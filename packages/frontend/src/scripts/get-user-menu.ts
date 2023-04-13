@@ -11,13 +11,14 @@ import { copyToClipboard } from '@/scripts/copy-to-clipboard.js';
 import { host, url } from '@/config.js';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
-import { defaultStore, userActions } from '@/store.js';
+import { defaultStore, userActions} from '@/store.js';
 import { $i, iAmModerator } from '@/account.js';
 import { notesSearchAvailable, canSearchNonLocalNotes } from '@/scripts/check-permissions.js';
 import { IRouter } from '@/nirax.js';
 import { antennasCache, rolesCache, userListsCache } from '@/cache.js';
 import { mainRouter } from '@/router/main.js';
 import { MenuItem } from '@/types/menu.js';
+import {editNickname} from "@/scripts/edit-nickname";
 
 export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter = mainRouter) {
 	const meId = $i ? $i.id : null;
@@ -199,7 +200,13 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 		action: () => {
 			editMemo();
 		},
-	}, {
+	}, ...(defaultStore.state.nicknameEnabled ? [{
+		icon: 'ti ti-edit',
+		text: 'ニックネームを編集',
+		action: () => {
+			editNickname(user);
+		},
+	}] : []), null,{
 		type: 'parent',
 		icon: 'ti ti-list',
 		text: i18n.ts.addToList,
