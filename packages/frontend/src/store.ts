@@ -378,6 +378,11 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: false,
 	},
+	nicknameEnabled: {
+		where: 'account',
+		default: true,
+	},
+	numb
 	mediaListWithOneImageAppearance: {
 		where: 'device',
 		default: 'expand' as 'expand' | '16_9' | '1_1' | '2_3',
@@ -491,6 +496,10 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: { type: 'syuilo/bubble2', volume: 1 } as SoundStore,
 	},
+	nicknameMap: {
+		where: 'account',
+		default: {} as Record<string, string>,
+	}
 }));
 
 // TODO: 他のタブと永続化されたstateを同期
