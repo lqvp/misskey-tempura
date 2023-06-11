@@ -21,6 +21,7 @@ import { host } from '@/config.js';
 import { defaultStore } from '@/store.js';
 import { nyaize as doNyaize } from '@/scripts/nyaize.js';
 import { safeParseFloat } from '@/scripts/safe-parse.js';
+import { parseMfmText } from '@/scripts/parse-mfm-text';
 
 const QUOTE_STYLE = `
 display: block;
@@ -81,7 +82,7 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 	 * @param scale How times large the text is
 	 * @param disableNyaize Whether nyaize is disabled or not
 	 */
-	const genEl = (ast: mfm.MfmNode[], scale: number, disableNyaize = false) => ast.map((token): VNode | string | (VNode | string)[] => {
+	const genEl = (ast: mfm.MfmNode[], parents: string[], scale: number, disableNyaize = false) => ast.map((token): VNode | string | (VNode | string)[] => {
 		switch (token.type) {
 			case 'text': {
 				let text = token.props.text.replace(/(\r\n|\n|\r)/g, '\n');
@@ -93,7 +94,7 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 					const res: (VNode | string)[] = [];
 					for (const t of text.split('\n')) {
 						res.push(h('br'));
-						res.push(t);
+						res.push(...parseMfmText(t, parents));
 					}
 					res.shift();
 					return res;
@@ -103,17 +104,17 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 			}
 
 			case 'bold': {
-				return [h('b', genEl(token.children, scale))];
+				return [h('b', genEl(token.children, [...parents, token.type], scale))];
 			}
 
 			case 'strike': {
-				return [h('del', genEl(token.children, scale))];
+				return [h('del', genEl(token.children, [...parents, token.type], scale))];
 			}
 
 			case 'italic': {
 				return h('i', {
 					style: 'font-style: oblique;',
-				}, genEl(token.children, scale));
+				}, genEl(token.children, [...parents, token.type], scale));
 			}
 
 			case 'fn': {
@@ -181,17 +182,17 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 					case 'x2': {
 						return h('span', {
 							class: defaultStore.state.advancedMfm ? 'mfm-x2' : '',
-						}, genEl(token.children, scale * 2));
+						}, genEl(token.children, [...parents, `${token.type}:${token.props.name}`], scale * 2));
 					}
 					case 'x3': {
 						return h('span', {
 							class: defaultStore.state.advancedMfm ? 'mfm-x3' : '',
-						}, genEl(token.children, scale * 3));
+						}, genEl(token.children, [...parents, `${token.type}:${token.props.name}`], scale * 3));
 					}
 					case 'x4': {
 						return h('span', {
 							class: defaultStore.state.advancedMfm ? 'mfm-x4' : '',
-						}, genEl(token.children, scale * 4));
+						}, genEl(token.children, [...parents, `${token.type}:${token.props.name}`], scale * 4));
 					}
 					case 'font': {
 						const family =
@@ -208,7 +209,7 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 					case 'blur': {
 						return h('span', {
 							class: '_mfm_blur_',
-						}, genEl(token.children, scale));
+						}, genEl(token.children, [...parents, `${token.type}:${token.props.name}`], scale));
 					}
 					case 'rainbow': {
 						if (!useAnim) {
@@ -223,9 +224,9 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 					}
 					case 'sparkle': {
 						if (!useAnim) {
-							return genEl(token.children, scale);
+							return genEl(token.children, [...parents, `${token.type}:${token.props.name}`], scale);
 						}
-						return h(MkSparkle, {}, genEl(token.children, scale));
+						return h(MkSparkle, {}, genEl(token.children, [...parents, `${token.type}:${token.props.name}`], scale));
 					}
 					case 'rotate': {
 						const degrees = safeParseFloat(token.props.args.deg) ?? 90;
@@ -324,20 +325,20 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 				} else {
 					return h('span', {
 						style: 'display: inline-block; ' + style,
-					}, genEl(token.children, scale));
+					}, genEl(token.children, [...parents, `${token.type}:${token.props.name}`], scale));
 				}
 			}
 
 			case 'small': {
 				return [h('small', {
 					style: 'opacity: 0.7;',
-				}, genEl(token.children, scale))];
+				}, genEl(token.children, [...parents, token.type], scale))];
 			}
 
 			case 'center': {
 				return [h('div', {
 					style: 'text-align:center;',
-				}, genEl(token.children, scale))];
+				}, genEl(token.children, [...parents, token.type], scale))];
 			}
 
 			case 'url': {
@@ -353,7 +354,7 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 					key: Math.random(),
 					url: token.props.url,
 					rel: 'nofollow noopener',
-				}, genEl(token.children, scale, true))];
+				}, genEl(token.children, [...parents, token.type], scale, true))];
 			}
 
 			case 'mention': {
@@ -391,11 +392,11 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 				if (!props.nowrap) {
 					return [h('div', {
 						style: QUOTE_STYLE,
-					}, genEl(token.children, scale, true))];
+					}, genEl(token.children, [...parents, token.type], scale, true))];
 				} else {
 					return [h('span', {
 						style: QUOTE_STYLE,
-					}, genEl(token.children, scale, true))];
+					}, genEl(token.children, [...parents, token.type], scale, true))];
 				}
 			}
 
@@ -454,7 +455,7 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 			}
 
 			case 'plain': {
-				return [h('span', genEl(token.children, scale, true))];
+				return [h('span', genEl(token.children, [...parents, token.type], scale, true))];
 			}
 
 			default: {
@@ -469,5 +470,5 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 	return h('span', {
 		// https://codeday.me/jp/qa/20190424/690106.html
 		style: props.nowrap ? 'white-space: pre; word-wrap: normal; overflow: hidden; text-overflow: ellipsis;' : 'white-space: pre-wrap;',
-	}, genEl(rootAst, props.rootScale ?? 1));
+	}, genEl(rootAst, [], props.rootScale ?? 1));
 }
