@@ -3315,6 +3315,42 @@ export type paths = {
      */
     post: operations['roles___notes'];
   };
+  '/roles/add': {
+    /**
+     * roles/add
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *write:community-role*
+     */
+    post: operations['roles___add'];
+  };
+  '/roles/assign': {
+    /**
+     * roles/assign
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *write:community-role*
+     */
+    post: operations['roles___assign'];
+  };
+  '/roles/unassign': {
+    /**
+     * roles/unassign
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *write:community-role*
+     */
+    post: operations['roles___unassign'];
+  };
+  '/roles/update': {
+    /**
+     * roles/update
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *write:community-role*
+     */
+    post: operations['roles___update'];
+  };
   '/request-reset-password': {
     /**
      * request-reset-password
@@ -10414,8 +10450,8 @@ export type operations = {
           target: 'manual' | 'conditional';
           condFormula: Record<string, never>;
           isPublic: boolean;
-          isModerator: boolean;
-          isAdministrator: boolean;
+          /** @enum {string} */
+          permissionGroup: 'Admin' | 'MainModerator' | 'Normal' | 'Community';
           /** @default false */
           isExplorable?: boolean;
           asBadge: boolean;
@@ -10636,8 +10672,8 @@ export type operations = {
           target?: 'manual' | 'conditional';
           condFormula?: Record<string, never>;
           isPublic?: boolean;
-          isModerator?: boolean;
-          isAdministrator?: boolean;
+          /** @enum {string} */
+          permissionGroup?: 'Admin' | 'MainModerator' | 'Normal' | 'Community';
           isExplorable?: boolean;
           asBadge?: boolean;
           canEditMembersByModerator?: boolean;
@@ -25881,6 +25917,15 @@ export type operations = {
    * **Credential required**: *Yes* / **Permission**: *read:account*
    */
   roles___list: {
+    requestBody: {
+      content: {
+        'application/json': {
+          communityOnly?: boolean;
+          communityPublicOnly?: boolean;
+          ownerOnly?: boolean;
+        };
+      };
+    };
     responses: {
       /** @description OK (with results) */
       200: {
@@ -26067,6 +26112,222 @@ export type operations = {
         content: {
           'application/json': components['schemas']['Note'][];
         };
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * roles/add
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *write:community-role*
+   */
+  roles___add: {
+    requestBody: {
+      content: {
+        'application/json': {
+          name: string;
+          description: string;
+          color: string | null;
+          iconUrl: string | null;
+          isPublic: boolean;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * roles/assign
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *write:community-role*
+   */
+  roles___assign: {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: misskey:id */
+          roleId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * roles/unassign
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *write:community-role*
+   */
+  roles___unassign: {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: misskey:id */
+          roleId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * roles/update
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *write:community-role*
+   */
+  roles___update: {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: misskey:id */
+          roleId: string;
+          name: string;
+          description: string;
+          color: string | null;
+          iconUrl: string | null;
+          isPublic: boolean;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
       };
       /** @description Client error */
       400: {

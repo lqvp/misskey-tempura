@@ -5,6 +5,7 @@
 
 import { Entity, Column, PrimaryColumn } from 'typeorm';
 import { id } from './util/id.js';
+import { User } from './User.js';
 
 /**
  * ～かつ～
@@ -194,6 +195,8 @@ export type RoleCondFormulaValue = { id: string } & (
 	CondFormulaValueActivedLessThan
 );
 
+export type RolePermissionGroupValue = 'Admin' | 'MainModerator' | 'Normal' | 'Community';
+
 @Entity('role')
 export class MiRole {
 	@PrimaryColumn(id())
@@ -254,12 +257,18 @@ export class MiRole {
 	@Column('boolean', {
 		default: false,
 	})
-	public isModerator: boolean;
+	public isModerator: boolean; // 後方互換
 
 	@Column('boolean', {
 		default: false,
 	})
-	public isAdministrator: boolean;
+	public isAdministrator: boolean; // 後方互換
+
+	@Column('enum', {
+		enum: ['Admin', 'MainModerator', 'Normal', 'Community'],
+		default: 'Normal',
+	})
+	public permissionGroup: RolePermissionGroupValue;
 
 	@Column('boolean', {
 		default: false,
@@ -285,4 +294,12 @@ export class MiRole {
 		priority: number;
 		value: any;
 	}>;
+
+	@Column({
+		...id(),
+		nullable: true,
+		comment: 'The owner ID.',
+		default: null,
+	})
+	public userId: User['id'] | null; // nullはCommunity外
 }

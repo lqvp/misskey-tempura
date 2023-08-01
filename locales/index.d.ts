@@ -7341,6 +7341,10 @@ export interface Locale extends ILocale {
              * 予約投稿の最大数
              */
             "scheduleNoteMax": string;
+            /**
+             * コミュニティーロールの追加
+             */
+            "canAddRoles": string;
         };
         "_condition": {
             /**
@@ -8840,6 +8844,10 @@ export interface Locale extends ILocale {
          * クリップを見る
          */
         "read:clip": string;
+        /**
+         * コミュニティーロールを操作する
+         */
+        "write:community-role": string;
     };
     "_auth": {
         /**
@@ -11399,6 +11407,14 @@ export interface Locale extends ILocale {
      * 背景画像URL
      */
     "backgroundImageUrls": string;
+    /**
+     * コミュニティー
+     */
+    "community": string;
+    /**
+     * ロールの管理
+     */
+    "manageRole": string;
 }
 declare const locales: {
     [lang: string]: Locale;

@@ -1894,6 +1894,7 @@ _role:
     canImportMuting: "ミュートのインポートを許可"
     canImportUserLists: "リストのインポートを許可"
     scheduleNoteMax: "予約投稿の最大数"
+    canAddRoles: "コミュニティーロールの追加"
   _condition:
     roleAssignedTo: "マニュアルロールにアサイン済み"
     isLocal: "ローカルユーザー"
@@ -2314,6 +2315,7 @@ _permissions:
   "read:announcements": "お知らせを見る"
   "read:stats": "統計情報を見る"
   "read:clip": "クリップを見る"
+  "write:community-role": "コミュニティーロールを操作する"
 
 _auth:
   shareAccessTitle: "アプリへのアクセス許可"
@@ -3040,3 +3042,6 @@ muteThisUserIsProhibited: "サーバー管理者はこのユーザーをミュ�
 unfollowThisUserProhibited: "このユーザーのフォロー解除は禁止されています。"
 
 backgroundImageUrls: "背景画像URL"
+
+community: "コミュニティー"
+manageRole: "ロールの管理"

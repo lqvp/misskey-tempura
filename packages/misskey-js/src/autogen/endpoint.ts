@@ -504,6 +504,7 @@ import type {
 	PingResponse,
 	PinnedUsersResponse,
 	PromoReadRequest,
+	RolesListRequest,
 	RolesListResponse,
 	RolesShowRequest,
 	RolesShowResponse,
@@ -511,6 +512,10 @@ import type {
 	RolesUsersResponse,
 	RolesNotesRequest,
 	RolesNotesResponse,
+	RolesAddRequest,
+	RolesAssignRequest,
+	RolesUnassignRequest,
+	RolesUpdateRequest,
 	RequestResetPasswordRequest,
 	ResetPasswordRequest,
 	ServerInfoResponse,
@@ -943,10 +948,14 @@ export type Endpoints = {
 	'ping': { req: EmptyRequest; res: PingResponse };
 	'pinned-users': { req: EmptyRequest; res: PinnedUsersResponse };
 	'promo/read': { req: PromoReadRequest; res: EmptyResponse };
-	'roles/list': { req: EmptyRequest; res: RolesListResponse };
+	'roles/list': { req: RolesListRequest; res: RolesListResponse };
 	'roles/show': { req: RolesShowRequest; res: RolesShowResponse };
 	'roles/users': { req: RolesUsersRequest; res: RolesUsersResponse };
 	'roles/notes': { req: RolesNotesRequest; res: RolesNotesResponse };
+	'roles/add': { req: RolesAddRequest; res: EmptyResponse };
+	'roles/assign': { req: RolesAssignRequest; res: EmptyResponse };
+	'roles/unassign': { req: RolesUnassignRequest; res: EmptyResponse };
+	'roles/update': { req: RolesUpdateRequest; res: EmptyResponse };
 	'request-reset-password': { req: RequestResetPasswordRequest; res: EmptyResponse };
 	'reset-db': { req: EmptyRequest; res: EmptyResponse };
 	'reset-password': { req: ResetPasswordRequest; res: EmptyResponse };

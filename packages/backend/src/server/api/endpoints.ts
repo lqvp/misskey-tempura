@@ -357,6 +357,10 @@ import * as ep___roles_list from './endpoints/roles/list.js';
 import * as ep___roles_show from './endpoints/roles/show.js';
 import * as ep___roles_users from './endpoints/roles/users.js';
 import * as ep___roles_notes from './endpoints/roles/notes.js';
+import * as ep___roles_add from './endpoints/roles/add.js';
+import * as ep___roles_assign from './endpoints/roles/assign.js';
+import * as ep___roles_unassign from './endpoints/roles/unassign.js';
+import * as ep___roles_update from './endpoints/roles/update.js';
 import * as ep___requestResetPassword from './endpoints/request-reset-password.js';
 import * as ep___resetDb from './endpoints/reset-db.js';
 import * as ep___resetPassword from './endpoints/reset-password.js';
@@ -758,6 +762,10 @@ const eps = [
 	['roles/show', ep___roles_show],
 	['roles/users', ep___roles_users],
 	['roles/notes', ep___roles_notes],
+	['roles/add', ep___roles_add],
+	['roles/assign', ep___roles_assign],
+	['roles/unassign', ep___roles_unassign],
+	['roles/update', ep___roles_update],
 	['request-reset-password', ep___requestResetPassword],
 	['reset-db', ep___resetDb],
 	['reset-password', ep___resetPassword],
@@ -836,12 +844,12 @@ interface IEndpointMetaBase {
 	readonly requireCredential?: boolean;
 
 	/**
-	 * isModeratorなロールを必要とするか
+	 * Main Moderator権限を必要とするか
 	 */
 	readonly requireModerator?: boolean;
 
 	/**
-	 * isAdministratorなロールを必要とするか
+	 * Administrator権限を必要とするか
 	 */
 	readonly requireAdmin?: boolean;
 

@@ -301,6 +301,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 								<template #label>{{ i18n.ts.enable }}</template>
 							</MkSwitch>
 						</MkFolder>
+
+						<MkFolder v-if="matchQuery([i18n.ts._role._options.canAddRoles, 'canAddRoles'])">
+							<template #label>{{ i18n.ts._role._options.canAddRoles }}</template>
+							<template #suffix>{{ policies.canAddRoles ? i18n.ts.yes : i18n.ts.no }}</template>
+							<MkSwitch v-model="policies.canAddRoles">
+								<template #label>{{ i18n.ts.enable }}</template>
+							</MkSwitch>
+						</MkFolder>
 					</div>
 				</MkFolder>
 				<MkButton primary rounded @click="create"><i class="ti ti-plus"></i> {{ i18n.ts._role.new }}</MkButton>
@@ -308,13 +316,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkFoldableSection>
 						<template #header>{{ i18n.ts._role.manualRoles }}</template>
 						<div class="_gaps_s">
-							<MkRolePreview v-for="role in roles.filter(x => x.target === 'manual')" :key="role.id" :role="role" :forModeration="true"/>
+							<MkRolePreview v-for="role in roles.filter(x => x.target === 'manual' && x.permissionGroup !== 'Community')" :key="role.id" :role="role" :forModeration="true"/>
 						</div>
 					</MkFoldableSection>
 					<MkFoldableSection>
 						<template #header>{{ i18n.ts._role.conditionalRoles }}</template>
 						<div class="_gaps_s">
-							<MkRolePreview v-for="role in roles.filter(x => x.target === 'conditional')" :key="role.id" :role="role" :forModeration="true"/>
+							<MkRolePreview v-for="role in roles.filter(x => x.target === 'conditional' && x.permissionGroup !== 'Community')" :key="role.id" :role="role" :forModeration="true"/>
+						</div>
+					</MkFoldableSection>
+					<MkFoldableSection>
+						<template #header>Community roles</template>
+						<div class="_gaps_s">
+							<MkRolePreview v-for="role in roles.filter(x => x.permissionGroup === 'Community')" :key="role.id" :role="role" :forModeration="true"/>
 						</div>
 					</MkFoldableSection>
 				</div>

@@ -1750,6 +1750,7 @@ declare namespace entities {
         PingResponse,
         PinnedUsersResponse,
         PromoReadRequest,
+        RolesListRequest,
         RolesListResponse,
         RolesShowRequest,
         RolesShowResponse,
@@ -1757,6 +1758,10 @@ declare namespace entities {
         RolesUsersResponse,
         RolesNotesRequest,
         RolesNotesResponse,
+        RolesAddRequest,
+        RolesAssignRequest,
+        RolesUnassignRequest,
+        RolesUpdateRequest,
         RequestResetPasswordRequest,
         ResetPasswordRequest,
         ServerInfoResponse,
@@ -3118,6 +3123,15 @@ type RoleLite = components['schemas']['RoleLite'];
 type RolePolicies = components['schemas']['RolePolicies'];
 
 // @public (undocumented)
+type RolesAddRequest = operations['roles___add']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type RolesAssignRequest = operations['roles___assign']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type RolesListRequest = operations['roles___list']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
 type RolesListResponse = operations['roles___list']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
@@ -3131,6 +3145,12 @@ type RolesShowRequest = operations['roles___show']['requestBody']['content']['ap
 
 // @public (undocumented)
 type RolesShowResponse = operations['roles___show']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type RolesUnassignRequest = operations['roles___unassign']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type RolesUpdateRequest = operations['roles___update']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
 type RolesUsersRequest = operations['roles___users']['requestBody']['content']['application/json'];

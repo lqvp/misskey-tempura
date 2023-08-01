@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { computed, reactive } from 'vue';
+import { computed, reactive, defineAsyncComponent } from 'vue';
+import { ui } from '@@/js/config.js';
 import { clearCache } from './scripts/clear-cache.js';
 import { $i } from '@/account.js';
 import { miLocalStorage } from '@/local-storage.js';
@@ -11,8 +12,20 @@ import { openInstanceMenu, openToolsMenu } from '@/ui/_common_/common.js';
 import { lookup } from '@/scripts/lookup.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
-import { ui } from '@@/js/config.js';
 import { unisonReload } from '@/scripts/unison-reload.js';
+
+const roleManager = async () => {
+	try {
+		await os.popup(
+			defineAsyncComponent(() => import('@/pages/role-add-dialog.vue')),
+			{},
+			{},
+			'closed',
+		);
+	} catch (error) {
+		console.error(error);
+	}
+};
 
 export const navbarItemDef = reactive({
 	notifications: {
@@ -181,6 +194,13 @@ export const navbarItemDef = reactive({
 		icon: 'ti ti-trash',
 		action: (ev) => {
 			clearCache();
+		},
+	},
+	roleManager: {
+		title: i18n.ts.manageRole,
+		icon: 'ti ti-tags',
+		action: (ev) => {
+			roleManager();
 		},
 	},
 });

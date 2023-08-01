@@ -106,6 +106,8 @@ export const ROLE_POLICIES = [
 	'noteEachClipsLimit',
 	'userListLimit',
 	'userEachUserListsLimit',
+	'mutualLinkLimit',
+	'mutualLinkSectionLimit',
 	'rateLimitFactor',
 	'avatarDecorationLimit',
 	'canImportAntennas',
@@ -113,6 +115,7 @@ export const ROLE_POLICIES = [
 	'canImportFollowing',
 	'canImportMuting',
 	'canImportUserLists',
+	'canAddRoles',
 ] as const;
 
 // なんか動かない

@@ -63,14 +63,14 @@ export class RoleEntityService {
 			target: role.target,
 			condFormula: role.condFormula,
 			isPublic: role.isPublic,
-			isAdministrator: role.isAdministrator,
-			isModerator: role.isModerator,
+			permissionGroup: role.permissionGroup,
 			isExplorable: role.isExplorable,
 			asBadge: role.asBadge,
 			canEditMembersByModerator: role.canEditMembersByModerator,
 			displayOrder: role.displayOrder,
 			policies: policies,
 			usersCount: assignedCount,
+			isOwner: role.userId != null ? role.userId === me?.id : false,
 		});
 	}
 
