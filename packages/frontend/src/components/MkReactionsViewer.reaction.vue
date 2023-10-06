@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	ref="buttonEl"
 	v-ripple="canToggle"
 	class="_button"
-	:class="[$style.root, { [$style.reacted]: note.myReaction == reaction, [$style.canToggle]: canToggle, [$style.small]: defaultStore.state.reactionsDisplaySize === 'small', [$style.large]: defaultStore.state.reactionsDisplaySize === 'large' }]"
+	:class="[$style.root, { [$style.reacted]: note.myReaction == reaction, [$style.canToggle]: canToggle || canToggleRemoteEmojiName, [$style.small]: defaultStore.state.reactionsDisplaySize === 'small', [$style.large]: defaultStore.state.reactionsDisplaySize === 'large' }]"
 	@click="toggleReaction()"
 	@contextmenu.prevent.stop="menu"
 >
@@ -26,11 +26,12 @@ import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import * as os from '@/os.js';
 import { misskeyApi, misskeyApiGet } from '@/scripts/misskey-api.js';
 import { useTooltip } from '@/scripts/use-tooltip.js';
-import { $i } from '@/account.js';
+import { $i, iAmModerator } from '@/account.js';
 import MkReactionEffect from '@/components/MkReactionEffect.vue';
 import { claimAchievement } from '@/scripts/achievements.js';
 import { defaultStore } from '@/store.js';
 import { i18n } from '@/i18n.js';
+import { customEmojis } from '@/custom-emojis.js';
 import * as sound from '@/scripts/sound.js';
 import { checkReactionPermissions } from '@/scripts/check-reaction-permissions.js';
 import { customEmojisMap } from '@/custom-emojis.js';
@@ -59,8 +60,15 @@ const canToggle = computed(() => {
 });
 const canGetInfo = computed(() => !props.reaction.match(/@\w/) && props.reaction.includes(':'));
 
-async function toggleReaction() {
-	if (!canToggle.value) return;
+const reactionName = computed(() => props.reaction.slice(1, props.reaction.indexOf('@')));
+
+const canToggleRemoteEmojiName = computed(() => $i && customEmojis.value.find(emoji => emoji.name === reactionName.value)?.name);
+
+async function toggleReaction(): Promise<void> {
+	if (!canToggle.value) {
+		reactRemoteEmoji();
+		return;
+	}
 
 	const oldReaction = props.note.myReaction;
 	if (oldReaction) {
@@ -125,15 +133,98 @@ async function menu(ev) {
 	}], ev.currentTarget ?? ev.target);
 }
 
-function anime() {
-	if (document.hidden || !defaultStore.state.animation || buttonEl.value == null) return;
+function anime(): void {
+	if (document.hidden || !defaultStore.state.animation || !buttonEl.value) return;
 
 	const rect = buttonEl.value.getBoundingClientRect();
 	const x = rect.left + 16;
 	const y = rect.top + (buttonEl.value.offsetHeight / 2);
+
 	const { dispose } = os.popup(MkReactionEffect, { reaction: props.reaction, x, y }, {
 		end: () => dispose(),
 	});
+}
+
+function reactRemoteEmoji(): void {
+	if (!canToggleRemoteEmojiName.value) {
+		importEmojiConfirm();
+		return;
+	}
+	os.api('notes/reactions/create', {
+		noteId: props.note.id,
+		reaction: `:${canToggleRemoteEmojiName.value}:`,
+	});
+}
+
+async function importEmojiConfirm(): Promise<void> {
+	if (!iAmModerator) return;
+	const { canceled } = await os.confirm({
+		type: 'info',
+		text: `${reactionName.value}をインポートしますか？`,
+	});
+	if (!canceled) importEmoji().then(() =>
+		os.toast(`${reactionName.value}をインポートしました`));
+}
+
+async function importEmoji(): Promise<void> {
+	const emojiId = await getEmojiId();
+	os.api('admin/emoji/copy', {
+		emojiId: emojiId,
+	});
+}
+
+async function getEmojiId(): Promise<string> {
+	const host = props.reaction.slice(props.reaction.indexOf('@') + 1, props.reaction.length - 1);
+
+	const res = await os.api('admin/emoji/list-remote', {
+		host,
+		query: reactionName.value,
+	});
+
+	if (!res) throw new Error('Failed to fetch emojiId.');
+
+	return await res.find((emoji: { name: string; }) => emoji.name === reactionName.value).id;
+}
+
+function reactRemoteEmoji(): void {
+	if (!canToggleRemoteEmojiName.value) {
+		importEmojiConfirm();
+		return;
+	}
+	os.api('notes/reactions/create', {
+		noteId: props.note.id,
+		reaction: `:${canToggleRemoteEmojiName.value}:`,
+	});
+}
+
+async function importEmojiConfirm(): Promise<void> {
+	if (!iAmModerator) return;
+	const { canceled } = await os.confirm({
+		type: 'info',
+		text: `${reactionName.value}をインポートしますか？`,
+	});
+	if (!canceled) importEmoji().then(() =>
+		os.toast(`${reactionName.value}をインポートしました`));
+}
+
+async function importEmoji(): Promise<void> {
+	const emojiId = await getEmojiId();
+	os.api('admin/emoji/copy', {
+		emojiId: emojiId,
+	});
+}
+
+async function getEmojiId(): Promise<string> {
+	const host = props.reaction.slice(props.reaction.indexOf('@') + 1, props.reaction.length - 1);
+
+	const res = await os.api('admin/emoji/list-remote', {
+		host,
+		query: reactionName.value,
+	});
+
+	if (!res) throw new Error('Failed to fetch emojiId.');
+
+	return await res.find((emoji: { name: string; }) => emoji.name === reactionName.value).id;
 }
 
 watch(() => props.count, (newCount, oldCount) => {
