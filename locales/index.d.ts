@@ -13,6 +13,7 @@ export interface Locale extends ILocale {
      * 日本語
      */
     "_lang_": string;
+    "viewTextSource": string;
     /**
      * ノートでつながるネットワーク
      */

@@ -155,6 +155,7 @@ export function getNoteMenu(props: {
 	note: Misskey.entities.Note;
 	translation: Ref<Misskey.entities.NotesTranslateResponse | null>;
 	translating: Ref<boolean>;
+	viewTextSource: Ref<boolean>;
 	isDeleted: Ref<boolean>;
 	currentClip?: Misskey.entities.Clip;
 }) {
@@ -276,6 +277,10 @@ export function getNoteMenu(props: {
 		props.translation.value = res;
 	}
 
+	function showViewTextSource(): void {
+		props.viewTextSource.value = true;
+	}
+
 	let menu: MenuItem[];
 	if ($i) {
 		const statePromise = misskeyApi('notes/state', {
@@ -316,6 +321,12 @@ export function getNoteMenu(props: {
 				text: i18n.ts.translate,
 				action: translate,
 			} : undefined,
+			null,
+			{
+				icon: 'ti ti-file-text',
+				text: i18n.ts.viewTextSource,
+				action: showViewTextSource,
+			},
 			{ type: 'divider' },
 			statePromise.then(state => state.isFavorited ? {
 				icon: 'ti ti-star-off',
