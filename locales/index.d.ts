@@ -5352,6 +5352,7 @@ export interface Locale extends ILocale {
     };
     "autoRejectFollowRequest": string;
     "autoRejectFollowRequestDescription": string;
+    "disableNoteNyaize": string;
     "_announcement": {
         /**
          * 既存ユーザーのみ
