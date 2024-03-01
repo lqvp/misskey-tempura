@@ -650,4 +650,9 @@ export class MiMeta {
 		default: '{}',
 	})
 	public customSplashText: string[];
+
+	@Column('boolean', {
+		default: true,
+	})
+	public blockMentionsFromUnfamiliarRemoteUsers: boolean;
 }

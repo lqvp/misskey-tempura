@@ -5085,6 +5085,14 @@ export interface Locale extends ILocale {
      */
     "enableHorizontalSwipe": string;
     /**
+     * 荒らしの可能性があるユーザーからのメンションをブロックする
+     */
+    "blockMentionsFromUnfamiliarRemoteUsers": string;
+    /**
+     * このサーバーからのフォロワーがいないリモートユーザーの、メンションを含むノートをブロックするようにします。
+     */
+    "blockMentionsFromUnfamiliarRemoteUsersDescription": string;
+		/**
      * 読み込み中
      */
     "loading": string;
