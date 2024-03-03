@@ -1280,6 +1280,8 @@ _delivery:
 mutualLink: "相互リンク"
 mutualBannerThisUser: "このユーザーのバナー"
 maximum: "最大"
+scheduledNoteDelete: "すぐ消す"
+noteDeletationAt: "このノートは{time}に削除されます"
 
 _bubbleGame:
   howToPlay: "遊び方"
