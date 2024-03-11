@@ -128,6 +128,11 @@ export class MiUserProfile {
 	})
 	public followersVisibility: typeof followersVisibilities[number];
 
+	@Column('boolean', {
+		default: false,
+	})
+	public hideActivity: boolean;
+
 	@Column('varchar', {
 		length: 128, nullable: true,
 	})

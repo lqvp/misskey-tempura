@@ -1320,6 +1320,8 @@ hideReactionUsersDescription: "リアクションをホバーした際のユー�
 hideReactionCount: "リアクション数の非表示"
 addToEmojiPicker: "絵文字ピッカーに追加"
 clearPost: "投稿フォームをリセット"
+hideActivity: "アクティビティを非公開にする"
+hideActivityDescription: "自分のプロフィールのアクティビティ (概要/アクティビティタブ) を他人が見れないようにします。このオプションを有効にしても、自分であればプロフィールのアクティビティタブから引き続き閲覧できます。"
 
 _bubbleGame:
   howToPlay: "遊び方"
