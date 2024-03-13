@@ -1712,6 +1712,7 @@ _role:
     inviteLimitCycle: "招待コードの作れる間隔"
     inviteExpirationTime: "招待コードの期限"
     canManageCustomEmojis: "カスタム絵文字の管理"
+    canUseRemoteIconDecorations: "リモートアイコンデコの利用"
     canManageAvatarDecorations: "アバターを飾るモンの管理"
     driveCapacity: "ドライブ容量"
     alwaysMarkNsfw: "勝手にファイルにNSFWをくっつける"

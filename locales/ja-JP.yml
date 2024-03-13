@@ -1747,6 +1747,7 @@ _role:
     canManageCustomEmojis: "カスタム絵文字の管理"
     canManageAvatarDecorations: "アバターデコレーションの管理"
     canEmojiDeletion: "絵文字の削除"
+    canUseRemoteIconDecorations: "リモートアイコンデコレーションの利用"
     driveCapacity: "ドライブ容量"
     alwaysMarkNsfw: "ファイルにNSFWを常に付与"
     canUpdateBioMedia: "アイコンとバナーの更新を許可"

@@ -56,6 +56,10 @@ export const meta = {
 					type: 'string',
 					optional: false, nullable: false,
 				},
+				license: {
+					type: 'string',
+					optional: false, nullable: true,
+				},
 			},
 		},
 	},

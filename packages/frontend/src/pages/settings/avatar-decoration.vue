@@ -39,7 +39,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				/>
 			</div>
 		</MkFolder>
-		<MkFolder>
+		<MkFolder v-if="$i.policies.canUseRemoteIconDecorations">
 			<template #label>リモート</template>
 			<div :class="$style.decorations">
 				<XDecoration

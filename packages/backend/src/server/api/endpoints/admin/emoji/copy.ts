@@ -42,6 +42,10 @@ export const meta = {
 				optional: false, nullable: false,
 				format: 'id',
 			},
+			license: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
 		},
 	},
 } as const;
