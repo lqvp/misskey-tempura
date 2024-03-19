@@ -1319,6 +1319,7 @@ hideReactionUsers: "誰がリアクションをしたのかを非表示にする
 hideReactionUsersDescription: "リアクションをホバーした際のユーザー一覧と、ノート詳細ページのリアクションタブにあるリアクションをしたユーザー一覧を非表示にします"
 hideReactionCount: "リアクション数の非表示"
 addToEmojiPicker: "絵文字ピッカーに追加"
+clearPost: "投稿フォームをリセット"
 
 _bubbleGame:
   howToPlay: "遊び方"

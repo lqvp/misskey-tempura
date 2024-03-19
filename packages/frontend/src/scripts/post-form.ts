@@ -41,4 +41,8 @@ export const bottomItemDef = {
 		title: i18n.ts.saveAsDraft,
 		icon: 'ti-note',
 	},
+	clearPost: {
+		title: i18n.ts.clearPost,
+		icon: 'ti-trash',
+	},
 };

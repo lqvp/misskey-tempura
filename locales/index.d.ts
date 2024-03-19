@@ -5284,6 +5284,10 @@ export interface Locale extends ILocale {
      * 絵文字ピッカーに追加
      */
     "addToEmojiPicker": string;
+    /**
+     * 投稿フォームをリセット
+     */
+    "clearPost": string;
     "_bubbleGame": {
         /**
          * 遊び方
