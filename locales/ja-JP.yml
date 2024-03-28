@@ -2746,5 +2746,10 @@ _contextMenu:
 _uniqueFeatures:
   uniqueFeature: "独自機能"
   remoteLocalTimeline: "リモート上のサーバーのローカルタイムラインを覗く機能"
-  hiddenActivityAndFiles: "プロフィール上からアクティビティやファイルの非表示"
-  hiddenActivityAndFilesDescription: "プロフィール上からアクティビティやファイルを非表示にします。ノートをいち早く見たい方にお勧めです。"
+  hiddenProfile: "プロフィールを非表示にする機能"
+  hiddenPinnedNotes: "プロフィール上からピン留めしたノートを非表示にします"
+  hiddenPinnedNotesDescription: "ピン留めしたノートを非表示にすることで、プロフィールページをスッキリさせることができます。"
+  hiddenActivity: "プロフィール上からアクティビティを非表示にします"
+  hiddenActivityDescription: "プロフィール上からアクティビティを非表示にすることで、プロフィールページをスッキリさせることができます。"
+  hiddenFiles: "プロフィール上からファイルを非表示にします。"
+  hiddenFilesDescription: "ファイルを非表示にすることで、プロフィールページをスッキリさせることができます。"

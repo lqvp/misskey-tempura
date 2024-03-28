@@ -242,7 +242,15 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: false,
 	},
-	hiddenActivityAndFiles: {
+	hiddenPinnedNotes: {
+		where: 'device',
+		default: false,
+	},
+	hiddenActivity: {
+		where: 'device',
+		default: false,
+	},
+	hiddenFiles: {
 		where: 'device',
 		default: false,
 	},

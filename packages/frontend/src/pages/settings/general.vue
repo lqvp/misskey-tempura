@@ -234,10 +234,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<template #label>{{ i18n.ts._uniqueFeatures.uniqueFeature }}</template>
 
 		<div class="_gaps_m">
-			<MkSwitch v-model="hiddenActivityAndFiles">
-				<template #caption>{{ i18n.ts._uniqueFeatures.hiddenActivityAndFilesDescription }}</template>
-				{{ i18n.ts._uniqueFeatures.hiddenActivityAndFiles }}
-			</MkSwitch>
+			<MkFolder>
+				<template #label>{{ i18n.ts._uniqueFeatures.hiddenProfile }}</template>
+				<div class="_gaps_m">
+					<div class="_buttons">
+						<MkButton inline @click="enableAllHidden">{{ i18n.ts.enableAll }}</MkButton>
+						<MkButton inline @click="disableAllHidden">{{ i18n.ts.disableAll }}</MkButton>
+					</div>
+					<MkSwitch v-model="hiddenPinnedNotes">
+						<template #caption>{{ i18n.ts._uniqueFeatures.hiddenPinnedNotesDescription }}</template>
+						{{ i18n.ts._uniqueFeatures.hiddenPinnedNotes }}
+					</MkSwitch>
+					<MkSwitch v-model="hiddenActivity">
+						<template #caption>{{ i18n.ts._uniqueFeatures.hiddenActivityDescription }}</template>
+						{{ i18n.ts._uniqueFeatures.hiddenActivity }}
+					</MkSwitch>
+					<MkSwitch v-model="hiddenFiles">
+						<template #caption>{{ i18n.ts._uniqueFeatures.hiddenFilesDescription }}</template>
+						{{ i18n.ts._uniqueFeatures.hiddenFiles }}
+					</MkSwitch>
+				</div>
+			</MkFolder>
 
 			<MkFolder>
 				<template #label>{{ i18n.ts._uniqueFeatuers.remoteLocalTimeline }}</template>
@@ -420,7 +437,13 @@ const enableQuickAddMfmFunction = computed(defaultStore.makeGetterSetter('enable
 const emojiStyle = computed(defaultStore.makeGetterSetter('emojiStyle'));
 const disableDrawer = computed(defaultStore.makeGetterSetter('disableDrawer'));
 const disableShowingAnimatedImages = computed(defaultStore.makeGetterSetter('disableShowingAnimatedImages'));
+<<<<<<< HEAD
+const hiddenPinnedNotes = computed(defaultStore.makeGetterSetter('hiddenPinnedNotes'));
+const hiddenActivity = computed(defaultStore.makeGetterSetter('hiddenActivity'));
+const hiddenFiles = computed(defaultStore.makeGetterSetter('hiddenFiles'));
+=======
 const hiddenActivityAndFiles = computed(defaultStore.makeGetterSetter('hiddenActivityAndFiles'));
+>>>>>>> b088ae5bbb273835c6fa2af7c089ce3ce790d046
 const forceShowAds = computed(defaultStore.makeGetterSetter('forceShowAds'));
 const loadRawImages = computed(defaultStore.makeGetterSetter('loadRawImages'));
 const highlightSensitiveMedia = computed(defaultStore.makeGetterSetter('highlightSensitiveMedia'));
@@ -491,6 +514,9 @@ watch([
 	alwaysConfirmFollow,
 	confirmWhenRevealingSensitiveMedia,
 	contextMenu,
+	hiddenPinnedNotes,
+	hiddenActivity,
+	hiddenFiles,
 ], async () => {
 	await reloadAsk();
 });
@@ -589,6 +615,18 @@ function enableAllDataSaver() {
 	Object.keys(g).forEach((key) => { g[key] = true; });
 
 	dataSaver.value = g;
+}
+
+function enableAllHidden() {
+	defaultStore.set('hiddenPinnedNotes', true);
+	defaultStore.set('hiddenActivity', true);
+	defaultStore.set('hiddenFiles', true);
+}
+
+function disableAllHidden() {
+	defaultStore.set('hiddenPinnedNotes', false);
+	defaultStore.set('hiddenActivity', false);
+	defaultStore.set('hiddenFiles', false);
 }
 
 function disableAllDataSaver() {

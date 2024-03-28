@@ -10298,13 +10298,33 @@ export interface Locale extends ILocale {
          */
         "remoteLocalTimeline": string;
         /**
-         * プロフィール上からアクティビティやファイルの非表示
+         * プロフィールを非表示にする機能
          */
-        "hiddenActivityAndFiles": string;
+        "hiddenProfile": string;
         /**
-         * プロフィール上からアクティビティやファイルを非表示にします。ノートをいち早く見たい方にお勧めです。
+         * プロフィール上からピン留めしたノートを非表示にします
          */
-        "hiddenActivityAndFilesDescription": string;
+        "hiddenPinnedNotes": string;
+        /**
+         * ピン留めしたノートを非表示にすることで、プロフィールページをスッキリさせることができます。
+         */
+        "hiddenPinnedNotesDescription": string;
+        /**
+         * プロフィール上からアクティビティを非表示にします
+         */
+        "hiddenActivity": string;
+        /**
+         * プロフィール上からアクティビティを非表示にすることで、プロフィールページをスッキリさせることができます。
+         */
+        "hiddenActivityDescription": string;
+        /**
+         * プロフィール上からファイルを非表示にします。
+         */
+        "hiddenFiles": string;
+        /**
+         * ファイルを非表示にすることで、プロフィールページをスッキリさせることができます。
+         */
+        "hiddenFilesDescription": string;
     };
 }
 declare const locales: {
