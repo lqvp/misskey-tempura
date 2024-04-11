@@ -5076,6 +5076,10 @@ export interface Locale extends ILocale {
      * このノートは{time}に消去されます
      */
     "noteDeletationAt": ParameterizedString<"time">;
+    /**
+     * 1年以上先の日時を指定することはできません
+     */
+    "cannotScheduleLaterThanOneYear": string;
 		/**
      * 使用しない場合は空欄にしてください
      */
