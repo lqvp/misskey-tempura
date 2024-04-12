@@ -5280,6 +5280,10 @@ export interface Locale extends ILocale {
      * リアクション数の非表示
      */
     "hideReactionCount": string;
+    /**
+     * 絵文字ピッカーに追加
+     */
+    "addToEmojiPicker": string;
     "_bubbleGame": {
         /**
          * 遊び方
