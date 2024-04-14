@@ -72,6 +72,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<option value="large">{{ i18n.ts.large }}</option>
 				</MkRadios>
 				<MkSwitch v-model="limitWidthOfReaction">{{ i18n.ts.limitWidthOfReaction }}</MkSwitch>
+				<MkSwitch v-model="hideReactionUsers">
+					<template #caption>{{ i18n.ts.hideReactionUsersDescription }}</template>
+					{{ i18n.ts.hideReactionUsers }}
+					<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+				</MkSwitch>
 			</div>
 
 			<MkSelect v-model="instanceTicker">
@@ -333,6 +338,7 @@ const showNoteActionsOnlyHover = computed(defaultStore.makeGetterSetter('showNot
 const showClipButtonInNoteFooter = computed(defaultStore.makeGetterSetter('showClipButtonInNoteFooter'));
 const reactionsDisplaySize = computed(defaultStore.makeGetterSetter('reactionsDisplaySize'));
 const limitWidthOfReaction = computed(defaultStore.makeGetterSetter('limitWidthOfReaction'));
+const hideReactionUsers = computed(defaultStore.makeGetterSetter('hideReactionUsers'));
 const collapseRenotes = computed(defaultStore.makeGetterSetter('collapseRenotes'));
 const directRenote = computed(defaultStore.makeGetterSetter('directRenote'));
 const reduceAnimation = computed(defaultStore.makeGetterSetter('animation', v => !v, v => !v));

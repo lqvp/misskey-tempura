@@ -5268,6 +5268,14 @@ export interface Locale extends ILocale {
      * デフォルトでノートが自己消滅するように
      */
     "defaultScheduledNoteDelete": string;
+    /**
+     * 誰がリアクションをしたのかを非表示にする
+     */
+    "hideReactionUsers": string;
+    /**
+     * リアクションをホバーした際のユーザー一覧と、ノート詳細ページのリアクションタブにあるリアクションをしたユーザー一覧を非表示にします
+     */
+    "hideReactionUsersDescription": string;
     "_bubbleGame": {
         /**
          * 遊び方
