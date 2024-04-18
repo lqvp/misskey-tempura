@@ -96,6 +96,33 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'account',
 		default: false,
 	},
+	defaultHomeNoteLocalOnly: {
+		where: 'account',
+		default: false,
+	},	defaultFollowersNoteLocalOnly: {
+		where: 'account',
+		default: false,
+	},
+	draftSavingBehavior: {
+		where: 'account',
+		default: 'auto' as 'auto' | 'manual',
+	},
+	rememberNoteVisibility: {
+		where: 'account',
+		default: false,
+	},
+	rememberReactionAcceptance: {
+		where: 'account',
+		default: false,
+	},
+	defaultNoteVisibility: {
+		where: 'account',
+		default: 'home',
+	},
+	defaultNoteLocalOnly: {
+		where: 'account',
+		default: false,
+	},
 	uploadFolder: {
 		where: 'account',
 		default: null as string | null,
