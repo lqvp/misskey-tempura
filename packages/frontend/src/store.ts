@@ -88,10 +88,6 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'account',
 		default: true,
 	},
-	rememberNoteVisibility: {
-		where: 'account',
-		default: false,
-	},
 	defaultNoteVisibility: {
 		where: 'account',
 		default: 'public' as (typeof Misskey.noteVisibilities)[number],
