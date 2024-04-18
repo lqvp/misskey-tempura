@@ -5144,6 +5144,22 @@ export interface Locale extends ILocale {
      * 投稿フォームの下部に表示される項目の並び替えが出来ます。項目をクリックすると削除できます。
      */
     "postFormBottomSettingsDescription": string;
+    /**
+     * 下書き
+     */
+    "drafts": string;
+    /**
+     * 下書きの保存に関する動作
+     */
+    "draftSavingBehavior": string;
+    /**
+     * 下書きとして保存
+     */
+    "saveAsDraft": string;
+    /**
+     * 下書きを適用すると現在入力されている内容はリセットされます。よろしいですか？
+     */
+    "draftOverwriteConfirm": string;
     "_bubbleGame": {
         /**
          * 遊び方
@@ -10343,6 +10359,16 @@ export interface Locale extends ILocale {
          * ファイルを非表示にすることで、プロフィールページをスッキリさせることができます。
          */
         "hiddenFilesDescription": string;
+    };
+    "_draftSavingBehavior": {
+        /**
+         * 自動的に保存する
+         */
+        "auto": string;
+        /**
+         * 都度確認する
+         */
+        "manual": string;
     };
 }
 declare const locales: {

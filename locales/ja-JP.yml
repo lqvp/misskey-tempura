@@ -1284,6 +1284,13 @@ scheduledNoteDelete: "すぐ消す"
 noteDeletationAt: "このノートは{time}に削除されます"
 postForm: "投稿フォーム"
 postFormBottomSettingsDescription: "投稿フォームの下部に表示される項目の並び替えが出来ます。項目をクリックすると削除できます。"
+clearPost: "投稿フォームをリセット"
+addToEmojiPicker: "絵文字ピッカーに追加"
+hideReactionCount: "リアクション数の非表示"
+drafts: "下書き"
+draftSavingBehavior: "下書きの保存に関する動作"
+saveAsDraft: "下書きとして保存"
+draftOverwriteConfirm: "下書きを適用すると現在入力されている内容はリセットされます。よろしいですか？"
 
 _bubbleGame:
   howToPlay: "遊び方"
@@ -2759,3 +2766,7 @@ _uniqueFeatures:
   hiddenActivityDescription: "プロフィール上からアクティビティを非表示にすることで、プロフィールページをスッキリさせることができます。"
   hiddenFiles: "プロフィール上からファイルを非表示にします。"
   hiddenFilesDescription: "ファイルを非表示にすることで、プロフィールページをスッキリさせることができます。"
+
+_draftSavingBehavior:
+  auto: "自動的に保存する"
+  manual: "都度確認する"
