@@ -1731,6 +1731,7 @@ _role:
     inviteExpirationTime: "招待コードの有効期限"
     canManageCustomEmojis: "カスタム絵文字の管理"
     canManageAvatarDecorations: "アバターデコレーションの管理"
+    canEmojiDeletion: "絵文字の削除"
     driveCapacity: "ドライブ容量"
     alwaysMarkNsfw: "ファイルにNSFWを常に付与"
     canUpdateBioMedia: "アイコンとバナーの更新を許可"

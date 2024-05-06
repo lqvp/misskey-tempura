@@ -55,6 +55,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</MkInput>
 						</MkFolder>
 
+						<MkFolder v-if="matchQuery([i18n.ts._role._options.canScheduleNote, 'canScheduleNote'])">
+							<template #label>{{ i18n.ts._role._options.canScheduleNote }}</template>
+							<template #suffix>{{ policies.canScheduleNote ? i18n.ts.yes : i18n.ts.no }}</template>
+							<MkSwitch v-model="policies.canScheduleNote">
+								<template #label>{{ i18n.ts.enable }}</template>
+							</MkSwitch>
+						</MkFolder>
+
 						<MkFolder v-if="matchQuery([i18n.ts._role._options.canInvite, 'canInvite'])">
 							<template #label>{{ i18n.ts._role._options.canInvite }}</template>
 							<template #suffix>{{ policies.canInvite ? i18n.ts.yes : i18n.ts.no }}</template>
@@ -90,6 +98,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<template #label>{{ i18n.ts._role._options.canManageAvatarDecorations }}</template>
 							<template #suffix>{{ policies.canManageAvatarDecorations ? i18n.ts.yes : i18n.ts.no }}</template>
 							<MkSwitch v-model="policies.canManageAvatarDecorations">
+								<template #label>{{ i18n.ts.enable }}</template>
+							</MkSwitch>
+						</MkFolder>
+
+						<MkFolder v-if="matchQuery([i18n.ts._role._options.canEmojiDeletion, 'canEmojiDeletion'])">
+							<template #label>{{ i18n.ts._role._options.canEmojiDeletion }}</template>
+							<template #suffix>{{ policies.canEmojiDeletion ? i18n.ts.yes : i18n.ts.no }}</template>
+							<MkSwitch v-model="policies.canEmojiDeletion">
 								<template #label>{{ i18n.ts.enable }}</template>
 							</MkSwitch>
 						</MkFolder>

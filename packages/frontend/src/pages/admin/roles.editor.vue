@@ -179,6 +179,26 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</div>
 			</MkFolder>
 
+			<MkFolder v-if="matchQuery([i18n.ts._role._options.canScheduleNote, 'canScheduleNote'])">
+				<template #label>{{ i18n.ts._role._options.canScheduleNote }}</template>
+				<template #suffix>
+					<span v-if="role.policies.canScheduleNote.useDefault" :class="$style.useDefaultLabel">{{ i18n.ts._role.useBaseValue }}</span>
+					<span v-else>{{ role.policies.canScheduleNote.value ? i18n.ts.yes : i18n.ts.no }}</span>
+					<span :class="$style.priorityIndicator"><i :class="getPriorityIcon(role.policies.canScheduleNote)"></i></span>
+				</template>
+				<div class="_gaps">
+					<MkSwitch v-model="role.policies.canScheduleNote.useDefault" :readonly="readonly">
+						<template #label>{{ i18n.ts._role.useBaseValue }}</template>
+					</MkSwitch>
+					<MkSwitch v-model="role.policies.canScheduleNote.value" :disabled="role.policies.canScheduleNote.useDefault" :readonly="readonly">
+						<template #label>{{ i18n.ts.enable }}</template>
+					</MkSwitch>
+					<MkRange v-model="role.policies.canScheduleNote.priority" :min="0" :max="2" :step="1" easing :textConverter="(v) => v === 0 ? i18n.ts._role._priority.low : v === 1 ? i18n.ts._role._priority.middle : v === 2 ? i18n.ts._role._priority.high : ''">
+						<template #label>{{ i18n.ts._role.priority }}</template>
+					</MkRange>
+				</div>
+			</MkFolder>
+
 			<MkFolder v-if="matchQuery([i18n.ts._role._options.canInvite, 'canInvite'])">
 				<template #label>{{ i18n.ts._role._options.canInvite }}</template>
 				<template #suffix>
@@ -293,6 +313,106 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #label>{{ i18n.ts.enable }}</template>
 					</MkSwitch>
 					<MkRange v-model="role.policies.canManageAvatarDecorations.priority" :min="0" :max="2" :step="1" easing :textConverter="(v) => v === 0 ? i18n.ts._role._priority.low : v === 1 ? i18n.ts._role._priority.middle : v === 2 ? i18n.ts._role._priority.high : ''">
+						<template #label>{{ i18n.ts._role.priority }}</template>
+					</MkRange>
+				</div>
+			</MkFolder>
+
+			<MkFolder v-if="matchQuery([i18n.ts._role._options.canUseChannel, 'canUseChannel'])">
+				<template #label>{{ i18n.ts._role._options.canUseChannel }}</template>
+				<template #suffix>
+					<span v-if="role.policies.canUseChannel.useDefault" :class="$style.useDefaultLabel">{{ i18n.ts._role.useBaseValue }}</span>
+					<span v-else>{{ role.policies.canUseChannel.value ? i18n.ts.yes : i18n.ts.no }}</span>
+					<span :class="$style.priorityIndicator"><i :class="getPriorityIcon(role.policies.canUseChannel)"></i></span>
+				</template>
+				<div class="_gaps">
+					<MkSwitch v-model="role.policies.canUseChannel.useDefault" :readonly="readonly">
+						<template #label>{{ i18n.ts._role.useBaseValue }}</template>
+					</MkSwitch>
+					<MkSwitch v-model="role.policies.canUseChannel.value" :disabled="role.policies.canUseChannel.useDefault" :readonly="readonly">
+						<template #label>{{ i18n.ts.enable }}</template>
+					</MkSwitch>
+					<MkRange v-model="role.policies.canUseChannel.priority" :min="0" :max="2" :step="1" easing :textConverter="(v) => v === 0 ? i18n.ts._role._priority.low : v === 1 ? i18n.ts._role._priority.middle : v === 2 ? i18n.ts._role._priority.high : ''">
+						<template #label>{{ i18n.ts._role.priority }}</template>
+					</MkRange>
+				</div>
+			</MkFolder>
+
+			<MkFolder v-if="matchQuery([i18n.ts._role._options.canUseHighlight, 'canUseHighlight'])">
+				<template #label>{{ i18n.ts._role._options.canUseHighlight }}</template>
+				<template #suffix>
+					<span v-if="role.policies.canUseHighlight.useDefault" :class="$style.useDefaultLabel">{{ i18n.ts._role.useBaseValue }}</span>
+					<span v-else>{{ role.policies.canUseHighlight.value ? i18n.ts.yes : i18n.ts.no }}</span>
+					<span :class="$style.priorityIndicator"><i :class="getPriorityIcon(role.policies.canUseHighlight)"></i></span>
+				</template>
+				<div class="_gaps">
+					<MkSwitch v-model="role.policies.canUseHighlight.useDefault" :readonly="readonly">
+						<template #label>{{ i18n.ts._role.useBaseValue }}</template>
+					</MkSwitch>
+					<MkSwitch v-model="role.policies.canUseHighlight.value" :disabled="role.policies.canUseHighlight.useDefault" :readonly="readonly">
+						<template #label>{{ i18n.ts.enable }}</template>
+					</MkSwitch>
+					<MkRange v-model="role.policies.canUseHighlight.priority" :min="0" :max="2" :step="1" easing :textConverter="(v) => v === 0 ? i18n.ts._role._priority.low : v === 1 ? i18n.ts._role._priority.middle : v === 2 ? i18n.ts._role._priority.high : ''">
+						<template #label>{{ i18n.ts._role.priority }}</template>
+					</MkRange>
+				</div>
+			</MkFolder>
+
+			<MkFolder v-if="matchQuery([i18n.ts._role._options.canUseRemoteIconDecorations, 'canUseRemoteIconDecorations'])">
+				<template #label>{{ i18n.ts._role._options.canUseRemoteIconDecorations }}</template>
+				<template #suffix>
+					<span v-if="role.policies.canUseRemoteIconDecorations.useDefault" :class="$style.useDefaultLabel">{{ i18n.ts._role.useBaseValue }}</span>
+					<span v-else>{{ role.policies.canUseRemoteIconDecorations.value ? i18n.ts.yes : i18n.ts.no }}</span>
+					<span :class="$style.priorityIndicator"><i :class="getPriorityIcon(role.policies.canUseHighlight)"></i></span>
+				</template>
+				<div class="_gaps">
+					<MkSwitch v-model="role.policies.canUseRemoteIconDecorations.useDefault" :readonly="readonly">
+						<template #label>{{ i18n.ts._role.useBaseValue }}</template>
+					</MkSwitch>
+					<MkSwitch v-model="role.policies.canUseRemoteIconDecorations.value" :disabled="role.policies.canUseRemoteIconDecorations.useDefault" :readonly="readonly">
+						<template #label>{{ i18n.ts.enable }}</template>
+					</MkSwitch>
+					<MkRange v-model="role.policies.canUseRemoteIconDecorations.priority" :min="0" :max="2" :step="1" easing :textConverter="(v) => v === 0 ? i18n.ts._role._priority.low : v === 1 ? i18n.ts._role._priority.middle : v === 2 ? i18n.ts._role._priority.high : ''">
+						<template #label>{{ i18n.ts._role.priority }}</template>
+					</MkRange>
+				</div>
+			</MkFolder>
+
+			<MkFolder v-if="matchQuery([i18n.ts._role._options.canEmojiDeletion, 'canEmojiDeletion'])">
+				<template #label>{{ i18n.ts._role._options.canEmojiDeletion }}</template>
+				<template #suffix>
+					<span v-if="role.policies.canEmojiDeletion.useDefault" :class="$style.useDefaultLabel">{{ i18n.ts._role.useBaseValue }}</span>
+					<span v-else>{{ role.policies.canEmojiDeletion.value ? i18n.ts.yes : i18n.ts.no }}</span>
+					<span :class="$style.priorityIndicator"><i :class="getPriorityIcon(role.policies.canUseHighlight)"></i></span>
+				</template>
+				<div class="_gaps">
+					<MkSwitch v-model="role.policies.canEmojiDeletion.useDefault" :readonly="readonly">
+						<template #label>{{ i18n.ts._role.useBaseValue }}</template>
+					</MkSwitch>
+					<MkSwitch v-model="role.policies.canEmojiDeletion.value" :disabled="role.policies.canEmojiDeletion.useDefault" :readonly="readonly">
+						<template #label>{{ i18n.ts.enable }}</template>
+					</MkSwitch>
+					<MkRange v-model="role.policies.canEmojiDeletion.priority" :min="0" :max="2" :step="1" easing :textConverter="(v) => v === 0 ? i18n.ts._role._priority.low : v === 1 ? i18n.ts._role._priority.middle : v === 2 ? i18n.ts._role._priority.high : ''">
+						<template #label>{{ i18n.ts._role.priority }}</template>
+					</MkRange>
+				</div>
+			</MkFolder>
+
+			<MkFolder v-if="matchQuery([i18n.ts._role._options.remoteLocalTimelineAnyLimit, 'remoteLocalTimelineAnyLimit'])">
+				<template #label>{{ i18n.ts._role._options.remoteLocalTimelineAnyLimit }}</template>
+				<template #suffix>
+					<span v-if="role.policies.remoteLocalTimelineAnyLimit.useDefault" :class="$style.useDefaultLabel">{{ i18n.ts._role.useBaseValue }}</span>
+					<span v-else>{{ role.policies.remoteLocalTimelineAnyLimit.value }}</span>
+					<span :class="$style.priorityIndicator"><i :class="getPriorityIcon(role.policies.remoteLocalTimelineAnyLimit)"></i></span>
+				</template>
+				<div class="_gaps">
+					<MkSwitch v-model="role.policies.remoteLocalTimelineAnyLimit.useDefault" :readonly="readonly">
+						<template #label>{{ i18n.ts._role.useBaseValue }}</template>
+					</MkSwitch>
+					<MkInput v-model="role.policies.remoteLocalTimelineAnyLimit.value" type="number" :min="0" :disabled="role.policies.remoteLocalTimelineAnyLimit.useDefault">
+						<template #label>{{ i18n.ts._role._options.remoteLocalTimelineAnyLimit }}</template>
+					</MkInput>
+					<MkRange v-model="role.policies.remoteLocalTimelineAnyLimit.priority" :min="0" :max="5" :step="1" easing :textConverter="(v) => v === 0 ? i18n.ts._role._priority.low : v === 1 ? i18n.ts._role._priority.middle : v === 5 ? i18n.ts._role._priority.high : ''">
 						<template #label>{{ i18n.ts._role.priority }}</template>
 					</MkRange>
 				</div>
