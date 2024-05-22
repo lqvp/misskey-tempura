@@ -128,22 +128,26 @@ const hideReactionCount = computed(() => {
 	}
 
 	async function menu(ev) {
-		if (!canGetInfo.value) return;
-
-		os.popupMenu([{
-			text: i18n.ts.info,
-			icon: 'ti ti-info-circle',
-			action: async () => {
-				const { dispose } = os.popup(MkCustomEmojiDetailedDialog, {
-					emoji: await misskeyApiGet('emoji', {
-						name: props.reaction.replace(/:/g, '').replace(/@\./, ''),
-					}),
-				}, {
-					closed: () => dispose(),
-				});
-			},
-		}], ev.currentTarget ?? ev.target);
-	}
+	os.popupMenu([...(canGetInfo.value ? [{
+		text: i18n.ts.info,
+		icon: 'ti ti-info-circle',
+		action: async () => {
+			const { dispose } = os.popup(MkCustomEmojiDetailedDialog, {
+				emoji: await misskeyApiGet('emoji', {
+					name: props.reaction.replace(/:/g, '').replace(/@\./, ''),
+				}),
+			}, {
+				closed: () => dispose(),
+			});
+		},
+	}] : []), ...(isAvailable.value && !defaultStore.state.reactions.includes(plainReaction.value) ? [{
+		text: i18n.ts.addToEmojiPicker,
+		icon: 'ti ti-plus',
+		action: async () => {
+			defaultStore.set('reactions', [...defaultStore.state.reactions, plainReaction.value]);
+		},
+	}] : [])], ev.currentTarget ?? ev.target);
+}
 
 	function anime() {
 		if (document.hidden || !defaultStore.state.animation || buttonEl.value == null) return;
