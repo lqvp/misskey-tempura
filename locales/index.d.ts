@@ -5141,6 +5141,14 @@ export interface Locale extends ILocale {
      */
     "createdAntennas": string;
     /**
+     * ノートの自己消滅の初期値
+     */
+    "defaultScheduledNoteDeleteTime": string;
+    /**
+     * ノートの自己消滅が有効になっています
+     */
+    "scheduledNoteDeleteEnabled": string;
+    /**
      * {x}から
      */
     "fromX": ParameterizedString<"x">;
