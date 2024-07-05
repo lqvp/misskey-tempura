@@ -1263,6 +1263,7 @@ confirmWhenRevealingSensitiveMedia: "センシティブなメディアを表示�
 sensitiveMediaRevealConfirm: "センシティブなメディアです。表示しますか？"
 createdLists: "作成したリスト"
 createdAntennas: "作成したアンテナ"
+scheduledNoteDelete: "ノートの削除を予約"
 
 _delivery:
   status: "配信状態"

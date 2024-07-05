@@ -5068,6 +5068,10 @@ export interface Locale extends ILocale {
      * 作成したアンテナ
      */
     "createdAntennas": string;
+		/**
+     * ノートの削除を予約
+     */
+		"scheduledNoteDelete": string;
     "_delivery": {
         /**
          * 配信状態

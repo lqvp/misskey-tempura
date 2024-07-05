@@ -74,6 +74,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<input v-show="withHashtags" ref="hashtagsInputEl" v-model="hashtags" :class="$style.hashtags" :placeholder="i18n.ts.hashtags" list="hashtags">
 	<XPostFormAttaches v-model="files" @detach="detachFile" @changeSensitive="updateFileSensitive" @changeName="updateFileName" @replaceFile="replaceFile"/>
 	<MkPollEditor v-if="poll" v-model="poll" @destroyed="poll = null"/>
+	<MkScheduledNoteDelete v-if="scheduledNoteDelete" v-model="scheduledNoteDelete" @destroyed="scheduledNoteDelete = null" />
 	<MkNotePreview v-if="showPreview" :class="$style.preview" :text="text" :files="files" :poll="poll ?? undefined" :useCw="useCw" :cw="cw" :user="postAccount ?? $i"/>
 	<div v-if="showingOptions" style="padding: 8px 16px;">
 	</div>
@@ -109,6 +110,7 @@ import MkNoteSimple from '@/components/MkNoteSimple.vue';
 import MkNotePreview from '@/components/MkNotePreview.vue';
 import XPostFormAttaches from '@/components/MkPostFormAttaches.vue';
 import MkPollEditor, { type PollEditorModelValue } from '@/components/MkPollEditor.vue';
+import MkScheduledNoteDelete, { type DeleteScheduleEditorModelValue } from '@/components/MkScheduledNoteDelete.vue';
 import { host, url } from '@/config.js';
 import { erase, unique } from '@/scripts/array.js';
 import { extractMentions } from '@/scripts/extract-mentions.js';
@@ -201,6 +203,7 @@ const recentHashtags = ref(JSON.parse(miLocalStorage.getItem('hashtags') ?? '[]'
 const imeText = ref('');
 const showingOptions = ref(false);
 const textAreaReadOnly = ref(false);
+const scheduledNoteDelete = ref<DeleteScheduleEditorModelValue | null>(null);
 
 const draftKey = computed((): string => {
 	let key = props.channel ? `channel:${props.channel.id}` : '';
@@ -369,6 +372,7 @@ function watchForDraft() {
 	watch(localOnly, () => saveDraft());
 	watch(quoteId, () => saveDraft());
 	watch(reactionAcceptance, () => saveDraft());
+	watch(scheduledNoteDelete, () => saveDraft());
 }
 
 function checkMissingMention() {
@@ -707,6 +711,7 @@ function saveDraft() {
 			visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(x => x.id) : undefined,
 			quoteId: quoteId.value,
 			reactionAcceptance: reactionAcceptance.value,
+			scheduledNoteDelete: scheduledNoteDelete.value,
 		},
 	};
 
@@ -788,6 +793,7 @@ async function post(ev?: MouseEvent) {
 		visibility: visibility.value,
 		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(u => u.id) : undefined,
 		reactionAcceptance: reactionAcceptance.value,
+		scheduledDelete: scheduledNoteDelete.value,
 	};
 
 	if (withHashtags.value && hashtags.value && hashtags.value.trim() !== '') {
@@ -956,6 +962,17 @@ function showActions(ev: MouseEvent) {
 	})), ev.currentTarget ?? ev.target);
 }
 
+function toggleScheduledNoteDelete() {
+	if (scheduledNoteDelete.value) {
+		scheduledNoteDelete.value = null;
+	} else {
+		scheduledNoteDelete.value = {
+			deleteAt: null,
+			deleteAfter: null,
+		};
+	}
+}
+
 const postAccount = ref<Misskey.entities.UserDetailed | null>(null);
 
 function openAccountMenu(ev: MouseEvent) {
@@ -973,6 +990,82 @@ function openAccountMenu(ev: MouseEvent) {
 			}
 		},
 	}, ev);
+}
+
+function showPreviewMenu(ev: MouseEvent) {
+	os.popupMenu([{
+		type: 'switch',
+		text: i18n.ts.previewNoteText,
+		icon: 'ti ti-eye',
+		ref: showPreview,
+	}, {
+		type: 'switch',
+		text: i18n.ts.previewNoteProfile,
+		icon: 'ti ti-user-circle',
+		ref: showProfilePreview,
+	}], ev.currentTarget ?? ev.target);
+}
+
+function showOtherMenu(ev: MouseEvent) {
+	let reactionAcceptanceIcon: string;
+	switch (reactionAcceptance.value) {
+		case 'likeOnly':
+			reactionAcceptanceIcon = 'ti ti-heart';
+			break;
+		case 'likeOnlyForRemote':
+			reactionAcceptanceIcon = 'ti ti-heart-plus';
+			break;
+		case 'nonSensitiveOnly':
+			reactionAcceptanceIcon = 'ti ti-eye-exclamation';
+			break;
+		case 'nonSensitiveOnlyForLocalLikeOnlyForRemote':
+			reactionAcceptanceIcon = 'ti ti-eye-heart';
+			break;
+		default:
+			reactionAcceptanceIcon = 'ti ti-icons';
+			break;
+	}
+
+	let toggleDisableRightClickIcon: string;
+	if (disableRightClick.value) {
+		toggleDisableRightClickIcon = 'ti ti-mouse-off';
+	} else {
+		toggleDisableRightClickIcon = 'ti ti-mouse';
+	}
+
+	os.popupMenu([{
+		type: 'button',
+		text: i18n.ts.scheduledNoteDelete,
+		icon: 'ti ti-bomb',
+		action: toggleScheduledNoteDelete,
+	},{
+		type: 'button',
+		text: i18n.ts.reactionAcceptance,
+		icon: reactionAcceptanceIcon,
+		action: toggleReactionAcceptance,
+	}, {
+		type: 'button',
+		text: i18n.ts._mfm.cheatSheet,
+		icon: 'ti ti-help',
+		action: openMfmCheatSheet,
+	}, {
+		type: 'button',
+		text: i18n.ts.mention,
+		icon: 'ti ti-at',
+		action: insertMention,
+	}, {
+		type: 'button',
+		text: i18n.ts.hashtags,
+		icon: 'ti ti-hash',
+		action: toggleTag,
+	}, {
+		type: 'button',
+		text: i18n.ts.disableRightClick,
+		icon: toggleDisableRightClickIcon,
+		action: toggleDisableRightClick,
+	}], ev.currentTarget ?? ev.target, {
+		align: 'right',
+	});
 }
 
 onMounted(() => {
@@ -1028,6 +1121,12 @@ onMounted(() => {
 					multiple: init.poll.multiple,
 					expiresAt: init.poll.expiresAt ? (new Date(init.poll.expiresAt)).getTime() : null,
 					expiredAfter: null,
+				};
+			}
+			if (init.deletedAt) {
+				scheduledNoteDelete.value = {
+					deleteAt: init.deletedAt ? (new Date(init.deletedAt)).getTime() : null,
+					deleteAfter: null,
 				};
 			}
 			if (init.visibleUserIds) {
