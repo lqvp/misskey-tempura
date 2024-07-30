@@ -12,6 +12,8 @@ import { schema } from '@/core/chart/charts/entities/ap-request.js';
 export const meta = {
 	tags: ['charts'],
 
+	requireCredential: true,
+
 	res: getJsonSchema(schema),
 
 	allowGet: true,
