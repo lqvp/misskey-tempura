@@ -15,6 +15,7 @@ export const meta = {
 	tags: ['federation'],
 
 	requireCredential: true,
+	allowGet: true,
 
 	allowGet: true,
 	cacheSec: 60 * 60,
