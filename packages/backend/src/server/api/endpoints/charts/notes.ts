@@ -12,7 +12,7 @@ import { schema } from '@/core/chart/charts/entities/notes.js';
 export const meta = {
 	tags: ['charts', 'notes'],
 
-	requireCredential: false,
+	requireCredential: true,
 
 	res: getJsonSchema(schema),
 
