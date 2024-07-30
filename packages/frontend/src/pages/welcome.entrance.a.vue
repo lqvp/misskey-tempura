@@ -27,6 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { ref } from 'vue';
+import * as Misskey from 'misskey-js';
 import MkFeaturedPhotos from '@/components/MkFeaturedPhotos.vue';
 import misskeysvg from '/client-assets/misskey.svg';
 import MkVisitorDashboard from '@/components/MkVisitorDashboard.vue';
@@ -127,26 +128,6 @@ import MkVisitorDashboard from '@/components/MkVisitorDashboard.vue';
 	@media (max-width: 900px) {
 	  display: none;
 	}
-  }
-}
-</style>
-
-<style lang="scss" module>
-.federationInstance {
-  display: inline-flex;
-  align-items: center;
-  vertical-align: bottom;
-  padding: 6px 12px 6px 6px;
-  margin: 0 10px 0 0;
-  background: var(--panel);
-  border-radius: 999px;
-
-  > :global(.icon) {
-	display: inline-block;
-	width: 20px;
-	height: 20px;
-	margin-right: 5px;
-	border-radius: 999px;
   }
 }
 </style>
