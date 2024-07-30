@@ -12,8 +12,6 @@ import { schema } from '@/core/chart/charts/entities/drive.js';
 export const meta = {
 	tags: ['charts', 'drive'],
 
-	requireCredential: true,
-
 	res: getJsonSchema(schema),
 
 	allowGet: true,

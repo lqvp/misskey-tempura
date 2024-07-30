@@ -25,16 +25,24 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</div>
 </div>
 </template>
+
 <script lang="ts" setup>
 import * as Misskey from 'misskey-js';
 import { onUpdated, ref, shallowRef } from 'vue';
 import MkReactionsViewer from '@/components/MkReactionsViewer.vue';
 import MkMediaList from '@/components/MkMediaList.vue';
 import MkPoll from '@/components/MkPoll.vue';
+import { misskeyApiGet } from '@/scripts/misskey-api.js';
 import { getScrollContainer } from '@/scripts/scroll.js';
+
 const notes = ref<Misskey.entities.Note[]>([]);
 const isScrolling = ref(false);
 const scrollEl = shallowRef<HTMLElement>();
+
+misskeyApiGet('notes/featured').then(_notes => {
+	notes.value = _notes;
+});
+
 onUpdated(() => {
 	if (!scrollEl.value) return;
 	const container = getScrollContainer(scrollEl.value);
@@ -44,6 +52,7 @@ onUpdated(() => {
 	}
 });
 </script>
+
 <style lang="scss" module>
 @keyframes scroll {
 	0% {
@@ -59,23 +68,28 @@ onUpdated(() => {
 		transform: translate3d(0, calc(-100% + 90vh), 0);
 	}
 }
+
 .root {
 	text-align: right;
 }
+
 .scrollbox {
 	&.scroll {
 		animation: scroll 45s linear infinite;
 	}
 }
+
 .note {
 	margin: 16px 0 16px auto;
 }
+
 .content {
 	padding: 16px;
 	margin: 0 0 0 auto;
 	max-width: max-content;
 	border-radius: 16px;
 }
+
 .richcontent {
 	min-width: 250px;
 }
