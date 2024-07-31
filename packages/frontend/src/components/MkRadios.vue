@@ -29,9 +29,6 @@ export default defineComponent({
 		// なぜかFragmentになることがあるため
 		if (options.length === 1 && options[0].props == null) options = options[0].children as VNode[];
 
-		// vnodeのうちv-if=falseなものを除外する(trueになるものはoptionなど他typeになる)
-		options = options.filter(vnode => !(typeof vnode.type === 'symbol' && vnode.type.description === 'v-cmt' && vnode.children === 'v-if'));
-
 		return () => h('div', {
 			class: 'novjtcto',
 		}, [
@@ -43,7 +40,6 @@ export default defineComponent({
 			}, options.map(option => h(MkRadio, {
 				key: option.key as string,
 				value: option.props?.value,
-				disabled: option.props?.disabled,
 				modelValue: value.value,
 				'onUpdate:modelValue': _v => value.value = _v,
 			}, () => option.children)),

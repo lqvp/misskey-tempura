@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	ref="rootEl"
 	v-hotkey="keymap"
 	:class="[$style.root, { [$style.showActionsOnlyHover]: defaultStore.state.showNoteActionsOnlyHover }]"
-	:tabindex="isDeleted ? '-1' : '0'"
+	:tabindex="!isDeleted ? '-1' : undefined"
 >
 	<MkNoteSub v-if="appearNote.reply && !renoteCollapsed" :note="appearNote.reply" :class="$style.replyTo"/>
 	<div v-if="pinned" :class="$style.tip"><i class="ti ti-pin"></i> {{ i18n.ts.pinnedNote }}</div>
@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</template>
 		</I18n>
 		<div :class="$style.renoteInfo">
-			<button ref="renoteTime" :class="$style.renoteTime" class="_button" @mousedown.prevent="showRenoteMenu()">
+			<button ref="renoteTime" :class="$style.renoteTime" class="_button" @click="showRenoteMenu()">
 				<i class="ti ti-dots" :class="$style.renoteMenu"></i>
 				<MkTime :time="note.createdAt"/>
 			</button>
@@ -79,7 +79,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</div>
 					</div>
 					<div v-if="appearNote.files && appearNote.files.length > 0">
-						<MkMediaList ref="galleryEl" :mediaList="appearNote.files"/>
+						<MkMediaList :mediaList="appearNote.files"/>
 					</div>
 					<MkPoll v-if="appearNote.poll" :noteId="appearNote.id" :poll="appearNote.poll" :class="$style.poll"/>
 					<div v-if="isEnabledUrlPreview">
@@ -110,7 +110,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					ref="renoteButton"
 					:class="$style.footerButton"
 					class="_button"
-					@mousedown.prevent="renote()"
+					@mousedown="renote()"
 				>
 					<i class="ti ti-repeat"></i>
 					<p v-if="appearNote.renoteCount > 0" :class="$style.footerButtonCount">{{ number(appearNote.renoteCount) }}</p>
@@ -125,10 +125,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<i v-else class="ti ti-plus"></i>
 					<p v-if="(appearNote.reactionAcceptance === 'likeOnly' || defaultStore.state.showReactionsCount) && appearNote.reactionCount > 0" :class="$style.footerButtonCount">{{ number(appearNote.reactionCount) }}</p>
 				</button>
-				<button v-if="defaultStore.state.showClipButtonInNoteFooter" ref="clipButton" :class="$style.footerButton" class="_button" @mousedown.prevent="clip()">
+				<button v-if="defaultStore.state.showClipButtonInNoteFooter" ref="clipButton" :class="$style.footerButton" class="_button" @mousedown="clip()">
 					<i class="ti ti-paperclip"></i>
 				</button>
-				<button ref="menuButton" :class="$style.footerButton" class="_button" @mousedown.prevent="showMenu()">
+				<button ref="menuButton" :class="$style.footerButton" class="_button" @mousedown="showMenu()">
 					<i class="ti ti-dots"></i>
 				</button>
 			</footer>
@@ -174,7 +174,8 @@ import MkPoll from '@/components/MkPoll.vue';
 import MkUsersTooltip from '@/components/MkUsersTooltip.vue';
 import MkUrlPreview from '@/components/MkUrlPreview.vue';
 import MkInstanceTicker from '@/components/MkInstanceTicker.vue';
-import { pleaseLogin, type OpenOnRemoteOptions } from '@/scripts/please-login.js';
+import { pleaseLogin } from '@/scripts/please-login.js';
+import { focusPrev, focusNext } from '@/scripts/focus.js';
 import { checkWordMute } from '@/scripts/check-word-mute.js';
 import { userPage } from '@/filters/user.js';
 import number from '@/filters/number.js';
@@ -196,10 +197,7 @@ import { MenuItem } from '@/types/menu.js';
 import MkRippleEffect from '@/components/MkRippleEffect.vue';
 import { showMovedDialog } from '@/scripts/show-moved-dialog.js';
 import { shouldCollapsed } from '@/scripts/collapsed.js';
-import { host } from '@/config.js';
 import { isEnabledUrlPreview } from '@/instance.js';
-import { type Keymap } from '@/scripts/hotkey.js';
-import { focusPrev, focusNext } from '@/scripts/focus.js';
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
@@ -258,7 +256,6 @@ const renoteTime = shallowRef<HTMLElement>();
 const reactButton = shallowRef<HTMLElement>();
 const clipButton = shallowRef<HTMLElement>();
 const appearNote = computed(() => isRenote ? note.value.renote as Misskey.entities.Note : note.value);
-const galleryEl = shallowRef<InstanceType<typeof MkMediaList>>();
 const isMyRenote = $i && ($i.id === note.value.userId);
 const showContent = ref(false);
 const parsed = computed(() => appearNote.value.text ? mfm.parse(appearNote.value.text) : null);
@@ -279,11 +276,6 @@ const renoteCollapsed = ref(
 	),
 );
 
-const pleaseLoginContext = computed<OpenOnRemoteOptions>(() => ({
-	type: 'lookup',
-	url: `https://${host}/notes/${appearNote.value.id}`,
-}));
-
 /* Overload FunctionにLintが対応していないのでコメントアウト
 function checkMute(noteToCheck: Misskey.entities.Note, mutedWords: Array<string | string[]> | undefined | null, checkOnly: true): boolean;
 function checkMute(noteToCheck: Misskey.entities.Note, mutedWords: Array<string | string[]> | undefined | null, checkOnly: false): boolean | 'sensitiveMute';
@@ -302,53 +294,15 @@ function checkMute(noteToCheck: Misskey.entities.Note, mutedWords: Array<string 
 }
 
 const keymap = {
-	'r': () => {
-		if (renoteCollapsed.value) return;
-		reply();
-	},
-	'e|a|plus': () => {
-		if (renoteCollapsed.value) return;
-		react();
-	},
-	'q': () => {
-		if (renoteCollapsed.value) return;
-		renote();
-	},
-	'm': () => {
-		if (renoteCollapsed.value) return;
-		showMenu();
-	},
-	'c': () => {
-		if (renoteCollapsed.value) return;
-		if (!defaultStore.state.showClipButtonInNoteFooter) return;
-		clip();
-	},
-	'o': () => {
-		if (renoteCollapsed.value) return;
-		galleryEl.value?.openGallery();
-	},
-	'v|enter': () => {
-		if (renoteCollapsed.value) {
-			renoteCollapsed.value = false;
-		} else if (appearNote.value.cw != null) {
-			showContent.value = !showContent.value;
-		} else if (isLong) {
-			collapsed.value = !collapsed.value;
-		}
-	},
-	'esc': {
-		allowRepeat: true,
-		callback: () => blur(),
-	},
-	'up|k|shift+tab': {
-		allowRepeat: true,
-		callback: () => focusBefore(),
-	},
-	'down|j|tab': {
-		allowRepeat: true,
-		callback: () => focusAfter(),
-	},
-} as const satisfies Keymap;
+	'r': () => reply(true),
+	'e|a|plus': () => react(true),
+	'q': () => renote(true),
+	'up|k|shift+tab': focusBefore,
+	'down|j|tab': focusAfter,
+	'esc': blur,
+	'm|o': () => showMenu(true),
+	's': () => showContent.value !== showContent.value,
+};
 
 provide('react', (reaction: string) => {
 	misskeyApi('notes/reactions/create', {
@@ -381,14 +335,12 @@ if (!props.mock) {
 
 		if (users.length < 1) return;
 
-		const { dispose } = os.popup(MkUsersTooltip, {
+		os.popup(MkUsersTooltip, {
 			showing,
 			users,
 			count: appearNote.value.renoteCount,
 			targetElement: renoteButton.value,
-		}, {
-			closed: () => dispose(),
-		});
+		}, {}, 'closed');
 	});
 
 	if (appearNote.value.reactionAcceptance === 'likeOnly') {
@@ -403,21 +355,19 @@ if (!props.mock) {
 
 			if (users.length < 1) return;
 
-			const { dispose } = os.popup(MkReactionsViewerDetails, {
+			os.popup(MkReactionsViewerDetails, {
 				showing,
 				reaction: '❤️',
 				users,
 				count: appearNote.value.reactionCount,
 				targetElement: reactButton.value!,
-			}, {
-				closed: () => dispose(),
-			});
+			}, {}, 'closed');
 		});
 	}
 }
 
 function renote(viaKeyboard = false) {
-	pleaseLogin(undefined, pleaseLoginContext.value);
+	pleaseLogin();
 	showMovedDialog();
 
 	const { menu } = getRenoteMenu({ note: note.value, renoteButton, mock: props.mock });
@@ -426,21 +376,22 @@ function renote(viaKeyboard = false) {
 	});
 }
 
-function reply(): void {
-	pleaseLogin(undefined, pleaseLoginContext.value);
+function reply(viaKeyboard = false): void {
+	pleaseLogin();
 	if (props.mock) {
 		return;
 	}
 	os.post({
 		reply: appearNote.value,
 		channel: appearNote.value.channel,
+		animation: !viaKeyboard,
 	}).then(() => {
 		focus();
 	});
 }
 
-function react(): void {
-	pleaseLogin(undefined, pleaseLoginContext.value);
+function react(viaKeyboard = false): void {
+	pleaseLogin();
 	showMovedDialog();
 	if (appearNote.value.reactionAcceptance === 'likeOnly') {
 		sound.playMisskeySfx('reaction');
@@ -458,9 +409,7 @@ function react(): void {
 			const rect = el.getBoundingClientRect();
 			const x = rect.left + (el.offsetWidth / 2);
 			const y = rect.top + (el.offsetHeight / 2);
-			const { dispose } = os.popup(MkRippleEffect, { x, y }, {
-				end: () => dispose(),
-			});
+			os.popup(MkRippleEffect, { x, y }, {}, 'end');
 		}
 	} else {
 		blur();
@@ -534,16 +483,18 @@ function onContextmenu(ev: MouseEvent): void {
 	}
 }
 
-function showMenu(): void {
+function showMenu(viaKeyboard = false): void {
 	if (props.mock) {
 		return;
 	}
 
 	const { menu, cleanup } = getNoteMenu({ note: note.value, translating, translation, isDeleted, currentClip: currentClip?.value });
-	os.popupMenu(menu, menuButton.value).then(focus).finally(cleanup);
+	os.popupMenu(menu, menuButton.value, {
+		viaKeyboard,
+	}).then(focus).finally(cleanup);
 }
 
-async function clip(): Promise<void> {
+async function clip() {
 	if (props.mock) {
 		return;
 	}
@@ -551,7 +502,7 @@ async function clip(): Promise<void> {
 	os.popupMenu(await getNoteClipMenu({ note: note.value, isDeleted, currentClip: currentClip?.value }), clipButton.value).then(focus);
 }
 
-function showRenoteMenu(): void {
+function showRenoteMenu(viaKeyboard = false): void {
 	if (props.mock) {
 		return;
 	}
@@ -571,19 +522,23 @@ function showRenoteMenu(): void {
 	}
 
 	if (isMyRenote) {
-		pleaseLogin(undefined, pleaseLoginContext.value);
+		pleaseLogin();
 		os.popupMenu([
 			getCopyNoteLinkMenu(note.value, i18n.ts.copyLinkRenote),
 			{ type: 'divider' },
 			getUnrenote(),
-		], renoteTime.value);
+		], renoteTime.value, {
+			viaKeyboard: viaKeyboard,
+		});
 	} else {
 		os.popupMenu([
 			getCopyNoteLinkMenu(note.value, i18n.ts.copyLinkRenote),
 			{ type: 'divider' },
 			getAbuseNoteMenu(note.value, i18n.ts.reportAbuseRenote),
 			($i?.isModerator || $i?.isAdmin) ? getUnrenote() : undefined,
-		], renoteTime.value);
+		], renoteTime.value, {
+			viaKeyboard: viaKeyboard,
+		});
 	}
 }
 
@@ -596,11 +551,11 @@ function blur() {
 }
 
 function focusBefore() {
-	focusPrev(rootEl.value);
+	focusPrev(rootEl.value ?? null);
 }
 
 function focusAfter() {
-	focusNext(rootEl.value);
+	focusNext(rootEl.value ?? null);
 }
 
 function readPromo() {
@@ -638,7 +593,7 @@ function emitUpdReaction(emoji: string, delta: number) {
 	&:focus-visible {
 		outline: none;
 
-		&::after {
+		&:after {
 			content: "";
 			pointer-events: none;
 			display: block;
@@ -651,7 +606,7 @@ function emitUpdReaction(emoji: string, delta: number) {
 			margin: auto;
 			width: calc(100% - 8px);
 			height: calc(100% - 8px);
-			border: dashed 2px var(--focus);
+			border: dashed 1px var(--focus);
 			border-radius: var(--radius);
 			box-sizing: border-box;
 		}

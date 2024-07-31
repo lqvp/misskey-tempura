@@ -68,7 +68,7 @@ export class ServerService implements OnApplicationShutdown {
 		private loggerService: LoggerService,
 		private oauth2ProviderService: OAuth2ProviderService,
 	) {
-		this.logger = this.loggerService.getLogger('server', 'gray');
+		this.logger = this.loggerService.getLogger('server', 'gray', false);
 	}
 
 	@bindThis

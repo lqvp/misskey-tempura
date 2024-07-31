@@ -20,7 +20,7 @@ export const packedDriveFileSchema = {
 		name: {
 			type: 'string',
 			optional: false, nullable: false,
-			example: '192.jpg',
+			example: 'lenna.jpg',
 		},
 		type: {
 			type: 'string',

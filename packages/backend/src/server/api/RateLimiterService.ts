@@ -32,13 +32,11 @@ export class RateLimiterService {
 
 	@bindThis
 	public limit(limitation: IEndpointMeta['limit'] & { key: NonNullable<string> }, actor: string, factor = 1) {
-		{
-			if (this.disabled) {
-				return Promise.resolve();
-			}
+		return new Promise<void>((ok, reject) => {
+			if (this.disabled) ok();
 
 			// Short-term limit
-			const min = new Promise<void>((ok, reject) => {
+			const min = (): void => {
 				const minIntervalLimiter = new Limiter({
 					id: `${actor}:${limitation.key}:min`,
 					duration: limitation.minInterval! * factor,
@@ -48,25 +46,25 @@ export class RateLimiterService {
 
 				minIntervalLimiter.get((err, info) => {
 					if (err) {
-						return reject({ code: 'ERR', info });
+						return reject('ERR');
 					}
 
 					this.logger.debug(`${actor} ${limitation.key} min remaining: ${info.remaining}`);
 
 					if (info.remaining === 0) {
-						return reject({ code: 'BRIEF_REQUEST_INTERVAL', info });
+						reject('BRIEF_REQUEST_INTERVAL');
 					} else {
 						if (hasLongTermLimit) {
-							return max.then(ok, reject);
+							max();
 						} else {
-							return ok();
+							ok();
 						}
 					}
 				});
-			});
+			};
 
 			// Long term limit
-			const max = new Promise<void>((ok, reject) => {
+			const max = (): void => {
 				const limiter = new Limiter({
 					id: `${actor}:${limitation.key}`,
 					duration: limitation.duration! * factor,
@@ -76,18 +74,18 @@ export class RateLimiterService {
 
 				limiter.get((err, info) => {
 					if (err) {
-						return reject({ code: 'ERR', info });
+						return reject('ERR');
 					}
 
 					this.logger.debug(`${actor} ${limitation.key} max remaining: ${info.remaining}`);
 
 					if (info.remaining === 0) {
-						return reject({ code: 'RATE_LIMIT_EXCEEDED', info });
+						reject('RATE_LIMIT_EXCEEDED');
 					} else {
-						return ok();
+						ok();
 					}
 				});
-			});
+			};
 
 			const hasShortTermLimit = typeof limitation.minInterval === 'number';
 
@@ -96,12 +94,12 @@ export class RateLimiterService {
 				typeof limitation.max === 'number';
 
 			if (hasShortTermLimit) {
-				return min;
+				min();
 			} else if (hasLongTermLimit) {
-				return max;
+				max();
 			} else {
-				return Promise.resolve();
+				ok();
 			}
-		}
+		});
 	}
 }

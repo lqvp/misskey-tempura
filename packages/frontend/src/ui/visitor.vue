@@ -126,19 +126,15 @@ const keymap = computed(() => {
 });
 
 function signin() {
-	const { dispose } = os.popup(XSigninDialog, {
+	os.popup(XSigninDialog, {
 		autoSet: true,
-	}, {
-		closed: () => dispose(),
-	});
+	}, {}, 'closed');
 }
 
 function signup() {
-	const { dispose } = os.popup(XSignupDialog, {
+	os.popup(XSignupDialog, {
 		autoSet: true,
-	}, {
-		closed: () => dispose(),
-	});
+	}, {}, 'closed');
 }
 
 onMounted(() => {

@@ -74,24 +74,22 @@ async function removeAccount(account) {
 }
 
 function addExistingAccount() {
-	const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkSigninDialog.vue')), {}, {
+	os.popup(defineAsyncComponent(() => import('@/components/MkSigninDialog.vue')), {}, {
 		done: async res => {
 			await addAccounts(res.id, res.i);
 			os.success();
 			init();
 		},
-		closed: () => dispose(),
-	});
+	}, 'closed');
 }
 
 function createAccount() {
-	const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkSignupDialog.vue')), {}, {
+	os.popup(defineAsyncComponent(() => import('@/components/MkSignupDialog.vue')), {}, {
 		done: async res => {
 			await addAccounts(res.id, res.i);
 			switchAccountWithToken(res.i);
 		},
-		closed: () => dispose(),
-	});
+	}, 'closed');
 }
 
 async function switchAccount(account: any) {

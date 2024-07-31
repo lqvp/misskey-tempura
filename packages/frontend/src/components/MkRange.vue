@@ -101,19 +101,17 @@ const steps = computed(() => {
 	}
 });
 
-function onMousedown(ev: MouseEvent | TouchEvent) {
+const onMousedown = (ev: MouseEvent | TouchEvent) => {
 	ev.preventDefault();
 
 	const tooltipShowing = ref(true);
-	const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkTooltip.vue')), {
+	os.popup(defineAsyncComponent(() => import('@/components/MkTooltip.vue')), {
 		showing: tooltipShowing,
 		text: computed(() => {
 			return props.textConverter(finalValue.value);
 		}),
 		targetElement: thumbEl,
-	}, {
-		closed: () => dispose(),
-	});
+	}, {}, 'closed');
 
 	const style = document.createElement('style');
 	style.appendChild(document.createTextNode('* { cursor: grabbing !important; } body * { pointer-events: none !important; }'));
@@ -154,7 +152,7 @@ function onMousedown(ev: MouseEvent | TouchEvent) {
 	window.addEventListener('touchmove', onDrag);
 	window.addEventListener('mouseup', onMouseup, { once: true });
 	window.addEventListener('touchend', onMouseup, { once: true });
-}
+};
 </script>
 
 <style lang="scss" scoped>

@@ -120,7 +120,7 @@ function fetchAccount(token: string, id?: string, forceShowDialog?: boolean): Pr
 				res.json().then(done2, fail2);
 			}))
 			.then(async res => {
-				if ('error' in res) {
+				if (res.error) {
 					if (res.error.id === 'a8c724b3-6e9c-4b46-b1a8-bc3ed6258370') {
 						// SUSPENDED
 						if (forceShowDialog || $i && (token === $i.token || id === $i.id)) {
@@ -184,12 +184,10 @@ export async function refreshAccount() {
 
 export async function login(token: Account['token'], redirect?: string) {
 	const showing = ref(true);
-	const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkWaitingDialog.vue')), {
+	popup(defineAsyncComponent(() => import('@/components/MkWaitingDialog.vue')), {
 		success: false,
 		showing: showing,
-	}, {
-		closed: () => dispose(),
-	});
+	}, {}, 'closed');
 	if (_DEV_) console.log('logging as token ', token);
 	const me = await fetchAccount(token, undefined, true)
 		.catch(reason => {
@@ -225,23 +223,21 @@ export async function openAccountMenu(opts: {
 	if (!$i) return;
 
 	function showSigninDialog() {
-		const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkSigninDialog.vue')), {}, {
+		popup(defineAsyncComponent(() => import('@/components/MkSigninDialog.vue')), {}, {
 			done: res => {
 				addAccount(res.id, res.i);
 				success();
 			},
-			closed: () => dispose(),
-		});
+		}, 'closed');
 	}
 
 	function createAccount() {
-		const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkSignupDialog.vue')), {}, {
+		popup(defineAsyncComponent(() => import('@/components/MkSignupDialog.vue')), {}, {
 			done: res => {
 				addAccount(res.id, res.i);
 				switchAccountWithToken(res.i);
 			},
-			closed: () => dispose(),
-		});
+		}, 'closed');
 	}
 
 	async function switchAccount(account: Misskey.entities.UserDetailed) {

@@ -109,15 +109,6 @@ definePageMetadata(() => ({
 </script>
 
 <style lang="scss" module>
-.fadeEnterActive,
-.fadeLeaveActive {
-	transition: opacity 0.125s ease;
-}
-.fadeEnterFrom,
-.fadeLeaveTo {
-	opacity: 0;
-}
-
 .announcement {
 	padding: 16px;
 }

@@ -70,7 +70,7 @@ export const paramDef = {
 		alignCenter: { type: 'boolean' },
 		hideTitleWhenPinned: { type: 'boolean' },
 	},
-	required: ['pageId'],
+	required: ['pageId', 'title', 'name', 'content', 'variables', 'script'],
 } as const;
 
 @Injectable()
@@ -91,8 +91,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw new ApiError(meta.errors.accessDenied);
 			}
 
+			let eyeCatchingImage = null;
 			if (ps.eyeCatchingImageId != null) {
-				const eyeCatchingImage = await this.driveFilesRepository.findOneBy({
+				eyeCatchingImage = await this.driveFilesRepository.findOneBy({
 					id: ps.eyeCatchingImageId,
 					userId: me.id,
 				});
@@ -115,15 +116,23 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			await this.pagesRepository.update(page.id, {
 				updatedAt: new Date(),
 				title: ps.title,
-				name: ps.name,
+				// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+				name: ps.name === undefined ? page.name : ps.name,
 				summary: ps.summary === undefined ? page.summary : ps.summary,
 				content: ps.content,
 				variables: ps.variables,
 				script: ps.script,
-				alignCenter: ps.alignCenter,
-				hideTitleWhenPinned: ps.hideTitleWhenPinned,
-				font: ps.font,
-				eyeCatchingImageId: ps.eyeCatchingImageId,
+				// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+				alignCenter: ps.alignCenter === undefined ? page.alignCenter : ps.alignCenter,
+				// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+				hideTitleWhenPinned: ps.hideTitleWhenPinned === undefined ? page.hideTitleWhenPinned : ps.hideTitleWhenPinned,
+				// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+				font: ps.font === undefined ? page.font : ps.font,
+				eyeCatchingImageId: ps.eyeCatchingImageId === null
+					? null
+					: ps.eyeCatchingImageId === undefined
+						? page.eyeCatchingImageId
+						: eyeCatchingImage!.id,
 			});
 		});
 	}

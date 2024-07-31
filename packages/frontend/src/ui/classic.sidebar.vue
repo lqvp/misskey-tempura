@@ -86,11 +86,9 @@ function calcViewState() {
 }
 
 function more(ev: MouseEvent) {
-	const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkLaunchPad.vue')), {
+	os.popup(defineAsyncComponent(() => import('@/components/MkLaunchPad.vue')), {
 		src: ev.currentTarget ?? ev.target,
-	}, {
-		closed: () => dispose(),
-	});
+	}, {}, 'closed');
 }
 
 function openAccountMenu(ev: MouseEvent) {

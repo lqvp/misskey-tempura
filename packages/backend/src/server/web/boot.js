@@ -29,8 +29,7 @@
 
 	let forceError = localStorage.getItem('forceError');
 	if (forceError != null) {
-		renderError('FORCED_ERROR', 'This error is forced by having forceError in local storage.');
-		return;
+		renderError('FORCED_ERROR', 'This error is forced by having forceError in local storage.')
 	}
 
 	//#region Detect language & fetch translations
@@ -156,12 +155,7 @@
 		document.head.appendChild(css);
 	}
 
-	async function renderError(code, details) {
-		// Cannot set property 'innerHTML' of null を回避
-		if (document.readyState === 'loading') {
-			await new Promise(resolve => window.addEventListener('DOMContentLoaded', resolve));
-		}
-
+	function renderError(code, details) {
 		let errorsElement = document.getElementById('errors');
 
 		if (!errorsElement) {
@@ -320,6 +314,6 @@
 			#errorInfo {
 				width: 50%;
 			}
-		}`)
+		`)
 	}
 })();

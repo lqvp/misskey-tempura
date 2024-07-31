@@ -95,14 +95,15 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 					// Check if the circular reference will occur
 					const checkCircle = async (folderId: string): Promise<boolean> => {
-						const folder2 = await this.driveFoldersRepository.findOneByOrFail({
+						// Fetch folder
+						const folder2 = await this.driveFoldersRepository.findOneBy({
 							id: folderId,
 						});
 
-						if (folder2.id === folder.id) {
+						if (folder2!.id === folder!.id) {
 							return true;
-						} else if (folder2.parentId) {
-							return await checkCircle(folder2.parentId);
+						} else if (folder2!.parentId) {
+							return await checkCircle(folder2!.parentId);
 						} else {
 							return false;
 						}

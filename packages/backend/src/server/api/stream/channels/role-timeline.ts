@@ -8,7 +8,6 @@ import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { bindThis } from '@/decorators.js';
 import { RoleService } from '@/core/RoleService.js';
 import type { GlobalEvents } from '@/core/GlobalEventService.js';
-import type { JsonObject } from '@/misc/json-value.js';
 import Channel, { type MiChannelService } from '../channel.js';
 
 class RoleTimelineChannel extends Channel {
@@ -29,9 +28,8 @@ class RoleTimelineChannel extends Channel {
 	}
 
 	@bindThis
-	public async init(params: JsonObject) {
-		if (typeof params.roleId !== 'string') return;
-		this.roleId = params.roleId;
+	public async init(params: any) {
+		this.roleId = params.roleId as string;
 
 		this.subscriber.on(`roleTimelineStream:${this.roleId}`, this.onEvent);
 	}

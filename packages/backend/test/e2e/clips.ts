@@ -79,14 +79,14 @@ describe('クリップ', () => {
 	};
 
 	const deleteClip = async (parameters: Misskey.entities.ClipsDeleteRequest, request: Partial<ApiRequest<'clips/delete'>> = {}): Promise<void> => {
-		await successfulApiCall({
+		return await successfulApiCall({
 			endpoint: 'clips/delete',
 			parameters,
 			user: alice,
 			...request,
 		}, {
 			status: 204,
-		});
+		}) as any as void;
 	};
 
 	const show = async (parameters: Misskey.entities.ClipsShowRequest, request: Partial<ApiRequest<'clips/show'>> = {}): Promise<Misskey.entities.Clip> => {
@@ -153,7 +153,8 @@ describe('クリップ', () => {
 	});
 
 	test('の作成はポリシーで定められた数以上はできない。', async () => {
-		const clipLimit = DEFAULT_POLICIES.clipLimit;
+		// ポリシー + 1まで作れるという所がミソ
+		const clipLimit = DEFAULT_POLICIES.clipLimit + 1;
 		for (let i = 0; i < clipLimit; i++) {
 			await create();
 		}
@@ -326,7 +327,7 @@ describe('クリップ', () => {
 	});
 
 	test('の一覧(clips/list)が取得できる(上限いっぱい)', async () => {
-		const clipLimit = DEFAULT_POLICIES.clipLimit;
+		const clipLimit = DEFAULT_POLICIES.clipLimit + 1;
 		const clips = await createMany({}, clipLimit);
 		const res = await list({
 			parameters: { limit: 1 }, // FIXME: 無視されて11全部返ってくる
@@ -454,25 +455,25 @@ describe('クリップ', () => {
 		let aliceClip: Misskey.entities.Clip;
 
 		const favorite = async (parameters: Misskey.entities.ClipsFavoriteRequest, request: Partial<ApiRequest<'clips/favorite'>> = {}): Promise<void> => {
-			await successfulApiCall({
+			return successfulApiCall({
 				endpoint: 'clips/favorite',
 				parameters,
 				user: alice,
 				...request,
 			}, {
 				status: 204,
-			});
+			}) as any as void;
 		};
 
 		const unfavorite = async (parameters: Misskey.entities.ClipsUnfavoriteRequest, request: Partial<ApiRequest<'clips/unfavorite'>> = {}): Promise<void> => {
-			await successfulApiCall({
+			return successfulApiCall({
 				endpoint: 'clips/unfavorite',
 				parameters,
 				user: alice,
 				...request,
 			}, {
 				status: 204,
-			});
+			}) as any as void;
 		};
 
 		const myFavorites = async (request: Partial<ApiRequest<'clips/my-favorites'>> = {}): Promise<Misskey.entities.Clip[]> => {
@@ -704,7 +705,7 @@ describe('クリップ', () => {
 
 		// TODO: 17000msくらいかかる...
 		test('をポリシーで定められた上限いっぱい(200)を超えて追加はできない。', async () => {
-			const noteLimit = DEFAULT_POLICIES.noteEachClipsLimit;
+			const noteLimit = DEFAULT_POLICIES.noteEachClipsLimit + 1;
 			const noteList = await Promise.all([...Array(noteLimit)].map((_, i) => post(alice, {
 				text: `test ${i}`,
 			}) as unknown)) as Misskey.entities.Note[];

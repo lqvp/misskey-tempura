@@ -4,7 +4,7 @@
  */
 
 import { Directive } from 'vue';
-import { makeHotkey } from '@/scripts/hotkey.js';
+import { makeHotkey } from '../scripts/hotkey.js';
 
 export default {
 	mounted(el, binding) {
@@ -13,9 +13,9 @@ export default {
 		el._keyHandler = makeHotkey(binding.value);
 
 		if (el._hotkey_global) {
-			document.addEventListener('keydown', el._keyHandler, { passive: false });
+			document.addEventListener('keydown', el._keyHandler);
 		} else {
-			el.addEventListener('keydown', el._keyHandler, { passive: false });
+			el.addEventListener('keydown', el._keyHandler);
 		}
 	},
 

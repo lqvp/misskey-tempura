@@ -23,7 +23,7 @@ import { definePageMetadata } from '@/scripts/page-metadata.js';
 const isDesktop = ref(window.innerWidth >= 1100);
 
 function generateToken() {
-	const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkTokenGenerateWindow.vue')), {}, {
+	os.popup(defineAsyncComponent(() => import('@/components/MkTokenGenerateWindow.vue')), {}, {
 		done: async result => {
 			const { name, permissions } = result;
 			const { token } = await misskeyApi('miauth/gen-token', {
@@ -38,8 +38,7 @@ function generateToken() {
 				text: token,
 			});
 		},
-		closed: () => dispose(),
-	});
+	}, 'closed');
 }
 
 const headerActions = computed(() => []);

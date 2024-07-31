@@ -14,8 +14,7 @@ export const QUEUE = {
 	DB: 'db',
 	RELATIONSHIP: 'relationship',
 	OBJECT_STORAGE: 'objectStorage',
-	USER_WEBHOOK_DELIVER: 'userWebhookDeliver',
-	SYSTEM_WEBHOOK_DELIVER: 'systemWebhookDeliver',
+	WEBHOOK_DELIVER: 'webhookDeliver',
 };
 
 export function baseQueueOptions(config: Config, queueName: typeof QUEUE[keyof typeof QUEUE]): Bull.QueueOptions {

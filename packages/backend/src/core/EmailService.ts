@@ -16,7 +16,6 @@ import type { UserProfilesRepository } from '@/models/_.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import { bindThis } from '@/decorators.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
-import { QueueService } from '@/core/QueueService.js';
 
 @Injectable()
 export class EmailService {
@@ -33,7 +32,6 @@ export class EmailService {
 		private loggerService: LoggerService,
 		private utilityService: UtilityService,
 		private httpRequestService: HttpRequestService,
-		private queueService: QueueService,
 	) {
 		this.logger = this.loggerService.getLogger('email');
 	}

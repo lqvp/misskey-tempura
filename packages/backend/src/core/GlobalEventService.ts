@@ -18,7 +18,6 @@ import type { MiAbuseUserReport } from '@/models/AbuseUserReport.js';
 import type { MiSignin } from '@/models/Signin.js';
 import type { MiPage } from '@/models/Page.js';
 import type { MiWebhook } from '@/models/Webhook.js';
-import type { MiSystemWebhook } from '@/models/SystemWebhook.js';
 import type { MiMeta } from '@/models/Meta.js';
 import { MiAvatarDecoration, MiReversiGame, MiRole, MiRoleAssignment } from '@/models/_.js';
 import type { Packed } from '@/misc/json-schema.js';
@@ -209,10 +208,6 @@ type SerializedAll<T> = {
 	[K in keyof T]: Serialized<T[K]>;
 };
 
-type UndefinedAsNullAll<T> = {
-	[K in keyof T]: T[K] extends undefined ? null : T[K];
-}
-
 export interface InternalEventTypes {
 	userChangeSuspendedState: { id: MiUser['id']; isSuspended: MiUser['isSuspended']; };
 	userChangeDeletedState: { id: MiUser['id']; isDeleted: MiUser['isDeleted']; };
@@ -232,9 +227,6 @@ export interface InternalEventTypes {
 	webhookCreated: MiWebhook;
 	webhookDeleted: MiWebhook;
 	webhookUpdated: MiWebhook;
-	systemWebhookCreated: MiSystemWebhook;
-	systemWebhookDeleted: MiSystemWebhook;
-	systemWebhookUpdated: MiSystemWebhook;
 	antennaCreated: MiAntenna;
 	antennaDeleted: MiAntenna;
 	antennaUpdated: MiAntenna;
@@ -251,45 +243,43 @@ export interface InternalEventTypes {
 	userListMemberRemoved: { userListId: MiUserList['id']; memberId: MiUser['id']; };
 }
 
-type EventTypesToEventPayload<T> = EventUnionFromDictionary<UndefinedAsNullAll<SerializedAll<T>>>;
-
 // name/messages(spec) pairs dictionary
 export type GlobalEvents = {
 	internal: {
 		name: 'internal';
-		payload: EventTypesToEventPayload<InternalEventTypes>;
+		payload: EventUnionFromDictionary<SerializedAll<InternalEventTypes>>;
 	};
 	broadcast: {
 		name: 'broadcast';
-		payload: EventTypesToEventPayload<BroadcastTypes>;
+		payload: EventUnionFromDictionary<SerializedAll<BroadcastTypes>>;
 	};
 	main: {
 		name: `mainStream:${MiUser['id']}`;
-		payload: EventTypesToEventPayload<MainEventTypes>;
+		payload: EventUnionFromDictionary<SerializedAll<MainEventTypes>>;
 	};
 	drive: {
 		name: `driveStream:${MiUser['id']}`;
-		payload: EventTypesToEventPayload<DriveEventTypes>;
+		payload: EventUnionFromDictionary<SerializedAll<DriveEventTypes>>;
 	};
 	note: {
 		name: `noteStream:${MiNote['id']}`;
-		payload: EventTypesToEventPayload<NoteStreamEventTypes>;
+		payload: EventUnionFromDictionary<SerializedAll<NoteStreamEventTypes>>;
 	};
 	userList: {
 		name: `userListStream:${MiUserList['id']}`;
-		payload: EventTypesToEventPayload<UserListEventTypes>;
+		payload: EventUnionFromDictionary<SerializedAll<UserListEventTypes>>;
 	};
 	roleTimeline: {
 		name: `roleTimelineStream:${MiRole['id']}`;
-		payload: EventTypesToEventPayload<RoleTimelineEventTypes>;
+		payload: EventUnionFromDictionary<SerializedAll<RoleTimelineEventTypes>>;
 	};
 	antenna: {
 		name: `antennaStream:${MiAntenna['id']}`;
-		payload: EventTypesToEventPayload<AntennaEventTypes>;
+		payload: EventUnionFromDictionary<SerializedAll<AntennaEventTypes>>;
 	};
 	admin: {
 		name: `adminStream:${MiUser['id']}`;
-		payload: EventTypesToEventPayload<AdminEventTypes>;
+		payload: EventUnionFromDictionary<SerializedAll<AdminEventTypes>>;
 	};
 	notes: {
 		name: 'notesStream';
@@ -297,11 +287,11 @@ export type GlobalEvents = {
 	};
 	reversi: {
 		name: `reversiStream:${MiUser['id']}`;
-		payload: EventTypesToEventPayload<ReversiEventTypes>;
+		payload: EventUnionFromDictionary<SerializedAll<ReversiEventTypes>>;
 	};
 	reversiGame: {
 		name: `reversiGameStream:${MiReversiGame['id']}`;
-		payload: EventTypesToEventPayload<ReversiGameEventTypes>;
+		payload: EventUnionFromDictionary<SerializedAll<ReversiGameEventTypes>>;
 	};
 };
 

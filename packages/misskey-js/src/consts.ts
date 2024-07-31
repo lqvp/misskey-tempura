@@ -1,13 +1,3 @@
-import type { operations } from './autogen/types.js';
-import type {
-	AbuseReportNotificationRecipient, Ad,
-	Announcement,
-	EmojiDetailed, InviteCode,
-	MetaDetailed,
-	Note,
-	Role, SystemWebhook, UserLite,
-} from './autogen/models.js';
-
 export const notificationTypes = ['note', 'follow', 'mention', 'reply', 'renote', 'quote', 'reaction', 'pollVote', 'pollEnded', 'receiveFollowRequest', 'followRequestAccepted', 'groupInvited', 'app', 'roleAssigned', 'achievementEarned'] as const;
 
 export const noteVisibilities = ['public', 'home', 'followers', 'specified'] as const;
@@ -143,38 +133,12 @@ export const moderationLogTypes = [
 	'deleteAvatarDecoration',
 	'unsetUserAvatar',
 	'unsetUserBanner',
-	'createSystemWebhook',
-	'updateSystemWebhook',
-	'deleteSystemWebhook',
-	'createAbuseReportNotificationRecipient',
-	'updateAbuseReportNotificationRecipient',
-	'deleteAbuseReportNotificationRecipient',
 ] as const;
-
-// See: packages/backend/src/core/ReversiService.ts@L410
-export const reversiUpdateKeys = [
-	'map',
-	'bw',
-	'isLlotheo',
-	'canPutEverywhere',
-	'loopedBoard',
-	'timeLimitForEachTurn',
-] as const;
-
-export type ReversiUpdateKey = typeof reversiUpdateKeys[number];
-
-type AvatarDecoration = UserLite['avatarDecorations'][number];
-
-type ReceivedAbuseReport = {
-	reportId: AbuseReportNotificationRecipient['id'];
-	report: operations['admin___abuse-user-reports']['responses'][200]['content']['application/json'];
-	forwarded: boolean;
-};
 
 export type ModerationLogPayloads = {
 	updateServerSettings: {
-		before: MetaDetailed | null;
-		after: MetaDetailed | null;
+		before: any | null;
+		after: any | null;
 	};
 	suspend: {
 		userId: string;
@@ -195,16 +159,16 @@ export type ModerationLogPayloads = {
 	};
 	addCustomEmoji: {
 		emojiId: string;
-		emoji: EmojiDetailed;
+		emoji: any;
 	};
 	updateCustomEmoji: {
 		emojiId: string;
-		before: EmojiDetailed;
-		after: EmojiDetailed;
+		before: any;
+		after: any;
 	};
 	deleteCustomEmoji: {
 		emojiId: string;
-		emoji: EmojiDetailed;
+		emoji: any;
 	};
 	assignRole: {
 		userId: string;
@@ -223,16 +187,16 @@ export type ModerationLogPayloads = {
 	};
 	createRole: {
 		roleId: string;
-		role: Role;
+		role: any;
 	};
 	updateRole: {
 		roleId: string;
-		before: Role;
-		after: Role;
+		before: any;
+		after: any;
 	};
 	deleteRole: {
 		roleId: string;
-		role: Role;
+		role: any;
 	};
 	clearQueue: Record<string, never>;
 	promoteQueue: Record<string, never>;
@@ -247,39 +211,39 @@ export type ModerationLogPayloads = {
 		noteUserId: string;
 		noteUserUsername: string;
 		noteUserHost: string | null;
-		note: Note;
+		note: any;
 	};
 	createGlobalAnnouncement: {
 		announcementId: string;
-		announcement: Announcement;
+		announcement: any;
 	};
 	createUserAnnouncement: {
 		announcementId: string;
-		announcement: Announcement;
+		announcement: any;
 		userId: string;
 		userUsername: string;
 		userHost: string | null;
 	};
 	updateGlobalAnnouncement: {
 		announcementId: string;
-		before: Announcement;
-		after: Announcement;
+		before: any;
+		after: any;
 	};
 	updateUserAnnouncement: {
 		announcementId: string;
-		before: Announcement;
-		after: Announcement;
+		before: any;
+		after: any;
 		userId: string;
 		userUsername: string;
 		userHost: string | null;
 	};
 	deleteGlobalAnnouncement: {
 		announcementId: string;
-		announcement: Announcement;
+		announcement: any;
 	};
 	deleteUserAnnouncement: {
 		announcementId: string;
-		announcement: Announcement;
+		announcement: any;
 		userId: string;
 		userUsername: string;
 		userHost: string | null;
@@ -317,37 +281,37 @@ export type ModerationLogPayloads = {
 	};
 	resolveAbuseReport: {
 		reportId: string;
-		report: ReceivedAbuseReport;
+		report: any;
 		forwarded: boolean;
 	};
 	createInvitation: {
-		invitations: InviteCode[];
+		invitations: any[];
 	};
 	createAd: {
 		adId: string;
-		ad: Ad;
+		ad: any;
 	};
 	updateAd: {
 		adId: string;
-		before: Ad;
-		after: Ad;
+		before: any;
+		after: any;
 	};
 	deleteAd: {
 		adId: string;
-		ad: Ad;
+		ad: any;
 	};
 	createAvatarDecoration: {
 		avatarDecorationId: string;
-		avatarDecoration: AvatarDecoration;
+		avatarDecoration: any;
 	};
 	updateAvatarDecoration: {
 		avatarDecorationId: string;
-		before: AvatarDecoration;
-		after: AvatarDecoration;
+		before: any;
+		after: any;
 	};
 	deleteAvatarDecoration: {
 		avatarDecorationId: string;
-		avatarDecoration: AvatarDecoration;
+		avatarDecoration: any;
 	};
 	unsetUserAvatar: {
 		userId: string;
@@ -360,31 +324,5 @@ export type ModerationLogPayloads = {
 		userUsername: string;
 		userHost: string | null;
 		fileId: string;
-	};
-	createSystemWebhook: {
-		systemWebhookId: string;
-		webhook: SystemWebhook;
-	};
-	updateSystemWebhook: {
-		systemWebhookId: string;
-		before: SystemWebhook;
-		after: SystemWebhook;
-	};
-	deleteSystemWebhook: {
-		systemWebhookId: string;
-		webhook: SystemWebhook;
-	};
-	createAbuseReportNotificationRecipient: {
-		recipientId: string;
-		recipient: AbuseReportNotificationRecipient;
-	};
-	updateAbuseReportNotificationRecipient: {
-		recipientId: string;
-		before: AbuseReportNotificationRecipient;
-		after: AbuseReportNotificationRecipient;
-	};
-	deleteAbuseReportNotificationRecipient: {
-		recipientId: string;
-		recipient: AbuseReportNotificationRecipient;
 	};
 };

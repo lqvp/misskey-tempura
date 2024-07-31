@@ -4,10 +4,6 @@
  */
 
 export function isUserRelated(note: any, userIds: Set<string>, ignoreAuthor = false): boolean {
-	if (!note) {
-		return false;
-	}
-
 	if (userIds.has(note.userId) && !ignoreAuthor) {
 		return true;
 	}

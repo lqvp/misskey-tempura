@@ -3,18 +3,16 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import type { Repository } from "typeorm";
-
 process.env.NODE_ENV = 'test';
 
 import * as assert from 'assert';
 import { MiNote } from '@/models/Note.js';
 import { MAX_NOTE_TEXT_LENGTH } from '@/const.js';
-import { api, castAsError, initTestDb, post, role, signup, uploadFile, uploadUrl } from '../utils.js';
+import { api, initTestDb, post, role, signup, uploadFile, uploadUrl } from '../utils.js';
 import type * as misskey from 'misskey-js';
 
 describe('Note', () => {
-	let Notes: Repository<MiNote>;
+	let Notes: any;
 
 	let root: misskey.entities.SignupResponse;
 	let alice: misskey.entities.SignupResponse;
@@ -43,7 +41,7 @@ describe('Note', () => {
 	});
 
 	test('ファイルを添付できる', async () => {
-		const file = await uploadUrl(alice, 'https://raw.githubusercontent.com/misskey-dev/misskey/develop/packages/backend/test/resources/192.jpg');
+		const file = await uploadUrl(alice, 'https://raw.githubusercontent.com/misskey-dev/misskey/develop/packages/backend/test/resources/Lenna.jpg');
 
 		const res = await api('notes/create', {
 			fileIds: [file.id],
@@ -55,7 +53,7 @@ describe('Note', () => {
 	}, 1000 * 10);
 
 	test('他人のファイルで怒られる', async () => {
-		const file = await uploadUrl(bob, 'https://raw.githubusercontent.com/misskey-dev/misskey/develop/packages/backend/test/resources/192.jpg');
+		const file = await uploadUrl(bob, 'https://raw.githubusercontent.com/misskey-dev/misskey/develop/packages/backend/test/resources/Lenna.jpg');
 
 		const res = await api('notes/create', {
 			text: 'test',
@@ -63,8 +61,8 @@ describe('Note', () => {
 		}, alice);
 
 		assert.strictEqual(res.status, 400);
-		assert.strictEqual(castAsError(res.body).error.code, 'NO_SUCH_FILE');
-		assert.strictEqual(castAsError(res.body).error.id, 'b6992544-63e7-67f0-fa7f-32444b1b5306');
+		assert.strictEqual(res.body.error.code, 'NO_SUCH_FILE');
+		assert.strictEqual(res.body.error.id, 'b6992544-63e7-67f0-fa7f-32444b1b5306');
 	}, 1000 * 10);
 
 	test('存在しないファイルで怒られる', async () => {
@@ -74,8 +72,8 @@ describe('Note', () => {
 		}, alice);
 
 		assert.strictEqual(res.status, 400);
-		assert.strictEqual(castAsError(res.body).error.code, 'NO_SUCH_FILE');
-		assert.strictEqual(castAsError(res.body).error.id, 'b6992544-63e7-67f0-fa7f-32444b1b5306');
+		assert.strictEqual(res.body.error.code, 'NO_SUCH_FILE');
+		assert.strictEqual(res.body.error.id, 'b6992544-63e7-67f0-fa7f-32444b1b5306');
 	});
 
 	test('不正なファイルIDで怒られる', async () => {
@@ -83,8 +81,8 @@ describe('Note', () => {
 			fileIds: ['kyoppie'],
 		}, alice);
 		assert.strictEqual(res.status, 400);
-		assert.strictEqual(castAsError(res.body).error.code, 'NO_SUCH_FILE');
-		assert.strictEqual(castAsError(res.body).error.id, 'b6992544-63e7-67f0-fa7f-32444b1b5306');
+		assert.strictEqual(res.body.error.code, 'NO_SUCH_FILE');
+		assert.strictEqual(res.body.error.id, 'b6992544-63e7-67f0-fa7f-32444b1b5306');
 	});
 
 	test('返信できる', async () => {
@@ -103,7 +101,6 @@ describe('Note', () => {
 		assert.strictEqual(typeof res.body === 'object' && !Array.isArray(res.body), true);
 		assert.strictEqual(res.body.createdNote.text, alicePost.text);
 		assert.strictEqual(res.body.createdNote.replyId, alicePost.replyId);
-		assert.ok(res.body.createdNote.reply);
 		assert.strictEqual(res.body.createdNote.reply.text, bobPost.text);
 	});
 
@@ -121,7 +118,6 @@ describe('Note', () => {
 		assert.strictEqual(res.status, 200);
 		assert.strictEqual(typeof res.body === 'object' && !Array.isArray(res.body), true);
 		assert.strictEqual(res.body.createdNote.renoteId, alicePost.renoteId);
-		assert.ok(res.body.createdNote.renote);
 		assert.strictEqual(res.body.createdNote.renote.text, bobPost.text);
 	});
 
@@ -141,7 +137,6 @@ describe('Note', () => {
 		assert.strictEqual(typeof res.body === 'object' && !Array.isArray(res.body), true);
 		assert.strictEqual(res.body.createdNote.text, alicePost.text);
 		assert.strictEqual(res.body.createdNote.renoteId, alicePost.renoteId);
-		assert.ok(res.body.createdNote.renote);
 		assert.strictEqual(res.body.createdNote.renote.text, bobPost.text);
 	});
 
@@ -223,7 +218,7 @@ describe('Note', () => {
 		}, bob);
 
 		assert.strictEqual(bobReply.status, 400);
-		assert.strictEqual(castAsError(bobReply.body).error.code, 'CANNOT_REPLY_TO_AN_INVISIBLE_NOTE');
+		assert.strictEqual(bobReply.body.error.code, 'CANNOT_REPLY_TO_AN_INVISIBLE_NOTE');
 	});
 
 	test('visibility: specifiedなノートに対してvisibility: specifiedで返信できる', async () => {
@@ -261,7 +256,7 @@ describe('Note', () => {
 		}, bob);
 
 		assert.strictEqual(bobReply.status, 400);
-		assert.strictEqual(castAsError(bobReply.body).error.code, 'CANNOT_REPLY_TO_SPECIFIED_VISIBILITY_NOTE_WITH_EXTENDED_VISIBILITY');
+		assert.strictEqual(bobReply.body.error.code, 'CANNOT_REPLY_TO_SPECIFIED_VISIBILITY_NOTE_WITH_EXTENDED_VISIBILITY');
 	});
 
 	test('文字数ぎりぎりで怒られない', async () => {
@@ -338,7 +333,6 @@ describe('Note', () => {
 		assert.strictEqual(res.body.createdNote.text, post.text);
 
 		const noteDoc = await Notes.findOneBy({ id: res.body.createdNote.id });
-		assert.ok(noteDoc);
 		assert.deepStrictEqual(noteDoc.mentions, [bob.id]);
 	});
 
@@ -351,7 +345,6 @@ describe('Note', () => {
 
 			assert.strictEqual(res.status, 200);
 			assert.strictEqual(typeof res.body === 'object' && !Array.isArray(res.body), true);
-			assert.ok(res.body.createdNote.files);
 			assert.strictEqual(res.body.createdNote.files.length, 1);
 			assert.strictEqual(res.body.createdNote.files[0].id, file.body!.id);
 		});
@@ -370,9 +363,8 @@ describe('Note', () => {
 
 			assert.strictEqual(res.status, 200);
 			assert.strictEqual(Array.isArray(res.body), true);
-			const myNote = res.body.find(note => note.id === createdNote.body.createdNote.id);
-			assert.ok(myNote);
-			assert.ok(myNote.files);
+			const myNote = res.body.find((note: { id: string; files: { id: string }[] }) => note.id === createdNote.body.createdNote.id);
+			assert.notEqual(myNote, null);
 			assert.strictEqual(myNote.files.length, 1);
 			assert.strictEqual(myNote.files[0].id, file.body!.id);
 		});
@@ -397,9 +389,7 @@ describe('Note', () => {
 			assert.strictEqual(res.status, 200);
 			assert.strictEqual(Array.isArray(res.body), true);
 			const myNote = res.body.find((note: { id: string }) => note.id === renoted.body.createdNote.id);
-			assert.ok(myNote);
-			assert.ok(myNote.renote);
-			assert.ok(myNote.renote.files);
+			assert.notEqual(myNote, null);
 			assert.strictEqual(myNote.renote.files.length, 1);
 			assert.strictEqual(myNote.renote.files[0].id, file.body!.id);
 		});
@@ -425,9 +415,7 @@ describe('Note', () => {
 			assert.strictEqual(res.status, 200);
 			assert.strictEqual(Array.isArray(res.body), true);
 			const myNote = res.body.find((note: { id: string }) => note.id === reply.body.createdNote.id);
-			assert.ok(myNote);
-			assert.ok(myNote.reply);
-			assert.ok(myNote.reply.files);
+			assert.notEqual(myNote, null);
 			assert.strictEqual(myNote.reply.files.length, 1);
 			assert.strictEqual(myNote.reply.files[0].id, file.body!.id);
 		});
@@ -458,10 +446,7 @@ describe('Note', () => {
 			assert.strictEqual(res.status, 200);
 			assert.strictEqual(Array.isArray(res.body), true);
 			const myNote = res.body.find((note: { id: string }) => note.id === renoted.body.createdNote.id);
-			assert.ok(myNote);
-			assert.ok(myNote.renote);
-			assert.ok(myNote.renote.reply);
-			assert.ok(myNote.renote.reply.files);
+			assert.notEqual(myNote, null);
 			assert.strictEqual(myNote.renote.reply.files.length, 1);
 			assert.strictEqual(myNote.renote.reply.files[0].id, file.body!.id);
 		});
@@ -489,7 +474,7 @@ describe('Note', () => {
 						priority: 0,
 						value: true,
 					},
-				},
+				} as any,
 			}, root);
 
 			assert.strictEqual(res.status, 200);
@@ -513,7 +498,7 @@ describe('Note', () => {
 			}, alice);
 
 			assert.strictEqual(liftnsfw.status, 400);
-			assert.strictEqual(castAsError(liftnsfw.body).error.code, 'RESTRICTED_BY_ROLE');
+			assert.strictEqual(liftnsfw.body.error.code, 'RESTRICTED_BY_ROLE');
 
 			const oldaddnsfw = await api('drive/files/update', {
 				fileId: file.body!.id,
@@ -725,7 +710,7 @@ describe('Note', () => {
 			}, alice);
 
 			assert.strictEqual(note1.status, 400);
-			assert.strictEqual(castAsError(note1.body).error.code, 'CONTAINS_PROHIBITED_WORDS');
+			assert.strictEqual(note1.body.error.code, 'CONTAINS_PROHIBITED_WORDS');
 		});
 
 		test('禁止ワードを含む投稿はエラーになる (正規表現)', async () => {
@@ -742,7 +727,7 @@ describe('Note', () => {
 			}, alice);
 
 			assert.strictEqual(note2.status, 400);
-			assert.strictEqual(castAsError(note2.body).error.code, 'CONTAINS_PROHIBITED_WORDS');
+			assert.strictEqual(note2.body.error.code, 'CONTAINS_PROHIBITED_WORDS');
 		});
 
 		test('禁止ワードを含む投稿はエラーになる (スペースアンド)', async () => {
@@ -759,7 +744,7 @@ describe('Note', () => {
 			}, alice);
 
 			assert.strictEqual(note2.status, 400);
-			assert.strictEqual(castAsError(note2.body).error.code, 'CONTAINS_PROHIBITED_WORDS');
+			assert.strictEqual(note2.body.error.code, 'CONTAINS_PROHIBITED_WORDS');
 		});
 
 		test('禁止ワードを含んでるリモートノートもエラーになる', async () => {
@@ -801,7 +786,7 @@ describe('Note', () => {
 						priority: 1,
 						value: 0,
 					},
-				},
+				} as any,
 			}, root);
 
 			assert.strictEqual(res.status, 200);
@@ -822,7 +807,7 @@ describe('Note', () => {
 			}, alice);
 
 			assert.strictEqual(note.status, 400);
-			assert.strictEqual(castAsError(note.body).error.code, 'CONTAINS_TOO_MANY_MENTIONS');
+			assert.strictEqual(note.body.error.code, 'CONTAINS_TOO_MANY_MENTIONS');
 
 			await api('admin/roles/unassign', {
 				userId: alice.id,
@@ -855,7 +840,7 @@ describe('Note', () => {
 						priority: 1,
 						value: 0,
 					},
-				},
+				} as any,
 			}, root);
 
 			assert.strictEqual(res.status, 200);
@@ -878,7 +863,7 @@ describe('Note', () => {
 			}, alice);
 
 			assert.strictEqual(note.status, 400);
-			assert.strictEqual(castAsError(note.body).error.code, 'CONTAINS_TOO_MANY_MENTIONS');
+			assert.strictEqual(note.body.error.code, 'CONTAINS_TOO_MANY_MENTIONS');
 
 			await api('admin/roles/unassign', {
 				userId: alice.id,
@@ -911,7 +896,7 @@ describe('Note', () => {
 						priority: 1,
 						value: 1,
 					},
-				},
+				} as any,
 			}, root);
 
 			assert.strictEqual(res.status, 200);
@@ -966,7 +951,6 @@ describe('Note', () => {
 
 			assert.strictEqual(deleteOneRes.status, 204);
 			let mainNote = await Notes.findOneBy({ id: mainNoteRes.body.createdNote.id });
-			assert.ok(mainNote);
 			assert.strictEqual(mainNote.repliesCount, 1);
 
 			const deleteTwoRes = await api('notes/delete', {
@@ -975,7 +959,6 @@ describe('Note', () => {
 
 			assert.strictEqual(deleteTwoRes.status, 204);
 			mainNote = await Notes.findOneBy({ id: mainNoteRes.body.createdNote.id });
-			assert.ok(mainNote);
 			assert.strictEqual(mainNote.repliesCount, 0);
 		});
 	});
@@ -997,7 +980,7 @@ describe('Note', () => {
 				}, alice);
 
 				assert.strictEqual(res.status, 400);
-				assert.strictEqual(castAsError(res.body).error.code, 'UNAVAILABLE');
+				assert.strictEqual(res.body.error.code, 'UNAVAILABLE');
 			});
 
 			afterAll(async () => {
@@ -1009,7 +992,7 @@ describe('Note', () => {
 			const res = await api('notes/translate', { noteId: 'foo', targetLang: 'ja' }, alice);
 
 			assert.strictEqual(res.status, 400);
-			assert.strictEqual(castAsError(res.body).error.code, 'NO_SUCH_NOTE');
+			assert.strictEqual(res.body.error.code, 'NO_SUCH_NOTE');
 		});
 
 		test('不可視なノートは翻訳できない', async () => {
@@ -1017,7 +1000,7 @@ describe('Note', () => {
 			const bobTranslateAttempt = await api('notes/translate', { noteId: aliceNote.id, targetLang: 'ja' }, bob);
 
 			assert.strictEqual(bobTranslateAttempt.status, 400);
-			assert.strictEqual(castAsError(bobTranslateAttempt.body).error.code, 'CANNOT_TRANSLATE_INVISIBLE_NOTE');
+			assert.strictEqual(bobTranslateAttempt.body.error.code, 'CANNOT_TRANSLATE_INVISIBLE_NOTE');
 		});
 
 		test('text: null なノートを翻訳すると空のレスポンスが返ってくる', async () => {
@@ -1033,7 +1016,7 @@ describe('Note', () => {
 
 			// NOTE: デフォルトでは登録されていないので落ちる
 			assert.strictEqual(res.status, 400);
-			assert.strictEqual(castAsError(res.body).error.code, 'UNAVAILABLE');
+			assert.strictEqual(res.body.error.code, 'UNAVAILABLE');
 		});
 	});
 });

@@ -17,16 +17,20 @@ export function useChartTooltip(opts: { position: 'top' | 'middle' } = { positio
 		borderColor: string;
 		text: string;
 	}[] | null>(null);
-	const { dispose: disposeTooltipComponent } = os.popup(MkChartTooltip, {
+	let disposeTooltipComponent;
+
+	os.popup(MkChartTooltip, {
 		showing: tooltipShowing,
 		x: tooltipX,
 		y: tooltipY,
 		title: tooltipTitle,
 		series: tooltipSeries,
-	}, {});
+	}, {}).then(({ dispose }) => {
+		disposeTooltipComponent = dispose;
+	});
 
 	onUnmounted(() => {
-		disposeTooltipComponent();
+		if (disposeTooltipComponent) disposeTooltipComponent();
 	});
 
 	onDeactivated(() => {

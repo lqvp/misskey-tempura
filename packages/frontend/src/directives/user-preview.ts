@@ -35,7 +35,7 @@ export class UserPreview {
 
 		const showing = ref(true);
 
-		const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkUserPopup.vue')), {
+		popup(defineAsyncComponent(() => import('@/components/MkUserPopup.vue')), {
 			showing,
 			q: this.user,
 			source: this.el,
@@ -47,8 +47,7 @@ export class UserPreview {
 				window.clearTimeout(this.showTimer);
 				this.hideTimer = window.setTimeout(this.close, 500);
 			},
-			closed: () => dispose(),
-		});
+		}, 'closed');
 
 		this.promise = {
 			cancel: () => {

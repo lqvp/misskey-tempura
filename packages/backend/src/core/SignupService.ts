@@ -21,7 +21,6 @@ import { bindThis } from '@/decorators.js';
 import UsersChart from '@/core/chart/charts/users.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import { MetaService } from '@/core/MetaService.js';
-import { UserService } from '@/core/UserService.js';
 
 @Injectable()
 export class SignupService {
@@ -36,7 +35,6 @@ export class SignupService {
 		private usedUsernamesRepository: UsedUsernamesRepository,
 
 		private utilityService: UtilityService,
-		private userService: UserService,
 		private userEntityService: UserEntityService,
 		private idService: IdService,
 		private metaService: MetaService,
@@ -150,8 +148,7 @@ export class SignupService {
 			}));
 		});
 
-		this.usersChart.update(account, true).then();
-		this.userService.notifySystemWebhook(account, 'userCreated').then();
+		this.usersChart.update(account, true);
 
 		return { account, secret };
 	}

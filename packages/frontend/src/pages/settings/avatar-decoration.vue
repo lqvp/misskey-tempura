@@ -67,7 +67,7 @@ misskeyApi('get-avatar-decorations').then(_avatarDecorations => {
 });
 
 function openDecoration(avatarDecoration, index?: number) {
-	const { dispose } = os.popup(defineAsyncComponent(() => import('./avatar-decoration.dialog.vue')), {
+	os.popup(defineAsyncComponent(() => import('./avatar-decoration.dialog.vue')), {
 		decoration: avatarDecoration,
 		usingIndex: index,
 	}, {
@@ -108,8 +108,7 @@ function openDecoration(avatarDecoration, index?: number) {
 			});
 			$i.avatarDecorations = update;
 		},
-		closed: () => dispose(),
-	});
+	}, 'closed');
 }
 
 function detachAllDecorations() {

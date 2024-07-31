@@ -40,7 +40,7 @@ export const paramDef = {
 		startsAt: { type: 'integer' },
 		dayOfWeek: { type: 'integer' },
 	},
-	required: ['id'],
+	required: ['id', 'memo', 'url', 'imageUrl', 'place', 'priority', 'ratio', 'expiresAt', 'startsAt', 'dayOfWeek'],
 } as const;
 
 @Injectable()
@@ -63,8 +63,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				ratio: ps.ratio,
 				memo: ps.memo,
 				imageUrl: ps.imageUrl,
-				expiresAt: ps.expiresAt ? new Date(ps.expiresAt) : undefined,
-				startsAt: ps.startsAt ? new Date(ps.startsAt) : undefined,
+				expiresAt: new Date(ps.expiresAt),
+				startsAt: new Date(ps.startsAt),
 				dayOfWeek: ps.dayOfWeek,
 			});
 

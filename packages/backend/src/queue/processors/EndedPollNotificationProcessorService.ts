@@ -7,7 +7,6 @@ import { Inject, Injectable } from '@nestjs/common';
 import { DI } from '@/di-symbols.js';
 import type { PollVotesRepository, NotesRepository } from '@/models/_.js';
 import type Logger from '@/logger.js';
-import { CacheService } from '@/core/CacheService.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { bindThis } from '@/decorators.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
@@ -25,7 +24,6 @@ export class EndedPollNotificationProcessorService {
 		@Inject(DI.pollVotesRepository)
 		private pollVotesRepository: PollVotesRepository,
 
-		private cacheService: CacheService,
 		private notificationService: NotificationService,
 		private queueLoggerService: QueueLoggerService,
 	) {
@@ -49,12 +47,9 @@ export class EndedPollNotificationProcessorService {
 		const userIds = [...new Set([note.userId, ...votes.map(v => v.userId)])];
 
 		for (const userId of userIds) {
-			const profile = await this.cacheService.userProfileCache.fetch(userId);
-			if (profile.userHost === null) {
-				this.notificationService.createNotification(userId, 'pollEnded', {
-					noteId: note.id,
-				});
-			}
+			this.notificationService.createNotification(userId, 'pollEnded', {
+				noteId: note.id,
+			});
 		}
 	}
 }

@@ -83,21 +83,11 @@ const url = computed(() => (props.raw || defaultStore.state.loadRawImages)
 		: props.image.thumbnailUrl,
 );
 
-async function onclick(ev: MouseEvent) {
+function onclick() {
 	if (!props.controls) {
 		return;
 	}
-
 	if (hide.value) {
-		ev.stopPropagation();
-		if (props.image.isSensitive && defaultStore.state.confirmWhenRevealingSensitiveMedia) {
-			const { canceled } = await os.confirm({
-				type: 'question',
-				text: i18n.ts.sensitiveMediaRevealConfirm,
-			});
-			if (canceled) return;
-		}
-
 		hide.value = false;
 	}
 }

@@ -232,26 +232,13 @@ const routes: RouteDef[] = [{
 	component: page(() => import('@/pages/search.vue')),
 	query: {
 		q: 'query',
-		userId: 'userId',
-		username: 'username',
-		host: 'host',
 		channel: 'channel',
 		type: 'type',
 		origin: 'origin',
 	},
 }, {
-	// Legacy Compatibility	
 	path: '/authorize-follow',
-	redirect: '/lookup',
-	loginRequired: true,
-}, {
-	// Mastodon Compatibility
-	path: '/authorize_interaction',
-	redirect: '/lookup',
-	loginRequired: true,
-}, {
-	path: '/lookup',
-	component: page(() => import('@/pages/lookup.vue')),
+	component: page(() => import('@/pages/follow.vue')),
 	loginRequired: true,
 }, {
 	path: '/share',
@@ -264,9 +251,6 @@ const routes: RouteDef[] = [{
 }, {
 	path: '/scratchpad',
 	component: page(() => import('@/pages/scratchpad.vue')),
-}, {
-	path: '/preview',
-	component: page(() => import('@/pages/preview.vue')),
 }, {
 	path: '/auth/:token',
 	component: page(() => import('@/pages/auth.vue')),
@@ -487,14 +471,6 @@ const routes: RouteDef[] = [{
 		path: '/invites',
 		name: 'invites',
 		component: page(() => import('@/pages/admin/invites.vue')),
-	}, {
-		path: '/abuse-report-notification-recipient',
-		name: 'abuse-report-notification-recipient',
-		component: page(() => import('@/pages/admin/abuse-report/notification-recipient.vue')),
-	}, {
-		path: '/system-webhook',
-		name: 'system-webhook',
-		component: page(() => import('@/pages/admin/system-webhook.vue')),
 	}, {
 		path: '/',
 		component: page(() => import('@/pages/_empty_.vue')),

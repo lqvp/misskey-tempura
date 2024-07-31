@@ -51,15 +51,13 @@ export default {
 			if (self.text == null) return;
 
 			const showing = ref(true);
-			const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkTooltip.vue')), {
+			popup(defineAsyncComponent(() => import('@/components/MkTooltip.vue')), {
 				showing,
 				text: self.text,
 				asMfm: binding.modifiers.mfm,
 				direction: binding.modifiers.left ? 'left' : binding.modifiers.right ? 'right' : binding.modifiers.top ? 'top' : binding.modifiers.bottom ? 'bottom' : 'top',
 				targetElement: el,
-			}, {
-				closed: () => dispose(),
-			});
+			}, {}, 'closed');
 
 			self._close = () => {
 				showing.value = false;

@@ -19,9 +19,8 @@ SPDX-License-Identifier: AGPL-3.0-only
   id-denylist violation when setting it. This is causing about 60+ lint issues.
   As this is part of Chart.js's API it makes sense to disable the check here.
 */
-import { onMounted, ref, shallowRef, watch } from 'vue';
+import { onMounted, ref, shallowRef, watch, PropType } from 'vue';
 import { Chart } from 'chart.js';
-import * as Misskey from 'misskey-js';
 import { misskeyApiGet } from '@/scripts/misskey-api.js';
 import { defaultStore } from '@/store.js';
 import { useChartTooltip } from '@/scripts/use-chart-tooltip.js';
@@ -35,63 +34,44 @@ import MkChartLegend from '@/components/MkChartLegend.vue';
 
 initChart();
 
-type ChartSrc =
-	| 'federation'
-	| 'ap-request'
-	| 'users'
-	| 'users-total'
-	| 'active-users'
-	| 'notes'
-	| 'local-notes'
-	| 'remote-notes'
-	| 'notes-total'
-	| 'drive'
-	| 'drive-files'
-	| 'instance-requests'
-	| 'instance-users'
-	| 'instance-users-total'
-	| 'instance-notes'
-	| 'instance-notes-total'
-	| 'instance-ff'
-	| 'instance-ff-total'
-	| 'instance-drive-usage'
-	| 'instance-drive-usage-total'
-	| 'instance-drive-files'
-	| 'instance-drive-files-total'
-	| 'per-user-notes'
-	| 'per-user-pv'
-	| 'per-user-following'
-	| 'per-user-followers'
-	| 'per-user-drive'
-
-const props = withDefaults(defineProps<{
-	src: ChartSrc;
-	args?: {
-		host?: string;
-		user?: Misskey.entities.UserLite;
-		withoutAll?: boolean;
-	};
-	limit?: number;
-	span: 'hour' | 'day';
-	detailed?: boolean;
-	stacked?: boolean;
-	bar?: boolean;
-	aspectRatio?: number | null;
-	nowForChromatic?: number;
-}>(), {
-	args: undefined,
-	limit: 90,
-	detailed: false,
-	stacked: false,
-	bar: false,
-	aspectRatio: null,
-
-	/**
-	 * @desc Overwrites current date to fix background lines of chart.
-	 * @ignore Only used for Chromatic. Don't use this for production.
-	 * @see https://github.com/misskey-dev/misskey/pull/13830#issuecomment-2155886151
-	 */
-	nowForChromatic: undefined,
+const props = defineProps({
+	src: {
+		type: String,
+		required: true,
+	},
+	args: {
+		type: Object,
+		required: false,
+	},
+	limit: {
+		type: Number,
+		required: false,
+		default: 90,
+	},
+	span: {
+		type: String as PropType<'hour' | 'day'>,
+		required: true,
+	},
+	detailed: {
+		type: Boolean,
+		required: false,
+		default: false,
+	},
+	stacked: {
+		type: Boolean,
+		required: false,
+		default: false,
+	},
+	bar: {
+		type: Boolean,
+		required: false,
+		default: false,
+	},
+	aspectRatio: {
+		type: Number,
+		required: false,
+		default: null,
+	},
 });
 
 const legendEl = shallowRef<InstanceType<typeof MkChartLegend>>();
@@ -114,8 +94,7 @@ const getColor = (i) => {
 	return colorSets[i % colorSets.length];
 };
 
-// eslint-disable-next-line vue/no-setup-props-reactivity-loss
-const now = props.nowForChromatic != null ? new Date(props.nowForChromatic) : new Date();
+const now = new Date();
 let chartInstance: Chart | null = null;
 let chartData: {
 	series: {

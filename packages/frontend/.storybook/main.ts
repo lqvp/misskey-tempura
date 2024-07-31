@@ -15,7 +15,6 @@ const _dirname = fileURLToPath(new URL('.', import.meta.url));
 
 const config = {
 	stories: ['../src/**/*.mdx', '../src/**/*.stories.@(js|jsx|ts|tsx)'],
-	staticDirs: [{ from: '../assets', to: '/client-assets' }],
 	addons: [
 		getAbsolutePath('@storybook/addon-essentials'),
 		getAbsolutePath('@storybook/addon-interactions'),

@@ -55,6 +55,9 @@ export class FanoutTimelineEndpointService {
 
 	@bindThis
 	private async getMiNotes(ps: TimelineOptions): Promise<MiNote[]> {
+		let noteIds: string[];
+		let shouldFallbackToDb = false;
+
 		// 呼び出し元と以下の処理をシンプルにするためにdbFallbackを置き換える
 		if (!ps.useDbFallback) ps.dbFallback = () => Promise.resolve([]);
 
@@ -64,11 +67,12 @@ export class FanoutTimelineEndpointService {
 		const redisResult = await this.fanoutTimelineService.getMulti(ps.redisTimelines, ps.untilId, ps.sinceId);
 
 		// TODO: いい感じにgetMulti内でソート済だからuniqするときにredisResultが全てソート済なのを利用して再ソートを避けたい
-		const redisResultIds = Array.from(new Set(redisResult.flat(1))).sort(idCompare);
+		const redisResultIds = Array.from(new Set(redisResult.flat(1)));
 
-		let noteIds = redisResultIds.slice(0, ps.limit);
-		const oldestNoteId = ascending ? redisResultIds[0] : redisResultIds[redisResultIds.length - 1];
-		const shouldFallbackToDb = noteIds.length === 0 || ps.sinceId != null && ps.sinceId < oldestNoteId;
+		redisResultIds.sort(idCompare);
+		noteIds = redisResultIds.slice(0, ps.limit);
+
+		shouldFallbackToDb = shouldFallbackToDb || (noteIds.length === 0);
 
 		if (!shouldFallbackToDb) {
 			let filter = ps.noteFilter ?? (_note => true);

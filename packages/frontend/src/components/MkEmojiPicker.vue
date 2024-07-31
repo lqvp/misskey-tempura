@@ -5,19 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div class="omfetrab" :class="['s' + size, 'w' + width, 'h' + height, { asDrawer, asWindow }]" :style="{ maxHeight: maxHeight ? maxHeight + 'px' : undefined }">
-	<input
-		ref="searchEl"
-		:value="q"
-		class="search"
-		data-prevent-emoji-insert
-		:class="{ filled: q != null && q != '' }"
-		:placeholder="i18n.ts.search"
-		type="search"
-		autocapitalize="off"
-		@input="input()"
-		@paste.stop="paste"
-		@keydown="onKeydown"
-	>
+	<input ref="searchEl" :value="q" class="search" data-prevent-emoji-insert :class="{ filled: q != null && q != '' }" :placeholder="i18n.ts.search" type="search" autocapitalize="off" @input="input()" @paste.stop="paste" @keydown.stop.prevent.enter="onEnter">
 	<!-- FirefoxのTabフォーカスが想定外の挙動となるためtabindex="-1"を追加 https://github.com/misskey-dev/misskey/issues/10744 -->
 	<div ref="emojisEl" class="emojis" tabindex="-1">
 		<section class="result">
@@ -151,7 +139,6 @@ const props = withDefaults(defineProps<{
 
 const emit = defineEmits<{
 	(ev: 'chosen', v: string): void;
-	(ev: 'esc'): void;
 }>();
 
 const searchEl = shallowRef<HTMLInputElement>();
@@ -415,9 +402,7 @@ function chosen(emoji: any, ev?: MouseEvent) {
 		const rect = el.getBoundingClientRect();
 		const x = rect.left + (el.offsetWidth / 2);
 		const y = rect.top + (el.offsetHeight / 2);
-		const { dispose } = os.popup(MkRippleEffect, { x, y }, {
-			end: () => dispose(),
-		});
+		os.popup(MkRippleEffect, { x, y }, {}, 'end');
 	}
 
 	const key = getKey(emoji);
@@ -446,18 +431,9 @@ function paste(event: ClipboardEvent): void {
 	}
 }
 
-function onKeydown(ev: KeyboardEvent) {
+function onEnter(ev: KeyboardEvent) {
 	if (ev.isComposing || ev.key === 'Process' || ev.keyCode === 229) return;
-	if (ev.key === 'Enter') {
-		ev.preventDefault();
-		ev.stopPropagation();
-		done();
-	}
-	if (ev.key === 'Escape') {
-		ev.preventDefault();
-		ev.stopPropagation();
-		emit('esc');
-	}
+	done();
 }
 
 function done(query?: string): boolean | void {
@@ -723,6 +699,11 @@ defineExpose({
 					contain: strict;
 					border-radius: 4px;
 					font-size: 24px;
+
+					&:focus-visible {
+						outline: solid 2px var(--focus);
+						z-index: 1;
+					}
 
 					&:hover {
 						background: rgba(0, 0, 0, 0.05);

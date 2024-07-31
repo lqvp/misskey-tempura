@@ -342,7 +342,6 @@ definePageMetadata(() => ({
 	&:hover, &:focus {
 		opacity: .7;
 	}
-
 	&:active {
 		cursor: pointer;
 	}

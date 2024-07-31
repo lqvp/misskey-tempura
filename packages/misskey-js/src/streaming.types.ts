@@ -21,14 +21,6 @@ import {
 	ServerStatsLog,
 	ReversiGameDetailed,
 } from './entities.js';
-import {
-	ReversiUpdateKey,
-} from './consts.js';
-
-type ReversiUpdateSettings<K extends ReversiUpdateKey> = {
-	key: K;
-	value: ReversiGameDetailed[K];
-};
 
 export type Channels = {
 	main: {
@@ -59,7 +51,6 @@ export type Channels = {
 			registryUpdated: (payload: {
 				scope?: string[];
 				key: string;
-				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				value: any | null;
 			}) => void;
 			driveFileCreated: (payload: DriveFile) => void;
@@ -217,8 +208,8 @@ export type Channels = {
 			ended: (payload: { winnerId: User['id'] | null; game: ReversiGameDetailed; }) => void;
 			canceled: (payload: { userId: User['id']; }) => void;
 			changeReadyStates: (payload: { user1: boolean; user2: boolean; }) => void;
-			updateSettings: <K extends ReversiUpdateKey>(payload: { userId: User['id']; key: K; value: ReversiGameDetailed[K]; }) => void;
-			log: (payload: Record<string, unknown>) => void;
+			updateSettings: (payload: { userId: User['id']; key: string; value: any; }) => void;
+			log: (payload: Record<string, any>) => void;
 		};
 		receives: {
 			putStone: {
@@ -227,7 +218,10 @@ export type Channels = {
 			};
 			ready: boolean;
 			cancel: null | Record<string, never>;
-			updateSettings: ReversiUpdateSettings<ReversiUpdateKey>;
+			updateSettings: {
+				key: string;
+				value: any;
+			};
 			claimTimeIsUp: null | Record<string, never>;
 		}
 	}

@@ -228,10 +228,6 @@ export const packedRolePoliciesSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
-		canUpdateBioMedia: {
-			type: 'boolean',
-			optional: false, nullable: false,
-		},
 		pinLimit: {
 			type: 'integer',
 			optional: false, nullable: false,

@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div :class="$style.root">
-	<MkAvatar :class="$style.avatar" :user="user"/>
+	<MkAvatar :class="$style.avatar" :user="user" link preview/>
 	<div :class="$style.main">
 		<div :class="$style.header">
 			<MkUserName :user="user" :nowrap="true"/>

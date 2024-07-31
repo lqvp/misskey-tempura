@@ -69,7 +69,6 @@ export const paramDef = {
 		sinceId: { type: 'string', format: 'misskey:id' },
 		untilId: { type: 'string', format: 'misskey:id' },
 		userId: { type: 'string', format: 'misskey:id', nullable: true },
-		status: { type: 'string', enum: ['all', 'active', 'archived'], default: 'active' },
 	},
 	required: [],
 } as const;
@@ -88,13 +87,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const query = this.queryService.makePaginationQuery(this.announcementsRepository.createQueryBuilder('announcement'), ps.sinceId, ps.untilId);
-
-			if (ps.status === 'archived') {
-				query.andWhere('announcement.isActive = false');
-			} else if (ps.status === 'active') {
-				query.andWhere('announcement.isActive = true');
-			}
-
+			query.andWhere('announcement.isActive = true');
 			if (ps.userId) {
 				query.andWhere('announcement.userId = :userId', { userId: ps.userId });
 			} else {

@@ -10,16 +10,15 @@ on:
       - packages/frontend/**
       - packages/sw/**
       - packages/misskey-js/**
-      - packages/shared/eslint.config.js
-      - .github/workflows/lint.yml
+      - packages/shared/.eslintrc.js
   pull_request:
     paths:
       - packages/backend/**
       - packages/frontend/**
       - packages/sw/**
       - packages/misskey-js/**
-      - packages/shared/eslint.config.js
-      - .github/workflows/lint.yml
+      - packages/shared/.eslintrc.js
+
 jobs:
   pnpm_install:
     runs-on: ubuntu-latest
@@ -29,7 +28,7 @@ jobs:
         fetch-depth: 0
         submodules: true
     - uses: pnpm/action-setup@v4
-    - uses: actions/setup-node@v4.0.3
+    - uses: actions/setup-node@v4.0.2
       with:
         node-version-file: '.node-version'
         cache: 'pnpm'
@@ -40,8 +39,6 @@ jobs:
     needs: [pnpm_install]
     runs-on: ubuntu-latest
     continue-on-error: true
-    env:
-      eslint-cache-version: v1
     strategy:
       matrix:
         workspace:
@@ -55,20 +52,13 @@ jobs:
         fetch-depth: 0
         submodules: true
     - uses: pnpm/action-setup@v4
-    - uses: actions/setup-node@v4.0.3
+    - uses: actions/setup-node@v4.0.2
       with:
         node-version-file: '.node-version'
         cache: 'pnpm'
     - run: corepack enable
     - run: pnpm i --frozen-lockfile
-    - name: Restore eslint cache
-      uses: actions/cache@v4.0.2
-      with:
-        path: node_modules/.cache/eslint
-        key: eslint-${{ env.eslint-cache-version }}-${{ hashFiles('/pnpm-lock.yaml') }}-${{ github.ref_name }}-${{ github.sha }}
-        restore-keys: |
-          eslint-${{ env.eslint-cache-version }}-${{ hashFiles('/pnpm-lock.yaml') }}-
-    - run: pnpm --filter ${{ matrix.workspace }} run eslint --cache --cache-location node_modules/.cache/eslint --cache-strategy content
+    - run: pnpm --filter ${{ matrix.workspace }} run eslint
 
   typecheck:
     needs: [pnpm_install]
@@ -85,7 +75,7 @@ jobs:
         fetch-depth: 0
         submodules: true
     - uses: pnpm/action-setup@v4
-    - uses: actions/setup-node@v4.0.3
+    - uses: actions/setup-node@v4.0.2
       with:
         node-version-file: '.node-version'
         cache: 'pnpm'

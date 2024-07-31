@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkA :to="`/play/${flash.id}`" class="vhpxefrk _panel">
+<MkA :to="`/play/${flash.id}`" class="vhpxefrk _panel" tabindex="-1">
 	<article>
 		<header>
 			<h1 :title="flash.title">{{ flash.title }}</h1>
@@ -37,10 +37,6 @@ const props = defineProps<{
 	&:hover {
 		text-decoration: none;
 		color: var(--accent);
-	}
-
-	&:focus-visible {
-		outline-offset: -2px;
 	}
 
 	> article {

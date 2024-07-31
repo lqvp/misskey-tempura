@@ -22,27 +22,31 @@ type Level = 'error' | 'success' | 'warning' | 'debug' | 'info';
 export default class Logger {
 	private context: Context;
 	private parentLogger: Logger | null = null;
+	private store: boolean;
 
-	constructor(context: string, color?: KEYWORD) {
+	constructor(context: string, color?: KEYWORD, store = true) {
 		this.context = {
 			name: context,
 			color: color,
 		};
+		this.store = store;
 	}
 
 	@bindThis
-	public createSubLogger(context: string, color?: KEYWORD): Logger {
-		const logger = new Logger(context, color);
+	public createSubLogger(context: string, color?: KEYWORD, store = true): Logger {
+		const logger = new Logger(context, color, store);
 		logger.parentLogger = this;
 		return logger;
 	}
 
 	@bindThis
-	private log(level: Level, message: string, data?: Record<string, any> | null, important = false, subContexts: Context[] = []): void {
+	private log(level: Level, message: string, data?: Record<string, any> | null, important = false, subContexts: Context[] = [], store = true): void {
 		if (envOption.quiet) return;
+		if (!this.store) store = false;
+		if (level === 'debug') store = false;
 
 		if (this.parentLogger) {
-			this.parentLogger.log(level, message, data, important, [this.context].concat(subContexts));
+			this.parentLogger.log(level, message, data, important, [this.context].concat(subContexts), store);
 			return;
 		}
 

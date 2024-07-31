@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<XColumn :column="column" :isStacked="isStacked" :menu="menu" :refresher="async () => { await notificationsComponent?.reload() }">
+<XColumn :column="column" :isStacked="isStacked" :menu="menu" :refresher="() => notificationsComponent.reload()">
 	<template #header><i class="ti ti-bell" style="margin-right: 8px;"></i>{{ column.name }}</template>
 
 	<XNotifications ref="notificationsComponent" :excludeTypes="props.column.excludeTypes"/>
@@ -27,7 +27,7 @@ const props = defineProps<{
 const notificationsComponent = shallowRef<InstanceType<typeof XNotifications>>();
 
 function func() {
-	const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkNotificationSelectWindow.vue')), {
+	os.popup(defineAsyncComponent(() => import('@/components/MkNotificationSelectWindow.vue')), {
 		excludeTypes: props.column.excludeTypes,
 	}, {
 		done: async (res) => {
@@ -36,8 +36,7 @@ function func() {
 				excludeTypes: excludeTypes,
 			});
 		},
-		closed: () => dispose(),
-	});
+	}, 'closed');
 }
 
 const menu = [{
