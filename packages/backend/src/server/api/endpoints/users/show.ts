@@ -20,7 +20,7 @@ import type { FindOptionsWhere } from 'typeorm';
 export const meta = {
 	tags: ['users'],
 
-	requireCredential: true,
+	requireCredential: false,
 
 	description: 'Show the properties of a user.',
 
