@@ -13,7 +13,7 @@ import { DI } from '@/di-symbols.js';
 export const meta = {
 	tags: ['lists', 'account'],
 
-	requireCredential: false,
+	requireCredential: true,
 
 	kind: 'read:account',
 
