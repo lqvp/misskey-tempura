@@ -12,6 +12,8 @@ import { schema } from '@/core/chart/charts/entities/per-user-notes.js';
 export const meta = {
 	tags: ['charts', 'users', 'notes'],
 
+	requireCredential: true,
+
 	res: getJsonSchema(schema),
 
 	allowGet: true,

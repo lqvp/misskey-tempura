@@ -12,6 +12,8 @@ import { schema } from '@/core/chart/charts/entities/per-user-reactions.js';
 export const meta = {
 	tags: ['charts', 'users', 'reactions'],
 
+	requireCredential: true,
+
 	res: getJsonSchema(schema),
 
 	allowGet: true,

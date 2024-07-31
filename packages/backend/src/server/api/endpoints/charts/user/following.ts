@@ -12,6 +12,8 @@ import { schema } from '@/core/chart/charts/entities/per-user-following.js';
 export const meta = {
 	tags: ['charts', 'users', 'following'],
 
+	requireCredential: true,
+
 	res: getJsonSchema(schema),
 
 	allowGet: true,
