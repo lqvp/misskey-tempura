@@ -12,6 +12,7 @@ import {
 	MiAccessToken,
 	MiAd,
 	MiAnnouncement,
+	MiAnnouncementRole,
 	MiAnnouncementRead,
 	MiAntenna,
 	MiApp,
@@ -81,6 +82,7 @@ import {
 	MiUserSecurityKey,
 	MiWebhook
 } from './_.js';
+
 import type { DataSource } from 'typeorm';
 
 const $usersRepository: Provider = {
@@ -98,6 +100,12 @@ const $notesRepository: Provider = {
 const $announcementsRepository: Provider = {
 	provide: DI.announcementsRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiAnnouncement).extend(miRepository as MiRepository<MiAnnouncement>),
+	inject: [DI.db],
+};
+
+const $announcementsRolesRepository: Provider = {
+	provide: DI.announcementRolesRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiAnnouncementRole).extend(miRepository as MiRepository<MiAnnouncementRole>),
 	inject: [DI.db],
 };
 
@@ -515,6 +523,7 @@ const $reversiGamesRepository: Provider = {
 		$usersRepository,
 		$notesRepository,
 		$announcementsRepository,
+		$announcementsRolesRepository,
 		$announcementReadsRepository,
 		$appsRepository,
 		$avatarDecorationsRepository,
@@ -588,6 +597,7 @@ const $reversiGamesRepository: Provider = {
 		$usersRepository,
 		$notesRepository,
 		$announcementsRepository,
+		$announcementsRolesRepository,
 		$announcementReadsRepository,
 		$appsRepository,
 		$avatarDecorationsRepository,

@@ -4753,6 +4753,10 @@ export interface Locale extends ILocale {
      */
     "forYou": string;
     /**
+     * あなたのロールへ
+     */
+    "forYourRoles": string;
+    /**
      * 現在のお知らせ
      */
     "currentAnnouncements": string;
