@@ -4,12 +4,15 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { AnnouncementsRepository, AnnouncementReadsRepository } from '@/models/_.js';
+import type { AnnouncementsRepository, AnnouncementRolesRepository, AnnouncementReadsRepository } from '@/models/_.js';
+import type { MiRole } from '@/models/Role.js';
 import type { MiAnnouncement } from '@/models/Announcement.js';
+import type { MiAnnouncementRole } from '@/models/AnnouncementRole.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { QueryService } from '@/core/QueryService.js';
 import { DI } from '@/di-symbols.js';
 import { IdService } from '@/core/IdService.js';
+import { RoleEntityService } from '@/core/entities/RoleEntityService.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -53,6 +56,26 @@ export const meta = {
 					type: 'string',
 					optional: false, nullable: true,
 				},
+				isRoleSpecified: {
+					type: 'boolean',
+					optional: false, nullable: false,
+				},
+				roles: {
+					type: 'array',
+					optional: false, nullable: false,
+					items: {
+						type: 'object',
+						properties: {
+							id: {
+								type: 'string',
+								format: 'id',
+							},
+							name: {
+								type: 'string',
+							},
+						},
+					},
+				},
 				reads: {
 					type: 'number',
 					optional: false, nullable: false,
@@ -80,11 +103,15 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		@Inject(DI.announcementsRepository)
 		private announcementsRepository: AnnouncementsRepository,
 
+		@Inject(DI.announcementRolesRepository)
+		private announcementRolesRepository: AnnouncementRolesRepository,
+
 		@Inject(DI.announcementReadsRepository)
 		private announcementReadsRepository: AnnouncementReadsRepository,
 
 		private queryService: QueryService,
 		private idService: IdService,
+		private roleEntityService: RoleEntityService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const query = this.queryService.makePaginationQuery(this.announcementsRepository.createQueryBuilder('announcement'), ps.sinceId, ps.untilId);
@@ -103,6 +130,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			const announcements = await query.limit(ps.limit).getMany();
 
+			if (announcements.length === 0) {
+				return [];
+			}
+
 			const reads = new Map<MiAnnouncement, number>();
 
 			for (const announcement of announcements) {
@@ -110,6 +141,15 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					announcementId: announcement.id,
 				}));
 			}
+
+			const announcementRoleIds = await this.announcementRolesRepository
+				.createQueryBuilder('announcement_role')
+				.where('announcement_role.announcementId IN (:...announcementIds)', { announcementIds: announcements.map(announcement => announcement.id) })
+				.select('announcement_role.announcementId')
+				.addSelect('announcement_role.roleId')
+				.getMany() as Pick<MiAnnouncementRole, 'announcementId' | 'roleId'>[];
+
+			const announcementRoles = await Promise.all(announcementRoleIds.map(async ar => { const role = await this.roleEntityService.pack(ar.roleId); return { ...ar, role }; }));
 
 			return announcements.map(announcement => ({
 				id: announcement.id,
@@ -125,6 +165,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				silence: announcement.silence,
 				needConfirmationToRead: announcement.needConfirmationToRead,
 				userId: announcement.userId,
+				isRoleSpecified: announcement.isRoleSpecified,
+				roles: announcementRoles
+					.filter(announcementRole => announcementRole.announcementId === announcement.id)
+					.map(announcementRole => announcementRole.role)
+					.filter((role): role is NonNullable<typeof role> => role !== null),
 				reads: reads.get(announcement)!,
 			}));
 		});

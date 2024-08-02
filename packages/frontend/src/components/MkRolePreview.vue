@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkA :to="forModeration ? `/admin/roles/${role.id}` : `/roles/${role.id}`" :class="$style.root" tabindex="-1" :style="{ '--color': role.color }">
+<component :is="noLink ? 'div' : 'MkA'" :to="forModeration ? `/admin/roles/${role.id}` : `/roles/${role.id}`" :class="$style.root" tabindex="-1" :style="{ '--color': role.color }">
 	<template v-if="forModeration">
 		<i v-if="role.isPublic" class="ti ti-world" :class="$style.icon" style="color: var(--MI_THEME-success)"></i>
 		<i v-else class="ti ti-lock" :class="$style.icon" style="color: var(--MI_THEME-warn)"></i>
@@ -30,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</div>
 		<div :class="$style.bodyDescription">{{ role.description }}</div>
 	</div>
-</MkA>
+</component>
 </template>
 
 <script lang="ts" setup>
@@ -39,55 +39,57 @@ import * as Misskey from 'misskey-js';
 import { i18n } from '@/i18n.js';
 
 const props = withDefaults(defineProps<{
-	role: Misskey.entities.Role;
-	forModeration: boolean;
-	detailed: boolean;
-}>(), {
+		role: Misskey.entities.Role;
+		forModeration: boolean;
+		detailed: boolean;
+		noLink?: boolean
+	}>(), {
 	detailed: true,
+	noLink: false,
 });
 </script>
 
-<style lang="scss" module>
-.root {
-	display: flex;
-	align-items: center;
-}
+	<style lang="scss" module>
+	.root {
+		display: flex;
+		align-items: center;
+	}
 
-.icon {
-	margin: 0 12px;
-}
+	.icon {
+		margin: 0 12px;
+	}
 
-.body {
-	display: block;
-	padding: 16px 20px;
-	flex: 1;
-	border-left: solid 6px var(--color);
-}
+	.body {
+		display: block;
+		padding: 16px 20px;
+		flex: 1;
+		border-left: solid 6px var(--color);
+	}
 
-.bodyTitle {
-	display: flex;
-}
+	.bodyTitle {
+		display: flex;
+	}
 
-.bodyIcon {
-	margin-right: 8px;
-}
+	.bodyIcon {
+		margin-right: 8px;
+	}
 
-.bodyBadge {
-	height: 1.3em;
-	vertical-align: -20%;
-}
+	.bodyBadge {
+		height: 1.3em;
+		vertical-align: -20%;
+	}
 
-.bodyName {
-	font-weight: bold;
-}
+	.bodyName {
+		font-weight: bold;
+	}
 
-.bodyUsers {
-	margin-left: auto;
-	opacity: 0.7;
-}
+	.bodyUsers {
+		margin-left: auto;
+		opacity: 0.7;
+	}
 
-.bodyDescription {
-	opacity: 0.7;
-	font-size: 85%;
-}
-</style>
+	.bodyDescription {
+		opacity: 0.7;
+		font-size: 85%;
+	}
+	</style>

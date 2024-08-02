@@ -20,7 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkLoading v-if="loading"/>
 
 			<template v-else>
-				<MkFolder v-for="announcement in announcements" :key="announcement.id ?? announcement._id" :defaultOpen="announcement.id == null">
+				<MkFolder v-for="(announcement, announcementIndex) in announcements" :key="announcement.id ?? announcement._id" :defaultOpen="announcement.id == null">
 					<template #label>{{ announcement.title }}</template>
 					<template #icon>
 						<i v-if="announcement.icon === 'info'" class="ti ti-info-circle"></i>
@@ -61,6 +61,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<option value="banner">{{ i18n.ts.banner }}</option>
 							<option value="dialog">{{ i18n.ts.dialog }}</option>
 						</MkRadios>
+						<div class="_gaps_s">
+							<div class="label" :class="$style.rolesLabel">{{ i18n.ts.roles }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></div>
+							<div v-for="role in announcement.roles" :key="`announcement-role-${role.id}`" class="_gaps_s">
+								<div :class="$style.roleItems">
+									<MkRolePreview :role="role" :noLink="true" :forModeration="false" :class="$style.rolePreview"/>
+									<button class="_button" :class="$style.remove" @click="removeRole(announcementIndex, role)"><i class="ti ti-x"></i></button>
+								</div>
+							</div>
+							<MkButton @click="addRole(announcement)">{{ i18n.ts.add }}</MkButton>
+						</div>
 						<MkInfo v-if="announcement.display === 'dialog'" warn>{{ i18n.ts._announcement.dialogAnnouncementUxWarn }}</MkInfo>
 						<MkSwitch v-model="announcement.forExistingUsers" :helpText="i18n.ts._announcement.forExistingUsersDescription">
 							{{ i18n.ts._announcement.forExistingUsers }}
@@ -74,11 +84,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<p v-if="announcement.reads">{{ i18n.tsx.nUsersRead({ n: announcement.reads }) }}</p>
 					</div>
 				</MkFolder>
-				<MkLoading v-if="loadingMore"/>
-				<MkButton @click="more()">
-					<i class="ti ti-reload"></i>{{ i18n.ts.more }}
-				</MkButton>
 			</template>
+			<MkLoading v-if="loadingMore"/>
+			<MkButton @click="more()">
+				<i class="ti ti-reload"></i>{{ i18n.ts.more }}
+			</MkButton>
 		</div>
 	</MkSpacer>
 </MkStickyContainer>
@@ -99,6 +109,7 @@ import { i18n } from '@/i18n.js';
 import { definePageMetadata } from '@/scripts/page-metadata.js';
 import MkFolder from '@/components/MkFolder.vue';
 import MkTextarea from '@/components/MkTextarea.vue';
+import MkRolePreview from '@/components/MkRolePreview.vue';
 
 const announcementsStatus = ref<'active' | 'archived'>('active');
 
@@ -117,6 +128,22 @@ watch(announcementsStatus, (to) => {
 	});
 }, { immediate: true });
 
+misskeyApi('admin/announcements/list').then(announcementResponse => {
+	announcements.value = announcementResponse;
+});
+
+function addRole(announcement) {
+	os.selectRole({ admin: true }).then(role => {
+		const index = announcements.value.findIndex(x => x.id === announcement.id);
+		console.log(index);
+		announcements.value[index].roles.push(role);
+	});
+}
+
+function removeRole(index: number, role) {
+	announcements.value[index].roles = announcements.value[index].roles.filter(x => x.id !== role.id);
+}
+
 function add() {
 	announcements.value.unshift({
 		_id: Math.random().toString(36),
@@ -129,6 +156,9 @@ function add() {
 		forExistingUsers: false,
 		silence: false,
 		needConfirmationToRead: false,
+		isRoleSpecified: false,
+		roles: [],
+		roleIds: [] as string[],
 	});
 }
 
@@ -151,15 +181,13 @@ async function archive(announcement) {
 	refresh();
 }
 
-async function unarchive(announcement) {
-	await os.apiWithDialog('admin/announcements/update', {
-		...announcement,
-		isActive: true,
-	});
-	refresh();
-}
-
 async function save(announcement) {
+	announcement.roleIds = announcement.roles.map(role => role.id);
+	if (announcement.roleIds.length === 0) {
+		announcement.isRoleSpecified = false;
+	} else {
+		announcement.isRoleSpecified = true;
+	}
 	if (announcement.id == null) {
 		await os.apiWithDialog('admin/announcements/create', announcement);
 		refresh();
@@ -180,21 +208,18 @@ function more() {
 }
 
 function refresh() {
-	loading.value = true;
-	misskeyApi('admin/announcements/list', {
-		status: announcementsStatus.value,
-	}).then(announcementResponse => {
+	misskeyApi('admin/announcements/list').then(announcementResponse => {
 		announcements.value = announcementResponse;
-		loading.value = false;
 	});
 }
+
+refresh();
 
 const headerActions = computed(() => [{
 	asFullButton: true,
 	icon: 'ti ti-plus',
 	text: i18n.ts.add,
 	handler: add,
-	disabled: announcementsStatus.value === 'archived',
 }]);
 
 const headerTabs = computed(() => []);
@@ -204,3 +229,32 @@ definePageMetadata(() => ({
 	icon: 'ti ti-speakerphone',
 }));
 </script>
+
+<style module>
+.roleItems {
+	display: flex;
+}
+
+.rolePreview {
+	flex-grow: 1;
+}
+
+.rolesLabel {
+	font-size: 0.85em;
+	padding: 0 0 8px 0;
+	user-select: none;
+
+	&:empty {
+		display: none;
+	}
+}
+
+.remove {
+	width: 32px;
+	height: 32px;
+	align-self: center;
+	& > i:before {
+		color: #ff2a2a;
+	}
+}
+</style>

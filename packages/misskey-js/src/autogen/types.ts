@@ -4371,6 +4371,7 @@ export type components = {
       needConfirmationToRead: boolean;
       silence: boolean;
       forYou: boolean;
+      forYourRoles: boolean;
       isRead?: boolean;
     };
     App: {
@@ -5256,7 +5257,7 @@ export type components = {
       canUseUnFollowNotification: boolean;
       canUseBlockedNotification: boolean;
       canUseUnBlockedNotification: boolean;
-			canDeleteAccount: boolean;
+      canDeleteAccount: boolean;
     };
     ReversiGameLite: {
       /** Format: id */
@@ -6505,6 +6506,10 @@ export type operations = {
            * @default null
            */
           userId?: string | null;
+          /** @default false */
+          isRoleSpecified?: boolean;
+          /** @default null */
+          roleIds?: string[] | null;
         };
       };
     };
@@ -6655,6 +6660,12 @@ export type operations = {
               text: string;
               title: string;
               imageUrl: string | null;
+              isRoleSpecified: boolean;
+              roles: {
+                  /** Format: id */
+                  id: string;
+                  name: string;
+                }[];
               reads: number;
             })[];
         };
@@ -6714,6 +6725,8 @@ export type operations = {
           silence?: boolean;
           needConfirmationToRead?: boolean;
           isActive?: boolean;
+          isRoleSpecified?: boolean;
+          roleIds?: string[];
         };
       };
     };
