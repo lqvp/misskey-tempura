@@ -194,19 +194,19 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 			const canonical = user.host === null ? `@${user.username}` : `@${user.username}@${user.host}`;
 			os.post({ specified: user, initialText: `${canonical} ` });
 		},
-	}, { type: 'divider' }, {
-		icon: 'ti ti-pencil',
-		text: i18n.ts.editMemo,
-		action: () => {
-			editMemo();
-		},
-	}, ...(defaultStore.state.nicknameEnabled ? [{
+	}, { type: 'divider' }, ...(defaultStore.state.nicknameEnabled ? [{
 		icon: 'ti ti-edit',
 		text: 'ニックネームを編集',
 		action: () => {
 			editNickname(user);
 		},
-	}] : []), null,{
+	}] : []), {
+		icon: 'ti ti-pencil',
+		text: i18n.ts.editMemo,
+		action: () => {
+			editMemo();
+		},
+	}, {
 		type: 'parent',
 		icon: 'ti ti-list',
 		text: i18n.ts.addToList,
