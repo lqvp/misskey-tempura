@@ -132,7 +132,7 @@ function anime() {
 	const x = rect.left + 16;
 	const y = rect.top + (buttonEl.value.offsetHeight / 2);
 	const { dispose } = os.popup(MkReactionEffect, { reaction: props.reaction, x, y }, {
-    end: () => dispose()
+    end: () => dispose(),
 }
 
 function reactAlternative(): void {
