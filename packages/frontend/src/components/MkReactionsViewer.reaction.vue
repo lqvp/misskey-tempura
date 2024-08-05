@@ -187,47 +187,6 @@ async function getEmojiId(): Promise<string> {
 	return await res.find((emoji: { name: string; }) => emoji.name === reactionName.value).id;
 }
 
-function reactRemoteEmoji(): void {
-	if (!canToggleRemoteEmojiName.value) {
-		importEmojiConfirm();
-		return;
-	}
-	os.api('notes/reactions/create', {
-		noteId: props.note.id,
-		reaction: `:${canToggleRemoteEmojiName.value}:`,
-	});
-}
-
-async function importEmojiConfirm(): Promise<void> {
-	if (!iAmModerator) return;
-	const { canceled } = await os.confirm({
-		type: 'info',
-		text: `${reactionName.value}をインポートしますか？`,
-	});
-	if (!canceled) importEmoji().then(() =>
-		os.toast(`${reactionName.value}をインポートしました`));
-}
-
-async function importEmoji(): Promise<void> {
-	const emojiId = await getEmojiId();
-	os.api('admin/emoji/copy', {
-		emojiId: emojiId,
-	});
-}
-
-async function getEmojiId(): Promise<string> {
-	const host = props.reaction.slice(props.reaction.indexOf('@') + 1, props.reaction.length - 1);
-
-	const res = await os.api('admin/emoji/list-remote', {
-		host,
-		query: reactionName.value,
-	});
-
-	if (!res) throw new Error('Failed to fetch emojiId.');
-
-	return await res.find((emoji: { name: string; }) => emoji.name === reactionName.value).id;
-}
-
 watch(() => props.count, (newCount, oldCount) => {
     if (oldCount < newCount) anime();
 });
