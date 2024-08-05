@@ -60,7 +60,10 @@ const canToggle = computed(() => {
 const canGetInfo = computed(() => !props.reaction.match(/@\w/) && props.reaction.includes(':'));
 
 async function toggleReaction() {
-	if (!canToggle.value) return;
+	if (!canToggle.value) {
+		reactAlternative();
+		return;
+	}
 
 	const oldReaction = props.note.myReaction;
 	if (oldReaction) {
