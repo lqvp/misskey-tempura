@@ -129,59 +129,61 @@ async function menu(ev) {
 }
 
 function anime() {
-	if (document.hidden || !defaultStore.state.animation || buttonEl.value == null) return;
+    if (document.hidden || !defaultStore.state.animation || buttonEl.value == null) return;
 
-	const rect = buttonEl.value.getBoundingClientRect();
-	const x = rect.left + 16;
-	const y = rect.top + (buttonEl.value.offsetHeight / 2);
-	const { dispose } = os.popup(MkReactionEffect, { reaction: props.reaction, x, y }, {
-    end: () => dispose(),
+    const rect = buttonEl.value.getBoundingClientRect();
+    const x = rect.left + 16;
+    const y = rect.top + (buttonEl.value.offsetHeight / 2);
+    const { dispose } = os.popup(MkReactionEffect, { reaction: props.reaction, x, y }, {
+        end: () => dispose(),
+    });
 }
 
 function reactAlternative(): void {
-	if (!alternative.value) {
-		importEmojiConfirm();
-		return;
-	}
-	os.api('notes/reactions/create', {
-		noteId: props.note.id,
-		reaction: `:${alternative.value}:`,
-	});
+    if (!alternative.value) {
+        importEmojiConfirm();
+        return;
+    }
+    os.api('notes/reactions/create', {
+        noteId: props.note.id,
+        reaction: `:${alternative.value}:`,
+    });
 }
 
 async function importEmojiConfirm(): Promise<void> {
-	if (!($i?.isAdmin || $i?.isModerator)) return;
-	const { canceled } = await os.confirm({
-		type: 'info',
-		text: `${reactionName.value}をインポートしますか？`,
-	});
-	if (!canceled) importEmoji().then(() =>
-		os.toast(`${reactionName.value}をインポートしました`));
+    if (!($i?.isAdmin || $i?.isModerator)) return;
+    const { canceled } = await os.confirm({
+        type: 'info',
+        text: `${reactionName.value}をインポートしますか？`,
+    });
+    if (!canceled) importEmoji().then(() =>
+        os.toast(`${reactionName.value}をインポートしました`));
 }
 
 async function importEmoji(): Promise<void> {
-	const emojiId = await getEmojiId();
-	os.api('admin/emoji/copy', {
-		emojiId: emojiId,
-	});
+    const emojiId = await getEmojiId();
+    os.api('admin/emoji/copy', {
+        emojiId: emojiId,
+    });
 }
 
 async function getEmojiId(): Promise<string> {
-	const host = (): string =>
-		props.reaction.slice(props.reaction.indexOf('@') + 1, props.reaction.length - 1);
+    const host = (): string =>
+        props.reaction.slice(props.reaction.indexOf('@') + 1, props.reaction.length - 1);
 
-	const res = await os.api('admin/emoji/list-remote', {
-		host,
-		query: reactionName.value,
-	});
+    const res = await os.api('admin/emoji/list-remote', {
+        host,
+        query: reactionName.value,
+    });
+    return res.emojiId; // 必ず値を返すようにします
 }
 
 watch(() => props.count, (newCount, oldCount) => {
-	if (oldCount < newCount) anime();
+    if (oldCount < newCount) anime();
 });
 
 onMounted(() => {
-	if (!props.isInitial) anime();
+    if (!props.isInitial) anime();
 });
 
 if (!mock) {
