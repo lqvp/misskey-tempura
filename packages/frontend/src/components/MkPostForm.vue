@@ -695,8 +695,6 @@ function onDrop(ev: DragEvent): void {
 function saveDraft(auto = true) {
 	if (props.instant || props.mock) return;
 
-	if (auto && defaultStore.state.draftSavingBehavior !== 'auto') return;
-
 	if (!auto) {
 		// 手動での保存の場合は自動保存したものを削除した上で保存
 		noteDrafts.remove(draftType.value, $i.id, 'default', draftAuxId.value as string);
@@ -945,18 +943,6 @@ function cancel() {
 	emit('cancel');
 }
 
-async function closed() {
-	if (defaultStore.state.draftSavingBehavior === 'manual' && text.value !== '') {
-		os.confirm({
-			type: 'question',
-			text: i18n.ts.saveConfirm,
-		}).then(({ canceled }) => {
-			if (canceled) return;
-			saveDraft(false);
-		});
-	}
-}
-
 function insertMention() {
 	os.selectUser({ localOnly: localOnly.value, includeSelf: true }).then(user => {
 		insertTextAtCursor(textareaEl.value, '@' + Misskey.acct.toString(user) + ' ');
@@ -1108,7 +1094,6 @@ onMounted(() => {
 
 defineExpose({
 	clear,
-	closed,
 });
 </script>
 

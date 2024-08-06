@@ -49,7 +49,6 @@ function onPosted() {
 }
 
 function onModalClosed() {
-	form.value?.closed();
 	emit('closed');
 }
 </script>
