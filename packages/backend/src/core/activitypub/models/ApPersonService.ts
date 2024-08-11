@@ -436,6 +436,7 @@ export class ApPersonService implements OnModuleInit {
 					usernameLower: person.preferredUsername?.toLowerCase(),
 					host,
 					inbox: person.inbox,
+					outbox: typeof person.outbox === 'string' ? person.outbox : null,
 					sharedInbox: person.sharedInbox ?? person.endpoints?.sharedInbox,
 					followersUri: person.followers ? getApId(person.followers) : undefined,
 					followersCount:
@@ -680,6 +681,7 @@ export class ApPersonService implements OnModuleInit {
 			lastFetchedAt: new Date(),
 			inbox: person.inbox,
 			sharedInbox: person.sharedInbox ?? person.endpoints?.sharedInbox,
+			outbox: typeof person.outbox === 'string' ? person.outbox : null,
 			followersUri: person.followers ? getApId(person.followers) : undefined,
 			followersCount:
 				followersCount !== undefined

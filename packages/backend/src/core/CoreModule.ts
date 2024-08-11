@@ -146,6 +146,7 @@ import { WebfingerService } from './WebfingerService.js';
 import { ApImageService } from './activitypub/models/ApImageService.js';
 import { ApMentionService } from './activitypub/models/ApMentionService.js';
 import { ApNoteService } from './activitypub/models/ApNoteService.js';
+import { ApOutboxFetchService } from './activitypub/models/ApOutboxFetchService.js';
 import { ApPersonService } from './activitypub/models/ApPersonService.js';
 import { ApQuestionService } from './activitypub/models/ApQuestionService.js';
 import { ApGameService } from './activitypub/models/ApGameService.js';
@@ -296,6 +297,7 @@ const $WebfingerService: Provider = { provide: 'WebfingerService', useExisting: 
 const $ApImageService: Provider = { provide: 'ApImageService', useExisting: ApImageService };
 const $ApMentionService: Provider = { provide: 'ApMentionService', useExisting: ApMentionService };
 const $ApNoteService: Provider = { provide: 'ApNoteService', useExisting: ApNoteService };
+const $ApOutboxFetchService: Provider = { provide: 'ApOutboxFetchService', useExisting: ApOutboxFetchService };
 const $ApPersonService: Provider = { provide: 'ApPersonService', useExisting: ApPersonService };
 const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting: ApQuestionService };
 const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGameService };
@@ -447,6 +449,7 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		ApImageService,
 		ApMentionService,
 		ApNoteService,
+		ApOutboxFetchService,
 		ApPersonService,
 		ApQuestionService,
 		ApGameService,
@@ -594,6 +597,7 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		$ApImageService,
 		$ApMentionService,
 		$ApNoteService,
+		$ApOutboxFetchService,
 		$ApPersonService,
 		$ApQuestionService,
 		$ApGameService,
@@ -741,6 +745,7 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		ApImageService,
 		ApMentionService,
 		ApNoteService,
+		ApOutboxFetchService,
 		ApPersonService,
 		ApQuestionService,
 		ApGameService,
@@ -887,6 +892,7 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		$ApImageService,
 		$ApMentionService,
 		$ApNoteService,
+		$ApOutboxFetchService,
 		$ApPersonService,
 		$ApQuestionService,
 		$ApGameService,
