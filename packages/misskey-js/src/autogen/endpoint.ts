@@ -139,6 +139,7 @@ import type {
 	ApGetResponse,
 	ApShowRequest,
 	ApShowResponse,
+	ApFetchOutboxRequest,
 	AppCreateRequest,
 	AppCreateResponse,
 	AppShowRequest,
@@ -679,6 +680,7 @@ export type Endpoints = {
 	'antennas/update': { req: AntennasUpdateRequest; res: AntennasUpdateResponse };
 	'ap/get': { req: ApGetRequest; res: ApGetResponse };
 	'ap/show': { req: ApShowRequest; res: ApShowResponse };
+	'ap/fetch-outbox': { req: ApFetchOutboxRequest; res: EmptyResponse };
 	'app/create': { req: AppCreateRequest; res: AppCreateResponse };
 	'app/show': { req: AppShowRequest; res: AppShowResponse };
 	'auth/accept': { req: AuthAcceptRequest; res: EmptyResponse };
