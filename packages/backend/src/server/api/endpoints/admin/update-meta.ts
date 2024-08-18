@@ -178,6 +178,9 @@ export const paramDef = {
 				type: 'string',
 			},
 		},
+		customSplashText: { type: 'array', nullable: true, items: {
+			type: 'string',
+		}},
 	},
 	required: [],
 } as const;
@@ -653,6 +656,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (Array.isArray(ps.federationHosts)) {
 				set.federationHosts = ps.federationHosts.filter(Boolean).map(x => x.toLowerCase());
+			}
+
+			if (Array.isArray(ps.customSplashText)) {
+				set.customSplashText = ps.customSplashText.filter(Boolean);
+			}
+
+			if (Array.isArray(ps.customSplashText)) {
+				set.customSplashText = ps.customSplashText.filter(Boolean);
 			}
 
 			const before = await this.metaService.fetch(true);
