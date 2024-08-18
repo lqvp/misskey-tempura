@@ -111,6 +111,15 @@ const defaultStoreSaveKeys: (keyof typeof defaultStore['state'])[] = [
 	'sound_note',
 	'sound_noteMy',
 	'sound_notification',
+	'collapseRenotesTrigger',
+	'collapseSelfRenotes',
+	'defaultScheduledNoteDelete',
+	'defaultScheduledNoteDeleteTime',
+	'postFormActions',
+	'customFont',
+	'instanceTickerStyle',
+	'hideReactionCount',
+	'hideReactionUsers',
 ];
 const coldDeviceStorageSaveKeys: (keyof typeof ColdDeviceStorage.default)[] = [
 	'lightTheme',
