@@ -75,6 +75,17 @@ export function useNoteCapture(props: {
 				break;
 			}
 
+			case 'updated': {
+				note.value.updatedAt = new Date().toISOString();
+				note.value.cw = body.cw;
+				note.value.text = body.text;
+				note.value.files = body.files;
+				note.value.fileIds = body.fileIds;
+				note.value.poll = body.poll;
+				note.value.emojis = body.emojis;
+				break;
+			}
+
 			case 'deleted': {
 				props.isDeletedRef.value = true;
 				break;

@@ -1321,6 +1321,7 @@ _abuseUserReport:
   accept: "인용"
   reject: "기각"
   resolveTutorial: "적절한 신고 내용에 대응한 경우, \"인용\"을 선택하여 \"해결됨\"으로 기록합니다.\n적절하지 않은 신고를 받은 경우, \"기각\"을 선택하여 \"기각\"으로 기록합니다."
+noteUpdatedAt: "편집됨: {date} {time}"
 _delivery:
   status: "전송 상태"
   stop: "정지됨"
@@ -1767,6 +1768,7 @@ _role:
     gtlAvailable: "글로벌 타임라인 보이기"
     ltlAvailable: "로컬 타임라인 보이기"
     canPublicNote: "공개 노트 허용"
+    canEditNote: "노트 편집 허용"
     mentionMax: "노트에 넣을 수 있는 멘션 수"
     canInvite: "서버 초대 코드 발행"
     inviteLimit: "초대 한도"

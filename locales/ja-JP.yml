@@ -1345,6 +1345,7 @@ _abuseUserReport:
   accept: "是認"
   reject: "否認"
   resolveTutorial: "内容が正当である通報に対応した場合は「是認」を選択し、肯定的にケースが解決されたことをマークします。\n内容が正当でない通報の場合は「否認」を選択し、否定的にケースが解決されたことをマークします。"
+noteUpdatedAt: "編集済み: {date} {time}"
 
 _delivery:
   status: "配信状態"
@@ -1826,6 +1827,7 @@ _role:
     gtlAvailable: "グローバルタイムラインの閲覧"
     ltlAvailable: "ローカルタイムラインの閲覧"
     canPublicNote: "パブリック投稿の許可"
+    canEditNote: "ノートの編集"
     mentionMax: "ノート内の最大メンション数"
     canInvite: "サーバー招待コードの発行"
     inviteLimit: "招待コードの作成可能数"

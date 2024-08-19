@@ -15,6 +15,7 @@ export interface IObject {
 	_misskey_summary?: string;
 	_misskey_followedMessage?: string | null;
 	published?: string;
+	updated?: string;
 	cc?: ApObject;
 	to?: ApObject;
 	attributedTo?: ApObject;
