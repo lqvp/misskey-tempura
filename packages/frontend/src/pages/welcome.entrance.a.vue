@@ -12,13 +12,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div class="powered-by">Powered by</div>
 			<img :src="misskeysvg" class="misskey"/>
 		</div>
-		<div class="emojis">
+		<!-- <div class="emojis">
 			<MkEmoji :normal="true" :noStyle="true" emoji="🥺"/>
 			<MkEmoji :normal="true" :noStyle="true" emoji="🥰"/>
 			<MkEmoji :normal="true" :noStyle="true" emoji="😳"/>
 			<MkEmoji :normal="true" :noStyle="true" emoji="😷"/>
 			<MkEmoji :normal="true" :noStyle="true" emoji="🤧"/>
-		</div>
+		</div> -->
 		<div class="contents">
 			<MkVisitorDashboard/>
 		</div>
