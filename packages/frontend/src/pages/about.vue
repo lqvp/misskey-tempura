@@ -63,13 +63,13 @@ const headerTabs = computed(() => [{
 	title: i18n.ts.federation,
 	icon: 'ti ti-whirl',
 }, {
-	key: 'charts',
-	title: i18n.ts.charts,
-	icon: 'ti ti-chart-line',
+	// key: 'charts',
+	// title: i18n.ts.charts,
+	// icon: 'ti ti-chart-line',
 }]);
 
-// definePageMetadata(() => ({
-// 	title: i18n.ts.instanceInfo,
-// 	icon: 'ti ti-info-circle',
-// }));
+definePageMetadata(() => ({
+	title: i18n.ts.instanceInfo,
+	icon: 'ti ti-info-circle',
+}));
 </script>
