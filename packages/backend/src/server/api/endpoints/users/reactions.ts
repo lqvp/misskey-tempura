@@ -18,7 +18,7 @@ import { ApiError } from '../../error.js';
 export const meta = {
 	tags: ['users', 'reactions'],
 
-	requireCredential: false,
+	requireCredential: true,
 
 	description: 'Show all reactions this user made.',
 
