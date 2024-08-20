@@ -1,6 +1,6 @@
 {
 	"name": "misskey",
-	"version": "2024.8.0-omakano",
+	"version": "2024.8.0-test",
 	"codename": "nasubi",
 	"repository": {
 		"type": "git",
