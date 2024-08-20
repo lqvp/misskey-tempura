@@ -16,9 +16,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkSpacer v-else-if="tab === 'federation'" :contentMax="1000" :marginMin="20">
 			<XFederation/>
 		</MkSpacer>
-		<MkSpacer v-else-if="tab === 'charts'" :contentMax="1000" :marginMin="20">
+		<!-- <MkSpacer v-else-if="tab === 'charts'" :contentMax="1000" :marginMin="20">
 			<MkInstanceStats/>
-		</MkSpacer>
+		</MkSpacer> -->
 	</MkHorizontalSwipe>
 </MkStickyContainer>
 </template>
@@ -27,13 +27,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import { i18n } from '@/i18n.js';
 import { claimAchievement } from '@/scripts/achievements.js';
-import { definePageMetadata } from '@/scripts/page-metadata.js';
+// import { definePageMetadata } from '@/scripts/page-metadata.js';
 import MkHorizontalSwipe from '@/components/MkHorizontalSwipe.vue';
 
 const XOverview = defineAsyncComponent(() => import('@/pages/about.overview.vue'));
 const XEmojis = defineAsyncComponent(() => import('@/pages/about.emojis.vue'));
 const XFederation = defineAsyncComponent(() => import('@/pages/about.federation.vue'));
-const MkInstanceStats = defineAsyncComponent(() => import('@/components/MkInstanceStats.vue'));
+// const MkInstanceStats = defineAsyncComponent(() => import('@/components/MkInstanceStats.vue'));
 
 const props = withDefaults(defineProps<{
 	initialTab?: string;
@@ -68,8 +68,8 @@ const headerTabs = computed(() => [{
 	icon: 'ti ti-chart-line',
 }]);
 
-definePageMetadata(() => ({
-	title: i18n.ts.instanceInfo,
-	icon: 'ti ti-info-circle',
-}));
+// definePageMetadata(() => ({
+// 	title: i18n.ts.instanceInfo,
+// 	icon: 'ti ti-info-circle',
+// }));
 </script>
