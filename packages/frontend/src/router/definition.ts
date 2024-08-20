@@ -204,9 +204,6 @@ const routes: RouteDef[] = [{
 	path: '/contact',
 	component: page(() => import('@/pages/contact.vue')),
 }, {
-	path: '/about-misskey',
-	component: page(() => import('@/pages/about-misskey.vue')),
-}, {
 	path: '/invite',
 	name: 'invite',
 	component: page(() => import('@/pages/invite.vue')),
@@ -240,7 +237,7 @@ const routes: RouteDef[] = [{
 		origin: 'origin',
 	},
 }, {
-	// Legacy Compatibility	
+	// Legacy Compatibility
 	path: '/authorize-follow',
 	redirect: '/lookup',
 	loginRequired: true,

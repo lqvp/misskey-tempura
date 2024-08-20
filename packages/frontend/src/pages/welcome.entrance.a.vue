@@ -12,13 +12,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div class="powered-by">Powered by</div>
 			<img :src="misskeysvg" class="misskey"/>
 		</div>
-		<div class="emojis">
+		<!-- <div class="emojis">
 			<MkEmoji :normal="true" :noStyle="true" emoji="🥺"/>
 			<MkEmoji :normal="true" :noStyle="true" emoji="🥰"/>
 			<MkEmoji :normal="true" :noStyle="true" emoji="😳"/>
 			<MkEmoji :normal="true" :noStyle="true" emoji="😷"/>
 			<MkEmoji :normal="true" :noStyle="true" emoji="🤧"/>
-		</div>
+		</div> -->
 		<div class="contents">
 			<MkVisitorDashboard/>
 		</div>
@@ -37,8 +37,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<script lang="ts" setup>
 	import { ref } from 'vue';
 	import * as Misskey from 'misskey-js';
-	import XTimeline from './welcome.timeline.vue';
-	import MarqueeText from '@/components/MkMarquee.vue';
+	// import XTimeline from './welcome.timeline.vue';
+	// import MarqueeText from '@/components/MkMarquee.vue';
 	import MkFeaturedPhotos from '@/components/MkFeaturedPhotos.vue';
 	import misskeysvg from '/client-assets/misskey.svg';
 	import { misskeyApiGet } from '@/scripts/misskey-api.js';
