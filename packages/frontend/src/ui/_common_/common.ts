@@ -54,16 +54,6 @@ export function openInstanceMenu(ev: MouseEvent) {
 		text: i18n.ts.customEmojis,
 		icon: 'ti ti-icons',
 		to: '/about#emojis',
-	}, {
-		type: 'link',
-		text: i18n.ts.federation,
-		icon: 'ti ti-whirl',
-		to: '/about#federation',
-	}, {
-		type: 'link',
-		text: i18n.ts.charts,
-		icon: 'ti ti-chart-line',
-		to: '/about#charts',
 	}, { type: 'divider' }, {
 		type: 'link',
 		text: i18n.ts.ads,
@@ -116,11 +106,7 @@ export function openInstanceMenu(ev: MouseEvent) {
 				closed: () => dispose(),
 			});
 		},
-	} : undefined, {
-		type: 'link',
-		text: i18n.ts.aboutMisskey,
-		to: '/about-misskey',
-	}], ev.currentTarget ?? ev.target, {
+	} : undefined], ev.currentTarget ?? ev.target, {
 		align: 'left',
 	});
 }

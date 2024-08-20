@@ -25,11 +25,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 					{{ instance.name ?? host }}
 				</template>
 			</I18n>
-			<I18n :src="i18n.ts.correspondingSourceIsAvailable" tag="span">
+			<!-- <I18n :src="i18n.ts.correspondingSourceIsAvailable" tag="span">
 				<template #anchor>
 					<MkA to="/about-misskey" class="_link">{{ i18n.ts.aboutMisskey }}</MkA>
 				</template>
-			</I18n>
+			</I18n> -->
 		</div>
 		<div class="_buttons">
 			<MkButton @click="close">{{ i18n.ts.gotIt }}</MkButton>
