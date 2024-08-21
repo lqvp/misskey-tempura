@@ -120,10 +120,6 @@ const headerTabs = computed(() => user.value ? [{
 	key: 'gallery',
 	title: i18n.ts.gallery,
 	icon: 'ti ti-icons',
-}, {
-	key: 'raw',
-	title: 'Raw',
-	icon: 'ti ti-code',
 }] : []);
 
 definePageMetadata(() => ({
