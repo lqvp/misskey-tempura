@@ -17,7 +17,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<img v-for="(role, i) in note.user.badgeRoles" :key="i" v-tooltip="role.name" :class="$style.badgeRole" :src="role.iconUrl!"/>
 	</div>
 	<div :class="$style.info">
-			<span v-if="note.deletedAt" style="margin-right: 0.5em;"><i class="ti ti-bomb"></i></span>
 		<div v-if="mock">
 			<MkTime :time="note.createdAt" colored/>
 		</div>
@@ -41,7 +40,6 @@ import * as Misskey from 'misskey-js';
 import { i18n } from '@/i18n.js';
 import { notePage } from '@/filters/note.js';
 import { userPage } from '@/filters/user.js';
-import { dateTimeFormat } from '@/scripts/intl-const';
 
 defineProps<{
 	note: Misskey.entities.Note;

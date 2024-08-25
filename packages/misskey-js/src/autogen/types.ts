@@ -4072,8 +4072,6 @@ export type components = {
             votes: number;
           }[];
       }) | null;
-      /** Format: date-time */
-      deleteAt?: string | null;
       emojis?: {
         [key: string]: string;
       };
@@ -21239,10 +21237,6 @@ export type operations = {
             multiple?: boolean;
             expiresAt?: number | null;
             expiredAfter?: number | null;
-          }) | null;
-          scheduledDelete?: ({
-            deleteAt?: number | null;
-            deleteAfter?: number | null;
           }) | null;
         };
       };
