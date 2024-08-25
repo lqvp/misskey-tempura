@@ -155,7 +155,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 			justify-content: center;
 			align-items: center;
 			flex-direction: column;
-			height: 100vh;
 
 			@media (max-width: 1200px) {
 				margin: auto;
