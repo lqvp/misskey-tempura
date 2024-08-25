@@ -19,8 +19,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkEmoji :normal="true" :noStyle="true" emoji="😷"/>
 			<MkEmoji :normal="true" :noStyle="true" emoji="🤧"/>
 		</div> -->
-		<div class="contents">
-			<MkVisitorDashboard/>
+		<div class="container">
+			<div class="contents">
+				<MkVisitorDashboard/>
+			</div>
 		</div>
 		<!-- <div v-if="instances && instances.length > 0" class="federation">
 			<MarqueeText :duration="40">
@@ -145,6 +147,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 		// 		display: none;
 		// 	}
 		// }
+
+		> .container {
+  		display: flex;
+  		justify-content: center;
+  		align-items: center;
+  		height: 100vh;
+		}
 
 		> .contents {
 			position: relative;
