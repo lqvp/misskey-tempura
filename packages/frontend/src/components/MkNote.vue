@@ -201,6 +201,7 @@ import { isEnabledUrlPreview } from '@/instance.js';
 import { type Keymap } from '@/scripts/hotkey.js';
 import { focusPrev, focusNext } from '@/scripts/focus.js';
 import { getAppearNote } from '@/scripts/get-appear-note.js';
+import { directRenote } from '@/scripts/direct-renote';
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
@@ -414,10 +415,14 @@ function renote(viaKeyboard = false) {
 	pleaseLogin(undefined, pleaseLoginContext.value);
 	showMovedDialog();
 
-	const { menu } = getRenoteMenu({ note: note.value, renoteButton, mock: props.mock });
-	os.popupMenu(menu, renoteButton.value, {
-		viaKeyboard,
-	});
+	if (defaultStore.state.directRenote) {
+		directRenote({ note: note.value, renoteButton, mock: props.mock });
+	} else {
+		const { menu } = getRenoteMenu({ note: note.value, renoteButton, mock: props.mock });
+		os.popupMenu(menu, renoteButton.value, {
+			viaKeyboard,
+		});
+	}
 }
 
 function reply(): void {

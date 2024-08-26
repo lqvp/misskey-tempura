@@ -4181,6 +4181,14 @@ export interface Locale extends ILocale {
      */
     "collapseRenotesDescription": string;
     /**
+     * ダイレクトリノート
+     */
+    "directRenote": string;
+    /**
+     * メニューを表示せず、そのままリノートすることができます。引用はミートボールメニューに格納されています
+     */
+    "directRenoteDescription": string;
+    /**
      * サーバー内部エラー
      */
     "internalServerError": string;

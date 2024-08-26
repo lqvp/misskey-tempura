@@ -54,6 +54,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #label>{{ i18n.ts.collapseRenotes }}</template>
 					<template #caption>{{ i18n.ts.collapseRenotesDescription }}</template>
 				</MkSwitch>
+				<MkSwitch v-model="directRenote">
+					<template #label>
+						{{ i18n.ts.directRenote }}
+						<span class="_beta">
+							{{ "originFeature" }}
+						</span>
+					</template>
+					<template #caption>{{ i18n.ts.directRenoteDescription }}</template>
+				</MkSwitch>
 				<MkSwitch v-model="showNoteActionsOnlyHover">{{ i18n.ts.showNoteActionsOnlyHover }}</MkSwitch>
 				<MkSwitch v-model="showClipButtonInNoteFooter">{{ i18n.ts.showClipButtonInNoteFooter }}</MkSwitch>
 				<MkSwitch v-model="advancedMfm">{{ i18n.ts.enableAdvancedMfm }}</MkSwitch>
@@ -288,6 +297,7 @@ const showClipButtonInNoteFooter = computed(defaultStore.makeGetterSetter('showC
 const reactionsDisplaySize = computed(defaultStore.makeGetterSetter('reactionsDisplaySize'));
 const limitWidthOfReaction = computed(defaultStore.makeGetterSetter('limitWidthOfReaction'));
 const collapseRenotes = computed(defaultStore.makeGetterSetter('collapseRenotes'));
+const directRenote = computed(defaultStore.makeGetterSetter('directRenote'));
 const reduceAnimation = computed(defaultStore.makeGetterSetter('animation', v => !v, v => !v));
 const useBlurEffectForModal = computed(defaultStore.makeGetterSetter('useBlurEffectForModal'));
 const useBlurEffect = computed(defaultStore.makeGetterSetter('useBlurEffect'));
@@ -348,6 +358,7 @@ watch(useSystemFont, () => {
 });
 
 watch([
+	directRenote,
 	hemisphere,
 	lang,
 	fontSize,

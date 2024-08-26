@@ -5,7 +5,9 @@
 
 import { defineAsyncComponent, Ref, ShallowRef } from 'vue';
 import * as Misskey from 'misskey-js';
+import { action } from '@storybook/addon-actions';
 import { claimAchievement } from './achievements.js';
+import { directQuote } from './direct-quote.js';
 import { $i } from '@/account.js';
 import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
@@ -294,7 +296,13 @@ export function getNoteMenu(props: {
 				icon: 'ti ti-info-circle',
 				text: i18n.ts.details,
 				action: openDetail,
-			}, {
+			}, (defaultStore.state.directRenote) ? {
+				icon: 'ti ti-quote',
+				text: i18n.ts.quote,
+				action: () => {
+					directQuote({ note: appearNote });
+				},
+			} : undefined, {
 				icon: 'ti ti-copy',
 				text: i18n.ts.copyContent,
 				action: copyContent,
@@ -484,7 +492,7 @@ export function getNoteMenu(props: {
 
 type Visibility = (typeof Misskey.noteVisibilities)[number];
 
-function smallerVisibility(a: Visibility, b: Visibility): Visibility {
+export function smallerVisibility(a: Visibility, b: Visibility): Visibility {
 	if (a === 'specified' || b === 'specified') return 'specified';
 	if (a === 'followers' || b === 'followers') return 'followers';
 	if (a === 'home' || b === 'home') return 'home';
