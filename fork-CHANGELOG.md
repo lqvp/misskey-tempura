@@ -4,3 +4,4 @@
 - ニックネーム機能(shrimpia/misskey)
 - 他サーバーの絵文字をクリックしてインポート(yu256/akatsukey) ←やる気があったら直す
 - フォローしているユーザーなら鍵ノートでもアンテナにひっかかるように(Steve-0628/misskey)
+- リバーシの連合に対応(yojo-art/cherrypick)
