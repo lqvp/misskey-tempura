@@ -96,8 +96,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 									</MkLink>
 								</div>
 							</div>
-						</MkOmit>
-					</div>
+						</div>
 					</MkContainer>
 					<MkContainer v-if="user?.mutualLinkSections?.length > 0" :showHeader="false" :max-height="200" class="fields" :style="{borderRadius: 0}">
 						<div v-for="(section, index) in user?.mutualLinkSections" :key="index" :class="$style.mutualLinkSections">
