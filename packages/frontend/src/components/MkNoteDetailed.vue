@@ -162,6 +162,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'replies' }]" @click="tab = 'replies'"><i class="ti ti-arrow-back-up"></i> {{ i18n.ts.replies }}</button>
 		<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'renotes' }]" @click="tab = 'renotes'"><i class="ti ti-repeat"></i> {{ i18n.ts.renotes }}</button>
 		<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'reactions' }]" @click="tab = 'reactions'"><i class="ti ti-icons"></i> {{ i18n.ts.reactions }}</button>
+		<button v-if="appearNote.updatedAt" class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'history'}]" @click="tab = 'history'"> <i class="ti ti-history"></i> {{ i18n.ts.editHistory }} </button>
 	</div>
 	<div>
 		<div v-if="tab === 'replies'">
@@ -198,6 +199,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</template>
 			</MkPagination>
 		</div>
+		<div v-if="tab === 'history'">
+			<div v-if="!historiesLoaded" style="padding: 16px">
+				<MkButton style="margin: 0 auto;" primary rounded @click="loadHistories">{{ i18n.ts.loadMore }}</MkButton>
+			</div>
+			<MkNoteHistorySub v-for="history in histories" :key="history.id" :history="history" :originalNote="appearNote" :class="$style.reply" :detail="true"/>
+			<div v-if="historiesLoaded && !history_list_end" style="padding: 16px">
+				<MkButton style="margin: 0 auto;" primary rounded @click="loadHistories">{{ i18n.ts.loadMore }}</MkButton>
+			</div>
+		</div>
 	</div>
 </div>
 <div v-else class="_panel" :class="$style.muted" @click="muted = false">
@@ -216,6 +226,7 @@ import { computed, inject, onMounted, provide, ref, shallowRef } from 'vue';
 import * as mfm from 'mfm-js';
 import * as Misskey from 'misskey-js';
 import { isLink } from '@@/js/is-link.js';
+import MkNoteHistorySub from '@/components/MkNoteHistorySub.vue';
 import MkNoteSub from '@/components/MkNoteSub.vue';
 import MkNoteSimple from '@/components/MkNoteSimple.vue';
 import MkReactionsViewer from '@/components/MkReactionsViewer.vue';
@@ -307,6 +318,7 @@ const urls = parsed ? extractUrlFromMfm(parsed).filter((url) => appearNote.value
 const showTicker = (defaultStore.state.instanceTicker === 'always') || (defaultStore.state.instanceTicker === 'remote' && appearNote.value.user.instance);
 const conversation = ref<Misskey.entities.Note[]>([]);
 const replies = ref<Misskey.entities.Note[]>([]);
+const histories = ref<Misskey.entities.NoteHistory[]>([]);
 const canRenote = computed(() => ['public', 'home'].includes(appearNote.value.visibility) || appearNote.value.userId === $i?.id);
 const hideReactionCount = computed(() => {
 	switch (defaultStore.state.hideReactionCount) {
@@ -575,6 +587,26 @@ function loadReplies() {
 		limit: 30,
 	}).then(res => {
 		replies.value = res;
+	});
+}
+
+const historiesLoaded = ref(false);
+const histories_untilId = ref<Misskey.entities.NoteHistory['id']>();
+const history_list_end = ref(false);
+
+function loadHistories() {
+	historiesLoaded.value = true;
+	misskeyApi('notes/history', {
+		...(histories_untilId.value ? { untilId: histories_untilId.value } : {} ),
+		noteId: appearNote.value.id,
+		limit: 5,
+	}).then(res => {
+		if (res.length === 0) {
+			history_list_end.value = true;
+			return;
+		}
+		histories_untilId.value = res[ res.length - 1 ].id;
+		histories.value = histories.value.concat(res);
 	});
 }
 

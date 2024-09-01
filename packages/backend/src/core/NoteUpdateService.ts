@@ -32,13 +32,7 @@ import { extractCustomEmojisFromMfm } from '@/misc/extract-custom-emojis-from-mf
 import Logger from '@/logger.js';
 import { NoteEntityService } from './entities/NoteEntityService.js';
 import { LoggerService } from './LoggerService.js';
-
-type MinimumUser = {
-	id: MiUser['id'];
-	host: MiUser['host'];
-	username: MiUser['username'];
-	uri: MiUser['uri'];
-};
+import { NoteHistorySerivce } from './NoteHistoryService.js';
 
 type Option = {
 	updatedAt?: Date | null;
@@ -75,7 +69,8 @@ export class NoteUpdateService implements OnApplicationShutdown {
 		private searchService: SearchService,
 		private activeUsersChart: ActiveUsersChart,
 		private loggerService: LoggerService,
-	) { 
+		private noteHistoryService: NoteHistorySerivce,
+	) {
 		this.logger = this.loggerService.getLogger('NoteUpdateService');
 	}
 
@@ -134,7 +129,7 @@ export class NoteUpdateService implements OnApplicationShutdown {
 		id: MiUser['id']; host: MiUser['host'];
 	}, note: MiNote, data: Option, tags: string[], emojis: string[]): Promise<MiNote | null> {
 		const values = new MiNote({
-			updatedAt: data.updatedAt!,
+			updatedAt: data.updatedAt,
 			fileIds: data.files ? data.files.map(file => file.id) : [],
 			text: data.text,
 			hasPoll: data.poll != null,
@@ -193,8 +188,6 @@ export class NoteUpdateService implements OnApplicationShutdown {
 			} else if (note.hasPoll && !values.hasPoll) {
 				// Start transaction
 				await this.db.transaction(async transactionalEntityManager => {
-					await transactionalEntityManager.update(MiNote, { id: note.id }, values);
-
 					if (!values.hasPoll) {
 						await transactionalEntityManager.delete(MiPoll, { noteId: note.id });
 					}
@@ -202,6 +195,8 @@ export class NoteUpdateService implements OnApplicationShutdown {
 			} else {
 				await this.notesRepository.update({ id: note.id }, values);
 			}
+
+			await this.noteHistoryService.recordHistory(values, note, { updatedAt: data.updatedAt });
 
 			return await this.notesRepository.findOneBy({ id: note.id });
 		} catch (e) {

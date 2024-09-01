@@ -1322,6 +1322,10 @@ _abuseUserReport:
   reject: "기각"
   resolveTutorial: "적절한 신고 내용에 대응한 경우, \"인용\"을 선택하여 \"해결됨\"으로 기록합니다.\n적절하지 않은 신고를 받은 경우, \"기각\"을 선택하여 \"기각\"으로 기록합니다."
 noteUpdatedAt: "편집됨: {date} {time}"
+editHistory: "편집 기록"
+fold: "펼치기"
+unfold: "접기"
+
 _delivery:
   status: "전송 상태"
   stop: "정지됨"

@@ -2744,6 +2744,15 @@ export type paths = {
      */
     post: operations['notes___update'];
   };
+  '/notes/history': {
+    /**
+     * notes/history
+     * @description No description provided.
+     *
+     * **Credential required**: *No*
+     */
+    post: operations['notes___history'];
+  };
   '/notes/delete': {
     /**
      * notes/delete
@@ -5193,6 +5202,29 @@ export type components = {
       user?: components['schemas']['UserLite'];
       systemWebhookId?: string;
       systemWebhook?: components['schemas']['SystemWebhook'];
+    };
+    NoteHistory: {
+      /**
+       * Format: id
+       * @example xxxxxxxxxx
+       */
+      id: string;
+      noteId: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      /** Format: id */
+      userId: string;
+      text: string | null;
+      fileIds?: string[];
+      files?: components['schemas']['DriveFile'][];
+      /** @enum {string} */
+      visibility: 'public' | 'home' | 'followers' | 'specified';
+      visibleUserIds?: string[];
+      emojis?: {
+        [key: string]: string;
+      };
     };
   };
   responses: never;
@@ -22290,6 +22322,66 @@ export type operations = {
       };
       /** @description To many requests */
       429: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * notes/history
+   * @description No description provided.
+   *
+   * **Credential required**: *No*
+   */
+  notes___history: {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: misskey:id */
+          noteId: string;
+          /** @default 10 */
+          limit?: number;
+          /** Format: misskey:id */
+          sinceId?: string;
+          /** Format: misskey:id */
+          untilId?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (with results) */
+      200: {
+        content: {
+          'application/json': components['schemas']['NoteHistory'][];
+        };
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
         content: {
           'application/json': components['schemas']['Error'];
         };
