@@ -28,24 +28,25 @@ class RjNumber {
 
 	// JVN
 	public static readonly JVN_SYMBOL = Symbol();
-	public static readonly JVN_REGEX = /JVN\d{8}/g;
+	public static readonly JVN_REGEX = /JVN[#\d]{8,}/g;
 	public static getJvnUrl(jvn: string): string {
-			return `https://jvn.jp/jp/${jvn}/index.html`;
+			return `https://jvn.jp/jp/${jvn.replace('#', '')}/index.html`;
 	}
 
 	// JVNVU
 	public static readonly JVNVU_SYMBOL = Symbol();
-	public static readonly JVNVU_REGEX = /JVNVU\d{8}/g;
+	public static readonly JVNVU_REGEX = /JVNVU[#\d]{8}/g;
 	public static getJvnVuUrl(jvnvu: string): string {
-			return `https://jvn.jp/vu/${jvnvu}/index.html`;
+			return `https://jvn.jp/vu/${jvnvu.replace('#', '')}/index.html`;
 	}
 
 	// JVNTA
 	public static readonly JVNTA_SYMBOL = Symbol();
-	public static readonly JVNTA_REGEX = /JVNTA\d{8}/g;
+	public static readonly JVNTA_REGEX = /JVNTA[#\d]{8}/g;
 	public static getJvnTaUrl(jvnta: string): string {
-			return `https://jvn.jp/ta/${jvnta}/index.html`;
+			return `https://jvn.jp/ta/${jvnta.replace('#', '')}/index.html`;
 	}
+
 
 	// JVNDB
 	public static readonly JVNDB_SYMBOL = Symbol();
