@@ -64,33 +64,101 @@ type ParsedNode = {
 
 const parseNodes = (parsedNodes: ParsedNode[], type: ParsedNode['type'], regexp: RegExp): ParsedNode[] => {
 	return parsedNodes.flatMap((node) => {
-			if (node.type !== 'text') return node;
+		if (node.type !== 'text') return node;
 
-			const matches = node.value.match(regexp);
-			if (matches == null) return node;
+		const matches = node.value.match(regexp);
+		if (matches == null) return node;
 
-			const result: ParsedNode[] = [];
-			let currentIndex = 0;
+		const result: ParsedNode[] = [];
+		let currentIndex = 0;
 
-			matches.forEach((match) => {
-					const index = node.value.indexOf(match, currentIndex);
-					if (index > currentIndex) {
-							result.push({
-									type: 'text' as const,
-									value: node.value.substring(currentIndex, index),
-							});
-					}
-					result.push({ type, value: match });
-					currentIndex = index + match.length;
-			});
-
-			if (currentIndex < node.value.length) {
-					result.push({
-							type: 'text' as const,
-							value: node.value.substring(currentIndex, node.value.length),
-					});
+		matches.forEach((match) => {
+			const index = node.value.indexOf(match, currentIndex);
+			if (index > currentIndex) {
+				result.push({
+					type: 'text' as const,
+					value: node.value.substring(currentIndex, index),
+				});
 			}
+			result.push({ type, value: match });
+			currentIndex = index + match.length;
+		});
 
-			return result;
+		if (currentIndex < node.value.length) {
+			result.push({
+				type: 'text' as const,
+				value: node.value.substring(currentIndex),
+			});
+		}
+
+		return result;
+	});
+};
+
+export const parseMfmRjNumber = (text: string): (VNode | string)[] => {
+	let parsedNodes: ParsedNode[] = [{ type: 'text' as const, value: text }];
+	parsedNodes = parseNodes(parsedNodes, RjNumber.WORK_SYMBOL, RjNumber.WORK_REGEX);
+	parsedNodes = parseNodes(parsedNodes, RjNumber.CIRCLE_SYMBOL, RjNumber.CIRCLE_REGEX);
+	parsedNodes = parseNodes(parsedNodes, RjNumber.NICO_SYMBOL, RjNumber.NICO_REGEX);
+	parsedNodes = parseNodes(parsedNodes, RjNumber.JVN_SYMBOL, RjNumber.JVN_REGEX);
+	parsedNodes = parseNodes(parsedNodes, RjNumber.JVNVU_SYMBOL, RjNumber.JVNVU_REGEX);
+	parsedNodes = parseNodes(parsedNodes, RjNumber.JVNTA_SYMBOL, RjNumber.JVNTA_REGEX);
+	parsedNodes = parseNodes(parsedNodes, RjNumber.JVNDB_SYMBOL, RjNumber.JVNDB_REGEX);
+
+	return parsedNodes.map(({ type, value }) => {
+		switch (type) {
+			case 'text': {
+				return value;
+			}
+			case RjNumber.WORK_SYMBOL: {
+				return h(TmsRjNumber, {
+					key: value,
+					rjNumber: value,
+					url: RjNumber.getWorkUrl(value),
+				});
+			}
+			case RjNumber.CIRCLE_SYMBOL: {
+				return h(TmsRjNumber, {
+					key: value,
+					rjNumber: value,
+					url: RjNumber.getCircleUrl(value),
+				});
+			}
+			case RjNumber.NICO_SYMBOL: {
+				return h(TmsRjNumber, {
+					key: value,
+					rjNumber: value,
+					url: RjNumber.getNicoUrl(value),
+				});
+			}
+			case RjNumber.JVN_SYMBOL: {
+				return h(TmsRjNumber, {
+					key: value,
+					rjNumber: value,
+					url: RjNumber.getJvnUrl(value),
+				});
+			}
+			case RjNumber.JVNVU_SYMBOL: {
+				return h(TmsRjNumber, {
+					key: value,
+					rjNumber: value,
+					url: RjNumber.getJvnVuUrl(value),
+				});
+			}
+			case RjNumber.JVNTA_SYMBOL: {
+				return h(TmsRjNumber, {
+					key: value,
+					rjNumber: value,
+					url: RjNumber.getJvnTaUrl(value),
+				});
+			}
+			case RjNumber.JVNDB_SYMBOL: {
+				return h(TmsRjNumber, {
+					key: value,
+					rjNumber: value,
+					url: RjNumber.getJvnDbUrl(value),
+				});
+			}
+		}
 	});
 };
