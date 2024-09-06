@@ -203,7 +203,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div v-if="!historiesLoaded" style="padding: 16px">
 				<MkButton style="margin: 0 auto;" primary rounded @click="loadHistories">{{ i18n.ts.loadMore }}</MkButton>
 			</div>
-			<MkNoteHistorySub v-for="history in histories" :key="history.id" :history="history" :originalNote="appearNote" :class="$style.reply" :detail="true"/>
+			<MkSwitch v-if="historiesLoaded" v-model="history_raw" style="padding: 16px;">raw diff</MkSwitch>
+			<MkNoteHistorySub
+				v-for="(history, index) in histories"
+				:key="history.id"
+				:oldNote="histories[index+1] ? histories[index+1] : null"
+				:newNote="history"
+				:originalNote="appearNote"
+				:class="$style.reply"
+				:detail="true"
+				:raw="history_raw"
+				:index="index"
+			/>
 			<div v-if="historiesLoaded && !history_list_end" style="padding: 16px">
 				<MkButton style="margin: 0 auto;" primary rounded @click="loadHistories">{{ i18n.ts.loadMore }}</MkButton>
 			</div>
@@ -262,6 +273,7 @@ import MkUserCardMini from '@/components/MkUserCardMini.vue';
 import MkPagination, { type Paging } from '@/components/MkPagination.vue';
 import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import MkButton from '@/components/MkButton.vue';
+import MkSwitch from '@/components/MkSwitch.vue';
 import { isEnabledUrlPreview } from '@/instance.js';
 import { getAppearNote } from '@/scripts/get-appear-note.js';
 import { type Keymap } from '@/scripts/hotkey.js';
@@ -593,6 +605,7 @@ function loadReplies() {
 const historiesLoaded = ref(false);
 const histories_untilId = ref<Misskey.entities.NoteHistory['id']>();
 const history_list_end = ref(false);
+const history_raw = ref(false);
 
 function loadHistories() {
 	historiesLoaded.value = true;
@@ -601,9 +614,25 @@ function loadHistories() {
 		noteId: appearNote.value.id,
 		limit: 5,
 	}).then(res => {
-		if (res.length === 0) {
+		if (histories.value.length === 0) {
+			const current_note = appearNote.value;
+			const current_version: Misskey.entities.NoteHistory = {
+				id: current_note.id,
+				noteId: current_note.id,
+				createdAt: current_note.createdAt,
+				updatedAt: current_note.createdAt,
+				userId: current_note.userId,
+				text: current_note.text,
+				fileIds: current_note.fileIds,
+				files: current_note.files,
+				visibility: current_note.visibility,
+				visibleUserIds: current_note.visibleUserIds,
+				emojis: current_note.emojis,
+			};
+			histories.value.push(current_version);
+		}
+		if (res.length < 5) {
 			history_list_end.value = true;
-			return;
 		}
 		histories_untilId.value = res[ res.length - 1 ].id;
 		histories.value = histories.value.concat(res);

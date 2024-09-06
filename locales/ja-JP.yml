@@ -1347,8 +1347,6 @@ _abuseUserReport:
   resolveTutorial: "内容が正当である通報に対応した場合は「是認」を選択し、肯定的にケースが解決されたことをマークします。\n内容が正当でない通報の場合は「否認」を選択し、否定的にケースが解決されたことをマークします。"
 noteUpdatedAt: "編集済み: {date} {time}"
 editHistory: "修正履歴"
-fold: "開く"
-unfold: "閉じる"
 
 _delivery:
   status: "配信状態"

@@ -1306,8 +1306,6 @@ _abuseUserReport:
   resolveTutorial: "If the report is legitimate in content, select \"Accept\" to mark the case as resolved in the affirmative.\nIf the content of the report is not legitimate, select \"Reject\" to mark the case as resolved in the negative."
 noteUpdatedAt: "Edited: {date} {time}"
 editHistory: "Edit history"
-fold: "Expand"
-unfold: "Collapse"
 
 _delivery:
   status: "Delivery status"

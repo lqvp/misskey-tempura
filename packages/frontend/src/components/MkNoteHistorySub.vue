@@ -17,12 +17,32 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<span><MkAcct :user="originalNote.user"/></span>
 					</div>
 					<div>
-						<span :class="$style.time">{{ i18n.ts.createdAt }}: <MkTime :time="history.createdAt" mode="detail"/>
-						</span>
+						<span v-if="index === 0" :class="$style.time"> {{ i18n.ts.currentVersion }} </span>
+						<span v-else :class="$style.time">{{ i18n.ts.createdAt }}: <MkTime :time="newNote.createdAt" mode="detail"/></span>
 					</div>
 				</div>
 			</div>
-			<MkNoteHistorySubContent :class="$style.body" :history="history" :originalNote="originalNote"/>
+			<div>
+				<div v-if="newNote.text">
+					<Mfm
+						v-if="!raw"
+						:text="newNote.text"
+						:author="originalNote.user"
+						:nyaize="'respect'"
+						:emojiUrls="newNote.emojis"
+					/>
+					<CodeDiff
+						v-if="raw"
+						:context="5"
+						:hideHeader="true"
+						:oldString="oldNote ? oldNote.text : null"
+						:newString="newNote.text"
+					/>
+				</div>
+				<div v-if="props.newNote.files && props.newNote.files.length > 0 && !raw" style="display: flex; justify-content: center;">
+					<MkMediaList :mediaList="props.newNote.files" style="width: 70%;"/>
+				</div>
+			</div>
 		</div>
 	</div>
 </div>
@@ -31,21 +51,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import MkNoteHeader from './MkNoteHeader.vue';
-import MkNoteHistorySubContent from './MkNoteHistorySubContent.vue';
+import { CodeDiff } from 'v-code-diff';
 import { userPage } from '@/filters/user.js';
 import { i18n } from '@/i18n.js';
+import MkMediaList from '@/components/MkMediaList.vue';
 
-const props = withDefaults(defineProps<{
-	history: Misskey.entities.NoteHistory;
+const props = defineProps<{
+	oldNote: Misskey.entities.NoteHistory | null;
+	newNote: Misskey.entities.NoteHistory;
 	originalNote: Misskey.entities.Note;
 	detail?: boolean;
+	raw:boolean;
 
-	// how many notes are in between this one and the note being viewed in detail
-	index?: number;
-}>(), {
-	index: 0,
-});
+	// 현재 표시하는 노트의 인덱스
+	index: number;
+}>();
 
 </script>
 
@@ -176,5 +196,32 @@ const props = withDefaults(defineProps<{
 	border: 1px solid var(--divider);
 	margin: 8px 8px 0 8px;
 	border-radius: 8px;
+}
+
+.reply {
+	margin-right: 6px;
+	color: var(--accent);
+}
+
+.rp {
+	margin-left: 4px;
+	font-style: oblique;
+	color: var(--renote);
+}
+
+.name {
+	flex-shrink: 1;
+	display: block;
+	margin: 0 .5em 0 0;
+	padding: 0;
+	overflow: hidden;
+	font-size: 1em;
+	font-weight: bold;
+	text-decoration: none;
+	text-overflow: ellipsis;
+
+	&:hover {
+		text-decoration: underline;
+	}
 }
 </style>
