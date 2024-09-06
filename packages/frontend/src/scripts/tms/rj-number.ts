@@ -35,14 +35,14 @@ class RjNumber {
 
 	// JVNVU
 	public static readonly JVNVU_SYMBOL = Symbol();
-	public static readonly JVNVU_REGEX = /JVNVU[#\d]{8}/g;
+	public static readonly JVNVU_REGEX = /JVNVU[#\d]{8,}/g;
 	public static getJvnVuUrl(jvnvu: string): string {
 			return `https://jvn.jp/vu/${jvnvu.replace('#', '')}/index.html`;
 	}
 
 	// JVNTA
 	public static readonly JVNTA_SYMBOL = Symbol();
-	public static readonly JVNTA_REGEX = /JVNTA[#\d]{8}/g;
+	public static readonly JVNTA_REGEX = /JVNTA[#\d]{8,}/g;
 	public static getJvnTaUrl(jvnta: string): string {
 			return `https://jvn.jp/ta/${jvnta.replace('#', '')}/index.html`;
 	}
