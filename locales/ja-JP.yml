@@ -2772,3 +2772,7 @@ _uniqueFeatures:
 _draftSavingBehavior:
   auto: "自動的に保存する"
   manual: "都度確認する"
+
+_reactionChecksMuting:
+  title: "リアクションでミュートを考慮する"
+  caption: "リアクションがミュートを考慮しますが、キャッシュが効かず通信量が増えることがあります。"

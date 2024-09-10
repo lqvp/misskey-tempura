@@ -36,6 +36,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 	import { customEmojisMap } from '@/custom-emojis.js';
 	import { getUnicodeEmoji } from '@/scripts/emojilist.js';
 
+const reactionChecksMuting = computed(defaultStore.makeGetterSetter('reactionChecksMuting'));
+
 	const props = defineProps<{
 		reaction: string;
 		count: number;
@@ -146,7 +148,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 	if (!mock) {
 		useTooltip(buttonEl, async (showing) => {
-			const reactions = await misskeyApiGet('notes/reactions', {
+			const useGet = !reactionChecksMuting.value;
+		const apiCall = useGet ? misskeyApiGet : misskeyApi;
+		const reactions = await apiCall('notes/reactions', {
 				noteId: props.note.id,
 				type: props.reaction,
 				limit: 10,
@@ -154,12 +158,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 			});
 
 			const users = reactions.map(x => x.user);
+		const count = users.length;
 
 			const { dispose } = os.popup(XDetails, {
 				showing,
 				reaction: props.reaction,
 				users,
-				count: props.count,
+				count,
 				targetElement: buttonEl.value,
 			}, {
 				closed: () => dispose(),

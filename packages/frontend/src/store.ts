@@ -497,8 +497,10 @@ export const defaultStore = markRaw(new Storage('base', {
 		default: false,
 	},
 	contextMenu: {
+	contextMenu: {
 		where: 'device',
 		default: 'app' as 'app' | 'appWithShift' | 'native',
+	},
 	},
 
 	sound_masterVolume: {
@@ -536,6 +538,10 @@ export const defaultStore = markRaw(new Storage('base', {
 	directRenote: {
 		where: 'device',
 		default: false,
+	},
+	reactionChecksMuting: {
+		where: 'device',
+		default: true,
 	},
 }));
 
