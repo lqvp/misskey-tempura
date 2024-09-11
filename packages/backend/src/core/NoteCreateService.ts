@@ -721,6 +721,24 @@ export class NoteCreateService implements OnApplicationShutdown {
 						this.relayService.deliverToRelays(user, noteActivity);
 					}
 
+					if (data.renote && data.renote.userHost === null && ['followers'].includes(data.renote.visibility)) {
+						const renoteActivity = await this.renderNoteOrRenoteActivity(data.renote, data.renote);
+						const dmRenote = this.apDeliverManagerService.createDeliverManager(user, renoteActivity);
+
+						// メンションされたリモートユーザーに配送
+						for (const u of mentionedUsers.filter(u => this.userEntityService.isRemoteUser(u))) {
+							dmRenote.addDirectRecipe(u as RemoteUser);
+						}
+
+						// フォロワーに配送
+						if (['public', 'home', 'followers'].includes(data.renote.visibility)) {
+							dmRenote.addFollowersRecipe();
+						}
+
+						await dmRenote.execute();
+					}
+
+					// 先に引用を配送しておく
 					trackPromise(dm.execute());
 				})();
 			}
