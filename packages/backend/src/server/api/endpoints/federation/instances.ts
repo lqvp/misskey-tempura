@@ -61,6 +61,8 @@ export const paramDef = {
 				'-firstRetrievedAt',
 				'+latestRequestReceivedAt',
 				'-latestRequestReceivedAt',
+				'+reversiVersion',
+				'-reversiVersion',
 				null,
 			],
 		},
@@ -95,6 +97,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				case '-firstRetrievedAt': query.orderBy('instance.firstRetrievedAt', 'ASC'); break;
 				case '+latestRequestReceivedAt': query.orderBy('instance.latestRequestReceivedAt', 'DESC', 'NULLS LAST'); break;
 				case '-latestRequestReceivedAt': query.orderBy('instance.latestRequestReceivedAt', 'ASC', 'NULLS FIRST'); break;
+				case '+reversiVersion': query.orderBy('instance.reversiVersion', 'DESC', 'NULLS LAST'); break;
+				case '-reversiVersion': query.orderBy('instance.reversiVersion', 'ASC', 'NULLS FIRST'); break;
 
 				default: query.orderBy('instance.id', 'DESC'); break;
 			}
