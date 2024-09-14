@@ -13914,7 +13914,6 @@ export type operations = {
     requestBody: {
       content: {
         'application/json': {
-          /** Format: misskey:id */
           clipId: string;
         };
       };
@@ -13963,6 +13962,16 @@ export type operations = {
    * **Credential required**: *Yes* / **Permission**: *read:clip-favorite*
    */
   'clips___my-favorites': {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @default true */
+          withLocal?: boolean;
+          /** @default true */
+          withRemote?: boolean;
+        };
+      };
+    };
     responses: {
       /** @description OK (with results) */
       200: {
