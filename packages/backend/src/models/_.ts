@@ -77,6 +77,7 @@ import { MiRole } from '@/models/Role.js';
 import { MiRoleAssignment } from '@/models/RoleAssignment.js';
 import { MiFlash } from '@/models/Flash.js';
 import { MiFlashLike } from '@/models/FlashLike.js';
+import { MiFlashLikeRemote } from '@/models/FlashLikeRemote.js';
 import { MiUserListFavorite } from '@/models/UserListFavorite.js';
 import { MiBubbleGameRecord } from '@/models/BubbleGameRecord.js';
 import { MiReversiGame } from '@/models/ReversiGame.js';
@@ -193,6 +194,7 @@ export {
 	MiRoleAssignment,
 	MiFlash,
 	MiFlashLike,
+	MiFlashLikeRemote,
 	MiUserMemo,
 	MiBubbleGameRecord,
 	MiReversiGame,
@@ -265,6 +267,7 @@ export type RolesRepository = Repository<MiRole> & MiRepository<MiRole>;
 export type RoleAssignmentsRepository = Repository<MiRoleAssignment> & MiRepository<MiRoleAssignment>;
 export type FlashsRepository = Repository<MiFlash> & MiRepository<MiFlash>;
 export type FlashLikesRepository = Repository<MiFlashLike> & MiRepository<MiFlashLike>;
+export type FlashLikesRemoteRepository = Repository<MiFlashLikeRemote> & MiRepository<MiFlashLikeRemote>;
 export type UserMemoRepository = Repository<MiUserMemo> & MiRepository<MiUserMemo>;
 export type BubbleGameRecordsRepository = Repository<MiBubbleGameRecord> & MiRepository<MiBubbleGameRecord>;
 export type ReversiGamesRepository = Repository<MiReversiGame> & MiRepository<MiReversiGame>;
