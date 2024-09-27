@@ -303,7 +303,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<template #suffix>
 					<span v-if="role.policies.canEmojiDeletion.useDefault" :class="$style.useDefaultLabel">{{ i18n.ts._role.useBaseValue }}</span>
 					<span v-else>{{ role.policies.canEmojiDeletion.value ? i18n.ts.yes : i18n.ts.no }}</span>
-					<span :class="$style.priorityIndicator"><i :class="getPriorityIcon(role.policies.canUseHighlight)"></i></span>
+					<span :class="$style.priorityIndicator"><i :class="getPriorityIcon(role.policies.canEmojiDeletion)"></i></span>
 				</template>
 				<div class="_gaps">
 					<MkSwitch v-model="role.policies.canEmojiDeletion.useDefault" :readonly="readonly">
