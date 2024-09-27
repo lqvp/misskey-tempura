@@ -510,8 +510,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	nicknameMap: {
 		where: 'account',
 		default: {} as Record<string, string>,
-	}
-
+	},
 	directRenote: {
 		where: 'device',
 		default: false,
