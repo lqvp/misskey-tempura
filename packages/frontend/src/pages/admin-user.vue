@@ -247,7 +247,7 @@ const info = ref<any>();
 const ips = ref<Misskey.entities.AdminGetUserIpsResponse | null>(null);
 const ap = ref<any>(null);
 const moderator = ref(false);
-let root = $ref(false);
+const root = ref(false);
 const silenced = ref(false);
 const suspended = ref(false);
 const moderationNote = ref('');
@@ -279,8 +279,8 @@ function createFetcher() {
 		info.value = _info;
 		ips.value = _ips;
 		moderator.value = info.value.isModerator;
+		root.value = info.value.isRoot;
 		silenced.value = info.value.isSilenced;
-		root = info.isRoot;
 		suspended.value = info.value.isSuspended;
 		moderationNote.value = info.value.moderationNote;
 
