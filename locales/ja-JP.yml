@@ -2745,7 +2745,7 @@ _contextMenu:
 
 _uniqueFeatures:
   uniqueFeature: "独自機能"
-  remoteLocalTimeline: "リモート上のサーバーのローカルタイムラインを覗く機能"
+  # remoteLocalTimeline: "リモート上のサーバーのローカルタイムラインを覗く機能"
   hiddenProfile: "プロフィールを非表示にする機能"
   hiddenPinnedNotes: "プロフィール上からピン留めしたノートを非表示にします"
   hiddenPinnedNotesDescription: "ピン留めしたノートを非表示にすることで、プロフィールページをスッキリさせることができます。"

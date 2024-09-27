@@ -10296,7 +10296,7 @@ export interface Locale extends ILocale {
         /**
          * リモート上のサーバーのローカルタイムラインを覗く機能
          */
-        "remoteLocalTimeline": string;
+        // "remoteLocalTimeline": string;
         /**
          * プロフィールを非表示にする機能
          */
