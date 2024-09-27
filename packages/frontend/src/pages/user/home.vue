@@ -216,7 +216,6 @@ import { getStaticImageUrl, getProxiedImageUrl } from '@/scripts/media-proxy.js'
 import {editNickname} from "@/scripts/edit-nickname";
 import MkLink from '@/components/MkLink.vue';
 import MkContainer from '@/components/MkContainer.vue';
-import { defaultStore } from '@/store';
 
 function calcAge(birthdate: string): number {
 	const date = new Date(birthdate);
