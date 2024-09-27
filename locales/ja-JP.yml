@@ -2742,3 +2742,9 @@ _contextMenu:
   app: "アプリケーション"
   appWithShift: "Shiftキーでアプリケーション"
   native: "ブラウザのUI"
+
+_uniqueFeatures:
+  uniqueFeature: "独自機能"
+  remoteLocalTimeline: "リモート上のサーバーのローカルタイムラインを覗く機能"
+  hiddenActivityAndFiles: "プロフィール上からアクティビティやファイルの非表示"
+  hiddenActivityAndFilesDescription: "プロフィール上からアクティビティやファイルを非表示にします。ノートをいち早く見たい方にお勧めです。"

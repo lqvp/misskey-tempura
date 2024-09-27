@@ -157,13 +157,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkNote v-for="note in user.pinnedNotes" :key="note.id" class="note _panel" :note="note" :pinned="true"/>
 				</div>
 				<MkInfo v-else-if="$i && $i.id === user.id">{{ i18n.ts.userPagePinTip }}</MkInfo>
-				<template v-if="narrow">
-					<MkLazy>
-						<XFiles :key="user.id" :user="user"/>
-					</MkLazy>
-					<MkLazy>
-						<XActivity :key="user.id" :user="user"/>
-					</MkLazy>
+				<template v-if="!hiddenActivityAndFiles">
+					<template v-if="narrow">
+						<MkLazy>
+							<XFiles :key="user.id" :user="user"/>
+						</MkLazy>
+						<MkLazy>
+							<XActivity :key="user.id" :user="user"/>
+						</MkLazy>
+					</template>
 				</template>
 				<div v-if="!disableNotes">
 					<MkLazy>
@@ -208,6 +210,7 @@ import { getStaticImageUrl, getProxiedImageUrl } from '@/scripts/media-proxy.js'
 import {editNickname} from "@/scripts/edit-nickname";
 import MkLink from '@/components/MkLink.vue';
 import MkContainer from '@/components/MkContainer.vue';
+import { defaultStore } from '@/store';
 
 function calcAge(birthdate: string): number {
 	const date = new Date(birthdate);
@@ -248,6 +251,7 @@ const memoDraft = ref(props.user.memo);
 const isEditingMemo = ref(false);
 const moderationNote = ref(props.user.moderationNote);
 const editModerationNote = ref(false);
+const hiddenActivityAndFiles = defaultStore.state.hiddenActivityAndFiles;
 
 watch(moderationNote, async () => {
 	await misskeyApi('admin/update-user-note', { userId: props.user.id, text: moderationNote.value });

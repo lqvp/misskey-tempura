@@ -10288,6 +10288,24 @@ export interface Locale extends ILocale {
          */
         "native": string;
     };
+    "_uniqueFeatures": {
+        /**
+         * 独自機能
+         */
+        "uniqueFeature": string;
+        /**
+         * リモート上のサーバーのローカルタイムラインを覗く機能
+         */
+        "remoteLocalTimeline": string;
+        /**
+         * プロフィール上からアクティビティやファイルの非表示
+         */
+        "hiddenActivityAndFiles": string;
+        /**
+         * プロフィール上からアクティビティやファイルを非表示にします。ノートをいち早く見たい方にお勧めです。
+         */
+        "hiddenActivityAndFilesDescription": string;
+    };
 }
 declare const locales: {
     [lang: string]: Locale;
