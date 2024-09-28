@@ -34,10 +34,35 @@ export const fontList = {
 		fontFamily: 'Klee One',
 		importUrl: 'https://fonts.googleapis.com/css2?family=Klee+One&display=swap',
 	},
+	'kosugi-maru': {
+		name: 'Kosugi Maru',
+		fontFamily: 'Kosugi Maru',
+		importUrl: 'https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap',
+	},
+	'kosugi': {
+		name: 'Kosugi',
+		fontFamily: 'Kosugi',
+		importUrl: 'https://fonts.googleapis.com/css2?family=Kosugi&display=swap',
+	},
+	'kiwi-maru': {
+		name: 'Kiwi Maru',
+		fontFamily: 'Kiwi Maru',
+		importUrl: 'https://fonts.googleapis.com/css2?family=Kiwi+Maru&display=swap',
+	},
 	'zen-maru-gothic': {
 		name: 'Zen Maru Gothic',
 		fontFamily: 'Zen Maru Gothic',
 		importUrl: 'https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic&display=swap',
+	},
+	'zen-kaku-gothic-new': {
+		name: 'Zen Kaku Gothic New',
+		fontFamily: 'Zen Kaku Gothic New',
+		importUrl: 'https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New&display=swap',
+	},
+	'zen-kurenaido': {
+		name: 'Zen Kurenaido',
+		fontFamily: 'Zen Kurenaido',
+		importUrl: 'https://fonts.googleapis.com/css2?family=Zen+Kurenaido&display=swap',
 	},
 	'kaisei-decol': {
 		name: 'Kaisei Decol',
@@ -49,15 +74,29 @@ export const fontList = {
 		fontFamily: 'DotGothic16',
 		importUrl: 'https://fonts.googleapis.com/css2?family=DotGothic16&display=swap',
 	},
-	'kiwi-maru': {
-		name: 'Kiwi Maru',
-		fontFamily: 'Kiwi Maru',
-		importUrl: 'https://fonts.googleapis.com/css2?family=Kiwi+Maru&display=swap'
-	}
+	'hachi-maru-pop-regular': {
+		name: 'Hachi Maru Pop',
+		fontFamily: 'Hachi Maru Pop',
+		importUrl: 'https://fonts.googleapis.com/css2?family=Hachi+Maru+Pop&display=swap',
+	},
+	'stick-regular': {
+		name: 'Stick',
+		fontFamily: 'Stick',
+		importUrl: 'https://fonts.googleapis.com/css2?family=Stick&display=swap',
+	},
+	'tsukimi-rounded-regular': {
+		name: 'Tsukimi Rounded',
+		fontFamily: 'Tsukimi Rounded',
+		importUrl: 'https://fonts.googleapis.com/css2?family=Tsukimi+Rounded&display=swap',
+	},
+	'yusei-magic-regular': {
+		name: 'Yusei Magic',
+		fontFamily: 'Yusei Magic',
+		importUrl: 'https://fonts.googleapis.com/css2?family=Yusei+Magic&display=swap',
+	},
 };
 
 export function applyFont(fontname: null | string) {
-	console.log('called');
 	let style = document.getElementById('custom-font');
 
 	if (!fontname) {
@@ -77,7 +116,8 @@ export function applyFont(fontname: null | string) {
 	style.innerHTML = `
 		@import url('${font.importUrl}');
 		body {
-			font-family: '${font.fontFamily}', 'Hiragino Maru Gothic Pro', 'BIZ UDGothic', Roboto, HelveticaNeue, Arial, sans-serif;
+			font-family: '${font.fontFamily}', 'Hiragino Maru Gothic Pro', 'BIZ UDGothic', Roboto, HelveticaNeue, Arial, sans-serif !important;
+			font-style: normal;
 		}
 	`;
 }
