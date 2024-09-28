@@ -28,7 +28,7 @@
 		"@tabler/icons-webfont": "3.3.0",
 		"@twemoji/parser": "15.1.1",
 		"@vitejs/plugin-vue": "5.1.0",
-		"@vue/compiler-sfc": "3.4.37",
+		"@vue/compiler-sfc": "3.5.10",
 		"aiscript-vscode": "github:aiscript-dev/aiscript-vscode#v0.1.11",
 		"astring": "1.8.6",
 		"broadcast-channel": "7.0.0",
