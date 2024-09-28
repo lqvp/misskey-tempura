@@ -281,7 +281,6 @@ function createFetcher() {
 		moderator.value = info.value.isModerator;
 		root.value = info.value.isRoot;
 		silenced.value = info.value.isSilenced;
-		root = info.isRoot;
 		suspended.value = info.value.isSuspended;
 		moderationNote.value = info.value.moderationNote;
 
