@@ -49,6 +49,11 @@ export const fontList = {
 		fontFamily: 'DotGothic16',
 		importUrl: 'https://fonts.googleapis.com/css2?family=DotGothic16&display=swap',
 	},
+	'kiwi-maru': {
+		name: 'Kiwi Maru',
+		fontFamily: 'Kiwi Maru',
+		importUrl: 'https://fonts.googleapis.com/css2?family=Kiwi+Maru&display=swap'
+	}
 };
 
 export function applyFont(fontname: null | string) {
