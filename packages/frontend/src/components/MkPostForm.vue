@@ -106,6 +106,7 @@ import MkNoteSimple from '@/components/MkNoteSimple.vue';
 import MkNotePreview from '@/components/MkNotePreview.vue';
 import XPostFormAttaches from '@/components/MkPostFormAttaches.vue';
 import MkPollEditor, { type PollEditorModelValue } from '@/components/MkPollEditor.vue';
+import MkDeleteScheduleEditor, { type DeleteScheduleEditorModelValue } from '@/components/MkDeleteScheduleEditor.vue';
 import { host, url } from '@/config.js';
 import { erase, unique } from '@/scripts/array.js';
 import { extractMentions } from '@/scripts/extract-mentions.js';
@@ -127,7 +128,6 @@ import { miLocalStorage } from '@/local-storage.js';
 import { claimAchievement } from '@/scripts/achievements.js';
 import { emojiPicker } from '@/scripts/emoji-picker.js';
 import { mfmFunctionPicker } from '@/scripts/mfm-function-picker.js';
-import { DeleteScheduleEditorModelValue } from './MkDeleteScheduleEditor.vue';
 import { bottomItemDef } from '@/scripts/post-form.js';
 
 const $i = signinRequired();
@@ -256,9 +256,9 @@ const canPost = computed((): boolean => {
 			1 <= textLength.value ||
 			1 <= files.value.length ||
 			poll.value != null ||
-			renote != null ||
+			props.renote != null ||
 			quoteId.value != null
-		.value) &&
+		) &&
 		(textLength.value <= maxTextLength.value) &&
 		(!poll.value || poll.value.choices.length >= 2);
 });
@@ -374,9 +374,9 @@ function initialize() {
 		}
 
 		if (visibility.value === 'specified') {
-			if (reply.value.visibleUserIds) {
+			if (props.reply.visibleUserIds) {
 				misskeyApi('users/show', {
-					userIds: reply.value.visibleUserIds.filter(uid => uid !== $i.id && uid !== reply.value?.userId),
+					userIds: props.reply.visibleUserIds.filter(uid => uid !== $i.id && uid !== props.reply?.userId),
 				}).then(users => {
 					users.forEach(u => pushVisibleUser(u));
 				});
@@ -764,9 +764,9 @@ async function saveDraft(auto = true) {
 		localOnly: localOnly.value,
 		files: files.value,
 		poll: poll.value,
-			visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(x => x.id) : undefined,
-			quoteId: quoteId.value,
-			reactionAcceptance: reactionAcceptance.value,
+		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(x => x.id) : undefined,
+		quoteId: quoteId.value,
+		reactionAcceptance: reactionAcceptance.value,
 		scheduledNoteDelete: scheduledNoteDelete.value,
 	}, draftAuxId.value as string);
 
@@ -801,18 +801,19 @@ function chooseDraft() {
 
 async function applyDraft(draft: noteDrafts.NoteDraft, native = false) {
 	if (!native) {
+		reply.value = undefined;
+		renote.value = undefined;
+
 		switch (draft.type) {
 			case 'quote': {
 				await os.apiWithDialog('notes/show', { noteId: draft.auxId as string }).then(note => {
 					renote.value = note;
-					reply.value = undefined;
 				});
 				break;
 			}
 			case 'reply': {
 				await os.apiWithDialog('notes/show', { noteId: draft.auxId as string }).then(note => {
 					reply.value = note;
-					renote.value = undefined;
 				});
 				break;
 			}
@@ -1012,7 +1013,7 @@ function cancel() {
 }
 
 async function closed() {
-	if (defaultStore.state.draftSavingBehavior === 'manual' && (text.value !== '' || files.value.length > 0)) {
+	if (defaultStore.state.draftSavingBehavior === 'manual' && !posted.value && (text.value !== '' || files.value.length > 0)) {
 		os.confirm({
 			type: 'question',
 			text: i18n.ts.saveConfirm,
@@ -1121,17 +1122,9 @@ onMounted(() => {
 
 		// 書きかけの投稿を復元
 		if (!props.instant && !props.mention && !props.specified && !props.mock) {
-			const draft = JSON.parse(miLocalStorage.getItem('drafts') ?? '{}')[draftKey.value];
+			const draft = await noteDrafts.get(draftType.value, $i.id, 'default', draftAuxId.value as string);
 			if (draft) {
-				text.value = draft.data.text;
-				useCw.value = draft.data.useCw;
-				cw.value = draft.data.cw;
-				visibility.value = draft.data.visibility;
-				localOnly.value = draft.data.localOnly;
-				files.value = (draft.data.files || []).filter(draftFile => draftFile);
-				if (draft.data.poll) {
-					poll.value = draft.data.poll;
-				}
+				applyDraft(draft, true);
 				if (draft.data.visibleUserIds) {
 					misskeyApi('users/show', { userIds: draft.data.visibleUserIds }).then(users => {
 						users.forEach(u => pushVisibleUser(u));
@@ -1139,9 +1132,6 @@ onMounted(() => {
 				}
 				quoteId.value = draft.data.quoteId;
 				reactionAcceptance.value = draft.data.reactionAcceptance;
-				if (draft.data.scheduledNoteDelete) {
-					scheduledNoteDelete.value = draft.data.scheduledNoteDelete;
-				}
 			}
 		}
 
