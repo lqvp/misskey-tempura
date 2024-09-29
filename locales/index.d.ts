@@ -280,6 +280,10 @@ export interface Locale extends ILocale {
      * フォローされました
      */
     "youGotNewFollower": string;
+		/**
+		 * フォロー解除されました
+		 */
+		"youGotUnFollower": string;
     /**
      * フォローリクエストされました
      */
@@ -7187,6 +7191,12 @@ export interface Locale extends ILocale {
              */
             "title": string;
         };
+				"_unfollow" : {
+					/**
+					 * フォロー解除されました
+					 */
+					"title": string;
+				}
         "_receiveFollowRequest": {
             /**
              * フォローリクエストを受け取りました
@@ -9339,6 +9349,10 @@ export interface Locale extends ILocale {
          * フォローされました
          */
         "youWereFollowed": string;
+				/**
+				 * フォロー解除されました
+ 				 */
+				"youWereUnFollower": string;
         /**
          * フォローリクエストが来ました
          */
@@ -9403,6 +9417,10 @@ export interface Locale extends ILocale {
          * {n}人にフォローされました
          */
         "followedBySomeUsers": ParameterizedString<"n">;
+				/**
+				 * {n}人にフォロー解除されました
+				 */
+				"unfollowerBySomeUser": ParameterizedString<"n">;
         /**
          * 通知の履歴をリセットする
          */
