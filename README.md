@@ -7,6 +7,8 @@
 
 [Learn more](https://misskey-hub.net/)
 
+[おひとり様で使うように色々いじってます](./diff.md)
+
 ---
 
 <a href="https://misskey-hub.net/servers/">
