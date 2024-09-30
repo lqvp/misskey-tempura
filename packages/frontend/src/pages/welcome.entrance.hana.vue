@@ -10,14 +10,14 @@
 			<div :class="$style.cta">
 				<div :class="$style.actions">
 					<MkButton :class="[$style.mainAction, $style.action1]" full rounded gradate data-cy-signup @click="signup()">{{ i18n.ts.joinThisServer }}</MkButton>
-					<MkButton :class="[$style.mainAction, $style.action2]" full rounded @click="upcomingFeatureDialog()">？？？</MkButton>
-					<MkButton :class="[$style.mainAction, $style.action3]" full rounded data-cy-signin @click="signin()">{{ i18n.ts.login }}</MkButton>
+					<!-- <MkButton :class="[$style.mainAction, $style.action2]" full rounded @click="upcomingFeatureDialog()">？？？</MkButton> -->
+					<MkButton :class="[$style.mainAction, $style.action2]" full rounded data-cy-signin @click="signin()">{{ i18n.ts.login }}</MkButton>
 				</div>
 			</div>
 		</div>
 	</div>
 
-	<div :class="$style.aboutRoot">
+	<!-- <div :class="$style.aboutRoot">
 		<div :class="$style.aboutWrapper">
 			<I18n :src="i18n.ts._hana._welcome.whatAboutX" tag="h2" :class="$style.aboutTitle" style="text-align: center;">
 				<template #x>
@@ -38,9 +38,9 @@
 				<div :class="$style.aboutDescription">{{ i18n.ts._hana._welcome._aboutDecentralized.description }}</div>
 			</div>
 		</div>
-	</div>
+	</div> -->
 
-	<div :class="$style.featuresRoot">
+	<!-- <div :class="$style.featuresRoot">
 		<div v-for="feature in features" :key="feature.title" :class="$style.feature">
 			<div :class="$style.featureRoot">
 				<div :class="[$style.featureImage, { [$style.noImage]: (feature.image == null) }]">
@@ -55,15 +55,15 @@
 				</div>
 			</div>
 		</div>
-	</div>
+	</div> -->
 
 	<div :class="$style.footerCtaRoot">
-		<img :class="[$style.footerCtaParticles, $style.left]" src="https://static-assets.misskey.flowers/misc/bg-particles/left_v1a.svg" alt=""/>
+		<!-- <img :class="[$style.footerCtaParticles, $style.left]" src="https://static-assets.misskey.flowers/misc/bg-particles/left_v1a.svg" alt=""/>
 		<img :class="[$style.footerCtaParticles, $style.right]" src="https://static-assets.misskey.flowers/misc/bg-particles/right_v1a.svg" alt=""/>
-		<img :class="[$style.footerCtaParticles, $style.neutral]" src="https://static-assets.misskey.flowers/misc/bg-particles/neutral_v1a.svg" alt=""/>
+		<img :class="[$style.footerCtaParticles, $style.neutral]" src="https://static-assets.misskey.flowers/misc/bg-particles/neutral_v1a.svg" alt=""/> -->
 
 		<div :class="$style.footerCtaWrapper" class="_gaps">
-			<div :class="$style.footerCtaTitle">{{ i18n.ts._hana._welcome._cta.title }}</div>
+			<!-- <div :class="$style.footerCtaTitle">{{ i18n.ts._hana._welcome._cta.title }}</div> -->
 			<MkButton :class="[$style.mainAction, $style.footerButton]" rounded transparent @click="signup()">
 				<span :class="$style.footerButtonText">{{ i18n.ts.joinThisServer }}</span>
 			</MkButton>
@@ -92,40 +92,40 @@ import { i18n } from '@/i18n.js';
 import * as os from '@/os.js';
 
 import MkButton from '@/components/MkButton.vue';
-import MkInfo from '@/components/MkInfo.vue';
+// import MkInfo from '@/components/MkInfo.vue';
 import XSigninDialog from '@/components/MkSigninDialog.vue';
 import XSignupDialog from '@/components/MkSignupDialog.vue';
 
-type FeatureItem = {
-	title: string;
-	description: string;
-	isInDevelopment?: boolean;
-	image?: string;
-};
+// type FeatureItem = {
+// 	title: string;
+// 	description: string;
+// 	isInDevelopment?: boolean;
+// 	image?: string;
+// };
 
-const features: FeatureItem[] = [
-	{
-		title: i18n.ts._hana._welcome._features._hanaMode.title,
-		description: i18n.ts._hana._welcome._features._hanaMode.description,
-		image: 'https://static-assets.misskey.flowers/app-landing/feat-hana.webp',
-	},
-	{
-		title: i18n.ts._hana._welcome._features._reactionAbundance.title,
-		description: i18n.ts._hana._welcome._features._reactionAbundance.description,
-		image: 'https://static-assets.misskey.flowers/app-landing/feat-reaction.png',
-	},
-	{
-		title: i18n.ts._hana._welcome._features._easyMigration.title,
-		description: i18n.ts._hana._welcome._features._easyMigration.description,
-		image: 'https://static-assets.misskey.flowers/app-landing/feat-migrate.png',
-	},
-	{
-		title: i18n.ts._hana._welcome._features._preciseSearching.title,
-		description: i18n.ts._hana._welcome._features._preciseSearching.description,
-		isInDevelopment: true,
-		image: 'https://static-assets.misskey.flowers/app-landing/feat-search.webp',
-	},
-];
+// const features: FeatureItem[] = [
+// 	{
+// 		title: i18n.ts._hana._welcome._features._hanaMode.title,
+// 		description: i18n.ts._hana._welcome._features._hanaMode.description,
+// 		image: 'https://static-assets.misskey.flowers/app-landing/feat-hana.webp',
+// 	},
+// 	{
+// 		title: i18n.ts._hana._welcome._features._reactionAbundance.title,
+// 		description: i18n.ts._hana._welcome._features._reactionAbundance.description,
+// 		image: 'https://static-assets.misskey.flowers/app-landing/feat-reaction.png',
+// 	},
+// 	{
+// 		title: i18n.ts._hana._welcome._features._easyMigration.title,
+// 		description: i18n.ts._hana._welcome._features._easyMigration.description,
+// 		image: 'https://static-assets.misskey.flowers/app-landing/feat-migrate.png',
+// 	},
+// 	{
+// 		title: i18n.ts._hana._welcome._features._preciseSearching.title,
+// 		description: i18n.ts._hana._welcome._features._preciseSearching.description,
+// 		isInDevelopment: true,
+// 		image: 'https://static-assets.misskey.flowers/app-landing/feat-search.webp',
+// 	},
+// ];
 
 function signin() {
 	const { dispose } = os.popup(XSigninDialog, {
@@ -143,12 +143,12 @@ function signup() {
 	});
 }
 
-function upcomingFeatureDialog() {
-	os.alert({
-		title: i18n.ts._hana._inDevelopment.title,
-		text: i18n.ts._hana._inDevelopment.description,
-	});
-}
+// function upcomingFeatureDialog() {
+// 	os.alert({
+// 		title: i18n.ts._hana._inDevelopment.title,
+// 		text: i18n.ts._hana._inDevelopment.description,
+// 	});
+// }
 </script>
 
 <style lang="scss" module>
@@ -511,20 +511,16 @@ function upcomingFeatureDialog() {
 
 	.actions {
 		width: fit-content;
-		grid-template-columns: repeat(3, 1fr);
+		grid-template-columns: repeat(2, 1fr);
 		gap: 16px;
 	}
 
 	.action1 {
-		order: 2;
-	}
-
-	.action2 {
 		order: 1;
 	}
 
-	.action3 {
-		order: 3;
+	.action2 {
+		order: 2;
 	}
 
 	.aboutWrapper {
