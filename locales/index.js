@@ -25,6 +25,7 @@ const languages = [
 	'it-IT',
 	'ja-JP',
 	'ja-KS',
+	'ja-NYA',
 	'kab-KAB',
 	'kn-IN',
 	'ko-KR',
@@ -77,6 +78,7 @@ export function build() {
 			switch (k) {
 				case 'ja-JP': return v;
 				case 'ja-KS':
+				case 'ja-NYA':
 				case 'en-US': return merge(locales['ja-JP'], v);
 				default: return merge(
 					locales['ja-JP'],
