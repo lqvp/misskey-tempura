@@ -14,6 +14,7 @@ Copy-Item $sourceFile $destinationFile
 $content = Get-Content $destinationFile
 
 # な→にゃ, ナ→ニャ に変換
+$content = $content -replace '日本語', 'にゃにゃにゃ！'
 $content = $content -replace 'な', 'にゃ' -replace 'ナ', 'ニャ'
 
 # 変換後の内容を ja-NYA.yml に上書き保存
