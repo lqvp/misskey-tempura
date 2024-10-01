@@ -19,7 +19,7 @@ import MkSparkle from '@/components/MkSparkle.vue';
 import MkA, { MkABehavior } from '@/components/global/MkA.vue';
 import { host } from '@@/js/config.js';
 import { defaultStore } from '@/store.js';
-import { safeParseFloat } from '@/scripts/safe-parse.js';
+import { parseMfmRjNumber } from '@/scripts/tms/rj-number.js';
 
 function safeParseFloat(str: unknown): number | null {
 	if (typeof str !== 'string' || str === '') return null;
@@ -84,10 +84,22 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 	/**
 	 * Gen Vue Elements from MFM AST
 	 * @param ast MFM AST
-	 * @param scale How times large the text is
-	 * @param disableNyaize Whether nyaize is disabled or not
+	 * @param options
+	 * @param options.scale How times large the text is
+	 * @param options.disableNyaize Whether nyaize is disabled or not
+	 * @param options.disableRjNumber Whether RJ Number is disabled or not
 	 */
-	const genEl = (ast: mfm.MfmNode[], scale: number, disableNyaize = false) => ast.map((token): VNode | string | (VNode | string)[] => {
+	const genEl = (
+		ast: mfm.MfmNode[],
+		options: {
+			scale: number;
+			disableNyaize: boolean;
+			disableRjNumber: boolean;
+		},
+	) => ast.map((token): VNode | string | (VNode | string)[] => {
+		let scale = options.scale;
+		const disableNyaize = options.disableNyaize;
+		const disableRjNumber = options.disableRjNumber;
 		switch (token.type) {
 			case 'text': {
 				let text = token.props.text.replace(/(\r\n|\n|\r)/g, '\n');
@@ -99,7 +111,11 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 					const res: (VNode | string)[] = [];
 					for (const t of text.split('\n')) {
 						res.push(h('br'));
-						res.push(t);
+						if (!disableRjNumber) {
+							res.push(...parseMfmRjNumber(t));
+						} else {
+							res.push(t);
+						}
 					}
 					res.shift();
 					return res;
@@ -109,17 +125,17 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 			}
 
 			case 'bold': {
-				return [h('b', genEl(token.children, scale))];
+				return [h('b', genEl(token.children, { scale, disableNyaize, disableRjNumber }))];
 			}
 
 			case 'strike': {
-				return [h('del', genEl(token.children, scale))];
+				return [h('del', genEl(token.children, { scale, disableNyaize, disableRjNumber }))];
 			}
 
 			case 'italic': {
 				return h('i', {
 					style: 'font-style: oblique;',
-				}, genEl(token.children, scale));
+				}, genEl(token.children, { scale, disableNyaize, disableRjNumber }));
 			}
 
 			case 'fn': {
@@ -187,17 +203,17 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 					case 'x2': {
 						return h('span', {
 							class: defaultStore.state.advancedMfm ? 'mfm-x2' : '',
-						}, genEl(token.children, scale * 2));
+						}, genEl(token.children, { scale: scale * 2, disableNyaize, disableRjNumber }));
 					}
 					case 'x3': {
 						return h('span', {
 							class: defaultStore.state.advancedMfm ? 'mfm-x3' : '',
-						}, genEl(token.children, scale * 3));
+						}, genEl(token.children, { scale: scale * 3, disableNyaize, disableRjNumber }));
 					}
 					case 'x4': {
 						return h('span', {
 							class: defaultStore.state.advancedMfm ? 'mfm-x4' : '',
-						}, genEl(token.children, scale * 4));
+						}, genEl(token.children, { scale: scale * 4, disableNyaize, disableRjNumber }));
 					}
 					case 'font': {
 						const family =
@@ -214,13 +230,13 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 					case 'blur': {
 						return h('span', {
 							class: '_mfm_blur_',
-						}, genEl(token.children, scale));
+						}, genEl(token.children, { scale, disableNyaize, disableRjNumber }));
 					}
 					case 'rainbow': {
 						if (!useAnim) {
 							return h('span', {
 								class: '_mfm_rainbow_fallback_',
-							}, genEl(token.children, scale));
+							}, genEl(token.children, { scale, disableNyaize, disableRjNumber }));
 						}
 						const speed = validTime(token.props.args.speed) ?? '1s';
 						const delay = validTime(token.props.args.delay) ?? '0s';
@@ -229,9 +245,9 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 					}
 					case 'sparkle': {
 						if (!useAnim) {
-							return genEl(token.children, scale);
+							return genEl(token.children, { scale, disableNyaize, disableRjNumber });
 						}
-						return h(MkSparkle, {}, genEl(token.children, scale));
+						return h(MkSparkle, {}, genEl(token.children, { scale, disableNyaize, disableRjNumber }));
 					}
 					case 'rotate': {
 						const degrees = safeParseFloat(token.props.args.deg) ?? 90;
@@ -296,7 +312,7 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 							if (!disableNyaize && shouldNyaize) {
 								text = Misskey.nyaize(text);
 							}
-							return h('ruby', {}, [...genEl(token.children.slice(0, token.children.length - 1), scale), h('rt', text.trim())]);
+							return h('ruby', {}, [...genEl(token.children.slice(0, token.children.length - 1), { scale, disableNyaize, disableRjNumber }), h('rt', text.trim())]);
 						}
 					}
 					case 'unixtime': {
@@ -322,28 +338,28 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 							ev.preventDefault();
 							const clickEv = typeof token.props.args.ev === 'string' ? token.props.args.ev : '';
 							emit('clickEv', clickEv);
-						} }, genEl(token.children, scale));
+						} }, genEl(token.children, { scale, disableNyaize, disableRjNumber: true }));
 					}
 				}
 				if (style === undefined) {
-					return h('span', {}, ['$[', token.props.name, ' ', ...genEl(token.children, scale), ']']);
+					return h('span', {}, ['$[', token.props.name, ' ', ...genEl(token.children, { scale, disableNyaize, disableRjNumber }), ']']);
 				} else {
 					return h('span', {
 						style: 'display: inline-block; ' + style,
-					}, genEl(token.children, scale));
+					}, genEl(token.children, { scale, disableNyaize, disableRjNumber }));
 				}
 			}
 
 			case 'small': {
 				return [h('small', {
 					style: 'opacity: 0.7;',
-				}, genEl(token.children, scale))];
+				}, genEl(token.children, { scale, disableNyaize, disableRjNumber }))];
 			}
 
 			case 'center': {
 				return [h('div', {
 					style: 'text-align:center;',
-				}, genEl(token.children, scale))];
+				}, genEl(token.children, { scale, disableNyaize, disableRjNumber }))];
 			}
 
 			case 'url': {
@@ -359,7 +375,7 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 					key: Math.random(),
 					url: token.props.url,
 					rel: 'nofollow noopener',
-				}, genEl(token.children, scale, true))];
+				}, genEl(token.children, { scale, disableNyaize: true, disableRjNumber: true }))];
 			}
 
 			case 'mention': {
@@ -397,11 +413,11 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 				if (!props.nowrap) {
 					return [h('div', {
 						style: QUOTE_STYLE,
-					}, genEl(token.children, scale, true))];
+					}, genEl(token.children, { scale, disableNyaize: true, disableRjNumber }))];
 				} else {
 					return [h('span', {
 						style: QUOTE_STYLE,
-					}, genEl(token.children, scale, true))];
+					}, genEl(token.children, { scale, disableNyaize: true, disableRjNumber }))];
 				}
 			}
 
@@ -460,7 +476,7 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 			}
 
 			case 'plain': {
-				return [h('span', genEl(token.children, scale, true))];
+				return [h('span', genEl(token.children, { scale, disableNyaize: true, disableRjNumber: true }))];
 			}
 
 			default: {
@@ -475,5 +491,5 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 	return h('span', {
 		// https://codeday.me/jp/qa/20190424/690106.html
 		style: props.nowrap ? 'white-space: pre; word-wrap: normal; overflow: hidden; text-overflow: ellipsis;' : 'white-space: pre-wrap;',
-	}, genEl(rootAst, props.rootScale ?? 1));
+	}, genEl(rootAst, { scale: props.rootScale ?? 1, disableNyaize: false, disableRjNumber: false }));
 }

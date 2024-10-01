@@ -1050,6 +1050,8 @@ thisPostMayBeAnnoying: "この投稿は迷惑になる可能性があります�
 thisPostMayBeAnnoyingHome: "ホームに投稿"
 thisPostMayBeAnnoyingCancel: "やめる"
 thisPostMayBeAnnoyingIgnore: "このまま投稿"
+disableNoteDrafting: "ノートの下書きの復元を無効化"
+disableNoteDraftingDescription: "ノートの投稿フォームを開き直した際に、下書きを復元しないようにします。"
 collapseRenotes: "リノートのスマート省略"
 collapseRenotesDescription: "リアクションやリノートをしたことがあるノートをたたんで表示します。"
 directRenote: "ダイレクトリノート"

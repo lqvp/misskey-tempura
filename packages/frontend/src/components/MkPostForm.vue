@@ -305,11 +305,11 @@ const bottomItemActionDef: Record<keyof typeof bottomItemDef, {
 		hide: computed(() => !showAddMfmFunction.value),
 		action: insertMfmFunction,
 	},
-	saveAsDraft: {
-		action: () => saveDraft(false),
-	},
 	clearPost: {
 		action: clear,
+	},
+	saveAsDraft: {
+		action: () => saveDraft(false),
 	},
 });
 
@@ -378,11 +378,11 @@ function initialize() {
 		}
 
 		if (visibility.value === 'specified') {
-			if (props.reply.visibleUserIds) {
+			if (reply.value.visibleUserIds) {
 				misskeyApi('users/show', {
-					userIds: props.reply.visibleUserIds.filter(uid => uid !== $i.id && uid !== props.reply?.userId),
+					userIds: reply.value.visibleUserIds.filter(uid => uid !== $i.id && uid !== reply.value?.userId),
 				}).then(users => {
-					users.forEach(u => pushVisibleUser(u));
+					users.forEach(pushVisibleUser);
 				});
 			}
 
@@ -399,10 +399,20 @@ function initialize() {
 		pushVisibleUser(props.specified);
 	}
 
-	// keep cw when reply
-	if (defaultStore.state.keepCw && reply.value && reply.value.cw) {
-		useCw.value = true;
-		cw.value = reply.value.cw;
+	if (visibility.value === 'specified') {
+		if (reply.value?.visibleUserIds) {
+			misskeyApi('users/show', {
+				userIds: reply.value.visibleUserIds.filter(uid => uid !== $i.id && uid !== reply.value?.userId),
+			}).then(users => {
+				users.forEach(u => pushVisibleUser(u));
+			});
+		}
+
+		if (reply.value?.userId !== $i.id) {
+			misskeyApi('users/show', { userId: reply.value?.userId }).then(user => {
+				pushVisibleUser(user);
+			});
+		}
 	}
 }
 
@@ -602,6 +612,11 @@ async function toggleReactionAcceptance() {
 		default: reactionAcceptance.value,
 	});
 	if (select.canceled) return;
+
+	if (defaultStore.state.rememberReactionAcceptance) {
+		defaultStore.set('reactionAcceptance', select.result);
+	}
+
 	reactionAcceptance.value = select.result;
 }
 
@@ -769,10 +784,8 @@ async function saveDraft(auto = true) {
 		localOnly: localOnly.value,
 		files: files.value,
 		poll: poll.value,
-		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(x => x.id) : undefined,
-		quoteId: quoteId.value,
-		reactionAcceptance: reactionAcceptance.value,
 		scheduledNoteDelete: scheduledNoteDelete.value,
+		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(x => x.id) : undefined,
 	}, draftAuxId.value as string);
 
 	if (!auto) {
@@ -838,6 +851,11 @@ async function applyDraft(draft: noteDrafts.NoteDraft, native = false) {
 	}
 	if (draft.data.scheduledNoteDelete) {
 		scheduledNoteDelete.value = draft.data.scheduledNoteDelete;
+	}
+	if (draft.data.visibleUserIds) {
+		misskeyApi('users/show', { userIds: draft.data.visibleUserIds }).then(users => {
+			users.forEach(u => pushVisibleUser(u));
+		});
 	}
 }
 
@@ -1126,18 +1144,9 @@ onMounted(() => {
 		await noteDrafts.migrate($i.id);
 
 		// 書きかけの投稿を復元
-		if (!props.instant && !props.mention && !props.specified && !props.mock) {
+		if (!props.instant && !props.mention && !props.specified && !props.mock && !defaultStore.state.disableNoteDrafting) {
 			const draft = await noteDrafts.get(draftType.value, $i.id, 'default', draftAuxId.value as string);
-			if (draft) {
-				applyDraft(draft, true);
-				if (draft.data.visibleUserIds) {
-					misskeyApi('users/show', { userIds: draft.data.visibleUserIds }).then(users => {
-						users.forEach(u => pushVisibleUser(u));
-					});
-				}
-				quoteId.value = draft.data.quoteId;
-				reactionAcceptance.value = draft.data.reactionAcceptance;
-			}
+			if (draft) applyDraft(draft, true);
 		}
 
 		// 削除して編集
@@ -1164,6 +1173,8 @@ onMounted(() => {
 					isValid: true,
 				};
 			}
+			visibility.value = init.visibility;
+			localOnly.value = init.localOnly ?? false;
 			if (init.visibleUserIds) {
 				misskeyApi('users/show', { userIds: init.visibleUserIds }).then(users => {
 					users.forEach(u => pushVisibleUser(u));

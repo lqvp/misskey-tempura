@@ -51,9 +51,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkSwitch v-model="directRenote">
 					<template #label>
 						{{ i18n.ts.directRenote }}
-						<span class="_beta">
-							{{ "originFeature" }}
-						</span>
+						<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 					</template>
 					<template #caption>{{ i18n.ts.directRenoteDescription }}</template>
 				</MkSwitch>
