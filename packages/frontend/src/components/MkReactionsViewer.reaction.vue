@@ -69,6 +69,8 @@ const isAvailable = computed(() => isLocal.value ? true : customEmojisMap.has(ge
 	});
 	const canGetInfo = computed(() => !props.reaction.match(/@\w/) && props.reaction.includes(':'));
 
+const plainReaction = computed(() => customEmojisMap.has(emojiName.value) ? getReactionName(props.reaction, true) : props.reaction);
+
 const hideReactionCount = computed(() => {
 	switch (defaultStore.state.hideReactionCount) {
 		case 'none': return false;
