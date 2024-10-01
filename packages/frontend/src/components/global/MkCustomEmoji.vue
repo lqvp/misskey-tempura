@@ -108,14 +108,17 @@ function onClick(ev: MouseEvent) {
 					react(`:${props.name}:`);
 					sound.playMisskeySfx('reaction');
 				},
-			}] : []), ...(!defaultStore.state.reactions.includes(`:${props.name}:`) ? [{
-			text: i18n.ts.addToEmojiPicker,
-			icon: 'ti ti-plus',
-			action: () => {
-				defaultStore.set('reactions', [...defaultStore.state.reactions, `:${props.name}:`]);
 			},
-		});
+			...(!defaultStore.state.reactions.includes(`:${props.name}:`) ? [{
+				text: i18n.ts.addToEmojiPicker,
+				icon: 'ti ti-plus',
+				action: () => {
+					defaultStore.set('reactions', [...defaultStore.state.reactions, `:${props.name}:`]);
+				},
+			}] : [])
+		);
 		}
+
 
 		menuItems.push({
 			text: i18n.ts.info,
