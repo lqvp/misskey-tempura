@@ -334,8 +334,6 @@ const showClipButtonInNoteFooter = computed(defaultStore.makeGetterSetter('showC
 const reactionsDisplaySize = computed(defaultStore.makeGetterSetter('reactionsDisplaySize'));
 const limitWidthOfReaction = computed(defaultStore.makeGetterSetter('limitWidthOfReaction'));
 const collapseRenotes = computed(defaultStore.makeGetterSetter('collapseRenotes'));
-const collapseRenotesTrigger = computed(defaultStore.makeGetterSetter('collapseRenotesTrigger'));
-const collapseSelfRenotes = computed(defaultStore.makeGetterSetter('collapseSelfRenotes'));
 const directRenote = computed(defaultStore.makeGetterSetter('directRenote'));
 const reduceAnimation = computed(defaultStore.makeGetterSetter('animation', v => !v, v => !v));
 const useBlurEffectForModal = computed(defaultStore.makeGetterSetter('useBlurEffectForModal'));
