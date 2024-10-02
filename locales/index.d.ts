@@ -10675,6 +10675,24 @@ export interface Locale extends ILocale {
          */
         "all": string;
     };
+    "__rest": {
+        /**
+         * Misskey.rest独自機能
+         */
+        "extendSettings": string;
+        /**
+         * ローカルタイムラインを非表示にする
+         */
+        "hideLocalTimeLine": string;
+        /**
+         * ソーシャルタイムラインを非表示にする
+         */
+        "hideSocialTimeLine": string;
+        /**
+         * グローバルタイムラインを非表示にする
+         */
+        "hideGlobalTimeLine": string;
+    };
 }
 declare const locales: {
     [lang: string]: Locale;
