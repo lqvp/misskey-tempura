@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</MkSwitch>
 
 	<MkSelect v-model="notesVisibility" @update:modelValue="save()">
-		<template #label>{{ i18n.ts.notesVisibility }}</template>
+		<template #label>{{ i18n.ts.notesVisibility }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 		<option value="public">{{ i18n.ts._ffVisibility.public }}</option>
 		<option value="followers">{{ i18n.ts._ffVisibility.followers }}</option>
 		<option value="private">{{ i18n.ts._ffVisibility.private }}</option>
