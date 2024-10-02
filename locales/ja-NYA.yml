@@ -920,6 +920,7 @@ makeReactionsPublicDescription: "あにゃたがしたリアクション一覧�
 classic: "クラシック"
 muteThread: "スレッドをミュート"
 unmuteThread: "スレッドのミュートを解除"
+notesVisibility: "ノート数の公開範囲"
 followingVisibility: "フォローの公開範囲"
 followersVisibility: "フォロワーの公開範囲"
 continueThread: "さらにスレッドを見る"
@@ -2847,3 +2848,9 @@ _hideReactionCount:
   self: "自分のノートのみ"
   others: "自分以外のノートのみ"
   all: "全てのノート"
+
+__rest:
+  extendSettings: Misskey.rest独自機能
+  hideLocalTimeLine: ローカルタイムラインを非表示にする
+  hideSocialTimeLine: ソーシャルタイムラインを非表示にする
+  hideGlobalTimeLine: グローバルタイムラインを非表示にする
