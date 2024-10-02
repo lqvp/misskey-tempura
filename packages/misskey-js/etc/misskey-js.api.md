@@ -2000,6 +2000,9 @@ type FollowingUpdateRequest = operations['following___update']['requestBody']['c
 type FollowingUpdateResponse = operations['following___update']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+export const notesVisibilities: readonly ["public", "followers", "private"];
+
+// @public (undocumented)
 export const followingVisibilities: readonly ["public", "followers", "private"];
 
 // @public (undocumented)
