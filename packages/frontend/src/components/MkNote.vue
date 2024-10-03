@@ -859,7 +859,7 @@ function emitUpdReaction(emoji: string, delta: number) {
 .instanceicon {
 	display: block !important;
 	padding-top: 33px;
-	margin-right: -25px;
+	width: 0;
 	height: 25px;
 	z-index: 10;
 	position: sticky !important;
@@ -1010,7 +1010,7 @@ function emitUpdReaction(emoji: string, delta: number) {
 	.instanceicon {
 		padding-top: 29px;
 		height: 21px;
-		margin-right: -21px;
+		width: 0;
 	}
 }
 
@@ -1062,7 +1062,7 @@ function emitUpdReaction(emoji: string, delta: number) {
 	.instanceicon {
 		padding-top: 27px;
 		height: 19px;
-		margin-right: -19px;
+		width: 0;
 		top: calc(14px + var(--stickyTop, 0px));
 	}
 }
