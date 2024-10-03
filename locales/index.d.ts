@@ -5280,6 +5280,10 @@ export interface Locale extends ILocale {
      * デフォルトでノートが自己消滅するように
      */
     "defaultScheduledNoteDelete": string;
+		/**
+		 * いいねボタンで使うリアクションを選択
+		 */
+		"selectReaction": string;
     /**
      * 誰がリアクションをしたのかを非表示にする
      */
