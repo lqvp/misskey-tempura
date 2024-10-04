@@ -21,7 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<span v-else>invalid url</span>
 	</div>
 	<div :class="$style.action">
-		<MkButton :small="true" inline @click="playerEnabled = false">
+		<MkButton :small="true" inline @click.stop="playerEnabled = false">
 			<i class="ti ti-x"></i> {{ i18n.ts.disablePlayer }}
 		</MkButton>
 	</div>
@@ -38,18 +38,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 		></iframe>
 	</div>
 	<div :class="$style.action">
-		<MkButton :small="true" inline @click="tweetExpanded = false">
+		<MkButton :small="true" inline @click.stop="tweetExpanded = false">
 			<i class="ti ti-x"></i> {{ i18n.ts.close }}
 		</MkButton>
 	</div>
 </template>
 <div v-else>
-	<component :is="self ? 'MkA' : 'a'" :class="[$style.link, { [$style.compact]: compact }]" :[attr]="self ? url.substring(local.length) : url" rel="nofollow noopener" :target="target" :title="url">
+	<component :is="self ? 'MkA' : 'a'" :class="[$style.link, { [$style.compact]: compact }]" :[attr]="self ? url_string.substring(local.length) : url_string" rel="nofollow noopener" :target="target" :title="url_string" @click.stop>
 		<div v-if="thumbnail && !sensitive" :class="$style.thumbnail" :style="defaultStore.state.dataSaver.urlPreview ? '' : `background-image: url('${thumbnail}')`">
 		</div>
 		<article :class="$style.body">
 			<header :class="$style.header">
-				<h1 v-if="unknownUrl" :class="$style.title">{{ url }}</h1>
+				<h1 v-if="unknownUrl" :class="$style.title">{{ url_string }}</h1>
 				<h1 v-else-if="fetching" :class="$style.title"><MkEllipsis/></h1>
 				<h1 v-else :class="$style.title" :title="title ?? undefined">{{ title }}</h1>
 			</header>
@@ -66,15 +66,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</component>
 	<template v-if="showActions">
 		<div v-if="tweetId" :class="$style.action">
-			<MkButton :small="true" inline @click="tweetExpanded = true">
+			<MkButton :small="true" inline @click.stop="tweetExpanded = true">
 				<i class="ti ti-brand-x"></i> {{ i18n.ts.expandTweet }}
 			</MkButton>
 		</div>
 		<div v-if="!playerEnabled && player.url" :class="$style.action">
-			<MkButton :small="true" inline @click="playerEnabled = true">
+			<MkButton :small="true" inline @click.stop="playerEnabled = true">
 				<i class="ti ti-player-play"></i> {{ i18n.ts.enablePlayer }}
 			</MkButton>
-			<MkButton v-if="!isMobile" :small="true" inline @click="openPlayer()">
+			<MkButton v-if="!isMobile" :small="true" inline @click.stop="openPlayer()">
 				<i class="ti ti-picture-in-picture"></i> {{ i18n.ts.openInWindow }}
 			</MkButton>
 		</div>
@@ -93,6 +93,8 @@ import MkButton from '@/components/MkButton.vue';
 import { versatileLang } from '@@/js/intl-const.js';
 import { transformPlayerUrl } from '@/scripts/player-url-transform.js';
 import { defaultStore } from '@/store.js';
+import { instance } from '@/instance.js';
+import { getProxiedImageUrlNullable } from '@/scripts/media-proxy.js';
 
 type SummalyResult = Awaited<ReturnType<typeof summaly>>;
 
@@ -101,10 +103,12 @@ const props = withDefaults(defineProps<{
 	detail?: boolean;
 	compact?: boolean;
 	showActions?: boolean;
+	host?: string | null | undefined;
 }>(), {
 	detail: false,
 	compact: false,
 	showActions: true,
+	host: null,
 });
 
 const MOBILE_THRESHOLD = 500;
@@ -113,7 +117,7 @@ const isMobile = ref(deviceKind === 'smartphone' || window.innerWidth <= MOBILE_
 let self = props.url.startsWith(local);
 let requestUrl = new URL(props.url);
 let url_string: string;
-if (props.host === requestUrl.host && requestUrl.pathname.startsWith('/clips/')) {
+if (props.host === requestUrl.host && (requestUrl.pathname.startsWith('/clips/') || requestUrl.pathname.startsWith('/play/'))) {
 	let split = requestUrl.pathname.split('@');
 	requestUrl = new URL(local + split[0] + '@' + (split.length >= 2 ? split[1] : props.host));
 	self = true;
@@ -147,7 +151,7 @@ onDeactivated(() => {
 	playerEnabled.value = false;
 });
 
-const requestUrl = new URL(props.url);
+// const requestUrl = new URL(props.url);
 if (!['http:', 'https:'].includes(requestUrl.protocol)) throw new Error('invalid url');
 
 if (requestUrl.hostname === 'twitter.com' || requestUrl.hostname === 'mobile.twitter.com' || requestUrl.hostname === 'x.com' || requestUrl.hostname === 'mobile.x.com') {
@@ -161,7 +165,7 @@ if (requestUrl.hostname === 'music.youtube.com' && requestUrl.pathname.match('^/
 
 requestUrl.hash = '';
 
-window.fetch(`/url?url=${encodeURIComponent(requestUrl.href)}&lang=${versatileLang}`)
+window.fetch(`${instance.urlPreviewEndpoint}?url=${encodeURIComponent(requestUrl.href)}&lang=${versatileLang}`)
 	.then(res => {
 		if (!res.ok) {
 			if (_DEV_) {
@@ -184,8 +188,8 @@ window.fetch(`/url?url=${encodeURIComponent(requestUrl.href)}&lang=${versatileLa
 
 		title.value = info.title;
 		description.value = info.description;
-		thumbnail.value = info.thumbnail;
-		icon.value = info.icon;
+		thumbnail.value = getProxiedImageUrlNullable(info.thumbnail, 'avatar', true);
+		icon.value = getProxiedImageUrlNullable(info.icon, 'emoji', true);
 		sitename.value = info.sitename;
 		player.value = info.player;
 		sensitive.value = info.sensitive ?? false;
