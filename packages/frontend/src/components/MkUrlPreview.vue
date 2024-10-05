@@ -126,6 +126,7 @@ if (props.host === requestUrl.host && (requestUrl.pathname.startsWith('/clips/')
 } else {
 	url_string = requestUrl.toString();
 }
+
 const attr = self ? 'to' : 'href';
 const target = self ? null : '_blank';
 const fetching = ref(true);
@@ -165,7 +166,7 @@ if (requestUrl.hostname === 'music.youtube.com' && requestUrl.pathname.match('^/
 
 requestUrl.hash = '';
 
-window.fetch(`${instance.urlPreviewEndpoint}?url=${encodeURIComponent(requestUrl.href)}&lang=${versatileLang}`)
+window.fetch(`/url?url=${encodeURIComponent(requestUrl.href)}&lang=${versatileLang}`)
 	.then(res => {
 		if (!res.ok) {
 			if (_DEV_) {
@@ -173,6 +174,9 @@ window.fetch(`${instance.urlPreviewEndpoint}?url=${encodeURIComponent(requestUrl
 			}
 			return null;
 		}
+
+		console.log('Instance object:', instance);
+		console.log(`Fetching from: /url??url=${encodeURIComponent(requestUrl.href)}&lang=${versatileLang}`);
 
 		return res.json();
 	})
