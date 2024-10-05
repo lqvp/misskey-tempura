@@ -48,6 +48,7 @@ const routes: RouteDef[] = [{
 }, {
 	path: '/instance-info/:host',
 	component: page(() => import('@/pages/instance-info.vue')),
+	loginRequired: true,
 }, {
 	name: 'settings',
 	path: '/settings',
@@ -202,6 +203,7 @@ const routes: RouteDef[] = [{
 }, {
 	path: '/announcements/:announcementId',
 	component: page(() => import('@/pages/announcement.vue')),
+	loginRequired: true,
 }, {
 	path: '/about',
 	component: page(() => import('@/pages/about.vue')),
@@ -210,13 +212,16 @@ const routes: RouteDef[] = [{
 }, {
 	path: '/contact',
 	component: page(() => import('@/pages/contact.vue')),
+	loginRequired: true,
 }, {
 	path: '/invite',
 	name: 'invite',
 	component: page(() => import('@/pages/invite.vue')),
+	loginRequired: true,
 }, {
 	path: '/ads',
 	component: page(() => import('@/pages/ads.vue')),
+	loginRequired: true,
 }, {
 	path: '/theme-editor',
 	component: page(() => import('@/pages/theme-editor.vue')),
@@ -290,6 +295,7 @@ const routes: RouteDef[] = [{
 }, {
 	path: '/tags/:tag',
 	component: page(() => import('@/pages/tag.vue')),
+	loginRequired: true,
 }, {
 	path: '/pages/new',
 	component: page(() => import('@/pages/page-editor/page-editor.vue')),
@@ -301,6 +307,7 @@ const routes: RouteDef[] = [{
 }, {
 	path: '/pages',
 	component: page(() => import('@/pages/pages.vue')),
+	loginRequired: true,
 }, {
 	path: '/play/:id/edit',
 	component: page(() => import('@/pages/flash/flash-edit.vue')),
@@ -312,9 +319,11 @@ const routes: RouteDef[] = [{
 }, {
 	path: '/play/:id',
 	component: page(() => import('@/pages/flash/flash.vue')),
+	loginRequired: true,
 }, {
 	path: '/play',
 	component: page(() => import('@/pages/flash/flash-index.vue')),
+	loginRequired: true,
 }, {
 	path: '/gallery/:postId/edit',
 	component: page(() => import('@/pages/gallery/edit.vue')),
@@ -326,9 +335,11 @@ const routes: RouteDef[] = [{
 }, {
 	path: '/gallery/:postId',
 	component: page(() => import('@/pages/gallery/post.vue')),
+	loginRequired: true,
 }, {
 	path: '/gallery',
 	component: page(() => import('@/pages/gallery/index.vue')),
+	loginRequired: true,
 }, {
 	path: '/channels/:channelId/edit',
 	component: page(() => import('@/pages/channel-editor.vue')),
@@ -340,16 +351,20 @@ const routes: RouteDef[] = [{
 }, {
 	path: '/channels/:channelId',
 	component: page(() => import('@/pages/channel.vue')),
+	loginRequired: true,
 }, {
 	path: '/channels',
 	component: page(() => import('@/pages/channels.vue')),
+	loginRequired: true,
 }, {
 	path: '/custom-emojis-manager',
 	component: page(() => import('@/pages/custom-emojis-manager.vue')),
+	loginRequired: true,
 }, {
 	path: '/avatar-decorations',
 	name: 'avatarDecorations',
 	component: page(() => import('@/pages/avatar-decorations.vue')),
+	loginRequired: true,
 }, {
 	path: '/registry/keys/:domain/:path(*)?',
 	component: page(() => import('@/pages/registry.keys.vue')),
