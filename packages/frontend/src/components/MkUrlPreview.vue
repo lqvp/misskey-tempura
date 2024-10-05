@@ -175,9 +175,6 @@ window.fetch(`/url?url=${encodeURIComponent(requestUrl.href)}&lang=${versatileLa
 			return null;
 		}
 
-		console.log('Instance object:', instance);
-		console.log(`Fetching from: /url??url=${encodeURIComponent(requestUrl.href)}&lang=${versatileLang}`);
-
 		return res.json();
 	})
 	.then((info: SummalyResult | null) => {
