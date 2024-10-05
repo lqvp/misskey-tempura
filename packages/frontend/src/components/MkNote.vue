@@ -404,7 +404,7 @@ if (!props.mock) {
 				noteId: appearNote.value.id,
 				limit: 10,
 				_cacheKey_: appearNote.value.reactionCount,
-			});
+			}) : [];
 
 			const users = reactions.map(x => x.user);
 
