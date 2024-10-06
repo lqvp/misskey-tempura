@@ -5,9 +5,10 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
-import type { ClipsRepository } from '@/models/_.js';
+import type { ClipFavoritesRemoteRepository, ClipsRepository } from '@/models/_.js';
 import { ClipEntityService } from '@/core/entities/ClipEntityService.js';
 import { DI } from '@/di-symbols.js';
+import { ClipService } from '@/core/ClipService.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -45,10 +46,36 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	constructor(
 		@Inject(DI.clipsRepository)
 		private clipsRepository: ClipsRepository,
+		@Inject(DI.clipFavoritesRemoteRepository)
+		private clipFavoritesRemoteRepository: ClipFavoritesRemoteRepository,
 
+		private clipService: ClipService,
 		private clipEntityService: ClipEntityService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			const parsed_id = ps.clipId.split('@');
+			if (parsed_id.length === 2 ) {//is remote
+				const clip = await clipService.showRemote(parsed_id[0], parsed_id[1], true).catch(err => {
+					console.error(err);
+					throw new ApiError(meta.errors.failedToResolveRemoteUser);
+				});
+				if (me) {
+					const exist = await this.clipFavoritesRemoteRepository.exists({
+						where: {
+							clipId: parsed_id[0],
+							host: parsed_id[1],
+							userId: me.id,
+						},
+					});
+					if (exist) {
+						clip.isFavorited = true;
+					}
+				}
+				return clip;
+			}
+			if (parsed_id.length !== 1 ) {//is not local
+				throw new ApiError(meta.errors.invalidIdFormat);
+			}
 			// Fetch the clip
 			const clip = await this.clipsRepository.findOneBy({
 				id: ps.clipId,
@@ -66,3 +93,4 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		});
 	}
 }
+

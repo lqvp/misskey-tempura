@@ -139,6 +139,7 @@ import type {
 	ApGetResponse,
 	ApShowRequest,
 	ApShowResponse,
+	ApFetchOutboxRequest,
 	AppCreateRequest,
 	AppCreateResponse,
 	AppShowRequest,
@@ -214,6 +215,7 @@ import type {
 	ClipsUpdateResponse,
 	ClipsFavoriteRequest,
 	ClipsUnfavoriteRequest,
+	ClipsMyFavoritesRequest,
 	ClipsMyFavoritesResponse,
 	DriveResponse,
 	DriveFilesRequest,
@@ -679,6 +681,7 @@ export type Endpoints = {
 	'antennas/update': { req: AntennasUpdateRequest; res: AntennasUpdateResponse };
 	'ap/get': { req: ApGetRequest; res: ApGetResponse };
 	'ap/show': { req: ApShowRequest; res: ApShowResponse };
+	'ap/fetch-outbox': { req: ApFetchOutboxRequest; res: EmptyResponse };
 	'app/create': { req: AppCreateRequest; res: AppCreateResponse };
 	'app/show': { req: AppShowRequest; res: AppShowResponse };
 	'auth/accept': { req: AuthAcceptRequest; res: EmptyResponse };
@@ -723,7 +726,7 @@ export type Endpoints = {
 	'clips/update': { req: ClipsUpdateRequest; res: ClipsUpdateResponse };
 	'clips/favorite': { req: ClipsFavoriteRequest; res: EmptyResponse };
 	'clips/unfavorite': { req: ClipsUnfavoriteRequest; res: EmptyResponse };
-	'clips/my-favorites': { req: EmptyRequest; res: ClipsMyFavoritesResponse };
+	'clips/my-favorites': { req: ClipsMyFavoritesRequest; res: ClipsMyFavoritesResponse };
 	'drive': { req: EmptyRequest; res: DriveResponse };
 	'drive/files': { req: DriveFilesRequest; res: DriveFilesResponse };
 	'drive/files/attached-notes': { req: DriveFilesAttachedNotesRequest; res: DriveFilesAttachedNotesResponse };

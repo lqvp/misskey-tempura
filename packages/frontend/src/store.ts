@@ -90,6 +90,10 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'account',
 		default: true,
 	},
+	disableNoteDrafting: {
+		where: 'account',
+		default: false,
+	},
 	draftSavingBehavior: {
 		where: 'account',
 		default: 'auto' as 'auto' | 'manual',
@@ -105,6 +109,14 @@ export const defaultStore = markRaw(new Storage('base', {
 	defaultNoteLocalOnly: {
 		where: 'account',
 		default: false,
+	},
+	defaultScheduledNoteDelete: {
+		where: 'account',
+		default: false,
+	},
+	defaultScheduledNoteDeleteTime: {
+		where: 'account',
+		default: 86400000,
 	},
 	uploadFolder: {
 		where: 'account',
@@ -398,6 +410,18 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: 'medium' as 'small' | 'medium' | 'large',
 	},
+	selectReaction: {
+		where: 'device',
+		default: '❤️' as string,
+	},
+	hideReactionUsers: {
+		where: 'account',
+		default: true,
+	},
+	hideReactionCount: {
+		where: 'account',
+		default: 'none' as 'none' | 'self' | 'others' | 'all',
+	},
 	limitWidthOfReaction: {
 		where: 'device',
 		default: true,
@@ -502,7 +526,22 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: 'app' as 'app' | 'appWithShift' | 'native',
 	},
-
+	disableNoteNyaize: {
+		where: 'device',
+		default: false,
+	},
+	hideLocalTimeLine: {
+		where: 'device',
+		default: false,
+	},
+	hideSocialTimeLine: {
+		where: 'device',
+		default: false,
+	},
+	hideGlobalTimeLine: {
+		where: 'device',
+		default: false,
+	},
 	sound_masterVolume: {
 		where: 'device',
 		default: 0.3,

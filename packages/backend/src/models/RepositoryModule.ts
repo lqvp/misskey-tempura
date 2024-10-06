@@ -24,12 +24,14 @@ import {
 	MiChannelFollowing,
 	MiClip,
 	MiClipFavorite,
+	MiClipFavoriteRemote,
 	MiClipNote,
 	MiDriveFile,
 	MiDriveFolder,
 	MiEmoji,
 	MiFlash,
 	MiFlashLike,
+	MiFlashLikeRemote,
 	MiFollowing,
 	MiFollowRequest,
 	MiGalleryLike,
@@ -375,6 +377,12 @@ const $clipFavoritesRepository: Provider = {
 	inject: [DI.db],
 };
 
+const $clipFavoritesRemoteRepository: Provider = {
+	provide: DI.clipFavoritesRemoteRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiClipFavoriteRemote).extend(miRepository as MiRepository<MiClipFavoriteRemote>),
+	inject: [DI.db],
+};
+
 const $antennasRepository: Provider = {
 	provide: DI.antennasRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiAntenna).extend(miRepository as MiRepository<MiAntenna>),
@@ -465,6 +473,12 @@ const $flashLikesRepository: Provider = {
 	inject: [DI.db],
 };
 
+const $flashLikesRemoteRepository: Provider = {
+	provide: DI.flashLikesRemoteRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiFlashLikeRemote).extend(miRepository as MiRepository<MiFlashLikeRemote>),
+	inject: [DI.db],
+};
+
 const $rolesRepository: Provider = {
 	provide: DI.rolesRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiRole).extend(miRepository as MiRepository<MiRole>),
@@ -547,6 +561,7 @@ const $reversiGamesRepository: Provider = {
 		$clipsRepository,
 		$clipNotesRepository,
 		$clipFavoritesRepository,
+		$clipFavoritesRemoteRepository,
 		$antennasRepository,
 		$promoNotesRepository,
 		$promoReadsRepository,
@@ -564,6 +579,7 @@ const $reversiGamesRepository: Provider = {
 		$roleAssignmentsRepository,
 		$flashsRepository,
 		$flashLikesRepository,
+		$flashLikesRemoteRepository,
 		$userMemosRepository,
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
@@ -618,6 +634,7 @@ const $reversiGamesRepository: Provider = {
 		$clipsRepository,
 		$clipNotesRepository,
 		$clipFavoritesRepository,
+		$clipFavoritesRemoteRepository,
 		$antennasRepository,
 		$promoNotesRepository,
 		$promoReadsRepository,
@@ -635,6 +652,7 @@ const $reversiGamesRepository: Provider = {
 		$roleAssignmentsRepository,
 		$flashsRepository,
 		$flashLikesRepository,
+		$flashLikesRemoteRepository,
 		$userMemosRepository,
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,

@@ -2441,6 +2441,10 @@ export interface Locale extends ILocale {
      */
     "updateRemoteUser": string;
     /**
+     * 投稿を取得
+     */
+    "fetchOutbox": string;
+    /**
      * アイコンを解除
      */
     "unsetUserAvatar": string;
@@ -3696,6 +3700,10 @@ export interface Locale extends ILocale {
      * スレッドのミュートを解除
      */
     "unmuteThread": string;
+		/**
+		 * ノート数の公開範囲
+		 */
+		"notesVisibility": string;
     /**
      * フォローの公開範囲
      */
@@ -4216,6 +4224,14 @@ export interface Locale extends ILocale {
      * このまま投稿
      */
     "thisPostMayBeAnnoyingIgnore": string;
+		/**
+     * ノートの下書きの復元を無効化
+     */
+    "disableNoteDrafting": string;
+    /**
+     * ノートの投稿フォームを開き直した際に、下書きを復元しないようにします。
+     */
+    "disableNoteDraftingDescription": string;
     /**
      * リノートのスマート省略
      */
@@ -5076,6 +5092,10 @@ export interface Locale extends ILocale {
      * このノートは{time}に消去されます
      */
     "noteDeletationAt": ParameterizedString<"time">;
+    /**
+     * 1年以上先の日時を指定することはできません
+     */
+    "cannotScheduleLaterThanOneYear": string;
 		/**
      * 使用しない場合は空欄にしてください
      */
@@ -5136,6 +5156,14 @@ export interface Locale extends ILocale {
      * 作成したアンテナ
      */
     "createdAntennas": string;
+    /**
+     * ノートの自己消滅の初期値
+     */
+    "defaultScheduledNoteDeleteTime": string;
+    /**
+     * ノートの自己消滅が有効になっています
+     */
+    "scheduledNoteDeleteEnabled": string;
     /**
      * {x}から
      */
@@ -5252,6 +5280,42 @@ export interface Locale extends ILocale {
      * 下書きを適用すると現在入力されている内容はリセットされます。よろしいですか？
      */
     "draftOverwriteConfirm": string;
+    /**
+     * デフォルトでノートが自己消滅するように
+     */
+    "defaultScheduledNoteDelete": string;
+		/**
+		 * いいねボタンで使うリアクションを選択
+		 */
+		"selectReaction": string;
+    /**
+     * 誰がリアクションをしたのかを非表示にする
+     */
+    "hideReactionUsers": string;
+    /**
+     * リアクションをホバーした際のユーザー一覧と、ノート詳細ページのリアクションタブにあるリアクションをしたユーザー一覧を非表示にします
+     */
+    "hideReactionUsersDescription": string;
+    /**
+     * リアクション数の非表示
+     */
+    "hideReactionCount": string;
+    /**
+     * 絵文字ピッカーに追加
+     */
+    "addToEmojiPicker": string;
+    /**
+     * 投稿フォームをリセット
+     */
+    "clearPost": string;
+    /**
+     * アクティビティを非公開にする
+     */
+    "hideActivity": string;
+    /**
+     * 自分のプロフィールのアクティビティ (概要/アクティビティタブ) を他人が見れないようにします。このオプションを有効にしても、自分であればプロフィールのアクティビティタブから引き続き閲覧できます。
+     */
+    "hideActivityDescription": string;
     "_bubbleGame": {
         /**
          * 遊び方
@@ -5308,6 +5372,7 @@ export interface Locale extends ILocale {
     };
     "autoRejectFollowRequest": string;
     "autoRejectFollowRequestDescription": string;
+    "disableNoteNyaize": string;
     "_announcement": {
         /**
          * 既存ユーザーのみ
@@ -10600,100 +10665,42 @@ export interface Locale extends ILocale {
          */
         "codeGeneratedDescription": string;
     };
-    // "_hana": {
-    //     "_inDevelopment": {
-    //         /**
-    //          * この機能は開発中です
-    //          */
-    //         "title": string;
-    //         /**
-    //          * はなみすきーは新規機能盛りだくさんで鋭意開発中です！
-    //          * どんな機能が実装されるかはお楽しみ。
-    //          */
-    //         "description": string;
-    //     };
-    //     "_welcome": {
-    //         /**
-    //          * 「{x}」とは？
-    //          */
-    //         "whatAboutX": ParameterizedString<"x">;
-    //         "_aboutHana": {
-    //             /**
-    //              * はなみすきー
-    //              */
-    //             "title": string;
-    //             /**
-    //              * はなみすきーは、Misskeyベースの分散型SNSサービスです。
-    //              * あなたのSNS体験に「はな」を添える、数々の独自機能を備えています。
-    //              */
-    //             "description": string;
-    //         };
-    //         "_aboutDecentralized": {
-    //             /**
-    //              * 分散型SNS
-    //              */
-    //             "title": string;
-    //             /**
-    //              * 一般的なSNSサービス（X, Instagram, YouTubeなど）はそのサービス内で投稿データなどが完結するようになっています。しかし、分散型SNSは、サービス同士が共通の仕組みを通して連携しており、他のサービスのユーザーの投稿を見たり、フォローしたりできるのです。
-    //              * はなみすきーは標準で分散型テクノロジーのActivityPubに対応しており、他のMisskey/Mastodon等を利用したサービスやThreadsなどと通信することができます。
-    //              */
-    //             "description": string;
-    //         };
-    //         "_features": {
-    //             /**
-    //              * 近日提供予定
-    //              */
-    //             "inDevelopment": string;
-    //             "_hanaMode": {
-    //                 /**
-    //                  * はなモードで、あなただけのSNS体験を
-    //                  */
-    //                 "title": string;
-    //                 /**
-    //                  * はなみすきー独自機能「はなモード」をオンにすると、投稿内容がローカルタイムライン（LTL）に流れないようになります。ただし、「ホーム」投稿とは違い、LTLへのリノートが可能なほか、外部サーバーには通常のパブリックの投稿として配信されます。
-    //                  * これにより、おひとりさまサーバーに近い分散SNS体験をワンクリックで構築することができます。
-    //                  */
-    //                 "description": string;
-    //             };
-    //             "_reactionAbundance": {
-    //                 /**
-    //                  * リアクションで、もっと気軽につながろう
-    //                  */
-    //                 "title": string;
-    //                 /**
-    //                  * はなみすきーではユーザー同士の交流をより楽しめる「リアクション」機能を搭載。ユーザーの投稿に「いいね」ではなく絵文字を送ることができます。はなみすきーに標準搭載の豊富なリアクション絵文字で、リプライを送るよりも気軽に自分の気持ちを伝えられます。もちろん、リアクションよりいいねボタンがお好みならそのように設定することも可能です。
-    //                  */
-    //                 "description": string;
-    //             };
-    //             "_easyMigration": {
-    //                 /**
-    //                  * 他サービスから簡単移行
-    //                  */
-    //                 "title": string;
-    //                 /**
-    //                  * 他のMisskeyサーバーなどからの移行が簡単になる機能を提供！過去の投稿もはなみすきー上に引き継ぐことができます。
-    //                  */
-    //                 "description": string;
-    //             };
-    //             "_preciseSearching": {
-    //                 /**
-    //                  * 最新技術を活用した高精度な検索
-    //                  */
-    //                 "title": string;
-    //                 /**
-    //                  * 機械学習や最新の学術研究をもとに、はなみすきーのためにチューニングされた高精度で高速な検索機能を利用できます。また、はなみすきーの検索機能そのものが学術研究プロジェクトとなっているため、検索精度は日進月歩となることが期待できます。
-    //                  */
-    //                 "description": string;
-    //             };
-    //         };
-    //         "_cta": {
-    //             /**
-    //              * 「はな」のあるSNS体験を楽しもう
-    //              */
-    //             "title": string;
-    //         };
-    //     };
-    // };
+    "_hideReactionCount": {
+        /**
+         * 非表示にしない
+         */
+        "none": string;
+        /**
+         * 自分のノートのみ
+         */
+        "self": string;
+        /**
+         * 自分以外のノートのみ
+         */
+        "others": string;
+        /**
+         * 全てのノート
+         */
+        "all": string;
+    };
+    "__rest": {
+        /**
+         * Misskey.rest独自機能
+         */
+        "extendSettings": string;
+        /**
+         * ローカルタイムラインを非表示にする
+         */
+        "hideLocalTimeLine": string;
+        /**
+         * ソーシャルタイムラインを非表示にする
+         */
+        "hideSocialTimeLine": string;
+        /**
+         * グローバルタイムラインを非表示にする
+         */
+        "hideGlobalTimeLine": string;
+    };
 }
 declare const locales: {
     [lang: string]: Locale;

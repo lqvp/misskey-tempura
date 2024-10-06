@@ -6,12 +6,13 @@
 import { toUnicode } from 'punycode';
 import { defineAsyncComponent, ref, watch } from 'vue';
 import * as Misskey from 'misskey-js';
+import { host, url } from '@@/js/config.js';
 import { i18n } from '@/i18n.js';
 import { copyToClipboard } from '@/scripts/copy-to-clipboard.js';
 import { host, url } from '@@/js/config.js';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
-import { defaultStore, userActions} from '@/store.js';
+import { defaultStore, userActions } from '@/store.js';
 import { $i, iAmModerator } from '@/account.js';
 import { notesSearchAvailable, canSearchNonLocalNotes } from '@/scripts/check-permissions.js';
 import { IRouter } from '@/nirax.js';
@@ -20,6 +21,58 @@ import { mainRouter } from '@/router/main.js';
 import { genEmbedCode } from '@/scripts/get-embed-code.js';
 import type { MenuItem } from '@/types/menu.js';
 import {editNickname} from "@/scripts/edit-nickname";
+
+type PeriodType = {
+	key: string;
+	time: number | null;
+	text: string;
+};
+
+const period: PeriodType[] = [{
+	key: 'indefinitely',
+	time: null,
+	text: i18n.ts.indefinitely,
+}, {
+	key: 'tenMinutes',
+	time: 1000 * 60 * 10,
+	text: i18n.tsx._timeIn.minutes({ n: (10).toString() }),
+}, {
+	key: 'oneHour',
+	time: 1000 * 60 * 60,
+	text: i18n.tsx._timeIn.hours({ n: (1).toString() }),
+}, {
+	key: 'sixHours',
+	time: 1000 * 60 * 60 * 6,
+	text: i18n.tsx._timeIn.hours({ n: (6).toString() }),
+}, {
+	key: 'twelveHours',
+	time: 1000 * 60 * 60 * 12,
+	text: i18n.tsx._timeIn.hours({ n: (12).toString() }),
+}, {
+	key: 'oneDay',
+	time: 1000 * 60 * 60 * 24,
+	text: i18n.tsx._timeIn.days({ n: (1).toString() }),
+}, {
+	key: 'oneWeek',
+	time: 1000 * 60 * 60 * 24 * 7,
+	text: i18n.tsx._timeIn.weeks({ n: (1).toString() }),
+}];
+
+async function getPeriod(title: string, text?: string) {
+	const { canceled, result } = await os.select({
+		title,
+		text,
+		items: period.map(x => ({
+			value: x.key,
+			text: x.text,
+		})),
+		default: 'indefinitely',
+	});
+	if (canceled) return false;
+
+	const periodTime = period.find(x => x.key === result)?.time;
+	return periodTime == null ? null : Date.now() + periodTime;
+}
 
 export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter = mainRouter) {
 	const meId = $i ? $i.id : null;
@@ -34,29 +87,8 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 				user.isMuted = false;
 			});
 		} else {
-			const { canceled, result: period } = await os.select({
-				title: i18n.ts.mutePeriod,
-				items: [{
-					value: 'indefinitely', text: i18n.ts.indefinitely,
-				}, {
-					value: 'tenMinutes', text: i18n.ts.tenMinutes,
-				}, {
-					value: 'oneHour', text: i18n.ts.oneHour,
-				}, {
-					value: 'oneDay', text: i18n.ts.oneDay,
-				}, {
-					value: 'oneWeek', text: i18n.ts.oneWeek,
-				}],
-				default: 'indefinitely',
-			});
-			if (canceled) return;
-
-			const expiresAt = period === 'indefinitely' ? null
-				: period === 'tenMinutes' ? Date.now() + (1000 * 60 * 10)
-				: period === 'oneHour' ? Date.now() + (1000 * 60 * 60)
-				: period === 'oneDay' ? Date.now() + (1000 * 60 * 60 * 24)
-				: period === 'oneWeek' ? Date.now() + (1000 * 60 * 60 * 24 * 7)
-				: null;
+			const expiresAt = await getPeriod(i18n.ts.mutePeriod);
+			if (expiresAt === false) return;
 
 			os.apiWithDialog('mute/create', {
 				userId: user.id,
@@ -94,6 +126,27 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 		});
 	}
 
+	async function muteAndBlock() {
+		if (user.isMuted) return toggleBlock();
+		if (user.isBlocking) return toggleMute();
+
+		const expiresAt = await getPeriod(i18n.ts.muteAndBlockConfirm, i18n.ts.mutePeriod);
+		if (expiresAt === false) return;
+
+		await os.apiWithDialog('mute/create', {
+			userId: user.id,
+			expiresAt,
+		}).then(() => {
+			user.isMuted = true;
+		});
+
+		await os.apiWithDialog('blocking/create', {
+			userId: user.id,
+		}).then(() => {
+			user.isBlocking = true;
+		});
+	}
+
 	function reportAbuse() {
 		const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkAbuseReportWindow.vue')), {
 			user: user,
@@ -115,6 +168,14 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 	async function userInfoUpdate() {
 		os.apiWithDialog('federation/update-remote-user', {
 			userId: user.id,
+		});
+	}
+
+	async function userFetchOutbox() {
+		os.apiWithDialog('ap/fetch-outbox', {
+			userId: user.id,
+			wait: true,
+			includeAnnounce: true,
 		});
 	}
 
@@ -258,7 +319,7 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 								listId: list.id,
 								userId: user.id,
 							}).then(() => {
-								list.userIds?.splice(list.userIds?.indexOf(user.id), 1);
+								list.userIds?.splice(list.userIds.indexOf(user.id), 1);
 							});
 						}
 					}));
@@ -312,29 +373,8 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 					return roles.filter(r => r.target === 'manual').map(r => ({
 						text: r.name,
 						action: async () => {
-							const { canceled, result: period } = await os.select({
-								title: i18n.ts.period + ': ' + r.name,
-								items: [{
-									value: 'indefinitely', text: i18n.ts.indefinitely,
-								}, {
-									value: 'oneHour', text: i18n.ts.oneHour,
-								}, {
-									value: 'oneDay', text: i18n.ts.oneDay,
-								}, {
-									value: 'oneWeek', text: i18n.ts.oneWeek,
-								}, {
-									value: 'oneMonth', text: i18n.ts.oneMonth,
-								}],
-								default: 'indefinitely',
-							});
-							if (canceled) return;
-
-							const expiresAt = period === 'indefinitely' ? null
-								: period === 'oneHour' ? Date.now() + (1000 * 60 * 60)
-								: period === 'oneDay' ? Date.now() + (1000 * 60 * 60 * 24)
-								: period === 'oneWeek' ? Date.now() + (1000 * 60 * 60 * 24 * 7)
-								: period === 'oneMonth' ? Date.now() + (1000 * 60 * 60 * 24 * 30)
-								: null;
+							const expiresAt = await getPeriod(i18n.ts.period + ': ' + r.name);
+							if (expiresAt === false) return;
 
 							os.apiWithDialog('admin/roles/assign', { roleId: r.id, userId: user.id, expiresAt });
 						},
@@ -382,6 +422,14 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 			action: toggleBlock,
 		});
 
+		if (!user.isBlocking || !user.isMuted) {
+			menuItems.push({
+				icon: 'ti ti-hammer',
+				text: `${i18n.ts.mute}&${i18n.ts.block}`,
+				action: muteAndBlock,
+			});
+		}
+
 		if (user.isFollowed) {
 			menuItems.push({
 				icon: 'ti ti-link-off',
@@ -402,6 +450,10 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 			icon: 'ti ti-refresh',
 			text: i18n.ts.updateRemoteUser,
 			action: userInfoUpdate,
+		}, {
+			icon: 'ti ti-refresh-dot',
+			text: i18n.ts.fetchOutbox,
+			action: userFetchOutbox,
 		});
 	}
 

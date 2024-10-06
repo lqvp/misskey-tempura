@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	@drop.stop="onDrop"
 >
 	<header :class="$style.header">
-		<div :class="$style.headerLeft">
+		<div :class="[$style.headerLeft, {[$style.headerFixedBasis]: fixed}]">
 			<button v-if="!fixed" :class="$style.cancel" class="_button" @click="cancel"><i class="ti ti-x"></i></button>
 			<button v-click-anime v-tooltip="i18n.ts.switchAccount" :class="$style.account" class="_button" @click="openAccountMenu">
 				<MkAvatar :user="postAccount ?? $i" :class="$style.avatar"/>
@@ -180,7 +180,7 @@ const posted = ref(false);
 const text = ref(props.initialText ?? '');
 const files = ref(props.initialFiles ?? []);
 const poll = ref<PollEditorModelValue | null>(null);
-const scheduledNoteDelete = ref<DeleteScheduleEditorModelValue | null>(null);
+const scheduledNoteDelete = ref<DeleteScheduleEditorModelValue | null>(defaultStore.state.defaultScheduledNoteDelete ? { deleteAt: null, deleteAfter: defaultStore.state.defaultScheduledNoteDeleteTime, isValid: true } : null);
 const useCw = ref<boolean>(!!props.initialCw);
 const renote = ref(props.renote);
 const reply = ref(props.reply);
@@ -252,6 +252,7 @@ const maxTextLength = computed((): number => {
 
 const canPost = computed((): boolean => {
 	return !props.mock && !posting.value && !posted.value &&
+		(scheduledNoteDelete.value ? scheduledNoteDelete.value.isValid : true) &&
 		(
 			1 <= textLength.value ||
 			1 <= files.value.length ||
@@ -303,6 +304,9 @@ const bottomItemActionDef: Record<keyof typeof bottomItemDef, {
 	addMfmFunction: {
 		hide: computed(() => !showAddMfmFunction.value),
 		action: insertMfmFunction,
+	},
+	clearPost: {
+		action: clear,
 	},
 	saveAsDraft: {
 		action: () => saveDraft(false),
@@ -374,11 +378,11 @@ function initialize() {
 		}
 
 		if (visibility.value === 'specified') {
-			if (props.reply.visibleUserIds) {
+			if (reply.value.visibleUserIds) {
 				misskeyApi('users/show', {
-					userIds: props.reply.visibleUserIds.filter(uid => uid !== $i.id && uid !== props.reply?.userId),
+					userIds: reply.value.visibleUserIds.filter(uid => uid !== $i.id && uid !== reply.value?.userId),
 				}).then(users => {
-					users.forEach(u => pushVisibleUser(u));
+					users.forEach(pushVisibleUser);
 				});
 			}
 
@@ -395,10 +399,20 @@ function initialize() {
 		pushVisibleUser(props.specified);
 	}
 
-	// keep cw when reply
-	if (defaultStore.state.keepCw && reply.value && reply.value.cw) {
-		useCw.value = true;
-		cw.value = reply.value.cw;
+	if (visibility.value === 'specified') {
+		if (reply.value?.visibleUserIds) {
+			misskeyApi('users/show', {
+				userIds: reply.value.visibleUserIds.filter(uid => uid !== $i.id && uid !== reply.value?.userId),
+			}).then(users => {
+				users.forEach(u => pushVisibleUser(u));
+			});
+		}
+
+		if (reply.value?.userId !== $i.id) {
+			misskeyApi('users/show', { userId: reply.value?.userId }).then(user => {
+				pushVisibleUser(user);
+			});
+		}
 	}
 }
 
@@ -463,6 +477,7 @@ function toggleScheduledNoteDelete() {
 		scheduledNoteDelete.value = {
 			deleteAt: null,
 			deleteAfter: null,
+			isValid: true,
 		};
 	}
 }
@@ -597,6 +612,11 @@ async function toggleReactionAcceptance() {
 		default: reactionAcceptance.value,
 	});
 	if (select.canceled) return;
+
+	if (defaultStore.state.rememberReactionAcceptance) {
+		defaultStore.set('reactionAcceptance', select.result);
+	}
+
 	reactionAcceptance.value = select.result;
 }
 
@@ -764,10 +784,8 @@ async function saveDraft(auto = true) {
 		localOnly: localOnly.value,
 		files: files.value,
 		poll: poll.value,
-		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(x => x.id) : undefined,
-		quoteId: quoteId.value,
-		reactionAcceptance: reactionAcceptance.value,
 		scheduledNoteDelete: scheduledNoteDelete.value,
+		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(x => x.id) : undefined,
 	}, draftAuxId.value as string);
 
 	if (!auto) {
@@ -833,6 +851,11 @@ async function applyDraft(draft: noteDrafts.NoteDraft, native = false) {
 	}
 	if (draft.data.scheduledNoteDelete) {
 		scheduledNoteDelete.value = draft.data.scheduledNoteDelete;
+	}
+	if (draft.data.visibleUserIds) {
+		misskeyApi('users/show', { userIds: draft.data.visibleUserIds }).then(users => {
+			users.forEach(u => pushVisibleUser(u));
+		});
 	}
 }
 
@@ -1121,18 +1144,9 @@ onMounted(() => {
 		await noteDrafts.migrate($i.id);
 
 		// 書きかけの投稿を復元
-		if (!props.instant && !props.mention && !props.specified && !props.mock) {
+		if (!props.instant && !props.mention && !props.specified && !props.mock && !defaultStore.state.disableNoteDrafting) {
 			const draft = await noteDrafts.get(draftType.value, $i.id, 'default', draftAuxId.value as string);
-			if (draft) {
-				applyDraft(draft, true);
-				if (draft.data.visibleUserIds) {
-					misskeyApi('users/show', { userIds: draft.data.visibleUserIds }).then(users => {
-						users.forEach(u => pushVisibleUser(u));
-					});
-				}
-				quoteId.value = draft.data.quoteId;
-				reactionAcceptance.value = draft.data.reactionAcceptance;
-			}
+			if (draft) applyDraft(draft, true);
 		}
 
 		// 削除して編集
@@ -1156,8 +1170,11 @@ onMounted(() => {
 				scheduledNoteDelete.value = {
 					deleteAt: init.deleteAt ? (new Date(init.deleteAt)).getTime() : null,
 					deleteAfter: null,
+					isValid: true,
 				};
 			}
+			visibility.value = init.visibility;
+			localOnly.value = init.localOnly ?? false;
 			if (init.visibleUserIds) {
 				misskeyApi('users/show', { userIds: init.visibleUserIds }).then(users => {
 					users.forEach(u => pushVisibleUser(u));
@@ -1200,6 +1217,10 @@ defineExpose({
 .headerLeft {
 	display: flex;
 	flex: 0 1 100px;
+}
+
+.headerFixedBasis {
+	flex-basis: 70px;
 }
 
 .cancel {
@@ -1436,7 +1457,7 @@ html[data-color-scheme=light] .preview {
 	font-size: .9em;
 	color: var(--warn);
 	border-radius: 6px;
-	min-width: 1.6em;
+	min-width: 2em;
 	text-align: center;
 
 	&.textOver {

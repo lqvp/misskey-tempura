@@ -26,8 +26,8 @@ export class ReactionsBufferingService implements OnApplicationShutdown {
 		@Inject(DI.redisForSub)
 		private redisForSub: Redis.Redis,
 
-		@Inject(DI.redisForReactions)
-		private redisForReactions: Redis.Redis, // TODO: 専用のRedisインスタンスにする
+		@Inject(DI.redisForRemoteApis)
+		private redisForRemoteApis: Redis.Redis, // TODO: 専用のRedisインスタンスにする
 
 		@Inject(DI.notesRepository)
 		private notesRepository: NotesRepository,
@@ -57,7 +57,7 @@ export class ReactionsBufferingService implements OnApplicationShutdown {
 
 	@bindThis
 	public async create(noteId: MiNote['id'], userId: MiUser['id'], reaction: string, currentPairs: string[]): Promise<void> {
-		const pipeline = this.redisForReactions.pipeline();
+		const pipeline = this.redisForRemoteApis.pipeline();
 		pipeline.hincrby(`${REDIS_DELTA_PREFIX}:${noteId}`, reaction, 1);
 		for (let i = 0; i < currentPairs.length; i++) {
 			pipeline.zadd(`${REDIS_PAIR_PREFIX}:${noteId}`, i, currentPairs[i]);
@@ -69,7 +69,7 @@ export class ReactionsBufferingService implements OnApplicationShutdown {
 
 	@bindThis
 	public async delete(noteId: MiNote['id'], userId: MiUser['id'], reaction: string): Promise<void> {
-		const pipeline = this.redisForReactions.pipeline();
+		const pipeline = this.redisForRemoteApis.pipeline();
 		pipeline.hincrby(`${REDIS_DELTA_PREFIX}:${noteId}`, reaction, -1);
 		pipeline.zrem(`${REDIS_PAIR_PREFIX}:${noteId}`, `${userId}/${reaction}`);
 		// TODO: 「消した要素一覧」も持っておかないとcreateされた時に上書きされて復活する
@@ -81,7 +81,7 @@ export class ReactionsBufferingService implements OnApplicationShutdown {
 		deltas: Record<string, number>;
 		pairs: ([MiUser['id'], string])[];
 	}> {
-		const pipeline = this.redisForReactions.pipeline();
+		const pipeline = this.redisForRemoteApis.pipeline();
 		pipeline.hgetall(`${REDIS_DELTA_PREFIX}:${noteId}`);
 		pipeline.zrange(`${REDIS_PAIR_PREFIX}:${noteId}`, 0, -1);
 		const results = await pipeline.exec();
@@ -112,7 +112,7 @@ export class ReactionsBufferingService implements OnApplicationShutdown {
 			pairs: ([MiUser['id'], string])[];
 		}>();
 
-		const pipeline = this.redisForReactions.pipeline();
+		const pipeline = this.redisForRemoteApis.pipeline();
 		for (const noteId of noteIds) {
 			pipeline.hgetall(`${REDIS_DELTA_PREFIX}:${noteId}`);
 			pipeline.zrange(`${REDIS_PAIR_PREFIX}:${noteId}`, 0, -1);
@@ -148,7 +148,7 @@ export class ReactionsBufferingService implements OnApplicationShutdown {
 		let cursor = '0';
 		do {
 			// https://github.com/redis/ioredis#transparent-key-prefixing
-			const result = await this.redisForReactions.scan(
+			const result = await this.redisForRemoteApis.scan(
 				cursor,
 				'MATCH',
 				`${this.config.redis.prefix}:${REDIS_DELTA_PREFIX}:*`,
@@ -162,7 +162,7 @@ export class ReactionsBufferingService implements OnApplicationShutdown {
 		const bufferedMap = await this.getMany(bufferedNoteIds);
 
 		// clear
-		const pipeline = this.redisForReactions.pipeline();
+		const pipeline = this.redisForRemoteApis.pipeline();
 		for (const noteId of bufferedNoteIds) {
 			pipeline.del(`${REDIS_DELTA_PREFIX}:${noteId}`);
 			pipeline.del(`${REDIS_PAIR_PREFIX}:${noteId}`);

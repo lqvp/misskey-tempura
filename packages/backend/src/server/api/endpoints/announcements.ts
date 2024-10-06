@@ -14,7 +14,7 @@ import type { AnnouncementsRepository } from '@/models/_.js';
 export const meta = {
 	tags: ['meta'],
 
-	requireCredential: false,
+	requireCredential: true,
 
 	res: {
 		type: 'array',

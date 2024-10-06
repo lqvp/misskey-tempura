@@ -606,6 +606,7 @@ output: "出力"
 script: "スクリプト"
 disablePagesScript: "Pagesのスクリプトを無効にする"
 updateRemoteUser: "リモートユーザー情報の更新"
+fetchOutbox: "投稿を取得"
 unsetUserAvatar: "アイコンを解除"
 unsetUserAvatarConfirm: "アイコンを解除しますか？"
 unsetUserBanner: "バナーを解除"
@@ -920,6 +921,7 @@ makeReactionsPublicDescription: "あなたがしたリアクション一覧を�
 classic: "クラシック"
 muteThread: "スレッドをミュート"
 unmuteThread: "スレッドのミュートを解除"
+notesVisibility: "ノート数の公開範囲"
 followingVisibility: "フォローの公開範囲"
 followersVisibility: "フォロワーの公開範囲"
 continueThread: "さらにスレッドを見る"
@@ -1050,6 +1052,8 @@ thisPostMayBeAnnoying: "この投稿は迷惑になる可能性があります�
 thisPostMayBeAnnoyingHome: "ホームに投稿"
 thisPostMayBeAnnoyingCancel: "やめる"
 thisPostMayBeAnnoyingIgnore: "このまま投稿"
+disableNoteDrafting: "ノートの下書きの復元を無効化"
+disableNoteDraftingDescription: "ノートの投稿フォームを開き直した際に、下書きを復元しないようにします。"
 collapseRenotes: "リノートのスマート省略"
 collapseRenotesDescription: "リアクションやリノートをしたことがあるノートをたたんで表示します。"
 directRenote: "ダイレクトリノート"
@@ -1263,6 +1267,8 @@ enableHorizontalSwipe: "スワイプしてタブを切り替える"
 loading: "読み込み中"
 surrender: "やめる"
 gameRetry: "リトライ"
+defaultScheduledNoteDeleteTime: "ノートの自己消滅の初期値"
+scheduledNoteDeleteEnabled: "ノートの自己消滅が有効になっています"
 notUsePleaseLeaveBlank: "使用しない場合は空欄にしてください"
 useTotp: "ワンタイムパスワードを使う"
 useBackupCode: "バックアップコードを使う"
@@ -1305,15 +1311,22 @@ mutualBannerThisUser: "このユーザーのバナー"
 maximum: "最大"
 scheduledNoteDelete: "すぐ消す"
 noteDeletationAt: "このノートは{time}に削除されます"
+cannotScheduleLaterThanOneYear: "1年以上先の日時を指定することはできません"
 postForm: "投稿フォーム"
 postFormBottomSettingsDescription: "投稿フォームの下部に表示される項目の並び替えが出来ます。項目をクリックすると削除できます。"
-clearPost: "投稿フォームをリセット"
-addToEmojiPicker: "絵文字ピッカーに追加"
-hideReactionCount: "リアクション数の非表示"
 drafts: "下書き"
 draftSavingBehavior: "下書きの保存に関する動作"
 saveAsDraft: "下書きとして保存"
 draftOverwriteConfirm: "下書きを適用すると現在入力されている内容はリセットされます。よろしいですか？"
+defaultScheduledNoteDelete: "デフォルトでノートが自己消滅するように"
+selectReaction: "いいねボタンで使うリアクションを選択"
+hideReactionUsers: "誰がリアクションをしたのかを非表示にする"
+hideReactionUsersDescription: "リアクションをホバーした際のユーザー一覧と、ノート詳細ページのリアクションタブにあるリアクションをしたユーザー一覧を非表示にします"
+hideReactionCount: "リアクション数の非表示"
+addToEmojiPicker: "絵文字ピッカーに追加"
+clearPost: "投稿フォームをリセット"
+hideActivity: "アクティビティを非公開にする"
+hideActivityDescription: "自分のプロフィールのアクティビティ (概要/アクティビティタブ) を他人が見れないようにします。このオプションを有効にしても、自分であればプロフィールのアクティビティタブから引き続き閲覧できます。"
 
 _bubbleGame:
   howToPlay: "遊び方"
@@ -1332,6 +1345,7 @@ _bubbleGame:
     section3: "モノがハコからあふれるとゲームオーバーです。ハコからあふれないようにしつつモノを融合させてハイスコアを目指そう！"
 autoRejectFollowRequest: "フォローリクエストを自動で拒否する"
 autoRejectFollowRequestDescription: "フォローリクエストを自動で拒否するようにします。「フォロー中ユーザーからのフォロリクを自動承認」がONになっている場合は、フォロー中ユーザーからのフォローリクエストは自動的に承認され、それ以外のユーザーからのフォローリクエストは自動的に拒否されるようになります。"
+disableNoteNyaize: "nayizeを無効化する"
 
 _announcement:
   forExistingUsers: "既存ユーザーのみ"
@@ -2831,32 +2845,14 @@ _embedCodeGen:
   generateCode: "埋め込みコードを作成"
   codeGenerated: "コードが生成されました"
   codeGeneratedDescription: "生成されたコードをウェブサイトに貼り付けてご利用ください。"
+_hideReactionCount:
+  none: "非表示にしない"
+  self: "自分のノートのみ"
+  others: "自分以外のノートのみ"
+  all: "全てのノート"
 
-# _hana:
-#   _inDevelopment:
-#     title: "この機能は開発中です"
-#     description: "はなみすきーは新規機能盛りだくさんで鋭意開発中です！\nどんな機能が実装されるかはお楽しみ。"
-#   _welcome:
-#     whatAboutX: "「{x}」とは？"
-#     _aboutHana:
-#       title: "はなみすきー"
-#       description: "はなみすきーは、Misskeyベースの分散型SNSサービスです。\nあなたのSNS体験に「はな」を添える、数々の独自機能を備えています。"
-#     _aboutDecentralized:
-#       title: "分散型SNS"
-#       description: "一般的なSNSサービス（X, Instagram, YouTubeなど）はそのサービス内で投稿データなどが完結するようになっています。しかし、分散型SNSは、サービス同士が共通の仕組みを通して連携しており、他のサービスのユーザーの投稿を見たり、フォローしたりできるのです。\nはなみすきーは標準で分散型テクノロジーのActivityPubに対応しており、他のMisskey/Mastodon等を利用したサービスやThreadsなどと通信することができます。"
-#     _features:
-#       inDevelopment: "近日提供予定"
-#       _hanaMode:
-#         title: "はなモードで、あなただけのSNS体験を"
-#         description: "はなみすきー独自機能「はなモード」をオンにすると、投稿内容がローカルタイムライン（LTL）に流れないようになります。ただし、「ホーム」投稿とは違い、LTLへのリノートが可能なほか、外部サーバーには通常のパブリックの投稿として配信されます。\nこれにより、おひとりさまサーバーに近い分散SNS体験をワンクリックで構築することができます。"
-#       _reactionAbundance:
-#         title: "リアクションで、もっと気軽につながろう"
-#         description: "はなみすきーではユーザー同士の交流をより楽しめる「リアクション」機能を搭載。ユーザーの投稿に「いいね」ではなく絵文字を送ることができます。はなみすきーに標準搭載の豊富なリアクション絵文字で、リプライを送るよりも気軽に自分の気持ちを伝えられます。もちろん、リアクションよりいいねボタンがお好みならそのように設定することも可能です。"
-#       _easyMigration:
-#         title: "他サービスから簡単移行"
-#         description: "他のMisskeyサーバーなどからの移行が簡単になる機能を提供！過去の投稿もはなみすきー上に引き継ぐことができます。"
-#       _preciseSearching:
-#         title: "最新技術を活用した高精度な検索"
-#         description: "機械学習や最新の学術研究をもとに、はなみすきーのためにチューニングされた高精度で高速な検索機能を利用できます。また、はなみすきーの検索機能そのものが学術研究プロジェクトとなっているため、検索精度は日進月歩となることが期待できます。"
-#     _cta:
-#       title: "「はな」のあるSNS体験を楽しもう"
+__rest:
+  extendSettings: Misskey.rest独自機能
+  hideLocalTimeLine: ローカルタイムラインを非表示にする
+  hideSocialTimeLine: ソーシャルタイムラインを非表示にする
+  hideGlobalTimeLine: グローバルタイムラインを非表示にする

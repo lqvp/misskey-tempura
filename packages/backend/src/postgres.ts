@@ -25,6 +25,7 @@ import { MiChannelFavorite } from '@/models/ChannelFavorite.js';
 import { MiClip } from '@/models/Clip.js';
 import { MiClipNote } from '@/models/ClipNote.js';
 import { MiClipFavorite } from '@/models/ClipFavorite.js';
+import { MiClipFavoriteRemote } from '@/models/ClipFavoriteRemote.js';
 import { MiDriveFile } from '@/models/DriveFile.js';
 import { MiDriveFolder } from '@/models/DriveFolder.js';
 import { MiEmoji } from '@/models/Emoji.js';
@@ -75,6 +76,7 @@ import { MiRole } from '@/models/Role.js';
 import { MiRoleAssignment } from '@/models/RoleAssignment.js';
 import { MiFlash } from '@/models/Flash.js';
 import { MiFlashLike } from '@/models/FlashLike.js';
+import { MiFlashLikeRemote } from '@/models/FlashLikeRemote.js';
 import { MiUserMemo } from '@/models/UserMemo.js';
 import { MiBubbleGameRecord } from '@/models/BubbleGameRecord.js';
 import { MiReversiGame } from '@/models/ReversiGame.js';
@@ -176,6 +178,7 @@ export const entities = [
 	MiClip,
 	MiClipNote,
 	MiClipFavorite,
+	MiClipFavoriteRemote,
 	MiAntenna,
 	MiPromoNote,
 	MiPromoRead,
@@ -195,6 +198,7 @@ export const entities = [
 	MiRoleAssignment,
 	MiFlash,
 	MiFlashLike,
+	MiFlashLikeRemote,
 	MiUserMemo,
 	MiBubbleGameRecord,
 	MiReversiGame,

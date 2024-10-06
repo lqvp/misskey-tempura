@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		@contextmenu.prevent.stop="menu"
 	>
 		<MkReactionIcon :class="defaultStore.state.limitWidthOfReaction ? $style.limitWidth : ''" :reaction="reaction" :emojiUrl="note.reactionEmojis[reaction.substring(1, reaction.length - 1)]"/>
-		<span :class="$style.count">{{ count }}</span>
+		<span v-if="!hideReactionCount" :class="$style.count">{{ count }}</span>
 	</button>
 	</template>
 
@@ -21,7 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	import { computed, inject, onMounted, shallowRef, watch } from 'vue';
 	import * as Misskey from 'misskey-js';
 	import { getUnicodeEmoji } from '@@/js/emojilist.js';
-import MkCustomEmojiDetailedDialog from './MkCustomEmojiDetailedDialog.vue';
+	import MkCustomEmojiDetailedDialog from './MkCustomEmojiDetailedDialog.vue';
 	import XDetails from '@/components/MkReactionsViewer.details.vue';
 	import MkReactionIcon from '@/components/MkReactionIcon.vue';
 	import * as os from '@/os.js';
@@ -56,10 +56,30 @@ const reactionChecksMuting = computed(defaultStore.makeGetterSetter('reactionChe
 	const emojiName = computed(() => props.reaction.replace(/:/g, '').replace(/@\./, ''));
 	const emoji = computed(() => customEmojisMap.get(emojiName.value) ?? getUnicodeEmoji(props.reaction));
 
+function getReactionName(reaction: string, formated = false) {
+	const r = reaction.replaceAll(':', '').replace(/@.*/, '');
+	return formated ? `:${r}:` : r;
+}
+
+const isLocal = computed(() => !props.reaction.match(/@\w/));
+const isAvailable = computed(() => isLocal.value ? true : customEmojisMap.has(getReactionName(props.reaction)));
+
 	const canToggle = computed(() => {
 		return !props.reaction.match(/@\w/) && $i && emoji.value && checkReactionPermissions($i, props.note, emoji.value);
 	});
 	const canGetInfo = computed(() => !props.reaction.match(/@\w/) && props.reaction.includes(':'));
+
+const plainReaction = computed(() => customEmojisMap.has(emojiName.value) ? getReactionName(props.reaction, true) : props.reaction);
+
+const hideReactionCount = computed(() => {
+	switch (defaultStore.state.hideReactionCount) {
+		case 'none': return false;
+		case 'all': return true;
+		case 'self': return props.note.userId === $i?.id;
+		case 'others': return props.note.userId !== $i?.id;
+		default: return false;
+	}
+});
 
 	async function toggleReaction() {
 		if (!canToggle.value) return;
@@ -110,22 +130,26 @@ const reactionChecksMuting = computed(defaultStore.makeGetterSetter('reactionChe
 	}
 
 	async function menu(ev) {
-		if (!canGetInfo.value) return;
-
-		os.popupMenu([{
-			text: i18n.ts.info,
-			icon: 'ti ti-info-circle',
-			action: async () => {
-				const { dispose } = os.popup(MkCustomEmojiDetailedDialog, {
-					emoji: await misskeyApiGet('emoji', {
-						name: props.reaction.replace(/:/g, '').replace(/@\./, ''),
-					}),
-				}, {
-					closed: () => dispose(),
-				});
-			},
-		}], ev.currentTarget ?? ev.target);
-	}
+	os.popupMenu([...(canGetInfo.value ? [{
+		text: i18n.ts.info,
+		icon: 'ti ti-info-circle',
+		action: async () => {
+			const { dispose } = os.popup(MkCustomEmojiDetailedDialog, {
+				emoji: await misskeyApiGet('emoji', {
+					name: props.reaction.replace(/:/g, '').replace(/@\./, ''),
+				}),
+			}, {
+				closed: () => dispose(),
+			});
+		},
+	}] : []), ...(isAvailable.value && !defaultStore.state.reactions.includes(plainReaction.value) ? [{
+		text: i18n.ts.addToEmojiPicker,
+		icon: 'ti ti-plus',
+		action: async () => {
+			defaultStore.set('reactions', [...defaultStore.state.reactions, plainReaction.value]);
+		},
+	}] : [])], ev.currentTarget ?? ev.target);
+}
 
 	function anime() {
 		if (document.hidden || !defaultStore.state.animation || buttonEl.value == null) return;
@@ -150,12 +174,12 @@ const reactionChecksMuting = computed(defaultStore.makeGetterSetter('reactionChe
 		useTooltip(buttonEl, async (showing) => {
 			const useGet = !reactionChecksMuting.value;
 		const apiCall = useGet ? misskeyApiGet : misskeyApi;
-		const reactions = await apiCall('notes/reactions', {
+		const reactions = !defaultStore.state.hideReactionUsers ? await apiCall('notes/reactions', {
 				noteId: props.note.id,
 				type: props.reaction,
 				limit: 10,
 				_cacheKey_: props.count,
-			});
+			}) : [];
 
 			const users = reactions.map(x => x.user);
 		const count = users.length;

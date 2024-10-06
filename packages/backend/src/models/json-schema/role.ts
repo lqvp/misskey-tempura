@@ -204,11 +204,11 @@ export const packedRolePoliciesSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
-		canManageAvatarDecorations: {
+		canEmojiDeletion: {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
-		canEmojiDeletion: {
+		canManageAvatarDecorations: {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},

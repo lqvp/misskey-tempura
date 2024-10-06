@@ -917,6 +917,15 @@ export type paths = {
      */
     post: operations['ap___show'];
   };
+  '/ap/fetch-outbox': {
+    /**
+     * ap/fetch-outbox
+     * @description リモートユーザの投稿を取得します
+     *
+     * **Credential required**: *Yes* / **Permission**: *read:account*
+     */
+    post: operations['ap___fetch-outbox'];
+  };
   '/app/create': {
     /**
      * app/create
@@ -3799,6 +3808,9 @@ export type components = {
       pinnedPageId: string | null;
       pinnedPage: components['schemas']['Page'] | null;
       publicReactions: boolean;
+      hideActivity: boolean;
+			/** @enum {string} */
+			notesVisibility: 'public' | 'followers' | 'private';
       /** @enum {string} */
       followingVisibility: 'public' | 'followers' | 'private';
       /** @enum {string} */
@@ -4642,6 +4654,9 @@ export type components = {
       favoritedCount: number;
       isFavorited?: boolean;
       notesCount?: number;
+      emojis?: {
+        [key: string]: string;
+      };
     };
     FederationInstance: {
       /** Format: id */
@@ -4747,6 +4762,9 @@ export type components = {
       visibility: 'private' | 'public';
       likedCount: number | null;
       isLiked?: boolean;
+      emojis?: {
+        [key: string]: string;
+      };
     };
     Signin: {
       id: string;
@@ -4855,8 +4873,8 @@ export type components = {
       inviteLimitCycle: number;
       inviteExpirationTime: number;
       canManageCustomEmojis: boolean;
+			canEmojiDeletion: boolean;
       canManageAvatarDecorations: boolean;
-      canEmojiDeletion: boolean;
       canSearchNotes: boolean;
       canUseTranslator: boolean;
       canHideAds: boolean;
@@ -11219,6 +11237,77 @@ export type operations = {
     };
   };
   /**
+   * ap/fetch-outbox
+   * @description リモートユーザの投稿を取得します
+   *
+   * **Credential required**: *Yes* / **Permission**: *read:account*
+   */
+  'ap___fetch-outbox': {
+    requestBody: {
+      content: {
+        'application/json': {
+          /**
+           * Format: misskey:id
+           * @description Outbox取得対象ユーザのローカルのユーザID
+           */
+          userId: string;
+          /**
+           * @description Outboxの取得が終わるまで待ちます
+           * @default false
+           */
+          wait?: boolean;
+          /**
+           * @description Outbox取得の際にRenoteも対象にします
+           * @default false
+           */
+          includeAnnounce?: boolean;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description To many requests */
+      429: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
    * app/create
    * @description No description provided.
    *
@@ -13831,7 +13920,6 @@ export type operations = {
     requestBody: {
       content: {
         'application/json': {
-          /** Format: misskey:id */
           clipId: string;
         };
       };
@@ -13880,6 +13968,16 @@ export type operations = {
    * **Credential required**: *Yes* / **Permission**: *read:clip-favorite*
    */
   'clips___my-favorites': {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @default true */
+          withLocal?: boolean;
+          /** @default true */
+          withRemote?: boolean;
+        };
+      };
+    };
     responses: {
       /** @description OK (with results) */
       200: {
@@ -19890,6 +19988,7 @@ export type operations = {
           isExplorable?: boolean;
           hideOnlineStatus?: boolean;
           publicReactions?: boolean;
+          hideActivity?: boolean;
           carefulBot?: boolean;
           autoAcceptFollowed?: boolean;
           noCrawle?: boolean;
@@ -24044,7 +24143,6 @@ export type operations = {
     requestBody: {
       content: {
         'application/json': {
-          /** Format: misskey:id */
           flashId: string;
         };
       };
@@ -24096,7 +24194,6 @@ export type operations = {
     requestBody: {
       content: {
         'application/json': {
-          /** Format: misskey:id */
           flashId: string;
         };
       };
@@ -24150,7 +24247,6 @@ export type operations = {
     requestBody: {
       content: {
         'application/json': {
-          /** Format: misskey:id */
           flashId: string;
         };
       };
@@ -24330,6 +24426,10 @@ export type operations = {
           sinceId?: string;
           /** Format: misskey:id */
           untilId?: string;
+          /** @default true */
+          withLocal?: boolean;
+          /** @default true */
+          withRemote?: boolean;
         };
       };
     };
@@ -26628,9 +26728,7 @@ export type operations = {
           userId: string;
           /** @default 10 */
           limit?: number;
-          /** Format: misskey:id */
           sinceId?: string;
-          /** Format: misskey:id */
           untilId?: string;
         };
       };

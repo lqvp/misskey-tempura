@@ -73,6 +73,7 @@ import { UtilityService } from './UtilityService.js';
 import { FileInfoService } from './FileInfoService.js';
 import { SearchService } from './SearchService.js';
 import { ClipService } from './ClipService.js';
+import { FlashService } from './FlashService.js';
 import { FeaturedService } from './FeaturedService.js';
 import { FanoutTimelineService } from './FanoutTimelineService.js';
 import { ChannelFollowingService } from './ChannelFollowingService.js';
@@ -146,6 +147,7 @@ import { WebfingerService } from './WebfingerService.js';
 import { ApImageService } from './activitypub/models/ApImageService.js';
 import { ApMentionService } from './activitypub/models/ApMentionService.js';
 import { ApNoteService } from './activitypub/models/ApNoteService.js';
+import { ApOutboxFetchService } from './activitypub/models/ApOutboxFetchService.js';
 import { ApPersonService } from './activitypub/models/ApPersonService.js';
 import { ApQuestionService } from './activitypub/models/ApQuestionService.js';
 import { ApGameService } from './activitypub/models/ApGameService.js';
@@ -220,6 +222,7 @@ const $UtilityService: Provider = { provide: 'UtilityService', useExisting: Util
 const $FileInfoService: Provider = { provide: 'FileInfoService', useExisting: FileInfoService };
 const $SearchService: Provider = { provide: 'SearchService', useExisting: SearchService };
 const $ClipService: Provider = { provide: 'ClipService', useExisting: ClipService };
+const $FlashService: Provider = { provide: 'FlashService', useExisting: FlashService };
 const $FeaturedService: Provider = { provide: 'FeaturedService', useExisting: FeaturedService };
 const $FanoutTimelineService: Provider = { provide: 'FanoutTimelineService', useExisting: FanoutTimelineService };
 const $FanoutTimelineEndpointService: Provider = { provide: 'FanoutTimelineEndpointService', useExisting: FanoutTimelineEndpointService };
@@ -296,6 +299,7 @@ const $WebfingerService: Provider = { provide: 'WebfingerService', useExisting: 
 const $ApImageService: Provider = { provide: 'ApImageService', useExisting: ApImageService };
 const $ApMentionService: Provider = { provide: 'ApMentionService', useExisting: ApMentionService };
 const $ApNoteService: Provider = { provide: 'ApNoteService', useExisting: ApNoteService };
+const $ApOutboxFetchService: Provider = { provide: 'ApOutboxFetchService', useExisting: ApOutboxFetchService };
 const $ApPersonService: Provider = { provide: 'ApPersonService', useExisting: ApPersonService };
 const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting: ApQuestionService };
 const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGameService };
@@ -371,6 +375,7 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		FileInfoService,
 		SearchService,
 		ClipService,
+		FlashService,
 		FeaturedService,
 		FanoutTimelineService,
 		FanoutTimelineEndpointService,
@@ -447,6 +452,7 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		ApImageService,
 		ApMentionService,
 		ApNoteService,
+		ApOutboxFetchService,
 		ApPersonService,
 		ApQuestionService,
 		ApGameService,
@@ -518,6 +524,7 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		$FileInfoService,
 		$SearchService,
 		$ClipService,
+		$FlashService,
 		$FeaturedService,
 		$FanoutTimelineService,
 		$FanoutTimelineEndpointService,
@@ -594,6 +601,7 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		$ApImageService,
 		$ApMentionService,
 		$ApNoteService,
+		$ApOutboxFetchService,
 		$ApPersonService,
 		$ApQuestionService,
 		$ApGameService,
@@ -666,6 +674,7 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		FileInfoService,
 		SearchService,
 		ClipService,
+		FlashService,
 		FeaturedService,
 		FanoutTimelineService,
 		FanoutTimelineEndpointService,
@@ -741,6 +750,7 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		ApImageService,
 		ApMentionService,
 		ApNoteService,
+		ApOutboxFetchService,
 		ApPersonService,
 		ApQuestionService,
 		ApGameService,
@@ -812,6 +822,7 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		$FileInfoService,
 		$SearchService,
 		$ClipService,
+		$FlashService,
 		$FeaturedService,
 		$FanoutTimelineService,
 		$FanoutTimelineEndpointService,
@@ -887,6 +898,7 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		$ApImageService,
 		$ApMentionService,
 		$ApNoteService,
+		$ApOutboxFetchService,
 		$ApPersonService,
 		$ApQuestionService,
 		$ApGameService,

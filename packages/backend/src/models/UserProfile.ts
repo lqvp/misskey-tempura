@@ -4,7 +4,7 @@
  */
 
 import { Entity, Column, Index, OneToOne, JoinColumn, PrimaryColumn } from 'typeorm';
-import { followingVisibilities, followersVisibilities, notificationTypes } from '@/types.js';
+import { notesVisibilities, followingVisibilities, followersVisibilities, notificationTypes } from '@/types.js';
 import { id } from './util/id.js';
 import { MiUser } from './User.js';
 import { MiPage } from './Page.js';
@@ -117,6 +117,12 @@ export class MiUserProfile {
 	public publicReactions: boolean;
 
 	@Column('enum', {
+		enum: notesVisibilities,
+		default: 'public',
+	})
+	public notesVisibility: typeof notesVisibilities[number]
+
+	@Column('enum', {
 		enum: followingVisibilities,
 		default: 'public',
 	})
@@ -127,6 +133,11 @@ export class MiUserProfile {
 		default: 'public',
 	})
 	public followersVisibility: typeof followersVisibilities[number];
+
+	@Column('boolean', {
+		default: false,
+	})
+	public hideActivity: boolean;
 
 	@Column('varchar', {
 		length: 128, nullable: true,

@@ -439,6 +439,9 @@ type AntennasUpdateRequest = operations['antennas___update']['requestBody']['con
 type AntennasUpdateResponse = operations['antennas___update']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type ApFetchOutboxRequest = operations['ap___fetch-outbox']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
 type ApGetRequest = operations['ap___get']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -951,6 +954,9 @@ type ClipsFavoriteRequest = operations['clips___favorite']['requestBody']['conte
 type ClipsListResponse = operations['clips___list']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type ClipsMyFavoritesRequest = operations['clips___my-favorites']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
 type ClipsMyFavoritesResponse = operations['clips___my-favorites']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
@@ -1340,6 +1346,7 @@ declare namespace entities {
         ApGetResponse,
         ApShowRequest,
         ApShowResponse,
+        ApFetchOutboxRequest,
         AppCreateRequest,
         AppCreateResponse,
         AppShowRequest,
@@ -1415,6 +1422,7 @@ declare namespace entities {
         ClipsUpdateResponse,
         ClipsFavoriteRequest,
         ClipsUnfavoriteRequest,
+        ClipsMyFavoritesRequest,
         ClipsMyFavoritesResponse,
         DriveResponse,
         DriveFilesRequest,
@@ -1998,6 +2006,9 @@ type FollowingUpdateRequest = operations['following___update']['requestBody']['c
 
 // @public (undocumented)
 type FollowingUpdateResponse = operations['following___update']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+export const notesVisibilities: readonly ["public", "followers", "private"];
 
 // @public (undocumented)
 export const followingVisibilities: readonly ["public", "followers", "private"];

@@ -38,7 +38,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkFolder>
 		</div>
 	</FormSection>
-
 	<FormSection>
 		<template #label>{{ i18n.ts.displayOfNote }}</template>
 
@@ -51,9 +50,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkSwitch v-model="directRenote">
 					<template #label>
 						{{ i18n.ts.directRenote }}
-						<span class="_beta">
-							{{ "originFeature" }}
-						</span>
+						<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 					</template>
 					<template #caption>{{ i18n.ts.directRenoteDescription }}</template>
 				</MkSwitch>
@@ -72,6 +69,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<option value="large">{{ i18n.ts.large }}</option>
 				</MkRadios>
 				<MkSwitch v-model="limitWidthOfReaction">{{ i18n.ts.limitWidthOfReaction }}</MkSwitch>
+				<MkSwitch v-model="hideReactionUsers">
+					<template #caption>{{ i18n.ts.hideReactionUsersDescription }}</template>
+					{{ i18n.ts.hideReactionUsers }}
+					<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+				</MkSwitch>
+				<MkSelect v-model="hideReactionCount">
+					<template #label>{{ i18n.ts.hideReactionCount }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+					<option value="none">{{ i18n.ts._hideReactionCount.none }}</option>
+					<option value="self">{{ i18n.ts._hideReactionCount.self }}</option>
+					<option value="others">{{ i18n.ts._hideReactionCount.others }}</option>
+					<option value="all">{{ i18n.ts._hideReactionCount.all }}</option>
+				</MkSelect>
 			</div>
 
 			<MkSelect v-model="instanceTicker">
@@ -95,6 +104,23 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<option value="1_1">{{ i18n.tsx.limitTo({ x: '1:1' }) }}</option>
 				<option value="2_3">{{ i18n.tsx.limitTo({ x: '2:3' }) }}</option>
 			</MkRadios>
+
+			<MkSwitch v-model="disableNoteNyaize">{{ i18n.ts.disableNoteNyaize }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
+
+			<MkRadios v-model="selectReaction">
+				<template #label>{{ i18n.ts.selectReaction }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+				<option value="❤️">❤️</option>
+				<option value="⭐">⭐</option>
+				<option value="🍮">🍮</option>
+				<option value="💩">💩</option>
+			</MkRadios>
+
+			<!-- <MkSwitch v-model="selectReaction">
+				<template #label>{{ i18n.ts.selectReaction }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+				<button class="_button" :class="$style.emojisAdd" @click="chooseReaction">
+					<i class="ti ti-plus"></i>
+				</button>
+			</MkSwitch> -->
 		</div>
 	</FormSection>
 
@@ -271,6 +297,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</FormSection>
 
 	<FormSection>
+		<template #label>{{ i18n.ts.__rest.extendSettings }}</template>
+
+		<div class="_gaps">
+			<MkSwitch v-model="hideLocalTimeLine">{{ i18n.ts.__rest.hideLocalTimeLine }}</MkSwitch>
+			<MkSwitch v-model="hideSocialTimeLine">{{ i18n.ts.__rest.hideSocialTimeLine }}</MkSwitch>
+			<MkSwitch v-model="hideGlobalTimeLine">{{ i18n.ts.__rest.hideGlobalTimeLine }}</MkSwitch>
+		</div>
+	</FormSection>
+
+	<FormSection>
 		<template #label>{{ i18n.ts.other }}</template>
 
 		<div class="_gaps">
@@ -333,9 +369,9 @@ const showNoteActionsOnlyHover = computed(defaultStore.makeGetterSetter('showNot
 const showClipButtonInNoteFooter = computed(defaultStore.makeGetterSetter('showClipButtonInNoteFooter'));
 const reactionsDisplaySize = computed(defaultStore.makeGetterSetter('reactionsDisplaySize'));
 const limitWidthOfReaction = computed(defaultStore.makeGetterSetter('limitWidthOfReaction'));
+const hideReactionUsers = computed(defaultStore.makeGetterSetter('hideReactionUsers'));
+const hideReactionCount = computed(defaultStore.makeGetterSetter('hideReactionCount'));
 const collapseRenotes = computed(defaultStore.makeGetterSetter('collapseRenotes'));
-const collapseRenotesTrigger = computed(defaultStore.makeGetterSetter('collapseRenotesTrigger'));
-const collapseSelfRenotes = computed(defaultStore.makeGetterSetter('collapseSelfRenotes'));
 const directRenote = computed(defaultStore.makeGetterSetter('directRenote'));
 const reduceAnimation = computed(defaultStore.makeGetterSetter('animation', v => !v, v => !v));
 const useBlurEffectForModal = computed(defaultStore.makeGetterSetter('useBlurEffectForModal'));
@@ -372,12 +408,17 @@ const keepScreenOn = computed(defaultStore.makeGetterSetter('keepScreenOn'));
 const disableStreamingTimeline = computed(defaultStore.makeGetterSetter('disableStreamingTimeline'));
 const useGroupedNotifications = computed(defaultStore.makeGetterSetter('useGroupedNotifications'));
 const enableSeasonalScreenEffect = computed(defaultStore.makeGetterSetter('enableSeasonalScreenEffect'));
+const disableNoteNyaize = computed(defaultStore.makeGetterSetter('disableNoteNyaize'));
 const enableHorizontalSwipe = computed(defaultStore.makeGetterSetter('enableHorizontalSwipe'));
 const useNativeUIForVideoAudioPlayer = computed(defaultStore.makeGetterSetter('useNativeUIForVideoAudioPlayer'));
 const alwaysConfirmFollow = computed(defaultStore.makeGetterSetter('alwaysConfirmFollow'));
 const confirmWhenRevealingSensitiveMedia = computed(defaultStore.makeGetterSetter('confirmWhenRevealingSensitiveMedia'));
 const contextMenu = computed(defaultStore.makeGetterSetter('contextMenu'));
 const reactionChecksMuting = computed(defaultStore.makeGetterSetter('reactionChecksMuting'));
+const hideLocalTimeLine = computed(defaultStore.makeGetterSetter('hideLocalTimeLine'));
+const hideGlobalTimeLine = computed(defaultStore.makeGetterSetter('hideGlobalTimeLine'));
+const hideSocialTimeLine = computed(defaultStore.makeGetterSetter('hideSocialTimeLine'));
+const selectReaction = computed(defaultStore.makeGetterSetter('selectReaction'));
 
 watch(lang, () => {
 	miLocalStorage.setItem('lang', lang.value as string);
@@ -412,6 +453,7 @@ watch([
 	showNoteActionsOnlyHover,
 	showGapBetweenNotesInTimeline,
 	instanceTicker,
+	hideReactionCount,
 	overridedDeviceKind,
 	mediaListWithOneImageAppearance,
 	reactionsDisplaySize,
@@ -426,9 +468,32 @@ watch([
 	hiddenPinnedNotes,
 	hiddenActivity,
 	hiddenFiles,
+	selectReaction,
 ], async () => {
 	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
 });
+
+// const chooseReaction = (ev: MouseEvent) => {
+//     pickEmoji(selectReaction, ev); // selectReaction は文字列
+// };
+
+// async function pickEmoji(currentReaction: string, ev: MouseEvent) {
+//     const selectedEmoji = await os.pickEmoji(getHTMLElement(ev), {
+//         showPinned: false,
+//     });
+
+//     // selectedEmoji が定義されているか確認
+//     if (selectedEmoji && selectedEmoji !== currentReaction) {
+//         // selectReaction を更新
+//         defaultStore.state.selectReaction = selectedEmoji;
+//     }
+// }
+
+// function getHTMLElement(ev: MouseEvent): HTMLElement {
+//     const target = ev.currentTarget ?? ev.target;
+//     return target as HTMLElement;
+// }
+
 
 const emojiIndexLangs = ['en-US', 'ja-JP', 'ja-JP_hira'] as const;
 
@@ -561,3 +626,10 @@ definePageMetadata(() => ({
 	icon: 'ti ti-adjustments',
 }));
 </script>
+
+<!-- <style lang="scss" module>
+.emojisAdd {
+  display: inline-block;
+  padding: 8px;
+}
+</style> -->
