@@ -4,14 +4,23 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-	<MkStickyContainer>
-		<template #header><XHeader :actions="headerActions" :tabs="headerTabs"/></template>
-		<MkSpacer :contentMax="900">
-			<div class="_gaps">
-				<MkInfo>{{ i18n.ts._announcement.shouldNotBeUsedToPresentPermanentInfo }}</MkInfo>
-				<MkInfo v-if="announcements.length > 5" warn>{{ i18n.ts._announcement.tooManyActiveAnnouncementDescription }}</MkInfo>
+<MkStickyContainer>
+	<template #header><XHeader :actions="headerActions" :tabs="headerTabs"/></template>
+	<MkSpacer :contentMax="900">
+		<div class="_gaps">
+			<MkInfo>{{ i18n.ts._announcement.shouldNotBeUsedToPresentPermanentInfo }}</MkInfo>
+			<MkInfo v-if="announcements.length > 5" warn>{{ i18n.ts._announcement.tooManyActiveAnnouncementDescription }}</MkInfo>
 
-				<MkFolder v-for="(announcement, announcementIndex) in announcements" :key="announcement.id ?? announcement._id" :defaultOpen="announcement.id == null">
+			<MkSelect v-model="announcementsStatus">
+				<template #label>{{ i18n.ts.filter }}</template>
+				<option value="active">{{ i18n.ts.active }}</option>
+				<option value="archived">{{ i18n.ts.archived }}</option>
+			</MkSelect>
+
+			<MkLoading v-if="loading"/>
+
+			<template v-else>
+				<MkFolder v-for="announcement in announcements" :key="announcement.id ?? announcement._id" :defaultOpen="announcement.id == null">
 					<template #label>{{ announcement.title }}</template>
 					<template #icon>
 						<i v-if="announcement.icon === 'info'" class="ti ti-info-circle"></i>
@@ -52,16 +61,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<option value="banner">{{ i18n.ts.banner }}</option>
 							<option value="dialog">{{ i18n.ts.dialog }}</option>
 						</MkRadios>
-						<div class="_gaps_s">
-							<div class="label" :class="$style.rolesLabel">{{ i18n.ts.roles }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></div>
-							<div v-for="role in announcement.roles" :key="`announcement-role-${role.id}`" class="_gaps_s">
-								<div :class="$style.roleItems">
-									<MkRolePreview :role="role" :noLink="true" :forModeration="false" :class="$style.rolePreview"/>
-									<button class="_button" :class="$style.remove" @click="removeRole(announcementIndex, role)"><i class="ti ti-x"></i></button>
-								</div>
-							</div>
-							<MkButton @click="addRole(announcement)">{{ i18n.ts.add }}</MkButton>
-						</div>
 						<MkInfo v-if="announcement.display === 'dialog'" warn>{{ i18n.ts._announcement.dialogAnnouncementUxWarn }}</MkInfo>
 						<MkSwitch v-model="announcement.forExistingUsers" :helpText="i18n.ts._announcement.forExistingUsersDescription">
 							{{ i18n.ts._announcement.forExistingUsers }}
@@ -75,153 +74,133 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<p v-if="announcement.reads">{{ i18n.tsx.nUsersRead({ n: announcement.reads }) }}</p>
 					</div>
 				</MkFolder>
+				<MkLoading v-if="loadingMore"/>
 				<MkButton @click="more()">
 					<i class="ti ti-reload"></i>{{ i18n.ts.more }}
 				</MkButton>
-			</div>
-		</MkSpacer>
-	</MkStickyContainer>
-	</template>
+			</template>
+		</div>
+	</MkSpacer>
+</MkStickyContainer>
+</template>
 
-	<script lang="ts" setup>
-	import { ref, computed } from 'vue';
-	import XHeader from './_header_.vue';
-	import MkButton from '@/components/MkButton.vue';
-	import MkInput from '@/components/MkInput.vue';
-	import MkSwitch from '@/components/MkSwitch.vue';
-	import MkRadios from '@/components/MkRadios.vue';
-	import MkInfo from '@/components/MkInfo.vue';
-	import * as os from '@/os.js';
-	import { misskeyApi } from '@/scripts/misskey-api.js';
-	import { i18n } from '@/i18n.js';
-	import { definePageMetadata } from '@/scripts/page-metadata.js';
-	import MkFolder from '@/components/MkFolder.vue';
-	import MkTextarea from '@/components/MkTextarea.vue';
-	import MkRolePreview from '@/components/MkRolePreview.vue';
+<script lang="ts" setup>
+import { ref, computed, watch } from 'vue';
+import XHeader from './_header_.vue';
+import MkButton from '@/components/MkButton.vue';
+import MkInput from '@/components/MkInput.vue';
+import MkSelect from '@/components/MkSelect.vue';
+import MkSwitch from '@/components/MkSwitch.vue';
+import MkRadios from '@/components/MkRadios.vue';
+import MkInfo from '@/components/MkInfo.vue';
+import * as os from '@/os.js';
+import { misskeyApi } from '@/scripts/misskey-api.js';
+import { i18n } from '@/i18n.js';
+import { definePageMetadata } from '@/scripts/page-metadata.js';
+import MkFolder from '@/components/MkFolder.vue';
+import MkTextarea from '@/components/MkTextarea.vue';
 
-	const announcements = ref<any[]>([]);
+const announcementsStatus = ref<'active' | 'archived'>('active');
 
-	misskeyApi('admin/announcements/list').then(announcementResponse => {
+const loading = ref(true);
+const loadingMore = ref(false);
+
+const announcements = ref<any[]>([]);
+
+watch(announcementsStatus, (to) => {
+	loading.value = true;
+	misskeyApi('admin/announcements/list', {
+		status: to,
+	}).then(announcementResponse => {
 		announcements.value = announcementResponse;
+		loading.value = false;
 	});
+}, { immediate: true });
 
-	function addRole(announcement) {
-		os.selectRole({ admin: true }).then(role => {
-			const index = announcements.value.findIndex(x => x.id === announcement.id);
-			console.log(index);
-			announcements.value[index].roles.push(role);
-		});
-	}
+function add() {
+	announcements.value.unshift({
+		_id: Math.random().toString(36),
+		id: null,
+		title: 'New announcement',
+		text: '',
+		imageUrl: null,
+		icon: 'info',
+		display: 'normal',
+		forExistingUsers: false,
+		silence: false,
+		needConfirmationToRead: false,
+	});
+}
 
-	function removeRole(index: number, role) {
-		announcements.value[index].roles = announcements.value[index].roles.filter(x => x.id !== role.id);
-	}
+function del(announcement) {
+	os.confirm({
+		type: 'warning',
+		text: i18n.tsx.deleteAreYouSure({ x: announcement.title }),
+	}).then(({ canceled }) => {
+		if (canceled) return;
+		announcements.value = announcements.value.filter(x => x !== announcement);
+		misskeyApi('admin/announcements/delete', announcement);
+	});
+}
 
-	function add() {
-		announcements.value.unshift({
-			_id: Math.random().toString(36),
-			id: null,
-			title: 'New announcement',
-			text: '',
-			imageUrl: null,
-			icon: 'info',
-			display: 'normal',
-			forExistingUsers: false,
-			silence: false,
-			needConfirmationToRead: false,
-			isRoleSpecified: false,
-			roles: [],
-			roleIds: [] as string[],
-		});
-	}
-
-	function del(announcement) {
-		os.confirm({
-			type: 'warning',
-			text: i18n.tsx.deleteAreYouSure({ x: announcement.title }),
-		}).then(({ canceled }) => {
-			if (canceled) return;
-			announcements.value = announcements.value.filter(x => x !== announcement);
-			misskeyApi('admin/announcements/delete', announcement);
-		});
-	}
-
-	async function archive(announcement) {
-		await os.apiWithDialog('admin/announcements/update', {
-			...announcement,
-			isActive: false,
-		});
-		refresh();
-	}
-
-	async function save(announcement) {
-		announcement.roleIds = announcement.roles.map(role => role.id);
-		if (announcement.roleIds.length === 0) {
-			announcement.isRoleSpecified = false;
-		} else {
-			announcement.isRoleSpecified = true;
-		}
-		if (announcement.id == null) {
-			await os.apiWithDialog('admin/announcements/create', announcement);
-			refresh();
-		} else {
-			os.apiWithDialog('admin/announcements/update', announcement);
-		}
-	}
-
-	function more() {
-		misskeyApi('admin/announcements/list', { untilId: announcements.value.reduce((acc, announcement) => announcement.id != null ? announcement : acc).id, }).then(announcementResponse => {
-			announcements.value = announcements.value.concat(announcementResponse);
-		});
-	}
-
-	function refresh() {
-		misskeyApi('admin/announcements/list').then(announcementResponse => {
-			announcements.value = announcementResponse;
-		});
-	}
-
+async function archive(announcement) {
+	await os.apiWithDialog('admin/announcements/update', {
+		...announcement,
+		isActive: false,
+	});
 	refresh();
+}
 
-	const headerActions = computed(() => [{
-		asFullButton: true,
-		icon: 'ti ti-plus',
-		text: i18n.ts.add,
-		handler: add,
-	}]);
+async function unarchive(announcement) {
+	await os.apiWithDialog('admin/announcements/update', {
+		...announcement,
+		isActive: true,
+	});
+	refresh();
+}
 
-	const headerTabs = computed(() => []);
-
-	definePageMetadata(() => ({
-		title: i18n.ts.announcements,
-		icon: 'ti ti-speakerphone',
-	}));
-	</script>
-	<style module>
-	.roleItems {
-		display: flex;
+async function save(announcement) {
+	if (announcement.id == null) {
+		await os.apiWithDialog('admin/announcements/create', announcement);
+		refresh();
+	} else {
+		os.apiWithDialog('admin/announcements/update', announcement);
 	}
+}
 
-	.rolePreview {
-		flex-grow: 1;
-	}
+function more() {
+	loadingMore.value = true;
+	misskeyApi('admin/announcements/list', {
+		status: announcementsStatus.value,
+		untilId: announcements.value.reduce((acc, announcement) => announcement.id != null ? announcement : acc).id,
+	}).then(announcementResponse => {
+		announcements.value = announcements.value.concat(announcementResponse);
+		loadingMore.value = false;
+	});
+}
 
-	.rolesLabel {
-		font-size: 0.85em;
-		padding: 0 0 8px 0;
-		user-select: none;
+function refresh() {
+	loading.value = true;
+	misskeyApi('admin/announcements/list', {
+		status: announcementsStatus.value,
+	}).then(announcementResponse => {
+		announcements.value = announcementResponse;
+		loading.value = false;
+	});
+}
 
-		&:empty {
-			display: none;
-		}
-	}
+const headerActions = computed(() => [{
+	asFullButton: true,
+	icon: 'ti ti-plus',
+	text: i18n.ts.add,
+	handler: add,
+	disabled: announcementsStatus.value === 'archived',
+}]);
 
-	.remove {
-		width: 32px;
-		height: 32px;
-		align-self: center;
-		& > i:before {
-			color: #ff2a2a;
-		}
-	}
-	</style>
+const headerTabs = computed(() => []);
+
+definePageMetadata(() => ({
+	title: i18n.ts.announcements,
+	icon: 'ti ti-speakerphone',
+}));
+</script>

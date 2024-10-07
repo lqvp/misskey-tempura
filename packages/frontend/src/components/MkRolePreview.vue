@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<component :is="noLink ? 'div' : 'MkA'" :to="forModeration ? `/admin/roles/${role.id}` : `/roles/${role.id}`" :class="$style.root" tabindex="-1" :style="{ '--color': role.color }">
+<MkA :to="forModeration ? `/admin/roles/${role.id}` : `/roles/${role.id}`" :class="$style.root" tabindex="-1" :style="{ '--color': role.color }">
 	<template v-if="forModeration">
 		<i v-if="role.isPublic" class="ti ti-world" :class="$style.icon" style="color: var(--success)"></i>
 		<i v-else class="ti ti-lock" :class="$style.icon" style="color: var(--warn)"></i>
@@ -30,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</div>
 		<div :class="$style.bodyDescription">{{ role.description }}</div>
 	</div>
-</component>
+</MkA>
 </template>
 
 <script lang="ts" setup>
@@ -42,10 +42,8 @@ const props = withDefaults(defineProps<{
 	role: Misskey.entities.Role;
 	forModeration: boolean;
 	detailed: boolean;
-	noLink?: boolean
 }>(), {
 	detailed: true,
-	noLink: false,
 });
 </script>
 

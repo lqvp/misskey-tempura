@@ -39,8 +39,6 @@ export const paramDef = {
 		silence: { type: 'boolean' },
 		needConfirmationToRead: { type: 'boolean' },
 		isActive: { type: 'boolean' },
-		isRoleSpecified: { type: 'boolean' },
-		roleIds: { type: 'array', items: { type: 'string', format: 'misskey:id' } },
 	},
 	required: ['id'],
 } as const;
@@ -70,8 +68,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				silence: ps.silence,
 				needConfirmationToRead: ps.needConfirmationToRead,
 				isActive: ps.isActive,
-				isRoleSpecified: ps.isRoleSpecified,
-				roleIds: ps.roleIds,
 			}, me);
 		});
 	}
