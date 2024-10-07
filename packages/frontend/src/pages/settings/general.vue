@@ -29,6 +29,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div class="_gaps_s">
 			<MkSwitch v-model="showFixedPostForm">{{ i18n.ts.showFixedPostForm }}</MkSwitch>
 			<MkSwitch v-model="showFixedPostFormInChannel">{{ i18n.ts.showFixedPostFormInChannel }}</MkSwitch>
+			<MkSwitch v-model="disableNoteDrafting">
+				<template #caption>{{ i18n.ts.disableNoteDraftingDescription }}</template>
+				{{ i18n.ts.disableNoteDrafting }}
+				<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+			</MkSwitch>
 			<FormLink to="/settings/post-form">{{ i18n.ts.postForm }}</FormLink>
 			<MkFolder>
 				<template #label>{{ i18n.ts.pinnedList }}</template>
@@ -420,6 +425,7 @@ const hideLocalTimeLine = computed(defaultStore.makeGetterSetter('hideLocalTimeL
 const hideGlobalTimeLine = computed(defaultStore.makeGetterSetter('hideGlobalTimeLine'));
 const hideSocialTimeLine = computed(defaultStore.makeGetterSetter('hideSocialTimeLine'));
 const selectReaction = computed(defaultStore.makeGetterSetter('selectReaction'));
+const disableNoteDrafting = computed(defaultStore.makeGetterSetter('disableNoteDrafting'));
 
 watch(lang, () => {
 	miLocalStorage.setItem('lang', lang.value as string);
