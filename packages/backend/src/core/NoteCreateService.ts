@@ -59,6 +59,7 @@ import { Data } from 'ws';
 import { CollapsedQueue } from '@/misc/collapsed-queue.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import type Logger from '@/logger.js';
+import { LatestNoteService } from '@/core/LatestNoteService.js';
 
 type NotificationType = 'reply' | 'renote' | 'quote' | 'mention';
 
@@ -225,6 +226,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 		private utilityService: UtilityService,
 		private userBlockingService: UserBlockingService,
 		private loggerService: LoggerService,
+		private latestNoteService: LatestNoteService,
 	) {
 		this.logger = this.loggerService.getLogger('note-create-service');
 		this.updateNotesCountQueue = new CollapsedQueue(process.env.NODE_ENV !== 'test' ? 60 * 1000 * 5 : 0, this.collapseNotesCount, this.performUpdateNotesCount);
@@ -772,6 +774,9 @@ export class NoteCreateService implements OnApplicationShutdown {
 			});
 		}
 
+		// Update the Latest Note index / following feed
+		this.latestNoteService.handleCreatedNoteBG(note);
+
 		// Register to search database
 		this.index(note);
 	}
@@ -1100,7 +1105,31 @@ export class NoteCreateService implements OnApplicationShutdown {
 	}
 
 	@bindThis
-	public async onApplicationShutdown(signal?: string | undefined): Promise<void> {
-		await this.dispose();
+	public onApplicationShutdown(signal?: string | undefined): void {
+		this.dispose();
+	}
+
+	private async updateLatestNote(note: MiNote) {
+		// Ignore DMs.
+		// Followers-only posts are *included*, as this table is used to back the "following" feed.
+		if (note.visibility === 'specified') return;
+
+		// Ignore pure renotes
+		if (isPureRenote(note)) return;
+
+		// Compute the compound key of the entry to check
+		const key = SkLatestNote.keyFor(note);
+
+		// Make sure that this isn't an *older* post.
+		// We can get older posts through replies, lookups, etc.
+		const currentLatest = await this.latestNotesRepository.findOneBy(key);
+		if (currentLatest != null && currentLatest.noteId >= note.id) return;
+
+		// Record this as the latest note for the given user
+		const latestNote = new SkLatestNote({
+			...key,
+			noteId: note.id,
+		});
+		await this.latestNotesRepository.upsert(latestNote, ['userId', 'isPublic', 'isReply', 'isQuote']);
 	}
 }

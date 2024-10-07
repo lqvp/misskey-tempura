@@ -3166,19 +3166,29 @@ declare module '../api.js' {
 
     /**
      * No description provided.
-     * 
-     * **Credential required**: *No*
+     *
+     * **Credential required**: *Yes* / **Permission**: *write:notes*
      */
-    request<E extends 'notes/history', P extends Endpoints[E]['req']>(
+    request<E extends 'notes/update', P extends Endpoints[E]['req']>(
       endpoint: E,
       params: P,
       credential?: string | null,
     ): Promise<SwitchCaseResponseType<E, P>>;
 
+		/**
+     * No description provided.
+     *
+     * **Credential required**: *No*
+     */
+				request<E extends 'notes/history', P extends Endpoints[E]['req']>(
+					endpoint: E,
+					params: P,
+					credential?: string | null,
+				): Promise<SwitchCaseResponseType<E, P>>;
     /**
      * No description provided.
-     * 
-     * **Credential required**: *Yes* / **Permission**: *write:notes*
+     *
+     * **Credential required**: *Yes* / **Permission**: *write:favorites*
      */
     request<E extends 'notes/delete', P extends Endpoints[E]['req']>(
       endpoint: E,
@@ -3200,7 +3210,18 @@ declare module '../api.js' {
     /**
      * No description provided.
      *
-     * **Credential required**: *Yes* / **Permission**: *write:favorites*
+     * **Credential required**: *Yes* / **Permission**: *read:account*
+     */
+    request<E extends 'notes/following', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *read:account*
      */
     request<E extends 'notes/favorites/delete', P extends Endpoints[E]['req']>(
       endpoint: E,

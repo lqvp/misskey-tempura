@@ -6,7 +6,7 @@
 import { Brackets, In } from 'typeorm';
 import { Injectable, Inject } from '@nestjs/common';
 import type { MiUser, MiLocalUser, MiRemoteUser } from '@/models/User.js';
-import type { MiNote, IMentionedRemoteUsers } from '@/models/Note.js';
+import { MiNote, IMentionedRemoteUsers } from '@/models/Note.js';
 import type { InstancesRepository, MiMeta, NotesRepository, UsersRepository } from '@/models/_.js';
 import { RelayService } from '@/core/RelayService.js';
 import { FederatedInstanceService } from '@/core/FederatedInstanceService.js';
@@ -23,6 +23,7 @@ import { bindThis } from '@/decorators.js';
 import { SearchService } from '@/core/SearchService.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { isQuote, isRenote } from '@/misc/is-renote.js';
+import { LatestNoteService } from '@/core/LatestNoteService.js';
 
 @Injectable()
 export class NoteDeleteService {
@@ -53,6 +54,7 @@ export class NoteDeleteService {
 		private notesChart: NotesChart,
 		private perUserNotesChart: PerUserNotesChart,
 		private instanceChart: InstanceChart,
+		private latestNoteService: LatestNoteService,
 	) {}
 
 	/**
@@ -127,6 +129,8 @@ export class NoteDeleteService {
 			id: note.id,
 			userId: user.id,
 		});
+
+		this.latestNoteService.handleDeletedNoteBG(note);
 
 		if (deleter && (note.userId !== deleter.id)) {
 			const user = await this.usersRepository.findOneByOrFail({ id: note.userId });

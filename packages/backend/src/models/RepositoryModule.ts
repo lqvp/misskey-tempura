@@ -6,6 +6,7 @@
 import { Module } from '@nestjs/common';
 import { DI } from '@/di-symbols.js';
 import {
+	SkLatestNote,
 	MiAbuseReportNotificationRecipient,
 	MiAbuseUserReport,
 	MiAccessToken,
@@ -121,6 +122,12 @@ const $appsRepository: Provider = {
 const $avatarDecorationsRepository: Provider = {
 	provide: DI.avatarDecorationsRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiAvatarDecoration).extend(miRepository as MiRepository<MiAvatarDecoration>),
+	inject: [DI.db],
+};
+
+const $latestNotesRepository: Provider = {
+	provide: DI.latestNotesRepository,
+	useFactory: (db: DataSource) => db.getRepository(SkLatestNote).extend(miRepository as MiRepository<SkLatestNote>),
 	inject: [DI.db],
 };
 
@@ -511,6 +518,7 @@ const $reversiGamesRepository: Provider = {
 		$announcementReadsRepository,
 		$appsRepository,
 		$avatarDecorationsRepository,
+		$latestNotesRepository,
 		$noteFavoritesRepository,
 		$noteThreadMutingsRepository,
 		$noteReactionsRepository,
@@ -583,6 +591,7 @@ const $reversiGamesRepository: Provider = {
 		$announcementReadsRepository,
 		$appsRepository,
 		$avatarDecorationsRepository,
+		$latestNotesRepository,
 		$noteFavoritesRepository,
 		$noteThreadMutingsRepository,
 		$noteReactionsRepository,

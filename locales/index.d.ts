@@ -391,6 +391,10 @@ export interface Locale extends ILocale {
      */
     "followers": string;
     /**
+     * Mutuals
+     */
+    "mutuals": string;
+    /**
      * フォローされています
      */
     "followsYou": string;
@@ -2847,6 +2851,10 @@ export interface Locale extends ILocale {
      */
     "userSaysSomething": ParameterizedString<"name">;
     /**
+     * post is hidden by a filter
+     */
+    "postFiltered": string;
+    /**
      * アクティブにする
      */
     "makeActive": string;
@@ -4950,6 +4958,18 @@ export interface Locale extends ILocale {
      * リノートを表示
      */
     "showRenotes": string;
+    /**
+     * Show quotes
+     */
+    "showQuotes": string;
+    /**
+     * Show replies
+     */
+    "showReplies": string;
+    /**
+     * Show non-public
+     */
+    "showNonPublicNotes": string;
     /**
      * 編集済み
      */
@@ -10999,6 +11019,10 @@ export interface Locale extends ILocale {
          */
         "hideGlobalTimeLine": string;
     };
+    /**
+     * Remote followers may have incomplete or outdated activity
+     */
+    "remoteFollowersWarning": string;
 }
 declare const locales: {
     [lang: string]: Locale;

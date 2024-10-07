@@ -1663,6 +1663,8 @@ declare namespace entities {
         NotesFavoritesDeleteRequest,
         NotesFeaturedRequest,
         NotesFeaturedResponse,
+        NotesFollowingRequest,
+        NotesFollowingResponse,
         NotesGlobalTimelineRequest,
         NotesGlobalTimelineResponse,
         NotesHybridTimelineRequest,
@@ -2726,6 +2728,12 @@ type NotesFeaturedRequest = operations['notes___featured']['requestBody']['conte
 
 // @public (undocumented)
 type NotesFeaturedResponse = operations['notes___featured']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type NotesFollowingRequest = operations['notes___following']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type NotesFollowingResponse = operations['notes___following']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type NotesGlobalTimelineRequest = operations['notes___global-timeline']['requestBody']['content']['application/json'];

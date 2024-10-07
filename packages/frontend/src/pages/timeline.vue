@@ -58,6 +58,8 @@ import { useRouter } from '@/router/supplier.js';
 
 provide('shouldOmitHeaderTitle', true);
 
+const router = useRouter();
+
 const tlComponent = shallowRef<InstanceType<typeof MkTimeline>>();
 const rootEl = shallowRef<HTMLElement>();
 
@@ -320,6 +322,11 @@ const headerTabs = computed(() => [...(defaultStore.reactiveState.pinnedUserList
 	icon: 'ti ti-users',
 	iconOnly: true,
 	onClick: () => { router.push('/my/followings-updates') },
+}, {
+	icon: 'ph-user-check ph-bold ph-lg',
+	title: i18n.ts.following,
+	iconOnly: true,
+	onClick: () => router.push('/following-feed'),
 }, {
 	icon: 'ti ti-list',
 	title: i18n.ts.lists,

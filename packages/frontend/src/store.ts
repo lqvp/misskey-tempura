@@ -10,6 +10,7 @@ import lightTheme from '@@/themes/l-light.json5';
 import darkTheme from '@@/themes/d-green-lime.json5';
 import { miLocalStorage } from './local-storage.js';
 import type { SoundType } from '@/scripts/sound.js';
+import type { FollowingFeedTab } from '@/scripts/following-feed-utils.js';
 import { Storage } from '@/pizzax.js';
 
 interface PostFormAction {
@@ -232,6 +233,18 @@ export const defaultStore = markRaw(new Storage('base', {
 	pinnedUserLists: {
 		where: 'deviceAccount',
 		default: [] as Misskey.entities.UserList[],
+	},
+	followingFeed: {
+		where: 'account',
+		default: {
+			withNonPublic: false,
+			withQuotes: false,
+			withBots: true,
+			withReplies: false,
+			onlyFiles: false,
+			userList: 'following' as FollowingFeedTab,
+			remoteWarningDismissed: false,
+		},
 	},
 
 	overridedDeviceKind: {
