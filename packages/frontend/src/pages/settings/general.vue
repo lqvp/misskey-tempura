@@ -274,7 +274,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</FormSection>
 
 	<FormSection>
-		<template #label>{{ i18n.ts._uniqueFeatures.uniqueFeature }}</template>
+		<template #label>{{ i18n.ts._uniqueFeatures.uniqueFeature }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 
 		<div class="_gaps_m">
 			<MkFolder>
@@ -302,7 +302,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</FormSection>
 
 	<FormSection>
-		<template #label>{{ i18n.ts.__rest.extendSettings }}</template>
+		<template #label>{{ i18n.ts.__rest.extendSettings }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 
 		<div class="_gaps">
 			<MkSwitch v-model="hideLocalTimeLine">{{ i18n.ts.__rest.hideLocalTimeLine }}</MkSwitch>
