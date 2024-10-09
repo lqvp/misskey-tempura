@@ -174,7 +174,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div v-if="!hiddenFiles">
 					<template v-if="narrow">
 						<MkLazy>
-							<XActivity :key="user.id" :user="user"/>
+							<XActivity v-if="!user.hideActivity" :key="user.id" :user="user"/>
 						</MkLazy>
 					</template>
 				</div>
