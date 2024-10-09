@@ -74,7 +74,6 @@ import { UtilityService } from './UtilityService.js';
 import { FileInfoService } from './FileInfoService.js';
 import { SearchService } from './SearchService.js';
 import { ClipService } from './ClipService.js';
-import { FlashService } from './FlashService.js';
 import { FeaturedService } from './FeaturedService.js';
 import { FanoutTimelineService } from './FanoutTimelineService.js';
 import { ChannelFollowingService } from './ChannelFollowingService.js';
@@ -224,7 +223,6 @@ const $FileInfoService: Provider = { provide: 'FileInfoService', useExisting: Fi
 const $FlashService: Provider = { provide: 'FlashService', useExisting: FlashService };
 const $SearchService: Provider = { provide: 'SearchService', useExisting: SearchService };
 const $ClipService: Provider = { provide: 'ClipService', useExisting: ClipService };
-const $FlashService: Provider = { provide: 'FlashService', useExisting: FlashService };
 const $FeaturedService: Provider = { provide: 'FeaturedService', useExisting: FeaturedService };
 const $FanoutTimelineService: Provider = { provide: 'FanoutTimelineService', useExisting: FanoutTimelineService };
 const $FanoutTimelineEndpointService: Provider = { provide: 'FanoutTimelineEndpointService', useExisting: FanoutTimelineEndpointService };
@@ -378,7 +376,6 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		FlashService,
 		SearchService,
 		ClipService,
-		FlashService,
 		FeaturedService,
 		FanoutTimelineService,
 		FanoutTimelineEndpointService,
@@ -528,7 +525,6 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		$FlashService,
 		$SearchService,
 		$ClipService,
-		$FlashService,
 		$FeaturedService,
 		$FanoutTimelineService,
 		$FanoutTimelineEndpointService,
@@ -679,7 +675,6 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		FlashService,
 		SearchService,
 		ClipService,
-		FlashService,
 		FeaturedService,
 		FanoutTimelineService,
 		FanoutTimelineEndpointService,
