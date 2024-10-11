@@ -4,8 +4,9 @@
 		<img v-if="instance.backgroundImageUrl" :src="instance.backgroundImageUrl" :class="$style.backgroundImage" alt=""/>
 		<div :class="$style.titleRoot">
 			<h1 :class="$style.logo">
-				<span :class="$style.visuallyHidden">はなみすきー</span>
-				<img :class="$style.logoImage" src="https://static-assets.misskey.flowers/brand-assets/logotype/logotype_v1.png"/>
+				<span :class="$style.visuallyHidden">{{ instanceName }}</span>
+				<!-- <img :class="$style.logoImage" src="https://static-assets.misskey.flowers/brand-assets/logotype/logotype_v1.png"/> -->
+				<img :class="$style.logoImage" :src="instance.iconUrl" />
 			</h1>
 			<div :class="$style.cta">
 				<div :class="$style.actions">
@@ -90,6 +91,7 @@
 import { instance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
 import * as os from '@/os.js';
+import { instanceName } from '@@/js/config.js';
 
 import MkButton from '@/components/MkButton.vue';
 // import MkInfo from '@/components/MkInfo.vue';
@@ -251,7 +253,7 @@ function signup() {
 	display: block;
 	margin: 0 auto;
 	width: 100%;
-	max-width: 500px;
+	max-width: 300px;
 }
 
 .cta {
