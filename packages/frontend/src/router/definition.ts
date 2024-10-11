@@ -34,6 +34,7 @@ const routes: RouteDef[] = [{
 	name: 'user',
 	path: '/@:acct/:page?',
 	component: page(() => import('@/pages/user/index.vue')),
+	loginRequired: true,
 }, {
 	name: 'note',
 	path: '/notes/:noteId/:initialTab?',
