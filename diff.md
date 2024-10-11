@@ -6,7 +6,7 @@
 - リバーシの連合に対応 (yojo-art/cherrypick)
 - ノートの文字制限を8192へ
 - 名前の最大文字数を100文字へ
-- RJ番号, nicovideo, jvn/jvnvu/jvnta/jvndbをmfmでリンク化
+- RJ番号, nicovideo, cve/jvn/jvnvu/jvnta/jvndbをmfmでリンク化
 - フォロリク自動拒否
 - 下書き機能
 - 下書きの保存に関する設定を可能に
