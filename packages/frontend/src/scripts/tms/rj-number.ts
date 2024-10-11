@@ -26,6 +26,13 @@ class RjNumber {
 			return `https://www.nicovideo.jp/watch/${sm}`;
 	}
 
+	// CVE
+	public static readonly CVE_SYMBOL = Symbol();
+	public static readonly CVE_REGEX = /CVE-\d{4}-\d{4,}/g;
+	public static getCveUrl(cve: string): string {
+			return `https://www.cve.org/CVERecord?id=${cve}`;
+	}
+
 	// JVN
 	public static readonly JVN_SYMBOL = Symbol();
 	public static readonly JVN_REGEX = /JVN[#\d]{8,}/g;
@@ -58,7 +65,7 @@ class RjNumber {
 }
 
 type ParsedNode = {
-	readonly type: 'text' | typeof RjNumber.WORK_SYMBOL | typeof RjNumber.CIRCLE_SYMBOL | typeof RjNumber.NICO_SYMBOL | typeof RjNumber.JVN_SYMBOL | typeof RjNumber.JVNVU_SYMBOL | typeof RjNumber.JVNTA_SYMBOL | typeof RjNumber.JVNDB_SYMBOL;
+	readonly type: 'text' | typeof RjNumber.WORK_SYMBOL | typeof RjNumber.CIRCLE_SYMBOL | typeof RjNumber.NICO_SYMBOL | typeof RjNumber.CVE_SYMBOL | typeof RjNumber.JVN_SYMBOL | typeof RjNumber.JVNVU_SYMBOL | typeof RjNumber.JVNTA_SYMBOL | typeof RjNumber.JVNDB_SYMBOL;
 	readonly value: string;
 };
 
@@ -100,6 +107,7 @@ export const parseMfmRjNumber = (text: string): (VNode | string)[] => {
 	parsedNodes = parseNodes(parsedNodes, RjNumber.WORK_SYMBOL, RjNumber.WORK_REGEX);
 	parsedNodes = parseNodes(parsedNodes, RjNumber.CIRCLE_SYMBOL, RjNumber.CIRCLE_REGEX);
 	parsedNodes = parseNodes(parsedNodes, RjNumber.NICO_SYMBOL, RjNumber.NICO_REGEX);
+	parsedNodes = parseNodes(parsedNodes, RjNumber.CVE_SYMBOL, RjNumber.CVE_REGEX);
 	parsedNodes = parseNodes(parsedNodes, RjNumber.JVN_SYMBOL, RjNumber.JVN_REGEX);
 	parsedNodes = parseNodes(parsedNodes, RjNumber.JVNVU_SYMBOL, RjNumber.JVNVU_REGEX);
 	parsedNodes = parseNodes(parsedNodes, RjNumber.JVNTA_SYMBOL, RjNumber.JVNTA_REGEX);
@@ -130,6 +138,13 @@ export const parseMfmRjNumber = (text: string): (VNode | string)[] => {
 					rjNumber: value,
 					url: RjNumber.getNicoUrl(value),
 				});
+			}
+			case RjNumber.CVE_SYMBOL: {
+				return h(TmsRjNumber, {
+					key: value,
+					rjNumber: value,
+					url: RjNumber.getCveUrl(value),
+				})
 			}
 			case RjNumber.JVN_SYMBOL: {
 				return h(TmsRjNumber, {
