@@ -14,6 +14,7 @@ import { AbuseReportNotificationService } from '@/core/AbuseReportNotificationSe
 import { SystemWebhookService } from '@/core/SystemWebhookService.js';
 import { UserSearchService } from '@/core/UserSearchService.js';
 import { WebhookTestService } from '@/core/WebhookTestService.js';
+import { FlashService } from '@/core/FlashService.js';
 import { AccountMoveService } from './AccountMoveService.js';
 import { AccountUpdateService } from './AccountUpdateService.js';
 import { AiService } from './AiService.js';
@@ -73,7 +74,6 @@ import { UtilityService } from './UtilityService.js';
 import { FileInfoService } from './FileInfoService.js';
 import { SearchService } from './SearchService.js';
 import { ClipService } from './ClipService.js';
-import { FlashService } from './FlashService.js';
 import { FeaturedService } from './FeaturedService.js';
 import { FanoutTimelineService } from './FanoutTimelineService.js';
 import { ChannelFollowingService } from './ChannelFollowingService.js';
@@ -220,9 +220,9 @@ const $SystemWebhookService: Provider = { provide: 'SystemWebhookService', useEx
 const $WebhookTestService: Provider = { provide: 'WebhookTestService', useExisting: WebhookTestService };
 const $UtilityService: Provider = { provide: 'UtilityService', useExisting: UtilityService };
 const $FileInfoService: Provider = { provide: 'FileInfoService', useExisting: FileInfoService };
+const $FlashService: Provider = { provide: 'FlashService', useExisting: FlashService };
 const $SearchService: Provider = { provide: 'SearchService', useExisting: SearchService };
 const $ClipService: Provider = { provide: 'ClipService', useExisting: ClipService };
-const $FlashService: Provider = { provide: 'FlashService', useExisting: FlashService };
 const $FeaturedService: Provider = { provide: 'FeaturedService', useExisting: FeaturedService };
 const $FanoutTimelineService: Provider = { provide: 'FanoutTimelineService', useExisting: FanoutTimelineService };
 const $FanoutTimelineEndpointService: Provider = { provide: 'FanoutTimelineEndpointService', useExisting: FanoutTimelineEndpointService };
@@ -373,9 +373,9 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		WebhookTestService,
 		UtilityService,
 		FileInfoService,
+		FlashService,
 		SearchService,
 		ClipService,
-		FlashService,
 		FeaturedService,
 		FanoutTimelineService,
 		FanoutTimelineEndpointService,
@@ -522,9 +522,9 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		$WebhookTestService,
 		$UtilityService,
 		$FileInfoService,
+		$FlashService,
 		$SearchService,
 		$ClipService,
-		$FlashService,
 		$FeaturedService,
 		$FanoutTimelineService,
 		$FanoutTimelineEndpointService,
@@ -672,9 +672,9 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		WebhookTestService,
 		UtilityService,
 		FileInfoService,
+		FlashService,
 		SearchService,
 		ClipService,
-		FlashService,
 		FeaturedService,
 		FanoutTimelineService,
 		FanoutTimelineEndpointService,

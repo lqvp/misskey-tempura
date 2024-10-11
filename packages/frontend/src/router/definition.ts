@@ -34,10 +34,12 @@ const routes: RouteDef[] = [{
 	name: 'user',
 	path: '/@:acct/:page?',
 	component: page(() => import('@/pages/user/index.vue')),
+	loginRequired: true,
 }, {
 	name: 'note',
 	path: '/notes/:noteId/:initialTab?',
 	component: page(() => import('@/pages/note.vue')),
+	loginRequired: true,
 }, {
 	name: 'list',
 	path: '/list/:listId',
@@ -229,9 +231,11 @@ const routes: RouteDef[] = [{
 }, {
 	path: '/roles/:role',
 	component: page(() => import('@/pages/role.vue')),
+	loginRequired: true,
 }, {
 	path: '/user-tags/:tag',
 	component: page(() => import('@/pages/user-tag.vue')),
+	loginRequired: true,
 }, {
 	path: '/explore',
 	component: page(() => import('@/pages/explore.vue')),
@@ -240,6 +244,7 @@ const routes: RouteDef[] = [{
 }, {
 	path: '/search',
 	component: page(() => import('@/pages/search.vue')),
+	loginRequired: true,
 	query: {
 		q: 'query',
 		userId: 'userId',

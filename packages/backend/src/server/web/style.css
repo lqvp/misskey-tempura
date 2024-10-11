@@ -10,7 +10,7 @@ html {
 }
 
 #splash {
-	position: fixed;
+	position: relative;
 	z-index: 10000;
 	top: 0;
 	left: 0;
@@ -44,7 +44,7 @@ html {
 	display: inline-block;
 	width: 28px;
 	height: 28px;
-	transform: translateY(70px);
+	transform: translateY(80px);
 	color: var(--accent);
 }
 
@@ -65,6 +65,17 @@ html {
 }
 #splashSpinner > .spinner.fg {
 	animation: splashSpinner 0.5s linear infinite;
+}
+
+#splashText {
+	position: absolute;
+	inset: 0;
+	margin: auto;
+	display: inline-block;
+	inline-size: 70%;
+	block-size: 0;
+	text-align: center;
+	padding-block-start: 200px;
 }
 
 @keyframes splashSpinner {

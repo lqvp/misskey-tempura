@@ -29,6 +29,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div class="_gaps_s">
 			<MkSwitch v-model="showFixedPostForm">{{ i18n.ts.showFixedPostForm }}</MkSwitch>
 			<MkSwitch v-model="showFixedPostFormInChannel">{{ i18n.ts.showFixedPostFormInChannel }}</MkSwitch>
+			<MkSwitch v-model="disableNoteDrafting">
+				<template #caption>{{ i18n.ts.disableNoteDraftingDescription }}</template>
+				{{ i18n.ts.disableNoteDrafting }}
+				<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+			</MkSwitch>
 			<FormLink to="/settings/post-form">{{ i18n.ts.postForm }}</FormLink>
 			<MkFolder>
 				<template #label>{{ i18n.ts.pinnedList }}</template>
@@ -89,7 +94,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<option value="remote">{{ i18n.ts._instanceTicker.remote }}</option>
 				<option value="always">{{ i18n.ts._instanceTicker.always }}</option>
 			</MkSelect>
-
+			<MkSwitch v-if="instanceTicker !== 'none'" v-model="instanceIcon">{{ i18n.ts.instanceIcon }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
 			<MkSelect v-model="nsfw">
 				<template #label>{{ i18n.ts.displayOfSensitiveMedia }}</template>
 				<option value="respect">{{ i18n.ts._displayOfSensitiveMedia.respect }}</option>
@@ -269,7 +274,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</FormSection>
 
 	<FormSection>
-		<template #label>{{ i18n.ts._uniqueFeatures.uniqueFeature }}</template>
+		<template #label>{{ i18n.ts._uniqueFeatures.uniqueFeature }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 
 		<div class="_gaps_m">
 			<MkFolder>
@@ -297,7 +302,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</FormSection>
 
 	<FormSection>
-		<template #label>{{ i18n.ts.__rest.extendSettings }}</template>
+		<template #label>{{ i18n.ts.__rest.extendSettings }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 
 		<div class="_gaps">
 			<MkSwitch v-model="hideLocalTimeLine">{{ i18n.ts.__rest.hideLocalTimeLine }}</MkSwitch>
@@ -397,6 +402,7 @@ const showFixedPostForm = computed(defaultStore.makeGetterSetter('showFixedPostF
 const showFixedPostFormInChannel = computed(defaultStore.makeGetterSetter('showFixedPostFormInChannel'));
 const numberOfPageCache = computed(defaultStore.makeGetterSetter('numberOfPageCache'));
 const instanceTicker = computed(defaultStore.makeGetterSetter('instanceTicker'));
+const instanceIcon = computed(defaultStore.makeGetterSetter('instanceIcon'));
 const enableInfiniteScroll = computed(defaultStore.makeGetterSetter('enableInfiniteScroll'));
 const useReactionPickerForContextMenu = computed(defaultStore.makeGetterSetter('useReactionPickerForContextMenu'));
 const squareAvatars = computed(defaultStore.makeGetterSetter('squareAvatars'));
@@ -419,6 +425,7 @@ const hideLocalTimeLine = computed(defaultStore.makeGetterSetter('hideLocalTimeL
 const hideGlobalTimeLine = computed(defaultStore.makeGetterSetter('hideGlobalTimeLine'));
 const hideSocialTimeLine = computed(defaultStore.makeGetterSetter('hideSocialTimeLine'));
 const selectReaction = computed(defaultStore.makeGetterSetter('selectReaction'));
+const disableNoteDrafting = computed(defaultStore.makeGetterSetter('disableNoteDrafting'));
 
 watch(lang, () => {
 	miLocalStorage.setItem('lang', lang.value as string);
@@ -454,6 +461,7 @@ watch([
 	showGapBetweenNotesInTimeline,
 	instanceTicker,
 	hideReactionCount,
+	instanceIcon,
 	overridedDeviceKind,
 	mediaListWithOneImageAppearance,
 	reactionsDisplaySize,

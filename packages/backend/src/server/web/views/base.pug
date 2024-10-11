@@ -83,6 +83,9 @@ html
 			| Please turn on your JavaScript
 		div#splash
 			img#splashIcon(src= icon || '/static-assets/splash.png')
+			span#splashText
+				block customSplashText
+					= customSplashText
 			div#splashSpinner
 				<svg class="spinner bg" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">
 					<g transform="matrix(1,0,0,1,12,12)">

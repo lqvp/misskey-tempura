@@ -198,6 +198,7 @@ export class ClientServerService {
 			instanceUrl: this.config.url,
 			metaJson: htmlSafeJsonStringify(await this.metaEntityService.packDetailed(meta)),
 			now: Date.now(),
+			customSplashText: meta.customSplashText[Math.floor(Math.random() * meta.customSplashText.length)],
 		};
 	}
 

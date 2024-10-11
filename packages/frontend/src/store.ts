@@ -78,6 +78,10 @@ export const defaultStore = markRaw(new Storage('base', {
 			global: false,
 		},
 	},
+	abusesTutorial: {
+		where: 'account',
+		default: false,
+	},
 	keepCw: {
 		where: 'account',
 		default: true,
@@ -144,7 +148,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	reactionAcceptance: {
 		where: 'account',
-		default: 'nonSensitiveOnly' as 'likeOnly' | 'likeOnlyForRemote' | 'nonSensitiveOnly' | 'nonSensitiveOnlyForLocalLikeOnlyForRemote' | null,
+		default: null as 'likeOnly' | 'likeOnlyForRemote' | 'nonSensitiveOnly' | 'nonSensitiveOnlyForLocalLikeOnlyForRemote' | null,
 	},
 	mutedAds: {
 		where: 'account',
@@ -252,7 +256,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	animatedMfm: {
 		where: 'device',
-		default: false,
+		default: !window.matchMedia('(prefers-reduced-motion)').matches,
 	},
 	advancedMfm: {
 		where: 'device',
@@ -337,6 +341,10 @@ export const defaultStore = markRaw(new Storage('base', {
 	instanceTicker: {
 		where: 'device',
 		default: 'remote' as 'none' | 'remote' | 'always',
+	},
+	instanceIcon: {
+		where: 'device',
+		default: false,
 	},
 	emojiPickerScale: {
 		where: 'device',

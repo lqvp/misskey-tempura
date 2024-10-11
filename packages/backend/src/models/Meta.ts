@@ -643,4 +643,16 @@ export class MiMeta {
 		default: '{}',
 	})
 	public federationHosts: string[];
+
+	@Column('varchar', {
+		length: 1024,
+		array: true,
+		default: '{}',
+	})
+	public customSplashText: string[];
+
+	@Column('boolean', {
+		default: true,
+	})
+	public blockMentionsFromUnfamiliarRemoteUsers: boolean;
 }

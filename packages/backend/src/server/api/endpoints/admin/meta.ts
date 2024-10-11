@@ -499,13 +499,24 @@ export const meta = {
 				type: 'string',
 				optional: false, nullable: false,
 			},
-			federationHosts: {
-				type: 'array',
+			emailToReceiveAbuseReport: {
+				type: 'string',
 				optional: false, nullable: false,
 				items: {
 					type: 'string',
 					optional: false, nullable: false,
 				},
+			},
+			customSplashText: {
+				type: 'array',
+				optional: false, nullable: false,
+				items: {
+					type: 'string',
+				},
+			},
+			blockMentionsFromUnfamiliarRemoteUsers: {
+				type: 'boolean',
+				optional: false, nullable: false,
 			},
 		},
 	},
@@ -644,6 +655,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				urlPreviewSummaryProxyUrl: instance.urlPreviewSummaryProxyUrl,
 				federation: instance.federation,
 				federationHosts: instance.federationHosts,
+				customSplashText: instance.customSplashText,
+				blockMentionsFromUnfamiliarRemoteUsers: instance.blockMentionsFromUnfamiliarRemoteUsers,
 			};
 		});
 	}

@@ -76,7 +76,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						.where('user.updatedAt IS NULL')
 						.orWhere('user.updatedAt > :activeThreshold', { activeThreshold: activeThreshold });
 				}))
-				.andWhere('user.isSuspended = FALSE');
+				.andWhere('user.isSuspended = FALSE')
+				.andWhere('user.isLocked = FALSE');
 
 			if (ps.origin === 'local') {
 				nameQuery.andWhere('user.host IS NULL');
