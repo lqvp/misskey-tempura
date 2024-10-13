@@ -1782,6 +1782,15 @@ export type paths = {
      */
     post: operations['following___requests___list'];
   };
+	'following/requests/sendlist': {
+		/**
+		 * following/requests/sendlist
+		 * @description No description provided.
+		 *
+		 * **Credential required**: *Yes* / **Permission**: *read:following*
+		 */
+		post: operations['following___requests___send___list'];
+	}
   '/following/requests/reject': {
     /**
      * following/requests/reject
@@ -16259,6 +16268,69 @@ export type operations = {
    * **Credential required**: *Yes* / **Permission**: *read:following*
    */
   following___requests___list: {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: misskey:id */
+          sinceId?: string;
+          /** Format: misskey:id */
+          untilId?: string;
+          /** @default 10 */
+          limit?: number;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (with results) */
+      200: {
+        content: {
+          'application/json': {
+              /** Format: id */
+              id: string;
+              follower: components['schemas']['UserLite'];
+              followee: components['schemas']['UserLite'];
+            }[];
+        };
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+	/**
+   * following/requests/sendlist
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *read:following*
+   */
+  following___requests___send___list: {
     requestBody: {
       content: {
         'application/json': {

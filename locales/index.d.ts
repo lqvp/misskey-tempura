@@ -454,6 +454,10 @@ export interface Locale extends ILocale {
      * フォロー許可待ち
      */
     "followRequestPending": string;
+		/**
+		 * フォロリク一覧
+		 */
+		"followRequestList": string;
     /**
      * 絵文字を入力
      */
