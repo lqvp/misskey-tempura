@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<template #empty>
 					<div class="_fullinfo">
 						<img :src="infoImageUrl" class="_ghost"/>
-						<div>{{ i18n.ts.noFollowRequests }}</div>
+						<div>{{ i18n.ts.noSentFollowRequests }}</div>
 					</div>
 				</template>
 				<template #default="{items}">
