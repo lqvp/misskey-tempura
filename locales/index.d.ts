@@ -461,7 +461,7 @@ export interface Locale extends ILocale {
 		/**
 		 * フォロリク一覧
 		 */
-		"followRequestList": string;
+		"sentFollowRequestList": string;
     /**
      * 絵文字を入力
      */

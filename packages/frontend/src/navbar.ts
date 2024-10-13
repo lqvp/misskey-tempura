@@ -46,7 +46,7 @@ export const navbarItemDef = reactive({
 		to: '/my/follow-requests',
 	},
 	FollowRequestsSendlist: {
-		title: i18n.ts.followRequestList,
+		title: i18n.ts.sentFollowRequestList,
 		icon: 'ti ti-user-plus',
 		show: computed(() => $i != null),
 		to: '/my/follow-requests-sendlist',
