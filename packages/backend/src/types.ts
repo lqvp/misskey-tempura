@@ -15,6 +15,7 @@
  * pollEnded - 自分のアンケートもしくは自分が投票したアンケートが終了した
  * receiveFollowRequest - フォローリクエストされた
  * followRequestAccepted - 自分の送ったフォローリクエストが承認された
+ * followRequestRejected - 自分の送ったフォローリクエストが拒否された
  * roleAssigned - ロールが付与された
  * achievementEarned - 実績を獲得
  * exportCompleted - エクスポートが完了
@@ -34,6 +35,7 @@ export const notificationTypes = [
 	'pollEnded',
 	'receiveFollowRequest',
 	'followRequestAccepted',
+	'followRequestRejected',
 	'roleAssigned',
 	'achievementEarned',
 	'exportCompleted',

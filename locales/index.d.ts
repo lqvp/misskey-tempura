@@ -306,6 +306,10 @@ export interface Locale extends ILocale {
      * フォローが承認されました
      */
     "followRequestAccepted": string;
+		/**
+		 * フォローが拒否されました
+		 */
+		"followRequestRejected": string;
     /**
      * メンション
      */
@@ -9495,6 +9499,10 @@ export interface Locale extends ILocale {
          * フォローリクエストが承認されました
          */
         "yourFollowRequestAccepted": string;
+				/**
+				 * フォローリクエストが拒否されました
+				 */
+				"yourFollowRequestRejected": string;
         /**
          * アンケートの結果が出ました
          */
@@ -9616,6 +9624,10 @@ export interface Locale extends ILocale {
              * フォローが受理された
              */
             "followRequestAccepted": string;
+						/**
+						 * フォローが拒否された
+						 */
+						"followRequestRejected": string;
             /**
              * ロールが付与された
              */

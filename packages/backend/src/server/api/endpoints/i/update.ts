@@ -215,6 +215,7 @@ export const paramDef = {
 				pollEnded: notificationRecieveConfig,
 				receiveFollowRequest: notificationRecieveConfig,
 				followRequestAccepted: notificationRecieveConfig,
+				followRequestRejected: notificationRecieveConfig,
 				roleAssigned: notificationRecieveConfig,
 				achievementEarned: notificationRecieveConfig,
 				app: notificationRecieveConfig,
