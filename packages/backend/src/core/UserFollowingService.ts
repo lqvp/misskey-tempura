@@ -682,15 +682,6 @@ export class UserFollowingService implements OnModuleInit {
 
 		await this.removeFollowRequest(user, follower);
 
-		const followeeId = user.id;
-    const followee = await this.usersRepository.findOneByOrFail({ id: followeeId });
-
-		// 通知を作成
-		const profile = await this.cacheService.userProfileCache.fetch(followee.id);
-		this.notificationService.createNotification(follower.id, 'followRequestRejected', {
-			message: profile.followedMessage,
-		}, followee.id);
-
 		if (this.userEntityService.isLocalUser(follower)) {
 			this.publishUnfollow(user, follower);
 		}
@@ -733,6 +724,15 @@ export class UserFollowingService implements OnModuleInit {
 		});
 
 		if (!request) return;
+
+		// const followeeId = followee.id;
+    // const followee = await this.usersRepository.findOneByOrFail({ id: followeeId });
+
+		// 通知を作成
+		const profile = await this.cacheService.userProfileCache.fetch(followee.id);
+		this.notificationService.createNotification(follower.id, 'followRequestRejected', {
+			message: profile.followedMessage,
+		}, followee.id);
 
 		await this.followRequestsRepository.delete(request.id);
 	}
