@@ -27,6 +27,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #caption>{{ i18n.ts.objectStoragePrefixDesc }}</template>
 					</MkInput>
 
+					<MkInput v-model="objectStoragePrefixForRemote">
+						<template #label>{{ i18n.ts.objectStoragePrefixForRemote }}</template>
+						<template #caption>{{ i18n.ts.objectStoragePrefixForRemoteDesc }}</template>
+					</MkInput>
+
 					<MkInput v-model="objectStorageEndpoint" :placeholder="'example.com'">
 						<template #label>{{ i18n.ts.objectStorageEndpoint }}</template>
 						<template #prefix>https://</template>
@@ -100,6 +105,7 @@ const useObjectStorage = ref<boolean>(false);
 const objectStorageBaseUrl = ref<string | null>(null);
 const objectStorageBucket = ref<string | null>(null);
 const objectStoragePrefix = ref<string | null>(null);
+const objectStoragePrefixForRemote = ref<string | null>(null);
 const objectStorageEndpoint = ref<string | null>(null);
 const objectStorageRegion = ref<string | null>(null);
 const objectStoragePort = ref<number | null>(null);
@@ -116,6 +122,7 @@ async function init() {
 	objectStorageBaseUrl.value = meta.objectStorageBaseUrl;
 	objectStorageBucket.value = meta.objectStorageBucket;
 	objectStoragePrefix.value = meta.objectStoragePrefix;
+	objectStoragePrefixForRemote.value = meta.objectStoragePrefixForRemote;
 	objectStorageEndpoint.value = meta.objectStorageEndpoint;
 	objectStorageRegion.value = meta.objectStorageRegion;
 	objectStoragePort.value = meta.objectStoragePort;
@@ -133,6 +140,7 @@ function save() {
 		objectStorageBaseUrl: objectStorageBaseUrl.value,
 		objectStorageBucket: objectStorageBucket.value,
 		objectStoragePrefix: objectStoragePrefix.value,
+		objectStoragePrefixForRemote: objectStoragePrefixForRemote.value,
 		objectStorageEndpoint: objectStorageEndpoint.value,
 		objectStorageRegion: objectStorageRegion.value,
 		objectStoragePort: objectStoragePort.value,

@@ -119,6 +119,7 @@ export const paramDef = {
 		objectStorageBaseUrl: { type: 'string', nullable: true },
 		objectStorageBucket: { type: 'string', nullable: true },
 		objectStoragePrefix: { type: 'string', nullable: true },
+		objectStoragePrefixForRemote: { type: 'string', nullable: true },
 		objectStorageEndpoint: { type: 'string', nullable: true },
 		objectStorageRegion: { type: 'string', nullable: true },
 		objectStoragePort: { type: 'integer', nullable: true },
@@ -490,6 +491,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.objectStoragePrefix !== undefined) {
 				set.objectStoragePrefix = ps.objectStoragePrefix;
+			}
+
+			if (ps.objectStoragePrefixForRemote !== undefined) {
+				set.objectStoragePrefixForRemote = ps.objectStoragePrefixForRemote;
 			}
 
 			if (ps.objectStorageEndpoint !== undefined) {

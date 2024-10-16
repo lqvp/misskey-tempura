@@ -284,6 +284,10 @@ export const meta = {
 				type: 'string',
 				optional: false, nullable: true,
 			},
+			objectStoragePrefixForRemote: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
 			objectStorageEndpoint: {
 				type: 'string',
 				optional: false, nullable: true,
@@ -635,6 +639,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				objectStorageBaseUrl: instance.objectStorageBaseUrl,
 				objectStorageBucket: instance.objectStorageBucket,
 				objectStoragePrefix: instance.objectStoragePrefix,
+				objectStoragePrefixForRemote: instance.objectStoragePrefixForRemote,
 				objectStorageEndpoint: instance.objectStorageEndpoint,
 				objectStorageRegion: instance.objectStorageRegion,
 				objectStoragePort: instance.objectStoragePort,

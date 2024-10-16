@@ -435,6 +435,12 @@ export class MiMeta {
 		length: 1024,
 		nullable: true,
 	})
+	public objectStoragePrefixForRemote: string | null;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
 	public objectStorageBaseUrl: string | null;
 
 	@Column('varchar', {

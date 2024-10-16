@@ -144,9 +144,10 @@ export class DriveService {
 	 * @param type Content-Type for original
 	 * @param hash Hash for original
 	 * @param size Size for original
+	 * @param isRemoteFile is Remote file or Local File
 	 */
 	@bindThis
-	private async save(file: MiDriveFile, path: string, name: string, type: string, hash: string, size: number): Promise<MiDriveFile> {
+	private async save(file: MiDriveFile, path: string, name: string, type: string, hash: string, size: number, isRemoteFile = false): Promise<MiDriveFile> {
 	// thunbnail, webpublic を必要なら生成
 		const alts = await this.generateAlts(path, type, !file.uri);
 
@@ -173,7 +174,7 @@ export class DriveService {
 				?? `${ this.meta.objectStorageUseSSL ? 'https' : 'http' }://${ this.meta.objectStorageEndpoint }${ this.meta.objectStoragePort ? `:${this.meta.objectStoragePort}` : '' }/${ this.meta.objectStorageBucket }`;
 
 			// for original
-			const key = `${this.meta.objectStoragePrefix}/${randomUUID()}${ext}`;
+			const key = (isRemoteFile && this.meta.objectStoragePrefixForRemote) ? `${this.meta.objectStoragePrefixForRemote}/original/${randomUUID()}${ext}` : `${this.meta.objectStoragePrefix}/original/${randomUUID()}${ext}`;
 			const url = `${ baseUrl }/${ key }`;
 
 			// for alts
@@ -190,7 +191,7 @@ export class DriveService {
 			];
 
 			if (alts.webpublic) {
-				webpublicKey = `${this.meta.objectStoragePrefix}/webpublic-${randomUUID()}.${alts.webpublic.ext}`;
+				webpublicKey = (isRemoteFile && this.meta.objectStoragePrefixForRemote) ? `${this.meta.objectStoragePrefixForRemote}/webpublic/${randomUUID()}${ext}` : `${this.meta.objectStoragePrefix}/webpublic/webpublic-${randomUUID()}.${alts.webpublic.ext}`;
 				webpublicUrl = `${ baseUrl }/${ webpublicKey }`;
 
 				this.registerLogger.info(`uploading webpublic: ${webpublicKey}`);
@@ -198,7 +199,7 @@ export class DriveService {
 			}
 
 			if (alts.thumbnail) {
-				thumbnailKey = `${this.meta.objectStoragePrefix}/thumbnail-${randomUUID()}.${alts.thumbnail.ext}`;
+				thumbnailKey = (isRemoteFile && this.meta.objectStoragePrefixForRemote) ? `${this.meta.objectStoragePrefixForRemote}/thumbnail/${randomUUID()}${ext}` : `${this.meta.objectStoragePrefix}/thumbnail/thumbnail-${randomUUID()}.${alts.thumbnail.ext}`;
 				thumbnailUrl = `${ baseUrl }/${ thumbnailKey }`;
 
 				this.registerLogger.info(`uploading thumbnail: ${thumbnailKey}`);
@@ -630,7 +631,8 @@ export class DriveService {
 				}
 			}
 		} else {
-			file = await (this.save(file, path, detectedName, info.type.mime, info.md5, info.size));
+			const isRemoteFile = (user && this.userEntityService.isRemoteUser(user)) ?? false;
+			file = await (this.save(file, path, detectedName, info.type.mime, info.md5, info.size, isRemoteFile));
 		}
 
 		this.registerLogger.succ(`drive file has been created ${file.id}`);
