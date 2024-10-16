@@ -7,13 +7,13 @@ import { URL } from 'node:url';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import { Injectable } from '@nestjs/common';
-import { DeleteObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { DeleteObjectCommand, ListObjectsCommand, S3Client } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { NodeHttpHandler, NodeHttpHandlerOptions } from '@smithy/node-http-handler';
 import type { MiMeta } from '@/models/Meta.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { bindThis } from '@/decorators.js';
-import type { DeleteObjectCommandInput, PutObjectCommandInput } from '@aws-sdk/client-s3';
+import type { DeleteObjectCommandInput, ListObjectsCommandInput, PutObjectCommandInput } from '@aws-sdk/client-s3';
 
 @Injectable()
 export class S3Service {
@@ -65,5 +65,10 @@ export class S3Service {
 	public delete(meta: MiMeta, input: DeleteObjectCommandInput) {
 		const client = this.getS3Client(meta);
 		return client.send(new DeleteObjectCommand(input));
+	}
+
+	@bindThis list(meta: MiMeta, input: ListObjectsCommandInput) {
+		const client = this.getS3Client(meta);
+		return client.send(new ListObjectsCommand(input));
 	}
 }

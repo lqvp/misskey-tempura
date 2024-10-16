@@ -5,11 +5,14 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import { IsNull, MoreThan, Not } from 'typeorm';
+import { ListObjectsCommandInput } from '@aws-sdk/client-s3';
 import { DI } from '@/di-symbols.js';
 import type { MiDriveFile, DriveFilesRepository } from '@/models/_.js';
 import type Logger from '@/logger.js';
 import { DriveService } from '@/core/DriveService.js';
 import { bindThis } from '@/decorators.js';
+import { S3Service } from '@/core/S3Service.js';
+import { MetaService } from '@/core/MetaService.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import type * as Bull from 'bullmq';
 
@@ -23,6 +26,8 @@ export class CleanRemoteFilesProcessorService {
 
 		private driveService: DriveService,
 		private queueLoggerService: QueueLoggerService,
+		private s3Service: S3Service,
+		private metaService: MetaService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('clean-remote-files');
 	}
@@ -67,5 +72,55 @@ export class CleanRemoteFilesProcessorService {
 		}
 
 		this.logger.succ('All cached remote files has been deleted.');
+
+		this.logger.info('Cleaning orphaned files...');
+		let object_cursor: string | null = null;
+		let delete_counter = 0;
+		while (true) {
+			const meta = await this.metaService.fetch();
+			if (meta.objectStorageBucket == null) {
+				break;
+			}
+			const param = {
+				Bucket: meta.objectStorageBucket,
+			} as ListObjectsCommandInput;
+
+			if (object_cursor) {
+				param.Marker = object_cursor;
+			}
+
+			const objects = await this.s3Service.list(meta, param);
+
+			if (!objects.Contents) {
+				break;
+			}
+			object_cursor = objects.Contents.at(-1)?.Key ?? null;
+			const files = objects.Contents;
+			files.forEach(async (v) => {
+				if (!v.Key) {
+					return;
+				}
+				const isInDb = await this.driveFilesRepository.exists(
+					{ where: [
+						{ accessKey: v.Key }, 
+						{ webpublicAccessKey: v.Key }, 
+						{ thumbnailAccessKey: v.Key },
+					] },
+				);
+				if (!isInDb) {
+					this.logger.debug(`Delete ${v.Key}`);
+					delete_counter++;
+					await this.s3Service.delete(meta, {
+						Key: v.Key,
+						Bucket: meta.objectStorageBucket ?? undefined,
+					});
+				}
+			});
+
+			if (!objects.IsTruncated) {
+				break;
+			}
+		}
+		this.logger.info(`${delete_counter} orphaned files deleted.`);
 	}
 }
