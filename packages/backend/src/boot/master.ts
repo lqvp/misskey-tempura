@@ -31,17 +31,21 @@ const themeColor = chalk.hex('#86b300');
 
 function greet() {
 	if (!envOption.quiet) {
-		//#region Misskey logo
-		const v = `v${meta.version}`;
-		console.log(themeColor('  _____ _         _           '));
-		console.log(themeColor(' |     |_|___ ___| |_ ___ _ _ '));
-		console.log(themeColor(' | | | | |_ -|_ -| \'_| -_| | |'));
-		console.log(themeColor(' |_|_|_|_|___|___|_,_|___|_  |'));
-		console.log(' ' + chalk.gray(v) + themeColor('                        |___|\n'.substring(v.length)));
+		//#region lqvp logo?
+		const versionParts = meta.version.split('-');
+		const v = `v${versionParts[0]}`;
+		const forkVersion = versionParts[2];
+		console.log(themeColor(' _'));
+		console.log(themeColor('| | __ ___   ___ __'));
+		console.log(themeColor('| |/ _` \\ \\ / / \'_ \\'));
+		console.log(themeColor('| | (_| |\\ V /| |_) |'));
+		console.log(themeColor('|_|\\__, | \\_/ | .__/' + chalk.gray(forkVersion)));
+		console.log(themeColor('      |_|     |_|' + chalk.gray('based on Misskey ' + v)));
 		//#endregion
 
-		console.log(' Misskey is an open-source decentralized microblogging platform.');
-		console.log(chalk.rgb(255, 136, 0)(' If you like Misskey, please donate to support development. https://www.patreon.com/syuilo'));
+		console.log('lqvp is a fork of Misskey.')
+		console.log(chalk.rgb(255, 136, 0)(' If you like this fork, please donate to support Misskey development. https://www.patreon.com/syuilo'));
+		console.log(chalk.gray(' Original Misskey repository: https://github.com/misskey-dev/misskey'));
 
 		console.log('');
 		console.log(chalkTemplate`--- ${os.hostname()} {gray (PID: ${process.pid.toString()})} ---`);
