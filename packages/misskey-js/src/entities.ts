@@ -55,6 +55,9 @@ export type ModerationLog = {
 	type: 'unsuspend';
 	info: ModerationLogPayloads['unsuspend'];
 } | {
+	type: 'updateUserName';
+	info: ModerationLogPayloads['updateUserName'];
+} | {
 	type: 'updateUserNote';
 	info: ModerationLogPayloads['updateUserNote'];
 } | {
@@ -114,6 +117,9 @@ export type ModerationLog = {
 } | {
 	type: 'resetPassword';
 	info: ModerationLogPayloads['resetPassword'];
+} | {
+	type: 'regenerateUserToken';
+	info: ModerationLogPayloads['regenerateUserToken'];
 } | {
 	type: 'suspendRemoteInstance';
 	info: ModerationLogPayloads['suspendRemoteInstance'];

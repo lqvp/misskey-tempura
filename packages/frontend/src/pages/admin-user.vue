@@ -98,7 +98,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkSwitch v-model="suspended" @update:modelValue="toggleSuspend">{{ i18n.ts.suspend }}</MkSwitch>
 						<MkSwitch v-model="root" @update:modelValue="toggleRoot">{{ 'rootユーザー' }}</MkSwitch>
 						<div>
-							<MkButton v-if="user.host == null" inline style="margin-right: 8px;" @click="resetPassword"><i class="ti ti-key"></i> {{ i18n.ts.resetPassword }}</MkButton>
+							<div v-if="user.host == null" inline style="margin-right: 8px;" class="_buttons">
+									<MkButton @click="resetPassword"><i class="ti ti-key"></i> {{ i18n.ts.resetPassword }}</MkButton>
+									<MkButton danger @click="regenerateLoginToken"><i class="ti ti-refresh"></i> {{ i18n.ts.regenerateLoginToken }}</MkButton>
+								</div>
+								<MkButton inline danger @click="updateUserName"><i class="ti ti-user-edit"></i> {{ i18n.ts.changeUserName }}</MkButton>
 							<MkButton inline danger @click="unsetUserAvatar"><i class="ti ti-user-circle"></i> {{ i18n.ts.unsetUserAvatar }}</MkButton>
 							<MkButton inline danger @click="unsetUserBanner"><i class="ti ti-photo"></i> {{ i18n.ts.unsetUserBanner }}</MkButton>
 							<MkButton inline danger @click="unsetUserMutualLink"><i class="ti ti-photo"></i> {{ i18n.ts.unsetUserMutualLink }}</MkButton>
@@ -329,6 +333,18 @@ async function resetPassword() {
 	}
 }
 
+async function regenerateLoginToken() {
+	const confirm = await os.confirm({
+		type: 'warning',
+		text: i18n.ts.regenerateLoginTokenConfirm,
+	});
+	if (confirm.canceled) return;
+
+	await os.apiWithDialog('admin/regenerate-user-token', {
+		userId: user.value.id,
+	}).then(refreshUser);
+}
+
 async function toggleSuspend(v) {
 	const confirm = await os.confirm({
 		type: 'warning',
@@ -353,6 +369,34 @@ async function toggleRoot(v) {
 		await misskeyApi(v ? 'admin/root/add' : 'admin/root/remove', { userId: user.value.id });
 		await refreshUser();
 	}
+}
+
+async function updateUserName() {
+	const { canceled, result: name } = await os.inputText({
+		type: 'text',
+		title: i18n.ts.enterUsername,
+		default: '',
+	});
+	if (canceled) return;
+
+	await os.apiWithDialog('admin/update-user-name', {
+		userId: user.value.id,
+		name: name || undefined,
+	}).then(refreshUser);
+}
+
+async function updateUserName() {
+	const { canceled, result: name } = await os.inputText({
+		type: 'text',
+		title: i18n.ts.enterUsername,
+		default: '',
+	});
+	if (canceled) return;
+
+	await os.apiWithDialog('admin/update-user-name', {
+		userId: user.value.id,
+		name: name || undefined,
+	}).then(refreshUser);
 }
 
 async function unsetUserAvatar() {

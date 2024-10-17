@@ -78,6 +78,7 @@ export const moderationLogTypes = [
 	'updateServerSettings',
 	'suspend',
 	'unsuspend',
+	'updateUserName',
 	'updateUserNote',
 	'addCustomEmoji',
 	'updateCustomEmoji',
@@ -98,6 +99,7 @@ export const moderationLogTypes = [
 	'deleteGlobalAnnouncement',
 	'deleteUserAnnouncement',
 	'resetPassword',
+	'regenerateUserToken',
 	'suspendRemoteInstance',
 	'unsuspendRemoteInstance',
 	'updateRemoteInstanceNote',
@@ -142,6 +144,13 @@ export type ModerationLogPayloads = {
 		userId: string;
 		userUsername: string;
 		userHost: string | null;
+	};
+	updateUserName: {
+		userId: string;
+		userUsername: string;
+		userHost: string | null;
+		before: string | null;
+		after: string | null;
 	};
 	updateUserNote: {
 		userId: string;
@@ -242,6 +251,11 @@ export type ModerationLogPayloads = {
 		userHost: string | null;
 	};
 	resetPassword: {
+		userId: string;
+		userUsername: string;
+		userHost: string | null;
+	};
+	regenerateUserToken: {
 		userId: string;
 		userUsername: string;
 		userHost: string | null;
