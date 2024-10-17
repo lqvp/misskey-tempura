@@ -464,6 +464,14 @@ export class QueueService {
 		});
 	}
 
+	@bindThis
+	public createReDownloadRemoteFileJob(fileId: string) {
+		return this.objectStorageQueue.add('ReDownloadRemoteFile', { key: fileId }, {
+			removeOnComplete: true,
+			removeOnFail: true,
+		});
+	}
+
 	/**
 	 * @see UserWebhookDeliverJobData
 	 * @see UserWebhookDeliverProcessorService

@@ -19,6 +19,7 @@ import { isMimeImage } from '@/misc/is-mime-image.js';
 import { IdService } from '@/core/IdService.js';
 import { UtilityService } from '../UtilityService.js';
 import { VideoProcessingService } from '../VideoProcessingService.js';
+import { GlobalEventService } from '../GlobalEventService.js';
 import { UserEntityService } from './UserEntityService.js';
 import { DriveFolderEntityService } from './DriveFolderEntityService.js';
 
@@ -45,6 +46,7 @@ export class DriveFileEntityService {
 		private driveFolderEntityService: DriveFolderEntityService,
 		private videoProcessingService: VideoProcessingService,
 		private idService: IdService,
+		private globalEventService: GlobalEventService,
 	) {
 	}
 
@@ -96,6 +98,8 @@ export class DriveFileEntityService {
 		}
 
 		if (file.uri != null && file.isLink && this.config.proxyRemoteFiles) {
+			this.globalEventService.publishInternalEvent('remoteFileCacheMiss', { fileId: file.id });
+
 			// リモートかつ期限切れはローカルプロキシを試みる
 			// 従来は/files/${thumbnailAccessKey}にアクセスしていたが、
 			// /filesはメディアプロキシにリダイレクトするようにしたため直接メディアプロキシを指定する
@@ -116,12 +120,13 @@ export class DriveFileEntityService {
 
 		// リモートかつ期限切れはローカルプロキシを試みる
 		if (file.uri != null && file.isLink && this.config.proxyRemoteFiles) {
+			this.globalEventService.publishInternalEvent('remoteFileCacheMiss', { fileId: file.id });
+
 			const key = file.webpublicAccessKey;
 
 			if (key && !key.match('/')) {	// 古いものはここにオブジェクトストレージキーが入ってるので除外
-				const url = `${this.config.url}/files/${key}`;
 				if (mode === 'avatar') return this.getProxiedUrl(file.uri, 'avatar');
-				return url;
+				else return this.getProxiedUrl(file.uri);
 			}
 		}
 
