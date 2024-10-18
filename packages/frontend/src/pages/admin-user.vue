@@ -385,20 +385,6 @@ async function updateUserName() {
 	}).then(refreshUser);
 }
 
-async function updateUserName() {
-	const { canceled, result: name } = await os.inputText({
-		type: 'text',
-		title: i18n.ts.enterUsername,
-		default: '',
-	});
-	if (canceled) return;
-
-	await os.apiWithDialog('admin/update-user-name', {
-		userId: user.value.id,
-		name: name || undefined,
-	}).then(refreshUser);
-}
-
 async function unsetUserAvatar() {
 	const confirm = await os.confirm({
 		type: 'warning',
