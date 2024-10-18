@@ -83,6 +83,12 @@ export class QueueService {
 			removeOnComplete: true,
 		});
 
+		this.objectStorageQueue.add('CleanExpiredRemoteFiles', {
+		}, {
+			repeat: { pattern: '0 * * * *' },
+			removeOnComplete: true,
+		});
+
 		this.systemQueue.add('checkExpiredMutings', {
 		}, {
 			repeat: { pattern: '*/5 * * * *' },

@@ -320,6 +320,10 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			objectStorageCacheDays: {
+				type: 'number', 
+				optional: false, nullable: true,
+			},
 			enableIpLogging: {
 				type: 'boolean',
 				optional: false, nullable: false,
@@ -649,6 +653,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				objectStorageUseProxy: instance.objectStorageUseProxy,
 				objectStorageSetPublicRead: instance.objectStorageSetPublicRead,
 				objectStorageS3ForcePathStyle: instance.objectStorageS3ForcePathStyle,
+				objectStorageCacheDays: instance.objectStorageCacheDays,
 				deeplAuthKey: instance.deeplAuthKey,
 				deeplIsPro: instance.deeplIsPro,
 				enableIpLogging: instance.enableIpLogging,

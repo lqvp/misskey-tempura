@@ -492,6 +492,11 @@ export class MiMeta {
 	})
 	public objectStorageS3ForcePathStyle: boolean;
 
+	@Column('integer', {
+		nullable: true,
+	})
+	public objectStorageCacheDays: number | null;
+
 	@Column('boolean', {
 		default: false,
 	})
