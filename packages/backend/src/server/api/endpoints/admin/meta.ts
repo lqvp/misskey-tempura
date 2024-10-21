@@ -33,6 +33,10 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			approvalRequiredForSignup: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
 			enableHcaptcha: {
 				type: 'boolean',
 				optional: false, nullable: false,
@@ -572,6 +576,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				inquiryUrl: instance.inquiryUrl,
 				disableRegistration: instance.disableRegistration,
 				emailRequiredForSignup: instance.emailRequiredForSignup,
+				approvalRequiredForSignup: instance.approvalRequiredForSignup,
 				enableHcaptcha: instance.enableHcaptcha,
 				hcaptchaSiteKey: instance.hcaptchaSiteKey,
 				enableMcaptcha: instance.enableMcaptcha,

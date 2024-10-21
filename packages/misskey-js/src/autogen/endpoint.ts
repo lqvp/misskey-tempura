@@ -96,6 +96,7 @@ import type {
 	AdminShowUsersRequest,
 	AdminShowUsersResponse,
 	AdminSuspendUserRequest,
+	AdminApproveUserRequest,
 	AdminUnsuspendUserRequest,
 	AdminRootAdd,
 	AdminRootRemove,
@@ -660,6 +661,7 @@ export type Endpoints = {
 	'admin/show-user': { req: AdminShowUserRequest; res: AdminShowUserResponse };
 	'admin/show-users': { req: AdminShowUsersRequest; res: AdminShowUsersResponse };
 	'admin/suspend-user': { req: AdminSuspendUserRequest; res: EmptyResponse };
+	'admin/approve-user': { req: AdminApproveUserRequest; res: EmptyResponse };
 	'admin/unsuspend-user': { req: AdminUnsuspendUserRequest; res: EmptyResponse };
 	'admin/root/add': { req: AdminRootAdd; res: EmptyResponse };
 	'admin/root/remove': { req: AdminRootRemove; res: EmptyResponse };
