@@ -66,6 +66,7 @@ export const notificationTypes = [
 	'pollEnded',
 	'receiveFollowRequest',
 	'followRequestAccepted',
+	'followRequestRejected',
 	'roleAssigned',
 	'achievementEarned',
 	'exportCompleted',

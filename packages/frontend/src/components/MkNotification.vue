@@ -19,6 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				[$style.t_follow]: notification.type === 'follow',
 				[$style.t_unfollow]: notification.type === 'unfollow',
 				[$style.t_followRequestAccepted]: notification.type === 'followRequestAccepted',
+				[$style.t_followRequestRejected]: notification.type === 'followRequestRejected',
 				[$style.t_receiveFollowRequest]: notification.type === 'receiveFollowRequest',
 				[$style.t_renote]: notification.type === 'renote',
 				[$style.t_reply]: notification.type === 'reply',
@@ -35,6 +36,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<i v-else-if="notification.type === 'unfollow'" class="ti ti-minus"></i>
 			<i v-else-if="notification.type === 'receiveFollowRequest'" class="ti ti-clock"></i>
 			<i v-else-if="notification.type === 'followRequestAccepted'" class="ti ti-check"></i>
+			<i v-else-if="notification.type === 'followRequestRejected'" class="ti ti-ban"></i>
 			<i v-else-if="notification.type === 'renote'" class="ti ti-repeat"></i>
 			<i v-else-if="notification.type === 'reply'" class="ti ti-arrow-back-up"></i>
 			<i v-else-if="notification.type === 'mention'" class="ti ti-at"></i>
@@ -65,7 +67,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span v-else-if="notification.type === 'login'">{{ i18n.ts._notification.login }}</span>
 			<span v-else-if="notification.type === 'test'">{{ i18n.ts._notification.testNotification }}</span>
 			<span v-else-if="notification.type === 'exportCompleted'">{{ i18n.tsx._notification.exportOfXCompleted({ x: exportEntityName[notification.exportedEntity] }) }}</span>
-			<MkA v-else-if="notification.type === 'follow' || notification.type === 'unfollow' || notification.type === 'mention' || notification.type === 'reply' || notification.type === 'renote' || notification.type === 'quote' || notification.type === 'reaction' || notification.type === 'receiveFollowRequest' || notification.type === 'followRequestAccepted'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
+			<MkA v-else-if="notification.type === 'follow' || notification.type === 'unfollow' || notification.type === 'mention' || notification.type === 'reply' || notification.type === 'renote' || notification.type === 'quote' || notification.type === 'reaction' || notification.type === 'receiveFollowRequest' || notification.type === 'followRequestAccepted' || notification.type === 'followRequestRejected'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
 			<span v-else-if="notification.type === 'reaction:grouped' && notification.note.reactionAcceptance === 'likeOnly'">{{ i18n.tsx._notification.likedBySomeUsers({ n: getActualReactedUsersCount(notification) }) }}</span>
 			<span v-else-if="notification.type === 'reaction:grouped'">{{ i18n.tsx._notification.reactedBySomeUsers({ n: getActualReactedUsersCount(notification) }) }}</span>
 			<span v-else-if="notification.type === 'renote:grouped'">{{ i18n.tsx._notification.renotedBySomeUsers({ n: notification.users.length }) }}</span>
@@ -119,6 +121,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</template>
 			<template v-else-if="notification.type === 'followRequestAccepted'">
 				<div :class="$style.text" style="opacity: 0.6;">{{ i18n.ts.followRequestAccepted }}</div>
+				<div v-if="notification.message" :class="$style.text" style="opacity: 0.6; font-style: oblique;">
+					<i class="ti ti-quote" :class="$style.quote"></i>
+					<span>{{ notification.message }}</span>
+					<i class="ti ti-quote" :class="$style.quote"></i>
+				</div>
+			</template>
+			<template v-else-if="notification.type === 'followRequestRejected'">
+				<div :class="$style.text" style="opacity: 0.6;">{{ i18n.ts.followRequestRejected }}</div>
 				<div v-if="notification.message" :class="$style.text" style="opacity: 0.6; font-style: oblique;">
 					<i class="ti ti-quote" :class="$style.quote"></i>
 					<span>{{ notification.message }}</span>
@@ -228,12 +238,14 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 	overflow-wrap: break-word;
 	display: flex;
 	contain: content;
+	content-visibility: auto;
+	contain-intrinsic-size: 0 100px;
 
 	--eventFollow: #36aed2;
 	--eventUnFollow: #f08080;
 	--eventRenote: #36d298;
 	--eventReply: #007aff;
-	--eventReactionHeart: var(--love);
+	--eventReactionHeart: var(--MI_THEME-love);
 	--eventReaction: #e99a0b;
 	--eventAchievement: #cb9a11;
 	--eventLogin: #007aff;
@@ -293,8 +305,8 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 	height: 20px;
 	box-sizing: border-box;
 	border-radius: 100%;
-	background: var(--panel);
-	box-shadow: 0 0 0 3px var(--panel);
+	background: var(--MI_THEME-panel);
+	box-shadow: 0 0 0 3px var(--MI_THEME-panel);
 	font-size: 11px;
 	text-align: center;
 	color: #fff;
@@ -310,7 +322,7 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 	pointer-events: none;
 }
 
-.t_unfollow {
+.t_unfollow, .t_followRequestRejected {
 	padding: 3px;
 	background: var(--eventUnFollow);
 	pointer-events: none;
@@ -452,8 +464,8 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 	height: 20px;
 	box-sizing: border-box;
 	border-radius: 100%;
-	background: var(--panel);
-	box-shadow: 0 0 0 3px var(--panel);
+	background: var(--MI_THEME-panel);
+	box-shadow: 0 0 0 3px var(--MI_THEME-panel);
 	font-size: 11px;
 	text-align: center;
 	color: #fff;

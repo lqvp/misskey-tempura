@@ -98,7 +98,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkSwitch v-model="suspended" @update:modelValue="toggleSuspend">{{ i18n.ts.suspend }}</MkSwitch>
 						<MkSwitch v-model="root" @update:modelValue="toggleRoot">{{ 'rootユーザー' }}</MkSwitch>
 						<div>
-							<MkButton v-if="user.host == null" inline style="margin-right: 8px;" @click="resetPassword"><i class="ti ti-key"></i> {{ i18n.ts.resetPassword }}</MkButton>
+							<div v-if="user.host == null" inline style="margin-right: 8px;" class="_buttons">
+									<MkButton @click="resetPassword"><i class="ti ti-key"></i> {{ i18n.ts.resetPassword }}</MkButton>
+									<MkButton danger @click="regenerateLoginToken"><i class="ti ti-refresh"></i> {{ i18n.ts.regenerateLoginToken }}</MkButton>
+								</div>
+								<MkButton inline danger @click="updateUserName"><i class="ti ti-user-edit"></i> {{ i18n.ts.changeUserName }}</MkButton>
 							<MkButton inline danger @click="unsetUserAvatar"><i class="ti ti-user-circle"></i> {{ i18n.ts.unsetUserAvatar }}</MkButton>
 							<MkButton inline danger @click="unsetUserBanner"><i class="ti ti-photo"></i> {{ i18n.ts.unsetUserBanner }}</MkButton>
 							<MkButton inline danger @click="unsetUserMutualLink"><i class="ti ti-photo"></i> {{ i18n.ts.unsetUserMutualLink }}</MkButton>
@@ -157,15 +161,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div v-else-if="tab === 'announcements'" class="_gaps">
 				<MkButton primary rounded @click="createAnnouncement"><i class="ti ti-plus"></i> {{ i18n.ts.new }}</MkButton>
 
+				<MkSelect v-model="announcementsStatus">
+					<template #label>{{ i18n.ts.filter }}</template>
+					<option value="active">{{ i18n.ts.active }}</option>
+					<option value="archived">{{ i18n.ts.archived }}</option>
+				</MkSelect>
+
 				<MkPagination :pagination="announcementsPagination">
 					<template #default="{ items }">
 						<div class="_gaps_s">
 							<div v-for="announcement in items" :key="announcement.id" v-panel :class="$style.announcementItem" @click="editAnnouncement(announcement)">
 								<span style="margin-right: 0.5em;">
 									<i v-if="announcement.icon === 'info'" class="ti ti-info-circle"></i>
-									<i v-else-if="announcement.icon === 'warning'" class="ti ti-alert-triangle" style="color: var(--warn);"></i>
-									<i v-else-if="announcement.icon === 'error'" class="ti ti-circle-x" style="color: var(--error);"></i>
-									<i v-else-if="announcement.icon === 'success'" class="ti ti-check" style="color: var(--success);"></i>
+									<i v-else-if="announcement.icon === 'warning'" class="ti ti-alert-triangle" style="color: var(--MI_THEME-warn);"></i>
+									<i v-else-if="announcement.icon === 'error'" class="ti ti-circle-x" style="color: var(--MI_THEME-error);"></i>
+									<i v-else-if="announcement.icon === 'success'" class="ti ti-check" style="color: var(--MI_THEME-success);"></i>
 								</span>
 								<span>{{ announcement.title }}</span>
 								<span v-if="announcement.reads > 0" style="margin-left: auto; opacity: 0.7;">{{ i18n.ts.messageRead }}</span>
@@ -259,11 +269,15 @@ const filesPagination = {
 		userId: props.userId,
 	})),
 };
+
+const announcementsStatus = ref<'active' | 'archived'>('active');
+
 const announcementsPagination = {
 	endpoint: 'admin/announcements/list' as const,
 	limit: 10,
 	params: computed(() => ({
 		userId: props.userId,
+		status: announcementsStatus.value,
 	})),
 };
 const expandedRoles = ref([]);
@@ -319,6 +333,18 @@ async function resetPassword() {
 	}
 }
 
+async function regenerateLoginToken() {
+	const confirm = await os.confirm({
+		type: 'warning',
+		text: i18n.ts.regenerateLoginTokenConfirm,
+	});
+	if (confirm.canceled) return;
+
+	await os.apiWithDialog('admin/regenerate-user-token', {
+		userId: user.value.id,
+	}).then(refreshUser);
+}
+
 async function toggleSuspend(v) {
 	const confirm = await os.confirm({
 		type: 'warning',
@@ -343,6 +369,20 @@ async function toggleRoot(v) {
 		await misskeyApi(v ? 'admin/root/add' : 'admin/root/remove', { userId: user.value.id });
 		await refreshUser();
 	}
+}
+
+async function updateUserName() {
+	const { canceled, result: name } = await os.inputText({
+		type: 'text',
+		title: i18n.ts.enterUsername,
+		default: '',
+	});
+	if (canceled) return;
+
+	await os.apiWithDialog('admin/update-user-name', {
+		userId: user.value.id,
+		name: name || undefined,
+	}).then(refreshUser);
 }
 
 async function unsetUserAvatar() {
@@ -613,18 +653,18 @@ definePageMetadata(() => ({
 			}
 
 			> .suspended {
-				color: var(--error);
-				border-color: var(--error);
+				color: var(--MI_THEME-error);
+				border-color: var(--MI_THEME-error);
 			}
 
 			> .silenced {
-				color: var(--warn);
-				border-color: var(--warn);
+				color: var(--MI_THEME-warn);
+				border-color: var(--MI_THEME-warn);
 			}
 
 			> .moderator {
-				color: var(--success);
-				border-color: var(--success);
+				color: var(--MI_THEME-success);
+				border-color: var(--MI_THEME-success);
 			}
 		}
 	}
@@ -671,7 +711,7 @@ definePageMetadata(() => ({
 .roleItemSub {
 	padding: 6px 12px;
 	font-size: 85%;
-	color: var(--fgTransparentWeak);
+	color: var(--MI_THEME-fgTransparentWeak);
 }
 
 .roleUnassign {

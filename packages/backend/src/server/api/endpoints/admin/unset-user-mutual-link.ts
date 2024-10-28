@@ -17,7 +17,7 @@ export const meta = {
 
 	requireCredential: true,
 	requireModerator: true,
-	kind: 'write:admin:unset-user-mutual-link',
+	kind: 'write:admin:user-mutual-link',
 } as const;
 
 export const paramDef = {

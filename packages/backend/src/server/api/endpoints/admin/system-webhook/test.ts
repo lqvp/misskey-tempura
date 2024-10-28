@@ -14,7 +14,7 @@ export const meta = {
 	tags: ['webhooks'],
 
 	requireCredential: true,
-	requireModerator: true,
+	requireAdmin: true,
 	secure: true,
 	kind: 'read:admin:system-webhook',
 

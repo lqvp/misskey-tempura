@@ -549,7 +549,11 @@ export const defaultStore = markRaw(new Storage('base', {
 	hideGlobalTimeLine: {
 		where: 'device',
 		default: false,
+	},	skipNoteRender: {
+		where: 'device',
+		default: true,
 	},
+
 	sound_masterVolume: {
 		where: 'device',
 		default: 0.3,

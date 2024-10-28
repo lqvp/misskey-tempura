@@ -27,6 +27,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</MkFoldableSection>
 
 		<MkFoldableSection class="item">
+			<template #header>Administrators</template>
+			<XAdministrators/>
+		</MkFoldableSection>
+
+		<MkFoldableSection class="item">
 			<template #header>Moderators</template>
 			<XModerators/>
 		</MkFoldableSection>
@@ -75,6 +80,7 @@ import XUsers from './overview.users.vue';
 import XActiveUsers from './overview.active-users.vue';
 import XStats from './overview.stats.vue';
 import XRetention from './overview.retention.vue';
+import XAdministrators from './overview.administrators.vue';
 import XModerators from './overview.moderators.vue';
 import XHeatmap from './overview.heatmap.vue';
 import type { InstanceForPie } from './overview.pie.vue';

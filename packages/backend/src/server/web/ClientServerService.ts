@@ -504,8 +504,9 @@ export class ClientServerService {
 			const feed = await getFeed(request.params.user);
 
 			if (feed) {
-				reply.header('Content-Type', 'application/atom+xml; charset=utf-8');
-				return feed.atom1();
+				// reply.header('Content-Type', 'application/atom+xml; charset=utf-8');
+				// return feed.atom1();
+				reply.code(204).send();
 			} else {
 				reply.code(404);
 				return;
@@ -519,8 +520,9 @@ export class ClientServerService {
 			const feed = await getFeed(request.params.user);
 
 			if (feed) {
-				reply.header('Content-Type', 'application/rss+xml; charset=utf-8');
-				return feed.rss2();
+				// reply.header('Content-Type', 'application/rss+xml; charset=utf-8');
+				// return feed.rss2();
+				reply.code(204).send();
 			} else {
 				reply.code(404);
 				return;
@@ -534,8 +536,9 @@ export class ClientServerService {
 			const feed = await getFeed(request.params.user);
 
 			if (feed) {
-				reply.header('Content-Type', 'application/json; charset=utf-8');
-				return feed.json1();
+				// reply.header('Content-Type', 'application/json; charset=utf-8');
+				// return feed.json1();
+				reply.code(204).send();
 			} else {
 				reply.code(404);
 				return;

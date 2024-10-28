@@ -306,6 +306,10 @@ export interface Locale extends ILocale {
      * フォローが承認されました
      */
     "followRequestAccepted": string;
+		/**
+		 * フォローが拒否されました
+		 */
+		"followRequestRejected": string;
     /**
      * メンション
      */
@@ -454,6 +458,10 @@ export interface Locale extends ILocale {
      * フォロー許可待ち
      */
     "followRequestPending": string;
+		/**
+		 * フォロリク一覧
+		 */
+		"sentFollowRequestList": string;
     /**
      * 絵文字を入力
      */
@@ -2174,6 +2182,10 @@ export interface Locale extends ILocale {
      * フォロー申請はありません
      */
     "noFollowRequests": string;
+		/**
+		 * 送ったフォロー申請はありません
+		 */
+		"noSentFollowRequests": string;
     /**
      * 画像を新しいタブで開く
      */
@@ -2858,6 +2870,10 @@ export interface Locale extends ILocale {
      * ログイントークンを再生成
      */
     "regenerateLoginToken": string;
+    /**
+     * ログイントークンを再生成しますか？
+     */
+    "regenerateLoginTokenConfirm": string;
     /**
      * ログインに使用される内部トークンを再生成します。通常この操作を行う必要はありません。再生成すると、全てのデバイスでログアウトされます。
      */
@@ -4339,7 +4355,7 @@ export interface Locale extends ILocale {
      */
     "rolesAssignedToMe": string;
     /**
-     * パスワードリセットしますか？
+     * パスワードをリセットしますか？
      */
     "resetPasswordConfirm": string;
     /**
@@ -4422,6 +4438,10 @@ export interface Locale extends ILocale {
      * リモートサーバーのチャートを生成
      */
     "enableChartsForFederatedInstances": string;
+    /**
+     * リモートサーバーの情報を取得
+     */
+    "enableStatsForFederatedInstances": string;
     /**
      * ノートのアクションにクリップを追加
      */
@@ -5250,6 +5270,26 @@ export interface Locale extends ILocale {
      * 対象
      */
     "target": string;
+    /**
+     * CAPTCHAのテストを目的とした機能です。<strong>本番環境で使用しないでください。</strong>
+     */
+    "testCaptchaWarning": string;
+    /**
+     * 禁止ワード（ユーザーの名前）
+     */
+    "prohibitedWordsForNameOfUser": string;
+    /**
+     * このリストに含まれる文字列がユーザーの名前に含まれる場合、ユーザーの名前の変更を拒否します。モデレーター権限を持つユーザーはこの制限の影響を受けません。
+     */
+    "prohibitedWordsForNameOfUserDescription": string;
+    /**
+     * 変更しようとした名前に禁止された文字列が含まれています
+     */
+    "yourNameContainsProhibitedWords": string;
+    /**
+     * 名前に禁止されている文字列が含まれています。この名前を使用したい場合は、サーバー管理者にお問い合わせください。
+     */
+    "yourNameContainsProhibitedWordsDescription": string;
     "_abuseUserReport": {
         /**
          * 転送
@@ -5381,6 +5421,10 @@ export interface Locale extends ILocale {
      * 自分のプロフィールのアクティビティ (概要/アクティビティタブ) を他人が見れないようにします。このオプションを有効にしても、自分であればプロフィールのアクティビティタブから引き続き閲覧できます。
      */
     "hideActivityDescription": string;
+		/**
+     * 名前を変更
+     */
+    "changeUserName": string;
     "_bubbleGame": {
         /**
          * 遊び方
@@ -5855,6 +5899,10 @@ export interface Locale extends ILocale {
          * サーバー運営者へのお問い合わせフォームのURLや、運営者の連絡先等が記載されたWebページのURLを指定します。
          */
         "inquiryUrlDescription": string;
+        /**
+         * 一定期間モデレーターのアクティビティが検出されなかった場合、スパム防止のためこの設定は自動でオフになります。
+         */
+        "thisSettingWillAutomaticallyOffWhenModeratorsInactive": string;
     };
     "_accountMigration": {
         /**
@@ -7883,10 +7931,6 @@ export interface Locale extends ILocale {
              */
             "inputBorder": string;
             /**
-             * リスト項目の背景 (ホバー)
-             */
-            "listItemHoverBg": string;
-            /**
              * ドライブフォルダーの背景
              */
             "driveFolderBg": string;
@@ -8346,6 +8390,10 @@ export interface Locale extends ILocale {
          */
         "write:admin:reset-password": string;
         /**
+         * ユーザーのログイントークンを再生成する
+         */
+        "write:admin:regenerate-user-token": string;
+        /**
          * ユーザーからの通報を解決する
          */
         "write:admin:resolve-abuse-user-report": string;
@@ -8372,15 +8420,15 @@ export interface Locale extends ILocale {
         /**
          * ユーザーのアバターを削除する
          */
-        "write:admin:unset-user-avatar": string;
+        "write:admin:user-avatar": string;
         /**
          * ユーザーのバーナーを削除する
          */
-        "write:admin:unset-user-banner": string;
+        "write:admin:user-banner": string;
         /**
          * ユーザーの相互リンクを削除する
          */
-        "write:admin:unset-user-mutual-link": string;
+        "write:admin:user-mutual-link": string;
         /**
          * ユーザーの凍結を解除する
          */
@@ -8389,6 +8437,10 @@ export interface Locale extends ILocale {
          * インスタンスのメタデータを操作する
          */
         "write:admin:meta": string;
+        /**
+         * ユーザーの名前を変更する
+         */
+        "write:admin:user-name": string;
         /**
          * モデレーションノートを操作する
          */
@@ -9491,6 +9543,10 @@ export interface Locale extends ILocale {
          * フォローリクエストが承認されました
          */
         "yourFollowRequestAccepted": string;
+				/**
+				 * フォローリクエストが拒否されました
+				 */
+				"yourFollowRequestRejected": string;
         /**
          * アンケートの結果が出ました
          */
@@ -9612,6 +9668,10 @@ export interface Locale extends ILocale {
              * フォローが受理された
              */
             "followRequestAccepted": string;
+						/**
+						 * フォローが拒否された
+						 */
+						"followRequestRejected": string;
             /**
              * ロールが付与された
              */
@@ -9874,6 +9934,14 @@ export interface Locale extends ILocale {
              * ユーザーが作成されたとき
              */
             "userCreated": string;
+            /**
+             * モデレーターが一定期間非アクティブになったとき
+             */
+            "inactiveModeratorsWarning": string;
+            /**
+             * モデレーターが一定期間非アクティブだったため、システムにより招待制へと変更されたとき
+             */
+            "inactiveModeratorsInvitationOnlyChanged": string;
         };
         /**
          * Webhookを削除しますか？

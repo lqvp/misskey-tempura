@@ -297,6 +297,7 @@ export class UserFollowingService implements OnModuleInit {
 		if (follower.host === null) {
 			const profile = await this.cacheService.userProfileCache.fetch(followee.id);
 
+
 			this.notificationService.createNotification(follower.id, 'followRequestAccepted', {
 				message: profile.followedMessage,
 			}, followee.id);
@@ -319,20 +320,22 @@ export class UserFollowingService implements OnModuleInit {
 			//#endregion
 
 			//#region Update instance stats
-			if (this.userEntityService.isRemoteUser(follower) && this.userEntityService.isLocalUser(followee)) {
-				this.federatedInstanceService.fetch(follower.host).then(async i => {
-					this.instancesRepository.increment({ id: i.id }, 'followingCount', 1);
-					if (this.meta.enableChartsForFederatedInstances) {
-						this.instanceChart.updateFollowing(i.host, true);
-					}
-				});
-			} else if (this.userEntityService.isLocalUser(follower) && this.userEntityService.isRemoteUser(followee)) {
-				this.federatedInstanceService.fetch(followee.host).then(async i => {
-					this.instancesRepository.increment({ id: i.id }, 'followersCount', 1);
-					if (this.meta.enableChartsForFederatedInstances) {
-						this.instanceChart.updateFollowers(i.host, true);
-					}
-				});
+			if (this.meta.enableStatsForFederatedInstances) {
+				if (this.userEntityService.isRemoteUser(follower) && this.userEntityService.isLocalUser(followee)) {
+					this.federatedInstanceService.fetchOrRegister(follower.host).then(async i => {
+						this.instancesRepository.increment({ id: i.id }, 'followingCount', 1);
+						if (this.meta.enableChartsForFederatedInstances) {
+							this.instanceChart.updateFollowing(i.host, true);
+						}
+					});
+				} else if (this.userEntityService.isLocalUser(follower) && this.userEntityService.isRemoteUser(followee)) {
+					this.federatedInstanceService.fetchOrRegister(followee.host).then(async i => {
+						this.instancesRepository.increment({ id: i.id }, 'followersCount', 1);
+						if (this.meta.enableChartsForFederatedInstances) {
+							this.instanceChart.updateFollowers(i.host, true);
+						}
+					});
+				}
 			}
 			//#endregion
 
@@ -469,20 +472,22 @@ export class UserFollowingService implements OnModuleInit {
 			//#endregion
 
 			//#region Update instance stats
-			if (this.userEntityService.isRemoteUser(follower) && this.userEntityService.isLocalUser(followee)) {
-				this.federatedInstanceService.fetch(follower.host).then(async i => {
-					this.instancesRepository.decrement({ id: i.id }, 'followingCount', 1);
-					if (this.meta.enableChartsForFederatedInstances) {
-						this.instanceChart.updateFollowing(i.host, false);
-					}
-				});
-			} else if (this.userEntityService.isLocalUser(follower) && this.userEntityService.isRemoteUser(followee)) {
-				this.federatedInstanceService.fetch(followee.host).then(async i => {
-					this.instancesRepository.decrement({ id: i.id }, 'followersCount', 1);
-					if (this.meta.enableChartsForFederatedInstances) {
-						this.instanceChart.updateFollowers(i.host, false);
-					}
-				});
+			if (this.meta.enableStatsForFederatedInstances) {
+				if (this.userEntityService.isRemoteUser(follower) && this.userEntityService.isLocalUser(followee)) {
+					this.federatedInstanceService.fetchOrRegister(follower.host).then(async i => {
+						this.instancesRepository.decrement({ id: i.id }, 'followingCount', 1);
+						if (this.meta.enableChartsForFederatedInstances) {
+							this.instanceChart.updateFollowing(i.host, false);
+						}
+					});
+				} else if (this.userEntityService.isLocalUser(follower) && this.userEntityService.isRemoteUser(followee)) {
+					this.federatedInstanceService.fetchOrRegister(followee.host).then(async i => {
+						this.instancesRepository.decrement({ id: i.id }, 'followersCount', 1);
+						if (this.meta.enableChartsForFederatedInstances) {
+							this.instanceChart.updateFollowers(i.host, false);
+						}
+					});
+				}
 			}
 			//#endregion
 
@@ -723,6 +728,15 @@ export class UserFollowingService implements OnModuleInit {
 		});
 
 		if (!request) return;
+
+		// const followeeId = followee.id;
+    // const followee = await this.usersRepository.findOneByOrFail({ id: followeeId });
+
+		// 通知を作成
+		const profile = await this.cacheService.userProfileCache.fetch(followee.id);
+		this.notificationService.createNotification(follower.id, 'followRequestRejected', {
+			message: profile.followedMessage,
+		}, followee.id);
 
 		await this.followRequestsRepository.delete(request.id);
 	}

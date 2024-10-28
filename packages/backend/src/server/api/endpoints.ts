@@ -76,6 +76,7 @@ import * as ep___admin_relays_add from './endpoints/admin/relays/add.js';
 import * as ep___admin_relays_list from './endpoints/admin/relays/list.js';
 import * as ep___admin_relays_remove from './endpoints/admin/relays/remove.js';
 import * as ep___admin_resetPassword from './endpoints/admin/reset-password.js';
+import * as ep___admin_regenerateUserToken from './endpoints/admin/regenerate-user-token.js';
 import * as ep___admin_resolveAbuseUserReport from './endpoints/admin/resolve-abuse-user-report.js';
 import * as ep___admin_forwardAbuseUserReport from './endpoints/admin/forward-abuse-user-report.js';
 import * as ep___admin_updateAbuseUserReport from './endpoints/admin/update-abuse-user-report.js';
@@ -88,6 +89,7 @@ import * as ep___admin_suspendUser from './endpoints/admin/suspend-user.js';
 import * as ep___admin_unsuspendUser from './endpoints/admin/unsuspend-user.js';
 import * as ep___admin_updateMeta from './endpoints/admin/update-meta.js';
 import * as ep___admin_deleteAccount from './endpoints/admin/delete-account.js';
+import * as ep___admin_updateUserName from './endpoints/admin/update-user-name.js';
 import * as ep___admin_updateUserNote from './endpoints/admin/update-user-note.js';
 import * as ep___admin_roles_create from './endpoints/admin/roles/create.js';
 import * as ep___admin_roles_delete from './endpoints/admin/roles/delete.js';
@@ -197,6 +199,7 @@ import * as ep___following_invalidate from './endpoints/following/invalidate.js'
 import * as ep___following_requests_accept from './endpoints/following/requests/accept.js';
 import * as ep___following_requests_cancel from './endpoints/following/requests/cancel.js';
 import * as ep___following_requests_list from './endpoints/following/requests/list.js';
+import * as ep___following_requests_sendlist from './endpoints/following/requests/sendlist.js';
 import * as ep___following_requests_reject from './endpoints/following/requests/reject.js';
 import * as ep___gallery_featured from './endpoints/gallery/featured.js';
 import * as ep___gallery_popular from './endpoints/gallery/popular.js';
@@ -465,6 +468,7 @@ const eps = [
 	['admin/relays/list', ep___admin_relays_list],
 	['admin/relays/remove', ep___admin_relays_remove],
 	['admin/reset-password', ep___admin_resetPassword],
+	['admin/regenerate-user-token', ep___admin_regenerateUserToken],
 	['admin/resolve-abuse-user-report', ep___admin_resolveAbuseUserReport],
 	['admin/forward-abuse-user-report', ep___admin_forwardAbuseUserReport],
 	['admin/update-abuse-user-report', ep___admin_updateAbuseUserReport],
@@ -477,6 +481,7 @@ const eps = [
 	['admin/unsuspend-user', ep___admin_unsuspendUser],
 	['admin/update-meta', ep___admin_updateMeta],
 	['admin/delete-account', ep___admin_deleteAccount],
+	['admin/update-user-name', ep___admin_updateUserName],
 	['admin/update-user-note', ep___admin_updateUserNote],
 	['admin/roles/create', ep___admin_roles_create],
 	['admin/roles/delete', ep___admin_roles_delete],
@@ -586,6 +591,7 @@ const eps = [
 	['following/requests/accept', ep___following_requests_accept],
 	['following/requests/cancel', ep___following_requests_cancel],
 	['following/requests/list', ep___following_requests_list],
+	['following/requests/sendlist', ep___following_requests_sendlist],
 	['following/requests/reject', ep___following_requests_reject],
 	['gallery/featured', ep___gallery_featured],
 	['gallery/popular', ep___gallery_popular],
