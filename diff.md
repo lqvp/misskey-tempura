@@ -56,4 +56,5 @@
 - bootロゴを変えた
 - admin/overviewのModeratorsから分けてAdminを別で表示するように
 - モデレーターがユーザーの名前を変更できるように＆トークンを再生成できるように(misskeyio)
+- rss/atom/jsonで情報を取れないように
 - 登録を承認制に出来るように
