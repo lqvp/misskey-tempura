@@ -23,14 +23,6 @@ export class MiClipFavoriteRemote {
 	@JoinColumn()
 	public user: MiUser | null;
 
-	@Column(id())
-	public authorId: MiUser['id'];
-	@ManyToOne(type => MiUser, {
-		onDelete: 'CASCADE',
-	})
-	@JoinColumn()
-	public author: MiUser | null;
-
 	@Column('varchar', {
 		length: 32,
 	})
