@@ -31,7 +31,6 @@ import {
 	MiEmoji,
 	MiFlash,
 	MiFlashLike,
-	MiFlashLikeRemote,
 	MiFollowing,
 	MiFollowRequest,
 	MiGalleryLike,
@@ -473,12 +472,6 @@ const $flashLikesRepository: Provider = {
 	inject: [DI.db],
 };
 
-const $flashLikesRemoteRepository: Provider = {
-	provide: DI.flashLikesRemoteRepository,
-	useFactory: (db: DataSource) => db.getRepository(MiFlashLikeRemote).extend(miRepository as MiRepository<MiFlashLikeRemote>),
-	inject: [DI.db],
-};
-
 const $rolesRepository: Provider = {
 	provide: DI.rolesRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiRole).extend(miRepository as MiRepository<MiRole>),
@@ -579,7 +572,6 @@ const $reversiGamesRepository: Provider = {
 		$roleAssignmentsRepository,
 		$flashsRepository,
 		$flashLikesRepository,
-		$flashLikesRemoteRepository,
 		$userMemosRepository,
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
@@ -652,7 +644,6 @@ const $reversiGamesRepository: Provider = {
 		$roleAssignmentsRepository,
 		$flashsRepository,
 		$flashLikesRepository,
-		$flashLikesRemoteRepository,
 		$userMemosRepository,
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,

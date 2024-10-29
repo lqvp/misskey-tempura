@@ -84,7 +84,6 @@ export const DI = {
 	roleAssignmentsRepository: Symbol('roleAssignmentsRepository'),
 	flashsRepository: Symbol('flashsRepository'),
 	flashLikesRepository: Symbol('flashLikesRepository'),
-	flashLikesRemoteRepository: Symbol('flashLikesRemoteRepository'),
 	userMemosRepository: Symbol('userMemosRepository'),
 	bubbleGameRecordsRepository: Symbol('bubbleGameRecordsRepository'),
 	reversiGamesRepository: Symbol('reversiGamesRepository'),

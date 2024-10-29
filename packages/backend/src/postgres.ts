@@ -76,7 +76,6 @@ import { MiRole } from '@/models/Role.js';
 import { MiRoleAssignment } from '@/models/RoleAssignment.js';
 import { MiFlash } from '@/models/Flash.js';
 import { MiFlashLike } from '@/models/FlashLike.js';
-import { MiFlashLikeRemote } from '@/models/FlashLikeRemote.js';
 import { MiUserMemo } from '@/models/UserMemo.js';
 import { MiBubbleGameRecord } from '@/models/BubbleGameRecord.js';
 import { MiReversiGame } from '@/models/ReversiGame.js';
@@ -198,7 +197,6 @@ export const entities = [
 	MiRoleAssignment,
 	MiFlash,
 	MiFlashLike,
-	MiFlashLikeRemote,
 	MiUserMemo,
 	MiBubbleGameRecord,
 	MiReversiGame,
