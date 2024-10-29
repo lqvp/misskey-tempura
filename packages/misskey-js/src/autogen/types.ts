@@ -4745,9 +4745,6 @@ export type components = {
       favoritedCount: number;
       isFavorited?: boolean;
       notesCount?: number;
-      emojis?: {
-        [key: string]: string;
-      };
     };
     FederationInstance: {
       /** Format: id */
