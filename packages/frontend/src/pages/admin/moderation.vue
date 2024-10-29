@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #caption>{{ i18n.ts.registerApprovalEmailRecommended }}</template>
 					</MkSwitch>
 
-					<MkSwitch v-model="blockMentionsFromUnfamiliarRemoteUsers">
+					<MkSwitch v-model="blockMentionsFromUnfamiliarRemoteUsers" @change="onChange_blockMentionsFromUnfamiliarRemoteUsers">
 						<template #label>{{ i18n.ts.blockMentionsFromUnfamiliarRemoteUsers }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 						<template #caption>{{ i18n.ts.blockMentionsFromUnfamiliarRemoteUsersDescription }} Cherry-picked from Misskey.io (https://github.com/MisskeyIO/misskey/commit/82cc3987c13db4ad0da1589386027c222ce85ff8)</template>
 					</MkSwitch>
@@ -152,6 +152,7 @@ import MkFolder from '@/components/MkFolder.vue';
 const enableRegistration = ref<boolean>(false);
 const emailRequiredForSignup = ref<boolean>(false);
 const approvalRequiredForSignup = ref<boolean>(false);
+const blockMentionsFromUnfamiliarRemoteUsers = ref<boolean>(false);
 const sensitiveWords = ref<string>('');
 const prohibitedWords = ref<string>('');
 const prohibitedWordsForNameOfUser = ref<string>('');
@@ -160,13 +161,13 @@ const preservedUsernames = ref<string>('');
 const blockedHosts = ref<string>('');
 const silencedHosts = ref<string>('');
 const mediaSilencedHosts = ref<string>('');
-const blockMentionsFromUnfamiliarRemoteUsers = ref(false);
 
 async function init() {
 	const meta = await misskeyApi('admin/meta');
 	enableRegistration.value = !meta.disableRegistration;
 	emailRequiredForSignup.value = meta.emailRequiredForSignup;
 	approvalRequiredForSignup.value = meta.approvalRequiredForSignup;
+	blockMentionsFromUnfamiliarRemoteUsers.value = meta.blockMentionsFromUnfamiliarRemoteUsers;
 	sensitiveWords.value = meta.sensitiveWords.join('\n');
 	prohibitedWords.value = meta.prohibitedWords.join('\n');
 	prohibitedWordsForNameOfUser.value = meta.prohibitedWordsForNameOfUser.join('\n');
@@ -175,7 +176,6 @@ async function init() {
 	blockedHosts.value = meta.blockedHosts.join('\n');
 	silencedHosts.value = meta.silencedHosts?.join('\n') ?? '';
 	mediaSilencedHosts.value = meta.mediaSilencedHosts.join('\n');
-	blockMentionsFromUnfamiliarRemoteUsers.value = meta.blockMentionsFromUnfamiliarRemoteUsers;
 }
 
 function onChange_enableRegistration(value: boolean) {
@@ -200,6 +200,14 @@ function onChange_approvalRequiredForSignup(value: boolean) {
 	}).then(() => {
 		fetchInstance(true);
 	});
+}
+
+function onChange_blockMentionsFromUnfamiliarRemoteUsers(value: boolean) {
+	os.apiWithDialog('admin/update-meta', {
+		blockMentionsFromUnfamiliarRemoteUsers: value,
+	}).then(() => {
+		fetchInstance(true);
+	})
 }
 
 function save_preservedUsernames() {
