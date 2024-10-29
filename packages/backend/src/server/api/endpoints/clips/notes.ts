@@ -59,28 +59,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 		@Inject(DI.clipNotesRepository)
 		private clipNotesRepository: ClipNotesRepository,
-		@Inject(DI.redisForRemoteApis)
-		private redisForRemoteApis: Redis.Redis,
-
-		private httpRequestService: HttpRequestService,
-		private apNoteService: ApNoteService,
-		private metaService: MetaService,
-		private utilityService: UtilityService,
 
 		private noteEntityService: NoteEntityService,
 		private queryService: QueryService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			const parsed_id = ps.clipId.split('@');
-			let notes = [];
-			if (parsed_id.length === 2 ) {//is remote
-				const url = 'https://' + parsed_id[1] + '/api/clips/notes';
-				apLoggerService.logger.debug('remote clip ' + url);
-				notes = await remote(config, httpRequestService, redisForRemoteApis, apNoteService, metaService, utilityService, apLoggerService, url, parsed_id[0], parsed_id[1], ps.clipId, ps.limit, ps.sinceId, ps.untilId);
-			} else if (parsed_id.length === 1 ) {//is not local
-				const clip = await this.clipsRepository.findOneBy({
-					id: ps.clipId,
-				});
+			const clip = await this.clipsRepository.findOneBy({
+				id: ps.clipId,
+			});
 
 			if (clip == null) {
 				throw new ApiError(meta.errors.noSuchClip);
@@ -111,136 +97,5 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			return await this.noteEntityService.packMany(notes, me);
 		});
-	}
-}
-
-async function remote(
-	config:Config,
-	httpRequestService: HttpRequestService,
-	redisForRemoteApis: Redis.Redis,
-	apNoteService: ApNoteService,
-	metaService: MetaService,
-	utilityService: UtilityService,
-	apLoggerService: ApLoggerService,
-	url:string,
-	clipId:string,
-	host:string,
-	local_id:string,
-	limit:number,
-	sinceId:string|undefined,
-	untilId:string|undefined,
-) {
-	const cache_key = 'clip:notes:' + local_id + '-' + (sinceId ? sinceId : '') + '-' + (untilId ? untilId : '') + '-' + limit;
-	const cache_value = await redisForRemoteApis.get(cache_key);
-	let remote_json = null;
-	if (cache_value === null) {
-		//リモートのノートIDを対応するローカルのノートIDに解決する
-		const sinceIdRemote = sinceId ? await redisForRemoteApis.get('local-noteId:' + sinceId + '@' + host) : undefined;
-		const untilIdRemote = untilId ? await redisForRemoteApis.get('local-noteId:' + untilId + '@' + host) : undefined;
-		const timeout = 30 * 1000;
-		const operationTimeout = 60 * 1000;
-		const res = got.post(url, {
-			headers: {
-				'User-Agent': config.userAgent,
-				'Content-Type': 'application/json; charset=utf-8',
-			},
-			timeout: {
-				lookup: timeout,
-				connect: timeout,
-				secureConnect: timeout,
-				socket: timeout,	// read timeout
-				response: timeout,
-				send: timeout,
-				request: operationTimeout,	// whole operation timeout
-			},
-			agent: {
-				http: httpRequestService.httpAgent,
-				https: httpRequestService.httpsAgent,
-			},
-			http2: true,
-			retry: {
-				limit: 1,
-			},
-			enableUnixSockets: false,
-			body: JSON.stringify({
-				clipId,
-				limit,
-				sinceId: sinceIdRemote,
-				untilId: untilIdRemote,
-			}),
-		});
-		remote_json = await res.text();
-		const redisPipeline = redisForRemoteApis.pipeline();
-		redisPipeline.set(cache_key, remote_json);
-		redisPipeline.expire(cache_key, 10 * 60);
-		await redisPipeline.exec();
-	} else {
-		remote_json = cache_value;
-	}
-	const remote_notes = JSON.parse(remote_json);
-	//リモートに照会する回数の上限
-	const create_limit = 5;
-	let create_count = 0;
-	const notes = [];
-	for (const note of remote_notes) {
-		const uri = note.uri ? note.uri : 'https://' + host + '/notes/' + note.id;
-		if (uri !== null) {
-			if (create_count > create_limit) {
-				break;
-			}
-			const local_note = await remoteNote(apNoteService, uri, redisForRemoteApis, metaService, utilityService, apLoggerService, host, note.id);
-			if (local_note !== null) {
-				if (local_note.is_create) {
-					create_count++;
-				}
-				notes.push(local_note.note);
-			}
-		}
-	}
-	return notes;
-}
-
-class RemoteNote {
-	note:MiNote;
-	is_create:boolean;
-}
-
-async function remoteNote(
-	apNoteService: ApNoteService,
-	uri: string,
-	redisForRemoteApis: Redis.Redis,
-	metaService: MetaService,
-	utilityService: UtilityService,
-	apLoggerService: ApLoggerService,
-	host:string,
-	remote_note_id:string,
-): Promise<RemoteNote | null> {
-	const fetchedMeta = await metaService.fetch();
-	apLoggerService.logger.debug('remote clip note fetch ' + uri);
-	let note;
-	let is_create = false;
-	try {
-		//ブロックされたインスタンスの投稿は無かった事にする
-		if (utilityService.isBlockedHost(fetchedMeta.blockedHosts, utilityService.extractDbHost(uri))) return null;
-		//ローカルのDBから取得を試みる
-		note = await apNoteService.fetchNote(uri);
-		if (note == null) {
-			//ダメそうなら照会
-			note = await apNoteService.createNote(uri, undefined, true);
-			is_create = true;
-		}
-	} catch (e) {
-		apLoggerService.logger.warn(String(e));
-		//照会失敗した時はクリップ内に無かった事にする
-		return null;
-	}
-	if (note !== null) {
-		redisForRemoteApis.set('local-noteId:' + note.id + '@' + host, remote_note_id);
-		return {
-			note,
-			is_create,
-		};
-	} else {
-		return null;
 	}
 }
