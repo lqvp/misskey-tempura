@@ -79,23 +79,10 @@ const $redisForTimelines: Provider = {
 	},
 	inject: [DI.config],
 };
-
 const $redisForRemoteApis: Provider = {
 	provide: DI.redisForRemoteApis,
 	useFactory: (config: Config) => {
 		return new Redis.Redis(config.redisForRemoteApis);
-	},
-	inject: [DI.config],
-};
-
-const $redisForJobQueue: Provider = {
-	provide: DI.redisForJobQueue,
-	useFactory: (config: Config) => {
-		return new Redis.Redis({
-			...config.redisForJobQueue,
-			maxRetriesPerRequest: null,
-			keyPrefix: undefined,
-		});
 	},
 	inject: [DI.config],
 };
@@ -170,6 +157,7 @@ export class GlobalModule implements OnApplicationShutdown {
 		@Inject(DI.redisForPub) private redisForPub: Redis.Redis,
 		@Inject(DI.redisForSub) private redisForSub: Redis.Redis,
 		@Inject(DI.redisForTimelines) private redisForTimelines: Redis.Redis,
+		@Inject(DI.redisForReactions) private redisForReactions: Redis.Redis,
 		@Inject(DI.redisForJobQueue) private redisForJobQueue: Redis.Redis,
 		@Inject(DI.redisForRemoteApis) private redisForRemoteApis: Redis.Redis,
 	) { }
@@ -184,6 +172,7 @@ export class GlobalModule implements OnApplicationShutdown {
 			this.redisForPub.disconnect(),
 			this.redisForSub.disconnect(),
 			this.redisForTimelines.disconnect(),
+			this.redisForReactions.disconnect(),
 			this.redisForJobQueue.disconnect(),
 			this.redisForRemoteApis.disconnect(),
 		]);

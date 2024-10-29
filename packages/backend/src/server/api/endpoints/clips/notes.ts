@@ -5,22 +5,10 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
-import got, * as Got from 'got';
-import * as Redis from 'ioredis';
-import type { Config } from '@/config.js';
-import type { NotesRepository, ClipsRepository, ClipNotesRepository, MiNote } from '@/models/_.js';
+import type { NotesRepository, ClipsRepository, ClipNotesRepository } from '@/models/_.js';
 import { QueryService } from '@/core/QueryService.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { DI } from '@/di-symbols.js';
-import { HttpRequestService } from '@/core/HttpRequestService.js';
-import { UserEntityService } from '@/core/entities/UserEntityService.js';
-import { awaitAll } from '@/misc/prelude/await-all.js';
-import { RemoteUserResolveService } from '@/core/RemoteUserResolveService.js';
-import { ApNoteService } from '@/core/activitypub/models/ApNoteService.js';
-import { IObject } from '@/core/activitypub/type.js';
-import { MetaService } from '@/core/MetaService.js';
-import { UtilityService } from '@/core/UtilityService.js';
-import { ApLoggerService } from '@/core/activitypub/ApLoggerService.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -35,16 +23,6 @@ export const meta = {
 			message: 'No such clip.',
 			code: 'NO_SUCH_CLIP',
 			id: '1d7645e6-2b6d-4635-b0fe-fe22b0e72e00',
-		},
-		invalidIdFormat: {
-			message: 'Invalid id format.',
-			code: 'INVALID_ID_FORMAT',
-			id: '42d11fe5-686e-41ee-9e7f-e804ec3a388d',
-		},
-		failedToResolveRemoteUser: {
-			message: 'failedToResolveRemoteUser.',
-			code: 'FAILED_TO_RESOLVE_REMOTE_USER',
-			id: 'af0ecffc-8717-409e-a8d4-e1e3a5d2497f',
 		},
 	},
 
@@ -62,7 +40,7 @@ export const meta = {
 export const paramDef = {
 	type: 'object',
 	properties: {
-		clipId: { type: 'string' },
+		clipId: { type: 'string', format: 'misskey:id' },
 		limit: { type: 'integer', minimum: 1, maximum: 100, default: 10 },
 		sinceId: { type: 'string', format: 'misskey:id' },
 		untilId: { type: 'string', format: 'misskey:id' },
@@ -73,8 +51,6 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
-		@Inject(DI.config)
-		private config: Config,
 		@Inject(DI.clipsRepository)
 		private clipsRepository: ClipsRepository,
 
@@ -93,7 +69,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 		private noteEntityService: NoteEntityService,
 		private queryService: QueryService,
-		private apLoggerService: ApLoggerService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const parsed_id = ps.clipId.split('@');
@@ -107,35 +82,32 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					id: ps.clipId,
 				});
 
-				if (clip == null) {
-					throw new ApiError(meta.errors.noSuchClip);
-				}
-
-				if (!clip.isPublic && (me == null || (clip.userId !== me.id))) {
-					throw new ApiError(meta.errors.noSuchClip);
-				}
-
-				const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), ps.sinceId, ps.untilId)
-					.innerJoin(this.clipNotesRepository.metadata.targetName, 'clipNote', 'clipNote.noteId = note.id')
-					.innerJoinAndSelect('note.user', 'user')
-					.leftJoinAndSelect('note.reply', 'reply')
-					.leftJoinAndSelect('note.renote', 'renote')
-					.leftJoinAndSelect('reply.user', 'replyUser')
-					.leftJoinAndSelect('renote.user', 'renoteUser')
-					.andWhere('clipNote.clipId = :clipId', { clipId: clip.id });
-
-				if (me) {
-					this.queryService.generateVisibilityQuery(query, me);
-					this.queryService.generateMutedUserQuery(query, me);
-					this.queryService.generateBlockedUserQuery(query, me);
-				}
-
-				notes = await query
-					.limit(ps.limit)
-					.getMany();
-			} else {
-				throw new ApiError(meta.errors.invalidIdFormat);
+			if (clip == null) {
+				throw new ApiError(meta.errors.noSuchClip);
 			}
+
+			if (!clip.isPublic && (me == null || (clip.userId !== me.id))) {
+				throw new ApiError(meta.errors.noSuchClip);
+			}
+
+			const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), ps.sinceId, ps.untilId)
+				.innerJoin(this.clipNotesRepository.metadata.targetName, 'clipNote', 'clipNote.noteId = note.id')
+				.innerJoinAndSelect('note.user', 'user')
+				.leftJoinAndSelect('note.reply', 'reply')
+				.leftJoinAndSelect('note.renote', 'renote')
+				.leftJoinAndSelect('reply.user', 'replyUser')
+				.leftJoinAndSelect('renote.user', 'renoteUser')
+				.andWhere('clipNote.clipId = :clipId', { clipId: clip.id });
+
+			if (me) {
+				this.queryService.generateVisibilityQuery(query, me);
+				this.queryService.generateMutedUserQuery(query, me);
+				this.queryService.generateBlockedUserQuery(query, me);
+			}
+
+			const notes = await query
+				.limit(ps.limit)
+				.getMany();
 
 			return await this.noteEntityService.packMany(notes, me);
 		});
