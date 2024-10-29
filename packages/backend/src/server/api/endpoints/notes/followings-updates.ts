@@ -73,7 +73,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			});
 
 			for (const update of updates) {
-				update.notes = await this.noteEntityService.packMany(update.notes);
+				update.notes = await this.noteEntityService.packMany(update.notes, me);
 			}
 			return updates;
 		});
