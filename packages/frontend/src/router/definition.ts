@@ -189,6 +189,10 @@ const routes: RouteDef[] = [{
 		name: 'other',
 		component: page(() => import('@/pages/settings/other.vue')),
 	}, {
+		path: '/lqvp-settings',
+		name: 'lqvp-settings',
+		component: page(() => import('@/pages/settings/lqvp-settings.vue')),
+	}, {
 		path: '/',
 		component: page(() => import('@/pages/_empty_.vue')),
 	}],

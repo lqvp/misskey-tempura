@@ -1,0 +1,198 @@
+<!--
+SPDX-FileCopyrightText: lqvp
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<template>
+	<div class="_gaps_m">
+		<FormSection>
+			<div class="_gaps_s">
+				<MkSwitch v-model="disableNoteDrafting">
+					<template #caption>{{ i18n.ts.disableNoteDraftingDescription }}</template>
+					{{ i18n.ts.disableNoteDrafting }}
+					<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+				</MkSwitch>
+				<FormLink to="/settings/post-form">{{ i18n.ts.postForm }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></FormLink>
+			</div>
+		</FormSection>
+		<FormSection>
+			<template #label>{{ i18n.ts.displayOfNote }}</template>
+
+			<div class="_gaps_m">
+				<div class="_gaps_s">
+					<MkSwitch v-model="directRenote">
+						<template #label>
+							{{ i18n.ts.directRenote }}
+							<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+						</template>
+						<template #caption>{{ i18n.ts.directRenoteDescription }}</template>
+					</MkSwitch>
+					<MkSwitch v-model="hideReactionUsers">
+						<template #caption>{{ i18n.ts.hideReactionUsersDescription }}</template>
+						{{ i18n.ts.hideReactionUsers }}
+						<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+					</MkSwitch>
+					<MkSelect v-model="hideReactionCount">
+						<template #label>{{ i18n.ts.hideReactionCount }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+						<option value="none">{{ i18n.ts._hideReactionCount.none }}</option>
+						<option value="self">{{ i18n.ts._hideReactionCount.self }}</option>
+						<option value="others">{{ i18n.ts._hideReactionCount.others }}</option>
+						<option value="all">{{ i18n.ts._hideReactionCount.all }}</option>
+					</MkSelect>
+				</div>
+
+				<MkSwitch v-if="instanceTicker !== 'none'" v-model="instanceIcon">{{ i18n.ts.instanceIcon }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
+
+				<MkSwitch v-model="disableNoteNyaize">{{ i18n.ts.disableNoteNyaize }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
+
+				<MkRadios v-model="selectReaction">
+					<template #label>{{ i18n.ts.selectReaction }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+					<option value="❤️">❤️</option>
+					<option value="⭐">⭐</option>
+					<option value="🍮">🍮</option>
+					<option value="💩">💩</option>
+				</MkRadios>
+			</div>
+		</FormSection>
+
+		<FormSection>
+			<template #label>{{ i18n.ts.appearance }}</template>
+
+			<div class="_gaps_m">
+				<MkSelect v-model="customFont">
+					<template #label>{{ i18n.ts.customFont }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+					<option :value="null">{{ i18n.ts.default }}</option>
+					<option v-for="[name, font] of Object.entries(fontList)" :value="name">{{ font.name }}</option>
+				</MkSelect>
+			</div>
+		</FormSection>
+
+		<FormSection>
+			<template #label>{{ i18n.ts.behavior }}</template>
+
+			<div class="_gaps_m">
+				<div class="_gaps_s">
+					<MkSwitch v-model="reactionChecksMuting">
+						{{ i18n.ts._reactionChecksMuting.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+						<template #caption>{{ i18n.ts._reactionChecksMuting.caption }}</template>
+					</MkSwitch>
+				</div>
+			</div>
+		</FormSection>
+
+		<FormSection>
+			<template #label>{{ i18n.ts._uniqueFeatures.uniqueFeature }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+
+			<div class="_gaps_m">
+				<MkFolder>
+					<template #label>{{ i18n.ts._uniqueFeatures.hiddenProfile }}</template>
+					<div class="_gaps_m">
+						<div class="_buttons">
+							<MkButton inline @click="enableAllHidden">{{ i18n.ts.enableAll }}</MkButton>
+							<MkButton inline @click="disableAllHidden">{{ i18n.ts.disableAll }}</MkButton>
+						</div>
+						<MkSwitch v-model="hiddenPinnedNotes">
+							<template #caption>{{ i18n.ts._uniqueFeatures.hiddenPinnedNotesDescription }}</template>
+							{{ i18n.ts._uniqueFeatures.hiddenPinnedNotes }}
+						</MkSwitch>
+						<MkSwitch v-model="hiddenActivity">
+							<template #caption>{{ i18n.ts._uniqueFeatures.hiddenActivityDescription }}</template>
+							{{ i18n.ts._uniqueFeatures.hiddenActivity }}
+						</MkSwitch>
+						<MkSwitch v-model="hiddenFiles">
+							<template #caption>{{ i18n.ts._uniqueFeatures.hiddenFilesDescription }}</template>
+							{{ i18n.ts._uniqueFeatures.hiddenFiles }}
+						</MkSwitch>
+					</div>
+				</MkFolder>
+			</div>
+		</FormSection>
+
+		<FormSection>
+			<template #label>{{ i18n.ts.__rest.extendSettings }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+
+			<div class="_gaps">
+				<MkSwitch v-model="hideLocalTimeLine">{{ i18n.ts.__rest.hideLocalTimeLine }}</MkSwitch>
+				<MkSwitch v-model="hideSocialTimeLine">{{ i18n.ts.__rest.hideSocialTimeLine }}</MkSwitch>
+				<MkSwitch v-model="hideGlobalTimeLine">{{ i18n.ts.__rest.hideGlobalTimeLine }}</MkSwitch>
+			</div>
+		</FormSection>
+	</div>
+	</template>
+
+	<script lang="ts" setup>
+	import { computed, watch } from 'vue';
+	import * as Misskey from 'misskey-js';
+	import MkSwitch from '@/components/MkSwitch.vue';
+	import MkSelect from '@/components/MkSelect.vue';
+	import MkRadios from '@/components/MkRadios.vue';
+	import MkFolder from '@/components/MkFolder.vue';
+	import MkButton from '@/components/MkButton.vue';
+	import FormSection from '@/components/form/section.vue';
+	import FormLink from '@/components/form/link.vue';
+	import { defaultStore } from '@/store.js';
+	import * as os from '@/os.js';
+	import { reloadAsk } from '@/scripts/reload-ask.js';
+	import { i18n } from '@/i18n.js';
+	import { definePageMetadata } from '@/scripts/page-metadata.js';
+	import { fontList } from '@/scripts/font';
+
+	const hideReactionUsers = computed(defaultStore.makeGetterSetter('hideReactionUsers'));
+	const hideReactionCount = computed(defaultStore.makeGetterSetter('hideReactionCount'));
+	const directRenote = computed(defaultStore.makeGetterSetter('directRenote'));
+	const showReactionsCount = computed(defaultStore.makeGetterSetter('showReactionsCount'));
+	const customFont = computed(defaultStore.makeGetterSetter('customFont'));
+	const hiddenPinnedNotes = computed(defaultStore.makeGetterSetter('hiddenPinnedNotes'));
+	const hiddenActivity = computed(defaultStore.makeGetterSetter('hiddenActivity'));
+	const hiddenFiles = computed(defaultStore.makeGetterSetter('hiddenFiles'));
+	const instanceIcon = computed(defaultStore.makeGetterSetter('instanceIcon'));
+	const disableNoteNyaize = computed(defaultStore.makeGetterSetter('disableNoteNyaize'));
+	const reactionChecksMuting = computed(defaultStore.makeGetterSetter('reactionChecksMuting'));
+	const hideLocalTimeLine = computed(defaultStore.makeGetterSetter('hideLocalTimeLine'));
+	const hideGlobalTimeLine = computed(defaultStore.makeGetterSetter('hideGlobalTimeLine'));
+	const hideSocialTimeLine = computed(defaultStore.makeGetterSetter('hideSocialTimeLine'));
+	const selectReaction = computed(defaultStore.makeGetterSetter('selectReaction'));
+	const disableNoteDrafting = computed(defaultStore.makeGetterSetter('disableNoteDrafting'));
+
+	watch([
+		hideReactionUsers,
+		hideReactionCount,
+		directRenote,
+		showReactionsCount,
+		customFont,
+		hiddenPinnedNotes,
+		hiddenActivity,
+		hiddenFiles,
+		instanceIcon,
+		disableNoteNyaize,
+		reactionChecksMuting,
+		hideLocalTimeLine,
+		hideGlobalTimeLine,
+		hideSocialTimeLine,
+		selectReaction,
+		disableNoteDrafting
+	], async () => {
+		await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
+	});
+
+	function enableAllHidden() {
+		defaultStore.set('hiddenPinnedNotes', true);
+		defaultStore.set('hiddenActivity', true);
+		defaultStore.set('hiddenFiles', true);
+	}
+
+	function disableAllHidden() {
+		defaultStore.set('hiddenPinnedNotes', false);
+		defaultStore.set('hiddenActivity', false);
+		defaultStore.set('hiddenFiles', false);
+	}
+
+	const headerActions = computed(() => []);
+
+	const headerTabs = computed(() => []);
+
+	definePageMetadata(() => ({
+		title: 'lqvp-fork',
+		icon: 'ti ti-adjustments',
+	}));
+	</script>
