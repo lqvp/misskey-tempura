@@ -24,7 +24,6 @@ import {
 	MiChannelFollowing,
 	MiClip,
 	MiClipFavorite,
-	MiClipFavoriteRemote,
 	MiClipNote,
 	MiDriveFile,
 	MiDriveFolder,
@@ -376,12 +375,6 @@ const $clipFavoritesRepository: Provider = {
 	inject: [DI.db],
 };
 
-const $clipFavoritesRemoteRepository: Provider = {
-	provide: DI.clipFavoritesRemoteRepository,
-	useFactory: (db: DataSource) => db.getRepository(MiClipFavoriteRemote).extend(miRepository as MiRepository<MiClipFavoriteRemote>),
-	inject: [DI.db],
-};
-
 const $antennasRepository: Provider = {
 	provide: DI.antennasRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiAntenna).extend(miRepository as MiRepository<MiAntenna>),
@@ -554,7 +547,6 @@ const $reversiGamesRepository: Provider = {
 		$clipsRepository,
 		$clipNotesRepository,
 		$clipFavoritesRepository,
-		$clipFavoritesRemoteRepository,
 		$antennasRepository,
 		$promoNotesRepository,
 		$promoReadsRepository,
@@ -626,7 +618,6 @@ const $reversiGamesRepository: Provider = {
 		$clipsRepository,
 		$clipNotesRepository,
 		$clipFavoritesRepository,
-		$clipFavoritesRemoteRepository,
 		$antennasRepository,
 		$promoNotesRepository,
 		$promoReadsRepository,

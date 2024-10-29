@@ -220,7 +220,6 @@ import type {
 	ClipsUpdateResponse,
 	ClipsFavoriteRequest,
 	ClipsUnfavoriteRequest,
-	ClipsMyFavoritesRequest,
 	ClipsMyFavoritesResponse,
 	DriveResponse,
 	DriveFilesRequest,
@@ -739,7 +738,7 @@ export type Endpoints = {
 	'clips/update': { req: ClipsUpdateRequest; res: ClipsUpdateResponse };
 	'clips/favorite': { req: ClipsFavoriteRequest; res: EmptyResponse };
 	'clips/unfavorite': { req: ClipsUnfavoriteRequest; res: EmptyResponse };
-	'clips/my-favorites': { req: ClipsMyFavoritesRequest; res: ClipsMyFavoritesResponse };
+	'clips/my-favorites': { req: EmptyRequest; res: ClipsMyFavoritesResponse };
 	'drive': { req: EmptyRequest; res: DriveResponse };
 	'drive/files': { req: DriveFilesRequest; res: DriveFilesResponse };
 	'drive/files/attached-notes': { req: DriveFilesAttachedNotesRequest; res: DriveFilesAttachedNotesResponse };
