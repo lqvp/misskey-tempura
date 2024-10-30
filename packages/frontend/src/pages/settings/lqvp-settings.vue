@@ -45,13 +45,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 				<MkSwitch v-model="disableNoteNyaize">{{ i18n.ts.disableNoteNyaize }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
 
-				<MkRadios v-model="selectReaction">
+				<FromSlot v-model="selectReaction">
 					<template #label>{{ i18n.ts.selectReaction }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-					<option value="❤️">❤️</option>
-					<option value="⭐">⭐</option>
-					<option value="🍮">🍮</option>
-					<option value="💩">💩</option>
-				</MkRadios>
+					<MkCustomEmoji v-if="selectReaction && selectReaction.startsWith(':')" style="max-height: 3em; font-size: 1.1em;" :useOriginalSize="false" :name="selectReaction" :normal="true" :noStyle="true"/>
+					<MkEmoji v-else-if="selectReaction && !selectReaction.startsWith(':')" :emoji="selectReaction" style="max-height: 3em; font-size: 1.1em;" :normal="true" :noStyle="true"/>
+					<span v-else-if="!selectReaction">{{ i18n.ts.notSet }}</span>
+					<div class="_buttons" style="padding-top: 8px;">
+						<MkButton rounded :small="true" inline @click="chooseNewReaction"><i class="ph-smiley ph-bold ph-lg"></i> Change</MkButton>
+						<MkButton rounded :small="true" inline @click="resetReaction"><i class="ph-arrow-clockwise ph-bold ph-lg"></i> Reset</MkButton>
+					</div>
+				</FromSlot>
 			</div>
 		</FormSection>
 
@@ -120,79 +123,102 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</div>
 	</template>
 
-	<script lang="ts" setup>
-	import { computed, watch } from 'vue';
-	import * as Misskey from 'misskey-js';
-	import MkSwitch from '@/components/MkSwitch.vue';
-	import MkSelect from '@/components/MkSelect.vue';
-	import MkRadios from '@/components/MkRadios.vue';
-	import MkFolder from '@/components/MkFolder.vue';
-	import MkButton from '@/components/MkButton.vue';
-	import FormSection from '@/components/form/section.vue';
-	import FormLink from '@/components/form/link.vue';
-	import { defaultStore } from '@/store.js';
-	import * as os from '@/os.js';
-	import { reloadAsk } from '@/scripts/reload-ask.js';
-	import { i18n } from '@/i18n.js';
-	import { definePageMetadata } from '@/scripts/page-metadata.js';
-	import { fontList } from '@/scripts/font';
+<script lang="ts" setup>
+import { computed, watch } from 'vue';
+import * as Misskey from 'misskey-js';
+import MkSwitch from '@/components/MkSwitch.vue';
+import MkSelect from '@/components/MkSelect.vue';
+import MkRadios from '@/components/MkRadios.vue';
+import MkFolder from '@/components/MkFolder.vue';
+import MkButton from '@/components/MkButton.vue';
+import FormSection from '@/components/form/section.vue';
+import FormLink from '@/components/form/link.vue';
+import FromSlot from '@/components/form/slot.vue';
+import MkCustomEmoji from '@/components/global/MkCustomEmoji.vue';
+import MkEmoji from '@/components/global/MkEmoji.vue';
+import { defaultStore } from '@/store.js';
+import * as os from '@/os.js';
+import { reloadAsk } from '@/scripts/reload-ask.js';
+import { i18n } from '@/i18n.js';
+import { definePageMetadata } from '@/scripts/page-metadata.js';
+import { fontList } from '@/scripts/font';
 
-	const hideReactionUsers = computed(defaultStore.makeGetterSetter('hideReactionUsers'));
-	const hideReactionCount = computed(defaultStore.makeGetterSetter('hideReactionCount'));
-	const directRenote = computed(defaultStore.makeGetterSetter('directRenote'));
-	const showReactionsCount = computed(defaultStore.makeGetterSetter('showReactionsCount'));
-	const customFont = computed(defaultStore.makeGetterSetter('customFont'));
-	const hiddenPinnedNotes = computed(defaultStore.makeGetterSetter('hiddenPinnedNotes'));
-	const hiddenActivity = computed(defaultStore.makeGetterSetter('hiddenActivity'));
-	const hiddenFiles = computed(defaultStore.makeGetterSetter('hiddenFiles'));
-	const instanceIcon = computed(defaultStore.makeGetterSetter('instanceIcon'));
-	const disableNoteNyaize = computed(defaultStore.makeGetterSetter('disableNoteNyaize'));
-	const reactionChecksMuting = computed(defaultStore.makeGetterSetter('reactionChecksMuting'));
-	const hideLocalTimeLine = computed(defaultStore.makeGetterSetter('hideLocalTimeLine'));
-	const hideGlobalTimeLine = computed(defaultStore.makeGetterSetter('hideGlobalTimeLine'));
-	const hideSocialTimeLine = computed(defaultStore.makeGetterSetter('hideSocialTimeLine'));
-	const selectReaction = computed(defaultStore.makeGetterSetter('selectReaction'));
-	const disableNoteDrafting = computed(defaultStore.makeGetterSetter('disableNoteDrafting'));
+const hideReactionUsers = computed(defaultStore.makeGetterSetter('hideReactionUsers'));
+const hideReactionCount = computed(defaultStore.makeGetterSetter('hideReactionCount'));
+const directRenote = computed(defaultStore.makeGetterSetter('directRenote'));
+const showReactionsCount = computed(defaultStore.makeGetterSetter('showReactionsCount'));
+const customFont = computed(defaultStore.makeGetterSetter('customFont'));
+const hiddenPinnedNotes = computed(defaultStore.makeGetterSetter('hiddenPinnedNotes'));
+const hiddenActivity = computed(defaultStore.makeGetterSetter('hiddenActivity'));
+const hiddenFiles = computed(defaultStore.makeGetterSetter('hiddenFiles'));
+const instanceIcon = computed(defaultStore.makeGetterSetter('instanceIcon'));
+const disableNoteNyaize = computed(defaultStore.makeGetterSetter('disableNoteNyaize'));
+const reactionChecksMuting = computed(defaultStore.makeGetterSetter('reactionChecksMuting'));
+const hideLocalTimeLine = computed(defaultStore.makeGetterSetter('hideLocalTimeLine'));
+const hideGlobalTimeLine = computed(defaultStore.makeGetterSetter('hideGlobalTimeLine'));
+const hideSocialTimeLine = computed(defaultStore.makeGetterSetter('hideSocialTimeLine'));
+const selectReaction = computed(defaultStore.makeGetterSetter('selectReaction'));
+const disableNoteDrafting = computed(defaultStore.makeGetterSetter('disableNoteDrafting'));
 
-	watch([
-		hideReactionUsers,
-		hideReactionCount,
-		directRenote,
-		showReactionsCount,
-		customFont,
-		hiddenPinnedNotes,
-		hiddenActivity,
-		hiddenFiles,
-		instanceIcon,
-		disableNoteNyaize,
-		reactionChecksMuting,
-		hideLocalTimeLine,
-		hideGlobalTimeLine,
-		hideSocialTimeLine,
-		selectReaction,
-		disableNoteDrafting
-	], async () => {
-		await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
+watch([
+	hideReactionUsers,
+	hideReactionCount,
+	directRenote,
+	showReactionsCount,
+	customFont,
+	hiddenPinnedNotes,
+	hiddenActivity,
+	hiddenFiles,
+	instanceIcon,
+	disableNoteNyaize,
+	reactionChecksMuting,
+	hideLocalTimeLine,
+	hideGlobalTimeLine,
+	hideSocialTimeLine,
+	selectReaction,
+	disableNoteDrafting
+], async () => {
+	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
+});
+
+function chooseNewReaction(ev: MouseEvent) {
+	os.pickEmoji(getHTMLElement(ev), {
+		showPinned: false,
+	}).then(async (emoji) => {
+		selectReaction.value = emoji as string;
+		await reloadAsk();
 	});
+}
 
-	function enableAllHidden() {
-		defaultStore.set('hiddenPinnedNotes', true);
-		defaultStore.set('hiddenActivity', true);
-		defaultStore.set('hiddenFiles', true);
-	}
+function resetReaction() {
+	selectReaction.value = '';
+	reloadAsk();
+}
 
-	function disableAllHidden() {
-		defaultStore.set('hiddenPinnedNotes', false);
-		defaultStore.set('hiddenActivity', false);
-		defaultStore.set('hiddenFiles', false);
-	}
+function getHTMLElement(ev: MouseEvent): HTMLElement {
+	const target = ev.currentTarget ?? ev.target;
+	return target as HTMLElement;
+}
 
-	const headerActions = computed(() => []);
+function enableAllHidden() {
+	defaultStore.set('hiddenPinnedNotes', true);
+	defaultStore.set('hiddenActivity', true);
+	defaultStore.set('hiddenFiles', true);
+}
 
-	const headerTabs = computed(() => []);
+function disableAllHidden() {
+	defaultStore.set('hiddenPinnedNotes', false);
+	defaultStore.set('hiddenActivity', false);
+	defaultStore.set('hiddenFiles', false);
+}
 
-	definePageMetadata(() => ({
-		title: 'lqvp-fork',
-		icon: 'ti ti-adjustments',
-	}));
-	</script>
+const headerActions = computed(() => []);
+
+const headerTabs = computed(() => []);
+
+definePageMetadata(() => ({
+	title: 'lqvp-fork',
+	icon: 'ti ti-adjustments',
+}));
+</script>
+
