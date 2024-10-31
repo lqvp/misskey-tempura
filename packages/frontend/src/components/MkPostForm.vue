@@ -76,6 +76,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<XPostFormAttaches v-model="files" @detach="detachFile" @changeSensitive="updateFileSensitive" @changeName="updateFileName" @replaceFile="replaceFile"/>
 	<MkPollEditor v-if="poll" v-model="poll" @destroyed="poll = null"/>
 	<MkDeleteScheduleEditor v-if="scheduledNoteDelete" v-model="scheduledNoteDelete" @destroyed="scheduledNoteDelete = null"/>
+	<MkScheduleEditor v-if="scheduleNote" v-model="scheduleNote" @destroyed="scheduleNote = null"/>
 	<MkNotePreview v-if="showPreview" :class="$style.preview" :text="text" :files="files" :poll="poll ?? undefined" :useCw="useCw" :cw="cw" :user="postAccount ?? $i"/>
 	<div v-if="showingOptions" style="padding: 8px 16px;">
 	</div>
@@ -84,6 +85,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<template v-for="item in defaultStore.state.postFormActions">
 				<button v-if="!bottomItemActionDef[item].hide" :key="item" v-tooltip="bottomItemDef[item].title" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: bottomItemActionDef[item].active }]" v-on="bottomItemActionDef[item].action ? { click: bottomItemActionDef[item].action } : {}"><i class="ti" :class="bottomItemDef[item].icon"></i></button>
 			</template>
+			<button v-tooltip="i18n.ts.otherSettings" :class="['_button', $style.footerButton]" @click="showOtherMenu"><i class="ti ti-dots"></i></button>
 		</div>
 		<div :class="$style.footerRight">
 			<button v-tooltip="i18n.ts.previewNoteText" class="_button" :class="[$style.footerButton, { [$style.previewButtonActive]: showPreview }]" @click="showPreview = !showPreview"><i class="ti ti-eye"></i></button>
@@ -103,6 +105,7 @@ import * as Misskey from 'misskey-js';
 import insertTextAtCursor from 'insert-text-at-cursor';
 import { toASCII } from 'punycode/';
 import { host, url } from '@@/js/config.js';
+import type { MenuItem } from '@/types/menu.js';
 import MkNoteSimple from '@/components/MkNoteSimple.vue';
 import MkNotePreview from '@/components/MkNotePreview.vue';
 import XPostFormAttaches from '@/components/MkPostFormAttaches.vue';
@@ -129,6 +132,7 @@ import { claimAchievement } from '@/scripts/achievements.js';
 import { emojiPicker } from '@/scripts/emoji-picker.js';
 import { mfmFunctionPicker } from '@/scripts/mfm-function-picker.js';
 import { bottomItemDef } from '@/scripts/post-form.js';
+import MkScheduleEditor from '@/components/MkScheduleEditor.vue';
 
 const $i = signinRequired();
 
@@ -146,7 +150,9 @@ const props = withDefaults(defineProps<{
 	initialFiles?: Misskey.entities.DriveFile[];
 	initialLocalOnly?: boolean;
 	initialVisibleUsers?: Misskey.entities.UserDetailed[];
-	initialNote?: Misskey.entities.Note;
+	initialNote?: Misskey.entities.Note & {
+		isSchedule?: boolean,
+	};
 	instant?: boolean;
 	fixed?: boolean;
 	autofocus?: boolean;
@@ -205,6 +211,9 @@ const recentHashtags = ref(JSON.parse(miLocalStorage.getItem('hashtags') ?? '[]'
 const imeText = ref('');
 const showingOptions = ref(false);
 const textAreaReadOnly = ref(false);
+const scheduleNote = ref<{
+	scheduledAt: number | null;
+} | null>(null);
 
 const draftType = computed(() => {
 	if (props.channel) return 'channel';
@@ -646,6 +655,7 @@ function clear() {
 	files.value = [];
 	poll.value = null;
 	quoteId.value = null;
+	scheduleNote.value = null;
 }
 
 function onKeydown(ev: KeyboardEvent) {
@@ -788,6 +798,7 @@ async function saveDraft(auto = true) {
 		scheduledNoteDelete: scheduledNoteDelete.value,
 		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(x => x.id) : undefined,
 		noteId: props.updateMode ? props.initialNote?.id : undefined,
+		scheduleNote: scheduleNote.value,
 	}, draftAuxId.value as string);
 
 	if (!auto) {
@@ -930,6 +941,7 @@ async function post(ev?: MouseEvent) {
 		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(u => u.id) : undefined,
 		reactionAcceptance: reactionAcceptance.value,
 		noteId: props.updateMode ? props.initialNote?.id : undefined,
+		scheduleNote: scheduleNote.value ?? undefined,
 	};
 
 	if (withHashtags.value && hashtags.value && hashtags.value.trim() !== '') {
@@ -966,7 +978,7 @@ async function post(ev?: MouseEvent) {
 	}
 
 	posting.value = true;
-	misskeyApi(props.updateMode ? 'notes/update' : 'notes/create', postData, token).then(() => {
+	misskeyApi(props.updateMode ? 'notes/update' : (postData.scheduleNote ? 'notes/schedule/create' : 'notes/create'), postData, token).then(() => {
 		if (props.freezeAfterPosted) {
 			posted.value = true;
 		} else {
@@ -987,6 +999,8 @@ async function post(ev?: MouseEvent) {
 			if (notesCount === 1) {
 				claimAchievement('notes1');
 			}
+
+			poll.value = null;
 
 			const text = postData.text ?? '';
 			const lowerCase = text.toLowerCase();
@@ -1129,6 +1143,42 @@ function openAccountMenu(ev: MouseEvent) {
 	}, ev);
 }
 
+function toggleScheduleNote() {
+	if (scheduleNote.value) {
+		scheduleNote.value = null;
+	} else {
+		scheduleNote.value = {
+			scheduledAt: null,
+		};
+	}
+}
+
+function showOtherMenu(ev: MouseEvent) {
+	const menuItems: MenuItem[] = [];
+
+	if ($i.policies.scheduleNoteMax > 0) {
+		menuItems.push({
+			type: 'button',
+			text: i18n.ts.schedulePost,
+			icon: 'ti ti-calendar-time',
+			action: toggleScheduleNote,
+		}, {
+			type: 'button',
+			text: i18n.ts.schedulePostList,
+			icon: 'ti ti-calendar-event',
+			action: () => {
+				const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkSchedulePostListDialog.vue')), {}, {
+					closed: () => {
+						dispose();
+					},
+				});
+			},
+		});
+	}
+
+	os.popupMenu(menuItems, ev.currentTarget ?? ev.target);
+}
+
 onMounted(() => {
 	if (props.autofocus) {
 		focus();
@@ -1185,6 +1235,11 @@ onMounted(() => {
 			}
 			quoteId.value = init.renote ? init.renote.id : null;
 			reactionAcceptance.value = init.reactionAcceptance;
+			if (init.isSchedule) {
+				scheduleNote.value = {
+					scheduledAt: new Date(init.createdAt).getTime(),
+				};
+			}
 		}
 
 		nextTick(() => watchForDraft());
