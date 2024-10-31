@@ -17,6 +17,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<img v-for="(role, i) in note.user.badgeRoles" :key="i" v-tooltip="role.name" :class="$style.badgeRole" :src="role.iconUrl!"/>
 	</div>
 	<div :class="$style.info">
+		<div v-if="mock">
+			<MkTime :time="note.createdAt" colored/>
+		</div>
+		<MkA v-else :to="notePage(note)">
+			<MkTime :time="note.createdAt" colored/>
+		</MkA>
 		<span v-if="note.updatedAt" style="margin-right: 0.5em;"><i v-tooltip="i18n.tsx.noteUpdatedAt({ date: (new Date(note.updatedAt)).toLocaleDateString(), time: (new Date(note.updatedAt)).toLocaleTimeString() })" class="ti ti-pencil"></i></span>
 		<span v-if="note.visibility !== 'public'" style="margin-right: 0.5em;">
 				<i v-if="note.visibility === 'home'" v-tooltip="i18n.ts._visibility[note.visibility]" class="ti ti-home"></i>
@@ -32,12 +38,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<span v-if="note.localOnly" style="margin-right: 0.5em;"><i v-tooltip="i18n.ts._visibility['disableFederation']" class="ti ti-rocket-off"></i></span>
 		<span v-if="note.channel" style="margin-right: 0.5em;"><i v-tooltip="note.channel.name" class="ti ti-device-tv"></i></span>
 		<span v-if="note.deleteAt" style="margin-left: 0.5em;" :title="i18n.tsx.noteDeletationAt({ time: dateTimeFormat.format(new Date(note.deleteAt)) })"><i class="ti ti-bomb"></i></span>
-		<div v-if="mock">
-			<MkTime :time="note.createdAt" colored/>
-		</div>
-		<MkA v-else :to="notePage(note)">
-			<MkTime :time="note.createdAt" colored/>
-		</MkA>
 	</div>
 </header>
 </template>
