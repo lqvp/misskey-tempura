@@ -67,6 +67,7 @@ export const paramDef = {
 		serverErrorImageUrl: { type: 'string', nullable: true },
 		infoImageUrl: { type: 'string', nullable: true },
 		notFoundImageUrl: { type: 'string', nullable: true },
+		youBlockedImageUrl: { type: 'string', nullable: true },
 		iconUrl: { type: 'string', nullable: true },
 		app192IconUrl: { type: 'string', nullable: true },
 		app512IconUrl: { type: 'string', nullable: true },
@@ -316,6 +317,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.notFoundImageUrl !== undefined) {
 				set.notFoundImageUrl = ps.notFoundImageUrl;
+			}
+
+			if (ps.youBlockedImageUrl !== undefined) {
+				set.youBlockedImageUrl = ps.youBlockedImageUrl;
 			}
 
 			if (ps.backgroundImageUrl !== undefined) {

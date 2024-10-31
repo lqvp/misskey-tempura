@@ -163,13 +163,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 			<div class="contents _gaps">
 				<div v-if="!hiddenPinnedNotes">
-					<div v-if="user.pinnedNotes.length > 0" class="_gaps">
+					<div v-if="user.pinnedNotes.length > 0 && !user.isBlocked" class="_gaps">
 						<MkNote v-for="note in user.pinnedNotes" :key="note.id" class="note _panel" :note="note" :pinned="true"/>
 					</div>
 				</div>
 				<MkInfo v-else-if="$i && $i.id === user.id">{{ i18n.ts.userPagePinTip }}</MkInfo>
 				<div v-if="!hiddenActivity">
-					<template v-if="narrow">
+					<template v-if="narrow && !user.isBlocked">
 						<MkLazy>
 							<XFiles :key="user.id" :user="user"/>
 						</MkLazy>
@@ -185,14 +185,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkLazy>
 					<XListenBrainz v-if="user.listenbrainz && listenbrainzdata" :key="user.id" :user="user" :collapsed="true"/>
 				</MkLazy>
-				<div v-if="!disableNotes">
+				<div v-if="!disableNotes && !user.isBlocked">
 					<MkLazy>
 						<XTimeline :user="user"/>
 					</MkLazy>
 				</div>
+				<div v-if="user.isBlocked" class="_fullinfo">
+					<img :src="youBlockedImageUrl" class="_ghost"/>
+					<div style="font-size: 1.4rem; font-weight: bold; padding-bottom: 4px;">{{ i18n.ts.youBlocked }}</div>
+					<div style="opacity: 0.7">{{ i18n.tsx.youBlockedDescription({ user: `@${ user.username }` }) }}</div>
+				</div>
 			</div>
 		</div>
-		<div v-if="!narrow" class="sub _gaps" style="container-type: inline-size;">
+		<div v-if="!narrow && !user.isBlocked" class="sub _gaps" style="container-type: inline-size;">
 			<XFiles :key="user.id" :user="user"/>
 			<XActivity v-if="!user.hideActivity" :key="user.id" :user="user"/>
 			<XListenBrainz v-if="user.listenbrainz && listenbrainzdata" :key="user.id" :user="user"/>
@@ -232,6 +237,7 @@ import { editNickname } from "@/scripts/edit-nickname";
 import MkLink from '@/components/MkLink.vue';
 import MkContainer from '@/components/MkContainer.vue';
 import MkSparkle from '@/components/MkSparkle.vue';
+import { youBlockedImageUrl } from '@/instance.js';
 
 function calcAge(birthdate: string): number {
 	const date = new Date(birthdate);

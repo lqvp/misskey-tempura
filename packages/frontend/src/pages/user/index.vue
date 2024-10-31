@@ -113,7 +113,7 @@ const headerTabs = computed(() => user.value ? [{
 	key: 'home',
 	title: i18n.ts.overview,
 	icon: 'ti ti-home',
-}, {
+}, ...(!user.value.isBlocked ? [{
 	key: 'notes',
 	title: i18n.ts.notes,
 	icon: 'ti ti-pencil',
@@ -149,7 +149,7 @@ const headerTabs = computed(() => user.value ? [{
 	key: 'gallery',
 	title: i18n.ts.gallery,
 	icon: 'ti ti-icons',
-}] : []);
+}] : []),
 
 definePageMetadata(() => ({
 	title: i18n.ts.user,
