@@ -571,6 +571,8 @@ objectStorageBucket: "Bucket"
 objectStorageBucketDesc: "使用サービスのbucket名を指定してください。"
 objectStoragePrefix: "Prefix"
 objectStoragePrefixDesc: "このprefixのディレクトリ下に格納されます。"
+objectStoragePrefixForRemote: "Prefix For Remote"
+objectStoragePrefixForRemoteDesc: "設定すると、このprefixのディレクトリ下にRemoteファイルが保存されます。"
 objectStorageEndpoint: "Endpoint"
 objectStorageEndpointDesc: "S3の場合は空、それ以外の場合は各サービスのendpointを指定してください。'<host>'または'<host>:<port>'のように指定します。"
 objectStorageRegion: "Region"
@@ -581,6 +583,8 @@ objectStorageUseProxy: "Proxyを利用する"
 objectStorageUseProxyDesc: "API接続にproxyを利用しにゃい場合はオフにしてください"
 objectStorageSetPublicRead: "アップロード時に'public-read'を設定する"
 s3ForcePathStyleDesc: "s3ForcePathStyleを有効にすると、バケット名をURLのホスト名ではにゃくパスの一部として指定することを強制します。セルフホストされたMinioにゃどの使用時に有効にする必要がある場合があります。"
+objectStorageCacheDays: "Cache Days"
+objectStorageCacheDaysDesc: "リモートファイルをキャッシュする期間（日）"
 serverLogs: "サーバーログ"
 deleteAll: "全て削除"
 showFixedPostForm: "タイムライン上部に投稿フォームを表示する"
@@ -1341,6 +1345,8 @@ _abuseUserReport:
   accept: "是認"
   reject: "否認"
   resolveTutorial: "内容が正当である通報に対応した場合は「是認」を選択し、肯定的にケースが解決されたことをマークします。\n内容が正当でにゃい通報の場合は「否認」を選択し、否定的にケースが解決されたことをマークします。"
+noteUpdatedAt: "編集済み: {date} {time}"
+editHistory: "修正履歴"
 
 _delivery:
   status: "配信状態"
@@ -1822,6 +1828,7 @@ _role:
     gtlAvailable: "グローバルタイムラインの閲覧"
     ltlAvailable: "ローカルタイムラインの閲覧"
     canPublicNote: "パブリック投稿の許可"
+    canEditNote: "ノートの編集"
     mentionMax: "ノート内の最大メンション数"
     canInvite: "サーバー招待コードの発行"
     inviteLimit: "招待コードの作成可能数"
@@ -2454,6 +2461,8 @@ _timelines:
   local: "ローカル"
   social: "ソーシャル"
   global: "グローバル"
+
+followingsUpdates: "フォロー中ユーザーの投稿"
 
 _play:
   new: "Playの作成"
