@@ -9,7 +9,7 @@ export const meta = {
 	tags: ['admin'],
 
 	requireCredential: true,
-	requireModerator: true,
+	requireAdmin: true,
 	kind: 'write:admin:approve-account',
 	secure: true,
 } as const;
