@@ -3871,6 +3871,7 @@ export type components = {
       location: string | null;
       /** @example 2018-03-12 */
       birthday: string | null;
+			listenbrainz?: string;
       /** @example ja-JP */
       lang: string | null;
       fields: {

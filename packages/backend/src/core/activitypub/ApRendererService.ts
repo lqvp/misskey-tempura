@@ -533,6 +533,11 @@ export class ApRendererService {
 			person['vcard:Address'] = profile.location;
 		}
 
+		if (profile.listenbrainz) {
+			person.listenbrainz = profile.listenbrainz;
+		}
+
+
 		if (profile.mutualLinkSections.length > 0) {
 			const ApMutualLinkSections = await Promise.all(profile.mutualLinkSections.map(async section => {
 				return {
