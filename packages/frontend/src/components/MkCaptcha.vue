@@ -41,9 +41,12 @@ export type Captcha = {
 	execute(id: string): void;
 	reset(id?: string): void;
 	getResponse(id: string): string;
+	WidgetInstance(container: string | Node, options: {
+		readonly [_ in 'sitekey' | 'doneCallback' | 'errorCallback' | 'puzzleEndpoint']?: unknown;
+	}): void;
 };
 
-export type CaptchaProvider = 'hcaptcha' | 'recaptcha' | 'turnstile' | 'mcaptcha' | 'testcaptcha';
+export type CaptchaProvider = 'hcaptcha' | 'recaptcha' | 'turnstile' | 'mcaptcha' | 'fc' | 'testcaptcha';
 
 type CaptchaContainer = {
 	readonly [_ in CaptchaProvider]?: Captcha;
@@ -80,6 +83,7 @@ const variable = computed(() => {
 		case 'recaptcha': return 'grecaptcha';
 		case 'turnstile': return 'turnstile';
 		case 'mcaptcha': return 'mcaptcha';
+		case 'fc': return 'friendlyChallenge';
 		case 'testcaptcha': return 'testcaptcha';
 	}
 });
@@ -91,6 +95,7 @@ const src = computed(() => {
 		case 'hcaptcha': return 'https://js.hcaptcha.com/1/api.js?render=explicit&recaptchacompat=off';
 		case 'recaptcha': return 'https://www.recaptcha.net/recaptcha/api.js?render=explicit';
 		case 'turnstile': return 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+		case 'fc': return 'https://cdn.jsdelivr.net/npm/friendly-challenge@0.9.18/widget.min.js';
 		case 'mcaptcha': return null;
 		case 'testcaptcha': return null;
 	}
@@ -167,6 +172,14 @@ async function requestRender() {
 				key: props.sitekey,
 			},
 		});
+	} else if (variable.value === 'friendlyChallenge' && captchaEl.value instanceof Element) {
+		new captcha.value.WidgetInstance(captchaEl.value, {
+			sitekey: props.sitekey,
+			doneCallback: callback,
+			errorCallback: callback,
+		});
+		// The following line is needed so that the design gets applied without it the captcha will look broken
+		captchaEl.value.className = 'frc-captcha';
 	} else {
 		window.setTimeout(requestRender, 1);
 	}

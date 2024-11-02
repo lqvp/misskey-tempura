@@ -74,6 +74,7 @@ export class SignupApiService {
 				'g-recaptcha-response'?: string;
 				'turnstile-response'?: string;
 				'm-captcha-response'?: string;
+				'frc-captcha-solution'?: string;
 				'testcaptcha-response'?: string;
 			}
 		}>,
@@ -104,6 +105,12 @@ export class SignupApiService {
 
 			if (this.meta.enableTurnstile && this.meta.turnstileSecretKey) {
 				await this.captchaService.verifyTurnstile(this.meta.turnstileSecretKey, body['turnstile-response']).catch(err => {
+					throw new FastifyReplyError(400, err);
+				});
+			}
+
+			if (this.meta.enableFC && this.meta.fcSecretKey) {
+				await this.captchaService.verifyFriendlyCaptcha(this.meta.fcSecretKey, body['frc-captcha-solution']).catch(err => {
 					throw new FastifyReplyError(400, err);
 				});
 			}
