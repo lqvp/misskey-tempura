@@ -246,10 +246,10 @@ export class SignupApiService {
 				});
 			}
 
-			const moderators = await this.roleService.getModerators();
+			const administrators = await this.roleService.getAdministrators();
 
-			for (const moderator of moderators) {
-				const profile = await this.userProfilesRepository.findOneBy({ userId: moderator.id });
+			for (const administrator of administrators) {
+				const profile = await this.userProfilesRepository.findOneBy({ userId: administrator.id });
 
 				if (profile?.email) {
 					this.emailService.sendEmail(profile.email, 'New user awaiting approval',
@@ -336,10 +336,10 @@ export class SignupApiService {
 						'Your account is now pending approval. You will get notified when you have been accepted.');
 				}
 
-				const moderators = await this.roleService.getModerators();
+				const administrators = await this.roleService.getAdministrators();
 
-				for (const moderator of moderators) {
-					const profile = await this.userProfilesRepository.findOneBy({ userId: moderator.id });
+				for (const administrator of administrators) {
+					const profile = await this.userProfilesRepository.findOneBy({ userId: administrator.id });
 
 					if (profile?.email) {
 						this.emailService.sendEmail(profile.email, 'New user awaiting approval',
