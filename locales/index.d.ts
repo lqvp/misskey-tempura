@@ -7378,7 +7378,7 @@ export interface Locale extends ILocale {
          */
         "emailSent": ParameterizedString<"email">;
 				/**
-				 * アカウントの登録が承認された際、({email}) 宛にメールが届きます。
+				 * 入力されたメールアドレス({email})宛に確認のメールが送信されました。メールに記載されたリンクにアクセスすると、アカウントが作成され、承認待ちの状態になります。アカウントの登録が承認された際、({email})宛にメールが届きます。
 				 */
 				"approvalAndEmailPending": ParameterizedString<"email">;
         /**
