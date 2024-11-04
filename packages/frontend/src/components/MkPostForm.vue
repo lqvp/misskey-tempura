@@ -477,7 +477,7 @@ function toggleScheduledNoteDelete() {
 	} else {
 		scheduledNoteDelete.value = {
 			deleteAt: null,
-			deleteAfter: null,
+			deleteAfter: defaultStore.state.defaultScheduledNoteDeleteTime,
 			isValid: true,
 		};
 	}
