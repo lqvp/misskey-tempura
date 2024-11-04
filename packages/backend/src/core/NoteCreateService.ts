@@ -57,6 +57,8 @@ import { trackPromise } from '@/misc/promise-tracker.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { Data } from 'ws';
 import { CollapsedQueue } from '@/misc/collapsed-queue.js';
+import { LoggerService } from '@/core/LoggerService.js';
+import type Logger from '@/logger.js';
 
 type NotificationType = 'reply' | 'renote' | 'quote' | 'mention';
 
@@ -152,6 +154,8 @@ export class NoteCreateService implements OnApplicationShutdown {
 	#shutdownController = new AbortController();
 	private updateNotesCountQueue: CollapsedQueue<MiNote['id'], number>;
 
+	private logger: Logger;
+
 	constructor(
 		@Inject(DI.config)
 		private config: Config,
@@ -220,7 +224,9 @@ export class NoteCreateService implements OnApplicationShutdown {
 		private instanceChart: InstanceChart,
 		private utilityService: UtilityService,
 		private userBlockingService: UserBlockingService,
+		private loggerService: LoggerService,
 	) {
+		this.logger = this.loggerService.getLogger('note-create-service');
 		this.updateNotesCountQueue = new CollapsedQueue(process.env.NODE_ENV !== 'test' ? 60 * 1000 * 5 : 0, this.collapseNotesCount, this.performUpdateNotesCount);
 	}
 
@@ -369,9 +375,11 @@ export class NoteCreateService implements OnApplicationShutdown {
 		// if the host is media-silenced, custom emojis are not allowed
 		if (this.utilityService.isMediaSilencedHost(this.meta.mediaSilencedHosts, user.host)) emojis = [];
 
-		const willCauseNotification = mentionedUsers.filter(u => u.host === null).length > 0 || data.reply?.userHost === null || data.renote?.userHost === null;
+		const willCauseNotification = mentionedUsers.some(u => u.host === null)
+			|| (data.visibility === 'specified' && data.visibleUsers?.some(u => u.host === null))
+			|| data.reply?.userHost === null || (this.isRenote(data) && this.isQuote(data) && data.renote.userHost === null) || false;
 
-		if (this.meta.blockMentionsFromUnfamiliarRemoteUsers === 'true' && user.host !== null && willCauseNotification) {
+		if (this.meta.blockMentionsFromUnfamiliarRemoteUsers && user.host !== null && willCauseNotification) {
 			const userEntity = await this.usersRepository.findOneBy({ id: user.id });
 			if ((userEntity?.followersCount ?? 0) === 0) {
 				this.logger.info('Request rejected because user has no local followers', { user: user.id, note: data });
