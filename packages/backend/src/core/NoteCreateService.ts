@@ -382,7 +382,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 		if (this.meta.blockMentionsFromUnfamiliarRemoteUsers && user.host !== null && willCauseNotification) {
 			const userEntity = await this.usersRepository.findOneBy({ id: user.id });
 			if ((userEntity?.followersCount ?? 0) === 0) {
-				this.logger.info('Request rejected because user has no local followers', { user: user.id, note: data });
+				this.logger.error('Request rejected because user has no local followers', { user: user.id, note: data });
 				throw new IdentifiableError('e11b3a16-f543-4885-8eb1-66cad131dbfd', 'Notes including mentions, replies, or renotes from remote users are not allowed until user has at least one local follower.');
 			}
 		}
