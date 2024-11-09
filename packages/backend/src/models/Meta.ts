@@ -692,4 +692,9 @@ export class MiMeta {
 		default: true,
 	})
 	public blockMentionsFromUnfamiliarRemoteUsers: boolean;
+
+	@Column('integer', {
+		default: 5,
+	})
+	public validateMinimumUsernameLength: number;
 }

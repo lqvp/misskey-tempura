@@ -298,10 +298,10 @@ export interface Locale extends ILocale {
      * フォローされました
      */
     "youGotNewFollower": string;
-		/**
-		 * フォロー解除されました
-		 */
-		"youGotUnFollower": string;
+    /**
+     * フォロー解除されました
+     */
+    "youGotUnFollower": string;
     /**
      * フォローリクエストされました
      */
@@ -310,10 +310,10 @@ export interface Locale extends ILocale {
      * フォローが承認されました
      */
     "followRequestAccepted": string;
-		/**
-		 * フォローが拒否されました
-		 */
-		"followRequestRejected": string;
+    /**
+     * フォローが拒否されました
+     */
+    "followRequestRejected": string;
     /**
      * メンション
      */
@@ -466,10 +466,10 @@ export interface Locale extends ILocale {
      * フォロー許可待ち
      */
     "followRequestPending": string;
-		/**
-		 * フォロリク一覧
-		 */
-		"sentFollowRequestList": string;
+    /**
+     * 送信したフォロリク一覧
+     */
+    "sentFollowRequestList": string;
     /**
      * 絵文字を入力
      */
@@ -2206,10 +2206,10 @@ export interface Locale extends ILocale {
      * フォロー申請はありません
      */
     "noFollowRequests": string;
-		/**
-		 * 送ったフォロー申請はありません
-		 */
-		"noSentFollowRequests": string;
+    /**
+     * 送ったフォロー申請はありません
+     */
+    "noSentFollowRequests": string;
     /**
      * 画像を新しいタブで開く
      */
@@ -3774,10 +3774,10 @@ export interface Locale extends ILocale {
      * スレッドのミュートを解除
      */
     "unmuteThread": string;
-		/**
-		 * ノート数の公開範囲
-		 */
-		"notesVisibility": string;
+    /**
+     * ノート数の公開範囲
+     */
+    "notesVisibility": string;
     /**
      * フォローの公開範囲
      */
@@ -4094,10 +4094,10 @@ export interface Locale extends ILocale {
      * ベータ
      */
     "beta": string;
-		/**
+    /**
      * 独自機能
      */
-		"originalFeature": string;
+    "originalFeature": string;
     /**
      * 自動センシティブ判定
      */
@@ -4326,7 +4326,7 @@ export interface Locale extends ILocale {
      * このまま投稿
      */
     "thisPostMayBeAnnoyingIgnore": string;
-		/**
+    /**
      * ノートの下書きの復元を無効化
      */
     "disableNoteDrafting": string;
@@ -5210,7 +5210,7 @@ export interface Locale extends ILocale {
      * このサーバーからのフォロワーがいないリモートユーザーの、メンションを含むノートをブロックするようにします。
      */
     "blockMentionsFromUnfamiliarRemoteUsersDescription": string;
-		/**
+    /**
      * 読み込み中
      */
     "loading": string;
@@ -5223,18 +5223,14 @@ export interface Locale extends ILocale {
      */
     "gameRetry": string;
     /**
-     * すぐ消す
+     * ノートの自己消滅の初期値
      */
-    "scheduledNoteDelete": string;
+    "defaultScheduledNoteDeleteTime": string;
     /**
-     * このノートは{time}に消去されます
+     * ノートの自己消滅が有効になっています
      */
-    "noteDeletationAt": ParameterizedString<"time">;
+    "scheduledNoteDeleteEnabled": string;
     /**
-     * 1年以上先の日時を指定することはできません
-     */
-    "cannotScheduleLaterThanOneYear": string;
-		/**
      * 使用しない場合は空欄にしてください
      */
     "notUsePleaseLeaveBlank": string;
@@ -5294,14 +5290,6 @@ export interface Locale extends ILocale {
      * 作成したアンテナ
      */
     "createdAntennas": string;
-    /**
-     * ノートの自己消滅の初期値
-     */
-    "defaultScheduledNoteDeleteTime": string;
-    /**
-     * ノートの自己消滅が有効になっています
-     */
-    "scheduledNoteDeleteEnabled": string;
     /**
      * {x}から
      */
@@ -5378,6 +5366,14 @@ export interface Locale extends ILocale {
      * 名前に禁止されている文字列が含まれています。この名前を使用したい場合は、サーバー管理者にお問い合わせください。
      */
     "yourNameContainsProhibitedWordsDescription": string;
+    /**
+     * ユーザー名の長さ(最低文字数)
+     */
+    "validateMinimumUsernameLength": string;
+		/**
+		 * 登録時にユーザーが扱えるユーザー名の最低文字数を指定できます。
+		 */
+		"validateMinimumUsernameLengthDescription": string;
     "_abuseUserReport": {
         /**
          * 転送
@@ -5458,6 +5454,18 @@ export interface Locale extends ILocale {
      */
     "maximum": string;
     /**
+     * すぐ消す
+     */
+    "scheduledNoteDelete": string;
+    /**
+     * このノートは{time}に削除されます
+     */
+    "noteDeletationAt": ParameterizedString<"time">;
+    /**
+     * 1年以上先の日時を指定することはできません
+     */
+    "cannotScheduleLaterThanOneYear": string;
+    /**
      * 投稿フォーム
      */
     "postForm": string;
@@ -5485,10 +5493,10 @@ export interface Locale extends ILocale {
      * デフォルトでノートが自己消滅するように
      */
     "defaultScheduledNoteDelete": string;
-		/**
-		 * いいねボタンで使うリアクションを選択
-		 */
-		"selectReaction": string;
+    /**
+     * いいねボタンで使うリアクションを選択
+     */
+    "selectReaction": string;
     /**
      * 誰がリアクションをしたのかを非表示にする
      */
@@ -5517,7 +5525,7 @@ export interface Locale extends ILocale {
      * 自分のプロフィールのアクティビティ (概要/アクティビティタブ) を他人が見れないようにします。このオプションを有効にしても、自分であればプロフィールのアクティビティタブから引き続き閲覧できます。
      */
     "hideActivityDescription": string;
-		/**
+    /**
      * 名前を変更
      */
     "changeUserName": string;
@@ -5575,8 +5583,17 @@ export interface Locale extends ILocale {
             "section3": string;
         };
     };
+    /**
+     * フォローリクエストを自動で拒否する
+     */
     "autoRejectFollowRequest": string;
+    /**
+     * フォローリクエストを自動で拒否するようにします。「フォロー中ユーザーからのフォロリクを自動承認」がONになっている場合は、フォロー中ユーザーからのフォローリクエストは自動的に承認され、それ以外のユーザーからのフォローリクエストは自動的に拒否されるようになります。
+     */
     "autoRejectFollowRequestDescription": string;
+    /**
+     * nayizeを無効化する
+     */
     "disableNoteNyaize": string;
     "_announcement": {
         /**
@@ -7107,6 +7124,10 @@ export interface Locale extends ILocale {
              */
             "canManageAvatarDecorations": string;
             /**
+             * 絵文字の削除
+             */
+            "canEmojiDeletion": string;
+            /**
              * リモートアイコンデコレーションの利用
              */
             "canUseRemoteIconDecorations": string;
@@ -7377,10 +7398,10 @@ export interface Locale extends ILocale {
          * 入力されたメールアドレス({email})宛に確認のメールが送信されました。メールに記載されたリンクにアクセスすると、アカウントの作成が完了します。メールに記載されているリンクの有効期限は30分です。
          */
         "emailSent": ParameterizedString<"email">;
-				/**
-				 * 入力されたメールアドレス({email})宛に確認のメールが送信されました。メールに記載されたリンクにアクセスすると、アカウントが作成され、承認待ちの状態になります。アカウントの登録が承認された際、({email})宛にメールが届きます。
-				 */
-				"approvalAndEmailPending": ParameterizedString<"email">;
+        /**
+         * 入力されたメールアドレス({email})宛に確認のメールが送信されました。メールに記載されたリンクにアクセスすると、アカウントが作成され、承認待ちの状態になります。アカウントの登録が承認された際、({email})宛にメールが届きます。
+         */
+        "approvalAndEmailPending": ParameterizedString<"email" | "email">;
         /**
          * アカウントが作成され、承認待ちの状態です。
          */
@@ -7489,12 +7510,12 @@ export interface Locale extends ILocale {
              */
             "title": string;
         };
-				"_unfollow" : {
-					/**
-					 * フォロー解除されました
-					 */
-					"title": string;
-				}
+        "_unfollow": {
+            /**
+             * フォロー解除されました
+             */
+            "title": string;
+        };
         "_receiveFollowRequest": {
             /**
              * フォローリクエストを受け取りました
@@ -9655,10 +9676,10 @@ export interface Locale extends ILocale {
          * フォローされました
          */
         "youWereFollowed": string;
-				/**
-				 * フォロー解除されました
- 				 */
-				"youWereUnFollower": string;
+        /**
+         * フォロー解除されました
+         */
+        "youWereUnFollower": string;
         /**
          * フォローリクエストが来ました
          */
@@ -9667,10 +9688,10 @@ export interface Locale extends ILocale {
          * フォローリクエストが承認されました
          */
         "yourFollowRequestAccepted": string;
-				/**
-				 * フォローリクエストが拒否されました
-				 */
-				"yourFollowRequestRejected": string;
+        /**
+         * フォローリクエストが拒否されました
+         */
+        "yourFollowRequestRejected": string;
         /**
          * アンケートの結果が出ました
          */
@@ -9731,10 +9752,10 @@ export interface Locale extends ILocale {
          * {n}人にフォローされました
          */
         "followedBySomeUsers": ParameterizedString<"n">;
-				/**
-				 * {n}人にフォロー解除されました
-				 */
-				"unfollowerBySomeUser": ParameterizedString<"n">;
+        /**
+         * {n}人にフォロー解除されました
+         */
+        "unfollowerBySomeUsers": ParameterizedString<"n">;
         /**
          * 通知の履歴をリセットする
          */
@@ -9760,10 +9781,10 @@ export interface Locale extends ILocale {
              * フォロー
              */
             "follow": string;
-						/**
-						 * フォロー解除
-						 */
-						"unfollow": string;
+            /**
+             * フォロー解除
+             */
+            "unfollow": string;
             /**
              * メンション
              */
@@ -9796,10 +9817,10 @@ export interface Locale extends ILocale {
              * フォローが受理された
              */
             "followRequestAccepted": string;
-						/**
-						 * フォローが拒否された
-						 */
-						"followRequestRejected": string;
+            /**
+             * フォローが拒否された
+             */
+            "followRequestRejected": string;
             /**
              * ロールが付与された
              */
@@ -10839,10 +10860,6 @@ export interface Locale extends ILocale {
          * 独自機能
          */
         "uniqueFeature": string;
-        /**
-         * リモート上のサーバーのローカルタイムラインを覗く機能
-         */
-        // "remoteLocalTimeline": string;
         /**
          * プロフィールを非表示にする機能
          */

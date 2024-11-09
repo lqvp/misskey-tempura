@@ -5378,6 +5378,7 @@ export type operations = {
             customSplashText: string[];
             federation: string;
             federationHosts: string[];
+						validateMinimumUsernameLength: number;
           };
         };
       };

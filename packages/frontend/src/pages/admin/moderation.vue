@@ -29,6 +29,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #caption>{{ i18n.ts.blockMentionsFromUnfamiliarRemoteUsersDescription }} Cherry-picked from Misskey.io (https://github.com/MisskeyIO/misskey/commit/82cc3987c13db4ad0da1589386027c222ce85ff8)</template>
 					</MkSwitch>
 
+					<div class="_gaps">
+						<MkInput v-model="validateMinimumUsernameLength" type="number" @update:modelValue="onUsernameMinLengthChange">
+							<template #label>
+								<span>{{ i18n.ts.validateMinimumUsernameLength }}</span>
+								<span v-if="validateMinimumUsernameLengthChanged" class="_modified">{{ i18n.ts.modified }}</span>
+								<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+							</template>
+							<template #caption>{{ i18n.ts.validateMinimumUsernameLengthDescription }}</template>
+						</MkInput>
+						<MkButton v-if="validateMinimumUsernameLengthChanged" primary @click="save_validateMinimumUsernameLength">{{ i18n.ts.save }}</MkButton>
+					</div>
+
 					<FormLink to="/admin/server-rules">{{ i18n.ts.serverRules }}</FormLink>
 
 					<MkFolder>
@@ -153,6 +165,7 @@ const enableRegistration = ref<boolean>(false);
 const emailRequiredForSignup = ref<boolean>(false);
 const approvalRequiredForSignup = ref<boolean>(false);
 const blockMentionsFromUnfamiliarRemoteUsers = ref<boolean>(false);
+const validateMinimumUsernameLength = ref<number>();
 const sensitiveWords = ref<string>('');
 const prohibitedWords = ref<string>('');
 const prohibitedWordsForNameOfUser = ref<string>('');
@@ -162,12 +175,19 @@ const blockedHosts = ref<string>('');
 const silencedHosts = ref<string>('');
 const mediaSilencedHosts = ref<string>('');
 
+const originalMinimumUsernameLength = ref<number>();
+const validateMinimumUsernameLengthChanged = computed(() =>
+	validateMinimumUsernameLength.value !== originalMinimumUsernameLength.value
+);
+
 async function init() {
 	const meta = await misskeyApi('admin/meta');
 	enableRegistration.value = !meta.disableRegistration;
 	emailRequiredForSignup.value = meta.emailRequiredForSignup;
 	approvalRequiredForSignup.value = meta.approvalRequiredForSignup;
 	blockMentionsFromUnfamiliarRemoteUsers.value = meta.blockMentionsFromUnfamiliarRemoteUsers;
+	validateMinimumUsernameLength.value = meta.validateMinimumUsernameLength;
+	originalMinimumUsernameLength.value = meta.validateMinimumUsernameLength;
 	sensitiveWords.value = meta.sensitiveWords.join('\n');
 	prohibitedWords.value = meta.prohibitedWords.join('\n');
 	prohibitedWordsForNameOfUser.value = meta.prohibitedWordsForNameOfUser.join('\n');
@@ -208,6 +228,19 @@ function onChange_blockMentionsFromUnfamiliarRemoteUsers(value: boolean) {
 	}).then(() => {
 		fetchInstance(true);
 	})
+}
+
+function onUsernameMinLengthChange(value: number) {
+	validateMinimumUsernameLength.value = value;
+}
+
+function save_validateMinimumUsernameLength() {
+	os.apiWithDialog('admin/update-meta', {
+		validateMinimumUsernameLength: validateMinimumUsernameLength.value,
+	}).then(() => {
+		fetchInstance(true);
+		originalMinimumUsernameLength.value = validateMinimumUsernameLength.value;
+	});
 }
 
 function save_preservedUsernames() {

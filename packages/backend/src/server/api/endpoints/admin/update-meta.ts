@@ -156,6 +156,7 @@ export const paramDef = {
 		enableReactionsBuffering: { type: 'boolean' },
 		notesPerOneAd: { type: 'integer' },
 		blockMentionsFromUnfamiliarRemoteUsers: { type: 'boolean' },
+		validateMinimumUsernameLength: { type: 'integer', minimum: 1, maximum: 20 },
 		silencedHosts: {
 			type: 'array',
 			nullable: true,
@@ -711,6 +712,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.blockMentionsFromUnfamiliarRemoteUsers !== undefined) {
 				set.blockMentionsFromUnfamiliarRemoteUsers = ps.blockMentionsFromUnfamiliarRemoteUsers;
+			}
+
+			if (ps.validateMinimumUsernameLength !== undefined) {
+				set.validateMinimumUsernameLength = ps.validateMinimumUsernameLength;
 			}
 
 			const before = await this.metaService.fetch(true);

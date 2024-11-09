@@ -549,6 +549,10 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			validateMinimumUsernameLength: {
+				type: 'number',
+				optional: false, nullable: false,
+			},
 		},
 	},
 } as const;
@@ -695,6 +699,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				federationHosts: instance.federationHosts,
 				customSplashText: instance.customSplashText,
 				blockMentionsFromUnfamiliarRemoteUsers: instance.blockMentionsFromUnfamiliarRemoteUsers,
+				validateMinimumUsernameLength: instance.validateMinimumUsernameLength,
 			};
 		});
 	}

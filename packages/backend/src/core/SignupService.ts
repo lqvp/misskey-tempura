@@ -59,7 +59,9 @@ export class SignupService {
 		let hash = passwordHash;
 
 		// Validate username
-		if (!this.userEntityService.validateLocalUsername(username)) {
+		if (
+			(!opts.ignorePreservedUsernames && username.length < this.meta.validateMinimumUsernameLength) || !this.userEntityService.validateLocalUsername(username)
+		) {
 			throw new Error('INVALID_USERNAME');
 		}
 

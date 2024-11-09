@@ -58,7 +58,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			const isPreserved = this.serverSettings.preservedUsernames.map(x => x.toLowerCase()).includes(ps.username.toLowerCase());
 
 			return {
-				available: exist === 0 && exist2 === 0 && !isPreserved,
+				available: exist === 0 && exist2 === 0 && !isPreserved && ps.username.length > (this.serverSettings.validateMinimumUsernameLength - 1),
 			};
 		});
 	}
