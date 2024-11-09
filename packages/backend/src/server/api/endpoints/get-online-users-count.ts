@@ -13,7 +13,7 @@ import { DI } from '@/di-symbols.js';
 export const meta = {
 	tags: ['meta'],
 
-	requireCredential: false,
+	requireCredential: true,
 	allowGet: true,
 	cacheSec: 60 * 1,
 	res: {
