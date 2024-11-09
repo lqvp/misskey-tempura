@@ -2923,8 +2923,8 @@ _hideReactionCount:
   others: "自分以外のノートのみ"
   all: "全てのノート"
 
-__rest:
-  extendSettings: Misskey.rest独自機能
+__TL_conf:
+  extendSettings: タイムラインの非表示
   hideLocalTimeLine: ローカルタイムラインを非表示にする
   hideSocialTimeLine: ソーシャルタイムラインを非表示にする
   hideGlobalTimeLine: グローバルタイムラインを非表示にする

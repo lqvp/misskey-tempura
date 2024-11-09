@@ -10964,9 +10964,9 @@ export interface Locale extends ILocale {
          */
         "all": string;
     };
-    "__rest": {
+    "__TL_conf": {
         /**
-         * Misskey.rest独自機能
+         * タイムラインの非表示
          */
         "extendSettings": string;
         /**

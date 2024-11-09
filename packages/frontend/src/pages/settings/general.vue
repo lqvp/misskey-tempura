@@ -299,12 +299,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</FormSection>
 
 	<FormSection>
-		<template #label>{{ i18n.ts.__rest.extendSettings }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+		<template #label>{{ i18n.ts.__TL_conf.extendSettings }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 
 		<div class="_gaps">
-			<MkSwitch v-model="hideLocalTimeLine">{{ i18n.ts.__rest.hideLocalTimeLine }}</MkSwitch>
-			<MkSwitch v-model="hideSocialTimeLine">{{ i18n.ts.__rest.hideSocialTimeLine }}</MkSwitch>
-			<MkSwitch v-model="hideGlobalTimeLine">{{ i18n.ts.__rest.hideGlobalTimeLine }}</MkSwitch>
+			<MkSwitch v-model="hideLocalTimeLine">{{ i18n.ts.__TL_conf.hideLocalTimeLine }}</MkSwitch>
+			<MkSwitch v-model="hideSocialTimeLine">{{ i18n.ts.__TL_conf.hideSocialTimeLine }}</MkSwitch>
+			<MkSwitch v-model="hideGlobalTimeLine">{{ i18n.ts.__TL_conf.hideGlobalTimeLine }}</MkSwitch>
 		</div>
 	</FormSection>
 
