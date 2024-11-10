@@ -2931,10 +2931,10 @@ _hideReactionCount:
   all: "全てのノート"
 
 __TL_conf:
-  extendSettings: タイムラインの非表示
-  hideLocalTimeLine: ローカルタイムラインを非表示にする
-  hideSocialTimeLine: ソーシャルタイムラインを非表示にする
-  hideGlobalTimeLine: グローバルタイムラインを非表示にする
+  extendSettings: "タイムラインの非表示"
+  hideLocalTimeLine: "ローカルタイムラインを非表示にする"
+  hideSocialTimeLine: "ソーシャルタイムラインを非表示にする"
+  hideGlobalTimeLine: "グローバルタイムラインを非表示にする"
 
 remoteFollowersWarning: "リモートフォロワーのアクティビティは不完全または古い情報である可能性があります"
 followFeed: "フォローフィード"
