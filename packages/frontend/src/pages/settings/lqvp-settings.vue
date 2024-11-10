@@ -4,124 +4,124 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-	<div class="_gaps_m">
-		<FormSection>
+<div class="_gaps_m">
+	<FormSection>
+		<div class="_gaps_s">
+			<MkSwitch v-model="disableNoteDrafting">
+				<template #caption>{{ i18n.ts.disableNoteDraftingDescription }}</template>
+				{{ i18n.ts.disableNoteDrafting }}
+				<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+			</MkSwitch>
+			<FormLink to="/settings/post-form">{{ i18n.ts.postForm }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></FormLink>
+		</div>
+	</FormSection>
+	<FormSection>
+		<template #label>{{ i18n.ts.displayOfNote }}</template>
+
+		<div class="_gaps_m">
 			<div class="_gaps_s">
-				<MkSwitch v-model="disableNoteDrafting">
-					<template #caption>{{ i18n.ts.disableNoteDraftingDescription }}</template>
-					{{ i18n.ts.disableNoteDrafting }}
+				<MkSwitch v-model="directRenote">
+					<template #label>
+						{{ i18n.ts.directRenote }}
+						<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+					</template>
+					<template #caption>{{ i18n.ts.directRenoteDescription }}</template>
+				</MkSwitch>
+				<MkSwitch v-model="hideReactionUsers">
+					<template #caption>{{ i18n.ts.hideReactionUsersDescription }}</template>
+					{{ i18n.ts.hideReactionUsers }}
 					<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 				</MkSwitch>
-				<FormLink to="/settings/post-form">{{ i18n.ts.postForm }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></FormLink>
-			</div>
-		</FormSection>
-		<FormSection>
-			<template #label>{{ i18n.ts.displayOfNote }}</template>
-
-			<div class="_gaps_m">
-				<div class="_gaps_s">
-					<MkSwitch v-model="directRenote">
-						<template #label>
-							{{ i18n.ts.directRenote }}
-							<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-						</template>
-						<template #caption>{{ i18n.ts.directRenoteDescription }}</template>
-					</MkSwitch>
-					<MkSwitch v-model="hideReactionUsers">
-						<template #caption>{{ i18n.ts.hideReactionUsersDescription }}</template>
-						{{ i18n.ts.hideReactionUsers }}
-						<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-					</MkSwitch>
-					<MkSelect v-model="hideReactionCount">
-						<template #label>{{ i18n.ts.hideReactionCount }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-						<option value="none">{{ i18n.ts._hideReactionCount.none }}</option>
-						<option value="self">{{ i18n.ts._hideReactionCount.self }}</option>
-						<option value="others">{{ i18n.ts._hideReactionCount.others }}</option>
-						<option value="all">{{ i18n.ts._hideReactionCount.all }}</option>
-					</MkSelect>
-				</div>
-
-				<MkSwitch v-if="instanceTicker !== 'none'" v-model="instanceIcon">{{ i18n.ts.instanceIcon }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
-
-				<MkSwitch v-model="disableNoteNyaize">{{ i18n.ts.disableNoteNyaize }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
-
-				<FromSlot v-model="selectReaction">
-					<template #label>{{ i18n.ts.selectReaction }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-					<MkCustomEmoji v-if="selectReaction && selectReaction.startsWith(':')" style="max-height: 3em; font-size: 1.1em;" :useOriginalSize="false" :name="selectReaction" :normal="true" :noStyle="true"/>
-					<MkEmoji v-else-if="selectReaction && !selectReaction.startsWith(':')" :emoji="selectReaction" style="max-height: 3em; font-size: 1.1em;" :normal="true" :noStyle="true"/>
-					<span v-else-if="!selectReaction">{{ i18n.ts.notSet }}</span>
-					<div class="_buttons" style="padding-top: 8px;">
-						<MkButton rounded :small="true" inline @click="chooseNewReaction"><i class="ph-smiley ph-bold ph-lg"></i> Change</MkButton>
-						<MkButton rounded :small="true" inline @click="resetReaction"><i class="ph-arrow-clockwise ph-bold ph-lg"></i> Reset</MkButton>
-					</div>
-				</FromSlot>
-			</div>
-		</FormSection>
-
-		<FormSection>
-			<template #label>{{ i18n.ts.appearance }}</template>
-
-			<div class="_gaps_m">
-				<MkSelect v-model="customFont">
-					<template #label>{{ i18n.ts.customFont }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-					<option :value="null">{{ i18n.ts.default }}</option>
-					<option v-for="[name, font] of Object.entries(fontList)" :value="name">{{ font.name }}</option>
+				<MkSelect v-model="hideReactionCount">
+					<template #label>{{ i18n.ts.hideReactionCount }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+					<option value="none">{{ i18n.ts._hideReactionCount.none }}</option>
+					<option value="self">{{ i18n.ts._hideReactionCount.self }}</option>
+					<option value="others">{{ i18n.ts._hideReactionCount.others }}</option>
+					<option value="all">{{ i18n.ts._hideReactionCount.all }}</option>
 				</MkSelect>
 			</div>
-		</FormSection>
 
-		<FormSection>
-			<template #label>{{ i18n.ts.behavior }}</template>
+			<MkSwitch v-if="instanceTicker !== 'none'" v-model="instanceIcon">{{ i18n.ts.instanceIcon }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
 
-			<div class="_gaps_m">
-				<div class="_gaps_s">
-					<MkSwitch v-model="reactionChecksMuting">
-						{{ i18n.ts._reactionChecksMuting.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-						<template #caption>{{ i18n.ts._reactionChecksMuting.caption }}</template>
+			<MkSwitch v-model="disableNoteNyaize">{{ i18n.ts.disableNoteNyaize }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
+
+			<FromSlot v-model="selectReaction">
+				<template #label>{{ i18n.ts.selectReaction }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+				<MkCustomEmoji v-if="selectReaction && selectReaction.startsWith(':')" style="max-height: 3em; font-size: 1.1em;" :useOriginalSize="false" :name="selectReaction" :normal="true" :noStyle="true"/>
+				<MkEmoji v-else-if="selectReaction && !selectReaction.startsWith(':')" :emoji="selectReaction" style="max-height: 3em; font-size: 1.1em;" :normal="true" :noStyle="true"/>
+				<span v-else-if="!selectReaction">{{ i18n.ts.notSet }}</span>
+				<div class="_buttons" style="padding-top: 8px;">
+					<MkButton rounded :small="true" inline @click="chooseNewReaction"><i class="ph-smiley ph-bold ph-lg"></i> Change</MkButton>
+					<MkButton rounded :small="true" inline @click="resetReaction"><i class="ph-arrow-clockwise ph-bold ph-lg"></i> Reset</MkButton>
+				</div>
+			</FromSlot>
+		</div>
+	</FormSection>
+
+	<FormSection>
+		<template #label>{{ i18n.ts.appearance }}</template>
+
+		<div class="_gaps_m">
+			<MkSelect v-model="customFont">
+				<template #label>{{ i18n.ts.customFont }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+				<option :value="null">{{ i18n.ts.default }}</option>
+				<option v-for="[name, font] of Object.entries(fontList)" :value="name">{{ font.name }}</option>
+			</MkSelect>
+		</div>
+	</FormSection>
+
+	<FormSection>
+		<template #label>{{ i18n.ts.behavior }}</template>
+
+		<div class="_gaps_m">
+			<div class="_gaps_s">
+				<MkSwitch v-model="reactionChecksMuting">
+					{{ i18n.ts._reactionChecksMuting.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+					<template #caption>{{ i18n.ts._reactionChecksMuting.caption }}</template>
+				</MkSwitch>
+			</div>
+		</div>
+	</FormSection>
+
+	<FormSection>
+		<template #label>{{ i18n.ts._uniqueFeatures.uniqueFeature }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+
+		<div class="_gaps_m">
+			<MkFolder>
+				<template #label>{{ i18n.ts._uniqueFeatures.hiddenProfile }}</template>
+				<div class="_gaps_m">
+					<div class="_buttons">
+						<MkButton inline @click="enableAllHidden">{{ i18n.ts.enableAll }}</MkButton>
+						<MkButton inline @click="disableAllHidden">{{ i18n.ts.disableAll }}</MkButton>
+					</div>
+					<MkSwitch v-model="hiddenPinnedNotes">
+						<template #caption>{{ i18n.ts._uniqueFeatures.hiddenPinnedNotesDescription }}</template>
+						{{ i18n.ts._uniqueFeatures.hiddenPinnedNotes }}
+					</MkSwitch>
+					<MkSwitch v-model="hiddenActivity">
+						<template #caption>{{ i18n.ts._uniqueFeatures.hiddenActivityDescription }}</template>
+						{{ i18n.ts._uniqueFeatures.hiddenActivity }}
+					</MkSwitch>
+					<MkSwitch v-model="hiddenFiles">
+						<template #caption>{{ i18n.ts._uniqueFeatures.hiddenFilesDescription }}</template>
+						{{ i18n.ts._uniqueFeatures.hiddenFiles }}
 					</MkSwitch>
 				</div>
-			</div>
-		</FormSection>
+			</MkFolder>
+		</div>
+	</FormSection>
 
-		<FormSection>
-			<template #label>{{ i18n.ts._uniqueFeatures.uniqueFeature }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+	<FormSection>
+		<template #label>{{ i18n.ts.__TL_conf.extendSettings }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 
-			<div class="_gaps_m">
-				<MkFolder>
-					<template #label>{{ i18n.ts._uniqueFeatures.hiddenProfile }}</template>
-					<div class="_gaps_m">
-						<div class="_buttons">
-							<MkButton inline @click="enableAllHidden">{{ i18n.ts.enableAll }}</MkButton>
-							<MkButton inline @click="disableAllHidden">{{ i18n.ts.disableAll }}</MkButton>
-						</div>
-						<MkSwitch v-model="hiddenPinnedNotes">
-							<template #caption>{{ i18n.ts._uniqueFeatures.hiddenPinnedNotesDescription }}</template>
-							{{ i18n.ts._uniqueFeatures.hiddenPinnedNotes }}
-						</MkSwitch>
-						<MkSwitch v-model="hiddenActivity">
-							<template #caption>{{ i18n.ts._uniqueFeatures.hiddenActivityDescription }}</template>
-							{{ i18n.ts._uniqueFeatures.hiddenActivity }}
-						</MkSwitch>
-						<MkSwitch v-model="hiddenFiles">
-							<template #caption>{{ i18n.ts._uniqueFeatures.hiddenFilesDescription }}</template>
-							{{ i18n.ts._uniqueFeatures.hiddenFiles }}
-						</MkSwitch>
-					</div>
-				</MkFolder>
-			</div>
-		</FormSection>
-
-		<FormSection>
-			<template #label>{{ i18n.ts.__TL_conf.extendSettings }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-
-			<div class="_gaps">
-				<MkSwitch v-model="hideLocalTimeLine">{{ i18n.ts.__TL_conf.hideLocalTimeLine }}</MkSwitch>
-				<MkSwitch v-model="hideSocialTimeLine">{{ i18n.ts.__TL_conf.hideSocialTimeLine }}</MkSwitch>
-				<MkSwitch v-model="hideGlobalTimeLine">{{ i18n.ts.__TL_conf.hideGlobalTimeLine }}</MkSwitch>
-			</div>
-		</FormSection>
-	</div>
-	</template>
+		<div class="_gaps">
+			<MkSwitch v-model="hideLocalTimeLine">{{ i18n.ts.__TL_conf.hideLocalTimeLine }}</MkSwitch>
+			<MkSwitch v-model="hideSocialTimeLine">{{ i18n.ts.__TL_conf.hideSocialTimeLine }}</MkSwitch>
+			<MkSwitch v-model="hideGlobalTimeLine">{{ i18n.ts.__TL_conf.hideGlobalTimeLine }}</MkSwitch>
+		</div>
+	</FormSection>
+</div>
+</template>
 
 <script lang="ts" setup>
 import { computed, watch } from 'vue';
