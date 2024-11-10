@@ -2938,3 +2938,4 @@ __TL_conf:
 
 remoteFollowersWarning: "リモートフォロワーのアクティビティは不完全または古い情報である可能性があります"
 followFeed: "フォローフィード"
+showBots: "タイムラインにbotを表示"

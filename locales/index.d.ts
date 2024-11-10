@@ -11027,6 +11027,11 @@ export interface Locale extends ILocale {
 		 * フォローフィード
 		 */
 		"followFeed": string;
+		/**
+     * タイムラインにbotを表示
+     */
+    "showBots": string;
+
 }
 declare const locales: {
     [lang: string]: Locale;
