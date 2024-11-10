@@ -194,7 +194,7 @@ const headerTabs = computed(() => [
 		} satisfies Tab,
 		{
 			key: followersTab,
-			icon: 'ph-user ph-bold ph-lg',
+			icon: 'ti ti-user',
 			title: i18n.ts.followers,
 		} satisfies Tab,
 ]);
