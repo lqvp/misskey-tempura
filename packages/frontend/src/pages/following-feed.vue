@@ -58,7 +58,6 @@ import { $i } from '@/account.js';
 import { checkWordMute } from '@/scripts/check-word-mute.js';
 import SkUserRecentNotes from '@/components/SkUserRecentNotes.vue';
 import { useScrollPositionManager } from '@/nirax.js';
-import { getScrollContainer } from '@/scripts/scroll.js';
 import MkPagination, { Paging } from '@/components/MkPagination.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import { createModel, createOptions, followersTab, followingTab, mutualsTab } from '@/scripts/following-feed-utils.js';
@@ -135,14 +134,14 @@ function isHardMuted(note: Misskey.entities.Note): boolean {
 	return isMuted(note, $i?.hardMutedWords);
 }
 
-// Match the typing used by Misskey
-type Mutes = (string | string[])[] | null | undefined;
+	// Match the typing used by Misskey
+	type Mutes = (string | string[])[] | null | undefined;
 
 // Adapted from MkNote.ts
 function isMuted(note: Misskey.entities.Note, mutes: Mutes): boolean {
 	return checkMute(note, mutes)
-		|| checkMute(note.reply, mutes)
-		|| checkMute(note.renote, mutes);
+			|| checkMute(note.reply, mutes)
+			|| checkMute(note.renote, mutes);
 }
 
 // Adapted from check-word-mute.ts
@@ -183,21 +182,21 @@ const headerActions: PageHeaderItem[] = [
 ];
 
 const headerTabs = computed(() => [
-	{
-		key: followingTab,
-		icon: 'ph-user-check ph-bold ph-lg',
-		title: i18n.ts.following,
-	} satisfies Tab,
-	{
-		key: mutualsTab,
-		icon: 'ph-user-switch ph-bold ph-lg',
-		title: i18n.ts.mutuals,
-	} satisfies Tab,
-	{
-		key: followersTab,
-		icon: 'ph-user ph-bold ph-lg',
-		title: i18n.ts.followers,
-	} satisfies Tab,
+		{
+			key: followingTab,
+			icon: 'ph-user-check ph-bold ph-lg',
+			title: i18n.ts.following,
+		} satisfies Tab,
+		{
+			key: mutualsTab,
+			icon: 'ph-user-switch ph-bold ph-lg',
+			title: i18n.ts.mutuals,
+		} satisfies Tab,
+		{
+			key: followersTab,
+			icon: 'ph-user ph-bold ph-lg',
+			title: i18n.ts.followers,
+		} satisfies Tab,
 ]);
 
 useScrollPositionManager(() => getScrollContainer(userScroll.value ?? null), router);
@@ -209,75 +208,75 @@ definePageMetadata(() => ({
 
 </script>
 
-<style lang="scss" module>
-//This inspection complains about duplicate "height" properties, but this is needed because "dvh" units are not supported in all browsers.
-//The earlier "vh" provide a "close enough" approximation for older browsers.
-//noinspection CssOverwrittenProperties
-.root {
-	display: grid;
-	grid-template-columns: min-content 1fr min-content;
-	grid-template-rows: min-content 1fr;
-	grid-template-areas:
-		"header header header"
-		"lm notes rm";
-	gap: 12px;
-
-	height: 100vh;
-	height: 100dvh;
-
-	// The universal layout inserts a "spacer" thing that causes a stray scroll bar.
-	// We have to create fake "space" for it to "roll up" and back into the viewport, which removes the scrollbar.
-	margin-bottom: calc(-1 * var(--minBottomSpacing));
-
-	// Some "just in case" backup properties.
-	// These should not be needed, but help to maintain the layout if the above trick ever stops working.
-	overflow: hidden;
-	position: sticky;
-	top: 0;
-}
-
-.header {
-	grid-area: header;
-}
-
-.notes {
-	grid-area: notes;
-	overflow-y: auto;
-}
-
-.user {
-	grid-area: user;
-	overflow-y: auto;
-}
-
-.remoteWarning {
-	margin: 12px 12px 0 12px;
-}
-
-.userInfo {
-	margin-bottom: 12px;
-}
-
-@media (min-width: 750px) {
+	<style lang="scss" module>
+	//This inspection complains about duplicate "height" properties, but this is needed because "dvh" units are not supported in all browsers.
+	//The earlier "vh" provide a "close enough" approximation for older browsers.
+	//noinspection CssOverwrittenProperties
 	.root {
-		grid-template-columns: min-content 4fr 6fr min-content;
+		display: grid;
+		grid-template-columns: min-content 1fr min-content;
 		grid-template-rows: min-content 1fr;
 		grid-template-areas:
-			"header header header header"
-			"lm notes user rm";
-		gap: 24px;
+			"header header header"
+			"lm notes rm";
+		gap: 12px;
+
+		height: 100vh;
+		height: 100dvh;
+
+		// The universal layout inserts a "spacer" thing that causes a stray scroll bar.
+		// We have to create fake "space" for it to "roll up" and back into the viewport, which removes the scrollbar.
+		margin-bottom: calc(-1 * var(--minBottomSpacing));
+
+		// Some "just in case" backup properties.
+		// These should not be needed, but help to maintain the layout if the above trick ever stops working.
+		overflow: hidden;
+		position: sticky;
+		top: 0;
+	}
+
+	.header {
+		grid-area: header;
+	}
+
+	.notes {
+		grid-area: notes;
+		overflow-y: auto;
+	}
+
+	.user {
+		grid-area: user;
+		overflow-y: auto;
 	}
 
 	.remoteWarning {
-		margin: 24px 24px 0 24px;
+		margin: 12px 12px 0 12px;
 	}
 
 	.userInfo {
-		margin-bottom: 24px;
+		margin-bottom: 12px;
 	}
-}
 
-.panel {
-	background: var(--panel);
-}
-</style>
+	@media (min-width: 750px) {
+		.root {
+			grid-template-columns: min-content 4fr 6fr min-content;
+			grid-template-rows: min-content 1fr;
+			grid-template-areas:
+				"header header header header"
+				"lm notes user rm";
+			gap: 24px;
+		}
+
+		.remoteWarning {
+			margin: 24px 24px 0 24px;
+		}
+
+		.userInfo {
+			margin-bottom: 24px;
+		}
+	}
+
+	.panel {
+		background: var(--panel);
+	}
+	</style>
