@@ -75,8 +75,8 @@ export const navbarItemDef = reactive({
 		},
 	},
 	following: {
-		title: i18n.ts.following,
-		icon: 'ph-user-check ph-bold ph-lg',
+		title: i18n.ts.followFeed,
+		icon: 'ti ti-user',
 		show: computed(() => $i != null && !$i.movedTo),
 		to: '/following-feed',
 	},

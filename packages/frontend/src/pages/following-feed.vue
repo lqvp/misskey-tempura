@@ -184,12 +184,12 @@ const headerActions: PageHeaderItem[] = [
 const headerTabs = computed(() => [
 		{
 			key: followingTab,
-			icon: 'ph-user-check ph-bold ph-lg',
+			icon: 'ti ti-user-check',
 			title: i18n.ts.following,
 		} satisfies Tab,
 		{
 			key: mutualsTab,
-			icon: 'ph-user-switch ph-bold ph-lg',
+			icon: 'ti ti-user-heart',
 			title: i18n.ts.mutuals,
 		} satisfies Tab,
 		{
@@ -203,7 +203,7 @@ useScrollPositionManager(() => getScrollContainer(userScroll.value ?? null), rou
 useScrollPositionManager(() => getScrollContainer(noteScroll.value ?? null), router);
 definePageMetadata(() => ({
 	title: i18n.ts.following,
-	icon: 'ph-user-check ph-bold ph-lg',
+	icon: 'ti ti-user-check',
 }));
 
 </script>

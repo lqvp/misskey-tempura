@@ -11023,6 +11023,10 @@ export interface Locale extends ILocale {
      * Remote followers may have incomplete or outdated activity
      */
     "remoteFollowersWarning": string;
+		/**
+		 * フォローフィード
+		 */
+		"followFeed": string;
 }
 declare const locales: {
     [lang: string]: Locale;
