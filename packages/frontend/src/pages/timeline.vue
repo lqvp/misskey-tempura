@@ -58,8 +58,6 @@ import { useRouter } from '@/router/supplier.js';
 
 provide('shouldOmitHeaderTitle', true);
 
-const router = useRouter();
-
 const tlComponent = shallowRef<InstanceType<typeof MkTimeline>>();
 const rootEl = shallowRef<HTMLElement>();
 
