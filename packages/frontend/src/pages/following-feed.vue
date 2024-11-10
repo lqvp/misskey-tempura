@@ -202,8 +202,8 @@ const headerTabs = computed(() => [
 useScrollPositionManager(() => getScrollContainer(userScroll.value ?? null), router);
 useScrollPositionManager(() => getScrollContainer(noteScroll.value ?? null), router);
 definePageMetadata(() => ({
-	title: i18n.ts.following,
-	icon: 'ti ti-user-check',
+	title: i18n.ts.followFeed,
+	icon: 'ti ti-user',
 }));
 
 </script>
