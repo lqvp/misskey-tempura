@@ -160,6 +160,7 @@ const hideLocalTimeLine = computed(defaultStore.makeGetterSetter('hideLocalTimeL
 const hideGlobalTimeLine = computed(defaultStore.makeGetterSetter('hideGlobalTimeLine'));
 const hideSocialTimeLine = computed(defaultStore.makeGetterSetter('hideSocialTimeLine'));
 const selectReaction = computed(defaultStore.makeGetterSetter('selectReaction'));
+const showLikeButton = computed(defaultStore.makeGetterSetter('showLikeButton'));
 const disableNoteDrafting = computed(defaultStore.makeGetterSetter('disableNoteDrafting'));
 
 watch([
@@ -178,6 +179,7 @@ watch([
 	hideGlobalTimeLine,
 	hideSocialTimeLine,
 	selectReaction,
+	showLikeButton,
 	disableNoteDrafting
 ], async () => {
 	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
