@@ -55,6 +55,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkButton rounded :small="true" inline @click="resetReaction"><i class="ph-arrow-clockwise ph-bold ph-lg"></i> Reset</MkButton>
 				</div>
 			</FromSlot>
+
+			<MkSwitch v-model="showLikeButton"> {{ i18n.ts.showLikeButton }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
 		</div>
 	</FormSection>
 

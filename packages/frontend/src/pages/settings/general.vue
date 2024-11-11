@@ -123,7 +123,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</div>
 			</FromSlot>
 
-			<MkSwitch v-model="showLikeButton"><i class="ti ti-dots"></i> {{ i18n.ts.showLikeButton }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
+			<MkSwitch v-model="showLikeButton"> {{ i18n.ts.showLikeButton }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
 
 		</div>
 	</FormSection>
