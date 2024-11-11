@@ -122,6 +122,7 @@ const defaultStoreSaveKeys: (keyof typeof defaultStore['state'])[] = [
 	'hideSocialTimeLine',
 	'hideGlobalTimeLine',
 	'selectReaction',
+	'showLikeButton',
 	'disableNoteNyaize',
 	'reactionChecksMuting',
 	'instanceIcon',

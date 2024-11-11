@@ -5517,6 +5517,10 @@ export interface Locale extends ILocale {
      * いいねボタンで使うリアクションを選択
      */
     "selectReaction": string;
+		/**
+		 * いいねボタンを表示する
+		 */
+		"showLikeButton": string;
     /**
      * 誰がリアクションをしたのかを非表示にする
      */
