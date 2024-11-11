@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import type { Provider } from '@nestjs/common';
 import { Module } from '@nestjs/common';
 import { DI } from '@/di-symbols.js';
 import {
+	SkLatestNote,
 	MiAbuseReportNotificationRecipient,
 	MiAbuseUserReport,
 	MiAccessToken,
@@ -24,14 +24,12 @@ import {
 	MiChannelFollowing,
 	MiClip,
 	MiClipFavorite,
-	MiClipFavoriteRemote,
 	MiClipNote,
 	MiDriveFile,
 	MiDriveFolder,
 	MiEmoji,
 	MiFlash,
 	MiFlashLike,
-	MiFlashLikeRemote,
 	MiFollowing,
 	MiFollowRequest,
 	MiGalleryLike,
@@ -79,9 +77,11 @@ import {
 	MiUserProfile,
 	MiUserPublickey,
 	MiUserSecurityKey,
-	MiWebhook
+	MiWebhook,
 } from './_.js';
+import { NoteHistory } from './NoteHistory.js';
 import type { DataSource } from 'typeorm';
+import type { Provider } from '@nestjs/common';
 
 const $usersRepository: Provider = {
 	provide: DI.usersRepository,
@@ -92,6 +92,12 @@ const $usersRepository: Provider = {
 const $notesRepository: Provider = {
 	provide: DI.notesRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiNote).extend(miRepository as MiRepository<MiNote>),
+	inject: [DI.db],
+};
+
+const $noteHistoryRepository: Provider = {
+	provide: DI.noteHistoryRepository,
+	useFactory: (db: DataSource) => db.getRepository(NoteHistory).extend(miRepository as MiRepository<NoteHistory>),
 	inject: [DI.db],
 };
 
@@ -116,6 +122,12 @@ const $appsRepository: Provider = {
 const $avatarDecorationsRepository: Provider = {
 	provide: DI.avatarDecorationsRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiAvatarDecoration).extend(miRepository as MiRepository<MiAvatarDecoration>),
+	inject: [DI.db],
+};
+
+const $latestNotesRepository: Provider = {
+	provide: DI.latestNotesRepository,
+	useFactory: (db: DataSource) => db.getRepository(SkLatestNote).extend(miRepository as MiRepository<SkLatestNote>),
 	inject: [DI.db],
 };
 
@@ -377,12 +389,6 @@ const $clipFavoritesRepository: Provider = {
 	inject: [DI.db],
 };
 
-const $clipFavoritesRemoteRepository: Provider = {
-	provide: DI.clipFavoritesRemoteRepository,
-	useFactory: (db: DataSource) => db.getRepository(MiClipFavoriteRemote).extend(miRepository as MiRepository<MiClipFavoriteRemote>),
-	inject: [DI.db],
-};
-
 const $antennasRepository: Provider = {
 	provide: DI.antennasRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiAntenna).extend(miRepository as MiRepository<MiAntenna>),
@@ -473,12 +479,6 @@ const $flashLikesRepository: Provider = {
 	inject: [DI.db],
 };
 
-const $flashLikesRemoteRepository: Provider = {
-	provide: DI.flashLikesRemoteRepository,
-	useFactory: (db: DataSource) => db.getRepository(MiFlashLikeRemote).extend(miRepository as MiRepository<MiFlashLikeRemote>),
-	inject: [DI.db],
-};
-
 const $rolesRepository: Provider = {
 	provide: DI.rolesRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiRole).extend(miRepository as MiRepository<MiRole>),
@@ -518,6 +518,7 @@ const $reversiGamesRepository: Provider = {
 		$announcementReadsRepository,
 		$appsRepository,
 		$avatarDecorationsRepository,
+		$latestNotesRepository,
 		$noteFavoritesRepository,
 		$noteThreadMutingsRepository,
 		$noteReactionsRepository,
@@ -561,7 +562,6 @@ const $reversiGamesRepository: Provider = {
 		$clipsRepository,
 		$clipNotesRepository,
 		$clipFavoritesRepository,
-		$clipFavoritesRemoteRepository,
 		$antennasRepository,
 		$promoNotesRepository,
 		$promoReadsRepository,
@@ -579,10 +579,10 @@ const $reversiGamesRepository: Provider = {
 		$roleAssignmentsRepository,
 		$flashsRepository,
 		$flashLikesRepository,
-		$flashLikesRemoteRepository,
 		$userMemosRepository,
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
+		$noteHistoryRepository,
 	],
 	exports: [
 		$usersRepository,
@@ -591,6 +591,7 @@ const $reversiGamesRepository: Provider = {
 		$announcementReadsRepository,
 		$appsRepository,
 		$avatarDecorationsRepository,
+		$latestNotesRepository,
 		$noteFavoritesRepository,
 		$noteThreadMutingsRepository,
 		$noteReactionsRepository,
@@ -634,7 +635,6 @@ const $reversiGamesRepository: Provider = {
 		$clipsRepository,
 		$clipNotesRepository,
 		$clipFavoritesRepository,
-		$clipFavoritesRemoteRepository,
 		$antennasRepository,
 		$promoNotesRepository,
 		$promoReadsRepository,
@@ -652,10 +652,10 @@ const $reversiGamesRepository: Provider = {
 		$roleAssignmentsRepository,
 		$flashsRepository,
 		$flashLikesRepository,
-		$flashLikesRemoteRepository,
 		$userMemosRepository,
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
+		$noteHistoryRepository,
 	],
 })
 export class RepositoryModule {

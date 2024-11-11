@@ -804,6 +804,18 @@ declare module '../api.js' {
     /**
      * No description provided.
      *
+     * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+     * **Credential required**: *Yes* / **Permission**: *write:admin:approve-account*
+     */
+    request<E extends 'admin/approve-user', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * No description provided.
+     *
      * **Credential required**: *Yes* / **Permission**: *write:admin:unsuspend-user*
      */
     request<E extends 'admin/unsuspend-user', P extends Endpoints[E]['req']>(
@@ -3146,6 +3158,38 @@ declare module '../api.js' {
      *
      * **Credential required**: *Yes* / **Permission**: *write:notes*
      */
+    request<E extends 'notes/update', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *write:notes*
+     */
+    request<E extends 'notes/update', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+		/**
+     * No description provided.
+     *
+     * **Credential required**: *No*
+     */
+				request<E extends 'notes/history', P extends Endpoints[E]['req']>(
+					endpoint: E,
+					params: P,
+					credential?: string | null,
+				): Promise<SwitchCaseResponseType<E, P>>;
+    /**
+     * No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *write:favorites*
+     */
     request<E extends 'notes/delete', P extends Endpoints[E]['req']>(
       endpoint: E,
       params: P,
@@ -3166,7 +3210,18 @@ declare module '../api.js' {
     /**
      * No description provided.
      *
-     * **Credential required**: *Yes* / **Permission**: *write:favorites*
+     * **Credential required**: *Yes* / **Permission**: *read:account*
+     */
+    request<E extends 'notes/following', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *read:account*
      */
     request<E extends 'notes/favorites/delete', P extends Endpoints[E]['req']>(
       endpoint: E,

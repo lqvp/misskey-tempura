@@ -83,6 +83,12 @@ export class QueueService {
 			removeOnComplete: true,
 		});
 
+		this.objectStorageQueue.add('CleanExpiredRemoteFiles', {
+		}, {
+			repeat: { pattern: '0 * * * *' },
+			removeOnComplete: true,
+		});
+
 		this.systemQueue.add('checkExpiredMutings', {
 		}, {
 			repeat: { pattern: '*/5 * * * *' },
@@ -459,6 +465,14 @@ export class QueueService {
 	@bindThis
 	public createCleanRemoteFilesJob() {
 		return this.objectStorageQueue.add('cleanRemoteFiles', {}, {
+			removeOnComplete: true,
+			removeOnFail: true,
+		});
+	}
+
+	@bindThis
+	public createReDownloadRemoteFileJob(fileId: string) {
+		return this.objectStorageQueue.add('ReDownloadRemoteFile', { key: fileId }, {
 			removeOnComplete: true,
 			removeOnFail: true,
 		});

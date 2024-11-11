@@ -180,6 +180,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</MkLazy>
 					</template>
 				</div>
+				<MkLazy>
+					<XListenBrainz v-if="user.listenbrainz && listenbrainzdata" :key="user.id" :user="user" :collapsed="true"/>
+				</MkLazy>
 				<div v-if="!disableNotes">
 					<MkLazy>
 						<XTimeline :user="user"/>
@@ -190,6 +193,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div v-if="!narrow" class="sub _gaps" style="container-type: inline-size;">
 			<XFiles :key="user.id" :user="user"/>
 			<XActivity v-if="!user.hideActivity" :key="user.id" :user="user"/>
+			<XListenBrainz v-if="user.listenbrainz && listenbrainzdata" :key="user.id" :user="user"/>
 		</div>
 	</div>
 </MkSpacer>
@@ -225,7 +229,6 @@ import {editNickname} from "@/scripts/edit-nickname";
 import MkLink from '@/components/MkLink.vue';
 import MkContainer from '@/components/MkContainer.vue';
 import MkSparkle from '@/components/MkSparkle.vue';
-
 function calcAge(birthdate: string): number {
 	const date = new Date(birthdate);
 	const now = new Date();
@@ -244,6 +247,7 @@ function calcAge(birthdate: string): number {
 const XFiles = defineAsyncComponent(() => import('./index.files.vue'));
 const XActivity = defineAsyncComponent(() => import('./index.activity.vue'));
 const XTimeline = defineAsyncComponent(() => import('./index.timeline.vue'));
+const XListenBrainz = defineAsyncComponent(() => import("./index.listenbrainz.vue"));;
 
 const props = withDefaults(defineProps<{
 	user: Misskey.entities.UserDetailed;
@@ -268,6 +272,27 @@ const editModerationNote = ref(false);
 const hiddenPinnedNotes = defaultStore.state.hiddenPinnedNotes;
 const hiddenActivity = defaultStore.state.hiddenActivity;
 const hiddenFiles = defaultStore.state.hiddenFiles;
+
+const listenbrainzdata = ref(false);
+if (props.user.listenbrainz) {
+	(async function() {
+		try {
+			const response = await fetch(`https://api.listenbrainz.org/1/user/${props.user.listenbrainz}/playing-now`, {
+				method: 'GET',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			});
+			const data = await response.json();
+			if (data.payload.listens && data.payload.listens.length !== 0) {
+				listenbrainzdata.value = true;
+			}
+		} catch (err) {
+			listenbrainzdata.value = false;
+		}
+	})();
+}
+
 
 watch(moderationNote, async () => {
 	await misskeyApi('admin/update-user-note', { userId: props.user.id, text: moderationNote.value });

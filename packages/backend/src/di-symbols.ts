@@ -13,8 +13,6 @@ export const DI = {
 	redisForSub: Symbol('redisForSub'),
 	redisForTimelines: Symbol('redisForTimelines'),
 	redisForReactions: Symbol('redisForReactions'),
-	redisForJobQueue: Symbol('redisForJobQueue'),
-	redisForRemoteApis: Symbol('redisForRemoteApis'),
 
 	//#region Repositories
 	usersRepository: Symbol('usersRepository'),
@@ -23,6 +21,7 @@ export const DI = {
 	announcementReadsRepository: Symbol('announcementReadsRepository'),
 	appsRepository: Symbol('appsRepository'),
 	avatarDecorationsRepository: Symbol('avatarDecorationsRepository'),
+	latestNotesRepository: Symbol('latestNotesRepository'),
 	noteFavoritesRepository: Symbol('noteFavoritesRepository'),
 	noteThreadMutingsRepository: Symbol('noteThreadMutingsRepository'),
 	noteReactionsRepository: Symbol('noteReactionsRepository'),
@@ -66,7 +65,6 @@ export const DI = {
 	clipsRepository: Symbol('clipsRepository'),
 	clipNotesRepository: Symbol('clipNotesRepository'),
 	clipFavoritesRepository: Symbol('clipFavoritesRepository'),
-	clipFavoritesRemoteRepository: Symbol('clipFavoritesRemoteRepository'),
 	antennasRepository: Symbol('antennasRepository'),
 	promoNotesRepository: Symbol('promoNotesRepository'),
 	promoReadsRepository: Symbol('promoReadsRepository'),
@@ -84,9 +82,9 @@ export const DI = {
 	roleAssignmentsRepository: Symbol('roleAssignmentsRepository'),
 	flashsRepository: Symbol('flashsRepository'),
 	flashLikesRepository: Symbol('flashLikesRepository'),
-	flashLikesRemoteRepository: Symbol('flashLikesRemoteRepository'),
 	userMemosRepository: Symbol('userMemosRepository'),
 	bubbleGameRecordsRepository: Symbol('bubbleGameRecordsRepository'),
 	reversiGamesRepository: Symbol('reversiGamesRepository'),
+	noteHistoryRepository: Symbol('noteHistoryRepository'),
 	//#endregion
 };

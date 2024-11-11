@@ -119,7 +119,11 @@ export interface NoteEventTypes {
 	};
 	updated: {
 		cw: string | null;
-		text: string;
+		text: string | null;
+		files: Packed<'DriveFile'>[];
+		fileIds: string[];
+		poll: any | null;
+		emojis: Record<string, string>;
 	};
 	reacted: {
 		reaction: string;
@@ -250,6 +254,7 @@ export interface InternalEventTypes {
 	unmute: { muterId: MiUser['id']; muteeId: MiUser['id']; };
 	userListMemberAdded: { userListId: MiUserList['id']; memberId: MiUser['id']; };
 	userListMemberRemoved: { userListId: MiUserList['id']; memberId: MiUser['id']; };
+	remoteFileCacheMiss: { fileId: MiDriveFile['id']; }
 }
 
 type EventTypesToEventPayload<T> = EventUnionFromDictionary<UndefinedAsNullAll<SerializedAll<T>>>;

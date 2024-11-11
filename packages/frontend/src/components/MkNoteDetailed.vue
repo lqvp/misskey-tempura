@@ -117,6 +117,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkA>
 				<span v-if="appearNote.deleteAt"><i class="ti ti-bomb"></i>{{ i18n.ts.scheduledNoteDelete }}: <MkTime :time="appearNote.deleteAt" mode="detail" colored/></span>
 			</div>
+			<div v-if="appearNote.updatedAt" style="margin-top: 0; opacity: 0.7; font-size: 0.7em;">
+				<MkA :to="notePage(appearNote)">
+					{{ i18n.ts.updatedAt }}: <MkTime :time="appearNote.updatedAt" mode="detail"/>
+				</MkA>
+			</div>
 			<MkReactionsViewer v-if="appearNote.reactionAcceptance !== 'likeOnly'" ref="reactionsViewer" :note="appearNote"/>
 			<button class="_button" :class="$style.noteFooterButton" @click="reply()">
 				<i class="ti ti-arrow-back-up"></i>
@@ -157,6 +162,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'replies' }]" @click="tab = 'replies'"><i class="ti ti-arrow-back-up"></i> {{ i18n.ts.replies }}</button>
 		<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'renotes' }]" @click="tab = 'renotes'"><i class="ti ti-repeat"></i> {{ i18n.ts.renotes }}</button>
 		<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'reactions' }]" @click="tab = 'reactions'"><i class="ti ti-icons"></i> {{ i18n.ts.reactions }}</button>
+		<button v-if="appearNote.updatedAt" class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'history'}]" @click="tab = 'history'"> <i class="ti ti-history"></i> {{ i18n.ts.editHistory }} </button>
 	</div>
 	<div>
 		<div v-if="tab === 'replies'">
@@ -193,6 +199,26 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</template>
 			</MkPagination>
 		</div>
+		<div v-if="tab === 'history'">
+			<div v-if="!historiesLoaded" style="padding: 16px">
+				<MkButton style="margin: 0 auto;" primary rounded @click="loadHistories">{{ i18n.ts.loadMore }}</MkButton>
+			</div>
+			<MkSwitch v-if="historiesLoaded" v-model="history_raw" style="padding: 16px;">raw diff</MkSwitch>
+			<MkNoteHistorySub
+				v-for="(history, index) in histories"
+				:key="history.id"
+				:oldNote="histories[index+1] ? histories[index+1] : null"
+				:newNote="history"
+				:originalNote="appearNote"
+				:class="$style.reply"
+				:detail="true"
+				:raw="history_raw"
+				:index="index"
+			/>
+			<div v-if="historiesLoaded && !history_list_end" style="padding: 16px">
+				<MkButton style="margin: 0 auto;" primary rounded @click="loadHistories">{{ i18n.ts.loadMore }}</MkButton>
+			</div>
+		</div>
 	</div>
 </div>
 <div v-else class="_panel" :class="$style.muted" @click="muted = false">
@@ -211,6 +237,7 @@ import { computed, inject, onMounted, provide, ref, shallowRef } from 'vue';
 import * as mfm from 'mfm-js';
 import * as Misskey from 'misskey-js';
 import { isLink } from '@@/js/is-link.js';
+import MkNoteHistorySub from '@/components/MkNoteHistorySub.vue';
 import MkNoteSub from '@/components/MkNoteSub.vue';
 import MkNoteSimple from '@/components/MkNoteSimple.vue';
 import MkReactionsViewer from '@/components/MkReactionsViewer.vue';
@@ -246,6 +273,7 @@ import MkUserCardMini from '@/components/MkUserCardMini.vue';
 import MkPagination, { type Paging } from '@/components/MkPagination.vue';
 import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import MkButton from '@/components/MkButton.vue';
+import MkSwitch from '@/components/MkSwitch.vue';
 import { isEnabledUrlPreview } from '@/instance.js';
 import { getAppearNote } from '@/scripts/get-appear-note.js';
 import { type Keymap } from '@/scripts/hotkey.js';
@@ -302,6 +330,7 @@ const urls = parsed ? extractUrlFromMfm(parsed).filter((url) => appearNote.value
 const showTicker = (defaultStore.state.instanceTicker === 'always') || (defaultStore.state.instanceTicker === 'remote' && appearNote.value.user.instance);
 const conversation = ref<Misskey.entities.Note[]>([]);
 const replies = ref<Misskey.entities.Note[]>([]);
+const histories = ref<Misskey.entities.NoteHistory[]>([]);
 const canRenote = computed(() => ['public', 'home'].includes(appearNote.value.visibility) || appearNote.value.userId === $i?.id);
 const hideReactionCount = computed(() => {
 	switch (defaultStore.state.hideReactionCount) {
@@ -570,6 +599,43 @@ function loadReplies() {
 		limit: 30,
 	}).then(res => {
 		replies.value = res;
+	});
+}
+
+const historiesLoaded = ref(false);
+const histories_untilId = ref<Misskey.entities.NoteHistory['id']>();
+const history_list_end = ref(false);
+const history_raw = ref(false);
+
+function loadHistories() {
+	historiesLoaded.value = true;
+	misskeyApi('notes/history', {
+		...(histories_untilId.value ? { untilId: histories_untilId.value } : {} ),
+		noteId: appearNote.value.id,
+		limit: 5,
+	}).then(res => {
+		if (histories.value.length === 0) {
+			const current_note = appearNote.value;
+			const current_version: Misskey.entities.NoteHistory = {
+				id: current_note.id,
+				noteId: current_note.id,
+				createdAt: current_note.createdAt,
+				updatedAt: current_note.createdAt,
+				userId: current_note.userId,
+				text: current_note.text,
+				fileIds: current_note.fileIds,
+				files: current_note.files,
+				visibility: current_note.visibility,
+				visibleUserIds: current_note.visibleUserIds,
+				emojis: current_note.emojis,
+			};
+			histories.value.push(current_version);
+		}
+		if (res.length < 5) {
+			history_list_end.value = true;
+		}
+		histories_untilId.value = res[ res.length - 1 ].id;
+		histories.value = histories.value.concat(res);
 	});
 }
 

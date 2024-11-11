@@ -96,6 +96,7 @@ import type {
 	AdminShowUsersRequest,
 	AdminShowUsersResponse,
 	AdminSuspendUserRequest,
+	AdminApproveUserRequest,
 	AdminUnsuspendUserRequest,
 	AdminRootAdd,
 	AdminRootRemove,
@@ -219,7 +220,6 @@ import type {
 	ClipsUpdateResponse,
 	ClipsFavoriteRequest,
 	ClipsUnfavoriteRequest,
-	ClipsMyFavoritesRequest,
 	ClipsMyFavoritesResponse,
 	DriveResponse,
 	DriveFilesRequest,
@@ -421,11 +421,16 @@ import type {
 	NotesConversationResponse,
 	NotesCreateRequest,
 	NotesCreateResponse,
+	NotesUpdateRequest,
+	NotesHistoryRequest,
+	NotesHistoryResponse,
 	NotesDeleteRequest,
 	NotesFavoritesCreateRequest,
 	NotesFavoritesDeleteRequest,
 	NotesFeaturedRequest,
 	NotesFeaturedResponse,
+	NotesFollowingRequest,
+	NotesFollowingResponse,
 	NotesGlobalTimelineRequest,
 	NotesGlobalTimelineResponse,
 	NotesHybridTimelineRequest,
@@ -660,6 +665,7 @@ export type Endpoints = {
 	'admin/show-user': { req: AdminShowUserRequest; res: AdminShowUserResponse };
 	'admin/show-users': { req: AdminShowUsersRequest; res: AdminShowUsersResponse };
 	'admin/suspend-user': { req: AdminSuspendUserRequest; res: EmptyResponse };
+	'admin/approve-user': { req: AdminApproveUserRequest; res: EmptyResponse };
 	'admin/unsuspend-user': { req: AdminUnsuspendUserRequest; res: EmptyResponse };
 	'admin/root/add': { req: AdminRootAdd; res: EmptyResponse };
 	'admin/root/remove': { req: AdminRootRemove; res: EmptyResponse };
@@ -737,7 +743,7 @@ export type Endpoints = {
 	'clips/update': { req: ClipsUpdateRequest; res: ClipsUpdateResponse };
 	'clips/favorite': { req: ClipsFavoriteRequest; res: EmptyResponse };
 	'clips/unfavorite': { req: ClipsUnfavoriteRequest; res: EmptyResponse };
-	'clips/my-favorites': { req: ClipsMyFavoritesRequest; res: ClipsMyFavoritesResponse };
+	'clips/my-favorites': { req: EmptyRequest; res: ClipsMyFavoritesResponse };
 	'drive': { req: EmptyRequest; res: DriveResponse };
 	'drive/files': { req: DriveFilesRequest; res: DriveFilesResponse };
 	'drive/files/attached-notes': { req: DriveFilesAttachedNotesRequest; res: DriveFilesAttachedNotesResponse };
@@ -871,10 +877,13 @@ export type Endpoints = {
 	'notes/clips': { req: NotesClipsRequest; res: NotesClipsResponse };
 	'notes/conversation': { req: NotesConversationRequest; res: NotesConversationResponse };
 	'notes/create': { req: NotesCreateRequest; res: NotesCreateResponse };
+	'notes/update': { req: NotesUpdateRequest; res: EmptyResponse };
+	'notes/history': { req: NotesHistoryRequest; res: NotesHistoryResponse };
 	'notes/delete': { req: NotesDeleteRequest; res: EmptyResponse };
 	'notes/favorites/create': { req: NotesFavoritesCreateRequest; res: EmptyResponse };
 	'notes/favorites/delete': { req: NotesFavoritesDeleteRequest; res: EmptyResponse };
 	'notes/featured': { req: NotesFeaturedRequest; res: NotesFeaturedResponse };
+	'notes/following': { req: NotesFollowingRequest; res: NotesFollowingResponse };
 	'notes/global-timeline': { req: NotesGlobalTimelineRequest; res: NotesGlobalTimelineResponse };
 	'notes/hybrid-timeline': { req: NotesHybridTimelineRequest; res: NotesHybridTimelineResponse };
 	'notes/local-timeline': { req: NotesLocalTimelineRequest; res: NotesLocalTimelineResponse };

@@ -56,14 +56,5 @@ export const packedClipSchema = {
 			type: 'integer',
 			optional: true, nullable: false,
 		},
-		emojis: {
-			type: 'object',
-			optional: true, nullable: false,
-			additionalProperties: {
-				anyOf: [{
-					type: 'string',
-				}],
-			},
-		},
 	},
 } as const;

@@ -686,6 +686,16 @@ export type paths = {
      */
     post: operations['admin___suspend-user'];
   };
+  '/admin/approve-user': {
+    /**
+     * admin/approve-user
+     * @description No description provided.
+     *
+     * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+     * **Credential required**: *Yes* / **Permission**: *write:admin:approve-account*
+     */
+    post: operations['admin___approve-user'];
+  };
   '/admin/unsuspend-user': {
     /**
      * admin/unsuspend-user
@@ -2725,6 +2735,24 @@ export type paths = {
      */
     post: operations['notes___create'];
   };
+  '/notes/update': {
+    /**
+     * notes/update
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *write:notes*
+     */
+    post: operations['notes___update'];
+  };
+  '/notes/history': {
+    /**
+     * notes/history
+     * @description No description provided.
+     *
+     * **Credential required**: *No*
+     */
+    post: operations['notes___history'];
+  };
   '/notes/delete': {
     /**
      * notes/delete
@@ -2770,12 +2798,28 @@ export type paths = {
   };
   '/notes/global-timeline': {
     /**
-     * notes/global-timeline
+     * notes/following
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *read:account*
+     */
+    get: operations['notes___following'];
+    /**
+     * notes/following
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *read:account*
+     */
+    post: operations['notes___following'];
+  };
+  '/notes/bubble-timeline': {
+    /**
+     * notes/bubble-timeline
      * @description No description provided.
      *
      * **Credential required**: *No*
      */
-    post: operations['notes___global-timeline'];
+    post: operations['notes___bubble-timeline'];
   };
   '/notes/hybrid-timeline': {
     /**
@@ -3777,6 +3821,11 @@ export type components = {
        * @example misskey.example.com
        */
       host: string | null;
+      /**
+       * @description User whom registeration is approved or not
+       * @default false
+       */
+      approved: boolean;
       /** Format: url */
       avatarUrl: string | null;
       avatarBlurhash: string | null;
@@ -3838,6 +3887,7 @@ export type components = {
       location: string | null;
       /** @example 2018-03-12 */
       birthday: string | null;
+			listenbrainz?: string;
       /** @example ja-JP */
       lang: string | null;
       fields: {
@@ -3879,6 +3929,7 @@ export type components = {
       twoFactorEnabled?: boolean;
       usePasswordLessLogin?: boolean;
       securityKeys?: boolean;
+      approved?: boolean;
       isFollowing?: boolean;
       isFollowed?: boolean;
       hasPendingFollowRequestFromYou?: boolean;
@@ -4159,6 +4210,8 @@ export type components = {
       id: string;
       /** Format: date-time */
       createdAt: string;
+      /** Format: date-time */
+      updatedAt?: string | null;
       /** Format: date-time */
       deletedAt?: string | null;
       text: string | null;
@@ -4729,9 +4782,6 @@ export type components = {
       favoritedCount: number;
       isFavorited?: boolean;
       notesCount?: number;
-      emojis?: {
-        [key: string]: string;
-      };
     };
     FederationInstance: {
       /** Format: id */
@@ -4837,9 +4887,6 @@ export type components = {
       visibility: 'private' | 'public';
       likedCount: number | null;
       isLiked?: boolean;
-      emojis?: {
-        [key: string]: string;
-      };
     };
     Signin: {
       id: string;
@@ -4942,6 +4989,7 @@ export type components = {
       gtlAvailable: boolean;
       ltlAvailable: boolean;
       canPublicNote: boolean;
+      canEditNote: boolean | null;
       mentionLimit: number;
       canInvite: boolean;
       inviteLimit: number;
@@ -5067,6 +5115,8 @@ export type components = {
       defaultLightTheme: string | null;
       disableRegistration: boolean;
       emailRequiredForSignup: boolean;
+      /** @default false */
+      approvalRequiredForSignup: boolean;
       enableHcaptcha: boolean;
       hcaptchaSiteKey: string | null;
       enableMcaptcha: boolean;
@@ -5170,6 +5220,29 @@ export type components = {
       systemWebhookId?: string;
       systemWebhook?: components['schemas']['SystemWebhook'];
     };
+    NoteHistory: {
+      /**
+       * Format: id
+       * @example xxxxxxxxxx
+       */
+      id: string;
+      noteId: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** Format: date-time */
+      updatedAt: string;
+      /** Format: id */
+      userId: string;
+      text: string | null;
+      fileIds?: string[];
+      files?: components['schemas']['DriveFile'][];
+      /** @enum {string} */
+      visibility: 'public' | 'home' | 'followers' | 'specified';
+      visibleUserIds?: string[];
+      emojis?: {
+        [key: string]: string;
+      };
+    };
   };
   responses: never;
   parameters: never;
@@ -5199,6 +5272,7 @@ export type operations = {
             cacheRemoteFiles: boolean;
             cacheRemoteSensitiveFiles: boolean;
             emailRequiredForSignup: boolean;
+            approvalRequiredForSignup: boolean;
             enableHcaptcha: boolean;
             hcaptchaSiteKey: string | null;
             enableMcaptcha: boolean;
@@ -5231,6 +5305,7 @@ export type operations = {
             prohibitedWords: string[];
             prohibitedWordsForNameOfUser: string[];
             bannedEmailDomains?: string[];
+						emailWhitelist?: boolean;
             preservedUsernames: string[];
             hcaptchaSecretKey: string | null;
             mcaptchaSecretKey: string | null;
@@ -5253,6 +5328,7 @@ export type operations = {
             objectStorageBaseUrl: string | null;
             objectStorageBucket: string | null;
             objectStoragePrefix: string | null;
+            objectStoragePrefixForRemote: string | null;
             objectStorageEndpoint: string | null;
             objectStorageRegion: string | null;
             objectStoragePort: number | null;
@@ -5261,6 +5337,7 @@ export type operations = {
             objectStorageUseSSL: boolean;
             objectStorageUseProxy: boolean;
             objectStorageSetPublicRead: boolean;
+            objectStorageCacheDays: number | null;
             enableIpLogging: boolean;
             enableActiveEmailValidation: boolean;
             enableVerifymailApi: boolean;
@@ -5317,6 +5394,7 @@ export type operations = {
             customSplashText: string[];
             federation: string;
             federationHosts: string[];
+						validateMinimumUsernameLength: number;
           };
         };
       };
@@ -9558,6 +9636,7 @@ export type operations = {
                 expiresAt: string | null;
                 roleId: string;
               })[];
+            signupReason: string | null;
           };
         };
       };
@@ -9613,7 +9692,7 @@ export type operations = {
            * @default all
            * @enum {string}
            */
-          state?: 'all' | 'alive' | 'available' | 'admin' | 'moderator' | 'adminOrModerator' | 'suspended';
+          state?: 'all' | 'alive' | 'available' | 'admin' | 'moderator' | 'adminOrModerator' | 'suspended' | 'pending' | 'approved';
           /**
            * @default combined
            * @enum {string}
@@ -9675,6 +9754,59 @@ export type operations = {
    * **Credential required**: *Yes* / **Permission**: *write:admin:suspend-user*
    */
   'admin___suspend-user': {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: misskey:id */
+          userId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * admin/approve-user
+   * @description No description provided.
+   *
+   * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+   * **Credential required**: *Yes* / **Permission**: *write:admin:approve-account*
+   */
+  'admin___approve-user': {
     requestBody: {
       content: {
         'application/json': {
@@ -9808,6 +9940,7 @@ export type operations = {
           cacheRemoteFiles?: boolean;
           cacheRemoteSensitiveFiles?: boolean;
           emailRequiredForSignup?: boolean;
+          approvalRequiredForSignup?: boolean;
           enableHcaptcha?: boolean;
           hcaptchaSiteKey?: string | null;
           hcaptchaSecretKey?: string | null;
@@ -9855,6 +9988,7 @@ export type operations = {
           objectStorageBaseUrl?: string | null;
           objectStorageBucket?: string | null;
           objectStoragePrefix?: string | null;
+          objectStoragePrefixForRemote?: string | null;
           objectStorageEndpoint?: string | null;
           objectStorageRegion?: string | null;
           objectStoragePort?: number | null;
@@ -9864,6 +9998,7 @@ export type operations = {
           objectStorageUseProxy?: boolean;
           objectStorageSetPublicRead?: boolean;
           objectStorageS3ForcePathStyle?: boolean;
+          objectStorageCacheDays?: number | null;
           enableIpLogging?: boolean;
           enableActiveEmailValidation?: boolean;
           enableVerifymailApi?: boolean;
@@ -9878,6 +10013,7 @@ export type operations = {
           enableIdenticonGeneration?: boolean;
           serverRules?: string[];
           bannedEmailDomains?: string[];
+					emailWhitelist?: boolean;
           preservedUsernames?: string[];
           manifestJsonOverride?: string;
           enableFanoutTimeline?: boolean;
@@ -14231,6 +14367,7 @@ export type operations = {
     requestBody: {
       content: {
         'application/json': {
+          /** Format: misskey:id */
           clipId: string;
         };
       };
@@ -14279,16 +14416,6 @@ export type operations = {
    * **Credential required**: *Yes* / **Permission**: *read:clip-favorite*
    */
   'clips___my-favorites': {
-    requestBody: {
-      content: {
-        'application/json': {
-          /** @default true */
-          withLocal?: boolean;
-          /** @default true */
-          withRemote?: boolean;
-        };
-      };
-    };
     responses: {
       /** @description OK (with results) */
       200: {
@@ -19283,8 +19410,8 @@ export type operations = {
           untilId?: string;
           /** @default true */
           markAsRead?: boolean;
-          includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'app' | 'test' | 'reaction:grouped' | 'renote:grouped' | 'pollVote' | 'groupInvited')[];
-          excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'app' | 'test' | 'reaction:grouped' | 'renote:grouped' | 'pollVote' | 'groupInvited')[];
+          includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'app' | 'test' | 'reaction:grouped' | 'renote:grouped' | 'note:grouped' | 'pollVote' | 'groupInvited')[];
+          excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'app' | 'test' | 'reaction:grouped' | 'renote:grouped' | 'note:grouped' | 'pollVote' | 'groupInvited')[];
         };
       };
     };
@@ -22158,6 +22285,266 @@ export type operations = {
     };
   };
   /**
+   * notes/update
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *write:notes*
+   */
+  notes___update: {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: misskey:id */
+          noteId: string;
+          text: string | null;
+          fileIds?: string[];
+          mediaIds?: string[];
+          poll?: ({
+            choices: string[];
+            multiple?: boolean;
+            expiresAt?: number | null;
+            expiredAfter?: number | null;
+          }) | null;
+          cw: string | null;
+          /** @default false */
+          disableRightClick?: boolean;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description To many requests */
+      429: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * notes/history
+   * @description No description provided.
+   *
+   * **Credential required**: *No*
+   */
+  notes___history: {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: misskey:id */
+          noteId: string;
+          /** @default 10 */
+          limit?: number;
+          /** Format: misskey:id */
+          sinceId?: string;
+          /** Format: misskey:id */
+          untilId?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (with results) */
+      200: {
+        content: {
+          'application/json': components['schemas']['NoteHistory'][];
+        };
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * notes/update
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *write:notes*
+   */
+  notes___update: {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: misskey:id */
+          noteId: string;
+          text: string | null;
+          fileIds?: string[];
+          mediaIds?: string[];
+          poll?: ({
+            choices: string[];
+            multiple?: boolean;
+            expiresAt?: number | null;
+            expiredAfter?: number | null;
+          }) | null;
+          cw: string | null;
+          /** @default false */
+          disableRightClick?: boolean;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description To many requests */
+      429: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * notes/history
+   * @description No description provided.
+   *
+   * **Credential required**: *No*
+   */
+  notes___history: {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: misskey:id */
+          noteId: string;
+          /** @default 10 */
+          limit?: number;
+          /** Format: misskey:id */
+          sinceId?: string;
+          /** Format: misskey:id */
+          untilId?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (with results) */
+      200: {
+        content: {
+          'application/json': components['schemas']['NoteHistory'][];
+        };
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
    * notes/delete
    * @description No description provided.
    *
@@ -22274,17 +22661,36 @@ export type operations = {
     };
   };
   /**
-   * notes/favorites/delete
+   * notes/featured
    * @description No description provided.
    *
-   * **Credential required**: *Yes* / **Permission**: *write:favorites*
+   * **Credential required**: *No*
    */
-  notes___favorites___delete: {
+  notes___featured: {
     requestBody: {
       content: {
         'application/json': {
+          /**
+           * @default following
+           * @enum {string}
+           */
+          list?: 'following' | 'followers' | 'mutuals';
+          /** @default false */
+          filesOnly?: boolean;
+          /** @default false */
+          includeNonPublic?: boolean;
+          /** @default false */
+          includeReplies?: boolean;
+          /** @default false */
+          includeQuotes?: boolean;
+          /** @default true */
+          includeBots?: boolean;
+          /** @default 10 */
+          limit?: number;
           /** Format: misskey:id */
-          noteId: string;
+          untilId?: string;
+          /** Format: misskey:id */
+          channelId?: string | null;
         };
       };
     };
@@ -24536,6 +24942,7 @@ export type operations = {
     requestBody: {
       content: {
         'application/json': {
+          /** Format: misskey:id */
           flashId: string;
         };
       };
@@ -24587,6 +24994,7 @@ export type operations = {
     requestBody: {
       content: {
         'application/json': {
+          /** Format: misskey:id */
           flashId: string;
         };
       };
@@ -24640,6 +25048,7 @@ export type operations = {
     requestBody: {
       content: {
         'application/json': {
+          /** Format: misskey:id */
           flashId: string;
         };
       };
@@ -24819,10 +25228,6 @@ export type operations = {
           sinceId?: string;
           /** Format: misskey:id */
           untilId?: string;
-          /** @default true */
-          withLocal?: boolean;
-          /** @default true */
-          withRemote?: boolean;
         };
       };
     };
@@ -26990,7 +27395,15 @@ export type operations = {
           /** @default false */
           withReplies?: boolean;
           /** @default true */
+          withRepliesToSelf?: boolean;
+          /** @default true */
+          withQuotes?: boolean;
+          /** @default true */
           withRenotes?: boolean;
+          /** @default true */
+          withBots?: boolean;
+          /** @default true */
+          withNonPublic?: boolean;
           /** @default false */
           withChannelNotes?: boolean;
           /** @default 10 */
@@ -27121,7 +27534,9 @@ export type operations = {
           userId: string;
           /** @default 10 */
           limit?: number;
+          /** Format: misskey:id */
           sinceId?: string;
+          /** Format: misskey:id */
           untilId?: string;
         };
       };

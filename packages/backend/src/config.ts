@@ -49,7 +49,7 @@ type Source = {
 	redisForPubsub?: RedisOptionsSource;
 	redisForJobQueue?: RedisOptionsSource;
 	redisForTimelines?: RedisOptionsSource;
-	redisForRemoteApis?: RedisOptionsSource;
+	redisForReactions?: RedisOptionsSource;
 	meilisearch?: {
 		host: string;
 		port: string;
@@ -175,7 +175,7 @@ export type Config = {
 	redisForPubsub: RedisOptions & RedisOptionsSource;
 	redisForJobQueue: RedisOptions & RedisOptionsSource;
 	redisForTimelines: RedisOptions & RedisOptionsSource;
-	redisForRemoteApis: RedisOptions & RedisOptionsSource;
+	redisForReactions: RedisOptions & RedisOptionsSource;
 	sentryForBackend: { options: Partial<Sentry.NodeOptions>; enableNodeProfiling: boolean; } | undefined;
 	sentryForFrontend: { options: Partial<Sentry.NodeOptions> } | undefined;
 	perChannelMaxNoteCacheCount: number;
@@ -257,7 +257,7 @@ export function loadConfig(): Config {
 		redisForPubsub: config.redisForPubsub ? convertRedisOptions(config.redisForPubsub, host) : redis,
 		redisForJobQueue: config.redisForJobQueue ? convertRedisOptions(config.redisForJobQueue, host) : redis,
 		redisForTimelines: config.redisForTimelines ? convertRedisOptions(config.redisForTimelines, host) : redis,
-		redisForRemoteApis: config.redisForRemoteApis ? convertRedisOptions(config.redisForRemoteApis, host) : redis,
+		redisForReactions: config.redisForReactions ? convertRedisOptions(config.redisForReactions, host) : redis,
 		sentryForBackend: config.sentryForBackend,
 		sentryForFrontend: config.sentryForFrontend,
 		id: config.id,

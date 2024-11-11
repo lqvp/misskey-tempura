@@ -188,4 +188,11 @@ export class MiDriveFile {
 		length: 128, nullable: true,
 	})
 	public requestIp: string | null;
+
+	@Index()
+	@Column('timestamp with time zone', {
+		default: null, nullable: true,
+		comment: 'Cache Timestamp',
+	})
+	public cachedAt: Date | null;
 }

@@ -167,6 +167,10 @@ export interface Locale extends ILocale {
      */
     "users": string;
     /**
+     * 承認
+     */
+    "approvals": string;
+    /**
      * ユーザーを追加
      */
     "addUser": string;
@@ -294,10 +298,10 @@ export interface Locale extends ILocale {
      * フォローされました
      */
     "youGotNewFollower": string;
-		/**
-		 * フォロー解除されました
-		 */
-		"youGotUnFollower": string;
+    /**
+     * フォロー解除されました
+     */
+    "youGotUnFollower": string;
     /**
      * フォローリクエストされました
      */
@@ -306,10 +310,10 @@ export interface Locale extends ILocale {
      * フォローが承認されました
      */
     "followRequestAccepted": string;
-		/**
-		 * フォローが拒否されました
-		 */
-		"followRequestRejected": string;
+    /**
+     * フォローが拒否されました
+     */
+    "followRequestRejected": string;
     /**
      * メンション
      */
@@ -318,6 +322,10 @@ export interface Locale extends ILocale {
      * あなた宛て
      */
     "mentions": string;
+    /**
+     * 新規投稿
+     */
+    "newNotes": string;
     /**
      * ダイレクト投稿
      */
@@ -382,6 +390,10 @@ export interface Locale extends ILocale {
      * フォロワー
      */
     "followers": string;
+    /**
+     * Mutuals
+     */
+    "mutuals": string;
     /**
      * フォローされています
      */
@@ -458,10 +470,10 @@ export interface Locale extends ILocale {
      * フォロー許可待ち
      */
     "followRequestPending": string;
-		/**
-		 * フォロリク一覧
-		 */
-		"sentFollowRequestList": string;
+    /**
+     * 送信したフォロリク一覧
+     */
+    "sentFollowRequestList": string;
     /**
      * 絵文字を入力
      */
@@ -639,6 +651,14 @@ export interface Locale extends ILocale {
      */
     "suspendConfirm": string;
     /**
+     * 登録を承認しますか？
+     */
+    "registerApproveConfirm": string;
+    /**
+     * この操作は取り消せません。承認後、このユーザーに登録が承認された旨が記載されたメールが送信されます。
+     */
+    "registerApproveConfirmDescription": string;
+    /**
      * 解凍しますか？
      */
     "unsuspendConfirm": string;
@@ -754,6 +774,14 @@ export interface Locale extends ILocale {
      * フォロー中ユーザーからのフォロリクを自動承認
      */
     "autoAcceptFollowed": string;
+    /**
+     * Botからのフォローを承認制にする
+     */
+    "carefulBot": string;
+    /**
+     * この設定を有効にすると、Botからのフォローリクエストを承認制にします。
+     */
+    "carefulBotDescription": string;
     /**
      * アカウントを追加
      */
@@ -2182,10 +2210,10 @@ export interface Locale extends ILocale {
      * フォロー申請はありません
      */
     "noFollowRequests": string;
-		/**
-		 * 送ったフォロー申請はありません
-		 */
-		"noSentFollowRequests": string;
+    /**
+     * 送ったフォロー申請はありません
+     */
+    "noSentFollowRequests": string;
     /**
      * 画像を新しいタブで開く
      */
@@ -2279,6 +2307,14 @@ export interface Locale extends ILocale {
      */
     "objectStoragePrefixDesc": string;
     /**
+     * Prefix For Remote
+     */
+    "objectStoragePrefixForRemote": string;
+    /**
+     * 設定すると、このprefixのディレクトリ下にRemoteファイルが保存されます。
+     */
+    "objectStoragePrefixForRemoteDesc": string;
+    /**
      * Endpoint
      */
     "objectStorageEndpoint": string;
@@ -2318,6 +2354,14 @@ export interface Locale extends ILocale {
      * s3ForcePathStyleを有効にすると、バケット名をURLのホスト名ではなくパスの一部として指定することを強制します。セルフホストされたMinioなどの使用時に有効にする必要がある場合があります。
      */
     "s3ForcePathStyleDesc": string;
+    /**
+     * Cache Days
+     */
+    "objectStorageCacheDays": string;
+    /**
+     * リモートファイルをキャッシュする期間（日）
+     */
+    "objectStorageCacheDaysDesc": string;
     /**
      * サーバーログ
      */
@@ -2806,6 +2850,10 @@ export interface Locale extends ILocale {
      * {name}が何かを言いました
      */
     "userSaysSomething": ParameterizedString<"name">;
+    /**
+     * post is hidden by a filter
+     */
+    "postFiltered": string;
     /**
      * アクティブにする
      */
@@ -3691,6 +3739,14 @@ export interface Locale extends ILocale {
      */
     "emailRequiredForSignup": string;
     /**
+     * アカウント登録を承認制にする
+     */
+    "approvalRequiredForSignup": string;
+    /**
+     * アカウント登録の承認
+     */
+    "signupPendingApprovals": string;
+    /**
      * 未読
      */
     "unread": string;
@@ -3726,10 +3782,10 @@ export interface Locale extends ILocale {
      * スレッドのミュートを解除
      */
     "unmuteThread": string;
-		/**
-		 * ノート数の公開範囲
-		 */
-		"notesVisibility": string;
+    /**
+     * ノート数の公開範囲
+     */
+    "notesVisibility": string;
     /**
      * フォローの公開範囲
      */
@@ -3899,6 +3955,10 @@ export interface Locale extends ILocale {
      */
     "thereIsUnresolvedAbuseReportWarning": string;
     /**
+     * 承認待ちのユーザーがいます。
+     */
+    "pendingUserApprovals": string;
+    /**
      * 推奨
      */
     "recommended": string;
@@ -3930,6 +3990,26 @@ export interface Locale extends ILocale {
      * アカウント削除
      */
     "deleteAccount": string;
+    /**
+     * 承認する
+     */
+    "approveAccount": string;
+    /**
+     * 拒否してアカウント削除
+     */
+    "denyAccount": string;
+    /**
+     * 承認済み
+     */
+    "approved": string;
+    /**
+     * 未承認
+     */
+    "notApproved": string;
+    /**
+     * 承認状況
+     */
+    "approvalStatus": string;
     /**
      * ドキュメント
      */
@@ -4022,10 +4102,10 @@ export interface Locale extends ILocale {
      * ベータ
      */
     "beta": string;
-		/**
+    /**
      * 独自機能
      */
-		"originalFeature": string;
+    "originalFeature": string;
     /**
      * 自動センシティブ判定
      */
@@ -4254,7 +4334,7 @@ export interface Locale extends ILocale {
      * このまま投稿
      */
     "thisPostMayBeAnnoyingIgnore": string;
-		/**
+    /**
      * ノートの下書きの復元を無効化
      */
     "disableNoteDrafting": string;
@@ -4318,6 +4398,22 @@ export interface Locale extends ILocale {
      * 現在このサーバーは招待制です。招待コードをお持ちの方のみ登録できます。
      */
     "invitationRequiredToRegister": string;
+    /**
+     * 現在このサーバーは承認制です。参加したい理由を記入し、承認された方のみ登録できます。
+     */
+    "approvalRequiredToRegister": string;
+    /**
+     * 登録理由
+     */
+    "registerReason": string;
+    /**
+     * サーバーへの登録はまだ承認されていません。しばらくしてから再度お試しください。登録時にメールアドレスを記入した場合は、登録が承認されたらメールでお知らせします。
+     */
+    "registerHasNotBeenApprovedYet": string;
+    /**
+     * サーバーへの登録が承認されたかどうかの通知を行うために、併せてアカウント登録にメールアドレスを必須にすることを強く推奨します。
+     */
+    "registerApprovalEmailRecommended": string;
     /**
      * このサーバーではメール配信はサポートされていません
      */
@@ -4863,6 +4959,18 @@ export interface Locale extends ILocale {
      */
     "showRenotes": string;
     /**
+     * Show quotes
+     */
+    "showQuotes": string;
+    /**
+     * Show replies
+     */
+    "showReplies": string;
+    /**
+     * Show non-public
+     */
+    "showNonPublicNotes": string;
+    /**
      * 編集済み
      */
     "edited": string;
@@ -5122,7 +5230,7 @@ export interface Locale extends ILocale {
      * このサーバーからのフォロワーがいないリモートユーザーの、メンションを含むノートをブロックするようにします。
      */
     "blockMentionsFromUnfamiliarRemoteUsersDescription": string;
-		/**
+    /**
      * 読み込み中
      */
     "loading": string;
@@ -5135,18 +5243,14 @@ export interface Locale extends ILocale {
      */
     "gameRetry": string;
     /**
-     * すぐ消す
+     * ノートの自己消滅の初期値
      */
-    "scheduledNoteDelete": string;
+    "defaultScheduledNoteDeleteTime": string;
     /**
-     * このノートは{time}に消去されます
+     * ノートの自己消滅が有効になっています
      */
-    "noteDeletationAt": ParameterizedString<"time">;
+    "scheduledNoteDeleteEnabled": string;
     /**
-     * 1年以上先の日時を指定することはできません
-     */
-    "cannotScheduleLaterThanOneYear": string;
-		/**
      * 使用しない場合は空欄にしてください
      */
     "notUsePleaseLeaveBlank": string;
@@ -5206,14 +5310,6 @@ export interface Locale extends ILocale {
      * 作成したアンテナ
      */
     "createdAntennas": string;
-    /**
-     * ノートの自己消滅の初期値
-     */
-    "defaultScheduledNoteDeleteTime": string;
-    /**
-     * ノートの自己消滅が有効になっています
-     */
-    "scheduledNoteDeleteEnabled": string;
     /**
      * {x}から
      */
@@ -5290,6 +5386,14 @@ export interface Locale extends ILocale {
      * 名前に禁止されている文字列が含まれています。この名前を使用したい場合は、サーバー管理者にお問い合わせください。
      */
     "yourNameContainsProhibitedWordsDescription": string;
+    /**
+     * ユーザー名の長さ(最低文字数)
+     */
+    "validateMinimumUsernameLength": string;
+		/**
+		 * 登録時にユーザーが扱えるユーザー名の最低文字数を指定できます。
+		 */
+		"validateMinimumUsernameLengthDescription": string;
     "_abuseUserReport": {
         /**
          * 転送
@@ -5317,6 +5421,14 @@ export interface Locale extends ILocale {
          */
         "resolveTutorial": string;
     };
+    /**
+     * 編集済み: {date} {time}
+     */
+    "noteUpdatedAt": ParameterizedString<"date" | "time">;
+    /**
+     * 修正履歴
+     */
+    "editHistory": string;
     "_delivery": {
         /**
          * 配信状態
@@ -5362,6 +5474,18 @@ export interface Locale extends ILocale {
      */
     "maximum": string;
     /**
+     * すぐ消す
+     */
+    "scheduledNoteDelete": string;
+    /**
+     * このノートは{time}に削除されます
+     */
+    "noteDeletationAt": ParameterizedString<"time">;
+    /**
+     * 1年以上先の日時を指定することはできません
+     */
+    "cannotScheduleLaterThanOneYear": string;
+    /**
      * 投稿フォーム
      */
     "postForm": string;
@@ -5389,10 +5513,10 @@ export interface Locale extends ILocale {
      * デフォルトでノートが自己消滅するように
      */
     "defaultScheduledNoteDelete": string;
-		/**
-		 * いいねボタンで使うリアクションを選択
-		 */
-		"selectReaction": string;
+    /**
+     * いいねボタンで使うリアクションを選択
+     */
+    "selectReaction": string;
     /**
      * 誰がリアクションをしたのかを非表示にする
      */
@@ -5421,7 +5545,7 @@ export interface Locale extends ILocale {
      * 自分のプロフィールのアクティビティ (概要/アクティビティタブ) を他人が見れないようにします。このオプションを有効にしても、自分であればプロフィールのアクティビティタブから引き続き閲覧できます。
      */
     "hideActivityDescription": string;
-		/**
+    /**
      * 名前を変更
      */
     "changeUserName": string;
@@ -5479,8 +5603,17 @@ export interface Locale extends ILocale {
             "section3": string;
         };
     };
+    /**
+     * フォローリクエストを自動で拒否する
+     */
     "autoRejectFollowRequest": string;
+    /**
+     * フォローリクエストを自動で拒否するようにします。「フォロー中ユーザーからのフォロリクを自動承認」がONになっている場合は、フォロー中ユーザーからのフォローリクエストは自動的に承認され、それ以外のユーザーからのフォローリクエストは自動的に拒否されるようになります。
+     */
     "autoRejectFollowRequestDescription": string;
+    /**
+     * nayizeを無効化する
+     */
     "disableNoteNyaize": string;
     "_announcement": {
         /**
@@ -6979,6 +7112,10 @@ export interface Locale extends ILocale {
              */
             "canPublicNote": string;
             /**
+             * ノートの編集
+             */
+            "canEditNote": string;
+            /**
              * ノート内の最大メンション数
              */
             "mentionMax": string;
@@ -7006,6 +7143,10 @@ export interface Locale extends ILocale {
              * アバターデコレーションの管理
              */
             "canManageAvatarDecorations": string;
+            /**
+             * 絵文字の削除
+             */
+            "canEmojiDeletion": string;
             /**
              * リモートアイコンデコレーションの利用
              */
@@ -7173,6 +7314,14 @@ export interface Locale extends ILocale {
              */
             "notesMoreThanOrEq": string;
             /**
+             * 最終アクティブ日時が～未満
+             */
+            "activedMoreThan": string;
+            /**
+             * 最終アクティブ日時が～以上
+             */
+            "activedLessThan": string;
+            /**
              * ～かつ～
              */
             "and": string;
@@ -7269,6 +7418,18 @@ export interface Locale extends ILocale {
          * 入力されたメールアドレス({email})宛に確認のメールが送信されました。メールに記載されたリンクにアクセスすると、アカウントの作成が完了します。メールに記載されているリンクの有効期限は30分です。
          */
         "emailSent": ParameterizedString<"email">;
+        /**
+         * 入力されたメールアドレス({email})宛に確認のメールが送信されました。メールに記載されたリンクにアクセスすると、アカウントが作成され、承認待ちの状態になります。アカウントの登録が承認された際、({email})宛にメールが届きます。
+         */
+        "approvalAndEmailPending": ParameterizedString<"email" | "email">;
+        /**
+         * アカウントが作成され、承認待ちの状態です。
+         */
+        "approvalPending": string;
+        /**
+         * このサーバーに参加したい理由を入力してください。
+         */
+        "reasonInfo": string;
     };
     "_accountDelete": {
         /**
@@ -7369,12 +7530,12 @@ export interface Locale extends ILocale {
              */
             "title": string;
         };
-				"_unfollow" : {
-					/**
-					 * フォロー解除されました
-					 */
-					"title": string;
-				}
+        "_unfollow": {
+            /**
+             * フォロー解除されました
+             */
+            "title": string;
+        };
         "_receiveFollowRequest": {
             /**
              * フォローリクエストを受け取りました
@@ -9228,6 +9389,10 @@ export interface Locale extends ILocale {
          */
         "global": string;
     };
+    /**
+     * フォロー中ユーザーの投稿
+     */
+    "followingsUpdates": string;
     "_play": {
         /**
          * Playの作成
@@ -9531,10 +9696,10 @@ export interface Locale extends ILocale {
          * フォローされました
          */
         "youWereFollowed": string;
-				/**
-				 * フォロー解除されました
- 				 */
-				"youWereUnFollower": string;
+        /**
+         * フォロー解除されました
+         */
+        "youWereUnFollower": string;
         /**
          * フォローリクエストが来ました
          */
@@ -9543,10 +9708,10 @@ export interface Locale extends ILocale {
          * フォローリクエストが承認されました
          */
         "yourFollowRequestAccepted": string;
-				/**
-				 * フォローリクエストが拒否されました
-				 */
-				"yourFollowRequestRejected": string;
+        /**
+         * フォローリクエストが拒否されました
+         */
+        "yourFollowRequestRejected": string;
         /**
          * アンケートの結果が出ました
          */
@@ -9600,13 +9765,17 @@ export interface Locale extends ILocale {
          */
         "renotedBySomeUsers": ParameterizedString<"n">;
         /**
+         * {n}件の新しい投稿
+         */
+        "notedBySomeUsers": ParameterizedString<"n">;
+        /**
          * {n}人にフォローされました
          */
         "followedBySomeUsers": ParameterizedString<"n">;
-				/**
-				 * {n}人にフォロー解除されました
-				 */
-				"unfollowerBySomeUser": ParameterizedString<"n">;
+        /**
+         * {n}人にフォロー解除されました
+         */
+        "unfollowerBySomeUsers": ParameterizedString<"n">;
         /**
          * 通知の履歴をリセットする
          */
@@ -9632,10 +9801,10 @@ export interface Locale extends ILocale {
              * フォロー
              */
             "follow": string;
-						/**
-						 * フォロー解除
-						 */
-						"unfollow": string;
+            /**
+             * フォロー解除
+             */
+            "unfollow": string;
             /**
              * メンション
              */
@@ -9668,10 +9837,10 @@ export interface Locale extends ILocale {
              * フォローが受理された
              */
             "followRequestAccepted": string;
-						/**
-						 * フォローが拒否された
-						 */
-						"followRequestRejected": string;
+            /**
+             * フォローが拒否された
+             */
+            "followRequestRejected": string;
             /**
              * ロールが付与された
              */
@@ -10025,6 +10194,10 @@ export interface Locale extends ILocale {
          * ロールのアサイン解除
          */
         "unassignRole": string;
+        /**
+         * 承認済み
+         */
+        "approve": string;
         /**
          * 凍結
          */
@@ -10708,10 +10881,6 @@ export interface Locale extends ILocale {
          */
         "uniqueFeature": string;
         /**
-         * リモート上のサーバーのローカルタイムラインを覗く機能
-         */
-        // "remoteLocalTimeline": string;
-        /**
          * プロフィールを非表示にする機能
          */
         "hiddenProfile": string;
@@ -10832,9 +11001,9 @@ export interface Locale extends ILocale {
          */
         "all": string;
     };
-    "__rest": {
+    "__TL_conf": {
         /**
-         * Misskey.rest独自機能
+         * タイムラインの非表示
          */
         "extendSettings": string;
         /**
@@ -10850,6 +11019,19 @@ export interface Locale extends ILocale {
          */
         "hideGlobalTimeLine": string;
     };
+    /**
+     * Remote followers may have incomplete or outdated activity
+     */
+    "remoteFollowersWarning": string;
+		/**
+		 * フォローフィード
+		 */
+		"followFeed": string;
+		/**
+     * タイムラインにbotを表示
+     */
+    "showBots": string;
+
 }
 declare const locales: {
     [lang: string]: Locale;

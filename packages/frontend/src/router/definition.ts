@@ -189,6 +189,10 @@ const routes: RouteDef[] = [{
 		name: 'other',
 		component: page(() => import('@/pages/settings/other.vue')),
 	}, {
+		path: '/lqvp-settings',
+		name: 'lqvp-settings',
+		component: page(() => import('@/pages/settings/lqvp-settings.vue')),
+	}, {
 		path: '/',
 		component: page(() => import('@/pages/_empty_.vue')),
 	}],
@@ -240,6 +244,14 @@ const routes: RouteDef[] = [{
 	path: '/explore',
 	component: page(() => import('@/pages/explore.vue')),
 	hash: 'initialTab',
+	loginRequired: true,
+}, {
+	path: '/following-feed',
+	component: page(() => import('@/pages/following-feed.vue')),
+	loginRequired: true,
+}, {
+	path: '/following-feed/:userId',
+	component: page(() => import('@/pages/user/recent-notes.vue')),
 	loginRequired: true,
 }, {
 	path: '/search',
@@ -513,6 +525,10 @@ const routes: RouteDef[] = [{
 		name: 'system-webhook',
 		component: page(() => import('@/pages/admin/system-webhook.vue')),
 	}, {
+		path: '/approvals',
+		name: 'approvals',
+		component: page(() => import('@/pages/admin/approvals.vue')),
+	}, {
 		path: '/',
 		component: page(() => import('@/pages/_empty_.vue')),
 	}],
@@ -551,6 +567,10 @@ const routes: RouteDef[] = [{
 },{
 	path: '/my/lists/:listId',
 	component: page(() => import('@/pages/my-lists/list.vue')),
+	loginRequired: true,
+}, {
+	path: '/my/followings-updates',
+	component: page(() => import('@/pages/my-followings/index.vue')),
 	loginRequired: true,
 }, {
 	path: '/my/lists',

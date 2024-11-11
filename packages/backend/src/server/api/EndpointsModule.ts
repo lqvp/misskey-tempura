@@ -80,6 +80,7 @@ import * as ep___admin_showModerationLogs from './endpoints/admin/show-moderatio
 import * as ep___admin_showUser from './endpoints/admin/show-user.js';
 import * as ep___admin_showUsers from './endpoints/admin/show-users.js';
 import * as ep___admin_suspendUser from './endpoints/admin/suspend-user.js';
+import * as ep___admin_approveUser from './endpoints/admin/approve-user.js';
 import * as ep___admin_unsuspendUser from './endpoints/admin/unsuspend-user.js';
 import * as ep___admin_updateMeta from './endpoints/admin/update-meta.js';
 import * as ep___admin_deleteAccount from './endpoints/admin/delete-account.js';
@@ -289,13 +290,17 @@ import * as ep___notes_children from './endpoints/notes/children.js';
 import * as ep___notes_clips from './endpoints/notes/clips.js';
 import * as ep___notes_conversation from './endpoints/notes/conversation.js';
 import * as ep___notes_create from './endpoints/notes/create.js';
+import * as ep___notes_update from './endpoints/notes/update.js';
+import * as ep___notes_history from './endpoints/notes/history.js';
 import * as ep___notes_delete from './endpoints/notes/delete.js';
 import * as ep___notes_favorites_create from './endpoints/notes/favorites/create.js';
 import * as ep___notes_favorites_delete from './endpoints/notes/favorites/delete.js';
 import * as ep___notes_featured from './endpoints/notes/featured.js';
+import * as ep___notes_following from './endpoints/notes/following.js';
 import * as ep___notes_globalTimeline from './endpoints/notes/global-timeline.js';
 import * as ep___notes_hybridTimeline from './endpoints/notes/hybrid-timeline.js';
 import * as ep___notes_localTimeline from './endpoints/notes/local-timeline.js';
+import * as ep___notes_followingsUpdates from './endpoints/notes/followings-updates.js';
 import * as ep___notes_mentions from './endpoints/notes/mentions.js';
 import * as ep___notes_polls_recommendation from './endpoints/notes/polls/recommendation.js';
 import * as ep___notes_polls_vote from './endpoints/notes/polls/vote.js';
@@ -474,6 +479,7 @@ const $admin_showModerationLogs: Provider = { provide: 'ep:admin/show-moderation
 const $admin_showUser: Provider = { provide: 'ep:admin/show-user', useClass: ep___admin_showUser.default };
 const $admin_showUsers: Provider = { provide: 'ep:admin/show-users', useClass: ep___admin_showUsers.default };
 const $admin_suspendUser: Provider = { provide: 'ep:admin/suspend-user', useClass: ep___admin_suspendUser.default };
+const $admin_approveUser: Provider = { provide: 'ep:admin/approve-user', useClass: ep___admin_approveUser.default };
 const $admin_unsuspendUser: Provider = { provide: 'ep:admin/unsuspend-user', useClass: ep___admin_unsuspendUser.default };
 const $admin_updateMeta: Provider = { provide: 'ep:admin/update-meta', useClass: ep___admin_updateMeta.default };
 const $admin_deleteAccount: Provider = { provide: 'ep:admin/delete-account', useClass: ep___admin_deleteAccount.default };
@@ -683,13 +689,17 @@ const $notes_children: Provider = { provide: 'ep:notes/children', useClass: ep__
 const $notes_clips: Provider = { provide: 'ep:notes/clips', useClass: ep___notes_clips.default };
 const $notes_conversation: Provider = { provide: 'ep:notes/conversation', useClass: ep___notes_conversation.default };
 const $notes_create: Provider = { provide: 'ep:notes/create', useClass: ep___notes_create.default };
+const $notes_update: Provider = { provide: 'ep:notes/update', useClass: ep___notes_update.default };
+const $notes_history: Provider = { provide: 'ep:notes/history', useClass: ep___notes_history.default };
 const $notes_delete: Provider = { provide: 'ep:notes/delete', useClass: ep___notes_delete.default };
 const $notes_favorites_create: Provider = { provide: 'ep:notes/favorites/create', useClass: ep___notes_favorites_create.default };
 const $notes_favorites_delete: Provider = { provide: 'ep:notes/favorites/delete', useClass: ep___notes_favorites_delete.default };
 const $notes_featured: Provider = { provide: 'ep:notes/featured', useClass: ep___notes_featured.default };
+const $notes_following: Provider = { provide: 'ep:notes/following', useClass: ep___notes_following.default };
 const $notes_globalTimeline: Provider = { provide: 'ep:notes/global-timeline', useClass: ep___notes_globalTimeline.default };
 const $notes_hybridTimeline: Provider = { provide: 'ep:notes/hybrid-timeline', useClass: ep___notes_hybridTimeline.default };
 const $notes_localTimeline: Provider = { provide: 'ep:notes/local-timeline', useClass: ep___notes_localTimeline.default };
+const $notes_followingsUpdates: Provider = { provide: 'ep:notes/followings-updates', useClass: ep___notes_followingsUpdates.default };
 const $notes_mentions: Provider = { provide: 'ep:notes/mentions', useClass: ep___notes_mentions.default };
 const $notes_polls_recommendation: Provider = { provide: 'ep:notes/polls/recommendation', useClass: ep___notes_polls_recommendation.default };
 const $notes_polls_vote: Provider = { provide: 'ep:notes/polls/vote', useClass: ep___notes_polls_vote.default };
@@ -872,6 +882,7 @@ const $reversi_verify: Provider = { provide: 'ep:reversi/verify', useClass: ep__
 		$admin_showUser,
 		$admin_showUsers,
 		$admin_suspendUser,
+		$admin_approveUser,
 		$admin_unsuspendUser,
 		$admin_updateMeta,
 		$admin_deleteAccount,
@@ -1081,13 +1092,17 @@ const $reversi_verify: Provider = { provide: 'ep:reversi/verify', useClass: ep__
 		$notes_clips,
 		$notes_conversation,
 		$notes_create,
+		$notes_update,
+		$notes_history,
 		$notes_delete,
 		$notes_favorites_create,
 		$notes_favorites_delete,
 		$notes_featured,
+		$notes_following,
 		$notes_globalTimeline,
 		$notes_hybridTimeline,
 		$notes_localTimeline,
+		$notes_followingsUpdates,
 		$notes_mentions,
 		$notes_polls_recommendation,
 		$notes_polls_vote,
@@ -1264,6 +1279,7 @@ const $reversi_verify: Provider = { provide: 'ep:reversi/verify', useClass: ep__
 		$admin_showUser,
 		$admin_showUsers,
 		$admin_suspendUser,
+		$admin_approveUser,
 		$admin_unsuspendUser,
 		$admin_updateMeta,
 		$admin_deleteAccount,
@@ -1473,13 +1489,17 @@ const $reversi_verify: Provider = { provide: 'ep:reversi/verify', useClass: ep__
 		$notes_clips,
 		$notes_conversation,
 		$notes_create,
+		$notes_update,
+		$notes_history,
 		$notes_delete,
 		$notes_favorites_create,
 		$notes_favorites_delete,
 		$notes_featured,
+		$notes_following,
 		$notes_globalTimeline,
 		$notes_hybridTimeline,
 		$notes_localTimeline,
+		$notes_followingsUpdates,
 		$notes_mentions,
 		$notes_polls_recommendation,
 		$notes_polls_vote,

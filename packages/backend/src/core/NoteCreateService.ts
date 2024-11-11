@@ -57,6 +57,9 @@ import { trackPromise } from '@/misc/promise-tracker.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { Data } from 'ws';
 import { CollapsedQueue } from '@/misc/collapsed-queue.js';
+import { LoggerService } from '@/core/LoggerService.js';
+import type Logger from '@/logger.js';
+import { LatestNoteService } from '@/core/LatestNoteService.js';
 
 type NotificationType = 'reply' | 'renote' | 'quote' | 'mention';
 
@@ -125,6 +128,7 @@ type MinimumUser = {
 
 type Option = {
 	createdAt?: Date | null;
+	updatedAt?: Date | null;
 	name?: string | null;
 	text?: string | null;
 	reply?: MiNote | null;
@@ -150,6 +154,8 @@ type Option = {
 export class NoteCreateService implements OnApplicationShutdown {
 	#shutdownController = new AbortController();
 	private updateNotesCountQueue: CollapsedQueue<MiNote['id'], number>;
+
+	private logger: Logger;
 
 	constructor(
 		@Inject(DI.config)
@@ -219,7 +225,10 @@ export class NoteCreateService implements OnApplicationShutdown {
 		private instanceChart: InstanceChart,
 		private utilityService: UtilityService,
 		private userBlockingService: UserBlockingService,
+		private loggerService: LoggerService,
+		private latestNoteService: LatestNoteService,
 	) {
+		this.logger = this.loggerService.getLogger('note-create-service');
 		this.updateNotesCountQueue = new CollapsedQueue(process.env.NODE_ENV !== 'test' ? 60 * 1000 * 5 : 0, this.collapseNotesCount, this.performUpdateNotesCount);
 	}
 
@@ -368,12 +377,14 @@ export class NoteCreateService implements OnApplicationShutdown {
 		// if the host is media-silenced, custom emojis are not allowed
 		if (this.utilityService.isMediaSilencedHost(this.meta.mediaSilencedHosts, user.host)) emojis = [];
 
-		const willCauseNotification = mentionedUsers.filter(u => u.host === null).length > 0 || data.reply?.userHost === null || data.renote?.userHost === null;
+		const willCauseNotification = mentionedUsers.some(u => u.host === null)
+			|| (data.visibility === 'specified' && data.visibleUsers?.some(u => u.host === null))
+			|| data.reply?.userHost === null || (this.isRenote(data) && this.isQuote(data) && data.renote.userHost === null) || false;
 
-		if (process.env.MISSKEY_BLOCK_MENTIONS_FROM_UNFAMILIAR_REMOTE_USERS === 'true' && user.host !== null && willCauseNotification) {
+		if (this.meta.blockMentionsFromUnfamiliarRemoteUsers && user.host !== null && willCauseNotification) {
 			const userEntity = await this.usersRepository.findOneBy({ id: user.id });
 			if ((userEntity?.followersCount ?? 0) === 0) {
-				this.logger.info('Request rejected because user has no local followers', { user: user.id, note: data });
+				this.logger.error('Request rejected because user has no local followers', { user: user.id, note: data });
 				throw new IdentifiableError('e11b3a16-f543-4885-8eb1-66cad131dbfd', 'Notes including mentions, replies, or renotes from remote users are not allowed until user has at least one local follower.');
 			}
 		}
@@ -551,7 +562,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 			this.saveReply(data.reply, note);
 		}
 
-		if (data.reply == null) {
+		if (data.reply == null && !silent) {
 			// TODO: キャッシュ
 			this.followingsRepository.findBy({
 				followeeId: user.id,
@@ -721,6 +732,24 @@ export class NoteCreateService implements OnApplicationShutdown {
 						this.relayService.deliverToRelays(user, noteActivity);
 					}
 
+					if (data.renote && data.renote.userHost === null && ['followers'].includes(data.renote.visibility)) {
+						const renoteActivity = await this.renderNoteOrRenoteActivity(data.renote, data.renote);
+						const dmRenote = this.apDeliverManagerService.createDeliverManager(user, renoteActivity);
+
+						// メンションされたリモートユーザーに配送
+						for (const u of mentionedUsers.filter(u => this.userEntityService.isRemoteUser(u))) {
+							dmRenote.addDirectRecipe(u as RemoteUser);
+						}
+
+						// フォロワーに配送
+						if (['public', 'home', 'followers'].includes(data.renote.visibility)) {
+							dmRenote.addFollowersRecipe();
+						}
+
+						await dmRenote.execute();
+					}
+
+					// 先に引用を配送しておく
 					trackPromise(dm.execute());
 				})();
 			}
@@ -744,6 +773,9 @@ export class NoteCreateService implements OnApplicationShutdown {
 				}
 			});
 		}
+
+		// Update the Latest Note index / following feed
+		this.latestNoteService.handleCreatedNoteBG(note);
 
 		// Register to search database
 		this.index(note);
@@ -1073,7 +1105,31 @@ export class NoteCreateService implements OnApplicationShutdown {
 	}
 
 	@bindThis
-	public async onApplicationShutdown(signal?: string | undefined): Promise<void> {
-		await this.dispose();
+	public onApplicationShutdown(signal?: string | undefined): void {
+		this.dispose();
+	}
+
+	private async updateLatestNote(note: MiNote) {
+		// Ignore DMs.
+		// Followers-only posts are *included*, as this table is used to back the "following" feed.
+		if (note.visibility === 'specified') return;
+
+		// Ignore pure renotes
+		if (isPureRenote(note)) return;
+
+		// Compute the compound key of the entry to check
+		const key = SkLatestNote.keyFor(note);
+
+		// Make sure that this isn't an *older* post.
+		// We can get older posts through replies, lookups, etc.
+		const currentLatest = await this.latestNotesRepository.findOneBy(key);
+		if (currentLatest != null && currentLatest.noteId >= note.id) return;
+
+		// Record this as the latest note for the given user
+		const latestNote = new SkLatestNote({
+			...key,
+			noteId: note.id,
+		});
+		await this.latestNotesRepository.upsert(latestNote, ['userId', 'isPublic', 'isReply', 'isQuote']);
 	}
 }

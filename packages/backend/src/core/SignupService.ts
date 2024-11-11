@@ -53,12 +53,15 @@ export class SignupService {
 		passwordHash?: MiUserProfile['password'] | null;
 		host?: string | null;
 		ignorePreservedUsernames?: boolean;
+		reason?: string | null;
 	}) {
 		const { username, password, passwordHash, host } = opts;
 		let hash = passwordHash;
 
 		// Validate username
-		if (!this.userEntityService.validateLocalUsername(username)) {
+		if (
+			(!opts.ignorePreservedUsernames && username.length < this.meta.validateMinimumUsernameLength) || !this.userEntityService.validateLocalUsername(username)
+		) {
 			throw new Error('INVALID_USERNAME');
 		}
 
@@ -130,6 +133,7 @@ export class SignupService {
 				host: this.utilityService.toPunyNullable(host),
 				token: secret,
 				isRoot: isTheFirstUser,
+				signupReason: opts.reason,
 			}));
 
 			await transactionalEntityManager.save(new MiUserKeypair({

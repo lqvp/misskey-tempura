@@ -63,13 +63,14 @@ export function misskeyApi<
 
 // Implements Misskey.api.ApiClient.request
 export function misskeyApiGet<
-	ResT = void,
-	E extends keyof Misskey.Endpoints = keyof Misskey.Endpoints,
-	P extends Misskey.Endpoints[E]['req'] = Misskey.Endpoints[E]['req'],
-	_ResT = ResT extends void ? Misskey.api.SwitchCaseResponseType<E, P> : ResT,
+    ResT = void,
+    E extends keyof Misskey.Endpoints = keyof Misskey.Endpoints,
+    P extends Misskey.Endpoints[E]['req'] = Misskey.Endpoints[E]['req'],
+    _ResT = ResT extends void ? Misskey.api.SwitchCaseResponseType<E, P> : ResT,
 >(
 	endpoint: E,
 	data: P = {} as any,
+	token?: string | null | undefined,
 ): Promise<_ResT> {
 	pendingApiRequestsCount.value++;
 
@@ -77,7 +78,11 @@ export function misskeyApiGet<
 		pendingApiRequestsCount.value--;
 	};
 
-	const query = new URLSearchParams(data as any);
+	const params = { ...data as any };
+	if ($i) params.i = $i.token;
+	if (token !== undefined) params.i = token;
+
+	const query = new URLSearchParams(params);
 
 	const promise = new Promise<_ResT>((resolve, reject) => {
 		// Send request
@@ -85,6 +90,9 @@ export function misskeyApiGet<
 			method: 'GET',
 			credentials: 'omit',
 			cache: 'default',
+			headers: {
+				'Content-Type': 'application/json',
+			},
 		}).then(async (res) => {
 			const body = res.status === 204 ? null : await res.json();
 

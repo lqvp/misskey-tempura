@@ -192,6 +192,11 @@ export class MiMeta {
 	@Column('boolean', {
 		default: false,
 	})
+	public approvalRequiredForSignup: boolean;
+
+	@Column('boolean', {
+		default: false,
+	})
 	public enableHcaptcha: boolean;
 
 	@Column('varchar', {
@@ -430,6 +435,12 @@ export class MiMeta {
 		length: 1024,
 		nullable: true,
 	})
+	public objectStoragePrefixForRemote: string | null;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
 	public objectStorageBaseUrl: string | null;
 
 	@Column('varchar', {
@@ -480,6 +491,11 @@ export class MiMeta {
 		default: true,
 	})
 	public objectStorageS3ForcePathStyle: boolean;
+
+	@Column('integer', {
+		nullable: true,
+	})
+	public objectStorageCacheDays: number | null;
 
 	@Column('boolean', {
 		default: false,
@@ -568,6 +584,12 @@ export class MiMeta {
 		default: '{}',
 	})
 	public bannedEmailDomains: string[];
+
+	@Column('boolean', {
+		default: false,
+	})
+	public emailWhitelist: boolean;
+
 
 	@Column('varchar', {
 		length: 1024, array: true, default: '{ "admin", "administrator", "root", "system", "maintainer", "host", "mod", "moderator", "owner", "superuser", "staff", "auth", "i", "me", "everyone", "all", "mention", "mentions", "example", "user", "users", "account", "accounts", "official", "help", "helps", "support", "supports", "info", "information", "informations", "announce", "announces", "announcement", "announcements", "notice", "notification", "notifications", "dev", "developer", "developers", "tech", "misskey" }',
@@ -670,4 +692,9 @@ export class MiMeta {
 		default: true,
 	})
 	public blockMentionsFromUnfamiliarRemoteUsers: boolean;
+
+	@Column('integer', {
+		default: 5,
+	})
+	public validateMinimumUsernameLength: number;
 }

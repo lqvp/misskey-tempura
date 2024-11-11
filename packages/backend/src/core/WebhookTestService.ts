@@ -83,6 +83,8 @@ function generateDummyUser(override?: Partial<MiUser>): MiUser {
 		isExplorable: true,
 		isHibernated: false,
 		isDeleted: false,
+		approved: true,
+		signupReason: '',
 		emojis: [],
 		score: 0,
 		host: null,
@@ -134,6 +136,7 @@ function generateDummyNote(override?: Partial<MiNote>): MiNote {
 		replyUserHost: null,
 		renoteUserId: null,
 		renoteUserHost: null,
+		updatedAt: new Date(),
 		...override,
 	};
 }
@@ -198,6 +201,7 @@ function toPackedUserLite(user: MiUser, override?: Packed<'UserLite'>): Packed<'
 		})),
 		isBot: user.isBot,
 		isCat: user.isCat,
+		approved: user.approved,
 		emojis: user.emojis,
 		onlineStatus: 'active',
 		badgeRoles: [],

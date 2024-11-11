@@ -433,6 +433,7 @@ export class ApPersonService implements OnModuleInit {
 					alsoKnownAs: person.alsoKnownAs,
 					isExplorable: person.discoverable,
 					username: person.preferredUsername,
+					approved: true,
 					usernameLower: person.preferredUsername?.toLowerCase(),
 					host,
 					inbox: person.inbox,
@@ -491,6 +492,7 @@ export class ApPersonService implements OnModuleInit {
 					birthday: bday?.[0] ?? null,
 					location: person['vcard:Address'] ?? null,
 					userHost: host,
+					listenbrainz: person.listenbrainz ?? null,
 				}));
 
 				if (person.publicKey) {
@@ -713,6 +715,7 @@ export class ApPersonService implements OnModuleInit {
 			emojis: emojiNames,
 			name: truncate(person.name, nameLength),
 			tags,
+			approved: true,
 			isBot: getApType(object) === 'Service' || getApType(object) === 'Application',
 			isCat: (person as any).isCat === true,
 			isLocked: person.manuallyApprovesFollowers,
@@ -770,6 +773,7 @@ export class ApPersonService implements OnModuleInit {
 			followersVisibility,
 			birthday: bday?.[0] ?? null,
 			location: person['vcard:Address'] ?? null,
+			listenbrainz: person.listenbrainz ?? null,
 			mutualLinkSections: await this.mutualLinkSections(person, exist),
 		});
 

@@ -10,6 +10,7 @@ import { RelationIdLoader } from 'typeorm/query-builder/relation-id/RelationIdLo
 import { RawSqlResultsToEntityTransformer } from 'typeorm/query-builder/transformer/RawSqlResultsToEntityTransformer.js';
 import { ObjectUtils } from 'typeorm/util/ObjectUtils.js';
 import { OrmUtils } from 'typeorm/util/OrmUtils.js';
+import { SkLatestNote } from '@/models/LatestNote.js';
 import { MiAbuseUserReport } from '@/models/AbuseUserReport.js';
 import { MiAbuseReportNotificationRecipient } from '@/models/AbuseReportNotificationRecipient.js';
 import { MiAccessToken } from '@/models/AccessToken.js';
@@ -26,7 +27,6 @@ import { MiChannelFavorite } from '@/models/ChannelFavorite.js';
 import { MiClip } from '@/models/Clip.js';
 import { MiClipNote } from '@/models/ClipNote.js';
 import { MiClipFavorite } from '@/models/ClipFavorite.js';
-import { MiClipFavoriteRemote } from '@/models/ClipFavoriteRemote.js';
 import { MiDriveFile } from '@/models/DriveFile.js';
 import { MiDriveFolder } from '@/models/DriveFolder.js';
 import { MiEmoji } from '@/models/Emoji.js';
@@ -77,10 +77,10 @@ import { MiRole } from '@/models/Role.js';
 import { MiRoleAssignment } from '@/models/RoleAssignment.js';
 import { MiFlash } from '@/models/Flash.js';
 import { MiFlashLike } from '@/models/FlashLike.js';
-import { MiFlashLikeRemote } from '@/models/FlashLikeRemote.js';
 import { MiUserListFavorite } from '@/models/UserListFavorite.js';
 import { MiBubbleGameRecord } from '@/models/BubbleGameRecord.js';
 import { MiReversiGame } from '@/models/ReversiGame.js';
+import { NoteHistory } from './NoteHistory.js';
 import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity.js';
 
 export interface MiRepository<T extends ObjectLiteral> {
@@ -127,6 +127,7 @@ export const miRepository = {
 } satisfies MiRepository<ObjectLiteral>;
 
 export {
+	SkLatestNote,
 	MiAbuseUserReport,
 	MiAbuseReportNotificationRecipient,
 	MiAccessToken,
@@ -143,7 +144,6 @@ export {
 	MiClip,
 	MiClipNote,
 	MiClipFavorite,
-	MiClipFavoriteRemote,
 	MiDriveFile,
 	MiDriveFolder,
 	MiEmoji,
@@ -194,7 +194,6 @@ export {
 	MiRoleAssignment,
 	MiFlash,
 	MiFlashLike,
-	MiFlashLikeRemote,
 	MiUserMemo,
 	MiBubbleGameRecord,
 	MiReversiGame,
@@ -216,7 +215,6 @@ export type ChannelFavoritesRepository = Repository<MiChannelFavorite> & MiRepos
 export type ClipsRepository = Repository<MiClip> & MiRepository<MiClip>;
 export type ClipNotesRepository = Repository<MiClipNote> & MiRepository<MiClipNote>;
 export type ClipFavoritesRepository = Repository<MiClipFavorite> & MiRepository<MiClipFavorite>;
-export type ClipFavoritesRemoteRepository = Repository<MiClipFavoriteRemote> & MiRepository<MiClipFavoriteRemote>;
 export type DriveFilesRepository = Repository<MiDriveFile> & MiRepository<MiDriveFile>;
 export type DriveFoldersRepository = Repository<MiDriveFolder> & MiRepository<MiDriveFolder>;
 export type EmojisRepository = Repository<MiEmoji> & MiRepository<MiEmoji>;
@@ -227,6 +225,7 @@ export type GalleryPostsRepository = Repository<MiGalleryPost> & MiRepository<Mi
 export type HashtagsRepository = Repository<MiHashtag> & MiRepository<MiHashtag>;
 export type InstancesRepository = Repository<MiInstance> & MiRepository<MiInstance>;
 export type MetasRepository = Repository<MiMeta> & MiRepository<MiMeta>;
+export type LatestNotesRepository = Repository<SkLatestNote> & MiRepository<SkLatestNote>;
 export type ModerationLogsRepository = Repository<MiModerationLog> & MiRepository<MiModerationLog>;
 export type MutingsRepository = Repository<MiMuting> & MiRepository<MiMuting>;
 export type RenoteMutingsRepository = Repository<MiRenoteMuting> & MiRepository<MiRenoteMuting>;
@@ -267,7 +266,8 @@ export type RolesRepository = Repository<MiRole> & MiRepository<MiRole>;
 export type RoleAssignmentsRepository = Repository<MiRoleAssignment> & MiRepository<MiRoleAssignment>;
 export type FlashsRepository = Repository<MiFlash> & MiRepository<MiFlash>;
 export type FlashLikesRepository = Repository<MiFlashLike> & MiRepository<MiFlashLike>;
-export type FlashLikesRemoteRepository = Repository<MiFlashLikeRemote> & MiRepository<MiFlashLikeRemote>;
 export type UserMemoRepository = Repository<MiUserMemo> & MiRepository<MiUserMemo>;
 export type BubbleGameRecordsRepository = Repository<MiBubbleGameRecord> & MiRepository<MiBubbleGameRecord>;
 export type ReversiGamesRepository = Repository<MiReversiGame> & MiRepository<MiReversiGame>;
+export type NoteHistoryRepository = Repository<NoteHistory> & MiRepository<NoteHistory>;
+

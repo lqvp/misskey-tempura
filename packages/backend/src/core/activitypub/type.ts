@@ -15,6 +15,7 @@ export interface IObject {
 	_misskey_summary?: string;
 	_misskey_followedMessage?: string | null;
 	published?: string;
+	updated?: string;
 	cc?: ApObject;
 	to?: ApObject;
 	attributedTo?: ApObject;
@@ -204,6 +205,7 @@ export interface IActor extends IObject {
 	};
 	'vcard:bday'?: string;
 	'vcard:Address'?: string;
+	listenbrainz?: string;
 	banner?: {
 		sectionName?: string | null;
 		_misskey_sectionName?: string | null;

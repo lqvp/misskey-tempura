@@ -62,6 +62,11 @@ export const packedUserLiteSchema = {
 			example: 'misskey.example.com',
 			description: 'The local host is represented with `null`.',
 		},
+		approved: {
+			type: 'boolean',
+			nullable: false, default: false,
+			description: 'User whom registeration is approved or not',
+		},
 		avatarUrl: {
 			type: 'string',
 			format: 'url',
@@ -264,6 +269,12 @@ export const packedUserDetailedNotMeOnlySchema = {
 			nullable: true, optional: false,
 			example: '2018-03-12',
 		},
+		ListenBrainz: {
+			type: "string",
+			nullable: true,
+			optional: false,
+			example: "Steve",
+		},
 		lang: {
 			type: 'string',
 			nullable: true, optional: false,
@@ -413,6 +424,10 @@ export const packedUserDetailedNotMeOnlySchema = {
 			nullable: false, optional: true,
 		},
 		securityKeys: {
+			type: 'boolean',
+			nullable: false, optional: true,
+		},
+		approved: {
 			type: 'boolean',
 			nullable: false, optional: true,
 		},

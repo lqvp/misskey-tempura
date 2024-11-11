@@ -70,6 +70,7 @@ export const paramDef = {
 		cacheRemoteFiles: { type: 'boolean' },
 		cacheRemoteSensitiveFiles: { type: 'boolean' },
 		emailRequiredForSignup: { type: 'boolean' },
+		approvalRequiredForSignup: { type: 'boolean' },
 		enableHcaptcha: { type: 'boolean' },
 		hcaptchaSiteKey: { type: 'string', nullable: true },
 		hcaptchaSecretKey: { type: 'string', nullable: true },
@@ -118,6 +119,7 @@ export const paramDef = {
 		objectStorageBaseUrl: { type: 'string', nullable: true },
 		objectStorageBucket: { type: 'string', nullable: true },
 		objectStoragePrefix: { type: 'string', nullable: true },
+		objectStoragePrefixForRemote: { type: 'string', nullable: true },
 		objectStorageEndpoint: { type: 'string', nullable: true },
 		objectStorageRegion: { type: 'string', nullable: true },
 		objectStoragePort: { type: 'integer', nullable: true },
@@ -127,6 +129,7 @@ export const paramDef = {
 		objectStorageUseProxy: { type: 'boolean' },
 		objectStorageSetPublicRead: { type: 'boolean' },
 		objectStorageS3ForcePathStyle: { type: 'boolean' },
+		objectStorageCacheDays: { type: 'integer', nullable: true },
 		enableIpLogging: { type: 'boolean' },
 		enableActiveEmailValidation: { type: 'boolean' },
 		enableVerifymailApi: { type: 'boolean' },
@@ -141,6 +144,7 @@ export const paramDef = {
 		enableIdenticonGeneration: { type: 'boolean' },
 		serverRules: { type: 'array', items: { type: 'string' } },
 		bannedEmailDomains: { type: 'array', items: { type: 'string' } },
+		emailWhitelist: { type: 'boolean'},
 		preservedUsernames: { type: 'array', items: { type: 'string' } },
 		manifestJsonOverride: { type: 'string' },
 		enableFanoutTimeline: { type: 'boolean' },
@@ -152,6 +156,7 @@ export const paramDef = {
 		enableReactionsBuffering: { type: 'boolean' },
 		notesPerOneAd: { type: 'integer' },
 		blockMentionsFromUnfamiliarRemoteUsers: { type: 'boolean' },
+		validateMinimumUsernameLength: { type: 'integer', minimum: 1, maximum: 20 },
 		silencedHosts: {
 			type: 'array',
 			nullable: true,
@@ -317,6 +322,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.emailRequiredForSignup !== undefined) {
 				set.emailRequiredForSignup = ps.emailRequiredForSignup;
+			}
+
+			if (ps.approvalRequiredForSignup !== undefined) {
+				set.approvalRequiredForSignup = ps.approvalRequiredForSignup;
 			}
 
 			if (ps.enableHcaptcha !== undefined) {
@@ -487,6 +496,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.objectStoragePrefix = ps.objectStoragePrefix;
 			}
 
+			if (ps.objectStoragePrefixForRemote !== undefined) {
+				set.objectStoragePrefixForRemote = ps.objectStoragePrefixForRemote;
+			}
+
 			if (ps.objectStorageEndpoint !== undefined) {
 				set.objectStorageEndpoint = ps.objectStorageEndpoint;
 			}
@@ -521,6 +534,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.objectStorageS3ForcePathStyle !== undefined) {
 				set.objectStorageS3ForcePathStyle = ps.objectStorageS3ForcePathStyle;
+			}
+
+			if (ps.objectStorageCacheDays !== undefined) {
+				set.objectStorageCacheDays = ps.objectStorageCacheDays;
 			}
 
 			if (ps.deeplAuthKey !== undefined) {
@@ -643,6 +660,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.bannedEmailDomains = ps.bannedEmailDomains;
 			}
 
+			if (ps.emailWhitelist !== undefined) {
+				set.emailWhitelist = ps.emailWhitelist;
+			}
+
 			if (ps.urlPreviewEnabled !== undefined) {
 				set.urlPreviewEnabled = ps.urlPreviewEnabled;
 			}
@@ -691,6 +712,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.blockMentionsFromUnfamiliarRemoteUsers !== undefined) {
 				set.blockMentionsFromUnfamiliarRemoteUsers = ps.blockMentionsFromUnfamiliarRemoteUsers;
+			}
+
+			if (ps.validateMinimumUsernameLength !== undefined) {
+				set.validateMinimumUsernameLength = ps.validateMinimumUsernameLength;
 			}
 
 			const before = await this.metaService.fetch(true);
