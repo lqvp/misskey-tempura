@@ -705,6 +705,15 @@ export type paths = {
      */
     post: operations['admin___unsuspend-user'];
   };
+  '/admin/update-meta': {
+    /**
+     * admin/update-meta
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *write:admin:meta*
+     */
+    post: operations['admin___update-meta'];
+  };
   '/admin/delete-account': {
     /**
      * admin/delete-account
@@ -878,7 +887,7 @@ export type paths = {
      * announcements
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['announcements'];
   };
@@ -1288,14 +1297,14 @@ export type paths = {
      * charts/user/following
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     get: operations['charts___user___following'];
     /**
      * charts/user/following
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['charts___user___following'];
   };
@@ -1304,14 +1313,14 @@ export type paths = {
      * charts/user/notes
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     get: operations['charts___user___notes'];
     /**
      * charts/user/notes
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['charts___user___notes'];
   };
@@ -1320,14 +1329,14 @@ export type paths = {
      * charts/user/pv
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     get: operations['charts___user___pv'];
     /**
      * charts/user/pv
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['charts___user___pv'];
   };
@@ -1336,14 +1345,14 @@ export type paths = {
      * charts/user/reactions
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     get: operations['charts___user___reactions'];
     /**
      * charts/user/reactions
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['charts___user___reactions'];
   };
@@ -1684,14 +1693,14 @@ export type paths = {
      * federation/instances
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     get: operations['federation___instances'];
     /**
      * federation/instances
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['federation___instances'];
   };
@@ -1810,15 +1819,15 @@ export type paths = {
      */
     post: operations['following___requests___list'];
   };
-	'following/requests/sendlist': {
-		/**
-		 * following/requests/sendlist
-		 * @description No description provided.
-		 *
-		 * **Credential required**: *Yes* / **Permission**: *read:following*
-		 */
-		post: operations['following___requests___send___list'];
-	}
+  '/following/requests/sendlist': {
+    /**
+     * following/requests/sendlist
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *read:following*
+     */
+    post: operations['following___requests___sendlist'];
+  };
   '/following/requests/reject': {
     /**
      * following/requests/reject
@@ -1833,7 +1842,7 @@ export type paths = {
      * gallery/featured
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes* / **Permission**: *read:gallery*
      */
     post: operations['gallery___featured'];
   };
@@ -1842,7 +1851,7 @@ export type paths = {
      * gallery/popular
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes* / **Permission**: *read:gallery*
      */
     post: operations['gallery___popular'];
   };
@@ -1851,7 +1860,7 @@ export type paths = {
      * gallery/posts
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes* / **Permission**: *read:gallery*
      */
     post: operations['gallery___posts'];
   };
@@ -1914,14 +1923,14 @@ export type paths = {
      * get-online-users-count
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     get: operations['get-online-users-count'];
     /**
      * get-online-users-count
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['get-online-users-count'];
   };
@@ -1930,7 +1939,7 @@ export type paths = {
      * get-avatar-decorations
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['get-avatar-decorations'];
   };
@@ -2785,18 +2794,18 @@ export type paths = {
      * notes/featured
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     get: operations['notes___featured'];
     /**
      * notes/featured
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['notes___featured'];
   };
-  '/notes/global-timeline': {
+  '/notes/following': {
     /**
      * notes/following
      * @description No description provided.
@@ -2812,14 +2821,14 @@ export type paths = {
      */
     post: operations['notes___following'];
   };
-  '/notes/bubble-timeline': {
+  '/notes/global-timeline': {
     /**
-     * notes/bubble-timeline
+     * notes/global-timeline
      * @description No description provided.
      *
      * **Credential required**: *No*
      */
-    post: operations['notes___bubble-timeline'];
+    post: operations['notes___global-timeline'];
   };
   '/notes/hybrid-timeline': {
     /**
@@ -2838,6 +2847,15 @@ export type paths = {
      * **Credential required**: *No*
      */
     post: operations['notes___local-timeline'];
+  };
+  '/notes/followings-updates': {
+    /**
+     * notes/followings-updates
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *read:account*
+     */
+    post: operations['notes___followings-updates'];
   };
   '/notes/mentions': {
     /**
@@ -3140,7 +3158,7 @@ export type paths = {
      * flash/featured
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['flash___featured'];
   };
@@ -3309,7 +3327,7 @@ export type paths = {
      * stats
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['stats'];
   };
@@ -3375,7 +3393,14 @@ export type paths = {
      * users
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
+     */
+    get: operations['users'];
+    /**
+     * users
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes*
      */
     post: operations['users'];
   };
@@ -3384,7 +3409,7 @@ export type paths = {
      * users/clips
      * @description Show all clips this user owns.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['users___clips'];
   };
@@ -3393,7 +3418,7 @@ export type paths = {
      * users/followers
      * @description Show everyone that follows this user.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['users___followers'];
   };
@@ -3402,7 +3427,7 @@ export type paths = {
      * users/following
      * @description Show everyone that this user is following.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['users___following'];
   };
@@ -3411,7 +3436,7 @@ export type paths = {
      * users/gallery/posts
      * @description Show all gallery posts by the given user.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['users___gallery___posts'];
   };
@@ -3429,14 +3454,14 @@ export type paths = {
      * users/featured-notes
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     get: operations['users___featured-notes'];
     /**
      * users/featured-notes
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['users___featured-notes'];
   };
@@ -3463,7 +3488,7 @@ export type paths = {
      * users/lists/list
      * @description Show all lists that the authenticated user has created.
      *
-     * **Credential required**: *No* / **Permission**: *read:account*
+     * **Credential required**: *Yes* / **Permission**: *read:account*
      */
     post: operations['users___lists___list'];
   };
@@ -3562,7 +3587,7 @@ export type paths = {
      * users/pages
      * @description Show all pages this user created.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['users___pages'];
   };
@@ -3571,7 +3596,7 @@ export type paths = {
      * users/flashs
      * @description Show all flashs this user created.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['users___flashs'];
   };
@@ -3580,7 +3605,7 @@ export type paths = {
      * users/reactions
      * @description Show all reactions this user made.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['users___reactions'];
   };
@@ -3625,7 +3650,7 @@ export type paths = {
      * users/search
      * @description Search for users.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['users___search'];
   };
@@ -3643,7 +3668,7 @@ export type paths = {
      * users/achievements
      * @description No description provided.
      *
-     * **Credential required**: *No*
+     * **Credential required**: *Yes*
      */
     post: operations['users___achievements'];
   };
@@ -3887,7 +3912,8 @@ export type components = {
       location: string | null;
       /** @example 2018-03-12 */
       birthday: string | null;
-			listenbrainz?: string;
+      /** @example Steve */
+      ListenBrainz: string | null;
       /** @example ja-JP */
       lang: string | null;
       fields: {
@@ -3904,8 +3930,8 @@ export type components = {
       pinnedPage: components['schemas']['Page'] | null;
       publicReactions: boolean;
       hideActivity: boolean;
-			/** @enum {string} */
-			notesVisibility: 'public' | 'followers' | 'private';
+      /** @enum {string} */
+      notesVisibility: 'public' | 'followers' | 'private';
       /** @enum {string} */
       followingVisibility: 'public' | 'followers' | 'private';
       /** @enum {string} */
@@ -4188,7 +4214,7 @@ export type components = {
       /** @enum {string} */
       icon: 'info' | 'warning' | 'error' | 'success';
       /** @enum {string} */
-      display: 'dialog' | 'normal' | 'banner' | 'emergency';
+      display: 'dialog' | 'normal' | 'banner';
       needConfirmationToRead: boolean;
       silence: boolean;
       forYou: boolean;
@@ -4996,8 +5022,9 @@ export type components = {
       inviteLimitCycle: number;
       inviteExpirationTime: number;
       canManageCustomEmojis: boolean;
-			canEmojiDeletion: boolean;
+      canEmojiDeletion: boolean;
       canManageAvatarDecorations: boolean;
+      canUseRemoteIconDecorations: boolean;
       canSearchNotes: boolean;
       canUseTranslator: boolean;
       canHideAds: boolean;
@@ -5305,7 +5332,7 @@ export type operations = {
             prohibitedWords: string[];
             prohibitedWordsForNameOfUser: string[];
             bannedEmailDomains?: string[];
-						emailWhitelist?: boolean;
+            emailWhitelist: string | null;
             preservedUsernames: string[];
             hcaptchaSecretKey: string | null;
             mcaptchaSecretKey: string | null;
@@ -5391,10 +5418,11 @@ export type operations = {
             urlPreviewRequireContentLength: boolean;
             urlPreviewUserAgent: string | null;
             urlPreviewSummaryProxyUrl: string | null;
-            customSplashText: string[];
             federation: string;
-            federationHosts: string[];
-						validateMinimumUsernameLength: number;
+            emailToReceiveAbuseReport: string;
+            customSplashText: string[];
+            blockMentionsFromUnfamiliarRemoteUsers: boolean;
+            validateMinimumUsernameLength: number;
           };
         };
       };
@@ -7335,6 +7363,7 @@ export type operations = {
           'application/json': {
             /** Format: id */
             id: string;
+            license: string | null;
           };
         };
       };
@@ -7565,6 +7594,7 @@ export type operations = {
               /** @description The local host is represented with `null`. */
               host: string | null;
               url: string;
+              license: string | null;
             })[];
         };
       };
@@ -10013,7 +10043,7 @@ export type operations = {
           enableIdenticonGeneration?: boolean;
           serverRules?: string[];
           bannedEmailDomains?: string[];
-					emailWhitelist?: boolean;
+          emailWhitelist?: boolean;
           preservedUsernames?: string[];
           manifestJsonOverride?: string;
           enableFanoutTimeline?: boolean;
@@ -10024,6 +10054,8 @@ export type operations = {
           perUserListTimelineCacheMax?: number;
           enableReactionsBuffering?: boolean;
           notesPerOneAd?: number;
+          blockMentionsFromUnfamiliarRemoteUsers?: boolean;
+          validateMinimumUsernameLength?: number;
           silencedHosts?: string[] | null;
           mediaSilencedHosts?: string[] | null;
           /** @description [Deprecated] Use "urlPreviewSummaryProxyUrl" instead. */
@@ -10034,10 +10066,10 @@ export type operations = {
           urlPreviewRequireContentLength?: boolean;
           urlPreviewUserAgent?: string | null;
           urlPreviewSummaryProxyUrl?: string | null;
-          customSplashText?: string[] | null;
           /** @enum {string} */
           federation?: 'all' | 'none' | 'specified';
           federationHosts?: string[];
+          customSplashText?: string[] | null;
         };
       };
     };
@@ -11101,7 +11133,7 @@ export type operations = {
    * announcements
    * @description No description provided.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   announcements: {
     requestBody: {
@@ -13510,7 +13542,7 @@ export type operations = {
    * charts/user/following
    * @description No description provided.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   charts___user___following: {
     requestBody: {
@@ -13595,7 +13627,7 @@ export type operations = {
    * charts/user/notes
    * @description No description provided.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   charts___user___notes: {
     requestBody: {
@@ -13665,7 +13697,7 @@ export type operations = {
    * charts/user/pv
    * @description No description provided.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   charts___user___pv: {
     requestBody: {
@@ -13734,7 +13766,7 @@ export type operations = {
    * charts/user/reactions
    * @description No description provided.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   charts___user___reactions: {
     requestBody: {
@@ -15848,7 +15880,7 @@ export type operations = {
    * federation/instances
    * @description No description provided.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   federation___instances: {
     requestBody: {
@@ -16610,13 +16642,13 @@ export type operations = {
       };
     };
   };
-	/**
+  /**
    * following/requests/sendlist
    * @description No description provided.
    *
    * **Credential required**: *Yes* / **Permission**: *read:following*
    */
-  following___requests___send___list: {
+  following___requests___sendlist: {
     requestBody: {
       content: {
         'application/json': {
@@ -16729,7 +16761,7 @@ export type operations = {
    * gallery/featured
    * @description No description provided.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes* / **Permission**: *read:gallery*
    */
   gallery___featured: {
     requestBody: {
@@ -16785,7 +16817,7 @@ export type operations = {
    * gallery/popular
    * @description No description provided.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes* / **Permission**: *read:gallery*
    */
   gallery___popular: {
     responses: {
@@ -16831,7 +16863,7 @@ export type operations = {
    * gallery/posts
    * @description No description provided.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes* / **Permission**: *read:gallery*
    */
   gallery___posts: {
     requestBody: {
@@ -17227,7 +17259,7 @@ export type operations = {
    * get-online-users-count
    * @description No description provided.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   'get-online-users-count': {
     responses: {
@@ -17275,7 +17307,7 @@ export type operations = {
    * get-avatar-decorations
    * @description No description provided.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   'get-avatar-decorations': {
     responses: {
@@ -19342,8 +19374,8 @@ export type operations = {
           untilId?: string;
           /** @default true */
           markAsRead?: boolean;
-          includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
-          excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
+          includeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
+          excludeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
         };
       };
     };
@@ -19410,8 +19442,8 @@ export type operations = {
           untilId?: string;
           /** @default true */
           markAsRead?: boolean;
-          includeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'app' | 'test' | 'reaction:grouped' | 'renote:grouped' | 'note:grouped' | 'pollVote' | 'groupInvited')[];
-          excludeTypes?: ('note' | 'follow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'app' | 'test' | 'reaction:grouped' | 'renote:grouped' | 'note:grouped' | 'pollVote' | 'groupInvited')[];
+          includeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'app' | 'test' | 'reaction:grouped' | 'renote:grouped' | 'note:grouped' | 'pollVote' | 'groupInvited')[];
+          excludeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'app' | 'test' | 'reaction:grouped' | 'renote:grouped' | 'note:grouped' | 'pollVote' | 'groupInvited')[];
         };
       };
     };
@@ -20467,6 +20499,7 @@ export type operations = {
           followedMessage?: string | null;
           location?: string | null;
           birthday?: string | null;
+          listenbrainz?: string | null;
           /** @enum {string|null} */
           lang?: null | 'ach' | 'ady' | 'af' | 'af-NA' | 'af-ZA' | 'ak' | 'ar' | 'ar-AR' | 'ar-MA' | 'ar-SA' | 'ay-BO' | 'az' | 'az-AZ' | 'be-BY' | 'bg' | 'bg-BG' | 'bn' | 'bn-IN' | 'bn-BD' | 'br' | 'bs-BA' | 'ca' | 'ca-ES' | 'cak' | 'ck-US' | 'cs' | 'cs-CZ' | 'cy' | 'cy-GB' | 'da' | 'da-DK' | 'de' | 'de-AT' | 'de-DE' | 'de-CH' | 'dsb' | 'el' | 'el-GR' | 'en' | 'en-GB' | 'en-AU' | 'en-CA' | 'en-IE' | 'en-IN' | 'en-PI' | 'en-SG' | 'en-UD' | 'en-US' | 'en-ZA' | 'en@pirate' | 'eo' | 'eo-EO' | 'es' | 'es-AR' | 'es-419' | 'es-CL' | 'es-CO' | 'es-EC' | 'es-ES' | 'es-LA' | 'es-NI' | 'es-MX' | 'es-US' | 'es-VE' | 'et' | 'et-EE' | 'eu' | 'eu-ES' | 'fa' | 'fa-IR' | 'fb-LT' | 'ff' | 'fi' | 'fi-FI' | 'fo' | 'fo-FO' | 'fr' | 'fr-CA' | 'fr-FR' | 'fr-BE' | 'fr-CH' | 'fy-NL' | 'ga' | 'ga-IE' | 'gd' | 'gl' | 'gl-ES' | 'gn-PY' | 'gu-IN' | 'gv' | 'gx-GR' | 'he' | 'he-IL' | 'hi' | 'hi-IN' | 'hr' | 'hr-HR' | 'hsb' | 'ht' | 'hu' | 'hu-HU' | 'hy' | 'hy-AM' | 'id' | 'id-ID' | 'is' | 'is-IS' | 'it' | 'it-IT' | 'ja' | 'ja-JP' | 'jv-ID' | 'ka-GE' | 'kk-KZ' | 'km' | 'kl' | 'km-KH' | 'kab' | 'kn' | 'kn-IN' | 'ko' | 'ko-KR' | 'ku-TR' | 'kw' | 'la' | 'la-VA' | 'lb' | 'li-NL' | 'lt' | 'lt-LT' | 'lv' | 'lv-LV' | 'mai' | 'mg-MG' | 'mk' | 'mk-MK' | 'ml' | 'ml-IN' | 'mn-MN' | 'mr' | 'mr-IN' | 'ms' | 'ms-MY' | 'mt' | 'mt-MT' | 'my' | 'no' | 'nb' | 'nb-NO' | 'ne' | 'ne-NP' | 'nl' | 'nl-BE' | 'nl-NL' | 'nn-NO' | 'oc' | 'or-IN' | 'pa' | 'pa-IN' | 'pl' | 'pl-PL' | 'ps-AF' | 'pt' | 'pt-BR' | 'pt-PT' | 'qu-PE' | 'rm-CH' | 'ro' | 'ro-RO' | 'ru' | 'ru-RU' | 'sa-IN' | 'se-NO' | 'sh' | 'si-LK' | 'sk' | 'sk-SK' | 'sl' | 'sl-SI' | 'so-SO' | 'sq' | 'sq-AL' | 'sr' | 'sr-RS' | 'su' | 'sv' | 'sv-SE' | 'sw' | 'sw-KE' | 'ta' | 'ta-IN' | 'te' | 'te-IN' | 'tg' | 'tg-TJ' | 'th' | 'th-TH' | 'fil' | 'tlh' | 'tr' | 'tr-TR' | 'tt-RU' | 'uk' | 'uk-UA' | 'ur' | 'ur-PK' | 'uz' | 'uz-UZ' | 'vi' | 'vi-VN' | 'xh-ZA' | 'yi' | 'yi-DE' | 'zh' | 'zh-Hans' | 'zh-Hant' | 'zh-CN' | 'zh-HK' | 'zh-SG' | 'zh-TW' | 'zu-ZA';
           /** Format: misskey:id */
@@ -20492,6 +20525,7 @@ export type operations = {
           hideActivity?: boolean;
           carefulBot?: boolean;
           autoAcceptFollowed?: boolean;
+          autoRejectFollowRequest?: boolean;
           noCrawle?: boolean;
           preventAiLearning?: boolean;
           isBot?: boolean;
@@ -20500,6 +20534,8 @@ export type operations = {
           receiveAnnouncementEmail?: boolean;
           alwaysMarkNsfw?: boolean;
           autoSensitive?: boolean;
+          /** @enum {string} */
+          notesVisibility?: 'public' | 'followers' | 'private';
           /** @enum {string} */
           followingVisibility?: 'public' | 'followers' | 'private';
           /** @enum {string} */
@@ -22415,136 +22451,6 @@ export type operations = {
     };
   };
   /**
-   * notes/update
-   * @description No description provided.
-   *
-   * **Credential required**: *Yes* / **Permission**: *write:notes*
-   */
-  notes___update: {
-    requestBody: {
-      content: {
-        'application/json': {
-          /** Format: misskey:id */
-          noteId: string;
-          text: string | null;
-          fileIds?: string[];
-          mediaIds?: string[];
-          poll?: ({
-            choices: string[];
-            multiple?: boolean;
-            expiresAt?: number | null;
-            expiredAfter?: number | null;
-          }) | null;
-          cw: string | null;
-          /** @default false */
-          disableRightClick?: boolean;
-        };
-      };
-    };
-    responses: {
-      /** @description OK (without any results) */
-      204: {
-        content: never;
-      };
-      /** @description Client error */
-      400: {
-        content: {
-          'application/json': components['schemas']['Error'];
-        };
-      };
-      /** @description Authentication error */
-      401: {
-        content: {
-          'application/json': components['schemas']['Error'];
-        };
-      };
-      /** @description Forbidden error */
-      403: {
-        content: {
-          'application/json': components['schemas']['Error'];
-        };
-      };
-      /** @description I'm Ai */
-      418: {
-        content: {
-          'application/json': components['schemas']['Error'];
-        };
-      };
-      /** @description To many requests */
-      429: {
-        content: {
-          'application/json': components['schemas']['Error'];
-        };
-      };
-      /** @description Internal server error */
-      500: {
-        content: {
-          'application/json': components['schemas']['Error'];
-        };
-      };
-    };
-  };
-  /**
-   * notes/history
-   * @description No description provided.
-   *
-   * **Credential required**: *No*
-   */
-  notes___history: {
-    requestBody: {
-      content: {
-        'application/json': {
-          /** Format: misskey:id */
-          noteId: string;
-          /** @default 10 */
-          limit?: number;
-          /** Format: misskey:id */
-          sinceId?: string;
-          /** Format: misskey:id */
-          untilId?: string;
-        };
-      };
-    };
-    responses: {
-      /** @description OK (with results) */
-      200: {
-        content: {
-          'application/json': components['schemas']['NoteHistory'][];
-        };
-      };
-      /** @description Client error */
-      400: {
-        content: {
-          'application/json': components['schemas']['Error'];
-        };
-      };
-      /** @description Authentication error */
-      401: {
-        content: {
-          'application/json': components['schemas']['Error'];
-        };
-      };
-      /** @description Forbidden error */
-      403: {
-        content: {
-          'application/json': components['schemas']['Error'];
-        };
-      };
-      /** @description I'm Ai */
-      418: {
-        content: {
-          'application/json': components['schemas']['Error'];
-        };
-      };
-      /** @description Internal server error */
-      500: {
-        content: {
-          'application/json': components['schemas']['Error'];
-        };
-      };
-    };
-  };
-  /**
    * notes/delete
    * @description No description provided.
    *
@@ -22661,36 +22567,17 @@ export type operations = {
     };
   };
   /**
-   * notes/featured
+   * notes/favorites/delete
    * @description No description provided.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes* / **Permission**: *write:favorites*
    */
-  notes___featured: {
+  notes___favorites___delete: {
     requestBody: {
       content: {
         'application/json': {
-          /**
-           * @default following
-           * @enum {string}
-           */
-          list?: 'following' | 'followers' | 'mutuals';
-          /** @default false */
-          filesOnly?: boolean;
-          /** @default false */
-          includeNonPublic?: boolean;
-          /** @default false */
-          includeReplies?: boolean;
-          /** @default false */
-          includeQuotes?: boolean;
-          /** @default true */
-          includeBots?: boolean;
-          /** @default 10 */
-          limit?: number;
           /** Format: misskey:id */
-          untilId?: string;
-          /** Format: misskey:id */
-          channelId?: string | null;
+          noteId: string;
         };
       };
     };
@@ -22735,7 +22622,7 @@ export type operations = {
    * notes/featured
    * @description No description provided.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   notes___featured: {
     requestBody: {
@@ -22747,6 +22634,81 @@ export type operations = {
           untilId?: string;
           /** Format: misskey:id */
           channelId?: string | null;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (with results) */
+      200: {
+        content: {
+          'application/json': components['schemas']['Note'][];
+        };
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * notes/following
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *read:account*
+   */
+  notes___following: {
+    requestBody: {
+      content: {
+        'application/json': {
+          /**
+           * @default following
+           * @enum {string}
+           */
+          list?: 'following' | 'followers' | 'mutuals';
+          /** @default false */
+          filesOnly?: boolean;
+          /** @default false */
+          includeNonPublic?: boolean;
+          /** @default false */
+          includeReplies?: boolean;
+          /** @default false */
+          includeQuotes?: boolean;
+          /** @default true */
+          includeBots?: boolean;
+          /** @default 10 */
+          limit?: number;
+          /** Format: misskey:id */
+          sinceId?: string;
+          /** Format: misskey:id */
+          untilId?: string;
+          sinceDate?: number;
+          untilDate?: number;
         };
       };
     };
@@ -22953,6 +22915,65 @@ export type operations = {
           allowPartial?: boolean;
           sinceDate?: number;
           untilDate?: number;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (with results) */
+      200: {
+        content: {
+          'application/json': components['schemas']['Note'][];
+        };
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * notes/followings-updates
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *read:account*
+   */
+  'notes___followings-updates': {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @default 10 */
+          limit?: number;
+          /** Format: misskey:id */
+          anchorId?: string;
+          anchorDate?: number;
+          /** @default 0 */
+          offset?: number;
         };
       };
     };
@@ -24880,7 +24901,7 @@ export type operations = {
    * flash/featured
    * @description No description provided.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   flash___featured: {
     requestBody: {
@@ -25863,7 +25884,7 @@ export type operations = {
    * stats
    * @description No description provided.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   stats: {
     responses: {
@@ -26277,7 +26298,7 @@ export type operations = {
    * users
    * @description No description provided.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   users: {
     requestBody: {
@@ -26350,7 +26371,7 @@ export type operations = {
    * users/clips
    * @description Show all clips this user owns.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   users___clips: {
     requestBody: {
@@ -26410,7 +26431,7 @@ export type operations = {
    * users/followers
    * @description Show everyone that follows this user.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   users___followers: {
     requestBody: {
@@ -26473,7 +26494,7 @@ export type operations = {
    * users/following
    * @description Show everyone that this user is following.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   users___following: {
     requestBody: {
@@ -26537,7 +26558,7 @@ export type operations = {
    * users/gallery/posts
    * @description Show all gallery posts by the given user.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   users___gallery___posts: {
     requestBody: {
@@ -26656,7 +26677,7 @@ export type operations = {
    * users/featured-notes
    * @description No description provided.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   'users___featured-notes': {
     requestBody: {
@@ -26819,7 +26840,7 @@ export type operations = {
    * users/lists/list
    * @description Show all lists that the authenticated user has created.
    *
-   * **Credential required**: *No* / **Permission**: *read:account*
+   * **Credential required**: *Yes* / **Permission**: *read:account*
    */
   users___lists___list: {
     requestBody: {
@@ -27464,7 +27485,7 @@ export type operations = {
    * users/pages
    * @description Show all pages this user created.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   users___pages: {
     requestBody: {
@@ -27524,7 +27545,7 @@ export type operations = {
    * users/flashs
    * @description Show all flashs this user created.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   users___flashs: {
     requestBody: {
@@ -27584,7 +27605,7 @@ export type operations = {
    * users/reactions
    * @description Show all reactions this user made.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   users___reactions: {
     requestBody: {
@@ -27888,7 +27909,7 @@ export type operations = {
    * users/search
    * @description Search for users.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   users___search: {
     requestBody: {
@@ -28010,7 +28031,7 @@ export type operations = {
    * users/achievements
    * @description No description provided.
    *
-   * **Credential required**: *No*
+   * **Credential required**: *Yes*
    */
   users___achievements: {
     requestBody: {

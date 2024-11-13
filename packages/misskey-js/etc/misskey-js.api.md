@@ -322,6 +322,12 @@ type AdminRolesUsersRequest = operations['admin___roles___users']['requestBody']
 type AdminRolesUsersResponse = operations['admin___roles___users']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type AdminRootAddRequest = operations['admin___root___add']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminRootRemoveRequest = operations['admin___root___remove']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
 type AdminSendEmailRequest = operations['admin___send-email']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -1308,6 +1314,8 @@ declare namespace entities {
         AdminInviteCreateResponse,
         AdminInviteListRequest,
         AdminInviteListResponse,
+        AdminRootAddRequest,
+        AdminRootRemoveRequest,
         AdminPromoCreateRequest,
         AdminQueueDeliverDelayedResponse,
         AdminQueueInboxDelayedResponse,
@@ -1519,8 +1527,8 @@ declare namespace entities {
         FollowingRequestsCancelResponse,
         FollowingRequestsListRequest,
         FollowingRequestsListResponse,
-				FollowingRequestsSendListRequest,
-				FollowingRequestsSendListResponse,
+        FollowingRequestsSendlistRequest,
+        FollowingRequestsSendlistResponse,
         FollowingRequestsRejectRequest,
         GalleryFeaturedRequest,
         GalleryFeaturedResponse,
@@ -1671,6 +1679,8 @@ declare namespace entities {
         NotesHybridTimelineResponse,
         NotesLocalTimelineRequest,
         NotesLocalTimelineResponse,
+        NotesFollowingsUpdatesRequest,
+        NotesFollowingsUpdatesResponse,
         NotesMentionsRequest,
         NotesMentionsResponse,
         NotesPollsRecommendationRequest,
@@ -2039,13 +2049,13 @@ type FollowingRequestsListRequest = operations['following___requests___list']['r
 type FollowingRequestsListResponse = operations['following___requests___list']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
-type FollowingRequestsSendListRequest = perations['following___requests___send___list']['requestBody']['content']['application/json'];
-
-// @public (undocumented)
-type FollowingRequestsSendListResponse = perations['following___requests___send___list']['requestBody']['content']['application/json'];
-
-// @public (undocumented)
 type FollowingRequestsRejectRequest = operations['following___requests___reject']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type FollowingRequestsSendlistRequest = operations['following___requests___sendlist']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type FollowingRequestsSendlistResponse = operations['following___requests___sendlist']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type FollowingUpdateAllRequest = operations['following___update-all']['requestBody']['content']['application/json'];
@@ -2055,9 +2065,6 @@ type FollowingUpdateRequest = operations['following___update']['requestBody']['c
 
 // @public (undocumented)
 type FollowingUpdateResponse = operations['following___update']['responses']['200']['content']['application/json'];
-
-// @public (undocumented)
-export const notesVisibilities: readonly ["public", "followers", "private"];
 
 // @public (undocumented)
 export const followingVisibilities: readonly ["public", "followers", "private"];
@@ -2736,6 +2743,12 @@ type NotesFollowingRequest = operations['notes___following']['requestBody']['con
 type NotesFollowingResponse = operations['notes___following']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type NotesFollowingsUpdatesRequest = operations['notes___followings-updates']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type NotesFollowingsUpdatesResponse = operations['notes___followings-updates']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type NotesGlobalTimelineRequest = operations['notes___global-timeline']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -2859,6 +2872,9 @@ type NotesUserListTimelineRequest = operations['notes___user-list-timeline']['re
 type NotesUserListTimelineResponse = operations['notes___user-list-timeline']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+export const notesVisibilities: readonly ["public", "followers", "private"];
+
+// @public (undocumented)
 export const noteVisibilities: readonly ["public", "home", "followers", "specified"];
 
 // @public (undocumented)
@@ -2868,7 +2884,7 @@ type Notification_2 = components['schemas']['Notification'];
 type NotificationsCreateRequest = operations['notifications___create']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
-export const notificationTypes: readonly ["note", "follow", "mention", "reply", "renote", "quote", "reaction", "pollVote", "pollEnded", "receiveFollowRequest", "followRequestAccepted", "followRequestRejected", groupInvited", "app", "roleAssigned", "achievementEarned"];
+export const notificationTypes: readonly ["note", "follow", "mention", "reply", "renote", "quote", "reaction", "pollVote", "pollEnded", "receiveFollowRequest", "followRequestAccepted", "followRequestRejected", "groupInvited", "app", "roleAssigned", "achievementEarned"];
 
 // @public (undocumented)
 export function nyaize(text: string): string;
@@ -2931,7 +2947,7 @@ type PartialRolePolicyOverride = Partial<{
 }>;
 
 // @public (undocumented)
-export const permissions: readonly ["read:account", "write:account", "read:blocks", "write:blocks", "read:drive", "write:drive", "read:favorites", "write:favorites", "read:following", "write:following", "read:messaging", "write:messaging", "read:mutes", "write:mutes", "write:notes", "read:notifications", "write:notifications", "read:reactions", "write:reactions", "write:votes", "read:pages", "write:pages", "write:page-likes", "read:page-likes", "read:user-groups", "write:user-groups", "read:channels", "write:channels", "read:gallery", "write:gallery", "read:gallery-likes", "write:gallery-likes", "read:flash", "write:flash", "read:flash-likes", "write:flash-likes", "read:admin:abuse-user-reports", "write:admin:delete-account", "write:admin:delete-all-files-of-a-user", "write:admin:approve-account", "read:admin:index-stats", "read:admin:table-stats", "read:admin:user-ips", "read:admin:meta", "write:admin:reset-password", "write:admin:regenerate-user-token", "write:admin:resolve-abuse-user-report", "write:admin:send-email", "read:admin:server-info", "read:admin:show-moderation-log", "read:admin:show-user", "write:admin:suspend-user", "write:admin:unset-user-avatar", "write:admin:unset-user-banner", "write:admin:unsuspend-user", "write:admin:meta", "write:admin:user-note", "write:admin:roles", "read:admin:roles", "write:admin:relays", "read:admin:relays", "write:admin:invite-codes", "read:admin:invite-codes", "write:admin:announcements", "read:admin:announcements", "write:admin:avatar-decorations", "read:admin:avatar-decorations", "write:admin:federation", "write:admin:account", "read:admin:account", "write:admin:emoji", "read:admin:emoji", "write:admin:queue", "read:admin:queue", "write:admin:promo", "write:admin:drive", "read:admin:drive", "write:admin:ad", "read:admin:ad", "write:invite-codes", "read:invite-codes", "write:clip-favorite", "read:clip-favorite", "read:federation", "write:report-abuse"];
+export const permissions: readonly ["read:account", "write:account", "read:blocks", "write:blocks", "read:drive", "write:drive", "read:favorites", "write:favorites", "read:following", "write:following", "read:messaging", "write:messaging", "read:mutes", "write:mutes", "write:notes", "read:notifications", "write:notifications", "read:reactions", "write:reactions", "write:votes", "read:pages", "write:pages", "write:page-likes", "read:page-likes", "read:user-groups", "write:user-groups", "read:channels", "write:channels", "read:gallery", "write:gallery", "read:gallery-likes", "write:gallery-likes", "read:flash", "write:flash", "read:flash-likes", "write:flash-likes", "read:admin:abuse-user-reports", "write:admin:delete-account", "write:admin:delete-all-files-of-a-user", "write:admin:approve-account", "read:admin:index-stats", "read:admin:table-stats", "read:admin:user-ips", "read:admin:meta", "write:admin:reset-password", "write:admin:regenerate-user-token", "write:admin:resolve-abuse-user-report", "write:admin:send-email", "read:admin:server-info", "read:admin:show-moderation-log", "read:admin:show-user", "write:admin:suspend-user", "write:admin:unset-user-avatar", "write:admin:unset-user-banner", "write:admin:unsuspend-user", "write:admin:meta", "write:admin:user-name", "write:admin:user-note", "write:admin:user-avatar", "write:admin:user-banner", "write:admin:user-mutual-link", "write:admin:roles", "read:admin:roles", "write:admin:relays", "read:admin:relays", "write:admin:invite-codes", "read:admin:invite-codes", "write:admin:announcements", "read:admin:announcements", "write:admin:avatar-decorations", "read:admin:avatar-decorations", "write:admin:federation", "write:admin:account", "read:admin:account", "write:admin:emoji", "read:admin:emoji", "write:admin:queue", "read:admin:queue", "write:admin:promo", "write:admin:drive", "read:admin:drive", "write:admin:ad", "read:admin:ad", "write:invite-codes", "read:invite-codes", "write:clip-favorite", "read:clip-favorite", "read:federation", "write:report-abuse"];
 
 // @public (undocumented)
 type PingResponse = operations['ping']['responses']['200']['content']['application/json'];
