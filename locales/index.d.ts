@@ -391,7 +391,7 @@ export interface Locale extends ILocale {
      */
     "followers": string;
     /**
-     * Mutuals
+     * 相互
      */
     "mutuals": string;
     /**
@@ -2851,7 +2851,7 @@ export interface Locale extends ILocale {
      */
     "userSaysSomething": ParameterizedString<"name">;
     /**
-     * post is hidden by a filter
+     * 投稿はフィルターによって非表示になっています
      */
     "postFiltered": string;
     /**
@@ -4959,15 +4959,15 @@ export interface Locale extends ILocale {
      */
     "showRenotes": string;
     /**
-     * Show quotes
+     * 引用を表示
      */
     "showQuotes": string;
     /**
-     * Show replies
+     * リプライを表示
      */
     "showReplies": string;
     /**
-     * Show non-public
+     * パブリック以外のノートも表示
      */
     "showNonPublicNotes": string;
     /**
@@ -5390,10 +5390,10 @@ export interface Locale extends ILocale {
      * ユーザー名の長さ(最低文字数)
      */
     "validateMinimumUsernameLength": string;
-		/**
-		 * 登録時にユーザーが扱えるユーザー名の最低文字数を指定できます。
-		 */
-		"validateMinimumUsernameLengthDescription": string;
+    /**
+     * 登録時にユーザーが扱えるユーザー名の最低文字数を指定できます。
+     */
+    "validateMinimumUsernameLengthDescription": string;
     "_abuseUserReport": {
         /**
          * 転送
@@ -5517,10 +5517,10 @@ export interface Locale extends ILocale {
      * いいねボタンで使うリアクションを選択
      */
     "selectReaction": string;
-		/**
-		 * いいねボタンを表示する
-		 */
-		"showLikeButton": string;
+    /**
+     * いいねボタンを表示する
+     */
+    "showLikeButton": string;
     /**
      * 誰がリアクションをしたのかを非表示にする
      */
@@ -11024,18 +11024,17 @@ export interface Locale extends ILocale {
         "hideGlobalTimeLine": string;
     };
     /**
-     * Remote followers may have incomplete or outdated activity
+     * リモートフォロワーのアクティビティは不完全または古い情報である可能性があります
      */
     "remoteFollowersWarning": string;
-		/**
-		 * フォローフィード
-		 */
-		"followFeed": string;
-		/**
+    /**
+     * フォローフィード
+     */
+    "followFeed": string;
+    /**
      * タイムラインにbotを表示
      */
     "showBots": string;
-
 }
 declare const locales: {
     [lang: string]: Locale;
