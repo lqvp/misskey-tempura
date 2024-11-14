@@ -2475,8 +2475,6 @@ _timelines:
   social: "ソーシャル"
   global: "グローバル"
 
-followingsUpdates: "フォロー中ユーザーの投稿"
-
 _play:
   new: "Playの作成"
   edit: "Playの編集"
@@ -2938,10 +2936,25 @@ _hideReactionCount:
 
 __TL_conf:
   extendSettings: "タイムラインの非表示"
+  hideTimelineLabel: "タイムラインの表示制御"
   hideLocalTimeLine: "ローカルタイムラインを非表示にする"
+  hideLocalTimeLineDescription: "サーバー内の全ての投稿が表示されるタイムラインを非表示にします"
   hideSocialTimeLine: "ソーシャルタイムラインを非表示にする"
+  hideSocialTimeLineDescription: "フォローしているユーザーとリモートユーザーの投稿が表示されるタイムラインを非表示にします"
   hideGlobalTimeLine: "グローバルタイムラインを非表示にする"
+  hideGlobalTimeLineDescription: "連合先のサーバーを含む全ての公開投稿が表示されるタイムラインを非表示にします"
+  hideFollowingsUpdates: "フォロー中ユーザーの投稿を隠す"
+  hideFollowingsUpdatesDescription: "フォローしているユーザーの最新の投稿を非表示にします"
+  hideFollowFeed: "フォローフィードを隠す"
+  hideFollowFeedDescription: "フォローしているユーザーの投稿フィードを非表示にします"
+  hideLists: "リストを隠す"
+  hideListsDescription: "作成したリストのタブを非表示にします"
+  hideAntennas: "アンテナを隠す"
+  hideAntennasDescription: "設定したアンテナのタブを非表示にします"
+  hideChannel: "チャンネルを隠す"
+  hideChannelDescription: "チャンネル機能へのアクセスを非表示にします"
 
+followingsUpdates: "フォロー中ユーザーの投稿"
 remoteFollowersWarning: "リモートフォロワーのアクティビティは不完全または古い情報である可能性があります"
 followFeed: "フォローフィード"
 showBots: "タイムラインにbotを表示"

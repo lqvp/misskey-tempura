@@ -9405,10 +9405,6 @@ export interface Locale extends ILocale {
          */
         "global": string;
     };
-    /**
-     * フォロー中ユーザーの投稿
-     */
-    "followingsUpdates": string;
     "_play": {
         /**
          * Playの作成
@@ -11031,18 +11027,78 @@ export interface Locale extends ILocale {
          */
         "extendSettings": string;
         /**
+         * タイムラインの表示制御
+         */
+        "hideTimelineLabel": string;
+        /**
          * ローカルタイムラインを非表示にする
          */
         "hideLocalTimeLine": string;
+        /**
+         * サーバー内の全ての投稿が表示されるタイムラインを非表示にします
+         */
+        "hideLocalTimeLineDescription": string;
         /**
          * ソーシャルタイムラインを非表示にする
          */
         "hideSocialTimeLine": string;
         /**
+         * フォローしているユーザーとリモートユーザーの投稿が表示されるタイムラインを非表示にします
+         */
+        "hideSocialTimeLineDescription": string;
+        /**
          * グローバルタイムラインを非表示にする
          */
         "hideGlobalTimeLine": string;
+        /**
+         * 連合先のサーバーを含む全ての公開投稿が表示されるタイムラインを非表示にします
+         */
+        "hideGlobalTimeLineDescription": string;
+        /**
+         * フォロー中ユーザーの投稿を隠す
+         */
+        "hideFollowingsUpdates": string;
+        /**
+         * フォローしているユーザーの最新の投稿を非表示にします
+         */
+        "hideFollowingsUpdatesDescription": string;
+        /**
+         * フォローフィードを隠す
+         */
+        "hideFollowFeed": string;
+        /**
+         * フォローしているユーザーの投稿フィードを非表示にします
+         */
+        "hideFollowFeedDescription": string;
+        /**
+         * リストを隠す
+         */
+        "hideLists": string;
+        /**
+         * 作成したリストのタブを非表示にします
+         */
+        "hideListsDescription": string;
+        /**
+         * アンテナを隠す
+         */
+        "hideAntennas": string;
+        /**
+         * 設定したアンテナのタブを非表示にします
+         */
+        "hideAntennasDescription": string;
+        /**
+         * チャンネルを隠す
+         */
+        "hideChannel": string;
+        /**
+         * チャンネル機能へのアクセスを非表示にします
+         */
+        "hideChannelDescription": string;
     };
+    /**
+     * フォロー中ユーザーの投稿
+     */
+    "followingsUpdates": string;
     /**
      * リモートフォロワーのアクティビティは不完全または古い情報である可能性があります
      */

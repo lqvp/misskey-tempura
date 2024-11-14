@@ -305,42 +305,94 @@ const headerActions = computed(() => {
 	return tmp;
 });
 
-const headerTabs = computed(() => [...(defaultStore.reactiveState.pinnedUserLists.value.map(l => ({
-	key: 'list:' + l.id,
-	title: l.name,
-	icon: 'ti ti-star',
-	iconOnly: true,
-}))), ...availableBasicTimelines().map(tl => ({
-	key: tl,
-	title: i18n.ts._timelines[tl],
-	icon: basicTimelineIconClass(tl),
-	iconOnly: true,
-})), {
-	title: i18n.ts.followingsUpdates,
-	icon: 'ti ti-users',
-	iconOnly: true,
-	onClick: () => { router.push('/my/followings-updates'); },
-}, {
-	icon: 'ti ti-user-check',
-	title: i18n.ts.followFeed,
-	iconOnly: true,
-	onClick: () => router.push('/following-feed'),
-}, {
-	icon: 'ti ti-list',
-	title: i18n.ts.lists,
-	iconOnly: true,
-	onClick: chooseList,
-}, {
-	icon: 'ti ti-antenna',
-	title: i18n.ts.antennas,
-	iconOnly: true,
-	onClick: chooseAntenna,
-}, {
-	icon: 'ti ti-device-tv',
-	title: i18n.ts.channel,
-	iconOnly: true,
-	onClick: chooseChannel,
-}] as Tab[]);
+// タブの表示制御用の関数を作成
+function isTabVisible(key: string): boolean {
+	switch (key) {
+		case 'followingsUpdates':
+			return !defaultStore.makeGetterSetter('hideFollowingsUpdates').get();
+		case 'followFeed':
+			return !defaultStore.makeGetterSetter('hideFollowFeed').get();
+		case 'lists':
+			return !defaultStore.makeGetterSetter('hideLists').get();
+		case 'antennas':
+			return !defaultStore.makeGetterSetter('hideAntennas').get();
+		case 'channel':
+			return !defaultStore.makeGetterSetter('hideChannel').get();
+		default:
+			return true;
+	}
+}
+
+// headerTabs の計算式を修正
+const headerTabs = computed(() => {
+	const tabs: Tab[] = [];
+
+	// ピン留めされたユーザーリストのタブを追加
+	if (!defaultStore.makeGetterSetter('hideLists').get()) {
+		tabs.push(...defaultStore.reactiveState.pinnedUserLists.value.map(l => ({
+			key: 'list:' + l.id,
+			title: l.name,
+			icon: 'ti ti-star',
+			iconOnly: true,
+		})));
+	}
+
+	// 基本タイムラインのタブを追加
+	tabs.push(...availableBasicTimelines().map(tl => ({
+		key: tl,
+		title: i18n.ts._timelines[tl],
+		icon: basicTimelineIconClass(tl),
+		iconOnly: true,
+	})));
+
+	// 追加のタブを条件付きで追加
+	if (isTabVisible('followingsUpdates')) {
+		tabs.push({
+			title: i18n.ts.followingsUpdates,
+			icon: 'ti ti-users',
+			iconOnly: true,
+			onClick: () => { router.push('/my/followings-updates'); },
+		});
+	}
+
+	if (isTabVisible('followFeed')) {
+		tabs.push({
+			icon: 'ti ti-user-check',
+			title: i18n.ts.followFeed,
+			iconOnly: true,
+			onClick: () => router.push('/following-feed'),
+		});
+	}
+
+	if (isTabVisible('lists')) {
+		tabs.push({
+			icon: 'ti ti-list',
+			title: i18n.ts.lists,
+			iconOnly: true,
+			onClick: chooseList,
+		});
+	}
+
+	if (isTabVisible('antennas')) {
+		tabs.push({
+			icon: 'ti ti-antenna',
+			title: i18n.ts.antennas,
+			iconOnly: true,
+			onClick: chooseAntenna,
+		});
+	}
+
+	if (isTabVisible('channel')) {
+		tabs.push({
+			icon: 'ti ti-device-tv',
+			title: i18n.ts.channel,
+			iconOnly: true,
+			onClick: chooseChannel,
+		});
+	}
+
+	return tabs;
+});
 
 const headerTabsWhenNotLogin = computed(() => [...availableBasicTimelines().map(tl => ({
 	key: tl,
