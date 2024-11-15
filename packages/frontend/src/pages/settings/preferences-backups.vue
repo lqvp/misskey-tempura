@@ -131,6 +131,7 @@ const defaultStoreSaveKeys: (keyof typeof defaultStore['state'])[] = [
 	'disableNoteNyaize',
 	'reactionChecksMuting',
 	'instanceIcon',
+	'imageCompressionMode',
 ];
 const coldDeviceStorageSaveKeys: (keyof typeof ColdDeviceStorage.default)[] = [
 	'lightTheme',

@@ -40,6 +40,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<FormLink to="/settings/drive/cleaner">
 				{{ i18n.ts.drivecleaner }}
 			</FormLink>
+			<MkSelect v-model="imageCompressionMode">
+				<template #label>{{ i18n.ts._imageCompressionMode.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+				<option value="resizeCompress">{{ i18n.ts._imageCompressionMode.resizeCompress }}</option>
+				<option value="noResizeCompress">{{ i18n.ts._imageCompressionMode.noResizeCompress }}</option>
+				<option value="resizeCompressLossy">{{ i18n.ts._imageCompressionMode.resizeCompressLossy }}</option>
+				<option value="noResizeCompressLossy">{{ i18n.ts._imageCompressionMode.noResizeCompressLossy }}</option>
+				<template #caption>{{ i18n.ts._imageCompressionMode.description }}</template>
+			</MkSelect>
 			<MkSwitch v-model="keepOriginalUploading">
 				<template #label>{{ i18n.ts.keepOriginalUploading }}</template>
 				<template #caption>{{ i18n.ts.keepOriginalUploadingDescription }}</template>
@@ -77,6 +85,7 @@ import MkChart from '@/components/MkChart.vue';
 import { i18n } from '@/i18n.js';
 import { definePageMetadata } from '@/scripts/page-metadata.js';
 import { signinRequired } from '@/account.js';
+import MkSelect from '@/components/MkSelect.vue';
 
 const $i = signinRequired();
 
@@ -101,6 +110,7 @@ const meterStyle = computed(() => {
 
 const keepOriginalUploading = computed(defaultStore.makeGetterSetter('keepOriginalUploading'));
 const keepOriginalFilename = computed(defaultStore.makeGetterSetter('keepOriginalFilename'));
+const imageCompressionMode = computed(defaultStore.makeGetterSetter('imageCompressionMode'));
 
 misskeyApi('drive').then(info => {
 	capacity.value = info.capacity;
