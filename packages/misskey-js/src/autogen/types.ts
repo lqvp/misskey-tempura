@@ -5246,6 +5246,12 @@ export type components = {
       noteSearchableScope: 'local' | 'global';
       reversiVersion: string;
       maxFileSize: number;
+      /** @default #fd709a */
+      hanaThemeColor: string;
+      /** @default #f77062 */
+      hanaThemeAltColor: string;
+      /** @default 0.2 */
+      hanaThemeWeakOpacity: number;
     };
     MetaDetailedOnly: {
       features?: {
@@ -5470,6 +5476,10 @@ export type operations = {
             customSplashText: string[];
             blockMentionsFromUnfamiliarRemoteUsers: boolean;
             validateMinimumUsernameLength: number;
+            useHanaEntrance: boolean;
+            hanaThemeColor: string;
+            hanaThemeAltColor: string;
+            hanaThemeWeakOpacity: number;
           };
         };
       };
@@ -10103,6 +10113,10 @@ export type operations = {
           notesPerOneAd?: number;
           blockMentionsFromUnfamiliarRemoteUsers?: boolean;
           validateMinimumUsernameLength?: number;
+          useHanaEntrance?: boolean;
+          hanaThemeColor?: string;
+          hanaThemeAltColor?: string;
+          hanaThemeWeakOpacity?: number;
           silencedHosts?: string[] | null;
           mediaSilencedHosts?: string[] | null;
           /** @description [Deprecated] Use "urlPreviewSummaryProxyUrl" instead. */

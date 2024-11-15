@@ -11145,6 +11145,34 @@ export interface Locale extends ILocale {
      * 予約投稿一覧
      */
     "schedulePostList": string;
+    /**
+     * はなみすきー仕様のエントランスを使う
+     */
+    "useHanaEntrance": string;
+    /**
+     * はなテーマのメインカラー
+     */
+    "hanaThemeColor": string;
+    /**
+     * HEXカラーコード (#000000 形式)
+     */
+    "hanaThemeColorDescription": string;
+    /**
+     * はなテーマのアクセントカラー
+     */
+    "hanaThemeAltColor": string;
+    /**
+     * HEXカラーコード (#000000 形式)
+     */
+    "hanaThemeAltColorDescription": string;
+    /**
+     * はなテーマの薄色の透明度
+     */
+    "hanaThemeWeakOpacity": string;
+    /**
+     * 0から1までの数値
+     */
+    "hanaThemeWeakOpacityDescription": string;
 }
 declare const locales: {
     [lang: string]: Locale;

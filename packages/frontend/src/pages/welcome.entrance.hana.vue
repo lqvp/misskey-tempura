@@ -1,12 +1,12 @@
 <template>
-<div :class="$style.root">
+<div :class="$style.root" :style="rootStyle">
 	<div :class="$style.heroRoot">
 		<img v-if="instance.backgroundImageUrl" :src="instance.backgroundImageUrl" :class="$style.backgroundImage" alt=""/>
 		<div :class="$style.titleRoot">
 			<h1 :class="$style.logo">
 				<span :class="$style.visuallyHidden">{{ instanceName }}</span>
 				<!-- <img :class="$style.logoImage" src="https://static-assets.misskey.flowers/brand-assets/logotype/logotype_v1.png"/> -->
-				<img :class="$style.logoImage" :src="instance.iconUrl" />
+				<img :class="$style.logoImage" :src="instance.iconUrl"/>
 			</h1>
 			<div :class="$style.cta">
 				<div :class="$style.actions">
@@ -75,7 +75,7 @@
 	</div>
 
 	<div :class="$style.footerRoot" class="_gaps_s">
-		<div style="text-align: center;">&copy; 2024 Misskey.flowers Project</div>
+		<div style="text-align: center;">&copy; 2024 Misskey-lqvp</div>
 		<div :class="$style.links">
 			<MkA to="/about">{{ i18n.ts.instanceInfo }}</MkA>
 			<a v-if="instance.impressumUrl" :href="instance.impressumUrl">{{ i18n.ts.impressum }}</a>
@@ -88,10 +88,13 @@
 </template>
 
 <script setup lang="ts">
+import { instanceName } from '@@/js/config.js';
+import { computed } from 'vue';
+import * as Misskey from 'misskey-js';
 import { instance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
 import * as os from '@/os.js';
-import { instanceName } from '@@/js/config.js';
+import { useInstance } from '@/scripts/use-instance';
 
 import MkButton from '@/components/MkButton.vue';
 // import MkInfo from '@/components/MkInfo.vue';
@@ -145,6 +148,20 @@ function signup() {
 	});
 }
 
+const rootStyle = computed(() => {
+	return {
+		'--hana-theme': instance.hanaThemeColor || '#fd709a',
+		'--hana-themeAlt': instance.hanaThemeAltColor || '#f77062',
+		'--hana-themeWeak': `rgba(${hexToRgb(instance.hanaThemeColor || '#fd709a')}, ${instance.hanaThemeWeakOpacity || 0.2})`,
+	};
+});
+
+function hexToRgb(hex: string): string {
+	const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+	if (!result) return '253, 112, 154';
+
+	return `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}`;
+}
 // function upcomingFeatureDialog() {
 // 	os.alert({
 // 		title: i18n.ts._hana._inDevelopment.title,
@@ -160,48 +177,41 @@ function signup() {
 }
 
 .root {
-	--paddingSize: 19px;
-	--innerBorderSize: 3px;
-	--outerBorderSize: calc(var(--paddingSize) - var(--innerBorderSize));
+  --paddingSize: 19px;
+  --innerBorderSize: 3px;
+  --outerBorderSize: calc(var(--paddingSize) - var(--innerBorderSize));
+  --fullViewHeight: calc(100svh - var(--paddingSize) * 2);
+  --misskey-accent: #86b300;
 
-	--fullViewHeight: calc(100svh - var(--paddingSize) * 2);
+  padding: var(--paddingSize);
+  position: relative;
+  min-height: 100svh;
 
-	--hana-theme: #fd709a;
-	--hana-themeAlt: #f77062;
-	--hana-themeWeak: rgba(253, 112, 154, 0.2);
+  &::before {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(100% - var(--outerBorderSize) * 2);
+    height: calc(100% - var(--outerBorderSize) * 2);
+    content: '';
+    border: var(--outerBorderSize) solid var(--MI_THEME-panel);
+    border-radius: calc(var(--outerBorderSize) + 12px);
+    z-index: 9999;
+    pointer-events: none;
+  }
 
-	--misskey-accent: #86b300;
-
-	padding: var(--paddingSize);
-	position: relative;
-
-	min-height: 100svh;
-
-	&::before {
-		position: absolute;
-		top: 0;
-		left: 0;
-		width: calc(100% - var(--outerBorderSize) * 2);
-		height: calc(100% - var(--outerBorderSize) * 2);
-		content: '';
-		border: var(--outerBorderSize) solid var(--panel);
-		border-radius: calc(var(--outerBorderSize) + 12px);
-		z-index: 9999;
-		pointer-events: none;
-	}
-
-	&::after {
-		position: absolute;
-		top: var(--outerBorderSize);
-		left: var(--outerBorderSize);
-		width: calc(100% - var(--paddingSize) * 2);
-		height: calc(100% - var(--paddingSize) * 2);
-		content: '';
-		border: var(--innerBorderSize) solid var(--hana-theme);
-		border-radius: 12px;
-		z-index: 9999;
-		pointer-events: none;
-	}
+  &::after {
+    position: absolute;
+    top: var(--outerBorderSize);
+    left: var(--outerBorderSize);
+    width: calc(100% - var(--paddingSize) * 2);
+    height: calc(100% - var(--paddingSize) * 2);
+    content: '';
+    border: var(--innerBorderSize) solid var(--hana-theme);
+    border-radius: 12px;
+    z-index: 9999;
+    pointer-events: none;
+  }
 }
 
 .visuallyHidden {
@@ -242,7 +252,7 @@ function signup() {
 }
 
 .logo {
-	background: linear-gradient(transparent, var(--bg));
+	background: linear-gradient(transparent, var(---MI_THEME-bg));
 	width: 100%;
 	min-height: 25%;
 	padding: 16px 16px 0 16px;
@@ -257,7 +267,7 @@ function signup() {
 }
 
 .cta {
-	background: var(--bg);
+	background: var(--MI_THEME-bg);
 	width: 100%;
 	min-height: 75%;
 	padding: 16px;
@@ -288,15 +298,15 @@ function signup() {
 .aboutWrapper {
 	margin: 0 16px;
 	padding: 16px;
-	border-radius: var(--radius);
-	background: var(--panel);
+	border-radius: var(--MI-radius);
+	background: var(--MI_THEME-panel);
 }
 
 .decentralizedRoot {
 	margin-top: 32px;
 	padding: 16px;
-	border-radius: var(--radius);
-	background: var(--panel);
+	border-radius: var(--MI-radius);
+	background: var(--MI_THEME-panel);
 
 	border: 2px dashed var(--misskey-accent);
 
@@ -366,17 +376,17 @@ function signup() {
 		transform: translate(-50%, -50%);
 		width: 100%;
 		height: auto;
-		border-radius: var(--radius);
+		border-radius: var(--MI-radius);
 	}
 
 	&.noImage {
 		background-color: #aaa;
-		border-radius: var(--radius);
+		border-radius: var(--MI-radius);
 	}
 }
 
 .featuresRoot .feature:nth-child(odd) {
-	background: var(--panel);
+	background: var(--MI_THEME-panel);
 }
 
 .footerCtaRoot {
@@ -470,7 +480,7 @@ function signup() {
 	gap: 16px;
 
 	a {
-		color: var(--fg);
+		color: var(--MI_THEME-fg);
 		text-decoration: none;
 
 		&:hover {
@@ -489,7 +499,7 @@ function signup() {
 			left: calc(var(--outerBorderSize) * -3);
 			width: calc(100% - calc(var(--outerBorderSize) * 2));
 			height: calc(100% - calc(var(--outerBorderSize) * 2));
-			border: calc(var(--outerBorderSize) * 4) solid var(--panel);
+			border: calc(var(--outerBorderSize) * 4) solid var(--MI_THEME-panel);
 			border-radius: calc(calc(var(--outerBorderSize) * 4) + 12px);
 		}
 
@@ -518,11 +528,15 @@ function signup() {
 	}
 
 	.action1 {
-		order: 1;
+		order: 2;
 	}
 
 	.action2 {
-		order: 2;
+		order: 1;
+	}
+
+	.action3 {
+		order: 3;
 	}
 
 	.aboutWrapper {

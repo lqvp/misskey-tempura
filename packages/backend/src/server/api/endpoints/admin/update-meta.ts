@@ -157,6 +157,10 @@ export const paramDef = {
 		notesPerOneAd: { type: 'integer' },
 		blockMentionsFromUnfamiliarRemoteUsers: { type: 'boolean' },
 		validateMinimumUsernameLength: { type: 'integer', minimum: 1, maximum: 20 },
+		useHanaEntrance: { type: 'boolean' },
+		hanaThemeColor: { type: 'string' },
+		hanaThemeAltColor: { type: 'string' },
+		hanaThemeWeakOpacity: { type: 'number' },
 		silencedHosts: {
 			type: 'array',
 			nullable: true,
@@ -716,6 +720,22 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.validateMinimumUsernameLength !== undefined) {
 				set.validateMinimumUsernameLength = ps.validateMinimumUsernameLength;
+			}
+
+			if (ps.useHanaEntrance !== undefined) {
+				set.useHanaEntrance = ps.useHanaEntrance;
+			}
+
+			if (ps.hanaThemeColor !== undefined) {
+				set.hanaThemeColor = ps.hanaThemeColor;
+			}
+
+			if (ps.hanaThemeAltColor !== undefined) {
+				set.hanaThemeAltColor = ps.hanaThemeAltColor;
+			}
+
+			if (ps.hanaThemeWeakOpacity !== undefined) {
+				set.hanaThemeWeakOpacity = ps.hanaThemeWeakOpacity;
 			}
 
 			const before = await this.metaService.fetch(true);

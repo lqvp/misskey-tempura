@@ -553,6 +553,22 @@ export const meta = {
 				type: 'number',
 				optional: false, nullable: false,
 			},
+			useHanaEntrance: {
+				type: 'boolean',
+				optional: false, nullbable: false,
+			},
+			hanaThemeColor: {
+				type: 'string',
+				optional: false, nullable: false,
+			},
+			hanaThemeAltColor: {
+				type: 'string',
+				optional: false, nullable: false,
+			},
+			hanaThemeWeakOpacity: {
+				type: 'number',
+				optional: false, nullable: false,
+			},
 		},
 	},
 } as const;
@@ -700,6 +716,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				customSplashText: instance.customSplashText,
 				blockMentionsFromUnfamiliarRemoteUsers: instance.blockMentionsFromUnfamiliarRemoteUsers,
 				validateMinimumUsernameLength: instance.validateMinimumUsernameLength,
+				useHanaEntrance: instance.useHanaEntrance,
+				hanaThemeColor: instance.hanaThemeColor,
+				hanaThemeAltColor: instance.hanaThemeAltColor,
+				hanaThemeWeakOpacity: instance.hanaThemeWeakOpacity,
 			};
 		});
 	}

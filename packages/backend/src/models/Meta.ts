@@ -697,4 +697,26 @@ export class MiMeta {
 		default: 5,
 	})
 	public validateMinimumUsernameLength: number;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public useHanaEntrance: boolean;
+
+	@Column('varchar', {
+		length: 32,
+		default: '#fd709a',
+	})
+	public hanaThemeColor: string;
+
+	@Column('varchar', {
+		length: 32,
+		default: '#f77062',
+	})
+	public hanaThemeAltColor: string;
+
+	@Column('float', {
+		default: 0.2,
+	})
+	public hanaThemeWeakOpacity: number;
 }
