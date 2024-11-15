@@ -89,33 +89,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkFolder>
 
 			<MkFolder>
-				<template #label>Email WhiteList</template>
-				<template v-if="emailWhitelistForm.savedState.emailWhitelist" #suffix>Enabled</template>
+				<template #label>Email Domain Settings<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+				<template v-if="emailSettingsForm.savedState.emailWhitelist" #suffix>Enabled</template>
 				<template v-else #suffix>Disabled</template>
-				<template v-if="emailWhitelistForm.modified.value" #footer>
-					<MkFormFooter :form="emailWhitelistForm"/>
+				<template v-if="emailSettingsForm.modified.value" #footer>
+					<MkFormFooter :form="emailSettingsForm"/>
 				</template>
 
 				<div class="_gaps_m">
-					<MkSwitch v-model="emailWhitelistForm.state.emailWhitelist">
-						<template #label>Enable</template>
+					<MkSwitch v-model="emailSettingsForm.state.emailWhitelist">
+						<template #label>Enable Whitelist Mode</template>
 					</MkSwitch>
-				</div>
-			</MkFolder>
 
-			<MkFolder>
-				<template #label>
-					<span v-if="emailWhitelistForm.state.emailWhitelist">Whitelist Email Domains</span>
-					<span v-else>Banned Email Domains</span>
-				</template>
-				<template v-if="bannedEmailDomainsForm.modified.value" #footer>
-					<MkFormFooter :form="bannedEmailDomainsForm"/>
-				</template>
-
-				<div class="_gaps_m">
-					<MkTextarea v-model="bannedEmailDomainsForm.state.bannedEmailDomains">
+					<MkTextarea v-model="emailSettingsForm.state.bannedEmailDomains">
 						<template #label>
-							<span v-if="emailWhitelistForm.state.emailWhitelist">Whitelist Email Domains List</span>
+							<span v-if="emailSettingsForm.state.emailWhitelist">Whitelist Email Domains List</span>
 							<span v-else>Banned Email Domains List</span>
 						</template>
 					</MkTextarea>
@@ -195,11 +183,13 @@ const ipLoggingForm = useForm({
 	fetchInstance(true);
 });
 
-const emailWhitelistForm = useForm({
+const emailSettingsForm = useForm({
 	emailWhitelist: meta.emailWhitelist,
+	bannedEmailDomains: meta.bannedEmailDomains?.join('\n') || '',
 }, async (state) => {
 	await os.apiWithDialog('admin/update-meta', {
 		emailWhitelist: state.emailWhitelist,
+		bannedEmailDomains: state.bannedEmailDomains.split('\n'),
 	});
 	fetchInstance(true);
 });
@@ -219,15 +209,6 @@ const emailValidationForm = useForm({
 		enableTruemailApi: state.enableTruemailApi,
 		truemailInstance: state.truemailInstance,
 		truemailAuthKey: state.truemailAuthKey,
-	});
-	fetchInstance(true);
-});
-
-const bannedEmailDomainsForm = useForm({
-	bannedEmailDomains: meta.bannedEmailDomains?.join('\n') || '',
-}, async (state) => {
-	await os.apiWithDialog('admin/update-meta', {
-		bannedEmailDomains: state.bannedEmailDomains.split('\n'),
 	});
 	fetchInstance(true);
 });

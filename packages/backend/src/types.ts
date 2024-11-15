@@ -20,6 +20,8 @@
  * achievementEarned - 実績を獲得
  * exportCompleted - エクスポートが完了
  * login - ログイン
+ * scheduledNoteFailed - 予約投稿に失敗
+ * scheduledNotePosted - 予約投稿をノート
  * app - アプリ通知
  * test - テスト通知（サーバー側）
  */
@@ -40,6 +42,8 @@ export const notificationTypes = [
 	'achievementEarned',
 	'exportCompleted',
 	'login',
+	'scheduledNoteFailed',
+	'scheduledNotePosted',
 	'app',
 	'test',
 ] as const;

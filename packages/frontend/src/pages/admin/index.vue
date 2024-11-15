@@ -229,6 +229,11 @@ const menuDef = computed(() => [{
 		text: i18n.ts.performance,
 		to: '/admin/performance',
 		active: currentPage.value?.route.name === 'performance',
+	}, {
+		icon: 'ti ti-git-fork',
+		text: i18n.ts.originalFeature,
+		to: '/admin/lqvp-admin',
+		active: currentPage.value?.route.name === 'lqvp-admin',
 	}],
 }, {
 	title: i18n.ts.info,

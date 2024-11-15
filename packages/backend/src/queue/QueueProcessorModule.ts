@@ -44,6 +44,7 @@ import { RelationshipProcessorService } from './processors/RelationshipProcessor
 import { ScheduledNoteDeleteProcessorService } from './processors/ScheduledNoteDeleteProcessorService.js';
 import { CleanExpiredRemoteFilesProcessorService } from './processors/CleanExpiredRemoteFilesProcessorService.js';
 import { ReDownloadRemoteFileProcessorService } from './processors/ReDownloadRemoteFileProcessorService.js';
+import { ScheduleNotePostProcessorService } from './processors/ScheduleNotePostProcessorService.js';
 
 @Module({
 	imports: [
@@ -90,6 +91,7 @@ import { ReDownloadRemoteFileProcessorService } from './processors/ReDownloadRem
 		QueueProcessorService,
 		CleanExpiredRemoteFilesProcessorService,
 		ReDownloadRemoteFileProcessorService,
+		ScheduleNotePostProcessorService,
 	],
 	exports: [
 		QueueProcessorService,

@@ -112,16 +112,23 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 			<MkSwitch v-model="disableNoteNyaize">{{ i18n.ts.disableNoteNyaize }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
 
-			<FromSlot v-model="selectReaction">
-				<template #label>{{ i18n.ts.selectReaction }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-				<MkCustomEmoji v-if="selectReaction && selectReaction.startsWith(':')" style="max-height: 3em; font-size: 1.1em;" :useOriginalSize="false" :name="selectReaction" :normal="true" :noStyle="true"/>
-				<MkEmoji v-else-if="selectReaction && !selectReaction.startsWith(':')" :emoji="selectReaction" style="max-height: 3em; font-size: 1.1em;" :normal="true" :noStyle="true"/>
-				<span v-else-if="!selectReaction">{{ i18n.ts.notSet }}</span>
-				<div class="_buttons" style="padding-top: 8px;">
-					<MkButton rounded :small="true" inline @click="chooseNewReaction"><i class="ph-smiley ph-bold ph-lg"></i> Change</MkButton>
-					<MkButton rounded :small="true" inline @click="resetReaction"><i class="ph-arrow-clockwise ph-bold ph-lg"></i> Reset</MkButton>
+			<MkFolder>
+				<template #label>{{ i18n.ts.like }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+				<div class="_gaps_m">
+					<MkSwitch v-model="showLikeButton">{{ i18n.ts.showLikeButton }}</MkSwitch>
+
+					<FromSlot v-model="selectReaction">
+						<template #label>{{ i18n.ts.selectReaction }}</template>
+						<MkCustomEmoji v-if="selectReaction && selectReaction.startsWith(':')" style="max-height: 3em; font-size: 1.1em;" :useOriginalSize="false" :name="selectReaction" :normal="true" :noStyle="true"/>
+						<MkEmoji v-else-if="selectReaction && !selectReaction.startsWith(':')" :emoji="selectReaction" style="max-height: 3em; font-size: 1.1em;" :normal="true" :noStyle="true"/>
+						<span v-else-if="!selectReaction">{{ i18n.ts.notSet }}</span>
+						<div class="_buttons" style="padding-top: 8px;">
+							<MkButton rounded :small="true" inline @click="chooseNewReaction"><i class="ph-smiley ph-bold ph-lg"></i> Change</MkButton>
+							<MkButton rounded :small="true" inline @click="resetReaction"><i class="ph-arrow-clockwise ph-bold ph-lg"></i> Reset</MkButton>
+						</div>
+					</FromSlot>
 				</div>
-			</FromSlot>
+			</MkFolder>
 
 		</div>
 	</FormSection>
@@ -295,16 +302,47 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkSwitch>
 				</div>
 			</MkFolder>
-		</div>
-	</FormSection>
-
-	<FormSection>
-		<template #label>{{ i18n.ts.__TL_conf.extendSettings }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-
-		<div class="_gaps">
-			<MkSwitch v-model="hideLocalTimeLine">{{ i18n.ts.__TL_conf.hideLocalTimeLine }}</MkSwitch>
-			<MkSwitch v-model="hideSocialTimeLine">{{ i18n.ts.__TL_conf.hideSocialTimeLine }}</MkSwitch>
-			<MkSwitch v-model="hideGlobalTimeLine">{{ i18n.ts.__TL_conf.hideGlobalTimeLine }}</MkSwitch>
+			<MkFolder>
+				<template #label>{{ i18n.ts.__TL_conf.hideTimelineLabel }}</template>
+				<div class="_gaps_m">
+					<div class="_buttons">
+						<MkButton inline @click="toggleAllHidden(true)">{{ i18n.ts.enableAll }}</MkButton>
+						<MkButton inline @click="toggleAllHidden(false)">{{ i18n.ts.disableAll }}</MkButton>
+					</div>
+					<MkSwitch v-model="hideLocalTimeLine">
+						<template #caption>{{ i18n.ts.__TL_conf.hideLocalTimeLineDescription }}</template>
+						{{ i18n.ts.__TL_conf.hideLocalTimeLine }}
+					</MkSwitch>
+					<MkSwitch v-model="hideSocialTimeLine">
+						<template #caption>{{ i18n.ts.__TL_conf.hideSocialTimeLineDescription }}</template>
+						{{ i18n.ts.__TL_conf.hideSocialTimeLine }}
+					</MkSwitch>
+					<MkSwitch v-model="hideGlobalTimeLine">
+						<template #caption>{{ i18n.ts.__TL_conf.hideGlobalTimeLineDescription }}</template>
+						{{ i18n.ts.__TL_conf.hideGlobalTimeLine }}
+					</MkSwitch>
+					<MkSwitch v-model="hideFollowingsUpdates">
+						<template #caption>{{ i18n.ts.__TL_conf.hideFollowingsUpdatesDescription }}</template>
+						{{ i18n.ts.__TL_conf.hideFollowingsUpdates }}
+					</MkSwitch>
+					<MkSwitch v-model="hideFollowFeed">
+						<template #caption>{{ i18n.ts.__TL_conf.hideFollowFeedDescription }}</template>
+						{{ i18n.ts.__TL_conf.hideFollowFeed }}
+					</MkSwitch>
+					<MkSwitch v-model="hideLists">
+						<template #caption>{{ i18n.ts.__TL_conf.hideListsDescription }}</template>
+						{{ i18n.ts.__TL_conf.hideLists }}
+					</MkSwitch>
+					<MkSwitch v-model="hideAntennas">
+						<template #caption>{{ i18n.ts.__TL_conf.hideAntennasDescription }}</template>
+						{{ i18n.ts.__TL_conf.hideAntennas }}
+					</MkSwitch>
+					<MkSwitch v-model="hideChannel">
+						<template #caption>{{ i18n.ts.__TL_conf.hideChannelDescription }}</template>
+						{{ i18n.ts.__TL_conf.hideChannel }}
+					</MkSwitch>
+				</div>
+			</MkFolder>
 		</div>
 	</FormSection>
 
@@ -424,7 +462,13 @@ const reactionChecksMuting = computed(defaultStore.makeGetterSetter('reactionChe
 const hideLocalTimeLine = computed(defaultStore.makeGetterSetter('hideLocalTimeLine'));
 const hideGlobalTimeLine = computed(defaultStore.makeGetterSetter('hideGlobalTimeLine'));
 const hideSocialTimeLine = computed(defaultStore.makeGetterSetter('hideSocialTimeLine'));
+const hideFollowingsUpdates = computed(defaultStore.makeGetterSetter('hideFollowingsUpdates'));
+const hideFollowFeed = computed(defaultStore.makeGetterSetter('hideFollowFeed'));
+const hideLists = computed(defaultStore.makeGetterSetter('hideLists'));
+const hideAntennas = computed(defaultStore.makeGetterSetter('hideAntennas'));
+const hideChannel = computed(defaultStore.makeGetterSetter('hideChannel'));
 const selectReaction = computed(defaultStore.makeGetterSetter('selectReaction'));
+const showLikeButton = computed(defaultStore.makeGetterSetter('showLikeButton'));
 const disableNoteDrafting = computed(defaultStore.makeGetterSetter('disableNoteDrafting'));
 
 watch(lang, () => {
@@ -476,7 +520,16 @@ watch([
 	hiddenPinnedNotes,
 	hiddenActivity,
 	hiddenFiles,
+	hideLocalTimeLine,
+	hideGlobalTimeLine,
+	hideSocialTimeLine,
+	hideFollowingsUpdates,
+	hideFollowFeed,
+	hideLists,
+	hideAntennas,
+	hideChannel,
 	selectReaction,
+	showLikeButton,
 ], async () => {
 	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
 });
@@ -606,6 +659,23 @@ function disableAllHidden() {
 	defaultStore.set('hiddenPinnedNotes', false);
 	defaultStore.set('hiddenActivity', false);
 	defaultStore.set('hiddenFiles', false);
+}
+
+function toggleAllHidden(value: boolean) {
+	const settings = [
+		'hideLocalTimeLine',
+		'hideGlobalTimeLine',
+		'hideSocialTimeLine',
+		'hideFollowingsUpdates',
+		'hideFollowFeed',
+		'hideLists',
+		'hideAntennas',
+		'hideChannel',
+	];
+
+	settings.forEach(setting => {
+		defaultStore.set(setting, value);
+	});
 }
 
 function disableAllDataSaver() {

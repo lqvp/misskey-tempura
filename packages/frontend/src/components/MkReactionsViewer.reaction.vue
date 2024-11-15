@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	ref="buttonEl"
 	v-ripple="canToggle"
 	class="_button"
-	:class="[$style.root, { [$style.reacted]: note.myReaction == reaction, [$style.canToggle]: canToggle, [$style.small]: defaultStore.state.reactionsDisplaySize === 'small', [$style.large]: defaultStore.state.reactionsDisplaySize === 'large' }]"
+	:class="[$style.root, { [$style.reacted]: note.myReaction == reaction, [$style.canToggle]: (isLocal && canToggle), [$style.canToggleFallback]: (!isLocal && isAvailable), [$style.small]: defaultStore.state.reactionsDisplaySize === 'small', [$style.large]: defaultStore.state.reactionsDisplaySize === 'large' }]"
 	@click="toggleReaction()"
 	@contextmenu.prevent.stop="menu"
 >
@@ -65,7 +65,7 @@ const isLocal = computed(() => !props.reaction.match(/@\w/));
 const isAvailable = computed(() => isLocal.value ? true : customEmojisMap.has(getReactionName(props.reaction)));
 
 const canToggle = computed(() => {
-	return !props.reaction.match(/@\w/) && $i && emoji.value && checkReactionPermissions($i, props.note, emoji.value);
+	return isAvailable.value && $i && emoji.value && checkReactionPermissions($i, props.note, emoji.value);
 });
 const canGetInfo = computed(() => !props.reaction.match(/@\w/) && props.reaction.includes(':'));
 
@@ -84,30 +84,31 @@ const hideReactionCount = computed(() => {
 async function toggleReaction() {
 	if (!canToggle.value) return;
 
-	const oldReaction = props.note.myReaction;
+	const reaction = getReactionName(props.reaction, true);
+	const oldReaction = props.note.myReaction ? getReactionName(props.note.myReaction, true) : null;
 	if (oldReaction) {
 		const confirm = await os.confirm({
 			type: 'warning',
-			text: oldReaction !== props.reaction ? i18n.ts.changeReactionConfirm : i18n.ts.cancelReactionConfirm,
+			text: oldReaction !== reaction ? i18n.ts.changeReactionConfirm : i18n.ts.cancelReactionConfirm,
 		});
 		if (confirm.canceled) return;
 
-		if (oldReaction !== props.reaction) {
+		if (oldReaction !== reaction) {
 			sound.playMisskeySfx('reaction');
 		}
 
 		if (mock) {
-			emit('reactionToggled', props.reaction, (props.count - 1));
+			emit('reactionToggled', reaction, (props.count - 1));
 			return;
 		}
 
 		misskeyApi('notes/reactions/delete', {
 			noteId: props.note.id,
 		}).then(() => {
-			if (oldReaction !== props.reaction) {
+			if (oldReaction !== reaction) {
 				misskeyApi('notes/reactions/create', {
 					noteId: props.note.id,
-					reaction: props.reaction,
+					reaction: reaction,
 				});
 			}
 		});
@@ -115,14 +116,15 @@ async function toggleReaction() {
 		sound.playMisskeySfx('reaction');
 
 		if (mock) {
-			emit('reactionToggled', props.reaction, (props.count + 1));
+			emit('reactionToggled', reaction, (props.count + 1));
 			return;
 		}
 
 		misskeyApi('notes/reactions/create', {
 			noteId: props.note.id,
-			reaction: props.reaction,
+			reaction: reaction,
 		});
+
 		if (props.note.text && props.note.text.length > 100 && (Date.now() - new Date(props.note.createdAt).getTime() < 1000 * 3)) {
 			claimAchievement('reactWithoutRead');
 		}
@@ -172,7 +174,9 @@ onMounted(() => {
 
 if (!mock) {
 	useTooltip(buttonEl, async (showing) => {
-		const reactions = !defaultStore.state.hideReactionUsers ? await misskeyApiGet('notes/reactions', {
+		const useGet = !reactionChecksMuting.value;
+		const apiCall = useGet ? misskeyApiGet : misskeyApi;
+		const reactions = !defaultStore.state.hideReactionUsers ? await apiCall('notes/reactions', {
 			noteId: props.note.id,
 			type: props.reaction,
 			limit: 10,
@@ -180,12 +184,13 @@ if (!mock) {
 		}) : [];
 
 		const users = reactions.map(x => x.user);
+		const count = users.length;
 
 		const { dispose } = os.popup(XDetails, {
 			showing,
 			reaction: props.reaction,
 			users,
-			count: props.count,
+			count,
 			targetElement: buttonEl.value,
 		}, {
 			closed: () => dispose(),
@@ -194,74 +199,88 @@ if (!mock) {
 }
 </script>
 
-	<style lang="scss" module>
-	.root {
-		display: inline-flex;
-		height: 42px;
-		margin: 2px;
-		padding: 0 6px;
-		font-size: 1.5em;
-		border-radius: 6px;
-		align-items: center;
-		justify-content: center;
+<style lang="scss" module>
+.root {
+	display: inline-flex;
+	height: 42px;
+	margin: 2px;
+	padding: 0 6px;
+	font-size: 1.5em;
+	border-radius: 6px;
+	align-items: center;
+	justify-content: center;
 
-		&.canToggle {
-			background: var(--MI_THEME-buttonBg);
+	&.canToggle {
+		background: var(--MI_THEME-buttonBg);
 
-			&:hover {
-				background: rgba(0, 0, 0, 0.1);
-			}
+		&:hover {
+			background: rgba(0, 0, 0, 0.1);
 		}
+	}
 
-		&:not(.canToggle) {
-			cursor: default;
-		}
+	&.canToggleFallback:not(.canToggle):not(.reacted) {
+		box-sizing: border-box;
+		border: 2px dashed var(--MI_THEME-switchBg);
 
 		&.small {
-			height: 32px;
-			font-size: 1em;
-			border-radius: 4px;
-
-			> .count {
-				font-size: 0.9em;
-				line-height: 32px;
-			}
+			border-width: 1px;
+			border-color: var(--MI_THEME-buttonBgSub);
 		}
 
-		&.large {
-			height: 52px;
-			font-size: 2em;
-			border-radius: 8px;
-
-			> .count {
-				font-size: 0.6em;
-				line-height: 52px;
-			}
+		&:hover {
+			background: rgba(0, 0, 0, 0.1);
 		}
+	}
 
-		&.reacted, &.reacted:hover {
-			background: var(--MI_THEME-accentedBg);
+	&:not(.canToggle):not(.canToggleFallback) {
+		cursor: default;
+	}
+
+	&.small {
+		height: 32px;
+		font-size: 1em;
+		border-radius: 4px;
+
+		> .count {
+			font-size: 0.9em;
+			line-height: 32px;
+		}
+	}
+
+	&.large {
+		height: 52px;
+		font-size: 2em;
+		border-radius: 8px;
+
+		> .count {
+			font-size: 0.6em;
+			line-height: 52px;
+		}
+	}
+
+	&.reacted, &.reacted:hover {
+		background: var(--MI_THEME-accentedBg);
+		color: var(--MI_THEME-accent);
+		box-shadow: 0 0 0 1px var(--MI_THEME-accent) inset;
+
+		> .count {
 			color: var(--MI_THEME-accent);
-			box-shadow: 0 0 0 1px var(--MI_THEME-accent) inset;
+		}
 
-			> .count {
-				color: var(--MI_THEME-accent);
-			}
-
-			> .icon {
-				filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
-			}
+		> .icon {
+			filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
 		}
 	}
+}
 
-	.limitWidth {
-		max-width: 70px;
-		object-fit: contain;
-	}
+.limitWidth {
+	max-width: 70px;
+	object-fit: contain;
+}
 
-	.count {
-		font-size: 0.7em;
-		line-height: 42px;
-		margin: 0 0 0 4px;
-	}
-	</style>
+.count {
+	font-size: 0.7em;
+	line-height: 42px;
+	margin: 0 0 0 4px;
+}
+</style>

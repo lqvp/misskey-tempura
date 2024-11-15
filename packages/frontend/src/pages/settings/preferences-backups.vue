@@ -121,10 +121,17 @@ const defaultStoreSaveKeys: (keyof typeof defaultStore['state'])[] = [
 	'hideLocalTimeLine',
 	'hideSocialTimeLine',
 	'hideGlobalTimeLine',
+	'hideFollowingsUpdates',
+	'hideFollowFeed',
+	'hideLists',
+	'hideAntennas',
+	'hideChannel',
 	'selectReaction',
+	'showLikeButton',
 	'disableNoteNyaize',
 	'reactionChecksMuting',
 	'instanceIcon',
+	'imageCompressionMode',
 ];
 const coldDeviceStorageSaveKeys: (keyof typeof ColdDeviceStorage.default)[] = [
 	'lightTheme',

@@ -391,7 +391,7 @@ export interface Locale extends ILocale {
      */
     "followers": string;
     /**
-     * Mutuals
+     * 相互
      */
     "mutuals": string;
     /**
@@ -2851,7 +2851,7 @@ export interface Locale extends ILocale {
      */
     "userSaysSomething": ParameterizedString<"name">;
     /**
-     * post is hidden by a filter
+     * 投稿はフィルターによって非表示になっています
      */
     "postFiltered": string;
     /**
@@ -4959,15 +4959,15 @@ export interface Locale extends ILocale {
      */
     "showRenotes": string;
     /**
-     * Show quotes
+     * 引用を表示
      */
     "showQuotes": string;
     /**
-     * Show replies
+     * リプライを表示
      */
     "showReplies": string;
     /**
-     * Show non-public
+     * パブリック以外のノートも表示
      */
     "showNonPublicNotes": string;
     /**
@@ -5390,10 +5390,10 @@ export interface Locale extends ILocale {
      * ユーザー名の長さ(最低文字数)
      */
     "validateMinimumUsernameLength": string;
-		/**
-		 * 登録時にユーザーが扱えるユーザー名の最低文字数を指定できます。
-		 */
-		"validateMinimumUsernameLengthDescription": string;
+    /**
+     * 登録時にユーザーが扱えるユーザー名の最低文字数を指定できます。
+     */
+    "validateMinimumUsernameLengthDescription": string;
     "_abuseUserReport": {
         /**
          * 転送
@@ -5517,6 +5517,10 @@ export interface Locale extends ILocale {
      * いいねボタンで使うリアクションを選択
      */
     "selectReaction": string;
+    /**
+     * いいねボタンを表示する
+     */
+    "showLikeButton": string;
     /**
      * 誰がリアクションをしたのかを非表示にする
      */
@@ -7247,6 +7251,10 @@ export interface Locale extends ILocale {
              * リストのインポートを許可
              */
             "canImportUserLists": string;
+            /**
+             * 予約投稿の最大数
+             */
+            "scheduleNoteMax": string;
         };
         "_condition": {
             /**
@@ -8722,6 +8730,14 @@ export interface Locale extends ILocale {
          * 違反を報告する
          */
         "write:report-abuse": string;
+        /**
+         * 予約投稿を見る
+         */
+        "read:notes-schedule": string;
+        /**
+         * 予約投稿を作成・削除する
+         */
+        "write:notes-schedule": string;
     };
     "_auth": {
         /**
@@ -9389,10 +9405,6 @@ export interface Locale extends ILocale {
          */
         "global": string;
     };
-    /**
-     * フォロー中ユーザーの投稿
-     */
-    "followingsUpdates": string;
     "_play": {
         /**
          * Playの作成
@@ -9728,6 +9740,14 @@ export interface Locale extends ILocale {
          * ロールが付与されました
          */
         "roleAssigned": string;
+        /**
+         * 予約投稿に失敗しました
+         */
+        "scheduledNoteFailed": string;
+        /**
+         * 予約投稿をノートしました
+         */
+        "scheduledNotePosted": string;
         /**
          * プッシュ通知の更新をしました
          */
@@ -11007,31 +11027,124 @@ export interface Locale extends ILocale {
          */
         "extendSettings": string;
         /**
+         * タイムラインの表示制御
+         */
+        "hideTimelineLabel": string;
+        /**
          * ローカルタイムラインを非表示にする
          */
         "hideLocalTimeLine": string;
+        /**
+         * サーバー内の全ての投稿が表示されるタイムラインを非表示にします
+         */
+        "hideLocalTimeLineDescription": string;
         /**
          * ソーシャルタイムラインを非表示にする
          */
         "hideSocialTimeLine": string;
         /**
+         * フォローしているユーザーとリモートユーザーの投稿が表示されるタイムラインを非表示にします
+         */
+        "hideSocialTimeLineDescription": string;
+        /**
          * グローバルタイムラインを非表示にする
          */
         "hideGlobalTimeLine": string;
+        /**
+         * 連合先のサーバーを含む全ての公開投稿が表示されるタイムラインを非表示にします
+         */
+        "hideGlobalTimeLineDescription": string;
+        /**
+         * フォロー中ユーザーの投稿を隠す
+         */
+        "hideFollowingsUpdates": string;
+        /**
+         * フォローしているユーザーの最新の投稿を非表示にします
+         */
+        "hideFollowingsUpdatesDescription": string;
+        /**
+         * フォローフィードを隠す
+         */
+        "hideFollowFeed": string;
+        /**
+         * フォローしているユーザーの投稿フィードを非表示にします
+         */
+        "hideFollowFeedDescription": string;
+        /**
+         * リストを隠す
+         */
+        "hideLists": string;
+        /**
+         * 作成したリストのタブを非表示にします
+         */
+        "hideListsDescription": string;
+        /**
+         * アンテナを隠す
+         */
+        "hideAntennas": string;
+        /**
+         * 設定したアンテナのタブを非表示にします
+         */
+        "hideAntennasDescription": string;
+        /**
+         * チャンネルを隠す
+         */
+        "hideChannel": string;
+        /**
+         * チャンネル機能へのアクセスを非表示にします
+         */
+        "hideChannelDescription": string;
+    };
+    "_imageCompressionMode": {
+        /**
+         * 画像の圧縮形式
+         */
+        "title": string;
+        /**
+         * オリジナル画像を保持しない場合に、Web公開用画像の圧縮形式を選択できます。縮小する場合は2048x2048より小さくなるように縮小されます。非可逆圧縮を指定しない場合は、元画像に応じて非可逆圧縮か可逆圧縮かが自動的に選択されます。
+         */
+        "description": string;
+        /**
+         * 縮小して再圧縮する
+         */
+        "resizeCompress": string;
+        /**
+         * 縮小せず再圧縮する
+         */
+        "noResizeCompress": string;
+        /**
+         * 縮小して非可逆圧縮する
+         */
+        "resizeCompressLossy": string;
+        /**
+         * 縮小せず非可逆圧縮する
+         */
+        "noResizeCompressLossy": string;
     };
     /**
-     * Remote followers may have incomplete or outdated activity
+     * フォロー中ユーザーの投稿
+     */
+    "followingsUpdates": string;
+    /**
+     * リモートフォロワーのアクティビティは不完全または古い情報である可能性があります
      */
     "remoteFollowersWarning": string;
-		/**
-		 * フォローフィード
-		 */
-		"followFeed": string;
-		/**
+    /**
+     * フォローフィード
+     */
+    "followFeed": string;
+    /**
      * タイムラインにbotを表示
      */
     "showBots": string;
-
+    /**
+     * 予約投稿
+     */
+    "schedulePost": string;
+    /**
+     * 予約投稿一覧
+     */
+    "schedulePostList": string;
 }
 declare const locales: {
     [lang: string]: Locale;

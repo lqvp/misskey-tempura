@@ -23,7 +23,7 @@ const nodeinfo_homepage = 'https://misskey-hub.net';
 @Injectable()
 export class NodeinfoServerService {
 	//semverに従って割り当てる
-	static reversiVersion = '1.0.0-lvpq';
+	static reversiVersion = '1.0.0-lqvp';
 	constructor(
 		@Inject(DI.config)
 		private config: Config,

@@ -214,11 +214,9 @@ const routes: RouteDef[] = [{
 	path: '/about',
 	component: page(() => import('@/pages/about.vue')),
 	hash: 'initialTab',
-	loginRequired: true,
 }, {
 	path: '/contact',
 	component: page(() => import('@/pages/contact.vue')),
-	loginRequired: true,
 }, {
 	path: '/invite',
 	name: 'invite',
@@ -528,6 +526,10 @@ const routes: RouteDef[] = [{
 		path: '/approvals',
 		name: 'approvals',
 		component: page(() => import('@/pages/admin/approvals.vue')),
+	}, {
+		path: '/lqvp-admin',
+		name: 'lqvp-admin',
+		component: page(() => import('@/pages/admin/lqvp-admin.vue')),
 	}, {
 		path: '/',
 		component: page(() => import('@/pages/_empty_.vue')),

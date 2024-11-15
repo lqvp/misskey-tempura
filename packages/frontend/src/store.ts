@@ -9,6 +9,7 @@ import { hemisphere } from '@@/js/intl-const.js';
 import lightTheme from '@@/themes/l-light.json5';
 import darkTheme from '@@/themes/d-green-lime.json5';
 import { miLocalStorage } from './local-storage.js';
+import { directRenote } from './scripts/direct-renote.js';
 import type { SoundType } from '@/scripts/sound.js';
 import type { FollowingFeedTab } from '@/scripts/following-feed-utils.js';
 import { Storage } from '@/pizzax.js';
@@ -433,7 +434,11 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	selectReaction: {
 		where: 'device',
-		default: '❤️' as string,
+		default: '🩷' as string,
+	},
+	showLikeButton: {
+		where: 'device',
+		default: true,
 	},
 	hideReactionUsers: {
 		where: 'account',
@@ -562,7 +567,28 @@ export const defaultStore = markRaw(new Storage('base', {
 	hideGlobalTimeLine: {
 		where: 'device',
 		default: false,
-	},	skipNoteRender: {
+	},
+	hideFollowingsUpdates: {
+		where: 'device',
+		default: false,
+	},
+	hideFollowFeed: {
+		where: 'device',
+		default: false,
+	},
+	hideLists: {
+		where: 'device',
+		default: false,
+	},
+	hideAntennas: {
+		where: 'device',
+		default: false,
+	},
+	hideChannel: {
+		where: 'device',
+		default: false,
+	},
+	skipNoteRender: {
 		where: 'device',
 		default: true,
 	},
@@ -607,6 +633,10 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: true,
 	},
+	imageCompressionMode: {
+		where: 'account',
+		default: 'resizeCompressLossy' as 'resizeCompress' | 'noResizeCompress' | 'resizeCompressLossy' | 'noResizeCompressLossy' | null,
+	},
 }));
 
 // TODO: 他のタブと永続化されたstateを同期
@@ -636,7 +666,6 @@ interface Watcher {
 /**
  * 常にメモリにロードしておく必要がないような設定情報を保管するストレージ(非リアクティブ)
  */
-import { directRenote } from './scripts/direct-renote.js';
 
 export class ColdDeviceStorage {
 	public static default = {
