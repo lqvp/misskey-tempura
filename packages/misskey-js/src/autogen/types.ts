@@ -5246,6 +5246,7 @@ export type components = {
       noteSearchableScope: 'local' | 'global';
       reversiVersion: string;
       maxFileSize: number;
+      useHanaEntrance: boolean;
       /** @default #fd709a */
       hanaThemeColor: string;
       /** @default #f77062 */

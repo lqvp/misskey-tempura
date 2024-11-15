@@ -269,6 +269,10 @@ export const packedMetaLiteSchema = {
 			type: 'number',
 			optional: false, nullable: false,
 		},
+		useHanaEntrance: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
 		hanaThemeColor: {
 			type: 'string',
 			optional: false, nullable: false,

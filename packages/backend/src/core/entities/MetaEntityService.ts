@@ -135,6 +135,7 @@ export class MetaEntityService {
 			noteSearchableScope: (this.config.meilisearch == null || this.config.meilisearch.scope !== 'local') ? 'global' : 'local',
 			reversiVersion: NodeinfoServerService.reversiVersion,
 			maxFileSize: this.config.maxFileSize,
+			useHanaEntrance: instance.useHanaEntrance,
 			hanaThemeColor: instance.hanaThemeColor,
 			hanaThemeAltColor: instance.hanaThemeAltColor,
 			hanaThemeWeakOpacity: instance.hanaThemeWeakOpacity,
