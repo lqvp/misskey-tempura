@@ -13,7 +13,6 @@ import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { ui } from '@@/js/config.js';
 import { unisonReload } from '@/scripts/unison-reload.js';
-import FollowRequestsSendlist from './pages/follow-requests-sendlist.vue';
 
 export const navbarItemDef = reactive({
 	notifications: {
@@ -44,18 +43,6 @@ export const navbarItemDef = reactive({
 		show: computed(() => $i != null && $i.isLocked),
 		indicated: computed(() => $i != null && $i.hasPendingReceivedFollowRequest),
 		to: '/my/follow-requests',
-	},
-	FollowRequestsSendlist: {
-		title: i18n.ts.sentFollowRequestList,
-		icon: 'ti ti-user-plus',
-		show: computed(() => $i != null),
-		to: '/my/follow-requests-sendlist',
-	},
-	following: {
-		title: i18n.ts.followFeed,
-		icon: 'ti ti-user',
-		show: computed(() => $i != null && !$i.movedTo),
-		to: '/following-feed',
 	},
 	explore: {
 		title: i18n.ts.explore,

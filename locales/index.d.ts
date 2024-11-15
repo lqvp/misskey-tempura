@@ -471,10 +471,6 @@ export interface Locale extends ILocale {
      */
     "followRequestPending": string;
     /**
-     * 送信したフォロリク一覧
-     */
-    "sentFollowRequestList": string;
-    /**
      * 絵文字を入力
      */
     "enterEmoji": string;
@@ -2210,10 +2206,6 @@ export interface Locale extends ILocale {
      * フォロー申請はありません
      */
     "noFollowRequests": string;
-    /**
-     * 送ったフォロー申請はありません
-     */
-    "noSentFollowRequests": string;
     /**
      * 画像を新しいタブで開く
      */
