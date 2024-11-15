@@ -165,7 +165,7 @@ const menuDef = computed(() => [{
 		active: currentPage.value?.route.name === 'migration',
 	}, {
 		icon: 'ti ti-git-fork',
-		text: 'lqvp-settings',
+		text: i18n.ts.originalFeature,
 		to: '/settings/lqvp-settings',
 		active: currentPage.value?.route.name === 'lqvp-settings',
 	}, {

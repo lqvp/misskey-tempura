@@ -302,13 +302,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkSwitch>
 				</div>
 			</MkFolder>
-		</div>
-	</FormSection>
-
-	<FormSection>
-		<template #label>{{ i18n.ts.__TL_conf.extendSettings }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-
-		<div class="_gaps_m">
 			<MkFolder>
 				<template #label>{{ i18n.ts.__TL_conf.hideTimelineLabel }}</template>
 				<div class="_gaps_m">

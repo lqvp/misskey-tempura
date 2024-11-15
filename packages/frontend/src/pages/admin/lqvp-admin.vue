@@ -1,0 +1,145 @@
+<!--
+SPDX-FileCopyrightText: lqvp
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<template>
+<div>
+	<MkStickyContainer>
+		<template #header><XHeader :tabs="headerTabs"/></template>
+		<MkSpacer :contentMax="700" :marginMin="16" :marginMax="32">
+			<FormSuspense :p="init">
+				<div class="_gaps_m">
+					<MkSwitch v-model="approvalRequiredForSignup" @change="onChange_approvalRequiredForSignup">
+						<template #label>{{ i18n.ts.approvalRequiredForSignup }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+						<template #caption>{{ i18n.ts.registerApprovalEmailRecommended }}</template>
+					</MkSwitch>
+
+					<MkSwitch v-model="blockMentionsFromUnfamiliarRemoteUsers" @change="onChange_blockMentionsFromUnfamiliarRemoteUsers">
+						<template #label>{{ i18n.ts.blockMentionsFromUnfamiliarRemoteUsers }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+						<template #caption>{{ i18n.ts.blockMentionsFromUnfamiliarRemoteUsersDescription }} Cherry-picked from Misskey.io (https://github.com/MisskeyIO/misskey/commit/82cc3987c13db4ad0da1589386027c222ce85ff8)</template>
+					</MkSwitch>
+
+					<div class="_gaps">
+						<MkInput v-model="validateMinimumUsernameLength" type="number" @update:modelValue="onUsernameMinLengthChange">
+							<template #label>
+								<span>{{ i18n.ts.validateMinimumUsernameLength }}</span>
+								<span v-if="validateMinimumUsernameLengthChanged" class="_modified">{{ i18n.ts.modified }}</span>
+								<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+							</template>
+							<template #caption>{{ i18n.ts.validateMinimumUsernameLengthDescription }}</template>
+						</MkInput>
+						<MkButton v-if="validateMinimumUsernameLengthChanged" primary @click="save_validateMinimumUsernameLength">{{ i18n.ts.save }}</MkButton>
+					</div>
+
+					<MkFolder>
+						<template #label>Email Domain Settings<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+						<template v-if="emailSettingsForm.savedState.emailWhitelist" #suffix>Enabled</template>
+						<template v-else #suffix>Disabled</template>
+						<template v-if="emailSettingsForm.modified.value" #footer>
+							<MkFormFooter :form="emailSettingsForm"/>
+						</template>
+
+						<div class="_gaps_m">
+							<MkSwitch v-model="emailSettingsForm.state.emailWhitelist">
+								<template #label>Enable Whitelist Mode</template>
+							</MkSwitch>
+
+							<MkTextarea v-model="emailSettingsForm.state.bannedEmailDomains">
+								<template #label>
+									<span v-if="emailSettingsForm.state.emailWhitelist">Whitelist Email Domains List</span>
+									<span v-else>Banned Email Domains List</span>
+								</template>
+							</MkTextarea>
+						</div>
+					</MkFolder>
+				</div>
+			</FormSuspense>
+		</MkSpacer>
+	</MkStickyContainer>
+</div>
+</template>
+
+<script lang="ts" setup>
+import { ref, computed } from 'vue';
+import XHeader from './_header_.vue';
+import MkSwitch from '@/components/MkSwitch.vue';
+import MkInput from '@/components/MkInput.vue';
+import MkTextarea from '@/components/MkTextarea.vue';
+import FormSuspense from '@/components/form/suspense.vue';
+import * as os from '@/os.js';
+import { misskeyApi } from '@/scripts/misskey-api.js';
+import { fetchInstance } from '@/instance.js';
+import { i18n } from '@/i18n.js';
+import { definePageMetadata } from '@/scripts/page-metadata.js';
+import MkButton from '@/components/MkButton.vue';
+import FormLink from '@/components/form/link.vue';
+import MkFolder from '@/components/MkFolder.vue';
+import { useForm } from '@/scripts/use-form.js';
+import MkFormFooter from '@/components/MkFormFooter.vue';
+
+const meta = await misskeyApi('admin/meta');
+
+const approvalRequiredForSignup = ref<boolean>(false);
+const blockMentionsFromUnfamiliarRemoteUsers = ref<boolean>(false);
+const validateMinimumUsernameLength = ref<number>();
+
+const originalMinimumUsernameLength = ref<number>();
+const validateMinimumUsernameLengthChanged = computed(() =>
+	validateMinimumUsernameLength.value !== originalMinimumUsernameLength.value,
+);
+
+const emailSettingsForm = useForm({
+	emailWhitelist: meta.emailWhitelist,
+	bannedEmailDomains: meta.bannedEmailDomains?.join('\n') || '',
+}, async (state) => {
+	await os.apiWithDialog('admin/update-meta', {
+		emailWhitelist: state.emailWhitelist,
+		bannedEmailDomains: state.bannedEmailDomains.split('\n'),
+	});
+	fetchInstance(true);
+});
+
+async function init() {
+	approvalRequiredForSignup.value = meta.approvalRequiredForSignup;
+	blockMentionsFromUnfamiliarRemoteUsers.value = meta.blockMentionsFromUnfamiliarRemoteUsers;
+	validateMinimumUsernameLength.value = meta.validateMinimumUsernameLength;
+	originalMinimumUsernameLength.value = meta.validateMinimumUsernameLength;
+}
+
+function onChange_approvalRequiredForSignup(value: boolean) {
+	os.apiWithDialog('admin/update-meta', {
+		approvalRequiredForSignup: value,
+	}).then(() => {
+		fetchInstance(true);
+	});
+}
+
+function onChange_blockMentionsFromUnfamiliarRemoteUsers(value: boolean) {
+	os.apiWithDialog('admin/update-meta', {
+		blockMentionsFromUnfamiliarRemoteUsers: value,
+	}).then(() => {
+		fetchInstance(true);
+	});
+}
+
+function onUsernameMinLengthChange(value: number) {
+	validateMinimumUsernameLength.value = value;
+}
+
+function save_validateMinimumUsernameLength() {
+	os.apiWithDialog('admin/update-meta', {
+		validateMinimumUsernameLength: validateMinimumUsernameLength.value,
+	}).then(() => {
+		fetchInstance(true);
+		originalMinimumUsernameLength.value = validateMinimumUsernameLength.value;
+	});
+}
+
+const headerTabs = computed(() => []);
+
+definePageMetadata(() => ({
+	title: i18n.ts.moderation,
+	icon: 'ti ti-shield',
+}));
+</script>
