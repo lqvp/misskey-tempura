@@ -530,14 +530,6 @@ export const meta = {
 				type: 'string',
 				optional: false, nullable: false,
 			},
-			emailToReceiveAbuseReport: {
-				type: 'string',
-				optional: false, nullable: false,
-				items: {
-					type: 'string',
-					optional: false, nullable: false,
-				},
-			},
 			customSplashText: {
 				type: 'array',
 				optional: false, nullable: false,
@@ -555,7 +547,7 @@ export const meta = {
 			},
 			useHanaEntrance: {
 				type: 'boolean',
-				optional: false, nullbable: false,
+				optional: false, nullable: false,
 			},
 			hanaThemeColor: {
 				type: 'string',

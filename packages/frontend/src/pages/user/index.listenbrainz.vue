@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: lqvp
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 <template>
 	<MkContainer :foldable="true">
 		<template #header
@@ -135,4 +140,4 @@ if (props.user.listenbrainz) {
 	font-size: 1.7rem;
 	padding-left: 3rem;
 }
-</style> 
+</style>

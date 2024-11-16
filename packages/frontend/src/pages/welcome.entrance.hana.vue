@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: lqvp
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 <template>
 <div :class="$style.root" :style="rootStyle">
 	<div :class="$style.heroRoot">

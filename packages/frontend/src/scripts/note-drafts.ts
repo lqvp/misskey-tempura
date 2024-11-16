@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: lqvp
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 import * as Misskey from 'misskey-js';
 import type { PollEditorModelValue } from '@/components/MkPollEditor.vue';
 import type { DeleteScheduleEditorModelValue } from '@/components/MkDeleteScheduleEditor.vue';

@@ -1,3 +1,7 @@
+/*
+ * SPDX-FileCopyrightText: lqvp
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
 
 export class NoteHistory1725344700039 {
 	name = 'NoteHistory1725344700039';
