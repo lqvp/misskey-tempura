@@ -105,18 +105,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</div>
 						</div>
 					</MkContainer>
-					<MkContainer v-if="user?.mutualLinkSections?.length > 0" :showHeader="false" :max-height="200" class="fields" :style="{borderRadius: 0}">
-						<div v-for="(section, index) in user?.mutualLinkSections" :key="index" :class="$style.mutualLinkSections">
-							<span v-if="section.name">{{ section.name }}</span>
-							<div :class="$style.mutualLinks">
-								<div v-for="mutualLink in section.mutualLinks" :key="mutualLink.id">
-									<MkLink :hideIcon="true" :url="mutualLink.url">
-										<img :class="$style.mutualLinkImg" :src="getProxiedImageUrl(mutualLink.imgSrc)" :alt="mutualLink.description"/>
-									</MkLink>
-								</div>
-							</div>
-						</div>
-					</MkContainer>
 					<div class="fields system">
 						<dl v-if="user.location" class="field">
 							<dt class="name"><i class="ti ti-map-pin ti-fw"></i> {{ i18n.ts.location }}</dt>
