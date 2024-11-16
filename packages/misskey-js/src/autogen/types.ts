@@ -4464,6 +4464,16 @@ export type components = {
       /** Format: date-time */
       createdAt: string;
       /** @enum {string} */
+      type: 'unfollow';
+      user: components['schemas']['UserLite'];
+      /** Format: id */
+      userId: string;
+    } | {
+      /** Format: id */
+      id: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** @enum {string} */
       type: 'receiveFollowRequest';
       user: components['schemas']['UserLite'];
       /** Format: id */
@@ -9594,6 +9604,15 @@ export type operations = {
                 userListId: string;
               }]>;
               follow?: OneOf<[{
+                /** @enum {string} */
+                type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+              }, {
+                /** @enum {string} */
+                type: 'list';
+                /** Format: misskey:id */
+                userListId: string;
+              }]>;
+              unfollow?: OneOf<[{
                 /** @enum {string} */
                 type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
               }, {
@@ -20630,6 +20649,15 @@ export type operations = {
               userListId: string;
             }]>;
             follow?: OneOf<[{
+              /** @enum {string} */
+              type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+            }, {
+              /** @enum {string} */
+              type: 'list';
+              /** Format: misskey:id */
+              userListId: string;
+            }]>;
+            unfollow?: OneOf<[{
               /** @enum {string} */
               type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
             }, {

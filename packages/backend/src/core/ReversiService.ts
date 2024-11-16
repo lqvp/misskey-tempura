@@ -107,22 +107,34 @@ export class ReversiService implements OnApplicationShutdown, OnModuleInit {
 	}
 
 	@bindThis
-	public async remoteVersion(host:string): Promise<string | null> {
+	public async remoteVersion(host: string): Promise<string | null> {
 		const cache = await this.redisClient.get(`reversi:federation:version:${host}`);
 		if (cache !== null) {
 			return cache.length === 0 ? null : cache;
 		}
-		const instance = await this.federatedInstanceService.fetch(host);
-		const nodeinfo = await this.fetchInstanceMetadataService.fetchNodeinfo(instance);
-		const reversiVersion = nodeinfo.metadata?.reversiVersion;
-		if (typeof(reversiVersion) === 'string') {
-			//0.0.0-foo => 0.0.0
-			const version = reversiVersion.split('-')[0];
-			await this.redisClient.setex(`reversi:federation:version:${host}`, 5 * 60, version);
-			return version;
+
+		try {
+			const instance = await this.federatedInstanceService.fetch(host);
+			if (instance === null) {
+				await this.redisClient.setex(`reversi:federation:version:${host}`, 5 * 60, '');
+				return null;
+			}
+
+			const nodeinfo = await this.fetchInstanceMetadataService.fetchNodeinfo(instance);
+			const reversiVersion = nodeinfo.metadata?.reversiVersion;
+
+			if (typeof reversiVersion === 'string') {
+				const version = reversiVersion.split('-')[0];
+				await this.redisClient.setex(`reversi:federation:version:${host}`, 5 * 60, version);
+				return version;
+			}
+
+			await this.redisClient.setex(`reversi:federation:version:${host}`, 5 * 60, '');
+			return null;
+		} catch (error) {
+			await this.redisClient.setex(`reversi:federation:version:${host}`, 5 * 60, '');
+			return null;
 		}
-		await this.redisClient.setex(`reversi:federation:version:${host}`, 5 * 60, '');
-		return null;
 	}
 	@bindThis
 	public async federationAvailable(host:string): Promise<boolean | null> {

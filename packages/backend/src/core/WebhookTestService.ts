@@ -89,6 +89,7 @@ function generateDummyUser(override?: Partial<MiUser>): MiUser {
 		score: 0,
 		host: null,
 		inbox: null,
+		outbox: null,
 		sharedInbox: null,
 		featured: null,
 		uri: null,
@@ -137,6 +138,7 @@ function generateDummyNote(override?: Partial<MiNote>): MiNote {
 		renoteUserId: null,
 		renoteUserHost: null,
 		updatedAt: new Date(),
+		deleteAt: null,
 		...override,
 	};
 }
@@ -257,6 +259,8 @@ function toPackedUserDetailedNotMe(user: MiUser, override?: Packed<'UserDetailed
 		isRenoteMuted: false,
 		notify: 'none',
 		withReplies: true,
+		hideActivity: false,
+		ListenBrainz: null,
 		...override,
 	};
 }

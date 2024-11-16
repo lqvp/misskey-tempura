@@ -33,6 +33,7 @@ type TimelineOptions = {
 	excludeNoFiles?: boolean;
 	excludeReplies?: boolean;
 	excludePureRenotes: boolean;
+	excludeBots?: boolean;
 	dbFallback: (untilId: string | null, sinceId: string | null, limit: number) => Promise<MiNote[]>,
 };
 

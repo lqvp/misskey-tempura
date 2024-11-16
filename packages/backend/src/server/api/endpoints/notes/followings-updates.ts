@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { Datasource } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { Inject, Injectable } from '@nestjs/common';
 import type { NotesRepository, ChannelFollowingsRepository, MiMeta } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
