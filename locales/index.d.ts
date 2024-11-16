@@ -647,6 +647,10 @@ export interface Locale extends ILocale {
      */
     "unblockConfirm": string;
     /**
+     * ミュートしてブロックしますか？
+     */
+    "muteAndBlockConfirm": string;
+    /**
      * 凍結しますか？
      */
     "suspendConfirm": string;
