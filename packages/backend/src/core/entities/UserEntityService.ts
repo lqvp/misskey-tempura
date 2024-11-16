@@ -458,7 +458,6 @@ export class UserEntityService implements OnModuleInit {
     (profile.notesVisibility === 'followers') && (relation && relation.isFollowing) ? user.notesCount :
     	null;
 
-
 		const followingCount = profile == null ? null :
 			(profile.followingVisibility === 'public') || isMe || iAmModerator ? user.followingCount :
 			(profile.followingVisibility === 'followers') && (relation && relation.isFollowing) ? user.followingCount :

@@ -39,7 +39,7 @@ function reload() {
 
 useStream().on('_disconnected_', onDisconnected);
 
-useStream().on('_connected_', resetDisconnected)
+useStream().on('_connected_', resetDisconnected);
 
 onUnmounted(() => {
 	useStream().off('_disconnected_', onDisconnected);

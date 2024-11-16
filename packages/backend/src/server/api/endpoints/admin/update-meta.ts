@@ -154,7 +154,7 @@ export const paramDef = {
 		enableIdenticonGeneration: { type: 'boolean' },
 		serverRules: { type: 'array', items: { type: 'string' } },
 		bannedEmailDomains: { type: 'array', items: { type: 'string' } },
-		emailWhitelist: { type: 'boolean'},
+		emailWhitelist: { type: 'boolean' },
 		preservedUsernames: { type: 'array', items: { type: 'string' } },
 		manifestJsonOverride: { type: 'string' },
 		enableFanoutTimeline: { type: 'boolean' },
@@ -207,7 +207,7 @@ export const paramDef = {
 		},
 		customSplashText: { type: 'array', nullable: true, items: {
 			type: 'string',
-		}},
+		} },
 		defaultFollowedUsers: {
 			type: 'array', nullable: true, items: {
 				type: 'string',

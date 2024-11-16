@@ -320,7 +320,6 @@ async function onSubmit(): Promise<void> {
 		}
 	}
 
-
 	submitting.value = false;
 }
 

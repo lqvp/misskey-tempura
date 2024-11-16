@@ -44,11 +44,13 @@ export type BadgeNames =
 	| 'bell'
 	| 'chart-arrows'
 	| 'circle-check'
+	| 'ban'
 	| 'medal'
 	| 'messages'
 	| 'plus'
 	| 'quote'
 	| 'repeat'
 	| 'user-plus'
+	| 'user-minus'
 	| 'users'
 	| 'login-2';

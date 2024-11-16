@@ -20,7 +20,7 @@ import { antennasCache, rolesCache, userListsCache } from '@/cache.js';
 import { mainRouter } from '@/router/main.js';
 import { genEmbedCode } from '@/scripts/get-embed-code.js';
 import type { MenuItem } from '@/types/menu.js';
-import {editNickname} from "@/scripts/edit-nickname";
+import { editNickname } from "@/scripts/edit-nickname";
 
 type PeriodType = {
 	key: string;

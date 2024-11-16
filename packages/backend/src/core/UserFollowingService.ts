@@ -299,7 +299,6 @@ export class UserFollowingService implements OnModuleInit {
 		if (follower.host === null) {
 			const profile = await this.cacheService.userProfileCache.fetch(followee.id);
 
-
 			this.notificationService.createNotification(follower.id, 'followRequestAccepted', {
 				message: profile.followedMessage,
 			}, followee.id);

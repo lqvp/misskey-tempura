@@ -46,7 +46,7 @@ import { pleaseLogin } from '@/scripts/please-login.js';
 import { host } from '@@/js/config.js';
 import { $i } from '@/account.js';
 import { defaultStore } from '@/store.js';
-import {userName} from "@/filters/user";
+import { userName } from "@/filters/user";
 
 const props = withDefaults(defineProps<{
 	user: { id: string } & Partial<Misskey.entities.UserDetailed>,

@@ -27,11 +27,11 @@ const recent = ref(8.64e+7);
 const headerActions = computed(() => []);
 
 const headerTabs = computed(() => [
-  { key: 3.6e+6, title: i18n.tsx.recentNHours({n: 1}) },
-  { key: 8.64e+7, title: i18n.tsx.recentNDays({n: 1}) },
-  { key: 3 * 8.64e+7, title: i18n.tsx.recentNDays({n: 3}) },
-  { key: 7 * 8.64e+7, title: i18n.tsx.recentNDays({n: 7}) },
-  { key: 30 * 8.64e+7, title: i18n.tsx.recentNDays({n: 30}) },
+  { key: 3.6e+6, title: i18n.tsx.recentNHours({ n: 1 }) },
+  { key: 8.64e+7, title: i18n.tsx.recentNDays({ n: 1 }) },
+  { key: 3 * 8.64e+7, title: i18n.tsx.recentNDays({ n: 3 }) },
+  { key: 7 * 8.64e+7, title: i18n.tsx.recentNDays({ n: 7 }) },
+  { key: 30 * 8.64e+7, title: i18n.tsx.recentNDays({ n: 30 }) },
 ]);
 
 const anchorDate = computed((previous) => {

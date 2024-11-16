@@ -213,10 +213,11 @@ import { misskeyApi } from '@/scripts/misskey-api.js';
 import { isNotesVisibilityForMe, isFollowingVisibleForMe, isFollowersVisibleForMe } from '@/scripts/isFfVisibleForMe.js';
 import { useRouter } from '@/router/supplier.js';
 import { getStaticImageUrl, getProxiedImageUrl } from '@/scripts/media-proxy.js';
-import {editNickname} from "@/scripts/edit-nickname";
+import { editNickname } from "@/scripts/edit-nickname";
 import MkLink from '@/components/MkLink.vue';
 import MkContainer from '@/components/MkContainer.vue';
 import MkSparkle from '@/components/MkSparkle.vue';
+
 function calcAge(birthdate: string): number {
 	const date = new Date(birthdate);
 	const now = new Date();
@@ -235,7 +236,7 @@ function calcAge(birthdate: string): number {
 const XFiles = defineAsyncComponent(() => import('./index.files.vue'));
 const XActivity = defineAsyncComponent(() => import('./index.activity.vue'));
 const XTimeline = defineAsyncComponent(() => import('./index.timeline.vue'));
-const XListenBrainz = defineAsyncComponent(() => import("./index.listenbrainz.vue"));;
+const XListenBrainz = defineAsyncComponent(() => import("./index.listenbrainz.vue")); ;
 
 const props = withDefaults(defineProps<{
 	user: Misskey.entities.UserDetailed;
@@ -280,7 +281,6 @@ if (props.user.listenbrainz) {
 		}
 	})();
 }
-
 
 watch(moderationNote, async () => {
 	await misskeyApi('admin/update-user-note', { userId: props.user.id, text: moderationNote.value });

@@ -566,7 +566,7 @@ const routes: RouteDef[] = [{
 	path: '/my/follow-requests-sendlist',
 	component: page(() => import('@/pages/follow-requests-sendlist.vue')),
 	loginRequired: true,
-},{
+}, {
 	path: '/my/lists/:listId',
 	component: page(() => import('@/pages/my-lists/list.vue')),
 	loginRequired: true,

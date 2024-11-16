@@ -222,7 +222,7 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 					}];
 
 				case 'followRequestRejected':
-					return [i18n.ts._notification.yourfollowRequestRejected, {
+					return [i18n.ts._notification.yourFollowRequestRejected, {
 						body: getUserName(data.body.user),
 						icon: data.body.user.avatarUrl ?? undefined,
 						badge: iconUrl('ban'),

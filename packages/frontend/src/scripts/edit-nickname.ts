@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import {User} from "misskey-js/built/entities";
-import {defaultStore} from "@/store";
+import { User } from "misskey-js/built/entities";
+import { defaultStore } from "@/store";
 import * as os from '@/os';
 
 export async function editNickname(user: User) {
@@ -14,8 +14,8 @@ export async function editNickname(user: User) {
 		placeholder: user.name || user.username,
 		default: defaultStore.state.nicknameMap[user.id] ?? null,
 	});
-	if (canceled) return
-	const newMap = {...defaultStore.state.nicknameMap};
+	if (canceled) return;
+	const newMap = { ...defaultStore.state.nicknameMap };
 	if (result) {
 		newMap[user.id] = result;
 	} else {
