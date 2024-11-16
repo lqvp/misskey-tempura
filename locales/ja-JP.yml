@@ -2604,6 +2604,8 @@ _notification:
     login: "ログイン"
     test: "通知のテスト"
     app: "連携アプリからの通知"
+    scheduledNoteFailed: "予約投稿に失敗"
+    scheduledNotePosted: "予約投稿に成功"
 
   _actions:
     followBack: "フォローバック"
