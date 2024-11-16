@@ -3,11 +3,13 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { DI } from '@/di-symbols.js';
 import type { MiMeta } from '@/models/Meta.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { MetaService } from '@/core/MetaService.js';
+import { ApiError } from '../../error.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -15,6 +17,14 @@ export const meta = {
 	requireCredential: true,
 	requireAdmin: true,
 	kind: 'write:admin:meta',
+
+	errors: {
+		followedUserDuplicated: {
+			message: 'Some items in "defaultFollowedUsers" and "forciblyFollowedUsers" are duplicated.',
+			code: 'FOLLOWED_USER_DUPLICATED',
+			id: 'bcf088ec-fec5-42d0-8b9e-16d3b4797a4d',
+		},
+	},
 } as const;
 
 export const paramDef = {
@@ -198,6 +208,18 @@ export const paramDef = {
 		customSplashText: { type: 'array', nullable: true, items: {
 			type: 'string',
 		}},
+		defaultFollowedUsers: {
+			type: 'array', nullable: true, items: {
+				type: 'string',
+				format: 'misskey:id',
+			},
+		},
+		forciblyFollowedUsers: {
+			type: 'array', nullable: true, items: {
+				type: 'string',
+				format: 'misskey:id',
+			},
+		},
 	},
 	required: [],
 } as const;
@@ -205,6 +227,9 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
+		@Inject(DI.meta)
+		private serverSettings: MiMeta,
+
 		private metaService: MetaService,
 		private moderationLogService: ModerationLogService,
 	) {
@@ -736,6 +761,22 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.hanaThemeWeakOpacity !== undefined) {
 				set.hanaThemeWeakOpacity = ps.hanaThemeWeakOpacity;
+			}
+
+			if (Array.isArray(ps.defaultFollowedUsers)) {
+				if (ps.defaultFollowedUsers.some(x => this.serverSettings.forciblyFollowedUsers.includes(x) || ps.forciblyFollowedUsers?.includes(x))) {
+					throw new ApiError(meta.errors.followedUserDuplicated);
+				}
+
+				set.defaultFollowedUsers = ps.defaultFollowedUsers.filter(Boolean);
+			}
+
+			if (Array.isArray(ps.forciblyFollowedUsers)) {
+				if (ps.forciblyFollowedUsers.some(x => this.serverSettings.defaultFollowedUsers.includes(x) || ps.defaultFollowedUsers?.includes(x))) {
+					throw new ApiError(meta.errors.followedUserDuplicated);
+				}
+
+				set.forciblyFollowedUsers = ps.forciblyFollowedUsers.filter(Boolean);
 			}
 
 			const before = await this.metaService.fetch(true);

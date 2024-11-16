@@ -108,6 +108,23 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</MkInput>
 						</div>
 					</MkFolder>
+
+					<MkFolder>
+						<template #icon><i class="ti ti-user-star"></i></template>
+						<template #label>{{ i18n.ts.defaultFollowedUsers }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+
+						<div class="_gaps">
+							<MkTextarea v-model="defaultFollowedUsers">
+								<template #label>{{ i18n.ts.defaultFollowedUsers }}</template>
+								<template #caption>{{ i18n.ts.defaultFollowedUsersDescription }}</template>
+							</MkTextarea>
+							<MkTextarea v-model="forciblyFollowedUsers">
+								<template #label>{{ i18n.ts.forciblyFollowedUsers }}</template>
+								<template #caption>{{ i18n.ts.forciblyFollowedUsersDescription }}</template>
+							</MkTextarea>
+							<MkButton primary @click="save_defaultUsers">{{ i18n.ts.save }}</MkButton>
+						</div>
+					</MkFolder>
 				</div>
 			</FormSuspense>
 		</MkSpacer>
@@ -142,6 +159,8 @@ const useHanaEntrance = ref<boolean>(false);
 const hanaThemeColor = ref<string>();
 const hanaThemeAltColor = ref<string>();
 const hanaThemeWeakOpacity = ref<string>();
+const defaultFollowedUsers = ref<string>('');
+const forciblyFollowedUsers = ref<string>('');
 
 const originalMinimumUsernameLength = ref<number>();
 const validateMinimumUsernameLengthChanged = computed(() =>
@@ -168,6 +187,8 @@ async function init() {
 	hanaThemeColor.value = meta.hanaThemeColor;
 	hanaThemeAltColor.value = meta.hanaThemeAltColor;
 	hanaThemeWeakOpacity.value = meta.hanaThemeWeakOpacity;
+	defaultFollowedUsers.value = meta.defaultFollowedUsers.join('\n');
+	forciblyFollowedUsers.value = meta.forciblyFollowedUsers.join('\n');
 }
 
 function onChange_approvalRequiredForSignup(value: boolean) {
@@ -228,6 +249,19 @@ function save_validateMinimumUsernameLength() {
 	}).then(() => {
 		fetchInstance(true);
 		originalMinimumUsernameLength.value = validateMinimumUsernameLength.value;
+	});
+}
+
+function save_defaultUsers() {
+	os.apiWithDialog('admin/update-meta', {
+		defaultFollowedUsers: defaultFollowedUsers.value.split('\n'),
+		forciblyFollowedUsers: forciblyFollowedUsers.value.split('\n'),
+	}, undefined, {
+		'bcf088ec-fec5-42d0-8b9e-16d3b4797a4d': {
+			text: i18n.ts.defaultFollowedUsersDuplicated,
+		}
+	}).then(() => {
+		fetchInstance(true);
 	});
 }
 

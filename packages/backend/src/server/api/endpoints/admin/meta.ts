@@ -561,6 +561,20 @@ export const meta = {
 				type: 'number',
 				optional: false, nullable: false,
 			},
+			defaultFollowedUsers: {
+				type: 'array',
+				optional: false, nullable: false,
+				items: {
+					type: 'string',
+				},
+			},
+			forciblyFollowedUsers: {
+				type: 'array',
+				optional: false, nullable: false,
+				items: {
+					type: 'string',
+				},
+			},
 		},
 	},
 } as const;
@@ -712,6 +726,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				hanaThemeColor: instance.hanaThemeColor,
 				hanaThemeAltColor: instance.hanaThemeAltColor,
 				hanaThemeWeakOpacity: instance.hanaThemeWeakOpacity,
+				defaultFollowedUsers: instance.defaultFollowedUsers,
+				forciblyFollowedUsers: instance.forciblyFollowedUsers,
 			};
 		});
 	}

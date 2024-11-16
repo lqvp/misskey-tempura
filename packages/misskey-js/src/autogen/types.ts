@@ -2884,6 +2884,15 @@ export type paths = {
      */
     post: operations['notes___polls___vote'];
   };
+  '/notes/quotes': {
+    /**
+     * notes/quotes
+     * @description No description provided.
+     *
+     * **Credential required**: *No*
+     */
+    post: operations['notes___quotes'];
+  };
   '/notes/reactions': {
     /**
      * notes/reactions
@@ -5473,7 +5482,6 @@ export type operations = {
             urlPreviewUserAgent: string | null;
             urlPreviewSummaryProxyUrl: string | null;
             federation: string;
-            emailToReceiveAbuseReport: string;
             customSplashText: string[];
             blockMentionsFromUnfamiliarRemoteUsers: boolean;
             validateMinimumUsernameLength: number;
@@ -5481,6 +5489,8 @@ export type operations = {
             hanaThemeColor: string;
             hanaThemeAltColor: string;
             hanaThemeWeakOpacity: number;
+            defaultFollowedUsers: string[];
+            forciblyFollowedUsers: string[];
           };
         };
       };
@@ -10132,6 +10142,8 @@ export type operations = {
           federation?: 'all' | 'none' | 'specified';
           federationHosts?: string[];
           customSplashText?: string[] | null;
+          defaultFollowedUsers?: string[] | null;
+          forciblyFollowedUsers?: string[] | null;
         };
       };
     };
@@ -23217,6 +23229,66 @@ export type operations = {
       /** @description OK (without any results) */
       204: {
         content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * notes/quotes
+   * @description No description provided.
+   *
+   * **Credential required**: *No*
+   */
+  notes___quotes: {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: misskey:id */
+          noteId: string;
+          /** Format: misskey:id */
+          sinceId?: string;
+          /** Format: misskey:id */
+          untilId?: string;
+          /** @default 10 */
+          limit?: number;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (with results) */
+      200: {
+        content: {
+          'application/json': components['schemas']['Note'][];
+        };
       };
       /** @description Client error */
       400: {
