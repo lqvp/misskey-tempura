@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: lqvp
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 export class HanaThemeColors1731664908710 {
 	name = 'HanaThemeColors1731664908710'
 

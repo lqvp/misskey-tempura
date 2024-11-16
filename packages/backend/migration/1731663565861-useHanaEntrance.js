@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: lqvp
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 export class UseHanaEntrance1731663565861 {
 	name = 'UseHanaEntrance1731663565861'
 
