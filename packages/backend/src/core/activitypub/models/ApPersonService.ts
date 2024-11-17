@@ -273,11 +273,11 @@ export class ApPersonService implements OnModuleInit {
 		};
 
 		if (host) {
-			const i = await this.federatedInstanceService.fetch(host);
+			const instance = await this.federatedInstanceService.fetch(host);
 			console.log('avatarDecorationFetch: start');
-			if (i.softwareName === 'misskey') {
+			if (instance?.softwareName === 'misskey') {
 				const remoteUserId = user.uri.split('/users/')[1];
-				const userMetaRequest = await this.httpRequestService.send(`https://${i.host}/api/users/show`, {
+				const userMetaRequest = await this.httpRequestService.send(`https://${instance.host}/api/users/show`, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
