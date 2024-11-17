@@ -887,7 +887,7 @@ export type paths = {
      * announcements
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:announcements*
      */
     post: operations['announcements'];
   };
@@ -1297,14 +1297,14 @@ export type paths = {
      * charts/user/following
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:stats*
      */
     get: operations['charts___user___following'];
     /**
      * charts/user/following
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:stats*
      */
     post: operations['charts___user___following'];
   };
@@ -1313,14 +1313,14 @@ export type paths = {
      * charts/user/notes
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:stats*
      */
     get: operations['charts___user___notes'];
     /**
      * charts/user/notes
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:stats*
      */
     post: operations['charts___user___notes'];
   };
@@ -1329,14 +1329,14 @@ export type paths = {
      * charts/user/pv
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:stats*
      */
     get: operations['charts___user___pv'];
     /**
      * charts/user/pv
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:stats*
      */
     post: operations['charts___user___pv'];
   };
@@ -1345,14 +1345,14 @@ export type paths = {
      * charts/user/reactions
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:stats*
      */
     get: operations['charts___user___reactions'];
     /**
      * charts/user/reactions
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:stats*
      */
     post: operations['charts___user___reactions'];
   };
@@ -1693,14 +1693,14 @@ export type paths = {
      * federation/instances
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:federation*
      */
     get: operations['federation___instances'];
     /**
      * federation/instances
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:federation*
      */
     post: operations['federation___instances'];
   };
@@ -1923,14 +1923,14 @@ export type paths = {
      * get-online-users-count
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:stats*
      */
     get: operations['get-online-users-count'];
     /**
      * get-online-users-count
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:stats*
      */
     post: operations['get-online-users-count'];
   };
@@ -1939,7 +1939,7 @@ export type paths = {
      * get-avatar-decorations
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:account*
      */
     post: operations['get-avatar-decorations'];
   };
@@ -2794,14 +2794,14 @@ export type paths = {
      * notes/featured
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:notes*
      */
     get: operations['notes___featured'];
     /**
      * notes/featured
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:notes*
      */
     post: operations['notes___featured'];
   };
@@ -3194,7 +3194,7 @@ export type paths = {
      * flash/featured
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:flash*
      */
     post: operations['flash___featured'];
   };
@@ -3363,7 +3363,7 @@ export type paths = {
      * stats
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:stats*
      */
     post: operations['stats'];
   };
@@ -3429,14 +3429,14 @@ export type paths = {
      * users
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:account*
      */
     get: operations['users'];
     /**
      * users
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:account*
      */
     post: operations['users'];
   };
@@ -3445,7 +3445,7 @@ export type paths = {
      * users/clips
      * @description Show all clips this user owns.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:clip*
      */
     post: operations['users___clips'];
   };
@@ -3454,7 +3454,7 @@ export type paths = {
      * users/followers
      * @description Show everyone that follows this user.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:following*
      */
     post: operations['users___followers'];
   };
@@ -3463,7 +3463,7 @@ export type paths = {
      * users/following
      * @description Show everyone that this user is following.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:following*
      */
     post: operations['users___following'];
   };
@@ -3472,7 +3472,7 @@ export type paths = {
      * users/gallery/posts
      * @description Show all gallery posts by the given user.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:gallery*
      */
     post: operations['users___gallery___posts'];
   };
@@ -3490,14 +3490,14 @@ export type paths = {
      * users/featured-notes
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:notes*
      */
     get: operations['users___featured-notes'];
     /**
      * users/featured-notes
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:notes*
      */
     post: operations['users___featured-notes'];
   };
@@ -3623,7 +3623,7 @@ export type paths = {
      * users/pages
      * @description Show all pages this user created.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:pages*
      */
     post: operations['users___pages'];
   };
@@ -3632,7 +3632,7 @@ export type paths = {
      * users/flashs
      * @description Show all flashs this user created.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:flash*
      */
     post: operations['users___flashs'];
   };
@@ -3641,7 +3641,7 @@ export type paths = {
      * users/reactions
      * @description Show all reactions this user made.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:reactions*
      */
     post: operations['users___reactions'];
   };
@@ -3686,7 +3686,7 @@ export type paths = {
      * users/search
      * @description Search for users.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:account*
      */
     post: operations['users___search'];
   };
@@ -3704,7 +3704,7 @@ export type paths = {
      * users/achievements
      * @description No description provided.
      *
-     * **Credential required**: *Yes*
+     * **Credential required**: *Yes* / **Permission**: *read:achievements*
      */
     post: operations['users___achievements'];
   };
@@ -5405,7 +5405,7 @@ export type operations = {
             prohibitedWords: string[];
             prohibitedWordsForNameOfUser: string[];
             bannedEmailDomains?: string[];
-            emailWhitelist: string | null;
+            emailWhitelist: boolean;
             preservedUsernames: string[];
             hcaptchaSecretKey: string | null;
             mcaptchaSecretKey: string | null;
@@ -11226,7 +11226,7 @@ export type operations = {
    * announcements
    * @description No description provided.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:announcements*
    */
   announcements: {
     requestBody: {
@@ -13635,7 +13635,7 @@ export type operations = {
    * charts/user/following
    * @description No description provided.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:stats*
    */
   charts___user___following: {
     requestBody: {
@@ -13720,7 +13720,7 @@ export type operations = {
    * charts/user/notes
    * @description No description provided.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:stats*
    */
   charts___user___notes: {
     requestBody: {
@@ -13790,7 +13790,7 @@ export type operations = {
    * charts/user/pv
    * @description No description provided.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:stats*
    */
   charts___user___pv: {
     requestBody: {
@@ -13859,7 +13859,7 @@ export type operations = {
    * charts/user/reactions
    * @description No description provided.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:stats*
    */
   charts___user___reactions: {
     requestBody: {
@@ -15973,7 +15973,7 @@ export type operations = {
    * federation/instances
    * @description No description provided.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:federation*
    */
   federation___instances: {
     requestBody: {
@@ -17352,7 +17352,7 @@ export type operations = {
    * get-online-users-count
    * @description No description provided.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:stats*
    */
   'get-online-users-count': {
     responses: {
@@ -17400,7 +17400,7 @@ export type operations = {
    * get-avatar-decorations
    * @description No description provided.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:account*
    */
   'get-avatar-decorations': {
     responses: {
@@ -22724,7 +22724,7 @@ export type operations = {
    * notes/featured
    * @description No description provided.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:notes*
    */
   notes___featured: {
     requestBody: {
@@ -25296,7 +25296,7 @@ export type operations = {
    * flash/featured
    * @description No description provided.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:flash*
    */
   flash___featured: {
     requestBody: {
@@ -26279,7 +26279,7 @@ export type operations = {
    * stats
    * @description No description provided.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:stats*
    */
   stats: {
     responses: {
@@ -26693,7 +26693,7 @@ export type operations = {
    * users
    * @description No description provided.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:account*
    */
   users: {
     requestBody: {
@@ -26766,7 +26766,7 @@ export type operations = {
    * users/clips
    * @description Show all clips this user owns.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:clip*
    */
   users___clips: {
     requestBody: {
@@ -26826,7 +26826,7 @@ export type operations = {
    * users/followers
    * @description Show everyone that follows this user.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:following*
    */
   users___followers: {
     requestBody: {
@@ -26889,7 +26889,7 @@ export type operations = {
    * users/following
    * @description Show everyone that this user is following.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:following*
    */
   users___following: {
     requestBody: {
@@ -26953,7 +26953,7 @@ export type operations = {
    * users/gallery/posts
    * @description Show all gallery posts by the given user.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:gallery*
    */
   users___gallery___posts: {
     requestBody: {
@@ -27072,7 +27072,7 @@ export type operations = {
    * users/featured-notes
    * @description No description provided.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:notes*
    */
   'users___featured-notes': {
     requestBody: {
@@ -27880,7 +27880,7 @@ export type operations = {
    * users/pages
    * @description Show all pages this user created.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:pages*
    */
   users___pages: {
     requestBody: {
@@ -27940,7 +27940,7 @@ export type operations = {
    * users/flashs
    * @description Show all flashs this user created.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:flash*
    */
   users___flashs: {
     requestBody: {
@@ -28000,7 +28000,7 @@ export type operations = {
    * users/reactions
    * @description Show all reactions this user made.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:reactions*
    */
   users___reactions: {
     requestBody: {
@@ -28304,7 +28304,7 @@ export type operations = {
    * users/search
    * @description Search for users.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:account*
    */
   users___search: {
     requestBody: {
@@ -28426,7 +28426,7 @@ export type operations = {
    * users/achievements
    * @description No description provided.
    *
-   * **Credential required**: *Yes*
+   * **Credential required**: *Yes* / **Permission**: *read:achievements*
    */
   users___achievements: {
     requestBody: {

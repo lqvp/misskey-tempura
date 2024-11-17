@@ -15,6 +15,8 @@ export const meta = {
 
 	requireCredential: true,
 
+	kind: 'read:clip',
+
 	description: 'Show all clips this user owns.',
 
 	res: {

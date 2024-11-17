@@ -20,6 +20,8 @@ export const meta = {
 
 	requireCredential: true,
 
+	kind: 'read:following',
+
 	description: 'Show everyone that this user is following.',
 
 	res: {

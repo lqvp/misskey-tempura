@@ -15,6 +15,8 @@ export const meta = {
 
 	requireCredential: true,
 
+	kind: 'read:account',
+
 	res: {
 		type: 'array',
 		optional: false, nullable: false,

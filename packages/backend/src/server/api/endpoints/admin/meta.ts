@@ -197,8 +197,8 @@ export const meta = {
 				},
 			},
 			emailWhitelist: {
-				type: 'string',
-				optional: false, nullable: true,
+				type: 'boolean',
+				optional: false, nullable: false,
 			},
 			preservedUsernames: {
 				type: 'array',

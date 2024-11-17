@@ -2289,6 +2289,10 @@ _permissions:
   "write:report-abuse": "違反を報告する"
   "read:notes-schedule": "予約投稿を見る"
   "write:notes-schedule": "予約投稿を作成・削除する"
+  "read:achievements": "実績を見る"
+  "read:announcements": "お知らせを見る"
+  "read:stats": "統計情報を見る"
+  "read:clip": "クリップを見る"
 
 _auth:
   shareAccessTitle: "アプリへのアクセス許可"

@@ -14,6 +14,7 @@ export const meta = {
 	tags: ['users'],
 
 	requireCredential: true,
+	kind: 'read:account',
 	allowGet: true,
 
 	res: {

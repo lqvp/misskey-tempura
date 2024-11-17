@@ -20,6 +20,8 @@ export const meta = {
 
 	requireCredential: true,
 
+	kind: 'read:reactions',
+
 	description: 'Show all reactions this user made.',
 
 	res: {

@@ -8746,6 +8746,22 @@ export interface Locale extends ILocale {
          * 予約投稿を作成・削除する
          */
         "write:notes-schedule": string;
+        /**
+         * 実績を見る
+         */
+        "read:achievements": string;
+        /**
+         * お知らせを見る
+         */
+        "read:announcements": string;
+        /**
+         * 統計情報を見る
+         */
+        "read:stats": string;
+        /**
+         * クリップを見る
+         */
+        "read:clip": string;
     };
     "_auth": {
         /**

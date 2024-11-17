@@ -13,6 +13,8 @@ import UsersChart from '@/core/chart/charts/users.js';
 export const meta = {
 	requireCredential: true,
 
+	kind: 'read:stats',
+
 	tags: ['meta'],
 
 	res: {

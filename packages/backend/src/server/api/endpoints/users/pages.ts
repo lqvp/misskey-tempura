@@ -15,6 +15,8 @@ export const meta = {
 
 	requireCredential: true,
 
+	kind: 'read:pages',
+
 	description: 'Show all pages this user created.',
 
 	res: {
