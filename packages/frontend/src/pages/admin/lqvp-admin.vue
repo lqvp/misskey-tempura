@@ -158,7 +158,7 @@ const validateMinimumUsernameLength = ref<number>();
 const useHanaEntrance = ref<boolean>(false);
 const hanaThemeColor = ref<string>();
 const hanaThemeAltColor = ref<string>();
-const hanaThemeWeakOpacity = ref<string>();
+const hanaThemeWeakOpacity = ref<number>();
 const defaultFollowedUsers = ref<string>('');
 const forciblyFollowedUsers = ref<string>('');
 
