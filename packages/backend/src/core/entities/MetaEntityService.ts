@@ -139,6 +139,10 @@ export class MetaEntityService {
 			hanaThemeColor: instance.hanaThemeColor,
 			hanaThemeAltColor: instance.hanaThemeAltColor,
 			hanaThemeWeakOpacity: instance.hanaThemeWeakOpacity,
+			hanaModeIcon: instance.hanaModeIcon,
+			hanaModeIconSize: instance.hanaModeIconSize,
+			hanaModeIconRadius: instance.hanaModeIconRadius,
+			hanaModeBackground: instance.hanaModeBackground,
 		};
 
 		return packed;

@@ -6,12 +6,12 @@
 <template>
 <div :class="$style.root" :style="rootStyle">
 	<div :class="$style.heroRoot">
-		<img v-if="instance.backgroundImageUrl" :src="instance.backgroundImageUrl" :class="$style.backgroundImage" alt=""/>
+		<img v-if="rootStyle['--hana-background']" :src="rootStyle['--hana-background']" :class="$style.backgroundImage" alt=""/>
 		<div :class="$style.titleRoot">
 			<h1 :class="$style.logo">
 				<span :class="$style.visuallyHidden">{{ instanceName }}</span>
 				<!-- <img :class="$style.logoImage" src="https://static-assets.misskey.flowers/brand-assets/logotype/logotype_v1.png"/> -->
-				<img :class="$style.logoImage" :src="instance.iconUrl"/>
+				<img :class="$style.logoImage" :src="rootStyle['--hana-icon']" :style="{ 'border-radius': rootStyle['--hana-icon-radius'] }"/>
 			</h1>
 			<div :class="$style.cta">
 				<div :class="$style.actions">
@@ -158,6 +158,10 @@ const rootStyle = computed(() => {
 		'--hana-theme': instance.hanaThemeColor || '#fd709a',
 		'--hana-themeAlt': instance.hanaThemeAltColor || '#f77062',
 		'--hana-themeWeak': `rgba(${hexToRgb(instance.hanaThemeColor || '#fd709a')}, ${instance.hanaThemeWeakOpacity || 0.2})`,
+		'--hana-icon': instance.hanaModeIcon || instance.iconUrl,
+		'--hana-background': instance.hanaModeBackground || instance.backgroundImageUrl,
+		'--hana-icon-radius': instance.hanaModeIconRadius != null ? `${instance.hanaModeIconRadius}%` : '50%',
+		'--hana-icon-size': `${instance.hanaModeIconSize || 128}px`,
 	};
 });
 
@@ -265,10 +269,11 @@ function hexToRgb(hex: string): string {
 }
 
 .logoImage {
-	display: block;
-	margin: 0 auto;
-	width: 100%;
-	max-width: 300px;
+  display: block;
+  margin: 0 auto;
+  width: 100%;
+  max-width: var(--hana-icon-size);
+  border-radius: var(--hana-icon-radius);
 }
 
 .cta {

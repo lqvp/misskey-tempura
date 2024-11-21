@@ -5272,6 +5272,12 @@ export type components = {
       hanaThemeAltColor: string;
       /** @default 0.2 */
       hanaThemeWeakOpacity: number;
+      hanaModeIcon?: string | null;
+      /** @default 128 */
+      hanaModeIconSize: number;
+      /** @default 50 */
+      hanaModeIconRadius: number;
+      hanaModeBackground?: string | null;
     };
     MetaDetailedOnly: {
       features?: {
@@ -5499,6 +5505,10 @@ export type operations = {
             hanaThemeColor: string;
             hanaThemeAltColor: string;
             hanaThemeWeakOpacity: number;
+            hanaModeIcon: string;
+            hanaModeIconSize: number;
+            hanaModeIconRadius: number;
+            hanaModeBackground: string;
             defaultFollowedUsers: string[];
             forciblyFollowedUsers: string[];
           };
@@ -10147,6 +10157,10 @@ export type operations = {
           hanaThemeColor?: string;
           hanaThemeAltColor?: string;
           hanaThemeWeakOpacity?: number;
+          hanaModeIcon?: string;
+          hanaModeIconSize?: number;
+          hanaModeIconRadius?: number;
+          hanaModeBackground?: string;
           silencedHosts?: string[] | null;
           mediaSilencedHosts?: string[] | null;
           /** @description [Deprecated] Use "urlPreviewSummaryProxyUrl" instead. */

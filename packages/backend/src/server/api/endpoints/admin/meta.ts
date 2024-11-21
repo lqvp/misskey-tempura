@@ -561,6 +561,22 @@ export const meta = {
 				type: 'number',
 				optional: false, nullable: false,
 			},
+			hanaModeIcon: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
+			hanaModeIconSize: {
+				type: 'number',
+				optional: false, nullable: false,
+			},
+			hanaModeIconRadius: {
+				type: 'number',
+				optional: false, nullable: false,
+			},
+			hanaModeBackground: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
 			defaultFollowedUsers: {
 				type: 'array',
 				optional: false, nullable: false,
@@ -726,6 +742,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				hanaThemeColor: instance.hanaThemeColor,
 				hanaThemeAltColor: instance.hanaThemeAltColor,
 				hanaThemeWeakOpacity: instance.hanaThemeWeakOpacity,
+				hanaModeIcon: instance.hanaModeIcon,
+				hanaModeIconSize: instance.hanaModeIconSize,
+				hanaModeIconRadius: instance.hanaModeIconRadius,
+				hanaModeBackground: instance.hanaModeBackground,
 				defaultFollowedUsers: instance.defaultFollowedUsers,
 				forciblyFollowedUsers: instance.forciblyFollowedUsers,
 			};

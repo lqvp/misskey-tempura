@@ -11206,6 +11206,38 @@ export interface Locale extends ILocale {
      */
     "hanaThemeWeakOpacityDescription": string;
     /**
+     * LPで使うアイコン
+     */
+    "hanaModeIcon": string;
+    /**
+     * はなみすきー仕様のエントランスで表示するアイコン
+     */
+    "hanaModeIconDescription": string;
+    /**
+     * アイコンのサイズ
+     */
+    "hanaModeIconSize": string;
+    /**
+     * アイコンの表示サイズ（ピクセル単位）
+     */
+    "hanaModeIconSizeDescription": string;
+    /**
+     * アイコンの角丸
+     */
+    "hanaModeIconRadius": string;
+    /**
+     * アイコンの角を丸くする度合い（0=四角形、100=円形）
+     */
+    "hanaModeIconRadiusDescription": string;
+    /**
+     * LPで使う背景画像
+     */
+    "hanaModeBackground": string;
+    /**
+     * はなみすきー仕様のエントランスで表示する背景画像
+     */
+    "hanaModeBackgroundDescription": string;
+    /**
      * デフォルトでフォローするユーザー (ID)
      */
     "defaultFollowedUsers": string;

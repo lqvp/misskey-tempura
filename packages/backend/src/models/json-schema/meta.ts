@@ -288,6 +288,24 @@ export const packedMetaLiteSchema = {
 			optional: false, nullable: false,
 			default: 0.2,
 		},
+		hanaModeIcon: {
+			type: 'string',
+			optional: true, nullable: true,
+		},
+		hanaModeIconSize: {
+			type: 'number',
+			optional: false, nullable: false,
+			default: 128,
+		},
+		hanaModeIconRadius: {
+			type: 'number',
+			optional: false, nullable: false,
+			default: 50,
+		},
+		hanaModeBackground: {
+			type: 'string',
+			optional: true, nullable: true,
+		},
 	},
 } as const;
 

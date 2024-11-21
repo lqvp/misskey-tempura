@@ -171,6 +171,10 @@ export const paramDef = {
 		hanaThemeColor: { type: 'string' },
 		hanaThemeAltColor: { type: 'string' },
 		hanaThemeWeakOpacity: { type: 'number' },
+		hanaModeIcon: { type: 'string' },
+		hanaModeIconSize: { type: 'number' },
+		hanaModeIconRadius: { type: 'number' },
+		hanaModeBackground: { type: 'string' },
 		silencedHosts: {
 			type: 'array',
 			nullable: true,
@@ -761,6 +765,22 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.hanaThemeWeakOpacity !== undefined) {
 				set.hanaThemeWeakOpacity = ps.hanaThemeWeakOpacity;
+			}
+
+			if (ps.hanaModeIcon !== undefined) {
+				set.hanaModeIcon = ps.hanaModeIcon;
+			}
+
+			if (ps.hanaModeIconSize !== undefined) {
+				set.hanaModeIconSize = ps.hanaModeIconSize;
+			}
+
+			if (ps.hanaModeIconRadius !== undefined) {
+				set.hanaModeIconRadius = ps.hanaModeIconRadius;
+			}
+
+			if (ps.hanaModeBackground !== undefined) {
+				set.hanaModeBackground = ps.hanaModeBackground;
 			}
 
 			if (Array.isArray(ps.defaultFollowedUsers)) {

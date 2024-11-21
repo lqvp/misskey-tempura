@@ -69,7 +69,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 							<MkInput
 								v-model="hanaSettingsForm.state.hanaThemeColor"
-								type="string"
+								type="text"
 								pattern="^#([A-Fa-f0-9]{6})$"
 								maxlength="7"
 							>
@@ -82,7 +82,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 							<MkInput
 								v-model="hanaSettingsForm.state.hanaThemeAltColor"
-								type="string"
+								type="text"
 								pattern="^#([A-Fa-f0-9]{6})$"
 								maxlength="7"
 							>
@@ -105,6 +105,53 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 								</template>
 								<template #caption>{{ i18n.ts.hanaThemeWeakOpacityDescription }}</template>
+							</MkInput>
+
+							<MkInput
+								v-model="hanaSettingsForm.state.hanaModeIcon"
+								type="url"
+							>
+								<template #label>
+									<span>{{ i18n.ts.hanaModeIcon }}</span>
+									<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+								</template>
+								<template #caption>{{ i18n.ts.hanaModeIconDescription }}</template>
+							</MkInput>
+
+							<MkInput
+								v-model="hanaSettingsForm.state.hanaModeIconSize"
+								type="number"
+								min="0"
+							>
+								<template #label>
+									<span>{{ i18n.ts.hanaModeIconSize }}</span>
+									<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+								</template>
+								<template #caption>{{ i18n.ts.hanaModeIconSizeDescription }}</template>
+							</MkInput>
+
+							<MkInput
+								v-model="hanaSettingsForm.state.hanaModeIconRadius"
+								type="number"
+								min="0"
+								max="100"
+							>
+								<template #label>
+									<span>{{ i18n.ts.hanaModeIconRadius }}</span>
+									<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+								</template>
+								<template #caption>{{ i18n.ts.hanaModeIconRadiusDescription }}</template>
+							</MkInput>
+
+							<MkInput
+								v-model="hanaSettingsForm.state.hanaModeBackground"
+								type="url"
+							>
+								<template #label>
+									<span>{{ i18n.ts.hanaModeBackground }}</span>
+									<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+								</template>
+								<template #caption>{{ i18n.ts.hanaModeBackgroundDescription }}</template>
 							</MkInput>
 						</div>
 					</MkFolder>
@@ -159,6 +206,10 @@ const useHanaEntrance = ref<boolean>(false);
 const hanaThemeColor = ref<string>();
 const hanaThemeAltColor = ref<string>();
 const hanaThemeWeakOpacity = ref<number>();
+const hanaModeIcon = ref<string>();
+const hanaModeIconSize = ref<number>(128);
+const hanaModeIconRadius = ref<number>(50);
+const hanaModeBackground = ref<string>();
 const defaultFollowedUsers = ref<string>('');
 const forciblyFollowedUsers = ref<string>('');
 
@@ -186,6 +237,10 @@ async function init() {
 	useHanaEntrance.value = meta.useHanaEntrance;
 	hanaThemeColor.value = meta.hanaThemeColor;
 	hanaThemeAltColor.value = meta.hanaThemeAltColor;
+	hanaModeIcon.value = meta.hanaModeIcon;
+	hanaModeIconSize.value = meta.hanaModeIconSize;
+	hanaModeIconRadius.value = meta.hanaModeIconRadius;
+	hanaModeBackground.value = meta.hanaModeBackground;
 	hanaThemeWeakOpacity.value = meta.hanaThemeWeakOpacity;
 	defaultFollowedUsers.value = meta.defaultFollowedUsers.join('\n');
 	forciblyFollowedUsers.value = meta.forciblyFollowedUsers.join('\n');
@@ -212,6 +267,10 @@ const hanaSettingsForm = useForm({
 	hanaThemeColor: meta.hanaThemeColor || '#fd709a',
 	hanaThemeAltColor: meta.hanaThemeAltColor || '#f77062',
 	hanaThemeWeakOpacity: meta.hanaThemeWeakOpacity || 0.2,
+	hanaModeIcon: meta.hanaModeIcon,
+	hanaModeIconSize: meta.hanaModeIconSize || 128,
+	hanaModeIconRadius: meta.hanaModeIconRadius ?? 50,
+	hanaModeBackground: meta.hanaModeBackground,
 }, async (state) => {
 	const hexColorRegex = /^#([A-Fa-f0-9]{6})$/;
 	if (!hexColorRegex.test(state.hanaThemeColor) || !hexColorRegex.test(state.hanaThemeAltColor)) {
@@ -230,11 +289,31 @@ const hanaSettingsForm = useForm({
 		return;
 	}
 
+	if (state.hanaModeIconSize < 0) {
+		os.alert({
+			type: 'error',
+			text: 'アイコンサイズは0以上の値を指定してください',
+		});
+		return;
+	}
+
+	if (state.hanaModeIconRadius < 0 || state.hanaModeIconRadius > 100) {
+		os.alert({
+			type: 'error',
+			text: '角丸の値は0から100の間で指定してください',
+		});
+		return;
+	}
+
 	await os.apiWithDialog('admin/update-meta', {
 		useHanaEntrance: state.useHanaEntrance,
 		hanaThemeColor: state.hanaThemeColor,
 		hanaThemeAltColor: state.hanaThemeAltColor,
 		hanaThemeWeakOpacity: state.hanaThemeWeakOpacity,
+		hanaModeIcon: state.hanaModeIcon,
+		hanaModeIconSize: state.hanaModeIconSize,
+		hanaModeIconRadius: state.hanaModeIconRadius,
+		hanaModeBackground: state.hanaModeBackground,
 	});
 	fetchInstance(true);
 });
@@ -259,7 +338,7 @@ function save_defaultUsers() {
 	}, undefined, {
 		'bcf088ec-fec5-42d0-8b9e-16d3b4797a4d': {
 			text: i18n.ts.defaultFollowedUsersDuplicated,
-		}
+		},
 	}).then(() => {
 		fetchInstance(true);
 	});

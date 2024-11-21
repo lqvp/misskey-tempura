@@ -719,6 +719,28 @@ export class MiMeta {
 	})
 	public hanaThemeWeakOpacity: number;
 
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public hanaModeIcon: string | null;
+
+	@Column('integer', {
+		default: 128,
+	})
+	public hanaModeIconSize: number;
+
+	@Column('integer', {
+		default: 50,
+	})
+	public hanaModeIconRadius: number;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public hanaModeBackground: string | null;
+
 	/**
 	 * アカウント作成の段階でデフォルトでフォローしているユーザー（あとから解除可能）
 	 */
