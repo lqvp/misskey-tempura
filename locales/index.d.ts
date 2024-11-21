@@ -643,6 +643,10 @@ export interface Locale extends ILocale {
      */
     "unblockConfirm": string;
     /**
+     * ミュートしてブロックしますか？
+     */
+    "muteAndBlockConfirm": string;
+    /**
      * 凍結しますか？
      */
     "suspendConfirm": string;
@@ -4907,6 +4911,10 @@ export interface Locale extends ILocale {
      */
     "renotes": string;
     /**
+     * 引用
+     */
+    "quotes": string;
+    /**
      * 返信を見る
      */
     "loadReplies": string;
@@ -8730,6 +8738,22 @@ export interface Locale extends ILocale {
          * 予約投稿を作成・削除する
          */
         "write:notes-schedule": string;
+        /**
+         * 実績を見る
+         */
+        "read:achievements": string;
+        /**
+         * お知らせを見る
+         */
+        "read:announcements": string;
+        /**
+         * 統計情報を見る
+         */
+        "read:stats": string;
+        /**
+         * クリップを見る
+         */
+        "read:clip": string;
     };
     "_auth": {
         /**
@@ -9877,6 +9901,14 @@ export interface Locale extends ILocale {
              * 連携アプリからの通知
              */
             "app": string;
+            /**
+             * 予約投稿に失敗
+             */
+            "scheduledNoteFailed": string;
+            /**
+             * 予約投稿に成功
+             */
+            "scheduledNotePosted": string;
         };
         "_actions": {
             /**
@@ -11137,6 +11169,70 @@ export interface Locale extends ILocale {
      * 予約投稿一覧
      */
     "schedulePostList": string;
+    /**
+     * はなみすきー仕様のエントランスを使う
+     */
+    "useHanaEntrance": string;
+    /**
+     * はなテーマのメインカラー
+     */
+    "hanaThemeColor": string;
+    /**
+     * HEXカラーコード (#000000 形式)
+     */
+    "hanaThemeColorDescription": string;
+    /**
+     * はなテーマのアクセントカラー
+     */
+    "hanaThemeAltColor": string;
+    /**
+     * HEXカラーコード (#000000 形式)
+     */
+    "hanaThemeAltColorDescription": string;
+    /**
+     * はなテーマの薄色の透明度
+     */
+    "hanaThemeWeakOpacity": string;
+    /**
+     * 0から1までの数値
+     */
+    "hanaThemeWeakOpacityDescription": string;
+    /**
+     * デフォルトでフォローするユーザー (ID)
+     */
+    "defaultFollowedUsers": string;
+    /**
+     * 今後アカウントが作成された際に自動でフォローされるユーザー（解除可能）のユーザーIDを改行区切りで指定します。
+     */
+    "defaultFollowedUsersDescription": string;
+    /**
+     * 交流を断てないユーザー (ID)
+     */
+    "forciblyFollowedUsers": string;
+    /**
+     * 今後アカウントが作成された際には自動でフォローされ、フォローの解除やミュート・ブロックができないユーザーのユーザーIDを改行区切りで指定します。
+     */
+    "forciblyFollowedUsersDescription": string;
+    /**
+     * 「デフォルトでフォローするユーザー」と「交流を絶てないユーザー」が重複しています。
+     */
+    "defaultFollowedUsersDuplicated": string;
+    /**
+     * サーバー管理者はこのユーザーをフォロー解除することを禁止しています。
+     */
+    "unfollowThisUserIsProhibited": string;
+    /**
+     * サーバー管理者はこのユーザーをブロックすることを禁止しています。
+     */
+    "blockThisUserIsProhibited": string;
+    /**
+     * サーバー管理者はこのユーザーをミュートすることを禁止しています。
+     */
+    "muteThisUserIsProhibited": string;
+    /**
+     * このユーザーのフォロー解除は禁止されています。
+     */
+    "unfollowThisUserProhibited": string;
 }
 declare const locales: {
     [lang: string]: Locale;

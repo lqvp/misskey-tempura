@@ -11,6 +11,8 @@ import { DI } from '@/di-symbols.js';
 export const meta = {
 	requireCredential: true,
 
+	kind: 'read:achievements',
+
 	res: {
 		type: 'array',
 		items: {

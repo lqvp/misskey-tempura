@@ -43,6 +43,7 @@ export const permissions = [
 	'write:messaging',
 	'read:mutes',
 	'write:mutes',
+	'read:notes',
 	'write:notes',
 	'read:notes-schedule',
 	'write:notes-schedule',
@@ -120,6 +121,10 @@ export const permissions = [
 	'read:clip-favorite',
 	'read:federation',
 	'write:report-abuse',
+	'read:achievements',
+	'read:announcements',
+	'read:stats',
+	'read:clip',
 ] as const;
 
 export const moderationLogTypes = [

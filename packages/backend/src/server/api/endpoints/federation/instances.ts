@@ -16,6 +16,7 @@ export const meta = {
 
 	requireCredential: true,
 	requireAdmin: true,
+	kind: 'read:federation',
 	allowGet: true,
 	cacheSec: 3600,
 

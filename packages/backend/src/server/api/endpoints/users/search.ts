@@ -17,6 +17,8 @@ export const meta = {
 
 	requireCredential: true,
 
+	kind: 'read:account',
+
 	description: 'Search for users.',
 
 	res: {

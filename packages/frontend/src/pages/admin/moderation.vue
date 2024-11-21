@@ -227,7 +227,7 @@ function onChange_blockMentionsFromUnfamiliarRemoteUsers(value: boolean) {
 		blockMentionsFromUnfamiliarRemoteUsers: value,
 	}).then(() => {
 		fetchInstance(true);
-	})
+	});
 }
 
 function onUsernameMinLengthChange(value: number) {

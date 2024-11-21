@@ -6,16 +6,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <div v-if="instance">
 	<XSetup v-if="instance.requireSetup"/>
-	<XEntrance v-else/>
+	<XEntranceHana v-else-if="instance.useHanaEntrance"/>
+	<XEntranceA v-else/>
 </div>
 </template>
 
 <script lang="ts" setup>
 import { computed, ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import XSetup from './welcome.setup.vue';
-import XEntrance from './welcome.entrance.a.vue';
 import { instanceName } from '@@/js/config.js';
+import XSetup from './welcome.setup.vue';
+import XEntranceHana from './welcome.entrance.hana.vue';
+import XEntranceA from './welcome.entrance.a.vue';
 import { definePageMetadata } from '@/scripts/page-metadata.js';
 import { fetchInstance } from '@/instance.js';
 

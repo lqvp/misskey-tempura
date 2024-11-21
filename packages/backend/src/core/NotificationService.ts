@@ -207,7 +207,7 @@ export class NotificationService implements OnApplicationShutdown {
 	private async emailNotificationUnFollow(userId: MiUser['id'], follower: MiUser) {
 		/*
 		const userProfile = await UserProfiles.findOneByOrFail({ userId: userId });
-		if (!userProfile.email || !userProfile.emailNotificationTypes.includes('follow')) return;
+		if (!userProfile.email || !userProfile.emailNotificationTypes.includes('unfollow')) return;
 		const locale = locales[userProfile.lang ?? 'ja-JP'];
 		const i18n = new I18n(locale);
 		// TODO: render user information html

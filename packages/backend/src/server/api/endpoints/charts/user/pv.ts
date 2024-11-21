@@ -18,6 +18,8 @@ export const meta = {
 
 	requireCredential: true,
 
+	kind: 'read:stats',
+
 	res: getJsonSchema(schema),
 
 	allowGet: true,

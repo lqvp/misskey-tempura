@@ -46,7 +46,7 @@ import { pleaseLogin } from '@/scripts/please-login.js';
 import { host } from '@@/js/config.js';
 import { $i } from '@/account.js';
 import { defaultStore } from '@/store.js';
-import {userName} from "@/filters/user";
+import { userName } from "@/filters/user";
 
 const props = withDefaults(defineProps<{
 	user: { id: string } & Partial<Misskey.entities.UserDetailed>,
@@ -97,6 +97,14 @@ async function onClick() {
 
 			await misskeyApi('following/delete', {
 				userId: props.user.id,
+			}).catch((err) => {
+				if (err.id === '19f25f61-0141-4683-99dc-217a88d633cb') {
+					os.alert({
+						type: 'error',
+						title: i18n.ts.permissionDeniedError,
+						text: i18n.ts.unfollowThisUserProhibited,
+					});
+				}
 			});
 		} else {
 			if (defaultStore.state.alwaysConfirmFollow) {

@@ -225,7 +225,6 @@ function openDecoration(avatarDecoration, index?: number) {
 	});
 }
 
-
 function detachAllDecorations() {
 	os.confirm({
 		type: 'warning',

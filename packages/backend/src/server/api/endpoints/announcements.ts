@@ -16,6 +16,8 @@ export const meta = {
 
 	requireCredential: true,
 
+	kind: 'read:announcements',
+
 	res: {
 		type: 'array',
 		optional: false, nullable: false,

@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: lqvp
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 import { SkLatestNote } from '@/models/LatestNote.js';
 import { MiNote } from '@/models/Note.js';
 

@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: lqvp
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 export const fontList = {
 	'noto-sans': {
 		name: 'Noto Sans',

@@ -118,6 +118,7 @@ async function selectImage(decoration, ev) {
 	decoration.name = file.name.replace(/\.(.+)$/, '');
 	decoration.url = file.url;
 }
+
 const localAvatarDecorations = ref<Misskey.entities.AdminAvatarDecorationsListResponse>([]);
 const remoteAvatarDecorations = ref<Misskey.entities.AdminAvatarDecorationsListResponse>([]);
 

@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: lqvp
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 <template>
 	<MkContainer :foldable="true">
 		<template #header
@@ -37,7 +42,7 @@ const props = withDefaults(
 	}>(),
 	{},
 );
-const listenbrainz = {title: '', artist: '', lastlisten: '', img: '', musicbrainzurl: '', listenbrainzurl: ''};
+const listenbrainz = { title: '', artist: '', lastlisten: '', img: '', musicbrainzurl: '', listenbrainzurl: '' };
 if (props.user.listenbrainz) {
 	const getLMData = async (title: string, artist: string) => {
 		const response = await fetch(`https://api.listenbrainz.org/1/metadata/lookup/?artist_name=${artist}&recording_name=${title}`, {
@@ -45,7 +50,7 @@ if (props.user.listenbrainz) {
 			headers: {
 				'Content-Type': 'application/json'
 			},
-		})
+		});
 		const data = await response.json();
 		if (!data.recording_name) {
 		return null;
@@ -135,4 +140,4 @@ if (props.user.listenbrainz) {
 	font-size: 1.7rem;
 	padding-left: 3rem;
 }
-</style> 
+</style>

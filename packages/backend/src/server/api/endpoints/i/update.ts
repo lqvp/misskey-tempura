@@ -216,6 +216,7 @@ export const paramDef = {
 			properties: {
 				note: notificationRecieveConfig,
 				follow: notificationRecieveConfig,
+				unfollow: notificationRecieveConfig,
 				mention: notificationRecieveConfig,
 				reply: notificationRecieveConfig,
 				renote: notificationRecieveConfig,

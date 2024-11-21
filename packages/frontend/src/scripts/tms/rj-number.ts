@@ -10,57 +10,56 @@ class RjNumber {
 	public static readonly WORK_SYMBOL = Symbol();
 	public static readonly WORK_REGEX = /[RVB][JE]\d{6,}/g;
 	public static getWorkUrl(rj: string): string {
-			return `https://www.dlsite.com/home/work/=/product_id/${rj}.html`;
+		return `https://www.dlsite.com/home/work/=/product_id/${rj}.html`;
 	}
 
 	public static readonly CIRCLE_SYMBOL = Symbol();
 	public static readonly CIRCLE_REGEX = /[RVB][G]\d{5,}/g;
 	public static getCircleUrl(rg: string): string {
-			return `https://www.dlsite.com/home/circle/profile/=/maker_id/${rg}.html`;
+		return `https://www.dlsite.com/home/circle/profile/=/maker_id/${rg}.html`;
 	}
 
 	// nicovideo
 	public static readonly NICO_SYMBOL = Symbol();
 	public static readonly NICO_REGEX = /sm\d+/g;
 	public static getNicoUrl(sm: string): string {
-			return `https://www.nicovideo.jp/watch/${sm}`;
+		return `https://www.nicovideo.jp/watch/${sm}`;
 	}
 
 	// CVE
 	public static readonly CVE_SYMBOL = Symbol();
 	public static readonly CVE_REGEX = /CVE-\d{4}-\d{4,}/g;
 	public static getCveUrl(cve: string): string {
-			return `https://www.cve.org/CVERecord?id=${cve}`;
+		return `https://www.cve.org/CVERecord?id=${cve}`;
 	}
 
 	// JVN
 	public static readonly JVN_SYMBOL = Symbol();
 	public static readonly JVN_REGEX = /JVN[#\d]{8,}/g;
 	public static getJvnUrl(jvn: string): string {
-			return `https://jvn.jp/jp/${jvn.replace('#', '')}/index.html`;
+		return `https://jvn.jp/jp/${jvn.replace('#', '')}/index.html`;
 	}
 
 	// JVNVU
 	public static readonly JVNVU_SYMBOL = Symbol();
 	public static readonly JVNVU_REGEX = /JVNVU[#\d]{8,}/g;
 	public static getJvnVuUrl(jvnvu: string): string {
-			return `https://jvn.jp/vu/${jvnvu.replace('#', '')}/index.html`;
+		return `https://jvn.jp/vu/${jvnvu.replace('#', '')}/index.html`;
 	}
 
 	// JVNTA
 	public static readonly JVNTA_SYMBOL = Symbol();
 	public static readonly JVNTA_REGEX = /JVNTA[#\d]{8,}/g;
 	public static getJvnTaUrl(jvnta: string): string {
-			return `https://jvn.jp/ta/${jvnta.replace('#', '')}/index.html`;
+		return `https://jvn.jp/ta/${jvnta.replace('#', '')}/index.html`;
 	}
-
 
 	// JVNDB
 	public static readonly JVNDB_SYMBOL = Symbol();
 	public static readonly JVNDB_REGEX = /JVNDB-\d{4}-\d{6}/g;
 	public static getJvnDbUrl(jvndb: string): string {
-			const year = jvndb.match(/\d{4}/)![0];
-			return `https://jvndb.jvn.jp/en/contents/${year}/${jvndb}.html`;
+		const year = jvndb.match(/\d{4}/)![0];
+		return `https://jvndb.jvn.jp/en/contents/${year}/${jvndb}.html`;
 	}
 }
 
@@ -144,7 +143,7 @@ export const parseMfmRjNumber = (text: string): (VNode | string)[] => {
 					key: value,
 					rjNumber: value,
 					url: RjNumber.getCveUrl(value),
-				})
+				});
 			}
 			case RjNumber.JVN_SYMBOL: {
 				return h(TmsRjNumber, {

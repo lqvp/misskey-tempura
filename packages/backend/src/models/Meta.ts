@@ -590,7 +590,6 @@ export class MiMeta {
 	})
 	public emailWhitelist: boolean;
 
-
 	@Column('varchar', {
 		length: 1024, array: true, default: '{ "admin", "administrator", "root", "system", "maintainer", "host", "mod", "moderator", "owner", "superuser", "staff", "auth", "i", "me", "everyone", "all", "mention", "mentions", "example", "user", "users", "account", "accounts", "official", "help", "helps", "support", "supports", "info", "information", "informations", "announce", "announces", "announcement", "announcements", "notice", "notification", "notifications", "dev", "developer", "developers", "tech", "misskey" }',
 	})
@@ -697,4 +696,42 @@ export class MiMeta {
 		default: 5,
 	})
 	public validateMinimumUsernameLength: number;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public useHanaEntrance: boolean;
+
+	@Column('varchar', {
+		length: 32,
+		default: '#fd709a',
+	})
+	public hanaThemeColor: string;
+
+	@Column('varchar', {
+		length: 32,
+		default: '#f77062',
+	})
+	public hanaThemeAltColor: string;
+
+	@Column('float', {
+		default: 0.2,
+	})
+	public hanaThemeWeakOpacity: number;
+
+	/**
+	 * アカウント作成の段階でデフォルトでフォローしているユーザー（あとから解除可能）
+	 */
+	@Column('varchar', {
+		length: 1024, array: true, default: '{}',
+	})
+	public defaultFollowedUsers: string[];
+
+	/**
+	 * デフォルトでフォローしていて、フォロー解除・ブロック・ミュートができないユーザー
+	 */
+	@Column('varchar', {
+		length: 1024, array: true, default: '{}',
+	})
+	public forciblyFollowedUsers: string[];
 }

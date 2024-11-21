@@ -53,6 +53,78 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</MkTextarea>
 						</div>
 					</MkFolder>
+
+					<MkFolder>
+						<template #label>はなみすきー風LP<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+						<template v-if="hanaSettingsForm.savedState.useHanaEntrance" #suffix>Enabled</template>
+						<template v-else #suffix>Disabled</template>
+						<template v-if="hanaSettingsForm.modified.value" #footer>
+							<MkFormFooter :form="hanaSettingsForm"/>
+						</template>
+
+						<div class="_gaps_m">
+							<MkSwitch v-model="hanaSettingsForm.state.useHanaEntrance">
+								<template #label>{{ i18n.ts.useHanaEntrance }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+							</MkSwitch>
+
+							<MkInput
+								v-model="hanaSettingsForm.state.hanaThemeColor"
+								type="string"
+								pattern="^#([A-Fa-f0-9]{6})$"
+								maxlength="7"
+							>
+								<template #label>
+									<span>{{ i18n.ts.hanaThemeColor }}</span>
+									<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+								</template>
+								<template #caption>{{ i18n.ts.hanaThemeColorDescription }}</template>
+							</MkInput>
+
+							<MkInput
+								v-model="hanaSettingsForm.state.hanaThemeAltColor"
+								type="string"
+								pattern="^#([A-Fa-f0-9]{6})$"
+								maxlength="7"
+							>
+								<template #label>
+									<span>{{ i18n.ts.hanaThemeAltColor }}</span>
+									<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+								</template>
+								<template #caption>{{ i18n.ts.hanaThemeAltColorDescription }}</template>
+							</MkInput>
+
+							<MkInput
+								v-model="hanaSettingsForm.state.hanaThemeWeakOpacity"
+								type="number"
+								min="0"
+								max="1"
+								step="0.1"
+							>
+								<template #label>
+									<span>{{ i18n.ts.hanaThemeWeakOpacity }}</span>
+									<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+								</template>
+								<template #caption>{{ i18n.ts.hanaThemeWeakOpacityDescription }}</template>
+							</MkInput>
+						</div>
+					</MkFolder>
+
+					<MkFolder>
+						<template #icon><i class="ti ti-user-star"></i></template>
+						<template #label>{{ i18n.ts.defaultFollowedUsers }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+
+						<div class="_gaps">
+							<MkTextarea v-model="defaultFollowedUsers">
+								<template #label>{{ i18n.ts.defaultFollowedUsers }}</template>
+								<template #caption>{{ i18n.ts.defaultFollowedUsersDescription }}</template>
+							</MkTextarea>
+							<MkTextarea v-model="forciblyFollowedUsers">
+								<template #label>{{ i18n.ts.forciblyFollowedUsers }}</template>
+								<template #caption>{{ i18n.ts.forciblyFollowedUsersDescription }}</template>
+							</MkTextarea>
+							<MkButton primary @click="save_defaultUsers">{{ i18n.ts.save }}</MkButton>
+						</div>
+					</MkFolder>
 				</div>
 			</FormSuspense>
 		</MkSpacer>
@@ -83,6 +155,12 @@ const meta = await misskeyApi('admin/meta');
 const approvalRequiredForSignup = ref<boolean>(false);
 const blockMentionsFromUnfamiliarRemoteUsers = ref<boolean>(false);
 const validateMinimumUsernameLength = ref<number>();
+const useHanaEntrance = ref<boolean>(false);
+const hanaThemeColor = ref<string>();
+const hanaThemeAltColor = ref<string>();
+const hanaThemeWeakOpacity = ref<string>();
+const defaultFollowedUsers = ref<string>('');
+const forciblyFollowedUsers = ref<string>('');
 
 const originalMinimumUsernameLength = ref<number>();
 const validateMinimumUsernameLengthChanged = computed(() =>
@@ -105,6 +183,12 @@ async function init() {
 	blockMentionsFromUnfamiliarRemoteUsers.value = meta.blockMentionsFromUnfamiliarRemoteUsers;
 	validateMinimumUsernameLength.value = meta.validateMinimumUsernameLength;
 	originalMinimumUsernameLength.value = meta.validateMinimumUsernameLength;
+	useHanaEntrance.value = meta.useHanaEntrance;
+	hanaThemeColor.value = meta.hanaThemeColor;
+	hanaThemeAltColor.value = meta.hanaThemeAltColor;
+	hanaThemeWeakOpacity.value = meta.hanaThemeWeakOpacity;
+	defaultFollowedUsers.value = meta.defaultFollowedUsers.join('\n');
+	forciblyFollowedUsers.value = meta.forciblyFollowedUsers.join('\n');
 }
 
 function onChange_approvalRequiredForSignup(value: boolean) {
@@ -123,6 +207,38 @@ function onChange_blockMentionsFromUnfamiliarRemoteUsers(value: boolean) {
 	});
 }
 
+const hanaSettingsForm = useForm({
+	useHanaEntrance: meta.useHanaEntrance,
+	hanaThemeColor: meta.hanaThemeColor || '#fd709a',
+	hanaThemeAltColor: meta.hanaThemeAltColor || '#f77062',
+	hanaThemeWeakOpacity: meta.hanaThemeWeakOpacity || 0.2,
+}, async (state) => {
+	const hexColorRegex = /^#([A-Fa-f0-9]{6})$/;
+	if (!hexColorRegex.test(state.hanaThemeColor) || !hexColorRegex.test(state.hanaThemeAltColor)) {
+		os.alert({
+			type: 'error',
+			text: 'カラーコードの形式が正しくありません (#000000 形式で入力してください)',
+		});
+		return;
+	}
+
+	if (state.hanaThemeWeakOpacity < 0 || state.hanaThemeWeakOpacity > 1) {
+		os.alert({
+			type: 'error',
+			text: '透明度は0から1の間で指定してください',
+		});
+		return;
+	}
+
+	await os.apiWithDialog('admin/update-meta', {
+		useHanaEntrance: state.useHanaEntrance,
+		hanaThemeColor: state.hanaThemeColor,
+		hanaThemeAltColor: state.hanaThemeAltColor,
+		hanaThemeWeakOpacity: state.hanaThemeWeakOpacity,
+	});
+	fetchInstance(true);
+});
+
 function onUsernameMinLengthChange(value: number) {
 	validateMinimumUsernameLength.value = value;
 }
@@ -133,6 +249,19 @@ function save_validateMinimumUsernameLength() {
 	}).then(() => {
 		fetchInstance(true);
 		originalMinimumUsernameLength.value = validateMinimumUsernameLength.value;
+	});
+}
+
+function save_defaultUsers() {
+	os.apiWithDialog('admin/update-meta', {
+		defaultFollowedUsers: defaultFollowedUsers.value.split('\n'),
+		forciblyFollowedUsers: forciblyFollowedUsers.value.split('\n'),
+	}, undefined, {
+		'bcf088ec-fec5-42d0-8b9e-16d3b4797a4d': {
+			text: i18n.ts.defaultFollowedUsersDuplicated,
+		}
+	}).then(() => {
+		fetchInstance(true);
 	});
 }
 

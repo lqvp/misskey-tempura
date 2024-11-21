@@ -120,7 +120,6 @@ function onClick(ev: MouseEvent) {
 		);
 		}
 
-
 		menuItems.push({
 			text: i18n.ts.info,
 			icon: 'ti ti-info-circle',

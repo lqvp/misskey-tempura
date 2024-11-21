@@ -15,6 +15,8 @@ export const meta = {
 
 	requireCredential: true,
 
+	kind: 'read:gallery',
+
 	description: 'Show all gallery posts by the given user.',
 
 	res: {

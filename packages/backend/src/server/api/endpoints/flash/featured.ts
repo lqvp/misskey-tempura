@@ -15,6 +15,8 @@ export const meta = {
 
 	requireCredential: true,
 
+	kind: 'read:flash',
+
 	res: {
 		type: 'array',
 		optional: false, nullable: false,

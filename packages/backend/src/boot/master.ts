@@ -43,7 +43,7 @@ function greet() {
 		console.log(themeColor('      |_|     |_|' + chalk.gray('based on Misskey ' + v)));
 		//#endregion
 
-		console.log('lqvp is a fork of Misskey.')
+		console.log('lqvp is a fork of Misskey.');
 		console.log(chalk.rgb(255, 136, 0)(' If you like this fork, please donate to support Misskey development. https://www.patreon.com/syuilo'));
 		console.log(chalk.gray(' Original Misskey repository: https://github.com/misskey-dev/misskey'));
 

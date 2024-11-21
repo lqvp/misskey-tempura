@@ -125,7 +125,7 @@ export class NoteEntityService implements OnModuleInit {
 		}
 
 		// 未ログインなら非表示
-		if(!meId){
+		if (!meId) {
 			hide = true;
 		}
 
@@ -261,7 +261,7 @@ export class NoteEntityService implements OnModuleInit {
 		}
 
 		// 未ログインなら非表示
-		if(!meId){
+		if (!meId) {
 			return false;
 		}
 

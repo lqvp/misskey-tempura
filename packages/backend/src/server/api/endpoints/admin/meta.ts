@@ -197,8 +197,8 @@ export const meta = {
 				},
 			},
 			emailWhitelist: {
-				type: 'string',
-				optional: false, nullable: true,
+				type: 'boolean',
+				optional: false, nullable: false,
 			},
 			preservedUsernames: {
 				type: 'array',
@@ -530,14 +530,6 @@ export const meta = {
 				type: 'string',
 				optional: false, nullable: false,
 			},
-			emailToReceiveAbuseReport: {
-				type: 'string',
-				optional: false, nullable: false,
-				items: {
-					type: 'string',
-					optional: false, nullable: false,
-				},
-			},
 			customSplashText: {
 				type: 'array',
 				optional: false, nullable: false,
@@ -552,6 +544,36 @@ export const meta = {
 			validateMinimumUsernameLength: {
 				type: 'number',
 				optional: false, nullable: false,
+			},
+			useHanaEntrance: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			hanaThemeColor: {
+				type: 'string',
+				optional: false, nullable: false,
+			},
+			hanaThemeAltColor: {
+				type: 'string',
+				optional: false, nullable: false,
+			},
+			hanaThemeWeakOpacity: {
+				type: 'number',
+				optional: false, nullable: false,
+			},
+			defaultFollowedUsers: {
+				type: 'array',
+				optional: false, nullable: false,
+				items: {
+					type: 'string',
+				},
+			},
+			forciblyFollowedUsers: {
+				type: 'array',
+				optional: false, nullable: false,
+				items: {
+					type: 'string',
+				},
 			},
 		},
 	},
@@ -700,6 +722,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				customSplashText: instance.customSplashText,
 				blockMentionsFromUnfamiliarRemoteUsers: instance.blockMentionsFromUnfamiliarRemoteUsers,
 				validateMinimumUsernameLength: instance.validateMinimumUsernameLength,
+				useHanaEntrance: instance.useHanaEntrance,
+				hanaThemeColor: instance.hanaThemeColor,
+				hanaThemeAltColor: instance.hanaThemeAltColor,
+				hanaThemeWeakOpacity: instance.hanaThemeWeakOpacity,
+				defaultFollowedUsers: instance.defaultFollowedUsers,
+				forciblyFollowedUsers: instance.forciblyFollowedUsers,
 			};
 		});
 	}

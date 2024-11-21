@@ -15,6 +15,8 @@ export const meta = {
 
 	requireCredential: true,
 
+	kind: 'read:flash',
+
 	description: 'Show all flashs this user created.',
 
 	res: {

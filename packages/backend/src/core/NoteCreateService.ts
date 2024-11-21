@@ -738,7 +738,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 
 						// メンションされたリモートユーザーに配送
 						for (const u of mentionedUsers.filter(u => this.userEntityService.isRemoteUser(u))) {
-							dmRenote.addDirectRecipe(u as RemoteUser);
+							dmRenote.addDirectRecipe(u as MiRemoteUser);
 						}
 
 						// フォロワーに配送
@@ -1107,29 +1107,5 @@ export class NoteCreateService implements OnApplicationShutdown {
 	@bindThis
 	public onApplicationShutdown(signal?: string | undefined): void {
 		this.dispose();
-	}
-
-	private async updateLatestNote(note: MiNote) {
-		// Ignore DMs.
-		// Followers-only posts are *included*, as this table is used to back the "following" feed.
-		if (note.visibility === 'specified') return;
-
-		// Ignore pure renotes
-		if (isPureRenote(note)) return;
-
-		// Compute the compound key of the entry to check
-		const key = SkLatestNote.keyFor(note);
-
-		// Make sure that this isn't an *older* post.
-		// We can get older posts through replies, lookups, etc.
-		const currentLatest = await this.latestNotesRepository.findOneBy(key);
-		if (currentLatest != null && currentLatest.noteId >= note.id) return;
-
-		// Record this as the latest note for the given user
-		const latestNote = new SkLatestNote({
-			...key,
-			noteId: note.id,
-		});
-		await this.latestNotesRepository.upsert(latestNote, ['userId', 'isPublic', 'isReply', 'isQuote']);
 	}
 }
