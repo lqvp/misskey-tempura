@@ -5496,10 +5496,10 @@ export type operations = {
             hanaThemeColor: string;
             hanaThemeAltColor: string;
             hanaThemeWeakOpacity: number;
-            hanaModeIcon: string;
+            hanaModeIcon: string | null;
             hanaModeIconSize: number;
             hanaModeIconRadius: number;
-            hanaModeBackground: string;
+            hanaModeBackground: string | null;
             defaultFollowedUsers: string[];
             forciblyFollowedUsers: string[];
           };
