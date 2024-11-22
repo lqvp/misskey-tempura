@@ -10,6 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		<div class="_gaps_m">
 			<MkFolder>
+				<template #icon><i class="ti ti-lock-open"></i></template>
 				<template #label>{{ i18n.ts.privacy }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 				<div class="_gaps_s">
 					<MkSwitch v-if="!isLocked" v-model="autoRejectFollowRequest" @update:modelValue="save_privacy()">
@@ -33,6 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkFolder>
 
 			<MkFolder>
+				<template #icon><i class="ti ti-pencil"></i></template>
 				<template #label>{{ i18n.ts.displayOfNote }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 				<div class="_gaps_m">
 					<div class="_gaps_s">
@@ -82,6 +84,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkFolder>
 
 			<MkFolder>
+				<template #icon><i class="ti ti-letter-case"></i></template>
 				<template #label>{{ i18n.ts.appearance }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 				<div class="_gaps_m">
 					<MkSelect v-model="customFont">
@@ -93,6 +96,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkFolder>
 
 			<MkFolder>
+				<template #icon><i class="ti ti-mood-happy"></i></template>
 				<template #label>{{ i18n.ts.behavior }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 				<div class="_gaps_m">
 					<div class="_gaps_s">
@@ -105,6 +109,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkFolder>
 
 			<MkFolder>
+				<template #icon><i class="ti ti-cloud"></i></template>
 				<template #label>{{ i18n.ts.drive }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 				<div class="_gaps_m">
 					<div class="_gaps_s">
@@ -121,6 +126,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkFolder>
 
 			<MkFolder>
+				<template #icon><i class="ti ti-user-scan"></i></template>
 				<template #label>{{ i18n.ts._uniqueFeatures.hiddenProfile }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 				<div class="_gaps_m">
 					<div class="_buttons">
@@ -143,6 +149,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkFolder>
 
 			<MkFolder>
+				<template #icon><i class="ti ti-forms"></i></template>
 				<template #label>{{ i18n.ts.postForm }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 				<div class="_gaps_s">
 					<MkContainer :showHeader="false">
@@ -192,6 +199,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkFolder>
 
 			<MkFolder>
+				<template #icon><i class="ti ti-timeline"></i></template>
 				<template #label>{{ i18n.ts.__TL_conf.hideTimelineLabel }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 				<div class="_gaps_m">
 					<div class="_buttons">

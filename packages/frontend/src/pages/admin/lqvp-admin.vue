@@ -33,6 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</div>
 
 					<MkFolder>
+						<template #icon><i class="ti ti-mail"></i></template>
 						<template #label>Email Domain Settings<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 						<template v-if="emailSettingsForm.savedState.emailWhitelist" #suffix>Enabled</template>
 						<template v-else #suffix>Disabled</template>
@@ -55,6 +56,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkFolder>
 
 					<MkFolder>
+						<template #icon><i class="ti ti-flower"></i></template>
 						<template #label>はなみすきー風LP<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 						<template v-if="hanaSettingsForm.savedState.useHanaEntrance" #suffix>Enabled</template>
 						<template v-else #suffix>Disabled</template>
