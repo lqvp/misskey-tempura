@@ -148,7 +148,7 @@ export class ApOutboxFetchService implements OnModuleInit {
 						if (!activity.id) continue;
 						let renote = await this.apNoteService.fetchNote(activity.object);
 						if (renote === null) {
-							renote = await this.apNoteService.createNote(activity.object, undefined, true);
+							renote = await this.apNoteService.createNote(activity.object, undefined);
 							if (renote === null) {
 								this.logger.info('announce target is null');
 								continue;
@@ -190,7 +190,7 @@ export class ApOutboxFetchService implements OnModuleInit {
 				} else if (isCreate(activity) && typeof(activity.object) !== 'string' && isNote(activity.object)) {
 					const object = await	this.apDbResolverService.getNoteFromApId(activity.object);
 					if (object) continue;
-					await this.apNoteService.createNote(activity.object, undefined, true);
+					await this.apNoteService.createNote(activity.object, undefined);
 				}
 			} catch (err) {
 				if (err instanceof AbortError) {

@@ -898,8 +898,6 @@ export class ApInboxService {
 		}
 	}
 
-
-
 	@bindThis
 	private async move(actor: MiRemoteUser, activity: IMove, resolver?: Resolver): Promise<string> {
 		// fetch the new and old accounts
