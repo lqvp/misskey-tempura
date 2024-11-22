@@ -19,6 +19,10 @@ jobs:
 
           search() {
             local directory="$1"
+            if [ ! -d "$directory" ]; then
+              echo "Warning: Directory $directory does not exist"
+              return
+            fi
             find "$directory" -type f \
               '(' \
                 -name "*.cjs" -and -not -name '*.config.cjs' -o \
@@ -34,6 +38,9 @@ jobs:
 
           check() {
             local file="$1"
+            if [ ! -f "$file" ]; then
+              return
+            fi
             if ! (
               grep -q "SPDX-FileCopyrightText: syuilo and misskey-project" "$file" ||
               grep -q "SPDX-License-Identifier: AGPL-3.0-only" "$file"
@@ -65,9 +72,13 @@ jobs:
           )
 
           for directory in "${directories[@]}"; do
-            for file in $(search $directory); do
-              check "$file"
-            done
+            if [ -d "$directory" ]; then
+              while IFS= read -r file; do
+                check "$file"
+              done < <(search "$directory")
+            else
+              echo "Warning: Directory $directory does not exist"
+            fi
           done
 
           if [ $counter -gt 0 ]; then
