@@ -344,13 +344,13 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 	}
 }
 
-.t_follow, .t_followRequestAccepted, .t_followRequestRejected, .t_receiveFollowRequest {
+.t_follow, .t_followRequestAccepted, .t_receiveFollowRequest {
 	padding: 3px;
 	background: var(--eventFollow);
 	pointer-events: none;
 }
 
-.t_unfollow {
+.t_unfollow, .t_followRequestRejected {
 	padding: 3px;
 	background: var(--eventUnFollow);
 	pointer-events: none;
