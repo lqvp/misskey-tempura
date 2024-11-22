@@ -108,6 +108,7 @@ export class MetaEntityService {
 			notFoundImageUrl: instance.notFoundImageUrl,
 			iconUrl: instance.iconUrl,
 			backgroundImageUrl: instance.backgroundImageUrl,
+			backgroundImageUrls: instance.backgroundImageUrls,
 			logoImageUrl: instance.logoImageUrl,
 			maxNoteTextLength: MAX_NOTE_TEXT_LENGTH,
 			defaultLightTheme,

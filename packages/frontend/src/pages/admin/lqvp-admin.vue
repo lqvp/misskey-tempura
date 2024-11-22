@@ -172,6 +172,26 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkButton primary @click="save_defaultUsers">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
+
+					<MkFolder>
+						<template #icon><i class="ti ti-photo"></i></template>
+						<template #label>{{ i18n.ts.backgroundImageUrls }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+						<div class="_gaps">
+							<MkButton @click="addBackgroundImage">
+								{{ i18n.ts.add }}
+							</MkButton>
+							<div v-for="(url, i) in backgroundImageUrls" :key="i" class="_gaps_s">
+								<MkInput v-model="backgroundImageUrls[i]">
+									<template #label>{{ i18n.ts.backgroundImageUrl }} #{{ i + 1 }}</template>
+								</MkInput>
+								<MkButton danger @click="removeBackgroundImage(i)">
+									<i class="ti ti-trash"></i>
+									<span>{{ i18n.ts.remove }}</span>
+								</MkButton>
+							</div>
+							<MkButton primary @click="save_backgroundImageUrl">{{ i18n.ts.save }}</MkButton>
+						</div>
+					</MkFolder>
 				</div>
 			</FormSuspense>
 		</MkSpacer>
@@ -212,6 +232,7 @@ const hanaModeIconRadius = ref<number>(50);
 const hanaModeBackground = ref<string>();
 const defaultFollowedUsers = ref<string>('');
 const forciblyFollowedUsers = ref<string>('');
+const backgroundImageUrls = ref<string[]>([]);
 
 const originalMinimumUsernameLength = ref<number>();
 const validateMinimumUsernameLengthChanged = computed(() =>
@@ -244,6 +265,23 @@ async function init() {
 	hanaThemeWeakOpacity.value = meta.hanaThemeWeakOpacity;
 	defaultFollowedUsers.value = meta.defaultFollowedUsers.join('\n');
 	forciblyFollowedUsers.value = meta.forciblyFollowedUsers.join('\n');
+	backgroundImageUrls.value = meta.backgroundImageUrls;
+}
+
+function addBackgroundImage() {
+	backgroundImageUrls.value.push('');
+}
+
+function removeBackgroundImage(index: number) {
+	backgroundImageUrls.value.splice(index, 1);
+}
+
+function save_backgroundImageUrl() {
+	os.apiWithDialog('admin/update-meta', {
+		backgroundImageUrls: backgroundImageUrls.value.filter(url => url !== ''),
+	}).then(() => {
+		fetchInstance(true);
+	});
 }
 
 function onChange_approvalRequiredForSignup(value: boolean) {

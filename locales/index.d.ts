@@ -11395,6 +11395,10 @@ export interface Locale extends ILocale {
      * このユーザーのフォロー解除は禁止されています。
      */
     "unfollowThisUserProhibited": string;
+    /**
+     * 背景画像URL
+     */
+    "backgroundImageUrls": string;
 }
 declare const locales: {
     [lang: string]: Locale;

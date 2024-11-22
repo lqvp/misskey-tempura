@@ -10074,6 +10074,7 @@ export type operations = {
           app192IconUrl?: string | null;
           app512IconUrl?: string | null;
           backgroundImageUrl?: string | null;
+          backgroundImageUrls?: unknown[] | null;
           logoImageUrl?: string | null;
           name?: string | null;
           shortName?: string | null;

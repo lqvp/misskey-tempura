@@ -652,6 +652,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				app192IconUrl: instance.app192IconUrl,
 				app512IconUrl: instance.app512IconUrl,
 				backgroundImageUrl: instance.backgroundImageUrl,
+				backgroundImageUrls: instance.backgroundImageUrls,
 				logoImageUrl: instance.logoImageUrl,
 				defaultLightTheme: instance.defaultLightTheme,
 				defaultDarkTheme: instance.defaultDarkTheme,

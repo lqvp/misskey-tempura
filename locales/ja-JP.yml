@@ -3038,3 +3038,5 @@ unfollowThisUserIsProhibited: "サーバー管理者はこのユーザーをフ�
 blockThisUserIsProhibited: "サーバー管理者はこのユーザーをブロックすることを禁止しています。"
 muteThisUserIsProhibited: "サーバー管理者はこのユーザーをミュートすることを禁止しています。"
 unfollowThisUserProhibited: "このユーザーのフォロー解除は禁止されています。"
+
+backgroundImageUrls: "背景画像URL"
