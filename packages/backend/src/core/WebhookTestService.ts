@@ -79,7 +79,7 @@ function generateDummyUser(override?: Partial<MiUser>): MiUser {
 		isDeleted: false,
 		approved: true,
 		signupReason: '',
-		requireSigninToViewContents: false,
+		requireSigninToViewContents: true,
 		makeNotesFollowersOnlyBefore: null,
 		makeNotesHiddenBefore: null,
 		emojis: [],
