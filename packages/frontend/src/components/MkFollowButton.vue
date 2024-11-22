@@ -37,13 +37,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import * as Misskey from 'misskey-js';
+import { host } from '@@/js/config.js';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
 import { useStream } from '@/stream.js';
 import { i18n } from '@/i18n.js';
 import { claimAchievement } from '@/scripts/achievements.js';
 import { pleaseLogin } from '@/scripts/please-login.js';
-import { host } from '@@/js/config.js';
 import { $i } from '@/account.js';
 import { defaultStore } from '@/store.js';
 import { userName } from "@/filters/user";
@@ -82,7 +82,7 @@ function onFollowChange(user: Misskey.entities.UserDetailed) {
 }
 
 async function onClick() {
-	pleaseLogin(undefined, { type: 'web', path: `/@${props.user.username}@${props.user.host ?? host}` });
+	pleaseLogin({ openOnRemote: { type: 'web', path: `/@${props.user.username}@${props.user.host ?? host}` } });
 
 	wait.value = true;
 
@@ -93,7 +93,10 @@ async function onClick() {
 				text: i18n.tsx.unfollowConfirm({ name: (userDetailed.value.name || userDetailed.value.username) ?? i18n.ts.user }),
 			});
 
-			if (canceled) return;
+			if (canceled) {
+				wait.value = false;
+				return;
+			}
 
 			await misskeyApi('following/delete', {
 				userId: props.user.id,
@@ -135,7 +138,10 @@ async function onClick() {
 				});
 				userDetailed.value.hasPendingFollowRequestFromYou = true;
 
-				if ($i == null) return;
+				if ($i == null) {
+					wait.value = false;
+					return;
+				}
 
 				if ($i) {
 					claimAchievement('following1');

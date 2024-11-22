@@ -180,29 +180,31 @@ SPDX-License-Identifier: AGPL-3.0-only
 			sensitive.value = info.sensitive ?? false;
 		});
 
-	function adjustTweetHeight(message: any) {
-		if (message.origin !== 'https://platform.twitter.com') return;
-		const embed = message.data?.['twttr.embed'];
-		if (embed?.method !== 'twttr.private.resize') return;
-		if (embed?.id !== embedId) return;
-		const height = embed?.params[0]?.height;
-		if (height) tweetHeight.value = height;
-	}
+function adjustTweetHeight(message: MessageEvent) {
+	if (message.origin !== 'https://platform.twitter.com') return;
+	const embed = message.data?.['twttr.embed'];
+	if (embed?.method !== 'twttr.private.resize') return;
+	if (embed?.id !== embedId) return;
+	const height = embed?.params[0]?.height;
+	if (height) tweetHeight.value = height;
+}
 
-	function openPlayer(): void {
-		const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkYouTubePlayer.vue')), {
-			url: requestUrl.href,
-		}, {
-			// TODO
-		});
-	}
-
-	(window as any).addEventListener('message', adjustTweetHeight);
-
-	onUnmounted(() => {
-		(window as any).removeEventListener('message', adjustTweetHeight);
+function openPlayer(): void {
+	const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkYouTubePlayer.vue')), {
+		url: requestUrl.href,
+	}, {
+		closed: () => {
+	dispose();
+	},
 	});
-	</script>
+}
+
+window.addEventListener('message', adjustTweetHeight);
+
+onUnmounted(() => {
+	window.removeEventListener('message', adjustTweetHeight);
+});
+</script>
 
 	<style lang="scss" module>
 	.player {
