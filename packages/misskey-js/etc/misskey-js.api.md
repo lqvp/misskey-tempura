@@ -1527,8 +1527,6 @@ declare namespace entities {
         FollowingRequestsCancelResponse,
         FollowingRequestsListRequest,
         FollowingRequestsListResponse,
-        FollowingRequestsSendlistRequest,
-        FollowingRequestsSendlistResponse,
         FollowingRequestsRejectRequest,
         GalleryFeaturedRequest,
         GalleryFeaturedResponse,
@@ -2056,12 +2054,6 @@ type FollowingRequestsListResponse = operations['following___requests___list']['
 
 // @public (undocumented)
 type FollowingRequestsRejectRequest = operations['following___requests___reject']['requestBody']['content']['application/json'];
-
-// @public (undocumented)
-type FollowingRequestsSendlistRequest = operations['following___requests___sendlist']['requestBody']['content']['application/json'];
-
-// @public (undocumented)
-type FollowingRequestsSendlistResponse = operations['following___requests___sendlist']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type FollowingUpdateAllRequest = operations['following___update-all']['requestBody']['content']['application/json'];
