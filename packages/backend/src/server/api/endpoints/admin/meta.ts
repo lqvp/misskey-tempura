@@ -420,6 +420,10 @@ export const meta = {
 				type: 'string',
 				optional: false, nullable: true,
 			},
+			backgroundImageUrls: {
+				type: 'array',
+				optional: false, nullable: true,
+			},
 			deeplAuthKey: {
 				type: 'string',
 				optional: false, nullable: true,

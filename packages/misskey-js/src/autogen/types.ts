@@ -5254,6 +5254,9 @@ export type components = {
       mediaProxy: string;
       enableUrlPreview: boolean;
       backgroundImageUrl: string | null;
+      backgroundImageUrls: {
+          url: string;
+        }[];
       impressumUrl: string | null;
       logoImageUrl: string | null;
       privacyPolicyUrl: string | null;
@@ -5470,6 +5473,7 @@ export type operations = {
             enableReactionsBuffering: boolean;
             notesPerOneAd: number;
             backgroundImageUrl: string | null;
+            backgroundImageUrls: unknown[] | null;
             deeplAuthKey: string | null;
             deeplIsPro: boolean;
             defaultDarkTheme: string | null;

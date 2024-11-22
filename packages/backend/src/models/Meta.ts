@@ -122,6 +122,7 @@ export class MiMeta {
 
 	@Column('jsonb', {
 		default: [],
+		nullable: true,
 	})
 	public backgroundImageUrls: { url: string }[];
 

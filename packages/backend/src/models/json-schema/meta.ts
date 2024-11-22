@@ -223,6 +223,23 @@ export const packedMetaLiteSchema = {
 			type: 'string',
 			optional: false, nullable: true,
 		},
+		backgroundImageUrls: {
+			type: 'array',
+			optional: false,
+			nullable: false,
+			items: {
+				type: 'object',
+				optional: false,
+				nullable: false,
+				properties: {
+					url: {
+						type: 'string',
+						optional: false,
+						nullable: false,
+					},
+				},
+			},
+		},
 		impressumUrl: {
 			type: 'string',
 			optional: false, nullable: true,

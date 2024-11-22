@@ -323,7 +323,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			if (ps.backgroundImageUrls !== undefined) {
-				set.backgroundImageUrls = ps.backgroundImageUrls;
+				set.backgroundImageUrls = ps.backgroundImageUrls ?? [];
 			}
 
 			if (ps.logoImageUrl !== undefined) {
