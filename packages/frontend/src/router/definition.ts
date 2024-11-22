@@ -39,7 +39,6 @@ const routes: RouteDef[] = [{
 	name: 'note',
 	path: '/notes/:noteId/:initialTab?',
 	component: page(() => import('@/pages/note.vue')),
-	loginRequired: true,
 }, {
 	name: 'list',
 	path: '/list/:listId',
