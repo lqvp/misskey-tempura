@@ -11415,6 +11415,14 @@ export interface Locale extends ILocale {
      * ロールの管理
      */
     "manageRole": string;
+    /**
+     * 割り当て済みロール
+     */
+    "assignedRole": string;
+    /**
+     * 割り当て可能なロール
+     */
+    "assignableRole": string;
 }
 declare const locales: {
     [lang: string]: Locale;

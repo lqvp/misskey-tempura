@@ -49,13 +49,13 @@
 			<div class="_gaps_m">
 				<div class="_gaps_s">
 					<MkFoldableSection>
-						<template #header>Assigned roles</template>
+						<template #header>{{ i18n.tsassignedRole }}</template>
 						<div class="_gaps_s">
 							<DialogRole v-for="role in rolesAssigned" :key="role.id" :role="role" :isAssigned="true"/>
 						</div>
 					</MkFoldableSection>
 					<MkFoldableSection>
-						<template #header>Assignable roles</template>
+						<template #header>{{ i18n.ts.assignableRole }}</template>
 						<div class="_gaps_s">
 							<DialogRole v-for="role in roles" :key="role.id" :role="role" :isAssigned="false"/>
 						</div>

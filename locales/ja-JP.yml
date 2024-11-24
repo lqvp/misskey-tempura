@@ -3045,3 +3045,5 @@ backgroundImageUrls: "背景画像URL"
 
 community: "コミュニティー"
 manageRole: "ロールの管理"
+assignedRole: "割り当て済みロール"
+assignableRole: "割り当て可能なロール"
