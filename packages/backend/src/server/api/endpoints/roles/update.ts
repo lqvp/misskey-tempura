@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: lqvp
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { RolesRepository } from '@/models/_.js';
@@ -75,8 +80,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 			if (role.permissionGroup !== 'Community') {
 				throw new ApiError(meta.errors.accessDenied);
 			}
-			if (role.userId != null && role.userId !== me.id) {
 
+			if (role.userId != null && role.userId !== me.id) {
+				throw new ApiError(meta.errors.notOwnerOrpermissionDenied);
 			}
 
 			const date = new Date();

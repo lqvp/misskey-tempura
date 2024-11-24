@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: lqvp
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 <template>
 	<button v-adaptive-bg tabindex="-1" class="_panel" :class="$style.root" :style="{ '--color': role.color }" @click="roleAction">
 		<div :class="$style.title">
