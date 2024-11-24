@@ -11423,6 +11423,14 @@ export interface Locale extends ILocale {
      * 割り当て可能なロール
      */
     "assignableRole": string;
+    /**
+     * ブロックされています
+     */
+    "youBlocked": string;
+    /**
+     * {user}さんのフォローやポストの表示はできません。
+     */
+    "youBlockedDescription": ParameterizedString<"user">;
 }
 declare const locales: {
     [lang: string]: Locale;
