@@ -64,7 +64,7 @@ html.embed.noborder #splash {
 	left: 0;
 	margin: auto;
 	display: inline-block;
-	width: 28px;
+	width: 60px;
 	height: 28px;
 	transform: translateY(70px);
 	color: var(--MI_THEME-accent);
@@ -81,6 +81,17 @@ html.embed.noborder #splash {
 	stroke-linecap: round;
 	stroke-linejoin: round;
 	stroke-miterlimit: 1.5;
+}
+
+#splashSpinner > .spinner.bg circle {
+	fill:none;
+	stroke:currentColor;
+	stroke-width:24px;
+}
+#splashSpinner > .spinner.fg path {
+	fill:none;
+	stroke:currentColor;
+	stroke-width:24px;
 }
 #splashSpinner > .spinner.bg {
 	opacity: 0.275;

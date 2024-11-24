@@ -9,6 +9,32 @@ html {
 	color: var(--MI_THEME-fg);
 }
 
+.hidden {
+	display: none !important;
+}
+
+#tty {
+	z-index: 10001;
+	opacity: 1;
+}
+
+#tty > .tty-line {
+	font-family: 'Courier New', Courier, monospace !important;
+	display: block;
+}
+
+#tty > .tty-line .tty-status-ok {
+	color: green;
+}
+
+#tty > .tty-line .tty-status-failed {
+	color: darkred;
+}
+
+#tty > .tty-line .tty-status-running {
+	color: red;
+}
+
 #splash {
 	position: relative;
 	z-index: 10000;
@@ -42,7 +68,7 @@ html {
 	left: 0;
 	margin: auto;
 	display: inline-block;
-	width: 28px;
+	width: 60px;
 	height: 28px;
 	transform: translateY(80px);
 	color: var(--MI_THEME-accent);
@@ -59,6 +85,17 @@ html {
 	stroke-linecap: round;
 	stroke-linejoin: round;
 	stroke-miterlimit: 1.5;
+}
+
+#splashSpinner > .spinner.bg circle {
+	fill:none;
+	stroke:currentColor;
+	stroke-width:24px;
+}
+#splashSpinner > .spinner.fg path {
+	fill:none;
+	stroke:currentColor;
+	stroke-width:24px;
 }
 #splashSpinner > .spinner.bg {
 	opacity: 0.275;
