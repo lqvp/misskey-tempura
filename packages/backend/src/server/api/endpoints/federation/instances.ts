@@ -81,6 +81,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private metaService: MetaService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			if (!me) {
+				return [];
+			}
 			const query = this.instancesRepository.createQueryBuilder('instance');
 
 			switch (ps.sort) {
