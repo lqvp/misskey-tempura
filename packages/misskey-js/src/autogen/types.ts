@@ -4578,6 +4578,7 @@ export type components = {
       createdAt: string;
       /** @enum {string} */
       type: 'login';
+      ip: string;
     } | ({
       /** Format: id */
       id: string;
