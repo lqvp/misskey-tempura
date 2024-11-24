@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkSpacer v-if="tab === 'overview'" :contentMax="600" :marginMin="20">
 			<XOverview/>
 		</MkSpacer>
-		<MkSpacer v-else-if="tab === 'emojis'" :contentMax="1000" :marginMin="20">
+		<MkSpacer v-else-if="tab === 'emojis' && $i" :contentMax="1000" :marginMin="20">
 			<XEmojis/>
 		</MkSpacer>
 		<MkSpacer v-else-if="tab === 'federation' && $i" :contentMax="1000" :marginMin="20">
@@ -56,18 +56,22 @@ const headerTabs = computed(() => {
 	const tabs = [{
 		key: 'overview',
 		title: i18n.ts.overview,
-	}, {
-		key: 'emojis',
-		title: i18n.ts.customEmojis,
-		icon: 'ti ti-icons',
 	}];
 
+	// ログインユーザーが存在する場合のみ emojis と federation タブを追加
 	if ($i) {
-		tabs.push({
-			key: 'federation',
-			title: i18n.ts.federation,
-			icon: 'ti ti-whirl',
-		});
+		tabs.push(
+			{
+				key: 'emojis',
+				title: i18n.ts.customEmojis,
+				icon: 'ti ti-icons',
+			},
+			{
+				key: 'federation',
+				title: i18n.ts.federation,
+				icon: 'ti ti-whirl',
+			},
+		);
 	}
 
 	return tabs;
