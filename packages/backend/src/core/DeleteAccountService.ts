@@ -54,18 +54,10 @@ export class DeleteAccountService {
 
 			const queue: string[] = [];
 
-			const followings = await this.followingsRepository.find({
-				where: [
-					{ followerSharedInbox: Not(IsNull()) },
-					{ followeeSharedInbox: Not(IsNull()) },
-				],
-				select: ['followerSharedInbox', 'followeeSharedInbox'],
-			});
-
-			const inboxes = followings.map(x => x.followerSharedInbox ?? x.followeeSharedInbox);
+			const inboxes = await this.usersRepository.query('SELECT DISTINCT "sharedInbox" from "user" AS U INNER JOIN instance AS I ON U.host = I.host WHERE (I."followersCount" > 0 OR I."followingCount" > 0)');
 
 			for (const inbox of inboxes) {
-				if (inbox != null && !queue.includes(inbox)) queue.push(inbox);
+				if (inbox.sharedInbox != null) queue.push(inbox.sharedInbox);
 			}
 
 			for (const inbox of queue) {
