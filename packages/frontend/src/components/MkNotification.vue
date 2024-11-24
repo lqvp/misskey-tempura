@@ -122,6 +122,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div v-else-if="notification.type === 'scheduledNoteFailed'" :class="$style.text">
 				{{ notification.reason }}
 			</div>
+			<MkA v-else-if="notification.type === 'login'" :class="$style.text" to="/settings/security">
+				<Mfm :text="i18n.tsx._notification.loginDescription({ ip: notification.ip, text: i18n.ts.regenerateLoginToken })"/>
+			</MkA>
 			<template v-else-if="notification.type === 'follow'">
 				<span :class="$style.text" style="opacity: 0.6;">{{ i18n.ts.youGotNewFollower }}</span>
 				<div v-if="full"><MkFollowButton :user="notification.user" :full="true"/></div>
@@ -437,6 +440,7 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 	display: flex;
 	width: 100%;
 	overflow: clip;
+	opacity: 0.7;
 }
 
 .quote {
