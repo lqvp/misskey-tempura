@@ -5,7 +5,7 @@
 
 import { Entity, Column, PrimaryColumn } from 'typeorm';
 import { id } from './util/id.js';
-import { User } from './User.js';
+import { MiUser } from './User.js';
 
 /**
  * ～かつ～
@@ -301,5 +301,5 @@ export class MiRole {
 		comment: 'The owner ID.',
 		default: null,
 	})
-	public userId: User['id'] | null; // nullはCommunity外
+	public userId: MiUser['id'] | null; // nullはCommunity外
 }

@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Brackets } from 'typeorm';
 import { Endpoint } from '@/server/api/endpoint-base.js';
-import type { RoleAssignmentsRepository, RolesRepository } from '@/models/index.js';
+import type { RoleAssignmentsRepository, RolesRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '@/server/api/error.js';
 import { RoleService } from '@/core/RoleService.js';
@@ -11,6 +11,7 @@ export const meta = {
 	tags: ['role'],
 
 	requireCredential: true,
+	secure: true,
 
 	kind: 'write:community-role',
 
@@ -62,12 +63,13 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 			}
 
 			const assignedCount = await this.roleAssignmentsRepository.createQueryBuilder('assign')
-			.where('assign.roleId = :roleId', { roleId: role.id })
-			.andWhere(new Brackets(qb => { qb
-				.where('assign.expiresAt IS NULL')
-				.orWhere('assign.expiresAt > :now', { now: new Date() });
-			}))
-			.getCount();
+				.where('assign.roleId = :roleId', { roleId: role.id })
+				.andWhere(new Brackets(qb => {
+					qb
+						.where('assign.expiresAt IS NULL')
+						.orWhere('assign.expiresAt > :now', { now: new Date() });
+				}))
+				.getCount();
 
 			if (assignedCount === 1) {
 				// 自動削除
@@ -75,8 +77,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 					id: ps.roleId,
 				});
 				this.globalEventService.publishInternalEvent('roleDeleted', role);
-			}
-			else {
+			} else {
 				await this.roleService.unassign(me.id, role.id);
 			}
 		});

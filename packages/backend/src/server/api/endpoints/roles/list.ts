@@ -39,6 +39,9 @@ export const paramDef = {
 		ownerOnly: {
 			type: 'boolean',
 		},
+		assignedOnly: {
+			type: 'boolean',
+		},
 	},
 	required: [
 	],

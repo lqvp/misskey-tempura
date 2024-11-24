@@ -10,6 +10,7 @@ export const meta = {
 
 	requireCredential: true,
 	kind: 'write:community-role',
+	secure: true,
 
 	errors: {
 		noSuchRole: {
@@ -25,12 +26,12 @@ export const meta = {
 		notOwnerOrpermissionDenied: {
 			message: 'You are not this role owner.',
 			code: 'NOT_OWNER_OR_PERMISSION_DENIED',
-			id: '73952b00-d3e3-4038-b2c6-f4b4532e3906'
+			id: '73952b00-d3e3-4038-b2c6-f4b4532e3906',
 		},
 		emptyName: {
-			message: "Name is empty.",
-			code: "EMPTY_NAME",
-			id: "e787f7ba-a46c-46ef-a6dc-44b98e499e62",
+			message: 'Name is empty.',
+			code: 'EMPTY_NAME',
+			id: 'e787f7ba-a46c-46ef-a6dc-44b98e499e62',
 		},
 	},
 } as const;
@@ -55,7 +56,6 @@ export const paramDef = {
 	],
 } as const;
 
-// eslint-disable-next-line import/no-default-export
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> {
 	constructor(

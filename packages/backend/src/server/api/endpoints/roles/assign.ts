@@ -10,6 +10,7 @@ export const meta = {
 
 	requireCredential: true,
 	kind: 'write:community-role',
+	secure: true,
 
 	errors: {
 		noSuchRole: {

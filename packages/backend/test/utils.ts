@@ -277,6 +277,7 @@ export const role = async (user: UserToken, role: Partial<misskey.entities.Role>
 		description: '',
 		displayOrder: 0,
 		iconUrl: null,
+		permissionGroup: 'Normal',
 		isAdministrator: false,
 		isModerator: false,
 		isPublic: false,

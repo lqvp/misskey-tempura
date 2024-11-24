@@ -64,6 +64,8 @@ export class RoleEntityService {
 			condFormula: role.condFormula,
 			isPublic: role.isPublic,
 			permissionGroup: role.permissionGroup,
+			isAdministrator: false,
+			isModerator: false,
 			isExplorable: role.isExplorable,
 			asBadge: role.asBadge,
 			canEditMembersByModerator: role.canEditMembersByModerator,
@@ -82,4 +84,3 @@ export class RoleEntityService {
 		return Promise.all(roles.map(x => this.pack(x, me)));
 	}
 }
-

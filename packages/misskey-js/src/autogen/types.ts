@@ -3320,6 +3320,7 @@ export type paths = {
      * roles/add
      * @description No description provided.
      *
+     * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
      * **Credential required**: *Yes* / **Permission**: *write:community-role*
      */
     post: operations['roles___add'];
@@ -3329,6 +3330,7 @@ export type paths = {
      * roles/assign
      * @description No description provided.
      *
+     * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
      * **Credential required**: *Yes* / **Permission**: *write:community-role*
      */
     post: operations['roles___assign'];
@@ -3338,6 +3340,7 @@ export type paths = {
      * roles/unassign
      * @description No description provided.
      *
+     * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
      * **Credential required**: *Yes* / **Permission**: *write:community-role*
      */
     post: operations['roles___unassign'];
@@ -3347,6 +3350,7 @@ export type paths = {
      * roles/update
      * @description No description provided.
      *
+     * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
      * **Credential required**: *Yes* / **Permission**: *write:community-role*
      */
     post: operations['roles___update'];
@@ -25923,6 +25927,7 @@ export type operations = {
           communityOnly?: boolean;
           communityPublicOnly?: boolean;
           ownerOnly?: boolean;
+          assignedOnly?: boolean;
         };
       };
     };
@@ -26149,6 +26154,7 @@ export type operations = {
    * roles/add
    * @description No description provided.
    *
+   * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
    * **Credential required**: *Yes* / **Permission**: *write:community-role*
    */
   roles___add: {
@@ -26204,6 +26210,7 @@ export type operations = {
    * roles/assign
    * @description No description provided.
    *
+   * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
    * **Credential required**: *Yes* / **Permission**: *write:community-role*
    */
   roles___assign: {
@@ -26256,6 +26263,7 @@ export type operations = {
    * roles/unassign
    * @description No description provided.
    *
+   * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
    * **Credential required**: *Yes* / **Permission**: *write:community-role*
    */
   roles___unassign: {
@@ -26308,6 +26316,7 @@ export type operations = {
    * roles/update
    * @description No description provided.
    *
+   * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
    * **Credential required**: *Yes* / **Permission**: *write:community-role*
    */
   roles___update: {

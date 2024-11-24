@@ -9,21 +9,22 @@ import { RoleService } from '@/core/RoleService.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
-	tags: ["role"],
+	tags: ['role'],
 
 	requireCredential: true,
 	kind: 'write:community-role',
+	secure: true,
 
 	errors: {
 		notAllowed: {
-			message: "You are not allowed to add role.",
-			code: "NOT_ALLOWED_ADD_ROLE",
-			id: "e4575a43-1368-49d2-84e1-61637976c918",
+			message: 'You are not allowed to add role.',
+			code: 'NOT_ALLOWED_ADD_ROLE',
+			id: 'e4575a43-1368-49d2-84e1-61637976c918',
 		},
 		emptyName: {
-			message: "Name is empty.",
-			code: "EMPTY_NAME",
-			id: "e787f7ba-a46c-46ef-a6dc-44b98e499e62",
+			message: 'Name is empty.',
+			code: 'EMPTY_NAME',
+			id: 'e787f7ba-a46c-46ef-a6dc-44b98e499e62',
 		},
 	},
 } as const;
@@ -46,7 +47,6 @@ export const paramDef = {
 	],
 } as const;
 
-// eslint-disable-next-line import/no-default-export
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> {
 	constructor(
@@ -84,7 +84,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				canEditMembersByModerator: true,
 				displayOrder: 0,
 				policies: {},
-				userId: me.id
+				userId: me.id,
 			}).then(x => this.rolesRepository.findOneByOrFail(x.identifiers[0]));
 
 			this.globalEventService.publishInternalEvent('roleCreated', created);

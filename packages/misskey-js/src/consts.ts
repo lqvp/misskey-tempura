@@ -125,6 +125,7 @@ export const permissions = [
 	'read:announcements',
 	'read:stats',
 	'read:clip',
+	'write:community-role',
 ] as const;
 
 export const moderationLogTypes = [
