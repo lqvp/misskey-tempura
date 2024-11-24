@@ -3031,6 +3031,7 @@ hanaModeIconRadiusDescription: "アイコンの角を丸くする度合い（0=�
 hanaModeBackground: "LPで使う背景画像"
 hanaModeBackgroundDescription: "はなみすきー仕様のエントランスで表示する背景画像"
 
+isAdmin: "Administrator"
 
 defaultFollowedUsers: "デフォルトでフォローするユーザー (ID)"
 defaultFollowedUsersDescription: "今後アカウントが作成された際に自動でフォローされるユーザー（解除可能）のユーザーIDを改行区切りで指定します。"

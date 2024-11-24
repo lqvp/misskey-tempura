@@ -11373,6 +11373,10 @@ export interface Locale extends ILocale {
      */
     "hanaModeBackgroundDescription": string;
     /**
+     * Administrator
+     */
+    "isAdmin": string;
+    /**
      * デフォルトでフォローするユーザー (ID)
      */
     "defaultFollowedUsers": string;

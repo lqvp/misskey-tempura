@@ -21,7 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<XPages v-else-if="tab === 'pages'" key="pages" :user="user"/>
 				<XFlashs v-else-if="tab === 'flashs'" key="flashs" :user="user"/>
 				<XGallery v-else-if="tab === 'gallery'" key="gallery" :user="user"/>
-				<!-- <XRaw v-else-if="tab === 'raw'" key="raw" :user="user"/> -->
+				<XRaw v-else-if="tab === 'raw'" key="raw" :user="user"/>
 			</MkHorizontalSwipe>
 		</div>
 		<div v-else-if="error">
@@ -59,7 +59,7 @@ const XLists = defineAsyncComponent(() => import('./lists.vue'));
 const XPages = defineAsyncComponent(() => import('./pages.vue'));
 const XFlashs = defineAsyncComponent(() => import('./flashs.vue'));
 const XGallery = defineAsyncComponent(() => import('./gallery.vue'));
-// const XRaw = defineAsyncComponent(() => import('./raw.vue'));
+const XRaw = defineAsyncComponent(() => import('./raw.vue'));
 
 const CTX_USER = getServerContext('user');
 
@@ -149,11 +149,11 @@ const headerTabs = computed(() => user.value ? [{
 	key: 'gallery',
 	title: i18n.ts.gallery,
 	icon: 'ti ti-icons',
-}] : []), [{
+}] : []), {
 	key: 'raw',
 	title: 'Raw',
 	icon: 'ti ti-code',
-}]] : []);
+}] : []);
 
 definePageMetadata(() => ({
 	title: i18n.ts.user,
