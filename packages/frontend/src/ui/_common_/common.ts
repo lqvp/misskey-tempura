@@ -4,10 +4,10 @@
  */
 
 import { defineAsyncComponent } from 'vue';
+import { host } from '@@/js/config.js';
 import type { MenuItem } from '@/types/menu.js';
 import * as os from '@/os.js';
 import { instance } from '@/instance.js';
-import { host } from '@@/js/config.js';
 import { i18n } from '@/i18n.js';
 import { $i } from '@/account.js';
 
@@ -51,12 +51,27 @@ export function openInstanceMenu(ev: MouseEvent) {
 		text: i18n.ts.instanceInfo,
 		icon: 'ti ti-info-circle',
 		to: '/about',
+	});
+
+	if ($i) {
+		menuItems.push(
+			{
+				type: 'link',
+				text: i18n.ts.customEmojis,
+				icon: 'ti ti-icons',
+				to: '/about#emojis',
+			},
+			{
+				type: 'link',
+				text: i18n.ts.federation,
+				icon: 'ti ti-whirl',
+				to: '/about#federation',
+			});
+	}
+
+	menuItems.push({
+		type: 'divider',
 	}, {
-		type: 'link',
-		text: i18n.ts.customEmojis,
-		icon: 'ti ti-icons',
-		to: '/about#emojis',
-	}, { type: 'divider' }, {
 		type: 'link',
 		text: i18n.ts.ads,
 		icon: 'ti ti-ad',
