@@ -52,6 +52,7 @@ import { globalEvents } from '@/events.js';
 import { injectReactiveMetadata } from '@/scripts/page-metadata.js';
 import { $i, openAccountMenu as openAccountMenu_ } from '@/account.js';
 import { PageHeaderItem } from '@/types/page-header.js';
+import { mainRouter } from '@/router/main.js';
 
 const props = withDefaults(defineProps<{
 	tabs?: Tab[];
