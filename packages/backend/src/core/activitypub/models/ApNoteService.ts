@@ -255,6 +255,10 @@ export class ApNoteService {
 				})
 				.catch(async err => {
 					this.logger.warn(`Error in inReplyTo ${note.inReplyTo} - ${err.statusCode ?? err}`);
+					if (err?.statusCode === 401 || err?.statusCode === 403 || err?.statusCode === 404) {
+						this.logger.info('Set inReplyTo to null');
+						return null;
+					}
 					throw err;
 				})
 			: null;
