@@ -365,16 +365,16 @@ export class ApPersonService implements OnModuleInit {
 				this.isPublicCollection(person.notes, resolver),
 				this.isPublicCollection(person.following, resolver),
 				this.isPublicCollection(person.followers, resolver),
-			].map((p): Promise<'public' | 'private'> => p
-				.then(isPublic => isPublic ? 'public' : 'private')
+			].map((p, index) => p
+				.then(isPublic => index === 0 ? 'public' : (isPublic ? 'public' : 'private'))
 				.catch(err => {
 					if (!(err instanceof StatusError) || err.isRetryable) {
 						this.logger.error('error occurred while fetching notes/following/followers collection', { stack: err });
 					}
-					return 'private';
+					return index === 0 ? 'public' : 'private';
 				}),
 			),
-		);
+	 );
 
 		const bday = person['vcard:bday']?.match(/^\d{4}-\d{2}-\d{2}/);
 
@@ -645,18 +645,16 @@ export class ApPersonService implements OnModuleInit {
 				this.isPublicCollection(person.notes, resolver),
 				this.isPublicCollection(person.following, resolver),
 				this.isPublicCollection(person.followers, resolver),
-			].map((p): Promise<'public' | 'private' | undefined> => p
-				.then(isPublic => isPublic ? 'public' : 'private')
+			].map((p, index) => p
+				.then(isPublic => index === 0 ? 'public' : (isPublic ? 'public' : 'private'))
 				.catch(err => {
 					if (!(err instanceof StatusError) || err.isRetryable) {
 						this.logger.error('error occurred while fetching notes/following/followers collection', { stack: err });
-						// Do not update the visibiility on transient errors.
-						return undefined;
 					}
-					return 'private';
+					return index === 0 ? 'public' : 'private';
 				}),
 			),
-		);
+	 );
 
 		const bday = person['vcard:bday']?.match(/^\d{4}-\d{2}-\d{2}/);
 
@@ -956,7 +954,7 @@ export class ApPersonService implements OnModuleInit {
 
 		// Resolve to Object(may be Note) arrays
 		const unresolvedItems = isCollection(collection) ? collection.items : collection.orderedItems;
-		const items = await Promise.all(toArray(unresolvedItems).map(x => _resolver?.resolve(x)));
+		const items = await Promise.all(toArray(unresolvedItems).map(x => _resolver.resolve(x)));
 
 		// Resolve and regist Notes
 		const limit = promiseLimit<MiNote | null>(2);

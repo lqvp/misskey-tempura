@@ -72,6 +72,12 @@ export const paramDef = {
 		untilDate: { type: 'integer' },
 		allowPartial: { type: 'boolean', default: false }, // true is recommended but for compatibility false by default
 		withFiles: { type: 'boolean', default: false },
+		username: { type: 'string' },
+		host: {
+			type: 'string',
+			nullable: true,
+			description: 'The local host is represented with `null`.',
+		},
 	},
 	required: ['userId'],
 } as const;
@@ -85,6 +91,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		@Inject(DI.notesRepository)
 		private notesRepository: NotesRepository,
 
+		@Inject(DI.usersRepository)
 		private noteEntityService: NoteEntityService,
 		private queryService: QueryService,
 		private cacheService: CacheService,
