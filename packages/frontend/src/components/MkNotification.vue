@@ -440,7 +440,6 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 	display: flex;
 	width: 100%;
 	overflow: clip;
-	opacity: 0.7;
 }
 
 .quote {
