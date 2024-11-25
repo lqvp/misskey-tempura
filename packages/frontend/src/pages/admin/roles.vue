@@ -326,7 +326,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</div>
 					</MkFoldableSection>
 					<MkFoldableSection>
-						<template #header>Community roles</template>
+						<template #header>{{ i18n.ts.communityRole }}</template>
 						<div class="_gaps_s">
 							<MkRolePreview v-for="role in roles.filter(x => x.permissionGroup === 'Community')" :key="role.id" :role="role" :forModeration="true"/>
 						</div>
