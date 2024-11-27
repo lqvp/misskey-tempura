@@ -26,6 +26,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkAvatar style="width: 60px; height: 60px;" :user="$i" :decorations="url != '' ? [{ url }] : []" forceShowDecoration/>
 					</div>
 				</div>
+				<MkButton rounded style="margin: 0 auto;" @click="selectImage($event)">{{ i18n.ts.selectFile }}</MkButton>
 				<MkInput v-model="name">
 					<template #label>{{ i18n.ts.name }}</template>
 				</MkInput>
@@ -67,6 +68,7 @@ import MkButton from '@/components/MkButton.vue';
 import MkInput from '@/components/MkInput.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import MkFolder from '@/components/MkFolder.vue';
+import { selectFile } from '@/scripts/select-file.js';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
 import { i18n } from '@/i18n.js';
@@ -96,6 +98,12 @@ const rolesThatCanBeUsedThisDecoration = ref<Misskey.entities.Role[]>([]);
 watch(roleIdsThatCanBeUsedThisDecoration, async () => {
 	rolesThatCanBeUsedThisDecoration.value = (await Promise.all(roleIdsThatCanBeUsedThisDecoration.value.map((id) => misskeyApi('admin/roles/show', { roleId: id }).catch(() => null)))).filter(x => x != null);
 }, { immediate: true });
+
+async function selectImage(ev) {
+	const file = await selectFile(ev.currentTarget ?? ev.target, null);
+	name.value = file.name.replace(/\.(.+)$/, '');
+	url.value = file.url;
+}
 
 async function addRole() {
 	const roles = await misskeyApi('admin/roles/list');
