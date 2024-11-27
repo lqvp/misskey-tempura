@@ -11420,10 +11420,10 @@ export interface Locale extends ILocale {
      * コミュニティー
      */
     "community": string;
-	/**
-	 * コミュニティロール
-	 */
-	"communityRole": string;
+    /**
+     * コミュニティーロール
+     */
+    "communityRole": string;
     /**
      * ロールの管理
      */
