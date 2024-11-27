@@ -11444,6 +11444,14 @@ export interface Locale extends ILocale {
      * {user}さんのフォローやポストの表示はできません。
      */
     "youBlockedDescription": ParameterizedString<"user">;
+    /**
+     * ログインしてください
+     */
+    "pleaseLogin": string;
+    /**
+     * プロフィールを閲覧するにはログインが必要です
+     */
+    "pleaseLoginToViewProfile": string;
 }
 declare const locales: {
     [lang: string]: Locale;

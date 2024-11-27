@@ -3053,3 +3053,6 @@ assignableRole: "割り当て可能なロール"
 
 youBlocked: "ブロックされています"
 youBlockedDescription: "{user}さんのフォローやポストの表示はできません。"
+
+pleaseLogin: "ログインしてください"
+pleaseLoginToViewProfile: "プロフィールを閲覧するにはログインが必要です"

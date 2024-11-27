@@ -116,7 +116,7 @@ watch(
 
 const headerActions = computed(() => []);
 
-const headerTabs = computed(() => user.value ? [{
+const headerTabs = computed(() => $i && user.value ? [{
 	key: 'home',
 	title: i18n.ts.overview,
 	icon: 'ti ti-home',
@@ -160,7 +160,11 @@ const headerTabs = computed(() => user.value ? [{
 	key: 'raw',
 	title: 'Raw',
 	icon: 'ti ti-code',
-}] : []);
+}] : [{
+	key: 'home',
+	title: i18n.ts.overview,
+	icon: 'ti ti-home',
+}]);
 
 definePageMetadata(() => ({
 	title: i18n.ts.user,
