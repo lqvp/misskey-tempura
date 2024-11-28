@@ -57,6 +57,8 @@ export interface MainEventTypes {
 	follow: Packed<'UserDetailedNotMe'>;
 	followed: Packed<'UserLite'>;
 	unfollow: Packed<'UserDetailedNotMe'>;
+	blocked: Packed<'UserDetailedNotMe'>;
+	unblocked: Packed<'UserDetailedNotMe'>;
 	meUpdated: Packed<'MeDetailed'>;
 	pageEvent: {
 		pageId: MiPage['id'];

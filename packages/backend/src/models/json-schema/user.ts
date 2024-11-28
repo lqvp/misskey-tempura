@@ -651,6 +651,8 @@ export const packedMeDetailedOnlySchema = {
 				receiveFollowRequest: { optional: true, ...notificationRecieveConfig },
 				followRequestAccepted: { optional: true, ...notificationRecieveConfig },
 				followRequestRejected: { optional: true, ...notificationRecieveConfig },
+				blocked: { optional: true, ...notificationRecieveConfig },
+				uunblocked: { optional: true, ...notificationRecieveConfig },
 				roleAssigned: { optional: true, ...notificationRecieveConfig },
 				achievementEarned: { optional: true, ...notificationRecieveConfig },
 				app: { optional: true, ...notificationRecieveConfig },

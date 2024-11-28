@@ -82,6 +82,16 @@ export type MiNotification = {
 	notifierId: MiUser['id'];
 	message: string | null;
 } | {
+	type: 'blocked';
+	id: string;
+	createdAt: string;
+	notifierId: MiUser['id'];
+} | {
+	type: 'unblocked';
+	id: string;
+	createdAt: string;
+	notifierId: MiUser['id'];
+} | {
 	type: 'roleAssigned';
 	id: string;
 	createdAt: string;

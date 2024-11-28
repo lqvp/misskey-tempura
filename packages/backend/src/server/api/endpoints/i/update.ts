@@ -229,6 +229,8 @@ export const paramDef = {
 				receiveFollowRequest: notificationRecieveConfig,
 				followRequestAccepted: notificationRecieveConfig,
 				followRequestRejected: notificationRecieveConfig,
+				blocked: notificationRecieveConfig,
+				unblocked: notificationRecieveConfig,
 				roleAssigned: notificationRecieveConfig,
 				achievementEarned: notificationRecieveConfig,
 				app: notificationRecieveConfig,

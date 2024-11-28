@@ -16,7 +16,7 @@ import type {
 	UserLite,
 } from './autogen/models.js';
 
-export const notificationTypes = ['note', 'follow', 'mention', 'reply', 'renote', 'quote', 'reaction', 'pollVote', 'pollEnded', 'receiveFollowRequest', 'followRequestAccepted', 'followRequestRejected', 'groupInvited', 'app', 'roleAssigned', 'achievementEarned', 'scheduledNoteFailed', 'scheduledNotePosted'] as const;
+export const notificationTypes = ['note', 'follow', 'mention', 'reply', 'renote', 'quote', 'reaction', 'pollVote', 'pollEnded', 'receiveFollowRequest', 'followRequestAccepted', 'followRequestRejected', 'blocked', 'unblocked', 'groupInvited', 'app', 'roleAssigned', 'achievementEarned', 'scheduledNoteFailed', 'scheduledNotePosted'] as const;
 
 export const noteVisibilities = ['public', 'home', 'followers', 'specified'] as const;
 

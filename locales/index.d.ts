@@ -315,6 +315,14 @@ export interface Locale extends ILocale {
      */
     "followRequestRejected": string;
     /**
+     * ブロックされました
+     */
+    "youGotBlocked": string;
+    /**
+     * ブロックが解除されました
+     */
+    "youGotUnblocked": string;
+    /**
      * メンション
      */
     "mention": string;
@@ -9847,6 +9855,14 @@ export interface Locale extends ILocale {
          */
         "yourFollowRequestRejected": string;
         /**
+         * ブロックされました
+         */
+        "youWereBlocked": string;
+        /**
+         * ブロックが解除されました
+         */
+        "youWereUnblocked": string;
+        /**
          * アンケートの結果が出ました
          */
         "pollEnded": string;
@@ -9988,6 +10004,14 @@ export interface Locale extends ILocale {
              * フォローが拒否された
              */
             "followRequestRejected": string;
+            /**
+             * ブロックされた
+             */
+            "blocked": string;
+            /**
+             * ブロックが解除された
+             */
+            "unblocked": string;
             /**
              * ロールが付与された
              */

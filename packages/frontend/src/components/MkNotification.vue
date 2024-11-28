@@ -22,6 +22,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 				[$style.t_followRequestAccepted]: notification.type === 'followRequestAccepted',
 				[$style.t_followRequestRejected]: notification.type === 'followRequestRejected',
 				[$style.t_receiveFollowRequest]: notification.type === 'receiveFollowRequest',
+				[$style.t_blocked]: notification.type === 'blocked',
+				[$style.t_unblocked]: notification.type === 'unblocked',
 				[$style.t_renote]: notification.type === 'renote',
 				[$style.t_reply]: notification.type === 'reply',
 				[$style.t_mention]: notification.type === 'mention',
@@ -40,6 +42,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<i v-else-if="notification.type === 'receiveFollowRequest'" class="ti ti-clock"></i>
 			<i v-else-if="notification.type === 'followRequestAccepted'" class="ti ti-check"></i>
 			<i v-else-if="notification.type === 'followRequestRejected'" class="ti ti-ban"></i>
+			<i v-else-if="notification.type === 'blocked'" class="ti ti-ban"></i>
+			<i v-else-if="notification.type === 'unblocked'" class="ti ti-check"></i>
 			<i v-else-if="notification.type === 'renote'" class="ti ti-repeat"></i>
 			<i v-else-if="notification.type === 'reply'" class="ti ti-arrow-back-up"></i>
 			<i v-else-if="notification.type === 'mention'" class="ti ti-at"></i>
@@ -72,7 +76,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span v-else-if="notification.type === 'login'">{{ i18n.ts._notification.login }}</span>
 			<span v-else-if="notification.type === 'test'">{{ i18n.ts._notification.testNotification }}</span>
 			<span v-else-if="notification.type === 'exportCompleted'">{{ i18n.tsx._notification.exportOfXCompleted({ x: exportEntityName[notification.exportedEntity] }) }}</span>
-			<MkA v-else-if="notification.type === 'follow' || notification.type === 'unfollow' || notification.type === 'mention' || notification.type === 'reply' || notification.type === 'renote' || notification.type === 'quote' || notification.type === 'reaction' || notification.type === 'receiveFollowRequest' || notification.type === 'followRequestAccepted' || notification.type === 'followRequestRejected'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
+			<MkA v-else-if="notification.type === 'follow' || notification.type === 'unfollow' || notification.type === 'mention' || notification.type === 'reply' || notification.type === 'renote' || notification.type === 'quote' || notification.type === 'reaction' || notification.type === 'receiveFollowRequest' || notification.type === 'followRequestAccepted' || notification.type === 'followRequestRejected' || notification.type === 'blocked' || notification.type === 'unblocked'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
 			<span v-else-if="notification.type === 'reaction:grouped' && notification.note.reactionAcceptance === 'likeOnly'">{{ i18n.tsx._notification.likedBySomeUsers({ n: getActualReactedUsersCount(notification) }) }}</span>
 			<span v-else-if="notification.type === 'reaction:grouped'">{{ i18n.tsx._notification.reactedBySomeUsers({ n: getActualReactedUsersCount(notification) }) }}</span>
 			<span v-else-if="notification.type === 'note:grouped'">{{ i18n.tsx._notification.notedBySomeUsers({ n: notification.noteIds.length }) }}</span>
@@ -155,6 +159,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkButton :class="$style.followRequestCommandButton" rounded primary @click="acceptFollowRequest()"><i class="ti ti-check"/> {{ i18n.ts.accept }}</MkButton>
 					<MkButton :class="$style.followRequestCommandButton" rounded danger @click="rejectFollowRequest()"><i class="ti ti-x"/> {{ i18n.ts.reject }}</MkButton>
 				</div>
+			</template>
+			<template v-else-if="notification.type === 'blocked'">
+				<span :class="$style.text" style="opacity: 0.6;">{{ i18n.ts.youGotBlocked }}</span>
+			</template>
+			<template v-else-if="notification.type === 'unblocked'">
+				<span :class="$style.text" style="opacity: 0.6;">{{ i18n.ts.youGotUnblocked }}</span>
+				<div v-if="full"><MkFollowButton :user="notification.user" :full="true"/></div>
 			</template>
 			<span v-else-if="notification.type === 'test'" :class="$style.text">{{ i18n.ts._notification.notificationWillBeDisplayedLikeThis }}</span>
 			<span v-else-if="notification.type === 'app'" :class="$style.text">
@@ -347,13 +358,13 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 	}
 }
 
-.t_follow, .t_followRequestAccepted, .t_receiveFollowRequest {
+.t_follow, .t_followRequestAccepted, .t_receiveFollowRequest, .t_unblocked {
 	padding: 3px;
 	background: var(--eventFollow);
 	pointer-events: none;
 }
 
-.t_unfollow, .t_followRequestRejected {
+.t_unfollow, .t_followRequestRejected, .t_blocked {
 	padding: 3px;
 	background: var(--eventUnFollow);
 	pointer-events: none;

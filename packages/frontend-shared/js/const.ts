@@ -67,6 +67,8 @@ export const notificationTypes = [
 	'receiveFollowRequest',
 	'followRequestAccepted',
 	'followRequestRejected',
+	'blocked',
+	'unblocked',
 	'roleAssigned',
 	'achievementEarned',
 	'exportCompleted',

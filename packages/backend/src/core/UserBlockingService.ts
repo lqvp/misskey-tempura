@@ -12,6 +12,7 @@ import type { MiMeta } from '@/models/Meta.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { QueueService } from '@/core/QueueService.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
+import { NotificationService } from '@/core/NotificationService.js';
 import { DI } from '@/di-symbols.js';
 import type { FollowRequestsRepository, BlockingsRepository, UserListsRepository, UserListMembershipsRepository } from '@/models/_.js';
 import Logger from '@/logger.js';
@@ -53,6 +54,7 @@ export class UserBlockingService implements OnModuleInit {
 		private idService: IdService,
 		private queueService: QueueService,
 		private globalEventService: GlobalEventService,
+		private notificationService: NotificationService,
 		private webhookService: UserWebhookService,
 		private apRendererService: ApRendererService,
 		private loggerService: LoggerService,
@@ -104,6 +106,12 @@ export class UserBlockingService implements OnModuleInit {
 		if (this.userEntityService.isLocalUser(blocker) && this.userEntityService.isRemoteUser(blockee)) {
 			const content = this.apRendererService.addContext(this.apRendererService.renderBlock(blocking));
 			this.queueService.deliver(blocker, content, blockee.inbox, false);
+		}
+
+		// 通知を作成（ブロックされた側に通知）
+		if (this.userEntityService.isLocalUser(blockee)) {
+			this.notificationService.createNotification(blockee.id, 'blocked', {
+			}, blocker.id);
 		}
 	}
 
@@ -202,6 +210,12 @@ export class UserBlockingService implements OnModuleInit {
 		if (this.userEntityService.isLocalUser(blocker) && this.userEntityService.isRemoteUser(blockee)) {
 			const content = this.apRendererService.addContext(this.apRendererService.renderUndo(this.apRendererService.renderBlock(blocking), blocker));
 			this.queueService.deliver(blocker, content, blockee.inbox, false);
+		}
+
+		// 通知を作成（ブロック解除された側に通知）
+		if (this.userEntityService.isLocalUser(blockee)) {
+			this.notificationService.createNotification(blockee.id, 'unblocked', {
+			}, blocker.id);
 		}
 	}
 

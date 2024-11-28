@@ -16,6 +16,8 @@
  * receiveFollowRequest - フォローリクエストされた
  * followRequestAccepted - 自分の送ったフォローリクエストが承認された
  * followRequestRejected - 自分の送ったフォローリクエストが拒否された
+ * blocked - ブロックされた
+ * unblocked - ブロック解除された
  * roleAssigned - ロールが付与された
  * achievementEarned - 実績を獲得
  * exportCompleted - エクスポートが完了
@@ -38,6 +40,8 @@ export const notificationTypes = [
 	'receiveFollowRequest',
 	'followRequestAccepted',
 	'followRequestRejected',
+	'blocked',
+	'unblocked',
 	'roleAssigned',
 	'achievementEarned',
 	'exportCompleted',
