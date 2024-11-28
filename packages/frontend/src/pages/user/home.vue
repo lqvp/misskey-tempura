@@ -171,7 +171,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 
 			<div class="contents _gaps">
-				<div v-if="$i || !user.requireSigninToViewContents">
+				<div class="contents _gaps" v-if="!user.requireSigninToViewContents || $i">
 					<div v-if="!hiddenPinnedNotes">
 						<div v-if="user.pinnedNotes.length > 0 && !user.isBlocked" class="_gaps">
 							<MkNote v-for="note in user.pinnedNotes" :key="note.id" class="note _panel" :note="note" :pinned="true"/>
@@ -186,15 +186,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</template>
 					</div>
 					<div v-if="!hiddenFiles">
-						<template v-if="narrow">
+						<template v-if="narrow && !user.isBlocked">
 							<MkLazy>
 								<XActivity v-if="!user.hideActivity" :key="user.id" :user="user"/>
 							</MkLazy>
 						</template>
 					</div>
-					<MkLazy v-if="user.listenbrainz && listenbrainzdata">
-						<XListenBrainz :key="user.id" :user="user" :collapsed="true"/>
-					</MkLazy>
+					<template v-if="narrow && !user.isBlocked">
+						<MkLazy v-if="user.listenbrainz && listenbrainzdata">
+							<XListenBrainz :key="user.id" :user="user" :collapsed="true"/>
+						</MkLazy>
+					</template>
 					<div v-if="!disableNotes && !user.isBlocked">
 						<MkLazy>
 							<XTimeline :user="user"/>
