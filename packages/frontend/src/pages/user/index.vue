@@ -9,19 +9,24 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div>
 		<div v-if="user">
 			<MkHorizontalSwipe v-model:tab="tab" :tabs="headerTabs">
-				<XHome v-if="tab === 'home'" key="home" :user="user"/>
-				<MkSpacer v-else-if="tab === 'notes'" key="notes" :contentMax="800" style="padding-top: 0">
-					<XTimeline :user="user"/>
-				</MkSpacer>
-				<XActivity v-else-if="tab === 'activity'" key="activity" :user="user"/>
-				<XAchievements v-else-if="tab === 'achievements'" key="achievements" :user="user"/>
-				<XReactions v-else-if="tab === 'reactions'" key="reactions" :user="user"/>
-				<XClips v-else-if="tab === 'clips'" key="clips" :user="user"/>
-				<XLists v-else-if="tab === 'lists'" key="lists" :user="user"/>
-				<XPages v-else-if="tab === 'pages'" key="pages" :user="user"/>
-				<XFlashs v-else-if="tab === 'flashs'" key="flashs" :user="user"/>
-				<XGallery v-else-if="tab === 'gallery'" key="gallery" :user="user"/>
-				<XRaw v-else-if="tab === 'raw'" key="raw" :user="user"/>
+				<template v-if="hasTabAccess(tab)">
+					<XHome v-if="tab === 'home'" key="home" :user="user"/>
+					<MkSpacer v-else-if="tab === 'notes'" key="notes" :contentMax="800" style="padding-top: 0">
+						<XTimeline :user="user"/>
+					</MkSpacer>
+					<XActivity v-else-if="tab === 'activity'" key="activity" :user="user"/>
+					<XAchievements v-else-if="tab === 'achievements'" key="achievements" :user="user"/>
+					<XReactions v-else-if="tab === 'reactions'" key="reactions" :user="user"/>
+					<XClips v-else-if="tab === 'clips'" key="clips" :user="user"/>
+					<XLists v-else-if="tab === 'lists'" key="lists" :user="user"/>
+					<XPages v-else-if="tab === 'pages'" key="pages" :user="user"/>
+					<XFlashs v-else-if="tab === 'flashs'" key="flashs" :user="user"/>
+					<XGallery v-else-if="tab === 'gallery'" key="gallery" :user="user"/>
+					<XRaw v-else-if="tab === 'raw'" key="raw" :user="user"/>
+				</template>
+				<div v-else class="forbidden">
+					<XNotFound/>
+				</div>
 			</MkHorizontalSwipe>
 		</div>
 		<div v-else-if="error">
@@ -47,6 +52,7 @@ import { $i } from '@/account.js';
 import MkUserNotFound from '@/components/MkUserNotFound.vue';
 import MkUserSuspended from '@/components/MkUserSuspended.vue';
 import MkHorizontalSwipe from '@/components/MkHorizontalSwipe.vue';
+import XNotFound from '@/pages/not-found.vue';
 import { getServerContext } from '@/server-context.js';
 
 const XHome = defineAsyncComponent(() => import('./home.vue'));
@@ -75,6 +81,7 @@ const tab = ref(props.page);
 const user = ref<null | Misskey.entities.UserDetailed>(CTX_USER);
 const error = ref<null | any>(null);
 const userstatus = ref<null | any>(null);
+const showContent = ref(true);
 
 function fetchUser(): void {
 	if (props.acct == null) return;
@@ -114,57 +121,129 @@ watch(
 	},
 );
 
+// アクセス制御のロジック
+const hasTabAccess = (tabName: string): boolean => {
+	if (!user.value || !$i) return tabName === 'home';
+
+	const isOwner = $i.id === user.value.id;
+	const isAdminMod = $i.isAdmin || $i.isModerator;
+
+	switch (tabName) {
+		case 'home':
+			return true;
+		case 'notes':
+			return !user.value.isBlocked;
+		case 'activity':
+			return (!user.value.hideActivity && !user.value.isBlocked) || isOwner || isAdminMod;
+		case 'achievements':
+			return user.value.host == null && !user.value.isBlocked;
+		case 'reactions':
+			return (user.value.publicReactions && !user.value.isBlocked) || isOwner || isAdminMod;
+		case 'raw':
+			return isOwner || isAdminMod;
+		case 'clips':
+		case 'lists':
+		case 'pages':
+		case 'flashs':
+		case 'gallery':
+			return !user.value.isBlocked;
+		default:
+			return false;
+	}
+};
+
+// タブ変更時の処理
+watch(tab, (newTab) => {
+	showContent.value = hasTabAccess(newTab);
+});
+
 const headerActions = computed(() => []);
 
-const headerTabs = computed(() => $i && user.value ? [{
-	key: 'home',
-	title: i18n.ts.overview,
-	icon: 'ti ti-home',
-}, ...(!user.value.isBlocked ? [{
-	key: 'notes',
-	title: i18n.ts.notes,
-	icon: 'ti ti-pencil',
-}, ...($i && ($i.id === user.value.id || $i.isAdmin || $i.isModerator)) || !user.value.hideActivity ? [{
-	key: 'activity',
-	title: i18n.ts.activity,
-	icon: 'ti ti-chart-line',
-}] : [], ...(user.value.host == null ? [{
-	key: 'achievements',
-	title: i18n.ts.achievements,
-	icon: 'ti ti-medal',
-}] : []), ...($i && ($i.id === user.value.id || $i.isAdmin || $i.isModerator)) || user.value.publicReactions ? [{
-	key: 'reactions',
-	title: i18n.ts.reaction,
-	icon: 'ti ti-mood-happy',
-}] : [], {
-	key: 'clips',
-	title: i18n.ts.clips,
-	icon: 'ti ti-paperclip',
-}, {
-	key: 'lists',
-	title: i18n.ts.lists,
-	icon: 'ti ti-list',
-}, {
-	key: 'pages',
-	title: i18n.ts.pages,
-	icon: 'ti ti-news',
-}, {
-	key: 'flashs',
-	title: 'Play',
-	icon: 'ti ti-player-play',
-}, {
-	key: 'gallery',
-	title: i18n.ts.gallery,
-	icon: 'ti ti-icons',
-}] : []), {
-	key: 'raw',
-	title: 'Raw',
-	icon: 'ti ti-code',
-}] : [{
-	key: 'home',
-	title: i18n.ts.overview,
-	icon: 'ti ti-home',
-}]);
+const headerTabs = computed(() => {
+	if (!$i || !user.value) return [{
+		key: 'home',
+		title: i18n.ts.overview,
+		icon: 'ti ti-home',
+	}];
+
+	const baseTabs = [{
+		key: 'home',
+		title: i18n.ts.overview,
+		icon: 'ti ti-home',
+	}];
+
+	if (user.value.isBlocked) return baseTabs;
+
+	const tabs = [
+		{
+			key: 'notes',
+			title: i18n.ts.notes,
+			icon: 'ti ti-pencil',
+		},
+	];
+
+	if (($i.id === user.value.id || $i.isAdmin || $i.isModerator) || !user.value.hideActivity) {
+		tabs.push({
+			key: 'activity',
+			title: i18n.ts.activity,
+			icon: 'ti ti-chart-line',
+		});
+	}
+
+	if (user.value.host == null) {
+		tabs.push({
+			key: 'achievements',
+			title: i18n.ts.achievements,
+			icon: 'ti ti-medal',
+		});
+	}
+
+	if (($i.id === user.value.id || $i.isAdmin || $i.isModerator) || user.value.publicReactions) {
+		tabs.push({
+			key: 'reactions',
+			title: i18n.ts.reaction,
+			icon: 'ti ti-mood-happy',
+		});
+	}
+
+	tabs.push(...[
+		{
+			key: 'clips',
+			title: i18n.ts.clips,
+			icon: 'ti ti-paperclip',
+		},
+		{
+			key: 'lists',
+			title: i18n.ts.lists,
+			icon: 'ti ti-list',
+		},
+		{
+			key: 'pages',
+			title: i18n.ts.pages,
+			icon: 'ti ti-news',
+		},
+		{
+			key: 'flashs',
+			title: 'Play',
+			icon: 'ti ti-player-play',
+		},
+		{
+			key: 'gallery',
+			title: i18n.ts.gallery,
+			icon: 'ti ti-icons',
+		},
+	]);
+
+	if ($i.id === user.value.id || $i.isAdmin || $i.isModerator) {
+		tabs.push({
+			key: 'raw',
+			title: 'Raw',
+			icon: 'ti ti-code',
+		});
+	}
+
+	return [...baseTabs, ...tabs];
+});
 
 definePageMetadata(() => ({
 	title: i18n.ts.user,
@@ -181,3 +260,16 @@ definePageMetadata(() => ({
 	} : {},
 }));
 </script>
+
+<style lang="scss" scoped>
+.forbidden {
+	text-align: center;
+	padding: 32px;
+	color: var(--error);
+
+	> i {
+		font-size: 24px;
+		margin-bottom: 8px;
+	}
+}
+</style>
