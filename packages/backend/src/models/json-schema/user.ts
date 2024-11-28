@@ -642,6 +642,7 @@ export const packedMeDetailedOnlySchema = {
 			properties: {
 				note: { optional: true, ...notificationRecieveConfig },
 				follow: { optional: true, ...notificationRecieveConfig },
+				unfollow: { optional: true, ...notificationRecieveConfig },
 				mention: { optional: true, ...notificationRecieveConfig },
 				reply: { optional: true, ...notificationRecieveConfig },
 				renote: { optional: true, ...notificationRecieveConfig },
