@@ -11476,6 +11476,14 @@ export interface Locale extends ILocale {
      * プロフィールを閲覧するにはログインが必要です
      */
     "pleaseLoginToViewProfile": string;
+    /**
+     * DeepLX-JS を使用する (認証キーなし)
+     */
+    "deeplFreeMode": string;
+    /**
+     * ヘルプが必要ですか? DeepLX-JSのセットアップ方法については、ドキュメントを参照してください。
+     */
+    "deeplFreeModeDescription": string;
 }
 declare const locales: {
     [lang: string]: Locale;

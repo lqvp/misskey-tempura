@@ -32,6 +32,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkButton v-if="validateMinimumUsernameLengthChanged" primary @click="save_validateMinimumUsernameLength">{{ i18n.ts.save }}</MkButton>
 					</div>
 
+					<div class="_gaps">
+						<MkTextarea v-model="customSplashText">
+							<template #label>{{ i18n.ts.customSplashText }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+							<template #caption>{{ i18n.ts.customSplashTextDescription }}</template>
+						</MkTextarea>
+						<MkButton primary @click="save_customSplashText">{{ i18n.ts.save }}</MkButton>
+					</div>
+
 					<MkFolder>
 						<template #icon><i class="ti ti-mail"></i></template>
 						<template #label>Email Domain Settings<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
@@ -235,6 +243,7 @@ const hanaModeBackground = ref<string>();
 const defaultFollowedUsers = ref<string>('');
 const forciblyFollowedUsers = ref<string>('');
 const backgroundImageUrls = ref<string[]>([]);
+const customSplashText = ref<string>('');
 
 const originalMinimumUsernameLength = ref<number>();
 const validateMinimumUsernameLengthChanged = computed(() =>
@@ -268,6 +277,7 @@ async function init() {
 	defaultFollowedUsers.value = meta.defaultFollowedUsers.join('\n');
 	forciblyFollowedUsers.value = meta.forciblyFollowedUsers.join('\n');
 	backgroundImageUrls.value = meta.backgroundImageUrls;
+	customSplashText.value = meta.customSplashText.join('\n');
 }
 
 function addBackgroundImage() {
@@ -379,6 +389,14 @@ function save_defaultUsers() {
 		'bcf088ec-fec5-42d0-8b9e-16d3b4797a4d': {
 			text: i18n.ts.defaultFollowedUsersDuplicated,
 		},
+	}).then(() => {
+		fetchInstance(true);
+	});
+}
+
+function save_customSplashText() {
+	os.apiWithDialog('admin/update-meta', {
+		customSplashText: customSplashText.value.split('\n'),
 	}).then(() => {
 		fetchInstance(true);
 	});
