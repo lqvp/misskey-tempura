@@ -639,6 +639,10 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'account',
 		default: 'resizeCompressLossy' as 'resizeCompress' | 'noResizeCompress' | 'resizeCompressLossy' | 'noResizeCompressLossy' | null,
 	},
+	enableSnowMode: {
+		where: 'device',
+		default: false,
+	},
 }));
 
 // TODO: 他のタブと永続化されたstateを同期

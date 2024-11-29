@@ -11488,6 +11488,10 @@ export interface Locale extends ILocale {
      * ヘルプが必要ですか? DeepLX-JSのセットアップ方法については、ドキュメントを参照してください。
      */
     "deeplFreeModeDescription": string;
+    /**
+     * 雪を降らせる
+     */
+    "snowMode": string;
 }
 declare const locales: {
     [lang: string]: Locale;

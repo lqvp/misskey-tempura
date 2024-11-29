@@ -92,6 +92,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<option :value="null">{{ i18n.ts.default }}</option>
 						<option v-for="[name, font] of Object.entries(fontList)" :value="name">{{ font.name }}</option>
 					</MkSelect>
+					<MkSwitch v-model="enableSnowMode">{{ i18n.ts.snowMode }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
 				</div>
 			</MkFolder>
 
@@ -296,6 +297,7 @@ const selectReaction = computed(defaultStore.makeGetterSetter('selectReaction'))
 const showLikeButton = computed(defaultStore.makeGetterSetter('showLikeButton'));
 const disableNoteDrafting = computed(defaultStore.makeGetterSetter('disableNoteDrafting'));
 const imageCompressionMode = computed(defaultStore.makeGetterSetter('imageCompressionMode'));
+const enableSnowMode = computed(defaultStore.makeGetterSetter('enableSnowMode'));
 
 const Sortable = defineAsyncComponent(() => import('vuedraggable').then(x => x.default));
 const draftSavingBehavior = computed(defaultStore.makeGetterSetter('draftSavingBehavior'));

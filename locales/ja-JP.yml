@@ -3066,3 +3066,5 @@ pleaseLoginToViewProfile: "プロフィールを閲覧するにはログイン�
 
 deeplFreeMode: "DeepLX-JS を使用する (認証キーなし)"
 deeplFreeModeDescription: "ヘルプが必要ですか? DeepLX-JSのセットアップ方法については、ドキュメントを参照してください。"
+
+snowMode: "雪を降らせる"

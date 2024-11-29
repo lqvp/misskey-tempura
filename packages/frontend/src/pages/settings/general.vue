@@ -173,6 +173,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkSwitch v-model="forceShowAds">{{ i18n.ts.forceShowAds }}</MkSwitch>
 				<MkSwitch v-model="enableSeasonalScreenEffect">{{ i18n.ts.seasonalScreenEffect }}</MkSwitch>
 				<MkSwitch v-model="useNativeUIForVideoAudioPlayer">{{ i18n.ts.useNativeUIForVideoAudioPlayer }}</MkSwitch>
+				<MkSwitch v-model="enableSnowMode">{{ i18n.ts.snowMode }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
 			</div>
 
 			<MkSelect v-model="menuStyle">
@@ -470,6 +471,7 @@ const hideChannel = computed(defaultStore.makeGetterSetter('hideChannel'));
 const selectReaction = computed(defaultStore.makeGetterSetter('selectReaction'));
 const showLikeButton = computed(defaultStore.makeGetterSetter('showLikeButton'));
 const disableNoteDrafting = computed(defaultStore.makeGetterSetter('disableNoteDrafting'));
+const enableSnowMode = computed(defaultStore.makeGetterSetter('enableSnowMode'));
 
 watch(lang, () => {
 	miLocalStorage.setItem('lang', lang.value as string);
