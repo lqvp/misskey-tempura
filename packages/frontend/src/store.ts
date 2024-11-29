@@ -6,8 +6,8 @@
 import { markRaw, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { hemisphere } from '@@/js/intl-const.js';
-import lightTheme from '@@/themes/l-light.json5';
-import darkTheme from '@@/themes/d-green-lime.json5';
+import lightTheme from '@@/themes/pink-candy.json5';
+import darkTheme from '@@/themes/night-pink.json5';
 import { directRenote } from './scripts/direct-renote.js';
 import type { SoundType } from '@/scripts/sound.js';
 import type { FollowingFeedTab } from '@/scripts/following-feed-utils.js';
