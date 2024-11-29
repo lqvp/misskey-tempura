@@ -173,10 +173,10 @@ export const paramDef = {
 		hanaThemeColor: { type: 'string' },
 		hanaThemeAltColor: { type: 'string' },
 		hanaThemeWeakOpacity: { type: 'number' },
-		hanaModeIcon: { type: 'string' },
+		hanaModeIcon: { type: 'string', nullable: true, },
 		hanaModeIconSize: { type: 'number' },
 		hanaModeIconRadius: { type: 'number' },
-		hanaModeBackground: { type: 'string' },
+		hanaModeBackground: { type: 'string', nullable: true, },
 		silencedHosts: {
 			type: 'array',
 			nullable: true,
