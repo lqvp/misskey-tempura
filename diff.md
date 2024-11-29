@@ -56,7 +56,7 @@
   - RJ番号
   - nicovideoリンク
   - セキュリティ情報（CVE/JVN/JVNVU/JVNTA/JVNDB）
-- DeePLX-JSのサポート
+- DeepLX-JSのサポート
 
 # インタラクションと表示のカスタマイズ
 - リアクション機能の改善
