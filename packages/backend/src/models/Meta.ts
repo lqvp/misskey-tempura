@@ -779,5 +779,4 @@ export class MiMeta {
 		nullable: true,
 	})
 	public deeplFreeInstance: string | null;
-
 }

@@ -171,7 +171,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 
 			<div class="contents _gaps">
-				<div class="contents _gaps" v-if="!user.requireSigninToViewContents || $i">
+				<div v-if="!user.requireSigninToViewContents || $i" class="contents _gaps">
 					<div v-if="!hiddenPinnedNotes">
 						<div v-if="user.pinnedNotes.length > 0 && !user.isBlocked" class="_gaps">
 							<MkNote v-for="note in user.pinnedNotes" :key="note.id" class="note _panel" :note="note" :pinned="true"/>

@@ -126,7 +126,7 @@ export class MetaEntityService {
 			enableEmail: instance.enableEmail,
 			enableServiceWorker: instance.enableServiceWorker,
 
-			translatorAvailable: instance.deeplAuthKey != null,
+			translatorAvailable: instance.deeplAuthKey != null || instance.deeplFreeMode && instance.deeplFreeInstance != null,
 
 			serverRules: instance.serverRules,
 
