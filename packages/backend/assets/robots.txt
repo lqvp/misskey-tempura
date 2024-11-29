@@ -1,4 +1,4 @@
 user-agent: *
-allow: /
+disallow: /
 
 # todo: sitemap
