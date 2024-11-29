@@ -96,21 +96,23 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</div>
 	</FormSection>
 
-	<FormSuspense v-slot="{ result: stats }" :p="initStats">
-		<FormSection>
-			<template #label>{{ i18n.ts.statistics }}</template>
-			<FormSplit>
-				<MkKeyValue>
-					<template #key>{{ i18n.ts.users }}</template>
-					<template #value>{{ number(stats.originalUsersCount) }}</template>
-				</MkKeyValue>
-				<MkKeyValue>
-					<template #key>{{ i18n.ts.notes }}</template>
-					<template #value>{{ number(stats.originalNotesCount) }}</template>
-				</MkKeyValue>
-			</FormSplit>
-		</FormSection>
-	</FormSuspense>
+	<template v-if="$i">
+		<FormSuspense v-slot="{ result: stats }" :p="initStats">
+			<FormSection>
+				<template #label>{{ i18n.ts.statistics }}</template>
+				<FormSplit>
+					<MkKeyValue>
+						<template #key>{{ i18n.ts.users }}</template>
+						<template #value>{{ number(stats.originalUsersCount) }}</template>
+					</MkKeyValue>
+					<MkKeyValue>
+						<template #key>{{ i18n.ts.notes }}</template>
+						<template #value>{{ number(stats.originalNotesCount) }}</template>
+					</MkKeyValue>
+				</FormSplit>
+			</FormSection>
+		</FormSuspense>
+	</template>
 
 	<FormSection>
 		<template #label>Well-known resources</template>
@@ -131,6 +133,7 @@ import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
 import number from '@/filters/number.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
+import { $i } from '@/account.js';
 import FormLink from '@/components/form/link.vue';
 import FormSection from '@/components/form/section.vue';
 import FormSplit from '@/components/form/split.vue';
