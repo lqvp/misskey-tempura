@@ -599,6 +599,15 @@ export const meta = {
 					type: 'string',
 				},
 			},
+			deeplFreeMode: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			deeplFreeInstance: {
+				type: 'string',
+				optional: false, nullable: true,
+			}
+
 		},
 	},
 } as const;
@@ -667,7 +676,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				defaultDarkTheme: instance.defaultDarkTheme,
 				enableEmail: instance.enableEmail,
 				enableServiceWorker: instance.enableServiceWorker,
-				translatorAvailable: instance.deeplAuthKey != null,
+				translatorAvailable: instance.deeplAuthKey != null || instance.deeplFreeMode && instance.deeplFreeInstance,
 				cacheRemoteFiles: instance.cacheRemoteFiles,
 				cacheRemoteSensitiveFiles: instance.cacheRemoteSensitiveFiles,
 				pinnedUsers: instance.pinnedUsers,
@@ -758,6 +767,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				hanaModeBackground: instance.hanaModeBackground,
 				defaultFollowedUsers: instance.defaultFollowedUsers,
 				forciblyFollowedUsers: instance.forciblyFollowedUsers,
+				deeplFreeMode: instance.deeplFreeMode,
+				deeplFreeInstance: instance.deeplFreeInstance,
 			};
 		});
 	}

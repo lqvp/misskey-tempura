@@ -3062,3 +3062,6 @@ youBlockedDescription: "{user}さんのフォローやポストの表示はで�
 
 pleaseLogin: "ログインしてください"
 pleaseLoginToViewProfile: "プロフィールを閲覧するにはログインが必要です"
+
+deeplFreeMode: "DeepLX-JS を使用する (認証キーなし)"
+deeplFreeModeDescription: "ヘルプが必要ですか? DeepLX-JSのセットアップ方法については、ドキュメントを参照してください。"

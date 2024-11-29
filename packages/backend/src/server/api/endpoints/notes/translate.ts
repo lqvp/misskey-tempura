@@ -87,7 +87,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				return;
 			}
 
-			if (this.serverSettings.deeplAuthKey == null) {
+			if (this.serverSettings.deeplAuthKey == null && !this.serverSettings.deeplFreeMode) {
+				throw new ApiError(meta.errors.unavailable);
+			}
+
+			if (this.serverSettings.deeplFreeMode && !this.serverSettings.deeplFreeInstance) {
 				throw new ApiError(meta.errors.unavailable);
 			}
 
@@ -95,11 +99,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			if (targetLang.includes('-')) targetLang = targetLang.split('-')[0];
 
 			const params = new URLSearchParams();
-			params.append('auth_key', this.serverSettings.deeplAuthKey);
+			if (this.serverSettings.deeplAuthKey) params.append('auth_key', this.serverSettings.deeplAuthKey);
 			params.append('text', note.text);
 			params.append('target_lang', targetLang);
 
-			const endpoint = this.serverSettings.deeplIsPro ? 'https://api.deepl.com/v2/translate' : 'https://api-free.deepl.com/v2/translate';
+			const endpoint = this.serverSettings.deeplFreeMode && this.serverSettings.deeplFreeInstance ? this.serverSettings.deeplFreeInstance : this.serverSettings.deeplIsPro ? 'https://api.deepl.com/v2/translate' : 'https://api-free.deepl.com/v2/translate';
 
 			const res = await this.httpRequestService.send(endpoint, {
 				method: 'POST',
@@ -110,17 +114,37 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				body: params.toString(),
 			});
 
-			const json = (await res.json()) as {
-				translations: {
-					detected_source_language: string;
-					text: string;
-				}[];
-			};
+			if (this.serverSettings.deeplAuthKey) {
+				const json = (await res.json()) as {
+					translations: {
+						detected_source_language: string;
+						text: string;
+					}[];
+				};
 
-			return {
-				sourceLang: json.translations[0].detected_source_language,
-				text: json.translations[0].text,
-			};
+				return {
+					sourceLang: json.translations[0].detected_source_language,
+					text: json.translations[0].text,
+				};
+			} else {
+				const json = (await res.json()) as {
+					code: number,
+					message: string,
+					data: string,
+					source_lang: string,
+					target_lang: string,
+					alternatives: string[],
+				};
+
+				const languageNames = new Intl.DisplayNames(['en'], {
+					type: 'language',
+				});
+
+				return {
+					sourceLang: languageNames.of(json.source_lang),
+					text: json.data,
+				};
+			}
 		});
 	}
 }

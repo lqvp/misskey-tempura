@@ -768,4 +768,16 @@ export class MiMeta {
 		length: 1024, array: true, default: '{}',
 	})
 	public forciblyFollowedUsers: string[];
+
+	@Column('boolean', {
+		default: false,
+	})
+	public deeplFreeMode: boolean;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public deeplFreeInstance: string | null;
+
 }

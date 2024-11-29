@@ -226,6 +226,8 @@ export const paramDef = {
 				format: 'misskey:id',
 			},
 		},
+		deeplFreeMode: { type: 'boolean' },
+		deeplFreeInstance: { type: 'string', nullable: true },
 	},
 	required: [],
 } as const;
@@ -807,6 +809,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				}
 
 				set.forciblyFollowedUsers = ps.forciblyFollowedUsers.filter(Boolean);
+			}
+
+			if (ps.deeplFreeMode !== undefined) {
+				set.deeplFreeMode = ps.deeplFreeMode;
+			}
+
+			if (ps.deeplFreeInstance !== undefined) {
+				if (ps.deeplFreeInstance === '') {
+					set.deeplFreeInstance = null;
+				} else {
+					set.deeplFreeInstance = ps.deeplFreeInstance;
+				}
 			}
 
 			const before = await this.metaService.fetch(true);

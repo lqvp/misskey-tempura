@@ -4099,6 +4099,15 @@ export type components = {
           /** Format: misskey:id */
           userListId: string;
         }]>;
+        unfollow?: OneOf<[{
+          /** @enum {string} */
+          type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+        }, {
+          /** @enum {string} */
+          type: 'list';
+          /** Format: misskey:id */
+          userListId: string;
+        }]>;
         mention?: OneOf<[{
           /** @enum {string} */
           type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
@@ -4189,7 +4198,7 @@ export type components = {
           /** Format: misskey:id */
           userListId: string;
         }]>;
-        uunblocked?: OneOf<[{
+        unblocked?: OneOf<[{
           /** @enum {string} */
           type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
         }, {
@@ -5599,6 +5608,8 @@ export type operations = {
             hanaModeBackground: string | null;
             defaultFollowedUsers: string[];
             forciblyFollowedUsers: string[];
+            deeplFreeMode: boolean;
+            deeplFreeInstance: string | null;
           };
         };
       };
@@ -10298,6 +10309,8 @@ export type operations = {
           customSplashText?: string[] | null;
           defaultFollowedUsers?: string[] | null;
           forciblyFollowedUsers?: string[] | null;
+          deeplFreeMode?: boolean;
+          deeplFreeInstance?: string | null;
         };
       };
     };
