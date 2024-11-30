@@ -189,13 +189,6 @@ export const navbarItemDef = reactive({
 		show: computed(() => $i != null),
 		to: `/@${$i?.username}`,
 	},
-	cacheClear: {
-		title: i18n.ts.clearCache,
-		icon: 'ti ti-trash',
-		action: (ev) => {
-			clearCache();
-		},
-	},
 	roleManager: {
 		title: i18n.ts.manageRole,
 		icon: 'ti ti-tags',
@@ -207,5 +200,12 @@ export const navbarItemDef = reactive({
 		title: i18n.ts._followRequestHistory.title,
 		icon: 'ti ti-history',
 		to: '/my/follow-requests-history',
+	},
+	cacheClear: {
+		title: i18n.ts.clearCache,
+		icon: 'ti ti-trash',
+		action: (ev) => {
+			clearCache();
+		},
 	},
 });
