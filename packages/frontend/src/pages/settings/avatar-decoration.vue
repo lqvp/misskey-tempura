@@ -42,12 +42,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkFolder v-if="$i.policies.canUseRemoteIconDecorations">
 			<template #label>リモート</template>
 			<div :class="$style.decorations">
-				<XDecoration
-					v-for="remoteAvatarDecoration in remoteAvatarDecorations"
-					:key="remoteAvatarDecoration.id"
-					:decoration="remoteAvatarDecoration"
-					@click="openRemoteDecoration(remoteAvatarDecoration)"
-				/>
+				<template v-for="(chunk, index) in remoteDecorationChunks" :key="index">
+					<XDecoration
+						v-for="remoteAvatarDecoration in remoteAvatarDecorations"
+						:key="remoteAvatarDecoration.id"
+						:decoration="remoteAvatarDecoration"
+						@click="openRemoteDecoration(remoteAvatarDecoration)"
+					/>
+				</template>
 			</div>
 		</MkFolder>
 	</div>
@@ -58,7 +60,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, defineAsyncComponent, computed } from 'vue';
+import { ref, defineAsyncComponent, computed, onMounted, onUnmounted } from 'vue';
 import * as Misskey from 'misskey-js';
 import XDecoration from './avatar-decoration.decoration.vue';
 import MkButton from '@/components/MkButton.vue';
@@ -71,11 +73,58 @@ import { definePageMetadata } from '@/scripts/page-metadata.js';
 import MkFolder from '@/components/MkFolder.vue';
 
 const $i = signinRequired();
+const CHUNK_SIZE = 12; // 一度に表示する装飾の数
 
 const loading = ref(true);
 const avatarDecorations = ref<Misskey.entities.GetAvatarDecorationsResponse>([]);
 const localAvatarDecorations = ref<Misskey.entities.GetAvatarDecorationsResponse>([]);
 const remoteAvatarDecorations = ref<Misskey.entities.GetAvatarDecorationsResponse>([]);
+const remoteContainer = ref<HTMLElement | null>(null);
+const visibleChunks = ref<Record<number, boolean>>({});
+
+// リモートの装飾をチャンクに分割
+const remoteDecorationChunks = computed(() => {
+	const chunks = [];
+	for (let i = 0; i < remoteAvatarDecorations.value.length; i += CHUNK_SIZE) {
+		chunks.push(remoteAvatarDecorations.value.slice(i, i + CHUNK_SIZE));
+	}
+	return chunks;
+});
+
+// Intersection Observerの設定
+let observer: IntersectionObserver | null = null;
+
+onMounted(() => {
+	observer = new IntersectionObserver((entries) => {
+		entries.forEach(entry => {
+			if (entry.isIntersecting) {
+				// 表示範囲に入ったチャンクを表示
+				const containerRect = remoteContainer.value?.getBoundingClientRect();
+				if (containerRect) {
+					remoteDecorationChunks.value.forEach((_, index) => {
+						const chunkTop = index * (containerRect.height / remoteDecorationChunks.value.length);
+						const chunkBottom = (index + 1) * (containerRect.height / remoteDecorationChunks.value.length);
+						if (chunkTop <= entry.boundingClientRect.bottom && chunkBottom >= entry.boundingClientRect.top) {
+							visibleChunks.value[index] = true;
+						}
+					});
+				}
+			}
+		});
+	}, {
+		root: null,
+		rootMargin: '100px',
+		threshold: 0.1
+	});
+
+	if (remoteContainer.value) {
+		observer.observe(remoteContainer.value);
+	}
+});
+
+onUnmounted(() => {
+	observer?.disconnect();
+});
 
 misskeyApi('get-avatar-decorations').then(_avatarDecorations => {
 	avatarDecorations.value = _avatarDecorations;
