@@ -1,8 +1,3 @@
-<!--
-SPDX-FileCopyrightText: syuilo and misskey-project
-SPDX-License-Identifier: AGPL-3.0-only
--->
-
 <template>
 <MkStickyContainer>
 	<template #header><MkPageHeader v-model:tab="tab" :actions="headerActions" :tabs="headerTabs"/></template>
@@ -18,8 +13,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</template>
 					<template #default="{items}">
 						<div class="mk-follow-requests _gaps">
-							<div v-for="history in items" :key="history.id" class="history _panel">
-								<MkAvatar class="avatar" :user="history.toUser" indicator link preview/>
+							<div
+								v-for="history in items"
+								:key="history.id"
+								class="history _panel"
+								:class="getActionConfig(history.type).className"
+							>
+								<MkAvatar
+									class="avatar"
+									:user="history[getActionConfig(history.type).avatarUser]"
+									indicator
+									link
+									preview
+								/>
 								<div class="body">
 									<div class="content">
 										<div class="users">
@@ -32,7 +38,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 											</MkA>
 										</div>
 										<p class="action">
-											<i :class="getActionIcon(history.type)"></i>
+											<i :class="getActionConfig(history.type).icon"></i>
 											{{ getActionText(history.type, history) }}
 										</p>
 									</div>
@@ -63,8 +69,66 @@ import { $i } from '@/account.js';
 import MkHorizontalSwipe from '@/components/MkHorizontalSwipe.vue';
 import { dateString } from '@/filters/date.js';
 
-const paginationComponent = shallowRef<InstanceType<typeof MkPagination>>();
+const ACTION_CONFIG = {
+	sent: {
+		icon: 'ti ti-send',
+		avatarUser: 'toUser',
+		className: 'history--sent',
+		themeColor: 'link',
+		tabIcon: 'ti ti-send',
+	},
+	received: {
+		icon: 'ti ti-inbox',
+		avatarUser: 'fromUser',
+		className: 'history--received',
+		themeColor: 'hashtag',
+		tabIcon: 'ti ti-inbox',
+	},
+	approved: {
+		icon: 'ti ti-check',
+		avatarUser: 'fromUser',
+		className: 'history--approved',
+		themeColor: 'success',
+		tabIcon: 'ti ti-check',
+	},
+	rejected: {
+		icon: 'ti ti-x',
+		avatarUser: 'fromUser',
+		className: 'history--rejected',
+		themeColor: 'error',
+		tabIcon: 'ti ti-x',
+	},
+	wasApproved: {
+		icon: 'ti ti-user-check',
+		avatarUser: 'toUser',
+		className: 'history--approved',
+		themeColor: 'success',
+		tabIcon: 'ti ti-user-check',
+	},
+	wasRejected: {
+		icon: 'ti ti-user-x',
+		avatarUser: 'toUser',
+		className: 'history--rejected',
+		themeColor: 'error',
+		tabIcon: 'ti ti-user-x',
+	},
+	wasBlocked: {
+		icon: 'ti ti-ban',
+		avatarUser: 'toUser',
+		className: 'history--blocked',
+		themeColor: 'warn',
+		tabIcon: 'ti ti-ban',
+	},
+	wasUnBlocked: {
+		icon: 'ti ti-arrow-back',
+		avatarUser: 'toUser',
+		className: 'history--unblocked',
+		themeColor: 'renote',
+		tabIcon: 'ti ti-arrow-back',
+	},
+} as const;
 
+const paginationComponent = shallowRef<InstanceType<typeof MkPagination>>();
 const tab = ref('all');
 
 const pagination = computed<Paging>(() => ({
@@ -75,26 +139,20 @@ const pagination = computed<Paging>(() => ({
 	},
 }));
 
-function getActionIcon(type: string) {
-	const icons = {
-		'sent': 'ti ti-send',
-		'received': 'ti ti-inbox',
-		'approved': 'ti ti-check',
-		'rejected': 'ti ti-x',
-		'wasApproved': 'ti ti-user-check',
-		'wasRejected': 'ti ti-user-x',
-		'wasBlocked': 'ti ti-ban',
-		'wasUnBlocked': 'ti ti-arrow-back',
+function getActionConfig(type: string) {
+	return ACTION_CONFIG[type as keyof typeof ACTION_CONFIG] ?? {
+		icon: 'ti ti-question',
+		avatarUser: 'toUser',
+		className: '',
+		themeColor: 'accent',
+		tabIcon: 'ti ti-question',
 	};
-	return icons[type] ?? 'ti ti-question';
 }
 
 function getActionText(type: string, history: any) {
-	// 名前を取得する際により安全な方法を使用
 	const sourceUser = history.fromUser?.name || history.fromUser?.username || '(unknown)';
 	const targetUser = history.toUser?.name || history.toUser?.username || '(unknown)';
 
-	// アクションタイプに基づいて適切なメッセージを返す
 	switch (type) {
 		case 'sent':
 			return i18n.t('_followRequestHistory.sent', { user: targetUser });
@@ -125,46 +183,11 @@ const headerTabs = computed(() => [
 		title: i18n.ts._followRequestHistory.types.all,
 		icon: 'ti ti-history',
 	},
-	{
-		key: 'sent',
-		title: i18n.ts._followRequestHistory.types.sent,
-		icon: 'ti ti-send',
-	},
-	{
-		key: 'received',
-		title: i18n.ts._followRequestHistory.types.received,
-		icon: 'ti ti-inbox',
-	},
-	{
-		key: 'approved',
-		title: i18n.ts._followRequestHistory.types.approved,
-		icon: 'ti ti-check',
-	},
-	{
-		key: 'rejected',
-		title: i18n.ts._followRequestHistory.types.rejected,
-		icon: 'ti ti-x',
-	},
-	{
-		key: 'wasApproved',
-		title: i18n.ts._followRequestHistory.types.wasApproved,
-		icon: 'ti ti-user-check',
-	},
-	{
-		key: 'wasRejected',
-		title: i18n.ts._followRequestHistory.types.wasRejected,
-		icon: 'ti ti-user-x',
-	},
-	{
-		key: 'wasBlocked',
-		title: i18n.ts._followRequestHistory.types.wasBlocked,
-		icon: 'ti ti-ban',
-	},
-	{
-		key: 'wasUnBlocked',
-		title: i18n.ts._followRequestHistory.types.wasUnBlocked,
-		icon: 'ti ti-arrow-back',
-	},
+	...Object.entries(ACTION_CONFIG).map(([key, config]) => ({
+		key,
+		title: i18n.ts._followRequestHistory.types[key],
+		icon: config.tabIcon,
+	})),
 ]);
 
 definePageMetadata(() => ({
@@ -178,6 +201,32 @@ definePageMetadata(() => ({
 		> .history {
 			display: flex;
 			padding: 16px;
+			border: 2px solid transparent;
+			transition: border-color 0.2s ease;
+
+			&.history--sent {
+			border-color: var(--MI_THEME-link);
+			}
+
+			&.history--received {
+				border-color: var(--MI_THEME-hashtag);
+			}
+
+			&.history--approved {
+				border-color: var(--MI_THEME-success);
+			}
+
+			&.history--rejected {
+				border-color: var(--MI_THEME-error);
+			}
+
+			&.history--blocked {
+				border-color: var(--MI_THEME-warn);
+			}
+
+			&.history--unblocked {
+				border-color: var(--MI_THEME-renote);
+			}
 
 			> .avatar {
 				display: block;
