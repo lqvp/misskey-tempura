@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div :class="[$style.root, { [$style.warn]: warn }]">
+<div :class="[$style.root, { [$style.warn]: warn, [$style.info]: info }]">
 	<i v-if="warn" class="ti ti-alert-triangle" :class="$style.i"></i>
 	<i v-else class="ti ti-info-circle" :class="$style.i"></i>
 	<div><slot></slot></div>
@@ -17,6 +17,7 @@ import { } from 'vue';
 
 const props = defineProps<{
 	warn?: boolean;
+	info?: boolean;
 	closable?: boolean;
 }>();
 
@@ -40,6 +41,11 @@ function close() {
 	color: var(--MI_THEME-infoFg);
 	border-radius: var(--MI-radius);
 	white-space: pre-wrap;
+
+	&.info {
+		background: var(--MI_THEME-infoBg);
+		color: var(--MI_THEME-infoFg);
+	}
 
 	&.warn {
 		background: var(--MI_THEME-infoWarnBg);
