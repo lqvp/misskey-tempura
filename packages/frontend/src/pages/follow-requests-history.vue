@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: lqvp
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 <template>
 <MkStickyContainer>
 	<template #header><MkPageHeader v-model:tab="tab" :actions="headerActions" :tabs="headerTabs"/></template>
@@ -13,19 +18,8 @@
 					</template>
 					<template #default="{items}">
 						<div class="mk-follow-requests _gaps">
-							<div
-								v-for="history in items"
-								:key="history.id"
-								class="history _panel"
-								:class="getActionConfig(history.type).className"
-							>
-								<MkAvatar
-									class="avatar"
-									:user="history[getActionConfig(history.type).avatarUser]"
-									indicator
-									link
-									preview
-								/>
+							<div v-for="history in items" :key="history.id" class="history _panel" :class="getActionConfig(history.type).className">
+								<MkAvatar class="avatar" :user="history[getActionConfig(history.type).avatarUser]" indicator link preview/>
 								<div class="body">
 									<div class="content">
 										<div class="users">
