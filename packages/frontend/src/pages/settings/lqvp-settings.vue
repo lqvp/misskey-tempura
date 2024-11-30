@@ -337,6 +337,7 @@ watch([
 	selectReaction,
 	showLikeButton,
 	disableNoteDrafting,
+	enableSnowMode,
 ], async () => {
 	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
 });
