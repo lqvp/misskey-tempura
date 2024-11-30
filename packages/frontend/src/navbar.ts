@@ -203,4 +203,9 @@ export const navbarItemDef = reactive({
 			roleManager();
 		},
 	},
+	followRequestHistory: {
+		title: i18n.ts._followRequestHistory.title,
+		icon: 'ti ti-history',
+		to: '/my/follow-requests-history',
+	},
 });

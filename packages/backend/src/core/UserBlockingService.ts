@@ -14,7 +14,7 @@ import { QueueService } from '@/core/QueueService.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { DI } from '@/di-symbols.js';
-import type { FollowRequestsRepository, BlockingsRepository, UserListsRepository, UserListMembershipsRepository } from '@/models/_.js';
+import type { FollowRequestsRepository, FollowRequestHistoryRepository, BlockingsRepository, UserListsRepository, UserListMembershipsRepository } from '@/models/_.js';
 import Logger from '@/logger.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { ApRendererService } from '@/core/activitypub/ApRendererService.js';
@@ -38,6 +38,9 @@ export class UserBlockingService implements OnModuleInit {
 
 		@Inject(DI.followRequestsRepository)
 		private followRequestsRepository: FollowRequestsRepository,
+
+		@Inject(DI.followRequestHistoryRepository)
+		private followRequestHistoryRepository: FollowRequestHistoryRepository,
 
 		@Inject(DI.blockingsRepository)
 		private blockingsRepository: BlockingsRepository,
@@ -112,6 +115,17 @@ export class UserBlockingService implements OnModuleInit {
 		if (this.userEntityService.isLocalUser(blockee)) {
 			this.notificationService.createNotification(blockee.id, 'blocked', {
 			}, blocker.id);
+		}
+
+		// フォローリクエスト履歴に「wasBlocked」を保存
+		if (this.userEntityService.isLocalUser(blocker)) {
+			await this.followRequestHistoryRepository.insert({
+				id: this.idService.gen(),
+				type: 'wasBlocked',
+				fromUserId: blockee.id,
+				toUserId: blocker.id,
+				timestamp: new Date(),
+			});
 		}
 	}
 
@@ -216,6 +230,17 @@ export class UserBlockingService implements OnModuleInit {
 		if (this.userEntityService.isLocalUser(blockee)) {
 			this.notificationService.createNotification(blockee.id, 'unblocked', {
 			}, blocker.id);
+		}
+
+		// フォローリクエスト履歴に「wasUnBlocked」を保存
+		if (this.userEntityService.isLocalUser(blocker)) {
+			await this.followRequestHistoryRepository.insert({
+				id: this.idService.gen(),
+				type: 'wasUnBlocked',
+				fromUserId: blockee.id,
+				toUserId: blocker.id,
+				timestamp: new Date(),
+			});
 		}
 	}
 

@@ -32,6 +32,7 @@ import {
 	MiFlashLike,
 	MiFollowing,
 	MiFollowRequest,
+	MiFollowRequestHistory,
 	MiGalleryLike,
 	MiGalleryPost,
 	MiHashtag,
@@ -243,6 +244,12 @@ const $followingsRepository: Provider = {
 const $followRequestsRepository: Provider = {
 	provide: DI.followRequestsRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiFollowRequest).extend(miRepository as MiRepository<MiFollowRequest>),
+	inject: [DI.db],
+};
+
+const $followRequestHistoryRepository: Provider = {
+	provide: DI.followRequestHistoryRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiFollowRequestHistory).extend(miRepository as MiRepository<MiFollowRequestHistory>),
 	inject: [DI.db],
 };
 
@@ -545,6 +552,7 @@ const $noteScheduleRepository: Provider = {
 		$usedUsernamesRepository,
 		$followingsRepository,
 		$followRequestsRepository,
+		$followRequestHistoryRepository,
 		$instancesRepository,
 		$emojisRepository,
 		$driveFilesRepository,
@@ -619,6 +627,7 @@ const $noteScheduleRepository: Provider = {
 		$usedUsernamesRepository,
 		$followingsRepository,
 		$followRequestsRepository,
+		$followRequestHistoryRepository,
 		$instancesRepository,
 		$emojisRepository,
 		$driveFilesRepository,

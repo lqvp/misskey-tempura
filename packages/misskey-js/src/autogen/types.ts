@@ -1837,6 +1837,15 @@ export type paths = {
      */
     post: operations['following___requests___reject'];
   };
+  '/following/requests/history': {
+    /**
+     * following/requests/history
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *read:following*
+     */
+    post: operations['following___requests___history'];
+  };
   '/gallery/featured': {
     /**
      * gallery/featured
@@ -10289,10 +10298,10 @@ export type operations = {
           hanaThemeColor?: string;
           hanaThemeAltColor?: string;
           hanaThemeWeakOpacity?: number;
-          hanaModeIcon?: string;
+          hanaModeIcon?: string | null;
           hanaModeIconSize?: number;
           hanaModeIconRadius?: number;
-          hanaModeBackground?: string;
+          hanaModeBackground?: string | null;
           silencedHosts?: string[] | null;
           mediaSilencedHosts?: string[] | null;
           /** @description [Deprecated] Use "urlPreviewSummaryProxyUrl" instead. */
@@ -16965,6 +16974,90 @@ export type operations = {
       /** @description OK (without any results) */
       204: {
         content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * following/requests/history
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *read:following*
+   */
+  following___requests___history: {
+    requestBody: {
+      content: {
+        'application/json': {
+          /**
+           * @description Filter by type of action
+           * @enum {string|null}
+           */
+          type?: 'sent' | 'received' | 'approved' | 'rejected' | 'wasApproved' | 'wasRejected' | 'wasBlocked' | 'wasUnBlocked';
+          /**
+           * Format: misskey:id
+           * @description Get history after this ID
+           */
+          sinceId?: string;
+          /**
+           * Format: misskey:id
+           * @description Get history before this ID
+           */
+          untilId?: string;
+          /**
+           * @description Number of histories to get
+           * @default 30
+           */
+          limit?: number;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (with results) */
+      200: {
+        content: {
+          'application/json': ({
+              /** Format: id */
+              id: string;
+              /**
+               * @description Filter by type of action
+               * @enum {string|null}
+               */
+              type: 'sent' | 'received' | 'approved' | 'rejected' | 'wasApproved' | 'wasRejected' | 'wasBlocked' | 'wasUnBlocked';
+              fromUser: components['schemas']['UserDetailedNotMe'];
+              toUser: components['schemas']['UserDetailedNotMe'];
+              /** Format: date-time */
+              timestamp: string;
+            })[];
+        };
       };
       /** @description Client error */
       400: {

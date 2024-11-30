@@ -30,6 +30,7 @@ import { MiDriveFolder } from '@/models/DriveFolder.js';
 import { MiEmoji } from '@/models/Emoji.js';
 import { MiFollowing } from '@/models/Following.js';
 import { MiFollowRequest } from '@/models/FollowRequest.js';
+import { MiFollowRequestHistory } from '@/models/FollowRequestHistory.js';
 import { MiGalleryLike } from '@/models/GalleryLike.js';
 import { MiGalleryPost } from '@/models/GalleryPost.js';
 import { MiHashtag } from '@/models/Hashtag.js';
@@ -153,6 +154,7 @@ export const entities = [
 	MiUsedUsername,
 	MiFollowing,
 	MiFollowRequest,
+	MiFollowRequestHistory,
 	MiMuting,
 	MiRenoteMuting,
 	MiBlocking,

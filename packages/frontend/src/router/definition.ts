@@ -562,6 +562,10 @@ const routes: RouteDef[] = [{
 	component: page(() => import('@/pages/follow-requests.vue')),
 	loginRequired: true,
 }, {
+	path: '/my/follow-requests-history',
+	component: page(() => import('@/pages/follow-requests-history.vue')),
+	loginRequired: true,
+}, {
 	path: '/my/lists/:listId',
 	component: page(() => import('@/pages/my-lists/list.vue')),
 	loginRequired: true,
