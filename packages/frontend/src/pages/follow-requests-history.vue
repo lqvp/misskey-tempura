@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #default="{items}">
 						<div class="mk-follow-requests _gaps">
 							<div v-for="history in items" :key="history.id" class="history _panel">
-								<MkAvatar class="avatar" :user="history.fromUser" indicator link preview/>
+								<MkAvatar class="avatar" :user="history.toUser" indicator link preview/>
 								<div class="body">
 									<div class="content">
 										<div class="users">
