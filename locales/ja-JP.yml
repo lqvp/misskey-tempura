@@ -3081,6 +3081,8 @@ _followRequestHistory:
   wasUnBlocked: "{user} にブロックが解除された"
   empty: "履歴はありません"
   filter: "フィルター"
+  deleteAll: "履歴をすべて削除"
+  deleteConfirm: "すべてのフォローリクエスト履歴を削除してもよろしいですか？ この操作は元に戻せません。"
   types:
     all: "すべて"
     sent: "送信済み"

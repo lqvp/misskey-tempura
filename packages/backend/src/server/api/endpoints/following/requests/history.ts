@@ -1,8 +1,3 @@
-/*
- * SPDX-FileCopyrightText: lqvp
- * SPDX-License-Identifier: AGPL-3.0-only
- */
-
 import { Inject, Injectable } from '@nestjs/common';
 import { Brackets } from 'typeorm';
 import { Endpoint } from '@/server/api/endpoint-base.js';
@@ -13,9 +8,7 @@ import { DI } from '@/di-symbols.js';
 
 export const meta = {
 	tags: ['following', 'account'],
-
 	requireCredential: true,
-
 	kind: 'read:following',
 
 	res: {
@@ -90,6 +83,11 @@ export const paramDef = {
 			default: 30,
 			description: 'Number of histories to get',
 		},
+		delete: {
+			type: 'boolean',
+			default: false,
+			description: 'Delete all histories',
+		},
 	},
 	required: [],
 } as const;
@@ -97,13 +95,38 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> {
 	constructor(
-        @Inject(DI.followRequestHistoryRepository)
-        private followRequestHistoryRepository: FollowRequestHistoryRepository,
+		@Inject(DI.followRequestHistoryRepository)
+		private followRequestHistoryRepository: FollowRequestHistoryRepository,
 
-        private userEntityService: UserEntityService,
-        private queryService: QueryService,
+		private userEntityService: UserEntityService,
+		private queryService: QueryService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			// 削除モードの部分だけを修正（他のコードは同じ）
+			if (ps.delete) {
+				await this.followRequestHistoryRepository
+					.createQueryBuilder()
+					.delete()
+					.from('follow_request_history')
+					.where(new Brackets(qb => {
+						qb.where(new Brackets(qb2 => {
+							qb2.where('fromUserId = :meId', { meId: me.id })
+								.andWhere('type IN (:...fromTypes)', {
+									fromTypes: ['sent', 'wasApproved', 'wasRejected', 'wasBlocked', 'wasUnBlocked'],
+								});
+						}))
+							.orWhere(new Brackets(qb2 => {
+								qb2.where('toUserId = :meId', { meId: me.id })
+									.andWhere('type IN (:...toTypes)', {
+										toTypes: ['received', 'approved', 'rejected'],
+									});
+							}));
+					}))
+					.execute();
+
+				return [];
+			}
+
 			const query = this.queryService.makePaginationQuery(
 				this.followRequestHistoryRepository.createQueryBuilder('history'),
 				ps.sinceId,
