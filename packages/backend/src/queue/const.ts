@@ -11,13 +11,13 @@ export const QUEUE = {
 	INBOX: 'inbox',
 	SYSTEM: 'system',
 	ENDED_POLL_NOTIFICATION: 'endedPollNotification',
-	SCHEDULED_NOTE_DELETE: 'scheduledNoteDelete',
 	DB: 'db',
 	RELATIONSHIP: 'relationship',
 	OBJECT_STORAGE: 'objectStorage',
 	USER_WEBHOOK_DELIVER: 'userWebhookDeliver',
 	SYSTEM_WEBHOOK_DELIVER: 'systemWebhookDeliver',
 	SCHEDULE_NOTE_POST: 'scheduleNotePost',
+	SCHEDULED_NOTE_DELETE: 'scheduledNoteDelete',
 };
 
 export function baseQueueOptions(config: Config, queueName: typeof QUEUE[keyof typeof QUEUE]): Bull.QueueOptions {

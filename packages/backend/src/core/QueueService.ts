@@ -33,9 +33,9 @@ import type {
 	RelationshipQueue,
 	SystemQueue,
 	SystemWebhookDeliverQueue,
+	UserWebhookDeliverQueue,
 	ScheduleNotePostQueue,
 	ScheduledNoteDeleteQueue,
-	UserWebhookDeliverQueue,
 } from './QueueModule.js';
 import type httpSignature from '@peertube/http-signature';
 import type * as Bull from 'bullmq';
@@ -48,7 +48,6 @@ export class QueueService {
 
 		@Inject('queue:system') public systemQueue: SystemQueue,
 		@Inject('queue:endedPollNotification') public endedPollNotificationQueue: EndedPollNotificationQueue,
-		@Inject('queue:scheduledNoteDelete') public scheduledNoteDeleteQueue: ScheduledNoteDeleteQueue,
 		@Inject('queue:deliver') public deliverQueue: DeliverQueue,
 		@Inject('queue:inbox') public inboxQueue: InboxQueue,
 		@Inject('queue:db') public dbQueue: DbQueue,
@@ -57,6 +56,7 @@ export class QueueService {
 		@Inject('queue:userWebhookDeliver') public userWebhookDeliverQueue: UserWebhookDeliverQueue,
 		@Inject('queue:systemWebhookDeliver') public systemWebhookDeliverQueue: SystemWebhookDeliverQueue,
 		@Inject('queue:scheduleNotePost') public ScheduleNotePostQueue: ScheduleNotePostQueue,
+		@Inject('queue:scheduledNoteDelete') public scheduledNoteDeleteQueue: ScheduledNoteDeleteQueue,
 	) {
 		this.systemQueue.add('tickCharts', {
 		}, {

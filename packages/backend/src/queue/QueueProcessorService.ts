@@ -43,12 +43,12 @@ import { CheckExpiredMutingsProcessorService } from './processors/CheckExpiredMu
 import { BakeBufferedReactionsProcessorService } from './processors/BakeBufferedReactionsProcessorService.js';
 import { CleanProcessorService } from './processors/CleanProcessorService.js';
 import { AggregateRetentionProcessorService } from './processors/AggregateRetentionProcessorService.js';
-import { ScheduleNotePostProcessorService } from './processors/ScheduleNotePostProcessorService.js';
 import { QueueLoggerService } from './QueueLoggerService.js';
 import { QUEUE, baseQueueOptions } from './const.js';
-import { ScheduledNoteDeleteProcessorService } from './processors/ScheduledNoteDeleteProcessorService.js';
 import { CleanExpiredRemoteFilesProcessorService } from './processors/CleanExpiredRemoteFilesProcessorService.js';
 import { ReDownloadRemoteFileProcessorService } from './processors/ReDownloadRemoteFileProcessorService.js';
+import { ScheduleNotePostProcessorService } from './processors/ScheduleNotePostProcessorService.js';
+import { ScheduledNoteDeleteProcessorService } from './processors/ScheduledNoteDeleteProcessorService.js';
 
 // ref. https://github.com/misskey-dev/misskey/pull/7635#issue-971097019
 function httpRelatedBackoff(attemptsMade: number) {
@@ -88,8 +88,8 @@ export class QueueProcessorService implements OnApplicationShutdown {
 	private relationshipQueueWorker: Bull.Worker;
 	private objectStorageQueueWorker: Bull.Worker;
 	private endedPollNotificationQueueWorker: Bull.Worker;
-	private scheduledNoteDeleteQueueWorker: Bull.Worker;
 	private schedulerNotePostQueueWorker: Bull.Worker;
+	private scheduledNoteDeleteQueueWorker: Bull.Worker;
 
 	constructor(
 		@Inject(DI.config)
@@ -99,7 +99,6 @@ export class QueueProcessorService implements OnApplicationShutdown {
 		private userWebhookDeliverProcessorService: UserWebhookDeliverProcessorService,
 		private systemWebhookDeliverProcessorService: SystemWebhookDeliverProcessorService,
 		private endedPollNotificationProcessorService: EndedPollNotificationProcessorService,
-		private scheduledNoteDeleteProcessorService: ScheduledNoteDeleteProcessorService,
 		private deliverProcessorService: DeliverProcessorService,
 		private inboxProcessorService: InboxProcessorService,
 		private deleteDriveFilesProcessorService: DeleteDriveFilesProcessorService,
@@ -133,6 +132,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 		private cleanExpiredRemoteFilesProcessorService: CleanExpiredRemoteFilesProcessorService,
 		private reDownloadRemoteFileProcessorService: ReDownloadRemoteFileProcessorService,
 		private scheduleNotePostProcessorService: ScheduleNotePostProcessorService,
+		private scheduledNoteDeleteProcessorService: ScheduledNoteDeleteProcessorService,
 	) {
 		this.logger = this.queueLoggerService.logger;
 
@@ -530,12 +530,6 @@ export class QueueProcessorService implements OnApplicationShutdown {
 		}
 		//#endregion
 
-		//#region scheduled note delete
-		this.scheduledNoteDeleteQueueWorker = new Bull.Worker(QUEUE.SCHEDULED_NOTE_DELETE, (job) => this.scheduledNoteDeleteProcessorService.process(job), {
-			...baseQueueOptions(this.config, QUEUE.SCHEDULED_NOTE_DELETE),
-			autorun: false,
-		});
-
 		//#region schedule note post
 		{
 			this.schedulerNotePostQueueWorker = new Bull.Worker(QUEUE.SCHEDULE_NOTE_POST, (job) => this.scheduleNotePostProcessorService.process(job), {
@@ -543,6 +537,13 @@ export class QueueProcessorService implements OnApplicationShutdown {
 				autorun: false,
 			});
 		}
+		//#endregion
+
+		//#region scheduled note delete
+		this.scheduledNoteDeleteQueueWorker = new Bull.Worker(QUEUE.SCHEDULED_NOTE_DELETE, (job) => this.scheduledNoteDeleteProcessorService.process(job), {
+			...baseQueueOptions(this.config, QUEUE.SCHEDULED_NOTE_DELETE),
+			autorun: false,
+		});
 		//#endregion
 	}
 
@@ -558,8 +559,8 @@ export class QueueProcessorService implements OnApplicationShutdown {
 			this.relationshipQueueWorker.run(),
 			this.objectStorageQueueWorker.run(),
 			this.endedPollNotificationQueueWorker.run(),
-			this.scheduledNoteDeleteQueueWorker.run(),
 			this.schedulerNotePostQueueWorker.run(),
+			this.scheduledNoteDeleteQueueWorker.run(),
 		]);
 	}
 
@@ -575,8 +576,8 @@ export class QueueProcessorService implements OnApplicationShutdown {
 			this.relationshipQueueWorker.close(),
 			this.objectStorageQueueWorker.close(),
 			this.endedPollNotificationQueueWorker.close(),
-			this.scheduledNoteDeleteQueueWorker.close(),
 			this.schedulerNotePostQueueWorker.close(),
+			this.scheduledNoteDeleteQueueWorker.close(),
 		]);
 	}
 
