@@ -130,6 +130,8 @@ export class ApPersonService implements OnModuleInit {
 		this.instanceChart = this.moduleRef.get('InstanceChart');
 		this.apLoggerService = this.moduleRef.get('ApLoggerService');
 		this.accountMoveService = this.moduleRef.get('AccountMoveService');
+		this.httpRequestService = this.moduleRef.get('HttpRequestService');
+		this.avatarDecorationService = this.moduleRef.get('AvatarDecorationService');
 		this.logger = this.apLoggerService.logger;
 	}
 
@@ -310,21 +312,27 @@ export class ApPersonService implements OnModuleInit {
 						'userId': remoteUserId,
 					}),
 				});
-				const res: any = await userMetaRequest.json();
-				if (res.avatarDecorations) {
-					const localDecos = await this.avatarDecorationService.getAll();
-					// ローカルのデコレーションとして登録する
-					for (const deco of res.avatarDecorations) {
-						if (localDecos.some((v) => v.id === deco.id)) continue;
-						await this.avatarDecorationService.create({
-							id: deco.id,
-							updatedAt: null,
-							url: deco.url,
-							name: `import_${host}_${deco.id}`,
-							description: `Imported from ${host}`,
-						});
+
+				try {
+					const res = await userMetaRequest.text(); // まずテキストとして取得
+					const data = JSON.parse(res); // JSONとしてパース
+					if (data.avatarDecorations) {
+						const localDecos = await this.avatarDecorationService.getAll();
+						// ローカルのデコレーションとして登録する
+						for (const deco of data.avatarDecorations) {
+							if (localDecos.some((v) => v.id === deco.id)) continue;
+							await this.avatarDecorationService.create({
+								id: deco.id,
+								updatedAt: null,
+								url: deco.url,
+								name: `import_${host}_${deco.id}`,
+								description: `Imported from ${host}`,
+							});
+						}
+						Object.assign(returnData, { avatarDecorations: data.avatarDecorations });
 					}
-					Object.assign(returnData, { avatarDecorations: res.avatarDecorations });
+				} catch (e) {
+					this.logger.error('Error processing avatar decorations:', e);
 				}
 			}
 		}
@@ -664,6 +672,10 @@ export class ApPersonService implements OnModuleInit {
 
 		if (person.id == null) {
 			throw new Error('Refusing to update person without id');
+		}
+
+		if (url) {
+			host = new URL(url).host;
 		}
 
 		if (url != null) {
