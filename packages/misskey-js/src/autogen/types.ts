@@ -17037,6 +17037,11 @@ export type operations = {
            * @default 30
            */
           limit?: number;
+          /**
+           * @description Delete all histories
+           * @default false
+           */
+          delete?: boolean;
         };
       };
     };
