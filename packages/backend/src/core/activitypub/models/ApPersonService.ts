@@ -130,6 +130,8 @@ export class ApPersonService implements OnModuleInit {
 		this.instanceChart = this.moduleRef.get('InstanceChart');
 		this.apLoggerService = this.moduleRef.get('ApLoggerService');
 		this.accountMoveService = this.moduleRef.get('AccountMoveService');
+		this.httpRequestService = this.moduleRef.get('HttpRequestService');
+		this.avatarDecorationService = this.moduleRef.get('AvatarDecorationService');
 		this.logger = this.apLoggerService.logger;
 	}
 
