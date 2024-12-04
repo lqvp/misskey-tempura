@@ -202,7 +202,8 @@ import * as ep___following_requests_cancel from './endpoints/following/requests/
 import * as ep___following_requests_list from './endpoints/following/requests/list.js';
 import * as ep___following_requests_sent from './endpoints/following/requests/sent.js';
 import * as ep___following_requests_reject from './endpoints/following/requests/reject.js';
-import * as ep___following_requests_history from './endpoints/following/requests/history.js';
+import * as ep___following_requests_history from './endpoints/following/history.js';
+import * as ep___following_history from './endpoints/following/requests/history.js';
 import * as ep___gallery_featured from './endpoints/gallery/featured.js';
 import * as ep___gallery_popular from './endpoints/gallery/popular.js';
 import * as ep___gallery_posts from './endpoints/gallery/posts.js';
@@ -609,6 +610,7 @@ const eps = [
 	['following/requests/sent', ep___following_requests_sent],
 	['following/requests/reject', ep___following_requests_reject],
 	['following/requests/history', ep___following_requests_history],
+	['following/history', ep___following_history],
 	['gallery/featured', ep___gallery_featured],
 	['gallery/popular', ep___gallery_popular],
 	['gallery/posts', ep___gallery_posts],

@@ -291,6 +291,8 @@ import type {
 	FollowingRequestsRejectRequest,
 	FollowingRequestsHistoryRequest,
 	FollowingRequestsHistoryResponse,
+	FollowingHistoryRequest,
+	FollowingHistoryResponse,
 	GalleryFeaturedRequest,
 	GalleryFeaturedResponse,
 	GalleryPopularResponse,
@@ -800,6 +802,7 @@ export type Endpoints = {
 	'following/requests/sent': { req: FollowingRequestsSentRequest; res: FollowingRequestsSentResponse };
 	'following/requests/reject': { req: FollowingRequestsRejectRequest; res: EmptyResponse };
 	'following/requests/history': { req: FollowingRequestsHistoryRequest; res: FollowingRequestsHistoryResponse };
+	'following/history': { req: FollowingHistoryRequest; res: FollowingHistoryResponse };
 	'gallery/featured': { req: GalleryFeaturedRequest; res: GalleryFeaturedResponse };
 	'gallery/popular': { req: EmptyRequest; res: GalleryPopularResponse };
 	'gallery/posts': { req: GalleryPostsRequest; res: GalleryPostsResponse };

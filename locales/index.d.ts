@@ -11584,6 +11584,98 @@ export interface Locale extends ILocale {
             "wasUnBlocked": string;
         };
     };
+    "_followHistory": {
+        /**
+         * フォローの履歴
+         */
+        "title": string;
+        /**
+         * {user} をフォローした
+         */
+        "follow": ParameterizedString<"user">;
+        /**
+         * {user} のフォローを解除
+         */
+        "unFollow": ParameterizedString<"user">;
+        /**
+         * {user} にフォローされた
+         */
+        "wasFollow": ParameterizedString<"user">;
+        /**
+         * {user} からフォロー解除された
+         */
+        "wasUnFollow": ParameterizedString<"user">;
+        /**
+         * {user} をブロックした
+         */
+        "blocked": ParameterizedString<"user">;
+        /**
+         * {user} のブロックを解除した
+         */
+        "unBlocked": ParameterizedString<"user">;
+        /**
+         * {user} にブロックされた
+         */
+        "wasBlocked": ParameterizedString<"user">;
+        /**
+         * {user} にブロックが解除された
+         */
+        "wasUnBlocked": ParameterizedString<"user">;
+        /**
+         * 履歴はありません
+         */
+        "empty": string;
+        /**
+         * フィルター
+         */
+        "filter": string;
+        /**
+         * 履歴をすべて削除
+         */
+        "deleteAll": string;
+        /**
+         * すべてのフォローリクエスト履歴を削除してもよろしいですか？ この操作は元に戻せません。
+         */
+        "deleteConfirm": string;
+        "types": {
+            /**
+             * すべて
+             */
+            "all": string;
+            /**
+             * フォローした
+             */
+            "follow": string;
+            /**
+             * フォロー解除した
+             */
+            "unFollow": string;
+            /**
+             * フォローされた
+             */
+            "wasFollow": string;
+            /**
+             * フォロー解除された
+             */
+            "wasUnFollow": string;
+            /**
+             * ブロックした
+             */
+            "blocked": string;
+            /**
+             * ブロック解除した
+             */
+            "unBlocked": string;
+            /**
+             * ブロックされた
+             */
+            "wasBlocked": string;
+            /**
+             * ブロックが解除された
+             */
+            "wasUnBlocked": string;
+        };
+    };
 }
 declare const locales: {
     [lang: string]: Locale;

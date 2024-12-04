@@ -1846,6 +1846,15 @@ export type paths = {
      */
     post: operations['following___requests___history'];
   };
+  '/following/history': {
+    /**
+     * following/history
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *read:following*
+     */
+    post: operations['following___history'];
+  };
   '/gallery/featured': {
     /**
      * gallery/featured
@@ -17014,6 +17023,95 @@ export type operations = {
    * **Credential required**: *Yes* / **Permission**: *read:following*
    */
   following___requests___history: {
+    requestBody: {
+      content: {
+        'application/json': {
+          /**
+           * @description Filter by type of action
+           * @enum {string|null}
+           */
+          type?: 'follow' | 'unFollow' | 'wasFollow' | 'wasUnFollow' | 'blocked' | 'unBlocked' | 'wasBlocked' | 'wasUnBlocked';
+          /**
+           * Format: misskey:id
+           * @description Get history after this ID
+           */
+          sinceId?: string;
+          /**
+           * Format: misskey:id
+           * @description Get history before this ID
+           */
+          untilId?: string;
+          /**
+           * @description Number of histories to get
+           * @default 30
+           */
+          limit?: number;
+          /**
+           * @description Delete all histories
+           * @default false
+           */
+          delete?: boolean;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (with results) */
+      200: {
+        content: {
+          'application/json': ({
+              /** Format: id */
+              id: string;
+              /**
+               * @description Filter by type of action
+               * @enum {string|null}
+               */
+              type: 'follow' | 'unFollow' | 'wasFollow' | 'wasUnFollow' | 'blocked' | 'unBlocked' | 'wasBlocked' | 'wasUnBlocked';
+              fromUser: components['schemas']['UserDetailedNotMe'];
+              toUser: components['schemas']['UserDetailedNotMe'];
+              /** Format: date-time */
+              timestamp: string;
+            })[];
+        };
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * following/history
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *read:following*
+   */
+  following___history: {
     requestBody: {
       content: {
         'application/json': {

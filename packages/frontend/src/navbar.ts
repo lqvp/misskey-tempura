@@ -196,6 +196,11 @@ export const navbarItemDef = reactive({
 			roleManager();
 		},
 	},
+	followHistory: {
+		title: i18n.ts._followHistory.title,
+		icon: 'ti ti-history',
+		to: '/my/follow-history',
+	},
 	followRequestHistory: {
 		title: i18n.ts._followRequestHistory.title,
 		icon: 'ti ti-history',
