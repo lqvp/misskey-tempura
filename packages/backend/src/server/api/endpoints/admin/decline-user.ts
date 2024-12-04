@@ -13,9 +13,11 @@ import { DeleteAccountService } from '@/core/DeleteAccountService.js';
 
 export const meta = {
 	tags: ['admin'],
+
 	requireCredential: true,
 	requireModerator: true,
 	kind: 'write:admin:decline-account',
+	secure: true,
 } as const;
 
 export const paramDef = {
