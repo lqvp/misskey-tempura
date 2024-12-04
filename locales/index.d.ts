@@ -11494,7 +11494,7 @@ export interface Locale extends ILocale {
     "snowMode": string;
     "_followRequestHistory": {
         /**
-         * フォロリク+ブロックの履歴
+         * フォロリクの履歴
          */
         "title": string;
         /**
@@ -11521,14 +11521,6 @@ export interface Locale extends ILocale {
          * {user} にフォローリクエストが拒否された
          */
         "wasRejected": ParameterizedString<"user">;
-        /**
-         * {user} にブロックされた
-         */
-        "wasBlocked": ParameterizedString<"user">;
-        /**
-         * {user} にブロックが解除された
-         */
-        "wasUnBlocked": ParameterizedString<"user">;
         /**
          * 履歴はありません
          */
@@ -11574,14 +11566,6 @@ export interface Locale extends ILocale {
              * 拒否された
              */
             "wasRejected": string;
-            /**
-             * ブロックされた
-             */
-            "wasBlocked": string;
-            /**
-             * ブロックが解除された
-             */
-            "wasUnBlocked": string;
         };
     };
     "_followHistory": {
