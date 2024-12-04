@@ -107,20 +107,6 @@ const ACTION_CONFIG = {
 		themeColor: 'error',
 		tabIcon: 'ti ti-user-x',
 	},
-	wasBlocked: {
-		icon: 'ti ti-ban',
-		avatarUser: 'toUser',
-		className: 'history--blocked',
-		themeColor: 'warn',
-		tabIcon: 'ti ti-ban',
-	},
-	wasUnBlocked: {
-		icon: 'ti ti-arrow-back',
-		avatarUser: 'toUser',
-		className: 'history--unblocked',
-		themeColor: 'renote',
-		tabIcon: 'ti ti-arrow-back',
-	},
 } as const;
 
 const paginationComponent = shallowRef<InstanceType<typeof MkPagination>>();
@@ -161,10 +147,6 @@ function getActionText(type: string, history: any) {
 			return i18n.t('_followRequestHistory.wasApproved', { user: targetUser });
 		case 'wasRejected':
 			return i18n.t('_followRequestHistory.wasRejected', { user: targetUser });
-		case 'wasBlocked':
-			return i18n.t('_followRequestHistory.wasBlocked', { user: targetUser });
-		case 'wasUnBlocked':
-			return i18n.t('_followRequestHistory.wasUnBlocked', { user: targetUser });
 		default:
 			return type;
 	}
@@ -232,14 +214,6 @@ definePageMetadata(() => ({
 
 			&.history--rejected {
 				border-color: var(--MI_THEME-error);
-			}
-
-			&.history--blocked {
-				border-color: var(--MI_THEME-warn);
-			}
-
-			&.history--unblocked {
-				border-color: var(--MI_THEME-renote);
 			}
 
 			> .avatar {
