@@ -84,7 +84,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			this.moderationLogService.log(me, 'decline', {
 				userId: user.id,
 				userUsername: user.username,
-				userHost: user.host,
+				// userHost: user.host,
 				reason: log_reason,
 			});
 		});
