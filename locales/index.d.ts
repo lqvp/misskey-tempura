@@ -4031,6 +4031,10 @@ export interface Locale extends ILocale {
      */
     "approvalStatus": string;
     /**
+     * 拒否した理由 (オプション)
+     */
+    "optionalReason": string;
+    /**
      * ドキュメント
      */
     "document": string;
@@ -10381,6 +10385,10 @@ export interface Locale extends ILocale {
          * 承認済み
          */
         "approve": string;
+        /**
+         * 拒否済み
+         */
+        "decline": string;
         /**
          * 凍結
          */

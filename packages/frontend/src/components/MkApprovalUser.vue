@@ -67,16 +67,33 @@ const emits = defineEmits<{
 }>();
 
 async function deleteAccount() {
-	const confirm = await os.confirm({
-		type: 'warning',
-		text: i18n.ts.deleteAccountConfirm,
+	const typed = await os.inputText({
+		text: i18n.ts.optionalReason,
+		type: 'text',
+		placeholder: i18n.ts.optionalReason,
+	});
+	if (typed.canceled) return;
+
+	const reason = typed.result || '';
+
+	const confirm = await os.inputText({
+		text: i18n.tsx.typeToConfirm({ x: props.user.username }),
+		type: 'text',
 	});
 	if (confirm.canceled) return;
 
-	await os.apiWithDialog('admin/delete-account', {
-		userId: props.user.id,
-	});
-	emits('deleted', props.user.id);
+	if (confirm.result === props.user.username) {
+		await os.apiWithDialog('admin/decline-user', {
+			userId: props.user.id,
+			reason: reason,
+		});
+		emits('deleted', props.user.id);
+	} else {
+		os.alert({
+			type: 'error',
+			text: 'input not match',
+		});
+	}
 }
 
 async function approveAccount() {

@@ -140,6 +140,9 @@ type AdminAvatarDecorationsListResponse = operations['admin___avatar-decorations
 type AdminAvatarDecorationsUpdateRequest = operations['admin___avatar-decorations___update']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
+type AdminDeclineUserRequest = operations['admin___decline-user']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
 type AdminDeleteAccountRequest = operations['admin___delete-account']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -1346,6 +1349,7 @@ declare namespace entities {
         AdminShowUsersResponse,
         AdminSuspendUserRequest,
         AdminApproveUserRequest,
+        AdminDeclineUserRequest,
         AdminUnsuspendUserRequest,
         AdminUpdateMetaRequest,
         AdminDeleteAccountRequest,

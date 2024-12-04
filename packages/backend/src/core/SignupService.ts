@@ -56,6 +56,7 @@ export class SignupService {
 		host?: string | null;
 		ignorePreservedUsernames?: boolean;
 		reason?: string | null;
+		approved?: boolean;
 	}) {
 		const { username, password, passwordHash, host } = opts;
 		let hash = passwordHash;
@@ -136,6 +137,7 @@ export class SignupService {
 				token: secret,
 				isRoot: isTheFirstUser,
 				signupReason: opts.reason,
+				approved: isTheFirstUser || (opts.approved ?? !this.meta.approvalRequiredForSignup),
 			}));
 
 			await transactionalEntityManager.save(new MiUserKeypair({
