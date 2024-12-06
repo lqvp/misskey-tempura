@@ -130,7 +130,6 @@ const defaultStoreSaveKeys: (keyof typeof defaultStore['state'])[] = [
 	'showLikeButton',
 	'disableNoteNyaize',
 	'reactionChecksMuting',
-	'instanceIcon',
 	'imageCompressionMode',
 ];
 const coldDeviceStorageSaveKeys: (keyof typeof ColdDeviceStorage.default)[] = [

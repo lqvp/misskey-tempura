@@ -59,8 +59,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</MkSelect>
 					</div>
 
-					<MkSwitch v-if="instanceTicker !== 'none'" v-model="instanceIcon">{{ i18n.ts.instanceIcon }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
-
 					<MkSwitch v-model="disableNoteNyaize">{{ i18n.ts.disableNoteNyaize }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
 
 					<MkFolder>
@@ -282,7 +280,6 @@ const customFont = computed(defaultStore.makeGetterSetter('customFont'));
 const hiddenPinnedNotes = computed(defaultStore.makeGetterSetter('hiddenPinnedNotes'));
 const hiddenActivity = computed(defaultStore.makeGetterSetter('hiddenActivity'));
 const hiddenFiles = computed(defaultStore.makeGetterSetter('hiddenFiles'));
-const instanceIcon = computed(defaultStore.makeGetterSetter('instanceIcon'));
 const disableNoteNyaize = computed(defaultStore.makeGetterSetter('disableNoteNyaize'));
 const reactionChecksMuting = computed(defaultStore.makeGetterSetter('reactionChecksMuting'));
 const hideLocalTimeLine = computed(defaultStore.makeGetterSetter('hideLocalTimeLine'));
@@ -323,7 +320,6 @@ watch([
 	hiddenPinnedNotes,
 	hiddenActivity,
 	hiddenFiles,
-	instanceIcon,
 	disableNoteNyaize,
 	reactionChecksMuting,
 	hideLocalTimeLine,
