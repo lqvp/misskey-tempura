@@ -11622,7 +11622,7 @@ export interface Locale extends ILocale {
          */
         "deleteAll": string;
         /**
-         * すべてのフォローリクエスト履歴を削除してもよろしいですか？ この操作は元に戻せません。
+         * すべてのフォロー関連の履歴を削除してもよろしいですか？ この操作は元に戻せません。
          */
         "deleteConfirm": string;
         "types": {
