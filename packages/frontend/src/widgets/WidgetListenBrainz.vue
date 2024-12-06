@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: lqvp
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 <template>
 <MkContainer :showHeader="widgetProps.showHeader" class="mkw-listenBrainz">
 	<template #icon><i class="ti ti-music"></i></template>
