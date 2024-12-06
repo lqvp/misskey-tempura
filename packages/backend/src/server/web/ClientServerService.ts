@@ -601,13 +601,27 @@ export class ClientServerService {
 					userProfile: profile,
 				});
 
+				// 必要なデータだけを抽出
+				const minimalUserData = {
+					name: _user.name,
+					avatarUrl: _user.avatarUrl,
+					avatarBlurhash: _user.avatarBlurhash,
+					bannerUrl: _user.bannerUrl,
+					bannerBlurhash: _user.bannerBlurhash,
+					username: _user.username,
+					host: _user.host,
+					isCat: _user.isCat,
+					isBot: _user.isBot,
+					requireSigninToViewContents: _user.requireSigninToViewContents,
+				};
+
 				return await reply.view('user', {
 					user, profile, me,
 					avatarUrl: user.avatarUrl ?? this.userEntityService.getIdenticonUrl(user),
 					sub: request.params.sub,
 					...await this.generateCommonPugData(this.meta),
 					clientCtx: htmlSafeJsonStringify({
-						user: _user,
+						user: minimalUserData,
 					}),
 				});
 			} else {
