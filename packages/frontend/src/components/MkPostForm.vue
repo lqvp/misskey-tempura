@@ -157,7 +157,9 @@ const props = withDefaults(defineProps<PostFormProps &{
 provide('mock', props.mock);
 
 const emit = defineEmits<{
+	(ev: 'posting'): void;
 	(ev: 'posted'): void;
+	(ev: 'postError'): void;
 	(ev: 'cancel'): void;
 	(ev: 'esc'): void;
 
@@ -1056,7 +1058,9 @@ async function post(ev?: MouseEvent) {
 			type: 'error',
 			text: err.message + '\n' + (err as any).id,
 		});
+		emit("postError");
 	});
+	emit("posting");
 }
 
 function cancel() {
