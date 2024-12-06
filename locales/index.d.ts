@@ -3015,10 +3015,6 @@ export interface Locale extends ILocale {
      */
     "instanceTicker": string;
     /**
-     * サーバー情報をアイコンのみにする
-     */
-    "instanceIcon": string;
-    /**
      * {x}を待っています
      */
     "waitingFor": ParameterizedString<"x">;
