@@ -33,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 										</div>
 										<p class="action">
 											<i :class="getActionConfig(history.type).icon"></i>
-											{{ getActionText(history.type, history) }}
+											<Mfm :text="getActionText(history.type, history)"/>
 										</p>
 									</div>
 									<div class="info">
