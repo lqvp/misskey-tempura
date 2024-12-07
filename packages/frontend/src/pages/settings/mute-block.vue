@@ -61,33 +61,37 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<template #icon><i class="ti ti-eye-off"></i></template>
 		<template #label>{{ i18n.ts.mutedUsers }}</template>
 
-		<MkPagination :pagination="mutingPagination">
-			<template #empty>
-				<div class="_fullinfo">
-					<img :src="infoImageUrl" class="_ghost"/>
-					<div>{{ i18n.ts.noUsers }}</div>
-				</div>
-			</template>
+		<div class="_gaps_s">
+			<MkSwitch v-model="anonymizeMutedUsers">{{ i18n.ts.anonymizeMutedUsers }}</MkSwitch>
 
-			<template #default="{ items }">
-				<div class="_gaps_s">
-					<div v-for="item in items" :key="item.mutee.id" :class="[$style.userItem, { [$style.userItemOpend]: expandedMuteItems.includes(item.id) }]">
-						<div :class="$style.userItemMain">
-							<MkA :class="$style.userItemMainBody" :to="userPage(item.mutee)">
-								<MkUserCardMini :user="item.mutee"/>
-							</MkA>
-							<button class="_button" :class="$style.userToggle" @click="toggleMuteItem(item)"><i :class="$style.chevron" class="ti ti-chevron-down"></i></button>
-							<button class="_button" :class="$style.remove" @click="unmute(item.mutee, $event)"><i class="ti ti-x"></i></button>
-						</div>
-						<div v-if="expandedMuteItems.includes(item.id)" :class="$style.userItemSub">
-							<div>Muted at: <MkTime :time="item.createdAt" mode="detail"/></div>
-							<div v-if="item.expiresAt">Period: {{ new Date(item.expiresAt).toLocaleString() }}</div>
-							<div v-else>Period: {{ i18n.ts.indefinitely }}</div>
+			<MkPagination :pagination="mutingPagination">
+				<template #empty>
+					<div class="_fullinfo">
+						<img :src="infoImageUrl" class="_ghost"/>
+						<div>{{ i18n.ts.noUsers }}</div>
+					</div>
+				</template>
+
+				<template #default="{ items }">
+					<div class="_gaps_s">
+						<div v-for="item in items" :key="item.mutee.id" :class="[$style.userItem, { [$style.userItemOpend]: expandedMuteItems.includes(item.id) }]">
+							<div :class="$style.userItemMain">
+								<MkA :class="$style.userItemMainBody" :to="userPage(item.mutee)">
+									<MkUserCardMini :user="item.mutee"/>
+								</MkA>
+								<button class="_button" :class="$style.userToggle" @click="toggleMuteItem(item)"><i :class="$style.chevron" class="ti ti-chevron-down"></i></button>
+								<button class="_button" :class="$style.remove" @click="unmute(item.mutee, $event)"><i class="ti ti-x"></i></button>
+							</div>
+							<div v-if="expandedMuteItems.includes(item.id)" :class="$style.userItemSub">
+								<div>Muted at: <MkTime :time="item.createdAt" mode="detail"/></div>
+								<div v-if="item.expiresAt">Period: {{ new Date(item.expiresAt).toLocaleString() }}</div>
+								<div v-else>Period: {{ i18n.ts.indefinitely }}</div>
+							</div>
 						</div>
 					</div>
-				</div>
-			</template>
-		</MkPagination>
+				</template>
+			</MkPagination>
+		</div>
 	</MkFolder>
 
 	<MkFolder>
@@ -126,11 +130,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import XInstanceMute from './mute-block.instance-mute.vue';
 import XWordMute from './mute-block.word-mute.vue';
 import MkPagination from '@/components/MkPagination.vue';
+import MkSwitch from '@/components/MkSwitch.vue';
+import { defaultStore } from '@/store.js';
 import { userPage } from '@/filters/user.js';
+import { unisonReload } from '@/scripts/unison-reload.js';
 import { i18n } from '@/i18n.js';
 import { definePageMetadata } from '@/scripts/page-metadata.js';
 import MkUserCardMini from '@/components/MkUserCardMini.vue';
@@ -160,6 +167,24 @@ const blockingPagination = {
 const expandedRenoteMuteItems = ref([]);
 const expandedMuteItems = ref([]);
 const expandedBlockItems = ref([]);
+
+async function reloadAsk() {
+	const { canceled } = await os.confirm({
+		type: 'info',
+		text: i18n.ts.reloadToApplySetting,
+	});
+	if (canceled) return;
+
+	unisonReload();
+}
+
+const anonymizeMutedUsers = computed(defaultStore.makeGetterSetter('anonymizeMutedUsers'));
+
+watch([
+	anonymizeMutedUsers,
+], async () => {
+	await reloadAsk();
+});
 
 async function unrenoteMute(user, ev) {
 	os.popupMenu([{

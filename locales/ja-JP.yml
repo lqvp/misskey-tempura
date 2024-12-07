@@ -3070,6 +3070,8 @@ deeplFreeModeDescription: "ヘルプが必要ですか? DeepLX-JSのセットア
 
 snowMode: "雪を降らせる"
 
+anonymizeMutedUsers: "ミュートしたユーザーを匿名にする"
+
 _followRequestHistory:
   title: "フォロリクの履歴"
   sent: "{user} へフォローリクエストを送信"

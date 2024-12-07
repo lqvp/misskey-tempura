@@ -11496,6 +11496,10 @@ export interface Locale extends ILocale {
      * 雪を降らせる
      */
     "snowMode": string;
+    /**
+     * ミュートしたユーザーを匿名にする
+     */
+    "anonymizeMutedUsers": string;
     "_followRequestHistory": {
         /**
          * フォロリクの履歴
