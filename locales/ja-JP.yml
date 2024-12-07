@@ -3115,3 +3115,12 @@ _followHistory:
     unBlocked: "ブロック解除した"
     wasBlocked: "ブロックされた"
     wasUnBlocked: "ブロックが解除された"
+
+_accountTruncate:
+  accountDelete: "アカウントの整理"
+  mayTakeTime: "アカウントの整理は負荷のかかる処理であるため、作成したコンテンツの数やアップロードしたファイルの数が多いと完了までに時間がかかることがあります。"
+  requestAccountTruncate: "アカウント整理をリクエスト"
+  started: "整理処理が開始されました。"
+  inProgress: "整理が進行中"
+  truncateAccountConfirm: "ダイレクトとピン留めされたノート、関連ドライブのファイルを除くすべてのノートとドライブのファイルが削除されます。続行しますか？"
+  truncateAccount: "アカウント整理"

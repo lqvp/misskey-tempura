@@ -405,6 +405,16 @@ export class QueueService {
 	}
 
 	@bindThis
+	public createTruncateAccountJob(user: ThinUser, opts = {}) {
+		return this.dbQueue.add('truncateAccount', {
+			user: { id: user.id },
+		}, {
+			removeOnComplete: true,
+			removeOnFail: true,
+		});
+	}
+
+	@bindThis
 	public createFollowJob(followings: { from: ThinUser, to: ThinUser, requestId?: string, silent?: boolean, withReplies?: boolean }[]) {
 		const jobs = followings.map(rel => this.generateRelationshipJobData('follow', rel));
 		return this.relationshipQueue.addBulk(jobs);

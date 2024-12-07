@@ -20,6 +20,7 @@ import { CleanChartsProcessorService } from './processors/CleanChartsProcessorSe
 import { CleanProcessorService } from './processors/CleanProcessorService.js';
 import { CleanRemoteFilesProcessorService } from './processors/CleanRemoteFilesProcessorService.js';
 import { DeleteAccountProcessorService } from './processors/DeleteAccountProcessorService.js';
+import { TruncateAccountProcessorService } from './processors/TruncateAccountProcessorService.js';
 import { DeleteDriveFilesProcessorService } from './processors/DeleteDriveFilesProcessorService.js';
 import { DeleteFileProcessorService } from './processors/DeleteFileProcessorService.js';
 import { ExportBlockingProcessorService } from './processors/ExportBlockingProcessorService.js';
@@ -76,6 +77,7 @@ import { ScheduledNoteDeleteProcessorService } from './processors/ScheduledNoteD
 		ImportCustomEmojisProcessorService,
 		ImportAntennasProcessorService,
 		DeleteAccountProcessorService,
+		TruncateAccountProcessorService,
 		DeleteFileProcessorService,
 		CleanRemoteFilesProcessorService,
 		RelationshipProcessorService,
