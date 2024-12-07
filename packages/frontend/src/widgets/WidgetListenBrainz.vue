@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: lqvp
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
 <template>
 <MkContainer :showHeader="widgetProps.showHeader" class="mkw-listenBrainz">
 	<template #icon><i class="ti ti-music"></i></template>
@@ -10,7 +15,7 @@
 	<div :class="$style.root">
 		<MkLoading v-if="fetching"/>
 		<div v-else-if="!playingNow" style="text-align: center;">
-			<img :src="infoImageUrl" class="_ghost"/>
+			<img :src="infoImageUrl" :class="$style.ghostImage"/>
 			<div>{{ i18n.ts.nothing }}</div>
 		</div>
 		<div v-else class="_gaps_s" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
@@ -77,12 +82,12 @@ let intervalId: number | null = null;
 const formattedNote = computed(() => {
 	if (!trackMetadata.value) return '';
 	return widgetProps.noteFormat
-		.replace('{artist_name}', trackMetadata.value.artist_name)
-		.replace('{track_name}', trackMetadata.value.track_name)
-		.replace('{media_player}', trackMetadata.value.additional_info.media_player)
-		.replace('{music_service_name}', trackMetadata.value.additional_info.music_service_name)
-		.replace('{url}', trackMetadata.value.additional_info.origin_url)
-		.replace('{client}', trackMetadata.value.additional_info.submission_client);
+		.replace('{artist_name}', trackMetadata.value.artist_name || '')
+		.replace('{track_name}', trackMetadata.value.track_name || '')
+		.replace('{media_player}', trackMetadata.value.additional_info?.media_player || '')
+		.replace('{music_service_name}', trackMetadata.value.additional_info?.music_service_name || '')
+		.replace('{url}', trackMetadata.value.additional_info?.origin_url || '')
+		.replace('{client}', trackMetadata.value.additional_info?.submission_client || '');
 });
 
 const fetchPlayingNow = async () => {
@@ -118,11 +123,15 @@ watch(() => widgetProps.userId, fetchPlayingNow, { immediate: true });
 
 watch(() => widgetProps.refreshIntervalSec, (newInterval) => {
 	if (intervalId) clearInterval(intervalId);
-	intervalId = setInterval(fetchPlayingNow, newInterval * 1000);
+	if (newInterval > 0) {
+		intervalId = setInterval(fetchPlayingNow, newInterval * 1000);
+	}
 }, { immediate: true });
 
 onMounted(() => {
-	intervalId = setInterval(fetchPlayingNow, widgetProps.refreshIntervalSec * 1000);
+	if (widgetProps.refreshIntervalSec > 0) {
+		intervalId = setInterval(fetchPlayingNow, widgetProps.refreshIntervalSec * 1000);
+	}
 });
 
 onUnmounted(() => {
@@ -139,5 +148,10 @@ defineExpose<WidgetComponentExpose>({
 <style lang="scss" module>
 .root {
 		padding: 16px;
+}
+
+.ghostImage {
+    max-width: 100%;
+    max-height: 100px;
 }
 </style>
