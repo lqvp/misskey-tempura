@@ -177,7 +177,7 @@ const headerTabs = computed(() => [
 	{
 		key: 'all',
 		title: i18n.ts._followRequestHistory.types.all,
-		icon: 'ti ti-history',
+		icon: 'ti ti-history-toggle',
 	},
 	...Object.entries(ACTION_CONFIG).map(([key, config]) => ({
 		key,
@@ -188,7 +188,7 @@ const headerTabs = computed(() => [
 
 definePageMetadata(() => ({
 	title: i18n.ts._followRequestHistory.title,
-	icon: 'ti ti-history',
+	icon: 'ti ti-history-toggle',
 }));
 </script>
 

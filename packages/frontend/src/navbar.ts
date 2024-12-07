@@ -203,7 +203,7 @@ export const navbarItemDef = reactive({
 	},
 	followRequestHistory: {
 		title: i18n.ts._followRequestHistory.title,
-		icon: 'ti ti-history',
+		icon: 'ti ti-history-toggle',
 		to: '/my/follow-requests-history',
 	},
 	cacheClear: {
