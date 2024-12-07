@@ -77,6 +77,7 @@ export class TruncateAccountProcessorService {
 
 		{ // Delete notes
 			let cursor: MiNote['id'] | null = null;
+			let deleteCount = 0;
 
 			while (true) {
 				const notes = await this.notesRepository.find({
@@ -88,7 +89,7 @@ export class TruncateAccountProcessorService {
 							id: Not(In([...piningNoteIds, ...cascadingPiningNoteIds, ...specifiedNoteIds, ...cascadingSpecifiedNoteIds])),
 						}),
 					},
-					take: 100,
+					take: 5,
 					order: {
 						id: 1,
 					},
@@ -100,8 +101,13 @@ export class TruncateAccountProcessorService {
 
 				cursor = notes.at(-1)?.id ?? null;
 
-				await Promise.all(notes.map((note) => {
-					return this.noteDeleteService.delete(user, note, false, user);
+				await Promise.all(notes.map(async (note) => {
+					await this.noteDeleteService.delete(user, note, false, user);
+					deleteCount++;
+					if (deleteCount % 5 === 0) {
+						this.logger.info('Waiting for 30 seconds...');
+						await new Promise(resolve => setTimeout(resolve, 30000));
+					}
 				}));
 			}
 
