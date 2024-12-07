@@ -342,6 +342,7 @@ export type IAuthorizedAppsResponse = operations['i___authorized-apps']['respons
 export type IClaimAchievementRequest = operations['i___claim-achievement']['requestBody']['content']['application/json'];
 export type IChangePasswordRequest = operations['i___change-password']['requestBody']['content']['application/json'];
 export type IDeleteAccountRequest = operations['i___delete-account']['requestBody']['content']['application/json'];
+export type ITruncateAccountRequest = operations['i___truncate-account']['requestBody']['content']['application/json'];
 export type IExportFollowingRequest = operations['i___export-following']['requestBody']['content']['application/json'];
 export type IFavoritesRequest = operations['i___favorites']['requestBody']['content']['application/json'];
 export type IFavoritesResponse = operations['i___favorites']['responses']['200']['content']['application/json'];
