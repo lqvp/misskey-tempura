@@ -2381,6 +2381,7 @@ _widgets:
     chooseList: "リストを選択"
   clicker: "クリッカー"
   birthdayFollowings: "今日誕生日のユーザー"
+  listenBrainz: "ListenBrainz"
 
 _cw:
   hide: "隠す"

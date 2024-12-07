@@ -1,12 +1,7 @@
-<!--
-SPDX-FileCopyrightText: lqvp
-SPDX-License-Identifier: AGPL-3.0-only
--->
-
 <template>
 <MkContainer :showHeader="widgetProps.showHeader" class="mkw-listenBrainz">
 	<template #icon><i class="ti ti-music"></i></template>
-	<template #header>ListenBrainz</template>
+	<template #header>{{ i18n.ts._widgets.listenBrainz }}</template>
 	<template #func="{ buttonStyleClass }">
 		<button class="_button" :class="buttonStyleClass" @click="fetchPlayingNow()"><i class="ti ti-refresh"></i></button>
 		<button class="_button" :class="buttonStyleClass" @click="configure()"><i class="ti ti-settings"></i></button>
@@ -27,7 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useWidgetPropsManager, WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import { GetFormResultType } from '@/scripts/form.js';
 import MkContainer from '@/components/MkContainer.vue';
@@ -35,10 +30,9 @@ import MkButton from '@/components/MkButton.vue';
 import MkLoading from '@/components/global/MkLoading.vue';
 import { i18n } from '@/i18n.js';
 import { infoImageUrl } from '@/instance.js';
-import * as os from '@/os.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
 
-const name = 'listenBrainz';
+const name = i18n.ts._widgets.listenBrainz;
 
 const widgetPropsDef = {
 	showHeader: {
@@ -55,12 +49,16 @@ const widgetPropsDef = {
 	},
 	visibility: {
 		type: 'enum' as const,
-		default: 'home' as const, // 初期値を 'home' に設定
+		default: 'home' as const,
 		enum: [
 			{ label: 'Public', value: 'public' },
 			{ label: 'Home', value: 'home' },
 			{ label: 'Followers', value: 'followers' },
 		],
+	},
+	refreshIntervalSec: {
+		type: 'number' as const,
+		default: 60,
 	},
 };
 
@@ -69,15 +67,12 @@ const widgetPropsDef = {
 const props = defineProps<WidgetComponentProps<WidgetProps>>();
 const emit = defineEmits<WidgetComponentEmits<WidgetProps>>();
 
-const { widgetProps, configure, save } = useWidgetPropsManager(name,
-	widgetPropsDef,
-	props,
-	emit,
-);
+const { widgetProps, configure, save } = useWidgetPropsManager(name, widgetPropsDef, props, emit);
 
 const playingNow = ref(false);
 const trackMetadata = ref<any>(null);
 const fetching = ref(true);
+let intervalId: number | null = null;
 
 const formattedNote = computed(() => {
 	if (!trackMetadata.value) return '';
@@ -91,7 +86,7 @@ const formattedNote = computed(() => {
 });
 
 const fetchPlayingNow = async () => {
-	fetching.value = true; // フェッチ開始時に fetching を true に設定
+	fetching.value = true;
 	if (!widgetProps.userId) return;
 
 	const url = `https://api.listenbrainz.org/1/user/${widgetProps.userId}/playing-now`;
@@ -106,7 +101,7 @@ const fetchPlayingNow = async () => {
 		trackMetadata.value = null;
 	}
 
-	fetching.value = false; // フェッチ終了時に fetching を false に設定
+	fetching.value = false;
 };
 
 const postNote = async () => {
@@ -121,6 +116,19 @@ const postNote = async () => {
 
 watch(() => widgetProps.userId, fetchPlayingNow, { immediate: true });
 
+watch(() => widgetProps.refreshIntervalSec, (newInterval) => {
+	if (intervalId) clearInterval(intervalId);
+	intervalId = setInterval(fetchPlayingNow, newInterval * 1000);
+}, { immediate: true });
+
+onMounted(() => {
+	intervalId = setInterval(fetchPlayingNow, widgetProps.refreshIntervalSec * 1000);
+});
+
+onUnmounted(() => {
+	if (intervalId) clearInterval(intervalId);
+});
+
 defineExpose<WidgetComponentExpose>({
 	name,
 	configure,
@@ -130,6 +138,6 @@ defineExpose<WidgetComponentExpose>({
 
 <style lang="scss" module>
 .root {
-	padding: 16px;
+		padding: 16px;
 }
 </style>
