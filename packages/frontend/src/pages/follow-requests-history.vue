@@ -33,7 +33,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 										</div>
 										<p class="action">
 											<i :class="getActionConfig(history.type).icon"></i>
-											<Mfm :text="getActionText(history.type, history)"/>
+											<Mfm
+												:text="getActionText(history.type, history)"
+												:author="getActionConfig(history.type).avatarUser === 'fromUser' ? history.fromUser : history.toUser"
+												:plain="true"
+												:emojiUrls="getActionConfig(history.type).avatarUser === 'fromUser' ? history.fromUser.emojis : history.toUser.emojis"
+											/>
 										</p>
 									</div>
 									<div class="info">
