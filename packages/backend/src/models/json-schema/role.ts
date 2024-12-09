@@ -320,6 +320,18 @@ export const packedRolePoliciesSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
+		canUseUnFollowNotification: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
+		canUseBlockedNotification: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
+		canUseUnBlockedNotification: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
 	},
 } as const;
 

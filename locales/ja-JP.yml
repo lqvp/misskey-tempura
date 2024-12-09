@@ -1898,6 +1898,9 @@ _role:
     canImportUserLists: "リストのインポートを許可"
     scheduleNoteMax: "予約投稿の最大数"
     canAddRoles: "コミュニティーロールの追加"
+    canUseUnFollowNotification: "フォロー解除通知を許可"
+    canUseBlockedNotification: "ブロック通知を許可"
+    canUseUnBlockedNotification: "ブロック解除通知を許可"
   _condition:
     roleAssignedTo: "マニュアルロールにアサイン済み"
     isLocal: "ローカルユーザー"

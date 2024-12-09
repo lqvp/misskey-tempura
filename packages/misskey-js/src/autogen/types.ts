@@ -5243,6 +5243,10 @@ export type components = {
       canImportMuting: boolean;
       canImportUserLists: boolean;
       scheduleNoteMax: number;
+      canAddRoles: boolean;
+      canUseUnFollowNotification: boolean;
+      canUseBlockedNotification: boolean;
+      canUseUnBlockedNotification: boolean;
     };
     ReversiGameLite: {
       /** Format: id */

@@ -7357,6 +7357,18 @@ export interface Locale extends ILocale {
              * コミュニティーロールの追加
              */
             "canAddRoles": string;
+            /**
+             * フォロー解除通知を許可
+             */
+            "canUseUnFollowNotification": string;
+            /**
+             * ブロック通知を許可
+             */
+            "canUseBlockedNotification": string;
+            /**
+             * ブロック解除通知を許可
+             */
+            "canUseUnBlockedNotification": string;
         };
         "_condition": {
             /**

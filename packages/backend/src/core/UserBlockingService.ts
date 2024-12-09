@@ -111,8 +111,10 @@ export class UserBlockingService implements OnModuleInit {
 			this.queueService.deliver(blocker, content, blockee.inbox, false);
 		}
 
+		const policies = await this.roleService.getUserPolicies(blockee.id);
+
 		// 通知を作成（ブロックされた側に通知）
-		if (this.userEntityService.isLocalUser(blockee)) {
+		if (this.userEntityService.isLocalUser(blockee) && policies.canUseBlockedNotification) {
 			this.notificationService.createNotification(blockee.id, 'blocked', {
 			}, blocker.id);
 		}
@@ -237,8 +239,10 @@ export class UserBlockingService implements OnModuleInit {
 			this.queueService.deliver(blocker, content, blockee.inbox, false);
 		}
 
+		const policies = await this.roleService.getUserPolicies(blockee.id);
+
 		// 通知を作成（ブロック解除された側に通知）
-		if (this.userEntityService.isLocalUser(blockee)) {
+		if (this.userEntityService.isLocalUser(blockee) && policies.canUseUnBlockedNotification) {
 			this.notificationService.createNotification(blockee.id, 'unblocked', {
 			}, blocker.id);
 		}

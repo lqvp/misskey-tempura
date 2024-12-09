@@ -70,6 +70,9 @@ export type RolePolicies = {
 	canImportMuting: boolean;
 	canImportUserLists: boolean;
 	canAddRoles: boolean;
+	canUseUnFollowNotification: boolean;
+  canUseBlockedNotification: boolean;
+  canUseUnBlockedNotification: boolean;
 };
 
 export const DEFAULT_POLICIES: RolePolicies = {
@@ -111,6 +114,9 @@ export const DEFAULT_POLICIES: RolePolicies = {
 	canImportMuting: true,
 	canImportUserLists: true,
 	canAddRoles: true,
+	canUseUnFollowNotification: true,
+	canUseBlockedNotification: true,
+	canUseUnBlockedNotification: true,
 };
 
 @Injectable()
@@ -431,6 +437,9 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			canImportMuting: calc('canImportMuting', vs => vs.some(v => v === true)),
 			canImportUserLists: calc('canImportUserLists', vs => vs.some(v => v === true)),
 			canAddRoles: calc('canAddRoles', vs => vs.some(v => v === true)),
+			canUseUnFollowNotification: calc('canUseUnFollowNotification', vs => vs.some(v => v === true)),
+  		canUseBlockedNotification: calc('canUseBlockedNotification', vs => vs.some(v => v === true)),
+  		canUseUnBlockedNotification: calc('canUseUnBlockedNotification', vs => vs.some(v => v === true)),
 		};
 	}
 

@@ -120,6 +120,9 @@ export const ROLE_POLICIES = [
 	'canImportMuting',
 	'canImportUserLists',
 	'canAddRoles',
+	'canUseUnFollowNotification',
+	'canUseBlockedNotification',
+	'canUseUnBlockedNotification',
 ] as const;
 
 // なんか動かない
