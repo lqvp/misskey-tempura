@@ -14,6 +14,7 @@ import { createTempDir } from '@/misc/create-temp.js';
 import { DriveService } from '@/core/DriveService.js';
 import { DownloadService } from '@/core/DownloadService.js';
 import { bindThis } from '@/decorators.js';
+import { NotificationService } from '@/core/NotificationService.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import type * as Bull from 'bullmq';
 import type { DbUserImportJobData } from '../types.js';
@@ -34,6 +35,7 @@ export class ImportCustomEmojisProcessorService {
 		private driveService: DriveService,
 		private downloadService: DownloadService,
 		private queueLoggerService: QueueLoggerService,
+		private notificationService: NotificationService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('import-custom-emojis');
 	}
@@ -84,32 +86,42 @@ export class ImportCustomEmojisProcessorService {
 					continue;
 				}
 				const emojiPath = outputPath + '/' + record.fileName;
-				await this.emojisRepository.delete({
-					name: emojiInfo.name,
-				});
-				try {
-					const driveFile = await this.driveService.addFile({
-						user: null,
-						path: emojiPath,
-						name: record.fileName,
-						force: true,
-					});
-					await this.customEmojiService.add({
-						name: emojiInfo.name,
-						category: emojiInfo.category,
-						host: null,
-						aliases: emojiInfo.aliases,
-						driveFile,
-						license: emojiInfo.license,
-						isSensitive: emojiInfo.isSensitive,
-						localOnly: emojiInfo.localOnly,
-						roleIdsThatCanBeUsedThisEmojiAsReaction: [],
-					});
-				} catch (e) {
-					if (e instanceof Error || typeof e === 'string') {
-						this.logger.error(`couldn't import ${emojiPath} for ${emojiInfo.name}: ${e}`);
+
+				// ショートコード重複時はスキップする
+				const isExist = await this.customEmojiService.checkDuplicate(emojiInfo.name);
+				if (!isExist) {
+					try {
+						const driveFile = await this.driveService.addFile({
+							user: null,
+							path: emojiPath,
+							name: record.fileName,
+							force: true,
+						});
+						await this.customEmojiService.add({
+							name: emojiInfo.name,
+							category: emojiInfo.category,
+							host: null,
+							aliases: emojiInfo.aliases,
+							driveFile,
+							license: emojiInfo.license,
+							isSensitive: emojiInfo.isSensitive,
+							localOnly: emojiInfo.localOnly,
+							roleIdsThatCanBeUsedThisEmojiAsReaction: [],
+						});
+					} catch (e) {
+						if (e instanceof Error || typeof e === 'string') {
+							this.logger.error(`couldn't import ${emojiPath} for ${emojiInfo.name}: ${e}`);
+						}
+						continue;
 					}
-					continue;
+				} else {
+					this.notificationService.createNotification(job.data.user.id, 'app', {
+						appAccessTokenId: null,
+						customBody: `${emojiInfo.name} はショートコードが重複しているためスキップされました。`,
+						customHeader: '[システム] 絵文字インポート',
+						customIcon: null,
+					});
+					this.logger.info(`[SKIP IMPORT] ${emojiInfo.name} is duplicate.`);
 				}
 			}
 
