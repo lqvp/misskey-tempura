@@ -27,10 +27,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkKeyValue>
 			<div v-html="i18n.tsx.poweredByLqvpForkDescription({ name: instance.name ?? host })">
 			</div>
-			<!-- <FormLink to="/about-misskey">
+			<FormLink to="/about-misskey-fork">
 				<template #icon><i class="ti ti-info-circle"></i></template>
-				{{ i18n.ts.aboutMisskey }}
-			</FormLink> -->
+				{{ i18n.ts._aboutFork.aboutFork }}
+			</FormLink>
 			<FormLink to="https://gist.github.com/lqvp/483eabceeffc8c78d1cb820e90f1696c" external>
 				<template #icon><i class="ti ti-sparkles"></i></template>
 				{{ i18n.ts.originalFeature }}

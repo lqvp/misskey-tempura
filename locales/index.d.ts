@@ -7825,6 +7825,16 @@ export interface Locale extends ILocale {
          */
         "projectMembers": string;
     };
+    "_aboutFork": {
+        /**
+         * misskey-tempはlqvpによって開発されているMisskeyのフォークです。
+         */
+        "about": string;
+        /**
+         * misskey-tempについて
+         */
+        "aboutFork": string;
+    };
     "_displayOfSensitiveMedia": {
         /**
          * センシティブ設定されたメディアを隠す
