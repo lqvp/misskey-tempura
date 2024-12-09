@@ -66,11 +66,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (profile?.email) {
 				if (!reason) {
-					await this.emailService.sendEmail(profile.email, 'Account Declined',
+					await this.emailService.sendEmail(profile.email, 'Account declined',
 						'Your Account has been declined!',
 						'Your Account has been declined!');
 				} else {
-					await this.emailService.sendEmail(profile.email, 'Account Declined',
+					await this.emailService.sendEmail(profile.email, 'Account declined',
 						`Your account has been declined due to: ${reason}`,
 						`Your account has been declined due to: ${reason}`);
 				}
