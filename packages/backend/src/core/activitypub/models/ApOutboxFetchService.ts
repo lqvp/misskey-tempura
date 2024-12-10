@@ -29,8 +29,8 @@ import type { ApNoteService } from './ApNoteService.js';
 import type { ApResolverService, Resolver } from '../ApResolverService.js';
 import type { ApLoggerService } from '../ApLoggerService.js';
 
-const pagelimit = 10;
-const createLimit = 200;
+const pagelimit = 1;
+const createLimit = 20;
 @Injectable()
 export class ApOutboxFetchService implements OnModuleInit {
 	private utilityService: UtilityService;
