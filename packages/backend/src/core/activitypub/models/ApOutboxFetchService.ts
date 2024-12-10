@@ -29,8 +29,8 @@ import type { ApNoteService } from './ApNoteService.js';
 import type { ApResolverService, Resolver } from '../ApResolverService.js';
 import type { ApLoggerService } from '../ApLoggerService.js';
 
-const pagelimit = 1;
-const createLimit = 20;
+const pagelimit = 10;
+const createLimit = 200;
 @Injectable()
 export class ApOutboxFetchService implements OnModuleInit {
 	private utilityService: UtilityService;
@@ -148,7 +148,7 @@ export class ApOutboxFetchService implements OnModuleInit {
 						if (!activity.id) continue;
 						let renote = await this.apNoteService.fetchNote(activity.object);
 						if (renote === null) {
-							renote = await this.apNoteService.createNote(activity.object, undefined);
+							renote = await this.apNoteService.createNote(activity.object, undefined, true);
 							if (renote === null) {
 								this.logger.info('announce target is null');
 								continue;
@@ -190,7 +190,7 @@ export class ApOutboxFetchService implements OnModuleInit {
 				} else if (isCreate(activity) && typeof(activity.object) !== 'string' && isNote(activity.object)) {
 					const object = await	this.apDbResolverService.getNoteFromApId(activity.object);
 					if (object) continue;
-					await this.apNoteService.createNote(activity.object, undefined);
+					await this.apNoteService.createNote(activity.object, undefined, true);
 				}
 			} catch (err) {
 				if (err instanceof AbortError) {
