@@ -58,6 +58,8 @@ async function init() {
 	const meta = await misskeyApi('admin/meta');
 	deeplAuthKey.value = meta.deeplAuthKey;
 	deeplIsPro.value = meta.deeplIsPro;
+	deeplFreeMode.value = meta.deeplFreeMode;
+	deeplFreeInstance.value = meta.deeplFreeInstance;
 }
 
 function save_deepl() {
