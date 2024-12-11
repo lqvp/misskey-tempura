@@ -104,7 +104,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<div class="_gaps">
 						<MkSwitch v-model="suspended" @update:modelValue="toggleSuspend">{{ i18n.ts.suspend }}</MkSwitch>
 						<MkSwitch v-model="root" @update:modelValue="toggleRoot">{{ 'rootユーザー' }}</MkSwitch>
-						<div>
+						<div class="_buttons">
 							<div v-if="user.host == null" inline style="margin-right: 8px;" class="_buttons">
 								<MkButton @click="resetPassword"><i class="ti ti-key"></i> {{ i18n.ts.resetPassword }}</MkButton>
 								<MkButton danger @click="regenerateLoginToken"><i class="ti ti-refresh"></i> {{ i18n.ts.regenerateLoginToken }}</MkButton>
