@@ -22,6 +22,8 @@ import UsersChart from '@/core/chart/charts/users.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import { UserService } from '@/core/UserService.js';
 import { UserFollowingService } from '@/core/UserFollowingService.js';
+import { NotificationService } from '@/core/NotificationService.js';
+import { RoleService } from '@/core/RoleService.js';
 
 @Injectable()
 export class SignupService {
@@ -45,6 +47,8 @@ export class SignupService {
 		private idService: IdService,
 		private instanceActorService: InstanceActorService,
 		private usersChart: UsersChart,
+		private notificationService: NotificationService,
+		private roleService: RoleService,
 	) {
 	}
 
@@ -177,6 +181,16 @@ export class SignupService {
 		//#endregion
 
 		this.userService.notifySystemWebhook(account, 'userCreated');
+
+		const adminIds = await this.roleService.getAdministratorIds();
+		await Promise.all(adminIds.map(async adminId => {
+			this.notificationService.createNotification(adminId, 'app', {
+				appAccessTokenId: null,
+				customBody: `新しいユーザー @${account.username} が作成されました。`,
+				customHeader: '[システム] 通知',
+				customIcon: null,
+			});
+		}));
 
 		return { account, secret };
 	}
