@@ -43,6 +43,7 @@ import { misskeyApi } from '@/scripts/misskey-api.js';
 import { lookupUser, lookupUserByEmail, lookupFile } from '@/scripts/admin-lookup.js';
 import { PageMetadata, definePageMetadata, provideMetadataReceiver, provideReactiveMetadata } from '@/scripts/page-metadata.js';
 import { useRouter } from '@/router/supplier.js';
+import { $i } from '@/account.js';
 
 const isEmpty = (x: string | null) => x == null || x === '';
 
@@ -177,7 +178,7 @@ const menuDef = computed(() => [{
 		to: '/admin/modlog',
 		active: currentPage.value?.route.name === 'modlog',
 	}],
-}, {
+}, ...($i.isAdmin ? [{
 	title: i18n.ts.settings,
 	items: [{
 		icon: 'ti ti-settings',
@@ -235,7 +236,7 @@ const menuDef = computed(() => [{
 		to: '/admin/lqvp-admin',
 		active: currentPage.value?.route.name === 'lqvp-admin',
 	}],
-}, {
+}] : []), {
 	title: i18n.ts.info,
 	items: [{
 		icon: 'ti ti-database',
