@@ -55,7 +55,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkKeyValue v-if="info" oneline>
 						<template #key>{{ i18n.ts.registerReason }}</template>
 						<!-- <template #value><span class="_monospace">{{ info.signupReason }}</span></template> -->
-						<template v-slot:value><div :class="$style.reason_box">{{ info.signupReason }}</div></template>
+						<template #value><div :class="$style.reason_box">{{ info.signupReason }}</div></template>
 					</MkKeyValue>
 				</div>
 
@@ -106,10 +106,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkSwitch v-model="root" @update:modelValue="toggleRoot">{{ 'rootユーザー' }}</MkSwitch>
 						<div>
 							<div v-if="user.host == null" inline style="margin-right: 8px;" class="_buttons">
-									<MkButton @click="resetPassword"><i class="ti ti-key"></i> {{ i18n.ts.resetPassword }}</MkButton>
-									<MkButton danger @click="regenerateLoginToken"><i class="ti ti-refresh"></i> {{ i18n.ts.regenerateLoginToken }}</MkButton>
-								</div>
-								<MkButton inline danger @click="updateUserName"><i class="ti ti-user-edit"></i> {{ i18n.ts.changeUserName }}</MkButton>
+								<MkButton @click="resetPassword"><i class="ti ti-key"></i> {{ i18n.ts.resetPassword }}</MkButton>
+								<MkButton danger @click="regenerateLoginToken"><i class="ti ti-refresh"></i> {{ i18n.ts.regenerateLoginToken }}</MkButton>
+							</div>
+							<MkButton inline danger @click="updateUserName"><i class="ti ti-user-edit"></i> {{ i18n.ts.changeUserName }}</MkButton>
 							<MkButton inline danger @click="unsetUserAvatar"><i class="ti ti-user-circle"></i> {{ i18n.ts.unsetUserAvatar }}</MkButton>
 							<MkButton inline danger @click="unsetUserBanner"><i class="ti ti-photo"></i> {{ i18n.ts.unsetUserBanner }}</MkButton>
 							<MkButton inline danger @click="unsetUserMutualLink"><i class="ti ti-photo"></i> {{ i18n.ts.unsetUserMutualLink }}</MkButton>
