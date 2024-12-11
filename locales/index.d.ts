@@ -8735,6 +8735,10 @@ export interface Locale extends ILocale {
          */
         "write:admin:user-name": string;
         /**
+         * 通知を送る
+         */
+        "write:admin:send-notification": string;
+        /**
          * モデレーションノートを操作する
          */
         "write:admin:user-note": string;
@@ -11526,6 +11530,18 @@ export interface Locale extends ILocale {
      * ミュートしたユーザーを匿名にする
      */
     "anonymizeMutedUsers": string;
+    /**
+     * 通知を送る
+     */
+    "notificationSend": string;
+    /**
+     * 通知内容を入力
+     */
+    "enterNotificationText": string;
+    /**
+     * 通知を送信しますか？
+     */
+    "notificationSendConfirm": string;
     "_followRequestHistory": {
         /**
          * フォロリクの履歴

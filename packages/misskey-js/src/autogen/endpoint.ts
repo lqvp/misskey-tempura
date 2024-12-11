@@ -106,6 +106,7 @@ import type {
 	AdminDeleteAccountRequest,
 	AdminUpdateUserNameRequest,
 	AdminUpdateUserNoteRequest,
+	AdminSendNotificationRequest,
 	AdminRolesCreateRequest,
 	AdminRolesCreateResponse,
 	AdminRolesDeleteRequest,
@@ -694,6 +695,7 @@ export type Endpoints = {
 	'admin/delete-account': { req: AdminDeleteAccountRequest; res: EmptyResponse };
 	'admin/update-user-name': { req: AdminUpdateUserNameRequest; res: EmptyResponse };
 	'admin/update-user-note': { req: AdminUpdateUserNoteRequest; res: EmptyResponse };
+	'admin/send-notification': { req: AdminSendNotificationRequest; res: EmptyResponse };
 	'admin/roles/create': { req: AdminRolesCreateRequest; res: AdminRolesCreateResponse };
 	'admin/roles/delete': { req: AdminRolesDeleteRequest; res: EmptyResponse };
 	'admin/roles/list': { req: EmptyRequest; res: AdminRolesListResponse };

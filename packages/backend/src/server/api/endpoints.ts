@@ -93,6 +93,7 @@ import * as ep___admin_updateMeta from './endpoints/admin/update-meta.js';
 import * as ep___admin_deleteAccount from './endpoints/admin/delete-account.js';
 import * as ep___admin_updateUserName from './endpoints/admin/update-user-name.js';
 import * as ep___admin_updateUserNote from './endpoints/admin/update-user-note.js';
+import * as ep___admin_sendNotification from './endpoints/admin/send-notification.js';
 import * as ep___admin_roles_create from './endpoints/admin/roles/create.js';
 import * as ep___admin_roles_delete from './endpoints/admin/roles/delete.js';
 import * as ep___admin_roles_list from './endpoints/admin/roles/list.js';
@@ -502,6 +503,7 @@ const eps = [
 	['admin/delete-account', ep___admin_deleteAccount],
 	['admin/update-user-name', ep___admin_updateUserName],
 	['admin/update-user-note', ep___admin_updateUserNote],
+	['admin/send-notification', ep___admin_sendNotification],
 	['admin/roles/create', ep___admin_roles_create],
 	['admin/roles/delete', ep___admin_roles_delete],
 	['admin/roles/list', ep___admin_roles_list],

@@ -109,6 +109,7 @@ export type AdminUpdateMetaRequest = operations['admin___update-meta']['requestB
 export type AdminDeleteAccountRequest = operations['admin___delete-account']['requestBody']['content']['application/json'];
 export type AdminUpdateUserNameRequest = operations['admin___update-user-name']['requestBody']['content']['application/json'];
 export type AdminUpdateUserNoteRequest = operations['admin___update-user-note']['requestBody']['content']['application/json'];
+export type AdminSendNotificationRequest = operations['admin___send-notification']['requestBody']['content']['application/json'];
 export type AdminRolesCreateRequest = operations['admin___roles___create']['requestBody']['content']['application/json'];
 export type AdminRolesCreateResponse = operations['admin___roles___create']['responses']['200']['content']['application/json'];
 export type AdminRolesDeleteRequest = operations['admin___roles___delete']['requestBody']['content']['application/json'];

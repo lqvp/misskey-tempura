@@ -64,6 +64,9 @@ export type ModerationLog = {
 	type: 'updateUserNote';
 	info: ModerationLogPayloads['updateUserNote'];
 } | {
+	type: 'sendNotification';
+	info: ModerationLogPayloads['sendNotification'];
+} | {
 	type: 'addCustomEmoji';
 	info: ModerationLogPayloads['addCustomEmoji'];
 } | {

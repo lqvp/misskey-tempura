@@ -751,6 +751,15 @@ export type paths = {
      */
     post: operations['admin___update-user-note'];
   };
+  '/admin/send-notification': {
+    /**
+     * admin/send-notification
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *write:admin:send-notification*
+     */
+    post: operations['admin___send-notification'];
+  };
   '/admin/roles/create': {
     /**
      * admin/roles/create
@@ -10559,6 +10568,59 @@ export type operations = {
    * **Credential required**: *Yes* / **Permission**: *write:admin:user-note*
    */
   'admin___update-user-note': {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: misskey:id */
+          userId: string;
+          text: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * admin/send-notification
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *write:admin:send-notification*
+   */
+  'admin___send-notification': {
     requestBody: {
       content: {
         'application/json': {

@@ -108,6 +108,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<div v-if="user.host == null" inline style="margin-right: 8px;" class="_buttons">
 								<MkButton @click="resetPassword"><i class="ti ti-key"></i> {{ i18n.ts.resetPassword }}</MkButton>
 								<MkButton danger @click="regenerateLoginToken"><i class="ti ti-refresh"></i> {{ i18n.ts.regenerateLoginToken }}</MkButton>
+								<MkButton danger @click="notificationSend"><i class="ti ti-bell"></i> {{ i18n.ts.notificationSend }}</MkButton>
 							</div>
 							<MkButton inline danger @click="updateUserName"><i class="ti ti-user-edit"></i> {{ i18n.ts.changeUserName }}</MkButton>
 							<MkButton inline danger @click="unsetUserAvatar"><i class="ti ti-user-circle"></i> {{ i18n.ts.unsetUserAvatar }}</MkButton>
@@ -351,6 +352,26 @@ async function regenerateLoginToken() {
 
 	await os.apiWithDialog('admin/regenerate-user-token', {
 		userId: user.value.id,
+	}).then(refreshUser);
+}
+
+async function notificationSend() {
+	const { canceled, result: text } = await os.inputText({
+		type: 'text',
+		title: i18n.ts.enterNotificationText,
+		default: '',
+	});
+	if (canceled) return;
+
+	const confirm = await os.confirm({
+		type: 'warning',
+		text: i18n.ts.notificationSendConfirm,
+	});
+	if (confirm.canceled) return;
+
+	await os.apiWithDialog('admin/send-notification', {
+		userId: user.value.id,
+		text: text,
 	}).then(refreshUser);
 }
 

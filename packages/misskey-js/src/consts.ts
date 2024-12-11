@@ -91,6 +91,7 @@ export const permissions = [
 	'write:admin:meta',
 	'write:admin:user-name',
 	'write:admin:user-note',
+	'write:admin:send-notification',
 	'write:admin:user-avatar',
 	'write:admin:user-banner',
 	'write:admin:user-mutual-link',
@@ -136,6 +137,7 @@ export const moderationLogTypes = [
 	'unsuspend',
 	'updateUserName',
 	'updateUserNote',
+	'sendNotification',
 	'addCustomEmoji',
 	'updateCustomEmoji',
 	'deleteCustomEmoji',
@@ -238,6 +240,12 @@ export type ModerationLogPayloads = {
 		userHost: string | null;
 		before: string | null;
 		after: string | null;
+	};
+	sendNotification: {
+		userId: string;
+		userUsername: string;
+		userHost: string | null;
+		text: string;
 	};
 	addCustomEmoji: {
 		emojiId: string;

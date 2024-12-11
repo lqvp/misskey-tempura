@@ -2289,6 +2289,7 @@ _permissions:
   "write:admin:unsuspend-user": "ユーザーの凍結を解除する"
   "write:admin:meta": "インスタンスのメタデータを操作する"
   "write:admin:user-name": "ユーザーの名前を変更する"
+  "write:admin:send-notification": "通知を送る"
   "write:admin:user-note": "モデレーションノートを操作する"
   "write:admin:roles": "ロールを操作する"
   "read:admin:roles": "ロールを見る"
@@ -3079,6 +3080,10 @@ deeplFreeModeDescription: "ヘルプが必要ですか? DeepLX-JSのセットア
 snowMode: "雪を降らせる"
 
 anonymizeMutedUsers: "ミュートしたユーザーを匿名にする"
+
+notificationSend: "通知を送る"
+enterNotificationText: "通知内容を入力"
+notificationSendConfirm: "通知を送信しますか？"
 
 _followRequestHistory:
   title: "フォロリクの履歴"
