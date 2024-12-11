@@ -15,7 +15,7 @@ export const meta = {
 	tags: ['admin'],
 
 	requireCredential: true,
-	requireAdmin: true,
+	requireRolePolicy: 'canDeleteAccount',
 	kind: 'write:admin:account',
 } as const;
 

@@ -129,7 +129,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</MkFolder>
 
 						<MkFolder v-if="matchQuery([i18n.ts._role._options.canEmojiDeletion, 'canEmojiDeletion'])">
-							<template #label>{{ i18n.ts._role._options.canEmojiDeletion }}</template>
+							<template #label>{{ i18n.ts._role._options.canEmojiDeletion }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 							<template #suffix>{{ policies.canEmojiDeletion ? i18n.ts.yes : i18n.ts.no }}</template>
 							<MkSwitch v-model="policies.canEmojiDeletion">
 								<template #label>{{ i18n.ts.enable }}</template>
@@ -330,6 +330,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<template #label>{{ i18n.ts._role._options.canUseUnBlockedNotification }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 							<template #suffix>{{ policies.canUseUnBlockedNotification ? i18n.ts.yes : i18n.ts.no }}</template>
 							<MkSwitch v-model="policies.canUseUnBlockedNotification">
+								<template #label>{{ i18n.ts.enable }}</template>
+							</MkSwitch>
+						</MkFolder>
+
+						<MkFolder v-if="matchQuery([i18n.ts._role._options.canDeleteAccount, 'canDeleteAccount'])">
+							<template #label>{{ i18n.ts._role._options.canDeleteAccount }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+							<template #suffix>{{ policies.canDeleteAccount ? i18n.ts.yes : i18n.ts.no }}</template>
+							<MkSwitch v-model="policies.canDeleteAccount">
 								<template #label>{{ i18n.ts.enable }}</template>
 							</MkSwitch>
 						</MkFolder>
