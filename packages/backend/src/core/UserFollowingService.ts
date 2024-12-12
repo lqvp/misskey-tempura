@@ -798,17 +798,6 @@ export class UserFollowingService implements OnModuleInit {
 			this.publishUnfollow(user, follower);
 		}
 
-		// フォローリクエストを拒否された側（送信者）の履歴
-		// if (this.userEntityService.isLocalUser(follower)) {
-		// 	await this.followRequestHistoryRepository.insert({
-		// 		id: this.idService.gen(),
-		// 		type: 'wasRejected',
-		// 		fromUserId: follower.id,
-		// 		toUserId: user.id,
-		// 		timestamp: new Date(),
-		// 	});
-		// }
-
 		// フォローリクエストを拒否した側（受信者）の履歴
 		if (this.userEntityService.isLocalUser(user)) {
 			await this.followRequestHistoryRepository.insert({
