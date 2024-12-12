@@ -35,12 +35,12 @@ function greet() {
 		const versionParts = meta.version.split('-');
 		const v = `v${versionParts[0]}`;
 		const forkVersion = versionParts[2];
-		console.log(themeColor('        .__               __                            __                         '));
+		console.log(themeColor('        .__                __                            __                         '));
 		console.log(themeColor('  _____ |__| ______ _____|  | __ ____ ___.__.         _/  |_  ____   _____ ______  '));
-		console.log(themeColor(' /     \|  |/  ___//  ___/  |/ // __ <   |  |  ______ \   __\/ __ \ /     \\____ \''));
-		console.log(themeColor('|  Y Y  \  |\___ \ \___ \|    <\  ___/\___  | /_____/  |  | \  ___/|  Y Y  \  |_> >'));
-		console.log(themeColor('|__|_|  /__/____  >____  >__|_ \\___  > ____|          |__|  \___  >__|_|  /   __/ ' + chalk.gray(forkVersion)));
-		console.log(themeColor('      \/        \/     \/     \/    \/\/                         \/      \/|__|   ' + chalk.gray('based on Misskey ' + v)));
+		console.log(themeColor(' /     \\|  |/  ___//  ___/  |/ // __ <   |  |  ______ \\   __\\/ __ \\ /     \\____ \\ '));
+		console.log(themeColor('|  Y Y  \\  |\\___ \\ \\___ \\|    <\\  ___/\\___  | /_____/  |  | \\  ___/|  Y Y  \\  |_> >'));
+		console.log(themeColor('|__|_|  /__/____  >____  >__|_ \\\\___  > ____|          |__|  \\___  >__|_|  /   __/ ' + chalk.gray(forkVersion)));
+		console.log(themeColor('      \\/        \\/     \\/     \\/    \\/\\/                         \\/      \\/|__|   ' + chalk.gray('based on Misskey ' + v)));
 		//#endregion
 
 		console.log('misskey-temp is a fork of Misskey.');

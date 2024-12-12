@@ -7369,6 +7369,10 @@ export interface Locale extends ILocale {
              * ブロック解除通知を許可
              */
             "canUseUnBlockedNotification": string;
+            /**
+             * アカウントの削除を許可
+             */
+            "canDeleteAccount": string;
         };
         "_condition": {
             /**
