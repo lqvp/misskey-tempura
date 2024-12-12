@@ -35,11 +35,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<img src="https://avatars.githubusercontent.com/u/183242690?v=4" :class="$style.contributorAvatar">
 							<span :class="$style.contributorUsername">@lqvp</span>
 						</a>
-						<a href="https://github.com/lqvp" target="_blank" :class="$style.contributor">
+						<a href="https://github.com/r-ca" target="_blank" :class="$style.contributor">
 							<img src="https://avatars.githubusercontent.com/u/66072112?v=4" :class="$style.contributorAvatar">
 							<span :class="$style.contributorUsername">@r-ca</span>
 						</a>
-						<a href="https://github.com/lqvp" target="_blank" :class="$style.contributor">
+						<a href="https://github.com/chan-mai" target="_blank" :class="$style.contributor">
 							<img src="https://avatars.githubusercontent.com/u/74494945?v=4" :class="$style.contributorAvatar">
 							<span :class="$style.contributorUsername">@chan-mai</span>
 						</a>
