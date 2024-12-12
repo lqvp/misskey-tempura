@@ -166,8 +166,8 @@ const menuDef = computed(() => [{
 	}, {
 		icon: 'ti ti-git-fork',
 		text: i18n.ts.originalFeature,
-		to: '/settings/lqvp-settings',
-		active: currentPage.value?.route.name === 'lqvp-settings',
+		to: '/settings/temp-settings',
+		active: currentPage.value?.route.name === 'temp-settings',
 	}, {
 		icon: 'ti ti-dots',
 		text: i18n.ts.other,

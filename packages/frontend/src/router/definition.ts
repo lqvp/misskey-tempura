@@ -188,9 +188,9 @@ const routes: RouteDef[] = [{
 		name: 'other',
 		component: page(() => import('@/pages/settings/other.vue')),
 	}, {
-		path: '/lqvp-settings',
-		name: 'lqvp-settings',
-		component: page(() => import('@/pages/settings/lqvp-settings.vue')),
+		path: '/temp-settings',
+		name: 'temp-settings',
+		component: page(() => import('@/pages/settings/temp-settings.vue')),
 	}, {
 		path: '/',
 		component: page(() => import('@/pages/_empty_.vue')),
@@ -530,9 +530,9 @@ const routes: RouteDef[] = [{
 		name: 'approvals',
 		component: page(() => import('@/pages/admin/approvals.vue')),
 	}, {
-		path: '/lqvp-admin',
-		name: 'lqvp-admin',
-		component: page(() => import('@/pages/admin/lqvp-admin.vue')),
+		path: '/temp-admin',
+		name: 'temp-admin',
+		component: page(() => import('@/pages/admin/temp-admin.vue')),
 	}, {
 		path: '/',
 		component: page(() => import('@/pages/_empty_.vue')),

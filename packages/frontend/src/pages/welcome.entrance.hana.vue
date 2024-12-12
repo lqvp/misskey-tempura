@@ -80,7 +80,7 @@
 	</div>
 
 	<div :class="$style.footerRoot" class="_gaps_s">
-		<div style="text-align: center;">&copy; 2024 Misskey-lqvp</div>
+		<div style="text-align: center;">&copy; 2024 misskey-temp</div>
 		<div :class="$style.links">
 			<MkA to="/about">{{ i18n.ts.instanceInfo }}</MkA>
 			<a v-if="instance.impressumUrl" :href="instance.impressumUrl">{{ i18n.ts.impressum }}</a>

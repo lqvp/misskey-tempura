@@ -35,15 +35,15 @@ function greet() {
 		const versionParts = meta.version.split('-');
 		const v = `v${versionParts[0]}`;
 		const forkVersion = versionParts[2];
-		console.log(themeColor(' _'));
-		console.log(themeColor('| | __ ___   ___ __'));
-		console.log(themeColor('| |/ _` \\ \\ / / \'_ \\'));
-		console.log(themeColor('| | (_| |\\ V /| |_) |'));
-		console.log(themeColor('|_|\\__, | \\_/ | .__/' + chalk.gray(forkVersion)));
-		console.log(themeColor('      |_|     |_|' + chalk.gray('based on Misskey ' + v)));
+		console.log(themeColor('        .__               __                            __                         '));
+		console.log(themeColor('  _____ |__| ______ _____|  | __ ____ ___.__.         _/  |_  ____   _____ ______  '));
+		console.log(themeColor(' /     \|  |/  ___//  ___/  |/ // __ <   |  |  ______ \   __\/ __ \ /     \\____ \''));
+		console.log(themeColor('|  Y Y  \  |\___ \ \___ \|    <\  ___/\___  | /_____/  |  | \  ___/|  Y Y  \  |_> >'));
+		console.log(themeColor('|__|_|  /__/____  >____  >__|_ \\___  > ____|          |__|  \___  >__|_|  /   __/ ' + chalk.gray(forkVersion)));
+		console.log(themeColor('      \/        \/     \/     \/    \/\/                         \/      \/|__|   ' + chalk.gray('based on Misskey ' + v)));
 		//#endregion
 
-		console.log('lqvp is a fork of Misskey.');
+		console.log('misskey-temp is a fork of Misskey.');
 		console.log(chalk.rgb(255, 136, 0)(' If you like this fork, please donate to support Misskey development. https://www.patreon.com/syuilo'));
 		console.log(chalk.gray(' Original Misskey repository: https://github.com/misskey-dev/misskey'));
 

@@ -29,9 +29,9 @@ export interface Locale extends ILocale {
      */
     "poweredByMisskeyDescription": ParameterizedString<"name">;
     /**
-     * {name}は、オープンソースのプラットフォーム<b>Misskey</b>のフォーク版であるlqvp-forkを使用しています。
+     * {name}は、オープンソースのプラットフォーム<b>Misskey</b>のフォーク版であるmisskey-tempを使用しています。
      */
-    "poweredByLqvpForkDescription": ParameterizedString<"name">;
+    "poweredBytempForkDescription": ParameterizedString<"name">;
     /**
      * {month}月 {day}日
      */

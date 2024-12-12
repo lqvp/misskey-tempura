@@ -451,7 +451,7 @@ const headerActions = computed(() => []);
 const headerTabs = computed(() => []);
 
 definePageMetadata(() => ({
-	title: 'lqvp-fork',
+	title: 'temp-fork',
 	icon: 'ti ti-adjustments',
 }));
 </script>
