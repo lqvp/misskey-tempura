@@ -799,15 +799,15 @@ export class UserFollowingService implements OnModuleInit {
 		}
 
 		// フォローリクエストを拒否された側（送信者）の履歴
-		if (this.userEntityService.isLocalUser(follower)) {
-			await this.followRequestHistoryRepository.insert({
-				id: this.idService.gen(),
-				type: 'wasRejected',
-				fromUserId: follower.id,
-				toUserId: user.id,
-				timestamp: new Date(),
-			});
-		}
+		// if (this.userEntityService.isLocalUser(follower)) {
+		// 	await this.followRequestHistoryRepository.insert({
+		// 		id: this.idService.gen(),
+		// 		type: 'wasRejected',
+		// 		fromUserId: follower.id,
+		// 		toUserId: user.id,
+		// 		timestamp: new Date(),
+		// 	});
+		// }
 
 		// フォローリクエストを拒否した側（受信者）の履歴
 		if (this.userEntityService.isLocalUser(user)) {
@@ -845,17 +845,6 @@ export class UserFollowingService implements OnModuleInit {
 		await this.removeFollowRequest(actor, follower);
 		await this.removeFollow(actor, follower);
 		this.publishUnfollow(actor, follower);
-
-		// リモートユーザーから拒否された履歴を保存
-		if (this.userEntityService.isLocalUser(follower)) {
-			await this.followRequestHistoryRepository.insert({
-				id: this.idService.gen(),
-				type: 'wasRejected',
-				fromUserId: follower.id,
-				toUserId: actor.id,
-				timestamp: new Date(),
-			});
-		}
 	}
 
 	/**
@@ -878,6 +867,17 @@ export class UserFollowingService implements OnModuleInit {
 		this.notificationService.createNotification(follower.id, 'followRequestRejected', {
 			message: profile.followedMessage,
 		}, followee.id);
+
+		// リモートユーザーから拒否された履歴を保存
+		if (this.userEntityService.isLocalUser(follower)) {
+			await this.followRequestHistoryRepository.insert({
+				id: this.idService.gen(),
+				type: 'wasRejected',
+				fromUserId: follower.id,
+				toUserId: followee.id,
+				timestamp: new Date(),
+			});
+		}
 
 		await this.followRequestsRepository.delete(request.id);
 	}
