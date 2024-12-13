@@ -561,7 +561,7 @@ export class ActivityPubServerService {
 		fastify.post('/users/:user/inbox', { config: { rawBody: true }, bodyLimit: 1024 * 64 }, async (request, reply) => await this.inbox(request, reply));
 
 		// note
-		fastify.get<{ Params: { note: string; } }>('/notes/:note', { constraints: { apOrHtml: 'ap' } }, async (request, reply) => {
+		fastify.get<{ Params: { note: string; } }>('/notes/:note', async (request, reply) => {
 			vary(reply.raw, 'Accept');
 
 			const note = await this.notesRepository.findOneBy({
@@ -582,6 +582,13 @@ export class ActivityPubServerService {
 					return;
 				}
 				reply.redirect(note.uri);
+				return;
+			}
+
+			const accepted = request.accepts().type(['html', ACTIVITY_JSON, LD_JSON]);
+
+			if (accepted === 'html' || Array.isArray(accepted)) {
+				reply.redirect(`${this.config.url}/notes/${note.id}`);
 				return;
 			}
 
