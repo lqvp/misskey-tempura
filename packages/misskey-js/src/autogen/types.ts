@@ -24258,6 +24258,10 @@ export type operations = {
           scheduleNote: {
             scheduledAt?: number;
           };
+          scheduledDelete?: ({
+            deleteAt?: number | null;
+            deleteAfter?: number | null;
+          }) | null;
         };
       };
     };
