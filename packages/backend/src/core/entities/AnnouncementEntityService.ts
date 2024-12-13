@@ -5,10 +5,11 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import { DI } from '@/di-symbols.js';
-import type { AnnouncementsRepository, AnnouncementReadsRepository, MiAnnouncement, MiUser } from '@/models/_.js';
+import type { AnnouncementsRepository, AnnouncementReadsRepository, AnnouncementRolesRepository, MiAnnouncement, MiUser } from '@/models/_.js';
 import type { Packed } from '@/misc/json-schema.js';
 import { bindThis } from '@/decorators.js';
 import { IdService } from '@/core/IdService.js';
+import { RoleEntityService } from './RoleEntityService.js';
 
 @Injectable()
 export class AnnouncementEntityService {
@@ -19,7 +20,11 @@ export class AnnouncementEntityService {
 		@Inject(DI.announcementReadsRepository)
 		private announcementReadsRepository: AnnouncementReadsRepository,
 
+		@Inject(DI.announcementRolesRepository)
+		private announcementRolesRepository: AnnouncementRolesRepository,
+
 		private idService: IdService,
+		private roleEntityService: RoleEntityService,
 	) {
 	}
 
@@ -43,6 +48,13 @@ export class AnnouncementEntityService {
 				.then((count: number) => count > 0);
 		}
 
+		// ロール名を取得
+		const roles = announcement.isRoleSpecified ? await this.announcementRolesRepository.findBy({ announcementId: announcement.id }) : [];
+		const roleNames = await Promise.all(roles.map(async role => {
+			const roleEntity = await this.roleEntityService.pack(role.roleId);
+			return roleEntity.name;
+		}));
+
 		return {
 			id: announcement.id,
 			createdAt: this.idService.parse(announcement.id).date.toISOString(),
@@ -57,6 +69,7 @@ export class AnnouncementEntityService {
 			needConfirmationToRead: announcement.needConfirmationToRead,
 			silence: announcement.silence,
 			isRead: announcement.isRead !== null ? announcement.isRead : undefined,
+			roleNames: roleNames,
 		};
 	}
 

@@ -60,6 +60,14 @@ export const packedAnnouncementSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
+		roleNames: {
+			type: 'array',
+			items: {
+				type: 'string',
+			},
+			optional: false,
+			nullable: false,
+		},
 		isRead: {
 			type: 'boolean',
 			optional: true, nullable: false,
