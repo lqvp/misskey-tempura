@@ -139,7 +139,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 		this.logger = this.queueLoggerService.logger;
 
 		function renderError(e?: Error) {
-			// ???e?undefined????????
+			// 何故かeがundefinedで来ることがある
 			if (!e) return '?';
 
 			if (e instanceof Bull.UnrecoverableError || e.name === 'AbortError') {
