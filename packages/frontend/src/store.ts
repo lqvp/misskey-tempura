@@ -168,7 +168,7 @@ export const defaultStore = markRaw(new Storage('base', {
 			'followHistory',
 			'followRequestHistory',
 			'-',
-			'explore',
+			'roleManager',
 			'announcements',
 			'search',
 			'-',
