@@ -19,17 +19,41 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #default="{items}">
 						<div class="mk-follow-requests _gaps">
 							<div v-for="history in items" :key="history.id" class="history _panel" :class="getActionConfig(history.type).className">
-								<MkAvatar class="avatar" :user="history[getActionConfig(history.type).avatarUser]" indicator link preview/>
+								<MkAvatar
+									v-if="hasUserProps(history[getActionConfig(history.type).avatarUser])"
+									class="avatar"
+									:user="history[getActionConfig(history.type).avatarUser]"
+									indicator
+									link
+									preview
+								/>
+								<div v-else class="unknown-user">
+									<span>?</span>
+								</div>
 								<div class="body">
 									<div class="content">
 										<div class="users">
-											<MkA v-user-preview="history.fromUser.id" class="name" :to="userPage(history.fromUser)">
-												<MkUserName :user="history.fromUser"/>
+											<MkA
+												v-if="hasUserProps(history.fromUser)"
+												v-user-preview="history.fromUser.id"
+												class="name"
+												:to="userPage(history.fromUser)"
+											>
+												<MkUserName v-if="hasUserProps(history.fromUser)" :user="history.fromUser"/>
+												<span v-else>unknown user</span>
 											</MkA>
+											<span v-else>unknown user</span>
 											<i class="ti ti-arrow-right"></i>
-											<MkA v-user-preview="history.toUser.id" class="name" :to="userPage(history.toUser)">
-												<MkUserName :user="history.toUser"/>
+											<MkA
+												v-if="hasUserProps(history.toUser)"
+												v-user-preview="history.toUser.id"
+												class="name"
+												:to="userPage(history.toUser)"
+											>
+												<MkUserName v-if="hasUserProps(history.toUser)" :user="history.toUser"/>
+												<span v-else>unknown user</span>
 											</MkA>
+											<span v-else>unknown user</span>
 										</div>
 										<p class="action">
 											<i :class="getActionConfig(history.type).icon"></i>
@@ -68,6 +92,10 @@ import { infoImageUrl } from '@/instance.js';
 import { $i } from '@/account.js';
 import MkHorizontalSwipe from '@/components/MkHorizontalSwipe.vue';
 import { dateString } from '@/filters/date.js';
+
+function hasUserProps(user: any): boolean {
+	return !!(user && (user.id || user.username || user.avatarUrl));
+}
 
 const ACTION_CONFIG = {
 	follow: {
@@ -215,93 +243,106 @@ definePageMetadata(() => ({
 }));
 </script>
 
-	<style lang="scss" scoped>
-	.mk-follow-requests {
-		> .history {
+<style lang="scss" scoped>
+.unknown-user {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 42px;
+	height: 42px;
+	border-radius: 8px;
+	background: var(--panel);
+	color: var(--fg);
+	font-size: 1.2em;
+	opacity: 0.5;
+}
+
+.mk-follow-requests {
+	> .history {
+		display: flex;
+		padding: 16px;
+		border: 2px solid transparent;
+		transition: border-color 0.2s ease;
+
+		&.history--follow {
+			border-color: var(--MI_THEME-link);
+		}
+
+		&.history--unfollow {
+			border-color: var(--MI_THEME-error);
+		}
+
+		&.history--wasfollow {
+			border-color: var(--MI_THEME-success);
+		}
+
+		&.history--wasunfollow {
+			border-color: var(--MI_THEME-error);
+		}
+
+		&.history--blocked {
+			border-color: var(--MI_THEME-warn);
+		}
+
+		&.history--unblocked {
+			border-color: var(--MI_THEME-renote);
+		}
+
+		&.history--wasblocked {
+			border-color: var(--MI_THEME-warn);
+		}
+
+		&.history--wasunblocked {
+			border-color: var(--MI_THEME-renote);
+		}
+
+		> .avatar {
+			display: block;
+			flex-shrink: 0;
+			margin: 0 12px 0 0;
+			width: 42px;
+			height: 42px;
+			border-radius: 8px;
+		}
+
+		> .body {
 			display: flex;
-			padding: 16px;
-			border: 2px solid transparent;
-			transition: border-color 0.2s ease;
+			flex-direction: column;
+			flex: 1;
+			gap: 4px;
 
-			&.history--follow {
-				border-color: var(--MI_THEME-link);
-			}
+			> .content {
+				> .users {
+					display: flex;
+					align-items: center;
+					gap: 8px;
+					font-size: 15px;
 
-			&.history--unfollow {
-				border-color: var(--MI_THEME-error);
-			}
-
-			&.history--wasfollow {
-				border-color: var(--MI_THEME-success);
-			}
-
-			&.history--wasunfollow {
-				border-color: var(--MI_THEME-error);
-			}
-
-			&.history--blocked {
-				border-color: var(--MI_THEME-warn);
-			}
-
-			&.history--unblocked {
-				border-color: var(--MI_THEME-renote);
-			}
-
-			&.history--wasblocked {
-				border-color: var(--MI_THEME-warn);
-			}
-
-			&.history--wasunblocked {
-				border-color: var(--MI_THEME-renote);
-			}
-
-			> .avatar {
-				display: block;
-				flex-shrink: 0;
-				margin: 0 12px 0 0;
-				width: 42px;
-				height: 42px;
-				border-radius: 8px;
-			}
-
-			> .body {
-				display: flex;
-				flex-direction: column;
-				flex: 1;
-				gap: 4px;
-
-				> .content {
-					> .users {
-						display: flex;
-						align-items: center;
-						gap: 8px;
-						font-size: 15px;
-
-						> .ti {
-							opacity: 0.7;
-						}
-					}
-
-					> .action {
-						margin: 4px 0 0 0;
+					> .ti {
 						opacity: 0.7;
-						font-size: 14px;
-
-						> .ti {
-							margin-right: 4px;
-						}
 					}
 				}
 
-				> .info {
-					font-size: 0.9em;
+				> .action {
+					margin: 4px 0 0 0;
 					opacity: 0.7;
+					font-size: 14px;
 
-					> .timestamp {
-						margin-right: 8px;
+					> .ti {
+						margin-right: 4px;
 					}
+				}
+			}
+
+			> .info {
+				font-size: 0.9em;
+				opacity: 0.7;
+
+				> .timestamp {
+					margin-right: 8px;
 				}
 			}
 		}
 	}
-	</style>
+}
+</style>

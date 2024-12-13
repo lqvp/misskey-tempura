@@ -37,12 +37,10 @@ export const meta = {
 				fromUser: {
 					type: 'object',
 					optional: false, nullable: false,
-					ref: 'UserDetailedNotMe',
 				},
 				toUser: {
 					type: 'object',
 					optional: false, nullable: false,
-					ref: 'UserDetailedNotMe',
 				},
 				timestamp: {
 					type: 'string',
@@ -200,8 +198,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 			return await Promise.all(histories.map(async history => ({
 				id: history.id,
 				type: history.type,
-				fromUser: await this.userEntityService.pack(history.fromUser ?? history.fromUserId, me, { schema: 'UserDetailed' }),
-				toUser: await this.userEntityService.pack(history.toUser ?? history.toUserId, me, { schema: 'UserDetailed' }),
+				fromUser: history.fromUser
+					? await this.userEntityService.pack(history.fromUser ?? history.fromUserId, me)
+					: { name: 'unknown user' },
+				toUser: history.toUser
+					? await this.userEntityService.pack(history.toUser ?? history.toUserId, me)
+					: { name: 'unknown user' },
 				timestamp: history.timestamp.toISOString(),
 			})));
 		});
