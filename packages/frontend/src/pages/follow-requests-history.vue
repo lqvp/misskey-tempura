@@ -19,15 +19,33 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #default="{items}">
 						<div class="mk-follow-requests _gaps">
 							<div v-for="history in items" :key="history.id" class="history _panel" :class="getActionConfig(history.type).className">
-								<MkAvatar class="avatar" :user="history[getActionConfig(history.type).avatarUser]" indicator link preview/>
+								<MkAvatar
+									class="avatar"
+									:user="history[getActionConfig(history.type).avatarUser]"
+									:disablePreview="isUnknownUser(history[getActionConfig(history.type).avatarUser])"
+									:disableLink="isUnknownUser(history[getActionConfig(history.type).avatarUser])"
+									indicator
+								/>
 								<div class="body">
 									<div class="content">
 										<div class="users">
-											<MkA v-user-preview="history.fromUser.id" class="name" :to="userPage(history.fromUser)">
+											<MkA
+												:class="{ 'no-hover': isUnknownUser(history.fromUser) }"
+												:vUserPreview="!isUnknownUser(history.fromUser) ? history.fromUser.id : undefined"
+												class="name"
+												:to="!isUnknownUser(history.fromUser) ? userPage(history.fromUser) : undefined"
+											>
 												<MkUserName :user="history.fromUser"/>
 											</MkA>
+
 											<i class="ti ti-arrow-right"></i>
-											<MkA v-user-preview="history.toUser.id" class="name" :to="userPage(history.toUser)">
+
+											<MkA
+												:class="{ 'no-hover': isUnknownUser(history.toUser) }"
+												:vUserPreview="!isUnknownUser(history.toUser) ? history.toUser.id : undefined"
+												class="name"
+												:to="!isUnknownUser(history.toUser) ? userPage(history.toUser) : undefined"
+											>
 												<MkUserName :user="history.toUser"/>
 											</MkA>
 										</div>
@@ -172,6 +190,10 @@ const deleteHistory = () => {
 	});
 };
 
+function isUnknownUser(user: any) {
+  return user?.isUnknown === true;
+}
+
 const headerActions = computed(() => [{
 	icon: 'ti ti-trash',
 	text: i18n.ts._followRequestHistory.deleteAll,
@@ -197,77 +219,84 @@ definePageMetadata(() => ({
 }));
 </script>
 
-	<style lang="scss" scoped>
-	.mk-follow-requests {
-		> .history {
+<style lang="scss" scoped>
+.no-hover {
+  pointer-events: none;
+  cursor: default;
+  text-decoration: none;
+  color: inherit;
+}
+
+.mk-follow-requests {
+	> .history {
+		display: flex;
+		padding: 16px;
+		border: 2px solid transparent;
+		transition: border-color 0.2s ease;
+
+		&.history--sent {
+		border-color: var(--MI_THEME-link);
+		}
+
+		&.history--received {
+			border-color: var(--MI_THEME-hashtag);
+		}
+
+		&.history--approved {
+			border-color: var(--MI_THEME-success);
+		}
+
+		&.history--rejected {
+			border-color: var(--MI_THEME-error);
+		}
+
+		> .avatar {
+			display: block;
+			flex-shrink: 0;
+			margin: 0 12px 0 0;
+			width: 42px;
+			height: 42px;
+			border-radius: 8px;
+		}
+
+		> .body {
 			display: flex;
-			padding: 16px;
-			border: 2px solid transparent;
-			transition: border-color 0.2s ease;
+			flex-direction: column;
+			flex: 1;
+			gap: 4px;
 
-			&.history--sent {
-			border-color: var(--MI_THEME-link);
-			}
+			> .content {
+				> .users {
+					display: flex;
+					align-items: center;
+					gap: 8px;
+					font-size: 15px;
 
-			&.history--received {
-				border-color: var(--MI_THEME-hashtag);
-			}
-
-			&.history--approved {
-				border-color: var(--MI_THEME-success);
-			}
-
-			&.history--rejected {
-				border-color: var(--MI_THEME-error);
-			}
-
-			> .avatar {
-				display: block;
-				flex-shrink: 0;
-				margin: 0 12px 0 0;
-				width: 42px;
-				height: 42px;
-				border-radius: 8px;
-			}
-
-			> .body {
-				display: flex;
-				flex-direction: column;
-				flex: 1;
-				gap: 4px;
-
-				> .content {
-					> .users {
-						display: flex;
-						align-items: center;
-						gap: 8px;
-						font-size: 15px;
-
-						> .ti {
-							opacity: 0.7;
-						}
-					}
-
-					> .action {
-						margin: 4px 0 0 0;
+					> .ti {
 						opacity: 0.7;
-						font-size: 14px;
-
-						> .ti {
-							margin-right: 4px;
-						}
 					}
 				}
 
-				> .info {
-					font-size: 0.9em;
+				> .action {
+					margin: 4px 0 0 0;
 					opacity: 0.7;
+					font-size: 14px;
 
-					> .timestamp {
-						margin-right: 8px;
+					> .ti {
+						margin-right: 4px;
 					}
+				}
+			}
+
+			> .info {
+				font-size: 0.9em;
+				opacity: 0.7;
+
+				> .timestamp {
+					margin-right: 8px;
 				}
 			}
 		}
 	}
-	</style>
+}
+</style>

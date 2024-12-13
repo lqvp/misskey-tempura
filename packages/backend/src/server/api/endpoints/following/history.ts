@@ -196,13 +196,37 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				.take(ps.limit)
 				.getMany();
 
-			return await Promise.all(histories.map(async history => ({
-				id: history.id,
-				type: history.type,
-				fromUser: await this.userEntityService.pack(history.fromUser ?? history.fromUserId, me, { schema: 'UserDetailed' }),
-				toUser: await this.userEntityService.pack(history.toUser ?? history.toUserId, me, { schema: 'UserDetailed' }),
-				timestamp: history.timestamp.toISOString(),
-			})));
+			const UNKNOWN_USER = {
+				id: '0',
+				name: 'Unknown User',
+				username: null,
+				host: null,
+				avatarUrl: null,
+				avatarBlurhash: null,
+				isBot: false,
+				isCat: false,
+				instance: null,
+				emojis: [],
+				onlineStatus: 'unknown',
+				isUnknown: true,
+			} as const;
+
+			// Endpoint classの中のhandler関数の該当部分を修正
+			return await Promise.all(histories.map(async history => {
+				const fromUser = history.fromUser ?? history.fromUserId;
+				const toUser = history.toUser ?? history.toUserId;
+
+				const packedFromUser = fromUser ? await this.userEntityService.pack(fromUser, me, { schema: 'UserDetailed' }).catch(() => UNKNOWN_USER) : UNKNOWN_USER;
+				const packedToUser = toUser ? await this.userEntityService.pack(toUser, me, { schema: 'UserDetailed' }).catch(() => UNKNOWN_USER) : UNKNOWN_USER;
+
+				return {
+					id: history.id,
+					type: history.type,
+					fromUser: packedFromUser,
+					toUser: packedToUser,
+					timestamp: history.timestamp.toISOString(),
+				};
+			}));
 		});
 	}
 }
