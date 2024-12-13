@@ -114,8 +114,8 @@ onMounted(() => {
 	}
 
 	&.selected > :global(._panel) {
-		background-color: var(--accent) !important;
-		color: var(--fgOnAccent) !important;
+		background-color: var(--MI_THEME-accent) !important;
+		color: var(--MI_THEME-fgOnAccent) !important;
 	}
 
 	& > :global(._panel) {
