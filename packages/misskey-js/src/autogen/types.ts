@@ -17220,8 +17220,8 @@ export type operations = {
                * @enum {string|null}
                */
               type: 'follow' | 'unFollow' | 'wasFollow' | 'wasUnFollow' | 'blocked' | 'unBlocked' | 'wasBlocked' | 'wasUnBlocked';
-              fromUser: components['schemas']['UserDetailedNotMe'];
-              toUser: components['schemas']['UserDetailedNotMe'];
+              fromUser: Record<string, never>;
+              toUser: Record<string, never>;
               /** Format: date-time */
               timestamp: string;
             })[];
@@ -17309,8 +17309,8 @@ export type operations = {
                * @enum {string|null}
                */
               type: 'sent' | 'received' | 'approved' | 'rejected' | 'wasApproved' | 'wasRejected' | 'wasBlocked' | 'wasUnBlocked';
-              fromUser: components['schemas']['UserDetailedNotMe'];
-              toUser: components['schemas']['UserDetailedNotMe'];
+              fromUser: Record<string, never>;
+              toUser: Record<string, never>;
               /** Format: date-time */
               timestamp: string;
             })[];
