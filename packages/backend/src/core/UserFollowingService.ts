@@ -203,6 +203,28 @@ export class UserFollowingService implements OnModuleInit {
 				});
 
 				if (isFollowed) autoAccept = true;
+
+				// フォローリクエストを承認された側（送信者）の履歴
+				if (this.userEntityService.isLocalUser(follower)) {
+					await this.followRequestHistoryRepository.insert({
+						id: this.idService.gen(),
+						type: 'wasApproved',
+						fromUserId: follower.id,
+						toUserId: followee.id,
+						timestamp: new Date(),
+					});
+				}
+
+				// フォローリクエストを承認した側（受信者）の履歴
+				if (this.userEntityService.isLocalUser(followee)) {
+					await this.followRequestHistoryRepository.insert({
+						id: this.idService.gen(),
+						type: 'approved',
+						fromUserId: follower.id,
+						toUserId: followee.id,
+						timestamp: new Date(),
+					});
+				}
 			}
 
 			// Automatically accept if the follower is an account who has moved and the locked followee had accepted the old account.
