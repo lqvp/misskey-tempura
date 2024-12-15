@@ -615,13 +615,15 @@ export class ClientServerService {
 					requireSigninToViewContents: _user.requireSigninToViewContents,
 				};
 
+				const userData = _user.requireSigninToViewContents ? minimalUserData : _user;
+
 				return await reply.view('user', {
 					user, profile, me,
 					avatarUrl: user.avatarUrl ?? this.userEntityService.getIdenticonUrl(user),
 					sub: request.params.sub,
 					...await this.generateCommonPugData(this.meta),
 					clientCtx: htmlSafeJsonStringify({
-						user: minimalUserData,
+						user: userData,
 					}),
 				});
 			} else {
