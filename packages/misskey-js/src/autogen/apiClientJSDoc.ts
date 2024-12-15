@@ -1197,17 +1197,6 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
-     * リモートユーザの投稿を取得します
-     * 
-     * **Credential required**: *Yes* / **Permission**: *read:account*
-     */
-    request<E extends 'ap/fetch-outbox', P extends Endpoints[E]['req']>(
-      endpoint: E,
-      params: P,
-      credential?: string | null,
-    ): Promise<SwitchCaseResponseType<E, P>>;
-
-    /**
      * No description provided.
      * 
      * **Credential required**: *No*
