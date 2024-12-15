@@ -111,20 +111,9 @@ export interface ICollection extends IObject {
 
 export interface IOrderedCollection extends IObject {
 	type: 'OrderedCollection';
-	totalItems?: number;
+	totalItems: number;
+	first?: IObject | string;
 	orderedItems?: ApObject;
-	first?: IOrderedCollectionPage | string;
-	last?:string;
-}
-
-export interface IOrderedCollectionPage extends IObject {
-	type: 'OrderedCollectionPage';
-	partOf: string;
-	totalItems?: number;
-	orderedItems?: IObject[];
-	items?: IObject[];
-	prev: string;
-	next: string;
 }
 
 export const validPost = ['Note', 'Question', 'Article', 'Audio', 'Document', 'Image', 'Page', 'Video', 'Event'];
@@ -229,9 +218,6 @@ export const isOrderedCollection = (object: IObject): object is IOrderedCollecti
 
 export const isCollectionOrOrderedCollection = (object: IObject): object is ICollection | IOrderedCollection =>
 	isCollection(object) || isOrderedCollection(object);
-
-export const isIOrderedCollectionPage = (object: IObject): object is IOrderedCollectionPage =>
-	getApType(object) === 'OrderedCollectionPage';
 
 export interface IApPropertyValue extends IObject {
 	type: 'PropertyValue';

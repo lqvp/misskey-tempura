@@ -186,14 +186,6 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 		});
 	}
 
-	async function userFetchOutbox() {
-		os.apiWithDialog('ap/fetch-outbox', {
-			userId: user.id,
-			wait: true,
-			includeAnnounce: true,
-		});
-	}
-
 	async function invalidateFollow() {
 		if (!await getConfirmed(i18n.ts.breakFollowConfirm)) return;
 
@@ -465,10 +457,6 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 			icon: 'ti ti-refresh',
 			text: i18n.ts.updateRemoteUser,
 			action: userInfoUpdate,
-		}, {
-			icon: 'ti ti-refresh-dot',
-			text: i18n.ts.fetchOutbox,
-			action: userFetchOutbox,
 		});
 	}
 

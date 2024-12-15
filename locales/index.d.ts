@@ -2523,10 +2523,6 @@ export interface Locale extends ILocale {
      */
     "updateRemoteUser": string;
     /**
-     * 投稿を取得
-     */
-    "fetchOutbox": string;
-    /**
      * アイコンを解除
      */
     "unsetUserAvatar": string;

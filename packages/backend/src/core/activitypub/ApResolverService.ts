@@ -15,11 +15,11 @@ import { UtilityService } from '@/core/UtilityService.js';
 import { bindThis } from '@/decorators.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import type Logger from '@/logger.js';
-import { isCollectionOrOrderedCollection, isIOrderedCollectionPage, isOrderedCollection } from './type.js';
+import { isCollectionOrOrderedCollection } from './type.js';
 import { ApDbResolverService } from './ApDbResolverService.js';
 import { ApRendererService } from './ApRendererService.js';
 import { ApRequestService } from './ApRequestService.js';
-import type { IObject, ICollection, IOrderedCollection, IOrderedCollectionPage } from './type.js';
+import type { IObject, ICollection, IOrderedCollection } from './type.js';
 
 export class Resolver {
 	private history: Set<string>;
@@ -41,7 +41,7 @@ export class Resolver {
 		private apRendererService: ApRendererService,
 		private apDbResolverService: ApDbResolverService,
 		private loggerService: LoggerService,
-		private recursionLimit = 1000,
+		private recursionLimit = 100,
 	) {
 		this.history = new Set();
 		this.logger = this.loggerService.getLogger('ap-resolve');
@@ -64,32 +64,6 @@ export class Resolver {
 			: value;
 
 		if (isCollectionOrOrderedCollection(collection)) {
-			return collection;
-		} else {
-			throw new Error(`unrecognized collection type: ${collection.type}`);
-		}
-	}
-
-	@bindThis
-	public async resolveOrderedCollection(value: string | IObject): Promise<IOrderedCollection> {
-		const collection = typeof value === 'string'
-			? await this.resolve(value)
-			: value;
-
-		if (isOrderedCollection(collection)) {
-			return collection;
-		} else {
-			throw new Error(`unrecognized collection type: ${collection.type}`);
-		}
-	}
-
-	@bindThis
-	public async resolveOrderedCollectionPage(value: string | IObject): Promise<IOrderedCollectionPage> {
-		const collection = typeof value === 'string'
-			? await this.resolve(value)
-			: value;
-
-		if (isIOrderedCollectionPage(collection)) {
 			return collection;
 		} else {
 			throw new Error(`unrecognized collection type: ${collection.type}`);
