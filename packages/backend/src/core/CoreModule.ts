@@ -153,7 +153,6 @@ import { ApNoteService } from './activitypub/models/ApNoteService.js';
 import { ApOutboxFetchService } from './activitypub/models/ApOutboxFetchService.js';
 import { ApPersonService } from './activitypub/models/ApPersonService.js';
 import { ApQuestionService } from './activitypub/models/ApQuestionService.js';
-import { ApGameService } from './activitypub/models/ApGameService.js';
 import { QueueModule } from './QueueModule.js';
 import { QueueService } from './QueueService.js';
 import { LoggerService } from './LoggerService.js';
@@ -311,7 +310,6 @@ const $ApNoteService: Provider = { provide: 'ApNoteService', useExisting: ApNote
 const $ApOutboxFetchService: Provider = { provide: 'ApOutboxFetchService', useExisting: ApOutboxFetchService };
 const $ApPersonService: Provider = { provide: 'ApPersonService', useExisting: ApPersonService };
 const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting: ApQuestionService };
-const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGameService };
 //#endregion
 
 @Module({
@@ -468,7 +466,6 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		ApOutboxFetchService,
 		ApPersonService,
 		ApQuestionService,
-		ApGameService,
 		QueueService,
 		NoteHistorySerivce,
 
@@ -622,7 +619,6 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		$ApOutboxFetchService,
 		$ApPersonService,
 		$ApQuestionService,
-		$ApGameService,
 		//#endregion
 	],
 	exports: [
@@ -775,7 +771,6 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		ApOutboxFetchService,
 		ApPersonService,
 		ApQuestionService,
-		ApGameService,
 		QueueService,
 		NoteHistorySerivce,
 
@@ -927,7 +922,6 @@ const $ApGameService: Provider = { provide: 'ApGameService', useExisting: ApGame
 		$ApOutboxFetchService,
 		$ApPersonService,
 		$ApQuestionService,
-		$ApGameService,
 		//#endregion
 	],
 })

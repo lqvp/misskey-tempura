@@ -16,7 +16,6 @@ import { InstanceActorService } from '@/core/InstanceActorService.js';
 import type { Config } from '@/config.js';
 import { DI } from '@/di-symbols.js';
 import { DEFAULT_POLICIES } from '@/core/RoleService.js';
-import { NodeinfoServerService } from '@/server/NodeinfoServerService.js';
 
 @Injectable()
 export class MetaEntityService {
@@ -135,7 +134,6 @@ export class MetaEntityService {
 			mediaProxy: this.config.mediaProxy,
 			enableUrlPreview: instance.urlPreviewEnabled,
 			noteSearchableScope: (this.config.meilisearch == null || this.config.meilisearch.scope !== 'local') ? 'global' : 'local',
-			reversiVersion: NodeinfoServerService.reversiVersion,
 			maxFileSize: this.config.maxFileSize,
 			useHanaEntrance: instance.useHanaEntrance,
 			hanaThemeColor: instance.hanaThemeColor,

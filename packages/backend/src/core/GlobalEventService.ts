@@ -199,10 +199,6 @@ export interface ReversiGameEventTypes {
 	canceled: {
 		userId: MiUser['id'];
 	};
-	reacted: {
-		userId: MiUser['id'];
-		reaction: string;
-	};
 }
 //#endregion
 
