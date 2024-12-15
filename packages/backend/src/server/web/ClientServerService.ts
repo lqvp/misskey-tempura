@@ -517,7 +517,6 @@ export class ClientServerService {
 				usernameLower: username.toLowerCase(),
 				host: host ?? IsNull(),
 				isSuspended: false,
-				requireSigninToViewContents: false,
 			});
 
 			return user && await this.feedService.packFeed(user);
@@ -575,20 +574,11 @@ export class ClientServerService {
 		// User
 		fastify.get<{ Params: { user: string; sub?: string; } }>('/@:user/:sub?', async (request, reply) => {
 			const { username, host } = Acct.parse(request.params.user);
-
-			if (host) {
-				return await renderBase(reply); // リモートユーザーのページはSSRしない (プライバシーの観点から)
-			}
-
 			const user = await this.usersRepository.findOneBy({
 				usernameLower: username.toLowerCase(),
 				host: host ?? IsNull(),
 				isSuspended: false,
 			});
-
-			if (user?.requireSigninToViewContents) {
-				return await renderBase(reply);
-			}
 
 			vary(reply.raw, 'Accept');
 
@@ -646,7 +636,6 @@ export class ClientServerService {
 				id: request.params.user,
 				host: IsNull(),
 				isSuspended: false,
-				requireSigninToViewContents: false,
 			});
 
 			if (user == null) {
@@ -698,14 +687,9 @@ export class ClientServerService {
 		// Page
 		fastify.get<{ Params: { user: string; page: string; } }>('/@:user/pages/:page', async (request, reply) => {
 			const { username, host } = Acct.parse(request.params.user);
-
-			if (host) {
-				return await renderBase(reply); // リモートユーザーのページはSSRしない
-			}
-
 			const user = await this.usersRepository.findOneBy({
 				usernameLower: username.toLowerCase(),
-				host: IsNull(),
+				host: host ?? IsNull(),
 			});
 
 			if (user == null) return;
@@ -893,9 +877,6 @@ export class ClientServerService {
 			if (user.host != null) return;
 
 			const _user = await this.userEntityService.pack(user);
-			const _user = await this.userEntityService.pack(user, null, {
-				schema: host ? 'UserLite' : 'UserDetailedNotMe' // リモートユーザーの場合は詳細情報を返さない
-			});
 
 			reply.header('Cache-Control', 'public, max-age=3600');
 			return await reply.view('base-embed', {
