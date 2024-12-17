@@ -64,6 +64,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</template>
 							<template #caption>{{ i18n.ts.enableLikeConfirmDescription }}</template>
 						</MkSwitch>
+						<MkSwitch v-model="disableNoteNyaize">{{ i18n.ts.disableNoteNyaize }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
 						<MkSelect v-model="hideReactionCount">
 							<template #label>{{ i18n.ts.hideReactionCount }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 							<option value="none">{{ i18n.ts._hideReactionCount.none }}</option>
@@ -72,8 +73,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<option value="all">{{ i18n.ts._hideReactionCount.all }}</option>
 						</MkSelect>
 					</div>
-
-					<MkSwitch v-model="disableNoteNyaize">{{ i18n.ts.disableNoteNyaize }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
 
 					<MkFolder>
 						<template #label>{{ i18n.ts.like }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
