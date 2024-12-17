@@ -11523,6 +11523,30 @@ export interface Locale extends ILocale {
      */
     "anonymizeMutedUsers": string;
     /**
+     * リアクションの確認を有効にする
+     */
+    "enableReactionConfirm": string;
+    /**
+     * リアクションを押した際に確認ダイアログを表示します。
+     */
+    "enableReactionConfirmDescription": string;
+    /**
+     * リアクションを追加しますか？
+     */
+    "addReactionConfirm": string;
+    /**
+     * いいねの確認を有効にする
+     */
+    "enableLikeConfirm": string;
+    /**
+     * いいねを押した際に確認ダイアログを表示します。
+     */
+    "enableLikeConfirmDescription": string;
+    /**
+     * いいねしますか？
+     */
+    "likeConfirm": string;
+    /**
      * 通知を送る
      */
     "notificationSend": string;

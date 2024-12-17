@@ -79,6 +79,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 					{{ i18n.ts.hideReactionUsers }}
 					<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 				</MkSwitch>
+				<MkSwitch v-model="enableReactionConfirm">
+					<template #label>
+						{{ i18n.ts.enableReactionConfirm }}
+						<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+					</template>
+					<template #caption>{{ i18n.ts.enableReactionConfirmDescription }}</template>
+				</MkSwitch>
+				<MkSwitch v-model="enableLikeConfirm">
+					<template #label>
+						{{ i18n.ts.enableLikeConfirm }}
+						<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+					</template>
+					<template #caption>{{ i18n.ts.enableLikeConfirmDescription }}</template>
+				</MkSwitch>
 				<MkSelect v-model="hideReactionCount">
 					<template #label>{{ i18n.ts.hideReactionCount }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 					<option value="none">{{ i18n.ts._hideReactionCount.none }}</option>

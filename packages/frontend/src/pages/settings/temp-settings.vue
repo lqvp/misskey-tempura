@@ -50,6 +50,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 							{{ i18n.ts.hideReactionUsers }}
 							<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 						</MkSwitch>
+						<MkSwitch v-model="enableReactionConfirm">
+							<template #label>
+								{{ i18n.ts.enableReactionConfirm }}
+								<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+							</template>
+							<template #caption>{{ i18n.ts.enableReactionConfirmDescription }}</template>
+						</MkSwitch>
+						<MkSwitch v-model="enableLikeConfirm">
+							<template #label>
+								{{ i18n.ts.enableLikeConfirm }}
+								<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+							</template>
+							<template #caption>{{ i18n.ts.enableLikeConfirmDescription }}</template>
+						</MkSwitch>
 						<MkSelect v-model="hideReactionCount">
 							<template #label>{{ i18n.ts.hideReactionCount }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 							<option value="none">{{ i18n.ts._hideReactionCount.none }}</option>
@@ -295,6 +309,8 @@ const showLikeButton = computed(defaultStore.makeGetterSetter('showLikeButton'))
 const disableNoteDrafting = computed(defaultStore.makeGetterSetter('disableNoteDrafting'));
 const imageCompressionMode = computed(defaultStore.makeGetterSetter('imageCompressionMode'));
 const enableSnowMode = computed(defaultStore.makeGetterSetter('enableSnowMode'));
+const enableReactionConfirm = computed(defaultStore.makeGetterSetter('enableReactionConfirm'));
+const enableLikeConfirm = computed(defaultStore.makeGetterSetter('enableLikeConfirm'));
 
 const Sortable = defineAsyncComponent(() => import('vuedraggable').then(x => x.default));
 const draftSavingBehavior = computed(defaultStore.makeGetterSetter('draftSavingBehavior'));
@@ -334,6 +350,8 @@ watch([
 	showLikeButton,
 	disableNoteDrafting,
 	enableSnowMode,
+	enableReactionConfirm,
+	enableLikeConfirm,
 ], async () => {
 	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
 });

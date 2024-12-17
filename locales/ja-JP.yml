@@ -3079,6 +3079,13 @@ snowMode: "雪を降らせる"
 
 anonymizeMutedUsers: "ミュートしたユーザーを匿名にする"
 
+enableReactionConfirm: "リアクションの確認を有効にする"
+enableReactionConfirmDescription: "リアクションを押した際に確認ダイアログを表示します。"
+addReactionConfirm: "リアクションを追加しますか？"
+enableLikeConfirm: "いいねの確認を有効にする"
+enableLikeConfirmDescription: "いいねを押した際に確認ダイアログを表示します。"
+likeConfirm: "いいねしますか？"
+
 notificationSend: "通知を送る"
 enterNotificationText: "通知内容を入力"
 notificationSendConfirm: "通知を送信しますか？"

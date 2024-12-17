@@ -502,9 +502,17 @@ function react(): void {
 	}
 }
 
-function heartReact(): void {
+async function heartReact(): Promise<void> {
 	pleaseLogin(undefined, pleaseLoginContext.value);
 	showMovedDialog();
+
+	if (defaultStore.state.enableLikeConfirm) {
+		const confirm = await os.confirm({
+			type: 'info',
+			text: i18n.ts.likeConfirm,
+		});
+		if (confirm.canceled) return;
+	}
 
 	sound.playMisskeySfx('reaction');
 

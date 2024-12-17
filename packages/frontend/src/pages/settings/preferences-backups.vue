@@ -132,6 +132,8 @@ const defaultStoreSaveKeys: (keyof typeof defaultStore['state'])[] = [
 	'reactionChecksMuting',
 	'imageCompressionMode',
 	'anonymizeMutedUsers',
+	'enableReactionConfirm',
+	'enableLikeConfirm',
 ];
 const coldDeviceStorageSaveKeys: (keyof typeof ColdDeviceStorage.default)[] = [
 	'lightTheme',

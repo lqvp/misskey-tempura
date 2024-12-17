@@ -37,6 +37,7 @@ import { checkReactionPermissions } from '@/scripts/check-reaction-permissions.j
 import { customEmojisMap } from '@/custom-emojis.js';
 
 const reactionChecksMuting = computed(defaultStore.makeGetterSetter('reactionChecksMuting'));
+const enableReactionConfirm = computed(defaultStore.makeGetterSetter('enableReactionConfirm'));
 
 const props = defineProps<{
 	reaction: string;
@@ -86,6 +87,15 @@ async function toggleReaction() {
 
 	const reaction = getReactionName(props.reaction, true);
 	const oldReaction = props.note.myReaction ? getReactionName(props.note.myReaction, true) : null;
+
+	if (enableReactionConfirm.value && !oldReaction) {
+		const confirm = await os.confirm({
+			type: 'info',
+			text: i18n.ts.addReactionConfirm,
+		});
+		if (confirm.canceled) return;
+	}
+
 	if (oldReaction) {
 		const confirm = await os.confirm({
 			type: 'warning',
