@@ -459,23 +459,13 @@ export class ApRendererService {
 			this.userProfilesRepository.findOneByOrFail({ userId: user.id }),
 		]);
 
-		const profileFields = profile.fields.map(field => ({
+		const attachment = profile.fields.map(field => ({
 			type: 'PropertyValue',
 			name: field.name,
 			value: (field.value.startsWith('http://') || field.value.startsWith('https://'))
 				? `<a href="${new URL(field.value).href}" rel="me nofollow noopener" target="_blank">${new URL(field.value).href}</a>`
 				: field.value,
 		}));
-
-		const mutualLinks = profile.mutualLinkSections.flatMap(section =>
-			section.mutualLinks.map(link => ({
-				type: 'PropertyValue',
-				name: section.name ?? link.description ?? 'Link',
-				value: `<a href="${link.url}" target="_blank">${link.description ?? link.url}</a>`,
-			})),
-		);
-
-		const attachment = mutualLinks.concat(profileFields);
 
 		const emojis = await this.getEmojis(user.emojis);
 		const apemojis = emojis.filter(emoji => !emoji.localOnly).map(emoji => this.renderEmoji(emoji));
@@ -536,25 +526,6 @@ export class ApRendererService {
 
 		if (profile.listenbrainz) {
 			person.listenbrainz = profile.listenbrainz;
-		}
-
-		if (profile.mutualLinkSections.length > 0) {
-			const ApMutualLinkSections = await Promise.all(profile.mutualLinkSections.map(async section => {
-				return {
-					sectionName: section.name ? this.mfmService.toHtml(mfm.parse(section.name)) : null,
-					_misskey_sectionName: section.name,
-					entrys: await Promise.all(section.mutualLinks.map(async entry => {
-						const img = await this.driveFilesRepository.findOneBy({ id: entry.fileId });
-						return {
-							description: entry.description ? this.mfmService.toHtml(mfm.parse(entry.description)) : null,
-							_misskey_description: entry.description,
-							image: img ? this.renderImage(img) : null,
-							url: entry.url,
-						};
-					})),
-				};
-			}));
-			person.banner = ApMutualLinkSections;
 		}
 
 		return person;

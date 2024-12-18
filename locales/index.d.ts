@@ -2547,14 +2547,6 @@ export interface Locale extends ILocale {
      */
     "unsetUserBannerConfirm": string;
     /**
-     * 相互リンクを削除
-     */
-    "unsetUserMutualLink": string;
-    /**
-     * 相互リンクを削除しますか？
-     */
-    "unsetUserMutualLinkConfirm": string;
-    /**
      * すべてのファイルを削除
      */
     "deleteAllFiles": string;
@@ -5552,18 +5544,6 @@ export interface Locale extends ILocale {
         };
     };
     /**
-     * 相互リンク
-     */
-    "mutualLink": string;
-    /**
-     * このユーザーのバナー
-     */
-    "mutualBannerThisUser": string;
-    /**
-     * 最大
-     */
-    "maximum": string;
-    /**
      * すぐ消す
      */
     "scheduledNoteDelete": string;
@@ -7318,14 +7298,6 @@ export interface Locale extends ILocale {
              */
             "avatarDecorationLimit": string;
             /**
-             * 相互リンクのセクションの最大数
-             */
-            "mutualLinkSectionLimit": string;
-            /**
-             * セクション内の相互リンクの最大数
-             */
-            "mutualLinkLimit": string;
-            /**
              * アンテナのインポートを許可
              */
             "canImportAntennas": string;
@@ -8713,15 +8685,19 @@ export interface Locale extends ILocale {
         /**
          * ユーザーのアバターを削除する
          */
+        "write:admin:unset-user-avatar": string;
+        /**
+         * ユーザーのバーナーを削除する
+         */
+        "write:admin:unset-user-banner": string;
+        /**
+         * ユーザーのアバターを削除する
+         */
         "write:admin:user-avatar": string;
         /**
          * ユーザーのバーナーを削除する
          */
         "write:admin:user-banner": string;
-        /**
-         * ユーザーの相互リンクを削除する
-         */
-        "write:admin:user-mutual-link": string;
         /**
          * ユーザーの凍結を解除する
          */
@@ -9352,50 +9328,6 @@ export interface Locale extends ILocale {
          * 最大{max}つまでデコレーションを付けられます。
          */
         "avatarDecorationMax": ParameterizedString<"max">;
-        /**
-         * 相互リンクを編集
-         */
-        "mutualLinksEdit": string;
-        /**
-         * 相互リンクのバナー
-         */
-        "mutualLinksBanner": string;
-        /**
-         * 説明
-         */
-        "mutualLinksDescriptionEdit": string;
-        /**
-         * リンク先のURL
-         */
-        "mutualLinksUrl": string;
-        /**
-         * このセクションをプロフィールにピン留め
-         */
-        "mutualLinkPining": string;
-        /**
-         * 相互リンクを設定すると、あなたのプロフィールにバナーが表示されます。
-         */
-        "mutualLinksDescription": string;
-        /**
-         * 相互リンクを追加
-         */
-        "addMutualLink": string;
-        /**
-         * セクションを追加
-         */
-        "addMutualLinkSection": string;
-        /**
-         * セクション名
-         */
-        "sectionName": string;
-        /**
-         * セクション名を表示しないようにする
-         */
-        "sectionNameNoneDescription": string;
-        /**
-         * 名前が表示されないセクション
-         */
-        "sectionNameNone": string;
         /**
          * フォローされた時のメッセージ
          */

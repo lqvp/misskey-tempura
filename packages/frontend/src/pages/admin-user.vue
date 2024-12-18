@@ -113,7 +113,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkButton inline danger @click="updateUserName"><i class="ti ti-user-edit"></i> {{ i18n.ts.changeUserName }}</MkButton>
 							<MkButton inline danger @click="unsetUserAvatar"><i class="ti ti-user-circle"></i> {{ i18n.ts.unsetUserAvatar }}</MkButton>
 							<MkButton inline danger @click="unsetUserBanner"><i class="ti ti-photo"></i> {{ i18n.ts.unsetUserBanner }}</MkButton>
-							<MkButton inline danger @click="unsetUserMutualLink"><i class="ti ti-photo"></i> {{ i18n.ts.unsetUserMutualLink }}</MkButton>
 						</div>
 
 						<MkFolder>
@@ -451,18 +450,6 @@ async function unsetUserBanner() {
 		});
 	});
 	refreshUser();
-}
-
-async function unsetUserMutualLink() {
-	const confirm = await os.confirm({
-		type: 'warning',
-		text: i18n.ts.unsetUserMutualLinkConfirm,
-	});
-	if (confirm.canceled) return;
-
-	await os.apiWithDialog('admin/unset-user-mutual-banner', {
-		userId: user.value.id,
-	}).then(refreshUser);
 }
 
 async function deleteAllFiles() {

@@ -142,7 +142,6 @@ export const moderationLogTypes = [
 	'deletePage',
 	'deleteFlash',
 	'deleteGalleryPost',
-	'unsetUserMutualLink',
 	'quarantineRemoteInstance',
 	'unquarantineRemoteInstance',
 ] as const;
@@ -444,20 +443,6 @@ export type ModerationLogPayloads = {
 		postUserId: string;
 		postUserUsername: string;
 		post: any;
-	};
-	updateOfficialTags: {
-		insert_data: {
-			id: string;
-			tag: string;
-			description: string | null;
-			bannerUrl: string | null;
-			priority: number,
-		}[];
-	};
-	unsetUserMutualLink: {
-		userId: string;
-		userUsername: string;
-		userMutualLinkSections: { name: string | null; mutualLinks: { fileId: string; description: string | null; imgSrc: string; }[]; }[] | []
 	};
 	quarantineRemoteInstance: {
 		id: string;

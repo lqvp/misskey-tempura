@@ -220,7 +220,7 @@ const $userListMembershipsRepository: Provider = {
 
 const $userNotePiningsRepository: Provider = {
 	provide: DI.userNotePiningsRepository,
-	useFactory: (db: DataSource) => db.getRepository(MiUserNotePining),
+	useFactory: (db: DataSource) => db.getRepository(MiUserNotePining).extend(miRepository as MiRepository<MiUserNotePining>),
 	inject: [DI.db],
 };
 

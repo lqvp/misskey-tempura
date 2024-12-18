@@ -61,8 +61,6 @@ export type RolePolicies = {
 	userEachUserListsLimit: number;
 	rateLimitFactor: number;
 	avatarDecorationLimit: number;
-	mutualLinkSectionLimit: number;
-	mutualLinkLimit: number;
 	canImportAntennas: boolean;
 	canImportBlocking: boolean;
 	canImportFollowing: boolean;
@@ -105,8 +103,6 @@ export const DEFAULT_POLICIES: RolePolicies = {
 	userEachUserListsLimit: 50,
 	rateLimitFactor: 1,
 	avatarDecorationLimit: 1,
-	mutualLinkSectionLimit: 1,
-	mutualLinkLimit: 15,
 	canImportAntennas: true,
 	canImportBlocking: true,
 	canImportFollowing: true,
@@ -477,8 +473,6 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			userEachUserListsLimit: calc('userEachUserListsLimit', vs => Math.max(...vs)),
 			rateLimitFactor: calc('rateLimitFactor', vs => Math.max(...vs)),
 			avatarDecorationLimit: calc('avatarDecorationLimit', vs => Math.max(...vs)),
-			mutualLinkSectionLimit: calc('mutualLinkSectionLimit', vs => Math.max(...vs)),
-			mutualLinkLimit: calc('mutualLinkLimit', vs => Math.max(...vs)),
 			canImportAntennas: calc('canImportAntennas', vs => vs.some(v => v === true)),
 			canImportBlocking: calc('canImportBlocking', vs => vs.some(v => v === true)),
 			canImportFollowing: calc('canImportFollowing', vs => vs.some(v => v === true)),

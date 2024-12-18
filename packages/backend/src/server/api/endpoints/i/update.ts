@@ -36,7 +36,6 @@ import { AvatarDecorationService } from '@/core/AvatarDecorationService.js';
 import { notificationRecieveConfig } from '@/models/json-schema/user.js';
 import { ApiLoggerService } from '../../ApiLoggerService.js';
 import { ApiError } from '../../error.js';
-import { IdService } from "@/core/IdService.js";
 
 export const meta = {
 	tags: ['account'],
@@ -57,12 +56,6 @@ export const meta = {
 			id: '539f3a45-f215-4f81-a9a8-31293640207f',
 		},
 
-		noSuchFile: {
-			message: 'No such file.',
-			code: 'NO_SUCH_FILE',
-			id: 'e0f0d3c7-e704-4314-a0b5-04286d69a65c',
-		},
-
 		noSuchBanner: {
 			message: 'No such banner file.',
 			code: 'NO_SUCH_BANNER',
@@ -73,12 +66,6 @@ export const meta = {
 			message: 'The file specified as an avatar is not an image.',
 			code: 'AVATAR_NOT_AN_IMAGE',
 			id: 'f419f9f8-2f4d-46b1-9fb4-49d3a2fd7191',
-		},
-
-		fileNotAnImage: {
-			message: 'The specified file is not an image.',
-			code: 'FILE_NOT_AN_IMAGE',
-			id: '2851568b-5ad1-4031-bf0d-5320afebf3a9',
 		},
 
 		bannerNotAnImage: {
@@ -246,28 +233,6 @@ export const paramDef = {
 			uniqueItems: true,
 			items: { type: 'string' },
 		},
-		mutualLinkSections: {
-			type: 'array',
-			items: {
-				type: 'object',
-				properties: {
-					name: { type: 'string', nullable: true },
-					mutualLinks: {
-						type: 'array',
-						items: {
-							type: 'object',
-							properties: {
-								url: { type: 'string', format: 'url' },
-								fileId: { type: 'string', format: 'misskey:id' },
-								description: { type: 'string', nullable: true },
-							},
-							required: ['url', 'fileId'],
-						},
-					},
-				},
-				required: ['mutualLinks'],
-			},
-		},
 	},
 } as const;
 
@@ -292,7 +257,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		@Inject(DI.pagesRepository)
 		private pagesRepository: PagesRepository,
 
-		private idService: IdService,
 		private userEntityService: UserEntityService,
 		private driveFileEntityService: DriveFileEntityService,
 		private globalEventService: GlobalEventService,
@@ -415,45 +379,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				updates.avatarId = null;
 				updates.avatarUrl = null;
 				updates.avatarBlurhash = null;
-			}
-
-			if (ps.mutualLinkSections) {
-				const policy = await this.roleService.getUserPolicies(user.id);
-				if (ps.mutualLinkSections.length > policy.mutualLinkSectionLimit) {
-					throw new ApiError(meta.errors.restrictedByRole);
-				}
-
-				const mutualLinkSections = ps.mutualLinkSections.map(async (section) => {
-					if (section.mutualLinks.length > policy.mutualLinkLimit) {
-						throw new ApiError(meta.errors.restrictedByRole);
-					}
-
-					const mutualLinks = await Promise.all(section.mutualLinks.map(async (mutualLink) => {
-						const file = await this.driveFilesRepository.findOneBy({ id: mutualLink.fileId });
-
-						if (!file) {
-							throw new ApiError(meta.errors.noSuchFile);
-						}
-						if (!file.type.startsWith('image/')) {
-							throw new ApiError(meta.errors.fileNotAnImage);
-						}
-
-						return {
-							id: this.idService.gen(),
-							url: mutualLink.url,
-							fileId: file.id,
-							imgSrc: this.driveFileEntityService.getPublicUrl(file),
-							description: mutualLink.description ?? null,
-						};
-					}));
-
-					return {
-						name: section.name ?? null,
-						mutualLinks,
-					};
-				});
-
-				profileUpdates.mutualLinkSections = await Promise.all(mutualLinkSections);
 			}
 
 			if (ps.bannerId) {

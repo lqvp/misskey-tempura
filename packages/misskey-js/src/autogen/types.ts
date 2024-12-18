@@ -242,15 +242,6 @@ export type paths = {
      */
     post: operations['admin___unset-user-banner'];
   };
-  '/admin/unset-user-mutual-link': {
-    /**
-     * admin/unset-user-mutual-link
-     * @description No description provided.
-     *
-     * **Credential required**: *Yes* / **Permission**: *write:admin:user-mutual-link*
-     */
-    post: operations['admin___unset-user-mutual-link'];
-  };
   '/admin/drive/clean-remote-files': {
     /**
      * admin/drive/clean-remote-files
@@ -3982,7 +3973,6 @@ export type components = {
           name: string;
           iconUrl: string | null;
           displayOrder: number;
-          behavior?: string;
         })[];
     };
     UserDetailedNotMeOnly: {
@@ -4039,18 +4029,6 @@ export type components = {
       followedMessage?: string | null;
       memo: string | null;
       moderationNote?: string;
-      mutualLinkSections: ({
-          name: string | null;
-          mutualLinks: ({
-              /** Format: misskey:id */
-              id: string;
-              url: string;
-              /** Format: misskey:id */
-              fileId: string;
-              description: string | null;
-              imgSrc: string;
-            })[];
-        })[];
       twoFactorEnabled?: boolean;
       usePasswordLessLogin?: boolean;
       securityKeys?: boolean;
@@ -5216,8 +5194,6 @@ export type components = {
       userEachUserListsLimit: number;
       rateLimitFactor: number;
       avatarDecorationLimit: number;
-      mutualLinkSectionLimit: number;
-      mutualLinkLimit: number;
       canImportAntennas: boolean;
       canImportBlocking: boolean;
       canImportFollowing: boolean;
@@ -7074,58 +7050,6 @@ export type operations = {
    * **Credential required**: *Yes* / **Permission**: *write:admin:user-banner*
    */
   'admin___unset-user-banner': {
-    requestBody: {
-      content: {
-        'application/json': {
-          /** Format: misskey:id */
-          userId: string;
-        };
-      };
-    };
-    responses: {
-      /** @description OK (without any results) */
-      204: {
-        content: never;
-      };
-      /** @description Client error */
-      400: {
-        content: {
-          'application/json': components['schemas']['Error'];
-        };
-      };
-      /** @description Authentication error */
-      401: {
-        content: {
-          'application/json': components['schemas']['Error'];
-        };
-      };
-      /** @description Forbidden error */
-      403: {
-        content: {
-          'application/json': components['schemas']['Error'];
-        };
-      };
-      /** @description I'm Ai */
-      418: {
-        content: {
-          'application/json': components['schemas']['Error'];
-        };
-      };
-      /** @description Internal server error */
-      500: {
-        content: {
-          'application/json': components['schemas']['Error'];
-        };
-      };
-    };
-  };
-  /**
-   * admin/unset-user-mutual-link
-   * @description No description provided.
-   *
-   * **Credential required**: *Yes* / **Permission**: *write:admin:user-mutual-link*
-   */
-  'admin___unset-user-mutual-link': {
     requestBody: {
       content: {
         'application/json': {
@@ -21236,16 +21160,6 @@ export type operations = {
           };
           emailNotificationTypes?: string[];
           alsoKnownAs?: string[];
-          mutualLinkSections?: ({
-              name?: string | null;
-              mutualLinks: ({
-                  /** Format: url */
-                  url: string;
-                  /** Format: misskey:id */
-                  fileId: string;
-                  description?: string | null;
-                })[];
-            })[];
         };
       };
     };
