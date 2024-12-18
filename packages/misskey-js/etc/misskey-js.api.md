@@ -1677,9 +1677,6 @@ declare namespace entities {
         NotesConversationResponse,
         NotesCreateRequest,
         NotesCreateResponse,
-        NotesUpdateRequest,
-        NotesHistoryRequest,
-        NotesHistoryResponse,
         NotesDeleteRequest,
         NotesFavoritesCreateRequest,
         NotesFavoritesDeleteRequest,
@@ -1912,8 +1909,7 @@ declare namespace entities {
         MetaDetailedOnly,
         MetaDetailed,
         SystemWebhook,
-        AbuseReportNotificationRecipient,
-        NoteHistory
+        AbuseReportNotificationRecipient
     }
 }
 export { entities }
@@ -2735,9 +2731,6 @@ export { note }
 type NoteFavorite = components['schemas']['NoteFavorite'];
 
 // @public (undocumented)
-type NoteHistory = components['schemas']['NoteHistory'];
-
-// @public (undocumented)
 type NoteReaction = components['schemas']['NoteReaction'];
 
 // @public (undocumented)
@@ -2796,12 +2789,6 @@ type NotesGlobalTimelineRequest = operations['notes___global-timeline']['request
 
 // @public (undocumented)
 type NotesGlobalTimelineResponse = operations['notes___global-timeline']['responses']['200']['content']['application/json'];
-
-// @public (undocumented)
-type NotesHistoryRequest = operations['notes___history']['requestBody']['content']['application/json'];
-
-// @public (undocumented)
-type NotesHistoryResponse = operations['notes___history']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type NotesHybridTimelineRequest = operations['notes___hybrid-timeline']['requestBody']['content']['application/json'];
@@ -2922,9 +2909,6 @@ type NotesTranslateResponse = operations['notes___translate']['responses']['200'
 
 // @public (undocumented)
 type NotesUnrenoteRequest = operations['notes___unrenote']['requestBody']['content']['application/json'];
-
-// @public (undocumented)
-type NotesUpdateRequest = operations['notes___update']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
 type NotesUserListTimelineRequest = operations['notes___user-list-timeline']['requestBody']['content']['application/json'];

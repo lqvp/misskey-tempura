@@ -252,12 +252,6 @@ export type NoteUpdatedEvent = { id: Note['id'] } & ({
 		deletedAt: string;
 	};
 } | {
-	type: 'updated';
-	body: {
-		cw: string | null;
-		text: string;
-	};
-} | {
 	type: 'pollVoted';
 	body: {
 		choice: number;

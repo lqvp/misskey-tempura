@@ -3228,28 +3228,6 @@ declare module '../api.js' {
      * 
      * **Credential required**: *Yes* / **Permission**: *write:notes*
      */
-    request<E extends 'notes/update', P extends Endpoints[E]['req']>(
-      endpoint: E,
-      params: P,
-      credential?: string | null,
-    ): Promise<SwitchCaseResponseType<E, P>>;
-
-    /**
-     * No description provided.
-     * 
-     * **Credential required**: *No*
-     */
-    request<E extends 'notes/history', P extends Endpoints[E]['req']>(
-      endpoint: E,
-      params: P,
-      credential?: string | null,
-    ): Promise<SwitchCaseResponseType<E, P>>;
-
-    /**
-     * No description provided.
-     * 
-     * **Credential required**: *Yes* / **Permission**: *write:notes*
-     */
     request<E extends 'notes/delete', P extends Endpoints[E]['req']>(
       endpoint: E,
       params: P,

@@ -19,8 +19,7 @@
 				"Vue.volar",
 				"Orta.vscode-jest",
 				"dbaeumer.vscode-eslint",
-				"mrmlnc.vscode-json5",
-				"eamodio.gitlens"
+				"mrmlnc.vscode-json5"
 			]
 		}
 	}

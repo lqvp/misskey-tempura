@@ -44,7 +44,6 @@ import { MetaService } from './MetaService.js';
 import { MfmService } from './MfmService.js';
 import { ModerationLogService } from './ModerationLogService.js';
 import { NoteCreateService } from './NoteCreateService.js';
-import { NoteUpdateService } from './NoteUpdateService.js';
 import { NoteDeleteService } from './NoteDeleteService.js';
 import { LatestNoteService } from './LatestNoteService.js';
 import { NotePiningService } from './NotePiningService.js';
@@ -155,8 +154,6 @@ import { ApQuestionService } from './activitypub/models/ApQuestionService.js';
 import { QueueModule } from './QueueModule.js';
 import { QueueService } from './QueueService.js';
 import { LoggerService } from './LoggerService.js';
-import { NoteHistorySerivce } from './NoteHistoryService.js';
-import { NoteHistoryEntityService } from './entities/NoteHistoryEntityService.js';
 import type { Provider } from '@nestjs/common';
 
 //#region 文字列ベースでのinjection用(循環参照対応のため)
@@ -192,7 +189,6 @@ const $MetaService: Provider = { provide: 'MetaService', useExisting: MetaServic
 const $MfmService: Provider = { provide: 'MfmService', useExisting: MfmService };
 const $ModerationLogService: Provider = { provide: 'ModerationLogService', useExisting: ModerationLogService };
 const $NoteCreateService: Provider = { provide: 'NoteCreateService', useExisting: NoteCreateService };
-const $NoteUpdateService: Provider = { provide: 'NoteUpdateService', useExisting: NoteUpdateService };
 const $NoteDeleteService: Provider = { provide: 'NoteDeleteService', useExisting: NoteDeleteService };
 const $LatestNoteService: Provider = { provide: 'LatestNoteService', useExisting: LatestNoteService };
 const $NotePiningService: Provider = { provide: 'NotePiningService', useExisting: NotePiningService };
@@ -274,7 +270,6 @@ const $ModerationLogEntityService: Provider = { provide: 'ModerationLogEntitySer
 const $MutingEntityService: Provider = { provide: 'MutingEntityService', useExisting: MutingEntityService };
 const $RenoteMutingEntityService: Provider = { provide: 'RenoteMutingEntityService', useExisting: RenoteMutingEntityService };
 const $NoteEntityService: Provider = { provide: 'NoteEntityService', useExisting: NoteEntityService };
-const $NoteHistoryEntityService: Provider = { provide: 'NoteHistoryEntityService', useExisting: NoteHistoryEntityService };
 const $NoteFavoriteEntityService: Provider = { provide: 'NoteFavoriteEntityService', useExisting: NoteFavoriteEntityService };
 const $NoteReactionEntityService: Provider = { provide: 'NoteReactionEntityService', useExisting: NoteReactionEntityService };
 const $NotificationEntityService: Provider = { provide: 'NotificationEntityService', useExisting: NotificationEntityService };
@@ -347,7 +342,6 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		MfmService,
 		ModerationLogService,
 		NoteCreateService,
-		NoteUpdateService,
 		NoteDeleteService,
 		LatestNoteService,
 		NotePiningService,
@@ -429,7 +423,6 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		MutingEntityService,
 		RenoteMutingEntityService,
 		NoteEntityService,
-		NoteHistoryEntityService,
 		NoteFavoriteEntityService,
 		NoteReactionEntityService,
 		NotificationEntityService,
@@ -464,7 +457,6 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		ApPersonService,
 		ApQuestionService,
 		QueueService,
-		NoteHistorySerivce,
 
 		//#region 文字列ベースでのinjection用(循環参照対応のため)
 		$LoggerService,
@@ -499,7 +491,6 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$MfmService,
 		$ModerationLogService,
 		$NoteCreateService,
-		$NoteUpdateService,
 		$NoteDeleteService,
 		$LatestNoteService,
 		$NotePiningService,
@@ -581,7 +572,6 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$MutingEntityService,
 		$RenoteMutingEntityService,
 		$NoteEntityService,
-		$NoteHistoryEntityService,
 		$NoteFavoriteEntityService,
 		$NoteReactionEntityService,
 		$NotificationEntityService,
@@ -651,7 +641,6 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		MfmService,
 		ModerationLogService,
 		NoteCreateService,
-		NoteUpdateService,
 		NoteDeleteService,
 		LatestNoteService,
 		NotePiningService,
@@ -732,7 +721,6 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		MutingEntityService,
 		RenoteMutingEntityService,
 		NoteEntityService,
-		NoteHistoryEntityService,
 		NoteFavoriteEntityService,
 		NoteReactionEntityService,
 		NotificationEntityService,
@@ -767,7 +755,6 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		ApPersonService,
 		ApQuestionService,
 		QueueService,
-		NoteHistorySerivce,
 
 		//#region 文字列ベースでのinjection用(循環参照対応のため)
 		$LoggerService,
@@ -802,7 +789,6 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$MfmService,
 		$ModerationLogService,
 		$NoteCreateService,
-		$NoteUpdateService,
 		$NoteDeleteService,
 		$LatestNoteService,
 		$NotePiningService,
@@ -882,7 +868,6 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$MutingEntityService,
 		$RenoteMutingEntityService,
 		$NoteEntityService,
-		$NoteHistoryEntityService,
 		$NoteFavoriteEntityService,
 		$NoteReactionEntityService,
 		$NotificationEntityService,

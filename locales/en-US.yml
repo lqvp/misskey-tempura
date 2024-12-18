@@ -1331,9 +1331,6 @@ _abuseUserReport:
   accept: "Accept"
   reject: "Reject"
   resolveTutorial: "If the report is legitimate in content, select \"Accept\" to mark the case as resolved in the affirmative.\nIf the content of the report is not legitimate, select \"Reject\" to mark the case as resolved in the negative."
-noteUpdatedAt: "Edited: {date} {time}"
-editHistory: "Edit history"
-
 _delivery:
   status: "Delivery status"
   stop: "Suspended"
@@ -1781,7 +1778,6 @@ _role:
     gtlAvailable: "Can view the global timeline"
     ltlAvailable: "Can view the local timeline"
     canPublicNote: "Can send public notes"
-    canEditNote: "Note editing"
     mentionMax: "Maximum number of mentions in a note"
     canInvite: "Can create instance invite codes"
     inviteLimit: "Invite limit"

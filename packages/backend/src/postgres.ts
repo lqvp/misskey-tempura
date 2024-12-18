@@ -85,7 +85,6 @@ import { MiNoteSchedule } from '@/models/NoteSchedule.js';
 import { Config } from '@/config.js';
 import MisskeyLogger from '@/logger.js';
 import { bindThis } from '@/decorators.js';
-import { NoteHistory } from './models/NoteHistory.js';
 import { SkLatestNote } from '@/models/LatestNote.js';
 import { MiAnnouncementRole } from './models/AnnouncementRole.js';
 
@@ -209,7 +208,6 @@ export const entities = [
 	MiUserMemo,
 	MiBubbleGameRecord,
 	MiReversiGame,
-	NoteHistory,
 	...charts,
 ];
 

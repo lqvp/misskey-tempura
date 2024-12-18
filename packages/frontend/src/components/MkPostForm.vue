@@ -145,7 +145,6 @@ const props = withDefaults(defineProps<PostFormProps &{
 	fixed?: boolean;
 	autofocus?: boolean;
 	freezeAfterPosted?: boolean;
-	updateMode?: boolean;
 	mock?: boolean;
 }>(), {
 	initialVisibleUsers: () => [],
@@ -810,7 +809,6 @@ async function saveDraft(auto = true) {
 		poll: poll.value,
 		scheduledNoteDelete: scheduledNoteDelete.value,
 		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(x => x.id) : undefined,
-		noteId: props.updateMode ? props.initialNote?.id : undefined,
 		scheduleNote: scheduleNote.value,
 	}, draftAuxId.value as string);
 
@@ -953,7 +951,6 @@ async function post(ev?: MouseEvent) {
 		visibility: visibility.value,
 		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(u => u.id) : undefined,
 		reactionAcceptance: reactionAcceptance.value,
-		noteId: props.updateMode ? props.initialNote?.id : undefined,
 		scheduleNote: scheduleNote.value ?? undefined,
 	};
 
@@ -991,7 +988,7 @@ async function post(ev?: MouseEvent) {
 	}
 
 	posting.value = true;
-	misskeyApi(props.updateMode ? 'notes/update' : (postData.scheduleNote ? 'notes/schedule/create' : 'notes/create'), postData, token).then(() => {
+	misskeyApi((postData.scheduleNote ? 'notes/schedule/create' : 'notes/create'), postData, token).then(() => {
 		if (props.freezeAfterPosted) {
 			posted.value = true;
 		} else {

@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import type { Provider } from '@nestjs/common';
 import { Module } from '@nestjs/common';
 import { DI } from '@/di-symbols.js';
 import {
@@ -81,11 +82,9 @@ import {
 	MiUserProfile,
 	MiUserPublickey,
 	MiUserSecurityKey,
-	MiWebhook,
+	MiWebhook
 } from './_.js';
-import { NoteHistory } from './NoteHistory.js';
 import type { DataSource } from 'typeorm';
-import type { Provider } from '@nestjs/common';
 
 const $usersRepository: Provider = {
 	provide: DI.usersRepository,
@@ -96,12 +95,6 @@ const $usersRepository: Provider = {
 const $notesRepository: Provider = {
 	provide: DI.notesRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiNote).extend(miRepository as MiRepository<MiNote>),
-	inject: [DI.db],
-};
-
-const $noteHistoryRepository: Provider = {
-	provide: DI.noteHistoryRepository,
-	useFactory: (db: DataSource) => db.getRepository(NoteHistory).extend(miRepository as MiRepository<NoteHistory>),
 	inject: [DI.db],
 };
 
@@ -613,7 +606,6 @@ const $noteScheduleRepository: Provider = {
 		$userMemosRepository,
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
-		$noteHistoryRepository,
 		$noteScheduleRepository,
 	],
 	exports: [
@@ -690,7 +682,6 @@ const $noteScheduleRepository: Provider = {
 		$userMemosRepository,
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
-		$noteHistoryRepository,
 		$noteScheduleRepository,
 	],
 })
