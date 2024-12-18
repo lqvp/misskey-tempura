@@ -10,6 +10,7 @@ import { QueryService } from '@/core/QueryService.js';
 import type { FollowHistoryRepository } from '@/models/_.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { DI } from '@/di-symbols.js';
+import { CacheService } from '@/core/CacheService.js';
 
 export const meta = {
 	tags: ['following', 'account'],
@@ -103,9 +104,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 
 		private userEntityService: UserEntityService,
 		private queryService: QueryService,
+		private cacheService: CacheService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			if (ps.delete) {
+				await this.cacheService.userFollowingsCache.delete(me.id);
 				await this.followHistoryRepository
 					.createQueryBuilder()
 					.delete()
@@ -189,22 +192,33 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 					break;
 			}
 
+			const blockedUserIds = await this.cacheService.userBlockedCache.fetch(me.id);
+			if (blockedUserIds.size > 0) {
+				query.andWhere('fromUser.id NOT IN (:...blockedUserIds)', { blockedUserIds: Array.from(blockedUserIds) });
+				query.andWhere('toUser.id NOT IN (:...blockedUserIds)', { blockedUserIds: Array.from(blockedUserIds) });
+			}
+
 			const histories = await query
 				.orderBy('history.timestamp', 'DESC')
 				.take(ps.limit)
 				.getMany();
 
-			return await Promise.all(histories.map(async history => ({
-				id: history.id,
-				type: history.type,
-				fromUser: history.fromUser
-					? await this.userEntityService.pack(history.fromUser ?? history.fromUserId, me)
-					: { name: 'unknown user' },
-				toUser: history.toUser
-					? await this.userEntityService.pack(history.toUser ?? history.toUserId, me)
-					: { name: 'unknown user' },
-				timestamp: history.timestamp.toISOString(),
-			})));
+			return await Promise.all(histories.map(async history => {
+				const userFollowings = await this.cacheService.userFollowingsCache.fetch(me.id);
+
+				return {
+					id: history.id,
+					type: history.type,
+					fromUser: history.fromUser
+						? await this.userEntityService.pack(history.fromUser ?? history.fromUserId, me)
+						: { name: 'unknown user' },
+					toUser: history.toUser
+						? await this.userEntityService.pack(history.toUser ?? history.toUserId, me)
+						: { name: 'unknown user' },
+					timestamp: history.timestamp.toISOString(),
+					isFollowing: Object.hasOwn(userFollowings, history.fromUserId),
+				};
+			}));
 		});
 	}
 }
