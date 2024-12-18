@@ -28,35 +28,35 @@ class RjNumber {
 
 	// CVE
 	public static readonly CVE_SYMBOL = Symbol();
-	public static readonly CVE_REGEX = /CVE-\d{4}-\d{4,}/g;
+	public static readonly CVE_REGEX = /CVE-\d{4}-\d{4,}/gi;
 	public static getCveUrl(cve: string): string {
 		return `https://www.cve.org/CVERecord?id=${cve}`;
 	}
 
 	// JVN
 	public static readonly JVN_SYMBOL = Symbol();
-	public static readonly JVN_REGEX = /JVN[#\d]{8,}/g;
+	public static readonly JVN_REGEX = /JVN[#\d]{8,}/gi;
 	public static getJvnUrl(jvn: string): string {
 		return `https://jvn.jp/jp/${jvn.replace('#', '')}/index.html`;
 	}
 
 	// JVNVU
 	public static readonly JVNVU_SYMBOL = Symbol();
-	public static readonly JVNVU_REGEX = /JVNVU[#\d]{8,}/g;
+	public static readonly JVNVU_REGEX = /JVNVU[#\d]{8,}/gi;
 	public static getJvnVuUrl(jvnvu: string): string {
 		return `https://jvn.jp/vu/${jvnvu.replace('#', '')}/index.html`;
 	}
 
 	// JVNTA
 	public static readonly JVNTA_SYMBOL = Symbol();
-	public static readonly JVNTA_REGEX = /JVNTA[#\d]{8,}/g;
+	public static readonly JVNTA_REGEX = /JVNTA[#\d]{8,}/gi;
 	public static getJvnTaUrl(jvnta: string): string {
 		return `https://jvn.jp/ta/${jvnta.replace('#', '')}/index.html`;
 	}
 
 	// JVNDB
 	public static readonly JVNDB_SYMBOL = Symbol();
-	public static readonly JVNDB_REGEX = /JVNDB-\d{4}-\d{6}/g;
+	public static readonly JVNDB_REGEX = /JVNDB-\d{4}-\d{6}/gi;
 	public static getJvnDbUrl(jvndb: string): string {
 		const year = jvndb.match(/\d{4}/)![0];
 		return `https://jvndb.jvn.jp/en/contents/${year}/${jvndb}.html`;
