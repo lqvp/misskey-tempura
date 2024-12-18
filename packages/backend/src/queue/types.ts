@@ -22,6 +22,8 @@ export type DeliverJobData = {
 	to: string;
 	/** whether it is sharedInbox */
 	isSharedInbox: boolean;
+	/** Activity is Public */
+	isPublicContent: boolean;
 };
 
 export type InboxJobData = {

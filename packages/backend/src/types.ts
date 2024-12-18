@@ -143,6 +143,8 @@ export const moderationLogTypes = [
 	'deleteFlash',
 	'deleteGalleryPost',
 	'unsetUserMutualLink',
+	'quarantineRemoteInstance',
+	'unquarantineRemoteInstance',
 ] as const;
 
 export type ModerationLogPayloads = {
@@ -456,7 +458,15 @@ export type ModerationLogPayloads = {
 		userId: string;
 		userUsername: string;
 		userMutualLinkSections: { name: string | null; mutualLinks: { fileId: string; description: string | null; imgSrc: string; }[]; }[] | []
-	}
+	};
+	quarantineRemoteInstance: {
+		id: string;
+		host: string;
+	};
+	unquarantineRemoteInstance: {
+		id: string;
+		host: string;
+	};
 };
 
 export type Serialized<T> = {

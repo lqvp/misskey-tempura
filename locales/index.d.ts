@@ -935,6 +935,10 @@ export interface Locale extends ILocale {
      */
     "mediaSilenceThisInstance": string;
     /**
+     * サーバーに公開投稿のみ配送
+     */
+    "quarantineThisInstance": string;
+    /**
      * 操作
      */
     "operations": string;
@@ -1106,6 +1110,10 @@ export interface Locale extends ILocale {
      * 配信停止
      */
     "suspended": string;
+    /**
+     * 隔離中
+     */
+    "quarantine": string;
     /**
      * 全て
      */
@@ -10579,6 +10587,14 @@ export interface Locale extends ILocale {
          * ギャラリーの投稿を削除
          */
         "deleteGalleryPost": string;
+        /**
+         * 公開投稿のみ配送に制限
+         */
+        "quarantineRemoteInstance": string;
+        /**
+         * 公開投稿のみ配送を解除
+         */
+        "unquarantineRemoteInstance": string;
     };
     "_fileViewer": {
         /**

@@ -158,4 +158,12 @@ export class MiInstance {
 		length: 16384, default: '',
 	})
 	public moderationNote: string;
+
+	/**
+	 * このインスタンスへの配送制限
+	 */
+	@Column('boolean', {
+		default: false,
+	})
+	public quarantineLimited: boolean;
 }

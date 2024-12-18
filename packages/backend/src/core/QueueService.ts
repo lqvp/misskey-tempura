@@ -5,7 +5,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import type { IActivity } from '@/core/activitypub/type.js';
+import { isAnnounce, isPost, type IActivity } from '@/core/activitypub/type.js';
 import type { MiDriveFile } from '@/models/DriveFile.js';
 import type { MiWebhook, WebhookEventTypes } from '@/models/Webhook.js';
 import type { MiSystemWebhook, SystemWebhookEventType } from '@/models/SystemWebhook.js';
@@ -114,6 +114,23 @@ export class QueueService {
 		});
 	}
 
+	private isPublicContent(content: IActivity) {
+		let toPublicOnly = false;
+		if (isAnnounce(content)) {
+			toPublicOnly = true;
+		}
+		if (typeof content.object !== 'string') {
+			if (isPost(content.object)) {
+				toPublicOnly = true;
+			}
+		}
+		if (toPublicOnly) {
+			return String(content.to) === 'https://www.w3.org/ns/activitystreams#Public' || String(content.cc) === 'https://www.w3.org/ns/activitystreams#Public';
+		} else {
+			return true;
+		}
+	}
+
 	@bindThis
 	public deliver(user: ThinUser, content: IActivity | null, to: string | null, isSharedInbox: boolean) {
 		if (content == null) return null;
@@ -130,6 +147,7 @@ export class QueueService {
 			digest,
 			to,
 			isSharedInbox,
+			isPublicContent: this.isPublicContent(content),
 		};
 
 		return this.deliverQueue.add(to, data, {
@@ -172,6 +190,7 @@ export class QueueService {
 				digest,
 				to: d[0],
 				isSharedInbox: d[1],
+				isPublicContent: this.isPublicContent(content),
 			} as DeliverJobData,
 			opts,
 		})));

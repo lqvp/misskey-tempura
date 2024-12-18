@@ -207,6 +207,12 @@ export type ModerationLog = {
 } | {
 	type: 'deleteGalleryPost';
 	info: ModerationLogPayloads['deleteGalleryPost'];
+} | {
+	type: 'quarantineRemoteInstance';
+	info: ModerationLogPayloads['quarantineRemoteInstance'];
+} | {
+	type: 'unquarantineRemoteInstance';
+	info: ModerationLogPayloads['unquarantineRemoteInstance'];
 });
 
 export type ServerStats = {

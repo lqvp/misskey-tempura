@@ -39,6 +39,7 @@ export const paramDef = {
 		notResponding: { type: 'boolean', nullable: true },
 		suspended: { type: 'boolean', nullable: true },
 		silenced: { type: 'boolean', nullable: true },
+		quarantine: { type: 'boolean', nullable: true },
 		federating: { type: 'boolean', nullable: true },
 		subscribing: { type: 'boolean', nullable: true },
 		publishing: { type: 'boolean', nullable: true },
@@ -129,6 +130,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					query.andWhere('instance.suspensionState != \'none\'');
 				} else {
 					query.andWhere('instance.suspensionState = \'none\'');
+				}
+			}
+
+			if (typeof ps.quarantine === 'boolean') {
+				if (ps.quarantine) {
+					query.andWhere('instance.quarantineLimited = TRUE');
+				} else {
+					query.andWhere('instance.quarantineLimited = FALSE');
 				}
 			}
 
