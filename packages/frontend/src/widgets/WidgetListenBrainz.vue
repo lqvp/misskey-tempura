@@ -50,6 +50,7 @@ const widgetPropsDef = {
 	},
 	noteFormat: {
 		type: 'string' as const,
+		multiline: true,
 		default: '{artist_name} - {track_name} ({media_player}/{music_service_name}/{client}) {url} #nowplaying',
 	},
 	visibility: {
