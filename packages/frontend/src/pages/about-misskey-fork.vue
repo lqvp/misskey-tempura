@@ -47,6 +47,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<img src="https://avatars.githubusercontent.com/u/123709459?v=4" :class="$style.contributorAvatar">
 							<span :class="$style.contributorUsername">@ruruke</span>
 						</a>
+						<a href="https://github.com/Steve-0628" target="_blank" :class="$style.contributor">
+							<img src="https://avatars.githubusercontent.com/u/49326405?v=4" :class="$style.contributorAvatar">
+							<span :class="$style.contributorUsername">@steve-0628</span>
+						</a>
 					</div>
 				</FormSection>
 			</div>
