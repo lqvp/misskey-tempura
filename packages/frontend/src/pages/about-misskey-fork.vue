@@ -33,23 +33,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<div :class="$style.contributors">
 						<a href="https://github.com/lqvp" target="_blank" :class="$style.contributor">
 							<img src="https://avatars.githubusercontent.com/u/183242690?v=4" :class="$style.contributorAvatar">
-							<span :class="$style.contributorUsername">@lqvp</span>
+							<span :class="$style.contributorUsername">lqvp</span>
 						</a>
 						<a href="https://github.com/r-ca" target="_blank" :class="$style.contributor">
 							<img src="https://avatars.githubusercontent.com/u/66072112?v=4" :class="$style.contributorAvatar">
-							<span :class="$style.contributorUsername">@r-ca</span>
+							<span :class="$style.contributorUsername">ろむねこ</span>
 						</a>
 						<a href="https://github.com/chan-mai" target="_blank" :class="$style.contributor">
 							<img src="https://avatars.githubusercontent.com/u/74494945?v=4" :class="$style.contributorAvatar">
-							<span :class="$style.contributorUsername">@chan-mai</span>
+							<span :class="$style.contributorUsername">mai</span>
 						</a>
 						<a href="https://github.com/ruruke" target="_blank" :class="$style.contributor">
 							<img src="https://avatars.githubusercontent.com/u/123709459?v=4" :class="$style.contributorAvatar">
-							<span :class="$style.contributorUsername">@ruruke</span>
+							<span :class="$style.contributorUsername">ruruke</span>
 						</a>
 						<a href="https://github.com/Steve-0628" target="_blank" :class="$style.contributor">
 							<img src="https://avatars.githubusercontent.com/u/49326405?v=4" :class="$style.contributorAvatar">
-							<span :class="$style.contributorUsername">@steve-0628</span>
+							<span :class="$style.contributorUsername">すてさん</span>
+						</a>
+						<a href="https://github.com/Pz2Or" target="_blank" :class="$style.contributor">
+							<img src="https://avatars.githubusercontent.com/u/116360839?v=4" :class="$style.contributorAvatar">
+							<span :class="$style.contributorUsername">🐬</span>
 						</a>
 					</div>
 				</FormSection>
