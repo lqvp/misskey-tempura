@@ -8,7 +8,7 @@ on:
 
 jobs:
   check_copyright_year:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4.1.1
     - run: |

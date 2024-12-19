@@ -17,7 +17,7 @@ jobs:
   check-version:
     # ルートの package.json と packages/misskey-js/package.json のバージョンが一致しているかを確認する
     name: Check version
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4.1.1

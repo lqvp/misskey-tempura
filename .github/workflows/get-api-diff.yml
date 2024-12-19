@@ -11,7 +11,7 @@ on:
       - .github/workflows/get-api-diff.yml
 jobs:
   get-from-misskey:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     permissions:
       contents: read
 
@@ -56,7 +56,7 @@ jobs:
         path: ${{ matrix.api-json-name }}
 
   save-pr-number:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Save PR number
         env:
