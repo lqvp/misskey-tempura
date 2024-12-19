@@ -30,7 +30,7 @@ on:
       - .github/workflows/lint.yml
 jobs:
   pnpm_install:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
     - uses: actions/checkout@v4.1.1
       with:
@@ -46,7 +46,7 @@ jobs:
 
   lint:
     needs: [pnpm_install]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     continue-on-error: true
     strategy:
       matrix:
@@ -84,7 +84,7 @@ jobs:
 
   typecheck:
     needs: [pnpm_install]
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     continue-on-error: true
     strategy:
       matrix:
