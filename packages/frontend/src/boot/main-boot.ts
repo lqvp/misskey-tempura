@@ -30,6 +30,7 @@ export async function mainBoot() {
 		!$i ? defineAsyncComponent(() => import('@/ui/visitor.vue')) :
 		ui === 'deck' ? defineAsyncComponent(() => import('@/ui/deck.vue')) :
 		ui === 'classic' ? defineAsyncComponent(() => import('@/ui/classic.vue')) :
+		ui === 'note' ? defineAsyncComponent(() => import('@/ui/note.vue')) :
 		defineAsyncComponent(() => import('@/ui/universal.vue')),
 	));
 
