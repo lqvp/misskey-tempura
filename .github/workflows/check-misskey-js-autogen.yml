@@ -12,7 +12,7 @@ on:
 jobs:
   # pull_request_target safety: permissions: read-all, and there are no secrets used in this job
   generate-misskey-js:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
     if: ${{ github.event.pull_request.mergeable == null || github.event.pull_request.mergeable == true }}
@@ -60,7 +60,7 @@ jobs:
 
   # pull_request_target safety: permissions: read-all, and no user codes are executed
   get-actual-misskey-js:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
     if: ${{ github.event.pull_request.mergeable == null || github.event.pull_request.mergeable == true }}
@@ -80,7 +80,7 @@ jobs:
 
   # pull_request_target safety: nothing is cloned from repository
   comment-misskey-js-autogen:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: [generate-misskey-js, get-actual-misskey-js]
     permissions:
       pull-requests: write

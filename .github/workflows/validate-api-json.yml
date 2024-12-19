@@ -14,7 +14,7 @@ on:
       - .github/workflows/validate-api-json.yml
 jobs:
   validate-api-json:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
 
     strategy:
       matrix:

@@ -11,7 +11,7 @@ on:
       - .github/workflows/locale.yml
 jobs:
   locale_verify:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     continue-on-error: true
     steps:
     - uses: actions/checkout@v4.1.1
