@@ -5169,6 +5169,7 @@ export type components = {
       gtlAvailable: boolean;
       ltlAvailable: boolean;
       canPublicNote: boolean;
+			canHomeNote: boolean;
       mentionLimit: number;
       canInvite: boolean;
       inviteLimit: number;

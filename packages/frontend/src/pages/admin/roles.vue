@@ -51,6 +51,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</MkSwitch>
 						</MkFolder>
 
+						<MkFolder v-if="matchQuery([i18n.ts._role._options.canHomeNote, 'canHomeNote'])">
+							<template #label>{{ i18n.ts._role._options.canHomeNote }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+							<template #suffix>{{ policies.canHomeNote ? i18n.ts.yes : i18n.ts.no }}</template>
+							<MkSwitch v-model="policies.canHomeNote">
+								<template #label>{{ i18n.ts.enable }}</template>
+							</MkSwitch>
+						</MkFolder>
+
 						<MkFolder v-if="matchQuery([i18n.ts._role._options.scheduleNoteMax, 'scheduleNoteMax'])">
 							<template #label>{{ i18n.ts._role._options.scheduleNoteMax }}</template>
 							<template #suffix>{{ policies.scheduleNoteMax }}</template>

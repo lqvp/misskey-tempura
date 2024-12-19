@@ -7194,6 +7194,10 @@ export interface Locale extends ILocale {
              */
             "canPublicNote": string;
             /**
+             * ホーム投稿の許可
+             */
+            "canHomeNote": string;
+            /**
              * ノート内の最大メンション数
              */
             "mentionMax": string;
