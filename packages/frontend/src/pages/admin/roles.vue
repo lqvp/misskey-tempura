@@ -60,7 +60,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</MkFolder>
 
 						<MkFolder v-if="matchQuery([i18n.ts._role._options.scheduleNoteMax, 'scheduleNoteMax'])">
-							<template #label>{{ i18n.ts._role._options.scheduleNoteMax }}</template>
+							<template #label>{{ i18n.ts._role._options.scheduleNoteMax }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 							<template #suffix>{{ policies.scheduleNoteMax }}</template>
 							<MkInput v-model="policies.scheduleNoteMax" type="number">
 							</MkInput>
@@ -113,7 +113,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</MkFolder>
 
 						<MkFolder v-if="matchQuery([i18n.ts._role._options.canUseRemoteIconDecorations, 'canUseRemoteIconDecorations'])">
-							<template #label>{{ i18n.ts._role._options.canUseRemoteIconDecorations }}</template>
+							<template #label>{{ i18n.ts._role._options.canUseRemoteIconDecorations }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 							<template #suffix>{{ policies.canUseRemoteIconDecorations ? i18n.ts.yes : i18n.ts.no }}</template>
 							<MkSwitch v-model="policies.canUseRemoteIconDecorations">
 								<template #label>{{ i18n.ts.enable }}</template>
