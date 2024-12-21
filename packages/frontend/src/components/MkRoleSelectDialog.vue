@@ -17,7 +17,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div>
 		<div v-if="roles.length > 0" :class="$style.roles">
 			<div v-for="role in roles" :key="role.id" class="_button" :class="[$style.role, { [$style.selected]: selected && selected.id === role.id }]" @click="selected = role" @dblclick="ok()">
-				<MkRolePreview :key="role.id" :role="role" :forModeration="false" :noLink="true"/>
+				<div :class="$style.roleWrapper">
+					<MkRolePreview :key="role.id" :role="role" :forModeration="false" :noLink="true"/>
+					<i v-if="selected && selected.id === role.id" class="ti ti-check" :class="$style.checkIcon"></i>
+				</div>
 			</div>
 		</div>
 		<div v-else :class="$style.empty">
@@ -103,24 +106,43 @@ onMounted(() => {
 	padding: 8px 0;
 }
 
+.roleWrapper {
+    width: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
 .role {
-	display: flex;
-	align-items: center;
-	padding: 8px var(--root-margin);
-	font-size: 14px;
+    display: flex;
+    align-items: center;
+    padding: 8px var(--root-margin);
+    font-size: 14px;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
 
-	&:hover {
-		background: var(--X7);
-	}
+    &:hover {
+        background: var(--MI_THEME-X7);
+        transform: translateX(4px);
+    }
 
-	&.selected > :global(._panel) {
-		background-color: var(--MI_THEME-accent) !important;
-		color: var(--MI_THEME-fgOnAccent) !important;
-	}
+    &.selected {
+        border-color: var(--MI_THEME-accent);
+        background: var(--MI_THEME-X7);
 
-	& > :global(._panel) {
-		width: 100%;
-	}
+        > .roleWrapper > :global(._panel) {
+            background-color: var(--MI_THEME-accent) !important;
+            color: var(--MI_THEME-fgOnAccent) !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+    }
+}
+
+.checkIcon {
+    color: var(--MI_THEME-accent);
+    font-size: 1.2em;
+    margin-left: 8px;
 }
 
 .empty {
