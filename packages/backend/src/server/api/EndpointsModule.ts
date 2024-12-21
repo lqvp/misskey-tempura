@@ -364,6 +364,7 @@ import * as ep___resetDb from './endpoints/reset-db.js';
 import * as ep___resetPassword from './endpoints/reset-password.js';
 import * as ep___serverInfo from './endpoints/server-info.js';
 import * as ep___stats from './endpoints/stats.js';
+import * as ep___reactionsStat from './endpoints/reactions-stat.js';
 import * as ep___sw_show_registration from './endpoints/sw/show-registration.js';
 import * as ep___sw_update_registration from './endpoints/sw/update-registration.js';
 import * as ep___sw_register from './endpoints/sw/register.js';
@@ -775,6 +776,7 @@ const $resetDb: Provider = { provide: 'ep:reset-db', useClass: ep___resetDb.defa
 const $resetPassword: Provider = { provide: 'ep:reset-password', useClass: ep___resetPassword.default };
 const $serverInfo: Provider = { provide: 'ep:server-info', useClass: ep___serverInfo.default };
 const $stats: Provider = { provide: 'ep:stats', useClass: ep___stats.default };
+const $reactionsStat: Provider = { provide: 'ep:reactions-stat', useClass: ep___reactionsStat.default };
 const $sw_show_registration: Provider = { provide: 'ep:sw/show-registration', useClass: ep___sw_show_registration.default };
 const $sw_update_registration: Provider = { provide: 'ep:sw/update-registration', useClass: ep___sw_update_registration.default };
 const $sw_register: Provider = { provide: 'ep:sw/register', useClass: ep___sw_register.default };
@@ -1190,6 +1192,7 @@ const $reversi_verify: Provider = { provide: 'ep:reversi/verify', useClass: ep__
 		$resetPassword,
 		$serverInfo,
 		$stats,
+		$reactionsStat,
 		$sw_show_registration,
 		$sw_update_registration,
 		$sw_register,
@@ -1597,6 +1600,7 @@ const $reversi_verify: Provider = { provide: 'ep:reversi/verify', useClass: ep__
 		$resetPassword,
 		$serverInfo,
 		$stats,
+		$reactionsStat,
 		$sw_register,
 		$sw_unregister,
 		$test,

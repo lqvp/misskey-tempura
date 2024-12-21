@@ -3075,6 +3075,9 @@ notificationSend: "通知を送る"
 enterNotificationText: "通知内容を入力"
 notificationSendConfirm: "通知を送信しますか？"
 
+reactionsStat: "リアクション統計"
+reactionsStatDescription: "最も使用された絵文字リアクション上位100件を表示します"
+
 _followRequestHistory:
   title: "フォロリクの履歴"
   sent: "{user} へフォローリクエストを送信"

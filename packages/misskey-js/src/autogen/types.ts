@@ -3445,6 +3445,15 @@ export type paths = {
      */
     post: operations['stats'];
   };
+  '/reaction-stat': {
+    /**
+     * reaction-stat
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *read:account*
+     */
+    post: operations['reaction-stat'];
+  };
   '/sw/show-registration': {
     /**
      * sw/show-registration
@@ -26967,6 +26976,63 @@ export type operations = {
             driveUsageLocal: number;
             driveUsageRemote: number;
           };
+        };
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * reaction-stat
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *read:account*
+   */
+  'reaction-stat': {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @default false */
+          site?: boolean;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (with results) */
+      200: {
+        content: {
+          'application/json': {
+              reaction: string;
+              count: number;
+            }[];
         };
       };
       /** @description Client error */

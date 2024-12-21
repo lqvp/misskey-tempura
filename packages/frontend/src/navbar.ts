@@ -203,6 +203,11 @@ export const navbarItemDef = reactive({
 			roleManager();
 		},
 	},
+	reactionStat: {
+		title: i18n.ts.reactionsStat,
+		icon: 'ti ti-chart-bar',
+		to: '/reactions-stat',
+	},
 	makePrivate: {
 		title: i18n.ts._makePrivate.bulkText,
 		icon: 'ti ti-eye-off',

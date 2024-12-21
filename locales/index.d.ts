@@ -11498,6 +11498,14 @@ export interface Locale extends ILocale {
      * 通知を送信しますか？
      */
     "notificationSendConfirm": string;
+    /**
+     * リアクション統計
+     */
+    "reactionsStat": string;
+    /**
+     * 最も使用された絵文字リアクション上位100件を表示します
+     */
+    "reactionsStatDescription": string;
     "_followRequestHistory": {
         /**
          * フォロリクの履歴
