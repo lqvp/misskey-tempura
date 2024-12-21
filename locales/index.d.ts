@@ -11696,6 +11696,56 @@ export interface Locale extends ILocale {
          */
         "truncateAccount": string;
     };
+    "_makePrivate": {
+        /**
+         * 非公開にする
+         */
+        "text": string;
+        /**
+         * 投稿を非公開にすると、あなただけが閲覧できるようになり、リモートサーバーに削除リクエストが送信されます。
+         */
+        "description": string;
+        /**
+         * 本当にこの投稿を非公開にしますか？
+         */
+        "confirm": string;
+        /**
+         * 複数の投稿をまとめて非公開にすることは、**永久的で取り消し不可能**な操作であり、サーバーに一定の負荷がかかります。注意して進めてください。投稿をまとめて非公開にできるのは1時間に1回のみです。
+         */
+        "warn": string;
+        /**
+         * 開始日
+         */
+        "sinceDate": string;
+        /**
+         * 終了日
+         */
+        "untilDate": string;
+        /**
+         * これは非常に危険な操作のため、この機能を有効にするには `{text}` と入力してください
+         */
+        "dangerTip": ParameterizedString<"text">;
+        /**
+         * 非公開にされる投稿が {count} 件あります
+         */
+        "manyCount": ParameterizedString<"count">;
+        /**
+         * 投稿を非公開にする！
+         */
+        "textmany": string;
+        /**
+         * これらの {count} 件の投稿をまとめて非公開にしてよろしいですか？この操作は取り消せず、投稿は今後ずっとあなただけしか閲覧できなくなります（本当です！）
+         */
+        "manyWarn": ParameterizedString<"count">;
+        /**
+         * 非公開化の処理が開始されました
+         */
+        "didStart": string;
+        /**
+         * 投稿をまとめて非公開にする
+         */
+        "bulkText": string;
+    };
 }
 declare const locales: {
     [lang: string]: Locale;

@@ -79,6 +79,16 @@ export function useNoteCapture(props: {
 				props.isDeletedRef.value = true;
 				break;
 			}
+
+			case 'madePrivate': {
+				if ($i?.id === note.value.userId) {
+					note.value.visibility = 'specified';
+				} else {
+					// perform delete
+					props.isDeletedRef.value = true;
+				}
+				break;
+			}
 		}
 	}
 

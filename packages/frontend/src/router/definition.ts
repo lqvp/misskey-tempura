@@ -602,6 +602,10 @@ const routes: RouteDef[] = [{
 	component: page(() => import('@/pages/my-antennas/index.vue')),
 	loginRequired: true,
 }, {
+	path: '/my/make-private-many',
+	component: page(() => import('@/pages/make-private-many.vue')),
+	loginRequired: true,
+}, {
 	path: '/timeline/list/:listId',
 	component: page(() => import('@/pages/user-list-timeline.vue')),
 	loginRequired: true,

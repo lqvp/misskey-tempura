@@ -135,6 +135,9 @@ export interface NoteEventTypes {
 		reaction: string;
 		userId: MiUser['id'];
 	};
+	madePrivate: {
+		deletedAt: Date;
+	};
 }
 type NoteStreamEventTypes = {
 	[key in keyof NoteEventTypes]: {

@@ -221,6 +221,19 @@ export function getNoteMenu(props: {
 		});
 	}
 
+	function makePrivate(): void {
+		os.confirm({
+			type: 'warning',
+			text: `${i18n.ts._makePrivate.description} ${i18n.ts._makePrivate.confirm}`,
+		}).then(({ canceled }) => {
+			if (canceled) return;
+
+			misskeyApi('notes/make-private', {
+				noteId: appearNote.id,
+			});
+		});
+	}
+
 	function toggleFavorite(favorite: boolean): void {
 		claimAchievement('noteFavorited1');
 		os.apiWithDialog(favorite ? 'notes/favorites/create' : 'notes/favorites/delete', {
@@ -460,7 +473,12 @@ export function getNoteMenu(props: {
 					icon: 'ti ti-edit',
 					text: i18n.ts.deleteAndEdit,
 					action: delEdit,
-				});
+				}, {
+					icon: 'ti ti-eye-off',
+					text: i18n.ts._makePrivate.text,
+					danger: true,
+					action: makePrivate,
+				},);
 			}
 			menuItems.push({
 				icon: 'ti ti-trash',

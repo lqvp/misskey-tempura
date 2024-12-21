@@ -26,6 +26,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<span v-if="note.visibility !== 'public'" style="margin-left: 0.5em;">
 			<i v-if="note.visibility === 'home'" v-tooltip="i18n.ts._visibility[note.visibility]" class="ti ti-home"></i>
 			<i v-else-if="note.visibility === 'followers'" v-tooltip="i18n.ts._visibility[note.visibility]" class="ti ti-lock"></i>
+			<i v-else-if="note.visibility === 'specified' && !note.visibleUserIds?.length" ref="specified" class="ti ti-eye-off"></i>
 			<i v-else-if="note.visibility === 'specified'" ref="specified" v-tooltip="i18n.ts._visibility[note.visibility]" class="ti ti-mail"></i>
 		</span>
 		<span v-if="note.reactionAcceptance != null" style="margin-left: 0.5em;" :class="{ [$style.danger]: ['nonSensitiveOnly', 'nonSensitiveOnlyForLocalLikeOnlyForRemote', 'likeOnly'].includes(<string>note.reactionAcceptance) }" :title="i18n.ts.reactionAcceptance">

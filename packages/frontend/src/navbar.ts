@@ -203,6 +203,11 @@ export const navbarItemDef = reactive({
 			roleManager();
 		},
 	},
+	makePrivate: {
+		title: i18n.ts._makePrivate.bulkText,
+		icon: 'ti ti-eye-off',
+		to: '/my/make-private-many',
+	},
 	followHistory: {
 		title: i18n.ts._followHistory.title,
 		icon: 'ti ti-history',

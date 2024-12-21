@@ -1674,6 +1674,10 @@ declare namespace entities {
         NotesCreateRequest,
         NotesCreateResponse,
         NotesDeleteRequest,
+        NotesMakePrivateRequest,
+        NotesMakePrivateManyRequest,
+        NotesMakePrivateManyCountRequest,
+        NotesMakePrivateManyCountResponse,
         NotesFavoritesCreateRequest,
         NotesFavoritesDeleteRequest,
         NotesFeaturedRequest,
@@ -2803,6 +2807,18 @@ type NotesLocalTimelineRequest = operations['notes___local-timeline']['requestBo
 
 // @public (undocumented)
 type NotesLocalTimelineResponse = operations['notes___local-timeline']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type NotesMakePrivateManyCountRequest = operations['notes___make-private-many-count']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type NotesMakePrivateManyCountResponse = operations['notes___make-private-many-count']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type NotesMakePrivateManyRequest = operations['notes___make-private-many']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type NotesMakePrivateRequest = operations['notes___make-private']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
 type NotesMentionsRequest = operations['notes___mentions']['requestBody']['content']['application/json'];
