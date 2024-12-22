@@ -3445,14 +3445,14 @@ export type paths = {
      */
     post: operations['stats'];
   };
-  '/reaction-stat': {
+  '/reactions-stat': {
     /**
-     * reaction-stat
+     * reactions-stat
      * @description No description provided.
      *
      * **Credential required**: *Yes* / **Permission**: *read:account*
      */
-    post: operations['reaction-stat'];
+    post: operations['reactions-stat'];
   };
   '/sw/show-registration': {
     /**
@@ -4659,6 +4659,14 @@ export type components = {
       createdAt: string;
       /** @enum {string} */
       type: 'login';
+      ip: string;
+    } | {
+      /** Format: id */
+      id: string;
+      /** Format: date-time */
+      createdAt: string;
+      /** @enum {string} */
+      type: 'loginFailed';
       ip: string;
     } | ({
       /** Format: id */
@@ -19857,8 +19865,8 @@ export type operations = {
           untilId?: string;
           /** @default true */
           markAsRead?: boolean;
-          includeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'blocked' | 'unblocked' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'scheduledNoteFailed' | 'scheduledNotePosted' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
-          excludeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'blocked' | 'unblocked' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'scheduledNoteFailed' | 'scheduledNotePosted' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
+          includeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'blocked' | 'unblocked' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'loginFailed' | 'scheduledNoteFailed' | 'scheduledNotePosted' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
+          excludeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'blocked' | 'unblocked' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'loginFailed' | 'scheduledNoteFailed' | 'scheduledNotePosted' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
         };
       };
     };
@@ -19925,8 +19933,8 @@ export type operations = {
           untilId?: string;
           /** @default true */
           markAsRead?: boolean;
-          includeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'blocked' | 'unblocked' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'scheduledNoteFailed' | 'scheduledNotePosted' | 'app' | 'test' | 'reaction:grouped' | 'renote:grouped' | 'note:grouped' | 'pollVote' | 'groupInvited')[];
-          excludeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'blocked' | 'unblocked' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'scheduledNoteFailed' | 'scheduledNotePosted' | 'app' | 'test' | 'reaction:grouped' | 'renote:grouped' | 'note:grouped' | 'pollVote' | 'groupInvited')[];
+          includeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'blocked' | 'unblocked' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'loginFailed' | 'scheduledNoteFailed' | 'scheduledNotePosted' | 'app' | 'test' | 'reaction:grouped' | 'renote:grouped' | 'note:grouped' | 'pollVote' | 'groupInvited')[];
+          excludeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'blocked' | 'unblocked' | 'roleAssigned' | 'achievementEarned' | 'exportCompleted' | 'login' | 'loginFailed' | 'scheduledNoteFailed' | 'scheduledNotePosted' | 'app' | 'test' | 'reaction:grouped' | 'renote:grouped' | 'note:grouped' | 'pollVote' | 'groupInvited')[];
         };
       };
     };
@@ -27011,12 +27019,12 @@ export type operations = {
     };
   };
   /**
-   * reaction-stat
+   * reactions-stat
    * @description No description provided.
    *
    * **Credential required**: *Yes* / **Permission**: *read:account*
    */
-  'reaction-stat': {
+  'reactions-stat': {
     requestBody: {
       content: {
         'application/json': {

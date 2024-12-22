@@ -1772,8 +1772,8 @@ declare namespace entities {
         ResetPasswordRequest,
         ServerInfoResponse,
         StatsResponse,
-        ReactionStatRequest,
-        ReactionStatResponse,
+        ReactionsStatRequest,
+        ReactionsStatResponse,
         SwShowRegistrationRequest,
         SwShowRegistrationResponse,
         SwUpdateRegistrationRequest,
@@ -3055,10 +3055,10 @@ type QueueStats = {
 type QueueStatsLog = QueueStats[];
 
 // @public (undocumented)
-type ReactionStatRequest = operations['reaction-stat']['requestBody']['content']['application/json'];
+type ReactionsStatRequest = operations['reactions-stat']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
-type ReactionStatResponse = operations['reaction-stat']['responses']['200']['content']['application/json'];
+type ReactionsStatResponse = operations['reactions-stat']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type RenoteMuteCreateRequest = operations['renote-mute___create']['requestBody']['content']['application/json'];

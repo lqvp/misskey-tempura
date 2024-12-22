@@ -526,8 +526,8 @@ import type {
 	ResetPasswordRequest,
 	ServerInfoResponse,
 	StatsResponse,
-	ReactionStatRequest,
-	ReactionStatResponse,
+	ReactionsStatRequest,
+	ReactionsStatResponse,
 	SwShowRegistrationRequest,
 	SwShowRegistrationResponse,
 	SwUpdateRegistrationRequest,
@@ -973,7 +973,7 @@ export type Endpoints = {
 	'reset-password': { req: ResetPasswordRequest; res: EmptyResponse };
 	'server-info': { req: EmptyRequest; res: ServerInfoResponse };
 	'stats': { req: EmptyRequest; res: StatsResponse };
-	'reaction-stat': { req: ReactionStatRequest; res: ReactionStatResponse };
+	'reactions-stat': { req: ReactionsStatRequest; res: ReactionsStatResponse };
 	'sw/show-registration': { req: SwShowRegistrationRequest; res: SwShowRegistrationResponse };
 	'sw/update-registration': { req: SwUpdateRegistrationRequest; res: SwUpdateRegistrationResponse };
 	'sw/register': { req: SwRegisterRequest; res: SwRegisterResponse };
