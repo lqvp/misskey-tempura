@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<span :class="$style.itemDescription">{{ i18n.ts._visibility.publicDescription }}</span>
 			</div>
 		</button>
-		<button key="home" :disabled="isReplyVisibilitySpecified" class="_button" :class="[$style.item, { [$style.active]: v === 'home' }]" data-index="2" @click="choose('home')">
+		<button key="home" :disabled="canHomeNote || isReplyVisibilitySpecified" class="_button" :class="[$style.item, { [$style.active]: v === 'home' }]" data-index="2" @click="choose('home')">
 			<div :class="$style.icon"><i class="ti ti-home"></i></div>
 			<div :class="$style.body">
 				<span :class="$style.itemTitle">{{ i18n.ts._visibility.home }}</span>
@@ -46,6 +46,9 @@ import { nextTick, shallowRef, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import MkModal from '@/components/MkModal.vue';
 import { i18n } from '@/i18n.js';
+import { $i } from '@/account';
+
+const canHomeNote = $i?.policies.canHomeNote ?? false;
 
 const modal = shallowRef<InstanceType<typeof MkModal>>();
 
