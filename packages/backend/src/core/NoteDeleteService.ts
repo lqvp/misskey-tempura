@@ -210,8 +210,17 @@ export class NoteDeleteService {
 				throw new Error('too many notes');
 			}
 			const shouldMakePrivateNotes = await query.getMany();
-			for (const note of shouldMakePrivateNotes) {
-				this.makePrivate(user, note);
+			const chunkSize = 10;
+			const chunkInterval = 60000; // 1 minutes
+
+			for (let i = 0; i < shouldMakePrivateNotes.length; i += chunkSize) {
+				const chunk = shouldMakePrivateNotes.slice(i, i + chunkSize);
+				for (const note of chunk) {
+					this.makePrivate(user, note);
+				}
+				if (i + chunkSize < shouldMakePrivateNotes.length) {
+					await new Promise(resolve => setTimeout(resolve, chunkInterval));
+				}
 			}
 			return shouldMakePrivateNotes.length;
 		}
