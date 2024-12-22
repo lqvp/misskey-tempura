@@ -25,6 +25,7 @@ import { UserAuthService } from '@/core/UserAuthService.js';
 import { CaptchaService } from '@/core/CaptchaService.js';
 import { FastifyReplyError } from '@/misc/fastify-reply-error.js';
 import { MetaService } from '@/core/MetaService.js';
+import { NotificationService } from '@/core/NotificationService.js';
 import { RateLimiterService } from './RateLimiterService.js';
 import { SigninService } from './SigninService.js';
 import type { AuthenticationResponseJSON } from '@simplewebauthn/types';
@@ -58,6 +59,7 @@ export class SigninApiService {
 		private webAuthnService: WebAuthnService,
 		private captchaService: CaptchaService,
 		private metaService: MetaService,
+		private notificationService: NotificationService,
 	) {
 	}
 
@@ -181,6 +183,11 @@ export class SigninApiService {
 				ip: request.ip,
 				headers: request.headers as any,
 				success: false,
+			});
+
+			// ログインに失敗したことを通知
+			await this.notificationService.createNotification(user.id, 'loginFailed', {
+				userIp: request.ip,
 			});
 
 			return error(status ?? 500, failure ?? { id: '4e30e80c-e338-45a0-8c8f-44455efa3b76' });

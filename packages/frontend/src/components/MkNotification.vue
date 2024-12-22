@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <div :class="$style.root">
 	<div :class="$style.head">
 		<MkAvatar v-if="['pollEnded', 'note', 'scheduledNotePosted'].includes(notification.type) && 'note' in notification" :class="$style.icon" :user="notification.note.user" link preview/>
-		<MkAvatar v-else-if="['roleAssigned', 'achievementEarned', 'exportCompleted', 'login', 'scheduledNoteFailed'].includes(notification.type)" :class="$style.icon" :user="$i" link preview/>
+		<MkAvatar v-else-if="['roleAssigned', 'achievementEarned', 'exportCompleted', 'login', 'loginFailed', 'scheduledNoteFailed'].includes(notification.type)" :class="$style.icon" :user="$i" link preview/>
 		<div v-else-if="notification.type === 'reaction:grouped' && notification.note.reactionAcceptance === 'likeOnly'" :class="[$style.icon, $style.icon_reactionGroupHeart]"><i class="ti ti-heart" style="line-height: 1;"></i></div>
 		<div v-else-if="notification.type === 'reaction:grouped'" :class="[$style.icon, $style.icon_reactionGroup]"><i class="ti ti-plus" style="line-height: 1;"></i></div>
 		<div v-else-if="notification.type === 'renote:grouped'" :class="[$style.icon, $style.icon_renoteGroup]"><i class="ti ti-repeat" style="line-height: 1;"></i></div>
@@ -32,6 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				[$style.t_achievementEarned]: notification.type === 'achievementEarned',
 				[$style.t_exportCompleted]: notification.type === 'exportCompleted',
 				[$style.t_login]: notification.type === 'login',
+				[$style.t_loginFailed]: notification.type === 'loginFailed',
 				[$style.t_roleAssigned]: notification.type === 'roleAssigned' && notification.role.iconUrl == null,
 				[$style.t_roleAssigned]: notification.type === 'scheduledNoteFailed',
 				[$style.t_pollEnded]: notification.type === 'scheduledNotePosted',
@@ -52,6 +53,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<i v-else-if="notification.type === 'achievementEarned'" class="ti ti-medal"></i>
 			<i v-else-if="notification.type === 'exportCompleted'" class="ti ti-archive"></i>
 			<i v-else-if="notification.type === 'login'" class="ti ti-login-2"></i>
+			<i v-else-if="notification.type === 'loginFailed'" class="ti ti-lock-exclamation"></i>
 			<template v-else-if="notification.type === 'roleAssigned'">
 				<img v-if="notification.role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="notification.role.iconUrl" alt=""/>
 				<i v-else class="ti ti-badges"></i>
@@ -74,6 +76,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span v-else-if="notification.type === 'roleAssigned'">{{ i18n.ts._notification.roleAssigned }}</span>
 			<span v-else-if="notification.type === 'achievementEarned'">{{ i18n.ts._notification.achievementEarned }}</span>
 			<span v-else-if="notification.type === 'login'">{{ i18n.ts._notification.login }}</span>
+			<span v-else-if="notification.type === 'loginFailed'">{{ i18n.ts._notification.loginFailed }}</span>
 			<span v-else-if="notification.type === 'test'">{{ i18n.ts._notification.testNotification }}</span>
 			<span v-else-if="notification.type === 'exportCompleted'">{{ i18n.tsx._notification.exportOfXCompleted({ x: exportEntityName[notification.exportedEntity] }) }}</span>
 			<MkA v-else-if="notification.type === 'follow' || notification.type === 'unfollow' || notification.type === 'mention' || notification.type === 'reply' || notification.type === 'renote' || notification.type === 'quote' || notification.type === 'reaction' || notification.type === 'receiveFollowRequest' || notification.type === 'followRequestAccepted' || notification.type === 'followRequestRejected' || notification.type === 'blocked' || notification.type === 'unblocked'" v-user-preview="notification.user.id" :class="$style.headerName" :to="userPage(notification.user)"><MkUserName :user="notification.user"/></MkA>
@@ -128,6 +131,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 			<MkA v-else-if="notification.type === 'login'" :class="$style.text" to="/settings/security">
 				<Mfm :text="i18n.tsx._notification.loginDescription({ ip: notification.ip, text: i18n.ts.regenerateLoginToken })"/>
+			</MkA>
+			<MkA v-else-if="notification.type === 'loginFailed'" :class="$style.text" to="/settings/security">
+				<Mfm :text="i18n.tsx._notification.loginFailedDescription({ ip: notification.ip })"/>
 			</MkA>
 			<template v-else-if="notification.type === 'follow'">
 				<span :class="$style.text" style="opacity: 0.6;">{{ i18n.ts.youGotNewFollower }}</span>
@@ -421,6 +427,12 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 .t_login {
 	padding: 3px;
 	background: var(--eventLogin);
+	pointer-events: none;
+}
+
+.t_loginFailed {
+	padding: 3px;
+	background: var(--eventUnFollow);
 	pointer-events: none;
 }
 

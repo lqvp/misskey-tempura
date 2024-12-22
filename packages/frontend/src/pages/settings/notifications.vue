@@ -83,7 +83,7 @@ const $i = signinRequired();
 
 const nonConfigurableNotificationTypes = ['note', 'roleAssigned', 'followRequestAccepted', 'followRequestRejected', 'test', 'exportCompleted'] satisfies (typeof notificationTypes[number])[] as string[];
 
-const onlyOnOrOffNotificationTypes = ['app', 'achievementEarned', 'login'] satisfies (typeof notificationTypes[number])[] as string[];
+const onlyOnOrOffNotificationTypes = ['app', 'achievementEarned', 'login', 'loginFailed'] satisfies (typeof notificationTypes[number])[] as string[];
 
 const allowButton = shallowRef<InstanceType<typeof MkPushNotificationAllowButton>>();
 const pushRegistrationInServer = computed(() => allowButton.value?.pushRegistrationInServer);

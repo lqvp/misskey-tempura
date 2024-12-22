@@ -9921,6 +9921,15 @@ export interface Locale extends ILocale {
          * 承認されていない機器であれば、セキュリティのために「{text}」を通じてすべての機器でログアウトを行ってください。
          */
         "loginDescription": ParameterizedString<"ip" | "text">;
+        /**
+         * ログインに失敗しました
+         */
+        "loginFailed": string;
+        /**
+         * {ip}からのログインに失敗しました。
+         * 自身のip以外でのログインが行われている場合、セキュリティのために設定にてパスワードを変更してください。
+         */
+        "loginFailedDescription": ParameterizedString<"ip">;
         "_types": {
             /**
              * すべて

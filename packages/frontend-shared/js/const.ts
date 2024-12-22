@@ -73,6 +73,7 @@ export const notificationTypes = [
 	'achievementEarned',
 	'exportCompleted',
 	'login',
+	'loginFailed',
 	'test',
 	'app',
 	'test',

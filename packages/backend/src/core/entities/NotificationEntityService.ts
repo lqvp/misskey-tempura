@@ -202,6 +202,9 @@ export class NotificationEntityService implements OnModuleInit {
 			...(notification.type === 'login' ? {
 				ip: notification.userIp,
 			} : {}),
+			...(notification.type === 'loginFailed' ? {
+				ip: notification.userIp,
+			} : {}),
 			...(notification.type === 'app' ? {
 				body: notification.customBody,
 				header: notification.customHeader,
