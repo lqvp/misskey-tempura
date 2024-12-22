@@ -25,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</div>
 		<div class="_gaps_s">
 			<p>
-				<Mfm key="sitereactionslist" :text="serverReactionsListMfm"></Mfm>
+				<Mfm key="sitereactionslist" :text="serverReactionsListMfm" :plain="true" :emojiUrls="serverReactionsListMfmEmojis"></Mfm>
 			</p>
 		</div>
 	</MkSpacer>
@@ -47,6 +47,8 @@ const $i = signinRequired();
 const myReactionsListMfm = ref('Loading...');
 const serverReactionsListMfm = ref('Loading...');
 
+const serverReactionsListMfmEmojis = ref<Record<string, string>>({});
+
 const tab = ref('me');
 
 watch(tab, async () => {
@@ -59,6 +61,10 @@ watch(tab, async () => {
 
 	if (tab.value === 'site') {
 		serverReactionsListMfm.value = res;
+		serverReactionsListMfmEmojis.value = reactionsList.reduce((acc: Record<string, string>, x: any) => {
+			if (x.url) acc[x.reaction] = x.url;
+			return acc;
+		}, {});
 	} else {
 		myReactionsListMfm.value = res;
 	}
