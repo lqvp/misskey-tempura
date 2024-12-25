@@ -125,6 +125,7 @@ export const ROLE_POLICIES = [
 	'canUseBlockedNotification',
 	'canUseUnBlockedNotification',
 	'canDeleteAccount',
+	'canPublicNonLtlNote',
 ] as const;
 
 // なんか動かない

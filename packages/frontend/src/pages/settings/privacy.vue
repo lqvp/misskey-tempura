@@ -154,6 +154,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkFolder v-if="!rememberNoteVisibility">
 				<template #label>{{ i18n.ts.defaultNoteVisibility }}</template>
 				<template v-if="defaultNoteVisibility === 'public'" #suffix>{{ i18n.ts._visibility.public }}</template>
+				<template v-else-if="defaultNoteVisibility === 'public_non_ltl'" #suffix>{{ i18n.ts._visibility.public_non_ltl }}</template>
 				<template v-else-if="defaultNoteVisibility === 'home'" #suffix>{{ i18n.ts._visibility.home }}</template>
 				<template v-else-if="defaultNoteVisibility === 'followers'" #suffix>{{ i18n.ts._visibility.followers }}</template>
 				<template v-else-if="defaultNoteVisibility === 'specified'" #suffix>{{ i18n.ts._visibility.specified }}</template>
@@ -161,6 +162,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div class="_gaps_m">
 					<MkSelect v-model="defaultNoteVisibility">
 						<option value="public">{{ i18n.ts._visibility.public }}</option>
+						<option v-if="$i.policies.canPublicNonLtlNote" value="public_non_ltl">{{ i18n.ts._visibility.public_non_ltl }}</option>
 						<option value="home">{{ i18n.ts._visibility.home }}</option>
 						<option value="followers">{{ i18n.ts._visibility.followers }}</option>
 						<option value="specified">{{ i18n.ts._visibility.specified }}</option>
