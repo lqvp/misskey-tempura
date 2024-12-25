@@ -72,6 +72,7 @@ export type RolePolicies = {
   canUseBlockedNotification: boolean;
   canUseUnBlockedNotification: boolean;
 	canDeleteAccount: boolean;
+	canPublicNonLtlNote: boolean;
 };
 
 export const DEFAULT_POLICIES: RolePolicies = {
@@ -115,6 +116,7 @@ export const DEFAULT_POLICIES: RolePolicies = {
 	canUseBlockedNotification: true,
 	canUseUnBlockedNotification: true,
 	canDeleteAccount: false,
+	canPublicNonLtlNote: false,
 };
 
 @Injectable()
@@ -486,6 +488,7 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
   		canUseBlockedNotification: calc('canUseBlockedNotification', vs => vs.some(v => v === true)),
   		canUseUnBlockedNotification: calc('canUseUnBlockedNotification', vs => vs.some(v => v === true)),
 			canDeleteAccount: calc('canDeleteAccount', vs => vs.some(v => v === true)),
+			canPublicNonLtlNote: calc('canPublicNonLtlNote', vs => vs.some(v => v === true)),
 		};
 	}
 

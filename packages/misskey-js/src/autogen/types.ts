@@ -4399,7 +4399,7 @@ export type components = {
       renote?: components['schemas']['Note'] | null;
       isHidden?: boolean;
       /** @enum {string} */
-      visibility: 'public' | 'home' | 'followers' | 'specified';
+      visibility: 'public' | 'public_non_ltl' | 'home' | 'followers' | 'specified';
       mentions?: string[];
       visibleUserIds?: string[];
       fileIds?: string[];
@@ -5250,6 +5250,7 @@ export type components = {
       canUseBlockedNotification: boolean;
       canUseUnBlockedNotification: boolean;
       canDeleteAccount: boolean;
+      canPublicNonLtlNote: boolean;
     };
     ReversiGameLite: {
       /** Format: id */
@@ -22746,7 +22747,7 @@ export type operations = {
            * @default public
            * @enum {string}
            */
-          visibility?: 'public' | 'home' | 'followers' | 'specified';
+          visibility?: 'public' | 'public_non_ltl' | 'home' | 'followers' | 'specified';
           visibleUserIds?: string[];
           cw?: string | null;
           /** @default false */

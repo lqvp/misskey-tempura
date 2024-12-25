@@ -18,7 +18,7 @@ import type {
 
 export const notificationTypes = ['note', 'follow', 'mention', 'reply', 'renote', 'quote', 'reaction', 'pollVote', 'pollEnded', 'receiveFollowRequest', 'followRequestAccepted', 'followRequestRejected', 'blocked', 'unblocked', 'groupInvited', 'app', 'roleAssigned', 'achievementEarned', 'scheduledNoteFailed', 'scheduledNotePosted'] as const;
 
-export const noteVisibilities = ['public', 'home', 'followers', 'specified'] as const;
+export const noteVisibilities = ['public', 'public_non_ltl', 'home', 'followers', 'specified'] as const;
 
 export const mutedNoteReasons = ['word', 'manual', 'spam', 'other'] as const;
 

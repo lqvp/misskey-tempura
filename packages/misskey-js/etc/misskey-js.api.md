@@ -2940,7 +2940,7 @@ type NotesUserListTimelineResponse = operations['notes___user-list-timeline']['r
 export const notesVisibilities: readonly ["public", "followers", "private"];
 
 // @public (undocumented)
-export const noteVisibilities: readonly ["public", "home", "followers", "specified"];
+export const noteVisibilities: readonly ["public", "public_non_ltl", "home", "followers", "specified"];
 
 // @public (undocumented)
 type Notification_2 = components['schemas']['Notification'];

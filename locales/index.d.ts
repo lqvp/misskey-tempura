@@ -5933,6 +5933,10 @@ export interface Locale extends ILocale {
                  */
                 "public": string;
                 /**
+                 * 全てのユーザーに公開されますが、LTLには掲載されません
+                 */
+                "public_non_ltl": string;
+                /**
                  * ホームタイムラインのみに公開。フォロワー・プロフィールを見に来た人・リノートから、他のユーザーも見ることができます。
                  */
                 "home": string;
@@ -7345,6 +7349,10 @@ export interface Locale extends ILocale {
              * アカウントの削除を許可
              */
             "canDeleteAccount": string;
+            /**
+             * パブリック投稿（非LTL）の許可
+             */
+            "canPublicNonLtlNote": string;
         };
         "_condition": {
             /**
@@ -9206,6 +9214,14 @@ export interface Locale extends ILocale {
          * 全てのユーザーに公開
          */
         "publicDescription": string;
+        /**
+         * パブリック（非LTL）
+         */
+        "public_non_ltl": string;
+        /**
+         * 全てのユーザーに公開（ローカルタイムラインには表示されません）
+         */
+        "public_non_ltlDescription": string;
         /**
          * ホーム
          */
