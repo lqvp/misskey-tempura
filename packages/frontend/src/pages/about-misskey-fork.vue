@@ -55,6 +55,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<img src="https://avatars.githubusercontent.com/u/116360839?v=4" :class="$style.contributorAvatar">
 							<span :class="$style.contributorUsername">🐬</span>
 						</a>
+						<a href="https://github.com/tai-cha" target="_blank" :class="$style.contributor">
+							<img src="https://avatars.githubusercontent.com/u/40626578?v=4" :class="$style.contributorAvatar">
+							<span :class="$style.contributorUsername">taichan</span>
+						</a>
 					</div>
 				</FormSection>
 			</div>
