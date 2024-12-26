@@ -17,6 +17,7 @@ import { ILink, WebfingerService } from '@/core/WebfingerService.js';
 import { RemoteLoggerService } from '@/core/RemoteLoggerService.js';
 import { ApDbResolverService } from '@/core/activitypub/ApDbResolverService.js';
 import { ApPersonService } from '@/core/activitypub/models/ApPersonService.js';
+import { ApResolverService } from '@/core/activitypub/ApResolverService.js';
 import { bindThis } from '@/decorators.js';
 
 @Injectable()
@@ -35,6 +36,7 @@ export class RemoteUserResolveService {
 		private remoteLoggerService: RemoteLoggerService,
 		private apDbResolverService: ApDbResolverService,
 		private apPersonService: ApPersonService,
+		private apResolverService: ApResolverService,
 	) {
 		this.logger = this.remoteLoggerService.logger.createSubLogger('resolve-user');
 	}
@@ -153,6 +155,25 @@ export class RemoteUserResolveService {
 			this.logger.error(`Failed to WebFinger for ${chalk.yellow(acctLower)}: self link not found`);
 			throw new Error('self link not found');
 		}
+
+		try {
+			// Resolverインスタンスを作成
+			const resolver = this.apResolverService.createResolver();
+			// ActivityPubオブジェクトを解決
+			const person = await resolver.resolve(self.href);
+
+			if (person && typeof person === 'object') {
+				const requireSignin = (person as any)._misskey_requireSigninToViewContents ?? false;
+				await this.usersRepository.update({
+					uri: self.href,
+				}, {
+					requireSigninToViewContents: requireSignin,
+				});
+			}
+		} catch (err) {
+			this.logger.error(`Failed to resolve ActivityPub object: ${err}`);
+		}
+
 		return self;
 	}
 }
