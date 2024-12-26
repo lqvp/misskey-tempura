@@ -160,6 +160,12 @@ export function openInstanceMenu(ev: MouseEvent) {
 
 	menuItems.push({
 		type: 'link',
+		text: i18n.ts.aboutMisskey,
+		to: '/about-misskey',
+	});
+
+	menuItems.push({
+		type: 'link',
 		text: i18n.ts._aboutFork.aboutFork,
 		to: '/about-misskey-fork',
 	});

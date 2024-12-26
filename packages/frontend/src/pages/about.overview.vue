@@ -27,6 +27,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkKeyValue>
 			<div v-html="i18n.tsx.poweredBytempForkDescription({ name: instance.name ?? host })">
 			</div>
+			<FormLink to="/about-misskey">
+				<template #icon><i class="ti ti-info-circle"></i></template>
+				{{ i18n.ts.aboutMisskey }}
+			</FormLink>
 			<FormLink to="/about-misskey-fork">
 				<template #icon><i class="ti ti-info-circle"></i></template>
 				{{ i18n.ts._aboutFork.aboutFork }}
