@@ -24283,7 +24283,7 @@ export type operations = {
                 cw?: string | null;
                 fileIds: string[];
                 /** @enum {string} */
-                visibility: 'public' | 'home' | 'followers' | 'specified';
+                visibility: 'public' | 'public_non_ltl' | 'home' | 'followers' | 'specified';
                 visibleUsers: components['schemas']['UserLite'][];
                 user: components['schemas']['User'];
                 /**
