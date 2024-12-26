@@ -23,9 +23,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkA v-else :to="notePage(note)">
 			<MkTime :time="note.createdAt" colored/>
 		</MkA>
-		<span v-if="note.visibility !== 'public'" style="margin-left: 0.5em;">
+		<span v-if="note.visibility === 'public' && note.dontShowOnLtl === true" style="margin-left: 0.5em;" :title="i18n.ts._visibility[note.visibility]">
+			<i v-tooltip="i18n.ts._visibility[note.visibility]" class="ti ti-broadcast"></i>
+		</span>
+		<span v-else-if="note.visibility !== 'public'" style="margin-left: 0.5em;" :title="i18n.ts._visibility[note.visibility]">
 			<i v-if="note.visibility === 'home'" v-tooltip="i18n.ts._visibility[note.visibility]" class="ti ti-home"></i>
-			<i v-if="note.visibility === 'public_non_ltl'" v-tooltip="i18n.ts._visibility[note.visibility]" class="ti ti-broadcast"></i>
 			<i v-else-if="note.visibility === 'followers'" v-tooltip="i18n.ts._visibility[note.visibility]" class="ti ti-lock"></i>
 			<i v-else-if="note.visibility === 'specified' && !note.visibleUserIds?.length" ref="specified" class="ti ti-eye-off"></i>
 			<i v-else-if="note.visibility === 'specified'" ref="specified" v-tooltip="i18n.ts._visibility[note.visibility]" class="ti ti-mail"></i>
