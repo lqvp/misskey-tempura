@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<div ref="containerEl" class="container" :class="{ playing: easterEggEngine != null }">
 						<img src="/client-assets/about-icon.png" alt="" class="icon" draggable="false" @load="iconLoaded" @click="gravity"/>
 						<div class="misskey">Misskey</div>
-						<div class="version">v{{ version }}</div>
+						<div class="version">v{{ displayVersion }}</div>
 						<span v-for="emoji in easterEggEmojis" :key="emoji.id" class="emoji" :data-physics-x="emoji.left" :data-physics-y="emoji.top" :class="{ _physics_circle_: !emoji.emoji.startsWith(':') }">
 							<MkCustomEmoji v-if="emoji.emoji[0] === ':'" class="emoji" :name="emoji.emoji" :normal="true" :noStyle="true" :fallbackToImage="true"/>
 							<MkEmoji v-else class="emoji" :emoji="emoji.emoji" :normal="true" :noStyle="true"/>
@@ -145,6 +145,10 @@ import * as os from '@/os.js';
 import { definePageMetadata } from '@/scripts/page-metadata.js';
 import { claimAchievement, claimedAchievements } from '@/scripts/achievements.js';
 import { $i } from '@/account.js';
+
+const displayVersion = computed(() => {
+	return version.split('-temp')[0];
+});
 
 const patronsWithIcon = [{
 	name: 'カイヤン',
