@@ -35,7 +35,7 @@ export const meta = {
 						text: { type: 'string', optional: true, nullable: false },
 						cw: { type: 'string', optional: true, nullable: true },
 						fileIds: { type: 'array', optional: false, nullable: false, items: { type: 'string', format: 'misskey:id', optional: false, nullable: false } },
-						visibility: { type: 'string', enum: ['public', 'home', 'followers', 'specified'], optional: false, nullable: false },
+						visibility: { type: 'string', enum: ['public', 'public_non_ltl', 'home', 'followers', 'specified'], optional: false, nullable: false },
 						visibleUsers: {
 							type: 'array', optional: false, nullable: false, items: {
 								type: 'object',
