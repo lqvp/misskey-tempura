@@ -33,9 +33,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<button v-tooltip.noDelay="action.text" class="_button" :class="[$style.button, { [$style.highlighted]: action.highlighted }]" @click.stop="action.handler" @touchstart="preventDrag"><i :class="action.icon"></i></button>
 			</template>
 		</div>
-		<div v-if="pageMetadata && pageMetadata.avatar && ($i && $i.id !== pageMetadata.userName?.id) && mainRouter.currentRoute.value.name === 'user' && !disableFollowButton" :class="$style.followButton">
-			<MkFollowButton :user="pageMetadata.avatar" :transparent="false" :full="!narrow"/>
-		</div>
 	</div>
 	<div v-if="(narrow && !hideTitle) && hasTabs" :class="[$style.lower, { [$style.slim]: narrow, [$style.thin]: thin_ }]">
 		<XTabs :class="$style.tabs" :tab="tab" :tabs="tabs" :rootEl="el" @update:tab="key => emit('update:tab', key)" @tabClick="onTabClick"/>
@@ -47,7 +44,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { onMounted, onUnmounted, ref, inject, shallowRef, computed } from 'vue';
 import tinycolor from 'tinycolor2';
 import XTabs, { Tab } from './MkPageHeader.tabs.vue';
-import MkFollowButton from '@/components/MkFollowButton.vue';
 import { scrollToTop } from '@@/js/scroll.js';
 import { globalEvents } from '@/events.js';
 import { injectReactiveMetadata } from '@/scripts/page-metadata.js';
