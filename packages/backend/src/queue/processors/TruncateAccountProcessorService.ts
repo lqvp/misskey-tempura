@@ -13,6 +13,7 @@ import type { MiDriveFile } from '@/models/DriveFile.js';
 import type { MiNote } from '@/models/Note.js';
 import { bindThis } from '@/decorators.js';
 import { NoteDeleteService } from '@/core/NoteDeleteService.js';
+import { NotificationService } from '@/core/NotificationService.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import type * as Bull from 'bullmq';
 import type { DbUserTruncateJobData } from '../types.js';
@@ -37,6 +38,7 @@ export class TruncateAccountProcessorService {
 		private driveService: DriveService,
 		private queueLoggerService: QueueLoggerService,
 		private noteDeleteService: NoteDeleteService,
+		private notificationService: NotificationService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('truncate-account');
 	}
@@ -146,6 +148,13 @@ export class TruncateAccountProcessorService {
 
 			this.logger.succ('All of files deleted');
 		}
+
+		this.notificationService.createNotification(user.id, 'app', {
+			appAccessTokenId: null,
+			customBody: 'アカウントの整理が完了しました。',
+			customHeader: '[システム通知] アカウントの整理',
+			customIcon: null,
+		});
 
 		return 'Account notes and drives are truncated';
 	}
