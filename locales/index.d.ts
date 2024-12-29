@@ -5933,9 +5933,13 @@ export interface Locale extends ILocale {
                  */
                 "public": string;
                 /**
-                 * 全てのユーザーに公開されますが、LTLには掲載されません
+                 * セミパブリック
                  */
                 "public_non_ltl": string;
+                /**
+                 * 全てのユーザーに公開（ローカルタイムラインには表示されません）
+                 */
+                "public_non_ltlDescription": string;
                 /**
                  * ホームタイムラインのみに公開。フォロワー・プロフィールを見に来た人・リノートから、他のユーザーも見ることができます。
                  */
