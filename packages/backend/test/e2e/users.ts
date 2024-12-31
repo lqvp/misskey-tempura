@@ -121,6 +121,7 @@ describe('ユーザー', () => {
 			autoSensitive: user.autoSensitive,
 			carefulBot: user.carefulBot,
 			autoAcceptFollowed: user.autoAcceptFollowed,
+			autoRejectFollowRequest: user.autoRejectFollowRequest,
 			noCrawle: user.noCrawle,
 			preventAiLearning: user.preventAiLearning,
 			isExplorable: user.isExplorable,

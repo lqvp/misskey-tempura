@@ -243,6 +243,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				approved: user.approved,
 				signupReason: user.signupReason,
 				autoAcceptFollowed: profile.autoAcceptFollowed,
+				autoRejectFollowRequest: profile.autoRejectFollowRequest,
 				noCrawle: profile.noCrawle,
 				preventAiLearning: profile.preventAiLearning,
 				alwaysMarkNsfw: profile.alwaysMarkNsfw,
