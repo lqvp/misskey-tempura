@@ -4095,6 +4095,7 @@ export type components = {
       autoSensitive: boolean;
       carefulBot: boolean;
       autoAcceptFollowed: boolean;
+      autoRejectFollowRequest: boolean;
       noCrawle: boolean;
       preventAiLearning: boolean;
       isExplorable: boolean;
@@ -9690,6 +9691,7 @@ export type operations = {
             emailVerified: boolean;
             followedMessage: string | null;
             autoAcceptFollowed: boolean;
+						autoRejectFollowRequest: boolean;
             noCrawle: boolean;
             preventAiLearning: boolean;
             alwaysMarkNsfw: boolean;
