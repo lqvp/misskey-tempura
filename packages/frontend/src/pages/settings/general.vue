@@ -485,6 +485,9 @@ const selectReaction = computed(defaultStore.makeGetterSetter('selectReaction'))
 const showLikeButton = computed(defaultStore.makeGetterSetter('showLikeButton'));
 const disableNoteDrafting = computed(defaultStore.makeGetterSetter('disableNoteDrafting'));
 const enableSnowMode = computed(defaultStore.makeGetterSetter('enableSnowMode'));
+const enableReactionConfirm = computed(defaultStore.makeGetterSetter('enableReactionConfirm'));
+const enableLikeConfirm = computed(defaultStore.makeGetterSetter('enableLikeConfirm'));
+
 
 watch(lang, () => {
 	miLocalStorage.setItem('lang', lang.value as string);
