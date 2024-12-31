@@ -656,7 +656,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	showInstanceTickerSoftwareName: {
 		where: 'device',
-		default: true,
+		default: false,
 	}
 }));
 
