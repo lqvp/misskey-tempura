@@ -93,6 +93,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</template>
 					<template #caption>{{ i18n.ts.enableLikeConfirmDescription }}</template>
 				</MkSwitch>
+				<MkSwitch v-model="showInstanceTickerSoftwareName">
+					<template #label>
+						{{ i18n.ts.showInstanceTickerSoftwareName }}
+						<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+					</template>
+					<template #caption>{{ i18n.ts.showInstanceTickerSoftwareNameDescription }}</template>
+				</MkSwitch>
 				<MkSelect v-model="hideReactionCount">
 					<template #label>{{ i18n.ts.hideReactionCount }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 					<option value="none">{{ i18n.ts._hideReactionCount.none }}</option>
@@ -487,6 +494,7 @@ const disableNoteDrafting = computed(defaultStore.makeGetterSetter('disableNoteD
 const enableSnowMode = computed(defaultStore.makeGetterSetter('enableSnowMode'));
 const enableReactionConfirm = computed(defaultStore.makeGetterSetter('enableReactionConfirm'));
 const enableLikeConfirm = computed(defaultStore.makeGetterSetter('enableLikeConfirm'));
+const showInstanceTickerSoftwareName = computed(defaultStore.makeGetterSetter('showInstanceTickerSoftwareName'));
 
 
 watch(lang, () => {

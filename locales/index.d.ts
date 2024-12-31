@@ -11516,6 +11516,14 @@ export interface Locale extends ILocale {
      */
     "likeConfirm": string;
     /**
+     * インスタンスのソフトウェア名を表示
+     */
+    "showInstanceTickerSoftwareName": string;
+    /**
+     * インスタンスのソフトウェア名をインスタンスの名前の横に表示します。
+     */
+    "showInstanceTickerSoftwareNameDescription": string;
+    /**
      * 通知を送る
      */
     "notificationSend": string;

@@ -6,7 +6,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <div :class="$style.root" :style="bg">
 	<img v-if="faviconUrl" :class="$style.icon" :src="faviconUrl"/>
-	<div :class="$style.name">{{ instance.name }}</div>
+	<div :class="$style.name">
+  	{{ instance.name }}
+  <template v-if="showInstanceTickerSoftwareName">
+    | {{ instance.softwareName }}
+  </template>
+</div>
 </div>
 </template>
 
@@ -15,12 +20,16 @@ import { computed } from 'vue';
 import { instanceName } from '@@/js/config.js';
 import { instance as Instance } from '@/instance.js';
 import { getProxiedImageUrlNullable } from '@/scripts/media-proxy.js';
+import { defaultStore } from '@/store.js';
+
+const showInstanceTickerSoftwareName = computed(() => defaultStore.state.showInstanceTickerSoftwareName);
 
 const props = defineProps<{
 	instance?: {
 		faviconUrl?: string | null
 		name?: string | null
 		themeColor?: string | null
+		softwareName?: string | null
 	}
 }>();
 

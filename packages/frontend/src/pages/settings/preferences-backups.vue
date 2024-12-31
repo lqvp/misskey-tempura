@@ -134,6 +134,7 @@ const defaultStoreSaveKeys: (keyof typeof defaultStore['state'])[] = [
 	'anonymizeMutedUsers',
 	'enableReactionConfirm',
 	'enableLikeConfirm',
+	'showInstanceTickerSoftwareName',
 ];
 const coldDeviceStorageSaveKeys: (keyof typeof ColdDeviceStorage.default)[] = [
 	'lightTheme',

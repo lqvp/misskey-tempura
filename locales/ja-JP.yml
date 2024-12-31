@@ -3079,6 +3079,9 @@ enableLikeConfirm: "いいねの確認を有効にする"
 enableLikeConfirmDescription: "いいねを押した際に確認ダイアログを表示します。"
 likeConfirm: "いいねしますか？"
 
+showInstanceTickerSoftwareName: "インスタンスのソフトウェア名を表示"
+showInstanceTickerSoftwareNameDescription: "インスタンスのソフトウェア名をインスタンスの名前の横に表示します。"
+
 notificationSend: "通知を送る"
 enterNotificationText: "通知内容を入力"
 notificationSendConfirm: "通知を送信しますか？"
