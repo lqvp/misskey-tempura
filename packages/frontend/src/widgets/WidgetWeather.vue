@@ -64,6 +64,10 @@ const widgetPropsDef = {
 		type: 'string' as const,
 		default: '100000',
 	},
+	areasCode: {
+		type: 'string' as const,
+		default: '42251',
+	},
 	refreshIntervalSec: {
 		type: 'number' as const,
 		default: 3600,
@@ -71,7 +75,7 @@ const widgetPropsDef = {
 	info: {
 		type: 'string' as const,
 		multiline: true,
-		default: 'エリアコード：https://www.jma.go.jp/bosai/common/const/area.json\n出典：気象庁 (https://www.jma.go.jp/bosai/forecast/)\n利用規約：https://www.jma.go.jp/jma/kishou/info/coment.html',
+		default: '出典：気象庁 (https://www.jma.go.jp/bosai/forecast/)\n利用規約：https://www.jma.go.jp/jma/kishou/info/coment.html\n使い方：https://gist.github.com/lqvp/09e6221bde29cb968147a08a5c94a7ad',
 	},
 };
 
@@ -107,6 +111,7 @@ const fetchWeatherData = async () => {
 const refreshWeatherData = () => {
 	fetchWeatherData();
 };
+
 const getWeatherIcon = (weatherCode: string) => {
 	return `https://www.jma.go.jp/bosai/forecast/img/${weatherCode}.svg`;
 };
@@ -117,15 +122,41 @@ const formatDate = (dateString: string) => {
 };
 
 const getMaxTemp = (index: number) => {
-	const temps = weatherData.value[0]?.timeSeries[2]?.areas[0]?.temps;
-	const temp = temps ? temps[index * 2] : undefined;
-	return temp ?? '?';
+	const timeDefines = weatherData.value[0]?.timeSeries[0]?.timeDefines;
+	const targetDate = timeDefines[index];
+
+	// 1日目の気温データ
+	if (index === 0) {
+		const temps = weatherData.value[0]?.timeSeries[2]?.areas.find((area: any) => area.area.code === widgetProps.areasCode)?.temps;
+		return temps ? temps[0] : '?';
+	}
+
+	// 2日目以降の気温データ
+	const longTermTemps = weatherData.value[1]?.timeSeries[1]?.areas.find((area: any) => area.area.code === widgetProps.areasCode)?.tempsMax;
+	if (longTermTemps && longTermTemps[index] !== undefined) {
+		return longTermTemps[index];
+	}
+
+	return '?';
 };
 
 const getMinTemp = (index: number) => {
-	const temps = weatherData.value[0]?.timeSeries[2]?.areas[0]?.temps;
-	const temp = temps ? temps[index * 2 + 1] : undefined;
-	return temp ?? '?';
+	const timeDefines = weatherData.value[0]?.timeSeries[0]?.timeDefines;
+	const targetDate = timeDefines[index];
+
+	// 1日目の気温データ
+	if (index === 0) {
+		const temps = weatherData.value[0]?.timeSeries[2]?.areas.find((area: any) => area.area.code === widgetProps.areasCode)?.temps;
+		return temps ? temps[1] : '?';
+	}
+
+	// 2日目以降の気温データ
+	const longTermTemps = weatherData.value[1]?.timeSeries[1]?.areas.find((area: any) => area.area.code === widgetProps.areasCode)?.tempsMin;
+	if (longTermTemps && longTermTemps[index] !== undefined) {
+		return longTermTemps[index];
+	}
+
+	return '?';
 };
 
 const getPops = (index: number) => {
@@ -155,6 +186,8 @@ onBeforeUnmount(() => {
 });
 
 watch(() => widgetProps.areaCode, fetchWeatherData, { immediate: true });
+watch(() => widgetProps.areasCode, fetchWeatherData, { immediate: true });
+
 onMounted(() => {
 	fetchWeatherData();
 });
@@ -168,86 +201,86 @@ defineExpose<WidgetComponentExpose>({
 
 <style lang="scss" scoped>
 .weather-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    padding: 8px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 8px;
+		padding: 8px;
 }
 
 .weather-days {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    width: 100%;
-    gap: 8px;
+		display: flex;
+		flex-direction: row;
+		justify-content: space-between;
+		width: 100%;
+		gap: 8px;
 }
 
 .weather-day {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 4px;
-    flex: 1;
-    padding: 8px;
-    border-right: 1px solid #eee;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+		flex: 1;
+		padding: 8px;
+		border-right: 1px solid #eee;
 }
 
 .weather-day:last-child {
-    border-right: none;
+		border-right: none;
 }
 
 .weather-date {
-    font-size: 12px;
+		font-size: 12px;
 }
 
 .weather-icon {
-    width: 40px;
-    height: 40px;
+		width: 40px;
+		height: 40px;
 }
 
 .weather-temp {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 4px;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 4px;
 }
 
 .temp-max {
-    font-size: 14px;
-    font-weight: bold;
-    color: #f04715;
+		font-size: 14px;
+		font-weight: bold;
+		color: #f04715;
 }
 
 .temp-min {
-    font-size: 12px;
-    color: #0988e6;
+		font-size: 12px;
+		color: #0988e6;
 }
 
 .temp-separator {
-    font-size: 12px;
-    color: #666;
+		font-size: 12px;
+		color: #666;
 }
 
 .weather-pop {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 4px;
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		gap: 4px;
 }
 
 .pop-item {
-    font-size: 12px;
+		font-size: 12px;
 }
 
 .pop-separator {
-    font-size: 12px;
-    color: #666;
+		font-size: 12px;
+		color: #666;
 }
 
 .weather-update-time {
-    font-size: 10px;
-    color: #666;
-    margin-top: 8px;
+		font-size: 10px;
+		color: #666;
+		margin-top: 8px;
 }
 </style>
