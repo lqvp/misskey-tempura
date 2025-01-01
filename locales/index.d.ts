@@ -9104,6 +9104,10 @@ export interface Locale extends ILocale {
          * ListenBrainz
          */
         "listenBrainz": string;
+        /**
+         * 天気予報
+         */
+        "weather": string;
     };
     "_cw": {
         /**
