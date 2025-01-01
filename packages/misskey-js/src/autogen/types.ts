@@ -9691,7 +9691,6 @@ export type operations = {
             emailVerified: boolean;
             followedMessage: string | null;
             autoAcceptFollowed: boolean;
-						autoRejectFollowRequest: boolean;
             noCrawle: boolean;
             preventAiLearning: boolean;
             alwaysMarkNsfw: boolean;
