@@ -15,6 +15,7 @@ import { CacheService } from '@/core/CacheService.js';
 export const meta = {
 	tags: ['following', 'account'],
 	requireCredential: true,
+	requireRolePolicy: 'canReadFollowHistory',
 	kind: 'read:following',
 
 	res: {

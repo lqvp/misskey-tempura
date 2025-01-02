@@ -7357,6 +7357,10 @@ export interface Locale extends ILocale {
              * パブリック投稿（非LTL）の許可
              */
             "canPublicNonLtlNote": string;
+            /**
+             * フォロー/フォロリク履歴の閲覧
+             */
+            "canReadFollowHistory": string;
         };
         "_condition": {
             /**

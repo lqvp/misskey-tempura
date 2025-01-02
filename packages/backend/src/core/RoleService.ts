@@ -73,6 +73,7 @@ export type RolePolicies = {
   canUseUnBlockedNotification: boolean;
 	canDeleteAccount: boolean;
 	canPublicNonLtlNote: boolean;
+	canReadFollowHistory: boolean;
 };
 
 export const DEFAULT_POLICIES: RolePolicies = {
@@ -117,6 +118,7 @@ export const DEFAULT_POLICIES: RolePolicies = {
 	canUseUnBlockedNotification: true,
 	canDeleteAccount: false,
 	canPublicNonLtlNote: false,
+	canReadFollowHistory: false,
 };
 
 @Injectable()
@@ -489,6 +491,7 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
   		canUseUnBlockedNotification: calc('canUseUnBlockedNotification', vs => vs.some(v => v === true)),
 			canDeleteAccount: calc('canDeleteAccount', vs => vs.some(v => v === true)),
 			canPublicNonLtlNote: calc('canPublicNonLtlNote', vs => vs.some(v => v === true)),
+			canReadFollowHistory: calc('canReadFollowHistory', vs => vs.some(v => v === true)),
 		};
 	}
 

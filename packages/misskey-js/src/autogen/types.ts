@@ -5253,6 +5253,7 @@ export type components = {
       canUseUnBlockedNotification: boolean;
       canDeleteAccount: boolean;
       canPublicNonLtlNote: boolean;
+      canReadFollowHistory: boolean;
     };
     ReversiGameLite: {
       /** Format: id */

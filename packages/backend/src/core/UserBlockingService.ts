@@ -119,24 +119,27 @@ export class UserBlockingService implements OnModuleInit {
 			}, blocker.id);
 		}
 
+		const blockerPolicies = await this.roleService.getUserPolicies(blocker.id);
+		const blockeePolicies = await this.roleService.getUserPolicies(blockee.id);
+
 		// フォロー履歴に「blocked」を保存
-		if (this.userEntityService.isLocalUser(blocker)) {
+		if (this.userEntityService.isLocalUser(blocker) && blockerPolicies.canReadFollowHistory) {
 			await this.followHistoryRepository.insert({
 				id: this.idService.gen(),
-				type: 'blocked', // ブロックした側の履歴
-				fromUserId: blocker.id, // ブロックした側のID
-				toUserId: blockee.id, // ブロックされた側のID
+				type: 'blocked',
+				fromUserId: blocker.id,
+				toUserId: blockee.id,
 				timestamp: new Date(),
 			});
 		}
 
 		// フォロー履歴に「wasBlocked」を保存
-		if (this.userEntityService.isLocalUser(blockee)) {
+		if (this.userEntityService.isLocalUser(blockee) && blockeePolicies.canReadFollowHistory) {
 			await this.followHistoryRepository.insert({
 				id: this.idService.gen(),
-				type: 'wasBlocked', // ブロックされた側の履歴
-				fromUserId: blocker.id, // ブロックされた側のID
-				toUserId: blockee.id, // ブロックした側のID
+				type: 'wasBlocked',
+				fromUserId: blocker.id,
+				toUserId: blockee.id,
 				timestamp: new Date(),
 			});
 		}
@@ -247,24 +250,27 @@ export class UserBlockingService implements OnModuleInit {
 			}, blocker.id);
 		}
 
+		const blockerPolicies = await this.roleService.getUserPolicies(blocker.id);
+		const blockeePolicies = await this.roleService.getUserPolicies(blockee.id);
+
 		// フォロー履歴に「unBlocked」を保存
-		if (this.userEntityService.isLocalUser(blocker)) {
+		if (this.userEntityService.isLocalUser(blocker) && blockerPolicies.canReadFollowHistory) {
 			await this.followHistoryRepository.insert({
 				id: this.idService.gen(),
-				type: 'unBlocked', // アンブロックした側の履歴
-				fromUserId: blocker.id, // アンブロックした側のID
-				toUserId: blockee.id, // アンブロックされた側のID
+				type: 'unBlocked',
+				fromUserId: blocker.id,
+				toUserId: blockee.id,
 				timestamp: new Date(),
 			});
 		}
 
 		// フォロー履歴に「wasUnBlocked」を保存
-		if (this.userEntityService.isLocalUser(blockee)) {
+		if (this.userEntityService.isLocalUser(blockee) && blockeePolicies.canReadFollowHistory) {
 			await this.followHistoryRepository.insert({
 				id: this.idService.gen(),
-				type: 'wasUnBlocked', // アンブロックされた側の履歴
-				fromUserId: blocker.id, // アンブロックされた側のID
-				toUserId: blockee.id, // アンブロックした側のID
+				type: 'wasUnBlocked',
+				fromUserId: blocker.id,
+				toUserId: blockee.id,
 				timestamp: new Date(),
 			});
 		}
