@@ -31,7 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</div>
 					<div class="weather-pop">
 						<span v-for="(pop, popIndex) in getPops(index)" :key="popIndex" class="pop-item">
-							{{ pop }}%<span v-if="popIndex < getPops(index).length - 1" class="pop-separator"> / </span>
+							{{ pop }}<span v-if="popIndex < getPops(index).length - 1" class="pop-separator"> / </span>
 						</span>
 					</div>
 				</div>
@@ -68,6 +68,10 @@ const widgetPropsDef = {
 		type: 'string' as const,
 		default: '42251',
 	},
+	weatherCodeGistUrl: {
+		type: 'string' as const,
+		default: 'https://gist.githubusercontent.com/lqvp/3ab8701f4b8e008d5e55c304ca32b930/raw/2097934ee7de18af1ec646ba1b52bd5dd8d23c58/weathercode.json',
+	},
 	refreshIntervalSec: {
 		type: 'number' as const,
 		default: 3600,
@@ -92,6 +96,7 @@ const updateTime = ref('');
 const publishingOffice = ref('');
 const reportDatetime = ref('');
 const intervalId = ref<ReturnType<typeof setInterval> | null>(null);
+const weatherCodeMapping = ref<Record<string, string[]>>({});
 
 const fetchWeatherData = async () => {
 	try {
@@ -112,7 +117,21 @@ const refreshWeatherData = () => {
 	fetchWeatherData();
 };
 
+const fetchWeatherCodeMapping = async () => {
+	try {
+		const response = await fetch( widgetProps.weatherCodeGistUrl);
+		const data = await response.json();
+		weatherCodeMapping.value = data;
+	} catch (error) {
+		console.error('Failed to fetch weather code mapping:', error);
+	}
+};
+
 const getWeatherIcon = (weatherCode: string) => {
+	const telops = weatherCodeMapping.value[weatherCode];
+	if (telops && telops[0]) {
+		return `https://www.jma.go.jp/bosai/forecast/img/${telops[0]}`;
+	}
 	return `https://www.jma.go.jp/bosai/forecast/img/${weatherCode}.svg`;
 };
 
@@ -161,7 +180,13 @@ const getMinTemp = (index: number) => {
 
 const getPops = (index: number) => {
 	const pops = weatherData.value[0]?.timeSeries[1]?.areas[0]?.pops;
-	return pops ? pops.slice(0, 3) : [];
+	if (Array.isArray(pops)) {
+		return pops.slice(0, 3).map(pop => `${pop}%`);
+	} else if (typeof pops === 'string') {
+		return pops.split(' / ').map(pop => `${pop}%`);
+	} else {
+		return [];
+	}
 };
 
 const setupAutoRefresh = () => {
@@ -190,6 +215,7 @@ watch(() => widgetProps.areasCode, fetchWeatherData, { immediate: true });
 
 onMounted(() => {
 	fetchWeatherData();
+	fetchWeatherCodeMapping();
 });
 
 defineExpose<WidgetComponentExpose>({
@@ -263,19 +289,20 @@ defineExpose<WidgetComponentExpose>({
 }
 
 .weather-pop {
-		display: flex;
-		flex-direction: row;
-		align-items: center;
-		gap: 4px;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
 }
 
 .pop-item {
-		font-size: 12px;
+    font-size: 10px;
 }
 
 .pop-separator {
-		font-size: 12px;
-		color: #666;
+    font-size: 10px;
+    color: #666;
 }
 
 .weather-update-time {
