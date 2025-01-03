@@ -29,11 +29,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<span class="temp-separator"> / </span>
 						<span class="temp-min">{{ getMinTemp(index) }}°C</span>
 					</div>
-					<div class="weather-pop">
+					<!-- <div class="weather-pop">
 						<span v-for="(pop, popIndex) in getPops(index)" :key="popIndex" class="pop-item">
 							{{ pop }}<span v-if="popIndex < getPops(index).length - 1" class="pop-separator"> / </span>
 						</span>
-					</div>
+					</div> -->
 				</div>
 			</div>
 			<div class="weather-update-time">
@@ -178,16 +178,16 @@ const getMinTemp = (index: number) => {
 	return '?';
 };
 
-const getPops = (index: number) => {
-	const pops = weatherData.value[0]?.timeSeries[1]?.areas[0]?.pops;
-	if (Array.isArray(pops)) {
-		return pops.slice(0, 3).map(pop => `${pop}%`);
-	} else if (typeof pops === 'string') {
-		return pops.split(' / ').map(pop => `${pop}%`);
-	} else {
-		return [];
-	}
-};
+// const getPops = (index: number) => {
+// 	const pops = weatherData.value[0]?.timeSeries[1]?.areas[0]?.pops;
+// 	if (Array.isArray(pops)) {
+// 		return pops.slice(0, 3).map(pop => `${pop}%`);
+// 	} else if (typeof pops === 'string') {
+// 		return pops.split(' / ').map(pop => `${pop}%`);
+// 	} else {
+// 		return [];
+// 	}
+// };
 
 const setupAutoRefresh = () => {
 	if (intervalId.value) {
