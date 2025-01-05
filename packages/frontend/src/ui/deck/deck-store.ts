@@ -29,6 +29,11 @@ export const columnTypes = [
 	'mentions',
 	'direct',
 	'roleTimeline',
+	'custom-timeline-1',
+	'custom-timeline-2',
+	'custom-timeline-3',
+	'custom-timeline-4',
+	'custom-timeline-5',
 ] as const;
 
 export type ColumnType = typeof columnTypes[number];

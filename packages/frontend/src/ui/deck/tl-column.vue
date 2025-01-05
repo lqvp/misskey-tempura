@@ -44,6 +44,7 @@ import { instance } from '@/instance.js';
 import { SoundStore } from '@/store.js';
 import { soundSettingsButton } from '@/ui/deck/tl-note-notification.js';
 import * as sound from '@/scripts/sound.js';
+import { defaultStore } from '@/store.js';
 
 const props = defineProps<{
 	column: Column;
@@ -57,6 +58,12 @@ const withRenotes = ref(props.column.withRenotes ?? true);
 const withReplies = ref(props.column.withReplies ?? false);
 const withSensitive = ref(props.column.withSensitive ?? true);
 const onlyFiles = ref(props.column.onlyFiles ?? false);
+
+const remoteLocalTimelineEnable1 = defaultStore.state['remoteLocalTimelineEnable1'];
+const remoteLocalTimelineEnable2 = defaultStore.state['remoteLocalTimelineEnable2'];
+const remoteLocalTimelineEnable3 = defaultStore.state['remoteLocalTimelineEnable3'];
+const remoteLocalTimelineEnable4 = defaultStore.state['remoteLocalTimelineEnable4'];
+const remoteLocalTimelineEnable5 = defaultStore.state['remoteLocalTimelineEnable5'];
 
 watch(withRenotes, v => {
 	updateColumn(props.column.id, {
@@ -103,7 +110,22 @@ async function setType() {
 			value: 'social' as const, text: i18n.ts._timelines.social,
 		}, {
 			value: 'global' as const, text: i18n.ts._timelines.global,
-		}],
+		}, ...(remoteLocalTimelineEnable1 ? [{
+			value: 'custom-timeline-1' as const,
+			text: defaultStore.state['remoteLocalTimelineName1'],
+		}] : []), ...(remoteLocalTimelineEnable2 ? [{
+			value: 'custom-timeline-2' as const,
+			text: defaultStore.state['remoteLocalTimelineName2'],
+		}] : []), ...(remoteLocalTimelineEnable3 ? [{
+			value: 'custom-timeline-3' as const,
+			text: defaultStore.state['remoteLocalTimelineName3'],
+		}] : []), ...(remoteLocalTimelineEnable4 ? [{
+			value: 'custom-timeline-4' as const,
+			text: defaultStore.state['remoteLocalTimelineName4'],
+		}] : []), ...(remoteLocalTimelineEnable5 ? [{
+			value: 'custom-timeline-5' as const,
+			text: defaultStore.state['remoteLocalTimelineName5'],
+		}] : []),],
 	});
 	if (canceled) {
 		if (props.column.tl == null) {

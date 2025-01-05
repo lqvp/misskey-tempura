@@ -444,6 +444,8 @@ import type {
 	NotesHybridTimelineResponse,
 	NotesLocalTimelineRequest,
 	NotesLocalTimelineResponse,
+	NotesAnyLocalTimelineRequest,
+	NotesAnyLocalTimelineResponse,
 	NotesFollowingsUpdatesRequest,
 	NotesFollowingsUpdatesResponse,
 	NotesMentionsRequest,
@@ -913,6 +915,7 @@ export type Endpoints = {
 	'notes/global-timeline': { req: NotesGlobalTimelineRequest; res: NotesGlobalTimelineResponse };
 	'notes/hybrid-timeline': { req: NotesHybridTimelineRequest; res: NotesHybridTimelineResponse };
 	'notes/local-timeline': { req: NotesLocalTimelineRequest; res: NotesLocalTimelineResponse };
+	'notes/any-local-timeline': { req: NotesAnyLocalTimelineRequest; res: NotesAnyLocalTimelineResponse };
 	'notes/followings-updates': { req: NotesFollowingsUpdatesRequest; res: NotesFollowingsUpdatesResponse };
 	'notes/mentions': { req: NotesMentionsRequest; res: NotesMentionsResponse };
 	'notes/polls/recommendation': { req: NotesPollsRecommendationRequest; res: NotesPollsRecommendationResponse };

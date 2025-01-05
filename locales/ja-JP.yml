@@ -1899,6 +1899,7 @@ _role:
     canDeleteAccount: "アカウントの削除を許可"
     canPublicNonLtlNote: "パブリック投稿（非LTL）の許可"
     canReadFollowHistory: "フォロー/フォロリク履歴の閲覧"
+    remoteLocalTimelineAnyLimit: "リモートローカルタイムラインの表示数制限"
 
   _condition:
     roleAssignedTo: "マニュアルロールにアサイン済み"
@@ -3098,6 +3099,9 @@ reactionsStat: "リアクション統計"
 reactionsStatDescription: "最も使用された絵文字リアクション上位100件を表示します"
 
 showOnlySensitiveFiles: "センシティブなファイルのみ"
+
+otherServerShowLocalTimeline: "他のサーバーのローカルタイムラインを表示"
+serverUrl: "サーバーURL"
 
 _followRequestHistory:
   title: "フォロリクの履歴"

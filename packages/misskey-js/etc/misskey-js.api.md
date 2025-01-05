@@ -1690,6 +1690,8 @@ declare namespace entities {
         NotesHybridTimelineResponse,
         NotesLocalTimelineRequest,
         NotesLocalTimelineResponse,
+        NotesAnyLocalTimelineRequest,
+        NotesAnyLocalTimelineResponse,
         NotesFollowingsUpdatesRequest,
         NotesFollowingsUpdatesResponse,
         NotesMentionsRequest,
@@ -2740,6 +2742,12 @@ type NoteFavorite = components['schemas']['NoteFavorite'];
 
 // @public (undocumented)
 type NoteReaction = components['schemas']['NoteReaction'];
+
+// @public (undocumented)
+type NotesAnyLocalTimelineRequest = operations['notes___any-local-timeline']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type NotesAnyLocalTimelineResponse = operations['notes___any-local-timeline']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type NotesChildrenRequest = operations['notes___children']['requestBody']['content']['application/json'];

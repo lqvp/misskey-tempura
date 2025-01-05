@@ -657,7 +657,87 @@ export const defaultStore = markRaw(new Storage('base', {
 	showInstanceTickerSoftwareName: {
 		where: 'device',
 		default: false,
-	}
+	},
+	remoteLocalTimelineName1: {
+		where: 'device',
+		default: 'custom timeline 1',
+	},
+	remoteLocalTimelineDomain1: {
+		where: 'account',
+		default: '',
+	},
+	remoteLocalTimelineToken1: {
+		where: 'account',
+		default: '',
+	},
+	remoteLocalTimelineEnable1: {
+		where: 'account',
+		default: false,
+	},
+	remoteLocalTimelineName2: {
+		where: 'device',
+		default: 'custom timeline 2',
+	},
+	remoteLocalTimelineDomain2: {
+		where: 'account',
+		default: '',
+	},
+	remoteLocalTimelineToken2: {
+		where: 'account',
+		default: '',
+	},
+	remoteLocalTimelineEnable2: {
+		where: 'account',
+		default: false,
+	},
+	remoteLocalTimelineName3: {
+		where: 'device',
+		default: 'custom timeline 3',
+	},
+	remoteLocalTimelineDomain3: {
+		where: 'account',
+		default: '',
+	},
+	remoteLocalTimelineToken3: {
+		where: 'account',
+		default: '',
+	},
+	remoteLocalTimelineEnable3: {
+		where: 'account',
+		default: false,
+	},
+	remoteLocalTimelineName4: {
+		where: 'device',
+		default: 'custom timeline 4',
+	},
+	remoteLocalTimelineDomain4: {
+		where: 'account',
+		default: '',
+	},
+	remoteLocalTimelineToken4: {
+		where: 'account',
+		default: '',
+	},
+	remoteLocalTimelineEnable4: {
+		where: 'account',
+		default: false,
+	},
+	remoteLocalTimelineName5: {
+		where: 'device',
+		default: 'custom timeline 5',
+	},
+	remoteLocalTimelineDomain5: {
+		where: 'account',
+		default: '',
+	},
+	remoteLocalTimelineToken5: {
+		where: 'account',
+		default: '',
+	},
+	remoteLocalTimelineEnable5: {
+		where: 'account',
+		default: false,
+	},
 }));
 
 // TODO: 他のタブと永続化されたstateを同期

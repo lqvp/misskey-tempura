@@ -304,6 +304,7 @@ import * as ep___notes_following from './endpoints/notes/following.js';
 import * as ep___notes_globalTimeline from './endpoints/notes/global-timeline.js';
 import * as ep___notes_hybridTimeline from './endpoints/notes/hybrid-timeline.js';
 import * as ep___notes_localTimeline from './endpoints/notes/local-timeline.js';
+import * as ep___notes_anyLocalTimeline from './endpoints/notes/any-local-timeline.js';
 import * as ep___notes_followingsUpdates from './endpoints/notes/followings-updates.js';
 import * as ep___notes_mentions from './endpoints/notes/mentions.js';
 import * as ep___notes_polls_recommendation from './endpoints/notes/polls/recommendation.js';
@@ -716,6 +717,7 @@ const $notes_following: Provider = { provide: 'ep:notes/following', useClass: ep
 const $notes_globalTimeline: Provider = { provide: 'ep:notes/global-timeline', useClass: ep___notes_globalTimeline.default };
 const $notes_hybridTimeline: Provider = { provide: 'ep:notes/hybrid-timeline', useClass: ep___notes_hybridTimeline.default };
 const $notes_localTimeline: Provider = { provide: 'ep:notes/local-timeline', useClass: ep___notes_localTimeline.default };
+const $notes_anyLocalTimeline: Provider = { provide: 'ep:notes/any-local-timeline', useClass: ep___notes_anyLocalTimeline.default };
 const $notes_followingsUpdates: Provider = { provide: 'ep:notes/followings-updates', useClass: ep___notes_followingsUpdates.default };
 const $notes_mentions: Provider = { provide: 'ep:notes/mentions', useClass: ep___notes_mentions.default };
 const $notes_polls_recommendation: Provider = { provide: 'ep:notes/polls/recommendation', useClass: ep___notes_polls_recommendation.default };
@@ -1132,6 +1134,7 @@ const $reversi_verify: Provider = { provide: 'ep:reversi/verify', useClass: ep__
 		$notes_globalTimeline,
 		$notes_hybridTimeline,
 		$notes_localTimeline,
+		$notes_anyLocalTimeline,
 		$notes_followingsUpdates,
 		$notes_mentions,
 		$notes_polls_recommendation,
@@ -1540,6 +1543,7 @@ const $reversi_verify: Provider = { provide: 'ep:reversi/verify', useClass: ep__
 		$notes_globalTimeline,
 		$notes_hybridTimeline,
 		$notes_localTimeline,
+		$notes_anyLocalTimeline,
 		$notes_followingsUpdates,
 		$notes_mentions,
 		$notes_polls_recommendation,

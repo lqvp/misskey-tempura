@@ -2886,6 +2886,15 @@ export type paths = {
      */
     post: operations['notes___local-timeline'];
   };
+  '/notes/any-local-timeline': {
+    /**
+     * notes/any-local-timeline
+     * @description No description provided.
+     *
+     * **Credential required**: *No*
+     */
+    post: operations['notes___any-local-timeline'];
+  };
   '/notes/followings-updates': {
     /**
      * notes/followings-updates
@@ -5254,6 +5263,7 @@ export type components = {
       canDeleteAccount: boolean;
       canPublicNonLtlNote: boolean;
       canReadFollowHistory: boolean;
+      remoteLocalTimelineAnyLimit: number;
     };
     ReversiGameLite: {
       /** Format: id */
@@ -23478,6 +23488,76 @@ export type operations = {
           allowPartial?: boolean;
           sinceDate?: number;
           untilDate?: number;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (with results) */
+      200: {
+        content: {
+          'application/json': components['schemas']['Note'][];
+        };
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * notes/any-local-timeline
+   * @description No description provided.
+   *
+   * **Credential required**: *No*
+   */
+  'notes___any-local-timeline': {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @default false */
+          withFiles?: boolean;
+          /** @default true */
+          withRenotes?: boolean;
+          /** @default false */
+          withReplies?: boolean;
+          /** @default 10 */
+          limit?: number;
+          /** Format: misskey:id */
+          sinceId?: string;
+          /** Format: misskey:id */
+          untilId?: string;
+          /** @default false */
+          allowPartial?: boolean;
+          sinceDate?: number;
+          untilDate?: number;
+          host?: string;
+          remoteToken?: string;
         };
       };
     };
