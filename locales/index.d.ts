@@ -10572,6 +10572,26 @@ export interface Locale extends ILocale {
          * 公開投稿のみ配送を解除
          */
         "unquarantineRemoteInstance": string;
+        /**
+         * ユーザー名を更新
+         */
+        "updateUserName": string;
+        /**
+         * 通知を送信
+         */
+        "sendNotification": string;
+        /**
+         * キューをクリア
+         */
+        "clearQueue": string;
+        /**
+         * キューをプロモート
+         */
+        "promoteQueue": string;
+        /**
+         * ユーザートークンを再生成
+         */
+        "regenerateUserToken": string;
     };
     "_fileViewer": {
         /**
