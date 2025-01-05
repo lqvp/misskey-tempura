@@ -159,6 +159,8 @@ const ilFilesObserver = new IntersectionObserver(
 
 const sortModeSelect = ref<NonNullable<Misskey.entities.DriveFilesRequest['sort']>>('+createdAt');
 
+const showOnlySensitive = ref(false);
+
 watch(folder, () => emit('cd', folder.value));
 watch(sortModeSelect, () => {
 	fetch();
@@ -565,11 +567,15 @@ async function fetch() {
 		limit: filesMax + 1,
 		sort: sortModeSelect.value,
 	}).then(fetchedFiles => {
-		if (fetchedFiles.length === filesMax + 1) {
-			moreFiles.value = true;
-			fetchedFiles.pop();
+		let filteredFiles = fetchedFiles;
+		if (showOnlySensitive.value) {
+			filteredFiles = fetchedFiles.filter(file => file.isSensitive);
 		}
-		return fetchedFiles;
+		if (filteredFiles.length === filesMax + 1) {
+			moreFiles.value = true;
+			filteredFiles.pop();
+		}
+		return filteredFiles;
 	});
 
 	const [fetchedFolders, fetchedFiles] = await Promise.all([foldersPromise, filesPromise]);
@@ -614,14 +620,18 @@ function fetchMoreFiles() {
 		untilId: files.value.at(-1)?.id,
 		limit: max + 1,
 		sort: sortModeSelect.value,
-	}).then(files => {
-		if (files.length === max + 1) {
+	}).then(fetchedFiles => {
+		let filteredFiles = fetchedFiles;
+		if (showOnlySensitive.value) {
+			filteredFiles = fetchedFiles.filter(file => file.isSensitive);
+		}
+		if (filteredFiles.length === max + 1) {
 			moreFiles.value = true;
-			files.pop();
+			filteredFiles.pop();
 		} else {
 			moreFiles.value = false;
 		}
-		for (const x of files) appendFile(x);
+		for (const x of filteredFiles) appendFile(x);
 		fetching.value = false;
 	});
 }
@@ -647,6 +657,16 @@ function getMenu() {
 	}, { type: 'divider' }, {
 		text: folder.value ? folder.value.name : i18n.ts.drive,
 		type: 'label',
+	});
+
+	menu.push({
+		type: 'switch',
+		text: i18n.ts.showOnlySensitiveFiles,
+		ref: showOnlySensitive,
+	});
+
+	watch(showOnlySensitive, () => {
+		fetch();
 	});
 
 	menu.push({

@@ -11555,6 +11555,10 @@ export interface Locale extends ILocale {
      * 最も使用された絵文字リアクション上位100件を表示します
      */
     "reactionsStatDescription": string;
+    /**
+     * センシティブなファイルのみ
+     */
+    "showOnlySensitiveFiles": string;
     "_followRequestHistory": {
         /**
          * フォロリクの履歴
