@@ -7261,6 +7261,8 @@ export type operations = {
            * @default null
            */
           hostname?: string | null;
+          /** @default false */
+          isSensitiveOnly?: boolean | null;
         };
       };
     };
