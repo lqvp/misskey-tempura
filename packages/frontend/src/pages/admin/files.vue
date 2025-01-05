@@ -29,6 +29,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #label>MIME type</template>
 					</MkInput>
 				</div>
+				<div>
+					<MkSwitch v-model="isSensitiveOnly">{{ i18n.ts.showOnlySensitiveFiles }}</MkSwitch>
+				</div>
 				<MkFileListForAdmin :pagination="pagination" :viewMode="viewMode"/>
 			</div>
 		</MkSpacer>
@@ -41,6 +44,7 @@ import { computed, ref } from 'vue';
 import XHeader from './_header_.vue';
 import MkInput from '@/components/MkInput.vue';
 import MkSelect from '@/components/MkSelect.vue';
+import MkSwitch from '@/components/MkSwitch.vue';
 import MkFileListForAdmin from '@/components/MkFileListForAdmin.vue';
 import * as os from '@/os.js';
 import { lookupFile } from '@/scripts/admin-lookup.js';
@@ -52,6 +56,7 @@ const type = ref<string | null>(null);
 const searchHost = ref('');
 const userId = ref('');
 const viewMode = ref<'grid'|'list'>('grid');
+const isSensitiveOnly = ref(false);
 const pagination = {
 	endpoint: 'admin/drive/files' as const,
 	limit: 10,
@@ -60,6 +65,7 @@ const pagination = {
 		userId: (userId.value && userId.value !== '') ? userId.value : null,
 		origin: origin.value,
 		hostname: (searchHost.value && searchHost.value !== '') ? searchHost.value : null,
+		isSensitiveOnly: isSensitiveOnly.value,
 	})),
 };
 

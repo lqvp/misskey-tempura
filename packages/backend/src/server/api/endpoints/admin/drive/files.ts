@@ -44,6 +44,7 @@ export const paramDef = {
 			default: null,
 			description: 'The local host is represented with `null`.',
 		},
+		isSensitiveOnly: { type: 'boolean', nullable: true, default: false },
 	},
 	required: [],
 } as const;
@@ -82,6 +83,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				} else {
 					query.andWhere('file.type = :type', { type: ps.type });
 				}
+			}
+
+			if (ps.isSensitiveOnly) {
+				query.andWhere('file.isSensitive = true');
 			}
 
 			const files = await query.limit(ps.limit).getMany();
