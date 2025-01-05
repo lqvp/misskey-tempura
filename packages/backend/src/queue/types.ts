@@ -144,4 +144,5 @@ export type ScheduleNotePostJobData = {
 
 export type ScheduledNoteDeleteJobData = {
 	noteId: MiNote['id'];
+	fileIds?: MiDriveFile['id'][];
 }

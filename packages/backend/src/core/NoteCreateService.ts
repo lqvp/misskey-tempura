@@ -622,6 +622,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 			const delay = data.deleteAt.getTime() - Date.now();
 			this.queueService.scheduledNoteDeleteQueue.add(note.id, {
 				noteId: note.id,
+				fileIds: data.files?.map(file => file.id),
 			}, {
 				delay,
 				removeOnComplete: true,
