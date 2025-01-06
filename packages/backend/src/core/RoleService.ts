@@ -74,7 +74,6 @@ export type RolePolicies = {
 	canDeleteAccount: boolean;
 	canPublicNonLtlNote: boolean;
 	canReadFollowHistory: boolean;
-	remoteLocalTimelineAnyLimit: number;
 };
 
 export const DEFAULT_POLICIES: RolePolicies = {
@@ -120,7 +119,6 @@ export const DEFAULT_POLICIES: RolePolicies = {
 	canDeleteAccount: false,
 	canPublicNonLtlNote: false,
 	canReadFollowHistory: false,
-	remoteLocalTimelineAnyLimit: 5,
 };
 
 @Injectable()
@@ -494,7 +492,6 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			canDeleteAccount: calc('canDeleteAccount', vs => vs.some(v => v === true)),
 			canPublicNonLtlNote: calc('canPublicNonLtlNote', vs => vs.some(v => v === true)),
 			canReadFollowHistory: calc('canReadFollowHistory', vs => vs.some(v => v === true)),
-			remoteLocalTimelineAnyLimit: calc('remoteLocalTimelineAnyLimit', vs => Math.max(...vs)),
 		};
 	}
 

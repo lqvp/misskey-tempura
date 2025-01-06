@@ -7361,10 +7361,6 @@ export interface Locale extends ILocale {
              * フォロー/フォロリク履歴の閲覧
              */
             "canReadFollowHistory": string;
-            /**
-             * リモートローカルタイムラインの表示数制限
-             */
-            "remoteLocalTimelineAnyLimit": string;
         };
         "_condition": {
             /**
@@ -11583,14 +11579,6 @@ export interface Locale extends ILocale {
      * センシティブなファイルのみ
      */
     "showOnlySensitiveFiles": string;
-    /**
-     * 他のサーバーのローカルタイムラインを表示
-     */
-    "otherServerShowLocalTimeline": string;
-    /**
-     * サーバーURL
-     */
-    "serverUrl": string;
     "_followRequestHistory": {
         /**
          * フォロリクの履歴

@@ -30,11 +30,11 @@ import { defaultStore } from '@/store.js';
 import { Paging } from '@/components/MkPagination.vue';
 
 const props = withDefaults(defineProps<{
-	src: BasicTimelineType | 'mentions' | 'directs' | 'list' | 'antenna' | 'channel' | 'role' | string;
-	list?: string | unknown;
-	antenna?: string | unknown;
-	channel?: string | unknown;
-	role?: string | unknown;
+	src: BasicTimelineType | 'mentions' | 'directs' | 'list' | 'antenna' | 'channel' | 'role';
+	list?: string;
+	antenna?: string;
+	channel?: string;
+	role?: string;
 	sound?: boolean;
 	withRenotes?: boolean;
 	withReplies?: boolean;
@@ -65,8 +65,6 @@ type TimelineQueryType = {
   listId?: string,
   channelId?: string,
   roleId?: string
-	host?: string,
-	remoteToken?: string,
 }
 
 const prComponent = shallowRef<InstanceType<typeof MkPullToRefresh>>();
@@ -102,7 +100,7 @@ function connectChannel() {
 	if (props.src === 'antenna') {
 		if (props.antenna == null) return;
 		connection = stream.useChannel('antenna', {
-			antennaId: props.antenna as string,
+			antennaId: props.antenna,
 		});
 	} else if (props.src === 'home') {
 		connection = stream.useChannel('homeTimeline', {
@@ -143,7 +141,7 @@ function connectChannel() {
 		connection = stream.useChannel('userList', {
 			withRenotes: props.withRenotes,
 			withFiles: props.onlyFiles ? true : undefined,
-			listId: props.list as string,
+			listId: props.list,
 		});
 	} else if (props.src === 'channel') {
 		if (props.channel == null) return;
@@ -171,7 +169,7 @@ function updatePaginationQuery() {
 	if (props.src === 'antenna') {
 		endpoint = 'antennas/notes';
 		query = {
-			antennaId: props.antenna as string,
+			antennaId: props.antenna,
 		};
 	} else if (props.src === 'home') {
 		endpoint = 'notes/timeline';
@@ -217,18 +215,12 @@ function updatePaginationQuery() {
 	} else if (props.src === 'channel') {
 		endpoint = 'channels/timeline';
 		query = {
-			channelId: props.channel as string,
+			channelId: props.channel,
 		};
 	} else if (props.src === 'role') {
 		endpoint = 'roles/notes';
 		query = {
-			roleId: props.role as string,
-		};
-	} else if (props.src.startsWith('custom-timeline')) {
-		endpoint = 'notes/any-local-timeline';
-		query = {
-			host: defaultStore.state[`remoteLocalTimelineDomain${props.src.split('-')[2]}`],
-			remoteToken: defaultStore.state[`remoteLocalTimelineToken${props.src.split('-')[2]}`],
+			roleId: props.role,
 		};
 	} else {
 		endpoint = null;

@@ -33,7 +33,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { ref } from 'vue';
 import { useWidgetPropsManager, WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
-import type { MenuItem } from '@/types/menu.js';
 import { GetFormResultType } from '@/scripts/form.js';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
@@ -41,7 +40,7 @@ import MkContainer from '@/components/MkContainer.vue';
 import MkTimeline from '@/components/MkTimeline.vue';
 import { i18n } from '@/i18n.js';
 import { availableBasicTimelines, isAvailableBasicTimeline, isBasicTimeline, basicTimelineIconClass } from '@/timelines.js';
-import { defaultStore } from '@/store.js';
+import type { MenuItem } from '@/types/menu.js';
 
 const name = 'timeline';
 
@@ -89,12 +88,6 @@ const setSrc = (src) => {
 	save();
 };
 
-const remoteLocalTimelineEnable1 = defaultStore.state['remoteLocalTimelineEnable1'];
-const remoteLocalTimelineEnable2 = defaultStore.state['remoteLocalTimelineEnable2'];
-const remoteLocalTimelineEnable3 = defaultStore.state['remoteLocalTimelineEnable3'];
-const remoteLocalTimelineEnable4 = defaultStore.state['remoteLocalTimelineEnable4'];
-const remoteLocalTimelineEnable5 = defaultStore.state['remoteLocalTimelineEnable5'];
-
 const choose = async (ev) => {
 	menuOpened.value = true;
 	const [antennas, lists] = await Promise.all([
@@ -124,27 +117,7 @@ const choose = async (ev) => {
 		text: i18n.ts._timelines[tl],
 		icon: basicTimelineIconClass(tl),
 		action: () => { setSrc(tl); },
-	})), ...(remoteLocalTimelineEnable1 ? [{
-		text: i18n.ts._timelines['custom-timeline-1'],
-		icon: 'ti ti-plus',
-		action: () => { setSrc('custom-timeline-1'); },
-	}] : []), ...(remoteLocalTimelineEnable2 ? [{
-		text: i18n.ts._timelines['custom-timeline-2'],
-		icon: 'ti ti-plus',
-		action: () => { setSrc('custom-timeline-2'); },
-	}] : []), ...(remoteLocalTimelineEnable3 ? [{
-		text: i18n.ts._timelines['custom-timeline-3'],
-		icon: 'ti ti-plus',
-		action: () => { setSrc('custom-timeline-3'); },
-	}] : []), ...(remoteLocalTimelineEnable4 ? [{
-		text: i18n.ts._timelines['custom-timeline-4'],
-		icon: 'ti ti-plus',
-		action: () => { setSrc('custom-timeline-4'); },
-	}] : []), ...(remoteLocalTimelineEnable5 ? [{
-		text: i18n.ts._timelines['custom-timeline-5'],
-		icon: 'ti ti-plus',
-		action: () => { setSrc('custom-timeline-5'); },
-	}] : []));
+	})));
 
 	if (antennaItems.length > 0) {
 		menuItems.push({ type: 'divider' });
