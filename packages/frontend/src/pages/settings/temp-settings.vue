@@ -214,6 +214,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 						{{ i18n.ts.defaultScheduledNoteDelete }}
 						<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 					</MkSwitch>
+					<MkSwitch v-model="useTextAreaAutoSize">
+						<template #caption>{{ i18n.ts.textAreaAutoResizeDescription }}</template>
+						{{ i18n.ts.textAreaAutoResize }}
+						<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+					</MkSwitch>
 				</div>
 			</MkFolder>
 
@@ -318,6 +323,7 @@ const enableSnowMode = computed(defaultStore.makeGetterSetter('enableSnowMode'))
 const enableReactionConfirm = computed(defaultStore.makeGetterSetter('enableReactionConfirm'));
 const enableLikeConfirm = computed(defaultStore.makeGetterSetter('enableLikeConfirm'));
 const showInstanceTickerSoftwareName = computed(defaultStore.makeGetterSetter('showInstanceTickerSoftwareName'));
+const useTextAreaAutoSize = computed(defaultStore.makeGetterSetter('useTextAreaAutoSize'));
 
 const Sortable = defineAsyncComponent(() => import('vuedraggable').then(x => x.default));
 const draftSavingBehavior = computed(defaultStore.makeGetterSetter('draftSavingBehavior'));
@@ -359,6 +365,7 @@ watch([
 	enableSnowMode,
 	enableReactionConfirm,
 	enableLikeConfirm,
+	useTextAreaAutoSize,
 ], async () => {
 	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
 });

@@ -11556,6 +11556,14 @@ export interface Locale extends ILocale {
      */
     "showInstanceTickerSoftwareNameDescription": string;
     /**
+     * テキストエリアの自動リサイズ
+     */
+    "textAreaAutoResize": string;
+    /**
+     * テキストエリアの高さを自動で調整します。
+     */
+    "textAreaAutoResizeDescription": string;
+    /**
      * 通知を送る
      */
     "notificationSend": string;

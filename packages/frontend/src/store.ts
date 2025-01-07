@@ -657,7 +657,11 @@ export const defaultStore = markRaw(new Storage('base', {
 	showInstanceTickerSoftwareName: {
 		where: 'device',
 		default: false,
-	}
+	},
+	useTextAreaAutoSize: {
+		where: 'account',
+		default: false,
+	},
 }));
 
 // TODO: 他のタブと永続化されたstateを同期
