@@ -130,6 +130,11 @@ const menuDef = computed(() => [{
 		text: i18n.ts.plugins,
 		to: '/settings/plugin',
 		active: currentPage.value?.route.name === 'plugin',
+	}, {
+		icon: 'ti ti-git-fork',
+		text: i18n.ts.originalFeature,
+		to: '/settings/temp-settings',
+		active: currentPage.value?.route.name === 'temp-settings',
 	}],
 }, {
 	title: i18n.ts.otherSettings,
@@ -163,11 +168,6 @@ const menuDef = computed(() => [{
 		text: `${i18n.ts.accountMigration}`,
 		to: '/settings/migration',
 		active: currentPage.value?.route.name === 'migration',
-	}, {
-		icon: 'ti ti-git-fork',
-		text: i18n.ts.originalFeature,
-		to: '/settings/temp-settings',
-		active: currentPage.value?.route.name === 'temp-settings',
 	}, {
 		icon: 'ti ti-dots',
 		text: i18n.ts.other,
