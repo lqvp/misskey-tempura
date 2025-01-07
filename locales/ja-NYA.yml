@@ -2939,17 +2939,6 @@ _contextMenu:
   appWithShift: "Shiftキーでアプリケーション"
   native: "ブラウザのUI"
 
-_uniqueFeatures:
-  uniqueFeature: "独自機能"
-  # remoteLocalTimeline: "リモート上のサーバーのローカルタイムラインを覗く機能"
-  hiddenProfile: "プロフィールを非表示にする機能"
-  hiddenPinnedNotes: "プロフィール上からピン留めしたノートを非表示にします"
-  hiddenPinnedNotesDescription: "ピン留めしたノートを非表示にすることで、プロフィールページをスッキリさせることができます。"
-  hiddenActivity: "プロフィール上からアクティビティを非表示にします"
-  hiddenActivityDescription: "プロフィール上からアクティビティを非表示にすることで、プロフィールページをスッキリさせることができます。"
-  hiddenFiles: "プロフィール上からファイルを非表示にします。"
-  hiddenFilesDescription: "ファイルを非表示にすることで、プロフィールページをスッキリさせることができます。"
-
 _draftSavingBehavior:
   auto: "自動的に保存する"
   manual: "都度確認する"

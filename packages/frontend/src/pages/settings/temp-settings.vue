@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <div class="_gaps_m">
 	<FormSection>
-		<template #label>{{ i18n.ts._uniqueFeatures.uniqueFeature }}</template>
+		<template #label><MkSparkle>{{ i18n.ts.originalFeature }}</MkSparkle></template>
 
 		<div class="_gaps_m">
 			<MkFolder>
@@ -92,8 +92,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 								<MkEmoji v-else-if="selectReaction && !selectReaction.startsWith(':')" :emoji="selectReaction" style="max-height: 3em; font-size: 1.1em;" :normal="true" :noStyle="true"/>
 								<span v-else-if="!selectReaction">{{ i18n.ts.notSet }}</span>
 								<div class="_buttons" style="padding-top: 8px;">
-									<MkButton rounded :small="true" inline @click="chooseNewReaction"><i class="ph-smiley ph-bold ph-lg"></i> Change</MkButton>
-									<MkButton rounded :small="true" inline @click="resetReaction"><i class="ph-arrow-clockwise ph-bold ph-lg"></i> Reset</MkButton>
+									<MkButton rounded :small="true" inline @click="chooseNewReaction"><i class="ti ti-mood-happy"></i> Change</MkButton>
+									<MkButton rounded :small="true" inline @click="resetReaction"><i class="ti ti-reload"></i> Reset</MkButton>
 								</div>
 							</FromSlot>
 						</div>
@@ -108,7 +108,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkSelect v-model="customFont">
 						<template #label>{{ i18n.ts.customFont }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 						<option :value="null">{{ i18n.ts.default }}</option>
-						<option v-for="[name, font] of Object.entries(fontList)" :value="name">{{ font.name }}</option>
+						<option v-for="[name, font] of Object.entries(fontList)" :key="name" :value="name">{{ font.name }}</option>
 					</MkSelect>
 					<MkSwitch v-model="enableSnowMode">{{ i18n.ts.snowMode }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
 				</div>
@@ -141,29 +141,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<template #caption>{{ i18n.ts._imageCompressionMode.description }}</template>
 						</MkSelect>
 					</div>
-				</div>
-			</MkFolder>
-
-			<MkFolder>
-				<template #icon><i class="ti ti-user-scan"></i></template>
-				<template #label>{{ i18n.ts._uniqueFeatures.hiddenProfile }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-				<div class="_gaps_m">
-					<div class="_buttons">
-						<MkButton inline @click="enableAllHidden">{{ i18n.ts.enableAll }}</MkButton>
-						<MkButton inline @click="disableAllHidden">{{ i18n.ts.disableAll }}</MkButton>
-					</div>
-					<MkSwitch v-model="hiddenPinnedNotes">
-						<template #caption>{{ i18n.ts._uniqueFeatures.hiddenPinnedNotesDescription }}</template>
-						{{ i18n.ts._uniqueFeatures.hiddenPinnedNotes }}
-					</MkSwitch>
-					<MkSwitch v-model="hiddenActivity">
-						<template #caption>{{ i18n.ts._uniqueFeatures.hiddenActivityDescription }}</template>
-						{{ i18n.ts._uniqueFeatures.hiddenActivity }}
-					</MkSwitch>
-					<MkSwitch v-model="hiddenFiles">
-						<template #caption>{{ i18n.ts._uniqueFeatures.hiddenFilesDescription }}</template>
-						{{ i18n.ts._uniqueFeatures.hiddenFiles }}
-					</MkSwitch>
 				</div>
 			</MkFolder>
 
@@ -289,6 +266,7 @@ import { reloadAsk } from '@/scripts/reload-ask.js';
 import { i18n } from '@/i18n.js';
 import { definePageMetadata } from '@/scripts/page-metadata.js';
 import { fontList } from '@/scripts/font';
+import MkSparkle from '@/components/MkSparkle.vue';
 import MkContainer from '@/components/MkContainer.vue';
 import MkDeleteScheduleEditor from '@/components/MkDeleteScheduleEditor.vue';
 import { bottomItemDef } from '@/scripts/post-form.js';
@@ -302,9 +280,6 @@ const hideReactionCount = computed(defaultStore.makeGetterSetter('hideReactionCo
 const directRenote = computed(defaultStore.makeGetterSetter('directRenote'));
 const showReactionsCount = computed(defaultStore.makeGetterSetter('showReactionsCount'));
 const customFont = computed(defaultStore.makeGetterSetter('customFont'));
-const hiddenPinnedNotes = computed(defaultStore.makeGetterSetter('hiddenPinnedNotes'));
-const hiddenActivity = computed(defaultStore.makeGetterSetter('hiddenActivity'));
-const hiddenFiles = computed(defaultStore.makeGetterSetter('hiddenFiles'));
 const disableNoteNyaize = computed(defaultStore.makeGetterSetter('disableNoteNyaize'));
 const reactionChecksMuting = computed(defaultStore.makeGetterSetter('reactionChecksMuting'));
 const hideLocalTimeLine = computed(defaultStore.makeGetterSetter('hideLocalTimeLine'));
@@ -346,9 +321,6 @@ watch([
 	directRenote,
 	showReactionsCount,
 	customFont,
-	hiddenPinnedNotes,
-	hiddenActivity,
-	hiddenFiles,
 	disableNoteNyaize,
 	reactionChecksMuting,
 	hideLocalTimeLine,
@@ -365,6 +337,7 @@ watch([
 	enableSnowMode,
 	enableReactionConfirm,
 	enableLikeConfirm,
+	showInstanceTickerSoftwareName,
 	useTextAreaAutoSize,
 ], async () => {
 	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
@@ -374,31 +347,17 @@ function chooseNewReaction(ev: MouseEvent) {
 	os.pickEmoji(getHTMLElement(ev), {
 		showPinned: false,
 	}).then(async (emoji) => {
-		selectReaction.value = emoji as string;
-		await reloadAsk();
+		defaultStore.set('selectReaction', emoji as string);
 	});
 }
 
 function resetReaction() {
-	selectReaction.value = '';
-	reloadAsk();
+	defaultStore.set('selectReaction', '');
 }
 
 function getHTMLElement(ev: MouseEvent): HTMLElement {
 	const target = ev.currentTarget ?? ev.target;
 	return target as HTMLElement;
-}
-
-function enableAllHidden() {
-	defaultStore.set('hiddenPinnedNotes', true);
-	defaultStore.set('hiddenActivity', true);
-	defaultStore.set('hiddenFiles', true);
-}
-
-function disableAllHidden() {
-	defaultStore.set('hiddenPinnedNotes', false);
-	defaultStore.set('hiddenActivity', false);
-	defaultStore.set('hiddenFiles', false);
 }
 
 function toggleAllHidden(value: boolean) {

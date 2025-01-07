@@ -161,20 +161,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 			<div class="contents _gaps">
 				<div v-if="!user.requireSigninToViewContents || $i" class="contents _gaps">
-					<div v-if="!hiddenPinnedNotes">
-						<div v-if="user.pinnedNotes.length > 0 && !user.isBlocked" class="_gaps">
-							<MkNote v-for="note in user.pinnedNotes" :key="note.id" class="note _panel" :note="note" :pinned="true"/>
-						</div>
+					<div v-if="user.pinnedNotes.length > 0 && !user.isBlocked" class="_gaps">
+						<MkNote v-for="note in user.pinnedNotes" :key="note.id" class="note _panel" :note="note" :pinned="true"/>
 					</div>
 					<MkInfo v-else-if="$i && $i.id === user.id">{{ i18n.ts.userPagePinTip }}</MkInfo>
-					<div v-if="!hiddenActivity">
+					<div>
 						<template v-if="narrow && !user.isBlocked">
 							<MkLazy>
 								<XFiles :key="user.id" :user="user"/>
 							</MkLazy>
 						</template>
 					</div>
-					<div v-if="!hiddenFiles">
+					<div>
 						<template v-if="narrow && !user.isBlocked">
 							<MkLazy>
 								<XActivity v-if="!user.hideActivity" :key="user.id" :user="user"/>
@@ -285,9 +283,6 @@ const memoDraft = ref(props.user.memo);
 const isEditingMemo = ref(false);
 const moderationNote = ref(props.user.moderationNote);
 const editModerationNote = ref(false);
-const hiddenPinnedNotes = defaultStore.state.hiddenPinnedNotes;
-const hiddenActivity = defaultStore.state.hiddenActivity;
-const hiddenFiles = defaultStore.state.hiddenFiles;
 
 const listenbrainzdata = ref(false);
 if (props.user.listenbrainz) {
