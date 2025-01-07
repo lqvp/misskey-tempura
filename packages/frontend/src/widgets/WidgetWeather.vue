@@ -141,38 +141,36 @@ const formatDate = (dateString: string) => {
 };
 
 const getMaxTemp = (index: number) => {
-	const timeDefines = weatherData.value[0]?.timeSeries[0]?.timeDefines;
-	const targetDate = timeDefines[index];
-
 	// 1日目の気温データ
 	if (index === 0) {
-		const temps = weatherData.value[0]?.timeSeries[2]?.areas.find((area: any) => area.area.code === widgetProps.areasCode)?.temps;
-		return temps ? temps[0] : '?';
+		const tempsMax = weatherData.value[1]?.timeSeries[1]?.areas.find((area: any) => area.area.code === widgetProps.areasCode)?.tempsMax;
+		if (tempsMax && tempsMax[0] !== undefined && tempsMax[0] !== '') {
+			return parseFloat(tempsMax[0]);
+		}
 	}
 
 	// 2日目以降の気温データ
 	const longTermTemps = weatherData.value[1]?.timeSeries[1]?.areas.find((area: any) => area.area.code === widgetProps.areasCode)?.tempsMax;
-	if (longTermTemps && longTermTemps[index] !== undefined) {
-		return longTermTemps[index];
+	if (longTermTemps && longTermTemps[index] !== undefined && longTermTemps[index] !== '') {
+		return parseFloat(longTermTemps[index]);
 	}
 
 	return '?';
 };
 
 const getMinTemp = (index: number) => {
-	const timeDefines = weatherData.value[0]?.timeSeries[0]?.timeDefines;
-	const targetDate = timeDefines[index];
-
 	// 1日目の気温データ
 	if (index === 0) {
-		const temps = weatherData.value[0]?.timeSeries[2]?.areas.find((area: any) => area.area.code === widgetProps.areasCode)?.temps;
-		return temps ? temps[1] : '?';
+		const tempsMin = weatherData.value[1]?.timeSeries[1]?.areas.find((area: any) => area.area.code === widgetProps.areasCode)?.tempsMin;
+		if (tempsMin && tempsMin[0] !== undefined && tempsMin[0] !== '') {
+			return parseFloat(tempsMin[0]);
+		}
 	}
 
 	// 2日目以降の気温データ
 	const longTermTemps = weatherData.value[1]?.timeSeries[1]?.areas.find((area: any) => area.area.code === widgetProps.areasCode)?.tempsMin;
-	if (longTermTemps && longTermTemps[index] !== undefined) {
-		return longTermTemps[index];
+	if (longTermTemps && longTermTemps[index] !== undefined && longTermTemps[index] !== '') {
+		return parseFloat(longTermTemps[index]);
 	}
 
 	return '?';
@@ -227,87 +225,88 @@ defineExpose<WidgetComponentExpose>({
 
 <style lang="scss" scoped>
 .weather-container {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 8px;
-		padding: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  color: var(--MI_THEME-fg);
 }
 
 .weather-days {
-		display: flex;
-		flex-direction: row;
-		justify-content: space-between;
-		width: 100%;
-		gap: 8px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+  gap: 8px;
 }
 
 .weather-day {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 4px;
-		flex: 1;
-		padding: 8px;
-		border-right: 1px solid #eee;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  padding: 8px;
+  border-right: 1px solid var(--MI_THEME-divider);
 }
 
 .weather-day:last-child {
-		border-right: none;
+  border-right: none;
 }
 
 .weather-date {
-		font-size: 12px;
+  font-size: 12px;
 }
 
 .weather-icon {
-		width: 40px;
-		height: 40px;
+  width: 40px;
+  height: 40px;
 }
 
 .weather-temp {
-		display: flex;
-		flex-direction: row;
-		align-items: center;
-		gap: 4px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
 }
 
 .temp-max {
-		font-size: 14px;
-		font-weight: bold;
-		color: #f04715;
+  font-size: 14px;
+  font-weight: bold;
+  color: #f04715;
 }
 
 .temp-min {
-		font-size: 12px;
-		color: #0988e6;
+  font-size: 12px;
+  color: #0988e6;
 }
 
 .temp-separator {
-		font-size: 12px;
-		color: #666;
+  font-size: 12px;
+  color: var(--MI_THEME-fg);
 }
 
 .weather-pop {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
 }
 
 .pop-item {
-    font-size: 10px;
+  font-size: 10px;
 }
 
 .pop-separator {
-    font-size: 10px;
-    color: #666;
+  font-size: 10px;
+  color: var(--MI_THEME-fg);
 }
 
 .weather-update-time {
-		font-size: 10px;
-		color: #666;
-		margin-top: 8px;
+  font-size: 10px;
+  color: var(--MI_THEME-fg);
+  margin-top: 8px;
 }
 </style>
