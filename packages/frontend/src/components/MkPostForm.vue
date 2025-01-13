@@ -419,7 +419,7 @@ if (props.reply && props.reply.dontShowOnLtl === true && $i.policies.canPublicNo
 // 自身のセミパブリックノートへのリプライである場合かつパブリック投稿へのリプライでセミパブリック投稿にする
 if (props.reply && props.reply.visibility === 'public' && props.reply.reply?.userId === $i.id && props.reply.reply?.dontShowOnLtl === true) {
 	visibility.value = 'public_non_ltl';
-}492cc84a6c146c15d4fe4862a4317b5e6f148297
+}
 // #endregion
 
 	if (props.specified) {
