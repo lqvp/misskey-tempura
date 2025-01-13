@@ -7544,6 +7544,10 @@ export interface Locale extends ILocale {
          * このサーバーに参加したい理由を入力してください。
          */
         "reasonInfo": string;
+        /**
+         * 招待コードを持っている場合は、ここに入力してください。承認制の場合、承認を受けずにアカウント登録が出来ます。
+         */
+        "inviteCodeInfo": string;
     };
     "_accountDelete": {
         /**

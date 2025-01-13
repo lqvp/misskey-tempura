@@ -140,6 +140,21 @@ export class SignupApiService {
 
 		let ticket: MiRegistrationTicket | null = null;
 
+		if (invitationCode && typeof invitationCode === 'string') {
+			ticket = await this.registrationTicketsRepository.findOneBy({ code: invitationCode });
+
+			if (ticket != null) {
+				if (ticket.usedById != null) {
+					reply.code(400);
+					return;
+				}
+				if (ticket.expiresAt && ticket.expiresAt < new Date()) {
+					reply.code(400);
+					return;
+				}
+			}
+		}
+
 		if (this.meta.disableRegistration) {
 			if (invitationCode == null || typeof invitationCode !== 'string') {
 				reply.code(400);
@@ -227,24 +242,24 @@ export class SignupApiService {
 
 			reply.code(204);
 			return;
-		} else if (this.meta.approvalRequiredForSignup) {
+		} else if (this.meta.approvalRequiredForSignup && !ticket) {
 			const { account } = await this.signupService.signup({
 				username, password, host, reason,
 			});
-
+				// 承認待ちフロー
 			if (emailAddress) {
 				this.emailService.sendEmail(emailAddress, 'Approval pending',
 					'Your account is now pending approval.<br>You will get notified when you have been accepted.',
 					'Your account is now pending approval. You will get notified when you have been accepted.');
 			}
 
-			if (ticket) {
-				await this.registrationTicketsRepository.update(ticket.id, {
-					usedAt: new Date(),
-					usedBy: account,
-					usedById: account.id,
-				});
-			}
+			// if (ticket) {
+			// 	await this.registrationTicketsRepository.update(ticket.id, {
+			// 		usedAt: new Date(),
+			// 		usedBy: account,
+			// 		usedById: account.id,
+			// 	});
+			// }
 
 			const administrators = await this.roleService.getAdministrators();
 
@@ -262,8 +277,13 @@ export class SignupApiService {
 			return;
 		} else {
 			try {
+				// ticket があれば承認待ちをスキップ
 				const { account, secret } = await this.signupService.signup({
-					username, password, host,
+					username,
+					password,
+					host,
+					reason,
+					approved: ticket != null,
 				});
 
 				const res = await this.userEntityService.pack(account, account, {

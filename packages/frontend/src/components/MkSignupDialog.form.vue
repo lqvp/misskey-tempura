@@ -10,8 +10,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</div>
 	<MkSpacer :marginMin="20" :marginMax="32">
 		<form class="_gaps_m" autocomplete="new-password" @submit.prevent="onSubmit">
-			<MkInput v-if="instance.disableRegistration" v-model="invitationCode" type="text" :spellcheck="false" required>
-				<template #label>{{ i18n.ts.invitationCode }}</template>
+			<MkInput v-if="instance.disableRegistration || instance.approvalRequiredForSignup" v-model="invitationCode" type="text" :spellcheck="false" :required="!instance.approvalRequiredForSignup">
+				<template #label>{{ i18n.ts.invitationCode }}<div v-tooltip:dialog="i18n.ts._signup.inviteCodeInfo" class="_button _help"><i class="ti ti-help-circle"></i></div></template>
 				<template #prefix><i class="ti ti-key"></i></template>
 			</MkInput>
 			<MkInput v-model="username" type="text" pattern="^[a-zA-Z0-9_]{1,20}$" :spellcheck="false" autocomplete="username" required data-cy-signup-username @update:modelValue="onChangeUsername">
