@@ -10,10 +10,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkSpacer :contentMax="900">
 			<div class="_gaps">
 				<div>
-					<MkInput v-model="host" :debounce="true" class="">
-						<template #prefix><i class="ti ti-search"></i></template>
-						<template #label>{{ i18n.ts.host }}</template>
-					</MkInput>
+					<div class="_gaps_m">
+						<MkInput v-model="host" :debounce="true" class="">
+							<template #prefix><i class="ti ti-search"></i></template>
+							<template #label>{{ i18n.ts.host }}</template>
+						</MkInput>
+						<MkInput v-model="softwareName" :debounce="true">
+							<template #prefix><i class="ti ti-search"></i></template>
+							<template #label>{{ i18n.ts.software }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+						</MkInput>
+					</div>
 					<FormSplit style="margin-top: var(--MI-margin);">
 						<MkSelect v-model="state">
 							<template #label>{{ i18n.ts.state }}</template>
@@ -71,6 +77,7 @@ import { i18n } from '@/i18n.js';
 import { definePageMetadata } from '@/scripts/page-metadata.js';
 
 const host = ref('');
+const softwareName = ref('');
 const state = ref('federating');
 const sort = ref('+pubSub');
 const pagination = {
@@ -80,6 +87,7 @@ const pagination = {
 	params: computed(() => ({
 		sort: sort.value,
 		host: host.value !== '' ? host.value : null,
+		softwareName: softwareName.value !== '' ? softwareName.value : null,
 		...(
 			state.value === 'federating' ? { federating: true, suspended: false, blocked: false } :
 			state.value === 'subscribing' ? { subscribing: true, suspended: false, blocked: false } :

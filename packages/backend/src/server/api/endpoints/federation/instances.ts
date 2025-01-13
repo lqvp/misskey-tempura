@@ -35,6 +35,7 @@ export const paramDef = {
 	type: 'object',
 	properties: {
 		host: { type: 'string', nullable: true, description: 'Omit or use `null` to not filter by host.' },
+		softwareName: { type: 'string', nullable: true, description: 'Omit or use `null` to not filter by softwareName.' },
 		blocked: { type: 'boolean', nullable: true },
 		notResponding: { type: 'boolean', nullable: true },
 		suspended: { type: 'boolean', nullable: true },
@@ -184,6 +185,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.host) {
 				query.andWhere('instance.host like :host', { host: '%' + sqlLikeEscape(ps.host.toLowerCase()) + '%' });
+			}
+
+			if (ps.softwareName) {
+				query.andWhere('instance.softwareName like :softwareName', {
+					softwareName: '%' + sqlLikeEscape(ps.softwareName.toLowerCase()) + '%',
+				});
 			}
 
 			const instances = await query.limit(ps.limit).offset(ps.offset).getMany();

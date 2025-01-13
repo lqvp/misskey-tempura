@@ -16153,6 +16153,8 @@ export type operations = {
         'application/json': {
           /** @description Omit or use `null` to not filter by host. */
           host?: string | null;
+          /** @description Omit or use `null` to not filter by softwareName. */
+          softwareName?: string | null;
           blocked?: boolean | null;
           notResponding?: boolean | null;
           suspended?: boolean | null;
