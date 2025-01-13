@@ -161,6 +161,7 @@ export class SearchService {
 		userId?: MiNote['userId'] | null;
 		channelId?: MiNote['channelId'] | null;
 		host?: string | null;
+		visibility?: MiNote['visibility'] | 'all';
 	}, pagination: {
 		untilId?: MiNote['id'];
 		sinceId?: MiNote['id'];
@@ -206,12 +207,20 @@ export class SearchService {
 			});
 			return notes.sort((a, b) => a.id > b.id ? -1 : 1);
 		} else {
-			const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), pagination.sinceId, pagination.untilId);
+			const query = this.queryService.makePaginationQuery(
+				this.notesRepository.createQueryBuilder('note'),
+				pagination.sinceId,
+				pagination.untilId,
+			);
 
 			if (opts.userId) {
 				query.andWhere('note.userId = :userId', { userId: opts.userId });
 			} else if (opts.channelId) {
 				query.andWhere('note.channelId = :channelId', { channelId: opts.channelId });
+			}
+
+			if (opts.visibility && opts.visibility !== 'all') {
+				query.andWhere('note.visibility = :visibility', { visibility: opts.visibility });
 			}
 
 			query

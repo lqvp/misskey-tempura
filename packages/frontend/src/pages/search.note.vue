@@ -13,6 +13,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<template #header>{{ i18n.ts.options }}</template>
 
 			<div class="_gaps_m">
+				<MkRadios v-model="visibilitySelect">
+					<template #label>{{ i18n.ts.visibility }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+					<option value="all" default>{{ i18n.ts.all }}</option>
+					<option value="public">{{ i18n.ts._visibility.public	}}</option>
+					<option value="home">{{ i18n.ts._visibility.home	}}</option>
+					<option value="followers">{{ i18n.ts._visibility.followers	}}</option>
+					<option value="specified">{{ i18n.ts._visibility.specified	}}</option>
+				</MkRadios>
 				<MkRadios v-model="hostSelect">
 					<template #label>{{ i18n.ts.host }}</template>
 					<option value="all" default>{{ i18n.ts.all }}</option>
@@ -86,6 +94,7 @@ const searchQuery = ref(toRef(props, 'query').value);
 const notePagination = ref<Paging>();
 const user = ref<UserDetailed | null>(null);
 const hostInput = ref(toRef(props, 'host').value);
+const visibilitySelect = ref<'all' | 'public' | 'home' | 'followers' | 'specified'>('all');
 
 const noteSearchableScope = instance.noteSearchableScope ?? 'local';
 
@@ -199,6 +208,7 @@ async function search() {
 			query: searchQuery.value,
 			userId: user.value ? user.value.id : null,
 			...(searchHost.value ? { host: searchHost.value } : {}),
+			visibility: visibilitySelect.value,
 		},
 	};
 

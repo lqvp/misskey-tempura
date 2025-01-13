@@ -53,6 +53,11 @@ export const paramDef = {
 		},
 		userId: { type: 'string', format: 'misskey:id', nullable: true, default: null },
 		channelId: { type: 'string', format: 'misskey:id', nullable: true, default: null },
+		visibility: {
+			type: 'string',
+			enum: ['all', 'public', 'home', 'followers', 'specified'],
+			default: 'all',
+		},
 	},
 	required: ['query'],
 } as const;
@@ -77,6 +82,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				userId: ps.userId,
 				channelId: ps.channelId,
 				host: ps.host,
+				visibility: ps.visibility,
 			}, {
 				untilId: ps.untilId,
 				sinceId: ps.sinceId,
