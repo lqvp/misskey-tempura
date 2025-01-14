@@ -38,6 +38,7 @@ export type SearchOpts = {
 	userId?: MiNote['userId'] | null;
 	channelId?: MiNote['channelId'] | null;
 	host?: string | null;
+	visibility?: MiNote['visibility'] | 'all';
 };
 
 export type SearchPagination = {
@@ -203,7 +204,6 @@ export class SearchService {
 		me: MiUser | null,
 		opts: SearchOpts,
 		pagination: SearchPagination,
-		visibility?: MiNote['visibility'] | 'all',
 	): Promise<MiNote[]> {
 		const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), pagination.sinceId, pagination.untilId);
 
@@ -213,9 +213,9 @@ export class SearchService {
 			query.andWhere('note.channelId = :channelId', { channelId: opts.channelId });
 		}
 
-			if (visibility && visibility !== 'all') {
-				query.andWhere('note.visibility = :visibility', { visibility: visibility });
-			}
+		if (opts.visibility && opts.visibility !== 'all') {
+			query.andWhere('note.visibility = :visibility', { visibility: opts.visibility });
+		}
 
 		query
 			.innerJoinAndSelect('note.user', 'user')
