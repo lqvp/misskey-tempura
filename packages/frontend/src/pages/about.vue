@@ -27,6 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import { instance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
+import { $i } from '@/account.js';
 import { claimAchievement } from '@/scripts/achievements.js';
 import { definePageMetadata } from '@/scripts/page-metadata.js';
 import MkHorizontalSwipe from '@/components/MkHorizontalSwipe.vue';
@@ -55,7 +56,7 @@ const headerActions = computed(() => []);
 const headerTabs = computed(() => {
 	const items = [];
 
-	if ($I) {
+	if ($i) {
 		items.push({
 			key: 'overview',
 			title: i18n.ts.overview,
