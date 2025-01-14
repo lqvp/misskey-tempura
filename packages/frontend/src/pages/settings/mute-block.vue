@@ -188,17 +188,11 @@ async function reloadAsk() {
 }
 
 const anonymizeMutedUsers = computed(defaultStore.makeGetterSetter('anonymizeMutedUsers'));
-
-watch([
-	anonymizeMutedUsers,
-], async () => {
-	await reloadAsk();
-});
-
 const showSoftWordMutedWord = computed(defaultStore.makeGetterSetter('showSoftWordMutedWord'));
 
 watch([
 	showSoftWordMutedWord,
+	anonymizeMutedUsers,
 ], async () => {
 	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
 });

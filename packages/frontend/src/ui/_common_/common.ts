@@ -62,22 +62,21 @@ export function openInstanceMenu(ev: MouseEvent) {
 				to: '/about#emojis',
 			});
 
-	if (instance.federation !== 'none')
-			{
-				menuItems.push({
-			type: 'link',
-					text: i18n.ts.federation,
-					icon: 'ti ti-whirl',
-					to: '/about#federation',
-				});
-	}
-
-	menuItems.push({
+		if (instance.federation !== 'none') {
+			menuItems.push({
 				type: 'link',
-				text: i18n.ts.charts,
-				icon: 'ti ti-chart-line',
-				to: '/about#charts',
+				text: i18n.ts.federation,
+				icon: 'ti ti-whirl',
+				to: '/about#federation',
 			});
+		}
+
+		menuItems.push({
+			type: 'link',
+			text: i18n.ts.charts,
+			icon: 'ti ti-chart-line',
+			to: '/about#charts',
+		});
 	}
 
 	menuItems.push({
