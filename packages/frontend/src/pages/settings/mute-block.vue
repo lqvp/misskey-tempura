@@ -176,17 +176,6 @@ const blockingPagination = {
 const expandedRenoteMuteItems = ref([]);
 const expandedMuteItems = ref([]);
 const expandedBlockItems = ref([]);
-
-async function reloadAsk() {
-	const { canceled } = await os.confirm({
-		type: 'info',
-		text: i18n.ts.reloadToApplySetting,
-	});
-	if (canceled) return;
-
-	unisonReload();
-}
-
 const anonymizeMutedUsers = computed(defaultStore.makeGetterSetter('anonymizeMutedUsers'));
 const showSoftWordMutedWord = computed(defaultStore.makeGetterSetter('showSoftWordMutedWord'));
 
