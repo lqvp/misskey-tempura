@@ -168,7 +168,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<div>
 						<template v-if="narrow && !user.isBlocked">
 							<MkLazy>
-								<XFiles :key="user.id" :user="user"/>
+								<XFiles :key="user.id" :user="user" @unfold="emit('unfoldFiles')"/>
 							</MkLazy>
 						</template>
 					</div>
@@ -203,7 +203,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</div>
 		<template v-if="$i || !user.requireSigninToViewContents">
 			<div v-if="!narrow && !user.isBlocked" class="sub _gaps" style="container-type: inline-size;">
-				<XFiles :key="user.id" :user="user"/>
+				<XFiles :key="user.id" :user="user" @unfold="emit('unfoldFiles')"/>
 				<XActivity v-if="!user.hideActivity" :key="user.id" :user="user"/>
 				<XListenBrainz v-if="user.listenbrainz && listenbrainzdata" :key="user.id" :user="user"/>
 			</div>
@@ -270,6 +270,10 @@ const props = withDefaults(defineProps<{
 }>(), {
 	disableNotes: false,
 });
+
+const emit = defineEmits<{
+	(ev: 'unfoldFiles'): void;
+}>();
 
 const router = useRouter();
 

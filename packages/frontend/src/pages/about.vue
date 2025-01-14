@@ -10,10 +10,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkSpacer v-if="tab === 'overview'" :contentMax="600" :marginMin="20">
 			<XOverview/>
 		</MkSpacer>
-		<MkSpacer v-else-if="tab === 'emojis' && $i" :contentMax="1000" :marginMin="20">
+		<MkSpacer v-else-if="tab === 'emojis'" :contentMax="1000" :marginMin="20">
 			<XEmojis/>
 		</MkSpacer>
-		<MkSpacer v-else-if="tab === 'federation' && $i" :contentMax="1000" :marginMin="20">
+		<MkSpacer v-else-if="instance.federation !== 'none' && tab === 'federation' && $i" :contentMax="1000" :marginMin="20">
 			<XFederation/>
 		</MkSpacer>
 		<MkSpacer v-else-if="tab === 'charts'" :contentMax="1000" :marginMin="20">
@@ -25,11 +25,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { computed, defineAsyncComponent, ref, watch } from 'vue';
+import { instance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
 import { claimAchievement } from '@/scripts/achievements.js';
 import { definePageMetadata } from '@/scripts/page-metadata.js';
 import MkHorizontalSwipe from '@/components/MkHorizontalSwipe.vue';
-import { $i } from '@/account.js';
 
 const XOverview = defineAsyncComponent(() => import('@/pages/about.overview.vue'));
 const XEmojis = defineAsyncComponent(() => import('@/pages/about.emojis.vue'));
@@ -53,51 +53,35 @@ watch(tab, () => {
 const headerActions = computed(() => []);
 
 const headerTabs = computed(() => {
-	const tabs = [{
-		key: 'overview',
-		title: i18n.ts.overview,
-	}];
+	const items = [];
 
-	// ログインユーザーが存在する場合のみ emojis と federation タブを追加
-	if ($i) {
-		tabs.push(
-			{
-				key: 'emojis',
-				title: i18n.ts.customEmojis,
-				icon: 'ti ti-icons',
-			},
-			{
+	if ($I) {
+		items.push({
+			key: 'overview',
+			title: i18n.ts.overview,
+		}, {
+			key: 'emojis',
+			title: i18n.ts.customEmojis,
+			icon: 'ti ti-icons',
+		});
+
+		if (instance.federation !== 'none') {
+			items.push({
 				key: 'federation',
 				title: i18n.ts.federation,
 				icon: 'ti ti-whirl',
-			},
-			{
-				key: 'charts',
-				title: i18n.ts.charts,
-				icon: 'ti ti-chart-line',
-			},
-		);
+			});
+		}
+
+		items.push({
+			key: 'charts',
+			title: i18n.ts.charts,
+			icon: 'ti ti-chart-line',
+		});
 	}
 
-	return tabs;
+	return items;
 });
-
-// const headerTabs = computed(() => [{
-// 	key: 'overview',
-// 	title: i18n.ts.overview,
-// }, {
-// 	key: 'emojis',
-// 	title: i18n.ts.customEmojis,
-// 	icon: 'ti ti-icons',
-// }, {
-// 	key: 'federation',
-// 	title: i18n.ts.federation,
-// 	icon: 'ti ti-whirl',
-// }, {
-// 	key: 'charts',
-// 	title: i18n.ts.charts,
-// 	icon: 'ti ti-chart-line',
-// }]);
 
 definePageMetadata(() => ({
 	title: i18n.ts.instanceInfo,

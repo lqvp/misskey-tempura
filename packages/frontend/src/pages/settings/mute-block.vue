@@ -9,17 +9,24 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<template #icon><i class="ti ti-message-off"></i></template>
 		<template #label>{{ i18n.ts.wordMute }}</template>
 
-		<XWordMute :muted="$i.mutedWords" @save="saveMutedWords"/>
+		<div class="_gaps_m">
+			<MkInfo>{{ i18n.ts.wordMuteDescription }}</MkInfo>
+			<MkSwitch v-model="showSoftWordMutedWord">{{ i18n.ts.showMutedWord }}</MkSwitch>
+			<XWordMute :muted="$i.mutedWords" @save="saveMutedWords"/>
+		</div>
 	</MkFolder>
 
 	<MkFolder>
 		<template #icon><i class="ti ti-message-off"></i></template>
 		<template #label>{{ i18n.ts.hardWordMute }}</template>
 
-		<XWordMute :muted="$i.hardMutedWords" @save="saveHardMutedWords"/>
+		<div class="_gaps_m">
+			<MkInfo>{{ i18n.ts.hardWordMuteDescription }}</MkInfo>
+			<XWordMute :muted="$i.hardMutedWords" @save="saveHardMutedWords"/>
+		</div>
 	</MkFolder>
 
-	<MkFolder>
+	<MkFolder v-if="instance.federation !== 'none'">
 		<template #icon><i class="ti ti-planet-off"></i></template>
 		<template #label>{{ i18n.ts.instanceMute }}</template>
 
@@ -134,8 +141,6 @@ import { ref, computed, watch } from 'vue';
 import XInstanceMute from './mute-block.instance-mute.vue';
 import XWordMute from './mute-block.word-mute.vue';
 import MkPagination from '@/components/MkPagination.vue';
-import MkSwitch from '@/components/MkSwitch.vue';
-import { defaultStore } from '@/store.js';
 import { userPage } from '@/filters/user.js';
 import { unisonReload } from '@/scripts/unison-reload.js';
 import { i18n } from '@/i18n.js';
@@ -143,9 +148,13 @@ import { definePageMetadata } from '@/scripts/page-metadata.js';
 import MkUserCardMini from '@/components/MkUserCardMini.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
-import { infoImageUrl } from '@/instance.js';
+import { instance, infoImageUrl } from '@/instance.js';
 import { signinRequired } from '@/account.js';
+import MkInfo from '@/components/MkInfo.vue';
 import MkFolder from '@/components/MkFolder.vue';
+import MkSwitch from '@/components/MkSwitch.vue';
+import { defaultStore } from '@/store';
+import { reloadAsk } from '@/scripts/reload-ask.js';
 
 const $i = signinRequired();
 
@@ -184,6 +193,14 @@ watch([
 	anonymizeMutedUsers,
 ], async () => {
 	await reloadAsk();
+});
+
+const showSoftWordMutedWord = computed(defaultStore.makeGetterSetter('showSoftWordMutedWord'));
+
+watch([
+	showSoftWordMutedWord,
+], async () => {
+	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
 });
 
 async function unrenoteMute(user, ev) {

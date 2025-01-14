@@ -59,6 +59,7 @@ import { instance as meta } from '@/instance.js';
 // misskeyApiGet('federation/instances', {
 // 	sort: '+pubSub',
 // 	limit: 20,
+//	blocked: 'false',
 // }).then(_instances => {
 // 	instances.value = _instances;
 // });

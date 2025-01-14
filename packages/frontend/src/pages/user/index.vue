@@ -10,11 +10,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div v-if="user">
 			<MkHorizontalSwipe v-model:tab="tab" :tabs="headerTabs">
 				<template v-if="hasTabAccess(tab)">
-					<XHome v-if="tab === 'home'" key="home" :user="user"/>
+					<XHome v-if="tab === 'home'" key="home" :user="user" @unfoldFiles="() => { tab = 'files'; }"/>
 					<MkSpacer v-else-if="tab === 'notes'" key="notes" :contentMax="800" style="padding-top: 0">
 						<XTimeline :user="user"/>
 					</MkSpacer>
-					<XActivity v-else-if="tab === 'activity'" key="activity" :user="user"/>
+					<XFiles v-else-if="tab === 'files'" :user="user"/>
+				<XActivity v-else-if="tab === 'activity'" key="activity" :user="user"/>
 					<XAchievements v-else-if="tab === 'achievements'" key="achievements" :user="user"/>
 					<XReactions v-else-if="tab === 'reactions'" key="reactions" :user="user"/>
 					<XClips v-else-if="tab === 'clips'" key="clips" :user="user"/>
@@ -53,10 +54,11 @@ import MkUserNotFound from '@/components/MkUserNotFound.vue';
 import MkUserSuspended from '@/components/MkUserSuspended.vue';
 import MkHorizontalSwipe from '@/components/MkHorizontalSwipe.vue';
 import XNotFound from '@/pages/not-found.vue';
-import { getServerContext } from '@/server-context.js';
+import { serverContext, assertServerContext } from '@/server-context.js';
 
 const XHome = defineAsyncComponent(() => import('./home.vue'));
 const XTimeline = defineAsyncComponent(() => import('./index.timeline.vue'));
+const XFiles = defineAsyncComponent(() => import('./files.vue'));
 const XActivity = defineAsyncComponent(() => import('./activity.vue'));
 const XAchievements = defineAsyncComponent(() => import('./achievements.vue'));
 const XReactions = defineAsyncComponent(() => import('./reactions.vue'));
@@ -67,7 +69,8 @@ const XFlashs = defineAsyncComponent(() => import('./flashs.vue'));
 const XGallery = defineAsyncComponent(() => import('./gallery.vue'));
 const XRaw = defineAsyncComponent(() => import('./raw.vue'));
 
-const CTX_USER = getServerContext('user');
+// contextは非ログイン状態の情報しかないためログイン時は利用できない
+const CTX_USER = !$i && assertServerContext(serverContext, 'user') ? serverContext.user : null;
 
 const props = withDefaults(defineProps<{
 	acct: string;
@@ -179,6 +182,10 @@ const headerTabs = computed(() => {
 			key: 'notes',
 			title: i18n.ts.notes,
 			icon: 'ti ti-pencil',
+}, {
+	key: 'files',
+	title: i18n.ts.files,
+	icon: 'ti ti-photo',
 		},
 	];
 
