@@ -55,8 +55,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div><MkTime :time="invite.createdAt" mode="absolute"/></div>
 			</div>
 			<div v-if="moderator">
-				<!-- <div :class="$style.label">{{ i18n.ts.createdAt }}</div> -->
-				<div :class="$style.label">メール認証をパス？</div>
+				<div :class="$style.label">{{ i18n.ts.skipEmailAuth }}</div>
 				<div>
 					<template v-if="invite.skipEmailAuth">
 						✅️

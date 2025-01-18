@@ -8678,6 +8678,8 @@ export type operations = {
           /** @default 1 */
           count?: number;
           expiresAt?: string | null;
+          /** @default false */
+          skipEmailAuth?: boolean;
         };
       };
     };

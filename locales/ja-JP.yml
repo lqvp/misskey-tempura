@@ -3131,6 +3131,8 @@ reactionsStatDescription: "最も使用された絵文字リアクション上�
 
 showOnlySensitiveFiles: "センシティブなファイルのみ"
 
+skipEmailAuth: "メール認証をスキップ"
+
 _followRequestHistory:
   title: "フォロリクの履歴"
   sent: "{user} へフォローリクエストを送信"
