@@ -50,6 +50,7 @@ export class InviteCodeEntityService {
 			usedBy: target.usedBy ? hints?.packedUsedBy ?? await this.userEntityService.pack(target.usedBy, me) : null,
 			usedAt: target.usedAt ? target.usedAt.toISOString() : null,
 			used: !!target.usedAt,
+			skipEmailAuth: target.skipEmailAuth,
 		});
 	}
 

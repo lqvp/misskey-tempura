@@ -118,16 +118,33 @@ export class SignupApiService {
 		const reason = body['reason'];
 		const emailAddress = body['emailAddress'];
 
+		let ticket: MiRegistrationTicket | null = null;
+
+		// ticket の取得を emailRequiredForSignup のチェック前に移動
+		if (invitationCode && typeof invitationCode === 'string') {
+			ticket = await this.registrationTicketsRepository.findOneBy({ code: invitationCode });
+		}
+
 		if (this.meta.emailRequiredForSignup) {
-			if (emailAddress == null || typeof emailAddress !== 'string') {
-				reply.code(400);
-				return;
+			// skipEmailAuthがtrueでない場合のみ、emailAddressの検証を行う
+			if (!(ticket && ticket.skipEmailAuth)) {
+				if (emailAddress == null || typeof emailAddress !== 'string') {
+					reply.code(400);
+					return;
+				}
+
+				const res = await this.emailService.validateEmailForAccount(emailAddress);
+				if (!res.available) {
+					reply.code(400);
+					return;
+				}
 			}
 
-			const res = await this.emailService.validateEmailForAccount(emailAddress);
-			if (!res.available) {
-				reply.code(400);
-				return;
+			// skipEmailAuthがtrueでない場合のみ、emailAddressが必須
+			if (!(ticket && ticket.skipEmailAuth)) {
+				if (!emailAddress) {
+					throw new FastifyReplyError(400, 'EMAIL_NOT_PROVIDED');
+				}
 			}
 		}
 
@@ -137,8 +154,6 @@ export class SignupApiService {
 				return;
 			}
 		}
-
-		let ticket: MiRegistrationTicket | null = null;
 
 		if (invitationCode && typeof invitationCode === 'string') {
 			ticket = await this.registrationTicketsRepository.findOneBy({ code: invitationCode });
@@ -176,7 +191,7 @@ export class SignupApiService {
 			}
 
 			// メアド認証が有効の場合
-			if (this.meta.emailRequiredForSignup) {
+			if (this.meta.emailRequiredForSignup ) {
 				// メアド認証済みならエラー
 				if (ticket.usedBy) {
 					reply.code(400);
@@ -194,7 +209,7 @@ export class SignupApiService {
 			}
 		}
 
-		if (this.meta.emailRequiredForSignup) {
+		if (this.meta.emailRequiredForSignup && !(ticket && ticket.skipEmailAuth)) {
 			if (!emailAddress) {
 				throw new FastifyReplyError(400, 'EMAIL_NOT_PROVIDED');
 			}

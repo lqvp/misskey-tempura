@@ -36,6 +36,7 @@ export const meta = {
 			optional: false, nullable: false,
 			ref: 'InviteCode',
 		},
+		skipEmailAuth: { type: 'boolean', default: false },
 	},
 } as const;
 
@@ -44,6 +45,7 @@ export const paramDef = {
 	properties: {
 		count: { type: 'integer', minimum: 1, maximum: 100, default: 1 },
 		expiresAt: { type: 'string', nullable: true },
+		skipEmailAuth: { type: 'boolean', default: false },
 	},
 	required: [],
 } as const;
@@ -70,6 +72,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					id: this.idService.gen(),
 					expiresAt: ps.expiresAt ? new Date(ps.expiresAt) : null,
 					code: generateInviteCode(),
+					skipEmailAuth: ps.skipEmailAuth,
 				}));
 			}
 

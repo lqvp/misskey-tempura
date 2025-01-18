@@ -16,6 +16,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkSwitch v-model="noExpirationDate">
 						<template #label>{{ i18n.ts.noExpirationDate }}</template>
 					</MkSwitch>
+					<MkSwitch v-model="skipEmailAuth">
+						<!-- <template #label>{{ i18n.ts.noExpirationDate }}</template> -->
+						<template #label>メール認証をパスする</template>
+					</MkSwitch>
 					<MkInput v-if="!noExpirationDate" v-model="expiresAt" type="datetime-local">
 						<template #label>{{ i18n.ts.expirationDate }}</template>
 					</MkInput>
@@ -87,11 +91,13 @@ const pagination: Paging = {
 const expiresAt = ref('');
 const noExpirationDate = ref(true);
 const createCount = ref(1);
+const skipEmailAuth = ref(false);
 
 async function createWithOptions() {
 	const options = {
 		expiresAt: noExpirationDate.value ? null : expiresAt.value,
 		count: createCount.value,
+		skipEmailAuth: skipEmailAuth.value,
 	};
 
 	const tickets = await misskeyApi('admin/invite/create', options);
