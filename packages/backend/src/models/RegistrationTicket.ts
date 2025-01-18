@@ -59,4 +59,9 @@ export class MiRegistrationTicket {
 		nullable: true,
 	})
 	public pendingUserId: string | null;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public	skipEmailAuth: boolean;
 }

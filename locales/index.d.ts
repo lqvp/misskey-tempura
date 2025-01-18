@@ -11683,6 +11683,10 @@ export interface Locale extends ILocale {
      * センシティブなファイルのみ
      */
     "showOnlySensitiveFiles": string;
+    /**
+     * メール認証をスキップ
+     */
+    "skipEmailAuth": string;
     "_followRequestHistory": {
         /**
          * フォロリクの履歴

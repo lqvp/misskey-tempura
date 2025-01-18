@@ -33,6 +33,11 @@ export class SigninService {
 	) {
 	}
 
+	private formatHeaders(headers: Record<string, any>): string {
+		return Object.entries(headers)
+			.map(([key, val]) => `${key}: ${val}`)
+			.join('\n');
+	}
 	@bindThis
 	public signin(request: FastifyRequest, reply: FastifyReply, user: MiLocalUser) {
 		setImmediate(async () => {
@@ -55,11 +60,11 @@ export class SigninService {
 				this.emailService.sendEmail(profile.email, 'New login / ログインがありました',
 					`userid: ${user.name ?? `@${user.username}`} <br>` +
 					`ip: ${request.ip} <br>` +
-					'header: ' + JSON.stringify(request.headers) + '<br>' +
+					`header: <pre>${this.formatHeaders(request.headers as any)}</pre><br>` +
 					'There is a new login. If you do not recognize this login, update the security status of your account, including changing your password. / 新しいログインがありました。このログインに心当たりがない場合は、パスワードを変更するなど、アカウントのセキュリティ状態を更新してください。',
 					`userid: ${user.name ?? `@${user.username}`} \n` +
 					`ip: ${request.ip} \n` +
-					'header: ' + JSON.stringify(request.headers) + '\n' +
+					'header:\n' + this.formatHeaders(request.headers as any) + '\n' +
 					'There is a new login. If you do not recognize this login, update the security status of your account, including changing your password. / 新しいログインがありました。このログインに心当たりがない場合は、パスワードを変更するなど、アカウントのセキュリティ状態を更新してください。');
 			}
 		});
