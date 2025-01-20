@@ -2471,6 +2471,7 @@ _profile:
   followedMessage: "フォローされた時のメッセージ"
   followedMessageDescription: "フォローされた時に相手に表示する短いメッセージを設定できます。"
   followedMessageDescriptionForLockedAccount: "フォローを承認制にしている場合、フォローリクエストを許可した時に表示されます。"
+  listenbrainz: "ListenBrainz username"
 
 _exportOrImport:
   allNotes: "全てのノート"
