@@ -36,7 +36,6 @@ export const meta = {
 			optional: false, nullable: false,
 			ref: 'InviteCode',
 		},
-		skipEmailAuth: { type: 'boolean', default: false },
 	},
 } as const;
 
