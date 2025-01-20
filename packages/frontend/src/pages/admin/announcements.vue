@@ -132,12 +132,27 @@ misskeyApi('admin/announcements/list').then(announcementResponse => {
 	announcements.value = announcementResponse;
 });
 
-function addRole(announcement) {
-	os.selectRole({ admin: true }).then(role => {
-		const index = announcements.value.findIndex(x => x.id === announcement.id);
-		console.log(index);
-		announcements.value[index].roles.push(role);
+async function selectRole(initialRoleIds: string[] = []): Promise<{ id: string, name: string }[]> {
+	const result = await os.selectRole({
+		initialRoleIds,
+		title: i18n.ts.rolesThatCanBeUsedThisEmojiAsReaction,
+		infoMessage: i18n.ts.rolesThatCanBeUsedThisEmojiAsReactionEmptyDescription,
+		publicOnly: true,
 	});
+
+	if (result.canceled) {
+		return [];
+	}
+
+	return result.result.map(it => ({ id: it.id, name: it.name }));
+}
+
+async function addRole(announcement) {
+	const roles = await selectRole();
+	if (roles.length > 0) {
+		const index = announcements.value.findIndex(x => x.id === announcement.id);
+		announcements.value[index].roles.push(...roles);
+	}
 }
 
 function removeRole(index: number, role) {

@@ -90,6 +90,7 @@ export class ImportCustomEmojisProcessorService {
 				// ショートコード重複時はスキップする
 				const isExist = await this.customEmojiService.checkDuplicate(emojiInfo.name);
 				if (!isExist) {
+
 					try {
 						const driveFile = await this.driveService.addFile({
 							user: null,
@@ -98,12 +99,14 @@ export class ImportCustomEmojisProcessorService {
 							force: true,
 						});
 						await this.customEmojiService.add({
+						originalUrl: driveFile.url,
+						publicUrl: driveFile.webpublicUrl ?? driveFile.url,
+						fileType: driveFile.webpublicType ?? driveFile.type,
 							name: emojiInfo.name,
 							category: emojiInfo.category,
 							host: null,
 							aliases: emojiInfo.aliases,
-							driveFile,
-							license: emojiInfo.license,
+								license: emojiInfo.license,
 							isSensitive: emojiInfo.isSensitive,
 							localOnly: emojiInfo.localOnly,
 							roleIdsThatCanBeUsedThisEmojiAsReaction: [],
