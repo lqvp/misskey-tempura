@@ -10080,13 +10080,13 @@ export interface Locale extends ILocale {
              */
             "app": string;
             /**
-             * 予約投稿に失敗
-             */
-            "scheduledNoteFailed": string;
-            /**
              * 予約投稿に成功
              */
             "scheduledNotePosted": string;
+            /**
+             * 予約投稿に失敗
+             */
+            "scheduledNoteFailed": string;
         };
         "_actions": {
             /**

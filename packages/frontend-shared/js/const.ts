@@ -77,8 +77,8 @@ export const notificationTypes = [
 	'test',
 	'app',
 	'test',
-	'scheduledNoteFailed',
 	'scheduledNotePosted',
+	'scheduledNoteFailed',
 ] as const;
 export const obsoleteNotificationTypes = ['pollVote', 'groupInvited'] as const;
 

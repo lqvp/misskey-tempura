@@ -148,15 +148,15 @@ export type MiNotification = {
 	id: string;
 	createdAt: string;
 } | {
-	type: 'scheduledNoteFailed';
-	id: string;
-	createdAt: string;
-	reason: string;
-} | {
 	type: 'scheduledNotePosted';
 	id: string;
 	createdAt: string;
 	noteId: MiNote['id'];
+} | {
+	type: 'scheduledNoteFailed';
+	id: string;
+	createdAt: string;
+	reason: string;
 };
 
 export type MiGroupedNotification = MiNotification | {

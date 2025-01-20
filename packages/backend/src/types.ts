@@ -23,8 +23,8 @@
  * exportCompleted - エクスポートが完了
  * login - ログイン
  * loginFailed - ログインに失敗
- * scheduledNoteFailed - 予約投稿に失敗
  * scheduledNotePosted - 予約投稿をノート
+ * scheduledNoteFailed - 予約投稿に失敗
  * app - アプリ通知
  * test - テスト通知（サーバー側）
  */
@@ -48,8 +48,8 @@ export const notificationTypes = [
 	'exportCompleted',
 	'login',
 	'loginFailed',
-	'scheduledNoteFailed',
 	'scheduledNotePosted',
+	'scheduledNoteFailed',
 	'app',
 	'test',
 ] as const;

@@ -34,8 +34,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 				[$style.t_login]: notification.type === 'login',
 				[$style.t_loginFailed]: notification.type === 'loginFailed',
 				[$style.t_roleAssigned]: notification.type === 'roleAssigned' && notification.role.iconUrl == null,
-				[$style.t_roleAssigned]: notification.type === 'scheduledNoteFailed',
 				[$style.t_pollEnded]: notification.type === 'scheduledNotePosted',
+				[$style.t_roleAssigned]: notification.type === 'scheduledNoteFailed',
 			}]"
 		>
 			<i v-if="notification.type === 'follow'" class="ti ti-plus"></i>
@@ -58,8 +58,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<img v-if="notification.role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="notification.role.iconUrl" alt=""/>
 				<i v-else class="ti ti-badges"></i>
 			</template>
-			<i v-else-if="notification.type === 'scheduledNoteFailed'" class="ti ti-calendar-event"></i>
 			<i v-else-if="notification.type === 'scheduledNotePosted'" class="ti ti-calendar-event"></i>
+			<i v-else-if="notification.type === 'scheduledNoteFailed'" class="ti ti-calendar-event"></i>
 			<MkReactionIcon
 				v-else-if="notification.type === 'reaction'"
 				:withTooltip="true"
@@ -85,8 +85,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<span v-else-if="notification.type === 'note:grouped'">{{ i18n.tsx._notification.notedBySomeUsers({ n: notification.noteIds.length }) }}</span>
 			<span v-else-if="notification.type === 'renote:grouped'">{{ i18n.tsx._notification.renotedBySomeUsers({ n: notification.users.length }) }}</span>
 			<span v-else-if="notification.type === 'app'">{{ notification.header }}</span>
-			<span v-else-if="notification.type === 'scheduledNoteFailed'">{{ i18n.ts._notification.scheduledNoteFailed }}</span>
 			<span v-else-if="notification.type === 'scheduledNotePosted'">{{ i18n.ts._notification.scheduledNotePosted }}</span>
+			<span v-else-if="notification.type === 'scheduledNoteFailed'">{{ i18n.ts._notification.scheduledNoteFailed }}</span>
 			<MkTime v-if="withTime" :time="notification.createdAt" :class="$style.headerTime"/>
 		</header>
 		<div>
