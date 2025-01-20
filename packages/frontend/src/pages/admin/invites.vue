@@ -17,7 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #label>{{ i18n.ts.noExpirationDate }}</template>
 					</MkSwitch>
 					<MkSwitch v-model="skipEmailAuth">
-						<template #label>{{ i18n.ts.skipEmailAuth }}</template>
+						<template #label>{{ i18n.ts.skipEmailAuth }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 					</MkSwitch>
 					<MkInput v-if="!noExpirationDate" v-model="expiresAt" type="datetime-local">
 						<template #label>{{ i18n.ts.expirationDate }}</template>
