@@ -512,7 +512,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 						expiresAt: data.poll!.expiresAt,
 						multiple: data.poll!.multiple,
 						votes: new Array(data.poll!.choices.length).fill(0),
-						noteVisibility: insert.visibility,
+						noteVisibility: insert.visibility === 'public_non_ltl' ? 'public' : insert.visibility,
 						userId: user.id,
 						userHost: user.host,
 						channelId: insert.channelId,
