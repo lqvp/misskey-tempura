@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div style="text-align: center;">
 					{{ i18n.ts._aboutFork.about }}
 				</div>
-				<FormLink to="https://gist.github.com/lqvp/483eabceeffc8c78d1cb820e90f1696c" external>
+				<FormLink to="https://hackmd.io/@il2/misskey-temp" external>
 					<template #icon><i class="ti ti-sparkles"></i></template>
 					{{ i18n.ts.originalFeature }}
 				</FormLink>
