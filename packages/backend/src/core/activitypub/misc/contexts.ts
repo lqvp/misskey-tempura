@@ -559,6 +559,11 @@ const extension_context_definition = {
 	'_misskey_requireSigninToViewContents': 'misskey:_misskey_requireSigninToViewContents',
 	'_misskey_makeNotesFollowersOnlyBefore': 'misskey:_misskey_makeNotesFollowersOnlyBefore',
 	'_misskey_makeNotesHiddenBefore': 'misskey:_misskey_makeNotesHiddenBefore',
+	'_misskey_license': 'misskey:_misskey_license',
+	'freeText': {
+		'@id': 'misskey:freeText',
+		'@type': 'schema:text',
+	},
 	'isCat': 'misskey:isCat',
 	'Game': 'yojoart:Game',
 	// vcard

@@ -53,7 +53,8 @@ import { instance as meta } from '@/instance.js';
 // 	if (!instance.iconUrl) {
 // 		return '';
 // 	}
-// 	return getProxiedImageUrl(instance.iconUrl, 'preview');
+
+//	return getProxiedImageUrl(instance.iconUrl, 'preview');
 // }
 
 // misskeyApiGet('federation/instances', {
