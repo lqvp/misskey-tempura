@@ -520,6 +520,7 @@ export class ClientServerService {
 				usernameLower: username.toLowerCase(),
 				host: host ?? IsNull(),
 				isSuspended: false,
+				requireSigninToViewContents: false,
 			});
 
 			return user && await this.feedService.packFeed(user);
