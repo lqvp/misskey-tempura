@@ -82,19 +82,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<!-- <div v-if="showingOptions" style="padding: 8px 16px;">
 	</div> -->
 	<footer :class="$style.footer">
-    <div :class="$style.footerLeft">
-      <template v-for="item in defaultStore.state.postFormActions">
-        <button v-if="!bottomItemActionDef[item].hide" :key="item" v-tooltip="bottomItemDef[item].title" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: bottomItemActionDef[item].active }]" v-on="bottomItemActionDef[item].action ? { click: bottomItemActionDef[item].action } : {}">
-          <i class="ti" :class="bottomItemDef[item].icon"></i>
-        </button>
-      </template>
-    </div>
-    <div :class="$style.footerRight">
-      <button v-tooltip="i18n.ts.previewNoteText" class="_button" :class="[$style.footerButton, { [$style.previewButtonActive]: showPreview }]" @click="showPreview = !showPreview">
-        <i class="ti ti-eye"></i>
-      </button>
-    </div>
-  </footer>
+		<div :class="$style.footerLeft">
+			<template v-for="item in defaultStore.state.postFormActions">
+				<button v-if="!bottomItemActionDef[item].hide" :key="item" v-tooltip="bottomItemDef[item].title" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: bottomItemActionDef[item].active }]" v-on="bottomItemActionDef[item].action ? { click: bottomItemActionDef[item].action } : {}">
+					<i class="ti" :class="bottomItemDef[item].icon"></i>
+				</button>
+			</template>
+		</div>
+		<div :class="$style.footerRight">
+			<button v-tooltip="i18n.ts.previewNoteText" class="_button" :class="[$style.footerButton, { [$style.previewButtonActive]: showPreview }]" @click="showPreview = !showPreview">
+				<i class="ti ti-eye"></i>
+			</button>
+		</div>
+	</footer>
 	<datalist id="hashtags">
 		<option v-for="hashtag in recentHashtags" :key="hashtag" :value="hashtag"/>
 	</datalist>
@@ -334,15 +334,15 @@ const bottomItemActionDef: Record<keyof typeof bottomItemDef, {
 		action: toggleScheduleNote,
 	},
 	schedulePostList: {
-    hide: computed(() => $i.policies.scheduleNoteMax === 0),
-    action: () => {
-      const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkSchedulePostListDialog.vue')), {}, {
-        closed: () => {
-          dispose();
-        },
-      });
-    },
-  },
+		hide: computed(() => $i.policies.scheduleNoteMax === 0),
+		action: () => {
+			const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkSchedulePostListDialog.vue')), {}, {
+				closed: () => {
+					dispose();
+				},
+			});
+		},
+	},
 });
 
 watch(text, () => {
@@ -426,17 +426,17 @@ function initialize() {
 		}
 	}
 
-// #region semi-public note
-// セミパブリックノートへのリプライは元の公開範囲を引き継ぐ
-if (props.reply && props.reply.dontShowOnLtl === true && $i.policies.canPublicNonLtlNote) {
-	visibility.value = 'public_non_ltl';
-}
+	// #region semi-public note
+	// セミパブリックノートへのリプライは元の公開範囲を引き継ぐ
+	if (props.reply && props.reply.dontShowOnLtl === true && $i.policies.canPublicNonLtlNote) {
+		visibility.value = 'public_non_ltl';
+	}
 
-// 自身のセミパブリックノートへのリプライである場合かつパブリック投稿へのリプライでセミパブリック投稿にする
-if (props.reply && props.reply.visibility === 'public' && props.reply.reply?.userId === $i.id && props.reply.reply?.dontShowOnLtl === true) {
-	visibility.value = 'public_non_ltl';
-}
-// #endregion
+	// 自身のセミパブリックノートへのリプライである場合かつパブリック投稿へのリプライでセミパブリック投稿にする
+	if (props.reply && props.reply.visibility === 'public' && props.reply.reply?.userId === $i.id && props.reply.reply.dontShowOnLtl === true) {
+		visibility.value = 'public_non_ltl';
+	}
+	// #endregion
 
 	if (props.specified) {
 		visibility.value = 'specified';
@@ -1085,9 +1085,9 @@ async function post(ev?: MouseEvent) {
 			type: 'error',
 			text: err.message + '\n' + (err as any).id,
 		});
-		emit("postError");
+		emit('postError');
 	});
-	emit("posting");
+	emit('posting');
 }
 
 function cancel() {
