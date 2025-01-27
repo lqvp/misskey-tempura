@@ -171,6 +171,10 @@ export interface Locale extends ILocale {
      */
     "save": string;
     /**
+     * 読み込み
+     */
+    "load": string;
+    /**
      * ユーザー
      */
     "users": string;
