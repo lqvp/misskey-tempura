@@ -2423,7 +2423,7 @@ declare module '../api.js' {
     /**
      * No description provided.
      * 
-     * **Credential required**: *Yes* / **Permission**: *read:account*
+     * **Credential required**: *No* / **Permission**: *read:account*
      */
     request<E extends 'get-avatar-decorations', P extends Endpoints[E]['req']>(
       endpoint: E,

@@ -2124,7 +2124,7 @@ export type paths = {
      * get-avatar-decorations
      * @description No description provided.
      *
-     * **Credential required**: *Yes* / **Permission**: *read:account*
+     * **Credential required**: *No* / **Permission**: *read:account*
      */
     post: operations['get-avatar-decorations'];
   };
@@ -18785,7 +18785,7 @@ export type operations = {
    * get-avatar-decorations
    * @description No description provided.
    *
-   * **Credential required**: *Yes* / **Permission**: *read:account*
+   * **Credential required**: *No* / **Permission**: *read:account*
    */
   'get-avatar-decorations': {
     responses: {
