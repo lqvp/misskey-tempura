@@ -13,7 +13,7 @@ import { RoleService } from '@/core/RoleService.js';
 export const meta = {
 	tags: ['users'],
 
-	requireCredential: true,
+	requireCredential: false,
 
 	kind: 'read:account',
 
