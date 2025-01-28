@@ -706,6 +706,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				infoImageUrl: instance.infoImageUrl,
 				youBlockedImageUrl: instance.youBlockedImageUrl,
 				iconUrl: instance.iconUrl,
+				enableLongIconUrl: instance.enableLongIconUrl,
 				longIconUrl: instance.longIconUrl,
 				app192IconUrl: instance.app192IconUrl,
 				app512IconUrl: instance.app512IconUrl,

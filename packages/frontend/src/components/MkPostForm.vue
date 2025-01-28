@@ -34,7 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</button>
 			</template>
 			<button v-if="visibility === 'specified'" v-click-anime v-tooltip="i18n.ts.save" class="_button" :class="$style.headerRightItem" @click="saveCurrentUsers"><i class="ti ti-device-floppy"/></button>
-			<button v-if="visibility === 'specified'" v-click-anime v-tooltip="i18n.ts.load" class="_button" :class="$style.headerRightItem"  @click="loadSavedUsers"><i class="ti ti-users"/></button>
+			<button v-if="visibility === 'specified'" v-click-anime v-tooltip="i18n.ts.load" class="_button" :class="$style.headerRightItem" @click="loadSavedUsers"><i class="ti ti-users"/></button>
 			<button v-click-anime v-tooltip="i18n.ts.drafts" class="_button" :class="$style.headerRightItem" @click="chooseDraft"><i class="ti ti-note"></i></button>
 			<button v-click-anime v-tooltip="i18n.ts._visibility.disableFederation" class="_button" :class="[$style.headerRightItem, { [$style.danger]: localOnly }]" :disabled="channel != null || visibility === 'specified'" @click="toggleLocalOnly">
 				<span v-if="!localOnly"><i class="ti ti-rocket"></i></span>

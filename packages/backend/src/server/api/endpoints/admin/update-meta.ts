@@ -69,7 +69,7 @@ export const paramDef = {
 		notFoundImageUrl: { type: 'string', nullable: true },
 		youBlockedImageUrl: { type: 'string', nullable: true },
 		iconUrl: { type: 'string', nullable: true },
-		enableLongIconUrl: { type: 'boolean', nullable: true },
+		enableLongIconUrl: { type: 'boolean' },
 		longIconUrl: { type: 'string', nullable: true },
 		app192IconUrl: { type: 'string', nullable: true },
 		app512IconUrl: { type: 'string', nullable: true },
