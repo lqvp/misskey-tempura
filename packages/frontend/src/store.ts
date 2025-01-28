@@ -11,7 +11,6 @@ import darkTheme from '@@/themes/night-pink.json5';
 import { directRenote } from './scripts/direct-renote.js';
 import type { SoundType } from '@/scripts/sound.js';
 import type { Ast } from '@syuilo/aiscript';
-import type { FollowingFeedTab } from '@/scripts/following-feed-utils.js';
 import { DEFAULT_DEVICE_KIND, type DeviceKind } from '@/scripts/device-kind.js';
 import { miLocalStorage } from '@/local-storage.js';
 import { Storage } from '@/pizzax.js';
@@ -239,18 +238,6 @@ export const defaultStore = markRaw(new Storage('base', {
 	pinnedUserLists: {
 		where: 'deviceAccount',
 		default: [] as Misskey.entities.UserList[],
-	},
-	followingFeed: {
-		where: 'account',
-		default: {
-			withNonPublic: false,
-			withQuotes: false,
-			withBots: true,
-			withReplies: false,
-			onlyFiles: false,
-			userList: 'following' as FollowingFeedTab,
-			remoteWarningDismissed: false,
-		},
 	},
 
 	overridedDeviceKind: {
@@ -558,10 +545,6 @@ export const defaultStore = markRaw(new Storage('base', {
 		default: false,
 	},
 	hideFollowingsUpdates: {
-		where: 'device',
-		default: false,
-	},
-	hideFollowFeed: {
 		where: 'device',
 		default: false,
 	},

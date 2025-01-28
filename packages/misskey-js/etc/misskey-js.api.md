@@ -1707,8 +1707,6 @@ declare namespace entities {
         NotesFavoritesDeleteRequest,
         NotesFeaturedRequest,
         NotesFeaturedResponse,
-        NotesFollowingRequest,
-        NotesFollowingResponse,
         NotesFollowingsUpdatesRequest,
         NotesFollowingsUpdatesResponse,
         NotesGlobalTimelineRequest,
@@ -2794,12 +2792,6 @@ type NotesFeaturedRequest = operations['notes___featured']['requestBody']['conte
 
 // @public (undocumented)
 type NotesFeaturedResponse = operations['notes___featured']['responses']['200']['content']['application/json'];
-
-// @public (undocumented)
-type NotesFollowingRequest = operations['notes___following']['requestBody']['content']['application/json'];
-
-// @public (undocumented)
-type NotesFollowingResponse = operations['notes___following']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type NotesFollowingsUpdatesRequest = operations['notes___followings-updates']['requestBody']['content']['application/json'];

@@ -25,17 +25,6 @@ type Quote =
 		hasPoll: true
 	});
 
-type PureRenote =
-	Renote & {
-		text: null,
-		cw: null,
-		replyId: null,
-		hasPoll: false,
-		fileIds: {
-			length: 0,
-		},
-	};
-
 export function isRenote(note: MiNote): note is Renote {
 	return note.renoteId != null;
 }
@@ -47,10 +36,6 @@ export function isQuote(note: Renote): note is Quote {
 		note.replyId != null ||
 		note.hasPoll ||
 		note.fileIds.length > 0;
-}
-
-export function isPureRenote(note: MiNote): note is PureRenote {
-	return isRenote(note) && !isQuote(note);
 }
 
 type PackedRenote =

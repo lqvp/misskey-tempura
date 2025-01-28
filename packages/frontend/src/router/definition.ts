@@ -251,14 +251,6 @@ const routes: RouteDef[] = [{
 	hash: 'initialTab',
 	loginRequired: true,
 }, {
-	path: '/following-feed',
-	component: page(() => import('@/pages/following-feed.vue')),
-	loginRequired: true,
-}, {
-	path: '/following-feed/:userId',
-	component: page(() => import('@/pages/user/recent-notes.vue')),
-	loginRequired: true,
-}, {
 	path: '/search',
 	component: page(() => import('@/pages/search.vue')),
 	loginRequired: true,

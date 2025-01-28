@@ -306,8 +306,6 @@ function isTabVisible(key: string): boolean {
 	switch (key) {
 		case 'followingsUpdates':
 			return !defaultStore.makeGetterSetter('hideFollowingsUpdates').get();
-		case 'followFeed':
-			return !defaultStore.makeGetterSetter('hideFollowFeed').get();
 		case 'lists':
 			return !defaultStore.makeGetterSetter('hideLists').get();
 		case 'antennas':
@@ -348,15 +346,6 @@ const headerTabs = computed(() => {
 			icon: 'ti ti-users',
 			iconOnly: true,
 			onClick: () => { router.push('/my/followings-updates'); },
-		});
-	}
-
-	if (isTabVisible('followFeed')) {
-		tabs.push({
-			icon: 'ti ti-user-check',
-			title: i18n.ts.followFeed,
-			iconOnly: true,
-			onClick: () => router.push('/following-feed'),
 		});
 	}
 

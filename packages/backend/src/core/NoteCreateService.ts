@@ -59,7 +59,6 @@ import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { CollapsedQueue } from '@/misc/collapsed-queue.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import type Logger from '@/logger.js';
-import { LatestNoteService } from '@/core/LatestNoteService.js';
 import { CacheService } from '@/core/CacheService.js';
 
 type NotificationType = 'reply' | 'renote' | 'quote' | 'mention';
@@ -226,7 +225,6 @@ export class NoteCreateService implements OnApplicationShutdown {
 		private utilityService: UtilityService,
 		private userBlockingService: UserBlockingService,
 		private loggerService: LoggerService,
-		private latestNoteService: LatestNoteService,
 		private cacheService: CacheService,
 	) {
 		this.logger = this.loggerService.getLogger('note-create-service');
@@ -781,9 +779,6 @@ export class NoteCreateService implements OnApplicationShutdown {
 			});
 		}
 
-		// Update the Latest Note index / following feed
-		this.latestNoteService.handleCreatedNoteBG(note);
-
 		// Register to search database
 		this.index(note);
 	}
@@ -1106,7 +1101,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 	}
 
 	@bindThis
-	public onApplicationShutdown(signal?: string | undefined): void {
-		this.dispose();
+	public async onApplicationShutdown(signal?: string | undefined): Promise<void> {
+		await this.dispose();
 	}
 }

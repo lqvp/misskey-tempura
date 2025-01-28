@@ -122,7 +122,6 @@ const defaultStoreSaveKeys: (keyof typeof defaultStore['state'])[] = [
 	'hideSocialTimeLine',
 	'hideGlobalTimeLine',
 	'hideFollowingsUpdates',
-	'hideFollowFeed',
 	'hideLists',
 	'hideAntennas',
 	'hideChannel',

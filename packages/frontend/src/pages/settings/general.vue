@@ -326,10 +326,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #caption>{{ i18n.ts.__TL_conf.hideFollowingsUpdatesDescription }}</template>
 						{{ i18n.ts.__TL_conf.hideFollowingsUpdates }}
 					</MkSwitch>
-					<MkSwitch v-model="hideFollowFeed">
-						<template #caption>{{ i18n.ts.__TL_conf.hideFollowFeedDescription }}</template>
-						{{ i18n.ts.__TL_conf.hideFollowFeed }}
-					</MkSwitch>
 					<MkSwitch v-model="hideLists">
 						<template #caption>{{ i18n.ts.__TL_conf.hideListsDescription }}</template>
 						{{ i18n.ts.__TL_conf.hideLists }}
@@ -461,7 +457,6 @@ const hideLocalTimeLine = computed(defaultStore.makeGetterSetter('hideLocalTimeL
 const hideGlobalTimeLine = computed(defaultStore.makeGetterSetter('hideGlobalTimeLine'));
 const hideSocialTimeLine = computed(defaultStore.makeGetterSetter('hideSocialTimeLine'));
 const hideFollowingsUpdates = computed(defaultStore.makeGetterSetter('hideFollowingsUpdates'));
-const hideFollowFeed = computed(defaultStore.makeGetterSetter('hideFollowFeed'));
 const hideLists = computed(defaultStore.makeGetterSetter('hideLists'));
 const hideAntennas = computed(defaultStore.makeGetterSetter('hideAntennas'));
 const hideChannel = computed(defaultStore.makeGetterSetter('hideChannel'));
@@ -522,7 +517,6 @@ watch([
 	hideGlobalTimeLine,
 	hideSocialTimeLine,
 	hideFollowingsUpdates,
-	hideFollowFeed,
 	hideLists,
 	hideAntennas,
 	hideChannel,
@@ -653,7 +647,6 @@ function toggleAllHidden(value: boolean) {
 		'hideGlobalTimeLine',
 		'hideSocialTimeLine',
 		'hideFollowingsUpdates',
-		'hideFollowFeed',
 		'hideLists',
 		'hideAntennas',
 		'hideChannel',

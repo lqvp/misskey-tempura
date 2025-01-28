@@ -451,8 +451,6 @@ import type {
 	NotesFavoritesDeleteRequest,
 	NotesFeaturedRequest,
 	NotesFeaturedResponse,
-	NotesFollowingRequest,
-	NotesFollowingResponse,
 	NotesFollowingsUpdatesRequest,
 	NotesFollowingsUpdatesResponse,
 	NotesGlobalTimelineRequest,
@@ -922,7 +920,6 @@ export type Endpoints = {
 	'notes/favorites/create': { req: NotesFavoritesCreateRequest; res: EmptyResponse };
 	'notes/favorites/delete': { req: NotesFavoritesDeleteRequest; res: EmptyResponse };
 	'notes/featured': { req: NotesFeaturedRequest; res: NotesFeaturedResponse };
-	'notes/following': { req: NotesFollowingRequest; res: NotesFollowingResponse };
 	'notes/followings-updates': { req: NotesFollowingsUpdatesRequest; res: NotesFollowingsUpdatesResponse };
 	'notes/global-timeline': { req: NotesGlobalTimelineRequest; res: NotesGlobalTimelineResponse };
 	'notes/hybrid-timeline': { req: NotesHybridTimelineRequest; res: NotesHybridTimelineResponse };

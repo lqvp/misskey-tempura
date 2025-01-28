@@ -11614,14 +11614,6 @@ export interface Locale extends ILocale {
          */
         "hideFollowingsUpdatesDescription": string;
         /**
-         * フォローフィードを隠す
-         */
-        "hideFollowFeed": string;
-        /**
-         * フォローしているユーザーの投稿フィードを非表示にします
-         */
-        "hideFollowFeedDescription": string;
-        /**
          * リストを隠す
          */
         "hideLists": string;
@@ -11680,10 +11672,6 @@ export interface Locale extends ILocale {
      * リモートフォロワーのアクティビティは不完全または古い情報である可能性があります
      */
     "remoteFollowersWarning": string;
-    /**
-     * フォローフィード
-     */
-    "followFeed": string;
     /**
      * タイムラインにbotを表示
      */
