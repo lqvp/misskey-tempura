@@ -1541,6 +1541,9 @@ _serverRules:
 
 _serverSettings:
   iconUrl: "アイコン画像のURL"
+  enableLongIconUrl: "横長アイコン画像を有効にする"
+  enableLongIconUrlDescription: "有効にすると、横長のアイコン画像を設定できるようになります。"
+  longIconUrl: "横長アイコン画像のURL"
   appIconDescription: "{host}がアプリとして表示される際のアイコンを指定します。"
   appIconUsageExample: "例: PWAや、スマートフォンのホーム画面にブックマークとして追加された時など"
   appIconStyleRecommendation: "円形もしくは角丸にクロップされる場合があるため、塗り潰された余白のある背景を持つことが推奨されます。"

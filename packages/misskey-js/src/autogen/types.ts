@@ -5394,6 +5394,8 @@ export type components = {
       notFoundImageUrl: string | null;
       youBlockedImageUrl: string | null;
       iconUrl: string | null;
+      enableLongIconUrl: boolean;
+      longIconUrl: string | null;
       maxNoteTextLength: number;
       ads: {
           /**
@@ -8747,6 +8749,8 @@ export type operations = {
             notFoundImageUrl: string | null;
             youBlockedImageUrl: string | null;
             iconUrl: string | null;
+            enableLongIconUrl: boolean;
+            longIconUrl: string | null;
             app192IconUrl: string | null;
             app512IconUrl: string | null;
             enableEmail: boolean;
@@ -11353,6 +11357,8 @@ export type operations = {
           notFoundImageUrl?: string | null;
           youBlockedImageUrl?: string | null;
           iconUrl?: string | null;
+          enableLongIconUrl?: boolean | null;
+          longIconUrl?: string | null;
           app192IconUrl?: string | null;
           app512IconUrl?: string | null;
           backgroundImageUrl?: string | null;

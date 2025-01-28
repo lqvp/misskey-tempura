@@ -6095,6 +6095,18 @@ export interface Locale extends ILocale {
          */
         "iconUrl": string;
         /**
+         * 横長アイコン画像を有効にする
+         */
+        "enableLongIconUrl": string;
+        /**
+         * 有効にすると、横長のアイコン画像を設定できるようになります。
+         */
+        "enableLongIconUrlDescription": string;
+        /**
+         * 横長アイコン画像のURL
+         */
+        "longIconUrl": string;
+        /**
          * {host}がアプリとして表示される際のアイコンを指定します。
          */
         "appIconDescription": ParameterizedString<"host">;

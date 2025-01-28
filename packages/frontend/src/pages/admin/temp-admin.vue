@@ -20,6 +20,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #caption>{{ i18n.ts.blockMentionsFromUnfamiliarRemoteUsersDescription }} Cherry-picked from Misskey.io (https://github.com/MisskeyIO/misskey/commit/82cc3987c13db4ad0da1589386027c222ce85ff8)</template>
 					</MkSwitch>
 
+					<MkSwitch v-model="enableLongIconUrl" @change="onChange_enableLongIconUrl">
+						<template #label>{{ i18n.ts._serverSettings.enableLongIconUrl }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+						<template #caption>{{ i18n.ts._serverSettings.enableLongIconUrlDescription }}</template>
+					</MkSwitch>
+
+					<div class="_gaps">
+						<MkInput v-model="longIconUrl">
+							<template #label>
+								<span>{{ i18n.ts._serverSettings.longIconUrl }}</span>
+								<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+							</template>
+						</MkInput>
+						<MkButton v-if="longIconUrl" primary @click="save_longIconUrl">{{ i18n.ts.save }}</MkButton>
+					</div>
+
 					<div class="_gaps">
 						<MkInput v-model="validateMinimumUsernameLength" type="number" @update:modelValue="onUsernameMinLengthChange">
 							<template #label>
@@ -244,6 +259,8 @@ const defaultFollowedUsers = ref<string>('');
 const forciblyFollowedUsers = ref<string>('');
 const backgroundImageUrls = ref<string[]>([]);
 const customSplashText = ref<string>('');
+const enableLongIconUrl = ref<boolean>(false);
+const longIconUrl = ref<string>();
 
 const originalMinimumUsernameLength = ref<number>();
 const validateMinimumUsernameLengthChanged = computed(() =>
@@ -278,6 +295,8 @@ async function init() {
 	forciblyFollowedUsers.value = meta.forciblyFollowedUsers.join('\n');
 	backgroundImageUrls.value = meta.backgroundImageUrls;
 	customSplashText.value = meta.customSplashText.join('\n');
+	enableLongIconUrl.value = meta.enableLongIconUrl;
+	longIconUrl.value = meta.longIconUrl;
 }
 
 function addBackgroundImage() {
@@ -307,6 +326,14 @@ function onChange_approvalRequiredForSignup(value: boolean) {
 function onChange_blockMentionsFromUnfamiliarRemoteUsers(value: boolean) {
 	os.apiWithDialog('admin/update-meta', {
 		blockMentionsFromUnfamiliarRemoteUsers: value,
+	}).then(() => {
+		fetchInstance(true);
+	});
+}
+
+function onChange_enableLongIconUrl(value: boolean) {
+	os.apiWithDialog('admin/update-meta', {
+		enableLongIconUrl: value,
 	}).then(() => {
 		fetchInstance(true);
 	});
@@ -370,6 +397,14 @@ const hanaSettingsForm = useForm({
 
 function onUsernameMinLengthChange(value: number) {
 	validateMinimumUsernameLength.value = value;
+}
+
+function save_longIconUrl() {
+	os.apiWithDialog('admin/update-meta', {
+		longIconUrl: longIconUrl.value,
+	}).then(() => {
+		fetchInstance(true);
+	});
 }
 
 function save_validateMinimumUsernameLength() {

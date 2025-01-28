@@ -69,6 +69,8 @@ export const paramDef = {
 		notFoundImageUrl: { type: 'string', nullable: true },
 		youBlockedImageUrl: { type: 'string', nullable: true },
 		iconUrl: { type: 'string', nullable: true },
+		enableLongIconUrl: { type: 'boolean', nullable: true },
+		longIconUrl: { type: 'string', nullable: true },
 		app192IconUrl: { type: 'string', nullable: true },
 		app512IconUrl: { type: 'string', nullable: true },
 		backgroundImageUrl: { type: 'string', nullable: true },
@@ -307,6 +309,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.iconUrl !== undefined) {
 				set.iconUrl = ps.iconUrl;
+			}
+
+			if (ps.enableLongIconUrl !== undefined) {
+				set.enableLongIconUrl = ps.enableLongIconUrl;
+			}
+
+			if (ps.longIconUrl !== undefined) {
+				set.longIconUrl = ps.longIconUrl;
 			}
 
 			if (ps.app192IconUrl !== undefined) {

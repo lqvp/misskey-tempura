@@ -110,6 +110,14 @@ export const meta = {
 				type: 'string',
 				optional: false, nullable: true,
 			},
+			enableLongIconUrl: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			longIconUrl: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
 			app192IconUrl: {
 				type: 'string',
 				optional: false, nullable: true,
@@ -698,6 +706,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				infoImageUrl: instance.infoImageUrl,
 				youBlockedImageUrl: instance.youBlockedImageUrl,
 				iconUrl: instance.iconUrl,
+				longIconUrl: instance.longIconUrl,
 				app192IconUrl: instance.app192IconUrl,
 				app512IconUrl: instance.app512IconUrl,
 				backgroundImageUrl: instance.backgroundImageUrl,

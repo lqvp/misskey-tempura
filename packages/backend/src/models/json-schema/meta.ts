@@ -156,6 +156,14 @@ export const packedMetaLiteSchema = {
 			type: 'string',
 			optional: false, nullable: true,
 		},
+		enableLongIconUrl: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
+		longIconUrl: {
+			type: 'string',
+			optional: false, nullable: true,
+		},
 		maxNoteTextLength: {
 			type: 'number',
 			optional: false, nullable: false,

@@ -138,6 +138,17 @@ export class MiMeta {
 	})
 	public iconUrl: string | null;
 
+	@Column('boolean', {
+		default: false,
+	})
+	public enableLongIconUrl: boolean;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public longIconUrl: string | null;
+
 	@Column('varchar', {
 		length: 1024,
 		nullable: true,
