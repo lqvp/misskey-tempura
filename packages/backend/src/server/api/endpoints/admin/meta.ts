@@ -606,8 +606,39 @@ export const meta = {
 			deeplFreeInstance: {
 				type: 'string',
 				optional: false, nullable: true,
-			}
-
+			},
+			enableCpuModel: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			customCpuModel: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
+			enableCpuCore: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			customCpuCore: {
+				type: 'number',
+				optional: false, nullable: true,
+			},
+			enableMemTotal: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			customMemTotal: {
+				type: 'number',
+				optional: false, nullable: true,
+			},
+			enableFsTotal: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			customFsTotal: {
+				type: 'number',
+				optional: false, nullable: true,
+			},
 		},
 	},
 } as const;
@@ -769,6 +800,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				forciblyFollowedUsers: instance.forciblyFollowedUsers,
 				deeplFreeMode: instance.deeplFreeMode,
 				deeplFreeInstance: instance.deeplFreeInstance,
+				enableCpuModel: instance.enableCpuModel,
+				customCpuModel: instance.customCpuModel,
+				enableCpuCore: instance.enableCpuCore,
+				customCpuCore: instance.customCpuCore,
+				enableMemTotal: instance.enableMemTotal,
+				customMemTotal: instance.customMemTotal,
+				enableFsTotal: instance.enableFsTotal,
+				customFsTotal: instance.customFsTotal,
 			};
 		});
 	}

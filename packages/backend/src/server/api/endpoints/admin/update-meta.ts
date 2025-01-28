@@ -228,6 +228,14 @@ export const paramDef = {
 		},
 		deeplFreeMode: { type: 'boolean' },
 		deeplFreeInstance: { type: 'string', nullable: true },
+		enableCpuModel: { type: 'boolean' },
+		customCpuModel: { type: 'string', nullable: true },
+		enableCpuCore: { type: 'boolean' },
+		customCpuCore: { type: 'integer', nullable: true },
+		enableMemTotal: { type: 'boolean' },
+		customMemTotal: { type: 'integer', nullable: true },
+		enableFsTotal: { type: 'boolean' },
+		customFsTotal: { type: 'integer', nullable: true },
 	},
 	required: [],
 } as const;
@@ -821,6 +829,38 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				} else {
 					set.deeplFreeInstance = ps.deeplFreeInstance;
 				}
+			}
+
+			if (ps.enableCpuModel !== undefined) {
+				set.enableCpuModel = ps.enableCpuModel;
+			}
+
+			if (ps.customCpuModel !== undefined) {
+				set.customCpuModel = ps.customCpuModel;
+			}
+
+			if (ps.enableCpuCore !== undefined) {
+				set.enableCpuCore = ps.enableCpuCore;
+			}
+
+			if (ps.customCpuCore !== undefined) {
+				set.customCpuCore = ps.customCpuCore;
+			}
+
+			if (ps.enableMemTotal !== undefined) {
+				set.enableMemTotal = ps.enableMemTotal;
+			}
+
+			if (ps.customMemTotal !== undefined) {
+				set.customMemTotal = ps.customMemTotal;
+			}
+
+			if (ps.enableFsTotal !== undefined) {
+				set.enableFsTotal = ps.enableFsTotal;
+			}
+
+			if (ps.customFsTotal !== undefined) {
+				set.customFsTotal = ps.customFsTotal;
 			}
 
 			const before = await this.metaService.fetch(true);

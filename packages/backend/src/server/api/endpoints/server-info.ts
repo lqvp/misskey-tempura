@@ -96,18 +96,42 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			const memStats = await si.mem();
 			const fsStats = await si.fsSize();
 
+			const cpuModel = this.serverSettings.enableCpuModel
+				? (this.serverSettings.customCpuModel && this.serverSettings.customCpuModel !== '0')
+					? this.serverSettings.customCpuModel
+					: os.cpus()[0]?.model || '?'
+				: '?';
+
+			const cpuCores = this.serverSettings.enableCpuCore
+				? (this.serverSettings.customCpuCore && this.serverSettings.customCpuCore !== 0)
+					? this.serverSettings.customCpuCore
+					: os.cpus().length
+				: 0;
+
+			const memTotal = this.serverSettings.enableMemTotal
+				? (this.serverSettings.customMemTotal && this.serverSettings.customMemTotal !== 0)
+					? this.serverSettings.customMemTotal * 1024 * 1024 * 1024
+					: memStats.total
+				: 0;
+
+			const fsTotal = this.serverSettings.enableFsTotal
+				? (this.serverSettings.customFsTotal && this.serverSettings.customFsTotal !== 0)
+					? this.serverSettings.customFsTotal * 1024 * 1024 * 1024
+					: fsStats[0]?.size
+				: 0;
+
 			return {
 				machine: os.hostname(),
 				cpu: {
-					model: os.cpus()[0].model,
-					cores: os.cpus().length,
+					model: cpuModel,
+					cores: cpuCores,
 				},
 				mem: {
-					total: memStats.total,
+					total: memTotal,
 				},
 				fs: {
-					total: fsStats[0].size,
-					used: fsStats[0].used,
+					total: fsTotal,
+					used: this.serverSettings.enableFsTotal ? fsStats[0]?.used : 0,
 				},
 			};
 		});
