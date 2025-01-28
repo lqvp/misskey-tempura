@@ -370,18 +370,16 @@ export class ApPersonService implements OnModuleInit {
 			[
 				this.isPublicCollection(person.following, resolver),
 				this.isPublicCollection(person.followers, resolver),
-			].map((p, index) => p
-				.then(isPublic => index === 0 ? 'public' : (isPublic ? 'public' : 'private'))
+			].map((p): Promise<'public' | 'private'> => p
+				.then(isPublic => isPublic ? 'public' : 'private')
 				.catch(err => {
 					if (!(err instanceof StatusError) || err.isRetryable) {
 						this.logger.error('error occurred while fetching following/followers collection', { stack: err });
-						// Do not update the visibiility on transient errors.
-						return undefined;
 					}
 					return 'private';
 				}),
 			),
-	 );
+		);
 
 		const bday = person['vcard:bday']?.match(/^\d{4}-\d{2}-\d{2}/);
 
@@ -638,16 +636,18 @@ export class ApPersonService implements OnModuleInit {
 			[
 				this.isPublicCollection(person.following, resolver),
 				this.isPublicCollection(person.followers, resolver),
-			].map((p, index) => p
-				.then(isPublic => index === 0 ? 'public' : (isPublic ? 'public' : 'private'))
+			].map((p): Promise<'public' | 'private' | undefined> => p
+				.then(isPublic => isPublic ? 'public' : 'private')
 				.catch(err => {
 					if (!(err instanceof StatusError) || err.isRetryable) {
 						this.logger.error('error occurred while fetching following/followers collection', { stack: err });
+						// Do not update the visibiility on transient errors.
+						return undefined;
 					}
 					return 'private';
 				}),
 			),
-	 );
+		);
 
 		const bday = person['vcard:bday']?.match(/^\d{4}-\d{2}-\d{2}/);
 
