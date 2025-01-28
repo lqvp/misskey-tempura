@@ -47,7 +47,7 @@ import type { ApNoteService } from './ApNoteService.js';
 import type { ApMfmService } from '../ApMfmService.js';
 import type { ApResolverService, Resolver } from '../ApResolverService.js';
 import type { ApLoggerService } from '../ApLoggerService.js';
-// eslint-disable-next-line @typescript-eslint/consistent-type-imports
+
 import type { ApImageService } from './ApImageService.js';
 import type { IActor, ICollection, IObject, IOrderedCollection } from '../type.js';
 
@@ -366,18 +366,19 @@ export class ApPersonService implements OnModuleInit {
 
 		const isBot = getApType(object) === 'Service' || getApType(object) === 'Application';
 
-		const [notesVisibility, followingVisibility, followersVisibility] = await Promise.all(
+		const [followingVisibility, followersVisibility] = await Promise.all(
 			[
-				this.isPublicCollection(person.notes, resolver),
 				this.isPublicCollection(person.following, resolver),
 				this.isPublicCollection(person.followers, resolver),
 			].map((p, index) => p
 				.then(isPublic => index === 0 ? 'public' : (isPublic ? 'public' : 'private'))
 				.catch(err => {
 					if (!(err instanceof StatusError) || err.isRetryable) {
-						this.logger.error('error occurred while fetching notes/following/followers collection', { stack: err });
+						this.logger.error('error occurred while fetching following/followers collection', { stack: err });
+						// Do not update the visibiility on transient errors.
+						return undefined;
 					}
-					return index === 0 ? 'public' : 'private';
+					return 'private';
 				}),
 			),
 	 );
@@ -392,21 +393,6 @@ export class ApPersonService implements OnModuleInit {
 
 		if (url && !checkHttps(url)) {
 			throw new Error('unexpected schema of person url: ' + url);
-		}
-
-		let notesCount: number | undefined;
-
-		if (typeof person.notes === 'string') {
-			try {
-				const data = await fetch(person.notes, {
-					headers: { Accept: 'application/json' },
-				});
-				const jsonData = JSON.parse(await data.text());
-
-				notesCount = jsonData.totalItems;
-			} catch {
-				notesCount = undefined;
-			}
 		}
 
 		let followersCount: number | undefined;
@@ -436,6 +422,21 @@ export class ApPersonService implements OnModuleInit {
 				followingCount = jsonData.totalItems;
 			} catch (e) {
 				followingCount = undefined;
+			}
+		}
+
+		let notesCount: number | undefined;
+
+		if (typeof person.outbox === 'string') {
+			try {
+				const data = await fetch(person.outbox, {
+					headers: { Accept: 'application/json' },
+				});
+				const jsonData = JSON.parse(await data.text());
+
+				notesCount = jsonData.totalItems;
+			} catch (e) {
+				notesCount = undefined;
 			}
 		}
 
@@ -521,7 +522,6 @@ export class ApPersonService implements OnModuleInit {
 					followedMessage: person._misskey_followedMessage != null ? truncate(person._misskey_followedMessage, 256) : null,
 					url,
 					fields,
-					notesVisibility,
 					followingVisibility,
 					followersVisibility,
 					birthday: bday?.[0] ?? null,
@@ -634,18 +634,17 @@ export class ApPersonService implements OnModuleInit {
 
 		const tags = extractApHashtags(person.tag).map(normalizeForSearch).splice(0, 32);
 
-		const [notesVisibility, followingVisibility, followersVisibility] = await Promise.all(
+		const [followingVisibility, followersVisibility] = await Promise.all(
 			[
-				this.isPublicCollection(person.notes, resolver),
 				this.isPublicCollection(person.following, resolver),
 				this.isPublicCollection(person.followers, resolver),
 			].map((p, index) => p
 				.then(isPublic => index === 0 ? 'public' : (isPublic ? 'public' : 'private'))
 				.catch(err => {
 					if (!(err instanceof StatusError) || err.isRetryable) {
-						this.logger.error('error occurred while fetching notes/following/followers collection', { stack: err });
+						this.logger.error('error occurred while fetching following/followers collection', { stack: err });
 					}
-					return index === 0 ? 'public' : 'private';
+					return 'private';
 				}),
 			),
 	 );
@@ -656,33 +655,8 @@ export class ApPersonService implements OnModuleInit {
 
 		let host = null;
 
-		if (person.id == null) {
-			throw new Error('Refusing to update person without id');
-		}
-
-		if (url != null) {
-			if (!checkHttps(url)) {
-				throw new Error('unexpected schema of person url: ' + url);
-			}
-
-			if (this.utilityService.punyHost(url) !== this.utilityService.punyHost(person.id)) {
-				throw new Error(`person url <> uri host mismatch: ${url} <> ${person.id}`);
-			}
-		}
-
-		let notesCount: number | undefined;
-
-		if (typeof person.notes === 'string') {
-			try {
-				const data = await fetch(person.notes, {
-					headers: { Accept: 'application/json' },
-				});
-				const jsonData = JSON.parse(await data.text());
-
-				notesCount = jsonData.totalItems;
-			} catch {
-				notesCount = undefined;
-			}
+		if (url && !checkHttps(url)) {
+			throw new Error('unexpected schema of person url: ' + url);
 		}
 
 		let followersCount: number | undefined;
@@ -712,6 +686,21 @@ export class ApPersonService implements OnModuleInit {
 				followingCount = jsonData.totalItems;
 			} catch {
 				followingCount = undefined;
+			}
+		}
+
+		let notesCount: number | undefined;
+
+		if (typeof person.outbox === 'string') {
+			try {
+				const data = await fetch(person.outbox, {
+					headers: { Accept: 'application/json' },
+				});
+				const jsonData = JSON.parse(await data.text());
+
+				notesCount = jsonData.totalItems;
+			} catch (e) {
+				notesCount = undefined;
 			}
 		}
 
@@ -805,7 +794,6 @@ export class ApPersonService implements OnModuleInit {
 			fields,
 			description: _description,
 			followedMessage: person._misskey_followedMessage != null ? truncate(person._misskey_followedMessage, 256) : null,
-			notesVisibility,
 			followingVisibility,
 			followersVisibility,
 			birthday: bday?.[0] ?? null,
@@ -904,7 +892,7 @@ export class ApPersonService implements OnModuleInit {
 
 		// Resolve to Object(may be Note) arrays
 		const unresolvedItems = isCollection(collection) ? collection.items : collection.orderedItems;
-		const items = await Promise.all(toArray(unresolvedItems).map(x => _resolver.resolve(x)));
+		const items = await Promise.all(toArray(unresolvedItems).map(x => _resolver?.resolve(x)));
 
 		// Resolve and regist Notes
 		const limit = promiseLimit<MiNote | null>(2);

@@ -138,7 +138,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</dl>
 						</div>
 						<div class="status">
-							<MkA v-if="isNotesVisibilityForMe(user)" :to="userPage(user, 'notes')">
+							<MkA :to="userPage(user)">
 								<b>{{ number(user.notesCount) }}</b>
 								<span>{{ i18n.ts.notes }}</span>
 							</MkA>
@@ -236,7 +236,7 @@ import { $i, iAmModerator } from '@/account.js';
 import { dateString } from '@/filters/date.js';
 import { confetti } from '@/scripts/confetti.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
-import { isNotesVisibilityForMe, isFollowingVisibleForMe, isFollowersVisibleForMe } from '@/scripts/isFfVisibleForMe.js';
+import { isFollowingVisibleForMe, isFollowersVisibleForMe } from '@/scripts/isFfVisibleForMe.js';
 import { useRouter } from '@/router/supplier.js';
 import { getStaticImageUrl } from '@/scripts/media-proxy.js';
 import { editNickname } from '@/scripts/edit-nickname';

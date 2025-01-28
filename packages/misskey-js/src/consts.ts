@@ -22,8 +22,6 @@ export const noteVisibilities = ['public', 'public_non_ltl', 'home', 'followers'
 
 export const mutedNoteReasons = ['word', 'manual', 'spam', 'other'] as const;
 
-export const notesVisibilities = ['public', 'followers', 'private'] as const;
-
 export const followingVisibilities = ['public', 'followers', 'private'] as const;
 
 export const followersVisibilities = ['public', 'followers', 'private'] as const;

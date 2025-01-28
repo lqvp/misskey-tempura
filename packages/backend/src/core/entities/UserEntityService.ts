@@ -454,11 +454,6 @@ export class UserEntityService implements OnModuleInit {
 			}
 		}
 
-		const notesCount = profile == null ? null :
-			(profile.notesVisibility === 'public') || isMe || iAmModerator ? user.notesCount :
-			(profile.notesVisibility === 'followers') && (relation && relation.isFollowing) ? user.notesCount :
-    	null;
-
 		const followingCount = profile == null ? null :
 			(profile.followingVisibility === 'public') || isMe || iAmModerator ? user.followingCount :
 			(profile.followingVisibility === 'followers') && (relation && relation.isFollowing) ? user.followingCount :
@@ -545,7 +540,7 @@ export class UserEntityService implements OnModuleInit {
 				verifiedLinks: profile!.verifiedLinks,
 				followersCount: followersCount ?? '?',
 				followingCount: followingCount ?? '?',
-				notesCount: notesCount ?? '?',
+				notesCount: user.notesCount,
 				pinnedNoteIds: pins.map(pin => pin.noteId),
 				pinnedNotes: this.noteEntityService.packMany(pins.map(pin => pin.note!), me, {
 					detail: true,
@@ -554,7 +549,6 @@ export class UserEntityService implements OnModuleInit {
 				pinnedPage: profile!.pinnedPageId ? this.pageEntityService.pack(profile!.pinnedPageId, me) : null,
 				publicReactions: this.isLocalUser(user) ? profile!.publicReactions : false, // https://github.com/misskey-dev/misskey/issues/12964
 				hideActivity: this.isLocalUser(user) ? profile!.hideActivity : false, //
-				notesVisibility: profile!.notesVisibility,
 				followersVisibility: profile!.followersVisibility,
 				followingVisibility: profile!.followingVisibility,
 				roles: this.roleService.getUserRoles(user.id).then(roles => roles.filter(role => role.isPublic && role.permissionGroup !== 'Community').sort((a, b) => b.displayOrder - a.displayOrder).map(role => ({

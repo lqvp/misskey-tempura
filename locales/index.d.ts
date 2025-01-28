@@ -3807,10 +3807,6 @@ export interface Locale extends ILocale {
      */
     "unmuteThread": string;
     /**
-     * ノート数の公開範囲
-     */
-    "notesVisibility": string;
-    /**
      * フォローの公開範囲
      */
     "followingVisibility": string;

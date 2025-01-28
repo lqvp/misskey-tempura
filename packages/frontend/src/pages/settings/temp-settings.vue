@@ -23,13 +23,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 						{{ i18n.ts.hideActivity }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 						<template #caption>{{ i18n.ts.hideActivityDescription }}</template>
 					</MkSwitch>
-
-					<MkSelect v-model="notesVisibility" @update:modelValue="save_privacy()">
-						<template #label>{{ i18n.ts.notesVisibility }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-						<option value="public">{{ i18n.ts._ffVisibility.public }}</option>
-						<option value="followers">{{ i18n.ts._ffVisibility.followers }}</option>
-						<option value="private">{{ i18n.ts._ffVisibility.private }}</option>
-					</MkSelect>
 				</div>
 			</MkFolder>
 
@@ -298,8 +291,6 @@ const scheduledNoteDelete = ref({ deleteAt: null, deleteAfter: defaultStore.stat
 const autoRejectFollowRequest = ref($i.autoRejectFollowRequest);
 const carefulBot = ref($i.carefulBot);
 const hideActivity = ref($i.hideActivity);
-const notesVisibility = ref($i.notesVisibility);
-
 const items = ref(defaultStore.state.postFormActions.map(x => ({
 	id: Math.random().toString(),
 	type: x,
@@ -419,7 +410,6 @@ function save_privacy() {
 		autoRejectFollowRequest: !!autoRejectFollowRequest.value,
 		carefulBot: !!carefulBot.value,
 		hideActivity: !!hideActivity.value,
-		notesVisibility: notesVisibility.value,
 	});
 }
 

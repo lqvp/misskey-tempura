@@ -2936,9 +2936,6 @@ type NotesUserListTimelineRequest = operations['notes___user-list-timeline']['re
 type NotesUserListTimelineResponse = operations['notes___user-list-timeline']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
-export const notesVisibilities: readonly ["public", "followers", "private"];
-
-// @public (undocumented)
 export const noteVisibilities: readonly ["public", "public_non_ltl", "home", "followers", "specified"];
 
 // @public (undocumented)

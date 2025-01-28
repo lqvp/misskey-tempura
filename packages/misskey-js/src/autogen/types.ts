@@ -4058,8 +4058,6 @@ export type components = {
       publicReactions: boolean;
       hideActivity: boolean;
       /** @enum {string} */
-      notesVisibility: 'public' | 'followers' | 'private';
-      /** @enum {string} */
       followingVisibility: 'public' | 'followers' | 'private';
       /** @enum {string} */
       followersVisibility: 'public' | 'followers' | 'private';
@@ -11357,7 +11355,7 @@ export type operations = {
           notFoundImageUrl?: string | null;
           youBlockedImageUrl?: string | null;
           iconUrl?: string | null;
-          enableLongIconUrl?: boolean | null;
+          enableLongIconUrl?: boolean;
           longIconUrl?: string | null;
           app192IconUrl?: string | null;
           app512IconUrl?: string | null;
@@ -22116,8 +22114,6 @@ export type operations = {
           receiveAnnouncementEmail?: boolean;
           alwaysMarkNsfw?: boolean;
           autoSensitive?: boolean;
-          /** @enum {string} */
-          notesVisibility?: 'public' | 'followers' | 'private';
           /** @enum {string} */
           followingVisibility?: 'public' | 'followers' | 'private';
           /** @enum {string} */
