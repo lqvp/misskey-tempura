@@ -2363,7 +2363,6 @@ _timelines:
   local: "Local"
   social: "Social"
   global: "Global"
-followingsUpdates: "Recently active followed users"
 _play:
   new: "Create Play"
   edit: "Edit Play"

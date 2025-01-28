@@ -544,10 +544,6 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: false,
 	},
-	hideFollowingsUpdates: {
-		where: 'device',
-		default: false,
-	},
 	hideLists: {
 		where: 'device',
 		default: false,

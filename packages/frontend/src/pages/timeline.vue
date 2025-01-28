@@ -55,14 +55,11 @@ import { deviceKind } from '@/scripts/device-kind.js';
 import { deepMerge } from '@/scripts/merge.js';
 import { miLocalStorage } from '@/local-storage.js';
 import { availableBasicTimelines, hasWithReplies, isAvailableBasicTimeline, isBasicTimeline, basicTimelineIconClass } from '@/timelines.js';
-import { useRouter } from '@/router/supplier.js';
 
 provide('shouldOmitHeaderTitle', true);
 
 const tlComponent = shallowRef<InstanceType<typeof MkTimeline>>();
 const rootEl = shallowRef<HTMLElement>();
-
-const router = useRouter();
 
 type TimelinePageSrc = BasicTimelineType | `list:${string}`;
 
@@ -304,8 +301,6 @@ const headerActions = computed(() => {
 // タブの表示制御用の関数を作成
 function isTabVisible(key: string): boolean {
 	switch (key) {
-		case 'followingsUpdates':
-			return !defaultStore.makeGetterSetter('hideFollowingsUpdates').get();
 		case 'lists':
 			return !defaultStore.makeGetterSetter('hideLists').get();
 		case 'antennas':
@@ -338,16 +333,6 @@ const headerTabs = computed(() => {
 		icon: basicTimelineIconClass(tl),
 		iconOnly: true,
 	})));
-
-	// 追加のタブを条件付きで追加
-	if (isTabVisible('followingsUpdates')) {
-		tabs.push({
-			title: i18n.ts.followingsUpdates,
-			icon: 'ti ti-users',
-			iconOnly: true,
-			onClick: () => { router.push('/my/followings-updates'); },
-		});
-	}
 
 	if (isTabVisible('lists')) {
 		tabs.push({

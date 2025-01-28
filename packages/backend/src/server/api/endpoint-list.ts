@@ -412,7 +412,6 @@ export * as 'i/truncate-account' from './endpoints/i/truncate-account.js';
 export * as 'notes/make-private' from './endpoints/notes/make-private.js';
 export * as 'notes/make-private-many' from './endpoints/notes/make-private-many.js';
 export * as 'notes/make-private-many-count' from './endpoints/notes/make-private-many-count.js';
-export * as 'notes/followings-updates' from './endpoints/notes/followings-updates.js';
 export * as 'notes/quotes' from './endpoints/notes/quotes.js';
 export * as 'notes/schedule/create' from './endpoints/notes/schedule/create.js';
 export * as 'notes/schedule/delete' from './endpoints/notes/schedule/delete.js';

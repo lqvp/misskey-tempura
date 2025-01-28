@@ -3101,8 +3101,6 @@ __TL_conf:
   hideSocialTimeLineDescription: "フォローしているユーザーとリモートユーザーの投稿が表示されるタイムラインを非表示にします"
   hideGlobalTimeLine: "グローバルタイムラインを非表示にする"
   hideGlobalTimeLineDescription: "連合先のサーバーを含む全ての公開投稿が表示されるタイムラインを非表示にします"
-  hideFollowingsUpdates: "フォロー中ユーザーの投稿を隠す"
-  hideFollowingsUpdatesDescription: "フォローしているユーザーの最新の投稿を非表示にします"
   hideLists: "リストを隠す"
   hideListsDescription: "作成したリストのタブを非表示にします"
   hideAntennas: "アンテナを隠す"

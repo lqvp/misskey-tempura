@@ -578,10 +578,6 @@ const routes: RouteDef[] = [{
 	component: page(() => import('@/pages/my-lists/list.vue')),
 	loginRequired: true,
 }, {
-	path: '/my/followings-updates',
-	component: page(() => import('@/pages/my-followings/index.vue')),
-	loginRequired: true,
-}, {
 	path: '/my/lists',
 	component: page(() => import('@/pages/my-lists/index.vue')),
 	loginRequired: true,
