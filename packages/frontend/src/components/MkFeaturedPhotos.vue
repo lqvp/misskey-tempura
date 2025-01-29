@@ -23,9 +23,9 @@ function shuffleArray(array: any[]) {
 onMounted(() => {
 	if (instance.backgroundImageUrls && instance.backgroundImageUrls.length > 0) {
 		shuffleArray(instance.backgroundImageUrls);
-		imgUrl.value = instance.backgroundImageUrls[0].url;
+		imgUrl.value = instance.backgroundImageUrls[0];
 	} else {
-		imgUrl.value = instance.backgroundImageUrl;
+		imgUrl.value = instance.backgroundImageUrl ?? '';
 	}
 });
 </script>
