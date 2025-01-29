@@ -30,6 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<template #icon><i class="ti ti-pencil"></i></template>
 				<template #label>{{ i18n.ts.displayOfNote }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 				<div class="_gaps_m">
+					<MkNote :note="noteMock" :mock="true"/>
 					<div class="_gaps_s">
 						<MkSwitch v-model="directRenote">
 							<template #label>
@@ -235,6 +236,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { computed, watch } from 'vue';
 import * as Misskey from 'misskey-js';
 import { defineAsyncComponent, ref } from 'vue';
+import { Note } from 'misskey-js/built/entities';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkSelect from '@/components/MkSelect.vue';
 // import MkRadios from '@/components/MkRadios.vue';
@@ -257,6 +259,7 @@ import MkDeleteScheduleEditor from '@/components/MkDeleteScheduleEditor.vue';
 import { bottomItemDef } from '@/scripts/post-form.js';
 import { signinRequired } from '@/account.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
+import MkNote from '@/components/MkNote.vue';
 
 const $i = signinRequired();
 
@@ -295,6 +298,50 @@ const items = ref(defaultStore.state.postFormActions.map(x => ({
 	id: Math.random().toString(),
 	type: x,
 })));
+
+const noteMock: Note = {
+	id: '0000000000',
+	createdAt: '2019-04-14T17:30:49.181Z',
+	userId: '0000000001',
+	user: {
+		id: '0000000001',
+		name: '藍',
+		username: 'ai',
+		host: 'example.ai',
+		approved: true,
+		avatarDecorations: [],
+		avatarUrl: '/client-assets/tutorial/ai.webp',
+		avatarBlurhash: 'eiKmhHIByXxZ~qWXs:-pR*NbR*s:xuRjoL-oR*WCt6WWf6WVf6oeWB',
+		isBot: false,
+		isCat: true,
+		emojis: {},
+		onlineStatus: 'online',
+		badgeRoles: [],
+		instance: {
+			faviconUrl: 'favicon.ico',
+			iconUrl: 'favicon.ico',
+			name: 'example.ai',
+			softwareName: 'Misskey',
+			softwareVersion: '2025.1.0',
+			themeColor: '#000000',
+		},
+	},
+	text: 'テストメッセージです！な！',
+	cw: null,
+	visibility: 'public',
+	localOnly: false,
+	reactionAcceptance: null,
+	renoteCount: 0,
+	repliesCount: 1,
+	reactionCount: 0,
+	reactions: { '❤': 1 },
+	reactionEmojis: {},
+	fileIds: [],
+	files: [],
+	replyId: null,
+	renoteId: null,
+	dontShowOnLtl: false,
+};
 
 watch([
 	hideReactionUsers,
