@@ -127,6 +127,7 @@ export const ROLE_POLICIES = [
 	'canDeleteAccount',
 	'canPublicNonLtlNote',
 	'canReadFollowHistory',
+	'canAutoFollowBack',
 ] as const;
 
 // なんか動かない

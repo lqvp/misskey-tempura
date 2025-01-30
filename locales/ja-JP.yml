@@ -1909,6 +1909,7 @@ _role:
     canDeleteAccount: "アカウントの削除を許可"
     canPublicNonLtlNote: "パブリック投稿（非LTL）の許可"
     canReadFollowHistory: "フォロー/フォロリク履歴の閲覧"
+    canAutoFollowBack: "自動フォローバックを許可"
 
   _condition:
     roleAssignedTo: "マニュアルロールにアサイン済み"

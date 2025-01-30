@@ -5278,6 +5278,7 @@ export type components = {
       canDeleteAccount: boolean;
       canPublicNonLtlNote: boolean;
       canReadFollowHistory: boolean;
+			canAutoFollowBack: boolean;
     };
     ReversiGameLite: {
       /** Format: id */

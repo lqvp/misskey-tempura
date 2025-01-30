@@ -420,8 +420,9 @@ export class UserFollowingService implements OnModuleInit {
 			}, follower.id);
 		}
 
+		const policies = await this.roleService.getUserPolicies(followee.id);
 		    // フォローバックの処理を追加
-		if (this.userEntityService.isLocalUser(followee)) {
+		if (this.userEntityService.isLocalUser(followee) && policies.canAutoFollowBack) {
 			const followeeProfile = await this.userProfilesRepository.findOneBy({ userId: followee.id });
 			if (followeeProfile?.autoFollowBack) {
 				// すでにフォローしているかチェック
