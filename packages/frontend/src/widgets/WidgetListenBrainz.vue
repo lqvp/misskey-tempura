@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div>{{ i18n.ts.nothing }}</div>
 		</div>
 		<div v-else class="_gaps_s" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
-			<div>{{ formattedNote }}</div>
+			<MkMfm :text="formattedNote"/>
 			<MkButton primary @click="postNote">{{ i18n.ts.note }}</MkButton>
 		</div>
 	</div>
@@ -37,6 +37,7 @@ import { i18n } from '@/i18n.js';
 import { infoImageUrl } from '@/instance.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
 import { $i } from '@/account.js';
+import MkMfm from '@/components/global/MkMfm.js';
 
 const name = i18n.ts._widgets.listenBrainz;
 
