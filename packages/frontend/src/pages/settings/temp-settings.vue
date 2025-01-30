@@ -19,6 +19,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkSwitch>
 					<MkSwitch v-if="!isLocked" v-model="carefulBot" @update:modelValue="save_privacy()">{{ i18n.ts.carefulBot }}<template #caption>{{ i18n.ts.carefulBotDescription }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template></MkSwitch>
 
+					<MkSwitch v-model="autoFollowBack" @update:modelValue="save()">
+						{{ i18n.ts.autoFollowBack }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+						<template #caption>{{ i18n.ts.autoFollowBackDescription }}</template>
+					</MkSwitch>
+
 					<MkSwitch v-model="hideActivity" @update:modelValue="save_privacy()">
 						{{ i18n.ts.hideActivity }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 						<template #caption>{{ i18n.ts.hideActivityDescription }}</template>
@@ -292,6 +297,7 @@ const defaultScheduledNoteDelete = computed(defaultStore.makeGetterSetter('defau
 const scheduledNoteDelete = ref({ deleteAt: null, deleteAfter: defaultStore.state.defaultScheduledNoteDeleteTime, isValid: true });
 
 const autoRejectFollowRequest = ref($i.autoRejectFollowRequest);
+const autoFollowBack = ref($i.autoFollowBack);
 const carefulBot = ref($i.carefulBot);
 const hideActivity = ref($i.hideActivity);
 const items = ref(defaultStore.state.postFormActions.map(x => ({
@@ -455,6 +461,7 @@ watch(scheduledNoteDelete, () => {
 function save_privacy() {
 	misskeyApi('i/update', {
 		autoRejectFollowRequest: !!autoRejectFollowRequest.value,
+		autoFollowBack: !!autoFollowBack.value,
 		carefulBot: !!carefulBot.value,
 		hideActivity: !!hideActivity.value,
 	});

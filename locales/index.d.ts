@@ -12218,6 +12218,14 @@ export interface Locale extends ILocale {
      * メール認証をスキップ
      */
     "skipEmailAuth": string;
+    /**
+     * 自動フォローバック
+     */
+    "autoFollowBack": string;
+    /**
+     * フォローされた際に自動でフォローバックします。
+     */
+    "autoFollowBackDescription": string;
 }
 declare const locales: {
     [lang: string]: Locale;

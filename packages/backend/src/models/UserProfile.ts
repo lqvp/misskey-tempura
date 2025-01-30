@@ -192,6 +192,11 @@ export class MiUserProfile {
 
 	@Column('boolean', {
 		default: false,
+	})
+	public autoFollowBack: boolean;
+
+	@Column('boolean', {
+		default: false,
 		comment: 'Whether reject index by crawler.',
 	})
 	public noCrawle: boolean;

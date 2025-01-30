@@ -13,6 +13,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</MkSwitch>
 	<MkSwitch v-if="!isLocked" v-model="carefulBot" @update:modelValue="save()">{{ i18n.ts.carefulBot }}<template #caption>{{ i18n.ts.carefulBotDescription }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template></MkSwitch>
 
+	<MkSwitch v-model="autoFollowBack" @update:modelValue="save()">
+		{{ i18n.ts.autoFollowBack }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+		<template #caption>{{ i18n.ts.autoFollowBackDescription }}</template>
+	</MkSwitch>
+
 	<MkSwitch v-model="publicReactions" @update:modelValue="save()">
 		{{ i18n.ts.makeReactionsPublic }}
 		<template #caption>{{ i18n.ts.makeReactionsPublicDescription }}</template>
@@ -192,6 +197,7 @@ const $i = signinRequired();
 const isLocked = ref($i.isLocked);
 const autoAcceptFollowed = ref($i.autoAcceptFollowed);
 const autoRejectFollowRequest = ref($i.autoRejectFollowRequest);
+const autoFollowBack = ref($i.autoFollowBack);
 const carefulBot = ref($i.carefulBot);
 const noCrawle = ref($i.noCrawle);
 const preventAiLearning = ref($i.preventAiLearning);
@@ -252,6 +258,7 @@ function save() {
 		isLocked: !!isLocked.value,
 		autoAcceptFollowed: !!autoAcceptFollowed.value,
 		autoRejectFollowRequest: !!autoRejectFollowRequest.value,
+		autoFollowBack: !!autoFollowBack.value,
 		carefulBot: !!carefulBot.value,
 		noCrawle: !!noCrawle.value,
 		preventAiLearning: !!preventAiLearning.value,

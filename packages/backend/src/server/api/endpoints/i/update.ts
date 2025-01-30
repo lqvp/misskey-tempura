@@ -180,6 +180,7 @@ export const paramDef = {
 		carefulBot: { type: 'boolean' },
 		autoAcceptFollowed: { type: 'boolean' },
 		autoRejectFollowRequest: { type: 'boolean' },
+		autoFollowBack: { type: 'boolean' },
 		noCrawle: { type: 'boolean' },
 		preventAiLearning: { type: 'boolean' },
 		requireSigninToViewContents: { type: 'boolean' },
@@ -345,6 +346,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			if (typeof ps.carefulBot === 'boolean') profileUpdates.carefulBot = ps.carefulBot;
 			if (typeof ps.autoAcceptFollowed === 'boolean') profileUpdates.autoAcceptFollowed = ps.autoAcceptFollowed;
 			if (typeof ps.autoRejectFollowRequest === 'boolean') profileUpdates.autoRejectFollowRequest = ps.autoRejectFollowRequest;
+			if (typeof ps.autoFollowBack === 'boolean') profileUpdates.autoFollowBack = ps.autoFollowBack;
 			if (typeof ps.noCrawle === 'boolean') profileUpdates.noCrawle = ps.noCrawle;
 			if (typeof ps.preventAiLearning === 'boolean') profileUpdates.preventAiLearning = ps.preventAiLearning;
 			if (typeof ps.requireSigninToViewContents === 'boolean') updates.requireSigninToViewContents = ps.requireSigninToViewContents;
