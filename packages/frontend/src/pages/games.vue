@@ -18,6 +18,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<img src="/client-assets/reversi/logo.png" style="display: block; max-width: 100%; max-height: 200px; margin: auto;"/>
 				</MkA>
 			</div>
+			<div class="_panel" :class="$style.link">
+				<MkA to="/taiko">
+					<img src="http://127.0.0.1:3000/files/997a6556-abdb-4724-8fc5-96f56ffc595d" style="display: block; max-width: 100%; max-height: 200px; margin: auto;"/>
+				</MkA>
+			</div>
 		</div>
 	</MkSpacer>
 </MkStickyContainer>
