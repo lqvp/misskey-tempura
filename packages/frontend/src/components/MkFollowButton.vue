@@ -106,7 +106,7 @@ async function onClick() {
 					os.alert({
 						type: 'error',
 						title: i18n.ts.permissionDeniedError,
-						text: i18n.ts.unfollowThisUserProhibited,
+						text: i18n.ts._extraSettings.unfollowThisUserProhibited,
 					});
 				}
 			});

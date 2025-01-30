@@ -96,7 +96,7 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 			}, undefined, {
 				'15273a89-374d-49fa-8df6-8bb3feeea455': {
 					title: i18n.ts.permissionDeniedError,
-					text: i18n.ts.muteThisUserIsProhibited,
+					text: i18n.ts._extraSettings.muteThisUserIsProhibited,
 				},
 			}).then(() => {
 				user.isMuted = true;
@@ -110,7 +110,7 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 		}, undefined, {
 			'15273a89-374d-49fa-8df6-8bb3feeea455': {
 				title: i18n.ts.permissionDeniedError,
-				text: i18n.ts.muteThisUserIsProhibited,
+				text: i18n.ts._extraSettings.muteThisUserIsProhibited,
 			},
 		}).then(() => {
 			user.isRenoteMuted = !user.isRenoteMuted;
@@ -125,7 +125,7 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 		}, undefined, {
 			'e2f04d25-0d94-4ac3-a4d8-ba401062741b': {
 				title: i18n.ts.permissionDeniedError,
-				text: i18n.ts.blockThisUserIsProhibited,
+				text: i18n.ts._extraSettings.blockThisUserIsProhibited,
 			},
 		}).then(() => {
 			user.isBlocking = !user.isBlocking;

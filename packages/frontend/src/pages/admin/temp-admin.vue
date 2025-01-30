@@ -89,7 +89,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 						<div class="_gaps_m">
 							<MkSwitch v-model="hanaSettingsForm.state.useHanaEntrance">
-								<template #label>{{ i18n.ts.useHanaEntrance }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+								<template #label>{{ i18n.ts._hana.useHanaEntrance }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 							</MkSwitch>
 
 							<MkInput
@@ -99,10 +99,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 								maxlength="7"
 							>
 								<template #label>
-									<span>{{ i18n.ts.hanaThemeColor }}</span>
+									<span>{{ i18n.ts._hana.hanaThemeColor }}</span>
 									<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 								</template>
-								<template #caption>{{ i18n.ts.hanaThemeColorDescription }}</template>
+								<template #caption>{{ i18n.ts._hana.hanaThemeColorDescription }}</template>
 							</MkInput>
 
 							<MkInput
@@ -112,10 +112,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 								maxlength="7"
 							>
 								<template #label>
-									<span>{{ i18n.ts.hanaThemeAltColor }}</span>
+									<span>{{ i18n.ts._hana.hanaThemeAltColor }}</span>
 									<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 								</template>
-								<template #caption>{{ i18n.ts.hanaThemeAltColorDescription }}</template>
+								<template #caption>{{ i18n.ts._hana.hanaThemeAltColorDescription }}</template>
 							</MkInput>
 
 							<MkInput
@@ -126,10 +126,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 								step="0.1"
 							>
 								<template #label>
-									<span>{{ i18n.ts.hanaThemeWeakOpacity }}</span>
+									<span>{{ i18n.ts._hana.hanaThemeWeakOpacity }}</span>
 									<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 								</template>
-								<template #caption>{{ i18n.ts.hanaThemeWeakOpacityDescription }}</template>
+								<template #caption>{{ i18n.ts._hana.hanaThemeWeakOpacityDescription }}</template>
 							</MkInput>
 
 							<MkInput
@@ -137,10 +137,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 								type="url"
 							>
 								<template #label>
-									<span>{{ i18n.ts.hanaModeIcon }}</span>
+									<span>{{ i18n.ts._hana.hanaModeIcon }}</span>
 									<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 								</template>
-								<template #caption>{{ i18n.ts.hanaModeIconDescription }}</template>
+								<template #caption>{{ i18n.ts._hana.hanaModeIconDescription }}</template>
 							</MkInput>
 
 							<MkInput
@@ -149,10 +149,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 								min="0"
 							>
 								<template #label>
-									<span>{{ i18n.ts.hanaModeIconSize }}</span>
+									<span>{{ i18n.ts._hana.hanaModeIconSize }}</span>
 									<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 								</template>
-								<template #caption>{{ i18n.ts.hanaModeIconSizeDescription }}</template>
+								<template #caption>{{ i18n.ts._hana.hanaModeIconSizeDescription }}</template>
 							</MkInput>
 
 							<MkInput
@@ -162,10 +162,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 								max="100"
 							>
 								<template #label>
-									<span>{{ i18n.ts.hanaModeIconRadius }}</span>
+									<span>{{ i18n.ts._hana.hanaModeIconRadius }}</span>
 									<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 								</template>
-								<template #caption>{{ i18n.ts.hanaModeIconRadiusDescription }}</template>
+								<template #caption>{{ i18n.ts._hana.hanaModeIconRadiusDescription }}</template>
 							</MkInput>
 
 							<MkInput
@@ -173,26 +173,26 @@ SPDX-License-Identifier: AGPL-3.0-only
 								type="url"
 							>
 								<template #label>
-									<span>{{ i18n.ts.hanaModeBackground }}</span>
+									<span>{{ i18n.ts._hana.hanaModeBackground }}</span>
 									<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 								</template>
-								<template #caption>{{ i18n.ts.hanaModeBackgroundDescription }}</template>
+								<template #caption>{{ i18n.ts._hana.hanaModeBackgroundDescription }}</template>
 							</MkInput>
 						</div>
 					</MkFolder>
 
 					<MkFolder>
 						<template #icon><i class="ti ti-user-star"></i></template>
-						<template #label>{{ i18n.ts.defaultFollowedUsers }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+						<template #label>{{ i18n.ts._extraSettings.defaultFollowedUsers }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 
 						<div class="_gaps">
 							<MkTextarea v-model="defaultFollowedUsers">
-								<template #label>{{ i18n.ts.defaultFollowedUsers }}</template>
-								<template #caption>{{ i18n.ts.defaultFollowedUsersDescription }}</template>
+								<template #label>{{ i18n.ts._extraSettings.defaultFollowedUsers }}</template>
+								<template #caption>{{ i18n.ts._extraSettings.defaultFollowedUsersDescription }}</template>
 							</MkTextarea>
 							<MkTextarea v-model="forciblyFollowedUsers">
-								<template #label>{{ i18n.ts.forciblyFollowedUsers }}</template>
-								<template #caption>{{ i18n.ts.forciblyFollowedUsersDescription }}</template>
+								<template #label>{{ i18n.ts._extraSettings.forciblyFollowedUsers }}</template>
+								<template #caption>{{ i18n.ts._extraSettings.forciblyFollowedUsersDescription }}</template>
 							</MkTextarea>
 							<MkButton primary @click="save_defaultUsers">{{ i18n.ts.save }}</MkButton>
 						</div>
@@ -422,7 +422,7 @@ function save_defaultUsers() {
 		forciblyFollowedUsers: forciblyFollowedUsers.value.split('\n'),
 	}, undefined, {
 		'bcf088ec-fec5-42d0-8b9e-16d3b4797a4d': {
-			text: i18n.ts.defaultFollowedUsersDuplicated,
+			text: i18n.ts._extraSettings.defaultFollowedUsersDuplicated,
 		},
 	}).then(() => {
 		fetchInstance(true);

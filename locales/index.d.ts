@@ -11354,26 +11354,6 @@ export interface Locale extends ILocale {
             };
         };
     };
-    "_draftSavingBehavior": {
-        /**
-         * 自動的に保存する
-         */
-        "auto": string;
-        /**
-         * 都度確認する
-         */
-        "manual": string;
-    };
-    "_reactionChecksMuting": {
-        /**
-         * リアクションでミュートを考慮する
-         */
-        "title": string;
-        /**
-         * リアクションがミュートを考慮しますが、キャッシュが効かず通信量が増えることがあります。
-         */
-        "caption": string;
-    };
     "_embedCodeGen": {
         /**
          * 埋め込みコードをカスタマイズ
@@ -11562,6 +11542,26 @@ export interface Locale extends ILocale {
             };
         };
     };
+    "_draftSavingBehavior": {
+        /**
+         * 自動的に保存する
+         */
+        "auto": string;
+        /**
+         * 都度確認する
+         */
+        "manual": string;
+    };
+    "_reactionChecksMuting": {
+        /**
+         * リアクションでミュートを考慮する
+         */
+        "title": string;
+        /**
+         * リアクションがミュートを考慮しますが、キャッシュが効かず通信量が増えることがあります。
+         */
+        "caption": string;
+    };
     "_hideReactionCount": {
         /**
          * 非表示にしない
@@ -11664,250 +11664,6 @@ export interface Locale extends ILocale {
          */
         "noResizeCompressLossy": string;
     };
-    /**
-     * フォロー中ユーザーの投稿
-     */
-    "followingsUpdates": string;
-    /**
-     * リモートフォロワーのアクティビティは不完全または古い情報である可能性があります
-     */
-    "remoteFollowersWarning": string;
-    /**
-     * タイムラインにbotを表示
-     */
-    "showBots": string;
-    /**
-     * 予約投稿
-     */
-    "schedulePost": string;
-    /**
-     * 予約投稿一覧
-     */
-    "schedulePostList": string;
-    /**
-     * はなみすきー仕様のエントランスを使う
-     */
-    "useHanaEntrance": string;
-    /**
-     * はなテーマのメインカラー
-     */
-    "hanaThemeColor": string;
-    /**
-     * HEXカラーコード (#000000 形式)
-     */
-    "hanaThemeColorDescription": string;
-    /**
-     * はなテーマのアクセントカラー
-     */
-    "hanaThemeAltColor": string;
-    /**
-     * HEXカラーコード (#000000 形式)
-     */
-    "hanaThemeAltColorDescription": string;
-    /**
-     * はなテーマの薄色の透明度
-     */
-    "hanaThemeWeakOpacity": string;
-    /**
-     * 0から1までの数値
-     */
-    "hanaThemeWeakOpacityDescription": string;
-    /**
-     * LPで使うアイコン
-     */
-    "hanaModeIcon": string;
-    /**
-     * はなみすきー仕様のエントランスで表示するアイコン
-     */
-    "hanaModeIconDescription": string;
-    /**
-     * アイコンのサイズ
-     */
-    "hanaModeIconSize": string;
-    /**
-     * アイコンの表示サイズ（ピクセル単位）
-     */
-    "hanaModeIconSizeDescription": string;
-    /**
-     * アイコンの角丸
-     */
-    "hanaModeIconRadius": string;
-    /**
-     * アイコンの角を丸くする度合い（0=四角形、100=円形）
-     */
-    "hanaModeIconRadiusDescription": string;
-    /**
-     * LPで使う背景画像
-     */
-    "hanaModeBackground": string;
-    /**
-     * はなみすきー仕様のエントランスで表示する背景画像
-     */
-    "hanaModeBackgroundDescription": string;
-    /**
-     * Administrator
-     */
-    "isAdmin": string;
-    /**
-     * デフォルトでフォローするユーザー (ID)
-     */
-    "defaultFollowedUsers": string;
-    /**
-     * 今後アカウントが作成された際に自動でフォローされるユーザー（解除可能）のユーザーIDを改行区切りで指定します。
-     */
-    "defaultFollowedUsersDescription": string;
-    /**
-     * 交流を断てないユーザー (ID)
-     */
-    "forciblyFollowedUsers": string;
-    /**
-     * 今後アカウントが作成された際には自動でフォローされ、フォローの解除やミュート・ブロックができないユーザーのユーザーIDを改行区切りで指定します。
-     */
-    "forciblyFollowedUsersDescription": string;
-    /**
-     * 「デフォルトでフォローするユーザー」と「交流を絶てないユーザー」が重複しています。
-     */
-    "defaultFollowedUsersDuplicated": string;
-    /**
-     * サーバー管理者はこのユーザーをフォロー解除することを禁止しています。
-     */
-    "unfollowThisUserIsProhibited": string;
-    /**
-     * サーバー管理者はこのユーザーをブロックすることを禁止しています。
-     */
-    "blockThisUserIsProhibited": string;
-    /**
-     * サーバー管理者はこのユーザーをミュートすることを禁止しています。
-     */
-    "muteThisUserIsProhibited": string;
-    /**
-     * このユーザーのフォロー解除は禁止されています。
-     */
-    "unfollowThisUserProhibited": string;
-    /**
-     * 背景画像URL
-     */
-    "backgroundImageUrls": string;
-    /**
-     * コミュニティー
-     */
-    "community": string;
-    /**
-     * コミュニティーロール
-     */
-    "communityRole": string;
-    /**
-     * ロールの管理
-     */
-    "manageRole": string;
-    /**
-     * 割り当て済みロール
-     */
-    "assignedRole": string;
-    /**
-     * 割り当て可能なロール
-     */
-    "assignableRole": string;
-    /**
-     * ブロックされています
-     */
-    "youBlocked": string;
-    /**
-     * {user}さんのフォローやポストの表示はできません。
-     */
-    "youBlockedDescription": ParameterizedString<"user">;
-    /**
-     * ログインしてください
-     */
-    "pleaseLogin": string;
-    /**
-     * プロフィールを閲覧するにはログインが必要です
-     */
-    "pleaseLoginToViewProfile": string;
-    /**
-     * DeepLX-JS を使用する (認証キーなし)
-     */
-    "deeplFreeMode": string;
-    /**
-     * ヘルプが必要ですか? DeepLX-JSのセットアップ方法については、ドキュメントを参照してください。
-     */
-    "deeplFreeModeDescription": string;
-    /**
-     * 雪を降らせる
-     */
-    "snowMode": string;
-    /**
-     * ミュートしたユーザーを匿名にする
-     */
-    "anonymizeMutedUsers": string;
-    /**
-     * リアクションの確認を有効にする
-     */
-    "enableReactionConfirm": string;
-    /**
-     * リアクションを押した際に確認ダイアログを表示します。
-     */
-    "enableReactionConfirmDescription": string;
-    /**
-     * リアクションを追加しますか？
-     */
-    "addReactionConfirm": string;
-    /**
-     * いいねの確認を有効にする
-     */
-    "enableLikeConfirm": string;
-    /**
-     * いいねを押した際に確認ダイアログを表示します。
-     */
-    "enableLikeConfirmDescription": string;
-    /**
-     * いいねしますか？
-     */
-    "likeConfirm": string;
-    /**
-     * インスタンスのソフトウェア名を表示
-     */
-    "showInstanceTickerSoftwareName": string;
-    /**
-     * インスタンスのソフトウェア名をインスタンスの名前の横に表示します。
-     */
-    "showInstanceTickerSoftwareNameDescription": string;
-    /**
-     * テキストエリアの自動リサイズ
-     */
-    "textAreaAutoResize": string;
-    /**
-     * テキストエリアの高さを自動で調整します。
-     */
-    "textAreaAutoResizeDescription": string;
-    /**
-     * 通知を送る
-     */
-    "notificationSend": string;
-    /**
-     * 通知内容を入力
-     */
-    "enterNotificationText": string;
-    /**
-     * 通知を送信しますか？
-     */
-    "notificationSendConfirm": string;
-    /**
-     * リアクション統計
-     */
-    "reactionsStat": string;
-    /**
-     * 最も使用された絵文字リアクション上位100件を表示します
-     */
-    "reactionsStatDescription": string;
-    /**
-     * センシティブなファイルのみ
-     */
-    "showOnlySensitiveFiles": string;
-    /**
-     * メール認証をスキップ
-     */
-    "skipEmailAuth": string;
     "_followRequestHistory": {
         /**
          * フォロリクの履歴
@@ -12226,6 +11982,242 @@ export interface Locale extends ILocale {
          */
         "customFsTotalDescription": string;
     };
+    "_hana": {
+        /**
+         * はなみすきー仕様のエントランスを使う
+         */
+        "useHanaEntrance": string;
+        /**
+         * はなテーマのメインカラー
+         */
+        "hanaThemeColor": string;
+        /**
+         * HEXカラーコード (#000000 形式)
+         */
+        "hanaThemeColorDescription": string;
+        /**
+         * はなテーマのアクセントカラー
+         */
+        "hanaThemeAltColor": string;
+        /**
+         * HEXカラーコード (#000000 形式)
+         */
+        "hanaThemeAltColorDescription": string;
+        /**
+         * はなテーマの薄色の透明度
+         */
+        "hanaThemeWeakOpacity": string;
+        /**
+         * 0から1までの数値
+         */
+        "hanaThemeWeakOpacityDescription": string;
+        /**
+         * LPで使うアイコン
+         */
+        "hanaModeIcon": string;
+        /**
+         * はなみすきー仕様のエントランスで表示するアイコン
+         */
+        "hanaModeIconDescription": string;
+        /**
+         * アイコンのサイズ
+         */
+        "hanaModeIconSize": string;
+        /**
+         * アイコンの表示サイズ（ピクセル単位）
+         */
+        "hanaModeIconSizeDescription": string;
+        /**
+         * アイコンの角丸
+         */
+        "hanaModeIconRadius": string;
+        /**
+         * アイコンの角を丸くする度合い（0=四角形、100=円形）
+         */
+        "hanaModeIconRadiusDescription": string;
+        /**
+         * LPで使う背景画像
+         */
+        "hanaModeBackground": string;
+        /**
+         * はなみすきー仕様のエントランスで表示する背景画像
+         */
+        "hanaModeBackgroundDescription": string;
+    };
+    "_extraSettings": {
+        /**
+         * デフォルトでフォローするユーザー (ID)
+         */
+        "defaultFollowedUsers": string;
+        /**
+         * 今後アカウントが作成された際に自動でフォローされるユーザー（解除可能）のユーザーIDを改行区切りで指定します。
+         */
+        "defaultFollowedUsersDescription": string;
+        /**
+         * 交流を断てないユーザー (ID)
+         */
+        "forciblyFollowedUsers": string;
+        /**
+         * 今後アカウントが作成された際には自動でフォローされ、フォローの解除やミュート・ブロックができないユーザーのユーザーIDを改行区切りで指定します。
+         */
+        "forciblyFollowedUsersDescription": string;
+        /**
+         * 「デフォルトでフォローするユーザー」と「交流を絶てないユーザー」が重複しています。
+         */
+        "defaultFollowedUsersDuplicated": string;
+        /**
+         * サーバー管理者はこのユーザーをフォロー解除することを禁止しています。
+         */
+        "unfollowThisUserIsProhibited": string;
+        /**
+         * サーバー管理者はこのユーザーをブロックすることを禁止しています。
+         */
+        "blockThisUserIsProhibited": string;
+        /**
+         * サーバー管理者はこのユーザーをミュートすることを禁止しています。
+         */
+        "muteThisUserIsProhibited": string;
+        /**
+         * このユーザーのフォロー解除は禁止されています。
+         */
+        "unfollowThisUserProhibited": string;
+    };
+    /**
+     * 予約投稿
+     */
+    "schedulePost": string;
+    /**
+     * 予約投稿一覧
+     */
+    "schedulePostList": string;
+    /**
+     * Administrator
+     */
+    "isAdmin": string;
+    /**
+     * 背景画像URL
+     */
+    "backgroundImageUrls": string;
+    /**
+     * コミュニティー
+     */
+    "community": string;
+    /**
+     * コミュニティーロール
+     */
+    "communityRole": string;
+    /**
+     * ロールの管理
+     */
+    "manageRole": string;
+    /**
+     * 割り当て済みロール
+     */
+    "assignedRole": string;
+    /**
+     * 割り当て可能なロール
+     */
+    "assignableRole": string;
+    /**
+     * ブロックされています
+     */
+    "youBlocked": string;
+    /**
+     * {user}さんのフォローやポストの表示はできません。
+     */
+    "youBlockedDescription": ParameterizedString<"user">;
+    /**
+     * ログインしてください
+     */
+    "pleaseLogin": string;
+    /**
+     * プロフィールを閲覧するにはログインが必要です
+     */
+    "pleaseLoginToViewProfile": string;
+    /**
+     * DeepLX-JS を使用する (認証キーなし)
+     */
+    "deeplFreeMode": string;
+    /**
+     * ヘルプが必要ですか? DeepLX-JSのセットアップ方法については、ドキュメントを参照してください。
+     */
+    "deeplFreeModeDescription": string;
+    /**
+     * 雪を降らせる
+     */
+    "snowMode": string;
+    /**
+     * ミュートしたユーザーを匿名にする
+     */
+    "anonymizeMutedUsers": string;
+    /**
+     * リアクションの確認を有効にする
+     */
+    "enableReactionConfirm": string;
+    /**
+     * リアクションを押した際に確認ダイアログを表示します。
+     */
+    "enableReactionConfirmDescription": string;
+    /**
+     * リアクションを追加しますか？
+     */
+    "addReactionConfirm": string;
+    /**
+     * いいねの確認を有効にする
+     */
+    "enableLikeConfirm": string;
+    /**
+     * いいねを押した際に確認ダイアログを表示します。
+     */
+    "enableLikeConfirmDescription": string;
+    /**
+     * いいねしますか？
+     */
+    "likeConfirm": string;
+    /**
+     * インスタンスのソフトウェア名を表示
+     */
+    "showInstanceTickerSoftwareName": string;
+    /**
+     * インスタンスのソフトウェア名をインスタンスの名前の横に表示します。
+     */
+    "showInstanceTickerSoftwareNameDescription": string;
+    /**
+     * テキストエリアの自動リサイズ
+     */
+    "textAreaAutoResize": string;
+    /**
+     * テキストエリアの高さを自動で調整します。
+     */
+    "textAreaAutoResizeDescription": string;
+    /**
+     * 通知を送る
+     */
+    "notificationSend": string;
+    /**
+     * 通知内容を入力
+     */
+    "enterNotificationText": string;
+    /**
+     * 通知を送信しますか？
+     */
+    "notificationSendConfirm": string;
+    /**
+     * リアクション統計
+     */
+    "reactionsStat": string;
+    /**
+     * 最も使用された絵文字リアクション上位100件を表示します
+     */
+    "reactionsStatDescription": string;
+    /**
+     * センシティブなファイルのみ
+     */
+    "showOnlySensitiveFiles": string;
+    /**
+     * メール認証をスキップ
+     */
+    "skipEmailAuth": string;
 }
 declare const locales: {
     [lang: string]: Locale;

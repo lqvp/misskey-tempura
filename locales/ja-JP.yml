@@ -3021,14 +3021,6 @@ _customEmojisManager:
       confirmClearEmojisDescription: "編集内容を破棄し、リストに表示されている絵文字をクリアします。よろしいですか？"
       confirmUploadEmojisDescription: "ドラッグ＆ドロップされた{count}個のファイルをドライブにアップロードします。実行しますか？"
 
-_draftSavingBehavior:
-  auto: "自動的に保存する"
-  manual: "都度確認する"
-
-_reactionChecksMuting:
-  title: "リアクションでミュートを考慮する"
-  caption: "リアクションがミュートを考慮しますが、キャッシュが効かず通信量が増えることがあります。"
-
 _embedCodeGen:
   title: "埋め込みコードをカスタマイズ"
   header: "ヘッダーを表示"
@@ -3088,6 +3080,14 @@ _captcha:
       title: "CAPTCHAエラー"
       text: "想定外のエラーが発生しました。"
 
+_draftSavingBehavior:
+  auto: "自動的に保存する"
+  manual: "都度確認する"
+
+_reactionChecksMuting:
+  title: "リアクションでミュートを考慮する"
+  caption: "リアクションがミュートを考慮しますが、キャッシュが効かず通信量が増えることがあります。"
+
 _hideReactionCount:
   none: "非表示にしない"
   self: "自分のノートのみ"
@@ -3117,84 +3117,6 @@ _imageCompressionMode:
   noResizeCompress: "縮小せず再圧縮する"
   resizeCompressLossy: "縮小して非可逆圧縮する"
   noResizeCompressLossy: "縮小せず非可逆圧縮する"
-
-followingsUpdates: "フォロー中ユーザーの投稿"
-remoteFollowersWarning: "リモートフォロワーのアクティビティは不完全または古い情報である可能性があります"
-showBots: "タイムラインにbotを表示"
-schedulePost: "予約投稿"
-schedulePostList: "予約投稿一覧"
-useHanaEntrance: "はなみすきー仕様のエントランスを使う"
-hanaThemeColor: "はなテーマのメインカラー"
-hanaThemeColorDescription: "HEXカラーコード (#000000 形式)"
-hanaThemeAltColor: "はなテーマのアクセントカラー"
-hanaThemeAltColorDescription: "HEXカラーコード (#000000 形式)"
-hanaThemeWeakOpacity: "はなテーマの薄色の透明度"
-hanaThemeWeakOpacityDescription: "0から1までの数値"
-hanaModeIcon: "LPで使うアイコン"
-hanaModeIconDescription: "はなみすきー仕様のエントランスで表示するアイコン"
-hanaModeIconSize: "アイコンのサイズ"
-hanaModeIconSizeDescription: "アイコンの表示サイズ（ピクセル単位）"
-hanaModeIconRadius: "アイコンの角丸"
-hanaModeIconRadiusDescription: "アイコンの角を丸くする度合い（0=四角形、100=円形）"
-hanaModeBackground: "LPで使う背景画像"
-hanaModeBackgroundDescription: "はなみすきー仕様のエントランスで表示する背景画像"
-
-isAdmin: "Administrator"
-
-defaultFollowedUsers: "デフォルトでフォローするユーザー (ID)"
-defaultFollowedUsersDescription: "今後アカウントが作成された際に自動でフォローされるユーザー（解除可能）のユーザーIDを改行区切りで指定します。"
-forciblyFollowedUsers: "交流を断てないユーザー (ID)"
-forciblyFollowedUsersDescription: "今後アカウントが作成された際には自動でフォローされ、フォローの解除やミュート・ブロックができないユーザーのユーザーIDを改行区切りで指定します。"
-defaultFollowedUsersDuplicated: "「デフォルトでフォローするユーザー」と「交流を絶てないユーザー」が重複しています。"
-unfollowThisUserIsProhibited: "サーバー管理者はこのユーザーをフォロー解除することを禁止しています。"
-blockThisUserIsProhibited: "サーバー管理者はこのユーザーをブロックすることを禁止しています。"
-muteThisUserIsProhibited: "サーバー管理者はこのユーザーをミュートすることを禁止しています。"
-unfollowThisUserProhibited: "このユーザーのフォロー解除は禁止されています。"
-
-backgroundImageUrls: "背景画像URL"
-
-community: "コミュニティー"
-communityRole: "コミュニティーロール"
-manageRole: "ロールの管理"
-assignedRole: "割り当て済みロール"
-assignableRole: "割り当て可能なロール"
-
-youBlocked: "ブロックされています"
-youBlockedDescription: "{user}さんのフォローやポストの表示はできません。"
-
-pleaseLogin: "ログインしてください"
-pleaseLoginToViewProfile: "プロフィールを閲覧するにはログインが必要です"
-
-deeplFreeMode: "DeepLX-JS を使用する (認証キーなし)"
-deeplFreeModeDescription: "ヘルプが必要ですか? DeepLX-JSのセットアップ方法については、ドキュメントを参照してください。"
-
-snowMode: "雪を降らせる"
-
-anonymizeMutedUsers: "ミュートしたユーザーを匿名にする"
-
-enableReactionConfirm: "リアクションの確認を有効にする"
-enableReactionConfirmDescription: "リアクションを押した際に確認ダイアログを表示します。"
-addReactionConfirm: "リアクションを追加しますか？"
-enableLikeConfirm: "いいねの確認を有効にする"
-enableLikeConfirmDescription: "いいねを押した際に確認ダイアログを表示します。"
-likeConfirm: "いいねしますか？"
-
-showInstanceTickerSoftwareName: "インスタンスのソフトウェア名を表示"
-showInstanceTickerSoftwareNameDescription: "インスタンスのソフトウェア名をインスタンスの名前の横に表示します。"
-
-textAreaAutoResize: "テキストエリアの自動リサイズ"
-textAreaAutoResizeDescription: "テキストエリアの高さを自動で調整します。"
-
-notificationSend: "通知を送る"
-enterNotificationText: "通知内容を入力"
-notificationSendConfirm: "通知を送信しますか？"
-
-reactionsStat: "リアクション統計"
-reactionsStatDescription: "最も使用された絵文字リアクション上位100件を表示します"
-
-showOnlySensitiveFiles: "センシティブなファイルのみ"
-
-skipEmailAuth: "メール認証をスキップ"
 
 _followRequestHistory:
   title: "フォロリクの履歴"
@@ -3283,3 +3205,80 @@ _serverStats:
   enableFsTotalDescription: "ストレージ容量を表示します。無効の場合は、「？」が表示されます。"
   customFsTotal: "カスタムストレージ容量"
   customFsTotalDescription: "ストレージ容量をカスタムで表示します。(オプション)"
+
+_hana:
+  useHanaEntrance: "はなみすきー仕様のエントランスを使う"
+  hanaThemeColor: "はなテーマのメインカラー"
+  hanaThemeColorDescription: "HEXカラーコード (#000000 形式)"
+  hanaThemeAltColor: "はなテーマのアクセントカラー"
+  hanaThemeAltColorDescription: "HEXカラーコード (#000000 形式)"
+  hanaThemeWeakOpacity: "はなテーマの薄色の透明度"
+  hanaThemeWeakOpacityDescription: "0から1までの数値"
+  hanaModeIcon: "LPで使うアイコン"
+  hanaModeIconDescription: "はなみすきー仕様のエントランスで表示するアイコン"
+  hanaModeIconSize: "アイコンのサイズ"
+  hanaModeIconSizeDescription: "アイコンの表示サイズ（ピクセル単位）"
+  hanaModeIconRadius: "アイコンの角丸"
+  hanaModeIconRadiusDescription: "アイコンの角を丸くする度合い（0=四角形、100=円形）"
+  hanaModeBackground: "LPで使う背景画像"
+  hanaModeBackgroundDescription: "はなみすきー仕様のエントランスで表示する背景画像"
+
+_extraSettings:
+  defaultFollowedUsers: "デフォルトでフォローするユーザー (ID)"
+  defaultFollowedUsersDescription: "今後アカウントが作成された際に自動でフォローされるユーザー（解除可能）のユーザーIDを改行区切りで指定します。"
+  forciblyFollowedUsers: "交流を断てないユーザー (ID)"
+  forciblyFollowedUsersDescription: "今後アカウントが作成された際には自動でフォローされ、フォローの解除やミュート・ブロックができないユーザーのユーザーIDを改行区切りで指定します。"
+  defaultFollowedUsersDuplicated: "「デフォルトでフォローするユーザー」と「交流を絶てないユーザー」が重複しています。"
+  unfollowThisUserIsProhibited: "サーバー管理者はこのユーザーをフォロー解除することを禁止しています。"
+  blockThisUserIsProhibited: "サーバー管理者はこのユーザーをブロックすることを禁止しています。"
+  muteThisUserIsProhibited: "サーバー管理者はこのユーザーをミュートすることを禁止しています。"
+  unfollowThisUserProhibited: "このユーザーのフォロー解除は禁止されています。"
+
+schedulePost: "予約投稿"
+schedulePostList: "予約投稿一覧"
+
+isAdmin: "Administrator"
+backgroundImageUrls: "背景画像URL"
+
+community: "コミュニティー"
+communityRole: "コミュニティーロール"
+manageRole: "ロールの管理"
+assignedRole: "割り当て済みロール"
+assignableRole: "割り当て可能なロール"
+
+youBlocked: "ブロックされています"
+youBlockedDescription: "{user}さんのフォローやポストの表示はできません。"
+
+pleaseLogin: "ログインしてください"
+pleaseLoginToViewProfile: "プロフィールを閲覧するにはログインが必要です"
+
+deeplFreeMode: "DeepLX-JS を使用する (認証キーなし)"
+deeplFreeModeDescription: "ヘルプが必要ですか? DeepLX-JSのセットアップ方法については、ドキュメントを参照してください。"
+
+snowMode: "雪を降らせる"
+
+anonymizeMutedUsers: "ミュートしたユーザーを匿名にする"
+
+enableReactionConfirm: "リアクションの確認を有効にする"
+enableReactionConfirmDescription: "リアクションを押した際に確認ダイアログを表示します。"
+addReactionConfirm: "リアクションを追加しますか？"
+enableLikeConfirm: "いいねの確認を有効にする"
+enableLikeConfirmDescription: "いいねを押した際に確認ダイアログを表示します。"
+likeConfirm: "いいねしますか？"
+
+showInstanceTickerSoftwareName: "インスタンスのソフトウェア名を表示"
+showInstanceTickerSoftwareNameDescription: "インスタンスのソフトウェア名をインスタンスの名前の横に表示します。"
+
+textAreaAutoResize: "テキストエリアの自動リサイズ"
+textAreaAutoResizeDescription: "テキストエリアの高さを自動で調整します。"
+
+notificationSend: "通知を送る"
+enterNotificationText: "通知内容を入力"
+notificationSendConfirm: "通知を送信しますか？"
+
+reactionsStat: "リアクション統計"
+reactionsStatDescription: "最も使用された絵文字リアクション上位100件を表示します"
+
+showOnlySensitiveFiles: "センシティブなファイルのみ"
+
+skipEmailAuth: "メール認証をスキップ"

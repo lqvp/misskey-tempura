@@ -6,6 +6,7 @@ poweredByMisskeyDescription: "{name}は、オープンソースのプラット�
 poweredBytempForkDescription: "{name}は、オープンソースのプラットフォーム<b>Misskey</b>のフォーク版であるmisskey-tempを使用しています。"
 monthAndDay: "{month}月 {day}日"
 search: "検索"
+reset: "リセット"
 notifications: "通知"
 username: "ユーザー名"
 password: "パスワード"
@@ -37,6 +38,7 @@ logout: "ログアウト"
 signup: "新規登録"
 uploading: "アップロード中"
 save: "保存"
+load: "読み込み"
 users: "ユーザー"
 approvals: "承認"
 addUser: "ユーザーを追加"
@@ -50,6 +52,7 @@ pin: "ピン留め"
 unpin: "ピン留め解除"
 copyContent: "内容をコピー"
 copyLink: "リンクをコピー"
+copyRemoteLink: "リモートのリンクをコピー"
 copyLinkRenote: "リノートのリンクをコピー"
 delete: "削除"
 deleteAndEdit: "削除して編集"
@@ -229,6 +232,7 @@ stopActivityDelivery: "アクティビティの配送を停止"
 blockThisInstance: "このサーバーをブロック"
 silenceThisInstance: "サーバーをサイレンス"
 mediaSilenceThisInstance: "サーバーをメディアサイレンス"
+quarantineThisInstance: "サーバーに公開投稿のみ配送"
 operations: "操作"
 software: "ソフトウェア"
 version: "バージョン"
@@ -272,6 +276,7 @@ noJobs: "ジョブはありません"
 federating: "連合中"
 blocked: "ブロック中"
 suspended: "配信停止"
+quarantine: "隔離中"
 all: "全て"
 subscribing: "購読中"
 publishing: "配信中"
@@ -626,13 +631,10 @@ output: "出力"
 script: "スクリプト"
 disablePagesScript: "Pagesのスクリプトを無効にする"
 updateRemoteUser: "リモートユーザー情報の更新"
-fetchOutbox: "投稿を取得"
 unsetUserAvatar: "アイコンを解除"
 unsetUserAvatarConfirm: "アイコンを解除しますか？"
 unsetUserBanner: "バニャーを解除"
 unsetUserBannerConfirm: "バニャーを解除しますか？"
-unsetUserMutualLink: "相互リンクを削除"
-unsetUserMutualLinkConfirm: "相互リンクを削除しますか？"
 deleteAllFiles: "すべてのファイルを削除"
 deleteAllFilesConfirm: "すべてのファイルを削除しますか？"
 removeAllFollowing: "フォローを全解除"
@@ -705,12 +707,15 @@ smtpSecure: "SMTP 接続に暗黙的にゃSSL/TLSを使用する"
 smtpSecureInfo: "STARTTLS使用時はオフにします。"
 testEmail: "配信テスト"
 wordMute: "ワードミュート"
+wordMuteDescription: "指定した語句を含むノートを最小化します。最小化されたノートをクリックすることで表示することができます。"
 hardWordMute: "ハードワードミュート"
+showMutedWord: "ミュートされたワードを表示"
+hardWordMuteDescription: "指定した語句を含むノートを隠します。ワードミュートとは異にゃり、ノートは完全に表示されにゃくにゃります。"
 regexpError: "正規表現エラー"
 regexpErrorDescription: "{tab}ワードミュートの{line}行目の正規表現にエラーが発生しました:"
 instanceMute: "サーバーミュート"
 userSaysSomething: "{name}が何かを言いました"
-postFiltered: "投稿はフィルターによって非表示ににゃっています"
+userSaysSomethingAbout: "{name}が「{word}」について何かを言いました"
 makeActive: "アクティブにする"
 display: "表示"
 copy: "コピー"
@@ -942,7 +947,6 @@ makeReactionsPublicDescription: "あにゃたがしたリアクション一覧�
 classic: "クラシック"
 muteThread: "スレッドをミュート"
 unmuteThread: "スレッドのミュートを解除"
-notesVisibility: "ノート数の公開範囲"
 followingVisibility: "フォローの公開範囲"
 followersVisibility: "フォロワーの公開範囲"
 continueThread: "さらにスレッドを見る"
@@ -1223,6 +1227,7 @@ iHaveReadXCarefullyAndAgree: "「{x}」の内容をよく読み、同意しま�
 dialog: "ダイアログ"
 icon: "アイコン"
 forYou: "あにゃたへ"
+forYourRoles: "あにゃたのロールへ"
 currentAnnouncements: "現在のお知らせ"
 pastAnnouncements: "過去のお知らせ"
 youHaveUnreadAnnouncements: "未読のお知らせがあります。"
@@ -1355,6 +1360,8 @@ lockdown: "ロックダウン"
 pleaseSelectAccount: "アカウントを選択してください"
 availableRoles: "利用可能にゃロール"
 acknowledgeNotesAndEnable: "注意事項を理解した上でオンにします。"
+federationSpecified: "このサーバーはホワイトリスト連合で運用されています。管理者が指定したサーバー以外とやり取りすることはできません。"
+federationDisabled: "このサーバーは連合が無効化されています。他のサーバーのユーザーとやり取りすることはできません。"
 
 _accountSettings:
   requireSigninToViewContents: "コンテンツの表示にログインを必須にする"
@@ -1376,8 +1383,6 @@ _abuseUserReport:
   accept: "是認"
   reject: "否認"
   resolveTutorial: "内容が正当である通報に対応した場合は「是認」を選択し、肯定的にケースが解決されたことをマークします。\n内容が正当でにゃい通報の場合は「否認」を選択し、否定的にケースが解決されたことをマークします。"
-noteUpdatedAt: "編集済み: {date} {time}"
-editHistory: "修正履歴"
 
 _delivery:
   status: "配信状態"
@@ -1388,9 +1393,6 @@ _delivery:
     manuallySuspended: "手動停止中"
     goneSuspended: "サーバー削除のため停止中"
     autoSuspendedForNotResponding: "サーバー応答にゃしのため停止中"
-mutualLink: "相互リンク"
-mutualBannerThisUser: "このユーザーのバニャー"
-maximum: "最大"
 scheduledNoteDelete: "すぐ消す"
 noteDeletationAt: "このノートは{time}に削除されます"
 cannotScheduleLaterThanOneYear: "1年以上先の日時を指定することはできません"
@@ -1499,6 +1501,8 @@ _initialTutorial:
     _visibility:
       description: "ノートを表示できる相手を制限できます。"
       public: "すべてのユーザーに公開。"
+      public_non_ltl: "セミパブリック"
+      public_non_ltlDescription: "全てのユーザーに公開（ローカルタイムラインには表示されません）"
       home: "ホームタイムラインのみに公開。フォロワー・プロフィールを見に来た人・リノートから、他のユーザーも見ることができます。"
       followers: "フォロワーにのみ公開。本人以外がリノートすることはできず、またフォロワー以外は閲覧できません。"
       direct: "指定したユーザーにのみ公開され、また相手に通知が入ります。ダイレクトメッセージのかわりにお使いいただけます。"
@@ -1536,6 +1540,9 @@ _serverRules:
 
 _serverSettings:
   iconUrl: "アイコン画像のURL"
+  enableLongIconUrl: "横長アイコン画像を有効にする"
+  enableLongIconUrlDescription: "有効にすると、横長のアイコン画像を設定できるようににゃります。"
+  longIconUrl: "横長アイコン画像のURL"
   appIconDescription: "{host}がアプリとして表示される際のアイコンを指定します。"
   appIconUsageExample: "例: PWAや、スマートフォンのホーム画面にブックマークとして追加された時にゃど"
   appIconStyleRecommendation: "円形もしくは角丸にクロップされる場合があるため、塗り潰された余白のある背景を持つことが推奨されます。"
@@ -1862,7 +1869,7 @@ _role:
     gtlAvailable: "グローバルタイムラインの閲覧"
     ltlAvailable: "ローカルタイムラインの閲覧"
     canPublicNote: "パブリック投稿の許可"
-    canEditNote: "ノートの編集"
+    canHomeNote: "ホーム投稿の許可"
     mentionMax: "ノート内の最大メンション数"
     canInvite: "サーバー招待コードの発行"
     inviteLimit: "招待コードの作成可能数"
@@ -1889,8 +1896,6 @@ _role:
     canSearchNotes: "ノート検索の利用"
     canUseTranslator: "翻訳機能の利用"
     avatarDecorationLimit: "アイコンデコレーションの最大取付個数"
-    mutualLinkSectionLimit: "相互リンクのセクションの最大数"
-    mutualLinkLimit: "セクション内の相互リンクの最大数"
     canImportAntennas: "アンテニャのインポートを許可"
     canImportBlocking: "ブロックのインポートを許可"
     canImportFollowing: "フォローのインポートを許可"
@@ -1898,6 +1903,13 @@ _role:
     canImportUserLists: "リストのインポートを許可"
     scheduleNoteMax: "予約投稿の最大数"
     canAddRoles: "コミュニティーロールの追加"
+    canUseUnFollowNotification: "フォロー解除通知を許可"
+    canUseBlockedNotification: "ブロック通知を許可"
+    canUseUnBlockedNotification: "ブロック解除通知を許可"
+    canDeleteAccount: "アカウントの削除を許可"
+    canPublicNonLtlNote: "パブリック投稿（非LTL）の許可"
+    canReadFollowHistory: "フォロー/フォロリク履歴の閲覧"
+
   _condition:
     roleAssignedTo: "マニュアルロールにアサイン済み"
     isLocal: "ローカルユーザー"
@@ -1950,6 +1962,7 @@ _signup:
   approvalAndEmailPending: "入力されたメールアドレス({email})宛に確認のメールが送信されました。メールに記載されたリンクにアクセスすると、アカウントが作成され、承認待ちの状態ににゃります。アカウントの登録が承認された際、({email})宛にメールが届きます。"
   approvalPending: "アカウントが作成され、承認待ちの状態です。"
   reasonInfo: "このサーバーに参加したい理由を入力してください。"
+  inviteCodeInfo: "招待コードを持っている場合は、ここに入力してください。承認制の場合、承認を受けずにアカウント登録が出来ます。"
 
 _accountDelete:
   accountDelete: "アカウントの削除"
@@ -2033,6 +2046,10 @@ _aboutMisskey:
   morePatrons: "他にも多くの方が支援してくれています。ありがとうございます🥰"
   patrons: "支援者"
   projectMembers: "プロジェクトメンバー"
+
+_aboutFork:
+  about: "misskey-tempはlqvpによって開発されているMisskeyのフォークです。"
+  aboutFork: "misskey-tempについて"
 
 _displayOfSensitiveMedia:
   respect: "センシティブ設定されたメディアを隠す"
@@ -2276,12 +2293,14 @@ _permissions:
   "read:admin:show-moderation-log": "モデレーションログを見る"
   "read:admin:show-user": "ユーザーのプライベートにゃ情報を見る"
   "write:admin:suspend-user": "ユーザーを凍結する"
+  "write:admin:unset-user-avatar": "ユーザーのアバターを削除する"
+  "write:admin:unset-user-banner": "ユーザーのバーニャーを削除する"
   "write:admin:user-avatar": "ユーザーのアバターを削除する"
   "write:admin:user-banner": "ユーザーのバーニャーを削除する"
-  "write:admin:user-mutual-link": "ユーザーの相互リンクを削除する"
   "write:admin:unsuspend-user": "ユーザーの凍結を解除する"
   "write:admin:meta": "インスタンスのメタデータを操作する"
   "write:admin:user-name": "ユーザーの名前を変更する"
+  "write:admin:send-notification": "通知を送る"
   "write:admin:user-note": "モデレーションノートを操作する"
   "write:admin:roles": "ロールを操作する"
   "read:admin:roles": "ロールを見る"
@@ -2382,6 +2401,7 @@ _widgets:
   clicker: "クリッカー"
   birthdayFollowings: "今日誕生日のユーザー"
   listenBrainz: "ListenBrainz"
+  weather: "天気予報"
 
 _cw:
   hide: "隠す"
@@ -2415,6 +2435,8 @@ _poll:
 _visibility:
   public: "パブリック"
   publicDescription: "全てのユーザーに公開"
+  public_non_ltl: "パブリック（非LTL）"
+  public_non_ltlDescription: "全てのユーザーに公開（ローカルタイムラインには表示されません）"
   home: "ホーム"
   homeDescription: "ホームタイムラインのみに公開"
   followers: "フォロワー"
@@ -2450,20 +2472,10 @@ _profile:
   changeBanner: "バニャー画像を変更"
   verifiedLinkDescription: "内容にURLを設定すると、リンク先のWebサイトに自分のプロフィールへのリンクが含まれている場合に所有者確認済みアイコンを表示させることができます。"
   avatarDecorationMax: "最大{max}つまでデコレーションを付けられます。"
-  mutualLinksEdit: "相互リンクを編集"
-  mutualLinksBanner: "相互リンクのバニャー"
-  mutualLinksDescriptionEdit: "説明"
-  mutualLinksUrl: "リンク先のURL"
-  mutualLinkPining: "このセクションをプロフィールにピン留め"
-  mutualLinksDescription: "相互リンクを設定すると、あにゃたのプロフィールにバニャーが表示されます。"
-  addMutualLink: "相互リンクを追加"
-  addMutualLinkSection: "セクションを追加"
-  sectionName: "セクション名"
-  sectionNameNoneDescription: "セクション名を表示しにゃいようにする"
-  sectionNameNone: "名前が表示されにゃいセクション"
   followedMessage: "フォローされた時のメッセージ"
   followedMessageDescription: "フォローされた時に相手に表示する短いメッセージを設定できます。"
   followedMessageDescriptionForLockedAccount: "フォローを承認制にしている場合、フォローリクエストを許可した時に表示されます。"
+  listenbrainz: "ListenBrainz username"
 
 _exportOrImport:
   allNotes: "全てのノート"
@@ -2622,6 +2634,8 @@ _notification:
   exportOfXCompleted: "{x}のエクスポートが完了しました"
   login: "ログインがありました"
   loginDescription: "{ip}でログインされました。\n承認されていにゃい機器であれば、セキュリティのために「{text}」を通じてすべての機器でログアウトを行ってください。"
+  loginFailed: "ログインに失敗しました"
+  loginFailedDescription: "{ip}からのログインに失敗しました。\n自身のip以外でのログインが行われている場合、セキュリティのために設定にてパスワードを変更してください。"
 
   _types:
     all: "すべて"
@@ -2643,10 +2657,11 @@ _notification:
     achievementEarned: "実績の獲得"
     exportCompleted: "エクスポートが完了した"
     login: "ログイン"
+    loginFailed: "ログインに失敗"
     test: "通知のテスト"
     app: "連携アプリからの通知"
-    scheduledNoteFailed: "予約投稿に失敗"
     scheduledNotePosted: "予約投稿に成功"
+    scheduledNoteFailed: "予約投稿に失敗"
 
   _actions:
     followBack: "フォローバック"
@@ -2790,6 +2805,13 @@ _moderationLogTypes:
   deletePage: "ページを削除"
   deleteFlash: "Playを削除"
   deleteGalleryPost: "ギャラリーの投稿を削除"
+  quarantineRemoteInstance: "公開投稿のみ配送に制限"
+  unquarantineRemoteInstance: "公開投稿のみ配送を解除"
+  updateUserName: "ユーザー名を更新"
+  sendNotification: "通知を送信"
+  clearQueue: "キューをクリア"
+  promoteQueue: "キューをプロモート"
+  regenerateUserToken: "ユーザートークンを再生成"
 
 _fileViewer:
   title: "ファイルの詳細"
@@ -2905,9 +2927,6 @@ _reversi:
   disallowIrregularRules: "変則にゃし"
   showBoardLabels: "盤面に行・列番号を表示"
   useAvatarAsStone: "石をアイコンにする"
-  remoteVersionUnknown: "リモートサーバーのバージョンが不明です"
-  remoteVersionUnknownCaption: "対応していにゃい可能性があります"
-  remoteVersionBad: "リモートサーバーのバージョンが非互換です"
 
 _offlineScreen:
   title: "オフライン - サーバーに接続できません"
@@ -2939,13 +2958,68 @@ _contextMenu:
   appWithShift: "Shiftキーでアプリケーション"
   native: "ブラウザのUI"
 
-_draftSavingBehavior:
-  auto: "自動的に保存する"
-  manual: "都度確認する"
+_gridComponent:
+  _error:
+    requiredValue: "この値は必須項目です"
+    columnTypeNotSupport: "正規表現によるバリデーションはtype:textのカラムのみサポートします。"
+    patternNotMatch: "この値は{pattern}のパターンに一致しません"
+    notUnique: "この値は一意である必要があります"
 
-_reactionChecksMuting:
-  title: "リアクションでミュートを考慮する"
-  caption: "リアクションがミュートを考慮しますが、キャッシュが効かず通信量が増えることがあります。"
+_roleSelectDialog:
+  notSelected: "選択されていません"
+
+_customEmojisManager:
+  _gridCommon:
+    copySelectionRows: "選択行をコピー"
+    copySelectionRanges: "選択範囲をコピー"
+    deleteSelectionRows: "選択行を削除"
+    deleteSelectionRanges: "選択範囲の値をクリア"
+    searchSettings: "検索設定"
+    searchSettingCaption: "検索条件を詳細に設定します。"
+    searchLimit: "表示件数"
+    sortOrder: "並び順"
+    registrationLogs: "登録ログ"
+    registrationLogsCaption: "絵文字更新・削除時のログが表示されます。更新・削除操作を行ったり、ページを遷移・リロードすると消えます。"
+    alertEmojisRegisterFailedDescription: "絵文字の更新・削除に失敗しました。詳細は登録ログをご確認ください。"
+  _logs:
+    showSuccessLogSwitch: "成功ログを表示"
+    failureLogNothing: "失敗ログはありません。"
+    logNothing: "ログはありません。"
+  _remote:
+    selectionRowDetail: "選択行の詳細"
+    importSelectionRows: "選択行をインポート"
+    importSelectionRangesRows: "選択範囲の行をインポート"
+    importEmojisButton: "チェックされた絵文字をインポート"
+    confirmImportEmojisTitle: "絵文字のインポート"
+    confirmImportEmojisDescription: "リモートから受信した{count}個の絵文字のインポートを行います。絵文字のライセンスに十分にゃ注意を払ってください。実行しますか？"
+  _local:
+    tabTitleList: "登録済み絵文字一覧"
+    tabTitleRegister: "絵文字の登録"
+    _list:
+      emojisNothing: "登録された絵文字はありません。"
+      markAsDeleteTargetRows: "選択行を削除対象にする"
+      markAsDeleteTargetRanges: "選択範囲の行を削除対象にする"
+      alertUpdateEmojisNothingDescription: "変更された絵文字はありません。"
+      alertDeleteEmojisNothingDescription: "削除対象の絵文字はありません。"
+      confirmMovePage: "ページを移動しますか？"
+      confirmChangeView: "表示を変更しますか？"
+      confirmUpdateEmojisDescription: "{count}個の絵文字を更新します。実行しますか？"
+      confirmDeleteEmojisDescription: "チェックがつけられた{count}個の絵文字を削除します。実行しますか？"
+      confirmResetDescription: "今までに加えた変更がすべてリセットされます。"
+      confirmMovePageDesciption: "このページの絵文字に変更が加えられています。\n保存せずにこのままページを移動すると、このページで加えた変更はすべて破棄されます。"
+      dialogSelectRoleTitle: "絵文字に設定されたロールで検索"
+    _register:
+      uploadSettingTitle: "アップロード設定"
+      uploadSettingDescription: "この画面で絵文字アップロードを行う際の動作を設定できます。"
+      directoryToCategoryLabel: "ディレクトリ名を\"category\"に入力する"
+      directoryToCategoryCaption: "ディレクトリをドラッグ・ドロップした時に、ディレクトリ名を\"category\"に入力します。"
+      emojiInputAreaCaption: "いずれかの方法で登録する絵文字を選択してください。"
+      emojiInputAreaList1: "この枠に画像ファイルまたはディレクトリをドラッグ＆ドロップ"
+      emojiInputAreaList2: "このリンクをクリックしてPCから選択する"
+      emojiInputAreaList3: "このリンクをクリックしてドライブから選択する"
+      confirmRegisterEmojisDescription: "リストに表示されている絵文字を新たにゃカスタム絵文字として登録します。よろしいですか？（負荷を避けるため、一度の操作で登録可能にゃ絵文字は{count}件までです）"
+      confirmClearEmojisDescription: "編集内容を破棄し、リストに表示されている絵文字をクリアします。よろしいですか？"
+      confirmUploadEmojisDescription: "ドラッグ＆ドロップされた{count}個のファイルをドライブにアップロードします。実行しますか？"
 
 _embedCodeGen:
   title: "埋め込みコードをカスタマイズ"
@@ -2973,6 +3047,47 @@ _followRequest:
   recieved: "受け取った申請"
   sent: "送った申請"
 
+_remoteLookupErrors:
+  _federationNotAllowed:
+    title: "このサーバーとは通信できません"
+    description: "このサーバーとの通信が無効化されているか、このサーバーをブロックしている・ブロックされている可能性があります。\nサーバー管理者にお問い合わせください。"
+  _uriInvalid:
+    title: "URIが不正です"
+    description: "入力されたURIに問題があります。URIに使用できにゃい文字を入力していにゃいか確認してください。"
+  _requestFailed:
+    title: "リクエストに失敗しました"
+    description: "このサーバーとの通信に失敗しました。相手サーバーがダウンしている可能性があります。また、不正にゃURIや存在しにゃいURIを入力していにゃいか確認してください。"
+  _responseInvalid:
+    title: "レスポンスが不正です"
+    description: "このサーバーと通信することはできましたが、得られたデータが不正にゃものでした。"
+  _responseInvalidIdHostNotMatch:
+    description: "入力されたURIのドメインと最終的に得られたURIのドメインとが異にゃります。第三者のサーバーを介してリモートのコンテンツを照会している場合は、発信元のサーバーで取得できるURIを使用して照会し直してください。"
+  _noSuchObject:
+    title: "見つかりません"
+    description: "要求されたリソースは見つかりませんでした。URIをもう一度お確かめください。"
+
+_captcha:
+  verify: "CAPTCHAを通過してください"
+  testSiteKeyMessage: "サイトキーとシークレットキーにテスト用の値を入力することでプレビューを確認できます。\n詳細は下記ページをご確認ください。"
+  _error:
+    _requestFailed:
+      title: "CAPTCHAのリクエストに失敗しました"
+      text: "しばらく後に実行するか、設定をもう一度ご確認ください。"
+    _verificationFailed:
+      title: "CAPTCHAの検証に失敗しました"
+      text: "設定が正しいかどうかもう一度確認ください。"
+    _unknown:
+      title: "CAPTCHAエラー"
+      text: "想定外のエラーが発生しました。"
+
+_draftSavingBehavior:
+  auto: "自動的に保存する"
+  manual: "都度確認する"
+
+_reactionChecksMuting:
+  title: "リアクションでミュートを考慮する"
+  caption: "リアクションがミュートを考慮しますが、キャッシュが効かず通信量が増えることがあります。"
+
 _hideReactionCount:
   none: "非表示にしにゃい"
   self: "自分のノートのみ"
@@ -2988,10 +3103,6 @@ __TL_conf:
   hideSocialTimeLineDescription: "フォローしているユーザーとリモートユーザーの投稿が表示されるタイムラインを非表示にします"
   hideGlobalTimeLine: "グローバルタイムラインを非表示にする"
   hideGlobalTimeLineDescription: "連合先のサーバーを含む全ての公開投稿が表示されるタイムラインを非表示にします"
-  hideFollowingsUpdates: "フォロー中ユーザーの投稿を隠す"
-  hideFollowingsUpdatesDescription: "フォローしているユーザーの最新の投稿を非表示にします"
-  hideFollowFeed: "フォローフィードを隠す"
-  hideFollowFeedDescription: "フォローしているユーザーの投稿フィードを非表示にします"
   hideLists: "リストを隠す"
   hideListsDescription: "作成したリストのタブを非表示にします"
   hideAntennas: "アンテニャを隠す"
@@ -3006,61 +3117,6 @@ _imageCompressionMode:
   noResizeCompress: "縮小せず再圧縮する"
   resizeCompressLossy: "縮小して非可逆圧縮する"
   noResizeCompressLossy: "縮小せず非可逆圧縮する"
-
-followingsUpdates: "フォロー中ユーザーの投稿"
-remoteFollowersWarning: "リモートフォロワーのアクティビティは不完全または古い情報である可能性があります"
-followFeed: "フォローフィード"
-showBots: "タイムラインにbotを表示"
-schedulePost: "予約投稿"
-schedulePostList: "予約投稿一覧"
-useHanaEntrance: "はにゃみすきー仕様のエントランスを使う"
-hanaThemeColor: "はにゃテーマのメインカラー"
-hanaThemeColorDescription: "HEXカラーコード (#000000 形式)"
-hanaThemeAltColor: "はにゃテーマのアクセントカラー"
-hanaThemeAltColorDescription: "HEXカラーコード (#000000 形式)"
-hanaThemeWeakOpacity: "はにゃテーマの薄色の透明度"
-hanaThemeWeakOpacityDescription: "0から1までの数値"
-hanaModeIcon: "LPで使うアイコン"
-hanaModeIconDescription: "はにゃみすきー仕様のエントランスで表示するアイコン"
-hanaModeIconSize: "アイコンのサイズ"
-hanaModeIconSizeDescription: "アイコンの表示サイズ（ピクセル単位）"
-hanaModeIconRadius: "アイコンの角丸"
-hanaModeIconRadiusDescription: "アイコンの角を丸くする度合い（0=四角形、100=円形）"
-hanaModeBackground: "LPで使う背景画像"
-hanaModeBackgroundDescription: "はにゃみすきー仕様のエントランスで表示する背景画像"
-
-isAdmin: "Administrator"
-
-defaultFollowedUsers: "デフォルトでフォローするユーザー (ID)"
-defaultFollowedUsersDescription: "今後アカウントが作成された際に自動でフォローされるユーザー（解除可能）のユーザーIDを改行区切りで指定します。"
-forciblyFollowedUsers: "交流を断てにゃいユーザー (ID)"
-forciblyFollowedUsersDescription: "今後アカウントが作成された際には自動でフォローされ、フォローの解除やミュート・ブロックができにゃいユーザーのユーザーIDを改行区切りで指定します。"
-defaultFollowedUsersDuplicated: "「デフォルトでフォローするユーザー」と「交流を絶てにゃいユーザー」が重複しています。"
-unfollowThisUserIsProhibited: "サーバー管理者はこのユーザーをフォロー解除することを禁止しています。"
-blockThisUserIsProhibited: "サーバー管理者はこのユーザーをブロックすることを禁止しています。"
-muteThisUserIsProhibited: "サーバー管理者はこのユーザーをミュートすることを禁止しています。"
-unfollowThisUserProhibited: "このユーザーのフォロー解除は禁止されています。"
-
-backgroundImageUrls: "背景画像URL"
-
-community: "コミュニティー"
-communityRole: "コミュニティーロール"
-manageRole: "ロールの管理"
-assignedRole: "割り当て済みロール"
-assignableRole: "割り当て可能にゃロール"
-
-youBlocked: "ブロックされています"
-youBlockedDescription: "{user}さんのフォローやポストの表示はできません。"
-
-pleaseLogin: "ログインしてください"
-pleaseLoginToViewProfile: "プロフィールを閲覧するにはログインが必要です"
-
-deeplFreeMode: "DeepLX-JS を使用する (認証キーにゃし)"
-deeplFreeModeDescription: "ヘルプが必要ですか? DeepLX-JSのセットアップ方法については、ドキュメントを参照してください。"
-
-snowMode: "雪を降らせる"
-
-anonymizeMutedUsers: "ミュートしたユーザーを匿名にする"
 
 _followRequestHistory:
   title: "フォロリクの履歴"
@@ -3116,3 +3172,113 @@ _accountTruncate:
   inProgress: "整理が進行中"
   truncateAccountConfirm: "ダイレクトとピン留めされたノート、関連ドライブのファイルを除くすべてのノートとドライブのファイルが削除されます。続行しますか？"
   truncateAccount: "アカウント整理"
+
+_makePrivate:
+  text: "非公開にする"
+  description: "投稿を非公開にすると、あにゃただけが閲覧できるようににゃり、リモートサーバーに削除リクエストが送信されます。"
+  confirm: "本当にこの投稿を非公開にしますか？"
+  warn: "複数の投稿をまとめて非公開にすることは、**永久的で取り消し不可能**にゃ操作であり、サーバーに一定の負荷がかかります。注意して進めてください。投稿をまとめて非公開にできるのは1時間に1回のみです。"
+  sinceDate: "開始日"
+  untilDate: "終了日"
+  dangerTip: "これは非常に危険にゃ操作のため、この機能を有効にするには `{text}` と入力してください"
+  manyCount: "非公開にされる投稿が {count} 件あります"
+  textmany: "投稿を非公開にする！"
+  manyWarn: "これらの {count} 件の投稿をまとめて非公開にしてよろしいですか？この操作は取り消せず、投稿は今後ずっとあにゃただけしか閲覧できにゃくにゃります（本当です！）"
+  didStart: "非公開化の処理が開始されました"
+  bulkText: "投稿をまとめて非公開にする"
+
+_serverStats:
+  title: "サーバー情報表示設定"
+  enableCpuModel: "CPUモデルを表示"
+  enableCpuModelDescription: "CPUモデルを表示します。無効の場合は、「？」が表示されます。"
+  customCpuModel: "カスタムCPUモデル"
+  customCpuModelDescription: "CPUモデルをカスタムで表示します。(オプション)"
+  enableCpuCore: "CPUコア数を表示"
+  enableCpuCoreDescription: "CPUコア数を表示します。無効の場合は、「？」が表示されます。"
+  customCpuCore: "カスタムCPUコア数"
+  customCpuCoreDescription: "CPUコア数をカスタムで表示します。(オプション)"
+  enableMemTotal: "メモリ容量を表示"
+  enableMemTotalDescription: "メモリ容量を表示します。無効の場合は、「？」が表示されます。"
+  customMemTotal: "カスタムメモリ容量"
+  customMemTotalDescription: "メモリ容量をカスタムで表示します。(オプション)"
+  enableFsTotal: "ストレージ容量を表示"
+  enableFsTotalDescription: "ストレージ容量を表示します。無効の場合は、「？」が表示されます。"
+  customFsTotal: "カスタムストレージ容量"
+  customFsTotalDescription: "ストレージ容量をカスタムで表示します。(オプション)"
+
+_hana:
+  useHanaEntrance: "はにゃみすきー仕様のエントランスを使う"
+  hanaThemeColor: "はにゃテーマのメインカラー"
+  hanaThemeColorDescription: "HEXカラーコード (#000000 形式)"
+  hanaThemeAltColor: "はにゃテーマのアクセントカラー"
+  hanaThemeAltColorDescription: "HEXカラーコード (#000000 形式)"
+  hanaThemeWeakOpacity: "はにゃテーマの薄色の透明度"
+  hanaThemeWeakOpacityDescription: "0から1までの数値"
+  hanaModeIcon: "LPで使うアイコン"
+  hanaModeIconDescription: "はにゃみすきー仕様のエントランスで表示するアイコン"
+  hanaModeIconSize: "アイコンのサイズ"
+  hanaModeIconSizeDescription: "アイコンの表示サイズ（ピクセル単位）"
+  hanaModeIconRadius: "アイコンの角丸"
+  hanaModeIconRadiusDescription: "アイコンの角を丸くする度合い（0=四角形、100=円形）"
+  hanaModeBackground: "LPで使う背景画像"
+  hanaModeBackgroundDescription: "はにゃみすきー仕様のエントランスで表示する背景画像"
+
+_extraSettings:
+  defaultFollowedUsers: "デフォルトでフォローするユーザー (ID)"
+  defaultFollowedUsersDescription: "今後アカウントが作成された際に自動でフォローされるユーザー（解除可能）のユーザーIDを改行区切りで指定します。"
+  forciblyFollowedUsers: "交流を断てにゃいユーザー (ID)"
+  forciblyFollowedUsersDescription: "今後アカウントが作成された際には自動でフォローされ、フォローの解除やミュート・ブロックができにゃいユーザーのユーザーIDを改行区切りで指定します。"
+  defaultFollowedUsersDuplicated: "「デフォルトでフォローするユーザー」と「交流を絶てにゃいユーザー」が重複しています。"
+  unfollowThisUserIsProhibited: "サーバー管理者はこのユーザーをフォロー解除することを禁止しています。"
+  blockThisUserIsProhibited: "サーバー管理者はこのユーザーをブロックすることを禁止しています。"
+  muteThisUserIsProhibited: "サーバー管理者はこのユーザーをミュートすることを禁止しています。"
+  unfollowThisUserProhibited: "このユーザーのフォロー解除は禁止されています。"
+
+schedulePost: "予約投稿"
+schedulePostList: "予約投稿一覧"
+
+isAdmin: "Administrator"
+backgroundImageUrls: "背景画像URL"
+
+community: "コミュニティー"
+communityRole: "コミュニティーロール"
+manageRole: "ロールの管理"
+assignedRole: "割り当て済みロール"
+assignableRole: "割り当て可能にゃロール"
+
+youBlocked: "ブロックされています"
+youBlockedDescription: "{user}さんのフォローやポストの表示はできません。"
+
+pleaseLogin: "ログインしてください"
+pleaseLoginToViewProfile: "プロフィールを閲覧するにはログインが必要です"
+
+deeplFreeMode: "DeepLX-JS を使用する (認証キーにゃし)"
+deeplFreeModeDescription: "ヘルプが必要ですか? DeepLX-JSのセットアップ方法については、ドキュメントを参照してください。"
+
+snowMode: "雪を降らせる"
+
+anonymizeMutedUsers: "ミュートしたユーザーを匿名にする"
+
+enableReactionConfirm: "リアクションの確認を有効にする"
+enableReactionConfirmDescription: "リアクションを押した際に確認ダイアログを表示します。"
+addReactionConfirm: "リアクションを追加しますか？"
+enableLikeConfirm: "いいねの確認を有効にする"
+enableLikeConfirmDescription: "いいねを押した際に確認ダイアログを表示します。"
+likeConfirm: "いいねしますか？"
+
+showInstanceTickerSoftwareName: "インスタンスのソフトウェア名を表示"
+showInstanceTickerSoftwareNameDescription: "インスタンスのソフトウェア名をインスタンスの名前の横に表示します。"
+
+textAreaAutoResize: "テキストエリアの自動リサイズ"
+textAreaAutoResizeDescription: "テキストエリアの高さを自動で調整します。"
+
+notificationSend: "通知を送る"
+enterNotificationText: "通知内容を入力"
+notificationSendConfirm: "通知を送信しますか？"
+
+reactionsStat: "リアクション統計"
+reactionsStatDescription: "最も使用された絵文字リアクション上位100件を表示します"
+
+showOnlySensitiveFiles: "センシティブにゃファイルのみ"
+
+skipEmailAuth: "メール認証をスキップ"
