@@ -68,7 +68,7 @@ const widgetPropsDef = {
 	},
 };
 
-	type WidgetProps = GetFormResultType<typeof widgetPropsDef>;
+type WidgetProps = GetFormResultType<typeof widgetPropsDef>;
 
 const props = defineProps<WidgetComponentProps<WidgetProps>>();
 const emit = defineEmits<WidgetComponentEmits<WidgetProps>>();
@@ -78,7 +78,7 @@ const { widgetProps, configure, save } = useWidgetPropsManager(name, widgetProps
 const playingNow = ref(false);
 const trackMetadata = ref<any>(null);
 const fetching = ref(true);
-let intervalId: number | null = null;
+let intervalId: ReturnType<typeof setTimeout> | null = null;
 
 const formattedNote = computed(() => {
 	if (!trackMetadata.value) return '';
