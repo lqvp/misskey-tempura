@@ -36,6 +36,7 @@ import MkLoading from '@/components/global/MkLoading.vue';
 import { i18n } from '@/i18n.js';
 import { infoImageUrl } from '@/instance.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
+import { $i } from '@/account.js';
 
 const name = i18n.ts._widgets.listenBrainz;
 
@@ -58,6 +59,9 @@ const widgetPropsDef = {
 		default: 'home' as const,
 		enum: [
 			{ label: 'Public', value: 'public' },
+			...( $i?.policies.canPublicNonLtlNote ? [{
+				label: 'Semi-Public', value: 'public_non_ltl',
+			}] : []),
 			{ label: 'Home', value: 'home' },
 			{ label: 'Followers', value: 'followers' },
 		],
