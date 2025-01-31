@@ -134,6 +134,11 @@ definePageMetadata(() => ({
 	color: #d28a3f;
 }
 
+.roleNames {
+	font-weight: bold;
+	color: var(--MI_THEME-accent);
+}
+
 .header {
 	margin-bottom: 16px;
 	font-weight: bold;
