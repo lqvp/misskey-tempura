@@ -7401,6 +7401,10 @@ export interface Locale extends ILocale {
              * フォロー/フォロリク履歴の閲覧
              */
             "canReadFollowHistory": string;
+            /**
+             * 自動フォローバックを許可
+             */
+            "canAutoFollowBack": string;
         };
         "_condition": {
             /**
