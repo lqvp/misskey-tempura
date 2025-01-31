@@ -25029,6 +25029,7 @@ export type operations = {
     requestBody: {
       content: {
         'application/json': {
+          /** @default */
           query: string;
           /** Format: misskey:id */
           sinceId?: string;
