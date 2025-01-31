@@ -1908,6 +1908,7 @@ _role:
     canUseUnBlockedNotification: "ブロック解除通知を許可"
     canPublicNonLtlNote: "パブリック投稿（非LTL）の許可"
     canReadFollowHistory: "フォロー/フォロリク履歴の閲覧"
+    canAutoFollowBack: "自動フォローバックを許可"
 
   _condition:
     roleAssignedTo: "マニュアルロールにアサイン済み"
@@ -3281,3 +3282,6 @@ reactionsStatDescription: "最も使用された絵文字リアクション上�
 showOnlySensitiveFiles: "センシティブにゃファイルのみ"
 
 skipEmailAuth: "メール認証をスキップ"
+
+autoFollowBack: "自動フォローバック"
+autoFollowBackDescription: "フォローされた際に自動でフォローバックします。"
