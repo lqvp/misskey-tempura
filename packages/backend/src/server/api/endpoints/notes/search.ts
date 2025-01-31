@@ -37,7 +37,7 @@ export const meta = {
 export const paramDef = {
 	type: 'object',
 	properties: {
-		query: { type: 'string' },
+		query: { type: 'string', minLength: 0, default: '' },
 		sinceId: { type: 'string', format: 'misskey:id' },
 		untilId: { type: 'string', format: 'misskey:id' },
 		limit: { type: 'integer', minimum: 1, maximum: 100, default: 10 },

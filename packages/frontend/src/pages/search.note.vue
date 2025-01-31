@@ -151,7 +151,8 @@ function removeUser() {
 async function search() {
 	const query = searchQuery.value.toString().trim();
 
-	if (query == null || query === '') return;
+	const allowEmptySearch = user.value !== null && visibilitySelect.value !== 'all';
+	if ((query === '' || query == null) && !allowEmptySearch) return;
 
 	//#region AP lookup
 	if (query.startsWith('https://') && !query.includes(' ')) {
@@ -207,7 +208,7 @@ async function search() {
 		endpoint: 'notes/search',
 		limit: 10,
 		params: {
-			query: searchQuery.value,
+			query: query === '' ? undefined : query,
 			userId: user.value ? user.value.id : null,
 			...(searchHost.value ? { host: searchHost.value } : {}),
 			visibility: visibilitySelect.value,

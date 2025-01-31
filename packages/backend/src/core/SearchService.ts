@@ -224,10 +224,13 @@ export class SearchService {
 			.leftJoinAndSelect('reply.user', 'replyUser')
 			.leftJoinAndSelect('renote.user', 'renoteUser');
 
-		if (this.config.fulltextSearch?.provider === 'sqlPgroonga') {
-			query.andWhere('note.text &@ :q', { q });
-		} else {
-			query.andWhere('LOWER(note.text) LIKE :q', { q: `%${ sqlLikeEscape(q.toLowerCase()) }%` });
+		// クエリが空でない場合のみテキスト検索条件を追加
+		if (q !== '') {
+			if (this.config.fulltextSearch?.provider === 'sqlPgroonga') {
+				query.andWhere('note.text &@ :q', { q });
+			} else {
+				query.andWhere('LOWER(note.text) LIKE :q', { q: `%${ sqlLikeEscape(q.toLowerCase()) }%` });
+			}
 		}
 
 		if (opts.host) {
