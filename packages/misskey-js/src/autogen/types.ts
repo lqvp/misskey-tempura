@@ -5275,7 +5275,6 @@ export type components = {
       canUseUnFollowNotification: boolean;
       canUseBlockedNotification: boolean;
       canUseUnBlockedNotification: boolean;
-      canDeleteAccount: boolean;
       canPublicNonLtlNote: boolean;
       canReadFollowHistory: boolean;
       canAutoFollowBack: boolean;

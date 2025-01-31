@@ -124,7 +124,6 @@ export const ROLE_POLICIES = [
 	'canUseUnFollowNotification',
 	'canUseBlockedNotification',
 	'canUseUnBlockedNotification',
-	'canDeleteAccount',
 	'canPublicNonLtlNote',
 	'canReadFollowHistory',
 	'canAutoFollowBack',

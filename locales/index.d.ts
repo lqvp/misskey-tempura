@@ -7390,10 +7390,6 @@ export interface Locale extends ILocale {
              */
             "canUseUnBlockedNotification": string;
             /**
-             * アカウントの削除を許可
-             */
-            "canDeleteAccount": string;
-            /**
              * パブリック投稿（非LTL）の許可
              */
             "canPublicNonLtlNote": string;

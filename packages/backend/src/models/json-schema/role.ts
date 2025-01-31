@@ -324,10 +324,6 @@ export const packedRolePoliciesSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
-		canDeleteAccount: {
-			type: 'boolean',
-			optional: false, nullable: false,
-		},
 		canPublicNonLtlNote: {
 			type: 'boolean',
 			optional: false, nullable: false,

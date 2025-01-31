@@ -1906,7 +1906,6 @@ _role:
     canUseUnFollowNotification: "フォロー解除通知を許可"
     canUseBlockedNotification: "ブロック通知を許可"
     canUseUnBlockedNotification: "ブロック解除通知を許可"
-    canDeleteAccount: "アカウントの削除を許可"
     canPublicNonLtlNote: "パブリック投稿（非LTL）の許可"
     canReadFollowHistory: "フォロー/フォロリク履歴の閲覧"
 

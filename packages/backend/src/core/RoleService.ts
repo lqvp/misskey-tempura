@@ -71,7 +71,6 @@ export type RolePolicies = {
 	canUseUnFollowNotification: boolean;
   canUseBlockedNotification: boolean;
   canUseUnBlockedNotification: boolean;
-	canDeleteAccount: boolean;
 	canPublicNonLtlNote: boolean;
 	canReadFollowHistory: boolean;
 	canAutoFollowBack: boolean;
@@ -117,7 +116,6 @@ export const DEFAULT_POLICIES: RolePolicies = {
 	canUseUnFollowNotification: true,
 	canUseBlockedNotification: true,
 	canUseUnBlockedNotification: true,
-	canDeleteAccount: false,
 	canPublicNonLtlNote: false,
 	canReadFollowHistory: false,
 	canAutoFollowBack: false,
@@ -491,7 +489,6 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			canUseUnFollowNotification: calc('canUseUnFollowNotification', vs => vs.some(v => v === true)),
   		canUseBlockedNotification: calc('canUseBlockedNotification', vs => vs.some(v => v === true)),
   		canUseUnBlockedNotification: calc('canUseUnBlockedNotification', vs => vs.some(v => v === true)),
-			canDeleteAccount: calc('canDeleteAccount', vs => vs.some(v => v === true)),
 			canPublicNonLtlNote: calc('canPublicNonLtlNote', vs => vs.some(v => v === true)),
 			canReadFollowHistory: calc('canReadFollowHistory', vs => vs.some(v => v === true)),
 			canAutoFollowBack: calc('canAutoFollowBack', vs => vs.some(v => v === true)),
