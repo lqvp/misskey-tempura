@@ -108,6 +108,21 @@ const setHostSelectWithInput = (after:string|undefined|null, before:string|undef
 	else hostSelect.value = 'specified';
 };
 
+// URLのクエリパラメータから検索条件を読み取る
+const queryParams = new URLSearchParams(window.location.search);
+searchQuery.value = queryParams.get('q') || '';
+if (queryParams.has('userId')) {
+	misskeyApi('users/show', { userId: queryParams.get('userId') }).then(_user => {
+		user.value = _user;
+	});
+}
+if (queryParams.has('host')) {
+	hostInput.value = queryParams.get('host') || '';
+}
+if (queryParams.has('visibility')) {
+	visibilitySelect.value = queryParams.get('visibility') as 'all' | 'public' | 'home' | 'followers' | 'specified';
+}
+
 setHostSelectWithInput(hostInput.value, undefined);
 
 watch(hostInput, setHostSelectWithInput);
@@ -153,6 +168,14 @@ async function search() {
 
 	const allowEmptySearch = user.value !== null && visibilitySelect.value !== 'all';
 	if ((query === '' || query == null) && !allowEmptySearch) return;
+
+	  // URLに検索条件を反映
+	const params = new URLSearchParams(window.location.search);
+	params.set('q', query);
+	if (user.value) params.set('userId', user.value.id);
+	if (hostInput.value) params.set('host', hostInput.value);
+	params.set('visibility', visibilitySelect.value);
+	window.history.replaceState(null, '', `?${params.toString()}`);
 
 	//#region AP lookup
 	if (query.startsWith('https://') && !query.includes(' ')) {
