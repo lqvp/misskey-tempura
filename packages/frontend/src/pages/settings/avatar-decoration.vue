@@ -30,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</div>
 
 		<MkFolder>
-			<template #label>ローカル</template>
+			<template #label>{{ i18n.ts.local }}</template>
 			<div :class="$style.decorations">
 				<XDecoration
 					v-for="localAvatarDecoration in visibleLocalDecorations"
@@ -45,7 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</MkFolder>
 
 		<MkFolder v-if="$i.policies.canUseRemoteIconDecorations">
-			<template #label>リモート</template>
+			<template #label>{{ i18n.ts.remote }}</template>
 			<div :class="$style.decorations">
 				<XDecoration
 					v-for="remoteAvatarDecoration in visibleRemoteDecorations"
