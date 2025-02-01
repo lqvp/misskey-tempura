@@ -53,11 +53,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</a>
 						<a href="https://github.com/Pz2Or" target="_blank" :class="$style.contributor">
 							<img src="https://avatars.githubusercontent.com/u/116360839?v=4" :class="$style.contributorAvatar">
-							<span :class="$style.contributorUsername">🐬</span>
+							<span :class="$style.contributorUsername">Torlka Nicla</span>
 						</a>
 						<a href="https://github.com/tai-cha" target="_blank" :class="$style.contributor">
 							<img src="https://avatars.githubusercontent.com/u/40626578?v=4" :class="$style.contributorAvatar">
 							<span :class="$style.contributorUsername">taichan</span>
+						</a>
+						<a href="https://github.com/buachigithub" target="_blank" :class="$style.contributor">
+							<img src="https://avatars.githubusercontent.com/u/60306404?v=4" :class="$style.contributorAvatar">
+							<span :class="$style.contributorUsername">buachi</span>
 						</a>
 					</div>
 				</FormSection>
