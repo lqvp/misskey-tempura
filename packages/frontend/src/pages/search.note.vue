@@ -108,21 +108,6 @@ const setHostSelectWithInput = (after:string|undefined|null, before:string|undef
 	else hostSelect.value = 'specified';
 };
 
-// URLのクエリパラメータから検索条件を読み取る
-const queryParams = new URLSearchParams(window.location.search);
-searchQuery.value = queryParams.get('q') || '';
-if (queryParams.has('userId')) {
-	misskeyApi('users/show', { userId: queryParams.get('userId') }).then(_user => {
-		user.value = _user;
-	});
-}
-if (queryParams.has('host')) {
-	hostInput.value = queryParams.get('host') || '';
-}
-if (queryParams.has('visibility')) {
-	visibilitySelect.value = queryParams.get('visibility') as 'all' | 'public' | 'home' | 'followers' | 'specified';
-}
-
 setHostSelectWithInput(hostInput.value, undefined);
 
 watch(hostInput, setHostSelectWithInput);
