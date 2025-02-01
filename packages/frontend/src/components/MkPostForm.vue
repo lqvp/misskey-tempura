@@ -560,7 +560,7 @@ function setVisibility() {
 		localOnly: localOnly.value,
 		src: visibilityButton.value,
 		isPublicNonLtlRestrected: $i.policies.canPublicNonLtlNote !== true || props.mock,
-		...(reply.value ? { isReplyVisibilitySpecified: reply.value.visibility === 'specified' } : {}),
+		...(props.reply ? { isReplyVisibilitySpecified: props.reply.visibility === 'specified' } : {}),
 	}, {
 		changeVisibility: v => {
 			visibility.value = v;
