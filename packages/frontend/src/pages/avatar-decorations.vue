@@ -8,18 +8,43 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<template #header><MkPageHeader :actions="headerActions" :tabs="headerTabs"/></template>
 	<MkSpacer :contentMax="900">
 		<div class="_gaps">
-			<div :class="$style.decorations">
-				<div
-					v-for="avatarDecoration in avatarDecorations"
-					:key="avatarDecoration.id"
-					v-panel
-					:class="$style.decoration"
-					@click="edit(avatarDecoration)"
-				>
-					<div :class="$style.decorationName"><MkCondensedLine :minScale="0.5">{{ avatarDecoration.name }}</MkCondensedLine></div>
-					<MkAvatar style="width: 60px; height: 60px;" :user="$i" :decorations="[{ url: avatarDecoration.url }]" forceShowDecoration/>
+			<MkFolder>
+				<template #label>{{ i18n.ts.local }}</template>
+				<div :class="$style.decorations">
+					<div
+						v-for="localDecoration in visibleLocalDecorations"
+						:key="localDecoration.id"
+						v-panel
+						:class="$style.decoration"
+						@click="edit(localDecoration)"
+					>
+						<div :class="$style.decorationName"><MkCondensedLine :minScale="0.5">{{ localDecoration.name }}</MkCondensedLine></div>
+						<MkAvatar style="width: 60px; height: 60px;" :user="$i" :decorations="[{ url: localDecoration.url }]" forceShowDecoration/>
+					</div>
 				</div>
-			</div>
+				<MkButton v-if="hasMoreLocal" class="mt-4" @click="loadMoreLocal">
+					{{ i18n.ts.loadMore }}
+				</MkButton>
+			</MkFolder>
+
+			<MkFolder>
+				<template #label>{{ i18n.ts.remote }}</template>
+				<div :class="$style.decorations">
+					<div
+						v-for="remoteDecoration in visibleRemoteDecorations"
+						:key="remoteDecoration.id"
+						v-panel
+						:class="$style.decoration"
+						@click="edit(remoteDecoration)"
+					>
+						<div :class="$style.decorationName"><MkCondensedLine :minScale="0.5">{{ remoteDecoration.name }}</MkCondensedLine></div>
+						<MkAvatar style="width: 60px; height: 60px;" :user="$i" :decorations="[{ url: remoteDecoration.url }]" forceShowDecoration/>
+					</div>
+				</div>
+				<MkButton v-if="hasMoreRemote" class="mt-4" @click="loadMoreRemote">
+					{{ i18n.ts.loadMore }}
+				</MkButton>
+			</MkFolder>
 		</div>
 	</MkSpacer>
 </MkStickyContainer>
@@ -33,15 +58,53 @@ import * as os from '@/os.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { definePageMetadata } from '@/scripts/page-metadata.js';
+import MkButton from '@/components/MkButton.vue';
+import MkFolder from '@/components/MkFolder.vue';
 
 const $i = signinRequired();
 
+const ITEMS_PER_PAGE = 50;
+const localPage = ref(1);
+const remotePage = ref(1);
+
 const avatarDecorations = ref<Misskey.entities.AdminAvatarDecorationsListResponse>([]);
+
+const localDecorations = computed(() =>
+	avatarDecorations.value.filter(d => !d.name.includes('import_')),
+);
+
+const remoteDecorations = computed(() =>
+	avatarDecorations.value.filter(d => d.name.includes('import_')),
+);
+
+const visibleLocalDecorations = computed(() =>
+	localDecorations.value.slice(0, localPage.value * ITEMS_PER_PAGE),
+);
+
+const visibleRemoteDecorations = computed(() =>
+	remoteDecorations.value.slice(0, remotePage.value * ITEMS_PER_PAGE),
+);
+
+const hasMoreLocal = computed(() =>
+	localDecorations.value.length > visibleLocalDecorations.value.length,
+);
+
+const hasMoreRemote = computed(() =>
+	remoteDecorations.value.length > visibleRemoteDecorations.value.length,
+);
 
 function load() {
 	misskeyApi('admin/avatar-decorations/list').then(_avatarDecorations => {
 		avatarDecorations.value = _avatarDecorations;
 	});
+}
+
+function loadMoreLocal() {
+	localPage.value++;
+}
+
+function loadMoreRemote() {
+	remotePage.value++;
 }
 
 load();
@@ -115,4 +178,4 @@ definePageMetadata(() => ({
 	font-weight: bold;
 	margin-bottom: 20px;
 }
-</style>
+	</style>
