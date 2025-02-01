@@ -1088,8 +1088,6 @@ thisPostMayBeAnnoying: "この投稿は迷惑になる可能性があります�
 thisPostMayBeAnnoyingHome: "ホームに投稿"
 thisPostMayBeAnnoyingCancel: "やめる"
 thisPostMayBeAnnoyingIgnore: "このまま投稿"
-disableNoteDrafting: "ノートの下書きの復元を無効化"
-disableNoteDraftingDescription: "ノートの投稿フォームを開き直した際に、下書きを復元しないようにします。"
 collapseRenotes: "リノートのスマート省略"
 collapseRenotesDescription: "リアクションやリノートをしたことがあるノートをたたんで表示します。"
 directRenote: "ダイレクトリノート"
@@ -1398,10 +1396,6 @@ noteDeletationAt: "このノートは{time}に削除されます"
 cannotScheduleLaterThanOneYear: "1年以上先の日時を指定することはできません"
 postForm: "投稿フォーム"
 postFormBottomSettingsDescription: "投稿フォームの下部に表示される項目の並び替えが出来ます。項目をクリックすると削除できます。"
-drafts: "下書き"
-draftSavingBehavior: "下書きの保存に関する動作"
-saveAsDraft: "下書きとして保存"
-draftOverwriteConfirm: "下書きを適用すると現在入力されている内容はリセットされます。よろしいですか？"
 defaultScheduledNoteDelete: "デフォルトでノートが自己消滅するように"
 selectReaction: "いいねボタンで使うリアクションを選択"
 showLikeButton: "いいねボタンを表示する"
@@ -3079,10 +3073,6 @@ _captcha:
     _unknown:
       title: "CAPTCHAエラー"
       text: "想定外のエラーが発生しました。"
-
-_draftSavingBehavior:
-  auto: "自動的に保存する"
-  manual: "都度確認する"
 
 _reactionChecksMuting:
   title: "リアクションでミュートを考慮する"

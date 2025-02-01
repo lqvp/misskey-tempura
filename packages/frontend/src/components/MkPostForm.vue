@@ -35,7 +35,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</template>
 			<button v-if="visibility === 'specified'" v-click-anime v-tooltip="i18n.ts.save" class="_button" :class="$style.headerRightItem" @click="saveCurrentUsers"><i class="ti ti-device-floppy"/></button>
 			<button v-if="visibility === 'specified'" v-click-anime v-tooltip="i18n.ts.load" class="_button" :class="$style.headerRightItem" @click="loadSavedUsers"><i class="ti ti-users"/></button>
-			<button v-click-anime v-tooltip="i18n.ts.drafts" class="_button" :class="$style.headerRightItem" @click="chooseDraft"><i class="ti ti-note"></i></button>
 			<button v-click-anime v-tooltip="i18n.ts._visibility.disableFederation" class="_button" :class="[$style.headerRightItem, { [$style.danger]: localOnly }]" :disabled="channel != null || visibility === 'specified'" @click="toggleLocalOnly">
 				<span v-if="!localOnly"><i class="ti ti-rocket"></i></span>
 				<span v-else><i class="ti ti-rocket-off"></i></span>
@@ -122,7 +121,6 @@ import { extractMentions } from '@/scripts/extract-mentions.js';
 import { formatTimeString } from '@/scripts/format-time-string.js';
 import { Autocomplete } from '@/scripts/autocomplete.js';
 import * as os from '@/os.js';
-import * as noteDrafts from '@/scripts/note-drafts.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
 import { selectFiles } from '@/scripts/select-file.js';
 import { defaultStore, notePostInterruptors, postFormActions } from '@/store.js';
@@ -181,8 +179,6 @@ const files = ref(props.initialFiles ?? []);
 const poll = ref<PollEditorModelValue | null>(null);
 const scheduledNoteDelete = ref<DeleteScheduleEditorModelValue | null>(defaultStore.state.defaultScheduledNoteDelete ? { deleteAt: null, deleteAfter: defaultStore.state.defaultScheduledNoteDeleteTime, isValid: true } : null);
 const useCw = ref<boolean>(!!props.initialCw);
-const renote = ref(props.renote);
-const reply = ref(props.reply);
 const showPreview = ref(defaultStore.state.showPreview);
 watch(showPreview, () => defaultStore.set('showPreview', showPreview.value));
 const showAddMfmFunction = ref(defaultStore.state.enableQuickAddMfmFunction);
@@ -208,14 +204,6 @@ const scheduleNote = ref<{
 	scheduledAt: number | null;
 } | null>(null);
 
-const draftType = computed(() => {
-	if (props.channel) return 'channel';
-	if (renote.value) return 'quote';
-	if (reply.value) return 'reply';
-	return 'note';
-});
-
-const draftAuxId = computed<string | null>(() => props.channel ? props.channel.id : renote.value ? renote.value.id : reply.value ? reply.value.id : null);
 const renoteTargetNote: ShallowRef<PostFormProps['renote'] | null> = shallowRef(props.renote);
 
 const draftKey = computed((): string => {
@@ -235,7 +223,7 @@ const draftKey = computed((): string => {
 const placeholder = computed((): string => {
 	if (renoteTargetNote.value) {
 		return i18n.ts._postForm.quotePlaceholder;
-	} else if (reply.value) {
+	} else if (props.reply) {
 		return i18n.ts._postForm.replyPlaceholder;
 	} else if (props.channel) {
 		return i18n.ts._postForm.channelPlaceholder;
@@ -255,7 +243,7 @@ const placeholder = computed((): string => {
 const submitText = computed((): string => {
 	return renoteTargetNote.value
 		? i18n.ts.quote
-		: reply.value
+		: props.reply
 			? i18n.ts.reply
 			: i18n.ts.note;
 });
@@ -327,9 +315,6 @@ const bottomItemActionDef: Record<keyof typeof bottomItemDef, {
 	clearPost: {
 		action: clear,
 	},
-	saveAsDraft: {
-		action: () => saveDraft(false),
-	},
 	scheduleNote: {
 		hide: computed(() => $i.policies.scheduleNoteMax === 0),
 		active: scheduleNote,
@@ -361,108 +346,94 @@ watch(visibleUsers, () => {
 	deep: true,
 });
 
-function initialize() {
-	if (props.mention) {
-		text.value = props.mention.host ? `@${props.mention.username}@${toASCII(props.mention.host)}` : `@${props.mention.username}`;
-		text.value += ' ';
+if (props.mention) {
+	text.value = props.mention.host ? `@${props.mention.username}@${toASCII(props.mention.host)}` : `@${props.mention.username}`;
+	text.value += ' ';
+}
+
+if (props.reply && (props.reply.user.username !== $i.username || (props.reply.user.host != null && props.reply.user.host !== host))) {
+	text.value = `@${props.reply.user.username}${props.reply.user.host != null ? '@' + toASCII(props.reply.user.host) : ''} `;
+}
+
+if (props.reply && props.reply.text != null) {
+	const ast = mfm.parse(props.reply.text);
+	const otherHost = props.reply.user.host;
+
+	for (const x of extractMentions(ast)) {
+		const mention = x.host ?
+			`@${x.username}@${toASCII(x.host)}` :
+			(otherHost == null || otherHost === host) ?
+				`@${x.username}` :
+				`@${x.username}@${toASCII(otherHost)}`;
+
+		// 自分は除外
+		if ($i.username === x.username && (x.host == null || x.host === host)) continue;
+
+		// 重複は除外
+		if (text.value.includes(`${mention} `)) continue;
+
+		text.value += `${mention} `;
 	}
+}
 
-	if (reply.value && (reply.value.user.username !== $i.username || (reply.value.user.host != null && reply.value.user.host !== host))) {
-		text.value = `@${reply.value.user.username}${reply.value.user.host != null ? '@' + toASCII(reply.value.user.host) : ''} `;
-	}
+if ($i.isSilenced && visibility.value === 'public') {
+	visibility.value = 'home';
+}
 
-	if (reply.value && reply.value.text != null) {
-		const ast = mfm.parse(reply.value.text);
-		const otherHost = reply.value.user.host;
+if (props.channel) {
+	visibility.value = 'public';
+	localOnly.value = true; // TODO: チャンネルが連合するようになった折には消す
+}
 
-		for (const x of extractMentions(ast)) {
-			const mention = x.host ?
-				`@${x.username}@${toASCII(x.host)}` :
-				(otherHost == null || otherHost === host) ?
-					`@${x.username}` :
-					`@${x.username}@${toASCII(otherHost)}`;
-
-			// 自分は除外
-			if ($i.username === x.username && (x.host == null || x.host === host)) continue;
-
-			// 重複は除外
-			if (text.value.includes(`${mention} `)) continue;
-
-			text.value += `${mention} `;
-		}
-	}
-
-	if ($i.isSilenced && visibility.value === 'public') {
-		visibility.value = 'home';
-	}
-
-	if (props.channel) {
-		visibility.value = 'public';
-		localOnly.value = true; // TODO: チャンネルが連合するようになった折には消す
-	}
-
-	// 公開以外へのリプライ時は元の公開範囲を引き継ぐ
-	if (reply.value && ['home', 'followers', 'specified'].includes(reply.value.visibility)) {
-		if (reply.value.visibility === 'home' && visibility.value === 'followers') {
-			visibility.value = 'followers';
-		} else if (['home', 'followers'].includes(reply.value.visibility) && visibility.value === 'specified') {
-			visibility.value = 'specified';
-		} else {
-			visibility.value = reply.value.visibility;
-		}
-
-		if (visibility.value === 'specified') {
-			if (reply.value.visibleUserIds) {
-				misskeyApi('users/show', {
-					userIds: reply.value.visibleUserIds.filter(uid => uid !== $i.id && uid !== reply.value?.userId),
-				}).then(users => {
-					users.forEach(pushVisibleUser);
-				});
-			}
-
-			if (reply.value.userId !== $i.id) {
-				misskeyApi('users/show', { userId: reply.value.userId }).then(user => {
-					pushVisibleUser(user);
-				});
-			}
-		}
-	}
-
-	// #region semi-public note
-	// セミパブリックノートへのリプライは元の公開範囲を引き継ぐ
-	if (props.reply && props.reply.dontShowOnLtl === true && $i.policies.canPublicNonLtlNote) {
-		visibility.value = 'public_non_ltl';
-	}
-
-	// 自身のセミパブリックノートへのリプライである場合かつパブリック投稿へのリプライでセミパブリック投稿にする
-	if (props.reply && props.reply.visibility === 'public' && props.reply.reply?.userId === $i.id && props.reply.reply.dontShowOnLtl === true) {
-		visibility.value = 'public_non_ltl';
-	}
-	// #endregion
-
-	if (props.specified) {
+// 公開以外へのリプライ時は元の公開範囲を引き継ぐ
+if (props.reply && ['home', 'followers', 'specified'].includes(props.reply.visibility)) {
+	if (props.reply.visibility === 'home' && visibility.value === 'followers') {
+		visibility.value = 'followers';
+	} else if (['home', 'followers'].includes(props.reply.visibility) && visibility.value === 'specified') {
 		visibility.value = 'specified';
-		pushVisibleUser(props.specified);
+	} else {
+		visibility.value = props.reply.visibility;
 	}
 
 	if (visibility.value === 'specified') {
-		if (reply.value?.visibleUserIds) {
+		if (props.reply.visibleUserIds) {
 			misskeyApi('users/show', {
-				userIds: reply.value.visibleUserIds.filter(uid => uid !== $i.id && uid !== reply.value?.userId),
+				userIds: props.reply.visibleUserIds.filter(uid => uid !== $i.id && uid !== props.reply?.userId),
 			}).then(users => {
 				users.forEach(u => pushVisibleUser(u));
 			});
 		}
 
-		if (reply.value?.userId !== $i.id) {
-			misskeyApi('users/show', { userId: reply.value?.userId }).then(user => {
+		if (props.reply.userId !== $i.id) {
+			misskeyApi('users/show', { userId: props.reply.userId }).then(user => {
 				pushVisibleUser(user);
 			});
 		}
 	}
 }
 
-initialize();
+// #region semi-public note
+// セミパブリックノートへのリプライは元の公開範囲を引き継ぐ
+if (props.reply && props.reply.dontShowOnLtl === true && $i.policies.canPublicNonLtlNote) {
+	visibility.value = 'public_non_ltl';
+}
+
+// 自身のセミパブリックノートへのリプライである場合かつパブリック投稿へのリプライでセミパブリック投稿にする
+if (props.reply && props.reply.visibility === 'public' && props.reply.reply?.userId === $i.id && props.reply.reply.dontShowOnLtl === true) {
+	visibility.value = 'public_non_ltl';
+}
+// #endregion
+
+if (props.specified) {
+	visibility.value = 'specified';
+	pushVisibleUser(props.specified);
+}
+
+// keep cw when reply
+if (defaultStore.state.keepCw && props.reply && props.reply.cw) {
+	useCw.value = true;
+	cw.value = props.reply.cw;
+}
 
 function watchForDraft() {
 	watch(text, () => saveDraft());
@@ -821,98 +792,36 @@ function onDrop(ev: DragEvent): void {
 	//#endregion
 }
 
-async function saveDraft(auto = true) {
+function saveDraft() {
 	if (props.instant || props.mock) return;
 
-	if (auto && defaultStore.state.draftSavingBehavior !== 'auto') return;
+	const draftData = JSON.parse(miLocalStorage.getItem('drafts') ?? '{}');
 
-	if (!auto) {
-		// 手動での保存の場合は自動保存したものを削除した上で保存
-		await noteDrafts.remove(draftType.value, $i.id, 'default', draftAuxId.value as string);
-	}
+	draftData[draftKey.value] = {
+		updatedAt: new Date(),
+		data: {
+			text: text.value,
+			useCw: useCw.value,
+			cw: cw.value,
+			visibility: visibility.value,
+			localOnly: localOnly.value,
+			files: files.value,
+			poll: poll.value,
+			visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(x => x.id) : undefined,
+			quoteId: quoteId.value,
+			reactionAcceptance: reactionAcceptance.value,
+		},
+	};
 
-	await noteDrafts.set(draftType.value, $i.id, auto ? 'default' : Date.now().toString(), {
-		text: text.value,
-		useCw: useCw.value,
-		cw: cw.value,
-		visibility: visibility.value,
-		localOnly: localOnly.value,
-		files: files.value,
-		poll: poll.value,
-		scheduledNoteDelete: scheduledNoteDelete.value,
-		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(x => x.id) : undefined,
-		scheduleNote: scheduleNote.value,
-	}, draftAuxId.value as string);
-
-	if (!auto) {
-		clear();
-	}
+	miLocalStorage.setItem('drafts', JSON.stringify(draftData));
 }
 
 function deleteDraft() {
-	noteDrafts.remove(draftType.value, $i.id, 'default', draftAuxId.value as string);
-}
+	const draftData = JSON.parse(miLocalStorage.getItem('drafts') ?? '{}');
 
-function chooseDraft() {
-	os.popup(defineAsyncComponent(() => import('@/components/MkPostFormDrafts.vue')), {
-		channelId: props.channel?.id,
-	}, {
-		selected: async (res) => {
-			const draft = await res as noteDrafts.NoteDraft;
+	delete draftData[draftKey.value];
 
-			if (text.value !== '' || files.value.length > 0) {
-				const { canceled } = await os.confirm({
-					type: 'warning',
-					text: i18n.ts.draftOverwriteConfirm,
-				});
-				if (canceled) return;
-			}
-
-			applyDraft(draft);
-		},
-	}, 'closed');
-}
-
-async function applyDraft(draft: noteDrafts.NoteDraft, native = false) {
-	if (!native) {
-		reply.value = undefined;
-		renote.value = undefined;
-
-		switch (draft.type) {
-			case 'quote': {
-				await os.apiWithDialog('notes/show', { noteId: draft.auxId as string }).then(note => {
-					renote.value = note;
-				});
-				break;
-			}
-			case 'reply': {
-				await os.apiWithDialog('notes/show', { noteId: draft.auxId as string }).then(note => {
-					reply.value = note;
-				});
-				break;
-			}
-		}
-
-		initialize();
-	}
-
-	text.value = draft.data.text;
-	useCw.value = draft.data.useCw;
-	cw.value = draft.data.cw;
-	visibility.value = draft.data.visibility;
-	localOnly.value = draft.data.localOnly;
-	files.value = (draft.data.files || []).filter(draftFile => draftFile);
-	if (draft.data.poll) {
-		poll.value = draft.data.poll;
-	}
-	if (draft.data.scheduledNoteDelete) {
-		scheduledNoteDelete.value = draft.data.scheduledNoteDelete;
-	}
-	if (draft.data.visibleUserIds) {
-		misskeyApi('users/show', { userIds: draft.data.visibleUserIds }).then(users => {
-			users.forEach(u => pushVisibleUser(u));
-		});
-	}
+	miLocalStorage.setItem('drafts', JSON.stringify(draftData));
 }
 
 async function post(ev?: MouseEvent) {
@@ -973,7 +882,7 @@ async function post(ev?: MouseEvent) {
 	let postData = {
 		text: text.value === '' ? null : text.value,
 		fileIds: files.value.length > 0 ? files.value.map(f => f.id) : undefined,
-		replyId: reply.value ? reply.value.id : undefined,
+		replyId: props.reply ? props.reply.id : undefined,
 		renoteId: renoteTargetNote.value ? renoteTargetNote.value.id : quoteId.value ? quoteId.value : undefined,
 		channelId: props.channel ? props.channel.id : undefined,
 		poll: poll.value,
@@ -1094,18 +1003,6 @@ async function post(ev?: MouseEvent) {
 
 function cancel() {
 	emit('cancel');
-}
-
-async function closed() {
-	if (defaultStore.state.draftSavingBehavior === 'manual' && !posted.value && (text.value !== '' || files.value.length > 0)) {
-		os.confirm({
-			type: 'question',
-			text: i18n.ts.saveConfirm,
-		}).then(({ canceled }) => {
-			if (canceled) return;
-			saveDraft(false);
-		});
-	}
 }
 
 function insertMention() {
@@ -1257,13 +1154,28 @@ onMounted(() => {
 	if (cwInputEl.value) new Autocomplete(cwInputEl.value, cw);
 	if (hashtagsInputEl.value) new Autocomplete(hashtagsInputEl.value, hashtags);
 
-	nextTick(async () => {
-		await noteDrafts.migrate($i.id);
-
+	nextTick(() => {
 		// 書きかけの投稿を復元
-		if (!props.instant && !props.mention && !props.specified && !props.mock && !defaultStore.state.disableNoteDrafting) {
-			const draft = await noteDrafts.get(draftType.value, $i.id, 'default', draftAuxId.value as string);
-			if (draft) applyDraft(draft, true);
+		if (!props.instant && !props.mention && !props.specified && !props.mock) {
+			const draft = JSON.parse(miLocalStorage.getItem('drafts') ?? '{}')[draftKey.value];
+			if (draft) {
+				text.value = draft.data.text;
+				useCw.value = draft.data.useCw;
+				cw.value = draft.data.cw;
+				visibility.value = draft.data.visibility;
+				localOnly.value = draft.data.localOnly;
+				files.value = (draft.data.files || []).filter(draftFile => draftFile);
+				if (draft.data.poll) {
+					poll.value = draft.data.poll;
+				}
+				if (draft.data.visibleUserIds) {
+					misskeyApi('users/show', { userIds: draft.data.visibleUserIds }).then(users => {
+						users.forEach(u => pushVisibleUser(u));
+					});
+				}
+				quoteId.value = draft.data.quoteId;
+				reactionAcceptance.value = draft.data.reactionAcceptance;
+			}
 		}
 
 		// 削除して編集
@@ -1283,15 +1195,6 @@ onMounted(() => {
 					expiredAfter: null,
 				};
 			}
-			if (init.deleteAt) {
-				scheduledNoteDelete.value = {
-					deleteAt: init.deleteAt ? (new Date(init.deleteAt)).getTime() : null,
-					deleteAfter: null,
-					isValid: true,
-				};
-			}
-			visibility.value = init.visibility;
-			localOnly.value = init.localOnly ?? false;
 			if (init.visibleUserIds) {
 				misskeyApi('users/show', { userIds: init.visibleUserIds }).then(users => {
 					users.forEach(u => pushVisibleUser(u));
@@ -1299,11 +1202,6 @@ onMounted(() => {
 			}
 			quoteId.value = renoteTargetNote.value ? renoteTargetNote.value.id : null;
 			reactionAcceptance.value = init.reactionAcceptance;
-			if (init.isSchedule) {
-				scheduleNote.value = {
-					scheduledAt: new Date(init.createdAt).getTime(),
-				};
-			}
 		}
 
 		nextTick(() => watchForDraft());
@@ -1312,7 +1210,6 @@ onMounted(() => {
 
 defineExpose({
 	clear,
-	closed,
 });
 </script>
 

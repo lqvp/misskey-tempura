@@ -169,16 +169,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkButton primary class="save" @click="save_postform"><i class="ti ti-device-floppy"></i> {{ i18n.ts.save }}</MkButton>
 					</div>
 					<div :class="$style.label">{{ i18n.ts.postFormBottomSettingsDescription }}</div>
-					<MkSwitch v-model="disableNoteDrafting">
-						<template #caption>{{ i18n.ts.disableNoteDraftingDescription }}</template>
-						{{ i18n.ts.disableNoteDrafting }}
-						<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-					</MkSwitch>
-					<MkSelect v-model="draftSavingBehavior">
-						<template #label>{{ i18n.ts.draftSavingBehavior }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-						<option value="auto">{{ i18n.ts._draftSavingBehavior.auto }}</option>
-						<option value="manual">{{ i18n.ts._draftSavingBehavior.manual }}</option>
-					</MkSelect>
 					<div>
 						<div :class="$style.label">
 							{{ i18n.ts.defaultScheduledNoteDeleteTime }}
@@ -283,7 +273,6 @@ const hideAntennas = computed(defaultStore.makeGetterSetter('hideAntennas'));
 const hideChannel = computed(defaultStore.makeGetterSetter('hideChannel'));
 const selectReaction = computed(defaultStore.makeGetterSetter('selectReaction'));
 const showLikeButton = computed(defaultStore.makeGetterSetter('showLikeButton'));
-const disableNoteDrafting = computed(defaultStore.makeGetterSetter('disableNoteDrafting'));
 const imageCompressionMode = computed(defaultStore.makeGetterSetter('imageCompressionMode'));
 const enableSnowMode = computed(defaultStore.makeGetterSetter('enableSnowMode'));
 const enableReactionConfirm = computed(defaultStore.makeGetterSetter('enableReactionConfirm'));
@@ -292,7 +281,6 @@ const showInstanceTickerSoftwareName = computed(defaultStore.makeGetterSetter('s
 const useTextAreaAutoSize = computed(defaultStore.makeGetterSetter('useTextAreaAutoSize'));
 
 const Sortable = defineAsyncComponent(() => import('vuedraggable').then(x => x.default));
-const draftSavingBehavior = computed(defaultStore.makeGetterSetter('draftSavingBehavior'));
 const defaultScheduledNoteDelete = computed(defaultStore.makeGetterSetter('defaultScheduledNoteDelete'));
 const scheduledNoteDelete = ref({ deleteAt: null, deleteAfter: defaultStore.state.defaultScheduledNoteDeleteTime, isValid: true });
 
@@ -365,7 +353,6 @@ watch([
 	hideChannel,
 	selectReaction,
 	showLikeButton,
-	disableNoteDrafting,
 	enableSnowMode,
 	enableReactionConfirm,
 	enableLikeConfirm,

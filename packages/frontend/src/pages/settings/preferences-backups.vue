@@ -113,7 +113,6 @@ const defaultStoreSaveKeys: (keyof typeof defaultStore['state'])[] = [
 	'sound_notification',
 	'defaultScheduledNoteDelete',
 	'defaultScheduledNoteDeleteTime',
-	'disableNoteDrafting',
 	'postFormActions',
 	'customFont',
 	'hideReactionCount',
