@@ -12056,6 +12056,96 @@ export interface Locale extends ILocale {
          */
         "unfollowThisUserProhibited": string;
     };
+    "_entrance": {
+        /**
+         * エントランス設定
+         */
+        "title": string;
+        /**
+         * ダッシュボード設定
+         */
+        "title2": string;
+        /**
+         * タイムラインを表示
+         */
+        "showTimeLine": string;
+        /**
+         * エントランスでタイムラインを表示します。
+         */
+        "showTimeLineDescription": string;
+        /**
+         * おすすめタイムラインを表示
+         */
+        "showFeatured": string;
+        /**
+         * エントランスで「みつける」と同様のタイムラインを表示します。
+         */
+        "showFeaturedDescription": string;
+        /**
+         * 絵文字を表示
+         */
+        "showEmojis": string;
+        /**
+         * エントランスで絵文字を表示します。
+         */
+        "showEmojisDescription": string;
+        /**
+         * 表示する絵文字
+         */
+        "selectEmojis": string;
+        /**
+         * エントランスで表示する絵文字を選択します。（最大5個まで）
+         */
+        "selectEmojisDescription": string;
+        /**
+         * サーバー情報を表示
+         */
+        "showStats": string;
+        /**
+         * エントランスでユーザー/ノート数や、チャートを表示します。
+         */
+        "showStatsDescription": string;
+        /**
+         * 連合インスタンスを表示
+         */
+        "showFederation": string;
+        /**
+         * エントランスで連合インスタンスを表示します。
+         */
+        "showFederationDescription": string;
+        /**
+         * ダッシュボードを表示
+         */
+        "showDashboard": string;
+        /**
+         * エントランスでダッシュボードを表示します。
+         */
+        "showDashboardDescription": string;
+        /**
+         * 新規登録を表示
+         */
+        "showSignup": string;
+        /**
+         * エントランスで新規登録を表示します。
+         */
+        "showSignupDescription": string;
+        /**
+         * 他のインスタンスを表示
+         */
+        "showAnotherInstance": string;
+        /**
+         * エントランスで「他のサーバーを探す」を表示します。
+         */
+        "showAnotherInstanceDescription": string;
+        /**
+         * ログインを表示
+         */
+        "showSignin": string;
+        /**
+         * エントランスでログインを表示します。
+         */
+        "showSigninDescription": string;
+    };
     /**
      * 予約投稿
      */

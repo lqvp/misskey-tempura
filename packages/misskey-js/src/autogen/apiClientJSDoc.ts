@@ -2015,7 +2015,7 @@ declare module '../api.js' {
     /**
      * No description provided.
      * 
-     * **Credential required**: *Yes* / **Permission**: *read:federation*
+     * **Credential required**: *No* / **Permission**: *read:federation*
      */
     request<E extends 'federation/instances', P extends Endpoints[E]['req']>(
       endpoint: E,
@@ -3381,7 +3381,7 @@ declare module '../api.js' {
     /**
      * No description provided.
      * 
-     * **Credential required**: *Yes* / **Permission**: *read:notes*
+     * **Credential required**: *No* / **Permission**: *read:notes*
      */
     request<E extends 'notes/featured', P extends Endpoints[E]['req']>(
       endpoint: E,
@@ -4134,7 +4134,7 @@ declare module '../api.js' {
     /**
      * No description provided.
      * 
-     * **Credential required**: *Yes* / **Permission**: *read:stats*
+     * **Credential required**: *No* / **Permission**: *read:stats*
      */
     request<E extends 'stats', P extends Endpoints[E]['req']>(
       endpoint: E,

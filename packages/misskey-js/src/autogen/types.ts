@@ -1769,14 +1769,14 @@ export type paths = {
      * federation/instances
      * @description No description provided.
      *
-     * **Credential required**: *Yes* / **Permission**: *read:federation*
+     * **Credential required**: *No* / **Permission**: *read:federation*
      */
     get: operations['federation___instances'];
     /**
      * federation/instances
      * @description No description provided.
      *
-     * **Credential required**: *Yes* / **Permission**: *read:federation*
+     * **Credential required**: *No* / **Permission**: *read:federation*
      */
     post: operations['federation___instances'];
   };
@@ -2928,14 +2928,14 @@ export type paths = {
      * notes/featured
      * @description No description provided.
      *
-     * **Credential required**: *Yes* / **Permission**: *read:notes*
+     * **Credential required**: *No* / **Permission**: *read:notes*
      */
     get: operations['notes___featured'];
     /**
      * notes/featured
      * @description No description provided.
      *
-     * **Credential required**: *Yes* / **Permission**: *read:notes*
+     * **Credential required**: *No* / **Permission**: *read:notes*
      */
     post: operations['notes___featured'];
   };
@@ -3573,7 +3573,7 @@ export type paths = {
      * stats
      * @description No description provided.
      *
-     * **Credential required**: *Yes* / **Permission**: *read:stats*
+     * **Credential required**: *No* / **Permission**: *read:stats*
      */
     post: operations['stats'];
   };
@@ -5451,6 +5451,34 @@ export type components = {
       hanaModeIconRadius: number;
       hanaModeBackground?: string | null;
       enableSignupRateLimit: boolean;
+      /** @default false */
+      entranceShowTimeLine: boolean;
+      /** @default false */
+      entranceShowFeatured: boolean;
+      /** @default false */
+      entranceShowEmojis: boolean;
+      /**
+       * @default [
+       *   "👍",
+       *   "❤",
+       *   "😆",
+       *   "🎉",
+       *   "🍮"
+       * ]
+       */
+      entranceSelectEmojis: string[];
+      /** @default false */
+      entranceShowStats: boolean;
+      /** @default false */
+      entranceShowFederation: boolean;
+      /** @default true */
+      entranceShowDashboard: boolean;
+      /** @default true */
+      entranceShowSignup: boolean;
+      /** @default true */
+      entranceShowAnotherInstance: boolean;
+      /** @default true */
+      entranceShowSignin: boolean;
     };
     MetaDetailedOnly: {
       features?: {
@@ -8878,6 +8906,16 @@ export type operations = {
             enableFsTotal: boolean;
             customFsTotal: number | null;
             secondsPerSignup: number;
+            entranceShowTimeLine: boolean;
+            entranceShowFeatured: boolean;
+            entranceShowEmojis: boolean;
+            entranceSelectEmojis: string[];
+            entranceShowStats: boolean;
+            entranceShowFederation: boolean;
+            entranceShowDashboard: boolean;
+            entranceShowSignup: boolean;
+            entranceShowAnotherInstance: boolean;
+            entranceShowSignin: boolean;
           };
         };
       };
@@ -11495,6 +11533,16 @@ export type operations = {
           enableFsTotal?: boolean;
           customFsTotal?: number | null;
           secondsPerSignup?: number;
+          entranceShowTimeLine?: boolean;
+          entranceShowFeatured?: boolean;
+          entranceShowEmojis?: boolean;
+          entranceSelectEmojis?: string[];
+          entranceShowStats?: boolean;
+          entranceShowFederation?: boolean;
+          entranceShowDashboard?: boolean;
+          entranceShowSignup?: boolean;
+          entranceShowAnotherInstance?: boolean;
+          entranceShowSignin?: boolean;
         };
       };
     };
@@ -16549,7 +16597,7 @@ export type operations = {
    * federation/instances
    * @description No description provided.
    *
-   * **Credential required**: *Yes* / **Permission**: *read:federation*
+   * **Credential required**: *No* / **Permission**: *read:federation*
    */
   federation___instances: {
     requestBody: {
@@ -16572,7 +16620,7 @@ export type operations = {
           /** @default 0 */
           offset?: number;
           /** @enum {string|null} */
-          sort?: '+pubSub' | '-pubSub' | '+notes' | '-notes' | '+users' | '-users' | '+following' | '-following' | '+followers' | '-followers' | '+firstRetrievedAt' | '-firstRetrievedAt' | '+latestRequestReceivedAt' | '-latestRequestReceivedAt' | '+reversiVersion' | '-reversiVersion' | null;
+          sort?: '+pubSub' | '-pubSub' | '+notes' | '-notes' | '+users' | '-users' | '+following' | '-following' | '+followers' | '-followers' | '+firstRetrievedAt' | '-firstRetrievedAt' | '+latestRequestReceivedAt' | '-latestRequestReceivedAt' | null;
         };
       };
     };
@@ -23826,7 +23874,7 @@ export type operations = {
    * notes/featured
    * @description No description provided.
    *
-   * **Credential required**: *Yes* / **Permission**: *read:notes*
+   * **Credential required**: *No* / **Permission**: *read:notes*
    */
   notes___featured: {
     requestBody: {
@@ -27808,7 +27856,7 @@ export type operations = {
    * stats
    * @description No description provided.
    *
-   * **Credential required**: *Yes* / **Permission**: *read:stats*
+   * **Credential required**: *No* / **Permission**: *read:stats*
    */
   stats: {
     responses: {

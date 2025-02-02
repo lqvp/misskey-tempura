@@ -651,6 +651,49 @@ export const meta = {
 				type: 'number',
 				optional: false, nullable: false,
 			},
+			entranceShowTimeLine: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			entranceShowFeatured: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			entranceShowEmojis: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			entranceSelectEmojis: {
+				type: 'array',
+				optional: false, nullable: false,
+				items: {
+					type: 'string',
+				},
+			},
+			entranceShowStats: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			entranceShowFederation: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			entranceShowDashboard: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			entranceShowSignup: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			entranceShowAnotherInstance: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			entranceShowSignin: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
 		},
 	},
 } as const;
@@ -823,6 +866,16 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				enableFsTotal: instance.enableFsTotal,
 				customFsTotal: instance.customFsTotal,
 				secondsPerSignup: instance.secondsPerSignup,
+				entranceShowTimeLine: instance.entranceShowTimeLine,
+				entranceShowFeatured: instance.entranceShowFeatured,
+				entranceShowEmojis: instance.entranceShowEmojis,
+				entranceSelectEmojis: instance.entranceSelectEmojis,
+				entranceShowStats: instance.entranceShowStats,
+				entranceShowFederation: instance.entranceShowFederation,
+				entranceShowDashboard: instance.entranceShowDashboard,
+				entranceShowSignup: instance.entranceShowSignup,
+				entranceShowAnotherInstance: instance.entranceShowAnotherInstance,
+				entranceShowSignin: instance.entranceShowSignin,
 			};
 		});
 	}

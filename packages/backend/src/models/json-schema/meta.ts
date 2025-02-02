@@ -340,6 +340,59 @@ export const packedMetaLiteSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
+		entranceShowTimeLine: {
+			type: 'boolean',
+			optional: false, nullable: false,
+			default: false,
+		},
+		entranceShowFeatured: {
+			type: 'boolean',
+			optional: false, nullable: false,
+			default: false,
+		},
+		entranceShowEmojis: {
+			type: 'boolean',
+			optional: false, nullable: false,
+			default: false,
+		},
+		entranceSelectEmojis: {
+			type: 'array',
+			optional: false, nullable: false,
+			default: ['👍', '❤', '😆', '🎉', '🍮'],
+			items: {
+				type: 'string',
+			},
+		},
+		entranceShowStats: {
+			type: 'boolean',
+			optional: false, nullable: false,
+			default: false,
+		},
+		entranceShowFederation: {
+			type: 'boolean',
+			optional: false, nullable: false,
+			default: false,
+		},
+		entranceShowDashboard: {
+			type: 'boolean',
+			optional: false, nullable: false,
+			default: true,
+		},
+		entranceShowSignup: {
+			type: 'boolean',
+			optional: false, nullable: false,
+			default: true,
+		},
+		entranceShowAnotherInstance: {
+			type: 'boolean',
+			optional: false, nullable: false,
+			default: true,
+		},
+		entranceShowSignin: {
+			type: 'boolean',
+			optional: false, nullable: false,
+			default: true,
+		},
 	},
 } as const;
 

@@ -147,6 +147,16 @@ export class MetaEntityService {
 			hanaModeIconRadius: instance.hanaModeIconRadius,
 			hanaModeBackground: instance.hanaModeBackground,
 			enableSignupRateLimit: (instance.secondsPerSignup > 0),
+			entranceShowTimeLine: instance.entranceShowTimeLine,
+			entranceShowFeatured: instance.entranceShowFeatured,
+			entranceShowEmojis: instance.entranceShowEmojis,
+			entranceSelectEmojis: instance.entranceSelectEmojis,
+			entranceShowStats: instance.entranceShowStats,
+			entranceShowFederation: instance.entranceShowFederation,
+			entranceShowDashboard: instance.entranceShowDashboard,
+			entranceShowSignup: instance.entranceShowSignup,
+			entranceShowAnotherInstance: instance.entranceShowAnotherInstance,
+			entranceShowSignin: instance.entranceShowSignin,
 		};
 
 		return packed;

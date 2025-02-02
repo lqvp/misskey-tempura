@@ -59,7 +59,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private featuredService: FeaturedService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			if (!this.serverSettings.entranceShowTimeLine && !me) {
+			if (!this.serverSettings.entranceShowFeatured && !me) {
 				return [];
 			}
 
