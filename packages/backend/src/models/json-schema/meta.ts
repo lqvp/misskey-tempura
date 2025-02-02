@@ -336,6 +336,10 @@ export const packedMetaLiteSchema = {
 			type: 'string',
 			optional: true, nullable: true,
 		},
+		enableSignupRateLimit: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
 	},
 } as const;
 

@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</div>
 	<MkSpacer :marginMin="20" :marginMax="32">
 		<form class="_gaps_m" autocomplete="new-password" @submit.prevent="onSubmit">
-			<MkInput v-if="instance.disableRegistration || instance.approvalRequiredForSignup || instance.emailRequiredForSignup" v-model="invitationCode" type="text" :spellcheck="false" :required="instance.disableRegistration">
+			<MkInput v-if="instance.disableRegistration || instance.enableSignupRateLimit || instance.approvalRequiredForSignup || instance.emailRequiredForSignup" v-model="invitationCode" type="text" :spellcheck="false" :required="instance.disableRegistration">
 				<template #label>{{ i18n.ts.invitationCode }}{{ !instance.disableRegistration && ` (${i18n.ts.optional})` }}<div v-tooltip:dialog="i18n.ts._signup.inviteCodeInfo" class="_button _help"><i class="ti ti-help-circle"></i></div></template>
 				<template #prefix><i class="ti ti-key"></i></template>
 			</MkInput>
@@ -282,7 +282,7 @@ async function onSubmit(): Promise<void> {
 		},
 		body: JSON.stringify(signupPayload),
 	}).catch(() => {
-		onSignupApiError();
+		onSignupApiError(null, null);
 		return null;
 	});
 
@@ -318,14 +318,17 @@ async function onSubmit(): Promise<void> {
 				await login(resJson.token);
 			}
 		}
+	} else if (res) {
+		const errorBody = await res.json().catch(() => ({}));
+		onSignupApiError(res, errorBody);
 	} else {
-		onSignupApiError();
+		onSignupApiError(null, null);
 	}
 
 	submitting.value = false;
 }
 
-function onSignupApiError() {
+function onSignupApiError(res: Response | null, errorBody: any) {
 	submitting.value = false;
 	hcaptcha.value?.reset?.();
 	mcaptcha.value?.reset?.();
@@ -333,10 +336,18 @@ function onSignupApiError() {
 	turnstile.value?.reset?.();
 	testcaptcha.value?.reset?.();
 
-	os.alert({
-		type: 'error',
-		text: i18n.ts.somethingHappened,
-	});
+	if (res?.status === 429 || errorBody?.error?.message === 'Too Many Requests') {
+		os.alert({
+			type: 'error',
+			title: i18n.ts.signupRateLimited,
+			text: i18n.ts.signupRateLimitedDescription,
+		});
+	} else {
+		os.alert({
+			type: 'error',
+			text: i18n.ts.somethingHappened,
+		});
+	}
 }
 </script>
 

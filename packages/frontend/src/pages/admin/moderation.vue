@@ -44,6 +44,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkButton v-if="validateMinimumUsernameLengthChanged" primary @click="save_validateMinimumUsernameLength">{{ i18n.ts.save }}</MkButton>
 					</div>
 
+					<div class="_gaps">
+						<MkInput v-model="secondsPerSignup" type="number" @update:modelValue="v => secondsPerSignup = Number(v)">
+							<template #label>
+								<span>{{ i18n.ts.secondsPerSignup }}</span>
+								<span v-if="secondsPerSignupChanged" class="_modified">{{ i18n.ts.modified }}</span>
+								<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+							</template>
+							<template #caption>{{ i18n.ts.secondsPerSignupDescription }}</template>
+						</MkInput>
+						<MkButton v-if="secondsPerSignupChanged" primary @click="save_secondsPerSignup">{{ i18n.ts.save }}</MkButton>
+					</div>
+
 					<FormLink to="/admin/server-rules">{{ i18n.ts.serverRules }}</FormLink>
 
 					<MkFolder>
@@ -169,6 +181,7 @@ const emailRequiredForSignup = ref<boolean>(false);
 const approvalRequiredForSignup = ref<boolean>(false);
 const blockMentionsFromUnfamiliarRemoteUsers = ref<boolean>(false);
 const validateMinimumUsernameLength = ref<number>();
+const secondsPerSignup = ref<number>(0);
 const sensitiveWords = ref<string>('');
 const prohibitedWords = ref<string>('');
 const prohibitedWordsForNameOfUser = ref<string>('');
@@ -179,8 +192,12 @@ const silencedHosts = ref<string>('');
 const mediaSilencedHosts = ref<string>('');
 
 const originalMinimumUsernameLength = ref<number>();
+const originalSecondsPerSignup = ref<number>(0);
 const validateMinimumUsernameLengthChanged = computed(() =>
 	validateMinimumUsernameLength.value !== originalMinimumUsernameLength.value
+);
+const secondsPerSignupChanged = computed(() =>
+	secondsPerSignup.value !== originalSecondsPerSignup.value
 );
 
 async function init() {
@@ -191,6 +208,8 @@ async function init() {
 	blockMentionsFromUnfamiliarRemoteUsers.value = meta.blockMentionsFromUnfamiliarRemoteUsers;
 	validateMinimumUsernameLength.value = meta.validateMinimumUsernameLength;
 	originalMinimumUsernameLength.value = meta.validateMinimumUsernameLength;
+	secondsPerSignup.value = meta.secondsPerSignup ?? 0;
+	originalSecondsPerSignup.value = meta.secondsPerSignup ?? 0;
 	sensitiveWords.value = meta.sensitiveWords.join('\n');
 	prohibitedWords.value = meta.prohibitedWords.join('\n');
 	prohibitedWordsForNameOfUser.value = meta.prohibitedWordsForNameOfUser.join('\n');
@@ -253,6 +272,15 @@ function save_validateMinimumUsernameLength() {
 	}).then(() => {
 		fetchInstance(true);
 		originalMinimumUsernameLength.value = validateMinimumUsernameLength.value;
+	});
+}
+
+function save_secondsPerSignup() {
+	os.apiWithDialog('admin/update-meta', {
+		secondsPerSignup: secondsPerSignup.value,
+	}).then(() => {
+		fetchInstance(true);
+		originalSecondsPerSignup.value = secondsPerSignup.value;
 	});
 }
 

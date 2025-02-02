@@ -238,6 +238,7 @@ export const paramDef = {
 		customMemTotal: { type: 'integer', nullable: true },
 		enableFsTotal: { type: 'boolean' },
 		customFsTotal: { type: 'integer', nullable: true },
+		secondsPerSignup: { type: 'integer' },
 	},
 	required: [],
 } as const;
@@ -871,6 +872,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.customFsTotal !== undefined) {
 				set.customFsTotal = ps.customFsTotal;
+			}
+
+			if (ps.secondsPerSignup !== undefined) {
+				set.secondsPerSignup = ps.secondsPerSignup;
 			}
 
 			const before = await this.metaService.fetch(true);

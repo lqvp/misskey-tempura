@@ -146,6 +146,7 @@ export class MetaEntityService {
 			hanaModeIconSize: instance.hanaModeIconSize,
 			hanaModeIconRadius: instance.hanaModeIconRadius,
 			hanaModeBackground: instance.hanaModeBackground,
+			enableSignupRateLimit: (instance.secondsPerSignup > 0),
 		};
 
 		return packed;

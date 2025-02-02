@@ -5449,6 +5449,7 @@ export type components = {
       /** @default 50 */
       hanaModeIconRadius: number;
       hanaModeBackground?: string | null;
+      enableSignupRateLimit: boolean;
     };
     MetaDetailedOnly: {
       features?: {
@@ -8875,6 +8876,7 @@ export type operations = {
             customMemTotal: number | null;
             enableFsTotal: boolean;
             customFsTotal: number | null;
+            secondsPerSignup: number;
           };
         };
       };
@@ -11491,6 +11493,7 @@ export type operations = {
           customMemTotal?: number | null;
           enableFsTotal?: boolean;
           customFsTotal?: number | null;
+          secondsPerSignup?: number;
         };
       };
     };

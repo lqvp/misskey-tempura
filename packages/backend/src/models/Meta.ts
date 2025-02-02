@@ -831,4 +831,9 @@ export class MiMeta {
 		nullable: true,
 	})
 	public customFsTotal: number | null;
+
+	@Column('integer', {
+		default: 0,
+	})
+	public secondsPerSignup: number;
 }
