@@ -11,7 +11,7 @@ import NotesChart from '@/core/chart/charts/notes.js';
 import UsersChart from '@/core/chart/charts/users.js';
 
 export const meta = {
-	requireCredential: true,
+	requireCredential: false,
 
 	kind: 'read:stats',
 
