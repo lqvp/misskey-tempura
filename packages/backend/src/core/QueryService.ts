@@ -191,8 +191,13 @@ export class QueryService {
 	public generateVisibilityQuery(q: SelectQueryBuilder<any>, me?: { id: MiUser['id'] } | null): void {
 		// This code must always be synchronized with the checks in Notes.isVisibleForMe.
 		if (me == null) {
-			// ログインしていないユーザーにはノートを表示しない
-			q.andWhere('FALSE');
+			q.andWhere(new Brackets(qb => {
+				qb
+					.where('note.visibility = \'public\'')
+					.orWhere('note.visibility = \'home\'')
+					// 連合なしのノートは未ログイン者には見せない
+					.andWhere('note.localOnly = FALSE');
+			}));
 		} else {
 			const followingQuery = this.followingsRepository.createQueryBuilder('following')
 				.select('following.followeeId')

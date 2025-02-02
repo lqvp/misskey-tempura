@@ -159,8 +159,8 @@ export class NoteEntityService implements OnModuleInit {
 			}
 		}
 
-		// 未ログインなら非表示
-		if (!meId) {
+		/// 連合なしで未ログインなら非表示
+		if (packedNote.localOnly && !meId) {
 			hide = true;
 		}
 
@@ -299,8 +299,8 @@ export class NoteEntityService implements OnModuleInit {
 			}
 		}
 
-		// 未ログインなら非表示
-		if (!meId) {
+		// 連合なし、かつ 未ログインなら非表示
+		if (note.localOnly && !meId) {
 			return false;
 		}
 
