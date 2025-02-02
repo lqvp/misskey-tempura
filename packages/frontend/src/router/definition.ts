@@ -637,7 +637,7 @@ const routes: RouteDef[] = [{
 }, {
 	path: '/timeline',
 	component: page(() => import('@/pages/timeline.vue')),
-	loginRequired: true,
+	loginRequired: false,
 }, {
 	path: '/reactions-stat',
 	component: page(() => import('@/pages/reactions-stat.vue')),
