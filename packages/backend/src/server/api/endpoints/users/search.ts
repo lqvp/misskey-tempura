@@ -9,8 +9,10 @@ import type { UsersRepository, UserProfilesRepository } from '@/models/_.js';
 import type { MiUser } from '@/models/User.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
+import { RoleService } from '@/core/RoleService.js';
 import { DI } from '@/di-symbols.js';
 import { sqlLikeEscape } from '@/misc/sql-like-escape.js';
+import { ApiError } from '../../error.js';
 
 export const meta = {
 	tags: ['users'],
@@ -28,6 +30,14 @@ export const meta = {
 			type: 'object',
 			optional: false, nullable: false,
 			ref: 'User',
+		},
+	},
+
+	errors: {
+		unavailable: {
+			message: 'Search of users unavailable.',
+			code: 'UNAVAILABLE',
+			id: '6906fe43-5c60-489a-8191-171c6a7127b0',
 		},
 	},
 } as const;
@@ -54,8 +64,13 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private userProfilesRepository: UserProfilesRepository,
 
 		private userEntityService: UserEntityService,
+		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			const policies = await this.roleService.getUserPolicies(me ? me.id : null);
+			if (!policies.canSearchUsers) {
+				throw new ApiError(meta.errors.unavailable);
+			}
 			const activeThreshold = new Date(Date.now() - (1000 * 60 * 60 * 24 * 30)); // 30日
 
 			ps.query = ps.query.trim();
