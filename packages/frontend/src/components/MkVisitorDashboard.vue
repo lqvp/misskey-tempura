@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <div v-if="instance" :class="$style.root">
 	<div :class="[$style.main, $style.panel]">
-		<img :src="instance.iconUrl || '/favicon.ico'" alt="" :class="$style.mainIcon"/>
+		<img :src="instance.enableLongIconUrl ? (instance.longIconUrl ?? '') : (instance.iconUrl ?? '/favicon.ico')" alt="" :class="[$style.mainIcon, { [$style.longIcon]: instance.enableLongIconUrl }]"/>
 		<button class="_button _acrylic" :class="$style.mainMenu" @click="showMenu"><i class="ti ti-dots"></i></button>
 		<div :class="$style.mainFg">
 			<h1 :class="$style.mainTitle">
@@ -127,6 +127,12 @@ function showMenu(ev: MouseEvent) {
 	margin-top: -47px;
 	vertical-align: bottom;
 	filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.5));
+}
+
+.longIcon {
+  width: 150px;
+  max-width: 300px;
+  height: auto;
 }
 
 .mainMenu {
