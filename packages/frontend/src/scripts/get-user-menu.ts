@@ -7,9 +7,10 @@ import { toUnicode } from 'punycode.js';
 import { defineAsyncComponent, ref, watch } from 'vue';
 import * as Misskey from 'misskey-js';
 import { host, url } from '@@/js/config.js';
+import { host, url } from '@@/js/config.js';
+import type { MenuItem } from '@/types/menu.js';
 import { i18n } from '@/i18n.js';
 import { copyToClipboard } from '@/scripts/copy-to-clipboard.js';
-import { host, url } from '@@/js/config.js';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
 import { defaultStore, userActions } from '@/store.js';
@@ -19,8 +20,7 @@ import { IRouter } from '@/nirax.js';
 import { antennasCache, rolesCache, userListsCache } from '@/cache.js';
 import { mainRouter } from '@/router/main.js';
 import { genEmbedCode } from '@/scripts/get-embed-code.js';
-import type { MenuItem } from '@/types/menu.js';
-import { editNickname } from "@/scripts/edit-nickname";
+import { editNickname } from '@/scripts/edit-nickname';
 
 type PeriodType = {
 	key: string;
@@ -296,12 +296,12 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 				os.post({ specified: user, initialText: `${canonical} ` });
 			},
 		}, { type: 'divider' }, ...(defaultStore.state.nicknameEnabled ? [{
-		icon: 'ti ti-edit',
-		text: 'ニックネームを編集',
-		action: () => {
-			editNickname(user);
-		},
-	}] : []), {
+			icon: 'ti ti-edit',
+			text: 'ニックネームを編集',
+			action: () => {
+				editNickname(user);
+			},
+		}] : []), {
 			icon: 'ti ti-pencil',
 			text: i18n.ts.editMemo,
 			action: editMemo,
