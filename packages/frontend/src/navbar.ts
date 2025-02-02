@@ -202,6 +202,7 @@ export const navbarItemDef = reactive({
 		action: (ev) => {
 			roleManager();
 		},
+		show: computed(() => $i != null && $i.policies.canAddRoles),
 	},
 	reactionStat: {
 		title: i18n.ts.reactionsStat,
@@ -217,11 +218,13 @@ export const navbarItemDef = reactive({
 		title: i18n.ts._followHistory.title,
 		icon: 'ti ti-history',
 		to: '/my/follow-history',
+		show: computed(() => $i != null && $i.policies.canReadFollowHistory),
 	},
 	followRequestHistory: {
 		title: i18n.ts._followRequestHistory.title,
 		icon: 'ti ti-history-toggle',
 		to: '/my/follow-requests-history',
+		show: computed(() => $i != null && $i.policies.canReadFollowHistory),
 	},
 	cacheClear: {
 		title: i18n.ts.clearCache,
