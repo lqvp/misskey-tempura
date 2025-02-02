@@ -180,7 +180,7 @@ const enableRegistration = ref<boolean>(false);
 const emailRequiredForSignup = ref<boolean>(false);
 const approvalRequiredForSignup = ref<boolean>(false);
 const blockMentionsFromUnfamiliarRemoteUsers = ref<boolean>(false);
-const validateMinimumUsernameLength = ref<number>();
+const validateMinimumUsernameLength = ref<number | null>(null);
 const secondsPerSignup = ref<number>(0);
 const sensitiveWords = ref<string>('');
 const prohibitedWords = ref<string>('');
@@ -262,16 +262,16 @@ function onChange_blockMentionsFromUnfamiliarRemoteUsers(value: boolean) {
 	});
 }
 
-function onUsernameMinLengthChange(value: number) {
-	validateMinimumUsernameLength.value = value;
+function onUsernameMinLengthChange(value: string | number) {
+	validateMinimumUsernameLength.value = Number(value);
 }
 
 function save_validateMinimumUsernameLength() {
 	os.apiWithDialog('admin/update-meta', {
-		validateMinimumUsernameLength: validateMinimumUsernameLength.value,
+		validateMinimumUsernameLength: validateMinimumUsernameLength.value ?? undefined,
 	}).then(() => {
 		fetchInstance(true);
-		originalMinimumUsernameLength.value = validateMinimumUsernameLength.value;
+		originalMinimumUsernameLength.value = validateMinimumUsernameLength.value ?? undefined;
 	});
 }
 
