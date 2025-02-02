@@ -14,8 +14,7 @@ import { sqlLikeEscape } from '@/misc/sql-like-escape.js';
 export const meta = {
 	tags: ['federation'],
 
-	requireCredential: true,
-	requireAdmin: true,
+	requireCredential: false,
 	kind: 'read:federation',
 	allowGet: true,
 	cacheSec: 3600,
@@ -64,8 +63,6 @@ export const paramDef = {
 				'-firstRetrievedAt',
 				'+latestRequestReceivedAt',
 				'-latestRequestReceivedAt',
-				'+reversiVersion',
-				'-reversiVersion',
 				null,
 			],
 		},
@@ -83,10 +80,67 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private metaService: MetaService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			if (!me) {
-				return [];
-			}
 			const query = this.instancesRepository.createQueryBuilder('instance');
+
+			if (!me) {
+				const meta = await this.metaService.fetch(true);
+				if (!meta.entranceShowFederation) {
+					return [];
+				}
+				const allowedParams = (
+					ps.sort === '+pubSub' &&
+					ps.limit === 20 &&
+					ps.blocked === false &&
+					ps.offset === 0 &&
+					ps.host === null &&
+					ps.softwareName === null &&
+					ps.notResponding === null &&
+					ps.suspended === null &&
+					ps.silenced === null &&
+					ps.quarantine === null &&
+					ps.federating === null &&
+					ps.subscribing === null &&
+					ps.publishing === null
+				);
+				if (!allowedParams) {
+					return [];
+				}
+			}
+
+			if (me && !me.isRoot) {
+				const meta = await this.metaService.fetch(true);
+
+				// 停止済みインスタンス除外
+				query.andWhere('instance.suspensionState = :none', { none: 'none' });
+
+				// サイレンス済みインスタンス除外
+				if (meta.silencedHosts.length > 0) {
+					query.andWhere('instance.host NOT IN (:...silenced)', {
+						silenced: meta.silencedHosts,
+					});
+				}
+
+				// 隔離済みインスタンス除外
+				query.andWhere('instance.quarantineLimited = FALSE');
+
+				// ブロック済みインスタンス除外
+				if (meta.blockedHosts.length > 0) {
+					query.andWhere('instance.host NOT IN (:...blocked)', {
+						blocked: meta.blockedHosts,
+					});
+				}
+
+				// パラメータによる上書き防止
+				const restrictedParams = [
+					ps.suspended,
+					ps.silenced,
+					ps.quarantine,
+					ps.blocked,
+				];
+				if (restrictedParams.some(p => p !== null && p !== undefined)) {
+					return [];
+				}
+			}
 
 			switch (ps.sort) {
 				case '+pubSub': query.orderBy('instance.followingCount', 'DESC').orderBy('instance.followersCount', 'DESC'); break;
@@ -103,8 +157,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				case '-firstRetrievedAt': query.orderBy('instance.firstRetrievedAt', 'ASC'); break;
 				case '+latestRequestReceivedAt': query.orderBy('instance.latestRequestReceivedAt', 'DESC', 'NULLS LAST'); break;
 				case '-latestRequestReceivedAt': query.orderBy('instance.latestRequestReceivedAt', 'ASC', 'NULLS FIRST'); break;
-				case '+reversiVersion': query.orderBy('instance.reversiVersion', 'DESC', 'NULLS LAST'); break;
-				case '-reversiVersion': query.orderBy('instance.reversiVersion', 'ASC', 'NULLS FIRST'); break;
 
 				default: query.orderBy('instance.id', 'DESC'); break;
 			}
