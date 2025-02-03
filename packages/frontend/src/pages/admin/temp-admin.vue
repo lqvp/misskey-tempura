@@ -245,6 +245,29 @@ SPDX-License-Identifier: AGPL-3.0-only
 									</MkSwitch>
 								</div>
 							</MkFolder>
+
+							<MkFolder>
+								<template #icon><i class="ti ti-box-margin"></i></template>
+								<template #label>{{ i18n.ts._entrance.marginSettings }}</template>
+
+								<div class="_gaps_m">
+									<MkInput v-model="entranceSettingsForm.state.entranceMarginLeft" type="number" :min="0">
+										<template #label>{{ i18n.ts._entrance.marginLeft }}</template>
+									</MkInput>
+
+									<MkInput v-model="entranceSettingsForm.state.entranceMarginRight" type="number" :min="0">
+										<template #label>{{ i18n.ts._entrance.marginRight }}</template>
+									</MkInput>
+
+									<MkInput v-model="entranceSettingsForm.state.entranceMarginTop" type="number" :min="0">
+										<template #label>{{ i18n.ts._entrance.marginTop }}</template>
+									</MkInput>
+
+									<MkInput v-model="entranceSettingsForm.state.entranceMarginBottom" type="number" :min="0">
+										<template #label>{{ i18n.ts._entrance.marginBottom }}</template>
+									</MkInput>
+								</div>
+							</MkFolder>
 						</div>
 					</MkFolder>
 
@@ -338,6 +361,10 @@ const entranceShowDashboard = ref<boolean>(false);
 const entranceShowSignup = ref<boolean>(false);
 const entranceShowAnotherInstance = ref<boolean>(false);
 const entranceShowSignin = ref<boolean>(false);
+const entranceMarginLeft = ref<number>();
+const entranceMarginRight = ref<number>();
+const entranceMarginTop = ref<number>();
+const entranceMarginBottom = ref<number>();
 
 const originalMinimumUsernameLength = ref<number>();
 const validateMinimumUsernameLengthChanged = computed(() =>
@@ -384,6 +411,10 @@ async function init() {
 	entranceShowSignup.value = meta.entranceShowSignup;
 	entranceShowAnotherInstance.value = meta.entranceShowAnotherInstance;
 	entranceShowSignin.value = meta.entranceShowSignin;
+	entranceMarginLeft.value = meta.entranceMarginLeft;
+	entranceMarginRight.value = meta.entranceMarginRight;
+	entranceMarginTop.value = meta.entranceMarginTop;
+	entranceMarginBottom.value = meta.entranceMarginBottom;
 }
 
 function addBackgroundImage() {
@@ -493,12 +524,31 @@ const entranceSettingsForm = useForm({
 	entranceShowSignup: meta.entranceShowSignup,
 	entranceShowAnotherInstance: meta.entranceShowAnotherInstance,
 	entranceShowSignin: meta.entranceShowSignin,
+	entranceMarginLeft: Number(meta.entranceMarginLeft),
+	entranceMarginRight: Number(meta.entranceMarginRight),
+	entranceMarginTop: Number(meta.entranceMarginTop),
+	entranceMarginBottom: Number(meta.entranceMarginBottom),
 }, async (state) => {
 	const emojis = state.entranceSelectEmojis.split('\n').filter(emoji => emoji.trim() !== '');
 	if (emojis.length > 5) {
 		os.alert({
 			type: 'error',
 			text: '表示する絵文字は最大5個までです。',
+		});
+		return;
+	}
+
+	const parsedMargins = {
+		entranceMarginLeft: Number(state.entranceMarginLeft),
+		entranceMarginRight: Number(state.entranceMarginRight),
+		entranceMarginTop: Number(state.entranceMarginTop),
+		entranceMarginBottom: Number(state.entranceMarginBottom),
+	};
+
+	if (Object.values(parsedMargins).some(isNaN)) {
+		os.alert({
+			type: 'error',
+			text: 'マージン値は数値で入力してください',
 		});
 		return;
 	}
@@ -513,6 +563,10 @@ const entranceSettingsForm = useForm({
 		entranceShowSignup: state.entranceShowSignup,
 		entranceShowAnotherInstance: state.entranceShowAnotherInstance,
 		entranceShowSignin: state.entranceShowSignin,
+		entranceMarginLeft: state.entranceMarginLeft,
+		entranceMarginRight: state.entranceMarginRight,
+		entranceMarginTop: state.entranceMarginTop,
+		entranceMarginBottom: state.entranceMarginBottom,
 	});
 	fetchInstance(true);
 });

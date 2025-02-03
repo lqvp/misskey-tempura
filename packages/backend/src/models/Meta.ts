@@ -888,4 +888,24 @@ export class MiMeta {
 		default: true,
 	})
 	public entranceShowSignin: boolean;
+
+	@Column('integer', {
+		default: 120,
+	})
+	public entranceMarginLeft: number;
+
+	@Column('integer', {
+		default: 0,
+	})
+	public entranceMarginRight: number;
+
+	@Column('integer', {
+		default: 0,
+	})
+	public entranceMarginTop: number;
+
+	@Column('integer', {
+		default: 0,
+	})
+	public entranceMarginBottom: number;
 }

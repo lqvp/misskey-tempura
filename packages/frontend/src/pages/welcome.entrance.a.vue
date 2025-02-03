@@ -22,7 +22,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			:emoji="emoji"
 		/>
 	</div>
-	<div v-if="meta.entranceShowDashboard" class="contents">
+	<div
+		v-if="meta.entranceShowDashboard" :style="cssVariables" class="contents"
+	>
 		<MkVisitorDashboard/>
 	</div>
 	<div v-if="instances && instances.length > 0 && meta.entranceShowFederation" class="federation">
@@ -38,7 +40,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import * as Misskey from 'misskey-js';
 import XTimeline from './welcome.timeline.vue';
 import MarqueeText from '@/components/MkMarquee.vue';
@@ -50,6 +52,33 @@ import { getProxiedImageUrl } from '@/scripts/media-proxy.js';
 import { instance as meta } from '@/instance.js';
 
 const instances = ref<Misskey.entities.FederationInstance[]>();
+
+const cssVariables = computed(() => {
+	const parseValue = (value: string | number | null | undefined): number => {
+		if (value === null || value === undefined) return 0;
+		if (typeof value === 'number') return value;
+		const num = parseInt(value, 10);
+		return isNaN(num) ? 0 : num;
+	};
+
+	const left = parseValue(meta.entranceMarginLeft);
+	const right = parseValue(meta.entranceMarginRight);
+	const shouldCenter = left === 0 && right === 0;
+
+	return {
+		'--margin-left': shouldCenter ? 'auto' : toCssUnit(meta.entranceMarginLeft),
+		'--margin-right': shouldCenter ? 'auto' : toCssUnit(meta.entranceMarginRight),
+		'--margin-top': toCssUnit(meta.entranceMarginTop),
+		'--margin-bottom': toCssUnit(meta.entranceMarginBottom),
+	};
+});
+
+function toCssUnit(value: string | number | null | undefined): string {
+	if (value === null || value === undefined) return '';
+	if (typeof value === 'number') return `${value}px`;
+	if (/^\d+$/.test(value)) return `${value}px`; // 数値のみの文字列もpx変換
+	return value;
+}
 
 function getInstanceIcon(instance: Misskey.entities.FederationInstance): string {
 	if (!instance.iconUrl) {
@@ -157,8 +186,11 @@ if (meta.entranceShowFederation) {
 	> .contents {
 		position: relative;
 		width: min(430px, calc(100% - 32px));
-		margin-left: 128px;
 		padding: 100px 0 100px 0;
+		margin-left: var(--margin-left, 0);
+		margin-right: var(--margin-right, 0);
+		margin-top: var(--margin-top, 0);
+		margin-bottom: var(--margin-bottom, 0);
 
 		@media (max-width: 1200px) {
 			margin: auto;

@@ -17,6 +17,10 @@ export class customizeEntrance1738513270655 {
 			await queryRunner.query(`ALTER TABLE "meta" ADD "entranceShowSignup" boolean NOT NULL DEFAULT true`);
 			await queryRunner.query(`ALTER TABLE "meta" ADD "entranceShowAnotherInstance" boolean NOT NULL DEFAULT true`);
 			await queryRunner.query(`ALTER TABLE "meta" ADD "entranceShowSignin" boolean NOT NULL DEFAULT true`);
+			await queryRunner.query('ALTER TABLE "meta" ADD "entranceMarginLeft" character varying(1024) NOT NULL DEFAULT \'120\'');
+			await queryRunner.query('ALTER TABLE "meta" ADD "entranceMarginRight" character varying(1024) NOT NULL DEFAULT \'0\'');
+			await queryRunner.query('ALTER TABLE "meta" ADD "entranceMarginTop" character varying(1024) NOT NULL DEFAULT \'0\'');
+			await queryRunner.query('ALTER TABLE "meta" ADD "entranceMarginBottom" character varying(1024) NOT NULL DEFAULT \'0\'');
 	}
 
 	async down(queryRunner) {
@@ -30,5 +34,9 @@ export class customizeEntrance1738513270655 {
 			await queryRunner.query(`ALTER TABLE "meta" DROP COLUMN "entranceShowSignup"`);
 			await queryRunner.query(`ALTER TABLE "meta" DROP COLUMN "entranceShowAnotherInstance"`);
 			await queryRunner.query(`ALTER TABLE "meta" DROP COLUMN "entranceShowSignin"`);
+			await queryRunner.query(`ALTER TABLE "meta" DROP COLUMN "entranceMarginLeft"`);
+			await queryRunner.query(`ALTER TABLE "meta" DROP COLUMN "entranceMarginRight"`);
+			await queryRunner.query(`ALTER TABLE "meta" DROP COLUMN "entranceMarginTop"`);
+			await queryRunner.query(`ALTER TABLE "meta" DROP COLUMN "entranceMarginBottom"`);
 	}
 }

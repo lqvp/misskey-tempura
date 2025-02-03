@@ -157,6 +157,10 @@ export class MetaEntityService {
 			entranceShowSignup: instance.entranceShowSignup,
 			entranceShowAnotherInstance: instance.entranceShowAnotherInstance,
 			entranceShowSignin: instance.entranceShowSignin,
+			entranceMarginLeft: instance.entranceMarginLeft,
+			entranceMarginRight: instance.entranceMarginRight,
+			entranceMarginTop: instance.entranceMarginTop,
+			entranceMarginBottom: instance.entranceMarginBottom,
 		};
 
 		return packed;

@@ -3236,6 +3236,11 @@ _entrance:
   showAnotherInstanceDescription: "エントランスで「他のサーバーを探す」を表示します。"
   showSignin: "ログインを表示"
   showSigninDescription: "エントランスでログインを表示します。"
+  marginSettings: "マージン設定"
+  marginLeft: "左マージン"
+  marginRight: "右マージン"
+  marginTop: "上マージン"
+  marginBottom: "下マージン"
 
 scheduledNoteDelete: "すぐ消す"
 noteDeletationAt: "このノートは{time}に削除されます"

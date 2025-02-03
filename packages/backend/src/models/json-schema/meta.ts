@@ -393,6 +393,26 @@ export const packedMetaLiteSchema = {
 			optional: false, nullable: false,
 			default: true,
 		},
+		entranceMarginLeft: {
+			type: 'number',
+			optional: false, nullable: false,
+			default: 120,
+		},
+		entranceMarginRight: {
+			type: 'number',
+			optional: false, nullable: false,
+			default: 0,
+		},
+		entranceMarginTop: {
+			type: 'number',
+			optional: false, nullable: false,
+			default: 0,
+		},
+		entranceMarginBottom: {
+			type: 'number',
+			optional: false, nullable: false,
+			default: 0,
+		},
 	},
 } as const;
 

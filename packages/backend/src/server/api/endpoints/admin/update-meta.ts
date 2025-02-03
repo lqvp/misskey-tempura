@@ -249,6 +249,10 @@ export const paramDef = {
 		entranceShowSignup: { type: 'boolean' },
 		entranceShowAnotherInstance: { type: 'boolean' },
 		entranceShowSignin: { type: 'boolean' },
+		entranceMarginLeft: { type: 'integer' },
+		entranceMarginRight: { type: 'integer' },
+		entranceMarginTop: { type: 'integer' },
+		entranceMarginBottom: { type: 'integer' },
 	},
 	required: [],
 } as const;
@@ -926,6 +930,22 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.entranceShowSignin !== undefined) {
 				set.entranceShowSignin = ps.entranceShowSignin;
+			}
+
+			if (ps.entranceMarginLeft !== undefined) {
+				set.entranceMarginLeft = ps.entranceMarginLeft;
+			}
+
+			if (ps.entranceMarginRight !== undefined) {
+				set.entranceMarginRight = ps.entranceMarginRight;
+			}
+
+			if (ps.entranceMarginTop !== undefined) {
+				set.entranceMarginTop = ps.entranceMarginTop;
+			}
+
+			if (ps.entranceMarginBottom !== undefined) {
+				set.entranceMarginBottom = ps.entranceMarginBottom;
 			}
 
 			const before = await this.metaService.fetch(true);
