@@ -129,6 +129,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkA :to="notePage(appearNote)">
 					<MkTime :time="appearNote.createdAt" mode="detail" colored/>
 				</MkA>
+				<br>
 				<span v-if="appearNote.deleteAt"><i class="ti ti-bomb"></i>{{ i18n.ts.scheduledNoteDelete }}: <MkTime :time="appearNote.deleteAt" mode="detail" colored/></span>
 			</div>
 			<MkReactionsViewer v-if="appearNote.reactionAcceptance !== 'likeOnly'" ref="reactionsViewer" :note="appearNote"/>
