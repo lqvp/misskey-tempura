@@ -22,14 +22,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<button v-if="thereIsTreasure" class="_button treasure" @click="getTreasure"><img src="/fluent-emoji/1f3c6.png" class="treasureImg"></button>
 				</div>
 				<div style="text-align: center;">
-					{{ i18n.ts._aboutFork.about }}
+					{{ i18n.ts._misskeyTemp.about }}
 				</div>
 				<FormLink to="https://hackmd.io/@il2/misskey-temp" external>
 					<template #icon><i class="ti ti-sparkles"></i></template>
 					{{ i18n.ts.originalFeature }}
 				</FormLink>
 				<FormSection>
-					<template #label>{{ i18n.ts._aboutMisskey.projectMembers }}</template>
+					<template #label>{{ i18n.ts._misskeyTemp.contributors }}</template>
 					<div :class="$style.contributors">
 						<a href="https://github.com/lqvp" target="_blank" :class="$style.contributor">
 							<img src="https://avatars.githubusercontent.com/u/183242690?v=4" :class="$style.contributorAvatar">
@@ -142,7 +142,7 @@ const headerActions = computed(() => []);
 const headerTabs = computed(() => []);
 
 definePageMetadata(() => ({
-	title: i18n.ts._aboutFork.aboutFork,
+	title: i18n.ts._misskeyTemp.aboutTemp,
 	icon: null,
 }));
 </script>

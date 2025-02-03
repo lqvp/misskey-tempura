@@ -171,8 +171,8 @@ export function openInstanceMenu(ev: MouseEvent) {
 
 	menuItems.push({
 		type: 'link',
-		text: i18n.ts._aboutFork.aboutFork,
-		to: '/about-misskey-fork',
+		text: i18n.ts._misskeyTemp.aboutTemp,
+		to: '/about-misskey-temp',
 	});
 
 	os.popupMenu(menuItems, ev.currentTarget ?? ev.target, {

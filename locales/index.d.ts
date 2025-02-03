@@ -7845,15 +7845,19 @@ export interface Locale extends ILocale {
          */
         "projectMembers": string;
     };
-    "_aboutFork": {
+    "_misskeyTemp": {
         /**
          * misskey-tempはlqvpによって開発されているMisskeyのフォークです。
          */
         "about": string;
         /**
+         * 優秀なコントリビューター(?)
+         */
+        "contributors": string;
+        /**
          * misskey-tempについて
          */
-        "aboutFork": string;
+        "aboutTemp": string;
     };
     "_displayOfSensitiveMedia": {
         /**

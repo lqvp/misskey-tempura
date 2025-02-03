@@ -2047,9 +2047,9 @@ _aboutMisskey:
   patrons: "支援者"
   projectMembers: "プロジェクトメンバー"
 
-_aboutFork:
+_misskeyTemp:
   about: "misskey-tempはlqvpによって開発されているMisskeyのフォークです。"
-  aboutFork: "misskey-tempについて"
+  aboutTemp: "misskey-tempについて"
 
 _displayOfSensitiveMedia:
   respect: "センシティブ設定されたメディアを隠す"

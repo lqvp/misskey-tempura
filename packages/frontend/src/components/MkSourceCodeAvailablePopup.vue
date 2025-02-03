@@ -32,7 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</I18n>
 			<I18n :src="i18n.ts.correspondingSourceIsAvailable" tag="span">
 				<template #anchor>
-					<MkA to="/about-misskey-fork" class="_link">{{ i18n.ts._aboutFork.aboutFork }}</MkA>
+					<MkA to="/about-misskey-temp" class="_link">{{ i18n.ts._misskeyTemp.aboutTemp }}</MkA>
 				</template>
 			</I18n>
 		</div>
@@ -45,8 +45,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import MkButton from '@/components/MkButton.vue';
 import { host } from '@@/js/config.js';
+import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
 import { miLocalStorage } from '@/local-storage.js';

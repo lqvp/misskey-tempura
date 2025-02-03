@@ -218,8 +218,8 @@ const routes: RouteDef[] = [{
 	component: page(() => import('@/pages/about-misskey.vue')),
 	hash: 'initialTab',
 }, {
-	path: '/about-misskey-fork',
-	component: page(() => import('@/pages/about-misskey-fork.vue')),
+	path: '/about-misskey-temp',
+	component: page(() => import('@/pages/about-misskey-temp.vue')),
 	hash: 'initialTab',
 }, {
 	path: '/contact',
