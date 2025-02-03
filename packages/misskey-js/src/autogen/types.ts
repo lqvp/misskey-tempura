@@ -4057,6 +4057,7 @@ export type components = {
       pinnedPage: components['schemas']['Page'] | null;
       publicReactions: boolean;
       hideActivity: boolean;
+      hideNoteFromOverview: boolean;
       /** @enum {string} */
       followingVisibility: 'public' | 'followers' | 'private';
       /** @enum {string} */
@@ -5279,6 +5280,8 @@ export type components = {
       canPublicNonLtlNote: boolean;
       canReadFollowHistory: boolean;
       canAutoFollowBack: boolean;
+      canUseTruncate: boolean;
+      canUseMakePrivate: boolean;
     };
     ReversiGameLite: {
       /** Format: id */
@@ -22153,6 +22156,7 @@ export type operations = {
           hideOnlineStatus?: boolean;
           publicReactions?: boolean;
           hideActivity?: boolean;
+          hideNoteFromOverview?: boolean;
           carefulBot?: boolean;
           autoAcceptFollowed?: boolean;
           autoRejectFollowRequest?: boolean;

@@ -12155,6 +12155,14 @@ export interface Locale extends ILocale {
      */
     "hideActivityDescription": string;
     /**
+     * 概要からノートを非表示にする
+     */
+    "hideNoteFromOverview": string;
+    /**
+     * プロフィールの概要にノートを表示されないようにします。このオプションを有効にしても、自分であればノートのURLを知っていれば閲覧できます。
+     */
+    "hideNoteFromOverviewDescription": string;
+    /**
      * 予約投稿
      */
     "schedulePost": string;

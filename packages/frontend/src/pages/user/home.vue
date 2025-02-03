@@ -184,7 +184,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<XListenBrainz :key="user.id" :user="user" :collapsed="true"/>
 						</MkLazy>
 					</template>
-					<div v-if="!disableNotes && !user.isBlocked">
+					<div v-if="!disableNotes && !user.isBlocked && !user.hideNoteFromOverview">
 						<MkLazy>
 							<XTimeline :user="user"/>
 						</MkLazy>

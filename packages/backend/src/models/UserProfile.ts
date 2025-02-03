@@ -125,6 +125,11 @@ export class MiUserProfile {
 	})
 	public hideActivity: boolean;
 
+	@Column('boolean', {
+		default: false,
+	})
+	public hideNoteFromOverview: boolean;
+
 	@Column('varchar', {
 		length: 128, nullable: true,
 	})

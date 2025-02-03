@@ -28,6 +28,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 						{{ i18n.ts.hideActivity }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 						<template #caption>{{ i18n.ts.hideActivityDescription }}</template>
 					</MkSwitch>
+
+					<MkSwitch v-model="hideNoteFromOverview" @update:modelValue="save_privacy()">
+						{{ i18n.ts.hideNoteFromOverview }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+						<template #caption>{{ i18n.ts.hideNoteFromOverviewDescription }}</template>
+					</MkSwitch>
 				</div>
 			</MkFolder>
 
@@ -288,6 +293,7 @@ const autoRejectFollowRequest = ref($i.autoRejectFollowRequest);
 const autoFollowBack = ref($i.autoFollowBack);
 const carefulBot = ref($i.carefulBot);
 const hideActivity = ref($i.hideActivity);
+const hideNoteFromOverview = ref($i.hideNoteFromOverview);
 const items = ref(defaultStore.state.postFormActions.map(x => ({
 	id: Math.random().toString(),
 	type: x,
@@ -451,6 +457,7 @@ function save_privacy() {
 		autoFollowBack: !!autoFollowBack.value,
 		carefulBot: !!carefulBot.value,
 		hideActivity: !!hideActivity.value,
+		hideNoteFromOverview: !!hideNoteFromOverview.value,
 	});
 }
 
