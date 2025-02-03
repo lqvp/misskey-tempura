@@ -4,8 +4,8 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { UsersRepository } from '@/models/_.js';
 import { QueueService } from '@/core/QueueService.js';
+import type { UsersRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { bindThis } from '@/decorators.js';
 
@@ -14,7 +14,6 @@ export class TruncateAccountService {
 	constructor(
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
-
 		private queueService: QueueService,
 	) {
 	}
@@ -26,8 +25,6 @@ export class TruncateAccountService {
 	}): Promise<void> {
 		const _user = await this.usersRepository.findOneByOrFail({ id: user.id });
 
-		this.queueService.createTruncateAccountJob(user, {
-			soft: false,
-		});
+		this.queueService.createTruncateAccountJob(user);
 	}
 }

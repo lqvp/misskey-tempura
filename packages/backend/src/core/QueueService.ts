@@ -432,7 +432,7 @@ export class QueueService {
 	}
 
 	@bindThis
-	public createTruncateAccountJob(user: ThinUser, opts = {}) {
+	public createTruncateAccountJob(user: ThinUser) {
 		return this.dbQueue.add('truncateAccount', {
 			user: { id: user.id },
 		}, {
