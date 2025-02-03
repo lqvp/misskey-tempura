@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<template v-if="hasTabAccess(tab)">
 					<XHome v-if="tab === 'home'" key="home" :user="user" @unfoldFiles="() => { tab = 'files'; }"/>
 					<MkSpacer v-else-if="tab === 'notes'" key="notes" :contentMax="800" style="padding-top: 0">
-						<XTimeline v-if="!user.hideNoteFromOverview" :user="user"/>
+						<XTimeline :user="user"/>
 					</MkSpacer>
 					<XFiles v-else-if="tab === 'files'" :user="user"/>
 					<XActivity v-else-if="tab === 'activity'" key="activity" :user="user"/>
