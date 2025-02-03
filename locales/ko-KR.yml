@@ -1357,7 +1357,6 @@ _delivery:
     manuallySuspended: "수동 정지 중"
     goneSuspended: "서버 삭제를 이유로 정지 중"
     autoSuspendedForNotResponding: "서버 응답 없음을 이유로 정지 중"
-changeUserName: "이름 변경"
 _bubbleGame:
   howToPlay: "설명"
   hold: "홀드"

@@ -1392,22 +1392,6 @@ _delivery:
     manuallySuspended: "手動停止中"
     goneSuspended: "サーバー削除のため停止中"
     autoSuspendedForNotResponding: "サーバー応答なしのため停止中"
-scheduledNoteDelete: "すぐ消す"
-noteDeletationAt: "このノートは{time}に削除されます"
-cannotScheduleLaterThanOneYear: "1年以上先の日時を指定することはできません"
-postForm: "投稿フォーム"
-postFormBottomSettingsDescription: "投稿フォームの下部に表示される項目の並び替えが出来ます。項目をクリックすると削除できます。"
-defaultScheduledNoteDelete: "デフォルトでノートが自己消滅するように"
-selectReaction: "いいねボタンで使うリアクションを選択"
-showLikeButton: "いいねボタンを表示する"
-hideReactionUsers: "誰がリアクションをしたのかを非表示にする"
-hideReactionUsersDescription: "リアクションをホバーした際のユーザー一覧と、ノート詳細ページのリアクションタブにあるリアクションをしたユーザー一覧を非表示にします"
-hideReactionCount: "リアクション数の非表示"
-addToEmojiPicker: "絵文字ピッカーに追加"
-clearPost: "投稿フォームをリセット"
-hideActivity: "アクティビティを非公開にする"
-hideActivityDescription: "自分のプロフィールのアクティビティ (概要/アクティビティタブ) を他人が見れないようにします。このオプションを有効にしても、自分であればプロフィールのアクティビティタブから引き続き閲覧できます。"
-changeUserName: "名前を変更"
 
 _bubbleGame:
   howToPlay: "遊び方"
@@ -3252,6 +3236,28 @@ _entrance:
   showAnotherInstanceDescription: "エントランスで「他のサーバーを探す」を表示します。"
   showSignin: "ログインを表示"
   showSigninDescription: "エントランスでログインを表示します。"
+
+scheduledNoteDelete: "すぐ消す"
+noteDeletationAt: "このノートは{time}に削除されます"
+cannotScheduleLaterThanOneYear: "1年以上先の日時を指定することはできません"
+
+postForm: "投稿フォーム"
+postFormBottomSettingsDescription: "投稿フォームの下部に表示される項目の並び替えが出来ます。項目をクリックすると削除できます。"
+defaultScheduledNoteDelete: "デフォルトでノートが自己消滅するように"
+clearPost: "投稿フォームをリセット"
+
+selectReaction: "いいねボタンで使うリアクションを選択"
+showLikeButton: "いいねボタンを表示する"
+
+hideReactionUsers: "誰がリアクションをしたのかを非表示にする"
+hideReactionUsersDescription: "リアクションをホバーした際のユーザー一覧と、ノート詳細ページのリアクションタブにあるリアクションをしたユーザー一覧を非表示にします"
+
+hideReactionCount: "リアクション数の非表示"
+
+addToEmojiPicker: "絵文字ピッカーに追加"
+
+hideActivity: "アクティビティを非公開にする"
+hideActivityDescription: "自分のプロフィールのアクティビティ (概要/アクティビティタブ) を他人が見れないようにします。このオプションを有効にしても、自分であればプロフィールのアクティビティタブから引き続き閲覧できます。"
 
 schedulePost: "予約投稿"
 schedulePostList: "予約投稿一覧"
