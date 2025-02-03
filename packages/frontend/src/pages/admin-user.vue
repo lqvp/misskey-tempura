@@ -108,7 +108,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 								<MkButton danger @click="regenerateLoginToken"><i class="ti ti-refresh"></i> {{ i18n.ts.regenerateLoginToken }}</MkButton>
 								<MkButton danger @click="notificationSend"><i class="ti ti-bell"></i> {{ i18n.ts.notificationSend }}</MkButton>
 							</div>
-							<MkButton inline danger @click="updateUserName"><i class="ti ti-user-edit"></i> {{ i18n.ts.changeUserName }}</MkButton>
+							<MkButton inline danger @click="updateUserName"><i class="ti ti-user-edit"></i> {{ i18n.ts.rename }}</MkButton>
 							<MkButton inline danger @click="unsetUserAvatar"><i class="ti ti-user-circle"></i> {{ i18n.ts.unsetUserAvatar }}</MkButton>
 							<MkButton inline danger @click="unsetUserBanner"><i class="ti ti-photo"></i> {{ i18n.ts.unsetUserBanner }}</MkButton>
 						</div>
