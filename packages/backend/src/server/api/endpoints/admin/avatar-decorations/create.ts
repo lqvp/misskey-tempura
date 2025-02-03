@@ -87,6 +87,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				user: null,
 				force: true,
 			});
+
+			// 元ファイルの削除
+			this.driveService.deleteFile({ url: ps.url } as any);
+
 			const created = await this.avatarDecorationService.create({
 				name: ps.name,
 				description: ps.description,

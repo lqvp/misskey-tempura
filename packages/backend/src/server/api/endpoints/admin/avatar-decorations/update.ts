@@ -52,6 +52,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					force: true,
 				});
 				fileUrl = sysFileData.url;
+
+				// 元ファイルの削除
+				this.driveService.deleteFile({ url: ps.url } as any);
 			}
 			await this.avatarDecorationService.update(ps.id, {
 				name: ps.name,
