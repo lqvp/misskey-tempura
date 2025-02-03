@@ -128,6 +128,8 @@ export const ROLE_POLICIES = [
 	'canPublicNonLtlNote',
 	'canReadFollowHistory',
 	'canAutoFollowBack',
+	'canUseTruncate',
+	'canUseMakePrivate',
 ] as const;
 
 // なんか動かない

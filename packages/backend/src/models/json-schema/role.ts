@@ -340,6 +340,14 @@ export const packedRolePoliciesSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
+		canUseTruncate: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
+		canUseMakePrivate: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
 	},
 } as const;
 

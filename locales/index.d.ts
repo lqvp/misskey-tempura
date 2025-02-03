@@ -7385,6 +7385,14 @@ export interface Locale extends ILocale {
              * 自動フォローバックを許可
              */
             "canAutoFollowBack": string;
+            /**
+             * アカウント整理機能の許可
+             */
+            "canUseTruncate": string;
+            /**
+             * 非公開化機能の許可
+             */
+            "canUseMakePrivate": string;
         };
         "_condition": {
             /**

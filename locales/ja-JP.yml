@@ -1905,6 +1905,8 @@ _role:
     canPublicNonLtlNote: "パブリック投稿（非LTL）の許可"
     canReadFollowHistory: "フォロー/フォロリク履歴の閲覧"
     canAutoFollowBack: "自動フォローバックを許可"
+    canUseTruncate: "アカウント整理機能の許可"
+    canUseMakePrivate: "非公開化機能の許可"
 
   _condition:
     roleAssignedTo: "マニュアルロールにアサイン済み"

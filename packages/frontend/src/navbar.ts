@@ -213,6 +213,7 @@ export const navbarItemDef = reactive({
 		title: i18n.ts._makePrivate.bulkText,
 		icon: 'ti ti-eye-off',
 		to: '/my/make-private-many',
+		show: computed(() => $i != null && $i.policies.canUseMakePrivate),
 	},
 	followHistory: {
 		title: i18n.ts._followHistory.title,

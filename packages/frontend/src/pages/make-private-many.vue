@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkStickyContainer>
+<MkStickyContainer v-if="$i.policies.canUseMakePrivate">
 	<template #header><MkPageHeader/></template>
 	<MkSpacer :contentMax="1200">
 		<MkInfo warn>
@@ -47,6 +47,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkNotes :pagination="notePaginationRev"></MkNotes>
 	</MkSpacer>
 </MkStickyContainer>
+<div v-else>
+	<XNotFound/>
+</div>
 </template>
 
 <script lang="ts" setup>
@@ -62,6 +65,7 @@ import FormSplit from '@/components/form/split.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import MkNotes from '@/components/MkNotes.vue';
 import MkButton from '@/components/MkButton.vue';
+import XNotFound from '@/pages/not-found.vue';
 
 definePageMetadata(() => ({
 	title: i18n.ts._makePrivate.text,

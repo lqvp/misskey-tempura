@@ -46,7 +46,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</div>
 			</MkFolder>
 
-			<MkFolder>
+			<MkFolder v-if="$i.policies.canUseTruncate">
 				<template #icon><i class="ti ti-recycle"></i></template>
 				<template #label>{{ i18n.ts._accountTruncate.truncateAccount }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 				<div class="_gaps_m">
