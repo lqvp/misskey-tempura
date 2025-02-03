@@ -41,7 +41,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</a>
 						<a href="https://github.com/chan-mai" target="_blank" :class="$style.contributor">
 							<img src="https://avatars.githubusercontent.com/u/74494945?v=4" :class="$style.contributorAvatar">
-							<span :class="$style.contributorUsername">mai</span>
+							<span :class="$style.contributorUsername">mq1</span>
 						</a>
 						<a href="https://github.com/ruruke" target="_blank" :class="$style.contributor">
 							<img src="https://avatars.githubusercontent.com/u/123709459?v=4" :class="$style.contributorAvatar">
