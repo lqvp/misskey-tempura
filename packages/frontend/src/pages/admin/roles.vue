@@ -59,19 +59,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</MkSwitch>
 						</MkFolder>
 
-						<MkFolder v-if="matchQuery([i18n.ts._role._options.scheduleNoteMax, 'scheduleNoteMax'])">
-							<template #label>{{ i18n.ts._role._options.scheduleNoteMax }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-							<template #suffix>{{ policies.scheduleNoteMax }}</template>
-							<MkInput v-model="policies.scheduleNoteMax" type="number">
-							</MkInput>
-						</MkFolder>
-
 						<MkFolder v-if="matchQuery([i18n.ts._role._options.canPublicNonLtlNote, 'canPublicNonLtlNote'])">
 							<template #label>{{ i18n.ts._role._options.canPublicNonLtlNote }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 							<template #suffix>{{ policies.canPublicNonLtlNote ? i18n.ts.yes : i18n.ts.no }}</template>
 							<MkSwitch v-model="policies.canPublicNonLtlNote">
 								<template #label>{{ i18n.ts.enable }}</template>
 							</MkSwitch>
+						</MkFolder>
+
+						<MkFolder v-if="matchQuery([i18n.ts._role._options.scheduleNoteMax, 'scheduleNoteMax'])">
+							<template #label>{{ i18n.ts._role._options.scheduleNoteMax }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+							<template #suffix>{{ policies.scheduleNoteMax }}</template>
+							<MkInput v-model="policies.scheduleNoteMax" type="number">
+							</MkInput>
 						</MkFolder>
 
 						<MkFolder v-if="matchQuery([i18n.ts._role._options.mentionMax, 'mentionLimit'])">
@@ -344,37 +344,37 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</MkSwitch>
 						</MkFolder>
 
-					<MkFolder v-if="matchQuery([i18n.ts._role._options.canAutoFollowBack, 'canAutoFollowBack'])">
-						<template #label>{{ i18n.ts._role._options.canAutoFollowBack }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-						<template #suffix>{{ policies.canAutoFollowBack ? i18n.ts.yes : i18n.ts.no }}</template>
-						<MkSwitch v-model="policies.canAutoFollowBack">
-							<template #label>{{ i18n.ts.enable }}</template>
-						</MkSwitch>
-					</MkFolder>
+						<MkFolder v-if="matchQuery([i18n.ts._role._options.canAutoFollowBack, 'canAutoFollowBack'])">
+							<template #label>{{ i18n.ts._role._options.canAutoFollowBack }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+							<template #suffix>{{ policies.canAutoFollowBack ? i18n.ts.yes : i18n.ts.no }}</template>
+							<MkSwitch v-model="policies.canAutoFollowBack">
+								<template #label>{{ i18n.ts.enable }}</template>
+							</MkSwitch>
+						</MkFolder>
 
-					<MkFolder v-if="matchQuery([i18n.ts._role._options.canUseTruncate, 'canUseTruncate'])">
-						<template #label>{{ i18n.ts._role._options.canUseTruncate }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-						<template #suffix>{{ policies.canUseTruncate ? i18n.ts.yes : i18n.ts.no }}</template>
-						<MkSwitch v-model="policies.canUseTruncate">
-							<template #label>{{ i18n.ts.enable }}</template>
-						</MkSwitch>
-					</MkFolder>
+						<MkFolder v-if="matchQuery([i18n.ts._role._options.canUseTruncate, 'canUseTruncate'])">
+							<template #label>{{ i18n.ts._role._options.canUseTruncate }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+							<template #suffix>{{ policies.canUseTruncate ? i18n.ts.yes : i18n.ts.no }}</template>
+							<MkSwitch v-model="policies.canUseTruncate">
+								<template #label>{{ i18n.ts.enable }}</template>
+							</MkSwitch>
+						</MkFolder>
 
-					<MkFolder v-if="matchQuery([i18n.ts._role._options.canUseMakePrivate, 'canUseMakePrivate'])">
-						<template #label>{{ i18n.ts._role._options.canUseMakePrivate }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-						<template #suffix>{{ policies.canUseMakePrivate ? i18n.ts.yes : i18n.ts.no }}</template>
-						<MkSwitch v-model="policies.canUseMakePrivate">
-							<template #label>{{ i18n.ts.enable }}</template>
-						</MkSwitch>
-					</MkFolder>
+						<MkFolder v-if="matchQuery([i18n.ts._role._options.canUseMakePrivate, 'canUseMakePrivate'])">
+							<template #label>{{ i18n.ts._role._options.canUseMakePrivate }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+							<template #suffix>{{ policies.canUseMakePrivate ? i18n.ts.yes : i18n.ts.no }}</template>
+							<MkSwitch v-model="policies.canUseMakePrivate">
+								<template #label>{{ i18n.ts.enable }}</template>
+							</MkSwitch>
+						</MkFolder>
 
-					<MkFolder v-if="matchQuery([i18n.ts._role._options.canUpdateCounters, 'canUpdateCounters'])">
-						<template #label>{{ i18n.ts._role._options.canUpdateCounters }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-						<template #suffix>{{ policies.canUpdateCounters ? i18n.ts.yes : i18n.ts.no }}</template>
-						<MkSwitch v-model="policies.canUpdateCounters">
-							<template #label>{{ i18n.ts.enable }}</template>
-						</MkSwitch>
-					</MkFolder>
+						<MkFolder v-if="matchQuery([i18n.ts._role._options.canUpdateCounters, 'canUpdateCounters'])">
+							<template #label>{{ i18n.ts._role._options.canUpdateCounters }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+							<template #suffix>{{ policies.canUpdateCounters ? i18n.ts.yes : i18n.ts.no }}</template>
+							<MkSwitch v-model="policies.canUpdateCounters">
+								<template #label>{{ i18n.ts.enable }}</template>
+							</MkSwitch>
+						</MkFolder>
 					</div>
 				</MkFolder>
 				<MkButton primary rounded @click="create"><i class="ti ti-plus"></i> {{ i18n.ts._role.new }}</MkButton>
