@@ -1644,6 +1644,7 @@ declare namespace entities {
         IPagesResponse,
         IPinRequest,
         IPinResponse,
+        IProfileCountsControlRequest,
         IReadAnnouncementRequest,
         IRegenerateTokenRequest,
         IRegistryGetRequest,
@@ -2363,6 +2364,9 @@ type IPinRequest = operations['i___pin']['requestBody']['content']['application/
 
 // @public (undocumented)
 type IPinResponse = operations['i___pin']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type IProfileCountsControlRequest = operations['i___profile-counts-control']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
 type IReadAnnouncementRequest = operations['i___read-announcement']['requestBody']['content']['application/json'];

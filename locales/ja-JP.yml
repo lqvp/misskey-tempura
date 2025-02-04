@@ -1891,6 +1891,7 @@ _role:
     canAutoFollowBack: "自動フォローバックを許可"
     canUseTruncate: "アカウント整理機能の許可"
     canUseMakePrivate: "非公開化機能の許可"
+    canUpdateCounters: "カウンターの更新を許可"
 
   _condition:
     roleAssignedTo: "マニュアルロールにアサイン済み"
@@ -3241,6 +3242,18 @@ _entrance:
   marginRight: "右マージン"
   marginTop: "上マージン"
   marginBottom: "下マージン"
+
+_updateCount:
+  title: "カウント更新"
+  updateFollowCount: "フォロー数を更新"
+  updateFollowCountDescription: "フォロー数を上書きします。"
+  updateFollowerCount: "フォロワー数を更新"
+  updateFollowerCountDescription: "フォロワー数を上書きします。"
+  updateNoteCount: "ノート数を更新"
+  updateNoteCountDescription: "ノート数を上書きします。"
+  negativeNumberNotAllowed: "負の数は許可されません。"
+  warningTitle: "カウンター更新の確認"
+  warningText: "フォロワー数/フォロー数/ノート数を手動で更新します。\nこの操作は通常では必要なく、変更前の値に戻すことは出来ません。\n本当に実行しますか？"
 
 scheduledNoteDelete: "すぐ消す"
 noteDeletationAt: "このノートは{time}に削除されます"

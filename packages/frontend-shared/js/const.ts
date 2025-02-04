@@ -130,6 +130,7 @@ export const ROLE_POLICIES = [
 	'canAutoFollowBack',
 	'canUseTruncate',
 	'canUseMakePrivate',
+	'canUpdateCounters',
 ] as const;
 
 // なんか動かない

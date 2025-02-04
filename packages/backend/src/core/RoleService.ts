@@ -77,6 +77,7 @@ export type RolePolicies = {
 	canAutoFollowBack: boolean;
 	canUseTruncate: boolean;
 	canUseMakePrivate: boolean;
+	canUpdateCounters: boolean;
 };
 
 export const DEFAULT_POLICIES: RolePolicies = {
@@ -125,6 +126,7 @@ export const DEFAULT_POLICIES: RolePolicies = {
 	canAutoFollowBack: false,
 	canUseTruncate: false,
 	canUseMakePrivate: false,
+	canUpdateCounters: false,
 };
 
 @Injectable()
@@ -501,6 +503,7 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			canAutoFollowBack: calc('canAutoFollowBack', vs => vs.some(v => v === true)),
 			canUseTruncate: calc('canUseTruncate', vs => vs.some(v => v === true)),
 			canUseMakePrivate: calc('canUseMakePrivate', vs => vs.some(v => v === true)),
+			canUpdateCounters: calc('canUpdateCounters', vs => vs.some(v => v === true)),
 		};
 	}
 

@@ -7329,6 +7329,10 @@ export interface Locale extends ILocale {
              * 非公開化機能の許可
              */
             "canUseMakePrivate": string;
+            /**
+             * カウンターの更新を許可
+             */
+            "canUpdateCounters": string;
         };
         "_condition": {
             /**
@@ -12113,6 +12117,50 @@ export interface Locale extends ILocale {
          * 下マージン
          */
         "marginBottom": string;
+    };
+    "_updateCount": {
+        /**
+         * カウント更新
+         */
+        "title": string;
+        /**
+         * フォロー数を更新
+         */
+        "updateFollowCount": string;
+        /**
+         * フォロー数を上書きします。
+         */
+        "updateFollowCountDescription": string;
+        /**
+         * フォロワー数を更新
+         */
+        "updateFollowerCount": string;
+        /**
+         * フォロワー数を上書きします。
+         */
+        "updateFollowerCountDescription": string;
+        /**
+         * ノート数を更新
+         */
+        "updateNoteCount": string;
+        /**
+         * ノート数を上書きします。
+         */
+        "updateNoteCountDescription": string;
+        /**
+         * 負の数は許可されません。
+         */
+        "negativeNumberNotAllowed": string;
+        /**
+         * カウンター更新の確認
+         */
+        "warningTitle": string;
+        /**
+         * フォロワー数/フォロー数/ノート数を手動で更新します。
+         * この操作は通常では必要なく、変更前の値に戻すことは出来ません。
+         * 本当に実行しますか？
+         */
+        "warningText": string;
     };
     /**
      * すぐ消す

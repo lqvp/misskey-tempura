@@ -10,6 +10,39 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		<div class="_gaps_m">
 			<MkFolder>
+				<template #icon><i class="ti ti-user"></i></template>
+				<template #label>{{ i18n.ts.profile }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+
+				<div class="_gaps_s">
+					<MkFolder v-if="$i.policies.canUpdateCounters">
+						<template #label>{{ i18n.ts._updateCount.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+						<div class="_gaps_s">
+							<MkInput v-model="followersCount" type="number" :min="0">
+								<template #label>{{ i18n.ts._updateCount.updateFollowerCount }}</template>
+								<template #caption>{{ i18n.ts._updateCount.updateFollowerCountDescription }}</template>
+							</MkInput>
+
+							<MkInput v-model="followingCount" type="number" :min="0">
+								<template #label>{{ i18n.ts._updateCount.updateFollowCount }}</template>
+								<template #caption>{{ i18n.ts._updateCount.updateFollowCountDescription }}</template>
+							</MkInput>
+
+							<MkInput v-model="notesCount" type="number" :min="0">
+								<template #label>{{ i18n.ts._updateCount.updateNoteCount }}</template>
+								<template #caption>{{ i18n.ts._updateCount.updateNoteCountDescription }}</template>
+							</MkInput>
+
+							<div class="_buttons">
+								<MkButton primary :disabled="!hasChanges" @click="saveCounts">
+									<i class="ti ti-check"></i> {{ i18n.ts.save }}
+								</MkButton>
+							</div>
+						</div>
+					</MkFolder>
+				</div>
+			</MkFolder>
+
+			<MkFolder>
 				<template #icon><i class="ti ti-lock-open"></i></template>
 				<template #label>{{ i18n.ts.privacy }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 				<div class="_gaps_s">
@@ -258,6 +291,7 @@ import MkContainer from '@/components/MkContainer.vue';
 import MkDeleteScheduleEditor from '@/components/MkDeleteScheduleEditor.vue';
 import { bottomItemDef } from '@/scripts/post-form.js';
 import { signinRequired } from '@/account.js';
+import { globalEvents } from '@/events.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
 import MkNote from '@/components/MkNote.vue';
 
@@ -367,6 +401,53 @@ watch([
 ], async () => {
 	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
 });
+
+const followersCount = ref($i.followersCount);
+const followingCount = ref($i.followingCount);
+const notesCount = ref($i.notesCount);
+
+const hasChanges = computed(() => {
+	return followersCount.value !== $i.followersCount ||
+    followingCount.value !== $i.followingCount ||
+    notesCount.value !== $i.notesCount;
+});
+
+async function saveCounts() {
+	const confirm = await os.confirm({
+		type: 'warning',
+		title: i18n.ts._updateCount.warningTitle,
+		text: i18n.ts._updateCount.warningText,
+		okText: i18n.ts.update,
+	});
+
+	if (confirm.canceled) return;
+
+	try {
+		const params = {} as Record<string, number>;
+
+		if (followersCount.value !== $i.followersCount) {
+			params.followersCount = followersCount.value;
+		}
+		if (followingCount.value !== $i.followingCount) {
+			params.followingCount = followingCount.value;
+		}
+		if (notesCount.value !== $i.notesCount) {
+			params.notesCount = notesCount.value;
+		}
+
+		await os.apiWithDialog('i/profile-counts-control', params);
+
+		const updatedUser = await misskeyApi('users/show', { userId: $i.id });
+		Object.assign($i, updatedUser);
+
+		globalEvents.emit('requestClearPageCache');
+	} catch (err: any) {
+		os.alert({
+			type: 'error',
+			text: err.message ?? 'Unknown error occurred',
+		});
+	}
+}
 
 function chooseNewReaction(ev: MouseEvent) {
 	os.pickEmoji(getHTMLElement(ev), {

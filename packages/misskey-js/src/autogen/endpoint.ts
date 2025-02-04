@@ -388,6 +388,7 @@ import type {
 	IPagesResponse,
 	IPinRequest,
 	IPinResponse,
+	IProfileCountsControlRequest,
 	IReadAnnouncementRequest,
 	IRegenerateTokenRequest,
 	IRegistryGetRequest,
@@ -876,6 +877,7 @@ export type Endpoints = {
 	'i/page-likes': { req: IPageLikesRequest; res: IPageLikesResponse };
 	'i/pages': { req: IPagesRequest; res: IPagesResponse };
 	'i/pin': { req: IPinRequest; res: IPinResponse };
+	'i/profile-counts-control': { req: IProfileCountsControlRequest; res: EmptyResponse };
 	'i/read-all-unread-notes': { req: EmptyRequest; res: EmptyResponse };
 	'i/read-announcement': { req: IReadAnnouncementRequest; res: EmptyResponse };
 	'i/regenerate-token': { req: IRegenerateTokenRequest; res: EmptyResponse };

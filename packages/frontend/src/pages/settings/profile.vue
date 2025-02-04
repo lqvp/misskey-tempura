@@ -117,6 +117,32 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkSwitch v-model="profile.isBot">{{ i18n.ts.flagAsBot }}<template #caption>{{ i18n.ts.flagAsBotDescription }}</template></MkSwitch>
 		</div>
 	</MkFolder>
+
+	<MkFolder v-if="$i.policies.canUpdateCounters">
+		<template #label>{{ i18n.ts._updateCount.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+		<div class="_gaps_s">
+			<MkInput v-model="followersCount" type="number" :min="0">
+				<template #label>{{ i18n.ts._updateCount.updateFollowerCount }}</template>
+				<template #caption>{{ i18n.ts._updateCount.updateFollowerCountDescription }}</template>
+			</MkInput>
+
+			<MkInput v-model="followingCount" type="number" :min="0">
+				<template #label>{{ i18n.ts._updateCount.updateFollowCount }}</template>
+				<template #caption>{{ i18n.ts._updateCount.updateFollowCountDescription }}</template>
+			</MkInput>
+
+			<MkInput v-model="notesCount" type="number" :min="0">
+				<template #label>{{ i18n.ts._updateCount.updateNoteCount }}</template>
+				<template #caption>{{ i18n.ts._updateCount.updateNoteCountDescription }}</template>
+			</MkInput>
+
+			<div class="_buttons">
+				<MkButton primary :disabled="!hasChanges" @click="saveCounts">
+					<i class="ti ti-check"></i> {{ i18n.ts.save }}
+				</MkButton>
+			</div>
+		</div>
+	</MkFolder>
 </div>
 </template>
 
@@ -138,6 +164,7 @@ import { definePageMetadata } from '@/scripts/page-metadata.js';
 import { claimAchievement } from '@/scripts/achievements.js';
 import { defaultStore } from '@/store.js';
 import { globalEvents } from '@/events.js';
+import { misskeyApi } from '@/scripts/misskey-api.js';
 import MkInfo from '@/components/MkInfo.vue';
 import MkTextarea from '@/components/MkTextarea.vue';
 
@@ -157,7 +184,7 @@ const profile = reactive({
 	followedMessage: $i.followedMessage,
 	location: $i.location,
 	birthday: $i.birthday,
-	listenbrainz: $i?.listenbrainz,
+	listenbrainz: $i.listenbrainz,
 	lang: assertVaildLang($i.lang) ? $i.lang : null,
 	isBot: $i.isBot ?? false,
 	isCat: $i.isCat ?? false,
@@ -280,6 +307,53 @@ function changeBanner(ev) {
 		$i.bannerUrl = i.bannerUrl;
 		globalEvents.emit('requestClearPageCache');
 	});
+}
+
+const followersCount = ref($i.followersCount);
+const followingCount = ref($i.followingCount);
+const notesCount = ref($i.notesCount);
+
+const hasChanges = computed(() => {
+	return followersCount.value !== $i.followersCount ||
+    followingCount.value !== $i.followingCount ||
+    notesCount.value !== $i.notesCount;
+});
+
+async function saveCounts() {
+	const confirm = await os.confirm({
+		type: 'warning',
+		title: i18n.ts._updateCount.warningTitle,
+		text: i18n.ts._updateCount.warningText,
+		okText: i18n.ts.update,
+	});
+
+	if (confirm.canceled) return;
+
+	try {
+		const params = {} as Record<string, number>;
+
+		if (followersCount.value !== $i.followersCount) {
+			params.followersCount = followersCount.value;
+		}
+		if (followingCount.value !== $i.followingCount) {
+			params.followingCount = followingCount.value;
+		}
+		if (notesCount.value !== $i.notesCount) {
+			params.notesCount = notesCount.value;
+		}
+
+		await os.apiWithDialog('i/profile-counts-control', params);
+
+		const updatedUser = await misskeyApi('users/show', { userId: $i.id });
+		Object.assign($i, updatedUser);
+
+		globalEvents.emit('requestClearPageCache');
+	} catch (err: any) {
+		os.alert({
+			type: 'error',
+			text: err.message ?? 'Unknown error occurred',
+		});
+	}
 }
 
 const headerActions = computed(() => []);
