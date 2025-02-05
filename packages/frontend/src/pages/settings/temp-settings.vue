@@ -269,14 +269,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { computed, watch } from 'vue';
 import * as Misskey from 'misskey-js';
 import { defineAsyncComponent, ref } from 'vue';
-import { Note } from 'misskey-js/built/entities';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkSelect from '@/components/MkSelect.vue';
-// import MkRadios from '@/components/MkRadios.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkButton from '@/components/MkButton.vue';
 import FormSection from '@/components/form/section.vue';
-// import FormLink from '@/components/form/link.vue';
 import FromSlot from '@/components/form/slot.vue';
 import MkCustomEmoji from '@/components/global/MkCustomEmoji.vue';
 import MkEmoji from '@/components/global/MkEmoji.vue';
@@ -333,7 +330,7 @@ const items = ref(defaultStore.state.postFormActions.map(x => ({
 	type: x,
 })));
 
-const noteMock: Note = {
+const noteMock: Misskey.entities.Note = {
 	id: '0000000000',
 	createdAt: '2019-04-14T17:30:49.181Z',
 	userId: '0000000001',

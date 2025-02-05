@@ -99,7 +99,6 @@ import * as Misskey from 'misskey-js';
 import { instance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
 import * as os from '@/os.js';
-import { useInstance } from '@/scripts/use-instance';
 
 import MkButton from '@/components/MkButton.vue';
 // import MkInfo from '@/components/MkInfo.vue';

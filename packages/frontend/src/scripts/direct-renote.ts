@@ -4,7 +4,6 @@
  */
 
 import * as Misskey from 'misskey-js';
-import { ShallowRef } from 'vue';
 import { getAppearNote } from './get-appear-note.js';
 import { misskeyApi } from './misskey-api.js';
 import { smallerVisibility } from './get-note-menu.js';

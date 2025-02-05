@@ -3,11 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { User } from "misskey-js/built/entities";
+import { entities } from "misskey-js";
 import { defaultStore } from "@/store";
 import * as os from '@/os';
 
-export async function editNickname(user: User) {
+export async function editNickname(user: entities.User) {
 	if (!defaultStore.state.nicknameEnabled) return;
 	const { result, canceled } = await os.inputText({
 		title: 'ニックネームを編集',

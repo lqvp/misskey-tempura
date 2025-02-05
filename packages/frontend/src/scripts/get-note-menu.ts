@@ -4,12 +4,11 @@
  */
 
 import { defineAsyncComponent } from 'vue';
-import type { Ref, ShallowRef } from 'vue';
 import * as Misskey from 'misskey-js';
-import { action } from '@storybook/addon-actions';
 import { url } from '@@/js/config.js';
 import { claimAchievement } from './achievements.js';
 import { directQuote } from './direct-quote.js';
+import type { Ref, ShallowRef } from 'vue';
 import type { MenuItem } from '@/types/menu.js';
 import { $i } from '@/account.js';
 import { i18n } from '@/i18n.js';

@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { type VNode, h } from 'vue';
+import { h } from 'vue';
+import type { VNode } from 'vue';
 import TmsRjNumber from '@/components/TmsRjNumber.vue';
 
 class RjNumber {
