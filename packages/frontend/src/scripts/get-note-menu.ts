@@ -3,7 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { defineAsyncComponent, Ref, ShallowRef } from 'vue';
+import { defineAsyncComponent } from 'vue';
+import type { Ref, ShallowRef } from 'vue';
 import * as Misskey from 'misskey-js';
 import { action } from '@storybook/addon-actions';
 import { url } from '@@/js/config.js';

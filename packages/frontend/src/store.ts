@@ -11,7 +11,8 @@ import darkTheme from '@@/themes/night-pink.json5';
 import { directRenote } from './scripts/direct-renote.js';
 import type { SoundType } from '@/scripts/sound.js';
 import type { Ast } from '@syuilo/aiscript';
-import { DEFAULT_DEVICE_KIND, type DeviceKind } from '@/scripts/device-kind.js';
+import { DEFAULT_DEVICE_KIND } from '@/scripts/device-kind.js';
+import type { DeviceKind } from '@/scripts/device-kind.js';
 import { miLocalStorage } from '@/local-storage.js';
 import { Storage } from '@/pizzax.js';
 
