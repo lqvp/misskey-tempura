@@ -87,24 +87,20 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				if (!meta.entranceShowFederation) {
 					return [];
 				}
-				const allowedParams = (
-					ps.sort === '+pubSub' &&
-					ps.limit === 20 &&
-					ps.blocked === false &&
-					ps.offset === 0 &&
-					ps.host === null &&
-					ps.softwareName === null &&
-					ps.notResponding === null &&
-					ps.suspended === null &&
-					ps.silenced === null &&
-					ps.quarantine === null &&
-					ps.federating === null &&
-					ps.subscribing === null &&
-					ps.publishing === null
-				);
-				if (!allowedParams) {
-					return [];
-				}
+
+				ps.sort = '+pubSub';
+				ps.limit = 20;
+				ps.blocked = false;
+				ps.suspended = false;
+				ps.silenced = false;
+				ps.quarantine = false;
+				ps.host = null;
+				ps.softwareName = null;
+				ps.notResponding = false;
+				ps.federating = null;
+				ps.subscribing = null;
+				ps.publishing = null;
+				ps.offset = 0;
 			}
 
 			if (me && !me.isRoot) {
