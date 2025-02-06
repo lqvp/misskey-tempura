@@ -12215,7 +12215,7 @@ export interface Locale extends ILocale {
      */
     "hideNoteFromOverview": string;
     /**
-     * プロフィールの概要にノートを表示されないようにします。このオプションを有効にしても、自分であればノートのURLを知っていれば閲覧できます。
+     * プロフィールの概要にノートを表示されないようにします。このオプションを有効にしても、ノートのURLを知っていれば閲覧できます。
      */
     "hideNoteFromOverviewDescription": string;
     /**

@@ -3275,7 +3275,7 @@ hideActivity: "アクティビティを非公開にする"
 hideActivityDescription: "自分のプロフィールのアクティビティ (概要/アクティビティタブ) を他人が見れないようにします。このオプションを有効にしても、自分であればプロフィールのアクティビティタブから引き続き閲覧できます。"
 
 hideNoteFromOverview: "概要からノートを非表示にする"
-hideNoteFromOverviewDescription: "プロフィールの概要にノートを表示されないようにします。このオプションを有効にしても、自分であればノートのURLを知っていれば閲覧できます。"
+hideNoteFromOverviewDescription: "プロフィールの概要にノートを表示されないようにします。このオプションを有効にしても、ノートのURLを知っていれば閲覧できます。"
 
 schedulePost: "予約投稿"
 schedulePostList: "予約投稿一覧"
