@@ -411,7 +411,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	hideReactionUsers: {
 		where: 'account',
-		default: true,
+		default: false,
 	},
 	hideReactionCount: {
 		where: 'account',
