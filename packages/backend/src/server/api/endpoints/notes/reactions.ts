@@ -61,6 +61,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private cacheService: CacheService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			if (!me) {
+				return [];
+			};
 			const query = this.queryService.makePaginationQuery(this.noteReactionsRepository.createQueryBuilder('reaction'), ps.sinceId, ps.untilId)
 				.andWhere('reaction.noteId = :noteId', { noteId: ps.noteId })
 				.leftJoinAndSelect('reaction.user', 'user')
