@@ -62,10 +62,17 @@ class RjNumber {
 		const year = jvndb.match(/\d{4}/)![0];
 		return `https://jvndb.jvn.jp/en/contents/${year}/${jvndb}.html`;
 	}
+
+	// GitHub commit hash
+	public static readonly GITHUB_COMMIT_SYMBOL = Symbol();
+	public static readonly GITHUB_COMMIT_REGEX = /[0-9a-f]{40}/gi;
+	public static getGitHubCommitUrl(hash: string): string {
+		return `https://github.com/search?q=${hash}&type=commits`;
+	}
 }
 
 type ParsedNode = {
-	readonly type: 'text' | typeof RjNumber.WORK_SYMBOL | typeof RjNumber.CIRCLE_SYMBOL | typeof RjNumber.NICO_SYMBOL | typeof RjNumber.CVE_SYMBOL | typeof RjNumber.JVN_SYMBOL | typeof RjNumber.JVNVU_SYMBOL | typeof RjNumber.JVNTA_SYMBOL | typeof RjNumber.JVNDB_SYMBOL;
+	readonly type: 'text' | typeof RjNumber.WORK_SYMBOL | typeof RjNumber.CIRCLE_SYMBOL | typeof RjNumber.NICO_SYMBOL | typeof RjNumber.CVE_SYMBOL | typeof RjNumber.JVN_SYMBOL | typeof RjNumber.JVNVU_SYMBOL | typeof RjNumber.JVNTA_SYMBOL | typeof RjNumber.JVNDB_SYMBOL | typeof RjNumber.GITHUB_COMMIT_SYMBOL;
 	readonly value: string;
 };
 
@@ -112,6 +119,7 @@ export const parseMfmRjNumber = (text: string): (VNode | string)[] => {
 	parsedNodes = parseNodes(parsedNodes, RjNumber.JVNVU_SYMBOL, RjNumber.JVNVU_REGEX);
 	parsedNodes = parseNodes(parsedNodes, RjNumber.JVNTA_SYMBOL, RjNumber.JVNTA_REGEX);
 	parsedNodes = parseNodes(parsedNodes, RjNumber.JVNDB_SYMBOL, RjNumber.JVNDB_REGEX);
+	parsedNodes = parseNodes(parsedNodes, RjNumber.GITHUB_COMMIT_SYMBOL, RjNumber.GITHUB_COMMIT_REGEX);
 
 	return parsedNodes.map(({ type, value }) => {
 		switch (type) {
@@ -172,6 +180,13 @@ export const parseMfmRjNumber = (text: string): (VNode | string)[] => {
 					key: value,
 					rjNumber: value,
 					url: RjNumber.getJvnDbUrl(value),
+				});
+			}
+			case RjNumber.GITHUB_COMMIT_SYMBOL: {
+				return h(TmsRjNumber, {
+					key: value,
+					rjNumber: value,
+					url: RjNumber.getGitHubCommitUrl(value),
 				});
 			}
 		}
