@@ -48,8 +48,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkFolder>
 			</div>
 		</MkFoldableSection>
-		<div>
-			<MkButton large primary gradate rounded style="margin: 0 auto;" @click="search">{{ i18n.ts.search }}</MkButton>
+		<div style="display: flex; gap: 12px; justify-content: center;">
+			<MkButton large primary gradate rounded @click="search">{{ i18n.ts.search }}</MkButton>
+			<MkButton large rounded gradate @click="copySearchUrl">
+				{{ i18n.ts.copySearchUrl }}
+				<i class="ti ti-link"></i>
+			</MkButton>
 		</div>
 	</div>
 
@@ -147,6 +151,52 @@ function removeUser() {
 	user.value = null;
 	hostInput.value = '';
 }
+
+//region Copy search URL
+async function copySearchUrl() {
+	const params = new URLSearchParams();
+
+	if (searchQuery.value) {
+		params.set('q', searchQuery.value);
+	}
+
+	if (user.value) {
+		params.set('userId', user.value.id);
+		if (user.value.username) {
+			params.set('username', user.value.username);
+		}
+		if (user.value.host) {
+			params.set('userHost', user.value.host);
+		}
+	}
+
+	switch (hostSelect.value) {
+		case 'local': params.set('host', 'local'); break;
+		case 'specified':
+			if (hostInput.value) {
+				params.set('host', hostInput.value);
+			}
+			break;
+	}
+
+	if (visibilitySelect.value !== 'all') {
+		params.set('visibility', visibilitySelect.value);
+	}
+
+	const url = new URL(window.location.origin + window.location.pathname);
+	url.search = params.toString();
+
+	try {
+		await navigator.clipboard.writeText(url.toString());
+		os.success();
+	} catch (err) {
+		os.alert({
+			type: 'error',
+			text: i18n.ts.failedToCopy,
+		});
+	}
+}
+//endregion
 
 async function search() {
 	const query = searchQuery.value.toString().trim();

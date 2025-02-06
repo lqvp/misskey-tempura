@@ -12394,6 +12394,14 @@ export interface Locale extends ILocale {
      * ただいま、アカウントの登録にインターバルを設けています。しばらく待ってから再度お試しいただくか、招待コードをお持ちの場合はそちらをご利用ください。
      */
     "signupRateLimitedDescription": string;
+    /**
+     * 検索URLをコピー
+     */
+    "copySearchUrl": string;
+    /**
+     * コピーに失敗しました
+     */
+    "failedToCopy": string;
 }
 declare const locales: {
     [lang: string]: Locale;
