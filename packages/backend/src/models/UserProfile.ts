@@ -130,6 +130,16 @@ export class MiUserProfile {
 	})
 	public hideNoteFromOverview: boolean;
 
+	@Column('boolean', {
+		default: false,
+	})
+	public hidePublicNotes: boolean;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public hideHomeNotes: boolean;
+
 	@Column('varchar', {
 		length: 128, nullable: true,
 	})

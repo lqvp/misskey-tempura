@@ -66,6 +66,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 						{{ i18n.ts.hideNoteFromOverview }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 						<template #caption>{{ i18n.ts.hideNoteFromOverviewDescription }}</template>
 					</MkSwitch>
+
+					<MkSwitch v-model="hidePublicNotes" @update:modelValue="save_privacy()">
+						{{ i18n.ts.hidePublicNotes }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+						<template #caption>{{ i18n.ts.hidePublicNotesDescription }}</template>
+					</MkSwitch>
+
+					<MkSwitch v-model="hideHomeNotes" @update:modelValue="save_privacy()">
+						{{ i18n.ts.hideHomeNotes }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+						<template #caption>{{ i18n.ts.hideHomeNotesDescription }}</template>
+					</MkSwitch>
 				</div>
 			</MkFolder>
 
@@ -326,6 +336,8 @@ const autoFollowBack = ref($i.autoFollowBack);
 const carefulBot = ref($i.carefulBot);
 const hideActivity = ref($i.hideActivity);
 const hideNoteFromOverview = ref($i.hideNoteFromOverview);
+const hidePublicNotes = ref($i.hidePublicNotes);
+const hideHomeNotes = ref($i.hideHomeNotes);
 const items = ref(defaultStore.state.postFormActions.map(x => ({
 	id: Math.random().toString(),
 	type: x,
@@ -537,6 +549,8 @@ function save_privacy() {
 		carefulBot: !!carefulBot.value,
 		hideActivity: !!hideActivity.value,
 		hideNoteFromOverview: !!hideNoteFromOverview.value,
+		hidePublicNotes: !!hidePublicNotes.value,
+		hideHomeNotes: !!hideHomeNotes.value,
 	});
 }
 

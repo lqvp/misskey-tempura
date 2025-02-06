@@ -12219,6 +12219,22 @@ export interface Locale extends ILocale {
      */
     "hideNoteFromOverviewDescription": string;
     /**
+     * 公開ノートを非表示にする
+     */
+    "hidePublicNotes": string;
+    /**
+     * 自分のプロフィールの公開ノートを非ログインユーザーが見れないようにします。このオプションを有効にしても、ログイン状態であればプロフィールのノートタブから引き続き閲覧できます。
+     */
+    "hidePublicNotesDescription": string;
+    /**
+     * ホームノートを非表示にする
+     */
+    "hideHomeNotes": string;
+    /**
+     * 自分のホームノートを非ログインユーザーが見れないようにします。このオプションを有効にしても、ログイン状態であればホームタブから引き続き閲覧できます。
+     */
+    "hideHomeNotesDescription": string;
+    /**
      * 予約投稿
      */
     "schedulePost": string;

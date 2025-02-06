@@ -4068,6 +4068,8 @@ export type components = {
       publicReactions: boolean;
       hideActivity: boolean;
       hideNoteFromOverview: boolean;
+      hidePublicNotes: boolean;
+      hideHomeNotes: boolean;
       /** @enum {string} */
       followingVisibility: 'public' | 'followers' | 'private';
       /** @enum {string} */
@@ -22244,6 +22246,8 @@ export type operations = {
           publicReactions?: boolean;
           hideActivity?: boolean;
           hideNoteFromOverview?: boolean;
+          hidePublicNotes?: boolean;
+          hideHomeNotes?: boolean;
           carefulBot?: boolean;
           autoAcceptFollowed?: boolean;
           autoRejectFollowRequest?: boolean;

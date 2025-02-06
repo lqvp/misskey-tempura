@@ -256,6 +256,8 @@ function toPackedUserDetailedNotMe(user: MiUser, override?: Packed<'UserDetailed
 		withReplies: true,
 		hideActivity: false,
 		hideNoteFromOverview: false,
+		hidePublicNotes: false,
+		hideHomeNotes: false,
 		ListenBrainz: null,
 		...override,
 	};

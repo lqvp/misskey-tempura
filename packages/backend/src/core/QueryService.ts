@@ -191,12 +191,23 @@ export class QueryService {
 	public generateVisibilityQuery(q: SelectQueryBuilder<any>, me?: { id: MiUser['id'] } | null): void {
 		// This code must always be synchronized with the checks in Notes.isVisibleForMe.
 		if (me == null) {
+			const profileSubQuery = this.userProfilesRepository.createQueryBuilder('profile')
+				.select('1')
+				.where('profile.userId = note.userId')
+				.andWhere(new Brackets(qb => {
+					qb
+						.where('(note.visibility = \'public\' AND profile.hidePublicNotes = TRUE)')
+						.orWhere('(note.visibility = \'home\' AND profile.hideHomeNotes = TRUE)');
+				}));
+
 			q.andWhere(new Brackets(qb => {
 				qb
 					.where('note.visibility = \'public\'')
 					.orWhere('note.visibility = \'home\'')
-					// 連合なしのノートは未ログイン者には見せない
-					.andWhere('note.localOnly = FALSE');
+				// 連合なしのノートは未ログイン者には見せない
+					.andWhere('note.localOnly = FALSE')
+				// プロフィールで非表示設定されているノートを除外
+					.andWhere(`NOT EXISTS (${profileSubQuery.getQuery()})`);
 			}));
 		} else {
 			const followingQuery = this.followingsRepository.createQueryBuilder('following')

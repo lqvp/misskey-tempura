@@ -3277,6 +3277,11 @@ hideActivityDescription: "自分のプロフィールのアクティビティ (�
 hideNoteFromOverview: "概要からノートを非表示にする"
 hideNoteFromOverviewDescription: "プロフィールの概要にノートを表示されないようにします。このオプションを有効にしても、ノートのURLを知っていれば閲覧できます。"
 
+hidePublicNotes: "公開ノートを非表示にする"
+hidePublicNotesDescription: "自分のプロフィールの公開ノートを非ログインユーザーが見れないようにします。このオプションを有効にしても、ログイン状態であればプロフィールのノートタブから引き続き閲覧できます。"
+hideHomeNotes: "ホームノートを非表示にする"
+hideHomeNotesDescription: "自分のホームノートを非ログインユーザーが見れないようにします。このオプションを有効にしても、ログイン状態であればホームタブから引き続き閲覧できます。"
+
 schedulePost: "予約投稿"
 schedulePostList: "予約投稿一覧"
 

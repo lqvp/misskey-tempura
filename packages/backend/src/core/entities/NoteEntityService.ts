@@ -11,7 +11,7 @@ import type { Packed } from '@/misc/json-schema.js';
 import { awaitAll } from '@/misc/prelude/await-all.js';
 import type { MiUser } from '@/models/User.js';
 import type { MiNote } from '@/models/Note.js';
-import type { UsersRepository, NotesRepository, FollowingsRepository, PollsRepository, PollVotesRepository, NoteReactionsRepository, ChannelsRepository, MiMeta } from '@/models/_.js';
+import type { UsersRepository, UserProfilesRepository, NotesRepository, FollowingsRepository, PollsRepository, PollVotesRepository, NoteReactionsRepository, ChannelsRepository, MiMeta } from '@/models/_.js';
 import { bindThis } from '@/decorators.js';
 import { DebounceLoader } from '@/misc/loader.js';
 import { IdService } from '@/core/IdService.js';
@@ -64,6 +64,9 @@ export class NoteEntityService implements OnModuleInit {
 
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
+
+		@Inject(DI.userProfilesRepository)
+		private userProfilesRepository: UserProfilesRepository,
 
 		@Inject(DI.notesRepository)
 		private notesRepository: NotesRepository,
@@ -156,6 +159,17 @@ export class NoteEntityService implements OnModuleInit {
 						hide = true;
 					}
 				}
+			}
+		}
+
+		// 未ログインかつプロフィールで非表示設定されている場合は非表示
+		if (!meId) {
+			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: packedNote.userId });
+			if (packedNote.visibility === 'public' && profile.hidePublicNotes) {
+				hide = true;
+			}
+			if (packedNote.visibility === 'home' && profile.hideHomeNotes) {
+				hide = true;
 			}
 		}
 

@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import { hi } from "date-fns/locale";
+
 export const notificationRecieveConfig = {
 	type: 'object',
 	oneOf: [
@@ -364,6 +366,14 @@ export const packedUserDetailedNotMeOnlySchema = {
 			nullable: false, optional: false,
 		},
 		hideNoteFromOverview: {
+			type: 'boolean',
+			nullable: false, optional: false,
+		},
+		hidePublicNotes: {
+			type: 'boolean',
+			nullable: false, optional: false,
+		},
+		hideHomeNotes: {
 			type: 'boolean',
 			nullable: false, optional: false,
 		},
