@@ -201,11 +201,11 @@ export class SigninApiService {
 			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });
 			if (profile.email && profile.emailVerified) {
 				this.emailService.sendEmail(profile.email, 'Login failed / ログインに失敗しました',
-					`userid: ${user.name ?? `@${user.username}`} <br>` +
+					`${user.name}(@${user.username}) <br>` +
 					`ip: ${request.ip} <br>` +
 					`header: <pre>${this.formatHeaders(request.headers as any)}</pre><br>` +
 					'There is a new login. If you do not recognize this login, update the security status of your account, including changing your password. / 新しいログインがありました。このログインに心当たりがない場合は、パスワードを変更するなど、アカウントのセキュリティ状態を更新してください。',
-					`userid: ${user.name ?? `@${user.username}`} \n` +
+					`${user.name}(@${user.username}) \n` +
 					`ip: ${request.ip} \n` +
 					'header:\n' + this.formatHeaders(request.headers as any) + '\n' +
 					'There is a new login. If you do not recognize this login, update the security status of your account, including changing your password. / 新しいログインがありました。このログインに心当たりがない場合は、パスワードを変更するなど、アカウントのセキュリティ状態を更新してください。');
