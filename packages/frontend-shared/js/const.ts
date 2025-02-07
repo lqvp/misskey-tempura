@@ -74,6 +74,7 @@ export const notificationTypes = [
 	'exportCompleted',
 	'login',
 	'loginFailed',
+	'createToken',
 	'test',
 	'app',
 	'test',
