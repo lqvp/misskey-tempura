@@ -15,7 +15,8 @@ const ev = new Xev();
 class QueueStatsChannel extends Channel {
 	public readonly chName = 'queueStats';
 	public static shouldShare = true;
-	public static requireCredential = false as const;
+	public static requireCredential = true as const;
+	public static kind = 'read:admin:queue';
 
 	constructor(id: string, connection: Channel['connection']) {
 		super(id, connection);

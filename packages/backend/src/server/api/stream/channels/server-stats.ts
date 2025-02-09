@@ -15,7 +15,8 @@ const ev = new Xev();
 class ServerStatsChannel extends Channel {
 	public readonly chName = 'serverStats';
 	public static shouldShare = true;
-	public static requireCredential = false as const;
+	public static requireCredential = true as const;
+	public static kind = 'read:admin:server-info';
 
 	constructor(id: string, connection: Channel['connection']) {
 		super(id, connection);
