@@ -99,6 +99,11 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 		text: i18n.ts.security,
 		to: '/settings/security',
 		active: currentPage.value?.route.name === 'security',
+	}, {
+		icon: 'ti ti-git-fork',
+		text: i18n.ts.originalFeature,
+		to: '/settings/temp-settings',
+		active: currentPage.value?.route.name === 'temp-settings',
 	}],
 }, {
 	title: i18n.ts.clientSettings,
@@ -132,11 +137,6 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 		text: i18n.ts.plugins,
 		to: '/settings/plugin',
 		active: currentPage.value?.route.name === 'plugin',
-	}, {
-		icon: 'ti ti-git-fork',
-		text: i18n.ts.originalFeature,
-		to: '/settings/temp-settings',
-		active: currentPage.value?.route.name === 'temp-settings',
 	}],
 }, {
 	title: i18n.ts.otherSettings,
