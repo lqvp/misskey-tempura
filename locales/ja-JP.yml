@@ -3283,6 +3283,8 @@ hidePublicNotes: "公開ノートを非表示にする"
 hidePublicNotesDescription: "自分のプロフィールの公開ノートを非ログインユーザーが見れないようにします。このオプションを有効にしても、ログイン状態であればプロフィールのノートタブから引き続き閲覧できます。"
 hideHomeNotes: "ホームノートを非表示にする"
 hideHomeNotesDescription: "自分のホームノートを非ログインユーザーが見れないようにします。このオプションを有効にしても、ログイン状態であればホームタブから引き続き閲覧できます。"
+hideLocalOnlyNotes: "連合なしノートを非表示にする"
+hideLocalOnlyNotesDescription: "自分の連合なしノートを非ログインユーザーが見れないようにします。このオプションを有効にしても、ログイン状態であればプロフィールのノートタブから引き続き閲覧できます。"
 
 schedulePost: "予約投稿"
 schedulePostList: "予約投稿一覧"

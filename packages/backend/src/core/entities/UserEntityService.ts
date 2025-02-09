@@ -552,6 +552,7 @@ export class UserEntityService implements OnModuleInit {
 				hideNoteFromOverview: this.isLocalUser(user) ? profile!.hideNoteFromOverview : false,
 				hidePublicNotes: this.isLocalUser(user) ? profile!.hidePublicNotes : false,
 				hideHomeNotes: this.isLocalUser(user) ? profile!.hideHomeNotes : false,
+				hideLocalOnlyNotes: this.isLocalUser(user) ? profile!.hideLocalOnlyNotes : false,
 				followersVisibility: profile!.followersVisibility,
 				followingVisibility: profile!.followingVisibility,
 				roles: this.roleService.getUserRoles(user.id).then(roles => roles.filter(role => role.isPublic && role.permissionGroup !== 'Community').sort((a, b) => b.displayOrder - a.displayOrder).map(role => ({

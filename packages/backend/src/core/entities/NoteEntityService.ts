@@ -171,6 +171,9 @@ export class NoteEntityService implements OnModuleInit {
 			if (packedNote.visibility === 'home' && profile.hideHomeNotes) {
 				hide = true;
 			}
+			if (packedNote.localOnly && profile.hideLocalOnlyNotes) {
+				hide = true;
+			}
 		}
 
 		/// 連合なしで未ログインなら非表示

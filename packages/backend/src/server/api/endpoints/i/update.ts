@@ -180,6 +180,7 @@ export const paramDef = {
 		hideNoteFromOverview: { type: 'boolean' },
 		hidePublicNotes: { type: 'boolean' },
 		hideHomeNotes: { type: 'boolean' },
+		hideLocalOnlyNotes: { type: 'boolean' },
 		carefulBot: { type: 'boolean' },
 		autoAcceptFollowed: { type: 'boolean' },
 		autoRejectFollowRequest: { type: 'boolean' },
@@ -348,6 +349,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			if (typeof ps.hideNoteFromOverview === 'boolean') profileUpdates.hideNoteFromOverview = ps.hideNoteFromOverview;
 			if (typeof ps.hidePublicNotes === 'boolean') profileUpdates.hidePublicNotes = ps.hidePublicNotes;
 			if (typeof ps.hideHomeNotes === 'boolean') profileUpdates.hideHomeNotes = ps.hideHomeNotes;
+			if (typeof ps.hideLocalOnlyNotes === 'boolean') profileUpdates.hideLocalOnlyNotes = ps.hideLocalOnlyNotes;
 			if (typeof ps.isBot === 'boolean') updates.isBot = ps.isBot;
 			if (typeof ps.carefulBot === 'boolean') profileUpdates.carefulBot = ps.carefulBot;
 			if (typeof ps.autoAcceptFollowed === 'boolean') profileUpdates.autoAcceptFollowed = ps.autoAcceptFollowed;

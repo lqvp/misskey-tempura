@@ -12243,6 +12243,14 @@ export interface Locale extends ILocale {
      */
     "hideHomeNotesDescription": string;
     /**
+     * 連合なしノートを非表示にする
+     */
+    "hideLocalOnlyNotes": string;
+    /**
+     * 自分の連合なしノートを非ログインユーザーが見れないようにします。このオプションを有効にしても、ログイン状態であればプロフィールのノートタブから引き続き閲覧できます。
+     */
+    "hideLocalOnlyNotesDescription": string;
+    /**
      * 予約投稿
      */
     "schedulePost": string;

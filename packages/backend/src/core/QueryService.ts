@@ -197,15 +197,14 @@ export class QueryService {
 				.andWhere(new Brackets(qb => {
 					qb
 						.where('(note.visibility = \'public\' AND profile.hidePublicNotes = TRUE)')
-						.orWhere('(note.visibility = \'home\' AND profile.hideHomeNotes = TRUE)');
+						.orWhere('(note.visibility = \'home\' AND profile.hideHomeNotes = TRUE)')
+						.orWhere('(note.localOnly = TRUE AND profile.hideLocalOnlyNotes = TRUE)');
 				}));
 
 			q.andWhere(new Brackets(qb => {
 				qb
 					.where('note.visibility = \'public\'')
 					.orWhere('note.visibility = \'home\'')
-				// 連合なしのノートは未ログイン者には見せない
-					.andWhere('note.localOnly = FALSE')
 				// プロフィールで非表示設定されているノートを除外
 					.andWhere(`NOT EXISTS (${profileSubQuery.getQuery()})`);
 			}));

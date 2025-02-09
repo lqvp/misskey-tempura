@@ -4070,6 +4070,7 @@ export type components = {
       hideNoteFromOverview: boolean;
       hidePublicNotes: boolean;
       hideHomeNotes: boolean;
+      hideLocalOnlyNotes: boolean;
       /** @enum {string} */
       followingVisibility: 'public' | 'followers' | 'private';
       /** @enum {string} */
@@ -22255,6 +22256,7 @@ export type operations = {
           hideNoteFromOverview?: boolean;
           hidePublicNotes?: boolean;
           hideHomeNotes?: boolean;
+          hideLocalOnlyNotes?: boolean;
           carefulBot?: boolean;
           autoAcceptFollowed?: boolean;
           autoRejectFollowRequest?: boolean;

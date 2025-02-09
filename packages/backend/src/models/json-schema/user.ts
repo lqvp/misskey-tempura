@@ -377,6 +377,10 @@ export const packedUserDetailedNotMeOnlySchema = {
 			type: 'boolean',
 			nullable: false, optional: false,
 		},
+		hideLocalOnlyNotes: {
+			type: 'boolean',
+			nullable: false, optional: false,
+		},
 		followingVisibility: {
 			type: 'string',
 			nullable: false, optional: false,

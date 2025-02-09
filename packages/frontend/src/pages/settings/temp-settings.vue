@@ -76,6 +76,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 						{{ i18n.ts.hideHomeNotes }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 						<template #caption>{{ i18n.ts.hideHomeNotesDescription }}</template>
 					</MkSwitch>
+
+					<MkSwitch v-model="hideLocalOnlyNotes" @update:modelValue="save_privacy()">
+						{{ i18n.ts.hideLocalOnlyNotes }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+						<template #caption>{{ i18n.ts.hideLocalOnlyNotesDescription }}</template>
+					</MkSwitch>
 				</div>
 			</MkFolder>
 
@@ -338,6 +343,7 @@ const hideActivity = ref($i.hideActivity);
 const hideNoteFromOverview = ref($i.hideNoteFromOverview);
 const hidePublicNotes = ref($i.hidePublicNotes);
 const hideHomeNotes = ref($i.hideHomeNotes);
+const hideLocalOnlyNotes = ref($i.hideLocalOnlyNotes);
 const items = ref(defaultStore.state.postFormActions.map(x => ({
 	id: Math.random().toString(),
 	type: x,
@@ -551,6 +557,7 @@ function save_privacy() {
 		hideNoteFromOverview: !!hideNoteFromOverview.value,
 		hidePublicNotes: !!hidePublicNotes.value,
 		hideHomeNotes: !!hideHomeNotes.value,
+		hideLocalOnlyNotes: !!hideLocalOnlyNotes.value,
 	});
 }
 
