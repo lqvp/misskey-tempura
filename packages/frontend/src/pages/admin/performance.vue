@@ -9,8 +9,29 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<MkSpacer :contentMax="700" :marginMin="16" :marginMax="32">
 		<div class="_gaps">
 			<div class="_panel" style="padding: 16px;">
-				<MkSwitch v-model="enableServerMachineStats" @change="onChange_enableServerMachineStats">
-					<template #label>{{ i18n.ts.enableServerMachineStats }}</template>
+				<MkSwitch v-model="enableIdenticonGeneration" @change="onChange_enableIdenticonGeneration">
+					<template #label>{{ i18n.ts.enableIdenticonGeneration }}</template>
+					<template #caption>{{ i18n.ts.turnOffToImprovePerformance }}</template>
+				</MkSwitch>
+			</div>
+
+			<div class="_panel" style="padding: 16px;">
+				<MkSwitch v-model="enableChartsForRemoteUser" @change="onChange_enableChartsForRemoteUser">
+					<template #label>{{ i18n.ts.enableChartsForRemoteUser }}</template>
+					<template #caption>{{ i18n.ts.turnOffToImprovePerformance }}</template>
+				</MkSwitch>
+			</div>
+
+			<div class="_panel" style="padding: 16px;">
+				<MkSwitch v-model="enableStatsForFederatedInstances" @change="onChange_enableStatsForFederatedInstances">
+					<template #label>{{ i18n.ts.enableStatsForFederatedInstances }}</template>
+					<template #caption>{{ i18n.ts.turnOffToImprovePerformance }}</template>
+				</MkSwitch>
+			</div>
+
+			<div class="_panel" style="padding: 16px;">
+				<MkSwitch v-model="enableChartsForFederatedInstances" @change="onChange_enableChartsForFederatedInstances">
+					<template #label>{{ i18n.ts.enableChartsForFederatedInstances }}</template>
 					<template #caption>{{ i18n.ts.turnOffToImprovePerformance }}</template>
 				</MkSwitch>
 			</div>
@@ -73,34 +94,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</template>
 				</div>
 			</MkFolder>
-
-			<div class="_panel" style="padding: 16px;">
-				<MkSwitch v-model="enableIdenticonGeneration" @change="onChange_enableIdenticonGeneration">
-					<template #label>{{ i18n.ts.enableIdenticonGeneration }}</template>
-					<template #caption>{{ i18n.ts.turnOffToImprovePerformance }}</template>
-				</MkSwitch>
-			</div>
-
-			<div class="_panel" style="padding: 16px;">
-				<MkSwitch v-model="enableChartsForRemoteUser" @change="onChange_enableChartsForRemoteUser">
-					<template #label>{{ i18n.ts.enableChartsForRemoteUser }}</template>
-					<template #caption>{{ i18n.ts.turnOffToImprovePerformance }}</template>
-				</MkSwitch>
-			</div>
-
-			<div class="_panel" style="padding: 16px;">
-				<MkSwitch v-model="enableStatsForFederatedInstances" @change="onChange_enableStatsForFederatedInstances">
-					<template #label>{{ i18n.ts.enableStatsForFederatedInstances }}</template>
-					<template #caption>{{ i18n.ts.turnOffToImprovePerformance }}</template>
-				</MkSwitch>
-			</div>
-
-			<div class="_panel" style="padding: 16px;">
-				<MkSwitch v-model="enableChartsForFederatedInstances" @change="onChange_enableChartsForFederatedInstances">
-					<template #label>{{ i18n.ts.enableChartsForFederatedInstances }}</template>
-					<template #caption>{{ i18n.ts.turnOffToImprovePerformance }}</template>
-				</MkSwitch>
-			</div>
 
 			<MkFolder :defaultOpen="true">
 				<template #icon><i class="ti ti-bolt"></i></template>
