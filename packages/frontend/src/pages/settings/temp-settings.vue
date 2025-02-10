@@ -123,6 +123,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</template>
 							<template #caption>{{ i18n.ts.showInstanceTickerSoftwareNameDescription }}</template>
 						</MkSwitch>
+						<MkSwitch v-model="showInstanceTickerVersion">
+							<template #label>
+								{{ i18n.ts.showInstanceTickerVersion }}
+								<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+							</template>
+							<template #caption>{{ i18n.ts.showInstanceTickerVersionDescription }}</template>
+						</MkSwitch>
 						<MkSwitch v-model="disableNoteNyaize">{{ i18n.ts.disableNoteNyaize }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
 						<MkSelect v-model="hideReactionCount">
 							<template #label>{{ i18n.ts.hideReactionCount }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
@@ -330,6 +337,7 @@ const enableSnowMode = computed(defaultStore.makeGetterSetter('enableSnowMode'))
 const enableReactionConfirm = computed(defaultStore.makeGetterSetter('enableReactionConfirm'));
 const enableLikeConfirm = computed(defaultStore.makeGetterSetter('enableLikeConfirm'));
 const showInstanceTickerSoftwareName = computed(defaultStore.makeGetterSetter('showInstanceTickerSoftwareName'));
+const showInstanceTickerVersion = computed(defaultStore.makeGetterSetter('showInstanceTickerVersion'));
 const useTextAreaAutoSize = computed(defaultStore.makeGetterSetter('useTextAreaAutoSize'));
 
 const Sortable = defineAsyncComponent(() => import('vuedraggable').then(x => x.default));
@@ -413,6 +421,7 @@ watch([
 	enableReactionConfirm,
 	enableLikeConfirm,
 	showInstanceTickerSoftwareName,
+	showInstanceTickerVersion,
 	useTextAreaAutoSize,
 ], async () => {
 	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });

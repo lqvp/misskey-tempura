@@ -95,6 +95,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</template>
 					<template #caption>{{ i18n.ts.showInstanceTickerSoftwareNameDescription }}</template>
 				</MkSwitch>
+				<MkSwitch v-model="showInstanceTickerVersion">
+					<template #label>
+						{{ i18n.ts.showInstanceTickerVersion }}
+						<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+					</template>
+					<template #caption>{{ i18n.ts.showInstanceTickerVersionDescription }}</template>
+				</MkSwitch>
 				<MkSelect v-model="hideReactionCount">
 					<template #label>{{ i18n.ts.hideReactionCount }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 					<option value="none">{{ i18n.ts._hideReactionCount.none }}</option>
@@ -413,6 +420,7 @@ const enableSnowMode = computed(defaultStore.makeGetterSetter('enableSnowMode'))
 const enableReactionConfirm = computed(defaultStore.makeGetterSetter('enableReactionConfirm'));
 const enableLikeConfirm = computed(defaultStore.makeGetterSetter('enableLikeConfirm'));
 const showInstanceTickerSoftwareName = computed(defaultStore.makeGetterSetter('showInstanceTickerSoftwareName'));
+const showInstanceTickerVersion = computed(defaultStore.makeGetterSetter('showInstanceTickerVersion'));
 
 watch(lang, () => {
 	miLocalStorage.setItem('lang', lang.value as string);

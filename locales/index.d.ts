@@ -12351,6 +12351,14 @@ export interface Locale extends ILocale {
      */
     "showInstanceTickerSoftwareNameDescription": string;
     /**
+     * インスタンスのバージョンを表示
+     */
+    "showInstanceTickerVersion": string;
+    /**
+     * インスタンスのバージョンをインスタンスの名前の横に表示します。
+     */
+    "showInstanceTickerVersionDescription": string;
+    /**
      * テキストエリアの自動リサイズ
      */
     "textAreaAutoResize": string;

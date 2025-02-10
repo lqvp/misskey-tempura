@@ -7,23 +7,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 <div :class="$style.root" :style="themeColorStyle">
 	<img v-if="faviconUrl" :class="$style.icon" :src="faviconUrl"/>
 	<div :class="$style.name">
-  	{{ instanceName }}
-  <template v-if="showInstanceTickerSoftwareName">
-    | {{ instance.softwareName }}
-  </template>
-</div>
+		{{ instanceName }}
+		<template v-if="showInstanceTickerSoftwareName">
+			| {{ instance.softwareName }}
+		</template>
+		<template v-if="showInstanceTickerVersion">
+			| {{ instance.softwareVersion }}
+		</template>
+	</div>
 </div>
 </template>
 
 <script lang="ts" setup>
 import { computed } from 'vue';
-import type { CSSProperties } from 'vue';
 import { instanceName as localInstanceName } from '@@/js/config.js';
+import type { CSSProperties } from 'vue';
 import { instance as localInstance } from '@/instance.js';
 import { getProxiedImageUrlNullable } from '@/scripts/media-proxy.js';
 import { defaultStore } from '@/store.js';
 
 const showInstanceTickerSoftwareName = computed(() => defaultStore.state.showInstanceTickerSoftwareName);
+const showInstanceTickerVersion = computed(() => defaultStore.state.showInstanceTickerVersion);
 
 const props = defineProps<{
 	host: string | null;

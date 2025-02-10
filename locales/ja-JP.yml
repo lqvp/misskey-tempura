@@ -3320,6 +3320,8 @@ likeConfirm: "いいねしますか？"
 
 showInstanceTickerSoftwareName: "インスタンスのソフトウェア名を表示"
 showInstanceTickerSoftwareNameDescription: "インスタンスのソフトウェア名をインスタンスの名前の横に表示します。"
+showInstanceTickerVersion: "インスタンスのバージョンを表示"
+showInstanceTickerVersionDescription: "インスタンスのバージョンをインスタンスの名前の横に表示します。"
 
 textAreaAutoResize: "テキストエリアの自動リサイズ"
 textAreaAutoResizeDescription: "テキストエリアの高さを自動で調整します。"

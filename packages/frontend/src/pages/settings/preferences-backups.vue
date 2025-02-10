@@ -132,6 +132,7 @@ const defaultStoreSaveKeys: (keyof typeof defaultStore['state'])[] = [
 	'enableReactionConfirm',
 	'enableLikeConfirm',
 	'showInstanceTickerSoftwareName',
+	'showInstanceTickerVersion',
 ];
 const coldDeviceStorageSaveKeys: (keyof typeof ColdDeviceStorage.default)[] = [
 	'lightTheme',

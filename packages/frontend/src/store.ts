@@ -622,6 +622,10 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'device',
 		default: false,
 	},
+	showInstanceTickerVersion: {
+		where: 'device',
+		default: false,
+	},
 	useTextAreaAutoSize: {
 		where: 'account',
 		default: false,
