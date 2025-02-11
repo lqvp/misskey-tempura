@@ -33,7 +33,7 @@ import * as Misskey from 'misskey-js';
 import PhotoSwipeLightbox from 'photoswipe/lightbox';
 import PhotoSwipe from 'photoswipe';
 import 'photoswipe/style.css';
-import type { FILE_TYPE_BROWSERSAFE, FILE_EXT_TRACKER_MODULES, FILE_TYPE_TRACKER_MODULES } from '@@/js/const.js';
+import { FILE_TYPE_BROWSERSAFE } from '@@/js/const.js';
 import XBanner from '@/components/MkMediaBanner.vue';
 import XImage from '@/components/MkMediaImage.vue';
 import XVideo from '@/components/MkMediaVideo.vue';
