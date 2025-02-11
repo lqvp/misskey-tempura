@@ -105,19 +105,18 @@ export class CustomEmojiService implements OnApplicationShutdown {
 		localOnly: boolean;
 		roleIdsThatCanBeUsedThisEmojiAsReaction: MiRole['id'][];
 	}, moderator?: MiUser): Promise<MiEmoji> {
+		const originalDriveData: MiDriveFile = data.driveFile;
+
 		// システムユーザーとして再アップロード
-		if (!data.originalUrl.startsWith('http')) {
-			const uploadedFile = await this.driveService.uploadFromUrl({
-				url: data.originalUrl,
+		if (!data.driveFile.user?.isRoot) {
+			data.driveFile = await this.driveService.uploadFromUrl({
+				url: data.driveFile.url,
 				user: null,
 				force: true,
 			});
 
 			// 元データの削除
-			await this.driveService.deleteFile({ url: data.originalUrl } as any);
-			data.originalUrl = uploadedFile.url;
-			data.publicUrl = uploadedFile.webpublicUrl ?? uploadedFile.url;
-			data.fileType = uploadedFile.webpublicType ?? uploadedFile.type;
+			this.driveService.deleteFile(originalDriveData);
 		}
 		const emoji = await this.emojisRepository.insertOne({
 			id: this.idService.gen(),
