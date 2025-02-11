@@ -1,7 +1,7 @@
 ## Unreleased
 
 ### General
--
+- Feat: アクセストークン発行時に通知するように
 
 ### Client
 -
