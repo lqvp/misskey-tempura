@@ -59,7 +59,7 @@ class QueueStatsChannel extends Channel {
 }
 
 @Injectable()
-export class QueueStatsChannelService implements MiChannelService<false> {
+export class QueueStatsChannelService implements MiChannelService<true> {
 	public readonly shouldShare = QueueStatsChannel.shouldShare;
 	public readonly requireCredential = QueueStatsChannel.requireCredential;
 	public readonly kind = QueueStatsChannel.kind;
