@@ -16,7 +16,6 @@ import { MemoryKVCache, RedisSingleCache } from '@/misc/cache.js';
 import { sqlLikeEscape } from '@/misc/sql-like-escape.js';
 import type { EmojisRepository, MiRole, MiUser } from '@/models/_.js';
 import type { MiEmoji } from '@/models/Emoji.js';
-import { MiDriveFile } from '@/models/DriveFile.js';
 import type { Serialized } from '@/types.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { DriveService } from '@/core/DriveService.js';
@@ -105,20 +104,20 @@ export class CustomEmojiService implements OnApplicationShutdown {
 		isSensitive: boolean;
 		localOnly: boolean;
 		roleIdsThatCanBeUsedThisEmojiAsReaction: MiRole['id'][];
-		driveFile: MiDriveFile;
 	}, moderator?: MiUser): Promise<MiEmoji> {
-		const originalDriveData: MiDriveFile = data.driveFile;
-
 		// システムユーザーとして再アップロード
-		if (!data.driveFile.user?.isRoot) {
-			data.driveFile = await this.driveService.uploadFromUrl({
-				url: data.driveFile.url,
+		if (!data.originalUrl.startsWith('http')) {
+			const uploadedFile = await this.driveService.uploadFromUrl({
+				url: data.originalUrl,
 				user: null,
 				force: true,
 			});
 
 			// 元データの削除
-			this.driveService.deleteFile(originalDriveData);
+			await this.driveService.deleteFile({ url: data.originalUrl } as any);
+			data.originalUrl = uploadedFile.url;
+			data.publicUrl = uploadedFile.webpublicUrl ?? uploadedFile.url;
+			data.fileType = uploadedFile.webpublicType ?? uploadedFile.type;
 		}
 		const emoji = await this.emojisRepository.insertOne({
 			id: this.idService.gen(),
