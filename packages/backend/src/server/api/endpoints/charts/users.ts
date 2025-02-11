@@ -34,6 +34,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private usersChart: UsersChart,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			if (!me) {
+				return { local: { total: [], inc: [], dec: [] }, remote: { total: [], inc: [], dec: [] } };
+			};
 			return await this.usersChart.getChart(ps.span, ps.limit, ps.offset ? new Date(ps.offset) : null);
 		});
 	}

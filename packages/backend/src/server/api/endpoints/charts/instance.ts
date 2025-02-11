@@ -35,6 +35,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private instanceChart: InstanceChart,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			if (!me) {
+				return {
+					requests: { failed: [], succeeded: [], received: [] },
+					notes: { total: [], inc: [], dec: [], diffs: { normal: [], reply: [], renote: [], withFile: [] } },
+					users: { total: [], inc: [], dec: [] },
+					following: { total: [], inc: [], dec: [] },
+					followers: { total: [], inc: [], dec: [] },
+					originalNotes: { total: [], inc: [], dec: [] },
+					drive: { totalFiles: [], incFiles: [], decFiles: [], incUsage: [], decUsage: [] }
+				};
+			};
 			return await this.instanceChart.getChart(ps.span, ps.limit, ps.offset ? new Date(ps.offset) : null, ps.host);
 		});
 	}

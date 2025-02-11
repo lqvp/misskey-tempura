@@ -72,6 +72,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private instanceEntityService: InstanceEntityService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			if (!me) {
+				return {
+					topSubInstances: [],
+					otherFollowersCount: 0,
+					topPubInstances: [],
+					otherFollowingCount: 0,
+				};
+			};
 			const [topSubInstances, topPubInstances, allSubCount, allPubCount] = await Promise.all([
 				this.instancesRepository.find({
 					where: {

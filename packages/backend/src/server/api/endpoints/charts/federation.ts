@@ -34,6 +34,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private federationChart: FederationChart,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			if (!me) {
+				return {
+					deliveredInstances: [],
+					inboxInstances: [],
+					stalled: [],
+					sub: [],
+					pub: [],
+					pubsub: [],
+					subActive: [],
+					pubActive: [],
+				};
+			}
 			return await this.federationChart.getChart(ps.span, ps.limit, ps.offset ? new Date(ps.offset) : null);
 		});
 	}

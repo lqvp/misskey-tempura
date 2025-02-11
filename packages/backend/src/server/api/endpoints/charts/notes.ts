@@ -34,7 +34,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private notesChart: NotesChart,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			return await this.notesChart.getChart(ps.span, ps.limit, ps.offset ? new Date(ps.offset) : null);
+			if (!me) {
+				return { local: { total: [], inc: [], dec: [], diffs: { normal: [], reply: [], renote: [], withFile: [] } }, remote: { total: [], inc: [], dec: [], diffs: { normal: [], reply: [], renote: [], withFile: [] } } };
+			};
+			return await this.notesChart.getChart(ps.span, ps.limit, ps.offset ? new Date(ps.offset) : null) as any;
 		});
 	}
 }
