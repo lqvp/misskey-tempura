@@ -16,6 +16,8 @@ import { MetaService } from '@/core/MetaService.js';
 import type { MiRemoteUser, MiUser } from '@/models/User.js';
 import { appendQuery, query } from '@/misc/prelude/url.js';
 import type { Config } from '@/config.js';
+import { NotificationService } from '@/core/NotificationService.js';
+import { RoleService } from '@/core/RoleService.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import type * as Bull from 'bullmq';
 
@@ -37,8 +39,19 @@ export class CleanRemoteFilesProcessorService {
 		private queueLoggerService: QueueLoggerService,
 		private s3Service: S3Service,
 		private metaService: MetaService,
+		private notificationService: NotificationService,
+		private roleService: RoleService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('clean-remote-files');
+	}
+
+	@bindThis
+	private formatBytes(bytes: number): string {
+		if (bytes === 0) return '0 B';
+		const k = 1024;
+		const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+		const i = Math.floor(Math.log(bytes) / Math.log(k));
+		return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 	}
 
 	@bindThis
@@ -46,6 +59,7 @@ export class CleanRemoteFilesProcessorService {
 		this.logger.info('Deleting cached remote files...');
 
 		let deletedCount = 0;
+		let totalSize = 0;
 		let cursor: MiDriveFile['id'] | null = null;
 
 		while (true) {
@@ -68,6 +82,11 @@ export class CleanRemoteFilesProcessorService {
 
 			cursor = files.at(-1)?.id ?? null;
 
+			// ファイルサイズを合計
+			files.forEach(file => {
+				totalSize += file.size;
+			});
+
 			await Promise.all(files.map(file => this.driveService.deleteFileSync(file, true)));
 
 			deletedCount += 8;
@@ -79,6 +98,18 @@ export class CleanRemoteFilesProcessorService {
 
 			job.updateProgress(100 / total * deletedCount);
 		}
+
+		// 管理者に通知
+		const humanReadableSize = this.formatBytes(totalSize);
+		const adminIds = await this.roleService.getAdministratorIds();
+		Promise.all(adminIds.map(async adminId => {
+			this.notificationService.createNotification(adminId, 'app', {
+				appAccessTokenId: null,
+				customBody: `リモートファイルのクリーンアップが完了しました。\n削除されたファイル数: ${deletedCount}\n解放された容量: ${humanReadableSize}`,
+				customHeader: '[システム] ストレージクリーンアップ',
+				customIcon: null,
+			});
+		}));
 
 		this.logger.succ('All cached remote files has been deleted.');
 		await this.cleanOrphanedFiles();
@@ -116,8 +147,8 @@ export class CleanRemoteFilesProcessorService {
 				}
 				const isInDb = await this.driveFilesRepository.exists(
 					{ where: [
-						{ accessKey: v.Key }, 
-						{ webpublicAccessKey: v.Key }, 
+						{ accessKey: v.Key },
+						{ webpublicAccessKey: v.Key },
 						{ thumbnailAccessKey: v.Key },
 					] },
 				);
