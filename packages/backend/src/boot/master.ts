@@ -189,7 +189,9 @@ async function connectDb(): Promise<void> {
 */
 
 async function spawnWorkers(limit = 1) {
-	const workers = Math.min(limit, os.cpus().length * 2);
+	// clusterOverClockがtrueの場合は上限チェックをスキップ
+	const config: Config = loadConfigBoot();
+	const workers = config.clusterOverClock ? limit : Math.min(limit, os.cpus().length * 2);
 	bootLogger.info(`Starting ${workers} worker${workers === 1 ? '' : 's'}...`);
 	await Promise.all([...Array(workers)].map(spawnWorker));
 	bootLogger.succ('All workers started');

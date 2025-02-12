@@ -188,6 +188,7 @@ id: 'aidx'
 
 # Number of worker processes
 #clusterLimit: 1
+#clusterOverClock: false
 
 # Job concurrency per worker
 # deliverJobConcurrency: 128
