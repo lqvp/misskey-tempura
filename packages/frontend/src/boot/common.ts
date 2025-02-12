@@ -4,9 +4,9 @@
  */
 
 import { computed, watch, version as vueVersion } from 'vue';
-import type { App } from 'vue';
 import { compareVersions } from 'compare-versions';
 import { version, lang, updateLocale, locale } from '@@/js/config.js';
+import type { App } from 'vue';
 import widgets from '@/widgets/index.js';
 import directives from '@/directives/index.js';
 import components from '@/components/index.js';
@@ -63,21 +63,31 @@ export async function common(createVue: () => App<Element>) {
 		});
 	}
 
-	let isClientUpdated = false;
-
 	//#region クライアントが更新されたかチェック
 	const lastVersion = miLocalStorage.getItem('lastVersion');
-	if (lastVersion !== version) {
-		miLocalStorage.setItem('lastVersion', version);
+	let isClientUpdated = false;
+	let updatedComponent: 'misskey' | 'temp' | 'both' | null = null;
 
+	if (lastVersion !== version) {
+		const [currentMisskeyVersion, currentTempVersion] = version.split('-temp-');
+		const [lastMisskeyVersion, lastTempVersion] = (lastVersion ?? '').split('-temp-');
+
+		if (currentMisskeyVersion !== lastMisskeyVersion) {
+			if (lastTempVersion !== currentTempVersion) {
+				updatedComponent = 'both';
+			} else {
+				updatedComponent = 'misskey';
+			}
+			isClientUpdated = true;
+		} else if (lastTempVersion !== currentTempVersion) {
+			updatedComponent = 'temp';
+			isClientUpdated = true;
+		}
+
+		// 比較後にバージョンを更新
+		miLocalStorage.setItem('lastVersion', version);
 		// テーマリビルドするため
 		miLocalStorage.removeItem('theme');
-
-		try { // 変なバージョン文字列来るとcompareVersionsでエラーになるため
-			if (lastVersion != null && compareVersions(version, lastVersion) === 1) {
-				isClientUpdated = true;
-			}
-		} catch (err) { /* empty */ }
 	}
 	//#endregion
 
@@ -312,6 +322,7 @@ export async function common(createVue: () => App<Element>) {
 
 	return {
 		isClientUpdated,
+		updatedComponent,
 		app,
 	};
 }

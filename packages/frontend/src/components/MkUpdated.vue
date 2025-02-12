@@ -9,8 +9,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div :class="$style.title"><MkSparkle>{{ i18n.ts.misskeyUpdated }}</MkSparkle></div>
 		<div :class="$style.version">✨{{ version }}🚀</div>
 		<div>
-			<MkButton :class="$style.updateButton" full @click="whatIsNew">{{ i18n.ts.whatIsNew }}</MkButton>
-			<MkButton :class="$style.updateButton" full @click="whatIsNewFork">{{ i18n.ts.whatIsNew }} (misskey-temp)</MkButton>
+			<MkButton v-if="shouldShowMisskeyButton" :class="$style.updateButton" full @click="whatIsNew">{{ i18n.ts.whatIsNew }}</MkButton>
+			<MkButton v-if="shouldShowTempButton" :class="$style.updateButton" full @click="whatIsNewFork">{{ i18n.ts.whatIsNew }} (misskey-temp)</MkButton>
 		</div>
 		<MkButton :class="$style.gotIt" primary full @click="modal?.close()">{{ i18n.ts.gotIt }}</MkButton>
 	</div>
@@ -18,25 +18,29 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { onMounted, shallowRef } from 'vue';
+import { computed, onMounted, shallowRef } from 'vue';
+import { version } from '@@/js/config.js';
 import MkModal from '@/components/MkModal.vue';
 import MkButton from '@/components/MkButton.vue';
 import MkSparkle from '@/components/MkSparkle.vue';
-import { version } from '@@/js/config.js';
 import { i18n } from '@/i18n.js';
 import { confetti } from '@/scripts/confetti.js';
 
+const props = withDefaults(defineProps<{
+			updatedComponent?: 'misskey' | 'temp' | 'both' | null;
+	}>(), {
+	updatedComponent: null,
+});
+
 const modal = shallowRef<InstanceType<typeof MkModal>>();
 
-function whatIsNew() {
-	modal.value?.close();
-	window.open(`https://misskey-hub.net/docs/releases/#_${version.replace(/\./g, '')}`, '_blank');
-}
+const shouldShowMisskeyButton = computed(() =>
+	props.updatedComponent === 'misskey' || props.updatedComponent === 'both',
+);
 
-function whatIsNewFork() {
-	modal.value?.close();
-	window.open('https://hackmd.io/@il2/temp-changelog');
-}
+const shouldShowTempButton = computed(() =>
+	props.updatedComponent === 'temp' || props.updatedComponent === 'both',
+);
 
 onMounted(() => {
 	confetti({
