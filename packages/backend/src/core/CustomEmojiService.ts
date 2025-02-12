@@ -14,7 +14,7 @@ import { bindThis } from '@/decorators.js';
 import { DI } from '@/di-symbols.js';
 import { MemoryKVCache, RedisSingleCache } from '@/misc/cache.js';
 import { sqlLikeEscape } from '@/misc/sql-like-escape.js';
-import type { EmojisRepository, MiRole, MiUser } from '@/models/_.js';
+import type { DriveFilesRepository, EmojisRepository, MiRole, MiUser } from '@/models/_.js';
 import type { MiEmoji } from '@/models/Emoji.js';
 import type { Serialized } from '@/types.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
@@ -68,6 +68,8 @@ export class CustomEmojiService implements OnApplicationShutdown {
 		private redisClient: Redis.Redis,
 		@Inject(DI.emojisRepository)
 		private emojisRepository: EmojisRepository,
+		@Inject(DI.driveFilesRepository)
+		private driveFilesRepository: DriveFilesRepository,
 		private utilityService: UtilityService,
 		private idService: IdService,
 		private emojiEntityService: EmojiEntityService,
@@ -106,18 +108,16 @@ export class CustomEmojiService implements OnApplicationShutdown {
 		roleIdsThatCanBeUsedThisEmojiAsReaction: MiRole['id'][];
 	}, moderator?: MiUser): Promise<MiEmoji> {
 		// システムユーザーとして再アップロード
-		if (!data.originalUrl.startsWith('http')) {
-			const uploadedFile = await this.driveService.uploadFromUrl({
+		const driveFile = await this.driveFilesRepository.findOneBy({ url: data.originalUrl });
+		if (driveFile?.user && !driveFile.user.isRoot) {
+			const copyDriveFile = await this.driveService.uploadFromUrl({
 				url: data.originalUrl,
 				user: null,
 				force: true,
 			});
-
-			// 元データの削除
-			await this.driveService.deleteFile({ url: data.originalUrl } as any);
-			data.originalUrl = uploadedFile.url;
-			data.publicUrl = uploadedFile.webpublicUrl ?? uploadedFile.url;
-			data.fileType = uploadedFile.webpublicType ?? uploadedFile.type;
+			data.originalUrl = copyDriveFile.url;
+			data.publicUrl = copyDriveFile.webpublicUrl ?? copyDriveFile.url;
+			data.fileType = copyDriveFile.webpublicType ?? copyDriveFile.type;
 		}
 		const emoji = await this.emojisRepository.insertOne({
 			id: this.idService.gen(),
