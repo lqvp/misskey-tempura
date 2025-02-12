@@ -11,6 +11,13 @@ import type { FollowRequestHistoryRepository } from '@/models/_.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { DI } from '@/di-symbols.js';
 import { CacheService } from '@/core/CacheService.js';
+import {
+	applyBlockedUsersFilter,
+	applyDefaultTypeCondition,
+	applyTypeCondition,
+	createDeleteQuery,
+	mapHistories,
+} from '@/core/HistoryUtils.js';
 
 export const meta = {
 	tags: ['following', 'account'],
@@ -100,36 +107,22 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> {
 	constructor(
-		@Inject(DI.followRequestHistoryRepository)
-		private followRequestHistoryRepository: FollowRequestHistoryRepository,
+        @Inject(DI.followRequestHistoryRepository)
+        private followRequestHistoryRepository: FollowRequestHistoryRepository,
 
-		private userEntityService: UserEntityService,
-		private queryService: QueryService,
-		private cacheService: CacheService,
+        private userEntityService: UserEntityService,
+        private queryService: QueryService,
+        private cacheService: CacheService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			// 削除モードの部分だけを修正（他のコードは同じ）
 			if (ps.delete) {
-				await this.followRequestHistoryRepository
-					.createQueryBuilder()
-					.delete()
-					.from('follow_request_history')
-					.where(new Brackets(qb => {
-						qb.where(new Brackets(qb2 => {
-							qb2.where('fromUserId = :meId', { meId: me.id })
-								.andWhere('type IN (:...fromTypes)', {
-									fromTypes: ['sent', 'wasApproved', 'wasRejected', 'wasBlocked', 'wasUnBlocked'],
-								});
-						}))
-							.orWhere(new Brackets(qb2 => {
-								qb2.where('toUserId = :meId', { meId: me.id })
-									.andWhere('type IN (:...toTypes)', {
-										toTypes: ['received', 'approved', 'rejected'],
-									});
-							}));
-					}))
-					.execute();
-
+				const query = createDeleteQuery(
+					this.followRequestHistoryRepository,
+					me.id,
+					['sent', 'wasApproved', 'wasRejected', 'wasBlocked', 'wasUnBlocked'],
+					['received', 'approved', 'rejected'],
+				);
+				await query.execute();
 				return [];
 			}
 
@@ -141,85 +134,28 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				.leftJoinAndSelect('history.fromUser', 'fromUser')
 				.leftJoinAndSelect('history.toUser', 'toUser');
 
-			// タイプごとの適切なフィルタリング
 			switch (ps.type) {
-				case 'sent':
-					query.andWhere('history.fromUserId = :meId', { meId: me.id })
-						.andWhere('history.type = :type', { type: 'sent' });
-					break;
-				case 'received':
-					query.andWhere('history.toUserId = :meId', { meId: me.id })
-						.andWhere('history.type = :type', { type: 'received' });
-					break;
-				case 'approved':
-					query.andWhere('history.toUserId = :meId', { meId: me.id })
-						.andWhere('history.type = :type', { type: 'approved' });
-					break;
-				case 'rejected':
-					query.andWhere('history.toUserId = :meId', { meId: me.id })
-						.andWhere('history.type = :type', { type: 'rejected' });
-					break;
-				case 'wasApproved':
-					query.andWhere('history.fromUserId = :meId', { meId: me.id })
-						.andWhere('history.type = :type', { type: 'wasApproved' });
-					break;
-				case 'wasRejected':
-					query.andWhere('history.fromUserId = :meId', { meId: me.id })
-						.andWhere('history.type = :type', { type: 'wasRejected' });
-					break;
-				case 'wasBlocked':
-					query.andWhere('history.fromUserId = :meId', { meId: me.id })
-						.andWhere('history.type = :type', { type: 'wasBlocked' });
-					break;
-				case 'wasUnBlocked':
-					query.andWhere('history.fromUserId = :meId', { meId: me.id })
-						.andWhere('history.type = :type', { type: 'wasUnBlocked' });
-					break;
-				default:
-					query.andWhere(new Brackets(qb => {
-						qb.where(new Brackets(qb2 => {
-							qb2.where('history.fromUserId = :meId', { meId: me.id })
-								.andWhere('history.type IN (:...fromTypes)', {
-									fromTypes: ['sent', 'wasApproved', 'wasRejected', 'wasBlocked', 'wasUnBlocked'],
-								});
-						}))
-							.orWhere(new Brackets(qb2 => {
-								qb2.where('history.toUserId = :meId', { meId: me.id })
-									.andWhere('history.type IN (:...toTypes)', {
-										toTypes: ['received', 'approved', 'rejected'],
-									});
-							}));
-					}));
-					break;
+				case 'sent': applyTypeCondition(query, 'fromUserId', 'sent', me.id); break;
+				case 'received': applyTypeCondition(query, 'toUserId', 'received', me.id); break;
+				case 'approved': applyTypeCondition(query, 'toUserId', 'approved', me.id); break;
+				case 'rejected': applyTypeCondition(query, 'toUserId', 'rejected', me.id); break;
+				case 'wasApproved': applyTypeCondition(query, 'fromUserId', 'wasApproved', me.id); break;
+				case 'wasRejected': applyTypeCondition(query, 'fromUserId', 'wasRejected', me.id); break;
+				case 'wasBlocked': applyTypeCondition(query, 'fromUserId', 'wasBlocked', me.id); break;
+				case 'wasUnBlocked': applyTypeCondition(query, 'fromUserId', 'wasUnBlocked', me.id); break;
+				default: applyDefaultTypeCondition(query, me.id,
+					['sent', 'wasApproved', 'wasRejected', 'wasBlocked', 'wasUnBlocked'],
+					['received', 'approved', 'rejected']);
 			}
 
-			const blockedUserIds = await this.cacheService.userBlockedCache.fetch(me.id);
-			if (blockedUserIds.size > 0) {
-				query.andWhere('fromUser.id NOT IN (:...blockedUserIds)', { blockedUserIds: Array.from(blockedUserIds) });
-				query.andWhere('toUser.id NOT IN (:...blockedUserIds)', { blockedUserIds: Array.from(blockedUserIds) });
-			}
+			await applyBlockedUsersFilter(query, me, this.cacheService);
 
 			const histories = await query
 				.orderBy('history.timestamp', 'DESC')
 				.take(ps.limit)
 				.getMany();
 
-			return await Promise.all(histories.map(async history => {
-				const userFollowings = await this.cacheService.userFollowingsCache.fetch(me.id);
-
-				return {
-					id: history.id,
-					type: history.type,
-					fromUser: history.fromUser
-						? await this.userEntityService.pack(history.fromUser ?? history.fromUserId, me)
-						: { name: 'unknown user' },
-					toUser: history.toUser
-						? await this.userEntityService.pack(history.toUser ?? history.toUserId, me)
-						: { name: 'unknown user' },
-					timestamp: history.timestamp.toISOString(),
-					isFollowing: Object.hasOwn(userFollowings, history.fromUserId),
-				};
-			}));
+			return mapHistories(histories, me, this.cacheService, this.userEntityService);
 		});
 	}
 }
