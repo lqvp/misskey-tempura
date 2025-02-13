@@ -15,6 +15,7 @@ import { DI } from '@/di-symbols.js';
 import { GlobalModule } from '@/GlobalModule.js';
 import { EmojisRepository } from '@/models/_.js';
 import { MiEmoji } from '@/models/Emoji.js';
+import { CoreModule } from '@/core/CoreModule.js';
 
 describe('CustomEmojiService', () => {
 	let app: TestingModule;
@@ -28,6 +29,7 @@ describe('CustomEmojiService', () => {
 			.createTestingModule({
 				imports: [
 					GlobalModule,
+					CoreModule,
 				],
 				providers: [
 					CustomEmojiService,

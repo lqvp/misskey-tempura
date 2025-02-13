@@ -115,6 +115,11 @@ export class CustomEmojiService implements OnApplicationShutdown {
 				user: null,
 				force: true,
 			});
+			// 元データの削除
+			const originalDriveFile = await this.driveFilesRepository.findOneBy({ url: data.originalUrl });
+			if (originalDriveFile) {
+				await this.driveService.deleteFile(originalDriveFile);
+			}
 			data.originalUrl = copyDriveFile.url;
 			data.publicUrl = copyDriveFile.webpublicUrl ?? copyDriveFile.url;
 			data.fileType = copyDriveFile.webpublicType ?? copyDriveFile.type;
