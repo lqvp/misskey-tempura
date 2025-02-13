@@ -28,25 +28,30 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<template #caption>{{ i18n.ts.hideActivityDescription }}</template>
 	</MkSwitch>
 
-	<MkSwitch v-model="hideNoteFromOverview" @update:modelValue="save()">
-		{{ i18n.ts.hideNoteFromOverview }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-		<template #caption>{{ i18n.ts.hideNoteFromOverviewDescription }}</template>
-	</MkSwitch>
+	<MkFolder>
+		<template #label>{{ i18n.ts.visibility }}</template>
+		<div class="_gpas_m">
+			<MkSwitch v-model="hideNoteFromOverview" @update:modelValue="save()">
+				{{ i18n.ts.hideNoteFromOverview }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+				<template #caption>{{ i18n.ts.hideNoteFromOverviewDescription }}</template>
+			</MkSwitch>
 
-	<MkSwitch v-model="hidePublicNotes" @update:modelValue="save()">
-		{{ i18n.ts.hidePublicNotes }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-		<template #caption>{{ i18n.ts.hidePublicNotesDescription }}</template>
-	</MkSwitch>
+			<MkSwitch v-model="hidePublicNotes" @update:modelValue="save()">
+				{{ i18n.ts.hidePublicNotes }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+				<template #caption>{{ i18n.ts.hidePublicNotesDescription }}</template>
+			</MkSwitch>
 
-	<MkSwitch v-model="hideHomeNotes" @update:modelValue="save()">
-		{{ i18n.ts.hideHomeNotes }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-		<template #caption>{{ i18n.ts.hideHomeNotesDescription }}</template>
-	</MkSwitch>
+			<MkSwitch v-model="hideHomeNotes" @update:modelValue="save()">
+				{{ i18n.ts.hideHomeNotes }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+				<template #caption>{{ i18n.ts.hideHomeNotesDescription }}</template>
+			</MkSwitch>
 
-	<MkSwitch v-model="hideLocalOnlyNotes" @update:modelValue="save()">
-		{{ i18n.ts.hideLocalOnlyNotes }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-		<template #caption>{{ i18n.ts.hideLocalOnlyNotesDescription }}</template>
-	</MkSwitch>
+			<MkSwitch v-model="hideLocalOnlyNotes" @update:modelValue="save()">
+				{{ i18n.ts.hideLocalOnlyNotes }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+				<template #caption>{{ i18n.ts.hideLocalOnlyNotesDescription }}</template>
+			</MkSwitch>
+		</div>
+	</MkFolder>
 
 	<MkSelect v-model="followingVisibility" @update:modelValue="save()">
 		<template #label>{{ i18n.ts.followingVisibility }}</template>
