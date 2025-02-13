@@ -227,7 +227,7 @@ export class SearchService {
 		// クエリが空でない場合のみテキスト検索条件を追加
 		if (q !== '') {
 			if (this.config.fulltextSearch?.provider === 'sqlPgroonga') {
-				query.andWhere('note.text &@ :q', { q });
+				query.andWhere('note.text &@~ :q', { q });
 			} else {
 				query.andWhere('LOWER(note.text) LIKE :q', { q: `%${ sqlLikeEscape(q.toLowerCase()) }%` });
 			}
