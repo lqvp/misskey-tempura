@@ -107,22 +107,28 @@ export class CustomEmojiService implements OnApplicationShutdown {
 		localOnly: boolean;
 		roleIdsThatCanBeUsedThisEmojiAsReaction: MiRole['id'][];
 	}, moderator?: MiUser): Promise<MiEmoji> {
-		// システムユーザーとして再アップロード
+		// driveFile の取得
 		const driveFile = await this.driveFilesRepository.findOneBy({ url: data.originalUrl });
-		if (driveFile?.user && !driveFile.user.isRoot) {
+
+		// システムユーザーとして再アップロードするかどうか
+		if (!driveFile?.user?.isRoot) {
 			const copyDriveFile = await this.driveService.uploadFromUrl({
 				url: data.originalUrl,
 				user: null,
 				force: true,
 			});
-			// 元データの削除
+
+			// オリジナルのファイル削除処理など
 			const originalDriveFile = await this.driveFilesRepository.findOneBy({ url: data.originalUrl });
 			if (originalDriveFile) {
 				await this.driveService.deleteFile(originalDriveFile);
 			}
+			// data の更新
 			data.originalUrl = copyDriveFile.url;
 			data.publicUrl = copyDriveFile.webpublicUrl ?? copyDriveFile.url;
 			data.fileType = copyDriveFile.webpublicType ?? copyDriveFile.type;
+		} else {
+			console.log('[DEBUG] Reupload skipped. Condition not met:', { driveFileUserId: driveFile?.userId });
 		}
 		const emoji = await this.emojisRepository.insertOne({
 			id: this.idService.gen(),
