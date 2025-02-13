@@ -2617,8 +2617,6 @@ _notification:
   loginDescription: "{ip}でログインされました。\n承認されていない機器であれば、セキュリティのために「{text}」を通じてすべての機器でログアウトを行ってください。"
   loginFailed: "ログインに失敗しました"
   loginFailedDescription: "{ip}からのログインに失敗しました。\n心当たりがない場合はパスワードの変更を行ってください。"
-  createToken: "アクセストークンが作成されました"
-  createTokenDescription: "心当たりがない場合は「{text}」を通じてアクセストークンを削除してください。"
 
   _types:
     all: "すべて"

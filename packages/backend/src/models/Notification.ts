@@ -118,10 +118,6 @@ export type MiNotification = {
 	createdAt: string;
 	userIp: string;
 } | {
-	type: 'createToken';
-	id: string;
-	createdAt: string;
-} | {
 	type: 'app';
 	id: string;
 	createdAt: string;
