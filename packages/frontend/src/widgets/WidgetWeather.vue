@@ -73,7 +73,7 @@ const widgetPropsDef = {
 	},
 	primaryAreaXmlUrl: {
 		type: 'string' as const,
-		default: 'https://gist.githubusercontent.com/lqvp/52b087649bc95ec510bea348dc4c4ab5/raw/primary_area.xml',
+		default: 'https://raw.githubusercontent.com/tsukumijima/weather-api/refs/heads/master/public/primary_area.xml',
 	},
 	info: {
 		type: 'string' as const,
