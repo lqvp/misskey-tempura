@@ -475,12 +475,15 @@ export function getNoteMenu(props: {
 					icon: 'ti ti-edit',
 					text: i18n.ts.deleteAndEdit,
 					action: delEdit,
-				}, {
-					icon: 'ti ti-eye-off',
-					text: i18n.ts._makePrivate.text,
-					danger: true,
-					action: makePrivate,
-				},);
+				});
+				if ($i && $i.policies.canUseMakePrivate) {
+					menuItems.push({
+						icon: 'ti ti-eye-off',
+						text: i18n.ts._makePrivate.text,
+						danger: true,
+						action: makePrivate,
+					});
+				}
 			}
 			menuItems.push({
 				icon: 'ti ti-trash',
