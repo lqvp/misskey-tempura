@@ -53,7 +53,7 @@ watch(tab, async () => {
 	if (tab.value === 'site' && serverReactionsListMfm.value !== 'Loading...') { return; }
 	if (tab.value !== 'site' && myReactionsListMfm.value !== 'Loading...') { return; }
 
-	const reactionsList = await misskeyApi('reactions-stat', { site: tab.value === 'site' });
+	const reactionsList = await misskeyApi('reaction-stats', { site: tab.value === 'site' });
 
 	const res = reactionsList.map((x) => `${x.reaction} ${x.count}`).join('\n');
 
@@ -80,7 +80,7 @@ const headerTabs = computed(() => [{
 }]);
 
 definePageMetadata(() => ({
-	title: i18n.ts.reactionsStat,
+	title: i18n.ts.reactionStats,
 	icon: 'ti ti-chart-bar',
 }));
 </script>

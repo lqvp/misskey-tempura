@@ -204,10 +204,10 @@ export const navbarItemDef = reactive({
 		},
 		show: computed(() => $i != null && $i.policies.canAddRoles),
 	},
-	reactionStat: {
-		title: i18n.ts.reactionsStat,
+	reactionStats: {
+		title: i18n.ts.reactionStats,
 		icon: 'ti ti-chart-bar',
-		to: '/reactions-stat',
+		to: '/reaction-stats',
 	},
 	makePrivate: {
 		title: i18n.ts._makePrivate.bulkText,

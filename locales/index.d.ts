@@ -12381,11 +12381,11 @@ export interface Locale extends ILocale {
     /**
      * リアクション統計
      */
-    "reactionsStat": string;
+    "reactionStats": string;
     /**
      * 最も使用された絵文字リアクション上位100件を表示します
      */
-    "reactionsStatDescription": string;
+    "reactionStatsDescription": string;
     /**
      * センシティブなファイルのみ
      */

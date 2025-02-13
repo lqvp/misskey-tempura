@@ -420,5 +420,5 @@ export * as 'roles/add' from './endpoints/roles/add.js';
 export * as 'roles/assign' from './endpoints/roles/assign.js';
 export * as 'roles/unassign' from './endpoints/roles/unassign.js';
 export * as 'roles/update' from './endpoints/roles/update.js';
-export * as 'reactions-stat' from './endpoints/reactions-stat.js';
+export * as 'reaction-stats' from './endpoints/reaction-stats.js';
 export * as 'i/profile-counts-control' from './endpoints/i/profile-counts-control.js';

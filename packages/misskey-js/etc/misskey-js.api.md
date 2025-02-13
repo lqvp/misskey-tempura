@@ -1768,8 +1768,8 @@ declare namespace entities {
         PingResponse,
         PinnedUsersResponse,
         PromoReadRequest,
-        ReactionsStatRequest,
-        ReactionsStatResponse,
+        ReactionStatsRequest,
+        ReactionStatsResponse,
         RenoteMuteCreateRequest,
         RenoteMuteDeleteRequest,
         RenoteMuteListRequest,
@@ -3055,10 +3055,10 @@ type QueueStats = {
 type QueueStatsLog = QueueStats[];
 
 // @public (undocumented)
-type ReactionsStatRequest = operations['reactions-stat']['requestBody']['content']['application/json'];
+type ReactionStatsRequest = operations['reaction-stats']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
-type ReactionsStatResponse = operations['reactions-stat']['responses']['200']['content']['application/json'];
+type ReactionStatsResponse = operations['reaction-stats']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type RenoteMuteCreateRequest = operations['renote-mute___create']['requestBody']['content']['application/json'];
