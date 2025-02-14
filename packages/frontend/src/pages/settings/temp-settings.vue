@@ -282,6 +282,36 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkSwitch>
 				</div>
 			</MkFolder>
+
+			<MkFolder>
+				<template #icon><i class="ti ti-robot"></i></template>
+				<template #label>{{ i18n.ts._llm.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+
+				<div class="_gaps_s">
+					<MkInput v-model="geminiToken" type="text">
+						<template #label>{{ i18n.ts._llm.geminiTokenLabel }}</template>
+						<template #caption>{{ i18n.ts._llm.geminiTokenCaption }}</template>
+					</MkInput>
+
+					<MkSelect v-model="geminiModels">
+						<template #label>{{ i18n.ts._llm.geminiModelLabel }}</template>
+						<option value="gemini-2.0-flash">gemini-2.0-flash</option>
+						<option value="gemini-1.5-flash">gemini-1.5-flash</option>
+						<option value="gemini-1.5-pro">gemini-1.5-pro</option>
+						<option value="gemini-2.0-pro-exp-02-05">gemini-2.0-pro-exp-02-05</option>
+					</MkSelect>
+
+					<MkInput v-model="geminiPrompt" type="text">
+						<template #label>{{ i18n.ts._llm.geminiSummarizePromptLabel }}</template>
+						<template #caption>{{ i18n.ts._llm.geminiSummarizePromptCaption }}</template>
+					</MkInput>
+
+					<!-- 保存ボタンを追加 -->
+					<div class="_buttons">
+						<MkButton primary @click="saveLLMSettings">{{ i18n.ts.save }}</MkButton>
+					</div>
+				</div>
+			</MkFolder>
 		</div>
 	</FormSection>
 </div>
@@ -339,6 +369,9 @@ const enableLikeConfirm = computed(defaultStore.makeGetterSetter('enableLikeConf
 const showInstanceTickerSoftwareName = computed(defaultStore.makeGetterSetter('showInstanceTickerSoftwareName'));
 const showInstanceTickerVersion = computed(defaultStore.makeGetterSetter('showInstanceTickerVersion'));
 const useTextAreaAutoSize = computed(defaultStore.makeGetterSetter('useTextAreaAutoSize'));
+const geminiToken = computed(defaultStore.makeGetterSetter('geminiToken'));
+const geminiModels = computed(defaultStore.makeGetterSetter('geminiModels'));
+const geminiPrompt = computed(defaultStore.makeGetterSetter('geminiPrompt'));
 
 const Sortable = defineAsyncComponent(() => import('vuedraggable').then(x => x.default));
 const defaultScheduledNoteDelete = computed(defaultStore.makeGetterSetter('defaultScheduledNoteDelete'));
@@ -568,6 +601,10 @@ function save_privacy() {
 		hideHomeNotes: !!hideHomeNotes.value,
 		hideLocalOnlyNotes: !!hideLocalOnlyNotes.value,
 	});
+}
+
+async function saveLLMSettings() {
+	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
 }
 
 const headerActions = computed(() => []);

@@ -24,6 +24,7 @@ import MkRippleEffect from '@/components/MkRippleEffect.vue';
 import { isSupportShare } from '@/scripts/navigator.js';
 import { getAppearNote } from '@/scripts/get-appear-note.js';
 import { genEmbedCode } from '@/scripts/get-embed-code.js';
+import { summarizeNoteText } from '@/scripts/temp-script/summarization.js';
 
 export async function getNoteClipMenu(props: {
 	note: Misskey.entities.Note;
@@ -370,6 +371,27 @@ export function getNoteMenu(props: {
 				action: translate,
 			});
 		}
+
+		menuItems.push({
+			icon: 'ti ti-file-text',
+			text: i18n.ts._llm.summarizeNote,
+			action: async () => {
+				try {
+					if (!appearNote.text) {
+						os.alert({ type: 'error', text: 'ノート本文がありません。' });
+						return;
+					}
+					const summary = await summarizeNoteText(appearNote.text);
+					os.popup(defineAsyncComponent(() => import('@/components/MkDialog.vue')), {
+						title: i18n.ts._llm.summarizeNote,
+						text: summary,
+					});
+				} catch (error) {
+					console.error('Summarization failed:', error);
+					os.alert({ type: 'error', text: '要約の取得に失敗しました。' });
+				}
+			},
+		});
 
 		menuItems.push({ type: 'divider' });
 

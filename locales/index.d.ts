@@ -9930,6 +9930,14 @@ export interface Locale extends ILocale {
          * 心当たりがない場合はパスワードの変更を行ってください。
          */
         "loginFailedDescription": ParameterizedString<"ip">;
+        /**
+         * アクセストークンが作成されました
+         */
+        "createToken": string;
+        /**
+         * 心当たりがない場合は「{text}」を通じてアクセストークンを削除してください。
+         */
+        "createTokenDescription": ParameterizedString<"text">;
         "_types": {
             /**
              * すべて
@@ -12149,6 +12157,36 @@ export interface Locale extends ILocale {
          * 本当に実行しますか？
          */
         "warningText": string;
+    };
+    "_llm": {
+        /**
+         * LLM設定
+         */
+        "title": string;
+        /**
+         * Geminiトークン
+         */
+        "geminiTokenLabel": string;
+        /**
+         * Gemini API の認証に使用するトークンを設定します。
+         */
+        "geminiTokenCaption": string;
+        /**
+         * Geminiモデル
+         */
+        "geminiModelLabel": string;
+        /**
+         * Gemini要約プロンプト
+         */
+        "geminiSummarizePromptLabel": string;
+        /**
+         * ノートを要約するためのプロンプトを設定します。
+         */
+        "geminiSummarizePromptCaption": string;
+        /**
+         * ノートを要約
+         */
+        "summarizeNote": string;
     };
     /**
      * すぐ消す

@@ -3254,6 +3254,15 @@ _updateCount:
   warningTitle: "カウンター更新の確認"
   warningText: "フォロワー数/フォロー数/ノート数を手動で更新します。\nこの操作は通常では必要なく、変更前の値に戻すことは出来ません。\n本当に実行しますか？"
 
+_llm:
+  title: "LLM設定"
+  geminiTokenLabel: "Geminiトークン"
+  geminiTokenCaption: "Gemini API の認証に使用するトークンを設定します。"
+  geminiModelLabel: "Geminiモデル"
+  geminiSummarizePromptLabel: "Gemini要約プロンプト"
+  geminiSummarizePromptCaption: "ノートを要約するためのプロンプトを設定します。"
+  summarizeNote: "ノートを要約"
+
 scheduledNoteDelete: "すぐ消す"
 noteDeletationAt: "このノートは{time}に削除されます"
 cannotScheduleLaterThanOneYear: "1年以上先の日時を指定することはできません"
