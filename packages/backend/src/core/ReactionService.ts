@@ -164,6 +164,10 @@ export class ReactionService {
 			}
 		}
 
+		if (/['\\]/.test(reaction)) {
+			throw new IdentifiableError('ea07adfd-4fe2-4075-b8cd-b2403944516e', 'Invalid reaction.');
+		}
+
 		const record: MiNoteReaction = {
 			id: this.idService.gen(),
 			noteId: note.id,
