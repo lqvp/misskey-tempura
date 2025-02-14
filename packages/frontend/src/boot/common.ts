@@ -69,24 +69,30 @@ export async function common(createVue: () => App<Element>) {
 	let updatedComponent: 'misskey' | 'temp' | 'both' | null = null;
 
 	if (lastVersion !== version) {
-		const [currentMisskeyVersion, currentTempVersion] = version.split('-temp-');
-		const [lastMisskeyVersion, lastTempVersion] = (lastVersion ?? '').split('-temp-');
-
-		if (currentMisskeyVersion !== lastMisskeyVersion) {
-			if (lastTempVersion !== currentTempVersion) {
-				updatedComponent = 'both';
-			} else {
-				updatedComponent = 'misskey';
-			}
-			isClientUpdated = true;
-		} else if (lastTempVersion !== currentTempVersion) {
+		// 開発リリースの場合、バージョン末尾に "-dev.1" などが付くので temp とする
+		if (/-dev\.\d+$/.test(version)) {
 			updatedComponent = 'temp';
 			isClientUpdated = true;
+		} else {
+			// ステーブルリリースの場合の処理
+			const [currentMisskeyVersion, currentTempVersion] = version.split('-temp-');
+			const [lastMisskeyVersion, lastTempVersion] = (lastVersion ?? '').split('-temp-');
+
+			if (currentMisskeyVersion !== lastMisskeyVersion) {
+				if (lastTempVersion !== currentTempVersion) {
+					updatedComponent = 'both';
+				} else {
+					updatedComponent = 'misskey';
+				}
+				isClientUpdated = true;
+			} else if (lastTempVersion !== currentTempVersion) {
+				updatedComponent = 'temp';
+				isClientUpdated = true;
+			}
 		}
 
-		// 比較後にバージョンを更新
+		// 比較後にバージョンを更新し、テーマキャッシュをクリアする
 		miLocalStorage.setItem('lastVersion', version);
-		// テーマリビルドするため
 		miLocalStorage.removeItem('theme');
 	}
 	//#endregion
