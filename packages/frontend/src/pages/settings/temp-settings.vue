@@ -4,611 +4,46 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div class="_gaps_m">
-	<FormSection>
-		<template #label><MkSparkle>{{ i18n.ts.originalFeature }}</MkSparkle></template>
-
-		<div class="_gaps_m">
-			<MkFolder>
-				<template #icon><i class="ti ti-user"></i></template>
-				<template #label>{{ i18n.ts.profile }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-
-				<div class="_gaps_s">
-					<MkFolder v-if="$i.policies.canUpdateCounters">
-						<template #label>{{ i18n.ts._updateCount.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-						<div class="_gaps_s">
-							<MkInput v-model="followersCount" type="number" :min="0">
-								<template #label>{{ i18n.ts._updateCount.updateFollowerCount }}</template>
-								<template #caption>{{ i18n.ts._updateCount.updateFollowerCountDescription }}</template>
-							</MkInput>
-
-							<MkInput v-model="followingCount" type="number" :min="0">
-								<template #label>{{ i18n.ts._updateCount.updateFollowCount }}</template>
-								<template #caption>{{ i18n.ts._updateCount.updateFollowCountDescription }}</template>
-							</MkInput>
-
-							<MkInput v-model="notesCount" type="number" :min="0">
-								<template #label>{{ i18n.ts._updateCount.updateNoteCount }}</template>
-								<template #caption>{{ i18n.ts._updateCount.updateNoteCountDescription }}</template>
-							</MkInput>
-
-							<div class="_buttons">
-								<MkButton primary :disabled="!hasChanges" @click="saveCounts">
-									<i class="ti ti-check"></i> {{ i18n.ts.save }}
-								</MkButton>
-							</div>
-						</div>
-					</MkFolder>
-				</div>
-			</MkFolder>
-
-			<MkFolder>
-				<template #icon><i class="ti ti-lock-open"></i></template>
-				<template #label>{{ i18n.ts.privacy }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-				<div class="_gaps_s">
-					<MkSwitch v-if="!isLocked" v-model="autoRejectFollowRequest" @update:modelValue="save_privacy()">
-						{{ i18n.ts.autoRejectFollowRequest }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-						<template #caption>{{ i18n.ts.autoRejectFollowRequestDescription }}</template>
-					</MkSwitch>
-					<MkSwitch v-if="!isLocked" v-model="carefulBot" @update:modelValue="save_privacy()">{{ i18n.ts.carefulBot }}<template #caption>{{ i18n.ts.carefulBotDescription }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template></MkSwitch>
-
-					<MkSwitch v-model="autoFollowBack" @update:modelValue="save_privacy()">
-						{{ i18n.ts.autoFollowBack }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-						<template #caption>{{ i18n.ts.autoFollowBackDescription }}</template>
-					</MkSwitch>
-
-					<MkSwitch v-model="hideActivity" @update:modelValue="save_privacy()">
-						{{ i18n.ts.hideActivity }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-						<template #caption>{{ i18n.ts.hideActivityDescription }}</template>
-					</MkSwitch>
-
-					<MkSwitch v-model="hideNoteFromOverview" @update:modelValue="save_privacy()">
-						{{ i18n.ts.hideNoteFromOverview }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-						<template #caption>{{ i18n.ts.hideNoteFromOverviewDescription }}</template>
-					</MkSwitch>
-
-					<MkSwitch v-model="hidePublicNotes" @update:modelValue="save_privacy()">
-						{{ i18n.ts.hidePublicNotes }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-						<template #caption>{{ i18n.ts.hidePublicNotesDescription }}</template>
-					</MkSwitch>
-
-					<MkSwitch v-model="hideHomeNotes" @update:modelValue="save_privacy()">
-						{{ i18n.ts.hideHomeNotes }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-						<template #caption>{{ i18n.ts.hideHomeNotesDescription }}</template>
-					</MkSwitch>
-
-					<MkSwitch v-model="hideLocalOnlyNotes" @update:modelValue="save_privacy()">
-						{{ i18n.ts.hideLocalOnlyNotes }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-						<template #caption>{{ i18n.ts.hideLocalOnlyNotesDescription }}</template>
-					</MkSwitch>
-				</div>
-			</MkFolder>
-
-			<MkFolder>
-				<template #icon><i class="ti ti-pencil"></i></template>
-				<template #label>{{ i18n.ts.displayOfNote }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-				<div class="_gaps_m">
-					<MkNote :note="noteMock" :mock="true"/>
-					<div class="_gaps_s">
-						<MkSwitch v-model="directRenote">
-							<template #label>
-								{{ i18n.ts.directRenote }}
-								<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-							</template>
-							<template #caption>{{ i18n.ts.directRenoteDescription }}</template>
-						</MkSwitch>
-						<MkSwitch v-model="hideReactionUsers">
-							<template #caption>{{ i18n.ts.hideReactionUsersDescription }}</template>
-							{{ i18n.ts.hideReactionUsers }}
-							<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-						</MkSwitch>
-						<MkSwitch v-model="enableReactionConfirm">
-							<template #label>
-								{{ i18n.ts.enableReactionConfirm }}
-								<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-							</template>
-							<template #caption>{{ i18n.ts.enableReactionConfirmDescription }}</template>
-						</MkSwitch>
-						<MkSwitch v-model="enableLikeConfirm">
-							<template #label>
-								{{ i18n.ts.enableLikeConfirm }}
-								<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-							</template>
-							<template #caption>{{ i18n.ts.enableLikeConfirmDescription }}</template>
-						</MkSwitch>
-						<MkSwitch v-model="showInstanceTickerSoftwareName">
-							<template #label>
-								{{ i18n.ts.showInstanceTickerSoftwareName }}
-								<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-							</template>
-							<template #caption>{{ i18n.ts.showInstanceTickerSoftwareNameDescription }}</template>
-						</MkSwitch>
-						<MkSwitch v-model="showInstanceTickerVersion">
-							<template #label>
-								{{ i18n.ts.showInstanceTickerVersion }}
-								<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-							</template>
-							<template #caption>{{ i18n.ts.showInstanceTickerVersionDescription }}</template>
-						</MkSwitch>
-						<MkSwitch v-model="disableNoteNyaize">{{ i18n.ts.disableNoteNyaize }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
-						<MkSelect v-model="hideReactionCount">
-							<template #label>{{ i18n.ts.hideReactionCount }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-							<option value="none">{{ i18n.ts._hideReactionCount.none }}</option>
-							<option value="self">{{ i18n.ts._hideReactionCount.self }}</option>
-							<option value="others">{{ i18n.ts._hideReactionCount.others }}</option>
-							<option value="all">{{ i18n.ts._hideReactionCount.all }}</option>
-						</MkSelect>
-					</div>
-
-					<MkFolder>
-						<template #label>{{ i18n.ts.like }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-						<div class="_gaps_m">
-							<MkSwitch v-model="showLikeButton">{{ i18n.ts.showLikeButton }}</MkSwitch>
-
-							<FromSlot v-model="selectReaction">
-								<template #label>{{ i18n.ts.selectReaction }}</template>
-								<MkCustomEmoji v-if="selectReaction && selectReaction.startsWith(':')" style="max-height: 3em; font-size: 1.1em;" :useOriginalSize="false" :name="selectReaction" :normal="true" :noStyle="true"/>
-								<MkEmoji v-else-if="selectReaction && !selectReaction.startsWith(':')" :emoji="selectReaction" style="max-height: 3em; font-size: 1.1em;" :normal="true" :noStyle="true"/>
-								<span v-else-if="!selectReaction">{{ i18n.ts.notSet }}</span>
-								<div class="_buttons" style="padding-top: 8px;">
-									<MkButton rounded :small="true" inline @click="chooseNewReaction"><i class="ti ti-mood-happy"></i> Change</MkButton>
-									<MkButton rounded :small="true" inline @click="resetReaction"><i class="ti ti-reload"></i> Reset</MkButton>
-								</div>
-							</FromSlot>
-						</div>
-					</MkFolder>
-				</div>
-			</MkFolder>
-
-			<MkFolder>
-				<template #icon><i class="ti ti-letter-case"></i></template>
-				<template #label>{{ i18n.ts.appearance }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-				<div class="_gaps_m">
-					<MkSelect v-model="customFont">
-						<template #label>{{ i18n.ts.customFont }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-						<option :value="null">{{ i18n.ts.default }}</option>
-						<option v-for="[name, font] of Object.entries(fontList)" :key="name" :value="name">{{ font.name }}</option>
-					</MkSelect>
-					<MkSwitch v-model="enableSnowMode">{{ i18n.ts.snowMode }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
-				</div>
-			</MkFolder>
-
-			<MkFolder>
-				<template #icon><i class="ti ti-mood-happy"></i></template>
-				<template #label>{{ i18n.ts.behavior }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-				<div class="_gaps_m">
-					<div class="_gaps_s">
-						<MkSwitch v-model="reactionChecksMuting">
-							{{ i18n.ts._reactionChecksMuting.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-							<template #caption>{{ i18n.ts._reactionChecksMuting.caption }}</template>
-						</MkSwitch>
-					</div>
-				</div>
-			</MkFolder>
-
-			<MkFolder>
-				<template #icon><i class="ti ti-cloud"></i></template>
-				<template #label>{{ i18n.ts.drive }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-				<div class="_gaps_m">
-					<div class="_gaps_s">
-						<MkSelect v-model="imageCompressionMode">
-							<template #label>{{ i18n.ts._imageCompressionMode.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-							<option value="resizeCompress">{{ i18n.ts._imageCompressionMode.resizeCompress }}</option>
-							<option value="noResizeCompress">{{ i18n.ts._imageCompressionMode.noResizeCompress }}</option>
-							<option value="resizeCompressLossy">{{ i18n.ts._imageCompressionMode.resizeCompressLossy }}</option>
-							<option value="noResizeCompressLossy">{{ i18n.ts._imageCompressionMode.noResizeCompressLossy }}</option>
-							<template #caption>{{ i18n.ts._imageCompressionMode.description }}</template>
-						</MkSelect>
-					</div>
-				</div>
-			</MkFolder>
-
-			<MkFolder>
-				<template #icon><i class="ti ti-forms"></i></template>
-				<template #label>{{ i18n.ts.postForm }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-				<div class="_gaps_s">
-					<MkContainer :showHeader="false">
-						<Sortable
-							v-model="items"
-							:class="$style.items"
-							:itemKey="items => items"
-							:animation="100"
-							:delay="50"
-							:delayOnTouchOnly="true"
-						>
-							<template #item="{element}">
-								<button v-tooltip="bottomItemDef[element.type].title" class="_button" :class="$style.item" @click="removeItem(element.type, $event)">
-									<i class="ti ti-fw" :class="[$style.itemIcon, bottomItemDef[element.type].icon]"></i>
-								</button>
-							</template>
-						</Sortable>
-					</MkContainer>
-					<div class="_buttons">
-						<MkButton @click="addItem"><i class="ti ti-plus"></i> {{ i18n.ts.addItem }}</MkButton>
-						<MkButton danger @click="reset_postform"><i class="ti ti-reload"></i> {{ i18n.ts.default }}</MkButton>
-						<MkButton primary class="save" @click="save_postform"><i class="ti ti-device-floppy"></i> {{ i18n.ts.save }}</MkButton>
-					</div>
-					<div :class="$style.label">{{ i18n.ts.postFormBottomSettingsDescription }}</div>
-					<div>
-						<div :class="$style.label">
-							{{ i18n.ts.defaultScheduledNoteDeleteTime }}
-							<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-						</div>
-						<MkDeleteScheduleEditor v-model="scheduledNoteDelete" :afterOnly="true"/>
-					</div>
-					<MkSwitch v-model="defaultScheduledNoteDelete">
-						{{ i18n.ts.defaultScheduledNoteDelete }}
-						<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-					</MkSwitch>
-					<MkSwitch v-model="useTextAreaAutoSize">
-						<template #caption>{{ i18n.ts.textAreaAutoResizeDescription }}</template>
-						{{ i18n.ts.textAreaAutoResize }}
-						<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-					</MkSwitch>
-				</div>
-			</MkFolder>
-
-			<MkFolder>
-				<template #icon><i class="ti ti-timeline"></i></template>
-				<template #label>{{ i18n.ts.__TL_conf.hideTimelineLabel }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-				<div class="_gaps_m">
-					<div class="_buttons">
-						<MkButton inline @click="toggleAllHidden(true)">{{ i18n.ts.enableAll }}</MkButton>
-						<MkButton inline @click="toggleAllHidden(false)">{{ i18n.ts.disableAll }}</MkButton>
-					</div>
-					<MkSwitch v-model="hideLocalTimeLine">
-						<template #caption>{{ i18n.ts.__TL_conf.hideLocalTimeLineDescription }}</template>
-						{{ i18n.ts.__TL_conf.hideLocalTimeLine }}
-					</MkSwitch>
-					<MkSwitch v-model="hideSocialTimeLine">
-						<template #caption>{{ i18n.ts.__TL_conf.hideSocialTimeLineDescription }}</template>
-						{{ i18n.ts.__TL_conf.hideSocialTimeLine }}
-					</MkSwitch>
-					<MkSwitch v-model="hideGlobalTimeLine">
-						<template #caption>{{ i18n.ts.__TL_conf.hideGlobalTimeLineDescription }}</template>
-						{{ i18n.ts.__TL_conf.hideGlobalTimeLine }}
-					</MkSwitch>
-					<MkSwitch v-model="hideLists">
-						<template #caption>{{ i18n.ts.__TL_conf.hideListsDescription }}</template>
-						{{ i18n.ts.__TL_conf.hideLists }}
-					</MkSwitch>
-					<MkSwitch v-model="hideAntennas">
-						<template #caption>{{ i18n.ts.__TL_conf.hideAntennasDescription }}</template>
-						{{ i18n.ts.__TL_conf.hideAntennas }}
-					</MkSwitch>
-					<MkSwitch v-model="hideChannel">
-						<template #caption>{{ i18n.ts.__TL_conf.hideChannelDescription }}</template>
-						{{ i18n.ts.__TL_conf.hideChannel }}
-					</MkSwitch>
-				</div>
-			</MkFolder>
-
-			<MkFolder>
-				<template #icon><i class="ti ti-robot"></i></template>
-				<template #label>{{ i18n.ts._llm.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-
-				<div class="_gaps_s">
-					<MkInput v-model="geminiToken" type="text">
-						<template #label>{{ i18n.ts._llm.geminiTokenLabel }}</template>
-						<template #caption>{{ i18n.ts._llm.geminiTokenCaption }}</template>
-					</MkInput>
-
-					<MkSelect v-model="geminiModels">
-						<template #label>{{ i18n.ts._llm.geminiModelLabel }}</template>
-						<option value="gemini-2.0-flash">gemini-2.0-flash</option>
-						<option value="gemini-1.5-flash">gemini-1.5-flash</option>
-						<option value="gemini-1.5-pro">gemini-1.5-pro</option>
-						<option value="gemini-2.0-pro-exp-02-05">gemini-2.0-pro-exp-02-05</option>
-					</MkSelect>
-
-					<MkInput v-model="geminiPrompt" type="text">
-						<template #label>{{ i18n.ts._llm.geminiSummarizePromptLabel }}</template>
-						<template #caption>{{ i18n.ts._llm.geminiSummarizePromptCaption }}</template>
-					</MkInput>
-
-					<!-- 保存ボタンを追加 -->
-					<div class="_buttons">
-						<MkButton primary @click="saveLLMSettings">{{ i18n.ts.save }}</MkButton>
-					</div>
-				</div>
-			</MkFolder>
-		</div>
-	</FormSection>
+<div>
+	<div :class="$style.header">
+		<MkSparkle>
+			<i class="ti ti-adjustments-bolt"></i>
+			{{ i18n.ts.originalFeature }}
+		</MkSparkle>
+	</div>
+	<br>
+	<div class="_gaps_m">
+		<ProfileSettings/>
+		<PrivacySettings/>
+		<NotesSettings/>
+		<AppearanceSettings/>
+		<BehaviorSettings/>
+		<DriveSettings/>
+		<PostFormSettings/>
+		<TimeLineSettings/>
+		<LLMSettings/>
+	</div>
 </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, watch } from 'vue';
+import { computed, defineAsyncComponent } from 'vue';
 import * as Misskey from 'misskey-js';
-import { defineAsyncComponent, ref } from 'vue';
-import MkInput from '@/components/MkInput.vue';
-import MkSwitch from '@/components/MkSwitch.vue';
-import MkSelect from '@/components/MkSelect.vue';
-import MkFolder from '@/components/MkFolder.vue';
-import MkButton from '@/components/MkButton.vue';
-import FormSection from '@/components/form/section.vue';
-import FromSlot from '@/components/form/slot.vue';
-import MkCustomEmoji from '@/components/global/MkCustomEmoji.vue';
-import MkEmoji from '@/components/global/MkEmoji.vue';
-import { defaultStore } from '@/store.js';
-import * as os from '@/os.js';
-import { reloadAsk } from '@/scripts/reload-ask.js';
 import { i18n } from '@/i18n.js';
 import { definePageMetadata } from '@/scripts/page-metadata.js';
-import { fontList } from '@/scripts/font';
 import MkSparkle from '@/components/MkSparkle.vue';
-import MkContainer from '@/components/MkContainer.vue';
-import MkDeleteScheduleEditor from '@/components/MkDeleteScheduleEditor.vue';
-import { bottomItemDef } from '@/scripts/post-form.js';
-import { signinRequired } from '@/account.js';
-import { globalEvents } from '@/events.js';
-import { misskeyApi } from '@/scripts/misskey-api.js';
-import MkNote from '@/components/MkNote.vue';
 
-const $i = signinRequired();
-
-const hideReactionUsers = computed(defaultStore.makeGetterSetter('hideReactionUsers'));
-const hideReactionCount = computed(defaultStore.makeGetterSetter('hideReactionCount'));
-const directRenote = computed(defaultStore.makeGetterSetter('directRenote'));
-const showReactionsCount = computed(defaultStore.makeGetterSetter('showReactionsCount'));
-const customFont = computed(defaultStore.makeGetterSetter('customFont'));
-const disableNoteNyaize = computed(defaultStore.makeGetterSetter('disableNoteNyaize'));
-const reactionChecksMuting = computed(defaultStore.makeGetterSetter('reactionChecksMuting'));
-const hideLocalTimeLine = computed(defaultStore.makeGetterSetter('hideLocalTimeLine'));
-const hideGlobalTimeLine = computed(defaultStore.makeGetterSetter('hideGlobalTimeLine'));
-const hideSocialTimeLine = computed(defaultStore.makeGetterSetter('hideSocialTimeLine'));
-const hideLists = computed(defaultStore.makeGetterSetter('hideLists'));
-const hideAntennas = computed(defaultStore.makeGetterSetter('hideAntennas'));
-const hideChannel = computed(defaultStore.makeGetterSetter('hideChannel'));
-const selectReaction = computed(defaultStore.makeGetterSetter('selectReaction'));
-const showLikeButton = computed(defaultStore.makeGetterSetter('showLikeButton'));
-const imageCompressionMode = computed(defaultStore.makeGetterSetter('imageCompressionMode'));
-const enableSnowMode = computed(defaultStore.makeGetterSetter('enableSnowMode'));
-const enableReactionConfirm = computed(defaultStore.makeGetterSetter('enableReactionConfirm'));
-const enableLikeConfirm = computed(defaultStore.makeGetterSetter('enableLikeConfirm'));
-const showInstanceTickerSoftwareName = computed(defaultStore.makeGetterSetter('showInstanceTickerSoftwareName'));
-const showInstanceTickerVersion = computed(defaultStore.makeGetterSetter('showInstanceTickerVersion'));
-const useTextAreaAutoSize = computed(defaultStore.makeGetterSetter('useTextAreaAutoSize'));
-const geminiToken = computed(defaultStore.makeGetterSetter('geminiToken'));
-const geminiModels = computed(defaultStore.makeGetterSetter('geminiModels'));
-const geminiPrompt = computed(defaultStore.makeGetterSetter('geminiPrompt'));
-
-const Sortable = defineAsyncComponent(() => import('vuedraggable').then(x => x.default));
-const defaultScheduledNoteDelete = computed(defaultStore.makeGetterSetter('defaultScheduledNoteDelete'));
-const scheduledNoteDelete = ref({ deleteAt: null, deleteAfter: defaultStore.state.defaultScheduledNoteDeleteTime, isValid: true });
-
-const autoRejectFollowRequest = ref($i.autoRejectFollowRequest);
-const autoFollowBack = ref($i.autoFollowBack);
-const carefulBot = ref($i.carefulBot);
-const hideActivity = ref($i.hideActivity);
-const hideNoteFromOverview = ref($i.hideNoteFromOverview);
-const hidePublicNotes = ref($i.hidePublicNotes);
-const hideHomeNotes = ref($i.hideHomeNotes);
-const hideLocalOnlyNotes = ref($i.hideLocalOnlyNotes);
-const items = ref(defaultStore.state.postFormActions.map(x => ({
-	id: Math.random().toString(),
-	type: x,
-})));
-
-const noteMock: Misskey.entities.Note = {
-	id: '0000000000',
-	createdAt: '2019-04-14T17:30:49.181Z',
-	userId: '0000000001',
-	user: {
-		id: '0000000001',
-		name: '藍',
-		username: 'ai',
-		host: 'example.ai',
-		approved: true,
-		avatarDecorations: [],
-		avatarUrl: '/client-assets/tutorial/ai.webp',
-		avatarBlurhash: 'eiKmhHIByXxZ~qWXs:-pR*NbR*s:xuRjoL-oR*WCt6WWf6WVf6oeWB',
-		isBot: false,
-		isCat: true,
-		emojis: {},
-		onlineStatus: 'online',
-		badgeRoles: [],
-		instance: {
-			faviconUrl: 'favicon.ico',
-			iconUrl: 'favicon.ico',
-			name: 'example.ai',
-			softwareName: 'Misskey',
-			softwareVersion: '2025.1.0',
-			themeColor: '#000000',
-		},
-	},
-	text: 'テストメッセージです！な！',
-	cw: null,
-	visibility: 'public',
-	localOnly: false,
-	reactionAcceptance: null,
-	renoteCount: 0,
-	repliesCount: 1,
-	reactionCount: 0,
-	reactions: { '❤': 1 },
-	reactionEmojis: {},
-	fileIds: [],
-	files: [],
-	replyId: null,
-	renoteId: null,
-	dontShowOnLtl: false,
-};
-
-watch([
-	hideReactionUsers,
-	hideReactionCount,
-	directRenote,
-	showReactionsCount,
-	customFont,
-	disableNoteNyaize,
-	reactionChecksMuting,
-	hideLocalTimeLine,
-	hideGlobalTimeLine,
-	hideSocialTimeLine,
-	hideLists,
-	hideAntennas,
-	hideChannel,
-	selectReaction,
-	showLikeButton,
-	enableSnowMode,
-	enableReactionConfirm,
-	enableLikeConfirm,
-	showInstanceTickerSoftwareName,
-	showInstanceTickerVersion,
-	useTextAreaAutoSize,
-], async () => {
-	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
-});
-
-const followersCount = ref($i.followersCount);
-const followingCount = ref($i.followingCount);
-const notesCount = ref($i.notesCount);
-
-const hasChanges = computed(() => {
-	return followersCount.value !== $i.followersCount ||
-    followingCount.value !== $i.followingCount ||
-    notesCount.value !== $i.notesCount;
-});
-
-async function saveCounts() {
-	const confirm = await os.confirm({
-		type: 'warning',
-		title: i18n.ts._updateCount.warningTitle,
-		text: i18n.ts._updateCount.warningText,
-		okText: i18n.ts.update,
-	});
-
-	if (confirm.canceled) return;
-
-	try {
-		const params = {} as Record<string, number>;
-
-		if (followersCount.value !== $i.followersCount) {
-			params.followersCount = followersCount.value;
-		}
-		if (followingCount.value !== $i.followingCount) {
-			params.followingCount = followingCount.value;
-		}
-		if (notesCount.value !== $i.notesCount) {
-			params.notesCount = notesCount.value;
-		}
-
-		await os.apiWithDialog('i/profile-counts-control', params);
-
-		const updatedUser = await misskeyApi('users/show', { userId: $i.id });
-		Object.assign($i, updatedUser);
-
-		globalEvents.emit('requestClearPageCache');
-	} catch (err: any) {
-		os.alert({
-			type: 'error',
-			text: err.message ?? 'Unknown error occurred',
-		});
-	}
-}
-
-function chooseNewReaction(ev: MouseEvent) {
-	os.pickEmoji(getHTMLElement(ev), {
-		showPinned: false,
-	}).then(async (emoji) => {
-		defaultStore.set('selectReaction', emoji as string);
-	});
-}
-
-function resetReaction() {
-	defaultStore.set('selectReaction', '');
-}
-
-function getHTMLElement(ev: MouseEvent): HTMLElement {
-	const target = ev.currentTarget ?? ev.target;
-	return target as HTMLElement;
-}
-
-function toggleAllHidden(value: boolean) {
-	const settings = [
-		'hideLocalTimeLine',
-		'hideGlobalTimeLine',
-		'hideSocialTimeLine',
-		'hideLists',
-		'hideAntennas',
-		'hideChannel',
-	];
-
-	settings.forEach(setting => {
-		defaultStore.set(setting, value);
-	});
-}
-
-async function addItem() {
-	const currentItems = items.value.map(x => x.type);
-	const bottomItem = Object.keys(bottomItemDef).filter(k => !currentItems.includes(k));
-	const { canceled, result: item } = await os.select({
-		title: i18n.ts.addItem,
-		items: bottomItem.map(k => ({
-			value: k, text: bottomItemDef[k].title,
-		})),
-	});
-	if (canceled || item == null) return;
-	items.value = [...items.value, {
-		id: Math.random().toString(),
-		type: item,
-	}];
-}
-
-function removeItem(type: keyof typeof bottomItemDef, ev: MouseEvent) {
-	const item = bottomItemDef[type];
-	os.popupMenu([{
-		type: 'label',
-		text: item.title,
-	}, {
-		text: i18n.ts.remove,
-		action: () => {
-			items.value = items.value.filter(x => x.type !== type);
-		},
-	}], getHTMLElement(ev));
-}
-
-async function save_postform() {
-	defaultStore.set('postFormActions', items.value.map(x => x.type));
-}
-
-async function reset_postform() {
-	const result = await os.confirm({
-		type: 'warning',
-		text: i18n.ts.resetAreYouSure,
-	});
-	if (result.canceled) return;
-
-	items.value = defaultStore.def.postFormActions.default.map(x => ({
-		id: Math.random().toString(),
-		type: x,
-	}));
-}
-
-watch(scheduledNoteDelete, () => {
-	if (!scheduledNoteDelete.value.isValid) return;
-	defaultStore.set('defaultScheduledNoteDeleteTime', scheduledNoteDelete.value.deleteAfter);
-});
-
-function save_privacy() {
-	misskeyApi('i/update', {
-		autoRejectFollowRequest: !!autoRejectFollowRequest.value,
-		autoFollowBack: !!autoFollowBack.value,
-		carefulBot: !!carefulBot.value,
-		hideActivity: !!hideActivity.value,
-		hideNoteFromOverview: !!hideNoteFromOverview.value,
-		hidePublicNotes: !!hidePublicNotes.value,
-		hideHomeNotes: !!hideHomeNotes.value,
-		hideLocalOnlyNotes: !!hideLocalOnlyNotes.value,
-	});
-}
-
-async function saveLLMSettings() {
-	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
-}
+const ProfileSettings = defineAsyncComponent(() => import('./temp-settings/temp-profile.vue'));
+const PrivacySettings = defineAsyncComponent(() => import('./temp-settings/temp-privacy.vue'));
+const NotesSettings = defineAsyncComponent(() => import('./temp-settings/temp-notes.vue'));
+const AppearanceSettings = defineAsyncComponent(() => import('./temp-settings/temp-appearance.vue'));
+const BehaviorSettings = defineAsyncComponent(() => import('./temp-settings/temp-behavior.vue'));
+const DriveSettings = defineAsyncComponent(() => import('./temp-settings/temp-drive.vue'));
+const PostFormSettings = defineAsyncComponent(() => import('./temp-settings/temp-postform.vue'));
+const TimeLineSettings = defineAsyncComponent(() => import('./temp-settings/temp-timeline.vue'));
+const LLMSettings = defineAsyncComponent(() => import('./temp-settings/temp-llm.vue'));
 
 const headerActions = computed(() => []);
-
 const headerTabs = computed(() => []);
 
 definePageMetadata(() => ({
@@ -618,33 +53,52 @@ definePageMetadata(() => ({
 </script>
 
 <style lang="scss" module>
-.items {
-    padding: 8px;
-    flex: 1;
-    display: grid;
-    grid-auto-flow: row;
-    grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
-    grid-auto-rows: 40px;
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem;
+  background: var(--MI_THEME-accentedBg);
+  color: var(--MI_THEME-accent);
+  border-radius: 12px;
+  margin: 1rem 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+  i {
+    font-size: 1.5em;
+    flex-shrink: 0;
+  }
 }
 
-.item {
-    display: inline-block;
-    padding: 0;
-    margin: 0;
-    font-size: 1em;
-    width: auto;
-    height: 100%;
-    border-radius: 6px;
-
-    &:hover {
-        background: var(--X5);
-    }
+@container (max-width: 500px) {
+  .header {
+    padding: 1rem;
+    font-size: 0.9em;
+  }
 }
+</style>
 
-.label {
-    font-size: 0.85em;
-    padding: 0 0 8px 0;
-    user-select: none;
+<style lang="scss">
+.temp-settings-section {
+  background: var(--MI_THEME-panel);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease;
+
+  &:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  h2 {
+    font-size: 1.1em;
+    font-weight: 600;
+    color: var(--MI_THEME-fg);
+    margin: 0 0 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--MI_THEME-divider);
+  }
 }
 </style>
 

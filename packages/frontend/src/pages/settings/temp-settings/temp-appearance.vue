@@ -1,0 +1,41 @@
+<!--
+SPDX-FileCopyrightText: lqvp
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<template>
+<MkFolder>
+	<template #icon><i class="ti ti-letter-case"></i></template>
+	<template #label>{{ i18n.ts.appearance }}</template>
+	<div class="_gaps_m">
+		<MkSelect v-model="customFont">
+			<template #label>{{ i18n.ts.customFont }}</template>
+			<option :value="null">{{ i18n.ts.default }}</option>
+			<option v-for="[name, font] of Object.entries(fontList)" :key="name" :value="name">{{ font.name }}</option>
+		</MkSelect>
+		<MkSwitch v-model="enableSnowMode">{{ i18n.ts.snowMode }}</MkSwitch>
+	</div>
+</MkFolder>
+</template>
+
+<script lang="ts" setup>
+import { computed } from 'vue';
+import * as Misskey from 'misskey-js';
+import MkSwitch from '@/components/MkSwitch.vue';
+import MkSelect from '@/components/MkSelect.vue';
+import MkFolder from '@/components/MkFolder.vue';
+import { defaultStore } from '@/store.js';
+import { i18n } from '@/i18n.js';
+import { fontList } from '@/scripts/font';
+
+const customFont = computed(defaultStore.makeGetterSetter('customFont'));
+const enableSnowMode = computed(defaultStore.makeGetterSetter('enableSnowMode'));
+</script>
+
+<style lang="scss" module>
+.label {
+    font-size: 0.85em;
+    padding: 0 0 8px 0;
+    user-select: none;
+}
+</style>
