@@ -29,7 +29,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</MkSwitch>
 
 	<MkFolder>
-		<template #label>{{ i18n.ts.visibility }}</template>
+		<template #label>{{ i18n.ts.visibility }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 		<div class="_gpas_m">
 			<MkSwitch v-model="hideNoteFromOverview" @update:modelValue="save()">
 				{{ i18n.ts.hideNoteFromOverview }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
