@@ -4959,6 +4959,10 @@ export interface Locale extends ILocale {
      */
     "loadReplies": string;
     /**
+     * 引用を見る
+     */
+    "loadQuotes": string;
+    /**
      * 会話を見る
      */
     "loadConversation": string;

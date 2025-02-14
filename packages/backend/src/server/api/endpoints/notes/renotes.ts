@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import { Brackets } from 'typeorm';
 import { Inject, Injectable } from '@nestjs/common';
 import type { NotesRepository } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
@@ -68,6 +69,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), ps.sinceId, ps.untilId)
 				.andWhere('note.renoteId = :renoteId', { renoteId: note.id })
+				.andWhere(new Brackets(qb => {
+					qb.where('note.text IS NULL')
+						.andWhere('note.fileIds = \'{}\'')
+						.andWhere('note.hasPoll = FALSE');
+				}))
 				.innerJoinAndSelect('note.user', 'user')
 				.leftJoinAndSelect('note.reply', 'reply')
 				.leftJoinAndSelect('note.renote', 'renote')

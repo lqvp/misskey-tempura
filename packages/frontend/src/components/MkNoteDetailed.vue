@@ -168,17 +168,22 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</button>
 		</footer>
 	</article>
-	<div :class="$style.tabs">
-		<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'replies' }]" @click="tab = 'replies'"><i class="ti ti-arrow-back-up"></i> {{ i18n.ts.replies }}</button>
-		<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'renotes' }]" @click="tab = 'renotes'"><i class="ti ti-repeat"></i> {{ i18n.ts.renotes }}</button>
-		<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'quotes' }]" @click="tab = 'quotes'"><i class="ti ti-quote"></i> {{ i18n.ts.quotes }}</button>
-		<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'reactions' }]" @click="tab = 'reactions'"><i class="ti ti-icons"></i> {{ i18n.ts.reactions }}</button>
+	<div :class="$style.tabsWrapper">
+		<div :class="$style.tabs">
+			<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'replies' }]" @click="tab = 'replies'"><i class="ti ti-arrow-back-up"></i> {{ i18n.ts.replies }}</button>
+			<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'renotes' }]" @click="tab = 'renotes'"><i class="ti ti-repeat"></i> {{ i18n.ts.renotes }}</button>
+			<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'quotes' }]" @click="tab = 'quotes'"><i class="ti ti-quote"></i> {{ i18n.ts.quotes }}</button>
+			<button class="_button" :class="[$style.tab, { [$style.tabActive]: tab === 'reactions' }]" @click="tab = 'reactions'"><i class="ti ti-icons"></i> {{ i18n.ts.reactions }}</button>
+		</div>
 	</div>
 	<div>
 		<div v-if="tab === 'replies'">
-			<MkPagination :pagination="repliesPagination" :disableAutoLoad="true">
+			<div v-if="!showReplies" style="padding: 16px">
+				<MkButton style="margin: 0 auto;" primary rounded @click="showReplies = true">{{ i18n.ts.loadReplies }}</MkButton>
+			</div>
+			<MkPagination v-else :pagination="repliesPagination" :disableAutoLoad="true">
 				<template #default="{ items }">
-					<MkNoteSub v-for="item in items" :key="item.id" :note="item" :class="$style.reply" :detail="true"/>
+					<MkNoteSub v-for="item, index in items" :key="item.id" :note="item" :class="{ [$style.replyBorder]: (index > 0) }" :detail="true"/>
 				</template>
 			</MkPagination>
 		</div>
@@ -193,10 +198,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</template>
 			</MkPagination>
 		</div>
-		<div v-if="tab === 'quotes'" :class="$style.tab_quotes" :disableAutoLoad="true">
-			<MkPagination :pagination="quotesPagination">
+		<div v-else-if="tab === 'quotes'">
+			<div v-if="!showQuotes" style="padding: 16px">
+				<MkButton style="margin: 0 auto;" primary rounded @click="showQuotes = true">{{ i18n.ts.loadQuotes }}</MkButton>
+			</div>
+			<MkPagination v-else :pagination="quotesPagination" :disableAutoLoad="true">
 				<template #default="{ items }">
-					<MkNoteSub v-for="item in items" :key="item.id" :note="item" :class="$style.reply" :detail="true"/>
+					<MkNoteSub v-for="item, index in items" :key="item.id" :note="item" :class="{ [$style.replyBorder]: (index > 0) }" :detail="true"/>
 				</template>
 			</MkPagination>
 		</div>
@@ -236,6 +244,9 @@ import * as mfm from 'mfm-js';
 import * as Misskey from 'misskey-js';
 import { isLink } from '@@/js/is-link.js';
 import { host } from '@@/js/config.js';
+import type { OpenOnRemoteOptions } from '@/scripts/please-login.js';
+import type { Paging } from '@/components/MkPagination.vue';
+import type { Keymap } from '@/scripts/hotkey.js';
 import MkNoteSub from '@/components/MkNoteSub.vue';
 import MkNoteSimple from '@/components/MkNoteSimple.vue';
 import MkReactionsViewer from '@/components/MkReactionsViewer.vue';
@@ -247,7 +258,6 @@ import MkUsersTooltip from '@/components/MkUsersTooltip.vue';
 import MkUrlPreview from '@/components/MkUrlPreview.vue';
 import MkInstanceTicker from '@/components/MkInstanceTicker.vue';
 import { pleaseLogin } from '@/scripts/please-login.js';
-import type { OpenOnRemoteOptions } from '@/scripts/please-login.js';
 import { checkWordMute } from '@/scripts/check-word-mute.js';
 import { userPage } from '@/filters/user.js';
 import { notePage } from '@/filters/note.js';
@@ -269,17 +279,15 @@ import MkRippleEffect from '@/components/MkRippleEffect.vue';
 import { showMovedDialog } from '@/scripts/show-moved-dialog.js';
 import MkUserCardMini from '@/components/MkUserCardMini.vue';
 import MkPagination from '@/components/MkPagination.vue';
-import type { Paging } from '@/components/MkPagination.vue';
 import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import MkButton from '@/components/MkButton.vue';
 import { isEnabledUrlPreview } from '@/instance.js';
 import { getAppearNote } from '@/scripts/get-appear-note.js';
-import type { Keymap } from '@/scripts/hotkey.js';
 
 const props = withDefaults(defineProps<{
-	note: Misskey.entities.Note;
-	initialTab: string;
-}>(), {
+		note: Misskey.entities.Note;
+		initialTab: string;
+	}>(), {
 	initialTab: 'replies',
 });
 
@@ -338,6 +346,8 @@ const hideReactionCount = computed(() => {
 		default: return false;
 	}
 });
+const showReplies = ref(false);
+const showQuotes = ref(false);
 
 const pleaseLoginContext = computed<OpenOnRemoteOptions>(() => ({
 	type: 'lookup',
@@ -391,7 +401,7 @@ const renotesPagination = computed<Paging>(() => ({
 	},
 }));
 
-const quotesPagination = computed(() => ({
+const quotesPagination = computed<Paging>(() => ({
 	endpoint: 'notes/quotes',
 	limit: 10,
 	params: {
@@ -854,21 +864,34 @@ function loadConversation() {
 	}
 }
 
-.reply:not(:first-child) {
+.replyBorder {
 	border-top: solid 0.5px var(--MI_THEME-divider);
+}
+
+.tabsWrapper {
+	overflow-x: auto;
+	scrollbar-width: none;
+
+	&::-webkit-scrollbar {
+		display: none;
+	}
 }
 
 .tabs {
 	border-top: solid 0.5px var(--MI_THEME-divider);
 	border-bottom: solid 0.5px var(--MI_THEME-divider);
-	display: flex;
+	min-width: max-content;
+	display: grid;
+	grid-auto-flow: column;
+	grid-template-columns: repeat(4, 1fr);
 }
 
 .tab {
-	flex: 1;
+	display: block;
 	padding: 12px 8px;
 	border-top: solid 2px transparent;
 	border-bottom: solid 2px transparent;
+	white-space: nowrap;
 }
 
 .tabActive {
@@ -876,10 +899,6 @@ function loadConversation() {
 }
 
 .tab_renotes {
-	padding: 16px;
-}
-
-.tab_quotes {
 	padding: 16px;
 }
 
