@@ -4,10 +4,10 @@
  */
 
 import { defineAsyncComponent } from 'vue';
-import { generateGeminiSummary } from '@/scripts/temp-script/llm';
+import { generateGeminiSummary } from '@/scripts/temp-script/llm.js';
 import { defaultStore } from '@/store.js';
 import * as os from '@/os.js';
-import { i18n } from '@/i18n';
+import { i18n } from '@/i18n.js';
 
 export async function callGeminiSummarize(text: string): Promise<string> {
 	// geminiPrompt を先頭に付与してプロンプト生成

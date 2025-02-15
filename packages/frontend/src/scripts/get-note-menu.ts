@@ -24,7 +24,7 @@ import MkRippleEffect from '@/components/MkRippleEffect.vue';
 import { isSupportShare } from '@/scripts/navigator.js';
 import { getAppearNote } from '@/scripts/get-appear-note.js';
 import { genEmbedCode } from '@/scripts/get-embed-code.js';
-import { showNoteSummary } from '@/scripts/temp-script/summarization';
+import { showNoteSummary } from '@/scripts/temp-script/summarization.js';
 
 export async function getNoteClipMenu(props: {
 	note: Misskey.entities.Note;

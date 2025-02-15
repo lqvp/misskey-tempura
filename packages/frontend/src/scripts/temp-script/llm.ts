@@ -4,7 +4,6 @@
  */
 
 import { defaultStore } from '@/store.js';
-import * as os from '@/os.js';
 
 export async function generateGeminiSummary(prompt: string): Promise<any> {
 	const { geminiToken, geminiModels } = defaultStore.state;
