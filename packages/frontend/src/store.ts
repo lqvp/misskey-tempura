@@ -642,7 +642,7 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'account',
 		default: 'gemini-2.0-flash' as 'gemini-2.0-flash' | 'gemini-1.5-flash' | 'gemini-1.5-pro' | 'gemini-2.0-pro-exp-02-05' | null,
 	},
-	geminiPrompt: {
+	geminiPromptNote: {
 		where: 'account',
 		default: '以下のSNSの投稿をわかりやすく簡潔にユーザーに要約せよ。' as string | null,
 	},

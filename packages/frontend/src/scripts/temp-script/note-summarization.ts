@@ -10,8 +10,8 @@ import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 
 export async function callGeminiSummarize(text: string): Promise<string> {
-	// geminiPrompt を先頭に付与してプロンプト生成
-	const prompt = (defaultStore.state.geminiPrompt ?? '') + 'note: ' + text;
+	// geminiPromptNote を先頭に付与してプロンプト生成
+	const prompt = (defaultStore.state.geminiPromptNote ?? '') + 'note: ' + text;
 
 	const data = await generateGeminiSummary(prompt);
 	if (!data.candidates || data.candidates.length === 0) {

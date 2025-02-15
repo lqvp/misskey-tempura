@@ -22,7 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<option value="gemini-2.0-pro-exp-02-05">gemini-2.0-pro-exp-02-05</option>
 		</MkSelect>
 
-		<MkInput v-model="geminiPrompt" type="text">
+		<MkInput v-model="geminiPromptNote" type="text">
 			<template #label>{{ i18n.ts._llm.geminiSummarizePromptLabel }}</template>
 			<template #caption>{{ i18n.ts._llm.geminiSummarizePromptCaption }}</template>
 		</MkInput>
@@ -52,7 +52,7 @@ import { i18n } from '@/i18n.js';
 
 const geminiToken = computed(defaultStore.makeGetterSetter('geminiToken'));
 const geminiModels = computed(defaultStore.makeGetterSetter('geminiModels'));
-const geminiPrompt = computed(defaultStore.makeGetterSetter('geminiPrompt'));
+const geminiPromptNote = computed(defaultStore.makeGetterSetter('geminiPromptNote'));
 const geminiPromptProfile = computed(defaultStore.makeGetterSetter('geminiPromptProfile'));
 
 async function saveLLMSettings() {
