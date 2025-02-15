@@ -12192,9 +12192,21 @@ export interface Locale extends ILocale {
          */
         "geminiSummarizePromptCaption": string;
         /**
+         * プロフィール要約プロンプト
+         */
+        "geminiProfileSummarizePromptLabel": string;
+        /**
+         * プロフィールを要約するためのプロンプトを設定します。
+         */
+        "geminiProfileSummarizePromptCaption": string;
+        /**
          * ノートを要約
          */
         "summarizeNote": string;
+        /**
+         * プロフィールを要約
+         */
+        "summarizeProfile": string;
     };
     /**
      * すぐ消す

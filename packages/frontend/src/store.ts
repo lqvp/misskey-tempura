@@ -646,6 +646,10 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'account',
 		default: '以下のSNSの投稿をわかりやすく簡潔にユーザーに要約せよ。' as string | null,
 	},
+	geminiPromptProfile: {
+		where: 'account',
+		default: 'プロフィール情報と投稿からこのユーザーの特徴を簡潔に教えて。' as string | null,
+	},
 }));
 
 // TODO: 他のタブと永続化されたstateを同期

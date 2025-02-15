@@ -27,6 +27,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<template #caption>{{ i18n.ts._llm.geminiSummarizePromptCaption }}</template>
 		</MkInput>
 
+		<MkInput v-model="geminiPromptProfile" type="text">
+			<template #label>{{ i18n.ts._llm.geminiProfileSummarizePromptLabel }}</template>
+			<template #caption>{{ i18n.ts._llm.geminiProfileSummarizePromptCaption }}</template>
+		</MkInput>
+
 		<div class="_buttons">
 			<MkButton primary @click="saveLLMSettings">{{ i18n.ts.save }}</MkButton>
 		</div>
@@ -48,6 +53,7 @@ import { i18n } from '@/i18n.js';
 const geminiToken = computed(defaultStore.makeGetterSetter('geminiToken'));
 const geminiModels = computed(defaultStore.makeGetterSetter('geminiModels'));
 const geminiPrompt = computed(defaultStore.makeGetterSetter('geminiPrompt'));
+const geminiPromptProfile = computed(defaultStore.makeGetterSetter('geminiPromptProfile'));
 
 async function saveLLMSettings() {
 	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });

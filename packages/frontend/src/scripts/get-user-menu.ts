@@ -8,6 +8,7 @@ import { defineAsyncComponent, ref, watch } from 'vue';
 import * as Misskey from 'misskey-js';
 import { host, url } from '@@/js/config.js';
 import type { MenuItem } from '@/types/menu.js';
+import type { IRouter } from '@/nirax.js';
 import { i18n } from '@/i18n.js';
 import { copyToClipboard } from '@/scripts/copy-to-clipboard.js';
 import * as os from '@/os.js';
@@ -15,11 +16,11 @@ import { misskeyApi } from '@/scripts/misskey-api.js';
 import { defaultStore, userActions } from '@/store.js';
 import { $i, iAmModerator } from '@/account.js';
 import { notesSearchAvailable, canSearchNonLocalNotes } from '@/scripts/check-permissions.js';
-import type { IRouter } from '@/nirax.js';
 import { antennasCache, rolesCache, userListsCache } from '@/cache.js';
 import { mainRouter } from '@/router/main.js';
 import { genEmbedCode } from '@/scripts/get-embed-code.js';
 import { editNickname } from '@/scripts/edit-nickname.js';
+import { summarizeUserProfile } from '@/scripts/temp-script/profile-summarization.js';
 
 type PeriodType = {
 	key: string;
@@ -293,6 +294,12 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 			action: () => {
 				const canonical = user.host === null ? `@${user.username}` : `@${user.username}@${user.host}`;
 				os.post({ specified: user, initialText: `${canonical} ` });
+			},
+		}, {
+			icon: 'ti ti-file-text',
+			text: i18n.ts._llm.summarizeProfile,
+			action: async () => {
+				await summarizeUserProfile(user.id);
 			},
 		}, { type: 'divider' }, ...(defaultStore.state.nicknameEnabled ? [{
 			icon: 'ti ti-edit',
