@@ -4,11 +4,13 @@
  */
 
 import { defaultStore } from '@/store.js';
+import * as os from '@/os.js';
 
 export async function generateGeminiSummary(prompt: string): Promise<any> {
 	const { geminiToken, geminiModels } = defaultStore.state;
 	if (!geminiToken) {
-		throw new Error('Gemini API token is not available in store.');
+		os.alert({ type: 'error', text: 'Gemini API tokenがありません。' });
+		return;
 	}
 
 	const response = await fetch(

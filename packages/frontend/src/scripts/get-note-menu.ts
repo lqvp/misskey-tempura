@@ -382,6 +382,7 @@ export function getNoteMenu(props: {
 						return;
 					}
 					const summary = await summarizeNoteText(appearNote.text);
+					if (!summary) return; // tokenエラー時など、すでにalert済みの場合は何もしない
 					os.popup(defineAsyncComponent(() => import('@/components/MkDialog.vue')), {
 						title: i18n.ts._llm.summarizeNote,
 						text: summary,
