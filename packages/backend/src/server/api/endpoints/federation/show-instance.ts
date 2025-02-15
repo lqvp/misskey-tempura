@@ -47,7 +47,21 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				return null;
 			}
 
-			return instance ? await this.instanceEntityService.pack(instance, me) : null;
+			if (instance) {
+				const data = await this.instanceEntityService.pack(instance, me);
+				if (!me || !me.isRoot) {
+					return {
+						...data,
+						isBlocked: false,
+						isMediaSilenced: false,
+						isQuarantineLimited: false,
+						isSilenced: false,
+						isSuspended: false,
+					};
+				}
+				return data;
+			}
+			return null;
 		});
 	}
 }
