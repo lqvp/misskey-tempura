@@ -422,3 +422,4 @@ export * as 'roles/unassign' from './endpoints/roles/unassign.js';
 export * as 'roles/update' from './endpoints/roles/update.js';
 export * as 'reaction-stats' from './endpoints/reaction-stats.js';
 export * as 'i/profile-counts-control' from './endpoints/i/profile-counts-control.js';
+export * as 'admin/drop-all-notes' from './endpoints/admin/drop-all-notes.js';

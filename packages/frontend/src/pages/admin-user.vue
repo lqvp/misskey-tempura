@@ -111,6 +111,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</div>
 							<MkButton inline danger @click="unsetUserAvatar"><i class="ti ti-user-circle"></i> {{ i18n.ts.unsetUserAvatar }}</MkButton>
 							<MkButton inline danger @click="unsetUserBanner"><i class="ti ti-photo"></i> {{ i18n.ts.unsetUserBanner }}</MkButton>
+							<div v-if="user.host" inline style="margin-right: 8px;" class="_buttons">
+								<MkButton danger @click="dropAllNotes"><i class="ti ti-trash"></i> {{ i18n.ts.dropAllNotes }}</MkButton>
+							</div>
 						</div>
 
 						<MkFolder>
@@ -434,6 +437,25 @@ async function unsetUserBanner() {
 	if (confirm.canceled) return;
 	const process = async () => {
 		await misskeyApi('admin/unset-user-banner', { userId: user.value!.id });
+		os.success();
+	};
+	await process().catch(err => {
+		os.alert({
+			type: 'error',
+			text: err.toString(),
+		});
+	});
+	refreshUser();
+}
+
+async function dropAllNotes() {
+	const confirm = await os.confirm({
+		type: 'warning',
+		text: i18n.ts.dropAllNotesConfirm,
+	});
+	if (confirm.canceled) return;
+	const process = async () => {
+		await misskeyApi('admin/drop-all-notes', { userId: user.value!.id });
 		os.success();
 	};
 	await process().catch(err => {

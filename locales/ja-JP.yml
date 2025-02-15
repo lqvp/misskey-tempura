@@ -2323,6 +2323,7 @@ _permissions:
   "read:stats": "統計情報を見る"
   "read:clip": "クリップを見る"
   "write:community-role": "コミュニティーロールを操作する"
+  "write:admin:drop-all-notes": "全てのノートを削除する"
 
 _auth:
   shareAccessTitle: "アプリへのアクセス許可"
@@ -3357,3 +3358,5 @@ signupRateLimitedDescription: "ただいま、アカウントの登録にイン�
 
 copySearchUrl: "検索URLをコピー"
 failedToCopy: "コピーに失敗しました"
+
+dropAllNotes: "全てのノートを削除"

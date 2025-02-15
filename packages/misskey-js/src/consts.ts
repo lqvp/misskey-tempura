@@ -126,6 +126,7 @@ export const permissions = [
 	'read:stats',
 	'read:clip',
 	'write:community-role',
+	'write:admin:drop-all-notes',
 ] as const;
 
 export const moderationLogTypes = [

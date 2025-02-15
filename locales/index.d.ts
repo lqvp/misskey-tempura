@@ -8866,6 +8866,10 @@ export interface Locale extends ILocale {
          * コミュニティーロールを操作する
          */
         "write:community-role": string;
+        /**
+         * 全てのノートを削除する
+         */
+        "write:admin:drop-all-notes": string;
     };
     "_auth": {
         /**
@@ -12460,6 +12464,10 @@ export interface Locale extends ILocale {
      * コピーに失敗しました
      */
     "failedToCopy": string;
+    /**
+     * 全てのノートを削除
+     */
+    "dropAllNotes": string;
 }
 declare const locales: {
     [lang: string]: Locale;
