@@ -81,158 +81,159 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const query = this.instancesRepository.createQueryBuilder('instance');
+			const metaData = await this.metaService.fetch(true);
 
 			if (!me) {
-				const meta = await this.metaService.fetch(true);
-				if (!meta.entranceShowFederation) {
+				// 未認証ユーザーの場合、metaの設定に応じて空配列にする
+				if (!metaData.entranceShowFederation) {
 					return [];
 				}
-
-				ps.sort = '+pubSub';
-				ps.limit = 20;
-				ps.blocked = false;
-				ps.suspended = false;
-				ps.silenced = false;
-				ps.quarantine = false;
-				ps.host = null;
-				ps.softwareName = null;
-				ps.notResponding = false;
-				ps.federating = null;
-				ps.subscribing = null;
-				ps.publishing = null;
-				ps.offset = 0;
-			}
-
-			if (me && !me.isRoot) {
-				const meta = await this.metaService.fetch(true);
-
+				// デフォルトのフィルタ条件を強制する
+				Object.assign(ps, {
+					sort: '+pubSub',
+					limit: 20,
+					blocked: false,
+					suspended: false,
+					silenced: false,
+					quarantine: false,
+					host: null,
+					softwareName: null,
+					notResponding: false,
+					federating: null,
+					subscribing: null,
+					publishing: null,
+					offset: 0,
+				});
+			} else if (!me.isRoot) {
+				// 一般ユーザーの場合、非Rootユーザー向けに追加の制御を実施
 				// 停止済みインスタンス除外
 				query.andWhere('instance.suspensionState = :none', { none: 'none' });
 
-				// サイレンス済みインスタンス除外
-				if (meta.silencedHosts.length > 0) {
+				// サイレンス／ブロック済み、隔離済みの除外
+				if (metaData.silencedHosts.length > 0) {
 					query.andWhere('instance.host NOT IN (:...silenced)', {
-						silenced: meta.silencedHosts,
+						silenced: metaData.silencedHosts,
 					});
 				}
-
-				// 隔離済みインスタンス除外
 				query.andWhere('instance.quarantineLimited = FALSE');
-
-				// ブロック済みインスタンス除外
-				if (meta.blockedHosts.length > 0) {
+				if (metaData.blockedHosts.length > 0) {
 					query.andWhere('instance.host NOT IN (:...blocked)', {
-						blocked: meta.blockedHosts,
+						blocked: metaData.blockedHosts,
 					});
 				}
 
-				// パラメータによる上書き防止
-				const restrictedParams = [
-					ps.suspended,
-					ps.silenced,
-					ps.quarantine,
-					ps.blocked,
-				];
+				// クエリパラメータでの上書きを防止
+				const restrictedParams = [ps.suspended, ps.silenced, ps.quarantine, ps.blocked];
 				if (restrictedParams.some(p => p !== null && p !== undefined)) {
 					return [];
 				}
 			}
 
 			switch (ps.sort) {
-				case '+pubSub': query.orderBy('instance.followingCount', 'DESC').orderBy('instance.followersCount', 'DESC'); break;
-				case '-pubSub': query.orderBy('instance.followingCount', 'ASC').orderBy('instance.followersCount', 'ASC'); break;
-				case '+notes': query.orderBy('instance.notesCount', 'DESC'); break;
-				case '-notes': query.orderBy('instance.notesCount', 'ASC'); break;
-				case '+users': query.orderBy('instance.usersCount', 'DESC'); break;
-				case '-users': query.orderBy('instance.usersCount', 'ASC'); break;
-				case '+following': query.orderBy('instance.followingCount', 'DESC'); break;
-				case '-following': query.orderBy('instance.followingCount', 'ASC'); break;
-				case '+followers': query.orderBy('instance.followersCount', 'DESC'); break;
-				case '-followers': query.orderBy('instance.followersCount', 'ASC'); break;
-				case '+firstRetrievedAt': query.orderBy('instance.firstRetrievedAt', 'DESC'); break;
-				case '-firstRetrievedAt': query.orderBy('instance.firstRetrievedAt', 'ASC'); break;
-				case '+latestRequestReceivedAt': query.orderBy('instance.latestRequestReceivedAt', 'DESC', 'NULLS LAST'); break;
-				case '-latestRequestReceivedAt': query.orderBy('instance.latestRequestReceivedAt', 'ASC', 'NULLS FIRST'); break;
-
-				default: query.orderBy('instance.id', 'DESC'); break;
+				case '+pubSub':
+					query.orderBy('instance.followingCount', 'DESC').addOrderBy('instance.followersCount', 'DESC');
+					break;
+				case '-pubSub':
+					query.orderBy('instance.followingCount', 'ASC').addOrderBy('instance.followersCount', 'ASC');
+					break;
+				case '+notes':
+					query.orderBy('instance.notesCount', 'DESC');
+					break;
+				case '-notes':
+					query.orderBy('instance.notesCount', 'ASC');
+					break;
+				case '+users':
+					query.orderBy('instance.usersCount', 'DESC');
+					break;
+				case '-users':
+					query.orderBy('instance.usersCount', 'ASC');
+					break;
+				case '+following':
+					query.orderBy('instance.followingCount', 'DESC');
+					break;
+				case '-following':
+					query.orderBy('instance.followingCount', 'ASC');
+					break;
+				case '+followers':
+					query.orderBy('instance.followersCount', 'DESC');
+					break;
+				case '-followers':
+					query.orderBy('instance.followersCount', 'ASC');
+					break;
+				case '+firstRetrievedAt':
+					query.orderBy('instance.firstRetrievedAt', 'DESC');
+					break;
+				case '-firstRetrievedAt':
+					query.orderBy('instance.firstRetrievedAt', 'ASC');
+					break;
+				case '+latestRequestReceivedAt':
+					query.orderBy('instance.latestRequestReceivedAt', 'DESC', 'NULLS LAST');
+					break;
+				case '-latestRequestReceivedAt':
+					query.orderBy('instance.latestRequestReceivedAt', 'ASC', 'NULLS FIRST');
+					break;
+				default:
+					query.orderBy('instance.id', 'DESC');
+					break;
 			}
 
 			if (typeof ps.blocked === 'boolean') {
-				const meta = await this.metaService.fetch(true);
 				if (ps.blocked) {
-					query.andWhere(meta.blockedHosts.length === 0 ? '1=0' : 'instance.host IN (:...blocks)', { blocks: meta.blockedHosts });
+					query.andWhere(metaData.blockedHosts.length === 0 ? '1=0' : 'instance.host IN (:...blocks)', {
+						blocks: metaData.blockedHosts,
+					});
 				} else {
-					query.andWhere(meta.blockedHosts.length === 0 ? '1=1' : 'instance.host NOT IN (:...blocks)', { blocks: meta.blockedHosts });
+					query.andWhere(metaData.blockedHosts.length === 0 ? '1=1' : 'instance.host NOT IN (:...blocks)', {
+						blocks: metaData.blockedHosts,
+					});
 				}
 			}
 
 			if (typeof ps.notResponding === 'boolean') {
-				if (ps.notResponding) {
-					query.andWhere('instance.isNotResponding = TRUE');
-				} else {
-					query.andWhere('instance.isNotResponding = FALSE');
-				}
+				query.andWhere(`instance.isNotResponding = ${ps.notResponding ? 'TRUE' : 'FALSE'}`);
 			}
 
 			if (typeof ps.suspended === 'boolean') {
-				if (ps.suspended) {
-					query.andWhere('instance.suspensionState != \'none\'');
-				} else {
-					query.andWhere('instance.suspensionState = \'none\'');
-				}
+				query.andWhere(
+					ps.suspended ? 'instance.suspensionState != \'none\'' : 'instance.suspensionState = \'none\'',
+				);
 			}
 
 			if (typeof ps.quarantine === 'boolean') {
-				if (ps.quarantine) {
-					query.andWhere('instance.quarantineLimited = TRUE');
-				} else {
-					query.andWhere('instance.quarantineLimited = FALSE');
-				}
+				query.andWhere(`instance.quarantineLimited = ${ps.quarantine ? 'TRUE' : 'FALSE'}`);
 			}
 
 			if (typeof ps.silenced === 'boolean') {
-				const meta = await this.metaService.fetch(true);
-
 				if (ps.silenced) {
-					if (meta.silencedHosts.length === 0) {
+					if (metaData.silencedHosts.length === 0) {
 						return [];
 					}
-					query.andWhere('instance.host IN (:...silences)', {
-						silences: meta.silencedHosts,
-					});
-				} else if (meta.silencedHosts.length > 0) {
-					query.andWhere('instance.host NOT IN (:...silences)', {
-						silences: meta.silencedHosts,
-					});
+					query.andWhere('instance.host IN (:...silences)', { silences: metaData.silencedHosts });
+				} else if (metaData.silencedHosts.length > 0) {
+					query.andWhere('instance.host NOT IN (:...silences)', { silences: metaData.silencedHosts });
 				}
 			}
 
 			if (typeof ps.federating === 'boolean') {
-				if (ps.federating) {
-					query.andWhere('((instance.followingCount > 0) OR (instance.followersCount > 0))');
-				} else {
-					query.andWhere('((instance.followingCount = 0) AND (instance.followersCount = 0))');
-				}
+				query.andWhere(
+					ps.federating
+						? '((instance.followingCount > 0) OR (instance.followersCount > 0))'
+						: '((instance.followingCount = 0) AND (instance.followersCount = 0))',
+				);
 			}
 
 			if (typeof ps.subscribing === 'boolean') {
-				if (ps.subscribing) {
-					query.andWhere('instance.followersCount > 0');
-				} else {
-					query.andWhere('instance.followersCount = 0');
-				}
+				query.andWhere(ps.subscribing ? 'instance.followersCount > 0' : 'instance.followersCount = 0');
 			}
 
 			if (typeof ps.publishing === 'boolean') {
-				if (ps.publishing) {
-					query.andWhere('instance.followingCount > 0');
-				} else {
-					query.andWhere('instance.followingCount = 0');
-				}
+				query.andWhere(ps.publishing ? 'instance.followingCount > 0' : 'instance.followingCount = 0');
 			}
 
 			if (ps.host) {
-				query.andWhere('instance.host like :host', { host: '%' + sqlLikeEscape(ps.host.toLowerCase()) + '%' });
+				query.andWhere('instance.host like :host', {
+					host: '%' + sqlLikeEscape(ps.host.toLowerCase()) + '%',
+				});
 			}
 
 			if (ps.softwareName) {
@@ -242,7 +243,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			const instances = await query.limit(ps.limit).offset(ps.offset).getMany();
-
 			return await this.instanceEntityService.packMany(instances, me);
 		});
 	}
