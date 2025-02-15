@@ -9,8 +9,7 @@ import * as os from '@/os.js';
 export async function generateGeminiSummary(prompt: string): Promise<any> {
 	const { geminiToken, geminiModels } = defaultStore.state;
 	if (!geminiToken) {
-		os.alert({ type: 'error', text: 'Gemini API tokenがありません。' });
-		return;
+		throw new Error('Gemini API tokenがありません。');
 	}
 
 	const response = await fetch(
