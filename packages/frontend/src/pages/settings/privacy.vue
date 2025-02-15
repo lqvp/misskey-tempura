@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</MkSwitch>
 	<MkSwitch v-if="!isLocked" v-model="carefulBot" @update:modelValue="save()">{{ i18n.ts.carefulBot }}<template #caption>{{ i18n.ts.carefulBotDescription }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template></MkSwitch>
 
-	<MkSwitch v-model="autoFollowBack" @update:modelValue="save()">
+	<MkSwitch v-if="$i.policies.canAutoFollowBack" v-model="autoFollowBack" @update:modelValue="save()">
 		{{ i18n.ts.autoFollowBack }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 		<template #caption>{{ i18n.ts.autoFollowBackDescription }}</template>
 	</MkSwitch>
