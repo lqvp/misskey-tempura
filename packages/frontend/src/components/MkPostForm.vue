@@ -1097,32 +1097,6 @@ function toggleScheduleNote() {
 	}
 }
 
-// function showOtherMenu(ev: MouseEvent) {
-// 	const menuItems: MenuItem[] = [];
-
-// 	if ($i.policies.scheduleNoteMax > 0) {
-// 		menuItems.push({
-// 			type: 'button',
-// 			text: i18n.ts.schedulePost,
-// 			icon: 'ti ti-calendar-time',
-// 			action: toggleScheduleNote,
-// 		}, {
-// 			type: 'button',
-// 			text: i18n.ts.schedulePostList,
-// 			icon: 'ti ti-calendar-event',
-// 			action: () => {
-// 				const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkSchedulePostListDialog.vue')), {}, {
-// 					closed: () => {
-// 						dispose();
-// 					},
-// 				});
-// 			},
-// 		});
-// 	}
-
-// 	os.popupMenu(menuItems, ev.currentTarget ?? ev.target);
-// }
-
 function saveCurrentUsers() {
 	defaultStore.set('specifiedUsers', visibleUsers.value.map(user => user.id));
 	os.success();
