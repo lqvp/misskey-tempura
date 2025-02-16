@@ -111,6 +111,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</div>
 							<MkButton inline danger @click="unsetUserAvatar"><i class="ti ti-user-circle"></i> {{ i18n.ts.unsetUserAvatar }}</MkButton>
 							<MkButton inline danger @click="unsetUserBanner"><i class="ti ti-photo"></i> {{ i18n.ts.unsetUserBanner }}</MkButton>
+							<MkButton inline danger @click="deleteAllFiles"><i class="ti ti-trash"></i> {{ i18n.ts.deleteAllFiles }}</MkButton>
 							<div v-if="user.host" inline style="margin-right: 8px;" class="_buttons">
 								<MkButton danger @click="dropAllNotes"><i class="ti ti-trash"></i> {{ i18n.ts.dropAllNotes }}</MkButton>
 							</div>
