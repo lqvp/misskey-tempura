@@ -32,6 +32,41 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<template #caption>{{ i18n.ts._llm.geminiProfileSummarizePromptCaption }}</template>
 		</MkInput>
 
+		<MkFolder>
+			<template #icon><i class="ti ti-info"></i></template>
+			<template #label>{{ i18n.ts._llm.notesPrompt }}</template>
+
+			<div class="_gaps_m">
+				<MkInput v-model="geminiNoteLongText" type="text">
+					<template #label>{{ i18n.ts._llm.geminiNoteLongText }}</template>
+				</MkInput>
+
+				<MkInput v-model="geminiNoteShortText" type="text">
+					<template #label>{{ i18n.ts._llm.geminiNoteShortText }}</template>
+				</MkInput>
+
+				<MkInput v-model="geminiNoteSimpleText" type="text">
+					<template #label>{{ i18n.ts._llm.geminiNoteSimpleText }}</template>
+				</MkInput>
+
+				<MkInput v-model="geminiNoteCasualText" type="text">
+					<template #label>{{ i18n.ts._llm.geminiNoteCasualText }}</template>
+				</MkInput>
+
+				<MkInput v-model="geminiNoteProfessionalText" type="text">
+					<template #label>{{ i18n.ts._llm.geminiNoteProfessionalText }}</template>
+				</MkInput>
+
+				<MkInput v-model="geminiNoteCatText" type="text">
+					<template #label>{{ i18n.ts._llm.geminiNoteCatText }}</template>
+				</MkInput>
+
+				<MkInput v-model="geminiNoteCustomText" type="text">
+					<template #label>{{ i18n.ts._llm.geminiNoteCustomText }}</template>
+				</MkInput>
+			</div>
+		</MkFolder>
+
 		<div class="_buttons">
 			<MkButton primary @click="saveLLMSettings">{{ i18n.ts.save }}</MkButton>
 		</div>
@@ -54,6 +89,13 @@ const geminiToken = computed(defaultStore.makeGetterSetter('geminiToken'));
 const geminiModels = computed(defaultStore.makeGetterSetter('geminiModels'));
 const geminiPromptNote = computed(defaultStore.makeGetterSetter('geminiPromptNote'));
 const geminiPromptProfile = computed(defaultStore.makeGetterSetter('geminiPromptProfile'));
+const geminiNoteLongText = computed(defaultStore.makeGetterSetter('geminiNoteLongText'));
+const geminiNoteShortText = computed(defaultStore.makeGetterSetter('geminiNoteShortText'));
+const geminiNoteSimpleText = computed(defaultStore.makeGetterSetter('geminiNoteSimpleText'));
+const geminiNoteCasualText = computed(defaultStore.makeGetterSetter('geminiNoteCasualText'));
+const geminiNoteProfessionalText = computed(defaultStore.makeGetterSetter('geminiNoteProfessionalText'));
+const geminiNoteCatText = computed(defaultStore.makeGetterSetter('geminiNoteCatText'));
+const geminiNoteCustomText = computed(defaultStore.makeGetterSetter('geminiNoteCustomText'));
 
 async function saveLLMSettings() {
 	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });

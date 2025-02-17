@@ -650,6 +650,34 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'account',
 		default: 'プロフィール情報と投稿からこのユーザーの特徴を簡潔に教えて。リスト記法はMisskeyが対応しておらず、パーサーが壊れるため使用禁止です。列挙する場合は「・」を使ってください。' as string | null,
 	},
+	geminiNoteLongText: {
+		where: 'account',
+		default: '以下の文章を長文にしてください。' as string | null,
+	},
+	geminiNoteShortText: {
+		where: 'account',
+		default: '以下の文章を短文にしてください。' as string | null,
+	},
+	geminiNoteSimpleText: {
+		where: 'account',
+		default: '以下の文章を簡潔にしてください。' as string | null,
+	},
+	geminiNoteCasualText: {
+		where: 'account',
+		default: '以下の文章をカジュアルにしてください。' as string | null,
+	},
+	geminiNoteProfessionalText: {
+		where: 'account',
+		default: '以下の文章を専門的にしてください。' as string | null,
+	},
+	geminiNoteCatText: {
+		where: 'account',
+		default: '以下の文章を猫っぽくしてください。' as string | null,
+	},
+	geminiNoteCustomText: {
+		where: 'account',
+		default: null as string | null,
+	},
 }));
 
 // TODO: 他のタブと永続化されたstateを同期

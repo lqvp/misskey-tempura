@@ -12207,6 +12207,46 @@ export interface Locale extends ILocale {
          * プロフィールを要約
          */
         "summarizeProfile": string;
+        /**
+         * ノートの変換
+         */
+        "notesTransformation": string;
+        /**
+         * ノートのプロンプト
+         */
+        "notesPrompt": string;
+        /**
+         * ノートを作成する際のプロンプトを設定します。
+         */
+        "notesPromptDescription": string;
+        /**
+         * 長文
+         */
+        "geminiNoteLongText": string;
+        /**
+         * 短文
+         */
+        "geminiNoteShortText": string;
+        /**
+         * シンプル
+         */
+        "geminiNoteSimpleText": string;
+        /**
+         * カジュアル
+         */
+        "geminiNoteCasualText": string;
+        /**
+         * プロフェッショナル
+         */
+        "geminiNoteProfessionalText": string;
+        /**
+         * 猫っぽく
+         */
+        "geminiNoteCatText": string;
+        /**
+         * カスタム
+         */
+        "geminiNoteCustomText": string;
     };
     /**
      * すぐ消す
