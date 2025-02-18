@@ -63,6 +63,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<img src="https://avatars.githubusercontent.com/u/60306404?v=4" :class="$style.contributorAvatar">
 							<span :class="$style.contributorUsername">buachi</span>
 						</a>
+						<a href="https://github.com/Misaki0331" target="_blank" :class="$style.contributor">
+							<img src="https://avatars.githubusercontent.com/u/60120497?v=4" :class="$style.contributorAvatar">
+							<span :class="$style.contributorUsername">水咲(みさき)</span>
+						</a>
 					</div>
 				</FormSection>
 			</div>
