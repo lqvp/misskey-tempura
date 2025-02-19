@@ -9100,6 +9100,10 @@ export interface Locale extends ILocale {
          * 天気予報
          */
         "weather": string;
+        /**
+         * ネストウィジェット
+         */
+        "nestedWidget": string;
     };
     "_cw": {
         /**

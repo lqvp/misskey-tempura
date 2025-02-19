@@ -2388,6 +2388,7 @@ _widgets:
   birthdayFollowings: "今日誕生日のユーザー"
   listenBrainz: "ListenBrainz"
   weather: "天気予報"
+  nestedWidget: "ネストウィジェット"
 
 _cw:
   hide: "隠す"
