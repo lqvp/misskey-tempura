@@ -9,9 +9,15 @@ import { defaultStore } from '@/store.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 
+/**
+ * Gemini を用いてノートの要約を生成します。
+ *
+ * @param text 要約対象のノート本文
+ * @returns 要約されたテキスト
+ */
 export async function callGeminiSummarize(text: string): Promise<string> {
-	// geminiPromptNote を先頭に付与してプロンプト生成
-	const prompt = (defaultStore.state.geminiPromptNote ?? '') + 'note: ' + text;
+	const additionalInstruction = 'リスト記法はMisskeyが対応しておらず、パーサーが壊れるため使用禁止です。列挙する場合は「・」を使ってください。';
+	const prompt = (defaultStore.state.geminiPromptNote ?? '') + 'note: ' + text + additionalInstruction;
 
 	const data = await generateGeminiSummary(prompt);
 	if (!data.candidates || data.candidates.length === 0) {

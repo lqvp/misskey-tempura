@@ -11,8 +11,8 @@ import darkTheme from '@@/themes/night-pink.json5';
 import { directRenote } from './scripts/direct-renote.js';
 import type { SoundType } from '@/scripts/sound.js';
 import type { Ast } from '@syuilo/aiscript';
-import { DEFAULT_DEVICE_KIND } from '@/scripts/device-kind.js';
 import type { DeviceKind } from '@/scripts/device-kind.js';
+import { DEFAULT_DEVICE_KIND } from '@/scripts/device-kind.js';
 import { miLocalStorage } from '@/local-storage.js';
 import { Storage } from '@/pizzax.js';
 
@@ -644,11 +644,11 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	geminiPromptNote: {
 		where: 'account',
-		default: '以下のSNSの投稿をわかりやすく簡潔にユーザーに要約せよ。リスト記法はMisskeyが対応しておらず、パーサーが壊れるため使用禁止です。列挙する場合は「・」を使ってください。' as string | null,
+		default: '以下のSNSの投稿をわかりやすく簡潔にユーザーに要約せよ。' as string | null,
 	},
 	geminiPromptProfile: {
 		where: 'account',
-		default: 'プロフィール情報と投稿からこのユーザーの特徴を簡潔に教えて。リスト記法はMisskeyが対応しておらず、パーサーが壊れるため使用禁止です。列挙する場合は「・」を使ってください。' as string | null,
+		default: 'プロフィール情報と投稿からこのユーザーの特徴を簡潔に教えて。' as string | null,
 	},
 	geminiNoteLongText: {
 		where: 'account',
