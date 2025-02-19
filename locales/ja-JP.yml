@@ -2643,6 +2643,7 @@ _notification:
     exportCompleted: "エクスポートが完了した"
     login: "ログイン"
     loginFailed: "ログインに失敗"
+    createToken: "アクセストークンが作成された"
     test: "通知のテスト"
     app: "連携アプリからの通知"
     scheduledNotePosted: "予約投稿に成功"

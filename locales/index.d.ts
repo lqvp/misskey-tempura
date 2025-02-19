@@ -10028,6 +10028,10 @@ export interface Locale extends ILocale {
              */
             "loginFailed": string;
             /**
+             * アクセストークンが作成された
+             */
+            "createToken": string;
+            /**
              * 通知のテスト
              */
             "test": string;
