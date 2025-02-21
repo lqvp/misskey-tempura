@@ -122,6 +122,10 @@ export type MiNotification = {
 	id: string;
 	createdAt: string;
 } | {
+	type: 'createToken';
+	id: string;
+	createdAt: string;
+} | {
 	type: 'app';
 	id: string;
 	createdAt: string;
