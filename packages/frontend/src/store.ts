@@ -642,6 +642,10 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'account',
 		default: 'gemini-2.0-flash' as 'gemini-2.0-flash' | 'gemini-1.5-flash' | 'gemini-1.5-pro' | 'gemini-2.0-pro-exp-02-05' | null,
 	},
+	geminiSystemPrompt: {
+		where: 'account',
+		default: 'リスト記法は対応しておらず、パーサーが壊れるため使用禁止です。列挙する場合は「・」を使ってください。' as string | null,
+	},
 	geminiPromptNote: {
 		where: 'account',
 		default: '以下のSNSの投稿をわかりやすく簡潔にユーザーに要約せよ。' as string | null,

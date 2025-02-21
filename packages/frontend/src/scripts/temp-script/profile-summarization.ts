@@ -38,17 +38,24 @@ export async function summarizeUserProfile(userId: string): Promise<void> {
 			? notesResponse.map((note: any) => note.text).filter(Boolean)
 			: [];
 
-		// ストアの専用プロンプトを先頭に付与してプロンプトを構築
-		const prompt = (defaultStore.state.geminiPromptProfile ?? '') +
-            'プロフィール情報:\n' +
-            `名前: ${name}\n` +
-            `場所: ${location}\n` +
-            `自己紹介: ${description}\n\n` +
-          	 '投稿:\n' +
-            notesTexts.join('\n');
+		// Gemini API 呼び出しをシステム命令形式に更新
+		const systemInstruction = [
+			defaultStore.state.geminiPromptProfile ?? '',
+			defaultStore.state.geminiSystemPrompt ?? '',
+		].join('\n');
 
-		// Gemini API を利用して要約を生成
-		const summaryResult = await generateGeminiSummary(prompt);
+		const userContent =
+			'プロフィール情報:\n' +
+			`名前: ${name}\n` +
+			`場所: ${location}\n` +
+			`自己紹介: ${description}\n\n` +
+			'投稿:\n' + notesTexts.join('\n');
+
+		const summaryResult = await generateGeminiSummary({
+			userContent,
+			systemInstruction,
+		});
+
 		if (!summaryResult.candidates || summaryResult.candidates.length === 0) {
 			throw new Error('Gemini API からの候補がありません。');
 		}

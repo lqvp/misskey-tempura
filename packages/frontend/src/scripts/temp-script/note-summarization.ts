@@ -16,10 +16,15 @@ import { i18n } from '@/i18n.js';
  * @returns 要約されたテキスト
  */
 export async function callGeminiSummarize(text: string): Promise<string> {
-	const additionalInstruction = 'リスト記法はMisskeyが対応しておらず、パーサーが壊れるため使用禁止です。列挙する場合は「・」を使ってください。';
-	const prompt = (defaultStore.state.geminiPromptNote ?? '') + 'note: ' + text + additionalInstruction;
+	const systemInstruction = [
+		defaultStore.state.geminiPromptNote ?? '',
+		defaultStore.state.geminiSystemPrompt ?? ''
+	].join('\n');
 
-	const data = await generateGeminiSummary(prompt);
+	const data = await generateGeminiSummary({
+		userContent: text,
+		systemInstruction,
+	});
 	if (!data.candidates || data.candidates.length === 0) {
 		throw new Error('No candidates returned from Gemini API.');
 	}

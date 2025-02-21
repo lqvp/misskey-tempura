@@ -40,13 +40,15 @@ export async function transformTextWithGemini(noteText: string, onApplied: (newT
 	while (true) {
 		// store内の該当プロンプト（geminiNote*）を利用してプロンプト生成
 		const state = (defaultStore.state as unknown) as Record<string, string> | null;
-		const promptPrefix: string = state?.[selectedStyleKey] ?? '';
-		const additionalInstruction = '\n変換したテキストだけを返答してください。';
-		const prompt = promptPrefix + noteText + additionalInstruction;
+		const stylePrompt = state?.[selectedStyleKey] ?? '';
 
 		let result: any;
 		try {
-			result = await generateGeminiSummary(prompt);
+			const data = await generateGeminiSummary({
+				userContent: noteText,
+				systemInstruction: stylePrompt,
+			});
+			result = data;
 		} catch (error) {
 			os.alert({ type: 'error', text: '変換の実行に失敗しました。' });
 			return;

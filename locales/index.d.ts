@@ -12192,6 +12192,14 @@ export interface Locale extends ILocale {
          */
         "geminiModelLabel": string;
         /**
+         * Geminiシステムプロンプト
+         */
+        "geminiSystemPromptLabel": string;
+        /**
+         * システムプロンプトを設定します。
+         */
+        "geminiSystemPromptCaption": string;
+        /**
          * Gemini要約プロンプト
          */
         "geminiSummarizePromptLabel": string;

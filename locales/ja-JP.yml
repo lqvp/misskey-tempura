@@ -3263,6 +3263,8 @@ _llm:
   geminiTokenLabel: "Geminiトークン"
   geminiTokenCaption: "Gemini API の認証に使用するトークンを設定します。"
   geminiModelLabel: "Geminiモデル"
+  geminiSystemPromptLabel: "Geminiシステムプロンプト"
+  geminiSystemPromptCaption: "システムプロンプトを設定します。"
   geminiSummarizePromptLabel: "Gemini要約プロンプト"
   geminiSummarizePromptCaption: "ノートを要約するためのプロンプトを設定します。"
   geminiProfileSummarizePromptLabel: "プロフィール要約プロンプト"

@@ -5,7 +5,13 @@
 
 import { defaultStore } from '@/store.js';
 
-export async function generateGeminiSummary(prompt: string): Promise<any> {
+export async function generateGeminiSummary({
+	userContent,
+	systemInstruction,
+}: {
+	userContent: string;
+	systemInstruction?: string;
+}): Promise<any> {
 	const { geminiToken, geminiModels } = defaultStore.state;
 	if (!geminiToken) {
 		throw new Error('Gemini API tokenがありません。');
@@ -19,11 +25,12 @@ export async function generateGeminiSummary(prompt: string): Promise<any> {
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify({
-				contents: [
-					{
-						parts: [{ text: prompt }],
-					},
-				],
+				system_instruction: systemInstruction ? {
+					parts: [{ text: systemInstruction }],
+				} : undefined,
+				contents: [{
+					parts: [{ text: userContent }],
+				}],
 			}),
 		},
 	);
