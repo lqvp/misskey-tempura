@@ -8,6 +8,7 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { InstancesRepository } from '@/models/_.js';
 import { InstanceEntityService } from '@/core/entities/InstanceEntityService.js';
 import { MetaService } from '@/core/MetaService.js';
+import { RoleService } from '@/core/RoleService.js';
 import { DI } from '@/di-symbols.js';
 import { sqlLikeEscape } from '@/misc/sql-like-escape.js';
 
@@ -78,10 +79,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 		private instanceEntityService: InstanceEntityService,
 		private metaService: MetaService,
+		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const query = this.instancesRepository.createQueryBuilder('instance');
 			const metaData = await this.metaService.fetch(true);
+			const isRoot = await this.roleService.isAdministrator(me);
 
 			if (!me) {
 				// 未認証ユーザーの場合、metaの設定に応じて空配列にする
@@ -104,7 +107,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					publishing: null,
 					offset: 0,
 				});
-			} else if (!me.isRoot) {
+			} else if (!isRoot) {
 				// 一般ユーザーの場合、非Rootユーザー向けに追加の制御を実施
 				// 停止済みインスタンス除外
 				query.andWhere('instance.suspensionState = :none', { none: 'none' });

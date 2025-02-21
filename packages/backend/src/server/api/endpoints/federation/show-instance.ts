@@ -9,6 +9,7 @@ import type { InstancesRepository } from '@/models/_.js';
 import { InstanceEntityService } from '@/core/entities/InstanceEntityService.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import { DI } from '@/di-symbols.js';
+import { RoleService } from '@/core/RoleService.js';
 
 export const meta = {
 	tags: ['federation'],
@@ -38,10 +39,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 		private utilityService: UtilityService,
 		private instanceEntityService: InstanceEntityService,
+		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const instance = await this.instancesRepository
 				.findOneBy({ host: this.utilityService.toPuny(ps.host) });
+			const isRoot = await this.roleService.isAdministrator(me);
 
 			if (!me) {
 				return null;
@@ -49,7 +52,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (instance) {
 				const data = await this.instanceEntityService.pack(instance, me);
-				if (!me || !me.isRoot) {
+				if (!me || !isRoot) {
 					return {
 						...data,
 						isBlocked: false,
