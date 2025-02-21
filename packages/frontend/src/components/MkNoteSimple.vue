@@ -37,7 +37,7 @@ import MkCwButton from '@/components/MkCwButton.vue';
 
 const props = defineProps<{
 	note: Misskey.entities.Note & {
-		isSchedule? : boolean,
+		isSchedule?: boolean,
 		scheduledNoteId?: string
 	};
 }>();

@@ -149,7 +149,7 @@ const $i = signinRequired();
 
 const modal = inject('modal');
 
-const props = withDefaults(defineProps<PostFormProps &{
+const props = withDefaults(defineProps<PostFormProps & {
 	fixed?: boolean;
 	autofocus?: boolean;
 	freezeAfterPosted?: boolean;
