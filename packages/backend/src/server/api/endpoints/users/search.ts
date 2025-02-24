@@ -140,6 +140,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 							.orWhere('user.updatedAt > :activeThreshold', { activeThreshold: activeThreshold });
 					}))
 					.andWhere('user.isSuspended = FALSE')
+					.andWhere('user.isLocked = FALSE')
 					.setParameters(profQuery.getParameters());
 
 				users = users.concat(await query
