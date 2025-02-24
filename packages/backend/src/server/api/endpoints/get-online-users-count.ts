@@ -13,8 +13,6 @@ import { DI } from '@/di-symbols.js';
 export const meta = {
 	tags: ['meta'],
 
-	requireCredential: true,
-	kind: 'read:stats',
 	allowGet: true,
 	cacheSec: 60 * 1,
 	res: {
@@ -41,7 +39,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
 	) {
-		super(meta, paramDef, async () => {
+		super(meta, paramDef, async (me) => {
+			if (!me) {
+				return {
+					count: 0,
+				};
+			}
 			const count = await this.usersRepository.countBy({
 				lastActiveDate: MoreThan(new Date(Date.now() - USER_ONLINE_THRESHOLD)),
 			});
