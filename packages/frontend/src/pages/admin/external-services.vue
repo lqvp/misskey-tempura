@@ -8,18 +8,31 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<template #header><XHeader :actions="headerActions" :tabs="headerTabs"/></template>
 	<MkSpacer :contentMax="700" :marginMin="16" :marginMax="32">
 		<FormSuspense :p="init">
-			<MkFolder>
-				<template #label>DeepL Translation</template>
+			<div class="_gaps_m">
+				<MkFolder>
+					<template #label>Google Analytics<span class="_beta">{{ i18n.ts.beta }}</span></template>
 
-				<div class="_gaps_m">
-					<MkInput v-model="deeplAuthKey">
-						<template #prefix><i class="ti ti-key"></i></template>
-						<template #label>DeepL Auth Key</template>
-					</MkInput>
-					<MkSwitch v-model="deeplIsPro">
-						<template #label>Pro account</template>
-					</MkSwitch>
-					<MkSwitch v-model="deeplFreeMode">
+					<div class="_gaps_m">
+						<MkInput v-model="googleAnalyticsMeasurementId">
+							<template #prefix><i class="ti ti-key"></i></template>
+							<template #label>Measurement ID</template>
+						</MkInput>
+						<MkButton primary @click="save_googleAnalytics">Save</MkButton>
+					</div>
+				</MkFolder>
+
+				<MkFolder>
+					<template #label>DeepL Translation</template>
+
+					<div class="_gaps_m">
+						<MkInput v-model="deeplAuthKey">
+							<template #prefix><i class="ti ti-key"></i></template>
+							<template #label>DeepL Auth Key</template>
+						</MkInput>
+						<MkSwitch v-model="deeplIsPro">
+							<template #label>Pro account</template>
+						</MkSwitch>
+						<MkSwitch v-model="deeplFreeMode">
 						<template #label>{{ i18n.ts.deeplFreeMode }}</template>
 					</MkSwitch>
 					<MkInput v-if="deeplFreeMode" v-model="deeplFreeInstance" :placeholder="'example.com/translate'">
@@ -28,8 +41,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #caption>{{ i18n.ts.deeplFreeModeDescription }}</template>
 					</MkInput>
 					<MkButton primary @click="save_deepl">Save</MkButton>
-				</div>
-			</MkFolder>
+					</div>
+				</MkFolder>
+			</div>
 		</FormSuspense>
 	</MkSpacer>
 </MkStickyContainer>
@@ -53,13 +67,15 @@ const deeplAuthKey = ref<string>('');
 const deeplIsPro = ref<boolean>(false);
 const deeplFreeMode = ref<boolean>(false);
 const deeplFreeInstance = ref<string>('');
+const googleAnalyticsMeasurementId = ref<string>('');
 
 async function init() {
 	const meta = await misskeyApi('admin/meta');
-	deeplAuthKey.value = meta.deeplAuthKey;
+	deeplAuthKey.value = meta.deeplAuthKey ?? '';
 	deeplIsPro.value = meta.deeplIsPro;
 	deeplFreeMode.value = meta.deeplFreeMode;
 	deeplFreeInstance.value = meta.deeplFreeInstance;
+	googleAnalyticsMeasurementId.value = meta.googleAnalyticsMeasurementId ?? '';
 }
 
 function save_deepl() {
@@ -68,6 +84,14 @@ function save_deepl() {
 		deeplIsPro: deeplIsPro.value,
 		deeplFreeMode: deeplFreeMode.value,
 		deeplFreeInstance: deeplFreeInstance.value,
+	}).then(() => {
+		fetchInstance(true);
+	});
+}
+
+function save_googleAnalytics() {
+	os.apiWithDialog('admin/update-meta', {
+		googleAnalyticsMeasurementId: googleAnalyticsMeasurementId.value,
 	}).then(() => {
 		fetchInstance(true);
 	});
