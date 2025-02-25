@@ -7119,6 +7119,14 @@ export interface Locale extends ILocale {
          */
         "isExplorable": string;
         /**
+         * レインボーカラー
+         */
+        "isRainbow": string;
+        /**
+         * オンにすると、ロールがレインボーカラーになります。
+         */
+        "descriptionOfIsRainbow": string;
+        /**
          * オンにすると、「みつける」でメンバー一覧が公開されるほか、ロールのタイムラインが利用可能になります。
          */
         "descriptionOfIsExplorable": string;

@@ -737,6 +737,7 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			isPublic: values.isPublic,
 			permissionGroup: values.permissionGroup,
 			isExplorable: values.isExplorable,
+			isRainbow: values.isRainbow,
 			asBadge: values.asBadge,
 			canEditMembersByModerator: values.canEditMembersByModerator,
 			displayOrder: values.displayOrder,

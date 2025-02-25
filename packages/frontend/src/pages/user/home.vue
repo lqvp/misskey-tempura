@@ -62,7 +62,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkFoldableSection v-if="user.roles.length > 0" class="role-folder" :expanded="user.roles.length < 5">
 							<template #header>{{ i18n.ts.roles }}</template>
 							<div class="roles">
-								<span v-for="role in user.roles" :key="role.id" v-tooltip="role.description" class="role" :style="{ '--color': role.color }">
+								<span v-for="role in user.roles" :key="role.id" v-tooltip="role.description" class="role" :class="{ 'rainbow': role.isRainbow }" :style="role.isRainbow ? {} : { '--color': role.color }">
 									<MkA v-adaptive-bg :to="`/roles/${role.id}`">
 										<img v-if="role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="role.iconUrl"/>
 										{{ role.name }}
@@ -73,7 +73,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkFoldableSection v-if="user.communityRoles.length > 0" class="role-folder" :expanded="user.communityRoles.length < 5">
 							<template #header>{{ i18n.ts.community + " " + i18n.ts.roles }}</template>
 							<div class="roles">
-								<span v-for="role in user.communityRoles" :key="role.id" v-tooltip="role.description" class="role" :style="{ '--color': role.color }">
+								<span v-for="role in user.communityRoles" :key="role.id" v-tooltip="role.description" class="role" :class="{ 'rainbow': role.isRainbow }" :style="role.isRainbow ? {} : { '--color': role.color }">
 									<MkA v-adaptive-bg :to="`/roles/${role.id}`">
 										<img v-if="role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="role.iconUrl"/>
 										{{ role.name }}
@@ -598,7 +598,75 @@ onUnmounted(() => {
 							border-radius: 999px;
 							margin-right: 4px;
 							padding: 3px 8px;
+
+							&.rainbow {
+								position: relative;
+								border: none;
+
+								&::before {
+									content: '';
+									position: absolute;
+									top: 0;
+									left: 0;
+									right: 0;
+									bottom: 0;
+									border-radius: 999px;
+									background: linear-gradient(
+										to right,
+										#ff0000, /* Red */
+										#ff7f00, /* Orange */
+										#ffff00, /* Yellow */
+										#00ff00, /* Green */
+										#00ffff, /* Cyan */
+										#0000ff, /* Blue */
+										#8b00ff  /* Violet */
+									);
+									padding: 1px;
+									-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+									-webkit-mask-composite: xor;
+									mask-composite: exclude;
+									animation: rainbowSpin 5s linear infinite;
+									opacity: 0.7;
+								}
+
+								a {
+									background-image: linear-gradient(
+										to right,
+										#ff0000, /* Red */
+										#ff7f00, /* Orange */
+										#ffff00, /* Yellow */
+										#00ff00, /* Green */
+										#00ffff, /* Cyan */
+										#0000ff, /* Blue */
+										#8b00ff  /* Violet */
+									);
+									background-size: 200% auto;
+									color: transparent !important;
+									-webkit-background-clip: text;
+									background-clip: text;
+									animation: rainbowTextSpin 5s linear infinite;
+									opacity: 0.7;
+								}
+							}
 						}
+					}
+				}
+
+				@keyframes rainbowSpin {
+					0% {
+						background-position: 0% 50%;
+					}
+					100% {
+						background-position: 100% 50%;
+					}
+				}
+
+				@keyframes rainbowTextSpin {
+					0% {
+						background-position: 0% 50%;
+					}
+					100% {
+						background-position: 200% 50%;
 					}
 				}
 

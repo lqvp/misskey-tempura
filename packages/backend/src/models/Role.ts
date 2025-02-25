@@ -286,6 +286,12 @@ export class MiRole {
 	})
 	public displayOrder: number;
 
+	// trueの場合ロールを虹色にする
+	@Column('boolean', {
+		default: false,
+	})
+	public isRainbow: boolean;
+
 	@Column('jsonb', {
 		default: { },
 	})

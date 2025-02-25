@@ -2143,14 +2143,14 @@ export type paths = {
      * get-online-users-count
      * @description No description provided.
      *
-     * **Credential required**: *Yes* / **Permission**: *read:stats*
+     * **Credential required**: *No*
      */
     get: operations['get-online-users-count'];
     /**
      * get-online-users-count
      * @description No description provided.
      *
-     * **Credential required**: *Yes* / **Permission**: *read:stats*
+     * **Credential required**: *No*
      */
     post: operations['get-online-users-count'];
   };
@@ -4031,6 +4031,7 @@ export type components = {
           name: string;
           iconUrl: string | null;
           displayOrder: number;
+          isRainbow: boolean;
         })[];
     };
     UserDetailedNotMeOnly: {
@@ -5240,6 +5241,8 @@ export type components = {
       isAdministrator: boolean;
       /** @example 0 */
       displayOrder: number;
+      /** @example false */
+      isRainbow: boolean;
     };
     Role: components['schemas']['RoleLite'] & ({
       /** Format: date-time */
@@ -5253,6 +5256,8 @@ export type components = {
       isPublic: boolean;
       /** @example false */
       isExplorable: boolean;
+      /** @example false */
+      isRainbow: boolean;
       /** @example false */
       asBadge: boolean;
       /** @example false */
@@ -9752,6 +9757,8 @@ export type operations = {
           permissionGroup: 'Admin' | 'MainModerator' | 'Normal' | 'Community';
           /** @default false */
           isExplorable?: boolean;
+          /** @default false */
+          isRainbow?: boolean;
           asBadge: boolean;
           canEditMembersByModerator: boolean;
           displayOrder: number;
@@ -10027,6 +10034,7 @@ export type operations = {
           /** @enum {string} */
           permissionGroup?: 'Admin' | 'MainModerator' | 'Normal' | 'Community';
           isExplorable?: boolean;
+          isRainbow?: boolean;
           asBadge?: boolean;
           canEditMembersByModerator?: boolean;
           displayOrder?: number;
@@ -18998,7 +19006,7 @@ export type operations = {
    * get-online-users-count
    * @description No description provided.
    *
-   * **Credential required**: *Yes* / **Permission**: *read:stats*
+   * **Credential required**: *No*
    */
   'get-online-users-count': {
     responses: {

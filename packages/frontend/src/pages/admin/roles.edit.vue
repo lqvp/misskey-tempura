@@ -62,6 +62,7 @@ if (props.id) {
 		condFormula: { id: uuid(), type: 'isRemote' },
 		isPublic: false,
 		isExplorable: false,
+		isRainbow: false,
 		asBadge: false,
 		canEditMembersByModerator: false,
 		displayOrder: 0,

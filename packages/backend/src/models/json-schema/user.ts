@@ -195,6 +195,10 @@ export const packedUserLiteSchema = {
 						type: 'number',
 						nullable: false, optional: false,
 					},
+					isRainbow: {
+						type: 'boolean',
+						nullable: false, optional: false,
+					},
 				},
 			},
 		},

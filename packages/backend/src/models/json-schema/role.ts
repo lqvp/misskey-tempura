@@ -397,6 +397,11 @@ export const packedRoleLiteSchema = {
 			optional: false, nullable: false,
 			example: 0,
 		},
+		isRainbow: {
+			type: 'boolean',
+			optional: false, nullable: false,
+			example: false,
+		},
 	},
 } as const;
 
@@ -436,6 +441,11 @@ export const packedRoleSchema = {
 					example: false,
 				},
 				isExplorable: {
+					type: 'boolean',
+					optional: false, nullable: false,
+					example: false,
+				},
+				isRainbow: {
 					type: 'boolean',
 					optional: false, nullable: false,
 					example: false,

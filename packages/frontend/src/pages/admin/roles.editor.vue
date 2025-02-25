@@ -21,6 +21,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<template #label>{{ i18n.ts.color }}</template>
 	</MkColorInput>
 
+	<MkSwitch v-model="role.isRainbow" :readonly="readonly">
+		<template #label>{{ i18n.ts._role.isRainbow }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+		<template #caption>{{ i18n.ts._role.descriptionOfIsRainbow }}</template>
+	</MkSwitch>
+
 	<MkInput v-model="role.iconUrl" type="url">
 		<template #label>{{ i18n.ts._role.iconUrl }}</template>
 	</MkInput>
@@ -1072,6 +1077,7 @@ const save = throttle(100, () => {
 		permissionGroup: role.value.permissionGroup,
 		isPublic: role.value.isPublic,
 		isExplorable: role.value.isExplorable,
+		isRainbow: role.value.isRainbow,
 		asBadge: role.value.asBadge,
 		canEditMembersByModerator: role.value.canEditMembersByModerator,
 		policies: role.value.policies,

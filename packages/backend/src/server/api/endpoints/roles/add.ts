@@ -85,6 +85,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				isPublic: ps.isPublic,
 				permissionGroup: 'Community',
 				isExplorable: true,
+				isRainbow: false,
 				asBadge: ps.iconUrl != null,
 				canEditMembersByModerator: true,
 				displayOrder: 0,

@@ -514,6 +514,7 @@ export class UserEntityService implements OnModuleInit {
 					name: r.name,
 					iconUrl: r.iconUrl,
 					displayOrder: r.displayOrder,
+					isRainbow: r.isRainbow,
 				})),
 			) : undefined,
 
@@ -567,6 +568,7 @@ export class UserEntityService implements OnModuleInit {
 					isAdministrator: role.isAdministrator,
 					permissionGroup: role.permissionGroup,
 					displayOrder: role.displayOrder,
+					isRainbow: role.isRainbow,
 				}))),
 				communityRoles: this.roleService.getUserRoles(user.id).then(roles => roles.filter(role => role.permissionGroup === 'Community').sort((a, b) => b.displayOrder - a.displayOrder).map(role => ({
 					id: role.id,
@@ -574,6 +576,7 @@ export class UserEntityService implements OnModuleInit {
 					color: role.color,
 					iconUrl: role.iconUrl,
 					description: role.description,
+					isRainbow: role.isRainbow,
 				}))),
 				memo: memo,
 				moderationNote: iAmModerator ? (profile!.moderationNote ?? '') : undefined,

@@ -1837,6 +1837,8 @@ _role:
   asBadge: "バッジとして表示"
   descriptionOfAsBadge: "オンにすると、ユーザー名の横にロールのアイコンが表示されます。"
   isExplorable: "ユーザーを見つけやすくする"
+  isRainbow: "レインボーカラー"
+  descriptionOfIsRainbow: "オンにすると、ロールがレインボーカラーになります。"
   descriptionOfIsExplorable: "オンにすると、「みつける」でメンバー一覧が公開されるほか、ロールのタイムラインが利用可能になります。"
   displayOrder: "表示順"
   descriptionOfDisplayOrder: "数値が大きいほどUI上で先頭に表示されます。"
