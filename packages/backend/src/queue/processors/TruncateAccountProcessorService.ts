@@ -48,7 +48,7 @@ export class TruncateAccountProcessorService {
 		this.logger = this.queueLoggerService.logger.createSubLogger('truncate-account');
 	}
 
-  @bindThis
+	@bindThis
 	private async findCascadingNotes(noteIds: string[]): Promise<string[]> {
 		if (noteIds.length === 0) return [];
 
@@ -74,198 +74,201 @@ export class TruncateAccountProcessorService {
 		return findRelatedNotes(noteIds);
 	}
 
-  private async getNotesToKeep(userId: string): Promise<{
+	private async getNotesToKeep(userId: string): Promise<{
 		noteIds: string[];
 		keepFileIds: string[];
 		deleteTargetFileIds: string[];
-}> {
-  	// ピン留めされたノートの取得
-  	const pinings = await this.userNotePiningsRepository.findBy({ userId });
-  	const piningNoteIds = pinings.map(pining => pining.noteId);
-  	const cascadingPiningNoteIds = await this.findCascadingNotes(piningNoteIds);
+	}> {
+		// ピン留めされたノートの取得
+		const pinings = await this.userNotePiningsRepository.findBy({ userId });
+		const piningNoteIds = pinings.map(pining => pining.noteId);
+		const cascadingPiningNoteIds = await this.findCascadingNotes(piningNoteIds);
 
-  	// 非公開ノートの取得
-  	const specifiedNotes = await this.notesRepository.findBy({
-  		userId,
-  		visibility: Not(In(['public', 'home', 'followers'])),
-  	});
-  	const specifiedNoteIds = specifiedNotes.map(note => note.id);
-  	const cascadingSpecifiedNoteIds = await this.findCascadingNotes(specifiedNoteIds);
+		// 非公開ノートの取得
+		const specifiedNotes = await this.notesRepository.findBy({
+			userId,
+			visibility: Not(In(['public', 'home', 'followers'])),
+		});
+		const specifiedNoteIds = specifiedNotes.map(note => note.id);
+		const cascadingSpecifiedNoteIds = await this.findCascadingNotes(specifiedNoteIds);
 
-  	// 保持すべきノートIDの結合
-  	const notesToKeep = [
-  		...piningNoteIds,
-  		...cascadingPiningNoteIds,
-  		...specifiedNoteIds,
-  		...cascadingSpecifiedNoteIds,
-  	];
+		// 保持すべきノートIDの結合
+		const notesToKeep = [
+			...piningNoteIds,
+			...cascadingPiningNoteIds,
+			...specifiedNoteIds,
+			...cascadingSpecifiedNoteIds,
+		];
 
-  	// 削除対象のノートを取得（公開範囲が public, home, followers のノート）
-  	const deletionTargetNotes = await this.notesRepository.find({
-  		where: {
-  			userId,
-  			visibility: In(['public', 'home', 'followers']),
-  			id: Not(In(notesToKeep)),
-  		},
-  		select: ['id', 'fileIds'], // 必要なフィールドのみ取得
-  	});
+		// 削除対象のノートを取得（公開範囲が public, home, followers のノート）
+		const deletionTargetNotes = await this.notesRepository.find({
+			where: {
+				userId,
+				visibility: In(['public', 'home', 'followers']),
+				id: Not(In(notesToKeep)),
+			},
+			select: ['id', 'fileIds'], // 必要なフィールドのみ取得
+		});
 
-  	// 保持するノートのファイルIDを収集
-  	const keepFileIds = await this.collectFileIdsFromNotes(notesToKeep);
+		// 保持するノートのファイルIDを収集
+		const keepFileIds = await this.collectFileIdsFromNotes(notesToKeep);
 
-  	// 削除対象のノートからファイルIDを収集
-  	const deleteTargetFileIds = deletionTargetNotes
-  		.flatMap(note => note.fileIds ?? [])
-  		.filter(fileId => !keepFileIds.includes(fileId)); // 保持するファイルは除外
+		// 削除対象のノートからファイルIDを収集
+		const deleteTargetFileIds = deletionTargetNotes
+			.flatMap(note => note.fileIds ?? [])
+			.filter(fileId => !keepFileIds.includes(fileId)); // 保持するファイルは除外
 
-  	return {
-  		noteIds: notesToKeep,
-  		keepFileIds,
-  		deleteTargetFileIds,
-  	};
-  }
+		// ここで、保持すべきファイルIDを確認し、削除対象から除外する
+		const filesToDelete = deleteTargetFileIds.filter(fileId => !keepFileIds.includes(fileId));
 
-  private async collectFileIdsFromNotes(noteIds: string[]): Promise<string[]> {
-  	if (noteIds.length === 0) return [];
+		return {
+			noteIds: notesToKeep,
+			keepFileIds,
+			deleteTargetFileIds: filesToDelete,
+		};
+	}
 
-  	const notes = await this.notesRepository.findBy({ id: In(noteIds) });
-  	return notes.flatMap(note => note.fileIds ?? []);
-  }
+	private async collectFileIdsFromNotes(noteIds: string[]): Promise<string[]> {
+		if (noteIds.length === 0) return [];
 
-  private async deleteNotesBatch(
-  	user: MiUser,
-    	excludeNoteIds: string[],
-    	cursor: string | null = null,
-  ): Promise<{ count: number; nextCursor: string | null }> {
-    	const notes = await this.notesRepository.find({
-    		where: {
-    			userId: user.id,
-    			...(cursor ? {
-    				id: And(Not(In(excludeNoteIds)), MoreThan(cursor)),
-    			} : {
-    				id: Not(In(excludeNoteIds)),
-    			}),
-    		},
-    		take: TruncateAccountProcessorService.BATCH_SIZE,
-    		order: { id: 'ASC' },
-    	});
+		const notes = await this.notesRepository.findBy({ id: In(noteIds) });
+		return notes.flatMap(note => note.fileIds ?? []);
+	}
 
-    	if (notes.length === 0) {
-    		return { count: 0, nextCursor: null };
-    	}
+	private async deleteNotesBatch(
+		user: MiUser,
+		excludeNoteIds: string[],
+		cursor: string | null = null,
+	): Promise<{ count: number; nextCursor: string | null }> {
+		const notes = await this.notesRepository.find({
+			where: {
+				userId: user.id,
+				...(cursor ? {
+					id: And(Not(In(excludeNoteIds)), MoreThan(cursor)),
+				} : {
+					id: Not(In(excludeNoteIds)),
+				}),
+			},
+			take: TruncateAccountProcessorService.BATCH_SIZE,
+			order: { id: 'ASC' },
+		});
 
-    	await Promise.all(notes.map(note =>
-    		this.noteDeleteService.delete(user, note, false, user),
-    	));
+		if (notes.length === 0) {
+			return { count: 0, nextCursor: null };
+		}
 
-    	return {
-    		count: notes.length,
-    		nextCursor: notes.at(-1)?.id ?? null,
-    	};
-  }
+		await Promise.all(notes.map(note =>
+			this.noteDeleteService.delete(user, note, false, user),
+		));
 
-  private async deleteFiles(userId: string, deleteTargetFileIds: string[]): Promise<number> {
-  	if (deleteTargetFileIds.length === 0) return 0;
+		return {
+			count: notes.length,
+			nextCursor: notes.at(-1)?.id ?? null,
+		};
+	}
 
-  	let cursor: string | null = null;
-  	let deletedCount = 0;
+	private async deleteFiles(userId: string, deleteTargetFileIds: string[]): Promise<number> {
+		if (deleteTargetFileIds.length === 0) return 0;
 
-  	while (true) {
-  		const files = await this.driveFilesRepository.find({
-  			where: {
-  				id: In(deleteTargetFileIds),
-  				userId,
-  				...(cursor ? { id: MoreThan(cursor) } : {}),
-  			},
-  			take: TruncateAccountProcessorService.FILE_BATCH_SIZE,
-  			order: { id: 'ASC' },
-  		});
+		let cursor: string | null = null;
+		let deletedCount = 0;
 
-  		if (files.length === 0) break;
+		while (true) {
+			const files = await this.driveFilesRepository.find({
+				where: {
+					id: In(deleteTargetFileIds),
+					userId,
+					...(cursor ? { id: MoreThan(cursor) } : {}),
+				},
+				take: TruncateAccountProcessorService.FILE_BATCH_SIZE,
+				order: { id: 'ASC' },
+			});
 
-  		cursor = files.at(-1)?.id ?? null;
-  		await Promise.all(files.map(file => this.driveService.deleteFileSync(file)));
-  		deletedCount += files.length;
-  	}
+			if (files.length === 0) break;
 
-  	return deletedCount;
-  }
+			cursor = files.at(-1)?.id ?? null;
+			await Promise.all(files.map(file => this.driveService.deleteFileSync(file)));
+			deletedCount += files.length;
+		}
 
-  private formatDuration(durationMs: number): string {
-  	const seconds = Math.floor(durationMs / 1000);
-  	const minutes = Math.floor(seconds / 60);
-  	const hours = Math.floor(minutes / 60);
+		return deletedCount;
+	}
 
-  	const remainingMinutes = minutes % 60;
-  	const remainingSeconds = seconds % 60;
+	private formatDuration(durationMs: number): string {
+		const seconds = Math.floor(durationMs / 1000);
+		const minutes = Math.floor(seconds / 60);
+		const hours = Math.floor(minutes / 60);
 
-  	const parts = [];
-  	if (hours > 0) parts.push(`${hours}時間`);
-  	if (remainingMinutes > 0) parts.push(`${remainingMinutes}分`);
-  	if (remainingSeconds > 0 || parts.length === 0) parts.push(`${remainingSeconds}秒`);
+		const remainingMinutes = minutes % 60;
+		const remainingSeconds = seconds % 60;
 
-  	return parts.join('');
-  }
+		const parts = [];
+		if (hours > 0) parts.push(`${hours}時間`);
+		if (remainingMinutes > 0) parts.push(`${remainingMinutes}分`);
+		if (remainingSeconds > 0 || parts.length === 0) parts.push(`${remainingSeconds}秒`);
+
+		return parts.join('');
+	}
 
 	@bindThis
-  public async process(job: Bull.Job<DbUserTruncateJobData>): Promise<string | void> {
-  	const startTime = Date.now();
-  	const userId = job.data.user.id;
-  	this.logger.info(`Truncating account data for user ${userId}...`);
+	public async process(job: Bull.Job<DbUserTruncateJobData>): Promise<string | void> {
+		const startTime = Date.now();
+		const userId = job.data.user.id;
+		this.logger.info(`Truncating account data for user ${userId}...`);
 
-  	const user = await this.usersRepository.findOneBy({ id: userId });
-  	if (!user) {
-  		this.logger.warn(`User ${userId} not found`);
-  		return;
-  	}
+		const user = await this.usersRepository.findOneBy({ id: userId });
+		if (!user) {
+			this.logger.warn(`User ${userId} not found`);
+			return;
+		}
 
-  	const { noteIds: notesToKeep, deleteTargetFileIds: filesToKeep } = await this.getNotesToKeep(userId);
+		const { noteIds: notesToKeep, deleteTargetFileIds: filesToKeep } = await this.getNotesToKeep(userId);
 
-  	// ノートの削除
-  	let cursor: string | null = null;
-  	let totalNotesDeleted = 0;
+		// ノートの削除
+		let cursor: string | null = null;
+		let totalNotesDeleted = 0;
 
-  	while (true) {
-  		const { count, nextCursor } = await this.deleteNotesBatch(user, notesToKeep, cursor);
-  		if (count === 0) break;
+		while (true) {
+			const { count, nextCursor } = await this.deleteNotesBatch(user, notesToKeep, cursor);
+			if (count === 0) break;
 
-  		totalNotesDeleted += count;
-  		cursor = nextCursor;
+			totalNotesDeleted += count;
+			cursor = nextCursor;
 
-  		if (totalNotesDeleted % TruncateAccountProcessorService.BATCH_SIZE === 0) {
-  			this.logger.info(`Deleted ${totalNotesDeleted} notes. Pausing for rate limiting...`);
-  			await new Promise(resolve => setTimeout(resolve, TruncateAccountProcessorService.DELETION_PAUSE_MS));
-  		}
-  	}
+			if (totalNotesDeleted % TruncateAccountProcessorService.BATCH_SIZE === 0) {
+				this.logger.info(`Deleted ${totalNotesDeleted} notes. Pausing for rate limiting...`);
+				await new Promise(resolve => setTimeout(resolve, TruncateAccountProcessorService.DELETION_PAUSE_MS));
+			}
+		}
 
-  	this.logger.info(`Completed deleting ${totalNotesDeleted} notes`);
+		this.logger.info(`Completed deleting ${totalNotesDeleted} notes`);
 
-  	// ファイルの削除処理
-  	const totalFilesDeleted = await this.deleteFiles(user.id, filesToKeep);
-  	this.logger.info(`Completed deleting ${totalFilesDeleted} files`);
+		// ファイルの削除処理
+		const totalFilesDeleted = await this.deleteFiles(user.id, filesToKeep);
+		this.logger.info(`Completed deleting ${totalFilesDeleted} files`);
 
-  	const endTime = Date.now();
-  	const duration = this.formatDuration(endTime - startTime);
+		const endTime = Date.now();
+		const duration = this.formatDuration(endTime - startTime);
 
-  	// 詳細な完了通知
-  	const notificationBody = [
-  		'アカウントの整理が完了しました。',
-  		'',
-  		'処理内容:',
-  		`・${totalNotesDeleted.toLocaleString()}件のノートを削除`,
-  		`・${totalFilesDeleted.toLocaleString()}件のファイルを削除`,
-  		'',
-  		`処理時間: ${duration}`,
-  	].join('\n');
+		// 詳細な完了通知
+		const notificationBody = [
+			'アカウントの整理が完了しました。',
+			'',
+			'処理内容:',
+			`・${totalNotesDeleted.toLocaleString()}件のノートを削除`,
+			`・${totalFilesDeleted.toLocaleString()}件のファイルを削除`,
+			'',
+			`処理時間: ${duration}`,
+		].join('\n');
 
-  	await this.notificationService.createNotification(user.id, 'app', {
-  		appAccessTokenId: null,
-  		customBody: notificationBody,
-  		customHeader: '[システム通知] アカウントの整理完了',
-  		customIcon: null,
-  	});
+		await this.notificationService.createNotification(user.id, 'app', {
+			appAccessTokenId: null,
+			customBody: notificationBody,
+			customHeader: '[システム通知] アカウントの整理完了',
+			customIcon: null,
+		});
 
-  	this.logger.succ(`Successfully truncated account for user ${userId}`);
-  	return 'Account notes and drives are truncated';
-  }
+		this.logger.succ(`Successfully truncated account for user ${userId}`);
+		return 'Account notes and drives are truncated';
+	}
 }
