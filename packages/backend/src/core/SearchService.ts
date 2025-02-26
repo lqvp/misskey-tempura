@@ -217,33 +217,33 @@ export class SearchService {
 			query.andWhere('note.channelId = :channelId', { channelId: opts.channelId });
 		}
 
-		// visibilityを絞る
+		// Filter by visibility
 		if (opts.visibility && opts.visibility !== 'all') {
 			query.andWhere('note.visibility = :visibility', { visibility: opts.visibility });
 		}
 
-		// ファイルを持っているものを絞る
+		// Filter notes with files
 		if (opts.hasFiles === 'with') {
 			query.andWhere('array_length(note."fileIds", 1) > 0');
 		} else if (opts.hasFiles === 'without') {
 			query.andWhere('note."fileIds" = :fileIds', { fileIds: [] });
 		}
 
-		// hasCw
+		// Filter notes with CW
 		if (opts.hasCw === 'with') {
 			query.andWhere('note.cw IS NOT NULL AND note.cw != :emptyString', { emptyString: '' });
 		} else if (opts.hasCw === 'without') {
 			query.andWhere('(note.cw IS NULL OR note.cw = :emptyString)', { emptyString: '' });
 		}
 
-		// hasReply
+		// Filter notes with replies
 		if (opts.hasReply === 'with') {
 			query.andWhere('note."replyId" IS NOT NULL');
 		} else if (opts.hasReply === 'without') {
 			query.andWhere('note."replyId" IS NULL');
 		}
 
-		// hasPoll
+		// Filter notes with polls
 		if (opts.hasPoll === 'with') {
 			query.andWhere('note."hasPoll" = TRUE');
 		} else if (opts.hasPoll === 'without') {
