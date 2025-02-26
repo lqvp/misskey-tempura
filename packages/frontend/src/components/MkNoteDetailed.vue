@@ -286,7 +286,7 @@ import { getAppearNote } from '@/scripts/get-appear-note.js';
 
 const props = withDefaults(defineProps<{
 		note: Misskey.entities.Note;
-		initialTab: string;
+		initialTab?: string;
 	}>(), {
 	initialTab: 'replies',
 });

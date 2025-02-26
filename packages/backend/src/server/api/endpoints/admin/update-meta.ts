@@ -133,7 +133,7 @@ export const paramDef = {
 		useObjectStorage: { type: 'boolean' },
 		objectStorageBaseUrl: { type: 'string', nullable: true },
 		objectStorageBucket: { type: 'string', nullable: true },
-		objectStoragePrefix: { type: 'string', nullable: true },
+		objectStoragePrefix: { type: 'string', pattern: /^[a-zA-Z0-9-._]*$/.source, nullable: true },
 		objectStoragePrefixForRemote: { type: 'string', nullable: true },
 		objectStorageEndpoint: { type: 'string', nullable: true },
 		objectStorageRegion: { type: 'string', nullable: true },
