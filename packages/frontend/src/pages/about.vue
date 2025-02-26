@@ -10,13 +10,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkSpacer v-if="tab === 'overview'" :contentMax="600" :marginMin="20">
 			<XOverview/>
 		</MkSpacer>
-		<MkSpacer v-else-if="tab === 'emojis'" :contentMax="1000" :marginMin="20">
+		<MkSpacer v-else-if="tab === 'emojis' && $i" :contentMax="1000" :marginMin="20">
 			<XEmojis/>
 		</MkSpacer>
 		<MkSpacer v-else-if="instance.federation !== 'none' && tab === 'federation' && $i" :contentMax="1000" :marginMin="20">
 			<XFederation/>
 		</MkSpacer>
-		<MkSpacer v-else-if="tab === 'charts'" :contentMax="1000" :marginMin="20">
+		<MkSpacer v-else-if="tab === 'charts' && $i" :contentMax="1000" :marginMin="20">
 			<MkInstanceStats/>
 		</MkSpacer>
 	</MkHorizontalSwipe>
