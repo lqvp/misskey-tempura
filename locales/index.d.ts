@@ -12320,6 +12320,40 @@ export interface Locale extends ILocale {
          */
         "geminiNoteCustomText": string;
     };
+    "_noteSearch": {
+        /**
+         * 検索強化
+         */
+        "enhanceSearch": string;
+        "_type": {
+            /**
+             * ファイル付き
+             */
+            "withFiles": string;
+            /**
+             * CW(内容を隠す)
+             */
+            "cw": string;
+            /**
+             * リプライ付き
+             */
+            "reply": string;
+            /**
+             * 投票付き
+             */
+            "poll": string;
+        };
+        "_option": {
+            /**
+             * 含む
+             */
+            "with": string;
+            /**
+             * 含まない
+             */
+            "without": string;
+        };
+    };
     /**
      * すぐ消す
      */

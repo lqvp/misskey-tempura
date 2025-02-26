@@ -25287,6 +25287,26 @@ export type operations = {
            * @enum {string}
            */
           visibility?: 'all' | 'public' | 'home' | 'followers' | 'specified';
+          /**
+           * @default all
+           * @enum {string}
+           */
+          hasFiles?: 'all' | 'with' | 'without';
+          /**
+           * @default all
+           * @enum {string}
+           */
+          hasCw?: 'all' | 'with' | 'without';
+          /**
+           * @default all
+           * @enum {string}
+           */
+          hasReply?: 'all' | 'with' | 'without';
+          /**
+           * @default all
+           * @enum {string}
+           */
+          hasPoll?: 'all' | 'with' | 'without';
         };
       };
     };

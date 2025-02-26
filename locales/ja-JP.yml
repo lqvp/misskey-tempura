@@ -3297,6 +3297,17 @@ _llm:
   geminiNoteCatText: "猫っぽく"
   geminiNoteCustomText: "カスタム"
 
+_noteSearch:
+  enhanceSearch: "検索強化"
+  _type:
+    withFiles: "ファイル付き"
+    cw: "CW(内容を隠す)"
+    reply: "リプライ付き"
+    poll: "投票付き"
+  _option:
+      with: "含む"
+      without: "含まない"
+
 scheduledNoteDelete: "すぐ消す"
 noteDeletationAt: "このノートは{time}に削除されます"
 cannotScheduleLaterThanOneYear: "1年以上先の日時を指定することはできません"
