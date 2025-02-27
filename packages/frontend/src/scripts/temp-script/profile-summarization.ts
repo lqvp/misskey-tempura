@@ -31,7 +31,7 @@ export async function summarizeUserProfile(userId: string): Promise<void> {
 			withReplies: false,
 			withChannelNotes: false,
 			withFiles: false,
-			limit: 3,
+			limit: 15,
 			allowPartial: false,
 		});
 		const notesTexts: string[] = Array.isArray(notesResponse)
