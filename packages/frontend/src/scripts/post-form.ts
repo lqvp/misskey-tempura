@@ -54,8 +54,8 @@ export const bottomItemDef = {
 		title: i18n.ts.schedulePostList,
 		icon: 'ti ti-calendar-event',
 	},
-	// notesTransformation: {
-	// 	title: i18n.ts._llm.notesTransformation,
-	// 	icon: 'ti ti-notes',
-	// },
+	notesTransformation: {
+		title: i18n.ts._llm.notesTransformation,
+		icon: 'ti ti-notes',
+	},
 };
