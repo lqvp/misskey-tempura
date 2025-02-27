@@ -1183,7 +1183,7 @@ onMounted(() => {
 			text.value = init.text ? init.text : '';
 			useCw.value = init.cw != null;
 			cw.value = init.cw ?? null;
-			visibility.value = init.visibility;
+			visibility.value = init.dontShowOnLtl === true ? 'public_non_ltl' : init.visibility;
 			localOnly.value = init.localOnly ?? false;
 			files.value = init.files ?? [];
 			if (init.poll) {
