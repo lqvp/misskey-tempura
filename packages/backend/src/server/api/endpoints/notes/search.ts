@@ -53,6 +53,26 @@ export const paramDef = {
 			enum: ['all', 'public', 'home', 'followers', 'specified'],
 			default: 'all',
 		},
+		hasFiles: {
+			type: 'string',
+			enum: ['all', 'with', 'without'],
+			default: 'all',
+		},
+		hasCw: {
+			type: 'string',
+			enum: ['all', 'with', 'without'],
+			default: 'all',
+		},
+		hasReply: {
+			type: 'string',
+			enum: ['all', 'with', 'without'],
+			default: 'all',
+		},
+		hasPoll: {
+			type: 'string',
+			enum: ['all', 'with', 'without'],
+			default: 'all',
+		},
 	},
 	required: ['query'],
 } as const;
@@ -77,6 +97,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				channelId: ps.channelId,
 				host: ps.host,
 				visibility: ps.visibility,
+				hasFiles: ps.hasFiles,
+				hasCw: ps.hasCw,
+				hasReply: ps.hasReply,
+				hasPoll: ps.hasPoll,
 			}, {
 				untilId: ps.untilId,
 				sinceId: ps.sinceId,

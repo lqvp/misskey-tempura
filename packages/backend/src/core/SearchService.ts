@@ -39,6 +39,10 @@ export type SearchOpts = {
 	channelId?: MiNote['channelId'] | null;
 	host?: string | null;
 	visibility?: MiNote['visibility'] | 'all';
+	hasFiles?: 'all' | 'with' | 'without';
+	hasCw?: 'all' | 'with' | 'without';
+	hasReply?: 'all' | 'with' | 'without';
+	hasPoll?: 'all' | 'with' | 'without';
 };
 
 export type SearchPagination = {
@@ -213,8 +217,37 @@ export class SearchService {
 			query.andWhere('note.channelId = :channelId', { channelId: opts.channelId });
 		}
 
+		// Filter by visibility
 		if (opts.visibility && opts.visibility !== 'all') {
 			query.andWhere('note.visibility = :visibility', { visibility: opts.visibility });
+		}
+
+		// Filter notes with files
+		if (opts.hasFiles === 'with') {
+			query.andWhere('array_length(note."fileIds", 1) > 0');
+		} else if (opts.hasFiles === 'without') {
+			query.andWhere('note."fileIds" = :fileIds', { fileIds: [] });
+		}
+
+		// Filter notes with CW
+		if (opts.hasCw === 'with') {
+			query.andWhere('note.cw IS NOT NULL AND note.cw != :emptyString', { emptyString: '' });
+		} else if (opts.hasCw === 'without') {
+			query.andWhere('(note.cw IS NULL OR note.cw = :emptyString)', { emptyString: '' });
+		}
+
+		// Filter notes with replies
+		if (opts.hasReply === 'with') {
+			query.andWhere('note."replyId" IS NOT NULL');
+		} else if (opts.hasReply === 'without') {
+			query.andWhere('note."replyId" IS NULL');
+		}
+
+		// Filter notes with polls
+		if (opts.hasPoll === 'with') {
+			query.andWhere('note."hasPoll" = TRUE');
+		} else if (opts.hasPoll === 'without') {
+			query.andWhere('note."hasPoll" = FALSE');
 		}
 
 		query
@@ -282,7 +315,6 @@ export class SearchService {
 				filter.qs.push({ op: '=', k: 'userHost', v: opts.host });
 			}
 		}
-
 		const res = await this.meilisearchNoteIndex.search(q, {
 			sort: ['createdAt:desc'],
 			matchingStrategy: 'all',
