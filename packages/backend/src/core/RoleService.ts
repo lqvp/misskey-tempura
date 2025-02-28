@@ -78,6 +78,7 @@ export type RolePolicies = {
 	canUseTruncate: boolean;
 	canUseMakePrivate: boolean;
 	canUpdateCounters: boolean;
+	canUseServerLlmApi: boolean;
 };
 
 export const DEFAULT_POLICIES: RolePolicies = {
@@ -127,6 +128,7 @@ export const DEFAULT_POLICIES: RolePolicies = {
 	canUseTruncate: false,
 	canUseMakePrivate: false,
 	canUpdateCounters: false,
+	canUseServerLlmApi: false,
 };
 
 @Injectable()
@@ -504,6 +506,7 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			canUseTruncate: calc('canUseTruncate', vs => vs.some(v => v === true)),
 			canUseMakePrivate: calc('canUseMakePrivate', vs => vs.some(v => v === true)),
 			canUpdateCounters: calc('canUpdateCounters', vs => vs.some(v => v === true)),
+			canUseServerLlmApi: calc('canUseServerLlmApi', vs => vs.some(v => v === true)),
 		};
 	}
 

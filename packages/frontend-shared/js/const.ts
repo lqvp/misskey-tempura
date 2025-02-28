@@ -132,6 +132,7 @@ export const ROLE_POLICIES = [
 	'canUseTruncate',
 	'canUseMakePrivate',
 	'canUpdateCounters',
+	'canUseServerLlmApi',
 ] as const;
 
 // なんか動かない

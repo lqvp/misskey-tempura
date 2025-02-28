@@ -7353,6 +7353,10 @@ export interface Locale extends ILocale {
              * カウンターの更新を許可
              */
             "canUpdateCounters": string;
+            /**
+             * サーバーLLM APIの利用
+             */
+            "canUseServerLlmApi": string;
         };
         "_condition": {
             /**
@@ -10604,6 +10608,10 @@ export interface Locale extends ILocale {
          * ユーザートークンを再生成
          */
         "regenerateUserToken": string;
+        /**
+         * 全てのノートを削除
+         */
+        "dropAllNotes": string;
     };
     "_fileViewer": {
         /**

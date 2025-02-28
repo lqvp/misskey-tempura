@@ -2977,6 +2977,15 @@ export type paths = {
      */
     post: operations['notes___hybrid-timeline'];
   };
+  '/notes/llm': {
+    /**
+     * notes/llm
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *write:notes*
+     */
+    post: operations['notes___llm'];
+  };
   '/notes/local-timeline': {
     /**
      * notes/local-timeline
@@ -5318,6 +5327,7 @@ export type components = {
       canUseTruncate: boolean;
       canUseMakePrivate: boolean;
       canUpdateCounters: boolean;
+      canUseServerLlmApi: boolean;
     };
     ReversiGameLite: {
       /** Format: id */
@@ -24212,6 +24222,58 @@ export type operations = {
         content: {
           'application/json': components['schemas']['Note'][];
         };
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * notes/llm
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *write:notes*
+   */
+  notes___llm: {
+    requestBody: {
+      content: {
+        'application/json': {
+          text?: string;
+          prompt?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
       };
       /** @description Client error */
       400: {

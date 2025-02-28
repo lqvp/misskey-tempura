@@ -1897,6 +1897,7 @@ _role:
     canUseTruncate: "アカウント整理機能の許可"
     canUseMakePrivate: "非公開化機能の許可"
     canUpdateCounters: "カウンターの更新を許可"
+    canUseServerLlmApi: "サーバーLLM APIの利用"
 
   _condition:
     roleAssignedTo: "マニュアルロールにアサイン済み"
