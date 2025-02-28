@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					'resetPassword',
 					'suspendRemoteInstance',
 					'quarantineRemoteInstance',
-				, 'regenerateUserToken', 'updateUserName', 'unsetUserAvatar', 'unsetUserBanner', 'unsetUserMutualLink', 'notificationSend'].includes(log.type),
+				, 'regenerateUserToken', 'updateUserName', 'unsetUserAvatar', 'unsetUserBanner', 'unsetUserMutualLink', 'notificationSend', 'dropAllNotes'].includes(log.type),
 				[$style.logRed]: [
 					'suspend',
 					'approve',
@@ -93,6 +93,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<span v-else-if="log.type === 'deleteGalleryPost'">: @{{ log.info.postUserUsername }}</span>
 		<span v-else-if="log.type === 'quarantineRemoteInstance'">: {{ log.info.host }}</span>
 		<span v-else-if="log.type === 'unquarantineRemoteInstance'">: {{ log.info.host }}</span>
+		<span v-else-if="log.type === 'dropAllNotes'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
 	</template>
 	<template #icon>
 		<MkAvatar :user="log.user" :class="$style.avatar"/>

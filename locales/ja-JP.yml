@@ -2803,6 +2803,7 @@ _moderationLogTypes:
   clearQueue: "キューをクリア"
   promoteQueue: "キューをプロモート"
   regenerateUserToken: "ユーザートークンを再生成"
+  dropAllNotes: "全てのノートを削除"
 
 _fileViewer:
   title: "ファイルの詳細"
@@ -3412,3 +3413,4 @@ copySearchUrl: "検索URLをコピー"
 failedToCopy: "コピーに失敗しました"
 
 dropAllNotes: "全てのノートを削除"
+dropAllNotesConfirm: "すべてのノートを削除しますか？"

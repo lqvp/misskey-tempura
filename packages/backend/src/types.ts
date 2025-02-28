@@ -147,6 +147,7 @@ export const moderationLogTypes = [
 	'deleteGalleryPost',
 	'quarantineRemoteInstance',
 	'unquarantineRemoteInstance',
+	'dropAllNotes',
 ] as const;
 
 export type ModerationLogPayloads = {
@@ -454,6 +455,11 @@ export type ModerationLogPayloads = {
 	unquarantineRemoteInstance: {
 		id: string;
 		host: string;
+	};
+	dropAllNotes: {
+		userId: string;
+		userUsername: string;
+		userHost: string | null;
 	};
 };
 

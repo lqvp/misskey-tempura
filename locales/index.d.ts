@@ -12656,6 +12656,10 @@ export interface Locale extends ILocale {
      * 全てのノートを削除
      */
     "dropAllNotes": string;
+    /**
+     * すべてのノートを削除しますか？
+     */
+    "dropAllNotesConfirm": string;
 }
 declare const locales: {
     [lang: string]: Locale;
