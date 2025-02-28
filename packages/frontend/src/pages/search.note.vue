@@ -430,7 +430,6 @@ async function search() {
 	}
 	//#endregion
 
-
 	if (searchParams.value) {
 		if (searchParams.value.query) {
 			params.query = searchParams.value.query;
@@ -441,8 +440,7 @@ async function search() {
 		if (searchParams.value.userId) {
 			params.userId = searchParams.value.userId;
 		}
-	}
-	else if (allowEmptySearch) {
+	} else if (allowEmptySearch) {
 		params.userId = user.value.id;
 
 		if (user.value.host) {
