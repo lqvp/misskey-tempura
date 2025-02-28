@@ -35,28 +35,31 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div>{{ i18n.ts.nothing }}</div>
 		</div>
 		<div v-else>
-			<Sortable
-				v-if="editMode"
-				v-model="widgetProps.widgets"
-				itemKey="id"
-				handle=".handle"
-				:animation="150"
-				class="sortable-list"
-				@update:modelValue="save"
-			>
-				<template #item="{ element, index }">
-					<div class="sortable-item" style="display:flex; align-items:center; padding: 8px; border-bottom: 1px solid #ccc;">
-						<span class="handle" style="cursor:grab; margin-right:8px;">&#x2630;</span>
-						<span style="flex:1;">{{ i18n.ts._widgets[element.name] }}</span>
-						<button class="_button" @click.stop="removeWidget(index)">
-							<i class="ti ti-trash"></i>
-						</button>
-					</div>
-				</template>
-			</Sortable>
-			<button v-if="editMode" class="_textButton" @click="toggleEditMode">
-				<i class="ti ti-check"></i> {{ i18n.ts.close }}
-			</button>
+			<div v-if="editMode" :class="$style.editModeContainer">
+				<Sortable
+					v-model="widgetProps.widgets"
+					itemKey="id"
+					handle=".handle"
+					:animation="150"
+					:class="$style.sortableList"
+					@update:modelValue="save"
+				>
+					<template #item="{ element, index }">
+						<div :class="$style.sortableItem">
+							<span :class="[$style.itemHandle, 'handle']">
+								<i class="ti ti-grip-vertical"></i>
+							</span>
+							<span :class="$style.itemTitle">{{ i18n.ts._widgets[element.name] }}</span>
+							<button :class="[$style.actionButton, $style.deleteButton]" @click.stop="removeWidget(index)">
+								<i class="ti ti-trash"></i>
+							</button>
+						</div>
+					</template>
+				</Sortable>
+				<button :class="$style.doneButton" @click="toggleEditMode">
+					<i class="ti ti-check"></i> {{ i18n.ts.close }}
+				</button>
+			</div>
 			<div v-else :class="$style.wrapper">
 				<component
 					:is="`widget-${currentWidget.name}`"
@@ -210,49 +213,122 @@ defineExpose<WidgetComponentExpose>({
 	position: relative;
 	height: 100%;
 }
+
 .wrapper {
 	position: relative;
 	height: 100%;
 	overflow: hidden;
 }
+
 .intro {
 	padding: 16px;
 	text-align: center;
 	color: var(--MI_THEME-fg);
 }
 
-.sortable-list {
-	max-height: 100%;
-	overflow-y: auto;
-	padding: 4px;
-	border: 1px solid var(--MI_THEME-divider, #ccc);
-	border-radius: 4px;
-	background: var(--MI_THEME-bg, #f9f9f9);
-}
-
-.sortable-item {
-	background: var(--MI_THEME-bg, #fff);
-	margin-bottom: 4px;
-	display: flex;
-	align-items: center;
-	padding: 8px;
-	border: 1px solid var(--MI_THEME-divider, #ddd);
-	border-radius: 4px;
-	transition: background 0.3s, box-shadow 0.3s;
-
-	&:hover {
-		background: var(--MI_THEME-bg, #f1f1f1);
-		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-	}
-
-	.handle {
-		cursor: grab;
-		margin-right: 8px;
-	}
-}
-
 .ghostImage {
     max-width: 100%;
     max-height: 100px;
+}
+
+.editModeContainer {
+	background: var(--MI_THEME-panel);
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+	margin-bottom: 12px;
+}
+
+.sortableList {
+	max-height: calc(100% - 40px);
+	overflow-y: auto;
+	background: var(--MI_THEME-bg);
+}
+
+.sortableItem {
+	background: var(--MI_THEME-panel);
+	margin: 8px;
+	display: flex;
+	align-items: center;
+	padding: 10px 12px;
+	border-radius: 6px;
+	transition: all 0.2s ease;
+	border: 1px solid var(--MI_THEME-divider);
+
+	&:hover {
+		background: var(--MI_THEME-buttonHover);
+		transform: translateY(-1px);
+		box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+	}
+
+	&:active {
+		transform: translateY(0);
+	}
+}
+
+.itemHandle {
+	cursor: grab;
+	margin-right: 12px;
+	padding: 4px;
+	border-radius: 4px;
+	color: var(--MI_THEME-accent);
+
+	&:hover {
+		background: var(--MI_THEME-buttonHover);
+	}
+}
+
+.itemTitle {
+	flex: 1;
+	font-size: 0.95em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.actionButton {
+	padding: 6px;
+	margin-left: 4px;
+	border-radius: 4px;
+	color: var(--MI_THEME-fg);
+	background: transparent;
+	transition: all 0.2s ease;
+
+	&:hover {
+		background: var(--MI_THEME-buttonHover);
+		color: var(--MI_THEME-accent);
+	}
+
+	&.deleteButton:hover {
+		background: var(--MI_THEME-bg);
+		color: var(--MI_THEME-error);
+	}
+}
+
+.doneButton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-top: 12px;
+	padding: 8px 16px;
+	border-radius: 6px;
+	background: var(--MI_THEME-accent);
+	color: var(--MI_THEME-fgOnAccent);
+	font-weight: bold;
+	transition: all 0.2s ease;
+	width: 100%;
+
+	&:hover {
+		opacity: 0.9;
+		transform: translateY(-1px);
+	}
+
+	&:active {
+		transform: translateY(0);
+	}
+
+	i {
+		margin-right: 6px;
+	}
 }
 </style>
