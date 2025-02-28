@@ -161,10 +161,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { computed, ref, shallowRef, toRef } from 'vue';
+import { host as localHost } from '@@/js/config.js';
 import type * as Misskey from 'misskey-js';
 import type { Paging } from '@/components/MkPagination.vue';
 import { $i } from '@/account.js';
-import { host as localHost } from '@@/js/config.js';
 import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
 import * as os from '@/os.js';
@@ -368,6 +368,14 @@ async function search() {
 	const allowEmptySearch = user.value !== null && visibilitySelect.value !== 'all';
 	if (searchParams.value == null && !allowEmptySearch) return;
 
+	const params = {
+		visibility: visibilitySelect.value,
+		hasFiles: hasFiles.value,
+		hasCw: hasCw.value,
+		hasReply: hasReply.value,
+		hasPoll: hasPoll.value,
+	};
+
 	//#region AP lookup
 	if (searchParams.value) {
 		if (searchParams.value.query) {
@@ -422,17 +430,30 @@ async function search() {
 	}
 	//#endregion
 
+
+	if (searchParams.value) {
+		if (searchParams.value.query) {
+			params.query = searchParams.value.query;
+		}
+		if (searchParams.value.host) {
+			params.host = searchParams.value.host;
+		}
+		if (searchParams.value.userId) {
+			params.userId = searchParams.value.userId;
+		}
+	}
+	else if (allowEmptySearch) {
+		params.userId = user.value.id;
+
+		if (user.value.host) {
+			params.host = fixHostIfLocal(user.value.host);
+		}
+	}
+
 	notePagination.value = {
 		endpoint: 'notes/search',
 		limit: 10,
-		params: {
-			...searchParams.value,
-			visibility: visibilitySelect.value,
-			hasFiles: hasFiles.value,
-			hasCw: hasCw.value,
-			hasReply: hasReply.value,
-			hasPoll: hasPoll.value,
-		},
+		params: params,
 	};
 
 	key.value++;
