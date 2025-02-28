@@ -9120,6 +9120,10 @@ export interface Locale extends ILocale {
          * ネストウィジェット
          */
         "nestedWidget": string;
+        /**
+         * 強震モニタ
+         */
+        "earthQuake": string;
     };
     "_cw": {
         /**

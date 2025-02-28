@@ -2393,6 +2393,7 @@ _widgets:
   listenBrainz: "ListenBrainz"
   weather: "天気予報"
   nestedWidget: "ネストウィジェット"
+  earthQuake: "強震モニタ"
 
 _cw:
   hide: "隠す"
