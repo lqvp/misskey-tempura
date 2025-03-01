@@ -376,10 +376,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</MkSwitch>
 						</MkFolder>
 
-					<MkFolder v-if="matchQuery([i18n.ts._role._options.canUseServerLlmApi, 'canUseServerLlmApi'])">
-						<template #label>{{ i18n.ts._role._options.canUseServerLlmApi }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-						<template #suffix>{{ policies.canUseServerLlmApi ? i18n.ts.yes : i18n.ts.no }}</template>
-						<MkSwitch v-model="policies.canUseServerLlmApi">
+					<MkFolder v-if="matchQuery([i18n.ts._role._options.canUseGeminiLLMAPI, 'canUseGeminiLLMAPI'])">
+						<template #label>{{ i18n.ts._role._options.canUseGeminiLLMAPI }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+						<template #suffix>{{ policies.canUseGeminiLLMAPI ? i18n.ts.yes : i18n.ts.no }}</template>
+						<MkSwitch v-model="policies.canUseGeminiLLMAPI">
 							<template #label>{{ i18n.ts.enable }}</template>
 						</MkSwitch>
 					</MkFolder>

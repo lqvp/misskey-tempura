@@ -9,12 +9,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<template #label>{{ i18n.ts._llm.title }}</template>
 
 	<div class="_gaps_m">
-		<MkInput v-model="geminiToken" type="text">
+		<MkSwitch v-if="$i?.policies.canUseGeminiLLMAPI" v-model="useGeminiLLMAPI">
+			{{ i18n.ts._llm.useGeminiLLMAPI }}
+			<template #caption>{{ i18n.ts._llm.useGeminiLLMAPIDescription }}</template>
+		</MkSwitch>
+
+		<MkInput v-model="geminiToken" type="text" :disabled="useGeminiLLMAPI">
 			<template #label>{{ i18n.ts._llm.geminiTokenLabel }}</template>
 			<template #caption>{{ i18n.ts._llm.geminiTokenCaption }}</template>
 		</MkInput>
 
-		<MkSelect v-model="geminiModels">
+		<MkSelect v-model="geminiModels" :disabled="useGeminiLLMAPI">
 			<template #label>{{ i18n.ts._llm.geminiModelLabel }}</template>
 			<option value="gemini-2.0-flash">gemini-2.0-flash</option>
 			<option value="gemini-1.5-flash">gemini-1.5-flash</option>
@@ -84,12 +89,15 @@ import { computed } from 'vue';
 import * as Misskey from 'misskey-js';
 import MkInput from '@/components/MkInput.vue';
 import MkSelect from '@/components/MkSelect.vue';
+import MkSwitch from '@/components/MkSwitch.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkButton from '@/components/MkButton.vue';
 import { defaultStore } from '@/store.js';
 import { reloadAsk } from '@/scripts/reload-ask.js';
+import { $i } from '@/account.js';
 import { i18n } from '@/i18n.js';
 
+const useGeminiLLMAPI = computed(defaultStore.makeGetterSetter('useGeminiLLMAPI'));
 const geminiToken = computed(defaultStore.makeGetterSetter('geminiToken'));
 const geminiModels = computed(defaultStore.makeGetterSetter('geminiModels'));
 const geminiSystemPrompt = computed(defaultStore.makeGetterSetter('geminiSystemPrompt'));

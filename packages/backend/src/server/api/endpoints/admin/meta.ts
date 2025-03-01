@@ -715,6 +715,14 @@ export const meta = {
 				type: 'number',
 				optional: false, nullable: false,
 			},
+			serverGeminiApiKey: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
+			serverGeminiModels: {
+				type: 'string',
+				optional: false, nullable: false,
+			},
 		},
 	},
 } as const;
@@ -902,6 +910,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				entranceMarginRight: instance.entranceMarginRight,
 				entranceMarginTop: instance.entranceMarginTop,
 				entranceMarginBottom: instance.entranceMarginBottom,
+				serverGeminiApiKey: instance.serverGeminiApiKey,
+				serverGeminiModels: instance.serverGeminiModels,
 			};
 		});
 	}

@@ -2977,14 +2977,14 @@ export type paths = {
      */
     post: operations['notes___hybrid-timeline'];
   };
-  '/notes/llm': {
+  '/notes/llm-gen': {
     /**
-     * notes/llm
+     * notes/llm-gen
      * @description No description provided.
      *
      * **Credential required**: *Yes* / **Permission**: *write:notes*
      */
-    post: operations['notes___llm'];
+    post: operations['notes___llm-gen'];
   };
   '/notes/local-timeline': {
     /**
@@ -5327,7 +5327,7 @@ export type components = {
       canUseTruncate: boolean;
       canUseMakePrivate: boolean;
       canUpdateCounters: boolean;
-      canUseServerLlmApi: boolean;
+      canUseGeminiLLMAPI: boolean;
     };
     ReversiGameLite: {
       /** Format: id */
@@ -9033,6 +9033,8 @@ export type operations = {
             entranceMarginRight: number;
             entranceMarginTop: number;
             entranceMarginBottom: number;
+            serverGeminiApiKey: string | null;
+            serverGeminiModels: string;
           };
         };
       };
@@ -11668,6 +11670,8 @@ export type operations = {
           entranceMarginRight?: number;
           entranceMarginTop?: number;
           entranceMarginBottom?: number;
+          serverGeminiApiKey?: string | null;
+          serverGeminiModels?: string;
         };
       };
     };
@@ -24256,17 +24260,17 @@ export type operations = {
     };
   };
   /**
-   * notes/llm
+   * notes/llm-gen
    * @description No description provided.
    *
    * **Credential required**: *Yes* / **Permission**: *write:notes*
    */
-  notes___llm: {
+  'notes___llm-gen': {
     requestBody: {
       content: {
         'application/json': {
-          text?: string;
-          prompt?: string;
+          text: string;
+          prompt: string;
         };
       };
     };
@@ -24295,6 +24299,12 @@ export type operations = {
       };
       /** @description I'm Ai */
       418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Too many requests */
+      429: {
         content: {
           'application/json': components['schemas']['Error'];
         };

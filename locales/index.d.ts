@@ -7356,7 +7356,7 @@ export interface Locale extends ILocale {
             /**
              * サーバーLLM APIの利用
              */
-            "canUseServerLlmApi": string;
+            "canUseGeminiLLMAPI": string;
         };
         "_condition": {
             /**
@@ -12269,10 +12269,32 @@ export interface Locale extends ILocale {
         "warningText": string;
     };
     "_llm": {
+        "_server": {
+            /**
+             * Gemini APIキー
+             */
+            "serverGeminiApiKey": string;
+            /**
+             * サーバーが提供するGemini APIのAPIキーを入力します。
+             */
+            "serverGeminiApiKeyDescription": string;
+            /**
+             * サーバーで提供するGemini APIで使用するモデルを選択します。
+             */
+            "serverGeminiModelsDescription": string;
+        };
         /**
          * LLM設定
          */
         "title": string;
+        /**
+         * サーバーのLLM APIを使用
+         */
+        "useGeminiLLMAPI": string;
+        /**
+         * サーバーが提供するGemini APIを使用して、LLMを実行します。
+         */
+        "useGeminiLLMAPIDescription": string;
         /**
          * Geminiトークン
          */

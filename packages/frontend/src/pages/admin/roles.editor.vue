@@ -996,21 +996,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</div>
 			</MkFolder>
 
-			<MkFolder v-if="matchQuery([i18n.ts._role._options.canUseServerLlmApi, 'canUseServerLlmApi'])">
-				<template #label>{{ i18n.ts._role._options.canUseServerLlmApi }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+			<MkFolder v-if="matchQuery([i18n.ts._role._options.canUseGeminiLLMAPI, 'canUseGeminiLLMAPI'])">
+				<template #label>{{ i18n.ts._role._options.canUseGeminiLLMAPI }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 				<template #suffix>
-					<span v-if="role.policies.canUseServerLlmApi.useDefault" :class="$style.useDefaultLabel">{{ i18n.ts._role.useBaseValue }}</span>
-					<span v-else>{{ role.policies.canUseServerLlmApi.value ? i18n.ts.yes : i18n.ts.no }}</span>
-					<span :class="$style.priorityIndicator"><i :class="getPriorityIcon(role.policies.canUseServerLlmApi)"></i></span>
+					<span v-if="role.policies.canUseGeminiLLMAPI.useDefault" :class="$style.useDefaultLabel">{{ i18n.ts._role.useBaseValue }}</span>
+					<span v-else>{{ role.policies.canUseGeminiLLMAPI.value ? i18n.ts.yes : i18n.ts.no }}</span>
+					<span :class="$style.priorityIndicator"><i :class="getPriorityIcon(role.policies.canUseGeminiLLMAPI)"></i></span>
 				</template>
 				<div class="_gaps">
-					<MkSwitch v-model="role.policies.canUseServerLlmApi.useDefault" :readonly="readonly">
+					<MkSwitch v-model="role.policies.canUseGeminiLLMAPI.useDefault" :readonly="readonly">
 						<template #label>{{ i18n.ts._role.useBaseValue }}</template>
 					</MkSwitch>
-					<MkSwitch v-model="role.policies.canUseServerLlmApi.value" :disabled="role.policies.canUseServerLlmApi.useDefault" :readonly="readonly">
+					<MkSwitch v-model="role.policies.canUseGeminiLLMAPI.value" :disabled="role.policies.canUseGeminiLLMAPI.useDefault" :readonly="readonly">
 						<template #label>{{ i18n.ts.enable }}</template>
 					</MkSwitch>
-					<MkRange v-model="role.policies.canUseServerLlmApi.priority" :min="0" :max="2" :step="1" easing :textConverter="(v) => v === 0 ? i18n.ts._role._priority.low : v === 1 ? i18n.ts._role._priority.middle : v === 2 ? i18n.ts._role._priority.high : ''">
+					<MkRange v-model="role.policies.canUseGeminiLLMAPI.priority" :min="0" :max="2" :step="1" easing :textConverter="(v) => v === 0 ? i18n.ts._role._priority.low : v === 1 ? i18n.ts._role._priority.middle : v === 2 ? i18n.ts._role._priority.high : ''">
 						<template #label>{{ i18n.ts._role.priority }}</template>
 					</MkRange>
 				</div>

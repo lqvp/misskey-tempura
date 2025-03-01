@@ -55,6 +55,23 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkButton primary @click="save_customSplashText">{{ i18n.ts.save }}</MkButton>
 					</div>
 
+					<div class="_gaps">
+						<MkInput v-model="serverGeminiApiKey" type="text">
+							<template #label>{{ i18n.ts._llm._server.serverGeminiApiKey }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+							<template #caption>{{ i18n.ts._llm._server.serverGeminiApiKeyDescription }}</template>
+						</MkInput>
+
+						<MkSelect v-model="serverGeminiModels">
+							<template #label>{{ i18n.ts._llm.geminiModelLabel }}</template>
+							<template #caption>{{ i18n.ts._llm._server.serverGeminiModels }}</template>
+							<option value="gemini-2.0-flash">gemini-2.0-flash</option>
+							<option value="gemini-1.5-flash">gemini-1.5-flash</option>
+							<option value="gemini-1.5-pro">gemini-1.5-pro</option>
+							<option value="gemini-2.0-pro-exp-02-05">gemini-2.0-pro-exp-02-05</option>
+						</MkSelect>
+						<MkButton primary @click="save_serverGemini">{{ i18n.ts.save }}</MkButton>
+					</div>
+
 					<MkFolder>
 						<template #icon><i class="ti ti-mail"></i></template>
 						<template #label>Email Domain Settings<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
@@ -190,12 +207,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 						<div class="_gaps_m">
 							<MkSwitch v-model="entranceSettingsForm.state.entranceShowTimeLine">
-								<template #label>{{ i18n.ts._entrance.showTimeLine}}</template>
+								<template #label>{{ i18n.ts._entrance.showTimeLine }}</template>
 								<template #caption>{{ i18n.ts._entrance.showTimeLineDescription }}</template>
 							</MkSwitch>
 
 							<MkSwitch v-model="entranceSettingsForm.state.entranceShowFeatured">
-								<template #label>{{ i18n.ts._entrance.showFeatured}}</template>
+								<template #label>{{ i18n.ts._entrance.showFeatured }}</template>
 								<template #caption>{{ i18n.ts._entrance.showFeaturedDescription }}</template>
 							</MkSwitch>
 
@@ -327,6 +344,7 @@ import { fetchInstance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
 import { definePageMetadata } from '@/scripts/page-metadata.js';
 import MkButton from '@/components/MkButton.vue';
+import MkSelect from '@/components/MkSelect.vue';
 import FormLink from '@/components/form/link.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import { useForm } from '@/scripts/use-form.js';
@@ -365,6 +383,8 @@ const entranceMarginLeft = ref<number>();
 const entranceMarginRight = ref<number>();
 const entranceMarginTop = ref<number>();
 const entranceMarginBottom = ref<number>();
+const serverGeminiApiKey = ref<string>('');
+const serverGeminiModels = ref<string>('gemini-2.0-flash');
 
 const originalMinimumUsernameLength = ref<number>();
 const validateMinimumUsernameLengthChanged = computed(() =>
@@ -415,6 +435,8 @@ async function init() {
 	entranceMarginRight.value = meta.entranceMarginRight;
 	entranceMarginTop.value = meta.entranceMarginTop;
 	entranceMarginBottom.value = meta.entranceMarginBottom;
+	serverGeminiApiKey.value = meta.serverGeminiApiKey;
+	serverGeminiModels.value = meta.serverGeminiModels;
 }
 
 function addBackgroundImage() {
@@ -608,6 +630,15 @@ function save_defaultUsers() {
 function save_customSplashText() {
 	os.apiWithDialog('admin/update-meta', {
 		customSplashText: customSplashText.value.split('\n'),
+	}).then(() => {
+		fetchInstance(true);
+	});
+}
+
+function save_serverGemini() {
+	os.apiWithDialog('admin/update-meta', {
+		serverGeminiApiKey: serverGeminiApiKey.value,
+		serverGeminiModels: serverGeminiModels.value,
 	}).then(() => {
 		fetchInstance(true);
 	});

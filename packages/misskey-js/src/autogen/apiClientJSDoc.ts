@@ -3440,7 +3440,7 @@ declare module '../api.js' {
      * 
      * **Credential required**: *Yes* / **Permission**: *write:notes*
      */
-    request<E extends 'notes/llm', P extends Endpoints[E]['req']>(
+    request<E extends 'notes/llm-gen', P extends Endpoints[E]['req']>(
       endpoint: E,
       params: P,
       credential?: string | null,

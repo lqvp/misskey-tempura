@@ -352,7 +352,7 @@ export const packedRolePoliciesSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
-		canUseServerLlmApi: {
+		canUseGeminiLLMAPI: {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},

@@ -457,7 +457,7 @@ import type {
 	NotesGlobalTimelineResponse,
 	NotesHybridTimelineRequest,
 	NotesHybridTimelineResponse,
-	NotesLlmRequest,
+	NotesLlmGenRequest,
 	NotesLocalTimelineRequest,
 	NotesLocalTimelineResponse,
 	NotesMakePrivateRequest,
@@ -925,7 +925,7 @@ export type Endpoints = {
 	'notes/featured': { req: NotesFeaturedRequest; res: NotesFeaturedResponse };
 	'notes/global-timeline': { req: NotesGlobalTimelineRequest; res: NotesGlobalTimelineResponse };
 	'notes/hybrid-timeline': { req: NotesHybridTimelineRequest; res: NotesHybridTimelineResponse };
-	'notes/llm': { req: NotesLlmRequest; res: EmptyResponse };
+	'notes/llm-gen': { req: NotesLlmGenRequest; res: EmptyResponse };
 	'notes/local-timeline': { req: NotesLocalTimelineRequest; res: NotesLocalTimelineResponse };
 	'notes/make-private': { req: NotesMakePrivateRequest; res: EmptyResponse };
 	'notes/make-private-many': { req: NotesMakePrivateManyRequest; res: EmptyResponse };
