@@ -926,5 +926,5 @@ export class MiMeta {
 		default: 'gemini-2.0-flash',
 		nullable: true,
 	})
-	public serverGeminiModels: string | null;
+	public serverGeminiModels: string;
 }

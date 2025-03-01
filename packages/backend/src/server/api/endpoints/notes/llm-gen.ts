@@ -9,7 +9,6 @@ import type { MiMeta } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { DI } from '@/di-symbols.js';
-import type { Config } from '@/config/index.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -113,7 +112,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 			} catch (error) {
 				// エラーの詳細を記録
 				console.error('LLM API error:', error);
-				throw new ApiError(meta.errors.llmApiError, error.message || 'Unknown error occurred');
+				const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+				throw new ApiError(meta.errors.llmApiError, errorMessage);
 			}
 		});
 	}
