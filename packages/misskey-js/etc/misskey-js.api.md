@@ -339,12 +339,6 @@ type AdminRolesUsersRequest = operations['admin___roles___users']['requestBody']
 type AdminRolesUsersResponse = operations['admin___roles___users']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
-type AdminRootAddRequest = operations['admin___root___add']['requestBody']['content']['application/json'];
-
-// @public (undocumented)
-type AdminRootRemoveRequest = operations['admin___root___remove']['requestBody']['content']['application/json'];
-
-// @public (undocumented)
 type AdminSendEmailRequest = operations['admin___send-email']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -1361,8 +1355,6 @@ declare namespace entities {
         AdminRolesUpdateDefaultPoliciesRequest,
         AdminRolesUsersRequest,
         AdminRolesUsersResponse,
-        AdminRootAddRequest,
-        AdminRootRemoveRequest,
         AdminSendEmailRequest,
         AdminSendNotificationRequest,
         AdminServerInfoResponse,
