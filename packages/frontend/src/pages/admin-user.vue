@@ -19,8 +19,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<span v-if="approved && !user.host" class="moderator">{{ i18n.ts.approved }}</span>
 							<span v-if="suspended" class="suspended">Suspended</span>
 							<span v-if="silenced" class="silenced">Silenced</span>
-							<span v-if="moderator && !root" class="moderator">Moderator</span>
-							<span v-if="root" class="suspended">isRoot</span>
+							<span v-if="administrator " class="suspended">Administrator</span>
+							<span v-if="moderator" class="moderator">Moderator</span>
 						</span>
 					</div>
 				</div>
@@ -101,7 +101,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<FormSection>
 					<div class="_gaps">
 						<MkSwitch v-model="suspended" @update:modelValue="toggleSuspend">{{ i18n.ts.suspend }}</MkSwitch>
-						<MkSwitch v-model="root" @update:modelValue="toggleRoot">{{ 'rootユーザー' }}</MkSwitch>
 						<div class="_buttons">
 							<div v-if="user.host == null" inline style="margin-right: 8px;" class="_buttons">
 								<MkButton @click="resetPassword"><i class="ti ti-key"></i> {{ i18n.ts.resetPassword }}</MkButton>
@@ -261,8 +260,8 @@ const init = ref<ReturnType<typeof createFetcher>>();
 const info = ref<any>();
 const ips = ref<Misskey.entities.AdminGetUserIpsResponse | null>(null);
 const ap = ref<any>(null);
+const administrator = ref(false);
 const moderator = ref(false);
-const root = ref(false);
 const silenced = ref(false);
 const approved = ref(false);
 const suspended = ref(false);
@@ -298,8 +297,8 @@ function createFetcher() {
 		user.value = _user;
 		info.value = _info;
 		ips.value = _ips;
+		administrator.value = _info.isAdministrator;
 		moderator.value = info.value.isModerator;
-		root.value = info.value.isRoot;
 		silenced.value = info.value.isSilenced;
 		approved.value = info.value.approved;
 		suspended.value = info.value.isSuspended;
@@ -380,19 +379,6 @@ async function toggleSuspend(v) {
 		suspended.value = !v;
 	} else {
 		await misskeyApi(v ? 'admin/suspend-user' : 'admin/unsuspend-user', { userId: user.value!.id });
-		await refreshUser();
-	}
-}
-
-async function toggleRoot(v) {
-	const confirm = await os.confirm({
-		type: 'warning',
-		text: v ? 'rootにしますか？' : 'rootを外しますか？',
-	});
-	if (confirm.canceled) {
-		root.value = !v;
-	} else {
-		await misskeyApi(v ? 'admin/root/add' : 'admin/root/remove', { userId: user.value.id });
 		await refreshUser();
 	}
 }

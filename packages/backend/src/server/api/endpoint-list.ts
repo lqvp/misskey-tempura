@@ -399,8 +399,6 @@ export * as 'users/update-memo' from './endpoints/users/update-memo.js';
 export * as 'v2/admin/emoji/list' from './endpoints/v2/admin/emoji/list.js';
 
 // extra endpoints
-export * as 'admin/root/add' from './endpoints/admin/root/add.js';
-export * as 'admin/root/remove' from './endpoints/admin/root/remove.js';
 export * as 'admin/regenerate-user-token' from './endpoints/admin/regenerate-user-token.js';
 export * as 'admin/approve-user' from './endpoints/admin/approve-user.js';
 export * as 'admin/decline-user' from './endpoints/admin/decline-user.js';
