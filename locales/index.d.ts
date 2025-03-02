@@ -10604,6 +10604,10 @@ export interface Locale extends ILocale {
          * ユーザートークンを再生成
          */
         "regenerateUserToken": string;
+        /**
+         * 全てのノートを削除
+         */
+        "dropAllNotes": string;
     };
     "_fileViewer": {
         /**
