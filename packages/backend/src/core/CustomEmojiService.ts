@@ -19,6 +19,8 @@ import type { MiEmoji } from '@/models/Emoji.js';
 import type { Serialized } from '@/types.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { DriveService } from '@/core/DriveService.js';
+import Logger from '@/logger.js';
+import { LoggerService } from './LoggerService.js';
 
 const parseEmojiStrRegexp = /^([-\w]+)(?:@([\w.-]+))?$/;
 
@@ -62,6 +64,7 @@ export type FetchEmojisSortKeys = typeof fetchEmojisSortKeys[number];
 export class CustomEmojiService implements OnApplicationShutdown {
 	private emojisCache: MemoryKVCache<MiEmoji | null>;
 	public localEmojisCache: RedisSingleCache<Map<string, MiEmoji>>;
+	private readonly logger: Logger;
 
 	constructor(
 		@Inject(DI.redis)
@@ -76,7 +79,10 @@ export class CustomEmojiService implements OnApplicationShutdown {
 		private moderationLogService: ModerationLogService,
 		private globalEventService: GlobalEventService,
 		private driveService: DriveService,
+		loggerService: LoggerService,
 	) {
+		this.logger = loggerService.getLogger('customEmojiService');
+
 		this.emojisCache = new MemoryKVCache<MiEmoji | null>(1000 * 60 * 60 * 12); // 12h
 
 		this.localEmojisCache = new RedisSingleCache<Map<string, MiEmoji>>(this.redisClient, 'localEmojis', {
@@ -107,28 +113,31 @@ export class CustomEmojiService implements OnApplicationShutdown {
 		localOnly: boolean;
 		roleIdsThatCanBeUsedThisEmojiAsReaction: MiRole['id'][];
 	}, moderator?: MiUser): Promise<MiEmoji> {
-		// driveFile の取得
-		const driveFile = await this.driveFilesRepository.findOneBy({ url: data.originalUrl });
-
-		// システムユーザーとして再アップロードするかどうか
-		if (!driveFile?.user?.isRoot) {
+		try {
+			//  システムとして再アップロードする
 			const copyDriveFile = await this.driveService.uploadFromUrl({
 				url: data.originalUrl,
 				user: null,
 				force: true,
 			});
 
-			// オリジナルのファイル削除処理など
-			const originalDriveFile = await this.driveFilesRepository.findOneBy({ url: data.originalUrl });
-			if (originalDriveFile) {
-				await this.driveService.deleteFile(originalDriveFile);
-			}
 			// data の更新
 			data.originalUrl = copyDriveFile.url;
 			data.publicUrl = copyDriveFile.webpublicUrl ?? copyDriveFile.url;
 			data.fileType = copyDriveFile.webpublicType ?? copyDriveFile.type;
-		} else {
-			console.log('[DEBUG] Reupload skipped. Condition not met:', { driveFileUserId: driveFile?.userId });
+
+			// オリジナルのファイル削除処理
+			// URL参照カウントをチェックしてから削除すべき
+			const originalDriveFile = await this.driveFilesRepository.findOneBy({ url: data.originalUrl });
+			if (originalDriveFile) {
+				await this.driveService.deleteFile(originalDriveFile);
+			}
+		} catch (e) {
+			this.logger.error('Failed to upload custom emoji', {
+				error: e,
+				originalUrl: data.originalUrl,
+			});
+			throw new Error('Failed to process custom emoji upload');
 		}
 		const emoji = await this.emojisRepository.insertOne({
 			id: this.idService.gen(),

@@ -467,7 +467,7 @@ export class UserFollowingService implements OnModuleInit {
 	@bindThis
 	public async unfollow(
 		follower: {
-			id: MiUser['id']; host: MiUser['host']; uri: MiUser['host']; isRoot: MiUser['isRoot']; inbox: MiUser['inbox']; sharedInbox: MiUser['sharedInbox'];
+			id: MiUser['id']; host: MiUser['host']; uri: MiUser['host']; inbox: MiUser['inbox']; sharedInbox: MiUser['sharedInbox'];
 		},
 		followee: {
 			id: MiUser['id']; host: MiUser['host']; uri: MiUser['host']; inbox: MiUser['inbox']; sharedInbox: MiUser['sharedInbox'];
