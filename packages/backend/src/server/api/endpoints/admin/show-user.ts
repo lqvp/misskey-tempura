@@ -222,6 +222,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw new Error('user not found');
 			}
 
+			const isAdministrator = await this.roleService.isAdministrator(user);
 			const isModerator = await this.roleService.isModerator(user);
 			const isSilenced = !(await this.roleService.getUserPolicies(user.id)).canPublicNote;
 
@@ -254,6 +255,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				mutedWords: profile.mutedWords,
 				mutedInstances: profile.mutedInstances,
 				notificationRecieveConfig: profile.notificationRecieveConfig,
+				isAdministrator: isAdministrator,
 				isModerator: isModerator,
 				isSilenced: isSilenced,
 				isSuspended: user.isSuspended,

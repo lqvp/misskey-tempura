@@ -19,7 +19,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<span v-if="approved && !user.host" class="moderator">{{ i18n.ts.approved }}</span>
 							<span v-if="suspended" class="suspended">Suspended</span>
 							<span v-if="silenced" class="silenced">Silenced</span>
-							<span v-if="moderator && !root" class="moderator">Moderator</span>
+							<span v-if="administrator " class="suspended">Administrator</span>
+							<span v-if="moderator" class="moderator">Moderator</span>
 						</span>
 					</div>
 				</div>
@@ -259,6 +260,7 @@ const init = ref<ReturnType<typeof createFetcher>>();
 const info = ref<any>();
 const ips = ref<Misskey.entities.AdminGetUserIpsResponse | null>(null);
 const ap = ref<any>(null);
+const administrator = ref(false);
 const moderator = ref(false);
 const silenced = ref(false);
 const approved = ref(false);
@@ -295,6 +297,7 @@ function createFetcher() {
 		user.value = _user;
 		info.value = _info;
 		ips.value = _ips;
+		administrator.value = _info.isAdministrator;
 		moderator.value = info.value.isModerator;
 		silenced.value = info.value.isSilenced;
 		approved.value = info.value.approved;
