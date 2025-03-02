@@ -2796,6 +2796,7 @@ _moderationLogTypes:
   deletePage: "ページを削除"
   deleteFlash: "Playを削除"
   deleteGalleryPost: "ギャラリーの投稿を削除"
+  updateProxyAccountDescription: "プロキシアカウントの説明を更新"
   quarantineRemoteInstance: "公開投稿のみ配送に制限"
   unquarantineRemoteInstance: "公開投稿のみ配送を解除"
   updateUserName: "ユーザー名を更新"

@@ -10577,6 +10577,10 @@ export interface Locale extends ILocale {
          */
         "deleteGalleryPost": string;
         /**
+         * プロキシアカウントの説明を更新
+         */
+        "updateProxyAccountDescription": string;
+        /**
          * 公開投稿のみ配送に制限
          */
         "quarantineRemoteInstance": string;

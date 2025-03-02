@@ -127,6 +127,8 @@ import type {
 	AdminUnsuspendUserRequest,
 	AdminUpdateAbuseUserReportRequest,
 	AdminUpdateMetaRequest,
+	AdminUpdateProxyAccountRequest,
+	AdminUpdateProxyAccountResponse,
 	AdminUpdateUserNameRequest,
 	AdminUpdateUserNoteRequest,
 	AnnouncementsRequest,
@@ -710,6 +712,7 @@ export type Endpoints = {
 	'admin/unsuspend-user': { req: AdminUnsuspendUserRequest; res: EmptyResponse };
 	'admin/update-abuse-user-report': { req: AdminUpdateAbuseUserReportRequest; res: EmptyResponse };
 	'admin/update-meta': { req: AdminUpdateMetaRequest; res: EmptyResponse };
+	'admin/update-proxy-account': { req: AdminUpdateProxyAccountRequest; res: AdminUpdateProxyAccountResponse };
 	'admin/update-user-name': { req: AdminUpdateUserNameRequest; res: EmptyResponse };
 	'admin/update-user-note': { req: AdminUpdateUserNoteRequest; res: EmptyResponse };
 	'announcements': { req: AnnouncementsRequest; res: AnnouncementsResponse };

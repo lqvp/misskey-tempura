@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import type { Provider } from '@nestjs/common';
 import { Module } from '@nestjs/common';
 import { DI } from '@/di-symbols.js';
 import {
@@ -67,6 +66,7 @@ import {
 	MiRoleAssignment,
 	MiSignin,
 	MiSwSubscription,
+	MiSystemAccount,
 	MiSystemWebhook,
 	MiUsedUsername,
 	MiUser,
@@ -81,8 +81,9 @@ import {
 	MiUserProfile,
 	MiUserPublickey,
 	MiUserSecurityKey,
-	MiWebhook
+	MiWebhook,
 } from './_.js';
+import type { Provider } from '@nestjs/common';
 import type { DataSource } from 'typeorm';
 
 const $usersRepository: Provider = {
@@ -304,6 +305,12 @@ const $blockingsRepository: Provider = {
 const $swSubscriptionsRepository: Provider = {
 	provide: DI.swSubscriptionsRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiSwSubscription).extend(miRepository as MiRepository<MiSwSubscription>),
+	inject: [DI.db],
+};
+
+const $systemAccountsRepository: Provider = {
+	provide: DI.systemAccountsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiSystemAccount),
 	inject: [DI.db],
 };
 
@@ -563,6 +570,7 @@ const $noteScheduleRepository: Provider = {
 		$renoteMutingsRepository,
 		$blockingsRepository,
 		$swSubscriptionsRepository,
+		$systemAccountsRepository,
 		$hashtagsRepository,
 		$abuseUserReportsRepository,
 		$abuseReportNotificationRecipientRepository,
@@ -638,6 +646,7 @@ const $noteScheduleRepository: Provider = {
 		$renoteMutingsRepository,
 		$blockingsRepository,
 		$swSubscriptionsRepository,
+		$systemAccountsRepository,
 		$hashtagsRepository,
 		$abuseUserReportsRepository,
 		$abuseReportNotificationRecipientRepository,
