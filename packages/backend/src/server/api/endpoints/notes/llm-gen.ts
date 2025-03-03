@@ -43,6 +43,12 @@ export const meta = {
 			code: 'LLM_API_ERROR',
 			id: '7767ca48-e402-426e-8583-75091f5337eb',
 		},
+
+		llmNotEnabled: {
+			message: 'Server LLM feature is not enabled',
+			code: 'LLM_NOT_ENABLED',
+			id: '58f1cb83-fb0b-47be-9dc8-0cf39ecf44e2',
+		},
 	},
 } as const;
 
@@ -72,9 +78,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				throw new ApiError(meta.errors.emptyPrompt);
 			}
 
-			// configからGemini APIキーを取得
+			// metaからサーバー設定を取得
+			const serverGeminiEnabled = this.serverSettings.serverGeminiEnabled;
 			const serverGeminiApiKey = this.serverSettings.serverGeminiApiKey;
 			const serverGeminiModels = this.serverSettings.serverGeminiModels;
+
+			if (!serverGeminiEnabled) {
+				throw new ApiError(meta.errors.llmNotEnabled);
+			}
 
 			if (!serverGeminiApiKey) {
 				throw new ApiError(meta.errors.llmApiError, 'Gemini API key is not configured on server');
