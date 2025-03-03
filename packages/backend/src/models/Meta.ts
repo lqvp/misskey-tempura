@@ -915,6 +915,11 @@ export class MiMeta {
 	})
 	public entranceMarginBottom: number;
 
+	@Column('boolean', {
+		default: false,
+	})
+	public serverGeminiEnabled: boolean;
+
 	@Column('varchar', {
 		length: 50,
 		nullable: true,

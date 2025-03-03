@@ -5537,6 +5537,7 @@ export type components = {
       entranceMarginTop: number;
       /** @default 0 */
       entranceMarginBottom: number;
+      serverGeminiEnabled: boolean;
     };
     MetaDetailedOnly: {
       features?: {
@@ -9033,6 +9034,7 @@ export type operations = {
             entranceMarginRight: number;
             entranceMarginTop: number;
             entranceMarginBottom: number;
+            serverGeminiEnabled: boolean;
             serverGeminiApiKey: string | null;
             serverGeminiModels: string;
           };
@@ -11670,6 +11672,7 @@ export type operations = {
           entranceMarginRight?: number;
           entranceMarginTop?: number;
           entranceMarginBottom?: number;
+          serverGeminiEnabled?: boolean;
           serverGeminiApiKey?: string | null;
           serverGeminiModels?: string;
         };

@@ -12271,6 +12271,14 @@ export interface Locale extends ILocale {
     "_llm": {
         "_server": {
             /**
+             * Gemini APIを有効にする
+             */
+            "serverGeminiEnabled": string;
+            /**
+             * 有効にすることで、サーバーが提供するGemini APIを使用して、LLMを実行できます。
+             */
+            "serverGeminiEnabledDescription": string;
+            /**
              * Gemini APIキー
              */
             "serverGeminiApiKey": string;

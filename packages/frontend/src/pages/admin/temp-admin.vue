@@ -55,23 +55,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkButton primary @click="save_customSplashText">{{ i18n.ts.save }}</MkButton>
 					</div>
 
-					<div class="_gaps">
-						<MkInput v-model="serverGeminiApiKey" type="text">
-							<template #label>{{ i18n.ts._llm._server.serverGeminiApiKey }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-							<template #caption>{{ i18n.ts._llm._server.serverGeminiApiKeyDescription }}</template>
-						</MkInput>
-
-						<MkSelect v-model="serverGeminiModels">
-							<template #label>{{ i18n.ts._llm.geminiModelLabel }}</template>
-							<template #caption>{{ i18n.ts._llm._server.serverGeminiModels }}</template>
-							<option value="gemini-2.0-flash">gemini-2.0-flash</option>
-							<option value="gemini-1.5-flash">gemini-1.5-flash</option>
-							<option value="gemini-1.5-pro">gemini-1.5-pro</option>
-							<option value="gemini-2.0-pro-exp-02-05">gemini-2.0-pro-exp-02-05</option>
-						</MkSelect>
-						<MkButton primary @click="save_serverGemini">{{ i18n.ts.save }}</MkButton>
-					</div>
-
 					<MkFolder>
 						<template #icon><i class="ti ti-mail"></i></template>
 						<template #label>Email Domain Settings<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
@@ -324,6 +307,37 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkButton primary @click="save_backgroundImageUrl">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
+
+					<MkFolder>
+						<template #icon><i class="ti ti-robot"></i></template>
+						<template #label>{{ i18n.ts._llm.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+						<template v-if="serverGeminiEnabled" #suffix>Enabled</template>
+						<template v-else #suffix>Disabled</template>
+						<template v-if="geminiSettingsForm.modified.value" #footer>
+							<MkFormFooter :form="geminiSettingsForm"/>
+						</template>
+
+						<div class="_gaps">
+							<MkSwitch v-model="geminiSettingsForm.state.serverGeminiEnabled">
+								<template #label>{{ i18n.ts._llm.serverGeminiEnabled }}</template>
+								<template #caption>{{ i18n.ts._llm._server.serverGeminiEnabledDescription }}</template>
+							</MkSwitch>
+
+							<MkInput v-model="geminiSettingsForm.state.serverGeminiApiKey" type="text">
+								<template #label>{{ i18n.ts._llm._server.serverGeminiApiKey }}</template>
+								<template #caption>{{ i18n.ts._llm._server.serverGeminiApiKeyDescription }}</template>
+							</MkInput>
+
+							<MkSelect v-model="geminiSettingsForm.state.serverGeminiModels">
+								<template #label>{{ i18n.ts._llm.geminiModelLabel }}</template>
+								<template #caption>{{ i18n.ts._llm._server.serverGeminiModelsDescription }}</template>
+								<option value="gemini-2.0-flash">gemini-2.0-flash</option>
+								<option value="gemini-1.5-flash">gemini-1.5-flash</option>
+								<option value="gemini-1.5-pro">gemini-1.5-pro</option>
+								<option value="gemini-2.0-pro-exp-02-05">gemini-2.0-pro-exp-02-05</option>
+							</MkSelect>
+						</div>
+					</MkFolder>
 				</div>
 			</FormSuspense>
 		</MkSpacer>
@@ -383,6 +397,7 @@ const entranceMarginLeft = ref<number>();
 const entranceMarginRight = ref<number>();
 const entranceMarginTop = ref<number>();
 const entranceMarginBottom = ref<number>();
+const serverGeminiEnabled = ref<boolean>(false);
 const serverGeminiApiKey = ref<string>('');
 const serverGeminiModels = ref<string>('gemini-2.0-flash');
 
@@ -435,6 +450,7 @@ async function init() {
 	entranceMarginRight.value = meta.entranceMarginRight;
 	entranceMarginTop.value = meta.entranceMarginTop;
 	entranceMarginBottom.value = meta.entranceMarginBottom;
+	serverGeminiEnabled.value = meta.serverGeminiEnabled;
 	serverGeminiApiKey.value = meta.serverGeminiApiKey;
 	serverGeminiModels.value = meta.serverGeminiModels;
 }
@@ -635,14 +651,18 @@ function save_customSplashText() {
 	});
 }
 
-function save_serverGemini() {
-	os.apiWithDialog('admin/update-meta', {
-		serverGeminiApiKey: serverGeminiApiKey.value,
-		serverGeminiModels: serverGeminiModels.value,
-	}).then(() => {
-		fetchInstance(true);
+const geminiSettingsForm = useForm({
+	serverGeminiEnabled: meta.serverGeminiEnabled,
+	serverGeminiApiKey: meta.serverGeminiApiKey || '',
+	serverGeminiModels: meta.serverGeminiModels || 'gemini-2.0-flash',
+}, async (state) => {
+	await os.apiWithDialog('admin/update-meta', {
+		serverGeminiEnabled: state.serverGeminiEnabled,
+		serverGeminiApiKey: state.serverGeminiApiKey,
+		serverGeminiModels: state.serverGeminiModels,
 	});
-}
+	fetchInstance(true);
+});
 
 const headerTabs = computed(() => []);
 
