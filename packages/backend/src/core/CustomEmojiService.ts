@@ -5,7 +5,7 @@
 
 import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
 import * as Redis from 'ioredis';
-import { In, IsNull } from 'typeorm';
+import { In, IsNull, Not } from 'typeorm';
 import { EmojiEntityService } from '@/core/entities/EmojiEntityService.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { IdService } from '@/core/IdService.js';
@@ -19,6 +19,8 @@ import type { MiEmoji } from '@/models/Emoji.js';
 import type { Serialized } from '@/types.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { DriveService } from '@/core/DriveService.js';
+import Logger from '@/logger.js';
+import { LoggerService } from './LoggerService.js';
 
 const parseEmojiStrRegexp = /^([-\w]+)(?:@([\w.-]+))?$/;
 
@@ -62,6 +64,7 @@ export type FetchEmojisSortKeys = typeof fetchEmojisSortKeys[number];
 export class CustomEmojiService implements OnApplicationShutdown {
 	private emojisCache: MemoryKVCache<MiEmoji | null>;
 	public localEmojisCache: RedisSingleCache<Map<string, MiEmoji>>;
+	private readonly logger: Logger;
 
 	constructor(
 		@Inject(DI.redis)
@@ -76,7 +79,10 @@ export class CustomEmojiService implements OnApplicationShutdown {
 		private moderationLogService: ModerationLogService,
 		private globalEventService: GlobalEventService,
 		private driveService: DriveService,
+		loggerService: LoggerService,
 	) {
+		this.logger = loggerService.getLogger('customEmojiService');
+
 		this.emojisCache = new MemoryKVCache<MiEmoji | null>(1000 * 60 * 60 * 12); // 12h
 
 		this.localEmojisCache = new RedisSingleCache<Map<string, MiEmoji>>(this.redisClient, 'localEmojis', {
@@ -107,29 +113,94 @@ export class CustomEmojiService implements OnApplicationShutdown {
 		localOnly: boolean;
 		roleIdsThatCanBeUsedThisEmojiAsReaction: MiRole['id'][];
 	}, moderator?: MiUser): Promise<MiEmoji> {
-		// driveFile の取得
-		const driveFile = await this.driveFilesRepository.findOneBy({ url: data.originalUrl });
+		const MAX_RETRY_COUNT = 3;
+		let retryCount = 0;
+		let copyDriveFile;
+		const errors: string[] = [];
 
-		// システムユーザーとして再アップロードするかどうか
-		if (!driveFile?.user?.isRoot) {
-			const copyDriveFile = await this.driveService.uploadFromUrl({
-				url: data.originalUrl,
-				user: null,
-				force: true,
-			});
+		// 元のURLを保存しておく
+		const originalSourceUrl = data.originalUrl;
 
-			// オリジナルのファイル削除処理など
-			const originalDriveFile = await this.driveFilesRepository.findOneBy({ url: data.originalUrl });
-			if (originalDriveFile) {
-				await this.driveService.deleteFile(originalDriveFile);
+		while (retryCount < MAX_RETRY_COUNT) {
+			try {
+				// システムとして再アップロードする
+				copyDriveFile = await this.driveService.uploadFromUrl({
+					url: originalSourceUrl,
+					user: null,
+					force: true,
+				});
+
+				// アップロード成功したらループ終了
+				break;
+			} catch (e) {
+				retryCount++;
+				this.logger.warn(`Failed to upload custom emoji (attempt ${retryCount}/${MAX_RETRY_COUNT})`, {
+					error: e instanceof Error ? e.message : String(e),
+					stack: e instanceof Error ? e.stack : undefined,
+					originalUrl: originalSourceUrl,
+					name: data.name,
+				});
+
+				errors.push(e instanceof Error ? e.message : String(e));
+
+				// 最大リトライ回数に達したらエラーを投げる
+				if (retryCount >= MAX_RETRY_COUNT) {
+					this.logger.error('Maximum retry count reached for custom emoji upload', {
+						error: e instanceof Error ? e.message : String(e),
+						originalUrl: originalSourceUrl,
+						name: data.name,
+					});
+					throw new Error(`Failed to process custom emoji upload after ${MAX_RETRY_COUNT} attempts: ${errors.join('; ')}`);
+				}
+
+				// 少し待ってからリトライ
+				await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
 			}
-			// data の更新
-			data.originalUrl = copyDriveFile.url;
-			data.publicUrl = copyDriveFile.webpublicUrl ?? copyDriveFile.url;
-			data.fileType = copyDriveFile.webpublicType ?? copyDriveFile.type;
-		} else {
-			console.log('[DEBUG] Reupload skipped. Condition not met:', { driveFileUserId: driveFile?.userId });
 		}
+
+		// この時点でcopyDriveFileは必ず存在するはず
+		if (!copyDriveFile) {
+			throw new Error('Emoji upload succeeded but drive file is undefined. This should never happen.');
+		}
+
+		// data の更新 - ファイルのURLを使用
+		data.originalUrl = copyDriveFile.url;
+		data.publicUrl = copyDriveFile.webpublicUrl ?? copyDriveFile.url;
+		data.fileType = copyDriveFile.webpublicType ?? copyDriveFile.type;
+
+		// オリジナルのファイル削除処理は元のURLとの比較が必要な場合のみ行う
+		if (originalSourceUrl !== copyDriveFile.url) {
+			try {
+				const originalDriveFile = await this.driveFilesRepository.findOneBy({ url: originalSourceUrl });
+				if (originalDriveFile && originalDriveFile.id !== copyDriveFile.id) {
+					// 別のファイルなので削除を検討
+					const referenceCount = await this.driveFilesRepository.count({
+						where: { url: originalSourceUrl, id: Not(originalDriveFile.id) },
+					});
+
+					// 参照カウントが0（このファイルのみ）なら削除
+					if (referenceCount === 0) {
+						await this.driveService.deleteFile(originalDriveFile);
+						this.logger.info('Deleted original emoji file as it\'s no longer referenced', {
+							fileId: originalDriveFile.id,
+							url: originalSourceUrl,
+						});
+					} else {
+						this.logger.info(`Skipped deleting original emoji file as it has ${referenceCount} references`, {
+							fileId: originalDriveFile.id,
+							url: originalSourceUrl,
+						});
+					}
+				}
+			} catch (e) {
+				// 元ファイルの削除に失敗しても処理は続行
+				this.logger.warn('Failed to delete original emoji file', {
+					error: e instanceof Error ? e.message : String(e),
+					originalUrl: originalSourceUrl,
+				});
+			}
+		}
+
 		const emoji = await this.emojisRepository.insertOne({
 			id: this.idService.gen(),
 			updatedAt: new Date(),
@@ -168,20 +239,20 @@ export class CustomEmojiService implements OnApplicationShutdown {
 	public async update(data: (
 		{ id: MiEmoji['id'], name?: string; } | { name: string; id?: MiEmoji['id'], }
 		) & {
-		originalUrl?: string;
-		publicUrl?: string;
-		fileType?: string;
-		category?: string | null;
-		aliases?: string[];
-		license?: string | null;
-		isSensitive?: boolean;
-		localOnly?: boolean;
-		roleIdsThatCanBeUsedThisEmojiAsReaction?: MiRole['id'][];
-	}, moderator?: MiUser): Promise<
+			originalUrl?: string;
+			publicUrl?: string;
+			fileType?: string;
+			category?: string | null;
+			aliases?: string[];
+			license?: string | null;
+			isSensitive?: boolean;
+			localOnly?: boolean;
+			roleIdsThatCanBeUsedThisEmojiAsReaction?: MiRole['id'][];
+		}, moderator?: MiUser): Promise<
 		null
 		| 'NO_SUCH_EMOJI'
 		| 'SAME_NAME_EMOJI_EXISTS'
-	> {
+		> {
 		const emoji = data.id
 			? await this.getEmojiById(data.id)
 			: await this.getEmojiByName(data.name!);
