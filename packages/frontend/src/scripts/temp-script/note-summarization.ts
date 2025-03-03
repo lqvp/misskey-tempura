@@ -27,11 +27,11 @@ export async function callGeminiSummarize(text: string): Promise<string> {
 		systemInstruction,
 	});
 	if (!data.candidates || data.candidates.length === 0) {
-		displayLlmError(new Error('No candidates returned from Gemini API.'));
+		displayLlmError(new Error('Gemini APIから返された候補はありません。'));
 	}
 	const candidate = data.candidates[0];
 	if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
-		displayLlmError(new Error('Invalid candidate format from Gemini API.'));
+		displayLlmError(new Error('Gemini APIからの候補フォーマットが無効です。'));
 	}
 	return candidate.content.parts[0].text;
 }
