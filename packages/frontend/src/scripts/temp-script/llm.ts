@@ -8,6 +8,7 @@ import * as Misskey from 'misskey-js';
 import { defaultStore } from '@/store.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
 import { fetchInstance } from '@/instance.js';
+import { displayLlmError } from '@/utils/errorHandler.js';
 
 const instance = ref<Misskey.entities.MetaDetailed | null>(null);
 
@@ -28,7 +29,7 @@ export async function generateGeminiSummary({
 	if (useGeminiLLMAPI) {
 		// サーバーでGeminiが有効になっているかチェック
 		if (!instance.value || !instance.value.serverGeminiEnabled) {
-			throw new Error('サーバー提供のLLM APIが有効になっていません。');
+			return displayLlmError(new Error('サーバー提供のLLM APIが有効になっていません。'));
 		}
 
 		try {
@@ -38,15 +39,15 @@ export async function generateGeminiSummary({
 			});
 		} catch (error: any) {
 			if (error.code === 'ROLE_PERMISSION_DENIED') {
-				throw new Error('サーバー提供のLLM APIを使用する権限がありません。');
+				return displayLlmError(new Error('サーバー提供のLLM APIを使用する権限がありません。'));
 			}
-			throw new Error(`サーバーLLM API エラー: ${error.message || error}`);
+			return displayLlmError(new Error(`サーバーLLM API エラー: ${error.message || error}`));
 		}
 	}
 
 	// ユーザー自身のAPIキーを使用する場合（従来の動作）
 	if (!geminiToken) {
-		throw new Error('Gemini API tokenがありません。');
+		return displayLlmError(new Error('Gemini API tokenがありません。'));
 	}
 
 	const response = await fetch(
@@ -68,7 +69,7 @@ export async function generateGeminiSummary({
 	);
 
 	if (!response.ok) {
-		throw new Error('Failed to get summary from Gemini API.');
+		return displayLlmError(new Error('Gemini APIからの要約の取得に失敗しました。'));
 	}
 	return response.json();
 }

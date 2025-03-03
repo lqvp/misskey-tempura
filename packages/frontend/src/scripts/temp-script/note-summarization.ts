@@ -8,6 +8,7 @@ import { generateGeminiSummary } from '@/scripts/temp-script/llm.js';
 import { defaultStore } from '@/store.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
+import { displayLlmError } from '@/utils/errorHandler.js';
 
 /**
  * Gemini を用いてノートの要約を生成します。
@@ -18,7 +19,7 @@ import { i18n } from '@/i18n.js';
 export async function callGeminiSummarize(text: string): Promise<string> {
 	const systemInstruction = [
 		defaultStore.state.geminiPromptNote ?? '',
-		defaultStore.state.geminiSystemPrompt ?? ''
+		defaultStore.state.geminiSystemPrompt ?? '',
 	].join('\n');
 
 	const data = await generateGeminiSummary({
@@ -26,11 +27,11 @@ export async function callGeminiSummarize(text: string): Promise<string> {
 		systemInstruction,
 	});
 	if (!data.candidates || data.candidates.length === 0) {
-		throw new Error('No candidates returned from Gemini API.');
+		displayLlmError(new Error('No candidates returned from Gemini API.'));
 	}
 	const candidate = data.candidates[0];
 	if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
-		throw new Error('Invalid candidate format from Gemini API.');
+		displayLlmError(new Error('Invalid candidate format from Gemini API.'));
 	}
 	return candidate.content.parts[0].text;
 }
@@ -39,16 +40,15 @@ export async function summarizeNoteText(noteText: string): Promise<string> {
 	try {
 		const summary = await callGeminiSummarize(noteText);
 		return summary;
-	} catch (error) {
+	} catch (error: any) {
 		console.error('Summarization error:', error);
-		throw error;
+		displayLlmError(error, 'ノートの要約に失敗しました。');
 	}
 }
 
 export async function showNoteSummary(noteText: string): Promise<void> {
 	if (!noteText) {
-		os.alert({ type: 'error', text: 'ノート本文がありません。' });
-		return;
+		displayLlmError(new Error('ノート本文がありません。'));
 	}
 	try {
 		const summary = await summarizeNoteText(noteText);
@@ -57,8 +57,8 @@ export async function showNoteSummary(noteText: string): Promise<void> {
 			title: i18n.ts._llm.summarizeNote,
 			text: summary,
 		});
-	} catch (error) {
+	} catch (error: any) {
 		console.error('Summarization failed:', error);
-		os.alert({ type: 'error', text: '要約の取得に失敗しました。' });
+		displayLlmError(error, '要約の取得に失敗しました。');
 	}
 }
