@@ -175,10 +175,10 @@ export const paramDef = {
 		hanaThemeColor: { type: 'string' },
 		hanaThemeAltColor: { type: 'string' },
 		hanaThemeWeakOpacity: { type: 'number' },
-		hanaModeIcon: { type: 'string', nullable: true, },
+		hanaModeIcon: { type: 'string', nullable: true },
 		hanaModeIconSize: { type: 'number' },
 		hanaModeIconRadius: { type: 'number' },
-		hanaModeBackground: { type: 'string', nullable: true, },
+		hanaModeBackground: { type: 'string', nullable: true },
 		silencedHosts: {
 			type: 'array',
 			nullable: true,
@@ -253,6 +253,9 @@ export const paramDef = {
 		entranceMarginRight: { type: 'integer' },
 		entranceMarginTop: { type: 'integer' },
 		entranceMarginBottom: { type: 'integer' },
+		serverGeminiEnabled: { type: 'boolean' },
+		serverGeminiApiKey: { type: 'string', nullable: true },
+		serverGeminiModels: { type: 'string', nullable: false },
 	},
 	required: [],
 } as const;
@@ -948,6 +951,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.entranceMarginBottom !== undefined) {
 				set.entranceMarginBottom = ps.entranceMarginBottom;
+			}
+
+			if (ps.serverGeminiEnabled !== undefined) {
+				set.serverGeminiEnabled = ps.serverGeminiEnabled;
+			}
+
+			if ( ps.serverGeminiApiKey !== undefined) {
+				set.serverGeminiApiKey = ps.serverGeminiApiKey;
+			}
+
+			if ( ps.serverGeminiModels !== undefined) {
+				set.serverGeminiModels = ps.serverGeminiModels;
 			}
 
 			const before = await this.metaService.fetch(true);

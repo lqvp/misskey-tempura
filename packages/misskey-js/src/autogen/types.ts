@@ -2966,6 +2966,15 @@ export type paths = {
      */
     post: operations['notes___hybrid-timeline'];
   };
+  '/notes/llm-gen': {
+    /**
+     * notes/llm-gen
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *write:notes*
+     */
+    post: operations['notes___llm-gen'];
+  };
   '/notes/local-timeline': {
     /**
      * notes/local-timeline
@@ -5307,6 +5316,7 @@ export type components = {
       canUseTruncate: boolean;
       canUseMakePrivate: boolean;
       canUpdateCounters: boolean;
+      canUseGeminiLLMAPI: boolean;
     };
     ReversiGameLite: {
       /** Format: id */
@@ -5516,6 +5526,7 @@ export type components = {
       entranceMarginTop: number;
       /** @default 0 */
       entranceMarginBottom: number;
+      serverGeminiEnabled: boolean;
     };
     MetaDetailedOnly: {
       features?: {
@@ -9012,6 +9023,9 @@ export type operations = {
             entranceMarginRight: number;
             entranceMarginTop: number;
             entranceMarginBottom: number;
+            serverGeminiEnabled: boolean;
+            serverGeminiApiKey: string | null;
+            serverGeminiModels: string;
           };
         };
       };
@@ -11539,6 +11553,9 @@ export type operations = {
           entranceMarginRight?: number;
           entranceMarginTop?: number;
           entranceMarginBottom?: number;
+          serverGeminiEnabled?: boolean;
+          serverGeminiApiKey?: string | null;
+          serverGeminiModels?: string;
         };
       };
     };
@@ -24167,6 +24184,64 @@ export type operations = {
       };
       /** @description I'm Ai */
       418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * notes/llm-gen
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *write:notes*
+   */
+  'notes___llm-gen': {
+    requestBody: {
+      content: {
+        'application/json': {
+          text: string;
+          prompt: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Too many requests */
+      429: {
         content: {
           'application/json': components['schemas']['Error'];
         };

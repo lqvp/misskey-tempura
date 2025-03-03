@@ -914,4 +914,22 @@ export class MiMeta {
 		default: 0,
 	})
 	public entranceMarginBottom: number;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public serverGeminiEnabled: boolean;
+
+	@Column('varchar', {
+		length: 50,
+		nullable: true,
+	})
+	public serverGeminiApiKey: string | null;
+
+	@Column('varchar', {
+		length: 50,
+		default: 'gemini-2.0-flash',
+		nullable: true,
+	})
+	public serverGeminiModels: string;
 }

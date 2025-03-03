@@ -78,6 +78,7 @@ export type RolePolicies = {
 	canUseTruncate: boolean;
 	canUseMakePrivate: boolean;
 	canUpdateCounters: boolean;
+	canUseGeminiLLMAPI: boolean;
 };
 
 export const DEFAULT_POLICIES: RolePolicies = {
@@ -127,6 +128,7 @@ export const DEFAULT_POLICIES: RolePolicies = {
 	canUseTruncate: false,
 	canUseMakePrivate: false,
 	canUpdateCounters: false,
+	canUseGeminiLLMAPI: false,
 };
 
 @Injectable()
@@ -502,6 +504,7 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			canUseTruncate: calc('canUseTruncate', vs => vs.some(v => v === true)),
 			canUseMakePrivate: calc('canUseMakePrivate', vs => vs.some(v => v === true)),
 			canUpdateCounters: calc('canUpdateCounters', vs => vs.some(v => v === true)),
+			canUseGeminiLLMAPI: calc('canUseGeminiLLMAPI', vs => vs.some(v => v === true)),
 		};
 	}
 

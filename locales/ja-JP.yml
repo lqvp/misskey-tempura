@@ -1897,6 +1897,7 @@ _role:
     canUseTruncate: "アカウント整理機能の許可"
     canUseMakePrivate: "非公開化機能の許可"
     canUpdateCounters: "カウンターの更新を許可"
+    canUseGeminiLLMAPI: "サーバーLLM APIの利用"
 
   _condition:
     roleAssignedTo: "マニュアルロールにアサイン済み"
@@ -3285,7 +3286,15 @@ _updateCount:
   warningText: "フォロワー数/フォロー数/ノート数を手動で更新します。\nこの操作は通常では必要なく、変更前の値に戻すことは出来ません。\n本当に実行しますか？"
 
 _llm:
+  _server:
+    serverGeminiEnabled: "Gemini APIを有効にする"
+    serverGeminiEnabledDescription: "有効にすることで、サーバーが提供するGemini APIを使用して、LLMを実行できます。"
+    serverGeminiApiKey: "Gemini APIキー"
+    serverGeminiApiKeyDescription: "サーバーが提供するGemini APIのAPIキーを入力します。"
+    serverGeminiModelsDescription: "サーバーで提供するGemini APIで使用するモデルを選択します。"
   title: "LLM設定"
+  useGeminiLLMAPI: "サーバーのLLM APIを使用"
+  useGeminiLLMAPIDescription: "サーバーが提供するGemini APIを使用して、LLMを実行します。"
   geminiTokenLabel: "Geminiトークン"
   geminiTokenCaption: "Gemini API の認証に使用するトークンを設定します。"
   geminiModelLabel: "Geminiモデル"

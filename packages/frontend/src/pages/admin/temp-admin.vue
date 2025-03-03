@@ -190,12 +190,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 						<div class="_gaps_m">
 							<MkSwitch v-model="entranceSettingsForm.state.entranceShowTimeLine">
-								<template #label>{{ i18n.ts._entrance.showTimeLine}}</template>
+								<template #label>{{ i18n.ts._entrance.showTimeLine }}</template>
 								<template #caption>{{ i18n.ts._entrance.showTimeLineDescription }}</template>
 							</MkSwitch>
 
 							<MkSwitch v-model="entranceSettingsForm.state.entranceShowFeatured">
-								<template #label>{{ i18n.ts._entrance.showFeatured}}</template>
+								<template #label>{{ i18n.ts._entrance.showFeatured }}</template>
 								<template #caption>{{ i18n.ts._entrance.showFeaturedDescription }}</template>
 							</MkSwitch>
 
@@ -307,6 +307,37 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkButton primary @click="save_backgroundImageUrl">{{ i18n.ts.save }}</MkButton>
 						</div>
 					</MkFolder>
+
+					<MkFolder>
+						<template #icon><i class="ti ti-robot"></i></template>
+						<template #label>{{ i18n.ts._llm.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+						<template v-if="serverGeminiEnabled" #suffix>Enabled</template>
+						<template v-else #suffix>Disabled</template>
+						<template v-if="geminiSettingsForm.modified.value" #footer>
+							<MkFormFooter :form="geminiSettingsForm"/>
+						</template>
+
+						<div class="_gaps">
+							<MkSwitch v-model="geminiSettingsForm.state.serverGeminiEnabled">
+								<template #label>{{ i18n.ts._llm.serverGeminiEnabled }}</template>
+								<template #caption>{{ i18n.ts._llm._server.serverGeminiEnabledDescription }}</template>
+							</MkSwitch>
+
+							<MkInput v-model="geminiSettingsForm.state.serverGeminiApiKey" type="text">
+								<template #label>{{ i18n.ts._llm._server.serverGeminiApiKey }}</template>
+								<template #caption>{{ i18n.ts._llm._server.serverGeminiApiKeyDescription }}</template>
+							</MkInput>
+
+							<MkSelect v-model="geminiSettingsForm.state.serverGeminiModels">
+								<template #label>{{ i18n.ts._llm.geminiModelLabel }}</template>
+								<template #caption>{{ i18n.ts._llm._server.serverGeminiModelsDescription }}</template>
+								<option value="gemini-2.0-flash">gemini-2.0-flash</option>
+								<option value="gemini-1.5-flash">gemini-1.5-flash</option>
+								<option value="gemini-1.5-pro">gemini-1.5-pro</option>
+								<option value="gemini-2.0-pro-exp-02-05">gemini-2.0-pro-exp-02-05</option>
+							</MkSelect>
+						</div>
+					</MkFolder>
 				</div>
 			</FormSuspense>
 		</MkSpacer>
@@ -327,6 +358,7 @@ import { fetchInstance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
 import { definePageMetadata } from '@/scripts/page-metadata.js';
 import MkButton from '@/components/MkButton.vue';
+import MkSelect from '@/components/MkSelect.vue';
 import FormLink from '@/components/form/link.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import { useForm } from '@/scripts/use-form.js';
@@ -365,6 +397,9 @@ const entranceMarginLeft = ref<number>();
 const entranceMarginRight = ref<number>();
 const entranceMarginTop = ref<number>();
 const entranceMarginBottom = ref<number>();
+const serverGeminiEnabled = ref<boolean>(false);
+const serverGeminiApiKey = ref<string>('');
+const serverGeminiModels = ref<string>('gemini-2.0-flash');
 
 const originalMinimumUsernameLength = ref<number>();
 const validateMinimumUsernameLengthChanged = computed(() =>
@@ -415,6 +450,9 @@ async function init() {
 	entranceMarginRight.value = meta.entranceMarginRight;
 	entranceMarginTop.value = meta.entranceMarginTop;
 	entranceMarginBottom.value = meta.entranceMarginBottom;
+	serverGeminiEnabled.value = meta.serverGeminiEnabled;
+	serverGeminiApiKey.value = meta.serverGeminiApiKey;
+	serverGeminiModels.value = meta.serverGeminiModels;
 }
 
 function addBackgroundImage() {
@@ -612,6 +650,19 @@ function save_customSplashText() {
 		fetchInstance(true);
 	});
 }
+
+const geminiSettingsForm = useForm({
+	serverGeminiEnabled: meta.serverGeminiEnabled,
+	serverGeminiApiKey: meta.serverGeminiApiKey || '',
+	serverGeminiModels: meta.serverGeminiModels || 'gemini-2.0-flash',
+}, async (state) => {
+	await os.apiWithDialog('admin/update-meta', {
+		serverGeminiEnabled: state.serverGeminiEnabled,
+		serverGeminiApiKey: state.serverGeminiApiKey,
+		serverGeminiModels: state.serverGeminiModels,
+	});
+	fetchInstance(true);
+});
 
 const headerTabs = computed(() => []);
 
