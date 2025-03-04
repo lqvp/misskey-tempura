@@ -13,6 +13,7 @@ import { type WebhookEventTypes } from '@/models/Webhook.js';
 import { type UserWebhookPayload, UserWebhookService } from '@/core/UserWebhookService.js';
 import { QueueService } from '@/core/QueueService.js';
 import { ModeratorInactivityRemainingTime } from '@/queue/processors/CheckModeratorsActivityProcessorService.js';
+import { MiContact } from '@/models/Contact.js';
 
 const oneDayMillis = 24 * 60 * 60 * 1000;
 
@@ -263,6 +264,24 @@ function toPackedUserDetailedNotMe(user: MiUser, override?: Packed<'UserDetailed
 	};
 }
 
+function generateContact() {
+	return {
+		id: `dummy-contact-${Math.random().toString(36).substr(2, 9)}`,
+		subject: 'Test Contact Form Submission',
+		message: 'This is a test message from the contact form for webhook testing purposes.',
+		name: 'Webhook Test User',
+		email: 'test@example.com',
+		misskeyUser: null,
+		category: 'feedback',
+		status: 'pending',
+		note: null,
+		responseMessage: null,
+		assigneeId: null,
+		createdAt: new Date(),
+		respondedAt: null,
+	} as MiContact;
+}
+
 const dummyUser1 = generateDummyUser();
 const dummyUser2 = generateDummyUser({
 	id: 'dummy-user-2',
@@ -476,6 +495,37 @@ export class WebhookTestService {
 			}
 			case 'inactiveModeratorsInvitationOnlyChanged': {
 				send('inactiveModeratorsInvitationOnlyChanged', {});
+				break;
+			}
+			case 'contactCreated': {
+				send('contactCreated', {
+					contact: generateContact(),
+				});
+				break;
+			}
+			case 'contactResolved': {
+				const contact = generateContact();
+				contact.status = 'resolved';
+				contact.respondedAt = new Date();
+				send('contactResolved', {
+					contact: contact,
+				});
+				break;
+			}
+			case 'contactUpdated': {
+				const contact = generateContact();
+				contact.status = 'inProgress';
+				contact.note = 'This contact is being worked on';
+				contact.assigneeId = dummyUser1.id;
+				send('contactUpdated', {
+					contact: contact,
+				});
+				break;
+			}
+			case 'contactDeleted': {
+				send('contactDeleted', {
+					contact: generateContact(),
+				});
 				break;
 			}
 			default: {

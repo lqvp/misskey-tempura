@@ -234,6 +234,46 @@ export type paths = {
      */
     post: operations['admin___captcha___save'];
   };
+  '/admin/contact-form/delete': {
+    /**
+     * admin/contact-form/delete
+     * @description No description provided.
+     *
+     * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+     * **Credential required**: *Yes* / **Permission**: *write:admin:contact-form*
+     */
+    post: operations['admin___contact-form___delete'];
+  };
+  '/admin/contact-form/list': {
+    /**
+     * admin/contact-form/list
+     * @description No description provided.
+     *
+     * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+     * **Credential required**: *Yes* / **Permission**: *read:admin:contact-form*
+     */
+    post: operations['admin___contact-form___list'];
+  };
+  '/admin/contact-form/show': {
+    /**
+     * admin/contact-form/show
+     * @description No description provided.
+     *
+     * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+     * **Credential required**: *Yes* / **Permission**: *read:admin:contact-form*
+     */
+    post: operations['admin___contact-form___show'];
+  };
+  '/admin/contact-form/update': {
+    /**
+     * admin/contact-form/update
+     * @description No description provided.
+     *
+     * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+     * **Credential required**: *Yes* / **Permission**: *write:admin:contact-form*
+     */
+    post: operations['admin___contact-form___update'];
+  };
   '/admin/decline-user': {
     /**
      * admin/decline-user
@@ -1513,6 +1553,15 @@ export type paths = {
      * **Credential required**: *Yes* / **Permission**: *write:account*
      */
     post: operations['clips___update'];
+  };
+  '/contact-send': {
+    /**
+     * contact-send
+     * @description No description provided.
+     *
+     * **Credential required**: *No*
+     */
+    post: operations['contact-send'];
   };
   '/drive': {
     /**
@@ -5558,7 +5607,7 @@ export type components = {
       latestSentAt: string | null;
       latestStatus: number | null;
       name: string;
-      on: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged')[];
+      on: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged' | 'contactCreated' | 'contactResolved' | 'contactUpdated' | 'contactDeleted')[];
       url: string;
       secret: string;
     };
@@ -7042,6 +7091,273 @@ export type operations = {
           sitekey?: string | null;
           secret?: string | null;
           instanceUrl?: string | null;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * admin/contact-form/delete
+   * @description No description provided.
+   *
+   * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+   * **Credential required**: *Yes* / **Permission**: *write:admin:contact-form*
+   */
+  'admin___contact-form___delete': {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: misskey:id */
+          contactId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * admin/contact-form/list
+   * @description No description provided.
+   *
+   * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+   * **Credential required**: *Yes* / **Permission**: *read:admin:contact-form*
+   */
+  'admin___contact-form___list': {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @default 10 */
+          limit?: number;
+          /** Format: misskey:id */
+          sinceId?: string;
+          /** Format: misskey:id */
+          untilId?: string;
+          /** @enum {string} */
+          status?: 'pending' | 'inProgress' | 'resolved';
+          /** @enum {string} */
+          origin?: 'combined' | 'internal' | 'external';
+          category?: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (with results) */
+      200: {
+        content: {
+          'application/json': ({
+              /** Format: misskey:id */
+              id: string;
+              subject: string;
+              /** Format: date-time */
+              createdAt: string;
+              status: string;
+              name: string;
+              category: string;
+              /** Format: misskey:id */
+              assigneeId?: string | null;
+              assignee?: components['schemas']['User'] | null;
+            })[];
+        };
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * admin/contact-form/show
+   * @description No description provided.
+   *
+   * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+   * **Credential required**: *Yes* / **Permission**: *read:admin:contact-form*
+   */
+  'admin___contact-form___show': {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: misskey:id */
+          contactId: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (with results) */
+      200: {
+        content: {
+          'application/json': {
+            /**
+             * Format: misskey:id
+             * @example xxxxxxxxxx
+             */
+            id: string;
+            subject: string;
+            message: string;
+            name: string;
+            email: string | null;
+            /** Format: misskey:id */
+            misskeyUser: string | null;
+            category: string;
+            /** @enum {string} */
+            status: 'pending' | 'inProgress' | 'resolved';
+            note: string | null;
+            responseMessage: string | null;
+            /** Format: misskey:id */
+            assigneeId: string | null;
+            assignee?: components['schemas']['User'] | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            respondedAt: string | null;
+          };
+        };
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * admin/contact-form/update
+   * @description No description provided.
+   *
+   * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+   * **Credential required**: *Yes* / **Permission**: *write:admin:contact-form*
+   */
+  'admin___contact-form___update': {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: misskey:id */
+          contactId: string;
+          /** @enum {string|null} */
+          status?: 'pending' | 'inProgress' | 'resolved';
+          note?: string | null;
+          responseMessage?: string | null;
+          /** Format: misskey:id */
+          assigneeId?: string | null;
         };
       };
     };
@@ -10837,7 +11153,7 @@ export type operations = {
         'application/json': {
           isActive: boolean;
           name: string;
-          on: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged')[];
+          on: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged' | 'contactCreated' | 'contactResolved' | 'contactUpdated' | 'contactDeleted')[];
           url: string;
           secret: string;
         };
@@ -10947,7 +11263,7 @@ export type operations = {
       content: {
         'application/json': {
           isActive?: boolean;
-          on?: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged')[];
+          on?: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged' | 'contactCreated' | 'contactResolved' | 'contactUpdated' | 'contactDeleted')[];
         };
       };
     };
@@ -11059,7 +11375,7 @@ export type operations = {
           /** Format: misskey:id */
           webhookId: string;
           /** @enum {string} */
-          type: 'abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged';
+          type: 'abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged' | 'contactCreated' | 'contactResolved' | 'contactUpdated' | 'contactDeleted';
           override?: {
             url?: string;
             secret?: string;
@@ -11125,7 +11441,7 @@ export type operations = {
           id: string;
           isActive: boolean;
           name: string;
-          on: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged')[];
+          on: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged' | 'contactCreated' | 'contactResolved' | 'contactUpdated' | 'contactDeleted')[];
           url: string;
           secret: string;
         };
@@ -15149,6 +15465,68 @@ export type operations = {
       };
       /** @description I'm Ai */
       418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * contact-send
+   * @description No description provided.
+   *
+   * **Credential required**: *No*
+   */
+  'contact-send': {
+    requestBody: {
+      content: {
+        'application/json': {
+          subject: string;
+          message: string;
+          name: string;
+          email?: string | null;
+          misskeyUser?: string | null;
+          category: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (without any results) */
+      204: {
+        content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Too many requests */
+      429: {
         content: {
           'application/json': components['schemas']['Error'];
         };

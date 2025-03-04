@@ -12426,6 +12426,100 @@ export interface Locale extends ILocale {
             "without": string;
         };
     };
+    "_contact": {
+        /**
+         * お問い合わせフォーム
+         */
+        "form": string;
+        "_form": {
+            /**
+             * 件名
+             */
+            "subject": string;
+            /**
+             * お問い合わせの概要を記入
+             */
+            "subjectPlaceholder": string;
+            /**
+             * お問い合わせ内容
+             */
+            "message": string;
+            /**
+             * 具体的な内容を詳細に記入
+             */
+            "messagePlaceholder": string;
+            /**
+             * お名前
+             */
+            "name": string;
+            /**
+             * ニックネーム可
+             */
+            "namePlaceholder": string;
+            /**
+             * メールアドレス
+             */
+            "email": string;
+            /**
+             * 返信希望の場合入力
+             */
+            "emailPlaceholder": string;
+            /**
+             * Misskeyユーザー名
+             */
+            "misskeyUser": string;
+            /**
+             * @username
+             */
+            "misskeyUserPlaceholder": string;
+        };
+        /**
+         * カテゴリ
+         */
+        "category": string;
+        "_category": {
+            /**
+             * 一般問い合わせ
+             */
+            "categoryGeneral": string;
+            /**
+             * バグ報告
+             */
+            "categoryBug": string;
+            /**
+             * 機能要望
+             */
+            "categoryFeature": string;
+            /**
+             * その他
+             */
+            "categoryOther": string;
+        };
+        /**
+         * 送信
+         */
+        "submit": string;
+        /**
+         * 送信中...
+         */
+        "submitting": string;
+        /**
+         * 必須項目を入力してください
+         */
+        "requiredFieldsMissing": string;
+        /**
+         * CAPTCHA認証を完了してください
+         */
+        "captchaVerificationRequired": string;
+        /**
+         * 送信完了
+         */
+        "submissionSuccess": string;
+        /**
+         * お問い合わせを受け付けました。
+         */
+        "confirmationMessage": string;
+    };
     /**
      * すぐ消す
      */

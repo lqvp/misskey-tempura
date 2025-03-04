@@ -223,6 +223,9 @@ const routes: RouteDef[] = [{
 	path: '/contact',
 	component: page(() => import('@/pages/contact.vue')),
 }, {
+	path: '/contact-form',
+	component: page(() => import('@/pages/contact-form.vue')),
+}, {
 	path: '/invite',
 	name: 'invite',
 	component: page(() => import('@/pages/invite.vue')),

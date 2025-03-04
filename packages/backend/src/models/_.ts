@@ -84,6 +84,7 @@ import { MiUserListFavorite } from '@/models/UserListFavorite.js';
 import { MiBubbleGameRecord } from '@/models/BubbleGameRecord.js';
 import { MiReversiGame } from '@/models/ReversiGame.js';
 import { MiNoteSchedule } from '@/models/NoteSchedule.js';
+import { MiContact } from '@/models/Contact.js';
 import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity.js';
 
 export interface MiRepository<T extends ObjectLiteral> {
@@ -204,6 +205,7 @@ export {
 	MiUserMemo,
 	MiBubbleGameRecord,
 	MiReversiGame,
+	MiContact,
 };
 
 export type AbuseUserReportsRepository = Repository<MiAbuseUserReport> & MiRepository<MiAbuseUserReport>;
@@ -280,3 +282,4 @@ export type UserMemoRepository = Repository<MiUserMemo> & MiRepository<MiUserMem
 export type BubbleGameRecordsRepository = Repository<MiBubbleGameRecord> & MiRepository<MiBubbleGameRecord>;
 export type ReversiGamesRepository = Repository<MiReversiGame> & MiRepository<MiReversiGame>;
 export type NoteScheduleRepository = Repository<MiNoteSchedule>;
+export type ContactsRepository = Repository<MiContact>;

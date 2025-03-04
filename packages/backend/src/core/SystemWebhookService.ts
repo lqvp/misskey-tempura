@@ -19,6 +19,7 @@ import { Packed } from '@/misc/json-schema.js';
 import { AbuseReportResolveType } from '@/models/AbuseUserReport.js';
 import { ModeratorInactivityRemainingTime } from '@/queue/processors/CheckModeratorsActivityProcessorService.js';
 import type { OnApplicationShutdown } from '@nestjs/common';
+import { MiContact } from '@/models/Contact.js';
 
 export type AbuseReportPayload = {
 	id: string;
@@ -41,11 +42,16 @@ export type InactiveModeratorsWarningPayload = {
 	remainingTime: ModeratorInactivityRemainingTime;
 };
 
+export type ContactPayload = {
+	contact: MiContact;
+};
+
 export type SystemWebhookPayload<T extends SystemWebhookEventType> =
 	T extends 'abuseReport' | 'abuseReportResolved' ? AbuseReportPayload :
 	T extends 'userCreated' ? Packed<'UserLite'> :
 	T extends 'inactiveModeratorsWarning' ? InactiveModeratorsWarningPayload :
 	T extends 'inactiveModeratorsInvitationOnlyChanged' ? Record<string, never> :
+	T extends 'contactCreated' | 'contactResolved' | 'contactUpdated' | 'contactDeleted' ? ContactPayload :
 		never;
 
 @Injectable()

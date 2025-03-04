@@ -107,6 +107,11 @@ export function openInstanceMenu(ev: MouseEvent) {
 		text: i18n.ts.inquiry,
 		icon: 'ti ti-help-circle',
 		to: '/contact',
+	}, {
+		type: 'link',
+		text: i18n.ts._contact.form,
+		icon: 'ti ti-forms',
+		to: '/contact-form',
 	});
 
 	if (instance.impressumUrl) {

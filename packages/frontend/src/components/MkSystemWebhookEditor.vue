@@ -67,6 +67,24 @@ SPDX-License-Identifier: AGPL-3.0-only
 								</MkSwitch>
 								<MkButton v-show="mode === 'edit'" transparent :class="$style.testButton" :disabled="!(isActive && events.inactiveModeratorsInvitationOnlyChanged)" @click="test('inactiveModeratorsInvitationOnlyChanged')"><i class="ti ti-send"></i></MkButton>
 							</div>
+							<div :class="$style.switchBox">
+								<MkSwitch v-model="events.contactCreated" :disabled="disabledEvents.contactCreated">
+									<template #label>{{ i18n.ts._webhookSettings._systemEvents.contactCreated }}</template>
+								</MkSwitch>
+								<MkButton v-show="mode === 'edit'" transparent :class="$style.testButton" :disabled="!(isActive && events.contactCreated)" @click="test('contactCreated')"><i class="ti ti-send"></i></MkButton>
+							</div>
+							<div :class="$style.switchBox">
+								<MkSwitch v-model="events.contactDeleted" :disabled="disabledEvents.contactDeleted">
+									<template #label>{{ i18n.ts._webhookSettings._systemEvents.contactDeleted }}</template>
+								</MkSwitch>
+								<MkButton v-show="mode === 'edit'" transparent :class="$style.testButton" :disabled="!(isActive && events.contactDeleted)" @click="test('contactDeleted')"><i class="ti ti-send"></i></MkButton>
+							</div>
+							<div :class="$style.switchBox">
+								<MkSwitch v-model="events.contactUpdated" :disabled="disabledEvents.contactUpdated">
+									<template #label>{{ i18n.ts._webhookSettings._systemEvents.contactUpdated }}</template>
+								</MkSwitch>
+								<MkButton v-show="mode === 'edit'" transparent :class="$style.testButton" :disabled="!(isActive && events.contactUpdated)" @click="test('contactUpdated')"><i class="ti ti-send"></i></MkButton>
+							</div>
 						</div>
 
 						<div v-show="mode === 'edit'" :class="$style.description">
@@ -114,6 +132,10 @@ type EventType = {
 	userCreated: boolean;
 	inactiveModeratorsWarning: boolean;
 	inactiveModeratorsInvitationOnlyChanged: boolean;
+	contactCreated: boolean;
+	contactResolved: boolean;
+	contactUpdated: boolean;
+	contactDeleted: boolean;
 };
 
 const emit = defineEmits<{
@@ -139,6 +161,10 @@ const events = ref<EventType>({
 	userCreated: true,
 	inactiveModeratorsWarning: true,
 	inactiveModeratorsInvitationOnlyChanged: true,
+	contactCreated: true,
+	contactResolved: true,
+	contactUpdated: true,
+	contactDeleted: true,
 });
 const isActive = ref<boolean>(true);
 
@@ -148,6 +174,10 @@ const disabledEvents = ref<EventType>({
 	userCreated: false,
 	inactiveModeratorsWarning: false,
 	inactiveModeratorsInvitationOnlyChanged: false,
+	contactCreated: false,
+	contactResolved: false,
+	contactUpdated: false,
+	contactDeleted: false,
 });
 
 const disableSubmitButton = computed(() => {

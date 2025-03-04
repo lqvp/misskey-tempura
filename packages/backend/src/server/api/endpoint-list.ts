@@ -423,3 +423,9 @@ export * as 'reaction-stats' from './endpoints/reaction-stats.js';
 export * as 'i/profile-counts-control' from './endpoints/i/profile-counts-control.js';
 export * as 'admin/drop-all-notes' from './endpoints/admin/drop-all-notes.js';
 export * as 'notes/llm-gen' from './endpoints/notes/llm-gen.js';
+export * as 'contact-send' from './endpoints/contact-send.js';
+export * as 'admin/contact-form/list' from './endpoints/admin/contact-form/list.js';
+export * as 'admin/contact-form/show' from './endpoints/admin/contact-form/show.js';
+export * as 'admin/contact-form/delete' from './endpoints/admin/contact-form/delete.js';
+export * as 'admin/contact-form/update' from './endpoints/admin/contact-form/update.js';
+

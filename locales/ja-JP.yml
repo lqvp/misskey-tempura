@@ -2329,6 +2329,8 @@ _permissions:
   "read:clip": "クリップを見る"
   "write:community-role": "コミュニティーロールを操作する"
   "write:admin:drop-all-notes": "全てのノートを削除する"
+  "write:admin:contact-form": "コンタクトフォームを操作する"
+  "read:admin:contact-form": "コンタクトフォームを見る"
 
 _auth:
   shareAccessTitle: "アプリへのアクセス許可"
@@ -2727,6 +2729,10 @@ _webhookSettings:
     userCreated: "ユーザーが作成されたとき"
     inactiveModeratorsWarning: "モデレーターが一定期間非アクティブになったとき"
     inactiveModeratorsInvitationOnlyChanged: "モデレーターが一定期間非アクティブだったため、システムにより招待制へと変更されたとき"
+    contactCreated: "コンタクトフォームから問い合わせを受けたとき"
+    contactResolved: "コンタクトフォームの問い合わせを処理したとき"
+    contactUpdated: "コンタクトフォームの問い合わせを更新したとき"
+    contactDeleted: "コンタクトフォームの問い合わせを削除したとき"
   deleteConfirm: "Webhookを削除しますか？"
   testRemarks: "スイッチの右にあるボタンをクリックするとダミーのデータを使用したテスト用Webhookを送信できます。"
 
@@ -3327,6 +3333,32 @@ _noteSearch:
   _option:
       with: "含む"
       without: "含まない"
+
+_contact:
+  form: "お問い合わせフォーム"
+  _form:
+    subject: "件名"
+    subjectPlaceholder: "お問い合わせの概要を記入"
+    message: "お問い合わせ内容"
+    messagePlaceholder: "具体的な内容を詳細に記入"
+    name: "お名前"
+    namePlaceholder: "ニックネーム可"
+    email: "メールアドレス"
+    emailPlaceholder: "返信希望の場合入力"
+    misskeyUser: "Misskeyユーザー名"
+    misskeyUserPlaceholder: "@username"
+  category:  "カテゴリ"
+  _category:
+    categoryGeneral: "一般問い合わせ"
+    categoryBug: "バグ報告"
+    categoryFeature: "機能要望"
+    categoryOther: "その他"
+  submit: "送信"
+  submitting: "送信中..."
+  requiredFieldsMissing: "必須項目を入力してください"
+  captchaVerificationRequired: "CAPTCHA認証を完了してください"
+  submissionSuccess: "送信完了"
+  confirmationMessage: "お問い合わせを受け付けました。"
 
 scheduledNoteDelete: "すぐ消す"
 noteDeletationAt: "このノートは{time}に削除されます"
