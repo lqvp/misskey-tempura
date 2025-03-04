@@ -6,6 +6,7 @@
 import { defaultStore } from '@/store.js';
 import { toast } from '@/os.js';
 import { i18n } from '@/i18n.js';
+import { playEarthquakeSound } from '@/scripts/sound.js';
 
 /**
  * Interface for earthquake alert data from jma_eew WebSocket API
@@ -69,8 +70,67 @@ export const shindoMap: Record<string, string> = {
 	'7': '7',
 };
 
-// 地震の警告音を再生するための音声ファイル
-const alertSound = new Audio('/assets/sounds/earthquake-alert.mp3');
+// 震度から適切な音声ファイルのタイプを決定
+function getSoundTypeForIntensity(intensity: string, isWarning: boolean, isCancel: boolean): keyof typeof import('@/scripts/sound.js').earthquakeSoundTypes {
+	// キャンセル報の場合
+	if (isCancel) {
+		return 'EEW_CANCELED';
+	}
+
+	// 通知音タイプの設定に基づいて選択
+	const soundType = defaultStore.reactiveState.earthquakeWarningSoundType?.value || 'auto';
+
+	if (soundType === 'eew') {
+		// EEW音のみ使用
+		return isWarning && intensity >= '5-' ? 'EEW2' : 'EEW1';
+	} else if (soundType === 'info') {
+		// 情報音声のみ使用
+		switch (intensity) {
+			case '1': return 'INFO_1';
+			case '2': return 'INFO_2';
+			case '3': return 'INFO_3';
+			case '4': return 'INFO_4';
+			case '5-': return 'INFO_5_MINUS';
+			case '5+': return 'INFO_5_PLUS';
+			case '6-': return 'INFO_6_MINUS';
+			case '6+': return 'INFO_6_PLUS';
+			case '7': return 'INFO_7';
+			default: return 'INFO_4'; // デフォルト
+		}
+	} else {
+		// 自動選択モード
+		// 警報・予報の判定
+		if (isWarning) {
+			return intensity >= '5-' ? 'EEW2' : 'EEW1';
+		}
+
+		// 情報音声（震度別）
+		switch (intensity) {
+			case '1': return 'INFO_1';
+			case '2': return 'INFO_2';
+			case '3': return 'INFO_3';
+			case '4': return 'INFO_4';
+			case '5-': return 'INFO_5_MINUS';
+			case '5+': return 'INFO_5_PLUS';
+			case '6-': return 'INFO_6_MINUS';
+			case '6+': return 'INFO_6_PLUS';
+			case '7': return 'INFO_7';
+			default: {
+				// 震度に応じてアラート音を選択
+				const intensityOrder = ['1', '2', '3', '4', '5-', '5+', '6-', '6+', '7'];
+				const intensityIndex = intensityOrder.indexOf(intensity);
+
+				if (intensityIndex >= 4) { // 震度5弱以上
+					return 'SHINDO2';
+				} else if (intensityIndex >= 0) { // 震度1以上
+					return 'SHINDO1';
+				} else {
+					return 'SHINDO0'; // 不明または微小地震
+				}
+			}
+		}
+	}
+}
 
 let wsConnection: WebSocket | null = null;
 let reconnectTimeout: NodeJS.Timeout | null = null;
@@ -125,6 +185,91 @@ function formatAlertMessage(data: EarthquakeAlertData): string {
 	}
 }
 
+// 最近通知した地震IDと時刻を保存するマップ
+const recentAlerts = new Map<string, number>();
+
+/**
+ * 通知抑制: 同じ地震IDの通知を一定時間内にスキップする
+ */
+function isThrottled(eventId: string): boolean {
+	if (!eventId) return false;
+
+	const now = Date.now();
+	const throttleTime = (defaultStore.reactiveState.earthquakeWarningThrottleTime.value || 60) * 1000; // 秒をミリ秒に変換
+	const lastTime = recentAlerts.get(eventId);
+
+	if (lastTime && (now - lastTime < throttleTime)) {
+		// 前回の通知から設定時間以内なのでスキップ
+		return true;
+	}
+
+	// 最新の通知時刻を記録
+	recentAlerts.set(eventId, now);
+
+	// マップのサイズを制限（古いエントリを削除）
+	if (recentAlerts.size > 100) {
+		const oldestKey = recentAlerts.keys().next().value;
+		if (oldestKey !== undefined) {
+			recentAlerts.delete(oldestKey);
+		}
+	}
+
+	return false;
+}
+
+/**
+ * 地域フィルタリング: 設定された地域に関する地震のみ通知する
+ */
+function passesRegionFilter(data: EarthquakeAlertData): boolean {
+	// 地域フィルタリングが無効なら常に通過
+	if (!defaultStore.reactiveState.enableEarthquakeWarningRegionFilter.value) {
+		return true;
+	}
+
+	const selectedRegions = defaultStore.reactiveState.earthquakeWarningRegionFilter.value || [];
+
+	// 何も選択されていない場合はすべての地域を通知
+	if (selectedRegions.length === 0) {
+		return true;
+	}
+
+	// 震源地の座標から該当地域を判定
+	const region = getRegionFromCoordinates(data.Latitude, data.Longitude);
+
+	// 選択された地域に含まれているか確認
+	return selectedRegions.includes(region);
+}
+
+/**
+ * 座標から日本の地域を判定
+ * 簡易的な実装として、大まかな地域区分を使用
+ */
+function getRegionFromCoordinates(latitude: number, longitude: number): string {
+	// 北海道: 北緯41.5度以上
+	if (latitude >= 41.5) return 'hokkaido';
+
+	// 東北: 北緯38.0～41.5度
+	if (latitude >= 38.0) return 'tohoku';
+
+	// 関東: 北緯35.0～38.0度、東経138.5度以東
+	if (latitude >= 35.0 && latitude < 38.0 && longitude >= 138.5) return 'kanto';
+
+	// 中部: 北緯35.0～38.0度、東経138.5度以西
+	if (latitude >= 35.0 && latitude < 38.0 && longitude < 138.5) return 'chubu';
+
+	// 近畿: 北緯33.5～35.0度、東経135.0度以東
+	if (latitude >= 33.5 && latitude < 35.0 && longitude >= 135.0) return 'kinki';
+
+	// 中国: 北緯33.5～35.0度、東経135.0度以西
+	if (latitude >= 33.5 && latitude < 35.0 && longitude < 135.0) return 'chugoku';
+
+	// 四国: 北緯32.0～33.5度
+	if (latitude >= 32.0 && latitude < 33.5) return 'shikoku';
+
+	// 九州・沖縄: 北緯32.0度以南
+	return 'kyushu';
+}
+
 /**
  * Display a toast notification for earthquake alerts
  */
@@ -134,6 +279,15 @@ function showEarthquakeAlert(data: EarthquakeAlertData): void {
 	// Check if this alert exceeds the user's intensity threshold
 	if (!intensityExceedsThreshold(data.MaxIntensity)) return;
 
+	// 訓練報のスキップ設定
+	if (data.isTraining && defaultStore.reactiveState.earthquakeWarningIgnoreTraining.value) return;
+
+	// Check if this alert matches the region filter (if enabled)
+	if (!passesRegionFilter(data)) return;
+
+	// 通知抑制: 同じイベントIDの通知を一定時間スキップ
+	if (isThrottled(data.EventID)) return;
+
 	// Format the message for display
 	const message = formatAlertMessage(data);
 
@@ -142,7 +296,19 @@ function showEarthquakeAlert(data: EarthquakeAlertData): void {
 
 	// Play alert sound if enabled
 	if (defaultStore.reactiveState.earthquakeWarningSound.value) {
-		playAlertSound();
+		const soundType = getSoundTypeForIntensity(data.MaxIntensity, data.isWarn, data.isCancel);
+		playEarthquakeSound(soundType)
+			.catch(error => {
+				console.error('Failed to play earthquake sound, falling back to legacy sound', error);
+				// フォールバック
+				try {
+					alertSound.pause();
+					alertSound.currentTime = 0;
+					alertSound.play().catch(error => console.error('Failed to play legacy alert sound:', error));
+				} catch (error) {
+					console.error('Error playing legacy alert sound:', error);
+				}
+			});
 	}
 
 	// Show toast notification
@@ -153,20 +319,6 @@ function showEarthquakeAlert(data: EarthquakeAlertData): void {
 	// If text-to-speech is enabled, read the message aloud
 	if (defaultStore.reactiveState.enableEarthquakeWarningTts.value) {
 		speakAlert(message);
-	}
-}
-
-/**
- * Play alert sound
- */
-function playAlertSound(): void {
-	try {
-		// 現在の再生状態をリセットして再度再生
-		alertSound.pause();
-		alertSound.currentTime = 0;
-		alertSound.play().catch(error => console.error('Failed to play alert sound:', error));
-	} catch (error) {
-		console.error('Error playing alert sound:', error);
 	}
 }
 
@@ -236,7 +388,19 @@ export function testEarthquakeAlert(): void {
 
 		// 通知音を鳴らす（設定有効時）
 		if (defaultStore.reactiveState.earthquakeWarningSound.value) {
-			playAlertSound();
+			const soundType = getSoundTypeForIntensity(mockData.MaxIntensity, mockData.isWarn, mockData.isCancel);
+			playEarthquakeSound(soundType)
+				.catch(error => {
+					console.error('Failed to play earthquake sound, falling back to legacy sound', error);
+					// フォールバック
+					try {
+						// alertSound.pause();
+						// alertSound.currentTime = 0;
+						// alertSound.play().catch(error => console.error('Failed to play legacy alert sound:', error));
+					} catch (error) {
+						console.error('Error playing legacy alert sound:', error);
+					}
+				});
 		}
 
 		// トースト通知を表示
@@ -300,8 +464,8 @@ export function connectEarthquakeWarningWs(): void {
 			try {
 				const data = JSON.parse(event.data) as EarthquakeAlertData;
 
-				// Only process jma_eew events that are not training/tests
-				if (data.type === 'jma_eew' && !data.isTraining) {
+				// Process jma_eew events (including training if not filtered)
+				if (data.type === 'jma_eew') {
 					showEarthquakeAlert(data);
 				}
 

@@ -51,6 +51,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<template #caption>{{ i18n.ts._earthquakeWarning.soundEnableCaption }}</template>
 			</MkSwitch>
 
+			<MkSelect v-if="earthquakeWarningSound" v-model="earthquakeWarningSoundType">
+				<template #label>{{ i18n.ts._earthquakeWarning.soundType }}</template>
+				<option value="auto">{{ i18n.ts._earthquakeWarning.soundTypeAuto }}</option>
+				<option value="eew">{{ i18n.ts._earthquakeWarning.soundTypeEew }}</option>
+				<option value="info">{{ i18n.ts._earthquakeWarning.soundTypeInfo }}</option>
+				<template #caption>{{ i18n.ts._earthquakeWarning.soundTypeCaption }}</template>
+			</MkSelect>
+
 			<MkSwitch v-model="enableEarthquakeWarningTts">
 				<template #label>{{ i18n.ts._earthquakeWarning.enableTts }}</template>
 				<template #caption>{{ i18n.ts._earthquakeWarning.enableTtsCaption }}</template>
@@ -63,6 +71,62 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkInput>
 			</div>
 
+			<!-- 地域フィルタリング設定 -->
+			<fieldset>
+				<legend>{{ i18n.ts._earthquakeWarning.regionFilter }}</legend>
+				<div class="_gaps_s">
+					<MkSwitch v-model="enableEarthquakeWarningRegionFilter">
+						<template #label>{{ i18n.ts._earthquakeWarning.regionFilterEnable }}</template>
+						<template #caption>{{ i18n.ts._earthquakeWarning.regionFilterCaption }}</template>
+					</MkSwitch>
+
+					<div v-if="enableEarthquakeWarningRegionFilter">
+						<MkFolder :defaultOpen="false">
+							<template #label>{{ i18n.ts._earthquakeWarning.regionFilterAreaLabel }}</template>
+							<div class="_gaps_s region-switches">
+								<MkSwitch v-model="regionFilters.hokkaido">
+									{{ i18n.ts._earthquakeWarning.regionFilterAreas.hokkaido }}
+								</MkSwitch>
+								<MkSwitch v-model="regionFilters.tohoku">
+									{{ i18n.ts._earthquakeWarning.regionFilterAreas.tohoku }}
+								</MkSwitch>
+								<MkSwitch v-model="regionFilters.kanto">
+									{{ i18n.ts._earthquakeWarning.regionFilterAreas.kanto }}
+								</MkSwitch>
+								<MkSwitch v-model="regionFilters.chubu">
+									{{ i18n.ts._earthquakeWarning.regionFilterAreas.chubu }}
+								</MkSwitch>
+								<MkSwitch v-model="regionFilters.kinki">
+									{{ i18n.ts._earthquakeWarning.regionFilterAreas.kinki }}
+								</MkSwitch>
+								<MkSwitch v-model="regionFilters.chugoku">
+									{{ i18n.ts._earthquakeWarning.regionFilterAreas.chugoku }}
+								</MkSwitch>
+								<MkSwitch v-model="regionFilters.shikoku">
+									{{ i18n.ts._earthquakeWarning.regionFilterAreas.shikoku }}
+								</MkSwitch>
+								<MkSwitch v-model="regionFilters.kyushu">
+									{{ i18n.ts._earthquakeWarning.regionFilterAreas.kyushu }}
+								</MkSwitch>
+							</div>
+							<p class="_caption">{{ i18n.ts._earthquakeWarning.regionFilterAreaCaption }}</p>
+						</MkFolder>
+					</div>
+				</div>
+			</fieldset>
+
+			<!-- 通知抑制設定 -->
+			<MkInput v-model="earthquakeWarningThrottleTime" type="number" step="10" :min="0">
+				<template #label>{{ i18n.ts._earthquakeWarning.throttleTime }}</template>
+				<template #caption>{{ i18n.ts._earthquakeWarning.throttleTimeCaption }}</template>
+			</MkInput>
+
+			<!-- 訓練報スキップ設定 -->
+			<MkSwitch v-model="earthquakeWarningIgnoreTraining">
+				<template #label>{{ i18n.ts._earthquakeWarning.ignoreTraining }}</template>
+				<template #caption>{{ i18n.ts._earthquakeWarning.ignoreTrainingCaption }}</template>
+			</MkSwitch>
+
 			<MkButton
 				primary
 				@click="testEarthquakeAlert"
@@ -73,15 +137,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div class="test-caption">{{ i18n.ts._earthquakeWarning.testNotificationCaption }}</div>
 		</div>
 	</div>
+	<div class="_buttons">
+		<MkButton primary @click="save">{{ i18n.ts.save }}</MkButton>
+	</div>
 </MkFolder>
-
-<div class="_buttons">
-	<MkButton primary @click="save">{{ i18n.ts.save }}</MkButton>
-</div>
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed, reactive, watch, onMounted } from 'vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkInput from '@/components/MkInput.vue';
@@ -145,16 +208,75 @@ const earthquakeWarningSound = computed({
 	},
 });
 
+const earthquakeWarningSoundType = computed({
+	get: () => defaultStore.reactiveState.earthquakeWarningSoundType.value,
+	set: (value) => {
+		defaultStore.set('earthquakeWarningSoundType', value);
+	},
+});
+
+// 地域フィルタリング設定
+const enableEarthquakeWarningRegionFilter = computed({
+	get: () => defaultStore.reactiveState.enableEarthquakeWarningRegionFilter.value,
+	set: (value) => {
+		defaultStore.set('enableEarthquakeWarningRegionFilter', value);
+	},
+});
+
+// 選択された地域をリアクティブに管理するためのオブジェクト
+const regionFilters = reactive({
+	hokkaido: false,
+	tohoku: false,
+	kanto: false,
+	chubu: false,
+	kinki: false,
+	chugoku: false,
+	shikoku: false,
+	kyushu: false,
+});
+
+// 地域フィルタの取得・設定
+watch(regionFilters, () => {
+	const regions = [];
+	for (const [region, selected] of Object.entries(regionFilters)) {
+		if (selected) regions.push(region);
+	}
+	defaultStore.set('earthquakeWarningRegionFilter', regions);
+}, { deep: true });
+
+// 初期値の設定
+onMounted(() => {
+	const selectedRegions = defaultStore.reactiveState.earthquakeWarningRegionFilter.value || [];
+	for (const region of selectedRegions) {
+		if (region in regionFilters) {
+			regionFilters[region] = true;
+		}
+	}
+});
+
+// 通知抑制時間設定
+const earthquakeWarningThrottleTime = computed({
+	get: () => defaultStore.reactiveState.earthquakeWarningThrottleTime.value,
+	set: (value) => {
+		defaultStore.set('earthquakeWarningThrottleTime', value);
+	},
+});
+
+// 訓練報スキップ設定
+const earthquakeWarningIgnoreTraining = computed({
+	get: () => defaultStore.reactiveState.earthquakeWarningIgnoreTraining.value,
+	set: (value) => {
+		defaultStore.set('earthquakeWarningIgnoreTraining', value);
+	},
+});
+
 /**
  * 設定を保存してページをリロードし、WebSocketの接続を更新します
  */
 async function save() {
-	await reloadAsk({ 
-		reason: i18n.ts.reloadToApplySetting, 
+	await reloadAsk({
+		reason: i18n.ts.reloadToApplySetting,
 		unison: true,
-		callback: () => {
-			os.success();
-		}
 	});
 }
 </script>

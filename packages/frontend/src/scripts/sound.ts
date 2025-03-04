@@ -184,13 +184,14 @@ export async function playUrl(url: string, opts: {
 	volume?: number;
 	pan?: number;
 	playbackRate?: number;
-}) {
+}): Promise<boolean> {
 	if (opts.volume === 0) {
-		return;
+		return true;
 	}
 	const buffer = await loadAudio(url);
-	if (!buffer) return;
+	if (!buffer) return false;
 	createSourceNode(buffer, opts).soundSource.start();
+	return true;
 }
 
 export function createSourceNode(buffer: AudioBuffer, opts: {
@@ -254,4 +255,69 @@ export function isMute(): boolean {
 	}
 
 	return false;
+}
+
+// 地震関連の音声ファイル
+export const earthquakeSoundTypes = {
+	// 緊急地震速報
+	EEW1: '/client-assets/sounds/earthQuake/EEW1.wav', // 予報（震度4未満）
+	EEW2: '/client-assets/sounds/earthQuake/EEW2.wav', // 警報（震度5弱以上）
+	EEW_CANCELED: '/client-assets/sounds/earthQuake/EEW_canceled.wav', // 取り消し
+
+	// 揺れ検知
+	PGA1: '/client-assets/sounds/earthQuake/PGA1.wav', // 加速度レベル1
+	PGA2: '/client-assets/sounds/earthQuake/PGA2.wav', // 加速度レベル2
+
+	// 震度情報
+	SHINDO0: '/client-assets/sounds/earthQuake/Shindo0.wav', // 震度レベル0（弱い反応）
+	SHINDO1: '/client-assets/sounds/earthQuake/Shindo1.wav', // 震度1以上
+	SHINDO2: '/client-assets/sounds/earthQuake/Shindo2.wav', // 震度4以上
+
+	// 地震情報音声（震度別）
+	INFO_1: '/client-assets/sounds/earthQuake/info/1.wav',
+	INFO_2: '/client-assets/sounds/earthQuake/info/2.wav',
+	INFO_3: '/client-assets/sounds/earthQuake/info/3.wav',
+	INFO_4: '/client-assets/sounds/earthQuake/info/4.wav',
+	INFO_5_MINUS: '/client-assets/sounds/earthQuake/info/5-.wav',
+	INFO_5_PLUS: '/client-assets/sounds/earthQuake/info/5+.wav',
+	INFO_6_MINUS: '/client-assets/sounds/earthQuake/info/6-.wav',
+	INFO_6_PLUS: '/client-assets/sounds/earthQuake/info/6+.wav',
+	INFO_7: '/client-assets/sounds/earthQuake/info/7.wav',
+};
+
+/**
+ * 地震関連の音声を再生する
+ * @param type 音声の種類
+ * @param volume 音量（0-1）
+ */
+export async function playEarthquakeSound(type: keyof typeof earthquakeSoundTypes, volume = 1.0): Promise<boolean> {
+	try {
+		const masterVolume = defaultStore.state.sound_masterVolume;
+		if (isMute() || masterVolume === 0 || volume === 0) {
+			return true; // ミュート時は成功として扱う
+		}
+
+		const url = earthquakeSoundTypes[type];
+		const buffer = await loadAudio(url, { useCache: true }).catch((error) => {
+			console.error(`Failed to load earthquake sound: ${type}`, error);
+			return undefined;
+		});
+
+		if (!buffer) {
+			console.warn(`Earthquake sound not available: ${type}, falling back to default`);
+			// フォールバック用の音声がある場合はそれを再生
+			if (type.startsWith('EEW') || type.startsWith('PGA') || type.startsWith('SHINDO')) {
+				playUrl('/client-assets/sounds/earthquake-alert.mp3', { volume: volume * masterVolume });
+				return true;
+			}
+			return false;
+		}
+
+		const finalVolume = volume * masterVolume;
+		createSourceNode(buffer, { volume: finalVolume }).soundSource.start();
+		return true;
+	} catch (error) {
+		console.error('Error playing earthquake sound:', error);
+		return false;
+	}
 }

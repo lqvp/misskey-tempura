@@ -12508,6 +12508,26 @@ export interface Locale extends ILocale {
          */
         "soundEnableCaption": string;
         /**
+         * 通知音のタイプ
+         */
+        "soundType": string;
+        /**
+         * 地震情報の種類に応じた通知音を選択します
+         */
+        "soundTypeCaption": string;
+        /**
+         * 自動（種類に応じて最適な音声）
+         */
+        "soundTypeAuto": string;
+        /**
+         * 緊急地震速報音
+         */
+        "soundTypeEew": string;
+        /**
+         * 地震情報音声
+         */
+        "soundTypeInfo": string;
+        /**
          * 有効
          */
         "enabled": string;
@@ -12558,16 +12578,82 @@ export interface Locale extends ILocale {
             "6+": string;
         };
         /**
-         * データ提供・API
+         * 地域フィルタリング
          */
-        "license": string;
+        "regionFilter": string;
+        /**
+         * 地域フィルタリングを有効にする
+         */
+        "regionFilterEnable": string;
+        /**
+         * 指定した地域に関する地震情報のみを通知します
+         */
+        "regionFilterCaption": string;
+        /**
+         * 通知する地域
+         */
+        "regionFilterAreaLabel": string;
+        /**
+         * 通知を受け取りたい地域を選択してください（選択しない場合はすべての地域）
+         */
+        "regionFilterAreaCaption": string;
+        "regionFilterAreas": {
+            /**
+             * 北海道
+             */
+            "hokkaido": string;
+            /**
+             * 東北
+             */
+            "tohoku": string;
+            /**
+             * 関東
+             */
+            "kanto": string;
+            /**
+             * 中部
+             */
+            "chubu": string;
+            /**
+             * 近畿
+             */
+            "kinki": string;
+            /**
+             * 中国
+             */
+            "chugoku": string;
+            /**
+             * 四国
+             */
+            "shikoku": string;
+            /**
+             * 九州・沖縄
+             */
+            "kyushu": string;
+        };
+        /**
+         * 通知抑制時間
+         */
+        "throttleTime": string;
+        /**
+         * 同じ地震の通知が短時間に複数回来るのを防ぎます。設定した秒数以内に来た同一地震IDの通知はスキップされます。
+         */
+        "throttleTimeCaption": string;
+        /**
+         * 訓練報を通知しない
+         */
+        "ignoreTraining": string;
+        /**
+         * 訓練や試験用の地震速報を通知から除外します
+         */
+        "ignoreTrainingCaption": string;
         /**
          * 地震速報データはWolfx (https://wolfx.jp/) によって提供されています。
          * この機能は、Wolfxが提供するWebSocket API (https://wolfx.jp/wsapi) を利用してリアルタイムにデータを受信しています。
          * APIの詳細については、Wolfx APIドキュメント (https://wolfx.jp/apidoc) を参照してください。
          * ご利用にあたっては、Wolfxの利用規約をご確認ください。
          */
-        "licenseDescription": string;
+        "license": string;
     };
     /**
      * すぐ消す
