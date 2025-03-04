@@ -690,6 +690,34 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'account',
 		default: null as string | null,
 	},
+	enableEarthquakeWarning: {
+		where: 'device',
+		default: false,
+	},
+	earthquakeWarningIntensity: {
+		where: 'device',
+		default: '4', // Default threshold is intensity 4
+	},
+	enableEarthquakeWarningTts: {
+		where: 'device',
+		default: false,
+	},
+	earthquakeWarningToastDuration: {
+		where: 'device',
+		default: 10000, // 10秒
+	},
+	earthquakeWarningTtsRate: {
+		where: 'device',
+		default: 1.0, // 標準速度
+	},
+	earthquakeWarningNotificationStyle: {
+		where: 'device',
+		default: 'standard', // 'detailed', 'standard', 'simple'
+	},
+	earthquakeWarningSound: {
+		where: 'device',
+		default: true, // 通知音を有効
+	},
 }));
 
 // TODO: 他のタブと永続化されたstateを同期

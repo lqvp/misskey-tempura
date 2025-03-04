@@ -22,6 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<PostFormSettings/>
 		<TimeLineSettings/>
 		<LLMSettings/>
+		<EarthquakeSettings/>
 	</div>
 </div>
 </template>
@@ -42,6 +43,7 @@ const DriveSettings = defineAsyncComponent(() => import('./temp-settings/temp-dr
 const PostFormSettings = defineAsyncComponent(() => import('./temp-settings/temp-postform.vue'));
 const TimeLineSettings = defineAsyncComponent(() => import('./temp-settings/temp-timeline.vue'));
 const LLMSettings = defineAsyncComponent(() => import('./temp-settings/temp-llm.vue'));
+const EarthquakeSettings = defineAsyncComponent(() => import('./temp-settings/temp-earthquake.vue'));
 
 const headerActions = computed(() => []);
 const headerTabs = computed(() => []);
@@ -101,4 +103,3 @@ definePageMetadata(() => ({
   }
 }
 </style>
-

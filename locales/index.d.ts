@@ -12426,6 +12426,149 @@ export interface Locale extends ILocale {
             "without": string;
         };
     };
+    "_earthquakeWarning": {
+        /**
+         * 地震速報
+         */
+        "settings": string;
+        /**
+         * 地震速報を有効にする
+         */
+        "enable": string;
+        /**
+         * WebSocketを通じて地震速報を受信し、トースト通知で表示します。
+         */
+        "enableCaption": string;
+        /**
+         * 通知する最小震度
+         */
+        "intensityThreshold": string;
+        /**
+         * 設定した震度以上の地震のみ通知されます。
+         */
+        "intensityDescription": string;
+        /**
+         * 音声読み上げを有効にする
+         */
+        "enableTts": string;
+        /**
+         * 地震速報を受信した際に通知内容を音声で読み上げます。
+         */
+        "enableTtsCaption": string;
+        /**
+         * 通知テスト
+         */
+        "testNotification": string;
+        /**
+         * 設定した内容で通知を表示してテストします。
+         */
+        "testNotificationCaption": string;
+        /**
+         * 通知表示時間
+         */
+        "toastDuration": string;
+        /**
+         * 通知が表示される時間（ミリ秒）
+         */
+        "toastDurationCaption": string;
+        /**
+         * 読み上げ速度
+         */
+        "ttsRate": string;
+        /**
+         * 音声読み上げの速度（1.0が標準速度）
+         */
+        "ttsRateCaption": string;
+        /**
+         * 通知スタイル
+         */
+        "notificationStyle": string;
+        /**
+         * 通知の表示スタイルを選択します
+         */
+        "notificationStyleCaption": string;
+        /**
+         * シンプル（最小限の情報）
+         */
+        "notificationStyleSimple": string;
+        /**
+         * 標準（基本情報）
+         */
+        "notificationStyleStandard": string;
+        /**
+         * 詳細（すべての情報）
+         */
+        "notificationStyleDetailed": string;
+        /**
+         * 通知音を有効にする
+         */
+        "soundEnable": string;
+        /**
+         * 地震速報受信時に警告音を鳴らします
+         */
+        "soundEnableCaption": string;
+        /**
+         * 有効
+         */
+        "enabled": string;
+        /**
+         * 無効
+         */
+        "disabled": string;
+        /**
+         * ミリ秒
+         */
+        "milliseconds": string;
+        "shindo": {
+            /**
+             * 震度1
+             */
+            "1": string;
+            /**
+             * 震度2
+             */
+            "2": string;
+            /**
+             * 震度3
+             */
+            "3": string;
+            /**
+             * 震度4
+             */
+            "4": string;
+            /**
+             * 震度7
+             */
+            "7": string;
+            /**
+             * 震度5弱
+             */
+            "5-": string;
+            /**
+             * 震度5強
+             */
+            "5+": string;
+            /**
+             * 震度6弱
+             */
+            "6-": string;
+            /**
+             * 震度6強
+             */
+            "6+": string;
+        };
+        /**
+         * データ提供・API
+         */
+        "license": string;
+        /**
+         * 地震速報データはWolfx (https://wolfx.jp/) によって提供されています。
+         * この機能は、Wolfxが提供するWebSocket API (https://wolfx.jp/wsapi) を利用してリアルタイムにデータを受信しています。
+         * APIの詳細については、Wolfx APIドキュメント (https://wolfx.jp/apidoc) を参照してください。
+         * ご利用にあたっては、Wolfxの利用規約をご確認ください。
+         */
+        "licenseDescription": string;
+    };
     /**
      * すぐ消す
      */
