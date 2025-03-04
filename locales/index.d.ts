@@ -12715,6 +12715,10 @@ export interface Locale extends ILocale {
      * リモートサーバーからのデータを表示しています
      */
     "showingDataFromRemoteServer": string;
+    /**
+     * リモートサーバーからデータを取得しました
+     */
+    "fetchedFromRemoteServer": string;
 }
 declare const locales: {
     [lang: string]: Locale;
