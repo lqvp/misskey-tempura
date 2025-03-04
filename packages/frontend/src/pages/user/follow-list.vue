@@ -62,32 +62,56 @@ async function fetchFromRemote() {
 
 	fetchingRemote.value = true;
 	remoteUsers.value = [];
+	const protocol = location.protocol === 'https:' ? 'https:' : 'http:';
 
 	try {
-		const endpoint = props.type === 'following' ? 'users/following' : 'users/followers';
-		const protocol = location.protocol === 'https:' ? 'https:' : 'http:';
-		const url = `${protocol}//${props.user.host}/api/${endpoint}`;
-
-		const response = await fetch(url, {
+		// 1. まずリモートサーバーでのユーザーIDを取得
+		const showUrl = `${protocol}//${props.user.host}/api/users/show`;
+		const showResponse = await fetch(showUrl, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify({
-				userId: props.user.id,
+				username: props.user.username,
+				host: null, // リモートサーバーから自サーバー上のユーザーを探すので、hostはnull
+			}),
+		});
+
+		if (!showResponse.ok) {
+			throw new Error(`${showResponse.status}: ${showResponse.statusText}`);
+		}
+
+		const userInfo = await showResponse.json();
+
+		if (!userInfo || !userInfo.id) {
+			throw new Error('User not found on remote server');
+		}
+
+		// 2. 取得したIDを使ってフォロー/フォロワーリストを取得
+		const endpoint = props.type === 'following' ? 'users/following' : 'users/followers';
+		const listUrl = `${protocol}//${props.user.host}/api/${endpoint}`;
+
+		const listResponse = await fetch(listUrl, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				userId: userInfo.id, // リモートサーバーから取得したID
 				limit: 100,
 			}),
 		});
 
-		if (!response.ok) {
-			throw new Error(`${response.status}: ${response.statusText}`);
+		if (!listResponse.ok) {
+			throw new Error(`${listResponse.status}: ${listResponse.statusText}`);
 		}
 
-		const data = await response.json();
+		const data = await listResponse.json();
 
 		if (Array.isArray(data)) {
 			remoteUsers.value = data.map(x => props.type === 'following' ? x.followee : x.follower);
-			os.success();
+			os.toast(i18n.ts.fetchedFromRemoteServer);
 		} else {
 			throw new Error('Invalid response format');
 		}
