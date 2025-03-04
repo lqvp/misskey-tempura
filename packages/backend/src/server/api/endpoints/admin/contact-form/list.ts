@@ -6,9 +6,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { ContactsRepository } from '@/models/_.js';
-import { QueryService } from '@/core/QueryService.js';
 import { DI } from '@/di-symbols.js';
+import { QueryService } from '@/core/QueryService.js';
+import type { User } from '@/models/entities/User.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
+import type { MiContact } from '@/models/Contact.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -17,58 +19,86 @@ export const meta = {
 	requireModerator: true,
 	secure: true,
 	kind: 'read:admin:contact-form',
+
 	res: {
 		type: 'array',
-		optional: false,
-		nullable: false,
+		optional: false, nullable: false,
 		items: {
 			type: 'object',
-			optional: false,
-			nullable: false,
+			optional: false, nullable: false,
 			properties: {
 				id: {
 					type: 'string',
-					optional: false,
-					nullable: false,
-					format: 'misskey:id',
+					optional: false, nullable: false,
+					format: 'id',
+					example: 'xxxxxxxxxx',
 				},
-				subject: {
+				email: {
 					type: 'string',
-					optional: false,
-					nullable: false,
+					optional: false, nullable: true,
 				},
-				createdAt: {
+				created: {
 					type: 'string',
-					optional: false,
-					nullable: false,
+					optional: false, nullable: false,
 					format: 'date-time',
 				},
-				status: {
+				updated: {
 					type: 'string',
-					optional: false,
-					nullable: false,
+					optional: false, nullable: false,
+					format: 'date-time',
 				},
-				name: {
+				misskeyUser: {
 					type: 'string',
-					optional: false,
-					nullable: false,
+					optional: false, nullable: true,
+					format: 'id',
+				},
+				message: {
+					type: 'string',
+					optional: false, nullable: false,
+				},
+				files: {
+					type: 'array',
+					optional: false, nullable: false,
+					items: {
+						type: 'string',
+						optional: false, nullable: false,
+					},
 				},
 				category: {
 					type: 'string',
-					optional: false,
-					nullable: false,
+					optional: false, nullable: false,
+				},
+				forwarded: {
+					type: 'boolean',
+					optional: false, nullable: false,
+				},
+				responseMessage: {
+					type: 'string',
+					optional: false, nullable: true,
+				},
+				note: {
+					type: 'string',
+					optional: false, nullable: true,
+				},
+				status: {
+					type: 'string',
+					enum: ['pending', 'inProgress', 'resolved'],
+					optional: false, nullable: false,
 				},
 				assigneeId: {
 					type: 'string',
-					optional: true,
-					nullable: true,
-					format: 'misskey:id',
+					optional: false, nullable: true,
+					format: 'id',
 				},
 				assignee: {
 					type: 'object',
-					optional: true,
-					nullable: true,
+					optional: false, nullable: true,
 					ref: 'User',
+				},
+				respondedAt: {
+					type: 'string',
+					optional: false, nullable: true,
+					format: 'date-time',
 				},
 			},
 		},
@@ -82,7 +112,7 @@ export const paramDef = {
 		sinceId: { type: 'string', format: 'misskey:id' },
 		untilId: { type: 'string', format: 'misskey:id' },
 		status: { type: 'string', enum: ['pending', 'inProgress', 'resolved'] },
-		origin: { type: 'string', enum: ['combined', 'internal', 'external'] },
+		origin: { type: 'string', enum: ['internal', 'external'] },
 		category: { type: 'string' },
 	},
 	required: [],
@@ -123,19 +153,26 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				let assignee = null;
 				if (contact.assigneeId) {
 					assignee = await this.userEntityService.pack(contact.assigneeId, null, {
-						detail: false,
+						schema: 'UserLite',
 					});
 				}
 
 				return {
 					id: contact.id,
-					subject: contact.subject,
-					createdAt: contact.createdAt.toISOString(),
-					status: contact.status,
-					name: contact.name,
+					email: contact.email,
+					created: contact.createdAt.toISOString(),
+					updated: contact.createdAt.toISOString(), // Using createdAt as there's no updated field
+					misskeyUser: contact.misskeyUser,
+					message: contact.message,
+					files: [], // Placeholder as this doesn't appear to be in the model
 					category: contact.category,
+					forwarded: false, // Placeholder as this doesn't appear to be in the model
+					responseMessage: contact.responseMessage,
+					note: contact.note,
+					status: contact.status,
 					assigneeId: contact.assigneeId,
-					assignee: assignee,
+					assignee,
+					respondedAt: contact.respondedAt ? contact.respondedAt.toISOString() : null,
 				};
 			}));
 		});

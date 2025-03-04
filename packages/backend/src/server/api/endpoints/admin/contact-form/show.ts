@@ -9,6 +9,7 @@ import type { ContactsRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '@/server/api/error.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
+import type { MiContact } from '@/models/Contact.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -28,32 +29,72 @@ export const meta = {
 
 	res: {
 		type: 'object',
-		optional: false,
-		nullable: false,
+		optional: false, nullable: false,
 		properties: {
 			id: {
 				type: 'string',
-				format: 'misskey:id',
+				optional: false, nullable: false,
+				format: 'id',
 				example: 'xxxxxxxxxx',
 			},
-			subject: { type: 'string' },
-			message: { type: 'string' },
-			name: { type: 'string' },
-			email: { type: 'string', nullable: true },
-			misskeyUser: { type: 'string', format: 'misskey:id', nullable: true },
-			category: { type: 'string' },
-			status: { type: 'string', enum: ['pending', 'inProgress', 'resolved'] },
-			note: { type: 'string', nullable: true },
-			responseMessage: { type: 'string', nullable: true },
-			assigneeId: { type: 'string', format: 'misskey:id', nullable: true },
+			subject: {
+				type: 'string',
+				optional: false, nullable: false,
+			},
+			message: {
+				type: 'string',
+				optional: false, nullable: false,
+			},
+			name: {
+				type: 'string',
+				optional: false, nullable: false,
+			},
+			email: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
+			misskeyUser: {
+				type: 'string',
+				optional: false, nullable: true,
+				format: 'id',
+			},
+			category: {
+				type: 'string',
+				optional: false, nullable: false,
+			},
+			status: {
+				type: 'string',
+				enum: ['pending', 'inProgress', 'resolved'],
+				optional: false, nullable: false,
+			},
+			note: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
+			responseMessage: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
+			assigneeId: {
+				type: 'string',
+				optional: false, nullable: true,
+				format: 'id',
+			},
 			assignee: {
 				type: 'object',
-				optional: true,
-				nullable: true,
+				optional: false, nullable: true,
 				ref: 'User',
 			},
-			createdAt: { type: 'string', format: 'date-time' },
-			respondedAt: { type: 'string', format: 'date-time', nullable: true },
+			createdAt: {
+				type: 'string',
+				optional: false, nullable: false,
+				format: 'date-time',
+			},
+			respondedAt: {
+				type: 'string',
+				optional: false, nullable: true,
+				format: 'date-time',
+			},
 		},
 	},
 } as const;
@@ -86,7 +127,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 			let assignee = null;
 			if (contact.assigneeId) {
 				assignee = await this.userEntityService.pack(contact.assigneeId, null, {
-					detail: false,
+					schema: 'UserLite',
 				});
 			}
 
@@ -102,7 +143,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				note: contact.note,
 				responseMessage: contact.responseMessage,
 				assigneeId: contact.assigneeId,
-				assignee: assignee,
+				assignee,
 				createdAt: contact.createdAt.toISOString(),
 				respondedAt: contact.respondedAt ? contact.respondedAt.toISOString() : null,
 			};
