@@ -12702,6 +12702,19 @@ export interface Locale extends ILocale {
      * すべてのノートを削除しますか？
      */
     "dropAllNotesConfirm": string;
+    /**
+     * リモートから取得
+     */
+    "fetchFromRemote": string;
+    /**
+     * リモートからの取得に失敗しました。
+     * 相手がリストを公開していないか、非対応のサーバーである可能性があります。
+     */
+    "failedToFetchFromRemote": string;
+    /**
+     * リモートサーバーからのデータを表示しています
+     */
+    "showingDataFromRemoteServer": string;
 }
 declare const locales: {
     [lang: string]: Locale;
