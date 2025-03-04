@@ -8,9 +8,7 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { ContactsRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { QueryService } from '@/core/QueryService.js';
-import type { User } from '@/models/entities/User.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
-import type { MiContact } from '@/models/Contact.js';
 
 export const meta = {
 	tags: ['admin'],
