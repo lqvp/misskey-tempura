@@ -242,6 +242,11 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 		text: i18n.ts.originalFeature,
 		to: '/admin/temp-admin',
 		active: currentPage.value?.route.name === 'temp-admin',
+	}, {
+		icon: 'ti ti-git-fork',
+		text: i18n.ts._contact.form,
+		to: '/admin/contact-form',
+		active: currentPage.value?.route.name === 'contact-form',
 	}],
 }] : []), {
 	title: i18n.ts.info,

@@ -8890,6 +8890,14 @@ export interface Locale extends ILocale {
          * 全てのノートを削除する
          */
         "write:admin:drop-all-notes": string;
+        /**
+         * コンタクトフォームを操作する
+         */
+        "write:admin:contact-form": string;
+        /**
+         * コンタクトフォームを見る
+         */
+        "read:admin:contact-form": string;
     };
     "_auth": {
         /**
@@ -10317,6 +10325,22 @@ export interface Locale extends ILocale {
              * モデレーターが一定期間非アクティブだったため、システムにより招待制へと変更されたとき
              */
             "inactiveModeratorsInvitationOnlyChanged": string;
+            /**
+             * コンタクトフォームから問い合わせを受けたとき
+             */
+            "contactCreated": string;
+            /**
+             * コンタクトフォームの問い合わせを処理したとき
+             */
+            "contactResolved": string;
+            /**
+             * コンタクトフォームの問い合わせを更新したとき
+             */
+            "contactUpdated": string;
+            /**
+             * コンタクトフォームの問い合わせを削除したとき
+             */
+            "contactDeleted": string;
         };
         /**
          * Webhookを削除しますか？
@@ -12496,6 +12520,14 @@ export interface Locale extends ILocale {
             "categoryOther": string;
         };
         /**
+         * お問い合わせフォームを有効にする
+         */
+        "enableContactForm": string;
+        /**
+         * 有効にすることで、お問い合わせフォームを表示します。
+         */
+        "enableContactFormDescription": string;
+        /**
          * 送信
          */
         "submit": string;
@@ -12519,6 +12551,58 @@ export interface Locale extends ILocale {
          * お問い合わせを受け付けました。
          */
         "confirmationMessage": string;
+        /**
+         * ステータス
+         */
+        "status": string;
+        /**
+         * 保留中
+         */
+        "pending": string;
+        /**
+         * 対応中
+         */
+        "inProgress": string;
+        /**
+         * 解決済み
+         */
+        "resolved": string;
+        /**
+         * 返信日時
+         */
+        "respondedAt": string;
+        /**
+         * 問い合わせ元
+         */
+        "origin": string;
+        /**
+         * 内部
+         */
+        "internal": string;
+        /**
+         * 外部
+         */
+        "external": string;
+        /**
+         * 返信
+         */
+        "response": string;
+        /**
+         * 問い合わせに対する返信内容を入力してください
+         */
+        "responseMessageCaption": string;
+        /**
+         * 内部メモ（問い合わせユーザーには表示されません）
+         */
+        "internalNote": string;
+        /**
+         * 担当者
+         */
+        "assignee": string;
+        /**
+         * この問い合わせを削除してもよろしいですか？この操作は元に戻せません。
+         */
+        "deleteContactConfirm": string;
     };
     /**
      * すぐ消す

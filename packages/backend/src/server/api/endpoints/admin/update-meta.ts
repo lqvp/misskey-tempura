@@ -256,6 +256,7 @@ export const paramDef = {
 		serverGeminiEnabled: { type: 'boolean' },
 		serverGeminiApiKey: { type: 'string', nullable: true },
 		serverGeminiModels: { type: 'string', nullable: false },
+		enableContactForm: { type: 'boolean' },
 	},
 	required: [],
 } as const;
@@ -963,6 +964,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if ( ps.serverGeminiModels !== undefined) {
 				set.serverGeminiModels = ps.serverGeminiModels;
+			}
+
+			if ( ps.enableContactForm !== undefined) {
+				set.enableContactForm = ps.enableContactForm;
 			}
 
 			const before = await this.metaService.fetch(true);

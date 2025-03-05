@@ -82,6 +82,7 @@ import {
 	MiUserPublickey,
 	MiUserSecurityKey,
 	MiWebhook,
+	MiContact,
 } from './_.js';
 import type { Provider } from '@nestjs/common';
 import type { DataSource } from 'typeorm';
@@ -530,6 +531,12 @@ const $noteScheduleRepository: Provider = {
 	inject: [DI.db],
 };
 
+const $contactsRepository: Provider = {
+	provide: DI.contactsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiContact).extend(miRepository as MiRepository<MiContact>),
+	inject: [DI.db],
+};
+
 @Module({
 	imports: [],
 	providers: [
@@ -607,6 +614,7 @@ const $noteScheduleRepository: Provider = {
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
 		$noteScheduleRepository,
+		$contactsRepository,
 	],
 	exports: [
 		$usersRepository,
@@ -683,6 +691,7 @@ const $noteScheduleRepository: Provider = {
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
 		$noteScheduleRepository,
+		$contactsRepository,
 	],
 })
 export class RepositoryModule {

@@ -5576,6 +5576,7 @@ export type components = {
       /** @default 0 */
       entranceMarginBottom: number;
       serverGeminiEnabled: boolean;
+      enableContactForm: boolean;
     };
     MetaDetailedOnly: {
       features?: {
@@ -7204,7 +7205,7 @@ export type operations = {
           /** @enum {string} */
           status?: 'pending' | 'inProgress' | 'resolved';
           /** @enum {string} */
-          origin?: 'combined' | 'internal' | 'external';
+          origin?: 'internal' | 'external';
           category?: string;
         };
       };
@@ -7214,17 +7215,31 @@ export type operations = {
       200: {
         content: {
           'application/json': ({
-              /** Format: misskey:id */
+              /**
+               * Format: id
+               * @example xxxxxxxxxx
+               */
               id: string;
-              subject: string;
+              email: string | null;
               /** Format: date-time */
-              createdAt: string;
-              status: string;
-              name: string;
+              created: string;
+              /** Format: date-time */
+              updated: string;
+              /** Format: id */
+              misskeyUser: string | null;
+              message: string;
+              files: string[];
               category: string;
-              /** Format: misskey:id */
-              assigneeId?: string | null;
-              assignee?: components['schemas']['User'] | null;
+              forwarded: boolean;
+              responseMessage: string | null;
+              note: string | null;
+              /** @enum {string} */
+              status: 'pending' | 'inProgress' | 'resolved';
+              /** Format: id */
+              assigneeId: string | null;
+              assignee: components['schemas']['User'] | null;
+              /** Format: date-time */
+              respondedAt: string | null;
             })[];
         };
       };
@@ -7282,7 +7297,7 @@ export type operations = {
         content: {
           'application/json': {
             /**
-             * Format: misskey:id
+             * Format: id
              * @example xxxxxxxxxx
              */
             id: string;
@@ -7290,16 +7305,16 @@ export type operations = {
             message: string;
             name: string;
             email: string | null;
-            /** Format: misskey:id */
+            /** Format: id */
             misskeyUser: string | null;
             category: string;
             /** @enum {string} */
             status: 'pending' | 'inProgress' | 'resolved';
             note: string | null;
             responseMessage: string | null;
-            /** Format: misskey:id */
+            /** Format: id */
             assigneeId: string | null;
-            assignee?: components['schemas']['User'] | null;
+            assignee: components['schemas']['User'] | null;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -9342,6 +9357,7 @@ export type operations = {
             serverGeminiEnabled: boolean;
             serverGeminiApiKey: string | null;
             serverGeminiModels: string;
+            enableContactForm: boolean;
           };
         };
       };
@@ -11872,6 +11888,7 @@ export type operations = {
           serverGeminiEnabled?: boolean;
           serverGeminiApiKey?: string | null;
           serverGeminiModels?: string;
+          enableContactForm?: boolean;
         };
       };
     };
@@ -15491,8 +15508,13 @@ export type operations = {
           message: string;
           name: string;
           email?: string | null;
-          misskeyUser?: string | null;
+          misskeyUser: string;
           category: string;
+          'hcaptcha-response'?: string | null;
+          'g-recaptcha-response'?: string | null;
+          'turnstile-response'?: string | null;
+          'm-captcha-response'?: string | null;
+          'testcaptcha-response'?: string | null;
         };
       };
     };

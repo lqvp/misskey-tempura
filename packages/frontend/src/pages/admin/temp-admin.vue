@@ -15,6 +15,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #caption>{{ i18n.ts.registerApprovalEmailRecommended }}</template>
 					</MkSwitch>
 
+					<MkSwitch v-model="enableContactForm" @change="onChange_enableContactForm">
+						<template #label>{{ i18n.ts._contact.enableContactForm }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+						<template #caption>{{ i18n.ts._contact.enableContactFormDescription }}</template>
+					</MkSwitch>
+
 					<MkSwitch v-model="blockMentionsFromUnfamiliarRemoteUsers" @change="onChange_blockMentionsFromUnfamiliarRemoteUsers">
 						<template #label>{{ i18n.ts.blockMentionsFromUnfamiliarRemoteUsers }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 						<template #caption>{{ i18n.ts.blockMentionsFromUnfamiliarRemoteUsersDescription }} Cherry-picked from Misskey.io (https://github.com/MisskeyIO/misskey/commit/82cc3987c13db4ad0da1589386027c222ce85ff8)</template>
@@ -400,6 +405,7 @@ const entranceMarginBottom = ref<number>();
 const serverGeminiEnabled = ref<boolean>(false);
 const serverGeminiApiKey = ref<string>('');
 const serverGeminiModels = ref<string>('gemini-2.0-flash');
+const enableContactForm = ref<boolean>(false);
 
 const originalMinimumUsernameLength = ref<number>();
 const validateMinimumUsernameLengthChanged = computed(() =>
@@ -453,6 +459,7 @@ async function init() {
 	serverGeminiEnabled.value = meta.serverGeminiEnabled;
 	serverGeminiApiKey.value = meta.serverGeminiApiKey;
 	serverGeminiModels.value = meta.serverGeminiModels;
+	enableContactForm.value = meta.enableContactForm;
 }
 
 function addBackgroundImage() {
@@ -474,6 +481,14 @@ function save_backgroundImageUrl() {
 function onChange_approvalRequiredForSignup(value: boolean) {
 	os.apiWithDialog('admin/update-meta', {
 		approvalRequiredForSignup: value,
+	}).then(() => {
+		fetchInstance(true);
+	});
+}
+
+function onChange_enableContactForm(value: boolean) {
+	os.apiWithDialog('admin/update-meta', {
+		enableContactForm: value,
 	}).then(() => {
 		fetchInstance(true);
 	});

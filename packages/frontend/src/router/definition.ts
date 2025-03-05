@@ -540,6 +540,10 @@ const routes: RouteDef[] = [{
 		name: 'temp-admin',
 		component: page(() => import('@/pages/admin/temp-admin.vue')),
 	}, {
+		path: '/contact-form',
+		name: 'contact-form',
+		component: page(() => import('@/pages/admin/contact-form.vue')),
+	}, {
 		path: '/',
 		component: page(() => import('@/pages/_empty_.vue')),
 	}],

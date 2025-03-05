@@ -18,6 +18,7 @@ import { MiAnnouncementRead } from '@/models/AnnouncementRead.js';
 import { MiAntenna } from '@/models/Antenna.js';
 import { MiApp } from '@/models/App.js';
 import { MiAvatarDecoration } from '@/models/AvatarDecoration.js';
+import { MiContact } from '@/models/Contact.js';
 import { MiAuthSession } from '@/models/AuthSession.js';
 import { MiBlocking } from '@/models/Blocking.js';
 import { MiChannelFollowing } from '@/models/ChannelFollowing.js';
@@ -179,6 +180,7 @@ export const entities = [
 	MiInstance,
 	MiApp,
 	MiAvatarDecoration,
+	MiContact,
 	MiAuthSession,
 	MiAccessToken,
 	MiUser,

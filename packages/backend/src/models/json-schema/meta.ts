@@ -421,6 +421,10 @@ export const packedMetaLiteSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
+		enableContactForm: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
 	},
 } as const;
 

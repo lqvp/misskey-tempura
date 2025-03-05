@@ -161,6 +161,7 @@ export class MetaEntityService {
 			entranceMarginTop: instance.entranceMarginTop,
 			entranceMarginBottom: instance.entranceMarginBottom,
 			serverGeminiEnabled: instance.serverGeminiEnabled,
+			enableContactForm: instance.enableContactForm,
 		};
 
 		return packed;

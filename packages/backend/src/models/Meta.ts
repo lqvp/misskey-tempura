@@ -932,4 +932,9 @@ export class MiMeta {
 		nullable: true,
 	})
 	public serverGeminiModels: string;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public enableContactForm: boolean;
 }

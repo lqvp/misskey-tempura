@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<div class="_gaps_m">
 						<!-- Required Fields -->
 						<div class="form-group">
-							<label for="subject">{{ i18n.ts._contact._form.subject }}</label>
+							<label for="subject">{{ i18n.ts._contact._form.subject }}<span class="required">*</span></label>
 							<MkInput
 								id="subject"
 								v-model="formData.subject"
@@ -25,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</div>
 
 						<div class="form-group">
-							<label for="message">{{ i18n.ts._contact._form.message }}</label>
+							<label for="message">{{ i18n.ts._contact._form.message }}<span class="required">*</span></label>
 							<MkTextarea
 								id="message"
 								v-model="formData.message"
@@ -37,11 +37,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 						<!-- Optional Fields -->
 						<div class="form-group optional">
-							<label for="name">{{ i18n.ts._contact._form.name }}</label>
+							<label for="name">{{ i18n.ts._contact._form.name }}<span class="required">*</span></label>
 							<MkInput
 								id="name"
 								v-model="formData.name"
 								:placeholder="i18n.ts._contact._form.namePlaceholder"
+								required
 							/>
 						</div>
 
@@ -56,12 +57,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</div>
 
 						<!-- Misskey-related Fields -->
-						<div class="form-group optional">
-							<label for="misskeyUser">{{ i18n.ts._contact._form.misskeyUser }}</label>
+						<div class="form-group">
+							<label for="misskeyUser">{{ i18n.ts._contact._form.misskeyUser }} <span class="required">*</span></label>
 							<MkInput
 								id="misskeyUser"
 								v-model="formData.misskeyUser"
 								:placeholder="i18n.ts._contact._form.misskeyUserPlaceholder"
+								required
 							/>
 						</div>
 
@@ -80,11 +82,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 						<!-- CAPTCHA -->
 						<div v-if="needCaptcha" class="form-group captchaContainer">
-							<MkCaptcha v-if="instance.enableHcaptcha" ref="hcaptcha" v-model="hCaptchaResponse" :class="$style.captcha" provider="hcaptcha" :sitekey="instance.hcaptchaSiteKey"/>
-							<MkCaptcha v-if="instance.enableMcaptcha" ref="mcaptcha" v-model="mCaptchaResponse" :class="$style.captcha" provider="mcaptcha" :sitekey="instance.mcaptchaSiteKey" :instanceUrl="instance.mcaptchaInstanceUrl"/>
-							<MkCaptcha v-if="instance.enableRecaptcha" ref="recaptcha" v-model="reCaptchaResponse" :class="$style.captcha" provider="recaptcha" :sitekey="instance.recaptchaSiteKey"/>
-							<MkCaptcha v-if="instance.enableTurnstile" ref="turnstile" v-model="turnstileResponse" :class="$style.captcha" provider="turnstile" :sitekey="instance.turnstileSiteKey"/>
-							<MkCaptcha v-if="instance.enableTestcaptcha" ref="testcaptcha" v-model="testcaptchaResponse" :class="$style.captcha" provider="testcaptcha"/>
+							<MkCaptcha v-if="instance.enableHcaptcha" ref="hcaptcha" v-model="captcha.hCaptchaResponse" :class="$style.captcha" provider="hcaptcha" :sitekey="instance.hcaptchaSiteKey"/>
+							<MkCaptcha v-if="instance.enableMcaptcha" ref="mcaptcha" v-model="captcha.mCaptchaResponse" :class="$style.captcha" provider="mcaptcha" :sitekey="instance.mcaptchaSiteKey" :instanceUrl="instance.mcaptchaInstanceUrl"/>
+							<MkCaptcha v-if="instance.enableRecaptcha" ref="recaptcha" v-model="captcha.reCaptchaResponse" :class="$style.captcha" provider="recaptcha" :sitekey="instance.recaptchaSiteKey"/>
+							<MkCaptcha v-if="instance.enableTurnstile" ref="turnstile" v-model="captcha.turnstileResponse" :class="$style.captcha" provider="turnstile" :sitekey="instance.turnstileSiteKey"/>
+							<MkCaptcha v-if="instance.enableTestcaptcha" ref="testcaptcha" v-model="captcha.testcaptchaResponse" :class="$style.captcha" provider="testcaptcha"/>
 						</div>
 					</div>
 
@@ -93,7 +95,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							type="submit"
 							primary
 							rounded
-							:disabled="submitting"
+							:disabled="submitting || (needCaptcha && captchaFailed)"
 							:wait="submitting"
 						>
 							{{ submitting ? i18n.ts._contact.submitting : i18n.ts._contact.submit }}
@@ -113,6 +115,7 @@ import MkTextarea from '@/components/MkTextarea.vue';
 import MkButton from '@/components/MkButton.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkCaptcha from '@/components/MkCaptcha.vue';
+import MkWaitingDialog from '@/components/MkWaitingDialog.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
 import { i18n } from '@/i18n.js';
@@ -183,7 +186,7 @@ async function submitForm() {
 		submitting.value = true;
 
 		// Validation
-		if (!formData.subject || !formData.message) {
+		if (!formData.subject || !formData.message || !formData.name || !formData.misskeyUser) {
 			os.alert({
 				type: 'error',
 				text: i18n.ts._contact.requiredFieldsMissing,
@@ -199,35 +202,45 @@ async function submitForm() {
 			return;
 		}
 
-		const captchaResponse = {
-			hcaptchaResponse: captcha.hCaptchaResponse,
-			mcaptchaResponse: captcha.mCaptchaResponse,
-			recaptchaResponse: captcha.reCaptchaResponse,
-			turnstileResponse: captcha.turnstileResponse,
-			testcaptchaResponse: captcha.testcaptchaResponse,
-		};
+		// Use popup API directly to create and control the waiting dialog
+		const showing = ref(true);
+		const waitingDialog = os.popup(MkWaitingDialog, {
+			success: false,
+			showing: showing,
+		}, {});
 
-		// API call
-		await os.apiWithDialog('contact-send', {
-			...formData,
-			captcha: captchaResponse,
-		}, {
-			title: i18n.ts._contact.submitting,
-			success: {
-				useOsAlert: true,
+		try {
+			// Use misskeyApi directly to prevent sending UI-related data in the payload
+			await misskeyApi('contact-send', {
+				...formData,
+				'hcaptcha-response': captcha.hCaptchaResponse,
+				'm-captcha-response': captcha.mCaptchaResponse,
+				'g-recaptcha-response': captcha.reCaptchaResponse,
+				'turnstile-response': captcha.turnstileResponse,
+				'testcaptcha-response': captcha.testcaptchaResponse,
+			});
+
+			// Reset form before showing success message to avoid UI conflicts
+			resetForm();
+			submitted.value = true;
+
+			// Show success message after successful submission
+			os.alert({
+				type: 'success',
 				title: i18n.ts._contact.submissionSuccess,
 				text: i18n.ts._contact.confirmationMessage,
-			},
-		});
-
-		// Reset form
-		resetForm();
-		submitted.value = true;
-	} catch (err) {
-		os.alert({
-			type: 'error',
-			text: err.message || i18n.ts.somethingHappened,
-		});
+			});
+		} catch (err: any) {
+			// Handle API errors
+			os.alert({
+				type: 'error',
+				text: err.message || i18n.ts.somethingHappened,
+			});
+		} finally {
+			// Dismiss the waiting dialog by updating the reactive reference
+			showing.value = false;
+			waitingDialog.dispose();
+		}
 	} finally {
 		submitting.value = false;
 	}

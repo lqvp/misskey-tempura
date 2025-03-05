@@ -728,6 +728,10 @@ export const meta = {
 				type: 'string',
 				optional: false, nullable: false,
 			},
+			enableContactForm: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
 		},
 	},
 } as const;
@@ -921,6 +925,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				serverGeminiEnabled: instance.serverGeminiEnabled,
 				serverGeminiApiKey: instance.serverGeminiApiKey,
 				serverGeminiModels: instance.serverGeminiModels,
+				enableContactForm: instance.enableContactForm,
 			};
 		});
 	}

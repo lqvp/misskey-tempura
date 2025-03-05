@@ -13,6 +13,7 @@ export class contactForm1741082321743 {
         await queryRunner.query(`CREATE INDEX "IDX_contact_createdAt" ON "contact" ("createdAt") `);
         await queryRunner.query(`CREATE INDEX "IDX_contact_assigneeId" ON "contact" ("assigneeId") `);
         await queryRunner.query(`ALTER TABLE "contact" ADD CONSTRAINT "FK_contact_assigneeId" FOREIGN KEY ("assigneeId") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
+				await queryRunner.query(`ALTER TABLE "meta" ADD "enableContactForm" boolean NOT NULL DEFAULT false`);
     }
     async down(queryRunner) {
         await queryRunner.query(`ALTER TABLE "contact" DROP CONSTRAINT "FK_contact_assigneeId"`);
@@ -20,5 +21,6 @@ export class contactForm1741082321743 {
         await queryRunner.query(`DROP INDEX "IDX_contact_createdAt"`);
         await queryRunner.query(`DROP INDEX "IDX_contact_status"`);
         await queryRunner.query(`DROP TABLE "contact"`);
+				await queryRunner.query(`ALTER TABLE "meta" DROP COLUMN "enableContactForm"`);
     }
 }
