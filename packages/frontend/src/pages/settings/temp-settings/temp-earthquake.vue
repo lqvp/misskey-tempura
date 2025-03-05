@@ -13,132 +13,179 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkMfm :text="i18n.ts._earthquakeWarning.license"/>
 			</div>
 		</MkInfo>
-		<MkSwitch v-model="enableEarthquakeWarning">
-			{{ i18n.ts._earthquakeWarning.enable }}
-			<template #caption>{{ i18n.ts._earthquakeWarning.enableCaption }}</template>
-		</MkSwitch>
+		<MkFolder :defaultOpen="true">
+			<template #icon><i class="ti ti-power"></i></template>
+			<template #label>{{ i18n.ts.general }}</template>
 
-		<div class="_gaps_s">
-			<MkSelect v-model="earthquakeWarningIntensity">
-				<template #label>{{ i18n.ts._earthquakeWarning.intensityThreshold }}</template>
-				<option value="1">{{ i18n.ts._earthquakeWarning.shindo["1"] || `${i18n.ts._earthquakeWarning.shindo} 1` }}</option>
-				<option value="2">{{ i18n.ts._earthquakeWarning.shindo["2"] || `${i18n.ts._earthquakeWarning.shindo} 2` }}</option>
-				<option value="3">{{ i18n.ts._earthquakeWarning.shindo["3"] || `${i18n.ts._earthquakeWarning.shindo} 3` }}</option>
-				<option value="4">{{ i18n.ts._earthquakeWarning.shindo["4"] || `${i18n.ts._earthquakeWarning.shindo} 4` }}</option>
-				<option value="5-">{{ i18n.ts._earthquakeWarning.shindo["5-"] || `${i18n.ts._earthquakeWarning.shindo} 5弱` }}</option>
-				<option value="5+">{{ i18n.ts._earthquakeWarning.shindo["5+"] || `${i18n.ts._earthquakeWarning.shindo} 5強` }}</option>
-				<option value="6-">{{ i18n.ts._earthquakeWarning.shindo["6-"] || `${i18n.ts._earthquakeWarning.shindo} 6弱` }}</option>
-				<option value="6+">{{ i18n.ts._earthquakeWarning.shindo["6+"] || `${i18n.ts._earthquakeWarning.shindo} 6強` }}</option>
-				<option value="7">{{ i18n.ts._earthquakeWarning.shindo["7"] || `${i18n.ts._earthquakeWarning.shindo} 7` }}</option>
-				<template #caption>{{ i18n.ts._earthquakeWarning.intensityDescription }}</template>
-			</MkSelect>
-
-			<MkSelect v-model="earthquakeWarningNotificationStyle">
-				<template #label>{{ i18n.ts._earthquakeWarning.notificationStyle }}</template>
-				<option value="simple">{{ i18n.ts._earthquakeWarning.notificationStyleSimple }}</option>
-				<option value="standard">{{ i18n.ts._earthquakeWarning.notificationStyleStandard }}</option>
-				<option value="detailed">{{ i18n.ts._earthquakeWarning.notificationStyleDetailed }}</option>
-				<template #caption>{{ i18n.ts._earthquakeWarning.notificationStyleCaption }}</template>
-			</MkSelect>
-
-			<MkInput v-model="earthquakeWarningToastDuration" type="number" step="1000" :min="5000">
-				<template #label>{{ i18n.ts._earthquakeWarning.toastDuration }}</template>
-				<template #caption>{{ i18n.ts._earthquakeWarning.toastDurationCaption }}</template>
-			</MkInput>
-
-			<MkSwitch v-model="earthquakeWarningSound">
-				<template #label>{{ i18n.ts._earthquakeWarning.soundEnable }}</template>
-				<template #caption>{{ i18n.ts._earthquakeWarning.soundEnableCaption }}</template>
+			<MkSwitch v-model="enableEarthquakeWarning">
+				{{ i18n.ts._earthquakeWarning.enable }}
+				<template #caption>{{ i18n.ts._earthquakeWarning.enableCaption }}</template>
 			</MkSwitch>
 
-			<MkSelect v-if="earthquakeWarningSound" v-model="earthquakeWarningSoundType">
-				<template #label>{{ i18n.ts._earthquakeWarning.soundType }}</template>
-				<option value="auto">{{ i18n.ts._earthquakeWarning.soundTypeAuto }}</option>
-				<option value="eew">{{ i18n.ts._earthquakeWarning.soundTypeEew }}</option>
-				<option value="info">{{ i18n.ts._earthquakeWarning.soundTypeInfo }}</option>
-				<template #caption>{{ i18n.ts._earthquakeWarning.soundTypeCaption }}</template>
-			</MkSelect>
+			<div class="_gaps_s">
+				<MkSelect v-model="earthquakeWarningIntensity">
+					<template #label>{{ i18n.ts._earthquakeWarning.intensityThreshold }}</template>
+					<option value="1">{{ i18n.tsx._earthquakeWarning.shindo({shindo: 1}) }}</option>
+					<option value="2">{{ i18n.tsx._earthquakeWarning.shindo({shindo: 2}) }}</option>
+					<option value="3">{{ i18n.tsx._earthquakeWarning.shindo({shindo: 3}) }}</option>
+					<option value="4">{{ i18n.tsx._earthquakeWarning.shindo({shindo: 4}) }}</option>
+					<option value="5-">{{ i18n.tsx._earthquakeWarning.shindo({shindo: "5-"}) }}</option>
+					<option value="5+">{{ i18n.tsx._earthquakeWarning.shindo({shindo: "5+"}) }}</option>
+					<option value="6-">{{ i18n.tsx._earthquakeWarning.shindo({shindo: "6-"}) }}</option>
+					<option value="6+">{{ i18n.tsx._earthquakeWarning.shindo({shindo: "6+"}) }}</option>
+					<option value="7">{{ i18n.tsx._earthquakeWarning.shindo({shindo: 7}) }}</option>
+					<template #caption>{{ i18n.ts._earthquakeWarning.intensityDescription }}</template>
+				</MkSelect>
 
-			<MkSwitch v-model="enableEarthquakeWarningTts">
-				<template #label>{{ i18n.ts._earthquakeWarning.enableTts }}</template>
-				<template #caption>{{ i18n.ts._earthquakeWarning.enableTtsCaption }}</template>
-			</MkSwitch>
+				<MkSelect v-model="earthquakeWarningNotificationStyle">
+					<template #label>{{ i18n.ts._earthquakeWarning.notificationStyle }}</template>
+					<option value="simple">{{ i18n.ts._earthquakeWarning.notificationStyleSimple }}</option>
+					<option value="standard">{{ i18n.ts._earthquakeWarning.notificationStyleStandard }}</option>
+					<option value="detailed">{{ i18n.ts._earthquakeWarning.notificationStyleDetailed }}</option>
+					<template #caption>{{ i18n.ts._earthquakeWarning.notificationStyleCaption }}</template>
+				</MkSelect>
 
-			<div v-if="enableEarthquakeWarningTts">
-				<MkInput v-model="earthquakeWarningTtsRate" type="number" step="0.1" :min="0.1" :max="3.0">
-					<template #label>{{ i18n.ts._earthquakeWarning.ttsRate }}</template>
-					<template #caption>{{ i18n.ts._earthquakeWarning.ttsRateCaption }}</template>
+				<MkInput v-model="earthquakeWarningToastDuration" type="number" step="1000" :min="5000">
+					<template #label>{{ i18n.ts._earthquakeWarning.toastDuration }}</template>
+					<template #caption>{{ i18n.ts._earthquakeWarning.toastDurationCaption }}</template>
 				</MkInput>
-			</div>
 
-			<!-- 地域フィルタリング設定 -->
-			<fieldset>
-				<legend>{{ i18n.ts._earthquakeWarning.regionFilter }}</legend>
-				<div class="_gaps_s">
-					<MkSwitch v-model="enableEarthquakeWarningRegionFilter">
-						<template #label>{{ i18n.ts._earthquakeWarning.regionFilterEnable }}</template>
-						<template #caption>{{ i18n.ts._earthquakeWarning.regionFilterCaption }}</template>
-					</MkSwitch>
+				<MkSwitch v-model="earthquakeWarningSound">
+					<template #label>{{ i18n.ts._earthquakeWarning.soundEnable }}</template>
+					<template #caption>{{ i18n.ts._earthquakeWarning.soundEnableCaption }}</template>
+				</MkSwitch>
 
-					<div v-if="enableEarthquakeWarningRegionFilter">
-						<MkFolder :defaultOpen="false">
-							<template #label>{{ i18n.ts._earthquakeWarning.regionFilterAreaLabel }}</template>
-							<div class="_gaps_s region-switches">
-								<MkSwitch v-model="regionFilters.hokkaido">
-									{{ i18n.ts._earthquakeWarning.regionFilterAreas.hokkaido }}
-								</MkSwitch>
-								<MkSwitch v-model="regionFilters.tohoku">
-									{{ i18n.ts._earthquakeWarning.regionFilterAreas.tohoku }}
-								</MkSwitch>
-								<MkSwitch v-model="regionFilters.kanto">
-									{{ i18n.ts._earthquakeWarning.regionFilterAreas.kanto }}
-								</MkSwitch>
-								<MkSwitch v-model="regionFilters.chubu">
-									{{ i18n.ts._earthquakeWarning.regionFilterAreas.chubu }}
-								</MkSwitch>
-								<MkSwitch v-model="regionFilters.kinki">
-									{{ i18n.ts._earthquakeWarning.regionFilterAreas.kinki }}
-								</MkSwitch>
-								<MkSwitch v-model="regionFilters.chugoku">
-									{{ i18n.ts._earthquakeWarning.regionFilterAreas.chugoku }}
-								</MkSwitch>
-								<MkSwitch v-model="regionFilters.shikoku">
-									{{ i18n.ts._earthquakeWarning.regionFilterAreas.shikoku }}
-								</MkSwitch>
-								<MkSwitch v-model="regionFilters.kyushu">
-									{{ i18n.ts._earthquakeWarning.regionFilterAreas.kyushu }}
-								</MkSwitch>
-							</div>
-							<p class="_caption">{{ i18n.ts._earthquakeWarning.regionFilterAreaCaption }}</p>
-						</MkFolder>
-					</div>
+				<MkSelect v-if="earthquakeWarningSound" v-model="earthquakeWarningSoundType">
+					<template #label>{{ i18n.ts._earthquakeWarning.soundType }}</template>
+					<option value="auto">{{ i18n.ts._earthquakeWarning.soundTypeAuto }}</option>
+					<option value="eew">{{ i18n.ts._earthquakeWarning.soundTypeEew }}</option>
+					<option value="info">{{ i18n.ts._earthquakeWarning.soundTypeInfo }}</option>
+					<template #caption>{{ i18n.ts._earthquakeWarning.soundTypeCaption }}</template>
+				</MkSelect>
+
+				<MkSwitch v-model="enableEarthquakeWarningTts">
+					<template #label>{{ i18n.ts._earthquakeWarning.enableTts }}</template>
+					<template #caption>{{ i18n.ts._earthquakeWarning.enableTtsCaption }}</template>
+				</MkSwitch>
+
+				<div v-if="enableEarthquakeWarningTts">
+					<MkInput v-model="earthquakeWarningTtsRate" type="number" step="0.1" :min="0.1" :max="3.0">
+						<template #label>{{ i18n.ts._earthquakeWarning.ttsRate }}</template>
+						<template #caption>{{ i18n.ts._earthquakeWarning.ttsRateCaption }}</template>
+					</MkInput>
 				</div>
-			</fieldset>
 
-			<!-- 通知抑制設定 -->
-			<MkInput v-model="earthquakeWarningThrottleTime" type="number" step="10" :min="0">
-				<template #label>{{ i18n.ts._earthquakeWarning.throttleTime }}</template>
-				<template #caption>{{ i18n.ts._earthquakeWarning.throttleTimeCaption }}</template>
-			</MkInput>
+				<!-- 地域フィルタリング設定 -->
+				<fieldset>
+					<legend>{{ i18n.ts._earthquakeWarning.regionFilter }}</legend>
+					<div class="_gaps_s">
+						<MkSwitch v-model="enableEarthquakeWarningRegionFilter">
+							<template #label>{{ i18n.ts._earthquakeWarning.regionFilterEnable }}</template>
+							<template #caption>{{ i18n.ts._earthquakeWarning.regionFilterCaption }}</template>
+						</MkSwitch>
+						<div v-if="enableEarthquakeWarningRegionFilter">
+							<!-- TODO: Consider extracting the following region filter switches into a separate, reusable component -->
+							<MkFolder :defaultOpen="false">
+								<template #label>{{ i18n.ts._earthquakeWarning.regionFilterAreaLabel }}</template>
+								<div class="_gaps_s region-switches">
+									<MkSwitch v-model="regionFilters.hokkaido" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.hokkaido">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.hokkaido }}
+									</MkSwitch>
+									<MkSwitch v-model="regionFilters.tohoku" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.tohoku">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.tohoku }}
+									</MkSwitch>
+									<MkSwitch v-model="regionFilters.kanto" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.kanto">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.kanto }}
+									</MkSwitch>
+									<MkSwitch v-model="regionFilters.chubu" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.chubu">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.chubu }}
+									</MkSwitch>
+									<MkSwitch v-model="regionFilters.kinki" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.kinki">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.kinki }}
+									</MkSwitch>
+									<MkSwitch v-model="regionFilters.chugoku" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.chugoku">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.chugoku }}
+									</MkSwitch>
+									<MkSwitch v-model="regionFilters.shikoku" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.shikoku">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.shikoku }}
+									</MkSwitch>
+									<MkSwitch v-model="regionFilters.kyushu" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.kyushu">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.kyushu }}
+									</MkSwitch>
+								</div>
+								<p class="_caption">{{ i18n.ts._earthquakeWarning.regionFilterAreaCaption }}</p>
+							</MkFolder>
+						</div>
+					</div>
+				</fieldset>
 
-			<!-- 訓練報スキップ設定 -->
-			<MkSwitch v-model="earthquakeWarningIgnoreTraining">
-				<template #label>{{ i18n.ts._earthquakeWarning.ignoreTraining }}</template>
-				<template #caption>{{ i18n.ts._earthquakeWarning.ignoreTrainingCaption }}</template>
-			</MkSwitch>
+				<!-- 通知抑制設定 -->
+				<MkInput v-model="earthquakeWarningThrottleTime" type="number" step="10" :min="0">
+					<template #label>{{ i18n.ts._earthquakeWarning.throttleTime }}</template>
+					<template #caption>{{ i18n.ts._earthquakeWarning.throttleTimeCaption }}</template>
+				</MkInput>
 
-			<MkButton
-				primary
-				@click="testEarthquakeAlert"
-			>
-				<template #icon><i class="ti ti-bell-ringing"></i></template>
-				{{ i18n.ts._earthquakeWarning.testNotification }}
+				<!-- 訓練報スキップ設定 -->
+				<MkSwitch v-model="earthquakeWarningIgnoreTraining">
+					<template #label>{{ i18n.ts._earthquakeWarning.ignoreTraining }}</template>
+					<template #caption>{{ i18n.ts._earthquakeWarning.ignoreTrainingCaption }}</template>
+				</MkSwitch>
+
+				<MkButton
+					primary
+					@click="testEarthquakeAlert"
+				>
+					<template #icon><i class="ti ti-bell-ringing"></i></template>
+					{{ i18n.ts._earthquakeWarning.testNotification }}
+				</MkButton>
+				<div class="test-caption">{{ i18n.ts._earthquakeWarning.testNotificationCaption }}</div>
+			</div>
+		</MkFolder>
+
+		<!-- Connection & Logging Settings -->
+		<MkFolder :defaultOpen="true">
+			<template #icon><i class="ti ti-plug-connected"></i></template>
+			<template #label>{{ i18n.ts._earthquakeWarning.connection }}</template>
+
+			<div class="_gaps_s">
+				<MkSwitch v-model="earthquakeWarningConnectionNotify">
+					<template #label>{{ i18n.ts._earthquakeWarning.connectionNotify }}</template>
+					<template #caption>{{ i18n.ts._earthquakeWarning.connectionNotifyCaption }}</template>
+				</MkSwitch>
+
+				<MkSelect v-model="earthquakeWarningLogLevel">
+					<template #label>{{ i18n.ts._earthquakeWarning.loggingLevel }}</template>
+					<option value="none">{{ i18n.ts._earthquakeWarning.loggingLevelNone }}</option>
+					<option value="basic">{{ i18n.ts._earthquakeWarning.loggingLevelBasic }}</option>
+					<option value="detailed">{{ i18n.ts._earthquakeWarning.loggingLevelDetailed }}</option>
+					<template #caption>{{ i18n.ts._earthquakeWarning.loggingLevelCaption }}</template>
+				</MkSelect>
+
+				<div v-if="earthquakeWarningLogLevel !== 'none'" class="log-actions">
+					<MkButton class="log-button" @click="viewLogs('connection')">
+						<template #icon><i class="ti ti-history"></i></template>
+						{{ i18n.ts._earthquakeWarning.connectionLogs }}
+					</MkButton>
+
+					<MkButton v-if="earthquakeWarningLogLevel === 'detailed'" class="log-button" @click="viewLogs('data')">
+						<template #icon><i class="ti ti-database"></i></template>
+						{{ i18n.ts._earthquakeWarning.dataLogs }}
+					</MkButton>
+
+					<MkButton class="log-button" danger @click="clearLogs">
+						<template #icon><i class="ti ti-eraser"></i></template>
+						{{ i18n.ts._earthquakeWarning.clearLogs }}
+					</MkButton>
+				</div>
+			</div>
+		</MkFolder>
+
+		<div class="_buttons">
+			<MkButton primary @click="save">
+				<template #icon><i class="ti ti-device-floppy"></i></template>
+				{{ i18n.ts.save }}
 			</MkButton>
-			<div class="test-caption">{{ i18n.ts._earthquakeWarning.testNotificationCaption }}</div>
 		</div>
-	</div>
-	<div class="_buttons">
-		<MkButton primary @click="save">{{ i18n.ts.save }}</MkButton>
 	</div>
 </MkFolder>
 </template>
@@ -153,7 +200,7 @@ import MkFolder from '@/components/MkFolder.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import MkMfm from '@/components/global/MkMfm.js';
 import { reloadAsk } from '@/scripts/reload-ask.js';
-import { testEarthquakeAlert } from '@/scripts/temp-script/earthquake-warning.js';
+import { testEarthquakeAlert, getConnectionLogs, getDataLogs, clearAllLogs } from '@/scripts/temp-script/earthquake-warning.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { defaultStore } from '@/store.js';
@@ -237,8 +284,8 @@ const regionFilters = reactive({
 
 // 地域フィルタの取得・設定
 watch(regionFilters, () => {
-	const regions = [];
-	for (const [region, selected] of Object.entries(regionFilters)) {
+	const regions: string[] = [];
+	for (const [region, selected] of Object.entries(regionFilters) as [string, boolean][]) {
 		if (selected) regions.push(region);
 	}
 	defaultStore.set('earthquakeWarningRegionFilter', regions);
@@ -270,6 +317,67 @@ const earthquakeWarningIgnoreTraining = computed({
 	},
 });
 
+// 接続通知設定
+const earthquakeWarningConnectionNotify = computed({
+	get: () => defaultStore.reactiveState.earthquakeWarningConnectionNotify.value,
+	set: (value) => {
+		defaultStore.set('earthquakeWarningConnectionNotify', value);
+	},
+});
+
+// ログレベル設定
+const earthquakeWarningLogLevel = computed({
+	get: () => defaultStore.reactiveState.earthquakeWarningLogLevel.value,
+	set: (value) => {
+		defaultStore.set('earthquakeWarningLogLevel', value);
+	},
+});
+
+/**
+ * ログを表示する
+ */
+function viewLogs(type: 'connection' | 'data') {
+	const logs = type === 'connection' ? getConnectionLogs() : getDataLogs();
+	const title = type === 'connection'
+		? i18n.ts._earthquakeWarning.connectionLogs
+		: i18n.ts._earthquakeWarning.dataLogs;
+
+	os.alert({
+		title: title,
+		text: formatLogs(logs),
+		type: 'info',
+	});
+}
+
+/**
+ * ログをフォーマットする
+ */
+function formatLogs(logs: any[]) {
+	if (!logs || logs.length === 0) {
+		return i18n.ts.nothing;
+	}
+
+	return logs.map(log => {
+		const time = log.timestamp.toLocaleTimeString();
+		let content = `[${time}] [${log.type}] ${log.message || JSON.stringify(log.data)}`;
+		return content;
+	}).join('\n');
+}
+
+/**
+ * すべてのログをクリアする
+ */
+function clearLogs() {
+	os.confirm({
+		type: 'warning',
+		text: i18n.ts.areYouSure,
+	}).then(({ canceled }) => {
+		if (canceled) return;
+		clearAllLogs();
+		os.success();
+	});
+}
+
 /**
  * 設定を保存してページをリロードし、WebSocketの接続を更新します
  */
@@ -291,5 +399,23 @@ async function save() {
 .license {
 	font-size: 0.9em;
 	line-height: 1.5;
+}
+
+.log-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.log-button {
+	flex: 1;
+	min-width: 150px;
+}
+
+.region-switches {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+	gap: 12px;
 }
 </style>

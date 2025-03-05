@@ -12539,44 +12539,10 @@ export interface Locale extends ILocale {
          * ミリ秒
          */
         "milliseconds": string;
-        "shindo": {
-            /**
-             * 震度1
-             */
-            "1": string;
-            /**
-             * 震度2
-             */
-            "2": string;
-            /**
-             * 震度3
-             */
-            "3": string;
-            /**
-             * 震度4
-             */
-            "4": string;
-            /**
-             * 震度7
-             */
-            "7": string;
-            /**
-             * 震度5弱
-             */
-            "5-": string;
-            /**
-             * 震度5強
-             */
-            "5+": string;
-            /**
-             * 震度6弱
-             */
-            "6-": string;
-            /**
-             * 震度6強
-             */
-            "6+": string;
-        };
+        /**
+         * 震度{shindo}
+         */
+        "shindo": ParameterizedString<"shindo">;
         /**
          * 地域フィルタリング
          */
@@ -12647,6 +12613,66 @@ export interface Locale extends ILocale {
          * 訓練や試験用の地震速報を通知から除外します
          */
         "ignoreTrainingCaption": string;
+        /**
+         * 接続状態通知
+         */
+        "connectionNotify": string;
+        /**
+         * WebSocket接続の確立、切断、エラーなどを通知します
+         */
+        "connectionNotifyCaption": string;
+        /**
+         * 地震速報APIに接続しました
+         */
+        "connectionEstablished": string;
+        /**
+         * 地震速報APIから切断されました
+         */
+        "connectionClosed": string;
+        /**
+         * 地震速報API接続エラー
+         */
+        "connectionError": string;
+        /**
+         * 地震速報APIへの接続に失敗しました
+         */
+        "connectionFailed": string;
+        /**
+         * ログレベル
+         */
+        "loggingLevel": string;
+        /**
+         * 地震速報システムのログ記録レベルを設定します
+         */
+        "loggingLevelCaption": string;
+        /**
+         * なし
+         */
+        "loggingLevelNone": string;
+        /**
+         * 基本
+         */
+        "loggingLevelBasic": string;
+        /**
+         * 詳細
+         */
+        "loggingLevelDetailed": string;
+        /**
+         * ログ
+         */
+        "logs": string;
+        /**
+         * 接続ログ
+         */
+        "connectionLogs": string;
+        /**
+         * データログ
+         */
+        "dataLogs": string;
+        /**
+         * ログをクリア
+         */
+        "clearLogs": string;
         /**
          * 地震速報データはWolfx (https://wolfx.jp/) によって提供されています。
          * この機能は、Wolfxが提供するWebSocket API (https://wolfx.jp/wsapi) を利用してリアルタイムにデータを受信しています。

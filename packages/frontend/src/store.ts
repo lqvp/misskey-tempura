@@ -696,7 +696,7 @@ export const defaultStore = markRaw(new Storage('base', {
 	},
 	earthquakeWarningIntensity: {
 		where: 'device',
-		default: '4', // Default threshold is intensity 4
+		default: '3', // Default threshold is intensity 3
 	},
 	enableEarthquakeWarningTts: {
 		where: 'device',
@@ -741,6 +741,17 @@ export const defaultStore = markRaw(new Storage('base', {
 	earthquakeWarningIgnoreTraining: {
 		where: 'device',
 		default: true,
+	},
+	// Connection notification setting
+	earthquakeWarningConnectionNotify: {
+		where: 'device',
+		default: true,
+	},
+
+	// Logging level setting (for debug and monitoring)
+	earthquakeWarningLogLevel: {
+		where: 'device',
+		default: 'basic', // 'none', 'basic', 'detailed'
 	},
 }));
 

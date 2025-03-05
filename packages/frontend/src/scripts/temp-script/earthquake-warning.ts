@@ -26,7 +26,7 @@ interface EarthquakeAlertData {
 	Hypocenter: string; // 震源地
 	Latitude: number; // 震源地纬度
 	Longitude: number; // 震源地经度
-	Magunitude: number; // 震级
+	magnitude: number; // 震级
 	Depth: number; // 震源深度
 	MaxIntensity: string; // 最大震度
 	Accuracy: {
@@ -70,6 +70,13 @@ export const shindoMap: Record<string, string> = {
 	'7': '7',
 };
 
+// Added common intensity order and helper function for robust comparisons
+const intensityOrder = ['1', '2', '3', '4', '5-', '5+', '6-', '6+', '7'];
+
+function getIntensityIndex(intensity: string): number {
+	return intensityOrder.indexOf(intensity);
+}
+
 // 震度から適切な音声ファイルのタイプを決定
 function getSoundTypeForIntensity(intensity: string, isWarning: boolean, isCancel: boolean): keyof typeof import('@/scripts/sound.js').earthquakeSoundTypes {
 	// キャンセル報の場合
@@ -77,12 +84,11 @@ function getSoundTypeForIntensity(intensity: string, isWarning: boolean, isCance
 		return 'EEW_CANCELED';
 	}
 
-	// 通知音タイプの設定に基づいて選択
 	const soundType = defaultStore.reactiveState.earthquakeWarningSoundType?.value || 'auto';
 
 	if (soundType === 'eew') {
 		// EEW音のみ使用
-		return isWarning && intensity >= '5-' ? 'EEW2' : 'EEW1';
+		return isWarning && getIntensityIndex(intensity) >= getIntensityIndex('5-') ? 'EEW2' : 'EEW1';
 	} else if (soundType === 'info') {
 		// 情報音声のみ使用
 		switch (intensity) {
@@ -95,16 +101,15 @@ function getSoundTypeForIntensity(intensity: string, isWarning: boolean, isCance
 			case '6-': return 'INFO_6_MINUS';
 			case '6+': return 'INFO_6_PLUS';
 			case '7': return 'INFO_7';
-			default: return 'INFO_4'; // デフォルト
+			default: return 'INFO_4';
 		}
 	} else {
 		// 自動選択モード
-		// 警報・予報の判定
+
 		if (isWarning) {
-			return intensity >= '5-' ? 'EEW2' : 'EEW1';
+			return getIntensityIndex(intensity) >= getIntensityIndex('5-') ? 'EEW2' : 'EEW1';
 		}
 
-		// 情報音声（震度別）
 		switch (intensity) {
 			case '1': return 'INFO_1';
 			case '2': return 'INFO_2';
@@ -116,16 +121,13 @@ function getSoundTypeForIntensity(intensity: string, isWarning: boolean, isCance
 			case '6+': return 'INFO_6_PLUS';
 			case '7': return 'INFO_7';
 			default: {
-				// 震度に応じてアラート音を選択
-				const intensityOrder = ['1', '2', '3', '4', '5-', '5+', '6-', '6+', '7'];
-				const intensityIndex = intensityOrder.indexOf(intensity);
-
-				if (intensityIndex >= 4) { // 震度5弱以上
+				const intensityIndex = getIntensityIndex(intensity);
+				if (intensityIndex >= 4) {
 					return 'SHINDO2';
-				} else if (intensityIndex >= 0) { // 震度1以上
+				} else if (intensityIndex >= 0) {
 					return 'SHINDO1';
 				} else {
-					return 'SHINDO0'; // 不明または微小地震
+					return 'SHINDO0';
 				}
 			}
 		}
@@ -137,24 +139,24 @@ let reconnectTimeout: NodeJS.Timeout | null = null;
 
 /**
  * Get the minimum intensity threshold from user settings
- * Default is 4 if not set
+ * Default is 3 if not set
  */
 export function getIntensityThreshold(): string {
-	return defaultStore.reactiveState.earthquakeWarningIntensity.value || '4';
+	return defaultStore.reactiveState.earthquakeWarningIntensity.value || '3';
 }
 
 /**
- * Check if the intensity exceeds the threshold set by the user
+ * Check if the intensity equals or exceeds the threshold set by the user
+ * Returns true if intensity is equal to or greater than threshold
  */
 function intensityExceedsThreshold(intensity: string): boolean {
 	if (!intensity) return false;
 
 	const threshold = getIntensityThreshold();
-	const intensityOrder = ['1', '2', '3', '4', '5-', '5+', '6-', '6+', '7'];
+	const thresholdIndex = getIntensityIndex(threshold);
+	const actualIndex = getIntensityIndex(intensity);
 
-	const thresholdIndex = intensityOrder.indexOf(threshold);
-	const actualIndex = intensityOrder.indexOf(intensity);
-
+	// Using >= to include the threshold value itself
 	return actualIndex >= thresholdIndex;
 }
 
@@ -165,7 +167,7 @@ function formatAlertMessage(data: EarthquakeAlertData): string {
 	const intensity = data.MaxIntensity ? (shindoMap[data.MaxIntensity] || data.MaxIntensity) : '不明';
 	const location = data.Hypocenter || '場所不明';
 	const depth = data.Depth ? `深さ${data.Depth}km` : '';
-	const magnitude = data.Magunitude ? `M${data.Magunitude}` : '';
+	const magnitude = data.magnitude ? `M${data.magnitude}` : '';
 
 	// 通知スタイルに基づいて表示内容を変更
 	const notificationStyle = defaultStore.reactiveState.earthquakeWarningNotificationStyle.value || 'standard';
@@ -274,51 +276,68 @@ function getRegionFromCoordinates(latitude: number, longitude: number): string {
  * Display a toast notification for earthquake alerts
  */
 function showEarthquakeAlert(data: EarthquakeAlertData): void {
-	if (!defaultStore.reactiveState.enableEarthquakeWarning.value) return;
+	try {
+		// Log data processing if detailed logging is enabled
+		const logLevel = defaultStore.reactiveState.earthquakeWarningLogLevel?.value || 'none';
+		if (logLevel === 'detailed') {
+			addToDataLog('processed', new Date(), data);
+		}
 
-	// Check if this alert exceeds the user's intensity threshold
-	if (!intensityExceedsThreshold(data.MaxIntensity)) return;
+		if (!defaultStore.reactiveState.enableEarthquakeWarning.value) return;
 
-	// 訓練報のスキップ設定
-	if (data.isTraining && defaultStore.reactiveState.earthquakeWarningIgnoreTraining.value) return;
+		// Check if this alert exceeds the user's intensity threshold
+		if (!intensityExceedsThreshold(data.MaxIntensity)) return;
 
-	// Check if this alert matches the region filter (if enabled)
-	if (!passesRegionFilter(data)) return;
+		// 訓練報のスキップ設定
+		if (data.isTraining && defaultStore.reactiveState.earthquakeWarningIgnoreTraining.value) return;
 
-	// 通知抑制: 同じイベントIDの通知を一定時間スキップ
-	if (isThrottled(data.EventID)) return;
+		// Check if this alert matches the region filter (if enabled)
+		if (defaultStore.reactiveState.enableEarthquakeWarningRegionFilter.value && !passesRegionFilter(data)) return;
 
-	// Format the message for display
-	const message = formatAlertMessage(data);
+		// Check if this alert is being throttled (same event ID within throttle time)
+		if (isThrottled(data.EventID)) return;
 
-	// Set notification duration
-	const duration = defaultStore.reactiveState.earthquakeWarningToastDuration.value || 10000;
+		// Format the alert message according to user settings
+		const message = formatAlertMessage(data);
+		const duration = defaultStore.reactiveState.earthquakeWarningToastDuration.value || 10000;
 
-	// Play alert sound if enabled
-	if (defaultStore.reactiveState.earthquakeWarningSound.value) {
-		const soundType = getSoundTypeForIntensity(data.MaxIntensity, data.isWarn, data.isCancel);
-		playEarthquakeSound(soundType)
-			.catch(error => {
-				console.error('Failed to play earthquake sound, falling back to legacy sound', error);
-				// フォールバック
-				try {
-					alertSound.pause();
-					alertSound.currentTime = 0;
-					alertSound.play().catch(error => console.error('Failed to play legacy alert sound:', error));
-				} catch (error) {
-					console.error('Error playing legacy alert sound:', error);
-				}
-			});
-	}
+		// Play the appropriate earthquake alert sound
+		if (defaultStore.reactiveState.earthquakeWarningSound.value) {
+			try {
+				const soundType = getSoundTypeForIntensity(data.MaxIntensity, data.isWarn, data.isCancel);
+				playEarthquakeSound(soundType).catch(error => {
+					console.error('Failed to play earthquake sound, falling back to legacy sound', error);
+					// フォールバック
+					try {
+						// alertSound.pause();
+						// alertSound.currentTime = 0;
+						// alertSound.play().catch(error => console.error('Failed to play legacy alert sound:', error));
+					} catch (error) {
+						console.error('Error playing legacy alert sound:', error);
+					}
+				});
+			} catch (error) {
+				console.error('Error determining sound type:', error);
+			}
+		}
 
-	// Show toast notification
-	toast(message, {
-		duration: duration,
-	});
+		// Display toast notification
+		toast(message, {
+			duration: duration,
+		});
 
-	// If text-to-speech is enabled, read the message aloud
-	if (defaultStore.reactiveState.enableEarthquakeWarningTts.value) {
-		speakAlert(message);
+		// If text-to-speech is enabled, read the message aloud
+		if (defaultStore.reactiveState.enableEarthquakeWarningTts.value) {
+			speakAlert(message);
+		}
+	} catch (error) {
+		console.error('Error processing earthquake alert:', error);
+
+		// Add error to data log if logging is enabled
+		const logLevel = defaultStore.reactiveState.earthquakeWarningLogLevel?.value || 'none';
+		if (logLevel === 'detailed') {
+			addToDataLog('error', new Date(), { error: String(error), data });
+		}
 	}
 }
 
@@ -342,7 +361,7 @@ export function testEarthquakeAlert(): void {
 		Hypocenter: 'テスト震源地',
 		Latitude: 35.6895,
 		Longitude: 139.6917,
-		Magunitude: 6.5,
+		magnitude: 6.5,
 		Depth: 10,
 		MaxIntensity: getIntensityThreshold(), // ユーザー設定の震度をそのまま使用
 		Accuracy: {
@@ -403,6 +422,12 @@ export function testEarthquakeAlert(): void {
 				});
 		}
 
+		// Log test data if logging is enabled
+		const logLevel = defaultStore.reactiveState.earthquakeWarningLogLevel?.value || 'none';
+		if (logLevel === 'basic' || logLevel === 'detailed') {
+			addToDataLog('received', new Date(), { ...mockData, isTest: true });
+		}
+
 		// トースト通知を表示
 		toast(`[テスト] ${message}`, {
 			duration: duration,
@@ -448,6 +473,9 @@ export function connectEarthquakeWarningWs(): void {
 	if (wsConnection) return;
 
 	try {
+		// Add connection attempt to log if logging is enabled
+		addToConnectionLog('info', new Date(), 'Attempting to connect to earthquake warning service');
+
 		wsConnection = new WebSocket('wss://ws-api.wolfx.jp/jma_eew');
 
 		wsConnection.onopen = () => {
@@ -458,11 +486,24 @@ export function connectEarthquakeWarningWs(): void {
 				clearTimeout(reconnectTimeout);
 				reconnectTimeout = null;
 			}
+
+			// Notify user of successful connection if notification setting is enabled
+			if (defaultStore.reactiveState.earthquakeWarningConnectionNotify?.value) {
+				toast(i18n.ts._earthquakeWarning.connectionEstablished, {
+					duration: 3000,
+				});
+			}
 		};
 
 		wsConnection.onmessage = (event) => {
 			try {
 				const data = JSON.parse(event.data) as EarthquakeAlertData;
+
+				// Log received data if detailed logging is enabled
+				const logLevel = defaultStore.reactiveState.earthquakeWarningLogLevel?.value || 'none';
+				if (logLevel === 'detailed') {
+					addToDataLog('received', new Date(), data);
+				}
 
 				// Process jma_eew events (including training if not filtered)
 				if (data.type === 'jma_eew') {
@@ -478,25 +519,61 @@ export function connectEarthquakeWarningWs(): void {
 			}
 		};
 
-		wsConnection.onclose = () => {
-			console.log('Earthquake warning WebSocket closed');
+		wsConnection.onclose = (event) => {
+			console.log('Earthquake warning WebSocket closed', event);
 			wsConnection = null;
+
+			// Notify user of connection closure if notification setting is enabled
+			if (defaultStore.reactiveState.earthquakeWarningConnectionNotify?.value) {
+				toast(i18n.ts._earthquakeWarning.connectionClosed, {
+					duration: 3000,
+				});
+			}
 
 			// Attempt to reconnect after delay
 			if (defaultStore.reactiveState.enableEarthquakeWarning.value && !reconnectTimeout) {
+				const reconnectDelay = 5000; // 5秒後に再接続
 				reconnectTimeout = setTimeout(() => {
 					reconnectTimeout = null;
 					connectEarthquakeWarningWs();
-				}, 5000);
+				}, reconnectDelay);
+
+				// ユーザーに再接続を試みることを通知
+				if (defaultStore.reactiveState.earthquakeWarningConnectionNotify?.value) {
+					toast(i18n.ts._earthquakeWarning.reconnecting, {
+						duration: 3000,
+					});
+				}
 			}
 		};
 
 		wsConnection.onerror = (error) => {
 			console.error('Earthquake warning WebSocket error:', error);
+
+			// Notify user of connection error if notification setting is enabled
+			if (defaultStore.reactiveState.earthquakeWarningConnectionNotify?.value) {
+				toast(i18n.ts._earthquakeWarning.connectionError, {
+					duration: 5000,
+				});
+			}
+
+			// Add error to connection log if logging is enabled
+			addToConnectionLog('error', new Date(), 'WebSocket connection error');
+
 			wsConnection?.close();
 		};
-	} catch (error) {
+	} catch (error: any) {
 		console.error('Failed to connect to earthquake warning WebSocket:', error);
+
+		// Add error to connection log if logging is enabled
+		addToConnectionLog('error', new Date(), `Connection failed: ${error.message}`);
+
+		// Notify user of connection failure if notification setting is enabled
+		if (defaultStore.reactiveState.earthquakeWarningConnectionNotify?.value) {
+			toast(i18n.ts._earthquakeWarning.connectionFailed, {
+				duration: 5000,
+			});
+		}
 	}
 }
 
@@ -518,7 +595,106 @@ export function disconnectEarthquakeWarningWs(): void {
 /**
  * Initialize earthquake warning system based on user settings
  */
+// Log data structures for connection and data events
+interface ConnectionLogEntry {
+	type: 'info' | 'error' | 'warning';
+	timestamp: Date;
+	message: string;
+}
+
+interface DataLogEntry {
+	type: 'received' | 'processed' | 'error';
+	timestamp: Date;
+	data: any;
+}
+
+// In-memory logs (will be lost on page refresh)
+let connectionLog: ConnectionLogEntry[] = [];
+let dataLog: DataLogEntry[] = [];
+const MAX_LOG_ENTRIES = 100; // 最大ログエントリー数
+
+/**
+ * Add entry to connection log
+ */
+function addToConnectionLog(type: 'info' | 'error' | 'warning', timestamp: Date, message: string): void {
+	// Check if logging is enabled
+	const logLevel = defaultStore.reactiveState.earthquakeWarningLogLevel?.value || 'none';
+	if (logLevel === 'none') return;
+
+	// For basic level, only log errors
+	if (logLevel === 'basic' && type !== 'error') return;
+
+	// Log to console for easier debugging
+	console.log(`[EarthquakeWarning] [${type}] ${message}`);
+
+	// Add to log
+	connectionLog.unshift({ type, timestamp, message });
+
+	// Trim log to maximum size
+	if (connectionLog.length > MAX_LOG_ENTRIES) {
+		connectionLog = connectionLog.slice(0, MAX_LOG_ENTRIES);
+	}
+}
+
+/**
+ * Add entry to data log
+ */
+function addToDataLog(type: 'received' | 'processed' | 'error', timestamp: Date, data: any): void {
+	// Check if data logging is enabled
+	const logLevel = defaultStore.reactiveState.earthquakeWarningLogLevel?.value || 'none';
+	if (logLevel !== 'detailed') return;
+
+	// Log to console for easier debugging
+	console.log(`[EarthquakeWarning] [Data ${type}]`, data);
+
+	// Add to log
+	dataLog.unshift({ type, timestamp, data });
+
+	// Trim log to maximum size
+	if (dataLog.length > MAX_LOG_ENTRIES) {
+		dataLog = dataLog.slice(0, MAX_LOG_ENTRIES);
+	}
+}
+
+/**
+ * Initialize logs
+ */
+function initializeLogs(): void {
+	// Clear existing logs
+	connectionLog = [];
+	dataLog = [];
+
+	// Log initialization
+	addToConnectionLog('info', new Date(), 'Earthquake warning system initialized');
+}
+
+/**
+ * Get connection log entries
+ */
+export function getConnectionLogs(): ConnectionLogEntry[] {
+	return [...connectionLog];
+}
+
+/**
+ * Get data log entries
+ */
+export function getDataLogs(): DataLogEntry[] {
+	return [...dataLog];
+}
+
+/**
+ * Clear all logs
+ */
+export function clearAllLogs(): void {
+	connectionLog = [];
+	dataLog = [];
+	addToConnectionLog('info', new Date(), 'Logs cleared');
+}
+
 export function initEarthquakeWarning(): void {
+	// Initialize logs
+	initializeLogs();
+
 	// Disconnect any existing connection first
 	disconnectEarthquakeWarningWs();
 
