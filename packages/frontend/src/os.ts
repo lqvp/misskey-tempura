@@ -215,9 +215,10 @@ export function pageWindow(path: string) {
 	});
 }
 
-export function toast(message: string) {
+export function toast(message: string, options?: { duration?: number }) {
 	const { dispose } = popup(MkToast, {
 		message,
+		duration: options?.duration, // 互換性のために number として定義されているが、省略可能
 	}, {
 		closed: () => dispose(),
 	});
@@ -768,5 +769,6 @@ export function checkExistence(fileData: ArrayBuffer): Promise<any> {
 			resolve(resp.length > 0 ? resp[0] : null);
 		});
 	});
-}*/
+}
 
+*/

@@ -25,6 +25,7 @@ import { emojiPicker } from '@/scripts/emoji-picker.js';
 import { mainRouter } from '@/router/main.js';
 import { makeHotkey } from '@/scripts/hotkey.js';
 import { addCustomEmoji, removeCustomEmojis, updateCustomEmojis } from '@/custom-emojis.js';
+import { initEarthquakeWarning } from '@/scripts/temp-script/earthquake-warning.js';
 
 export async function mainBoot() {
 	const { isClientUpdated, updatedComponent } = await common(() => {
@@ -426,4 +427,5 @@ export async function mainBoot() {
 	document.addEventListener('keydown', makeHotkey(keymap), { passive: false });
 
 	initializeSw();
+	initEarthquakeWarning();
 }

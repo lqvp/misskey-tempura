@@ -12434,6 +12434,261 @@ export interface Locale extends ILocale {
             "without": string;
         };
     };
+    "_earthquakeWarning": {
+        /**
+         * 地震速報
+         */
+        "settings": string;
+        /**
+         * 地震速報を有効にする
+         */
+        "enable": string;
+        /**
+         * WebSocketを通じて地震速報を受信し、トースト通知で表示します。
+         */
+        "enableCaption": string;
+        /**
+         * 通知する最小震度
+         */
+        "intensityThreshold": string;
+        /**
+         * 設定した震度以上の地震のみ通知されます。
+         */
+        "intensityDescription": string;
+        /**
+         * 音声読み上げを有効にする
+         */
+        "enableTts": string;
+        /**
+         * 地震速報を受信した際に通知内容を音声で読み上げます。
+         */
+        "enableTtsCaption": string;
+        /**
+         * 通知テスト
+         */
+        "testNotification": string;
+        /**
+         * 設定した内容で通知を表示してテストします。
+         */
+        "testNotificationCaption": string;
+        /**
+         * 通知表示時間
+         */
+        "toastDuration": string;
+        /**
+         * 通知が表示される時間（ミリ秒）
+         */
+        "toastDurationCaption": string;
+        /**
+         * 読み上げ速度
+         */
+        "ttsRate": string;
+        /**
+         * 音声読み上げの速度（1.0が標準速度）
+         */
+        "ttsRateCaption": string;
+        /**
+         * 通知スタイル
+         */
+        "notificationStyle": string;
+        /**
+         * 通知の表示スタイルを選択します
+         */
+        "notificationStyleCaption": string;
+        /**
+         * シンプル（最小限の情報）
+         */
+        "notificationStyleSimple": string;
+        /**
+         * 標準（基本情報）
+         */
+        "notificationStyleStandard": string;
+        /**
+         * 詳細（すべての情報）
+         */
+        "notificationStyleDetailed": string;
+        /**
+         * 通知音を有効にする
+         */
+        "soundEnable": string;
+        /**
+         * 地震速報受信時に警告音を鳴らします
+         */
+        "soundEnableCaption": string;
+        /**
+         * 通知音のタイプ
+         */
+        "soundType": string;
+        /**
+         * 地震情報の種類に応じた通知音を選択します
+         */
+        "soundTypeCaption": string;
+        /**
+         * 自動（種類に応じて最適な音声）
+         */
+        "soundTypeAuto": string;
+        /**
+         * 緊急地震速報音
+         */
+        "soundTypeEew": string;
+        /**
+         * 地震情報音声
+         */
+        "soundTypeInfo": string;
+        /**
+         * 有効
+         */
+        "enabled": string;
+        /**
+         * 無効
+         */
+        "disabled": string;
+        /**
+         * ミリ秒
+         */
+        "milliseconds": string;
+        /**
+         * 震度{shindo}
+         */
+        "shindo": ParameterizedString<"shindo">;
+        /**
+         * 地域フィルタリング
+         */
+        "regionFilter": string;
+        /**
+         * 地域フィルタリングを有効にする
+         */
+        "regionFilterEnable": string;
+        /**
+         * 指定した地域に関する地震情報のみを通知します
+         */
+        "regionFilterCaption": string;
+        /**
+         * 通知する地域
+         */
+        "regionFilterAreaLabel": string;
+        /**
+         * 通知を受け取りたい地域を選択してください（選択しない場合はすべての地域）
+         */
+        "regionFilterAreaCaption": string;
+        "regionFilterAreas": {
+            /**
+             * 北海道
+             */
+            "hokkaido": string;
+            /**
+             * 東北
+             */
+            "tohoku": string;
+            /**
+             * 関東
+             */
+            "kanto": string;
+            /**
+             * 中部
+             */
+            "chubu": string;
+            /**
+             * 近畿
+             */
+            "kinki": string;
+            /**
+             * 中国
+             */
+            "chugoku": string;
+            /**
+             * 四国
+             */
+            "shikoku": string;
+            /**
+             * 九州・沖縄
+             */
+            "kyushu": string;
+        };
+        /**
+         * 通知抑制時間
+         */
+        "throttleTime": string;
+        /**
+         * 同じ地震の通知が短時間に複数回来るのを防ぎます。設定した秒数以内に来た同一地震IDの通知はスキップされます。
+         */
+        "throttleTimeCaption": string;
+        /**
+         * 訓練報を通知しない
+         */
+        "ignoreTraining": string;
+        /**
+         * 訓練や試験用の地震速報を通知から除外します
+         */
+        "ignoreTrainingCaption": string;
+        /**
+         * 接続状態通知
+         */
+        "connectionNotify": string;
+        /**
+         * WebSocket接続の確立、切断、エラーなどを通知します
+         */
+        "connectionNotifyCaption": string;
+        /**
+         * 地震速報APIに接続しました
+         */
+        "connectionEstablished": string;
+        /**
+         * 地震速報APIから切断されました
+         */
+        "connectionClosed": string;
+        /**
+         * 地震速報API接続エラー
+         */
+        "connectionError": string;
+        /**
+         * 地震速報APIへの接続に失敗しました
+         */
+        "connectionFailed": string;
+        /**
+         * ログレベル
+         */
+        "loggingLevel": string;
+        /**
+         * 地震速報システムのログ記録レベルを設定します
+         */
+        "loggingLevelCaption": string;
+        /**
+         * なし
+         */
+        "loggingLevelNone": string;
+        /**
+         * 基本
+         */
+        "loggingLevelBasic": string;
+        /**
+         * 詳細
+         */
+        "loggingLevelDetailed": string;
+        /**
+         * ログ
+         */
+        "logs": string;
+        /**
+         * 接続ログ
+         */
+        "connectionLogs": string;
+        /**
+         * データログ
+         */
+        "dataLogs": string;
+        /**
+         * ログをクリア
+         */
+        "clearLogs": string;
+        /**
+         * 地震速報データはWolfx (https://wolfx.jp/) によって提供されています。
+         * この機能は、Wolfxが提供するWebSocket API (https://wolfx.jp/wsapi) を利用してリアルタイムにデータを受信しています。
+         * APIの詳細については、Wolfx APIドキュメント (https://wolfx.jp/apidoc) を参照してください。
+         * ご利用にあたっては、Wolfxの利用規約をご確認ください。
+         */
+        "license": string;
+    };
     /**
      * すぐ消す
      */

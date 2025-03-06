@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	>
 		<div v-if="showing" class="_acrylic" :class="$style.root" :style="{ zIndex }">
 			<div style="padding: 16px 24px;">
-				{{ message }}
+				<MkMfm :text="message"/>
 			</div>
 		</div>
 	</Transition>
@@ -25,9 +25,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { onMounted, ref } from 'vue';
 import * as os from '@/os.js';
 import { defaultStore } from '@/store.js';
+import MkMfm from '@/components/global/MkMfm.js';
 
-defineProps<{
+const props = defineProps<{
 	message: string;
+	duration?: number; // 互換性のために number として定義されているが、省略可能
 }>();
 
 const emit = defineEmits<{
@@ -40,7 +42,7 @@ const showing = ref(true);
 onMounted(() => {
 	window.setTimeout(() => {
 		showing.value = false;
-	}, 4000);
+	}, props.duration ?? 4000); // デフォルトは4000ミリ秒(4秒)
 });
 </script>
 

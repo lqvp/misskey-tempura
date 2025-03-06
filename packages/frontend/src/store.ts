@@ -686,6 +686,69 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'account',
 		default: null as string | null,
 	},
+	enableEarthquakeWarning: {
+		where: 'device',
+		default: false,
+	},
+	earthquakeWarningIntensity: {
+		where: 'device',
+		default: '3', // Default threshold is intensity 3
+	},
+	enableEarthquakeWarningTts: {
+		where: 'device',
+		default: false,
+	},
+	earthquakeWarningToastDuration: {
+		where: 'device',
+		default: 10000, // 10秒
+	},
+	earthquakeWarningTtsRate: {
+		where: 'device',
+		default: 1.0, // 標準速度
+	},
+	earthquakeWarningNotificationStyle: {
+		where: 'device',
+		default: 'standard', // 'detailed', 'standard', 'simple'
+	},
+	earthquakeWarningSound: {
+		where: 'device',
+		default: true, // 通知音を有効
+	},
+	earthquakeWarningSoundType: {
+		where: 'device',
+		default: 'auto', // 'eew', 'info', 'auto'
+	},
+	// 地域フィルタリング設定
+	earthquakeWarningRegionFilter: {
+		where: 'device',
+		default: [] as string[], // 通知する地域のリスト（空の場合はすべての地域）
+	},
+	// 地域フィルタリングの有効/無効
+	enableEarthquakeWarningRegionFilter: {
+		where: 'device',
+		default: false,
+	},
+	// 通知抑制時間 (秒)
+	earthquakeWarningThrottleTime: {
+		where: 'device',
+		default: 60, // 秒
+	},
+	// 訓練報は通知しない
+	earthquakeWarningIgnoreTraining: {
+		where: 'device',
+		default: true,
+	},
+	// Connection notification setting
+	earthquakeWarningConnectionNotify: {
+		where: 'device',
+		default: true,
+	},
+
+	// Logging level setting (for debug and monitoring)
+	earthquakeWarningLogLevel: {
+		where: 'device',
+		default: 'basic', // 'none', 'basic', 'detailed'
+	},
 }));
 
 // TODO: 他のタブと永続化されたstateを同期
