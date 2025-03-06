@@ -12710,6 +12710,14 @@ export interface Locale extends ILocale {
      * すべてのノートを削除しますか？
      */
     "dropAllNotesConfirm": string;
+    /**
+     * ファイルを含めて削除
+     */
+    "deleteWithFiles": string;
+    /**
+     * ファイルを含めて削除しますか？
+     */
+    "deleteWithFilesConfirm": string;
 }
 declare const locales: {
     [lang: string]: Locale;

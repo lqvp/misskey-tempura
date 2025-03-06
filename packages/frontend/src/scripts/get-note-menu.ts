@@ -214,6 +214,33 @@ export function getNoteMenu(props: {
 		});
 	}
 
+	function deleteWithFiles(): void {
+		os.confirm({
+			type: 'warning',
+			text: i18n.ts.deleteWithFilesConfirm,
+		}).then(async ({ canceled }) => {
+			if (canceled) return;
+
+			await misskeyApi('notes/delete', {
+				noteId: appearNote.id,
+			});
+
+			if (appearNote.files && appearNote.files.length > 0) {
+				await Promise.all(
+					appearNote.files.map(file =>
+						misskeyApi('drive/files/delete', {
+							fileId: file.id,
+						}),
+					),
+				);
+			}
+
+			if (Date.now() - new Date(appearNote.createdAt).getTime() < 1000 * 60 && appearNote.userId === $i.id) {
+				claimAchievement('noteDeletedWithin1min');
+			}
+		});
+	}
+
 	function makePrivate(): void {
 		os.confirm({
 			type: 'warning',
@@ -492,6 +519,14 @@ export function getNoteMenu(props: {
 				danger: true,
 				action: del,
 			});
+			if (appearNote.files && appearNote.files.length > 0) {
+				menuItems.push({
+					icon: 'ti ti-copy-x',
+					text: i18n.ts.deleteWithFiles,
+					danger: true,
+					action: deleteWithFiles,
+				});
+			}
 		}
 	} else {
 		menuItems.push({

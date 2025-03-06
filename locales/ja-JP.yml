@@ -3426,3 +3426,6 @@ failedToCopy: "コピーに失敗しました"
 
 dropAllNotes: "全てのノートを削除"
 dropAllNotesConfirm: "すべてのノートを削除しますか？"
+
+deleteWithFiles: "ファイルを含めて削除"
+deleteWithFilesConfirm: "ファイルを含めて削除しますか？"
