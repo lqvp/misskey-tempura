@@ -4,11 +4,11 @@
  */
 
 import { defineAsyncComponent } from 'vue';
+import type { Ref, ShallowRef } from 'vue';
 import * as Misskey from 'misskey-js';
 import { url } from '@@/js/config.js';
 import { claimAchievement } from './achievements.js';
 import { directQuote } from './direct-quote.js';
-import type { Ref, ShallowRef } from 'vue';
 import type { MenuItem } from '@/types/menu.js';
 import { $i } from '@/account.js';
 import { i18n } from '@/i18n.js';
@@ -210,7 +210,55 @@ export function getNoteMenu(props: {
 		}).then(({ canceled }) => {
 			if (canceled) return;
 
-			os.post({ initialNote: appearNote, renote: appearNote.renote, reply: appearNote.reply, channel: appearNote.channel, deleteInitialNoteAfterPost: true });
+			misskeyApi('notes/delete', {
+				noteId: appearNote.id,
+			});
+
+			os.post({ initialNote: appearNote, renote: appearNote.renote, reply: appearNote.reply, channel: appearNote.channel });
+
+			if (Date.now() - new Date(appearNote.createdAt).getTime() < 1000 * 60 && appearNote.userId === $i.id) {
+				claimAchievement('noteDeletedWithin1min');
+			}
+		});
+	}
+
+	function deleteWithFiles(): void {
+		os.confirm({
+			type: 'warning',
+			text: i18n.ts.deleteWithFilesConfirm,
+		}).then(async ({ canceled }) => {
+			if (canceled) return;
+
+			await misskeyApi('notes/delete', {
+				noteId: appearNote.id,
+			});
+
+			if (appearNote.files && appearNote.files.length > 0) {
+				await Promise.all(
+					appearNote.files.map(file =>
+						misskeyApi('drive/files/delete', {
+							fileId: file.id,
+						}),
+					),
+				);
+			}
+
+			if (Date.now() - new Date(appearNote.createdAt).getTime() < 1000 * 60 && appearNote.userId === $i.id) {
+				claimAchievement('noteDeletedWithin1min');
+			}
+		});
+	}
+
+	function makePrivate(): void {
+		os.confirm({
+			type: 'warning',
+			text: `${i18n.ts._makePrivate.description} ${i18n.ts._makePrivate.confirm}`,
+		}).then(({ canceled }) => {
+			if (canceled) return;
+
+			misskeyApi('notes/make-private', {
+				noteId: appearNote.id,
+			});
 		});
 	}
 

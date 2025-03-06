@@ -21,5 +21,4 @@ export interface PostFormProps {
 		isSchedule?: boolean,
 	};
 	instant?: boolean;
-	deleteInitialNoteAfterPost?: boolean;
 };
