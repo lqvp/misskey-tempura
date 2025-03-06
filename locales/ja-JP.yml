@@ -1364,6 +1364,8 @@ federationSpecified: "このサーバーはホワイトリスト連合で運用�
 federationDisabled: "このサーバーは連合が無効化されています。他のサーバーのユーザーとやり取りすることはできません。"
 confirmOnReact: "リアクションする際に確認する"
 reactAreYouSure: "\" {emoji} \" をリアクションしますか？"
+markAsSensitiveConfirm: "このメディアをセンシティブとして設定しますか？"
+unmarkAsSensitiveConfirm: "このメディアのセンシティブ指定を解除しますか？"
 
 _accountSettings:
   requireSigninToViewContents: "コンテンツの表示にログインを必須にする"
@@ -3429,3 +3431,6 @@ fetchFromRemote: "リモートから取得"
 failedToFetchFromRemote: "リモートからの取得に失敗しました。\n相手がリストを公開していないか、非対応のサーバーである可能性があります。"
 showingDataFromRemoteServer: "リモートサーバーからのデータを表示しています"
 fetchedFromRemoteServer: "リモートサーバーからデータを取得しました"
+
+deleteWithFiles: "ファイルを含めて削除"
+deleteWithFilesConfirm: "ファイルを含めて削除しますか？"

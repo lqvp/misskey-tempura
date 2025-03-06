@@ -7,6 +7,7 @@ import { defineAsyncComponent } from 'vue';
 import { defaultStore } from '@/store.js';
 import * as os from '@/os.js';
 import { generateGeminiSummary } from '@/scripts/temp-script/llm.js';
+import { displayLlmError } from '@/utils/errorHandler.js';
 
 /**
  * 指定されたテキストに対して、Gemini API による変換を実行します。
@@ -49,9 +50,9 @@ export async function transformTextWithGemini(noteText: string, onApplied: (newT
 				systemInstruction: stylePrompt,
 			});
 			result = data;
-		} catch (error) {
-			os.alert({ type: 'error', text: '変換の実行に失敗しました。' });
-			return;
+		} catch (error: any) {
+			// 変更: エラー表示とthrow
+			displayLlmError(error, '変換の実行に失敗しました。');
 		}
 
 		if (
@@ -61,8 +62,8 @@ export async function transformTextWithGemini(noteText: string, onApplied: (newT
             !result.candidates[0].content.parts ||
             result.candidates[0].content.parts.length === 0
 		) {
-			os.alert({ type: 'error', text: '変換結果に問題が発生しました。' });
-			return;
+			// 変更: エラーメッセージを統一した形で表示
+			displayLlmError(new Error('変換結果に問題が発生しました。'));
 		}
 
 		const transformedText = result.candidates[0].content.parts[0].text;

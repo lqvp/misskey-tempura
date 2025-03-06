@@ -90,10 +90,6 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'account',
 		default: true,
 	},
-	showFullAcct: {
-		where: 'account',
-		default: false,
-	},
 	collapseRenotes: {
 		where: 'account',
 		default: true,
