@@ -3427,5 +3427,10 @@ failedToCopy: "コピーに失敗しました"
 dropAllNotes: "全てのノートを削除"
 dropAllNotesConfirm: "すべてのノートを削除しますか？"
 
+fetchFromRemote: "リモートから取得"
+failedToFetchFromRemote: "リモートからの取得に失敗しました。\n相手がリストを公開していないか、非対応のサーバーである可能性があります。"
+showingDataFromRemoteServer: "リモートサーバーからのデータを表示しています"
+fetchedFromRemoteServer: "リモートサーバーからデータを取得しました"
+
 deleteWithFiles: "ファイルを含めて削除"
 deleteWithFilesConfirm: "ファイルを含めて削除しますか？"
