@@ -6,8 +6,8 @@
 import { defaultStore } from '@/store.js';
 import * as os from '@/os.js';
 import { generateGeminiSummary } from '@/scripts/temp-script/llm.js';
-import { i18n } from '@/i18n.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
+import { displayLlmError } from '@/utils/errorHandler.js';
 
 /**
  * 指定したユーザーIDのプロフィール情報と最新のノートを取得し、LLMに要約させた結果を表示します。
@@ -19,8 +19,7 @@ export async function summarizeUserProfile(userId: string): Promise<void> {
 		// プロフィール情報を取得 (name, location, description)
 		const profile = await misskeyApi('users/show', { userId });
 		if (!profile) {
-			os.alert({ type: 'error', text: 'プロフィール情報が取得できませんでした。' });
-			return;
+			displayLlmError(new Error('プロフィール情報が取得できませんでした。'));
 		}
 		const { name, location, description } = profile;
 
@@ -57,17 +56,17 @@ export async function summarizeUserProfile(userId: string): Promise<void> {
 		});
 
 		if (!summaryResult.candidates || summaryResult.candidates.length === 0) {
-			throw new Error('Gemini API からの候補がありません。');
+			displayLlmError(new Error('Gemini API からの候補がありません。'));
 		}
 		const candidate = summaryResult.candidates[0];
 		if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
-			throw new Error('Gemini API のレスポンスフォーマットが不正です。');
+			displayLlmError(new Error('Gemini API のレスポンスフォーマットが不正です。'));
 		}
 		const summarizedText = candidate.content.parts[0].text;
 
 		os.alert({ type: 'info', text: summarizedText });
-	} catch (error) {
-		console.error('プロフィール要約エラー:', error);
-		os.alert({ type: 'error', text: 'プロフィール要約の取得に失敗しました。' });
+	} catch (error: any) {
+		// catch節内も統一してハンドリング（この呼び出しによりalertとthrowが行われる）
+		displayLlmError(error, 'プロフィール要約の取得に失敗しました。');
 	}
 }
