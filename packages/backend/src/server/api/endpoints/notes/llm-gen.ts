@@ -11,7 +11,6 @@ import { RoleService } from '@/core/RoleService.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '../../error.js';
-import { access } from 'fs';
 
 export const meta = {
 	tags: ['notes'],
@@ -53,7 +52,7 @@ export const meta = {
 		},
 
 		accessDenied: {
-			message: 'Access denied.',
+			message: 'Access denied. Requires canUseGeminiLLMAPI role.',
 			code: 'ACCESS_DENIED',
 			id: '5eb8d909-2540-4970-90b8-dd6f86088121',
 		},
