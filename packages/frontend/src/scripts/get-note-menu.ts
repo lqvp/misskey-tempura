@@ -439,13 +439,15 @@ export function getNoteMenu(props: {
 			});
 		}
 
-		menuItems.push({
-			icon: 'ti ti-file-text',
-			text: i18n.ts._llm.summarizeNote,
-			action: async () => {
-				await showNoteSummary(appearNote.text ?? '');
-			},
-		});
+		if ($i.policies.canUseGeminiLLMAPI || defaultStore.state.geminiToken) {
+			menuItems.push({
+				icon: 'ti ti-file-text',
+				text: i18n.ts._llm.summarizeNote,
+				action: async () => {
+					await showNoteSummary(appearNote.text ?? '');
+				},
+			});
+		}
 
 		menuItems.push({ type: 'divider' });
 
