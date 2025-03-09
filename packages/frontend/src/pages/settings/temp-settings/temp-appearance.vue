@@ -4,18 +4,22 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkFolder>
-	<template #icon><i class="ti ti-letter-case"></i></template>
-	<template #label>{{ i18n.ts.appearance }}</template>
-	<div class="_gaps_m">
-		<MkSelect v-model="customFont">
-			<template #label>{{ i18n.ts.customFont }}</template>
-			<option :value="null">{{ i18n.ts.default }}</option>
-			<option v-for="[name, font] of Object.entries(fontList)" :key="name" :value="name">{{ font.name }}</option>
-		</MkSelect>
-		<MkSwitch v-model="enableSnowMode">{{ i18n.ts.snowMode }}</MkSwitch>
-	</div>
-</MkFolder>
+<SearchMarker markerId="temp-settings" :keywords="['appearance']">
+	<MkFolder>
+		<template #icon><i class="ti ti-letter-case"></i></template>
+		<template #label>{{ i18n.ts.appearance }}</template>
+		<div class="_gaps_m">
+			<SearchMarker :keywords="['font']">
+				<MkSelect v-model="customFont">
+					<template #label>{{ i18n.ts.customFont }}</template>
+					<option :value="null">{{ i18n.ts.default }}</option>
+					<option v-for="[name, font] of Object.entries(fontList)" :key="name" :value="name">{{ font.name }}</option>
+				</MkSelect>
+			</SearchMarker>
+			<MkSwitch v-model="enableSnowMode">{{ i18n.ts.snowMode }}</MkSwitch>
+		</div>
+	</MkFolder>
+</SearchMarker>
 </template>
 
 <script lang="ts" setup>

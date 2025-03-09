@@ -12630,6 +12630,14 @@ export interface Locale extends ILocale {
          */
         "ignoreTrainingCaption": string;
         /**
+         * 接続
+         */
+        "connection": string;
+        /**
+         * 再接続中
+         */
+        "reconnecting": string;
+        /**
          * 接続状態通知
          */
         "connectionNotify": string;

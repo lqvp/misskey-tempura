@@ -4,75 +4,77 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkFolder>
-	<template #icon><i class="ti ti-pencil"></i></template>
-	<template #label>{{ i18n.ts.displayOfNote }}</template>
-	<div class="_gaps_m">
-		<MkNote :note="noteMock" :mock="true"/>
+<SearchMarker markerId="temp-settings" :keywords="['notes']">
+	<MkFolder>
+		<template #icon><i class="ti ti-pencil"></i></template>
+		<template #label>{{ i18n.ts.displayOfNote }}</template>
 		<div class="_gaps_m">
-			<MkSwitch v-model="directRenote">
-				<template #label>
-					{{ i18n.ts.directRenote }}
-				</template>
-				<template #caption>{{ i18n.ts.directRenoteDescription }}</template>
-			</MkSwitch>
-			<MkSwitch v-model="hideReactionUsers">
-				<template #caption>{{ i18n.ts.hideReactionUsersDescription }}</template>
-				{{ i18n.ts.hideReactionUsers }}
-			</MkSwitch>
-			<MkSwitch v-model="enableReactionConfirm">
-				<template #label>
-					{{ i18n.ts.enableReactionConfirm }}
-				</template>
-				<template #caption>{{ i18n.ts.enableReactionConfirmDescription }}</template>
-			</MkSwitch>
-			<MkSwitch v-model="enableLikeConfirm">
-				<template #label>
-					{{ i18n.ts.enableLikeConfirm }}
-				</template>
-				<template #caption>{{ i18n.ts.enableLikeConfirmDescription }}</template>
-			</MkSwitch>
-			<MkSwitch v-model="showInstanceTickerSoftwareName">
-				<template #label>
-					{{ i18n.ts.showInstanceTickerSoftwareName }}
-				</template>
-				<template #caption>{{ i18n.ts.showInstanceTickerSoftwareNameDescription }}</template>
-			</MkSwitch>
-			<MkSwitch v-model="showInstanceTickerVersion">
-				<template #label>
-					{{ i18n.ts.showInstanceTickerVersion }}
-				</template>
-				<template #caption>{{ i18n.ts.showInstanceTickerVersionDescription }}</template>
-			</MkSwitch>
-			<MkSwitch v-model="disableNoteNyaize">{{ i18n.ts.disableNoteNyaize }}</MkSwitch>
-			<MkSelect v-model="hideReactionCount">
-				<template #label>{{ i18n.ts.hideReactionCount }}</template>
-				<option value="none">{{ i18n.ts._hideReactionCount.none }}</option>
-				<option value="self">{{ i18n.ts._hideReactionCount.self }}</option>
-				<option value="others">{{ i18n.ts._hideReactionCount.others }}</option>
-				<option value="all">{{ i18n.ts._hideReactionCount.all }}</option>
-			</MkSelect>
-		</div>
-
-		<MkFolder>
-			<template #label>{{ i18n.ts.like }}</template>
+			<MkNote :note="noteMock" :mock="true"/>
 			<div class="_gaps_m">
-				<MkSwitch v-model="showLikeButton">{{ i18n.ts.showLikeButton }}</MkSwitch>
-
-				<FromSlot v-model="selectReaction">
-					<template #label>{{ i18n.ts.selectReaction }}</template>
-					<MkCustomEmoji v-if="selectReaction && selectReaction.startsWith(':')" style="max-height: 3em; font-size: 1.1em;" :useOriginalSize="false" :name="selectReaction" :normal="true" :noStyle="true"/>
-					<MkEmoji v-else-if="selectReaction && !selectReaction.startsWith(':')" :emoji="selectReaction" style="max-height: 3em; font-size: 1.1em;" :normal="true" :noStyle="true"/>
-					<span v-else-if="!selectReaction">{{ i18n.ts.notSet }}</span>
-					<div class="_buttons" style="padding-top: 8px;">
-						<MkButton rounded :small="true" inline @click="chooseNewReaction"><i class="ti ti-mood-happy"></i> Change</MkButton>
-						<MkButton rounded :small="true" inline @click="resetReaction"><i class="ti ti-reload"></i> Reset</MkButton>
-					</div>
-				</FromSlot>
+				<MkSwitch v-model="directRenote">
+					<template #label>
+						{{ i18n.ts.directRenote }}
+					</template>
+					<template #caption>{{ i18n.ts.directRenoteDescription }}</template>
+				</MkSwitch>
+				<MkSwitch v-model="hideReactionUsers">
+					<template #caption>{{ i18n.ts.hideReactionUsersDescription }}</template>
+					{{ i18n.ts.hideReactionUsers }}
+				</MkSwitch>
+				<MkSwitch v-model="enableReactionConfirm">
+					<template #label>
+						{{ i18n.ts.enableReactionConfirm }}
+					</template>
+					<template #caption>{{ i18n.ts.enableReactionConfirmDescription }}</template>
+				</MkSwitch>
+				<MkSwitch v-model="enableLikeConfirm">
+					<template #label>
+						{{ i18n.ts.enableLikeConfirm }}
+					</template>
+					<template #caption>{{ i18n.ts.enableLikeConfirmDescription }}</template>
+				</MkSwitch>
+				<MkSwitch v-model="showInstanceTickerSoftwareName">
+					<template #label>
+						{{ i18n.ts.showInstanceTickerSoftwareName }}
+					</template>
+					<template #caption>{{ i18n.ts.showInstanceTickerSoftwareNameDescription }}</template>
+				</MkSwitch>
+				<MkSwitch v-model="showInstanceTickerVersion">
+					<template #label>
+						{{ i18n.ts.showInstanceTickerVersion }}
+					</template>
+					<template #caption>{{ i18n.ts.showInstanceTickerVersionDescription }}</template>
+				</MkSwitch>
+				<MkSwitch v-model="disableNoteNyaize">{{ i18n.ts.disableNoteNyaize }}</MkSwitch>
+				<MkSelect v-model="hideReactionCount">
+					<template #label>{{ i18n.ts.hideReactionCount }}</template>
+					<option value="none">{{ i18n.ts._hideReactionCount.none }}</option>
+					<option value="self">{{ i18n.ts._hideReactionCount.self }}</option>
+					<option value="others">{{ i18n.ts._hideReactionCount.others }}</option>
+					<option value="all">{{ i18n.ts._hideReactionCount.all }}</option>
+				</MkSelect>
 			</div>
-		</MkFolder>
-	</div>
-</MkFolder>
+
+			<MkFolder>
+				<template #label>{{ i18n.ts.like }}</template>
+				<div class="_gaps_m">
+					<MkSwitch v-model="showLikeButton">{{ i18n.ts.showLikeButton }}</MkSwitch>
+
+					<FromSlot v-model="selectReaction">
+						<template #label>{{ i18n.ts.selectReaction }}</template>
+						<MkCustomEmoji v-if="selectReaction && selectReaction.startsWith(':')" style="max-height: 3em; font-size: 1.1em;" :useOriginalSize="false" :name="selectReaction" :normal="true" :noStyle="true"/>
+						<MkEmoji v-else-if="selectReaction && !selectReaction.startsWith(':')" :emoji="selectReaction" style="max-height: 3em; font-size: 1.1em;" :normal="true" :noStyle="true"/>
+						<span v-else-if="!selectReaction">{{ i18n.ts.notSet }}</span>
+						<div class="_buttons" style="padding-top: 8px;">
+							<MkButton rounded :small="true" inline @click="chooseNewReaction"><i class="ti ti-mood-happy"></i> Change</MkButton>
+							<MkButton rounded :small="true" inline @click="resetReaction"><i class="ti ti-reload"></i> Reset</MkButton>
+						</div>
+					</FromSlot>
+				</div>
+			</MkFolder>
+		</div>
+	</MkFolder>
+</SearchMarker>
 </template>
 
 <script lang="ts" setup>

@@ -4,18 +4,22 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkFolder>
-	<template #icon><i class="ti ti-mood-happy"></i></template>
-	<template #label>{{ i18n.ts.behavior }}</template>
-	<div class="_gaps_m">
+<SearchMarker markerId="temp-settings" :keywords="['appearance']">
+	<MkFolder>
+		<template #icon><i class="ti ti-mood-happy"></i></template>
+		<template #label>{{ i18n.ts.behavior }}</template>
 		<div class="_gaps_m">
-			<MkSwitch v-model="reactionChecksMuting">
-				{{ i18n.ts._reactionChecksMuting.title }}
-				<template #caption>{{ i18n.ts._reactionChecksMuting.caption }}</template>
-			</MkSwitch>
+			<div class="_gaps_m">
+				<SearchMarker ;keywords="['reaction']">
+					<MkSwitch v-model="reactionChecksMuting">
+						{{ i18n.ts._reactionChecksMuting.title }}
+						<template #caption>{{ i18n.ts._reactionChecksMuting.caption }}</template>
+					</MkSwitch>
+				</SearchMarker>
+			</div>
 		</div>
-	</div>
-</MkFolder>
+	</MkFolder>
+</SearchMarker>
 </template>
 
 <script lang="ts" setup>

@@ -4,47 +4,49 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkFolder>
-	<template #icon><i class="ti ti-lock-open"></i></template>
-	<template #label>{{ i18n.ts.privacy }}</template>
-	<div class="_gaps_m">
-		<MkSwitch v-if="!isLocked" v-model="autoRejectFollowRequest" @update:modelValue="save_privacy()">
-			{{ i18n.ts.autoRejectFollowRequest }}
-			<template #caption>{{ i18n.ts.autoRejectFollowRequestDescription }}</template>
-		</MkSwitch>
-		<MkSwitch v-if="!isLocked" v-model="carefulBot" @update:modelValue="save_privacy()">{{ i18n.ts.carefulBot }}<template #caption>{{ i18n.ts.carefulBotDescription }}</template></MkSwitch>
+<SearchMarker markerId="temp-settings" :keywords="['privacy']">
+	<MkFolder>
+		<template #icon><i class="ti ti-lock-open"></i></template>
+		<template #label>{{ i18n.ts.privacy }}</template>
+		<div class="_gaps_m">
+			<MkSwitch v-if="!isLocked" v-model="autoRejectFollowRequest" @update:modelValue="save_privacy()">
+				{{ i18n.ts.autoRejectFollowRequest }}
+				<template #caption>{{ i18n.ts.autoRejectFollowRequestDescription }}</template>
+			</MkSwitch>
+			<MkSwitch v-if="!isLocked" v-model="carefulBot" @update:modelValue="save_privacy()">{{ i18n.ts.carefulBot }}<template #caption>{{ i18n.ts.carefulBotDescription }}</template></MkSwitch>
 
-		<MkSwitch v-if="$i.policies.canAutoFollowBack" v-model="autoFollowBack" @update:modelValue="save_privacy()">
-			{{ i18n.ts.autoFollowBack }}
-			<template #caption>{{ i18n.ts.autoFollowBackDescription }}</template>
-		</MkSwitch>
+			<MkSwitch v-if="$i.policies.canAutoFollowBack" v-model="autoFollowBack" @update:modelValue="save_privacy()">
+				{{ i18n.ts.autoFollowBack }}
+				<template #caption>{{ i18n.ts.autoFollowBackDescription }}</template>
+			</MkSwitch>
 
-		<MkSwitch v-model="hideActivity" @update:modelValue="save_privacy()">
-			{{ i18n.ts.hideActivity }}
-			<template #caption>{{ i18n.ts.hideActivityDescription }}</template>
-		</MkSwitch>
+			<MkSwitch v-model="hideActivity" @update:modelValue="save_privacy()">
+				{{ i18n.ts.hideActivity }}
+				<template #caption>{{ i18n.ts.hideActivityDescription }}</template>
+			</MkSwitch>
 
-		<MkSwitch v-model="hideNoteFromOverview" @update:modelValue="save_privacy()">
-			{{ i18n.ts.hideNoteFromOverview }}
-			<template #caption>{{ i18n.ts.hideNoteFromOverviewDescription }}</template>
-		</MkSwitch>
+			<MkSwitch v-model="hideNoteFromOverview" @update:modelValue="save_privacy()">
+				{{ i18n.ts.hideNoteFromOverview }}
+				<template #caption>{{ i18n.ts.hideNoteFromOverviewDescription }}</template>
+			</MkSwitch>
 
-		<MkSwitch v-model="hidePublicNotes" @update:modelValue="save_privacy()">
-			{{ i18n.ts.hidePublicNotes }}
-			<template #caption>{{ i18n.ts.hidePublicNotesDescription }}</template>
-		</MkSwitch>
+			<MkSwitch v-model="hidePublicNotes" @update:modelValue="save_privacy()">
+				{{ i18n.ts.hidePublicNotes }}
+				<template #caption>{{ i18n.ts.hidePublicNotesDescription }}</template>
+			</MkSwitch>
 
-		<MkSwitch v-model="hideHomeNotes" @update:modelValue="save_privacy()">
-			{{ i18n.ts.hideHomeNotes }}
-			<template #caption>{{ i18n.ts.hideHomeNotesDescription }}</template>
-		</MkSwitch>
+			<MkSwitch v-model="hideHomeNotes" @update:modelValue="save_privacy()">
+				{{ i18n.ts.hideHomeNotes }}
+				<template #caption>{{ i18n.ts.hideHomeNotesDescription }}</template>
+			</MkSwitch>
 
-		<MkSwitch v-model="hideLocalOnlyNotes" @update:modelValue="save_privacy()">
-			{{ i18n.ts.hideLocalOnlyNotes }}
-			<template #caption>{{ i18n.ts.hideLocalOnlyNotesDescription }}</template>
-		</MkSwitch>
-	</div>
-</MkFolder>
+			<MkSwitch v-model="hideLocalOnlyNotes" @update:modelValue="save_privacy()">
+				{{ i18n.ts.hideLocalOnlyNotes }}
+				<template #caption>{{ i18n.ts.hideLocalOnlyNotesDescription }}</template>
+			</MkSwitch>
+		</div>
+	</MkFolder>
+</SearchMarker>
 </template>
 
 <script lang="ts" setup>

@@ -18,54 +18,55 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkSwitch v-model="autoAcceptFollowed" @update:modelValue="save()">
 					<template #label><SearchLabel>{{ i18n.ts.autoAcceptFollowed }}</SearchLabel></template>
 				</MkSwitch>
-	<MkSwitch v-if="isLocked" v-model="autoRejectFollowRequest" @update:modelValue="save()">
-		{{ i18n.ts.autoRejectFollowRequest }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-		<template #caption>{{ i18n.ts.autoRejectFollowRequestDescription }}</template>
-	</MkSwitch>
-	<MkSwitch v-if="!isLocked" v-model="carefulBot" @update:modelValue="save()">{{ i18n.ts.carefulBot }}<template #caption>{{ i18n.ts.carefulBotDescription }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template></MkSwitch>
-
-	<MkSwitch v-if="$i.policies.canAutoFollowBack" v-model="autoFollowBack" @update:modelValue="save()">
-		{{ i18n.ts.autoFollowBack }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-		<template #caption>{{ i18n.ts.autoFollowBackDescription }}</template>
-	</MkSwitch>
 			</SearchMarker>
 		</MkDisableSection>
+
+		<MkSwitch v-if="isLocked" v-model="autoRejectFollowRequest" @update:modelValue="save()">
+			{{ i18n.ts.autoRejectFollowRequest }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+			<template #caption>{{ i18n.ts.autoRejectFollowRequestDescription }}</template>
+		</MkSwitch>
+		<MkSwitch v-if="!isLocked" v-model="carefulBot" @update:modelValue="save()">{{ i18n.ts.carefulBot }}<template #caption>{{ i18n.ts.carefulBotDescription }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template></MkSwitch>
+
+		<MkSwitch v-if="$i.policies.canAutoFollowBack" v-model="autoFollowBack" @update:modelValue="save()">
+			{{ i18n.ts.autoFollowBack }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+			<template #caption>{{ i18n.ts.autoFollowBackDescription }}</template>
+		</MkSwitch>
+
+		<MkSwitch v-model="hideActivity" @update:modelValue="save()">
+			{{ i18n.ts.hideActivity }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+			<template #caption>{{ i18n.ts.hideActivityDescription }}</template>
+		</MkSwitch>
+
+		<MkFolder>
+			<template #label>{{ i18n.ts.visibility }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+			<div class="_gpas_m">
+				<MkSwitch v-model="hideNoteFromOverview" @update:modelValue="save()">
+					{{ i18n.ts.hideNoteFromOverview }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+					<template #caption>{{ i18n.ts.hideNoteFromOverviewDescription }}</template>
+				</MkSwitch>
+
+				<MkSwitch v-model="hidePublicNotes" @update:modelValue="save()">
+					{{ i18n.ts.hidePublicNotes }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+					<template #caption>{{ i18n.ts.hidePublicNotesDescription }}</template>
+				</MkSwitch>
+
+				<MkSwitch v-model="hideHomeNotes" @update:modelValue="save()">
+					{{ i18n.ts.hideHomeNotes }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+					<template #caption>{{ i18n.ts.hideHomeNotesDescription }}</template>
+				</MkSwitch>
+
+				<MkSwitch v-model="hideLocalOnlyNotes" @update:modelValue="save()">
+					{{ i18n.ts.hideLocalOnlyNotes }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+					<template #caption>{{ i18n.ts.hideLocalOnlyNotesDescription }}</template>
+				</MkSwitch>
+			</div>
+		</MkFolder>
 
 		<SearchMarker :keywords="['reaction', 'public']">
 			<MkSwitch v-model="publicReactions" @update:modelValue="save()">
 				<template #label><SearchLabel>{{ i18n.ts.makeReactionsPublic }}</SearchLabel></template>
 				<template #caption><SearchKeyword>{{ i18n.ts.makeReactionsPublicDescription }}</SearchKeyword></template>
 			</MkSwitch>
-
-	<MkSwitch v-model="hideActivity" @update:modelValue="save()">
-		{{ i18n.ts.hideActivity }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-		<template #caption>{{ i18n.ts.hideActivityDescription }}</template>
-	</MkSwitch>
-
-	<MkFolder>
-		<template #label>{{ i18n.ts.visibility }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-		<div class="_gpas_m">
-			<MkSwitch v-model="hideNoteFromOverview" @update:modelValue="save()">
-				{{ i18n.ts.hideNoteFromOverview }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-				<template #caption>{{ i18n.ts.hideNoteFromOverviewDescription }}</template>
-			</MkSwitch>
-
-			<MkSwitch v-model="hidePublicNotes" @update:modelValue="save()">
-				{{ i18n.ts.hidePublicNotes }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-				<template #caption>{{ i18n.ts.hidePublicNotesDescription }}</template>
-			</MkSwitch>
-
-			<MkSwitch v-model="hideHomeNotes" @update:modelValue="save()">
-				{{ i18n.ts.hideHomeNotes }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-				<template #caption>{{ i18n.ts.hideHomeNotesDescription }}</template>
-			</MkSwitch>
-
-			<MkSwitch v-model="hideLocalOnlyNotes" @update:modelValue="save()">
-				{{ i18n.ts.hideLocalOnlyNotes }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-				<template #caption>{{ i18n.ts.hideLocalOnlyNotesDescription }}</template>
-			</MkSwitch>
-		</div>
-	</MkFolder>
 		</SearchMarker>
 
 		<SearchMarker :keywords="['following', 'visibility']">
@@ -221,7 +222,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkFolder v-if="!rememberNoteVisibility">
 						<template #label><SearchLabel>{{ i18n.ts.defaultNoteVisibility }}</SearchLabel></template>
 						<template v-if="defaultNoteVisibility === 'public'" #suffix>{{ i18n.ts._visibility.public }}</template>
-				<template v-else-if="defaultNoteVisibility === 'public_non_ltl'" #suffix>{{ i18n.ts._visibility.public_non_ltl }}</template>
+						<template v-else-if="defaultNoteVisibility === 'public_non_ltl'" #suffix>{{ i18n.ts._visibility.public_non_ltl }}</template>
 						<template v-else-if="defaultNoteVisibility === 'home'" #suffix>{{ i18n.ts._visibility.home }}</template>
 						<template v-else-if="defaultNoteVisibility === 'followers'" #suffix>{{ i18n.ts._visibility.followers }}</template>
 						<template v-else-if="defaultNoteVisibility === 'specified'" #suffix>{{ i18n.ts._visibility.specified }}</template>
@@ -229,7 +230,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<div class="_gaps_m">
 							<MkSelect v-model="defaultNoteVisibility">
 								<option value="public">{{ i18n.ts._visibility.public }}</option>
-						<option v-if="$i.policies.canPublicNonLtlNote" value="public_non_ltl">{{ i18n.ts._visibility.public_non_ltl }}</option>
+								<option v-if="$i.policies.canPublicNonLtlNote" value="public_non_ltl">{{ i18n.ts._visibility.public_non_ltl }}</option>
 								<option value="home">{{ i18n.ts._visibility.home }}</option>
 								<option value="followers">{{ i18n.ts._visibility.followers }}</option>
 								<option value="specified">{{ i18n.ts._visibility.specified }}</option>

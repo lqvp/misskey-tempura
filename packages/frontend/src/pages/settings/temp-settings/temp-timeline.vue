@@ -4,40 +4,42 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkFolder>
-	<template #icon><i class="ti ti-timeline"></i></template>
-	<template #label>{{ i18n.ts.__TL_conf.hideTimelineLabel }}</template>
-	<div class="_gaps_m">
-		<div class="_buttons">
-			<MkButton inline @click="toggleAllHidden(true)">{{ i18n.ts.enableAll }}</MkButton>
-			<MkButton inline @click="toggleAllHidden(false)">{{ i18n.ts.disableAll }}</MkButton>
+<SearchMarker markerId="temp-settings" :keywords="['timeline']">
+	<MkFolder>
+		<template #icon><i class="ti ti-timeline"></i></template>
+		<template #label>{{ i18n.ts.__TL_conf.hideTimelineLabel }}</template>
+		<div class="_gaps_m">
+			<div class="_buttons">
+				<MkButton inline @click="toggleAllHidden(true)">{{ i18n.ts.enableAll }}</MkButton>
+				<MkButton inline @click="toggleAllHidden(false)">{{ i18n.ts.disableAll }}</MkButton>
+			</div>
+			<MkSwitch v-model="hideLocalTimeLine">
+				<template #caption>{{ i18n.ts.__TL_conf.hideLocalTimeLineDescription }}</template>
+				{{ i18n.ts.__TL_conf.hideLocalTimeLine }}
+			</MkSwitch>
+			<MkSwitch v-model="hideSocialTimeLine">
+				<template #caption>{{ i18n.ts.__TL_conf.hideSocialTimeLineDescription }}</template>
+				{{ i18n.ts.__TL_conf.hideSocialTimeLine }}
+			</MkSwitch>
+			<MkSwitch v-model="hideGlobalTimeLine">
+				<template #caption>{{ i18n.ts.__TL_conf.hideGlobalTimeLineDescription }}</template>
+				{{ i18n.ts.__TL_conf.hideGlobalTimeLine }}
+			</MkSwitch>
+			<MkSwitch v-model="hideLists">
+				<template #caption>{{ i18n.ts.__TL_conf.hideListsDescription }}</template>
+				{{ i18n.ts.__TL_conf.hideLists }}
+			</MkSwitch>
+			<MkSwitch v-model="hideAntennas">
+				<template #caption>{{ i18n.ts.__TL_conf.hideAntennasDescription }}</template>
+				{{ i18n.ts.__TL_conf.hideAntennas }}
+			</MkSwitch>
+			<MkSwitch v-model="hideChannel">
+				<template #caption>{{ i18n.ts.__TL_conf.hideChannelDescription }}</template>
+				{{ i18n.ts.__TL_conf.hideChannel }}
+			</MkSwitch>
 		</div>
-		<MkSwitch v-model="hideLocalTimeLine">
-			<template #caption>{{ i18n.ts.__TL_conf.hideLocalTimeLineDescription }}</template>
-			{{ i18n.ts.__TL_conf.hideLocalTimeLine }}
-		</MkSwitch>
-		<MkSwitch v-model="hideSocialTimeLine">
-			<template #caption>{{ i18n.ts.__TL_conf.hideSocialTimeLineDescription }}</template>
-			{{ i18n.ts.__TL_conf.hideSocialTimeLine }}
-		</MkSwitch>
-		<MkSwitch v-model="hideGlobalTimeLine">
-			<template #caption>{{ i18n.ts.__TL_conf.hideGlobalTimeLineDescription }}</template>
-			{{ i18n.ts.__TL_conf.hideGlobalTimeLine }}
-		</MkSwitch>
-		<MkSwitch v-model="hideLists">
-			<template #caption>{{ i18n.ts.__TL_conf.hideListsDescription }}</template>
-			{{ i18n.ts.__TL_conf.hideLists }}
-		</MkSwitch>
-		<MkSwitch v-model="hideAntennas">
-			<template #caption>{{ i18n.ts.__TL_conf.hideAntennasDescription }}</template>
-			{{ i18n.ts.__TL_conf.hideAntennas }}
-		</MkSwitch>
-		<MkSwitch v-model="hideChannel">
-			<template #caption>{{ i18n.ts.__TL_conf.hideChannelDescription }}</template>
-			{{ i18n.ts.__TL_conf.hideChannel }}
-		</MkSwitch>
-	</div>
-</MkFolder>
+	</MkFolder>
+</SearchMarker>
 </template>
 
 <script lang="ts" setup>

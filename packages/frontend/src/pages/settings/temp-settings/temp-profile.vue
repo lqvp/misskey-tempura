@@ -4,38 +4,40 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkFolder>
-	<template #icon><i class="ti ti-user"></i></template>
-	<template #label>{{ i18n.ts.profile }}</template>
+<SearchMarker markerId="temp-settings" :keywords="['profile']">
+	<MkFolder>
+		<template #icon><i class="ti ti-user"></i></template>
+		<template #label>{{ i18n.ts.profile }}</template>
 
-	<div class="_gaps_m">
-		<MkFolder v-if="$i.policies.canUpdateCounters">
-			<template #label>{{ i18n.ts._updateCount.title }}</template>
-			<div class="_gaps_m">
-				<MkInput v-model="followersCount" type="number" :min="0">
-					<template #label>{{ i18n.ts._updateCount.updateFollowerCount }}</template>
-					<template #caption>{{ i18n.ts._updateCount.updateFollowerCountDescription }}</template>
-				</MkInput>
+		<div class="_gaps_m">
+			<MkFolder v-if="$i.policies.canUpdateCounters">
+				<template #label>{{ i18n.ts._updateCount.title }}</template>
+				<div class="_gaps_m">
+					<MkInput v-model="followersCount" type="number" :min="0">
+						<template #label>{{ i18n.ts._updateCount.updateFollowerCount }}</template>
+						<template #caption>{{ i18n.ts._updateCount.updateFollowerCountDescription }}</template>
+					</MkInput>
 
-				<MkInput v-model="followingCount" type="number" :min="0">
-					<template #label>{{ i18n.ts._updateCount.updateFollowCount }}</template>
-					<template #caption>{{ i18n.ts._updateCount.updateFollowCountDescription }}</template>
-				</MkInput>
+					<MkInput v-model="followingCount" type="number" :min="0">
+						<template #label>{{ i18n.ts._updateCount.updateFollowCount }}</template>
+						<template #caption>{{ i18n.ts._updateCount.updateFollowCountDescription }}</template>
+					</MkInput>
 
-				<MkInput v-model="notesCount" type="number" :min="0">
-					<template #label>{{ i18n.ts._updateCount.updateNoteCount }}</template>
-					<template #caption>{{ i18n.ts._updateCount.updateNoteCountDescription }}</template>
-				</MkInput>
+					<MkInput v-model="notesCount" type="number" :min="0">
+						<template #label>{{ i18n.ts._updateCount.updateNoteCount }}</template>
+						<template #caption>{{ i18n.ts._updateCount.updateNoteCountDescription }}</template>
+					</MkInput>
 
-				<div class="_buttons">
-					<MkButton primary :disabled="!hasChanges" @click="saveCounts">
-						<i class="ti ti-check"></i> {{ i18n.ts.save }}
-					</MkButton>
+					<div class="_buttons">
+						<MkButton primary :disabled="!hasChanges" @click="saveCounts">
+							<i class="ti ti-check"></i> {{ i18n.ts.save }}
+						</MkButton>
+					</div>
 				</div>
-			</div>
-		</MkFolder>
-	</div>
-</MkFolder>
+			</MkFolder>
+		</div>
+	</MkFolder>
+</SearchMarker>
 </template>
 
 <script lang="ts" setup>

@@ -4,49 +4,51 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkFolder>
-	<template #icon><i class="ti ti-forms"></i></template>
-	<template #label>{{ i18n.ts.postForm }}</template>
-	<div class="_gaps_m">
-		<MkContainer :showHeader="false">
-			<Sortable
-				v-model="items"
-				:class="$style.items"
-				:itemKey="items => items"
-				:animation="100"
-				:delay="50"
-				:delayOnTouchOnly="true"
-			>
-				<template #item="{element}">
-					<button v-tooltip="bottomItemDef[element.type].title" class="_button" :class="$style.item" @click="removeItem(element.type, $event)">
-						<i class="ti ti-fw" :class="[$style.itemIcon, bottomItemDef[element.type].icon]"></i>
-					</button>
-				</template>
-			</Sortable>
-		</MkContainer>
-		<div class="_buttons">
-			<MkButton @click="addItem"><i class="ti ti-plus"></i> {{ i18n.ts.addItem }}</MkButton>
-			<MkButton danger @click="reset_postform"><i class="ti ti-reload"></i> {{ i18n.ts.default }}</MkButton>
-			<MkButton primary class="save" @click="save_postform"><i class="ti ti-device-floppy"></i> {{ i18n.ts.save }}</MkButton>
-		</div>
-		<div :class="$style.label">{{ i18n.ts.postFormBottomSettingsDescription }}</div>
-		<div>
-			<div :class="$style.label">
-				{{ i18n.ts.defaultScheduledNoteDeleteTime }}
-			</div>
-			<MkDeleteScheduleEditor v-model="scheduledNoteDelete" :afterOnly="true"/>
-		</div>
+<SearchMarker markerId="temp-settings" :keywords="['postform']">
+	<MkFolder>
+		<template #icon><i class="ti ti-forms"></i></template>
+		<template #label>{{ i18n.ts.postForm }}</template>
 		<div class="_gaps_m">
-			<MkSwitch v-model="defaultScheduledNoteDelete">
-				{{ i18n.ts.defaultScheduledNoteDelete }}
-			</MkSwitch>
-			<MkSwitch v-model="useTextAreaAutoSize">
-				<template #caption>{{ i18n.ts.textAreaAutoResizeDescription }}</template>
-				{{ i18n.ts.textAreaAutoResize }}
-			</MkSwitch>
+			<MkContainer :showHeader="false">
+				<Sortable
+					v-model="items"
+					:class="$style.items"
+					:itemKey="items => items"
+					:animation="100"
+					:delay="50"
+					:delayOnTouchOnly="true"
+				>
+					<template #item="{element}">
+						<button v-tooltip="bottomItemDef[element.type].title" class="_button" :class="$style.item" @click="removeItem(element.type, $event)">
+							<i class="ti ti-fw" :class="[$style.itemIcon, bottomItemDef[element.type].icon]"></i>
+						</button>
+					</template>
+				</Sortable>
+			</MkContainer>
+			<div class="_buttons">
+				<MkButton @click="addItem"><i class="ti ti-plus"></i> {{ i18n.ts.addItem }}</MkButton>
+				<MkButton danger @click="reset_postform"><i class="ti ti-reload"></i> {{ i18n.ts.default }}</MkButton>
+				<MkButton primary class="save" @click="save_postform"><i class="ti ti-device-floppy"></i> {{ i18n.ts.save }}</MkButton>
+			</div>
+			<div :class="$style.label">{{ i18n.ts.postFormBottomSettingsDescription }}</div>
+			<div>
+				<div :class="$style.label">
+					{{ i18n.ts.defaultScheduledNoteDeleteTime }}
+				</div>
+				<MkDeleteScheduleEditor v-model="scheduledNoteDelete" :afterOnly="true"/>
+			</div>
+			<div class="_gaps_m">
+				<MkSwitch v-model="defaultScheduledNoteDelete">
+					{{ i18n.ts.defaultScheduledNoteDelete }}
+				</MkSwitch>
+				<MkSwitch v-model="useTextAreaAutoSize">
+					<template #caption>{{ i18n.ts.textAreaAutoResizeDescription }}</template>
+					{{ i18n.ts.textAreaAutoResize }}
+				</MkSwitch>
+			</div>
 		</div>
-	</div>
-</MkFolder>
+	</MkFolder>
+</SearchMarker>
 </template>
 
 <script lang="ts" setup>
