@@ -295,13 +295,13 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 				const canonical = user.host === null ? `@${user.username}` : `@${user.username}@${user.host}`;
 				os.post({ specified: user, initialText: `${canonical} ` });
 			},
-		}, {
+		}, ($i.policies.canUseGeminiLLMAPI || defaultStore.state.geminiToken) ? {
 			icon: 'ti ti-file-text',
 			text: i18n.ts._llm.summarizeProfile,
 			action: async () => {
 				await summarizeUserProfile(user.id);
 			},
-		}, { type: 'divider' }, ...(defaultStore.state.nicknameEnabled ? [{
+		} : undefined, { type: 'divider' }, ...(defaultStore.state.nicknameEnabled ? [{
 			icon: 'ti ti-edit',
 			text: 'ニックネームを編集',
 			action: () => {

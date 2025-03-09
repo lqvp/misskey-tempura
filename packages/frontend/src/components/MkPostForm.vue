@@ -286,6 +286,7 @@ const canPost = computed((): boolean => {
 
 const withHashtags = computed(defaultStore.makeGetterSetter('postFormWithHashtags'));
 const hashtags = computed(defaultStore.makeGetterSetter('postFormHashtags'));
+const geminiToken = computed(defaultStore.makeGetterSetter('geminiToken'));
 
 const bottomItemActionDef: Record<keyof typeof bottomItemDef, {
 	hide?: boolean;
@@ -344,6 +345,7 @@ const bottomItemActionDef: Record<keyof typeof bottomItemDef, {
 		},
 	},
 	notesTransformation: {
+		hide: computed(() => !($i.policies.canUseGeminiLLMAPI || geminiToken.value)),
 		action: () => {
 			transformTextWithGemini(text.value, (newText: string) => {
 				text.value = newText;
