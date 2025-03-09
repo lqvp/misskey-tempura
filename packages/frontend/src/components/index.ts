@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import type { App } from 'vue';
-
 import Mfm from './global/MkMfm.js';
 import MkA from './global/MkA.vue';
 import MkAcct from './global/MkAcct.vue';
@@ -27,6 +25,11 @@ import MkFooterSpacer from './global/MkFooterSpacer.vue';
 import MkStickyContainer from './global/MkStickyContainer.vue';
 import MkLazy from './global/MkLazy.vue';
 import MkSnow from './global/MkSnow.vue';
+import SearchMarker from './global/SearchMarker.vue';
+import SearchLabel from './global/SearchLabel.vue';
+import SearchKeyword from './global/SearchKeyword.vue';
+
+import type { App } from 'vue';
 
 export default function(app: App) {
 	for (const [key, value] of Object.entries(components)) {
@@ -57,6 +60,9 @@ export const components = {
 	MkStickyContainer: MkStickyContainer,
 	MkLazy: MkLazy,
 	MkSnow: MkSnow,
+	SearchMarker: SearchMarker,
+	SearchLabel: SearchLabel,
+	SearchKeyword: SearchKeyword,
 };
 
 declare module '@vue/runtime-core' {
@@ -83,5 +89,8 @@ declare module '@vue/runtime-core' {
 		MkStickyContainer: typeof MkStickyContainer;
 		MkLazy: typeof MkLazy;
 		MkSnow: typeof MkSnow;
+		SearchMarker: typeof SearchMarker;
+		SearchLabel: typeof SearchLabel;
+		SearchKeyword: typeof SearchKeyword;
 	}
 }

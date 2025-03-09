@@ -4,30 +4,31 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div>
-	<div v-if="!loading" class="_gaps">
-		<MkInfo>{{ i18n.tsx._profile.avatarDecorationMax({ max: $i.policies.avatarDecorationLimit }) }} ({{ i18n.tsx.remainingN({ n: $i.policies.avatarDecorationLimit - $i.avatarDecorations.length }) }})</MkInfo>
+<SearchMarker path="/settings/avatar-decoration" :label="i18n.ts.avatarDecorations" :keywords="['avatar', 'icon', 'decoration']" icon="ti ti-sparkles">
+	<div>
+		<div v-if="!loading" class="_gaps">
+			<MkInfo>{{ i18n.tsx._profile.avatarDecorationMax({ max: $i.policies.avatarDecorationLimit }) }} ({{ i18n.tsx.remainingN({ n: $i.policies.avatarDecorationLimit - $i.avatarDecorations.length }) }})</MkInfo>
 
-		<MkAvatar :class="$style.avatar" :user="$i" forceShowDecoration/>
+			<MkAvatar :class="$style.avatar" :user="$i" forceShowDecoration/>
 
-		<div v-if="$i.avatarDecorations.length > 0" v-panel :class="$style.current" class="_gaps_s">
-			<div>{{ i18n.ts.inUse }}</div>
-			<div :class="$style.decorations">
-				<XDecoration
-					v-for="(avatarDecoration, i) in $i.avatarDecorations"
-					:key="avatarDecoration.id"
-					:decoration="avatarDecorations.find(d => d.id === avatarDecoration.id)"
-					:angle="avatarDecoration.angle"
-					:flipH="avatarDecoration.flipH"
-					:offsetX="avatarDecoration.offsetX"
-					:offsetY="avatarDecoration.offsetY"
-					:active="true"
-					@click="openDecoration(avatarDecoration, i)"
-				/>
+			<div v-if="$i.avatarDecorations.length > 0" v-panel :class="$style.current" class="_gaps_s">
+				<div>{{ i18n.ts.inUse }}</div>
+				<div :class="$style.decorations">
+					<XDecoration
+						v-for="(avatarDecoration, i) in $i.avatarDecorations"
+						:key="avatarDecoration.id"
+						:decoration="avatarDecorations.find(d => d.id === avatarDecoration.id)"
+						:angle="avatarDecoration.angle"
+						:flipH="avatarDecoration.flipH"
+						:offsetX="avatarDecoration.offsetX"
+						:offsetY="avatarDecoration.offsetY"
+						:active="true"
+						@click="openDecoration(avatarDecoration, i)"
+					/>
+				</div>
+
+				<MkButton danger @click="detachAllDecorations">{{ i18n.ts.detachAll }}</MkButton>
 			</div>
-
-			<MkButton danger @click="detachAllDecorations">{{ i18n.ts.detachAll }}</MkButton>
-		</div>
 
 		<MkFolder>
 			<template #label>{{ i18n.ts.local }}</template>
@@ -46,23 +47,24 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		<MkFolder v-if="$i.policies.canUseRemoteIconDecorations">
 			<template #label>{{ i18n.ts.remote }}</template>
-			<div :class="$style.decorations">
-				<XDecoration
-					v-for="remoteAvatarDecoration in visibleRemoteDecorations"
-					:key="remoteAvatarDecoration.id"
-					:decoration="remoteAvatarDecoration"
-					@click="openRemoteDecoration(remoteAvatarDecoration)"
-				/>
-			</div>
+				<div :class="$style.decorations">
+					<XDecoration
+						v-for="remoteAvatarDecoration in visibleRemoteDecorations"
+						:key="remoteAvatarDecoration.id"
+						:decoration="remoteAvatarDecoration"
+						@click="openRemoteDecoration(remoteAvatarDecoration)"
+					/>
+				</div>
 			<MkButton v-if="hasMoreRemoteDecorations" class="mt-4" @click="loadMoreRemoteDecorations">
 				{{ i18n.ts.loadMore }}
 			</MkButton>
 		</MkFolder>
+		</div>
+		<div v-else>
+			<MkLoading/>
+		</div>
 	</div>
-	<div v-else>
-		<MkLoading/>
-	</div>
-</div>
+</SearchMarker>
 </template>
 
 <script lang="ts" setup>
