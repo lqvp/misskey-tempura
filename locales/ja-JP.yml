@@ -3499,3 +3499,5 @@ dropAllNotesConfirm: "すべてのノートを削除しますか？"
 
 deleteWithFiles: "ファイルを含めて削除"
 deleteWithFilesConfirm: "ファイルを含めて削除しますか？"
+
+noSendActivity: "アクティビティを送信しない"

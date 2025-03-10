@@ -29,6 +29,7 @@ export const paramDef = {
 	type: 'object',
 	properties: {
 		userId: { type: 'string', format: 'misskey:id' },
+		noSendActivity: { type: 'boolean', optional: true },
 	},
 	required: ['userId'],
 } as const;
@@ -46,7 +47,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw err;
 			});
 
-			await this.userFollowingService.rejectFollowRequest(me, follower);
+			await this.userFollowingService.rejectFollowRequest(me, follower, ps.noSendActivity );
 
 			return;
 		});

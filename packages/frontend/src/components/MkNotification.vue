@@ -170,6 +170,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div v-if="full && !followRequestDone" :class="$style.followRequestCommands">
 					<MkButton :class="$style.followRequestCommandButton" rounded primary @click="acceptFollowRequest()"><i class="ti ti-check"/> {{ i18n.ts.accept }}</MkButton>
 					<MkButton :class="$style.followRequestCommandButton" rounded danger @click="rejectFollowRequest()"><i class="ti ti-x"/> {{ i18n.ts.reject }}</MkButton>
+					<MkButton v-if="notification.user.host" :class="$style.followRequestCommandButton" rounded danger @click="noSendActivity_reject()"><i class="ti ti-x"/>{{ i18n.ts.reject }}({{ i18n.ts.noSendActivity }})</MkButton>
 				</div>
 			</template>
 			<template v-else-if="notification.type === 'blocked'">
@@ -269,6 +270,12 @@ const rejectFollowRequest = () => {
 	if (!('user' in props.notification)) return;
 	followRequestDone.value = true;
 	misskeyApi('following/requests/reject', { userId: props.notification.user.id });
+};
+
+const noSendActivity_reject = () => {
+	if (!('user' in props.notification)) return;
+	followRequestDone.value = true;
+	misskeyApi('following/requests/reject', { userId: props.notification.user.id, noSendActivity: true });
 };
 
 function getActualReactedUsersCount(notification: Misskey.entities.Notification) {
@@ -499,12 +506,13 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 
 .followRequestCommands {
 	display: flex;
+	flex-wrap: wrap;
 	gap: 8px;
 	max-width: 300px;
 	margin-top: 8px;
 }
 .followRequestCommandButton {
-	flex: 1;
+  flex: 1 1 auto;
 }
 
 .reactionsItem {

@@ -848,8 +848,8 @@ export class UserFollowingService implements OnModuleInit {
 	 * API following/request/reject
 	 */
 	@bindThis
-	public async rejectFollowRequest(user: Local, follower: Both): Promise<void> {
-		if (this.userEntityService.isRemoteUser(follower)) {
+	public async rejectFollowRequest(user: Local, follower: Both, noSendActivity?: boolean): Promise<void> {
+		if (this.userEntityService.isRemoteUser(follower) && !noSendActivity) {
 			this.deliverReject(user, follower);
 		}
 
