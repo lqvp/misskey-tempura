@@ -12989,6 +12989,10 @@ export interface Locale extends ILocale {
      * ファイルを含めて削除しますか？
      */
     "deleteWithFilesConfirm": string;
+    /**
+     * アクティビティを送信しない
+     */
+    "noSendActivity": string;
 }
 declare const locales: {
     [lang: string]: Locale;
