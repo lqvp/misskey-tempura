@@ -205,7 +205,7 @@ export const searchIndexes: SearchIndexItem[] = [
 				keywords: ['follow', 'auto', 'accept'],
 			},
 			{
-				id: '4nEwI6LYt',
+				id: 'lO2UbhKb7',
 				label: i18n.ts.makeReactionsPublic,
 				keywords: ['reaction', 'public', i18n.ts.makeReactionsPublicDescription],
 			},

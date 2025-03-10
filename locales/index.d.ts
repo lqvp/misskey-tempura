@@ -12324,6 +12324,14 @@ export interface Locale extends ILocale {
          */
         "useGeminiLLMAPIDescription": string;
         /**
+         * メディアを含めてLLMを実行
+         */
+        "useGeminiWithMedia": string;
+        /**
+         * ノートにファイルがあれば、Gemini APIにメディアを含めてLLMを実行します。
+         */
+        "useGeminiWithMediaDescription": string;
+        /**
          * Geminiトークン
          */
         "geminiTokenLabel": string;

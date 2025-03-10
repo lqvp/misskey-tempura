@@ -638,6 +638,10 @@ export const defaultStore = markRaw(new Storage('base', {
 		where: 'account',
 		default: false,
 	},
+	useGeminiWithMedia: {
+		where: 'account',
+		default: true,
+	},
 	geminiToken: {
 		where: 'account',
 		default: null as string | null,
