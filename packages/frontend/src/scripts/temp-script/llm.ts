@@ -262,7 +262,7 @@ export function extractCandidateText(result: any): string {
 		!result.candidates[0].content.parts ||
 		result.candidates[0].content.parts.length === 0
 	) {
-		throw new Error('LLM応答の形式が不正です。');
+		throw new Error('LLM応答の形式が不正です。candidates, content, partsのいずれかが存在しません。');
 	}
 	return result.candidates[0].content.parts[0].text;
 }
