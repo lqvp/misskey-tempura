@@ -24209,6 +24209,10 @@ export type operations = {
         'application/json': {
           text: string;
           prompt: string;
+          fileUris?: {
+              mimeType: string;
+              fileUri: string;
+            }[] | null;
         };
       };
     };

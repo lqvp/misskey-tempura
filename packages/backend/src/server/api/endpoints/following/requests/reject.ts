@@ -29,7 +29,7 @@ export const paramDef = {
 	type: 'object',
 	properties: {
 		userId: { type: 'string', format: 'misskey:id' },
-		noSendActivity: { type: 'boolean', optional: true, nullable: false },
+		noSendActivity: { type: 'boolean', nullable: false },
 	},
 	required: ['userId'],
 } as const;

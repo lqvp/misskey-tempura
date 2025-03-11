@@ -17,14 +17,91 @@ fetchInstance(true).then((res) => {
 	instance.value = res;
 });
 
+/**
+ * Gemini APIにファイルをアップロードする
+ * @param file アップロードするファイル情報
+ * @param apiKey Gemini API Key
+ * @returns アップロードされたファイルのURI
+ */
+async function uploadFileToGemini(file: Misskey.entities.DriveFile, apiKey: string): Promise<string> {
+	try {
+		// ファイルをダウンロードしてバイナリデータとして取得
+		const fileResponse = await fetch(file.url);
+		if (!fileResponse.ok) {
+			throw new Error('ファイルのダウンロードに失敗しました');
+		}
+		const fileBlob = await fileResponse.blob();
+
+		// Gemini APIのファイルアップロードエンドポイント
+		const uploadUrl = 'https://generativelanguage.googleapis.com/upload/v1beta/files';
+
+		// メタデータアップロードのリクエスト
+		const metadataResponse = await fetch(`${uploadUrl}?key=${apiKey}`, {
+			method: 'POST',
+			headers: {
+				'X-Goog-Upload-Protocol': 'resumable',
+				'X-Goog-Upload-Command': 'start',
+				'X-Goog-Upload-Header-Content-Length': String(fileBlob.size),
+				'X-Goog-Upload-Header-Content-Type': file.type,
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				file: { display_name: file.name },
+			}),
+		});
+
+		if (!metadataResponse.ok) {
+			throw new Error('ファイルアップロードの初期化に失敗しました');
+		}
+
+		// アップロードURLを取得
+		const uploadSessionUrl = metadataResponse.headers.get('X-Goog-Upload-URL');
+		if (!uploadSessionUrl) {
+			throw new Error('アップロードURLが取得できませんでした');
+		}
+
+		// 実際のファイルデータをアップロード
+		const fileUploadResponse = await fetch(uploadSessionUrl, {
+			method: 'POST',
+			headers: {
+				'Content-Length': String(fileBlob.size),
+				'X-Goog-Upload-Offset': '0',
+				'X-Goog-Upload-Command': 'upload, finalize',
+			},
+			body: fileBlob,
+		});
+
+		if (!fileUploadResponse.ok) {
+			throw new Error('ファイルのアップロードに失敗しました');
+		}
+
+		const fileInfo = await fileUploadResponse.json();
+		if (!fileInfo.file || !fileInfo.file.uri) {
+			throw new Error('アップロードしたファイルのURIが取得できませんでした');
+		}
+
+		return fileInfo.file.uri;
+	} catch (error) {
+		console.error('ファイルアップロードエラー:', error);
+		throw error;
+	}
+}
+
 export async function generateGeminiSummary({
+	note,
 	userContent,
 	systemInstruction,
 }: {
-	userContent: string;
+	note?: Misskey.entities.Note;
+	userContent?: string;
 	systemInstruction?: string;
 }): Promise<any> {
-	const { geminiToken, geminiModels, useGeminiLLMAPI } = defaultStore.state;
+	const { geminiToken, geminiModels, useGeminiLLMAPI, useGeminiWithMedia = true } = defaultStore.state;
+
+	// ノートからコンテンツを取得
+	const text = note?.text || userContent || '';
+	const files = note?.files || [];
+	const hasMedia = files.length > 0 && useGeminiWithMedia;
 
 	// サーバー提供のLLM APIを使用する場合
 	if (useGeminiLLMAPI) {
@@ -42,36 +119,128 @@ export async function generateGeminiSummary({
 					],
 				});
 				if (canceled) {
-					return displayLlmError(new Error('操作がキャンセルされました。'));
+					throw new Error('操作がキャンセルされました。');
 				}
 				if (result === 'disable') {
 					defaultStore.state.useGeminiLLMAPI = false;
-					return displayLlmError(new Error('Gemini APIの利用を無効にしました。'));
+					throw new Error('Gemini APIの利用を無効にしました。');
 				}
 				// 'fallback'を選択された場合は、geminiTokenを利用して従来の生成処理へフォールバック
 			} else {
-				return displayLlmError(new Error('サーバー提供のLLM APIが有効になっていません。'));
+				throw new Error('サーバー提供のLLM APIが有効になっていません。');
 			}
 		} else {
 			try {
+				// ファイル処理をローカルで行い、URIをサーバーに送信
+				const fileUris: { mimeType: string; fileUri: string }[] = [];
+
+				// メディアファイルの処理（画像のみサポート）
+				if (hasMedia && geminiToken) { // クライアント側のアップロードにもAPIキーが必要
+					try {
+						const mediaFiles = files.filter(file =>
+							file.type.startsWith('image/') && !file.type.includes('gif'),
+						);
+
+						if (mediaFiles.length > 0) {
+							// 最大4つの画像のみ処理（Gemini APIの制限に基づく）
+							const filesToProcess = mediaFiles.slice(0, 4);
+
+							// OS通知
+							os.success();
+
+							// 各ファイルをアップロードしてリクエストに追加
+							for (const file of filesToProcess) {
+								const fileUri = await uploadFileToGemini(file, geminiToken);
+								fileUris.push({
+									mimeType: file.type,
+									fileUri: fileUri,
+								});
+							}
+						}
+					} catch (error) {
+						console.error('メディアファイル処理エラー:', error);
+						os.alert({
+							type: 'error',
+							title: 'メディア処理エラー',
+							text: 'ファイルの処理に失敗しました。テキストのみで要約を続行します。',
+						});
+					}
+				}
+
+				// サーバーAPIを呼び出し
 				return await misskeyApi('notes/llm-gen', {
-					text: userContent,
+					text: text,
 					prompt: systemInstruction ?? '',
+					fileUris: fileUris.length > 0 ? fileUris : undefined,
 				});
 			} catch (error: any) {
 				if (error.code === 'ROLE_PERMISSION_DENIED') {
-					return displayLlmError(new Error('サーバー提供のLLM APIを使用する権限がありません。'));
+					throw new Error('サーバー提供のLLM APIを使用する権限がありません。');
 				}
-				return displayLlmError(new Error(`サーバーLLM API エラー: ${error.message || error}`));
+				throw new Error(`サーバーLLM API エラー: ${error.message || error}`);
 			}
 		}
 	}
 
-	// ユーザー自身のAPIキーを使用する場合（従来の動作）
+	// ユーザー自身のAPIキーを使用する場合
 	if (!geminiToken) {
-		return displayLlmError(new Error('Gemini API tokenがありません。'));
+		throw new Error('Gemini API tokenがありません。');
 	}
 
+	// リクエストボディの作成
+	const requestBody: any = {
+		system_instruction: systemInstruction
+			? {
+				parts: [{ text: systemInstruction }],
+			}
+			: undefined,
+		contents: [
+			{
+				parts: [{ text: text }],
+			},
+		],
+	};
+
+	// メディアファイルの処理（画像のみサポート）
+	if (hasMedia) {
+		try {
+			const mediaFiles = files.filter(file =>
+				file.type.startsWith('image/') && !file.type.includes('gif'),
+			);
+
+			if (mediaFiles.length > 0) {
+				// 最大4つの画像のみ処理（Gemini APIの制限に基づく）
+				const filesToProcess = mediaFiles.slice(0, 4);
+
+				// OS通知
+				os.success();
+
+				// requestBodyのpartsを更新
+				requestBody.contents[0].parts = [{ text: text }];
+
+				// 各ファイルをアップロードしてリクエストに追加
+				for (const file of filesToProcess) {
+					const fileUri = await uploadFileToGemini(file, geminiToken);
+					requestBody.contents[0].parts.push({
+						file_data: {
+							mime_type: file.type,
+							file_uri: fileUri,
+						},
+					});
+				}
+			}
+		} catch (error) {
+			console.error('メディアファイル処理エラー:', error);
+			// ファイル処理に失敗した場合はテキストのみでフォールバック
+			os.alert({
+				type: 'error',
+				title: 'メディア処理エラー',
+				text: 'ファイルの処理に失敗しました。テキストのみで要約を続行します。',
+			});
+		}
+	}
+
+	// Gemini APIにリクエスト送信
 	const response = await fetch(
 		`https://generativelanguage.googleapis.com/v1beta/models/${geminiModels}:generateContent?key=${geminiToken}`,
 		{
@@ -79,23 +248,13 @@ export async function generateGeminiSummary({
 			headers: {
 				'Content-Type': 'application/json',
 			},
-			body: JSON.stringify({
-				system_instruction: systemInstruction
-					? {
-						parts: [{ text: systemInstruction }],
-					}
-					: undefined,
-				contents: [
-					{
-						parts: [{ text: userContent }],
-					},
-				],
-			}),
+			body: JSON.stringify(requestBody),
 		},
 	);
 
 	if (!response.ok) {
-		return displayLlmError(new Error('Gemini APIからの要約の取得に失敗しました。'));
+		throw new Error(`Gemini API エラー: ${response.status} ${response.statusText}`);
 	}
+
 	return response.json();
 }

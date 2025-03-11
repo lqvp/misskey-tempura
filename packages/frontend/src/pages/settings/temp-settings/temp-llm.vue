@@ -15,6 +15,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<template #caption>{{ i18n.ts._llm.useGeminiLLMAPIDescription }}</template>
 			</MkSwitch>
 
+			<MkSwitch v-model="useGeminiWithMedia">
+				{{ i18n.ts._llm.useGeminiWithMedia }}
+				<template #caption>{{ i18n.ts._llm.useGeminiWithMediaDescription }}</template>
+			</MkSwitch>
+
 			<MkInput v-model="geminiToken" type="text" :disabled="useGeminiLLMAPI">
 				<template #label>{{ i18n.ts._llm.geminiTokenLabel }}</template>
 				<template #caption>{{ i18n.ts._llm.geminiTokenCaption }}</template>
@@ -107,6 +112,7 @@ fetchInstance(true).then((res) => {
 });
 
 const useGeminiLLMAPI = computed(defaultStore.makeGetterSetter('useGeminiLLMAPI'));
+const useGeminiWithMedia = computed(defaultStore.makeGetterSetter('useGeminiWithMedia'));
 const geminiToken = computed(defaultStore.makeGetterSetter('geminiToken'));
 const geminiModels = computed(defaultStore.makeGetterSetter('geminiModels'));
 const geminiSystemPrompt = computed(defaultStore.makeGetterSetter('geminiSystemPrompt'));

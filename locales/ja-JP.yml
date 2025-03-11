@@ -3299,6 +3299,8 @@ _llm:
   title: "LLM設定"
   useGeminiLLMAPI: "サーバーのLLM APIを使用"
   useGeminiLLMAPIDescription: "サーバーが提供するGemini APIを使用して、LLMを実行します。"
+  useGeminiWithMedia: "メディアを含めてLLMを実行"
+  useGeminiWithMediaDescription: "ノートにファイルがあれば、Gemini APIにメディアを含めてLLMを実行します。"
   geminiTokenLabel: "Geminiトークン"
   geminiTokenCaption: "Gemini API の認証に使用するトークンを設定します。"
   geminiModelLabel: "Geminiモデル"

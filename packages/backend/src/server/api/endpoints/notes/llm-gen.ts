@@ -64,6 +64,18 @@ export const paramDef = {
 	properties: {
 		text: { type: 'string' },
 		prompt: { type: 'string' },
+		fileUris: {
+			type: 'array',
+			nullable: true,
+			items: {
+				type: 'object',
+				properties: {
+					mimeType: { type: 'string' },
+					fileUri: { type: 'string' },
+				},
+				required: ['mimeType', 'fileUri'],
+			},
+		},
 	},
 	required: ['text', 'prompt'],
 } as const;
@@ -105,13 +117,28 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				throw new ApiError(meta.errors.llmApiError, 'Gemini API key is not configured on server');
 			}
 
+			// リクエストボディのコンテンツ部分を作成
+			const parts: any[] = [{ text: ps.text }];
+
+			// ファイルURIがある場合は追加
+			if (ps.fileUris && ps.fileUris.length > 0) {
+				for (const fileInfo of ps.fileUris) {
+					parts.push({
+						file_data: {
+							mime_type: fileInfo.mimeType,
+							file_uri: fileInfo.fileUri,
+						},
+					});
+				}
+			}
+
 			// リクエストボディの作成
 			const requestBody = JSON.stringify({
 				system_instruction: {
 					parts: [{ text: ps.prompt }],
 				},
 				contents: [{
-					parts: [{ text: ps.text }],
+					parts: parts,
 				}],
 			});
 
