@@ -145,9 +145,6 @@ export async function generateGeminiSummary({
 							// 最大4つの画像のみ処理（Gemini APIの制限に基づく）
 							const filesToProcess = mediaFiles.slice(0, 4);
 
-							// OS通知
-							os.success();
-
 							// 各ファイルをアップロードしてリクエストに追加
 							for (const file of filesToProcess) {
 								const fileUri = await uploadFileToGemini(file, geminiToken);
@@ -212,9 +209,6 @@ export async function generateGeminiSummary({
 				// 最大4つの画像のみ処理（Gemini APIの制限に基づく）
 				const filesToProcess = mediaFiles.slice(0, 4);
 
-				// OS通知
-				os.success();
-
 				// requestBodyのpartsを更新
 				requestBody.contents[0].parts = [{ text: text }];
 
@@ -257,4 +251,18 @@ export async function generateGeminiSummary({
 	}
 
 	return response.json();
+}
+
+export function extractCandidateText(result: any): string {
+	// 共通の候補抽出処理
+	if (
+		!result.candidates ||
+		result.candidates.length === 0 ||
+		!result.candidates[0].content ||
+		!result.candidates[0].content.parts ||
+		result.candidates[0].content.parts.length === 0
+	) {
+		throw new Error('LLM応答の形式が不正です。');
+	}
+	return result.candidates[0].content.parts[0].text;
 }

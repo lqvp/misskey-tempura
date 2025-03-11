@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import { defineAsyncComponent, ref } from 'vue';
 import { defaultStore } from '@/store.js';
 import * as os from '@/os.js';
-import { generateGeminiSummary } from '@/scripts/temp-script/llm.js';
+import { generateGeminiSummary, extractCandidateText } from '@/scripts/temp-script/llm.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
 import { displayLlmError } from '@/utils/errorHandler.js';
 
@@ -15,6 +16,13 @@ import { displayLlmError } from '@/utils/errorHandler.js';
  * @param userId 要約対象のユーザーID
  */
 export async function summarizeUserProfile(userId: string): Promise<void> {
+	const waitingFlag = ref(true);
+	const waitingPopup = os.popup(defineAsyncComponent(() => import('@/components/MkWaitingDialog.vue')), {
+		success: false,
+		showing: waitingFlag,
+	}, {
+		closed: () => { /* ... */ },
+	});
 	try {
 		// プロフィール情報を取得 (name, location, description)
 		const profile = await misskeyApi('users/show', { userId });
@@ -54,19 +62,18 @@ export async function summarizeUserProfile(userId: string): Promise<void> {
 			userContent,
 			systemInstruction,
 		});
-
-		if (!summaryResult.candidates || summaryResult.candidates.length === 0) {
-			displayLlmError(new Error('Gemini API からの候補がありません。'));
+		let summarizedText: string;
+		try {
+			summarizedText = extractCandidateText(summaryResult);
+		} catch (error: any) {
+			displayLlmError(error, 'Gemini API のレスポンスフォーマットが不正です。');
 		}
-		const candidate = summaryResult.candidates[0];
-		if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
-			displayLlmError(new Error('Gemini API のレスポンスフォーマットが不正です。'));
-		}
-		const summarizedText = candidate.content.parts[0].text;
-
 		os.alert({ type: 'info', text: summarizedText });
 	} catch (error: any) {
 		// catch節内も統一してハンドリング（この呼び出しによりalertとthrowが行われる）
 		displayLlmError(error, 'プロフィール要約の取得に失敗しました。');
+	} finally {
+		waitingFlag.value = false;
+		waitingPopup.dispose();
 	}
 }
