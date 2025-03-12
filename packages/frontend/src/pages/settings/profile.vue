@@ -50,11 +50,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<template #label><SearchLabel>{{ i18n.ts.birthday }}</SearchLabel></template>
 				<template #prefix><i class="ti ti-cake"></i></template>
 			</MkInput>
+		</SearchMarker>
 
-	<MkInput v-model="profile.listenbrainz" manualSave>
-		<template #label>{{ i18n.ts._profile.listenbrainz }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-		<template #prefix><i class="ti ti-headphones"></i></template>
-	</MkInput>
+		<SearchMarker :keywords="['listenbrainz']">
+			<MkInput v-model="profile.listenbrainz" manualSave>
+				<template #label>{{ i18n.ts._profile.listenbrainz }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+				<template #prefix><i class="ti ti-headphones"></i></template>
+			</MkInput>
 		</SearchMarker>
 
 		<SearchMarker :keywords="['language', 'locale']">
@@ -152,32 +154,34 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</SearchMarker>
 				</div>
 			</MkFolder>
+		</SearchMarker>
 
-	<MkFolder v-if="$i.policies.canUpdateCounters">
-		<template #label>{{ i18n.ts._updateCount.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-		<div class="_gaps_s">
-			<MkInput v-model="followersCount" type="number" :min="0">
-				<template #label>{{ i18n.ts._updateCount.updateFollowerCount }}</template>
-				<template #caption>{{ i18n.ts._updateCount.updateFollowerCountDescription }}</template>
-			</MkInput>
+		<SearchMarker :keywords="['count', 'update']">
+			<MkFolder v-if="$i.policies.canUpdateCounters">
+				<template #label>{{ i18n.ts._updateCount.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+				<div class="_gaps_s">
+					<MkInput v-model="followersCount" type="number" :min="0">
+						<template #label>{{ i18n.ts._updateCount.updateFollowerCount }}</template>
+						<template #caption>{{ i18n.ts._updateCount.updateFollowerCountDescription }}</template>
+					</MkInput>
 
-			<MkInput v-model="followingCount" type="number" :min="0">
-				<template #label>{{ i18n.ts._updateCount.updateFollowCount }}</template>
-				<template #caption>{{ i18n.ts._updateCount.updateFollowCountDescription }}</template>
-			</MkInput>
+					<MkInput v-model="followingCount" type="number" :min="0">
+						<template #label>{{ i18n.ts._updateCount.updateFollowCount }}</template>
+						<template #caption>{{ i18n.ts._updateCount.updateFollowCountDescription }}</template>
+					</MkInput>
 
-			<MkInput v-model="notesCount" type="number" :min="0">
-				<template #label>{{ i18n.ts._updateCount.updateNoteCount }}</template>
-				<template #caption>{{ i18n.ts._updateCount.updateNoteCountDescription }}</template>
-			</MkInput>
+					<MkInput v-model="notesCount" type="number" :min="0">
+						<template #label>{{ i18n.ts._updateCount.updateNoteCount }}</template>
+						<template #caption>{{ i18n.ts._updateCount.updateNoteCountDescription }}</template>
+					</MkInput>
 
-			<div class="_buttons">
-				<MkButton primary :disabled="!hasChanges" @click="saveCounts">
-					<i class="ti ti-check"></i> {{ i18n.ts.save }}
-				</MkButton>
-			</div>
-		</div>
-	</MkFolder>
+					<div class="_buttons">
+						<MkButton primary :disabled="!hasChanges" @click="saveCounts">
+							<i class="ti ti-check"></i> {{ i18n.ts.save }}
+						</MkButton>
+					</div>
+				</div>
+			</MkFolder>
 		</SearchMarker>
 	</div>
 </SearchMarker>
@@ -204,6 +208,7 @@ import { globalEvents } from '@/events.js';
 import { misskeyApi } from '@/scripts/misskey-api.js';
 import MkInfo from '@/components/MkInfo.vue';
 import MkTextarea from '@/components/MkTextarea.vue';
+import SearchMarker from '@/components/global/SearchMarker.vue';
 
 const $i = signinRequired();
 

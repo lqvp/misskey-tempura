@@ -149,41 +149,51 @@ export const searchIndexes: SearchIndexItem[] = [
 				keywords: ['birthday', 'birthdate', 'age'],
 			},
 			{
-				id: 'kRQc5zZ5d',
+				id: 'm2trKwPgq',
+				label: 'Unnamed marker',
+				keywords: ['listenbrainz'],
+			},
+			{
+				id: 'kfDZxCDp9',
 				label: i18n.ts.language,
 				keywords: ['language', 'locale'],
 			},
 			{
-				id: 'nOQYynSvN',
+				id: '2z1CeA4m4',
 				label: i18n.ts._profile.metadataEdit,
 				keywords: ['metadata'],
 			},
 			{
-				id: 'gbzFsHXLv',
+				id: 'grCWYebrn',
 				label: i18n.ts._profile.followedMessage,
 				keywords: ['follow', 'message', i18n.ts._profile.followedMessageDescription],
 			},
 			{
-				id: 'qYM6CtIby',
+				id: 'bsXEyBwmL',
 				label: i18n.ts.reactionAcceptance,
 				keywords: ['reaction'],
 			},
 			{
-				id: 'f2cRLh8ad',
+				id: '2XLhEGQBA',
 				children: [
 					{
-						id: 'kObNVstW6',
+						id: 'eVoViiF3h',
 						label: i18n.ts.flagAsCat,
 						keywords: ['cat'],
 					},
 					{
-						id: 'pTA3hB5UD',
+						id: 'tPmOrkctj',
 						label: i18n.ts.flagAsBot,
 						keywords: ['bot'],
 					},
 				],
 				label: i18n.ts.advancedSettings,
 				keywords: [],
+			},
+			{
+				id: 'Ewa9zgaTU',
+				label: 'Unnamed marker',
+				keywords: ['count', 'update'],
 			},
 		],
 		label: i18n.ts.profile,
@@ -468,12 +478,17 @@ export const searchIndexes: SearchIndexItem[] = [
 				keywords: ['account', 'close', 'delete', i18n.ts._accountDelete.requestAccountDelete],
 			},
 			{
-				id: 'gy7yCfzXG',
+				id: '2qI6ruPgi',
+				label: 'Unnamed marker',
+				keywords: ['account', 'truncate'],
+			},
+			{
+				id: '3N4CWpYSc',
 				label: i18n.ts.experimentalFeatures,
 				keywords: ['experimental', 'feature', 'flags'],
 			},
 			{
-				id: 'hNY4o9Cfj',
+				id: 'oUM3jKXvi',
 				label: i18n.ts.developer,
 				keywords: ['developer', 'mode', 'debug'],
 			},

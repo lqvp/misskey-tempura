@@ -58,16 +58,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkButton v-else disabled>{{ i18n.ts._accountDelete.inProgress }}</MkButton>
 						</div>
 					</MkFolder>
+				</SearchMarker>
 
-			<MkFolder v-if="$i.policies.canUseTruncate">
-				<template #icon><i class="ti ti-recycle"></i></template>
-				<template #label>{{ i18n.ts._accountTruncate.truncateAccount }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-				<div class="_gaps_m">
-					<FormInfo warn>{{ i18n.ts._accountTruncate.mayTakeTime }}</FormInfo>
-					<MkButton v-if="!$i.isDeleted" danger @click="truncateAccount">{{ i18n.ts._accountTruncate.requestAccountTruncate }}</MkButton>
-					<MkButton v-else disabled>{{ i18n.ts._accountTruncate.inProgress }}</MkButton>
-				</div>
-			</MkFolder>
+				<SearchMarker :keywords="['account', 'truncate']">
+					<MkFolder v-if="$i.policies.canUseTruncate">
+						<template #icon><i class="ti ti-recycle"></i></template>
+						<template #label>{{ i18n.ts._accountTruncate.truncateAccount }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+						<div class="_gaps_m">
+							<FormInfo warn>{{ i18n.ts._accountTruncate.mayTakeTime }}</FormInfo>
+							<MkButton v-if="!$i.isDeleted" danger @click="truncateAccount">{{ i18n.ts._accountTruncate.requestAccountTruncate }}</MkButton>
+							<MkButton v-else disabled>{{ i18n.ts._accountTruncate.inProgress }}</MkButton>
+						</div>
+					</MkFolder>
 				</SearchMarker>
 
 				<SearchMarker :keywords="['experimental', 'feature', 'flags']">
