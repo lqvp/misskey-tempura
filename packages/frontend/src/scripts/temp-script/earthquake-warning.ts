@@ -84,7 +84,7 @@ function getSoundTypeForIntensity(intensity: string, isWarning: boolean, isCance
 		return 'EEW_CANCELED';
 	}
 
-	const soundType = defaultStore.reactiveState.earthquakeWarningSoundType?.value || 'auto';
+	const soundType = defaultStore.reactiveState.earthquakeWarningSoundType.value || 'auto';
 
 	if (soundType === 'eew') {
 		// EEW音のみ使用
@@ -278,7 +278,7 @@ function getRegionFromCoordinates(latitude: number, longitude: number): string {
 function showEarthquakeAlert(data: EarthquakeAlertData): void {
 	try {
 		// Log data processing if detailed logging is enabled
-		const logLevel = defaultStore.reactiveState.earthquakeWarningLogLevel?.value || 'none';
+		const logLevel = defaultStore.reactiveState.earthquakeWarningLogLevel.value || 'none';
 		if (logLevel === 'detailed') {
 			addToDataLog('processed', new Date(), data);
 		}
@@ -334,7 +334,7 @@ function showEarthquakeAlert(data: EarthquakeAlertData): void {
 		console.error('Error processing earthquake alert:', error);
 
 		// Add error to data log if logging is enabled
-		const logLevel = defaultStore.reactiveState.earthquakeWarningLogLevel?.value || 'none';
+		const logLevel = defaultStore.reactiveState.earthquakeWarningLogLevel.value || 'none';
 		if (logLevel === 'detailed') {
 			addToDataLog('error', new Date(), { error: String(error), data });
 		}
@@ -423,7 +423,7 @@ export function testEarthquakeAlert(): void {
 		}
 
 		// Log test data if logging is enabled
-		const logLevel = defaultStore.reactiveState.earthquakeWarningLogLevel?.value || 'none';
+		const logLevel = defaultStore.reactiveState.earthquakeWarningLogLevel.value || 'none';
 		if (logLevel === 'basic' || logLevel === 'detailed') {
 			addToDataLog('received', new Date(), { ...mockData, isTest: true });
 		}
@@ -488,7 +488,7 @@ export function connectEarthquakeWarningWs(): void {
 			}
 
 			// Notify user of successful connection if notification setting is enabled
-			if (defaultStore.reactiveState.earthquakeWarningConnectionNotify?.value) {
+			if (defaultStore.reactiveState.earthquakeWarningConnectionNotify.value) {
 				toast(i18n.ts._earthquakeWarning.connectionEstablished, {
 					duration: 3000,
 				});
@@ -500,7 +500,7 @@ export function connectEarthquakeWarningWs(): void {
 				const data = JSON.parse(event.data) as EarthquakeAlertData;
 
 				// Log received data if detailed logging is enabled
-				const logLevel = defaultStore.reactiveState.earthquakeWarningLogLevel?.value || 'none';
+				const logLevel = defaultStore.reactiveState.earthquakeWarningLogLevel.value || 'none';
 				if (logLevel === 'detailed') {
 					addToDataLog('received', new Date(), data);
 				}
@@ -524,7 +524,7 @@ export function connectEarthquakeWarningWs(): void {
 			wsConnection = null;
 
 			// Notify user of connection closure if notification setting is enabled
-			if (defaultStore.reactiveState.earthquakeWarningConnectionNotify?.value) {
+			if (defaultStore.reactiveState.earthquakeWarningConnectionNotify.value) {
 				toast(i18n.ts._earthquakeWarning.connectionClosed, {
 					duration: 3000,
 				});
@@ -539,7 +539,7 @@ export function connectEarthquakeWarningWs(): void {
 				}, reconnectDelay);
 
 				// ユーザーに再接続を試みることを通知
-				if (defaultStore.reactiveState.earthquakeWarningConnectionNotify?.value) {
+				if (defaultStore.reactiveState.earthquakeWarningConnectionNotify.value) {
 					toast(i18n.ts._earthquakeWarning.reconnecting, {
 						duration: 3000,
 					});
@@ -551,7 +551,7 @@ export function connectEarthquakeWarningWs(): void {
 			console.error('Earthquake warning WebSocket error:', error);
 
 			// Notify user of connection error if notification setting is enabled
-			if (defaultStore.reactiveState.earthquakeWarningConnectionNotify?.value) {
+			if (defaultStore.reactiveState.earthquakeWarningConnectionNotify.value) {
 				toast(i18n.ts._earthquakeWarning.connectionError, {
 					duration: 5000,
 				});
@@ -569,7 +569,7 @@ export function connectEarthquakeWarningWs(): void {
 		addToConnectionLog('error', new Date(), `Connection failed: ${error.message}`);
 
 		// Notify user of connection failure if notification setting is enabled
-		if (defaultStore.reactiveState.earthquakeWarningConnectionNotify?.value) {
+		if (defaultStore.reactiveState.earthquakeWarningConnectionNotify.value) {
 			toast(i18n.ts._earthquakeWarning.connectionFailed, {
 				duration: 5000,
 			});
@@ -618,7 +618,7 @@ const MAX_LOG_ENTRIES = 100; // 最大ログエントリー数
  */
 function addToConnectionLog(type: 'info' | 'error' | 'warning', timestamp: Date, message: string): void {
 	// Check if logging is enabled
-	const logLevel = defaultStore.reactiveState.earthquakeWarningLogLevel?.value || 'none';
+	const logLevel = defaultStore.reactiveState.earthquakeWarningLogLevel.value || 'none';
 	if (logLevel === 'none') return;
 
 	// For basic level, only log errors
@@ -641,7 +641,7 @@ function addToConnectionLog(type: 'info' | 'error' | 'warning', timestamp: Date,
  */
 function addToDataLog(type: 'received' | 'processed' | 'error', timestamp: Date, data: any): void {
 	// Check if data logging is enabled
-	const logLevel = defaultStore.reactiveState.earthquakeWarningLogLevel?.value || 'none';
+	const logLevel = defaultStore.reactiveState.earthquakeWarningLogLevel.value || 'none';
 	if (logLevel !== 'detailed') return;
 
 	// Log to console for easier debugging
