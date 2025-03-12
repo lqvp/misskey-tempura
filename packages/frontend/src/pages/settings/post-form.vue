@@ -60,7 +60,7 @@ import MkSelect from '@/components/MkSelect.vue';
 import MkDeleteScheduleEditor from '@/components/MkDeleteScheduleEditor.vue';
 import FormSlot from '@/components/form/slot.vue';
 import MkContainer from '@/components/MkContainer.vue';
-import { bottomItemDef } from '@/utilitys/post-form.js';
+import { bottomItemDef } from '@/utility/post-form.js';
 import * as os from '@/os.js';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
