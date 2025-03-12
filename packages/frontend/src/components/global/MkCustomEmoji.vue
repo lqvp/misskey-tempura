@@ -36,6 +36,7 @@ import * as sound from '@/utility/sound.js';
 import { i18n } from '@/i18n.js';
 import MkCustomEmojiDetailedDialog from '@/components/MkCustomEmojiDetailedDialog.vue';
 import { $i } from '@/account.js';
+import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 
 const props = defineProps<{
@@ -111,14 +112,14 @@ function onClick(ev: MouseEvent) {
 					sound.playMisskeySfx('reaction');
 				},
 			},
-			...(!defaultStore.state.reactions.includes(`:${props.name}:`) ? [{
+			...(!store.s.reactions.includes(`:${props.name}:`) ? [{
 				text: i18n.ts.addToEmojiPicker,
 				icon: 'ti ti-plus',
 				action: () => {
-					defaultStore.set('reactions', [...defaultStore.state.reactions, `:${props.name}:`]);
+					store.set('reactions', [...store.state.reactions, `:${props.name}:`]);
 				},
-			}] : [])
-		);
+			}] : []),
+			);
 		}
 
 		menuItems.push({

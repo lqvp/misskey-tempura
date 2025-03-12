@@ -87,32 +87,32 @@ import MkButton from '@/components/MkButton.vue';
 import FromSlot from '@/components/form/slot.vue';
 import MkCustomEmoji from '@/components/global/MkCustomEmoji.vue';
 import MkEmoji from '@/components/global/MkEmoji.vue';
-import { defaultStore } from '@/store.js';
+import { prefer } from '@/preferences.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import MkNote from '@/components/MkNote.vue';
 
-const hideReactionUsers = computed(defaultStore.makeGetterSetter('hideReactionUsers'));
-const hideReactionCount = computed(defaultStore.makeGetterSetter('hideReactionCount'));
-const directRenote = computed(defaultStore.makeGetterSetter('directRenote'));
-const disableNoteNyaize = computed(defaultStore.makeGetterSetter('disableNoteNyaize'));
-const selectReaction = computed(defaultStore.makeGetterSetter('selectReaction'));
-const showLikeButton = computed(defaultStore.makeGetterSetter('showLikeButton'));
-const enableReactionConfirm = computed(defaultStore.makeGetterSetter('enableReactionConfirm'));
-const enableLikeConfirm = computed(defaultStore.makeGetterSetter('enableLikeConfirm'));
-const showInstanceTickerSoftwareName = computed(defaultStore.makeGetterSetter('showInstanceTickerSoftwareName'));
-const showInstanceTickerVersion = computed(defaultStore.makeGetterSetter('showInstanceTickerVersion'));
+const hideReactionUsers = prefer.model('hideReactionUsers');
+const hideReactionCount = prefer.model('hideReactionCount');
+const directRenote = prefer.model('directRenote');
+const disableNoteNyaize = prefer.model('disableNoteNyaize');
+const selectReaction = prefer.model('selectReaction');
+const showLikeButton = prefer.model('showLikeButton');
+const enableReactionConfirm = prefer.model('enableReactionConfirm');
+const enableLikeConfirm = prefer.model('enableLikeConfirm');
+const showInstanceTickerSoftwareName = prefer.model('showInstanceTickerSoftwareName');
+const showInstanceTickerVersion = prefer.model('showInstanceTickerVersion');
 
 function chooseNewReaction(ev: MouseEvent) {
 	os.pickEmoji(getHTMLElement(ev), {
 		showPinned: false,
 	}).then(async (emoji) => {
-		defaultStore.set('selectReaction', emoji as string);
+		prefer.commit('selectReaction', emoji as string);
 	});
 }
 
 function resetReaction() {
-	defaultStore.set('selectReaction', '');
+	prefer.commit('selectReaction', '');
 }
 
 function getHTMLElement(ev: MouseEvent): HTMLElement {

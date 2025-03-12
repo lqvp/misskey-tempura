@@ -201,74 +201,74 @@ import MkButton from '@/components/MkButton.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import MkMfm from '@/components/global/MkMfm.js';
-import { reloadAsk } from '@/scripts/reload-ask.js';
-import { testEarthquakeAlert, getConnectionLogs, getDataLogs, clearAllLogs } from '@/scripts/temp-script/earthquake-warning.js';
+import { reloadAsk } from '@/utility/reload-ask.js';
+import { testEarthquakeAlert, getConnectionLogs, getDataLogs, clearAllLogs } from '@/utility/temp-script/earthquake-warning.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
-import { defaultStore } from '@/store.js';
+import { prefer } from '@/preferences.js';
 
 // State
 const enableEarthquakeWarning = computed({
-	get: () => defaultStore.reactiveState.enableEarthquakeWarning.value,
+	get: () => prefer.r.enableEarthquakeWarning.value,
 	set: (value) => {
-		defaultStore.set('enableEarthquakeWarning', value);
+		prefer.commit('enableEarthquakeWarning', value);
 	},
 });
 
 const earthquakeWarningIntensity = computed({
-	get: () => defaultStore.reactiveState.earthquakeWarningIntensity.value,
+	get: () => prefer.r.earthquakeWarningIntensity.value,
 	set: (value) => {
-		defaultStore.set('earthquakeWarningIntensity', value);
+		prefer.commit('earthquakeWarningIntensity', value);
 	},
 });
 
 const enableEarthquakeWarningTts = computed({
-	get: () => defaultStore.reactiveState.enableEarthquakeWarningTts.value,
+	get: () => prefer.r.enableEarthquakeWarningTts.value,
 	set: (value) => {
-		defaultStore.set('enableEarthquakeWarningTts', value);
+		prefer.commit('enableEarthquakeWarningTts', value);
 	},
 });
 
 const earthquakeWarningToastDuration = computed({
-	get: () => defaultStore.reactiveState.earthquakeWarningToastDuration.value,
+	get: () => prefer.r.earthquakeWarningToastDuration.value,
 	set: (value) => {
-		defaultStore.set('earthquakeWarningToastDuration', value);
+		prefer.commit('earthquakeWarningToastDuration', value);
 	},
 });
 
 const earthquakeWarningTtsRate = computed({
-	get: () => defaultStore.reactiveState.earthquakeWarningTtsRate.value,
+	get: () => prefer.r.earthquakeWarningTtsRate.value,
 	set: (value) => {
-		defaultStore.set('earthquakeWarningTtsRate', value);
+		prefer.commit('earthquakeWarningTtsRate', value);
 	},
 });
 
 const earthquakeWarningNotificationStyle = computed({
-	get: () => defaultStore.reactiveState.earthquakeWarningNotificationStyle.value,
+	get: () => prefer.r.earthquakeWarningNotificationStyle.value,
 	set: (value) => {
-		defaultStore.set('earthquakeWarningNotificationStyle', value);
+		prefer.commit('earthquakeWarningNotificationStyle', value);
 	},
 });
 
 const earthquakeWarningSound = computed({
-	get: () => defaultStore.reactiveState.earthquakeWarningSound.value,
+	get: () => prefer.r.earthquakeWarningSound.value,
 	set: (value) => {
-		defaultStore.set('earthquakeWarningSound', value);
+		prefer.commit('earthquakeWarningSound', value);
 	},
 });
 
 const earthquakeWarningSoundType = computed({
-	get: () => defaultStore.reactiveState.earthquakeWarningSoundType.value,
+	get: () => prefer.r.earthquakeWarningSoundType.value,
 	set: (value) => {
-		defaultStore.set('earthquakeWarningSoundType', value);
+		prefer.commit('earthquakeWarningSoundType', value);
 	},
 });
 
 // 地域フィルタリング設定
 const enableEarthquakeWarningRegionFilter = computed({
-	get: () => defaultStore.reactiveState.enableEarthquakeWarningRegionFilter.value,
+	get: () => prefer.r.enableEarthquakeWarningRegionFilter.value,
 	set: (value) => {
-		defaultStore.set('enableEarthquakeWarningRegionFilter', value);
+		prefer.commit('enableEarthquakeWarningRegionFilter', value);
 	},
 });
 
@@ -290,12 +290,12 @@ watch(regionFilters, () => {
 	for (const [region, selected] of Object.entries(regionFilters) as [string, boolean][]) {
 		if (selected) regions.push(region);
 	}
-	defaultStore.set('earthquakeWarningRegionFilter', regions);
+	prefer.commit('earthquakeWarningRegionFilter', regions);
 }, { deep: true });
 
 // 初期値の設定
 onMounted(() => {
-	const selectedRegions = defaultStore.reactiveState.earthquakeWarningRegionFilter.value || [];
+	const selectedRegions = prefer.r.earthquakeWarningRegionFilter.value || [];
 	for (const region of selectedRegions) {
 		if (region in regionFilters) {
 			regionFilters[region] = true;
@@ -305,33 +305,33 @@ onMounted(() => {
 
 // 通知抑制時間設定
 const earthquakeWarningThrottleTime = computed({
-	get: () => defaultStore.reactiveState.earthquakeWarningThrottleTime.value,
+	get: () => prefer.r.earthquakeWarningThrottleTime.value,
 	set: (value) => {
-		defaultStore.set('earthquakeWarningThrottleTime', value);
+		prefer.commit('earthquakeWarningThrottleTime', value);
 	},
 });
 
 // 訓練報スキップ設定
 const earthquakeWarningIgnoreTraining = computed({
-	get: () => defaultStore.reactiveState.earthquakeWarningIgnoreTraining.value,
+	get: () => prefer.r.earthquakeWarningIgnoreTraining.value,
 	set: (value) => {
-		defaultStore.set('earthquakeWarningIgnoreTraining', value);
+		prefer.commit('earthquakeWarningIgnoreTraining', value);
 	},
 });
 
 // 接続通知設定
 const earthquakeWarningConnectionNotify = computed({
-	get: () => defaultStore.reactiveState.earthquakeWarningConnectionNotify.value,
+	get: () => prefer.r.earthquakeWarningConnectionNotify.value,
 	set: (value) => {
-		defaultStore.set('earthquakeWarningConnectionNotify', value);
+		prefer.commit('earthquakeWarningConnectionNotify', value);
 	},
 });
 
 // ログレベル設定
 const earthquakeWarningLogLevel = computed({
-	get: () => defaultStore.reactiveState.earthquakeWarningLogLevel.value,
+	get: () => prefer.r.earthquakeWarningLogLevel.value,
 	set: (value) => {
-		defaultStore.set('earthquakeWarningLogLevel', value);
+		prefer.commit('earthquakeWarningLogLevel', value);
 	},
 });
 

@@ -141,7 +141,7 @@ const meterStyle = computed(() => {
 
 const keepOriginalUploading = prefer.model('keepOriginalUploading');
 const keepOriginalFilename = prefer.model('keepOriginalFilename');
-const imageCompressionMode = prefer.modelr('imageCompressionMode');
+const imageCompressionMode = prefer.model('imageCompressionMode');
 
 misskeyApi('drive').then(info => {
 	capacity.value = info.capacity;

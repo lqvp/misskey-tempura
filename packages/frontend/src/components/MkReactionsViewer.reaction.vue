@@ -34,10 +34,11 @@ import { i18n } from '@/i18n.js';
 import * as sound from '@/utility/sound.js';
 import { checkReactionPermissions } from '@/utility/check-reaction-permissions.js';
 import { customEmojisMap } from '@/custom-emojis.js';
+import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 
-const reactionChecksMuting = computed(prefer.makeGetterSetter('reactionChecksMuting'));
-const enableReactionConfirm = computed(prefer.makeGetterSetter('enableReactionConfirm'));
+const reactionChecksMuting = prefer.s.reactionChecksMuting;
+const enableReactionConfirm = prefer.s.enableReactionConfirm;
 
 const props = defineProps<{
 	reaction: string;
@@ -73,7 +74,7 @@ const canGetInfo = computed(() => !props.reaction.match(/@\w/) && props.reaction
 const plainReaction = computed(() => customEmojisMap.has(emojiName.value) ? getReactionName(props.reaction, true) : props.reaction);
 
 const hideReactionCount = computed(() => {
-	switch (defaultStore.state.hideReactionCount) {
+	switch (prefer.s.hideReactionCount) {
 		case 'none': return false;
 		case 'all': return true;
 		case 'self': return props.note.userId === $i?.id;
@@ -163,11 +164,11 @@ async function menu(ev) {
 				closed: () => dispose(),
 			});
 		},
-	}] : []), ...(isAvailable.value && !defaultStore.state.reactions.includes(plainReaction.value) ? [{
+	}] : []), ...(isAvailable.value && !store.s.reactions.includes(plainReaction.value) ? [{
 		text: i18n.ts.addToEmojiPicker,
 		icon: 'ti ti-plus',
 		action: async () => {
-			defaultStore.set('reactions', [...defaultStore.state.reactions, plainReaction.value]);
+			store.set('reactions', [...store.s.reactions, plainReaction.value]);
 		},
 	}] : [])], ev.currentTarget ?? ev.target);
 }
@@ -195,7 +196,7 @@ if (!mock) {
 	useTooltip(buttonEl, async (showing) => {
 		const useGet = !reactionChecksMuting.value;
 		const apiCall = useGet ? misskeyApiGet : misskeyApi;
-		const reactions = !defaultStore.state.hideReactionUsers ? await apiCall('notes/reactions', {
+		const reactions = !store.s.hideReactionUsers ? await apiCall('notes/reactions', {
 			noteId: props.note.id,
 			type: props.reaction,
 			limit: 10,

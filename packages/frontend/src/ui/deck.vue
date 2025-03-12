@@ -5,7 +5,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div :class="[$style.root, { [$style.rootIsMobile]: isMobile }]">
-	<MkSnow v-if="defaultStore.state.enableSnowMode"></MkSnow>
 	<XSidebar v-if="!isMobile"/>
 
 	<div :class="$style.main">

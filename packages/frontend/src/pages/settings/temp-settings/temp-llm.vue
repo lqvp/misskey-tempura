@@ -99,8 +99,9 @@ import MkSelect from '@/components/MkSelect.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkButton from '@/components/MkButton.vue';
-import { defaultStore } from '@/store.js';
-import { reloadAsk } from '@/scripts/reload-ask.js';
+import { store } from '@/store.js';
+import { prefer } from '@/preferences.js';
+import { reloadAsk } from '@/utility/reload-ask.js';
 import { $i } from '@/account.js';
 import { i18n } from '@/i18n.js';
 import { fetchInstance } from '@/instance.js';
@@ -111,20 +112,20 @@ fetchInstance(true).then((res) => {
 	instance.value = res;
 });
 
-const useGeminiLLMAPI = computed(defaultStore.makeGetterSetter('useGeminiLLMAPI'));
-const useGeminiWithMedia = computed(defaultStore.makeGetterSetter('useGeminiWithMedia'));
-const geminiToken = computed(defaultStore.makeGetterSetter('geminiToken'));
-const geminiModels = computed(defaultStore.makeGetterSetter('geminiModels'));
-const geminiSystemPrompt = computed(defaultStore.makeGetterSetter('geminiSystemPrompt'));
-const geminiPromptNote = computed(defaultStore.makeGetterSetter('geminiPromptNote'));
-const geminiPromptProfile = computed(defaultStore.makeGetterSetter('geminiPromptProfile'));
-const geminiNoteLongText = computed(defaultStore.makeGetterSetter('geminiNoteLongText'));
-const geminiNoteShortText = computed(defaultStore.makeGetterSetter('geminiNoteShortText'));
-const geminiNoteSimpleText = computed(defaultStore.makeGetterSetter('geminiNoteSimpleText'));
-const geminiNoteCasualText = computed(defaultStore.makeGetterSetter('geminiNoteCasualText'));
-const geminiNoteProfessionalText = computed(defaultStore.makeGetterSetter('geminiNoteProfessionalText'));
-const geminiNoteCatText = computed(defaultStore.makeGetterSetter('geminiNoteCatText'));
-const geminiNoteCustomText = computed(defaultStore.makeGetterSetter('geminiNoteCustomText'));
+const useGeminiLLMAPI = prefer.model('useGeminiLLMAPI');
+const useGeminiWithMedia = prefer.model('useGeminiWithMedia');
+const geminiToken = prefer.model('geminiToken');
+const geminiModels = prefer.model('geminiModels');
+const geminiSystemPrompt = prefer.model('geminiSystemPrompt');
+const geminiPromptNote = prefer.model('geminiPromptNote');
+const geminiPromptProfile = prefer.model('geminiPromptProfile');
+const geminiNoteLongText = prefer.model('geminiNoteLongText');
+const geminiNoteShortText = prefer.model('geminiNoteShortText');
+const geminiNoteSimpleText = prefer.model('geminiNoteSimpleText');
+const geminiNoteCasualText = prefer.model('geminiNoteCasualText');
+const geminiNoteProfessionalText = prefer.model('geminiNoteProfessionalText');
+const geminiNoteCatText = prefer.model('geminiNoteCatText');
+const geminiNoteCustomText = prefer.model('geminiNoteCustomText');
 
 async function saveLLMSettings() {
 	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });

@@ -5,8 +5,9 @@
 
 import { defineAsyncComponent } from 'vue';
 import * as Misskey from 'misskey-js';
-import { generateGeminiSummary } from '@/scripts/temp-script/llm.js';
-import { defaultStore } from '@/store.js';
+import { generateGeminiSummary } from '@/utility/temp-script/llm.js';
+import { store } from '@/store.js';
+import { prefer } from '@/preferences.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { displayLlmError } from '@/utils/errorHandler.js';
@@ -19,8 +20,8 @@ import { displayLlmError } from '@/utils/errorHandler.js';
  */
 export async function callGeminiSummarize(note: Misskey.entities.Note): Promise<string> {
 	const systemInstruction = [
-		defaultStore.state.geminiPromptNote ?? '',
-		defaultStore.state.geminiSystemPrompt ?? '',
+		prefer.s.geminiPromptNote ?? '',
+		prefer.s.geminiSystemPrompt ?? '',
 	].join('\n');
 
 	const data = await generateGeminiSummary({
@@ -60,13 +61,11 @@ export async function showNoteSummary(noteOrText: Misskey.entities.Note | string
 		if (typeof noteOrText === 'string') {
 			if (!noteOrText) {
 				displayLlmError(new Error('ノート本文がありません。'));
-				return;
 			}
 			summary = await summarizeNoteText(noteOrText);
 		} else {
 			if (!noteOrText.text && (!noteOrText.files || noteOrText.files.length === 0)) {
 				displayLlmError(new Error('ノート本文とファイルがありません。'));
-				return;
 			}
 			summary = await summarizeNote(noteOrText);
 		}

@@ -4,9 +4,10 @@
  */
 
 import { defineAsyncComponent } from 'vue';
-import { defaultStore } from '@/store.js';
+import { store } from '@/store.js';
+import { prefer } from '@/preferences.js';
 import * as os from '@/os.js';
-import { generateGeminiSummary } from '@/scripts/temp-script/llm.js';
+import { generateGeminiSummary } from '@/utility/temp-script/llm.js';
 import { displayLlmError } from '@/utils/errorHandler.js';
 
 /**
@@ -40,7 +41,7 @@ export async function transformTextWithGemini(noteText: string, onApplied: (newT
 	// 繰り返し処理で「再生成」が選択された場合も対応
 	while (true) {
 		// store内の該当プロンプト（geminiNote*）を利用してプロンプト生成
-		const state = (defaultStore.state as unknown) as Record<string, string> | null;
+		const state = (prefer.s as unknown) as Record<string, string> | null;
 		const stylePrompt = state?.[selectedStyleKey] ?? '';
 
 		let result: any;

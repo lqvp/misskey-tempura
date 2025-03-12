@@ -196,20 +196,20 @@ export async function common(createVue: () => App<Element>) {
 	});
 
 	//# Custom font
-	if (defaultStore.state.customFont) {
-		applyFont(defaultStore.state.customFont);
+	if (prefer.s.customFont) {
+		applyFont(prefer.s.customFont);
 	}
 
-	watch(defaultStore.reactiveState.customFont, (font) => {
+	watch(prefer.r.customFont, (font) => {
 		applyFont(font);
 	});
 
 	//# Custom font
-	if (defaultStore.state.customFont) {
-		applyFont(defaultStore.state.customFont);
+	if (store.s.customFont) {
+		applyFont(store.s.customFont);
 	}
 
-	watch(defaultStore.reactiveState.customFont, (font) => {
+	watch(store.r.customFont, (font) => {
 		applyFont(font);
 	});
 

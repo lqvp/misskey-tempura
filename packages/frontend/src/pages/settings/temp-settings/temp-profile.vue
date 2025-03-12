@@ -50,7 +50,7 @@ import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { signinRequired } from '@/account.js';
 import { globalEvents } from '@/events.js';
-import { misskeyApi } from '@/scripts/misskey-api.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 
 const $i = signinRequired();
 

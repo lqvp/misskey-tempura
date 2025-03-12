@@ -24,7 +24,6 @@ import MkSpacer from './global/MkSpacer.vue';
 import MkFooterSpacer from './global/MkFooterSpacer.vue';
 import MkStickyContainer from './global/MkStickyContainer.vue';
 import MkLazy from './global/MkLazy.vue';
-import MkSnow from './global/MkSnow.vue';
 import SearchMarker from './global/SearchMarker.vue';
 import SearchLabel from './global/SearchLabel.vue';
 import SearchKeyword from './global/SearchKeyword.vue';
@@ -59,7 +58,6 @@ export const components = {
 	MkFooterSpacer: MkFooterSpacer,
 	MkStickyContainer: MkStickyContainer,
 	MkLazy: MkLazy,
-	MkSnow: MkSnow,
 	SearchMarker: SearchMarker,
 	SearchLabel: SearchLabel,
 	SearchKeyword: SearchKeyword,
@@ -88,7 +86,6 @@ declare module '@vue/runtime-core' {
 		MkFooterSpacer: typeof MkFooterSpacer;
 		MkStickyContainer: typeof MkStickyContainer;
 		MkLazy: typeof MkLazy;
-		MkSnow: typeof MkSnow;
 		SearchMarker: typeof SearchMarker;
 		SearchLabel: typeof SearchLabel;
 		SearchKeyword: typeof SearchKeyword;

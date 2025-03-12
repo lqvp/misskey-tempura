@@ -13,7 +13,8 @@ import { i18n } from '@/i18n.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
-import { defaultStore, userActions } from '@/store.js';
+import { store } from "@/store.js";
+import { prefer } from '@/preferences.js';
 import { $i, iAmModerator } from '@/account.js';
 import { notesSearchAvailable, canSearchNonLocalNotes } from '@/utility/check-permissions.js';
 import { antennasCache, rolesCache, userListsCache } from '@/cache.js';
@@ -73,19 +74,6 @@ async function getPeriod(title: string, text?: string) {
 	const periodTime = period.find(x => x.key === result)?.time;
 	return periodTime == null ? null : Date.now() + periodTime;
 }
-import type { IRouter } from '@/nirax.js';
-import type { MenuItem } from '@/types/menu.js';
-import { i18n } from '@/i18n.js';
-import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
-import * as os from '@/os.js';
-import { misskeyApi } from '@/utility/misskey-api.js';
-import { $i, iAmModerator } from '@/account.js';
-import { notesSearchAvailable, canSearchNonLocalNotes } from '@/utility/check-permissions.js';
-import { antennasCache, rolesCache, userListsCache } from '@/cache.js';
-import { mainRouter } from '@/router/main.js';
-import { genEmbedCode } from '@/utility/get-embed-code.js';
-import { prefer } from '@/preferences.js';
-import { getPluginHandlers } from '@/plugin.js';
 
 export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter = mainRouter) {
 	const meId = $i ? $i.id : null;
@@ -308,13 +296,13 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 				const canonical = user.host === null ? `@${user.username}` : `@${user.username}@${user.host}`;
 				os.post({ specified: user, initialText: `${canonical} ` });
 			},
-		}, ($i.policies.canUseGeminiLLMAPI || defaultStore.state.geminiToken) ? {
+		}, ($i.policies.canUseGeminiLLMAPI || prefer.s.geminiToken) ? {
 			icon: 'ti ti-file-text',
 			text: i18n.ts._llm.summarizeProfile,
 			action: async () => {
 				await summarizeUserProfile(user.id);
 			},
-		} : undefined, { type: 'divider' }, ...(defaultStore.state.nicknameEnabled ? [{
+		} : undefined, { type: 'divider' }, ...(prefer.s.nicknameEnabled ? [{
 			icon: 'ti ti-edit',
 			text: 'ニックネームを編集',
 			action: () => {

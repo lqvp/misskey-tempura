@@ -5,9 +5,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <component :is="link ? MkA : 'span'" v-user-preview="preview ? user.id : undefined" v-bind="bound" class="_noSelect" :class="[$style.root, { [$style.animation]: animation, [$style.cat]: user.isCat, [$style.square]: squareAvatars }]" :style="{ color }" :title="acct(user)" @click="onClick">
-	<MkImgWithBlurhash :class="$style.inner" :src="(defaultStore.state.anonymizeMutedUsers && user.isMuted) ? (instance.iconUrl || '/favicon.ico') : url" :hash="user.avatarBlurhash" :cover="true" :onlyAvgColor="true"/>
-	<MkUserOnlineIndicator v-if="!(defaultStore.state.anonymizeMutedUsers && user.isMuted) && indicator" :class="$style.indicator" :user="user"/>
-	<div v-if="!(defaultStore.state.anonymizeMutedUsers && user.isMuted) && user.isCat" :class="[$style.ears]">
+	<MkImgWithBlurhash :class="$style.inner" :src="(prefer.s.anonymizeMutedUsers && user.isMuted) ? (instance.iconUrl || '/favicon.ico') : url" :hash="user.avatarBlurhash" :cover="true" :onlyAvgColor="true"/>
+	<MkUserOnlineIndicator v-if="!(prefer.s.anonymizeMutedUsers && user.isMuted) && indicator" :class="$style.indicator" :user="user"/>
+	<div v-if="!(prefer.s.anonymizeMutedUsers && user.isMuted) && user.isCat" :class="[$style.ears]">
 		<div :class="$style.earLeft">
 			<div v-if="false" :class="$style.layer">
 				<div :class="$style.plot" :style="{ backgroundImage: `url(${JSON.stringify(url)})` }"/>

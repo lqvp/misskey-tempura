@@ -129,7 +129,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<button v-else :class="$style.footerButton" class="_button" disabled>
 					<i class="ti ti-ban"></i>
 				</button>
-				<button v-if="appearNote.reactionAcceptance !== 'likeOnly' && appearNote.myReaction == null && defaultStore.state.showLikeButton" ref="heartReactButton" v-tooltip="i18n.ts.like" :class="$style.footerButton" class="_button" @mousedown="heartReact()">
+				<button v-if="appearNote.reactionAcceptance !== 'likeOnly' && appearNote.myReaction == null && prefer.s.showLikeButton" ref="heartReactButton" v-tooltip="i18n.ts.like" :class="$style.footerButton" class="_button" @mousedown="heartReact()">
 					<i class="ti ti-heart"></i>
 				</button>
 				<button ref="reactButton" :class="$style.footerButton" class="_button" @click="toggleReact()">
@@ -429,7 +429,7 @@ if (!props.mock) {
 
 	if (appearNote.value.reactionAcceptance === 'likeOnly') {
 		useTooltip(reactButton, async (showing) => {
-			const reactions = !defaultStore.state.hideReactionUsers ? await misskeyApiGet('notes/reactions', {
+			const reactions = !prefer.s.hideReactionUsers ? await misskeyApiGet('notes/reactions', {
 				noteId: appearNote.value.id,
 				limit: 10,
 				_cacheKey_: appearNote.value.reactionCount,
@@ -456,7 +456,7 @@ function renote(viaKeyboard = false) {
 	pleaseLogin({ openOnRemote: pleaseLoginContext.value });
 	showMovedDialog();
 
-	if (defaultStore.state.directRenote) {
+	if (prefer.s.directRenote) {
 		directRenote({ note: note.value, renoteButton, mock: props.mock });
 	} else {
 		const { menu } = getRenoteMenu({ note: note.value, renoteButton, mock: props.mock });
@@ -538,7 +538,7 @@ async function heartReact(): Promise<void> {
 	pleaseLogin(undefined, pleaseLoginContext.value);
 	showMovedDialog();
 
-	if (defaultStore.state.enableLikeConfirm) {
+	if (prefer.s.enableLikeConfirm) {
 		const confirm = await os.confirm({
 			type: 'info',
 			text: i18n.ts.likeConfirm,
@@ -548,7 +548,7 @@ async function heartReact(): Promise<void> {
 
 	sound.playMisskeySfx('reaction');
 
-	const selectreact = defaultStore.state.selectReaction;
+	const selectreact = prefer.s.selectReaction;
 
 	if (props.mock) {
 		return;

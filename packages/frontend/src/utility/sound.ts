@@ -293,7 +293,7 @@ export const earthquakeSoundTypes = {
  */
 export async function playEarthquakeSound(type: keyof typeof earthquakeSoundTypes, volume = 1.0): Promise<boolean> {
 	try {
-		const masterVolume = defaultStore.state.sound_masterVolume;
+		const masterVolume = prefer.s['sound.masterVolume'];
 		if (isMute() || masterVolume === 0 || volume === 0) {
 			return true; // ミュート時は成功として扱う
 		}

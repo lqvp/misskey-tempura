@@ -38,7 +38,6 @@ import XBanner from '@/components/MkMediaBanner.vue';
 import XImage from '@/components/MkMediaImage.vue';
 import XVideo from '@/components/MkMediaVideo.vue';
 import * as os from '@/os.js';
-import { defaultStore } from '@/store.js';
 import { focusParent } from '@/utility/focus.js';
 import { prefer } from '@/preferences.js';
 

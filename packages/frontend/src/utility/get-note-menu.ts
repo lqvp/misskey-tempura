@@ -394,7 +394,7 @@ export function getNoteMenu(props: {
 			icon: 'ti ti-info-circle',
 			text: i18n.ts.details,
 			action: openDetail,
-		}, (defaultStore.state.directRenote) ? {
+		}, (prefer.s.directRenote) ? {
 			icon: 'ti ti-quote',
 			text: i18n.ts.quote,
 			action: () => {
@@ -441,7 +441,7 @@ export function getNoteMenu(props: {
 			});
 		}
 
-		if ($i.policies.canUseGeminiLLMAPI || defaultStore.state.geminiToken) {
+		if ($i.policies.canUseGeminiLLMAPI || prefer.s.geminiToken) {
 			menuItems.push({
 				icon: 'ti ti-file-text',
 				text: i18n.ts._llm.summarizeNote,

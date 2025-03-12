@@ -150,7 +150,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<button v-else class="_button" :class="$style.noteFooterButton" disabled>
 				<i class="ti ti-ban"></i>
 			</button>
-			<button v-if="appearNote.reactionAcceptance !== 'likeOnly' && appearNote.myReaction == null && defaultStore.state.showLikeButton" ref="heartReactButton" v-tooltip="i18n.ts.like" :class="$style.noteFooterButton" class="_button" @mousedown="heartReact()">
+			<button v-if="appearNote.reactionAcceptance !== 'likeOnly' && appearNote.myReaction == null && prefer.s.showLikeButton" ref="heartReactButton" v-tooltip="i18n.ts.like" :class="$style.noteFooterButton" class="_button" @mousedown="heartReact()">
 				<i class="ti ti-heart"></i>
 			</button>
 			<button ref="reactButton" :class="$style.noteFooterButton" class="_button" @click="toggleReact()">
@@ -210,7 +210,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</div>
 		<div v-else-if="tab === 'reactions'" :class="$style.tab_reactions">
 			<div :class="$style.reactionTabs">
-				<button v-for="reaction in Object.keys(appearNote.reactions)" :key="reaction" :class="[$style.reactionTab, { [$style.reactionTabActive]: reactionTabType === reaction }]" class="_button" @click="reactionTabType = defaultStore.state.hideReactionUsers ? null : reaction">
+				<button v-for="reaction in Object.keys(appearNote.reactions)" :key="reaction" :class="[$style.reactionTab, { [$style.reactionTabActive]: reactionTabType === reaction }]" class="_button" @click="reactionTabType = prefer.s.hideReactionUsers ? null : reaction">
 					<MkReactionIcon :reaction="reaction"/>
 					<span v-if="!hideReactionCount" style="margin-left: 4px;">{{ appearNote.reactions[reaction] }}</span>
 				</button>
@@ -286,9 +286,9 @@ import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
 
 const props = withDefaults(defineProps<{
-		note: Misskey.entities.Note;
-		initialTab?: string;
-	}>(), {
+	note: Misskey.entities.Note;
+	initialTab?: string;
+}>(), {
 	initialTab: 'replies',
 });
 
@@ -340,7 +340,7 @@ const conversation = ref<Misskey.entities.Note[]>([]);
 const replies = ref<Misskey.entities.Note[]>([]);
 const canRenote = computed(() => ['public', 'home'].includes(appearNote.value.visibility) || appearNote.value.userId === $i?.id);
 const hideReactionCount = computed(() => {
-	switch (defaultStore.state.hideReactionCount) {
+	switch (prefer.s.hideReactionCount) {
 		case 'none': return false;
 		case 'all': return true;
 		case 'self': return props.note.userId === $i?.id;
@@ -449,7 +449,7 @@ useTooltip(renoteButton, async (showing) => {
 
 if (appearNote.value.reactionAcceptance === 'likeOnly') {
 	useTooltip(reactButton, async (showing) => {
-		const reactions = !defaultStore.state.hideReactionUsers ? await misskeyApiGet('notes/reactions', {
+		const reactions = !prefer.s.hideReactionUsers ? await misskeyApiGet('notes/reactions', {
 			noteId: appearNote.value.id,
 			limit: 10,
 			_cacheKey_: appearNote.value.reactionCount,
@@ -542,7 +542,7 @@ function heartReact(): void {
 
 	sound.playMisskeySfx('reaction');
 
-	const selectreact = defaultStore.state.selectReaction;
+	const selectreact = prefer.s.selectReaction;
 
 	misskeyApi('notes/reactions/create', {
 		noteId: appearNote.value.id,

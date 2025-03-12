@@ -87,7 +87,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</div> -->
 	<footer :class="$style.footer">
 		<div :class="$style.footerLeft">
-			<template v-for="item in defaultStore.state.postFormActions">
+			<template v-for="item in prefer.s.postFormActions">
 				<button v-if="!bottomItemActionDef[item].hide" :key="item" v-tooltip="bottomItemDef[item].title" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: bottomItemActionDef[item].active }]" v-on="bottomItemActionDef[item].action ? { click: bottomItemActionDef[item].action } : {}">
 					<i class="ti" :class="bottomItemDef[item].icon"></i>
 				</button>
@@ -185,7 +185,7 @@ const posted = ref(false);
 const text = ref(props.initialText ?? '');
 const files = ref(props.initialFiles ?? []);
 const poll = ref<PollEditorModelValue | null>(null);
-const scheduledNoteDelete = ref<DeleteScheduleEditorModelValue | null>(defaultStore.state.defaultScheduledNoteDelete ? { deleteAt: null, deleteAfter: defaultStore.state.defaultScheduledNoteDeleteTime, isValid: true } : null);
+const scheduledNoteDelete = ref<DeleteScheduleEditorModelValue | null>(prefer.s.defaultScheduledNoteDelete ? { deleteAt: null, deleteAfter: prefer.s.defaultScheduledNoteDeleteTime, isValid: true } : null);
 const useCw = ref<boolean>(!!props.initialCw);
 const showPreview = ref(store.s.showPreview);
 watch(showPreview, () => store.set('showPreview', showPreview.value));
@@ -523,7 +523,7 @@ function toggleScheduledNoteDelete() {
 	} else {
 		scheduledNoteDelete.value = {
 			deleteAt: null,
-			deleteAfter: defaultStore.state.defaultScheduledNoteDeleteTime,
+			deleteAfter: prefer.s.defaultScheduledNoteDeleteTime,
 			isValid: true,
 		};
 	}
@@ -660,11 +660,6 @@ async function toggleReactionAcceptance() {
 		default: reactionAcceptance.value,
 	});
 	if (select.canceled) return;
-
-	if (defaultStore.state.rememberReactionAcceptance) {
-		defaultStore.set('reactionAcceptance', select.result);
-	}
-
 	reactionAcceptance.value = select.result;
 }
 
@@ -1124,12 +1119,12 @@ function toggleScheduleNote() {
 }
 
 function saveCurrentUsers() {
-	defaultStore.set('specifiedUsers', visibleUsers.value.map(user => user.id));
+	store.set('specifiedUsers', visibleUsers.value.map(user => user.id));
 	os.success();
 }
 
 async function loadSavedUsers() {
-	const savedUsers = defaultStore.state.specifiedUsers;
+	const savedUsers = prefer.s.specifiedUsers;
 	if (savedUsers && savedUsers.length > 0) {
 		visibleUsers.value = [];
 		const users = await misskeyApi('users/show', { userIds: savedUsers });

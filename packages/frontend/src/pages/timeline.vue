@@ -38,8 +38,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { computed, watch, provide, shallowRef, ref, onMounted, onActivated } from 'vue';
 import { scroll } from '@@/js/scroll.js';
 import type { Tab } from '@/components/global/MkPageHeader.tabs.vue';
-import type { MenuItem } from '@/types/menu.js';
 import type { BasicTimelineType } from '@/timelines.js';
+import type { MenuItem } from '@/types/menu.js';
 import MkTimeline from '@/components/MkTimeline.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import MkPostForm from '@/components/MkPostForm.vue';
@@ -53,7 +53,6 @@ import { definePage } from '@/page.js';
 import { antennasCache, userListsCache, favoritedChannelsCache } from '@/cache.js';
 import { deviceKind } from '@/utility/device-kind.js';
 import { deepMerge } from '@/utility/merge.js';
-import type { MenuItem } from '@/types/menu.js';
 import { miLocalStorage } from '@/local-storage.js';
 import { availableBasicTimelines, hasWithReplies, isAvailableBasicTimeline, isBasicTimeline, basicTimelineIconClass } from '@/timelines.js';
 import { prefer } from '@/preferences.js';
@@ -304,11 +303,11 @@ const headerActions = computed(() => {
 function isTabVisible(key: string): boolean {
 	switch (key) {
 		case 'lists':
-			return !prefer.r.makeGetterSetter('hideLists').get();
+			return !prefer.r.hideLists;
 		case 'antennas':
-			return !prefer.r.makeGetterSetter('hideAntennas').get();
+			return !prefer.r.hideAntennas;
 		case 'channel':
-			return !prefer.r.makeGetterSetter('hideChannel').get();
+			return !prefer.r.hideChannel;
 		default:
 			return true;
 	}
@@ -319,7 +318,7 @@ const headerTabs = computed(() => {
 	const tabs: Tab[] = [];
 
 	// ピン留めされたユーザーリストのタブを追加
-	if (!prefer.r.makeGetterSetter('hideLists').get()) {
+	if (!prefer.r.hideLists) {
 		tabs.push(...prefer.r.pinnedUserLists.value.map(l => ({
 			key: 'list:' + l.id,
 			title: l.name,

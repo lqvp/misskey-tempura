@@ -5,7 +5,7 @@
 
 import { $i } from '@/account.js';
 import { instance } from '@/instance.js';
-import { defaultStore } from '@/store.js';
+import { prefer } from '@/preferences.js';
 
 export const basicTimelineTypes = [
 	'home',
@@ -38,11 +38,11 @@ export function isAvailableBasicTimeline(timeline: BasicTimelineType | undefined
 		case 'home':
 			return $i != null;
 		case 'local':
-			return ($i == null && instance.policies.ltlAvailable && !defaultStore.makeGetterSetter('hideLocalTimeLine').get()) || ($i != null && $i.policies.ltlAvailable && !defaultStore.makeGetterSetter('hideLocalTimeLine').get());
+			return ($i == null && instance.policies.ltlAvailable && !prefer.r.hideLocalTimeLine || ($i != null && $i.policies.ltlAvailable && !prefer.r.hideLocalTimeLine));
 		case 'social':
-			return $i != null && $i.policies.ltlAvailable && !defaultStore.makeGetterSetter('hideSocialTimeLine').get();
+			return $i != null && $i.policies.ltlAvailable && !prefer.r.hideSocialTimeLine;
 		case 'global':
-			return ($i == null && instance.policies.gtlAvailable && !defaultStore.makeGetterSetter('hideGlobalTimeLine').get()) || ($i != null && $i.policies.gtlAvailable && !defaultStore.makeGetterSetter('hideGlobalTimeLine').get());
+			return ($i == null && instance.policies.gtlAvailable && !prefer.r.hideGlobalTimeLine) || ($i != null && $i.policies.gtlAvailable && !prefer.r.hideGlobalTimeLine);
 		default:
 			return false;
 	}

@@ -16,7 +16,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<option v-for="[name, font] of Object.entries(fontList)" :key="name" :value="name">{{ font.name }}</option>
 				</MkSelect>
 			</SearchMarker>
-			<MkSwitch v-model="enableSnowMode">{{ i18n.ts.snowMode }}</MkSwitch>
 		</div>
 	</MkFolder>
 </SearchMarker>
@@ -28,12 +27,11 @@ import * as Misskey from 'misskey-js';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkFolder from '@/components/MkFolder.vue';
-import { defaultStore } from '@/store.js';
+import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
-import { fontList } from '@/scripts/font';
+import { fontList } from '@/utility/font';
 
-const customFont = computed(defaultStore.makeGetterSetter('customFont'));
-const enableSnowMode = computed(defaultStore.makeGetterSetter('enableSnowMode'));
+const customFont = prefer.model('customFont');
 </script>
 
 <style lang="scss" module>

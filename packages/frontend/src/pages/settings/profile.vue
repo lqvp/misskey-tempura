@@ -205,7 +205,7 @@ import { definePage } from '@/page.js';
 import { claimAchievement } from '@/utility/achievements.js';
 import { store } from '@/store.js';
 import { globalEvents } from '@/events.js';
-import { misskeyApi } from '@/scripts/misskey-api.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 import MkInfo from '@/components/MkInfo.vue';
 import MkTextarea from '@/components/MkTextarea.vue';
 import SearchMarker from '@/components/global/SearchMarker.vue';

@@ -75,13 +75,13 @@ import MkInput from '@/components/MkInput.vue';
 import * as os from '@/os';
 import { i18n } from '@/i18n';
 import MkSwitch from '@/components/MkSwitch.vue';
-import { selectFile } from '@/scripts/select-file';
+import { selectFile } from '@/utility/select-file';
 import XTabs from '@/components/global/MkPageHeader.tabs.vue';
 import MkFoldableSection from '@/components/MkFoldableSection.vue';
 import MkColorInput from '@/components/MkColorInput.vue';
 import MkTextarea from '@/components/MkTextarea.vue';
 import DialogRole from '@/pages/DialogRole.vue';
-import { misskeyApi } from '@/scripts/misskey-api.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 
 const props = defineProps<{
 		role?: any,

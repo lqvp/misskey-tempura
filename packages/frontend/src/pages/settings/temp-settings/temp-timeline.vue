@@ -48,15 +48,15 @@ import * as Misskey from 'misskey-js';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkButton from '@/components/MkButton.vue';
-import { defaultStore } from '@/store.js';
+import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
 
-const hideLocalTimeLine = computed(defaultStore.makeGetterSetter('hideLocalTimeLine'));
-const hideGlobalTimeLine = computed(defaultStore.makeGetterSetter('hideGlobalTimeLine'));
-const hideSocialTimeLine = computed(defaultStore.makeGetterSetter('hideSocialTimeLine'));
-const hideLists = computed(defaultStore.makeGetterSetter('hideLists'));
-const hideAntennas = computed(defaultStore.makeGetterSetter('hideAntennas'));
-const hideChannel = computed(defaultStore.makeGetterSetter('hideChannel'));
+const hideLocalTimeLine = prefer.model('hideLocalTimeLine');
+const hideGlobalTimeLine = prefer.model('hideGlobalTimeLine');
+const hideSocialTimeLine = prefer.model('hideSocialTimeLine');
+const hideLists = prefer.model('hideLists');
+const hideAntennas = prefer.model('hideAntennas');
+const hideChannel = prefer.model('hideChannel');
 
 function toggleAllHidden(value: boolean) {
 	type TimelineSettingKey = 'hideLocalTimeLine' | 'hideGlobalTimeLine' | 'hideSocialTimeLine' | 'hideLists' | 'hideAntennas' | 'hideChannel';
@@ -70,7 +70,7 @@ function toggleAllHidden(value: boolean) {
 	];
 
 	settings.forEach(setting => {
-		defaultStore.set(setting, value);
+		prefer.commit(setting, value);
 	});
 }
 

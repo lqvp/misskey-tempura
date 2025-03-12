@@ -2,12 +2,12 @@
  * SPDX-FileCopyrightText: lqvp
  * SPDX-License-Identifier: AGPL-3.0-only
  */
-
 import * as Misskey from 'misskey-js';
 import { getAppearNote } from './get-appear-note.js';
 import { misskeyApi } from './misskey-api.js';
 import { smallerVisibility } from './get-note-menu.js';
-import { defaultStore } from '@/store.js';
+import type { ShallowRef } from 'vue';
+import { store } from '@/store.js';
 import { i18n } from '@/i18n.js';
 import * as os from '@/os.js';
 import MkRippleEffect from '@/components/MkRippleEffect.vue';
@@ -19,8 +19,8 @@ export function directRenote(props: {
 }) {
 	const appearNote = getAppearNote(props.note);
 
-	const configuredVisibility = defaultStore.state.rememberNoteVisibility ? defaultStore.state.visibility : defaultStore.state.defaultNoteVisibility;
-	const localOnly = defaultStore.state.rememberNoteVisibility ? defaultStore.state.localOnly : defaultStore.state.defaultNoteLocalOnly;
+	const configuredVisibility = store.s.rememberNoteVisibility ? store.s.visibility : store.s.defaultNoteVisibility;
+	const localOnly = store.s.rememberNoteVisibility ? store.s.localOnly : store.s.defaultNoteLocalOnly;
 
 	let visibility = appearNote.visibility;
 	visibility = smallerVisibility(visibility, configuredVisibility);

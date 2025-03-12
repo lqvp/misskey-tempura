@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<img
 					:src="(instance.enableLongIconUrl && instance.longIconUrl) || instance.iconUrl || instance.faviconUrl || '/favicon.ico'"
 					alt=""
-					:class="[instance.enableLongIconUrl ? $style.instanceIconLong : $style.instanceIcon" style="viewTransitionName: navbar-serverIcon;]"
+					:class="[instance.enableLongIconUrl ? $style.instanceIconLong : $style.instanceIcon]" style="viewTransitionName: navbar-serverIcon"
 				/>
 			</button>
 		</div>

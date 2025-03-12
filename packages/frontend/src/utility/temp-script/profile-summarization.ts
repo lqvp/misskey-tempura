@@ -3,10 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { defaultStore } from '@/store.js';
+import { store } from '@/store.js';
+import { prefer } from '@/preferences.js';
 import * as os from '@/os.js';
-import { generateGeminiSummary } from '@/scripts/temp-script/llm.js';
-import { misskeyApi } from '@/scripts/misskey-api.js';
+import { generateGeminiSummary } from '@/utility/temp-script/llm.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 import { displayLlmError } from '@/utils/errorHandler.js';
 
 /**
@@ -39,8 +40,8 @@ export async function summarizeUserProfile(userId: string): Promise<void> {
 
 		// Gemini API 呼び出しをシステム命令形式に更新
 		const systemInstruction = [
-			defaultStore.state.geminiPromptProfile ?? '',
-			defaultStore.state.geminiSystemPrompt ?? '',
+			prefer.s.geminiPromptProfile ?? '',
+			prefer.s.geminiSystemPrompt ?? '',
 		].join('\n');
 
 		const userContent =

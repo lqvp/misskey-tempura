@@ -5,8 +5,9 @@
 
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import { defaultStore } from '@/store.js';
-import { misskeyApi } from '@/scripts/misskey-api.js';
+import { store } from '@/store.js';
+import { prefer } from '@/preferences.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 import { fetchInstance } from '@/instance.js';
 import { displayLlmError } from '@/utils/errorHandler.js';
 import * as os from '@/os.js';
@@ -96,7 +97,7 @@ export async function generateGeminiSummary({
 	userContent?: string;
 	systemInstruction?: string;
 }): Promise<any> {
-	const { geminiToken, geminiModels, useGeminiLLMAPI, useGeminiWithMedia = true } = defaultStore.state;
+	const { geminiToken, geminiModels, useGeminiLLMAPI, useGeminiWithMedia = true } = prefer.s;
 
 	// ノートからコンテンツを取得
 	const text = note?.text || userContent || '';
@@ -122,7 +123,7 @@ export async function generateGeminiSummary({
 					throw new Error('操作がキャンセルされました。');
 				}
 				if (result === 'disable') {
-					defaultStore.state.useGeminiLLMAPI = false;
+					prefer.s.useGeminiLLMAPI = false;
 					throw new Error('Gemini APIの利用を無効にしました。');
 				}
 				// 'fallback'を選択された場合は、geminiTokenを利用して従来の生成処理へフォールバック

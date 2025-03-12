@@ -10,12 +10,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<template #label>{{ i18n.ts.behavior }}</template>
 		<div class="_gaps_m">
 			<div class="_gaps_m">
-				<SearchMarker ;keywords="['reaction']">
-					<MkSwitch v-model="reactionChecksMuting">
-						{{ i18n.ts._reactionChecksMuting.title }}
-						<template #caption>{{ i18n.ts._reactionChecksMuting.caption }}</template>
-					</MkSwitch>
-				</SearchMarker>
+				<MkPreferenceContainer k="reactionChecksMuting">
+					<SearchMarker ;keywords="['reaction']">
+						<MkSwitch v-model="reactionChecksMuting">
+							{{ i18n.ts._reactionChecksMuting.title }}
+							<template #caption>{{ i18n.ts._reactionChecksMuting.caption }}</template>
+						</MkSwitch>
+					</SearchMarker>
+				</MkPreferenceContainer>
 			</div>
 		</div>
 	</MkFolder>
@@ -27,10 +29,10 @@ import { computed } from 'vue';
 import * as Misskey from 'misskey-js';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkFolder from '@/components/MkFolder.vue';
-import { defaultStore } from '@/store.js';
+import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
 
-const reactionChecksMuting = computed(defaultStore.makeGetterSetter('reactionChecksMuting'));
+const reactionChecksMuting = prefer.model('reactionChecksMuting');
 
 </script>
 

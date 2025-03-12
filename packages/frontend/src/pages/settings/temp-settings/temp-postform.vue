@@ -58,19 +58,20 @@ import { defineAsyncComponent, ref } from 'vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkButton from '@/components/MkButton.vue';
-import { defaultStore } from '@/store.js';
+import { prefer } from '@/preferences.js';
+import { PREF_DEF } from '@/preferences/def.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import MkContainer from '@/components/MkContainer.vue';
 import MkDeleteScheduleEditor from '@/components/MkDeleteScheduleEditor.vue';
-import { bottomItemDef } from '@/scripts/post-form.js';
+import { bottomItemDef } from '@/utility/post-form.js';
 
-const useTextAreaAutoSize = computed(defaultStore.makeGetterSetter('useTextAreaAutoSize'));
+const useTextAreaAutoSize = prefer.model('useTextAreaAutoSize');
 const Sortable = defineAsyncComponent(() => import('vuedraggable').then(x => x.default));
-const defaultScheduledNoteDelete = computed(defaultStore.makeGetterSetter('defaultScheduledNoteDelete'));
-const scheduledNoteDelete = ref({ deleteAt: null, deleteAfter: defaultStore.state.defaultScheduledNoteDeleteTime, isValid: true });
+const defaultScheduledNoteDelete = prefer.model('defaultScheduledNoteDelete');
+const scheduledNoteDelete = ref({ deleteAt: null, deleteAfter: prefer.s.defaultScheduledNoteDeleteTime, isValid: true });
 
-const items = ref(defaultStore.state.postFormActions.map(x => ({
+const items = ref(prefer.s.postFormActions.map(x => ({
 	id: Math.random().toString(),
 	type: x,
 })));
@@ -110,7 +111,7 @@ function removeItem(type: keyof typeof bottomItemDef, ev: MouseEvent) {
 }
 
 async function save_postform() {
-	defaultStore.set('postFormActions', items.value.map(x => x.type));
+	prefer.commit('postFormActions', items.value.map(x => x.type));
 }
 
 async function reset_postform() {
@@ -120,7 +121,7 @@ async function reset_postform() {
 	});
 	if (result.canceled) return;
 
-	items.value = defaultStore.def.postFormActions.default.map(x => ({
+	items.value = PREF_DEF.postFormActions.default.map(x => ({
 		id: Math.random().toString(),
 		type: x,
 	}));
@@ -128,7 +129,7 @@ async function reset_postform() {
 
 watch(scheduledNoteDelete, () => {
 	if (!scheduledNoteDelete.value.isValid) return;
-	defaultStore.set('defaultScheduledNoteDeleteTime', scheduledNoteDelete.value.deleteAfter);
+	prefer.commit('defaultScheduledNoteDeleteTime', scheduledNoteDelete.value.deleteAfter);
 });
 
 </script>

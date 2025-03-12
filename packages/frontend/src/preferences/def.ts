@@ -325,4 +325,181 @@ export const PREF_DEF = {
 			sfxVolume: 1,
 		},
 	},
+	postFormActions: {
+		default: [
+			'attachFile',
+			'poll',
+			'scheduledNoteDelete',
+			'useCw',
+			'mention',
+			'hashtags',
+			'plugins',
+			'emoji',
+			'addMfmFunction',
+			'scheduleNote',
+			'schedulePostList',
+		],
+	},
+	defaultScheduledNoteDelete: {
+		default: false,
+	},
+	defaultScheduledNoteDeleteTime: {
+		default: 86400000,
+	},
+	selectReaction: {
+		default: '🩷' as string,
+	},
+	showLikeButton: {
+		default: true,
+	},
+	hideReactionUsers: {
+		default: false,
+	},
+	hideReactionCount: {
+		default: 'none' as 'none' | 'self' | 'others' | 'all',
+	},
+	customFont: {
+		default: null as null | string,
+	},
+	disableNoteNyaize: {
+		default: false,
+	},
+	hideLocalTimeLine: {
+		default: false,
+	},
+	hideSocialTimeLine: {
+		default: false,
+	},
+	hideGlobalTimeLine: {
+		default: false,
+	},
+	hideLists: {
+		default: false,
+	},
+	hideAntennas: {
+		default: false,
+	},
+	hideChannel: {
+		default: false,
+	},
+	nicknameEnabled: {
+		default: true,
+	},
+	nicknameMap: {
+		default: {} as Record<string, string>,
+	},
+	directRenote: {
+		default: false,
+	},
+	reactionChecksMuting: {
+		default: true,
+	},
+	imageCompressionMode: {
+		default: 'resizeCompressLossy' as 'resizeCompress' | 'noResizeCompress' | 'resizeCompressLossy' | 'noResizeCompressLossy' | null,
+	},
+	anonymizeMutedUsers: {
+		default: true,
+	},
+	enableReactionConfirm: {
+		default: false,
+	},
+	enableLikeConfirm: {
+		default: false,
+	},
+	showInstanceTickerSoftwareName: {
+		default: false,
+	},
+	showInstanceTickerVersion: {
+		default: false,
+	},
+	useTextAreaAutoSize: {
+		default: false,
+	},
+	specifiedUsers: {
+		default: [] as string[],
+	},
+	useGeminiLLMAPI: {
+		default: false,
+	},
+	useGeminiWithMedia: {
+		default: true,
+	},
+	geminiToken: {
+		default: null as string | null,
+	},
+	geminiModels: {
+		default: 'gemini-2.0-flash' as 'gemini-2.0-flash' | 'gemini-1.5-flash' | 'gemini-1.5-pro' | 'gemini-2.0-pro-exp-02-05' | null,
+	},
+	geminiSystemPrompt: {
+		default: 'リスト記法は対応しておらず、パーサーが壊れるため使用禁止です。列挙する場合は「・」を使ってください。' as string | null,
+	},
+	geminiPromptNote: {
+		default: '以下のSNSの投稿をわかりやすく簡潔にユーザーに要約せよ。' as string | null,
+	},
+	geminiPromptProfile: {
+		default: 'プロフィール情報と投稿からこのユーザーの特徴を簡潔に教えて。' as string | null,
+	},
+	geminiNoteLongText: {
+		default: '以下の文章を長文にしてください。' as string | null,
+	},
+	geminiNoteShortText: {
+		default: '以下の文章を短文にしてください。' as string | null,
+	},
+	geminiNoteSimpleText: {
+		default: '以下の文章を簡潔にしてください。' as string | null,
+	},
+	geminiNoteCasualText: {
+		default: '以下の文章をカジュアルにしてください。' as string | null,
+	},
+	geminiNoteProfessionalText: {
+		default: '以下の文章を専門的にしてください。' as string | null,
+	},
+	geminiNoteCatText: {
+		default: '以下の文章を猫っぽくしてください。' as string | null,
+	},
+	geminiNoteCustomText: {
+		default: null as string | null,
+	},
+	enableEarthquakeWarning: {
+		default: false,
+	},
+	earthquakeWarningIntensity: {
+		default: '3', // Default threshold is intensity 3
+	},
+	enableEarthquakeWarningTts: {
+		default: false,
+	},
+	earthquakeWarningToastDuration: {
+		default: 10000, // 10秒
+	},
+	earthquakeWarningTtsRate: {
+		default: 1.0, // 標準速度
+	},
+	earthquakeWarningNotificationStyle: {
+		default: 'standard', // 'detailed', 'standard', 'simple'
+	},
+	earthquakeWarningSound: {
+		default: true, // 通知音を有効
+	},
+	earthquakeWarningSoundType: {
+		default: 'auto', // 'eew', 'info', 'auto'
+	},
+	earthquakeWarningRegionFilter: {
+		default: [] as string[], // 通知する地域のリスト（空の場合はすべての地域）
+	},
+	enableEarthquakeWarningRegionFilter: {
+		default: false,
+	},
+	earthquakeWarningThrottleTime: {
+		default: 60, // 秒
+	},
+	earthquakeWarningIgnoreTraining: {
+		default: true,
+	},
+	earthquakeWarningConnectionNotify: {
+		default: true,
+	},
+	earthquakeWarningLogLevel: {
+		default: 'basic', // 'none', 'basic', 'detailed'
+	},
 } satisfies PreferencesDefinition;

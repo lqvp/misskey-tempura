@@ -7,7 +7,6 @@ import { markRaw, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import lightTheme from '@@/themes/pink-candy.json5';
 import darkTheme from '@@/themes/night-pink.json5';
-import { directRenote } from './utility/direct-renote.js';
 import { hemisphere } from '@@/js/intl-const.js';
 import type { DeviceKind } from '@/utility/device-kind.js';
 import type { Plugin } from '@/plugin.js';
@@ -560,10 +559,6 @@ export const store = markRaw(new Storage('base', {
 	imageCompressionMode: {
 		where: 'account',
 		default: 'resizeCompressLossy' as 'resizeCompress' | 'noResizeCompress' | 'resizeCompressLossy' | 'noResizeCompressLossy' | null,
-	},
-	enableSnowMode: {
-		where: 'device',
-		default: false,
 	},
 	anonymizeMutedUsers: {
 		where: 'account',
