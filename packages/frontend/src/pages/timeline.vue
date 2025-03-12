@@ -303,11 +303,11 @@ const headerActions = computed(() => {
 function isTabVisible(key: string): boolean {
 	switch (key) {
 		case 'lists':
-			return !prefer.r.hideLists;
+			return !prefer.s.hideLists;
 		case 'antennas':
-			return !prefer.r.hideAntennas;
+			return !prefer.s.hideAntennas;
 		case 'channel':
-			return !prefer.r.hideChannel;
+			return !prefer.s.hideChannel;
 		default:
 			return true;
 	}
@@ -318,7 +318,7 @@ const headerTabs = computed(() => {
 	const tabs: Tab[] = [];
 
 	// ピン留めされたユーザーリストのタブを追加
-	if (!prefer.r.hideLists) {
+	if (!prefer.s.hideLists) {
 		tabs.push(...prefer.r.pinnedUserLists.value.map(l => ({
 			key: 'list:' + l.id,
 			title: l.name,
