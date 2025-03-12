@@ -38,11 +38,11 @@ export function isAvailableBasicTimeline(timeline: BasicTimelineType | undefined
 		case 'home':
 			return $i != null;
 		case 'local':
-			return ($i == null && instance.policies.ltlAvailable && !prefer.r.hideLocalTimeLine || ($i != null && $i.policies.ltlAvailable && !prefer.r.hideLocalTimeLine));
+			return ($i == null && instance.policies.ltlAvailable && !prefer.s.hideLocalTimeLine || ($i != null && $i.policies.ltlAvailable && !prefer.s.hideLocalTimeLine));
 		case 'social':
-			return $i != null && $i.policies.ltlAvailable && !prefer.r.hideSocialTimeLine;
+			return $i != null && $i.policies.ltlAvailable && !prefer.s.hideSocialTimeLine;
 		case 'global':
-			return ($i == null && instance.policies.gtlAvailable && !prefer.r.hideGlobalTimeLine) || ($i != null && $i.policies.gtlAvailable && !prefer.r.hideGlobalTimeLine);
+			return ($i == null && instance.policies.gtlAvailable && !prefer.s.hideGlobalTimeLine) || ($i != null && $i.policies.gtlAvailable && !prefer.s.hideGlobalTimeLine);
 		default:
 			return false;
 	}
