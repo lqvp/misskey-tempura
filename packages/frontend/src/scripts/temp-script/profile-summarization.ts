@@ -27,7 +27,7 @@ export async function summarizeUserProfile(userId: string): Promise<void> {
 		// プロフィール情報を取得 (name, location, description)
 		const profile = await misskeyApi('users/show', { userId });
 		if (!profile) {
-			displayLlmError(new Error('プロフィール情報が取得できませんでした。'));
+			displayLlmError(new Error(i18n.ts._llm._error.profileNotFound));
 		}
 		const { name, location, description } = profile;
 
@@ -66,12 +66,12 @@ export async function summarizeUserProfile(userId: string): Promise<void> {
 		try {
 			summarizedText = extractCandidateText(summaryResult);
 		} catch (error: any) {
-			displayLlmError(error, 'Gemini API のレスポンスフォーマットが不正です。');
+			displayLlmError(error, i18n.ts._llm._error.responseFormat);
 		}
 		os.alert({ type: 'info', text: summarizedText });
 	} catch (error: any) {
 		// catch節内も統一してハンドリング（この呼び出しによりalertとthrowが行われる）
-		displayLlmError(error, 'プロフィール要約の取得に失敗しました。');
+		displayLlmError(error, i18n.ts._llm._error.profileSummarization);
 	} finally {
 		waitingFlag.value = false;
 		waitingPopup.dispose();

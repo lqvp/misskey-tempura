@@ -30,7 +30,7 @@ export async function callGeminiSummarize(note: Misskey.entities.Note): Promise<
 	try {
 		return extractCandidateText(data);
 	} catch (error: any) {
-		displayLlmError(error, 'Gemini API応答の解析に失敗しました。');
+		displayLlmError(error, i18n.ts._llm._error.responseParse);
 	}
 }
 
@@ -40,7 +40,7 @@ export async function summarizeNote(note: Misskey.entities.Note): Promise<string
 		return summary;
 	} catch (error: any) {
 		console.error('Summarization error:', error);
-		displayLlmError(error, 'ノートの要約に失敗しました。');
+		displayLlmError(error, i18n.ts._llm._error.noteSummarization);
 	}
 }
 
@@ -62,12 +62,12 @@ export async function showNoteSummary(noteOrText: Misskey.entities.Note | string
 		let summary: string;
 		if (typeof noteOrText === 'string') {
 			if (!noteOrText) {
-				displayLlmError(new Error('ノート本文がありません。'));
+				displayLlmError(new Error(i18n.ts._llm._error.noteEmpty));
 			}
 			summary = await summarizeNoteText(noteOrText);
 		} else {
 			if (!noteOrText.text && (!noteOrText.files || noteOrText.files.length === 0)) {
-				displayLlmError(new Error('ノート本文とファイルがありません。'));
+				displayLlmError(new Error(i18n.ts._llm._error.noteMissing));
 			}
 			summary = await summarizeNote(noteOrText);
 		}
@@ -80,7 +80,7 @@ export async function showNoteSummary(noteOrText: Misskey.entities.Note | string
 		});
 	} catch (error: any) {
 		console.error('Summarization failed:', error);
-		displayLlmError(error, '要約の取得に失敗しました。');
+		displayLlmError(error, i18n.ts._llm._error.noteSummaryFetch);
 	} finally {
 		waitingFlag.value = false;
 		waitingPopup.dispose();

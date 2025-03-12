@@ -51,15 +51,15 @@ export async function transformTextWithGemini(noteText: string, onApplied: (newT
 			});
 			result = data;
 		} catch (error: any) {
-			// 変更: エラー表示とthrow
-			displayLlmError(error, '変換の実行に失敗しました。');
+			// 変更: エラー表示にlocaleの値を参照
+			displayLlmError(error, i18n.ts._llm._error.transformExecute);
 		}
 
 		let transformedText: string;
 		try {
 			transformedText = extractCandidateText(result);
 		} catch (error: any) {
-			displayLlmError(error, '変換結果に問題が発生しました。');
+			displayLlmError(error, i18n.ts._llm._error.transformResult);
 		}
 
 		// 結果の確認ダイアログを表示（MkDialog.vue を利用）
