@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <MkStickyContainer>
 	<template #header><MkPageHeader v-model:tab="tab" :actions="headerActions" :tabs="headerTabs"/></template>
 	<MkInfo>
-		{{ i18n.ts.reactionsStatDescription }}
+		{{ i18n.ts.reactionStatsDescription }}
 	</MkInfo>
 	<MkSpacer v-if="tab === 'me'" :contentMax="1000" :marginMin="20">
 		<div class="_gaps_s">
