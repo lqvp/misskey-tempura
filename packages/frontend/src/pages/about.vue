@@ -28,8 +28,8 @@ import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import { instance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
 import { $i } from '@/account.js';
-import { claimAchievement } from '@/scripts/achievements.js';
-import { definePageMetadata } from '@/scripts/page-metadata.js';
+import { claimAchievement } from '@/utility/achievements.js';
+import { definePage } from '@/page.js';
 import MkHorizontalSwipe from '@/components/MkHorizontalSwipe.vue';
 
 const XOverview = defineAsyncComponent(() => import('@/pages/about.overview.vue'));
@@ -84,7 +84,7 @@ const headerTabs = computed(() => {
 	return items;
 });
 
-definePageMetadata(() => ({
+definePage(() => ({
 	title: i18n.ts.instanceInfo,
 	icon: 'ti ti-info-circle',
 }));

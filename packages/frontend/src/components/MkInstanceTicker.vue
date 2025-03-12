@@ -23,11 +23,11 @@ import { computed } from 'vue';
 import { instanceName as localInstanceName } from '@@/js/config.js';
 import type { CSSProperties } from 'vue';
 import { instance as localInstance } from '@/instance.js';
-import { getProxiedImageUrlNullable } from '@/scripts/media-proxy.js';
+import { getProxiedImageUrlNullable } from '@/utility/media-proxy.js';
 import { defaultStore } from '@/store.js';
 
-const showInstanceTickerSoftwareName = computed(() => defaultStore.state.showInstanceTickerSoftwareName);
-const showInstanceTickerVersion = computed(() => defaultStore.state.showInstanceTickerVersion);
+const showInstanceTickerSoftwareName = computed(() => defaultStore.s.showInstanceTickerSoftwareName);
+const showInstanceTickerVersion = computed(() => defaultStore.s.showInstanceTickerVersion);
 
 const props = defineProps<{
 	host: string | null;
