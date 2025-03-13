@@ -5,25 +5,26 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div>
-	<div :class="$style.header">
-		<MkSparkle>
-			<i class="ti ti-adjustments-bolt"></i>
-			{{ i18n.ts.originalFeature }}
-		</MkSparkle>
-	</div>
-	<br>
-	<div class="_gaps_m">
-		<ProfileSettings/>
-		<PrivacySettings/>
-		<NotesSettings/>
-		<AppearanceSettings/>
-		<BehaviorSettings/>
-		<DriveSettings/>
-		<PostFormSettings/>
-		<TimeLineSettings/>
-		<LLMSettings/>
-		<EarthquakeSettings/>
-	</div>
+	<SearchMarker markerId="temp-settings-root" path="/settings/temp-settings" :label="i18n.ts.originalFeature" :keywords="['temp']" icon="ti ti-git-fork">
+		<MkFeatureBanner icon="/client-assets/package_3d.png" color="#FA8072">
+			<MkSparkle>
+				<SearchKeyword>{{ i18n.ts.originalFeature }}</SearchKeyword>
+			</MkSparkle>
+		</MkFeatureBanner>
+		<br>
+		<div class="_gaps_m">
+			<ProfileSettings/>
+			<PrivacySettings/>
+			<NotesSettings/>
+			<AppearanceSettings/>
+			<BehaviorSettings/>
+			<DriveSettings/>
+			<PostFormSettings/>
+			<TimeLineSettings/>
+			<LLMSettings/>
+			<EarthquakeSettings/>
+		</div>
+	</SearchMarker>
 </div>
 </template>
 
@@ -31,8 +32,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { computed, defineAsyncComponent } from 'vue';
 import * as Misskey from 'misskey-js';
 import { i18n } from '@/i18n.js';
-import { definePageMetadata } from '@/scripts/page-metadata.js';
+import { definePage } from '@/page.js';
 import MkSparkle from '@/components/MkSparkle.vue';
+import MkFeatureBanner from '@/components/MkFeatureBanner.vue';
 
 const ProfileSettings = defineAsyncComponent(() => import('./temp-settings/temp-profile.vue'));
 const PrivacySettings = defineAsyncComponent(() => import('./temp-settings/temp-privacy.vue'));
@@ -48,37 +50,11 @@ const EarthquakeSettings = defineAsyncComponent(() => import('./temp-settings/te
 const headerActions = computed(() => []);
 const headerTabs = computed(() => []);
 
-definePageMetadata(() => ({
+definePage(() => ({
 	title: 'temp-fork',
 	icon: 'ti ti-adjustments',
 }));
 </script>
-
-<style lang="scss" module>
-.header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 1.25rem;
-  background: var(--MI_THEME-accentedBg);
-  color: var(--MI_THEME-accent);
-  border-radius: 12px;
-  margin: 1rem 0;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-
-  i {
-    font-size: 1.5em;
-    flex-shrink: 0;
-  }
-}
-
-@container (max-width: 500px) {
-  .header {
-    padding: 1rem;
-    font-size: 0.9em;
-  }
-}
-</style>
 
 <style lang="scss">
 .temp-settings-section {

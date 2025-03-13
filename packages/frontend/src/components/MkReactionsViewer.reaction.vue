@@ -8,11 +8,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 	ref="buttonEl"
 	v-ripple="canToggle"
 	class="_button"
-	:class="[$style.root, { [$style.reacted]: note.myReaction == reaction, [$style.canToggle]: (isLocal && canToggle), [$style.canToggleFallback]: (!isLocal && isAvailable), [$style.small]: defaultStore.state.reactionsDisplaySize === 'small', [$style.large]: defaultStore.state.reactionsDisplaySize === 'large' }]"
+	:class="[$style.root, { [$style.reacted]: note.myReaction == reaction, [$style.canToggle]: (isLocal && canToggle), [$style.canToggleFallback]: (!isLocal && isAvailable), [$style.small]: prefer.s.reactionsDisplaySize === 'small', [$style.large]: prefer.s.reactionsDisplaySize === 'large' }]"
 	@click="toggleReaction()"
 	@contextmenu.prevent.stop="menu"
 >
-	<MkReactionIcon :class="defaultStore.state.limitWidthOfReaction ? $style.limitWidth : ''" :reaction="reaction" :emojiUrl="note.reactionEmojis[reaction.substring(1, reaction.length - 1)]"/>
+	<MkReactionIcon :class="prefer.s.limitWidthOfReaction ? $style.limitWidth : ''" :reaction="reaction" :emojiUrl="note.reactionEmojis[reaction.substring(1, reaction.length - 1)]"/>
 	<span v-if="!hideReactionCount" :class="$style.count">{{ count }}</span>
 </button>
 </template>
@@ -25,19 +25,20 @@ import MkCustomEmojiDetailedDialog from './MkCustomEmojiDetailedDialog.vue';
 import XDetails from '@/components/MkReactionsViewer.details.vue';
 import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import * as os from '@/os.js';
-import { misskeyApi, misskeyApiGet } from '@/scripts/misskey-api.js';
-import { useTooltip } from '@/scripts/use-tooltip.js';
+import { misskeyApi, misskeyApiGet } from '@/utility/misskey-api.js';
+import { useTooltip } from '@/utility/use-tooltip.js';
 import { $i } from '@/account.js';
 import MkReactionEffect from '@/components/MkReactionEffect.vue';
-import { claimAchievement } from '@/scripts/achievements.js';
-import { defaultStore } from '@/store.js';
+import { claimAchievement } from '@/utility/achievements.js';
 import { i18n } from '@/i18n.js';
-import * as sound from '@/scripts/sound.js';
-import { checkReactionPermissions } from '@/scripts/check-reaction-permissions.js';
+import * as sound from '@/utility/sound.js';
+import { checkReactionPermissions } from '@/utility/check-reaction-permissions.js';
 import { customEmojisMap } from '@/custom-emojis.js';
+import { store } from '@/store.js';
+import { prefer } from '@/preferences.js';
 
-const reactionChecksMuting = computed(defaultStore.makeGetterSetter('reactionChecksMuting'));
-const enableReactionConfirm = computed(defaultStore.makeGetterSetter('enableReactionConfirm'));
+const reactionChecksMuting = prefer.s.reactionChecksMuting;
+const enableReactionConfirm = prefer.s.enableReactionConfirm;
 
 const props = defineProps<{
 	reaction: string;
@@ -73,7 +74,7 @@ const canGetInfo = computed(() => !props.reaction.match(/@\w/) && props.reaction
 const plainReaction = computed(() => customEmojisMap.has(emojiName.value) ? getReactionName(props.reaction, true) : props.reaction);
 
 const hideReactionCount = computed(() => {
-	switch (defaultStore.state.hideReactionCount) {
+	switch (prefer.s.hideReactionCount) {
 		case 'none': return false;
 		case 'all': return true;
 		case 'self': return props.note.userId === $i?.id;
@@ -123,7 +124,7 @@ async function toggleReaction() {
 			}
 		});
 	} else {
-		if (defaultStore.state.confirmOnReact) {
+		if (prefer.s.confirmOnReact) {
 			const confirm = await os.confirm({
 				type: 'question',
 				text: i18n.tsx.reactAreYouSure({ emoji: props.reaction.replace('@.', '') }),
@@ -163,17 +164,17 @@ async function menu(ev) {
 				closed: () => dispose(),
 			});
 		},
-	}] : []), ...(isAvailable.value && !defaultStore.state.reactions.includes(plainReaction.value) ? [{
+	}] : []), ...(isAvailable.value && !store.s.reactions.includes(plainReaction.value) ? [{
 		text: i18n.ts.addToEmojiPicker,
 		icon: 'ti ti-plus',
 		action: async () => {
-			defaultStore.set('reactions', [...defaultStore.state.reactions, plainReaction.value]);
+			store.set('reactions', [...store.s.reactions, plainReaction.value]);
 		},
 	}] : [])], ev.currentTarget ?? ev.target);
 }
 
 function anime() {
-	if (document.hidden || !defaultStore.state.animation || buttonEl.value == null) return;
+	if (document.hidden || !prefer.s.animation || buttonEl.value == null) return;
 
 	const rect = buttonEl.value.getBoundingClientRect();
 	const x = rect.left + 16;
@@ -195,7 +196,7 @@ if (!mock) {
 	useTooltip(buttonEl, async (showing) => {
 		const useGet = !reactionChecksMuting.value;
 		const apiCall = useGet ? misskeyApiGet : misskeyApi;
-		const reactions = !defaultStore.state.hideReactionUsers ? await apiCall('notes/reactions', {
+		const reactions = !store.s.hideReactionUsers ? await apiCall('notes/reactions', {
 			noteId: props.note.id,
 			type: props.reaction,
 			limit: 10,

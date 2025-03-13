@@ -56,9 +56,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { computed, ref, watch } from 'vue';
 import { debounce } from 'throttle-debounce';
 import { i18n } from '@/i18n.js';
-import { definePageMetadata } from '@/scripts/page-metadata.js';
+import { definePage } from '@/page.js';
 import { $i } from '@/account.js';
-import { misskeyApi } from '@/scripts/misskey-api';
+import { misskeyApi } from '@/utility/misskey-api';
 import * as os from '@/os';
 import MkInput from '@/components/MkInput.vue';
 import FormSplit from '@/components/form/split.vue';
@@ -67,7 +67,7 @@ import MkNotes from '@/components/MkNotes.vue';
 import MkButton from '@/components/MkButton.vue';
 import XNotFound from '@/pages/not-found.vue';
 
-definePageMetadata(() => ({
+definePage(() => ({
 	title: i18n.ts._makePrivate.text,
 	icon: 'ti ti-eye-off',
 }));

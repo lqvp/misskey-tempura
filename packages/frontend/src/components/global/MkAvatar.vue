@@ -5,9 +5,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <component :is="link ? MkA : 'span'" v-user-preview="preview ? user.id : undefined" v-bind="bound" class="_noSelect" :class="[$style.root, { [$style.animation]: animation, [$style.cat]: user.isCat, [$style.square]: squareAvatars }]" :style="{ color }" :title="acct(user)" @click="onClick">
-	<MkImgWithBlurhash :class="$style.inner" :src="(defaultStore.state.anonymizeMutedUsers && user.isMuted) ? (instance.iconUrl || '/favicon.ico') : url" :hash="user.avatarBlurhash" :cover="true" :onlyAvgColor="true"/>
-	<MkUserOnlineIndicator v-if="!(defaultStore.state.anonymizeMutedUsers && user.isMuted) && indicator" :class="$style.indicator" :user="user"/>
-	<div v-if="!(defaultStore.state.anonymizeMutedUsers && user.isMuted) && user.isCat" :class="[$style.ears]">
+	<MkImgWithBlurhash :class="$style.inner" :src="(prefer.s.anonymizeMutedUsers && user.isMuted) ? (instance.iconUrl || '/favicon.ico') : url" :hash="user.avatarBlurhash" :cover="true" :onlyAvgColor="true"/>
+	<MkUserOnlineIndicator v-if="!(prefer.s.anonymizeMutedUsers && user.isMuted) && indicator" :class="$style.indicator" :user="user"/>
+	<div v-if="!(prefer.s.anonymizeMutedUsers && user.isMuted) && user.isCat" :class="[$style.ears]">
 		<div :class="$style.earLeft">
 			<div v-if="false" :class="$style.layer">
 				<div :class="$style.plot" :style="{ backgroundImage: `url(${JSON.stringify(url)})` }"/>
@@ -45,15 +45,14 @@ import * as Misskey from 'misskey-js';
 import { extractAvgColorFromBlurhash } from '@@/js/extract-avg-color-from-blurhash.js';
 import MkImgWithBlurhash from '../MkImgWithBlurhash.vue';
 import MkA from './MkA.vue';
-import { getStaticImageUrl } from '@/scripts/media-proxy.js';
+import { getStaticImageUrl } from '@/utility/media-proxy.js';
 import { acct, userPage } from '@/filters/user.js';
 import MkUserOnlineIndicator from '@/components/MkUserOnlineIndicator.vue';
-import { defaultStore } from '@/store.js';
+import { prefer } from '@/preferences.js';
 import { instance } from '@/instance.js';
 
-const animation = ref(defaultStore.state.animation);
-const squareAvatars = ref(defaultStore.state.squareAvatars);
-const useBlurEffect = ref(defaultStore.state.useBlurEffect);
+const animation = ref(prefer.s.animation);
+const squareAvatars = ref(prefer.s.squareAvatars);
 
 const props = withDefaults(defineProps<{
 	user: Misskey.entities.UserDetailed;
@@ -76,7 +75,7 @@ const emit = defineEmits<{
 	(ev: 'click', v: MouseEvent): void;
 }>();
 
-const showDecoration = props.forceShowDecoration || defaultStore.state.showAvatarDecorations;
+const showDecoration = props.forceShowDecoration || prefer.s.showAvatarDecorations;
 
 const bound = computed(() => props.link
 	? { to: userPage(props.user), target: props.target }
@@ -84,7 +83,7 @@ const bound = computed(() => props.link
 
 const url = computed(() => {
 	if (props.user.avatarUrl == null) return null;
-	if (defaultStore.state.disableShowingAnimatedImages || defaultStore.state.dataSaver.avatar) return getStaticImageUrl(props.user.avatarUrl);
+	if (prefer.s.disableShowingAnimatedImages || prefer.s.dataSaver.avatar) return getStaticImageUrl(props.user.avatarUrl);
 	return props.user.avatarUrl;
 });
 
@@ -94,7 +93,7 @@ function onClick(ev: MouseEvent): void {
 }
 
 function getDecorationUrl(decoration: Omit<Misskey.entities.UserDetailed['avatarDecorations'][number], 'id'>) {
-	if (defaultStore.state.disableShowingAnimatedImages || defaultStore.state.dataSaver.avatar) return getStaticImageUrl(decoration.url);
+	if (prefer.s.disableShowingAnimatedImages || prefer.s.dataSaver.avatar) return getStaticImageUrl(decoration.url);
 	return decoration.url;
 }
 

@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <MkStickyContainer>
 	<template #header><MkPageHeader v-model:tab="tab" :actions="headerActions" :tabs="headerTabs"/></template>
 	<MkInfo>
-		{{ i18n.ts.reactionsStatDescription }}
+		{{ i18n.ts.reactionStatsDescription }}
 	</MkInfo>
 	<MkSpacer v-if="tab === 'me'" :contentMax="1000" :marginMin="20">
 		<div class="_gaps_s">
@@ -34,13 +34,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue';
-import { misskeyApi } from '@/scripts/misskey-api';
+import { misskeyApi } from '@/utility/misskey-api';
 import { i18n } from '@/i18n.js';
-import { definePageMetadata } from '@/scripts/page-metadata.js';
+import { definePage } from '@/page.js';
 import { signinRequired } from '@/account';
 import MkInfo from '@/components/MkInfo.vue';
 import MkButton from '@/components/MkButton.vue';
-import { copyToClipboard } from '@/scripts/copy-to-clipboard';
+import { copyToClipboard } from '@/utility/copy-to-clipboard';
 
 const $i = signinRequired();
 
@@ -79,7 +79,7 @@ const headerTabs = computed(() => [{
 	icon: 'ti ti-planet',
 }]);
 
-definePageMetadata(() => ({
+definePage(() => ({
 	title: i18n.ts.reactionStats,
 	icon: 'ti ti-chart-bar',
 }));

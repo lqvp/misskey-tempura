@@ -17,11 +17,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { definePageMetadata } from '@/scripts/page-metadata.js';
+import { definePage } from '@/page.js';
 
 const gameUrl = 'https://www.cjdgrevival.com/';
 
-definePageMetadata(() => ({
+definePage(() => ({
 	title: 'taiko',
 	icon: 'ti ti-device-gamepad',
 }));

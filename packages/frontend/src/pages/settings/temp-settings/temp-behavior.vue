@@ -4,18 +4,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<SearchMarker markerId="temp-settings" :keywords="['appearance']">
+<SearchMarker markerId="temp-settings-behavior" :inlining="['temp-settings-root']" path="/settings/temp-settings" :keywords="['behavior', 'interaction', 'actions', 'default']">
 	<MkFolder>
 		<template #icon><i class="ti ti-mood-happy"></i></template>
-		<template #label>{{ i18n.ts.behavior }}</template>
+		<template #label><SearchLabel>{{ i18n.ts.behavior }}</SearchLabel></template>
 		<div class="_gaps_m">
 			<div class="_gaps_m">
-				<SearchMarker ;keywords="['reaction']">
-					<MkSwitch v-model="reactionChecksMuting">
-						{{ i18n.ts._reactionChecksMuting.title }}
-						<template #caption>{{ i18n.ts._reactionChecksMuting.caption }}</template>
-					</MkSwitch>
-				</SearchMarker>
+				<MkPreferenceContainer k="reactionChecksMuting">
+					<SearchMarker :keywords="['reaction', 'muting', 'block', 'ignore', 'notifications']">
+						<MkSwitch v-model="reactionChecksMuting">
+							<SearchLabel>{{ i18n.ts._reactionChecksMuting.title }}</SearchLabel>
+							<template #caption>{{ i18n.ts._reactionChecksMuting.caption }}</template>
+						</MkSwitch>
+					</SearchMarker>
+				</MkPreferenceContainer>
 			</div>
 		</div>
 	</MkFolder>
@@ -27,10 +29,11 @@ import { computed } from 'vue';
 import * as Misskey from 'misskey-js';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkFolder from '@/components/MkFolder.vue';
-import { defaultStore } from '@/store.js';
+import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
+import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 
-const reactionChecksMuting = computed(defaultStore.makeGetterSetter('reactionChecksMuting'));
+const reactionChecksMuting = prefer.model('reactionChecksMuting');
 
 </script>
 

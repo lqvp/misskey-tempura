@@ -9,10 +9,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div :class="$style.banner" :style="{ backgroundImage: `url(${ instance.bannerUrl })` }"></div>
 		<button class="_button" :class="$style.instance" @click="openInstanceMenu">
 			<img
-					:src="(instance.enableLongIconUrl && instance.longIconUrl) || instance.iconUrl || instance.faviconUrl || '/favicon.ico'"
-					alt=""
-					:class="[instance.enableLongIconUrl ? $style.instanceIconLong : $style.instanceIcon]"
-				/>
+				:src="(instance.enableLongIconUrl && instance.longIconUrl) || instance.iconUrl || instance.faviconUrl || '/favicon.ico'"
+				alt=""
+				:class="[instance.enableLongIconUrl ? $style.instanceIconLong : $style.instanceIcon]"
+			/>
 		</button>
 	</div>
 	<div :class="$style.middle">
@@ -58,11 +58,11 @@ import { openInstanceMenu } from './common.js';
 import * as os from '@/os.js';
 import { navbarItemDef } from '@/navbar.js';
 import { $i, openAccountMenu as openAccountMenu_ } from '@/account.js';
-import { defaultStore } from '@/store.js';
+import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
 
-const menu = toRef(defaultStore.state, 'menu');
+const menu = toRef(prefer.s, 'menu');
 const otherMenuItemIndicated = computed(() => {
 	for (const def in navbarItemDef) {
 		if (menu.value.includes(def)) continue;

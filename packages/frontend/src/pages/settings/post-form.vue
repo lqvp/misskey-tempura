@@ -7,22 +7,24 @@
 <div class="_gaps_m">
 	<FormSlot>
 		<template #label>{{ i18n.ts.postForm }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-		<MkContainer :showHeader="false">
-			<Sortable
-				v-model="items"
-				:class="$style.items"
-				:itemKey="items => items"
-				:animation="100"
-				:delay="50"
-				:delayOnTouchOnly="true"
-			>
-				<template #item="{element}">
-					<button v-tooltip="bottomItemDef[element.type].title" class="_button" :class="$style.item" @click="removeItem(element.type, $event)">
-						<i class="ti ti-fw" :class="[$style.itemIcon, bottomItemDef[element.type].icon]"></i>
-					</button>
-				</template>
-			</Sortable>
-		</MkContainer>
+		<MkPreferenceContainer k="postFormActions">
+			<MkContainer :showHeader="false">
+				<Sortable
+					v-model="items"
+					:class="$style.items"
+					:itemKey="items => items"
+					:animation="100"
+					:delay="50"
+					:delayOnTouchOnly="true"
+				>
+					<template #item="{element}">
+						<button v-tooltip="bottomItemDef[element.type].title" class="_button" :class="$style.item" @click="removeItem(element.type, $event)">
+							<i class="ti ti-fw" :class="[$style.itemIcon, bottomItemDef[element.type].icon]"></i>
+						</button>
+					</template>
+				</Sortable>
+			</MkContainer>
+		</MkPreferenceContainer>
 	</FormSlot>
 	<div class="_buttons">
 		<MkButton @click="addItem"><i class="ti ti-plus"></i> {{ i18n.ts.addItem }}</MkButton>
@@ -30,17 +32,23 @@
 		<MkButton primary class="save" @click="save"><i class="ti ti-device-floppy"></i> {{ i18n.ts.save }}</MkButton>
 	</div>
 	<div :class="$style.label">{{ i18n.ts.postFormBottomSettingsDescription }}</div>
-	<div>
-		<div :class="$style.label">
-			{{ i18n.ts.defaultScheduledNoteDeleteTime }}
-			<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+
+	<MkPreferenceContainer k="defaultScheduledNoteDeleteTime">
+		<div>
+			<div :class="$style.label">
+				{{ i18n.ts.defaultScheduledNoteDeleteTime }}
+				<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+			</div>
+			<MkDeleteScheduleEditor v-model="scheduledNoteDelete" :afterOnly="true"/>
 		</div>
-		<MkDeleteScheduleEditor v-model="scheduledNoteDelete" :afterOnly="true"/>
-	</div>
-	<MkSwitch v-model="defaultScheduledNoteDelete">
-		{{ i18n.ts.defaultScheduledNoteDelete }}
-		<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-	</MkSwitch>
+	</MkPreferenceContainer>
+
+	<MkPreferenceContainer k="defaultScheduledNoteDelete">
+		<MkSwitch v-model="defaultScheduledNoteDelete">
+			{{ i18n.ts.defaultScheduledNoteDelete }}
+			<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+		</MkSwitch>
+	</MkPreferenceContainer>
 </div>
 </template>
 
@@ -52,24 +60,26 @@ import MkSelect from '@/components/MkSelect.vue';
 import MkDeleteScheduleEditor from '@/components/MkDeleteScheduleEditor.vue';
 import FormSlot from '@/components/form/slot.vue';
 import MkContainer from '@/components/MkContainer.vue';
-import { bottomItemDef } from '@/scripts/post-form.js';
+import { bottomItemDef } from '@/utility/post-form.js';
 import * as os from '@/os.js';
-import { defaultStore } from '@/store.js';
+import { store } from '@/store.js';
+import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
-import { definePageMetadata } from '@/scripts/page-metadata.js';
+import { definePage } from '@/page.js';
+import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 
-const defaultScheduledNoteDelete = computed(defaultStore.makeGetterSetter('defaultScheduledNoteDelete'));
+const defaultScheduledNoteDelete = prefer.model('defaultScheduledNoteDelete');
 
-const scheduledNoteDelete = ref({ deleteAt: null, deleteAfter: defaultStore.state.defaultScheduledNoteDeleteTime, isValid: true });
+const scheduledNoteDelete = ref({ deleteAt: null, deleteAfter: prefer.s.defaultScheduledNoteDeleteTime, isValid: true });
 
 watch(scheduledNoteDelete, () => {
 	if (!scheduledNoteDelete.value.isValid) return;
-	defaultStore.set('defaultScheduledNoteDeleteTime', scheduledNoteDelete.value.deleteAfter);
+	prefer.commit('defaultScheduledNoteDeleteTime', scheduledNoteDelete.value.deleteAfter);
 });
 
 const Sortable = defineAsyncComponent(() => import('vuedraggable').then(x => x.default));
 
-const items = ref(defaultStore.state.postFormActions.map(x => ({
+const items = ref(prefer.s.postFormActions.map(x => ({
 	id: Math.random().toString(),
 	type: x,
 })));
@@ -109,7 +119,7 @@ function removeItem(type: keyof typeof bottomItemDef, ev: MouseEvent) {
 }
 
 async function save() {
-	defaultStore.set('postFormActions', items.value.map(x => x.type));
+	prefer.commit('postFormActions', items.value.map(x => x.type));
 }
 
 async function reset() {
@@ -119,7 +129,7 @@ async function reset() {
 	});
 	if (result.canceled) return;
 
-	items.value = defaultStore.def.postFormActions.default.map(x => ({
+	items.value = store.def.postFormActions.default.map(x => ({
 		id: Math.random().toString(),
 		type: x,
 	}));
@@ -129,7 +139,7 @@ const headerActions = computed(() => []);
 
 const headerTabs = computed(() => []);
 
-definePageMetadata(() => ({
+definePage(() => ({
 	title: i18n.ts.postForm,
 	icon: 'ti ti-pencil',
 }));

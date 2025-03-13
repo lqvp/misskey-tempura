@@ -4,37 +4,38 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-	<div>
-		<Transition :name="defaultStore.state.animation ? '_transition_zoom' : ''" mode="out-in">
-			<MkLoading v-if="fetching"/>
-			<div v-else :class="$style.root" class="_panel">
-				<MkA v-for="user in administrators" :key="user.id" class="user" :to="`/admin/user/${user.id}`">
-					<MkAvatar :user="user" class="avatar" indicator/>
-				</MkA>
-			</div>
-		</Transition>
-	</div>
-	</template>
+<div>
+	<Transition :name="prefer.s.animation ? '_transition_zoom' : ''" mode="out-in">
+		<MkLoading v-if="fetching"/>
+		<div v-else :class="$style.root" class="_panel">
+			<MkA v-for="user in administrators" :key="user.id" class="user" :to="`/admin/user/${user.id}`">
+				<MkAvatar :user="user" class="avatar" indicator/>
+			</MkA>
+		</div>
+	</Transition>
+</div>
+</template>
 
-	<script lang="ts" setup>
-	import { onMounted, ref } from 'vue';
-	import { misskeyApi } from '@/scripts/misskey-api.js';
-	import * as Misskey from 'misskey-js';
-	import { defaultStore } from '@/store.js';
+<script lang="ts" setup>
+import { onMounted, ref } from 'vue';
+import * as Misskey from 'misskey-js';
+import { misskeyApi } from '@/utility/misskey-api.js';
+import { store } from '@/store.js';
+import { prefer } from '@/preferences.js';
 
-	const administrators = ref<Misskey.entities.UserDetailed[] | null>(null);
-	const fetching = ref(true);
+const administrators = ref<Misskey.entities.UserDetailed[] | null>(null);
+const fetching = ref(true);
 
-	onMounted(async () => {
-		administrators.value = await misskeyApi('admin/show-users', {
-			sort: '+lastActiveDate',
-			state: 'admin',
-			limit: 30,
-		});
-
-		fetching.value = false;
+onMounted(async () => {
+	administrators.value = await misskeyApi('admin/show-users', {
+		sort: '+lastActiveDate',
+		state: 'admin',
+		limit: 30,
 	});
-	</script>
+
+	fetching.value = false;
+});
+</script>
 
 	<style lang="scss" module>
 	.root {

@@ -15,10 +15,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { computed, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { instanceName } from '@@/js/config.js';
-import XSetup from './welcome.setup.vue';
 import XEntranceHana from './welcome.entrance.hana.vue';
-import XEntranceA from './welcome.entrance.a.vue';
-import { definePageMetadata } from '@/scripts/page-metadata.js';
+import { definePage } from '@/page.js';
 import { fetchInstance } from '@/instance.js';
 
 const instance = ref<Misskey.entities.MetaDetailed | null>(null);
@@ -31,7 +29,7 @@ const headerActions = computed(() => []);
 
 const headerTabs = computed(() => []);
 
-definePageMetadata(() => ({
+definePage(() => ({
 	title: instanceName,
 	icon: null,
 }));

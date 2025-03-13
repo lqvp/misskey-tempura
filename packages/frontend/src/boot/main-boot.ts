@@ -6,26 +6,31 @@
 import { createApp, defineAsyncComponent, markRaw } from 'vue';
 import { ui } from '@@/js/config.js';
 import * as Misskey from 'misskey-js';
+import { v4 as uuid } from 'uuid';
 import { common } from './common.js';
 import type { Component } from 'vue';
-import type { Keymap } from '@/scripts/hotkey.js';
+import type { Keymap } from '@/utility/hotkey.js';
+import type { DeckProfile } from '@/deck.js';
 import { i18n } from '@/i18n.js';
 import { alert, confirm, popup, post, toast } from '@/os.js';
 import { useStream } from '@/stream.js';
-import * as sound from '@/scripts/sound.js';
+import * as sound from '@/utility/sound.js';
 import { $i, signout, updateAccountPartial } from '@/account.js';
 import { instance } from '@/instance.js';
-import { ColdDeviceStorage, defaultStore } from '@/store.js';
-import { reactionPicker } from '@/scripts/reaction-picker.js';
+import { ColdDeviceStorage, store } from '@/store.js';
+import { reactionPicker } from '@/utility/reaction-picker.js';
 import { miLocalStorage } from '@/local-storage.js';
-import { claimAchievement, claimedAchievements } from '@/scripts/achievements.js';
-import { initializeSw } from '@/scripts/initialize-sw.js';
-import { deckStore } from '@/ui/deck/deck-store.js';
-import { emojiPicker } from '@/scripts/emoji-picker.js';
+import { claimAchievement, claimedAchievements } from '@/utility/achievements.js';
+import { initializeSw } from '@/utility/initialize-sw.js';
+import { emojiPicker } from '@/utility/emoji-picker.js';
 import { mainRouter } from '@/router/main.js';
-import { makeHotkey } from '@/scripts/hotkey.js';
+import { makeHotkey } from '@/utility/hotkey.js';
 import { addCustomEmoji, removeCustomEmojis, updateCustomEmojis } from '@/custom-emojis.js';
-import { initEarthquakeWarning } from '@/scripts/temp-script/earthquake-warning.js';
+import { initEarthquakeWarning } from '@/utility/temp-script/earthquake-warning.js';
+import { prefer } from '@/preferences.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
+import { deckStore } from '@/ui/deck/deck-store.js';
+import { launchPlugins } from '@/plugin.js';
 
 export async function mainBoot() {
 	const { isClientUpdated, updatedComponent } = await common(() => {
@@ -35,7 +40,7 @@ export async function mainBoot() {
 		if (!$i) uiStyle = 'visitor';
 
 		if (searchParams.has('zen')) uiStyle = 'zen';
-		if (uiStyle === 'deck' && deckStore.state.useSimpleUiForNonRootPages && location.pathname !== '/') uiStyle = 'zen';
+		if (uiStyle === 'deck' && prefer.s['deck.useSimpleUiForNonRootPages'] && location.pathname !== '/') uiStyle = 'zen';
 
 		if (searchParams.has('ui')) uiStyle = searchParams.get('ui');
 
@@ -52,9 +57,6 @@ export async function mainBoot() {
 				break;
 			case 'classic':
 				rootComponent = defineAsyncComponent(() => import('@/ui/classic.vue'));
-				break;
-			case 'note':
-				rootComponent = defineAsyncComponent(() => import('@/ui/note.vue'));
 				break;
 			default:
 				rootComponent = defineAsyncComponent(() => import('@/ui/universal.vue'));
@@ -79,9 +81,9 @@ export async function mainBoot() {
 
 	let reloadDialogShowing = false;
 	stream.on('_disconnected_', async () => {
-		if (defaultStore.state.serverDisconnectedBehavior === 'reload') {
+		if (prefer.s.serverDisconnectedBehavior === 'reload') {
 			location.reload();
-		} else if (defaultStore.state.serverDisconnectedBehavior === 'dialog') {
+		} else if (prefer.s.serverDisconnectedBehavior === 'dialog') {
 			if (reloadDialogShowing) return;
 			reloadDialogShowing = true;
 			const { canceled } = await confirm({
@@ -108,30 +110,24 @@ export async function mainBoot() {
 		removeCustomEmojis(emojiData.emojis);
 	});
 
-	for (const plugin of ColdDeviceStorage.get('plugins').filter(p => p.active)) {
-		import('@/plugin.js').then(async ({ install }) => {
-			// Workaround for https://bugs.webkit.org/show_bug.cgi?id=242740
-			await new Promise(r => setTimeout(r, 0));
-			install(plugin);
-		});
-	}
+	launchPlugins();
 
 	try {
-		if (defaultStore.state.enableSeasonalScreenEffect) {
+		if (prefer.s.enableSeasonalScreenEffect) {
 			const month = new Date().getMonth() + 1;
-			if (defaultStore.state.hemisphere === 'S') {
+			if (prefer.s.hemisphere === 'S') {
 				// ▼南半球
 				if (month === 7 || month === 8) {
-					const SnowfallEffect = (await import('@/scripts/snowfall-effect.js')).SnowfallEffect;
+					const SnowfallEffect = (await import('@/utility/snowfall-effect.js')).SnowfallEffect;
 					new SnowfallEffect({}).render();
 				}
 			} else {
 				// ▼北半球
 				if (month === 12 || month === 1) {
-					const SnowfallEffect = (await import('@/scripts/snowfall-effect.js')).SnowfallEffect;
+					const SnowfallEffect = (await import('@/utility/snowfall-effect.js')).SnowfallEffect;
 					new SnowfallEffect({}).render();
 				} else if (month === 3 || month === 4) {
-					const SakuraEffect = (await import('@/scripts/snowfall-effect.js')).SnowfallEffect;
+					const SakuraEffect = (await import('@/utility/snowfall-effect.js')).SnowfallEffect;
 					new SakuraEffect({
 						sakura: true,
 					}).render();
@@ -144,8 +140,178 @@ export async function mainBoot() {
 	}
 
 	if ($i) {
-		defaultStore.loaded.then(() => {
-			if (defaultStore.state.accountSetupWizard !== -1) {
+		store.loaded.then(async () => {
+			// prefereces migration
+			// TODO: そのうち消す
+			if (store.s.menu.length > 0) {
+				const themes = await misskeyApi('i/registry/get', { scope: ['client'], key: 'themes' }).catch(() => []);
+				if (themes.length > 0) {
+					prefer.commit('themes', themes);
+				}
+
+				const plugins = ColdDeviceStorage.get('plugins');
+				prefer.commit('plugins', plugins.map(p => ({
+					...p,
+					installId: (p as any).id,
+					id: undefined,
+				})));
+
+				prefer.commit('deck.profile', deckStore.s.profile);
+				misskeyApi('i/registry/keys', {
+					scope: ['client', 'deck', 'profiles'],
+				}).then(async keys => {
+					const profiles: DeckProfile[] = [];
+					for (const key of keys) {
+						const deck = await misskeyApi('i/registry/get', {
+							scope: ['client', 'deck', 'profiles'],
+							key: key,
+						});
+						profiles.push({
+							id: uuid(),
+							name: key,
+							columns: deck.columns,
+							layout: deck.layout,
+						});
+					}
+					prefer.commit('deck.profiles', profiles);
+				});
+
+				prefer.commit('lightTheme', ColdDeviceStorage.get('lightTheme'));
+				prefer.commit('darkTheme', ColdDeviceStorage.get('darkTheme'));
+				prefer.commit('syncDeviceDarkMode', ColdDeviceStorage.get('syncDeviceDarkMode'));
+				prefer.commit('overridedDeviceKind', store.s.overridedDeviceKind);
+				prefer.commit('widgets', store.s.widgets);
+				prefer.commit('keepCw', store.s.keepCw);
+				prefer.commit('collapseRenotes', store.s.collapseRenotes);
+				prefer.commit('rememberNoteVisibility', store.s.rememberNoteVisibility);
+				prefer.commit('uploadFolder', store.s.uploadFolder);
+				prefer.commit('keepOriginalUploading', store.s.keepOriginalUploading);
+				prefer.commit('menu', store.s.menu);
+				prefer.commit('statusbars', store.s.statusbars);
+				prefer.commit('pinnedUserLists', store.s.pinnedUserLists);
+				prefer.commit('serverDisconnectedBehavior', store.s.serverDisconnectedBehavior);
+				prefer.commit('nsfw', store.s.nsfw);
+				prefer.commit('highlightSensitiveMedia', store.s.highlightSensitiveMedia);
+				prefer.commit('animation', store.s.animation);
+				prefer.commit('animatedMfm', store.s.animatedMfm);
+				prefer.commit('advancedMfm', store.s.advancedMfm);
+				prefer.commit('showReactionsCount', store.s.showReactionsCount);
+				prefer.commit('enableQuickAddMfmFunction', store.s.enableQuickAddMfmFunction);
+				prefer.commit('loadRawImages', store.s.loadRawImages);
+				prefer.commit('imageNewTab', store.s.imageNewTab);
+				prefer.commit('disableShowingAnimatedImages', store.s.disableShowingAnimatedImages);
+				prefer.commit('emojiStyle', store.s.emojiStyle);
+				prefer.commit('menuStyle', store.s.menuStyle);
+				prefer.commit('useBlurEffectForModal', store.s.useBlurEffectForModal);
+				prefer.commit('useBlurEffect', store.s.useBlurEffect);
+				prefer.commit('showFixedPostForm', store.s.showFixedPostForm);
+				prefer.commit('showFixedPostFormInChannel', store.s.showFixedPostFormInChannel);
+				prefer.commit('enableInfiniteScroll', store.s.enableInfiniteScroll);
+				prefer.commit('useReactionPickerForContextMenu', store.s.useReactionPickerForContextMenu);
+				prefer.commit('showGapBetweenNotesInTimeline', store.s.showGapBetweenNotesInTimeline);
+				prefer.commit('instanceTicker', store.s.instanceTicker);
+				prefer.commit('emojiPickerScale', store.s.emojiPickerScale);
+				prefer.commit('emojiPickerWidth', store.s.emojiPickerWidth);
+				prefer.commit('emojiPickerHeight', store.s.emojiPickerHeight);
+				prefer.commit('emojiPickerStyle', store.s.emojiPickerStyle);
+				prefer.commit('reportError', store.s.reportError);
+				prefer.commit('squareAvatars', store.s.squareAvatars);
+				prefer.commit('showAvatarDecorations', store.s.showAvatarDecorations);
+				prefer.commit('numberOfPageCache', store.s.numberOfPageCache);
+				prefer.commit('showNoteActionsOnlyHover', store.s.showNoteActionsOnlyHover);
+				prefer.commit('showClipButtonInNoteFooter', store.s.showClipButtonInNoteFooter);
+				prefer.commit('reactionsDisplaySize', store.s.reactionsDisplaySize);
+				prefer.commit('limitWidthOfReaction', store.s.limitWidthOfReaction);
+				prefer.commit('forceShowAds', store.s.forceShowAds);
+				prefer.commit('aiChanMode', store.s.aiChanMode);
+				prefer.commit('devMode', store.s.devMode);
+				prefer.commit('mediaListWithOneImageAppearance', store.s.mediaListWithOneImageAppearance);
+				prefer.commit('notificationPosition', store.s.notificationPosition);
+				prefer.commit('notificationStackAxis', store.s.notificationStackAxis);
+				prefer.commit('enableCondensedLine', store.s.enableCondensedLine);
+				prefer.commit('keepScreenOn', store.s.keepScreenOn);
+				prefer.commit('disableStreamingTimeline', store.s.disableStreamingTimeline);
+				prefer.commit('useGroupedNotifications', store.s.useGroupedNotifications);
+				prefer.commit('dataSaver', store.s.dataSaver);
+				prefer.commit('enableSeasonalScreenEffect', store.s.enableSeasonalScreenEffect);
+				prefer.commit('enableHorizontalSwipe', store.s.enableHorizontalSwipe);
+				prefer.commit('useNativeUiForVideoAudioPlayer', store.s.useNativeUIForVideoAudioPlayer);
+				prefer.commit('keepOriginalFilename', store.s.keepOriginalFilename);
+				prefer.commit('alwaysConfirmFollow', store.s.alwaysConfirmFollow);
+				prefer.commit('confirmWhenRevealingSensitiveMedia', store.s.confirmWhenRevealingSensitiveMedia);
+				prefer.commit('contextMenu', store.s.contextMenu);
+				prefer.commit('skipNoteRender', store.s.skipNoteRender);
+				prefer.commit('showSoftWordMutedWord', store.s.showSoftWordMutedWord);
+				prefer.commit('confirmOnReact', store.s.confirmOnReact);
+				prefer.commit('sound.masterVolume', store.s.sound_masterVolume);
+				prefer.commit('sound.notUseSound', store.s.sound_notUseSound);
+				prefer.commit('sound.useSoundOnlyWhenActive', store.s.sound_useSoundOnlyWhenActive);
+				prefer.commit('sound.on.note', store.s.sound_note as any);
+				prefer.commit('sound.on.noteMy', store.s.sound_noteMy as any);
+				prefer.commit('sound.on.notification', store.s.sound_notification as any);
+				prefer.commit('sound.on.reaction', store.s.sound_reaction as any);
+				store.set('menu', []);
+
+				// region 独自周り
+				prefer.commit('postFormActions', store.s.postFormActions);
+				prefer.commit('defaultScheduledNoteDelete', store.s.defaultScheduledNoteDelete);
+				prefer.commit('defaultScheduledNoteDeleteTime', store.s.defaultScheduledNoteDeleteTime);
+				prefer.commit('selectReaction', store.s.selectReaction);
+				prefer.commit('showLikeButton', store.s.showLikeButton);
+				prefer.commit('hideReactionUsers', store.s.hideReactionUsers);
+				prefer.commit('hideReactionCount', store.s.hideReactionCount);
+				prefer.commit('customFont', store.s.customFont);
+				prefer.commit('disableNoteNyaize', store.s.disableNoteNyaize);
+				prefer.commit('hideLocalTimeLine', store.s.hideLocalTimeLine);
+				prefer.commit('hideSocialTimeLine', store.s.hideSocialTimeLine);
+				prefer.commit('hideGlobalTimeLine', store.s.hideGlobalTimeLine);
+				prefer.commit('hideLists', store.s.hideLists);
+				prefer.commit('hideAntennas', store.s.hideAntennas);
+				prefer.commit('hideChannel', store.s.hideChannel);
+				prefer.commit('nicknameEnabled', store.s.nicknameEnabled);
+				prefer.commit('nicknameMap', store.s.nicknameMap);
+				prefer.commit('directRenote', store.s.directRenote);
+				prefer.commit('reactionChecksMuting', store.s.reactionChecksMuting);
+				prefer.commit('imageCompressionMode', store.s.imageCompressionMode);
+				prefer.commit('anonymizeMutedUsers', store.s.anonymizeMutedUsers);
+				prefer.commit('enableReactionConfirm', store.s.enableReactionConfirm);
+				prefer.commit('enableLikeConfirm', store.s.enableLikeConfirm);
+				prefer.commit('showInstanceTickerSoftwareName', store.s.showInstanceTickerSoftwareName);
+				prefer.commit('showInstanceTickerVersion', store.s.showInstanceTickerVersion);
+				prefer.commit('useTextAreaAutoSize', store.s.useTextAreaAutoSize);
+				prefer.commit('specifiedUsers', store.s.specifiedUsers);
+				prefer.commit('useGeminiLLMAPI', store.s.useGeminiLLMAPI);
+				prefer.commit('useGeminiWithMedia', store.s.useGeminiWithMedia);
+				prefer.commit('geminiToken', store.s.geminiToken);
+				prefer.commit('geminiModels', store.s.geminiModels);
+				prefer.commit('geminiSystemPrompt', store.s.geminiSystemPrompt);
+				prefer.commit('geminiPromptNote', store.s.geminiPromptNote);
+				prefer.commit('geminiPromptProfile', store.s.geminiPromptProfile);
+				prefer.commit('geminiNoteLongText', store.s.geminiNoteLongText);
+				prefer.commit('geminiNoteShortText', store.s.geminiNoteShortText);
+				prefer.commit('geminiNoteSimpleText', store.s.geminiNoteSimpleText);
+				prefer.commit('geminiNoteCasualText', store.s.geminiNoteCasualText);
+				prefer.commit('geminiNoteProfessionalText', store.s.geminiNoteProfessionalText);
+				prefer.commit('geminiNoteCatText', store.s.geminiNoteCatText);
+				prefer.commit('geminiNoteCustomText', store.s.geminiNoteCustomText);
+				prefer.commit('enableEarthquakeWarning', store.s.enableEarthquakeWarning);
+				prefer.commit('earthquakeWarningIntensity', store.s.earthquakeWarningIntensity);
+				prefer.commit('enableEarthquakeWarningTts', store.s.enableEarthquakeWarningTts);
+				prefer.commit('earthquakeWarningToastDuration', store.s.earthquakeWarningToastDuration);
+				prefer.commit('earthquakeWarningTtsRate', store.s.earthquakeWarningTtsRate);
+				prefer.commit('earthquakeWarningNotificationStyle', store.s.earthquakeWarningNotificationStyle);
+				prefer.commit('earthquakeWarningSound', store.s.earthquakeWarningSound);
+				prefer.commit('earthquakeWarningSoundType', store.s.earthquakeWarningSoundType);
+				prefer.commit('earthquakeWarningRegionFilter', store.s.earthquakeWarningRegionFilter);
+				prefer.commit('enableEarthquakeWarningRegionFilter', store.s.enableEarthquakeWarningRegionFilter);
+				prefer.commit('earthquakeWarningThrottleTime', store.s.earthquakeWarningThrottleTime);
+				prefer.commit('earthquakeWarningIgnoreTraining', store.s.earthquakeWarningIgnoreTraining);
+				prefer.commit('earthquakeWarningConnectionNotify', store.s.earthquakeWarningConnectionNotify);
+				prefer.commit('earthquakeWarningLogLevel', store.s.earthquakeWarningLogLevel);
+				// endregion
+			}
+
+			if (store.s.accountSetupWizard !== -1) {
 				const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkUserSetupDialog.vue')), {}, {
 					closed: () => dispose(),
 				});
@@ -160,7 +326,7 @@ export async function mainBoot() {
 			});
 		}
 
-		function onAnnouncementCreated (ev: { announcement: Misskey.entities.Announcement }) {
+		function onAnnouncementCreated(ev: { announcement: Misskey.entities.Announcement }) {
 			const announcement = ev.announcement;
 			if (announcement.display === 'dialog') {
 				const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkAnnouncementDialog.vue')), {
@@ -418,7 +584,7 @@ export async function mainBoot() {
 			post();
 		},
 		'd': () => {
-			defaultStore.set('darkMode', !defaultStore.state.darkMode);
+			store.set('darkMode', !store.s.darkMode);
 		},
 		's': () => {
 			mainRouter.push('/search');
