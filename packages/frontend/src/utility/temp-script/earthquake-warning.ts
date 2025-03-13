@@ -84,7 +84,7 @@ function getSoundTypeForIntensity(intensity: string, isWarning: boolean, isCance
 		return 'EEW_CANCELED';
 	}
 
-	const soundType = prefer.r.earthquakeWarningSoundType.value || 'auto';
+	const soundType = prefer.s.earthquakeWarningSoundType || 'auto';
 
 	if (soundType === 'eew') {
 		// EEW音のみ使用
@@ -142,7 +142,7 @@ let reconnectTimeout: NodeJS.Timeout | null = null;
  * Default is 3 if not set
  */
 export function getIntensityThreshold(): string {
-	return prefer.r.earthquakeWarningIntensity.value || '3';
+	return prefer.s.earthquakeWarningIntensity || '3';
 }
 
 /**
@@ -170,7 +170,7 @@ function formatAlertMessage(data: EarthquakeAlertData): string {
 	const magnitude = data.magnitude ? `M${data.magnitude}` : '';
 
 	// 通知スタイルに基づいて表示内容を変更
-	const notificationStyle = prefer.r.earthquakeWarningNotificationStyle.value || 'standard';
+	const notificationStyle = prefer.s.earthquakeWarningNotificationStyle || 'standard';
 
 	if (notificationStyle === 'simple') {
 		return `【地震速報】${location} 最大震度${intensity}`;
@@ -197,7 +197,7 @@ function isThrottled(eventId: string): boolean {
 	if (!eventId) return false;
 
 	const now = Date.now();
-	const throttleTime = (prefer.r.earthquakeWarningThrottleTime.value || 60) * 1000; // 秒をミリ秒に変換
+	const throttleTime = (prefer.s.earthquakeWarningThrottleTime || 60) * 1000; // 秒をミリ秒に変換
 	const lastTime = recentAlerts.get(eventId);
 
 	if (lastTime && (now - lastTime < throttleTime)) {
@@ -224,11 +224,11 @@ function isThrottled(eventId: string): boolean {
  */
 function passesRegionFilter(data: EarthquakeAlertData): boolean {
 	// 地域フィルタリングが無効なら常に通過
-	if (!prefer.r.enableEarthquakeWarningRegionFilter.value) {
+	if (!prefer.s.enableEarthquakeWarningRegionFilter) {
 		return true;
 	}
 
-	const selectedRegions = prefer.r.earthquakeWarningRegionFilter.value || [];
+	const selectedRegions = prefer.s.earthquakeWarningRegionFilter || [];
 
 	// 何も選択されていない場合はすべての地域を通知
 	if (selectedRegions.length === 0) {
@@ -278,31 +278,31 @@ function getRegionFromCoordinates(latitude: number, longitude: number): string {
 function showEarthquakeAlert(data: EarthquakeAlertData): void {
 	try {
 		// Log data processing if detailed logging is enabled
-		const logLevel = prefer.r.earthquakeWarningLogLevel.value || 'none';
+		const logLevel = prefer.s.earthquakeWarningLogLevel || 'none';
 		if (logLevel === 'detailed') {
 			addToDataLog('processed', new Date(), data);
 		}
 
-		if (!prefer.r.enableEarthquakeWarning.value) return;
+		if (!prefer.s.enableEarthquakeWarning) return;
 
 		// Check if this alert exceeds the user's intensity threshold
 		if (!intensityExceedsThreshold(data.MaxIntensity)) return;
 
 		// 訓練報のスキップ設定
-		if (data.isTraining && prefer.r.earthquakeWarningIgnoreTraining.value) return;
+		if (data.isTraining && prefer.s.earthquakeWarningIgnoreTraining) return;
 
 		// Check if this alert matches the region filter (if enabled)
-		if (prefer.r.enableEarthquakeWarningRegionFilter.value && !passesRegionFilter(data)) return;
+		if (prefer.s.enableEarthquakeWarningRegionFilter && !passesRegionFilter(data)) return;
 
 		// Check if this alert is being throttled (same event ID within throttle time)
 		if (isThrottled(data.EventID)) return;
 
 		// Format the alert message according to user settings
 		const message = formatAlertMessage(data);
-		const duration = prefer.r.earthquakeWarningToastDuration.value || 10000;
+		const duration = prefer.s.earthquakeWarningToastDuration || 10000;
 
 		// Play the appropriate earthquake alert sound
-		if (prefer.r.earthquakeWarningSound.value) {
+		if (prefer.s.earthquakeWarningSound) {
 			try {
 				const soundType = getSoundTypeForIntensity(data.MaxIntensity, data.isWarn, data.isCancel);
 				playEarthquakeSound(soundType).catch(error => {
@@ -327,14 +327,14 @@ function showEarthquakeAlert(data: EarthquakeAlertData): void {
 		});
 
 		// If text-to-speech is enabled, read the message aloud
-		if (prefer.r.enableEarthquakeWarningTts.value) {
+		if (prefer.s.enableEarthquakeWarningTts) {
 			speakAlert(message);
 		}
 	} catch (error) {
 		console.error('Error processing earthquake alert:', error);
 
 		// Add error to data log if logging is enabled
-		const logLevel = prefer.r.earthquakeWarningLogLevel.value || 'none';
+		const logLevel = prefer.s.earthquakeWarningLogLevel || 'none';
 		if (logLevel === 'detailed') {
 			addToDataLog('error', new Date(), { error: String(error), data });
 		}
@@ -403,10 +403,10 @@ export function testEarthquakeAlert(): void {
 	setTimeout(() => {
 		// 通常の処理をバイパスして、テスト通知を直接表示
 		const message = formatAlertMessage(mockData);
-		const duration = prefer.r.earthquakeWarningToastDuration.value || 10000;
+		const duration = prefer.s.earthquakeWarningToastDuration || 10000;
 
 		// 通知音を鳴らす（設定有効時）
-		if (prefer.r.earthquakeWarningSound.value) {
+		if (prefer.s.earthquakeWarningSound) {
 			const soundType = getSoundTypeForIntensity(mockData.MaxIntensity, mockData.isWarn, mockData.isCancel);
 			playEarthquakeSound(soundType)
 				.catch(error => {
@@ -423,7 +423,7 @@ export function testEarthquakeAlert(): void {
 		}
 
 		// Log test data if logging is enabled
-		const logLevel = prefer.r.earthquakeWarningLogLevel.value || 'none';
+		const logLevel = prefer.s.earthquakeWarningLogLevel || 'none';
 		if (logLevel === 'basic' || logLevel === 'detailed') {
 			addToDataLog('received', new Date(), { ...mockData, isTest: true });
 		}
@@ -433,7 +433,7 @@ export function testEarthquakeAlert(): void {
 			duration: duration,
 		});
 
-		if (prefer.r.enableEarthquakeWarningTts.value) {
+		if (prefer.s.enableEarthquakeWarningTts) {
 			speakAlert(`テスト、${message.replace(/\n/g, '、')}`);
 		}
 	}, 500);
@@ -453,7 +453,7 @@ function speakAlert(message: string): void {
 		utterance.lang = 'ja-JP';
 
 		// Get speech rate from settings
-		const rate = prefer.r.earthquakeWarningTtsRate.value || 1.0;
+		const rate = prefer.s.earthquakeWarningTtsRate || 1.0;
 		utterance.rate = rate;
 
 		// Speak with normal pitch but slightly lower for authority
@@ -469,7 +469,7 @@ function speakAlert(message: string): void {
  * Connect to earthquake warning WebSocket API
  */
 export function connectEarthquakeWarningWs(): void {
-	if (!prefer.r.enableEarthquakeWarning.value) return;
+	if (!prefer.s.enableEarthquakeWarning) return;
 	if (wsConnection) return;
 
 	try {
@@ -488,7 +488,7 @@ export function connectEarthquakeWarningWs(): void {
 			}
 
 			// Notify user of successful connection if notification setting is enabled
-			if (prefer.r.earthquakeWarningConnectionNotify.value) {
+			if (prefer.s.earthquakeWarningConnectionNotify) {
 				toast(i18n.ts._earthquakeWarning.connectionEstablished, {
 					duration: 3000,
 				});
@@ -500,7 +500,7 @@ export function connectEarthquakeWarningWs(): void {
 				const data = JSON.parse(event.data) as EarthquakeAlertData;
 
 				// Log received data if detailed logging is enabled
-				const logLevel = prefer.r.earthquakeWarningLogLevel.value || 'none';
+				const logLevel = prefer.s.earthquakeWarningLogLevel || 'none';
 				if (logLevel === 'detailed') {
 					addToDataLog('received', new Date(), data);
 				}
@@ -524,14 +524,14 @@ export function connectEarthquakeWarningWs(): void {
 			wsConnection = null;
 
 			// Notify user of connection closure if notification setting is enabled
-			if (prefer.r.earthquakeWarningConnectionNotify.value) {
+			if (prefer.s.earthquakeWarningConnectionNotify) {
 				toast(i18n.ts._earthquakeWarning.connectionClosed, {
 					duration: 3000,
 				});
 			}
 
 			// Attempt to reconnect after delay
-			if (prefer.r.enableEarthquakeWarning.value && !reconnectTimeout) {
+			if (prefer.s.enableEarthquakeWarning && !reconnectTimeout) {
 				const reconnectDelay = 5000; // 5秒後に再接続
 				reconnectTimeout = setTimeout(() => {
 					reconnectTimeout = null;
@@ -539,7 +539,7 @@ export function connectEarthquakeWarningWs(): void {
 				}, reconnectDelay);
 
 				// ユーザーに再接続を試みることを通知
-				if (prefer.r.earthquakeWarningConnectionNotify.value) {
+				if (prefer.s.earthquakeWarningConnectionNotify) {
 					toast(i18n.ts._earthquakeWarning.reconnecting, {
 						duration: 3000,
 					});
@@ -551,7 +551,7 @@ export function connectEarthquakeWarningWs(): void {
 			console.error('Earthquake warning WebSocket error:', error);
 
 			// Notify user of connection error if notification setting is enabled
-			if (prefer.r.earthquakeWarningConnectionNotify.value) {
+			if (prefer.s.earthquakeWarningConnectionNotify) {
 				toast(i18n.ts._earthquakeWarning.connectionError, {
 					duration: 5000,
 				});
@@ -569,7 +569,7 @@ export function connectEarthquakeWarningWs(): void {
 		addToConnectionLog('error', new Date(), `Connection failed: ${error.message}`);
 
 		// Notify user of connection failure if notification setting is enabled
-		if (prefer.r.earthquakeWarningConnectionNotify.value) {
+		if (prefer.s.earthquakeWarningConnectionNotify) {
 			toast(i18n.ts._earthquakeWarning.connectionFailed, {
 				duration: 5000,
 			});
@@ -618,7 +618,7 @@ const MAX_LOG_ENTRIES = 100; // 最大ログエントリー数
  */
 function addToConnectionLog(type: 'info' | 'error' | 'warning', timestamp: Date, message: string): void {
 	// Check if logging is enabled
-	const logLevel = prefer.r.earthquakeWarningLogLevel.value || 'none';
+	const logLevel = prefer.s.earthquakeWarningLogLevel || 'none';
 	if (logLevel === 'none') return;
 
 	// For basic level, only log errors
@@ -641,7 +641,7 @@ function addToConnectionLog(type: 'info' | 'error' | 'warning', timestamp: Date,
  */
 function addToDataLog(type: 'received' | 'processed' | 'error', timestamp: Date, data: any): void {
 	// Check if data logging is enabled
-	const logLevel = prefer.r.earthquakeWarningLogLevel.value || 'none';
+	const logLevel = prefer.s.earthquakeWarningLogLevel || 'none';
 	if (logLevel !== 'detailed') return;
 
 	// Log to console for easier debugging
@@ -699,7 +699,7 @@ export function initEarthquakeWarning(): void {
 	disconnectEarthquakeWarningWs();
 
 	// Connect to WebSocket if the feature is enabled
-	if (prefer.r.enableEarthquakeWarning.value) {
+	if (prefer.s.enableEarthquakeWarning) {
 		connectEarthquakeWarningWs();
 	}
 }
