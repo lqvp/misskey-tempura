@@ -4,48 +4,64 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<SearchMarker markerId="temp-settings" :keywords="['postform']">
+<SearchMarker markerId="temp-settings-postform" :inlining="['temp-settings-root']" path="/settings/temp-settings" :keywords="['postform', 'notes', 'posting', 'compose']">
 	<MkFolder>
 		<template #icon><i class="ti ti-forms"></i></template>
-		<template #label>{{ i18n.ts.postForm }}</template>
+		<template #label><SearchLabel>{{ i18n.ts.postForm }}</SearchLabel></template>
 		<div class="_gaps_m">
-			<MkContainer :showHeader="false">
-				<Sortable
-					v-model="items"
-					:class="$style.items"
-					:itemKey="items => items"
-					:animation="100"
-					:delay="50"
-					:delayOnTouchOnly="true"
-				>
-					<template #item="{element}">
-						<button v-tooltip="bottomItemDef[element.type].title" class="_button" :class="$style.item" @click="removeItem(element.type, $event)">
-							<i class="ti ti-fw" :class="[$style.itemIcon, bottomItemDef[element.type].icon]"></i>
-						</button>
-					</template>
-				</Sortable>
-			</MkContainer>
+			<SearchMarker :keywords="['post', 'form', 'compose']">
+				<MkPreferenceContainer k="postFormActions">
+					<MkContainer :showHeader="false">
+						<Sortable
+							v-model="items"
+							:class="$style.items"
+							:itemKey="items => items"
+							:animation="100"
+							:delay="50"
+							:delayOnTouchOnly="true"
+						>
+							<template #item="{element}">
+								<button v-tooltip="bottomItemDef[element.type].title" class="_button" :class="$style.item" @click="removeItem(element.type, $event)">
+									<i class="ti ti-fw" :class="[$style.itemIcon, bottomItemDef[element.type].icon]"></i>
+								</button>
+							</template>
+						</Sortable>
+					</MkContainer>
+				</MkPreferenceContainer>
+			</SearchMarker>
+
 			<div class="_buttons">
-				<MkButton @click="addItem"><i class="ti ti-plus"></i> {{ i18n.ts.addItem }}</MkButton>
+				<MkButton @click="addItem"><i class="ti ti-plus"></i>{{ i18n.ts.addItem }}</MkButton>
 				<MkButton danger @click="reset_postform"><i class="ti ti-reload"></i> {{ i18n.ts.default }}</MkButton>
 				<MkButton primary class="save" @click="save_postform"><i class="ti ti-device-floppy"></i> {{ i18n.ts.save }}</MkButton>
 			</div>
-			<div :class="$style.label">{{ i18n.ts.postFormBottomSettingsDescription }}</div>
-			<div>
-				<div :class="$style.label">
-					{{ i18n.ts.defaultScheduledNoteDeleteTime }}
-				</div>
-				<MkDeleteScheduleEditor v-model="scheduledNoteDelete" :afterOnly="true"/>
-			</div>
-			<div class="_gaps_m">
-				<MkSwitch v-model="defaultScheduledNoteDelete">
-					{{ i18n.ts.defaultScheduledNoteDelete }}
-				</MkSwitch>
-				<MkSwitch v-model="useTextAreaAutoSize">
-					<template #caption>{{ i18n.ts.textAreaAutoResizeDescription }}</template>
-					{{ i18n.ts.textAreaAutoResize }}
-				</MkSwitch>
-			</div>
+			<div :class="$style.label"><SearchLabel>{{ i18n.ts.postFormBottomSettingsDescription }}</SearchLabel></div>
+
+			<SearchMarker :keywords="['post', 'form', 'compose']">
+				<MkPreferenceContainer k="defaultScheduledNoteDeleteTime">
+					<div :class="$style.label">
+						<SearchLabel>{{ i18n.ts.defaultScheduledNoteDeleteTime }}</SearchLabel>
+					</div>
+					<MkDeleteScheduleEditor v-model="scheduledNoteDelete" :afterOnly="true"/>
+				</MkPreferenceContainer>
+			</SearchMarker>
+
+			<SearchMarker :keywords="['post', 'form', 'compose']">
+				<MkPreferenceContainer k="defaultScheduledNoteDelete">
+					<MkSwitch v-model="defaultScheduledNoteDelete">
+						<SearchLabel>{{ i18n.ts.defaultScheduledNoteDelete }}</SearchLabel>
+					</MkSwitch>
+				</MkPreferenceContainer>
+			</SearchMarker>
+
+			<SearchMarker :keywords="['post', 'form', 'compose']">
+				<MkPreferenceContainer k="useTextAreaAutoSize">
+					<MkSwitch v-model="useTextAreaAutoSize">
+						<template #caption><SearchLabel>{{ i18n.ts.textAreaAutoResizeDescription }}</SearchLabel></template>
+						<SearchLabel>{{ i18n.ts.textAreaAutoResize }}</SearchLabel>
+					</MkSwitch>
+				</MkPreferenceContainer>
+			</SearchMarker>
 		</div>
 	</MkFolder>
 </SearchMarker>
@@ -65,6 +81,7 @@ import { i18n } from '@/i18n.js';
 import MkContainer from '@/components/MkContainer.vue';
 import MkDeleteScheduleEditor from '@/components/MkDeleteScheduleEditor.vue';
 import { bottomItemDef } from '@/utility/post-form.js';
+import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 
 const useTextAreaAutoSize = prefer.model('useTextAreaAutoSize');
 const Sortable = defineAsyncComponent(() => import('vuedraggable').then(x => x.default));

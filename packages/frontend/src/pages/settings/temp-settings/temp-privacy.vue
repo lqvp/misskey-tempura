@@ -4,46 +4,66 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<SearchMarker markerId="temp-settings" :keywords="['privacy']">
+<SearchMarker markerId="temp-settings-privacy" :inlining="['temp-settings-root']" path="/settings/temp-settings" :keywords="['privacy', 'security', 'visibility', 'permission']">
 	<MkFolder>
 		<template #icon><i class="ti ti-lock-open"></i></template>
-		<template #label>{{ i18n.ts.privacy }}</template>
+		<template #label><SearchLabel>{{ i18n.ts.privacy }}</SearchLabel></template>
 		<div class="_gaps_m">
-			<MkSwitch v-if="!isLocked" v-model="autoRejectFollowRequest" @update:modelValue="save_privacy()">
-				{{ i18n.ts.autoRejectFollowRequest }}
-				<template #caption>{{ i18n.ts.autoRejectFollowRequestDescription }}</template>
-			</MkSwitch>
-			<MkSwitch v-if="!isLocked" v-model="carefulBot" @update:modelValue="save_privacy()">{{ i18n.ts.carefulBot }}<template #caption>{{ i18n.ts.carefulBotDescription }}</template></MkSwitch>
+			<SearchMarker :keywords="['follow', 'reject', 'auto']">
+				<MkSwitch v-model="autoRejectFollowRequest" @update:modelValue="save_privacy()">
+					<SearchLabel>{{ i18n.ts.autoRejectFollowRequest }}</SearchLabel>
+					<template #caption>{{ i18n.ts.autoRejectFollowRequestDescription }}</template>
+				</MkSwitch>
+			</SearchMarker>
 
-			<MkSwitch v-if="$i.policies.canAutoFollowBack" v-model="autoFollowBack" @update:modelValue="save_privacy()">
-				{{ i18n.ts.autoFollowBack }}
-				<template #caption>{{ i18n.ts.autoFollowBackDescription }}</template>
-			</MkSwitch>
+			<SearchMarker :keywords="['bot', 'careful']">
+				<MkSwitch v-model="carefulBot" @update:modelValue="save_privacy()">
+					<SearchLabel>{{ i18n.ts.carefulBot }}</SearchLabel>
+					<template #caption>{{ i18n.ts.carefulBotDescription }}</template>
+				</MkSwitch>
+			</SearchMarker>
 
-			<MkSwitch v-model="hideActivity" @update:modelValue="save_privacy()">
-				{{ i18n.ts.hideActivity }}
-				<template #caption>{{ i18n.ts.hideActivityDescription }}</template>
-			</MkSwitch>
+			<SearchMarker :keywords="['follow', 'back', 'auto']">
+				<MkSwitch v-if="$i.policies.canAutoFollowBack" v-model="autoFollowBack" @update:modelValue="save_privacy()">
+					<SearchLabel>{{ i18n.ts.autoFollowBack }}</SearchLabel>
+					<template #caption>{{ i18n.ts.autoFollowBackDescription }}</template>
+				</MkSwitch>
+			</SearchMarker>
 
-			<MkSwitch v-model="hideNoteFromOverview" @update:modelValue="save_privacy()">
-				{{ i18n.ts.hideNoteFromOverview }}
-				<template #caption>{{ i18n.ts.hideNoteFromOverviewDescription }}</template>
-			</MkSwitch>
+			<SearchMarker :keywords="['activity', 'hide']">
+				<MkSwitch v-model="hideActivity" @update:modelValue="save_privacy()">
+					<SearchLabel>{{ i18n.ts.hideActivity }}</SearchLabel>
+					<template #caption>{{ i18n.ts.hideActivityDescription }}</template>
+				</MkSwitch>
+			</SearchMarker>
 
-			<MkSwitch v-model="hidePublicNotes" @update:modelValue="save_privacy()">
-				{{ i18n.ts.hidePublicNotes }}
-				<template #caption>{{ i18n.ts.hidePublicNotesDescription }}</template>
-			</MkSwitch>
+			<SearchMarker :keywords="['note', 'overview', 'hide']">
+				<MkSwitch v-model="hideNoteFromOverview" @update:modelValue="save_privacy()">
+					<SearchLabel>{{ i18n.ts.hideNoteFromOverview }}</SearchLabel>
+					<template #caption>{{ i18n.ts.hideNoteFromOverviewDescription }}</template>
+				</MkSwitch>
+			</SearchMarker>
 
-			<MkSwitch v-model="hideHomeNotes" @update:modelValue="save_privacy()">
-				{{ i18n.ts.hideHomeNotes }}
-				<template #caption>{{ i18n.ts.hideHomeNotesDescription }}</template>
-			</MkSwitch>
+			<SearchMarker :keywords="['note', 'public', 'hide']">
+				<MkSwitch v-model="hidePublicNotes" @update:modelValue="save_privacy()">
+					<SearchLabel>{{ i18n.ts.hidePublicNotes }}</SearchLabel>
+					<template #caption>{{ i18n.ts.hidePublicNotesDescription }}</template>
+				</MkSwitch>
+			</SearchMarker>
 
-			<MkSwitch v-model="hideLocalOnlyNotes" @update:modelValue="save_privacy()">
-				{{ i18n.ts.hideLocalOnlyNotes }}
-				<template #caption>{{ i18n.ts.hideLocalOnlyNotesDescription }}</template>
-			</MkSwitch>
+			<SearchMarker :keywords="['note', 'home', 'hide']">
+				<MkSwitch v-model="hideHomeNotes" @update:modelValue="save_privacy()">
+					<SearchLabel>{{ i18n.ts.hideHomeNotes }}</SearchLabel>
+					<template #caption>{{ i18n.ts.hideHomeNotesDescription }}</template>
+				</MkSwitch>
+			</SearchMarker>
+
+			<SearchMarker :keywords="['note', 'local', 'hide']">
+				<MkSwitch v-model="hideLocalOnlyNotes" @update:modelValue="save_privacy()">
+					<SearchLabel>{{ i18n.ts.hideLocalOnlyNotes }}</SearchLabel>
+					<template #caption>{{ i18n.ts.hideLocalOnlyNotesDescription }}</template>
+				</MkSwitch>
+			</SearchMarker>
 		</div>
 	</MkFolder>
 </SearchMarker>

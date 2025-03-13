@@ -5,24 +5,26 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div>
-	<MkFeatureBanner icon="/client-assets/package_3d.png" color="#FA8072">
-		<MkSparkle>
-			<SearchKeyword>{{ i18n.ts.originalFeature }}</SearchKeyword>
-		</MkSparkle>
-	</MkFeatureBanner>
-	<br>
-	<div class="_gaps_m">
-		<ProfileSettings/>
-		<PrivacySettings/>
-		<NotesSettings/>
-		<AppearanceSettings/>
-		<BehaviorSettings/>
-		<DriveSettings/>
-		<PostFormSettings/>
-		<TimeLineSettings/>
-		<LLMSettings/>
-		<EarthquakeSettings/>
-	</div>
+	<SearchMarker markerId="temp-settings-root" path="/settings/temp-settings" :label="i18n.ts.originalFeature" :keywords="['temp']" icon="ti ti-git-fork">
+		<MkFeatureBanner icon="/client-assets/package_3d.png" color="#FA8072">
+			<MkSparkle>
+				<SearchKeyword>{{ i18n.ts.originalFeature }}</SearchKeyword>
+			</MkSparkle>
+		</MkFeatureBanner>
+		<br>
+		<div class="_gaps_m">
+			<ProfileSettings/>
+			<PrivacySettings/>
+			<NotesSettings/>
+			<AppearanceSettings/>
+			<BehaviorSettings/>
+			<DriveSettings/>
+			<PostFormSettings/>
+			<TimeLineSettings/>
+			<LLMSettings/>
+			<EarthquakeSettings/>
+		</div>
+	</SearchMarker>
 </div>
 </template>
 

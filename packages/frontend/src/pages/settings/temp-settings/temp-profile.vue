@@ -4,35 +4,43 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<SearchMarker markerId="temp-settings" :keywords="['profile']">
+<SearchMarker markerId="temp-settings-profile" :inlining="['temp-settings-root']" path="/settings/temp-settings" :keywords="['profile', 'account']">
 	<MkFolder>
 		<template #icon><i class="ti ti-user"></i></template>
-		<template #label>{{ i18n.ts.profile }}</template>
+		<template #label><SearchLabel>{{ i18n.ts.profile }}</SearchLabel></template>
 
 		<div class="_gaps_m">
 			<MkFolder v-if="$i.policies.canUpdateCounters">
 				<template #label>{{ i18n.ts._updateCount.title }}</template>
 				<div class="_gaps_m">
-					<MkInput v-model="followersCount" type="number" :min="0">
-						<template #label>{{ i18n.ts._updateCount.updateFollowerCount }}</template>
-						<template #caption>{{ i18n.ts._updateCount.updateFollowerCountDescription }}</template>
-					</MkInput>
+					<SearchMarker :keywords="['profile', 'followers', 'count', 'statistics']">
+						<MkInput v-model="followersCount" type="number" :min="0">
+							<template #label><SearchLabel>{{ i18n.ts._updateCount.updateFollowerCount }}</SearchLabel></template>
+							<template #caption>{{ i18n.ts._updateCount.updateFollowerCountDescription }}</template>
+						</MkInput>
+					</SearchMarker>
 
-					<MkInput v-model="followingCount" type="number" :min="0">
-						<template #label>{{ i18n.ts._updateCount.updateFollowCount }}</template>
-						<template #caption>{{ i18n.ts._updateCount.updateFollowCountDescription }}</template>
-					</MkInput>
+					<SearchMarker :keywords="['profile', 'following', 'count', 'statistics']">
+						<MkInput v-model="followingCount" type="number" :min="0">
+							<template #label><SearchLabel>{{ i18n.ts._updateCount.updateFollowCount }}</SearchLabel></template>
+							<template #caption>{{ i18n.ts._updateCount.updateFollowCountDescription }}</template>
+						</MkInput>
+					</SearchMarker>
 
-					<MkInput v-model="notesCount" type="number" :min="0">
-						<template #label>{{ i18n.ts._updateCount.updateNoteCount }}</template>
-						<template #caption>{{ i18n.ts._updateCount.updateNoteCountDescription }}</template>
-					</MkInput>
+					<SearchMarker :keywords="['profile', 'notes', 'posts', 'count', 'statistics']">
+						<MkInput v-model="notesCount" type="number" :min="0">
+							<template #label><SearchLabel>{{ i18n.ts._updateCount.updateNoteCount }}</SearchLabel></template>
+							<template #caption>{{ i18n.ts._updateCount.updateNoteCountDescription }}</template>
+						</MkInput>
+					</SearchMarker>
 
-					<div class="_buttons">
-						<MkButton primary :disabled="!hasChanges" @click="saveCounts">
-							<i class="ti ti-check"></i> {{ i18n.ts.save }}
-						</MkButton>
-					</div>
+					<SearchMarker :keywords="['profile', 'save', 'update', 'counts']">
+						<div class="_buttons">
+							<MkButton primary :disabled="!hasChanges" @click="saveCounts">
+								<i class="ti ti-check"></i> {{ i18n.ts.save }}
+							</MkButton>
+						</div>
+					</SearchMarker>
 				</div>
 			</MkFolder>
 		</div>
@@ -51,6 +59,7 @@ import { i18n } from '@/i18n.js';
 import { signinRequired } from '@/account.js';
 import { globalEvents } from '@/events.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
+import SearchLabel from '@/components/global/SearchLabel.vue';
 
 const $i = signinRequired();
 

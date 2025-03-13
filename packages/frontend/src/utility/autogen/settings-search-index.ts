@@ -486,7 +486,7 @@ export const searchIndexes: SearchIndexItem[] = [
 			},
 			{
 				id: '2qI6ruPgi',
-				label: 'Unnamed marker',
+				label: i18n.ts._accountTruncate.truncateAccount,
 				keywords: ['account', 'truncate'],
 			},
 			{
@@ -857,6 +857,456 @@ export const searchIndexes: SearchIndexItem[] = [
 		keywords: ['accessibility', i18n.ts._settings.accessibilityBanner],
 		path: '/settings/accessibility',
 		icon: 'ti ti-accessible',
+	},
+	{
+		id: 'temp-settings-timeline',
+		children: [
+			{
+				id: '7Ww2HoYoV',
+				label: i18n.ts.__TL_conf.hideLocalTimeLine,
+				keywords: ['local', 'timeline', 'hide'],
+			},
+			{
+				id: 'mySasOznP',
+				label: i18n.ts.__TL_conf.hideSocialTimeLine,
+				keywords: ['social', 'timeline', 'hide'],
+			},
+			{
+				id: 'w2f80EaVn',
+				label: i18n.ts.__TL_conf.hideGlobalTimeLine,
+				keywords: ['global', 'timeline', 'hide'],
+			},
+			{
+				id: 'ktgUbUsIA',
+				label: i18n.ts.__TL_conf.hideLists,
+				keywords: ['lists', 'hide'],
+			},
+			{
+				id: '2iBjjkSGm',
+				label: i18n.ts.__TL_conf.hideAntennas,
+				keywords: ['antennas', 'hide'],
+			},
+			{
+				id: 'iovqIF1oa',
+				label: i18n.ts.__TL_conf.hideChannel,
+				keywords: ['channel', 'hide'],
+			},
+			{
+				id: 'temp-settings-root',
+				label: i18n.ts.originalFeature,
+				keywords: ['temp', i18n.ts.originalFeature],
+				icon: 'ti ti-git-fork',
+			},
+		],
+		label: i18n.ts.disableAll,
+		keywords: ['timeline', 'feed', 'view', 'display'],
+		path: '/settings/temp-settings',
+	},
+	{
+		id: 'temp-settings-profile',
+		children: [
+			{
+				id: 'e3JyN0LLD',
+				label: i18n.ts._updateCount.updateFollowerCount,
+				keywords: ['profile', 'followers', 'count', 'statistics'],
+			},
+			{
+				id: '8iCAS9OIf',
+				label: i18n.ts._updateCount.updateFollowCount,
+				keywords: ['profile', 'following', 'count', 'statistics'],
+			},
+			{
+				id: 'hWi9LsBcF',
+				label: i18n.ts._updateCount.updateNoteCount,
+				keywords: ['profile', 'notes', 'posts', 'count', 'statistics'],
+			},
+			{
+				id: 'wfISaHhxA',
+				label: 'Unnamed marker',
+				keywords: ['profile', 'save', 'update', 'counts'],
+			},
+			{
+				id: 'temp-settings-root',
+				label: i18n.ts.originalFeature,
+				keywords: ['temp', i18n.ts.originalFeature],
+				icon: 'ti ti-git-fork',
+			},
+		],
+		label: i18n.ts.profile,
+		keywords: ['profile', 'account'],
+		path: '/settings/temp-settings',
+	},
+	{
+		id: 'temp-settings-privacy',
+		children: [
+			{
+				id: 'eSoREzsf8',
+				label: i18n.ts.autoRejectFollowRequest,
+				keywords: ['follow', 'reject', 'auto'],
+			},
+			{
+				id: 'FfBmQTkTM',
+				label: i18n.ts.carefulBot,
+				keywords: ['bot', 'careful'],
+			},
+			{
+				id: 'xpK1rat3',
+				label: i18n.ts.autoFollowBack,
+				keywords: ['follow', 'back', 'auto'],
+			},
+			{
+				id: '2bZIr9B4m',
+				label: i18n.ts.hideActivity,
+				keywords: ['activity', 'hide'],
+			},
+			{
+				id: 'CaPrnkb2c',
+				label: i18n.ts.hideNoteFromOverview,
+				keywords: ['note', 'overview', 'hide'],
+			},
+			{
+				id: 'fwTxqMuSZ',
+				label: i18n.ts.hidePublicNotes,
+				keywords: ['note', 'public', 'hide'],
+			},
+			{
+				id: '889XNlKVf',
+				label: i18n.ts.hideHomeNotes,
+				keywords: ['note', 'home', 'hide'],
+			},
+			{
+				id: 'EWNVsdJsc',
+				label: i18n.ts.hideLocalOnlyNotes,
+				keywords: ['note', 'local', 'hide'],
+			},
+			{
+				id: 'temp-settings-root',
+				label: i18n.ts.originalFeature,
+				keywords: ['temp', i18n.ts.originalFeature],
+				icon: 'ti ti-git-fork',
+			},
+		],
+		label: i18n.ts.privacy,
+		keywords: ['privacy', 'security', 'visibility', 'permission'],
+		path: '/settings/temp-settings',
+	},
+	{
+		id: 'temp-settings-postform',
+		children: [
+			{
+				id: 'lfuWUUh7R',
+				label: 'Unnamed marker',
+				keywords: ['post', 'form', 'compose'],
+			},
+			{
+				id: 'pbepXUfEv',
+				label: i18n.ts.defaultScheduledNoteDeleteTime,
+				keywords: ['post', 'form', 'compose'],
+			},
+			{
+				id: 'fZaOUHzvP',
+				label: i18n.ts.defaultScheduledNoteDelete,
+				keywords: ['post', 'form', 'compose'],
+			},
+			{
+				id: '69hEu5brt',
+				label: i18n.ts.textAreaAutoResize,
+				keywords: ['post', 'form', 'compose'],
+			},
+			{
+				id: 'temp-settings-root',
+				label: i18n.ts.originalFeature,
+				keywords: ['temp', i18n.ts.originalFeature],
+				icon: 'ti ti-git-fork',
+			},
+		],
+		label: i18n.ts.postFormBottomSettingsDescription,
+		keywords: ['postform', 'notes', 'posting', 'compose'],
+		path: '/settings/temp-settings',
+	},
+	{
+		id: 'temp-settings-notes',
+		children: [
+			{
+				id: 'kBIgFqOu6',
+				label: i18n.ts.directRenote,
+				keywords: ['direct', 'renote'],
+			},
+			{
+				id: 'd5nLahEM9',
+				label: i18n.ts.hideReactionUsers,
+				keywords: ['reaction', 'users', 'hide'],
+			},
+			{
+				id: 'yKt775Z8R',
+				label: i18n.ts.enableReactionConfirm,
+				keywords: ['reaction', 'confirm'],
+			},
+			{
+				id: 'yi47wF92u',
+				label: i18n.ts.enableLikeConfirm,
+				keywords: ['like', 'confirm'],
+			},
+			{
+				id: 'xPnWA64cA',
+				label: i18n.ts.showInstanceTickerSoftwareName,
+				keywords: ['instance', 'ticker', 'software', 'name'],
+			},
+			{
+				id: 'wEuu0zoEW',
+				label: i18n.ts.showInstanceTickerVersion,
+				keywords: ['instance', 'ticker', 'version'],
+			},
+			{
+				id: 'mxckkvJlg',
+				label: i18n.ts.disableNoteNyaize,
+				keywords: ['note', 'nyaize', 'disable'],
+			},
+			{
+				id: 'dIopDMc2s',
+				label: i18n.ts.hideReactionCount,
+				keywords: ['reaction', 'count', 'hide'],
+			},
+			{
+				id: 'Biy6IN3Qt',
+				label: i18n.ts.showLikeButton,
+				keywords: ['like', 'button', 'show'],
+			},
+			{
+				id: 'kQRjyq3EG',
+				label: i18n.ts.selectReaction,
+				keywords: ['reaction', 'select'],
+			},
+			{
+				id: 'temp-settings-root',
+				label: i18n.ts.originalFeature,
+				keywords: ['temp', i18n.ts.originalFeature],
+				icon: 'ti ti-git-fork',
+			},
+		],
+		label: i18n.ts.like,
+		keywords: ['notes', 'posts', 'content', 'display'],
+		path: '/settings/temp-settings',
+	},
+	{
+		id: 'temp-settings-llm',
+		children: [
+			{
+				id: '5aSmPDVN2',
+				label: i18n.ts._llm.useGeminiLLMAPI,
+				keywords: ['llm', 'gemini', 'api', 'server'],
+			},
+			{
+				id: 'ArCynoaCt',
+				label: i18n.ts._llm.useGeminiWithMedia,
+				keywords: ['llm', 'gemini', 'media', 'images', 'photos'],
+			},
+			{
+				id: '35qYzAeCB',
+				label: i18n.ts._llm.geminiTokenLabel,
+				keywords: ['llm', 'gemini', 'token', 'api key'],
+			},
+			{
+				id: 'sPhJxRF9c',
+				label: i18n.ts._llm.geminiModelLabel,
+				keywords: ['llm', 'gemini', 'model', 'version'],
+			},
+			{
+				id: 'lnN39qv0z',
+				label: i18n.ts._llm.geminiSystemPromptLabel,
+				keywords: ['llm', 'gemini', 'system', 'prompt', 'instruction'],
+			},
+			{
+				id: 'DT0fjOeHv',
+				label: i18n.ts._llm.geminiSummarizePromptLabel,
+				keywords: ['llm', 'gemini', 'note', 'summarize', 'prompt'],
+			},
+			{
+				id: '4hea75VWV',
+				label: i18n.ts._llm.geminiProfileSummarizePromptLabel,
+				keywords: ['llm', 'gemini', 'profile', 'summarize', 'prompt'],
+			},
+			{
+				id: 'nxZHxHLjB',
+				label: i18n.ts._llm.geminiNoteLongText,
+				keywords: ['llm', 'gemini', 'notes', 'long', 'text', 'format'],
+			},
+			{
+				id: 'dzpnjOQ4g',
+				label: i18n.ts._llm.geminiNoteShortText,
+				keywords: ['llm', 'gemini', 'notes', 'short', 'text', 'format'],
+			},
+			{
+				id: 'irztK4uHP',
+				label: i18n.ts._llm.geminiNoteSimpleText,
+				keywords: ['llm', 'gemini', 'notes', 'simple', 'text', 'format'],
+			},
+			{
+				id: 'hT5YrdXpA',
+				label: i18n.ts._llm.geminiNoteCasualText,
+				keywords: ['llm', 'gemini', 'notes', 'casual', 'text', 'format'],
+			},
+			{
+				id: 'oJdbAAq6x',
+				label: i18n.ts._llm.geminiNoteProfessionalText,
+				keywords: ['llm', 'gemini', 'notes', 'professional', 'text', 'format'],
+			},
+			{
+				id: 'CI0jxqqo1',
+				label: i18n.ts._llm.geminiNoteCatText,
+				keywords: ['llm', 'gemini', 'notes', 'cat', 'text', 'format'],
+			},
+			{
+				id: 'wJAQn9qei',
+				label: i18n.ts._llm.geminiNoteCustomText,
+				keywords: ['llm', 'gemini', 'notes', 'custom', 'text', 'format'],
+			},
+			{
+				id: 'temp-settings-root',
+				label: i18n.ts.originalFeature,
+				keywords: ['temp', i18n.ts.originalFeature],
+				icon: 'ti ti-git-fork',
+			},
+		],
+		label: i18n.ts._llm.title,
+		keywords: ['llm', 'ai', 'language model'],
+		path: '/settings/temp-settings',
+	},
+	{
+		id: 'temp-settings-earthquake',
+		children: [
+			{
+				id: '8K6CmTqkf',
+				label: i18n.ts._earthquakeWarning.enable,
+				keywords: ['earthquake', 'warning', 'enable'],
+			},
+			{
+				id: 'ev3aarKpH',
+				label: i18n.ts._earthquakeWarning.intensityThreshold,
+				keywords: ['earthquake', 'intensity', 'threshold'],
+			},
+			{
+				id: 'd71v4Qukz',
+				label: i18n.ts._earthquakeWarning.notificationStyle,
+				keywords: ['earthquake', 'notification', 'display', 'style'],
+			},
+			{
+				id: 'hrShTIyyZ',
+				label: i18n.ts._earthquakeWarning.toastDuration,
+				keywords: ['earthquake', 'notification', 'duration', 'time'],
+			},
+			{
+				id: 'a2UWiup4A',
+				label: i18n.ts._earthquakeWarning.soundEnable,
+				keywords: ['earthquake', 'sound', 'enable'],
+			},
+			{
+				id: 'yHP3YtmI8',
+				label: i18n.ts._earthquakeWarning.soundType,
+				keywords: ['earthquake', 'sound', 'type'],
+			},
+			{
+				id: 'yjyL6kkwP',
+				label: i18n.ts._earthquakeWarning.enableTts,
+				keywords: ['earthquake', 'tts', 'voice'],
+			},
+			{
+				id: 'l6QtcorM0',
+				label: i18n.ts._earthquakeWarning.ttsRate,
+				keywords: ['earthquake', 'tts', 'speed', 'rate'],
+			},
+			{
+				id: 'iw26tuvno',
+				label: i18n.ts._earthquakeWarning.regionFilterEnable,
+				keywords: ['earthquake', 'region', 'filter', 'enable'],
+			},
+			{
+				id: 'BzKX1GBHN',
+				label: i18n.ts._earthquakeWarning.throttleTime,
+				keywords: ['earthquake', 'notification', 'throttle', 'time'],
+			},
+			{
+				id: 'qdGh5C2F2',
+				label: i18n.ts._earthquakeWarning.ignoreTraining,
+				keywords: ['earthquake', 'ignore', 'training', 'test'],
+			},
+			{
+				id: 'jvVzZs79S',
+				label: i18n.ts._earthquakeWarning.connectionNotify,
+				keywords: ['earthquake', 'connection', 'notify'],
+			},
+			{
+				id: 'mu3QqyOKi',
+				label: i18n.ts._earthquakeWarning.loggingLevel,
+				keywords: ['earthquake', 'log', 'level'],
+			},
+			{
+				id: 'temp-settings-root',
+				label: i18n.ts.originalFeature,
+				keywords: ['temp', i18n.ts.originalFeature],
+				icon: 'ti ti-git-fork',
+			},
+		],
+		label: i18n.ts._earthquakeWarning.clearLogs,
+		keywords: ['earthquake', 'alert', 'notification', 'safety'],
+		path: '/settings/temp-settings',
+	},
+	{
+		id: 'temp-settings-drive',
+		children: [
+			{
+				id: 'p10LNaMLQ',
+				label: i18n.ts._imageCompressionMode.title,
+				keywords: ['drive', 'image', 'compression', 'mode'],
+			},
+			{
+				id: 'temp-settings-root',
+				label: i18n.ts.originalFeature,
+				keywords: ['temp', i18n.ts.originalFeature],
+				icon: 'ti ti-git-fork',
+			},
+		],
+		label: 'Unnamed marker',
+		keywords: ['drive'],
+		path: '/settings/temp-settings',
+	},
+	{
+		id: 'temp-settings-behavior',
+		children: [
+			{
+				id: 'mi44y9woD',
+				label: i18n.ts._reactionChecksMuting.title,
+				keywords: ['reaction', 'muting', 'block', 'ignore', 'notifications'],
+			},
+			{
+				id: 'temp-settings-root',
+				label: i18n.ts.originalFeature,
+				keywords: ['temp', i18n.ts.originalFeature],
+				icon: 'ti ti-git-fork',
+			},
+		],
+		label: i18n.ts.behavior,
+		keywords: ['behavior', 'interaction', 'actions', 'default'],
+		path: '/settings/temp-settings',
+	},
+	{
+		id: 'temp-settings-appearance',
+		children: [
+			{
+				id: '4oTYDPZVA',
+				label: i18n.ts.customFont,
+				keywords: ['font'],
+			},
+			{
+				id: 'temp-settings-root',
+				label: i18n.ts.originalFeature,
+				keywords: ['temp', i18n.ts.originalFeature],
+				icon: 'ti ti-git-fork',
+			},
+		],
+		label: i18n.ts.appearance,
+		keywords: ['appearance', 'theme', 'design', 'layout', 'ui'],
+		path: '/settings/temp-settings',
 	},
 ] as const;
 
