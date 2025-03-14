@@ -50,6 +50,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private emojiEntityService: EmojiEntityService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			if (!me) {
+				return {
+					emojis: [],
+				};
+			}
+
 			const emojis = await this.emojisRepository.find({
 				where: {
 					host: IsNull(),
