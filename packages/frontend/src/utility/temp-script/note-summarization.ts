@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { defineAsyncComponent } from 'vue';
+import { defineAsyncComponent, ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import { generateGeminiSummary } from '@/utility/temp-script/llm.js';
+import { generateGeminiSummary, extractCandidateText } from '@/utility/temp-script/llm.js';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 import * as os from '@/os.js';
@@ -28,15 +28,11 @@ export async function callGeminiSummarize(note: Misskey.entities.Note): Promise<
 		note: note,
 		systemInstruction,
 	});
-
-	if (!data.candidates || data.candidates.length === 0) {
-		displayLlmError(new Error('Gemini APIから返された候補はありません。'));
+	try {
+		return extractCandidateText(data);
+	} catch (error: any) {
+		displayLlmError(error, i18n.ts._llm._error.responseParse);
 	}
-	const candidate = data.candidates[0];
-	if (!candidate.content || !candidate.content.parts || candidate.content.parts.length === 0) {
-		displayLlmError(new Error('Gemini APIからの候補フォーマットが無効です。'));
-	}
-	return candidate.content.parts[0].text;
 }
 
 export async function summarizeNote(note: Misskey.entities.Note): Promise<string> {
@@ -45,7 +41,7 @@ export async function summarizeNote(note: Misskey.entities.Note): Promise<string
 		return summary;
 	} catch (error: any) {
 		console.error('Summarization error:', error);
-		displayLlmError(error, 'ノートの要約に失敗しました。');
+		displayLlmError(error, i18n.ts._llm._error.noteSummarization);
 	}
 }
 
@@ -55,21 +51,27 @@ export async function summarizeNoteText(noteText: string): Promise<string> {
 }
 
 export async function showNoteSummary(noteOrText: Misskey.entities.Note | string): Promise<void> {
+	// 以下、読み込み中表示の追加
+	const waitingFlag = ref(true);
+	const waitingPopup = os.popup(defineAsyncComponent(() => import('@/components/MkWaitingDialog.vue')), {
+		success: false,
+		showing: waitingFlag,
+	}, {
+		closed: () => { /* ... */ },
+	});
 	try {
 		let summary: string;
-
 		if (typeof noteOrText === 'string') {
 			if (!noteOrText) {
-				displayLlmError(new Error('ノート本文がありません。'));
+				displayLlmError(new Error(i18n.ts._llm._error.noteEmpty));
 			}
 			summary = await summarizeNoteText(noteOrText);
 		} else {
 			if (!noteOrText.text && (!noteOrText.files || noteOrText.files.length === 0)) {
-				displayLlmError(new Error('ノート本文とファイルがありません。'));
+				displayLlmError(new Error(i18n.ts._llm._error.noteMissing));
 			}
 			summary = await summarizeNote(noteOrText);
 		}
-
 		if (!summary) return;
 
 		os.popup(defineAsyncComponent(() => import('@/components/MkDialog.vue')), {
@@ -78,6 +80,9 @@ export async function showNoteSummary(noteOrText: Misskey.entities.Note | string
 		});
 	} catch (error: any) {
 		console.error('Summarization failed:', error);
-		displayLlmError(error, '要約の取得に失敗しました。');
+		displayLlmError(error, i18n.ts._llm._error.noteSummaryFetch);
+	} finally {
+		waitingFlag.value = false;
+		waitingPopup.dispose();
 	}
 }

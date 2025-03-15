@@ -11,6 +11,7 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import { fetchInstance } from '@/instance.js';
 import { displayLlmError } from '@/utils/errorHandler.js';
 import * as os from '@/os.js';
+import { i18n } from '@/i18n.js';
 
 const instance = ref<Misskey.entities.MetaDetailed | null>(null);
 
@@ -29,7 +30,7 @@ async function uploadFileToGemini(file: Misskey.entities.DriveFile, apiKey: stri
 		// ファイルをダウンロードしてバイナリデータとして取得
 		const fileResponse = await fetch(file.url);
 		if (!fileResponse.ok) {
-			throw new Error('ファイルのダウンロードに失敗しました');
+			throw new Error(i18n.ts._llm._error.fileDownload);
 		}
 		const fileBlob = await fileResponse.blob();
 
@@ -52,13 +53,13 @@ async function uploadFileToGemini(file: Misskey.entities.DriveFile, apiKey: stri
 		});
 
 		if (!metadataResponse.ok) {
-			throw new Error('ファイルアップロードの初期化に失敗しました');
+			throw new Error(i18n.ts._llm._error.uploadInit);
 		}
 
 		// アップロードURLを取得
 		const uploadSessionUrl = metadataResponse.headers.get('X-Goog-Upload-URL');
 		if (!uploadSessionUrl) {
-			throw new Error('アップロードURLが取得できませんでした');
+			throw new Error(i18n.ts._llm._error.uploadUrlNotFound);
 		}
 
 		// 実際のファイルデータをアップロード
@@ -73,12 +74,12 @@ async function uploadFileToGemini(file: Misskey.entities.DriveFile, apiKey: stri
 		});
 
 		if (!fileUploadResponse.ok) {
-			throw new Error('ファイルのアップロードに失敗しました');
+			throw new Error(i18n.ts._llm._error.upload);
 		}
 
 		const fileInfo = await fileUploadResponse.json();
 		if (!fileInfo.file || !fileInfo.file.uri) {
-			throw new Error('アップロードしたファイルのURIが取得できませんでした');
+			throw new Error(i18n.ts._llm._error.uploadedFileUri);
 		}
 
 		return fileInfo.file.uri;
@@ -120,15 +121,15 @@ export async function generateGeminiSummary({
 					],
 				});
 				if (canceled) {
-					throw new Error('操作がキャンセルされました。');
+					throw new Error(i18n.ts._llm._error.cancel);
 				}
 				if (result === 'disable') {
 					prefer.s.useGeminiLLMAPI = false;
-					throw new Error('Gemini APIの利用を無効にしました。');
+					throw new Error(i18n.ts._llm._error.disable);
 				}
 				// 'fallback'を選択された場合は、geminiTokenを利用して従来の生成処理へフォールバック
 			} else {
-				throw new Error('サーバー提供のLLM APIが有効になっていません。');
+				throw new Error(i18n.ts._llm._error.serverDisabled);
 			}
 		} else {
 			try {
@@ -145,9 +146,6 @@ export async function generateGeminiSummary({
 						if (mediaFiles.length > 0) {
 							// 最大4つの画像のみ処理（Gemini APIの制限に基づく）
 							const filesToProcess = mediaFiles.slice(0, 4);
-
-							// OS通知
-							os.success();
 
 							// 各ファイルをアップロードしてリクエストに追加
 							for (const file of filesToProcess) {
@@ -176,16 +174,16 @@ export async function generateGeminiSummary({
 				});
 			} catch (error: any) {
 				if (error.code === 'ROLE_PERMISSION_DENIED') {
-					throw new Error('サーバー提供のLLM APIを使用する権限がありません。');
+					throw new Error(i18n.ts._llm._error.serverPermission);
 				}
-				throw new Error(`サーバーLLM API エラー: ${error.message || error}`);
+				throw new Error(i18n.ts._llm._error.serverLLMApi + (error.message || error));
 			}
 		}
 	}
 
 	// ユーザー自身のAPIキーを使用する場合
 	if (!geminiToken) {
-		throw new Error('Gemini API tokenがありません。');
+		throw new Error(i18n.ts._llm._error.tokenMissing);
 	}
 
 	// リクエストボディの作成
@@ -212,9 +210,6 @@ export async function generateGeminiSummary({
 			if (mediaFiles.length > 0) {
 				// 最大4つの画像のみ処理（Gemini APIの制限に基づく）
 				const filesToProcess = mediaFiles.slice(0, 4);
-
-				// OS通知
-				os.success();
 
 				// requestBodyのpartsを更新
 				requestBody.contents[0].parts = [{ text: text }];
@@ -254,8 +249,22 @@ export async function generateGeminiSummary({
 	);
 
 	if (!response.ok) {
-		throw new Error(`Gemini API エラー: ${response.status} ${response.statusText}`);
+		throw new Error(i18n.ts._llm._error.api + `${response.status} ${response.statusText}`);
 	}
 
 	return response.json();
+}
+
+export function extractCandidateText(result: any): string {
+	// 共通の候補抽出処理
+	if (
+		!result.candidates ||
+		result.candidates.length === 0 ||
+		!result.candidates[0].content ||
+		!result.candidates[0].content.parts ||
+		result.candidates[0].content.parts.length === 0
+	) {
+		throw new Error('LLM応答の形式が不正です。candidates, content, partsのいずれかが存在しません。');
+	}
+	return result.candidates[0].content.parts[0].text;
 }

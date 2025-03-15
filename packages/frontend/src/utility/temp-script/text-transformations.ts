@@ -7,8 +7,9 @@ import { defineAsyncComponent } from 'vue';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 import * as os from '@/os.js';
-import { generateGeminiSummary } from '@/utility/temp-script/llm.js';
+import { generateGeminiSummary, extractCandidateText } from '@/utility/temp-script/llm.js';
 import { displayLlmError } from '@/utils/errorHandler.js';
+import { i18n } from '@/i18n.js';
 
 /**
  * 指定されたテキストに対して、Gemini API による変換を実行します。
@@ -52,22 +53,16 @@ export async function transformTextWithGemini(noteText: string, onApplied: (newT
 			});
 			result = data;
 		} catch (error: any) {
-			// 変更: エラー表示とthrow
-			displayLlmError(error, '変換の実行に失敗しました。');
+			// 変更: エラー表示にlocaleの値を参照
+			displayLlmError(error, i18n.ts._llm._error.transformExecute);
 		}
 
-		if (
-			!result.candidates ||
-            result.candidates.length === 0 ||
-            !result.candidates[0].content ||
-            !result.candidates[0].content.parts ||
-            result.candidates[0].content.parts.length === 0
-		) {
-			// 変更: エラーメッセージを統一した形で表示
-			displayLlmError(new Error('変換結果に問題が発生しました。'));
+		let transformedText: string;
+		try {
+			transformedText = extractCandidateText(result);
+		} catch (error: any) {
+			displayLlmError(error, i18n.ts._llm._error.transformResult);
 		}
-
-		const transformedText = result.candidates[0].content.parts[0].text;
 
 		// 結果の確認ダイアログを表示（MkDialog.vue を利用）
 		const dialogResult: string = await new Promise((resolve) => {
