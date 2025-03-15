@@ -200,16 +200,7 @@ export async function common(createVue: () => App<Element>) {
 		applyFont(prefer.s.customFont);
 	}
 
-	watch(prefer.r.customFont, (font) => {
-		applyFont(font);
-	});
-
-	//# Custom font
-	if (store.s.customFont) {
-		applyFont(store.s.customFont);
-	}
-
-	watch(store.r.customFont, (font) => {
+	watch(() => prefer.s.customFont ?? '', (font) => {
 		applyFont(font);
 	});
 
