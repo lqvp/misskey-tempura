@@ -41,6 +41,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkPreferenceContainer k="geminiModels">
 					<MkSelect v-model="geminiModels" :disabled="useGeminiLLMAPI">
 						<template #label><SearchLabel>{{ i18n.ts._llm.geminiModelLabel }}</SearchLabel></template>
+						<option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite</option>
 						<option value="gemini-2.0-flash">gemini-2.0-flash</option>
 						<option value="gemini-1.5-flash">gemini-1.5-flash</option>
 						<option value="gemini-1.5-pro">gemini-1.5-pro</option>
