@@ -424,6 +424,9 @@ export const PREF_DEF = {
 	useGeminiWithMedia: {
 		default: true,
 	},
+	useLlmContentFilter: {
+		default: false,
+	},
 	geminiToken: {
 		default: null as string | null,
 	},

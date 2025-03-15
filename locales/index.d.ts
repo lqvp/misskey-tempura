@@ -12514,6 +12514,19 @@ export interface Locale extends ILocale {
          */
         "useGeminiWithMediaDescription": string;
         /**
+         * LLMコンテンツフィルターを使用
+         */
+        "useLlmContentFilter": string;
+        /**
+         * ノートをフィルタリングするためのLLMコンテンツフィルターを有効にします。
+         * gemini-2.0-flash-liteを使用することを推奨します。
+         */
+        "useLlmContentFilterDescription": string;
+        /**
+         * {name}の投稿がフィルタされました: {reason}
+         */
+        "userSaysSomethingFiltered": ParameterizedString<"name" | "reason">;
+        /**
          * Geminiトークン
          */
         "geminiTokenLabel": string;

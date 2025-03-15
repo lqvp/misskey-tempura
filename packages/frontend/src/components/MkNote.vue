@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div
-	v-if="!hardMuted && muted === false"
+	v-if="!hardMuted && muted === false && !contentFiltered"
 	v-show="!isDeleted"
 	ref="rootEl"
 	v-hotkey="keymap"
@@ -157,6 +157,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkA>
 		</template>
 	</I18n>
+	<I18n v-else-if="contentFiltered" :src="i18n.ts._llm.userSaysSomethingFiltered" tag="small">
+		<template #name>
+			<MkA v-user-preview="appearNote.userId" :to="userPage(appearNote.user)">
+				<MkUserName :user="appearNote.user"/>
+			</MkA>
+		</template>
+		<template #reason>
+			{{ contentFilterReason }}
+		</template>
+	</I18n>
 	<I18n v-else-if="showSoftWordMutedWord !== true" :src="i18n.ts.userSaysSomething" tag="small">
 		<template #name>
 			<MkA v-user-preview="appearNote.userId" :to="userPage(appearNote.user)">
@@ -231,6 +241,7 @@ import { getAppearNote } from '@/utility/get-appear-note.js';
 import { directRenote } from '@/utility/direct-renote.js';
 import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
+import { checkNoteFiltered } from '@/utility/temp-script/note-filter.js';
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
@@ -295,6 +306,8 @@ const collapsed = ref(appearNote.value.cw == null && isLong);
 const isDeleted = ref(false);
 const muted = ref(checkMute(appearNote.value, $i?.mutedWords));
 const hardMuted = ref(props.withHardMute && checkMute(appearNote.value, $i?.hardMutedWords, true));
+const contentFiltered = ref(false);
+const contentFilterReason = ref('');
 const showSoftWordMutedWord = computed(() => prefer.s.showSoftWordMutedWord);
 const translation = ref<Misskey.entities.NotesTranslateResponse | null>(null);
 const translating = ref(false);
@@ -316,7 +329,7 @@ const pleaseLoginContext = computed<OpenOnRemoteOptions>(() => ({
 function checkMute(noteToCheck: Misskey.entities.Note, mutedWords: Array<string | string[]> | undefined | null, checkOnly: true): boolean;
 function checkMute(noteToCheck: Misskey.entities.Note, mutedWords: Array<string | string[]> | undefined | null, checkOnly: false): Array<string | string[]> | false | 'sensitiveMute';
 */
-function checkMute(noteToCheck: Misskey.entities.Note, mutedWords: Array<string | string[]> | undefined | null, checkOnly = false): Array<string | string[]> | false | 'sensitiveMute' {
+function checkMute(noteToCheck: Misskey.entities.Note, mutedWords: Array<string | string[]> | undefined | null, checkOnly = false): Array<string | string[]> | false | 'sensitiveMute' | 'contentFiltered' {
 	if (mutedWords != null) {
 		const result = checkWordMute(noteToCheck, $i, mutedWords);
 		if (Array.isArray(result)) return result;
@@ -332,6 +345,20 @@ function checkMute(noteToCheck: Misskey.entities.Note, mutedWords: Array<string 
 
 	if (inTimeline && tl_withSensitive.value === false && noteToCheck.files?.some((v) => v.isSensitive)) {
 		return 'sensitiveMute';
+	}
+
+	// コンテンツフィルターをチェック
+	if (prefer.s.useLlmContentFilter) {
+		// コールバックに依存しないようにするため、ここではコンテンツフィルターの結果を直接返さない
+		// 代わりに、contentFiltered と contentFilterReason に結果を保存する
+		checkNoteFiltered(noteToCheck).then(result => {
+			if (result !== false) {
+				contentFiltered.value = true;
+				contentFilterReason.value = result as string;
+			}
+		}).catch(error => {
+			console.error('Content filter error:', error);
+		});
 	}
 
 	return false;

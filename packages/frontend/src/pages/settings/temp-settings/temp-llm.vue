@@ -28,6 +28,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkPreferenceContainer>
 			</SearchMarker>
 
+			<SearchMarker :keywords="['llm', 'content', 'filter', 'inappropriate']">
+				<MkPreferenceContainer k="useLlmContentFilter">
+					<MkSwitch v-model="useLlmContentFilter">
+						<SearchLabel>{{ i18n.ts._llm.useLlmContentFilter }}</SearchLabel>
+						<template #caption>{{ i18n.ts._llm.useLlmContentFilterDescription }}</template>
+					</MkSwitch>
+				</MkPreferenceContainer>
+			</SearchMarker>
+
 			<SearchMarker :keywords="['llm', 'gemini', 'token', 'api key']">
 				<MkPreferenceContainer k="geminiToken">
 					<MkInput v-model="geminiToken" type="text" :disabled="useGeminiLLMAPI">
@@ -171,6 +180,7 @@ fetchInstance(true).then((res) => {
 
 const useGeminiLLMAPI = prefer.model('useGeminiLLMAPI');
 const useGeminiWithMedia = prefer.model('useGeminiWithMedia');
+const useLlmContentFilter = prefer.model('useLlmContentFilter');
 const geminiToken = prefer.model('geminiToken');
 const geminiModels = prefer.model('geminiModels');
 const geminiSystemPrompt = prefer.model('geminiSystemPrompt');

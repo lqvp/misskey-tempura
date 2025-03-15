@@ -596,6 +596,10 @@ export const store = markRaw(new Storage('base', {
 		where: 'account',
 		default: true,
 	},
+	useLlmContentFilter: {
+		where: 'account',
+		default: false,
+	},
 	geminiToken: {
 		where: 'account',
 		default: null as string | null,
