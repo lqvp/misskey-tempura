@@ -11,6 +11,7 @@ import type { Plugin } from '@/plugin.js';
 import type { DeviceKind } from '@/utility/device-kind.js';
 import type { DeckProfile } from '@/deck.js';
 import type { PreferencesDefinition } from './manager.js';
+import type { FilterResult } from '@/utility/temp-script/note-filter.js';
 import { DEFAULT_DEVICE_KIND } from '@/utility/device-kind.js';
 
 /** サウンド設定 */
@@ -426,6 +427,12 @@ export const PREF_DEF = {
 	},
 	useLlmContentFilter: {
 		default: false,
+	},
+	contentFilterThreshold: {
+		default: 0.7,
+	},
+	filterCache: {
+		default: {} as Record<string, FilterResult>,
 	},
 	geminiToken: {
 		default: null as string | null,

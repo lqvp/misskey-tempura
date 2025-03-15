@@ -308,6 +308,8 @@ const muted = ref(checkMute(appearNote.value, $i?.mutedWords));
 const hardMuted = ref(props.withHardMute && checkMute(appearNote.value, $i?.hardMutedWords, true));
 const contentFiltered = ref(false);
 const contentFilterReason = ref('');
+const contentFilterScore = ref<number | undefined>(undefined);
+const contentFilterError = ref<string | undefined>(undefined);
 const showSoftWordMutedWord = computed(() => prefer.s.showSoftWordMutedWord);
 const translation = ref<Misskey.entities.NotesTranslateResponse | null>(null);
 const translating = ref(false);
@@ -352,15 +354,22 @@ function checkMute(noteToCheck: Misskey.entities.Note, mutedWords: Array<string 
 		// コールバックに依存しないようにするため、ここではコンテンツフィルターの結果を直接返さない
 		// 代わりに、contentFiltered と contentFilterReason に結果を保存する
 		checkNoteFiltered(noteToCheck).then(result => {
-			if (result !== false) {
-				contentFiltered.value = true;
-				contentFilterReason.value = result as string;
+			if (result) {
+				// スコアをユーザー設定のしきい値と比較
+				contentFiltered.value = result.score >= prefer.s.contentFilterThreshold;
+				contentFilterReason.value = result.reason;
+				contentFilterScore.value = result.score;
+				contentFilterError.value = result.error;
 			}
 		}).catch(error => {
 			console.error('Content filter error:', error);
+			// エラー情報を表示
+			contentFiltered.value = true;
+			contentFilterReason.value = i18n.ts._llm.filterError;
+			contentFilterScore.value = 0;
+			contentFilterError.value = error.message || 'Unknown error';
 		});
 	}
-
 	return false;
 }
 

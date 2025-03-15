@@ -283,6 +283,8 @@ export async function mainBoot() {
 				prefer.commit('useGeminiLLMAPI', store.s.useGeminiLLMAPI);
 				prefer.commit('useGeminiWithMedia', store.s.useGeminiWithMedia);
 				prefer.commit('useLlmContentFilter', store.s.useLlmContentFilter);
+				prefer.commit('contentFilterThreshold', store.s.contentFilterThreshold);
+				prefer.commit('filterCache', store.s.filterCache);
 				prefer.commit('geminiToken', store.s.geminiToken);
 				prefer.commit('geminiModels', store.s.geminiModels);
 				prefer.commit('geminiSystemPrompt', store.s.geminiSystemPrompt);

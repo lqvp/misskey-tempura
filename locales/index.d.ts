@@ -12519,9 +12519,25 @@ export interface Locale extends ILocale {
         "useLlmContentFilter": string;
         /**
          * ノートをフィルタリングするためのLLMコンテンツフィルターを有効にします。
-         * gemini-2.0-flash-liteを使用することを推奨します。
+         * gemini-2.0-flash-liteを使用することを推奨します。(ローカルのGemini APIのみで使用可能です)
          */
         "useLlmContentFilterDescription": string;
+        /**
+         * フィルタリング閾値
+         */
+        "contentFilterThreshold": string;
+        /**
+         * フィルタリングするためのLLMコンテンツフィルターの閾値を設定します。
+         */
+        "contentFilterThresholdDescription": string;
+        /**
+         * フィルタリング中にエラーが発生しました
+         */
+        "filterError": string;
+        /**
+         * フィルタリングキャッシュをクリア
+         */
+        "clearFilterCache": string;
         /**
          * {name}の投稿がフィルタされました: {reason}
          */

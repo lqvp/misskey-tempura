@@ -37,6 +37,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkPreferenceContainer>
 			</SearchMarker>
 
+			<SearchMarker :keywords="['llm', 'content', 'filter', 'threshold']">
+				<MkPreferenceContainer k="contentFilterThreshold">
+					<MkInput v-model="contentFilterThreshold" type="number" :step="0.1" :min="0" :max="1">
+						<template #label><SearchLabel>{{ i18n.ts._llm.contentFilterThreshold }}</SearchLabel></template>
+						<template #caption>{{ i18n.ts._llm.contentFilterThresholdDescription }}</template>
+					</MkInput>
+				</MkPreferenceContainer>
+			</SearchMarker>
+
 			<SearchMarker :keywords="['llm', 'gemini', 'token', 'api key']">
 				<MkPreferenceContainer k="geminiToken">
 					<MkInput v-model="geminiToken" type="text" :disabled="useGeminiLLMAPI">
@@ -152,12 +161,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div class="_buttons">
 				<MkButton primary @click="saveLLMSettings">{{ i18n.ts.save }}</MkButton>
 			</div>
+
+			<div class="_buttons">
+				<MkButton primary @click="clearCache">{{ i18n.ts._llm.clearFilterCache }}</MkButton>
+			</div>
 		</div>
 	</MkFolder>
 </SearchMarker>
 </template>
 
 <script lang="ts" setup>
+import * as os from '@/os.js';
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import MkInput from '@/components/MkInput.vue';
@@ -170,6 +184,7 @@ import { reloadAsk } from '@/utility/reload-ask.js';
 import { $i } from '@/account.js';
 import { i18n } from '@/i18n.js';
 import { fetchInstance } from '@/instance.js';
+import { clearAllFilterCache } from '@/utility/temp-script/note-filter.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 
 const instance = ref<Misskey.entities.MetaDetailed | null>(null);
@@ -181,6 +196,7 @@ fetchInstance(true).then((res) => {
 const useGeminiLLMAPI = prefer.model('useGeminiLLMAPI');
 const useGeminiWithMedia = prefer.model('useGeminiWithMedia');
 const useLlmContentFilter = prefer.model('useLlmContentFilter');
+const contentFilterThreshold = prefer.model('contentFilterThreshold');
 const geminiToken = prefer.model('geminiToken');
 const geminiModels = prefer.model('geminiModels');
 const geminiSystemPrompt = prefer.model('geminiSystemPrompt');
@@ -196,6 +212,11 @@ const geminiNoteCustomText = prefer.model('geminiNoteCustomText');
 
 async function saveLLMSettings() {
 	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
+}
+
+async function clearCache() {
+	await clearAllFilterCache();
+	os.success();
 }
 </script>
 

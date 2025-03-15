@@ -10,6 +10,7 @@ import darkTheme from '@@/themes/night-pink.json5';
 import { hemisphere } from '@@/js/intl-const.js';
 import type { DeviceKind } from '@/utility/device-kind.js';
 import type { Plugin } from '@/plugin.js';
+import type { FilterResult } from '@/utility/temp-script/note-filter.js';
 import { miLocalStorage } from '@/local-storage.js';
 import { Storage } from '@/pizzax.js';
 import { DEFAULT_DEVICE_KIND } from '@/utility/device-kind.js';
@@ -599,6 +600,14 @@ export const store = markRaw(new Storage('base', {
 	useLlmContentFilter: {
 		where: 'account',
 		default: false,
+	},
+	contentFilterThreshold: {
+		where: 'account',
+		default: 0.7,
+	},
+	filterCache: {
+		where: 'account',
+		default: {} as Record<string, FilterResult>,
 	},
 	geminiToken: {
 		where: 'account',
