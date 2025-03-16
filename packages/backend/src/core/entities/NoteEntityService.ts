@@ -21,6 +21,7 @@ import type { CustomEmojiService } from '../CustomEmojiService.js';
 import type { ReactionService } from '../ReactionService.js';
 import type { UserEntityService } from './UserEntityService.js';
 import type { DriveFileEntityService } from './DriveFileEntityService.js';
+import { RoleService } from '@/core/RoleService.js';
 
 // is-renote.tsとよしなにリンク
 function isPureRenote(note: MiNote): note is MiNote & { renoteId: MiNote['id']; renote: MiNote } {
@@ -51,6 +52,7 @@ export class NoteEntityService implements OnModuleInit {
 	private userEntityService: UserEntityService;
 	private driveFileEntityService: DriveFileEntityService;
 	private customEmojiService: CustomEmojiService;
+	private roleService: RoleService;
 	private reactionService: ReactionService;
 	private reactionsBufferingService: ReactionsBufferingService;
 	private idService: IdService;
@@ -398,7 +400,7 @@ export class NoteEntityService implements OnModuleInit {
 		}, options);
 
 		const meId = me ? me.id : null;
-		const isRoot = me?.isRoot ?? false;
+		const isRoot = await this.roleService.isAdministrator(me ? { id: me.id } : null);
 		const note = typeof src === 'object' ? src : await this.noteLoader.load(src);
 		const host = note.userHost;
 
@@ -519,7 +521,7 @@ export class NoteEntityService implements OnModuleInit {
 		const bufferedReactions = this.meta.enableReactionsBuffering ? await this.reactionsBufferingService.getMany([...getAppearNoteIds(notes)]) : null;
 
 		const meId = me ? me.id : null;
-		const isRoot = me?.isRoot ?? false;
+		const isRoot = await this.roleService.isAdministrator(me ? { id: me.id } : null);
 		const myReactionsMap = new Map<MiNote['id'], string | null>();
 		if (meId) {
 			const idsNeedFetchMyReaction = new Set<MiNote['id']>();
