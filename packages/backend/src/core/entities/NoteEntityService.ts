@@ -21,7 +21,6 @@ import type { CustomEmojiService } from '../CustomEmojiService.js';
 import type { ReactionService } from '../ReactionService.js';
 import type { UserEntityService } from './UserEntityService.js';
 import type { DriveFileEntityService } from './DriveFileEntityService.js';
-import { RoleService } from '@/core/RoleService.js';
 
 // is-renote.tsとよしなにリンク
 function isPureRenote(note: MiNote): note is MiNote & { renoteId: MiNote['id']; renote: MiNote } {
@@ -52,7 +51,6 @@ export class NoteEntityService implements OnModuleInit {
 	private userEntityService: UserEntityService;
 	private driveFileEntityService: DriveFileEntityService;
 	private customEmojiService: CustomEmojiService;
-	private roleService: RoleService;
 	private reactionService: ReactionService;
 	private reactionsBufferingService: ReactionsBufferingService;
 	private idService: IdService;
@@ -123,9 +121,9 @@ export class NoteEntityService implements OnModuleInit {
 	}
 
 	@bindThis
-	private async hideNote(packedNote: Packed<'Note'>, meId: MiUser['id'] | null, isRoot = false): Promise<void> {
+	private async hideNote(packedNote: Packed<'Note'>, meId: MiUser['id'] | null, isAdmin = false): Promise<void> {
 		// If the user is root, always return true
-		if (isRoot) return;
+		if (isAdmin) return;
 
 		if (meId === packedNote.userId) return;
 
@@ -302,9 +300,9 @@ export class NoteEntityService implements OnModuleInit {
 	}
 
 	@bindThis
-	public async isVisibleForMe(note: MiNote, meId: MiUser['id'] | null, isRoot = false): Promise<boolean> {
+	public async isVisibleForMe(note: MiNote, meId: MiUser['id'] | null, isAdmin = false): Promise<boolean> {
 		// If the user is root, always return true
-		if (isRoot) return true;
+		if (isAdmin) return true;
 		// This code must always be synchronized with the checks in generateVisibilityQuery.
 		// visibility が specified かつ自分が指定されていなかったら非表示
 		if (note.visibility === 'specified') {
@@ -380,7 +378,7 @@ export class NoteEntityService implements OnModuleInit {
 	@bindThis
 	public async pack(
 		src: MiNote['id'] | MiNote,
-		me?: { id: MiUser['id'], isRoot?: boolean } | null | undefined,
+		me?: { id: MiUser['id'], isAdmin?: boolean } | null | undefined,
 		options?: {
 			detail?: boolean;
 			skipHide?: boolean;
@@ -400,7 +398,7 @@ export class NoteEntityService implements OnModuleInit {
 		}, options);
 
 		const meId = me ? me.id : null;
-		const isRoot = await this.roleService.isAdministrator(me ? { id: me.id } : null);
+		const isAdmin = me?.isAdmin ?? false;
 		const note = typeof src === 'object' ? src : await this.noteLoader.load(src);
 		const host = note.userHost;
 
@@ -501,7 +499,7 @@ export class NoteEntityService implements OnModuleInit {
 		this.treatVisibility(packed);
 
 		if (!opts.skipHide) {
-			await this.hideNote(packed, meId, isRoot);
+			await this.hideNote(packed, meId, isAdmin);
 		}
 
 		return packed;
@@ -510,7 +508,7 @@ export class NoteEntityService implements OnModuleInit {
 	@bindThis
 	public async packMany(
 		notes: MiNote[],
-		me?: { id: MiUser['id'], isRoot?: boolean } | null | undefined,
+		me?: { id: MiUser['id'], isAdmin?: boolean } | null | undefined,
 		options?: {
 			detail?: boolean;
 			skipHide?: boolean;
@@ -521,7 +519,7 @@ export class NoteEntityService implements OnModuleInit {
 		const bufferedReactions = this.meta.enableReactionsBuffering ? await this.reactionsBufferingService.getMany([...getAppearNoteIds(notes)]) : null;
 
 		const meId = me ? me.id : null;
-		const isRoot = await this.roleService.isAdministrator(me ? { id: me.id } : null);
+		const isAdmin = me?.isAdmin ?? false;
 		const myReactionsMap = new Map<MiNote['id'], string | null>();
 		if (meId) {
 			const idsNeedFetchMyReaction = new Set<MiNote['id']>();
@@ -589,7 +587,7 @@ export class NoteEntityService implements OnModuleInit {
 		const packedUsers = await this.userEntityService.packMany(users, me)
 			.then(users => new Map(users.map(u => [u.id, u])));
 
-		return await Promise.all(notes.map(n => this.pack(n, meId ? { id: meId, isRoot } : null, {
+		return await Promise.all(notes.map(n => this.pack(n, meId ? { id: meId, isAdmin } : null, {
 			...options,
 			_hint_: {
 				bufferedReactions,
