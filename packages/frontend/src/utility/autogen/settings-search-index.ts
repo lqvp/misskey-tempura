@@ -751,11 +751,6 @@ export const searchIndexes: SearchIndexItem[] = [
 				label: i18n.ts.alwaysMarkSensitive,
 				keywords: ['always', 'default', 'mark', 'nsfw', 'sensitive', 'media', 'file'],
 			},
-			{
-				id: 'vpc46wK7V',
-				label: i18n.ts.enableAutoSensitive,
-				keywords: ['auto', 'nsfw', 'sensitive', 'media', 'file', i18n.ts.enableAutoSensitiveDescription],
-			},
 		],
 		label: i18n.ts.drive,
 		keywords: ['drive', i18n.ts._settings.driveBanner],

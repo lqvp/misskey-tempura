@@ -84,13 +84,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #label><SearchLabel>{{ i18n.ts.alwaysMarkSensitive }}</SearchLabel></template>
 					</MkSwitch>
 				</SearchMarker>
-
-				<SearchMarker :keywords="['auto', 'nsfw', 'sensitive', 'media', 'file']">
-					<MkSwitch v-model="autoSensitive" @update:modelValue="saveProfile()">
-						<template #label><SearchLabel>{{ i18n.ts.enableAutoSensitive }}</SearchLabel><span class="_beta">{{ i18n.ts.beta }}</span></template>
-						<template #caption><SearchKeyword>{{ i18n.ts.enableAutoSensitiveDescription }}</SearchKeyword></template>
-					</MkSwitch>
-				</SearchMarker>
 			</div>
 		</FormSection>
 	</div>
