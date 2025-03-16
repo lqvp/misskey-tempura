@@ -209,11 +209,34 @@ export class ClientServerService {
 
 	@bindThis
 	private async generateCommonPugData(meta: MiMeta) {
+		let customCursorCss = '';
+
+		if (meta.customCursorUrl) {
+			customCursorCss += `:root { cursor: url("${meta.customCursorUrl}"), auto !important; }`;
+		}
+
+		if (meta.customCursorPointerUrl) {
+			customCursorCss += `a, button, .clickable, [role="button"], label, [data-clickable="true"] { cursor: url("${meta.customCursorPointerUrl}"), pointer !important; }`;
+		}
+
+		if (meta.customCursorTextUrl) {
+			customCursorCss += `input, textarea, [contenteditable="true"] { cursor: url("${meta.customCursorTextUrl}"), text !important; }`;
+		}
+
+		if (meta.customCursorProgressUrl) {
+			customCursorCss += `.progress-state, .loading { cursor: url("${meta.customCursorProgressUrl}"), progress !important; }`;
+		}
+
+		if (meta.customCursorWaitUrl) {
+			customCursorCss += `.wait-state, .loading-content, .is-fetching { cursor: url("${meta.customCursorWaitUrl}"), wait !important; }`;
+		}
+
 		return {
 			instanceName: meta.name ?? 'Misskey',
 			icon: meta.iconUrl,
 			appleTouchIcon: meta.app512IconUrl,
 			themeColor: meta.themeColor,
+			customCursorCss,
 			serverErrorImageUrl: meta.serverErrorImageUrl ?? 'https://xn--931a.moe/assets/error.jpg',
 			infoImageUrl: meta.infoImageUrl ?? 'https://xn--931a.moe/assets/info.jpg',
 			notFoundImageUrl: meta.notFoundImageUrl ?? 'https://xn--931a.moe/assets/not-found.jpg',

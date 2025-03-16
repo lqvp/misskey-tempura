@@ -13026,6 +13026,60 @@ export interface Locale extends ILocale {
          * ご利用にあたっては、Wolfxの利用規約をご確認ください。
          */
         "license": string;
+        "_customCursor": {
+            /**
+             * カスタムカーソル設定
+             */
+            "title": string;
+            /**
+             * デフォルトカーソル画像URL
+             */
+            "defaultCursorUrl": string;
+            /**
+             * 通常のカーソル状態のためのカスタムカーソル画像(PNG、GIF、CURなど)のURL
+             */
+            "defaultCursorUrlDescription": string;
+            /**
+             * ポインタカーソル画像URL
+             */
+            "pointerCursorImageURL": string;
+            /**
+             * クリック可能な要素（リンク、ボタンなど）用のカスタムカーソル画像のURL
+             */
+            "pointerCursorImageURLDescription": string;
+            /**
+             * テキストカーソル画像URL
+             */
+            "textCursorImageURL": string;
+            /**
+             * テキスト入力領域用のカスタムカーソル画像のURL
+             */
+            "textCursorImageURLDescription": string;
+            /**
+             * プログレスカーソル画像URL
+             */
+            "progressCursorImageURL": string;
+            /**
+             * プログレスバー用のカスタムカーソル画像のURL
+             */
+            "progressCursorImageURLDescription": string;
+            /**
+             * 待機カーソル画像URL
+             */
+            "waitCursorImageURL": string;
+            /**
+             * 待機状態のためのカスタムカーソル画像のURL
+             */
+            "waitCursorImageURLDescription": string;
+            /**
+             * 設定済み
+             */
+            "configured": string;
+            /**
+             * デフォルト
+             */
+            "default": string;
+        };
     };
     /**
      * すぐ消す

@@ -309,6 +309,58 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkFolder>
 
 					<MkFolder>
+						<template #icon><i class="ti ti-cursor"></i></template>
+						<template #label>{{ i18n.ts._customCursor.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+						<template v-if="customCursorUrl || customCursorPointerUrl || customCursorTextUrl || customCursorProgressUrl || customCursorWaitUrl" #suffix>{{ i18n.ts._customCursor.configured }}</template>
+						<template v-else #suffix>{{ i18n.ts._customCursor.default }}</template>
+
+						<div class="_gaps_m">
+							<div class="_gaps">
+								<MkInput v-model="customCursorUrl">
+									<template #label>
+										<span>{{ i18n.ts._customCursor.defaultCursorImageURL }}</span>
+									</template>
+									<template #caption>{{ i18n.ts._customCursor.defaultCursorImageURLDescription }}</template>
+								</MkInput>
+							</div>
+
+							<div class="_gaps">
+								<MkInput v-model="customCursorPointerUrl">
+									<template #label>
+										<span>{{ i18n.ts._customCursor.pointerCursorImageURL }}</span>
+									</template>
+									<template #caption>{{ i18n.ts._customCursor.pointerCursorImageURLDescription }}</template>
+								</MkInput>
+							</div>
+
+							<div class="_gaps">
+								<MkInput v-model="customCursorTextUrl">
+									<template #label>
+										<span>{{ i18n.ts._customCursor.textCursorImageURL }}</span>
+									</template>
+									<template #caption>{{ i18n.ts._customCursor.textCursorImageURLDescription }}</template>
+								</MkInput>
+							</div>
+
+							<div class="_gaps">
+								<MkInput v-model="customCursorProgressUrl">
+									<template #label>{{ i18n.ts._customCursor.progressCursorImageURL }}</template>
+									<template #caption>{{ i18n.ts._customCursor.progressCursorImageURLDescription }}</template>
+								</MkInput>
+							</div>
+
+							<div class="_gaps">
+								<MkInput v-model="customCursorWaitUrl">
+									<template #label>{{ i18n.ts._customCursor.waitCursorImageURL }}</template>
+									<template #caption>{{ i18n.ts._customCursor.waitCursorImageURLDescription }}</template>
+								</MkInput>
+							</div>
+
+							<MkButton primary @click="save_customCursorUrl">{{ i18n.ts.save }}</MkButton>
+						</div>
+					</MkFolder>
+
+					<MkFolder>
 						<template #icon><i class="ti ti-robot"></i></template>
 						<template #label>{{ i18n.ts._llm.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 						<template v-if="serverGeminiEnabled" #suffix>Enabled</template>
@@ -401,6 +453,11 @@ const entranceMarginBottom = ref<number>();
 const serverGeminiEnabled = ref<boolean>(false);
 const serverGeminiApiKey = ref<string>('');
 const serverGeminiModels = ref<string>('gemini-2.0-flash');
+const customCursorUrl = ref<string | null>(null);
+const customCursorPointerUrl = ref<string | null>(null);
+const customCursorTextUrl = ref<string | null>(null);
+const customCursorProgressUrl = ref<string | null>(null);
+const customCursorWaitUrl = ref<string | null>(null);
 
 const originalMinimumUsernameLength = ref<number>();
 const validateMinimumUsernameLengthChanged = computed(() =>
@@ -454,6 +511,11 @@ async function init() {
 	serverGeminiEnabled.value = meta.serverGeminiEnabled;
 	serverGeminiApiKey.value = meta.serverGeminiApiKey;
 	serverGeminiModels.value = meta.serverGeminiModels;
+	customCursorUrl.value = meta.customCursorUrl;
+	customCursorPointerUrl.value = meta.customCursorPointerUrl;
+	customCursorTextUrl.value = meta.customCursorTextUrl;
+	customCursorProgressUrl.value = meta.customCursorProgressUrl;
+	customCursorWaitUrl.value = meta.customCursorWaitUrl;
 }
 
 function addBackgroundImage() {
@@ -647,6 +709,18 @@ function save_defaultUsers() {
 function save_customSplashText() {
 	os.apiWithDialog('admin/update-meta', {
 		customSplashText: customSplashText.value.split('\n'),
+	}).then(() => {
+		fetchInstance(true);
+	});
+}
+
+function save_customCursorUrl() {
+	os.apiWithDialog('admin/update-meta', {
+		customCursorUrl: customCursorUrl.value,
+		customCursorPointerUrl: customCursorPointerUrl.value,
+		customCursorTextUrl: customCursorTextUrl.value,
+		customCursorProgressUrl: customCursorProgressUrl.value,
+		customCursorWaitUrl: customCursorWaitUrl.value,
 	}).then(() => {
 		fetchInstance(true);
 	});

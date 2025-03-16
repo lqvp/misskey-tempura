@@ -256,6 +256,11 @@ export const paramDef = {
 		serverGeminiEnabled: { type: 'boolean' },
 		serverGeminiApiKey: { type: 'string', nullable: true },
 		serverGeminiModels: { type: 'string', nullable: false },
+		customCursorUrl: { type: 'string', nullable: true },
+		customCursorPointerUrl: { type: 'string', nullable: true },
+		customCursorTextUrl: { type: 'string', nullable: true },
+		customCursorProgressUrl: { type: 'string', nullable: true },
+		customCursorWaitUrl: { type: 'string', nullable: true },
 	},
 	required: [],
 } as const;
@@ -963,6 +968,26 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if ( ps.serverGeminiModels !== undefined) {
 				set.serverGeminiModels = ps.serverGeminiModels;
+			}
+
+			if (ps.customCursorUrl !== undefined) {
+				set.customCursorUrl = ps.customCursorUrl;
+			}
+
+			if (ps.customCursorPointerUrl !== undefined) {
+				set.customCursorPointerUrl = ps.customCursorPointerUrl;
+			}
+
+			if (ps.customCursorTextUrl !== undefined) {
+				set.customCursorTextUrl = ps.customCursorTextUrl;
+			}
+
+			if (ps.customCursorProgressUrl !== undefined) {
+				set.customCursorProgressUrl = ps.customCursorProgressUrl;
+			}
+
+			if (ps.customCursorWaitUrl !== undefined) {
+				set.customCursorWaitUrl = ps.customCursorWaitUrl;
 			}
 
 			const before = await this.metaService.fetch(true);
