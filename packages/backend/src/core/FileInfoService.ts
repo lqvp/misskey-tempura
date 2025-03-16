@@ -5,10 +5,8 @@
 
 import * as fs from 'node:fs';
 import * as crypto from 'node:crypto';
-import { join } from 'node:path';
 import * as stream from 'node:stream/promises';
 import { Injectable } from '@nestjs/common';
-import { FSWatcher } from 'chokidar';
 import * as fileType from 'file-type';
 import FFmpeg from 'fluent-ffmpeg';
 import isSvg from 'is-svg';
@@ -130,22 +128,8 @@ export class FileInfoService {
 			});
 		}
 
-		let sensitive = false;
-		let porn = false;
-
-		if (!opts.skipSensitiveDetection) {
-			await this.detectSensitivity(
-				path,
-				type.mime,
-				opts.sensitiveThreshold ?? 0.5,
-				opts.sensitiveThresholdForPorn ?? 0.75,
-				opts.enableSensitiveMediaDetectionForVideos ?? false,
-			).then(value => {
-				[sensitive, porn] = value;
-			}, error => {
-				warnings.push(`detectSensitivity failed: ${error}`);
-			});
-		}
+		const sensitive = false;
+		const porn = false;
 
 		return {
 			size,
@@ -159,54 +143,6 @@ export class FileInfoService {
 			porn,
 			warnings,
 		};
-	}
-
-	@bindThis
-	private async detectSensitivity(source: string, mime: string, sensitiveThreshold: number, sensitiveThresholdForPorn: number, analyzeVideo: boolean): Promise<[sensitive: boolean, porn: boolean]> {
-		return [false, false];
-	}
-
-	private async *asyncIterateFrames(cwd: string, command: FFmpeg.FfmpegCommand): AsyncGenerator<string, void> {
-		const watcher = new FSWatcher({
-			cwd,
-		});
-		let finished = false;
-		command.once('end', () => {
-			finished = true;
-			watcher.close();
-		});
-		command.run();
-		for (let i = 1; true; i++) { // eslint-disable-line @typescript-eslint/no-unnecessary-condition
-			const current = `${i}.png`;
-			const next = `${i + 1}.png`;
-			const framePath = join(cwd, current);
-			if (await this.exists(join(cwd, next))) {
-				yield framePath;
-			} else if (!finished) { // eslint-disable-line @typescript-eslint/no-unnecessary-condition
-				watcher.add(next);
-				await new Promise<void>((resolve, reject) => {
-					watcher.on('add', function onAdd(path) {
-						if (path === next) { // 次フレームの書き出しが始まっているなら、現在フレームの書き出しは終わっている
-							watcher.unwatch(current);
-							watcher.off('add', onAdd);
-							resolve();
-						}
-					});
-					command.once('end', resolve); // 全てのフレームを処理し終わったなら、最終フレームである現在フレームの書き出しは終わっている
-					command.once('error', reject);
-				});
-				yield framePath;
-			} else if (await this.exists(framePath)) {
-				yield framePath;
-			} else {
-				return;
-			}
-		}
-	}
-
-	@bindThis
-	private exists(path: string): Promise<boolean> {
-		return fs.promises.access(path).then(() => true, () => false);
 	}
 
 	@bindThis
