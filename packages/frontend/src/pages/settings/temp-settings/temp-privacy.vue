@@ -75,7 +75,7 @@ import { ref } from 'vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import { i18n } from '@/i18n.js';
-import { signinRequired } from '@/account.js';
+import { signinRequired } from '@/i.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 
 const $i = signinRequired();

@@ -93,7 +93,7 @@ import { store } from '@/store.js';
 import * as os from '@/os.js';
 import { definePage } from '@/page.js';
 import { claimAchievement, claimedAchievements } from '@/utility/achievements.js';
-import { $i } from '@/account.js';
+import { $i } from '@/i.js';
 
 const displayVersion = computed(() => {
 	return version.split('temp-')[1];

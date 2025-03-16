@@ -37,7 +37,7 @@ import { computed, ref, watch } from 'vue';
 import { misskeyApi } from '@/utility/misskey-api';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
-import { signinRequired } from '@/account';
+import { signinRequired } from '@/i.js';
 import MkInfo from '@/components/MkInfo.vue';
 import MkButton from '@/components/MkButton.vue';
 import { copyToClipboard } from '@/utility/copy-to-clipboard';

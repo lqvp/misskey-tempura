@@ -27,7 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import { instance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
-import { $i } from '@/account.js';
+import { $i } from '@/i.js';
 import { claimAchievement } from '@/utility/achievements.js';
 import { definePage } from '@/page.js';
 import MkHorizontalSwipe from '@/components/MkHorizontalSwipe.vue';

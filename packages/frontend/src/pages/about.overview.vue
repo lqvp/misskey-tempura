@@ -137,7 +137,7 @@ import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
 import number from '@/filters/number.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
-import { $i } from '@/account.js';
+import { $i } from '@/i.js';
 import FormLink from '@/components/form/link.vue';
 import FormSection from '@/components/form/section.vue';
 import FormSplit from '@/components/form/split.vue';

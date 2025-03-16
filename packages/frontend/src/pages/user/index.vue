@@ -49,7 +49,7 @@ import { acct as getAcct } from '@/filters/user.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';
-import { $i } from '@/account.js';
+import { $i } from '@/i.js';
 import MkUserNotFound from '@/components/MkUserNotFound.vue';
 import MkUserSuspended from '@/components/MkUserSuspended.vue';
 import MkHorizontalSwipe from '@/components/MkHorizontalSwipe.vue';

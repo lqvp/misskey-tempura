@@ -53,7 +53,7 @@ import { nextTick, shallowRef, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import MkModal from '@/components/MkModal.vue';
 import { i18n } from '@/i18n.js';
-import { $i } from '@/account';
+import { $i } from '@/i.js';
 
 const canHomeNote = $i?.policies.canHomeNote ?? false;
 

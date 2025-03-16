@@ -35,26 +35,6 @@ export const store = markRaw(new Storage('base', {
 		where: 'account',
 		default: false,
 	},
-	keepCw: {
-		where: 'account',
-		default: true,
-	},
-	collapseRenotes: {
-		where: 'account',
-		default: true,
-	},
-	rememberNoteVisibility: {
-		where: 'account',
-		default: false,
-	},
-	defaultNoteVisibility: {
-		where: 'account',
-		default: 'public' as (typeof Misskey.noteVisibilities)[number],
-	},
-	defaultNoteLocalOnly: {
-		where: 'account',
-		default: false,
-	},
 	defaultScheduledNoteDelete: {
 		where: 'account',
 		default: false,
@@ -63,29 +43,13 @@ export const store = markRaw(new Storage('base', {
 		where: 'account',
 		default: 86400000,
 	},
-	uploadFolder: {
-		where: 'account',
-		default: null as string | null,
-	},
 	pastedFileName: {
 		where: 'account',
 		default: 'yyyy-MM-dd HH-mm-ss [{{number}}]',
 	},
-	keepOriginalUploading: {
-		where: 'account',
-		default: false,
-	},
 	memo: {
 		where: 'account',
 		default: null,
-	},
-	reactions: {
-		where: 'account',
-		default: ['👍', '❤️', '😆', '🤔', '😮', '🎉', '💢', '😥', '😇', '🍮'],
-	},
-	pinnedEmojis: {
-		where: 'account',
-		default: [],
 	},
 	reactionAcceptance: {
 		where: 'account',
@@ -94,23 +58,6 @@ export const store = markRaw(new Storage('base', {
 	mutedAds: {
 		where: 'account',
 		default: [] as string[],
-	},
-
-	menu: {
-		where: 'deviceAccount',
-		default: [
-			'notifications',
-			'drive',
-			'followRequests',
-			'followHistory',
-			'followRequestHistory',
-			'-',
-			'roleManager',
-			'announcements',
-			'search',
-			'-',
-			'ui',
-		],
 	},
 	postFormActions: {
 		where: 'deviceAccount',
@@ -181,13 +128,13 @@ export const store = markRaw(new Storage('base', {
 		where: 'device',
 		default: {} as Record<string, Record<string, string[]>>,
 	},
-	defaultWithReplies: {
-		where: 'account',
-		default: false,
-	},
 	pluginTokens: {
 		where: 'deviceAccount',
 		default: {} as Record<string, string>, // plugin id, token
+	},
+	accountTokens: {
+		where: 'device',
+		default: {} as Record<string, string>, // host/userId, token
 	},
 
 	enablePreferencesAutoCloudBackup: {
@@ -200,6 +147,18 @@ export const store = markRaw(new Storage('base', {
 	},
 
 	//#region TODO: そのうち消す (preferに移行済み)
+	defaultWithReplies: {
+		where: 'account',
+		default: false,
+	},
+	reactions: {
+		where: 'account',
+		default: ['👍', '❤️', '😆', '🤔', '😮', '🎉', '💢', '😥', '😇', '🍮'],
+	},
+	pinnedEmojis: {
+		where: 'account',
+		default: [],
+	},
 	widgets: {
 		where: 'account',
 		default: [] as {
@@ -216,6 +175,49 @@ export const store = markRaw(new Storage('base', {
 	defaultSideView: {
 		where: 'device',
 		default: false,
+	},
+	defaultNoteVisibility: {
+		where: 'account',
+		default: 'public' as (typeof Misskey.noteVisibilities)[number],
+	},
+	defaultNoteLocalOnly: {
+		where: 'account',
+		default: false,
+	},
+	keepCw: {
+		where: 'account',
+		default: true,
+	},
+	collapseRenotes: {
+		where: 'account',
+		default: true,
+	},
+	rememberNoteVisibility: {
+		where: 'account',
+		default: false,
+	},
+	uploadFolder: {
+		where: 'account',
+		default: null as string | null,
+	},
+	keepOriginalUploading: {
+		where: 'account',
+		default: false,
+	},
+	menu: {
+		where: 'deviceAccount',
+		default: [
+			'notifications',
+			'clips',
+			'drive',
+			'followRequests',
+			'-',
+			'explore',
+			'announcements',
+			'search',
+			'-',
+			'ui',
+		],
 	},
 	statusbars: {
 		where: 'deviceAccount',

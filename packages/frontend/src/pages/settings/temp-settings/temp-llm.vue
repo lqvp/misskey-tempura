@@ -158,7 +158,7 @@ import MkFolder from '@/components/MkFolder.vue';
 import MkButton from '@/components/MkButton.vue';
 import { prefer } from '@/preferences.js';
 import { reloadAsk } from '@/utility/reload-ask.js';
-import { $i } from '@/account.js';
+import { $i } from '@/i.js';
 import { i18n } from '@/i18n.js';
 import { fetchInstance } from '@/instance.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';

@@ -26,8 +26,8 @@ import XDetails from '@/components/MkReactionsViewer.details.vue';
 import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import * as os from '@/os.js';
 import { misskeyApi, misskeyApiGet } from '@/utility/misskey-api.js';
-import { useTooltip } from '@/utility/use-tooltip.js';
-import { $i } from '@/account.js';
+import { useTooltip } from '@/use/use-tooltip.js';
+import { $i } from '@/i.js';
 import MkReactionEffect from '@/components/MkReactionEffect.vue';
 import { claimAchievement } from '@/utility/achievements.js';
 import { i18n } from '@/i18n.js';
@@ -36,6 +36,7 @@ import { checkReactionPermissions } from '@/utility/check-reaction-permissions.j
 import { customEmojisMap } from '@/custom-emojis.js';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
+import { DI } from '@/di.js';
 
 const reactionChecksMuting = prefer.s.reactionChecksMuting;
 const enableReactionConfirm = prefer.s.enableReactionConfirm;
@@ -47,7 +48,7 @@ const props = defineProps<{
 	note: Misskey.entities.Note;
 }>();
 
-const mock = inject<boolean>('mock', false);
+const mock = inject(DI.mock, false);
 
 const emit = defineEmits<{
 	(ev: 'reactionToggled', emoji: string, newCount: number): void;

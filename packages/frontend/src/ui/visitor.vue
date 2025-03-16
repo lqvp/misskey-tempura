@@ -85,7 +85,7 @@ import { provideMetadataReceiver, provideReactiveMetadata } from '@/page.js';
 import { i18n } from '@/i18n.js';
 import MkVisitorDashboard from '@/components/MkVisitorDashboard.vue';
 import { mainRouter } from '@/router/main.js';
-import { $i } from '@/account';
+import { $i } from '@/i.js';
 import { DI } from '@/di.js';
 
 const isRoot = computed(() => mainRouter.currentRoute.value.name === 'index');

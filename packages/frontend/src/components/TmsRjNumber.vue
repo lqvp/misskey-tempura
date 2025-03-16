@@ -20,7 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { defineAsyncComponent, shallowRef } from 'vue';
 import { isEnabledUrlPreview } from '@/instance.js';
 import { popup } from '@/os.js';
-import { useTooltip } from '@/utility/use-tooltip.js';
+import { useTooltip } from '@/use/use-tooltip.js';
 
 const props = defineProps<{
 	rjNumber: string;

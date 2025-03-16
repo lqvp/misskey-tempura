@@ -37,7 +37,7 @@ import MkLoading from '@/components/global/MkLoading.vue';
 import { i18n } from '@/i18n.js';
 import { infoImageUrl } from '@/instance.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
-import { $i } from '@/account.js';
+import { $i } from '@/i.js';
 import MkMfm from '@/components/global/MkMfm.js';
 
 const name = i18n.ts._widgets.listenBrainz;

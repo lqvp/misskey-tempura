@@ -132,7 +132,8 @@ import { store } from '@/store.js';
 import MkInfo from '@/components/MkInfo.vue';
 import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
-import { signinRequired, notesCount, incNotesCount, getAccounts, openAccountMenu as openAccountMenu_ } from '@/account.js';
+import { signinRequired, notesCount, incNotesCount } from '@/i.js';
+import { getAccounts, openAccountMenu as openAccountMenu_ } from '@/accounts.js';
 import { uploadFile } from '@/utility/upload.js';
 import { deepClone } from '@/utility/clone.js';
 import MkRippleEffect from '@/components/MkRippleEffect.vue';
@@ -145,6 +146,7 @@ import MkScheduleEditor from '@/components/MkScheduleEditor.vue';
 import { transformTextWithGemini } from '@/utility/temp-script/text-transformations.js';
 import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
+import { DI } from '@/di.js';
 
 const $i = signinRequired();
 
@@ -162,7 +164,7 @@ const props = withDefaults(defineProps<PostFormProps & {
 	initialLocalOnly: undefined,
 });
 
-provide('mock', props.mock);
+provide(DI.mock, props.mock);
 
 const emit = defineEmits<{
 	(ev: 'posting'): void;
@@ -949,7 +951,7 @@ async function post(ev?: MouseEvent) {
 
 	if (postAccount.value) {
 		const storedAccounts = await getAccounts();
-		token = storedAccounts.find(x => x.id === postAccount.value?.id)?.token;
+		token = storedAccounts.find(x => x.user.id === postAccount.value?.id)?.token;
 	}
 
 	posting.value = true;

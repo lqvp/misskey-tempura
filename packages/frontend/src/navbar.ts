@@ -6,7 +6,7 @@
 import { computed, reactive, defineAsyncComponent } from 'vue';
 import { ui } from '@@/js/config.js';
 import { clearCache } from './utility/clear-cache.js';
-import { $i } from '@/account.js';
+import { $i } from '@/i.js';
 import { miLocalStorage } from '@/local-storage.js';
 import { openInstanceMenu, openToolsMenu } from '@/ui/_common_/common.js';
 import { lookup } from '@/utility/lookup.js';

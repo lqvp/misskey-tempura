@@ -45,7 +45,7 @@ import { lookupUser, lookupUserByEmail, lookupFile } from '@/utility/admin-looku
 import { definePage, provideMetadataReceiver, provideReactiveMetadata } from '@/page.js';
 import type { PageMetadata } from '@/page.js';
 import { useRouter } from '@/router/supplier.js';
-import { $i } from '@/account.js';
+import { $i } from '@/i.js';
 
 const isEmpty = (x: string | null) => x == null || x === '';
 
