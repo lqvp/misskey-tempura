@@ -211,24 +211,29 @@ export class ClientServerService {
 	private async generateCommonPugData(meta: MiMeta) {
 		let customCursorCss = '';
 
-		if (meta.customCursorUrl) {
-			customCursorCss += `:root { cursor: url("${meta.customCursorUrl}"), auto !important; }`;
-		}
+		try {
+			if (meta.customCursorUrl) {
+				customCursorCss += `:root { cursor: url("${encodeURIComponent(meta.customCursorUrl)}"), auto !important; }`;
+			}
 
-		if (meta.customCursorPointerUrl) {
-			customCursorCss += `a, button, .clickable, [role="button"], label, [data-clickable="true"] { cursor: url("${meta.customCursorPointerUrl}"), pointer !important; }`;
-		}
+			if (meta.customCursorPointerUrl) {
+				customCursorCss += `a, button, .clickable, [role="button"], label, [data-clickable="true"] { cursor: url("${encodeURIComponent(meta.customCursorPointerUrl)}"), pointer !important; }`;
+			}
 
-		if (meta.customCursorTextUrl) {
-			customCursorCss += `input, textarea, [contenteditable="true"] { cursor: url("${meta.customCursorTextUrl}"), text !important; }`;
-		}
+			if (meta.customCursorTextUrl) {
+				customCursorCss += `input, textarea, [contenteditable="true"] { cursor: url("${encodeURIComponent(meta.customCursorTextUrl)}"), text !important; }`;
+			}
 
-		if (meta.customCursorProgressUrl) {
-			customCursorCss += `.progress-state, .loading { cursor: url("${meta.customCursorProgressUrl}"), progress !important; }`;
-		}
+			if (meta.customCursorProgressUrl) {
+				customCursorCss += `.progress-state, .loading { cursor: url("${encodeURIComponent(meta.customCursorProgressUrl)}"), progress !important; }`;
+			}
 
-		if (meta.customCursorWaitUrl) {
-			customCursorCss += `.wait-state, .loading-content, .is-fetching { cursor: url("${meta.customCursorWaitUrl}"), wait !important; }`;
+			if (meta.customCursorWaitUrl) {
+				customCursorCss += `.wait-state, .loading-content, .is-fetching { cursor: url("${encodeURIComponent(meta.customCursorWaitUrl)}"), wait !important; }`;
+			}
+		} catch (error) {
+			console.error('Failed to generate custom cursor CSS:', error);
+			customCursorCss = '';
 		}
 
 		return {

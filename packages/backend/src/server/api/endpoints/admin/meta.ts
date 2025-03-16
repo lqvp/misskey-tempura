@@ -944,6 +944,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				customCursorUrl: instance.customCursorUrl,
 				customCursorPointerUrl: instance.customCursorPointerUrl,
 				customCursorTextUrl: instance.customCursorTextUrl,
+				customCursorProgressUrl: instance.customCursorProgressUrl,
+				customCursorWaitUrl: instance.customCursorWaitUrl,
 			};
 		});
 	}
