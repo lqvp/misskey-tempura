@@ -9360,6 +9360,24 @@ export interface Locale extends ILocale {
          * ネストウィジェット
          */
         "nestedWidget": string;
+        /**
+         * 地震履歴
+         */
+        "earthQuake": string;
+        "_eq": {
+            /**
+             * 最大震度
+             */
+            "maxIntensity": string;
+            /**
+             * 震源調查中
+             */
+            "epicenterInvestigating": string;
+            /**
+             * 深さ
+             */
+            "depth": string;
+        };
     };
     "_cw": {
         /**
