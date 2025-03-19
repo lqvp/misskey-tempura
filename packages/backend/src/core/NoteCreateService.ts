@@ -630,6 +630,12 @@ export class NoteCreateService implements OnApplicationShutdown {
 		if (!silent) {
 			if (this.userEntityService.isLocalUser(user)) this.activeUsersChart.write(user);
 
+			// Pack the note
+			const noteObj = await this.noteEntityService.pack(note, null, { skipHide: true, withReactionAndUserPairCache: true });
+
+			// Generate notification manager
+			const nm = new NotificationManager(this.mutingsRepository, this.notificationService, user, note);
+
 			// 未読通知を作成
 			if (data.visibility === 'specified') {
 				if (data.visibleUsers == null) throw new Error('invalid param');
@@ -642,6 +648,9 @@ export class NoteCreateService implements OnApplicationShutdown {
 						isSpecified: true,
 						isMentioned: false,
 					});
+					
+					// 通知を作成
+					nm.push(u.id, 'mention');
 				}
 			} else {
 				for (const u of mentionedUsers) {
@@ -655,16 +664,11 @@ export class NoteCreateService implements OnApplicationShutdown {
 				}
 			}
 
-			// Pack the note
-			const noteObj = await this.noteEntityService.pack(note, null, { skipHide: true, withReactionAndUserPairCache: true });
-
 			this.globalEventService.publishNotesStream(noteObj);
 
 			this.roleService.addNoteToRoleTimeline(noteObj);
 
 			this.webhookService.enqueueUserWebhook(user.id, 'note', { note: noteObj });
-
-			const nm = new NotificationManager(this.mutingsRepository, this.notificationService, user, note);
 
 			await this.createMentionedEvents(mentionedUsers, note, nm);
 
