@@ -56,12 +56,10 @@ import MkFolder from '@/components/MkFolder.vue';
 import MkButton from '@/components/MkButton.vue';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
-import { signinRequired } from '@/i.js';
+import { $i } from '@/i.js';
 import { globalEvents } from '@/events.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import SearchLabel from '@/components/global/SearchLabel.vue';
-
-const $i = signinRequired();
 
 const followersCount = ref($i.followersCount);
 const followingCount = ref($i.followingCount);

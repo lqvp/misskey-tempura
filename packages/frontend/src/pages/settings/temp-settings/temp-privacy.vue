@@ -75,10 +75,9 @@ import { ref } from 'vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import { i18n } from '@/i18n.js';
-import { signinRequired } from '@/i.js';
+import { $i } from '@/i.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 
-const $i = signinRequired();
 const isLocked = ref($i.isLocked);
 
 const autoRejectFollowRequest = ref($i.autoRejectFollowRequest);

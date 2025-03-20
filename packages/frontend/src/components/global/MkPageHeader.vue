@@ -51,7 +51,6 @@ import type { PageMetadata } from '@/page.js';
 import { globalEvents } from '@/events.js';
 import { openAccountMenu as openAccountMenu_ } from '@/accounts.js';
 import { $i } from '@/i.js';
-import { mainRouter } from '@/router/main.js';
 import { DI } from '@/di.js';
 
 const props = withDefaults(defineProps<{
