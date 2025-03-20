@@ -101,7 +101,6 @@ function deleteCode() {
 
 function copyInviteCode() {
 	copyToClipboard(props.invite.code);
-	os.success();
 }
 </script>
 

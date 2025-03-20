@@ -258,12 +258,12 @@ export const searchIndexes: SearchIndexItem[] = [
 						keywords: ['login', 'signin'],
 					},
 					{
-						id: '2hCPIiorI',
+						id: '5RbESWefG',
 						label: i18n.ts._accountSettings.makeNotesFollowersOnlyBefore,
 						keywords: ['follower', i18n.ts._accountSettings.makeNotesFollowersOnlyBeforeDescription],
 					},
 					{
-						id: '8EcmWfzZO',
+						id: 'hdzwDs3qd',
 						label: i18n.ts._accountSettings.makeNotesHiddenBefore,
 						keywords: ['hidden', i18n.ts._accountSettings.makeNotesHiddenBeforeDescription],
 					},
@@ -587,7 +587,7 @@ export const searchIndexes: SearchIndexItem[] = [
 				keywords: ['experimental', 'feature', 'flags'],
 			},
 			{
-				id: 'Bb3wnlKEZ',
+				id: 'zWbGKohZ2',
 				label: i18n.ts.developer,
 				keywords: ['developer', 'mode', 'debug'],
 			},

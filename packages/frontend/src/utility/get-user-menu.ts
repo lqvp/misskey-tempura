@@ -7,8 +7,8 @@ import { toUnicode } from 'punycode.js';
 import { defineAsyncComponent, ref, watch } from 'vue';
 import * as Misskey from 'misskey-js';
 import { host, url } from '@@/js/config.js';
+import type { Router } from '@/router.js';
 import type { MenuItem } from '@/types/menu.js';
-import type { IRouter } from '@/nirax.js';
 import { i18n } from '@/i18n.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 import * as os from '@/os.js';
@@ -18,7 +18,7 @@ import { prefer } from '@/preferences.js';
 import { $i, iAmModerator } from '@/i.js';
 import { notesSearchAvailable, canSearchNonLocalNotes } from '@/utility/check-permissions.js';
 import { antennasCache, rolesCache, userListsCache } from '@/cache.js';
-import { mainRouter } from '@/router/main.js';
+import { mainRouter } from '@/router.js';
 import { genEmbedCode } from '@/utility/get-embed-code.js';
 import { editNickname } from '@/utility/edit-nickname.js';
 import { summarizeUserProfile } from '@/utility/temp-script/profile-summarization.js';
@@ -75,7 +75,7 @@ async function getPeriod(title: string, text?: string) {
 	return periodTime == null ? null : Date.now() + periodTime;
 }
 
-export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter = mainRouter) {
+export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router = mainRouter) {
 	const meId = $i ? $i.id : null;
 
 	const cleanups = [] as (() => void)[];
@@ -469,7 +469,7 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 
 	if (prefer.s.devMode) {
 		menuItems.push({ type: 'divider' }, {
-			icon: 'ti ti-id',
+			icon: 'ti ti-hash',
 			text: i18n.ts.copyUserId,
 			action: () => {
 				copyToClipboard(user.id);

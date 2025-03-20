@@ -237,7 +237,7 @@ import { dateString } from '@/filters/date.js';
 import { confetti } from '@/utility/confetti.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { isFollowingVisibleForMe, isFollowersVisibleForMe } from '@/utility/isFfVisibleForMe.js';
-import { useRouter } from '@/router/supplier.js';
+import { useRouter } from '@/router.js';
 import { getStaticImageUrl } from '@/utility/media-proxy.js';
 import { editNickname } from '@/utility/edit-nickname';
 import MkSparkle from '@/components/MkSparkle.vue';

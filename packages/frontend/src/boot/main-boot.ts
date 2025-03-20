@@ -24,7 +24,7 @@ import { miLocalStorage } from '@/local-storage.js';
 import { claimAchievement, claimedAchievements } from '@/utility/achievements.js';
 import { initializeSw } from '@/utility/initialize-sw.js';
 import { emojiPicker } from '@/utility/emoji-picker.js';
-import { mainRouter } from '@/router/main.js';
+import { mainRouter } from '@/router.js';
 import { makeHotkey } from '@/utility/hotkey.js';
 import { addCustomEmoji, removeCustomEmojis, updateCustomEmojis } from '@/custom-emojis.js';
 import { initEarthquakeWarning } from '@/utility/temp-script/earthquake-warning.js';
@@ -204,6 +204,8 @@ export async function mainBoot() {
 				prefer.commit('sound.on.noteMy', store.s.sound_noteMy as any);
 				prefer.commit('sound.on.notification', store.s.sound_notification as any);
 				prefer.commit('sound.on.reaction', store.s.sound_reaction as any);
+				prefer.commit('defaultNoteVisibility', store.s.defaultNoteVisibility);
+				prefer.commit('defaultNoteLocalOnly', store.s.defaultNoteLocalOnly);
 
 				// region 独自周り
 				prefer.commit('postFormActions', store.s.postFormActions);

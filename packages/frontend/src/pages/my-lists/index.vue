@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div class="_gaps">
 			<div v-if="items.length === 0" class="empty">
 				<div class="_fullinfo">
-					<img :src="infoImageUrl" class="_ghost"/>
+					<img :src="infoImageUrl" draggable="false"/>
 					<div>{{ i18n.ts.nothing }}</div>
 				</div>
 			</div>
@@ -37,9 +37,9 @@ import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { userListsCache } from '@/cache.js';
 import { infoImageUrl } from '@/instance.js';
-import { signinRequired } from '@/i.js';
+import { ensureSignin } from '@/i.js';
 
-const $i = signinRequired();
+const $i = ensureSignin();
 
 const items = computed(() => userListsCache.value.value ?? []);
 

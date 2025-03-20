@@ -18,7 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, shallowRef } from 'vue';
+import { computed, onMounted, useTemplateRef } from 'vue';
 import { version } from '@@/js/config.js';
 import MkModal from '@/components/MkModal.vue';
 import MkButton from '@/components/MkButton.vue';
@@ -32,7 +32,7 @@ const props = withDefaults(defineProps<{
 	updatedComponent: null,
 });
 
-const modal = shallowRef<InstanceType<typeof MkModal>>();
+const modal = useTemplateRef('modal');
 
 const shouldShowMisskeyButton = computed(() =>
 	props.updatedComponent === 'misskey' || props.updatedComponent === 'both',

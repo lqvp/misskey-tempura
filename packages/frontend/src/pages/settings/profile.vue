@@ -199,18 +199,17 @@ import FormSlot from '@/components/form/slot.vue';
 import { selectFile } from '@/utility/select-file.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
-import { signinRequired } from '@/i.js';
+import { ensureSignin } from '@/i.js';
 import { langmap } from '@/utility/langmap.js';
 import { definePage } from '@/page.js';
 import { claimAchievement } from '@/utility/achievements.js';
 import { store } from '@/store.js';
-import { globalEvents } from '@/events.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import MkInfo from '@/components/MkInfo.vue';
 import MkTextarea from '@/components/MkTextarea.vue';
 import SearchMarker from '@/components/global/SearchMarker.vue';
 
-const $i = signinRequired();
+const $i = ensureSignin();
 
 const Sortable = defineAsyncComponent(() => import('vuedraggable').then(x => x.default));
 
@@ -261,7 +260,6 @@ function saveFields() {
 	os.apiWithDialog('i/update', {
 		fields: fields.value.filter(field => field.name !== '' && field.value !== '').map(field => ({ name: field.name, value: field.value })),
 	});
-	globalEvents.emit('requestClearPageCache');
 }
 
 function save() {
@@ -288,7 +286,6 @@ function save() {
 			text: i18n.ts.yourNameContainsProhibitedWordsDescription,
 		},
 	});
-	globalEvents.emit('requestClearPageCache');
 	claimAchievement('profileFilled');
 	if (profile.name === 'syuilo' || profile.name === 'しゅいろ') {
 		claimAchievement('setNameToSyuilo');
@@ -320,7 +317,6 @@ function changeAvatar(ev) {
 		});
 		$i.avatarId = i.avatarId;
 		$i.avatarUrl = i.avatarUrl;
-		globalEvents.emit('requestClearPageCache');
 		claimAchievement('profileFilled');
 	});
 }
@@ -347,7 +343,6 @@ function changeBanner(ev) {
 		});
 		$i.bannerId = i.bannerId;
 		$i.bannerUrl = i.bannerUrl;
-		globalEvents.emit('requestClearPageCache');
 	});
 }
 
@@ -389,7 +384,6 @@ async function saveCounts() {
 		const updatedUser = await misskeyApi('users/show', { userId: $i.id });
 		Object.assign($i, updatedUser);
 
-		globalEvents.emit('requestClearPageCache');
 	} catch (err: any) {
 		os.alert({
 			type: 'error',
