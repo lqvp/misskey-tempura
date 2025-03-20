@@ -383,7 +383,6 @@ async function saveCounts() {
 
 		const updatedUser = await misskeyApi('users/show', { userId: $i.id });
 		Object.assign($i, updatedUser);
-
 	} catch (err: any) {
 		os.alert({
 			type: 'error',
