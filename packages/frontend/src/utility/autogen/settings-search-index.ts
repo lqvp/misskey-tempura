@@ -250,20 +250,25 @@ export const searchIndexes: SearchIndexItem[] = [
 				keywords: ['explore', i18n.ts.makeExplorableDescription],
 			},
 			{
-				id: 'eB8trIWDa',
+				id: '99iP0A7WJ',
+				label: i18n.ts._chat.chatAllowedUsers,
+				keywords: ['chat'],
+			},
+			{
+				id: 'v8dwJUdRb',
 				children: [
 					{
-						id: '2mgCSQEcz',
+						id: 'A3SHh55Ma',
 						label: i18n.ts._accountSettings.requireSigninToViewContents,
 						keywords: ['login', 'signin'],
 					},
 					{
-						id: 'CnHGgFeNt',
+						id: 'p7ubEhMmm',
 						label: i18n.ts._accountSettings.makeNotesFollowersOnlyBefore,
 						keywords: ['follower', i18n.ts._accountSettings.makeNotesFollowersOnlyBeforeDescription],
 					},
 					{
-						id: '37QLEyrtk',
+						id: 'yoDNc7BYH',
 						label: i18n.ts._accountSettings.makeNotesHiddenBefore,
 						keywords: ['hidden', i18n.ts._accountSettings.makeNotesHiddenBeforeDescription],
 					},

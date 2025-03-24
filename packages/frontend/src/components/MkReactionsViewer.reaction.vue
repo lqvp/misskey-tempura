@@ -175,7 +175,7 @@ async function menu(ev) {
 }
 
 function anime() {
-	if (document.hidden || !prefer.s.animation || buttonEl.value == null) return;
+	if (window.document.hidden || !prefer.s.animation || buttonEl.value == null) return;
 
 	const rect = buttonEl.value.getBoundingClientRect();
 	const x = rect.left + 16;

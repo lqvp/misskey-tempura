@@ -123,6 +123,12 @@ export const navbarItemDef = reactive({
 		icon: 'ti ti-device-tv',
 		to: '/channels',
 	},
+	chat: {
+		title: i18n.ts.chat,
+		icon: 'ti ti-message',
+		to: '/chat',
+		indicated: computed(() => $i != null && $i.hasUnreadChatMessages),
+	},
 	achievements: {
 		title: i18n.ts.achievements,
 		icon: 'ti ti-medal',
@@ -187,7 +193,7 @@ export const navbarItemDef = reactive({
 		title: i18n.ts.reload,
 		icon: 'ti ti-refresh',
 		action: (ev) => {
-			location.reload();
+			window.location.reload();
 		},
 	},
 	profile: {

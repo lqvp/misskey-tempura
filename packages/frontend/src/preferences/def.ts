@@ -32,6 +32,8 @@ export type SoundStore = {
 // NOTE: デフォルト値は他の設定の状態に依存してはならない(依存していた場合、ユーザーがその設定項目単体で「初期値にリセット」した場合不具合の原因になる)
 
 export const PREF_DEF = {
+	// TODO: 持つのはホストやユーザーID、ユーザー名など最低限にしといて、その他のプロフィール情報はpreferences外で管理した方が綺麗そう
+	// 現状だと、updateCurrentAccount/updateCurrentAccountPartialが呼ばれるたびに「設定」へのcommitが行われて不自然(明らかに設定の更新とは捉えにくい)だし
 	accounts: {
 		default: [] as [host: string, user: Misskey.entities.User][],
 	},
@@ -134,9 +136,11 @@ export const PREF_DEF = {
 			'clips',
 			'drive',
 			'followRequests',
+			'chat',
 			'-',
 			'explore',
 			'announcements',
+			'channels',
 			'search',
 			'-',
 			'ui',
@@ -328,6 +332,7 @@ export const PREF_DEF = {
 	plugins: {
 		default: [] as Plugin[],
 	},
+
 	'sound.masterVolume': {
 		default: 0.3,
 	},
@@ -349,6 +354,10 @@ export const PREF_DEF = {
 	'sound.on.reaction': {
 		default: { type: 'syuilo/bubble2', volume: 1 } as SoundStore,
 	},
+	'sound.on.chatMessage': {
+		default: { type: 'syuilo/waon', volume: 1 } as SoundStore,
+	},
+
 	'deck.alwaysShowMainColumn': {
 		default: true,
 	},
@@ -361,6 +370,7 @@ export const PREF_DEF = {
 	'deck.columnAlign': {
 		default: 'left' as 'left' | 'right' | 'center',
 	},
+
 	'game.dropAndFusion': {
 		default: {
 			bgmVolume: 0.25,

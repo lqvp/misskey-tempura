@@ -97,7 +97,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { defineAsyncComponent, provide, onMounted, computed, ref, watch, useTemplateRef } from 'vue';
 import { instanceName } from '@@/js/config.js';
-import { CURRENT_STICKY_BOTTOM } from '@@/js/const.js';
 import { isLink } from '@@/js/is-link.js';
 import XCommon from './_common_/common.vue';
 import type { Ref } from 'vue';
@@ -143,9 +142,9 @@ provideMetadataReceiver((metadataGetter) => {
 	pageMetadata.value = info;
 	if (pageMetadata.value) {
 		if (isRoot.value && pageMetadata.value.title === instanceName) {
-			document.title = pageMetadata.value.title;
+			window.document.title = pageMetadata.value.title;
 		} else {
-			document.title = `${pageMetadata.value.title} | ${instanceName}`;
+			window.document.title = `${pageMetadata.value.title} | ${instanceName}`;
 		}
 	}
 });
@@ -170,7 +169,7 @@ if (window.innerWidth > 1024) {
 	if (tempUI) {
 		miLocalStorage.setItem('ui', tempUI);
 		miLocalStorage.removeItem('ui_temp');
-		location.reload();
+		window.location.reload();
 	}
 }
 
@@ -200,17 +199,14 @@ const onContextmenu = (ev) => {
 };
 
 const navFooterHeight = ref(0);
-provide<Ref<number>>(CURRENT_STICKY_BOTTOM, navFooterHeight);
 
 watch(navFooter, () => {
 	if (navFooter.value) {
 		navFooterHeight.value = navFooter.value.offsetHeight;
-		document.body.style.setProperty('--MI-stickyBottom', `${navFooterHeight.value}px`);
-		document.body.style.setProperty('--MI-minBottomSpacing', 'var(--MI-minBottomSpacingMobile)');
+		window.document.body.style.setProperty('--MI-minBottomSpacing', 'var(--MI-minBottomSpacingMobile)');
 	} else {
 		navFooterHeight.value = 0;
-		document.body.style.setProperty('--MI-stickyBottom', '0px');
-		document.body.style.setProperty('--MI-minBottomSpacing', '0px');
+		window.document.body.style.setProperty('--MI-minBottomSpacing', '0px');
 	}
 }, {
 	immediate: true,

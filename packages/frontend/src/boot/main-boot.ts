@@ -44,7 +44,7 @@ export async function mainBoot() {
 		if (!$i) uiStyle = 'visitor';
 
 		if (searchParams.has('zen')) uiStyle = 'zen';
-		if (uiStyle === 'deck' && prefer.s['deck.useSimpleUiForNonRootPages'] && location.pathname !== '/') uiStyle = 'zen';
+		if (uiStyle === 'deck' && prefer.s['deck.useSimpleUiForNonRootPages'] && window.location.pathname !== '/') uiStyle = 'zen';
 
 		if (searchParams.has('ui')) uiStyle = searchParams.get('ui');
 
@@ -277,7 +277,7 @@ export async function mainBoot() {
 	let reloadDialogShowing = false;
 	stream.on('_disconnected_', async () => {
 		if (prefer.s.serverDisconnectedBehavior === 'reload') {
-			location.reload();
+			window.location.reload();
 		} else if (prefer.s.serverDisconnectedBehavior === 'dialog') {
 			if (reloadDialogShowing) return;
 			reloadDialogShowing = true;
@@ -288,7 +288,7 @@ export async function mainBoot() {
 			});
 			reloadDialogShowing = false;
 			if (!canceled) {
-				location.reload();
+				window.location.reload();
 			}
 		}
 	});
@@ -459,7 +459,7 @@ export async function mainBoot() {
 			let lastVisibilityChangedAt = Date.now();
 
 			function claimPlainLucky() {
-				if (document.visibilityState !== 'visible') {
+				if (window.document.visibilityState !== 'visible') {
 					if (justPlainLuckyTimer != null) window.clearTimeout(justPlainLuckyTimer);
 					return;
 				}
@@ -474,7 +474,7 @@ export async function mainBoot() {
 			window.addEventListener('visibilitychange', () => {
 				const now = Date.now();
 
-				if (document.visibilityState === 'visible') {
+				if (window.document.visibilityState === 'visible') {
 					// タブを高速で切り替えたら取得処理が何度も走るのを防ぐ
 					if ((now - lastVisibilityChangedAt) < 1000 * 10) {
 						justPlainLuckyTimer = window.setTimeout(claimPlainLucky, 1000 * 10);
@@ -519,7 +519,7 @@ export async function mainBoot() {
 
 		const latestDonationInfoShownAt = miLocalStorage.getItem('latestDonationInfoShownAt');
 		const neverShowDonationInfo = miLocalStorage.getItem('neverShowDonationInfo');
-		if (neverShowDonationInfo !== 'true' && (createdAt.getTime() < (Date.now() - (1000 * 60 * 60 * 24 * 3))) && !location.pathname.startsWith('/miauth')) {
+		if (neverShowDonationInfo !== 'true' && (createdAt.getTime() < (Date.now() - (1000 * 60 * 60 * 24 * 3))) && !window.location.pathname.startsWith('/miauth')) {
 			if (latestDonationInfoShownAt == null || (new Date(latestDonationInfoShownAt).getTime() < (Date.now() - (1000 * 60 * 60 * 24 * 30)))) {
 				const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkDonation.vue')), {}, {
 					closed: () => dispose(),
@@ -563,29 +563,14 @@ export async function mainBoot() {
 			});
 		});
 
-		main.on('unreadMention', () => {
-			updateCurrentAccountPartial({ hasUnreadMentions: true });
-		});
-
-		main.on('readAllUnreadMentions', () => {
-			updateCurrentAccountPartial({ hasUnreadMentions: false });
-		});
-
-		main.on('unreadSpecifiedNote', () => {
-			updateCurrentAccountPartial({ hasUnreadSpecifiedNotes: true });
-		});
-
-		main.on('readAllUnreadSpecifiedNotes', () => {
-			updateCurrentAccountPartial({ hasUnreadSpecifiedNotes: false });
-		});
-
-		main.on('readAllAntennas', () => {
-			updateCurrentAccountPartial({ hasUnreadAntenna: false });
-		});
-
 		main.on('unreadAntenna', () => {
 			updateCurrentAccountPartial({ hasUnreadAntenna: true });
 			sound.playMisskeySfx('antenna');
+		});
+
+		main.on('newChatMessage', () => {
+			updateCurrentAccountPartial({ hasUnreadChatMessages: true });
+			sound.playMisskeySfx('chat');
 		});
 
 		main.on('readAllAnnouncements', () => {
@@ -615,7 +600,7 @@ export async function mainBoot() {
 			mainRouter.push('/search');
 		},
 	} as const satisfies Keymap;
-	document.addEventListener('keydown', makeHotkey(keymap), { passive: false });
+	window.document.addEventListener('keydown', makeHotkey(keymap), { passive: false });
 
 	initializeSw();
 	initEarthquakeWarning();

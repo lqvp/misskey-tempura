@@ -68,6 +68,7 @@ export type RolePolicies = {
 	canImportFollowing: boolean;
 	canImportMuting: boolean;
 	canImportUserLists: boolean;
+	canChat: boolean;
 	canAddRoles: boolean;
 	canUseUnFollowNotification: boolean;
   canUseBlockedNotification: boolean;
@@ -118,6 +119,7 @@ export const DEFAULT_POLICIES: RolePolicies = {
 	canImportFollowing: true,
 	canImportMuting: true,
 	canImportUserLists: true,
+	canChat: true,
 	canAddRoles: true,
 	canUseUnFollowNotification: true,
 	canUseBlockedNotification: true,
@@ -494,6 +496,7 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			canImportFollowing: calc('canImportFollowing', vs => vs.some(v => v === true)),
 			canImportMuting: calc('canImportMuting', vs => vs.some(v => v === true)),
 			canImportUserLists: calc('canImportUserLists', vs => vs.some(v => v === true)),
+			canChat: calc('canChat', vs => vs.some(v => v === true)),
 			canAddRoles: calc('canAddRoles', vs => vs.some(v => v === true)),
 			canUseUnFollowNotification: calc('canUseUnFollowNotification', vs => vs.some(v => v === true)),
   		canUseBlockedNotification: calc('canUseBlockedNotification', vs => vs.some(v => v === true)),

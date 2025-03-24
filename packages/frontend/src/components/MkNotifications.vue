@@ -66,7 +66,7 @@ const pagination = computed(() => props.notUseGrouped ? {
 
 function onNotification(notification) {
 	const isMuted = props.excludeTypes ? props.excludeTypes.includes(notification.type) : false;
-	if (isMuted || document.visibilityState === 'visible') {
+	if (isMuted || window.document.visibilityState === 'visible') {
 		useStream().send('readNotification');
 	}
 
