@@ -2504,6 +2504,11 @@ _widgets:
   listenBrainz: "ListenBrainz"
   weather: "天気予報"
   nestedWidget: "ネストウィジェット"
+  earthQuake: "地震履歴"
+  _eq:
+    maxIntensity: "最大震度"
+    epicenterInvestigating: "震源調查中"
+    depth: "深さ"
 
 _cw:
   hide: "隠す"
