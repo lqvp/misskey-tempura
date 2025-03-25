@@ -20,6 +20,7 @@ import { notesSearchAvailable, canSearchNonLocalNotes } from '@/utility/check-pe
 import { antennasCache, rolesCache, userListsCache } from '@/cache.js';
 import { mainRouter } from '@/router.js';
 import { genEmbedCode } from '@/utility/get-embed-code.js';
+import { getPluginHandlers } from '@/plugin.js';
 import { editNickname } from '@/utility/edit-nickname.js';
 import { summarizeUserProfile } from '@/utility/temp-script/profile-summarization.js';
 
@@ -289,19 +290,19 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 	}
 
 	if ($i) {
-		menuItems.push({ type: 'divider' },  ($i.policies.canUseGeminiLLMAPI || prefer.s.geminiToken) ? {
+		menuItems.push({ type: 'divider' }, ($i.policies.canUseGeminiLLMAPI || prefer.s.geminiToken) ? {
 			icon: 'ti ti-file-text',
 			text: i18n.ts._llm.summarizeProfile,
 			action: async () => {
 				await summarizeUserProfile(user.id);
 			},
-		} : undefined, { type: 'divider' }, ...(prefer.s.nicknameEnabled ? [{
+		} : undefined, ...(prefer.s.nicknameEnabled ? [{
 			icon: 'ti ti-edit',
 			text: 'ニックネームを編集',
 			action: () => {
 				editNickname(user);
 			},
-		}] : []), {
+		}] : []), { type: 'divider' }, {
 			icon: 'ti ti-pencil',
 			text: i18n.ts.editMemo,
 			action: editMemo,
