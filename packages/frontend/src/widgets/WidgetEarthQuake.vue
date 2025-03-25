@@ -183,16 +183,23 @@ const fetchEarthquakeData = async () => {
 	}
 };
 
-watch(() => widgetProps.refreshIntervalSec, () => {
-	if (intervalId) {
-		clearInterval(intervalId);
-		intervalId = null;
-	}
+watch(
+	() => widgetProps.refreshIntervalSec,
+	(newInterval) => {
+		if (intervalId) {
+			clearInterval(intervalId);
+			intervalId = null;
+		}
 
-	if (widgetProps.refreshIntervalSec > 0) {
-		intervalId = setInterval(fetchEarthquakeData, widgetProps.refreshIntervalSec * 1000);
-	}
-}, { immediate: true });
+		if (newInterval > 0) {
+			intervalId = setInterval(
+				fetchEarthquakeData,
+				newInterval * 1000,
+			);
+		}
+	},
+	{ immediate: true },
+);
 
 onMounted(() => {
 	fetchEarthquakeData();
