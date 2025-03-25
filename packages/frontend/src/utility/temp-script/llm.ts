@@ -28,7 +28,7 @@ fetchInstance(true).then((res) => {
 async function uploadFileToGemini(file: Misskey.entities.DriveFile, apiKey: string): Promise<string> {
 	try {
 		// ファイルをダウンロードしてバイナリデータとして取得
-		const fileResponse = await fetch(file.url);
+		const fileResponse = await window.fetch(file.url);
 		if (!fileResponse.ok) {
 			throw new Error(i18n.ts._llm._error.fileDownload);
 		}
@@ -38,7 +38,7 @@ async function uploadFileToGemini(file: Misskey.entities.DriveFile, apiKey: stri
 		const uploadUrl = 'https://generativelanguage.googleapis.com/upload/v1beta/files';
 
 		// メタデータアップロードのリクエスト
-		const metadataResponse = await fetch(`${uploadUrl}?key=${apiKey}`, {
+		const metadataResponse = await window.fetch(`${uploadUrl}?key=${apiKey}`, {
 			method: 'POST',
 			headers: {
 				'X-Goog-Upload-Protocol': 'resumable',
@@ -63,7 +63,7 @@ async function uploadFileToGemini(file: Misskey.entities.DriveFile, apiKey: stri
 		}
 
 		// 実際のファイルデータをアップロード
-		const fileUploadResponse = await fetch(uploadSessionUrl, {
+		const fileUploadResponse = await window.fetch(uploadSessionUrl, {
 			method: 'POST',
 			headers: {
 				'Content-Length': String(fileBlob.size),
@@ -237,7 +237,7 @@ export async function generateGeminiSummary({
 	}
 
 	// Gemini APIにリクエスト送信
-	const response = await fetch(
+	const response = await window.fetch(
 		`https://generativelanguage.googleapis.com/v1beta/models/${geminiModels}:generateContent?key=${geminiToken}`,
 		{
 			method: 'POST',

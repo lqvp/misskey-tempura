@@ -169,7 +169,7 @@ const fetchEarthquakeData = async () => {
 
 	try {
 		const url = `${widgetProps.apiUrl}?${Date.now()}`;
-		const response = await fetch(url);
+		const response = await window.fetch(url);
 		const data = await response.json();
 
 		if (!earthquakeData.value || earthquakeData.value.md5 !== data.md5) {

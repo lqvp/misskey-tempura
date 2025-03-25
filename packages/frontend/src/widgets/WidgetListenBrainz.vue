@@ -102,7 +102,7 @@ const fetchPlayingNow = async () => {
 	if (!widgetProps.userId) return;
 
 	const url = `https://api.listenbrainz.org/1/user/${widgetProps.userId}/playing-now`;
-	const response = await fetch(url);
+	const response = await window.fetch(url);
 	const data = await response.json();
 
 	if (data.payload.count > 0) {
