@@ -13,11 +13,20 @@ import { displayLlmError } from '@/utils/errorHandler.js';
 import { i18n } from '@/i18n.js';
 
 /**
+ * ノートの基本構造を定義するインターフェース
+ */
+interface NoteItem {
+	text: string | null;
+	visibility: 'public' | 'home' | 'followers' | 'specified';
+}
+
+/**
  * 指定したユーザーIDのプロフィール情報と最新のノートを取得し、LLMに要約させた結果を表示します。
  *
  * @param userId 要約対象のユーザーID
+ * @param notesLimit 取得するノートの最大数（デフォルト: 15）
  */
-export async function summarizeUserProfile(userId: string): Promise<void> {
+export async function summarizeUserProfile(userId: string, notesLimit?: number): Promise<void> {
 	const waitingFlag = ref(true);
 	const waitingPopup = os.popup(defineAsyncComponent(() => import('@/components/MkWaitingDialog.vue')), {
 		success: false,
@@ -40,12 +49,18 @@ export async function summarizeUserProfile(userId: string): Promise<void> {
 			withReplies: false,
 			withChannelNotes: false,
 			withFiles: false,
-			limit: 15,
+			limit: notesLimit ?? 15,
 			allowPartial: false,
 		});
-		const notesTexts: string[] = Array.isArray(notesResponse)
-			? notesResponse.map((note: any) => note.text).filter(Boolean)
+
+		// visibilityがpublicまたはhomeのノートのみをフィルタリング
+		const filteredNotes = Array.isArray(notesResponse)
+			? notesResponse.filter((note: NoteItem) => note.visibility === 'public' || note.visibility === 'home')
 			: [];
+
+		const notesTexts: string[] = filteredNotes
+			.map((note: NoteItem) => note.text)
+			.filter((text): text is string => text !== null);
 
 		// Gemini API 呼び出しをシステム命令形式に更新
 		const systemInstruction = [
@@ -67,13 +82,13 @@ export async function summarizeUserProfile(userId: string): Promise<void> {
 		let summarizedText: string;
 		try {
 			summarizedText = extractCandidateText(summaryResult);
-		} catch (error: any) {
-			displayLlmError(error, i18n.ts._llm._error.responseFormat);
+		} catch (error: unknown) {
+			displayLlmError(error as Error, i18n.ts._llm._error.responseFormat);
 		}
 		os.alert({ type: 'info', text: summarizedText });
-	} catch (error: any) {
+	} catch (error: unknown) {
 		// catch節内も統一してハンドリング（この呼び出しによりalertとthrowが行われる）
-		displayLlmError(error, i18n.ts._llm._error.profileSummarization);
+		displayLlmError(error as Error, i18n.ts._llm._error.profileSummarization);
 	} finally {
 		waitingFlag.value = false;
 		waitingPopup.dispose();

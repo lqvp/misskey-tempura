@@ -3445,6 +3445,7 @@ _llm:
   geminiProfileSummarizePromptCaption: "プロフィールを要約するためのプロンプトを設定します。"
   summarizeNote: "ノートを要約"
   summarizeProfile: "プロフィールを要約"
+  notesLimitPrompt: "ノート取得数を指定してください"
   notesTransformation: "ノートの変換"
   notesPrompt: "ノートのプロンプト"
   notesPromptDescription: "ノートを作成する際のプロンプトを設定します。"
