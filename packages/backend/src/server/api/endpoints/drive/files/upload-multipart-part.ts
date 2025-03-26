@@ -126,17 +126,21 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 				// Only increment completedParts if this is a new part
 				if (!partExists) {
-					// Get the current upload status to avoid race conditions
-					const currentUpload = await this.multipartUploadsRepository.findOneBy({
-						id: multipartUpload.id,
-					});
+					// Use a database transaction to ensure atomic update and avoid race conditions
+					await this.multipartUploadsRepository.manager.transaction(async transactionalEntityManager => {
+						// Get the latest upload status within the transaction
+						const currentUpload = await transactionalEntityManager.findOneBy(this.multipartUploadsRepository.target, {
+							id: multipartUpload.id,
+						});
 
-					if (currentUpload) {
-						await this.multipartUploadsRepository.update(
-							{ id: multipartUpload.id },
-							{ completedParts: currentUpload.completedParts + 1 },
-						);
-					}
+						if (currentUpload) {
+							await transactionalEntityManager.update(
+								this.multipartUploadsRepository.target,
+								{ id: multipartUpload.id },
+								{ completedParts: currentUpload.completedParts + 1 },
+							);
+						}
+					});
 				}
 
 				return {

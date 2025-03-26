@@ -169,7 +169,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 				return await this.driveFileEntityService.pack(driveFile, { self: true });
 			} catch (err) {
-				// Clean up on error
+				// エラー発生時の追加処理（ログ記録など）
+				console.error('Error completing multipart upload:', err);
+				throw err;
+			} finally {
+				// 常に実行されるクリーンアップ処理
 				try {
 					writeStream.end();
 					if (fs.existsSync(completeFilePath)) {
@@ -178,7 +182,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				} catch (e) {
 					console.error('Failed to clean up temporary file', e);
 				}
-				throw err;
 			}
 		});
 	}
