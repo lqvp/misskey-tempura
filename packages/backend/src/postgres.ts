@@ -90,6 +90,7 @@ import { MiChatApproval } from '@/models/ChatApproval.js';
 import { MiSystemAccount } from '@/models/SystemAccount.js';
 import { MiNoteSchedule } from '@/models/NoteSchedule.js';
 import { MiAnnouncementRole } from './models/AnnouncementRole.js';
+import { MiMultipartUpload } from '@/models/MultipartUpload.js';
 
 pg.types.setTypeParser(20, Number);
 
@@ -253,6 +254,7 @@ export const entities = [
 	MiChatApproval,
 	MiBubbleGameRecord,
 	MiReversiGame,
+	MiMultipartUpload,
 	...charts,
 ];
 
