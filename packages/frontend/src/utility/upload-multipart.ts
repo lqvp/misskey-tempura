@@ -90,40 +90,61 @@ export async function uploadFileMultipart(
 
 		const { id: uploadId } = await createMultipartRes.json();
 
-		// Step 2: Upload parts
+		// Step 2: Upload parts with dynamic queue
 		let completedSize = 0;
 
-		// Only process this many parts at once
-		const MAX_CONCURRENT_UPLOADS = 3;
-		const results = [];
+		// Maximum number of concurrent uploads
+		const MAX_CONCURRENT_UPLOADS = 5;
+		const results: { partNumber: number }[] = [];
 
-		// Process parts in batches to limit concurrency
-		for (let partNumber = 1; partNumber <= totalParts; partNumber += MAX_CONCURRENT_UPLOADS) {
-			const batch = [];
-
-			// Create a batch of promises for concurrent processing
-			for (let i = 0; i < MAX_CONCURRENT_UPLOADS && partNumber + i <= totalParts; i++) {
-				const currentPart = partNumber + i;
-				const start = (currentPart - 1) * CHUNK_SIZE;
-				const end = Math.min(currentPart * CHUNK_SIZE, file.size);
-				const chunk = file.slice(start, end);
-
-				const uploadPartPromise = uploadPart(uploadId, currentPart, chunk).then(() => {
-					completedSize += chunk.size;
-					ctx.progressValue = completedSize;
-					return { partNumber: currentPart };
-				});
-
-				batch.push(uploadPartPromise);
-			}
-
-			// Wait for current batch to complete before starting next batch
-			const batchResults = await Promise.all(batch);
-			results.push(...batchResults);
+		// Create a queue of all parts that need to be uploaded
+		const partQueue: number[] = [];
+		for (let i = 1; i <= totalParts; i++) {
+			partQueue.push(i);
 		}
 
-		// All parts have been uploaded
-		// const uploadPartResults = results;
+		// Process the queue with controlled concurrency
+		const processQueue = async () => {
+			const workers: Promise<void>[] = [];
+
+			const processNext = async (): Promise<void> => {
+				// Get next part from queue
+				const partNumber = partQueue.shift();
+				if (partNumber === undefined) return;
+
+				// Upload the part
+				const start = (partNumber - 1) * CHUNK_SIZE;
+				const end = Math.min(partNumber * CHUNK_SIZE, file.size);
+				const chunk = file.slice(start, end);
+
+				try {
+					await uploadPart(uploadId, partNumber, chunk);
+					completedSize += chunk.size;
+					ctx.progressValue = completedSize;
+					results.push({ partNumber });
+				} catch (err) {
+					// Re-add failed part to the beginning of the queue for retry
+					partQueue.unshift(partNumber);
+					console.error(`Error uploading part ${partNumber}:`, err);
+				}
+
+				// Process next part if any remain
+				if (partQueue.length > 0) {
+					return processNext();
+				}
+			};
+
+			// Start workers
+			for (let i = 0; i < Math.min(MAX_CONCURRENT_UPLOADS, totalParts); i++) {
+				workers.push(processNext());
+			}
+
+			// Wait for all workers to complete
+			await Promise.all(workers);
+		};
+
+		// Start processing the queue
+		await processQueue();
 
 		// Step 3: Complete multipart upload
 		const completeMultipartRes = await window.fetch(`${apiUrl}/drive/files/complete-multipart-upload`, {
