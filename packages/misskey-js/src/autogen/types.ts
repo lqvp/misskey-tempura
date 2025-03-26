@@ -1748,6 +1748,15 @@ export type paths = {
      */
     post: operations['drive___files___check-existence'];
   };
+  '/drive/files/complete-multipart-upload': {
+    /**
+     * drive/files/complete-multipart-upload
+     * @description Complete a multipart upload and create the final file.
+     *
+     * **Credential required**: *Yes* / **Permission**: *write:drive*
+     */
+    post: operations['drive___files___complete-multipart-upload'];
+  };
   '/drive/files/create': {
     /**
      * drive/files/create
@@ -1756,6 +1765,15 @@ export type paths = {
      * **Credential required**: *Yes* / **Permission**: *write:drive*
      */
     post: operations['drive___files___create'];
+  };
+  '/drive/files/create-multipart-upload': {
+    /**
+     * drive/files/create-multipart-upload
+     * @description Initiate a multipart upload to bypass Cloudflare's 100MB upload limit.
+     *
+     * **Credential required**: *Yes* / **Permission**: *write:drive*
+     */
+    post: operations['drive___files___create-multipart-upload'];
   };
   '/drive/files/delete': {
     /**
@@ -1810,6 +1828,15 @@ export type paths = {
      * **Credential required**: *Yes* / **Permission**: *write:drive*
      */
     post: operations['drive___files___upload-from-url'];
+  };
+  '/drive/files/upload-multipart-part': {
+    /**
+     * drive/files/upload-multipart-part
+     * @description Upload a part of a multipart upload.
+     *
+     * **Credential required**: *Yes* / **Permission**: *write:drive*
+     */
+    post: operations['drive___files___upload-multipart-part'];
   };
   '/drive/folders': {
     /**
@@ -16907,6 +16934,66 @@ export type operations = {
     };
   };
   /**
+   * drive/files/complete-multipart-upload
+   * @description Complete a multipart upload and create the final file.
+   *
+   * **Credential required**: *Yes* / **Permission**: *write:drive*
+   */
+  'drive___files___complete-multipart-upload': {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** Format: misskey:id */
+          id: string;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (with results) */
+      200: {
+        content: {
+          'application/json': components['schemas']['DriveFile'];
+        };
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
    * drive/files/create
    * @description Upload a new drive file.
    *
@@ -16942,6 +17029,87 @@ export type operations = {
       200: {
         content: {
           'application/json': components['schemas']['DriveFile'];
+        };
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * drive/files/create-multipart-upload
+   * @description Initiate a multipart upload to bypass Cloudflare's 100MB upload limit.
+   *
+   * **Credential required**: *Yes* / **Permission**: *write:drive*
+   */
+  'drive___files___create-multipart-upload': {
+    requestBody: {
+      content: {
+        'application/json': {
+          /** @default null */
+          name?: string | null;
+          /**
+           * Format: misskey:id
+           * @default null
+           */
+          folderId?: string | null;
+          /** @default null */
+          comment?: string | null;
+          /** @default false */
+          isSensitive?: boolean;
+          /** @default false */
+          force?: boolean;
+          totalSize: number;
+          totalParts: number;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (with results) */
+      200: {
+        content: {
+          'application/json': {
+            /**
+             * Format: id
+             * @example xxxxxxxxxx
+             */
+            id: string;
+            /** Format: date-time */
+            expiresAt: string;
+          };
         };
       };
       /** @description Client error */
@@ -17290,6 +17458,80 @@ export type operations = {
       /** @description OK (without any results) */
       204: {
         content: never;
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Too many requests */
+      429: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * drive/files/upload-multipart-part
+   * @description Upload a part of a multipart upload.
+   *
+   * **Credential required**: *Yes* / **Permission**: *write:drive*
+   */
+  'drive___files___upload-multipart-part': {
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: misskey:id */
+          id: string;
+          partNumber: number;
+          /**
+           * Format: binary
+           * @description The file contents.
+           */
+          file: Blob;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (with results) */
+      200: {
+        content: {
+          'application/json': {
+            /**
+             * Format: id
+             * @example xxxxxxxxxx
+             */
+            id: string;
+            partNumber: number;
+            etag: string;
+          };
+        };
       };
       /** @description Client error */
       400: {

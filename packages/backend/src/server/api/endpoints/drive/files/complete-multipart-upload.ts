@@ -90,7 +90,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			// Verify that all parts have been uploaded regardless of completedParts counter
 			const partDir = `/tmp/misskey_multipart_${multipartUpload.id}`;
 			let allPartsExist = true;
-			let missingParts = [];
+			const missingParts = [];
 
 			// Make sure the parts directory exists
 			if (!fs.existsSync(partDir)) {

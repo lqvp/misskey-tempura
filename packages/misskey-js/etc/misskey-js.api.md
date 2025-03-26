@@ -1179,6 +1179,18 @@ type DriveFilesCheckExistenceRequest = operations['drive___files___check-existen
 type DriveFilesCheckExistenceResponse = operations['drive___files___check-existence']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type DriveFilesCompleteMultipartUploadRequest = operations['drive___files___complete-multipart-upload']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type DriveFilesCompleteMultipartUploadResponse = operations['drive___files___complete-multipart-upload']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type DriveFilesCreateMultipartUploadRequest = operations['drive___files___create-multipart-upload']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type DriveFilesCreateMultipartUploadResponse = operations['drive___files___create-multipart-upload']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type DriveFilesCreateRequest = operations['drive___files___create']['requestBody']['content']['multipart/form-data'];
 
 // @public (undocumented)
@@ -1219,6 +1231,12 @@ type DriveFilesUpdateResponse = operations['drive___files___update']['responses'
 
 // @public (undocumented)
 type DriveFilesUploadFromUrlRequest = operations['drive___files___upload-from-url']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type DriveFilesUploadMultipartPartRequest = operations['drive___files___upload-multipart-part']['requestBody']['content']['multipart/form-data'];
+
+// @public (undocumented)
+type DriveFilesUploadMultipartPartResponse = operations['drive___files___upload-multipart-part']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type DriveFolder = components['schemas']['DriveFolder'];
@@ -1681,8 +1699,12 @@ declare namespace entities {
         DriveFilesAttachedNotesResponse,
         DriveFilesCheckExistenceRequest,
         DriveFilesCheckExistenceResponse,
+        DriveFilesCompleteMultipartUploadRequest,
+        DriveFilesCompleteMultipartUploadResponse,
         DriveFilesCreateRequest,
         DriveFilesCreateResponse,
+        DriveFilesCreateMultipartUploadRequest,
+        DriveFilesCreateMultipartUploadResponse,
         DriveFilesDeleteRequest,
         DriveFilesFindRequest,
         DriveFilesFindResponse,
@@ -1693,6 +1715,8 @@ declare namespace entities {
         DriveFilesUpdateRequest,
         DriveFilesUpdateResponse,
         DriveFilesUploadFromUrlRequest,
+        DriveFilesUploadMultipartPartRequest,
+        DriveFilesUploadMultipartPartResponse,
         DriveFoldersRequest,
         DriveFoldersResponse,
         DriveFoldersCreateRequest,

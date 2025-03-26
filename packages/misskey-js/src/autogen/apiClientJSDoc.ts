@@ -2011,11 +2011,33 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
+     * Complete a multipart upload and create the final file.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:drive*
+     */
+    request<E extends 'drive/files/complete-multipart-upload', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
      * Upload a new drive file.
      * 
      * **Credential required**: *Yes* / **Permission**: *write:drive*
      */
     request<E extends 'drive/files/create', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * Initiate a multipart upload to bypass Cloudflare's 100MB upload limit.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:drive*
+     */
+    request<E extends 'drive/files/create-multipart-upload', P extends Endpoints[E]['req']>(
       endpoint: E,
       params: P,
       credential?: string | null,
@@ -2082,6 +2104,17 @@ declare module '../api.js' {
      * **Credential required**: *Yes* / **Permission**: *write:drive*
      */
     request<E extends 'drive/files/upload-from-url', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * Upload a part of a multipart upload.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *write:drive*
+     */
+    request<E extends 'drive/files/upload-multipart-part', P extends Endpoints[E]['req']>(
       endpoint: E,
       params: P,
       credential?: string | null,

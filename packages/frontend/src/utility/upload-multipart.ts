@@ -178,6 +178,6 @@ export function canUseMultipartUpload(): boolean {
 	// Check for necessary APIs: Fetch, Blob.slice, etc.
 	return typeof Blob !== 'undefined' &&
 		typeof Blob.prototype.slice !== 'undefined' &&
-		typeof fetch !== 'undefined' &&
+		typeof window.fetch !== 'undefined' &&
 		typeof FormData !== 'undefined';
 }

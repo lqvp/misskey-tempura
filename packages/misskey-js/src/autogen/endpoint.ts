@@ -279,8 +279,12 @@ import type {
 	DriveFilesAttachedNotesResponse,
 	DriveFilesCheckExistenceRequest,
 	DriveFilesCheckExistenceResponse,
+	DriveFilesCompleteMultipartUploadRequest,
+	DriveFilesCompleteMultipartUploadResponse,
 	DriveFilesCreateRequest,
 	DriveFilesCreateResponse,
+	DriveFilesCreateMultipartUploadRequest,
+	DriveFilesCreateMultipartUploadResponse,
 	DriveFilesDeleteRequest,
 	DriveFilesFindRequest,
 	DriveFilesFindResponse,
@@ -291,6 +295,8 @@ import type {
 	DriveFilesUpdateRequest,
 	DriveFilesUpdateResponse,
 	DriveFilesUploadFromUrlRequest,
+	DriveFilesUploadMultipartPartRequest,
+	DriveFilesUploadMultipartPartResponse,
 	DriveFoldersRequest,
 	DriveFoldersResponse,
 	DriveFoldersCreateRequest,
@@ -843,13 +849,16 @@ export type Endpoints = {
 	'drive/files': { req: DriveFilesRequest; res: DriveFilesResponse };
 	'drive/files/attached-notes': { req: DriveFilesAttachedNotesRequest; res: DriveFilesAttachedNotesResponse };
 	'drive/files/check-existence': { req: DriveFilesCheckExistenceRequest; res: DriveFilesCheckExistenceResponse };
+	'drive/files/complete-multipart-upload': { req: DriveFilesCompleteMultipartUploadRequest; res: DriveFilesCompleteMultipartUploadResponse };
 	'drive/files/create': { req: DriveFilesCreateRequest; res: DriveFilesCreateResponse };
+	'drive/files/create-multipart-upload': { req: DriveFilesCreateMultipartUploadRequest; res: DriveFilesCreateMultipartUploadResponse };
 	'drive/files/delete': { req: DriveFilesDeleteRequest; res: EmptyResponse };
 	'drive/files/find': { req: DriveFilesFindRequest; res: DriveFilesFindResponse };
 	'drive/files/find-by-hash': { req: DriveFilesFindByHashRequest; res: DriveFilesFindByHashResponse };
 	'drive/files/show': { req: DriveFilesShowRequest; res: DriveFilesShowResponse };
 	'drive/files/update': { req: DriveFilesUpdateRequest; res: DriveFilesUpdateResponse };
 	'drive/files/upload-from-url': { req: DriveFilesUploadFromUrlRequest; res: EmptyResponse };
+	'drive/files/upload-multipart-part': { req: DriveFilesUploadMultipartPartRequest; res: DriveFilesUploadMultipartPartResponse };
 	'drive/folders': { req: DriveFoldersRequest; res: DriveFoldersResponse };
 	'drive/folders/create': { req: DriveFoldersCreateRequest; res: DriveFoldersCreateResponse };
 	'drive/folders/delete': { req: DriveFoldersDeleteRequest; res: EmptyResponse };
@@ -1101,4 +1110,5 @@ export type Endpoints = {
  */
 export const endpointReqTypes = {
 	'drive/files/create': 'multipart/form-data',
+	'drive/files/upload-multipart-part': 'multipart/form-data',
 } as const satisfies { [K in keyof Endpoints]?: 'multipart/form-data'; };
