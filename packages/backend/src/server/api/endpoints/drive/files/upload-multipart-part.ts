@@ -20,8 +20,8 @@ export const meta = {
 
 	// TODO: レートリミットを詳しく検討する
 	limit: {
-		duration: ms('10m'),
-		max: 300,
+		duration: ms('1hour'),
+		max: 1000,
 	},
 
 	requireFile: true,
