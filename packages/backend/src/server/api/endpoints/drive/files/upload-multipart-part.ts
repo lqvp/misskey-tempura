@@ -18,9 +18,10 @@ export const meta = {
 
 	prohibitMoved: true,
 
+	// TODO: レートリミットを詳しく検討する
 	limit: {
-		duration: ms('1hour'),
-		max: 120,
+		duration: ms('10m'),
+		max: 300,
 	},
 
 	requireFile: true,
