@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { reactive, ref } from 'vue';
+import { reactive } from 'vue';
 import * as Misskey from 'misskey-js';
 import { v4 as uuid } from 'uuid';
 import { apiUrl } from '@@/js/config.js';
@@ -12,11 +12,22 @@ import { alert } from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { uploads } from '@/utility/upload.js';
 
-// Size of each chunk in bytes (10MB)
-const CHUNK_SIZE = 10 * 1024 * 1024;
+// Maximum size for standard upload (95MB - Cloudflare制限を考慮)
+const MAX_STANDARD_UPLOAD_SIZE = 95 * 1024 * 1024;
 
-// Maximum size for standard upload (100MB)
-const MAX_STANDARD_UPLOAD_SIZE = 100 * 1024 * 1024;
+// ファイルサイズに応じた最適なチャンクサイズを計算
+function calculateOptimalChunkSize(fileSize: number): number {
+	// 小さいファイル (95MB以下): 10MB チャンク
+	if (fileSize <= 95 * 1024 * 1024) {
+		return 10 * 1024 * 1024;
+	} else if (fileSize <= 1024 * 1024 * 1024) {
+		// 中サイズファイル (95MB〜1GB): 20MB チャンク
+		return 20 * 1024 * 1024;
+	} else {
+		// 大きいファイル (1GB以上): 50MB チャンク
+		return 50 * 1024 * 1024;
+	}
+}
 
 /**
  * Handles file upload with multipart support for large files
@@ -28,7 +39,9 @@ export async function uploadFileMultipart(
 	sensitive?: boolean,
 	force?: boolean,
 ): Promise<Misskey.entities.DriveFile> {
-	if ($i == null) throw new Error('Not logged in');
+	if ($i == null) {
+		throw new Error('Not logged in');
+	}
 
 	const _folder = typeof folder === 'string' ? folder : folder?.id;
 	const fileName = name ?? file.name ?? 'untitled';
@@ -39,9 +52,15 @@ export async function uploadFileMultipart(
 		formData.append('i', $i.token);
 		formData.append('file', file);
 		formData.append('name', fileName);
-		if (_folder) formData.append('folderId', _folder);
-		if (sensitive) formData.append('isSensitive', 'true');
-		if (force) formData.append('force', 'true');
+		if (_folder) {
+			formData.append('folderId', _folder);
+		}
+		if (sensitive) {
+			formData.append('isSensitive', 'true');
+		}
+		if (force) {
+			formData.append('force', 'true');
+		}
 
 		return window.fetch(`${apiUrl}/drive/files/create`, {
 			method: 'POST',
@@ -63,8 +82,12 @@ export async function uploadFileMultipart(
 	uploads.value.push(ctx);
 
 	try {
-		// Calculate total parts
-		const totalParts = Math.ceil(file.size / CHUNK_SIZE);
+		// ファイルサイズに応じた最適なチャンクサイズを取得
+		const chunkSize = calculateOptimalChunkSize(file.size);
+		console.log(`File size: ${(file.size / (1024 * 1024)).toFixed(2)}MB, Using chunk size: ${(chunkSize / (1024 * 1024)).toFixed(2)}MB`);
+
+		// Calculate total parts based on dynamic chunk size
+		const totalParts = Math.ceil(file.size / chunkSize);
 
 		// Step 1: Create multipart upload
 		const createMultipartRes = await window.fetch(`${apiUrl}/drive/files/create-multipart-upload`, {
@@ -114,11 +137,13 @@ export async function uploadFileMultipart(
 			const processNext = async (): Promise<void> => {
 				// Get next part from queue
 				const partNumber = partQueue.shift();
-				if (partNumber === undefined) return;
+				if (partNumber === undefined) {
+					return;
+				}
 
 				// Upload the part
-				const start = (partNumber - 1) * CHUNK_SIZE;
-				const end = Math.min(partNumber * CHUNK_SIZE, file.size);
+				const start = (partNumber - 1) * chunkSize;
+				const end = Math.min(partNumber * chunkSize, file.size);
 				const chunk = file.slice(start, end);
 
 				try {
@@ -207,11 +232,13 @@ export async function uploadFileMultipart(
  * Uploads a single part/chunk of a multipart upload
  */
 async function uploadPart(uploadId: string, partNumber: number, chunk: Blob): Promise<void> {
-	if ($i == null) throw new Error('Not logged in');
+	if ($i == null) {
+		throw new Error('Not logged in');
+	}
 
 	// リトライとバックオフの設定
 	const MAX_RETRIES = 5;
-	const INITIAL_RETRY_DELAY = 1000; // 最初のリトライまでの待機時間（ミリ秒）
+	const INITIAL_RETRY_DELAY = 1000;
 
 	let retryCount = 0;
 	let retryDelay = INITIAL_RETRY_DELAY;
