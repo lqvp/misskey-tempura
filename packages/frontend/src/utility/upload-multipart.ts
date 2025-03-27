@@ -133,13 +133,18 @@ export async function uploadFileMultipart(
 			let globalRetryCount = 0;
 			const MAX_GLOBAL_RETRIES = 10;
 			let isAborting = false;
+			// 429レート制限エラーを検出したかどうか
+			let isRateLimited = false;
 
 			const processNext = async (): Promise<void> => {
-				// Get next part from queue
-				const partNumber = partQueue.shift();
-				if (partNumber === undefined) {
+				// レート制限発生時または処理中止中は何も処理しない
+				if (isRateLimited || isAborting) {
 					return;
 				}
+
+				// Get next part from queue
+				const partNumber = partQueue.shift();
+				if (partNumber === undefined) return;
 
 				// Upload the part
 				const start = (partNumber - 1) * chunkSize;
@@ -152,6 +157,14 @@ export async function uploadFileMultipart(
 					ctx.progressValue = completedSize;
 					results.push({ partNumber });
 				} catch (err) {
+					// レート制限エラー(429)が発生した場合
+					if (err instanceof RateLimitExceededError) {
+						console.error('Rate limit exceeded, aborting upload:', err.message);
+						isRateLimited = true;
+						isAborting = true;
+						throw new Error(`アップロードがレート制限により中止されました。しばらく時間をおいてから再試行してください。 (${err.message})`);
+					}
+
 					// Re-add failed part to the beginning of the queue for retry
 					partQueue.unshift(partNumber);
 
@@ -229,6 +242,16 @@ export async function uploadFileMultipart(
 }
 
 /**
+ * レート制限エラーを表現する特別なエラークラス
+ */
+class RateLimitExceededError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = 'RateLimitExceededError';
+	}
+}
+
+/**
  * Uploads a single part/chunk of a multipart upload
  */
 async function uploadPart(uploadId: string, partNumber: number, chunk: Blob): Promise<void> {
@@ -268,12 +291,12 @@ async function uploadPart(uploadId: string, partNumber: number, chunk: Blob): Pr
 					errorMessage = `Failed to parse error response: ${err}`;
 				}
 
-				// 429エラー（レート制限超過）の場合はリトライせずにエラーを返す
+				// 429エラー（レート制限超過）の場合は特別なエラーをスロー
 				if (responseStatus === 429) {
-					throw new Error(`Rate limit exceeded for part ${partNumber}: ${errorMessage}. Status: ${responseStatus}`);
+					throw new RateLimitExceededError(`レート制限を超過しました（パート ${partNumber}）: ${errorMessage}`);
 				}
 
-				// その他のエラーまたはリトライ回数超過
+				// その他のエラー
 				throw new Error(`Failed to upload part ${partNumber}: ${errorMessage}. Status: ${responseStatus}`);
 			}
 
