@@ -112,6 +112,14 @@ export class QueueService {
 			repeat: { pattern: '30 * * * *' },
 			removeOnComplete: true,
 		});
+
+		// 期限切れマルチパートアップロードをクリーンアップ
+		this.systemQueue.add('cleanExpiredMultipartUploads', {
+		}, {
+			// 毎時0分に起動
+			repeat: { pattern: '0 * * * *' },
+			removeOnComplete: true,
+		});
 	}
 
 	private isPublicContent(content: IActivity) {
