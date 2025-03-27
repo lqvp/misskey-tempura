@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import ms from 'ms';
 import * as fs from 'node:fs';
+import ms from 'ms';
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
@@ -114,16 +114,31 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			// Create a temporary file for the complete file
 			const [completeFilePath] = await createTemp();
 
-			// Combine all parts
+			// Combine all parts using streams instead of loading into memory
 			const writeStream = fs.createWriteStream(completeFilePath);
 
 			try {
+				// Process parts sequentially using streams
 				for (let i = 1; i <= multipartUpload.totalParts; i++) {
 					const partPath = `${partDir}/part_${i}`;
-					// Since we already verified all parts exist, this should never fail
-					const partData = fs.readFileSync(partPath);
-					writeStream.write(partData);
+
+					// Use streaming instead of loading entire parts into memory
+					await new Promise<void>((resolve, reject) => {
+						const readStream = fs.createReadStream(partPath);
+						readStream.on('error', (err) => {
+							console.error(`Error reading part ${i}:`, err);
+							reject(err);
+						});
+
+						// When this part is fully piped, resolve and move to next
+						readStream.on('end', () => resolve());
+
+						// Pipe the data without loading it fully into memory
+						readStream.pipe(writeStream, { end: false });
+					});
 				}
+
+				// Close the write stream after all parts are processed
 				writeStream.end();
 
 				// Wait for the write stream to finish
@@ -133,7 +148,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				});
 
 				// Now upload the complete file to drive
-				const fileName = multipartUpload.name || 'untitled';
+				const fileName = multipartUpload.name ?? 'untitled';
 
 				const driveFile = await this.driveService.addFile({
 					user: me,
