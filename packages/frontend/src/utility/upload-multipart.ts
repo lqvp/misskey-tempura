@@ -15,6 +15,9 @@ import { uploads } from '@/utility/upload.js';
 // Maximum size for standard upload (95MB - Cloudflare制限を考慮)
 const MAX_STANDARD_UPLOAD_SIZE = 95 * 1024 * 1024;
 
+// PostgreSQLのinteger型の最大値制限に基づく最大ファイルサイズ (2GB)
+const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024;
+
 // ファイルサイズに応じた最適なチャンクサイズを計算
 function calculateOptimalChunkSize(fileSize: number): number {
 	// 小さいファイル (95MB以下): 10MB チャンク
@@ -41,6 +44,11 @@ export async function uploadFileMultipart(
 ): Promise<Misskey.entities.DriveFile> {
 	if ($i == null) {
 		throw new Error('Not logged in');
+	}
+
+	// ファイルサイズが制限を超えていないか確認
+	if (file.size > MAX_FILE_SIZE) {
+		throw new Error('ファイルサイズが大きすぎます（最大: 2GB）。データベースの制限により、現在2GB以上のファイルはアップロードできません。');
 	}
 
 	const _folder = typeof folder === 'string' ? folder : folder?.id;
