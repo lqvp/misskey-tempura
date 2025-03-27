@@ -73,7 +73,7 @@ export class CleanExpiredMultipartUploadsProcessorService {
 				await this.multipartUploadsRepository.delete(upload.id);
 				deletedCount++;
 			} catch (err) {
-				this.logger.error(`Failed to clean up expired upload ${upload.id}:`, err);
+				this.logger.error(`Failed to clean up expired upload ${upload.id}:`, err as Error);
 				failedCount++;
 			}
 		}
