@@ -178,6 +178,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					case 'bakeBufferedReactions': return this.bakeBufferedReactionsProcessorService.process();
 					case 'checkModeratorsActivity': return this.checkModeratorsActivityProcessorService.process();
 					case 'clean': return this.cleanProcessorService.process();
+					case 'cleanExpiredMultipartUploads': return this.cleanExpiredMultipartUploadsProcessorService.process();
 					default: throw new Error(`unrecognized job type ${job.name} for system`);
 				}
 			};
@@ -485,7 +486,6 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					case 'cleanRemoteFiles': return this.cleanRemoteFilesProcessorService.process(job);
 					case 'CleanExpiredRemoteFiles': return this.cleanExpiredRemoteFilesProcessorService.process();
 					case 'ReDownloadRemoteFile': return this.reDownloadRemoteFileProcessorService.process(job);
-					case 'CleanExpiredMultipartUploads': return this.cleanExpiredMultipartUploadsProcessorService.process();
 					default: throw new Error(`unrecognized job type ${job.name} for objectStorage`);
 				}
 			};
