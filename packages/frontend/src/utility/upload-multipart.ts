@@ -9,7 +9,6 @@ import { v4 as uuid } from 'uuid';
 import { apiUrl } from '@@/js/config.js';
 import { $i } from '@/i.js';
 import { alert } from '@/os.js';
-import { i18n } from '@/i18n.js';
 import { uploads } from '@/utility/upload.js';
 
 // Maximum size for standard upload (95MB - Cloudflare制限を考慮)
@@ -48,7 +47,14 @@ export async function uploadFileMultipart(
 
 	// ファイルサイズが制限を超えていないか確認
 	if (file.size > MAX_FILE_SIZE) {
-		throw new Error('ファイルサイズが大きすぎます（最大: 2GB）。データベースの制限により、現在2GB以上のファイルはアップロードできません。');
+		// エラーをalert関数で表示
+		await alert({
+			type: 'error',
+			title: 'アップロードエラー',
+			text: 'ファイルサイズが大きすぎます（最大: 2GB）。データベースの制限により、現在2GB以上のファイルはアップロードできません。',
+		});
+		// エラー表示後に例外をスロー
+		throw new Error('File too large');
 	}
 
 	const _folder = typeof folder === 'string' ? folder : folder?.id;
@@ -116,7 +122,12 @@ export async function uploadFileMultipart(
 
 		if (!createMultipartRes.ok) {
 			const error = await createMultipartRes.json();
-			throw new Error(error.error?.message || `Failed to create multipart upload: ${createMultipartRes.status} ${createMultipartRes.statusText}`);
+			await alert({
+				type: 'error',
+				title: 'アップロードエラー',
+				text: error.error?.message || `Failed to create multipart upload: ${createMultipartRes.status} ${createMultipartRes.statusText}`,
+			});
+			throw new Error('Failed to create multipart upload');
 		}
 
 		const { id: uploadId } = await createMultipartRes.json();
@@ -170,24 +181,29 @@ export async function uploadFileMultipart(
 						console.error('Rate limit exceeded, aborting upload:', err.message);
 						isRateLimited = true;
 						isAborting = true;
-						throw new Error(`アップロードがレート制限により中止されました。しばらく時間をおいてから再試行してください。 (${err.message})`);
+						await alert({
+							type: 'error',
+							title: 'アップロードエラー',
+							text: `アップロードがレート制限により中止されました。しばらく時間をおいてから再試行してください。 (${err.message})`,
+						});
+						throw new Error('Rate limit exceeded');
 					}
 
 					// Re-add failed part to the beginning of the queue for retry
 					partQueue.unshift(partNumber);
 
 					// エラーの重大度を評価
-					if (isAborting) {
-						// アップロード中止中の場合は何もしない
-						return;
-					}
-
 					// グローバルリトライ回数を超えた場合はアップロードを中止
 					globalRetryCount++;
 					if (globalRetryCount > MAX_GLOBAL_RETRIES) {
 						isAborting = true;
 						console.error(`Too many global retries (${globalRetryCount}), aborting multipart upload.`);
-						throw new Error(`File upload failed after ${MAX_GLOBAL_RETRIES} global retries. Please try again later.`);
+						await alert({
+							type: 'error',
+							title: 'アップロードエラー',
+							text: `File upload failed after ${MAX_GLOBAL_RETRIES} global retries. Please try again later.`,
+						});
+						throw new Error('Too many retries');
 					}
 
 					console.error(`Error uploading part ${partNumber}:`, err);
@@ -197,7 +213,7 @@ export async function uploadFileMultipart(
 				}
 
 				// Process next part if any remain and not aborting
-				if (partQueue.length > 0 && !isAborting) {
+				if (partQueue.length > 0) {
 					return processNext();
 				}
 			};
@@ -228,7 +244,12 @@ export async function uploadFileMultipart(
 
 		if (!completeMultipartRes.ok) {
 			const error = await completeMultipartRes.json();
-			throw new Error(error.error?.message || `Failed to complete multipart upload: ${completeMultipartRes.status} ${completeMultipartRes.statusText}`);
+			await alert({
+				type: 'error',
+				title: 'アップロードエラー',
+				text: error.error?.message || `Failed to complete multipart upload: ${completeMultipartRes.status} ${completeMultipartRes.statusText}`,
+			});
+			throw new Error('Failed to complete multipart upload');
 		}
 
 		const driveFile = await completeMultipartRes.json();
@@ -239,10 +260,10 @@ export async function uploadFileMultipart(
 		uploads.value = uploads.value.filter(x => x.id !== id);
 		console.error('Multipart upload failed:', err);
 
-		alert({
+		await alert({
 			type: 'error',
-			title: i18n.ts.failedToUpload,
-			text: err instanceof Error ? err.message : i18n.ts.undefined,
+			title: 'アップロードエラー',
+			text: err instanceof Error ? err.message : 'undefined',
 		});
 
 		throw err;
@@ -308,8 +329,8 @@ async function uploadPart(uploadId: string, partNumber: number, chunk: Blob): Pr
 				throw new Error(`Failed to upload part ${partNumber}: ${errorMessage}. Status: ${responseStatus}`);
 			}
 
-			// 成功したら結果を返して終了
-			return response.json();
+			// 成功したら終了
+			return;
 		} catch (err) {
 			// 最大リトライ回数に達した場合はエラーを投げる
 			if (retryCount >= MAX_RETRIES) {
