@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<SearchMarker markerId="temp-settings-llm" :inlining="['temp-settings-root']" path="/settings/temp-settings" :keywords="['llm', 'ai', 'language model']">
+<SearchMarker markerId="tempura-settings-llm" :inlining="['tempura-settings-root']" path="/settings/tempura-settings" :keywords="['llm', 'ai', 'language model']">
 	<MkFolder>
 		<template #icon><i class="ti ti-robot"></i></template>
 		<template #label><SearchLabel>{{ i18n.ts._llm.title }}</SearchLabel></template>

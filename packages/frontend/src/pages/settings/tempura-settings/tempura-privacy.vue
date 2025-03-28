@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<SearchMarker markerId="temp-settings-privacy" :inlining="['temp-settings-root']" path="/settings/temp-settings" :keywords="['privacy', 'security', 'visibility', 'permission']">
+<SearchMarker markerId="tempura-settings-privacy" :inlining="['tempura-settings-root']" path="/settings/tempura-settings" :keywords="['privacy', 'security', 'visibility', 'permission']">
 	<MkFolder>
 		<template #icon><i class="ti ti-lock-open"></i></template>
 		<template #label><SearchLabel>{{ i18n.ts.privacy }}</SearchLabel></template>

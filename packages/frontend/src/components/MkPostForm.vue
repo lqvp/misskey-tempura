@@ -141,7 +141,7 @@ import { emojiPicker } from '@/utility/emoji-picker.js';
 import { mfmFunctionPicker } from '@/utility/mfm-function-picker.js';
 import { bottomItemDef } from '@/utility/post-form.js';
 import MkScheduleEditor from '@/components/MkScheduleEditor.vue';
-import { transformTextWithGemini } from '@/utility/temp-script/text-transformations.js';
+import { transformTextWithGemini } from '@/utility/tempura-script/text-transformations.js';
 import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
 import { DI } from '@/di.js';

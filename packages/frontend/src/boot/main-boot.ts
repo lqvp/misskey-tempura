@@ -27,7 +27,7 @@ import { emojiPicker } from '@/utility/emoji-picker.js';
 import { mainRouter } from '@/router.js';
 import { makeHotkey } from '@/utility/hotkey.js';
 import { addCustomEmoji, removeCustomEmojis, updateCustomEmojis } from '@/custom-emojis.js';
-import { initEarthquakeWarning } from '@/utility/temp-script/earthquake-warning.js';
+import { initEarthquakeWarning } from '@/utility/tempura-script/earthquake-warning.js';
 import { prefer } from '@/preferences.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { deckStore } from '@/ui/deck/deck-store.js';

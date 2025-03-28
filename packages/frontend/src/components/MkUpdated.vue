@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div :class="$style.version">✨{{ version }}🚀</div>
 		<div>
 			<MkButton v-if="shouldShowMisskeyButton" :class="$style.updateButton" full @click="whatIsNew">{{ i18n.ts.whatIsNew }}</MkButton>
-			<MkButton v-if="shouldShowTempButton" :class="$style.updateButton" full @click="whatIsNewFork">{{ i18n.ts.whatIsNew }} (misskey-temp)</MkButton>
+			<MkButton v-if="shouldShowTempButton" :class="$style.updateButton" full @click="whatIsNewFork">{{ i18n.ts.whatIsNew }} (misskey-tempura)</MkButton>
 		</div>
 		<MkButton :class="$style.gotIt" primary full @click="modal?.close()">{{ i18n.ts.gotIt }}</MkButton>
 	</div>
@@ -27,8 +27,8 @@ import { i18n } from '@/i18n.js';
 import { confetti } from '@/utility/confetti.js';
 
 const props = withDefaults(defineProps<{
-			updatedComponent?: 'misskey' | 'temp' | 'both' | null;
-	}>(), {
+	updatedComponent?: 'misskey' | 'tempura' | 'both' | null;
+}>(), {
 	updatedComponent: null,
 });
 
@@ -39,7 +39,7 @@ const shouldShowMisskeyButton = computed(() =>
 );
 
 const shouldShowTempButton = computed(() =>
-	props.updatedComponent === 'temp' || props.updatedComponent === 'both',
+	props.updatedComponent === 'tempura' || props.updatedComponent === 'both',
 );
 
 onMounted(() => {

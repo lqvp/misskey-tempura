@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<SearchMarker markerId="temp-settings-timeline" :inlining="['temp-settings-root']" path="/settings/temp-settings" :keywords="['timeline', 'feed', 'view', 'display']">
+<SearchMarker markerId="tempura-settings-timeline" :inlining="['tempura-settings-root']" path="/settings/tempura-settings" :keywords="['timeline', 'feed', 'view', 'display']">
 	<MkFolder>
 		<template #icon><i class="ti ti-timeline"></i></template>
 		<template #label><SearchLabel>{{ i18n.ts.__TL_conf.hideTimelineLabel }}</SearchLabel></template>

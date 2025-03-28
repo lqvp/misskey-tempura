@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<SearchMarker markerId="temp-settings-notes" :inlining="['temp-settings-root']" path="/settings/temp-settings" :keywords="['notes', 'posts', 'content', 'display']">
+<SearchMarker markerId="tempura-settings-notes" :inlining="['tempura-settings-root']" path="/settings/tempura-settings" :keywords="['notes', 'posts', 'content', 'display']">
 	<MkFolder>
 		<template #icon><i class="ti ti-pencil"></i></template>
 		<template #label><SearchLabel>{{ i18n.ts.displayOfNote }}</SearchLabel></template>

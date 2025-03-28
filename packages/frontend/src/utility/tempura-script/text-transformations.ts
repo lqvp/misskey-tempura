@@ -7,7 +7,7 @@ import { defineAsyncComponent } from 'vue';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 import * as os from '@/os.js';
-import { generateGeminiSummary, extractCandidateText } from '@/utility/temp-script/llm.js';
+import { generateGeminiSummary, extractCandidateText } from '@/utility/tempura-script/llm.js';
 import { displayLlmError } from '@/utils/errorHandler.js';
 import { i18n } from '@/i18n.js';
 

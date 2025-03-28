@@ -64,17 +64,17 @@ export async function common(createVue: () => App<Element>) {
 	//#region クライアントが更新されたかチェック
 	const lastVersion = miLocalStorage.getItem('lastVersion');
 	let isClientUpdated = false;
-	let updatedComponent: 'misskey' | 'temp' | 'both' | null = null;
+	let updatedComponent: 'misskey' | 'tempura' | 'both' | null = null;
 
 	if (lastVersion !== version) {
-		// 開発リリースの場合、バージョン末尾に "-dev.1" などが付くので temp とする
+		// 開発リリースの場合、バージョン末尾に "-dev.1" などが付くので tempura とする
 		if (/-dev\.\d+$/.test(version)) {
-			updatedComponent = 'temp';
+			updatedComponent = 'tempura';
 			isClientUpdated = true;
 		} else {
 			// ステーブルリリースの場合の処理
-			const [currentMisskeyVersion, currentTempVersion] = version.split('-temp-');
-			const [lastMisskeyVersion, lastTempVersion] = (lastVersion ?? '').split('-temp-');
+			const [currentMisskeyVersion, currentTempVersion] = version.split('-tempura-');
+			const [lastMisskeyVersion, lastTempVersion] = (lastVersion ?? '').split('-tempura-');
 
 			if (currentMisskeyVersion !== lastMisskeyVersion) {
 				if (lastTempVersion !== currentTempVersion) {
@@ -84,7 +84,7 @@ export async function common(createVue: () => App<Element>) {
 				}
 				isClientUpdated = true;
 			} else if (lastTempVersion !== currentTempVersion) {
-				updatedComponent = 'temp';
+				updatedComponent = 'tempura';
 				isClientUpdated = true;
 			}
 		}

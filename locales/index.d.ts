@@ -29,7 +29,7 @@ export interface Locale extends ILocale {
      */
     "poweredByMisskeyDescription": ParameterizedString<"name">;
     /**
-     * {name}は、オープンソースのプラットフォーム<b>Misskey</b>のフォーク版であるmisskey-tempを使用しています。
+     * {name}は、オープンソースのプラットフォーム<b>Misskey</b>のフォーク版であるmisskey-tempuraを使用しています。
      */
     "poweredBytempForkDescription": ParameterizedString<"name">;
     /**
@@ -8210,9 +8210,9 @@ export interface Locale extends ILocale {
          */
         "projectMembers": string;
     };
-    "_misskeyTemp": {
+    "_misskeyTempura": {
         /**
-         * misskey-tempはlqvpによって開発されているMisskeyのフォークです。
+         * misskey-tempuraはlqvpによって開発されているMisskeyのフォークです。
          */
         "about": string;
         /**
@@ -8220,9 +8220,9 @@ export interface Locale extends ILocale {
          */
         "contributors": string;
         /**
-         * misskey-tempについて
+         * misskey-tempuraについて
          */
-        "aboutTemp": string;
+        "aboutTempura": string;
     };
     "_displayOfSensitiveMedia": {
         /**

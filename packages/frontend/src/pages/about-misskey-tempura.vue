@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div v-panel class="about">
 					<div ref="containerEl" class="container" :class="{ playing: easterEggEngine != null }">
 						<img src="https://avatars.githubusercontent.com/u/183242690?v=4" alt="" class="icon" draggable="false" @load="iconLoaded" @click="gravity"/>
-						<div class="misskey">Misskey-temp</div>
+						<div class="misskey">Misskey-tempura</div>
 						<div class="version">{{ displayVersion }}</div>
 						<span v-for="emoji in easterEggEmojis" :key="emoji.id" class="emoji" :data-physics-x="emoji.left" :data-physics-y="emoji.top" :class="{ _physics_circle_: !emoji.emoji.startsWith(':') }">
 							<MkCustomEmoji v-if="emoji.emoji[0] === ':'" class="emoji" :name="emoji.emoji" :normal="true" :noStyle="true" :fallbackToImage="true"/>
@@ -22,14 +22,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<button v-if="thereIsTreasure" class="_button treasure" @click="getTreasure"><img src="/fluent-emoji/1f3c6.png" class="treasureImg"></button>
 				</div>
 				<div style="text-align: center;">
-					{{ i18n.ts._misskeyTemp.about }}
+					{{ i18n.ts._misskeyTempura.about }}
 				</div>
-				<FormLink to="https://hackmd.io/@il2/misskey-temp" external>
+				<FormLink to="https://hackmd.io/@il2/misskey-tempura" external>
 					<template #icon><i class="ti ti-sparkles"></i></template>
 					{{ i18n.ts.originalFeature }}
 				</FormLink>
 				<FormSection>
-					<template #label>{{ i18n.ts._misskeyTemp.contributors }}</template>
+					<template #label>{{ i18n.ts._misskeyTempura.contributors }}</template>
 					<div :class="$style.contributors">
 						<a href="https://github.com/lqvp" target="_blank" :class="$style.contributor">
 							<img src="https://avatars.githubusercontent.com/u/183242690?v=4" :class="$style.contributorAvatar">
@@ -96,7 +96,7 @@ import { claimAchievement, claimedAchievements } from '@/utility/achievements.js
 import { $i } from '@/i.js';
 
 const displayVersion = computed(() => {
-	return version.split('temp-')[1];
+	return version.split('tempura-')[1];
 });
 
 const thereIsTreasure = ref($i && !claimedAchievements.includes('foundTreasure'));

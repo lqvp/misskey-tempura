@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<SearchMarker markerId="temp-settings-earthquake" :inlining="['temp-settings-root']" path="/settings/temp-settings" :keywords="['earthquake', 'alert', 'notification', 'safety']">
+<SearchMarker markerId="tempura-settings-earthquake" :inlining="['tempura-settings-root']" path="/settings/tempura-settings" :keywords="['earthquake', 'alert', 'notification', 'safety']">
 	<MkFolder>
 		<template #icon><i class="ti ti-alert-triangle"></i></template>
 		<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.settings }}</SearchLabel></template>
@@ -261,7 +261,7 @@ import MkFolder from '@/components/MkFolder.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import MkMfm from '@/components/global/MkMfm.js';
 import { reloadAsk } from '@/utility/reload-ask.js';
-import { testEarthquakeAlert, getConnectionLogs, getDataLogs, clearAllLogs } from '@/utility/temp-script/earthquake-warning.js';
+import { testEarthquakeAlert, getConnectionLogs, getDataLogs, clearAllLogs } from '@/utility/tempura-script/earthquake-warning.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { prefer } from '@/preferences.js';

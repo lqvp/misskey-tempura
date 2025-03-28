@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<SearchMarker markerId="temp-settings-postform" :inlining="['temp-settings-root']" path="/settings/temp-settings" :keywords="['postform', 'notes', 'posting', 'compose']">
+<SearchMarker markerId="tempura-settings-postform" :inlining="['tempura-settings-root']" path="/settings/tempura-settings" :keywords="['postform', 'notes', 'posting', 'compose']">
 	<MkFolder>
 		<template #icon><i class="ti ti-forms"></i></template>
 		<template #label><SearchLabel>{{ i18n.ts.postForm }}</SearchLabel></template>

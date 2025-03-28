@@ -103,8 +103,8 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 	}, {
 		icon: 'ti ti-git-fork',
 		text: i18n.ts.originalFeature,
-		to: '/settings/temp-settings',
-		active: currentPage.value?.route.name === 'temp-settings',
+		to: '/settings/tempura-settings',
+		active: currentPage.value?.route.name === 'tempura-settings',
 	}],
 }, {
 	items: [{

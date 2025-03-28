@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <MkFolder>
 	<template #icon><i class="ti ti-cloud"></i></template>
 	<template #label><SearchLabel>{{ i18n.ts.drive }}</SearchLabel></template>
-	<SearchMarker markerId="temp-settings-drive" :inlining="['temp-settings-root']" path="/settings/temp-settings" :keywords="['drive']">
+	<SearchMarker markerId="tempura-settings-drive" :inlining="['tempura-settings-root']" path="/settings/tempura-settings" :keywords="['drive']">
 		<div class="_gaps_m">
 			<SearchMarker :keywords="['drive', 'image', 'compression', 'mode']">
 				<MkPreferenceContainer k="imageCompressionMode">

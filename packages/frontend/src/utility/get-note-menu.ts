@@ -24,7 +24,7 @@ import MkRippleEffect from '@/components/MkRippleEffect.vue';
 import { isSupportShare } from '@/utility/navigator.js';
 import { getAppearNote } from '@/utility/get-appear-note.js';
 import { genEmbedCode } from '@/utility/get-embed-code.js';
-import { showNoteSummary } from '@/utility/temp-script/note-summarization.js';
+import { showNoteSummary } from '@/utility/tempura-script/note-summarization.js';
 import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
 

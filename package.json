@@ -1,10 +1,10 @@
 {
 	"name": "misskey",
-	"version": "2025.3.2-beta.10-temp-1.8.0-dev2",
+	"version": "2025.3.2-beta.10-tempura-1.8.0-dev2",
 	"codename": "nasubi",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/lqvp/misskey-temp.git"
+		"url": "https://github.com/lqvp/misskey-tempura.git"
 	},
 	"packageManager": "pnpm@10.6.1",
 	"workspaces": [

@@ -22,7 +22,7 @@ import { mainRouter } from '@/router.js';
 import { genEmbedCode } from '@/utility/get-embed-code.js';
 import { getPluginHandlers } from '@/plugin.js';
 import { editNickname } from '@/utility/edit-nickname.js';
-import { summarizeUserProfile } from '@/utility/temp-script/profile-summarization.js';
+import { summarizeUserProfile } from '@/utility/tempura-script/profile-summarization.js';
 
 type PeriodType = {
 	key: string;

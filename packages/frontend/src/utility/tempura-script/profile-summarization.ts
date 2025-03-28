@@ -5,7 +5,7 @@
 
 import { defineAsyncComponent, ref } from 'vue';
 import * as os from '@/os.js';
-import { generateGeminiSummary, extractCandidateText } from '@/utility/temp-script/llm.js';
+import { generateGeminiSummary, extractCandidateText } from '@/utility/tempura-script/llm.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';

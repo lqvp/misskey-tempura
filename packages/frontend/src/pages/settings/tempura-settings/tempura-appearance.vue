@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<SearchMarker markerId="temp-settings-appearance" :inlining="['temp-settings-root']" path="/settings/temp-settings" :keywords="['appearance', 'theme', 'design', 'layout', 'ui']">
+<SearchMarker markerId="tempura-settings-appearance" :inlining="['tempura-settings-root']" path="/settings/tempura-settings" :keywords="['appearance', 'theme', 'design', 'layout', 'ui']">
 	<MkFolder>
 		<template #icon><i class="ti ti-letter-case"></i></template>
 		<template #label><SearchLabel>{{ i18n.ts.appearance }}</SearchLabel></template>

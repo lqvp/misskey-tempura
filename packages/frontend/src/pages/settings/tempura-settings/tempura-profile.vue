@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<SearchMarker markerId="temp-settings-profile" :inlining="['temp-settings-root']" path="/settings/temp-settings" :keywords="['profile', 'account']">
+<SearchMarker markerId="tempura-settings-profile" :inlining="['tempura-settings-root']" path="/settings/tempura-settings" :keywords="['profile', 'account']">
 	<MkFolder>
 		<template #icon><i class="ti ti-user"></i></template>
 		<template #label><SearchLabel>{{ i18n.ts.profile }}</SearchLabel></template>

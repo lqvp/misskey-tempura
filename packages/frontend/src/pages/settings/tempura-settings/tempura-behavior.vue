@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<SearchMarker markerId="temp-settings-behavior" :inlining="['temp-settings-root']" path="/settings/temp-settings" :keywords="['behavior', 'interaction', 'actions', 'default']">
+<SearchMarker markerId="tempura-settings-behavior" :inlining="['tempura-settings-root']" path="/settings/tempura-settings" :keywords="['behavior', 'interaction', 'actions', 'default']">
 	<MkFolder>
 		<template #icon><i class="ti ti-mood-happy"></i></template>
 		<template #label><SearchLabel>{{ i18n.ts.behavior }}</SearchLabel></template>

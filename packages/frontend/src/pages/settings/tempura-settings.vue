@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div>
-	<SearchMarker markerId="temp-settings-root" path="/settings/temp-settings" :label="i18n.ts.originalFeature" :keywords="['temp']" icon="ti ti-git-fork">
+	<SearchMarker markerId="tempura-settings-root" path="/settings/tempura-settings" :label="i18n.ts.originalFeature" :keywords="['temp']" icon="ti ti-git-fork">
 		<MkFeatureBanner icon="/client-assets/package_3d.png" color="#FA8072">
 			<MkSparkle>
 				<SearchKeyword>{{ i18n.ts.originalFeature }}</SearchKeyword>
@@ -36,28 +36,28 @@ import { definePage } from '@/page.js';
 import MkSparkle from '@/components/MkSparkle.vue';
 import MkFeatureBanner from '@/components/MkFeatureBanner.vue';
 
-const ProfileSettings = defineAsyncComponent(() => import('./temp-settings/temp-profile.vue'));
-const PrivacySettings = defineAsyncComponent(() => import('./temp-settings/temp-privacy.vue'));
-const NotesSettings = defineAsyncComponent(() => import('./temp-settings/temp-notes.vue'));
-const AppearanceSettings = defineAsyncComponent(() => import('./temp-settings/temp-appearance.vue'));
-const BehaviorSettings = defineAsyncComponent(() => import('./temp-settings/temp-behavior.vue'));
-const DriveSettings = defineAsyncComponent(() => import('./temp-settings/temp-drive.vue'));
-const PostFormSettings = defineAsyncComponent(() => import('./temp-settings/temp-postform.vue'));
-const TimeLineSettings = defineAsyncComponent(() => import('./temp-settings/temp-timeline.vue'));
-const LLMSettings = defineAsyncComponent(() => import('./temp-settings/temp-llm.vue'));
-const EarthquakeSettings = defineAsyncComponent(() => import('./temp-settings/temp-earthquake.vue'));
+const ProfileSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-profile.vue'));
+const PrivacySettings = defineAsyncComponent(() => import('./tempura-settings/tempura-privacy.vue'));
+const NotesSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-notes.vue'));
+const AppearanceSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-appearance.vue'));
+const BehaviorSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-behavior.vue'));
+const DriveSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-drive.vue'));
+const PostFormSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-postform.vue'));
+const TimeLineSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-timeline.vue'));
+const LLMSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-llm.vue'));
+const EarthquakeSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-earthquake.vue'));
 
 const headerActions = computed(() => []);
 const headerTabs = computed(() => []);
 
 definePage(() => ({
-	title: 'temp-fork',
+	title: 'tempura-fork',
 	icon: 'ti ti-adjustments',
 }));
 </script>
 
 <style lang="scss">
-.temp-settings-section {
+.tempura-settings-section {
   background: var(--MI_THEME-panel);
   border-radius: 12px;
   padding: 1.5rem;
