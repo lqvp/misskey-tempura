@@ -38,7 +38,7 @@ function greet() {
 			: `v${versionParts[0]}`;
 		const tempuraIndex = versionParts.findIndex((part: string) => part === 'tempura');
 		const forkVersion = tempuraIndex >= 0
-			? `${versionParts[tempuraIndex]}${versionParts.slice(tempuraIndex + 1).map(p => `-${p}`).join('')}`
+			? `${versionParts[tempuraIndex]}${versionParts.slice(tempuraIndex + 1).map((p: string) => `-${p}`).join('')}`
 			: undefined;
 		console.log(themeColor(' __                                                       '));
 		console.log(themeColor('/\\ \\__                                                    '));
