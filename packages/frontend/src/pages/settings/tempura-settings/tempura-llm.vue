@@ -11,8 +11,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		<div class="_gaps_m">
 			<SearchMarker :keywords="['llm', 'gemini', 'api', 'server']">
-				<MkPreferenceContainer k="useGeminiLLMAPI">
-					<MkSwitch v-if="instance?.serverGeminiEnabled && $i?.policies.canUseGeminiLLMAPI" v-model="useGeminiLLMAPI">
+				<MkPreferenceContainer v-if="instance?.serverGeminiEnabled && $i?.policies.canUseGeminiLLMAPI" k="useGeminiLLMAPI">
+					<MkSwitch v-model="useGeminiLLMAPI">
 						<SearchLabel>{{ i18n.ts._llm.useGeminiLLMAPI }}</SearchLabel>
 						<template #caption>{{ i18n.ts._llm.useGeminiLLMAPIDescription }}</template>
 					</MkSwitch>
