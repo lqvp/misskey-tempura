@@ -6,8 +6,8 @@
 import { computed, watch, version as vueVersion } from 'vue';
 import { compareVersions } from 'compare-versions';
 import { version, lang, updateLocale, locale } from '@@/js/config.js';
-import defaultLightTheme from '@@/themes/l-light.json5';
-import defaultDarkTheme from '@@/themes/d-green-lime.json5';
+import defaultLightTheme from '@@/themes/pink-candy.json5';
+import defaultDarkTheme from '@@/themes/night-pink.json5';
 import type { App } from 'vue';
 import widgets from '@/widgets/index.js';
 import directives from '@/directives/index.js';
