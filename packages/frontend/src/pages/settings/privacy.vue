@@ -119,6 +119,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkSwitch>
 		</SearchMarker>
 
+		<FormSection>
+			<SearchMarker :keywords="['chat']">
+				<MkSelect v-model="chatScope" @update:modelValue="save()">
+					<template #label><SearchLabel>{{ i18n.ts._chat.chatAllowedUsers }}</SearchLabel></template>
+					<option value="everyone">{{ i18n.ts._chat._chatAllowedUsers.everyone }}</option>
+					<option value="followers">{{ i18n.ts._chat._chatAllowedUsers.followers }}</option>
+					<option value="following">{{ i18n.ts._chat._chatAllowedUsers.following }}</option>
+					<option value="mutual">{{ i18n.ts._chat._chatAllowedUsers.mutual }}</option>
+					<option value="none">{{ i18n.ts._chat._chatAllowedUsers.none }}</option>
+					<template #caption>{{ i18n.ts._chat.chatAllowedUsers_note }}</template>
+				</MkSelect>
+			</SearchMarker>
+		</FormSection>
+
 		<SearchMarker :keywords="['lockdown']">
 			<FormSection>
 				<template #label><SearchLabel>{{ i18n.ts.lockdown }}</SearchLabel><span class="_beta">{{ i18n.ts.beta }}</span></template>
@@ -130,7 +144,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<template #caption>
 								<div>{{ i18n.ts._accountSettings.requireSigninToViewContentsDescription1 }}</div>
 								<div><i class="ti ti-alert-triangle" style="color: var(--MI_THEME-warn);"></i> {{ i18n.ts._accountSettings.requireSigninToViewContentsDescription2 }}</div>
-								<div v-if="instance.federation !== 'none'"><i class="ti ti-alert-triangle" style="color: var(--MI_THEME-warn);"></i> {{ i18n.ts._accountSettings.requireSigninToViewContentsDescription3 }}</div>
 							</template>
 						</MkSwitch>
 					</SearchMarker>
@@ -226,7 +239,7 @@ import MkFolder from '@/components/MkFolder.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
-import { signinRequired } from '@/i.js';
+import { ensureSignin } from '@/i.js';
 import { definePage } from '@/page.js';
 import FormSlot from '@/components/form/slot.vue';
 import { formatDateTimeString } from '@/utility/format-time-string.js';
@@ -236,7 +249,7 @@ import MkDisableSection from '@/components/MkDisableSection.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import MkFeatureBanner from '@/components/MkFeatureBanner.vue';
 
-const $i = signinRequired();
+const $i = ensureSignin();
 
 const isLocked = ref($i.isLocked);
 const autoAcceptFollowed = ref($i.autoAcceptFollowed);
@@ -258,6 +271,7 @@ const hideHomeNotes = ref($i.hideHomeNotes);
 const hideLocalOnlyNotes = ref($i.hideLocalOnlyNotes);
 const followingVisibility = ref($i.followingVisibility);
 const followersVisibility = ref($i.followersVisibility);
+const chatScope = ref($i.chatScope);
 
 const makeNotesFollowersOnlyBefore_type = computed(() => {
 	if (makeNotesFollowersOnlyBefore.value == null) {
@@ -318,6 +332,7 @@ function save() {
 		hideLocalOnlyNotes: !!hideLocalOnlyNotes.value,
 		followingVisibility: followingVisibility.value,
 		followersVisibility: followersVisibility.value,
+		chatScope: chatScope.value,
 	});
 }
 

@@ -222,7 +222,7 @@ export class TruncateAccountProcessorService {
 			return;
 		}
 
-		const { noteIds: notesToKeep, deleteTargetFileIds: filesToKeep } = await this.getNotesToKeep(userId);
+		const { noteIds: notesToKeep, deleteTargetFileIds } = await this.getNotesToKeep(userId);
 
 		// ノートの削除
 		let cursor: string | null = null;
@@ -244,7 +244,7 @@ export class TruncateAccountProcessorService {
 		this.logger.info(`Completed deleting ${totalNotesDeleted} notes`);
 
 		// ファイルの削除処理
-		const totalFilesDeleted = await this.deleteFiles(user.id, filesToKeep);
+		const totalFilesDeleted = await this.deleteFiles(user.id, deleteTargetFileIds);
 		this.logger.info(`Completed deleting ${totalFilesDeleted} files`);
 
 		const endTime = Date.now();

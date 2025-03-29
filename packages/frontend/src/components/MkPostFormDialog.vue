@@ -26,10 +26,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { shallowRef } from 'vue';
+import { useTemplateRef } from 'vue';
+import type { PostFormProps } from '@/types/post-form.js';
 import MkModal from '@/components/MkModal.vue';
 import MkPostForm from '@/components/MkPostForm.vue';
-import type { PostFormProps } from '@/types/post-form.js';
 import * as os from '@/os.js';
 
 const props = withDefaults(defineProps<PostFormProps & {
@@ -44,8 +44,7 @@ const emit = defineEmits<{
 	(ev: 'closed'): void;
 }>();
 
-const modal = shallowRef<InstanceType<typeof MkModal>>();
-const form = shallowRef<InstanceType<typeof MkPostForm>>();
+const modal = useTemplateRef('modal');
 
 function onPosting() {
 	modal.value?.close({

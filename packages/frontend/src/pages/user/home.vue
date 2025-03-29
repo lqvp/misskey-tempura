@@ -237,7 +237,7 @@ import { dateString } from '@/filters/date.js';
 import { confetti } from '@/utility/confetti.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { isFollowingVisibleForMe, isFollowersVisibleForMe } from '@/utility/isFfVisibleForMe.js';
-import { useRouter } from '@/router/supplier.js';
+import { useRouter } from '@/router.js';
 import { getStaticImageUrl } from '@/utility/media-proxy.js';
 import { editNickname } from '@/utility/edit-nickname';
 import MkSparkle from '@/components/MkSparkle.vue';
@@ -293,7 +293,7 @@ const listenbrainzdata = ref(false);
 if (props.user.listenbrainz) {
 	(async function() {
 		try {
-			const response = await fetch(`https://api.listenbrainz.org/1/user/${props.user.listenbrainz}/playing-now`, {
+			const response = await window.fetch(`https://api.listenbrainz.org/1/user/${props.user.listenbrainz}/playing-now`, {
 				method: 'GET',
 				headers: {
 					'Content-Type': 'application/json',

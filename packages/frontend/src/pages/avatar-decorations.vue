@@ -4,8 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkStickyContainer>
-	<template #header><MkPageHeader :actions="headerActions" :tabs="headerTabs"/></template>
+<PageWithHeader :actions="headerActions" :tabs="headerTabs">
 	<MkSpacer :contentMax="900">
 		<div class="_gaps">
 			<MkFolder>
@@ -47,13 +46,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkFolder>
 		</div>
 	</MkSpacer>
-</MkStickyContainer>
+</PageWithHeader>
 </template>
 
 <script lang="ts" setup>
 import { ref, computed, defineAsyncComponent } from 'vue';
 import * as Misskey from 'misskey-js';
-import { signinRequired } from '@/i.js';
+import { ensureSignin } from '@/i.js';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
@@ -61,7 +60,7 @@ import { definePage } from '@/page.js';
 import MkButton from '@/components/MkButton.vue';
 import MkFolder from '@/components/MkFolder.vue';
 
-const $i = signinRequired();
+const $i = ensureSignin();
 
 const ITEMS_PER_PAGE = 50;
 const localPage = ref(1);
