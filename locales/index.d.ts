@@ -13255,14 +13255,6 @@ export interface Locale extends ILocale {
          * 待機状態のためのカスタムカーソル画像のURL
          */
         "waitCursorImageURLDescription": string;
-        /**
-         * 設定済み
-         */
-        "configured": string;
-        /**
-         * デフォルト
-         */
-        "default": string;
     };
     /**
      * すぐ消す

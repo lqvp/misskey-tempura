@@ -3548,8 +3548,6 @@ _customCursor:
   progressCursorImageURLDescription: "プログレスバー用のカスタムカーソル画像のURL"
   waitCursorImageURL: "待機カーソル画像URL"
   waitCursorImageURLDescription: "待機状態のためのカスタムカーソル画像のURL"
-  configured: "設定済み"
-  default: "デフォルト"
 
 scheduledNoteDelete: "すぐ消す"
 noteDeletationAt: "このノートは{time}に削除されます"
