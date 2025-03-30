@@ -75,12 +75,12 @@ import MkButton from '@/components/MkButton.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
-import { signinRequired } from '@/account.js';
+import { ensureSignin } from '@/i.js';
 import MkInfo from '@/components/MkInfo.vue';
 import { definePage } from '@/page.js';
 import MkFolder from '@/components/MkFolder.vue';
 
-const $i = signinRequired();
+const $i = ensureSignin();
 
 const ITEMS_PER_PAGE = 20;
 

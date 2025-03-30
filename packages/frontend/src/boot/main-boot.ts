@@ -7,6 +7,7 @@ import { createApp, defineAsyncComponent, markRaw } from 'vue';
 import { ui } from '@@/js/config.js';
 import * as Misskey from 'misskey-js';
 import { v4 as uuid } from 'uuid';
+import { compareVersions } from 'compare-versions';
 import { common } from './common.js';
 import type { Component } from 'vue';
 import type { Keymap } from '@/utility/hotkey.js';
@@ -15,7 +16,7 @@ import { i18n } from '@/i18n.js';
 import { alert, confirm, popup, post, toast } from '@/os.js';
 import { useStream } from '@/stream.js';
 import * as sound from '@/utility/sound.js';
-import { $i, signout, updateAccountPartial } from '@/account.js';
+import { $i } from '@/i.js';
 import { instance } from '@/instance.js';
 import { ColdDeviceStorage, store } from '@/store.js';
 import { reactionPicker } from '@/utility/reaction-picker.js';
@@ -23,24 +24,27 @@ import { miLocalStorage } from '@/local-storage.js';
 import { claimAchievement, claimedAchievements } from '@/utility/achievements.js';
 import { initializeSw } from '@/utility/initialize-sw.js';
 import { emojiPicker } from '@/utility/emoji-picker.js';
-import { mainRouter } from '@/router/main.js';
+import { mainRouter } from '@/router.js';
 import { makeHotkey } from '@/utility/hotkey.js';
 import { addCustomEmoji, removeCustomEmojis, updateCustomEmojis } from '@/custom-emojis.js';
-import { initEarthquakeWarning } from '@/utility/temp-script/earthquake-warning.js';
+import { initEarthquakeWarning } from '@/utility/tempura-script/earthquake-warning.js';
 import { prefer } from '@/preferences.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { deckStore } from '@/ui/deck/deck-store.js';
 import { launchPlugins } from '@/plugin.js';
+import { unisonReload } from '@/utility/unison-reload.js';
+import { updateCurrentAccountPartial } from '@/accounts.js';
+import { signout } from '@/signout.js';
 
 export async function mainBoot() {
-	const { isClientUpdated, updatedComponent } = await common(() => {
+	const { isClientUpdated, updatedComponent, lastVersion } = await common(() => {
 		let uiStyle = ui;
 		const searchParams = new URLSearchParams(window.location.search);
 
 		if (!$i) uiStyle = 'visitor';
 
 		if (searchParams.has('zen')) uiStyle = 'zen';
-		if (uiStyle === 'deck' && prefer.s['deck.useSimpleUiForNonRootPages'] && location.pathname !== '/') uiStyle = 'zen';
+		if (uiStyle === 'deck' && prefer.s['deck.useSimpleUiForNonRootPages'] && window.location.pathname !== '/') uiStyle = 'zen';
 
 		if (searchParams.has('ui')) uiStyle = searchParams.get('ui');
 
@@ -75,75 +79,13 @@ export async function mainBoot() {
 		}, {
 			closed: () => dispose(),
 		});
-	}
 
-	const stream = useStream();
+		// prefereces migration
+		// TODO: そのうち消す
+		if (lastVersion && (compareVersions('2025.3.2-alpha.0', lastVersion) === 1)) {
+			console.log('Preferences migration');
 
-	let reloadDialogShowing = false;
-	stream.on('_disconnected_', async () => {
-		if (prefer.s.serverDisconnectedBehavior === 'reload') {
-			location.reload();
-		} else if (prefer.s.serverDisconnectedBehavior === 'dialog') {
-			if (reloadDialogShowing) return;
-			reloadDialogShowing = true;
-			const { canceled } = await confirm({
-				type: 'warning',
-				title: i18n.ts.disconnectedFromServer,
-				text: i18n.ts.reloadConfirm,
-			});
-			reloadDialogShowing = false;
-			if (!canceled) {
-				location.reload();
-			}
-		}
-	});
-
-	stream.on('emojiAdded', emojiData => {
-		addCustomEmoji(emojiData.emoji);
-	});
-
-	stream.on('emojiUpdated', emojiData => {
-		updateCustomEmojis(emojiData.emojis);
-	});
-
-	stream.on('emojiDeleted', emojiData => {
-		removeCustomEmojis(emojiData.emojis);
-	});
-
-	launchPlugins();
-
-	try {
-		if (prefer.s.enableSeasonalScreenEffect) {
-			const month = new Date().getMonth() + 1;
-			if (prefer.s.hemisphere === 'S') {
-				// ▼南半球
-				if (month === 7 || month === 8) {
-					const SnowfallEffect = (await import('@/utility/snowfall-effect.js')).SnowfallEffect;
-					new SnowfallEffect({}).render();
-				}
-			} else {
-				// ▼北半球
-				if (month === 12 || month === 1) {
-					const SnowfallEffect = (await import('@/utility/snowfall-effect.js')).SnowfallEffect;
-					new SnowfallEffect({}).render();
-				} else if (month === 3 || month === 4) {
-					const SakuraEffect = (await import('@/utility/snowfall-effect.js')).SnowfallEffect;
-					new SakuraEffect({
-						sakura: true,
-					}).render();
-				}
-			}
-		}
-	} catch (error) {
-		// console.error(error);
-		console.error('Failed to initialise the seasonal screen effect canvas context:', error);
-	}
-
-	if ($i) {
-		store.loaded.then(async () => {
-			// prefereces migration
-			// TODO: そのうち消す
-			if (store.s.menu.length > 0) {
+			store.loaded.then(async () => {
 				const themes = await misskeyApi('i/registry/get', { scope: ['client'], key: 'themes' }).catch(() => []);
 				if (themes.length > 0) {
 					prefer.commit('themes', themes);
@@ -179,6 +121,17 @@ export async function mainBoot() {
 				prefer.commit('lightTheme', ColdDeviceStorage.get('lightTheme'));
 				prefer.commit('darkTheme', ColdDeviceStorage.get('darkTheme'));
 				prefer.commit('syncDeviceDarkMode', ColdDeviceStorage.get('syncDeviceDarkMode'));
+				prefer.commit('emojiPalettes', [{
+					id: 'reactions',
+					name: '',
+					emojis: store.s.reactions,
+				}, {
+					id: 'pinnedEmojis',
+					name: '',
+					emojis: store.s.pinnedEmojis,
+				}]);
+				prefer.commit('emojiPaletteForMain', 'pinnedEmojis');
+				prefer.commit('emojiPaletteForReaction', 'reactions');
 				prefer.commit('overridedDeviceKind', store.s.overridedDeviceKind);
 				prefer.commit('widgets', store.s.widgets);
 				prefer.commit('keepCw', store.s.keepCw);
@@ -243,6 +196,7 @@ export async function mainBoot() {
 				prefer.commit('skipNoteRender', store.s.skipNoteRender);
 				prefer.commit('showSoftWordMutedWord', store.s.showSoftWordMutedWord);
 				prefer.commit('confirmOnReact', store.s.confirmOnReact);
+				prefer.commit('defaultFollowWithReplies', store.s.defaultWithReplies);
 				prefer.commit('sound.masterVolume', store.s.sound_masterVolume);
 				prefer.commit('sound.notUseSound', store.s.sound_notUseSound);
 				prefer.commit('sound.useSoundOnlyWhenActive', store.s.sound_useSoundOnlyWhenActive);
@@ -250,7 +204,8 @@ export async function mainBoot() {
 				prefer.commit('sound.on.noteMy', store.s.sound_noteMy as any);
 				prefer.commit('sound.on.notification', store.s.sound_notification as any);
 				prefer.commit('sound.on.reaction', store.s.sound_reaction as any);
-				store.set('menu', []);
+				prefer.commit('defaultNoteVisibility', store.s.defaultNoteVisibility);
+				prefer.commit('defaultNoteLocalOnly', store.s.defaultNoteLocalOnly);
 
 				// region 独自周り
 				prefer.commit('postFormActions', store.s.postFormActions);
@@ -312,8 +267,78 @@ export async function mainBoot() {
 				prefer.commit('earthquakeWarningConnectionNotify', store.s.earthquakeWarningConnectionNotify);
 				prefer.commit('earthquakeWarningLogLevel', store.s.earthquakeWarningLogLevel);
 				// endregion
-			}
 
+				window.setTimeout(() => {
+					unisonReload();
+				}, 5000);
+			});
+		}
+	}
+
+	const stream = useStream();
+
+	let reloadDialogShowing = false;
+	stream.on('_disconnected_', async () => {
+		if (prefer.s.serverDisconnectedBehavior === 'reload') {
+			window.location.reload();
+		} else if (prefer.s.serverDisconnectedBehavior === 'dialog') {
+			if (reloadDialogShowing) return;
+			reloadDialogShowing = true;
+			const { canceled } = await confirm({
+				type: 'warning',
+				title: i18n.ts.disconnectedFromServer,
+				text: i18n.ts.reloadConfirm,
+			});
+			reloadDialogShowing = false;
+			if (!canceled) {
+				window.location.reload();
+			}
+		}
+	});
+
+	stream.on('emojiAdded', emojiData => {
+		addCustomEmoji(emojiData.emoji);
+	});
+
+	stream.on('emojiUpdated', emojiData => {
+		updateCustomEmojis(emojiData.emojis);
+	});
+
+	stream.on('emojiDeleted', emojiData => {
+		removeCustomEmojis(emojiData.emojis);
+	});
+
+	launchPlugins();
+
+	try {
+		if (prefer.s.enableSeasonalScreenEffect) {
+			const month = new Date().getMonth() + 1;
+			if (prefer.s.hemisphere === 'S') {
+				// ▼南半球
+				if (month === 7 || month === 8) {
+					const SnowfallEffect = (await import('@/utility/snowfall-effect.js')).SnowfallEffect;
+					new SnowfallEffect({}).render();
+				}
+			} else {
+				// ▼北半球
+				if (month === 12 || month === 1) {
+					const SnowfallEffect = (await import('@/utility/snowfall-effect.js')).SnowfallEffect;
+					new SnowfallEffect({}).render();
+				} else if (month === 3 || month === 4) {
+					const SakuraEffect = (await import('@/utility/snowfall-effect.js')).SnowfallEffect;
+					new SakuraEffect({
+						sakura: true,
+					}).render();
+				}
+			}
+		}
+	} catch (error) {
+		// console.error(error);
+		console.error('Failed to initialise the seasonal screen effect canvas context:', error);
+	}
+
+	if ($i) {
+		store.loaded.then(async () => {
 			if (store.s.accountSetupWizard !== -1) {
 				const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkUserSetupDialog.vue')), {}, {
 					closed: () => dispose(),
@@ -437,7 +462,7 @@ export async function mainBoot() {
 			let lastVisibilityChangedAt = Date.now();
 
 			function claimPlainLucky() {
-				if (document.visibilityState !== 'visible') {
+				if (window.document.visibilityState !== 'visible') {
 					if (justPlainLuckyTimer != null) window.clearTimeout(justPlainLuckyTimer);
 					return;
 				}
@@ -452,7 +477,7 @@ export async function mainBoot() {
 			window.addEventListener('visibilitychange', () => {
 				const now = Date.now();
 
-				if (document.visibilityState === 'visible') {
+				if (window.document.visibilityState === 'visible') {
 					// タブを高速で切り替えたら取得処理が何度も走るのを防ぐ
 					if ((now - lastVisibilityChangedAt) < 1000 * 10) {
 						justPlainLuckyTimer = window.setTimeout(claimPlainLucky, 1000 * 10);
@@ -497,7 +522,7 @@ export async function mainBoot() {
 
 		const latestDonationInfoShownAt = miLocalStorage.getItem('latestDonationInfoShownAt');
 		const neverShowDonationInfo = miLocalStorage.getItem('neverShowDonationInfo');
-		if (neverShowDonationInfo !== 'true' && (createdAt.getTime() < (Date.now() - (1000 * 60 * 60 * 24 * 3))) && !location.pathname.startsWith('/miauth')) {
+		if (neverShowDonationInfo !== 'true' && (createdAt.getTime() < (Date.now() - (1000 * 60 * 60 * 24 * 3))) && !window.location.pathname.startsWith('/miauth')) {
 			if (latestDonationInfoShownAt == null || (new Date(latestDonationInfoShownAt).getTime() < (Date.now() - (1000 * 60 * 60 * 24 * 30)))) {
 				const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkDonation.vue')), {}, {
 					closed: () => dispose(),
@@ -523,11 +548,11 @@ export async function mainBoot() {
 
 		// 自分の情報が更新されたとき
 		main.on('meUpdated', i => {
-			updateAccountPartial(i);
+			updateCurrentAccountPartial(i);
 		});
 
 		main.on('readAllNotifications', () => {
-			updateAccountPartial({
+			updateCurrentAccountPartial({
 				hasUnreadNotification: false,
 				unreadNotificationsCount: 0,
 			});
@@ -535,39 +560,24 @@ export async function mainBoot() {
 
 		main.on('unreadNotification', () => {
 			const unreadNotificationsCount = ($i?.unreadNotificationsCount ?? 0) + 1;
-			updateAccountPartial({
+			updateCurrentAccountPartial({
 				hasUnreadNotification: true,
 				unreadNotificationsCount,
 			});
 		});
 
-		main.on('unreadMention', () => {
-			updateAccountPartial({ hasUnreadMentions: true });
-		});
-
-		main.on('readAllUnreadMentions', () => {
-			updateAccountPartial({ hasUnreadMentions: false });
-		});
-
-		main.on('unreadSpecifiedNote', () => {
-			updateAccountPartial({ hasUnreadSpecifiedNotes: true });
-		});
-
-		main.on('readAllUnreadSpecifiedNotes', () => {
-			updateAccountPartial({ hasUnreadSpecifiedNotes: false });
-		});
-
-		main.on('readAllAntennas', () => {
-			updateAccountPartial({ hasUnreadAntenna: false });
-		});
-
 		main.on('unreadAntenna', () => {
-			updateAccountPartial({ hasUnreadAntenna: true });
+			updateCurrentAccountPartial({ hasUnreadAntenna: true });
 			sound.playMisskeySfx('antenna');
 		});
 
+		main.on('newChatMessage', () => {
+			updateCurrentAccountPartial({ hasUnreadChatMessages: true });
+			sound.playMisskeySfx('chat');
+		});
+
 		main.on('readAllAnnouncements', () => {
-			updateAccountPartial({ hasUnreadAnnouncement: false });
+			updateCurrentAccountPartial({ hasUnreadAnnouncement: false });
 		});
 
 		// 個人宛てお知らせが発行されたとき
@@ -593,7 +603,7 @@ export async function mainBoot() {
 			mainRouter.push('/search');
 		},
 	} as const satisfies Keymap;
-	document.addEventListener('keydown', makeHotkey(keymap), { passive: false });
+	window.document.addEventListener('keydown', makeHotkey(keymap), { passive: false });
 
 	initializeSw();
 	initEarthquakeWarning();

@@ -7,21 +7,22 @@ import { toUnicode } from 'punycode.js';
 import { defineAsyncComponent, ref, watch } from 'vue';
 import * as Misskey from 'misskey-js';
 import { host, url } from '@@/js/config.js';
+import type { Router } from '@/router.js';
 import type { MenuItem } from '@/types/menu.js';
-import type { IRouter } from '@/nirax.js';
 import { i18n } from '@/i18n.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { store } from "@/store.js";
 import { prefer } from '@/preferences.js';
-import { $i, iAmModerator } from '@/account.js';
+import { $i, iAmModerator } from '@/i.js';
 import { notesSearchAvailable, canSearchNonLocalNotes } from '@/utility/check-permissions.js';
 import { antennasCache, rolesCache, userListsCache } from '@/cache.js';
-import { mainRouter } from '@/router/main.js';
+import { mainRouter } from '@/router.js';
 import { genEmbedCode } from '@/utility/get-embed-code.js';
+import { getPluginHandlers } from '@/plugin.js';
 import { editNickname } from '@/utility/edit-nickname.js';
-import { summarizeUserProfile } from '@/utility/temp-script/profile-summarization.js';
+import { summarizeUserProfile } from '@/utility/tempura-script/profile-summarization.js';
 
 type PeriodType = {
 	key: string;
@@ -75,7 +76,7 @@ async function getPeriod(title: string, text?: string) {
 	return periodTime == null ? null : Date.now() + periodTime;
 }
 
-export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter = mainRouter) {
+export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router = mainRouter) {
 	const meId = $i ? $i.id : null;
 
 	const cleanups = [] as (() => void)[];
@@ -220,6 +221,16 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 
 	const menuItems: MenuItem[] = [];
 
+	if (iAmModerator) {
+		menuItems.push({
+			icon: 'ti ti-user-exclamation',
+			text: i18n.ts.moderation,
+			action: () => {
+				router.push(`/admin/user/${user.id}`);
+			},
+		}, { type: 'divider' });
+	}
+
 	menuItems.push({
 		icon: 'ti ti-at',
 		text: i18n.ts.copyUsername,
@@ -228,25 +239,14 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 		},
 	});
 
-	if (notesSearchAvailable && (user.host == null || canSearchNonLocalNotes)) {
-		menuItems.push({
-			icon: 'ti ti-search',
-			text: i18n.ts.searchThisUsersNotes,
-			action: () => {
-				router.push(`/search?username=${encodeURIComponent(user.username)}${user.host != null ? '&host=' + encodeURIComponent(user.host) : ''}`);
-			},
-		});
-	}
-
-	if (iAmModerator) {
-		menuItems.push({
-			icon: 'ti ti-user-exclamation',
-			text: i18n.ts.moderation,
-			action: () => {
-				router.push(`/admin/user/${user.id}`);
-			},
-		});
-	}
+	menuItems.push({
+		icon: 'ti ti-share',
+		text: i18n.ts.copyProfileUrl,
+		action: () => {
+			const canonical = user.host === null ? `@${user.username}` : `@${user.username}@${toUnicode(user.host)}`;
+			copyToClipboard(`${url}/${canonical}`);
+		},
+	});
 
 	menuItems.push({
 		icon: 'ti ti-rss',
@@ -279,36 +279,30 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 		});
 	}
 
-	menuItems.push({
-		icon: 'ti ti-share',
-		text: i18n.ts.copyProfileUrl,
-		action: () => {
-			const canonical = user.host === null ? `@${user.username}` : `@${user.username}@${toUnicode(user.host)}`;
-			copyToClipboard(`${url}/${canonical}`);
-		},
-	});
+	if (notesSearchAvailable && (user.host == null || canSearchNonLocalNotes)) {
+		menuItems.push({
+			icon: 'ti ti-search',
+			text: i18n.ts.searchThisUsersNotes,
+			action: () => {
+				router.push(`/search?username=${encodeURIComponent(user.username)}${user.host != null ? '&host=' + encodeURIComponent(user.host) : ''}`);
+			},
+		});
+	}
 
 	if ($i) {
-		menuItems.push({
-			icon: 'ti ti-mail',
-			text: i18n.ts.sendMessage,
-			action: () => {
-				const canonical = user.host === null ? `@${user.username}` : `@${user.username}@${user.host}`;
-				os.post({ specified: user, initialText: `${canonical} ` });
-			},
-		}, ($i.policies.canUseGeminiLLMAPI || prefer.s.geminiToken) ? {
+		menuItems.push({ type: 'divider' }, ($i.policies.canUseGeminiLLMAPI || prefer.s.geminiToken) ? {
 			icon: 'ti ti-file-text',
 			text: i18n.ts._llm.summarizeProfile,
 			action: async () => {
 				await summarizeUserProfile(user.id);
 			},
-		} : undefined, { type: 'divider' }, ...(prefer.s.nicknameEnabled ? [{
+		} : undefined, ...(prefer.s.nicknameEnabled ? [{
 			icon: 'ti ti-edit',
 			text: 'ニックネームを編集',
 			action: () => {
 				editNickname(user);
 			},
-		}] : []), {
+		}] : []), { type: 'divider' }, {
 			icon: 'ti ti-pencil',
 			text: i18n.ts.editMemo,
 			action: editMemo,
@@ -423,6 +417,18 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 		//}
 
 		menuItems.push({ type: 'divider' }, {
+			icon: 'ti ti-mail',
+			text: i18n.ts.sendMessage,
+			action: () => {
+				const canonical = user.host === null ? `@${user.username}` : `@${user.username}@${user.host}`;
+				os.post({ specified: user, initialText: `${canonical} ` });
+			},
+		}, {
+			type: 'link',
+			icon: 'ti ti-messages',
+			text: i18n.ts._chat.chatWithThisUser,
+			to: `/chat/user/${user.id}`,
+		}, { type: 'divider' }, {
 			icon: user.isMuted ? 'ti ti-eye' : 'ti ti-eye-off',
 			text: user.isMuted ? i18n.ts.unmute : i18n.ts.mute,
 			action: toggleMute,
@@ -469,7 +475,7 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: IRouter
 
 	if (prefer.s.devMode) {
 		menuItems.push({ type: 'divider' }, {
-			icon: 'ti ti-id',
+			icon: 'ti ti-hash',
 			text: i18n.ts.copyUserId,
 			action: () => {
 				copyToClipboard(user.id);

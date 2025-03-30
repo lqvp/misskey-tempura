@@ -9,7 +9,7 @@ import type { MenuItem } from '@/types/menu.js';
 import * as os from '@/os.js';
 import { instance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
-import { $i } from '@/account.js';
+import { $i } from '@/i.js';
 
 function toolsMenuItems(): MenuItem[] {
 	return [{
@@ -171,8 +171,8 @@ export function openInstanceMenu(ev: MouseEvent) {
 
 	menuItems.push({
 		type: 'link',
-		text: i18n.ts._misskeyTemp.aboutTemp,
-		to: '/about-misskey-temp',
+		text: i18n.ts._misskeyTempura.aboutTempura,
+		to: '/about-misskey-tempura',
 	});
 
 	os.popupMenu(menuItems, ev.currentTarget ?? ev.target, {

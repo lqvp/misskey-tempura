@@ -932,4 +932,34 @@ export class MiMeta {
 		nullable: true,
 	})
 	public serverGeminiModels: string;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public customCursorUrl: string | null;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public customCursorPointerUrl: string | null;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public customCursorTextUrl: string | null;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public customCursorProgressUrl: string | null;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public customCursorWaitUrl: string | null;
 }

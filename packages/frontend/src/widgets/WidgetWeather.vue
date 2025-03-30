@@ -102,7 +102,7 @@ const forecasts = computed(() => weatherData.value?.forecasts || []);
 const fetchWeatherData = async () => {
 	try {
 		fetching.value = true;
-		const response = await fetch(`https://weather.tsukumijima.net/api/forecast/city/${widgetProps.cityId}`);
+		const response = await window.fetch(`https://weather.tsukumijima.net/api/forecast/city/${widgetProps.cityId}`);
 		const data = await response.json();
 		weatherData.value = data;
 		publishingOffice.value = data.publishingOffice;
@@ -157,14 +157,14 @@ const normalizePrefName = (prefName: string): string => {
 };
 
 interface City {
-  id: string;
-  title: string;
-  pref: string;
+	id: string;
+	title: string;
+	pref: string;
 }
 
 const fetchCities = async (xmlUrl: string): Promise<City[]> => {
 	try {
-		const response = await fetch(xmlUrl);
+		const response = await window.fetch(xmlUrl);
 		if (!response.ok) {
 			throw new Error('都市データの取得に失敗しました');
 		}

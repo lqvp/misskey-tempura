@@ -32,7 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</I18n>
 			<I18n :src="i18n.ts.correspondingSourceIsAvailable" tag="span">
 				<template #anchor>
-					<MkA to="/about-misskey-temp" class="_link">{{ i18n.ts._misskeyTemp.aboutTemp }}</MkA>
+					<MkA to="/about-misskey-tempura" class="_link">{{ i18n.ts._misskeyTempura.aboutTempura }}</MkA>
 				</template>
 			</I18n>
 		</div>

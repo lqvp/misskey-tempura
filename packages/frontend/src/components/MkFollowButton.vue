@@ -45,8 +45,7 @@ import { useStream } from '@/stream.js';
 import { i18n } from '@/i18n.js';
 import { claimAchievement } from '@/utility/achievements.js';
 import { pleaseLogin } from '@/utility/please-login.js';
-import { $i } from '@/account.js';
-import { store } from '@/store.js';
+import { $i } from '@/i.js';
 import { userName } from "@/filters/user.js";
 import { prefer } from '@/preferences.js';
 
@@ -132,11 +131,11 @@ async function onClick() {
 			} else {
 				await misskeyApi('following/create', {
 					userId: props.user.id,
-					withReplies: store.s.defaultWithReplies,
+					withReplies: prefer.s.defaultFollowWithReplies,
 				});
 				emit('update:user', {
 					...userDetailed.value,
-					withReplies: store.s.defaultWithReplies,
+					withReplies: prefer.s.defaultFollowWithReplies,
 				});
 				userDetailed.value.hasPendingFollowRequestFromYou = true;
 

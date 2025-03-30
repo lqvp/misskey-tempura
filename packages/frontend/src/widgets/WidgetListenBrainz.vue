@@ -37,7 +37,7 @@ import MkLoading from '@/components/global/MkLoading.vue';
 import { i18n } from '@/i18n.js';
 import { infoImageUrl } from '@/instance.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
-import { $i } from '@/account.js';
+import { $i } from '@/i.js';
 import MkMfm from '@/components/global/MkMfm.js';
 
 const name = i18n.ts._widgets.listenBrainz;
@@ -102,7 +102,7 @@ const fetchPlayingNow = async () => {
 	if (!widgetProps.userId) return;
 
 	const url = `https://api.listenbrainz.org/1/user/${widgetProps.userId}/playing-now`;
-	const response = await fetch(url);
+	const response = await window.fetch(url);
 	const data = await response.json();
 
 	if (data.payload.count > 0) {

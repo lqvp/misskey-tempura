@@ -29,7 +29,7 @@ export interface Locale extends ILocale {
      */
     "poweredByMisskeyDescription": ParameterizedString<"name">;
     /**
-     * {name}は、オープンソースのプラットフォーム<b>Misskey</b>のフォーク版であるmisskey-tempを使用しています。
+     * {name}は、オープンソースのプラットフォーム<b>Misskey</b>のフォーク版であるmisskey-tempuraを使用しています。
      */
     "poweredBytempForkDescription": ParameterizedString<"name">;
     /**
@@ -1239,10 +1239,6 @@ export interface Locale extends ILocale {
      */
     "saved": string;
     /**
-     * チャット
-     */
-    "messaging": string;
-    /**
      * アップロード
      */
     "upload": string;
@@ -1291,9 +1287,9 @@ export interface Locale extends ILocale {
      */
     "noMoreHistory": string;
     /**
-     * チャットを開始
+     * チャットを始める
      */
-    "startMessaging": string;
+    "startChat": string;
     /**
      * {n}人が読みました
      */
@@ -2046,14 +2042,6 @@ export interface Locale extends ILocale {
      * クリップボードのテキストが長いです。テキストファイルとして添付しますか？
      */
     "attachAsFileQuestion": string;
-    /**
-     * まだチャットはありません
-     */
-    "noMessagesYet": string;
-    /**
-     * 新しいメッセージがあります
-     */
-    "newMessageExists": string;
     /**
      * メッセージに添付できるファイルはひとつです
      */
@@ -2894,6 +2882,10 @@ export interface Locale extends ILocale {
      * コピー
      */
     "copy": string;
+    /**
+     * クリップボードにコピーされました
+     */
+    "copiedToClipboard": string;
     /**
      * メトリクス
      */
@@ -5546,6 +5538,201 @@ export interface Locale extends ILocale {
      * 同期の有効化をキャンセル
      */
     "preferenceSyncConflictChoiceCancel": string;
+    /**
+     * ペースト
+     */
+    "paste": string;
+    /**
+     * 絵文字パレット
+     */
+    "emojiPalette": string;
+    /**
+     * 投稿フォーム
+     */
+    "postForm": string;
+    /**
+     * 文字数
+     */
+    "textCount": string;
+    /**
+     * 情報
+     */
+    "information": string;
+    /**
+     * チャット
+     */
+    "chat": string;
+    "_chat": {
+        /**
+         * まだメッセージはありません
+         */
+        "noMessagesYet": string;
+        /**
+         * 新しいメッセージ
+         */
+        "newMessage": string;
+        /**
+         * 個人チャット
+         */
+        "individualChat": string;
+        /**
+         * 特定ユーザーとの一対一のチャットができます。
+         */
+        "individualChat_description": string;
+        /**
+         * ルームチャット
+         */
+        "roomChat": string;
+        /**
+         * 複数人でのチャットができます。
+         * また、個人チャットを許可していないユーザーとでも、相手が受け入れればチャットができます。
+         */
+        "roomChat_description": string;
+        /**
+         * ルームを作成
+         */
+        "createRoom": string;
+        /**
+         * ユーザーを招待してチャットを始めましょう
+         */
+        "inviteUserToChat": string;
+        /**
+         * 作成したルーム
+         */
+        "yourRooms": string;
+        /**
+         * 参加中のルーム
+         */
+        "joiningRooms": string;
+        /**
+         * 招待
+         */
+        "invitations": string;
+        /**
+         * 招待はありません
+         */
+        "noInvitations": string;
+        /**
+         * 履歴
+         */
+        "history": string;
+        /**
+         * 履歴はありません
+         */
+        "noHistory": string;
+        /**
+         * ルームはありません
+         */
+        "noRooms": string;
+        /**
+         * ユーザーを招待
+         */
+        "inviteUser": string;
+        /**
+         * 参加
+         */
+        "join": string;
+        /**
+         * 無視
+         */
+        "ignore": string;
+        /**
+         * ルームから退出
+         */
+        "leave": string;
+        /**
+         * メンバー
+         */
+        "members": string;
+        /**
+         * メッセージを検索
+         */
+        "searchMessages": string;
+        /**
+         * ホーム
+         */
+        "home": string;
+        /**
+         * このルームをミュート
+         */
+        "muteThisRoom": string;
+        /**
+         * このユーザーとのチャットを開始できません
+         */
+        "cannotChatWithTheUser": string;
+        /**
+         * チャットが使えない状態になっているか、相手がチャットを開放していません。
+         */
+        "cannotChatWithTheUser_description": string;
+        /**
+         * チャットする
+         */
+        "chatWithThisUser": string;
+        /**
+         * このユーザーはフォロワーからのみチャットを受け付けています。
+         */
+        "thisUserAllowsChatOnlyFromFollowers": string;
+        /**
+         * このユーザーはフォローしているユーザーからのみチャットを受け付けています。
+         */
+        "thisUserAllowsChatOnlyFromFollowing": string;
+        /**
+         * このユーザーは相互フォローのユーザーからのみチャットを受け付けています。
+         */
+        "thisUserAllowsChatOnlyFromMutualFollowing": string;
+        /**
+         * このユーザーは誰からもチャットを受け付けていません。
+         */
+        "thisUserNotAllowedChatAnyone": string;
+        /**
+         * チャットを許可する相手
+         */
+        "chatAllowedUsers": string;
+        /**
+         * 自分からチャットメッセージを送った相手とはこの設定に関わらずチャットが可能です。
+         */
+        "chatAllowedUsers_note": string;
+        "_chatAllowedUsers": {
+            /**
+             * 誰でも
+             */
+            "everyone": string;
+            /**
+             * 自分のフォロワーのみ
+             */
+            "followers": string;
+            /**
+             * 自分がフォローしているユーザーのみ
+             */
+            "following": string;
+            /**
+             * 相互フォローのユーザーのみ
+             */
+            "mutual": string;
+            /**
+             * 誰も許可しない
+             */
+            "none": string;
+        };
+    };
+    "_emojiPalette": {
+        /**
+         * パレット
+         */
+        "palettes": string;
+        /**
+         * パレットのデバイス間同期を有効にする
+         */
+        "enableSyncBetweenDevicesForPalettes": string;
+        /**
+         * メインで使用するパレット
+         */
+        "paletteForMain": string;
+        /**
+         * リアクションで使用するパレット
+         */
+        "paletteForReaction": string;
+    };
     "_settings": {
         /**
          * ドライブの管理と設定、使用量の確認、ファイルをアップロードする際の設定を行えます。
@@ -5580,7 +5767,7 @@ export interface Locale extends ILocale {
          */
         "accountData": string;
         /**
-         * アカウントのデータをエクスポート/インポートして管理できます。
+         * アカウントデータのアーカイブをエクスポート/インポートして管理できます。
          */
         "accountDataBanner": string;
         /**
@@ -5611,6 +5798,18 @@ export interface Locale extends ILocale {
          * クライアントで再生するサウンドの設定が行えます。
          */
         "soundsBanner": string;
+        /**
+         * タイムラインとノート
+         */
+        "timelineAndNote": string;
+        /**
+         * 全てのテキスト要素を選択可能にする
+         */
+        "makeEveryTextElementsSelectable": string;
+        /**
+         * 有効にすると、一部のシチュエーションでのユーザビリティが低下する場合があります。
+         */
+        "makeEveryTextElementsSelectable_description": string;
     };
     "_preferencesProfile": {
         /**
@@ -7500,6 +7699,10 @@ export interface Locale extends ILocale {
              */
             "canImportUserLists": string;
             /**
+             * チャットを許可
+             */
+            "canChat": string;
+            /**
              * 予約投稿の最大数
              */
             "scheduleNoteMax": string;
@@ -8007,9 +8210,9 @@ export interface Locale extends ILocale {
          */
         "projectMembers": string;
     };
-    "_misskeyTemp": {
+    "_misskeyTempura": {
         /**
-         * misskey-tempはlqvpによって開発されているMisskeyのフォークです。
+         * misskey-tempuraはlqvpによって開発されているMisskeyのフォークです。
          */
         "about": string;
         /**
@@ -8017,9 +8220,9 @@ export interface Locale extends ILocale {
          */
         "contributors": string;
         /**
-         * misskey-tempについて
+         * misskey-tempuraについて
          */
-        "aboutTemp": string;
+        "aboutTempura": string;
     };
     "_displayOfSensitiveMedia": {
         /**
@@ -8460,6 +8663,10 @@ export interface Locale extends ILocale {
          * リアクション選択時
          */
         "reaction": string;
+        /**
+         * チャットのメッセージ
+         */
+        "chatMessage": string;
     };
     "_soundSettings": {
         /**
@@ -9053,6 +9260,14 @@ export interface Locale extends ILocale {
          */
         "write:report-abuse": string;
         /**
+         * チャットを操作する
+         */
+        "write:chat": string;
+        /**
+         * チャットを閲覧する
+         */
+        "read:chat": string;
+        /**
          * 予約投稿を見る
          */
         "read:notes-schedule": string;
@@ -9318,6 +9533,24 @@ export interface Locale extends ILocale {
          * ネストウィジェット
          */
         "nestedWidget": string;
+        /**
+         * 地震履歴
+         */
+        "earthQuake": string;
+        "_eq": {
+            /**
+             * 最大震度
+             */
+            "maxIntensity": string;
+            /**
+             * 震源調查中
+             */
+            "epicenterInvestigating": string;
+            /**
+             * 深さ
+             */
+            "depth": string;
+        };
     };
     "_cw": {
         /**
@@ -10246,7 +10479,7 @@ export interface Locale extends ILocale {
              */
             "loginFailed": string;
             /**
-             * アクセストークンが作成された
+             * アクセストークンの作成
              */
             "createToken": string;
             /**
@@ -10859,20 +11092,12 @@ export interface Locale extends ILocale {
              * このプラグインをインストールしますか？
              */
             "title": string;
-            /**
-             * プラグイン情報
-             */
-            "metaTitle": string;
         };
         "_theme": {
             /**
              * このテーマをインストールしますか？
              */
             "title": string;
-            /**
-             * テーマ情報
-             */
-            "metaTitle": string;
         };
         "_meta": {
             /**
@@ -12493,6 +12718,96 @@ export interface Locale extends ILocale {
              */
             "serverGeminiModelsDescription": string;
         };
+        "_error": {
+            /**
+             * ファイルのダウンロードに失敗しました
+             */
+            "fileDownload": string;
+            /**
+             * ファイルアップロードの初期化に失敗しました
+             */
+            "uploadInit": string;
+            /**
+             * アップロードURLが取得できませんでした
+             */
+            "uploadUrlNotFound": string;
+            /**
+             * ファイルのアップロードに失敗しました
+             */
+            "upload": string;
+            /**
+             * アップロードしたファイルのURIが取得できませんでした
+             */
+            "uploadedFileUri": string;
+            /**
+             * 操作がキャンセルされました。
+             */
+            "cancel": string;
+            /**
+             * Gemini APIの利用を無効にしました。
+             */
+            "disable": string;
+            /**
+             * サーバー提供のLLM APIが有効になっていません。
+             */
+            "serverDisabled": string;
+            /**
+             * サーバー提供のLLM APIを使用する権限がありません。
+             */
+            "serverPermission": string;
+            /**
+             * サーバーLLM API エラー:
+             */
+            "serverLLMApi": string;
+            /**
+             * Gemini API tokenがありません。
+             */
+            "tokenMissing": string;
+            /**
+             * Gemini API エラー:
+             */
+            "api": string;
+            /**
+             * 変換の実行に失敗しました。
+             */
+            "transformExecute": string;
+            /**
+             * 変換結果に問題が発生しました。
+             */
+            "transformResult": string;
+            /**
+             * プロフィール情報が取得できませんでした。
+             */
+            "profileNotFound": string;
+            /**
+             * Gemini API のレスポンスフォーマットが不正です。
+             */
+            "responseFormat": string;
+            /**
+             * プロフィール要約の取得に失敗しました。
+             */
+            "profileSummarization": string;
+            /**
+             * ノート本文がありません。
+             */
+            "noteEmpty": string;
+            /**
+             * ノート本文とファイルがありません。
+             */
+            "noteMissing": string;
+            /**
+             * Gemini API応答の解析に失敗しました。
+             */
+            "responseParse": string;
+            /**
+             * ノートの要約に失敗しました。
+             */
+            "noteSummarization": string;
+            /**
+             * 要約の取得に失敗しました。
+             */
+            "noteSummaryFetch": string;
+        };
         /**
          * LLM設定
          */
@@ -12924,6 +13239,52 @@ export interface Locale extends ILocale {
          */
         "license": string;
     };
+    "_customCursor": {
+        /**
+         * カスタムカーソル設定
+         */
+        "title": string;
+        /**
+         * デフォルトカーソル画像URL
+         */
+        "defaultCursorImageURL": string;
+        /**
+         * 通常のカーソル状態のためのカスタムカーソル画像(PNG、GIF、CURなど)のURL
+         */
+        "defaultCursorImageUrlDescription": string;
+        /**
+         * ポインタカーソル画像URL
+         */
+        "pointerCursorImageURL": string;
+        /**
+         * クリック可能な要素（リンク、ボタンなど）用のカスタムカーソル画像のURL
+         */
+        "pointerCursorImageURLDescription": string;
+        /**
+         * テキストカーソル画像URL
+         */
+        "textCursorImageURL": string;
+        /**
+         * テキスト入力領域用のカスタムカーソル画像のURL
+         */
+        "textCursorImageURLDescription": string;
+        /**
+         * プログレスカーソル画像URL
+         */
+        "progressCursorImageURL": string;
+        /**
+         * プログレスバー用のカスタムカーソル画像のURL
+         */
+        "progressCursorImageURLDescription": string;
+        /**
+         * 待機カーソル画像URL
+         */
+        "waitCursorImageURL": string;
+        /**
+         * 待機状態のためのカスタムカーソル画像のURL
+         */
+        "waitCursorImageURLDescription": string;
+    };
     /**
      * すぐ消す
      */
@@ -12936,10 +13297,6 @@ export interface Locale extends ILocale {
      * 1年以上先の日時を指定することはできません
      */
     "cannotScheduleLaterThanOneYear": string;
-    /**
-     * 投稿フォーム
-     */
-    "postForm": string;
     /**
      * 投稿フォームの下部に表示される項目の並び替えが出来ます。項目をクリックすると削除できます。
      */

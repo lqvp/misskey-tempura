@@ -52,6 +52,7 @@ import { i18n } from '@/i18n.js';
 import { notePage } from '@/filters/note.js';
 import { userPage } from '@/filters/user.js';
 import { dateTimeFormat } from '@/utility/intl-const.js';
+import { DI } from '@/di.js';
 
 defineProps<{
 	note: Misskey.entities.Note & {
@@ -60,7 +61,7 @@ defineProps<{
 	scheduled?: boolean;
 }>();
 
-const mock = inject<boolean>('mock', false);
+const mock = inject(DI.mock, false);
 </script>
 
 <style lang="scss" module>

@@ -10,8 +10,8 @@ import '@tabler/icons-webfont/dist/tabler-icons.scss';
 
 import '@/style.scss';
 import { createApp, defineAsyncComponent } from 'vue';
-import defaultLightTheme from '@@/themes/l-light.json5';
-import defaultDarkTheme from '@@/themes/d-dark.json5';
+import defaultLightTheme from '@@/themes/pink-candy.json5';
+import defaultDarkTheme from '@@/themes/night-pink.json5';
 import { MediaProxy } from '@@/js/media-proxy.js';
 import { applyTheme, assertIsTheme } from '@/theme.js';
 import { fetchCustomEmojis } from '@/custom-emojis.js';

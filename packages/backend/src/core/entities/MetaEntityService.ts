@@ -161,6 +161,11 @@ export class MetaEntityService {
 			entranceMarginTop: instance.entranceMarginTop,
 			entranceMarginBottom: instance.entranceMarginBottom,
 			serverGeminiEnabled: instance.serverGeminiEnabled,
+			customCursorUrl: instance.customCursorUrl,
+			customCursorPointerUrl: instance.customCursorPointerUrl,
+			customCursorTextUrl: instance.customCursorTextUrl,
+			customCursorProgressUrl: instance.customCursorProgressUrl,
+			customCursorWaitUrl: instance.customCursorWaitUrl,
 		};
 
 		return packed;
@@ -201,4 +206,3 @@ export class MetaEntityService {
 		return packDetailed;
 	}
 }
-

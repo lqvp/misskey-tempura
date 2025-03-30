@@ -31,9 +31,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<template #icon><i class="ti ti-info-circle"></i></template>
 				{{ i18n.ts.aboutMisskey }}
 			</FormLink>
-			<FormLink to="/about-misskey-temp">
+			<FormLink to="/about-misskey-tempura">
 				<template #icon><i class="ti ti-info-circle"></i></template>
-				{{ i18n.ts._misskeyTemp.aboutTemp }}
+				{{ i18n.ts._misskeyTempura.aboutTempura }}
 			</FormLink>
 			<FormLink v-if="instance.repositoryUrl || instance.providesTarball" :to="instance.repositoryUrl || `/tarball/misskey-${version}.tar.gz`" external>
 				<template #icon><i class="ti ti-code"></i></template>
@@ -137,7 +137,7 @@ import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
 import number from '@/filters/number.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
-import { $i } from '@/account.js';
+import { $i } from '@/i.js';
 import FormLink from '@/components/form/link.vue';
 import FormSection from '@/components/form/section.vue';
 import FormSplit from '@/components/form/split.vue';

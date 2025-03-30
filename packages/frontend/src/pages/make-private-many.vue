@@ -57,7 +57,7 @@ import { computed, ref, watch } from 'vue';
 import { debounce } from 'throttle-debounce';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
-import { $i } from '@/account.js';
+import { $i } from '@/i.js';
 import { misskeyApi } from '@/utility/misskey-api';
 import * as os from '@/os';
 import MkInput from '@/components/MkInput.vue';

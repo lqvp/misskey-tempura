@@ -7,7 +7,7 @@ permissions:
   contents: read
   packages: write
 env:
-  REGISTRY_IMAGE: ghcr.io/${{ github.repository_owner }}/misskey-temp
+  REGISTRY_IMAGE: ghcr.io/${{ github.repository_owner }}/misskey-tempura
   TAGS: |
     type=raw,value={{branch}},enable=${{ github.ref != 'refs/heads/main' }}
     type=semver,pattern={{version}}

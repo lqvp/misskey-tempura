@@ -122,6 +122,7 @@ export const ROLE_POLICIES = [
 	'canImportFollowing',
 	'canImportMuting',
 	'canImportUserLists',
+	'canChat',
 	'canAddRoles',
 	'canUseUnFollowNotification',
 	'canUseBlockedNotification',
@@ -134,12 +135,6 @@ export const ROLE_POLICIES = [
 	'canUpdateCounters',
 	'canUseGeminiLLMAPI',
 ] as const;
-
-// なんか動かない
-//export const CURRENT_STICKY_TOP = Symbol('CURRENT_STICKY_TOP');
-//export const CURRENT_STICKY_BOTTOM = Symbol('CURRENT_STICKY_BOTTOM');
-export const CURRENT_STICKY_TOP = 'CURRENT_STICKY_TOP';
-export const CURRENT_STICKY_BOTTOM = 'CURRENT_STICKY_BOTTOM';
 
 export const DEFAULT_SERVER_ERROR_IMAGE_URL = 'https://xn--931a.moe/assets/error.jpg';
 export const DEFAULT_NOT_FOUND_IMAGE_URL = 'https://xn--931a.moe/assets/not-found.jpg';
