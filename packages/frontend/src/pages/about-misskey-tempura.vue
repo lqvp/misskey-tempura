@@ -154,7 +154,7 @@ const headerActions = computed(() => []);
 const headerTabs = computed(() => []);
 
 definePage(() => ({
-	title: i18n.ts._misskeyTemp.aboutTemp,
+	title: i18n.ts._misskeyTempura.aboutTempura,
 	icon: null,
 }));
 </script>
