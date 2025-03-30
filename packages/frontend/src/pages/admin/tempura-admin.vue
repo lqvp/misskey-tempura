@@ -309,7 +309,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkFolder>
 
 					<MkFolder>
-						<template #icon><i class="ti ti-cursor"></i></template>
+						<template #icon><i class="ti ti-pointer"></i></template>
 						<template #label>{{ i18n.ts._customCursor.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 						<template v-if="customCursorUrl || customCursorPointerUrl || customCursorTextUrl || customCursorProgressUrl || customCursorWaitUrl" #suffix>{{ i18n.ts._customCursor.configured }}</template>
 						<template v-else #suffix>{{ i18n.ts._customCursor.default }}</template>

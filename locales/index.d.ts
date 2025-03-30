@@ -13218,11 +13218,11 @@ export interface Locale extends ILocale {
         /**
          * デフォルトカーソル画像URL
          */
-        "defaultCursorUrl": string;
+        "defaultCursorImageURL": string;
         /**
          * 通常のカーソル状態のためのカスタムカーソル画像(PNG、GIF、CURなど)のURL
          */
-        "defaultCursorUrlDescription": string;
+        "defaultCursorImageUrlDescription": string;
         /**
          * ポインタカーソル画像URL
          */

@@ -3538,8 +3538,8 @@ _earthquakeWarning:
 
 _customCursor:
   title: "カスタムカーソル設定"
-  defaultCursorUrl: "デフォルトカーソル画像URL"
-  defaultCursorUrlDescription: "通常のカーソル状態のためのカスタムカーソル画像(PNG、GIF、CURなど)のURL"
+  defaultCursorImageURL: "デフォルトカーソル画像URL"
+  defaultCursorImageUrlDescription: "通常のカーソル状態のためのカスタムカーソル画像(PNG、GIF、CURなど)のURL"
   pointerCursorImageURL: "ポインタカーソル画像URL"
   pointerCursorImageURLDescription: "クリック可能な要素（リンク、ボタンなど）用のカスタムカーソル画像のURL"
   textCursorImageURL: "テキストカーソル画像URL"
