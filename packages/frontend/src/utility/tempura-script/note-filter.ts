@@ -276,6 +276,17 @@ export async function filterNoteContent(note: Misskey.entities.Note): Promise<Fi
 		if (!response.ok) {
 			const errorText = `Gemini API エラー: ${response.status} ${response.statusText}`;
 			console.error(errorText);
+
+			//429エラー（レート制限）の場合はキャッシュに保存せずに結果を返す
+			if (response.status === 429) {
+				return {
+					reason: `API rate limit exceeded: ${response.status}`,
+					timestamp: Date.now(),
+					score: 0,
+					error: errorText,
+				};
+			}
+
 			return saveToCache(note.id, {
 				reason: `API error: ${response.status}`,
 				timestamp: Date.now(),

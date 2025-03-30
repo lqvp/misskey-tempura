@@ -243,7 +243,7 @@ import { directRenote } from '@/utility/direct-renote.js';
 import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
 import { DI } from '@/di.js';
-import { checkNoteFiltered } from '@/utility/temp-script/note-filter.js';
+import { checkNoteFiltered } from '@/utility/tempura-script/note-filter.js';
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;

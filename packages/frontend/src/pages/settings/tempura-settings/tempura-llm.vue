@@ -184,7 +184,7 @@ import { reloadAsk } from '@/utility/reload-ask.js';
 import { $i } from '@/i.js';
 import { i18n } from '@/i18n.js';
 import { fetchInstance } from '@/instance.js';
-import { clearAllFilterCache } from '@/utility/temp-script/note-filter.js';
+import { clearAllFilterCache } from '@/utility/tempura-script/note-filter.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 
 const instance = ref<Misskey.entities.MetaDetailed | null>(null);
