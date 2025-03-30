@@ -3536,6 +3536,21 @@ _earthquakeWarning:
   license: "地震速報データはWolfx (https://wolfx.jp/) によって提供されています。\nこの機能は、Wolfxが提供するWebSocket API (https://wolfx.jp/wsapi) を利用してリアルタイムにデータを受信しています。\nAPIの詳細については、Wolfx APIドキュメント (https://wolfx.jp/apidoc) を参照してください。\nご利用にあたっては、Wolfxの利用規約をご確認ください。"
 
 
+  _customCursor:
+    title: "カスタムカーソル設定"
+    defaultCursorUrl: "デフォルトカーソル画像URL"
+    defaultCursorUrlDescription: "通常のカーソル状態のためのカスタムカーソル画像(PNG、GIF、CURなど)のURL"
+    pointerCursorImageURL: "ポインタカーソル画像URL"
+    pointerCursorImageURLDescription: "クリック可能な要素（リンク、ボタンなど）用のカスタムカーソル画像のURL"
+    textCursorImageURL: "テキストカーソル画像URL"
+    textCursorImageURLDescription: "テキスト入力領域用のカスタムカーソル画像のURL"
+    progressCursorImageURL: "プログレスカーソル画像URL"
+    progressCursorImageURLDescription: "プログレスバー用のカスタムカーソル画像のURL"
+    waitCursorImageURL: "待機カーソル画像URL"
+    waitCursorImageURLDescription: "待機状態のためのカスタムカーソル画像のURL"
+    configured: "設定済み"
+    default: "デフォルト"
+
 scheduledNoteDelete: "すぐ消す"
 noteDeletationAt: "このノートは{time}に削除されます"
 cannotScheduleLaterThanOneYear: "1年以上先の日時を指定することはできません"

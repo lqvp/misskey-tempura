@@ -421,6 +421,26 @@ export const packedMetaLiteSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
+		customCursorUrl: {
+			type: 'string',
+			optional: false, nullable: true,
+		},
+		customCursorPointerUrl: {
+			type: 'string',
+			optional: false, nullable: true,
+		},
+		customCursorTextUrl: {
+			type: 'string',
+			optional: false, nullable: true,
+		},
+		customCursorProgressUrl: {
+			type: 'string',
+			optional: false, nullable: true,
+		},
+		customCursorWaitUrl: {
+			type: 'string',
+			optional: false, nullable: true,
+		},
 	},
 } as const;
 

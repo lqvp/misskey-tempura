@@ -5720,6 +5720,11 @@ export type components = {
       /** @default 0 */
       entranceMarginBottom: number;
       serverGeminiEnabled: boolean;
+      customCursorUrl: string | null;
+      customCursorPointerUrl: string | null;
+      customCursorTextUrl: string | null;
+      customCursorProgressUrl: string | null;
+      customCursorWaitUrl: string | null;
     };
     MetaDetailedOnly: {
       features?: {
@@ -9282,6 +9287,11 @@ export type operations = {
             serverGeminiEnabled: boolean;
             serverGeminiApiKey: string | null;
             serverGeminiModels: string;
+            customCursorUrl: string | null;
+            customCursorPointerUrl: string | null;
+            customCursorTextUrl: string | null;
+            customCursorProgressUrl: string | null;
+            customCursorWaitUrl: string | null;
           };
         };
       };
@@ -11812,6 +11822,11 @@ export type operations = {
           serverGeminiEnabled?: boolean;
           serverGeminiApiKey?: string | null;
           serverGeminiModels?: string;
+          customCursorUrl?: string | null;
+          customCursorPointerUrl?: string | null;
+          customCursorTextUrl?: string | null;
+          customCursorProgressUrl?: string | null;
+          customCursorWaitUrl?: string | null;
         };
       };
     };
