@@ -134,6 +134,64 @@ export function migrateOldSettings() {
 		prefer.commit('defaultNoteVisibility', store.s.defaultNoteVisibility);
 		prefer.commit('defaultNoteLocalOnly', store.s.defaultNoteLocalOnly);
 
+		// region 独自周り
+		prefer.commit('postFormActions', store.s.postFormActions);
+		prefer.commit('defaultScheduledNoteDelete', store.s.defaultScheduledNoteDelete);
+		prefer.commit('defaultScheduledNoteDeleteTime', store.s.defaultScheduledNoteDeleteTime);
+		prefer.commit('selectReaction', store.s.selectReaction);
+		prefer.commit('showLikeButton', store.s.showLikeButton);
+		prefer.commit('hideReactionUsers', store.s.hideReactionUsers);
+		prefer.commit('hideReactionCount', store.s.hideReactionCount);
+		prefer.commit('customFont', store.s.customFont);
+		prefer.commit('disableNoteNyaize', store.s.disableNoteNyaize);
+		prefer.commit('hideLocalTimeLine', store.s.hideLocalTimeLine);
+		prefer.commit('hideSocialTimeLine', store.s.hideSocialTimeLine);
+		prefer.commit('hideGlobalTimeLine', store.s.hideGlobalTimeLine);
+		prefer.commit('hideLists', store.s.hideLists);
+		prefer.commit('hideAntennas', store.s.hideAntennas);
+		prefer.commit('hideChannel', store.s.hideChannel);
+		prefer.commit('nicknameEnabled', store.s.nicknameEnabled);
+		prefer.commit('nicknameMap', store.s.nicknameMap);
+		prefer.commit('directRenote', store.s.directRenote);
+		prefer.commit('reactionChecksMuting', store.s.reactionChecksMuting);
+		prefer.commit('imageCompressionMode', store.s.imageCompressionMode);
+		prefer.commit('anonymizeMutedUsers', store.s.anonymizeMutedUsers);
+		prefer.commit('enableReactionConfirm', store.s.enableReactionConfirm);
+		prefer.commit('enableLikeConfirm', store.s.enableLikeConfirm);
+		prefer.commit('showInstanceTickerSoftwareName', store.s.showInstanceTickerSoftwareName);
+		prefer.commit('showInstanceTickerVersion', store.s.showInstanceTickerVersion);
+		prefer.commit('useTextAreaAutoSize', store.s.useTextAreaAutoSize);
+		prefer.commit('specifiedUsers', store.s.specifiedUsers);
+		prefer.commit('useGeminiLLMAPI', store.s.useGeminiLLMAPI);
+		prefer.commit('useGeminiWithMedia', store.s.useGeminiWithMedia);
+		prefer.commit('geminiToken', store.s.geminiToken);
+		prefer.commit('geminiModels', store.s.geminiModels);
+		prefer.commit('geminiSystemPrompt', store.s.geminiSystemPrompt);
+		prefer.commit('geminiPromptNote', store.s.geminiPromptNote);
+		prefer.commit('geminiPromptProfile', store.s.geminiPromptProfile);
+		prefer.commit('geminiNoteLongText', store.s.geminiNoteLongText);
+		prefer.commit('geminiNoteShortText', store.s.geminiNoteShortText);
+		prefer.commit('geminiNoteSimpleText', store.s.geminiNoteSimpleText);
+		prefer.commit('geminiNoteCasualText', store.s.geminiNoteCasualText);
+		prefer.commit('geminiNoteProfessionalText', store.s.geminiNoteProfessionalText);
+		prefer.commit('geminiNoteCatText', store.s.geminiNoteCatText);
+		prefer.commit('geminiNoteCustomText', store.s.geminiNoteCustomText);
+		prefer.commit('enableEarthquakeWarning', store.s.enableEarthquakeWarning);
+		prefer.commit('earthquakeWarningIntensity', store.s.earthquakeWarningIntensity);
+		prefer.commit('enableEarthquakeWarningTts', store.s.enableEarthquakeWarningTts);
+		prefer.commit('earthquakeWarningToastDuration', store.s.earthquakeWarningToastDuration);
+		prefer.commit('earthquakeWarningTtsRate', store.s.earthquakeWarningTtsRate);
+		prefer.commit('earthquakeWarningNotificationStyle', store.s.earthquakeWarningNotificationStyle);
+		prefer.commit('earthquakeWarningSound', store.s.earthquakeWarningSound);
+		prefer.commit('earthquakeWarningSoundType', store.s.earthquakeWarningSoundType);
+		prefer.commit('earthquakeWarningRegionFilter', store.s.earthquakeWarningRegionFilter);
+		prefer.commit('enableEarthquakeWarningRegionFilter', store.s.enableEarthquakeWarningRegionFilter);
+		prefer.commit('earthquakeWarningThrottleTime', store.s.earthquakeWarningThrottleTime);
+		prefer.commit('earthquakeWarningIgnoreTraining', store.s.earthquakeWarningIgnoreTraining);
+		prefer.commit('earthquakeWarningConnectionNotify', store.s.earthquakeWarningConnectionNotify);
+		prefer.commit('earthquakeWarningLogLevel', store.s.earthquakeWarningLogLevel);
+		// endregion
+
 		window.setTimeout(() => {
 			unisonReload();
 		}, 5000);
