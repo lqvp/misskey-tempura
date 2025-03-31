@@ -94,7 +94,7 @@ const weatherData = ref<any>(null);
 const updateTime = ref('');
 const publishingOffice = ref('');
 const publicTimeFormatted = ref('');
-const intervalId = ref<ReturnType<typeof setInterval> | null>(null);
+const intervalId = ref<number | null>(null);
 const copyright = ref({ title: '', link: '' });
 
 const forecasts = computed(() => weatherData.value?.forecasts || []);
@@ -139,11 +139,11 @@ const isLast = (key: string, obj: object) => {
 
 const setupAutoRefresh = () => {
 	if (intervalId.value) {
-		clearInterval(intervalId.value);
+		window.clearInterval(intervalId.value);
 		intervalId.value = null;
 	}
 	if (widgetProps.refreshIntervalSec > 0) {
-		intervalId.value = setInterval(() => {
+		intervalId.value = window.setInterval(() => {
 			fetchWeatherData();
 		}, widgetProps.refreshIntervalSec * 1000);
 	}
@@ -256,7 +256,7 @@ watch(() => widgetProps.refreshIntervalSec, setupAutoRefresh, { immediate: true 
 watch(() => widgetProps.cityId, fetchWeatherData, { immediate: true });
 
 onBeforeUnmount(() => {
-	if (intervalId.value) clearInterval(intervalId.value);
+	if (intervalId.value) window.clearInterval(intervalId.value);
 });
 
 onMounted(() => {

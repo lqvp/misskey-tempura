@@ -99,7 +99,7 @@ interface EarthquakeData {
 const earthquakeData = ref<EarthquakeData | null>(null);
 const fetching = ref(true);
 const md5 = ref('');
-let intervalId: ReturnType<typeof setTimeout> | null = null;
+let intervalId: number | null = null;
 
 // Updated getShindoColor with switch for type safety
 function getShindoColor(shindoValue: string | number): { bg: string; fg: string } {
@@ -187,12 +187,12 @@ watch(
 	() => widgetProps.refreshIntervalSec,
 	(newInterval) => {
 		if (intervalId) {
-			clearInterval(intervalId);
+			window.clearInterval(intervalId);
 			intervalId = null;
 		}
 
 		if (newInterval > 0) {
-			intervalId = setInterval(
+			intervalId = window.setInterval(
 				fetchEarthquakeData,
 				newInterval * 1000,
 			);
@@ -207,7 +207,7 @@ onMounted(() => {
 
 onUnmounted(() => {
 	if (intervalId) {
-		clearInterval(intervalId);
+		window.clearInterval(intervalId);
 		intervalId = null;
 	}
 });

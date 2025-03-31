@@ -400,7 +400,7 @@ export function testEarthquakeAlert(): void {
 	}
 
 	// 少し遅延させてリアルな動作をシミュレート
-	setTimeout(() => {
+	window.setTimeout(() => {
 		// 通常の処理をバイパスして、テスト通知を直接表示
 		const message = formatAlertMessage(mockData);
 		const duration = prefer.s.earthquakeWarningToastDuration || 10000;
@@ -483,7 +483,7 @@ export function connectEarthquakeWarningWs(): void {
 
 			// Clear any reconnect timeout if it exists
 			if (reconnectTimeout) {
-				clearTimeout(reconnectTimeout);
+				window.clearTimeout(reconnectTimeout);
 				reconnectTimeout = null;
 			}
 
@@ -533,7 +533,7 @@ export function connectEarthquakeWarningWs(): void {
 			// Attempt to reconnect after delay
 			if (prefer.s.enableEarthquakeWarning && !reconnectTimeout) {
 				const reconnectDelay = 5000; // 5秒後に再接続
-				reconnectTimeout = setTimeout(() => {
+				reconnectTimeout = window.setTimeout(() => {
 					reconnectTimeout = null;
 					connectEarthquakeWarningWs();
 				}, reconnectDelay);
@@ -587,7 +587,7 @@ export function disconnectEarthquakeWarningWs(): void {
 	}
 
 	if (reconnectTimeout) {
-		clearTimeout(reconnectTimeout);
+		window.clearTimeout(reconnectTimeout);
 		reconnectTimeout = null;
 	}
 }
