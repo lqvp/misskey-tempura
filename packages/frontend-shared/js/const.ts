@@ -70,6 +70,7 @@ export const notificationTypes = [
 	'blocked',
 	'unblocked',
 	'roleAssigned',
+	'chatRoomInvitationReceived',
 	'achievementEarned',
 	'exportCompleted',
 	'login',

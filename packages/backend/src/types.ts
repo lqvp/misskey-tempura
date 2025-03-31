@@ -19,6 +19,7 @@
  * blocked - ブロックされた
  * unblocked - ブロック解除された
  * roleAssigned - ロールが付与された
+ * chatRoomInvitationReceived - チャットルームに招待された
  * achievementEarned - 実績を獲得
  * exportCompleted - エクスポートが完了
  * login - ログイン
@@ -45,6 +46,7 @@ export const notificationTypes = [
 	'blocked',
 	'unblocked',
 	'roleAssigned',
+	'chatRoomInvitationReceived',
 	'achievementEarned',
 	'exportCompleted',
 	'login',
@@ -145,6 +147,7 @@ export const moderationLogTypes = [
 	'deletePage',
 	'deleteFlash',
 	'deleteGalleryPost',
+	'deleteChatRoom',
 	'updateProxyAccountDescription',
 	'quarantineRemoteInstance',
 	'unquarantineRemoteInstance',
@@ -448,6 +451,10 @@ export type ModerationLogPayloads = {
 		postUserId: string;
 		postUserUsername: string;
 		post: any;
+	};
+	deleteChatRoom: {
+		roomId: string;
+		room: any;
 	};
 	updateProxyAccountDescription: {
 		before: string | null;

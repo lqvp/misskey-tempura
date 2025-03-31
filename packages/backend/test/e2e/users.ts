@@ -84,6 +84,7 @@ describe('ユーザー', () => {
 			followingVisibility: user.followingVisibility,
 			followersVisibility: user.followersVisibility,
 			chatScope: user.chatScope,
+			canChat: user.canChat,
 			roles: user.roles,
 			memo: user.memo,
 		});
@@ -348,6 +349,7 @@ describe('ユーザー', () => {
 		assert.strictEqual(response.followingVisibility, 'public');
 		assert.strictEqual(response.followersVisibility, 'public');
 		assert.strictEqual(response.chatScope, 'mutual');
+		assert.strictEqual(response.canChat, true);
 		assert.deepStrictEqual(response.roles, []);
 		assert.strictEqual(response.memo, null);
 
@@ -734,7 +736,7 @@ describe('ユーザー', () => {
 	});
 	test.each([
 		{ label: '「見つけやすくする」がOFFのユーザーが含まれる', user: () => userNotExplorable },
-		{ label: 'ミュートユーザーが含まれる', user: () => userMutedByAlice },
+		{ label: 'ミュートユーザーが含まれない', user: () => userMutedByAlice, excluded: true },
 		{ label: 'ブロックされているユーザーが含まれる', user: () => userBlockedByAlice },
 		{ label: 'ブロックしてきているユーザーが含まれる', user: () => userBlockingAlice },
 		{ label: '承認制ユーザーが含まれる', user: () => userLocking },

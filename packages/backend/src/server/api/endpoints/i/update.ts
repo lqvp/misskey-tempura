@@ -224,6 +224,7 @@ export const paramDef = {
 				blocked: notificationRecieveConfig,
 				unblocked: notificationRecieveConfig,
 				roleAssigned: notificationRecieveConfig,
+				chatRoomInvitationReceived: notificationRecieveConfig,
 				achievementEarned: notificationRecieveConfig,
 				app: notificationRecieveConfig,
 				test: notificationRecieveConfig,

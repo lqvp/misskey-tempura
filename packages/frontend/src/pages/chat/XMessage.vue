@@ -6,10 +6,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <div :class="[$style.root, { [$style.isMe]: isMe }]">
 	<MkAvatar :class="$style.avatar" :user="message.fromUser" :link="!isMe" :preview="false"/>
-	<div :class="$style.body">
+	<div :class="$style.body" @contextmenu.stop="onContextmenu">
+		<div :class="$style.header"><MkUserName v-if="!isMe && prefer.s['chat.showSenderName']" :user="message.fromUser"/></div>
 		<MkFukidashi :class="$style.fukidashi" :tail="isMe ? 'right' : 'left'" :accented="isMe">
 			<div v-if="!message.isDeleted" :class="$style.content">
-				<Mfm v-if="message.text" ref="text" class="_selectable" :text="message.text" :i="$i"/>
+				<Mfm
+					v-if="message.text"
+					ref="text"
+					class="_selectable"
+					:text="message.text"
+					:i="$i"
+					:nyaize="'respect'"
+					:enableEmojiMenu="true"
+					:enableEmojiMenuReaction="true"
+				/>
 				<MkMediaList v-if="message.file" :mediaList="[message.file]" :class="$style.file"/>
 			</div>
 			<div v-else :class="$style.content">
@@ -31,7 +41,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			:moveClass="prefer.s.animation ? $style.transition_reaction_move : ''"
 			tag="div" :class="$style.reactions"
 		>
-			<div v-for="record in message.reactions" :key="record.reaction + record.user.id" :class="$style.reaction">
+			<div v-for="record in message.reactions" :key="record.reaction + record.user.id" :class="[$style.reaction, record.user.id === $i.id ? $style.reactionMy : null]" @click="onReactionClick(record)">
 				<MkAvatar :user="record.user" :link="false" :class="$style.reactionAvatar"/>
 				<MkReactionIcon
 					:withTooltip="true"
@@ -46,10 +56,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, defineAsyncComponent } from 'vue';
+import { computed, defineAsyncComponent, provide } from 'vue';
 import * as mfm from 'mfm-js';
 import * as Misskey from 'misskey-js';
 import { url } from '@@/js/config.js';
+import { isLink } from '@@/js/is-link.js';
 import type { MenuItem } from '@/types/menu.js';
 import { extractUrlFromMfm } from '@/utility/extract-url-from-mfm.js';
 import MkUrlPreview from '@/components/MkUrlPreview.vue';
@@ -64,6 +75,7 @@ import { reactionPicker } from '@/utility/reaction-picker.js';
 import * as sound from '@/utility/sound.js';
 import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import { prefer } from '@/preferences.js';
+import { DI } from '@/di.js';
 
 const $i = ensureSignin();
 
@@ -75,10 +87,17 @@ const props = defineProps<{
 const isMe = computed(() => props.message.fromUserId === $i.id);
 const urls = computed(() => props.message.text ? extractUrlFromMfm(mfm.parse(props.message.text)) : []);
 
+provide(DI.mfmEmojiReactCallback, (reaction) => {
+	sound.playMisskeySfx('reaction');
+	misskeyApi('chat/messages/react', {
+		messageId: props.message.id,
+		reaction: reaction,
+	});
+});
+
 function react(ev: MouseEvent) {
 	reactionPicker.show(ev.currentTarget ?? ev.target, null, async (reaction) => {
 		sound.playMisskeySfx('reaction');
-
 		misskeyApi('chat/messages/react', {
 			messageId: props.message.id,
 			reaction: reaction,
@@ -86,7 +105,31 @@ function react(ev: MouseEvent) {
 	});
 }
 
-function showMenu(ev: MouseEvent) {
+function onReactionClick(record: Misskey.entities.ChatMessage['reactions'][0]) {
+	if (record.user.id === $i.id) {
+		misskeyApi('chat/messages/unreact', {
+			messageId: props.message.id,
+			reaction: record.reaction,
+		});
+	} else {
+		if (!props.message.reactions.some(r => r.user.id === $i.id && r.reaction === record.reaction)) {
+			sound.playMisskeySfx('reaction');
+			misskeyApi('chat/messages/react', {
+				messageId: props.message.id,
+				reaction: record.reaction,
+			});
+		}
+	}
+}
+
+function onContextmenu(ev: MouseEvent) {
+	if (ev.target && isLink(ev.target as HTMLElement)) return;
+	if (window.getSelection()?.toString() !== '') return;
+
+	showMenu(ev, true);
+}
+
+function showMenu(ev: MouseEvent, contextmenu = false) {
 	const menu: MenuItem[] = [];
 
 	if (!isMe.value) {
@@ -142,7 +185,11 @@ function showMenu(ev: MouseEvent) {
 		});
 	}
 
-	os.popupMenu(menu, ev.currentTarget ?? ev.target);
+	if (contextmenu) {
+		os.contextMenu(menu, ev);
+	} else {
+		os.popupMenu(menu, ev.currentTarget ?? ev.target);
+	}
 }
 </script>
 
@@ -169,10 +216,6 @@ function showMenu(ev: MouseEvent) {
 		flex-direction: row-reverse;
 		text-align: right;
 
-		.content {
-			color: var(--MI_THEME-fgOnAccent);
-		}
-
 		.footer {
 			flex-direction: row-reverse;
 		}
@@ -183,21 +226,46 @@ function showMenu(ev: MouseEvent) {
 	position: sticky;
 	top: calc(16px + var(--MI-stickyTop, 0px));
 	display: block;
-	width: 52px;
-	height: 52px;
+	width: 50px;
+	height: 50px;
+}
+
+@container (max-width: 450px) {
+	.root {
+		&.isMe {
+			.avatar {
+				display: none;
+			}
+		}
+	}
+
+	.avatar {
+		width: 42px;
+		height: 42px;
+	}
+
+	.fukidashi {
+		font-size: 90%;
+	}
 }
 
 .body {
 	margin: 0 12px;
 }
 
+.header {
+	min-height: 4px; // fukidashiの位置調整も兼ねるため
+	font-size: 80%;
+}
+
+.fukidashi {
+	text-align: left;
+}
+
 .content {
 	overflow: clip;
 	overflow-wrap: break-word;
 	word-break: break-word;
-}
-
-.file {
 }
 
 .footer {
@@ -230,6 +298,10 @@ function showMenu(ev: MouseEvent) {
 	border: solid 1px var(--MI_THEME-divider);
 	border-radius: 999px;
 	padding: 8px;
+
+	&.reactionMy {
+		border-color: var(--MI_THEME-accent);
+	}
 }
 
 .reactionAvatar {

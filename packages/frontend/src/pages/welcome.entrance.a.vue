@@ -190,7 +190,7 @@ if (meta.entranceShowFederation) {
 	left: 0;
 	right: 0;
 	margin: auto;
-	background: var(--MI_THEME-acrylicPanel);
+	background: color(from var(--MI_THEME-panel) srgb r g b / 0.5);
 	-webkit-backdrop-filter: var(--MI-blur, blur(15px));
 	backdrop-filter: var(--MI-blur, blur(15px));
 	border-radius: 999px;

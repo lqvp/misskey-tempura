@@ -127,6 +127,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<hr>
 
 		<FormLink to="/registry"><template #icon><i class="ti ti-adjustments"></i></template>{{ i18n.ts.registry }}</FormLink>
+
+		<hr>
+
+		<FormSlot>
+			<MkButton danger @click="migrate"><i class="ti ti-refresh"></i> {{ i18n.ts.migrateOldSettings }}</MkButton>
+			<template #caption>{{ i18n.ts.migrateOldSettings_description }}</template>
+		</FormSlot>
 	</div>
 </SearchMarker>
 </template>
@@ -140,6 +147,7 @@ import MkFolder from '@/components/MkFolder.vue';
 import FormInfo from '@/components/MkInfo.vue';
 import MkKeyValue from '@/components/MkKeyValue.vue';
 import MkButton from '@/components/MkButton.vue';
+import FormSlot from '@/components/form/slot.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { ensureSignin } from '@/i.js';
@@ -150,6 +158,7 @@ import FormSection from '@/components/form/section.vue';
 import { prefer } from '@/preferences.js';
 import MkRolePreview from '@/components/MkRolePreview.vue';
 import { signout } from '@/signout.js';
+import { migrateOldSettings } from '@/pref-migrate.js';
 
 const $i = ensureSignin();
 
@@ -185,6 +194,11 @@ async function deleteAccount() {
 	});
 
 	await signout();
+}
+
+function migrate() {
+	os.waiting();
+	migrateOldSettings();
 }
 
 async function truncateAccount() {
