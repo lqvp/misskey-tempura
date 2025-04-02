@@ -1,0 +1,13 @@
+version: 1.0
+
+excludeFiles:
+  - 'packages/misskey-js/**'
+  - 'packages/misskey-reversi/**'
+  - 'packages/misskey-bubble-game/**'
+  - 'packages/sw/**'
+  - 'packages/shared/**'
+  - 'locales/**'
+  - 'chart/**'
+  - 'cypress/**'
+  - 'scripts/**'
+  - 'idea/**'
