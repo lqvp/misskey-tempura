@@ -9,6 +9,7 @@ import { v4 as uuid } from 'uuid';
 import { apiUrl } from '@@/js/config.js';
 import { $i } from '@/i.js';
 import { alert } from '@/os.js';
+import { i18n } from '@/i18n.js';
 import { uploads } from '@/utility/upload.js';
 
 // Maximum size for standard upload (95MB - Cloudflare制限を考慮)
@@ -50,8 +51,8 @@ export async function uploadFileMultipart(
 		// エラーをalert関数で表示
 		await alert({
 			type: 'error',
-			title: 'アップロードエラー',
-			text: 'ファイルサイズが大きすぎます（最大: 2GB）。データベースの制限により、現在2GB以上のファイルはアップロードできません。',
+			title: i18n.ts._uploadMultipart.error,
+			text: i18n.ts._uploadMultipart.overflow,
 		});
 		// エラー表示後に例外をスロー
 		throw new Error('File too large');
@@ -124,8 +125,8 @@ export async function uploadFileMultipart(
 			const error = await createMultipartRes.json();
 			await alert({
 				type: 'error',
-				title: 'アップロードエラー',
-				text: error.error?.message || `Failed to create multipart upload: ${createMultipartRes.status} ${createMultipartRes.statusText}`,
+				title: i18n.ts._uploadMultipart.error,
+				text: error.error?.message || i18n.tsx._uploadMultipart.failedToCreateMultipart({ status: createMultipartRes.status, statusText: createMultipartRes.statusText }),
 			});
 			throw new Error('Failed to create multipart upload');
 		}
@@ -183,8 +184,8 @@ export async function uploadFileMultipart(
 						isAborting = true;
 						await alert({
 							type: 'error',
-							title: 'アップロードエラー',
-							text: `アップロードがレート制限により中止されました。しばらく時間をおいてから再試行してください。 (${err.message})`,
+							title: i18n.ts._uploadMultipart.error,
+							text: i18n.ts._uploadMultipart.rateLimitError,
 						});
 						throw new Error('Rate limit exceeded');
 					}
@@ -200,8 +201,8 @@ export async function uploadFileMultipart(
 						console.error(`Too many global retries (${globalRetryCount}), aborting multipart upload.`);
 						await alert({
 							type: 'error',
-							title: 'アップロードエラー',
-							text: `File upload failed after ${MAX_GLOBAL_RETRIES} global retries. Please try again later.`,
+							title: i18n.ts._uploadMultipart.error,
+							text: i18n.tsx._uploadMultipart.tooManyRetries({ retries: MAX_GLOBAL_RETRIES }),
 						});
 						throw new Error('Too many retries');
 					}
@@ -246,8 +247,8 @@ export async function uploadFileMultipart(
 			const error = await completeMultipartRes.json();
 			await alert({
 				type: 'error',
-				title: 'アップロードエラー',
-				text: error.error?.message || `Failed to complete multipart upload: ${completeMultipartRes.status} ${completeMultipartRes.statusText}`,
+				title: i18n.ts._uploadMultipart.error,
+				text: error.error?.message || i18n.tsx._uploadMultipart.failedToCreateMultipart({ status: completeMultipartRes.status, statusText: completeMultipartRes.statusText }),
 			});
 			throw new Error('Failed to complete multipart upload');
 		}
@@ -262,7 +263,7 @@ export async function uploadFileMultipart(
 
 		await alert({
 			type: 'error',
-			title: 'アップロードエラー',
+			title: i18n.ts._uploadMultipart.error,
 			text: err instanceof Error ? err.message : 'undefined',
 		});
 

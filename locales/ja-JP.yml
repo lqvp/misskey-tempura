@@ -3535,6 +3535,12 @@ _earthquakeWarning:
   clearLogs: "ログをクリア"
   license: "地震速報データはWolfx (https://wolfx.jp/) によって提供されています。\nこの機能は、Wolfxが提供するWebSocket API (https://wolfx.jp/wsapi) を利用してリアルタイムにデータを受信しています。\nAPIの詳細については、Wolfx APIドキュメント (https://wolfx.jp/apidoc) を参照してください。\nご利用にあたっては、Wolfxの利用規約をご確認ください。"
 
+_uploadMultipart:
+  error: "アップロードエラー"
+  overflow: "ファイルサイズが大きすぎます（最大: 2GB）。データベースの制限により、現在2GB以上のファイルはアップロードできません。"
+  rateLimit: "アップロードがレート制限により中止されました。しばらく時間をおいてから再試行してください。"
+  tooManyRetries: "ファイルアップロード中に{retries}回のリトライを試みましたが、失敗しました。\nしばらく時間をおいてから再試行してください。"
+  failedToCreateMultipart: "ファイルアップロード中に失敗しました。\n{status}: {statusText}"
 
 scheduledNoteDelete: "すぐ消す"
 noteDeletationAt: "このノートは{time}に削除されます"
