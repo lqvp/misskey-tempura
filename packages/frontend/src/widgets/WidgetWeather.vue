@@ -94,7 +94,7 @@ const weatherData = ref<any>(null);
 const updateTime = ref('');
 const publishingOffice = ref('');
 const publicTimeFormatted = ref('');
-const intervalId = ref<ReturnType<typeof setInterval> | null>(null);
+const intervalId = ref<number | null>(null);
 const copyright = ref({ title: '', link: '' });
 
 const forecasts = computed(() => weatherData.value?.forecasts || []);
@@ -102,7 +102,7 @@ const forecasts = computed(() => weatherData.value?.forecasts || []);
 const fetchWeatherData = async () => {
 	try {
 		fetching.value = true;
-		const response = await fetch(`https://weather.tsukumijima.net/api/forecast/city/${widgetProps.cityId}`);
+		const response = await window.fetch(`https://weather.tsukumijima.net/api/forecast/city/${widgetProps.cityId}`);
 		const data = await response.json();
 		weatherData.value = data;
 		publishingOffice.value = data.publishingOffice;
@@ -139,11 +139,11 @@ const isLast = (key: string, obj: object) => {
 
 const setupAutoRefresh = () => {
 	if (intervalId.value) {
-		clearInterval(intervalId.value);
+		window.clearInterval(intervalId.value);
 		intervalId.value = null;
 	}
 	if (widgetProps.refreshIntervalSec > 0) {
-		intervalId.value = setInterval(() => {
+		intervalId.value = window.setInterval(() => {
 			fetchWeatherData();
 		}, widgetProps.refreshIntervalSec * 1000);
 	}
@@ -157,14 +157,14 @@ const normalizePrefName = (prefName: string): string => {
 };
 
 interface City {
-  id: string;
-  title: string;
-  pref: string;
+	id: string;
+	title: string;
+	pref: string;
 }
 
 const fetchCities = async (xmlUrl: string): Promise<City[]> => {
 	try {
-		const response = await fetch(xmlUrl);
+		const response = await window.fetch(xmlUrl);
 		if (!response.ok) {
 			throw new Error('都市データの取得に失敗しました');
 		}
@@ -256,7 +256,7 @@ watch(() => widgetProps.refreshIntervalSec, setupAutoRefresh, { immediate: true 
 watch(() => widgetProps.cityId, fetchWeatherData, { immediate: true });
 
 onBeforeUnmount(() => {
-	if (intervalId.value) clearInterval(intervalId.value);
+	if (intervalId.value) window.clearInterval(intervalId.value);
 });
 
 onMounted(() => {

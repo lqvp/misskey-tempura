@@ -33,14 +33,25 @@ function greet() {
 	if (!envOption.quiet) {
 		//#region logo
 		const versionParts = meta.version.split('-');
-		const v = `v${versionParts[0]}`;
-		const forkVersion = versionParts[2];
-		console.log(themeColor('░█▄█░▀█▀░█▀▀░█▀▀░█░█░█▀▀░█░█░░░░░▀█▀░█▀▀░█▄█░█▀█'));
-		console.log(themeColor('░█░█░░█░░▀▀█░▀▀█░█▀▄░█▀▀░░█░░▄▄▄░░█░░█▀▀░█░█░█▀▀' + chalk.gray(forkVersion)));
-		console.log(themeColor('░▀░▀░▀▀▀░▀▀▀░▀▀▀░▀░▀░▀▀▀░░▀░░░░░░░▀░░▀▀▀░▀░▀░▀░░' + chalk.gray('based on Misskey ' + v)));
+		const v = versionParts[1]
+			? `v${versionParts[0]}-${versionParts[1]}`
+			: `v${versionParts[0]}`;
+		const tempuraIndex = versionParts.findIndex((part: string) => part === 'tempura');
+		const forkVersion = tempuraIndex >= 0
+			? `${versionParts[tempuraIndex]}${versionParts.slice(tempuraIndex + 1).map((p: string) => `-${p}`).join('')}`
+			: undefined;
+		console.log(themeColor(' __                                                       '));
+		console.log(themeColor('/\\ \\__                                                    '));
+		console.log(themeColor('\\ \\ ,_\\    __    ___ ___   _____   __  __  _ __    __     '));
+		console.log(themeColor(' \\ \\ \\/  /\'__`\\/\' __` __`\\/\\ \'__`\\/\\ \\/\\ \\/\\`\'__\\/\'__`\\   '));
+		console.log(themeColor('  \\ \\ \\_/\\  __//\\ \\/\\ \\/\\ \\ \\ \\L\\ \\ \\ \\_\\ \\ \\ \\/\\ \\L\\.\\_  '));
+		console.log(themeColor('   \\ \\__\\ \\____\\ \\_\\ \\_\\ \\_\\ \\ ,__/\\ \\____/\\ \\_\\\\ \\__/.\\_\\'));
+		console.log(themeColor('    \\/__/\\/____/\\/_/\\/_/\\/_/\\ \\ \\/  \\/___/  \\/_/ \\/__/\\/_/'));
+		console.log(themeColor('                             \\ \\_\\                        ' + chalk.gray(forkVersion)));
+		console.log(themeColor('                              \\/_/                        ' + chalk.gray('based on Misskey ' + v)));
 		//#endregion
 
-		console.log('misskey-temp is a fork of Misskey.');
+		console.log('misskey-tempura is a fork of Misskey.');
 		console.log(chalk.rgb(255, 136, 0)(' If you like this fork, please donate to support Misskey development. https://www.patreon.com/syuilo'));
 		console.log(chalk.gray(' Original Misskey repository: https://github.com/misskey-dev/misskey'));
 

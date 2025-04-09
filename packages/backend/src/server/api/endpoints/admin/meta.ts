@@ -728,6 +728,26 @@ export const meta = {
 				type: 'string',
 				optional: false, nullable: false,
 			},
+			customCursorUrl: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
+			customCursorPointerUrl: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
+			customCursorTextUrl: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
+			customCursorProgressUrl: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
+			customCursorWaitUrl: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
 		},
 	},
 } as const;
@@ -921,6 +941,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				serverGeminiEnabled: instance.serverGeminiEnabled,
 				serverGeminiApiKey: instance.serverGeminiApiKey,
 				serverGeminiModels: instance.serverGeminiModels,
+				customCursorUrl: instance.customCursorUrl,
+				customCursorPointerUrl: instance.customCursorPointerUrl,
+				customCursorTextUrl: instance.customCursorTextUrl,
+				customCursorProgressUrl: instance.customCursorProgressUrl,
+				customCursorWaitUrl: instance.customCursorWaitUrl,
 			};
 		});
 	}

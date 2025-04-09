@@ -38,8 +38,8 @@ import MkContainer from '@/components/MkContainer.vue';
 
 const props = withDefaults(
 	defineProps<{
-        user: misskey.entities.User & { listenbrainz?: string };
-    }>(),
+		user: misskey.entities.User & { listenbrainz?: string };
+	}>(),
 	{},
 );
 
@@ -55,7 +55,7 @@ const listenbrainz = reactive({
 if (props.user.listenbrainz) {
 	(async () => {
 		const getLMData = async (title: string, artist: string) => {
-			const response = await fetch(
+			const response = await window.fetch(
 				`https://api.listenbrainz.org/1/metadata/lookup/?artist_name=${artist}&recording_name=${title}`,
 				{
 					method: 'GET',
@@ -83,7 +83,7 @@ if (props.user.listenbrainz) {
 			return [titler, artistr, img, musicbrainzurl, listenbrainzurl];
 		};
 
-		const response = await fetch(
+		const response = await window.fetch(
 			`https://api.listenbrainz.org/1/user/${props.user.listenbrainz}/playing-now`,
 			{
 				method: 'GET',

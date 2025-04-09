@@ -5,9 +5,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div class="_gaps">
-	<MkButton primary gradate rounded :class="$style.start" @click="start"><i class="ti ti-plus"></i> {{ i18n.ts.startChat }}</MkButton>
+	<MkButton v-if="$i.policies.chatAvailability === 'available'" primary gradate rounded :class="$style.start" @click="start"><i class="ti ti-plus"></i> {{ i18n.ts.startChat }}</MkButton>
 
-	<MkAd :prefer="['horizontal', 'horizontal-big']"/>
+	<MkInfo v-else>{{ $i.policies.chatAvailability === 'readonly' ? i18n.ts._chat.chatIsReadOnlyForThisAccountOrServer : i18n.ts._chat.chatNotAvailableForThisAccountOrServer }}</MkInfo>
+
+	<MkAd :preferForms="['horizontal', 'horizontal-big']"/>
 
 	<MkInput
 		v-model="searchQuery"
@@ -40,10 +42,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 				class="_panel"
 				:to="item.message.toRoomId ? `/chat/room/${item.message.toRoomId}` : `/chat/user/${item.other!.id}`"
 			>
-				<MkAvatar v-if="item.other" :class="$style.messageAvatar" :user="item.other" indicator :preview="false"/>
+				<MkAvatar v-if="item.message.toRoomId" :class="$style.messageAvatar" :user="item.message.fromUser" indicator :preview="false"/>
+				<MkAvatar v-else-if="item.other" :class="$style.messageAvatar" :user="item.other" indicator :preview="false"/>
 				<div :class="$style.messageBody">
 					<header v-if="item.message.toRoom" :class="$style.messageHeader">
-						<span :class="$style.messageHeaderName">{{ item.message.toRoom.name }}</span>
+						<span :class="$style.messageHeaderName"><i class="ti ti-users"></i> {{ item.message.toRoom.name }}</span>
 						<MkTime :time="item.message.createdAt" :class="$style.messageHeaderTime"/>
 					</header>
 					<header v-else :class="$style.messageHeader">
@@ -55,17 +58,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</div>
 			</MkA>
 		</div>
-		<div v-if="!fetching && history.length == 0" class="_fullinfo">
+		<div v-if="!initializing && history.length == 0" class="_fullinfo">
 			<div>{{ i18n.ts._chat.noHistory }}</div>
 		</div>
-		<MkLoading v-if="fetching"/>
+		<MkLoading v-if="initializing"/>
 	</MkFoldableSection>
 </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue';
+import { onActivated, onDeactivated, onMounted, ref } from 'vue';
 import * as Misskey from 'misskey-js';
+import { useInterval } from '@@/js/use-interval.js';
 import XMessage from './XMessage.vue';
 import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
@@ -76,12 +80,14 @@ import * as os from '@/os.js';
 import { updateCurrentAccountPartial } from '@/accounts.js';
 import MkInput from '@/components/MkInput.vue';
 import MkFoldableSection from '@/components/MkFoldableSection.vue';
+import MkInfo from '@/components/MkInfo.vue';
 
 const $i = ensureSignin();
 
 const router = useRouter();
 
-const fetching = ref(true);
+const initializing = ref(true);
+const fetching = ref(false);
 const history = ref<{
 	id: string;
 	message: Misskey.entities.ChatMessage;
@@ -113,7 +119,8 @@ function start(ev: MouseEvent) {
 }
 
 async function startUser() {
-	os.selectUser().then(user => {
+	// TODO: localOnly は連合に対応したら消す
+	os.selectUser({ localOnly: true }).then(user => {
 		router.push(`/chat/user/${user.id}`);
 	});
 }
@@ -142,6 +149,8 @@ async function search() {
 }
 
 async function fetchHistory() {
+	if (fetching.value) return;
+
 	fetching.value = true;
 
 	const [userMessages, roomMessages] = await Promise.all([
@@ -154,14 +163,39 @@ async function fetchHistory() {
 		.map(m => ({
 			id: m.id,
 			message: m,
-			other: m.room == null ? (m.fromUserId === $i.id ? m.toUser : m.fromUser) : null,
+			other: (!('room' in m) || m.room == null) ? (m.fromUserId === $i.id ? m.toUser : m.fromUser) : null,
 			isMe: m.fromUserId === $i.id,
 		}));
 
 	fetching.value = false;
+	initializing.value = false;
 
 	updateCurrentAccountPartial({ hasUnreadChatMessages: false });
 }
+
+let isActivated = true;
+
+onActivated(() => {
+	isActivated = true;
+});
+
+onDeactivated(() => {
+	isActivated = false;
+});
+
+useInterval(() => {
+	// TODO: DOM的にバックグラウンドになっていないかどうかも考慮する
+	if (!window.document.hidden && isActivated) {
+		fetchHistory();
+	}
+}, 1000 * 10, {
+	immediate: false,
+	afterMounted: true,
+});
+
+onActivated(() => {
+	fetchHistory();
+});
 
 onMounted(() => {
 	fetchHistory();

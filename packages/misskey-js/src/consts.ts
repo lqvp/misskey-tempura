@@ -14,9 +14,10 @@ import type {
 	ReversiGameDetailed,
 	SystemWebhook,
 	UserLite,
+	ChatRoom,
 } from './autogen/models.js';
 
-export const notificationTypes = ['note', 'follow', 'mention', 'reply', 'renote', 'quote', 'reaction', 'pollVote', 'pollEnded', 'receiveFollowRequest', 'followRequestAccepted', 'followRequestRejected', 'blocked', 'unblocked', 'groupInvited', 'app', 'roleAssigned', 'achievementEarned', 'scheduledNoteFailed', 'scheduledNotePosted'] as const;
+export const notificationTypes = ['note', 'follow', 'mention', 'reply', 'renote', 'quote', 'reaction', 'pollVote', 'pollEnded', 'receiveFollowRequest', 'followRequestAccepted', 'followRequestRejected', 'blocked', 'unblocked', 'groupInvited', 'app', 'roleAssigned', 'chatRoomInvitationReceived', 'achievementEarned', 'scheduledNoteFailed', 'scheduledNotePosted'] as const;
 
 export const noteVisibilities = ['public', 'public_non_ltl', 'home', 'followers', 'specified'] as const;
 
@@ -186,6 +187,7 @@ export const moderationLogTypes = [
 	'deletePage',
 	'deleteFlash',
 	'deleteGalleryPost',
+	'deleteChatRoom',
 	'quarantineRemoteInstance',
 	'unquarantineRemoteInstance',
 	'dropAllNotes',
@@ -483,6 +485,10 @@ export type ModerationLogPayloads = {
 		postUserId: string;
 		postUserUsername: string;
 		post: GalleryPost;
+	};
+	deleteChatRoom: {
+		roomId: string;
+		room: ChatRoom;
 	};
 	quarantineRemoteInstance: {
 		id: string;

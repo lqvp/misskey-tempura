@@ -42,7 +42,7 @@ import { instance } from '@/instance.js';
 import { definePage, provideMetadataReceiver, provideReactiveMetadata } from '@/page.js';
 import * as os from '@/os.js';
 import { useRouter } from '@/router.js';
-import { searchIndexes } from '@/utility/autogen/settings-search-index.js';
+import { searchIndexes } from '@/utility/settings-search-index.js';
 import { enableAutoBackup, getPreferencesProfileMenu } from '@/preferences/utility.js';
 import { store } from '@/store.js';
 import { signout } from '@/signout.js';
@@ -103,8 +103,8 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 	}, {
 		icon: 'ti ti-git-fork',
 		text: i18n.ts.originalFeature,
-		to: '/settings/temp-settings',
-		active: currentPage.value?.route.name === 'temp-settings',
+		to: '/settings/tempura-settings',
+		active: currentPage.value?.route.name === 'tempura-settings',
 	}],
 }, {
 	items: [{
@@ -127,11 +127,6 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 		text: i18n.ts.sounds,
 		to: '/settings/sounds',
 		active: currentPage.value?.route.name === 'sounds',
-	}, {
-		icon: 'ti ti-accessible',
-		text: i18n.ts.accessibility,
-		to: '/settings/accessibility',
-		active: currentPage.value?.route.name === 'accessibility',
 	}, {
 		icon: 'ti ti-plug',
 		text: i18n.ts.plugins,

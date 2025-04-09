@@ -80,7 +80,7 @@ if (meta.entranceShowFederation) {
 	misskeyApiGet('federation/instances', {
 		sort: '+pubSub',
 		limit: 20,
-		blocked: 'false',
+		blocked: false,
 	}).then(_instances => {
 		instances.value = _instances;
 	});
@@ -166,21 +166,14 @@ if (meta.entranceShowFederation) {
 .contents {
 	position: relative;
 	width: min(430px, calc(100% - 32px));
-	margin-left: 128px;
 	padding: 100px 0 100px 0;
+	margin-left: var(--margin-left, 128px);
+	margin-right: var(--margin-right, 0);
+	margin-top: var(--margin-top, 0);
+	margin-bottom: var(--margin-bottom, 0);
 
-	> .contents {
-		position: relative;
-		width: min(430px, calc(100% - 32px));
-		padding: 100px 0 100px 0;
-		margin-left: var(--margin-left, 0);
-		margin-right: var(--margin-right, 0);
-		margin-top: var(--margin-top, 0);
-		margin-bottom: var(--margin-bottom, 0);
-
-		@media (max-width: 1200px) {
-			margin: auto;
-		}
+	@media (max-width: 1200px) {
+		margin: auto;
 	}
 }
 
@@ -190,7 +183,7 @@ if (meta.entranceShowFederation) {
 	left: 0;
 	right: 0;
 	margin: auto;
-	background: var(--MI_THEME-acrylicPanel);
+	background: color(from var(--MI_THEME-panel) srgb r g b / 0.5);
 	-webkit-backdrop-filter: var(--MI-blur, blur(15px));
 	backdrop-filter: var(--MI-blur, blur(15px));
 	border-radius: 999px;

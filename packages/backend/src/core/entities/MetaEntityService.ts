@@ -132,6 +132,7 @@ export class MetaEntityService {
 
 			policies: { ...DEFAULT_POLICIES, ...instance.policies },
 
+			sentryForFrontend: this.config.sentryForFrontend ?? null,
 			mediaProxy: this.config.mediaProxy,
 			enableUrlPreview: instance.urlPreviewEnabled,
 			noteSearchableScope: (this.config.meilisearch == null || this.config.meilisearch.scope !== 'local') ? 'global' : 'local',
@@ -161,6 +162,11 @@ export class MetaEntityService {
 			entranceMarginTop: instance.entranceMarginTop,
 			entranceMarginBottom: instance.entranceMarginBottom,
 			serverGeminiEnabled: instance.serverGeminiEnabled,
+			customCursorUrl: instance.customCursorUrl,
+			customCursorPointerUrl: instance.customCursorPointerUrl,
+			customCursorTextUrl: instance.customCursorTextUrl,
+			customCursorProgressUrl: instance.customCursorProgressUrl,
+			customCursorWaitUrl: instance.customCursorWaitUrl,
 		};
 
 		return packed;
@@ -201,4 +207,3 @@ export class MetaEntityService {
 		return packDetailed;
 	}
 }
-

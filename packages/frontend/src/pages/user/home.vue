@@ -293,7 +293,7 @@ const listenbrainzdata = ref(false);
 if (props.user.listenbrainz) {
 	(async function() {
 		try {
-			const response = await fetch(`https://api.listenbrainz.org/1/user/${props.user.listenbrainz}/playing-now`, {
+			const response = await window.fetch(`https://api.listenbrainz.org/1/user/${props.user.listenbrainz}/playing-now`, {
 				method: 'GET',
 				headers: {
 					'Content-Type': 'application/json',
@@ -686,7 +686,7 @@ onUnmounted(() => {
 
 					> .heading {
 						text-align: left;
-						color: var(--MI_THEME-fgTransparent);
+						color: color(from var(--MI_THEME-fg) srgb r g b / 0.5);
 						line-height: 1.5;
 						font-size: 85%;
 					}

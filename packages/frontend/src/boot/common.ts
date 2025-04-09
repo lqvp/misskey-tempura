@@ -5,9 +5,9 @@
 
 import { computed, watch, version as vueVersion } from 'vue';
 import { compareVersions } from 'compare-versions';
-import { version, lang, updateLocale, locale } from '@@/js/config.js';
-import defaultLightTheme from '@@/themes/l-light.json5';
-import defaultDarkTheme from '@@/themes/d-green-lime.json5';
+import { version, lang, updateLocale, locale, apiUrl } from '@@/js/config.js';
+import defaultLightTheme from '@@/themes/pink-candy.json5';
+import defaultDarkTheme from '@@/themes/night-pink.json5';
 import type { App } from 'vue';
 import widgets from '@/widgets/index.js';
 import directives from '@/directives/index.js';
@@ -30,7 +30,7 @@ import { prefer } from '@/preferences.js';
 import { applyFont } from '@/utility/font.js';
 import { $i } from '@/i.js';
 
-export async function common(createVue: () => App<Element>) {
+export async function common(createVue: () => Promise<App<Element>>) {
 	console.info(`Misskey v${version}`);
 
 	if (_DEV_) {
@@ -64,17 +64,17 @@ export async function common(createVue: () => App<Element>) {
 	//#region クライアントが更新されたかチェック
 	const lastVersion = miLocalStorage.getItem('lastVersion');
 	let isClientUpdated = false;
-	let updatedComponent: 'misskey' | 'temp' | 'both' | null = null;
+	let updatedComponent: 'misskey' | 'tempura' | 'both' | null = null;
 
 	if (lastVersion !== version) {
-		// 開発リリースの場合、バージョン末尾に "-dev.1" などが付くので temp とする
+		// 開発リリースの場合、バージョン末尾に "-dev.1" などが付くので tempura とする
 		if (/-dev\.\d+$/.test(version)) {
-			updatedComponent = 'temp';
+			updatedComponent = 'tempura';
 			isClientUpdated = true;
 		} else {
 			// ステーブルリリースの場合の処理
-			const [currentMisskeyVersion, currentTempVersion] = version.split('-temp-');
-			const [lastMisskeyVersion, lastTempVersion] = (lastVersion ?? '').split('-temp-');
+			const [currentMisskeyVersion, currentTempVersion] = version.split('-tempura-');
+			const [lastMisskeyVersion, lastTempVersion] = (lastVersion ?? '').split('-tempura-');
 
 			if (currentMisskeyVersion !== lastMisskeyVersion) {
 				if (lastTempVersion !== currentTempVersion) {
@@ -84,7 +84,7 @@ export async function common(createVue: () => App<Element>) {
 				}
 				isClientUpdated = true;
 			} else if (lastTempVersion !== currentTempVersion) {
-				updatedComponent = 'temp';
+				updatedComponent = 'tempura';
 				isClientUpdated = true;
 			}
 		}
@@ -289,7 +289,7 @@ export async function common(createVue: () => App<Element>) {
 		});
 	});
 
-	const app = createVue();
+	const app = await createVue();
 
 	if (_DEV_) {
 		app.config.performance = true;
@@ -316,6 +316,41 @@ export async function common(createVue: () => App<Element>) {
 		window.document.body.appendChild(root);
 		return root;
 	})();
+
+	if (instance.sentryForFrontend) {
+		const Sentry = await import('@sentry/vue');
+		Sentry.init({
+			app,
+			integrations: [
+				...(instance.sentryForFrontend.vueIntegration !== undefined ? [
+					Sentry.vueIntegration(instance.sentryForFrontend.vueIntegration ?? undefined),
+				] : []),
+				...(instance.sentryForFrontend.browserTracingIntegration !== undefined ? [
+					Sentry.browserTracingIntegration(instance.sentryForFrontend.browserTracingIntegration ?? undefined),
+				] : []),
+				...(instance.sentryForFrontend.replayIntegration !== undefined ? [
+					Sentry.replayIntegration(instance.sentryForFrontend.replayIntegration ?? undefined),
+				] : []),
+			],
+
+			// Set tracesSampleRate to 1.0 to capture 100%
+			tracesSampleRate: 1.0,
+
+			// Set `tracePropagationTargets` to control for which URLs distributed tracing should be enabled
+			...(instance.sentryForFrontend.browserTracingIntegration !== undefined ? {
+				tracePropagationTargets: [apiUrl],
+			} : {}),
+
+			// Capture Replay for 10% of all sessions,
+			// plus for 100% of sessions with an error
+			...(instance.sentryForFrontend.replayIntegration !== undefined ? {
+				replaysSessionSampleRate: 0.1,
+				replaysOnErrorSampleRate: 1.0,
+			} : {}),
+
+			...instance.sentryForFrontend.options,
+		});
+	}
 
 	app.mount(rootEl);
 

@@ -10,7 +10,7 @@ class Systemd {
 		this.tty_dom = document.querySelector('#tty');
 		const welcome = document.createElement('div');
 		welcome.className = 'tty-line';
-		welcome.innerText = `misskey-temp ${version} running in Web mode. cmdline: ${cmdline}`;
+		welcome.innerText = `misskey-tempura ${version} running in Web mode. cmdline: ${cmdline}`;
 		this.tty_dom.appendChild(welcome);
 	}
 	async start(id, promise) {
@@ -272,11 +272,6 @@ class Systemd {
 	const useSystemFont = localStorage.getItem('useSystemFont');
 	if (useSystemFont) {
 		document.documentElement.classList.add('useSystemFont');
-	}
-
-	const wallpaper = localStorage.getItem('wallpaper');
-	if (wallpaper) {
-		document.documentElement.style.backgroundImage = `url(${wallpaper})`;
 	}
 
 	const customCss = localStorage.getItem('customCss');

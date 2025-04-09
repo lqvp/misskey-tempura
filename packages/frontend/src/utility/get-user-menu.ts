@@ -22,7 +22,7 @@ import { mainRouter } from '@/router.js';
 import { genEmbedCode } from '@/utility/get-embed-code.js';
 import { getPluginHandlers } from '@/plugin.js';
 import { editNickname } from '@/utility/edit-nickname.js';
-import { summarizeUserProfile } from '@/utility/temp-script/profile-summarization.js';
+import { summarizeUserProfile } from '@/utility/tempura-script/profile-summarization.js';
 
 type PeriodType = {
 	key: string;
@@ -268,7 +268,7 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 	} else {
 		menuItems.push({
 			icon: 'ti ti-code',
-			text: i18n.ts.genEmbedCode,
+			text: i18n.ts.embed,
 			type: 'parent',
 			children: [{
 				text: i18n.ts.noteOfThisUser,
@@ -433,12 +433,18 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 				const canonical = user.host === null ? `@${user.username}` : `@${user.username}@${user.host}`;
 				os.post({ specified: user, initialText: `${canonical} ` });
 			},
-		}, {
-			type: 'link',
-			icon: 'ti ti-messages',
-			text: i18n.ts._chat.chatWithThisUser,
-			to: `/chat/user/${user.id}`,
-		}, { type: 'divider' }, {
+		});
+
+		if ($i.policies.chatAvailability === 'available' && user.canChat && user.host == null) {
+			menuItems.push({
+				type: 'link',
+				icon: 'ti ti-messages',
+				text: i18n.ts._chat.chatWithThisUser,
+				to: `/chat/user/${user.id}`,
+			});
+		}
+
+		menuItems.push({ type: 'divider' }, {
 			icon: user.isMuted ? 'ti ti-eye' : 'ti ti-eye-off',
 			text: user.isMuted ? i18n.ts.unmute : i18n.ts.mute,
 			action: toggleMute,

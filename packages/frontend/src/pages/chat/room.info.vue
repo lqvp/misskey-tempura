@@ -17,6 +17,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 	<hr>
 
+	<MkButton v-if="isOwner || ($i.isAdmin || $i.isModerator)" danger @click="del">{{ i18n.ts._chat.deleteRoom }}</MkButton>
+
 	<MkSwitch v-if="!isOwner" v-model="isMuted">
 		<template #label>{{ i18n.ts._chat.muteThisRoom }}</template>
 	</MkSwitch>
@@ -24,17 +26,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import * as Misskey from 'misskey-js';
 import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
-import { misskeyApi } from '@/utility/misskey-api.js';
 import * as os from '@/os.js';
 import { ensureSignin } from '@/i.js';
 import MkInput from '@/components/MkInput.vue';
 import MkTextarea from '@/components/MkTextarea.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
+import { useRouter } from '@/router.js';
 
+const router = useRouter();
 const $i = ensureSignin();
 
 const props = defineProps<{
@@ -56,17 +59,26 @@ function save() {
 	});
 }
 
-const isMuted = ref(props.room.isMuted);
+async function del() {
+	const { canceled } = await os.confirm({
+		type: 'warning',
+		text: i18n.tsx.deleteAreYouSure({ x: name_.value }),
+	});
+	if (canceled) return;
+
+	await os.apiWithDialog('chat/rooms/delete', {
+		roomId: props.room.id,
+	});
+	router.push('/chat');
+}
+
+const isMuted = ref(props.room.isMuted ?? false);
 
 watch(isMuted, async () => {
 	await os.apiWithDialog('chat/rooms/mute', {
 		roomId: props.room.id,
 		mute: isMuted.value,
 	});
-});
-
-onMounted(async () => {
-
 });
 </script>
 

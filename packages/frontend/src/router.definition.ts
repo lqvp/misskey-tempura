@@ -16,6 +16,10 @@ export const page = (loader: AsyncComponentLoader) => defineAsyncComponent({
 	errorComponent: MkError,
 });
 
+function chatPage(...args: Parameters<typeof page>) {
+	return $i?.policies.chatAvailability !== 'unavailable' ? page(...args) : page(() => import('@/pages/not-found.vue'));
+}
+
 export const ROUTE_DEF = [{
 	path: '/@:username/pages/:pageName(*)',
 	component: page(() => import('@/pages/page.vue')),
@@ -45,19 +49,19 @@ export const ROUTE_DEF = [{
 	component: page(() => import('@/pages/clip.vue')),
 }, {
 	path: '/chat',
-	component: page(() => import('@/pages/chat/home.vue')),
+	component: chatPage(() => import('@/pages/chat/home.vue')),
 	loginRequired: true,
 }, {
 	path: '/chat/user/:userId',
-	component: page(() => import('@/pages/chat/room.vue')),
+	component: chatPage(() => import('@/pages/chat/room.vue')),
 	loginRequired: true,
 }, {
 	path: '/chat/room/:roomId',
-	component: page(() => import('@/pages/chat/room.vue')),
+	component: chatPage(() => import('@/pages/chat/room.vue')),
 	loginRequired: true,
 }, {
 	path: '/chat/messages/:messageId',
-	component: page(() => import('@/pages/chat/message.vue')),
+	component: chatPage(() => import('@/pages/chat/message.vue')),
 	loginRequired: true,
 }, {
 	path: '/instance-info/:host',
@@ -137,10 +141,6 @@ export const ROUTE_DEF = [{
 		name: 'sounds',
 		component: page(() => import('@/pages/settings/sounds.vue')),
 	}, {
-		path: '/accessibility',
-		name: 'accessibility',
-		component: page(() => import('@/pages/settings/accessibility.vue')),
-	}, {
 		path: '/plugin/install',
 		name: 'plugin',
 		component: page(() => import('@/pages/settings/plugin.install.vue')),
@@ -189,9 +189,9 @@ export const ROUTE_DEF = [{
 		name: 'other',
 		component: page(() => import('@/pages/settings/other.vue')),
 	}, {
-		path: '/temp-settings',
-		name: 'temp-settings',
-		component: page(() => import('@/pages/settings/temp-settings.vue')),
+		path: '/tempura-settings',
+		name: 'tempura-settings',
+		component: page(() => import('@/pages/settings/tempura-settings.vue')),
 	}, {
 		path: '/',
 		component: page(() => import('@/pages/_empty_.vue')),
@@ -219,8 +219,8 @@ export const ROUTE_DEF = [{
 	component: page(() => import('@/pages/about-misskey.vue')),
 	hash: 'initialTab',
 }, {
-	path: '/about-misskey-temp',
-	component: page(() => import('@/pages/about-misskey-temp.vue')),
+	path: '/about-misskey-tempura',
+	component: page(() => import('@/pages/about-misskey-tempura.vue')),
 	hash: 'initialTab',
 }, {
 	path: '/contact',
@@ -536,9 +536,9 @@ export const ROUTE_DEF = [{
 		name: 'approvals',
 		component: page(() => import('@/pages/admin/approvals.vue')),
 	}, {
-		path: '/temp-admin',
-		name: 'temp-admin',
-		component: page(() => import('@/pages/admin/temp-admin.vue')),
+		path: '/tempura-admin',
+		name: 'tempura-admin',
+		component: page(() => import('@/pages/admin/tempura-admin.vue')),
 	}, {
 		path: '/',
 		component: page(() => import('@/pages/_empty_.vue')),
