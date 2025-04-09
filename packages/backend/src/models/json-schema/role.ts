@@ -308,9 +308,10 @@ export const packedRolePoliciesSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
-		canChat: {
-			type: 'boolean',
+		chatAvailability: {
+			type: 'string',
 			optional: false, nullable: false,
+			enum: ['available', 'readonly', 'unavailable'],
 		},
 		scheduleNoteMax: {
 			type: 'integer',
