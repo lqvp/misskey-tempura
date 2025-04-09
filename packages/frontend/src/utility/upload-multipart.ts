@@ -210,7 +210,7 @@ export async function uploadFileMultipart(
 					console.error(`Error uploading part ${partNumber}:`, err);
 
 					// 少し待ってから次の処理を試行（制御フローの混雑を緩和）
-					await new Promise(resolve => setTimeout(resolve, 500));
+					await new Promise(resolve => window.setTimeout(resolve, 500));
 				}
 
 				// Process next part if any remain and not aborting
@@ -342,7 +342,7 @@ async function uploadPart(uploadId: string, partNumber: number, chunk: Blob): Pr
 			// 予期せぬエラー（ネットワーク切断など）の場合もリトライ
 			retryCount++;
 			console.warn(`Error uploading part ${partNumber}, retry attempt ${retryCount}/${MAX_RETRIES} after ${retryDelay}ms:`, err);
-			await new Promise(resolve => setTimeout(resolve, retryDelay));
+			await new Promise(resolve => window.setTimeout(resolve, retryDelay));
 			retryDelay = Math.min(retryDelay * 2, 30000);
 		}
 	}
