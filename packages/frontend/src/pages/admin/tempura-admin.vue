@@ -385,7 +385,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 								<option value="gemini-2.0-flash">gemini-2.0-flash</option>
 								<option value="gemini-1.5-flash">gemini-1.5-flash</option>
 								<option value="gemini-1.5-pro">gemini-1.5-pro</option>
-								<option value="gemini-2.0-pro-exp-02-05">gemini-2.0-pro-exp-02-05</option>
+								<option value="gemini-2.5-pro-preview-03-25">gemini-2.5-pro-preview-03-25</option>
 							</MkSelect>
 						</div>
 					</MkFolder>

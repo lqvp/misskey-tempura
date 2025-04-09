@@ -506,7 +506,7 @@ export const PREF_DEF = {
 		default: null as string | null,
 	},
 	geminiModels: {
-		default: 'gemini-2.0-flash-lite' as 'gemini-2.0-flash-lite' | 'gemini-2.0-flash' | 'gemini-1.5-flash' | 'gemini-1.5-pro' | 'gemini-2.0-pro-exp-02-05' | null,
+		default: 'gemini-2.0-flash-lite' as 'gemini-2.0-flash-lite' | 'gemini-2.0-flash' | 'gemini-1.5-flash' | 'gemini-1.5-pro' | 'gemini-2.5-pro-preview-03-25' | null,
 	},
 	geminiSystemPrompt: {
 		default: 'リスト記法は対応しておらず、パーサーが壊れるため使用禁止です。列挙する場合は「・」を使ってください。' as string | null,
