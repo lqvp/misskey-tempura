@@ -40,6 +40,7 @@ import {
 	MiInstance,
 	MiMeta,
 	MiModerationLog,
+	MiMultipartUpload,
 	MiMuting,
 	MiNote,
 	MiNoteFavorite,
@@ -558,6 +559,12 @@ const $noteScheduleRepository: Provider = {
 	inject: [DI.db],
 };
 
+const $multipartUploadsRepository: Provider = {
+	provide: DI.multipartUploadsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiMultipartUpload).extend(miRepository as MiRepository<MiMultipartUpload>),
+	inject: [DI.db],
+};
+
 @Module({
 	imports: [],
 	providers: [
@@ -639,6 +646,7 @@ const $noteScheduleRepository: Provider = {
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
 		$noteScheduleRepository,
+		$multipartUploadsRepository,
 	],
 	exports: [
 		$usersRepository,
@@ -719,6 +727,7 @@ const $noteScheduleRepository: Provider = {
 		$bubbleGameRecordsRepository,
 		$reversiGamesRepository,
 		$noteScheduleRepository,
+		$multipartUploadsRepository,
 	],
 })
 export class RepositoryModule {

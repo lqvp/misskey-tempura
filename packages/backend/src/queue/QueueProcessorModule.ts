@@ -46,6 +46,7 @@ import { CleanExpiredRemoteFilesProcessorService } from './processors/CleanExpir
 import { ReDownloadRemoteFileProcessorService } from './processors/ReDownloadRemoteFileProcessorService.js';
 import { ScheduleNotePostProcessorService } from './processors/ScheduleNotePostProcessorService.js';
 import { ScheduledNoteDeleteProcessorService } from './processors/ScheduledNoteDeleteProcessorService.js';
+import { CleanExpiredMultipartUploadsProcessorService } from './processors/CleanExpiredMultipartUploadsProcessorService.js';
 
 @Module({
 	imports: [
@@ -94,6 +95,7 @@ import { ScheduledNoteDeleteProcessorService } from './processors/ScheduledNoteD
 		ReDownloadRemoteFileProcessorService,
 		ScheduleNotePostProcessorService,
 		ScheduledNoteDeleteProcessorService,
+		CleanExpiredMultipartUploadsProcessorService,
 	],
 	exports: [
 		QueueProcessorService,

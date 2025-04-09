@@ -14,6 +14,7 @@ import { alert } from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
 import { prefer } from '@/preferences.js';
+import { uploadFileMultipart, canUseMultipartUpload } from '@/utility/upload-multipart.js';
 
 type Uploading = {
 	id: string;
@@ -47,6 +48,12 @@ export function uploadFile(
 			text: i18n.ts.cannotUploadBecauseExceedsFileSizeLimit,
 		});
 		return Promise.reject();
+	}
+
+	// Use multipart upload for large files (if the browser supports it)
+	// Cloudflare has a 100MB limit, so we'll use multipart for anything over 95MB to be safe
+	if (file.size > 95 * 1024 * 1024 && canUseMultipartUpload()) {
+		return uploadFileMultipart(file, folder, name, false, true);
 	}
 
 	return new Promise((resolve, reject) => {
