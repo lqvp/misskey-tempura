@@ -13,11 +13,37 @@ import { displayLlmError } from '@/utils/errorHandler.js';
 import { i18n } from '@/i18n.js';
 
 /**
+ * ノートの基本構造を定義するインターフェース
+ */
+interface NoteItem {
+	id: string;
+	text: string | null;
+	visibility: 'public' | 'home' | 'followers' | 'specified';
+}
+
+/**
+ * API リクエストパラメータの型定義
+ */
+interface NotesRequestParams {
+	userId: string;
+	withRenotes: boolean;
+	withReplies: boolean;
+	withChannelNotes: boolean;
+	withFiles: boolean;
+	limit: number;
+	allowPartial: boolean;
+	untilId?: string;
+}
+
+const MAX_API_NOTES_PER_REQUEST = 100;
+
+/**
  * 指定したユーザーIDのプロフィール情報と最新のノートを取得し、LLMに要約させた結果を表示します。
  *
  * @param userId 要約対象のユーザーID
+ * @param notesLimit 取得するノートの最大数（デフォルト: 15）
  */
-export async function summarizeUserProfile(userId: string): Promise<void> {
+export async function summarizeUserProfile(userId: string, notesLimit?: number): Promise<void> {
 	const waitingFlag = ref(true);
 	const waitingPopup = os.popup(defineAsyncComponent(() => import('@/components/MkWaitingDialog.vue')), {
 		success: false,
@@ -33,19 +59,64 @@ export async function summarizeUserProfile(userId: string): Promise<void> {
 		}
 		const { name, location, description } = profile;
 
-		// 最新のノートを取得 (テキストのみを抽出)
-		const notesResponse = await misskeyApi('users/notes', {
-			userId,
-			withRenotes: false,
-			withReplies: false,
-			withChannelNotes: false,
-			withFiles: false,
-			limit: 15,
-			allowPartial: false,
-		});
-		const notesTexts: string[] = Array.isArray(notesResponse)
-			? notesResponse.map((note: any) => note.text).filter(Boolean)
-			: [];
+		// 実際に取得するノート数を決定（デフォルト: 15）
+		const limit = notesLimit ?? 15;
+
+		// 取得したノートを格納する配列
+		let allNotes: NoteItem[] = [];
+		let untilId: string | undefined = undefined;
+
+		// 最大で指定された数のノートを取得（100ノートごとにページネーション）
+		while (allNotes.length < limit) {
+			// 現在のページで取得するノート数を計算
+			const remainingToFetch = limit - allNotes.length;
+			const currentLimit = Math.min(remainingToFetch, MAX_API_NOTES_PER_REQUEST);
+
+			// ノートの取得リクエスト
+			const requestParams: NotesRequestParams = {
+				userId,
+				withRenotes: false,
+				withReplies: false,
+				withChannelNotes: false,
+				withFiles: false,
+				limit: currentLimit,
+				allowPartial: false,
+			};
+
+			// untilIdがある場合はそれを含める
+			if (untilId) {
+				requestParams.untilId = untilId;
+			}
+
+			// ノートを取得
+			const notesResponse = await misskeyApi('users/notes', requestParams);
+
+			// APIからの応答が配列でない場合、またはデータが空の場合はループを終了
+			if (!Array.isArray(notesResponse) || notesResponse.length === 0) {
+				break;
+			}
+
+			// 取得したノートを追加
+			allNotes = allNotes.concat(notesResponse);
+
+			// 最後のノートのIDを次のページのuntilIdとして保存
+			untilId = notesResponse[notesResponse.length - 1].id;
+
+			// 取得したノート数が要求数より少ない場合（これ以上ノートがない）は終了
+			if (notesResponse.length < currentLimit) {
+				break;
+			}
+		}
+
+		// visibilityがpublicまたはhomeのノートのみをフィルタリング
+		const filteredNotes = allNotes.filter(
+			(note: NoteItem) => note.visibility === 'public' || note.visibility === 'home',
+		);
+
+		// nullでないテキストのみを抽出
+		const notesTexts: string[] = filteredNotes
+			.map((note: NoteItem) => note.text)
+			.filter((text): text is string => text !== null);
 
 		// Gemini API 呼び出しをシステム命令形式に更新
 		const systemInstruction = [
@@ -67,13 +138,13 @@ export async function summarizeUserProfile(userId: string): Promise<void> {
 		let summarizedText: string;
 		try {
 			summarizedText = extractCandidateText(summaryResult);
-		} catch (error: any) {
-			displayLlmError(error, i18n.ts._llm._error.responseFormat);
+		} catch (error: unknown) {
+			displayLlmError(error as Error, i18n.ts._llm._error.responseFormat);
 		}
 		os.alert({ type: 'info', text: summarizedText });
-	} catch (error: any) {
+	} catch (error: unknown) {
 		// catch節内も統一してハンドリング（この呼び出しによりalertとthrowが行われる）
-		displayLlmError(error, i18n.ts._llm._error.profileSummarization);
+		displayLlmError(error as Error, i18n.ts._llm._error.profileSummarization);
 	} finally {
 		waitingFlag.value = false;
 		waitingPopup.dispose();

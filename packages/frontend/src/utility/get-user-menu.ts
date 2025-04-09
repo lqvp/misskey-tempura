@@ -294,7 +294,17 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 			icon: 'ti ti-file-text',
 			text: i18n.ts._llm.summarizeProfile,
 			action: async () => {
-				await summarizeUserProfile(user.id);
+				// プロフィール要約で取得するノート数を指定できるようにする
+				const { canceled, result } = await os.inputNumber({
+					title: i18n.ts._llm.summarizeProfile,
+					text: i18n.ts._llm.notesLimitPrompt,
+					default: 15,
+				});
+
+				if (canceled) return;
+
+				// キャンセルされなかった場合、指定された数値でプロフィール要約を実行
+				await summarizeUserProfile(user.id, result);
 			},
 		} : undefined, ...(prefer.s.nicknameEnabled ? [{
 			icon: 'ti ti-edit',
