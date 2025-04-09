@@ -10,7 +10,7 @@ permissions:
   packages: write
 
 env:
-  REGISTRY_IMAGE: ghcr.io/${{ github.repository_owner }}/misskey-temp
+  REGISTRY_IMAGE: ghcr.io/${{ github.repository_owner }}/misskey-tempura
   TAGS: |
     type=edge
     type=ref,event=pr

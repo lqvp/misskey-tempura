@@ -205,11 +205,50 @@ export class ClientServerService {
 
 	@bindThis
 	private async generateCommonPugData(meta: MiMeta) {
+		let customCursorCss = '';
+
+		try {
+			const cssSafeUrl = (url: string): string => {
+				// データURLや安全なURLの場合はそのまま使用
+				if (url.startsWith('data:') || /^https?:\/\//.test(url)) {
+					// CSS内で問題になる文字（"、)など）をエスケープ
+					return url.replace(/["'\\()]/g, '\\$&');
+				}
+				// それ以外はURLとして適切にエンコード（ただしCSS内で問題になる文字は個別にエスケープ）
+				// URLエンコードしたあと、CSS内で問題となる文字をエスケープ
+				return encodeURI(url).replace(/["'\\()]/g, '\\$&');
+			};
+
+			if (meta.customCursorUrl) {
+				customCursorCss += `:root { cursor: url("${cssSafeUrl(meta.customCursorUrl)}"), auto !important; }`;
+			}
+
+			if (meta.customCursorPointerUrl) {
+				customCursorCss += `a, button, .clickable, [role="button"], label, [data-clickable="true"] { cursor: url("${cssSafeUrl(meta.customCursorPointerUrl)}"), pointer !important; }`;
+			}
+
+			if (meta.customCursorTextUrl) {
+				customCursorCss += `input, textarea, [contenteditable="true"] { cursor: url("${cssSafeUrl(meta.customCursorTextUrl)}"), text !important; }`;
+			}
+
+			if (meta.customCursorProgressUrl) {
+				customCursorCss += `.progress-state, .loading { cursor: url("${cssSafeUrl(meta.customCursorProgressUrl)}"), progress !important; }`;
+			}
+
+			if (meta.customCursorWaitUrl) {
+				customCursorCss += `.wait-state, .loading-content, .is-fetching { cursor: url("${cssSafeUrl(meta.customCursorWaitUrl)}"), wait !important; }`;
+			}
+		} catch (error) {
+			console.error('Failed to generate custom cursor CSS:', error);
+			customCursorCss = '';
+		}
+
 		return {
 			instanceName: meta.name ?? 'Misskey',
 			icon: meta.iconUrl,
 			appleTouchIcon: meta.app512IconUrl,
 			themeColor: meta.themeColor,
+			customCursorCss,
 			serverErrorImageUrl: meta.serverErrorImageUrl ?? 'https://xn--931a.moe/assets/error.jpg',
 			infoImageUrl: meta.infoImageUrl ?? 'https://xn--931a.moe/assets/info.jpg',
 			notFoundImageUrl: meta.notFoundImageUrl ?? 'https://xn--931a.moe/assets/not-found.jpg',

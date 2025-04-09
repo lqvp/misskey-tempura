@@ -23,7 +23,7 @@ export const meta = {
 		items: {
 			type: 'object',
 			optional: false, nullable: false,
-			ref: 'ChatMessageLite',
+			ref: 'ChatMessageLiteForRoom',
 		},
 	},
 
@@ -54,12 +54,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private chatService: ChatService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			await this.chatService.checkChatAvailability(me.id, 'read');
+
 			const room = await this.chatService.findRoomById(ps.roomId);
 			if (room == null) {
 				throw new ApiError(meta.errors.noSuchRoom);
 			}
 
-			if (!(await this.chatService.isRoomMember(room, me.id))) {
+			if (!await this.chatService.hasPermissionToViewRoomTimeline(me.id, room)) {
 				throw new ApiError(meta.errors.noSuchRoom);
 			}
 

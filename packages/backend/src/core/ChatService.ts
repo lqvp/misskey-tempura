@@ -26,10 +26,26 @@ import { Packed } from '@/misc/json-schema.js';
 import { sqlLikeEscape } from '@/misc/sql-like-escape.js';
 import { CustomEmojiService } from '@/core/CustomEmojiService.js';
 import { emojiRegex } from '@/misc/emoji-regex.js';
+import { NotificationService } from '@/core/NotificationService.js';
+import { ModerationLogService } from '@/core/ModerationLogService.js';
 
 const MAX_ROOM_MEMBERS = 30;
 const MAX_REACTIONS_PER_MESSAGE = 100;
 const isCustomEmojiRegexp = /^:([\w+-]+)(?:@\.)?:$/;
+
+// TODO: ReactionServiceのやつと共通化
+function normalizeEmojiString(x: string) {
+	const match = emojiRegex.exec(x);
+	if (match) {
+		// 合字を含む1つの絵文字
+		const unicode = match[0];
+
+		// 異体字セレクタ除去
+		return unicode.match('\u200d') ? unicode : unicode.replace(/\ufe0f/g, '');
+	} else {
+		throw new Error('invalid emoji');
+	}
+}
 
 @Injectable()
 export class ChatService {
@@ -68,12 +84,48 @@ export class ChatService {
 		private apRendererService: ApRendererService,
 		private queueService: QueueService,
 		private pushNotificationService: PushNotificationService,
+		private notificationService: NotificationService,
 		private userBlockingService: UserBlockingService,
 		private queryService: QueryService,
 		private roleService: RoleService,
 		private userFollowingService: UserFollowingService,
 		private customEmojiService: CustomEmojiService,
+		private moderationLogService: ModerationLogService,
 	) {
+	}
+
+	@bindThis
+	public async getChatAvailability(userId: MiUser['id']): Promise<{ read: boolean; write: boolean; }> {
+		const policies = await this.roleService.getUserPolicies(userId);
+
+		switch (policies.chatAvailability) {
+			case 'available':
+				return {
+					read: true,
+					write: true,
+				};
+			case 'readonly':
+				return {
+					read: true,
+					write: false,
+				};
+			case 'unavailable':
+				return {
+					read: false,
+					write: false,
+				};
+			default:
+				throw new Error('invalid chat availability (unreachable)');
+		}
+	}
+
+	/** getChatAvailabilityの糖衣。主にAPI呼び出し時に走らせて、権限的に問題ない場合はそのまま続行する */
+	@bindThis
+	public async checkChatAvailability(userId: MiUser['id'], permission: 'read' | 'write') {
+		const policy = await this.getChatAvailability(userId);
+		if (policy[permission] === false) {
+			throw new Error('ROLE_PERMISSION_DENIED');
+		}
 	}
 
 	@bindThis
@@ -81,7 +133,7 @@ export class ChatService {
 		text?: string | null;
 		file?: MiDriveFile | null;
 		uri?: string | null;
-	}): Promise<Packed<'ChatMessageLite'>> {
+	}): Promise<Packed<'ChatMessageLiteFor1on1'>> {
 		if (fromUser.id === toUser.id) {
 			throw new Error('yourself');
 		}
@@ -122,7 +174,7 @@ export class ChatService {
 			}
 		}
 
-		if (!(await this.roleService.getUserPolicies(toUser.id)).canChat) {
+		if (!(await this.getChatAvailability(toUser.id)).write) {
 			throw new Error('recipient is cannot chat (policy)');
 		}
 
@@ -192,12 +244,20 @@ export class ChatService {
 		text?: string | null;
 		file?: MiDriveFile | null;
 		uri?: string | null;
-	}): Promise<Packed<'ChatMessageLite'>> {
-		const memberships = await this.chatRoomMembershipsRepository.findBy({ roomId: toRoom.id });
+	}): Promise<Packed<'ChatMessageLiteForRoom'>> {
+		const memberships = (await this.chatRoomMembershipsRepository.findBy({ roomId: toRoom.id })).map(m => ({
+			userId: m.userId,
+			isMuted: m.isMuted,
+		})).concat({ // ownerはmembershipレコードを作らないため
+			userId: toRoom.ownerId,
+			isMuted: false,
+		});
 
-		if (toRoom.ownerId !== fromUser.id && !memberships.some(member => member.userId === fromUser.id)) {
+		if (!memberships.some(member => member.userId === fromUser.id)) {
 			throw new Error('you are not a member of the room');
 		}
+
+		const membershipsOtherThanMe = memberships.filter(member => member.userId !== fromUser.id);
 
 		const message = {
 			id: this.idService.gen(),
@@ -216,7 +276,7 @@ export class ChatService {
 		this.globalEventService.publishChatRoomStream(toRoom.id, 'message', packedMessage);
 
 		const redisPipeline = this.redisClient.pipeline();
-		for (const membership of memberships) {
+		for (const membership of membershipsOtherThanMe) {
 			if (membership.isMuted) continue;
 
 			redisPipeline.set(`newRoomChatMessageExists:${membership.userId}:${toRoom.id}`, message.id);
@@ -227,7 +287,7 @@ export class ChatService {
 		// 3秒経っても既読にならなかったらイベント発行
 		setTimeout(async () => {
 			const redisPipeline = this.redisClient.pipeline();
-			for (const membership of memberships) {
+			for (const membership of membershipsOtherThanMe) {
 				redisPipeline.get(`newRoomChatMessageExists:${membership.userId}:${toRoom.id}`);
 			}
 			const markers = await redisPipeline.exec();
@@ -237,12 +297,12 @@ export class ChatService {
 
 			const packedMessageForTo = await this.chatEntityService.packMessageDetailed(inserted);
 
-			for (let i = 0; i < memberships.length; i++) {
+			for (let i = 0; i < membershipsOtherThanMe.length; i++) {
 				const marker = markers[i][1];
 				if (marker == null) continue;
 
-				this.globalEventService.publishMainStream(memberships[i].userId, 'newChatMessage', packedMessageForTo);
-				//this.pushNotificationService.pushNotification(memberships[i].userId, 'newChatMessage', packedMessageForTo);
+				this.globalEventService.publishMainStream(membershipsOtherThanMe[i].userId, 'newChatMessage', packedMessageForTo);
+				//this.pushNotificationService.pushNotification(membershipsOtherThanMe[i].userId, 'newChatMessage', packedMessageForTo);
 			}
 		}, 3000);
 
@@ -279,6 +339,20 @@ export class ChatService {
 	@bindThis
 	public findMyMessageById(userId: MiUser['id'], messageId: MiChatMessage['id']) {
 		return this.chatMessagesRepository.findOneBy({ id: messageId, fromUserId: userId });
+	}
+
+	@bindThis
+	public async hasPermissionToViewRoomTimeline(meId: MiUser['id'], room: MiChatRoom) {
+		if (await this.isRoomMember(room, meId)) {
+			return true;
+		} else {
+			const iAmModerator = await this.roleService.isModerator({ id: meId });
+			if (iAmModerator) {
+				return true;
+			}
+
+			return false;
+		}
 	}
 
 	@bindThis
@@ -330,7 +404,7 @@ export class ChatService {
 	@bindThis
 	public async roomTimeline(roomId: MiChatRoom['id'], limit: number, sinceId?: MiChatMessage['id'] | null, untilId?: MiChatMessage['id'] | null) {
 		const query = this.queryService.makePaginationQuery(this.chatMessagesRepository.createQueryBuilder('message'), sinceId, untilId)
-			.where('message.toRoomId = :roomId', { roomId })
+			.andWhere('message.toRoomId = :roomId', { roomId })
 			.leftJoinAndSelect('message.file', 'file')
 			.leftJoinAndSelect('message.fromUser', 'fromUser');
 
@@ -489,8 +563,33 @@ export class ChatService {
 	}
 
 	@bindThis
-	public async deleteRoom(room: MiChatRoom) {
+	public async hasPermissionToDeleteRoom(meId: MiUser['id'], room: MiChatRoom) {
+		if (room.ownerId === meId) {
+			return true;
+		}
+
+		const iAmModerator = await this.roleService.isModerator({ id: meId });
+		if (iAmModerator) {
+			return true;
+		}
+
+		return false;
+	}
+
+	@bindThis
+	public async deleteRoom(room: MiChatRoom, deleter?: MiUser) {
 		await this.chatRoomsRepository.delete(room.id);
+
+		if (deleter) {
+			const deleterIsModerator = await this.roleService.isModerator(deleter);
+
+			if (deleterIsModerator) {
+				this.moderationLogService.log(deleter, 'deleteChatRoom', {
+					roomId: room.id,
+					room: room,
+				});
+			}
+		}
 	}
 
 	@bindThis
@@ -518,6 +617,10 @@ export class ChatService {
 
 		const room = await this.chatRoomsRepository.findOneByOrFail({ id: roomId, ownerId: inviterId });
 
+		if (await this.isRoomMember(room, inviteeId)) {
+			throw new Error('already member');
+		}
+
 		const existingInvitation = await this.chatRoomInvitationsRepository.findOneBy({ roomId, userId: inviteeId });
 		if (existingInvitation) {
 			throw new Error('already invited');
@@ -538,13 +641,27 @@ export class ChatService {
 
 		const created = await this.chatRoomInvitationsRepository.insertOne(invitation);
 
+		this.notificationService.createNotification(inviteeId, 'chatRoomInvitationReceived', {
+			invitationId: invitation.id,
+		}, inviterId);
+
 		return created;
+	}
+
+	@bindThis
+	public async getSentRoomInvitationsWithPagination(roomId: MiChatRoom['id'], limit: number, sinceId?: MiChatRoomInvitation['id'] | null, untilId?: MiChatRoomInvitation['id'] | null) {
+		const query = this.queryService.makePaginationQuery(this.chatRoomInvitationsRepository.createQueryBuilder('invitation'), sinceId, untilId)
+			.andWhere('invitation.roomId = :roomId', { roomId });
+
+		const invitations = await query.take(limit).getMany();
+
+		return invitations;
 	}
 
 	@bindThis
 	public async getOwnedRoomsWithPagination(ownerId: MiUser['id'], limit: number, sinceId?: MiChatRoom['id'] | null, untilId?: MiChatRoom['id'] | null) {
 		const query = this.queryService.makePaginationQuery(this.chatRoomsRepository.createQueryBuilder('room'), sinceId, untilId)
-			.where('room.ownerId = :ownerId', { ownerId });
+			.andWhere('room.ownerId = :ownerId', { ownerId });
 
 		const rooms = await query.take(limit).getMany();
 
@@ -554,7 +671,7 @@ export class ChatService {
 	@bindThis
 	public async getReceivedRoomInvitationsWithPagination(userId: MiUser['id'], limit: number, sinceId?: MiChatRoomInvitation['id'] | null, untilId?: MiChatRoomInvitation['id'] | null) {
 		const query = this.queryService.makePaginationQuery(this.chatRoomInvitationsRepository.createQueryBuilder('invitation'), sinceId, untilId)
-			.where('invitation.userId = :userId', { userId })
+			.andWhere('invitation.userId = :userId', { userId })
 			.andWhere('invitation.ignored = FALSE');
 
 		const invitations = await query.take(limit).getMany();
@@ -618,7 +735,7 @@ export class ChatService {
 	@bindThis
 	public async getRoomMembershipsWithPagination(roomId: MiChatRoom['id'], limit: number, sinceId?: MiChatRoomMembership['id'] | null, untilId?: MiChatRoomMembership['id'] | null) {
 		const query = this.queryService.makePaginationQuery(this.chatRoomMembershipsRepository.createQueryBuilder('membership'), sinceId, untilId)
-			.where('membership.roomId = :roomId', { roomId });
+			.andWhere('membership.roomId = :roomId', { roomId });
 
 		const memberships = await query.take(limit).getMany();
 
@@ -688,24 +805,10 @@ export class ChatService {
 	public async react(messageId: MiChatMessage['id'], userId: MiUser['id'], reaction_: string) {
 		let reaction;
 
-		// TODO: ReactionServiceのやつと共通化
-		function normalize(x: string) {
-			const match = emojiRegex.exec(x);
-			if (match) {
-				// 合字を含む1つの絵文字
-				const unicode = match[0];
-
-				// 異体字セレクタ除去
-				return unicode.match('\u200d') ? unicode : unicode.replace(/\ufe0f/g, '');
-			} else {
-				throw new Error('invalid emoji');
-			}
-		}
-
 		const custom = reaction_.match(isCustomEmojiRegexp);
 
 		if (custom == null) {
-			reaction = normalize(reaction_);
+			reaction = normalizeEmojiString(reaction_);
 		} else {
 			const name = custom[1];
 			const emoji = (await this.customEmojiService.localEmojisCache.fetch()).get(name);
@@ -765,9 +868,55 @@ export class ChatService {
 	}
 
 	@bindThis
+	public async unreact(messageId: MiChatMessage['id'], userId: MiUser['id'], reaction_: string) {
+		let reaction;
+
+		const custom = reaction_.match(isCustomEmojiRegexp);
+
+		if (custom == null) {
+			reaction = normalizeEmojiString(reaction_);
+		} else { // 削除されたカスタム絵文字のリアクションを削除したいかもしれないので絵文字の存在チェックはする必要なし
+			const name = custom[1];
+			reaction = `:${name}:`;
+		}
+
+		// NOTE: 自分のリアクションを(あれば)削除するだけなので諸々の権限チェックは必要なし
+
+		const message = await this.chatMessagesRepository.findOneByOrFail({ id: messageId });
+
+		const room = message.toRoomId ? await this.chatRoomsRepository.findOneByOrFail({ id: message.toRoomId }) : null;
+
+		await this.chatMessagesRepository.createQueryBuilder().update()
+			.set({
+				reactions: () => `array_remove("reactions", '${userId}/${reaction}')`,
+			})
+			.where('id = :id', { id: message.id })
+			.execute();
+
+		// TODO: 実際に削除が行われたときのみイベントを発行する
+
+		if (room) {
+			this.globalEventService.publishChatRoomStream(room.id, 'unreact', {
+				messageId: message.id,
+				user: await this.userEntityService.pack(userId),
+				reaction,
+			});
+		} else {
+			this.globalEventService.publishChatUserStream(message.fromUserId, message.toUserId!, 'unreact', {
+				messageId: message.id,
+				reaction,
+			});
+			this.globalEventService.publishChatUserStream(message.toUserId!, message.fromUserId, 'unreact', {
+				messageId: message.id,
+				reaction,
+			});
+		}
+	}
+
+	@bindThis
 	public async getMyMemberships(userId: MiUser['id'], limit: number, sinceId?: MiChatRoomMembership['id'] | null, untilId?: MiChatRoomMembership['id'] | null) {
 		const query = this.queryService.makePaginationQuery(this.chatRoomMembershipsRepository.createQueryBuilder('membership'), sinceId, untilId)
-			.where('membership.userId = :userId', { userId });
+			.andWhere('membership.userId = :userId', { userId });
 
 		const memberships = await query.take(limit).getMany();
 

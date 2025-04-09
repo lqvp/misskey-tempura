@@ -227,6 +227,38 @@ export const packedMetaLiteSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
+		sentryForFrontend: {
+			type: 'object',
+			optional: false, nullable: true,
+			properties: {
+				options: {
+					type: 'object',
+					optional: false, nullable: false,
+					properties: {
+						dsn: {
+							type: 'string',
+							optional: false, nullable: false,
+						},
+					},
+					additionalProperties: true,
+				},
+				vueIntegration: {
+					type: 'object',
+					optional: true, nullable: true,
+					additionalProperties: true,
+				},
+				browserTracingIntegration: {
+					type: 'object',
+					optional: true, nullable: true,
+					additionalProperties: true,
+				},
+				replayIntegration: {
+					type: 'object',
+					optional: true, nullable: true,
+					additionalProperties: true,
+				},
+			},
+		},
 		mediaProxy: {
 			type: 'string',
 			optional: false, nullable: false,
@@ -420,6 +452,26 @@ export const packedMetaLiteSchema = {
 		serverGeminiEnabled: {
 			type: 'boolean',
 			optional: false, nullable: false,
+		},
+		customCursorUrl: {
+			type: 'string',
+			optional: false, nullable: true,
+		},
+		customCursorPointerUrl: {
+			type: 'string',
+			optional: false, nullable: true,
+		},
+		customCursorTextUrl: {
+			type: 'string',
+			optional: false, nullable: true,
+		},
+		customCursorProgressUrl: {
+			type: 'string',
+			optional: false, nullable: true,
+		},
+		customCursorWaitUrl: {
+			type: 'string',
+			optional: false, nullable: true,
 		},
 	},
 } as const;

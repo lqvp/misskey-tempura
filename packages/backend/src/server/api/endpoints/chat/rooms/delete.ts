@@ -42,11 +42,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private chatService: ChatService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			const room = await this.chatService.findMyRoomById(me.id, ps.roomId);
+			await this.chatService.checkChatAvailability(me.id, 'write');
+
+			const room = await this.chatService.findRoomById(ps.roomId);
 			if (room == null) {
 				throw new ApiError(meta.errors.noSuchRoom);
 			}
-			await this.chatService.deleteRoom(room);
+
+			if (!await this.chatService.hasPermissionToDeleteRoom(me.id, room)) {
+				throw new ApiError(meta.errors.noSuchRoom);
+			}
+
+			await this.chatService.deleteRoom(room, me);
 		});
 	}
 }

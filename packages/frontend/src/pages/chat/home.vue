@@ -18,7 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
 import XHome from './home.home.vue';
 import XInvitations from './home.invitations.vue';
 import XJoiningRooms from './home.joiningRooms.vue';
@@ -52,7 +52,7 @@ const headerTabs = computed(() => [{
 
 definePage(() => ({
 	title: i18n.ts.chat + ' (beta)',
-	icon: 'ti ti-message',
+	icon: 'ti ti-messages',
 }));
 </script>
 

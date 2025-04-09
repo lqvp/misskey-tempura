@@ -23,8 +23,9 @@ const extensions = ['.ts', '.tsx', '.js', '.jsx', '.mjs', '.json', '.json5', '.s
  * 検索インデックスの生成設定
  */
 export const searchIndexes = [{
-	targetFilePaths: ['src/pages/settings/*.vue', 'src/pages/settings/temp-settings/*.vue'],
-	exportFilePath: './src/utility/autogen/settings-search-index.ts',
+	targetFilePaths: ['src/pages/settings/*.vue', 'src/pages/settings/tempura-settings/*.vue'],
+	mainVirtualModule: 'search-index:settings',
+	modulesToHmrOnUpdate: ['src/pages/settings/index.vue'],
 	verbose: process.env.FRONTEND_SEARCH_INDEX_VERBOSE === 'true',
 }] satisfies SearchIndexOptions[];
 

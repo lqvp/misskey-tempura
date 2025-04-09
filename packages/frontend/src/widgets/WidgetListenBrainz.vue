@@ -84,7 +84,7 @@ const { widgetProps, configure, save } = useWidgetPropsManager(name, widgetProps
 const playingNow = ref(false);
 const trackMetadata = ref<any>(null);
 const fetching = ref(true);
-let intervalId: ReturnType<typeof setTimeout> | null = null;
+let intervalId: number | null = null;
 
 const formattedNote = computed(() => {
 	if (!trackMetadata.value) return '';
@@ -129,20 +129,20 @@ const postNote = async () => {
 watch(() => widgetProps.userId, fetchPlayingNow, { immediate: true });
 
 watch(() => widgetProps.refreshIntervalSec, (newInterval) => {
-	if (intervalId) clearInterval(intervalId);
+	if (intervalId) window.clearInterval(intervalId);
 	if (newInterval > 0) {
-		intervalId = setInterval(fetchPlayingNow, newInterval * 1000);
+		intervalId = window.setInterval(fetchPlayingNow, newInterval * 1000);
 	}
 }, { immediate: true });
 
 onMounted(() => {
 	if (widgetProps.refreshIntervalSec > 0) {
-		intervalId = setInterval(fetchPlayingNow, widgetProps.refreshIntervalSec * 1000);
+		intervalId = window.setInterval(fetchPlayingNow, widgetProps.refreshIntervalSec * 1000);
 	}
 });
 
 onUnmounted(() => {
-	if (intervalId) clearInterval(intervalId);
+	if (intervalId) window.clearInterval(intervalId);
 });
 
 defineExpose<WidgetComponentExpose>({

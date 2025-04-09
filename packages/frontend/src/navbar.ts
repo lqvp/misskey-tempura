@@ -125,8 +125,9 @@ export const navbarItemDef = reactive({
 	},
 	chat: {
 		title: i18n.ts.chat,
-		icon: 'ti ti-message',
+		icon: 'ti ti-messages',
 		to: '/chat',
+		show: computed(() => $i != null && $i.policies.chatAvailability !== 'unavailable'),
 		indicated: computed(() => $i != null && $i.hasUnreadChatMessages),
 	},
 	achievements: {
@@ -158,20 +159,6 @@ export const navbarItemDef = reactive({
 					miLocalStorage.setItem('ui', 'deck');
 					unisonReload();
 				},
-			}, {
-				text: i18n.ts.classic,
-				active: ui === 'classic',
-				action: () => {
-					miLocalStorage.setItem('ui', 'classic');
-					unisonReload();
-				},
-			}, {
-				text: i18n.ts.note,
-				active: ui === 'note',
-				action: () => {
-					miLocalStorage.setItem('ui', 'note');
-					unisonReload();
-				}
 			}], ev.currentTarget ?? ev.target);
 		},
 	},

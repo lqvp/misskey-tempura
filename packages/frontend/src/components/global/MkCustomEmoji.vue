@@ -35,12 +35,12 @@ import { customEmojisMap } from '@/custom-emojis.js';
 import * as os from '@/os.js';
 import { misskeyApi, misskeyApiGet } from '@/utility/misskey-api.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
-import * as sound from '@/utility/sound.js';
 import { i18n } from '@/i18n.js';
 import MkCustomEmojiDetailedDialog from '@/components/MkCustomEmojiDetailedDialog.vue';
 import { $i } from '@/i.js';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
+import { DI } from '@/di.js';
 
 const props = defineProps<{
 	name: string;
@@ -54,7 +54,7 @@ const props = defineProps<{
 	fallbackToImage?: boolean;
 }>();
 
-const react = inject<((name: string) => void) | null>('react', null);
+const react = inject(DI.mfmEmojiReactCallback);
 
 const customEmojiName = computed(() => (props.name[0] === ':' ? props.name.substring(1, props.name.length - 1) : props.name).replace('@.', ''));
 const isLocal = computed(() => !props.host && (customEmojiName.value.endsWith('@.') || !customEmojiName.value.includes('@')));
@@ -111,7 +111,6 @@ function onClick(ev: MouseEvent) {
 				icon: 'ti ti-plus',
 				action: () => {
 					react(`:${props.name}:`);
-					sound.playMisskeySfx('reaction');
 				},
 			},
 			...(!store.s.reactions.includes(`:${props.name}:`) ? [{

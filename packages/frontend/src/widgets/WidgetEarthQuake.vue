@@ -99,12 +99,20 @@ interface EarthquakeData {
 const earthquakeData = ref<EarthquakeData | null>(null);
 const fetching = ref(true);
 const md5 = ref('');
-let intervalId: ReturnType<typeof setTimeout> | null = null;
+let intervalId: number | null = null;
 
-// Updated getShindoColor with switch for type safety
-function getShindoColor(shindoValue: string | number): { bg: string; fg: string } {
-	const value = String(shindoValue);
-	switch (value) {
+const getShindoColor = (shindoValue: string | number): { bg: string; fg: string } => {
+	const shindo = String(shindoValue).trim();
+
+	// ごく稀に不明なときがある
+	if (shindo === '不明') {
+		return {
+			bg: '#999999',
+			fg: '#FFFFFF',
+		};
+	}
+
+	switch (shindo) {
 		case '1':
 			return { bg: '#6B7878', fg: '#FFFFFF' };
 		case '2':
@@ -130,7 +138,7 @@ function getShindoColor(shindoValue: string | number): { bg: string; fg: string 
 		default:
 			return { bg: 'var(--MI_THEME-panel)', fg: 'var(--MI_THEME-fg)' };
 	}
-}
+};
 
 // Format earthquake time to match screenshot format (YYYY/MM/DD HH:MM)
 function formatDateTime(time: string): string {
@@ -187,12 +195,12 @@ watch(
 	() => widgetProps.refreshIntervalSec,
 	(newInterval) => {
 		if (intervalId) {
-			clearInterval(intervalId);
+			window.clearInterval(intervalId);
 			intervalId = null;
 		}
 
 		if (newInterval > 0) {
-			intervalId = setInterval(
+			intervalId = window.setInterval(
 				fetchEarthquakeData,
 				newInterval * 1000,
 			);
@@ -207,7 +215,7 @@ onMounted(() => {
 
 onUnmounted(() => {
 	if (intervalId) {
-		clearInterval(intervalId);
+		window.clearInterval(intervalId);
 		intervalId = null;
 	}
 });
@@ -252,10 +260,11 @@ defineExpose<WidgetComponentExpose>({
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   font-weight: bold;
   border-radius: 0;
   margin-right: 8px;
+	text-align: center;
 }
 
 .quakeDetails {

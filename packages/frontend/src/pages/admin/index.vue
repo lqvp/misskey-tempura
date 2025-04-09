@@ -240,8 +240,8 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 	}, {
 		icon: 'ti ti-git-fork',
 		text: i18n.ts.originalFeature,
-		to: '/admin/temp-admin',
-		active: currentPage.value?.route.name === 'temp-admin',
+		to: '/admin/tempura-admin',
+		active: currentPage.value?.route.name === 'tempura-admin',
 	}],
 }] : []), {
 	title: i18n.ts.info,
@@ -353,7 +353,6 @@ defineExpose({
 	&.wide {
 		display: flex;
 		margin: 0 auto;
-		height: 100%;
 
 		> .nav {
 			position: sticky;
@@ -363,7 +362,7 @@ defineExpose({
 			box-sizing: border-box;
 			border-right: solid 0.5px var(--MI_THEME-divider);
 			overflow: auto;
-			height: 100dvh;
+			height: 100cqh;
 		}
 
 		> .main {

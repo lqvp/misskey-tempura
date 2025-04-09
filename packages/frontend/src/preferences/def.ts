@@ -118,9 +118,6 @@ export const PREF_DEF = {
 	keepCw: {
 		default: true,
 	},
-	keepOriginalUploading: {
-		default: false,
-	},
 	rememberNoteVisibility: {
 		default: false,
 	},
@@ -200,6 +197,9 @@ export const PREF_DEF = {
 	},
 	useBlurEffect: {
 		default: DEFAULT_DEVICE_KIND === 'desktop',
+	},
+	useStickyIcons: {
+		default: true,
 	},
 	showFixedPostForm: {
 		default: false,
@@ -329,6 +329,9 @@ export const PREF_DEF = {
 	makeEveryTextElementsSelectable: {
 		default: DEFAULT_DEVICE_KIND === 'desktop',
 	},
+	showNavbarSubButtons: {
+		default: true,
+	},
 	plugins: {
 		default: [] as Plugin[],
 	},
@@ -368,7 +371,26 @@ export const PREF_DEF = {
 		default: true,
 	},
 	'deck.columnAlign': {
-		default: 'left' as 'left' | 'right' | 'center',
+		default: 'center' as 'left' | 'right' | 'center',
+	},
+	'deck.columnGap': {
+		default: 6,
+	},
+	'deck.menuPosition': {
+		default: 'bottom' as 'right' | 'bottom',
+	},
+	'deck.navbarPosition': {
+		default: 'left' as 'left' | 'top' | 'bottom',
+	},
+	'deck.wallpaper': {
+		default: null as string | null,
+	},
+
+	'chat.showSenderName': {
+		default: false,
+	},
+	'chat.sendOnEnter': {
+		default: false,
 	},
 
 	'game.dropAndFusion': {
@@ -484,7 +506,7 @@ export const PREF_DEF = {
 		default: null as string | null,
 	},
 	geminiModels: {
-		default: 'gemini-2.0-flash-lite' as 'gemini-2.0-flash-lite' | 'gemini-2.0-flash' | 'gemini-1.5-flash' | 'gemini-1.5-pro' | 'gemini-2.0-pro-exp-02-05' | null,
+		default: 'gemini-2.0-flash-lite' as 'gemini-2.0-flash-lite' | 'gemini-2.0-flash' | 'gemini-1.5-flash' | 'gemini-1.5-pro' | 'gemini-2.5-pro-preview-03-25' | null,
 	},
 	geminiSystemPrompt: {
 		default: 'リスト記法は対応しておらず、パーサーが壊れるため使用禁止です。列挙する場合は「・」を使ってください。' as string | null,
