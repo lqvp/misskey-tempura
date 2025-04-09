@@ -369,7 +369,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 						<div class="_gaps">
 							<MkSwitch v-model="geminiSettingsForm.state.serverGeminiEnabled">
-								<template #label>{{ i18n.ts._llm.serverGeminiEnabled }}</template>
+								<template #label>{{ i18n.ts._llm._server.serverGeminiEnabled }}</template>
 								<template #caption>{{ i18n.ts._llm._server.serverGeminiEnabledDescription }}</template>
 							</MkSwitch>
 
@@ -726,7 +726,7 @@ function save_customCursorUrl() {
 
 const geminiSettingsForm = useForm({
 	serverGeminiEnabled: meta.serverGeminiEnabled,
-	serverGeminiApiKey: meta.serverGeminiApiKey || '',
+	serverGeminiApiKey: meta.serverGeminiApiKey ?? '',
 	serverGeminiModels: meta.serverGeminiModels || 'gemini-2.0-flash',
 }, async (state) => {
 	await os.apiWithDialog('admin/update-meta', {
