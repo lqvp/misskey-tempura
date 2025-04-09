@@ -12991,6 +12991,10 @@ export interface Locale extends ILocale {
          */
         "summarizeProfile": string;
         /**
+         * ノート取得数を指定してください
+         */
+        "notesLimitPrompt": string;
+        /**
          * ノートの変換
          */
         "notesTransformation": string;
