@@ -85,6 +85,8 @@
 		"@nestjs/core": "11.0.12",
 		"@nestjs/testing": "11.0.12",
 		"@peertube/http-signature": "1.7.0",
+		"@queuedash/api": "3.5.0",
+		"@queuedash/ui": "3.5.0",
 		"@sentry/node": "8.55.0",
 		"@sentry/profiling-node": "8.55.0",
 		"@simplewebauthn/server": "12.0.0",
