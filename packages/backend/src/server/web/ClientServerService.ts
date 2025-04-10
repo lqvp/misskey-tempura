@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { Inject, Injectable } from '@nestjs/common';
 import { fastifyQueueDashPlugin } from '@queuedash/api';
 import ms from 'ms';
-import sharp, { queue } from 'sharp';
+import sharp from 'sharp';
 import pug from 'pug';
 import { In, IsNull } from 'typeorm';
 import fastifyStatic from '@fastify/static';
