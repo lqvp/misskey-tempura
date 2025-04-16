@@ -567,12 +567,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				this.verifyLink(url.value, user);
 			}
 
-			if (ps.autoFollowOnMove !== undefined) {
-				await this.userProfilesRepository.update({ userId: user.id }, {
-					autoFollowOnMove: ps.autoFollowOnMove,
-				});
-			}
-
 			return iObj;
 		});
 	}

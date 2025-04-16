@@ -4357,6 +4357,7 @@ export type components = {
       autoAcceptFollowed: boolean;
       autoRejectFollowRequest: boolean;
       autoFollowBack: boolean;
+      autoFollowOnMove: boolean;
       noCrawle: boolean;
       preventAiLearning: boolean;
       isExplorable: boolean;
@@ -24230,6 +24231,7 @@ export type operations = {
           autoAcceptFollowed?: boolean;
           autoRejectFollowRequest?: boolean;
           autoFollowBack?: boolean;
+          autoFollowOnMove?: boolean;
           noCrawle?: boolean;
           preventAiLearning?: boolean;
           requireSigninToViewContents?: boolean;
