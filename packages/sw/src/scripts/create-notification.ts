@@ -341,7 +341,7 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 				renotify: true,
 			}];
 		case 'newChatMessage': {
-			return [getUserName(data.body.fromUser), {
+			return [i18n.tsx._notification.newChatMessage({ name: getUserName(data.body.fromUser) }), {
 				body: data.body.text ?? '',
 				icon: data.body.fromUser.avatarUrl ?? undefined,
 				badge: iconUrl('messages'),

@@ -2768,7 +2768,7 @@ _notification:
   loginFailedDescription: "{ip}からのログインに失敗しました。\n心当たりがない場合はパスワードの変更を行ってください。"
   createToken: "アクセストークンが作成されました"
   createTokenDescription: "心当たりがない場合は「{text}」を通じてアクセストークンを削除してください。"
-  newChatMessage: "新しいチャットメッセージ"
+  newChatMessage: "{name}からメッセージが届きました"
 
   _types:
     all: "すべて"

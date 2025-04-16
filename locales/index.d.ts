@@ -10496,9 +10496,9 @@ export interface Locale extends ILocale {
          */
         "createTokenDescription": ParameterizedString<"text">;
         /**
-         * 新しいチャットメッセージ
+         * {name}からメッセージが届きました
          */
-        "newChatMessage": string;
+        "newChatMessage": ParameterizedString<"name">;
         "_types": {
             /**
              * すべて
