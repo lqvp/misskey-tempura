@@ -10,41 +10,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div class="_gaps">
 			<MkAvatarDecorationSelect
 				v-model="selectedDecoration"
-				@select="openDecoration"
+				:showLocalDecorations="true"
+				:showRemoteDecorations="true"
+				@select="edit"
 			/>
 
-			<div v-if="!loading" class="_gaps">
-				<MkFolder>
-					<template #label>{{ i18n.ts.local }}</template>
-					<div :class="$style.decorations">
-						<XDecoration
-							v-for="localAvatarDecoration in visibleLocalDecorations"
-							:key="localAvatarDecoration.id"
-							:decoration="localAvatarDecoration"
-							@click="openLocalDecoration(localAvatarDecoration)"
-						/>
-					</div>
-					<MkButton v-if="hasMoreLocalDecorations" class="mt-4" @click="loadMoreLocalDecorations">
-						{{ i18n.ts.loadMore }}
-					</MkButton>
-				</MkFolder>
-
-				<MkFolder>
-					<template #label>{{ i18n.ts.remote }}</template>
-					<div :class="$style.decorations">
-						<XDecoration
-							v-for="remoteAvatarDecoration in visibleRemoteDecorations"
-							:key="remoteAvatarDecoration.id"
-							:decoration="remoteAvatarDecoration"
-							@click="openRemoteDecoration(remoteAvatarDecoration)"
-						/>
-					</div>
-					<MkButton v-if="hasMoreRemoteDecorations" class="mt-4" @click="loadMoreRemoteDecorations">
-						{{ i18n.ts.loadMore }}
-					</MkButton>
-				</MkFolder>
-			</div>
-			<div v-else>
+			<div v-if="loading">
 				<MkLoading/>
 			</div>
 		</div>
@@ -61,55 +32,19 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import MkButton from '@/components/MkButton.vue';
-import MkFolder from '@/components/MkFolder.vue';
-import XDecoration from '@/pages/settings/avatar-decoration.decoration.vue';
 import MkAvatarDecorationSelect from '@/components/MkAvatarDecorationSelect.vue';
 
 const $i = ensureSignin();
 
-const ITEMS_PER_PAGE = 20;
-const localPage = ref(1);
-const remotePage = ref(1);
 const selectedDecoration = ref<string | null>(null);
-
+const loading = ref(true);
 const avatarDecorations = ref<Misskey.entities.AdminAvatarDecorationsListResponse>([]);
-
-const localDecorations = computed(() =>
-	avatarDecorations.value.filter(d => !d.name.includes('import_')),
-);
-
-const remoteDecorations = computed(() =>
-	avatarDecorations.value.filter(d => d.name.includes('import_')),
-);
-
-const visibleLocalDecorations = computed(() =>
-	localDecorations.value.slice(0, localPage.value * ITEMS_PER_PAGE),
-);
-
-const visibleRemoteDecorations = computed(() =>
-	remoteDecorations.value.slice(0, remotePage.value * ITEMS_PER_PAGE),
-);
-
-const hasMoreLocalDecorations = computed(() =>
-	localDecorations.value.length > visibleLocalDecorations.value.length,
-);
-
-const hasMoreRemoteDecorations = computed(() =>
-	remoteDecorations.value.length > visibleRemoteDecorations.value.length,
-);
 
 function load() {
 	misskeyApi('admin/avatar-decorations/list').then(_avatarDecorations => {
 		avatarDecorations.value = _avatarDecorations;
+		loading.value = false;
 	});
-}
-
-function loadMoreLocalDecorations() {
-	localPage.value++;
-}
-
-function loadMoreRemoteDecorations() {
-	remotePage.value++;
 }
 
 load();
@@ -126,19 +61,19 @@ async function add(ev: MouseEvent) {
 	});
 }
 
-function edit(avatarDecoration) {
+function edit(decoration) {
 	const { dispose } = os.popup(defineAsyncComponent(() => import('./avatar-decoration-edit-dialog.vue')), {
-		avatarDecoration: avatarDecoration,
+		avatarDecoration: decoration,
 	}, {
 		done: result => {
 			if (result.updated) {
-				const index = avatarDecorations.value.findIndex(x => x.id === avatarDecoration.id);
+				const index = avatarDecorations.value.findIndex(x => x.id === decoration.id);
 				avatarDecorations.value[index] = {
 					...avatarDecorations.value[index],
 					...result.updated,
 				};
 			} else if (result.deleted) {
-				avatarDecorations.value = avatarDecorations.value.filter(x => x.id !== avatarDecoration.id);
+				avatarDecorations.value = avatarDecorations.value.filter(x => x.id !== decoration.id);
 			}
 		},
 		closed: () => dispose(),
@@ -183,4 +118,4 @@ definePage(() => ({
 	font-weight: bold;
 	margin-bottom: 20px;
 }
-	</style>
+</style>
