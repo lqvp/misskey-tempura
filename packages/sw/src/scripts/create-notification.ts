@@ -341,9 +341,10 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 				renotify: true,
 			}];
 		case 'newChatMessage': {
-			const userName = getUserName({ username: data.body.message.user.name, name: data.body.message.user.name });
-			return [i18n.ts._notification.newChatMessage, {
-				body: `${userName}: ${data.body.message.text || ''}`,
+			const user = data.body.message.user;
+			const displayName = user.name || user.id;
+			return [displayName, {
+				body: data.body.message.text || '',
 				icon: data.body.message.user.avatarUrl,
 				badge: iconUrl('messages'),
 				tag: `chat/user/:${data.body.message.user.id}`,
