@@ -98,7 +98,7 @@ export class PushNotificationService implements OnApplicationShutdown {
 
 			push.sendNotification(pushSubscription, JSON.stringify({
 				type,
-				body: (type === 'notification' || type === 'unreadAntennaNote' || type === 'newChatMessage') ? truncateBody(type, body) : body,
+				body: (type === 'notification' || type === 'unreadAntennaNote' ) ? truncateBody(type, body) : body,
 				userId,
 				dateTime: Date.now(),
 			}), {
