@@ -4429,7 +4429,7 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
-     * No description provided.
+     * An endpoint for searching avatar decorations. Returns a list of decorations filtered based on the query string.
      * 
      * **Credential required**: *Yes* / **Permission**: *read:account*
      */

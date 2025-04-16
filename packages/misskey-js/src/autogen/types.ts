@@ -3807,7 +3807,7 @@ export type paths = {
   '/search-avatar-decorations': {
     /**
      * search-avatar-decorations
-     * @description No description provided.
+     * @description An endpoint for searching avatar decorations. Returns a list of decorations filtered based on the query string.
      *
      * **Credential required**: *Yes* / **Permission**: *read:account*
      */
@@ -29970,7 +29970,7 @@ export type operations = {
   };
   /**
    * search-avatar-decorations
-   * @description No description provided.
+   * @description An endpoint for searching avatar decorations. Returns a list of decorations filtered based on the query string.
    *
    * **Credential required**: *Yes* / **Permission**: *read:account*
    */
