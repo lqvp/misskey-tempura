@@ -3671,6 +3671,9 @@ skipEmailAuth: "メール認証をスキップ"
 autoFollowBack: "自動フォローバック"
 autoFollowBackDescription: "フォローされた際に自動でフォローバックします。"
 
+autoFollowOnMove: "移行したユーザーを自動でフォローする"
+autoFollowOnMoveDescription: "移行したユーザーを自動でフォローするようにします。"
+
 secondsPerSignup: "アカウントを新規作成できるインターバル（秒）"
 secondsPerSignupDescription: "一度アカウントの作成があってから上記の秒数が経たないと他のユーザーが登録できないようになります。0に設定すると無効になります。招待コードがある場合はこの制限を無視できます。「誰でも新規登録できるようにする」が無効の場合はそちらが優先されます。"
 signupRateLimited: "登録が制限されています"

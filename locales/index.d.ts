@@ -13643,6 +13643,14 @@ export interface Locale extends ILocale {
      */
     "autoFollowBackDescription": string;
     /**
+     * 移行したユーザーを自動でフォローする
+     */
+    "autoFollowOnMove": string;
+    /**
+     * 移行したユーザーを自動でフォローするようにします。
+     */
+    "autoFollowOnMoveDescription": string;
+    /**
      * アカウントを新規作成できるインターバル（秒）
      */
     "secondsPerSignup": string;

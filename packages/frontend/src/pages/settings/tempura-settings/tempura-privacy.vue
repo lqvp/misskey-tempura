@@ -30,6 +30,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkSwitch>
 			</SearchMarker>
 
+			<SearchMarker :keywords="['follow', 'move', 'auto']">
+				<MkSwitch v-model="autoFollowOnMove" @update:modelValue="save_privacy()">
+					<SearchLabel>{{ i18n.ts.autoFollowOnMove }}</SearchLabel>
+					<template #caption>{{ i18n.ts.autoFollowOnMoveDescription }}</template>
+				</MkSwitch>
+			</SearchMarker>
+
 			<SearchMarker :keywords="['activity', 'hide']">
 				<MkSwitch v-model="hideActivity" @update:modelValue="save_privacy()">
 					<SearchLabel>{{ i18n.ts.hideActivity }}</SearchLabel>
@@ -82,6 +89,7 @@ const isLocked = ref($i.isLocked);
 
 const autoRejectFollowRequest = ref($i.autoRejectFollowRequest);
 const autoFollowBack = ref($i.autoFollowBack);
+const autoFollowOnMove = ref($i.autoFollowOnMove);
 const carefulBot = ref($i.carefulBot);
 const hideActivity = ref($i.hideActivity);
 const hideNoteFromOverview = ref($i.hideNoteFromOverview);
@@ -93,6 +101,7 @@ function save_privacy() {
 	misskeyApi('i/update', {
 		autoRejectFollowRequest: !!autoRejectFollowRequest.value,
 		autoFollowBack: !!autoFollowBack.value,
+		autoFollowOnMove: !!autoFollowOnMove.value,
 		carefulBot: !!carefulBot.value,
 		hideActivity: !!hideActivity.value,
 		hideNoteFromOverview: !!hideNoteFromOverview.value,
