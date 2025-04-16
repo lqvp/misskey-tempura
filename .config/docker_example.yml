@@ -258,3 +258,7 @@ signToActivityPubGet: true
 #     # Disable query truncation. If set to true, the full text of the query will be output to the log.
 #     # default: false
 #     disableQueryTruncation: false
+
+
+# Use this if you want to use a custom user agent with misskey
+# userAgent: 'misskey'
