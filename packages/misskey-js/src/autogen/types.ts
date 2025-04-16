@@ -3804,6 +3804,15 @@ export type paths = {
      */
     post: operations['roles___users'];
   };
+  '/search-avatar-decorations': {
+    /**
+     * search-avatar-decorations
+     * @description No description provided.
+     *
+     * **Credential required**: *Yes* / **Permission**: *read:account*
+     */
+    post: operations['search-avatar-decorations'];
+  };
   '/server-info': {
     /**
      * server-info
@@ -29925,6 +29934,75 @@ export type operations = {
               id: string;
               user: components['schemas']['UserDetailed'];
             }[];
+        };
+      };
+      /** @description Client error */
+      400: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Authentication error */
+      401: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Forbidden error */
+      403: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description I'm Ai */
+      418: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+      /** @description Internal server error */
+      500: {
+        content: {
+          'application/json': components['schemas']['Error'];
+        };
+      };
+    };
+  };
+  /**
+   * search-avatar-decorations
+   * @description No description provided.
+   *
+   * **Credential required**: *Yes* / **Permission**: *read:account*
+   */
+  'search-avatar-decorations': {
+    requestBody: {
+      content: {
+        'application/json': {
+          query: string;
+          /**
+           * @default combined
+           * @enum {string}
+           */
+          origin?: 'local' | 'remote' | 'combined';
+          host?: string | null;
+          /** @default 10 */
+          limit?: number;
+          /** @default 0 */
+          offset?: number;
+        };
+      };
+    };
+    responses: {
+      /** @description OK (with results) */
+      200: {
+        content: {
+          'application/json': ({
+              id: string;
+              name: string;
+              description: string | null;
+              url: string;
+              roleIdsThatCanBeUsedThisDecoration: string[];
+            })[];
         };
       };
       /** @description Client error */

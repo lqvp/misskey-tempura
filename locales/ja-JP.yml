@@ -3686,3 +3686,5 @@ deleteWithFiles: "ファイルを含めて削除"
 deleteWithFilesConfirm: "ファイルを含めて削除しますか？"
 
 noSendActivity: "アクティビティを送信しない"
+
+noResults: "該当する結果はありません"

@@ -4,49 +4,52 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<PageWithHeader :actions="headerActions" :tabs="headerTabs">
-	<MkSpacer :contentMax="900">
+<MkStickyContainer>
+	<template #header><MkPageHeader :actions="headerActions" :tabs="headerTabs"/></template>
+	<MkSpacer :contentMax="800">
 		<div class="_gaps">
-			<MkFolder>
-				<template #label>{{ i18n.ts.local }}</template>
-				<div :class="$style.decorations">
-					<div
-						v-for="localDecoration in visibleLocalDecorations"
-						:key="localDecoration.id"
-						v-panel
-						:class="$style.decoration"
-						@click="edit(localDecoration)"
-					>
-						<div :class="$style.decorationName"><MkCondensedLine :minScale="0.5">{{ localDecoration.name }}</MkCondensedLine></div>
-						<MkAvatar style="width: 60px; height: 60px;" :user="$i" :decorations="[{ url: localDecoration.url }]" forceShowDecoration/>
-					</div>
-				</div>
-				<MkButton v-if="hasMoreLocal" class="mt-4" @click="loadMoreLocal">
-					{{ i18n.ts.loadMore }}
-				</MkButton>
-			</MkFolder>
+			<MkAvatarDecorationSelect
+				v-model="selectedDecoration"
+				@select="openDecoration"
+			/>
 
-			<MkFolder>
-				<template #label>{{ i18n.ts.remote }}</template>
-				<div :class="$style.decorations">
-					<div
-						v-for="remoteDecoration in visibleRemoteDecorations"
-						:key="remoteDecoration.id"
-						v-panel
-						:class="$style.decoration"
-						@click="edit(remoteDecoration)"
-					>
-						<div :class="$style.decorationName"><MkCondensedLine :minScale="0.5">{{ remoteDecoration.name }}</MkCondensedLine></div>
-						<MkAvatar style="width: 60px; height: 60px;" :user="$i" :decorations="[{ url: remoteDecoration.url }]" forceShowDecoration/>
+			<div v-if="!loading" class="_gaps">
+				<MkFolder>
+					<template #label>{{ i18n.ts.local }}</template>
+					<div :class="$style.decorations">
+						<XDecoration
+							v-for="localAvatarDecoration in visibleLocalDecorations"
+							:key="localAvatarDecoration.id"
+							:decoration="localAvatarDecoration"
+							@click="openLocalDecoration(localAvatarDecoration)"
+						/>
 					</div>
-				</div>
-				<MkButton v-if="hasMoreRemote" class="mt-4" @click="loadMoreRemote">
-					{{ i18n.ts.loadMore }}
-				</MkButton>
-			</MkFolder>
+					<MkButton v-if="hasMoreLocalDecorations" class="mt-4" @click="loadMoreLocalDecorations">
+						{{ i18n.ts.loadMore }}
+					</MkButton>
+				</MkFolder>
+
+				<MkFolder>
+					<template #label>{{ i18n.ts.remote }}</template>
+					<div :class="$style.decorations">
+						<XDecoration
+							v-for="remoteAvatarDecoration in visibleRemoteDecorations"
+							:key="remoteAvatarDecoration.id"
+							:decoration="remoteAvatarDecoration"
+							@click="openRemoteDecoration(remoteAvatarDecoration)"
+						/>
+					</div>
+					<MkButton v-if="hasMoreRemoteDecorations" class="mt-4" @click="loadMoreRemoteDecorations">
+						{{ i18n.ts.loadMore }}
+					</MkButton>
+				</MkFolder>
+			</div>
+			<div v-else>
+				<MkLoading/>
+			</div>
 		</div>
 	</MkSpacer>
-</PageWithHeader>
+</MkStickyContainer>
 </template>
 
 <script lang="ts" setup>
@@ -59,12 +62,15 @@ import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import MkButton from '@/components/MkButton.vue';
 import MkFolder from '@/components/MkFolder.vue';
+import XDecoration from '@/pages/settings/avatar-decoration.decoration.vue';
+import MkAvatarDecorationSelect from '@/components/MkAvatarDecorationSelect.vue';
 
 const $i = ensureSignin();
 
-const ITEMS_PER_PAGE = 50;
+const ITEMS_PER_PAGE = 20;
 const localPage = ref(1);
 const remotePage = ref(1);
+const selectedDecoration = ref<string | null>(null);
 
 const avatarDecorations = ref<Misskey.entities.AdminAvatarDecorationsListResponse>([]);
 
@@ -84,11 +90,11 @@ const visibleRemoteDecorations = computed(() =>
 	remoteDecorations.value.slice(0, remotePage.value * ITEMS_PER_PAGE),
 );
 
-const hasMoreLocal = computed(() =>
+const hasMoreLocalDecorations = computed(() =>
 	localDecorations.value.length > visibleLocalDecorations.value.length,
 );
 
-const hasMoreRemote = computed(() =>
+const hasMoreRemoteDecorations = computed(() =>
 	remoteDecorations.value.length > visibleRemoteDecorations.value.length,
 );
 
@@ -98,11 +104,11 @@ function load() {
 	});
 }
 
-function loadMoreLocal() {
+function loadMoreLocalDecorations() {
 	localPage.value++;
 }
 
-function loadMoreRemote() {
+function loadMoreRemoteDecorations() {
 	remotePage.value++;
 }
 

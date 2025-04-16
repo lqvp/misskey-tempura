@@ -30,23 +30,28 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkButton danger @click="detachAllDecorations">{{ i18n.ts.detachAll }}</MkButton>
 			</div>
 
-		<MkFolder>
-			<template #label>{{ i18n.ts.local }}</template>
-			<div :class="$style.decorations">
-				<XDecoration
-					v-for="localAvatarDecoration in visibleLocalDecorations"
-					:key="localAvatarDecoration.id"
-					:decoration="localAvatarDecoration"
-					@click="openLocalDecoration(localAvatarDecoration)"
-				/>
-			</div>
-			<MkButton v-if="hasMoreLocalDecorations" class="mt-4" @click="loadMoreLocalDecorations">
-				{{ i18n.ts.loadMore }}
-			</MkButton>
-		</MkFolder>
+			<MkAvatarDecorationSelect
+				v-model="selectedDecoration"
+				@select="openDecoration"
+			/>
 
-		<MkFolder v-if="$i.policies.canUseRemoteIconDecorations">
-			<template #label>{{ i18n.ts.remote }}</template>
+			<MkFolder>
+				<template #label>{{ i18n.ts.local }}</template>
+				<div :class="$style.decorations">
+					<XDecoration
+						v-for="localAvatarDecoration in visibleLocalDecorations"
+						:key="localAvatarDecoration.id"
+						:decoration="localAvatarDecoration"
+						@click="openLocalDecoration(localAvatarDecoration)"
+					/>
+				</div>
+				<MkButton v-if="hasMoreLocalDecorations" class="mt-4" @click="loadMoreLocalDecorations">
+					{{ i18n.ts.loadMore }}
+				</MkButton>
+			</MkFolder>
+
+			<MkFolder v-if="$i.policies.canUseRemoteIconDecorations">
+				<template #label>{{ i18n.ts.remote }}</template>
 				<div :class="$style.decorations">
 					<XDecoration
 						v-for="remoteAvatarDecoration in visibleRemoteDecorations"
@@ -55,10 +60,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 						@click="openRemoteDecoration(remoteAvatarDecoration)"
 					/>
 				</div>
-			<MkButton v-if="hasMoreRemoteDecorations" class="mt-4" @click="loadMoreRemoteDecorations">
-				{{ i18n.ts.loadMore }}
-			</MkButton>
-		</MkFolder>
+				<MkButton v-if="hasMoreRemoteDecorations" class="mt-4" @click="loadMoreRemoteDecorations">
+					{{ i18n.ts.loadMore }}
+				</MkButton>
+			</MkFolder>
 		</div>
 		<div v-else>
 			<MkLoading/>
@@ -79,10 +84,12 @@ import { ensureSignin } from '@/i.js';
 import MkInfo from '@/components/MkInfo.vue';
 import { definePage } from '@/page.js';
 import MkFolder from '@/components/MkFolder.vue';
+import MkAvatarDecorationSelect from '@/components/MkAvatarDecorationSelect.vue';
 
 const $i = ensureSignin();
 
 const ITEMS_PER_PAGE = 20;
+const selectedDecoration = ref<string | null>(null);
 
 const loading = ref(true);
 const avatarDecorations = ref<Misskey.entities.GetAvatarDecorationsResponse>([]);
