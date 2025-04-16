@@ -345,7 +345,7 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 				body: data.body.message.text || '',
 				icon: data.body.message.user.avatarUrl,
 				badge: iconUrl('messages'),
-				tag: `chat:${data.body.message.user.id}`,
+				tag: `chat/user/:${data.body.message.user.id}`,
 				data,
 				actions: [
 					{
