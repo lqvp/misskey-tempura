@@ -340,9 +340,10 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 				data,
 				renotify: true,
 			}];
-		case 'newChatMessage':
-			return [getUserName({ username: data.body.message.user.name, name: data.body.message.user.name }), {
-				body: data.body.message.text || '',
+		case 'newChatMessage': {
+			const userName = getUserName({ username: data.body.message.user.name, name: data.body.message.user.name });
+			return [i18n.ts._notification.newChatMessage, {
+				body: `${userName}: ${data.body.message.text || ''}`,
 				icon: data.body.message.user.avatarUrl,
 				badge: iconUrl('messages'),
 				tag: `chat/user/:${data.body.message.user.id}`,
@@ -354,6 +355,7 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 					},
 				],
 			}];
+		}
 		default:
 			return null;
 	}
