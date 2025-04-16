@@ -17,6 +17,8 @@ export const meta = {
 	requireCredential: true,
 	kind: 'read:account',
 
+	description: 'An endpoint for searching avatar decorations. Returns a list of decorations filtered based on the query string.',
+
 	res: {
 		type: 'array',
 		optional: false, nullable: false,
