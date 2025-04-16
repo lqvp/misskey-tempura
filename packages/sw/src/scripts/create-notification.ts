@@ -341,10 +341,11 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 				renotify: true,
 			}];
 		case 'newChatMessage':
-			return [i18n.ts._notification.newChatMessage, {
+			return [getUserName({ ...data.body.message.user, username: data.body.message.user.name }), {
 				body: data.body.message.text || '',
 				icon: data.body.message.user.avatarUrl,
 				badge: iconUrl('messages'),
+				tag: `chat:${data.body.message.user.id}`,
 				data,
 				actions: [
 					{
