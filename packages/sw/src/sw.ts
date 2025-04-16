@@ -111,6 +111,9 @@ globalThis.addEventListener('notificationclick', (ev: ServiceWorkerGlobalScopeEv
 					case 'showUser':
 						if ('user' in data.body) client = await swos.openUser(Misskey.acct.toString(data.body.user), loginId);
 						break;
+					case 'showChat':
+						if ('user' in data.body) client = await swos.openClient('push', `/my/messaging/${data.body.user.id}`, loginId);
+						break;
 					case 'reply':
 						if ('note' in data.body) client = await swos.openPost({ reply: data.body.note }, loginId);
 						break;

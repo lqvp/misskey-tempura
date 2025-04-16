@@ -2768,6 +2768,7 @@ _notification:
   loginFailedDescription: "{ip}からのログインに失敗しました。\n心当たりがない場合はパスワードの変更を行ってください。"
   createToken: "アクセストークンが作成されました"
   createTokenDescription: "心当たりがない場合は「{text}」を通じてアクセストークンを削除してください。"
+  newChatMessage: "新しいチャットメッセージ"
 
   _types:
     all: "すべて"
@@ -2796,11 +2797,13 @@ _notification:
     app: "連携アプリからの通知"
     scheduledNotePosted: "予約投稿に成功"
     scheduledNoteFailed: "予約投稿に失敗"
+    chatMessage: "新しいチャットメッセージ"
 
   _actions:
     followBack: "フォローバック"
     reply: "返信"
     renote: "リノート"
+    showChat: "チャットを表示"
 
 _deck:
   alwaysShowMainColumn: "常にメインカラムを表示"

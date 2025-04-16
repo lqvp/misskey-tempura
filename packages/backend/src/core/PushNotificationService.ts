@@ -22,6 +22,7 @@ type PushNotificationsTypes = {
 		note: Packed<'Note'>;
 	};
 	'readAllNotifications': undefined;
+	'newChatMessage': Packed<'ChatMessageLiteFor1on1'>;
 };
 
 // Reduce length because push message servers have character limits

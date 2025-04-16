@@ -10495,6 +10495,10 @@ export interface Locale extends ILocale {
          * 心当たりがない場合は「{text}」を通じてアクセストークンを削除してください。
          */
         "createTokenDescription": ParameterizedString<"text">;
+        /**
+         * 新しいチャットメッセージ
+         */
+        "newChatMessage": string;
         "_types": {
             /**
              * すべて
@@ -10600,6 +10604,10 @@ export interface Locale extends ILocale {
              * 予約投稿に失敗
              */
             "scheduledNoteFailed": string;
+            /**
+             * 新しいチャットメッセージ
+             */
+            "chatMessage": string;
         };
         "_actions": {
             /**
@@ -10614,6 +10622,10 @@ export interface Locale extends ILocale {
              * リノート
              */
             "renote": string;
+            /**
+             * チャットを表示
+             */
+            "showChat": string;
         };
     };
     "_deck": {
