@@ -76,6 +76,7 @@ globalThis.addEventListener('push', ev => {
 			// case 'driveFileCreated':
 			case 'notification':
 			case 'unreadAntennaNote':
+			case 'newChatMessage':
 				// 1日以上経過している場合は無視
 				if (Date.now() - data.dateTime > 1000 * 60 * 60 * 24) break;
 
@@ -110,6 +111,9 @@ globalThis.addEventListener('notificationclick', (ev: ServiceWorkerGlobalScopeEv
 						break;
 					case 'showUser':
 						if ('user' in data.body) client = await swos.openUser(Misskey.acct.toString(data.body.user), loginId);
+						break;
+					case 'showChat':
+						if ('user' in data.body) client = await swos.openClient('push', `/chat/user/${data.body.user.id}`, loginId);
 						break;
 					case 'reply':
 						if ('note' in data.body) client = await swos.openPost({ reply: data.body.note }, loginId);
@@ -154,6 +158,9 @@ globalThis.addEventListener('notificationclick', (ev: ServiceWorkerGlobalScopeEv
 				break;
 			case 'unreadAntennaNote':
 				client = await swos.openAntenna(data.body.antenna.id, loginId);
+				break;
+			case 'newChatMessage':
+				client = await swos.openClient('push', `/chat/user/${data.body.fromUser.id}`, loginId);
 				break;
 			default:
 				switch (action) {

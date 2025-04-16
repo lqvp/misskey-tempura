@@ -340,6 +340,14 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 				data,
 				renotify: true,
 			}];
+		case 'newChatMessage': {
+			return [i18n.tsx._notification.newChatMessage({ name: getUserName(data.body.fromUser) }), {
+				body: data.body.text ?? '',
+				icon: data.body.fromUser.avatarUrl ?? undefined,
+				badge: iconUrl('messages'),
+				data,
+			}];
+		}
 		default:
 			return null;
 	}
