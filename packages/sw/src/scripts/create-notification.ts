@@ -342,7 +342,7 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 			}];
 		case 'newChatMessage': {
 			return [getUserName(data.body.fromUser), {
-				body: data.body.text || '',
+				body: data.body.text ?? '',
 				icon: data.body.fromUser.avatarUrl ?? undefined,
 				badge: iconUrl('messages'),
 				tag: `chat/user/:${data.body.fromUser.id}`,

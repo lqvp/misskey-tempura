@@ -160,7 +160,7 @@ globalThis.addEventListener('notificationclick', (ev: ServiceWorkerGlobalScopeEv
 				client = await swos.openAntenna(data.body.antenna.id, loginId);
 				break;
 			case 'newChatMessage':
-				client = await swos.openClient('push', `/chat/user/${data.body.message.user.id}`, loginId);
+				client = await swos.openClient('push', `/chat/user/${data.body.fromUser.id}`, loginId);
 				break;
 			default:
 				switch (action) {

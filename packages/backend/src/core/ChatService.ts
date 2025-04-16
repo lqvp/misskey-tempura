@@ -230,20 +230,9 @@ export class ChatService {
 
 				if (marker == null) return; // 既読
 
-				const user = await this.usersRepository.findOneByOrFail({ id: fromUser.id });
 				const packedMessageForTo = await this.chatEntityService.packMessageDetailed(inserted, toUser);
 				this.globalEventService.publishMainStream(toUser.id, 'newChatMessage', packedMessageForTo);
-				await this.pushNotificationService.pushNotification(toUser.id, 'newChatMessage', {
-					message: {
-						id: message.id,
-						text: message.text ?? '',
-						user: {
-							id: message.fromUserId,
-							name: user.name ?? '',
-							avatarUrl: user.avatarUrl ?? '',
-						},
-					},
-				});
+				this.pushNotificationService.pushNotification(toUser.id, 'newChatMessage', packedMessageForTo);
 			}, 3000);
 		}
 
@@ -251,7 +240,7 @@ export class ChatService {
 	}
 
 	@bindThis
-	public async createMessageToRoom(fromUser: { id: MiUser['id']; host: MiUser['host']; name: string | null; avatarUrl: string | null; }, toRoom: MiChatRoom, params: {
+	public async createMessageToRoom(fromUser: { id: MiUser['id']; host: MiUser['host']; }, toRoom: MiChatRoom, params: {
 		text?: string | null;
 		file?: MiDriveFile | null;
 		uri?: string | null;
