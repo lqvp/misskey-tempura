@@ -341,20 +341,12 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 				renotify: true,
 			}];
 		case 'newChatMessage': {
-			const user = data.body.message.user;
-			const displayName = user.name || user.id;
-			return [displayName, {
-				body: data.body.message.text || '',
-				icon: data.body.message.user.avatarUrl,
+			return [getUserName(data.body.fromUser), {
+				body: data.body.text || '',
+				icon: data.body.fromUser.avatarUrl ?? undefined,
 				badge: iconUrl('messages'),
-				tag: `chat/user/:${data.body.message.user.id}`,
+				tag: `chat/user/:${data.body.fromUser.id}`,
 				data,
-				actions: [
-					{
-						action: 'showChat',
-						title: i18n.ts._notification._actions.showChat,
-					},
-				],
 			}];
 		}
 		default:

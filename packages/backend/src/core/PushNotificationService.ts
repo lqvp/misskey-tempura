@@ -22,17 +22,7 @@ type PushNotificationsTypes = {
 		note: Packed<'Note'>;
 	};
 	'readAllNotifications': undefined;
-	'newChatMessage': {
-		message: {
-			id: string;
-			text: string;
-			user: {
-				id: string;
-				name: string;
-				avatarUrl: string;
-			};
-		};
-	};
+	'newChatMessage': Packed<'ChatMessage'>;
 };
 
 // Reduce length because push message servers have character limits

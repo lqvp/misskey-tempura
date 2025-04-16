@@ -23,13 +23,7 @@ type PushNotificationDataSourceMap = {
 		note: Misskey.entities.Note;
 	};
 	readAllNotifications: undefined;
-	newChatMessage: {
-		message: {
-			id: string;
-			text: string;
-			user: { id: string; name: string; avatarUrl: string };
-		};
-	};
+	newChatMessage: Misskey.entities.ChatMessage;
 };
 
 export type PushNotificationData<K extends keyof PushNotificationDataSourceMap> = {

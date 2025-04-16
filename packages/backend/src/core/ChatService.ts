@@ -313,17 +313,7 @@ export class ChatService {
 				if (marker == null) continue;
 
 				this.globalEventService.publishMainStream(membershipsOtherThanMe[i].userId, 'newChatMessage', packedMessageForTo);
-				await this.pushNotificationService.pushNotification(membershipsOtherThanMe[i].userId, 'newChatMessage', {
-					message: {
-						id: message.id,
-						text: message.text ?? '',
-						user: {
-							id: message.fromUserId,
-							name: fromUser.name ?? '',
-							avatarUrl: fromUser.avatarUrl ?? '',
-						},
-					},
-				});
+				this.pushNotificationService.pushNotification(membershipsOtherThanMe[i].userId, 'newChatMessage', packedMessageForTo);
 			}
 		}, 3000);
 
