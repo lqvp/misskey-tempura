@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <PageWithHeader v-model:tab="tab" :tabs="headerTabs" :actions="headerActions">
 	<div v-if="user">
-		<MkHorizontalSwipe v-model:tab="tab" :tabs="headerTabs">
+		<MkSwiper v-model:tab="tab" :tabs="headerTabs">
 				<template v-if="hasTabAccess(tab)">
 				<XHome v-if="tab === 'home'" :user="user" @unfoldFiles="() => { tab = 'files'; }"/>
 				<MkSpacer v-else-if="tab === 'notes'" :contentMax="800" style="padding-top: 0">
@@ -26,7 +26,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div v-else class="forbidden">
 					<XNotFound/>
 				</div>
-		</MkHorizontalSwipe>
+		</MkSwiper>
 	</div>
 	<div v-else-if="error">
 			<MkError @retry="fetchUser()"/>
@@ -49,7 +49,7 @@ import { i18n } from '@/i18n.js';
 import { $i } from '@/i.js';
 import MkUserNotFound from '@/components/MkUserNotFound.vue';
 import MkUserSuspended from '@/components/MkUserSuspended.vue';
-import MkHorizontalSwipe from '@/components/MkHorizontalSwipe.vue';
+import MkSwiper from '@/components/MkSwiper.vue';
 import XNotFound from '@/pages/not-found.vue';
 import { serverContext, assertServerContext } from '@/server-context.js';
 

@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <PageWithHeader v-model:tab="tab" :actions="headerActions" :tabs="headerTabs">
-	<MkHorizontalSwipe v-model:tab="tab" :tabs="headerTabs">
+	<MkSwiper v-model:tab="tab" :tabs="headerTabs">
 		<MkSpacer v-if="tab === 'note'" :contentMax="800">
 			<div v-if="notesSearchAvailable || ignoreNotesSearchAvailable">
 				<XNote v-bind="props"/>
@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkInfo warn>{{ i18n.ts.usersSearchNotAvailable }}</MkInfo>
 			</div>
 		</MkSpacer>
-	</MkHorizontalSwipe>
+	</MkSwiper>
 </PageWithHeader>
 </template>
 
@@ -33,7 +33,7 @@ import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { notesSearchAvailable, usersSearchAvailable } from '@/utility/check-permissions.js';
 import MkInfo from '@/components/MkInfo.vue';
-import MkHorizontalSwipe from '@/components/MkHorizontalSwipe.vue';
+import MkSwiper from '@/components/MkSwiper.vue';
 
 const props = withDefaults(defineProps<{
 	query?: string,

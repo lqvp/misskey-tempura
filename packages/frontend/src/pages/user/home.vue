@@ -57,7 +57,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<div v-if="user.followedMessage != null" class="followedMessage">
 							<MkFukidashi class="fukidashi" :tail="narrow ? 'none' : 'left'" negativeMargin>
 								<div class="messageHeader">{{ i18n.ts.messageToFollower }}</div>
-								<div><MkSparkle><Mfm :plain="true" :text="user.followedMessage" :author="user"/></MkSparkle></div>
+								<div><MkSparkle><Mfm :plain="true" :text="user.followedMessage" :author="user" class="_selectable"/></MkSparkle></div>
 							</MkFukidashi>
 						</div>
 						<MkFoldableSection v-if="user.roles.length > 0" class="role-folder" :expanded="user.roles.length < 5">
@@ -105,7 +105,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</div>
 						<div class="description">
 							<MkOmit>
-								<Mfm v-if="user.description" :text="user.description" :isNote="false" :author="user"/>
+								<Mfm v-if="user.description" :text="user.description" :isNote="false" :author="user" class="_selectable"/>
 								<p v-else class="empty">{{ i18n.ts.noAccountDescription }}</p>
 								<div v-if="user.description && isForeignLanguage">
 									<MkButton v-if="!(translating || translation)" class="translateButton" small @click="translate"><i class="ti ti-language-hiragana"></i> {{ i18n.ts.translateProfile }}</MkButton>
@@ -130,10 +130,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<div v-if="user.fields.length > 0" class="fields">
 							<dl v-for="(field, i) in user.fields" :key="i" class="field">
 								<dt class="name">
-									<Mfm :text="field.name" :author="user" :plain="true" :colored="false"/>
+									<Mfm :text="field.name" :author="user" :plain="true" :colored="false" class="_selectable"/>
 								</dt>
 								<dd class="value">
-									<Mfm :text="field.value" :author="user" :colored="false"/>
+									<Mfm :text="field.value" :author="user" :colored="false" class="_selectable"/>
 									<i v-if="user.verifiedLinks.includes(field.value)" v-tooltip:dialog="i18n.ts.verifiedLink" class="ti ti-circle-check" :class="$style.verifiedLink"></i>
 								</dd>
 							</dl>
