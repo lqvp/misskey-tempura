@@ -60,10 +60,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #label>{{ i18n.ts.somethingHappened }}</template>
 				</MkInput>
 
-					<MkInput v-model="youBlockedImageUrl" type="url">
-						<template #prefix><i class="ti ti-link"></i></template>
-						<template #label>{{ i18n.ts.youBlocked }}</template>
-					</MkInput>
+				<MkInput v-model="youBlockedImageUrl" type="url">
+					<template #prefix><i class="ti ti-link"></i></template>
+					<template #label>{{ i18n.ts.youBlocked }}</template>
+				</MkInput>
 
 				<MkColorInput v-model="themeColor">
 					<template #label>{{ i18n.ts.themeColor }}</template>
@@ -93,10 +93,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #label>{{ i18n.ts._serverSettings.manifestJsonOverride }}</template>
 				</MkTextarea>
 
-					<MkTextarea v-model="customSplashText">
-						<template #label>{{ i18n.ts.customSplashText }}</template>
-						<template #caption>{{ i18n.ts.customSplashTextDescription }}</template>
-					</MkTextarea>
+				<MkTextarea v-model="customSplashText">
+					<template #label>{{ i18n.ts.customSplashText }}</template>
+					<template #caption>{{ i18n.ts.customSplashTextDescription }}</template>
+				</MkTextarea>
 			</div>
 		</FormSuspense>
 	</MkSpacer>
