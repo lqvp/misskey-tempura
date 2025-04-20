@@ -4,49 +4,23 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<PageWithHeader :actions="headerActions" :tabs="headerTabs">
-	<MkSpacer :contentMax="900">
+<MkStickyContainer>
+	<template #header><MkPageHeader :actions="headerActions" :tabs="headerTabs"/></template>
+	<MkSpacer :contentMax="800">
 		<div class="_gaps">
-			<MkFolder>
-				<template #label>{{ i18n.ts.local }}</template>
-				<div :class="$style.decorations">
-					<div
-						v-for="localDecoration in visibleLocalDecorations"
-						:key="localDecoration.id"
-						v-panel
-						:class="$style.decoration"
-						@click="edit(localDecoration)"
-					>
-						<div :class="$style.decorationName"><MkCondensedLine :minScale="0.5">{{ localDecoration.name }}</MkCondensedLine></div>
-						<MkAvatar style="width: 60px; height: 60px;" :user="$i" :decorations="[{ url: localDecoration.url }]" forceShowDecoration/>
-					</div>
-				</div>
-				<MkButton v-if="hasMoreLocal" class="mt-4" @click="loadMoreLocal">
-					{{ i18n.ts.loadMore }}
-				</MkButton>
-			</MkFolder>
+			<MkAvatarDecorationSelect
+				v-model="selectedDecoration"
+				:showLocalDecorations="true"
+				:showRemoteDecorations="true"
+				@select="edit"
+			/>
 
-			<MkFolder>
-				<template #label>{{ i18n.ts.remote }}</template>
-				<div :class="$style.decorations">
-					<div
-						v-for="remoteDecoration in visibleRemoteDecorations"
-						:key="remoteDecoration.id"
-						v-panel
-						:class="$style.decoration"
-						@click="edit(remoteDecoration)"
-					>
-						<div :class="$style.decorationName"><MkCondensedLine :minScale="0.5">{{ remoteDecoration.name }}</MkCondensedLine></div>
-						<MkAvatar style="width: 60px; height: 60px;" :user="$i" :decorations="[{ url: remoteDecoration.url }]" forceShowDecoration/>
-					</div>
-				</div>
-				<MkButton v-if="hasMoreRemote" class="mt-4" @click="loadMoreRemote">
-					{{ i18n.ts.loadMore }}
-				</MkButton>
-			</MkFolder>
+			<div v-if="loading">
+				<MkLoading/>
+			</div>
 		</div>
 	</MkSpacer>
-</PageWithHeader>
+</MkStickyContainer>
 </template>
 
 <script lang="ts" setup>
@@ -58,52 +32,19 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import MkButton from '@/components/MkButton.vue';
-import MkFolder from '@/components/MkFolder.vue';
+import MkAvatarDecorationSelect from '@/components/MkAvatarDecorationSelect.vue';
 
 const $i = ensureSignin();
 
-const ITEMS_PER_PAGE = 50;
-const localPage = ref(1);
-const remotePage = ref(1);
-
+const selectedDecoration = ref<string | null>(null);
+const loading = ref(true);
 const avatarDecorations = ref<Misskey.entities.AdminAvatarDecorationsListResponse>([]);
-
-const localDecorations = computed(() =>
-	avatarDecorations.value.filter(d => !d.name.includes('import_')),
-);
-
-const remoteDecorations = computed(() =>
-	avatarDecorations.value.filter(d => d.name.includes('import_')),
-);
-
-const visibleLocalDecorations = computed(() =>
-	localDecorations.value.slice(0, localPage.value * ITEMS_PER_PAGE),
-);
-
-const visibleRemoteDecorations = computed(() =>
-	remoteDecorations.value.slice(0, remotePage.value * ITEMS_PER_PAGE),
-);
-
-const hasMoreLocal = computed(() =>
-	localDecorations.value.length > visibleLocalDecorations.value.length,
-);
-
-const hasMoreRemote = computed(() =>
-	remoteDecorations.value.length > visibleRemoteDecorations.value.length,
-);
 
 function load() {
 	misskeyApi('admin/avatar-decorations/list').then(_avatarDecorations => {
 		avatarDecorations.value = _avatarDecorations;
+		loading.value = false;
 	});
-}
-
-function loadMoreLocal() {
-	localPage.value++;
-}
-
-function loadMoreRemote() {
-	remotePage.value++;
 }
 
 load();
@@ -120,19 +61,19 @@ async function add(ev: MouseEvent) {
 	});
 }
 
-function edit(avatarDecoration) {
+function edit(decoration) {
 	const { dispose } = os.popup(defineAsyncComponent(() => import('./avatar-decoration-edit-dialog.vue')), {
-		avatarDecoration: avatarDecoration,
+		avatarDecoration: decoration,
 	}, {
 		done: result => {
 			if (result.updated) {
-				const index = avatarDecorations.value.findIndex(x => x.id === avatarDecoration.id);
+				const index = avatarDecorations.value.findIndex(x => x.id === decoration.id);
 				avatarDecorations.value[index] = {
 					...avatarDecorations.value[index],
 					...result.updated,
 				};
 			} else if (result.deleted) {
-				avatarDecorations.value = avatarDecorations.value.filter(x => x.id !== avatarDecoration.id);
+				avatarDecorations.value = avatarDecorations.value.filter(x => x.id !== decoration.id);
 			}
 		},
 		closed: () => dispose(),
@@ -177,4 +118,4 @@ definePage(() => ({
 	font-weight: bold;
 	margin-bottom: 20px;
 }
-	</style>
+</style>

@@ -30,35 +30,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkButton danger @click="detachAllDecorations">{{ i18n.ts.detachAll }}</MkButton>
 			</div>
 
-		<MkFolder>
-			<template #label>{{ i18n.ts.local }}</template>
-			<div :class="$style.decorations">
-				<XDecoration
-					v-for="localAvatarDecoration in visibleLocalDecorations"
-					:key="localAvatarDecoration.id"
-					:decoration="localAvatarDecoration"
-					@click="openLocalDecoration(localAvatarDecoration)"
-				/>
-			</div>
-			<MkButton v-if="hasMoreLocalDecorations" class="mt-4" @click="loadMoreLocalDecorations">
-				{{ i18n.ts.loadMore }}
-			</MkButton>
-		</MkFolder>
-
-		<MkFolder v-if="$i.policies.canUseRemoteIconDecorations">
-			<template #label>{{ i18n.ts.remote }}</template>
-				<div :class="$style.decorations">
-					<XDecoration
-						v-for="remoteAvatarDecoration in visibleRemoteDecorations"
-						:key="remoteAvatarDecoration.id"
-						:decoration="remoteAvatarDecoration"
-						@click="openRemoteDecoration(remoteAvatarDecoration)"
-					/>
-				</div>
-			<MkButton v-if="hasMoreRemoteDecorations" class="mt-4" @click="loadMoreRemoteDecorations">
-				{{ i18n.ts.loadMore }}
-			</MkButton>
-		</MkFolder>
+			<MkAvatarDecorationSelect
+				v-model="selectedDecoration"
+				:showLocalDecorations="true"
+				:showRemoteDecorations="true"
+				@select="openDecoration"
+			/>
 		</div>
 		<div v-else>
 			<MkLoading/>
@@ -78,182 +55,57 @@ import { i18n } from '@/i18n.js';
 import { ensureSignin } from '@/i.js';
 import MkInfo from '@/components/MkInfo.vue';
 import { definePage } from '@/page.js';
-import MkFolder from '@/components/MkFolder.vue';
+import MkAvatarDecorationSelect from '@/components/MkAvatarDecorationSelect.vue';
 
 const $i = ensureSignin();
 
-const ITEMS_PER_PAGE = 20;
-
+const selectedDecoration = ref<string | null>(null);
 const loading = ref(true);
 const avatarDecorations = ref<Misskey.entities.GetAvatarDecorationsResponse>([]);
-const localAvatarDecorations = ref<Misskey.entities.GetAvatarDecorationsResponse>([]);
-const remoteAvatarDecorations = ref<Misskey.entities.GetAvatarDecorationsResponse>([]);
-
-const localPage = ref(1);
-const remotePage = ref(1);
-
-const visibleLocalDecorations = computed(() => {
-	return localAvatarDecorations.value.slice(0, localPage.value * ITEMS_PER_PAGE);
-});
-
-const visibleRemoteDecorations = computed(() => {
-	return remoteAvatarDecorations.value.slice(0, remotePage.value * ITEMS_PER_PAGE);
-});
-
-const hasMoreLocalDecorations = computed(() => {
-	return localAvatarDecorations.value.length > visibleLocalDecorations.value.length;
-});
-
-const hasMoreRemoteDecorations = computed(() => {
-	return remoteAvatarDecorations.value.length > visibleRemoteDecorations.value.length;
-});
 
 // Initial data loading
 misskeyApi('get-avatar-decorations').then(_avatarDecorations => {
 	avatarDecorations.value = _avatarDecorations;
-	_avatarDecorations.forEach(item => {
-		if (item.name.includes('import_')) {
-			remoteAvatarDecorations.value.push(item);
-		} else {
-			localAvatarDecorations.value.push(item);
-		}
-	});
 	loading.value = false;
 });
 
-function loadMoreLocalDecorations() {
-	localPage.value++;
-}
-
-function loadMoreRemoteDecorations() {
-	remotePage.value++;
-}
-
-function openLocalDecoration(avatarDecoration, index?: number) {
-	os.popup(defineAsyncComponent(() => import('./avatar-decoration.dialog.vue')), {
-		decoration: avatarDecoration,
-		usingIndex: index,
-	}, {
-		'attach': async (payload) => {
-			const decoration = {
-				id: avatarDecoration.id,
-				angle: payload.angle,
-				flipH: payload.flipH,
-				offsetX: payload.offsetX,
-				offsetY: payload.offsetY,
-			};
-			const update = [...$i.avatarDecorations, decoration];
-			await os.apiWithDialog('i/update', {
-				avatarDecorations: update,
-			});
-			$i.avatarDecorations = update;
-		},
-		'update': async (payload) => {
-			const decoration = {
-				id: avatarDecoration.id,
-				angle: payload.angle,
-				flipH: payload.flipH,
-				offsetX: payload.offsetX,
-				offsetY: payload.offsetY,
-			};
-			const update = [...$i.avatarDecorations];
-			update[index] = decoration;
-			await os.apiWithDialog('i/update', {
-				avatarDecorations: update,
-			});
-			$i.avatarDecorations = update;
-		},
-		'detach': async () => {
-			const update = [...$i.avatarDecorations];
-			update.splice(index, 1);
-			await os.apiWithDialog('i/update', {
-				avatarDecorations: update,
-			});
-			$i.avatarDecorations = update;
-		},
-	}, 'closed');
-}
-
-function openRemoteDecoration(avatarDecoration, index?: number) {
-	os.popup(defineAsyncComponent(() => import('./avatar-decoration.dialog.vue')), {
-		decoration: avatarDecoration,
-		usingIndex: index,
-	}, {
-		'attach': async (payload) => {
-			const decoration = {
-				id: avatarDecoration.id,
-				angle: payload.angle,
-				flipH: payload.flipH,
-				offsetX: payload.offsetX,
-				offsetY: payload.offsetY,
-			};
-			const update = [...$i.avatarDecorations, decoration];
-			await os.apiWithDialog('i/update', {
-				avatarDecorations: update,
-			});
-			$i.avatarDecorations = update;
-		},
-		'update': async (payload) => {
-			const decoration = {
-				id: avatarDecoration.id,
-				angle: payload.angle,
-				flipH: payload.flipH,
-				offsetX: payload.offsetX,
-				offsetY: payload.offsetY,
-			};
-			const update = [...$i.avatarDecorations];
-			update[index] = decoration;
-			await os.apiWithDialog('i/update', {
-				avatarDecorations: update,
-			});
-			$i.avatarDecorations = update;
-		},
-		'detach': async () => {
-			const update = [...$i.avatarDecorations];
-			update.splice(index, 1);
-			await os.apiWithDialog('i/update', {
-				avatarDecorations: update,
-			});
-			$i.avatarDecorations = update;
-		},
-	}, 'closed');
-}
-
-function openDecoration(avatarDecoration, index?: number) {
+function openDecoration(selectedDecoration, index?: number) {
 	const { dispose } = os.popup(defineAsyncComponent(() => import('./avatar-decoration.dialog.vue')), {
-		decoration: avatarDecorations.value.find(d => d.id === avatarDecoration.id),
-		usingIndex: index,
+		decoration: avatarDecorations.value.find(d => d.id === selectedDecoration.id),
+		usingIndex: index ?? null,
 	}, {
 		'attach': async (payload) => {
-			const decoration = {
-				id: avatarDecoration.id,
+			const newDecoration = {
+				id: selectedDecoration.id,
 				angle: payload.angle,
 				flipH: payload.flipH,
 				offsetX: payload.offsetX,
 				offsetY: payload.offsetY,
 			};
-			const update = [...$i.avatarDecorations, decoration];
+			const update = [...$i.avatarDecorations, newDecoration];
 			await os.apiWithDialog('i/update', {
 				avatarDecorations: update,
 			});
 			$i.avatarDecorations = update;
 		},
 		'update': async (payload) => {
-			const decoration = {
-				id: avatarDecoration.id,
+			if (index === undefined) return;
+			const newDecoration = {
+				id: selectedDecoration.id,
 				angle: payload.angle,
 				flipH: payload.flipH,
 				offsetX: payload.offsetX,
 				offsetY: payload.offsetY,
 			};
 			const update = [...$i.avatarDecorations];
-			update[index] = decoration;
+			update[index] = newDecoration;
 			await os.apiWithDialog('i/update', {
 				avatarDecorations: update,
 			});
 			$i.avatarDecorations = update;
 		},
 		'detach': async () => {
+			if (index === undefined) return;
 			const update = [...$i.avatarDecorations];
 			update.splice(index, 1);
 			await os.apiWithDialog('i/update', {

@@ -606,6 +606,8 @@ import type {
 	RolesUpdateRequest,
 	RolesUsersRequest,
 	RolesUsersResponse,
+	SearchAvatarDecorationsRequest,
+	SearchAvatarDecorationsResponse,
 	ServerInfoResponse,
 	StatsResponse,
 	SwRegisterRequest,
@@ -1081,6 +1083,7 @@ export type Endpoints = {
 	'roles/unassign': { req: RolesUnassignRequest; res: EmptyResponse };
 	'roles/update': { req: RolesUpdateRequest; res: EmptyResponse };
 	'roles/users': { req: RolesUsersRequest; res: RolesUsersResponse };
+	'search-avatar-decorations': { req: SearchAvatarDecorationsRequest; res: SearchAvatarDecorationsResponse };
 	'server-info': { req: EmptyRequest; res: ServerInfoResponse };
 	'stats': { req: EmptyRequest; res: StatsResponse };
 	'sw/register': { req: SwRegisterRequest; res: SwRegisterResponse };

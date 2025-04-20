@@ -13710,6 +13710,10 @@ export interface Locale extends ILocale {
      * アクティビティを送信しない
      */
     "noSendActivity": string;
+    /**
+     * 該当する結果はありません
+     */
+    "noResults": string;
 }
 declare const locales: {
     [lang: string]: Locale;

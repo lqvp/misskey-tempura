@@ -2110,6 +2110,8 @@ declare namespace entities {
         RolesUpdateRequest,
         RolesUsersRequest,
         RolesUsersResponse,
+        SearchAvatarDecorationsRequest,
+        SearchAvatarDecorationsResponse,
         ServerInfoResponse,
         StatsResponse,
         SwRegisterRequest,
@@ -3517,6 +3519,12 @@ type RolesUsersRequest = operations['roles___users']['requestBody']['content']['
 
 // @public (undocumented)
 type RolesUsersResponse = operations['roles___users']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type SearchAvatarDecorationsRequest = operations['search-avatar-decorations']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type SearchAvatarDecorationsResponse = operations['search-avatar-decorations']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type ServerInfoResponse = operations['server-info']['responses']['200']['content']['application/json'];
