@@ -36,6 +36,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<template #caption>{{ i18n.ts.autoFollowBackDescription }}</template>
 		</MkSwitch>
 
+		<MkSwitch v-model="autoFollowOnMove" @update:modelValue="save()">
+			{{ i18n.ts.autoFollowOnMove }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+			<template #caption>{{ i18n.ts.autoFollowOnMoveDescription }}</template>
+		</MkSwitch>
+
 		<MkSwitch v-model="hideActivity" @update:modelValue="save()">
 			{{ i18n.ts.hideActivity }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 			<template #caption>{{ i18n.ts.hideActivityDescription }}</template>
@@ -262,6 +267,7 @@ const isLocked = ref($i.isLocked);
 const autoAcceptFollowed = ref($i.autoAcceptFollowed);
 const autoRejectFollowRequest = ref($i.autoRejectFollowRequest);
 const autoFollowBack = ref($i.autoFollowBack);
+const autoFollowOnMove = ref($i.autoFollowOnMove);
 const carefulBot = ref($i.carefulBot);
 const noCrawle = ref($i.noCrawle);
 const preventAiLearning = ref($i.preventAiLearning);
@@ -323,6 +329,7 @@ function save() {
 		autoAcceptFollowed: !!autoAcceptFollowed.value,
 		autoRejectFollowRequest: !!autoRejectFollowRequest.value,
 		autoFollowBack: !!autoFollowBack.value,
+		autoFollowOnMove: !!autoFollowOnMove.value,
 		carefulBot: !!carefulBot.value,
 		noCrawle: !!noCrawle.value,
 		preventAiLearning: !!preventAiLearning.value,

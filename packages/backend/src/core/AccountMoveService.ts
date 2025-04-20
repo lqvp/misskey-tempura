@@ -9,7 +9,7 @@ import { IsNull, In, MoreThan, Not } from 'typeorm';
 import { bindThis } from '@/decorators.js';
 import { DI } from '@/di-symbols.js';
 import type { MiLocalUser, MiRemoteUser, MiUser } from '@/models/User.js';
-import type { BlockingsRepository, FollowingsRepository, InstancesRepository, MiMeta, MutingsRepository, UserListMembershipsRepository, UsersRepository } from '@/models/_.js';
+import type { BlockingsRepository, FollowingsRepository, InstancesRepository, MiMeta, MutingsRepository, UserListMembershipsRepository, UsersRepository, UserProfilesRepository } from '@/models/_.js';
 import type { RelationshipJobData, ThinUser } from '@/queue/types.js';
 
 import { IdService } from '@/core/IdService.js';
@@ -50,6 +50,9 @@ export class AccountMoveService {
 
 		@Inject(DI.instancesRepository)
 		private instancesRepository: InstancesRepository,
+
+		@Inject(DI.userProfilesRepository)
+		private userProfilesRepository: UserProfilesRepository,
 
 		private userEntityService: UserEntityService,
 		private idService: IdService,
@@ -138,10 +141,22 @@ export class AccountMoveService {
 			followerHost: IsNull(), // follower is local
 			followerId: Not(proxy.id),
 		});
-		const followJobs = followings.map(following => ({
-			from: { id: following.followerId },
-			to: { id: dst.id },
-		})) as RelationshipJobData[];
+
+		// Get user profiles to check autoFollowOnMove setting
+		const followerProfiles = await this.userProfilesRepository.findBy({
+			userId: In(followings.map(following => following.followerId)),
+		});
+
+		// Filter followers based on autoFollowOnMove setting
+		const followJobs = followings
+			.filter(following => {
+				const profile = followerProfiles.find(p => p.userId === following.followerId);
+				return profile?.autoFollowOnMove !== false;
+			})
+			.map(following => ({
+				from: { id: following.followerId },
+				to: { id: dst.id },
+			})) as RelationshipJobData[];
 
 		// Decrease following count instead of unfollowing.
 		try {
