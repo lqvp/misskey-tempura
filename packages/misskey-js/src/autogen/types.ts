@@ -5632,6 +5632,7 @@ export type components = {
       chatAvailability: 'available' | 'readonly' | 'unavailable';
       scheduleNoteMax: number;
       canAddRoles: boolean;
+      canCreateRole: boolean;
       canUseUnFollowNotification: boolean;
       canUseBlockedNotification: boolean;
       canUseUnBlockedNotification: boolean;

@@ -19,8 +19,6 @@ const roleManager = async () => {
 		await os.popup(
 			defineAsyncComponent(() => import('@/pages/role-add-dialog.vue')),
 			{},
-			{},
-			'closed',
 		);
 	} catch (error) {
 		console.error(error);

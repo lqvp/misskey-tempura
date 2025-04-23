@@ -7829,6 +7829,10 @@ export interface Locale extends ILocale {
              */
             "canAddRoles": string;
             /**
+             * コミュニティーロールの作成
+             */
+            "canCreateRole": string;
+            /**
              * フォロー解除通知を許可
              */
             "canUseUnFollowNotification": string;

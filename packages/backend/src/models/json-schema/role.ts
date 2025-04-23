@@ -321,6 +321,10 @@ export const packedRolePoliciesSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
+		canCreateRole: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
 		canUseUnFollowNotification: {
 			type: 'boolean',
 			optional: false, nullable: false,

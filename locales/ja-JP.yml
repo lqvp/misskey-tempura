@@ -2025,6 +2025,7 @@ _role:
     chatAvailability: "チャットを許可"
     scheduleNoteMax: "予約投稿の最大数"
     canAddRoles: "コミュニティーロールの追加"
+    canCreateRole: "コミュニティーロールの作成"
     canUseUnFollowNotification: "フォロー解除通知を許可"
     canUseBlockedNotification: "ブロック通知を許可"
     canUseUnBlockedNotification: "ブロック解除通知を許可"
