@@ -13714,6 +13714,14 @@ export interface Locale extends ILocale {
      * 該当する結果はありません
      */
     "noResults": string;
+    /**
+     * 配送先サーバーを選択
+     */
+    "selectDeliveryServers": string;
+    /**
+     * 表示するサーバーはありません
+     */
+    "noServers": string;
 }
 declare const locales: {
     [lang: string]: Locale;

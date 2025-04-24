@@ -161,6 +161,7 @@ export const paramDef = {
 		replyId: { type: 'string', format: 'misskey:id', nullable: true },
 		renoteId: { type: 'string', format: 'misskey:id', nullable: true },
 		channelId: { type: 'string', format: 'misskey:id', nullable: true },
+		deliverToHosts: { type: 'array', items: { type: 'string' }, nullable: true },
 
 		// anyOf内にバリデーションを書いても最初の一つしかチェックされない
 		// See https://github.com/misskey-dev/misskey/pull/10082
@@ -417,6 +418,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					apHashtags: ps.noExtractHashtags ? [] : undefined,
 					apEmojis: ps.noExtractEmojis ? [] : undefined,
 					deleteAt: ps.scheduledDelete?.deleteAt ? new Date(ps.scheduledDelete.deleteAt) : null,
+					deliverToHosts: ps.deliverToHosts,
 				});
 
 				return {

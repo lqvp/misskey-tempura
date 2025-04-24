@@ -78,6 +78,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<MkPollEditor v-if="poll" v-model="poll" @destroyed="poll = null"/>
 	<MkDeleteScheduleEditor v-if="scheduledNoteDelete" v-model="scheduledNoteDelete" @destroyed="scheduledNoteDelete = null"/>
 	<MkScheduleEditor v-if="scheduleNote" v-model="scheduleNote" @destroyed="scheduleNote = null"/>
+	<MkDeliveryServerEditor v-if="selectingDeliveryServers" v-model="deliverToHosts" @destroyed="selectingDeliveryServers = false"/>
 	<MkNotePreview v-if="showPreview" :class="$style.preview" :text="text" :files="files" :poll="poll ?? undefined" :useCw="useCw" :cw="cw" :user="postAccount ?? $i"/>
 	<!-- <div v-if="showingOptions" style="padding: 8px 16px;">
 	</div> -->
@@ -145,6 +146,7 @@ import { transformTextWithGemini } from '@/utility/tempura-script/text-transform
 import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
 import { DI } from '@/di.js';
+import MkDeliveryServerEditor from '@/components/MkDeliveryServerEditor.vue';
 
 const $i = ensureSignin();
 
@@ -190,6 +192,7 @@ const scheduledNoteDelete = ref<DeleteScheduleEditorModelValue | null>(prefer.s.
 const useCw = ref<boolean>(!!props.initialCw);
 const showPreview = ref(store.s.showPreview);
 watch(showPreview, () => store.set('showPreview', showPreview.value));
+const selectingDeliveryServers = ref(false);
 const showAddMfmFunction = ref(prefer.s.enableQuickAddMfmFunction);
 watch(showAddMfmFunction, () => prefer.commit('enableQuickAddMfmFunction', showAddMfmFunction.value));
 const cw = ref<string | null>(props.initialCw ?? null);
@@ -360,6 +363,10 @@ const bottomItemActionDef: Record<keyof typeof bottomItemDef, {
 				text.value = newText;
 			});
 		},
+	},
+	selectDeliveryServers: {
+		active: computed(() => deliverToHosts.value !== null && deliverToHosts.value.length > 0),
+		action: toggleDeliveryServers,
 	},
 });
 
@@ -901,6 +908,14 @@ function isAnnoying(text: string): boolean {
 		text.includes('$[position');
 }
 
+// 配送先サーバーの選択
+const deliverToHosts = ref<string[] | null>(null);
+
+// 配送先サーバー選択ダイアログを表示
+function toggleDeliveryServers() {
+	selectingDeliveryServers.value = !selectingDeliveryServers.value;
+}
+
 async function post(ev?: MouseEvent) {
 	if (ev) {
 		const el = (ev.currentTarget ?? ev.target) as HTMLElement | null;
@@ -958,6 +973,7 @@ async function post(ev?: MouseEvent) {
 		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(u => u.id) : undefined,
 		reactionAcceptance: reactionAcceptance.value,
 		scheduleNote: scheduleNote.value ?? undefined,
+		deliverToHosts: deliverToHosts.value,
 	};
 
 	if (withHashtags.value && hashtags.value && hashtags.value.trim() !== '') {
@@ -1064,7 +1080,6 @@ async function post(ev?: MouseEvent) {
 		});
 		emit('postError');
 	});
-	emit('posting');
 }
 
 function cancel() {

@@ -146,6 +146,7 @@ type Option = {
 	url?: string | null;
 	app?: MiApp | null;
 	deleteAt?: Date | null;
+	deliverToHosts?: string[] | null;
 };
 
 @Injectable()
@@ -842,11 +843,11 @@ export class NoteCreateService implements OnApplicationShutdown {
 	private async renderNoteOrRenoteActivity(data: Option, note: MiNote) {
 		if (data.localOnly) return null;
 
-		const content = this.isRenote(data) && !this.isQuote(data)
-			? this.apRendererService.renderAnnounce(data.renote.uri ? data.renote.uri : `${this.config.url}/notes/${data.renote.id}`, note)
-			: this.apRendererService.renderCreate(await this.apRendererService.renderNote(note, false), note);
+		const content = this.apRendererService.renderNote(note);
 
-		return this.apRendererService.addContext(content);
+		if (data.renote && !data.text && !data.poll && !data.files?.length) return content;
+
+		return this.apRendererService.renderCreate(content);
 	}
 
 	@bindThis
@@ -886,130 +887,151 @@ export class NoteCreateService implements OnApplicationShutdown {
 
 	@bindThis
 	private async pushToTl(note: MiNote, user: { id: MiUser['id']; host: MiUser['host']; }) {
-		if (!this.meta.enableFanoutTimeline) return;
-
-		const r = this.redisForTimelines.pipeline();
+		const meta = await this.cacheService.apGet('meta');
 
 		if (note.channelId) {
-			this.fanoutTimelineService.push(`channelTimeline:${note.channelId}`, note.id, this.config.perChannelMaxNoteCacheCount, r);
+			this.fanoutTimelineService.push(`channelTimeline:${note.channelId}`, note.id);
+		}
 
-			this.fanoutTimelineService.push(`userTimelineWithChannel:${user.id}`, note.id, note.userHost == null ? this.meta.perLocalUserUserTimelineCacheMax : this.meta.perRemoteUserUserTimelineCacheMax, r);
+		// 自分のフォロワーに配信
+		const followings = await this.followingsRepository.createQueryBuilder('following')
+			.where('following.followeeId = :followeeId', { followeeId: note.userId })
+			.andWhere('following.followerHost IS NULL')
+			.getMany();
 
-			const channelFollowings = await this.channelFollowingsRepository.find({
-				where: {
-					followeeId: note.channelId,
-				},
-				select: ['followerId'],
-			});
-
-			for (const channelFollowing of channelFollowings) {
-				this.fanoutTimelineService.push(`homeTimeline:${channelFollowing.followerId}`, note.id, this.meta.perUserHomeTimelineCacheMax, r);
-				if (note.fileIds.length > 0) {
-					this.fanoutTimelineService.push(`homeTimelineWithFiles:${channelFollowing.followerId}`, note.id, this.meta.perUserHomeTimelineCacheMax / 2, r);
-				}
+		// 自分の投稿
+		if (!note.visibility.startsWith('public') && !note.visibility.startsWith('home')) {
+			for (const following of followings) {
+				// フォロワー
+				this.fanoutTimelineService.push(`homeTimeline:${following.followerId}`, note.id);
 			}
 		} else {
-			// TODO: キャッシュ？
-			// eslint-disable-next-line prefer-const
-			let [followings, userListMemberships] = await Promise.all([
-				this.followingsRepository.find({
+			// TODO: これでいいのか？ 2023/06/17
+			this.fanoutTimelineService.push('userPublicTimeline', note.id);
+			for (const following of followings) {
+				this.fanoutTimelineService.push(`homeTimeline:${following.followerId}`, note.id);
+				}
+			}
+
+		// 通知タイムライン
+		if (note.reply) {
+			this.fanoutTimelineService.push(`notificationTimeline:${note.reply.userId}`, note.id);
+		}
+		if (note.renote) {
+			this.fanoutTimelineService.push(`notificationTimeline:${note.renote.userId}`, note.id);
+			}
+
+		const mentionedUsers = await this.getMentionedUsers(user, note, false);
+		for (const u of mentionedUsers) {
+			this.fanoutTimelineService.push(`notificationTimeline:${u.id}`, note.id);
+		}
+
+		// 通知を作成
+		if (note.renote) {
+			this.globalEventService.publishNoteStream(note.renote.userId, 'renote', {
+				noteId: note.renote.id,
+				renoteId: note.id,
+			});
+		}
+
+		if (note.reply) {
+			this.globalEventService.publishNoteStream(note.reply.userId, 'reply', {
+				noteId: note.reply.id,
+				replyId: note.id,
+			});
+		}
+
+		if (mentionedUsers.length > 0) {
+			for (const u of mentionedUsers) {
+				this.globalEventService.publishNoteStream(u.id, 'mention', {
+					noteId: note.id,
+				});
+				}
+			}
+
+		// ActivityPubにも配信
+		if (!note.localOnly && !user.host) {
+			const activity = await this.renderNoteOrRenoteActivity(data, note);
+			const dm = this.apDeliverManagerService.createDeliverManager(user, activity);
+
+			// 配送先ホストが指定されている場合、指定されたホストのフォロワーにのみ配送する
+			if (data.deliverToHosts && data.deliverToHosts.length > 0) {
+				const followers = await this.followingsRepository.find({
 					where: {
 						followeeId: user.id,
-						followerHost: IsNull(),
-						isFollowerHibernated: false,
+						followerHost: In(data.deliverToHosts),
 					},
-					select: ['followerId', 'withReplies'],
-				}),
-				this.userListMembershipsRepository.find({
+					select: {
+						followerId: true,
+						followerHost: true,
+						followerInbox: true,
+						followerSharedInbox: true,
+					},
+				});
+
+				// フォロワーリストからユーザーオブジェクトを取得
+				const remoteUsers = await this.usersRepository.find({
 					where: {
-						userId: user.id,
+						id: In(followers.map(f => f.followerId)),
+						host: Not(IsNull()),
 					},
-					select: ['userListId', 'userListUserId', 'withReplies'],
-				}),
-			]);
+					select: {
+						id: true,
+						host: true,
+						inbox: true,
+						sharedInbox: true,
+					},
+				});
 
-			if (note.visibility === 'followers') {
-				// TODO: 重そうだから何とかしたい Set 使う？
-				userListMemberships = userListMemberships.filter(x => x.userListUserId === user.id || followings.some(f => f.followerId === x.userListUserId));
-			}
-
-			// TODO: あまりにも数が多いと redisPipeline.exec に失敗する(理由は不明)ため、3万件程度を目安に分割して実行するようにする
-			for (const following of followings) {
-				// 基本的にvisibleUserIdsには自身のidが含まれている前提であること
-				if (note.visibility === 'specified' && !note.visibleUserIds.some(v => v === following.followerId)) continue;
-
-				// 「自分自身への返信 or そのフォロワーへの返信」のどちらでもない場合
-				if (isReply(note, following.followerId)) {
-					if (!following.withReplies) continue;
-				}
-
-				this.fanoutTimelineService.push(`homeTimeline:${following.followerId}`, note.id, this.meta.perUserHomeTimelineCacheMax, r);
-				if (note.fileIds.length > 0) {
-					this.fanoutTimelineService.push(`homeTimelineWithFiles:${following.followerId}`, note.id, this.meta.perUserHomeTimelineCacheMax / 2, r);
-				}
-			}
-
-			for (const userListMembership of userListMemberships) {
-				// ダイレクトのとき、そのリストが対象外のユーザーの場合
-				if (
-					note.visibility === 'specified' &&
-					note.userId !== userListMembership.userListUserId &&
-					!note.visibleUserIds.some(v => v === userListMembership.userListUserId)
-				) continue;
-
-				// 「自分自身への返信 or そのリストの作成者への返信」のどちらでもない場合
-				if (isReply(note, userListMembership.userListUserId)) {
-					if (!userListMembership.withReplies) continue;
-				}
-
-				this.fanoutTimelineService.push(`userListTimeline:${userListMembership.userListId}`, note.id, this.meta.perUserListTimelineCacheMax, r);
-				if (note.fileIds.length > 0) {
-					this.fanoutTimelineService.push(`userListTimelineWithFiles:${userListMembership.userListId}`, note.id, this.meta.perUserListTimelineCacheMax / 2, r);
-				}
-			}
-
-			// 自分自身のHTL
-			if (note.userHost == null) {
-				if (note.visibility !== 'specified' || !note.visibleUserIds.some(v => v === user.id)) {
-					this.fanoutTimelineService.push(`homeTimeline:${user.id}`, note.id, this.meta.perUserHomeTimelineCacheMax, r);
-					if (note.fileIds.length > 0) {
-						this.fanoutTimelineService.push(`homeTimelineWithFiles:${user.id}`, note.id, this.meta.perUserHomeTimelineCacheMax / 2, r);
-					}
-				}
-			}
-
-			// 自分自身以外への返信
-			if (isReply(note)) {
-				this.fanoutTimelineService.push(`userTimelineWithReplies:${user.id}`, note.id, note.userHost == null ? this.meta.perLocalUserUserTimelineCacheMax : this.meta.perRemoteUserUserTimelineCacheMax, r);
-
-				if (note.visibility === 'public' && note.userHost == null) {
-					this.fanoutTimelineService.push('localTimelineWithReplies', note.id, 300, r);
-					if (note.replyUserHost == null) {
-						this.fanoutTimelineService.push(`localTimelineWithReplyTo:${note.replyUserId}`, note.id, 300 / 10, r);
+				// フォロワーごとに配送
+				for (const remoteUser of remoteUsers) {
+					if (remoteUser.inbox) {
+						dm.addDirectRecipe(remoteUser as MiRemoteUser);
 					}
 				}
 			} else {
-				this.fanoutTimelineService.push(`userTimeline:${user.id}`, note.id, note.userHost == null ? this.meta.perLocalUserUserTimelineCacheMax : this.meta.perRemoteUserUserTimelineCacheMax, r);
-				if (note.fileIds.length > 0) {
-					this.fanoutTimelineService.push(`userTimelineWithFiles:${user.id}`, note.id, note.userHost == null ? this.meta.perLocalUserUserTimelineCacheMax / 2 : this.meta.perRemoteUserUserTimelineCacheMax / 2, r);
+				// 通常の配送先追加処理
+				dm.addFollowersRecipe();
+
+				// 返信先のユーザーがリモートユーザーかつ投稿者のフォロワーでなければ配送
+				if (note.reply && note.reply.userHost !== null) {
+					const u = await this.remoteUserResolveService.resolveUser(note.reply.userId);
+					if (u && !dm.hasRecipe(u)) {
+						dm.addDirectRecipe(u);
+					}
 				}
 
-				if (note.visibility === 'public' && note.userHost == null) {
-					this.fanoutTimelineService.push('localTimeline', note.id, 1000, r);
-					if (note.fileIds.length > 0) {
-						this.fanoutTimelineService.push('localTimelineWithFiles', note.id, 500, r);
+				// 投稿がRenoteかつオリジナルの投稿者がリモートユーザーかつ投稿者のフォロワーでなければ配送
+				if (note.renote && note.renote.userHost !== null) {
+					const u = await this.remoteUserResolveService.resolveUser(note.renote.userId);
+					if (u && !dm.hasRecipe(u)) {
+						dm.addDirectRecipe(u);
+					}
+				}
+
+				// メンションのユーザーがリモートユーザーかつ投稿者のフォロワーでなければ配送
+				for (const u of mentionedUsers.filter(u => u.host !== null)) {
+					if (!dm.hasRecipe(u)) {
+						dm.addDirectRecipe(u as MiRemoteUser);
 					}
 				}
 			}
 
-			if (Math.random() < 0.1) {
-				process.nextTick(() => {
-					this.checkHibernation(followings);
+			this.cacheService.apSet('meta', meta);
+
+			// キューに入れる前にMeta更新。だいたいのクライアントは1のとき何もしない
+			if (meta.recaptchaEnabled && meta.recaptchaPostErequentlyFactor >= 2) {
+				await this.metaService.update({
+					id: meta.id,
+					recaptchaScoreRecentNotes: [...(meta.recaptchaScoreRecentNotes || []).filter(d => d.uid != user.id), {
+						uid: user.id,
+						time: Date.now(),
+					}],
 				});
 			}
-		}
 
-		r.exec();
+			dm.execute();
+		}
 	}
 
 	@bindThis

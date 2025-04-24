@@ -456,3 +456,4 @@ export * as 'i/profile-counts-control' from './endpoints/i/profile-counts-contro
 export * as 'admin/drop-all-notes' from './endpoints/admin/drop-all-notes.js';
 export * as 'notes/llm-gen' from './endpoints/notes/llm-gen.js';
 export * as 'search-avatar-decorations' from './endpoints/search-avatar-decorations.js';
+export * as 'i/followers-servers' from './endpoints/i/followers-servers.js';

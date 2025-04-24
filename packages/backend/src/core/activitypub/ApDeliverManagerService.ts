@@ -92,6 +92,17 @@ class DeliverManager {
 	}
 
 	/**
+	 * Check if a recipe for the specified remote user already exists
+	 * @param remoteUser Remote user to check
+	 */
+	@bindThis
+	public hasRecipe(remoteUser: MiRemoteUser): boolean {
+		return this.recipes.some(recipe =>
+			isDirect(recipe) && recipe.to.id === remoteUser.id
+		);
+	}
+
+	/**
 	 * Add recipe
 	 * @param recipe Recipe
 	 */

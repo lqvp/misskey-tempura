@@ -3695,3 +3695,6 @@ deleteWithFilesConfirm: "ファイルを含めて削除しますか？"
 noSendActivity: "アクティビティを送信しない"
 
 noResults: "該当する結果はありません"
+
+selectDeliveryServers: "配送先サーバーを選択"
+noServers: "表示するサーバーはありません"
