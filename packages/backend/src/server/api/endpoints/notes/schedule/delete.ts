@@ -61,7 +61,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw new ApiError(meta.errors.permissionDenied);
 			}
 			await this.noteScheduleRepository.delete({ id: ps.noteId });
-			await this.queueService.ScheduleNotePostQueue.remove(ps.noteId);
+			await this.queueService.scheduleNotePostQueue.remove(ps.noteId);
 		});
 	}
 }
