@@ -262,3 +262,6 @@ signToActivityPubGet: true
 
 # Use this if you want to use a custom user agent with misskey
 # userAgent: 'misskey'
+
+# # Use this if you want to use a custom version with misskey
+# version: '2025.0.0'

@@ -119,6 +119,7 @@ type Source = {
 	}
 
 	userAgent?: string;
+	version?: string;
 };
 
 export type Config = {
@@ -254,7 +255,7 @@ export function loadConfig(): Config {
 	const config = yaml.load(fs.readFileSync(path, 'utf-8')) as Source;
 
 	const url = tryCreateUrl(config.url ?? process.env.MISSKEY_URL ?? '');
-	const version = meta.version;
+	const version = config.version ?? meta.version;
 	const host = url.host;
 	const hostname = url.hostname;
 	const scheme = url.protocol.replace(/:$/, '');
