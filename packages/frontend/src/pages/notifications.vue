@@ -6,18 +6,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <PageWithHeader v-model:tab="tab" :actions="headerActions" :tabs="headerTabs">
 	<MkSpacer :contentMax="800">
-		<div v-if="tab === 'all'">
-			<XNotifications :class="$style.notifications" :excludeTypes="excludeTypes"/>
-		</div>
-		<div v-else-if="tab === 'newNote'" key="newNote">
+		<MkSwiper v-model:tab="tab" :tabs="headerTabs">
+			<div v-if="tab === 'all'">
+				<XNotifications :class="$style.notifications" :excludeTypes="excludeTypes"/>
+			</div>
+			<div v-else-if="tab === 'newNote'" key="newNote">
 			<XNotifications :class="$style.notifications" :excludeTypes="newNoteExcludeTypes" :notUseGrouped="true"/>
 		</div>
 		<div v-else-if="tab === 'mentions'">
-			<MkNotes :pagination="mentionsPagination"/>
-		</div>
-		<div v-else-if="tab === 'directNotes'">
-			<MkNotes :pagination="directNotesPagination"/>
-		</div>
+				<MkNotes :pagination="mentionsPagination"/>
+			</div>
+			<div v-else-if="tab === 'directNotes'">
+				<MkNotes :pagination="directNotesPagination"/>
+			</div>
+		</MkSwiper>
 	</MkSpacer>
 </PageWithHeader>
 </template>

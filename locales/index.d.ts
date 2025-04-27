@@ -7729,6 +7729,10 @@ export interface Locale extends ILocale {
              */
             "driveCapacity": string;
             /**
+             * アップロード可能な最大ファイルサイズ
+             */
+            "maxFileSize": string;
+            /**
              * ファイルにNSFWを常に付与
              */
             "alwaysMarkNsfw": string;
