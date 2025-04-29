@@ -46,7 +46,6 @@ export const paramDef = {
 	],
 } as const;
 
-// eslint-disable-next-line import/no-default-export
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> {
 	constructor(
@@ -66,6 +65,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 			}
 			if (!role.isPublic) {
 				throw new ApiError(meta.errors.isPrivateRole);
+			}
+
+			const policies = await this.roleService.getUserPolicies(me ? me.id : null);
+			if (!policies.canAddRoles) {
+				throw new ApiError(meta.errors.accessDenied);
 			}
 
 			await this.roleService.assign(me.id, role.id, null);

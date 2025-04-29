@@ -126,6 +126,7 @@ export const ROLE_POLICIES = [
 	'canImportUserLists',
 	'chatAvailability',
 	'canAddRoles',
+	'canCreateRole',
 	'canUseUnFollowNotification',
 	'canUseBlockedNotification',
 	'canUseUnBlockedNotification',

@@ -71,6 +71,7 @@ export type RolePolicies = {
 	canImportUserLists: boolean;
 	chatAvailability: 'available' | 'readonly' | 'unavailable';
 	canAddRoles: boolean;
+	canCreateRole: boolean;
 	canUseUnFollowNotification: boolean;
   canUseBlockedNotification: boolean;
   canUseUnBlockedNotification: boolean;
@@ -123,6 +124,7 @@ export const DEFAULT_POLICIES: RolePolicies = {
 	canImportUserLists: true,
 	chatAvailability: 'available',
 	canAddRoles: true,
+	canCreateRole: true,
 	canUseUnFollowNotification: true,
 	canUseBlockedNotification: true,
 	canUseUnBlockedNotification: true,
@@ -507,6 +509,7 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			canImportUserLists: calc('canImportUserLists', vs => vs.some(v => v === true)),
 			chatAvailability: calc('chatAvailability', aggregateChatAvailability),
 			canAddRoles: calc('canAddRoles', vs => vs.some(v => v === true)),
+			canCreateRole: calc('canCreateRole', vs => vs.some(v => v === true)),
 			canUseUnFollowNotification: calc('canUseUnFollowNotification', vs => vs.some(v => v === true)),
   		canUseBlockedNotification: calc('canUseBlockedNotification', vs => vs.some(v => v === true)),
   		canUseUnBlockedNotification: calc('canUseUnBlockedNotification', vs => vs.some(v => v === true)),

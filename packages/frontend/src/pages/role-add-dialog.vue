@@ -1,19 +1,19 @@
-/*
- * SPDX-FileCopyrightText: lqvp
- * SPDX-License-Identifier: AGPL-3.0-only
- */
+<!--
+SPDX-FileCopyrightText: lqvp
+SPDX-License-Identifier: AGPL-3.0-only
+-->
 
 <template>
 <MkModalWindow
 	ref="dialog"
 	:width="400"
-	@close="dialog.close()"
+	@close="dialog?.close()"
 	@closed="$emit('closed')"
 >
 	<template v-if="!props.role" #header>
 		<div :class="$style.header">
 			<span>{{ i18n.ts.communityRole }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></span>
-			<XTabs :class="$style.tabs" :rootEl="dialog" :tab="tab" :tabs="headerTabs" @update:tab="key => tab = key"/>
+			<XTabs :class="$style.tabs" :rootEl="dialog?.$el" :tab="tab" :tabs="headerTabs" @update:tab="key => tab = key"/>
 		</div>
 	</template>
 	<template v-else #header>{{ i18n.ts.changes }}</template>
@@ -82,23 +82,46 @@ import MkColorInput from '@/components/MkColorInput.vue';
 import MkTextarea from '@/components/MkTextarea.vue';
 import DialogRole from '@/pages/DialogRole.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
+import { $i } from '@/i.js';
 
 const props = defineProps<{
-		role?: any,
-	}>();
+	role?: any,
+}>();
 
-let dialog = ref(null);
-let name: string = ref(props.role ? props.role.name : '');
-let description: string = ref(props.role ? props.role.description : '');
-let color: string = ref(props.role ? props.role.color : '#000000');
-let isPublic = ref(props.role ? props.role.isPublic : false);
-let imgUrl = ref(props.role ? props.role.iconUrl : null);
+let dialog = ref<InstanceType<typeof MkModalWindow> | undefined>(undefined);
+let name = ref<string>('');
+let description = ref<string>('');
+let color = ref<string>('#000000');
+let isPublic = ref(false);
+let imgUrl = ref<string | null>(null);
 
-let assignedList = [];
-let roleList = [];
+interface Role {
+	id: string;
+	name: string;
+	color: string | null;
+	iconUrl: string | null;
+	description: string;
+	isModerator: boolean;
+	isAdministrator: boolean;
+	displayOrder: number;
+	isRainbow: boolean;
+}
+
+let assignedList: Role[] = [];
+let roleList: Role[] = [];
 
 let rolesAssigned = computed(() => assignedList);
 let roles = computed(() => roleList);
+
+onMounted(() => {
+	if (props.role) {
+		name.value = props.role.name;
+		description.value = props.role.description;
+		color.value = props.role.color;
+		isPublic.value = props.role.isPublic;
+		imgUrl.value = props.role.iconUrl;
+	}
+});
 
 onMounted(async () => {
 	assignedList = await misskeyApi('roles/list', {
@@ -109,19 +132,26 @@ onMounted(async () => {
 	}).then(v => v.filter(r => !assignedList.some(ra => r.id === ra.id)));
 });
 
-const tab = ref('add');
-const headerTabs = computed(() => [{
-	key: 'add',
-	title: i18n.ts.add,
-}, {
-	key: 'manage',
-	title: i18n.ts.manage,
-}]);
+const tab = ref($i?.policies.canCreateRole ? 'add' : 'manage');
+const headerTabs = computed(() => {
+	const tabs: { key: string; title: string; }[] = [];
+	if ($i?.policies.canCreateRole) {
+		tabs.push({
+			key: 'add',
+			title: i18n.ts.add,
+		});
+	}
+	tabs.push({
+		key: 'manage',
+		title: i18n.ts.manage,
+	});
+	return tabs;
+});
 
 const emit = defineEmits<{
-		(ev: 'done', v: { deleted?: boolean; updated?: any; created?: any }): void,
-		(ev: 'closed'): void
-	}>();
+	(ev: 'done', v: { deleted?: boolean; updated?: any; created?: any }): void,
+	(ev: 'closed'): void
+}>();
 
 async function changeImage(ev) {
 	const file = await selectFile(ev.currentTarget ?? ev.target, null);
@@ -131,6 +161,8 @@ async function changeImage(ev) {
 }
 
 async function done() {
+	if (!$i?.policies.canCreateRole) return;
+
 	const params = {
 		name: name.value,
 		description: description.value,
@@ -158,7 +190,7 @@ async function done() {
 			created: created,
 		});
 	}
-	dialog.value.close();
+	dialog.value?.close();
 }
 </script>
 
