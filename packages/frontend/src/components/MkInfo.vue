@@ -40,7 +40,6 @@ function close() {
 	background: var(--MI_THEME-infoBg);
 	color: var(--MI_THEME-infoFg);
 	border-radius: var(--MI-radius);
-	white-space: pre-wrap;
 
 	&.info {
 		background: var(--MI_THEME-infoBg);

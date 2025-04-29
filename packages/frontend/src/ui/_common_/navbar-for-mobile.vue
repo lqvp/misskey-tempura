@@ -125,6 +125,7 @@ function more() {
 	display: inline-block;
 	width: 38px;
 	aspect-ratio: 1;
+	border-radius: 8px;
 }
 
 .instanceIconLong {

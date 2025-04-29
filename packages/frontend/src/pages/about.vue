@@ -4,21 +4,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<PageWithHeader v-model:tab="tab" :actions="headerActions" :tabs="headerTabs">
-	<MkSwiper v-model:tab="tab" :tabs="headerTabs">
-		<MkSpacer v-if="tab === 'overview'" :contentMax="600" :marginMin="20">
-			<XOverview/>
-		</MkSpacer>
-		<MkSpacer v-else-if="tab === 'emojis' && $i" :contentMax="1000" :marginMin="20">
-			<XEmojis/>
-		</MkSpacer>
-		<MkSpacer v-else-if="instance.federation !== 'none' && tab === 'federation' && $i" :contentMax="1000" :marginMin="20">
-			<XFederation/>
-		</MkSpacer>
-		<MkSpacer v-else-if="tab === 'charts' && $i" :contentMax="1000" :marginMin="20">
-			<MkInstanceStats/>
-		</MkSpacer>
-	</MkSwiper>
+<PageWithHeader v-model:tab="tab" :actions="headerActions" :tabs="headerTabs" :swipable="true">
+	<div v-if="tab === 'overview'" class="_spacer" style="--MI_SPACER-w: 600px; --MI_SPACER-min: 20px;">
+		<XOverview/>
+	</div>
+	<div v-else-if="tab === 'emojis' && $i" class="_spacer" style="--MI_SPACER-w: 1000px; --MI_SPACER-min: 20px;">
+		<XEmojis/>
+	</div>
+	<div v-else-if="instance.federation !== 'none' && tab === 'federation' && $i" class="_spacer" style="--MI_SPACER-w: 1000px; --MI_SPACER-min: 20px;">
+		<XFederation/>
+	</div>
+	<div v-else-if="tab === 'charts' && $i" class="_spacer" style="--MI_SPACER-w: 1000px; --MI_SPACER-min: 20px;">
+		<MkInstanceStats/>
+	</div>
 </PageWithHeader>
 </template>
 
@@ -29,7 +27,6 @@ import { i18n } from '@/i18n.js';
 import { $i } from '@/i.js';
 import { claimAchievement } from '@/utility/achievements.js';
 import { definePage } from '@/page.js';
-import MkSwiper from '@/components/MkSwiper.vue';
 
 const XOverview = defineAsyncComponent(() => import('@/pages/about.overview.vue'));
 const XEmojis = defineAsyncComponent(() => import('@/pages/about.emojis.vue'));
