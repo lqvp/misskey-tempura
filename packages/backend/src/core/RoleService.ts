@@ -51,6 +51,7 @@ export type RolePolicies = {
 	canUseTranslator: boolean;
 	canHideAds: boolean;
 	driveCapacityMb: number;
+	maxFileSizeMb: number;
 	alwaysMarkNsfw: boolean;
 	canUpdateBioMedia: boolean;
 	pinLimit: number;
@@ -103,6 +104,7 @@ export const DEFAULT_POLICIES: RolePolicies = {
 	canUseTranslator: true,
 	canHideAds: false,
 	driveCapacityMb: 100,
+	maxFileSizeMb: 10,
 	alwaysMarkNsfw: false,
 	canUpdateBioMedia: true,
 	pinLimit: 5,
@@ -487,6 +489,7 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			canUseTranslator: calc('canUseTranslator', vs => vs.some(v => v === true)),
 			canHideAds: calc('canHideAds', vs => vs.some(v => v === true)),
 			driveCapacityMb: calc('driveCapacityMb', vs => Math.max(...vs)),
+			maxFileSizeMb: calc('maxFileSizeMb', vs => Math.max(...vs)),
 			alwaysMarkNsfw: calc('alwaysMarkNsfw', vs => vs.some(v => v === true)),
 			canUpdateBioMedia: calc('canUpdateBioMedia', vs => vs.some(v => v === true)),
 			pinLimit: calc('pinLimit', vs => Math.max(...vs)),

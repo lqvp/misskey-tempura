@@ -4,29 +4,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<PageWithHeader v-model:tab="tab" :tabs="headerTabs" :actions="headerActions">
+<PageWithHeader v-model:tab="tab" :tabs="headerTabs" :actions="headerActions" :swipable="true">
 	<div v-if="user">
-		<MkSwiper v-model:tab="tab" :tabs="headerTabs">
 				<template v-if="hasTabAccess(tab)">
-				<XHome v-if="tab === 'home'" :user="user" @unfoldFiles="() => { tab = 'files'; }"/>
-				<MkSpacer v-else-if="tab === 'notes'" :contentMax="800" style="padding-top: 0">
-					<XTimeline :user="user"/>
-				</MkSpacer>
-				<XFiles v-else-if="tab === 'files'" :user="user"/>
-				<XActivity v-else-if="tab === 'activity'" :user="user"/>
-				<XAchievements v-else-if="tab === 'achievements'" :user="user"/>
-				<XReactions v-else-if="tab === 'reactions'" :user="user"/>
-				<XClips v-else-if="tab === 'clips'" :user="user"/>
-				<XLists v-else-if="tab === 'lists'" :user="user"/>
-				<XPages v-else-if="tab === 'pages'" :user="user"/>
-				<XFlashs v-else-if="tab === 'flashs'" :user="user"/>
-				<XGallery v-else-if="tab === 'gallery'" :user="user"/>
-				<XRaw v-else-if="tab === 'raw'" :user="user"/>
+			<XHome v-if="tab === 'home'" :user="user" @unfoldFiles="() => { tab = 'files'; }"/>
+			<div v-else-if="tab === 'notes'" class="_spacer" style="--MI_SPACER-w: 800px;">
+				<XTimeline :user="user"/>
+			</div>
+			<XFiles v-else-if="tab === 'files'" :user="user"/>
+			<XActivity v-else-if="tab === 'activity'" :user="user"/>
+			<XAchievements v-else-if="tab === 'achievements'" :user="user"/>
+			<XReactions v-else-if="tab === 'reactions'" :user="user"/>
+			<XClips v-else-if="tab === 'clips'" :user="user"/>
+			<XLists v-else-if="tab === 'lists'" :user="user"/>
+			<XPages v-else-if="tab === 'pages'" :user="user"/>
+			<XFlashs v-else-if="tab === 'flashs'" :user="user"/>
+			<XGallery v-else-if="tab === 'gallery'" :user="user"/>
+			<XRaw v-else-if="tab === 'raw'" :user="user"/>
 				</template>
 				<div v-else class="forbidden">
 					<XNotFound/>
 				</div>
-		</MkSwiper>
 	</div>
 	<div v-else-if="error">
 			<MkError @retry="fetchUser()"/>
@@ -49,7 +47,6 @@ import { i18n } from '@/i18n.js';
 import { $i } from '@/i.js';
 import MkUserNotFound from '@/components/MkUserNotFound.vue';
 import MkUserSuspended from '@/components/MkUserSuspended.vue';
-import MkSwiper from '@/components/MkSwiper.vue';
 import XNotFound from '@/pages/not-found.vue';
 import { serverContext, assertServerContext } from '@/server-context.js';
 

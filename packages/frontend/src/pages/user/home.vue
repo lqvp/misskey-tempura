@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkSpacer :contentMax="narrow ? 800 : 1100">
+<div class="_spacer" :style="{ '--MI_SPACER-w': narrow ? '800px' : '1100px' }">
 	<div ref="rootEl" class="ftskorzw" :class="{ wide: !narrow }" style="container-type: inline-size;">
 		<div class="main _gaps">
 			<!-- TODO -->
@@ -210,7 +210,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 		</template>
 	</div>
-</MkSpacer>
+</div>
 </template>
 
 <script lang="ts" setup>

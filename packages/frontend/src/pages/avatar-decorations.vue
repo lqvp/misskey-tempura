@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <MkStickyContainer>
 	<template #header><MkPageHeader :actions="headerActions" :tabs="headerTabs"/></template>
-	<MkSpacer :contentMax="800">
+	<div class="_spacer" style="--MI_SPACER-w: 800px;">
 		<div class="_gaps">
 			<MkAvatarDecorationSelect
 				v-model="selectedDecoration"
@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkLoading/>
 			</div>
 		</div>
-	</MkSpacer>
+	</div>
 </MkStickyContainer>
 </template>
 
