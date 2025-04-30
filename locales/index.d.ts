@@ -13433,6 +13433,33 @@ export interface Locale extends ILocale {
          */
         "waitCursorImageURLDescription": string;
     };
+    "verifyEmail": {
+        /**
+         * メール認証
+         */
+        "title": string;
+        /**
+         * メール認証に成功しました
+         */
+        "successTitle": string;
+        /**
+         * メール認証に失敗しました
+         */
+        "failureTitle": string;
+        /**
+         * メールアドレスの認証に成功しました。
+         */
+        "successMessage": string;
+        /**
+         * 認証に失敗しました。もう一度お試しください。
+         * 認証コードが無効、または期限切れの可能性があります。
+         */
+        "failureMessage": string;
+        /**
+         * メールアドレスの設定へ
+         */
+        "goToEmailSettings": string;
+    };
     /**
      * すぐ消す
      */
