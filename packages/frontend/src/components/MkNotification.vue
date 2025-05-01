@@ -391,6 +391,7 @@ function getActualReactedUsersCount(notification: Misskey.entities.Notification)
 
 .t_unfollow, .t_followRequestRejected, .t_blocked {
 	padding: 3px;
+	background: var(--eventUnFollow);
 	pointer-events: none;
 }
 

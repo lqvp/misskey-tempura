@@ -15,9 +15,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div class="_gaps_s">
 				<MkFolder v-for="type in notificationTypes.filter(x => !nonConfigurableNotificationTypes.includes(x))" :key="type">
 					<template #label>
-					{{ i18n.ts._notification._types[type] }}
-					<span v-if="['unfollow', 'followRequestRejected', 'blocked', 'unblocked', 'scheduledNotePosted', 'scheduledNoteFailed'].includes(type)" class="_beta">{{ i18n.ts.originalFeature }}</span>
-				</template>
+						{{ i18n.ts._notification._types[type] }}
+						<span v-if="['unfollow', 'followRequestRejected', 'blocked', 'unblocked', 'scheduledNotePosted', 'scheduledNoteFailed'].includes(type)" class="_beta">{{ i18n.ts.originalFeature }}</span>
+					</template>
 					<template #suffix>
 						{{
 							$i.notificationRecieveConfig[type]?.type === 'never' ? i18n.ts.none :
