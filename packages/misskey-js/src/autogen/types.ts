@@ -7413,7 +7413,7 @@ export type operations = {
         content: {
           'application/json': {
             /** @enum {string} */
-            provider: 'none' | 'hcaptcha' | 'mcaptcha' | 'recaptcha' | 'turnstile' | 'testcaptcha';
+            provider: 'none' | 'hcaptcha' | 'mcaptcha' | 'recaptcha' | 'turnstile' | 'fc' | 'testcaptcha';
             hcaptcha: {
               siteKey: string | null;
               secretKey: string | null;
@@ -7477,7 +7477,7 @@ export type operations = {
       content: {
         'application/json': {
           /** @enum {string} */
-          provider: 'none' | 'hcaptcha' | 'mcaptcha' | 'recaptcha' | 'turnstile' | 'testcaptcha';
+          provider: 'none' | 'hcaptcha' | 'mcaptcha' | 'recaptcha' | 'turnstile' | 'fc' | 'testcaptcha';
           captchaResult?: string | null;
           sitekey?: string | null;
           secret?: string | null;
