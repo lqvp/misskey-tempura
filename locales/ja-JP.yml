@@ -3698,3 +3698,6 @@ deleteWithFilesConfirm: "ファイルを含めて削除しますか？"
 noSendActivity: "アクティビティを送信しない"
 
 noResults: "該当する結果はありません"
+
+noteActions: "ノートのアクション"
+noteBottomSettingsDescription: "ノートの下部に表示されるアクションを設定します。"

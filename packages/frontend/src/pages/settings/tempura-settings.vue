@@ -20,6 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<BehaviorSettings/>
 			<DriveSettings/>
 			<PostFormSettings/>
+			<NoteBottomSettings/>
 			<TimeLineSettings/>
 			<LLMSettings/>
 			<EarthquakeSettings/>
@@ -43,6 +44,7 @@ const AppearanceSettings = defineAsyncComponent(() => import('./tempura-settings
 const BehaviorSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-behavior.vue'));
 const DriveSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-drive.vue'));
 const PostFormSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-postform.vue'));
+const NoteBottomSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-notebottom.vue'));
 const TimeLineSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-timeline.vue'));
 const LLMSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-llm.vue'));
 const EarthquakeSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-earthquake.vue'));

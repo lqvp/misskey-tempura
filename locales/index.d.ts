@@ -13729,6 +13729,14 @@ export interface Locale extends ILocale {
      * 該当する結果はありません
      */
     "noResults": string;
+    /**
+     * ノートのアクション
+     */
+    "noteActions": string;
+    /**
+     * ノートの下部に表示されるアクションを設定します。
+     */
+    "noteBottomSettingsDescription": string;
 }
 declare const locales: {
     [lang: string]: Locale;
