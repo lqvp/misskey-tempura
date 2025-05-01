@@ -13288,6 +13288,46 @@ export interface Locale extends ILocale {
          */
         "ignoreTrainingCaption": string;
         /**
+         * 通知する報告の種類
+         */
+        "reportFilterMode": string;
+        /**
+         * どの報告（第n報・最終報）を通知するか選択できます
+         */
+        "reportFilterModeCaption": string;
+        /**
+         * すべての報告
+         */
+        "reportFilterModeAny": string;
+        /**
+         * 第n報のみ
+         */
+        "reportFilterModeNth": string;
+        /**
+         * 最終報のみ
+         */
+        "reportFilterModeFinal": string;
+        /**
+         * 第n報と最終報
+         */
+        "reportFilterModeBoth": string;
+        /**
+         * 通知する第n報
+         */
+        "reportNumber": string;
+        /**
+         * 通知したい報告番号を半角数字で入力してください（例: 3 なら第3報）。震度ではありません。
+         */
+        "reportNumberCaption": string;
+        /**
+         * 最終報のみ通知
+         */
+        "finalOnly": string;
+        /**
+         * 最終報（地震情報の最終版）のみ通知します
+         */
+        "finalOnlyCaption": string;
+        /**
          * 接続
          */
         "connection": string;

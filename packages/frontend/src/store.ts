@@ -711,11 +711,22 @@ export const store = markRaw(new Pizzax('base', {
 		where: 'device',
 		default: true,
 	},
-
 	// Logging level setting (for debug and monitoring)
 	earthquakeWarningLogLevel: {
 		where: 'device',
 		default: 'basic', // 'none', 'basic', 'detailed'
+	},
+	earthquakeWarningReportNumber: {
+		where: 'device',
+		default: null as number | null, // 通知する第n報（nullなら無効）
+	},
+	earthquakeWarningFinalOnly: {
+		where: 'device',
+		default: false, // 最終報のみ通知
+	},
+	earthquakeWarningReportFilterMode: {
+		where: 'device',
+		default: 'any' as 'any' | 'nth' | 'final' | 'both', // フィルタモード
 	},
 	//#endregion
 }));

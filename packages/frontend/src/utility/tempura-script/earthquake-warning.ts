@@ -294,6 +294,19 @@ function showEarthquakeAlert(data: EarthquakeAlertData): void {
 		// Check if this alert matches the region filter (if enabled)
 		if (prefer.s.enableEarthquakeWarningRegionFilter && !passesRegionFilter(data)) return;
 
+		// --- 報告番号・最終報フィルタリング ---
+		const filterMode = prefer.s.earthquakeWarningReportFilterMode || 'any';
+		const nth = prefer.s.earthquakeWarningReportNumber;
+		let pass = true;
+		if (filterMode === 'nth') {
+			pass = nth != null && Number(data.Serial) === Number(nth);
+		} else if (filterMode === 'final') {
+			pass = !!data.isFinal;
+		} else if (filterMode === 'both') {
+			pass = (nth != null && Number(data.Serial) === Number(nth)) || !!data.isFinal;
+		}
+		if (!pass) return;
+
 		// Check if this alert is being throttled (same event ID within throttle time)
 		if (isThrottled(data.EventID)) return;
 

@@ -584,4 +584,13 @@ export const PREF_DEF = {
 	earthquakeWarningLogLevel: {
 		default: 'basic', // 'none', 'basic', 'detailed'
 	},
+	earthquakeWarningReportNumber: {
+		default: null as number | null, // 通知する第n報（nullなら無効）
+	},
+	earthquakeWarningFinalOnly: {
+		default: false, // 最終報のみ通知
+	},
+	earthquakeWarningReportFilterMode: {
+		default: 'any' as 'any' | 'nth' | 'final' | 'both', // フィルタモード
+	},
 } satisfies PreferencesDefinition;
