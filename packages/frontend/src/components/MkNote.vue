@@ -111,37 +111,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</template>
 			</MkReactionsViewer>
 			<footer :class="$style.footer">
-				<button :class="$style.footerButton" class="_button" @click="reply()">
-					<i class="ti ti-arrow-back-up"></i>
-					<p v-if="appearNote.repliesCount > 0" :class="$style.footerButtonCount">{{ number(appearNote.repliesCount) }}</p>
-				</button>
+				<template v-for="action in visibleActions" :key="action">
+					<button
+						v-if="checkActionVisibility(action)"
+						:ref="action === 'react' ? 'reactButton' : action === 'quickReact' ? 'heartReactButton' : null"
+						:class="[$style.footerButton, { [$style.footerButtonActive]: isActionActive(action) }]"
+						class="_button"
+						@click="handleAction(action)"
+					>
+						<i :class="noteBottomDef[action].icon"></i>
+						<p v-if="shouldShowCount(action)" :class="$style.footerButtonCount">
+							{{ getActionCount(action) }}
+						</p>
+					</button>
+				</template>
 				<button
-					v-if="canRenote"
-					ref="renoteButton"
+					v-if="hasUnusedActions"
+					ref="menuButton"
 					:class="$style.footerButton"
 					class="_button"
-					@mousedown.prevent="renote()"
+					@mousedown.prevent="showBottomMenu"
 				>
-					<i class="ti ti-repeat"></i>
-					<p v-if="appearNote.renoteCount > 0" :class="$style.footerButtonCount">{{ number(appearNote.renoteCount) }}</p>
-				</button>
-				<button v-else :class="$style.footerButton" class="_button" disabled>
-					<i class="ti ti-ban"></i>
-				</button>
-				<button v-if="appearNote.reactionAcceptance !== 'likeOnly' && appearNote.myReaction == null && prefer.s.showLikeButton" ref="heartReactButton" v-tooltip="i18n.ts.like" :class="$style.footerButton" class="_button" @mousedown="heartReact()">
-					<i class="ti ti-heart"></i>
-				</button>
-				<button ref="reactButton" :class="$style.footerButton" class="_button" @click="toggleReact()">
-					<i v-if="appearNote.reactionAcceptance === 'likeOnly' && appearNote.myReaction != null" class="ti ti-heart-filled" style="color: var(--MI_THEME-love);"></i>
-					<i v-else-if="appearNote.myReaction != null" class="ti ti-minus" style="color: var(--MI_THEME-accent);"></i>
-					<i v-else-if="appearNote.reactionAcceptance === 'likeOnly'" class="ti ti-heart"></i>
-					<i v-else class="ti ti-mood-plus"></i>
-					<p v-if="(appearNote.reactionAcceptance === 'likeOnly' || prefer.s.showReactionsCount) && appearNote.reactionCount > 0" :class="$style.footerButtonCount">{{ number(appearNote.reactionCount) }}</p>
-				</button>
-				<button v-if="prefer.s.showClipButtonInNoteFooter" ref="clipButton" :class="$style.footerButton" class="_button" @mousedown.prevent="clip()">
-					<i class="ti ti-paperclip"></i>
-				</button>
-				<button ref="menuButton" :class="$style.footerButton" class="_button" @mousedown.prevent="showMenu()">
 					<i class="ti ti-dots"></i>
 				</button>
 			</footer>
@@ -193,6 +183,7 @@ import type { Ref } from 'vue';
 import type { MenuItem } from '@/types/menu.js';
 import type { OpenOnRemoteOptions } from '@/utility/please-login.js';
 import type { Keymap } from '@/utility/hotkey.js';
+import type { NoteBottomAction } from '@/utility/tempura-script/note-bottom-menu.js';
 import MkNoteSub from '@/components/MkNoteSub.vue';
 import MkNoteHeader from '@/components/MkNoteHeader.vue';
 import MkNoteSimple from '@/components/MkNoteSimple.vue';
@@ -231,6 +222,8 @@ import { directRenote } from '@/utility/direct-renote.js';
 import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
 import { DI } from '@/di.js';
+import { noteBottomDef, checkActionAvailability, getUnusedActionsForMenu } from '@/utility/tempura-script/note-bottom-menu.js';
+import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
@@ -703,6 +696,150 @@ function emitUpdReaction(emoji: string, delta: number) {
 	} else if (delta > 0) {
 		emit('reaction', emoji);
 	}
+}
+
+// 表示するアクション
+const visibleActions = computed(() => prefer.s.noteBottomActions);
+
+// 未使用のアクション
+const unusedActions = computed(() =>
+	getUnusedActionsForMenu(appearNote.value, $i, visibleActions.value),
+);
+
+// メニューボタンを表示するかどうか
+const hasUnusedActions = computed(() => unusedActions.value.length > 0);
+
+// アクションの表示可否をチェック
+function checkActionVisibility(action: NoteBottomAction): boolean {
+	return checkActionAvailability(action, appearNote.value, $i);
+}
+
+// アクションがアクティブかどうかをチェック
+function isActionActive(action: NoteBottomAction): boolean {
+	switch (action) {
+		case 'quickReact':
+		case 'react':
+			return appearNote.value.myReaction != null;
+		default:
+			return false;
+	}
+}
+
+// アクションのカウント表示
+function shouldShowCount(action: NoteBottomAction): boolean {
+	switch (action) {
+		case 'reply':
+			return appearNote.value.repliesCount > 0;
+		case 'renote':
+			return appearNote.value.renoteCount > 0;
+		case 'react':
+			return (appearNote.value.reactionAcceptance === 'likeOnly' || prefer.s.showReactionsCount) && appearNote.value.reactionCount > 0;
+		default:
+			return false;
+	}
+}
+
+function getActionCount(action: NoteBottomAction): number {
+	switch (action) {
+		case 'reply':
+			return appearNote.value.repliesCount;
+		case 'renote':
+			return appearNote.value.renoteCount;
+		case 'react':
+			return appearNote.value.reactionCount;
+		default:
+			return 0;
+	}
+}
+
+// アクションハンドラー
+function handleAction(action: NoteBottomAction) {
+	switch (action) {
+		case 'reply':
+			reply();
+			break;
+		case 'renote':
+			renote();
+			break;
+		case 'react':
+			toggleReact();
+			break;
+		case 'quickReact':
+			heartReact();
+			break;
+		case 'clip':
+			clip();
+			break;
+		case 'favorite':
+			toggleFavorite(true);
+			break;
+		case 'delete':
+			del();
+			break;
+		case 'edit':
+			edit();
+			break;
+		case 'copyContent':
+			copyContent();
+			break;
+		case 'copyLink':
+			copyLink();
+			break;
+		case 'translate':
+			translate();
+			break;
+	}
+}
+
+// メニューを表示
+function showBottomMenu() {
+	const menuItems = unusedActions.value.map(action => ({
+		icon: noteBottomDef[action].icon,
+		text: noteBottomDef[action].title,
+		action: () => handleAction(action as NoteBottomAction),
+	}));
+
+	os.popupMenu(menuItems, menuButton.value);
+}
+
+function toggleFavorite(favorite: boolean) {
+	os.apiWithDialog(favorite ? 'notes/favorites/create' : 'notes/favorites/delete', {
+		noteId: appearNote.value.id,
+	});
+}
+
+function del() {
+	os.confirm({
+		type: 'warning',
+		text: i18n.ts.noteDeleteConfirm,
+	}).then(({ canceled }) => {
+		if (canceled) return;
+		misskeyApi('notes/delete', { noteId: appearNote.value.id });
+	});
+}
+
+function edit() {
+	os.post({ initialNote: appearNote.value });
+}
+
+function copyContent() {
+	copyToClipboard(appearNote.value.text ?? '');
+}
+
+function copyLink() {
+	copyToClipboard(`${url}/notes/${appearNote.value.id}`);
+}
+
+function translate() {
+	if (translation.value != null) return;
+	translating.value = true;
+	misskeyApi('notes/translate', {
+		noteId: appearNote.value.id,
+		targetLang: miLocalStorage.getItem('lang') ?? navigator.language,
+	}).then(res => {
+		translating.value = false;
+		translation.value = res;
+	});
 }
 </script>
 

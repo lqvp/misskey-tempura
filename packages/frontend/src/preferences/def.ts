@@ -422,6 +422,15 @@ export const PREF_DEF = {
 			'schedulePostList',
 		],
 	},
+	noteBottomActions: {
+		default: [
+			'reply',
+			'renote',
+			'quickReact',
+			'react',
+			'clip',
+		],
+	},
 	defaultScheduledNoteDelete: {
 		default: false,
 	},

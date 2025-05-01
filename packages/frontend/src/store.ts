@@ -79,6 +79,16 @@ export const store = markRaw(new Pizzax('base', {
 			'schedulePostList',
 		],
 	},
+	noteBottomActions: {
+		where: 'deviceAccount',
+		default: [
+			'reply',
+			'renote',
+			'quickReact',
+			'react',
+			'clip',
+		],
+	},
 	visibility: {
 		where: 'deviceAccount',
 		default: 'public' as (typeof Misskey.noteVisibilities)[number],
