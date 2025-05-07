@@ -183,6 +183,37 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</MkPreferenceContainer>
 					</SearchMarker>
 
+					<SearchMarker :keywords="['earthquake', 'report', 'filter', 'mode']">
+						<MkPreferenceContainer k="earthquakeWarningReportFilterMode">
+							<MkSelect v-model="earthquakeWarningReportFilterMode">
+								<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.reportFilterMode }}</SearchLabel></template>
+								<option value="any">{{ i18n.ts._earthquakeWarning.reportFilterModeAny }}</option>
+								<option value="nth">{{ i18n.ts._earthquakeWarning.reportFilterModeNth }}</option>
+								<option value="final">{{ i18n.ts._earthquakeWarning.reportFilterModeFinal }}</option>
+								<option value="both">{{ i18n.ts._earthquakeWarning.reportFilterModeBoth }}</option>
+								<template #caption>{{ i18n.ts._earthquakeWarning.reportFilterModeCaption }}</template>
+							</MkSelect>
+						</MkPreferenceContainer>
+					</SearchMarker>
+
+					<SearchMarker :keywords="['earthquake', 'report', 'nth', 'number']">
+						<MkPreferenceContainer k="earthquakeWarningReportNumber">
+							<MkInput v-model="earthquakeWarningReportNumber" type="number" :min="1" :disabled="!['nth','both'].includes(earthquakeWarningReportFilterMode)">
+								<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.reportNumber }}</SearchLabel></template>
+								<template #caption>{{ i18n.ts._earthquakeWarning.reportNumberCaption }}</template>
+							</MkInput>
+						</MkPreferenceContainer>
+					</SearchMarker>
+
+					<SearchMarker :keywords="['earthquake', 'report', 'final', 'only']">
+						<MkPreferenceContainer k="earthquakeWarningFinalOnly">
+							<MkSwitch v-model="earthquakeWarningFinalOnly" :disabled="!['final','both'].includes(earthquakeWarningReportFilterMode)">
+								<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.finalOnly }}</SearchLabel></template>
+								<template #caption>{{ i18n.ts._earthquakeWarning.finalOnlyCaption }}</template>
+							</MkSwitch>
+						</MkPreferenceContainer>
+					</SearchMarker>
+
 					<MkButton
 						primary
 						@click="testEarthquakeAlert"
@@ -392,6 +423,28 @@ const earthquakeWarningLogLevel = computed({
 	get: () => prefer.r.earthquakeWarningLogLevel.value,
 	set: (value) => {
 		prefer.commit('earthquakeWarningLogLevel', value);
+	},
+});
+
+// 新しい報告フィルタリング設定
+const earthquakeWarningReportFilterMode = computed({
+	get: () => prefer.r.earthquakeWarningReportFilterMode.value,
+	set: (value) => {
+		prefer.commit('earthquakeWarningReportFilterMode', value);
+	},
+});
+
+const earthquakeWarningReportNumber = computed({
+	get: () => prefer.r.earthquakeWarningReportNumber.value,
+	set: (value) => {
+		prefer.commit('earthquakeWarningReportNumber', value);
+	},
+});
+
+const earthquakeWarningFinalOnly = computed({
+	get: () => prefer.r.earthquakeWarningFinalOnly.value,
+	set: (value) => {
+		prefer.commit('earthquakeWarningFinalOnly', value);
 	},
 });
 

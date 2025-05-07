@@ -191,8 +191,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</MkLazy>
 					</div>
 					<div v-if="user.isBlocked" class="_fullinfo">
-						<img :src="youBlockedImageUrl" class="_ghost"/>
-						<div style="font-size: 1.4rem; font-weight: bold; padding-bottom: 4px;">{{ i18n.ts.youBlocked }}</div>
+						<MkResult type="blocked" :text="i18n.ts.youBlocked"/>
 						<div style="opacity: 0.7">{{ i18n.tsx.youBlockedDescription({ user: `@${ user.username }` }) }}</div>
 					</div>
 				</div>
@@ -241,7 +240,6 @@ import { useRouter } from '@/router.js';
 import { getStaticImageUrl } from '@/utility/media-proxy.js';
 import { editNickname } from '@/utility/edit-nickname';
 import MkSparkle from '@/components/MkSparkle.vue';
-import { youBlockedImageUrl } from '@/instance.js';
 import { prefer } from '@/preferences.js';
 
 function calcAge(birthdate: string): number {

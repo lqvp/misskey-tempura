@@ -74,6 +74,14 @@ export const meta = {
 				type: 'string',
 				optional: false, nullable: true,
 			},
+			enableFC: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			fcSiteKey: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
 			enableTestcaptcha: {
 				type: 'boolean',
 				optional: false, nullable: false,
@@ -237,6 +245,10 @@ export const meta = {
 				optional: false, nullable: true,
 			},
 			turnstileSecretKey: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
+			fcSecretKey: {
 				type: 'string',
 				optional: false, nullable: true,
 			},
@@ -748,6 +760,24 @@ export const meta = {
 				type: 'string',
 				optional: false, nullable: true,
 			},
+			deliverSuspendedSoftware: {
+				type: 'array',
+				optional: false, nullable: false,
+				items: {
+					type: 'object',
+					optional: false, nullable: false,
+					properties: {
+						software: {
+							type: 'string',
+							optional: false, nullable: false,
+						},
+						versionRange: {
+							type: 'string',
+							optional: false, nullable: false,
+						},
+					},
+				},
+			},
 		},
 	},
 } as const;
@@ -800,6 +830,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				recaptchaSiteKey: instance.recaptchaSiteKey,
 				enableTurnstile: instance.enableTurnstile,
 				turnstileSiteKey: instance.turnstileSiteKey,
+				enableFC: instance.enableFC,
+				fcSiteKey: instance.fcSiteKey,
 				enableTestcaptcha: instance.enableTestcaptcha,
 				googleAnalyticsMeasurementId: instance.googleAnalyticsMeasurementId,
 				swPublickey: instance.swPublicKey,
@@ -838,6 +870,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				mcaptchaSecretKey: instance.mcaptchaSecretKey,
 				recaptchaSecretKey: instance.recaptchaSecretKey,
 				turnstileSecretKey: instance.turnstileSecretKey,
+				fcSecretKey: instance.fcSecretKey,
 				sensitiveMediaDetection: instance.sensitiveMediaDetection,
 				sensitiveMediaDetectionSensitivity: instance.sensitiveMediaDetectionSensitivity,
 				setSensitiveFlagAutomatically: instance.setSensitiveFlagAutomatically,
@@ -900,6 +933,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				urlPreviewSummaryProxyUrl: instance.urlPreviewSummaryProxyUrl,
 				federation: instance.federation,
 				federationHosts: instance.federationHosts,
+				deliverSuspendedSoftware: instance.deliverSuspendedSoftware,
 				customSplashText: instance.customSplashText,
 				blockMentionsFromUnfamiliarRemoteUsers: instance.blockMentionsFromUnfamiliarRemoteUsers,
 				validateMinimumUsernameLength: instance.validateMinimumUsernameLength,

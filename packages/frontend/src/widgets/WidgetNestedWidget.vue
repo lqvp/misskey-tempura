@@ -31,8 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 	<div :class="$style.container">
 		<div v-if="!hasWidgets" class="intro" style="text-align: center;">
-			<img :src="infoImageUrl" :class="$style.ghostImage"/>
-			<div>{{ i18n.ts.nothing }}</div>
+			<MkResult type="empty" :text="i18n.ts.nothing"/>
 		</div>
 		<div v-else>
 			<div v-if="editMode" :class="$style.editModeContainer">
@@ -83,7 +82,6 @@ import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps 
 import type { GetFormResultType } from '@/utility/form.js';
 import MkContainer from '@/components/MkContainer.vue';
 import { i18n } from '@/i18n.js';
-import { infoImageUrl } from '@/instance.js';
 import * as os from '@/os.js';
 import { widgets as widgetDefs } from '@/widgets/index.js';
 
