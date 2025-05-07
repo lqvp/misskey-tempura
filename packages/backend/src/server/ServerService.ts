@@ -238,7 +238,7 @@ export class ServerService implements OnApplicationShutdown {
 			}
 		});
 
-		fastify.get<{ Params: { code: string } }>('/verify-email/:code', async (request, reply) => {
+		fastify.get<{ Params: { code: string } }>('/api/verify-email/:code', async (request, reply) => {
 			const profile = await this.userProfilesRepository.findOneBy({
 				emailVerifyCode: request.params.code,
 			});
@@ -254,10 +254,20 @@ export class ServerService implements OnApplicationShutdown {
 					includeSecrets: true,
 				}));
 
-				reply.code(200).send('Verification succeeded! メールアドレスの認証に成功しました。');
+				reply.code(200).header('content-type', 'text/json; charset=utf-8')
+					.send(JSON.stringify({
+						code: 200,
+						status: 'success',
+						message: 'Verification succeeded! \nメールアドレスの認証に成功しました。',
+					}));
 				return;
 			} else {
-				reply.code(404).send('Verification failed. Please try again. メールアドレスの認証に失敗しました。もう一度お試しください');
+				reply.code(404).header('content-type', 'text/json; charset=utf-8')
+					.send(JSON.stringify({
+						code: 404,
+						status: 'failed',
+						message: 'Verification failed. Please try again. \nメールアドレスの認証に失敗しました。もう一度お試しください',
+					}));
 				return;
 			}
 		});

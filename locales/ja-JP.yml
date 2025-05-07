@@ -3612,6 +3612,14 @@ _customCursor:
   waitCursorImageURL: "待機カーソル画像URL"
   waitCursorImageURLDescription: "待機状態のためのカスタムカーソル画像のURL"
 
+verifyEmail:
+  title: "メール認証"
+  successTitle: "メール認証に成功しました"
+  failureTitle: "メール認証に失敗しました"
+  successMessage: "メールアドレスの認証に成功しました。"
+  failureMessage: "認証に失敗しました。もう一度お試しください。\n認証コードが無効、または期限切れの可能性があります。"
+  goToEmailSettings: "メールアドレスの設定へ"
+
 scheduledNoteDelete: "すぐ消す"
 noteDeletationAt: "このノートは{time}に削除されます"
 cannotScheduleLaterThanOneYear: "1年以上先の日時を指定することはできません"

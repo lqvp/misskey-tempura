@@ -22,6 +22,9 @@ function chatPage(...args: Parameters<typeof page>) {
 }
 
 export const ROUTE_DEF = [{
+	path: '/verify-email/:code',
+	component: page(() => import('@/pages/verify-email.vue')),
+}, {
 	name: 'index',
 	path: '/',
 	component: $i ? PageTimeline : page(() => import('@/pages/welcome.vue')),
