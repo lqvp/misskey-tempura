@@ -70,6 +70,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkCaptcha v-if="instance.enableMcaptcha" ref="mcaptcha" v-model="mCaptchaResponse" :class="$style.captcha" provider="mcaptcha" :sitekey="instance.mcaptchaSiteKey" :instanceUrl="instance.mcaptchaInstanceUrl"/>
 			<MkCaptcha v-if="instance.enableRecaptcha" ref="recaptcha" v-model="reCaptchaResponse" :class="$style.captcha" provider="recaptcha" :sitekey="instance.recaptchaSiteKey"/>
 			<MkCaptcha v-if="instance.enableTurnstile" ref="turnstile" v-model="turnstileResponse" :class="$style.captcha" provider="turnstile" :sitekey="instance.turnstileSiteKey"/>
+			<MkCaptcha v-if="instance.enableFC" ref="fc" v-model="fcResponse" :class="$style.captcha" provider="fc" :sitekey="instance.fcSiteKey"/>
 			<MkCaptcha v-if="instance.enableTestcaptcha" ref="testcaptcha" v-model="testcaptchaResponse" :class="$style.captcha" provider="testcaptcha"/>
 			<MkButton type="submit" :disabled="shouldDisableSubmitting" large gradate rounded data-cy-signup-submit style="margin: 0 auto;">
 				<template v-if="submitting">
@@ -116,6 +117,7 @@ const hcaptcha = ref<Captcha | undefined>();
 const mcaptcha = ref<Captcha | undefined>();
 const recaptcha = ref<Captcha | undefined>();
 const turnstile = ref<Captcha | undefined>();
+const fc = ref<Captcha | undefined>();
 const testcaptcha = ref<Captcha | undefined>();
 
 const username = ref<string>('');
@@ -133,6 +135,7 @@ const hCaptchaResponse = ref<string | null>(null);
 const mCaptchaResponse = ref<string | null>(null);
 const reCaptchaResponse = ref<string | null>(null);
 const turnstileResponse = ref<string | null>(null);
+const fcResponse = ref<string | null>(null);
 const testcaptchaResponse = ref<string | null>(null);
 const usernameAbortController = ref<null | AbortController>(null);
 const emailAbortController = ref<null | AbortController>(null);
@@ -143,6 +146,7 @@ const shouldDisableSubmitting = computed((): boolean => {
 		instance.enableMcaptcha && !mCaptchaResponse.value ||
 		instance.enableRecaptcha && !reCaptchaResponse.value ||
 		instance.enableTurnstile && !turnstileResponse.value ||
+		instance.enableFC && !fcResponse.value ||
 		instance.enableTestcaptcha && !testcaptchaResponse.value ||
 		(instance.emailRequiredForSignup && !invitationCode.value && emailState.value !== 'ok') ||
 		instance.approvalRequiredForSignup && (reason.value.length < 1 || reason.value.length > 1000) ||
@@ -273,6 +277,7 @@ async function onSubmit(): Promise<void> {
 		'm-captcha-response': mCaptchaResponse.value,
 		'g-recaptcha-response': reCaptchaResponse.value,
 		'turnstile-response': turnstileResponse.value,
+		'frc-captcha-solution': fcResponse.value,
 		'testcaptcha-response': testcaptchaResponse.value,
 	};
 
@@ -335,6 +340,7 @@ function onSignupApiError(res: Response | null, errorBody: any) {
 	mcaptcha.value?.reset?.();
 	recaptcha.value?.reset?.();
 	turnstile.value?.reset?.();
+	fc.value?.reset?.();
 	testcaptcha.value?.reset?.();
 
 	if (res?.status === 429 || errorBody?.error?.message === 'Too Many Requests') {
