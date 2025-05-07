@@ -12,6 +12,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkSystemIcon v-else-if="type === 'notFound'" type="question" :class="$style.icon"/>
 		<img v-if="type === 'error' && instance.serverErrorImageUrl" :src="instance.serverErrorImageUrl" draggable="false" :class="$style.img"/>
 		<MkSystemIcon v-else-if="type === 'error'" type="error" :class="$style.icon"/>
+		<img v-if="type === 'blocked' && instance.youBlockedImageUrl" :src="instance.youBlockedImageUrl" draggable="false" :class="$style.img"/>
+		<MkSystemIcon v-else-if="type === 'blocked'" type="block" :class="$style.icon"/>
 
 		<div style="opacity: 0.7;">{{ props.text ?? (type === 'empty' ? i18n.ts.nothing : type === 'notFound' ? i18n.ts.notFound : type === 'error' ? i18n.ts.somethingHappened : null) }}</div>
 		<slot></slot>
@@ -26,7 +28,7 @@ import { i18n } from '@/i18n.js';
 import { prefer } from '@/preferences.js';
 
 const props = defineProps<{
-	type: 'empty' | 'notFound' | 'error';
+	type: 'empty' | 'notFound' | 'error' | 'blocked';
 	text?: string;
 }>();
 </script>
