@@ -748,6 +748,24 @@ export const meta = {
 				type: 'string',
 				optional: false, nullable: true,
 			},
+			deliverSuspendedSoftware: {
+				type: 'array',
+				optional: false, nullable: false,
+				items: {
+					type: 'object',
+					optional: false, nullable: false,
+					properties: {
+						software: {
+							type: 'string',
+							optional: false, nullable: false,
+						},
+						versionRange: {
+							type: 'string',
+							optional: false, nullable: false,
+						},
+					},
+				},
+			},
 		},
 	},
 } as const;
@@ -900,6 +918,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				urlPreviewSummaryProxyUrl: instance.urlPreviewSummaryProxyUrl,
 				federation: instance.federation,
 				federationHosts: instance.federationHosts,
+				deliverSuspendedSoftware: instance.deliverSuspendedSoftware,
 				customSplashText: instance.customSplashText,
 				blockMentionsFromUnfamiliarRemoteUsers: instance.blockMentionsFromUnfamiliarRemoteUsers,
 				validateMinimumUsernameLength: instance.validateMinimumUsernameLength,
