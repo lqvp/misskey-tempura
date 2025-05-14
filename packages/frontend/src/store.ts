@@ -612,7 +612,7 @@ export const store = markRaw(new Pizzax('base', {
 	},
 	geminiModels: {
 		where: 'account',
-		default: 'gemini-2.0-flash' as 'gemini-2.0-flash' | 'gemini-2.0-flash-lite' | 'gemini-1.5-flash' | 'gemini-1.5-pro' | 'gemini-2.5-pro-preview-03-25' | null,
+		default: 'gemini-2.0-flash' as 'gemini-2.0-flash' | 'gemini-2.0-flash-lite' | 'gemini-2.5-flash-preview-04-17' | 'gemini-2.5-pro-preview-05-06' | null,
 	},
 	geminiSystemPrompt: {
 		where: 'account',

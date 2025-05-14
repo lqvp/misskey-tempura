@@ -513,7 +513,7 @@ export const PREF_DEF = {
 		default: null as string | null,
 	},
 	geminiModels: {
-		default: 'gemini-2.0-flash-lite' as 'gemini-2.0-flash-lite' | 'gemini-2.0-flash' | 'gemini-1.5-flash' | 'gemini-1.5-pro' | 'gemini-2.5-pro-preview-03-25' | null,
+		default: 'gemini-2.0-flash-lite' as 'gemini-2.0-flash' | 'gemini-2.0-flash-lite' | 'gemini-2.5-flash-preview-04-17' | 'gemini-2.5-pro-preview-05-06' | null,
 	},
 	geminiSystemPrompt: {
 		default: 'リスト記法は対応しておらず、パーサーが壊れるため使用禁止です。列挙する場合は「・」を使ってください。' as string | null,

@@ -380,11 +380,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkSelect v-model="geminiSettingsForm.state.serverGeminiModels">
 								<template #label>{{ i18n.ts._llm.geminiModelLabel }}</template>
 								<template #caption>{{ i18n.ts._llm._server.serverGeminiModelsDescription }}</template>
-								<option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite</option>
 								<option value="gemini-2.0-flash">gemini-2.0-flash</option>
-								<option value="gemini-1.5-flash">gemini-1.5-flash</option>
-								<option value="gemini-1.5-pro">gemini-1.5-pro</option>
-								<option value="gemini-2.5-pro-preview-03-25">gemini-2.5-pro-preview-03-25</option>
+								<option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite</option>
+								<option value="gemini-2.5-flash-preview-04-17">gemini-2.5-flash-preview-04-17</option>
+								<option value="gemini-2.5-pro-preview-05-06">gemini-2.5-pro-preview-05-06</option>
 							</MkSelect>
 						</div>
 					</MkFolder>
