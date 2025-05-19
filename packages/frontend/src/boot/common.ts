@@ -31,15 +31,28 @@ import { applyFont } from '@/utility/font.js';
 import { $i } from '@/i.js';
 
 export async function common(createVue: () => Promise<App<Element>>) {
-	console.info(`Misskey v${version}`);
+	console.log(
+		`%cMisskey v${version}`,
+		'background: linear-gradient(180deg, #ffaab0 0%, #FF8BB8 100%); color: white; padding: 6px; border-radius: 4px;',
+		'',
+	);
 
 	if (_DEV_) {
-		console.warn('Development mode!!!');
+		console.warn(
+			'%cDevelopment mode!!!%c',
+			'background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%); color: black; padding: 6px; border-radius: 4px;',
+			'',
+		);
 
 		console.info(`vue ${vueVersion}`);
 
 		window.addEventListener('error', event => {
-			console.error(event);
+			console.error(
+				`%cUnhandled error: ${event.message}%c`,
+				'background: linear-gradient(180deg, #FF6347 0%, #DC143C 100%); color: white; padding: 6px; border-radius: 4px;',
+				'',
+				event,
+			);
 			/*
 			alert({
 				type: 'error',
@@ -50,7 +63,12 @@ export async function common(createVue: () => Promise<App<Element>>) {
 		});
 
 		window.addEventListener('unhandledrejection', event => {
-			console.error(event);
+			console.error(
+				`%cUnhandled promise rejection: ${event.reason}%c`,
+				'background: linear-gradient(180deg, #FF6347 0%, #DC143C 100%); color: white; padding: 6px; border-radius: 4px;',
+				'',
+				event,
+			);
 			/*
 			alert({
 				type: 'error',
@@ -265,7 +283,11 @@ export async function common(createVue: () => Promise<App<Element>>) {
 	//#region Fetch user
 	if ($i && $i.token) {
 		if (_DEV_) {
-			console.log('account cache found. refreshing...');
+			console.log(
+				'%caccount cache found. refreshing...%c',
+				'background: linear-gradient(180deg, #007bff 0%, #0056b3 100%); color: white; padding: 6px; border-radius: 4px;',
+				'',
+			);
 		}
 
 		refreshCurrentAccount();
@@ -307,7 +329,11 @@ export async function common(createVue: () => Promise<App<Element>>) {
 		const currentRoot = window.document.getElementById(MISSKEY_MOUNT_DIV_ID);
 
 		if (currentRoot) {
-			console.warn('multiple import detected');
+			console.warn(
+				'%cmultiple import detected%c',
+				'background: linear-gradient(180deg, #FFD700 0%, #FFA500 100%); color: black; padding: 6px; border-radius: 4px;',
+				'',
+			);
 			return currentRoot;
 		}
 

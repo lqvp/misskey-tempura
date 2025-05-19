@@ -272,11 +272,20 @@ async function launchPlugin(id: Plugin['installId']): Promise<void> {
 
 	aiscript.exec(parser.parse(plugin.src)).then(
 		() => {
-			console.info('Plugin installed:', plugin.name, 'v' + plugin.version);
+			console.info(
+				`%cPlugin installed: ${plugin.name} v${plugin.version}%c`,
+				'background: linear-gradient(180deg, #28a745 0%,rgb(23, 90, 37) 100%); color: white; padding: 6px; border-radius: 4px;',
+				'',
+			);
 			systemLog('Plugin started');
 		},
 		(err) => {
-			console.error('Plugin install failed:', plugin.name, 'v' + plugin.version);
+			console.error(
+				`%cPlugin install failed: ${plugin.name} v${plugin.version}%c`,
+				'background: linear-gradient(180deg, #FF6347 0%, #DC143C 100%); color: white; padding: 6px; border-radius: 4px;',
+				'',
+				err,
+			);
 			systemLog(`${err}`, true);
 			throw err;
 		},
