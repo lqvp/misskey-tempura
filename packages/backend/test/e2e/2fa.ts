@@ -123,14 +123,12 @@ describe('2要素認証', () => {
 		password: string,
 		'g-recaptcha-response'?: string | null,
 		'hcaptcha-response'?: string | null,
-		'frc-captcha-solution'?: string | null,
 	} => {
 		return {
 			username,
 			password,
 			'g-recaptcha-response': null,
 			'hcaptcha-response': null,
-			'frc-captcha-solution': null,
 		};
 	};
 

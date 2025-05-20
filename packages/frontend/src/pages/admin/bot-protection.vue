@@ -11,7 +11,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<template v-else-if="botProtectionForm.savedState.provider === 'mcaptcha'" #suffix>mCaptcha</template>
 	<template v-else-if="botProtectionForm.savedState.provider === 'recaptcha'" #suffix>reCAPTCHA</template>
 	<template v-else-if="botProtectionForm.savedState.provider === 'turnstile'" #suffix>Turnstile</template>
-	<template v-else-if="botProtectionForm.savedState.provider === 'fc'" #suffix>FriendlyCaptcha</template>
 	<template v-else-if="botProtectionForm.savedState.provider === 'testcaptcha'" #suffix>testCaptcha</template>
 	<template v-else #suffix>{{ i18n.ts.none }} ({{ i18n.ts.notRecommended }})</template>
 	<template #footer>
@@ -25,7 +24,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<option value="mcaptcha">mCaptcha</option>
 			<option value="recaptcha">reCAPTCHA</option>
 			<option value="turnstile">Turnstile</option>
-			<option value="fc">FriendlyCaptcha</option>
 			<option value="testcaptcha">testCaptcha</option>
 		</MkRadios>
 
@@ -144,26 +142,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkInfo>
 		</template>
 
-		<template v-else-if="botProtectionForm.state.provider === 'fc'">
-			<MkInput v-model="botProtectionForm.state.fcSiteKey" debounce>
-				<template #prefix><i class="ti ti-key"></i></template>
-				<template #label>{{ i18n.ts.hcaptchaSiteKey }}</template>
-			</MkInput>
-			<MkInput v-model="botProtectionForm.state.fcSecretKey" debounce>
-				<template #prefix><i class="ti ti-key"></i></template>
-				<template #label>{{ i18n.ts.hcaptchaSecretKey }}</template>
-			</MkInput>
-			<FormSlot v-if="botProtectionForm.state.fcSiteKey && botProtectionForm.state.fcSecretKey">
-				<template #label>{{ i18n.ts._captcha.verify }}</template>
-				<MkCaptcha
-					v-model="captchaResult"
-					provider="fc"
-					:sitekey="botProtectionForm.state.fcSiteKey"
-					:secretKey="botProtectionForm.state.fcSecretKey"
-				/>
-			</FormSlot>
-		</template>
-
 		<template v-else-if="botProtectionForm.state.provider === 'testcaptcha'">
 			<MkInfo warn><span v-html="i18n.ts.testCaptchaWarning"></span></MkInfo>
 			<FormSlot>
@@ -215,48 +193,73 @@ const captchaResult = ref<string | null>(null);
 
 const meta = await misskeyApi('admin/captcha/current');
 const botProtectionForm = useForm({
-	provider: meta.enableHcaptcha
-		? 'hcaptcha'
-		: meta.enableRecaptcha
-			? 'recaptcha'
-			: meta.enableTurnstile
-				? 'turnstile'
-				: meta.enableMcaptcha
-					? 'mcaptcha'
-					: meta.enableFC
-						? 'fc'
-						: null,
-	hcaptchaSiteKey: meta.hcaptchaSiteKey,
-	hcaptchaSecretKey: meta.hcaptchaSecretKey,
-	mcaptchaSiteKey: meta.mcaptchaSiteKey,
-	mcaptchaSecretKey: meta.mcaptchaSecretKey,
-	mcaptchaInstanceUrl: meta.mcaptchaInstanceUrl,
-	recaptchaSiteKey: meta.recaptchaSiteKey,
-	recaptchaSecretKey: meta.recaptchaSecretKey,
-	turnstileSiteKey: meta.turnstileSiteKey,
-	turnstileSecretKey: meta.turnstileSecretKey,
-	fcSiteKey: meta.fcSiteKey,
-	fcSecretKey: meta.fcSecretKey,
+	provider: meta.provider,
+	hcaptchaSiteKey: meta.hcaptcha.siteKey,
+	hcaptchaSecretKey: meta.hcaptcha.secretKey,
+	mcaptchaSiteKey: meta.mcaptcha.siteKey,
+	mcaptchaSecretKey: meta.mcaptcha.secretKey,
+	mcaptchaInstanceUrl: meta.mcaptcha.instanceUrl,
+	recaptchaSiteKey: meta.recaptcha.siteKey,
+	recaptchaSecretKey: meta.recaptcha.secretKey,
+	turnstileSiteKey: meta.turnstile.siteKey,
+	turnstileSecretKey: meta.turnstile.secretKey,
 }, async (state) => {
-	await os.apiWithDialog('admin/update-meta', {
-		enableHcaptcha: state.provider === 'hcaptcha',
-		hcaptchaSiteKey: state.hcaptchaSiteKey,
-		hcaptchaSecretKey: state.hcaptchaSecretKey,
-		enableMcaptcha: state.provider === 'mcaptcha',
-		mcaptchaSiteKey: state.mcaptchaSiteKey,
-		mcaptchaSecretKey: state.mcaptchaSecretKey,
-		mcaptchaInstanceUrl: state.mcaptchaInstanceUrl,
-		enableRecaptcha: state.provider === 'recaptcha',
-		recaptchaSiteKey: state.recaptchaSiteKey,
-		recaptchaSecretKey: state.recaptchaSecretKey,
-		enableTurnstile: state.provider === 'turnstile',
-		turnstileSiteKey: state.turnstileSiteKey,
-		turnstileSecretKey: state.turnstileSecretKey,
-		enableFC: state.provider === 'fc',
-		fcSiteKey: state.fcSiteKey,
-		fcSecretKey: state.fcSecretKey,
-	});
-	fetchInstance(true);
+	const provider = state.provider;
+	if (provider === 'none') {
+		await os.apiWithDialog(
+			'admin/captcha/save',
+			{ provider: provider as Misskey.entities.AdminCaptchaSaveRequest['provider'] },
+			undefined,
+			errorHandler,
+		);
+	} else {
+		const sitekey = provider === 'hcaptcha'
+			? state.hcaptchaSiteKey
+			: provider === 'mcaptcha'
+				? state.mcaptchaSiteKey
+				: provider === 'recaptcha'
+					? state.recaptchaSiteKey
+					: provider === 'turnstile'
+						? state.turnstileSiteKey
+						: null;
+		const secret = provider === 'hcaptcha'
+			? state.hcaptchaSecretKey
+			: provider === 'mcaptcha'
+				? state.mcaptchaSecretKey
+				: provider === 'recaptcha'
+					? state.recaptchaSecretKey
+					: provider === 'turnstile'
+						? state.turnstileSecretKey
+						: null;
+
+		await os.apiWithDialog(
+			'admin/captcha/save',
+			{
+				provider: provider as Misskey.entities.AdminCaptchaSaveRequest['provider'],
+				sitekey: sitekey,
+				secret: secret,
+				instanceUrl: state.mcaptchaInstanceUrl,
+				captchaResult: captchaResult.value,
+			},
+			undefined,
+			errorHandler,
+		);
+	}
+
+	await fetchInstance(true);
+});
+
+watch(botProtectionForm.state, () => {
+	captchaResult.value = null;
+});
+
+const canSaving = computed((): boolean => {
+	return (botProtectionForm.state.provider === 'none') ||
+		(botProtectionForm.state.provider === 'hcaptcha' && !!captchaResult.value) ||
+		(botProtectionForm.state.provider === 'mcaptcha' && !!captchaResult.value) ||
+		(botProtectionForm.state.provider === 'recaptcha' && !!captchaResult.value) ||
+		(botProtectionForm.state.provider === 'turnstile' && !!captchaResult.value) ||
+		(botProtectionForm.state.provider === 'testcaptcha' && !!captchaResult.value);
 });
 
 </script>

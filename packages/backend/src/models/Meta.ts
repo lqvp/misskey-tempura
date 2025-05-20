@@ -294,23 +294,6 @@ export class MiMeta {
 	@Column('boolean', {
 		default: false,
 	})
-	public enableFC: boolean;
-
-	@Column('varchar', {
-		length: 1024,
-		nullable: true,
-	})
-	public fcSiteKey: string | null;
-
-	@Column('varchar', {
-		length: 1024,
-		nullable: true,
-	})
-	public fcSecretKey: string | null;
-
-	@Column('boolean', {
-		default: false,
-	})
 	public enableTestcaptcha: boolean;
 
 	// chaptcha系を追加した際にはnodeinfoのレスポンスに追加するのを忘れないようにすること

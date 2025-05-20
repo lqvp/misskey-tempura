@@ -5751,8 +5751,6 @@ export type components = {
       recaptchaSiteKey: string | null;
       enableTurnstile: boolean;
       turnstileSiteKey: string | null;
-      enableFC: boolean;
-      fcSiteKey: string | null;
       enableTestcaptcha: boolean;
       googleAnalyticsMeasurementId: string | null;
       swPublickey: string | null;
@@ -7415,7 +7413,7 @@ export type operations = {
         content: {
           'application/json': {
             /** @enum {string} */
-            provider: 'none' | 'hcaptcha' | 'mcaptcha' | 'recaptcha' | 'turnstile' | 'fc' | 'testcaptcha';
+            provider: 'none' | 'hcaptcha' | 'mcaptcha' | 'recaptcha' | 'turnstile' | 'testcaptcha';
             hcaptcha: {
               siteKey: string | null;
               secretKey: string | null;
@@ -7479,7 +7477,7 @@ export type operations = {
       content: {
         'application/json': {
           /** @enum {string} */
-          provider: 'none' | 'hcaptcha' | 'mcaptcha' | 'recaptcha' | 'turnstile' | 'fc' | 'testcaptcha';
+          provider: 'none' | 'hcaptcha' | 'mcaptcha' | 'recaptcha' | 'turnstile' | 'testcaptcha';
           captchaResult?: string | null;
           sitekey?: string | null;
           secret?: string | null;
@@ -9311,8 +9309,6 @@ export type operations = {
             recaptchaSiteKey: string | null;
             enableTurnstile: boolean;
             turnstileSiteKey: string | null;
-            enableFC: boolean;
-            fcSiteKey: string | null;
             enableTestcaptcha: boolean;
             googleAnalyticsMeasurementId: string | null;
             swPublickey: string | null;
@@ -9346,7 +9342,6 @@ export type operations = {
             mcaptchaSecretKey: string | null;
             recaptchaSecretKey: string | null;
             turnstileSecretKey: string | null;
-            fcSecretKey: string | null;
             sensitiveMediaDetection: string;
             sensitiveMediaDetectionSensitivity: string;
             setSensitiveFlagAutomatically: boolean;
@@ -12213,9 +12208,6 @@ export type operations = {
           enableTurnstile?: boolean;
           turnstileSiteKey?: string | null;
           turnstileSecretKey?: string | null;
-          enableFC?: boolean;
-          fcSiteKey?: string | null;
-          fcSecretKey?: string | null;
           enableTestcaptcha?: boolean;
           googleAnalyticsMeasurementId?: string | null;
           /** @enum {string} */

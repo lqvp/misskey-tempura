@@ -11,7 +11,7 @@ import { MiMeta } from '@/models/Meta.js';
 import Logger from '@/logger.js';
 import { LoggerService } from './LoggerService.js';
 
-export const supportedCaptchaProviders = ['none', 'hcaptcha', 'mcaptcha', 'recaptcha', 'turnstile', 'fc', 'testcaptcha'] as const;
+export const supportedCaptchaProviders = ['none', 'hcaptcha', 'mcaptcha', 'recaptcha', 'turnstile', 'testcaptcha'] as const;
 export type CaptchaProvider = typeof supportedCaptchaProviders[number];
 
 export const captchaErrorCodes = {
@@ -43,10 +43,6 @@ export type CaptchaSetting = {
 		siteKey: string | null;
 		secretKey: string | null;
 	}
-	fc: {
-		siteKey: string | null;
-		secretKey: string | null;
-	}
 };
 
 export class CaptchaError extends Error {
@@ -73,7 +69,6 @@ export type CaptchaSaveResult = CaptchaSaveSuccess | CaptchaSaveFailure;
 type CaptchaResponse = {
 	success: boolean;
 	'error-codes'?: string[];
-	'errors'?: string[];
 };
 
 @Injectable()
@@ -139,35 +134,6 @@ export class CaptchaService {
 		if (result.success !== true) {
 			const errorCodes = result['error-codes'] ? result['error-codes'].join(', ') : '';
 			throw new CaptchaError(captchaErrorCodes.verificationFailed, `hcaptcha-failed: ${errorCodes}`);
-		}
-	}
-
-	@bindThis
-	public async verifyFriendlyCaptcha(secret: string, response: string | null | undefined): Promise<void> {
-		if (response == null) {
-			throw new CaptchaError(captchaErrorCodes.noResponseProvided, 'frc-failed: no response provided');
-		}
-
-		const result = await this.httpRequestService.send('https://api.friendlycaptcha.com/api/v1/siteverify', {
-			method: 'POST',
-			body: JSON.stringify({
-				secret: secret,
-				solution: response,
-			}),
-			headers: {
-				'Content-Type': 'application/json',
-			},
-		}, { throwErrorWhenResponseNotOk: false });
-
-		if (result.status !== 200) {
-			throw new CaptchaError(captchaErrorCodes.requestFailed, `frc-request-failed: ${result.status}`);
-		}
-
-		const resp = await result.json() as CaptchaResponse;
-
-		if (resp.success !== true) {
-			const errorCodes = resp['errors'] ? resp['errors'].join(', ') : '';
-			throw new CaptchaError(captchaErrorCodes.verificationFailed, `frc-failed: ${errorCodes}`);
 		}
 	}
 
@@ -253,10 +219,6 @@ export class CaptchaService {
 				provider = 'turnstile';
 				break;
 			}
-			case meta.enableFC: {
-				provider = 'fc';
-				break;
-			}
 			case meta.enableTestcaptcha: {
 				provider = 'testcaptcha';
 				break;
@@ -286,11 +248,6 @@ export class CaptchaService {
 				siteKey: meta.turnstileSiteKey,
 				secretKey: meta.turnstileSecretKey,
 			},
-			fc: {
-				siteKey: meta.fcSiteKey,
-				secretKey: meta.fcSecretKey,
-			},
-
 		};
 	}
 
@@ -363,14 +320,6 @@ export class CaptchaService {
 				await this.verifyTurnstile(params.secret, params.captchaResult);
 				await this.updateMeta(provider, params);
 			},
-			fc: async () => {
-				if (!params?.secret || !params.captchaResult) {
-					throw new CaptchaError(captchaErrorCodes.invalidParameters, 'frc-failed: secret and captureResult are required');
-				}
-
-				await this.verifyFriendlyCaptcha(params.secret, params.captchaResult);
-				await this.updateMeta(provider, params);
-			},
 			testcaptcha: async () => {
 				if (!params?.captchaResult) {
 					throw new CaptchaError(captchaErrorCodes.invalidParameters, 'turnstile-failed: captureResult are required');
@@ -411,7 +360,6 @@ export class CaptchaService {
 				('enableMcaptcha' | 'mcaptchaSitekey' | 'mcaptchaSecretKey' | 'mcaptchaInstanceUrl') |
 				('enableRecaptcha' | 'recaptchaSiteKey' | 'recaptchaSecretKey') |
 				('enableTurnstile' | 'turnstileSiteKey' | 'turnstileSecretKey') |
-				('enableFC' | 'fcSiteKey' | 'fcSecretKey') |
 				('enableTestcaptcha')
 			>
 		> = {
@@ -419,7 +367,6 @@ export class CaptchaService {
 			enableMcaptcha: provider === 'mcaptcha',
 			enableRecaptcha: provider === 'recaptcha',
 			enableTurnstile: provider === 'turnstile',
-			enableFC: provider === 'fc',
 			enableTestcaptcha: provider === 'testcaptcha',
 		};
 
@@ -448,11 +395,6 @@ export class CaptchaService {
 			case 'turnstile': {
 				updateIfNotUndefined('turnstileSiteKey', params?.sitekey);
 				updateIfNotUndefined('turnstileSecretKey', params?.secret);
-				break;
-			}
-			case 'fc': {
-				updateIfNotUndefined('fcSiteKey', params?.sitekey);
-				updateIfNotUndefined('fcSecretKey', params?.secret);
 				break;
 			}
 		}

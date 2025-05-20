@@ -95,8 +95,6 @@ export class MetaEntityService {
 			recaptchaSiteKey: instance.recaptchaSiteKey,
 			enableTurnstile: instance.enableTurnstile,
 			turnstileSiteKey: instance.turnstileSiteKey,
-			enableFC: instance.enableFC,
-			fcSiteKey: instance.fcSiteKey,
 			enableTestcaptcha: instance.enableTestcaptcha,
 			googleAnalyticsMeasurementId: instance.googleAnalyticsMeasurementId,
 			swPublickey: instance.swPublicKey,
