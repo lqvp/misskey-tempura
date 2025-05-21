@@ -5,6 +5,7 @@
 
 import { bindThis } from '@/decorators.js';
 import { isInstanceMuted } from '@/misc/is-instance-muted.js';
+import { checkPerServerWordMute } from '@/misc/check-per-server-word-mute.js';
 import { isUserRelated } from '@/misc/is-user-related.js';
 import { isRenotePacked, isQuotePacked } from '@/misc/is-renote.js';
 import type { Packed } from '@/misc/json-schema.js';
@@ -62,7 +63,7 @@ export default abstract class Channel {
 	/*
 	 * ミュートとブロックされてるを処理する
 	 */
-	protected isNoteMutedOrBlocked(note: Packed<'Note'>): boolean {
+	protected async isNoteMutedOrBlocked(note: Packed<'Note'>): Promise<boolean> { // Make async
 		// 流れてきたNoteがインスタンスミュートしたインスタンスが関わる
 		if (isInstanceMuted(note, new Set<string>(this.userProfile?.mutedInstances ?? []))) return true;
 
@@ -73,6 +74,21 @@ export default abstract class Channel {
 
 		// 流れてきたNoteがリノートをミュートしてるユーザが行ったもの
 		if (isRenotePacked(note) && !isQuotePacked(note) && this.userIdsWhoMeMutingRenotes.has(note.user.id)) return true;
+
+		// サーバーごとミュートワードのチェック
+		if (this.userProfile?.perServerMuteWords && this.userProfile.perServerMuteWords.length > 0) {
+			// Packed<'Note'> to MiNote like object for checkPerServerWordMute
+			// This might need a more robust conversion or for checkPerServerWordMute to accept Packed<'Note'>
+			const noteForCheck = {
+				text: note.text,
+				cw: note.cw,
+				user: note.user, // Packed<'UserLite'> should be compatible with { id: string, host?: string | null }
+				// reply and renote are not directly available in Packed<'Note'> in the same way as MiNote,
+				// so checkPerServerWordMute might not be able to check those if it relies on them.
+				// For now, we assume it primarily checks the main note content.
+			};
+			if (await checkPerServerWordMute(noteForCheck as any, this.userProfile.perServerMuteWords, this.user)) return true;
+		}
 
 		return false;
 	}

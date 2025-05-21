@@ -56,7 +56,7 @@ class GlobalTimelineChannel extends Channel {
 
 		if (isRenotePacked(note) && !isQuotePacked(note) && !this.withRenotes) return;
 
-		if (this.isNoteMutedOrBlocked(note)) return;
+		if (await this.isNoteMutedOrBlocked(note)) return; // Add await
 
 		if (this.user && isRenotePacked(note) && !isQuotePacked(note)) {
 			if (note.renote && Object.keys(note.renote.reactions).length > 0) {

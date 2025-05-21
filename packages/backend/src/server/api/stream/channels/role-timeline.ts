@@ -46,7 +46,7 @@ class RoleTimelineChannel extends Channel {
 			}
 			if (note.visibility !== 'public') return;
 
-			if (this.isNoteMutedOrBlocked(note)) return;
+			if (await this.isNoteMutedOrBlocked(note)) return; // Add await
 
 			this.send('note', note);
 		} else {

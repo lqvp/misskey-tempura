@@ -291,6 +291,15 @@ export class MiUserProfile {
 	public mutedInstances: string[];
 
 	@Column('jsonb', {
+		default: [],
+		comment: 'List of per-server mute words settings by the user.',
+	})
+	public perServerMuteWords: {
+		fqdn: string;
+		words: (string[] | string)[];
+	}[];
+
+	@Column('jsonb', {
 		default: {},
 	})
 	public notificationRecieveConfig: {

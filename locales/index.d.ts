@@ -13828,6 +13828,40 @@ export interface Locale extends ILocale {
      * 該当する結果はありません
      */
     "noResults": string;
+    "_tempura": {
+        /**
+         * サーバーごとミュートワード
+         */
+        "perServerMuteWordsTitle": string;
+        /**
+         * 指定したサーバーからの投稿にのみ適用されるミュートワードを設定します。
+         */
+        "perServerMuteWordsDescription": string;
+    };
+    /**
+     * サーバーのドメイン (例: example.com)
+     */
+    "fqdnPlaceholder": string;
+    /**
+     * ミュートする単語 (スペース区切りでAND、改行でOR、/regex/で正規表現)
+     */
+    "muteWordsPlaceholder": string;
+    /**
+     * 設定はありません
+     */
+    "noEntries": string;
+    /**
+     * FQDNを入力してください。
+     */
+    "pleaseEnterFqdn": string;
+    /**
+     * FQDNの形式が正しくありません。
+     */
+    "invalidFqdnFormat": string;
+    /**
+     * ミュートする単語を入力してください。
+     */
+    "pleaseEnterMuteWords": string;
 }
 declare const locales: {
     [lang: string]: Locale;

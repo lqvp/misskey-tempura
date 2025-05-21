@@ -3724,3 +3724,13 @@ deleteWithFilesConfirm: "ファイルを含めて削除しますか？"
 noSendActivity: "アクティビティを送信しない"
 
 noResults: "該当する結果はありません"
+
+_tempura:
+  perServerMuteWordsTitle: "サーバーごとミュートワード"
+  perServerMuteWordsDescription: "指定したサーバーからの投稿にのみ適用されるミュートワードを設定します。"
+fqdnPlaceholder: "サーバーのドメイン (例: example.com)"
+muteWordsPlaceholder: "ミュートする単語 (スペース区切りでAND、改行でOR、/regex/で正規表現)"
+noEntries: "設定はありません"
+pleaseEnterFqdn: "FQDNを入力してください。"
+invalidFqdnFormat: "FQDNの形式が正しくありません。"
+pleaseEnterMuteWords: "ミュートする単語を入力してください。"
