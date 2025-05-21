@@ -13828,6 +13828,10 @@ export interface Locale extends ILocale {
      * 該当する結果はありません
      */
     "noResults": string;
+    /**
+     * メディアが省略されています
+     */
+    "mediaOmitted": string;
 }
 declare const locales: {
     [lang: string]: Locale;

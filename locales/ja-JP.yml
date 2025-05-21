@@ -3724,3 +3724,5 @@ deleteWithFilesConfirm: "ファイルを含めて削除しますか？"
 noSendActivity: "アクティビティを送信しない"
 
 noResults: "該当する結果はありません"
+
+mediaOmitted: "メディアが省略されています"

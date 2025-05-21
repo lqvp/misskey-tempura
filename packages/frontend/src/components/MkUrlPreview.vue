@@ -26,17 +26,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</MkButton>
 	</div>
 </template>
-<template v-else-if="tweetId && tweetExpanded">
-	<div ref="twitter">
-		<iframe
-			ref="tweet"
-			allow="fullscreen;web-share"
-			sandbox="allow-popups allow-popups-to-escape-sandbox allow-scripts allow-same-origin"
-			scrolling="no"
-			:style="{ position: 'relative', width: '100%', height: `${tweetHeight}px`, border: 0 }"
-			:src="`https://platform.twitter.com/embed/index.html?embedId=${embedId}&amp;hideCard=false&amp;hideThread=false&amp;lang=en&amp;theme=${store.s.darkMode ? 'dark' : 'light'}&amp;id=${tweetId}`"
-		></iframe>
-	</div>
+<template v-else-if="tweetInfo.id && tweetInfo.screenName && tweetExpanded">
+	<MkTwitterEmbed :tweetId="tweetInfo.id" :screenName="tweetInfo.screenName"/>
 	<div :class="$style.action">
 		<MkButton :small="true" inline @click="tweetExpanded = false">
 			<i class="ti ti-x"></i> {{ i18n.ts.close }}
@@ -65,7 +56,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</article>
 	</component>
 	<template v-if="showActions">
-		<div v-if="tweetId" :class="$style.action">
+		<div v-if="tweetInfo.id && tweetInfo.screenName" :class="$style.action">
 			<MkButton :small="true" inline @click="tweetExpanded = true">
 				<i class="ti ti-brand-x"></i> {{ i18n.ts.expandTweet }}
 			</MkButton>
@@ -95,6 +86,7 @@ import { transformPlayerUrl } from '@/utility/player-url-transform.js';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 import { maybeMakeRelative } from '@@/js/url.js';
+import MkTwitterEmbed from './MkTwitterEmbed.vue';
 
 	type SummalyResult = Awaited<ReturnType<typeof summaly>>;
 
@@ -129,10 +121,8 @@ const player = ref({
 	height: null,
 } as SummalyResult['player']);
 const playerEnabled = ref(false);
-const tweetId = ref<string | null>(null);
+const tweetInfo = ref<{ id: string | null; screenName: string | null }>({ id: null, screenName: null });
 const tweetExpanded = ref(props.detail);
-const embedId = `embed${Math.random().toString().replace(/\D/, '')}`;
-const tweetHeight = ref(150);
 const unknownUrl = ref(false);
 
 onDeactivated(() => {
@@ -143,8 +133,11 @@ const requestUrl = new URL(props.url);
 if (!['http:', 'https:'].includes(requestUrl.protocol)) throw new Error('invalid url');
 
 if (requestUrl.hostname === 'twitter.com' || requestUrl.hostname === 'mobile.twitter.com' || requestUrl.hostname === 'x.com' || requestUrl.hostname === 'mobile.x.com') {
-	const m = requestUrl.pathname.match(/^\/.+\/status(?:es)?\/(\d+)/);
-	if (m) tweetId.value = m[1];
+	const twitterPathRegex = /^\/([a-zA-Z0-9_]+)\/status(?:es)?\/(\d+)/;
+	const match = requestUrl.pathname.match(twitterPathRegex);
+	if (match && match[1] && match[2]) {
+		tweetInfo.value = { screenName: match[1], id: match[2] };
+	}
 }
 
 if (requestUrl.hostname === 'music.youtube.com' && requestUrl.pathname.match('^/(?:watch|channel)')) {
@@ -183,15 +176,6 @@ window.fetch(`/url?url=${encodeURIComponent(requestUrl.href)}&lang=${versatileLa
 		sensitive.value = info.sensitive ?? false;
 	});
 
-function adjustTweetHeight(message: MessageEvent) {
-	if (message.origin !== 'https://platform.twitter.com') return;
-	const embed = message.data?.['twttr.embed'];
-	if (embed?.method !== 'twttr.private.resize') return;
-	if (embed?.id !== embedId) return;
-	const height = embed?.params[0]?.height;
-	if (height) tweetHeight.value = height;
-}
-
 function openPlayer(): void {
 	const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkYouTubePlayer.vue')), {
 		url: requestUrl.href,
@@ -201,12 +185,6 @@ function openPlayer(): void {
 		},
 	});
 }
-
-window.addEventListener('message', adjustTweetHeight);
-
-onUnmounted(() => {
-	window.removeEventListener('message', adjustTweetHeight);
-});
 </script>
 
 	<style lang="scss" module>
