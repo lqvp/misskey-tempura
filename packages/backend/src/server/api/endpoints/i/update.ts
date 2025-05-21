@@ -136,6 +136,15 @@ const muteWords = { type: 'array', items: { oneOf: [
 	{ type: 'string' },
 ] } } as const;
 
+const perServerMuteWordsItem = {
+	type: 'object',
+	properties: {
+		fqdn: { type: 'string' }, // FQDN validation will be done in the handler
+		words: muteWords,
+	},
+	required: ['fqdn', 'words'],
+} as const;
+
 export const paramDef = {
 	type: 'object',
 	properties: {
@@ -206,6 +215,7 @@ export const paramDef = {
 		mutedInstances: { type: 'array', items: {
 			type: 'string',
 		} },
+		perServerMuteWords: { type: 'array', items: perServerMuteWordsItem },
 		notificationRecieveConfig: {
 			type: 'object',
 			nullable: false,
@@ -344,6 +354,25 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				profileUpdates.hardMutedWords = ps.hardMutedWords;
 			}
 			if (ps.mutedInstances !== undefined) profileUpdates.mutedInstances = ps.mutedInstances;
+
+			if (ps.perServerMuteWords !== undefined) {
+				policies ??= await this.roleService.getUserPolicies(user.id);
+				for (const item of ps.perServerMuteWords) {
+					// FQDN validation (simple check for now, can be enhanced with a library like validator.js)
+					// Allows subdomains and punycode (xn--)
+					if (!/^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+(?:[a-zA-Z]{2,6}|xn--[a-zA-Z0-9]+)$/.test(item.fqdn)) {
+						throw new ApiError({
+							message: `Invalid FQDN: ${item.fqdn}`,
+							code: 'INVALID_FQDN',
+							id: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx', // TODO: Generate a new UUID
+						});
+					}
+					checkMuteWordCount(item.words, policies.wordMuteLimit); // Assuming same limit as general word mute
+					validateMuteWordRegex(item.words);
+				}
+				profileUpdates.perServerMuteWords = ps.perServerMuteWords;
+			}
+
 			if (ps.notificationRecieveConfig !== undefined) profileUpdates.notificationRecieveConfig = ps.notificationRecieveConfig;
 			if (typeof ps.isLocked === 'boolean') updates.isLocked = ps.isLocked;
 			if (typeof ps.isExplorable === 'boolean') updates.isExplorable = ps.isExplorable;

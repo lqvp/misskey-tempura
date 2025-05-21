@@ -70,7 +70,7 @@ class HybridTimelineChannel extends Channel {
 			if (!isMe && !note.visibleUserIds!.includes(this.user!.id)) return;
 		}
 
-		if (this.isNoteMutedOrBlocked(note)) return;
+		if (await this.isNoteMutedOrBlocked(note)) return; // Add await
 
 		if (note.reply) {
 			const reply = note.reply;

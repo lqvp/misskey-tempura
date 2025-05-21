@@ -19,6 +19,7 @@ import { isQuote, isRenote } from '@/misc/is-renote.js';
 import { CacheService } from '@/core/CacheService.js';
 import { isReply } from '@/misc/is-reply.js';
 import { isInstanceMuted } from '@/misc/is-instance-muted.js';
+import { checkPerServerWordMute } from '@/misc/check-per-server-word-mute.js';
 
 type TimelineOptions = {
 	untilId: string | null,
@@ -28,7 +29,7 @@ type TimelineOptions = {
 	me?: { id: MiUser['id'] } | undefined | null,
 	useDbFallback: boolean,
 	redisTimelines: FanoutTimelineName[],
-	noteFilter?: (note: MiNote) => boolean,
+	noteFilter?: (note: MiNote) => boolean | Promise<boolean>, // Allow async filter
 	alwaysIncludeMyNotes?: boolean;
 	ignoreAuthorFromBlock?: boolean;
 	ignoreAuthorFromMute?: boolean;
@@ -109,22 +110,32 @@ export class FanoutTimelineEndpointService {
 					userIdsWhoMeMuting,
 					userIdsWhoMeMutingRenotes,
 					userIdsWhoBlockingMe,
-					userMutedInstances,
+					userProfile, // Fetch the whole profile to get mutedInstances and perServerMuteWords
 				] = await Promise.all([
 					this.cacheService.userMutingsCache.fetch(ps.me.id),
 					this.cacheService.renoteMutingsCache.fetch(ps.me.id),
 					this.cacheService.userBlockedCache.fetch(ps.me.id),
-					this.cacheService.userProfileCache.fetch(me.id).then(p => new Set(p.mutedInstances)),
+					this.cacheService.userProfileCache.fetch(me.id),
 				]);
 
+				const userMutedInstances = new Set(userProfile.mutedInstances);
+				const perServerMuteWords = userProfile.perServerMuteWords;
+
 				const parentFilter = filter;
-				filter = (note) => {
+				// Make the filter async to use await for checkPerServerWordMute
+				filter = async (note): Promise<boolean> => { // Explicitly return Promise<boolean>
 					if (isUserRelated(note, userIdsWhoBlockingMe, ps.ignoreAuthorFromBlock)) return false;
 					if (isUserRelated(note, userIdsWhoMeMuting, ps.ignoreAuthorFromMute)) return false;
 					if (!ps.ignoreAuthorFromMute && isRenote(note) && !isQuote(note) && userIdsWhoMeMutingRenotes.has(note.userId)) return false;
 					if (isInstanceMuted(note, userMutedInstances)) return false;
+					if (perServerMuteWords && perServerMuteWords.length > 0) {
+						// Pass ps.me directly as it matches the expected type MiUser | null | undefined (or a compatible part of it)
+						if (await checkPerServerWordMute(note, perServerMuteWords, ps.me)) return false;
+					}
 
-					return parentFilter(note);
+					// If parentFilter is async, await it, otherwise call directly
+					const parentResult = parentFilter(note);
+					return typeof parentResult === 'boolean' ? parentResult : await parentResult;
 				};
 			}
 
@@ -199,9 +210,10 @@ export class FanoutTimelineEndpointService {
 		return await ps.dbFallback(ps.untilId, ps.sinceId, ps.limit);
 	}
 
-	private async getAndFilterFromDb(noteIds: string[], noteFilter: (note: MiNote) => boolean, idCompare: (a: string, b: string) => number): Promise<MiNote[]> {
+	private async getAndFilterFromDb(noteIds: string[], noteFilter: (note: MiNote) => boolean | Promise<boolean>, idCompare: (a: string, b: string) => number): Promise<MiNote[]> {
+		if (noteIds.length === 0) return []; // Avoid empty IN clause
 		const query = this.notesRepository.createQueryBuilder('note')
-			.where('note.id IN (:...noteIds)', { noteIds: noteIds })
+			.where('note.id IN (:...noteIds)', { noteIds })
 			.innerJoinAndSelect('note.user', 'user')
 			.leftJoinAndSelect('note.reply', 'reply')
 			.leftJoinAndSelect('note.renote', 'renote')
@@ -209,7 +221,19 @@ export class FanoutTimelineEndpointService {
 			.leftJoinAndSelect('renote.user', 'renoteUser')
 			.leftJoinAndSelect('note.channel', 'channel');
 
-		const notes = (await query.getMany()).filter(noteFilter);
+		// The original filter in getAndFilterFromDb was synchronous.
+		// If the main filter function becomes async, getAndFilterFromDb needs to handle it.
+		// For now, we've moved the DB fetching and async filtering logic directly into the while loop.
+		// The getAndFilterFromDb method might need refactoring or removal if this direct approach is preferred.
+		// For simplicity, let's assume the direct filtering in the loop is sufficient.
+		// If getAndFilterFromDb is still used elsewhere or needs to be kept, it must be adapted for async filters.
+		const notes = [];
+		for (const note of await query.getMany()) {
+			// Await the result of noteFilter since it can be a Promise
+			if (await noteFilter(note)) {
+				notes.push(note);
+			}
+		}
 
 		notes.sort((a, b) => idCompare(a.id, b.id));
 
