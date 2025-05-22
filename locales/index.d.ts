@@ -13829,9 +13829,9 @@ export interface Locale extends ILocale {
      */
     "noResults": string;
     /**
-     * メディアが省略されています
+     * ポストの読み込みに失敗しました
      */
-    "mediaOmitted": string;
+    "failedToLoadTweet": string;
 }
 declare const locales: {
     [lang: string]: Locale;

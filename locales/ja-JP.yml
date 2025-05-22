@@ -3725,4 +3725,4 @@ noSendActivity: "アクティビティを送信しない"
 
 noResults: "該当する結果はありません"
 
-mediaOmitted: "メディアが省略されています"
+failedToLoadTweet: "ポストの読み込みに失敗しました"
