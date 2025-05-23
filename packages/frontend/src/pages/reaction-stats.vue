@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<MkInfo>
 		{{ i18n.ts.reactionStatsDescription }}
 	</MkInfo>
-	<MkSpacer v-if="tab === 'me'" :contentMax="1000" :marginMin="20">
+	<div v-if="tab === 'me'" class="_spacer" style="--MI_SPACER-w: 1000px; --MI_SPACER-marginMin: 20px;">
 		<div class="_gaps_s">
 			<MkButton key="copyMyReactionsList" @click="copyToClipboard(myReactionsListMfm)"><i class="ti ti-copy"></i> {{ i18n.ts.copyContent }}</MkButton>
 		</div>
@@ -18,8 +18,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<Mfm key="myreactionslist" :text="myReactionsListMfm"></Mfm>
 			</p>
 		</div>
-	</MkSpacer>
-	<MkSpacer v-else-if="tab === 'site'" :contentMax="1000" :marginMin="20">
+	</div>
+	<div v-else-if="tab === 'site'" class="_spacer" style="--MI_SPACER-w: 1000px; --MI_SPACER-marginMin: 20px;">
 		<div class="_gaps_s">
 			<MkButton key="copySiteReactionsList" @click="copyToClipboard(serverReactionsListMfm)"><i class="ti ti-copy"></i> {{ i18n.ts.copyContent }}</MkButton>
 		</div>
@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<Mfm key="sitereactionslist" :text="serverReactionsListMfm"></Mfm>
 			</p>
 		</div>
-	</MkSpacer>
+	</div>
 </MkStickyContainer>
 </template>
 

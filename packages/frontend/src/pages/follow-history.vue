@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <MkStickyContainer v-if="$i.policies.canReadFollowHistory">
 	<template #header><MkPageHeader v-model:tab="tab" :actions="headerActions" :tabs="headerTabs"/></template>
-	<MkSpacer :contentMax="800">
+	<div class="_spacer" style="--MI_SPACER-w: 900px;">
 		<MkSwiper v-model:tab="tab" :tabs="headerTabs">
 			<div :key="tab" class="_gaps">
 				<MkPagination ref="paginationComponent" :pagination="pagination">
@@ -74,7 +74,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkPagination>
 			</div>
 		</MkSwiper>
-	</MkSpacer>
+	</div>
 </MkStickyContainer>
 <div v-else>
 	<XNotFound/>

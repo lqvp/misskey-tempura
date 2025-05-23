@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <MkStickyContainer v-if="$i.policies.canUseMakePrivate">
 	<template #header><MkPageHeader/></template>
-	<MkSpacer :contentMax="1200">
+	<div class="_spacer" style="--MI_SPACER-w: 1200px;">
 		<MkInfo warn>
 			<p>{{ i18n.ts._makePrivate.description }}</p>
 			<p><mfm :text="i18n.ts._makePrivate.warn"/></p>
@@ -45,7 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkNotes :pagination="notePagination"></MkNotes>
 		<p><br>...<br></p>
 		<MkNotes :pagination="notePaginationRev"></MkNotes>
-	</MkSpacer>
+	</div>
 </MkStickyContainer>
 <div v-else>
 	<XNotFound/>

@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<template v-else #header>{{ i18n.ts.changes }}</template>
 
 	<div v-if="tab === 'add'">
-		<MkSpacer :marginMin="20" :marginMax="28">
+		<div class="_spacer" style="--MI_SPACER-marginMin: 20px; --MI_SPACER-marginMax: 28px;">
 			<div class="_gaps_m">
 				<div v-if="imgUrl != null" :class="$style.imgs">
 					<div :class="$style.imgContainer">
@@ -38,14 +38,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkColorInput>
 				<MkSwitch v-model="isPublic">{{ i18n.ts._role.isPublic }}</MkSwitch>
 			</div>
-		</MkSpacer>
+		</div>
 		<div :class="$style.footer">
 			<MkButton primary rounded style="margin: 0 auto;" @click="done"><i class="ti ti-check"></i> {{ props.role ? i18n.ts.update : i18n.ts.create }}</MkButton>
 		</div>
 	</div>
 
 	<div v-else-if="tab === 'manage'">
-		<MkSpacer :marginMin="20" :marginMax="28">
+		<div class="_spacer" style="--MI_SPACER-marginMin: 20px; --MI_SPACER-marginMax: 28px;">
 			<div class="_gaps_m">
 				<div class="_gaps_s">
 					<MkFoldableSection>
@@ -62,7 +62,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkFoldableSection>
 				</div>
 			</div>
-		</MkSpacer>
+		</div>
 	</div>
 </MkModalWindow>
 </template>

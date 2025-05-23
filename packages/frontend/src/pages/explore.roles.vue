@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 	<div class="_spacer" style="--MI_SPACER-w: 700px;">
-		<MkSpacer>
+		<div class="_spacer">
 			<MkFoldableSection>
 				<template #header>{{ i18n.ts._role.manual + " " + i18n.ts.roles }}</template>
 		<div :class="$style.roleGrid">
@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkRolePreview v-for="role in rolesCommunity" :key="role.id" :role="role" :forModeration="false"/>
 		</div>
 			</MkFoldableSection>
-		</MkSpacer>
+		</div>
 	</div>
 </template>
 
