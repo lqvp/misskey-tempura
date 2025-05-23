@@ -70,6 +70,7 @@ export type RolePolicies = {
 	canImportMuting: boolean;
 	canImportUserLists: boolean;
 	chatAvailability: 'available' | 'readonly' | 'unavailable';
+	uploadableFileTypes: string[];
 	canAddRoles: boolean;
 	canCreateRole: boolean;
 	canUseUnFollowNotification: boolean;
@@ -123,6 +124,13 @@ export const DEFAULT_POLICIES: RolePolicies = {
 	canImportMuting: true,
 	canImportUserLists: true,
 	chatAvailability: 'available',
+	uploadableFileTypes: [
+		'text/plain',
+		'application/json',
+		'image/*',
+		'video/*',
+		'audio/*',
+	],
 	canAddRoles: true,
 	canCreateRole: true,
 	canUseUnFollowNotification: true,
@@ -508,6 +516,16 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			canImportMuting: calc('canImportMuting', vs => vs.some(v => v === true)),
 			canImportUserLists: calc('canImportUserLists', vs => vs.some(v => v === true)),
 			chatAvailability: calc('chatAvailability', aggregateChatAvailability),
+			uploadableFileTypes: calc('uploadableFileTypes', vs => {
+				const set = new Set<string>();
+				for (const v of vs) {
+					for (const type of v) {
+						if (type.trim() === '') continue;
+						set.add(type.trim());
+					}
+				}
+				return [...set];
+			}),
 			canAddRoles: calc('canAddRoles', vs => vs.some(v => v === true)),
 			canCreateRole: calc('canCreateRole', vs => vs.some(v => v === true)),
 			canUseUnFollowNotification: calc('canUseUnFollowNotification', vs => vs.some(v => v === true)),

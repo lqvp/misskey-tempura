@@ -6,11 +6,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <PageWithHeader v-model:tab="tab" :tabs="headerTabs" :actions="headerActions" :swipable="true">
 	<div v-if="user">
-				<template v-if="hasTabAccess(tab)">
-			<XHome v-if="tab === 'home'" :user="user" @unfoldFiles="() => { tab = 'files'; }"/>
-			<div v-else-if="tab === 'notes'" class="_spacer" style="--MI_SPACER-w: 800px;">
-				<XTimeline :user="user"/>
-			</div>
+		<template v-if="hasTabAccess(tab)">
+			<XHome v-if="tab === 'home'" :user="user" @showMoreFiles="() => { tab = 'files'; }"/>
+			<XNotes v-else-if="tab === 'notes'" :user="user"/>
 			<XFiles v-else-if="tab === 'files'" :user="user"/>
 			<XActivity v-else-if="tab === 'activity'" :user="user"/>
 			<XAchievements v-else-if="tab === 'achievements'" :user="user"/>
@@ -21,10 +19,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<XFlashs v-else-if="tab === 'flashs'" :user="user"/>
 			<XGallery v-else-if="tab === 'gallery'" :user="user"/>
 			<XRaw v-else-if="tab === 'raw'" :user="user"/>
-				</template>
-				<div v-else class="forbidden">
-					<XNotFound/>
-				</div>
+		</template>
+		<div v-else class="forbidden">
+			<XNotFound/>
+		</div>
 	</div>
 	<div v-else-if="error">
 			<MkError @retry="fetchUser()"/>
@@ -51,7 +49,7 @@ import XNotFound from '@/pages/not-found.vue';
 import { serverContext, assertServerContext } from '@/server-context.js';
 
 const XHome = defineAsyncComponent(() => import('./home.vue'));
-const XTimeline = defineAsyncComponent(() => import('./index.timeline.vue'));
+const XNotes = defineAsyncComponent(() => import('./notes.vue'));
 const XFiles = defineAsyncComponent(() => import('./files.vue'));
 const XActivity = defineAsyncComponent(() => import('./activity.vue'));
 const XAchievements = defineAsyncComponent(() => import('./achievements.vue'));

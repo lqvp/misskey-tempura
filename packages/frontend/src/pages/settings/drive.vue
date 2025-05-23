@@ -52,14 +52,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<FormLink to="/settings/drive/cleaner">
 					{{ i18n.ts.drivecleaner }}
 				</FormLink>
-			<MkSelect v-model="imageCompressionMode">
-				<template #label>{{ i18n.ts._imageCompressionMode.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-				<option value="resizeCompress">{{ i18n.ts._imageCompressionMode.resizeCompress }}</option>
-				<option value="noResizeCompress">{{ i18n.ts._imageCompressionMode.noResizeCompress }}</option>
-				<option value="resizeCompressLossy">{{ i18n.ts._imageCompressionMode.resizeCompressLossy }}</option>
-				<option value="noResizeCompressLossy">{{ i18n.ts._imageCompressionMode.noResizeCompressLossy }}</option>
-				<template #caption>{{ i18n.ts._imageCompressionMode.description }}</template>
-			</MkSelect>
 
 				<SearchMarker :keywords="['keep', 'original', 'filename']">
 					<MkPreferenceContainer k="keepOriginalFilename">
@@ -108,6 +100,7 @@ import MkSelect from '@/components/MkSelect.vue';
 import { prefer } from '@/preferences.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 import MkFeatureBanner from '@/components/MkFeatureBanner.vue';
+import { selectDriveFolder } from '@/utility/drive.js';
 
 const $i = ensureSignin();
 
@@ -131,7 +124,6 @@ const meterStyle = computed(() => {
 });
 
 const keepOriginalFilename = prefer.model('keepOriginalFilename');
-const imageCompressionMode = prefer.model('imageCompressionMode');
 
 misskeyApi('drive').then(info => {
 	capacity.value = info.capacity;
@@ -148,7 +140,7 @@ if (prefer.s.uploadFolder) {
 }
 
 function chooseUploadFolder() {
-	os.selectDriveFolder(false).then(async folder => {
+	selectDriveFolder(null).then(async folder => {
 		prefer.commit('uploadFolder', folder[0] ? folder[0].id : null);
 		os.success();
 		if (prefer.s.uploadFolder) {

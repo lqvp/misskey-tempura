@@ -42,9 +42,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</I18n>
 		</MkInfo>
 		<p>{{ i18n.ts.preview }}</p>
-		<MkNotes :pagination="notePagination"></MkNotes>
+		<MkNotesTimeline :pagination="notePagination"></MkNotesTimeline>
 		<p><br>...<br></p>
-		<MkNotes :pagination="notePaginationRev"></MkNotes>
+		<MkNotesTimeline :pagination="notePaginationRev"></MkNotesTimeline>
 	</div>
 </MkStickyContainer>
 <div v-else>
@@ -63,7 +63,7 @@ import * as os from '@/os';
 import MkInput from '@/components/MkInput.vue';
 import FormSplit from '@/components/form/split.vue';
 import MkInfo from '@/components/MkInfo.vue';
-import MkNotes from '@/components/MkNotes.vue';
+import MkNotesTimeline from '@/components/MkNotesTimeline.vue';
 import MkButton from '@/components/MkButton.vue';
 import XNotFound from '@/pages/not-found.vue';
 

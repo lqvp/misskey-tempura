@@ -394,6 +394,7 @@ const patrons = [
 	'まゆつな空高',
 	'asata',
 	'ruru',
+	'みりめい',
 ];
 
 const thereIsTreasure = ref($i && !claimedAchievements.includes('foundTreasure'));

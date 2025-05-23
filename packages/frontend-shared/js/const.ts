@@ -125,6 +125,7 @@ export const ROLE_POLICIES = [
 	'canImportMuting',
 	'canImportUserLists',
 	'chatAvailability',
+	'uploadableFileTypes',
 	'canAddRoles',
 	'canCreateRole',
 	'canUseUnFollowNotification',

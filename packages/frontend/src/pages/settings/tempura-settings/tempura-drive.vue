@@ -9,18 +9,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<template #label><SearchLabel>{{ i18n.ts.drive }}</SearchLabel></template>
 	<SearchMarker markerId="tempura-settings-drive" :inlining="['tempura-settings-root']" path="/settings/tempura-settings" :keywords="['drive']">
 		<div class="_gaps_m">
-			<SearchMarker :keywords="['drive', 'image', 'compression', 'mode']">
-				<MkPreferenceContainer k="imageCompressionMode">
-					<MkSelect v-model="imageCompressionMode">
-						<template #label><SearchLabel>{{ i18n.ts._imageCompressionMode.title }}</SearchLabel></template>
-						<option value="resizeCompress">{{ i18n.ts._imageCompressionMode.resizeCompress }}</option>
-						<option value="noResizeCompress">{{ i18n.ts._imageCompressionMode.noResizeCompress }}</option>
-						<option value="resizeCompressLossy">{{ i18n.ts._imageCompressionMode.resizeCompressLossy }}</option>
-						<option value="noResizeCompressLossy">{{ i18n.ts._imageCompressionMode.noResizeCompressLossy }}</option>
-						<template #caption>{{ i18n.ts._imageCompressionMode.description }}</template>
-					</MkSelect>
-				</MkPreferenceContainer>
-			</SearchMarker>
 		</div>
 	</SearchMarker>
 </MkFolder>
@@ -34,8 +22,6 @@ import MkFolder from '@/components/MkFolder.vue';
 import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
-
-const imageCompressionMode = prefer.model('imageCompressionMode');
 
 </script>
 
