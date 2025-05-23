@@ -14208,6 +14208,10 @@ export interface Locale extends ILocale {
      * 該当する結果はありません
      */
     "noResults": string;
+    /**
+     * ポストの読み込みに失敗しました
+     */
+    "failedToLoadTweet": string;
 }
 declare const locales: {
     [lang: string]: Locale;
