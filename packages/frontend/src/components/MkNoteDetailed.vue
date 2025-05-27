@@ -421,7 +421,7 @@ provide(DI.mfmEmojiReactCallback, (reaction) => {
 const tab = ref(props.initialTab);
 const reactionTabType = ref<string | null>(null);
 
-const repliesPagination = computed<Paging>(() => ({
+const repliesPagination = computed(() => ({
 	endpoint: 'notes/replies',
 	limit: 10,
 	params: {
@@ -429,7 +429,7 @@ const repliesPagination = computed<Paging>(() => ({
 	},
 }));
 
-const renotesPagination = computed<Paging>(() => ({
+const renotesPagination = computed(() => ({
 	endpoint: 'notes/renotes',
 	limit: 10,
 	params: {
@@ -437,14 +437,13 @@ const renotesPagination = computed<Paging>(() => ({
 	},
 }));
 
-const quotesPagination = computed<Paging>(() => ({
+const quotesPagination = computed(() => ({
 	endpoint: 'notes/quotes',
 	limit: 10,
 	params: {
 		noteId: appearNote.id,
 	},
 }));
-
 
 const reactionsPagination = computed(() => ({
 	endpoint: 'notes/reactions',
