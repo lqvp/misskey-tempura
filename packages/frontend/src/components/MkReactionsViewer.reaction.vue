@@ -74,9 +74,9 @@ const isAvailable = computed(() => isLocal.value ? true : customEmojisMap.has(ge
 const canToggle = computed(() => {
 	// TODO
 	//return isAvailable.value && $i && emoji.value && checkReactionPermissions($i, props.note, emoji.value);
-	return !props.reaction.match(/@\w/) && $i && emoji.value;
+	return $i && emoji.value;
 });
-const canGetInfo = computed(() => !props.reaction.match(/@\w/) && props.reaction.includes(':'));
+const canGetInfo = computed(() => props.reaction.includes(':'));
 const isLocalCustomEmoji = props.reaction[0] === ':' && props.reaction.includes('@.');
 
 const plainReaction = computed(() => customEmojisMap.has(emojiName.value) ? getReactionName(props.reaction, true) : props.reaction);

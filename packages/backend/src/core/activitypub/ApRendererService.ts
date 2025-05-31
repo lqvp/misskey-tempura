@@ -23,7 +23,7 @@ import { MfmService, type Appender } from '@/core/MfmService.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.js';
 import type { MiUserKeypair } from '@/models/UserKeypair.js';
-import type { UsersRepository, UserProfilesRepository, NotesRepository, DriveFilesRepository, PollsRepository, MiMeta } from '@/models/_.js';
+import type { UsersRepository, UserProfilesRepository, NotesRepository, DriveFilesRepository, PollsRepository, MiMeta, EmojisRepository } from '@/models/_.js';
 import { bindThis } from '@/decorators.js';
 import { CustomEmojiService } from '@/core/CustomEmojiService.js';
 import { IdService } from '@/core/IdService.js';
@@ -56,6 +56,9 @@ export class ApRendererService {
 
 		@Inject(DI.pollsRepository)
 		private pollsRepository: PollsRepository,
+
+		@Inject(DI.emojisRepository)
+		private emojisRepository: EmojisRepository,
 
 		private customEmojiService: CustomEmojiService,
 		private userEntityService: UserEntityService,
@@ -178,9 +181,11 @@ export class ApRendererService {
 	@bindThis
 	public renderEmoji(emoji: MiEmoji): IApEmoji {
 		return {
-			id: `${this.config.url}/emojis/${emoji.name}`,
+			id: emoji.uri || `${this.config.url}/emojis/${emoji.name}`,
 			type: 'Emoji',
 			name: `:${emoji.name}:`,
+			host: `${emoji.host ?? this.config.host}`,
+			keywords: emoji.aliases,
 			updated: emoji.updatedAt != null ? emoji.updatedAt.toISOString() : new Date().toISOString(),
 			icon: {
 				type: 'Image',
@@ -307,18 +312,31 @@ export class ApRendererService {
 	public async renderLike(noteReaction: MiNoteReaction, note: { uri: string | null }): Promise<ILike> {
 		const reaction = noteReaction.reaction;
 
+		const custom = reaction.match(/^:([\w+-]+)(?:@([\w.-]+))?:$/);
+		const sendReaction = custom
+			? custom[2]
+				? `:${custom[1]}:`
+				: reaction
+			: reaction;
+
 		const object: ILike = {
 			type: 'Like',
 			id: `${this.config.url}/likes/${noteReaction.id}`,
 			actor: `${this.config.url}/users/${noteReaction.userId}`,
 			object: note.uri ? note.uri : `${this.config.url}/notes/${noteReaction.noteId}`,
-			content: reaction,
-			_misskey_reaction: reaction,
+			content: sendReaction,
+			_misskey_reaction: sendReaction,
 		};
 
-		if (reaction.startsWith(':')) {
-			const name = reaction.replaceAll(':', '');
-			const emoji = (await this.customEmojiService.localEmojisCache.fetch()).get(name);
+		if (custom) {
+			const name = custom[1];
+			const host = custom[2] === '.' ? null : custom[2];
+			const emoji = host == null
+				? (await this.customEmojiService.localEmojisCache.fetch()).get(name)
+				: await this.emojisRepository.findOneBy({
+					host: host,
+					name,
+				});
 
 			if (emoji && !emoji.localOnly) object.tag = [this.renderEmoji(emoji)];
 		}

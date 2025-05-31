@@ -30,6 +30,8 @@ import { trackPromise } from '@/misc/promise-tracker.js';
 import { isQuote, isRenote } from '@/misc/is-renote.js';
 import { ReactionsBufferingService } from '@/core/ReactionsBufferingService.js';
 import { PER_NOTE_REACTION_USER_PAIR_CACHE_MAX } from '@/const.js';
+import type { Config } from '@/config.js';
+import type { MiEmoji } from '@/models/Emoji.js';
 
 const FALLBACK = '\u2764';
 
@@ -65,7 +67,7 @@ type DecodedReaction = {
 };
 
 const isCustomEmojiRegexp = /^:([\w+-]+)(?:@\.)?:$/;
-const decodeCustomEmojiRegexp = /^:([\w+-]+)(?:@([\w.-]+))?:$/;
+export const decodeCustomEmojiRegexp = /^:([\w+-]+)(?:@([\w.-]+))?:$/;
 
 @Injectable()
 export class ReactionService {
@@ -84,6 +86,9 @@ export class ReactionService {
 
 		@Inject(DI.emojisRepository)
 		private emojisRepository: EmojisRepository,
+
+		@Inject(DI.config)
+		private config: Config,
 
 		private utilityService: UtilityService,
 		private customEmojiService: CustomEmojiService,
@@ -127,21 +132,39 @@ export class ReactionService {
 		if (note.reactionAcceptance === 'likeOnly' || ((note.reactionAcceptance === 'likeOnlyForRemote' || note.reactionAcceptance === 'nonSensitiveOnlyForLocalLikeOnlyForRemote') && (user.host != null))) {
 			reaction = '\u2764';
 		} else if (_reaction != null) {
-			const custom = reaction.match(isCustomEmojiRegexp);
+			const custom = reaction.match(decodeCustomEmojiRegexp);
 			if (custom) {
 				const reacterHost = this.utilityService.toPunyNullable(user.host);
 
+				let emoji: MiEmoji | null = null;
+
 				const name = custom[1];
-				const emoji = reacterHost == null
-					? (await this.customEmojiService.localEmojisCache.fetch()).get(name)
-					: await this.emojisRepository.findOneBy({
-						host: reacterHost,
-						name,
-					});
+				const noteHost = note.userHost;
+				const hosts = (
+					reacterHost
+						? custom?.[2] === this.config.host
+							? [null, reacterHost]
+							: [custom?.[2], reacterHost, null]
+						: [
+							null,
+							custom?.[2] === this.config.host ? undefined : custom?.[2],
+							noteHost ?? 'misskey.io',
+						]
+				).filter((x) => x || x == null);
+				for (const host of hosts) {
+					emoji = host == null
+						? (await this.customEmojiService.localEmojisCache.fetch()).get(name) ?? null
+						: await this.emojisRepository.findOneBy({
+							host: host,
+							name,
+						});
+
+					if (emoji) break;
+				}
 
 				if (emoji) {
 					if (emoji.roleIdsThatCanBeUsedThisEmojiAsReaction.length === 0 || (await this.roleService.getUserRoles(user.id)).some(r => emoji.roleIdsThatCanBeUsedThisEmojiAsReaction.includes(r.id))) {
-						reaction = reacterHost ? `:${name}@${reacterHost}:` : `:${name}:`;
+						reaction = emoji.host ? `:${name}@${emoji.host}:` : `:${name}:`;
 
 						// センシティブ
 						if ((note.reactionAcceptance === 'nonSensitiveOnly' || note.reactionAcceptance === 'nonSensitiveOnlyForLocalLikeOnlyForRemote') && emoji.isSensitive) {
