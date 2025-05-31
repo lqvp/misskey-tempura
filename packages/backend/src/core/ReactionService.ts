@@ -67,7 +67,7 @@ type DecodedReaction = {
 };
 
 const isCustomEmojiRegexp = /^:([\w+-]+)(?:@\.)?:$/;
-export const decodeCustomEmojiRegexp = /^:([\w+-]+)(?:@([\w.-]+))?:$/;
+const decodeCustomEmojiRegexp = /^:([\w+-]+)(?:@([\w.-]+))?:$/;
 
 @Injectable()
 export class ReactionService {
