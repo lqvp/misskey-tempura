@@ -9778,7 +9778,7 @@ export type operations = {
         'application/json': {
           /** @enum {string} */
           queue: 'system' | 'endedPollNotification' | 'deliver' | 'inbox' | 'db' | 'relationship' | 'objectStorage' | 'userWebhookDeliver' | 'systemWebhookDeliver' | 'scheduleNotePost' | 'scheduledNoteDelete';
-          state: ('active' | 'wait' | 'delayed' | 'completed' | 'failed')[];
+          state: ('active' | 'wait' | 'delayed' | 'completed' | 'failed' | 'paused')[];
           search?: string;
         };
       };
