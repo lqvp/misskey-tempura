@@ -168,7 +168,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<button v-else class="_button" :class="$style.noteFooterButton" disabled>
 				<i class="ti ti-ban"></i>
 			</button>
-			<button v-if="appearNote.reactionAcceptance !== 'likeOnly' && appearNote.myReaction == null && prefer.s.showLikeButton" ref="heartReactButton" v-tooltip="i18n.ts.like" :class="$style.noteFooterButton" class="_button" @mousedown="heartReact()">
+			<button v-if="appearNote.reactionAcceptance !== 'likeOnly' && appearNote.myReaction == null && prefer.s.showLikeButton" ref="heartReactButton" v-tooltip="i18n.ts.like" :class="$style.noteFooterButton" class="_button" @click="toggleHeartReact()">
 				<i class="ti ti-heart"></i>
 			</button>
 			<button ref="reactButton" :class="$style.noteFooterButton" class="_button" @click="toggleReact()">
@@ -574,16 +574,35 @@ function react(): void {
 }
 
 function heartReact(): void {
-	pleaseLogin(undefined, pleaseLoginContext.value);
+	pleaseLogin({ openOnRemote: pleaseLoginContext.value });
 	showMovedDialog();
+
+	if (prefer.s.enableLikeConfirm) {
+		const confirm = os.confirm({
+			type: 'info',
+			text: i18n.ts.likeConfirm,
+		});
+		if (confirm.canceled) return;
+	}
 
 	sound.playMisskeySfx('reaction');
 
-	const selectreact = prefer.s.selectReaction;
+	if (props.mock) {
+		emit('reaction', prefer.s.selectReaction);
+		$appearNote.reactions[prefer.s.selectReaction] = 1;
+		$appearNote.reactionCount++;
+		$appearNote.myReaction = prefer.s.selectReaction;
+		return;
+	}
 
 	misskeyApi('notes/reactions/create', {
 		noteId: appearNote.id,
-		reaction: selectreact,
+		reaction: prefer.s.selectReaction,
+	}).then(() => {
+		noteEvents.emit(`reacted:${appearNote.id}`, {
+			userId: $i!.id,
+			reaction: prefer.s.selectReaction,
+		});
 	});
 
 	if (appearNote.text && appearNote.text.length > 100 && (Date.now() - new Date(appearNote.createdAt).getTime() < 1000 * 3)) {
@@ -591,11 +610,13 @@ function heartReact(): void {
 	}
 
 	const el = heartReactButton.value;
-	if (el) {
+	if (el && prefer.s.animation) {
 		const rect = el.getBoundingClientRect();
 		const x = rect.left + (el.offsetWidth / 2);
 		const y = rect.top + (el.offsetHeight / 2);
-		os.popup(MkRippleEffect, { x, y }, {}, 'end');
+		const { dispose } = os.popup(MkRippleEffect, { x, y }, {
+			end: () => dispose(),
+		});
 	}
 }
 
@@ -615,6 +636,14 @@ function undoReact(targetNote: Misskey.entities.Note): void {
 function toggleReact() {
 	if (appearNote.myReaction == null) {
 		react();
+	} else {
+		undoReact(appearNote);
+	}
+}
+
+function toggleHeartReact() {
+	if ($appearNote.myReaction == null) {
+		heartReact();
 	} else {
 		undoReact(appearNote);
 	}
