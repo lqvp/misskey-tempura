@@ -587,14 +587,6 @@ function heartReact(): void {
 
 	sound.playMisskeySfx('reaction');
 
-	if (props.mock) {
-		emit('reaction', prefer.s.selectReaction);
-		$appearNote.reactions[prefer.s.selectReaction] = 1;
-		$appearNote.reactionCount++;
-		$appearNote.myReaction = prefer.s.selectReaction;
-		return;
-	}
-
 	misskeyApi('notes/reactions/create', {
 		noteId: appearNote.id,
 		reaction: prefer.s.selectReaction,
