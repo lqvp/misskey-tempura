@@ -568,6 +568,8 @@ const extension_context_definition = {
 	'Game': 'yojoart:Game',
 	// vcard
 	vcard: 'http://www.w3.org/2006/vcard/ns#',
+	host: 'schema:host',
+	keywords: 'schema:keywords',
 } satisfies Context;
 
 export const CONTEXT: (string | Context)[] = [...context_iris, extension_context_definition];

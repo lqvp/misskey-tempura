@@ -43,12 +43,23 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private emojiEntityService: EmojiEntityService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			const emoji = await this.emojisRepository.findOneOrFail({
-				where: {
-					name: ps.name,
-					host: IsNull(),
-				},
-			});
+			let emoji = undefined;
+			const custom = /^([\w+-]+)(?:@([\w.-]+))?$/.exec(ps.name);
+			if (custom && custom.length >= 3) {
+				emoji = await this.emojisRepository.findOneOrFail({
+					where: {
+						name: custom[1],
+						host: custom[2] === '.' ? IsNull() : (custom[2] ? custom[2] : IsNull()),
+					},
+				});
+			} else {
+				emoji = await this.emojisRepository.findOneOrFail({
+					where: {
+						name: ps.name,
+						host: IsNull(),
+					},
+				});
+			}
 
 			return this.emojiEntityService.packDetailed(emoji);
 		});
