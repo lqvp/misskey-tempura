@@ -49,7 +49,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				emoji = await this.emojisRepository.findOneOrFail({
 					where: {
 						name: custom[1],
-						host: custom[2],
+						host: custom[2] === '.' ? IsNull() : (custom[2] ? custom[2] : IsNull()),
 					},
 				});
 			} else {

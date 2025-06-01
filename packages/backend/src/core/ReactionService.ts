@@ -148,7 +148,7 @@ export class ReactionService {
 						: [
 							null,
 							custom?.[2] === this.config.host ? undefined : custom?.[2],
-							noteHost ?? 'misskey.io',
+							noteHost,
 						]
 				).filter((x) => x || x == null);
 				for (const host of hosts) {
