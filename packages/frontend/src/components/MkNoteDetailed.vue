@@ -422,7 +422,7 @@ const repliesPagination = computed(() => ({
 	endpoint: 'notes/replies',
 	limit: 10,
 	params: {
-		noteId: appearNote.value.id,
+		noteId: appearNote.id,
 	},
 }));
 
