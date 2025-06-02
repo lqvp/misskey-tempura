@@ -69,8 +69,8 @@ misskeyApi('get-avatar-decorations').then(_avatarDecorations => {
 	loading.value = false;
 });
 
-function openDecoration(selectedDecoration, index?: number) {
-	const { dispose } = os.popup(defineAsyncComponent(() => import('./avatar-decoration.dialog.vue')), {
+async function openDecoration(selectedDecoration, index?: number) {
+	const { dispose } = await os.popupAsyncWithDialog(import('./avatar-decoration.dialog.vue').then(x => x.default), {
 		decoration: avatarDecorations.value.find(d => d.id === selectedDecoration.id),
 		usingIndex: index ?? null,
 	}, {
