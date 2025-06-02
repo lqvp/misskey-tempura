@@ -54,9 +54,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span v-if="tweetData.quote.likes != null" :class="$style.statItem">
 						<i class="ti ti-heart" :class="$style.iconLike"></i> {{ tweetData.quote.likes.toLocaleString() }}
 					</span>
+					<span v-if="tweetData.quote.views != null" :class="$style.statItem">
+						<i class="ti ti-eye" :class="$style.iconView"></i> {{ tweetData.quote.views.toLocaleString() }}
+					</span>
 				</div>
 			</a>
-			<Mfm v-if="tweetData.source" :text="tweetData.source" :class="$style.source"/>
+			<Mfm v-if="tweetData.quote.source" :text="tweetData.quote.source" :class="$style.source"/>
 		</footer>
 	</div>
 
@@ -72,6 +75,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</span>
 				<span v-if="tweetData.likes != null" :class="$style.statItem">
 					<i class="ti ti-heart" :class="$style.iconLike"></i> {{ tweetData.likes.toLocaleString() }}
+				</span>
+				<span v-if="tweetData.views != null" :class="$style.statItem">
+					<i class="ti ti-eye" :class="$style.iconView"></i> {{ tweetData.views.toLocaleString() }}
 				</span>
 			</div>
 		</a>
@@ -131,6 +137,7 @@ interface FxTweet {
 	replies?: number;
 	retweets?: number;
 	likes?: number;
+	views?: number;
 	quote?: FxTweet;
 }
 
@@ -406,6 +413,9 @@ function mapToDriveFile(media: FxTweetMedia, tweet: FxTweet | null): Misskey.ent
 	.iconLike {
 		color: var(--MI_THEME-love);
 	}
+	.iconView {
+		color: var(--MI_THEME-notif);
+	}
 }
 
 .statsLink {
@@ -431,6 +441,9 @@ function mapToDriveFile(media: FxTweetMedia, tweet: FxTweet | null): Misskey.ent
 }
 
 .source {
+	margin-left: auto;
+	font-size: 1dem;
+	text-align: right;
 }
 
 .quoteContainer {
