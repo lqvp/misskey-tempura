@@ -113,11 +113,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #icon><i class="ti ti-eye-off"></i></template>
 					<template #label>{{ i18n.ts.mutedUsers }}</template>
 
-		<div class="_gaps_s">
-			<MkSwitch v-model="anonymizeMutedUsers">{{ i18n.ts.anonymizeMutedUsers }}</MkSwitch>
+					<div class="_gaps_s">
+						<MkSwitch v-model="anonymizeMutedUsers">{{ i18n.ts.anonymizeMutedUsers }}</MkSwitch>
 
-					<MkPagination :pagination="mutingPagination">
-						<template #empty><MkResult type="empty" :text="i18n.ts.noUsers"/></template>
+						<MkPagination :pagination="mutingPagination">
+							<template #empty><MkResult type="empty" :text="i18n.ts.noUsers"/></template>
 
 							<template #default="{ items }">
 								<div class="_gaps_s">
@@ -138,7 +138,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 								</div>
 							</template>
 						</MkPagination>
-		</div>
+					</div>
 				</MkFolder>
 			</SearchMarker>
 

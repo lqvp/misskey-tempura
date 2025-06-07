@@ -18,6 +18,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</MkSwitch>
 					</SearchMarker>
 				</MkPreferenceContainer>
+
+				<MkPreferenceContainer k="anonymizeMutedUsers">
+					<SearchMarker :keywords="['anonymize', 'muted', 'users']">
+						<MkSwitch v-model="anonymizeMutedUsers">
+							<SearchLabel>{{ i18n.ts.anonymizeMutedUsers }}</SearchLabel>
+							<template #caption>{{ i18n.ts._anonymizeMutedUsers.caption }}</template>
+						</MkSwitch>
+					</SearchMarker>
+				</MkPreferenceContainer>
 			</div>
 		</div>
 	</MkFolder>
@@ -34,6 +43,7 @@ import { i18n } from '@/i18n.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 
 const reactionChecksMuting = prefer.model('reactionChecksMuting');
+const anonymizeMutedUsers = prefer.model('anonymizeMutedUsers');
 
 </script>
 
