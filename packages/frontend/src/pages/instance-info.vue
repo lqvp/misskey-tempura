@@ -7,9 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 <PageWithHeader v-model:tab="tab" :actions="headerActions" :tabs="headerTabs" :swipable="true">
 	<div v-if="instance" class="_spacer" style="--MI_SPACER-w: 600px; --MI_SPACER-min: 16px; --MI_SPACER-max: 32px;">
 		<div v-if="tab === 'overview'" class="_gaps_m">
-			<div class="fnfelxur">
-				<img :src="faviconUrl" alt="" class="icon"/>
-				<span class="name">{{ instance.name || `(${i18n.ts.unknown})` }}</span>
+			<div :class="$style.faviconAndName">
+				<img :src="faviconUrl" alt="" :class="$style.icon"/>
+				<span :class="$style.name">{{ instance.name || `(${i18n.ts.unknown})` }}</span>
 			</div>
 			<div style="display: flex; flex-direction: column; gap: 1em;">
 				<MkKeyValue :copy="host" oneline>
@@ -46,7 +46,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkSwitch v-model="isBlocked" :disabled="!meta || !instance" @update:modelValue="toggleBlock">{{ i18n.ts.blockThisInstance }}</MkSwitch>
 					<MkSwitch v-model="isSilenced" :disabled="!meta || !instance" @update:modelValue="toggleSilenced">{{ i18n.ts.silenceThisInstance }}</MkSwitch>
 					<MkSwitch v-model="isMediaSilenced" :disabled="!meta || !instance" @update:modelValue="toggleMediaSilenced">{{ i18n.ts.mediaSilenceThisInstance }}</MkSwitch>
-						<MkSwitch v-model="isQuarantineLimit" :disabled="!meta || !instance" @update:modelValue="toggleQuarantined">{{ i18n.ts.quarantineThisInstance }}</MkSwitch>
+					<MkSwitch v-model="isQuarantineLimit" :disabled="!meta || !instance" @update:modelValue="toggleQuarantined">{{ i18n.ts.quarantineThisInstance }}</MkSwitch>
 					<MkButton @click="refreshMetadata"><i class="ti ti-refresh"></i> Refresh metadata</MkButton>
 					<MkTextarea v-model="moderationNote" manualSave>
 						<template #label>{{ i18n.ts.moderationNote }}</template>
@@ -91,8 +91,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</FormSection>
 		</div>
 		<div v-else-if="tab === 'chart'" class="_gaps_m">
-			<div class="cmhjzshl">
-				<div class="selects">
+			<div>
+				<div :class="$style.selects">
 					<MkSelect v-model="chartSrc" style="margin: 0 10px 0 0; flex: 1;">
 						<option value="instance-requests">{{ i18n.ts._instanceCharts.requests }}</option>
 						<option value="instance-users">{{ i18n.ts._instanceCharts.users }}</option>
@@ -107,51 +107,53 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<option value="instance-drive-files-total">{{ i18n.ts._instanceCharts.filesTotal }}</option>
 					</MkSelect>
 				</div>
-				<div class="charts">
-					<div class="label">{{ i18n.tsx.recentNHours({ n: 90 }) }}</div>
-					<MkChart class="chart" :src="chartSrc" span="hour" :limit="90" :args="{ host: host }" :detailed="true"></MkChart>
-					<div class="label">{{ i18n.tsx.recentNDays({ n: 90 }) }}</div>
-					<MkChart class="chart" :src="chartSrc" span="day" :limit="90" :args="{ host: host }" :detailed="true"></MkChart>
+				<div>
+					<div :class="$style.label">{{ i18n.tsx.recentNHours({ n: 90 }) }}</div>
+					<MkChart :src="chartSrc" span="hour" :limit="90" :args="{ host: host }" :detailed="true"></MkChart>
+					<div :class="$style.label">{{ i18n.tsx.recentNDays({ n: 90 }) }}</div>
+					<MkChart :src="chartSrc" span="day" :limit="90" :args="{ host: host }" :detailed="true"></MkChart>
 				</div>
 			</div>
 		</div>
 		<div v-else-if="tab === 'users'" class="_gaps_m">
-			<MkPagination v-slot="{items}" :pagination="usersPagination" style="display: grid; grid-template-columns: repeat(auto-fill,minmax(270px,1fr)); grid-gap: 12px;">
-				<MkA v-for="user in items" :key="user.id" v-tooltip.mfm="`Last posted: ${dateString(user.updatedAt)}`" class="user" :to="`/admin/user/${user.id}`">
-					<MkUserCardMini :user="user"/>
-				</MkA>
+			<MkPagination v-slot="{ items }" :pagination="usersPagination">
+				<div :class="$style.users">
+					<MkA v-for="user in items" :key="user.id" v-tooltip.mfm="`Last posted: ${user.updatedAt ? dateString(user.updatedAt) : 'unknown'}`" :to="`/admin/user/${user.id}`">
+						<MkUserCardMini :user="user"/>
+					</MkA>
+				</div>
 			</MkPagination>
 		</div>
-			<div v-else-if="tab === 'following'" key="following" class="_gaps_m">
-				<MkPagination v-slot="{items}" :pagination="followingPagination">
-					<div class="follow-relations-list">
-						<div v-for="followRelationship in items" :key="followRelationship.id" class="follow-relation">
-							<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.followee.updatedAt)}`" :to="`/admin/user/${followRelationship.followee.id}`" class="user">
-								<MkUserCardMini :user="followRelationship.followee" :withChart="false"/>
-							</MkA>
-							<span class="arrow">→</span>
-							<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.follower.updatedAt)}`" :to="`/admin/user/${followRelationship.follower.id}`" class="user">
-								<MkUserCardMini :user="followRelationship.follower" :withChart="false"/>
-							</MkA>
-						</div>
+		<div v-else-if="tab === 'following'" key="following" class="_gaps_m">
+			<MkPagination v-slot="{items}" :pagination="followingPagination">
+				<div class="follow-relations-list">
+					<div v-for="followRelationship in items" :key="followRelationship.id" class="follow-relation">
+						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.followee.updatedAt)}`" :to="`/admin/user/${followRelationship.followee.id}`" class="user">
+							<MkUserCardMini :user="followRelationship.followee" :withChart="false"/>
+						</MkA>
+						<span class="arrow">→</span>
+						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.follower.updatedAt)}`" :to="`/admin/user/${followRelationship.follower.id}`" class="user">
+							<MkUserCardMini :user="followRelationship.follower" :withChart="false"/>
+						</MkA>
 					</div>
-				</MkPagination>
-			</div>
-			<div v-else-if="tab === 'followers'" key="followers" class="_gaps_m">
-				<MkPagination v-slot="{items}" :pagination="followersPagination">
-					<div class="follow-relations-list">
-						<div v-for="followRelationship in items" :key="followRelationship.id" class="follow-relation">
-							<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.followee.updatedAt)}`" :to="`/admin/user/${followRelationship.followee.id}`" class="user">
-								<MkUserCardMini :user="followRelationship.followee" :withChart="false"/>
-							</MkA>
-							<span class="arrow">←</span>
-							<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.follower.updatedAt)}`" :to="`/admin/user/${followRelationship.follower.id}`" class="user">
-								<MkUserCardMini :user="followRelationship.follower" :withChart="false"/>
-							</MkA>
-						</div>
+				</div>
+			</MkPagination>
+		</div>
+		<div v-else-if="tab === 'followers'" key="followers" class="_gaps_m">
+			<MkPagination v-slot="{items}" :pagination="followersPagination">
+				<div class="follow-relations-list">
+					<div v-for="followRelationship in items" :key="followRelationship.id" class="follow-relation">
+						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.followee.updatedAt)}`" :to="`/admin/user/${followRelationship.followee.id}`" class="user">
+							<MkUserCardMini :user="followRelationship.followee" :withChart="false"/>
+						</MkA>
+						<span class="arrow">←</span>
+						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.follower.updatedAt)}`" :to="`/admin/user/${followRelationship.follower.id}`" class="user">
+							<MkUserCardMini :user="followRelationship.follower" :withChart="false"/>
+						</MkA>
 					</div>
-				</MkPagination>
-			</div>
+				</div>
+			</MkPagination>
+		</div>
 		<div v-else-if="tab === 'raw'" class="_gaps_m">
 			<MkObjectView tall :value="instance">
 			</MkObjectView>
@@ -212,7 +214,7 @@ const usersPagination = {
 		hostname: props.host,
 	},
 	offsetMode: true,
-} satisfies PagingCtx;
+} satisfies PagingCtx<'admin/show-users' | 'users'>;
 
 const followingPagination = {
 	endpoint: 'federation/following' as const,
@@ -343,7 +345,7 @@ const headerTabs = computed(() => [{
 	key: 'overview',
 	title: i18n.ts.overview,
 	icon: 'ti ti-info-circle',
-}, {
+}, ...(iAmModerator ? [{
 	key: 'chart',
 	title: i18n.ts.charts,
 	icon: 'ti ti-chart-line',
@@ -359,7 +361,7 @@ const headerTabs = computed(() => [{
 	key: 'followers',
 	title: i18n.ts.followers,
 	icon: 'ti ti-arrow-left',
-}, {
+}] : []), {
 	key: 'raw',
 	title: 'Raw',
 	icon: 'ti ti-code',
@@ -371,8 +373,8 @@ definePage(() => ({
 }));
 </script>
 
-<style lang="scss" scoped>
-.fnfelxur {
+<style lang="scss" module>
+.faviconAndName {
 	display: flex;
 	align-items: center;
 
@@ -401,7 +403,6 @@ definePage(() => ({
 		}
 	}
 }
-
 .follow-relations-list {
   display: flex;
   flex-direction: column;

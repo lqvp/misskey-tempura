@@ -207,6 +207,7 @@ import { store } from '@/store.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import MkInfo from '@/components/MkInfo.vue';
 import MkTextarea from '@/components/MkTextarea.vue';
+import { genId } from '@/utility/id.js';
 import SearchMarker from '@/components/global/SearchMarker.vue';
 
 const $i = ensureSignin();
@@ -237,12 +238,12 @@ watch(() => profile, () => {
 	deep: true,
 });
 
-const fields = ref($i.fields.map(field => ({ id: Math.random().toString(), name: field.name, value: field.value })) ?? []);
+const fields = ref($i.fields.map(field => ({ id: genId(), name: field.name, value: field.value })) ?? []);
 const fieldEditMode = ref(false);
 
 function addField() {
 	fields.value.push({
-		id: Math.random().toString(),
+		id: genId(),
 		name: '',
 		value: '',
 	});
