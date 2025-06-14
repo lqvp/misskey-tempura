@@ -118,15 +118,27 @@ class Systemd {
 		})());
 	}
 	emergency_mode(code, details) {
-		``;
-		const divPrev = document.createElement('div');
-		divPrev.className = 'tty-line';
-		divPrev.innerText = 'Critical error occurred [' + code + '] : ' + details.message ? details.message : details;
-		this.tty_dom.appendChild(divPrev);
-		const div = document.createElement('div');
-		div.className = 'tty-line';
-		div.innerText = 'You are in emergency mode. Type Ctrl-Shift-I to view system logs. Clearing local storage by going to /flush and browser settings may help.';
-		this.tty_dom.appendChild(div);
+		const tty = this.tty_dom;
+
+		const addLine = (html) => {
+			const div = document.createElement('div');
+			div.className = 'tty-line';
+			div.innerHTML = html;
+			tty.appendChild(div);
+		};
+
+		const escapeHtml = (str) => {
+			if (str == null) return '';
+			const el = document.createElement('div');
+			el.innerText = str;
+			return el.innerHTML;
+		};
+
+		const message = details?.message ? details.message : details;
+		addLine(`Critical error occurred [${code}]: ${escapeHtml(message)}`);
+
+		addLine('You are in emergency mode. After solving the problem, please try <a href="/flush">/flush</a> to reboot.');
+		addLine('Other tools: <a href="/cli">/cli</a>, <a href="/bios">/bios</a>');
 	}
 }
 

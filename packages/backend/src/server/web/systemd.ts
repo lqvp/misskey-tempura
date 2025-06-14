@@ -13,13 +13,13 @@ export class Systemd {
 
 	async start<T>(id: string, promise: Promise<T>): Promise<T> {
 		let state: {
-            state: 'running'
-        } | {
-            state: 'done'
-        } | {
-            state: 'failed'
-            message: string
-        } = { state: 'running' };
+			state: 'running'
+		} | {
+			state: 'done'
+		} | {
+			state: 'failed'
+			message: string
+		} = { state: 'running' };
 
 		let persistentDom : HTMLDivElement | null = null;
 
@@ -146,10 +146,30 @@ export class Systemd {
 		})());
 	}
 
-	public emergency_mode() {
-		const div = document.createElement('div');
-		div.className = 'tty-line';
-		div.innerText = 'You are in emergency mode. Type Ctrl-Shift-I to view logs.';
-		this.tty_dom.appendChild(div);
+	public emergency_mode(code?: string, details?: Error | string) {
+		const tty = this.tty_dom;
+
+		const addLine = (html: string) => {
+			const div = document.createElement('div');
+			div.className = 'tty-line';
+			div.innerHTML = html;
+			tty.appendChild(div);
+		};
+
+		const escapeHtml = (str: string | undefined | null): string => {
+			if (str == null) return '';
+			const el = document.createElement('div');
+			el.innerText = str;
+			return el.innerHTML;
+		};
+
+		if (code && details) {
+			const message = (details instanceof Error) ? details.message : details;
+			addLine(`Critical error occurred [${code}]: ${escapeHtml(message)}`);
+		}
+
+		addLine('You are in emergency mode. After solving the problem, please try <a href="/flush">/flush</a> to reboot.');
+		addLine('Other tools: <a href="/cli">/cli</a>, <a href="/bios">/bios</a>');
+		addLine('Type Ctrl-Shift-I to view logs.');
 	}
 }
