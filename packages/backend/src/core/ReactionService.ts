@@ -162,7 +162,7 @@ export class ReactionService {
 					}
 				}
 
-				const hosts = hostsToSearch.filter((x): x is string | null => x || x == null);
+				const hosts = hostsToSearch.filter((x): x is string | null => x !== undefined);
 
 				for (const host of hosts) {
 					emoji = host == null
