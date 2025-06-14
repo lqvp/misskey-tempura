@@ -140,17 +140,30 @@ export class ReactionService {
 
 				const name = custom[1];
 				const noteHost = note.userHost;
-				const hosts = (
-					reacterHost
-						? custom?.[2] === this.config.host
-							? [null, reacterHost]
-							: [custom?.[2], reacterHost, null]
-						: [
-							null,
-							custom?.[2] === this.config.host ? undefined : custom?.[2],
-							noteHost,
-						]
-				).filter((x) => x || x == null);
+				const emojiDeclaratedHost = custom?.[2]; // リアクションで指定された絵文字のホスト
+
+				let hostsToSearch: (string | null | undefined)[] = [];
+
+				if (!reacterHost) { // ローカルユーザーからのリアクション
+					if (emojiDeclaratedHost === this.config.host) { // :emoji@local:
+						hostsToSearch = [null, reacterHost];
+					} else if (emojiDeclaratedHost) { // :emoji@remote:
+						hostsToSearch = [emojiDeclaratedHost, reacterHost, null];
+					} else { // :emoji:
+						hostsToSearch = [null, reacterHost, noteHost];
+					}
+				} else { // リモートユーザーからのリアクション
+					if (emojiDeclaratedHost === this.config.host) { // :emoji@local: (リモートユーザーがローカル絵文字を指定)
+						hostsToSearch = [null, reacterHost];
+					} else if (emojiDeclaratedHost) { // :emoji@remote:
+						hostsToSearch = [emojiDeclaratedHost, reacterHost];
+					} else { // :emoji: (リモートユーザーがホスト指定なし)
+						hostsToSearch = [reacterHost]; // リアクターのホストのみ検索
+					}
+				}
+
+				const hosts = hostsToSearch.filter((x): x is string | null => x || x == null);
+
 				for (const host of hosts) {
 					emoji = host == null
 						? (await this.customEmojiService.localEmojisCache.fetch()).get(name) ?? null
