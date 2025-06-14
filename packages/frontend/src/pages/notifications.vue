@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkStreamingNotificationsTimeline :class="$style.notifications" :excludeTypes="excludeTypes"/>
 		</div>
 		<div v-else-if="tab === 'newNote'" key="newNote">
-			<XNotifications :class="$style.notifications" :excludeTypes="newNoteExcludeTypes" :notUseGrouped="true"/>
+			<MkStreamingNotificationsTimeline :class="$style.notifications" :excludeTypes="newNoteExcludeTypes" :notUseGrouped="true"/>
 		</div>
 		<div v-else-if="tab === 'mentions'">
 			<MkNotesTimeline :pagination="mentionsPagination"/>
