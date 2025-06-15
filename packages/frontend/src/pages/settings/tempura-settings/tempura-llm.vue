@@ -43,8 +43,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #label><SearchLabel>{{ i18n.ts._llm.geminiModelLabel }}</SearchLabel></template>
 						<option value="gemini-2.0-flash">gemini-2.0-flash</option>
 						<option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite</option>
-						<option value="gemini-2.5-flash-preview-04-17">gemini-2.5-flash-preview-04-17</option>
-						<option value="gemini-2.5-pro-preview-05-06">gemini-2.5-pro-preview-05-06</option>
+						<option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash-preview-05-20</option>
+						<option value="gemini-2.5-pro-preview-06-05">gemini-2.5-pro-preview-06-05</option>
 					</MkSelect>
 				</MkPreferenceContainer>
 			</SearchMarker>
