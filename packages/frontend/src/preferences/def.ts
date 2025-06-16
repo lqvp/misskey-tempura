@@ -505,7 +505,6 @@ export const PREF_DEF = definePreferences({
 			'mention',
 			'hashtags',
 			'plugins',
-			'emoji',
 			'addMfmFunction',
 			'scheduleNote',
 			'schedulePostList',

@@ -142,6 +142,7 @@ async function reset_postform() {
 		id: Math.random().toString(),
 		type: x,
 	}));
+	save_postform();
 }
 
 watch(scheduledNoteDelete, () => {

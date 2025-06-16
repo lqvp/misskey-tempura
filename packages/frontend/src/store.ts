@@ -54,14 +54,14 @@ export const store = markRaw(new Pizzax('base', {
 	postFormActions: {
 		where: 'deviceAccount',
 		default: [
-			'attachFile',
+			'attachFileUpload',
+			'attachFileFromDrive',
 			'poll',
 			'scheduledNoteDelete',
 			'useCw',
 			'mention',
 			'hashtags',
 			'plugins',
-			'emoji',
 			'addMfmFunction',
 			'scheduleNote',
 			'schedulePostList',
