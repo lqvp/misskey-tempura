@@ -14442,6 +14442,14 @@ export interface Locale extends ILocale {
      * ポストの読み込みに失敗しました
      */
     "failedToLoadTweet": string;
+    /**
+     * 招待コードをコピー
+     */
+    "copyInviteCode": string;
+    /**
+     * 招待URLをコピー
+     */
+    "copyInviteUrl": string;
 }
 declare const locales: {
     [lang: string]: Locale;

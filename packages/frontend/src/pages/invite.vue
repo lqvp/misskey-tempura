@@ -39,6 +39,7 @@ import MkInviteCode from '@/components/MkInviteCode.vue';
 import { definePage } from '@/page.js';
 import { instance } from '@/instance.js';
 import { $i } from '@/i.js';
+import { copyInviteCode, copyInviteUrl } from '@/utility/invite.js';
 
 const pagingComponent = useTemplateRef('pagingComponent');
 const currentInviteLimit = ref<null | number>(null);
@@ -62,11 +63,32 @@ const resetCycle = computed<null | string>(() => {
 
 async function create() {
 	const ticket = await misskeyApi('invite/create');
-	os.alert({
+	const { result } = await os.actions({
 		type: 'success',
 		title: i18n.ts.inviteCodeCreated,
 		text: ticket.code,
+		actions: [{
+			value: 'copyUrl',
+			text: i18n.ts.copyInviteUrl,
+			primary: true,
+		}, {
+			value: 'copyCode',
+			text: i18n.ts.copyInviteCode,
+			primary: true,
+		}, {
+			value: 'close',
+			text: i18n.ts.close,
+		}],
 	});
+
+	switch (result) {
+		case 'copyUrl':
+			copyInviteUrl(ticket.code);
+			break;
+		case 'copyCode':
+			copyInviteCode(ticket.code);
+			break;
+	}
 
 	pagingComponent.value?.paginator.prepend(ticket);
 	update();
