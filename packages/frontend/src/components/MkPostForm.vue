@@ -89,11 +89,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</div> -->
 	<footer :class="$style.footer">
 		<div :class="$style.footerLeft">
-			<template v-for="item in prefer.s.postFormActions">
-				<button v-if="!bottomItemActionDef[item].hide" :key="item" v-tooltip="bottomItemDef[item].title" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: bottomItemActionDef[item].active }]" v-on="bottomItemActionDef[item].action ? { click: bottomItemActionDef[item].action } : {}">
-					<i class="ti" :class="bottomItemDef[item].icon"></i>
-				</button>
-			</template>
+			<button v-tooltip="i18n.ts.attachFile + ' (' + i18n.ts.upload + ')'" class="_button" :class="$style.footerButton" @click="chooseFileFromPc"><i class="ti ti-photo-plus"></i></button>
+			<button v-tooltip="i18n.ts.attachFile + ' (' + i18n.ts.fromDrive + ')'" class="_button" :class="$style.footerButton" @click="chooseFileFromDrive"><i class="ti ti-cloud-download"></i></button>
+			<button v-tooltip="i18n.ts.poll" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: poll }]" @click="togglePoll"><i class="ti ti-chart-arrows"></i></button>
+			<button v-tooltip="i18n.ts.useCw" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: useCw }]" @click="useCw = !useCw"><i class="ti ti-eye-off"></i></button>
+			<button v-tooltip="i18n.ts.hashtags" class="_button" :class="[$style.footerButton, { [$style.footerButtonActive]: withHashtags }]" @click="withHashtags = !withHashtags"><i class="ti ti-hash"></i></button>
+			<button v-tooltip="i18n.ts.mention" class="_button" :class="$style.footerButton" @click="insertMention"><i class="ti ti-at"></i></button>
+			<button v-if="showAddMfmFunction" v-tooltip="i18n.ts.addMfmFunction" :class="['_button', $style.footerButton]" @click="insertMfmFunction"><i class="ti ti-palette"></i></button>
+			<button v-if="postFormActions.length > 0" v-tooltip="i18n.ts.plugins" class="_button" :class="$style.footerButton" @click="showActions"><i class="ti ti-plug"></i></button>
 		</div>
 		<div :class="$style.footerRight">
 			<button v-tooltip="i18n.ts.emoji" :class="['_button', $style.footerButton]" @click="insertEmoji"><i class="ti ti-mood-happy"></i></button>
@@ -144,7 +147,6 @@ import { miLocalStorage } from '@/local-storage.js';
 import { claimAchievement } from '@/utility/achievements.js';
 import { emojiPicker } from '@/utility/emoji-picker.js';
 import { mfmFunctionPicker } from '@/utility/mfm-function-picker.js';
-import { bottomItemDef } from '@/utility/post-form.js';
 import MkScheduleEditor from '@/components/MkScheduleEditor.vue';
 import { transformTextWithGemini } from '@/utility/tempura-script/text-transformations.js';
 import { prefer } from '@/preferences.js';
@@ -313,73 +315,6 @@ const canPost = computed((): boolean => {
 
 const withHashtags = computed(store.makeGetterSetter('postFormWithHashtags'));
 const hashtags = computed(store.makeGetterSetter('postFormHashtags'));
-const geminiToken = computed(store.makeGetterSetter('geminiToken'));
-
-const bottomItemActionDef: Record<keyof typeof bottomItemDef, {
-	hide?: boolean;
-	active?: any;
-	action?: any;
-}> = reactive({
-	attachFileUpload: {
-		action: chooseFileFromPc,
-	},
-	attachFileFromDrive: {
-		action: chooseDriveFile,
-	},
-	poll: {
-		active: poll,
-		action: togglePoll,
-	},
-	scheduledNoteDelete: {
-		active: scheduledNoteDelete,
-		action: toggleScheduledNoteDelete,
-	},
-	useCw: {
-		active: useCw,
-		action: () => useCw.value = !useCw.value,
-	},
-	mention: {
-		action: insertMention,
-	},
-	hashtags: {
-		active: withHashtags,
-		action: () => withHashtags.value = !withHashtags.value,
-	},
-	plugins: {
-		hide: postFormActions.length === 0,
-		action: showActions,
-	},
-	addMfmFunction: {
-		hide: computed(() => !showAddMfmFunction.value),
-		action: insertMfmFunction,
-	},
-	clearPost: {
-		action: clear,
-	},
-	scheduleNote: {
-		hide: computed(() => $i.policies.scheduleNoteMax === 0),
-		active: scheduleNote,
-		action: toggleScheduleNote,
-	},
-	schedulePostList: {
-		hide: computed(() => $i.policies.scheduleNoteMax === 0),
-		action: () => {
-			const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkSchedulePostListDialog.vue')), {}, {
-				closed: () => {
-					dispose();
-				},
-			});
-		},
-	},
-	notesTransformation: {
-		hide: computed(() => !($i.policies.canUseGeminiLLMAPI || geminiToken.value)),
-		action: () => {
-			transformTextWithGemini(text.value, (newText: string) => {
-				text.value = newText;
-			});
-		},
-	},
-});
 
 watch(text, () => {
 	checkMissingMention();
