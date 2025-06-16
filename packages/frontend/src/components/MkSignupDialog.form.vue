@@ -268,6 +268,14 @@ function onChangePasswordRetype(): void {
 }
 
 async function onSubmit(): Promise<void> {
+	function removeInviteCodeFromUrl() {
+		const url = new URL(window.location.href);
+		if (url.searchParams.has('invite-code')) {
+			url.searchParams.delete('invite-code');
+			window.history.replaceState({}, '', url.toString());
+		}
+	}
+
 	if (submitting.value) return;
 	submitting.value = true;
 
@@ -296,9 +304,7 @@ async function onSubmit(): Promise<void> {
 	});
 
 	if (res && res.ok) {
-		const redirect = new URL(window.location.href);
-		const hasInviteCode = redirect.searchParams.has('invite-code');
-		redirect.searchParams.delete('invite-code');
+		removeInviteCodeFromUrl();
 
 		if (instance.emailRequiredForSignup && instance.approvalRequiredForSignup) {
 			os.alert({
@@ -314,10 +320,6 @@ async function onSubmit(): Promise<void> {
 				text: i18n.tsx._signup.emailSent({ email: email.value }),
 			});
 			emit('signupEmailPending');
-
-			if (hasInviteCode) {
-				window.location.href = redirect.toString();
-			}
 		} else if (instance.approvalRequiredForSignup) {
 			os.alert({
 				type: 'success',
@@ -332,7 +334,7 @@ async function onSubmit(): Promise<void> {
 			emit('signup', resJson);
 
 			if (props.autoSet) {
-				await login(resJson.token, redirect.toString());
+				await login(resJson.token);
 			}
 		}
 	} else if (res) {
