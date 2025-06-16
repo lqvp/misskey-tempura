@@ -117,6 +117,8 @@ export async function common(createVue: () => Promise<App<Element>>) {
 	const localeVersion = miLocalStorage.getItem('localeVersion');
 	const localeOutdated = (localeVersion == null || localeVersion !== version || locale == null);
 	if (localeOutdated) {
+		miLocalStorage.removeItem('locale');
+		miLocalStorage.removeItem('localeVersion');
 		const res = await window.fetch(`/assets/locales/${lang}.${version}.json`);
 		if (res.status === 200) {
 			const newLocale = await res.text();
