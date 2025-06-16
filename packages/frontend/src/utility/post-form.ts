@@ -38,10 +38,6 @@ export const bottomItemDef = {
 		title: i18n.ts.plugins,
 		icon: 'ti-plug',
 	},
-	emoji: {
-		title: i18n.ts.emoji,
-		icon: 'ti-mood-happy',
-	},
 	addMfmFunction: {
 		title: i18n.ts.addMfmFunction,
 		icon: 'ti-palette',

@@ -349,9 +349,6 @@ const bottomItemActionDef: Record<keyof typeof bottomItemDef, {
 		hide: postFormActions.length === 0,
 		action: showActions,
 	},
-	emoji: {
-		action: insertEmoji,
-	},
 	addMfmFunction: {
 		hide: computed(() => !showAddMfmFunction.value),
 		action: insertMfmFunction,
