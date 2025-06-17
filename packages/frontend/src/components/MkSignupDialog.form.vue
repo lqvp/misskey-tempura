@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</div>
 	<div class="_spacer" style="--MI_SPACER-min: 20px; --MI_SPACER-max: 32px;">
 		<form class="_gaps_m" autocomplete="new-password" @submit.prevent="onSubmit">
-			<MkInput v-if="instance.disableRegistration || instance.enableSignupRateLimit || instance.approvalRequiredForSignup || instance.emailRequiredForSignup" v-model="invitationCode" type="text" :spellcheck="false" :required="instance.disableRegistration">
+			<MkInput v-if="showInvitationCodeInput" v-model="invitationCode" type="text" :spellcheck="false" :required="instance.disableRegistration">
 				<template #label>{{ i18n.ts.invitationCode }}{{ !instance.disableRegistration && ` (${i18n.ts.optional})` }}<div v-tooltip:dialog="i18n.ts._signup.inviteCodeInfo" class="_button _help"><i class="ti ti-help-circle"></i></div></template>
 				<template #prefix><i class="ti ti-key"></i></template>
 			</MkInput>
@@ -83,7 +83,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { toUnicode } from 'punycode.js';
 import * as Misskey from 'misskey-js';
 import * as config from '@@/js/config.js';
@@ -108,6 +108,7 @@ const emit = defineEmits<{
 	(ev: 'signup', user: Misskey.entities.SignupResponse): void;
 	(ev: 'signupEmailPending'): void;
 	(ev: 'approvalPending'): void;
+	(ev: 'approvalAndEmailPending'): void;
 }>();
 
 const host = toUnicode(config.host);
@@ -124,6 +125,13 @@ const retypedPassword = ref<string>('');
 const invitationCode = ref<string>('');
 const reason = ref<string>('');
 const email = ref('');
+
+const showInvitationCodeInput = computed(() =>
+	instance.disableRegistration ||
+	instance.enableSignupRateLimit ||
+	instance.approvalRequiredForSignup ||
+	instance.emailRequiredForSignup,
+);
 const usernameState = ref<null | 'wait' | 'ok' | 'unavailable' | 'error' | 'invalid-format' | 'min-range' | 'max-range'>(null);
 const emailState = ref<null | 'wait' | 'ok' | 'unavailable:used' | 'unavailable:format' | 'unavailable:disposable' | 'unavailable:banned' | 'unavailable:mx' | 'unavailable:smtp' | 'unavailable' | 'error'>(null);
 const passwordStrength = ref<'' | 'low' | 'medium' | 'high'>('');
@@ -260,6 +268,14 @@ function onChangePasswordRetype(): void {
 }
 
 async function onSubmit(): Promise<void> {
+	function removeInviteCodeFromUrl() {
+		const url = new URL(window.location.href);
+		if (url.searchParams.has('invite-code')) {
+			url.searchParams.delete('invite-code');
+			window.history.replaceState({}, '', url.toString());
+		}
+	}
+
 	if (submitting.value) return;
 	submitting.value = true;
 
@@ -288,6 +304,8 @@ async function onSubmit(): Promise<void> {
 	});
 
 	if (res && res.ok) {
+		removeInviteCodeFromUrl();
+
 		if (instance.emailRequiredForSignup && instance.approvalRequiredForSignup) {
 			os.alert({
 				type: 'success',
@@ -296,7 +314,7 @@ async function onSubmit(): Promise<void> {
 			});
 			emit('approvalAndEmailPending');
 		} else if (instance.emailRequiredForSignup && res.status === 204) {
-			os.alert({
+			await os.alert({
 				type: 'success',
 				title: i18n.ts._signup.almostThere,
 				text: i18n.tsx._signup.emailSent({ email: email.value }),
@@ -350,6 +368,13 @@ function onSignupApiError(res: Response | null, errorBody: any) {
 		});
 	}
 }
+
+onMounted(() => {
+	const params = new URLSearchParams(window.location.search);
+	if (params.has('invite-code') && showInvitationCodeInput.value) {
+		invitationCode.value = params.get('invite-code') ?? '';
+	}
+});
 </script>
 
 <style lang="scss" module>

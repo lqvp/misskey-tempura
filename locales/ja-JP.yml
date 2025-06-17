@@ -3894,3 +3894,6 @@ noSendActivity: "アクティビティを送信しない"
 noResults: "該当する結果はありません"
 
 failedToLoadTweet: "ポストの読み込みに失敗しました"
+
+copyInviteCode: "招待コードをコピー"
+copyInviteUrl: "招待URLをコピー"
