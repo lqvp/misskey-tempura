@@ -47,7 +47,6 @@ import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 import { i18n } from '@/i18n.js';
 import MkCustomEmojiDetailedDialog from '@/components/MkCustomEmojiDetailedDialog.vue';
 import { $i } from '@/i.js';
-import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 import { DI } from '@/di.js';
 import { makeEmojiMuteKey, mute as muteEmoji, unmute as unmuteEmoji, checkMuted as checkEmojiMuted } from '@/utility/emoji-mute';
@@ -72,7 +71,6 @@ const isLocal = computed(() => !props.host && (customEmojiName.value.endsWith('@
 const emojiCodeToMute = makeEmojiMuteKey(props);
 const isMuted = checkEmojiMuted(emojiCodeToMute);
 const shouldMute = computed(() => !props.ignoreMuted && isMuted.value);
-const canReact = computed(() => isLocal.value || customEmojisMap.has(customEmojiName.value));
 
 const rawUrl = computed(() => {
 	if (props.url) {
@@ -105,7 +103,7 @@ const alt = computed(() => `:${customEmojiName.value}:`);
 const errored = ref(url.value == null);
 
 function onClick(ev: MouseEvent) {
-	if (props.menu && canReact.value) {
+	if (props.menu) {
 		const menuItems: MenuItem[] = [];
 
 		menuItems.push({
@@ -130,15 +128,24 @@ function onClick(ev: MouseEvent) {
 				action: () => {
 					react(`:${props.name}:`);
 				},
-			},
-			...(!store.s.reactions.includes(`:${props.name}:`) ? [{
+			});
+		}
+
+		const reactionEmojiPalette = prefer.s.emojiPaletteForReaction == null ? prefer.s.emojiPalettes[0] : prefer.s.emojiPalettes.find(palette => palette.id === prefer.s.emojiPaletteForReaction);
+		if (reactionEmojiPalette != null && !reactionEmojiPalette.emojis.includes(`:${props.name}:`)) {
+			menuItems.push({
 				text: i18n.ts.addToEmojiPicker,
 				icon: 'ti ti-plus',
 				action: () => {
-					store.set('reactions', [...store.state.reactions, `:${props.name}:`]);
+					prefer.commit('emojiPalettes', prefer.s.emojiPalettes.map(palette => {
+						if (palette.id !== reactionEmojiPalette.id) return palette;
+						return {
+							...palette,
+							emojis: [...palette.emojis, `:${props.name}:`],
+						};
+					}));
 				},
-			}] : []),
-			);
+			});
 		}
 
 		if (isLocal.value) {
