@@ -25,7 +25,24 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<XServerRules @done="isAcceptedServerRule = true" @cancel="onClose"/>
 			</template>
 			<template v-else>
-				<XSignup :autoSet="autoSet" @signup="onSignup" @signupEmailPending="onSignupEmailPending" @approvalPending="onApprovalPending"/>
+				<template v-if="currentStep === 'inviteCheck'">
+					<XInviteCheck
+						@verified="handleInviteVerified"
+						@proceedWithoutCode="handleProceedWithoutCode"
+						@cancel="onClose"
+					/>
+				</template>
+				<template v-else-if="currentStep === 'form'">
+					<XSignup
+						:autoSet="autoSet"
+						:skipEmailAuth="inviteResult?.skipEmailAuth ?? false"
+						:skipApproval="inviteResult?.skipApproval ?? false"
+						:invitationCode="inviteResult?.code ?? null"
+						@signup="onSignup"
+						@signupEmailPending="onSignupEmailPending"
+						@approvalPending="onApprovalPending"
+					/>
+				</template>
 			</template>
 		</Transition>
 	</div>
@@ -37,6 +54,7 @@ import { useTemplateRef, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import XSignup from '@/components/MkSignupDialog.form.vue';
 import XServerRules from '@/components/MkSignupDialog.rules.vue';
+import XInviteCheck from '@/components/MkSignupInvitationCheckDialog.vue';
 import MkModalWindow from '@/components/MkModalWindow.vue';
 import { i18n } from '@/i18n.js';
 
@@ -51,6 +69,25 @@ const emit = defineEmits<{
 	(ev: 'cancelled'): void;
 	(ev: 'closed'): void;
 }>();
+
+const currentStep = ref<'inviteCheck' | 'form'>('inviteCheck');
+
+const inviteResult = ref<{
+	code: string;
+	skipEmailAuth: boolean;
+	skipApproval: boolean;
+	expiresAt?: Date | null;
+} | null>(null);
+
+function handleInviteVerified(info: { code: string; skipEmailAuth: boolean; skipApproval: boolean; expiresAt?: Date | null }) {
+	inviteResult.value = info;
+	currentStep.value = 'form';
+}
+
+function handleProceedWithoutCode() {
+	inviteResult.value = null;
+	currentStep.value = 'form';
+}
 
 const dialog = useTemplateRef('dialog');
 

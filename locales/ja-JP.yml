@@ -3780,6 +3780,27 @@ _customCursor:
   waitCursorImageURL: "待機カーソル画像URL"
   waitCursorImageURLDescription: "待機状態のためのカスタムカーソル画像のURL"
 
+_signupEnhance:
+  inviteCodeCheckTitle: "招待コードの確認"
+  inviteCodePrompt: "招待コードをお持ちの場合は入力してください。"
+  inviteCodeRequiredPrompt: "このインスタンスでは登録に招待コードが必要です。"
+  inviteCodeInputLabel: "招待コード:"
+  checkInviteCodeButton: "招待コードを確認"
+  checkingInviteCodeButton: "確認中..."
+  proceedWithoutInviteCodeButton: "招待コードなしで進む"
+  errorInviteCodeEmpty: "招待コードを入力してください。"
+  errorInviteCodeInvalid: "招待コードが無効です。"
+  errorInviteCodeExpired: "招待コードの有効期限が切れています。"
+  errorInviteCodeUsed: "この招待コードは既に使用されています。"
+  errorInviteCodeCheckFailed: "招待コードの検証中にエラーが発生しました。"
+  successInviteCodeValid: "招待コードは有効です。"
+  infoSkipEmailAuth: "メール認証はスキップされます。"
+  infoSkipApproval: "管理者承認はスキップされます。"
+  inviteCodeConfirmTitle: "招待コードの確認"
+  useInviteCodeButton: "このコードを使用する"
+  tryAnotherInviteCodeButton: "別のコードを試す"
+  infoBenefitsDescription: "この招待コードを利用すると、以下の特典があります:"
+
 verifyEmail:
   title: "メール認証"
   successTitle: "メール認証に成功しました"

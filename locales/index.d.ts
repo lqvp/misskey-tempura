@@ -14115,6 +14115,84 @@ export interface Locale extends ILocale {
          */
         "waitCursorImageURLDescription": string;
     };
+    "_signupEnhance": {
+        /**
+         * 招待コードの確認
+         */
+        "inviteCodeCheckTitle": string;
+        /**
+         * 招待コードをお持ちの場合は入力してください。
+         */
+        "inviteCodePrompt": string;
+        /**
+         * このインスタンスでは登録に招待コードが必要です。
+         */
+        "inviteCodeRequiredPrompt": string;
+        /**
+         * 招待コード:
+         */
+        "inviteCodeInputLabel": string;
+        /**
+         * 招待コードを確認
+         */
+        "checkInviteCodeButton": string;
+        /**
+         * 確認中...
+         */
+        "checkingInviteCodeButton": string;
+        /**
+         * 招待コードなしで進む
+         */
+        "proceedWithoutInviteCodeButton": string;
+        /**
+         * 招待コードを入力してください。
+         */
+        "errorInviteCodeEmpty": string;
+        /**
+         * 招待コードが無効です。
+         */
+        "errorInviteCodeInvalid": string;
+        /**
+         * 招待コードの有効期限が切れています。
+         */
+        "errorInviteCodeExpired": string;
+        /**
+         * この招待コードは既に使用されています。
+         */
+        "errorInviteCodeUsed": string;
+        /**
+         * 招待コードの検証中にエラーが発生しました。
+         */
+        "errorInviteCodeCheckFailed": string;
+        /**
+         * 招待コードは有効です。
+         */
+        "successInviteCodeValid": string;
+        /**
+         * メール認証はスキップされます。
+         */
+        "infoSkipEmailAuth": string;
+        /**
+         * 管理者承認はスキップされます。
+         */
+        "infoSkipApproval": string;
+        /**
+         * 招待コードの確認
+         */
+        "inviteCodeConfirmTitle": string;
+        /**
+         * このコードを使用する
+         */
+        "useInviteCodeButton": string;
+        /**
+         * 別のコードを試す
+         */
+        "tryAnotherInviteCodeButton": string;
+        /**
+         * この招待コードを利用すると、以下の特典があります:
+         */
+        "infoBenefitsDescription": string;
+    };
     "verifyEmail": {
         /**
          * メール認証
