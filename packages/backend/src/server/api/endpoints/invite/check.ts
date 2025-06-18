@@ -85,7 +85,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			return {
 				isValid: true,
-				expiresAt: ticket.expiresAt,
+				expiresAt: ticket.expiresAt ? ticket.expiresAt.toISOString() : null,
 				skipEmailAuth: ticket.skipEmailAuth,
 				skipApproval: ticket.skipApproval,
 			};
