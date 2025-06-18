@@ -29,7 +29,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span v-else-if="usernameState === 'max-range'" style="color: var(--MI_THEME-error)"><i class="ti ti-alert-triangle ti-fw"></i> {{ i18n.ts.tooLong }}</span>
 				</template>
 			</MkInput>
-			<MkInput v-if="instance.emailRequiredForSignup" v-model="email" :debounce="true" type="email" :spellcheck="false" data-cy-signup-email @update:modelValue="onChangeEmail">
+			<MkInput v-show="instance.emailRequiredForSignup && !props.skipEmailAuth" v-model="email" :debounce="true" type="email" :spellcheck="false" data-cy-signup-email @update:modelValue="onChangeEmail">
 				<template #label>{{ i18n.ts.emailAddress }} <div v-tooltip:dialog="i18n.ts._signup.emailAddressInfo" class="_button _help"><i class="ti ti-help-circle"></i></div></template>
 				<template #prefix><i class="ti ti-mail"></i></template>
 				<template #caption>
@@ -62,7 +62,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span v-if="passwordRetypeState == 'not-match'" style="color: var(--MI_THEME-error)"><i class="ti ti-alert-triangle ti-fw"></i> {{ i18n.ts.passwordNotMatched }}</span>
 				</template>
 			</MkInput>
-			<MkTextarea v-if="instance.approvalRequiredForSignup" v-model="reason" :placeholder="i18n.ts._signup.reasonInfo" :spellcheck="false" required data-cy-signup-reason>
+			<MkTextarea v-show="instance.approvalRequiredForSignup && !props.skipApproval" v-model="reason" :placeholder="i18n.ts._signup.reasonInfo" :spellcheck="false" required data-cy-signup-reason>
 				<template #label>{{ i18n.ts.registerReason }} <div v-tooltip:dialog="i18n.ts._signup.reasonInfo" class="_button _help"><i class="ti ti-help-circle"></i></div></template>
 				<template #prefix><i class="ti ti-chalkboard"></i></template>
 			</MkTextarea>
@@ -83,7 +83,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import { toUnicode } from 'punycode.js';
 import * as Misskey from 'misskey-js';
 import * as config from '@@/js/config.js';
@@ -100,8 +100,14 @@ import { login } from '@/accounts.js';
 
 const props = withDefaults(defineProps<{
 	autoSet?: boolean;
+	skipEmailAuth?: boolean;
+	skipApproval?: boolean;
+	invitationCode?: string | null;
 }>(), {
 	autoSet: false,
+	skipEmailAuth: false,
+	skipApproval: false,
+	invitationCode: null,
 });
 
 const emit = defineEmits<{
@@ -122,7 +128,7 @@ const testcaptcha = ref<Captcha | undefined>();
 const username = ref<string>('');
 const password = ref<string>('');
 const retypedPassword = ref<string>('');
-const invitationCode = ref<string>('');
+const invitationCode = ref<string>(props.invitationCode ?? '');
 const reason = ref<string>('');
 const email = ref('');
 
@@ -306,21 +312,21 @@ async function onSubmit(): Promise<void> {
 	if (res && res.ok) {
 		removeInviteCodeFromUrl();
 
-		if (instance.emailRequiredForSignup && instance.approvalRequiredForSignup) {
+		if (instance.emailRequiredForSignup && !props.skipEmailAuth && instance.approvalRequiredForSignup && !props.skipApproval) {
 			os.alert({
 				type: 'success',
 				title: i18n.ts._signup.almostThere,
 				text: i18n.tsx._signup.approvalAndEmailPending({ email: email.value }),
 			});
 			emit('approvalAndEmailPending');
-		} else if (instance.emailRequiredForSignup && res.status === 204) {
+		} else if (instance.emailRequiredForSignup && !props.skipEmailAuth && ( (instance.approvalRequiredForSignup && props.skipApproval) || !instance.approvalRequiredForSignup ) && res.status === 204) {
 			await os.alert({
 				type: 'success',
 				title: i18n.ts._signup.almostThere,
 				text: i18n.tsx._signup.emailSent({ email: email.value }),
 			});
 			emit('signupEmailPending');
-		} else if (instance.approvalRequiredForSignup) {
+		} else if (instance.approvalRequiredForSignup && !props.skipApproval && ( (instance.emailRequiredForSignup && props.skipEmailAuth) || !instance.emailRequiredForSignup )) {
 			os.alert({
 				type: 'success',
 				title: i18n.ts._signup.almostThere,
@@ -368,13 +374,6 @@ function onSignupApiError(res: Response | null, errorBody: any) {
 		});
 	}
 }
-
-onMounted(() => {
-	const params = new URLSearchParams(window.location.search);
-	if (params.has('invite-code') && showInvitationCodeInput.value) {
-		invitationCode.value = params.get('invite-code') ?? '';
-	}
-});
 </script>
 
 <style lang="scss" module>

@@ -1981,6 +1981,8 @@ declare namespace entities {
         IWebhooksShowResponse,
         IWebhooksTestRequest,
         IWebhooksUpdateRequest,
+        InviteCheckRequest,
+        InviteCheckResponse,
         InviteCreateResponse,
         InviteDeleteRequest,
         InviteLimitResponse,
@@ -2647,6 +2649,12 @@ type INotificationsRequest = operations['i___notifications']['requestBody']['con
 
 // @public (undocumented)
 type INotificationsResponse = operations['i___notifications']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type InviteCheckRequest = operations['invite___check']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type InviteCheckResponse = operations['invite___check']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type InviteCode = components['schemas']['InviteCode'];

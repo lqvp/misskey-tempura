@@ -56,7 +56,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import * as Misskey from 'misskey-js';
 import { instanceName } from '@@/js/config.js';
 import type { MenuItem } from '@/types/menu.js';
@@ -100,6 +100,13 @@ function signup() {
 function showMenu(ev: MouseEvent) {
 	openInstanceMenu(ev);
 }
+
+onMounted(() => {
+	const params = new URLSearchParams(window.location.search);
+	if (params.has('invite-code')) {
+		signup();
+	}
+});
 </script>
 
 <style lang="scss" module>

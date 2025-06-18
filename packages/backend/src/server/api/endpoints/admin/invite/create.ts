@@ -45,6 +45,7 @@ export const paramDef = {
 		count: { type: 'integer', minimum: 1, maximum: 100, default: 1 },
 		expiresAt: { type: 'string', nullable: true },
 		skipEmailAuth: { type: 'boolean', default: false },
+		skipApproval: { type: 'boolean', default: false },
 	},
 	required: [],
 } as const;
@@ -74,6 +75,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					expiresAt: ps.expiresAt ? new Date(ps.expiresAt) : null,
 					code: generateInviteCode(),
 					skipEmailAuth: ps.skipEmailAuth,
+					skipApproval: ps.skipApproval,
 				}));
 			}
 

@@ -284,7 +284,7 @@ export class SignupApiService {
 
 			reply.code(204);
 			return;
-		} else if (this.meta.approvalRequiredForSignup && !ticket) {
+		} else if (this.meta.approvalRequiredForSignup && (ticket == null || ticket.skipApproval === false)) {
 			const { account } = await this.signupService.signup({
 				username, password, host, reason,
 			});
@@ -327,7 +327,7 @@ export class SignupApiService {
 					password,
 					host,
 					reason,
-					approved: ticket != null,
+					approved: ticket != null && ticket.skipApproval,
 				});
 
 				const res = await this.userEntityService.pack(account, account, {

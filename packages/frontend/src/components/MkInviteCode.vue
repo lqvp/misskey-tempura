@@ -68,6 +68,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</template>
 				</div>
 			</div>
+			<div v-if="moderator">
+				<div :class="$style.label">{{ i18n.ts.skipApproval }}</div>
+				<div>
+					<template v-if="invite.skipApproval">
+						✅️
+					</template>
+					<template v-else>
+						❌
+					</template>
+				</div>
+			</div>
 		</div>
 	</div>
 </MkFolder>
