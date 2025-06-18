@@ -14192,6 +14192,10 @@ export interface Locale extends ILocale {
          * この招待コードを利用すると、以下の特典があります:
          */
         "infoBenefitsDescription": string;
+        /**
+         * 有効期限: {expiresAt}
+         */
+        "infoExpiresAt": ParameterizedString<"expiresAt">;
     };
     "verifyEmail": {
         /**

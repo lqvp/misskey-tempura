@@ -3800,6 +3800,7 @@ _signupEnhance:
   useInviteCodeButton: "このコードを使用する"
   tryAnotherInviteCodeButton: "別のコードを試す"
   infoBenefitsDescription: "この招待コードを利用すると、以下の特典があります:"
+  infoExpiresAt: "有効期限: {expiresAt}"
 
 verifyEmail:
   title: "メール認証"

@@ -57,7 +57,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 				<p v-if="validationResult.expiresAt" :class="$style.expiresAt">
 					<i class="ti ti-calendar-off"></i>
-					<span>{{ i18n.tsx._signupEnhance.infoExpiresAt ? i18n.tsx._signupEnhance.infoExpiresAt({ expiresAt: new Date(validationResult.expiresAt).toLocaleString() }) : `Expires at: ${new Date(validationResult.expiresAt).toLocaleString()}` }}</span>
+					<span>{{ i18n.tsx._signupEnhance.infoExpiresAt({ expiresAt: new Date(validationResult.expiresAt).toLocaleString() }) }}</span>
 				</p>
 			</div>
 

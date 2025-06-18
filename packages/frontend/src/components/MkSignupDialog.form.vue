@@ -151,17 +151,26 @@ const testcaptchaResponse = ref<string | null>(null);
 const usernameAbortController = ref<null | AbortController>(null);
 const emailAbortController = ref<null | AbortController>(null);
 
+const canSubmitForm = computed(() => {
+	if (usernameState.value !== 'ok') return false;
+	if (instance.emailRequiredForSignup && !props.skipEmailAuth && emailState.value !== 'ok') return false;
+	if (passwordStrength.value === 'low' || passwordStrength.value === '') return false;
+	if (passwordRetypeState.value !== 'match') return false;
+	if (instance.enableHcaptcha && hCaptchaResponse.value === '') return false;
+	if (instance.enableMcaptcha && mCaptchaResponse.value === '') return false;
+	if (instance.enableRecaptcha && reCaptchaResponse.value === '') return false;
+	if (instance.enableTurnstile && turnstileResponse.value === '') return false;
+	if (instance.enableTestcaptcha && testcaptchaResponse.value === '') return false;
+	return true;
+});
+
 const shouldDisableSubmitting = computed((): boolean => {
+	const actualApprovalReasonRequired = instance.approvalRequiredForSignup && !props.skipApproval;
+	const reasonIsInvalid = actualApprovalReasonRequired && (reason.value.length < 1 || reason.value.length > 1000);
+
 	return submitting.value ||
-		instance.enableHcaptcha && !hCaptchaResponse.value ||
-		instance.enableMcaptcha && !mCaptchaResponse.value ||
-		instance.enableRecaptcha && !reCaptchaResponse.value ||
-		instance.enableTurnstile && !turnstileResponse.value ||
-		instance.enableTestcaptcha && !testcaptchaResponse.value ||
-		(instance.emailRequiredForSignup && !invitationCode.value && emailState.value !== 'ok') ||
-		instance.approvalRequiredForSignup && (reason.value.length < 1 || reason.value.length > 1000) ||
-		usernameState.value !== 'ok' ||
-		passwordRetypeState.value !== 'match';
+		!canSubmitForm.value ||
+		reasonIsInvalid;
 });
 
 function getPasswordStrength(source: string): number {
