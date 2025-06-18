@@ -14375,6 +14375,10 @@ export interface Locale extends ILocale {
      */
     "skipEmailAuth": string;
     /**
+     * 承認をスキップ
+     */
+    "skipApproval": string;
+    /**
      * 自動フォローバック
      */
     "autoFollowBack": string;

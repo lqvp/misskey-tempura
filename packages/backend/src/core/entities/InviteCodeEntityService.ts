@@ -51,6 +51,7 @@ export class InviteCodeEntityService {
 			usedAt: target.usedAt ? target.usedAt.toISOString() : null,
 			used: !!target.usedAt,
 			skipEmailAuth: target.skipEmailAuth,
+			skipApproval: target.skipApproval,
 		});
 	}
 

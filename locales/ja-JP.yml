@@ -3868,6 +3868,7 @@ reactionStatsDescription: "最も使用された絵文字リアクション上�
 showOnlySensitiveFiles: "センシティブなファイルのみ"
 
 skipEmailAuth: "メール認証をスキップ"
+skipApproval: "承認をスキップ"
 
 autoFollowBack: "自動フォローバック"
 autoFollowBackDescription: "フォローされた際に自動でフォローバックします。"

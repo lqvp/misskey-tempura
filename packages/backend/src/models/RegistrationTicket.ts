@@ -64,4 +64,9 @@ export class MiRegistrationTicket {
 		default: false,
 	})
 	public	skipEmailAuth: boolean;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public skipApproval: boolean;
 }
