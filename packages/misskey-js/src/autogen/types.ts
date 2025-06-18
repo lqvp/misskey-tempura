@@ -9636,6 +9636,8 @@ export interface operations {
                     expiresAt?: string | null;
                     /** @default false */
                     skipEmailAuth?: boolean;
+                    /** @default false */
+                    skipApproval?: boolean;
                 };
             };
         };
