@@ -775,9 +775,47 @@ export class NoteCreateService implements OnApplicationShutdown {
 						}
 					}
 				}
+			} else {
+				// メンション
+				await this.createMentionedEvents(mentionedUsers, note, nm);
 
-				nm.notify();
+				// If has in reply to note
+				if (data.reply) {
+					// 通知
+					if (data.reply.userHost === null) {
+						const isThreadMuted = await this.noteThreadMutingsRepository.exists({
+							where: {
+								userId: data.reply.userId,
+								threadId: data.reply.threadId ?? data.reply.id,
+							},
+						});
+
+						if (!isThreadMuted) {
+							nm.push(data.reply.userId, 'reply');
+							this.globalEventService.publishMainStream(data.reply.userId, 'reply', noteObj);
+							this.webhookService.enqueueUserWebhook(data.reply.userId, 'reply', { note: noteObj });
+						}
+					}
+				}
+
+				// Renote
+				if (this.isRenote(data)) {
+					const type = this.isQuote(data) ? 'quote' : 'renote';
+
+					// Notify
+					if (data.renote.userHost === null) {
+						nm.push(data.renote.userId, type);
+					}
+
+					// Publish event
+					if ((user.id !== data.renote.userId) && data.renote.userHost === null) {
+						this.globalEventService.publishMainStream(data.renote.userId, 'renote', noteObj);
+						this.webhookService.enqueueUserWebhook(data.renote.userId, 'renote', { note: noteObj });
+					}
+				}
 			}
+
+			nm.notify();
 
 			//#region AP deliver
 			if (!data.localOnly && this.userEntityService.isLocalUser(user)) {
