@@ -420,7 +420,6 @@ export class NoteCreateService implements OnApplicationShutdown {
 			if (data.reply && !data.visibleUsers.some(x => x.id === data.reply!.userId)) {
 				data.visibleUsers.push(await this.usersRepository.findOneByOrFail({ id: data.reply!.userId }));
 			}
-
 		}
 
 		if (mentionedUsers.length > 0 && mentionedUsers.length > (await this.roleService.getUserPolicies(user.id)).mentionLimit) {
@@ -653,12 +652,35 @@ export class NoteCreateService implements OnApplicationShutdown {
 			let usersToNotifyForMention = [...mentionedUsers]; // Default to all mentioned users
 
 			if (note.visibility === 'specified') {
-				const permissibleMentionedUsers = [];
-				const sender = await this.usersRepository.findOneBy({ id: user.id });
+				const senderIsPrivileged = (await this.roleService.isAdministrator(user)) || (await this.roleService.isModerator(user));
 
-				if (sender != null) { // Proceed only if sender is found
-					const senderIsPrivileged = (await this.roleService.isAdministrator(sender)) || (await this.roleService.isModerator(sender));
+				// Consolidate all local users who need their profile/following status checked.
+				const localUserIdsToCheck = new Set<string>();
+				mentionedUsers.forEach(u => {
+					if (u.host === null) localUserIdsToCheck.add(u.id);
+				});
+				note.visibleUserIds?.forEach(id => {
+					if (id !== user.id) localUserIdsToCheck.add(id);
+				});
+				const userIds = Array.from(localUserIdsToCheck);
 
+				// Bulk fetch profiles and followings once.
+				let profilesMap = new Map();
+				let followingsMap = new Map();
+				if (userIds.length > 0) {
+					profilesMap = new Map(
+						(await this.userProfilesRepository.findBy({ userId: In(userIds) }))
+							.map(p => [p.userId, p]),
+					);
+					followingsMap = new Map(
+						(await this.followingsRepository.findBy({ followeeId: user.id, followerId: In(userIds) }))
+							.map(f => [f.followerId, f]),
+					);
+				}
+
+				// Process mentions using the maps
+				if (mentionedUsers.length > 0) {
+					const permissibleMentionedUsers: MinimumUser[] = [];
 					for (const mentionedUser of mentionedUsers) {
 						if (senderIsPrivileged) {
 							permissibleMentionedUsers.push(mentionedUser);
@@ -670,29 +692,19 @@ export class NoteCreateService implements OnApplicationShutdown {
 							continue;
 						}
 
-						// Local user, check profile
-						const recipientProfile = await this.userProfilesRepository.findOneBy({ userId: mentionedUser.id });
-
+						const recipientProfile = profilesMap.get(mentionedUser.id);
 						if (recipientProfile == null) {
-							// Profile not found for local user. Default to allowing notification.
-							// This case might warrant logging for data consistency checks.
 							permissibleMentionedUsers.push(mentionedUser);
 							continue;
 						}
 
 						switch (recipientProfile.receiveSpecifiedNotesFrom) {
 							case 'nobody':
-								// Do not add to permissibleMentionedUsers, so skip notification
 								break;
 							case 'following':
-								const isFollowing = await this.followingsRepository.findOneBy({
-									followerId: mentionedUser.id,
-									followeeId: user.id,
-								});
-								if (isFollowing != null) {
+								if (followingsMap.has(mentionedUser.id)) {
 									permissibleMentionedUsers.push(mentionedUser);
 								}
-								// Else, do not add, so skip notification
 								break;
 							case 'all':
 							default:
@@ -701,91 +713,71 @@ export class NoteCreateService implements OnApplicationShutdown {
 						}
 					}
 					usersToNotifyForMention = permissibleMentionedUsers;
-				} else {
-					// Sender not found, this is an anomaly. Log or handle as an error.
-					// For now, default to sending all notifications to avoid silent drops if sender is unexpectedly null.
-					console.error(`Sender with id ${user.id} not found during notification processing for note ${note.id}`);
 				}
-			}
-			await this.createMentionedEvents(usersToNotifyForMention, note, nm);
+				await this.createMentionedEvents(usersToNotifyForMention, note, nm);
 
-			// If has in reply to note
-			if (data.reply) {
-				// 通知
-				if (data.reply.userHost === null) {
-					const isThreadMuted = await this.noteThreadMutingsRepository.exists({
-						where: {
-							userId: data.reply.userId,
-							threadId: data.reply.threadId ?? data.reply.id,
-						},
-					});
+				// If has in reply to note
+				if (data.reply) {
+					// 通知
+					if (data.reply.userHost === null) {
+						const isThreadMuted = await this.noteThreadMutingsRepository.exists({
+							where: {
+								userId: data.reply.userId,
+								threadId: data.reply.threadId ?? data.reply.id,
+							},
+						});
 
-					if (!isThreadMuted) {
-						nm.push(data.reply.userId, 'reply');
-						this.globalEventService.publishMainStream(data.reply.userId, 'reply', noteObj);
-						this.webhookService.enqueueUserWebhook(data.reply.userId, 'reply', { note: noteObj });
-					}
-				}
-			}
-
-			// If it is renote
-			if (this.isRenote(data)) {
-				const type = this.isQuote(data) ? 'quote' : 'renote';
-
-				// Notify
-				if (data.renote.userHost === null) {
-					nm.push(data.renote.userId, type);
-				}
-
-				// Publish event
-				if ((user.id !== data.renote.userId) && data.renote.userHost === null) {
-					this.globalEventService.publishMainStream(data.renote.userId, 'renote', noteObj);
-					this.webhookService.enqueueUserWebhook(data.renote.userId, 'renote', { note: noteObj });
-				}
-			}
-
-			// Handle notifications for 'specified' visibility notes
-			if (note.visibility === 'specified' && note.visibleUserIds) {
-				for (const visibleUserId of note.visibleUserIds) {
-					if (visibleUserId === user.id) {
-						continue;
-					}
-
-					const recipientProfile = await this.userProfilesRepository.findOneBy({ userId: visibleUserId });
-					if (!recipientProfile) {
-						continue;
-					}
-
-					let shouldNotify = false;
-					switch (recipientProfile.receiveSpecifiedNotesFrom) {
-						case 'all':
-							shouldNotify = true;
-							break;
-						case 'following': {
-							// Check if recipient (visibleUserId) follows the author (user.id)
-							const isFollowingAuthor = await this.followingsRepository.exists({
-								where: { followerId: visibleUserId, followeeId: user.id },
-							});
-							if (isFollowingAuthor) {
-								shouldNotify = true;
-							}
-							break;
+						if (!isThreadMuted) {
+							nm.push(data.reply.userId, 'reply');
+							this.globalEventService.publishMainStream(data.reply.userId, 'reply', noteObj);
+							this.webhookService.enqueueUserWebhook(data.reply.userId, 'reply', { note: noteObj });
 						}
-						case 'nobody':
-							shouldNotify = false;
-							break;
-					}
-
-					if (shouldNotify) {
-						// Using 'mention' type for specified notes, as they are direct message-like
-						nm.push(visibleUserId, 'mention');
-						this.globalEventService.publishMainStream(visibleUserId, 'mention', noteObj);
-						this.webhookService.enqueueUserWebhook(visibleUserId, 'mention', { note: noteObj });
 					}
 				}
-			}
 
-			nm.notify();
+				// Handle notifications for 'specified' visibility notes
+				if (note.visibleUserIds?.length) {
+					const visibleUserIds = note.visibleUserIds.filter(id => id !== user.id);
+
+					if (visibleUserIds.length > 0) {
+						for (const visibleUserId of visibleUserIds) {
+							let shouldNotify = false;
+							const recipientProfile = profilesMap.get(visibleUserId);
+
+							if (senderIsPrivileged) {
+								shouldNotify = true;
+							} else if (recipientProfile == null) {
+								// Profile not found, default to allowing notification.
+								shouldNotify = true;
+							} else {
+								switch (recipientProfile.receiveSpecifiedNotesFrom) {
+									case 'all':
+										shouldNotify = true;
+										break;
+									case 'following':
+										// Check if recipient (visibleUserId) follows the author (user.id).
+										if (followingsMap.has(visibleUserId)) {
+											shouldNotify = true;
+										}
+										break;
+									case 'nobody':
+										shouldNotify = false;
+										break;
+								}
+							}
+
+							if (shouldNotify) {
+								// Using 'mention' type for specified notes, as they are direct message-like.
+								nm.push(visibleUserId, 'mention');
+								this.globalEventService.publishMainStream(visibleUserId, 'mention', noteObj);
+								this.webhookService.enqueueUserWebhook(visibleUserId, 'mention', { note: noteObj });
+							}
+						}
+					}
+				}
+
+				nm.notify();
+			}
 
 			//#region AP deliver
 			if (!data.localOnly && this.userEntityService.isLocalUser(user)) {

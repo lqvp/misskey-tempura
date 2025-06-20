@@ -81,7 +81,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<option value="nobody">{{ i18n.ts._receiveSpecifiedNotesFrom.nobody }}</option>
 				</MkSelect>
 			</SearchMarker>
-			<p class="item-desc">{{ i18n.ts.receiveSpecifiedNotesFromAdminNote }}</p>
 		</div>
 	</MkFolder>
 </SearchMarker>
