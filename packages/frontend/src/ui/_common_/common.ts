@@ -88,7 +88,13 @@ export function openInstanceMenu(ev: MouseEvent) {
 		to: '/ads',
 	});
 
-	if ($i && ($i.isAdmin || $i.policies.canInvite) && instance.disableRegistration) {
+	const shouldShowInviteMenuItem =
+		instance.disableRegistration ||
+		instance.enableSignupRateLimit ||
+		instance.approvalRequiredForSignup ||
+		instance.emailRequiredForSignup;
+
+	if ($i && ($i.isAdmin || $i.policies.canInvite) && shouldShowInviteMenuItem) {
 		menuItems.push({
 			type: 'link',
 			to: '/invite',

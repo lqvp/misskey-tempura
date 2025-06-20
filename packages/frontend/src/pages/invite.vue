@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <PageWithHeader>
-	<div v-if="!instance.disableRegistration || !($i && ($i.isAdmin || $i.policies.canInvite))" class="_spacer" style="--MI_SPACER-w: 1200px;">
+	<div v-if="!showInvite || !($i && ($i.isAdmin || $i.policies.canInvite))" class="_spacer" style="--MI_SPACER-w: 1200px;">
 		<MkResult type="empty"/>
 	</div>
 	<div v-else class="_spacer" style="--MI_SPACER-w: 800px;">
@@ -54,6 +54,12 @@ const pagingComponent = useTemplateRef('pagingComponent');
 const currentInviteLimit = ref<null | number>(null);
 const inviteLimit = (($i != null && $i.policies.inviteLimit) || (($i == null && instance.policies.inviteLimit))) as number;
 const inviteLimitCycle = (($i != null && $i.policies.inviteLimitCycle) || ($i == null && instance.policies.inviteLimitCycle)) as number;
+const showInvite = computed(() =>
+	instance.disableRegistration ||
+	instance.enableSignupRateLimit ||
+	instance.approvalRequiredForSignup ||
+	instance.emailRequiredForSignup,
+);
 
 const pagination: PagingCtx = {
 	endpoint: 'invite/list' as const,
