@@ -8097,6 +8097,14 @@ export interface Locale extends ILocale {
              * サーバーLLM APIの利用
              */
             "canUseGeminiLLMAPI": string;
+            /**
+             * 招待時のメール認証スキップを許可
+             */
+            "canSkipInviteEmailAuth": string;
+            /**
+             * 招待時の承認スキップを許可
+             */
+            "canSkipInviteApproval": string;
         };
         "_condition": {
             /**
