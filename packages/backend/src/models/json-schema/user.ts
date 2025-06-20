@@ -548,6 +548,11 @@ export const packedMeDetailedOnlySchema = {
 			type: 'boolean',
 			nullable: false, optional: false,
 		},
+		receiveSpecifiedNotesFrom: {
+			type: 'string',
+			nullable: false, optional: false,
+			enum: ['all', 'following', 'nobody'],
+		},
 		noCrawle: {
 			type: 'boolean',
 			nullable: false, optional: false,

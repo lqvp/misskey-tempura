@@ -4,7 +4,7 @@
  */
 
 import { Entity, Column, Index, OneToOne, JoinColumn, PrimaryColumn } from 'typeorm';
-import { obsoleteNotificationTypes, followingVisibilities, followersVisibilities, notificationTypes } from '@/types.js';
+import { obsoleteNotificationTypes, followingVisibilities, followersVisibilities, notificationTypes, receiveSpecifiedNotesFromVisibilities } from '@/types.js';
 import { id } from './util/id.js';
 import { MiUser } from './User.js';
 import { MiPage } from './Page.js';
@@ -311,6 +311,14 @@ export class MiUserProfile {
 			userListId: MiUserList['id'];
 		};
 	};
+
+	@Column('varchar', {
+		length: 15, // 'mutualFollow' が最長
+		nullable: false,
+		default: 'all',
+		comment: 'Controls who can send specified (direct message like) notes to the user.',
+	})
+	public receiveSpecifiedNotesFrom: typeof receiveSpecifiedNotesFromVisibilities[number];
 
 	@Column('varchar', {
 		length: 32, array: true, default: '{}',

@@ -71,6 +71,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #caption>{{ i18n.ts.hideLocalOnlyNotesDescription }}</template>
 				</MkSwitch>
 			</SearchMarker>
+
+			<SearchMarker :keywords="['direct message', 'specified', 'note', 'receive']">
+				<MkSelect v-model="receiveSpecifiedNotesFrom" @update:modelValue="save_privacy()">
+					<template #label><SearchLabel>{{ i18n.ts.receiveSpecifiedNotesFrom }}</SearchLabel></template>
+					<template #caption><SearchKeyword>{{ i18n.ts.receiveSpecifiedNotesFromDescription }}</SearchKeyword></template>
+					<option value="all">{{ i18n.ts._receiveSpecifiedNotesFrom.all }}</option>
+					<option value="following">{{ i18n.ts._receiveSpecifiedNotesFrom.following }}</option>
+					<option value="nobody">{{ i18n.ts._receiveSpecifiedNotesFrom.nobody }}</option>
+				</MkSelect>
+			</SearchMarker>
+			<p class="item-desc">{{ i18n.ts.receiveSpecifiedNotesFromAdminNote }}</p>
 		</div>
 	</MkFolder>
 </SearchMarker>
@@ -80,6 +91,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import * as Misskey from 'misskey-js';
 import { ref } from 'vue';
 import MkSwitch from '@/components/MkSwitch.vue';
+import MkSelect from '@/components/MkSelect.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import { i18n } from '@/i18n.js';
 import { $i } from '@/i.js';
@@ -96,6 +108,7 @@ const hideNoteFromOverview = ref($i.hideNoteFromOverview);
 const hidePublicNotes = ref($i.hidePublicNotes);
 const hideHomeNotes = ref($i.hideHomeNotes);
 const hideLocalOnlyNotes = ref($i.hideLocalOnlyNotes);
+const receiveSpecifiedNotesFrom = ref($i.receiveSpecifiedNotesFrom ?? 'all');
 
 function save_privacy() {
 	misskeyApi('i/update', {
@@ -108,6 +121,7 @@ function save_privacy() {
 		hidePublicNotes: !!hidePublicNotes.value,
 		hideHomeNotes: !!hideHomeNotes.value,
 		hideLocalOnlyNotes: !!hideLocalOnlyNotes.value,
+		receiveSpecifiedNotesFrom: receiveSpecifiedNotesFrom.value,
 	});
 }
 </script>
