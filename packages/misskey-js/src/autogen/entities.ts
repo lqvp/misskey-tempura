@@ -485,6 +485,7 @@ export type IWebhooksTestRequest = operations['i___webhooks___test']['requestBod
 export type IWebhooksUpdateRequest = operations['i___webhooks___update']['requestBody']['content']['application/json'];
 export type InviteCheckRequest = operations['invite___check']['requestBody']['content']['application/json'];
 export type InviteCheckResponse = operations['invite___check']['responses']['200']['content']['application/json'];
+export type InviteCreateRequest = operations['invite___create']['requestBody']['content']['application/json'];
 export type InviteCreateResponse = operations['invite___create']['responses']['200']['content']['application/json'];
 export type InviteDeleteRequest = operations['invite___delete']['requestBody']['content']['application/json'];
 export type InviteLimitResponse = operations['invite___limit']['responses']['200']['content']['application/json'];
