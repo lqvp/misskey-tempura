@@ -12,6 +12,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div class="_gaps_m" style="text-align: center;">
 			<div v-if="resetCycle && inviteLimit">{{ i18n.tsx.inviteLimitResetCycle({ time: resetCycle, limit: inviteLimit }) }}</div>
 			<MkButton inline primary rounded :disabled="currentInviteLimit !== null && currentInviteLimit <= 0" @click="create"><i class="ti ti-user-plus"></i> {{ i18n.ts.createInviteCode }}</MkButton>
+			<MkFolder v-if="$i?.policies.canSkipInviteEmailAuth || $i?.policies.canSkipInviteApproval">
+				<template #label>{{ i18n.ts.options }}</template>
+				<div class="_gaps_s">
+					<MkSwitch v-if="$i?.policies.canSkipInviteEmailAuth" v-model="skipEmailAuth">{{ i18n.ts.skipEmailAuth }}</MkSwitch>
+					<MkSwitch v-if="$i?.policies.canSkipInviteApproval" v-model="skipApproval">{{ i18n.ts.skipApproval }}</MkSwitch>
+				</div>
+			</MkFolder>
 			<div v-if="currentInviteLimit !== null">{{ i18n.tsx.createLimitRemaining({ limit: currentInviteLimit }) }}</div>
 
 			<MkPagination ref="pagingComponent" :pagination="pagination">
@@ -36,6 +43,8 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import MkButton from '@/components/MkButton.vue';
 import MkPagination from '@/components/MkPagination.vue';
 import MkInviteCode from '@/components/MkInviteCode.vue';
+import MkFolder from '@/components/MkFolder.vue';
+import MkSwitch from '@/components/MkSwitch.vue';
 import { definePage } from '@/page.js';
 import { instance } from '@/instance.js';
 import { $i } from '@/i.js';
@@ -51,6 +60,9 @@ const pagination: PagingCtx = {
 	limit: 10,
 };
 
+const skipEmailAuth = ref(false);
+const skipApproval = ref(false);
+
 const resetCycle = computed<null | string>(() => {
 	if (!inviteLimitCycle) return null;
 
@@ -62,7 +74,10 @@ const resetCycle = computed<null | string>(() => {
 });
 
 async function create() {
-	const ticket = await misskeyApi('invite/create');
+	const ticket = await misskeyApi('invite/create', {
+		skipEmailAuth: skipEmailAuth.value,
+		skipApproval: skipApproval.value,
+	});
 	const { result } = await os.actions({
 		type: 'success',
 		title: i18n.ts.inviteCodeCreated,

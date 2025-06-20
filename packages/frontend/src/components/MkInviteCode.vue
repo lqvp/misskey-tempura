@@ -57,7 +57,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div :class="$style.label">{{ i18n.ts.createdAt }}</div>
 				<div><MkTime :time="invite.createdAt" mode="absolute"/></div>
 			</div>
-			<div v-if="moderator">
+			<div v-if="moderator || ($i && $i.policies.canSkipInviteEmailAuth)">
 				<div :class="$style.label">{{ i18n.ts.skipEmailAuth }}</div>
 				<div>
 					<template v-if="invite.skipEmailAuth">
@@ -68,7 +68,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</template>
 				</div>
 			</div>
-			<div v-if="moderator">
+			<div v-if="moderator || ($i && $i.policies.canSkipInviteApproval)">
 				<div :class="$style.label">{{ i18n.ts.skipApproval }}</div>
 				<div>
 					<template v-if="invite.skipApproval">
@@ -92,6 +92,7 @@ import MkButton from '@/components/MkButton.vue';
 import { copyInviteCode, copyInviteUrl } from '@/utility/invite.js';
 import { i18n } from '@/i18n.js';
 import * as os from '@/os.js';
+import { $i } from '@/i.js';
 
 const props = defineProps<{
 	invite: Misskey.entities.InviteCode;
