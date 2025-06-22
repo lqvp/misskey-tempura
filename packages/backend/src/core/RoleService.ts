@@ -74,8 +74,8 @@ export type RolePolicies = {
 	canAddRoles: boolean;
 	canCreateRole: boolean;
 	canUseUnFollowNotification: boolean;
-  canUseBlockedNotification: boolean;
-  canUseUnBlockedNotification: boolean;
+	canUseBlockedNotification: boolean;
+	canUseUnBlockedNotification: boolean;
 	canPublicNonLtlNote: boolean;
 	canReadFollowHistory: boolean;
 	canAutoFollowBack: boolean;
@@ -83,6 +83,8 @@ export type RolePolicies = {
 	canUseMakePrivate: boolean;
 	canUpdateCounters: boolean;
 	canUseGeminiLLMAPI: boolean;
+	canSkipInviteEmailAuth: boolean;
+	canSkipInviteApproval: boolean;
 };
 
 export const DEFAULT_POLICIES: RolePolicies = {
@@ -143,6 +145,8 @@ export const DEFAULT_POLICIES: RolePolicies = {
 	canUseMakePrivate: false,
 	canUpdateCounters: false,
 	canUseGeminiLLMAPI: false,
+	canSkipInviteEmailAuth: false,
+	canSkipInviteApproval: false,
 };
 
 @Injectable()
@@ -529,8 +533,8 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			canAddRoles: calc('canAddRoles', vs => vs.some(v => v === true)),
 			canCreateRole: calc('canCreateRole', vs => vs.some(v => v === true)),
 			canUseUnFollowNotification: calc('canUseUnFollowNotification', vs => vs.some(v => v === true)),
-  		canUseBlockedNotification: calc('canUseBlockedNotification', vs => vs.some(v => v === true)),
-  		canUseUnBlockedNotification: calc('canUseUnBlockedNotification', vs => vs.some(v => v === true)),
+			canUseBlockedNotification: calc('canUseBlockedNotification', vs => vs.some(v => v === true)),
+			canUseUnBlockedNotification: calc('canUseUnBlockedNotification', vs => vs.some(v => v === true)),
 			canPublicNonLtlNote: calc('canPublicNonLtlNote', vs => vs.some(v => v === true)),
 			canReadFollowHistory: calc('canReadFollowHistory', vs => vs.some(v => v === true)),
 			canAutoFollowBack: calc('canAutoFollowBack', vs => vs.some(v => v === true)),
@@ -538,6 +542,8 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			canUseMakePrivate: calc('canUseMakePrivate', vs => vs.some(v => v === true)),
 			canUpdateCounters: calc('canUpdateCounters', vs => vs.some(v => v === true)),
 			canUseGeminiLLMAPI: calc('canUseGeminiLLMAPI', vs => vs.some(v => v === true)),
+			canSkipInviteEmailAuth: calc('canSkipInviteEmailAuth', vs => vs.some(v => v === true)),
+			canSkipInviteApproval: calc('canSkipInviteApproval', vs => vs.some(v => v === true)),
 		};
 	}
 

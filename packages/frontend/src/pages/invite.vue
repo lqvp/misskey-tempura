@@ -5,13 +5,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <PageWithHeader>
-	<div v-if="!instance.disableRegistration || !($i && ($i.isAdmin || $i.policies.canInvite))" class="_spacer" style="--MI_SPACER-w: 1200px;">
+	<div v-if="!showInvite || !($i && ($i.isAdmin || $i.policies.canInvite))" class="_spacer" style="--MI_SPACER-w: 1200px;">
 		<MkResult type="empty"/>
 	</div>
 	<div v-else class="_spacer" style="--MI_SPACER-w: 800px;">
 		<div class="_gaps_m" style="text-align: center;">
 			<div v-if="resetCycle && inviteLimit">{{ i18n.tsx.inviteLimitResetCycle({ time: resetCycle, limit: inviteLimit }) }}</div>
 			<MkButton inline primary rounded :disabled="currentInviteLimit !== null && currentInviteLimit <= 0" @click="create"><i class="ti ti-user-plus"></i> {{ i18n.ts.createInviteCode }}</MkButton>
+			<MkFolder v-if="$i?.policies.canSkipInviteEmailAuth || $i?.policies.canSkipInviteApproval">
+				<template #label>{{ i18n.ts.options }}</template>
+				<div class="_gaps_s">
+					<MkSwitch v-if="$i?.policies.canSkipInviteEmailAuth" v-model="skipEmailAuth">{{ i18n.ts.skipEmailAuth }}</MkSwitch>
+					<MkSwitch v-if="$i?.policies.canSkipInviteApproval" v-model="skipApproval">{{ i18n.ts.skipApproval }}</MkSwitch>
+				</div>
+			</MkFolder>
 			<div v-if="currentInviteLimit !== null">{{ i18n.tsx.createLimitRemaining({ limit: currentInviteLimit }) }}</div>
 
 			<MkPagination ref="pagingComponent" :pagination="pagination">
@@ -36,6 +43,8 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import MkButton from '@/components/MkButton.vue';
 import MkPagination from '@/components/MkPagination.vue';
 import MkInviteCode from '@/components/MkInviteCode.vue';
+import MkFolder from '@/components/MkFolder.vue';
+import MkSwitch from '@/components/MkSwitch.vue';
 import { definePage } from '@/page.js';
 import { instance } from '@/instance.js';
 import { $i } from '@/i.js';
@@ -45,11 +54,20 @@ const pagingComponent = useTemplateRef('pagingComponent');
 const currentInviteLimit = ref<null | number>(null);
 const inviteLimit = (($i != null && $i.policies.inviteLimit) || (($i == null && instance.policies.inviteLimit))) as number;
 const inviteLimitCycle = (($i != null && $i.policies.inviteLimitCycle) || ($i == null && instance.policies.inviteLimitCycle)) as number;
+const showInvite = computed(() =>
+	instance.disableRegistration ||
+	instance.enableSignupRateLimit ||
+	instance.approvalRequiredForSignup ||
+	instance.emailRequiredForSignup,
+);
 
 const pagination: PagingCtx = {
 	endpoint: 'invite/list' as const,
 	limit: 10,
 };
+
+const skipEmailAuth = ref(false);
+const skipApproval = ref(false);
 
 const resetCycle = computed<null | string>(() => {
 	if (!inviteLimitCycle) return null;
@@ -62,7 +80,10 @@ const resetCycle = computed<null | string>(() => {
 });
 
 async function create() {
-	const ticket = await misskeyApi('invite/create');
+	const ticket = await misskeyApi('invite/create', {
+		skipEmailAuth: skipEmailAuth.value,
+		skipApproval: skipApproval.value,
+	});
 	const { result } = await os.actions({
 		type: 'success',
 		title: i18n.ts.inviteCodeCreated,

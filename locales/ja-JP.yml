@@ -2093,6 +2093,8 @@ _role:
     canUseMakePrivate: "非公開化機能の許可"
     canUpdateCounters: "カウンターの更新を許可"
     canUseGeminiLLMAPI: "サーバーLLM APIの利用"
+    canSkipInviteEmailAuth: "招待時のメール認証スキップを許可"
+    canSkipInviteApproval: "招待時の承認スキップを許可"
 
   _condition:
     roleAssignedTo: "マニュアルロールにアサイン済み"

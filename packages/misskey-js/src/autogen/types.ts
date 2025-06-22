@@ -5523,6 +5523,8 @@ export type components = {
             canUseMakePrivate: boolean;
             canUpdateCounters: boolean;
             canUseGeminiLLMAPI: boolean;
+            canSkipInviteEmailAuth: boolean;
+            canSkipInviteApproval: boolean;
         };
         ReversiGameLite: {
             /** Format: id */
@@ -29221,6 +29223,16 @@ export interface operations {
         };
     };
     invite___create: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** @default false */
+                    skipEmailAuth?: boolean;
+                    /** @default false */
+                    skipApproval?: boolean;
+                };
+            };
+        };
         responses: {
             /** @description OK (with results) */
             200: {

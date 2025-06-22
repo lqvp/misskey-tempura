@@ -377,6 +377,14 @@ export const packedRolePoliciesSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
+		canSkipInviteEmailAuth: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
+		canSkipInviteApproval: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
 	},
 } as const;
 

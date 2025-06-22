@@ -38,7 +38,10 @@ export const meta = {
 
 export const paramDef = {
 	type: 'object',
-	properties: {},
+	properties: {
+		skipEmailAuth: { type: 'boolean', default: false },
+		skipApproval: { type: 'boolean', default: false },
+	},
 	required: [],
 } as const;
 
@@ -72,6 +75,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				createdById: me.id,
 				expiresAt: policies.inviteExpirationTime ? new Date(Date.now() + (policies.inviteExpirationTime * 1000 * 60)) : null,
 				code: generateInviteCode(),
+				skipEmailAuth: ps.skipEmailAuth && policies.canSkipInviteEmailAuth,
+				skipApproval: ps.skipApproval && policies.canSkipInviteApproval,
 			});
 
 			return await this.inviteCodeEntityService.pack(ticket, me);
