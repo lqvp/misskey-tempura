@@ -297,7 +297,7 @@ async function onSubmit(): Promise<void> {
 	const signupPayload: Misskey.entities.SignupRequest = {
 		username: username.value,
 		password: password.value,
-		emailAddress: invitationCode.value ? undefined : email.value,
+		emailAddress: (instance.emailRequiredForSignup && !props.skipEmailAuth) ? email.value : undefined,
 		invitationCode: invitationCode.value,
 		reason: reason.value,
 		'hcaptcha-response': hCaptchaResponse.value,
