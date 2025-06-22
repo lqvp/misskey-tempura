@@ -14550,7 +14550,8 @@ export interface Locale extends ILocale {
     "receiveSpecifiedNotesFrom": string;
     /**
      * ダイレクトメッセージのような形式のノート（特定ユーザー間でのみ閲覧可能なノート）を誰から受信するかを設定します。
-     * 管理者とモデレーターからのダイレクトメッセージは、この設定に関わらず常に受信します。
+     * なお、一度でも返信した相手との会話は許可したものとみなされ、以降その相手からはこの設定に関わらずメッセージが届くようになります。
+     * また、管理者とモデレーターからのダイレクトメッセージも、常に受信します。
      */
     "receiveSpecifiedNotesFromDescription": string;
     "_receiveSpecifiedNotesFrom": {

@@ -3924,7 +3924,7 @@ copyInviteCode: "招待コードをコピー"
 copyInviteUrl: "招待URLをコピー"
 
 receiveSpecifiedNotesFrom: "ダイレクトメッセージの受信範囲"
-receiveSpecifiedNotesFromDescription: "ダイレクトメッセージのような形式のノート（特定ユーザー間でのみ閲覧可能なノート）を誰から受信するかを設定します。\n管理者とモデレーターからのダイレクトメッセージは、この設定に関わらず常に受信します。"
+receiveSpecifiedNotesFromDescription: "ダイレクトメッセージのような形式のノート（特定ユーザー間でのみ閲覧可能なノート）を誰から受信するかを設定します。\nなお、一度でも返信した相手との会話は許可したものとみなされ、以降その相手からはこの設定に関わらずメッセージが届くようになります。\nまた、管理者とモデレーターからのダイレクトメッセージも、常に受信します。"
 _receiveSpecifiedNotesFrom:
   all: "すべてのアカウント"
   following: "フォローしているアカウントのみ"
