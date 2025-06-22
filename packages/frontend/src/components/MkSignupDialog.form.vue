@@ -62,7 +62,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span v-if="passwordRetypeState == 'not-match'" style="color: var(--MI_THEME-error)"><i class="ti ti-alert-triangle ti-fw"></i> {{ i18n.ts.passwordNotMatched }}</span>
 				</template>
 			</MkInput>
-			<MkTextarea v-show="instance.approvalRequiredForSignup && !props.skipApproval" v-model="reason" :placeholder="i18n.ts._signup.reasonInfo" :spellcheck="false" required data-cy-signup-reason>
+			<MkTextarea v-if="instance.approvalRequiredForSignup && !props.skipApproval" v-model="reason" :required="instance.approvalRequiredForSignup && !props.skipApproval" :placeholder="i18n.ts._signup.reasonInfo" :spellcheck="false" data-cy-signup-reason>
 				<template #label>{{ i18n.ts.registerReason }} <div v-tooltip:dialog="i18n.ts._signup.reasonInfo" class="_button _help"><i class="ti ti-help-circle"></i></div></template>
 				<template #prefix><i class="ti ti-chalkboard"></i></template>
 			</MkTextarea>
