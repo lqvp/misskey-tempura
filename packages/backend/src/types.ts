@@ -495,3 +495,6 @@ export type FilterUnionByProperty<
 	Property extends string | number | symbol,
 	Condition,
 > = Union extends Record<Property, Condition> ? Union : never;
+
+// Added for receiveSpecifiedNotesFrom feature
+export const receiveSpecifiedNotesFromVisibilities = ['all', 'following', 'nobody'] as const;

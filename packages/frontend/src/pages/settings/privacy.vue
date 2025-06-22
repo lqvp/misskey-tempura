@@ -96,6 +96,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkSelect>
 		</SearchMarker>
 
+		<SearchMarker :keywords="['direct message', 'specified', 'note', 'receive']">
+			<MkSelect v-model="receiveSpecifiedNotesFrom" @update:modelValue="save()">
+				<template #label><SearchLabel>{{ i18n.ts.receiveSpecifiedNotesFrom }}</SearchLabel></template>
+				<template #caption><SearchKeyword>{{ i18n.ts.receiveSpecifiedNotesFromDescription }}</SearchKeyword></template>
+				<option value="all">{{ i18n.ts._receiveSpecifiedNotesFrom.all }}</option>
+				<option value="following">{{ i18n.ts._receiveSpecifiedNotesFrom.following }}</option>
+				<option value="nobody">{{ i18n.ts._receiveSpecifiedNotesFrom.nobody }}</option>
+			</MkSelect>
+		</SearchMarker>
+
 		<SearchMarker :keywords="['online', 'status']">
 			<MkSwitch v-model="hideOnlineStatus" @update:modelValue="save()">
 				<template #label><SearchLabel>{{ i18n.ts.hideOnlineStatus }}</SearchLabel></template>
@@ -285,6 +295,7 @@ const hideLocalOnlyNotes = ref($i.hideLocalOnlyNotes);
 const followingVisibility = ref($i.followingVisibility);
 const followersVisibility = ref($i.followersVisibility);
 const chatScope = ref($i.chatScope);
+const receiveSpecifiedNotesFrom = ref($i.receiveSpecifiedNotesFrom ?? 'all');
 
 const makeNotesFollowersOnlyBefore_type = computed(() => {
 	if (makeNotesFollowersOnlyBefore.value == null) {
@@ -347,6 +358,7 @@ function save() {
 		followingVisibility: followingVisibility.value,
 		followersVisibility: followersVisibility.value,
 		chatScope: chatScope.value,
+		receiveSpecifiedNotesFrom: receiveSpecifiedNotesFrom.value,
 	});
 }
 

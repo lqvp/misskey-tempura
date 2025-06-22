@@ -649,40 +649,169 @@ export class NoteCreateService implements OnApplicationShutdown {
 
 			const nm = new NotificationManager(this.mutingsRepository, this.notificationService, user, note);
 
-			await this.createMentionedEvents(mentionedUsers, note, nm);
+			let usersToNotifyForMention = [...mentionedUsers]; // Default to all mentioned users
 
-			// If has in reply to note
-			if (data.reply) {
-				// 通知
-				if (data.reply.userHost === null) {
-					const isThreadMuted = await this.noteThreadMutingsRepository.exists({
-						where: {
-							userId: data.reply.userId,
-							threadId: data.reply.threadId ?? data.reply.id,
-						},
-					});
+			if (note.visibility === 'specified') {
+				const senderIsPrivileged = (await this.roleService.isAdministrator(user)) || (await this.roleService.isModerator(user));
 
-					if (!isThreadMuted) {
-						nm.push(data.reply.userId, 'reply');
-						this.globalEventService.publishMainStream(data.reply.userId, 'reply', noteObj);
-						this.webhookService.enqueueUserWebhook(data.reply.userId, 'reply', { note: noteObj });
+				// Consolidate all local users who need their profile/following status checked.
+				const localUserIdsToCheck = new Set<string>();
+				mentionedUsers.forEach(u => {
+					if (u.host === null) localUserIdsToCheck.add(u.id);
+				});
+				note.visibleUserIds?.forEach(id => {
+					if (id !== user.id) localUserIdsToCheck.add(id);
+				});
+				const userIds = Array.from(localUserIdsToCheck);
+
+				// Bulk fetch profiles and followings once.
+				let profilesMap = new Map();
+				let followingsMap = new Map();
+				if (userIds.length > 0) {
+					profilesMap = new Map(
+						(await this.userProfilesRepository.findBy({ userId: In(userIds) }))
+							.map(p => [p.userId, p]),
+					);
+					followingsMap = new Map(
+						(await this.followingsRepository.findBy({ followeeId: user.id, followerId: In(userIds) }))
+							.map(f => [f.followerId, f]),
+					);
+				}
+
+				// Process mentions using the maps
+				if (mentionedUsers.length > 0) {
+					const permissibleMentionedUsers: MinimumUser[] = [];
+					for (const mentionedUser of mentionedUsers) {
+						if (senderIsPrivileged) {
+							permissibleMentionedUsers.push(mentionedUser);
+							continue;
+						}
+
+						if (mentionedUser.host !== null) { // Remote user, allow notification
+							permissibleMentionedUsers.push(mentionedUser);
+							continue;
+						}
+
+						const recipientProfile = profilesMap.get(mentionedUser.id);
+						if (recipientProfile == null) {
+							permissibleMentionedUsers.push(mentionedUser);
+							continue;
+						}
+
+						switch (recipientProfile.receiveSpecifiedNotesFrom) {
+							case 'nobody':
+								break;
+							case 'following':
+								if (followingsMap.has(mentionedUser.id)) {
+									permissibleMentionedUsers.push(mentionedUser);
+								}
+								break;
+							case 'all':
+							default:
+								permissibleMentionedUsers.push(mentionedUser);
+								break;
+						}
+					}
+					usersToNotifyForMention = permissibleMentionedUsers;
+				}
+				await this.createMentionedEvents(usersToNotifyForMention, note, nm);
+
+				// If has in reply to note
+				if (data.reply) {
+					// 通知
+					if (data.reply.userHost === null) {
+						const isThreadMuted = await this.noteThreadMutingsRepository.exists({
+							where: {
+								userId: data.reply.userId,
+								threadId: data.reply.threadId ?? data.reply.id,
+							},
+						});
+
+						if (!isThreadMuted) {
+							nm.push(data.reply.userId, 'reply');
+							this.globalEventService.publishMainStream(data.reply.userId, 'reply', noteObj);
+							this.webhookService.enqueueUserWebhook(data.reply.userId, 'reply', { note: noteObj });
+						}
 					}
 				}
-			}
 
-			// If it is renote
-			if (this.isRenote(data)) {
-				const type = this.isQuote(data) ? 'quote' : 'renote';
+				// Handle notifications for 'specified' visibility notes
+				if (note.visibleUserIds?.length) {
+					const visibleUserIds = note.visibleUserIds.filter(id => id !== user.id);
 
-				// Notify
-				if (data.renote.userHost === null) {
-					nm.push(data.renote.userId, type);
+					if (visibleUserIds.length > 0) {
+						for (const visibleUserId of visibleUserIds) {
+							let shouldNotify = false;
+							const recipientProfile = profilesMap.get(visibleUserId);
+
+							if (senderIsPrivileged) {
+								shouldNotify = true;
+							} else if (recipientProfile == null) {
+								// Profile not found, default to allowing notification.
+								shouldNotify = true;
+							} else {
+								switch (recipientProfile.receiveSpecifiedNotesFrom) {
+									case 'all':
+										shouldNotify = true;
+										break;
+									case 'following':
+										// Check if recipient (visibleUserId) follows the author (user.id).
+										if (followingsMap.has(visibleUserId)) {
+											shouldNotify = true;
+										}
+										break;
+									case 'nobody':
+										shouldNotify = false;
+										break;
+								}
+							}
+
+							if (shouldNotify) {
+								// Using 'mention' type for specified notes, as they are direct message-like.
+								nm.push(visibleUserId, 'mention');
+								this.globalEventService.publishMainStream(visibleUserId, 'mention', noteObj);
+								this.webhookService.enqueueUserWebhook(visibleUserId, 'mention', { note: noteObj });
+							}
+						}
+					}
+				}
+			} else {
+				// メンション
+				await this.createMentionedEvents(mentionedUsers, note, nm);
+
+				// If has in reply to note
+				if (data.reply) {
+					// 通知
+					if (data.reply.userHost === null) {
+						const isThreadMuted = await this.noteThreadMutingsRepository.exists({
+							where: {
+								userId: data.reply.userId,
+								threadId: data.reply.threadId ?? data.reply.id,
+							},
+						});
+
+						if (!isThreadMuted) {
+							nm.push(data.reply.userId, 'reply');
+							this.globalEventService.publishMainStream(data.reply.userId, 'reply', noteObj);
+							this.webhookService.enqueueUserWebhook(data.reply.userId, 'reply', { note: noteObj });
+						}
+					}
 				}
 
-				// Publish event
-				if ((user.id !== data.renote.userId) && data.renote.userHost === null) {
-					this.globalEventService.publishMainStream(data.renote.userId, 'renote', noteObj);
-					this.webhookService.enqueueUserWebhook(data.renote.userId, 'renote', { note: noteObj });
+				// Renote
+				if (this.isRenote(data)) {
+					const type = this.isQuote(data) ? 'quote' : 'renote';
+
+					// Notify
+					if (data.renote.userHost === null) {
+						nm.push(data.renote.userId, type);
+					}
+
+					// Publish event
+					if ((user.id !== data.renote.userId) && data.renote.userHost === null) {
+						this.globalEventService.publishMainStream(data.renote.userId, 'renote', noteObj);
+						this.webhookService.enqueueUserWebhook(data.renote.userId, 'renote', { note: noteObj });
+					}
 				}
 			}
 

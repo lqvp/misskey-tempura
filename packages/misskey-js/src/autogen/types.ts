@@ -4263,6 +4263,8 @@ export type components = {
             autoRejectFollowRequest: boolean;
             autoFollowBack: boolean;
             autoFollowOnMove: boolean;
+            /** @enum {string} */
+            receiveSpecifiedNotesFrom: 'all' | 'following' | 'nobody';
             noCrawle: boolean;
             preventAiLearning: boolean;
             isExplorable: boolean;
@@ -28359,6 +28361,8 @@ export interface operations {
                     autoRejectFollowRequest?: boolean;
                     autoFollowBack?: boolean;
                     autoFollowOnMove?: boolean;
+                    /** @enum {string} */
+                    receiveSpecifiedNotesFrom?: 'all' | 'following' | 'nobody';
                     noCrawle?: boolean;
                     preventAiLearning?: boolean;
                     requireSigninToViewContents?: boolean;

@@ -14544,6 +14544,29 @@ export interface Locale extends ILocale {
      * 招待URLをコピー
      */
     "copyInviteUrl": string;
+    /**
+     * ダイレクトメッセージの受信範囲
+     */
+    "receiveSpecifiedNotesFrom": string;
+    /**
+     * ダイレクトメッセージのような形式のノート（特定ユーザー間でのみ閲覧可能なノート）を誰から受信するかを設定します。
+     * 管理者とモデレーターからのダイレクトメッセージは、この設定に関わらず常に受信します。
+     */
+    "receiveSpecifiedNotesFromDescription": string;
+    "_receiveSpecifiedNotesFrom": {
+        /**
+         * すべてのアカウント
+         */
+        "all": string;
+        /**
+         * フォローしているアカウントのみ
+         */
+        "following": string;
+        /**
+         * 誰も許可しない
+         */
+        "nobody": string;
+    };
 }
 declare const locales: {
     [lang: string]: Locale;

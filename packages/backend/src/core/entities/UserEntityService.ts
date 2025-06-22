@@ -614,6 +614,7 @@ export class UserEntityService implements OnModuleInit {
 				autoRejectFollowRequest: profile!.autoRejectFollowRequest,
 				autoFollowBack: profile!.autoFollowBack,
 				autoFollowOnMove: profile!.autoFollowOnMove,
+				receiveSpecifiedNotesFrom: profile!.receiveSpecifiedNotesFrom,
 				noCrawle: profile!.noCrawle,
 				preventAiLearning: profile!.preventAiLearning,
 				isExplorable: user.isExplorable,

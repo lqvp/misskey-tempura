@@ -3922,3 +3922,10 @@ failedToLoadTweet: "ポストの読み込みに失敗しました"
 
 copyInviteCode: "招待コードをコピー"
 copyInviteUrl: "招待URLをコピー"
+
+receiveSpecifiedNotesFrom: "ダイレクトメッセージの受信範囲"
+receiveSpecifiedNotesFromDescription: "ダイレクトメッセージのような形式のノート（特定ユーザー間でのみ閲覧可能なノート）を誰から受信するかを設定します。\n管理者とモデレーターからのダイレクトメッセージは、この設定に関わらず常に受信します。"
+_receiveSpecifiedNotesFrom:
+  all: "すべてのアカウント"
+  following: "フォローしているアカウントのみ"
+  nobody: "誰も許可しない"
