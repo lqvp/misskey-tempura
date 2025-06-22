@@ -324,7 +324,7 @@ const bottomItemActionDef: Record<keyof typeof bottomItemDef, {
 		action: chooseFileFromPc,
 	},
 	attachFileFromDrive: {
-		action: chooseDriveFile,
+		action: chooseFileFromDrive,
 	},
 	poll: {
 		active: poll,
