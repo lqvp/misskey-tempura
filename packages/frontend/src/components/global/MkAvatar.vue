@@ -24,10 +24,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 		</div>
 	</div>
-	<template v-if="showDecoration">
+	<template v-if="showDecoration && !(prefer.s.anonymizeMutedUsers && user.isMuted)">
 		<img
 			v-for="decoration in decorations ?? user.avatarDecorations"
-			v-if="!(prefer.s.anonymizeMutedUsers && user.isMuted)"
 			:class="[$style.decoration, { [$style.decorationBlink]: decoration.blink }]"
 			:src="getDecorationUrl(decoration)"
 			:style="{
@@ -38,7 +37,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			alt=""
 			draggable="false"
 			style="-webkit-user-drag: none;"
-		>
+		/>
 	</template>
 </component>
 </template>
