@@ -8567,7 +8567,9 @@ export interface Locale extends ILocale {
     };
     "_misskeyTempura": {
         /**
-         * misskey-tempuraはlqvpによって開発されているMisskeyのフォークです。
+         * misskey-tempuraは隠居特化型のMisskeyフォークです。
+         * ユーザー保護を重視した設計を目指しています。
+         * その他、ユーザー体験をより快適にする改造を行っています。
          */
         "about": string;
         /**

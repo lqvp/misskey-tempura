@@ -2234,7 +2234,7 @@ _aboutMisskey:
   projectMembers: "プロジェクトメンバー"
 
 _misskeyTempura:
-  about: "misskey-tempuraはlqvpによって開発されているMisskeyのフォークです。"
+  about: "misskey-tempuraは隠居特化型のMisskeyフォークです。\nユーザー保護を重視した設計を目指しています。\nその他、ユーザー体験をより快適にする改造を行っています。"
   contributors: "優秀なコントリビューター(?)"
   aboutTempura: "misskey-tempuraについて"
 
