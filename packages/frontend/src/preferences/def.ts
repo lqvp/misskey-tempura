@@ -678,4 +678,7 @@ export const PREF_DEF = definePreferences({
 	earthquakeWarningReportFilterMode: {
 		default: 'any' as 'any' | 'nth' | 'final' | 'both', // フィルタモード
 	},
+	skipPasteUploadDialog: {
+		default: false,
+	},
 });

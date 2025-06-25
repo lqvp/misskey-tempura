@@ -62,6 +62,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkSwitch>
 				</MkPreferenceContainer>
 			</SearchMarker>
+
+			<SearchMarker :keywords="['paste', 'upload', 'clipboard']">
+				<MkPreferenceContainer k="skipPasteUploadDialog">
+					<MkSwitch v-model="skipPasteUploadDialog">
+						<template #caption><SearchLabel>{{ i18n.ts.skipPasteUploadDialogDescription }}</SearchLabel></template>
+						<SearchLabel>{{ i18n.ts.skipPasteUploadDialog }}</SearchLabel>
+					</MkSwitch>
+				</MkPreferenceContainer>
+			</SearchMarker>
 		</div>
 	</MkFolder>
 </SearchMarker>
@@ -84,6 +93,7 @@ import { bottomItemDef } from '@/utility/post-form.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 
 const useTextAreaAutoSize = prefer.model('useTextAreaAutoSize');
+const skipPasteUploadDialog = prefer.model('skipPasteUploadDialog');
 const Sortable = defineAsyncComponent(() => import('vuedraggable').then(x => x.default));
 const defaultScheduledNoteDelete = prefer.model('defaultScheduledNoteDelete');
 const scheduledNoteDelete = ref({ deleteAt: null, deleteAfter: prefer.s.defaultScheduledNoteDeleteTime, isValid: true });
