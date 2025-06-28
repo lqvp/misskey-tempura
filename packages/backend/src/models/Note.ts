@@ -197,6 +197,12 @@ export class MiNote {
 	})
 	public deleteAt: Date | null;
 
+	@Column('boolean', {
+		default: false,
+		comment: 'When true, the note will be made private instead of deleted at deleteAt.',
+	})
+	public isScheduledForPrivate: boolean;
+
 	@Index()
 	@Column({
 		...id(),
