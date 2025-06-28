@@ -594,8 +594,8 @@ export const PREF_DEF = definePreferences({
 	geminiToken: {
 		default: null as string | null,
 	},
-	geminiModels: {
-		default: 'gemini-2.0-flash-lite' as 'gemini-2.0-flash' | 'gemini-2.0-flash-lite' | 'gemini-2.5-flash-preview-05-20' | 'gemini-2.5-pro-preview-06-05' | null,
+	geminiModel: {
+		default: 'gemini-2.5-flash' as string | null,
 	},
 	geminiSystemPrompt: {
 		default: 'リスト記法は対応しておらず、パーサーが壊れるため使用禁止です。列挙する場合は「・」を使ってください。' as string | null,

@@ -379,10 +379,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkSelect v-model="geminiSettingsForm.state.serverGeminiModels">
 							<template #label>{{ i18n.ts._llm.geminiModelLabel }}</template>
 							<template #caption>{{ i18n.ts._llm._server.serverGeminiModelsDescription }}</template>
-							<option value="gemini-2.0-flash">gemini-2.0-flash</option>
-							<option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite</option>
-							<option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash-preview-05-20</option>
-							<option value="gemini-2.5-pro-preview-06-05">gemini-2.5-pro-preview-06-05</option>
+							<option v-for="model in geminiModels" :key="model" :value="model">
+								{{ model }}
+							</option>
 						</MkSelect>
 					</div>
 				</MkFolder>
@@ -393,7 +392,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
+import { ref, computed } from 'vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkInput from '@/components/MkInput.vue';
 import MkTextarea from '@/components/MkTextarea.vue';
@@ -409,6 +408,7 @@ import FormLink from '@/components/form/link.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import { useForm } from '@/composables/use-form.js';
 import MkFormFooter from '@/components/MkFormFooter.vue';
+import { geminiModels } from '@/utility/tempura-script/models.js';
 
 const meta = await misskeyApi('admin/meta');
 

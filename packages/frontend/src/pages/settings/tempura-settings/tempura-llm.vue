@@ -38,13 +38,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</SearchMarker>
 
 			<SearchMarker :keywords="['llm', 'gemini', 'model', 'version']">
-				<MkPreferenceContainer k="geminiModels">
-					<MkSelect v-model="geminiModels" :disabled="useGeminiLLMAPI">
+				<MkPreferenceContainer k="geminiModel">
+					<MkSelect v-model="geminiModel" :disabled="useGeminiLLMAPI">
 						<template #label><SearchLabel>{{ i18n.ts._llm.geminiModelLabel }}</SearchLabel></template>
-						<option value="gemini-2.0-flash">gemini-2.0-flash</option>
-						<option value="gemini-2.0-flash-lite">gemini-2.0-flash-lite</option>
-						<option value="gemini-2.5-flash-preview-05-20">gemini-2.5-flash-preview-05-20</option>
-						<option value="gemini-2.5-pro-preview-06-05">gemini-2.5-pro-preview-06-05</option>
+						<option v-for="model in geminiModels" :key="model" :value="model">
+							{{ model }}
+						</option>
 					</MkSelect>
 				</MkPreferenceContainer>
 			</SearchMarker>
@@ -161,6 +160,7 @@ import { $i } from '@/i.js';
 import { i18n } from '@/i18n.js';
 import { fetchInstance } from '@/instance.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
+import { geminiModels } from '@/utility/tempura-script/models.js';
 
 const instance = ref<Misskey.entities.MetaDetailed | null>(null);
 
@@ -171,7 +171,7 @@ fetchInstance(true).then((res) => {
 const useGeminiLLMAPI = prefer.model('useGeminiLLMAPI');
 const useGeminiWithMedia = prefer.model('useGeminiWithMedia');
 const geminiToken = prefer.model('geminiToken');
-const geminiModels = prefer.model('geminiModels');
+const geminiModel = prefer.model('geminiModel');
 const geminiSystemPrompt = prefer.model('geminiSystemPrompt');
 const geminiPromptNote = prefer.model('geminiPromptNote');
 const geminiPromptProfile = prefer.model('geminiPromptProfile');

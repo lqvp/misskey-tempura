@@ -98,7 +98,7 @@ export async function generateGeminiSummary({
 	userContent?: string;
 	systemInstruction?: string;
 }): Promise<any> {
-	const { geminiToken, geminiModels, useGeminiLLMAPI, useGeminiWithMedia = true } = prefer.s;
+	const { geminiToken, geminiModel, useGeminiLLMAPI, useGeminiWithMedia = true } = prefer.s;
 
 	// ノートからコンテンツを取得
 	const text = note?.text || userContent || '';
@@ -238,7 +238,7 @@ export async function generateGeminiSummary({
 
 	// Gemini APIにリクエスト送信
 	const response = await window.fetch(
-		`https://generativelanguage.googleapis.com/v1beta/models/${geminiModels}:generateContent?key=${geminiToken}`,
+		`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiToken}`,
 		{
 			method: 'POST',
 			headers: {
