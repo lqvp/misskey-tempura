@@ -7,7 +7,7 @@ export class AddIsScheduledForPrivateToNote1751110737616 {
     name = 'AddIsScheduledForPrivateToNote1751110737616';
 
     async up(queryRunner) {
-			await queryRunner.query(`ALTER TABLE "note" ADD "isScheduledForPrivate" boolean DEFAULT false`);
+			await queryRunner.query(`ALTER TABLE "note" ADD "isScheduledForPrivate" boolean NOT NULL DEFAULT false`);
     }
 
     async down(queryRunner) {
