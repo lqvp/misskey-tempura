@@ -178,14 +178,7 @@ class Systemd {
 		const supportedLangs = LANGS;
 		let lang = localStorage.getItem('lang');
 		if (lang == null || !supportedLangs.includes(lang)) {
-			if (supportedLangs.includes(navigator.language)) {
-				lang = navigator.language;
-			} else {
-				lang = supportedLangs.find(x => x.split('-')[0] === navigator.language);
-
-				// Fallback
-				if (lang == null) lang = 'en-US';
-			}
+			lang = 'ja-JP';
 		}
 
 		const metaRes = await systemd.start('Fetch /api/meta', window.fetch('/api/meta', {
