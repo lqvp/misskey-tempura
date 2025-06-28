@@ -370,8 +370,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				if (ps.scheduledDelete.deleteAt && ps.scheduledDelete.deleteAt > ps.scheduleNote.scheduledAt + ms('1year')) {
 					throw new ApiError(meta.errors.cannotScheduleDeleteLaterThanOneYear);
 				}
-
-				ps.scheduledDelete.isScheduledForPrivate = ps.isScheduledForPrivate;
 			}
 
 			const note: MiScheduleNoteType = {
