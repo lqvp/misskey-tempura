@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: lqvp
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 export const geminiModels = [
 	'gemini-2.0-flash',
 	'gemini-2.0-flash-lite',
