@@ -146,7 +146,7 @@ type Option = {
 	url?: string | null;
 	app?: MiApp | null;
 	deleteAt?: Date | null;
-	isScheduledForPrivate?: boolean | null;
+	isScheduledForPrivate?: boolean;
 };
 
 @Injectable()
