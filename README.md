@@ -7,7 +7,12 @@
 
 [Learn more](https://misskey-hub.net/)
 
-[おひとり様で使うように色々いじってます](./diff.md)
+---
+
+**Misskey-Tempuraは隠居向け・お一人様向け変なフォークです。**
+
+[詳細な更新情報](https://hackmd.io/@il2/misskey-tempura)
+[情報が古いフォーク差分](./diff.md)
 
 ---
 
