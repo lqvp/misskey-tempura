@@ -5,7 +5,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <button
-	v-if="isVisible"
 	ref="buttonEl"
 	v-ripple="canToggle"
 	class="_button"
@@ -19,7 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, inject, onMounted, ref, useTemplateRef, watch } from 'vue';
+import { computed, inject, onMounted, useTemplateRef, watch } from 'vue';
 import * as Misskey from 'misskey-js';
 import { getUnicodeEmoji } from '@@/js/emojilist.js';
 import MkCustomEmojiDetailedDialog from './MkCustomEmojiDetailedDialog.vue';
@@ -35,7 +34,6 @@ import { i18n } from '@/i18n.js';
 import * as sound from '@/utility/sound.js';
 import { checkReactionPermissions } from '@/utility/check-reaction-permissions.js';
 import { customEmojisMap } from '@/custom-emojis.js';
-import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 import { DI } from '@/di.js';
 import { noteEvents } from '@/composables/use-note-capture.js';
@@ -239,34 +237,19 @@ function anime() {
 	});
 }
 
-const isVisible = ref(true);
-
 watch(() => props.count, (newCount, oldCount) => {
 	if (oldCount < newCount) anime();
 });
 
-onMounted(async () => {
+onMounted(() => {
 	if (!props.isInitial) anime();
-
-	// リアクションしたのがミュートユーザーのみの場合は非表示にする
-	if (props.count > 0 && !store.s.hideReactionUsers) {
-		const reactions = await misskeyApi('notes/reactions', {
-			noteId: props.noteId,
-			type: props.reaction,
-			limit: 1,
-		});
-
-		if (reactions.length === 0) {
-			isVisible.value = false;
-		}
-	}
 });
 
 if (!mock) {
 	useTooltip(buttonEl, async (showing) => {
 		const useGet = !reactionChecksMuting.value;
 		const apiCall = useGet ? misskeyApiGet : misskeyApi;
-		const reactions = !store.s.hideReactionUsers ? await apiCall('notes/reactions', {
+		const reactions = !prefer.s.hideReactionUsers ? await apiCall('notes/reactions', {
 			noteId: props.noteId,
 			type: props.reaction,
 			limit: 10,
