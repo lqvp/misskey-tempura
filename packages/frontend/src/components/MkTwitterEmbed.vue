@@ -44,6 +44,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</a>
 		<Mfm v-if="tweetData.quote?.text && mfmQuoteText" :text="mfmQuoteText" :class="$style.quoteBody"/>
 		<MkMediaList v-if="quoteDriveFiles.length > 0" :mediaList="quoteDriveFiles" :class="$style.mediaContainer"/>
+		<div v-if="tweetData.quote.community_note" :class="$style.communityNote">
+			<div :class="$style.communityNoteHeader">
+				<i class="ti ti-users-group"></i>
+				<span>{{ i18n.ts.communityNote }}</span>
+			</div>
+			<Mfm v-if="mfmQuoteCommunityNoteText" :text="mfmQuoteCommunityNoteText" :class="$style.communityNoteText"/>
+		</div>
 		<footer :class="$style.quoteFooter">
 			<a :href="tweetData.quote.url" target="_blank" rel="noopener noreferrer" :class="$style.statsLink">
 				<div :class="[$style.stats]">
@@ -66,6 +73,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</a>
 			<Mfm v-if="tweetData.quote.source" :text="tweetData.quote.source" :class="$style.source"/>
 		</footer>
+	</div>
+	<div v-if="tweetData.community_note" :class="$style.communityNote">
+		<div :class="$style.communityNoteHeader">
+			<i class="ti ti-users-group"></i>
+			<span>{{ i18n.ts.communityNote }}</span>
+		</div>
+		<Mfm v-if="mfmCommunityNoteText" :text="mfmCommunityNoteText" :class="$style.communityNoteText"/>
 	</div>
 	<footer :class="$style.footer">
 		<a :href="tweetData.url" target="_blank" rel="noopener noreferrer" :class="$style.statsLink">
@@ -123,6 +137,23 @@ interface FxTweetMediaVideo {
 	duration_millis?: number;
 }
 
+interface FxCommunityNoteEntityRef {
+	type: string;
+	url: string;
+	urlType: string;
+}
+
+interface FxCommunityNoteEntity {
+	fromIndex: number;
+	toIndex: number;
+	ref: FxCommunityNoteEntityRef;
+}
+
+interface FxCommunityNote {
+	text: string;
+	entities?: FxCommunityNoteEntity[];
+}
+
 type FxTweetMedia = FxTweetMediaPhoto | FxTweetMediaVideo;
 
 interface FxTweet {
@@ -139,10 +170,13 @@ interface FxTweet {
 	url: string;
 	source: string;
 	possibly_sensitive?: boolean;
+	is_note_tweet: boolean;
+	community_note: FxCommunityNote | null;
 	id_str?: string;
 	replies?: number;
 	retweets?: number;
 	likes?: number;
+	bookmarks?: number;
 	views?: number;
 	quote?: FxTweet;
 }
@@ -208,6 +242,32 @@ const processTweetTextForTwitterContext = (text: string | undefined): string | u
 
 const mfmTweetText = computed(() => processTweetTextForTwitterContext(tweetData.value?.text));
 const mfmQuoteText = computed(() => processTweetTextForTwitterContext(tweetData.value?.quote?.text));
+
+const processCommunityNoteText = (note: FxCommunityNote | null | undefined): string | undefined => {
+	if (!note?.text) return undefined;
+
+	let processedText = note.text;
+	const entities = note.entities;
+
+	if (entities?.length) {
+		const sortedEntities = [...entities].sort((a, b) => b.fromIndex - a.fromIndex);
+
+		for (const entity of sortedEntities) {
+			const originalUrlText = processedText.substring(entity.fromIndex, entity.toIndex);
+			const targetUrl = entity.ref.url;
+			const markdownLink = `[${originalUrlText}](${targetUrl})`;
+			processedText =
+				processedText.substring(0, entity.fromIndex) +
+				markdownLink +
+				processedText.substring(entity.toIndex);
+		}
+	}
+
+	return processedText;
+};
+
+const mfmCommunityNoteText = computed(() => processCommunityNoteText(tweetData.value?.community_note));
+const mfmQuoteCommunityNoteText = computed(() => processCommunityNoteText(tweetData.value?.quote?.community_note));
 
 const mediaItems = computed((): FxTweetMedia[] => {
 	return tweetData.value?.media?.all || tweetData.value?.media?.photos || tweetData.value?.media?.videos || [];
@@ -526,6 +586,37 @@ function mapToDriveFile(media: FxTweetMedia, tweet: FxTweet | null): Misskey.ent
 	align-items: center;
 	&:hover {
 		text-decoration: underline;
+	}
+}
+
+.communityNote {
+	border: 1px solid var(--MI_THEME-warn);
+	background-color: rgba(var(--MI_THEME-warn-rgb), 0.1);
+	border-radius: 6px;
+	padding: 10px;
+	margin-top: 12px;
+	font-size: 0.9em;
+}
+
+.communityNoteHeader {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-weight: bold;
+	margin-bottom: 8px;
+	color: var(--MI_THEME-warn);
+}
+
+.communityNoteText {
+	white-space: pre-wrap;
+	word-wrap: break-word;
+
+	a {
+		color: var(--MI_THEME-accent);
+		text-decoration: none;
+		&:hover {
+			text-decoration: underline;
+		}
 	}
 }
 

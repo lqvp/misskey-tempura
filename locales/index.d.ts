@@ -14539,6 +14539,10 @@ export interface Locale extends ILocale {
      */
     "failedToLoadTweet": string;
     /**
+     * コミュニティノート
+     */
+    "communityNote": string;
+    /**
      * 招待コードをコピー
      */
     "copyInviteCode": string;
