@@ -14622,27 +14622,27 @@ export interface Locale extends ILocale {
         /**
          * 公開 (Public) の投稿を連合する
          */
-        "public": string;
+        "publicVisibility": string;
         /**
          * チェックを外すと、outboxから公開設定の投稿が拾えなくなります。
          */
-        "publicDescription": string;
+        "publicVisibilityDescription": string;
         /**
          * セミパブリック (Public Non-LTL) の投稿を連合する
          */
-        "public_non_ltl": string;
+        "publicNonLtlVisibility": string;
         /**
          * チェックを外すと、outboxからセミパブリック設定の投稿が拾えなくなります。
          */
-        "public_non_ltlDescription": string;
+        "publicNonLtlVisibilityDescription": string;
         /**
          * ホーム (Home) の投稿を連合する
          */
-        "home": string;
+        "homeVisibility": string;
         /**
          * チェックを外すと、outboxからホーム設定の投稿が拾えなくなります。
          */
-        "homeDescription": string;
+        "homeVisibilityDescription": string;
     };
 }
 declare const locales: {

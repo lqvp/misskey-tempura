@@ -476,23 +476,16 @@ export class ActivityPubServerService {
 				const visibility = note.visibility;
 				const filter = userProfile.outboxFilter;
 
-				if (filter == null) {
-					return visibility === 'public' || visibility === 'public_non_ltl' || visibility === 'home';
+				switch (visibility) {
+					case 'public':
+						return filter.public !== false;
+					case 'public_non_ltl':
+						return filter.public_non_ltl !== false;
+					case 'home':
+						return filter.home !== false;
+					default:
+						return false;
 				}
-
-				if (visibility === 'public') {
-					return filter.public;
-				}
-
-				if (visibility === 'public_non_ltl') {
-					return filter.public_non_ltl;
-				}
-
-				if (visibility === 'home') {
-					return filter.home;
-				}
-
-				return false;
 			};
 
 			const notes = this.meta.enableFanoutTimeline ? await this.fanoutTimelineEndpointService.getMiNotes({
@@ -515,6 +508,7 @@ export class ActivityPubServerService {
 						sinceId,
 						limit,
 						userId: user.id,
+						userProfile,
 					});
 				},
 			}) : (await this.getUserNotesFromDb({
@@ -522,6 +516,7 @@ export class ActivityPubServerService {
 				sinceId: sinceId ?? null,
 				limit,
 				userId: user.id,
+				userProfile,
 			})).filter(noteFilter);
 
 			if (sinceId) notes.reverse();
@@ -566,14 +561,38 @@ export class ActivityPubServerService {
 		sinceId: string | null,
 		limit: number,
 		userId: MiUser['id'],
+		userProfile: { outboxFilter?: { public?: boolean, public_non_ltl?: boolean, home?: boolean } },
 	}) {
-		return await this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), ps.sinceId, ps.untilId)
-			.andWhere('note.userId = :userId', { userId: ps.userId })
-			.andWhere(new Brackets(qb => {
-				qb
-					.where('note.visibility = \'public\'')
-					.orWhere('note.visibility = \'home\'');
-			}))
+		const visibilityConditions: string[] = [];
+		if (ps.userProfile.outboxFilter?.public !== false) {
+			visibilityConditions.push('note.visibility = \'public\'');
+		}
+		if (ps.userProfile.outboxFilter?.public_non_ltl !== false) {
+			visibilityConditions.push('note.visibility = \'public_non_ltl\'');
+		}
+		if (ps.userProfile.outboxFilter?.home !== false) {
+			visibilityConditions.push('note.visibility = \'home\'');
+		}
+
+		const qb = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), ps.sinceId, ps.untilId)
+			.andWhere('note.userId = :userId', { userId: ps.userId });
+
+		if (visibilityConditions.length > 0) {
+			qb.andWhere(new Brackets(qb => {
+				visibilityConditions.forEach((condition, index) => {
+					if (index === 0) {
+						qb.where(condition);
+					} else {
+						qb.orWhere(condition);
+					}
+				});
+			}));
+		} else {
+			// 全てfalseの場合は何も返さないようにする
+			qb.andWhere('1 = 0');
+		}
+
+		return await qb
 			.andWhere('note.localOnly = FALSE')
 			.limit(ps.limit)
 			.getMany();

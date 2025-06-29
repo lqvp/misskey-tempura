@@ -221,7 +221,7 @@ export class MiUserProfile {
 	public autoFollowOnMove: boolean;
 
 	@Column('jsonb', {
-		default: {},
+		default: { public: true, public_non_ltl: true, home: true },
 	})
 	public outboxFilter: {
 		public: boolean;

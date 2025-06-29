@@ -46,18 +46,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<template #caption>{{ i18n.ts._outboxFilter.description }}</template>
 			<div class="_gpas_m">
 				<MkSwitch v-model="outboxFilter.public" @update:modelValue="save()">
-					{{ i18n.ts._outboxFilter.public }}
-					<template #caption>{{ i18n.ts._outboxFilter.publicDescription }}</template>
+					{{ i18n.ts._outboxFilter.publicVisibility }}
+					<template #caption>{{ i18n.ts._outboxFilter.publicVisibilityDescription }}</template>
 				</MkSwitch>
 
 				<MkSwitch v-model="outboxFilter.public_non_ltl" @update:modelValue="save()">
-					{{ i18n.ts._outboxFilter.public_non_ltl }}
-					<template #caption>{{ i18n.ts._outboxFilter.public_non_ltlDescription }}</template>
+					{{ i18n.ts._outboxFilter.publicNonLtlVisibility }}
+					<template #caption>{{ i18n.ts._outboxFilter.publicNonLtlVisibilityDescription }}</template>
 				</MkSwitch>
 
 				<MkSwitch v-model="outboxFilter.home" @update:modelValue="save()">
-					{{ i18n.ts._outboxFilter.home }}
-					<template #caption>{{ i18n.ts._outboxFilter.homeDescription }}</template>
+					{{ i18n.ts._outboxFilter.homeVisibility }}
+					<template #caption>{{ i18n.ts._outboxFilter.homeVisibilityDescription }}</template>
 				</MkSwitch>
 			</div>
 		</MkFolder>
@@ -299,7 +299,7 @@ const autoAcceptFollowed = ref($i.autoAcceptFollowed);
 const autoRejectFollowRequest = ref($i.autoRejectFollowRequest);
 const autoFollowBack = ref($i.autoFollowBack);
 const autoFollowOnMove = ref($i.autoFollowOnMove);
-const outboxFilter = ref($i.outboxFilter ?? { public: true, public_non_ltl: true, home: true });
+const outboxFilter = ref({ public: true, public_non_ltl: true, home: true, ...$i.outboxFilter });
 const carefulBot = ref($i.carefulBot);
 const noCrawle = ref($i.noCrawle);
 const preventAiLearning = ref($i.preventAiLearning);

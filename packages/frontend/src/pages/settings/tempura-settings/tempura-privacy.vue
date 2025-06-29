@@ -42,23 +42,23 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<template #caption>{{ i18n.ts._outboxFilter.description }}</template>
 				<div class="_gpas_m">
 					<SearchMarker :keywords="['outbox', 'filter', 'public']">
-						<MkSwitch v-model="outboxFilter.public" @update:modelValue="save()">
-							{{ i18n.ts._outboxFilter.public }}
-							<template #caption>{{ i18n.ts._outboxFilter.publicDescription }}</template>
+						<MkSwitch v-model="outboxFilter.public" @update:modelValue="save_privacy()">
+							{{ i18n.ts._outboxFilter.publicVisibility }}
+							<template #caption>{{ i18n.ts._outboxFilter.publicVisibilityDescription }}</template>
 						</MkSwitch>
 					</SearchMarker>
 
 					<SearchMarker :keywords="['outbox', 'filter', 'public_non_ltl']">
-						<MkSwitch v-model="outboxFilter.public_non_ltl" @update:modelValue="save()">
-							{{ i18n.ts._outboxFilter.public_non_ltl }}
-							<template #caption>{{ i18n.ts._outboxFilter.public_non_ltlDescription }}</template>
+						<MkSwitch v-model="outboxFilter.public_non_ltl" @update:modelValue="save_privacy()">
+							{{ i18n.ts._outboxFilter.publicNonLtlVisibility }}
+							<template #caption>{{ i18n.ts._outboxFilter.publicNonLtlVisibilityDescription }}</template>
 						</MkSwitch>
 					</SearchMarker>
 
 					<SearchMarker :keywords="['outbox', 'filter', 'home']">
-						<MkSwitch v-model="outboxFilter.home" @update:modelValue="save()">
-							{{ i18n.ts._outboxFilter.home }}
-							<template #caption>{{ i18n.ts._outboxFilter.homeDescription }}</template>
+						<MkSwitch v-model="outboxFilter.home" @update:modelValue="save_privacy()">
+							{{ i18n.ts._outboxFilter.homeVisibility }}
+							<template #caption>{{ i18n.ts._outboxFilter.homeVisibilityDescription }}</template>
 						</MkSwitch>
 					</SearchMarker>
 				</div>
@@ -128,7 +128,7 @@ const isLocked = ref($i.isLocked);
 const autoRejectFollowRequest = ref($i.autoRejectFollowRequest);
 const autoFollowBack = ref($i.autoFollowBack);
 const autoFollowOnMove = ref($i.autoFollowOnMove);
-const outboxFilter = ref($i.outboxFilter ?? { public: true, public_non_ltl: true, home: true });
+const outboxFilter = ref({ public: true, public_non_ltl: true, home: true, ...$i.outboxFilter });
 const carefulBot = ref($i.carefulBot);
 const hideActivity = ref($i.hideActivity);
 const hideNoteFromOverview = ref($i.hideNoteFromOverview);
