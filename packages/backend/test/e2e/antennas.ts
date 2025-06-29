@@ -608,6 +608,26 @@ describe('アンテナ', () => {
 					{ note: (): Promise<Note> => post(bob, { text: `${keyword}` }), included: true },
 				],
 			},
+			{
+				label: 'フォロワーのみの投稿を取得',
+				parameters: () => ({ onlyFollowers: true }),
+				posts: [
+					{ note: (): Promise<Note> => post(alice, { text: `${keyword}` }), included: true }, // 自分の投稿
+					{ note: (): Promise<Note> => post(userFollowingAlice, { text: `${keyword}` }), included: true }, // フォロワーの投稿
+					{ note: (): Promise<Note> => post(bob, { text: `${keyword}` }) }, // 非フォロワーの投稿は除外
+					{ note: (): Promise<Note> => post(userFollowedByAlice, { text: `${keyword}` }) }, // フォロー先の投稿は除外
+				],
+			},
+			{
+				label: 'フォロワー制限なしの投稿を取得',
+				parameters: () => ({ onlyFollowers: false }),
+				posts: [
+					{ note: (): Promise<Note> => post(alice, { text: `${keyword}` }), included: true },
+					{ note: (): Promise<Note> => post(userFollowingAlice, { text: `${keyword}` }), included: true },
+					{ note: (): Promise<Note> => post(bob, { text: `${keyword}` }), included: true },
+					{ note: (): Promise<Note> => post(userFollowedByAlice, { text: `${keyword}` }), included: true },
+				],
+			},
 		])('が取得できること（$label）', async ({ parameters, posts }) => {
 			const antenna = await successfulApiCall({
 				endpoint: 'antennas/create',
