@@ -42,8 +42,9 @@ const MAX_API_NOTES_PER_REQUEST = 100;
  *
  * @param userId 要約対象のユーザーID
  * @param notesLimit 取得するノートの最大数（デフォルト: 15）
+ * @param includeFollowers followersのノートを含めるかどうか（デフォルト: false）
  */
-export async function summarizeUserProfile(userId: string, notesLimit?: number): Promise<void> {
+export async function summarizeUserProfile(userId: string, notesLimit?: number, includeFollowers = false): Promise<void> {
 	const waitingFlag = ref(true);
 	const waitingPopup = os.popup(defineAsyncComponent(() => import('@/components/MkWaitingDialog.vue')), {
 		success: false,
@@ -108,12 +109,17 @@ export async function summarizeUserProfile(userId: string, notesLimit?: number):
 			}
 		}
 
-		// visibilityがpublic, home, public_non_ltlのノートのみをフィルタリング
-		const filteredNotes = allNotes.filter(
-			(note: NoteItem) =>
-				note.visibility === 'public' ||
-				note.visibility === 'home' ||
-				note.visibility === 'public_non_ltl',
+		// 許可されたvisibilityのノートをフィルタリング
+		const allowedVisibilities: NoteItem['visibility'][] = [
+			'public',
+			'home',
+			'public_non_ltl',
+		];
+		if (includeFollowers) {
+			allowedVisibilities.push('followers');
+		}
+		const filteredNotes = allNotes.filter((note: NoteItem) =>
+			(allowedVisibilities as string[]).includes(note.visibility),
 		);
 
 		// nullでないテキストのみを抽出

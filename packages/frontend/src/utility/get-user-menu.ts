@@ -13,7 +13,7 @@ import { i18n } from '@/i18n.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
-import { store } from "@/store.js";
+import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 import { $i, iAmModerator } from '@/i.js';
 import { notesSearchAvailable, canSearchNonLocalNotes } from '@/utility/check-permissions.js';
@@ -295,16 +295,23 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 			text: i18n.ts._llm.summarizeProfile,
 			action: async () => {
 				// プロフィール要約で取得するノート数を指定できるようにする
-				const { canceled, result } = await os.inputNumber({
+				const { canceled: canceledNotesLimit, result: notesLimit } = await os.inputNumber({
 					title: i18n.ts._llm.summarizeProfile,
 					text: i18n.ts._llm.notesLimitPrompt,
 					default: 15,
 				});
 
-				if (canceled) return;
+				if (canceledNotesLimit) return;
+
+				// followersの投稿を含めるか確認
+				const { canceled: canceledFollowers } = await os.confirm({
+					title: i18n.ts._llm.summarizeProfile,
+					text: i18n.ts._llm.includeFollowersNotesPrompt,
+				});
+				const includeFollowers = !canceledFollowers;
 
 				// キャンセルされなかった場合、指定された数値でプロフィール要約を実行
-				await summarizeUserProfile(user.id, result);
+				await summarizeUserProfile(user.id, notesLimit, includeFollowers);
 			},
 		} : undefined, ...(prefer.s.nicknameEnabled ? [{
 			icon: 'ti ti-edit',

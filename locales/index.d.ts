@@ -13678,6 +13678,10 @@ export interface Locale extends ILocale {
          */
         "notesLimitPrompt": string;
         /**
+         * フォロワー限定(Followers)の投稿を含める
+         */
+        "includeFollowersNotesPrompt": string;
+        /**
          * ノートの変換
          */
         "notesTransformation": string;

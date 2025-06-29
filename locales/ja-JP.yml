@@ -3662,6 +3662,7 @@ _llm:
   summarizeNote: "ノートを要約"
   summarizeProfile: "プロフィールを要約"
   notesLimitPrompt: "ノート取得数を指定してください"
+  includeFollowersNotesPrompt: "フォロワー限定(Followers)の投稿を含める"
   notesTransformation: "ノートの変換"
   notesPrompt: "ノートのプロンプト"
   notesPromptDescription: "ノートを作成する際のプロンプトを設定します。"
