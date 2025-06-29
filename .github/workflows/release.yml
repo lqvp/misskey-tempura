@@ -1,0 +1,134 @@
+name: Create Release on Version Update
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'package.json'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Parse version from package.json
+        id: parse_version
+        run: |
+          # package.jsonからバージョンを取得
+          VERSION=$(jq -r .version package.json)
+          echo "Full Version: $VERSION"
+
+          # 'tempura-X.X.X' の部分を抽出（より厳密な正規表現）
+          TEMPURA_PART=$(echo "$VERSION" | sed -n 's/.*tempura-\([0-9]\+\.[0-9]\+\.[0-9]\+[^[:space:]]*\).*/\1/p')
+          if [ -z "$TEMPURA_PART" ]; then
+            echo "::notice::No tempura version found in $VERSION, skipping release creation"
+            echo "skip_release=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "Tempura Part: $TEMPURA_PART"
+
+          # タグ名を設定
+          TAG_NAME="v$TEMPURA_PART"
+          echo "tag_name=$TAG_NAME" >> "$GITHUB_OUTPUT"
+
+          # -dev が含まれているかでstableかbetaかを判断
+          if [[ "$TEMPURA_PART" == *"-dev"* ]]; then
+            IS_STABLE=false
+            RELEASE_NAME="Beta Release: $TEMPURA_PART"
+          else
+            IS_STABLE=true
+            RELEASE_NAME="Stable Release: $TEMPURA_PART"
+          fi
+
+          echo "is_stable=$IS_STABLE" >> "$GITHUB_OUTPUT"
+          echo "release_name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
+          echo "skip_release=false" >> "$GITHUB_OUTPUT"
+
+      - name: Check if tag already exists
+        if: steps.parse_version.outputs.skip_release != 'true'
+        id: check_tag
+        run: |
+          TAG_NAME="${{ steps.parse_version.outputs.tag_name }}"
+
+          # リモートからタグ情報を取得
+          git fetch --tags
+
+          # タグが既に存在するかチェック
+          if git rev-parse "refs/tags/$TAG_NAME" >/dev/null 2>&1; then
+            echo "::notice::Tag $TAG_NAME already exists, skipping release creation"
+            echo "tag_exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Tag $TAG_NAME does not exist, proceeding with release creation"
+            echo "tag_exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Generate Release Notes for Stable Release
+        if: |
+          steps.parse_version.outputs.skip_release != 'true' &&
+          steps.check_tag.outputs.tag_exists != 'true' &&
+          steps.parse_version.outputs.is_stable == 'true'
+        id: generate_stable_notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_TAG: ${{ steps.parse_version.outputs.tag_name }}
+        run: |
+          # プレリリースではない、最新のリリースのタグ名を取得
+          PREVIOUS_STABLE_TAG=$(gh release list \
+            --repo ${{ github.repository }} \
+            --exclude-pre-releases \
+            --limit 1 \
+            --json tagName \
+            --jq -r ".[0].tagName // \"\"")
+
+          echo "Previous stable tag: $PREVIOUS_STABLE_TAG"
+
+          # リリースノートを生成
+          if [ -n "$PREVIOUS_STABLE_TAG" ]; then
+            GENERATED_NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes \
+              -f tag_name="$NEW_TAG" \
+              -f previous_tag_name="$PREVIOUS_STABLE_TAG" \
+              --jq '.body')
+          else
+            # 初回リリースの場合
+            GENERATED_NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes \
+              -f tag_name="$NEW_TAG" \
+              --jq '.body')
+          fi
+
+          # マルチライン出力の安全な設定
+          {
+            echo "notes<<EOF_DELIMITER_$(date +%s)"
+            echo "$GENERATED_NOTES"
+            echo "EOF_DELIMITER_$(date +%s)"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        if: |
+          steps.parse_version.outputs.skip_release != 'true' &&
+          steps.check_tag.outputs.tag_exists != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.parse_version.outputs.tag_name }}
+          name: ${{ steps.parse_version.outputs.release_name }}
+          body: ${{ steps.generate_stable_notes.outputs.notes || 'This is a beta (development) release.' }}
+          prerelease: ${{ steps.parse_version.outputs.is_stable == 'false' }}
+          make_latest: ${{ steps.parse_version.outputs.is_stable == 'true' }}
+
+      - name: Output release result
+        if: steps.parse_version.outputs.skip_release != 'true'
+        run: |
+          if [ "${{ steps.check_tag.outputs.tag_exists }}" == "true" ]; then
+            echo "::notice::Release was skipped because tag ${{ steps.parse_version.outputs.tag_name }} already exists"
+          else
+            echo "::notice::Successfully created release ${{ steps.parse_version.outputs.release_name }}"
+            echo "::notice::Release URL: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.parse_version.outputs.tag_name }}"
+          fi
