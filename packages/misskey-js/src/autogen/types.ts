@@ -4263,6 +4263,11 @@ export type components = {
             autoRejectFollowRequest: boolean;
             autoFollowBack: boolean;
             autoFollowOnMove: boolean;
+            outboxFilter: {
+                public: boolean;
+                public_non_ltl: boolean;
+                home: boolean;
+            };
             /** @enum {string} */
             receiveSpecifiedNotesFrom: 'all' | 'following' | 'nobody';
             noCrawle: boolean;
@@ -28361,6 +28366,11 @@ export interface operations {
                     autoRejectFollowRequest?: boolean;
                     autoFollowBack?: boolean;
                     autoFollowOnMove?: boolean;
+                    outboxFilter?: {
+                        public: boolean;
+                        public_non_ltl: boolean;
+                        home: boolean;
+                    };
                     /** @enum {string} */
                     receiveSpecifiedNotesFrom?: 'all' | 'following' | 'nobody';
                     noCrawle?: boolean;

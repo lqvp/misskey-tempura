@@ -220,6 +220,15 @@ export class MiUserProfile {
 	})
 	public autoFollowOnMove: boolean;
 
+	@Column('jsonb', {
+		default: { public: true, public_non_ltl: true, home: true },
+	})
+	public outboxFilter: {
+		public: boolean;
+		public_non_ltl: boolean;
+		home: boolean;
+	};
+
 	@Column('boolean', {
 		default: false,
 		comment: 'Whether reject index by crawler.',

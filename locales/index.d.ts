@@ -14610,6 +14610,40 @@ export interface Locale extends ILocale {
          */
         "makePrivateInsteadOfDelete": string;
     };
+    "_outboxFilter": {
+        /**
+         * outboxに含める投稿の公開範囲
+         */
+        "title": string;
+        /**
+         * outboxから投稿を拾えなくなります。Activityを送信することには影響ありません。
+         */
+        "description": string;
+        /**
+         * 公開 (Public) の投稿を連合する
+         */
+        "publicVisibility": string;
+        /**
+         * チェックを外すと、outboxから公開設定の投稿が拾えなくなります。
+         */
+        "publicVisibilityDescription": string;
+        /**
+         * セミパブリック (Public Non-LTL) の投稿を連合する
+         */
+        "publicNonLtlVisibility": string;
+        /**
+         * チェックを外すと、outboxからセミパブリック設定の投稿が拾えなくなります。
+         */
+        "publicNonLtlVisibilityDescription": string;
+        /**
+         * ホーム (Home) の投稿を連合する
+         */
+        "homeVisibility": string;
+        /**
+         * チェックを外すと、outboxからホーム設定の投稿が拾えなくなります。
+         */
+        "homeVisibilityDescription": string;
+    };
 }
 declare const locales: {
     [lang: string]: Locale;

@@ -41,6 +41,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<template #caption>{{ i18n.ts.autoFollowOnMoveDescription }}</template>
 		</MkSwitch>
 
+		<MkFolder>
+			<template #label>{{ i18n.ts._outboxFilter.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+			<template #caption>{{ i18n.ts._outboxFilter.description }}</template>
+			<div class="_gpas_m">
+				<MkSwitch v-model="outboxFilter.public" @update:modelValue="save()">
+					{{ i18n.ts._outboxFilter.publicVisibility }}
+					<template #caption>{{ i18n.ts._outboxFilter.publicVisibilityDescription }}</template>
+				</MkSwitch>
+
+				<MkSwitch v-model="outboxFilter.public_non_ltl" @update:modelValue="save()">
+					{{ i18n.ts._outboxFilter.publicNonLtlVisibility }}
+					<template #caption>{{ i18n.ts._outboxFilter.publicNonLtlVisibilityDescription }}</template>
+				</MkSwitch>
+
+				<MkSwitch v-model="outboxFilter.home" @update:modelValue="save()">
+					{{ i18n.ts._outboxFilter.homeVisibility }}
+					<template #caption>{{ i18n.ts._outboxFilter.homeVisibilityDescription }}</template>
+				</MkSwitch>
+			</div>
+		</MkFolder>
+
 		<MkSwitch v-model="hideActivity" @update:modelValue="save()">
 			{{ i18n.ts.hideActivity }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 			<template #caption>{{ i18n.ts.hideActivityDescription }}</template>
@@ -278,6 +299,7 @@ const autoAcceptFollowed = ref($i.autoAcceptFollowed);
 const autoRejectFollowRequest = ref($i.autoRejectFollowRequest);
 const autoFollowBack = ref($i.autoFollowBack);
 const autoFollowOnMove = ref($i.autoFollowOnMove);
+const outboxFilter = ref({ public: true, public_non_ltl: true, home: true, ...$i.outboxFilter });
 const carefulBot = ref($i.carefulBot);
 const noCrawle = ref($i.noCrawle);
 const preventAiLearning = ref($i.preventAiLearning);
@@ -341,6 +363,11 @@ function save() {
 		autoRejectFollowRequest: !!autoRejectFollowRequest.value,
 		autoFollowBack: !!autoFollowBack.value,
 		autoFollowOnMove: !!autoFollowOnMove.value,
+		outboxFilter: {
+			public: !!outboxFilter.value.public,
+			public_non_ltl: !!outboxFilter.value.public_non_ltl,
+			home: !!outboxFilter.value.home,
+		},
 		carefulBot: !!carefulBot.value,
 		noCrawle: !!noCrawle.value,
 		preventAiLearning: !!preventAiLearning.value,

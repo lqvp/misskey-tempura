@@ -3942,3 +3942,13 @@ skipPasteUploadDialogDescription: "有効にすると、投稿フォームに画
 
 _scheduledNote:
   makePrivateInsteadOfDelete: "代わりにプライベートにする"
+
+_outboxFilter:
+  title: "outboxに含める投稿の公開範囲"
+  description: "outboxから投稿を拾えなくなります。Activityを送信することには影響ありません。"
+  publicVisibility: "公開 (Public) の投稿を連合する"
+  publicVisibilityDescription: "チェックを外すと、outboxから公開設定の投稿が拾えなくなります。"
+  publicNonLtlVisibility: "セミパブリック (Public Non-LTL) の投稿を連合する"
+  publicNonLtlVisibilityDescription: "チェックを外すと、outboxからセミパブリック設定の投稿が拾えなくなります。"
+  homeVisibility: "ホーム (Home) の投稿を連合する"
+  homeVisibilityDescription: "チェックを外すと、outboxからホーム設定の投稿が拾えなくなります。"

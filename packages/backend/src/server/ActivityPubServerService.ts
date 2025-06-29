@@ -8,7 +8,7 @@ import { IncomingMessage } from 'node:http';
 import { Inject, Injectable } from '@nestjs/common';
 import fastifyAccepts from '@fastify/accepts';
 import httpSignature from '@peertube/http-signature';
-import { Brackets, In, IsNull, LessThan, Not } from 'typeorm';
+import { In, IsNull, LessThan, Not } from 'typeorm';
 import accepts from 'accepts';
 import vary from 'vary';
 import secureJson from 'secure-json-parse';
@@ -459,10 +459,26 @@ export class ActivityPubServerService {
 			return;
 		}
 
+		const userProfile = await this.userProfilesRepository.findOneBy({ userId: user.id });
+		if (userProfile == null) {
+			// This should not happen for a valid user
+			reply.code(404);
+			return;
+		}
+
 		const limit = 20;
 		const partOf = `${this.config.url}/users/${userId}/outbox`;
 
 		if (page) {
+			const visibilities: ('public' | 'public_non_ltl' | 'home')[] = ['public', 'public_non_ltl', 'home'];
+			const filterSettings = userProfile.outboxFilter;
+			const visibilitiesToShow = visibilities.filter(v => filterSettings?.[v] !== false);
+
+			const noteFilter = (note: MiNote) => {
+				if (note.localOnly) return false;
+				return (visibilitiesToShow as (MiNote['visibility'])[]).includes(note.visibility);
+			};
+
 			const notes = this.meta.enableFanoutTimeline ? await this.fanoutTimelineEndpointService.getMiNotes({
 				sinceId: sinceId ?? null,
 				untilId: untilId ?? null,
@@ -476,17 +492,14 @@ export class ActivityPubServerService {
 				useDbFallback: true,
 				ignoreAuthorFromMute: true,
 				excludePureRenotes: false,
-				noteFilter: (note) => {
-					if (note.visibility !== 'home' && note.visibility !== 'public') return false;
-					if (note.localOnly) return false;
-					return true;
-				},
+				noteFilter: noteFilter,
 				dbFallback: async (untilId, sinceId, limit) => {
 					return await this.getUserNotesFromDb({
 						untilId,
 						sinceId,
 						limit,
 						userId: user.id,
+						visibilities: visibilitiesToShow,
 					});
 				},
 			}) : await this.getUserNotesFromDb({
@@ -494,6 +507,7 @@ export class ActivityPubServerService {
 				sinceId: sinceId ?? null,
 				limit,
 				userId: user.id,
+				visibilities: visibilitiesToShow,
 			});
 
 			if (sinceId) notes.reverse();
@@ -538,14 +552,19 @@ export class ActivityPubServerService {
 		sinceId: string | null,
 		limit: number,
 		userId: MiUser['id'],
+		visibilities: ('public' | 'public_non_ltl' | 'home')[],
 	}) {
-		return await this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), ps.sinceId, ps.untilId)
-			.andWhere('note.userId = :userId', { userId: ps.userId })
-			.andWhere(new Brackets(qb => {
-				qb
-					.where('note.visibility = \'public\'')
-					.orWhere('note.visibility = \'home\'');
-			}))
+		const qb = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), ps.sinceId, ps.untilId)
+			.andWhere('note.userId = :userId', { userId: ps.userId });
+
+		if (ps.visibilities.length > 0) {
+			qb.andWhere('note.visibility IN (:...visibilities)', { visibilities: ps.visibilities });
+		} else {
+			// 全てfalseの場合は何も返さないようにする
+			qb.andWhere('1 = 0');
+		}
+
+		return await qb
 			.andWhere('note.localOnly = FALSE')
 			.limit(ps.limit)
 			.getMany();

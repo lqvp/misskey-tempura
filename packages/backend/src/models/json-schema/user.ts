@@ -548,6 +548,24 @@ export const packedMeDetailedOnlySchema = {
 			type: 'boolean',
 			nullable: false, optional: false,
 		},
+		outboxFilter: {
+			type: 'object',
+			nullable: false, optional: false,
+			properties: {
+				public: {
+					type: 'boolean',
+					nullable: false, optional: false,
+				},
+				public_non_ltl: {
+					type: 'boolean',
+					nullable: false, optional: false,
+				},
+				home: {
+					type: 'boolean',
+					nullable: false, optional: false,
+				},
+			},
+		},
 		receiveSpecifiedNotesFrom: {
 			type: 'string',
 			nullable: false, optional: false,
