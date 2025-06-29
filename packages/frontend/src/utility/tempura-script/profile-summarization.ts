@@ -18,7 +18,7 @@ import { i18n } from '@/i18n.js';
 interface NoteItem {
 	id: string;
 	text: string | null;
-	visibility: 'public' | 'home' | 'followers' | 'specified';
+	visibility: 'public' | 'home' | 'followers' | 'specified' | 'public_non_ltl';
 }
 
 /**
@@ -108,9 +108,12 @@ export async function summarizeUserProfile(userId: string, notesLimit?: number):
 			}
 		}
 
-		// visibilityがpublicまたはhomeのノートのみをフィルタリング
+		// visibilityがpublic, home, public_non_ltlのノートのみをフィルタリング
 		const filteredNotes = allNotes.filter(
-			(note: NoteItem) => note.visibility === 'public' || note.visibility === 'home',
+			(note: NoteItem) =>
+				note.visibility === 'public' ||
+				note.visibility === 'home' ||
+				note.visibility === 'public_non_ltl',
 		);
 
 		// nullでないテキストのみを抽出
