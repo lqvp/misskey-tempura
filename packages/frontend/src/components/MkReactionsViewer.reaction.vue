@@ -5,6 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <button
+	v-if="isVisible"
 	ref="buttonEl"
 	v-ripple="canToggle"
 	class="_button"
@@ -18,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, inject, onMounted, useTemplateRef, watch } from 'vue';
+import { computed, inject, onMounted, ref, useTemplateRef, watch } from 'vue';
 import * as Misskey from 'misskey-js';
 import { getUnicodeEmoji } from '@@/js/emojilist.js';
 import MkCustomEmojiDetailedDialog from './MkCustomEmojiDetailedDialog.vue';
@@ -238,12 +239,27 @@ function anime() {
 	});
 }
 
+const isVisible = ref(true);
+
 watch(() => props.count, (newCount, oldCount) => {
 	if (oldCount < newCount) anime();
 });
 
-onMounted(() => {
+onMounted(async () => {
 	if (!props.isInitial) anime();
+
+	// リアクションしたのがミュートユーザーのみの場合は非表示にする
+	if (props.count > 0 && !store.s.hideReactionUsers) {
+		const reactions = await misskeyApi('notes/reactions', {
+			noteId: props.noteId,
+			type: props.reaction,
+			limit: 1,
+		});
+
+		if (reactions.length === 0) {
+			isVisible.value = false;
+		}
+	}
 });
 
 if (!mock) {
