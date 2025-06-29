@@ -470,16 +470,13 @@ export class ActivityPubServerService {
 		const partOf = `${this.config.url}/users/${userId}/outbox`;
 
 		if (page) {
-			const visibilitiesToShow: ('public' | 'public_non_ltl' | 'home')[] = [];
+			const visibilities: ('public' | 'public_non_ltl' | 'home')[] = ['public', 'public_non_ltl', 'home'];
 			const filterSettings = userProfile.outboxFilter;
-			if (filterSettings?.public !== false) visibilitiesToShow.push('public');
-			if (filterSettings?.public_non_ltl !== false) visibilitiesToShow.push('public_non_ltl');
-			if (filterSettings?.home !== false) visibilitiesToShow.push('home');
+			const visibilitiesToShow = visibilities.filter(v => filterSettings?.[v] !== false);
 
 			const noteFilter = (note: MiNote) => {
 				if (note.localOnly) return false;
-				// The cast is needed because note.visibility is a wider type.
-				return visibilitiesToShow.includes(note.visibility as any);
+				return (visibilitiesToShow as (MiNote['visibility'])[]).includes(note.visibility);
 			};
 
 			const notes = this.meta.enableFanoutTimeline ? await this.fanoutTimelineEndpointService.getMiNotes({

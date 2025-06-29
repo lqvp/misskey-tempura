@@ -371,12 +371,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			if (typeof ps.autoRejectFollowRequest === 'boolean') profileUpdates.autoRejectFollowRequest = ps.autoRejectFollowRequest;
 			if (typeof ps.autoFollowBack === 'boolean') profileUpdates.autoFollowBack = ps.autoFollowBack;
 			if (typeof ps.autoFollowOnMove === 'boolean') profileUpdates.autoFollowOnMove = ps.autoFollowOnMove;
-			if (ps.outboxFilter != null && typeof ps.outboxFilter === 'object') {
-				profileUpdates.outboxFilter = {
-					public: ps.outboxFilter.public,
-					public_non_ltl: ps.outboxFilter.public_non_ltl,
-					home: ps.outboxFilter.home,
-				};
+			if (ps.outboxFilter) {
+				const { public, public_non_ltl, home } = ps.outboxFilter;
+				profileUpdates.outboxFilter = { public, public_non_ltl, home };
 			}
 			if (typeof ps.receiveSpecifiedNotesFrom === 'string') profileUpdates.receiveSpecifiedNotesFrom = ps.receiveSpecifiedNotesFrom;
 			if (typeof ps.noCrawle === 'boolean') profileUpdates.noCrawle = ps.noCrawle;
