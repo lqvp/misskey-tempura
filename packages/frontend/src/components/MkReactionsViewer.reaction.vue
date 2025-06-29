@@ -34,7 +34,6 @@ import { i18n } from '@/i18n.js';
 import * as sound from '@/utility/sound.js';
 import { checkReactionPermissions } from '@/utility/check-reaction-permissions.js';
 import { customEmojisMap } from '@/custom-emojis.js';
-import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 import { DI } from '@/di.js';
 import { noteEvents } from '@/composables/use-note-capture.js';
@@ -250,7 +249,7 @@ if (!mock) {
 	useTooltip(buttonEl, async (showing) => {
 		const useGet = !reactionChecksMuting.value;
 		const apiCall = useGet ? misskeyApiGet : misskeyApi;
-		const reactions = !store.s.hideReactionUsers ? await apiCall('notes/reactions', {
+		const reactions = !prefer.s.hideReactionUsers ? await apiCall('notes/reactions', {
 			noteId: props.noteId,
 			type: props.reaction,
 			limit: 10,

@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	tag="div" :class="$style.root"
 >
 	<XReaction
-		v-for="[reaction, count] in _reactions"
+		v-for="[reaction, count] in filteredReactions"
 		:key="reaction"
 		:reaction="reaction"
 		:reactionEmojis="props.reactionEmojis"
@@ -30,14 +30,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import * as Misskey from 'misskey-js';
-import { inject, watch, ref } from 'vue';
+import { inject, watch, ref, computed } from 'vue';
 import { TransitionGroup } from 'vue';
+import { isSupportedEmoji } from '@@/js/emojilist.js';
 import XReaction from '@/components/MkReactionsViewer.reaction.vue';
 import { $i } from '@/i.js';
 import { prefer } from '@/preferences.js';
 import { customEmojisMap } from '@/custom-emojis.js';
-import { isSupportedEmoji } from '@@/js/emojilist.js';
 import { DI } from '@/di.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 
 const props = withDefaults(defineProps<{
 	noteId: Misskey.entities.Note['id'];
@@ -55,13 +56,51 @@ const emit = defineEmits<{
 	(ev: 'mockUpdateMyReaction', emoji: string, delta: number): void;
 }>();
 
-const initialReactions = new Set(Object.keys(props.reactions));
+const initialReactions = ref(new Set<string>());
 
 const _reactions = ref<[string, number][]>([]);
 const hasMoreReactions = ref(false);
+const visibleReactions = ref<Set<string> | null>(null);
 
-if (props.myReaction && !Object.keys(_reactions.value).includes(props.myReaction)) {
-	_reactions.value[props.myReaction] = props.reactions[props.myReaction];
+const filteredReactions = computed(() => {
+	if (visibleReactions.value == null) {
+		// まだ取得が完了していない場合は全て表示（ちらつき防止）
+		return _reactions.value;
+	}
+	return _reactions.value.filter(([reaction]) => visibleReactions.value?.has(reaction));
+});
+
+async function updateVisibility() {
+	if (!prefer.s.reactionChecksMuting) {
+		visibleReactions.value = new Set(Object.keys(props.reactions));
+		return;
+	}
+
+	try {
+		const reactionTypes = Object.keys(props.reactions);
+		const promises = reactionTypes.map(type =>
+			misskeyApi('notes/reactions', {
+				noteId: props.noteId,
+				type: type,
+				limit: 1,
+			}),
+		);
+
+		const results = await Promise.all(promises);
+
+		const visible = new Set<string>();
+		for (let i = 0; i < results.length; i++) {
+			const users = results[i];
+			if (users.length > 0) {
+				visible.add(reactionTypes[i]);
+			}
+		}
+		visibleReactions.value = visible;
+	} catch (error) {
+		console.error(error);
+		// フォールバックとして全て表示
+		visibleReactions.value = new Set(Object.keys(props.reactions));
+	}
 }
 
 function onMockToggleReaction(emoji: string, count: number) {
@@ -79,35 +118,41 @@ function canReact(reaction: string) {
 	return !reaction.match(/@\w/) && (customEmojisMap.has(reaction) || isSupportedEmoji(reaction));
 }
 
-watch([() => props.reactions, () => props.maxNumber], ([newSource, maxNumber]) => {
-	let newReactions: [string, number][] = [];
-	hasMoreReactions.value = Object.keys(newSource).length > maxNumber;
+let isInitialReactionSet = false;
 
-	for (let i = 0; i < _reactions.value.length; i++) {
-		const reaction = _reactions.value[i][0];
-		if (reaction in newSource && newSource[reaction] !== 0) {
-			_reactions.value[i][1] = newSource[reaction];
-			newReactions.push(_reactions.value[i]);
-		}
+watch(() => props.reactions, (newSource) => {
+	if (!isInitialReactionSet) {
+		initialReactions.value = new Set(Object.keys(newSource));
+		isInitialReactionSet = true;
+	}
+	if (Object.keys(newSource).length > 0) {
+		updateVisibility();
+	} else {
+		visibleReactions.value = new Set();
 	}
 
-	const newReactionsNames = newReactions.map(([x]) => x);
-	newReactions = [
-		...newReactions,
-		...Object.entries(newSource)
-			.sort(([emojiA, countA], [emojiB, countB]) => {
-				if (prefer.s.showAvailableReactionsFirstInNote) {
-					if (!canReact(emojiA) && canReact(emojiB)) return 1;
-					if (canReact(emojiA) && !canReact(emojiB)) return -1;
-					return countB - countA;
-				} else {
-					return countB - countA;
-				}
-			})
-			.filter(([y], i) => i < maxNumber && !newReactionsNames.includes(y)),
-	];
+	let newReactions: [string, number][] = [];
+	hasMoreReactions.value = Object.keys(newSource).length > props.maxNumber;
 
-	newReactions = newReactions.slice(0, props.maxNumber);
+	const existingReactions = _reactions.value.filter(([reaction]) => reaction in newSource && newSource[reaction] !== 0);
+	for (const r of existingReactions) {
+		r[1] = newSource[r[0]];
+	}
+
+	const newReactionsNames = existingReactions.map(([x]) => x);
+	const sortedNew = Object.entries(newSource)
+		.sort(([emojiA, countA], [emojiB, countB]) => {
+			if (prefer.s.showAvailableReactionsFirstInNote) {
+				if (!canReact(emojiA) && canReact(emojiB)) return 1;
+				if (canReact(emojiA) && !canReact(emojiB)) return -1;
+				return countB - countA;
+			} else {
+				return countB - countA;
+			}
+		})
+		.filter(([y]) => !newReactionsNames.includes(y));
+
+	newReactions = [...existingReactions, ...sortedNew].slice(0, props.maxNumber);
 
 	if (props.myReaction && !newReactions.map(([x]) => x).includes(props.myReaction)) {
 		newReactions.push([props.myReaction, newSource[props.myReaction]]);
