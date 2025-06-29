@@ -112,7 +112,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #label>{{ i18n.ts.mutedUsers }}</template>
 
 					<div class="_gaps_s">
-						<MkSwitch v-model="anonymizeMutedUsers">{{ i18n.ts.anonymizeMutedUsers }}</MkSwitch>
+						<MkSwitch v-model="anonymizeMutedUsers">{{ i18n.ts._anonymizeMutedUsers.title }}</MkSwitch>
 
 						<MkPagination :pagination="mutingPagination">
 							<template #empty><MkResult type="empty" :text="i18n.ts.noUsers"/></template>

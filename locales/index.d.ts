@@ -14398,10 +14398,16 @@ export interface Locale extends ILocale {
      * 雪を降らせる
      */
     "snowMode": string;
-    /**
-     * ミュートしたユーザーを匿名にする
-     */
-    "anonymizeMutedUsers": string;
+    "_anonymizeMutedUsers": {
+        /**
+         * ミュートしたユーザーを匿名にする
+         */
+        "title": string;
+        /**
+         * ミュートしたユーザーの名前とアイコンをサーバーの情報に置き換えます。
+         */
+        "caption": string;
+    };
     /**
      * リアクションの確認を有効にする
      */

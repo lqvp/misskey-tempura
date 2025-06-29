@@ -22,7 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkPreferenceContainer k="anonymizeMutedUsers">
 					<SearchMarker :keywords="['anonymize', 'muted', 'users']">
 						<MkSwitch v-model="anonymizeMutedUsers">
-							<SearchLabel>{{ i18n.ts.anonymizeMutedUsers }}</SearchLabel>
+							<SearchLabel>{{ i18n.ts._anonymizeMutedUsers.title }}</SearchLabel>
 							<template #caption>{{ i18n.ts._anonymizeMutedUsers.caption }}</template>
 						</MkSwitch>
 					</SearchMarker>
