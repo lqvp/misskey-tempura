@@ -187,6 +187,14 @@ export const paramDef = {
 		autoRejectFollowRequest: { type: 'boolean' },
 		autoFollowBack: { type: 'boolean' },
 		autoFollowOnMove: { type: 'boolean' },
+		outboxFilter: {
+			type: 'object',
+			properties: {
+				public: { type: 'boolean' },
+				public_non_ltl: { type: 'boolean' },
+				home: { type: 'boolean' },
+			},
+		},
 		receiveSpecifiedNotesFrom: { type: 'string', enum: receiveSpecifiedNotesFromVisibilities },
 		noCrawle: { type: 'boolean' },
 		preventAiLearning: { type: 'boolean' },
@@ -362,6 +370,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			if (typeof ps.autoRejectFollowRequest === 'boolean') profileUpdates.autoRejectFollowRequest = ps.autoRejectFollowRequest;
 			if (typeof ps.autoFollowBack === 'boolean') profileUpdates.autoFollowBack = ps.autoFollowBack;
 			if (typeof ps.autoFollowOnMove === 'boolean') profileUpdates.autoFollowOnMove = ps.autoFollowOnMove;
+			if (typeof ps.outboxFilter === 'object') profileUpdates.outboxFilter = ps.outboxFilter;
 			if (typeof ps.receiveSpecifiedNotesFrom === 'string') profileUpdates.receiveSpecifiedNotesFrom = ps.receiveSpecifiedNotesFrom;
 			if (typeof ps.noCrawle === 'boolean') profileUpdates.noCrawle = ps.noCrawle;
 			if (typeof ps.preventAiLearning === 'boolean') profileUpdates.preventAiLearning = ps.preventAiLearning;

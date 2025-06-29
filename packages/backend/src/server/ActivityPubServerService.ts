@@ -459,10 +459,42 @@ export class ActivityPubServerService {
 			return;
 		}
 
+		const userProfile = await this.userProfilesRepository.findOneBy({ userId: user.id });
+		if (userProfile == null) {
+			// This should not happen for a valid user
+			reply.code(404);
+			return;
+		}
+
 		const limit = 20;
 		const partOf = `${this.config.url}/users/${userId}/outbox`;
 
 		if (page) {
+			const noteFilter = (note: MiNote) => {
+				if (note.localOnly) return false;
+
+				const visibility = note.visibility;
+				const filter = userProfile.outboxFilter;
+
+				if (filter == null) {
+					return visibility === 'public' || visibility === 'public_non_ltl' || visibility === 'home';
+				}
+
+				if (visibility === 'public') {
+					return filter.public;
+				}
+
+				if (visibility === 'public_non_ltl') {
+					return filter.public_non_ltl;
+				}
+
+				if (visibility === 'home') {
+					return filter.home;
+				}
+
+				return false;
+			};
+
 			const notes = this.meta.enableFanoutTimeline ? await this.fanoutTimelineEndpointService.getMiNotes({
 				sinceId: sinceId ?? null,
 				untilId: untilId ?? null,
@@ -476,11 +508,7 @@ export class ActivityPubServerService {
 				useDbFallback: true,
 				ignoreAuthorFromMute: true,
 				excludePureRenotes: false,
-				noteFilter: (note) => {
-					if (note.visibility !== 'home' && note.visibility !== 'public') return false;
-					if (note.localOnly) return false;
-					return true;
-				},
+				noteFilter: noteFilter,
 				dbFallback: async (untilId, sinceId, limit) => {
 					return await this.getUserNotesFromDb({
 						untilId,
@@ -489,12 +517,12 @@ export class ActivityPubServerService {
 						userId: user.id,
 					});
 				},
-			}) : await this.getUserNotesFromDb({
+			}) : (await this.getUserNotesFromDb({
 				untilId: untilId ?? null,
 				sinceId: sinceId ?? null,
 				limit,
 				userId: user.id,
-			});
+			})).filter(noteFilter);
 
 			if (sinceId) notes.reverse();
 
