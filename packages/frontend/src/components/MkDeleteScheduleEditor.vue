@@ -35,6 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</section>
 		</div>
 	</section>
+	<MkSwitch v-if="afterOnly || showDetail" v-model="isScheduledForPrivate">{{ i18n.ts._scheduledNote.makePrivateInsteadOfDelete }}</MkSwitch>
 </div>
 </template>
 
@@ -43,6 +44,7 @@ import { computed, ref, watch } from 'vue';
 import MkInput from './MkInput.vue';
 import MkSelect from './MkSelect.vue';
 import MkInfo from './MkInfo.vue';
+import MkSwitch from './MkSwitch.vue';
 import { formatDateTimeString } from '@/utility/format-time-string.js';
 import { addTime } from '@/utility/time.js';
 import { prefer } from '@/preferences.js';
@@ -52,6 +54,7 @@ export type DeleteScheduleEditorModelValue = {
 	deleteAt: number | null;
 	deleteAfter: number | null;
 	isValid: boolean;
+	isScheduledForPrivate: boolean;
 };
 
 const props = defineProps<{
@@ -67,6 +70,7 @@ const atDate = ref(formatDateTimeString(addTime(new Date(), 1, 'day'), 'yyyy-MM-
 const atTime = ref('00:00');
 const after = ref(0);
 const unit = ref<'second' | 'minute' | 'hour' | 'day'>('second');
+const isScheduledForPrivate = ref(props.modelValue.isScheduledForPrivate ?? false);
 const isValid = ref(true);
 
 const showDetail = ref(!prefer.s.defaultScheduledNoteDelete);
@@ -151,7 +155,7 @@ const isValidTime = () => {
 
 isValid.value = isValidTime();
 
-watch([expiration, atDate, atTime, after, unit, isValid], () => {
+watch([expiration, atDate, atTime, after, unit, isValid, isScheduledForPrivate], () => {
 	const isValidTimeValue = isValidTime();
 	isValid.value = isValidTimeValue;
 
@@ -159,6 +163,7 @@ watch([expiration, atDate, atTime, after, unit, isValid], () => {
 		deleteAt: expiration.value === 'at' ? calcAt() : null,
 		deleteAfter: expiration.value === 'after' ? calcAfter() : null,
 		isValid: isValidTimeValue,
+		isScheduledForPrivate: isScheduledForPrivate.value,
 	});
 }, {
 	deep: true,

@@ -209,6 +209,7 @@ export const paramDef = {
 			properties: {
 				deleteAt: { type: 'number', nullable: true },
 				deleteAfter: { type: 'number', nullable: true },
+				isScheduledForPrivate: { type: 'boolean', nullable: true },
 			},
 		},
 	},

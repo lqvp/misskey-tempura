@@ -30225,6 +30225,7 @@ export interface operations {
                     scheduledDelete?: {
                         deleteAt?: number | null;
                         deleteAfter?: number | null;
+                        isScheduledForPrivate?: boolean | null;
                     } | null;
                 };
             };
@@ -31784,6 +31785,7 @@ export interface operations {
                     scheduledDelete?: {
                         deleteAt?: number | null;
                         deleteAfter?: number | null;
+                        isScheduledForPrivate?: boolean | null;
                     } | null;
                 } | unknown | unknown | unknown | unknown | unknown;
             };

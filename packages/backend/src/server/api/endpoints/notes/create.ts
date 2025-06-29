@@ -207,6 +207,7 @@ export const paramDef = {
 			properties: {
 				deleteAt: { type: 'integer', nullable: true },
 				deleteAfter: { type: 'integer', nullable: true, minimum: 1 },
+				isScheduledForPrivate: { type: 'boolean', nullable: true },
 			},
 		},
 	},
@@ -417,6 +418,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					apHashtags: ps.noExtractHashtags ? [] : undefined,
 					apEmojis: ps.noExtractEmojis ? [] : undefined,
 					deleteAt: ps.scheduledDelete?.deleteAt ? new Date(ps.scheduledDelete.deleteAt) : null,
+					isScheduledForPrivate: ps.scheduledDelete?.isScheduledForPrivate ?? false,
 				});
 
 				return {

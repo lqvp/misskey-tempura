@@ -49,21 +49,26 @@ export class ScheduledNoteDeleteProcessorService {
 			return;
 		}
 
-		await this.noteDeleteService.delete(user, note);
-		this.logger.info(`Deleted note ${note.id}`);
+		if (job.data.isScheduledForPrivate) {
+			await this.noteDeleteService.makePrivate(user, note);
+			this.logger.info(`Made note ${note.id} private`);
+		} else {
+			await this.noteDeleteService.delete(user, note);
+			this.logger.info(`Deleted note ${note.id}`);
 
-		// 添付ファイルがあれば削除
-		if (job.data.fileIds && job.data.fileIds.length > 0) {
-			const files = await this.drivesRepository.findBy({
-				id: In(job.data.fileIds),
-				userId: user.id,
-			});
+			// 添付ファイルがあれば削除
+			if (job.data.fileIds && job.data.fileIds.length > 0) {
+				const files = await this.drivesRepository.findBy({
+					id: In(job.data.fileIds),
+					userId: user.id,
+				});
 
-			for (const file of files) {
-				await this.driveService.deleteFileImmediately(file, false, user);
+				for (const file of files) {
+					await this.driveService.deleteFileImmediately(file, false, user);
+				}
+
+				this.logger.info(`Deleted ${files.length} attached files: ${files.map(f => f.id).join(', ')}`);
 			}
-
-			this.logger.info(`Deleted ${files.length} attached files: ${files.map(f => f.id).join(', ')}`);
 		}
 	}
 }

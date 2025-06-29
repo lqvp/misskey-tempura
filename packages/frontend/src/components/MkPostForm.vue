@@ -194,7 +194,7 @@ const posted = ref(false);
 const text = ref(props.initialText ?? '');
 const files = ref(props.initialFiles ?? []);
 const poll = ref<PollEditorModelValue | null>(null);
-const scheduledNoteDelete = ref<DeleteScheduleEditorModelValue | null>(prefer.s.defaultScheduledNoteDelete ? { deleteAt: null, deleteAfter: prefer.s.defaultScheduledNoteDeleteTime, isValid: true } : null);
+const scheduledNoteDelete = ref<DeleteScheduleEditorModelValue | null>(prefer.s.defaultScheduledNoteDelete ? { deleteAt: null, deleteAfter: prefer.s.defaultScheduledNoteDeleteTime, isValid: true, isScheduledForPrivate: false } : null);
 const useCw = ref<boolean>(!!props.initialCw);
 const showPreview = ref(store.s.showPreview);
 watch(showPreview, () => store.set('showPreview', showPreview.value));
@@ -543,6 +543,7 @@ function toggleScheduledNoteDelete() {
 		scheduledNoteDelete.value = {
 			deleteAt: null,
 			deleteAfter: prefer.s.defaultScheduledNoteDeleteTime,
+			isScheduledForPrivate: false,
 			isValid: true,
 		};
 	}

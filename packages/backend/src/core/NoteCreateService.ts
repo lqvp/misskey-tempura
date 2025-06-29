@@ -146,6 +146,7 @@ type Option = {
 	url?: string | null;
 	app?: MiApp | null;
 	deleteAt?: Date | null;
+	isScheduledForPrivate?: boolean;
 };
 
 @Injectable()
@@ -453,6 +454,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 			text: data.text,
 			hasPoll: data.poll != null,
 			deleteAt: data.deleteAt,
+			isScheduledForPrivate: data.isScheduledForPrivate,
 			cw: data.cw ?? null,
 			tags: tags.map(tag => normalizeForSearch(tag)),
 			emojis,
@@ -629,12 +631,12 @@ export class NoteCreateService implements OnApplicationShutdown {
 			this.queueService.scheduledNoteDeleteQueue.add(note.id, {
 				noteId: note.id,
 				fileIds: data.files?.map(file => file.id),
+				isScheduledForPrivate: data.isScheduledForPrivate,
 			}, {
 				delay,
 				removeOnComplete: true,
 			});
 		}
-
 		if (!silent) {
 			if (this.userEntityService.isLocalUser(user)) this.activeUsersChart.write(user);
 
