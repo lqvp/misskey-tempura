@@ -73,6 +73,7 @@ export const paramDef = {
 		withReplies: { type: 'boolean' },
 		withFile: { type: 'boolean' },
 		excludeNotesInSensitiveChannel: { type: 'boolean' },
+		onlyFollowers: { type: 'boolean' },
 	},
 	required: ['antennaId'],
 } as const;
@@ -131,6 +132,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				withReplies: ps.withReplies,
 				withFile: ps.withFile,
 				excludeNotesInSensitiveChannel: ps.excludeNotesInSensitiveChannel,
+				onlyFollowers: ps.onlyFollowers,
 				isActive: true,
 				lastUsedAt: new Date(),
 			});

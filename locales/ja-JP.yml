@@ -443,6 +443,7 @@ antennaKeywordsDescription: "スペースで区切るとAND指定になり、改
 notifyAntenna: "新しいノートを通知する"
 withFileAntenna: "ファイルが添付されたノートのみ"
 excludeNotesInSensitiveChannel: "センシティブなチャンネルのノートを除外"
+onlyFollowers: "フォロワーのみ"
 enableServiceworker: "ブラウザへのプッシュ通知を有効にする"
 antennaUsersDescription: "ユーザー名を改行で区切って指定します"
 caseSensitive: "大文字小文字を区別する"

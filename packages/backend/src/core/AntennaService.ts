@@ -134,6 +134,16 @@ export class AntennaService implements OnApplicationShutdown {
 			if (!isFollowing && antenna.userId !== note.userId) return false;
 		}
 
+		if (antenna.onlyFollowers) {
+			// Don't filter notes from the antenna owner
+			if (antenna.userId !== note.userId) {
+				// Check if the note author is a follower of the antenna owner.
+				// This is equivalent to checking if the antenna owner is being followed by the note author.
+				const isFollower = Object.hasOwn(await this.cacheService.userFollowingsCache.fetch(note.userId), antenna.userId);
+				if (!isFollower) return false;
+			}
+		}
+
 		if (antenna.src === 'home') {
 			// TODO
 		} else if (antenna.src === 'list') {

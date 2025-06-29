@@ -1791,6 +1791,10 @@ export interface Locale extends ILocale {
      */
     "excludeNotesInSensitiveChannel": string;
     /**
+     * フォロワーのみ
+     */
+    "onlyFollowers": string;
+    /**
      * ブラウザへのプッシュ通知を有効にする
      */
     "enableServiceworker": string;
