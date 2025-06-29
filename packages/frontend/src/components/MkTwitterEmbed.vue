@@ -26,6 +26,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</a>
 	<Mfm v-if="tweetData.text && mfmTweetText" :text="mfmTweetText" :class="$style.body"/>
 
+	<MkMediaList v-if="driveFiles.length > 0" :mediaList="driveFiles" :class="$style.mediaContainer"/>
+
 	<!-- Quoted Tweet Section -->
 	<div v-if="tweetData.quote" :class="$style.quoteContainer">
 		<a :href="`https://twitter.com/${tweetData.quote.author.screen_name}`" target="_blank" rel="noopener noreferrer" :class="$style.headerLink">
@@ -57,13 +59,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span v-if="tweetData.quote.views != null" :class="$style.statItem">
 						<i class="ti ti-eye" :class="$style.iconView"></i> {{ tweetData.quote.views.toLocaleString() }}
 					</span>
+					<span v-if="tweetData.quote.bookmarks != null" :class="$style.statItem">
+						<i class="ti ti-bookmark" :class="$style.iconBookmark"></i> {{ tweetData.quote.bookmarks.toLocaleString() }}
+					</span>
 				</div>
 			</a>
 			<Mfm v-if="tweetData.quote.source" :text="tweetData.quote.source" :class="$style.source"/>
 		</footer>
 	</div>
-
-	<MkMediaList v-if="driveFiles.length > 0" :mediaList="driveFiles" :class="$style.mediaContainer"/>
 	<footer :class="$style.footer">
 		<a :href="tweetData.url" target="_blank" rel="noopener noreferrer" :class="$style.statsLink">
 			<div :class="$style.stats">
@@ -78,6 +81,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</span>
 				<span v-if="tweetData.views != null" :class="$style.statItem">
 					<i class="ti ti-eye" :class="$style.iconView"></i> {{ tweetData.views.toLocaleString() }}
+				</span>
+				<span v-if="tweetData.bookmarks != null" :class="$style.statItem">
+					<i class="ti ti-bookmark" :class="$style.iconBookmark"></i> {{ tweetData.bookmarks.toLocaleString() }}
 				</span>
 			</div>
 		</a>
@@ -415,6 +421,9 @@ function mapToDriveFile(media: FxTweetMedia, tweet: FxTweet | null): Misskey.ent
 	}
 	.iconView {
 		color: var(--MI_THEME-notif);
+	}
+	.iconBookmark {
+		color: var(--MI_THEME-info);
 	}
 }
 
