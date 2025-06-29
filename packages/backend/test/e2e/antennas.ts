@@ -159,6 +159,7 @@ describe('アンテナ', () => {
 			excludeBots: false,
 			localOnly: false,
 			notify: false,
+			onlyFollowers: false,
 		};
 		assert.deepStrictEqual(response, expected);
 	});
@@ -220,6 +221,8 @@ describe('アンテナ', () => {
 		{ parameters: () => ({ withFile: true }) },
 		{ parameters: () => ({ excludeNotesInSensitiveChannel: false }) },
 		{ parameters: () => ({ excludeNotesInSensitiveChannel: true }) },
+		{ parameters: () => ({ onlyFollowers: false }) },
+		{ parameters: () => ({ onlyFollowers: true }) },
 	];
 	test.each(antennaParamPattern)('を作成できること($#)', async ({ parameters }) => {
 		const response = await successfulApiCall({
