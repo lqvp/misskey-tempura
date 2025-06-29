@@ -8,7 +8,7 @@ import { IncomingMessage } from 'node:http';
 import { Inject, Injectable } from '@nestjs/common';
 import fastifyAccepts from '@fastify/accepts';
 import httpSignature from '@peertube/http-signature';
-import { Brackets, In, IsNull, LessThan, Not } from 'typeorm';
+import { In, IsNull, LessThan, Not } from 'typeorm';
 import accepts from 'accepts';
 import vary from 'vary';
 import secureJson from 'secure-json-parse';
@@ -470,22 +470,16 @@ export class ActivityPubServerService {
 		const partOf = `${this.config.url}/users/${userId}/outbox`;
 
 		if (page) {
+			const visibilitiesToShow: ('public' | 'public_non_ltl' | 'home')[] = [];
+			const filterSettings = userProfile.outboxFilter;
+			if (filterSettings?.public !== false) visibilitiesToShow.push('public');
+			if (filterSettings?.public_non_ltl !== false) visibilitiesToShow.push('public_non_ltl');
+			if (filterSettings?.home !== false) visibilitiesToShow.push('home');
+
 			const noteFilter = (note: MiNote) => {
 				if (note.localOnly) return false;
-
-				const visibility = note.visibility;
-				const filter = userProfile.outboxFilter;
-
-				switch (visibility) {
-					case 'public':
-						return filter.public !== false;
-					case 'public_non_ltl':
-						return filter.public_non_ltl !== false;
-					case 'home':
-						return filter.home !== false;
-					default:
-						return false;
-				}
+				// The cast is needed because note.visibility is a wider type.
+				return visibilitiesToShow.includes(note.visibility as any);
 			};
 
 			const notes = this.meta.enableFanoutTimeline ? await this.fanoutTimelineEndpointService.getMiNotes({
@@ -508,16 +502,16 @@ export class ActivityPubServerService {
 						sinceId,
 						limit,
 						userId: user.id,
-						userProfile,
+						visibilities: visibilitiesToShow,
 					});
 				},
-			}) : (await this.getUserNotesFromDb({
+			}) : await this.getUserNotesFromDb({
 				untilId: untilId ?? null,
 				sinceId: sinceId ?? null,
 				limit,
 				userId: user.id,
-				userProfile,
-			})).filter(noteFilter);
+				visibilities: visibilitiesToShow,
+			});
 
 			if (sinceId) notes.reverse();
 
@@ -561,32 +555,13 @@ export class ActivityPubServerService {
 		sinceId: string | null,
 		limit: number,
 		userId: MiUser['id'],
-		userProfile: { outboxFilter?: { public?: boolean, public_non_ltl?: boolean, home?: boolean } },
+		visibilities: ('public' | 'public_non_ltl' | 'home')[],
 	}) {
-		const visibilityConditions: string[] = [];
-		if (ps.userProfile.outboxFilter?.public !== false) {
-			visibilityConditions.push('note.visibility = \'public\'');
-		}
-		if (ps.userProfile.outboxFilter?.public_non_ltl !== false) {
-			visibilityConditions.push('note.visibility = \'public_non_ltl\'');
-		}
-		if (ps.userProfile.outboxFilter?.home !== false) {
-			visibilityConditions.push('note.visibility = \'home\'');
-		}
-
 		const qb = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), ps.sinceId, ps.untilId)
 			.andWhere('note.userId = :userId', { userId: ps.userId });
 
-		if (visibilityConditions.length > 0) {
-			qb.andWhere(new Brackets(qb => {
-				visibilityConditions.forEach((condition, index) => {
-					if (index === 0) {
-						qb.where(condition);
-					} else {
-						qb.orWhere(condition);
-					}
-				});
-			}));
+		if (ps.visibilities.length > 0) {
+			qb.andWhere('note.visibility IN (:...visibilities)', { visibilities: ps.visibilities });
 		} else {
 			// 全てfalseの場合は何も返さないようにする
 			qb.andWhere('1 = 0');

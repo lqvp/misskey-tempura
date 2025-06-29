@@ -28367,9 +28367,9 @@ export interface operations {
                     autoFollowBack?: boolean;
                     autoFollowOnMove?: boolean;
                     outboxFilter?: {
-                        public?: boolean;
-                        public_non_ltl?: boolean;
-                        home?: boolean;
+                        public: boolean;
+                        public_non_ltl: boolean;
+                        home: boolean;
                     };
                     /** @enum {string} */
                     receiveSpecifiedNotesFrom?: 'all' | 'following' | 'nobody';
