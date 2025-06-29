@@ -636,6 +636,9 @@ export const PREF_DEF = definePreferences({
 	enableEarthquakeWarningTts: {
 		default: false,
 	},
+	earthquakeWarningTtsVoice: {
+		default: null as string | null,
+	},
 	earthquakeWarningToastDuration: {
 		default: 10000, // 10秒
 	},

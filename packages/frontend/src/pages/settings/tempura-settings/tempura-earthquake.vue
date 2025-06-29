@@ -88,25 +88,34 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</MkPreferenceContainer>
 					</SearchMarker>
 
-					<SearchMarker :keywords="['earthquake', 'tts', 'voice']">
+					<SearchMarker :keywords="['earthquake', 'tts', 'voice', 'speed', 'rate']">
 						<MkPreferenceContainer k="enableEarthquakeWarningTts">
 							<MkSwitch v-model="enableEarthquakeWarningTts">
 								<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.enableTts }}</SearchLabel></template>
 								<template #caption>{{ i18n.ts._earthquakeWarning.enableTtsCaption }}</template>
 							</MkSwitch>
 						</MkPreferenceContainer>
-					</SearchMarker>
 
-					<div v-if="enableEarthquakeWarningTts">
-						<SearchMarker :keywords="['earthquake', 'tts', 'speed', 'rate']">
+						<div v-if="enableEarthquakeWarningTts" class="_gaps_m">
+							<MkPreferenceContainer k="earthquakeWarningTtsVoice">
+								<MkSelect v-model="earthquakeWarningTtsVoice">
+									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.ttsVoice }}</SearchLabel></template>
+									<option :value="null">{{ i18n.ts._earthquakeWarning.ttsVoiceDefault }}</option>
+									<option v-for="voice in availableVoices" :key="voice.voiceURI" :value="voice.voiceURI">
+										{{ voice.name }} ({{ voice.lang }})
+									</option>
+									<template #caption>{{ i18n.ts._earthquakeWarning.ttsVoiceCaption }}</template>
+								</MkSelect>
+							</MkPreferenceContainer>
+
 							<MkPreferenceContainer k="earthquakeWarningTtsRate">
-								<MkInput v-model="earthquakeWarningTtsRate" type="number" step="0.1" :min="0.1" :max="3.0">
+								<MkInput v-model="earthquakeWarningTtsRate" type="number" step="0.1" :min="0.1" :max="10">
 									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.ttsRate }}</SearchLabel></template>
 									<template #caption>{{ i18n.ts._earthquakeWarning.ttsRateCaption }}</template>
 								</MkInput>
 							</MkPreferenceContainer>
-						</SearchMarker>
-					</div>
+						</div>
+					</SearchMarker>
 
 					<!-- 地域フィルタリング設定 -->
 					<fieldset>
@@ -283,7 +292,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watch, onMounted } from 'vue';
+import { computed, reactive, watch, onMounted, ref, onBeforeUnmount } from 'vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkInput from '@/components/MkInput.vue';
@@ -326,6 +335,23 @@ const earthquakeWarningToastDuration = computed({
 		prefer.commit('earthquakeWarningToastDuration', value);
 	},
 });
+
+const earthquakeWarningTtsVoice = computed({
+	get: () => prefer.r.earthquakeWarningTtsVoice.value,
+	set: (value) => {
+		prefer.commit('earthquakeWarningTtsVoice', value);
+	},
+});
+
+const availableVoices = ref<SpeechSynthesisVoice[]>([]);
+
+const populateVoices = () => {
+	const voices = window.speechSynthesis.getVoices();
+	availableVoices.value = voices.filter(v => v.lang.startsWith('ja'));
+	if (availableVoices.value.length === 0) {
+		availableVoices.value = voices;
+	}
+};
 
 const earthquakeWarningTtsRate = computed({
 	get: () => prefer.r.earthquakeWarningTtsRate.value,
@@ -386,11 +412,22 @@ watch(regionFilters, () => {
 
 // 初期値の設定
 onMounted(() => {
-	const selectedRegions = prefer.r.earthquakeWarningRegionFilter.value || [];
-	for (const region of selectedRegions) {
-		if (region in regionFilters) {
+	const savedRegions = prefer.r.earthquakeWarningRegionFilter.value;
+	if (Array.isArray(savedRegions)) {
+		for (const region of savedRegions) {
 			regionFilters[region] = true;
 		}
+	}
+
+	populateVoices();
+	if (window.speechSynthesis.onvoiceschanged !== undefined) {
+		window.speechSynthesis.onvoiceschanged = populateVoices;
+	}
+});
+
+onBeforeUnmount(() => {
+	if (window.speechSynthesis.onvoiceschanged !== undefined) {
+		window.speechSynthesis.onvoiceschanged = null;
 	}
 });
 

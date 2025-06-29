@@ -472,6 +472,16 @@ function speakAlert(message: string): void {
 		// Speak with normal pitch but slightly lower for authority
 		utterance.pitch = 0.9;
 
+		// Get selected voice from settings
+		const selectedVoiceURI = prefer.s.earthquakeWarningTtsVoice;
+		if (selectedVoiceURI) {
+			const voices = window.speechSynthesis.getVoices();
+			const selectedVoice = voices.find(voice => voice.voiceURI === selectedVoiceURI);
+			if (selectedVoice) {
+				utterance.voice = selectedVoice;
+			}
+		}
+
 		window.speechSynthesis.speak(utterance);
 	} catch (error) {
 		console.error('Speech synthesis error:', error);

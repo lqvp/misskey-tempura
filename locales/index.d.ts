@@ -13802,9 +13802,21 @@ export interface Locale extends ILocale {
          */
         "ttsRate": string;
         /**
-         * 音声読み上げの速度（1.0が標準速度）
+         * 読み上げの速度を設定します。
          */
         "ttsRateCaption": string;
+        /**
+         * 読み上げ音声
+         */
+        "ttsVoice": string;
+        /**
+         * ブラウザのデフォルト
+         */
+        "ttsVoiceDefault": string;
+        /**
+         * 読み上げに使用する音声を選択します。
+         */
+        "ttsVoiceCaption": string;
         /**
          * 通知スタイル
          */
