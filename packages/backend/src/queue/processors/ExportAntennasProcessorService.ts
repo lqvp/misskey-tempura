@@ -88,6 +88,7 @@ export class ExportAntennasProcessorService {
 					withReplies: antenna.withReplies,
 					withFile: antenna.withFile,
 					excludeNotesInSensitiveChannel: antenna.excludeNotesInSensitiveChannel,
+					onlyFollowers: antenna.onlyFollowers,
 				} satisfies Required<ExportedAntenna>));
 				if (antennas.length - 1 !== index) {
 					write(', ');

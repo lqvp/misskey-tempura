@@ -5225,6 +5225,8 @@ export type components = {
             notify: boolean;
             /** @default false */
             excludeNotesInSensitiveChannel: boolean;
+            /** @default false */
+            onlyFollowers: boolean;
         };
         Clip: {
             /**
@@ -13837,6 +13839,7 @@ export interface operations {
                     withReplies: boolean;
                     withFile: boolean;
                     excludeNotesInSensitiveChannel?: boolean;
+                    onlyFollowers?: boolean;
                 };
             };
         };
@@ -14178,6 +14181,7 @@ export interface operations {
                     withReplies?: boolean;
                     withFile?: boolean;
                     excludeNotesInSensitiveChannel?: boolean;
+                    onlyFollowers?: boolean;
                 };
             };
         };

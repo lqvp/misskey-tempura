@@ -105,5 +105,10 @@ export const packedAntennaSchema = {
 			optional: false, nullable: false,
 			default: false,
 		},
+		onlyFollowers: {
+			type: 'boolean',
+			optional: false, nullable: false,
+			default: false,
+		},
 	},
 } as const;
