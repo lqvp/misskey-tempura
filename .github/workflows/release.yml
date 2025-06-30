@@ -1,6 +1,7 @@
 name: Create Release on Version Update
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - master
@@ -87,7 +88,7 @@ jobs:
             --exclude-pre-releases \
             --limit 1 \
             --json tagName \
-            --jq -r ".[0].tagName // \"\"")
+            --jq '.[0].tagName // ""')
 
           echo "Previous stable tag: $PREVIOUS_STABLE_TAG"
 
