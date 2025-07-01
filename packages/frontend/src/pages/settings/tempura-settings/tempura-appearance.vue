@@ -34,31 +34,31 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</MkPreferenceContainer>
 
 						<MkPreferenceContainer k="noteVisibilityColorPublicNonLtl">
-							<MkColorInput v-model="colors.publicNonLtl">
+							<MkColorInput :key="colorInputKey" v-model="colors.publicNonLtl">
 								<template #label>{{ i18n.ts._visibility.public_non_ltl }}</template>
 							</MkColorInput>
 						</MkPreferenceContainer>
 
 						<MkPreferenceContainer k="noteVisibilityColorHome">
-							<MkColorInput v-model="colors.home">
+							<MkColorInput :key="colorInputKey" v-model="colors.home">
 								<template #label>{{ i18n.ts._visibility.home }}</template>
 							</MkColorInput>
 						</MkPreferenceContainer>
 
 						<MkPreferenceContainer k="noteVisibilityColorFollowers">
-							<MkColorInput v-model="colors.followers">
+							<MkColorInput :key="colorInputKey" v-model="colors.followers">
 								<template #label>{{ i18n.ts._visibility.followers }}</template>
 							</MkColorInput>
 						</MkPreferenceContainer>
 
 						<MkPreferenceContainer k="noteVisibilityColorSpecified">
-							<MkColorInput v-model="colors.specified">
+							<MkColorInput :key="colorInputKey" v-model="colors.specified">
 								<template #label>{{ i18n.ts._visibility.specified }}</template>
 							</MkColorInput>
 						</MkPreferenceContainer>
 
 						<MkPreferenceContainer k="noteVisibilityColorLocalOnly">
-							<MkColorInput v-model="colors.localOnly">
+							<MkColorInput :key="colorInputKey" v-model="colors.localOnly">
 								<template #label>{{ i18n.ts._visibility.public }}（{{ i18n.ts._visibility.disableFederation }}）</template>
 							</MkColorInput>
 						</MkPreferenceContainer>
@@ -79,7 +79,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { reactive, computed } from 'vue';
+import { computed, reactive, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkSelect from '@/components/MkSelect.vue';
@@ -97,38 +97,52 @@ const customFont = prefer.model('customFont');
 // Note visibility coloring
 const useNoteVisibilityColoring = prefer.model('useNoteVisibilityColoring');
 
-const colors = reactive({
-	publicNonLtl: prefer.s.noteVisibilityColorPublicNonLtl,
-	home: prefer.s.noteVisibilityColorHome,
-	followers: prefer.s.noteVisibilityColorFollowers,
-	specified: prefer.s.noteVisibilityColorSpecified,
-	localOnly: prefer.s.noteVisibilityColorLocalOnly,
-});
+const colorPrefKeys = {
+	publicNonLtl: 'noteVisibilityColorPublicNonLtl',
+	home: 'noteVisibilityColorHome',
+	followers: 'noteVisibilityColorFollowers',
+	specified: 'noteVisibilityColorSpecified',
+	localOnly: 'noteVisibilityColorLocalOnly',
+} as const;
 
-const isChanged = computed(() =>
-	colors.publicNonLtl !== prefer.s.noteVisibilityColorPublicNonLtl ||
-	colors.home !== prefer.s.noteVisibilityColorHome ||
-	colors.followers !== prefer.s.noteVisibilityColorFollowers ||
-	colors.specified !== prefer.s.noteVisibilityColorSpecified ||
-	colors.localOnly !== prefer.s.noteVisibilityColorLocalOnly,
-);
+// Helper to get current colors from the central store
+const getColorsFromStore = () => Object.fromEntries(
+	Object.entries(colorPrefKeys).map(([key, prefKey]) => [key, prefer.s[prefKey]]),
+) as Record<keyof typeof colorPrefKeys, string>;
+
+// Holds the current state of the UI color pickers
+const colors = reactive(getColorsFromStore());
+
+// Holds the state of the colors when the component was loaded or last saved
+const originalColors = reactive(getColorsFromStore());
+
+// A key to force re-rendering of child components
+const colorInputKey = ref(0);
+
+const isChanged = computed(() => {
+	return Object.entries(colorPrefKeys).some(([key]) => {
+		return colors[key] !== originalColors[key];
+	});
+});
 
 function saveColors() {
 	if (!isChanged.value) return;
 
-	prefer.commit('noteVisibilityColorPublicNonLtl', colors.publicNonLtl);
-	prefer.commit('noteVisibilityColorHome', colors.home);
-	prefer.commit('noteVisibilityColorFollowers', colors.followers);
-	prefer.commit('noteVisibilityColorSpecified', colors.specified);
-	prefer.commit('noteVisibilityColorLocalOnly', colors.localOnly);
+	for (const [key, prefKey] of Object.entries(colorPrefKeys)) {
+		prefer.commit(prefKey, colors[key]);
+	}
+
+	// After saving, update the "original" state to match the new saved state
+	Object.assign(originalColors, colors);
 }
 
 function resetToDefault() {
-	colors.publicNonLtl = PREF_DEF.noteVisibilityColorPublicNonLtl.default;
-	colors.home = PREF_DEF.noteVisibilityColorHome.default;
-	colors.followers = PREF_DEF.noteVisibilityColorFollowers.default;
-	colors.specified = PREF_DEF.noteVisibilityColorSpecified.default;
-	colors.localOnly = PREF_DEF.noteVisibilityColorLocalOnly.default;
+	for (const [key, prefKey] of Object.entries(colorPrefKeys)) {
+		colors[key] = PREF_DEF[prefKey].default;
+	}
+
+	// Force re-render of color inputs to fix display bug
+	colorInputKey.value++;
 }
 </script>
 
