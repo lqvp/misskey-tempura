@@ -684,4 +684,19 @@ export const PREF_DEF = definePreferences({
 	skipPasteUploadDialog: {
 		default: false,
 	},
+	useNoteVisibilityColoring: {
+		default: false,
+	},
+	noteVisibilityColorHome: {
+		default: '#FFB900',
+	},
+	noteVisibilityColorFollowers: {
+		default: '#0078D7',
+	},
+	noteVisibilityColorSpecified: {
+		default: '#111111',
+	},
+	noteVisibilityColorLocalOnly: {
+		default: '#B93E43',
+	},
 });

@@ -11,6 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	@dragleave="onDragleave"
 	@drop.stop="onDrop"
 >
+	<MkVisibilityColoring v-if="prefer.s.useNoteVisibilityColoring && !channel && (visibility !== 'public' || localOnly)" :visibility="visibility" :localOnly="localOnly"/>
 	<header :class="$style.header">
 		<div :class="[$style.headerLeft, {[$style.headerFixedBasis]: fixed}]">
 			<button v-if="!fixed" :class="$style.cancel" class="_button" @click="cancel"><i class="ti ti-x"></i></button>
@@ -153,6 +154,7 @@ import { DI } from '@/di.js';
 import { globalEvents } from '@/events.js';
 import { checkDragDataType, getDragData } from '@/drag-and-drop.js';
 import { useUploader } from '@/composables/use-uploader.js';
+import MkVisibilityColoring from '@/components/MkVisibilityColoring.vue';
 
 const $i = ensureSignin();
 
