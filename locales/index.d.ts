@@ -13728,11 +13728,11 @@ export interface Locale extends ILocale {
         /**
          * 思考トークン数
          */
-        "geminiThinkingBudget": string;
+        "geminiThinkingBudgetLabel": string;
         /**
          * 思考トークン数を設定します。`-1`を設定することで無制限となります。Proなどは無効にすることは出来ません。より詳細な説明は https://ai.google.dev/gemini-api/docs/thinking をご覧ください。
          */
-        "geminiThinkingBudgetDescription": string;
+        "geminiThinkingBudgetCaption": string;
     };
     "_noteSearch": {
         /**
