@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div :class="$style.root" :style="`background: ${background}`">
+<div :class="$style.root" :style="{ background: background }">
 </div>
 </template>
 
@@ -19,6 +19,7 @@ const props = defineProps<{
 
 const color = computed(() => {
 	switch (props.visibility) {
+		case 'public_non_ltl': return prefer.s['noteVisibilityColorPublicNonLtl'];
 		case 'home': return prefer.s['noteVisibilityColorHome'];
 		case 'followers': return prefer.s['noteVisibilityColorFollowers'];
 		case 'specified': return prefer.s['noteVisibilityColorSpecified'];

@@ -687,6 +687,9 @@ export const PREF_DEF = definePreferences({
 	useNoteVisibilityColoring: {
 		default: false,
 	},
+	noteVisibilityColorPublicNonLtl: {
+		default: '#86B300',
+	},
 	noteVisibilityColorHome: {
 		default: '#FFB900',
 	},

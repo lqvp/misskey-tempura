@@ -33,6 +33,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</MkSwitch>
 						</MkPreferenceContainer>
 
+						<MkPreferenceContainer k="noteVisibilityColorPublicNonLtl">
+							<MkColorInput v-model="colors.publicNonLtl">
+								<template #label>{{ i18n.ts._visibility.public_non_ltl }}</template>
+							</MkColorInput>
+						</MkPreferenceContainer>
+
 						<MkPreferenceContainer k="noteVisibilityColorHome">
 							<MkColorInput v-model="colors.home">
 								<template #label>{{ i18n.ts._visibility.home }}</template>
@@ -92,6 +98,7 @@ const customFont = prefer.model('customFont');
 const useNoteVisibilityColoring = prefer.model('useNoteVisibilityColoring');
 
 const colors = reactive({
+	publicNonLtl: prefer.s.noteVisibilityColorPublicNonLtl,
 	home: prefer.s.noteVisibilityColorHome,
 	followers: prefer.s.noteVisibilityColorFollowers,
 	specified: prefer.s.noteVisibilityColorSpecified,
@@ -99,6 +106,7 @@ const colors = reactive({
 });
 
 const isChanged = computed(() =>
+	colors.publicNonLtl !== prefer.s.noteVisibilityColorPublicNonLtl ||
 	colors.home !== prefer.s.noteVisibilityColorHome ||
 	colors.followers !== prefer.s.noteVisibilityColorFollowers ||
 	colors.specified !== prefer.s.noteVisibilityColorSpecified ||
@@ -108,6 +116,7 @@ const isChanged = computed(() =>
 function saveColors() {
 	if (!isChanged.value) return;
 
+	prefer.commit('noteVisibilityColorPublicNonLtl', colors.publicNonLtl);
 	prefer.commit('noteVisibilityColorHome', colors.home);
 	prefer.commit('noteVisibilityColorFollowers', colors.followers);
 	prefer.commit('noteVisibilityColorSpecified', colors.specified);
@@ -115,6 +124,7 @@ function saveColors() {
 }
 
 function resetToDefault() {
+	colors.publicNonLtl = PREF_DEF.noteVisibilityColorPublicNonLtl.default;
 	colors.home = PREF_DEF.noteVisibilityColorHome.default;
 	colors.followers = PREF_DEF.noteVisibilityColorFollowers.default;
 	colors.specified = PREF_DEF.noteVisibilityColorSpecified.default;
