@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: syuilo and misskey-project
+SPDX-FileCopyrightText: lqvp
 SPDX-License-Identifier: AGPL-3.0-only
 -->
 
@@ -15,11 +15,14 @@ import { prefer } from '@/preferences.js';
 const props = defineProps<{
 	visibility: string;
 	localOnly: boolean;
+	dontShowOnLtl?: boolean;
 }>();
 
 const color = computed(() => {
+	if (props.visibility === 'public' && props.dontShowOnLtl === true) {
+		return prefer.s['noteVisibilityColorPublicNonLtl'];
+	}
 	switch (props.visibility) {
-		case 'public_non_ltl': return prefer.s['noteVisibilityColorPublicNonLtl'];
 		case 'home': return prefer.s['noteVisibilityColorHome'];
 		case 'followers': return prefer.s['noteVisibilityColorFollowers'];
 		case 'specified': return prefer.s['noteVisibilityColorSpecified'];
@@ -29,8 +32,8 @@ const color = computed(() => {
 
 const background = computed(() => {
 	if (props.localOnly) {
-		const theColor = props.visibility === 'public' ? prefer.s['noteVisibilityColorLocalOnly'] : color.value;
-		return `repeating-linear-gradient(135deg, transparent, transparent 5px, ${theColor} 5px, ${theColor} 10px);`;
+		const theColor = prefer.s['noteVisibilityColorLocalOnly'];
+		return `repeating-linear-gradient(135deg, transparent, transparent 5px, ${theColor} 5px, ${theColor} 10px)`;
 	}
 	return color.value;
 });

@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	:class="[$style.root, { [$style.showActionsOnlyHover]: prefer.s.showNoteActionsOnlyHover, [$style.skipRender]: prefer.s.skipNoteRender }]"
 	tabindex="0"
 >
-	<MkVisibilityColoring v-if="prefer.s.useNoteVisibilityColoring && !appearNote.channel && (appearNote.visibility !== 'public' || appearNote.localOnly)" :visibility="appearNote.visibility" :localOnly="appearNote.localOnly ?? false"/>
+	<MkVisibilityColoring v-if="prefer.s.useNoteVisibilityColoring && !appearNote.channel && (appearNote.visibility !== 'public' || appearNote.localOnly || appearNote.dontShowOnLtl)" :visibility="appearNote.visibility" :localOnly="appearNote.localOnly ?? false" :dontShowOnLtl="appearNote.dontShowOnLtl ?? false"/>
 	<MkNoteSub v-if="appearNote.reply && !renoteCollapsed" :note="appearNote.reply" :class="$style.replyTo"/>
 	<div v-if="pinned" :class="$style.tip"><i class="ti ti-pin"></i> {{ i18n.ts.pinnedNote }}</div>
 	<div v-if="isRenote" :class="$style.renote">
