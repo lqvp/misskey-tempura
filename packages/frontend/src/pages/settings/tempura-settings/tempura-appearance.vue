@@ -141,7 +141,8 @@ function resetToDefault() {
 		colors[key] = PREF_DEF[prefKey].default;
 	}
 
-	// Force re-render of color inputs to fix display bug
+	// MkColorInput has reactivity issues with programmatic value changes
+	// Force re-render to ensure UI updates correctly
 	colorInputKey.value++;
 }
 </script>
