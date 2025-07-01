@@ -48,6 +48,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkPreferenceContainer>
 			</SearchMarker>
 
+			<SearchMarker :keywords="['llm', 'gemini', 'thinking', 'budget']">
+				<MkPreferenceContainer k="geminiThinkingBudget">
+					<MkInput v-model="geminiThinkingBudget" type="number">
+						<template #label><SearchLabel>{{ i18n.ts._llm.geminiThinkingBudgetLabel }}</SearchLabel></template>
+						<template #caption>{{ i18n.ts._llm.geminiThinkingBudgetCaption }}</template>
+					</MkInput>
+				</MkPreferenceContainer>
+			</SearchMarker>
+
 			<SearchMarker :keywords="['llm', 'gemini', 'system', 'prompt', 'instruction']">
 				<MkPreferenceContainer k="geminiSystemPrompt">
 					<MkInput v-model="geminiSystemPrompt" type="text">
@@ -182,6 +191,7 @@ const geminiNoteCasualText = prefer.model('geminiNoteCasualText');
 const geminiNoteProfessionalText = prefer.model('geminiNoteProfessionalText');
 const geminiNoteCatText = prefer.model('geminiNoteCatText');
 const geminiNoteCustomText = prefer.model('geminiNoteCustomText');
+const geminiThinkingBudget = prefer.model('geminiThinkingBudget');
 
 async function saveLLMSettings() {
 	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });

@@ -98,7 +98,7 @@ export async function generateGeminiSummary({
 	userContent?: string;
 	systemInstruction?: string;
 }): Promise<any> {
-	const { geminiToken, geminiModel, useGeminiLLMAPI, useGeminiWithMedia = true } = prefer.s;
+	const { geminiToken, geminiModel, geminiThinkingBudget, useGeminiLLMAPI, useGeminiWithMedia = true } = prefer.s;
 
 	// ノートからコンテンツを取得
 	const text = note?.text || userContent || '';
@@ -198,6 +198,11 @@ export async function generateGeminiSummary({
 				parts: [{ text: text }],
 			},
 		],
+		generationConfig: {
+			thinkingConfig: {
+				thinkingBudget: geminiThinkingBudget,
+			},
+		},
 	};
 
 	// メディアファイルの処理（画像のみサポート）

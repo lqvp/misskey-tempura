@@ -627,6 +627,9 @@ export const PREF_DEF = definePreferences({
 	geminiNoteCustomText: {
 		default: null as string | null,
 	},
+	geminiThinkingBudget: {
+		default: -1 as number,
+	},
 	enableEarthquakeWarning: {
 		default: false,
 	},
