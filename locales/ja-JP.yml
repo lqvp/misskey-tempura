@@ -3953,3 +3953,6 @@ _outboxFilter:
   publicNonLtlVisibilityDescription: "チェックを外すと、outboxからセミパブリック設定の投稿が拾えなくなります。"
   homeVisibility: "ホーム (Home) の投稿を連合する"
   homeVisibilityDescription: "チェックを外すと、outboxからホーム設定の投稿が拾えなくなります。"
+
+noteVisibilityColoring: "ノートの公開範囲に応じた色分け"
+noteVisibilityColoringDescription: "ノートの公開範囲に応じて、色付き表示を行います。\nノートの公開範囲をより視覚的に区別することができます。"

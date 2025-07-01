@@ -14648,6 +14648,15 @@ export interface Locale extends ILocale {
          */
         "homeVisibilityDescription": string;
     };
+    /**
+     * ノートの公開範囲に応じた色分け
+     */
+    "noteVisibilityColoring": string;
+    /**
+     * ノートの公開範囲に応じて、色付き表示を行います。
+     * ノートの公開範囲をより視覚的に区別することができます。
+     */
+    "noteVisibilityColoringDescription": string;
 }
 declare const locales: {
     [lang: string]: Locale;
