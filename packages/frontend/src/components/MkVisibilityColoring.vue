@@ -13,7 +13,7 @@ import { defineProps, computed } from 'vue';
 import { prefer } from '@/preferences.js';
 
 const props = defineProps<{
-	visibility: string;
+	visibility: 'public' | 'home' | 'followers' | 'specified';
 	localOnly: boolean;
 	dontShowOnLtl?: boolean;
 }>();
