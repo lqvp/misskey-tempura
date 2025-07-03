@@ -206,7 +206,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkPagination>
 		</div>
 		<div v-else-if="tab === 'renotes'" :class="$style.tab_renotes">
-			<MkPagination :pagination="renotesPagination" :disableAutoLoad="true">
+			<MkPagination :paginator="renotesPaginator">
 				<template #default="{ items }">
 					<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); grid-gap: 12px;">
 						<MkA v-for="item in items" :key="item.id" :to="userPage(item.user)">
@@ -220,7 +220,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div v-if="!showQuotes" style="padding: 16px">
 				<MkButton style="margin: 0 auto;" primary rounded @click="showQuotes = true">{{ i18n.ts.loadQuotes }}</MkButton>
 			</div>
-			<MkPagination v-else :pagination="quotesPagination" :disableAutoLoad="true">
+			<MkPagination v-else :paginator="quotesPaginator" :disableAutoLoad="true">
 				<template #default="{ items }">
 					<MkNoteSub v-for="item, index in items" :key="item.id" :note="item" :class="{ [$style.replyBorder]: (index > 0) }" :detail="true"/>
 				</template>
@@ -233,7 +233,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span v-if="!hideReactionCount" style="margin-left: 4px;">{{ $appearNote.reactions[reaction] }}</span>
 				</button>
 			</div>
-			<MkPagination v-if="reactionTabType" :key="reactionTabType" :pagination="reactionsPagination" :disableAutoLoad="true">
+			<MkPagination v-if="reactionTabType" :key="reactionTabType" :paginator="reactionsPaginator">
 				<template #default="{ items }">
 					<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)); grid-gap: 12px;">
 						<MkA v-for="item in items" :key="item.id" :to="userPage(item.user)">
@@ -257,7 +257,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, inject, onMounted, provide, ref, useTemplateRef } from 'vue';
+import { computed, inject, markRaw, onMounted, provide, ref, useTemplateRef } from 'vue';
 import * as mfm from 'mfm-js';
 import * as Misskey from 'misskey-js';
 import { isLink } from '@@/js/is-link.js';
@@ -303,6 +303,7 @@ import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
 import { DI } from '@/di.js';
 import { globalEvents, useGlobalEvent } from '@/events.js';
+import { Paginator } from '@/utility/paginator.js';
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
@@ -425,29 +426,26 @@ const repliesPagination = computed(() => ({
 	},
 }));
 
-const renotesPagination = computed(() => ({
-	endpoint: 'notes/renotes',
+const renotesPaginator = markRaw(new Paginator('notes/renotes', {
 	limit: 10,
 	params: {
 		noteId: appearNote.id,
 	},
 }));
 
-const quotesPagination = computed(() => ({
-	endpoint: 'notes/quotes',
+const quotesPaginator = markRaw(new Paginator('notes/quotes', {
 	limit: 10,
 	params: {
 		noteId: appearNote.id,
 	},
 }));
 
-const reactionsPagination = computed(() => ({
-	endpoint: 'notes/reactions',
+const reactionsPaginator = markRaw(new Paginator('notes/reactions', {
 	limit: 10,
-	params: {
+	computedParams: computed(() => ({
 		noteId: appearNote.id,
 		type: reactionTabType.value,
-	},
+	})),
 }));
 
 useTooltip(renoteButton, async (showing) => {

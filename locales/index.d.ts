@@ -5487,6 +5487,10 @@ export interface Locale extends ILocale {
      */
     "federationDisabled": string;
     /**
+     * 下書き
+     */
+    "draft": string;
+    /**
      * リアクションする際に確認する
      */
     "confirmOnReact": string;
@@ -5705,6 +5709,16 @@ export interface Locale extends ILocale {
      * 低くすると画質を保てますが、ファイルサイズは増加します。<br>高くするとファイルサイズを減らせますが、画質は低下します。
      */
     "defaultImageCompressionLevel_description": string;
+    "_order": {
+        /**
+         * 新しい順
+         */
+        "newest": string;
+        /**
+         * 古い順
+         */
+        "oldest": string;
+    };
     "_chat": {
         /**
          * まだメッセージはありません
@@ -8050,6 +8064,10 @@ export interface Locale extends ILocale {
              */
             "uploadableFileTypes_caption2": ParameterizedString<"x">;
             /**
+             * サーバーサイドのノートの下書きの作成可能数
+             */
+            "noteDraftLimit": string;
+            /**
              * 予約投稿の最大数
              */
             "scheduleNoteMax": string;
@@ -8744,6 +8762,10 @@ export interface Locale extends ILocale {
          * テーマコード
          */
         "code": string;
+        /**
+         * テーマコードをコピー
+         */
+        "copyThemeCode": string;
         /**
          * 説明
          */
@@ -12556,6 +12578,10 @@ export interface Locale extends ILocale {
     };
     "_uploader": {
         /**
+         * 画像の編集
+         */
+        "editImage": string;
+        /**
          * {x}に圧縮
          */
         "compressedToX": ParameterizedString<"x">;
@@ -12815,6 +12841,64 @@ export interface Locale extends ILocale {
              */
             "tearing": string;
         };
+    };
+    /**
+     * 下書き
+     */
+    "drafts": string;
+    "_drafts": {
+        /**
+         * 下書きを選択
+         */
+        "select": string;
+        /**
+         * 下書きの作成可能数を超えています。
+         */
+        "cannotCreateDraftAnymore": string;
+        /**
+         * この内容では下書きを作成できません。
+         */
+        "cannotCreateDraft": string;
+        /**
+         * 下書きを削除
+         */
+        "delete": string;
+        /**
+         * 下書きを削除しますか？
+         */
+        "deleteAreYouSure": string;
+        /**
+         * 下書きはありません
+         */
+        "noDrafts": string;
+        /**
+         * {user}への返信
+         */
+        "replyTo": ParameterizedString<"user">;
+        /**
+         * {user}のノートへの引用
+         */
+        "quoteOf": ParameterizedString<"user">;
+        /**
+         * {channel}への投稿
+         */
+        "postTo": ParameterizedString<"channel">;
+        /**
+         * 下書きへ保存
+         */
+        "saveToDraft": string;
+        /**
+         * 下書きから復元
+         */
+        "restoreFromDraft": string;
+        /**
+         * 復元
+         */
+        "restore": string;
+        /**
+         * 下書き一覧
+         */
+        "listDrafts": string;
     };
     "_reactionChecksMuting": {
         /**

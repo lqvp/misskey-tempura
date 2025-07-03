@@ -78,6 +78,8 @@ export const paramDef = {
 			properties: {
 				sinceId: { type: 'string', format: 'misskey:id' },
 				untilId: { type: 'string', format: 'misskey:id' },
+				sinceDate: { type: 'integer' },
+				untilDate: { type: 'integer' },
 				limit: { type: 'integer', minimum: 1, maximum: 100, default: 10 },
 			},
 		},
@@ -134,7 +136,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				}
 			}
 
-			const query = this.queryService.makePaginationQuery(this.followingsRepository.createQueryBuilder('following'), ps.sinceId, ps.untilId)
+			const query = this.queryService.makePaginationQuery(this.followingsRepository.createQueryBuilder('following'), ps.sinceId, ps.untilId, ps.sinceDate, ps.untilDate)
 				.andWhere('following.followeeId = :userId', { userId: user.id })
 				.innerJoinAndSelect('following.follower', 'follower');
 

@@ -32,6 +32,8 @@ export const paramDef = {
 		host: { type: 'string' },
 		sinceId: { type: 'string', format: 'misskey:id' },
 		untilId: { type: 'string', format: 'misskey:id' },
+		sinceDate: { type: 'integer' },
+		untilDate: { type: 'integer' },
 		limit: { type: 'integer', minimum: 1, maximum: 100, default: 10 },
 		includeFollower: { type: 'boolean', default: false },
 		includeFollowee: { type: 'boolean', default: true },
@@ -52,7 +54,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			if (!me) {
 				return [];
 			};
-			const query = this.queryService.makePaginationQuery(this.followingsRepository.createQueryBuilder('following'), ps.sinceId, ps.untilId)
+			const query = this.queryService.makePaginationQuery(this.followingsRepository.createQueryBuilder('following'), ps.sinceId, ps.untilId, ps.sinceDate, ps.untilDate)
 				.andWhere('following.followerHost = :host', { host: ps.host });
 
 			const followings = await query

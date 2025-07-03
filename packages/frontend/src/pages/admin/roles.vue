@@ -332,6 +332,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</MkSwitch>
 					</MkFolder>
 
+					<MkFolder v-if="matchQuery([i18n.ts._role._options.noteDraftLimit, 'noteDraftLimit'])">
+						<template #label>{{ i18n.ts._role._options.noteDraftLimit }}</template>
+						<template #suffix>{{ policies.noteDraftLimit }}</template>
+						<MkInput v-model="policies.noteDraftLimit" type="number" :min="0">
+						</MkInput>
+					</MkFolder>
+
 					<MkFolder v-if="matchQuery([i18n.ts._role._options.canAddRoles, 'canAddRoles'])">
 						<template #label>{{ i18n.ts._role._options.canAddRoles }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 						<template #suffix>{{ policies.canAddRoles ? i18n.ts.yes : i18n.ts.no }}</template>

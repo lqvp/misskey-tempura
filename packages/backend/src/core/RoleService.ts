@@ -71,6 +71,7 @@ export type RolePolicies = {
 	canImportUserLists: boolean;
 	chatAvailability: 'available' | 'readonly' | 'unavailable';
 	uploadableFileTypes: string[];
+	noteDraftLimit: number;
 	canAddRoles: boolean;
 	canCreateRole: boolean;
 	canUseUnFollowNotification: boolean;
@@ -133,6 +134,7 @@ export const DEFAULT_POLICIES: RolePolicies = {
 		'video/*',
 		'audio/*',
 	],
+	noteDraftLimit: 10,
 	canAddRoles: true,
 	canCreateRole: true,
 	canUseUnFollowNotification: true,
@@ -530,6 +532,7 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 				}
 				return [...set];
 			}),
+			noteDraftLimit: calc('noteDraftLimit', vs => Math.max(...vs)),
 			canAddRoles: calc('canAddRoles', vs => vs.some(v => v === true)),
 			canCreateRole: calc('canCreateRole', vs => vs.some(v => v === true)),
 			canUseUnFollowNotification: calc('canUseUnFollowNotification', vs => vs.some(v => v === true)),
