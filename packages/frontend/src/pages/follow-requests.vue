@@ -72,7 +72,7 @@ function reject(user: Misskey.entities.UserLite) {
 
 function reject_noSendActivity(user: Misskey.entities.UserLite) {
 	os.apiWithDialog('following/requests/reject', { userId: user.id, noSendActivity: true }).then(() => {
-		paginationComponent.value?.reload();
+		paginator.reload();
 	});
 }
 
