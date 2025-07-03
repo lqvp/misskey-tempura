@@ -3939,9 +3939,6 @@ _receiveSpecifiedNotesFrom:
   following: "フォローしているアカウントのみ"
   nobody: "誰も許可しない"
 
-skipPasteUploadDialog: "クリップボードからのファイルの貼り付け"
-skipPasteUploadDialogDescription: "有効にすると、投稿フォームに画像などのファイルを貼り付けた際に、アップロード確認のダイアログを表示せず、即座にアップロードを開始します。"
-
 _scheduledNote:
   makePrivateInsteadOfDelete: "代わりにプライベートにする"
 

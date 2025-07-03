@@ -14608,14 +14608,6 @@ export interface Locale extends ILocale {
          */
         "nobody": string;
     };
-    /**
-     * クリップボードからのファイルの貼り付け
-     */
-    "skipPasteUploadDialog": string;
-    /**
-     * 有効にすると、投稿フォームに画像などのファイルを貼り付けた際に、アップロード確認のダイアログを表示せず、即座にアップロードを開始します。
-     */
-    "skipPasteUploadDialogDescription": string;
     "_scheduledNote": {
         /**
          * 代わりにプライベートにする

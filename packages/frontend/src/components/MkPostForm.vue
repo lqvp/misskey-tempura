@@ -797,14 +797,9 @@ async function onPaste(ev: ClipboardEvent) {
 	}
 	if (pastedFiles.length > 0) {
 		ev.preventDefault();
-		if (prefer.s.skipPasteUploadDialog) {
-			uploader.addFiles(pastedFiles);
-			uploader.upload();
-		} else {
-			os.launchUploader(pastedFiles, {}).then(driveFiles => {
-				files.value.push(...driveFiles);
-			});
-		}
+		os.launchUploader(pastedFiles, {}).then(driveFiles => {
+			files.value.push(...driveFiles);
+		});
 		return;
 	}
 
