@@ -489,14 +489,27 @@ export class UserEntityService implements OnModuleInit {
 			host: user.host,
 			avatarUrl: (user.avatarId == null ? null : user.avatarUrl) ?? this.getIdenticonUrl(user),
 			avatarBlurhash: (user.avatarId == null ? null : user.avatarBlurhash),
-			avatarDecorations: user.avatarDecorations.length > 0 ? this.avatarDecorationService.getAll().then(decorations => user.avatarDecorations.filter(ud => decorations.some(d => d.id === ud.id)).map(ud => ({
-				id: ud.id,
-				angle: ud.angle || undefined,
-				flipH: ud.flipH || undefined,
-				offsetX: ud.offsetX || undefined,
-				offsetY: ud.offsetY || undefined,
-				url: decorations.find(d => d.id === ud.id)!.url,
-			}))) : [],
+			avatarDecorations: user.avatarDecorations.length > 0 ? (
+				user.host !== null
+					? // リモートユーザーの場合、既にURLが含まれているのでそのまま使用
+					user.avatarDecorations.map(ud => ({
+						id: ud.id,
+						angle: ud.angle ?? undefined,
+						flipH: ud.flipH ?? undefined,
+						offsetX: ud.offsetX ?? undefined,
+						offsetY: ud.offsetY ?? undefined,
+						url: (ud as any).url,
+					}))
+					: // ローカルユーザーの場合、従来通りローカルデコレーション一覧と照合
+					this.avatarDecorationService.getAll().then(decorations => user.avatarDecorations.filter(ud => decorations.some(d => d.id === ud.id)).map(ud => ({
+						id: ud.id,
+						angle: ud.angle ?? undefined,
+						flipH: ud.flipH ?? undefined,
+						offsetX: ud.offsetX ?? undefined,
+						offsetY: ud.offsetY ?? undefined,
+						url: decorations.find(d => d.id === ud.id)!.url,
+					})))
+			) : [],
 			isBot: user.isBot,
 			isCat: user.isCat,
 			requireSigninToViewContents: user.requireSigninToViewContents === false ? undefined : true,
