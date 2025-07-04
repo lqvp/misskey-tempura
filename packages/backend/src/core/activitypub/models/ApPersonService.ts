@@ -318,18 +318,6 @@ export class ApPersonService implements OnModuleInit {
 				});
 				const res: any = await userMetaRequest.json();
 				if (res.avatarDecorations) {
-					const localDecos = await this.avatarDecorationService.getAll();
-					// ローカルのデコレーションとして登録する
-					for (const deco of res.avatarDecorations) {
-						if (localDecos.some((v) => v.id === deco.id)) continue;
-						await this.avatarDecorationService.create({
-							id: deco.id,
-							updatedAt: null,
-							url: deco.url,
-							name: `import_${host}_${deco.id}`,
-							description: `Imported from ${host}`,
-						});
-					}
 					Object.assign(returnData, { avatarDecorations: res.avatarDecorations });
 				}
 			}
