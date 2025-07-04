@@ -4712,7 +4712,7 @@ export type components = {
             reply?: components['schemas']['Note'] | null;
             renote?: components['schemas']['Note'] | null;
             /** @enum {string} */
-            visibility: 'public' | 'home' | 'followers' | 'specified';
+            visibility: 'public' | 'public_non_ltl' | 'home' | 'followers' | 'specified';
             visibleUserIds?: string[];
             fileIds?: string[];
             files?: components['schemas']['DriveFile'][];
@@ -24531,6 +24531,7 @@ export interface operations {
                         name: string;
                         description: string;
                         url: string;
+                        host?: string | null;
                         roleIdsThatCanBeUsedThisDecoration: string[];
                     }[];
                 };

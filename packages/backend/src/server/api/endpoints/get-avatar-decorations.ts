@@ -42,6 +42,10 @@ export const meta = {
 					type: 'string',
 					optional: false, nullable: false,
 				},
+				host: {
+					type: 'string',
+					optional: true, nullable: true,
+				},
 				roleIdsThatCanBeUsedThisDecoration: {
 					type: 'array',
 					optional: false, nullable: false,
@@ -77,6 +81,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				name: decoration.name,
 				description: decoration.description,
 				url: decoration.url,
+				host: decoration.host,
 				roleIdsThatCanBeUsedThisDecoration: decoration.roleIdsThatCanBeUsedThisDecoration.filter(roleId => allRoles.some(role => role.id === roleId)),
 			}));
 		});

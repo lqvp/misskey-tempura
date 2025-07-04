@@ -92,6 +92,7 @@ const emit = defineEmits<{
 		name: string;
 		description: string | null;
 		url: string;
+		host?: string | null;
 		roleIdsThatCanBeUsedThisDecoration: string[];
 	}): void;
 }>();
@@ -106,6 +107,7 @@ const searchResults = ref<{
 	name: string;
 	description: string | null;
 	url: string;
+	host?: string | null;
 	roleIdsThatCanBeUsedThisDecoration: string[];
 }[]>([]);
 const isSearching = ref(false);
@@ -113,10 +115,10 @@ const searchTimeout = ref<number | null>(null);
 
 const avatarDecorations = ref<Misskey.entities.GetAvatarDecorationsResponse>([]);
 const localAvatarDecorations = computed(() =>
-	avatarDecorations.value.filter(d => !d.name.includes('import_')),
+	avatarDecorations.value.filter(d => d.host == null),
 );
 const remoteAvatarDecorations = computed(() =>
-	avatarDecorations.value.filter(d => d.name.includes('import_')),
+	avatarDecorations.value.filter(d => d.host != null),
 );
 
 const visibleLocalDecorations = computed(() =>
@@ -161,6 +163,7 @@ async function onSearchInput() {
 				name: string;
 				description: string | null;
 				url: string;
+				host?: string | null;
 				roleIdsThatCanBeUsedThisDecoration: string[];
 			}[];
 		} catch (err) {
@@ -184,6 +187,7 @@ function selectDecoration(decoration: {
 	name: string;
 	description: string | null;
 	url: string;
+	host?: string | null;
 	roleIdsThatCanBeUsedThisDecoration: string[];
 }) {
 	emit('update:modelValue', decoration.id);
