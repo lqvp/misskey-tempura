@@ -57,6 +57,7 @@ export class AvatarDecorationService implements OnApplicationShutdown {
 	public async create(options: Partial<MiAvatarDecoration>, moderator?: MiUser): Promise<MiAvatarDecoration> {
 		const created = await this.avatarDecorationsRepository.insertOne({
 			id: this.idService.gen(),
+			host: null,
 			...options,
 		});
 
