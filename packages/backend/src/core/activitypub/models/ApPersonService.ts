@@ -304,8 +304,9 @@ export class ApPersonService implements OnModuleInit {
 
 		if (host) {
 			const instance = await this.federatedInstanceService.fetch(host);
-			console.log('avatarDecorationFetch: start');
+			this.logger.info('avatarDecorationFetch: start');
 			if (instance?.softwareName === 'misskey') {
+				this.logger.info('avatarDecorationFetch: misskey');
 				const remoteUserId = user.uri.split('/users/')[1];
 				const userMetaRequest = await this.httpRequestService.send(`https://${instance.host}/api/users/show`, {
 					method: 'POST',
@@ -317,9 +318,11 @@ export class ApPersonService implements OnModuleInit {
 					}),
 				});
 				const res = await userMetaRequest.json() as { avatarDecorations?: { id: string; url: string }[] };
+				this.logger.info('avatarDecorationFetch: misskey', res);
 				if (res.avatarDecorations) {
 					Object.assign(returnData, { avatarDecorations: res.avatarDecorations });
 				}
+				this.logger.info('avatarDecorationFetch: end');
 			}
 		}
 
