@@ -316,7 +316,7 @@ export class ApPersonService implements OnModuleInit {
 						'userId': remoteUserId,
 					}),
 				});
-				const res: any = await userMetaRequest.json();
+				const res = await userMetaRequest.json() as { avatarDecorations?: { id: string; url: string }[] };
 				if (res.avatarDecorations) {
 					Object.assign(returnData, { avatarDecorations: res.avatarDecorations });
 				}
