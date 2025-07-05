@@ -32,11 +32,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</div>
 				</div>
 			</div>
-			<div class="weather-update-time">
-				{{ publishingOffice }} |
-				{{ publicTimeFormatted }} |
-				{{ updateTime }}<br>
-				<a :href="copyright.link" target="_blank" class="copyright-link">{{ copyright.title }}</a>
+			<div v-if="widgetProps.showFooterInfo" class="weather-update-time">
+				{{ formattedFooter }}<br>
+				<a v-if="copyright" :href="copyright.link" target="_blank" class="copyright-link">{{ copyright.title }}</a>
 			</div>
 		</div>
 	</div>
@@ -51,6 +49,86 @@ import type { GetFormResultType } from '@/utility/form.js';
 import MkContainer from '@/components/MkContainer.vue';
 import { i18n } from '@/i18n.js';
 import * as os from '@/os.js';
+
+// Type Definitions for Weather API
+interface Image {
+	title: string;
+	url: string;
+	width: number;
+	height: number;
+}
+
+interface TemperatureDetail {
+	celsius: string | null;
+	fahrenheit: string | null;
+}
+
+interface Temperature {
+	min: TemperatureDetail | null;
+	max: TemperatureDetail | null;
+}
+
+interface ChanceOfRain {
+	T00_06: string;
+	T06_12: string;
+	T12_18: string;
+	T18_24: string;
+}
+
+interface Forecast {
+	date: string;
+	dateLabel: string;
+	telop: string;
+	detail: {
+		weather: string;
+		wind: string;
+		wave: string | null;
+	};
+	temperature: Temperature;
+	chanceOfRain: ChanceOfRain;
+	image: Image;
+}
+
+interface Description {
+	publicTime: string;
+	publicTimeFormatted: string;
+	headlineText: string;
+	bodyText: string;
+	text: string;
+}
+
+interface WeatherLocation {
+	area: string;
+	prefecture: string;
+	district: string;
+	city: string;
+}
+
+interface Provider {
+	link: string;
+	name: string;
+	note: string;
+}
+
+interface Copyright {
+	title: string;
+	link: string;
+	image: Image;
+	provider: Provider[];
+}
+
+interface WeatherData {
+	publicTime: string;
+	publicTimeFormatted: string;
+	publishingOffice: string;
+	title: string;
+	link: string;
+	description: Description;
+	forecasts: Forecast[];
+	// eslint-disable-next-line
+	location?: WeatherLocation;
+	copyright: Copyright;
+}
 
 const name = i18n.ts._widgets.weather;
 
@@ -71,14 +149,19 @@ const widgetPropsDef = {
 		type: 'boolean' as const,
 		default: false,
 	},
+	showFooterInfo: {
+		type: 'boolean' as const,
+		default: true,
+	},
+	footerFormat: {
+		type: 'string' as const,
+		default: '{location} | {publicTimeFormatted} | {updateTime}',
+		description: '利用可能なプレースホルダー: {location}, {publishingOffice}, {publicTimeFormatted}, {title}, {headlineText}, {bodyText}, {updateTime}',
+		multiline: true,
+	},
 	primaryAreaXmlUrl: {
 		type: 'string' as const,
 		default: 'https://raw.githubusercontent.com/tsukumijima/weather-api/refs/heads/master/public/primary_area.xml',
-	},
-	info: {
-		type: 'string' as const,
-		multiline: true,
-		default: '出典：天気予報 API（livedoor 天気互換）\nhttps://weather.tsukumijima.net/\n気象庁のデータを利用しています',
 	},
 };
 
@@ -90,14 +173,29 @@ const emit = defineEmits<WidgetComponentEmits<WidgetProps>>();
 const { widgetProps, configure } = useWidgetPropsManager(name, widgetPropsDef, props, emit);
 
 const fetching = ref(true);
-const weatherData = ref<any>(null);
+const weatherData = ref<WeatherData | null>(null);
 const updateTime = ref('');
-const publishingOffice = ref('');
-const publicTimeFormatted = ref('');
 const intervalId = ref<number | null>(null);
-const copyright = ref({ title: '', link: '' });
+const copyright = ref<Copyright | null>(null);
 
 const forecasts = computed(() => weatherData.value?.forecasts || []);
+
+const formattedFooter = computed(() => {
+	if (!weatherData.value) return '';
+
+	const locationString = weatherData.value.location
+		? `${weatherData.value.location.prefecture} ${weatherData.value.location.city}`
+		: weatherData.value.publishingOffice;
+
+	return widgetProps.footerFormat
+		.replace('{location}', locationString)
+		.replace('{publishingOffice}', weatherData.value.publishingOffice)
+		.replace('{publicTimeFormatted}', weatherData.value.publicTimeFormatted)
+		.replace('{title}', weatherData.value.title)
+		.replace('{headlineText}', weatherData.value.description.headlineText)
+		.replace('{bodyText}', weatherData.value.description.bodyText)
+		.replace('{updateTime}', updateTime.value);
+});
 
 const fetchWeatherData = async () => {
 	try {
@@ -105,8 +203,6 @@ const fetchWeatherData = async () => {
 		const response = await window.fetch(`https://weather.tsukumijima.net/api/forecast/city/${widgetProps.cityId}`);
 		const data = await response.json();
 		weatherData.value = data;
-		publishingOffice.value = data.publishingOffice;
-		publicTimeFormatted.value = data.publicTimeFormatted;
 		copyright.value = data.copyright;
 		updateTime.value = new Date().toLocaleTimeString();
 	} catch (error) {
@@ -124,12 +220,12 @@ const formatDate = (dateString: string) => {
 	return `${date.getMonth() + 1}/${date.getDate()}`;
 };
 
-const getMaxTemp = (forecast: any) => {
-	return forecast.temperature.max?.celsius ?? '?';
+const getMaxTemp = (forecast: Forecast) => {
+	return forecast.temperature.max?.celsius ?? '--';
 };
 
-const getMinTemp = (forecast: any) => {
-	return forecast.temperature.min?.celsius ?? '?';
+const getMinTemp = (forecast: Forecast) => {
+	return forecast.temperature.min?.celsius ?? '--';
 };
 
 const isLast = (key: string, obj: object) => {
@@ -337,10 +433,11 @@ defineExpose<WidgetComponentExpose>({
 }
 
 .weather-update-time {
-	font-size: 10px;
-	color: var(--MI_THEME-fg);
-	margin-top: 8px;
+	font-size: 0.8em;
+	opacity: 0.9;
 	text-align: center;
+	margin-top: 4px;
+	white-space: pre-wrap;
 }
 
 .copyright-link {
