@@ -9892,6 +9892,12 @@ export interface Locale extends ILocale {
          * ListenBrainz
          */
         "listenBrainz": string;
+        "_listenBrainz": {
+            /**
+             * ListenBrainzのユーザーIDを設定してください。
+             */
+            "userIdDescription": string;
+        };
         /**
          * 天気予報
          */
