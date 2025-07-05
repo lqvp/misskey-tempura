@@ -146,7 +146,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<button v-else :class="$style.footerButton" class="_button" disabled>
 					<i class="ti ti-ban"></i>
 				</button>
-				<button v-if="appearNote.reactionAcceptance !== 'likeOnly' && appearNote.myReaction == null && prefer.s.showLikeButton" ref="heartReactButton" v-tooltip="i18n.ts.like" :class="$style.footerButton" class="_button" @click="toggleHeartReact()">
+				<button v-if="appearNote.reactionAcceptance !== 'likeOnly' && $appearNote.myReaction == null && prefer.s.showLikeButton" ref="heartReactButton" v-tooltip="i18n.ts.like" :class="$style.footerButton" class="_button" @click="toggleHeartReact()">
 					<i class="ti ti-heart"></i>
 				</button>
 				<button ref="reactButton" :class="$style.footerButton" class="_button" @click="toggleReact()">
@@ -597,6 +597,7 @@ async function heartReact(): Promise<void> {
 		noteId: appearNote.id,
 		reaction: prefer.s.selectReaction,
 	}).then(() => {
+		$appearNote.myReaction = prefer.s.selectReaction;
 		noteEvents.emit(`reacted:${appearNote.id}`, {
 			userId: $i!.id,
 			reaction: prefer.s.selectReaction,
