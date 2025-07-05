@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div class="_gaps_m znqjceqz">
 				<div v-panel class="about">
 					<div ref="containerEl" class="container" :class="{ playing: easterEggEngine != null }">
-						<img src="https://avatars.githubusercontent.com/u/183242690?v=4" alt="" class="icon" draggable="false" @load="iconLoaded" @click="gravity"/>
+						<img src="https://github.com/lqvp.png" alt="" class="icon" draggable="false" @load="iconLoaded" @click="gravity"/>
 						<div class="misskey">Misskey-tempura</div>
 						<div class="version">{{ displayVersion }}</div>
 						<span v-for="emoji in easterEggEmojis" :key="emoji.id" class="emoji" :data-physics-x="emoji.left" :data-physics-y="emoji.top" :class="{ _physics_circle_: !emoji.emoji.startsWith(':') }">
@@ -30,49 +30,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<FormSection>
 					<template #label>{{ i18n.ts._misskeyTempura.contributors }}</template>
 					<div :class="$style.contributors">
-						<a href="https://github.com/lqvp" target="_blank" :class="$style.contributor">
-							<img src="https://avatars.githubusercontent.com/u/183242690?v=4" :class="$style.contributorAvatar">
-							<span :class="$style.contributorUsername">lqvp</span>
-						</a>
-						<a href="https://github.com/r-ca" target="_blank" :class="$style.contributor">
-							<img src="https://avatars.githubusercontent.com/u/66072112?v=4" :class="$style.contributorAvatar">
-							<span :class="$style.contributorUsername">ろむねこ</span>
-						</a>
-						<a href="https://github.com/chan-mai" target="_blank" :class="$style.contributor">
-							<img src="https://avatars.githubusercontent.com/u/74494945?v=4" :class="$style.contributorAvatar">
-							<span :class="$style.contributorUsername">mq1</span>
-						</a>
-						<a href="https://github.com/ruruke" target="_blank" :class="$style.contributor">
-							<img src="https://avatars.githubusercontent.com/u/123709459?v=4" :class="$style.contributorAvatar">
-							<span :class="$style.contributorUsername">ruruke</span>
-						</a>
-						<a href="https://github.com/Steve-0628" target="_blank" :class="$style.contributor">
-							<img src="https://avatars.githubusercontent.com/u/49326405?v=4" :class="$style.contributorAvatar">
-							<span :class="$style.contributorUsername">すてさん</span>
-						</a>
-						<a href="https://github.com/r2iz" target="_blank" :class="$style.contributor">
-							<img src="https://avatars.githubusercontent.com/u/116360839?v=4" :class="$style.contributorAvatar">
-							<span :class="$style.contributorUsername">r2iz</span>
-						</a>
-						<a href="https://github.com/tai-cha" target="_blank" :class="$style.contributor">
-							<img src="https://avatars.githubusercontent.com/u/40626578?v=4" :class="$style.contributorAvatar">
-							<span :class="$style.contributorUsername">taichan</span>
-						</a>
-						<a href="https://github.com/buachigithub" target="_blank" :class="$style.contributor">
-							<img src="https://avatars.githubusercontent.com/u/60306404?v=4" :class="$style.contributorAvatar">
-							<span :class="$style.contributorUsername">buachi</span>
-						</a>
-						<a href="https://github.com/Misaki0331" target="_blank" :class="$style.contributor">
-							<img src="https://avatars.githubusercontent.com/u/60120497?v=4" :class="$style.contributorAvatar">
-							<span :class="$style.contributorUsername">水咲(みさき)</span>
-						</a>
-						<a href="https://github.com/harumaki2000" target="_blank" :class="$style.contributor">
-							<img src="https://avatars.githubusercontent.com/u/184736599?v=4" :class="$style.contributorAvatar">
-							<span :class="$style.contributorUsername">harumaki2000</span>
-						</a>
-						<a href="https://github.com/sim1222" target="_blank" :class="$style.contributor">
-							<img src="https://avatars.githubusercontent.com/u/50144466?v=4" :class="$style.contributorAvatar">
-							<span :class="$style.contributorUsername">こけっち</span>
+						<a v-for="c in contributors" :key="c.github" :href="`https://github.com/${c.github}`" target="_blank" :class="$style.contributor">
+							<img :src="`https://github.com/${c.github}.png`" :class="$style.contributorAvatar">
+							<span :class="$style.contributorUsername">{{ c.name }}</span>
 						</a>
 					</div>
 				</FormSection>
@@ -97,6 +57,20 @@ import * as os from '@/os.js';
 import { definePage } from '@/page.js';
 import { claimAchievement, claimedAchievements } from '@/utility/achievements.js';
 import { $i } from '@/i.js';
+
+const contributors = [
+	{ github: 'lqvp', name: 'lqvp' },
+	{ github: 'r-ca', name: 'ろむねこ' },
+	{ github: 'chan-mai', name: 'mq1' },
+	{ github: 'ruruke', name: 'ruruke' },
+	{ github: 'Steve-0628', name: 'すてさん' },
+	{ github: 'r2iz', name: 'r2iz' },
+	{ github: 'tai-cha', name: 'taichan' },
+	{ github: 'buachigithub', name: 'buachi' },
+	{ github: 'Misaki0331', name: '水咲(みさき)' },
+	{ github: 'harumaki2000', name: 'harumaki2000' },
+	{ github: 'sim1222', name: 'こけっち' },
+];
 
 const displayVersion = computed(() => {
 	return version.split('tempura-')[1];
