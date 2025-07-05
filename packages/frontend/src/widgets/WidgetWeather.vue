@@ -187,14 +187,20 @@ const formattedFooter = computed(() => {
 		? `${weatherData.value.location.prefecture} ${weatherData.value.location.city}`
 		: weatherData.value.publishingOffice;
 
-	return widgetProps.footerFormat
-		.replace('{location}', locationString)
-		.replace('{publishingOffice}', weatherData.value.publishingOffice)
-		.replace('{publicTimeFormatted}', weatherData.value.publicTimeFormatted)
-		.replace('{title}', weatherData.value.title)
-		.replace('{headlineText}', weatherData.value.description.headlineText)
-		.replace('{bodyText}', weatherData.value.description.bodyText)
-		.replace('{updateTime}', updateTime.value);
+	const replacements: Record<string, string> = {
+		'{location}': locationString,
+		'{publishingOffice}': weatherData.value.publishingOffice,
+		'{publicTimeFormatted}': weatherData.value.publicTimeFormatted,
+		'{title}': weatherData.value.title,
+		'{headlineText}': weatherData.value.description.headlineText,
+		'{bodyText}': weatherData.value.description.bodyText,
+		'{updateTime}': updateTime.value,
+	};
+
+	return widgetProps.footerFormat.replace(
+		/\{[^}]+\}/g,
+		(match) => replacements[match] ?? match,
+	);
 });
 
 const fetchWeatherData = async () => {
