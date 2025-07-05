@@ -570,12 +570,12 @@ function react(): void {
 	}
 }
 
-function heartReact(): void {
+async function heartReact(): Promise<void> {
 	pleaseLogin({ openOnRemote: pleaseLoginContext.value });
 	showMovedDialog();
 
 	if (prefer.s.enableLikeConfirm) {
-		const confirm = os.confirm({
+		const confirm = await os.confirm({
 			type: 'info',
 			text: i18n.ts.likeConfirm,
 		});

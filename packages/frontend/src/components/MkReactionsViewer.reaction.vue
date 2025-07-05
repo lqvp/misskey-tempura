@@ -40,7 +40,6 @@ import { noteEvents } from '@/composables/use-note-capture.js';
 import { mute as muteEmoji, unmute as unmuteEmoji, checkMuted as isEmojiMuted } from '@/utility/emoji-mute.js';
 
 const reactionChecksMuting = prefer.s.reactionChecksMuting;
-const enableReactionConfirm = prefer.s.enableReactionConfirm;
 
 const props = defineProps<{
 	noteId: Misskey.entities.Note['id'];
@@ -96,7 +95,7 @@ async function toggleReaction() {
 	const reaction = getReactionName(props.reaction, true);
 	const oldReaction = props.myReaction ? getReactionName(props.myReaction, true) : null;
 
-	if (enableReactionConfirm.value && !oldReaction) {
+	if (prefer.s.enableReactionConfirm && !oldReaction) {
 		const confirm = await os.confirm({
 			type: 'info',
 			text: i18n.ts.addReactionConfirm,
@@ -141,7 +140,8 @@ async function toggleReaction() {
 			}
 		});
 	} else {
-		if (prefer.s.confirmOnReact) {
+		// enableReactionConfirmが有効な場合は上部で既に確認済みなので、confirmOnReactのみチェック
+		if (!prefer.s.enableReactionConfirm && prefer.s.confirmOnReact) {
 			const confirm = await os.confirm({
 				type: 'question',
 				text: i18n.tsx.reactAreYouSure({ emoji: props.reaction.replace('@.', '') }),
