@@ -13,14 +13,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</template>
 
 	<div :class="$style.root">
-		<MkLoading v-if="fetching"/>
-		<div v-else-if="!playingNow" style="text-align: center;">
-			<MkResult type="empty" :text="i18n.ts.nothing"/>
+		<div v-if="!widgetProps.userId" class="_gaps" style="text-align: center;">
+			<div>{{ i18n.ts._widgets._listenBrainz.userIdDescription }}</div>
 		</div>
-		<div v-else class="_gaps_s" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
-			<MkMfm :text="formattedNote"/>
-			<MkButton primary @click="postNote">{{ i18n.ts.note }}</MkButton>
-		</div>
+		<template v-else>
+			<MkLoading v-if="fetching"/>
+			<div v-else-if="!playingNow" style="text-align: center;">
+				<MkResult type="empty" :text="i18n.ts.nothing"/>
+			</div>
+			<div v-else class="_gaps_s" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+				<MkMfm :text="formattedNote"/>
+				<MkButton primary @click="postNote">{{ i18n.ts.note }}</MkButton>
+			</div>
+		</template>
 	</div>
 </MkContainer>
 </template>
@@ -52,7 +57,8 @@ const widgetPropsDef = {
 	noteFormat: {
 		type: 'string' as const,
 		multiline: true,
-		default: '{artist_name} - {track_name} ({media_player}/{music_service_name}/{client}) {url} #nowplaying',
+		default: 'Now Playing: {artist_name} - {track_name} #nowplaying',
+		description: '利用可能なプレースホルダー: {artist_name}, {track_name}, {release_name}, {media_player}, {music_service_name}, {music_service}, {client}, {client_version}, {url}, {duration}, {duration_formatted}, {duration_ms}, {recording_mbid}, {release_mbid}, {tracknumber}, {isrc}, {spotify_id}, {tags}',
 	},
 	visibility: {
 		type: 'enum' as const,
@@ -86,18 +92,46 @@ let intervalId: number | null = null;
 
 const formattedNote = computed(() => {
 	if (!trackMetadata.value) return '';
-	return widgetProps.noteFormat
-		.replace('{artist_name}', trackMetadata.value.artist_name || '')
-		.replace('{track_name}', trackMetadata.value.track_name || '')
-		.replace('{media_player}', trackMetadata.value.additional_info?.media_player || '')
-		.replace('{music_service_name}', trackMetadata.value.additional_info?.music_service_name || '')
-		.replace('{url}', trackMetadata.value.additional_info?.origin_url || '')
-		.replace('{client}', trackMetadata.value.additional_info?.submission_client || '');
+
+	const durationSec = trackMetadata.value.additional_info?.duration;
+	const formattedDuration = durationSec ? `${Math.floor(durationSec / 60)}:${String(durationSec % 60).padStart(2, '0')}` : '';
+	const tags = (trackMetadata.value.additional_info?.tags ?? []).join(', ');
+
+	const replacements: Record<string, string> = {
+		'{artist_name}': trackMetadata.value.artist_name ?? '',
+		'{track_name}': trackMetadata.value.track_name ?? '',
+		'{release_name}': trackMetadata.value.release_name ?? '',
+		'{media_player}': trackMetadata.value.additional_info?.media_player ?? '',
+		'{music_service_name}': trackMetadata.value.additional_info?.music_service_name ?? '',
+		'{music_service}': trackMetadata.value.additional_info?.music_service ?? '',
+		'{url}': trackMetadata.value.additional_info?.origin_url ?? '',
+		'{client}': trackMetadata.value.additional_info?.submission_client ?? '',
+		'{client_version}': trackMetadata.value.additional_info?.submission_client_version ?? '',
+		'{duration}': durationSec?.toString() ?? '',
+		'{duration_formatted}': formattedDuration,
+		'{duration_ms}': trackMetadata.value.additional_info?.duration_ms?.toString() ?? '',
+		'{recording_mbid}': trackMetadata.value.additional_info?.recording_mbid ?? '',
+		'{release_mbid}': trackMetadata.value.additional_info?.release_mbid ?? '',
+		'{tracknumber}': trackMetadata.value.additional_info?.tracknumber ?? '',
+		'{isrc}': trackMetadata.value.additional_info?.isrc ?? '',
+		'{spotify_id}': trackMetadata.value.additional_info?.spotify_id ?? '',
+		'{tags}': tags,
+	};
+
+	return widgetProps.noteFormat.replace(
+		/\{[^}]+\}/g,
+		(match) => replacements[match] ?? match,
+	);
 });
 
 const fetchPlayingNow = async () => {
+	if (!widgetProps.userId) {
+		fetching.value = false;
+		playingNow.value = false;
+		trackMetadata.value = null;
+		return;
+	}
 	fetching.value = true;
-	if (!widgetProps.userId) return;
 
 	const url = `https://api.listenbrainz.org/1/user/${widgetProps.userId}/playing-now`;
 	const response = await window.fetch(url);
@@ -120,7 +154,7 @@ const postNote = async () => {
 	const note = formattedNote.value;
 	misskeyApi('notes/create', {
 		text: note,
-		visibility: widgetProps.visibility,
+		visibility: widgetProps.visibility as any,
 	});
 };
 

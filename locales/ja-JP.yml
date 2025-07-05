@@ -2597,6 +2597,8 @@ _widgets:
   birthdayFollowings: "今日誕生日のユーザー"
   chat: "チャット"
   listenBrainz: "ListenBrainz"
+  _listenBrainz:
+    userIdDescription: "ListenBrainzのユーザーIDを設定してください。"
   weather: "天気予報"
   nestedWidget: "ネストウィジェット"
   earthQuake: "地震履歴"
