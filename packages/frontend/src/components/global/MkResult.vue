@@ -46,6 +46,7 @@ const props = defineProps<{
 	aspect-ratio: 1;
 	margin-bottom: 16px;
 	border-radius: 16px;
+	object-fit: contain;
 }
 
 .icon {
