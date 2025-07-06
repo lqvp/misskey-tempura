@@ -385,6 +385,38 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</MkSelect>
 					</div>
 				</MkFolder>
+
+				<MkFolder>
+					<template #icon><i class="ti ti-mail"></i></template>
+					<template #label>{{ i18n.ts._contactForm.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+					<template v-if="contactFormSettingsForm.savedState.enableContactForm" #suffix>Enabled</template>
+					<template v-else #suffix>Disabled</template>
+					<template v-if="contactFormSettingsForm.modified.value" #footer>
+						<MkFormFooter :form="contactFormSettingsForm"/>
+					</template>
+
+					<div class="_gaps_m">
+						<MkSwitch v-model="contactFormSettingsForm.state.enableContactForm">
+							<template #label>{{ i18n.ts._contactForm.enable }}</template>
+							<template #caption>{{ i18n.ts._contactForm.enableDescription }}</template>
+						</MkSwitch>
+
+						<MkInput v-model="contactFormSettingsForm.state.contactFormLimit" type="number" :min="1" :max="10">
+							<template #label>{{ i18n.ts._contactForm.limit }}</template>
+							<template #caption>{{ i18n.ts._contactForm.limitDescription }}</template>
+						</MkInput>
+
+						<MkSwitch v-model="contactFormSettingsForm.state.contactFormRequireAuth">
+							<template #label>{{ i18n.ts._contactForm.requireAuth }}</template>
+							<template #caption>{{ i18n.ts._contactForm.requireAuthDescription }}</template>
+						</MkSwitch>
+
+						<MkSwitch v-model="contactFormSettingsForm.state.contactFormRequireCaptcha">
+							<template #label>{{ i18n.ts._contactForm.requireCaptcha }}</template>
+							<template #caption>{{ i18n.ts._contactForm.requireCaptchaDescription }}</template>
+						</MkSwitch>
+					</div>
+				</MkFolder>
 			</div>
 		</FormSuspense>
 	</div>
@@ -731,6 +763,22 @@ const geminiSettingsForm = useForm({
 	});
 	fetchInstance(true);
 });
+
+const contactFormSettingsForm = useForm({
+	enableContactForm: meta.enableContactForm,
+	contactFormLimit: meta.contactFormLimit,
+	contactFormRequireAuth: meta.contactFormRequireAuth,
+	contactFormRequireCaptcha: meta.contactFormRequireCaptcha,
+}, async (state) => {
+	await os.apiWithDialog('admin/update-meta', {
+		enableContactForm: state.enableContactForm,
+		contactFormLimit: state.contactFormLimit,
+		contactFormRequireAuth: state.contactFormRequireAuth,
+		contactFormRequireCaptcha: state.contactFormRequireCaptcha,
+	});
+	fetchInstance(true);
+});
+
 const headerActions = computed(() => []);
 
 const headerTabs = computed(() => []);

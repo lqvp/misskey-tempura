@@ -998,6 +998,27 @@ export class MiMeta {
 		nullable: true,
 	})
 	public customCursorWaitUrl: string | null;
+
+	// Contact Form Settings
+	@Column('boolean', {
+		default: true,
+	})
+	public enableContactForm: boolean;
+
+	@Column('integer', {
+		default: 3,
+	})
+	public contactFormLimit: number;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public contactFormRequireAuth: boolean;
+
+	@Column('boolean', {
+		default: true,
+	})
+	public contactFormRequireCaptcha: boolean;
 }
 
 export type SoftwareSuspension = {

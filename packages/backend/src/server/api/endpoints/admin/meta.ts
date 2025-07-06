@@ -752,6 +752,23 @@ export const meta = {
 				type: 'string',
 				optional: false, nullable: true,
 			},
+			// Contact Form Settings
+			enableContactForm: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			contactFormLimit: {
+				type: 'number',
+				optional: false, nullable: false,
+			},
+			contactFormRequireAuth: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			contactFormRequireCaptcha: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
 			deliverSuspendedSoftware: {
 				type: 'array',
 				optional: false, nullable: false,
@@ -996,6 +1013,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				customCursorTextUrl: instance.customCursorTextUrl,
 				customCursorProgressUrl: instance.customCursorProgressUrl,
 				customCursorWaitUrl: instance.customCursorWaitUrl,
+				enableContactForm: instance.enableContactForm,
+				contactFormLimit: instance.contactFormLimit,
+				contactFormRequireAuth: instance.contactFormRequireAuth,
+				contactFormRequireCaptcha: instance.contactFormRequireCaptcha,
 			};
 		});
 	}

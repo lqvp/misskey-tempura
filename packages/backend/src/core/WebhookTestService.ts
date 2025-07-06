@@ -329,6 +329,22 @@ export class WebhookTestService {
 				send('inactiveModeratorsInvitationOnlyChanged', {});
 				break;
 			}
+			case 'contactForm': {
+				send('contactForm', {
+					id: '9cvdo1wzkm',
+					subject: 'テストのお問い合わせ',
+					content: 'これはテスト用のお問い合わせ内容です。',
+					name: 'テストユーザー',
+					email: 'test@example.com',
+					misskeyUsername: null,
+					replyMethod: 'email',
+					category: 'other',
+					status: 'pending',
+					ipAddress: '192.0.2.1',
+					user: dummyUser1,
+				});
+				break;
+			}
 			default: {
 				// eslint-disable-next-line @typescript-eslint/no-unused-vars
 				const _exhaustiveAssertion: never = params.type;

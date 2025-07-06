@@ -281,6 +281,11 @@ export const paramDef = {
 		customCursorTextUrl: { type: 'string', nullable: true },
 		customCursorProgressUrl: { type: 'string', nullable: true },
 		customCursorWaitUrl: { type: 'string', nullable: true },
+		// Contact Form Settings
+		enableContactForm: { type: 'boolean' },
+		contactFormLimit: { type: 'integer', minimum: 1, maximum: 10 },
+		contactFormRequireAuth: { type: 'boolean' },
+		contactFormRequireCaptcha: { type: 'boolean' },
 	},
 	required: [],
 } as const;
@@ -838,14 +843,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.customSplashText = ps.customSplashText.filter(Boolean);
 			}
 
-			if (Array.isArray(ps.customSplashText)) {
-				set.customSplashText = ps.customSplashText.filter(Boolean);
-			}
-
-			if (ps.blockMentionsFromUnfamiliarRemoteUsers !== undefined) {
-				set.blockMentionsFromUnfamiliarRemoteUsers = ps.blockMentionsFromUnfamiliarRemoteUsers;
-			}
-
 			if (ps.blockMentionsFromUnfamiliarRemoteUsers !== undefined) {
 				set.blockMentionsFromUnfamiliarRemoteUsers = ps.blockMentionsFromUnfamiliarRemoteUsers;
 			}
@@ -1036,6 +1033,22 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.customCursorWaitUrl !== undefined) {
 				set.customCursorWaitUrl = ps.customCursorWaitUrl;
+			}
+
+			if (ps.enableContactForm !== undefined) {
+				set.enableContactForm = ps.enableContactForm;
+			}
+
+			if (ps.contactFormLimit !== undefined) {
+				set.contactFormLimit = ps.contactFormLimit;
+			}
+
+			if (ps.contactFormRequireAuth !== undefined) {
+				set.contactFormRequireAuth = ps.contactFormRequireAuth;
+			}
+
+			if (ps.contactFormRequireCaptcha !== undefined) {
+				set.contactFormRequireCaptcha = ps.contactFormRequireCaptcha;
 			}
 
 			const before = await this.metaService.fetch(true);

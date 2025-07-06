@@ -14747,6 +14747,208 @@ export interface Locale extends ILocale {
      * ノートの公開範囲をより視覚的に区別することができます。
      */
     "noteVisibilityColoringDescription": string;
+    "_contactForm": {
+        /**
+         * コンタクトフォーム設定
+         */
+        "title": string;
+        /**
+         * コンタクトフォームを有効にする
+         */
+        "enableContactForm": string;
+        /**
+         * ユーザーがお問い合わせフォームを利用できるようになります
+         */
+        "enableContactFormDescription": string;
+        /**
+         * 送信制限（1時間あたり）
+         */
+        "contactFormLimit": string;
+        /**
+         * 同一IPアドレスからの1時間あたりの送信回数制限
+         */
+        "contactFormLimitDescription": string;
+        /**
+         * ログイン必須
+         */
+        "contactFormRequireAuth": string;
+        /**
+         * お問い合わせ
+         */
+        "contactUs": string;
+        /**
+         * ご不明な点やお困りのことがございましたら、お気軽にお問い合わせください。
+         */
+        "contactDescription": string;
+        /**
+         * カテゴリ
+         */
+        "category": string;
+        /**
+         * バグ報告
+         */
+        "bugReport": string;
+        /**
+         * 機能要望
+         */
+        "featureRequest": string;
+        /**
+         * アカウント関連
+         */
+        "accountIssue": string;
+        /**
+         * 技術的な問題
+         */
+        "technicalIssue": string;
+        /**
+         * コンテンツ関連
+         */
+        "contentIssue": string;
+        /**
+         * その他
+         */
+        "other": string;
+        /**
+         * 件名
+         */
+        "subject": string;
+        /**
+         * お問い合わせの概要をご入力ください
+         */
+        "subjectPlaceholder": string;
+        /**
+         * お問い合わせ内容
+         */
+        "content": string;
+        /**
+         * 詳しい内容をご記入ください（10文字以上）
+         */
+        "contentPlaceholder": string;
+        /**
+         * 名前・ニックネーム
+         */
+        "name": string;
+        /**
+         * お名前またはニックネーム
+         */
+        "namePlaceholder": string;
+        /**
+         * 任意：誰からのお問い合わせかを把握するのに役立ちます
+         */
+        "nameCaption": string;
+        /**
+         * 返信方法
+         */
+        "replyMethod": string;
+        /**
+         * メールアドレスで返信
+         */
+        "replyByEmail": string;
+        /**
+         * Misskey内で返信
+         */
+        "replyByMisskey": string;
+        /**
+         * メールアドレス
+         */
+        "email": string;
+        /**
+         * 返信用のメールアドレス
+         */
+        "emailPlaceholder": string;
+        /**
+         * Misskeyユーザー名
+         */
+        "misskeyUsername": string;
+        /**
+         * @username
+         */
+        "misskeyUsernamePlaceholder": string;
+        /**
+         * Misskey内での返信を希望する場合のユーザー名（@なし）
+         */
+        "misskeyUsernameCaption": string;
+        /**
+         * 送信
+         */
+        "submit": string;
+        /**
+         * お問い合わせを送信しました。ありがとうございます。
+         */
+        "submitComplete": string;
+        /**
+         * コンタクトフォーム設定
+         */
+        "settings": string;
+        /**
+         * コンタクトフォームを有効にする
+         */
+        "enable": string;
+        /**
+         * ユーザーがお問い合わせフォームを利用できるようになります
+         */
+        "enableDescription": string;
+        /**
+         * 送信制限（1時間あたり）
+         */
+        "limit": string;
+        /**
+         * 同一IPアドレスからの1時間あたりの送信回数制限
+         */
+        "limitDescription": string;
+        /**
+         * ログイン必須
+         */
+        "requireAuth": string;
+        /**
+         * ログインしたユーザーのみお問い合わせを送信できます
+         */
+        "requireAuthDescription": string;
+        /**
+         * CAPTCHA必須
+         */
+        "requireCaptcha": string;
+        /**
+         * お問い合わせ送信時にCAPTCHA認証を必須にします
+         */
+        "requireCaptchaDescription": string;
+        /**
+         * お問い合わせ一覧
+         */
+        "list": string;
+        /**
+         * 未対応
+         */
+        "pending": string;
+        /**
+         * 対応中
+         */
+        "inProgress": string;
+        /**
+         * 解決済み
+         */
+        "resolved": string;
+        /**
+         * クローズ
+         */
+        "closed": string;
+        /**
+         * 担当者
+         */
+        "assignedUser": string;
+        /**
+         * 管理者メモ
+         */
+        "adminNote": string;
+        /**
+         * ステータス更新
+         */
+        "updateStatus": string;
+        /**
+         * 担当者設定
+         */
+        "assign": string;
+    };
 }
 declare const locales: {
     [lang: string]: Locale;

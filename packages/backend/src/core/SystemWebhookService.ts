@@ -41,11 +41,26 @@ export type InactiveModeratorsWarningPayload = {
 	remainingTime: ModeratorInactivityRemainingTime;
 };
 
+export type ContactFormPayload = {
+	id: string;
+	subject: string;
+	content: string;
+	name: string | null;
+	email: string | null;
+	misskeyUsername: string | null;
+	replyMethod: 'email' | 'misskey';
+	category: 'bug_report' | 'feature_request' | 'account_issue' | 'technical_issue' | 'content_issue' | 'other';
+	status: 'pending' | 'in_progress' | 'resolved' | 'closed';
+	ipAddress: string | null;
+	user: Packed<'UserLite'> | null;
+};
+
 export type SystemWebhookPayload<T extends SystemWebhookEventType> =
 	T extends 'abuseReport' | 'abuseReportResolved' ? AbuseReportPayload :
 	T extends 'userCreated' ? Packed<'UserLite'> :
 	T extends 'inactiveModeratorsWarning' ? InactiveModeratorsWarningPayload :
 	T extends 'inactiveModeratorsInvitationOnlyChanged' ? Record<string, never> :
+	T extends 'contactForm' ? ContactFormPayload :
 		never;
 
 @Injectable()
