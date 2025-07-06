@@ -92,6 +92,7 @@ import { MiSystemAccount } from '@/models/SystemAccount.js';
 import { MiNoteSchedule } from '@/models/NoteSchedule.js';
 import { MiAnnouncementRole } from './models/AnnouncementRole.js';
 import { MiMultipartUpload } from '@/models/MultipartUpload.js';
+import { MiContactForm } from '@/models/ContactForm.js';
 
 pg.types.setTypeParser(20, Number);
 
@@ -269,6 +270,7 @@ export const entities = [
 	MiBubbleGameRecord,
 	MiReversiGame,
 	MiMultipartUpload,
+	MiContactForm,
 	...charts,
 ];
 

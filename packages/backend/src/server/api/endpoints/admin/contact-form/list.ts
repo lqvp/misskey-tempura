@@ -7,14 +7,15 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { ContactFormsRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
-import { QueryService } from '@/core/QueryService.js';
 import { ContactFormEntityService } from '@/core/entities/ContactFormEntityService.js';
+import { ContactFormService } from '@/core/ContactFormService.js';
 
 export const meta = {
 	tags: ['admin'],
 	requireCredential: true,
 	requireModerator: true,
 	kind: 'read:admin:contact-form',
+	secure: true,
 
 	res: {
 		type: 'array',
@@ -58,32 +59,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 		@Inject(DI.contactFormsRepository)
 		private contactFormsRepository: ContactFormsRepository,
 
-		private queryService: QueryService,
+		private contactFormService: ContactFormService,
 		private contactFormEntityService: ContactFormEntityService,
 	) {
 		super(meta, paramDef, async (ps) => {
-			const query = this.queryService.makePaginationQuery(
-				this.contactFormsRepository.createQueryBuilder('contactForm'),
-				ps.offset,
-				ps.limit,
-			)
-				.leftJoinAndSelect('contactForm.user', 'user')
-				.leftJoinAndSelect('contactForm.assignedUser', 'assignedUser')
-				.orderBy('contactForm.createdAt', 'DESC');
-
-			if (ps.status) {
-				query.andWhere('contactForm.status = :status', { status: ps.status });
-			}
-
-			if (ps.category) {
-				query.andWhere('contactForm.category = :category', { category: ps.category });
-			}
-
-			if (ps.assignedUserId) {
-				query.andWhere('contactForm.assignedUserId = :assignedUserId', { assignedUserId: ps.assignedUserId });
-			}
-
-			const contactForms = await query.getMany();
+			const contactForms = await this.contactFormService.list({
+				limit: ps.limit,
+				offset: ps.offset,
+				status: ps.status || undefined,
+				category: ps.category || undefined,
+				assignedUserId: ps.assignedUserId || undefined,
+			});
 
 			return await this.contactFormEntityService.packMany(contactForms);
 		});

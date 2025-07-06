@@ -38,9 +38,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 		</MkFolder>
 
-		<MkFolder :withSpacer="false">
+		<MkFolder>
 			<template #icon><i class="ti ti-user"></i></template>
-			<template #label>{{ i18n.ts._contactForm.contactDescription }}</template>
+			<template #label>{{ i18n.ts._contactForm.contactInfo }}</template>
 			<div class="_gaps_s">
 				<MkKeyValue>
 					<template #key>{{ i18n.ts._contactForm.name }}</template>
@@ -59,7 +59,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #value><MkAcct :user="contactForm.user"/></template>
 				</MkKeyValue>
 				<MkKeyValue v-if="contactForm.ipAddress">
-					<template #key>IP Address</template>
+					<template #key>{{ i18n.ts._contactForm.ipAddress }}</template>
 					<template #value>{{ contactForm.ipAddress }}</template>
 				</MkKeyValue>
 			</div>
@@ -140,19 +140,44 @@ function updateStatus() {
 	});
 }
 
-function assignUser() {
+async function assignUser() {
 	if (!assignedUsername.value) return;
 
-	// @を取り除く
-	const username = assignedUsername.value.replace(/^@/, '');
+	try {
+		// @を取り除く
+		const username = assignedUsername.value.replace(/^@/, '');
 
-	misskeyApi('admin/contact-form/update', {
-		contactFormId: props.contactForm.id,
-		assignedUserId: username, // TODO: ユーザーIDの解決が必要
-	}).then(() => {
+		// ユーザー名からユーザーIDを解決
+		const users = await misskeyApi('users/search-by-username-and-host', {
+			username: username,
+			host: null, // ローカルユーザーのみ
+			limit: 1,
+		});
+
+		if (users.length === 0) {
+			os.alert({
+				type: 'error',
+				text: i18n.ts.noSuchUser,
+			});
+			return;
+		}
+
+		const userId = users[0].id;
+
+		await misskeyApi('admin/contact-form/update', {
+			contactFormId: props.contactForm.id,
+			assignedUserId: userId,
+		});
+
 		assignedUsername.value = '';
 		emit('updated', props.contactForm.id);
-	});
+	} catch (error) {
+		console.error('Failed to assign user:', error);
+		os.alert({
+			type: 'error',
+			text: i18n.ts.somethingHappened,
+		});
+	}
 }
 
 function deleteForm() {

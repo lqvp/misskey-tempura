@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkTip>
 
 			<div :class="$style.inputs" class="_gaps">
-				<MkSelect v-model="status" style="margin: 0; flex: 1;">
+				<MkSelect v-model="status" style="margin: 0; flex: 1;" @update:modelValue="reload">
 					<template #label>{{ i18n.ts.state }}</template>
 					<option value="all">{{ i18n.ts.all }}</option>
 					<option value="pending">{{ i18n.ts._contactForm.pending }}</option>
@@ -20,7 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<option value="resolved">{{ i18n.ts._contactForm.resolved }}</option>
 					<option value="closed">{{ i18n.ts._contactForm.closed }}</option>
 				</MkSelect>
-				<MkSelect v-model="category" style="margin: 0; flex: 1;">
+				<MkSelect v-model="category" style="margin: 0; flex: 1;" @update:modelValue="reload">
 					<template #label>{{ i18n.ts._contactForm.category }}</template>
 					<option value="all">{{ i18n.ts.all }}</option>
 					<option value="bug_report">{{ i18n.ts._contactForm.bugReport }}</option>
@@ -30,48 +30,102 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<option value="content_issue">{{ i18n.ts._contactForm.contentIssue }}</option>
 					<option value="other">{{ i18n.ts._contactForm.other }}</option>
 				</MkSelect>
-				<MkInput v-model="assignedUserId" style="margin: 0; flex: 1;" type="text" :spellcheck="false" :placeholder="'@username'">
+				<MkInput v-model="assignedUserId" style="margin: 0; flex: 1;" type="text" :spellcheck="false" :placeholder="'@username'" @update:modelValue="reload">
 					<template #label>{{ i18n.ts._contactForm.assignedUser }}</template>
 				</MkInput>
 			</div>
 
-			<MkPagination v-slot="{items}" :paginator="paginator">
-				<div class="_gaps">
-					<XContactForm v-for="contactForm in items" :key="contactForm.id" :contact-form="contactForm" @updated="onContactFormUpdated"/>
+			<div v-if="loading" class="loading">
+				<MkLoading/>
+			</div>
+			<div v-else class="_gaps">
+				<MkContactForm v-for="contactForm in items" :key="contactForm.id" :contactForm="contactForm" @updated="onContactFormUpdated"/>
+
+				<div v-if="items.length === 0" class="empty">
+					<div style="text-align: center; color: var(--MI_THEME-fg);">
+						{{ i18n.ts.noUsers }}
+					</div>
 				</div>
-			</MkPagination>
+
+				<div v-if="hasMore" class="more">
+					<MkButton style="margin: 0 auto;" @click="loadMore">{{ i18n.ts.loadMore }}</MkButton>
+				</div>
+			</div>
 		</div>
 	</div>
 </PageWithHeader>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, markRaw } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkInput from '@/components/MkInput.vue';
-import MkPagination from '@/components/MkPagination.vue';
-import XContactForm from '@/components/XContactForm.vue';
+import MkButton from '@/components/MkButton.vue';
+import MkLoading from '@/components/global/MkLoading.vue';
+import MkContactForm from '@/components/MkContactForm.vue';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
-import { Paginator } from '@/utility/paginator.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 
 const status = ref('all');
 const category = ref('all');
 const assignedUserId = ref('');
 
-const paginator = markRaw(new Paginator('admin/contact-form/list', {
-	limit: 10,
-	computedParams: computed(() => ({
-		status: status.value === 'all' ? undefined : status.value,
-		category: category.value === 'all' ? undefined : category.value,
-		assignedUserId: assignedUserId.value || undefined,
-	})),
-}));
+const items = ref([]);
+const loading = ref(false);
+const offset = ref(0);
+const limit = 10;
+const hasMore = ref(true);
+
+async function loadItems(reset = false) {
+	loading.value = true;
+
+	try {
+		if (reset) {
+			offset.value = 0;
+			items.value = [];
+		}
+
+		const params = {
+			limit: limit,
+			offset: offset.value,
+			status: status.value === 'all' ? undefined : status.value,
+			category: category.value === 'all' ? undefined : category.value,
+			assignedUserId: assignedUserId.value || undefined,
+		};
+
+		const result = await misskeyApi('admin/contact-form/list', params);
+
+		if (reset) {
+			items.value = result;
+		} else {
+			items.value.push(...result);
+		}
+
+		hasMore.value = result.length === limit;
+		offset.value += result.length;
+	} catch (error) {
+		console.error('Failed to load contact forms:', error);
+	} finally {
+		loading.value = false;
+	}
+}
+
+function reload() {
+	loadItems(true);
+}
+
+function loadMore() {
+	loadItems(false);
+}
 
 function onContactFormUpdated(contactFormId: string) {
-	paginator.reload();
+	reload();
 }
+
+onMounted(() => {
+	loadItems(true);
+});
 
 const headerActions = computed(() => []);
 
@@ -96,5 +150,10 @@ definePage(() => ({
 	flex-direction: row;
 	justify-content: space-between;
 	align-items: center;
+}
+
+.loading, .empty, .more {
+	text-align: center;
+	padding: 16px;
 }
 </style>

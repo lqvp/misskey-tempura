@@ -9662,6 +9662,14 @@ export interface Locale extends ILocale {
          * 全てのノートを削除する
          */
         "write:admin:drop-all-notes": string;
+        /**
+         * お問い合わせフォームを操作する
+         */
+        "write:admin:contact-form": string;
+        /**
+         * お問い合わせフォームを見る
+         */
+        "read:admin:contact-form": string;
     };
     "_auth": {
         /**
@@ -14877,6 +14885,15 @@ export interface Locale extends ILocale {
          */
         "submitComplete": string;
         /**
+         * お問い合わせ頂いた内容については、お問い合わせ頂いたメールアドレスまたはMisskeyユーザー名に返信いたします。
+         * (返信には数日かかる場合があります。必ずしも返信があるとは限りません。)
+         */
+        "submitCompleteDescription": string;
+        /**
+         * トップページに戻る
+         */
+        "goToTop": string;
+        /**
          * コンタクトフォーム設定
          */
         "settings": string;
@@ -14948,6 +14965,22 @@ export interface Locale extends ILocale {
          * 担当者設定
          */
         "assign": string;
+        /**
+         * 連絡先情報
+         */
+        "contactInfo": string;
+        /**
+         * IPアドレス
+         */
+        "ipAddress": string;
+        /**
+         * 送信内容
+         */
+        "submittedContent": string;
+        /**
+         * 送信日時
+         */
+        "submittedAt": string;
     };
 }
 declare const locales: {

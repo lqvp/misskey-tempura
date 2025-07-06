@@ -8,6 +8,7 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { ContactFormsRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { ContactFormEntityService } from '@/core/entities/ContactFormEntityService.js';
+import { ContactFormService } from '@/core/ContactFormService.js';
 import { ApiError } from '@/server/api/error.js';
 
 export const meta = {
@@ -15,6 +16,15 @@ export const meta = {
 	requireCredential: true,
 	requireModerator: true,
 	kind: 'read:admin:contact-form',
+	secure: true,
+
+	errors: {
+		noSuchContactForm: {
+			message: 'No such contact form.',
+			code: 'NO_SUCH_CONTACT_FORM',
+			id: 'bf326f31-d430-4f97-9933-5d61e4d48a23',
+		},
+	},
 
 	res: {
 		type: 'object',
@@ -37,14 +47,6 @@ export const meta = {
 			assignedUser: { type: 'object', nullable: true, ref: 'UserLite' },
 		},
 	},
-
-	errors: {
-		noSuchContactForm: {
-			message: 'No such contact form.',
-			code: 'NO_SUCH_CONTACT_FORM',
-			id: 'd1e5f6a3-c4b2-4d8c-9e7f-1234567890de',
-		},
-	},
 } as const;
 
 export const paramDef = {
@@ -61,13 +63,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 		@Inject(DI.contactFormsRepository)
 		private contactFormsRepository: ContactFormsRepository,
 
+		private contactFormService: ContactFormService,
 		private contactFormEntityService: ContactFormEntityService,
 	) {
 		super(meta, paramDef, async (ps) => {
-			const contactForm = await this.contactFormsRepository.findOne({
-				where: { id: ps.contactFormId },
-				relations: ['user', 'assignedUser'],
-			});
+			const contactForm = await this.contactFormService.show(ps.contactFormId);
 
 			if (!contactForm) {
 				throw new ApiError(meta.errors.noSuchContactForm);

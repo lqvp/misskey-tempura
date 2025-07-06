@@ -12,6 +12,7 @@ import { MetaService } from '@/core/MetaService.js';
 import { ApiError } from '@/server/api/error.js';
 import { bindThis } from '@/decorators.js';
 import { ContactFormService } from '@/core/ContactFormService.js';
+import { UtilityService } from '@/core/UtilityService.js';
 
 export const meta = {
 	tags: ['contact'],
@@ -63,7 +64,6 @@ export const paramDef = {
 		// 条件付き必須項目
 		email: {
 			type: 'string',
-			format: 'email',
 			maxLength: 512,
 			nullable: true,
 		},
@@ -100,6 +100,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 		private idService: IdService,
 		private metaService: MetaService,
 		private contactFormService: ContactFormService,
+		private utilityService: UtilityService,
 	) {
 		super(meta, paramDef, async (ps, me, accessToken, file, ip, headers) => {
 			const instance = await this.metaService.fetch();
@@ -117,6 +118,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 			// バリデーション: replyMethodに応じた必須フィールドチェック
 			if (ps.replyMethod === 'email') {
 				if (!ps.email || ps.email.trim() === '') {
+					throw new ApiError(meta.errors.invalidReplyMethod);
+				}
+				// Email形式バリデーション
+				if (!this.utilityService.validateEmailFormat(ps.email.trim())) {
 					throw new ApiError(meta.errors.invalidReplyMethod);
 				}
 			} else if (ps.replyMethod === 'misskey') {

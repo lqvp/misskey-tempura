@@ -2533,6 +2533,8 @@ _permissions:
   "read:clip": "クリップを見る"
   "write:community-role": "コミュニティーロールを操作する"
   "write:admin:drop-all-notes": "全てのノートを削除する"
+  "write:admin:contact-form": "お問い合わせフォームを操作する"
+  "read:admin:contact-form": "お問い合わせフォームを見る"
 
 _auth:
   shareAccessTitle: "アプリへのアクセス許可"
@@ -4014,6 +4016,8 @@ _contactForm:
   misskeyUsernameCaption: "Misskey内での返信を希望する場合のユーザー名（@なし）"
   submit: "送信"
   submitComplete: "お問い合わせを送信しました。ありがとうございます。"
+  submitCompleteDescription: "お問い合わせ頂いた内容については、お問い合わせ頂いたメールアドレスまたはMisskeyユーザー名に返信いたします。\n(返信には数日かかる場合があります。必ずしも返信があるとは限りません。)"
+  goToTop: "トップページに戻る"
   settings: "コンタクトフォーム設定"
   enable: "コンタクトフォームを有効にする"
   enableDescription: "ユーザーがお問い合わせフォームを利用できるようになります"
@@ -4032,3 +4036,7 @@ _contactForm:
   adminNote: "管理者メモ"
   updateStatus: "ステータス更新"
   assign: "担当者設定"
+  contactInfo: "連絡先情報"
+  ipAddress: "IPアドレス"
+  submittedContent: "送信内容"
+  submittedAt: "送信日時"

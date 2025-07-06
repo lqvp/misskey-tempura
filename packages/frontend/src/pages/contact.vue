@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</div>
 			</div>
 
-			<MkForm :disabled="submitting" @submit="submit">
+			<div class="_gaps_m">
 				<FormSection>
 					<template #label><i class="ti ti-forms"></i> {{ i18n.ts._contactForm.category }}</template>
 					<MkSelect v-model="category" :required="true">
@@ -99,19 +99,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkCaptcha v-model="captchaToken" provider="turnstile" :sitekey="instance.turnstileSiteKey"/>
 				</FormSection>
 				<FormSection v-else-if="instance.enableMcaptcha">
-					<MkCaptcha v-model="captchaToken" provider="mcaptcha" :sitekey="instance.mcaptchaSitekey" :instanceUrl="instance.mcaptchaInstanceUrl"/>
+					<MkCaptcha v-model="captchaToken" provider="mcaptcha" :sitekey="instance.mcaptchaSiteKey" :instanceUrl="instance.mcaptchaInstanceUrl"/>
 				</FormSection>
 				<FormSection v-else-if="instance.enableTestcaptcha">
-					<MkCaptcha v-model="captchaToken" provider="testcaptcha"/>
+					<MkCaptcha v-model="captchaToken" provider="testcaptcha" :sitekey="null"/>
 				</FormSection>
 
 				<div class="_buttons">
-					<MkButton type="submit" :disabled="submitting || !canSubmit" primary rounded style="margin: 0 auto;">
-						<template v-if="submitting"><MkLoading :size="16"/></template>
+					<MkButton :disabled="submitting || !canSubmit" primary rounded style="margin: 0 auto;" @click="submit">
+						<template v-if="submitting"><i class="ti ti-loader" style="animation: spin 1s linear infinite;"></i></template>
 						<template v-else><i class="ti ti-send"></i> {{ i18n.ts._contactForm.submit }}</template>
 					</MkButton>
 				</div>
-			</MkForm>
+			</div>
 		</div>
 
 		<div v-else class="_gaps_m" style="text-align: center;">
@@ -120,10 +120,66 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 			<div>
 				<h2>{{ i18n.ts._contactForm.submitComplete }}</h2>
-				<p>{{ i18n.ts.thanksForYourContinuedSupport }}</p>
+				<p>{{ i18n.ts._contactForm.submitCompleteDescription }}</p>
 			</div>
+
+			<!-- 送信内容の表示 -->
+			<div class="_gaps_m" style="max-width: 500px; margin: 24px auto; text-align: left;">
+				<div style="padding: 16px; background: var(--MI_THEME-panel); border-radius: 8px; border: 1px solid var(--MI_THEME-divider);">
+					<h3 style="margin: 0 0 16px 0; text-align: center; color: var(--MI_THEME-fg);">
+						<i class="ti ti-mail-opened"></i> {{ i18n.ts._contactForm.submittedContent }}
+					</h3>
+
+					<div class="_gaps_s">
+						<div>
+							<strong>{{ i18n.ts._contactForm.category }}:</strong>
+							<span style="margin-left: 8px;">{{ getCategoryText(submittedData.category) }}</span>
+						</div>
+
+						<div>
+							<strong>{{ i18n.ts._contactForm.subject }}:</strong>
+							<div style="margin-top: 4px; padding: 8px; background: var(--MI_THEME-bg); border-radius: 4px; word-break: break-word;">
+								{{ submittedData.subject }}
+							</div>
+						</div>
+
+						<div>
+							<strong>{{ i18n.ts._contactForm.content }}:</strong>
+							<div style="margin-top: 4px; padding: 8px; background: var(--MI_THEME-bg); border-radius: 4px; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;">
+								{{ submittedData.content }}
+							</div>
+						</div>
+
+						<div v-if="submittedData.name">
+							<strong>{{ i18n.ts._contactForm.name }}:</strong>
+							<span style="margin-left: 8px;">{{ submittedData.name }}</span>
+						</div>
+
+						<div>
+							<strong>{{ i18n.ts._contactForm.replyMethod }}:</strong>
+							<span style="margin-left: 8px;">{{ getReplyMethodText(submittedData.replyMethod) }}</span>
+						</div>
+
+						<div v-if="submittedData.replyMethod === 'email'">
+							<strong>{{ i18n.ts._contactForm.email }}:</strong>
+							<span style="margin-left: 8px;">{{ submittedData.email }}</span>
+						</div>
+
+						<div v-if="submittedData.replyMethod === 'misskey'">
+							<strong>{{ i18n.ts._contactForm.misskeyUsername }}:</strong>
+							<span style="margin-left: 8px;">{{ submittedData.misskeyUsername }}</span>
+						</div>
+
+						<div style="font-size: 0.9em; color: var(--MI_THEME-fgTransparentWeak); margin-top: 12px;">
+							<i class="ti ti-clock"></i>
+							{{ i18n.ts._contactForm.submittedAt }}: {{ submittedAt }}
+						</div>
+					</div>
+				</div>
+			</div>
+
 			<div>
-				<MkButton inline @click="reset">{{ i18n.ts.goToTop }}</MkButton>
+				<MkButton inline @click="reset">{{ i18n.ts._contactForm.goToTop }}</MkButton>
 			</div>
 		</div>
 	</div>
@@ -140,11 +196,10 @@ import MkTextarea from '@/components/MkTextarea.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkRadios from '@/components/MkRadios.vue';
 import MkButton from '@/components/MkButton.vue';
-import MkForm from '@/components/form/form.vue';
 import FormSection from '@/components/form/section.vue';
 import MkCaptcha from '@/components/MkCaptcha.vue';
-import MkLoading from '@/components/MkLoading.vue';
 import * as os from '@/os.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 
 // フォームの状態
 const submitting = ref(false);
@@ -159,6 +214,10 @@ const replyMethod = ref<'email' | 'misskey'>('email');
 const email = ref('');
 const misskeyUsername = ref('');
 const captchaToken = ref<string | null>(null);
+
+// 送信後のデータ保存用
+const submittedData = ref<any>({});
+const submittedAt = ref('');
 
 // バリデーション
 const canSubmit = computed(() => {
@@ -211,9 +270,22 @@ async function submit() {
 			payload['testcaptcha-response'] = captchaToken.value;
 		}
 
-		await os.api('contact-form/submit', payload);
+		await misskeyApi('contact-form/submit', payload);
+
+		// 送信データを保存
+		submittedData.value = {
+			category: category.value,
+			subject: subject.value,
+			content: content.value,
+			name: name.value,
+			replyMethod: replyMethod.value,
+			email: replyMethod.value === 'email' ? email.value : null,
+			misskeyUsername: replyMethod.value === 'misskey' ? misskeyUsername.value : null,
+		};
+		submittedAt.value = new Date().toLocaleString('ja-JP');
+
 		isSubmitted.value = true;
-	} catch (error) {
+	} catch (error: any) {
 		console.error('Contact form submission failed:', error);
 		os.alert({
 			type: 'error',
@@ -222,6 +294,22 @@ async function submit() {
 	} finally {
 		submitting.value = false;
 	}
+}
+
+function getCategoryText(category: string): string {
+	const categoryMap = {
+		bug_report: i18n.ts._contactForm.bugReport,
+		feature_request: i18n.ts._contactForm.featureRequest,
+		account_issue: i18n.ts._contactForm.accountIssue,
+		technical_issue: i18n.ts._contactForm.technicalIssue,
+		content_issue: i18n.ts._contactForm.contentIssue,
+		other: i18n.ts._contactForm.other,
+	};
+	return categoryMap[category] || category;
+}
+
+function getReplyMethodText(replyMethod: string): string {
+	return replyMethod === 'email' ? i18n.ts._contactForm.replyByEmail : i18n.ts._contactForm.replyByMisskey;
 }
 
 function reset() {
@@ -236,6 +324,10 @@ function reset() {
 	captchaToken.value = null;
 	isSubmitted.value = false;
 	submitting.value = false;
+
+	// 送信データもリセット
+	submittedData.value = {};
+	submittedAt.value = '';
 }
 
 definePage(() => ({
@@ -243,3 +335,10 @@ definePage(() => ({
 	icon: 'ti ti-mail',
 }));
 </script>
+
+<style lang="scss" scoped>
+@keyframes spin {
+	from { transform: rotate(0deg); }
+	to { transform: rotate(360deg); }
+}
+</style>
