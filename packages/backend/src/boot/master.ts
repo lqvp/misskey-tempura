@@ -29,17 +29,26 @@ const bootLogger = logger.createSubLogger('boot', 'magenta');
 
 const themeColor = chalk.hex('#86b300');
 
+function parseVersionInfo(version: string) {
+	const versionParts = version.split('-');
+	const tempuraIndex = versionParts.findIndex((part: string) => part === 'tempura');
+
+	const baseVersionParts = tempuraIndex >= 0 ? versionParts.slice(0, tempuraIndex) : versionParts;
+	const baseMisskeyVersion = baseVersionParts.length > 1
+		? `v${baseVersionParts[0]}-${baseVersionParts.slice(1).join('-')}`
+		: `v${baseVersionParts[0]}`;
+
+	const forkVersionString = tempuraIndex >= 0
+		? `${versionParts[tempuraIndex]}${versionParts.slice(tempuraIndex + 1).map((p: string) => `-${p}`).join('')}`
+		: undefined;
+
+	return { baseMisskeyVersion, forkVersionString };
+}
+
 function greet() {
 	if (!envOption.quiet) {
 		//#region logo
-		const versionParts = meta.version.split('-');
-		const v = versionParts[1]
-			? `v${versionParts[0]}-${versionParts[1]}`
-			: `v${versionParts[0]}`;
-		const tempuraIndex = versionParts.findIndex((part: string) => part === 'tempura');
-		const forkVersion = tempuraIndex >= 0
-			? `${versionParts[tempuraIndex]}${versionParts.slice(tempuraIndex + 1).map((p: string) => `-${p}`).join('')}`
-			: undefined;
+		const { baseMisskeyVersion, forkVersionString } = parseVersionInfo(meta.version);
 		console.log(themeColor(' __                                                       '));
 		console.log(themeColor('/\\ \\__                                                    '));
 		console.log(themeColor('\\ \\ ,_\\    __    ___ ___   _____   __  __  _ __    __     '));
@@ -47,12 +56,12 @@ function greet() {
 		console.log(themeColor('  \\ \\ \\_/\\  __//\\ \\/\\ \\/\\ \\ \\ \\L\\ \\ \\ \\_\\ \\ \\ \\/\\ \\L\\.\\_  '));
 		console.log(themeColor('   \\ \\__\\ \\____\\ \\_\\ \\_\\ \\_\\ \\ ,__/\\ \\____/\\ \\_\\\\ \\__/.\\_\\'));
 		console.log(themeColor('    \\/__/\\/____/\\/_/\\/_/\\/_/\\ \\ \\/  \\/___/  \\/_/ \\/__/\\/_/'));
-		console.log(themeColor('                             \\ \\_\\                        ' + chalk.gray(forkVersion)));
-		console.log(themeColor('                              \\/_/                        ' + chalk.gray('based on Misskey ' + v)));
+		console.log(themeColor('                             \\ \\_\\                        ' + chalk.gray(forkVersionString)));
+		console.log(themeColor('                              \\/_/                        ' + chalk.gray('based on Misskey ' + baseMisskeyVersion)));
 		//#endregion
 
 		console.log('misskey-tempura is a fork of Misskey.');
-		console.log(chalk.rgb(255, 136, 0)(' If you like this fork, please donate to support Misskey development. https://www.patreon.com/syuilo'));
+		console.log(chalk.rgb(255, 136, 0)(' Fork repository: https://github.com/lqvp/misskey-tempura'));
 		console.log(chalk.gray(' Original Misskey repository: https://github.com/misskey-dev/misskey'));
 
 		console.log('');
@@ -60,7 +69,12 @@ function greet() {
 	}
 
 	bootLogger.info('Welcome to Misskey!');
-	bootLogger.info(`Misskey v${meta.version}`, null, true);
+
+	const { baseMisskeyVersion, forkVersionString } = parseVersionInfo(meta.version);
+	bootLogger.info(`Base: Misskey ${baseMisskeyVersion}`, null, true);
+	if (forkVersionString) {
+		bootLogger.info(`Fork: ${forkVersionString}`, null, true);
+	}
 }
 
 /**
