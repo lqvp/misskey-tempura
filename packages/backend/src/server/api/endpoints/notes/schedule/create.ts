@@ -393,6 +393,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				deleteAt: ps.scheduledDelete && ps.scheduledDelete.deleteAt
 					? new Date(ps.scheduledDelete.deleteAt).toISOString()
 					: null,
+				deliveryTargets: ps.deliveryTargets,
 			};
 
 			if (ps.scheduleNote.scheduledAt) {

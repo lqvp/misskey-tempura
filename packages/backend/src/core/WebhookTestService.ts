@@ -109,6 +109,7 @@ function generateDummyNote(override?: Partial<MiNote>): MiNote {
 		renoteUserHost: null,
 		deleteAt: null,
 		isScheduledForPrivate: false,
+		deliveryTargets: null,
 		...override,
 	};
 }

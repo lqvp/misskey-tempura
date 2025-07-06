@@ -147,6 +147,7 @@ type Option = {
 	app?: MiApp | null;
 	deleteAt?: Date | null;
 	isScheduledForPrivate?: boolean;
+	deliveryTargets?: { mode: 'include' | 'exclude'; hosts: string[] } | null;
 };
 
 @Injectable()
@@ -844,7 +845,11 @@ export class NoteCreateService implements OnApplicationShutdown {
 
 					// フォロワーに配送
 					if (['public', 'public_non_ltl', 'home', 'followers'].includes(note.visibility)) {
-						dm.addFollowersRecipe();
+						if (data.deliveryTargets) {
+							dm.addSelectiveFollowersRecipe(data.deliveryTargets);
+						} else {
+							dm.addFollowersRecipe();
+						}
 					}
 
 					if (['public', 'public_non_ltl'].includes(note.visibility)) {
@@ -862,7 +867,11 @@ export class NoteCreateService implements OnApplicationShutdown {
 
 						// フォロワーに配送
 						if (['public', 'home', 'followers'].includes(data.renote.visibility)) {
-							dmRenote.addFollowersRecipe();
+							if (data.deliveryTargets) {
+								dmRenote.addSelectiveFollowersRecipe(data.deliveryTargets);
+							} else {
+								dmRenote.addFollowersRecipe();
+							}
 						}
 
 						await dmRenote.execute();

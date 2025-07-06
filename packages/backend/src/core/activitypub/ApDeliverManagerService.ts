@@ -4,7 +4,7 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import { IsNull, Not } from 'typeorm';
+import { IsNull, Not, In } from 'typeorm';
 import { DI } from '@/di-symbols.js';
 import type { FollowingsRepository } from '@/models/_.js';
 import type { MiLocalUser, MiRemoteUser, MiUser } from '@/models/User.js';
@@ -22,6 +22,11 @@ interface IFollowersRecipe extends IRecipe {
 	type: 'Followers';
 }
 
+interface ISelectiveFollowersRecipe extends IRecipe {
+	type: 'SelectiveFollowers';
+	deliveryTargets?: { mode: 'include' | 'exclude'; hosts: string[] } | null;
+}
+
 interface IDirectRecipe extends IRecipe {
 	type: 'Direct';
 	to: MiRemoteUser;
@@ -29,6 +34,9 @@ interface IDirectRecipe extends IRecipe {
 
 const isFollowers = (recipe: IRecipe): recipe is IFollowersRecipe =>
 	recipe.type === 'Followers';
+
+const isSelectiveFollowers = (recipe: IRecipe): recipe is ISelectiveFollowersRecipe =>
+	recipe.type === 'SelectiveFollowers';
 
 const isDirect = (recipe: IRecipe): recipe is IDirectRecipe =>
 	recipe.type === 'Direct';
@@ -78,6 +86,19 @@ class DeliverManager {
 	}
 
 	/**
+	 * Add recipe for selective followers deliver
+	 */
+	@bindThis
+	public addSelectiveFollowersRecipe(deliveryTargets?: { mode: 'include' | 'exclude'; hosts: string[] } | null): void {
+		const deliver: ISelectiveFollowersRecipe = {
+			type: 'SelectiveFollowers',
+			deliveryTargets,
+		};
+
+		this.addRecipe(deliver);
+	}
+
+	/**
 	 * Add recipe for direct deliver
 	 * @param to To
 	 */
@@ -120,6 +141,39 @@ class DeliverManager {
 					followeeId: this.actor.id,
 					followerHost: Not(IsNull()),
 				},
+				select: {
+					followerSharedInbox: true,
+					followerInbox: true,
+				},
+			});
+
+			for (const following of followers) {
+				const inbox = following.followerSharedInbox ?? following.followerInbox;
+				if (inbox === null) throw new Error('inbox is null');
+				inboxes.set(inbox, following.followerSharedInbox != null);
+			}
+		}
+
+		// Process selective followers deliver
+		if (this.recipes.some(r => isSelectiveFollowers(r))) {
+			const recipe = this.recipes.find(r => isSelectiveFollowers(r)) as ISelectiveFollowersRecipe;
+			const deliveryTargets = recipe.deliveryTargets;
+
+			const whereClause: any = {
+				followeeId: this.actor.id,
+				followerHost: Not(IsNull()),
+			};
+
+			if (deliveryTargets) {
+				if (deliveryTargets.mode === 'include') {
+					whereClause.followerHost = In(deliveryTargets.hosts);
+				} else if (deliveryTargets.mode === 'exclude') {
+					whereClause.followerHost = Not(In(deliveryTargets.hosts));
+				}
+			}
+
+			const followers = await this.followingsRepository.find({
+				where: whereClause,
 				select: {
 					followerSharedInbox: true,
 					followerInbox: true,

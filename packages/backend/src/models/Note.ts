@@ -203,6 +203,14 @@ export class MiNote {
 	})
 	public isScheduledForPrivate: boolean;
 
+	@Column('jsonb', {
+		default: {},
+	})
+	public deliveryTargets: {
+		mode: 'include' | 'exclude';
+		hosts: string[];
+	} | null;
+
 	@Index()
 	@Column({
 		...id(),

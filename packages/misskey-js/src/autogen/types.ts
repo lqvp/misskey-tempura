@@ -2302,7 +2302,7 @@ export type paths = {
          * get-avatar-decorations
          * @description No description provided.
          *
-         *     **Credential required**: *No* / **Permission**: *read:account*
+         *     **Credential required**: *No*
          */
         post: operations['get-avatar-decorations'];
     };
@@ -2586,6 +2586,15 @@ export type paths = {
          *     **Credential required**: *Yes* / **Permission**: *read:favorites*
          */
         post: operations['i___favorites'];
+    };
+    '/i/followers-servers': {
+        /**
+         * i/followers-servers
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:following*
+         */
+        post: operations['i___followers-servers'];
     };
     '/i/gallery/likes': {
         /**
@@ -4712,7 +4721,7 @@ export type components = {
             reply?: components['schemas']['Note'] | null;
             renote?: components['schemas']['Note'] | null;
             /** @enum {string} */
-            visibility: 'public' | 'home' | 'followers' | 'specified';
+            visibility: 'public' | 'public_non_ltl' | 'home' | 'followers' | 'specified';
             visibleUserIds?: string[];
             fileIds?: string[];
             files?: components['schemas']['DriveFile'][];
@@ -26550,6 +26559,69 @@ export interface operations {
             };
         };
     };
+    'i___followers-servers': {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        servers: {
+                            host: string;
+                            followersCount: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     i___gallery___likes: {
         requestBody: {
             content: {
@@ -30435,6 +30507,11 @@ export interface operations {
                         deleteAt?: number | null;
                         deleteAfter?: number | null;
                         isScheduledForPrivate?: boolean | null;
+                    } | null;
+                    deliveryTargets?: {
+                        /** @enum {string} */
+                        mode: 'include' | 'exclude';
+                        hosts: string[];
                     } | null;
                 };
             };

@@ -2807,7 +2807,7 @@ declare module '../api.js' {
     /**
      * No description provided.
      * 
-     * **Credential required**: *No* / **Permission**: *read:account*
+     * **Credential required**: *No*
      */
     request<E extends 'get-avatar-decorations', P extends Endpoints[E]['req']>(
       endpoint: E,
@@ -3149,6 +3149,17 @@ declare module '../api.js' {
      * **Credential required**: *Yes* / **Permission**: *read:favorites*
      */
     request<E extends 'i/favorites', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * No description provided.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *read:following*
+     */
+    request<E extends 'i/followers-servers', P extends Endpoints[E]['req']>(
       endpoint: E,
       params: P,
       credential?: string | null,
