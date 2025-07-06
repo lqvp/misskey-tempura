@@ -9903,7 +9903,7 @@ export interface Locale extends ILocale {
          */
         "weather": string;
         /**
-         * ネストウィジェット
+         * ネスト
          */
         "nestedWidget": string;
         /**

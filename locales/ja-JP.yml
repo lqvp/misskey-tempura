@@ -2600,7 +2600,7 @@ _widgets:
   _listenBrainz:
     userIdDescription: "ListenBrainzのユーザーIDを設定してください。"
   weather: "天気予報"
-  nestedWidget: "ネストウィジェット"
+  nestedWidget: "ネスト"
   earthQuake: "地震履歴"
   _eq:
     maxIntensity: "最大震度"

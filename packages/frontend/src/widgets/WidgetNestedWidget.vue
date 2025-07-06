@@ -12,16 +12,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 		{{ widgetProps.customTitle || i18n.ts._widgets.nestedWidget }}
 	</template>
 	<template #func="{ buttonStyleClass }">
-		<button class="_button" :class="buttonStyleClass" @click="prev">
+		<button v-if="hasWidgets" class="_button" :class="buttonStyleClass" @click="prev">
 			<i class="ti ti-chevron-left"></i>
 		</button>
-		<button class="_button" :class="buttonStyleClass" @click="next">
+		<button v-if="hasWidgets" class="_button" :class="buttonStyleClass" @click="next">
 			<i class="ti ti-chevron-right"></i>
 		</button>
 		<button class="_button" :class="buttonStyleClass" @click="addWidget">
 			<i class="ti ti-plus"></i>
 		</button>
-		<button class="_button" :class="buttonStyleClass" @click="removeWidget(currentIndex)">
+		<button v-if="hasWidgets" class="_button" :class="buttonStyleClass" @click="removeWidget(currentIndex)">
 			<i class="ti ti-trash"></i>
 		</button>
 		<button class="_button" :class="buttonStyleClass" @click="toggleEditMode">
@@ -30,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</template>
 
 	<div :class="$style.container">
-		<div v-if="!hasWidgets" class="intro" style="text-align: center;">
+		<div v-if="!hasWidgets" :class="$style.intro">
 			<MkResult type="empty" :text="i18n.ts.nothing"/>
 		</div>
 		<div v-else>
@@ -48,21 +48,24 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<span :class="[$style.itemHandle, 'handle']">
 								<i class="ti ti-grip-vertical"></i>
 							</span>
-							<span :class="$style.itemTitle">{{ i18n.ts._widgets[element.name] }}</span>
+							<span :class="$style.itemTitle">{{ i18n.ts._widgets[element.name] || element.name }}</span>
 							<button :class="[$style.actionButton, $style.deleteButton]" @click.stop="removeWidget(index)">
 								<i class="ti ti-trash"></i>
 							</button>
 						</div>
 					</template>
 				</Sortable>
-				<button :class="$style.doneButton" @click="toggleEditMode">
-					<i class="ti ti-check"></i> {{ i18n.ts.close }}
-				</button>
+				<div :class="$style.editModeFooter">
+					<button :class="$style.doneButton" @click="toggleEditMode">
+						<i class="ti ti-check"></i>
+						{{ i18n.ts.close }}
+					</button>
+				</div>
 			</div>
 			<div v-else :class="$style.wrapper">
 				<component
-					:is="`widget-${currentWidget.name}`"
-					v-if="currentWidget && currentWidget.name"
+					:is="`widget-${currentWidget?.name}`"
+					v-if="currentWidget?.name"
 					:key="currentWidget.id"
 					:widget="currentWidget"
 					@updateProps="updateChildProps"
@@ -81,6 +84,7 @@ import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { GetFormResultType } from '@/utility/form.js';
 import MkContainer from '@/components/MkContainer.vue';
+import MkResult from '@/components/global/MkResult.vue';
 import { i18n } from '@/i18n.js';
 import * as os from '@/os.js';
 import { widgets as widgetDefs } from '@/widgets/index.js';
@@ -94,10 +98,11 @@ const widgetPropsDef = {
 	widgets: {
 		type: 'array' as const,
 		default: [] as Array<{ id: string; name: string; data: Record<string, any> }>,
+		hidden: true,
 	},
 };
 
-	type WidgetProps = GetFormResultType<typeof widgetPropsDef>;
+type WidgetProps = GetFormResultType<typeof widgetPropsDef>;
 
 const props = defineProps<WidgetComponentProps<WidgetProps>>();
 const emit = defineEmits<WidgetComponentEmits<WidgetProps>>();
@@ -108,19 +113,46 @@ const currentIndex = ref(0);
 const autoRotate = ref(true);
 const editMode = ref(false);
 
-const currentWidget = computed(() => widgetProps.widgets[currentIndex.value] || null);
+const currentWidget = computed(() => {
+	const widget = widgetProps.widgets[currentIndex.value];
+	return widget as { id: string; name: string; data: Record<string, any> } | null;
+});
+
 const hasWidgets = computed(() => widgetProps.widgets.length > 0);
 
+const delay = computed(() => {
+	return widgetProps.interval === 0 ? 1000 : widgetProps.interval * 1000;
+});
+
+// インターバル管理
+let stopInterval: (() => void) | null | undefined = null;
+
+const resetInterval = () => {
+	if (stopInterval) stopInterval();
+	if (widgetProps.interval === 0 || editMode.value) return;
+
+	stopInterval = useInterval(() => {
+		if (autoRotate.value && hasWidgets.value) {
+			next();
+		}
+	}, delay.value, {
+		immediate: false,
+		afterMounted: true,
+	});
+};
+
 const next = () => {
+	if (!hasWidgets.value) return;
 	const length = widgetProps.widgets.length;
-	if (length === 0) return;
 	currentIndex.value = (currentIndex.value + 1) % length;
+	resetInterval(); // タイマーをリセット
 };
 
 const prev = () => {
+	if (!hasWidgets.value) return;
 	const length = widgetProps.widgets.length;
-	if (length === 0) return;
 	currentIndex.value = (currentIndex.value - 1 + length) % length;
+	resetInterval(); // タイマーをリセット
 };
 
 const addWidget = async () => {
@@ -144,11 +176,16 @@ const addWidget = async () => {
 		currentIndex.value = widgetProps.widgets.length - 1;
 		save();
 	} catch (error) {
-		os.alert('Widget の選択中にエラーが発生しました:', error);
+		os.alert({
+			type: 'error',
+			text: `Widget の選択中にエラーが発生しました: ${error}`,
+		});
 	}
 };
 
 const removeWidget = (index: number) => {
+	if (widgetProps.widgets.length === 0) return;
+
 	widgetProps.widgets = widgetProps.widgets.filter((_, i) => i !== index);
 	currentIndex.value = Math.min(currentIndex.value, widgetProps.widgets.length - 1);
 	save();
@@ -156,43 +193,37 @@ const removeWidget = (index: number) => {
 
 const updateChildProps = (data: Record<string, any>) => {
 	const widget = widgetProps.widgets[currentIndex.value];
-	widgetProps.widgets.splice(currentIndex.value, 1, { ...widget, data });
+	if (!widget) return;
+
+	const updatedWidget = { ...widget, data };
+	widgetProps.widgets.splice(currentIndex.value, 1, updatedWidget);
 	save();
 };
 
 const toggleEditMode = () => {
 	editMode.value = !editMode.value;
-};
-
-const delay = computed(() => {
-	return widgetProps.interval === 0 ? 1000 : widgetProps.interval * 1000;
-});
-
-const setupInterval = (intervalDelay: number, afterMounted: boolean) => {
-	stopInterval && stopInterval();
-	stopInterval = useInterval(() => {
-		if (widgetProps.interval === 0) return;
-		if (autoRotate.value && hasWidgets.value) {
-			next();
-		}
-	}, intervalDelay, {
-		immediate: false,
-		afterMounted,
-	});
-};
-
-let stopInterval = useInterval(() => {
-	if (widgetProps.interval === 0) return;
-	if (autoRotate.value && hasWidgets.value) {
-		next();
+	if (editMode.value) {
+		// 編集モードに入る時はインターバルを停止
+		if (stopInterval) stopInterval();
+	} else {
+		// 編集モードから出る時はインターバルを再開
+		resetInterval();
 	}
-}, delay.value, {
-	immediate: false,
-	afterMounted: true,
+};
+
+// 初期化とwatch
+resetInterval();
+
+watch(delay, () => {
+	resetInterval();
 });
 
-watch(delay, (newDelay) => {
-	setupInterval(newDelay, false);
+watch(editMode, () => {
+	if (editMode.value) {
+		if (stopInterval) stopInterval();
+	} else {
+		resetInterval();
+	}
 });
 
 watch(() => widgetProps.widgets, () => {
@@ -207,6 +238,7 @@ defineExpose<WidgetComponentExpose>({
 </script>
 
 <style lang="scss" module>
+/* コンテナレイアウト */
 .container {
 	position: relative;
 	height: 100%;
@@ -219,114 +251,159 @@ defineExpose<WidgetComponentExpose>({
 }
 
 .intro {
-	padding: 16px;
+	padding: 24px;
 	text-align: center;
-	color: var(--MI_THEME-fg);
+	color: var(--MI_THEME-fgTransparentWeak);
 }
 
-.ghostImage {
-    max-width: 100%;
-    max-height: 100px;
-}
-
+/* 編集モード */
 .editModeContainer {
 	background: var(--MI_THEME-panel);
-	border-radius: 8px;
+	border-radius: 6px;
 	overflow: hidden;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-	margin-bottom: 12px;
+	border: 1px solid var(--MI_THEME-divider);
+	margin: var(--MI-margin) 0;
 }
 
+.editModeFooter {
+	padding: 12px;
+	border-top: 1px solid var(--MI_THEME-divider);
+	background: var(--MI_THEME-panelHeaderBg);
+	text-align: center;
+}
+
+/* ソート可能リスト */
 .sortableList {
-	max-height: calc(100% - 40px);
+	min-height: 100px;
+	max-height: 400px;
 	overflow-y: auto;
 	background: var(--MI_THEME-bg);
+	padding: 8px;
 }
 
 .sortableItem {
 	background: var(--MI_THEME-panel);
-	margin: 8px;
+	margin-bottom: 8px;
 	display: flex;
 	align-items: center;
-	padding: 10px 12px;
-	border-radius: 6px;
-	transition: all 0.2s ease;
+	padding: 12px;
+	border-radius: 4px;
+	transition: background 0.1s ease;
 	border: 1px solid var(--MI_THEME-divider);
+	position: relative;
 
 	&:hover {
-		background: var(--MI_THEME-buttonHover);
-		transform: translateY(-1px);
-		box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+		background: var(--MI_THEME-buttonHoverBg);
 	}
 
-	&:active {
-		transform: translateY(0);
+	&:last-child {
+		margin-bottom: 0;
 	}
 }
 
+/* ドラッグハンドル */
 .itemHandle {
 	cursor: grab;
 	margin-right: 12px;
-	padding: 4px;
+	padding: 8px;
 	border-radius: 4px;
-	color: var(--MI_THEME-accent);
-
-	&:hover {
-		background: var(--MI_THEME-buttonHover);
-	}
-}
-
-.itemTitle {
-	flex: 1;
-	font-size: 0.95em;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.actionButton {
-	padding: 6px;
-	margin-left: 4px;
-	border-radius: 4px;
-	color: var(--MI_THEME-fg);
-	background: transparent;
-	transition: all 0.2s ease;
-
-	&:hover {
-		background: var(--MI_THEME-buttonHover);
-		color: var(--MI_THEME-accent);
-	}
-
-	&.deleteButton:hover {
-		background: var(--MI_THEME-bg);
-		color: var(--MI_THEME-error);
-	}
-}
-
-.doneButton {
+	color: var(--MI_THEME-fgTransparentWeak);
+	transition: all 0.1s ease;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	margin-top: 12px;
-	padding: 8px 16px;
-	border-radius: 6px;
-	background: var(--MI_THEME-accent);
-	color: var(--MI_THEME-fgOnAccent);
-	font-weight: bold;
-	transition: all 0.2s ease;
-	width: 100%;
+	background: var(--MI_THEME-buttonBg);
+	border: 1px solid var(--MI_THEME-divider);
 
 	&:hover {
-		opacity: 0.9;
-		transform: translateY(-1px);
+		background: var(--MI_THEME-buttonHoverBg);
+		color: var(--MI_THEME-accent);
+		border-color: var(--MI_THEME-accent);
 	}
 
 	&:active {
-		transform: translateY(0);
+		cursor: grabbing;
+		background: var(--MI_THEME-buttonHoverBg);
+	}
+}
+
+/* アイテムタイトル */
+.itemTitle {
+	flex: 1;
+	font-size: 0.9em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--MI_THEME-fg);
+}
+
+/* アクションボタン */
+.actionButton {
+	position: absolute;
+	top: 50%;
+	right: 8px;
+	transform: translateY(-50%);
+	width: 32px;
+	height: 32px;
+	color: var(--MI_THEME-fgOnAccent);
+	background: color-mix(in srgb, var(--MI_THEME-fg) 70%, transparent);
+	border-radius: 4px;
+	border: none !important;
+	outline: none !important;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.1s ease;
+
+	&:hover {
+		background: color-mix(in srgb, var(--MI_THEME-fg) 80%, transparent);
+	}
+
+		&.deleteButton {
+		background: color-mix(in srgb, var(--MI_THEME-error) 70%, transparent);
+		color: var(--MI_THEME-fgOnAccent);
+
+		&:hover {
+			background: color-mix(in srgb, var(--MI_THEME-error) 80%, transparent);
+		}
+	}
+}
+
+/* ボタンスタイル */
+.doneButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 7px 14px;
+	border-radius: 5px;
+	background: var(--MI_THEME-accent);
+	color: var(--MI_THEME-fgOnAccent);
+	font-weight: normal;
+	font-size: 95%;
+	transition: background 0.1s ease;
+	min-width: 100px;
+	border: none !important;
+	outline: none !important;
+
+	&:hover {
+		background: hsl(from var(--MI_THEME-accent) h s calc(l + 5));
+	}
+
+	&:active {
+		background: hsl(from var(--MI_THEME-accent) h s calc(l + 5));
 	}
 
 	i {
 		margin-right: 6px;
 	}
 }
+
+/* ヘッダータイトル */
+.headerTitle {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: calc(100% - 210px);
+}
 </style>
+
