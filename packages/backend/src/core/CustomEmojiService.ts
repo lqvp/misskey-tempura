@@ -16,6 +16,7 @@ import { MemoryKVCache, RedisSingleCache } from '@/misc/cache.js';
 import { sqlLikeEscape } from '@/misc/sql-like-escape.js';
 import type { DriveFilesRepository, EmojisRepository, MiRole, MiUser } from '@/models/_.js';
 import type { MiEmoji } from '@/models/Emoji.js';
+import type { MiDriveFile } from '@/models/DriveFile.js';
 import type { Serialized } from '@/types.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { DriveService } from '@/core/DriveService.js';
@@ -99,6 +100,32 @@ export class CustomEmojiService implements OnApplicationShutdown {
 		});
 	}
 
+	/**
+	 * 絵文字名のバリデーション
+	 * @param emojiName バリデーション対象の絵文字名
+	 * @returns バリデーション結果
+	 */
+	@bindThis
+	private validateEmojiName(emojiName: string): boolean {
+		// 絵文字名の基本的なバリデーション
+		if (!emojiName || typeof emojiName !== 'string') {
+			return false;
+		}
+
+		// 長さチェック（最大128文字）
+		if (emojiName.length > 128) {
+			return false;
+		}
+
+		// 使用可能文字のチェック（英数字、ハイフン、アンダースコア）
+		const validPattern = /^[a-zA-Z0-9_-]+$/;
+		if (!validPattern.test(emojiName)) {
+			return false;
+		}
+
+		return true;
+	}
+
 	@bindThis
 	public async add(data: {
 		originalUrl: string;
@@ -113,6 +140,11 @@ export class CustomEmojiService implements OnApplicationShutdown {
 		localOnly: boolean;
 		roleIdsThatCanBeUsedThisEmojiAsReaction: MiRole['id'][];
 	}, moderator?: MiUser): Promise<MiEmoji> {
+		// 絵文字名のバリデーション
+		if (!this.validateEmojiName(data.name)) {
+			throw new Error(`Invalid emoji name: ${data.name}`);
+		}
+
 		// システムとして再アップロードする
 		const uploadResult = await this.systemReupload(data.originalUrl, data.name);
 
@@ -162,10 +194,15 @@ export class CustomEmojiService implements OnApplicationShutdown {
 	 * @returns アップロードされたファイル情報
 	 */
 	@bindThis
-	private async systemReupload(originalUrl: string, emojiName: string): Promise<any> {
+	private async systemReupload(originalUrl: string, emojiName: string): Promise<MiDriveFile> {
+		// 絵文字名のバリデーション
+		if (!this.validateEmojiName(emojiName)) {
+			throw new Error(`Invalid emoji name for system reupload: ${emojiName}`);
+		}
+
 		const MAX_RETRY_COUNT = 3;
 		let retryCount = 0;
-		let copyDriveFile;
+		let copyDriveFile: MiDriveFile | undefined;
 		const errors: string[] = [];
 
 		// 元のURLを保存しておく
@@ -276,6 +313,11 @@ export class CustomEmojiService implements OnApplicationShutdown {
 		// IDと絵文字名が両方指定されている場合は絵文字名の変更を行うため重複チェックが必要
 		const doNameUpdate = data.id && data.name && (data.name !== emoji.name);
 		if (doNameUpdate) {
+			// 新しい絵文字名のバリデーション
+			if (!this.validateEmojiName(data.name!)) {
+				throw new Error(`Invalid emoji name: ${data.name}`);
+			}
+
 			const isDuplicate = await this.checkDuplicate(data.name!);
 			if (isDuplicate) return 'SAME_NAME_EMOJI_EXISTS';
 		}
@@ -283,12 +325,22 @@ export class CustomEmojiService implements OnApplicationShutdown {
 		// ファイルのURLが変更される場合、システムとして再アップロードする
 		let fileUpdateData: any = {};
 		if (data.originalUrl && data.originalUrl !== emoji.originalUrl) {
-			const uploadResult = await this.systemReupload(data.originalUrl, emoji.name);
-			fileUpdateData = {
-				originalUrl: uploadResult.url,
-				publicUrl: uploadResult.webpublicUrl ?? uploadResult.url,
-				type: uploadResult.webpublicType ?? uploadResult.type,
-			};
+			try {
+				const uploadResult = await this.systemReupload(data.originalUrl, emoji.name);
+				fileUpdateData = {
+					originalUrl: uploadResult.url,
+					publicUrl: uploadResult.webpublicUrl ?? uploadResult.url,
+					type: uploadResult.webpublicType ?? uploadResult.type,
+				};
+			} catch (e) {
+				this.logger.error('Failed to reupload emoji file during update', {
+					error: e instanceof Error ? e.message : String(e),
+					emojiId: emoji.id,
+					emojiName: emoji.name,
+					originalUrl: data.originalUrl,
+				});
+				throw new Error(`Failed to reupload emoji file: ${e instanceof Error ? e.message : String(e)}`);
+			}
 		}
 
 		await this.emojisRepository.update(emoji.id, {
