@@ -341,7 +341,7 @@ export class WebhookTestService {
 					category: 'other',
 					status: 'pending',
 					ipAddress: '192.0.2.1',
-					user: dummyUser1,
+					user: await this.toPackedUserLite(dummyUser1),
 				});
 				break;
 			}

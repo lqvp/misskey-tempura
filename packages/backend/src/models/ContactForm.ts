@@ -70,7 +70,7 @@ export class MiContactForm {
 
 	// 送信者がログインユーザーの場合（自動取得）
 	@Index()
-	@Column(id(), { nullable: true })
+	@Column({ ...id(), nullable: true })
 	public userId: MiUser['id'] | null;
 
 	@ManyToOne(type => MiUser, { onDelete: 'SET NULL' })
@@ -79,7 +79,7 @@ export class MiContactForm {
 
 	// 担当者
 	@Index()
-	@Column(id(), { nullable: true })
+	@Column({ ...id(), nullable: true })
 	public assignedUserId: MiUser['id'] | null;
 
 	@ManyToOne(type => MiUser, { onDelete: 'SET NULL' })
