@@ -6053,6 +6053,30 @@ export type components = {
             roomId: string;
             room?: components['schemas']['ChatRoom'];
         };
+        ContactForm: {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string | null;
+            subject: string;
+            content: string;
+            name: string | null;
+            email: string | null;
+            misskeyUsername: string | null;
+            /** @enum {string} */
+            replyMethod: 'email' | 'misskey';
+            /** @enum {string} */
+            category: 'bug_report' | 'feature_request' | 'account_issue' | 'technical_issue' | 'content_issue' | 'other';
+            /** @enum {string} */
+            status: 'pending' | 'in_progress' | 'resolved' | 'closed';
+            adminNote: string | null;
+            ipAddress: string | null;
+            userAgent: string | null;
+            user: components['schemas']['UserLite'] | null;
+            assignedUser: components['schemas']['UserLite'] | null;
+        };
     };
     responses: never;
     parameters: never;

@@ -1257,6 +1257,9 @@ type ClipsUpdateRequest = operations['clips___update']['requestBody']['content']
 type ClipsUpdateResponse = operations['clips___update']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type ContactForm = components['schemas']['ContactForm'];
+
+// @public (undocumented)
 type ContactFormSubmitRequest = operations['contact-form___submit']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -2286,7 +2289,8 @@ declare namespace entities {
         ChatMessageLiteForRoom,
         ChatRoom,
         ChatRoomInvitation,
-        ChatRoomMembership
+        ChatRoomMembership,
+        ContactForm
     }
 }
 export { entities }
