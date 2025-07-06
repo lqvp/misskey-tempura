@@ -576,7 +576,7 @@ function toggleDeliveryTargets() {
 		deliveryTargets.value = null;
 	} else {
 		deliveryTargets.value = {
-			mode: 'all',
+			mode: 'include',
 			hosts: [],
 		};
 	}
@@ -1056,7 +1056,7 @@ async function post(ev?: MouseEvent) {
 		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(u => u.id) : undefined,
 		reactionAcceptance: reactionAcceptance.value,
 		scheduleNote: scheduleNote.value ?? undefined,
-		deliveryTargets: deliveryTargets.value && deliveryTargets.value.mode !== 'all' ? deliveryTargets.value : undefined,
+		deliveryTargets: deliveryTargets.value && !(deliveryTargets.value.mode === 'exclude' && deliveryTargets.value.hosts.length === 0) ? deliveryTargets.value : undefined,
 	};
 
 	if (withHashtags.value && hashtags.value && hashtags.value.trim() !== '') {

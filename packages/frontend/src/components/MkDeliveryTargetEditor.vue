@@ -49,7 +49,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import MkRadios from '@/components/MkRadios.vue';
 import MkLoading from '@/components/global/MkLoading.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';

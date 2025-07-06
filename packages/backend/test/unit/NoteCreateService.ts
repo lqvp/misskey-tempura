@@ -62,6 +62,7 @@ describe('NoteCreateService', () => {
 			renoteUserHost: null,
 			deleteAt: null,
 			isScheduledForPrivate: false,
+			deliveryTargets: null,
 		};
 
 		const poll: IPoll = {
