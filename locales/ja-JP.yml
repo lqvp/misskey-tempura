@@ -3980,3 +3980,10 @@ _outboxFilter:
 
 noteVisibilityColoring: "ノートの公開範囲に応じた色分け"
 noteVisibilityColoringDescription: "ノートの公開範囲に応じて、色付き表示を行います。\nノートの公開範囲をより視覚的に区別することができます。"
+
+chooseFileFrom: "アップロードボタンの挙動"
+chooseFileFromDescription: "アップロードボタンの挙動を選択します。newはそのままアップロードボタンを使用し、oldは旧選択ダイアログを使用します。"
+_chooseFileFrom:
+  new: "新しいファイル選択ダイアログ"
+  old: "旧ファイル選択ダイアログ"
+

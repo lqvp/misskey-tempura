@@ -62,6 +62,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkSwitch>
 				</MkPreferenceContainer>
 			</SearchMarker>
+
+			<SearchMarker :keywords="['post', 'form', 'compose']">
+				<MkPreferenceContainer k="chooseFileFrom">
+					<MkSelect v-model="chooseFileFrom">
+						<template #label><SearchLabel>{{ i18n.ts.chooseFileFrom }}</SearchLabel></template>
+						<template #caption><SearchLabel>{{ i18n.ts.chooseFileFromDescription }}</SearchLabel></template>
+						<option value="new">{{ i18n.ts._chooseFileFrom.new }}</option>
+						<option value="old">{{ i18n.ts._chooseFileFrom.old }}</option>
+					</MkSelect>
+				</MkPreferenceContainer>
+			</SearchMarker>
 		</div>
 	</MkFolder>
 </SearchMarker>
@@ -74,6 +85,7 @@ import { defineAsyncComponent, ref } from 'vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkButton from '@/components/MkButton.vue';
+import MkSelect from '@/components/MkSelect.vue';
 import { prefer } from '@/preferences.js';
 import { PREF_DEF } from '@/preferences/def.js';
 import * as os from '@/os.js';
@@ -87,6 +99,7 @@ const useTextAreaAutoSize = prefer.model('useTextAreaAutoSize');
 const Sortable = defineAsyncComponent(() => import('vuedraggable').then(x => x.default));
 const defaultScheduledNoteDelete = prefer.model('defaultScheduledNoteDelete');
 const scheduledNoteDelete = ref({ deleteAt: null, deleteAfter: prefer.s.defaultScheduledNoteDeleteTime, isValid: true });
+const chooseFileFrom = prefer.model('chooseFileFrom');
 
 const items = ref(prefer.s.postFormActions.map(x => ({
 	id: Math.random().toString(),

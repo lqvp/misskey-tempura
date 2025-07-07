@@ -14747,6 +14747,24 @@ export interface Locale extends ILocale {
      * ノートの公開範囲をより視覚的に区別することができます。
      */
     "noteVisibilityColoringDescription": string;
+    /**
+     * アップロードボタンの挙動
+     */
+    "chooseFileFrom": string;
+    /**
+     * アップロードボタンの挙動を選択します。newはそのままアップロードボタンを使用し、oldは旧選択ダイアログを使用します。
+     */
+    "chooseFileFromDescription": string;
+    "_chooseFileFrom": {
+        /**
+         * 新しいファイル選択ダイアログ
+         */
+        "new": string;
+        /**
+         * 旧ファイル選択ダイアログ
+         */
+        "old": string;
+    };
 }
 declare const locales: {
     [lang: string]: Locale;

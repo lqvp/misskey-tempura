@@ -702,4 +702,7 @@ export const PREF_DEF = definePreferences({
 	noteVisibilityColorLocalOnly: {
 		default: '#B93E43',
 	},
+	chooseFileFrom: {
+		default: 'new' as 'new' | 'old',
+	},
 });
