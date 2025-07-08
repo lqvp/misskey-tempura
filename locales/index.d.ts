@@ -14747,6 +14747,28 @@ export interface Locale extends ILocale {
      * ノートの公開範囲をより視覚的に区別することができます。
      */
     "noteVisibilityColoringDescription": string;
+    /**
+     * デフォルトのFxTwitterプロバイダー
+     */
+    "defaultFxTwitterEmbedProvider": string;
+    /**
+     * デフォルトのFxTwitter埋め込みプロバイダーを設定します。
+     */
+    "defaultFxTwitterEmbedProviderDescription": string;
+    /**
+     * カスタムFxTwitterプロバイダー
+     */
+    "customFxTwitterEmbedProvider": string;
+    "defaultFxTwitterEmbedProviderOptions": {
+        /**
+         * fxtwitter.com
+         */
+        "fxtwitter": string;
+        /**
+         * カスタム
+         */
+        "custom": string;
+    };
 }
 declare const locales: {
     [lang: string]: Locale;

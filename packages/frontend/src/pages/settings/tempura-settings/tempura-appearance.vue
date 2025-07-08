@@ -19,6 +19,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkPreferenceContainer>
 			</SearchMarker>
 
+			<SearchMarker :keywords="['twitter', 'embed', 'provider']">
+				<MkPreferenceContainer k="defaultFxTwitterEmbedProvider">
+					<MkSelect v-model="twitterEmbedMode">
+						<template #label><SearchLabel>{{ i18n.ts.defaultFxTwitterEmbedProvider }}</SearchLabel></template>
+						<option value="fxtwitter">{{ i18n.ts.defaultFxTwitterEmbedProviderOptions.fxtwitter }}</option>
+						<option value="custom">{{ i18n.ts.defaultFxTwitterEmbedProviderOptions.custom }}</option>
+					</MkSelect>
+					<MkInput v-if="twitterEmbedMode === 'custom'" v-model="defaultFxTwitterEmbedProvider">
+						<template #label><SearchLabel>{{ i18n.ts.customFxTwitterEmbedProvider }}</SearchLabel></template>
+					</MkInput>
+				</MkPreferenceContainer>
+			</SearchMarker>
+
 			<SearchMarker :keywords="['note', 'visibility', 'coloring']">
 				<MkFolder :defaultOpen="useNoteVisibilityColoring">
 					<template #icon><i class="ti ti-color-swatch"></i></template>
@@ -84,6 +97,7 @@ import * as Misskey from 'misskey-js';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkFolder from '@/components/MkFolder.vue';
+import MkInput from '@/components/MkInput.vue';
 import { prefer } from '@/preferences.js';
 import { PREF_DEF } from '@/preferences/def.js';
 import { i18n } from '@/i18n.js';
@@ -93,6 +107,25 @@ import MkColorInput from '@/components/MkColorInput.vue';
 import MkButton from '@/components/MkButton.vue';
 
 const customFont = prefer.model('customFont');
+const defaultFxTwitterEmbedProvider = prefer.model('defaultFxTwitterEmbedProvider');
+
+// Twitter embed mode computed property
+const twitterEmbedMode = computed({
+	get: () => {
+		return defaultFxTwitterEmbedProvider.value === 'fxtwitter.com' ? 'fxtwitter' : 'custom';
+	},
+	set: (value: 'fxtwitter' | 'custom') => {
+		if (value === 'fxtwitter') {
+			defaultFxTwitterEmbedProvider.value = 'fxtwitter.com';
+		} else {
+			// カスタムモードの場合、現在の値が 'fxtwitter.com' なら空文字にする
+			if (defaultFxTwitterEmbedProvider.value === 'fxtwitter.com') {
+				defaultFxTwitterEmbedProvider.value = '';
+			}
+			// すでにカスタム値が入っている場合はそのまま維持
+		}
+	},
+});
 
 // Note visibility coloring
 const useNoteVisibilityColoring = prefer.model('useNoteVisibilityColoring');
