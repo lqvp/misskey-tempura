@@ -2302,7 +2302,7 @@ export type paths = {
          * get-avatar-decorations
          * @description No description provided.
          *
-         *     **Credential required**: *No* / **Permission**: *read:account*
+         *     **Credential required**: *No*
          */
         post: operations['get-avatar-decorations'];
     };
@@ -4712,7 +4712,7 @@ export type components = {
             reply?: components['schemas']['Note'] | null;
             renote?: components['schemas']['Note'] | null;
             /** @enum {string} */
-            visibility: 'public' | 'home' | 'followers' | 'specified';
+            visibility: 'public' | 'public_non_ltl' | 'home' | 'followers' | 'specified';
             visibleUserIds?: string[];
             fileIds?: string[];
             files?: components['schemas']['DriveFile'][];

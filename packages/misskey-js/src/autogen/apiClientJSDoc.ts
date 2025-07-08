@@ -2807,7 +2807,7 @@ declare module '../api.js' {
     /**
      * No description provided.
      * 
-     * **Credential required**: *No* / **Permission**: *read:account*
+     * **Credential required**: *No*
      */
     request<E extends 'get-avatar-decorations', P extends Endpoints[E]['req']>(
       endpoint: E,
