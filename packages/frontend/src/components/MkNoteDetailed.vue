@@ -196,14 +196,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</div>
 	<div>
 		<div v-if="tab === 'replies'">
-			<div v-if="!showReplies" style="padding: 16px">
-				<MkButton style="margin: 0 auto;" primary rounded @click="showReplies = true">{{ i18n.ts.loadReplies }}</MkButton>
+			<div v-if="!repliesLoaded" style="padding: 16px">
+				<MkButton style="margin: 0 auto;" primary rounded @click="loadReplies">{{ i18n.ts.loadReplies }}</MkButton>
 			</div>
-			<MkPagination v-else :pagination="repliesPagination" :disableAutoLoad="true">
-				<template #default="{ items }">
-					<MkNoteSub v-for="item, index in items" :key="item.id" :note="item" :class="{ [$style.replyBorder]: (index > 0) }" :detail="true"/>
-				</template>
-			</MkPagination>
+			<MkNoteSub v-for="note in replies" :key="note.id" :note="note" :class="$style.reply" :detail="true"/>
 		</div>
 		<div v-else-if="tab === 'renotes'" :class="$style.tab_renotes">
 			<MkPagination :paginator="renotesPaginator">
@@ -417,14 +413,6 @@ provide(DI.mfmEmojiReactCallback, (reaction) => {
 
 const tab = ref(props.initialTab);
 const reactionTabType = ref<string | null>(null);
-
-const repliesPagination = computed(() => ({
-	endpoint: 'notes/replies',
-	limit: 10,
-	params: {
-		noteId: appearNote.id,
-	},
-}));
 
 const renotesPaginator = markRaw(new Paginator('notes/renotes', {
 	limit: 10,

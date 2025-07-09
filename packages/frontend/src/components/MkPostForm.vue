@@ -311,10 +311,7 @@ const canPost = computed((): boolean => {
 		(textLength.value <= maxTextLength.value) &&
 		(
 			useCw.value ?
-				(
-					cw.value != null && cw.value.trim() !== '' &&
-					cwTextLength.value <= maxCwTextLength
-				) : true
+				cwTextLength.value <= maxCwTextLength : true
 		) &&
 		(files.value.length <= 16) &&
 		(!poll.value || poll.value.choices.length >= 2);
@@ -504,6 +501,7 @@ function watchForDraft() {
 	watch(cw, () => saveDraft());
 	watch(poll, () => saveDraft());
 	watch(scheduledNoteDelete, () => saveDraft());
+	watch(scheduleNote, () => saveDraft());
 	watch(files, () => saveDraft(), { deep: true });
 	watch(visibility, () => saveDraft());
 	watch(localOnly, () => saveDraft());
@@ -916,6 +914,8 @@ function saveDraft() {
 			localOnly: localOnly.value,
 			files: files.value,
 			poll: poll.value,
+			scheduledNoteDelete: scheduledNoteDelete.value,
+			scheduleNote: scheduleNote.value,
 			...( visibleUsers.value.length > 0 ? { visibleUserIds: visibleUsers.value.map(x => x.id) } : {}),
 			quoteId: quoteId.value,
 			reactionAcceptance: reactionAcceptance.value,
@@ -1381,6 +1381,12 @@ onMounted(() => {
 				files.value = (draft.data.files || []).filter(draftFile => draftFile);
 				if (draft.data.poll) {
 					poll.value = draft.data.poll;
+				}
+				if (draft.data.scheduledNoteDelete) {
+					scheduledNoteDelete.value = draft.data.scheduledNoteDelete;
+				}
+				if (draft.data.scheduleNote) {
+					scheduleNote.value = draft.data.scheduleNote;
 				}
 				if (draft.data.visibleUserIds) {
 					misskeyApi('users/show', { userIds: draft.data.visibleUserIds }).then(users => {

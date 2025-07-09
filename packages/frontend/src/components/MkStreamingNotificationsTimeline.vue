@@ -60,11 +60,17 @@ import { Paginator } from '@/utility/paginator.js';
 
 const props = defineProps<{
 	excludeTypes?: typeof notificationTypes[number][];
+	notUseGrouped?: boolean;
 }>();
 
 const rootEl = useTemplateRef('rootEl');
 
-const paginator = prefer.s.useGroupedNotifications ? markRaw(new Paginator('i/notifications-grouped', {
+const paginator = props.notUseGrouped ? markRaw(new Paginator('i/notifications', {
+	limit: 20,
+	computedParams: computed(() => ({
+		excludeTypes: props.excludeTypes ?? undefined,
+	})),
+})) : prefer.s.useGroupedNotifications ? markRaw(new Paginator('i/notifications-grouped', {
 	limit: 20,
 	computedParams: computed(() => ({
 		excludeTypes: props.excludeTypes ?? undefined,

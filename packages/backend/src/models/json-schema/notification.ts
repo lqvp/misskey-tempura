@@ -21,7 +21,7 @@ const baseSchema = {
 		type: {
 			type: 'string',
 			optional: false, nullable: false,
-			enum: [...notificationTypes, 'reaction:grouped', 'renote:grouped'],
+			enum: [...notificationTypes, 'reaction:grouped', 'renote:grouped', 'note:grouped'],
 		},
 	},
 } as const;
@@ -569,6 +569,30 @@ export const packedNotificationSchema = {
 				type: 'string',
 				optional: false, nullable: false,
 				enum: ['renote:grouped'],
+			},
+			note: {
+				type: 'object',
+				ref: 'Note',
+				optional: false, nullable: false,
+			},
+			users: {
+				type: 'array',
+				optional: false, nullable: false,
+				items: {
+					type: 'object',
+					ref: 'UserLite',
+					optional: false, nullable: false,
+				},
+			},
+		},
+	}, {
+		type: 'object',
+		properties: {
+			...baseSchema.properties,
+			type: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['note:grouped'],
 			},
 			note: {
 				type: 'object',
