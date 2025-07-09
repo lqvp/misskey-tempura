@@ -588,9 +588,8 @@ function chooseFileFrom(ev: MouseEvent) {
 		multiple: true,
 		label: i18n.ts.attachFile,
 	}).then(files_ => {
-		for (const file of files_) {
-			files.value.push(file);
-		}
+		if (files_.length === 0) return;
+		files.value.push(...files_);
 	});
 }
 

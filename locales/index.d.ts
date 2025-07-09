@@ -14792,7 +14792,7 @@ export interface Locale extends ILocale {
      */
     "chooseFileFrom": string;
     /**
-     * アップロードボタンの挙動を選択します。newはそのままアップロードボタンを使用し、oldは旧選択ダイアログを使用します。
+     * ファイルのアップロード時に使用するダイアログを選択します。「新しいファイル選択ダイアログ」はOS標準のものを、「旧ファイル選択ダイアログ」はMisskey独自のダイアログを使用します。
      */
     "chooseFileFromDescription": string;
     "_chooseFileFrom": {
