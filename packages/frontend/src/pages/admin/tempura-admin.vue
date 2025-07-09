@@ -478,9 +478,9 @@ const customCursorPointerUrl = ref<string | null>(null);
 const customCursorTextUrl = ref<string | null>(null);
 const customCursorProgressUrl = ref<string | null>(null);
 const customCursorWaitUrl = ref<string | null>(null);
-// const enableContactForm = ref<boolean>(true);
-// const contactFormLimit = ref<number>(3);
-// const contactFormRequireAuth = ref<boolean>(false);
+const enableContactForm = ref<boolean>(true);
+const contactFormLimit = ref<number>(3);
+const contactFormRequireAuth = ref<boolean>(false);
 
 const originalMinimumUsernameLength = ref<number>();
 const validateMinimumUsernameLengthChanged = computed(() =>
@@ -539,9 +539,9 @@ async function init() {
 	customCursorTextUrl.value = meta.customCursorTextUrl;
 	customCursorProgressUrl.value = meta.customCursorProgressUrl;
 	customCursorWaitUrl.value = meta.customCursorWaitUrl;
-	// enableContactForm.value = meta.enableContactForm;
-	// contactFormLimit.value = meta.contactFormLimit;
-	// contactFormRequireAuth.value = meta.contactFormRequireAuth;
+	enableContactForm.value = meta.enableContactForm;
+	contactFormLimit.value = meta.contactFormLimit;
+	contactFormRequireAuth.value = meta.contactFormRequireAuth;
 }
 
 function addBackgroundImage() {
@@ -766,9 +766,6 @@ const geminiSettingsForm = useForm({
 });
 
 const contactFormSettingsForm = useForm({
-	// enableContactForm: enableContactForm.value,
-	// contactFormLimit: contactFormLimit.value,
-	// contactFormRequireAuth: contactFormRequireAuth.value,
 	enableContactForm: meta.enableContactForm,
 	contactFormLimit: meta.contactFormLimit,
 	contactFormRequireAuth: meta.contactFormRequireAuth,

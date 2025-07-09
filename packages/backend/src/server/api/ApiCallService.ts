@@ -322,7 +322,7 @@ export class ApiCallService implements OnApplicationShutdown {
 			// Contact form dynamic limit support
 			if (ep.name === 'contact-form/submit') {
 				const meta = await this.metaService.fetch();
-				(limit as any).max = meta.contactFormLimit;
+				Object.assign(limit, { max: meta.contactFormLimit });
 			}
 
 			if (limit.key == null) {

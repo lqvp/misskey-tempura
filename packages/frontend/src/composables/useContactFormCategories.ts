@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { instance } from '@/instance.js';
 
 export interface ContactFormCategory {
@@ -17,32 +17,40 @@ export interface ContactFormCategory {
 export function useContactFormCategories() {
 	const categories = ref<ContactFormCategory[]>([]);
 	const loading = ref(false);
+	const DEFAULT_CATEGORY_KEY = 'other';
 
 	// Meta設定からカテゴリを取得
 	const fetchCategories = async (): Promise<ContactFormCategory[]> => {
-		if (loading.value) return categories.value;
-
+		if (loading.value) {
+			// 既に実行中の場合は現在のPromiseを返す
+			await new Promise<void>(resolve => {
+				const unwatch = watch(loading, (newValue) => {
+					if (!newValue) {
+						unwatch();
+						resolve();
+					}
+				});
+			});
+			return categories.value;
+		}
 		loading.value = true;
 		try {
+			if (!instance) {
+				throw new Error('Instance is not available');
+			}
 			const allCategories = instance.contactFormCategories;
-
-			// contactFormCategoriesが存在し、配列の場合のみ処理
 			if (allCategories && Array.isArray(allCategories)) {
-			// 有効なカテゴリのみをフィルタリングして順序でソート
 				const enabledCategories = allCategories
 					.filter((cat: ContactFormCategory) => cat.enabled)
 					.sort((a: ContactFormCategory, b: ContactFormCategory) => a.order - b.order);
-
 				categories.value = enabledCategories;
 				return enabledCategories;
 			} else {
-			// 設定が存在しない場合は空の配列を返す
 				categories.value = [];
 				return [];
 			}
 		} catch (error) {
 			console.error('Failed to fetch contact form categories:', error);
-			// エラーを再throwして呼び出し側でハンドリング
 			throw error;
 		} finally {
 			loading.value = false;
@@ -58,14 +66,14 @@ export function useContactFormCategories() {
 	// デフォルトカテゴリを取得
 	const getDefaultCategory = (): string => {
 		const defaultCategory = categories.value.find(cat => cat.isDefault);
-		return defaultCategory ? defaultCategory.key : 'other';
+		return defaultCategory ? defaultCategory.key : DEFAULT_CATEGORY_KEY;
 	};
 
 	// 有効なカテゴリの選択肢を取得（Vue Select用）
 	const categoryOptions = computed(() => {
 		return categories.value.map(cat => ({
 			value: cat.key,
-			label: cat.text || getCategoryLabel(cat.key),
+			label: cat.text,
 		}));
 	});
 
