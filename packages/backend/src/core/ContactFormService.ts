@@ -11,12 +11,15 @@ import { bindThis } from '@/decorators.js';
 import { SystemWebhookService, ContactFormPayload } from '@/core/SystemWebhookService.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import type { MiUser } from '@/models/User.js';
+import { IdService } from '@/core/IdService.js';
+import { MetaService } from '@/core/MetaService.js';
+import type { ContactFormCategory } from '@/models/Meta.js';
 
 export type ContactFormListOptions = {
 	limit: number;
 	offset: number;
 	status?: 'pending' | 'in_progress' | 'resolved' | 'closed';
-	category?: 'bug_report' | 'feature_request' | 'account_issue' | 'technical_issue' | 'content_issue' | 'other';
+	category?: string;
 	assignedUserId?: string;
 };
 
@@ -24,6 +27,20 @@ export type ContactFormUpdateData = {
 	status?: 'pending' | 'in_progress' | 'resolved' | 'closed';
 	adminNote?: string;
 	assignedUserId?: string | null;
+	assignedNickname?: string | null;
+};
+
+export type ContactFormSubmitData = {
+	subject: string;
+	content: string;
+	replyMethod: 'email' | 'misskey';
+	name?: string | null;
+	email?: string | null;
+	misskeyUsername?: string | null;
+	category?: string;
+	ipAddress?: string | null;
+	userAgent?: string | null;
+	userId?: string | null;
 };
 
 @Injectable()
@@ -34,7 +51,30 @@ export class ContactFormService {
 
 		private systemWebhookService: SystemWebhookService,
 		private userEntityService: UserEntityService,
+		private idService: IdService,
+		private metaService: MetaService,
 	) {
+	}
+
+	@bindThis
+	public async getEnabledCategories(): Promise<ContactFormCategory[]> {
+		const meta = await this.metaService.fetch();
+		return meta.contactFormCategories
+			.filter(cat => cat.enabled)
+			.sort((a, b) => a.order - b.order);
+	}
+
+	@bindThis
+	public async getDefaultCategory(): Promise<string> {
+		const categories = await this.getEnabledCategories();
+		const defaultCategory = categories.find(cat => cat.isDefault);
+		return defaultCategory ? defaultCategory.key : 'other';
+	}
+
+	@bindThis
+	public async validateCategory(category: string): Promise<boolean> {
+		const enabledCategories = await this.getEnabledCategories();
+		return enabledCategories.some(cat => cat.key === category);
 	}
 
 	@bindThis
@@ -86,6 +126,10 @@ export class ContactFormService {
 			updateData.assignedUserId = data.assignedUserId;
 		}
 
+		if (data.assignedNickname !== undefined) {
+			updateData.assignedNickname = data.assignedNickname;
+		}
+
 		updateData.updatedAt = new Date();
 
 		await this.contactFormsRepository.update(contactFormId, updateData);
@@ -115,5 +159,35 @@ export class ContactFormService {
 
 		// System Webhookに通知
 		await this.systemWebhookService.enqueueSystemWebhook('contactForm', payload);
+	}
+
+	@bindThis
+	public async submit(data: ContactFormSubmitData): Promise<MiContactForm> {
+		// カテゴリのバリデーション
+		const category = data.category || await this.getDefaultCategory();
+		if (!(await this.validateCategory(category))) {
+			throw new Error('Invalid category');
+		}
+
+		const contactForm = await this.contactFormsRepository.insertOne({
+			id: this.idService.gen(),
+			createdAt: new Date(),
+			subject: data.subject.trim(),
+			content: data.content.trim(),
+			replyMethod: data.replyMethod,
+			name: data.name?.trim() || null,
+			email: data.email?.trim() || null,
+			misskeyUsername: data.misskeyUsername?.trim() || null,
+			category: category,
+			status: 'pending',
+			ipAddress: data.ipAddress,
+			userAgent: data.userAgent,
+			userId: data.userId ?? null,
+		});
+
+		// Webhook通知とモデレーションログ記録
+		await this.notifyContactFormReceived(contactForm);
+
+		return contactForm;
 	}
 }

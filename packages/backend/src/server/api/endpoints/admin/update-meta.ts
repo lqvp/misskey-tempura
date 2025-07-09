@@ -286,6 +286,20 @@ export const paramDef = {
 		contactFormLimit: { type: 'integer', minimum: 1, maximum: 10 },
 		contactFormRequireAuth: { type: 'boolean' },
 		contactFormRequireCaptcha: { type: 'boolean' },
+		contactFormCategories: {
+			type: 'array',
+			items: {
+				type: 'object',
+				properties: {
+					key: { type: 'string', maxLength: 64 },
+					text: { type: 'string', maxLength: 256 },
+					enabled: { type: 'boolean' },
+					order: { type: 'integer', minimum: 1 },
+					isDefault: { type: 'boolean' },
+				},
+				required: ['key', 'text', 'enabled', 'order', 'isDefault'],
+			},
+		},
 	},
 	required: [],
 } as const;
@@ -1049,6 +1063,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.contactFormRequireCaptcha !== undefined) {
 				set.contactFormRequireCaptcha = ps.contactFormRequireCaptcha;
+			}
+
+			if (ps.contactFormCategories !== undefined) {
+				set.contactFormCategories = ps.contactFormCategories;
 			}
 
 			const before = await this.metaService.fetch(true);

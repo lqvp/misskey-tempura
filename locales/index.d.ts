@@ -14793,30 +14793,6 @@ export interface Locale extends ILocale {
          */
         "category": string;
         /**
-         * バグ報告
-         */
-        "bugReport": string;
-        /**
-         * 機能要望
-         */
-        "featureRequest": string;
-        /**
-         * アカウント関連
-         */
-        "accountIssue": string;
-        /**
-         * 技術的な問題
-         */
-        "technicalIssue": string;
-        /**
-         * コンテンツ関連
-         */
-        "contentIssue": string;
-        /**
-         * その他
-         */
-        "other": string;
-        /**
          * 件名
          */
         "subject": string;
@@ -14829,7 +14805,7 @@ export interface Locale extends ILocale {
          */
         "content": string;
         /**
-         * 詳しい内容をご記入ください（10文字以上）
+         * 詳しい内容をご記入ください（20文字以上）
          */
         "contentPlaceholder": string;
         /**
@@ -14865,15 +14841,15 @@ export interface Locale extends ILocale {
          */
         "emailPlaceholder": string;
         /**
-         * Misskeyユーザー名
+         * Misskey(Fediverse)ユーザー名
          */
         "misskeyUsername": string;
         /**
-         * @username
+         * username@example.com
          */
         "misskeyUsernamePlaceholder": string;
         /**
-         * Misskey内での返信を希望する場合のユーザー名（@なし）
+         * username@domain形式で入力してください（@付きでも可）
          */
         "misskeyUsernameCaption": string;
         /**
@@ -14966,6 +14942,10 @@ export interface Locale extends ILocale {
          */
         "assign": string;
         /**
+         * @username@example.com または ニックネーム
+         */
+        "placeholderAssignedUser": string;
+        /**
          * 連絡先情報
          */
         "contactInfo": string;
@@ -14974,6 +14954,10 @@ export interface Locale extends ILocale {
          */
         "ipAddress": string;
         /**
+         * User-Agent
+         */
+        "userAgent": string;
+        /**
          * 送信内容
          */
         "submittedContent": string;
@@ -14981,6 +14965,31 @@ export interface Locale extends ILocale {
          * 送信日時
          */
         "submittedAt": string;
+        /**
+         * カテゴリ管理
+         */
+        "categoryManagement": string;
+        /**
+         * デフォルトカテゴリ
+         */
+        "defaultCategory": string;
+        /**
+         * リセット
+         */
+        "reset": string;
+        /**
+         * お問い合わせフォームは無効です
+         */
+        "contactFormDisabled": string;
+        /**
+         * このインスタンスではお問い合わせフォームが無効になっています。
+         * 別の方法でお問い合わせをお願いします。
+         */
+        "contactFormDisabledDescription": string;
+        /**
+         * お問い合わせがありません
+         */
+        "noContacts": string;
     };
 }
 declare const locales: {

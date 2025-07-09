@@ -49,7 +49,6 @@ export const packedContactFormSchema = {
 		category: {
 			type: 'string',
 			nullable: false, optional: false,
-			enum: ['bug_report', 'feature_request', 'account_issue', 'technical_issue', 'content_issue', 'other'],
 		},
 		status: {
 			type: 'string',
@@ -77,6 +76,10 @@ export const packedContactFormSchema = {
 			type: 'object',
 			nullable: true, optional: false,
 			ref: 'UserLite',
+		},
+		assignedNickname: {
+			type: 'string',
+			nullable: true, optional: false,
 		},
 	},
 } as const;

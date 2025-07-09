@@ -33,6 +33,7 @@ export const paramDef = {
 		status: { type: 'string', enum: ['pending', 'in_progress', 'resolved', 'closed'], nullable: true },
 		adminNote: { type: 'string', nullable: true },
 		assignedUserId: { type: 'string', format: 'misskey:id', nullable: true },
+		assignedNickname: { type: 'string', nullable: true },
 	},
 	required: ['contactFormId'],
 } as const;
@@ -54,9 +55,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 
 			// 更新
 			await this.contactFormService.update(ps.contactFormId, {
-				status: ps.status || undefined,
-				adminNote: ps.adminNote || undefined,
-				assignedUserId: ps.assignedUserId || undefined,
+				status: ps.status ?? undefined,
+				adminNote: ps.adminNote ?? undefined,
+				assignedUserId: ps.assignedUserId !== undefined ? ps.assignedUserId : undefined,
+				assignedNickname: ps.assignedNickname !== undefined ? ps.assignedNickname : undefined,
 			});
 		});
 	}

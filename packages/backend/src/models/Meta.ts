@@ -7,6 +7,14 @@ import { Entity, Column, PrimaryColumn, ManyToOne } from 'typeorm';
 import { id } from './util/id.js';
 import { MiUser } from './User.js';
 
+export interface ContactFormCategory {
+	key: string; // カテゴリキー (例: 'bug_report', 'feature_request')
+	text: string; // 表示テキスト (例: 'バグ報告', 'Bug Report')
+	enabled: boolean; // 有効/無効フラグ
+	order: number; // 表示順序
+	isDefault: boolean; // デフォルトカテゴリフラグ
+}
+
 @Entity('meta')
 export class MiMeta {
 	@PrimaryColumn({
@@ -1019,9 +1027,14 @@ export class MiMeta {
 		default: true,
 	})
 	public contactFormRequireCaptcha: boolean;
+
+	@Column('jsonb', {
+		default: [],
+	})
+	public contactFormCategories: ContactFormCategory[];
 }
 
 export type SoftwareSuspension = {
-	software: string,
-	versionRange: string,
+	software: string;
+	versionRange: string;
 };

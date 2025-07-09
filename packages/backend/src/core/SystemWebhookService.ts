@@ -49,7 +49,7 @@ export type ContactFormPayload = {
 	email: string | null;
 	misskeyUsername: string | null;
 	replyMethod: 'email' | 'misskey';
-	category: 'bug_report' | 'feature_request' | 'account_issue' | 'technical_issue' | 'content_issue' | 'other';
+	category: string;
 	status: 'pending' | 'in_progress' | 'resolved' | 'closed';
 	ipAddress: string | null;
 	user: Packed<'UserLite'> | null;
@@ -61,7 +61,7 @@ export type SystemWebhookPayload<T extends SystemWebhookEventType> =
 	T extends 'inactiveModeratorsWarning' ? InactiveModeratorsWarningPayload :
 	T extends 'inactiveModeratorsInvitationOnlyChanged' ? Record<string, never> :
 	T extends 'contactForm' ? ContactFormPayload :
-		never;
+	never;
 
 @Injectable()
 export class SystemWebhookService implements OnApplicationShutdown {

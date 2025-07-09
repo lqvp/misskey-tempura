@@ -167,6 +167,11 @@ export class MetaEntityService {
 			customCursorTextUrl: instance.customCursorTextUrl,
 			customCursorProgressUrl: instance.customCursorProgressUrl,
 			customCursorWaitUrl: instance.customCursorWaitUrl,
+			enableContactForm: instance.enableContactForm,
+			contactFormLimit: instance.contactFormLimit,
+			contactFormRequireAuth: instance.contactFormRequireAuth,
+			contactFormRequireCaptcha: instance.contactFormRequireCaptcha,
+			contactFormCategories: instance.contactFormCategories,
 		};
 
 		return packed;

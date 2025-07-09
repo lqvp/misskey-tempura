@@ -29,7 +29,7 @@ export class MiContactForm {
 	// 返信方法（必須：emailまたはmisskey）
 	@Index()
 	@Column('enum', {
-		enum: ['email', 'misskey']
+		enum: ['email', 'misskey'],
 	})
 	public replyMethod: 'email' | 'misskey';
 
@@ -45,17 +45,17 @@ export class MiContactForm {
 
 	// カテゴリ
 	@Index()
-	@Column('enum', {
-		enum: ['bug_report', 'feature_request', 'account_issue', 'technical_issue', 'content_issue', 'other'],
-		default: 'other'
+	@Column('varchar', {
+		length: 64,
+		default: 'other',
 	})
-	public category: 'bug_report' | 'feature_request' | 'account_issue' | 'technical_issue' | 'content_issue' | 'other';
+	public category: string;
 
 	// 管理用
 	@Index()
 	@Column('enum', {
 		enum: ['pending', 'in_progress', 'resolved', 'closed'],
-		default: 'pending'
+		default: 'pending',
 	})
 	public status: 'pending' | 'in_progress' | 'resolved' | 'closed';
 
@@ -85,4 +85,8 @@ export class MiContactForm {
 	@ManyToOne(type => MiUser, { onDelete: 'SET NULL' })
 	@JoinColumn()
 	public assignedUser: MiUser | null;
+
+	// 担当者ニックネーム（自由入力）
+	@Column('varchar', { length: 128, nullable: true })
+	public assignedNickname: string | null;
 }

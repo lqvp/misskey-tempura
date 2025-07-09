@@ -23,12 +23,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkSelect v-model="category" style="margin: 0; flex: 1;" @update:modelValue="reload">
 					<template #label>{{ i18n.ts._contactForm.category }}</template>
 					<option value="all">{{ i18n.ts.all }}</option>
-					<option value="bug_report">{{ i18n.ts._contactForm.bugReport }}</option>
-					<option value="feature_request">{{ i18n.ts._contactForm.featureRequest }}</option>
-					<option value="account_issue">{{ i18n.ts._contactForm.accountIssue }}</option>
-					<option value="technical_issue">{{ i18n.ts._contactForm.technicalIssue }}</option>
-					<option value="content_issue">{{ i18n.ts._contactForm.contentIssue }}</option>
-					<option value="other">{{ i18n.ts._contactForm.other }}</option>
+					<option v-for="option in categoryOptions" :key="option.value" :value="option.value">
+						{{ option.label }}
+					</option>
 				</MkSelect>
 				<MkInput v-model="assignedUserId" style="margin: 0; flex: 1;" type="text" :spellcheck="false" :placeholder="'@username'" @update:modelValue="reload">
 					<template #label>{{ i18n.ts._contactForm.assignedUser }}</template>
@@ -43,7 +40,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 				<div v-if="items.length === 0" class="empty">
 					<div style="text-align: center; color: var(--MI_THEME-fg);">
-						{{ i18n.ts.noUsers }}
+						{{ i18n.ts._contactForm.noContactForms }}
 					</div>
 				</div>
 
@@ -57,22 +54,31 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, onMounted, watch } from 'vue';
+import { ref, reactive, computed, onMounted } from 'vue';
+import MkButton from '@/components/MkButton.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkInput from '@/components/MkInput.vue';
-import MkButton from '@/components/MkButton.vue';
-import MkLoading from '@/components/global/MkLoading.vue';
-import MkContactForm from '@/components/MkContactForm.vue';
+import MkPagination from '@/components/MkPagination.vue';
+import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
-import { misskeyApi } from '@/utility/misskey-api.js';
+import MkContactForm from '@/components/MkContactForm.vue';
+import { useContactFormCategories } from '@/composables/useContactFormCategories.js';
 
+// Dynamic category management
+const { fetchCategories, categoryOptions } = useContactFormCategories();
+
+const loading = ref(false);
 const status = ref('all');
 const category = ref('all');
 const assignedUserId = ref('');
 
+// Initialize categories
+onMounted(async () => {
+	await fetchCategories();
+});
+
 const items = ref([]);
-const loading = ref(false);
 const offset = ref(0);
 const limit = 10;
 const hasMore = ref(true);

@@ -563,6 +563,10 @@ export const ROUTE_DEF = [{
 		name: 'tempura-contact',
 		component: page(() => import('@/pages/admin/tempura-contact.vue')),
 	}, {
+		path: '/contact-form-categories',
+		name: 'contact-form-categories',
+		component: page(() => import('@/pages/admin/contact-form-categories.vue')),
+	}, {
 		path: '/',
 		component: page(() => import('@/pages/_empty_.vue')),
 	}],

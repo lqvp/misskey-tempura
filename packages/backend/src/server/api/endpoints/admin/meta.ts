@@ -769,6 +769,36 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			contactFormCategories: {
+				type: 'array',
+				optional: false, nullable: false,
+				items: {
+					type: 'object',
+					optional: false, nullable: false,
+					properties: {
+						key: {
+							type: 'string',
+							optional: false, nullable: false,
+						},
+						text: {
+							type: 'string',
+							optional: false, nullable: false,
+						},
+						enabled: {
+							type: 'boolean',
+							optional: false, nullable: false,
+						},
+						order: {
+							type: 'number',
+							optional: false, nullable: false,
+						},
+						isDefault: {
+							type: 'boolean',
+							optional: false, nullable: false,
+						},
+					},
+				},
+			},
 			deliverSuspendedSoftware: {
 				type: 'array',
 				optional: false, nullable: false,
@@ -1017,6 +1047,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				contactFormLimit: instance.contactFormLimit,
 				contactFormRequireAuth: instance.contactFormRequireAuth,
 				contactFormRequireCaptcha: instance.contactFormRequireCaptcha,
+				contactFormCategories: instance.contactFormCategories,
 			};
 		});
 	}

@@ -2116,7 +2116,7 @@ declare module '../api.js' {
     /**
      * No description provided.
      * 
-     * **Credential required**: *No* / **Permission**: *write:contact*
+     * **Credential required**: *No*
      */
     request<E extends 'contact-form/submit', P extends Endpoints[E]['req']>(
       endpoint: E,

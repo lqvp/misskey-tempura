@@ -3,28 +3,24 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
-import { IdService } from '@/core/IdService.js';
-import type { ContactFormsRepository } from '@/models/_.js';
-import { DI } from '@/di-symbols.js';
 import { MetaService } from '@/core/MetaService.js';
 import { ApiError } from '@/server/api/error.js';
-import { bindThis } from '@/decorators.js';
 import { ContactFormService } from '@/core/ContactFormService.js';
 import { UtilityService } from '@/core/UtilityService.js';
+import { CaptchaService } from '@/core/CaptchaService.js';
+import { EmailService } from '@/core/EmailService.js';
 
+// Meta設定を動的に読み込むため、limit.maxは実行時に決定
 export const meta = {
 	tags: ['contact'],
 	requireCredential: false,
-	kind: 'write:contact',
 
 	limit: {
 		duration: 60 * 60 * 1000, // 1時間
-		max: 3, // Meta設定から動的に読み込み
+		max: 3, // デフォルト値（実際には動的に設定される）
 	},
-
-	requireCaptcha: true,
 
 	res: {
 		type: 'object',
@@ -77,7 +73,7 @@ export const paramDef = {
 		name: { type: 'string', maxLength: 256, nullable: true },
 		category: {
 			type: 'string',
-			enum: ['bug_report', 'feature_request', 'account_issue', 'technical_issue', 'content_issue', 'other'],
+			maxLength: 64,
 			default: 'other',
 		},
 
@@ -92,17 +88,15 @@ export const paramDef = {
 } as const;
 
 @Injectable()
-export default class extends Endpoint<typeof meta, typeof paramDef> {
+export default class extends Endpoint<typeof meta, typeof paramDef> {	// eslint-disable-line import/no-default-export
 	constructor(
-		@Inject(DI.contactFormsRepository)
-		private contactFormsRepository: ContactFormsRepository,
-
-		private idService: IdService,
 		private metaService: MetaService,
 		private contactFormService: ContactFormService,
 		private utilityService: UtilityService,
+		private captchaService: CaptchaService,
+		private emailService: EmailService,
 	) {
-		super(meta, paramDef, async (ps, me, accessToken, file, ip, headers) => {
+		super(meta, paramDef, async (ps, me, _accessToken, _file, _cleanup, ip, headers) => {
 			const instance = await this.metaService.fetch();
 
 			// コンタクトフォームが無効な場合
@@ -115,19 +109,103 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				throw new ApiError(meta.errors.authRequired);
 			}
 
+			// CAPTCHA検証（contactFormRequireCaptchaが有効でテスト環境でない場合）
+			if (instance.contactFormRequireCaptcha && process.env.NODE_ENV !== 'test') {
+				if (instance.enableHcaptcha && instance.hcaptchaSecretKey) {
+					await this.captchaService.verifyHcaptcha(instance.hcaptchaSecretKey, ps['hcaptcha-response']).catch(err => {
+						throw new ApiError(meta.errors.invalidReplyMethod);
+					});
+				}
+
+				if (instance.enableMcaptcha && instance.mcaptchaSecretKey && instance.mcaptchaSitekey && instance.mcaptchaInstanceUrl) {
+					await this.captchaService.verifyMcaptcha(instance.mcaptchaSecretKey, instance.mcaptchaSitekey, instance.mcaptchaInstanceUrl, ps['m-captcha-response']).catch(err => {
+						throw new ApiError(meta.errors.invalidReplyMethod);
+					});
+				}
+
+				if (instance.enableRecaptcha && instance.recaptchaSecretKey) {
+					await this.captchaService.verifyRecaptcha(instance.recaptchaSecretKey, ps['g-recaptcha-response']).catch(err => {
+						throw new ApiError(meta.errors.invalidReplyMethod);
+					});
+				}
+
+				if (instance.enableTurnstile && instance.turnstileSecretKey) {
+					await this.captchaService.verifyTurnstile(instance.turnstileSecretKey, ps['cf-turnstile-response']).catch(err => {
+						throw new ApiError(meta.errors.invalidReplyMethod);
+					});
+				}
+
+				if (instance.enableTestcaptcha) {
+					await this.captchaService.verifyTestcaptcha(ps['testcaptcha-response']).catch(err => {
+						throw new ApiError(meta.errors.invalidReplyMethod);
+					});
+				}
+			}
+
 			// バリデーション: replyMethodに応じた必須フィールドチェック
 			if (ps.replyMethod === 'email') {
 				if (!ps.email || ps.email.trim() === '') {
 					throw new ApiError(meta.errors.invalidReplyMethod);
 				}
-				// Email形式バリデーション
-				if (!this.utilityService.validateEmailFormat(ps.email.trim())) {
+
+				const email = ps.email.trim();
+
+				// 基本的なEmail形式バリデーション
+				if (!this.utilityService.validateEmailFormat(email)) {
 					throw new ApiError(meta.errors.invalidReplyMethod);
+				}
+
+				// Active Email Validationが有効な場合、詳細なメール検証を実行
+				if (instance.enableActiveEmailValidation) {
+					try {
+						const emailValidation = await this.emailService.validateEmailForAccount(email);
+						if (!emailValidation.available) {
+							// 使用済みエラーは除外（コンタクトフォームでは既存メールアドレスも許可）
+							if (emailValidation.reason !== 'used') {
+								throw new ApiError(meta.errors.invalidReplyMethod);
+							}
+						}
+					} catch (error) {
+						// 検証エラーが発生した場合もリジェクト
+						throw new ApiError(meta.errors.invalidReplyMethod);
+					}
 				}
 			} else if (ps.replyMethod === 'misskey') {
 				if (!ps.misskeyUsername || ps.misskeyUsername.trim() === '') {
 					throw new ApiError(meta.errors.invalidReplyMethod);
 				}
+
+				// 先頭の@を取り除く（あってもなくても可）
+				const misskeyUsername = ps.misskeyUsername.trim().replace(/^@/, '');
+
+				// username@domain 形式の検証
+				if (!misskeyUsername.includes('@')) {
+					throw new ApiError(meta.errors.invalidReplyMethod);
+				}
+
+				// @で分割して検証
+				const parts = misskeyUsername.split('@');
+				if (parts.length !== 2 || parts[0] === '' || parts[1] === '') {
+					throw new ApiError(meta.errors.invalidReplyMethod);
+				}
+
+				const [username, domain] = parts;
+
+				// ユーザー名の形式チェック（英数字、アンダースコア、ハイフンのみ）
+				if (!/^[a-zA-Z0-9_-]+$/.test(username)) {
+					throw new ApiError(meta.errors.invalidReplyMethod);
+				}
+
+				// ドメインの基本的な形式チェック
+				if (!/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(domain)) {
+					throw new ApiError(meta.errors.invalidReplyMethod);
+				}
+			}
+
+			// カテゴリの動的バリデーション
+			const category = ps.category || await this.contactFormService.getDefaultCategory();
+			if (!(await this.contactFormService.validateCategory(category))) {
+				throw new ApiError(meta.errors.invalidReplyMethod);
 			}
 
 			// IPアドレスとUser-Agentの取得
@@ -137,24 +215,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				: null;
 
 			// コンタクトフォーム作成
-			const contactForm = await this.contactFormsRepository.insertOne({
-				id: this.idService.gen(),
-				createdAt: new Date(),
-				subject: ps.subject.trim(),
-				content: ps.content.trim(),
+			const contactForm = await this.contactFormService.submit({
+				subject: ps.subject,
+				content: ps.content,
 				replyMethod: ps.replyMethod,
-				name: ps.name?.trim() || null,
-				email: ps.replyMethod === 'email' ? ps.email!.trim() : null,
-				misskeyUsername: ps.replyMethod === 'misskey' ? ps.misskeyUsername!.trim() : null,
-				category: ps.category ?? 'other',
-				status: 'pending',
+				name: ps.name || null,
+				email: ps.replyMethod === 'email' ? ps.email! : null,
+				misskeyUsername: ps.replyMethod === 'misskey' ? ps.misskeyUsername! : null,
+				category: ps.category,
 				ipAddress,
 				userAgent,
-				userId: me?.id ?? null,
+				userId: me ? me.id : null,
 			});
-
-			// Webhook通知とモデレーションログ記録
-			await this.contactFormService.notifyContactFormReceived(contactForm);
 
 			return {
 				id: contactForm.id,

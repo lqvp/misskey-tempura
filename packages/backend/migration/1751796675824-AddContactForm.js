@@ -8,7 +8,7 @@ export class AddContactForm1751796675824 {
 
 	async up(queryRunner) {
 		// contact_formテーブルの作成
-		await queryRunner.query(`CREATE TABLE "contact_form" ("id" character varying(32) NOT NULL, "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL, "updatedAt" TIMESTAMP WITH TIME ZONE, "subject" character varying(256) NOT NULL, "content" text NOT NULL, "replyMethod" character varying(32) NOT NULL, "name" character varying(256), "email" character varying(512), "misskeyUsername" character varying(128), "category" character varying(32) NOT NULL DEFAULT 'other', "status" character varying(32) NOT NULL DEFAULT 'pending', "adminNote" text, "ipAddress" character varying(45), "userAgent" character varying(512), "userId" character varying(32), "assignedUserId" character varying(32), CONSTRAINT "PK_contact_form" PRIMARY KEY ("id"))`);
+		await queryRunner.query(`CREATE TABLE "contact_form" ("id" character varying(32) NOT NULL, "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL, "updatedAt" TIMESTAMP WITH TIME ZONE, "subject" character varying(256) NOT NULL, "content" text NOT NULL, "replyMethod" character varying(32) NOT NULL, "name" character varying(256), "email" character varying(512), "misskeyUsername" character varying(128), "category" character varying(32) NOT NULL DEFAULT 'other', "status" character varying(32) NOT NULL DEFAULT 'pending', "adminNote" text, "ipAddress" character varying(45), "userAgent" character varying(512), "userId" character varying(32), "assignedUserId" character varying(32), "assignedNickname" character varying(128), CONSTRAINT "PK_contact_form" PRIMARY KEY ("id"))`);
 
 		// インデックスの作成
 		await queryRunner.query(`CREATE INDEX "IDX_contact_form_createdAt" ON "contact_form" ("createdAt")`);
@@ -27,6 +27,17 @@ export class AddContactForm1751796675824 {
 		await queryRunner.query(`ALTER TABLE "meta" ADD "contactFormLimit" integer NOT NULL DEFAULT 3`);
 		await queryRunner.query(`ALTER TABLE "meta" ADD "contactFormRequireAuth" boolean NOT NULL DEFAULT false`);
 		await queryRunner.query(`ALTER TABLE "meta" ADD "contactFormRequireCaptcha" boolean NOT NULL DEFAULT true`);
+
+		// ContactFormカテゴリ設定を追加（動的管理用）
+		await queryRunner.query(`ALTER TABLE "meta" ADD "contactFormCategories" jsonb NOT NULL DEFAULT '[
+			{"key": "general", "text": "一般", "enabled": true, "order": 1, "isDefault": true},
+			{"key": "bug_report", "text": "バグ報告", "enabled": true, "order": 2, "isDefault": false},
+			{"key": "feature_request", "text": "機能要望", "enabled": true, "order": 3, "isDefault": false},
+			{"key": "account_issue", "text": "アカウント関連", "enabled": true, "order": 4, "isDefault": false},
+			{"key": "technical_issue", "text": "技術的な問題", "enabled": true, "order": 5, "isDefault": false},
+			{"key": "content_issue", "text": "コンテンツ関連", "enabled": true, "order": 6, "isDefault": false},
+			{"key": "other", "text": "その他", "enabled": true, "order": 7, "isDefault": false}
+		]'::jsonb`);
 	}
 
 	async down(queryRunner) {
@@ -35,6 +46,7 @@ export class AddContactForm1751796675824 {
 		await queryRunner.query(`ALTER TABLE "meta" DROP COLUMN "contactFormRequireAuth"`);
 		await queryRunner.query(`ALTER TABLE "meta" DROP COLUMN "contactFormLimit"`);
 		await queryRunner.query(`ALTER TABLE "meta" DROP COLUMN "enableContactForm"`);
+		await queryRunner.query(`ALTER TABLE "meta" DROP COLUMN "contactFormCategories"`);
 
 		// 外部キー制約の削除
 		await queryRunner.query(`ALTER TABLE "contact_form" DROP CONSTRAINT "FK_contact_form_assignedUserId"`);

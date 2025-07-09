@@ -6,17 +6,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <MkFolder>
 	<template #icon>
-		<i v-if="contactForm.status === 'resolved'" class="ti ti-check" style="color: var(--MI_THEME-success)"></i>
-		<i v-else-if="contactForm.status === 'closed'" class="ti ti-x" style="color: var(--MI_THEME-error)"></i>
-		<i v-else-if="contactForm.status === 'in_progress'" class="ti ti-clock" style="color: var(--MI_THEME-accent)"></i>
-		<i v-else class="ti ti-mail" style="color: var(--MI_THEME-warn)"></i>
+		<i v-if="contactForm.status === 'resolved'" class="ti ti-check" :class="$style.iconSuccess"></i>
+		<i v-else-if="contactForm.status === 'closed'" class="ti ti-x" :class="$style.iconError"></i>
+		<i v-else-if="contactForm.status === 'in_progress'" class="ti ti-clock" :class="$style.iconAccent"></i>
+		<i v-else class="ti ti-mail" :class="$style.iconWarn"></i>
 	</template>
 	<template #label>{{ contactForm.subject }}</template>
 	<template #caption>{{ getCategoryText(contactForm.category) }} | {{ getReplyMethodText(contactForm.replyMethod) }}</template>
 	<template #suffix><MkTime :time="contactForm.createdAt"/></template>
 	<template #footer>
 		<div class="_buttons">
-			<MkSelect v-model="currentStatus" style="margin: 0; flex: 1;">
+			<MkSelect v-model="currentStatus" :class="$style.statusSelect">
 				<template #label>{{ i18n.ts._contactForm.updateStatus }}</template>
 				<option value="pending">{{ i18n.ts._contactForm.pending }}</option>
 				<option value="in_progress">{{ i18n.ts._contactForm.inProgress }}</option>
@@ -25,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkSelect>
 			<MkButton primary @click="updateStatus"><i class="ti ti-check"></i> {{ i18n.ts.update }}</MkButton>
 			<MkButton @click="deleteForm"><i class="ti ti-trash"></i> {{ i18n.ts.delete }}</MkButton>
-			<button class="_button" style="margin-left: auto; width: 34px;" @click="showMenu"><i class="ti ti-dots"></i></button>
+			<button class="_button" :class="$style.menuButton" @click="showMenu"><i class="ti ti-dots"></i></button>
 		</div>
 	</template>
 
@@ -52,7 +52,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkKeyValue>
 				<MkKeyValue v-if="contactForm.replyMethod === 'misskey'">
 					<template #key>{{ i18n.ts._contactForm.misskeyUsername }}</template>
-					<template #value>@{{ contactForm.misskeyUsername }}</template>
+					<template #value><Mfm :text="`@${contactForm.misskeyUsername}`" :linkNavigationBehavior="'window'"/></template>
 				</MkKeyValue>
 				<MkKeyValue v-if="contactForm.user">
 					<template #key>{{ i18n.ts.registeredUser }}</template>
@@ -62,17 +62,24 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #key>{{ i18n.ts._contactForm.ipAddress }}</template>
 					<template #value>{{ contactForm.ipAddress }}</template>
 				</MkKeyValue>
+				<MkKeyValue v-if="contactForm.userAgent">
+					<template #key>{{ i18n.ts._contactForm.userAgent }}</template>
+					<template #value><span :title="contactForm.userAgent">{{ truncateUserAgent(contactForm.userAgent) }}</span></template>
+				</MkKeyValue>
 			</div>
 		</MkFolder>
 
 		<MkFolder :defaultOpen="false">
 			<template #icon><i class="ti ti-note"></i></template>
 			<template #label>{{ i18n.ts._contactForm.adminNote }}</template>
-			<template #suffix>{{ adminNote.length > 0 ? '...' : i18n.ts.none }}</template>
+			<template #suffix>{{ getAdminNotePreview() }} <span v-if="adminNoteChanged" :class="$style.changedMark">*</span></template>
 			<div class="_gaps_s">
-				<MkTextarea v-model="adminNote" manualSave>
+				<MkTextarea v-model="adminNote">
 					<template #caption>{{ i18n.ts.moderationNoteDescription }}</template>
 				</MkTextarea>
+				<MkButton v-if="adminNoteChanged" primary @click="saveAdminNote">
+					<i class="ti ti-device-floppy"></i> {{ i18n.ts.save }}
+				</MkButton>
 			</div>
 		</MkFolder>
 
@@ -80,23 +87,28 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<template #icon><i class="ti ti-user-check"></i></template>
 			<template #label>{{ i18n.ts._contactForm.assign }}</template>
 			<div class="_gaps_s">
-				<MkInput v-model="assignedUsername" type="text" :spellcheck="false" :placeholder="'@username'">
+				<MkInput v-model="assignedUsername" type="text" :spellcheck="false" :placeholder="i18n.ts._contactForm.placeholderAssignedUser">
 					<template #label>{{ i18n.ts._contactForm.assignedUser }}</template>
 				</MkInput>
 				<MkButton primary @click="assignUser"><i class="ti ti-check"></i> {{ i18n.ts._contactForm.assign }}</MkButton>
 			</div>
 		</MkFolder>
 
-		<div v-if="contactForm.assignedUser">
+		<div v-if="contactForm.assignedUser || contactForm.assignedNickname" :class="$style.assignedUserDisplay">
 			{{ i18n.ts._contactForm.assignedUser }}:
-			<MkAcct :user="contactForm.assignedUser"/>
+			<span v-if="contactForm.assignedUser" :class="$style.assignedUserMention">
+				<Mfm :text="`@${contactForm.assignedUser.username}${contactForm.assignedUser.host ? '@' + contactForm.assignedUser.host : ''}`" :linkNavigationBehavior="'window'"/>
+			</span>
+			<span v-else-if="contactForm.assignedNickname" :class="$style.assignedNickname">
+				{{ contactForm.assignedNickname }}
+			</span>
 		</div>
 	</div>
 </MkFolder>
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from 'vue';
+import { ref, computed } from 'vue';
 import MkButton from '@/components/MkButton.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkInput from '@/components/MkInput.vue';
@@ -107,6 +119,7 @@ import MkFolder from '@/components/MkFolder.vue';
 import MkTextarea from '@/components/MkTextarea.vue';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
+import { useContactFormCategories } from '@/composables/useContactFormCategories.js';
 
 const props = defineProps<{
 	contactForm: any; // TODO: 適切な型定義
@@ -116,20 +129,37 @@ const emit = defineEmits<{
 	(ev: 'updated', contactFormId: string): void;
 }>();
 
+// Dynamic category management
+const { getCategoryLabel } = useContactFormCategories();
+
 const currentStatus = ref(props.contactForm.status);
 const adminNote = ref(props.contactForm.adminNote ?? '');
 const assignedUsername = ref('');
 
-watch(adminNote, async () => {
-	if (adminNote.value !== props.contactForm.adminNote) {
-		misskeyApi('admin/contact-form/update', {
+const adminNoteChanged = computed(() => {
+	// null/undefined/空文字を全て空文字として正規化して比較
+	const normalizeValue = (val: string | null | undefined): string => val ?? '';
+	return normalizeValue(adminNote.value) !== normalizeValue(props.contactForm.adminNote);
+});
+
+async function saveAdminNote() {
+	if (!adminNoteChanged.value) return;
+
+	try {
+		await misskeyApi('admin/contact-form/update', {
 			contactFormId: props.contactForm.id,
 			adminNote: adminNote.value,
-		}).then(() => {
-			emit('updated', props.contactForm.id);
+		});
+		emit('updated', props.contactForm.id);
+		os.toast(i18n.ts.saved);
+	} catch (error) {
+		console.error('Failed to save admin note:', error);
+		os.alert({
+			type: 'error',
+			text: i18n.ts.somethingHappened,
 		});
 	}
-});
+}
 
 function updateStatus() {
 	misskeyApi('admin/contact-form/update', {
@@ -144,35 +174,63 @@ async function assignUser() {
 	if (!assignedUsername.value) return;
 
 	try {
-		// @を取り除く
-		const username = assignedUsername.value.replace(/^@/, '');
+		const input = assignedUsername.value.trim();
 
-		// ユーザー名からユーザーIDを解決
-		const users = await misskeyApi('users/search-by-username-and-host', {
-			username: username,
-			host: null, // ローカルユーザーのみ
-			limit: 1,
-		});
+		if (input.startsWith('@')) {
+			// Misskeyユーザー直接指定
+			const cleanInput = input.replace(/^@/, '');
 
-		if (users.length === 0) {
-			os.alert({
-				type: 'error',
-				text: i18n.ts.noSuchUser,
+			// ユーザー名とホストを解析
+			let username: string;
+			let host: string | null;
+
+			if (cleanInput.includes('@')) {
+				// リモートユーザー: user@host.example.com
+				const parts = cleanInput.split('@');
+				username = parts[0];
+				host = parts[1];
+			} else {
+				// ローカルユーザー: username
+				username = cleanInput;
+				host = null;
+			}
+
+			// 直接ユーザーを取得（検索ではなく）
+			const user = await misskeyApi('users/show', {
+				username: username,
+				host: host,
 			});
-			return;
+
+			await misskeyApi('admin/contact-form/update', {
+				contactFormId: props.contactForm.id,
+				assignedUserId: user.id,
+				assignedNickname: null, // ユーザー割り当て時はニックネームをクリア
+			});
+		} else {
+			// ニックネーム割り当て
+			await misskeyApi('admin/contact-form/update', {
+				contactFormId: props.contactForm.id,
+				assignedUserId: null, // ニックネーム割り当て時はユーザーをクリア
+				assignedNickname: input,
+			});
 		}
-
-		const userId = users[0].id;
-
-		await misskeyApi('admin/contact-form/update', {
-			contactFormId: props.contactForm.id,
-			assignedUserId: userId,
-		});
 
 		assignedUsername.value = '';
 		emit('updated', props.contactForm.id);
 	} catch (error) {
 		console.error('Failed to assign user:', error);
+
+		// より具体的なエラーメッセージ
+		if (error && typeof error === 'object' && 'code' in error) {
+			if (error.code === 'NO_SUCH_USER') {
+				os.alert({
+					type: 'error',
+					text: i18n.ts.noSuchUser,
+				});
+				return;
+			}
+		}
+
 		os.alert({
 			type: 'error',
 			text: i18n.ts.somethingHappened,
@@ -196,19 +254,33 @@ function deleteForm() {
 }
 
 function getCategoryText(category: string): string {
-	const categoryMap = {
-		bug_report: i18n.ts._contactForm.bugReport,
-		feature_request: i18n.ts._contactForm.featureRequest,
-		account_issue: i18n.ts._contactForm.accountIssue,
-		technical_issue: i18n.ts._contactForm.technicalIssue,
-		content_issue: i18n.ts._contactForm.contentIssue,
-		other: i18n.ts._contactForm.other,
-	};
-	return categoryMap[category] || category;
+	return getCategoryLabel(category);
 }
 
 function getReplyMethodText(replyMethod: string): string {
 	return replyMethod === 'email' ? i18n.ts._contactForm.replyByEmail : i18n.ts._contactForm.replyByMisskey;
+}
+
+function getAdminNotePreview(): string {
+	if (!adminNote.value || adminNote.value.trim() === '') {
+		return i18n.ts.none;
+	}
+
+	// 最初の行のみを取得（改行で分割）
+	const firstLine = adminNote.value.split('\n')[0].trim();
+
+	// 30文字以内の場合はそのまま表示
+	if (firstLine.length <= 30) {
+		return firstLine;
+	}
+
+	// 30文字を超える場合は省略
+	return firstLine.substring(0, 27) + '...';
+}
+
+function truncateUserAgent(userAgent: string): string {
+	if (userAgent.length <= 80) return userAgent;
+	return userAgent.substring(0, 77) + '...';
 }
 
 function showMenu(ev: MouseEvent) {
@@ -229,4 +301,52 @@ function showMenu(ev: MouseEvent) {
 </script>
 
 <style lang="scss" module>
+// Status icons
+.iconSuccess {
+	color: var(--MI_THEME-success);
+}
+
+.iconError {
+	color: var(--MI_THEME-error);
+}
+
+.iconAccent {
+	color: var(--MI_THEME-accent);
+}
+
+.iconWarn {
+	color: var(--MI_THEME-warn);
+}
+
+// Form controls
+.statusSelect {
+	margin: 0;
+	flex: 1;
+}
+
+.menuButton {
+	margin-left: auto;
+	width: 34px;
+}
+
+// UI indicators
+.changedMark {
+	color: var(--MI_THEME-warn);
+	font-weight: bold;
+}
+
+// Assigned user display
+.assignedUserDisplay {
+	margin-top: 8px;
+}
+
+.assignedUserMention {
+	margin-left: 8px;
+	opacity: 0.8;
+}
+
+.assignedNickname {
+	margin-left: 8px;
+	font-weight: 500;
+}
 </style>

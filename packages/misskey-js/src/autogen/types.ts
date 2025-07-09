@@ -1737,7 +1737,7 @@ export type paths = {
          * contact-form/submit
          * @description No description provided.
          *
-         *     **Credential required**: *No* / **Permission**: *write:contact*
+         *     **Credential required**: *No*
          */
         post: operations['contact-form___submit'];
     };
@@ -5913,6 +5913,11 @@ export type components = {
             customCursorTextUrl: string | null;
             customCursorProgressUrl: string | null;
             customCursorWaitUrl: string | null;
+            enableContactForm: boolean;
+            contactFormLimit: number;
+            contactFormRequireAuth: boolean;
+            contactFormRequireCaptcha: boolean;
+            contactFormCategories: unknown[];
         };
         MetaDetailedOnly: {
             features?: {
@@ -6067,8 +6072,7 @@ export type components = {
             misskeyUsername: string | null;
             /** @enum {string} */
             replyMethod: 'email' | 'misskey';
-            /** @enum {string} */
-            category: 'bug_report' | 'feature_request' | 'account_issue' | 'technical_issue' | 'content_issue' | 'other';
+            category: string;
             /** @enum {string} */
             status: 'pending' | 'in_progress' | 'resolved' | 'closed';
             adminNote: string | null;
@@ -6076,6 +6080,7 @@ export type components = {
             userAgent: string | null;
             user: components['schemas']['UserLite'] | null;
             assignedUser: components['schemas']['UserLite'] | null;
+            assignedNickname: string | null;
         };
     };
     responses: never;
@@ -7932,8 +7937,7 @@ export interface operations {
                     offset?: number;
                     /** @enum {string|null} */
                     status?: 'pending' | 'in_progress' | 'resolved' | 'closed' | null;
-                    /** @enum {string|null} */
-                    category?: 'bug_report' | 'feature_request' | 'account_issue' | 'technical_issue' | 'content_issue' | 'other' | null;
+                    category?: string | null;
                     /** Format: misskey:id */
                     assignedUserId?: string | null;
                 };
@@ -7960,14 +7964,14 @@ export interface operations {
                         misskeyUsername: string | null;
                         /** @enum {string} */
                         replyMethod: 'email' | 'misskey';
-                        /** @enum {string} */
-                        category: 'bug_report' | 'feature_request' | 'account_issue' | 'technical_issue' | 'content_issue' | 'other';
+                        category: string;
                         /** @enum {string} */
                         status: 'pending' | 'in_progress' | 'resolved' | 'closed';
                         adminNote: string | null;
                         ipAddress: string | null;
                         user: components['schemas']['UserLite'] | null;
                         assignedUser: components['schemas']['UserLite'] | null;
+                        assignedNickname: string | null;
                     }[];
                 };
             };
@@ -8048,8 +8052,7 @@ export interface operations {
                         misskeyUsername: string | null;
                         /** @enum {string} */
                         replyMethod: 'email' | 'misskey';
-                        /** @enum {string} */
-                        category: 'bug_report' | 'feature_request' | 'account_issue' | 'technical_issue' | 'content_issue' | 'other';
+                        category: string;
                         /** @enum {string} */
                         status: 'pending' | 'in_progress' | 'resolved' | 'closed';
                         adminNote: string | null;
@@ -8057,6 +8060,7 @@ export interface operations {
                         userAgent: string | null;
                         user: components['schemas']['UserLite'] | null;
                         assignedUser: components['schemas']['UserLite'] | null;
+                        assignedNickname: string | null;
                     };
                 };
             };
@@ -8118,6 +8122,7 @@ export interface operations {
                     adminNote?: string | null;
                     /** Format: misskey:id */
                     assignedUserId?: string | null;
+                    assignedNickname?: string | null;
                 };
             };
         };
@@ -10486,6 +10491,13 @@ export interface operations {
                         contactFormLimit: number;
                         contactFormRequireAuth: boolean;
                         contactFormRequireCaptcha: boolean;
+                        contactFormCategories: {
+                            key: string;
+                            text: string;
+                            enabled: boolean;
+                            order: number;
+                            isDefault: boolean;
+                        }[];
                         deliverSuspendedSoftware: {
                             software: string;
                             versionRange: string;
@@ -13950,6 +13962,13 @@ export interface operations {
                     contactFormLimit?: number;
                     contactFormRequireAuth?: boolean;
                     contactFormRequireCaptcha?: boolean;
+                    contactFormCategories?: {
+                        key: string;
+                        text: string;
+                        enabled: boolean;
+                        order: number;
+                        isDefault: boolean;
+                    }[];
                 };
             };
         };
@@ -20047,11 +20066,8 @@ export interface operations {
                     email?: string | null;
                     misskeyUsername?: string | null;
                     name?: string | null;
-                    /**
-                     * @default other
-                     * @enum {string}
-                     */
-                    category?: 'bug_report' | 'feature_request' | 'account_issue' | 'technical_issue' | 'content_issue' | 'other';
+                    /** @default other */
+                    category?: string;
                     'hcaptcha-response'?: string | null;
                     'g-recaptcha-response'?: string | null;
                     'cf-turnstile-response'?: string | null;

@@ -44,6 +44,7 @@ export class ContactFormEntityService {
 			userAgent: contactForm.userAgent,
 			user: contactForm.user ? await this.userEntityService.pack(contactForm.user, undefined, { schema: 'UserLite' }) : null,
 			assignedUser: contactForm.assignedUser ? await this.userEntityService.pack(contactForm.assignedUser, undefined, { schema: 'UserLite' }) : null,
+			assignedNickname: contactForm.assignedNickname,
 		};
 	}
 
