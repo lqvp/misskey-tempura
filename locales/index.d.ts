@@ -14843,7 +14843,7 @@ export interface Locale extends ILocale {
          */
         "contactFormRequireAuth": string;
         /**
-         * お問い合わせ
+         * お問い合わせフォーム
          */
         "contactUs": string;
         /**
@@ -15052,6 +15052,10 @@ export interface Locale extends ILocale {
          * お問い合わせがありません
          */
         "noContacts": string;
+        /**
+         * お問い合わせフォームはこちら
+         */
+        "contactForm": string;
     };
 }
 declare const locales: {

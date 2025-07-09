@@ -4012,7 +4012,7 @@ _contactForm:
   contactFormLimit: "送信制限（1時間あたり）"
   contactFormLimitDescription: "同一IPアドレスからの1時間あたりの送信回数制限"
   contactFormRequireAuth: "ログイン必須"
-  contactUs: "お問い合わせ"
+  contactUs: "お問い合わせフォーム"
   contactDescription: "ご不明な点やお困りのことがございましたら、お気軽にお問い合わせください。"
   category: "カテゴリ"
   subject: "件名"
@@ -4064,3 +4064,4 @@ _contactForm:
   contactFormDisabled: "お問い合わせフォームは無効です"
   contactFormDisabledDescription: "このインスタンスではお問い合わせフォームが無効になっています。\n別の方法でお問い合わせをお願いします。"
   noContacts: "お問い合わせがありません"
+  contactForm: "お問い合わせフォームはこちら"
