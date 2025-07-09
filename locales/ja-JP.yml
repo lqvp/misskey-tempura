@@ -3987,3 +3987,10 @@ customFxTwitterEmbedProvider: "カスタムFxTwitterプロバイダー"
 defaultFxTwitterEmbedProviderOptions:
   fxtwitter: "fxtwitter.com"
   custom: "カスタム"
+
+widgetDrawerDirection: "ウィジェット表示方向"
+widgetDrawerDirectionDescription: "モバイルでのウィジェットの表示方向を設定します。"
+_widgetDrawerDirection:
+  left: "左から表示"
+  right: "右から表示"
+

@@ -705,4 +705,7 @@ export const PREF_DEF = definePreferences({
 	defaultFxTwitterEmbedProvider: {
 		default: 'fxtwitter.com' as string | null,
 	},
+	widgetDrawerDirection: {
+		default: 'left' as 'left' | 'right',
+	},
 });

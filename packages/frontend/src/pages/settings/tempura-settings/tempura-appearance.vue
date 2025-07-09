@@ -19,6 +19,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkPreferenceContainer>
 			</SearchMarker>
 
+			<SearchMarker :keywords="['widget', 'drawer', 'direction', 'mobile']">
+				<MkPreferenceContainer k="widgetDrawerDirection">
+					<MkRadios v-model="widgetDrawerDirection">
+						<template #label><SearchLabel>{{ i18n.ts.widgetDrawerDirection }}</SearchLabel></template>
+						<template #description>{{ i18n.ts.widgetDrawerDirectionDescription }}</template>
+						<option value="left"><i class="ti ti-arrow-left"></i> {{ i18n.ts._widgetDrawerDirection.left }}</option>
+						<option value="right"><i class="ti ti-arrow-right"></i> {{ i18n.ts._widgetDrawerDirection.right }}</option>
+					</MkRadios>
+				</MkPreferenceContainer>
+			</SearchMarker>
+
 			<SearchMarker :keywords="['twitter', 'embed', 'provider']">
 				<MkPreferenceContainer k="defaultFxTwitterEmbedProvider">
 					<MkSelect v-model="twitterEmbedMode">
@@ -105,6 +116,7 @@ import { fontList } from '@/utility/font';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 import MkColorInput from '@/components/MkColorInput.vue';
 import MkButton from '@/components/MkButton.vue';
+import MkRadios from '@/components/MkRadios.vue';
 
 const customFont = prefer.model('customFont');
 const defaultFxTwitterEmbedProvider = prefer.model('defaultFxTwitterEmbedProvider');
@@ -126,6 +138,9 @@ const twitterEmbedMode = computed({
 		}
 	},
 });
+
+// Widget drawer direction
+const widgetDrawerDirection = prefer.model('widgetDrawerDirection');
 
 // Note visibility coloring
 const useNoteVisibilityColoring = prefer.model('useNoteVisibilityColoring');

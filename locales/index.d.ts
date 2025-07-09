@@ -14769,6 +14769,24 @@ export interface Locale extends ILocale {
          */
         "custom": string;
     };
+    /**
+     * ウィジェット表示方向
+     */
+    "widgetDrawerDirection": string;
+    /**
+     * モバイルでのウィジェットの表示方向を設定します。
+     */
+    "widgetDrawerDirectionDescription": string;
+    "_widgetDrawerDirection": {
+        /**
+         * 左から表示
+         */
+        "left": string;
+        /**
+         * 右から表示
+         */
+        "right": string;
+    };
 }
 declare const locales: {
     [lang: string]: Locale;
