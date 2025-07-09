@@ -2302,7 +2302,7 @@ export type paths = {
          * get-avatar-decorations
          * @description No description provided.
          *
-         *     **Credential required**: *No* / **Permission**: *read:account*
+         *     **Credential required**: *No*
          */
         post: operations['get-avatar-decorations'];
     };
@@ -4712,7 +4712,7 @@ export type components = {
             reply?: components['schemas']['Note'] | null;
             renote?: components['schemas']['Note'] | null;
             /** @enum {string} */
-            visibility: 'public' | 'home' | 'followers' | 'specified';
+            visibility: 'public' | 'public_non_ltl' | 'home' | 'followers' | 'specified';
             visibleUserIds?: string[];
             fileIds?: string[];
             files?: components['schemas']['DriveFile'][];
@@ -5027,6 +5027,15 @@ export type components = {
             createdAt: string;
             /** @enum {string} */
             type: 'renote:grouped';
+            note: components['schemas']['Note'];
+            users: components['schemas']['UserLite'][];
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'note:grouped';
             note: components['schemas']['Note'];
             users: components['schemas']['UserLite'][];
         } | {
@@ -5721,9 +5730,9 @@ export type components = {
             description: string | null;
             langs: string[];
             tosUrl: string | null;
-            /** @default https://github.com/misskey-dev/misskey */
+            /** @default https://github.com/lqvp/misskey-tempura */
             repositoryUrl: string | null;
-            /** @default https://github.com/misskey-dev/misskey/issues/new */
+            /** @default https://github.com/lqvp/misskey-tempura/issues/new */
             feedbackUrl: string | null;
             defaultDarkTheme: string | null;
             defaultLightTheme: string | null;

@@ -8,16 +8,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div class="_spacer" style="--MI_SPACER-w: 900px;">
 		<div class="_gaps">
 			<div>
-					<div class="_gaps_m">
+				<div class="_gaps_m">
 					<MkInput v-model="host" :debounce="true" class="">
 						<template #prefix><i class="ti ti-search"></i></template>
 						<template #label>{{ i18n.ts.host }}</template>
 					</MkInput>
-						<MkInput v-model="softwareName" :debounce="true">
-							<template #prefix><i class="ti ti-search"></i></template>
-							<template #label>{{ i18n.ts.software }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-						</MkInput>
-					</div>
+					<MkInput v-model="softwareName" :debounce="true">
+						<template #prefix><i class="ti ti-search"></i></template>
+						<template #label>{{ i18n.ts.software }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+					</MkInput>
+				</div>
 				<FormSplit style="margin-top: var(--MI-margin);">
 					<MkSelect v-model="state">
 						<template #label>{{ i18n.ts.state }}</template>
@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<option value="suspended">{{ i18n.ts.suspended }}</option>
 						<option value="blocked">{{ i18n.ts.blocked }}</option>
 						<option value="silenced">{{ i18n.ts.silence }}</option>
-							<option value="quarantine">{{ i18n.ts.quarantine }}</option>
+						<option value="quarantine">{{ i18n.ts.quarantine }}</option>
 						<option value="notResponding">{{ i18n.ts.notResponding }}</option>
 					</MkSelect>
 					<MkSelect v-model="sort">
@@ -81,7 +81,7 @@ const paginator = markRaw(new Paginator('federation/instances', {
 	limit: 10,
 	offsetMode: true,
 	computedParams: computed(() => ({
-		sort: sort.value,
+		sort: sort.value as any,
 		host: host.value !== '' ? host.value : null,
 		softwareName: softwareName.value !== '' ? softwareName.value : null,
 		...(
@@ -110,7 +110,7 @@ function getStatus(instance: Misskey.entities.FederationInstance) {
 	}
 	if (instance.isBlocked) return 'Blocked';
 	if (instance.isSilenced) return 'Silenced';
-	if (instance.isQuarantined) return 'Quarantined';
+	if (instance.isQuarantineLimited) return 'Quarantined';
 	if (instance.isNotResponding) return 'Error';
 	return 'Alive';
 }

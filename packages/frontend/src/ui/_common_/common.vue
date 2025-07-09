@@ -46,12 +46,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 </Transition>
 
 <Transition
-	:enterActiveClass="prefer.s.animation ? $style.transition_widgetsDrawer_enterActive : ''"
-	:leaveActiveClass="prefer.s.animation ? $style.transition_widgetsDrawer_leaveActive : ''"
-	:enterFromClass="prefer.s.animation ? $style.transition_widgetsDrawer_enterFrom : ''"
-	:leaveToClass="prefer.s.animation ? $style.transition_widgetsDrawer_leaveTo : ''"
+	:enterActiveClass="prefer.s.animation ? (prefer.s.widgetDrawerDirection === 'right' ? $style.transition_widgetsDrawerRight_enterActive : $style.transition_widgetsDrawer_enterActive) : ''"
+	:leaveActiveClass="prefer.s.animation ? (prefer.s.widgetDrawerDirection === 'right' ? $style.transition_widgetsDrawerRight_leaveActive : $style.transition_widgetsDrawer_leaveActive) : ''"
+	:enterFromClass="prefer.s.animation ? (prefer.s.widgetDrawerDirection === 'right' ? $style.transition_widgetsDrawerRight_enterFrom : $style.transition_widgetsDrawer_enterFrom) : ''"
+	:leaveToClass="prefer.s.animation ? (prefer.s.widgetDrawerDirection === 'right' ? $style.transition_widgetsDrawerRight_leaveTo : $style.transition_widgetsDrawer_leaveTo) : ''"
 >
-	<div v-if="widgetsShowing" :class="$style.widgetsDrawer">
+	<div v-if="widgetsShowing" :class="prefer.s.widgetDrawerDirection === 'right' ? $style.widgetsDrawerRight : $style.widgetsDrawer">
 		<button class="_button" :class="$style.widgetsCloseButton" @click="widgetsShowing = false"><i class="ti ti-x"></i></button>
 		<XWidgets/>
 	</div>
@@ -202,6 +202,18 @@ if ($i) {
 	transform: translateX(-240px);
 }
 
+.transition_widgetsDrawerRight_enterActive,
+.transition_widgetsDrawerRight_leaveActive {
+	opacity: 1;
+	transform: translateX(0);
+	transition: transform 300ms cubic-bezier(0.23, 1, 0.32, 1), opacity 300ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.transition_widgetsDrawerRight_enterFrom,
+.transition_widgetsDrawerRight_leaveTo {
+	opacity: 0;
+	transform: translateX(240px);
+}
+
 .transition_notification_move,
 .transition_notification_enterActive,
 .transition_notification_leaveActive {
@@ -236,6 +248,20 @@ if ($i) {
 	position: fixed;
 	top: 0;
 	left: 0;
+	z-index: 1001;
+	width: 310px;
+	height: 100dvh;
+	padding: var(--MI-margin) var(--MI-margin) calc(var(--MI-margin) + env(safe-area-inset-bottom, 0px)) !important;
+	box-sizing: border-box;
+	overflow: auto;
+	overscroll-behavior: contain;
+	background: var(--MI_THEME-bg);
+}
+
+.widgetsDrawerRight {
+	position: fixed;
+	top: 0;
+	right: 0;
 	z-index: 1001;
 	width: 310px;
 	height: 100dvh;

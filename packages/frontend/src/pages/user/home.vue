@@ -23,9 +23,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<div class="fade"></div>
 							<div class="title">
 								<div class="name">
-								<MkUserName :user="user" :nowrap="true" @click="editNickname(props.user)"/>
+									<MkUserName :user="user" :nowrap="true" @click="editNickname(props.user)"/>
 								</div>
-							<div class="bottom">
+								<div class="bottom">
 									<span class="username"><MkAcct :user="user" :detail="true"/></span>
 									<span v-if="user.isAdmin" :title="i18n.ts.isAdmin" style="color: var(--MI_THEME-badge);"><i class="ti ti-shield"></i></span>
 									<span v-if="user.isLocked" :title="i18n.ts.isLocked"><i class="ti ti-lock"></i></span>
@@ -37,12 +37,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</div>
 							<span v-if="$i && $i.id != user.id && user.isFollowed" class="followed">{{ i18n.ts.followsYou }}</span>
 							<template v-if="$i || !user.requireSigninToViewContents">
-							<div class="actions">
+								<div class="actions">
 									<button class="menu _button" @click="menu"><i class="ti ti-dots"></i></button>
 									<MkFollowButton v-if="$i?.id != user.id" v-model:user="user" :inline="true" :transparent="false" :full="true" class="koudoku"/>
 								</div>
 							</template>
-					</div>
+						</div>
 						<MkAvatar class="avatar" :user="user" indicator/>
 						<div class="title">
 							<MkUserName :user="user" :nowrap="false" class="name" @click="editNickname(props.user)"/>
@@ -54,8 +54,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</div>
 						</div>
 
-					<template v-if="$i || !user.requireSigninToViewContents">
-						<div v-if="user.followedMessage != null" class="followedMessage">
+						<template v-if="$i || !user.requireSigninToViewContents">
+							<div v-if="user.followedMessage != null" class="followedMessage">
 								<MkFukidashi class="fukidashi" :tail="narrow ? 'none' : 'left'" negativeMargin>
 									<div class="messageHeader">{{ i18n.ts.messageToFollower }}</div>
 									<div><MkSparkle><Mfm :plain="true" :text="user.followedMessage" :author="user" class="_selectable"/></MkSparkle></div>
@@ -63,19 +63,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</div>
 							<MkFoldableSection v-if="user.roles.length > 0" class="role-folder" :expanded="user.roles.length < 5">
 								<template #header>{{ i18n.ts.roles }}</template>
-							<div class="roles">
-								<span v-for="role in user.roles" :key="role.id" v-tooltip="role.description" class="role" :class="{ 'rainbow': role.isRainbow }" :style="role.isRainbow ? {} : { '--color': role.color }">
-									<MkA v-adaptive-bg :to="`/roles/${role.id}`">
-										<img v-if="role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="role.iconUrl"/>
-										{{ role.name }}
-									</MkA>
-								</span>
-							</div>
-						</MkFoldableSection>
-						<MkFoldableSection v-if="user.communityRoles.length > 0" class="role-folder" :expanded="user.communityRoles.length < 5">
-							<template #header>{{ i18n.ts.community + " " + i18n.ts.roles }}</template>
-							<div class="roles">
-								<span v-for="role in user.communityRoles" :key="role.id" v-tooltip="role.description" class="role" :class="{ 'rainbow': role.isRainbow }" :style="role.isRainbow ? {} : { '--color': role.color }">
+								<div class="roles">
+									<span v-for="role in user.roles" :key="role.id" v-tooltip="role.description" class="role" :class="{ 'rainbow': role.isRainbow }" :style="role.isRainbow ? {} : { '--color': role.color }">
 										<MkA v-adaptive-bg :to="`/roles/${role.id}`">
 											<img v-if="role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="role.iconUrl"/>
 											{{ role.name }}
@@ -83,7 +72,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 									</span>
 								</div>
 							</MkFoldableSection>
-						<div v-if="iAmModerator" class="moderationNote">
+							<MkFoldableSection v-if="user.communityRoles.length > 0" class="role-folder" :expanded="user.communityRoles.length < 5">
+								<template #header>{{ i18n.ts.community + " " + i18n.ts.roles }}</template>
+								<div class="roles">
+									<span v-for="role in user.communityRoles" :key="role.id" v-tooltip="role.description" class="role" :class="{ 'rainbow': role.isRainbow }" :style="role.isRainbow ? {} : { '--color': role.color }">
+										<MkA v-adaptive-bg :to="`/roles/${role.id}`">
+											<img v-if="role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="role.iconUrl"/>
+											{{ role.name }}
+										</MkA>
+									</span>
+								</div>
+							</MkFoldableSection>
+							<div v-if="iAmModerator" class="moderationNote">
 								<MkTextarea v-if="editModerationNote || (moderationNote != null && moderationNote !== '')" v-model="moderationNote" manualSave>
 									<template #label>{{ i18n.ts.moderationNote }}</template>
 									<template #caption>{{ i18n.ts.moderationNoteDescription }}</template>
@@ -98,7 +98,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 									ref="memoTextareaEl"
 									v-model="memoDraft"
 									v-autosize
-								rows="1"
+									rows="1"
 									@focus="isEditingMemo = true"
 									@blur="updateMemo"
 									@input="adjustMemoTextarea"
@@ -109,10 +109,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<Mfm v-if="user.description" :text="user.description" :isNote="false" :author="user" class="_selectable"/>
 									<p v-else class="empty">{{ i18n.ts.noAccountDescription }}</p>
 									<div v-if="user.description && isForeignLanguage">
-									<MkButton v-if="!(translating || translation)" class="translateButton" small @click="translate"><i class="ti ti-language-hiragana"></i> {{ i18n.ts.translateProfile }}</MkButton>
-									<MkButton v-else class="translateButton" small @click="translation = null"><i class="ti ti-x"></i> {{ i18n.ts.close }}</MkButton>
-								</div>
-							</MkOmit>
+										<MkButton v-if="!(translating || translation)" class="translateButton" small @click="translate"><i class="ti ti-language-hiragana"></i> {{ i18n.ts.translateProfile }}</MkButton>
+										<MkButton v-else class="translateButton" small @click="translation = null"><i class="ti ti-x"></i> {{ i18n.ts.close }}</MkButton>
+									</div>
+								</MkOmit>
 							</div>
 							<div class="fields system">
 								<dl v-if="user.location" class="field">
@@ -153,63 +153,63 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<span>{{ i18n.ts.followers }}</span>
 								</MkA>
 							</div>
-					</template>
-					<div v-else class="_fullinfo">
-						<div style="font-size: 1.4rem; font-weight: bold; padding-bottom: 4px;">{{ i18n.ts.pleaseLogin }}</div>
-						<div style="opacity: 0.7">{{ i18n.ts.pleaseLoginToViewProfile }}</div>
-					</div>
+						</template>
+						<div v-else class="_fullinfo">
+							<div style="font-size: 1.4rem; font-weight: bold; padding-bottom: 4px;">{{ i18n.ts.pleaseLogin }}</div>
+							<div style="opacity: 0.7">{{ i18n.ts.pleaseLoginToViewProfile }}</div>
+						</div>
 					</div>
 				</div>
 
 				<div class="contents _gaps">
 					<div v-if="!user.requireSigninToViewContents || $i" class="contents _gaps">
-					<div v-if="user.pinnedNotes.length > 0 && !user.isBlocked" class="_gaps">
+						<div v-if="user.pinnedNotes.length > 0 && !user.isBlocked" class="_gaps">
 							<MkNote v-for="note in user.pinnedNotes" :key="note.id" class="note _panel" :note="note" :pinned="true"/>
 						</div>
 						<MkInfo v-else-if="$i && $i.id === user.id">{{ i18n.ts.userPagePinTip }}</MkInfo>
 						<div>
-						<template v-if="narrow && !user.isBlocked">
+							<template v-if="narrow && !user.isBlocked">
 								<MkLazy>
 									<XFiles :key="user.id" :user="user" @showMore="emit('showMoreFiles')"/>
 								</MkLazy>
 							</template>
-					</div>
-					<div>
-						<template v-if="narrow && !user.isBlocked">
-							<MkLazy>
+						</div>
+						<div>
+							<template v-if="narrow && !user.isBlocked">
+								<MkLazy>
 									<XActivity v-if="!user.hideActivity" :key="user.id" :user="user"/>
 								</MkLazy>
-						</template>
-					</div>
-					<template v-if="narrow && !user.isBlocked">
-						<MkLazy v-if="user.listenbrainz && listenbrainzdata">
-							<XListenBrainz :key="user.id" :user="user" :collapsed="true"/>
-						</MkLazy>
+							</template>
+						</div>
+						<template v-if="narrow && !user.isBlocked">
+							<MkLazy v-if="user.ListenBrainz && listenbrainzdata">
+								<XListenBrainz :key="user.id" :user="user" :collapsed="true"/>
+							</MkLazy>
 						</template>
 						<div v-if="!disableNotes && !user.isBlocked && !user.hideNoteFromOverview">
 							<MkLazy>
 								<XTimeline :user="user"/>
 							</MkLazy>
 						</div>
-					<div v-if="user.isBlocked" class="_fullinfo">
-						<MkResult type="blocked" :text="i18n.ts.youBlocked"/>
-						<div style="opacity: 0.7">{{ i18n.tsx.youBlockedDescription({ user: `@${ user.username }` }) }}</div>
+						<div v-if="user.isBlocked" class="_fullinfo">
+							<MkResult type="blocked" :text="i18n.ts.youBlocked"/>
+							<div style="opacity: 0.7">{{ i18n.tsx.youBlockedDescription({ user: `@${ user.username }` }) }}</div>
+						</div>
 					</div>
-				</div>
-				<div v-else class="_fullinfo">
-					<div style="font-size: 1.4rem; font-weight: bold; padding-bottom: 4px;">{{ i18n.ts.pleaseLogin }}</div>
-					<div style="opacity: 0.7">{{ i18n.ts.pleaseLoginToViewProfile }}</div>
-				</div>
+					<div v-else class="_fullinfo">
+						<div style="font-size: 1.4rem; font-weight: bold; padding-bottom: 4px;">{{ i18n.ts.pleaseLogin }}</div>
+						<div style="opacity: 0.7">{{ i18n.ts.pleaseLoginToViewProfile }}</div>
+					</div>
 				</div>
 			</div>
 			<template v-if="$i || !user.requireSigninToViewContents">
-			<div v-if="!narrow && !user.isBlocked" class="sub _gaps" style="container-type: inline-size;">
+				<div v-if="!narrow && !user.isBlocked" class="sub _gaps" style="container-type: inline-size;">
 					<XFiles :key="user.id" :user="user" @showMore="emit('showMoreFiles')"/>
 					<XActivity v-if="!user.hideActivity" :key="user.id" :user="user"/>
-				<XListenBrainz v-if="user.listenbrainz && listenbrainzdata" :key="user.id" :user="user"/>
+					<XListenBrainz v-if="user.ListenBrainz && listenbrainzdata" :key="user.id" :user="user"/>
 				</div>
 			</template>
-	</div>
+		</div>
 	</div>
 </component>
 </template>
@@ -291,10 +291,10 @@ const moderationNote = ref(props.user.moderationNote);
 const editModerationNote = ref(false);
 
 const listenbrainzdata = ref(false);
-if (props.user.listenbrainz) {
+if (props.user.ListenBrainz) {
 	(async function() {
 		try {
-			const response = await window.fetch(`https://api.listenbrainz.org/1/user/${props.user.listenbrainz}/playing-now`, {
+			const response = await window.fetch(`https://api.listenbrainz.org/1/user/${props.user.ListenBrainz!}/playing-now`, {
 				method: 'GET',
 				headers: {
 					'Content-Type': 'application/json',

@@ -110,6 +110,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { ref, onMounted, computed } from 'vue';
 import * as Misskey from 'misskey-js';
 import { i18n } from '@/i18n.js';
+import { prefer } from '@/preferences.js';
 import MkMediaList from '@/components/MkMediaList.vue';
 
 interface FxTweetAuthor {
@@ -200,7 +201,7 @@ const fetchTweetData = async () => {
 	fetching.value = true;
 	error.value = null;
 	try {
-		const response = await window.fetch(`https://api.fxtwitter.com/${props.screenName}/status/${props.tweetId}`);
+		const response = await window.fetch(`https://api.${prefer.s.defaultFxTwitterEmbedProvider}/${props.screenName}/status/${props.tweetId}`);
 		if (!response.ok) {
 			throw new Error(`HTTP error! status: ${response.status}`);
 		}

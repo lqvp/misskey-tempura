@@ -14748,6 +14748,46 @@ export interface Locale extends ILocale {
      */
     "noteVisibilityColoringDescription": string;
     /**
+     * デフォルトのFxTwitterプロバイダー
+     */
+    "defaultFxTwitterEmbedProvider": string;
+    /**
+     * デフォルトのFxTwitter埋め込みプロバイダーを設定します。
+     */
+    "defaultFxTwitterEmbedProviderDescription": string;
+    /**
+     * カスタムFxTwitterプロバイダー
+     */
+    "customFxTwitterEmbedProvider": string;
+    "defaultFxTwitterEmbedProviderOptions": {
+        /**
+         * fxtwitter.com
+         */
+        "fxtwitter": string;
+        /**
+         * カスタム
+         */
+        "custom": string;
+    };
+    /**
+     * ウィジェット表示方向
+     */
+    "widgetDrawerDirection": string;
+    /**
+     * モバイルでのウィジェットの表示方向を設定します。
+     */
+    "widgetDrawerDirectionDescription": string;
+    "_widgetDrawerDirection": {
+        /**
+         * 左から表示
+         */
+        "left": string;
+        /**
+         * 右から表示
+         */
+        "right": string;
+    };
+    /**
      * アップロードボタンの挙動
      */
     "chooseFileFrom": string;
