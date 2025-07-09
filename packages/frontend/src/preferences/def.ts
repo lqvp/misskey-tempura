@@ -708,4 +708,7 @@ export const PREF_DEF = definePreferences({
 	widgetDrawerDirection: {
 		default: 'left' as 'left' | 'right',
 	},
+	chooseFileFrom: {
+		default: 'new' as 'new' | 'old',
+	},
 });

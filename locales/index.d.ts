@@ -14787,6 +14787,24 @@ export interface Locale extends ILocale {
          */
         "right": string;
     };
+    /**
+     * アップロードボタンの挙動
+     */
+    "chooseFileFrom": string;
+    /**
+     * ファイルのアップロード時に使用するダイアログを選択します。「新しいファイル選択ダイアログ」はOS標準のものを、「旧ファイル選択ダイアログ」はMisskey独自のダイアログを使用します。
+     */
+    "chooseFileFromDescription": string;
+    "_chooseFileFrom": {
+        /**
+         * 新しいファイル選択ダイアログ
+         */
+        "new": string;
+        /**
+         * 旧ファイル選択ダイアログ
+         */
+        "old": string;
+    };
 }
 declare const locales: {
     [lang: string]: Locale;
