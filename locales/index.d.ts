@@ -15056,6 +15056,10 @@ export interface Locale extends ILocale {
          * お問い合わせフォームはこちら
          */
         "contactForm": string;
+        /**
+         * 登録済みユーザー
+         */
+        "registeredUser": string;
     };
 }
 declare const locales: {

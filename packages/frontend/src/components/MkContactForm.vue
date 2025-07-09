@@ -55,8 +55,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #value><Mfm :text="`@${contactForm.misskeyUsername}`" :linkNavigationBehavior="'window'"/></template>
 				</MkKeyValue>
 				<MkKeyValue v-if="contactForm.user">
-					<template #key>{{ i18n.ts.registeredUser }}</template>
-					<template #value><MkAcct :user="contactForm.user"/></template>
+					<template #key>{{ i18n.ts._contactForm.registeredUser }}</template>
+					<template #value><Mfm :text="`@${contactForm.user.username}${contactForm.user.host ? '@' + contactForm.user.host : ''}`" :linkNavigationBehavior="'window'"/></template>
 				</MkKeyValue>
 				<MkKeyValue v-if="contactForm.ipAddress">
 					<template #key>{{ i18n.ts._contactForm.ipAddress }}</template>

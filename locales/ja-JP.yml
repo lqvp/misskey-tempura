@@ -4065,3 +4065,4 @@ _contactForm:
   contactFormDisabledDescription: "このインスタンスではお問い合わせフォームが無効になっています。\n別の方法でお問い合わせをお願いします。"
   noContacts: "お問い合わせがありません"
   contactForm: "お問い合わせフォームはこちら"
+  registeredUser: "登録済みユーザー"
