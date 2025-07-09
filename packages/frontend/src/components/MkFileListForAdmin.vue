@@ -15,11 +15,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 				:class="[$style.file, '_button']"
 			>
 				<div v-if="file.isSensitive" :class="$style.sensitiveLabel">{{ i18n.ts.sensitive }}</div>
-				<div v-if="customEmojiUrls.includes(file.url)" class="label">
-				<img class="labelImg" src="/client-assets/label.svg"/>
-				<p class="labelText">{{ i18n.ts.emoji }}</p>
-			</div>
-			<MkDriveFileThumbnail :class="$style.thumbnail" :file="file" fit="contain" :highlightWhenSensitive="true"/>
+				<div v-if="customEmojiUrls.includes(file.url)" :class="$style.label">
+					<img :class="$style.labelImg" src="/client-assets/label.svg"/>
+					<p :class="$style.labelText">{{ i18n.ts.emoji }}</p>
+				</div>
+				<MkDriveFileThumbnail :class="$style.thumbnail" :file="file" fit="contain" :highlightWhenSensitive="true"/>
 				<div v-if="viewMode === 'list'" :class="$style.body">
 					<div>
 						<small style="opacity: 0.7;">{{ file.name }}</small>
@@ -127,50 +127,52 @@ defineProps<{
 	border-radius: 4px;
 	font-size: 85%;
 	animation: sensitive-blink 1s infinite;
+}
 
-	.label {
+.label {
+	position: absolute;
+	top: 0;
+	left: 0;
+	pointer-events: none;
+	&::before,
+	&::after {
+		content: "";
+		display: block;
 		position: absolute;
+		z-index: 1;
+		background: #0c7ac9;
+	}
+	&::before {
 		top: 0;
+		left: 57px;
+		width: 28px;
+		height: 8px;
+	}
+	&::after {
+		top: 57px;
 		left: 0;
-		pointer-events: none;
-		&::before,
-		&::after {
-			content: "";
-			display: block;
-			position: absolute;
-			z-index: 1;
-			background: #0c7ac9;
-		}
-		&::before {
-			top: 0;
-			left: 57px;
-			width: 28px;
-			height: 8px;
-		}
-		&::after {
-			top: 57px;
-			left: 0;
-			width: 8px;
-			height: 28px;
-		}
+		width: 8px;
+		height: 28px;
 	}
-	.labelImg {
-		position: absolute;
-		z-index: 2;
-		top: 0;
-		left: 0;
-	}
-	.labelText {
-		position: absolute;
-		z-index: 3;
-		top: 19px;
-		left: -28px;
-		width: 120px;
-		margin: 0;
-		text-align: center;
-		line-height: 28px;
-		color: #fff;
-		transform: rotate(-45deg);
-	}
+}
+
+.labelImg {
+	position: absolute;
+	z-index: 2;
+	top: 0;
+	left: 0;
+}
+
+.labelText {
+	position: absolute;
+	z-index: 3;
+	top: 19px;
+	left: -28px;
+	width: 120px;
+	margin: 0;
+	text-align: center;
+	line-height: 28px;
+	color: #fff;
+	transform: rotate(-45deg);
 }
 </style>

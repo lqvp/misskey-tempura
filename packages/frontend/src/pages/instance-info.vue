@@ -125,7 +125,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkPagination>
 		</div>
 		<div v-else-if="tab === 'following'" key="following" class="_gaps_m">
-			<MkPagination v-slot="{items}" :pagination="followingPagination">
+			<MkPagination v-slot="{items}" :paginator="followingPaginator">
 				<div class="follow-relations-list">
 					<div v-for="followRelationship in items" :key="followRelationship.id" class="follow-relation">
 						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.followee.updatedAt)}`" :to="`/admin/user/${followRelationship.followee.id}`" class="user">
@@ -140,7 +140,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkPagination>
 		</div>
 		<div v-else-if="tab === 'followers'" key="followers" class="_gaps_m">
-			<MkPagination v-slot="{items}" :pagination="followersPagination">
+			<MkPagination v-slot="{items}" :paginator="followersPaginator">
 				<div class="follow-relations-list">
 					<div v-for="followRelationship in items" :key="followRelationship.id" class="follow-relation">
 						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.followee.updatedAt)}`" :to="`/admin/user/${followRelationship.followee.id}`" class="user">
@@ -223,25 +223,23 @@ const usersPaginator = iAmModerator ? markRaw(new Paginator('admin/show-users', 
 	offsetMode: true,
 }));
 
-const followingPagination = {
-	endpoint: 'federation/following' as const,
+const followingPaginator = markRaw(new Paginator('federation/following', {
 	limit: 10,
 	params: {
 		host: props.host,
 		includeFollower: true,
 	},
 	offsetMode: false,
-};
+}));
 
-const followersPagination = {
-	endpoint: 'federation/followers' as const,
+const followersPaginator = markRaw(new Paginator('federation/followers', {
 	limit: 10,
 	params: {
 		host: props.host,
 		includeFollower: true,
 	},
 	offsetMode: false,
-};
+}));
 
 if (iAmModerator) {
 	watch(moderationNote, async () => {

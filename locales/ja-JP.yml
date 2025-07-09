@@ -3981,6 +3981,27 @@ _outboxFilter:
 noteVisibilityColoring: "ノートの公開範囲に応じた色分け"
 noteVisibilityColoringDescription: "ノートの公開範囲に応じて、色付き表示を行います。\nノートの公開範囲をより視覚的に区別することができます。"
 
+defaultFxTwitterEmbedProvider: "デフォルトのFxTwitterプロバイダー"
+defaultFxTwitterEmbedProviderDescription: "デフォルトのFxTwitter埋め込みプロバイダーを設定します。"
+customFxTwitterEmbedProvider: "カスタムFxTwitterプロバイダー"
+defaultFxTwitterEmbedProviderOptions:
+  fxtwitter: "fxtwitter.com"
+  custom: "カスタム"
+
+widgetDrawerDirection: "ウィジェット表示方向"
+widgetDrawerDirectionDescription: "モバイルでのウィジェットの表示方向を設定します。"
+_widgetDrawerDirection:
+  left: "左から表示"
+  right: "右から表示"
+
+
+chooseFileFrom: "アップロードボタンの挙動"
+chooseFileFromDescription: "ファイルのアップロード時に使用するダイアログを選択します。「新しいファイル選択ダイアログ」はOS標準のものを、「旧ファイル選択ダイアログ」はMisskey独自のダイアログを使用します。"
+_chooseFileFrom:
+  new: "新しいファイル選択ダイアログ"
+  old: "旧ファイル選択ダイアログ"
+
+
 _deliveryTargetControl:
   deliveryTargetControl: "配送先制御"
   deliveryTargetInclude: "選択したサーバーのみに配送"

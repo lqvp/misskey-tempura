@@ -702,4 +702,13 @@ export const PREF_DEF = definePreferences({
 	noteVisibilityColorLocalOnly: {
 		default: '#B93E43',
 	},
+	defaultFxTwitterEmbedProvider: {
+		default: 'fxtwitter.com' as string | null,
+	},
+	widgetDrawerDirection: {
+		default: 'left' as 'left' | 'right',
+	},
+	chooseFileFrom: {
+		default: 'new' as 'new' | 'old',
+	},
 });

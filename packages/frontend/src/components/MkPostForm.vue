@@ -135,7 +135,7 @@ import { formatTimeString } from '@/utility/format-time-string.js';
 import { Autocomplete } from '@/utility/autocomplete.js';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
-import { chooseDriveFile } from '@/utility/drive.js';
+import { selectFile, chooseDriveFile } from '@/utility/drive.js';
 import { store } from '@/store.js';
 import MkInfo from '@/components/MkInfo.vue';
 import { i18n } from '@/i18n.js';
@@ -315,10 +315,7 @@ const canPost = computed((): boolean => {
 		(textLength.value <= maxTextLength.value) &&
 		(
 			useCw.value ?
-				(
-					cw.value != null && cw.value.trim() !== '' &&
-					cwTextLength.value <= maxCwTextLength
-				) : true
+				cwTextLength.value <= maxCwTextLength : true
 		) &&
 		(files.value.length <= 16) &&
 		(!poll.value || poll.value.choices.length >= 2);
@@ -339,7 +336,7 @@ const bottomItemActionDef: Record<keyof typeof bottomItemDef, {
 	action?: any;
 }> = reactive({
 	attachFileUpload: {
-		action: chooseFileFromPc,
+		action: postFormFileUpload,
 	},
 	attachFileFromDrive: {
 		action: chooseFileFromDrive,
@@ -512,6 +509,7 @@ function watchForDraft() {
 	watch(cw, () => saveDraft());
 	watch(poll, () => saveDraft());
 	watch(scheduledNoteDelete, () => saveDraft());
+	watch(scheduleNote, () => saveDraft());
 	watch(files, () => saveDraft(), { deep: true });
 	watch(visibility, () => saveDraft());
 	watch(localOnly, () => saveDraft());
@@ -591,6 +589,27 @@ function focus() {
 		textareaEl.value.focus();
 		textareaEl.value.setSelectionRange(textareaEl.value.value.length, textareaEl.value.value.length);
 	}
+}
+
+function postFormFileUpload(ev: MouseEvent) {
+	if (prefer.s.chooseFileFrom === 'new') {
+		chooseFileFromPc(ev);
+	} else {
+		chooseFileFrom(ev);
+	}
+}
+
+function chooseFileFrom(ev: MouseEvent) {
+	if (props.mock) return;
+
+	selectFile({
+		anchorElement: ev.currentTarget ?? ev.target,
+		multiple: true,
+		label: i18n.ts.attachFile,
+	}).then(files_ => {
+		if (files_.length === 0) return;
+		files.value.push(...files_);
+	});
 }
 
 function chooseFileFromPc(ev: MouseEvent) {
@@ -935,6 +954,8 @@ function saveDraft() {
 			localOnly: localOnly.value,
 			files: files.value,
 			poll: poll.value,
+			scheduledNoteDelete: scheduledNoteDelete.value,
+			scheduleNote: scheduleNote.value,
 			...( visibleUsers.value.length > 0 ? { visibleUserIds: visibleUsers.value.map(x => x.id) } : {}),
 			quoteId: quoteId.value,
 			reactionAcceptance: reactionAcceptance.value,
@@ -1401,6 +1422,12 @@ onMounted(() => {
 				files.value = (draft.data.files || []).filter(draftFile => draftFile);
 				if (draft.data.poll) {
 					poll.value = draft.data.poll;
+				}
+				if (draft.data.scheduledNoteDelete) {
+					scheduledNoteDelete.value = draft.data.scheduledNoteDelete;
+				}
+				if (draft.data.scheduleNote) {
+					scheduleNote.value = draft.data.scheduleNote;
 				}
 				if (draft.data.visibleUserIds) {
 					misskeyApi('users/show', { userIds: draft.data.visibleUserIds }).then(users => {

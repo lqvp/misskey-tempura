@@ -14747,6 +14747,64 @@ export interface Locale extends ILocale {
      * ノートの公開範囲をより視覚的に区別することができます。
      */
     "noteVisibilityColoringDescription": string;
+    /**
+     * デフォルトのFxTwitterプロバイダー
+     */
+    "defaultFxTwitterEmbedProvider": string;
+    /**
+     * デフォルトのFxTwitter埋め込みプロバイダーを設定します。
+     */
+    "defaultFxTwitterEmbedProviderDescription": string;
+    /**
+     * カスタムFxTwitterプロバイダー
+     */
+    "customFxTwitterEmbedProvider": string;
+    "defaultFxTwitterEmbedProviderOptions": {
+        /**
+         * fxtwitter.com
+         */
+        "fxtwitter": string;
+        /**
+         * カスタム
+         */
+        "custom": string;
+    };
+    /**
+     * ウィジェット表示方向
+     */
+    "widgetDrawerDirection": string;
+    /**
+     * モバイルでのウィジェットの表示方向を設定します。
+     */
+    "widgetDrawerDirectionDescription": string;
+    "_widgetDrawerDirection": {
+        /**
+         * 左から表示
+         */
+        "left": string;
+        /**
+         * 右から表示
+         */
+        "right": string;
+    };
+    /**
+     * アップロードボタンの挙動
+     */
+    "chooseFileFrom": string;
+    /**
+     * ファイルのアップロード時に使用するダイアログを選択します。「新しいファイル選択ダイアログ」はOS標準のものを、「旧ファイル選択ダイアログ」はMisskey独自のダイアログを使用します。
+     */
+    "chooseFileFromDescription": string;
+    "_chooseFileFrom": {
+        /**
+         * 新しいファイル選択ダイアログ
+         */
+        "new": string;
+        /**
+         * 旧ファイル選択ダイアログ
+         */
+        "old": string;
+    };
     "_deliveryTargetControl": {
         /**
          * 配送先制御
