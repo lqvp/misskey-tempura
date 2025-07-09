@@ -5925,7 +5925,6 @@ export type components = {
             enableContactForm: boolean;
             contactFormLimit: number;
             contactFormRequireAuth: boolean;
-            contactFormRequireCaptcha: boolean;
             contactFormCategories: unknown[];
         };
         MetaDetailedOnly: {
@@ -10499,7 +10498,6 @@ export interface operations {
                         enableContactForm: boolean;
                         contactFormLimit: number;
                         contactFormRequireAuth: boolean;
-                        contactFormRequireCaptcha: boolean;
                         contactFormCategories: {
                             key: string;
                             text: string;
@@ -13970,7 +13968,6 @@ export interface operations {
                     enableContactForm?: boolean;
                     contactFormLimit?: number;
                     contactFormRequireAuth?: boolean;
-                    contactFormRequireCaptcha?: boolean;
                     contactFormCategories?: {
                         key: string;
                         text: string;

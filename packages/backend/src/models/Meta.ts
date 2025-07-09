@@ -1023,11 +1023,6 @@ export class MiMeta {
 	})
 	public contactFormRequireAuth: boolean;
 
-	@Column('boolean', {
-		default: true,
-	})
-	public contactFormRequireCaptcha: boolean;
-
 	@Column('jsonb', {
 		default: [],
 	})

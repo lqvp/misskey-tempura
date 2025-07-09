@@ -410,11 +410,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<template #label>{{ i18n.ts._contactForm.requireAuth }}</template>
 							<template #caption>{{ i18n.ts._contactForm.requireAuthDescription }}</template>
 						</MkSwitch>
-
-						<MkSwitch v-model="contactFormSettingsForm.state.contactFormRequireCaptcha">
-							<template #label>{{ i18n.ts._contactForm.requireCaptcha }}</template>
-							<template #caption>{{ i18n.ts._contactForm.requireCaptchaDescription }}</template>
-						</MkSwitch>
 					</div>
 				</MkFolder>
 			</div>
@@ -768,13 +763,11 @@ const contactFormSettingsForm = useForm({
 	enableContactForm: meta.enableContactForm,
 	contactFormLimit: meta.contactFormLimit,
 	contactFormRequireAuth: meta.contactFormRequireAuth,
-	contactFormRequireCaptcha: meta.contactFormRequireCaptcha,
 }, async (state) => {
 	await os.apiWithDialog('admin/update-meta', {
 		enableContactForm: state.enableContactForm,
 		contactFormLimit: state.contactFormLimit,
 		contactFormRequireAuth: state.contactFormRequireAuth,
-		contactFormRequireCaptcha: state.contactFormRequireCaptcha,
 	});
 	fetchInstance(true);
 });

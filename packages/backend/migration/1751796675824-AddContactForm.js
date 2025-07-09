@@ -26,7 +26,6 @@ export class AddContactForm1751796675824 {
 		await queryRunner.query(`ALTER TABLE "meta" ADD "enableContactForm" boolean NOT NULL DEFAULT true`);
 		await queryRunner.query(`ALTER TABLE "meta" ADD "contactFormLimit" integer NOT NULL DEFAULT 3`);
 		await queryRunner.query(`ALTER TABLE "meta" ADD "contactFormRequireAuth" boolean NOT NULL DEFAULT false`);
-		await queryRunner.query(`ALTER TABLE "meta" ADD "contactFormRequireCaptcha" boolean NOT NULL DEFAULT true`);
 
 		// ContactFormカテゴリ設定を追加（動的管理用）
 		await queryRunner.query(`ALTER TABLE "meta" ADD "contactFormCategories" jsonb NOT NULL DEFAULT '[
@@ -42,7 +41,6 @@ export class AddContactForm1751796675824 {
 
 	async down(queryRunner) {
 		// metaテーブルから設定を削除
-		await queryRunner.query(`ALTER TABLE "meta" DROP COLUMN "contactFormRequireCaptcha"`);
 		await queryRunner.query(`ALTER TABLE "meta" DROP COLUMN "contactFormRequireAuth"`);
 		await queryRunner.query(`ALTER TABLE "meta" DROP COLUMN "contactFormLimit"`);
 		await queryRunner.query(`ALTER TABLE "meta" DROP COLUMN "enableContactForm"`);

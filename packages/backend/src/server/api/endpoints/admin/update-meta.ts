@@ -285,7 +285,6 @@ export const paramDef = {
 		enableContactForm: { type: 'boolean' },
 		contactFormLimit: { type: 'integer', minimum: 1, maximum: 10 },
 		contactFormRequireAuth: { type: 'boolean' },
-		contactFormRequireCaptcha: { type: 'boolean' },
 		contactFormCategories: {
 			type: 'array',
 			items: {
@@ -1059,10 +1058,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.contactFormRequireAuth !== undefined) {
 				set.contactFormRequireAuth = ps.contactFormRequireAuth;
-			}
-
-			if (ps.contactFormRequireCaptcha !== undefined) {
-				set.contactFormRequireCaptcha = ps.contactFormRequireCaptcha;
 			}
 
 			if (ps.contactFormCategories !== undefined) {

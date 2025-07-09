@@ -485,10 +485,6 @@ export const packedMetaLiteSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
-		contactFormRequireCaptcha: {
-			type: 'boolean',
-			optional: false, nullable: false,
-		},
 		contactFormCategories: {
 			type: 'array',
 			optional: false, nullable: false,

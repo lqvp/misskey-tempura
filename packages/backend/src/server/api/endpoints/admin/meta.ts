@@ -765,10 +765,6 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
-			contactFormRequireCaptcha: {
-				type: 'boolean',
-				optional: false, nullable: false,
-			},
 			contactFormCategories: {
 				type: 'array',
 				optional: false, nullable: false,
@@ -1046,7 +1042,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				enableContactForm: instance.enableContactForm,
 				contactFormLimit: instance.contactFormLimit,
 				contactFormRequireAuth: instance.contactFormRequireAuth,
-				contactFormRequireCaptcha: instance.contactFormRequireCaptcha,
 				contactFormCategories: instance.contactFormCategories,
 			};
 		});

@@ -46,6 +46,11 @@ export const meta = {
 			code: 'AUTH_REQUIRED',
 			id: 'c5d4d7b2-c9d2-4d3e-9eaf-1234567890cd',
 		},
+		captchaFailed: {
+			message: 'CAPTCHA verification failed.',
+			code: 'CAPTCHA_FAILED',
+			id: 'd6e5e8c3-d0e3-4e4f-9faf-1234567890de',
+		},
 	},
 } as const;
 
@@ -109,35 +114,35 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {	// eslint-
 				throw new ApiError(meta.errors.authRequired);
 			}
 
-			// CAPTCHA検証（contactFormRequireCaptchaが有効でテスト環境でない場合）
-			if (instance.contactFormRequireCaptcha && process.env.NODE_ENV !== 'test') {
+			// CAPTCHA検証（signup/signinと同じロジック）
+			if (process.env.NODE_ENV !== 'test') {
 				if (instance.enableHcaptcha && instance.hcaptchaSecretKey) {
 					await this.captchaService.verifyHcaptcha(instance.hcaptchaSecretKey, ps['hcaptcha-response']).catch(err => {
-						throw new ApiError(meta.errors.invalidReplyMethod);
+						throw new ApiError(meta.errors.captchaFailed);
 					});
 				}
 
 				if (instance.enableMcaptcha && instance.mcaptchaSecretKey && instance.mcaptchaSitekey && instance.mcaptchaInstanceUrl) {
 					await this.captchaService.verifyMcaptcha(instance.mcaptchaSecretKey, instance.mcaptchaSitekey, instance.mcaptchaInstanceUrl, ps['m-captcha-response']).catch(err => {
-						throw new ApiError(meta.errors.invalidReplyMethod);
+						throw new ApiError(meta.errors.captchaFailed);
 					});
 				}
 
 				if (instance.enableRecaptcha && instance.recaptchaSecretKey) {
 					await this.captchaService.verifyRecaptcha(instance.recaptchaSecretKey, ps['g-recaptcha-response']).catch(err => {
-						throw new ApiError(meta.errors.invalidReplyMethod);
+						throw new ApiError(meta.errors.captchaFailed);
 					});
 				}
 
 				if (instance.enableTurnstile && instance.turnstileSecretKey) {
 					await this.captchaService.verifyTurnstile(instance.turnstileSecretKey, ps['cf-turnstile-response']).catch(err => {
-						throw new ApiError(meta.errors.invalidReplyMethod);
+						throw new ApiError(meta.errors.captchaFailed);
 					});
 				}
 
 				if (instance.enableTestcaptcha) {
 					await this.captchaService.verifyTestcaptcha(ps['testcaptcha-response']).catch(err => {
-						throw new ApiError(meta.errors.invalidReplyMethod);
+						throw new ApiError(meta.errors.captchaFailed);
 					});
 				}
 			}

@@ -14960,14 +14960,6 @@ export interface Locale extends ILocale {
          */
         "requireAuthDescription": string;
         /**
-         * CAPTCHA必須
-         */
-        "requireCaptcha": string;
-        /**
-         * お問い合わせ送信時にCAPTCHA認証を必須にします
-         */
-        "requireCaptchaDescription": string;
-        /**
          * お問い合わせ一覧
          */
         "list": string;

@@ -170,7 +170,6 @@ export class MetaEntityService {
 			enableContactForm: instance.enableContactForm,
 			contactFormLimit: instance.contactFormLimit,
 			contactFormRequireAuth: instance.contactFormRequireAuth,
-			contactFormRequireCaptcha: instance.contactFormRequireCaptcha,
 			contactFormCategories: instance.contactFormCategories,
 		};
 
