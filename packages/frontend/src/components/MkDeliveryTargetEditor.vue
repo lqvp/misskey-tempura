@@ -27,21 +27,37 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<i class="ti ti-info-circle"></i>
 				{{ i18n.ts._deliveryTargetControl.noFollowersFromRemoteServers }}
 			</div>
-			<div v-else :class="$style.servers">
-				<label v-for="server in servers" :key="server.host" :class="$style.server">
-					<input
+			<div v-else>
+				<!-- Search Field -->
+				<MkInput v-model="searchQuery" type="search" :placeholder="i18n.ts.search" :class="$style.searchInput">
+					<template #prefix><i class="ti ti-search"></i></template>
+				</MkInput>
+
+				<!-- Server List -->
+				<div :class="$style.servers">
+					<MkCheckbox
+						v-for="server in filteredServers"
+						:key="server.host"
 						v-model="selectedHosts"
 						:value="server.host"
-						type="checkbox"
-						:class="$style.checkbox"
+						:class="$style.serverItem"
 					>
-					<div :class="$style.serverInfo">
-						<div :class="$style.serverHost">{{ server.host }}</div>
-						<div :class="$style.serverCount">
-							{{ i18n.tsx._deliveryTargetControl.followersCount({ count: server.followersCount }) }}
+						<div :class="$style.serverInfo">
+							<div :class="$style.serverHost">{{ server.host }}</div>
+							<div :class="$style.serverCount">
+								{{ i18n.tsx._deliveryTargetControl.followersCount({ count: server.followersCount }) }}
+							</div>
 						</div>
-					</div>
-				</label>
+					</MkCheckbox>
+				</div>
+
+				<!-- Server Count Info -->
+				<div v-if="searchQuery && servers.length > 0" :class="$style.searchInfo">
+					{{ i18n.tsx._deliveryTargetControl.searchResults({
+						count: filteredServers.length,
+						total: servers.length
+					}) }}
+				</div>
 			</div>
 		</div>
 	</div>
@@ -49,9 +65,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, onMounted, watch, nextTick, computed } from 'vue';
 import MkRadios from '@/components/MkRadios.vue';
 import MkLoading from '@/components/global/MkLoading.vue';
+import MkInput from '@/components/MkInput.vue';
+import MkCheckbox from '@/components/MkCheckbox.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 
@@ -76,11 +94,33 @@ const selectedHosts = ref<string[]>([...props.modelValue.hosts]);
 const servers = ref<{ host: string; followersCount: number }[]>([]);
 const serversLoading = ref(true);
 const loadError = ref(false);
+const searchQuery = ref('');
 
-// Watch for props changes
+// 内部更新中フラグ（無限ループ防止）
+const isInternalUpdate = ref(false);
+
+// Search functionality
+const filteredServers = computed(() => {
+	if (!searchQuery.value.trim()) {
+		return servers.value;
+	}
+
+	const query = searchQuery.value.toLowerCase().trim();
+	return servers.value.filter(server =>
+		server.host.toLowerCase().includes(query),
+	);
+});
+
+// Watch for props changes - 外部からの変更のみ反映
 watch(() => props.modelValue, (newValue) => {
-	deliveryMode.value = newValue.mode;
-	selectedHosts.value = [...newValue.hosts];
+	if (isInternalUpdate.value) return; // 内部更新中は無視
+
+	// 値が実際に変わった場合のみ更新
+	if (deliveryMode.value !== newValue.mode ||
+		JSON.stringify(selectedHosts.value) !== JSON.stringify(newValue.hosts)) {
+		deliveryMode.value = newValue.mode;
+		selectedHosts.value = [...newValue.hosts];
+	}
 }, { deep: true });
 
 // Clear selected hosts when switching to 'include' mode
@@ -90,12 +130,21 @@ watch(deliveryMode, (newMode) => {
 	}
 });
 
-// Watch for internal changes and emit
+// Watch for internal changes and emit - 重複防止付き
 watch([deliveryMode, selectedHosts], () => {
-	emit('update:modelValue', {
+	const newValue = {
 		mode: deliveryMode.value,
-		hosts: selectedHosts.value,
-	});
+		hosts: [...selectedHosts.value],
+	};
+
+	// 実際に値が変わった場合のみemit
+	if (JSON.stringify(newValue) !== JSON.stringify(props.modelValue)) {
+		isInternalUpdate.value = true;
+		emit('update:modelValue', newValue);
+		nextTick(() => {
+			isInternalUpdate.value = false;
+		});
+	}
 }, { deep: true });
 
 const loadServers = async () => {
@@ -145,6 +194,10 @@ onMounted(() => {
 	padding: 8px 0;
 }
 
+.searchInput {
+	margin-bottom: 8px;
+}
+
 .noServers {
 	text-align: center;
 	color: var(--MI_THEME-fgTransparentWeak);
@@ -159,31 +212,17 @@ onMounted(() => {
 .servers {
 	display: flex;
 	flex-direction: column;
-	gap: 6px;
-	max-height: 180px;
+	gap: 4px;
+	max-height: 240px;
 	overflow-y: auto;
-	padding: 4px;
+	padding: 8px;
 	border: 1px solid var(--MI_THEME-divider);
 	border-radius: 6px;
 	background: var(--MI_THEME-bg);
 }
 
-.server {
-	display: flex;
-	align-items: center;
-	padding: 8px 12px;
-	border-radius: 4px;
-	cursor: pointer;
-	transition: background-color 0.2s;
-
-	&:hover {
-		background: var(--MI_THEME-buttonHoverBg);
-	}
-}
-
-.checkbox {
-	margin-right: 12px;
-	accent-color: var(--MI_THEME-accent);
+.serverItem {
+	width: 100%;
 }
 
 .serverInfo {
@@ -203,6 +242,14 @@ onMounted(() => {
 	color: var(--MI_THEME-fgTransparentWeak);
 	margin-top: 2px;
 	line-height: 1.2;
+}
+
+.searchInfo {
+	margin-top: 8px;
+	font-size: 0.8em;
+	color: var(--MI_THEME-fgTransparentWeak);
+	text-align: center;
+	padding: 4px 8px;
 }
 
 .errorMessage {

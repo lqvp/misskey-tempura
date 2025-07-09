@@ -3988,3 +3988,4 @@ _deliveryTargetControl:
   noFollowersFromRemoteServers: "リモートサーバーのフォロワーがいません"
   loadError: "サーバー一覧の読み込みに失敗しました"
   followersCount: "{count}人のフォロワー"
+  searchResults: "{count}件見つかりました（全{total}件中）"

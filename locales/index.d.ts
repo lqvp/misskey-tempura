@@ -14772,6 +14772,10 @@ export interface Locale extends ILocale {
          * {count}人のフォロワー
          */
         "followersCount": ParameterizedString<"count">;
+        /**
+         * {count}件見つかりました（全{total}件中）
+         */
+        "searchResults": ParameterizedString<"count" | "total">;
     };
 }
 declare const locales: {
