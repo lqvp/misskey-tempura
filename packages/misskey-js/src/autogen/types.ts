@@ -32493,6 +32493,11 @@ export interface operations {
                         deleteAfter?: number | null;
                         isScheduledForPrivate?: boolean | null;
                     } | null;
+                    deliveryTargets?: {
+                        /** @enum {string} */
+                        mode: 'include' | 'exclude';
+                        hosts: string[];
+                    } | null;
                 } | unknown | unknown | unknown | unknown | unknown;
             };
         };
