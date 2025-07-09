@@ -12,8 +12,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<i class="ti ti-ban" :class="$style.disabledIcon"></i>
 			</div>
 			<div>
-				<h2 :class="$style.disabledTitle">{{ i18n.ts._contactForm.contactFormDisabled }}</h2>
-				<p :class="$style.disabledDescription">{{ i18n.ts._contactForm.contactFormDisabledDescription }}</p>
+				<h2 :class="$style.disabledTitle">{{ i18n.ts._contactForm._userForm.contactFormDisabled }}</h2>
+				<p :class="$style.disabledDescription">{{ i18n.ts._contactForm._userForm.contactFormDisabledDescription }}</p>
 			</div>
 		</div>
 
@@ -21,14 +21,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div v-else-if="!isSubmitted" class="_gaps_m">
 			<div class="_gaps">
 				<div>
-					<h1><i class="ti ti-mail"></i> {{ i18n.ts._contactForm.contactUs }}</h1>
-					<p>{{ i18n.ts._contactForm.contactDescription }}</p>
+					<h1><i class="ti ti-mail"></i> {{ i18n.ts._contactForm._userForm.contactUs }}</h1>
+					<p>{{ i18n.ts._contactForm._userForm.contactDescription }}</p>
 				</div>
 			</div>
 
 			<div class="_gaps_m">
 				<FormSection>
-					<template #label><i class="ti ti-forms"></i> {{ i18n.ts._contactForm.category }}</template>
+					<template #label><i class="ti ti-forms"></i> {{ i18n.ts._contactForm._userForm.category }}</template>
 					<MkSelect v-model="category" :required="true">
 						<option v-for="option in categoryOptions" :key="option.value" :value="option.value">
 							{{ option.label }}
@@ -37,21 +37,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</FormSection>
 
 				<FormSection>
-					<template #label><i class="ti ti-pencil"></i> {{ i18n.ts._contactForm.subject }} *</template>
+					<template #label><i class="ti ti-pencil"></i> {{ i18n.ts._contactForm._userForm.subject }} *</template>
 					<MkInput
 						v-model="subject"
 						:required="true"
-						:placeholder="i18n.ts._contactForm.subjectPlaceholder"
+						:placeholder="i18n.ts._contactForm._userForm.subjectPlaceholder"
 						:max="256"
 					/>
 				</FormSection>
 
 				<FormSection>
-					<template #label><i class="ti ti-message-2"></i> {{ i18n.ts._contactForm.content }} *</template>
+					<template #label><i class="ti ti-message-2"></i> {{ i18n.ts._contactForm._userForm.content }} *</template>
 					<MkTextarea
 						v-model="content"
 						:required="true"
-						:placeholder="i18n.ts._contactForm.contentPlaceholder"
+						:placeholder="i18n.ts._contactForm._userForm.contentPlaceholder"
 						:minlength="20"
 						:maxlength="10000"
 						:rows="6"
@@ -59,31 +59,31 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</FormSection>
 
 				<FormSection>
-					<template #label><i class="ti ti-user"></i> {{ i18n.ts._contactForm.name }}</template>
-					<template #caption>{{ i18n.ts._contactForm.nameCaption }}</template>
+					<template #label><i class="ti ti-user"></i> {{ i18n.ts._contactForm._userForm.name }}</template>
+					<template #caption>{{ i18n.ts._contactForm._userForm.nameCaption }}</template>
 					<MkInput
 						v-model="name"
-						:placeholder="i18n.ts._contactForm.namePlaceholder"
+						:placeholder="i18n.ts._contactForm._userForm.namePlaceholder"
 						:max="256"
 					/>
 				</FormSection>
 
 				<FormSection>
-					<template #label><i class="ti ti-mail-forward"></i> {{ i18n.ts._contactForm.replyMethod }} *</template>
+					<template #label><i class="ti ti-mail-forward"></i> {{ i18n.ts._contactForm._userForm.replyMethod }} *</template>
 					<MkRadios v-model="replyMethod" :required="true">
-						<option value="email">{{ i18n.ts._contactForm.replyByEmail }}</option>
-						<option value="misskey">{{ i18n.ts._contactForm.replyByMisskey }}</option>
+						<option value="email">{{ i18n.ts._contactForm._userForm.replyByEmail }}</option>
+						<option value="misskey">{{ i18n.ts._contactForm._userForm.replyByMisskey }}</option>
 					</MkRadios>
 				</FormSection>
 
 				<FormSection v-if="replyMethod === 'email'">
-					<template #label><i class="ti ti-mail"></i> {{ i18n.ts._contactForm.email }} *</template>
+					<template #label><i class="ti ti-mail"></i> {{ i18n.ts._contactForm._userForm.email }} *</template>
 					<MkInput
 						v-model="email"
 						:debounce="true"
 						type="email"
 						:required="replyMethod === 'email'"
-						:placeholder="i18n.ts._contactForm.emailPlaceholder"
+						:placeholder="i18n.ts._contactForm._userForm.emailPlaceholder"
 						:max="512"
 						@update:modelValue="onChangeEmail"
 					>
@@ -105,12 +105,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</FormSection>
 
 				<FormSection v-if="replyMethod === 'misskey'">
-					<template #label><i class="ti ti-at"></i> {{ i18n.ts._contactForm.misskeyUsername }} *</template>
-					<template #caption>{{ i18n.ts._contactForm.misskeyUsernameCaption }}</template>
+					<template #label><i class="ti ti-at"></i> {{ i18n.ts._contactForm._userForm.misskeyUsername }} *</template>
+					<template #caption>{{ i18n.ts._contactForm._userForm.misskeyUsernameCaption }}</template>
 					<MkInput
 						v-model="misskeyUsername"
 						:required="replyMethod === 'misskey'"
-						placeholder="username@example.com または @username@example.com"
+						:placeholder="i18n.ts._contactForm._userForm.misskeyUsernamePlaceholder"
 						:max="128"
 						@input="onChangeMisskeyUsername"
 					/>
@@ -139,7 +139,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div class="_buttons">
 					<MkButton :disabled="submitting || !canSubmit" primary rounded style="margin: 0 auto;" @click="submit">
 						<template v-if="submitting"><i class="ti ti-loader" style="animation: spin 1s linear infinite;"></i></template>
-						<template v-else><i class="ti ti-send"></i> {{ i18n.ts._contactForm.submit }}</template>
+						<template v-else><i class="ti ti-send"></i> {{ i18n.ts._contactForm._userForm.submit }}</template>
 					</MkButton>
 				</div>
 			</div>
@@ -150,54 +150,54 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<i class="ti ti-check" style="color: var(--MI_THEME-success); font-size: 3em;"></i>
 			</div>
 			<div>
-				<h2>{{ i18n.ts._contactForm.submitComplete }}</h2>
-				<p>{{ i18n.ts._contactForm.submitCompleteDescription }}</p>
+				<h2>{{ i18n.ts._contactForm._submitComplete.complete }}</h2>
+				<p>{{ i18n.ts._contactForm._submitComplete.completeDescription }}</p>
 			</div>
 
 			<!-- 送信内容の表示 -->
 			<div class="_gaps_m" :class="$style.previewContainer">
 				<div :class="$style.previewCard">
 					<h3 :class="$style.previewTitle">
-						<i class="ti ti-mail-opened"></i> {{ i18n.ts._contactForm.submittedContent }}
+						<i class="ti ti-mail-opened"></i> {{ i18n.ts._contactForm._adminDetail.submittedContent }}
 					</h3>
 
 					<div class="_gaps_s">
 						<div :class="$style.previewField">
-							<strong>{{ i18n.ts._contactForm.category }}:</strong>
+							<strong>{{ i18n.ts._contactForm._userForm.category }}:</strong>
 							<span :class="$style.previewValue">{{ getCategoryLabel(submittedData.category) }}</span>
 						</div>
 
 						<div :class="$style.previewField">
-							<strong>{{ i18n.ts._contactForm.subject }}:</strong>
+							<strong>{{ i18n.ts._contactForm._userForm.subject }}:</strong>
 							<div :class="$style.previewContent">
 								{{ submittedData.subject }}
 							</div>
 						</div>
 
 						<div :class="$style.previewField">
-							<strong>{{ i18n.ts._contactForm.content }}:</strong>
+							<strong>{{ i18n.ts._contactForm._userForm.content }}:</strong>
 							<div :class="[$style.previewContent, $style.previewContentText]">
 								{{ submittedData.content }}
 							</div>
 						</div>
 
 						<div v-if="submittedData.name" :class="$style.previewField">
-							<strong>{{ i18n.ts._contactForm.name }}:</strong>
+							<strong>{{ i18n.ts._contactForm._userForm.name }}:</strong>
 							<span :class="$style.previewValue">{{ submittedData.name }}</span>
 						</div>
 
 						<div :class="$style.previewField">
-							<strong>{{ i18n.ts._contactForm.replyMethod }}:</strong>
+							<strong>{{ i18n.ts._contactForm._userForm.replyMethod }}:</strong>
 							<span :class="$style.previewValue">{{ getReplyMethodText(submittedData.replyMethod) }}</span>
 						</div>
 
 						<div v-if="submittedData.replyMethod === 'email'" :class="$style.previewField">
-							<strong>{{ i18n.ts._contactForm.email }}:</strong>
+							<strong>{{ i18n.ts._contactForm._userForm.email }}:</strong>
 							<span :class="$style.previewValue">{{ submittedData.email }}</span>
 						</div>
 
 						<div v-if="submittedData.replyMethod === 'misskey'" :class="$style.previewField">
-							<strong>{{ i18n.ts._contactForm.misskeyUsername }}:</strong>
+							<strong>{{ i18n.ts._contactForm._userForm.misskeyUsername }}:</strong>
 							<span :class="$style.previewValue">
 								<Mfm :text="`@${submittedData.misskeyUsername}`" :linkNavigationBehavior="'window'"/>
 							</span>
@@ -205,14 +205,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 						<div :class="$style.previewTimestamp">
 							<i class="ti ti-clock"></i>
-							{{ i18n.ts._contactForm.submittedAt }}: {{ submittedAt }}
+							{{ i18n.ts._contactForm._adminDetail.submittedAt }}: {{ submittedAt }}
 						</div>
 					</div>
 				</div>
 			</div>
 
 			<div>
-				<MkButton inline @click="reset">{{ i18n.ts._contactForm.goToTop }}</MkButton>
+				<MkButton inline @click="reset">{{ i18n.ts._contactForm._submitComplete.goToTop }}</MkButton>
 			</div>
 		</div>
 	</div>
@@ -291,14 +291,14 @@ function onChangeMisskeyUsername(): void {
 
 	// username@domain形式の検証
 	if (!username.includes('@')) {
-		misskeyUsernameError.value = 'username@domain 形式で入力してください';
+		misskeyUsernameError.value = i18n.ts._contactForm._validation.misskeyUsernameFormatError;
 		return;
 	}
 
 	// @で分割して検証
 	const parts = username.split('@');
 	if (parts.length !== 2 || parts[0] === '' || parts[1] === '') {
-		misskeyUsernameError.value = 'username@domain 形式で入力してください';
+		misskeyUsernameError.value = i18n.ts._contactForm._validation.misskeyUsernameFormatError;
 		return;
 	}
 
@@ -306,13 +306,13 @@ function onChangeMisskeyUsername(): void {
 
 	// ユーザー名の形式チェック（英数字、アンダースコア、ハイフンのみ）
 	if (!/^[a-zA-Z0-9_-]+$/.test(user)) {
-		misskeyUsernameError.value = 'ユーザー名は英数字、アンダースコア、ハイフンのみ使用できます';
+		misskeyUsernameError.value = i18n.ts._contactForm._validation.misskeyUsernameCharacterError;
 		return;
 	}
 
 	// ドメインの基本的な形式チェック
 	if (!/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(domain)) {
-		misskeyUsernameError.value = '有効なドメイン名を入力してください';
+		misskeyUsernameError.value = i18n.ts._contactForm._validation.misskeyUsernameDomainError;
 		return;
 	}
 
@@ -366,7 +366,7 @@ function onChangeEmail(): void {
 // Validation
 const canSubmit = computed(() => {
 	if (!subject.value.trim()) return false;
-	if (!content.value.trim() || content.value.length < 10) return false;
+	if (!content.value.trim() || content.value.length < 20) return false;
 	if (replyMethod.value === 'email') {
 		if (!email.value.trim()) return false;
 		// メール検証が失敗している場合は送信不可
@@ -448,7 +448,7 @@ async function submit() {
 }
 
 function getReplyMethodText(replyMethod: string): string {
-	return replyMethod === 'email' ? i18n.ts._contactForm.replyByEmail : i18n.ts._contactForm.replyByMisskey;
+	return replyMethod === 'email' ? i18n.ts._contactForm._userForm.replyByEmail : i18n.ts._contactForm._userForm.replyByMisskey;
 }
 
 function reset() {
@@ -470,7 +470,7 @@ function reset() {
 }
 
 definePage(() => ({
-	title: i18n.ts._contactForm.contactUs,
+	title: i18n.ts._contactForm._userForm.contactUs,
 	icon: 'ti ti-mail',
 }));
 </script>

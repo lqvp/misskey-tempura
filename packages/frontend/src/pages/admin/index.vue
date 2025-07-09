@@ -186,12 +186,12 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 		active: currentPage.value?.route.name === 'abuses',
 	}, {
 		icon: 'ti ti-mail',
-		text: i18n.ts._contactForm.list,
+		text: i18n.ts._contactForm._adminList.list,
 		to: '/admin/tempura-contact',
 		active: currentPage.value?.route.name === 'tempura-contact',
 	}, {
 		icon: 'ti ti-forms',
-		text: i18n.ts._contactForm.categoryManagement || 'カテゴリ管理',
+		text: i18n.ts._contactForm._category.categoryManagement,
 		to: '/admin/contact-form-categories',
 		active: currentPage.value?.route.name === 'contact-form-categories',
 	}, {

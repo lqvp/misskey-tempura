@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<!-- コンタクトフォームボタン -->
 			<div v-if="instance.enableContactForm" style="text-align: center;">
 				<MkButton primary rounded @click="router.push('/contact-form')">
-					<i class="ti ti-mail"></i> {{ i18n.ts._contactForm.contactForm }}
+					<i class="ti ti-mail"></i> {{ i18n.ts._contactForm._userForm.contactForm }}
 				</MkButton>
 			</div>
 

@@ -7977,6 +7977,7 @@ export interface operations {
                         status: 'pending' | 'in_progress' | 'resolved' | 'closed';
                         adminNote: string | null;
                         ipAddress: string | null;
+                        userAgent: string | null;
                         user: components['schemas']['UserLite'] | null;
                         assignedUser: components['schemas']['UserLite'] | null;
                         assignedNickname: string | null;

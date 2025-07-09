@@ -115,7 +115,7 @@ export function openInstanceMenu(ev: MouseEvent) {
 		to: '/contact',
 	}, {
 		type: 'link',
-		text: i18n.ts._contactForm.contactUs,
+		text: i18n.ts._contactForm._userForm.contactForm,
 		icon: 'ti ti-mail',
 		to: '/contact-form',
 	});

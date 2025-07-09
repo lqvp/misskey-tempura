@@ -17,11 +17,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<template #footer>
 		<div class="_buttons">
 			<MkSelect v-model="currentStatus" :class="$style.statusSelect">
-				<template #label>{{ i18n.ts._contactForm.updateStatus }}</template>
-				<option value="pending">{{ i18n.ts._contactForm.pending }}</option>
-				<option value="in_progress">{{ i18n.ts._contactForm.inProgress }}</option>
-				<option value="resolved">{{ i18n.ts._contactForm.resolved }}</option>
-				<option value="closed">{{ i18n.ts._contactForm.closed }}</option>
+				<template #label>{{ i18n.ts._contactForm._adminStatus.updateStatus }}</template>
+				<option value="pending">{{ i18n.ts._contactForm._adminStatus.pending }}</option>
+				<option value="in_progress">{{ i18n.ts._contactForm._adminStatus.inProgress }}</option>
+				<option value="resolved">{{ i18n.ts._contactForm._adminStatus.resolved }}</option>
+				<option value="closed">{{ i18n.ts._contactForm._adminStatus.closed }}</option>
 			</MkSelect>
 			<MkButton primary @click="updateStatus"><i class="ti ti-check"></i> {{ i18n.ts.update }}</MkButton>
 			<MkButton @click="deleteForm"><i class="ti ti-trash"></i> {{ i18n.ts.delete }}</MkButton>
@@ -32,7 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div class="_gaps_s">
 		<MkFolder :defaultOpen="true">
 			<template #icon><i class="ti ti-message-2"></i></template>
-			<template #label>{{ i18n.ts._contactForm.content }}</template>
+			<template #label>{{ i18n.ts._contactForm._adminDetail.submittedContent }}</template>
 			<div class="_gaps_s">
 				<Mfm :text="contactForm.content" :linkNavigationBehavior="'window'"/>
 			</div>
@@ -40,30 +40,30 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		<MkFolder>
 			<template #icon><i class="ti ti-user"></i></template>
-			<template #label>{{ i18n.ts._contactForm.contactInfo }}</template>
+			<template #label>{{ i18n.ts._contactForm._adminDetail.contactInfo }}</template>
 			<div class="_gaps_s">
 				<MkKeyValue>
-					<template #key>{{ i18n.ts._contactForm.name }}</template>
+					<template #key>{{ i18n.ts._contactForm._userForm.name }}</template>
 					<template #value>{{ contactForm.name || i18n.ts.none }}</template>
 				</MkKeyValue>
 				<MkKeyValue v-if="contactForm.replyMethod === 'email'">
-					<template #key>{{ i18n.ts._contactForm.email }}</template>
+					<template #key>{{ i18n.ts._contactForm._userForm.email }}</template>
 					<template #value>{{ contactForm.email }}</template>
 				</MkKeyValue>
 				<MkKeyValue v-if="contactForm.replyMethod === 'misskey'">
-					<template #key>{{ i18n.ts._contactForm.misskeyUsername }}</template>
+					<template #key>{{ i18n.ts._contactForm._userForm.misskeyUsername }}</template>
 					<template #value><Mfm :text="`@${contactForm.misskeyUsername}`" :linkNavigationBehavior="'window'"/></template>
 				</MkKeyValue>
 				<MkKeyValue v-if="contactForm.user">
-					<template #key>{{ i18n.ts._contactForm.registeredUser }}</template>
+					<template #key>{{ i18n.ts._contactForm._userForm.registeredUser }}</template>
 					<template #value><Mfm :text="`@${contactForm.user.username}${contactForm.user.host ? '@' + contactForm.user.host : ''}`" :linkNavigationBehavior="'window'"/></template>
 				</MkKeyValue>
 				<MkKeyValue v-if="contactForm.ipAddress">
-					<template #key>{{ i18n.ts._contactForm.ipAddress }}</template>
+					<template #key>{{ i18n.ts._contactForm._adminDetail.ipAddress }}</template>
 					<template #value>{{ contactForm.ipAddress }}</template>
 				</MkKeyValue>
 				<MkKeyValue v-if="contactForm.userAgent">
-					<template #key>{{ i18n.ts._contactForm.userAgent }}</template>
+					<template #key>{{ i18n.ts._contactForm._adminDetail.userAgent }}</template>
 					<template #value><span :title="contactForm.userAgent">{{ truncateUserAgent(contactForm.userAgent) }}</span></template>
 				</MkKeyValue>
 			</div>
@@ -71,7 +71,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		<MkFolder :defaultOpen="false">
 			<template #icon><i class="ti ti-note"></i></template>
-			<template #label>{{ i18n.ts._contactForm.adminNote }}</template>
+			<template #label>{{ i18n.ts._contactForm._adminDetail.adminNote }}</template>
 			<template #suffix>{{ getAdminNotePreview() }} <span v-if="adminNoteChanged" :class="$style.changedMark">*</span></template>
 			<div class="_gaps_s">
 				<MkTextarea v-model="adminNote">
@@ -85,17 +85,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		<MkFolder :defaultOpen="false">
 			<template #icon><i class="ti ti-user-check"></i></template>
-			<template #label>{{ i18n.ts._contactForm.assign }}</template>
+			<template #label>{{ i18n.ts._contactForm._adminDetail.assign }}</template>
 			<div class="_gaps_s">
-				<MkInput v-model="assignedUsername" type="text" :spellcheck="false" :placeholder="i18n.ts._contactForm.placeholderAssignedUser">
-					<template #label>{{ i18n.ts._contactForm.assignedUser }}</template>
+				<MkInput v-model="assignedUsername" type="text" :spellcheck="false" :placeholder="i18n.ts._contactForm._adminDetail.placeholderAssignedUser">
+					<template #label>{{ i18n.ts._contactForm._adminDetail.assignedUser }}</template>
 				</MkInput>
-				<MkButton primary @click="assignUser"><i class="ti ti-check"></i> {{ i18n.ts._contactForm.assign }}</MkButton>
+				<MkButton primary @click="assignUser"><i class="ti ti-check"></i> {{ i18n.ts._contactForm._adminDetail.assign }}</MkButton>
 			</div>
 		</MkFolder>
 
 		<div v-if="contactForm.assignedUser || contactForm.assignedNickname" :class="$style.assignedUserDisplay">
-			{{ i18n.ts._contactForm.assignedUser }}:
+			{{ i18n.ts._contactForm._adminDetail.assignedUser }}:
 			<span v-if="contactForm.assignedUser" :class="$style.assignedUserMention">
 				<Mfm :text="`@${contactForm.assignedUser.username}${contactForm.assignedUser.host ? '@' + contactForm.assignedUser.host : ''}`" :linkNavigationBehavior="'window'"/>
 			</span>
@@ -150,6 +150,7 @@ async function saveAdminNote() {
 			contactFormId: props.contactForm.id,
 			adminNote: adminNote.value,
 		});
+		props.contactForm.adminNote = adminNote.value;
 		emit('updated', props.contactForm.id);
 		os.toast(i18n.ts.saved);
 	} catch (error) {
@@ -161,13 +162,23 @@ async function saveAdminNote() {
 	}
 }
 
-function updateStatus() {
-	misskeyApi('admin/contact-form/update', {
-		contactFormId: props.contactForm.id,
-		status: currentStatus.value,
-	}).then(() => {
+async function updateStatus() {
+	try {
+		await misskeyApi('admin/contact-form/update', {
+			contactFormId: props.contactForm.id,
+			status: currentStatus.value,
+		});
 		emit('updated', props.contactForm.id);
-	});
+		os.toast(i18n.ts.saved);
+	} catch (error) {
+		console.error('Failed to update status:', error);
+		os.alert({
+			type: 'error',
+			text: i18n.ts.somethingHappened,
+		});
+		// 元の値に戻す
+		currentStatus.value = props.contactForm.status;
+	}
 }
 
 async function assignUser() {
@@ -244,11 +255,17 @@ function deleteForm() {
 		text: i18n.ts.deleteConfirm,
 	}).then(({ canceled }) => {
 		if (canceled) return;
-
 		misskeyApi('admin/contact-form/delete', {
 			contactFormId: props.contactForm.id,
 		}).then(() => {
 			emit('updated', props.contactForm.id);
+			os.toast(i18n.ts._contactForm._adminDetail.deleted);
+		}).catch((error) => {
+			console.error('Failed to delete form:', error);
+			os.alert({
+				type: 'error',
+				text: i18n.ts.somethingHappened,
+			});
 		});
 	});
 }
@@ -258,7 +275,7 @@ function getCategoryText(category: string): string {
 }
 
 function getReplyMethodText(replyMethod: string): string {
-	return replyMethod === 'email' ? i18n.ts._contactForm.replyByEmail : i18n.ts._contactForm.replyByMisskey;
+	return replyMethod === 'email' ? i18n.ts._contactForm._userForm.replyByEmail : i18n.ts._contactForm._userForm.replyByMisskey;
 }
 
 function getAdminNotePreview(): string {

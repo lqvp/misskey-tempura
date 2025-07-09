@@ -35,6 +35,7 @@ export const meta = {
 				status: { type: 'string', enum: ['pending', 'in_progress', 'resolved', 'closed'] },
 				adminNote: { type: 'string', nullable: true },
 				ipAddress: { type: 'string', nullable: true },
+				userAgent: { type: 'string', nullable: true },
 				user: { type: 'object', nullable: true, ref: 'UserLite' },
 				assignedUser: { type: 'object', nullable: true, ref: 'UserLite' },
 				assignedNickname: { type: 'string', nullable: true },

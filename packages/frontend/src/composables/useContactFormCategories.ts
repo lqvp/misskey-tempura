@@ -28,7 +28,7 @@ export function useContactFormCategories() {
 
 			// contactFormCategoriesが存在し、配列の場合のみ処理
 			if (allCategories && Array.isArray(allCategories)) {
-				// 有効なカテゴリのみをフィルタリングして順序でソート
+			// 有効なカテゴリのみをフィルタリングして順序でソート
 				const enabledCategories = allCategories
 					.filter((cat: ContactFormCategory) => cat.enabled)
 					.sort((a: ContactFormCategory, b: ContactFormCategory) => a.order - b.order);
@@ -36,33 +36,14 @@ export function useContactFormCategories() {
 				categories.value = enabledCategories;
 				return enabledCategories;
 			} else {
-				// フォールバック：デフォルトカテゴリを返す
-				const fallbackCategories = [
-					{ key: 'general', text: '一般', enabled: true, order: 1, isDefault: true },
-					{ key: 'bug_report', text: 'バグ報告', enabled: true, order: 2, isDefault: false },
-					{ key: 'feature_request', text: '機能要望', enabled: true, order: 3, isDefault: false },
-					{ key: 'account_issue', text: 'アカウント関連', enabled: true, order: 4, isDefault: false },
-					{ key: 'technical_issue', text: '技術的な問題', enabled: true, order: 5, isDefault: false },
-					{ key: 'content_issue', text: 'コンテンツ関連', enabled: true, order: 6, isDefault: false },
-					{ key: 'other', text: 'その他', enabled: true, order: 7, isDefault: false },
-				];
-				categories.value = fallbackCategories;
-				return fallbackCategories;
+			// 設定が存在しない場合は空の配列を返す
+				categories.value = [];
+				return [];
 			}
 		} catch (error) {
 			console.error('Failed to fetch contact form categories:', error);
-			// フォールバック：デフォルトカテゴリを返す
-			const fallbackCategories = [
-				{ key: 'general', text: '一般', enabled: true, order: 1, isDefault: true },
-				{ key: 'bug_report', text: 'バグ報告', enabled: true, order: 2, isDefault: false },
-				{ key: 'feature_request', text: '機能要望', enabled: true, order: 3, isDefault: false },
-				{ key: 'account_issue', text: 'アカウント関連', enabled: true, order: 4, isDefault: false },
-				{ key: 'technical_issue', text: '技術的な問題', enabled: true, order: 5, isDefault: false },
-				{ key: 'content_issue', text: 'コンテンツ関連', enabled: true, order: 6, isDefault: false },
-				{ key: 'other', text: 'その他', enabled: true, order: 7, isDefault: false },
-			];
-			categories.value = fallbackCategories;
-			return fallbackCategories;
+			// エラーを再throwして呼び出し側でハンドリング
+			throw error;
 		} finally {
 			loading.value = false;
 		}

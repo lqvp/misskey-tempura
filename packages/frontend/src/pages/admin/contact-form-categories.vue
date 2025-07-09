@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div class="_spacer" style="--MI_SPACER-w: 900px;">
 		<div :class="$style.root" class="_gaps">
 			<MkTip k="contactFormCategories">
-				{{ i18n.ts._contactForm.categoryManagement }}
+				{{ i18n.ts._contactForm._category.categoryManagement }}
 			</MkTip>
 
 			<div class="_gaps">
@@ -20,7 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<i class="ti ti-device-floppy"></i> {{ i18n.ts.save }}
 					</MkButton>
 					<MkButton @click="resetCategories">
-						<i class="ti ti-restore"></i> {{ i18n.ts._contactForm.reset }}
+						<i class="ti ti-restore"></i> {{ i18n.ts._contactForm._category.reset }}
 					</MkButton>
 				</div>
 
@@ -30,8 +30,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<div :class="$style.dragHandle">
 								<i class="ti ti-grip-vertical"></i>
 							</div>
-							<MkInput v-model="category.key" :placeholder="'category_key'" style="flex: 1;"/>
-							<MkInput v-model="category.text" :placeholder="'表示テキスト'" style="flex: 1; margin-left: 8px;"/>
+							<MkInput v-model="category.key" :placeholder="i18n.ts._contactForm._category.categoryKeyPlaceholder" style="flex: 1;"/>
+							<MkInput v-model="category.text" :placeholder="i18n.ts._contactForm._category.categoryTextPlaceholder" style="flex: 1; margin-left: 8px;"/>
 							<MkSwitch v-model="category.enabled"/>
 							<MkButton danger @click="removeCategory(index)">
 								<i class="ti ti-trash"></i>
@@ -39,9 +39,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</div>
 						<div :class="$style.categoryOptions">
 							<MkSwitch v-model="category.isDefault" @change="onDefaultChange(index)">
-								<template #label>{{ i18n.ts._contactForm.defaultCategory }}</template>
+								<template #label>{{ i18n.ts._contactForm._category.defaultCategory }}</template>
 							</MkSwitch>
-							<MkInput v-model.number="category.order" type="number" :placeholder="'表示順序'" style="width: 100px;"/>
+							<MkInput v-model.number="category.order" type="number" :placeholder="i18n.ts._contactForm._category.categoryOrderPlaceholder" style="width: 100px;"/>
 						</div>
 					</div>
 				</div>
@@ -101,7 +101,7 @@ async function saveCategories() {
 		if (categories.value.length === 0) {
 			os.alert({
 				type: 'error',
-				text: '最低1つのカテゴリが必要です',
+				text: i18n.ts._contactForm._category.atLeastOneCategoryRequired,
 			});
 			return;
 		}
@@ -111,7 +111,7 @@ async function saveCategories() {
 		if (defaultCategories.length !== 1) {
 			os.alert({
 				type: 'error',
-				text: 'デフォルトカテゴリを1つ選択してください',
+				text: i18n.ts._contactForm._category.selectOneDefaultCategory,
 			});
 			return;
 		}
@@ -121,14 +121,14 @@ async function saveCategories() {
 		if (new Set(keys).size !== keys.length) {
 			os.alert({
 				type: 'error',
-				text: 'カテゴリキーが重複しています',
+				text: i18n.ts._contactForm._category.duplicateCategoryKey,
 			});
 			return;
 		}
 
 		await misskeyApi('admin/update-meta', {
 			contactFormCategories: categories.value,
-		});
+		} as any);
 
 		originalCategories.value = JSON.parse(JSON.stringify(categories.value));
 
@@ -146,7 +146,7 @@ function addCategory() {
 	const newOrder = Math.max(...categories.value.map(cat => cat.order), 0) + 1;
 	categories.value.push({
 		key: `custom_${Date.now()}`,
-		text: 'カスタムカテゴリ',
+		text: i18n.ts._contactForm._category.customCategory,
 		enabled: true,
 		order: newOrder,
 		isDefault: false,
@@ -182,7 +182,7 @@ onMounted(() => {
 });
 
 definePage(() => ({
-	title: i18n.ts._contactForm.categoryManagement || 'カテゴリ管理',
+	title: i18n.ts._contactForm._category.categoryManagement,
 	icon: 'ti ti-forms',
 }));
 </script>

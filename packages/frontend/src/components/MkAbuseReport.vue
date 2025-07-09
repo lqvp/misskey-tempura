@@ -135,13 +135,13 @@ function forward() {
 function showMenu(ev: MouseEvent) {
 	os.popupMenu([{
 		icon: 'ti ti-hash',
-		text: 'Copy ID',
+		text: i18n.ts._abuseUserReport.copyId,
 		action: () => {
 			copyToClipboard(props.report.id);
 		},
 	}, {
 		icon: 'ti ti-json',
-		text: 'Copy JSON',
+		text: i18n.ts._abuseUserReport.copyJson,
 		action: () => {
 			copyToClipboard(JSON.stringify(props.report, null, '\t'));
 		},

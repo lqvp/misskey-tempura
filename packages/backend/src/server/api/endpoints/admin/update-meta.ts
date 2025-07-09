@@ -1061,6 +1061,27 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			if (ps.contactFormCategories !== undefined) {
+				// Validate contactFormCategories array
+				if (Array.isArray(ps.contactFormCategories)) {
+					// Check for duplicate keys
+					const keys = ps.contactFormCategories.map(cat => cat.key);
+					const uniqueKeys = new Set(keys);
+					if (keys.length !== uniqueKeys.size) {
+						throw new Error('Duplicate category keys are not allowed');
+					}
+
+					// Check for multiple default categories
+					const defaultCategories = ps.contactFormCategories.filter(cat => cat.isDefault);
+					if (defaultCategories.length > 1) {
+						throw new Error('Only one category can be set as default');
+					}
+
+					// Ensure at least one category exists and has a default
+					if (ps.contactFormCategories.length > 0 && defaultCategories.length === 0) {
+						throw new Error('At least one category must be set as default');
+					}
+				}
+
 				set.contactFormCategories = ps.contactFormCategories;
 			}
 

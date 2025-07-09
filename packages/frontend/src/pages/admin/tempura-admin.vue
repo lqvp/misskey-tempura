@@ -388,7 +388,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 				<MkFolder>
 					<template #icon><i class="ti ti-mail"></i></template>
-					<template #label>{{ i18n.ts._contactForm.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+					<template #label>{{ i18n.ts._contactForm._settings.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 					<template v-if="contactFormSettingsForm.savedState.enableContactForm" #suffix>Enabled</template>
 					<template v-else #suffix>Disabled</template>
 					<template v-if="contactFormSettingsForm.modified.value" #footer>
@@ -397,18 +397,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 					<div class="_gaps_m">
 						<MkSwitch v-model="contactFormSettingsForm.state.enableContactForm">
-							<template #label>{{ i18n.ts._contactForm.enable }}</template>
-							<template #caption>{{ i18n.ts._contactForm.enableDescription }}</template>
+							<template #label>{{ i18n.ts._contactForm._settings.enable }}</template>
+							<template #caption>{{ i18n.ts._contactForm._settings.enableDescription }}</template>
 						</MkSwitch>
 
 						<MkInput v-model="contactFormSettingsForm.state.contactFormLimit" type="number" :min="1" :max="10">
-							<template #label>{{ i18n.ts._contactForm.limit }}</template>
-							<template #caption>{{ i18n.ts._contactForm.limitDescription }}</template>
+							<template #label>{{ i18n.ts._contactForm._settings.limit }}</template>
+							<template #caption>{{ i18n.ts._contactForm._settings.limitDescription }}</template>
 						</MkInput>
 
 						<MkSwitch v-model="contactFormSettingsForm.state.contactFormRequireAuth">
-							<template #label>{{ i18n.ts._contactForm.requireAuth }}</template>
-							<template #caption>{{ i18n.ts._contactForm.requireAuthDescription }}</template>
+							<template #label>{{ i18n.ts._contactForm._settings.requireAuth }}</template>
+							<template #caption>{{ i18n.ts._contactForm._settings.requireAuthDescription }}</template>
 						</MkSwitch>
 					</div>
 				</MkFolder>
@@ -478,6 +478,9 @@ const customCursorPointerUrl = ref<string | null>(null);
 const customCursorTextUrl = ref<string | null>(null);
 const customCursorProgressUrl = ref<string | null>(null);
 const customCursorWaitUrl = ref<string | null>(null);
+// const enableContactForm = ref<boolean>(true);
+// const contactFormLimit = ref<number>(3);
+// const contactFormRequireAuth = ref<boolean>(false);
 
 const originalMinimumUsernameLength = ref<number>();
 const validateMinimumUsernameLengthChanged = computed(() =>
@@ -536,6 +539,9 @@ async function init() {
 	customCursorTextUrl.value = meta.customCursorTextUrl;
 	customCursorProgressUrl.value = meta.customCursorProgressUrl;
 	customCursorWaitUrl.value = meta.customCursorWaitUrl;
+	// enableContactForm.value = meta.enableContactForm;
+	// contactFormLimit.value = meta.contactFormLimit;
+	// contactFormRequireAuth.value = meta.contactFormRequireAuth;
 }
 
 function addBackgroundImage() {
@@ -760,10 +766,20 @@ const geminiSettingsForm = useForm({
 });
 
 const contactFormSettingsForm = useForm({
+	// enableContactForm: enableContactForm.value,
+	// contactFormLimit: contactFormLimit.value,
+	// contactFormRequireAuth: contactFormRequireAuth.value,
 	enableContactForm: meta.enableContactForm,
 	contactFormLimit: meta.contactFormLimit,
 	contactFormRequireAuth: meta.contactFormRequireAuth,
 }, async (state) => {
+	if (state.contactFormLimit < 1 || state.contactFormLimit > 10) {
+		os.alert({
+			type: 'error',
+			text: '制限値は1から10の間で設定してください',
+		});
+		return;
+	}
 	await os.apiWithDialog('admin/update-meta', {
 		enableContactForm: state.enableContactForm,
 		contactFormLimit: state.contactFormLimit,

@@ -12,14 +12,13 @@ import { UtilityService } from '@/core/UtilityService.js';
 import { CaptchaService } from '@/core/CaptchaService.js';
 import { EmailService } from '@/core/EmailService.js';
 
-// Meta設定を動的に読み込むため、limit.maxは実行時に決定
 export const meta = {
 	tags: ['contact'],
 	requireCredential: false,
 
 	limit: {
 		duration: 60 * 60 * 1000, // 1時間
-		max: 3, // デフォルト値（実際には動的に設定される）
+		max: 3, // この値はApiCallServiceで`contactFormLimit`によって動的に上書きされる
 	},
 
 	res: {
@@ -59,7 +58,7 @@ export const paramDef = {
 	properties: {
 		// 必須項目
 		subject: { type: 'string', minLength: 1, maxLength: 256 },
-		content: { type: 'string', minLength: 10, maxLength: 10000 },
+		content: { type: 'string', minLength: 20, maxLength: 10000 },
 		replyMethod: { type: 'string', enum: ['email', 'misskey'] },
 
 		// 条件付き必須項目
@@ -118,30 +117,35 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {	// eslint-
 			if (process.env.NODE_ENV !== 'test') {
 				if (instance.enableHcaptcha && instance.hcaptchaSecretKey) {
 					await this.captchaService.verifyHcaptcha(instance.hcaptchaSecretKey, ps['hcaptcha-response']).catch(err => {
+						console.error('hcaptcha verification failed', err);
 						throw new ApiError(meta.errors.captchaFailed);
 					});
 				}
 
 				if (instance.enableMcaptcha && instance.mcaptchaSecretKey && instance.mcaptchaSitekey && instance.mcaptchaInstanceUrl) {
 					await this.captchaService.verifyMcaptcha(instance.mcaptchaSecretKey, instance.mcaptchaSitekey, instance.mcaptchaInstanceUrl, ps['m-captcha-response']).catch(err => {
+						console.error('mcaptcha verification failed', err);
 						throw new ApiError(meta.errors.captchaFailed);
 					});
 				}
 
 				if (instance.enableRecaptcha && instance.recaptchaSecretKey) {
 					await this.captchaService.verifyRecaptcha(instance.recaptchaSecretKey, ps['g-recaptcha-response']).catch(err => {
+						console.error('recaptcha verification failed', err);
 						throw new ApiError(meta.errors.captchaFailed);
 					});
 				}
 
 				if (instance.enableTurnstile && instance.turnstileSecretKey) {
 					await this.captchaService.verifyTurnstile(instance.turnstileSecretKey, ps['cf-turnstile-response']).catch(err => {
+						console.error('turnstile verification failed', err);
 						throw new ApiError(meta.errors.captchaFailed);
 					});
 				}
 
 				if (instance.enableTestcaptcha) {
 					await this.captchaService.verifyTestcaptcha(ps['testcaptcha-response']).catch(err => {
+						console.error('testcaptcha verification failed', err);
 						throw new ApiError(meta.errors.captchaFailed);
 					});
 				}

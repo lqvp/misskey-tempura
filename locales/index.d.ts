@@ -14818,240 +14818,288 @@ export interface Locale extends ILocale {
         "old": string;
     };
     "_contactForm": {
-        /**
-         * コンタクトフォーム設定
-         */
-        "title": string;
-        /**
-         * コンタクトフォームを有効にする
-         */
-        "enableContactForm": string;
-        /**
-         * ユーザーがお問い合わせフォームを利用できるようになります
-         */
-        "enableContactFormDescription": string;
-        /**
-         * 送信制限（1時間あたり）
-         */
-        "contactFormLimit": string;
-        /**
-         * 同一IPアドレスからの1時間あたりの送信回数制限
-         */
-        "contactFormLimitDescription": string;
-        /**
-         * ログイン必須
-         */
-        "contactFormRequireAuth": string;
-        /**
-         * お問い合わせフォーム
-         */
-        "contactUs": string;
-        /**
-         * ご不明な点やお困りのことがございましたら、お気軽にお問い合わせください。
-         */
-        "contactDescription": string;
-        /**
-         * カテゴリ
-         */
-        "category": string;
-        /**
-         * 件名
-         */
-        "subject": string;
-        /**
-         * お問い合わせの概要をご入力ください
-         */
-        "subjectPlaceholder": string;
-        /**
-         * お問い合わせ内容
-         */
-        "content": string;
-        /**
-         * 詳しい内容をご記入ください（20文字以上）
-         */
-        "contentPlaceholder": string;
-        /**
-         * 名前・ニックネーム
-         */
-        "name": string;
-        /**
-         * お名前またはニックネーム
-         */
-        "namePlaceholder": string;
-        /**
-         * 任意：誰からのお問い合わせかを把握するのに役立ちます
-         */
-        "nameCaption": string;
-        /**
-         * 返信方法
-         */
-        "replyMethod": string;
-        /**
-         * メールアドレスで返信
-         */
-        "replyByEmail": string;
-        /**
-         * Misskey内で返信
-         */
-        "replyByMisskey": string;
-        /**
-         * メールアドレス
-         */
-        "email": string;
-        /**
-         * 返信用のメールアドレス
-         */
-        "emailPlaceholder": string;
-        /**
-         * Misskey(Fediverse)ユーザー名
-         */
-        "misskeyUsername": string;
-        /**
-         * username@example.com
-         */
-        "misskeyUsernamePlaceholder": string;
-        /**
-         * username@domain形式で入力してください（@付きでも可）
-         */
-        "misskeyUsernameCaption": string;
-        /**
-         * 送信
-         */
-        "submit": string;
-        /**
-         * お問い合わせを送信しました。ありがとうございます。
-         */
-        "submitComplete": string;
-        /**
-         * お問い合わせ頂いた内容については、お問い合わせ頂いたメールアドレスまたはMisskeyユーザー名に返信いたします。
-         * (返信には数日かかる場合があります。必ずしも返信があるとは限りません。)
-         */
-        "submitCompleteDescription": string;
-        /**
-         * トップページに戻る
-         */
-        "goToTop": string;
-        /**
-         * コンタクトフォーム設定
-         */
-        "settings": string;
-        /**
-         * コンタクトフォームを有効にする
-         */
-        "enable": string;
-        /**
-         * ユーザーがお問い合わせフォームを利用できるようになります
-         */
-        "enableDescription": string;
-        /**
-         * 送信制限（1時間あたり）
-         */
-        "limit": string;
-        /**
-         * 同一IPアドレスからの1時間あたりの送信回数制限
-         */
-        "limitDescription": string;
-        /**
-         * ログイン必須
-         */
-        "requireAuth": string;
-        /**
-         * ログインしたユーザーのみお問い合わせを送信できます
-         */
-        "requireAuthDescription": string;
-        /**
-         * お問い合わせ一覧
-         */
-        "list": string;
-        /**
-         * 未対応
-         */
-        "pending": string;
-        /**
-         * 対応中
-         */
-        "inProgress": string;
-        /**
-         * 解決済み
-         */
-        "resolved": string;
-        /**
-         * クローズ
-         */
-        "closed": string;
-        /**
-         * 担当者
-         */
-        "assignedUser": string;
-        /**
-         * 管理者メモ
-         */
-        "adminNote": string;
-        /**
-         * ステータス更新
-         */
-        "updateStatus": string;
-        /**
-         * 担当者設定
-         */
-        "assign": string;
-        /**
-         * @username@example.com または ニックネーム
-         */
-        "placeholderAssignedUser": string;
-        /**
-         * 連絡先情報
-         */
-        "contactInfo": string;
-        /**
-         * IPアドレス
-         */
-        "ipAddress": string;
-        /**
-         * User-Agent
-         */
-        "userAgent": string;
-        /**
-         * 送信内容
-         */
-        "submittedContent": string;
-        /**
-         * 送信日時
-         */
-        "submittedAt": string;
-        /**
-         * カテゴリ管理
-         */
-        "categoryManagement": string;
-        /**
-         * デフォルトカテゴリ
-         */
-        "defaultCategory": string;
-        /**
-         * リセット
-         */
-        "reset": string;
-        /**
-         * お問い合わせフォームは無効です
-         */
-        "contactFormDisabled": string;
-        /**
-         * このインスタンスではお問い合わせフォームが無効になっています。
-         * 別の方法でお問い合わせをお願いします。
-         */
-        "contactFormDisabledDescription": string;
-        /**
-         * お問い合わせがありません
-         */
-        "noContacts": string;
-        /**
-         * お問い合わせフォームはこちら
-         */
-        "contactForm": string;
-        /**
-         * 登録済みユーザー
-         */
-        "registeredUser": string;
+        "_settings": {
+            /**
+             * コンタクトフォーム設定
+             */
+            "title": string;
+            /**
+             * コンタクトフォームを有効にする
+             */
+            "enable": string;
+            /**
+             * ユーザーがお問い合わせフォームを利用できるようになります
+             */
+            "enableDescription": string;
+            /**
+             * 送信制限（1時間あたり）
+             */
+            "limit": string;
+            /**
+             * 同一IPアドレスからの1時間あたりの送信回数制限
+             */
+            "limitDescription": string;
+            /**
+             * ログイン必須
+             */
+            "requireAuth": string;
+            /**
+             * ログインしたユーザーのみお問い合わせを送信できます
+             */
+            "requireAuthDescription": string;
+        };
+        "_userForm": {
+            /**
+             * お問い合わせフォームはこちら
+             */
+            "contactForm": string;
+            /**
+             * お問い合わせフォーム
+             */
+            "contactUs": string;
+            /**
+             * ご不明な点やお困りのことがございましたら、お気軽にお問い合わせください。
+             */
+            "contactDescription": string;
+            /**
+             * カテゴリ
+             */
+            "category": string;
+            /**
+             * 件名
+             */
+            "subject": string;
+            /**
+             * お問い合わせの概要をご入力ください
+             */
+            "subjectPlaceholder": string;
+            /**
+             * お問い合わせ内容
+             */
+            "content": string;
+            /**
+             * 詳しい内容をご記入ください（20文字以上）
+             */
+            "contentPlaceholder": string;
+            /**
+             * 名前・ニックネーム
+             */
+            "name": string;
+            /**
+             * お名前またはニックネーム
+             */
+            "namePlaceholder": string;
+            /**
+             * 任意：誰からのお問い合わせかを把握するのに役立ちます
+             */
+            "nameCaption": string;
+            /**
+             * 返信方法
+             */
+            "replyMethod": string;
+            /**
+             * メールアドレスで返信
+             */
+            "replyByEmail": string;
+            /**
+             * メールアドレス
+             */
+            "email": string;
+            /**
+             * 返信用のメールアドレス
+             */
+            "emailPlaceholder": string;
+            /**
+             * Misskey内で返信
+             */
+            "replyByMisskey": string;
+            /**
+             * Misskey(Fediverse)ユーザー名
+             */
+            "misskeyUsername": string;
+            /**
+             * username@example.com または @username@example.com
+             */
+            "misskeyUsernamePlaceholder": string;
+            /**
+             * username@domain形式で入力してください（@付きでも可）
+             */
+            "misskeyUsernameCaption": string;
+            /**
+             * 登録済みユーザー
+             */
+            "registeredUser": string;
+            /**
+             * 送信
+             */
+            "submit": string;
+            /**
+             * お問い合わせフォームは無効です
+             */
+            "contactFormDisabled": string;
+            /**
+             * このインスタンスではお問い合わせフォームが無効になっています。
+             * 別の方法でお問い合わせをお願いします。
+             */
+            "contactFormDisabledDescription": string;
+        };
+        "_submitComplete": {
+            /**
+             * お問い合わせを送信しました。ありがとうございます。
+             */
+            "complete": string;
+            /**
+             * お問い合わせ頂いた内容については、お問い合わせ頂いたメールアドレスまたはMisskeyユーザー名に返信いたします。
+             * (返信には数日かかる場合があります。必ずしも返信があるとは限りません。)
+             */
+            "completeDescription": string;
+            /**
+             * トップページに戻る
+             */
+            "goToTop": string;
+        };
+        "_adminList": {
+            /**
+             * お問い合わせ一覧
+             */
+            "list": string;
+            /**
+             * お問い合わせがありません
+             */
+            "noContacts": string;
+            /**
+             * お問い合わせフォームの読み込みに失敗しました
+             */
+            "failedToLoadContactForms": string;
+        };
+        "_adminStatus": {
+            /**
+             * 未対応
+             */
+            "pending": string;
+            /**
+             * 対応中
+             */
+            "inProgress": string;
+            /**
+             * 解決済み
+             */
+            "resolved": string;
+            /**
+             * クローズ
+             */
+            "closed": string;
+            /**
+             * ステータス更新
+             */
+            "updateStatus": string;
+        };
+        "_adminDetail": {
+            /**
+             * 送信内容
+             */
+            "submittedContent": string;
+            /**
+             * 送信日時
+             */
+            "submittedAt": string;
+            /**
+             * 連絡先情報
+             */
+            "contactInfo": string;
+            /**
+             * IPアドレス
+             */
+            "ipAddress": string;
+            /**
+             * User-Agent
+             */
+            "userAgent": string;
+            /**
+             * 担当者
+             */
+            "assignedUser": string;
+            /**
+             * @username@example.com または ニックネーム
+             */
+            "placeholderAssignedUser": string;
+            /**
+             * 担当者設定
+             */
+            "assign": string;
+            /**
+             * 管理者メモ
+             */
+            "adminNote": string;
+            /**
+             * IDをコピー
+             */
+            "copyId": string;
+            /**
+             * JSONをコピー
+             */
+            "copyJson": string;
+            /**
+             * 削除
+             */
+            "deleted": string;
+        };
+        "_category": {
+            /**
+             * カテゴリ管理
+             */
+            "categoryManagement": string;
+            /**
+             * デフォルトカテゴリ
+             */
+            "defaultCategory": string;
+            /**
+             * デフォルトカテゴリを選択してください
+             */
+            "selectOneDefaultCategory": string;
+            /**
+             * カスタムカテゴリ
+             */
+            "customCategory": string;
+            /**
+             * カテゴリキー
+             */
+            "categoryKeyPlaceholder": string;
+            /**
+             * カテゴリ名
+             */
+            "categoryTextPlaceholder": string;
+            /**
+             * カテゴリ順序
+             */
+            "categoryOrderPlaceholder": string;
+            /**
+             * 少なくとも1つのカテゴリが必要です
+             */
+            "atLeastOneCategoryRequired": string;
+            /**
+             * カテゴリキーが重複しています
+             */
+            "duplicateCategoryKey": string;
+            /**
+             * リセット
+             */
+            "reset": string;
+        };
+        "_validation": {
+            /**
+             * username@domain 形式で入力してください
+             */
+            "misskeyUsernameFormatError": string;
+            /**
+             * ユーザー名は英数字、アンダースコア、ハイフンのみ使用できます
+             */
+            "misskeyUsernameCharacterError": string;
+            /**
+             * 有効なドメイン名を入力してください
+             */
+            "misskeyUsernameDomainError": string;
+        };
     };
 }
 declare const locales: {

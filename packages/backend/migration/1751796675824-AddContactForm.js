@@ -8,7 +8,7 @@ export class AddContactForm1751796675824 {
 
 	async up(queryRunner) {
 		// contact_formテーブルの作成
-		await queryRunner.query(`CREATE TABLE "contact_form" ("id" character varying(32) NOT NULL, "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL, "updatedAt" TIMESTAMP WITH TIME ZONE, "subject" character varying(256) NOT NULL, "content" text NOT NULL, "replyMethod" character varying(32) NOT NULL, "name" character varying(256), "email" character varying(512), "misskeyUsername" character varying(128), "category" character varying(32) NOT NULL DEFAULT 'other', "status" character varying(32) NOT NULL DEFAULT 'pending', "adminNote" text, "ipAddress" character varying(45), "userAgent" character varying(512), "userId" character varying(32), "assignedUserId" character varying(32), "assignedNickname" character varying(128), CONSTRAINT "PK_contact_form" PRIMARY KEY ("id"))`);
+		await queryRunner.query(`CREATE TABLE "contact_form" ("id" character varying(32) NOT NULL, "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL, "updatedAt" TIMESTAMP WITH TIME ZONE, "subject" character varying(256) NOT NULL, "content" text NOT NULL, "replyMethod" character varying(32) NOT NULL, "name" character varying(256), "email" character varying(512), "misskeyUsername" character varying(128), "category" character varying(32) NOT NULL DEFAULT 'other', "status" character varying(32) NOT NULL DEFAULT 'pending', "adminNote" text, "ipAddress" character varying(45), "userAgent" character varying(1024), "userId" character varying(32), "assignedUserId" character varying(32), "assignedNickname" character varying(128), CONSTRAINT "PK_contact_form" PRIMARY KEY ("id"))`);
 
 		// インデックスの作成
 		await queryRunner.query(`CREATE INDEX "IDX_contact_form_createdAt" ON "contact_form" ("createdAt")`);

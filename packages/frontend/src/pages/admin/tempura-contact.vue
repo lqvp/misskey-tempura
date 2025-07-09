@@ -8,27 +8,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div class="_spacer" style="--MI_SPACER-w: 900px;">
 		<div :class="$style.root" class="_gaps">
 			<MkTip k="contactForms">
-				{{ i18n.ts._contactForm.list }}
+				{{ i18n.ts._contactForm._adminList.list }}
 			</MkTip>
 
 			<div :class="$style.inputs" class="_gaps">
 				<MkSelect v-model="status" style="margin: 0; flex: 1;" @update:modelValue="reload">
 					<template #label>{{ i18n.ts.state }}</template>
 					<option value="all">{{ i18n.ts.all }}</option>
-					<option value="pending">{{ i18n.ts._contactForm.pending }}</option>
-					<option value="in_progress">{{ i18n.ts._contactForm.inProgress }}</option>
-					<option value="resolved">{{ i18n.ts._contactForm.resolved }}</option>
-					<option value="closed">{{ i18n.ts._contactForm.closed }}</option>
+					<option value="pending">{{ i18n.ts._contactForm._adminStatus.pending }}</option>
+					<option value="in_progress">{{ i18n.ts._contactForm._adminStatus.inProgress }}</option>
+					<option value="resolved">{{ i18n.ts._contactForm._adminStatus.resolved }}</option>
+					<option value="closed">{{ i18n.ts._contactForm._adminStatus.closed }}</option>
 				</MkSelect>
 				<MkSelect v-model="category" style="margin: 0; flex: 1;" @update:modelValue="reload">
-					<template #label>{{ i18n.ts._contactForm.category }}</template>
+					<template #label>{{ i18n.ts._contactForm._userForm.category }}</template>
 					<option value="all">{{ i18n.ts.all }}</option>
 					<option v-for="option in categoryOptions" :key="option.value" :value="option.value">
 						{{ option.label }}
 					</option>
 				</MkSelect>
-				<MkInput v-model="assignedUserId" style="margin: 0; flex: 1;" type="text" :spellcheck="false" :placeholder="'@username'" @update:modelValue="reload">
-					<template #label>{{ i18n.ts._contactForm.assignedUser }}</template>
+				<MkInput v-model="assignedUserId" style="margin: 0; flex: 1;" type="text" :spellcheck="false" :placeholder="i18n.ts._contactForm._adminDetail.placeholderAssignedUser" @update:modelValue="reload">
+					<template #label>{{ i18n.ts._contactForm._adminDetail.assignedUser }}</template>
 				</MkInput>
 			</div>
 
@@ -40,7 +40,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 				<div v-if="items.length === 0" class="empty">
 					<div style="text-align: center; color: var(--MI_THEME-fg);">
-						{{ i18n.ts._contactForm.noContactForms }}
+						{{ i18n.ts._contactForm._adminList.noContacts }}
 					</div>
 				</div>
 
@@ -54,14 +54,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, reactive, computed, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import MkButton from '@/components/MkButton.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkInput from '@/components/MkInput.vue';
-import MkPagination from '@/components/MkPagination.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
+import * as os from '@/os.js';
 import MkContactForm from '@/components/MkContactForm.vue';
 import { useContactFormCategories } from '@/composables/useContactFormCategories.js';
 
@@ -76,6 +76,7 @@ const assignedUserId = ref('');
 // Initialize categories
 onMounted(async () => {
 	await fetchCategories();
+	loadItems(true);
 });
 
 const items = ref([]);
@@ -112,6 +113,10 @@ async function loadItems(reset = false) {
 		offset.value += result.length;
 	} catch (error) {
 		console.error('Failed to load contact forms:', error);
+		os.alert({
+			type: 'error',
+			text: i18n.ts._contactForm._adminList.failedToLoadContactForms,
+		});
 	} finally {
 		loading.value = false;
 	}
@@ -129,16 +134,12 @@ function onContactFormUpdated(contactFormId: string) {
 	reload();
 }
 
-onMounted(() => {
-	loadItems(true);
-});
-
 const headerActions = computed(() => []);
 
 const headerTabs = computed(() => []);
 
 definePage(() => ({
-	title: i18n.ts._contactForm.list,
+	title: i18n.ts._contactForm._adminList.list,
 	icon: 'ti ti-mail',
 }));
 </script>

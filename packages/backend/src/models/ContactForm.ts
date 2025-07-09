@@ -37,7 +37,7 @@ export class MiContactForm {
 	@Column('varchar', { length: 256, nullable: true })
 	public name: string | null; // 名前・ニックネーム（任意）
 
-	@Column('varchar', { length: 512, nullable: true })
+	@Column('varchar', { length: 320, nullable: true })
 	public email: string | null; // メールアドレス（replyMethod=emailの場合必須）
 
 	@Column('varchar', { length: 128, nullable: true })
@@ -65,7 +65,7 @@ export class MiContactForm {
 	@Column('varchar', { length: 45, nullable: true })
 	public ipAddress: string | null;
 
-	@Column('varchar', { length: 512, nullable: true })
+	@Column('varchar', { length: 1024, nullable: true })
 	public userAgent: string | null;
 
 	// 送信者がログインユーザーの場合（自動取得）
