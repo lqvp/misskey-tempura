@@ -4,7 +4,6 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import { IsNull, Not } from 'typeorm';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { FollowingsRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
@@ -59,7 +58,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			return {
 				servers: serverStats.map(s => ({
 					host: s.host,
-					followersCount: parseInt(s.followers_count, 10),
+					followersCount: Number(s.followers_count),
 				})),
 			};
 		});

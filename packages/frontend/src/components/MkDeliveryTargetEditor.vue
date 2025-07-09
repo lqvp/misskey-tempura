@@ -151,7 +151,7 @@ const loadServers = async () => {
 	serversLoading.value = true;
 	loadError.value = false;
 	try {
-		const result = await misskeyApi('i/followers-servers', {}) as { servers: { host: string; followersCount: number }[] };
+		const result = await misskeyApi<{ servers: { host: string; followersCount: number }[] }>('i/followers-servers', {});
 		servers.value = result.servers;
 	} catch (err) {
 		console.error('Failed to load follower servers:', err);
