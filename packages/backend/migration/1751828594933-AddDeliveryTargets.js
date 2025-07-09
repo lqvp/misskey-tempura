@@ -7,7 +7,7 @@ export class AddDeliveryTargets1751828594933 {
 	name = 'AddDeliveryTargets1751828594933';
 
 	async up(queryRunner) {
-		await queryRunner.query(`ALTER TABLE "note" ADD "deliveryTargets" jsonb NOT NULL DEFAULT '{}'`);
+		await queryRunner.query(`ALTER TABLE "note" ADD "deliveryTargets" jsonb DEFAULT NULL`);
 	}
 
 	async down(queryRunner) {

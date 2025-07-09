@@ -204,6 +204,7 @@ export class MiNote {
 	public isScheduledForPrivate: boolean;
 
 	@Column('jsonb', {
+		nullable: true,
 		default: {},
 	})
 	public deliveryTargets: {

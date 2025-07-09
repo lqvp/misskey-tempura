@@ -212,6 +212,19 @@ export const paramDef = {
 				isScheduledForPrivate: { type: 'boolean', nullable: true },
 			},
 		},
+		deliveryTargets: {
+			type: 'object',
+			nullable: true,
+			properties: {
+				mode: { type: 'string', enum: ['include', 'exclude'] },
+				hosts: {
+					type: 'array',
+					items: { type: 'string' },
+					uniqueItems: true,
+				},
+			},
+			required: ['mode', 'hosts'],
+		},
 	},
 	// (re)note with text, files and poll are optional
 	anyOf: [

@@ -13,6 +13,8 @@ import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { bindThis } from '@/decorators.js';
 import type { IActivity } from '@/core/activitypub/type.js';
 import { ThinUser } from '@/queue/types.js';
+import { LoggerService } from '@/core/LoggerService.js';
+import type Logger from '@/logger.js';
 
 interface IRecipe {
 	type: string;
@@ -45,6 +47,7 @@ class DeliverManager {
 	private actor: ThinUser;
 	private activity: IActivity | null;
 	private recipes: IRecipe[] = [];
+	private logger: Logger;
 
 	/**
 	 * Constructor
@@ -61,6 +64,7 @@ class DeliverManager {
 
 		actor: { id: MiUser['id']; host: null; },
 		activity: IActivity | null,
+		logger: Logger,
 	) {
 		// 型で弾いてはいるが一応ローカルユーザーかチェック
 		// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -71,6 +75,7 @@ class DeliverManager {
 			id: actor.id,
 		};
 		this.activity = activity;
+		this.logger = logger.createSubLogger('deliver-manager');
 	}
 
 	/**
@@ -160,7 +165,14 @@ class DeliverManager {
 
 			for (const following of followers) {
 				const inbox = following.followerSharedInbox ?? following.followerInbox;
-				if (inbox === null) throw new Error('inbox is null');
+				if (inbox === null) {
+					this.logger.warn('inbox is null, skipping delivery', {
+						followerSharedInbox: following.followerSharedInbox,
+						followerInbox: following.followerInbox,
+						actorId: this.actor.id,
+					});
+					continue;
+				}
 				inboxes.set(inbox, following.followerSharedInbox != null);
 			}
 		} else if (this.recipes.some(r => isFollowers(r))) {
@@ -180,7 +192,14 @@ class DeliverManager {
 
 			for (const following of followers) {
 				const inbox = following.followerSharedInbox ?? following.followerInbox;
-				if (inbox === null) throw new Error('inbox is null');
+				if (inbox === null) {
+					this.logger.warn('inbox is null, skipping delivery', {
+						followerSharedInbox: following.followerSharedInbox,
+						followerInbox: following.followerInbox,
+						actorId: this.actor.id,
+					});
+					continue;
+				}
 				inboxes.set(inbox, following.followerSharedInbox != null);
 			}
 		}
@@ -202,13 +221,17 @@ class DeliverManager {
 
 @Injectable()
 export class ApDeliverManagerService {
+	private logger: Logger;
+
 	constructor(
 		@Inject(DI.followingsRepository)
 		private followingsRepository: FollowingsRepository,
 
 		private userEntityService: UserEntityService,
 		private queueService: QueueService,
+		private loggerService: LoggerService,
 	) {
+		this.logger = this.loggerService.getLogger('ap-deliver-manager', 'blue');
 	}
 
 	/**
@@ -224,6 +247,7 @@ export class ApDeliverManagerService {
 			this.queueService,
 			actor,
 			activity,
+			this.logger,
 		);
 		manager.addFollowersRecipe();
 		await manager.execute();
@@ -243,6 +267,7 @@ export class ApDeliverManagerService {
 			this.queueService,
 			actor,
 			activity,
+			this.logger,
 		);
 		manager.addDirectRecipe(to);
 		await manager.execute();
@@ -262,6 +287,7 @@ export class ApDeliverManagerService {
 			this.queueService,
 			actor,
 			activity,
+			this.logger,
 		);
 		for (const to of targets) manager.addDirectRecipe(to);
 		await manager.execute();
@@ -276,6 +302,7 @@ export class ApDeliverManagerService {
 
 			actor,
 			activity,
+			this.logger,
 		);
 	}
 }
