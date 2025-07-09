@@ -3997,6 +3997,13 @@ _widgetDrawerDirection:
   right: "右から表示"
 
 
+chooseFileFrom: "アップロードボタンの挙動"
+chooseFileFromDescription: "ファイルのアップロード時に使用するダイアログを選択します。「新しいファイル選択ダイアログ」はOS標準のものを、「旧ファイル選択ダイアログ」はMisskey独自のダイアログを使用します。"
+_chooseFileFrom:
+  new: "新しいファイル選択ダイアログ"
+  old: "旧ファイル選択ダイアログ"
+
+
 _contactForm:
   title: "コンタクトフォーム設定"
   enableContactForm: "コンタクトフォームを有効にする"

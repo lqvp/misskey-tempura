@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<option value="combined">{{ i18n.ts.all }}</option>
 					<option value="local">{{ i18n.ts.local }}</option>
 					<option value="remote">{{ i18n.ts.remote }}</option>
-						<option value="system">{{ i18n.ts.system }}</option>
+					<option value="system">{{ i18n.ts.system }}</option>
 				</MkSelect>
 				<MkInput v-model="searchHost" :debounce="true" type="search" style="margin: 0; flex: 1;" :disabled="paginator.computedParams?.value?.origin === 'local'">
 					<template #label>{{ i18n.ts.host }}</template>
@@ -27,9 +27,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #label>MIME type</template>
 				</MkInput>
 			</div>
-				<div>
-					<MkSwitch v-model="isSensitiveOnly">{{ i18n.ts.showOnlySensitiveFiles }}</MkSwitch>
-				</div>
+			<div>
+				<MkSwitch v-model="isSensitiveOnly">{{ i18n.ts.showOnlySensitiveFiles }}</MkSwitch>
+			</div>
 			<MkFileListForAdmin :paginator="paginator" :viewMode="viewMode"/>
 		</div>
 	</div>
