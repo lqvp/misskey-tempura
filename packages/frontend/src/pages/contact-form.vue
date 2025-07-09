@@ -230,6 +230,7 @@ import MkCaptcha from '@/components/MkCaptcha.vue';
 import FormSection from '@/components/form/section.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
+import { $i } from '@/i.js';
 import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
 import { definePage } from '@/page.js';
@@ -267,6 +268,15 @@ const captchaToken = ref<string | null>(null);
 onMounted(async () => {
 	await fetchCategories();
 	category.value = getDefaultCategory();
+
+	// ログイン済みユーザーの場合、フォームに自動入力
+	if ($i) {
+		name.value = $i.name || $i.username;
+		replyMethod.value = 'misskey';
+		const host = $i.host || new URL(instance.uri).hostname;
+		misskeyUsername.value = `${$i.username}@${host}`;
+		email.value = $i.email || '';
+	}
 });
 
 // Misskey username validation function
