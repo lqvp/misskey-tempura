@@ -154,11 +154,12 @@ export class ContactFormService {
 			category: contactForm.category,
 			status: contactForm.status,
 			ipAddress: contactForm.ipAddress,
+			userAgent: contactForm.userAgent,
 			user: contactForm.user ? await this.userEntityService.pack(contactForm.user, undefined, { schema: 'UserLite' }) : null,
 		};
 
 		// System Webhookに通知
-		await this.systemWebhookService.enqueueSystemWebhook('contactForm', payload);
+		await this.systemWebhookService.enqueueSystemWebhook('receivedContactForm', payload);
 	}
 
 	@bindThis

@@ -19,7 +19,7 @@ export const systemWebhookEventTypes = [
 	// モデレータが一定期間不在のためシステムにより招待制へと変更された
 	'inactiveModeratorsInvitationOnlyChanged',
 	// コンタクトフォームが送信されたとき
-	'contactForm',
+	'receivedContactForm',
 ] as const;
 export type SystemWebhookEventType = typeof systemWebhookEventTypes[number];
 

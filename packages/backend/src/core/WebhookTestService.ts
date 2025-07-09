@@ -329,8 +329,8 @@ export class WebhookTestService {
 				send('inactiveModeratorsInvitationOnlyChanged', {});
 				break;
 			}
-			case 'contactForm': {
-				send('contactForm', {
+			case 'receivedContactForm': {
+				send('receivedContactForm', {
 					id: '9cvdo1wzkm',
 					subject: 'テストのお問い合わせ',
 					content: 'これはテスト用のお問い合わせ内容です。',
@@ -341,6 +341,7 @@ export class WebhookTestService {
 					category: 'other',
 					status: 'pending',
 					ipAddress: '192.0.2.1',
+					userAgent: 'Mozilla/5.0 (Test Browser)',
 					user: await this.toPackedUserLite(dummyUser1),
 				});
 				break;

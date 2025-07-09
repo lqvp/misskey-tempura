@@ -11161,6 +11161,10 @@ export interface Locale extends ILocale {
              * モデレーターが一定期間非アクティブだったため、システムにより招待制へと変更されたとき
              */
             "inactiveModeratorsInvitationOnlyChanged": string;
+            /**
+             * お問い合わせフォームからのメッセージがあったとき
+             */
+            "receivedContactForm": string;
         };
         /**
          * Webhookを削除しますか？

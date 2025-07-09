@@ -52,6 +52,7 @@ export type ContactFormPayload = {
 	category: string;
 	status: 'pending' | 'in_progress' | 'resolved' | 'closed';
 	ipAddress: string | null;
+	userAgent: string | null;
 	user: Packed<'UserLite'> | null;
 };
 
@@ -60,7 +61,7 @@ export type SystemWebhookPayload<T extends SystemWebhookEventType> =
 	T extends 'userCreated' ? Packed<'UserLite'> :
 	T extends 'inactiveModeratorsWarning' ? InactiveModeratorsWarningPayload :
 	T extends 'inactiveModeratorsInvitationOnlyChanged' ? Record<string, never> :
-	T extends 'contactForm' ? ContactFormPayload :
+	T extends 'receivedContactForm' ? ContactFormPayload :
 	never;
 
 @Injectable()
