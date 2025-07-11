@@ -289,6 +289,8 @@ import type {
 	DriveResponse,
 	DriveFilesRequest,
 	DriveFilesResponse,
+	DriveFilesAttachedChatMessagesRequest,
+	DriveFilesAttachedChatMessagesResponse,
 	DriveFilesAttachedNotesRequest,
 	DriveFilesAttachedNotesResponse,
 	DriveFilesCheckExistenceRequest,
@@ -360,6 +362,8 @@ import type {
 	FlashMyResponse,
 	FlashMyLikesRequest,
 	FlashMyLikesResponse,
+	FlashSearchRequest,
+	FlashSearchResponse,
 	FlashShowRequest,
 	FlashShowResponse,
 	FlashUnlikeRequest,
@@ -892,6 +896,7 @@ export type Endpoints = {
 	'contact-form/submit': { req: ContactFormSubmitRequest; res: ContactFormSubmitResponse };
 	'drive': { req: EmptyRequest; res: DriveResponse };
 	'drive/files': { req: DriveFilesRequest; res: DriveFilesResponse };
+	'drive/files/attached-chat-messages': { req: DriveFilesAttachedChatMessagesRequest; res: DriveFilesAttachedChatMessagesResponse };
 	'drive/files/attached-notes': { req: DriveFilesAttachedNotesRequest; res: DriveFilesAttachedNotesResponse };
 	'drive/files/check-existence': { req: DriveFilesCheckExistenceRequest; res: DriveFilesCheckExistenceResponse };
 	'drive/files/complete-multipart-upload': { req: DriveFilesCompleteMultipartUploadRequest; res: DriveFilesCompleteMultipartUploadResponse };
@@ -933,6 +938,7 @@ export type Endpoints = {
 	'flash/like': { req: FlashLikeRequest; res: EmptyResponse };
 	'flash/my': { req: FlashMyRequest; res: FlashMyResponse };
 	'flash/my-likes': { req: FlashMyLikesRequest; res: FlashMyLikesResponse };
+	'flash/search': { req: FlashSearchRequest; res: FlashSearchResponse };
 	'flash/show': { req: FlashShowRequest; res: FlashShowResponse };
 	'flash/unlike': { req: FlashUnlikeRequest; res: EmptyResponse };
 	'flash/update': { req: FlashUpdateRequest; res: EmptyResponse };

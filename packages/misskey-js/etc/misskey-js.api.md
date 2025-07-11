@@ -1272,6 +1272,12 @@ type DateString = string;
 type DriveFile = components['schemas']['DriveFile'];
 
 // @public (undocumented)
+type DriveFilesAttachedChatMessagesRequest = operations['drive___files___attached-chat-messages']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type DriveFilesAttachedChatMessagesResponse = operations['drive___files___attached-chat-messages']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type DriveFilesAttachedNotesRequest = operations['drive___files___attached-notes']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -1817,6 +1823,8 @@ declare namespace entities {
         DriveResponse,
         DriveFilesRequest,
         DriveFilesResponse,
+        DriveFilesAttachedChatMessagesRequest,
+        DriveFilesAttachedChatMessagesResponse,
         DriveFilesAttachedNotesRequest,
         DriveFilesAttachedNotesResponse,
         DriveFilesCheckExistenceRequest,
@@ -1888,6 +1896,8 @@ declare namespace entities {
         FlashMyResponse,
         FlashMyLikesRequest,
         FlashMyLikesResponse,
+        FlashSearchRequest,
+        FlashSearchResponse,
         FlashShowRequest,
         FlashShowResponse,
         FlashUnlikeRequest,
@@ -2399,6 +2409,12 @@ type FlashMyRequest = operations['flash___my']['requestBody']['content']['applic
 
 // @public (undocumented)
 type FlashMyResponse = operations['flash___my']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type FlashSearchRequest = operations['flash___search']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type FlashSearchResponse = operations['flash___search']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type FlashShowRequest = operations['flash___show']['requestBody']['content']['application/json'];
