@@ -130,6 +130,8 @@ export const permissions = [
 	'read:clip',
 	'write:community-role',
 	'write:admin:drop-all-notes',
+	'write:admin:contact-form',
+	'read:admin:contact-form',
 ] as const;
 
 export const moderationLogTypes = [

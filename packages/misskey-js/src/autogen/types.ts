@@ -224,6 +224,46 @@ export type paths = {
          */
         post: operations['admin___captcha___save'];
     };
+    '/admin/contact-form/delete': {
+        /**
+         * admin/contact-form/delete
+         * @description No description provided.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:contact-form*
+         */
+        post: operations['admin___contact-form___delete'];
+    };
+    '/admin/contact-form/list': {
+        /**
+         * admin/contact-form/list
+         * @description No description provided.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:contact-form*
+         */
+        post: operations['admin___contact-form___list'];
+    };
+    '/admin/contact-form/show': {
+        /**
+         * admin/contact-form/show
+         * @description No description provided.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:contact-form*
+         */
+        post: operations['admin___contact-form___show'];
+    };
+    '/admin/contact-form/update': {
+        /**
+         * admin/contact-form/update
+         * @description No description provided.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:contact-form*
+         */
+        post: operations['admin___contact-form___update'];
+    };
     '/admin/decline-user': {
         /**
          * admin/decline-user
@@ -1691,6 +1731,15 @@ export type paths = {
          *     **Credential required**: *Yes* / **Permission**: *write:account*
          */
         post: operations['clips___update'];
+    };
+    '/contact-form/submit': {
+        /**
+         * contact-form/submit
+         * @description No description provided.
+         *
+         *     **Credential required**: *No*
+         */
+        post: operations['contact-form___submit'];
     };
     '/drive': {
         /**
@@ -5882,6 +5931,10 @@ export type components = {
             customCursorTextUrl: string | null;
             customCursorProgressUrl: string | null;
             customCursorWaitUrl: string | null;
+            enableContactForm: boolean;
+            contactFormLimit: number;
+            contactFormRequireAuth: boolean;
+            contactFormCategories: unknown[];
         };
         MetaDetailedOnly: {
             features?: {
@@ -5913,7 +5966,7 @@ export type components = {
             latestSentAt: string | null;
             latestStatus: number | null;
             name: string;
-            on: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged')[];
+            on: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged' | 'receivedContactForm')[];
             url: string;
             secret: string;
         };
@@ -6021,6 +6074,30 @@ export type components = {
             user?: components['schemas']['UserLite'];
             roomId: string;
             room?: components['schemas']['ChatRoom'];
+        };
+        ContactForm: {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string | null;
+            subject: string;
+            content: string;
+            name: string | null;
+            email: string | null;
+            misskeyUsername: string | null;
+            /** @enum {string} */
+            replyMethod: 'email' | 'misskey';
+            category: string;
+            /** @enum {string} */
+            status: 'pending' | 'in_progress' | 'resolved' | 'closed';
+            adminNote: string | null;
+            ipAddress: string | null;
+            userAgent: string | null;
+            user: components['schemas']['UserLite'] | null;
+            assignedUser: components['schemas']['UserLite'] | null;
+            assignedNickname: string | null;
         };
     };
     responses: never;
@@ -7747,6 +7824,323 @@ export interface operations {
                     sitekey?: string | null;
                     secret?: string | null;
                     instanceUrl?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___contact-form___delete': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    contactFormId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___contact-form___list': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** @default 10 */
+                    limit?: number;
+                    /** @default 0 */
+                    offset?: number;
+                    /** @enum {string|null} */
+                    status?: 'pending' | 'in_progress' | 'resolved' | 'closed' | null;
+                    category?: string | null;
+                    /** Format: misskey:id */
+                    assignedUserId?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** Format: misskey:id */
+                        id: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string | null;
+                        subject: string;
+                        content: string;
+                        name: string | null;
+                        email: string | null;
+                        misskeyUsername: string | null;
+                        /** @enum {string} */
+                        replyMethod: 'email' | 'misskey';
+                        category: string;
+                        /** @enum {string} */
+                        status: 'pending' | 'in_progress' | 'resolved' | 'closed';
+                        adminNote: string | null;
+                        ipAddress: string | null;
+                        userAgent: string | null;
+                        user: components['schemas']['UserLite'] | null;
+                        assignedUser: components['schemas']['UserLite'] | null;
+                        assignedNickname: string | null;
+                    }[];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___contact-form___show': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    contactFormId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** Format: misskey:id */
+                        id: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string | null;
+                        subject: string;
+                        content: string;
+                        name: string | null;
+                        email: string | null;
+                        misskeyUsername: string | null;
+                        /** @enum {string} */
+                        replyMethod: 'email' | 'misskey';
+                        category: string;
+                        /** @enum {string} */
+                        status: 'pending' | 'in_progress' | 'resolved' | 'closed';
+                        adminNote: string | null;
+                        ipAddress: string | null;
+                        userAgent: string | null;
+                        user: components['schemas']['UserLite'] | null;
+                        assignedUser: components['schemas']['UserLite'] | null;
+                        assignedNickname: string | null;
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___contact-form___update': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    contactFormId: string;
+                    /** @enum {string|null} */
+                    status?: 'pending' | 'in_progress' | 'resolved' | 'closed' | null;
+                    adminNote?: string | null;
+                    /** Format: misskey:id */
+                    assignedUserId?: string | null;
+                    assignedNickname?: string | null;
                 };
             };
         };
@@ -10111,6 +10505,16 @@ export interface operations {
                         customCursorTextUrl: string | null;
                         customCursorProgressUrl: string | null;
                         customCursorWaitUrl: string | null;
+                        enableContactForm: boolean;
+                        contactFormLimit: number;
+                        contactFormRequireAuth: boolean;
+                        contactFormCategories: {
+                            key: string;
+                            text: string;
+                            enabled: boolean;
+                            order: number;
+                            isDefault: boolean;
+                        }[];
                         deliverSuspendedSoftware: {
                             software: string;
                             versionRange: string;
@@ -12724,7 +13128,7 @@ export interface operations {
                 'application/json': {
                     isActive: boolean;
                     name: string;
-                    on: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged')[];
+                    on: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged' | 'receivedContactForm')[];
                     url: string;
                     secret: string;
                 };
@@ -12855,7 +13259,7 @@ export interface operations {
             content: {
                 'application/json': {
                     isActive?: boolean;
-                    on?: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged')[];
+                    on?: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged' | 'receivedContactForm')[];
                 };
             };
         };
@@ -12989,7 +13393,7 @@ export interface operations {
                     /** Format: misskey:id */
                     webhookId: string;
                     /** @enum {string} */
-                    type: 'abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged';
+                    type: 'abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged' | 'receivedContactForm';
                     override?: {
                         url?: string;
                         secret?: string;
@@ -13068,7 +13472,7 @@ export interface operations {
                     id: string;
                     isActive: boolean;
                     name: string;
-                    on: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged')[];
+                    on: ('abuseReport' | 'abuseReportResolved' | 'userCreated' | 'inactiveModeratorsWarning' | 'inactiveModeratorsInvitationOnlyChanged' | 'receivedContactForm')[];
                     url: string;
                     secret: string;
                 };
@@ -13571,6 +13975,16 @@ export interface operations {
                     customCursorTextUrl?: string | null;
                     customCursorProgressUrl?: string | null;
                     customCursorWaitUrl?: string | null;
+                    enableContactForm?: boolean;
+                    contactFormLimit?: number;
+                    contactFormRequireAuth?: boolean;
+                    contactFormCategories?: {
+                        key: string;
+                        text: string;
+                        enabled: boolean;
+                        order: number;
+                        isDefault: boolean;
+                    }[];
                 };
             };
         };
@@ -19639,6 +20053,97 @@ export interface operations {
             };
             /** @description I'm Ai */
             418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'contact-form___submit': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    subject: string;
+                    content: string;
+                    /** @enum {string} */
+                    replyMethod: 'email' | 'misskey';
+                    email?: string | null;
+                    misskeyUsername?: string | null;
+                    name?: string | null;
+                    /** @default other */
+                    category?: string;
+                    'hcaptcha-response'?: string | null;
+                    'g-recaptcha-response'?: string | null;
+                    'cf-turnstile-response'?: string | null;
+                    'm-captcha-response'?: string | null;
+                    'testcaptcha-response'?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** Format: misskey:id */
+                        id: string;
+                        message: string;
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

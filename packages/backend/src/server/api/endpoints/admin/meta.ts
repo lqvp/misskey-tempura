@@ -752,6 +752,49 @@ export const meta = {
 				type: 'string',
 				optional: false, nullable: true,
 			},
+			// Contact Form Settings
+			enableContactForm: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			contactFormLimit: {
+				type: 'number',
+				optional: false, nullable: false,
+			},
+			contactFormRequireAuth: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			contactFormCategories: {
+				type: 'array',
+				optional: false, nullable: false,
+				items: {
+					type: 'object',
+					optional: false, nullable: false,
+					properties: {
+						key: {
+							type: 'string',
+							optional: false, nullable: false,
+						},
+						text: {
+							type: 'string',
+							optional: false, nullable: false,
+						},
+						enabled: {
+							type: 'boolean',
+							optional: false, nullable: false,
+						},
+						order: {
+							type: 'number',
+							optional: false, nullable: false,
+						},
+						isDefault: {
+							type: 'boolean',
+							optional: false, nullable: false,
+						},
+					},
+				},
+			},
 			deliverSuspendedSoftware: {
 				type: 'array',
 				optional: false, nullable: false,
@@ -996,6 +1039,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				customCursorTextUrl: instance.customCursorTextUrl,
 				customCursorProgressUrl: instance.customCursorProgressUrl,
 				customCursorWaitUrl: instance.customCursorWaitUrl,
+				enableContactForm: instance.enableContactForm,
+				contactFormLimit: instance.contactFormLimit,
+				contactFormRequireAuth: instance.contactFormRequireAuth,
+				contactFormCategories: instance.contactFormCategories,
 			};
 		});
 	}

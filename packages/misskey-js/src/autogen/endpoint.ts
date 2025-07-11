@@ -38,6 +38,12 @@ import type {
 	AdminAvatarDecorationsUpdateRequest,
 	AdminCaptchaCurrentResponse,
 	AdminCaptchaSaveRequest,
+	AdminContactFormDeleteRequest,
+	AdminContactFormListRequest,
+	AdminContactFormListResponse,
+	AdminContactFormShowRequest,
+	AdminContactFormShowResponse,
+	AdminContactFormUpdateRequest,
 	AdminDeclineUserRequest,
 	AdminDeleteAccountRequest,
 	AdminDeleteAllFilesOfAUserRequest,
@@ -278,6 +284,8 @@ import type {
 	ClipsUnfavoriteRequest,
 	ClipsUpdateRequest,
 	ClipsUpdateResponse,
+	ContactFormSubmitRequest,
+	ContactFormSubmitResponse,
 	DriveResponse,
 	DriveFilesRequest,
 	DriveFilesResponse,
@@ -715,6 +723,10 @@ export type Endpoints = {
 	'admin/avatar-decorations/update': { req: AdminAvatarDecorationsUpdateRequest; res: EmptyResponse };
 	'admin/captcha/current': { req: EmptyRequest; res: AdminCaptchaCurrentResponse };
 	'admin/captcha/save': { req: AdminCaptchaSaveRequest; res: EmptyResponse };
+	'admin/contact-form/delete': { req: AdminContactFormDeleteRequest; res: EmptyResponse };
+	'admin/contact-form/list': { req: AdminContactFormListRequest; res: AdminContactFormListResponse };
+	'admin/contact-form/show': { req: AdminContactFormShowRequest; res: AdminContactFormShowResponse };
+	'admin/contact-form/update': { req: AdminContactFormUpdateRequest; res: EmptyResponse };
 	'admin/decline-user': { req: AdminDeclineUserRequest; res: EmptyResponse };
 	'admin/delete-account': { req: AdminDeleteAccountRequest; res: EmptyResponse };
 	'admin/delete-all-files-of-a-user': { req: AdminDeleteAllFilesOfAUserRequest; res: EmptyResponse };
@@ -877,6 +889,7 @@ export type Endpoints = {
 	'clips/show': { req: ClipsShowRequest; res: ClipsShowResponse };
 	'clips/unfavorite': { req: ClipsUnfavoriteRequest; res: EmptyResponse };
 	'clips/update': { req: ClipsUpdateRequest; res: ClipsUpdateResponse };
+	'contact-form/submit': { req: ContactFormSubmitRequest; res: ContactFormSubmitResponse };
 	'drive': { req: EmptyRequest; res: DriveResponse };
 	'drive/files': { req: DriveFilesRequest; res: DriveFilesResponse };
 	'drive/files/attached-notes': { req: DriveFilesAttachedNotesRequest; res: DriveFilesAttachedNotesResponse };

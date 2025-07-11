@@ -17,6 +17,7 @@ import type { MiMeta, UserIpsRepository } from '@/models/_.js';
 import { createTemp } from '@/misc/create-temp.js';
 import { bindThis } from '@/decorators.js';
 import { RoleService } from '@/core/RoleService.js';
+import { MetaService } from '@/core/MetaService.js';
 import type { Config } from '@/config.js';
 import { ApiError } from './error.js';
 import { RateLimiterService } from './RateLimiterService.js';
@@ -52,6 +53,7 @@ export class ApiCallService implements OnApplicationShutdown {
 		private rateLimiterService: RateLimiterService,
 		private roleService: RoleService,
 		private apiLoggerService: ApiLoggerService,
+		private metaService: MetaService,
 	) {
 		this.logger = this.apiLoggerService.logger;
 		this.userIpHistories = new Map<MiUser['id'], Set<string>>();
@@ -316,6 +318,12 @@ export class ApiCallService implements OnApplicationShutdown {
 			}
 
 			const limit = Object.assign({}, ep.meta.limit);
+
+			// Contact form dynamic limit support
+			if (ep.name === 'contact-form/submit') {
+				const meta = await this.metaService.fetch();
+				Object.assign(limit, { max: meta.contactFormLimit });
+			}
 
 			if (limit.key == null) {
 				(limit as any).key = ep.name;
