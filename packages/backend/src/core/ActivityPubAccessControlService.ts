@@ -109,7 +109,7 @@ export class ActivityPubAccessControlService {
 	 * @returns アクセス許可の場合はnull、拒否の場合は理由を含むオブジェクト
 	 */
 	@bindThis
-	public async checkAccess(request: FastifyRequest): Promise<{
+	public async checkAccess(request: FastifyRequest, allowLimitedHosts = false): Promise<{
 		blocked: boolean;
 		reason: string;
 		host?: string;
@@ -125,8 +125,10 @@ export class ActivityPubAccessControlService {
 		// インスタンス制限をチェック
 		const restrictions = await this.checkInstanceRestrictions(remoteHost);
 
-		// ブロック、サイレンス、隔離のいずれかが有効な場合はアクセス拒否
-		if (restrictions.isBlocked || restrictions.isSilenced || restrictions.isQuarantined) {
+		// isBlocked と isQuarantined は常に拒否。
+		// isSilenced は allowLimitedHosts が true の場合のみ許可。
+		const shouldDeny = restrictions.isBlocked || restrictions.isQuarantined || (!allowLimitedHosts && restrictions.isSilenced);
+		if (shouldDeny) {
 			this.logger.info(`ActivityPub access denied from ${remoteHost}: ${restrictions.reason}`, {
 				host: remoteHost,
 				reason: restrictions.reason,
