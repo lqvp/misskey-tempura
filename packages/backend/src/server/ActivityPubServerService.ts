@@ -26,14 +26,14 @@ import type { MiNote } from '@/models/Note.js';
 import { QueryService } from '@/core/QueryService.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
+import { FanoutTimelineEndpointService } from '@/core/FanoutTimelineEndpointService.js';
+import { ActivityPubAccessControlService } from '@/core/ActivityPubAccessControlService.js';
 import { bindThis } from '@/decorators.js';
 import { IActivity } from '@/core/activitypub/type.js';
 import { isQuote, isRenote } from '@/misc/is-renote.js';
 import * as Acct from '@/misc/acct.js';
 import type { FastifyInstance, FastifyRequest, FastifyReply, FastifyPluginOptions, FastifyBodyParser } from 'fastify';
 import type { FindOptionsWhere } from 'typeorm';
-import { FanoutTimelineEndpointService } from '@/core/FanoutTimelineEndpointService.js';
-import { ActivityPubAccessControlService } from '@/core/ActivityPubAccessControlService.js';
 
 const ACTIVITY_JSON = 'application/activity+json; charset=utf-8';
 const LD_JSON = 'application/ld+json; profile="https://www.w3.org/ns/activitystreams"; charset=utf-8';
@@ -181,10 +181,26 @@ export class ActivityPubServerService {
 	}
 
 	@bindThis
+	private async applyAccessControl(request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
+		const accessControl = await this.activityPubAccessControlService.checkAccess(request);
+		if (accessControl) {
+			reply.code(403);
+			reply.header('Content-Type', 'text/plain; charset=utf-8');
+			reply.send(`Access denied: ${accessControl.reason}`);
+			return true;
+		}
+		return false;
+	}
+
+	@bindThis
 	private async followers(
 		request: FastifyRequest<{ Params: { user: string; }; Querystring: { cursor?: string; page?: string; }; }>,
 		reply: FastifyReply,
 	) {
+		if (await this.applyAccessControl(request, reply)) {
+			return;
+		}
+
 		if (this.meta.federation === 'none') {
 			reply.code(403);
 			return;
@@ -282,6 +298,10 @@ export class ActivityPubServerService {
 		request: FastifyRequest<{ Params: { user: string; }; Querystring: { cursor?: string; page?: string; }; }>,
 		reply: FastifyReply,
 	) {
+		if (await this.applyAccessControl(request, reply)) {
+			return;
+		}
+
 		if (this.meta.federation === 'none') {
 			reply.code(403);
 			return;
@@ -376,6 +396,10 @@ export class ActivityPubServerService {
 
 	@bindThis
 	private async featured(request: FastifyRequest<{ Params: { user: string; }; }>, reply: FastifyReply) {
+		if (await this.applyAccessControl(request, reply)) {
+			return;
+		}
+
 		if (this.meta.federation === 'none') {
 			reply.code(403);
 			return;
@@ -425,6 +449,10 @@ export class ActivityPubServerService {
 		}>,
 		reply: FastifyReply,
 	) {
+		if (await this.applyAccessControl(request, reply)) {
+			return;
+		}
+
 		if (this.meta.federation === 'none') {
 			reply.code(403);
 			return;
@@ -578,13 +606,9 @@ export class ActivityPubServerService {
 			reply.code(403);
 			return;
 		}
-
-		// アクセス制御をチェック
-		const accessControl = await this.activityPubAccessControlService.checkAccess(request);
-		if (accessControl) {
-			reply.code(403);
-			reply.header('Content-Type', 'text/plain; charset=utf-8');
-			return `Access denied: ${accessControl.reason}`;
+		
+		if (await this.applyAccessControl(request, reply)) {
+			return;
 		}
 
 		if (user == null) {
@@ -674,12 +698,8 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			// アクセス制御をチェック
-			const accessControl = await this.activityPubAccessControlService.checkAccess(request);
-			if (accessControl) {
-				reply.code(403);
-				reply.header('Content-Type', 'text/plain; charset=utf-8');
-				return `Access denied: ${accessControl.reason}`;
+			if (await this.applyAccessControl(request, reply)) {
+				return;
 			}
 
 			const note = await this.notesRepository.findOneBy({

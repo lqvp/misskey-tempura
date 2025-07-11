@@ -17,6 +17,21 @@ import type { FastifyRequest } from 'fastify';
 export class ActivityPubAccessControlService {
 	private logger: Logger;
 
+	private static readonly userAgentPatterns: readonly RegExp[] = [
+		// Mastodon
+		/http\.rb\/[\d.]+\s+\(Mastodon\/[\d.]+;\s+\+https?:\/\/([^/\)]+)/i,
+		// Pleroma
+		/Pleroma\s+[\d.]+;\s+https?:\/\/([^/\s<]+)/i,
+		// Misskey
+		/Misskey\/[\d.]+\s+\(https?:\/\/([^/\)]+)/i,
+		// Pixelfed
+		/pixelfed\/[\d.]+\s+\(https?:\/\/([^/\)]+)/i,
+		// Friendica
+		/friendica-[\d.]+\s+\(https?:\/\/([^/\)]+)/i,
+		// Generic ActivityPub pattern: contains hostname (厳密化)
+		/https?:\/\/([a-zA-Z0-9.-]+[a-zA-Z0-9])/i,
+	];
+
 	constructor(
 		@Inject(DI.config)
 		private config: Config,
@@ -45,23 +60,7 @@ export class ActivityPubAccessControlService {
 			return null;
 		}
 
-		// 既知のActivityPubサーバーのUser-Agentパターンを解析
-		const patterns = [
-			// Mastodon: "http.rb/5.3.0 (Mastodon/4.2.0; +https://example.com/)"
-			/http\.rb\/[\d.]+\s+\(Mastodon\/[\d.]+;\s+\+https?:\/\/([^/\)]+)/i,
-			// Pleroma: "Pleroma 2.5.0; https://example.com <team@example.com>"
-			/Pleroma\s+[\d.]+;\s+https?:\/\/([^/\s<]+)/i,
-			// Misskey: "Misskey/13.0.0 (https://example.com/)"
-			/Misskey\/[\d.]+\s+\(https?:\/\/([^/\)]+)/i,
-			// Pixelfed: "pixelfed/0.11.9 (https://example.com)"
-			/pixelfed\/[\d.]+\s+\(https?:\/\/([^/\)]+)/i,
-			// Friendica: "friendica-2023.09 (https://example.com)"
-			/friendica-[\d.]+\s+\(https?:\/\/([^/\)]+)/i,
-			// Generic ActivityPub pattern: contains hostname
-			/https?:\/\/([^/\s\)]+)/i,
-		];
-
-		for (const pattern of patterns) {
+		for (const pattern of ActivityPubAccessControlService.userAgentPatterns) {
 			const match = userAgent.match(pattern);
 			if (match && match[1]) {
 				const host = match[1].toLowerCase();
