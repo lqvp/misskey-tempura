@@ -86,6 +86,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<MkPollEditor v-if="poll" v-model="poll" @destroyed="poll = null"/>
 	<MkDeleteScheduleEditor v-if="scheduledNoteDelete" v-model="scheduledNoteDelete" @destroyed="scheduledNoteDelete = null"/>
 	<MkScheduleEditor v-if="scheduleNote" v-model="scheduleNote" @destroyed="scheduleNote = null"/>
+	<MkDeliveryTargetEditor v-if="deliveryTargets" v-model="deliveryTargets" @destroyed="deliveryTargets = null"/>
 	<MkNotePreview v-if="showPreview" :class="$style.preview" :text="text" :files="files" :poll="poll ?? undefined" :useCw="useCw" :cw="cw" :user="postAccount ?? $i"/>
 	<!-- <div v-if="showingOptions" style="padding: 8px 16px;">
 	</div> -->
@@ -121,6 +122,7 @@ import type { MenuItem } from '@/types/menu.js';
 import type { PollEditorModelValue } from '@/components/MkPollEditor.vue';
 import type { UploaderItem } from '@/composables/use-uploader.js';
 import type { DeleteScheduleEditorModelValue } from '@/components/MkDeleteScheduleEditor.vue';
+import type { DeliveryTargetEditorModelValue } from '@/components/MkDeliveryTargetEditor.vue';
 import MkNotePreview from '@/components/MkNotePreview.vue';
 import XPostFormAttaches from '@/components/MkPostFormAttaches.vue';
 import XTextCounter from '@/components/MkPostForm.TextCounter.vue';
@@ -148,6 +150,7 @@ import { emojiPicker } from '@/utility/emoji-picker.js';
 import { mfmFunctionPicker } from '@/utility/mfm-function-picker.js';
 import { bottomItemDef } from '@/utility/post-form.js';
 import MkScheduleEditor from '@/components/MkScheduleEditor.vue';
+import MkDeliveryTargetEditor from '@/components/MkDeliveryTargetEditor.vue';
 import { transformTextWithGemini } from '@/utility/tempura-script/text-transformations.js';
 import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
@@ -222,6 +225,7 @@ const justEndedComposition = ref(false);
 const scheduleNote = ref<{
 	scheduledAt: number | null;
 } | null>(null);
+const deliveryTargets = ref<DeliveryTargetEditorModelValue | null>(null);
 
 const renoteTargetNote: ShallowRef<PostFormProps['renote'] | null> = shallowRef(props.renote);
 const replyTargetNote: ShallowRef<PostFormProps['reply'] | null> = shallowRef(props.reply);
@@ -390,6 +394,10 @@ const bottomItemActionDef: Record<keyof typeof bottomItemDef, {
 			});
 		},
 	},
+	deliveryTargets: {
+		active: deliveryTargets,
+		action: toggleDeliveryTargets,
+	},
 });
 
 watch(text, () => {
@@ -557,6 +565,17 @@ function toggleScheduledNoteDelete() {
 			deleteAfter: prefer.s.defaultScheduledNoteDeleteTime,
 			isScheduledForPrivate: false,
 			isValid: true,
+		};
+	}
+}
+
+function toggleDeliveryTargets() {
+	if (deliveryTargets.value) {
+		deliveryTargets.value = null;
+	} else {
+		deliveryTargets.value = {
+			mode: 'include',
+			hosts: [],
 		};
 	}
 }
@@ -1058,6 +1077,7 @@ async function post(ev?: MouseEvent) {
 		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(u => u.id) : undefined,
 		reactionAcceptance: reactionAcceptance.value,
 		scheduleNote: scheduleNote.value ?? undefined,
+		deliveryTargets: deliveryTargets.value && !(deliveryTargets.value.mode === 'exclude' && deliveryTargets.value.hosts.length === 0) ? deliveryTargets.value : undefined,
 	};
 
 	if (withHashtags.value && hashtags.value && hashtags.value.trim() !== '') {

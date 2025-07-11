@@ -433,6 +433,7 @@ import type {
 	IExportFollowingRequest,
 	IFavoritesRequest,
 	IFavoritesResponse,
+	IFollowersServersResponse,
 	IGalleryLikesRequest,
 	IGalleryLikesResponse,
 	IGalleryPostsRequest,
@@ -986,6 +987,7 @@ export type Endpoints = {
 	'i/export-notes': { req: EmptyRequest; res: EmptyResponse };
 	'i/export-user-lists': { req: EmptyRequest; res: EmptyResponse };
 	'i/favorites': { req: IFavoritesRequest; res: IFavoritesResponse };
+	'i/followers-servers': { req: EmptyRequest; res: IFollowersServersResponse };
 	'i/gallery/likes': { req: IGalleryLikesRequest; res: IGalleryLikesResponse };
 	'i/gallery/posts': { req: IGalleryPostsRequest; res: IGalleryPostsResponse };
 	'i/import-antennas': { req: IImportAntennasRequest; res: EmptyResponse };

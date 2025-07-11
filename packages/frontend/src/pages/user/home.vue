@@ -154,9 +154,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 								</MkA>
 							</div>
 						</template>
-						<div v-else class="_fullinfo">
-							<div style="font-size: 1.4rem; font-weight: bold; padding-bottom: 4px;">{{ i18n.ts.pleaseLogin }}</div>
-							<div style="opacity: 0.7">{{ i18n.ts.pleaseLoginToViewProfile }}</div>
+						<div v-else>
+							<MkResult type="empty" :text="i18n.ts.pleaseLoginToViewProfile">
+								<MkButton primary rounded :class="$style.loginButton" @click="showLogin">
+									<i class="ti ti-login-2"></i> {{ i18n.ts.login }}
+								</MkButton>
+							</MkResult>
 						</div>
 					</div>
 				</div>
@@ -195,10 +198,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkResult type="blocked" :text="i18n.ts.youBlocked"/>
 							<div style="opacity: 0.7">{{ i18n.tsx.youBlockedDescription({ user: `@${ user.username }` }) }}</div>
 						</div>
-					</div>
-					<div v-else class="_fullinfo">
-						<div style="font-size: 1.4rem; font-weight: bold; padding-bottom: 4px;">{{ i18n.ts.pleaseLogin }}</div>
-						<div style="opacity: 0.7">{{ i18n.ts.pleaseLoginToViewProfile }}</div>
 					</div>
 				</div>
 			</div>
@@ -244,6 +243,7 @@ import { editNickname } from '@/utility/edit-nickname';
 import MkSparkle from '@/components/MkSparkle.vue';
 import { prefer } from '@/preferences.js';
 import MkPullToRefresh from '@/components/MkPullToRefresh.vue';
+import { pleaseLogin } from '@/utility/please-login.js';
 
 function calcAge(birthdate: string): number {
 	const date = new Date(birthdate);
@@ -381,6 +381,10 @@ watch([props.user], () => {
 
 async function reload() {
 	// TODO
+}
+
+function showLogin() {
+	pleaseLogin();
 }
 
 onMounted(() => {
@@ -897,5 +901,13 @@ onUnmounted(() => {
 .verifiedLink {
 	margin-left: 4px;
 	color: var(--MI_THEME-success);
+}
+
+.loginButton {
+	margin-left: auto;
+	margin-right: auto;
+	justify-content: center;
+	align-items: center;
+	display: flex;
 }
 </style>
