@@ -79,6 +79,7 @@ import { ChannelFollowingService } from './ChannelFollowingService.js';
 import { ChatService } from './ChatService.js';
 import { RegistryApiService } from './RegistryApiService.js';
 import { ReversiService } from './ReversiService.js';
+import { ActivityPubAccessControlService } from './ActivityPubAccessControlService.js';
 
 import { ChartLoggerService } from './chart/ChartLoggerService.js';
 import FederationChart from './chart/charts/federation.js';
@@ -229,6 +230,7 @@ const $ChannelFollowingService: Provider = { provide: 'ChannelFollowingService',
 const $ChatService: Provider = { provide: 'ChatService', useExisting: ChatService };
 const $RegistryApiService: Provider = { provide: 'RegistryApiService', useExisting: RegistryApiService };
 const $ReversiService: Provider = { provide: 'ReversiService', useExisting: ReversiService };
+const $ActivityPubAccessControlService: Provider = { provide: 'ActivityPubAccessControlService', useExisting: ActivityPubAccessControlService };
 
 const $ChartLoggerService: Provider = { provide: 'ChartLoggerService', useExisting: ChartLoggerService };
 const $FederationChart: Provider = { provide: 'FederationChart', useExisting: FederationChart };
@@ -382,6 +384,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		ChatService,
 		RegistryApiService,
 		ReversiService,
+		ActivityPubAccessControlService,
 
 		ChartLoggerService,
 		FederationChart,
@@ -531,6 +534,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$ChatService,
 		$RegistryApiService,
 		$ReversiService,
+		$ActivityPubAccessControlService,
 
 		$ChartLoggerService,
 		$FederationChart,
@@ -681,6 +685,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		ChatService,
 		RegistryApiService,
 		ReversiService,
+		ActivityPubAccessControlService,
 
 		FederationChart,
 		NotesChart,
@@ -828,6 +833,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$ChatService,
 		$RegistryApiService,
 		$ReversiService,
+		$ActivityPubAccessControlService,
 
 		$FederationChart,
 		$NotesChart,
