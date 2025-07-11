@@ -316,7 +316,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 								<template #label>
 									<span>{{ i18n.ts._customCursor.defaultCursorImageURL }}</span>
 								</template>
-								<template #caption>{{ i18n.ts._customCursor.defaultCursorImageURLDescription }}</template>
+								<template #caption>{{ i18n.ts._customCursor.defaultCursorImageUrlDescription }}</template>
 							</MkInput>
 						</div>
 
