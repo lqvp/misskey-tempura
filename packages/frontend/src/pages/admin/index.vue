@@ -185,6 +185,16 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 		to: '/admin/abuses',
 		active: currentPage.value?.route.name === 'abuses',
 	}, {
+		icon: 'ti ti-mail',
+		text: i18n.ts._contactForm._adminList.list,
+		to: '/admin/tempura-contact',
+		active: currentPage.value?.route.name === 'tempura-contact',
+	}, {
+		icon: 'ti ti-forms',
+		text: i18n.ts._contactForm._category.categoryManagement,
+		to: '/admin/contact-form-categories',
+		active: currentPage.value?.route.name === 'contact-form-categories',
+	}, {
 		icon: 'ti ti-list-search',
 		text: i18n.ts.moderationLogs,
 		to: '/admin/modlog',

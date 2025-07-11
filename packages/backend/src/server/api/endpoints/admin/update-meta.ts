@@ -281,6 +281,24 @@ export const paramDef = {
 		customCursorTextUrl: { type: 'string', nullable: true },
 		customCursorProgressUrl: { type: 'string', nullable: true },
 		customCursorWaitUrl: { type: 'string', nullable: true },
+		// Contact Form Settings
+		enableContactForm: { type: 'boolean' },
+		contactFormLimit: { type: 'integer', minimum: 1, maximum: 10 },
+		contactFormRequireAuth: { type: 'boolean' },
+		contactFormCategories: {
+			type: 'array',
+			items: {
+				type: 'object',
+				properties: {
+					key: { type: 'string', maxLength: 64 },
+					text: { type: 'string', maxLength: 256 },
+					enabled: { type: 'boolean' },
+					order: { type: 'integer', minimum: 1 },
+					isDefault: { type: 'boolean' },
+				},
+				required: ['key', 'text', 'enabled', 'order', 'isDefault'],
+			},
+		},
 	},
 	required: [],
 } as const;
@@ -838,14 +856,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.customSplashText = ps.customSplashText.filter(Boolean);
 			}
 
-			if (Array.isArray(ps.customSplashText)) {
-				set.customSplashText = ps.customSplashText.filter(Boolean);
-			}
-
-			if (ps.blockMentionsFromUnfamiliarRemoteUsers !== undefined) {
-				set.blockMentionsFromUnfamiliarRemoteUsers = ps.blockMentionsFromUnfamiliarRemoteUsers;
-			}
-
 			if (ps.blockMentionsFromUnfamiliarRemoteUsers !== undefined) {
 				set.blockMentionsFromUnfamiliarRemoteUsers = ps.blockMentionsFromUnfamiliarRemoteUsers;
 			}
@@ -1036,6 +1046,43 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.customCursorWaitUrl !== undefined) {
 				set.customCursorWaitUrl = ps.customCursorWaitUrl;
+			}
+
+			if (ps.enableContactForm !== undefined) {
+				set.enableContactForm = ps.enableContactForm;
+			}
+
+			if (ps.contactFormLimit !== undefined) {
+				set.contactFormLimit = ps.contactFormLimit;
+			}
+
+			if (ps.contactFormRequireAuth !== undefined) {
+				set.contactFormRequireAuth = ps.contactFormRequireAuth;
+			}
+
+			if (ps.contactFormCategories !== undefined) {
+				// Validate contactFormCategories array
+				if (Array.isArray(ps.contactFormCategories)) {
+					// Check for duplicate keys
+					const keys = ps.contactFormCategories.map(cat => cat.key);
+					const uniqueKeys = new Set(keys);
+					if (keys.length !== uniqueKeys.size) {
+						throw new Error('Duplicate category keys are not allowed');
+					}
+
+					// Check for multiple default categories
+					const defaultCategories = ps.contactFormCategories.filter(cat => cat.isDefault);
+					if (defaultCategories.length > 1) {
+						throw new Error('Only one category can be set as default');
+					}
+
+					// Ensure at least one category exists and has a default
+					if (ps.contactFormCategories.length > 0 && defaultCategories.length === 0) {
+						throw new Error('At least one category must be set as default');
+					}
+				}
+
+				set.contactFormCategories = ps.contactFormCategories;
 			}
 
 			const before = await this.metaService.fetch(true);

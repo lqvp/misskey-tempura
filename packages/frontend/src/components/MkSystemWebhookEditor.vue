@@ -67,6 +67,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 								</MkSwitch>
 								<MkButton v-show="mode === 'edit'" transparent :class="$style.testButton" :disabled="!(isActive && events.inactiveModeratorsInvitationOnlyChanged)" @click="test('inactiveModeratorsInvitationOnlyChanged')"><i class="ti ti-send"></i></MkButton>
 							</div>
+							<div :class="$style.switchBox">
+								<MkSwitch v-model="events.receivedContactForm" :disabled="disabledEvents.receivedContactForm">
+									<template #label>{{ i18n.ts._webhookSettings._systemEvents.receivedContactForm }}</template>
+								</MkSwitch>
+								<MkButton v-show="mode === 'edit'" transparent :class="$style.testButton" :disabled="!(isActive && events.receivedContactForm)" @click="test('receivedContactForm')"><i class="ti ti-send"></i></MkButton>
+							</div>
 						</div>
 
 						<div v-show="mode === 'edit'" :class="$style.description">
@@ -114,6 +120,7 @@ type EventType = {
 	userCreated: boolean;
 	inactiveModeratorsWarning: boolean;
 	inactiveModeratorsInvitationOnlyChanged: boolean;
+	receivedContactForm: boolean;
 };
 
 const emit = defineEmits<{
@@ -139,6 +146,7 @@ const events = ref<EventType>({
 	userCreated: true,
 	inactiveModeratorsWarning: true,
 	inactiveModeratorsInvitationOnlyChanged: true,
+	receivedContactForm: true,
 });
 const isActive = ref<boolean>(true);
 
@@ -148,6 +156,7 @@ const disabledEvents = ref<EventType>({
 	userCreated: false,
 	inactiveModeratorsWarning: false,
 	inactiveModeratorsInvitationOnlyChanged: false,
+	receivedContactForm: false,
 });
 
 const disableSubmitButton = computed(() => {

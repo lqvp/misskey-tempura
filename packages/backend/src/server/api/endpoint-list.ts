@@ -466,3 +466,11 @@ export * as 'notes/llm-gen' from './endpoints/notes/llm-gen.js';
 export * as 'search-avatar-decorations' from './endpoints/search-avatar-decorations.js';
 export * as 'invite/check' from './endpoints/invite/check.js';
 export * as 'i/followers-servers' from './endpoints/i/followers-servers.js';
+
+// region ContactForm
+export * as 'admin/contact-form/list' from './endpoints/admin/contact-form/list.js';
+export * as 'admin/contact-form/update' from './endpoints/admin/contact-form/update.js';
+export * as 'admin/contact-form/delete' from './endpoints/admin/contact-form/delete.js';
+export * as 'admin/contact-form/show' from './endpoints/admin/contact-form/show.js';
+export * as 'contact-form/submit' from './endpoints/contact-form/submit.js';
+// endregion ContactForm
