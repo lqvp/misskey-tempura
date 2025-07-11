@@ -25,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</div>
 
 				<div class="_gaps_s">
-					<div v-for="(category, index) in categories" :key="category.key" :class="$style.categoryItem">
+					<div v-for="(category, index) in categories" :key="index" :class="$style.categoryItem">
 						<div :class="$style.categoryHeader">
 							<div :class="$style.dragHandle">
 								<i class="ti ti-grip-vertical"></i>
