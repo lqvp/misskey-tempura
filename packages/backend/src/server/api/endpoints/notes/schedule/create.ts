@@ -212,6 +212,19 @@ export const paramDef = {
 				isScheduledForPrivate: { type: 'boolean', nullable: true },
 			},
 		},
+		deliveryTargets: {
+			type: 'object',
+			nullable: true,
+			properties: {
+				mode: { type: 'string', enum: ['include', 'exclude'] },
+				hosts: {
+					type: 'array',
+					items: { type: 'string' },
+					uniqueItems: true,
+				},
+			},
+			required: ['mode', 'hosts'],
+		},
 	},
 	// (re)note with text, files and poll are optional
 	anyOf: [
@@ -393,6 +406,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				deleteAt: ps.scheduledDelete && ps.scheduledDelete.deleteAt
 					? new Date(ps.scheduledDelete.deleteAt).toISOString()
 					: null,
+				deliveryTargets: ps.deliveryTargets,
 			};
 
 			if (ps.scheduleNote.scheduledAt) {

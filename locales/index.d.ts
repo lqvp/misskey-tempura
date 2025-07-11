@@ -14805,6 +14805,36 @@ export interface Locale extends ILocale {
          */
         "old": string;
     };
+    "_deliveryTargetControl": {
+        /**
+         * 配送先制御
+         */
+        "deliveryTargetControl": string;
+        /**
+         * 選択したサーバーのみに配送
+         */
+        "deliveryTargetInclude": string;
+        /**
+         * 選択したサーバーを除外して配送
+         */
+        "deliveryTargetExclude": string;
+        /**
+         * リモートサーバーのフォロワーがいません
+         */
+        "noFollowersFromRemoteServers": string;
+        /**
+         * サーバー一覧の読み込みに失敗しました
+         */
+        "loadError": string;
+        /**
+         * {count}人のフォロワー
+         */
+        "followersCount": ParameterizedString<"count">;
+        /**
+         * {count}件見つかりました（全{total}件中）
+         */
+        "searchResults": ParameterizedString<"count" | "total">;
+    };
 }
 declare const locales: {
     [lang: string]: Locale;

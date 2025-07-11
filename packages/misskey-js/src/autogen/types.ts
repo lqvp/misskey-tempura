@@ -2587,6 +2587,15 @@ export type paths = {
          */
         post: operations['i___favorites'];
     };
+    '/i/followers-servers': {
+        /**
+         * i/followers-servers
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:following*
+         */
+        post: operations['i___followers-servers'];
+    };
     '/i/gallery/likes': {
         /**
          * i/gallery/likes
@@ -26559,6 +26568,69 @@ export interface operations {
             };
         };
     };
+    'i___followers-servers': {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        servers: {
+                            host: string;
+                            followersCount: number;
+                        }[];
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     i___gallery___likes: {
         requestBody: {
             content: {
@@ -30445,6 +30517,11 @@ export interface operations {
                         deleteAfter?: number | null;
                         isScheduledForPrivate?: boolean | null;
                     } | null;
+                    deliveryTargets?: {
+                        /** @enum {string} */
+                        mode: 'include' | 'exclude';
+                        hosts: string[];
+                    } | null;
                 };
             };
         };
@@ -32415,6 +32492,11 @@ export interface operations {
                         deleteAt?: number | null;
                         deleteAfter?: number | null;
                         isScheduledForPrivate?: boolean | null;
+                    } | null;
+                    deliveryTargets?: {
+                        /** @enum {string} */
+                        mode: 'include' | 'exclude';
+                        hosts: string[];
                     } | null;
                 } | unknown | unknown | unknown | unknown | unknown;
             };

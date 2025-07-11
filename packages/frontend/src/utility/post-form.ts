@@ -58,4 +58,8 @@ export const bottomItemDef = {
 		title: i18n.ts._llm.notesTransformation,
 		icon: 'ti ti-notes',
 	},
+	deliveryTargets: {
+		title: i18n.ts._deliveryTargetControl.deliveryTargetControl,
+		icon: 'ti-server-2',
+	},
 };

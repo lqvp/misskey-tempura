@@ -4001,3 +4001,12 @@ _chooseFileFrom:
   new: "新しいファイル選択ダイアログ"
   old: "旧ファイル選択ダイアログ"
 
+
+_deliveryTargetControl:
+  deliveryTargetControl: "配送先制御"
+  deliveryTargetInclude: "選択したサーバーのみに配送"
+  deliveryTargetExclude: "選択したサーバーを除外して配送"
+  noFollowersFromRemoteServers: "リモートサーバーのフォロワーがいません"
+  loadError: "サーバー一覧の読み込みに失敗しました"
+  followersCount: "{count}人のフォロワー"
+  searchResults: "{count}件見つかりました（全{total}件中）"

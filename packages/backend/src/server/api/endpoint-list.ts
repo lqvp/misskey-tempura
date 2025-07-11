@@ -465,3 +465,4 @@ export * as 'admin/drop-all-notes' from './endpoints/admin/drop-all-notes.js';
 export * as 'notes/llm-gen' from './endpoints/notes/llm-gen.js';
 export * as 'search-avatar-decorations' from './endpoints/search-avatar-decorations.js';
 export * as 'invite/check' from './endpoints/invite/check.js';
+export * as 'i/followers-servers' from './endpoints/i/followers-servers.js';
