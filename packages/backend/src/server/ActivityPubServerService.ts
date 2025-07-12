@@ -713,6 +713,11 @@ export class ActivityPubServerService {
 				return;
 			}
 
+			if (!await this.activityPubAccessControlService.checkNoteAccess(note, request)) {
+				reply.code(404);
+				return;
+			}
+
 			// リモートだったらリダイレクト
 			if (note.userHost != null) {
 				if (note.uri == null || this.utilityService.isSelfHost(note.userHost)) {
