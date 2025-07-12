@@ -14850,6 +14850,14 @@ export interface Locale extends ILocale {
          * {count}件見つかりました（全{total}件中）
          */
         "searchResults": ParameterizedString<"count" | "total">;
+        /**
+         * 一部のサーバーにのみ公開
+         */
+        "deliveryTargetsInclude": string;
+        /**
+         * 一部のサーバーに非公開
+         */
+        "deliveryTargetsExclude": string;
     };
     "_contactForm": {
         "_settings": {

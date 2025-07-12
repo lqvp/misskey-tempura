@@ -66,6 +66,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<i v-else-if="appearNote.visibility === 'specified'" ref="specified" class="ti ti-mail"></i>
 						</span>
 						<span v-if="appearNote.localOnly" style="margin-left: 0.5em;" :title="i18n.ts._visibility['disableFederation']"><i class="ti ti-rocket-off"></i></span>
+						<span v-if="appearNote.deliveryTargets?.hosts?.length" v-tooltip="`${i18n.ts._deliveryTargetControl[appearNote.deliveryTargets.mode === 'include' ? 'deliveryTargetsInclude' : 'deliveryTargetsExclude']}\n${appearNote.deliveryTargets.hosts.join('\n')}`" style="margin-left: 0.5em;">
+							<i v-if="appearNote.deliveryTargets.mode === 'include'" class="ti ti-list-check"></i>
+							<i v-else class="ti ti-list-details"></i>
+						</span>
 					</div>
 				</div>
 				<div :class="$style.noteHeaderUsernameAndBadgeRoles">
@@ -437,6 +441,8 @@ const reactionsPaginator = markRaw(new Paginator('notes/reactions', {
 }));
 
 useTooltip(renoteButton, async (showing) => {
+	if (renoteButton.value == null) return;
+
 	const renotes = await misskeyApi('notes/renotes', {
 		noteId: appearNote.id,
 		limit: 11,
@@ -496,7 +502,6 @@ function reply(): void {
 	showMovedDialog();
 	os.post({
 		reply: appearNote,
-		channel: appearNote.channel,
 	}).then(() => {
 		focus();
 	});

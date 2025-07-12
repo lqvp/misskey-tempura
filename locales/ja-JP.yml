@@ -4014,6 +4014,8 @@ _deliveryTargetControl:
   loadError: "サーバー一覧の読み込みに失敗しました"
   followersCount: "{count}人のフォロワー"
   searchResults: "{count}件見つかりました（全{total}件中）"
+  deliveryTargetsInclude: "一部のサーバーにのみ公開"
+  deliveryTargetsExclude: "一部のサーバーに非公開"
 
 _contactForm:
   _settings:
