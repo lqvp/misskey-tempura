@@ -35460,7 +35460,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    'application/json': components['schemas']['RenoteMuting'][];
+                    'application/json': components['schemas']['QuoteMuting'][];
                 };
             };
             /** @description Client error */

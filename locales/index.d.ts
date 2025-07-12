@@ -643,6 +643,14 @@ export interface Locale extends ILocale {
      */
     "renoteUnmute": string;
     /**
+     * 引用をミュート
+     */
+    "quoteMute": string;
+    /**
+     * 引用のミュートを解除
+     */
+    "quoteUnmute": string;
+    /**
      * ブロック
      */
     "block": string;
@@ -15143,14 +15151,6 @@ export interface Locale extends ILocale {
      * ボットアカウント
      */
     "isBot": string;
-    /**
-     * 引用をミュート
-     */
-    "quoteMute": string;
-    /**
-     * 引用のミュートを解除
-     */
-    "quoteUnmute": string;
 }
 declare const locales: {
     [lang: string]: Locale;

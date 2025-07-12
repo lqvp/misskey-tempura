@@ -266,6 +266,16 @@ async function unrenoteMute(user, ev) {
 	}], ev.currentTarget ?? ev.target);
 }
 
+async function unquoteMute(user, ev) {
+	os.popupMenu([{
+		text: i18n.ts.quoteUnmute,
+		icon: 'ti ti-x',
+		action: async () => {
+			await os.apiWithDialog('quote-mute/delete', { userId: user.id });
+		},
+	}], ev.currentTarget ?? ev.target);
+}
+
 async function unmute(user, ev) {
 	os.popupMenu([{
 		text: i18n.ts.unmute,
