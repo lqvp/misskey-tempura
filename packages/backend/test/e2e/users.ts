@@ -102,6 +102,7 @@ describe('ユーザー', () => {
 			isBlocked: user.isBlocked ?? false,
 			isMuted: user.isMuted ?? false,
 			isRenoteMuted: user.isRenoteMuted ?? false,
+			isQuoteMuted: user.isQuoteMuted ?? false,
 			notify: user.notify ?? 'none',
 			withReplies: user.withReplies ?? false,
 			followedMessage: user.isFollowing ? (user.followedMessage ?? null) : undefined,
@@ -644,6 +645,7 @@ describe('ユーザー', () => {
 		{ label: 'ブロックされている', user: () => userBlockingAlice, selector: (user: misskey.entities.UserDetailed) => user.isBlocked },
 		{ label: 'ミュート中になっている', user: () => userMutedByAlice, selector: (user: misskey.entities.UserDetailed) => user.isMuted },
 		{ label: 'リノートミュート中になっている', user: () => userRnMutedByAlice, selector: (user: misskey.entities.UserDetailed) => user.isRenoteMuted },
+		{ label: '引用ミュート中になっている', user: () => userQuoteMutedByAlice, selector: (user: misskey.entities.UserDetailed) => user.isQuoteMuted },
 		{ label: 'フォローリクエスト中になっている', user: () => userFollowRequested, me: () => userFollowRequesting, selector: (user: misskey.entities.UserDetailed) => user.hasPendingFollowRequestFromYou },
 		{ label: 'フォローリクエストされている', user: () => userFollowRequesting, me: () => userFollowRequested, selector: (user: misskey.entities.UserDetailed) => user.hasPendingFollowRequestToYou },
 	] as const)('を取得することができ、$labelこと', async ({ user, me, selector, expected }) => {

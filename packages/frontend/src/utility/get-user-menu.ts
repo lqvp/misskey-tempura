@@ -119,6 +119,19 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 		});
 	}
 
+	async function toggleQuoteMute() {
+		os.apiWithDialog(user.isQuoteMuted ? 'quote-mute/delete' : 'quote-mute/create', {
+			userId: user.id,
+		}, undefined, {
+			'15273a89-374d-49fa-8df6-8bb3feeea455': {
+				title: i18n.ts.permissionDeniedError,
+				text: i18n.ts._extraSettings.muteThisUserIsProhibited,
+			},
+		}).then(() => {
+			user.isQuoteMuted = !user.isQuoteMuted;
+		});
+	}
+
 	async function toggleBlock() {
 		if (!await getConfirmed(user.isBlocking ? i18n.ts.unblockConfirm : i18n.ts.blockConfirm)) return;
 
@@ -461,6 +474,10 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 			icon: user.isRenoteMuted ? 'ti ti-repeat' : 'ti ti-repeat-off',
 			text: user.isRenoteMuted ? i18n.ts.renoteUnmute : i18n.ts.renoteMute,
 			action: toggleRenoteMute,
+		}, {
+			icon: user.isQuoteMuted ? 'ti ti-quote' : 'ti ti-quote-off',
+			text: user.isQuoteMuted ? i18n.ts.quoteUnmute : i18n.ts.quoteMute,
+			action: toggleQuoteMute,
 		}, {
 			icon: 'ti ti-ban',
 			text: user.isBlocking ? i18n.ts.unblock : i18n.ts.block,

@@ -33,6 +33,7 @@ import type {
 	MiUserProfile,
 	MutingsRepository,
 	RenoteMutingsRepository,
+	QuoteMutingsRepository,
 	UserMemoRepository,
 	UserNotePiningsRepository,
 	UserProfilesRepository,
@@ -80,6 +81,7 @@ export type UserRelation = {
 	isBlocked: boolean
 	isMuted: boolean
 	isRenoteMuted: boolean
+	isQuoteMuted: boolean
 };
 
 @Injectable()
@@ -127,6 +129,9 @@ export class UserEntityService implements OnModuleInit {
 
 		@Inject(DI.renoteMutingsRepository)
 		private renoteMutingsRepository: RenoteMutingsRepository,
+
+		@Inject(DI.quoteMutingsRepository)
+		private quoteMutingsRepository: QuoteMutingsRepository,
 
 		@Inject(DI.userNotePiningsRepository)
 		private userNotePiningsRepository: UserNotePiningsRepository,
@@ -176,6 +181,7 @@ export class UserEntityService implements OnModuleInit {
 			isBlocked,
 			isMuted,
 			isRenoteMuted,
+			isQuoteMuted,
 		] = await Promise.all([
 			this.followingsRepository.findOneBy({
 				followerId: me,
@@ -223,6 +229,12 @@ export class UserEntityService implements OnModuleInit {
 					muteeId: target,
 				},
 			}),
+			this.quoteMutingsRepository.exists({
+				where: {
+					muterId: me,
+					muteeId: target,
+				},
+			}),
 		]);
 
 		return {
@@ -236,6 +248,7 @@ export class UserEntityService implements OnModuleInit {
 			isBlocked,
 			isMuted,
 			isRenoteMuted,
+			isQuoteMuted,
 		};
 	}
 
@@ -250,6 +263,7 @@ export class UserEntityService implements OnModuleInit {
 			blockees,
 			muters,
 			renoteMuters,
+			quoteMuters,
 		] = await Promise.all([
 			this.followingsRepository.findBy({ followerId: me })
 				.then(f => new Map(f.map(it => [it.followeeId, it]))),
@@ -288,6 +302,11 @@ export class UserEntityService implements OnModuleInit {
 				.where('m.muterId = :me', { me })
 				.getRawMany<{ m_muteeId: string }>()
 				.then(it => it.map(it => it.m_muteeId)),
+			this.quoteMutingsRepository.createQueryBuilder('m')
+				.select('m.muteeId')
+				.where('m.muterId = :me', { me })
+				.getRawMany<{ m_muteeId: string }>()
+				.then(it => it.map(it => it.m_muteeId)),
 		]);
 
 		return new Map(
@@ -307,6 +326,7 @@ export class UserEntityService implements OnModuleInit {
 						isBlocked: blockees.includes(target),
 						isMuted: muters.includes(target),
 						isRenoteMuted: renoteMuters.includes(target),
+						isQuoteMuted: quoteMuters.includes(target),
 					},
 				];
 			}),
@@ -669,6 +689,7 @@ export class UserEntityService implements OnModuleInit {
 				isBlocked: relation.isBlocked,
 				isMuted: relation.isMuted,
 				isRenoteMuted: relation.isRenoteMuted,
+				isQuoteMuted: relation.isQuoteMuted,
 				notify: relation.following?.notify ?? 'none',
 				withReplies: relation.following?.withReplies ?? false,
 				followedMessage: relation.isFollowing ? profile!.followedMessage : undefined,

@@ -65,6 +65,7 @@ export default class Connection {
 			this.cacheService.userMutingsCache.fetch(this.user.id),
 			this.cacheService.userBlockedCache.fetch(this.user.id),
 			this.cacheService.renoteMutingsCache.fetch(this.user.id),
+			this.cacheService.quoteMutingsCache.fetch(this.user.id),
 		]);
 		this.userProfile = userProfile;
 		this.following = following;

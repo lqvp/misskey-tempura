@@ -108,11 +108,13 @@ export class FanoutTimelineEndpointService {
 				const [
 					userIdsWhoMeMuting,
 					userIdsWhoMeMutingRenotes,
+					userIdsWhoMeMutingQuotes,
 					userIdsWhoBlockingMe,
 					userMutedInstances,
 				] = await Promise.all([
 					this.cacheService.userMutingsCache.fetch(ps.me.id),
 					this.cacheService.renoteMutingsCache.fetch(ps.me.id),
+					this.cacheService.quoteMutingsCache.fetch(ps.me.id),
 					this.cacheService.userBlockedCache.fetch(ps.me.id),
 					this.cacheService.userProfileCache.fetch(me.id).then(p => new Set(p.mutedInstances)),
 				]);
@@ -120,11 +122,23 @@ export class FanoutTimelineEndpointService {
 				const parentFilter = filter;
 				filter = (note) => {
 					if (isUserRelated(note, userIdsWhoBlockingMe, ps.ignoreAuthorFromBlock)) return false;
-					if (isUserRelated(note, userIdsWhoMeMuting, ps.ignoreAuthorFromMute)) return false;
 					if (isUserRelated(note.renote, userIdsWhoBlockingMe, ps.ignoreAuthorFromBlock)) return false;
-					if (isUserRelated(note.renote, userIdsWhoMeMuting, ps.ignoreAuthorFromMute)) return false;
-					if (!ps.ignoreAuthorFromMute && isRenote(note) && !isQuote(note) && userIdsWhoMeMutingRenotes.has(note.userId)) return false;
 					if (isInstanceMuted(note, userMutedInstances)) return false;
+
+					if (isRenote(note)) {
+						if (isQuote(note)) {
+							// 引用
+							if (isUserRelated(note, userIdsWhoMeMuting, ps.ignoreAuthorFromMute)) return false;
+							if (!ps.ignoreAuthorFromMute && userIdsWhoMeMutingQuotes.has(note.userId)) return false;
+						} else {
+							// リノート
+							if (isUserRelated(note.renote, userIdsWhoMeMuting, ps.ignoreAuthorFromMute)) return false;
+							if (!ps.ignoreAuthorFromMute && userIdsWhoMeMutingRenotes.has(note.userId)) return false;
+						}
+					} else {
+						// 通常ノート
+						if (isUserRelated(note, userIdsWhoMeMuting, ps.ignoreAuthorFromMute)) return false;
+					}
 
 					return parentFilter(note);
 				};

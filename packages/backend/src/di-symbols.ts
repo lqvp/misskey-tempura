@@ -49,6 +49,7 @@ export const DI = {
 	metasRepository: Symbol('metasRepository'),
 	mutingsRepository: Symbol('mutingsRepository'),
 	renoteMutingsRepository: Symbol('renoteMutingsRepository'),
+	quoteMutingsRepository: Symbol('quoteMutingsRepository'),
 	blockingsRepository: Symbol('blockingsRepository'),
 	swSubscriptionsRepository: Symbol('swSubscriptionsRepository'),
 	hashtagsRepository: Symbol('hashtagsRepository'),

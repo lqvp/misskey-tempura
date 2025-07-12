@@ -2131,6 +2131,10 @@ declare namespace entities {
         PingResponse,
         PinnedUsersResponse,
         PromoReadRequest,
+        QuoteMuteCreateRequest,
+        QuoteMuteDeleteRequest,
+        QuoteMuteListRequest,
+        QuoteMuteListResponse,
         ReactionStatsRequest,
         ReactionStatsResponse,
         RenoteMuteCreateRequest,
@@ -2258,6 +2262,7 @@ declare namespace entities {
         Following,
         Muting,
         RenoteMuting,
+        QuoteMuting,
         Blocking,
         Hashtag,
         InviteCode,
@@ -3498,6 +3503,21 @@ type QueueStatsLog = QueueStats[];
 
 // @public (undocumented)
 export const queueTypes: readonly ["system", "endedPollNotification", "deliver", "inbox", "db", "relationship", "objectStorage", "userWebhookDeliver", "systemWebhookDeliver"];
+
+// @public (undocumented)
+type QuoteMuteCreateRequest = operations['quote-mute___create']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type QuoteMuteDeleteRequest = operations['quote-mute___delete']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type QuoteMuteListRequest = operations['quote-mute___list']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type QuoteMuteListResponse = operations['quote-mute___list']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type QuoteMuting = components['schemas']['QuoteMuting'];
 
 // @public (undocumented)
 type ReactionStatsRequest = operations['reaction-stats']['requestBody']['content']['application/json'];

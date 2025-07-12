@@ -3633,6 +3633,33 @@ export type paths = {
          */
         post: operations['promo___read'];
     };
+    '/quote-mute/create': {
+        /**
+         * quote-mute/create
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:mutes*
+         */
+        post: operations['quote-mute___create'];
+    };
+    '/quote-mute/delete': {
+        /**
+         * quote-mute/delete
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:mutes*
+         */
+        post: operations['quote-mute___delete'];
+    };
+    '/quote-mute/list': {
+        /**
+         * quote-mute/list
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:mutes*
+         */
+        post: operations['quote-mute___list'];
+    };
     '/reaction-stats': {
         /**
          * reaction-stats
@@ -4363,6 +4390,7 @@ export type components = {
             isBlocked?: boolean;
             isMuted?: boolean;
             isRenoteMuted?: boolean;
+            isQuoteMuted?: boolean;
             /** @enum {string} */
             notify?: 'normal' | 'none';
             withReplies?: boolean;
@@ -5219,6 +5247,18 @@ export type components = {
             mutee: components['schemas']['UserDetailedNotMe'];
         };
         RenoteMuting: {
+            /**
+             * Format: id
+             * @example xxxxxxxxxx
+             */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: id */
+            muteeId: string;
+            mutee: components['schemas']['UserDetailedNotMe'];
+        };
+        QuoteMuting: {
             /**
              * Format: id
              * @example xxxxxxxxxx
@@ -35263,6 +35303,213 @@ export interface operations {
             };
         };
     };
+    'quote-mute___create': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    userId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'quote-mute___delete': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    userId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'quote-mute___list': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** @default 30 */
+                    limit?: number;
+                    /** Format: misskey:id */
+                    sinceId?: string;
+                    /** Format: misskey:id */
+                    untilId?: string;
+                    sinceDate?: number;
+                    untilDate?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['RenoteMuting'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     'reaction-stats': {
         requestBody: {
             content: {
@@ -39270,6 +39517,7 @@ export interface operations {
                         isBlocked: boolean;
                         isMuted: boolean;
                         isRenoteMuted: boolean;
+                        isQuoteMuted: boolean;
                     } | {
                         /** Format: id */
                         id: string;
@@ -39281,6 +39529,7 @@ export interface operations {
                         isBlocked: boolean;
                         isMuted: boolean;
                         isRenoteMuted: boolean;
+                        isQuoteMuted: boolean;
                     }[];
                 };
             };

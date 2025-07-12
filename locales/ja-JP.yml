@@ -4093,3 +4093,6 @@ _contactForm:
 
 isLocked: "鍵アカウント"
 isBot: "ボットアカウント"
+
+quoteMute: "引用をミュート"
+quoteUnmute: "引用のミュートを解除"

@@ -161,6 +161,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		this.queryService.generateVisibilityQuery(query, me);
 		this.queryService.generateBaseNoteFilteringQuery(query, me);
 		if (me) this.queryService.generateMutedUserRenotesQueryForNotes(query, me);
+		if (me) this.queryService.generateMutedUserQuoteQueryForNotes(query, me);
 
 		if (ps.withFiles) {
 			query.andWhere('note.fileIds != \'{}\'');
