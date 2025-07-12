@@ -3924,8 +3924,12 @@ notificationSend: "通知を送る"
 enterNotificationText: "通知内容を入力"
 notificationSendConfirm: "通知を送信しますか？"
 
-reactionStats: "リアクション統計"
-reactionStatsDescription: "最も使用された絵文字リアクション上位100件を表示します"
+_reactionStats:
+  reactionStats: "リアクション統計"
+  reactionStatsDescription: "あなたが付 けたリアクション、またはサーバー全体のリアクションの統計を表示します。"
+  totalReactions: "総リアクション数"
+  uniqueReactions: "リアクションの種類"
+  mostUsedReaction: "最多リアクション"
 
 showOnlySensitiveFiles: "センシティブなファイルのみ"
 

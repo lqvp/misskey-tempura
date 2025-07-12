@@ -14590,14 +14590,28 @@ export interface Locale extends ILocale {
      * 通知を送信しますか？
      */
     "notificationSendConfirm": string;
-    /**
-     * リアクション統計
-     */
-    "reactionStats": string;
-    /**
-     * 最も使用された絵文字リアクション上位100件を表示します
-     */
-    "reactionStatsDescription": string;
+    "_reactionStats": {
+        /**
+         * リアクション統計
+         */
+        "reactionStats": string;
+        /**
+         * あなたが付 けたリアクション、またはサーバー全体のリアクションの統計を表示します。
+         */
+        "reactionStatsDescription": string;
+        /**
+         * 総リアクション数
+         */
+        "totalReactions": string;
+        /**
+         * リアクションの種類
+         */
+        "uniqueReactions": string;
+        /**
+         * 最多リアクション
+         */
+        "mostUsedReaction": string;
+    };
     /**
      * センシティブなファイルのみ
      */

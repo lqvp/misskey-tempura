@@ -196,7 +196,7 @@ export const navbarItemDef = reactive({
 		show: computed(() => $i != null && $i.policies.canAddRoles),
 	},
 	reactionStats: {
-		title: i18n.ts.reactionStats,
+		title: i18n.ts._reactionStats.reactionStats,
 		icon: 'ti ti-chart-bar',
 		to: '/reaction-stats',
 	},

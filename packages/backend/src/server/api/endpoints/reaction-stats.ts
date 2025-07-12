@@ -5,8 +5,7 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
-import type { NoteReactionsRepository } from '@/models/_.js';
-import { DI } from '@/di-symbols.js';
+import { ReactionStatsCacheService } from '@/core/ReactionStatsCacheService.js';
 
 export const meta = {
 	tags: ['meta'],
@@ -51,28 +50,16 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
-		@Inject(DI.noteReactionsRepository)
-		private noteReactionsRepository: NoteReactionsRepository,
+		private reactionStatsCache: ReactionStatsCacheService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			const query =
-				this.noteReactionsRepository.createQueryBuilder('nr')
-					.select('nr.reaction', 'reaction')
-					.addSelect('count(nr.id)', 'count')
-					.groupBy('nr.reaction')
-					.orderBy('count', 'DESC')
-					.limit(100);
+			const cacheKey = ps.site
+				? 'site'
+				: `user:${me.id}`;
 
-			if (!ps.site) {
-				query.where('nr.userId = :id', { id: me.id });
-			}
+			const res = await this.reactionStatsCache.fetch(cacheKey);
 
-			const res = await query.getRawMany();
-
-			return res.map(x => ({
-				reaction: x.reaction,
-				count: x.count,
-			}));
+			return res;
 		});
 	}
 }
