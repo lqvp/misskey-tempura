@@ -11,6 +11,7 @@ import { UtilityService } from '@/core/UtilityService.js';
 import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
 import { LoggerService } from '@/core/LoggerService.js';
+import type { MiNote } from '@/models/Note.js';
 import type { FastifyRequest } from 'fastify';
 
 @Injectable()
@@ -46,6 +47,35 @@ export class ActivityPubAccessControlService {
 		private loggerService: LoggerService,
 	) {
 		this.logger = this.loggerService.getLogger('ap-access-control');
+	}
+
+	@bindThis
+	public async checkNoteAccess(note: MiNote, request: FastifyRequest): Promise<boolean> {
+		if (note.deliveryTargets == null) {
+			return true;
+		}
+
+		const remoteHost = this.extractRemoteHostFromRequest(request);
+		if (remoteHost == null) {
+			// Not a remote request
+			return true;
+		}
+
+		const deliveryTargets = note.deliveryTargets;
+
+		if (deliveryTargets.mode === 'include') {
+			if (!deliveryTargets.hosts.includes(remoteHost)) {
+				this.logger.info(`Access to note ${note.id} denied for ${remoteHost} (not in include list)`);
+				return false;
+			}
+		} else { // exclude
+			if (deliveryTargets.hosts.includes(remoteHost)) {
+				this.logger.info(`Access to note ${note.id} denied for ${remoteHost} (in exclude list)`);
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**
