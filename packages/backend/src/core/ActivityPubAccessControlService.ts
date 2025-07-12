@@ -51,7 +51,7 @@ export class ActivityPubAccessControlService {
 
 	@bindThis
 	public async checkNoteAccess(note: MiNote, request: FastifyRequest): Promise<boolean> {
-		if (note.deliveryTargets == null) {
+		if (note.deliveryTargets == null || !Array.isArray(note.deliveryTargets.hosts)) {
 			return true;
 		}
 
