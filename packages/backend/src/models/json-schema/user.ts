@@ -474,6 +474,10 @@ export const packedUserDetailedNotMeOnlySchema = {
 			type: 'boolean',
 			nullable: false, optional: true,
 		},
+		isQuoteMuted: {
+			type: 'boolean',
+			nullable: false, optional: true,
+		},
 		notify: {
 			type: 'string',
 			nullable: false, optional: true,

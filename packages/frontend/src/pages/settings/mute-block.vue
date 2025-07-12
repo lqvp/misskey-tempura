@@ -104,6 +104,36 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</SearchMarker>
 
 			<SearchMarker
+				:keywords="['quote', 'mute', 'hide', 'user']"
+			>
+				<MkFolder>
+					<template #icon><i class="ti ti-repeat-off"></i></template>
+					<template #label><SearchLabel>{{ i18n.ts.mutedUsers }} ({{ i18n.ts.quote }})</SearchLabel><span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+
+					<MkPagination :paginator="quoteMutingPaginator" withControl>
+						<template #empty><MkResult type="empty" :text="i18n.ts.noUsers"/></template>
+
+						<template #default="{ items }">
+							<div class="_gaps_s">
+								<div v-for="item in items" :key="item.mutee.id" :class="[$style.userItem, { [$style.userItemOpend]: expandedQuoteMuteItems.includes(item.id) }]">
+									<div :class="$style.userItemMain">
+										<MkA :class="$style.userItemMainBody" :to="userPage(item.mutee)">
+											<MkUserCardMini :user="item.mutee"/>
+										</MkA>
+										<button class="_button" :class="$style.userToggle" @click="toggleQuoteMuteItem(item)"><i :class="$style.chevron" class="ti ti-chevron-down"></i></button>
+										<button class="_button" :class="$style.remove" @click="unquoteMute(item.mutee, $event)"><i class="ti ti-x"></i></button>
+									</div>
+									<div v-if="expandedQuoteMuteItems.includes(item.id)" :class="$style.userItemSub">
+										<div>Muted at: <MkTime :time="item.createdAt" mode="detail"/></div>
+									</div>
+								</div>
+							</div>
+						</template>
+					</MkPagination>
+				</MkFolder>
+			</SearchMarker>
+
+			<SearchMarker
 				:label="i18n.ts.mutedUsers"
 				:keywords="['note', 'mute', 'hide', 'user']"
 			>
@@ -201,6 +231,10 @@ const renoteMutingPaginator = markRaw(new Paginator('renote-mute/list', {
 	limit: 10,
 }));
 
+const quoteMutingPaginator = markRaw(new Paginator('quote-mute/list', {
+	limit: 10,
+}));
+
 const mutingPaginator = markRaw(new Paginator('mute/list', {
 	limit: 10,
 }));
@@ -210,6 +244,7 @@ const blockingPaginator = markRaw(new Paginator('blocking/list', {
 }));
 
 const expandedRenoteMuteItems = ref<string[]>([]);
+const expandedQuoteMuteItems = ref<string[]>([]);
 const expandedMuteItems = ref<string[]>([]);
 const expandedBlockItems = ref<string[]>([]);
 const showSoftWordMutedWord = prefer.model('showSoftWordMutedWord');
@@ -227,6 +262,16 @@ async function unrenoteMute(user, ev) {
 		action: async () => {
 			await os.apiWithDialog('renote-mute/delete', { userId: user.id });
 			//role.users = role.users.filter(u => u.id !== user.id);
+		},
+	}], ev.currentTarget ?? ev.target);
+}
+
+async function unquoteMute(user, ev) {
+	os.popupMenu([{
+		text: i18n.ts.quoteUnmute,
+		icon: 'ti ti-x',
+		action: async () => {
+			await os.apiWithDialog('quote-mute/delete', { userId: user.id });
 		},
 	}], ev.currentTarget ?? ev.target);
 }
@@ -258,6 +303,14 @@ async function toggleRenoteMuteItem(item: { id: string }) {
 		expandedRenoteMuteItems.value = expandedRenoteMuteItems.value.filter(x => x !== item.id);
 	} else {
 		expandedRenoteMuteItems.value.push(item.id);
+	}
+}
+
+async function toggleQuoteMuteItem(item: { id: string }) {
+	if (expandedQuoteMuteItems.value.includes(item.id)) {
+		expandedQuoteMuteItems.value = expandedQuoteMuteItems.value.filter(x => x !== item.id);
+	} else {
+		expandedQuoteMuteItems.value.push(item.id);
 	}
 }
 

@@ -643,6 +643,14 @@ export interface Locale extends ILocale {
      */
     "renoteUnmute": string;
     /**
+     * 引用をミュート
+     */
+    "quoteMute": string;
+    /**
+     * 引用のミュートを解除
+     */
+    "quoteUnmute": string;
+    /**
      * ブロック
      */
     "block": string;

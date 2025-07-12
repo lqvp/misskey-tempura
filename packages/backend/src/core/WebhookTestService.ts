@@ -502,6 +502,7 @@ export class WebhookTestService {
 			isBlocked: false,
 			isMuted: false,
 			isRenoteMuted: false,
+			isQuoteMuted: false,
 			notify: 'none',
 			withReplies: true,
 			hideActivity: false,

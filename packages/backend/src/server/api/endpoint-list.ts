@@ -468,6 +468,9 @@ export * as 'notes/llm-gen' from './endpoints/notes/llm-gen.js';
 export * as 'search-avatar-decorations' from './endpoints/search-avatar-decorations.js';
 export * as 'invite/check' from './endpoints/invite/check.js';
 export * as 'i/followers-servers' from './endpoints/i/followers-servers.js';
+export * as 'quote-mute/create' from './endpoints/quote-mute/create.js';
+export * as 'quote-mute/delete' from './endpoints/quote-mute/delete.js';
+export * as 'quote-mute/list' from './endpoints/quote-mute/list.js';
 
 // region ContactForm
 export * as 'admin/contact-form/list' from './endpoints/admin/contact-form/list.js';

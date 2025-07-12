@@ -75,6 +75,7 @@ import { MiRegistrationTicket } from '@/models/RegistrationTicket.js';
 import { MiRegistryItem } from '@/models/RegistryItem.js';
 import { MiRelay } from '@/models/Relay.js';
 import { MiRenoteMuting } from '@/models/RenoteMuting.js';
+import { MiQuoteMuting } from '@/models/QuoteMuting.js';
 import { MiRetentionAggregation } from '@/models/RetentionAggregation.js';
 import { MiReversiGame } from '@/models/ReversiGame.js';
 import { MiRole } from '@/models/Role.js';
@@ -199,6 +200,7 @@ export {
 	MiMultipartUpload,
 	MiMuting,
 	MiRenoteMuting,
+	MiQuoteMuting,
 	MiNote,
 	MiNoteDraft,
 	MiNoteFavorite,
@@ -284,6 +286,7 @@ export type ModerationLogsRepository = Repository<MiModerationLog> & MiRepositor
 export type MultipartUploadsRepository = Repository<MiMultipartUpload> & MiRepository<MiMultipartUpload>;
 export type MutingsRepository = Repository<MiMuting> & MiRepository<MiMuting>;
 export type RenoteMutingsRepository = Repository<MiRenoteMuting> & MiRepository<MiRenoteMuting>;
+export type QuoteMutingsRepository = Repository<MiQuoteMuting> & MiRepository<MiQuoteMuting>;
 export type NotesRepository = Repository<MiNote> & MiRepository<MiNote>;
 export type NoteDraftsRepository = Repository<MiNoteDraft> & MiRepository<MiNoteDraft>;
 export type NoteFavoritesRepository = Repository<MiNoteFavorite> & MiRepository<MiNoteFavorite>;

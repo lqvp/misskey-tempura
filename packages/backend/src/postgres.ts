@@ -43,6 +43,7 @@ import { MiMeta } from '@/models/Meta.js';
 import { MiModerationLog } from '@/models/ModerationLog.js';
 import { MiMuting } from '@/models/Muting.js';
 import { MiRenoteMuting } from '@/models/RenoteMuting.js';
+import { MiQuoteMuting } from '@/models/QuoteMuting.js';
 import { MiNote } from '@/models/Note.js';
 import { MiNoteFavorite } from '@/models/NoteFavorite.js';
 import { MiNoteReaction } from '@/models/NoteReaction.js';
@@ -215,6 +216,7 @@ export const entities = [
 	MiFollowHistory,
 	MiMuting,
 	MiRenoteMuting,
+	MiQuoteMuting,
 	MiBlocking,
 	MiNote,
 	MiNoteFavorite,
