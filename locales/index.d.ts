@@ -15135,6 +15135,14 @@ export interface Locale extends ILocale {
             "misskeyUsernameDomainError": string;
         };
     };
+    /**
+     * 鍵アカウント
+     */
+    "isLocked": string;
+    /**
+     * ボットアカウント
+     */
+    "isBot": string;
 }
 declare const locales: {
     [lang: string]: Locale;

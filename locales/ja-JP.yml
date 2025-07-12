@@ -4090,3 +4090,6 @@ _contactForm:
     misskeyUsernameFormatError: "username@domain 形式で入力してください"
     misskeyUsernameCharacterError: "ユーザー名は英数字、アンダースコア、ハイフンのみ使用できます"
     misskeyUsernameDomainError: "有効なドメイン名を入力してください"
+
+isLocked: "鍵アカウント"
+isBot: "ボットアカウント"

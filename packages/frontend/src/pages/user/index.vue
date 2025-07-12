@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <PageWithHeader v-model:tab="tab" :tabs="headerTabs" :actions="headerActions" :swipable="true">
 	<div v-if="user">
 		<template v-if="hasTabAccess(tab)">
-			<XHome v-if="tab === 'home'" :user="user" @showMoreFiles="() => { tab = 'files'; }"/>
+			<XHome v-if="tab === 'home'" :user="user" :disableNotes="false" @showMoreFiles="() => { tab = 'files'; }"/>
 			<XNotes v-else-if="tab === 'notes'" :user="user"/>
 			<XFiles v-else-if="tab === 'files'" :user="user"/>
 			<XActivity v-else-if="tab === 'activity'" :user="user"/>
@@ -25,12 +25,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</div>
 	</div>
 	<div v-else-if="error">
-			<MkError @retry="fetchUser()"/>
-		</div>
-		<div v-else-if="userstatus">
-			<MkUserNotFound v-if="userstatus === 'notfound'"/>
-			<MkUserSuspended v-else-if="userstatus === 'suspended'"/>
-		</div>
+		<MkError @retry="fetchUser()"/>
+	</div>
+	<div v-else-if="userstatus">
+		<MkUserNotFound v-if="userstatus === 'notfound'"/>
+		<MkUserSuspended v-else-if="userstatus === 'suspended'"/>
+	</div>
 	<MkLoading v-else/>
 </PageWithHeader>
 </template>
@@ -131,13 +131,13 @@ const hasTabAccess = (tabName: string): boolean => {
 		case 'files':
 			return !user.value.isBlocked;
 		case 'activity':
-			return (!user.value.hideActivity && !user.value.isBlocked) || isOwner || isAdminMod;
+			return (user.value.hideActivity !== true && !user.value.isBlocked) || !!(isOwner || isAdminMod);
 		case 'achievements':
 			return user.value.host == null && !user.value.isBlocked;
 		case 'reactions':
-			return (user.value.publicReactions && !user.value.isBlocked) || isOwner || isAdminMod;
+			return (user.value.publicReactions === true && !user.value.isBlocked) || !!(isOwner || isAdminMod);
 		case 'raw':
-			return isOwner || isAdminMod;
+			return !!(isOwner || isAdminMod);
 		case 'clips':
 		case 'lists':
 		case 'pages':
