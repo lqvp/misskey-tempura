@@ -200,6 +200,8 @@ describe('ユーザー', () => {
 	let userMutedByAlice: misskey.entities.SignupResponse;
 	let userRnMutingAlice: misskey.entities.SignupResponse;
 	let userRnMutedByAlice: misskey.entities.SignupResponse;
+	let userQuoteMutingAlice: misskey.entities.SignupResponse;
+	let userQuoteMutedByAlice: misskey.entities.SignupResponse;
 	let userFollowRequesting: misskey.entities.SignupResponse;
 	let userFollowRequested: misskey.entities.SignupResponse;
 
@@ -279,6 +281,12 @@ describe('ユーザー', () => {
 		userRnMutedByAlice = await signup({ username: 'userRnMutedByAlice' });
 		await post(userRnMutedByAlice, { text: 'test' });
 		await api('renote-mute/create', { userId: userRnMutedByAlice.id }, alice);
+		userQuoteMutingAlice = await signup({ username: 'userQuoteMutingAlice' });
+		await post(userQuoteMutingAlice, { text: 'test' });
+		await api('quote-mute/create', { userId: alice.id }, userQuoteMutingAlice);
+		userQuoteMutedByAlice = await signup({ username: 'userQuoteMutedByAlice' });
+		await post(userQuoteMutedByAlice, { text: 'test' });
+		await api('quote-mute/create', { userId: userQuoteMutedByAlice.id }, alice);
 		userFollowRequesting = await signup({ username: 'userFollowRequesting' });
 		await post(userFollowRequesting, { text: 'test' });
 		userFollowRequested = userLocking;
