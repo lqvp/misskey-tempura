@@ -14,6 +14,14 @@ type HistoryEndpoint = 'following/history' | 'following/requests/history';
 type HistoryItem = Endpoints[HistoryEndpoint]['res'][number];
 type ActionType = HistoryItem['type'];
 
+type ActionConfigItem = {
+	icon: string;
+	avatarUser: 'toUser' | 'fromUser';
+	className: string;
+	themeColor?: string;
+	tabIcon: string;
+};
+
 export function useHistoryPage<
 	T extends HistoryEndpoint,
 	const A extends Record<string, any>,
@@ -31,7 +39,7 @@ export function useHistoryPage<
 
 	const paginator = markRaw(new Paginator(endpoint, { computedParams: params as any }));
 
-	function getActionConfig(type: ActionType) {
+	function getActionConfig(type: ActionType): ActionConfigItem {
 		return actionConfig[type!] ?? {
 			icon: 'ti ti-question',
 			avatarUser: 'toUser',

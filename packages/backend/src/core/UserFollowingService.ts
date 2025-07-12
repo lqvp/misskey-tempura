@@ -481,9 +481,7 @@ export class UserFollowingService implements OnModuleInit {
 			}, follower.id);
 		}
 
-		const fullFollower = await this.usersRepository.findOneByOrFail({ id: follower.id });
-		const fullFollowee = await this.usersRepository.findOneByOrFail({ id: followee.id });
-		await this.historyService.addUnfollowHistory(fullFollower, fullFollowee);
+		await this.historyService.addUnfollowHistory(following.follower, following.followee);
 	}
 
 	@bindThis
@@ -559,9 +557,7 @@ export class UserFollowingService implements OnModuleInit {
 			// TODO: adjust charts
 		}
 
-		const fullFollower = await this.usersRepository.findOneByOrFail({ id: follower.id });
-		const fullFollowee = await this.usersRepository.findOneByOrFail({ id: followee.id });
-		await this.historyService.addUnfollowHistory(fullFollower, fullFollowee);
+		await this.historyService.addUnfollowHistory(follower, followee);
 	}
 
 	@bindThis
@@ -697,9 +693,8 @@ export class UserFollowingService implements OnModuleInit {
 			schema: 'MeDetailed',
 		}).then(packed => this.globalEventService.publishMainStream(followee.id, 'meUpdated', packed));
 
-		const fullFollower = await this.usersRepository.findOneByOrFail({ id: follower.id });
 		const fullFollowee = await this.usersRepository.findOneByOrFail({ id: followee.id });
-		await this.historyService.addFollowRequestAcceptedHistory(fullFollower, fullFollowee);
+		await this.historyService.addFollowRequestAcceptedHistory(follower, fullFollowee);
 	}
 
 	@bindThis
@@ -732,6 +727,10 @@ export class UserFollowingService implements OnModuleInit {
 		if (this.userEntityService.isLocalUser(follower)) {
 			this.publishUnfollow(user, follower);
 		}
+
+		const fullFollower = await this.usersRepository.findOneByOrFail({ id: follower.id });
+		const fullFollowee = await this.usersRepository.findOneByOrFail({ id: user.id });
+		await this.historyService.addFollowRequestRejectedHistory(fullFollower, fullFollowee);
 	}
 
 	/**
@@ -780,10 +779,6 @@ export class UserFollowingService implements OnModuleInit {
 		this.notificationService.createNotification(follower.id, 'followRequestRejected', {
 			message: profile.followedMessage,
 		}, followee.id);
-
-		const fullFollower = await this.usersRepository.findOneByOrFail({ id: follower.id });
-		const fullFollowee = await this.usersRepository.findOneByOrFail({ id: followee.id });
-		await this.historyService.addFollowRequestRejectedHistory(fullFollower, fullFollowee);
 
 		await this.followRequestsRepository.delete(request.id);
 	}

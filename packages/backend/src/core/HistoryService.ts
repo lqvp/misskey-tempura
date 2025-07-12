@@ -28,27 +28,31 @@ export class HistoryService {
 		private followRequestHistoryRepository: FollowRequestHistoryRepository,
 	) {}
 
-	private async addHistoryEntry(
-		repository: Repository<MiFollowHistory | MiFollowRequestHistory>,
-		type: string,
+	private async addHistoryEntry<
+		TEntity extends MiFollowHistory | MiFollowRequestHistory,
+	>(
+		repository: Repository<TEntity>,
+		type: TEntity['type'],
 		fromUserId: string,
 		toUserId: string,
 	) {
 		await repository.insert({
 			id: this.idService.gen(),
-			type: type as any,
+			type: type,
 			fromUserId,
 			toUserId,
 			timestamp: new Date(),
-		});
+		} as any);
 	}
 
-	private async createHistory(
-		repository: Repository<MiFollowHistory | MiFollowRequestHistory>,
+	private async createHistory<
+		TEntity extends MiFollowHistory | MiFollowRequestHistory,
+	>(
+		repository: Repository<TEntity>,
 		userA: MiUser,
 		userB: MiUser,
-		typeA: string,
-		typeB: string,
+		typeA: TEntity['type'],
+		typeB: TEntity['type'],
 	) {
 		const [policiesA, policiesB] = await Promise.all([
 			this.roleService.getUserPolicies(userA.id),
