@@ -89,19 +89,23 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 				user.isMuted = false;
 			});
 		} else {
-			const expiresAt = await getPeriod(i18n.ts.mutePeriod);
-			if (expiresAt === false) return;
-
-			os.apiWithDialog('mute/create', {
-				userId: user.id,
-				expiresAt,
-			}, undefined, {
-				'15273a89-374d-49fa-8df6-8bb3feeea455': {
-					title: i18n.ts.permissionDeniedError,
-					text: i18n.ts._extraSettings.muteThisUserIsProhibited,
+			const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkMuteDialog.vue')), {}, {
+				done: (expiresAt: number | null) => {
+					os.apiWithDialog('mute/create', {
+						userId: user.id,
+						expiresAt,
+					}, undefined, {
+						'15273a89-374d-49fa-8df6-8bb3feeea455': {
+							title: i18n.ts.permissionDeniedError,
+							text: i18n.ts._extraSettings.muteThisUserIsProhibited,
+						},
+					}).then(() => {
+						user.isMuted = true;
+					});
 				},
-			}).then(() => {
-				user.isMuted = true;
+				closed: () => {
+					dispose();
+				},
 			});
 		}
 	}
@@ -292,36 +296,7 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 	}
 
 	if ($i) {
-		menuItems.push({ type: 'divider' }, ($i.policies.canUseGeminiLLMAPI || prefer.s.geminiToken) ? {
-			icon: 'ti ti-file-text',
-			text: i18n.ts._llm.summarizeProfile,
-			action: async () => {
-				// プロフィール要約で取得するノート数を指定できるようにする
-				const { canceled: canceledNotesLimit, result: notesLimit } = await os.inputNumber({
-					title: i18n.ts._llm.summarizeProfile,
-					text: i18n.ts._llm.notesLimitPrompt,
-					default: 15,
-				});
-
-				if (canceledNotesLimit) return;
-
-				// followersの投稿を含めるか確認
-				const { canceled: canceledFollowers } = await os.confirm({
-					title: i18n.ts._llm.summarizeProfile,
-					text: i18n.ts._llm.includeFollowersNotesPrompt,
-				});
-				const includeFollowers = !canceledFollowers;
-
-				// キャンセルされなかった場合、指定された数値でプロフィール要約を実行
-				await summarizeUserProfile(user.id, notesLimit, includeFollowers);
-			},
-		} : undefined, ...(prefer.s.nicknameEnabled ? [{
-			icon: 'ti ti-edit',
-			text: 'ニックネームを編集',
-			action: () => {
-				editNickname(user);
-			},
-		}] : []), { type: 'divider' }, {
+		menuItems.push({ type: 'divider' }, {
 			icon: 'ti ti-pencil',
 			text: i18n.ts.editMemo,
 			action: editMemo,

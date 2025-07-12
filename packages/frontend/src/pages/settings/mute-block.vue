@@ -118,23 +118,23 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<div class="_gaps_s">
 								<div v-for="item in items" :key="item.mutee.id" :class="[$style.userItem, { [$style.userItemOpend]: expandedMuteItems.includes(item.id) }]">
 									<div :class="$style.userItemMain">
-											<MkA :class="$style.userItemMainBody" :to="userPage(item.mutee)">
-												<MkUserCardMini :user="item.mutee"/>
-											</MkA>
-											<button class="_button" :class="$style.userToggle" @click="toggleMuteItem(item)"><i :class="$style.chevron" class="ti ti-chevron-down"></i></button>
-											<button class="_button" :class="$style.remove" @click="unmute(item.mutee, $event)"><i class="ti ti-x"></i></button>
-										</div>
-										<div v-if="expandedMuteItems.includes(item.id)" :class="$style.userItemSub">
-											<div>Muted at: <MkTime :time="item.createdAt" mode="detail"/></div>
-											<div v-if="item.expiresAt">Period: {{ new Date(item.expiresAt).toLocaleString() }}</div>
-											<div v-else>Period: {{ i18n.ts.indefinitely }}</div>
-										</div>
+										<MkA :class="$style.userItemMainBody" :to="userPage(item.mutee)">
+											<MkUserCardMini :user="item.mutee"/>
+										</MkA>
+										<button class="_button" :class="$style.userToggle" @click="toggleMuteItem(item)"><i :class="$style.chevron" class="ti ti-chevron-down"></i></button>
+										<button class="_button" :class="$style.remove" @click="unmute(item.mutee, $event)"><i class="ti ti-x"></i></button>
+									</div>
+									<div v-if="expandedMuteItems.includes(item.id)" :class="$style.userItemSub">
+										<div>Muted at: <MkTime :time="item.createdAt" mode="detail"/></div>
+										<div v-if="item.expiresAt">Period: <MkTime :time="item.expiresAt" mode="detail"/></div>
+										<div v-else>Period: {{ i18n.ts.indefinitely }}</div>
 									</div>
 								</div>
-							</template>
-						</MkPagination>
-					</MkFolder>
-				</SearchMarker>
+							</div>
+						</template>
+					</MkPagination>
+				</MkFolder>
+			</SearchMarker>
 
 			<SearchMarker
 				:label="i18n.ts.blockedUsers"
