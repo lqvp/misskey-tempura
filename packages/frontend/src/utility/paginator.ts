@@ -151,6 +151,7 @@ export class Paginator<
 		this.getOldestId = this.getOldestId.bind(this);
 		this.init = this.init.bind(this);
 		this.reload = this.reload.bind(this);
+		this.setParams = this.setParams.bind(this);
 		this.fetchOlder = this.fetchOlder.bind(this);
 		this.fetchNewer = this.fetchNewer.bind(this);
 		this.unshiftItems = this.unshiftItems.bind(this);
@@ -240,6 +241,11 @@ export class Paginator<
 
 	public reload(): Promise<void> {
 		return this.init();
+	}
+
+	public setParams(params: E['req'] | (() => E['req'])): void {
+		this.params = params;
+		this.reload();
 	}
 
 	public async fetchOlder(): Promise<void> {

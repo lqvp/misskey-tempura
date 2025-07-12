@@ -4,20 +4,11 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import { Brackets } from 'typeorm';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { QueryService } from '@/core/QueryService.js';
 import type { FollowRequestHistoryRepository } from '@/models/_.js';
-import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { DI } from '@/di-symbols.js';
-import { CacheService } from '@/core/CacheService.js';
-import {
-	applyBlockedUsersFilter,
-	applyDefaultTypeCondition,
-	applyTypeCondition,
-	createDeleteQuery,
-	mapHistories,
-} from '@/core/HistoryUtils.js';
+import { HistoryService } from '@/core/HistoryService.js';
 
 export const meta = {
 	tags: ['following', 'account'],
@@ -107,16 +98,15 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> {
 	constructor(
-        @Inject(DI.followRequestHistoryRepository)
-        private followRequestHistoryRepository: FollowRequestHistoryRepository,
+		@Inject(DI.followRequestHistoryRepository)
+		private followRequestHistoryRepository: FollowRequestHistoryRepository,
 
-        private userEntityService: UserEntityService,
-        private queryService: QueryService,
-        private cacheService: CacheService,
+		private queryService: QueryService,
+		private historyService: HistoryService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			if (ps.delete) {
-				const query = createDeleteQuery(
+				const query = this.historyService.createDeleteQuery(
 					this.followRequestHistoryRepository,
 					me.id,
 					['sent', 'wasApproved', 'wasRejected', 'wasBlocked', 'wasUnBlocked'],
@@ -135,27 +125,27 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				.leftJoinAndSelect('history.toUser', 'toUser');
 
 			switch (ps.type) {
-				case 'sent': applyTypeCondition(query, 'fromUserId', 'sent', me.id); break;
-				case 'received': applyTypeCondition(query, 'toUserId', 'received', me.id); break;
-				case 'approved': applyTypeCondition(query, 'toUserId', 'approved', me.id); break;
-				case 'rejected': applyTypeCondition(query, 'toUserId', 'rejected', me.id); break;
-				case 'wasApproved': applyTypeCondition(query, 'fromUserId', 'wasApproved', me.id); break;
-				case 'wasRejected': applyTypeCondition(query, 'fromUserId', 'wasRejected', me.id); break;
-				case 'wasBlocked': applyTypeCondition(query, 'fromUserId', 'wasBlocked', me.id); break;
-				case 'wasUnBlocked': applyTypeCondition(query, 'fromUserId', 'wasUnBlocked', me.id); break;
-				default: applyDefaultTypeCondition(query, me.id,
+				case 'sent': this.historyService.applyTypeCondition(query, 'fromUserId', 'sent', me.id); break;
+				case 'received': this.historyService.applyTypeCondition(query, 'toUserId', 'received', me.id); break;
+				case 'approved': this.historyService.applyTypeCondition(query, 'toUserId', 'approved', me.id); break;
+				case 'rejected': this.historyService.applyTypeCondition(query, 'toUserId', 'rejected', me.id); break;
+				case 'wasApproved': this.historyService.applyTypeCondition(query, 'fromUserId', 'wasApproved', me.id); break;
+				case 'wasRejected': this.historyService.applyTypeCondition(query, 'fromUserId', 'wasRejected', me.id); break;
+				case 'wasBlocked': this.historyService.applyTypeCondition(query, 'fromUserId', 'wasBlocked', me.id); break;
+				case 'wasUnBlocked': this.historyService.applyTypeCondition(query, 'fromUserId', 'wasUnBlocked', me.id); break;
+				default: this.historyService.applyDefaultTypeCondition(query, me.id,
 					['sent', 'wasApproved', 'wasRejected', 'wasBlocked', 'wasUnBlocked'],
 					['received', 'approved', 'rejected']);
 			}
 
-			await applyBlockedUsersFilter(query, me, this.cacheService);
+			await this.historyService.applyBlockedUsersFilter(query, me);
 
 			const histories = await query
 				.orderBy('history.timestamp', 'DESC')
 				.take(ps.limit)
 				.getMany();
 
-			return mapHistories(histories, me, this.cacheService, this.userEntityService);
+			return this.historyService.mapHistories(histories, me);
 		});
 	}
 }
