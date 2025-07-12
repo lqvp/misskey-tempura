@@ -184,7 +184,7 @@ export class ActivityPubServerService {
 	private async applyAccessControl(request: FastifyRequest, reply: FastifyReply, allowLimitedHosts = false): Promise<boolean> {
 		const accessControl = await this.activityPubAccessControlService.checkAccess(request, allowLimitedHosts);
 		if (accessControl) {
-			reply.code(403);
+			reply.code(404);
 			reply.header('Content-Type', 'text/plain; charset=utf-8');
 			reply.send(`Access denied: ${accessControl.reason}`);
 			return true;
