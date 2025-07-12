@@ -6,11 +6,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 	<MkHistoryViewer
 		endpoint="following/requests/history"
-		:action-config="ACTION_CONFIG"
-		i18n-scope="_followRequestHistory"
-		:page-title="i18n.ts._followRequestHistory.title"
-		page-icon="ti ti-history-toggle"
-		spacer-width="800px"
+		:actionConfig="ACTION_CONFIG"
+		i18nScope="_followRequestHistory"
+		:pageTitle="i18n.ts._followRequestHistory.title"
+		pageIcon="ti ti-history-toggle"
+		spacerWidth="800px"
 	/>
 </template>
 
