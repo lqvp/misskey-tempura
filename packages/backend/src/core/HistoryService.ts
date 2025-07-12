@@ -159,18 +159,29 @@ export class HistoryService {
 		}
 	}
 
-	async mapHistories(
-		histories: any[],
-		me: MiUser,
-	) {
-		const userFollowings = await this.cacheService.userFollowingsCache.fetch(me.id);
-		return Promise.all(histories.map(async (history) => ({
-			id: history.id,
-			type: history.type,
-			fromUser: await this.userEntityService.pack(history.fromUser ?? history.fromUserId, me),
-			toUser: await this.userEntityService.pack(history.toUser ?? history.toUserId, me),
-			timestamp: history.timestamp.toISOString(),
-			isFollowing: Object.hasOwn(userFollowings, history.fromUserId),
-		})));
-	}
+// Add a concrete type for history records
+type HistoryRecord = {
+    id: string;
+    type: string;
+    fromUser?: MiUser;
+    fromUserId: string;
+    toUser?: MiUser;
+    toUserId: string;
+    timestamp: Date;
+};
+
+async mapHistories(
+    histories: HistoryRecord[],
+    me: MiUser,
+) {
+    const userFollowings = await this.cacheService.userFollowingsCache.fetch(me.id);
+    return Promise.all(histories.map(async (history) => ({
+        id: history.id,
+        type: history.type,
+        fromUser: await this.userEntityService.pack(history.fromUser ?? history.fromUserId, me),
+        toUser: await this.userEntityService.pack(history.toUser ?? history.toUserId, me),
+        timestamp: history.timestamp.toISOString(),
+        isFollowing: Object.hasOwn(userFollowings, history.fromUserId),
+    })));
+}
 }
