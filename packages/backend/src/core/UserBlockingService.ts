@@ -14,7 +14,7 @@ import { QueueService } from '@/core/QueueService.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { DI } from '@/di-symbols.js';
-import type { FollowRequestsRepository, FollowHistoryRepository, BlockingsRepository, UserListsRepository, UserListMembershipsRepository } from '@/models/_.js';
+import type { FollowRequestsRepository, BlockingsRepository, UserListsRepository, UserListMembershipsRepository } from '@/models/_.js';
 import Logger from '@/logger.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { ApRendererService } from '@/core/activitypub/ApRendererService.js';
@@ -24,6 +24,7 @@ import { bindThis } from '@/decorators.js';
 import { CacheService } from '@/core/CacheService.js';
 import { UserFollowingService } from '@/core/UserFollowingService.js';
 import { RoleService } from '@/core/RoleService.js';
+import { HistoryService } from '@/core/HistoryService.js';
 
 @Injectable()
 export class UserBlockingService implements OnModuleInit {
@@ -38,9 +39,6 @@ export class UserBlockingService implements OnModuleInit {
 
 		@Inject(DI.followRequestsRepository)
 		private followRequestsRepository: FollowRequestsRepository,
-
-		@Inject(DI.followHistoryRepository)
-		private followHistoryRepository: FollowHistoryRepository,
 
 		@Inject(DI.blockingsRepository)
 		private blockingsRepository: BlockingsRepository,
@@ -61,6 +59,7 @@ export class UserBlockingService implements OnModuleInit {
 		private webhookService: UserWebhookService,
 		private apRendererService: ApRendererService,
 		private loggerService: LoggerService,
+		private historyService: HistoryService,
 	) {
 		this.logger = this.loggerService.getLogger('user-block');
 	}
@@ -119,30 +118,7 @@ export class UserBlockingService implements OnModuleInit {
 			}, blocker.id);
 		}
 
-		const blockerPolicies = await this.roleService.getUserPolicies(blocker.id);
-		const blockeePolicies = await this.roleService.getUserPolicies(blockee.id);
-
-		// フォロー履歴に「blocked」を保存
-		if (this.userEntityService.isLocalUser(blocker) && blockerPolicies.canReadFollowHistory) {
-			this.followHistoryRepository.insert({
-				id: this.idService.gen(),
-				type: 'blocked',
-				fromUserId: blocker.id,
-				toUserId: blockee.id,
-				timestamp: new Date(),
-			});
-		}
-
-		// フォロー履歴に「wasBlocked」を保存
-		if (this.userEntityService.isLocalUser(blockee) && blockeePolicies.canReadFollowHistory) {
-			this.followHistoryRepository.insert({
-				id: this.idService.gen(),
-				type: 'wasBlocked',
-				fromUserId: blocker.id,
-				toUserId: blockee.id,
-				timestamp: new Date(),
-			});
-		}
+		await this.historyService.addBlockHistory(blocker, blockee);
 	}
 
 	@bindThis
@@ -244,30 +220,7 @@ export class UserBlockingService implements OnModuleInit {
 			}, blocker.id);
 		}
 
-		const blockerPolicies = await this.roleService.getUserPolicies(blocker.id);
-		const blockeePolicies = await this.roleService.getUserPolicies(blockee.id);
-
-		// フォロー履歴に「unBlocked」を保存
-		if (this.userEntityService.isLocalUser(blocker) && blockerPolicies.canReadFollowHistory) {
-			this.followHistoryRepository.insert({
-				id: this.idService.gen(),
-				type: 'unBlocked',
-				fromUserId: blocker.id,
-				toUserId: blockee.id,
-				timestamp: new Date(),
-			});
-		}
-
-		// フォロー履歴に「wasUnBlocked」を保存
-		if (this.userEntityService.isLocalUser(blockee) && blockeePolicies.canReadFollowHistory) {
-			this.followHistoryRepository.insert({
-				id: this.idService.gen(),
-				type: 'wasUnBlocked',
-				fromUserId: blocker.id,
-				toUserId: blockee.id,
-				timestamp: new Date(),
-			});
-		}
+		await this.historyService.addUnblockHistory(blocker, blockee);
 	}
 
 	@bindThis

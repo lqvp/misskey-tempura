@@ -466,6 +466,7 @@ export class NoteEntityService implements OnModuleInit {
 			} : undefined,
 			mentions: note.mentions.length > 0 ? note.mentions : undefined,
 			hasPoll: note.hasPoll || undefined,
+			deliveryTargets: note.deliveryTargets ?? undefined,
 			uri: note.uri ?? undefined,
 			url: note.url ?? undefined,
 			dontShowOnLtl: note.visibility === 'public_non_ltl',

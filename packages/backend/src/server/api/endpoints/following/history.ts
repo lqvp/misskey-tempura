@@ -4,20 +4,12 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import { Brackets } from 'typeorm';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { QueryService } from '@/core/QueryService.js';
 import type { FollowHistoryRepository } from '@/models/_.js';
-import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { DI } from '@/di-symbols.js';
 import { CacheService } from '@/core/CacheService.js';
-import {
-	applyBlockedUsersFilter,
-	applyDefaultTypeCondition,
-	applyTypeCondition,
-	createDeleteQuery,
-	mapHistories,
-} from '@/core/HistoryUtils.js';
+import { HistoryService } from '@/core/HistoryService.js';
 
 export const meta = {
 	tags: ['following', 'account'],
@@ -107,17 +99,17 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> {
 	constructor(
-        @Inject(DI.followHistoryRepository)
-        private followHistoryRepository: FollowHistoryRepository,
+		@Inject(DI.followHistoryRepository)
+		private followHistoryRepository: FollowHistoryRepository,
 
-        private userEntityService: UserEntityService,
-        private queryService: QueryService,
-        private cacheService: CacheService,
+		private queryService: QueryService,
+		private cacheService: CacheService,
+		private historyService: HistoryService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			if (ps.delete) {
 				await this.cacheService.userFollowingsCache.delete(me.id);
-				const query = createDeleteQuery(
+				const query = this.historyService.createDeleteQuery(
 					this.followHistoryRepository,
 					me.id,
 					['follow', 'unFollow', 'blocked', 'unBlocked'],
@@ -136,27 +128,27 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				.leftJoinAndSelect('history.toUser', 'toUser');
 
 			switch (ps.type) {
-				case 'follow': applyTypeCondition(query, 'fromUserId', 'follow', me.id); break;
-				case 'unFollow': applyTypeCondition(query, 'fromUserId', 'unFollow', me.id); break;
-				case 'wasFollow': applyTypeCondition(query, 'toUserId', 'wasFollow', me.id); break;
-				case 'wasUnFollow': applyTypeCondition(query, 'toUserId', 'wasUnFollow', me.id); break;
-				case 'blocked': applyTypeCondition(query, 'fromUserId', 'blocked', me.id); break;
-				case 'unBlocked': applyTypeCondition(query, 'fromUserId', 'unBlocked', me.id); break;
-				case 'wasBlocked': applyTypeCondition(query, 'toUserId', 'wasBlocked', me.id); break;
-				case 'wasUnBlocked': applyTypeCondition(query, 'toUserId', 'wasUnBlocked', me.id); break;
-				default: applyDefaultTypeCondition(query, me.id,
+				case 'follow': this.historyService.applyTypeCondition(query, 'fromUserId', 'follow', me.id); break;
+				case 'unFollow': this.historyService.applyTypeCondition(query, 'fromUserId', 'unFollow', me.id); break;
+				case 'wasFollow': this.historyService.applyTypeCondition(query, 'toUserId', 'wasFollow', me.id); break;
+				case 'wasUnFollow': this.historyService.applyTypeCondition(query, 'toUserId', 'wasUnFollow', me.id); break;
+				case 'blocked': this.historyService.applyTypeCondition(query, 'fromUserId', 'blocked', me.id); break;
+				case 'unBlocked': this.historyService.applyTypeCondition(query, 'fromUserId', 'unBlocked', me.id); break;
+				case 'wasBlocked': this.historyService.applyTypeCondition(query, 'toUserId', 'wasBlocked', me.id); break;
+				case 'wasUnBlocked': this.historyService.applyTypeCondition(query, 'toUserId', 'wasUnBlocked', me.id); break;
+				default: this.historyService.applyDefaultTypeCondition(query, me.id,
 					['follow', 'unFollow', 'blocked', 'unBlocked'],
 					['wasFollow', 'wasUnFollow', 'wasBlocked', 'wasUnBlocked']);
 			}
 
-			await applyBlockedUsersFilter(query, me, this.cacheService);
+			await this.historyService.applyBlockedUsersFilter(query, me);
 
 			const histories = await query
 				.orderBy('history.timestamp', 'DESC')
 				.take(ps.limit)
 				.getMany();
 
-			return mapHistories(histories, me, this.cacheService, this.userEntityService);
+			return this.historyService.mapHistories(histories, me);
 		});
 	}
 }

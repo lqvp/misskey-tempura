@@ -82,6 +82,7 @@ import { RegistryApiService } from './RegistryApiService.js';
 import { ReversiService } from './ReversiService.js';
 import { ActivityPubAccessControlService } from './ActivityPubAccessControlService.js';
 import { ContactFormService } from './ContactFormService.js';
+import { HistoryService } from './HistoryService.js';
 
 import { ChartLoggerService } from './chart/ChartLoggerService.js';
 import FederationChart from './chart/charts/federation.js';
@@ -294,6 +295,7 @@ const $MetaEntityService: Provider = { provide: 'MetaEntityService', useExisting
 const $SystemWebhookEntityService: Provider = { provide: 'SystemWebhookEntityService', useExisting: SystemWebhookEntityService };
 const $ContactFormService: Provider = { provide: 'ContactFormService', useExisting: ContactFormService };
 const $ContactFormEntityService: Provider = { provide: 'ContactFormEntityService', useExisting: ContactFormEntityService };
+const $HistoryService: Provider = { provide: 'HistoryService', useExisting: HistoryService };
 
 const $ApAudienceService: Provider = { provide: 'ApAudienceService', useExisting: ApAudienceService };
 const $ApDbResolverService: Provider = { provide: 'ApDbResolverService', useExisting: ApDbResolverService };
@@ -395,6 +397,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		ReversiService,
 		ActivityPubAccessControlService,
 		ContactFormService,
+		HistoryService,
 
 		ChartLoggerService,
 		FederationChart,
@@ -606,6 +609,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$SystemWebhookEntityService,
 		$ContactFormService,
 		$ContactFormEntityService,
+		$HistoryService,
 
 		$ApAudienceService,
 		$ApDbResolverService,
@@ -704,6 +708,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		ReversiService,
 		ActivityPubAccessControlService,
 		ContactFormService,
+		HistoryService,
 
 		FederationChart,
 		NotesChart,
