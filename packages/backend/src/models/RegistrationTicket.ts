@@ -60,7 +60,8 @@ export class MiRegistrationTicket {
 	})
 	public pendingUserId: string | null;
 
-	@Column('text', {
+	@Column('varchar', {
+		length: 256,
 		nullable: true,
 	})
 	public description: string | null;
