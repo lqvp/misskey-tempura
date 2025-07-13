@@ -417,6 +417,7 @@ export class WebhookTestService {
 			url: note.url ?? undefined,
 			dontShowOnLtl: note.visibility === 'public_non_ltl',
 			reactionAndUserPairCache: note.reactionAndUserPairCache,
+			deliveryTargets: note.deliveryTargets,
 			...(detail ? {
 				clippedCount: note.clippedCount,
 				reply: note.reply ? await this.toPackedNote(note.reply, false) : null,
