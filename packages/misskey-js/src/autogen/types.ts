@@ -4792,7 +4792,7 @@ export type components = {
             deliveryTargets?: {
                 /** @enum {string} */
                 mode: 'include' | 'exclude';
-                hosts?: (string | null)[] | null;
+                hosts?: string[] | null;
             } | null;
         };
         NoteDraft: {
