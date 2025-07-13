@@ -79,6 +79,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</template>
 				</div>
 			</div>
+			<div v-if="invite.description">
+				<div :class="$style.label">{{ i18n.ts.description }}</div>
+				<div>{{ invite.description }}</div>
+			</div>
 		</div>
 	</div>
 </MkFolder>

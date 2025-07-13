@@ -21,6 +21,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkSwitch v-model="skipApproval">
 						<template #label>{{ i18n.ts.skipApproval }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 					</MkSwitch>
+					<MkInput v-model="description" type="text" :maxlength="256">
+						<template #label>{{ i18n.ts.description }}<span class="_beta">{{ i18n.ts.optional }}</span></template>
+					</MkInput>
 					<MkInput v-if="!noExpirationDate" v-model="expiresAt" type="datetime-local">
 						<template #label>{{ i18n.ts.expirationDate }}</template>
 					</MkInput>
@@ -92,6 +95,7 @@ const noExpirationDate = ref(true);
 const createCount = ref(1);
 const skipEmailAuth = ref(false);
 const skipApproval = ref(false);
+const description = ref('');
 
 async function createWithOptions() {
 	const options = {
@@ -99,6 +103,7 @@ async function createWithOptions() {
 		count: createCount.value,
 		skipEmailAuth: skipEmailAuth.value,
 		skipApproval: skipApproval.value,
+		description: description.value,
 	};
 
 	const tickets = await misskeyApi('admin/invite/create', options);

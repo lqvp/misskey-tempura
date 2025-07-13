@@ -60,6 +60,11 @@ export class MiRegistrationTicket {
 	})
 	public pendingUserId: string | null;
 
+	@Column('text', {
+		nullable: true,
+	})
+	public description: string | null;
+
 	@Column('boolean', {
 		default: false,
 	})
