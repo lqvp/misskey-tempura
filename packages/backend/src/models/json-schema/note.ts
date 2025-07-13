@@ -289,7 +289,7 @@ export const packedNoteSchema = {
 					optional: true, nullable: true,
 					items: {
 						type: 'string',
-						optional: true, nullable: true,
+						optional: false, nullable: false,
 					},
 				},
 			},
