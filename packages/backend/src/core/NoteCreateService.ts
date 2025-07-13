@@ -470,6 +470,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 				: [],
 
 			attachedFileTypes: data.files ? data.files.map(file => file.type) : [],
+			deliveryTargets: data.deliveryTargets,
 
 			// 以下非正規化データ
 			replyUserId: data.reply ? data.reply.userId : null,
