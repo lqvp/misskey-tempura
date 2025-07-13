@@ -15,12 +15,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</div>
 
 	<div v-else-if="tab === 'user'" class="_spacer" style="--MI_SPACER-w: 800px;">
-			<div v-if="usersSearchAvailable">
+		<div v-if="usersSearchAvailable || ignoreUsersSearchAvailable">
 			<XUser v-bind="props"/>
-			</div>
-			<div v-else>
-				<MkInfo warn>{{ i18n.ts.usersSearchNotAvailable }}</MkInfo>
-			</div>
+		</div>
+		<div v-else>
+			<MkInfo warn>{{ i18n.ts.usersSearchNotAvailable }}</MkInfo>
+		</div>
 	</div>
 </PageWithHeader>
 </template>
@@ -41,6 +41,7 @@ const props = withDefaults(defineProps<{
 	origin?: 'combined' | 'local' | 'remote',
 	// For storybook only
 	ignoreNotesSearchAvailable?: boolean,
+	ignoreUsersSearchAvailable?: boolean,
 }>(), {
 	query: '',
 	userId: undefined,
@@ -49,6 +50,7 @@ const props = withDefaults(defineProps<{
 	type: 'note',
 	origin: 'combined',
 	ignoreNotesSearchAvailable: false,
+	ignoreUsersSearchAvailable: false,
 });
 
 const XNote = defineAsyncComponent(() => import('./search.note.vue'));
