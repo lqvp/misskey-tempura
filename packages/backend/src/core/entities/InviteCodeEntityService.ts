@@ -52,6 +52,7 @@ export class InviteCodeEntityService {
 			used: !!target.usedAt,
 			skipEmailAuth: target.skipEmailAuth,
 			skipApproval: target.skipApproval,
+			description: target.description,
 		});
 	}
 

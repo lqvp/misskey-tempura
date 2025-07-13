@@ -17,6 +17,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div class="_gaps_s">
 					<MkSwitch v-if="$i?.policies.canSkipInviteEmailAuth" v-model="skipEmailAuth">{{ i18n.ts.skipEmailAuth }}</MkSwitch>
 					<MkSwitch v-if="$i?.policies.canSkipInviteApproval" v-model="skipApproval">{{ i18n.ts.skipApproval }}</MkSwitch>
+					<MkInput v-model="description" type="text" :maxlength="256">
+						<template #label>{{ i18n.ts.description }}<span class="_beta">{{ i18n.ts.optional }}</span></template>
+					</MkInput>
 				</div>
 			</MkFolder>
 			<div v-if="currentInviteLimit !== null">{{ i18n.tsx.createLimitRemaining({ limit: currentInviteLimit }) }}</div>
@@ -44,6 +47,7 @@ import MkPagination from '@/components/MkPagination.vue';
 import MkInviteCode from '@/components/MkInviteCode.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
+import MkInput from '@/components/MkInput.vue';
 import { definePage } from '@/page.js';
 import { instance } from '@/instance.js';
 import { $i } from '@/i.js';
@@ -66,6 +70,7 @@ const paginator = markRaw(new Paginator('invite/list', {
 
 const skipEmailAuth = ref(false);
 const skipApproval = ref(false);
+const description = ref('');
 
 const resetCycle = computed<null | string>(() => {
 	if (!inviteLimitCycle) return null;
@@ -81,6 +86,7 @@ async function create() {
 	const ticket = await misskeyApi('invite/create', {
 		skipEmailAuth: skipEmailAuth.value,
 		skipApproval: skipApproval.value,
+		description: description.value,
 	});
 	const { result } = await os.actions({
 		type: 'success',

@@ -46,5 +46,17 @@ export const packedInviteCodeSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
+		skipEmailAuth: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
+		skipApproval: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
+		description: {
+			type: 'string',
+			optional: false, nullable: true,
+		},
 	},
 } as const;

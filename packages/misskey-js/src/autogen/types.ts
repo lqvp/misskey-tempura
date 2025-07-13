@@ -5314,6 +5314,9 @@ export type components = {
             /** Format: date-time */
             usedAt: string | null;
             used: boolean;
+            skipEmailAuth: boolean;
+            skipApproval: boolean;
+            description: string | null;
         };
         Page: {
             /**
@@ -10248,6 +10251,7 @@ export interface operations {
                     skipEmailAuth?: boolean;
                     /** @default false */
                     skipApproval?: boolean;
+                    description?: string | null;
                 };
             };
         };
@@ -30232,6 +30236,7 @@ export interface operations {
                     skipEmailAuth?: boolean;
                     /** @default false */
                     skipApproval?: boolean;
+                    description?: string | null;
                 };
             };
         };

@@ -60,6 +60,12 @@ export class MiRegistrationTicket {
 	})
 	public pendingUserId: string | null;
 
+	@Column('varchar', {
+		length: 256,
+		nullable: true,
+	})
+	public description: string | null;
+
 	@Column('boolean', {
 		default: false,
 	})
