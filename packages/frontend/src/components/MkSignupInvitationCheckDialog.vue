@@ -55,11 +55,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</ul>
 				</div>
 
-				<div v-if="validationResult.description" :class="$style.description">
-					<p>{{ i18n.ts.description }}</p>
-					<p>{{ validationResult.description }}</p>
-				</div>
-
 				<p v-if="validationResult.expiresAt" :class="$style.expiresAt">
 					<i class="ti ti-calendar-off"></i>
 					<span>{{ i18n.tsx._signupEnhance.infoExpiresAt({ expiresAt: new Date(validationResult.expiresAt).toLocaleString() }) }}</span>
@@ -245,19 +240,6 @@ function proceedWithoutCode() {
 	background-color: var(--MI_THEME-accentedBg);
 	padding: 12px;
 	border-radius: 8px;
-}
-
-.description {
-	background-color: var(--MI_THEME-accentedBg);
-	padding: 12px;
-	border-radius: 8px;
-	white-space: pre-wrap;
-	word-break: break-word;
-
-	p:first-child {
-		font-weight: bold;
-		margin-bottom: 4px;
-	}
 }
 
 .benefitsList {
