@@ -77,7 +77,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					code: generateInviteCode(),
 					skipEmailAuth: ps.skipEmailAuth,
 					skipApproval: ps.skipApproval,
-					description: ps.description,
+					description: ps.description?.trim() ? ps.description : null,
 				}));
 			}
 

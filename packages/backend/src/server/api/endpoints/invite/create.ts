@@ -78,7 +78,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				code: generateInviteCode(),
 				skipEmailAuth: ps.skipEmailAuth && policies.canSkipInviteEmailAuth,
 				skipApproval: ps.skipApproval && policies.canSkipInviteApproval,
-				description: ps.description,
+				description: ps.description?.trim() ? ps.description : null,
 			});
 
 			return await this.inviteCodeEntityService.pack(ticket, me);
