@@ -8076,6 +8076,10 @@ export interface Locale extends ILocale {
              */
             "noteDraftLimit": string;
             /**
+             * ウォーターマーク機能の使用可否
+             */
+            "watermarkAvailable": string;
+            /**
              * 予約投稿の最大数
              */
             "scheduleNoteMax": string;

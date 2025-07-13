@@ -127,6 +127,7 @@ export const ROLE_POLICIES = [
 	'chatAvailability',
 	'uploadableFileTypes',
 	'noteDraftLimit',
+	'watermarkAvailable',
 	'canAddRoles',
 	'canCreateRole',
 	'canUseUnFollowNotification',

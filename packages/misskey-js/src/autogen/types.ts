@@ -5753,6 +5753,7 @@ export type components = {
             /** @enum {string} */
             chatAvailability: 'available' | 'readonly' | 'unavailable';
             noteDraftLimit: number;
+            watermarkAvailable: boolean;
             scheduleNoteMax: number;
             canAddRoles: boolean;
             canCreateRole: boolean;

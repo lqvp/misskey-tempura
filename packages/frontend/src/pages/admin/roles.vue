@@ -339,6 +339,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</MkInput>
 					</MkFolder>
 
+					<MkFolder v-if="matchQuery([i18n.ts._role._options.watermarkAvailable, 'watermarkAvailable'])">
+						<template #label>{{ i18n.ts._role._options.watermarkAvailable }}</template>
+						<template #suffix>{{ policies.watermarkAvailable ? i18n.ts.yes : i18n.ts.no }}</template>
+						<MkSwitch v-model="policies.watermarkAvailable">
+							<template #label>{{ i18n.ts.enable }}</template>
+						</MkSwitch>
+					</MkFolder>
+
 					<MkFolder v-if="matchQuery([i18n.ts._role._options.canAddRoles, 'canAddRoles'])">
 						<template #label>{{ i18n.ts._role._options.canAddRoles }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 						<template #suffix>{{ policies.canAddRoles ? i18n.ts.yes : i18n.ts.no }}</template>
