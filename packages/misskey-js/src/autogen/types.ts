@@ -4789,6 +4789,11 @@ export type components = {
             hasPoll?: boolean;
             myReaction?: string | null;
             dontShowOnLtl: boolean;
+            deliveryTargets?: {
+                /** @enum {string} */
+                mode: 'include' | 'exclude';
+                hosts?: string[] | null;
+            } | null;
         };
         NoteDraft: {
             /**

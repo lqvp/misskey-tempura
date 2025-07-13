@@ -216,6 +216,7 @@ const noteMock: Misskey.entities.Note = {
 	replyId: null,
 	renoteId: null,
 	dontShowOnLtl: false,
+	deliveryTargets: undefined,
 };
 </script>
 
