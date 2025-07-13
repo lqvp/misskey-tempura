@@ -3926,7 +3926,7 @@ notificationSendConfirm: "通知を送信しますか？"
 
 _reactionStats:
   reactionStats: "リアクション統計"
-  reactionStatsDescription: "あなたが付 けたリアクション、またはサーバー全体のリアクションの統計を表示します。"
+  reactionStatsDescription: "あなたが付けたリアクション、またはサーバー全体のリアクションの統計を表示します。"
   totalReactions: "総リアクション数"
   uniqueReactions: "リアクションの種類"
   mostUsedReaction: "最多リアクション"

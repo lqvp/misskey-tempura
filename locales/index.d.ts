@@ -14596,7 +14596,7 @@ export interface Locale extends ILocale {
          */
         "reactionStats": string;
         /**
-         * あなたが付 けたリアクション、またはサーバー全体のリアクションの統計を表示します。
+         * あなたが付けたリアクション、またはサーバー全体のリアクションの統計を表示します。
          */
         "reactionStatsDescription": string;
         /**

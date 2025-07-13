@@ -6,56 +6,50 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <MkStickyContainer>
 	<template #header><MkPageHeader v-model:tab="tab" :actions="headerActions" :tabs="headerTabs"/></template>
-	<div style="padding: 0 20px;">
+	<div class="main-content-container">
 		<MkInfo>
 			{{ i18n.ts._reactionStats.reactionStatsDescription }}
 		</MkInfo>
-	</div>
 
-	<div class="summary-container">
-		<div class="summary-item">
-			<div class="label">{{ i18n.ts._reactionStats.totalReactions }}</div>
-			<div class="value">{{ summary.total }}</div>
-		</div>
-		<div class="summary-item">
-			<div class="label">{{ i18n.ts._reactionStats.uniqueReactions }}</div>
-			<div class="value">{{ summary.unique }}</div>
-		</div>
-		<div v-if="summary.mostUsed" class="summary-item">
-			<div class="label">{{ i18n.ts._reactionStats.mostUsedReaction }}</div>
-			<div class="value most-used">
-				<Mfm :text="summary.mostUsed.reaction"/>
-				<span>{{ summary.mostUsed.count }}</span>
+		<div class="summary-container">
+			<div class="summary-item">
+				<div class="label">{{ i18n.ts._reactionStats.totalReactions }}</div>
+				<div class="value">{{ summary.total }}</div>
+			</div>
+			<div class="summary-item">
+				<div class="label">{{ i18n.ts._reactionStats.uniqueReactions }}</div>
+				<div class="value">{{ summary.unique }}</div>
+			</div>
+			<div v-if="summary.mostUsed" class="summary-item">
+				<div class="label">{{ i18n.ts._reactionStats.mostUsedReaction }}</div>
+				<div class="value most-used">
+					<Mfm :text="summary.mostUsed.reaction"/>
+					<span>{{ summary.mostUsed.count }}</span>
+				</div>
 			</div>
 		</div>
-	</div>
 
-	<div v-if="chartData" class="chart-container _spacer" style="--MI_SPACER-w: 1000px; --MI_SPACER-marginMin: 20px;">
-		<ul>
-			<li v-for="item in chartData" :key="item.reaction" class="chart-item">
-				<Mfm :text="item.reaction" class="reaction"/>
-				<div class="bar-container">
-					<div class="bar" :style="{ width: `${(item.count / maxCount) * 100}%` }"></div>
-				</div>
-				<span class="count">{{ item.count }}</span>
-			</li>
-		</ul>
-	</div>
-	<div v-else class="loading">
-		<MkLoading/>
+		<div v-if="chartData" class="chart-container _spacer">
+			<canvas ref="chartEl"></canvas>
+		</div>
+		<div v-else class="loading">
+			<MkLoading/>
+		</div>
 	</div>
 </MkStickyContainer>
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, nextTick } from 'vue';
+import { Chart } from 'chart.js';
+import { onMounted, useTemplateRef } from 'vue';
 import { misskeyApi } from '@/utility/misskey-api';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { ensureSignin } from '@/i.js';
 import MkInfo from '@/components/MkInfo.vue';
 import MkLoading from '@/components/global/MkLoading.vue';
-import Mfm from '@/components/global/MkMfm';
+import { initChart } from '@/utility/init-chart.js';
 
 const $i = ensureSignin();
 
@@ -92,8 +86,13 @@ const maxCount = computed(() => {
 
 watch(tab, async () => {
 	chartData.value = null; // データをリセットしてローディング状態を示す
-	const reactionsList = await misskeyApi('reaction-stats', { site: tab.value === 'site' });
-	chartData.value = reactionsList;
+	try {
+		const reactionsList = await misskeyApi('reaction-stats', { site: tab.value === 'site' });
+		chartData.value = reactionsList;
+	} catch (error) {
+		console.error('Failed to fetch reaction stats:', error);
+		chartData.value = [];
+	}
 }, {
 	immediate: true,
 });
@@ -114,15 +113,88 @@ definePage(() => ({
 	title: i18n.ts._reactionStats.reactionStats,
 	icon: 'ti ti-chart-bar',
 }));
+
+initChart();
+
+const chartEl = useTemplateRef('chartEl');
+let chartInstance: Chart | null = null;
+
+// Misskey-style color palette
+const colorPalette = [
+	'#008FFB', // blue
+	'#00E396', // green
+	'#FEB019', // yellow
+	'#FF4560', // red
+	'#e300db', // purple
+	'#fe6919', // orange
+	'#bde800', // lime
+	'#00e0e0', // cyan
+];
+
+function getColor(i: number) {
+	return colorPalette[i % colorPalette.length];
+}
+
+function renderChart() {
+	if (!chartData.value || chartData.value.length === 0 || !chartEl.value) return;
+	if (chartInstance) chartInstance.destroy();
+	chartInstance = new Chart(chartEl.value, {
+		type: 'bar',
+		data: {
+			labels: chartData.value.map(x => x.reaction),
+			datasets: [{
+				label: i18n.ts._reactionStats.totalReactions,
+				data: chartData.value.map(x => x.count),
+				backgroundColor: chartData.value.map((_, i) => getColor(i)),
+				borderRadius: 4,
+				barPercentage: 0.9,
+				categoryPercentage: 0.9,
+			}],
+		},
+		options: {
+			aspectRatio: 2.5,
+			plugins: {
+				legend: { display: false },
+				tooltip: { enabled: true },
+			},
+			scales: {
+				x: {
+					grid: { display: false },
+					ticks: { font: { size: 16 } },
+				},
+				y: {
+					beginAtZero: true,
+					grid: { display: true },
+					ticks: { font: { size: 14 } },
+				},
+			},
+			layout: {
+				padding: { left: 0, right: 8, top: 0, bottom: 0 },
+			},
+		},
+	});
+}
+
+onMounted(() => {
+	if (chartData.value) renderChart();
+});
+
+watch(chartData, async () => {
+	await nextTick();
+	renderChart();
+});
 </script>
 
 <style lang="scss" scoped>
+.main-content-container {
+	padding: 0 20px;
+}
+
 .summary-container {
 	display: flex;
 	justify-content: space-around;
 	text-align: center;
 	padding: 20px;
-	margin: 0 20px;
 	border-bottom: 1px solid var(--divider);
 
 	.summary-item {

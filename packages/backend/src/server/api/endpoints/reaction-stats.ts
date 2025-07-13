@@ -57,9 +57,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				? 'site'
 				: `user:${me.id}`;
 
-			const res = await this.reactionStatsCache.fetch(cacheKey);
-
-			return res;
+			try {
+				const res = await this.reactionStatsCache.fetch(cacheKey);
+				return res;
+			} catch (error) {
+				throw new Error(`Failed to fetch reaction stats: ${error}`);
+			}
 		});
 	}
 }

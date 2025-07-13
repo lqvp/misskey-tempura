@@ -47,7 +47,7 @@ export class ReactionStatsCacheService implements OnApplicationShutdown {
 				.orderBy('count', 'DESC')
 				.limit(limit);
 
-		if (type === 'user' && id) {
+		if (type === 'user' && id !== '') {
 			query.where('nr.userId = :id', { id: id });
 		}
 
