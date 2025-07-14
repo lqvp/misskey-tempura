@@ -70,6 +70,10 @@ import type {
 	AdminEmojiSetLicenseBulkRequest,
 	AdminEmojiUpdateRequest,
 	AdminFederationDeleteAllFilesRequest,
+	AdminFederationFollowersRequest,
+	AdminFederationFollowersResponse,
+	AdminFederationFollowingRequest,
+	AdminFederationFollowingResponse,
 	AdminFederationRefreshRemoteInstanceMetadataRequest,
 	AdminFederationRemoveAllFollowingRequest,
 	AdminFederationUpdateInstanceRequest,
@@ -335,10 +339,6 @@ import type {
 	EndpointRequest,
 	EndpointResponse,
 	EndpointsResponse,
-	FederationFollowersRequest,
-	FederationFollowersResponse,
-	FederationFollowingRequest,
-	FederationFollowingResponse,
 	FederationInstancesRequest,
 	FederationInstancesResponse,
 	FederationShowInstanceRequest,
@@ -757,6 +757,8 @@ export type Endpoints = {
 	'admin/emoji/set-license-bulk': { req: AdminEmojiSetLicenseBulkRequest; res: EmptyResponse };
 	'admin/emoji/update': { req: AdminEmojiUpdateRequest; res: EmptyResponse };
 	'admin/federation/delete-all-files': { req: AdminFederationDeleteAllFilesRequest; res: EmptyResponse };
+	'admin/federation/followers': { req: AdminFederationFollowersRequest; res: AdminFederationFollowersResponse };
+	'admin/federation/following': { req: AdminFederationFollowingRequest; res: AdminFederationFollowingResponse };
 	'admin/federation/refresh-remote-instance-metadata': { req: AdminFederationRefreshRemoteInstanceMetadataRequest; res: EmptyResponse };
 	'admin/federation/remove-all-following': { req: AdminFederationRemoveAllFollowingRequest; res: EmptyResponse };
 	'admin/federation/update-instance': { req: AdminFederationUpdateInstanceRequest; res: EmptyResponse };
@@ -927,8 +929,6 @@ export type Endpoints = {
 	'endpoint': { req: EndpointRequest; res: EndpointResponse };
 	'endpoints': { req: EmptyRequest; res: EndpointsResponse };
 	'export-custom-emojis': { req: EmptyRequest; res: EmptyResponse };
-	'federation/followers': { req: FederationFollowersRequest; res: FederationFollowersResponse };
-	'federation/following': { req: FederationFollowingRequest; res: FederationFollowingResponse };
 	'federation/instances': { req: FederationInstancesRequest; res: FederationInstancesResponse };
 	'federation/show-instance': { req: FederationShowInstanceRequest; res: FederationShowInstanceResponse };
 	'federation/stats': { req: FederationStatsRequest; res: FederationStatsResponse };
