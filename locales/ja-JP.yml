@@ -2244,9 +2244,10 @@ _aboutMisskey:
   projectMembers: "プロジェクトメンバー"
 
 _misskeyTempura:
-  about: "misskey-tempuraは隠居特化型のMisskeyフォークです。\nユーザー保護を重視した設計を目指しています。\nその他、ユーザー体験をより快適にする改造を行っています。"
+  about: "Misskey-tempuraは隠居特化型のMisskeyフォークです。\nユーザー保護を重視した設計を目指していますが、変な機能も沢山あります。"
   contributors: "優秀なコントリビューター(?)"
-  aboutTempura: "misskey-tempuraについて"
+  aboutTempura: "Misskey-tempuraについて"
+  diff: "更新履歴"
 
 _displayOfSensitiveMedia:
   respect: "センシティブ設定されたメディアを隠す"

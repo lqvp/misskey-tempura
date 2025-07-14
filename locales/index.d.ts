@@ -8601,9 +8601,8 @@ export interface Locale extends ILocale {
     };
     "_misskeyTempura": {
         /**
-         * misskey-tempuraは隠居特化型のMisskeyフォークです。
-         * ユーザー保護を重視した設計を目指しています。
-         * その他、ユーザー体験をより快適にする改造を行っています。
+         * Misskey-tempuraは隠居特化型のMisskeyフォークです。
+         * ユーザー保護を重視した設計を目指していますが、変な機能も沢山あります。
          */
         "about": string;
         /**
@@ -8611,9 +8610,13 @@ export interface Locale extends ILocale {
          */
         "contributors": string;
         /**
-         * misskey-tempuraについて
+         * Misskey-tempuraについて
          */
         "aboutTempura": string;
+        /**
+         * 更新履歴
+         */
+        "diff": string;
     };
     "_displayOfSensitiveMedia": {
         /**

@@ -1,7 +1,7 @@
 {
 	"type": "module",
 	"name": "misskey-js",
-	"version": "2025.7.0-beta.1",
+	"version": "2025.7.0-beta.1-tempura-1.9.2-dev",
 	"description": "Misskey SDK for JavaScript",
 	"license": "MIT",
 	"main": "./built/index.js",
@@ -31,7 +31,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/misskey-dev/misskey.git",
+		"url": "https://github.com/lqvp/misskey-tempura.git",
 		"directory": "packages/misskey-js"
 	},
 	"devDependencies": {

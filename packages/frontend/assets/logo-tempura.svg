@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   version="1.1"
+   id="svg1"
+   width="1310.5823"
+   height="473.02936"
+   viewBox="0 0 1310.5823 473.02936"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <defs
+     id="defs1">
+    <rect
+       x="174.87402"
+       y="611.32434"
+       width="1062.4698"
+       height="335.05276"
+       id="rect3" />
+  </defs>
+  <g
+     id="g8"
+     transform="translate(-1199.7467,-526.64063)">
+    <path
+       style="display:inline;fill:#b68536;fill-opacity:1"
+       d="M 1450.6692,526.64063 1441.1888,647.1993 1457.4882,658.1109 C 1457.4882,658.1109 1486.4694,618.55656 1486.3508,618.83619 L 1484.0703,556.34384 M 1481.4095,675.45111 1593.8383,624.93952 1559.8648,602.91634 1494.9292,623.42078 1466.8383,662.64063 M 1436.1371,653.2034 1391.1888,681.82197 1367.4165,691.30422 1357.9642,716.09127 1335.1981,728.24251 1332.5854,752.97169 1313.1888,759.30427 1293.337,776.36904 1292.769,804.15919 1263.3732,818.73171 1251.195,840.19544 1235.8408,852.30422 1229.4859,868.01412 1212.0245,882.20315 1206.9642,912.1993 1199.7467,935.1993 1216.5847,960.1993 1231.2034,983.2302 1263.1888,988.7572 1291.1888,999.67 1311.2042,982.6291 1335.2729,966.1993 1339.0468,942.30732 1351.8886,934.76949 1368.0553,910.1993 1367.3516,882.21474 1399.7952,864.18385 1406.9311,832.29268 1427.5515,817.18385 1435.097,792.95315 1448.6556,778.1993 1451.9311,759.29268 1464.8215,746.15993 1465.374,723.1993 1473.9095,694.1993 1476.4813,683.23866 M 1397.0406,694.84285 1404.0476,714.73475 1419.1456,713.72322 1442.2281,727.88527 1452.4465,732.50252 1439.7613,755.1993 1437.0097,772.15993 1421.9311,788.1993 1418.31,807.10591 1394.8917,825.20315 1388.8856,855.97169 1354.5669,877.1993 1355.4458,905.1993 1343.8593,923.11366 1328.827,932.29268 1323.3308,962.14449 1301.2281,973.413 1286.1888,986.6576 1266.1888,976.3042 1238.2938,972.457 1220.509,942.1993 1212.2906,931.1993 1220.8601,910.1993 1222.5067,890.29268 1237.0006,879.01412 1245.0429,862.41224 1259.8092,851.15919 1274.232,827.71241 1301.8601,815.10591 1308.8493,797.1993 1307.5461,780.20009 1341.9758,763.86982 1346.7922,737.4269 1366.1456,727.14449 1377.7528,700.71315 1389.1888,696.77102 1397.0406,694.84285"
+       id="path5" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:240px;font-family:Koruri;-inkscape-font-specification:'Koruri, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;direction:ltr;text-anchor:start;fill:#b68536;fill-opacity:1"
+       x="1522.4384"
+       y="855.07812"
+       id="text5"><tspan
+         id="tspan5"
+         x="1522.4384"
+         y="855.07812">tempura</tspan></text>
+    <text
+       xml:space="preserve"
+       id="text2"
+       style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:240px;font-family:Koruri;-inkscape-font-specification:'Koruri, Medium';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:start;writing-mode:lr-tb;direction:ltr;white-space:pre;shape-inside:url(#rect3);display:none;fill:#000000"
+       transform="translate(112.44617,9.484436)"><tspan
+         x="174.875"
+         y="847.69141"
+         id="tspan1">misskey</tspan></text>
+  </g>
+</svg>

@@ -249,6 +249,18 @@ type AdminEmojiUpdateRequest = operations['admin___emoji___update']['requestBody
 type AdminFederationDeleteAllFilesRequest = operations['admin___federation___delete-all-files']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
+type AdminFederationFollowersRequest = operations['admin___federation___followers']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminFederationFollowersResponse = operations['admin___federation___followers']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type AdminFederationFollowingRequest = operations['admin___federation___following']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminFederationFollowingResponse = operations['admin___federation___following']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type AdminFederationRefreshRemoteInstanceMetadataRequest = operations['admin___federation___refresh-remote-instance-metadata']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -1604,6 +1616,10 @@ declare namespace entities {
         AdminEmojiSetLicenseBulkRequest,
         AdminEmojiUpdateRequest,
         AdminFederationDeleteAllFilesRequest,
+        AdminFederationFollowersRequest,
+        AdminFederationFollowersResponse,
+        AdminFederationFollowingRequest,
+        AdminFederationFollowingResponse,
         AdminFederationRefreshRemoteInstanceMetadataRequest,
         AdminFederationRemoveAllFollowingRequest,
         AdminFederationUpdateInstanceRequest,
@@ -1869,10 +1885,6 @@ declare namespace entities {
         EndpointRequest,
         EndpointResponse,
         EndpointsResponse,
-        FederationFollowersRequest,
-        FederationFollowersResponse,
-        FederationFollowingRequest,
-        FederationFollowingResponse,
         FederationInstancesRequest,
         FederationInstancesResponse,
         FederationShowInstanceRequest,
@@ -2313,18 +2325,6 @@ export { entities }
 
 // @public (undocumented)
 type Error_2 = components['schemas']['Error'];
-
-// @public (undocumented)
-type FederationFollowersRequest = operations['federation___followers']['requestBody']['content']['application/json'];
-
-// @public (undocumented)
-type FederationFollowersResponse = operations['federation___followers']['responses']['200']['content']['application/json'];
-
-// @public (undocumented)
-type FederationFollowingRequest = operations['federation___following']['requestBody']['content']['application/json'];
-
-// @public (undocumented)
-type FederationFollowingResponse = operations['federation___following']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type FederationInstance = components['schemas']['FederationInstance'];
