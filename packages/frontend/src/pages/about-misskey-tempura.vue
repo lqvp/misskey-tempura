@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div class="_spacer" style="--MI_SPACER-w: 600px; --MI_SPACER-min: 20px;">
 			<div class="_gaps_m znqjceqz">
 				<div v-panel class="about">
-					<div ref="containerEl" class="container">
+					<div class="container">
 						<img :src="tempurasvg" alt="" class="icon" draggable="false"/>
 						<div class="misskey">Misskey-tempura</div>
 						<div class="version">{{ displayVersion }}</div>
@@ -36,7 +36,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { shallowRef, computed } from 'vue';
+import { computed } from 'vue';
 import { version } from '@@/js/config.js';
 import FormLink from '@/components/form/link.vue';
 import FormSection from '@/components/form/section.vue';
@@ -59,8 +59,6 @@ const contributors = [
 const displayVersion = computed(() => {
 	return version.split('tempura-')[1];
 });
-
-const containerEl = shallowRef<HTMLElement>();
 
 const headerActions = computed(() => []);
 
