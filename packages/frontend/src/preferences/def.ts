@@ -711,4 +711,7 @@ export const PREF_DEF = definePreferences({
 	chooseFileFrom: {
 		default: 'new' as 'new' | 'old',
 	},
+	viewedRenotes: {
+		default: [] as string[],
+	},
 });
