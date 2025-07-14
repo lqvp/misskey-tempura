@@ -132,6 +132,7 @@ export const permissions = [
 	'write:admin:drop-all-notes',
 	'write:admin:contact-form',
 	'read:admin:contact-form',
+	'read:admin:federation',
 ] as const;
 
 export const moderationLogTypes = [

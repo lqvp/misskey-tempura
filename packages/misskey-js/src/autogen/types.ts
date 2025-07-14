@@ -2008,7 +2008,8 @@ export type paths = {
          * federation/followers
          * @description No description provided.
          *
-         *     **Credential required**: *No*
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:federation*
          */
         post: operations['federation___followers'];
     };
@@ -2017,7 +2018,8 @@ export type paths = {
          * federation/following
          * @description No description provided.
          *
-         *     **Credential required**: *No*
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:federation*
          */
         post: operations['federation___following'];
     };

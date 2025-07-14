@@ -9682,6 +9682,10 @@ export interface Locale extends ILocale {
          * お問い合わせフォームを見る
          */
         "read:admin:contact-form": string;
+        /**
+         * 連合に関する情報を見る
+         */
+        "read:admin:federation": string;
     };
     "_auth": {
         /**

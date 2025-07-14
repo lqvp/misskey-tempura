@@ -2538,6 +2538,7 @@ _permissions:
   "write:admin:drop-all-notes": "全てのノートを削除する"
   "write:admin:contact-form": "お問い合わせフォームを操作する"
   "read:admin:contact-form": "お問い合わせフォームを見る"
+  "read:admin:federation": "連合に関する情報を見る"
 
 _auth:
   shareAccessTitle: "アプリへのアクセス許可"

@@ -223,7 +223,7 @@ const usersPaginator = iAmModerator ? markRaw(new Paginator('admin/show-users', 
 	offsetMode: true,
 }));
 
-const followingPaginator = markRaw(new Paginator('federation/following', {
+const followingPaginator = markRaw(new Paginator('admin/federation/following', {
 	limit: 10,
 	params: {
 		host: props.host,
@@ -232,7 +232,7 @@ const followingPaginator = markRaw(new Paginator('federation/following', {
 	offsetMode: false,
 }));
 
-const followersPaginator = markRaw(new Paginator('federation/followers', {
+const followersPaginator = markRaw(new Paginator('admin/federation/followers', {
 	limit: 10,
 	params: {
 		host: props.host,
