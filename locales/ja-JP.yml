@@ -4127,3 +4127,7 @@ _advancedSearch:
   usageExample2: "ねこ いぬ -犬"
   usageExplanation2: "ねこ いぬ -犬 → 「犬」を除外"
   usageExplanation3: "下の設定でAND/ORを切り替え可能"
+
+_enableViewedRenotes:
+  title: "閲覧したリノートを記録"
+  caption: "リノートを閲覧した際に、そのノートIDを記録します。記録されたリノートは自動的に折りたたまれます。"

@@ -66,6 +66,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkSwitch>
 				</MkPreferenceContainer>
 			</SearchMarker>
+
+			<SearchMarker :keywords="['viewed', 'renotes', 'enable']">
+				<MkPreferenceContainer k="enableViewedRenotes">
+					<MkSwitch v-model="enableViewedRenotes">
+						<template #caption>{{ i18n.ts._enableViewedRenotes.caption }}</template>
+						<SearchLabel>{{ i18n.ts._enableViewedRenotes.title }}</SearchLabel>
+					</MkSwitch>
+				</MkPreferenceContainer>
+			</SearchMarker>
 		</div>
 	</MkFolder>
 </SearchMarker>
@@ -87,6 +96,7 @@ const hideSocialTimeLine = prefer.model('hideSocialTimeLine');
 const hideLists = prefer.model('hideLists');
 const hideAntennas = prefer.model('hideAntennas');
 const hideChannel = prefer.model('hideChannel');
+const enableViewedRenotes = prefer.model('enableViewedRenotes');
 
 function toggleAllHidden(value: boolean) {
 	type TimelineSettingKey = 'hideLocalTimeLine' | 'hideGlobalTimeLine' | 'hideSocialTimeLine' | 'hideLists' | 'hideAntennas' | 'hideChannel';

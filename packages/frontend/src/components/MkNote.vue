@@ -251,6 +251,7 @@ import { getPluginHandlers } from '@/plugin.js';
 import { DI } from '@/di.js';
 import { globalEvents } from '@/events.js';
 import MkVisibilityColoring from '@/components/MkVisibilityColoring.vue';
+import { useViewedRenotes } from '@/composables/useViewedRenotes.js';
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
@@ -291,6 +292,8 @@ let note = deepClone(props.note);
 //	note = result as Misskey.entities.Note;
 //}
 
+const { add: addViewedRenote, has: isViewedRenote } = useViewedRenotes();
+
 const isRenote = Misskey.note.isPureRenote(note);
 const appearNote = getAppearNote(note);
 const { $note: $appearNote, subscribe: subscribeManuallyToNoteCapture } = useNoteCapture({
@@ -323,7 +326,8 @@ const canRenote = computed(() => ['public', 'home'].includes(appearNote.visibili
 const renoteCollapsed = ref(
 	prefer.s.collapseRenotes && isRenote && (
 		($i && ($i.id === note.userId || $i.id === appearNote.userId)) || // `||` must be `||`! See https://github.com/misskey-dev/misskey/issues/13131
-		($appearNote.myReaction != null)
+		($appearNote.myReaction != null) ||
+		isViewedRenote(appearNote.id)
 	),
 );
 
@@ -755,6 +759,12 @@ function readPromo() {
 		noteId: appearNote.id,
 	});
 }
+
+onMounted(() => {
+	if (isRenote) {
+		addViewedRenote(appearNote.id);
+	}
+});
 
 function emitUpdReaction(emoji: string, delta: number) {
 	if (delta < 0) {
