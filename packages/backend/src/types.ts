@@ -155,7 +155,6 @@ export const moderationLogTypes = [
 	'unquarantineRemoteInstance',
 	'dropAllNotes',
 	'unsetUserMutualLink',
-	'notificationSend',
 ] as const;
 
 export type ModerationLogPayloads = {
@@ -473,6 +472,11 @@ export type ModerationLogPayloads = {
 		host: string;
 	};
 	dropAllNotes: {
+		userId: string;
+		userUsername: string;
+		userHost: string | null;
+	};
+	unsetUserMutualLink: {
 		userId: string;
 		userUsername: string;
 		userHost: string | null;

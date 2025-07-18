@@ -30,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					'unsetUserAvatar',
 					'unsetUserBanner',
 					'unsetUserMutualLink',
-					'notificationSend',
+					'sendNotification',
 					'dropAllNotes'
 				].includes(log.type),
 				[$style.logRed]: [
@@ -60,7 +60,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<span v-else-if="log.type === 'unsetUserAvatar'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
 		<span v-else-if="log.type === 'unsetUserBanner'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
 		<span v-else-if="log.type === 'unsetUserMutualLink'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
-		<span v-else-if="log.type === 'notificationSend'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
+		<span v-else-if="log.type === 'sendNotification'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
 		<span v-else-if="log.type === 'approve'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
 		<span v-else-if="log.type === 'decline'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}{{ " " + i18n.ts.optionalReason + ":" + " " +log.info.reason }}</span>
 		<span v-else-if="log.type === 'suspend'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
@@ -104,7 +104,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<span v-else-if="log.type === 'quarantineRemoteInstance'">: {{ log.info.host }}</span>
 		<span v-else-if="log.type === 'unquarantineRemoteInstance'">: {{ log.info.host }}</span>
 		<span v-else-if="log.type === 'dropAllNotes'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
-		<span v-else-if="log.type === 'unsetUserMutualLink'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
 		<span v-else-if="log.type === 'createRolesAnnouncement'">: {{ log.info.announcement.title }}</span>
 		<span v-else-if="log.type === 'updateRolesAnnouncement'">: {{ log.info.before.title }}</span>
 		<span v-else-if="log.type === 'deleteRolesAnnouncement'">: {{ log.info.announcement.title }}</span>

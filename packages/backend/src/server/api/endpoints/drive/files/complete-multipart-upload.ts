@@ -172,7 +172,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				});
 
 				// Verify the actual file size matches the expected size
-				const actualFileSize = fs.statSync(completeFilePath).size;
+				const actualFileSize = (await fs.promises.stat(completeFilePath)).size;
 				if (actualFileSize !== multipartUpload.totalSize) {
 					console.error(`File size mismatch: expected ${multipartUpload.totalSize}, got ${actualFileSize}`);
 					throw new ApiError(meta.errors.fileSizeMismatch);
@@ -218,23 +218,15 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				// エラー発生時の追加処理（ログ記録など）
 				console.error('Error completing multipart upload:', err);
 
-				// Clean up temp files on error
-				try {
-					if (fs.existsSync(completeFilePath)) {
-						fs.unlinkSync(completeFilePath);
-					}
-				} catch (cleanupErr) {
-					console.error('Failed to clean up temporary file on error:', cleanupErr);
-				}
-
 				throw err;
 			} finally {
 				// 常に実行されるクリーンアップ処理
 				try {
 					writeStream.end();
-					if (fs.existsSync(completeFilePath)) {
-						fs.unlinkSync(completeFilePath);
-					}
+					// 非同期でファイル削除を試行（ファイルが存在しない場合は無視）
+					await fs.promises.unlink(completeFilePath).catch(() => {
+						// ファイルが存在しない場合は無視
+					});
 				} catch (e) {
 					console.error('Failed to clean up temporary file', e);
 				}

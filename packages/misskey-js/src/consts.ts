@@ -200,7 +200,6 @@ export const moderationLogTypes = [
 	'unquarantineRemoteInstance',
 	'dropAllNotes',
 	'unsetUserMutualLink',
-	'notificationSend',
 ] as const;
 
 export const queueTypes = [

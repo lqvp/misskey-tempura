@@ -14218,10 +14218,6 @@ export interface Locale extends ILocale {
          */
         "overflow": string;
         /**
-         * アップロードがレート制限により中止されました。しばらく時間をおいてから再試行してください。
-         */
-        "rateLimit": string;
-        /**
          * レート制限によりアップロードが中止されました。しばらく時間をおいてから再試行してください。
          */
         "rateLimitError": string;
@@ -14616,7 +14612,7 @@ export interface Locale extends ILocale {
     /**
      * 通知を送る
      */
-    "notificationSend": string;
+    "sendNotification": string;
     /**
      * 通知内容を入力
      */
@@ -14624,7 +14620,7 @@ export interface Locale extends ILocale {
     /**
      * 通知を送信しますか？
      */
-    "notificationSendConfirm": string;
+    "sendNotificationConfirm": string;
     "_reactionStats": {
         /**
          * リアクション統計

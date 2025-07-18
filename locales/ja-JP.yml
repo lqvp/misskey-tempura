@@ -3806,7 +3806,6 @@ _earthquakeWarning:
 _uploadMultipart:
   error: "アップロードエラー"
   overflow: "ファイルサイズが大きすぎます（最大: 2GB）。データベースの制限により、現在2GB以上のファイルはアップロードできません。"
-  rateLimit: "アップロードがレート制限により中止されました。しばらく時間をおいてから再試行してください。"
   rateLimitError: "レート制限によりアップロードが中止されました。しばらく時間をおいてから再試行してください。"
   tooManyRetries: "ファイルアップロード中に{retries}回のリトライを試みましたが、失敗しました。\nしばらく時間をおいてから再試行してください。"
   failedToCreateMultipart: "ファイルアップロード中に失敗しました。\n{status}: {statusText}"
@@ -3929,9 +3928,9 @@ showInstanceTickerVersionDescription: "インスタンスのバージョンを�
 textAreaAutoResize: "テキストエリアの自動リサイズ"
 textAreaAutoResizeDescription: "テキストエリアの高さを自動で調整します。"
 
-notificationSend: "通知を送る"
+sendNotification: "通知を送る"
 enterNotificationText: "通知内容を入力"
-notificationSendConfirm: "通知を送信しますか？"
+sendNotificationConfirm: "通知を送信しますか？"
 
 _reactionStats:
   reactionStats: "リアクション統計"
