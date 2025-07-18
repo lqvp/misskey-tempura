@@ -4131,3 +4131,5 @@ _advancedSearch:
 _enableViewedRenotes:
   title: "閲覧したリノートを記録"
   caption: "リノートを閲覧した際に、そのノートIDを記録します。記録されたリノートは自動的に折りたたまれます。"
+
+searchResults: "{search}件"

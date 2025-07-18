@@ -196,7 +196,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</div>
 
 	<MkFoldableSection v-if="paginator">
-		<template #header>{{ i18n.ts.searchResult }}</template>
+		<template #header>
+			{{ i18n.ts.searchResult }}
+			<span v-if="hitCount !== null" class="_text">
+				{{ i18n.tsx.searchResults({ search: hitCount }) }}
+			</span>
+		</template>
 		<MkNotesTimeline :key="`searchNotes:${key}`" :paginator="paginator"/>
 	</MkFoldableSection>
 </div>
@@ -256,6 +261,7 @@ const router = useRouter();
 
 const key = ref(0);
 const paginator = shallowRef<Paginator<'notes/search'> | null>(null);
+const hitCount = ref<number | null>(null);
 
 const searchQuery = ref(toRef(props, 'query').value);
 const hostInput = ref(toRef(props, 'host').value);
@@ -576,6 +582,15 @@ async function search() {
 		limit: 10,
 		params: params,
 	}));
+
+	// ヒット数を計算
+	try {
+		await paginator.value.init();
+		// 新しいレスポンス形式からヒット数を取得
+		hitCount.value = paginator.value.items.value.length;
+	} catch (err) {
+		hitCount.value = null;
+	}
 
 	key.value++;
 }

@@ -15278,6 +15278,10 @@ export interface Locale extends ILocale {
          */
         "caption": string;
     };
+    /**
+     * {search}件
+     */
+    "searchResults": ParameterizedString<"search">;
 }
 declare const locales: {
     [lang: string]: Locale;
