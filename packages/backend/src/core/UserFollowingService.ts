@@ -713,6 +713,28 @@ export class UserFollowingService implements OnModuleInit {
 		}
 	}
 
+	@bindThis
+	public async rejectAllFollowRequests(
+		user: {
+			id: MiUser['id']; host: MiUser['host']; uri: MiUser['host']; inbox: MiUser['inbox']; sharedInbox: MiUser['sharedInbox'];
+		},
+	): Promise<void> {
+		const requests = await this.followRequestsRepository.findBy({
+			followeeId: user.id,
+		});
+
+		for (const request of requests) {
+			const follower = await this.usersRepository.findOneByOrFail({ id: request.followerId });
+			// userをLocal型として扱うため、必要なプロパティのみを抽出
+			const localUser = {
+				id: user.id,
+				host: user.host,
+				uri: user.uri,
+			} as Local;
+			this.rejectFollowRequest(localUser, follower as Both);
+		}
+	}
+
 	/**
 	 * API following/request/reject
 	 */

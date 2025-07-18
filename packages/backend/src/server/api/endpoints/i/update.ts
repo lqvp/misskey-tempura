@@ -570,9 +570,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			// Publish meUpdated event
 			this.globalEventService.publishMainStream(user.id, 'meUpdated', iObj);
 
-			// 鍵垢を解除したとき、溜まっていたフォローリクエストがあるならすべて承認
+			// 鍵垢を解除したとき、溜まっていたフォローリクエストがあるならすべて拒否
 			if (user.isLocked && ps.isLocked === false) {
-				this.userFollowingService.acceptAllFollowRequests(user);
+				this.userFollowingService.rejectAllFollowRequests(user);
 			}
 
 			// フォロワーにUpdateを配信
