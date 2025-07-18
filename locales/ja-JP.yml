@@ -2613,6 +2613,7 @@ _widgets:
     maxIntensity: "最大震度"
     epicenterInvestigating: "震源調查中"
     depth: "深さ"
+  federationJobQueue: "連合ジョブキュー"
 
 _cw:
   hide: "隠す"

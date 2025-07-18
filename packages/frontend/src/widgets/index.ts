@@ -40,6 +40,7 @@ export default function(app: App) {
 	app.component('WidgetWeather', defineAsyncComponent(() => import('./WidgetWeather.vue')));
 	app.component('WidgetNestedWidget', defineAsyncComponent(() => import('./WidgetNestedWidget.vue')));
 	app.component('WidgetEarthQuake', defineAsyncComponent(() => import('./WidgetEarthQuake.vue')));
+	app.component('WidgetFederationJobQueue', defineAsyncComponent(() => import('./WidgetFederationJobQueue.vue')));
 }
 
 // 連合関連のウィジェット（連合無効時に隠す）
@@ -80,5 +81,6 @@ export const widgets = [
 	'weather',
 	'nestedWidget',
 	'earthQuake',
+	'federationJobQueue',
 	...federationWidgets,
 ];

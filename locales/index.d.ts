@@ -9951,6 +9951,10 @@ export interface Locale extends ILocale {
              */
             "depth": string;
         };
+        /**
+         * 連合ジョブキュー
+         */
+        "federationJobQueue": string;
     };
     "_cw": {
         /**
