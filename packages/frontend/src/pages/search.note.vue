@@ -17,7 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</MkInput>
 
 		<!-- 高度な検索オプション（折りたたみ） -->
-		<MkFolder defaultOpen>
+		<MkFolder>
 			<template #label>{{ i18n.ts._advancedSearch.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 
 			<div class="_gaps_s">
@@ -202,13 +202,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 				{{ i18n.tsx.searchResults({ search: hitCount }) }}
 			</span>
 		</template>
-		<MkNotesTimeline :key="`searchNotes:${key}`" :paginator="paginator"/>
+		<MkNotesTimeline :key="`searchNotes:${key}`" :paginator="paginator" :autoLoad="false"/>
 	</MkFoldableSection>
 </div>
 </template>
 
 <script lang="ts" setup>
-import { computed, markRaw, ref, shallowRef, toRef } from 'vue';
+import { computed, markRaw, ref, shallowRef, toRef, nextTick } from 'vue';
 import { host as localHost } from '@@/js/config.js';
 import type * as Misskey from 'misskey-js';
 import { $i } from '@/i.js';
@@ -583,10 +583,9 @@ async function search() {
 		params: params,
 	}));
 
-	// ヒット数を計算
+	// 手動で初期化してヒット数を取得
 	try {
 		await paginator.value.init();
-		// 新しいレスポンス形式からヒット数を取得
 		hitCount.value = paginator.value.items.value.length;
 	} catch (err) {
 		hitCount.value = null;
