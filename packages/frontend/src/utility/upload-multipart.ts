@@ -103,7 +103,18 @@ export async function uploadFileMultipart(
 
 	if (!createMultipartRes.ok) {
 		const error = await createMultipartRes.json();
-		throw new Error(error.error?.message ?? 'Failed to create multipart upload');
+		const errorMessage = error.error?.message ?? 'Failed to create multipart upload';
+
+		// Handle specific error cases
+		if (error.error?.code === 'NO_FREE_SPACE') {
+			await alert({
+				type: 'error',
+				title: i18n.ts._uploadMultipart.error,
+				text: i18n.ts._uploadMultipart.noFreeSpace,
+			});
+		}
+
+		throw new Error(errorMessage);
 	}
 
 	const { id: uploadId } = await createMultipartRes.json();
@@ -219,7 +230,30 @@ export async function uploadFileMultipart(
 
 	if (!completeMultipartRes.ok) {
 		const error = await completeMultipartRes.json();
-		throw new Error(error.error?.message ?? 'Failed to complete multipart upload');
+		const errorMessage = error.error?.message ?? 'Failed to complete multipart upload';
+
+		// Handle specific error cases
+		if (error.error?.code === 'NO_FREE_SPACE') {
+			await alert({
+				type: 'error',
+				title: i18n.ts._uploadMultipart.error,
+				text: i18n.ts._uploadMultipart.noFreeSpace ?? 'No free space in drive',
+			});
+		} else if (error.error?.code === 'FILE_SIZE_MISMATCH') {
+			await alert({
+				type: 'error',
+				title: i18n.ts._uploadMultipart.error,
+				text: i18n.ts._uploadMultipart.fileSizeMismatch ?? 'File size mismatch detected',
+			});
+		} else if (error.error?.code === 'MULTIPART_UPLOAD_NOT_COMPLETE') {
+			await alert({
+				type: 'error',
+				title: i18n.ts._uploadMultipart.error,
+				text: i18n.ts._uploadMultipart.incompleteUpload ?? 'Upload is incomplete',
+			});
+		}
+
+		throw new Error(errorMessage);
 	}
 
 	return completeMultipartRes.json();

@@ -9,8 +9,10 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 import { MiMultipartUpload } from '@/models/MultipartUpload.js';
 import type { MultipartUploadsRepository } from '@/models/_.js';
-import { ApiError } from '../../../error.js';
+import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.js';
+import { RoleService } from '@/core/RoleService.js';
 import { IdService } from '@/core/IdService.js';
+import { ApiError } from '../../../error.js';
 
 export const meta = {
 	tags: ['drive'],
@@ -52,6 +54,11 @@ export const meta = {
 			code: 'INVALID_FILE_NAME',
 			id: 'f449b209-0c60-4e51-84d5-29486263bfd4',
 		},
+		noFreeSpace: {
+			message: 'No free space.',
+			code: 'NO_FREE_SPACE',
+			id: 'c6244ed2-a39a-4e1c-bf93-f0fbd7764fa6',
+		},
 	},
 } as const;
 
@@ -74,9 +81,23 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	constructor(
 		@Inject(DI.multipartUploadsRepository)
 		private multipartUploadsRepository: MultipartUploadsRepository,
+		private driveFileEntityService: DriveFileEntityService,
+		private roleService: RoleService,
 		private idService: IdService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			// Check drive capacity before creating multipart upload
+			const policies = await this.roleService.getUserPolicies(me.id);
+			const driveCapacity = 1024 * 1024 * policies.driveCapacityMb;
+			const currentUsage = await this.driveFileEntityService.calcDriveUsageOf(me.id);
+
+			console.log(`Creating multipart upload: capacity=${driveCapacity}, usage=${currentUsage}, totalSize=${ps.totalSize}`);
+
+			if (driveCapacity < currentUsage + ps.totalSize) {
+				console.error(`Drive capacity exceeded: ${currentUsage + ps.totalSize} > ${driveCapacity}`);
+				throw new ApiError(meta.errors.noFreeSpace);
+			}
+
 			// Get 'name' parameter
 			let name = ps.name;
 			if (name != null) {

@@ -18,6 +18,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					'createAvatarDecoration',
 					'createSystemWebhook',
 					'createAbuseReportNotificationRecipient',
+					'createRolesAnnouncement',
 				].includes(log.type),
 				[$style.logYellow]: [
 					'markSensitiveDriveFile',
@@ -29,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					'unsetUserAvatar',
 					'unsetUserBanner',
 					'unsetUserMutualLink',
-					'notificationSend',
+					'sendNotification',
 					'dropAllNotes'
 				].includes(log.type),
 				[$style.logRed]: [
@@ -59,10 +60,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<span v-else-if="log.type === 'unsetUserAvatar'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
 		<span v-else-if="log.type === 'unsetUserBanner'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
 		<span v-else-if="log.type === 'unsetUserMutualLink'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
-		<span v-else-if="log.type === 'notificationSend'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
-		<span v-else-if="log.type === 'suspend'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
+		<span v-else-if="log.type === 'sendNotification'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
 		<span v-else-if="log.type === 'approve'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
 		<span v-else-if="log.type === 'decline'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}{{ " " + i18n.ts.optionalReason + ":" + " " +log.info.reason }}</span>
+		<span v-else-if="log.type === 'suspend'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
 		<span v-else-if="log.type === 'unsuspend'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
 		<span v-else-if="log.type === 'resetPassword'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
 		<span v-else-if="log.type === 'regenerateUserToken'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
@@ -103,6 +104,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<span v-else-if="log.type === 'quarantineRemoteInstance'">: {{ log.info.host }}</span>
 		<span v-else-if="log.type === 'unquarantineRemoteInstance'">: {{ log.info.host }}</span>
 		<span v-else-if="log.type === 'dropAllNotes'">: @{{ log.info.userUsername }}{{ log.info.userHost ? '@' + log.info.userHost : '' }}</span>
+		<span v-else-if="log.type === 'createRolesAnnouncement'">: {{ log.info.announcement.title }}</span>
+		<span v-else-if="log.type === 'updateRolesAnnouncement'">: {{ log.info.before.title }}</span>
+		<span v-else-if="log.type === 'deleteRolesAnnouncement'">: {{ log.info.announcement.title }}</span>
 	</template>
 	<template #icon>
 		<i v-if="log.type === 'updateServerSettings'" class="ti ti-settings"></i>
@@ -147,6 +151,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<i v-else-if="log.type === 'deleteFlash'" class="ti ti-trash"></i>
 		<i v-else-if="log.type === 'deleteGalleryPost'" class="ti ti-trash"></i>
 		<i v-else-if="log.type === 'deleteChatRoom'" class="ti ti-trash"></i>
+		<i v-else-if="log.type === 'createRolesAnnouncement'" class="ti ti-plus"></i>
+		<i v-else-if="log.type === 'updateRolesAnnouncement'" class="ti ti-pencil"></i>
+		<i v-else-if="log.type === 'deleteRolesAnnouncement'" class="ti ti-trash"></i>
 	</template>
 	<template #suffix>
 		<MkTime :time="log.createdAt"/>
