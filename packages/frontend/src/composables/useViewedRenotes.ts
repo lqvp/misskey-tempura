@@ -45,6 +45,9 @@ export function useViewedRenotes() {
 	}
 
 	function has(noteId: string): boolean {
+		// If the feature is disabled, always return false
+		if (!prefer.s.enableViewedRenotes) return false;
+
 		// Use the computed Set for efficient 'has' checks.
 		return viewedRenotesSet.value.has(noteId);
 	}
