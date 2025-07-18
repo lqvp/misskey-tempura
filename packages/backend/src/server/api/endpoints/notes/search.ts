@@ -39,6 +39,8 @@ export const paramDef = {
 	type: 'object',
 	properties: {
 		query: { type: 'string', minLength: 0, default: '' },
+		searchTerms: { type: 'string', default: '' },
+		operator: { type: 'string', enum: ['and', 'or'], default: 'and' },
 		sinceId: { type: 'string', format: 'misskey:id' },
 		untilId: { type: 'string', format: 'misskey:id' },
 		sinceDate: { type: 'integer' },
@@ -76,8 +78,18 @@ export const paramDef = {
 			enum: ['all', 'with', 'without'],
 			default: 'all',
 		},
+		searchOperator: {
+			type: 'string',
+			enum: ['and', 'or'],
+			default: 'and',
+		},
+		excludeWords: {
+			type: 'array',
+			items: { type: 'string' },
+			default: [],
+		},
 	},
-	required: ['query'],
+	required: [],
 } as const;
 
 // TODO: ロジックをサービスに切り出す
@@ -99,7 +111,24 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw new ApiError(meta.errors.unavailable);
 			}
 
-			const notes = await this.searchService.searchNote(ps.query, me, {
+			// 検索クエリの構築
+			let searchQuery = ps.query;
+
+			// 複数の検索語がある場合
+			if (ps.searchTerms) {
+				const terms = ps.searchTerms.split(',').map(term => decodeURIComponent(term).trim()).filter(term => term !== '');
+				if (terms.length > 0) {
+					if (ps.operator === 'and') {
+						// AND検索: すべての語を含む
+						searchQuery = terms.join(' ');
+					} else {
+						// OR検索: いずれかの語を含む
+						searchQuery = terms.join(' OR ');
+					}
+				}
+			}
+
+			const notes = await this.searchService.searchNote(searchQuery, me, {
 				userId: ps.userId,
 				channelId: ps.channelId,
 				host: ps.host,
@@ -108,6 +137,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				hasCw: ps.hasCw,
 				hasReply: ps.hasReply,
 				hasPoll: ps.hasPoll,
+				searchOperator: ps.searchOperator,
+				excludeWords: ps.excludeWords,
+				sinceDate: ps.sinceDate,
+				untilDate: ps.untilDate,
 			}, {
 				untilId: untilId,
 				sinceId: sinceId,

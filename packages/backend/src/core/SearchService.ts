@@ -43,6 +43,10 @@ export type SearchOpts = {
 	hasCw?: 'all' | 'with' | 'without';
 	hasReply?: 'all' | 'with' | 'without';
 	hasPoll?: 'all' | 'with' | 'without';
+	searchOperator?: 'and' | 'or';
+	excludeWords?: string[];
+	sinceDate?: number;
+	untilDate?: number;
 };
 
 export type SearchPagination = {
@@ -195,7 +199,6 @@ export class SearchService {
 				return this.searchNoteByMeiliSearch(q, me, opts, pagination);
 			}
 			default: {
-				// eslint-disable-next-line @typescript-eslint/no-unused-vars
 				const typeCheck: never = this.provider;
 				return [];
 			}
@@ -209,7 +212,7 @@ export class SearchService {
 		opts: SearchOpts,
 		pagination: SearchPagination,
 	): Promise<MiNote[]> {
-		const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), pagination.sinceId, pagination.untilId);
+		const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), pagination.sinceId, pagination.untilId, opts.sinceDate, opts.untilDate);
 
 		if (opts.userId) {
 			query.andWhere('note.userId = :userId', { userId: opts.userId });
@@ -260,7 +263,16 @@ export class SearchService {
 		// クエリが空でない場合のみテキスト検索条件を追加
 		if (q !== '') {
 			if (this.config.fulltextSearch?.provider === 'sqlPgroonga') {
-				query.andWhere('note.text &@~ :q', { q });
+				// sqlPgroongaの高度な検索機能を使用
+				let searchQuery = q;
+
+				// 除外語の処理
+				if (opts.excludeWords && opts.excludeWords.length > 0) {
+					const excludeQuery = opts.excludeWords.map(word => `-${word}`).join(' ');
+					searchQuery += ` ${excludeQuery}`;
+				}
+
+				query.andWhere('note.text &@~ :q', { q: searchQuery });
 			} else {
 				query.andWhere('LOWER(note.text) LIKE :q', { q: `%${ sqlLikeEscape(q.toLowerCase()) }%` });
 			}

@@ -4104,3 +4104,15 @@ _contactForm:
 
 isLocked: "鍵アカウント"
 isBot: "ボットアカウント"
+
+_advancedSearch:
+  title: "高度な検索"
+  searchTerms: "検索語"
+  excludeWords: "除外語"
+  searchOperator: "検索演算子"
+  searchOperatorAnd: "AND（すべての語を含む）"
+  searchOperatorOr: "OR（いずれかの語を含む）"
+  addSearchTerm: "検索語を追加"
+  addExcludeWord: "除外語を追加"
+  sinceDate: "開始日時"
+  untilDate: "終了日時"

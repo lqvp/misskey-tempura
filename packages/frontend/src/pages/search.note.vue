@@ -15,10 +15,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 		>
 			<template #prefix><i class="ti ti-search"></i></template>
 		</MkInput>
-		<MkFolder>
-			<template #label>{{ i18n.ts._noteSearch.enhanceSearch }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+
+		<!-- 高度な検索オプション（折りたたみ） -->
+		<MkFolder defaultOpen>
+			<template #label>{{ i18n.ts._advancedSearch.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 
 			<div class="_gaps_s">
+				<div>
+					<strong>検索の使い方:</strong>
+					<ul style="margin: 8px 0; padding-left: 20px;">
+						<li><code>ねこ いぬ</code> → AND検索（両方の語を含む）</li>
+						<li><code>ねこ いぬ -犬</code> → 「犬」を除外</li>
+						<li>下の設定でAND/ORを切り替え可能</li>
+					</ul>
+				</div>
+
+				<MkRadios v-model="searchOperator">
+					<template #label>{{ i18n.ts._advancedSearch.searchOperator }}</template>
+					<option value="and">{{ i18n.ts._advancedSearch.searchOperatorAnd }}</option>
+					<option value="or">{{ i18n.ts._advancedSearch.searchOperatorOr }}</option>
+				</MkRadios>
+
 				<MkRadios v-model="visibilitySelect">
 					<template #label>{{ i18n.ts.visibility }}</template>
 					<option value="all" default>{{ i18n.ts.all }}</option>
@@ -51,8 +68,26 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<option value="with">{{ i18n.ts._noteSearch._option.with }}</option>
 					<option value="without">{{ i18n.ts._noteSearch._option.without }}</option>
 				</MkRadios>
+
+				<div class="_gaps_s">
+					<MkInput
+						v-model="sinceDate"
+						type="datetime-local"
+						:placeholder="i18n.ts._advancedSearch.sinceDate"
+					>
+						<template #label>{{ i18n.ts._advancedSearch.sinceDate }}</template>
+					</MkInput>
+					<MkInput
+						v-model="untilDate"
+						type="datetime-local"
+						:placeholder="i18n.ts._advancedSearch.untilDate"
+					>
+						<template #label>{{ i18n.ts._advancedSearch.untilDate }}</template>
+					</MkInput>
+				</div>
 			</div>
 		</MkFolder>
+
 		<MkFoldableSection expanded>
 			<template #header>{{ i18n.ts.options }}</template>
 
@@ -132,7 +167,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				primary
 				gradate
 				rounded
-				:disabled="!(searchParams != null || (user !== null && visibilitySelect !== 'all'))"
+				:disabled="!(searchParams != null || hasValidFilters)"
 				style="margin: 0 auto;"
 				@click="search"
 			>
@@ -142,7 +177,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				large
 				primary
 				rounded
-				:disabled="!(searchParams != null || (user !== null && visibilitySelect !== 'all'))"
+				:disabled="!(searchParams != null || hasValidFilters)"
 				style="margin: 0 auto;"
 				@click="copySearchUrl"
 			>
@@ -184,11 +219,27 @@ const props = withDefaults(defineProps<{
 	userId?: string;
 	username?: string;
 	host?: string | null;
+	sinceDate?: string;
+	untilDate?: string;
+	visibility?: string;
+	hasFiles?: string;
+	hasCw?: string;
+	hasReply?: string;
+	hasPoll?: string;
+	searchOperator?: string;
 }>(), {
 	query: '',
 	userId: undefined,
 	username: undefined,
 	host: '',
+	sinceDate: undefined,
+	untilDate: undefined,
+	visibility: 'all',
+	hasFiles: 'all',
+	hasCw: 'all',
+	hasReply: 'all',
+	hasPoll: 'all',
+	searchOperator: 'and',
 });
 
 const router = useRouter();
@@ -198,11 +249,21 @@ const paginator = shallowRef<Paginator<'notes/search'> | null>(null);
 
 const searchQuery = ref(toRef(props, 'query').value);
 const hostInput = ref(toRef(props, 'host').value);
-const visibilitySelect = ref<'all' | 'public' | 'home' | 'followers' | 'specified'>('all');
-const hasFiles = ref<'all' | 'with' | 'without'>('all');
-const hasCw = ref<'all' | 'with' | 'without'>('all');
-const hasReply = ref<'all' | 'with' | 'without'>('all');
-const hasPoll = ref<'all' | 'with' | 'without'>('all');
+const visibilitySelect = ref<'all' | 'public' | 'home' | 'followers' | 'specified'>(toRef(props, 'visibility').value as any);
+const hasFiles = ref<'all' | 'with' | 'without'>(toRef(props, 'hasFiles').value as any);
+const hasCw = ref<'all' | 'with' | 'without'>(toRef(props, 'hasCw').value as any);
+const hasReply = ref<'all' | 'with' | 'without'>(toRef(props, 'hasReply').value as any);
+const hasPoll = ref<'all' | 'with' | 'without'>(toRef(props, 'hasPoll').value as any);
+const searchOperator = ref<'and' | 'or'>(toRef(props, 'searchOperator').value as any);
+// URLパラメータからsinceDate/untilDateを適切に変換
+const convertTimestampToDatetimeLocal = (timestamp: string | undefined): string | null => {
+	if (!timestamp) return null;
+	const date = new Date(parseInt(timestamp));
+	return date.toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM形式
+};
+
+const sinceDate = ref<string | null>(convertTimestampToDatetimeLocal(toRef(props, 'sinceDate').value));
+const untilDate = ref<string | null>(convertTimestampToDatetimeLocal(toRef(props, 'untilDate').value));
 
 const user = shallowRef<Misskey.entities.UserDetailed | null>(null);
 
@@ -250,10 +311,22 @@ const fixHostIfLocal = (target: string | null | undefined) => {
 	return target;
 };
 
+const hasValidFilters = computed(() => {
+	return visibilitySelect.value !== 'all' ||
+		hasFiles.value !== 'all' ||
+		hasCw.value !== 'all' ||
+		hasReply.value !== 'all' ||
+		hasPoll.value !== 'all' ||
+		sinceDate.value !== null ||
+		untilDate.value !== null ||
+		searchQuery.value.trim() !== '' ||
+		user.value !== null;
+});
+
 const searchParams = computed<SearchParams | null>(() => {
 	const trimmedQuery = searchQuery.value.trim();
-	if (!trimmedQuery) return null;
 
+	// 空のクエリでもフィルター検索を許可するため、常に有効なパラメータを返す
 	if (searchScope.value === 'user') {
 		if (user.value == null) return null;
 		return {
@@ -350,6 +423,19 @@ async function copySearchUrl() {
 		params.set('hasPoll', hasPoll.value);
 	}
 
+	if (searchOperator.value === 'and') {
+		params.set('operator', 'and');
+	} else if (searchOperator.value === 'or') {
+		params.set('operator', 'or');
+	}
+
+	if (sinceDate.value) {
+		params.set('sinceDate', new Date(sinceDate.value).getTime().toString());
+	}
+	if (untilDate.value) {
+		params.set('untilDate', new Date(untilDate.value).getTime().toString());
+	}
+
 	const url = new URL(window.location.origin + window.location.pathname);
 	url.search = params.toString();
 
@@ -366,10 +452,10 @@ async function copySearchUrl() {
 //endregion
 
 async function search() {
-	const allowEmptySearch = user.value !== null && visibilitySelect.value !== 'all';
-	if (searchParams.value == null && !allowEmptySearch) return;
+	// 空のクエリでもフィルター検索を許可するため、条件を緩和
+	if (searchParams.value == null && !hasValidFilters.value) return;
 
-	const params = {
+	const params: any = {
 		visibility: visibilitySelect.value,
 		hasFiles: hasFiles.value,
 		hasCw: hasCw.value,
@@ -377,26 +463,44 @@ async function search() {
 		hasPoll: hasPoll.value,
 	};
 
+	// 新しいフィルターを追加
+	if (searchOperator.value === 'and') {
+		params.searchOperator = 'and';
+	} else if (searchOperator.value === 'or') {
+		params.searchOperator = 'or';
+	}
+
+	// 複数の検索語を処理
+	const trimmedQuery = searchQuery.value.trim();
+	if (trimmedQuery !== '') {
+		params.query = trimmedQuery;
+	}
+
+	if (sinceDate.value) {
+		params.sinceDate = new Date(sinceDate.value).getTime();
+	}
+	if (untilDate.value) {
+		params.untilDate = new Date(untilDate.value).getTime();
+	}
+
 	//#region AP lookup
-	if (searchParams.value) {
-		if (searchParams.value.query) {
-			if (searchParams.value.query.startsWith('https://') && !searchParams.value.query.includes(' ')) {
-				const confirm = await os.confirm({
-					type: 'info',
-					text: i18n.ts.lookupConfirm,
-				});
-				if (!confirm.canceled) {
-					const res = await apLookup(searchParams.value.query);
+	if (searchParams.value && searchParams.value.query) {
+		if (searchParams.value.query.startsWith('https://') && !searchParams.value.query.includes(' ')) {
+			const confirm = await os.confirm({
+				type: 'info',
+				text: i18n.ts.lookupConfirm,
+			});
+			if (!confirm.canceled) {
+				const res = await apLookup(searchParams.value.query);
 
-					if (res.type === 'User') {
-						router.push(`/@${res.object.username}@${res.object.host}`);
-					// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-					} else if (res.type === 'Note') {
-						router.push(`/notes/${res.object.id}`);
-					}
-
-					return;
+				if (res.type === 'User') {
+					router.push(`/@${res.object.username}@${res.object.host}`);
+				// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+				} else if (res.type === 'Note') {
+					router.push(`/notes/${res.object.id}`);
 				}
+
+				return;
 			}
 		}
 		if (searchParams.value.query.length > 1 && !searchParams.value.query.includes(' ')) {
@@ -435,7 +539,7 @@ async function search() {
 		if (searchParams.value.userId) {
 			params.userId = searchParams.value.userId;
 		}
-	} else if (allowEmptySearch) {
+	} else if (user.value !== null) {
 		params.userId = user.value.id;
 
 		if (user.value.host) {

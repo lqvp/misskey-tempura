@@ -15184,6 +15184,48 @@ export interface Locale extends ILocale {
      * ボットアカウント
      */
     "isBot": string;
+    "_advancedSearch": {
+        /**
+         * 高度な検索
+         */
+        "title": string;
+        /**
+         * 検索語
+         */
+        "searchTerms": string;
+        /**
+         * 除外語
+         */
+        "excludeWords": string;
+        /**
+         * 検索演算子
+         */
+        "searchOperator": string;
+        /**
+         * AND（すべての語を含む）
+         */
+        "searchOperatorAnd": string;
+        /**
+         * OR（いずれかの語を含む）
+         */
+        "searchOperatorOr": string;
+        /**
+         * 検索語を追加
+         */
+        "addSearchTerm": string;
+        /**
+         * 除外語を追加
+         */
+        "addExcludeWord": string;
+        /**
+         * 開始日時
+         */
+        "sinceDate": string;
+        /**
+         * 終了日時
+         */
+        "untilDate": string;
+    };
 }
 declare const locales: {
     [lang: string]: Locale;
