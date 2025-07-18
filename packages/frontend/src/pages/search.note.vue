@@ -270,7 +270,10 @@ const excludeWords = ref<string>(toRef(props, 'excludeWords').value);
 // URLパラメータからsinceDate/untilDateを適切に変換
 const convertTimestampToDatetimeLocal = (timestamp: string | undefined): string | null => {
 	if (!timestamp) return null;
-	const date = new Date(parseInt(timestamp));
+	const parsedTimestamp = parseInt(timestamp);
+	if (isNaN(parsedTimestamp)) return null;
+	const date = new Date(parsedTimestamp);
+	if (isNaN(date.getTime())) return null;
 	return date.toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM形式
 };
 
@@ -437,9 +440,9 @@ async function copySearchUrl() {
 	}
 
 	if (searchOperator.value === 'and') {
-		params.set('operator', 'and');
+		params.set('searchOperator', 'and');
 	} else if (searchOperator.value === 'or') {
-		params.set('operator', 'or');
+		params.set('searchOperator', 'or');
 	}
 
 	if (excludeWords.value.trim() !== '') {

@@ -114,7 +114,15 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			// 複数の検索語がある場合
 			if (ps.query) {
-				const terms = ps.query.split(' ').map((term: string) => decodeURIComponent(term).trim()).filter((term: string) => term !== '');
+				const terms = ps.query.split(' ').map((term: string) => {
+					// URLエンコードされた文字列のみをデコード
+					try {
+						return decodeURIComponent(term).trim();
+					} catch {
+						// デコードに失敗した場合は元の文字列を使用
+						return term.trim();
+					}
+				}).filter((term: string) => term !== '');
 				if (terms.length > 0) {
 					if (ps.searchOperator === 'and') {
 						// AND検索: すべての語を含む

@@ -275,7 +275,24 @@ export class SearchService {
 				query.andWhere('note.text &@~ :q', { q: searchQuery });
 			}
 		} else if (q !== '') {
-			query.andWhere('LOWER(note.text) LIKE :q', { q: `%${ sqlLikeEscape(q.toLowerCase()) }%` });
+			// sqlLikeプロバイダーでの検索処理
+			if (q.includes(' OR ')) {
+				// OR検索の場合、各語句をOR条件で結合
+				const terms = q.split(' OR ').map(term => term.trim()).filter(term => term !== '');
+				if (terms.length > 0) {
+					const orConditions = terms.map(term =>
+						`LOWER(note.text) LIKE :term${terms.indexOf(term)}`,
+					).join(' OR ');
+					const params: Record<string, string> = {};
+					terms.forEach((term, index) => {
+						params[`term${index}`] = `%${sqlLikeEscape(term.toLowerCase())}%`;
+					});
+					query.andWhere(`(${orConditions})`, params);
+				}
+			} else {
+				// AND検索の場合、従来通りの処理
+				query.andWhere('LOWER(note.text) LIKE :q', { q: `%${ sqlLikeEscape(q.toLowerCase()) }%` });
+			}
 		}
 
 		if (opts.host) {
