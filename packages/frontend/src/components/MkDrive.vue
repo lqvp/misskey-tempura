@@ -81,7 +81,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 			<MkButton v-if="foldersPaginator.canFetchOlder.value" primary rounded @click="foldersPaginator.fetchOlder()">{{ i18n.ts.loadMore }}</MkButton>
 
-			<MkStickyContainer v-for="(item, i) in filesTimeline" :key="`${item.date.getFullYear()}/${item.date.getMonth() + 1}`">
+			<MkStickyContainer v-for="(item, i) in filteredFilesTimeline" :key="`${item.date.getFullYear()}/${item.date.getMonth() + 1}`">
 				<template #header>
 					<div :class="$style.date">
 						<span><i class="ti ti-chevron-down"></i> {{ item.date.getFullYear() }}/{{ item.date.getMonth() + 1 }}</span>
@@ -111,7 +111,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkStickyContainer>
 			<MkButton v-show="filesPaginator.canFetchOlder.value" :class="$style.loadMore" primary rounded @click="filesPaginator.fetchOlder()">{{ i18n.ts.loadMore }}</MkButton>
 
-			<div v-if="filesPaginator.items.value.length == 0 && foldersPaginator.items.value.length == 0 && !fetching" :class="$style.empty">
+			<div v-if="filteredFilesTimeline.length == 0 && foldersPaginator.items.value.length == 0 && !fetching" :class="$style.empty">
 				<div v-if="draghover">{{ i18n.ts['empty-draghover'] }}</div>
 				<div v-if="!draghover && folder == null"><strong>{{ i18n.ts.emptyDrive }}</strong></div>
 				<div v-if="!draghover && folder != null">{{ i18n.ts.emptyFolder }}</div>
@@ -217,8 +217,23 @@ const filesTimeline = makeDateGroupedTimelineComputedRef(filesPaginator.items, '
 
 const showOnlySensitive = ref(false);
 
+// センシティブファイルのフィルタリング
+const filteredFilesTimeline = computed(() => {
+	if (!showOnlySensitive.value) {
+		return filesTimeline.value;
+	}
+
+	return filesTimeline.value.map(group => ({
+		...group,
+		items: group.items.filter(file => file.isSensitive),
+	})).filter(group => group.items.length > 0);
+});
+
 watch(folder, () => emit('cd', folder.value));
 watch(sortModeSelect, () => {
+	initialize();
+});
+watch(showOnlySensitive, () => {
 	initialize();
 });
 
@@ -647,6 +662,11 @@ function getMenu() {
 		text: i18n.ts.edit,
 		icon: 'ti ti-pointer',
 		ref: isEditMode,
+	}, {
+		type: 'switch',
+		text: i18n.ts.showOnlySensitiveFiles,
+		icon: 'ti ti-eye-off',
+		ref: showOnlySensitive,
 	});
 
 	return menu;
