@@ -216,6 +216,7 @@
 - Fix: タイムラインでノートが重複して表示されることがあるのを修正
 
 ### Server
+- Enhance: 1つのMisskeyで複数のHTTPサーバプロセスを起動できるように ( #13662 )
 - Enhance: ジョブキューの成功/失敗したジョブも一定数・一定期間保存するようにし、後から問題を調査することを容易に
 - Enhance: フォローしているユーザーならフォロワー限定投稿のノートでもアンテナで検知できるように  
 	(Cherry-picked from https://github.com/yojo-art/cherrypick/pull/568 and https://github.com/team-shahu/misskey/pull/38)
