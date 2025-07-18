@@ -280,8 +280,8 @@ export class SearchService {
 				// OR検索の場合、各語句をOR条件で結合
 				const terms = q.split(' OR ').map(term => term.trim()).filter(term => term !== '');
 				if (terms.length > 0) {
-					const orConditions = terms.map(term =>
-						`LOWER(note.text) LIKE :term${terms.indexOf(term)}`,
+					const orConditions = terms.map((term, index) =>
+						`LOWER(note.text) LIKE :term${index}`,
 					).join(' OR ');
 					const params: Record<string, string> = {};
 					terms.forEach((term, index) => {
