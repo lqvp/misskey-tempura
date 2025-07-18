@@ -181,23 +181,11 @@ export class ActivityPubServerService {
 	}
 
 	@bindThis
-	private async applyAccessControl(request: FastifyRequest, reply: FastifyReply, allowLimitedHosts = false): Promise<boolean> {
-		const accessControl = await this.activityPubAccessControlService.checkAccess(request, allowLimitedHosts);
-		if (accessControl) {
-			reply.code(404);
-			reply.header('Content-Type', 'text/plain; charset=utf-8');
-			reply.send(`Access denied: ${accessControl.reason}`);
-			return true;
-		}
-		return false;
-	}
-
-	@bindThis
 	private async followers(
 		request: FastifyRequest<{ Params: { user: string; }; Querystring: { cursor?: string; page?: string; }; }>,
 		reply: FastifyReply,
 	) {
-		if (await this.applyAccessControl(request, reply)) {
+		if (await this.activityPubAccessControlService.applyAccessControl(request, reply)) {
 			return;
 		}
 
@@ -298,7 +286,7 @@ export class ActivityPubServerService {
 		request: FastifyRequest<{ Params: { user: string; }; Querystring: { cursor?: string; page?: string; }; }>,
 		reply: FastifyReply,
 	) {
-		if (await this.applyAccessControl(request, reply)) {
+		if (await this.activityPubAccessControlService.applyAccessControl(request, reply)) {
 			return;
 		}
 
@@ -396,7 +384,7 @@ export class ActivityPubServerService {
 
 	@bindThis
 	private async featured(request: FastifyRequest<{ Params: { user: string; }; }>, reply: FastifyReply) {
-		if (await this.applyAccessControl(request, reply)) {
+		if (await this.activityPubAccessControlService.applyAccessControl(request, reply)) {
 			return;
 		}
 
@@ -449,7 +437,7 @@ export class ActivityPubServerService {
 		}>,
 		reply: FastifyReply,
 	) {
-		if (await this.applyAccessControl(request, reply)) {
+		if (await this.activityPubAccessControlService.applyAccessControl(request, reply)) {
 			return;
 		}
 
@@ -607,7 +595,7 @@ export class ActivityPubServerService {
 			return;
 		}
 
-		if (await this.applyAccessControl(request, reply, true)) {
+		if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true)) {
 			return;
 		}
 
@@ -698,7 +686,7 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			if (await this.applyAccessControl(request, reply, true)) {
+			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true)) {
 				return;
 			}
 
@@ -742,7 +730,7 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			if (await this.applyAccessControl(request, reply, true)) {
+			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true)) {
 				return;
 			}
 
@@ -791,7 +779,7 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			if (await this.applyAccessControl(request, reply, true)) {
+			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true)) {
 				return;
 			}
 
@@ -864,7 +852,7 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			if (await this.applyAccessControl(request, reply, true)) {
+			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true)) {
 				return;
 			}
 
@@ -890,7 +878,7 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			if (await this.applyAccessControl(request, reply, true)) {
+			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true)) {
 				return;
 			}
 
@@ -920,7 +908,7 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			if (await this.applyAccessControl(request, reply, true)) {
+			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true)) {
 				return;
 			}
 
@@ -955,7 +943,7 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			if (await this.applyAccessControl(request, reply, true)) {
+			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true)) {
 				return;
 			}
 
