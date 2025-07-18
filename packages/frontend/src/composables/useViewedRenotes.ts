@@ -3,61 +3,54 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { ref, watch } from 'vue';
+import { computed } from 'vue';
 import { prefer } from '@/preferences.js';
 
 const MAX_VIEWED_RENOTES = 1000;
 
-const viewedRenotesCache = ref(new Set(prefer.s.viewedRenotes));
-
-let internalBuffer: string[] = [...prefer.s.viewedRenotes];
-let bufferIndex = internalBuffer.length;
-
-watch(() => prefer.s.viewedRenotes, (newViewed) => {
-	viewedRenotesCache.value = new Set(newViewed);
-	internalBuffer = [...newViewed];
-	bufferIndex = internalBuffer.length;
-}, { deep: true });
+// Use a computed property for the Set for efficient lookups.
+// It will automatically update when `prefer.r.viewedRenotes` changes.
+const viewedRenotesSet = computed(() => new Set(prefer.r.viewedRenotes.value));
 
 export function useViewedRenotes() {
 	function add(noteId: string) {
-		if (viewedRenotesCache.value.has(noteId)) return;
+		if (!prefer.s.enableViewedRenotes) return;
 
-		if (bufferIndex >= MAX_VIEWED_RENOTES) {
-			const oldestIndex = bufferIndex % MAX_VIEWED_RENOTES;
-			const oldestItem = internalBuffer[oldestIndex];
+		const currentList = prefer.s.viewedRenotes;
+		const index = currentList.indexOf(noteId);
 
-			viewedRenotesCache.value.delete(oldestItem);
-
-			internalBuffer[oldestIndex] = noteId;
-			viewedRenotesCache.value.add(noteId);
-
-			bufferIndex++;
-
-			const startIdx = (bufferIndex - MAX_VIEWED_RENOTES) % MAX_VIEWED_RENOTES;
-			const result = new Array(MAX_VIEWED_RENOTES);
-			for (let i = 0; i < MAX_VIEWED_RENOTES; i++) {
-				result[i] = internalBuffer[(startIdx + i) % MAX_VIEWED_RENOTES];
-			}
-			prefer.s.viewedRenotes = result;
-		} else {
-			internalBuffer[bufferIndex] = noteId;
-			viewedRenotesCache.value.add(noteId);
-			bufferIndex++;
-
-			prefer.s.viewedRenotes = internalBuffer.slice(0, bufferIndex);
+		// If noteId is already the most recent item, do nothing to avoid unnecessary commits.
+		if (index === currentList.length - 1) {
+			return;
 		}
+
+		// Create a mutable copy to work with.
+		const newList = [...currentList];
+
+		if (index !== -1) {
+			// If the note is already in the list, remove it from its current position to move it to the end.
+			newList.splice(index, 1);
+		}
+
+		// Add the note to the end of the list (most recently viewed).
+		newList.push(noteId);
+
+		// If the list exceeds the maximum size, remove the oldest item (from the beginning).
+		if (newList.length > MAX_VIEWED_RENOTES) {
+			newList.shift();
+		}
+
+		// Commit the updated list to preferences.
+		prefer.commit('viewedRenotes', newList);
 	}
 
 	function has(noteId: string): boolean {
-		return viewedRenotesCache.value.has(noteId);
+		// Use the computed Set for efficient 'has' checks.
+		return viewedRenotesSet.value.has(noteId);
 	}
 
 	function clear() {
-		prefer.s.viewedRenotes = [];
-		viewedRenotesCache.value.clear();
-		internalBuffer = [];
-		bufferIndex = 0;
+		prefer.commit('viewedRenotes', []);
 	}
 
 	return {

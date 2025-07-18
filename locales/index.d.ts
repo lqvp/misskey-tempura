@@ -15177,6 +15177,16 @@ export interface Locale extends ILocale {
      * ボットアカウント
      */
     "isBot": string;
+    "_enableViewedRenotes": {
+        /**
+         * 閲覧したリノートを記録
+         */
+        "title": string;
+        /**
+         * リノートを閲覧した際に、そのノートIDを記録します。記録されたリノートは自動的に折りたたまれます。
+         */
+        "caption": string;
+    };
 }
 declare const locales: {
     [lang: string]: Locale;
