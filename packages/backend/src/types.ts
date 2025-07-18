@@ -93,8 +93,6 @@ export const userImportableEntities = ['antenna', 'blocking', 'customEmoji', 'fo
 export const moderationLogTypes = [
 	'updateServerSettings',
 	'suspend',
-	'approve',
-	'decline',
 	'unsuspend',
 	'updateUserName',
 	'updateUserNote',
@@ -151,9 +149,13 @@ export const moderationLogTypes = [
 	'deleteGalleryPost',
 	'deleteChatRoom',
 	'updateProxyAccountDescription',
+	'approve',
+	'decline',
 	'quarantineRemoteInstance',
 	'unquarantineRemoteInstance',
 	'dropAllNotes',
+	'unsetUserMutualLink',
+	'notificationSend',
 ] as const;
 
 export type ModerationLogPayloads = {

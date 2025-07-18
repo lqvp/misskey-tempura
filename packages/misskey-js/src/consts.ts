@@ -138,7 +138,6 @@ export const permissions = [
 export const moderationLogTypes = [
 	'updateServerSettings',
 	'suspend',
-	'approve',
 	'unsuspend',
 	'updateUserName',
 	'updateUserNote',
@@ -157,10 +156,13 @@ export const moderationLogTypes = [
 	'deleteNote',
 	'createGlobalAnnouncement',
 	'createUserAnnouncement',
+	'createRolesAnnouncement',
 	'updateGlobalAnnouncement',
 	'updateUserAnnouncement',
+	'updateRolesAnnouncement',
 	'deleteGlobalAnnouncement',
 	'deleteUserAnnouncement',
+	'deleteRolesAnnouncement',
 	'resetPassword',
 	'regenerateUserToken',
 	'suspendRemoteInstance',
@@ -191,9 +193,14 @@ export const moderationLogTypes = [
 	'deleteFlash',
 	'deleteGalleryPost',
 	'deleteChatRoom',
+	'updateProxyAccountDescription',
+	'approve',
+	'decline',
 	'quarantineRemoteInstance',
 	'unquarantineRemoteInstance',
 	'dropAllNotes',
+	'unsetUserMutualLink',
+	'notificationSend',
 ] as const;
 
 export const queueTypes = [
