@@ -3807,8 +3807,12 @@ _uploadMultipart:
   error: "アップロードエラー"
   overflow: "ファイルサイズが大きすぎます（最大: 2GB）。データベースの制限により、現在2GB以上のファイルはアップロードできません。"
   rateLimit: "アップロードがレート制限により中止されました。しばらく時間をおいてから再試行してください。"
+  rateLimitError: "レート制限によりアップロードが中止されました。しばらく時間をおいてから再試行してください。"
   tooManyRetries: "ファイルアップロード中に{retries}回のリトライを試みましたが、失敗しました。\nしばらく時間をおいてから再試行してください。"
   failedToCreateMultipart: "ファイルアップロード中に失敗しました。\n{status}: {statusText}"
+  noFreeSpace: "ドライブの容量が不足しています。"
+  fileSizeMismatch: "ファイルサイズの不一致が検出されました。"
+  incompleteUpload: "アップロードが不完全です。"
 
 _customCursor:
   title: "カスタムカーソル設定"

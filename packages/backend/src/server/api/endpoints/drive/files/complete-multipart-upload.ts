@@ -12,6 +12,7 @@ import { createTemp } from '@/misc/create-temp.js';
 import type { MultipartUploadsRepository } from '@/models/_.js';
 import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.js';
 import { DriveService } from '@/core/DriveService.js';
+import { RoleService } from '@/core/RoleService.js';
 import { ApiError } from '../../../error.js';
 
 export const meta = {
@@ -52,6 +53,16 @@ export const meta = {
 			code: 'MULTIPART_UPLOAD_EXPIRED',
 			id: '1c8f71a2-a080-4043-9caa-ca06eed63c25',
 		},
+		noFreeSpace: {
+			message: 'No free space.',
+			code: 'NO_FREE_SPACE',
+			id: 'c6244ed2-a39a-4e1c-bf93-f0fbd7764fa6',
+		},
+		fileSizeMismatch: {
+			message: 'File size mismatch.',
+			code: 'FILE_SIZE_MISMATCH',
+			id: 'a8b2c3d4-e5f6-7890-abcd-ef1234567890',
+		},
 	},
 } as const;
 
@@ -70,6 +81,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private multipartUploadsRepository: MultipartUploadsRepository,
 		private driveFileEntityService: DriveFileEntityService,
 		private driveService: DriveService,
+		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me, _1, _2, _3, ip, headers) => {
 			// Find the multipart upload
@@ -85,6 +97,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			// Check if the multipart upload has expired
 			if (multipartUpload.expiresAt < new Date()) {
 				throw new ApiError(meta.errors.multipartUploadExpired);
+			}
+
+			// Check drive capacity before processing
+			const policies = await this.roleService.getUserPolicies(me.id);
+			const driveCapacity = 1024 * 1024 * policies.driveCapacityMb;
+			const currentUsage = await this.driveFileEntityService.calcDriveUsageOf(me.id);
+
+			console.log(`Multipart upload ${multipartUpload.id}: capacity=${driveCapacity}, usage=${currentUsage}, totalSize=${multipartUpload.totalSize}`);
+
+			if (driveCapacity < currentUsage + multipartUpload.totalSize) {
+				console.error(`Drive capacity exceeded: ${currentUsage + multipartUpload.totalSize} > ${driveCapacity}`);
+				throw new ApiError(meta.errors.noFreeSpace);
 			}
 
 			// Verify that all parts have been uploaded regardless of completedParts counter
@@ -147,6 +171,13 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					writeStream.on('error', reject);
 				});
 
+				// Verify the actual file size matches the expected size
+				const actualFileSize = fs.statSync(completeFilePath).size;
+				if (actualFileSize !== multipartUpload.totalSize) {
+					console.error(`File size mismatch: expected ${multipartUpload.totalSize}, got ${actualFileSize}`);
+					throw new ApiError(meta.errors.fileSizeMismatch);
+				}
+
 				// Now upload the complete file to drive
 				const fileName = multipartUpload.name ?? 'untitled';
 
@@ -186,6 +217,16 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			} catch (err) {
 				// エラー発生時の追加処理（ログ記録など）
 				console.error('Error completing multipart upload:', err);
+
+				// Clean up temp files on error
+				try {
+					if (fs.existsSync(completeFilePath)) {
+						fs.unlinkSync(completeFilePath);
+					}
+				} catch (cleanupErr) {
+					console.error('Failed to clean up temporary file on error:', cleanupErr);
+				}
+
 				throw err;
 			} finally {
 				// 常に実行されるクリーンアップ処理

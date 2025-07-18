@@ -14222,6 +14222,10 @@ export interface Locale extends ILocale {
          */
         "rateLimit": string;
         /**
+         * レート制限によりアップロードが中止されました。しばらく時間をおいてから再試行してください。
+         */
+        "rateLimitError": string;
+        /**
          * ファイルアップロード中に{retries}回のリトライを試みましたが、失敗しました。
          * しばらく時間をおいてから再試行してください。
          */
@@ -14231,6 +14235,18 @@ export interface Locale extends ILocale {
          * {status}: {statusText}
          */
         "failedToCreateMultipart": ParameterizedString<"status" | "statusText">;
+        /**
+         * ドライブの容量が不足しています。
+         */
+        "noFreeSpace": string;
+        /**
+         * ファイルサイズの不一致が検出されました。
+         */
+        "fileSizeMismatch": string;
+        /**
+         * アップロードが不完全です。
+         */
+        "incompleteUpload": string;
     };
     "_customCursor": {
         /**
