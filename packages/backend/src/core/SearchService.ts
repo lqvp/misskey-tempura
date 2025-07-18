@@ -260,22 +260,22 @@ export class SearchService {
 			.leftJoinAndSelect('reply.user', 'replyUser')
 			.leftJoinAndSelect('renote.user', 'renoteUser');
 
-		// クエリが空でない場合のみテキスト検索条件を追加
-		if (q !== '') {
-			if (this.config.fulltextSearch?.provider === 'sqlPgroonga') {
-				// sqlPgroongaの高度な検索機能を使用
-				let searchQuery = q;
+		// テキスト検索条件の追加
+		if (this.config.fulltextSearch?.provider === 'sqlPgroonga') {
+			// sqlPgroongaの高度な検索機能を使用
+			let searchQuery = q;
 
-				// 除外語の処理
-				if (opts.excludeWords && opts.excludeWords.length > 0) {
-					const excludeQuery = opts.excludeWords.map(word => `-${word}`).join(' ');
-					searchQuery += ` ${excludeQuery}`;
-				}
-
-				query.andWhere('note.text &@~ :q', { q: searchQuery });
-			} else {
-				query.andWhere('LOWER(note.text) LIKE :q', { q: `%${ sqlLikeEscape(q.toLowerCase()) }%` });
+			// 除外語の処理
+			if (opts.excludeWords && opts.excludeWords.length > 0) {
+				const excludeQuery = opts.excludeWords.map(word => `-${word}`).join(' ');
+				searchQuery = q ? `${q} ${excludeQuery}` : excludeQuery;
 			}
+
+			if (searchQuery) {
+				query.andWhere('note.text &@~ :q', { q: searchQuery });
+			}
+		} else if (q !== '') {
+			query.andWhere('LOWER(note.text) LIKE :q', { q: `%${ sqlLikeEscape(q.toLowerCase()) }%` });
 		}
 
 		if (opts.host) {

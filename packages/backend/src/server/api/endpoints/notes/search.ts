@@ -39,8 +39,6 @@ export const paramDef = {
 	type: 'object',
 	properties: {
 		query: { type: 'string', minLength: 0, default: '' },
-		searchTerms: { type: 'string', default: '' },
-		operator: { type: 'string', enum: ['and', 'or'], default: 'and' },
 		sinceId: { type: 'string', format: 'misskey:id' },
 		untilId: { type: 'string', format: 'misskey:id' },
 		sinceDate: { type: 'integer' },
@@ -115,10 +113,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			let searchQuery = ps.query;
 
 			// 複数の検索語がある場合
-			if (ps.searchTerms) {
-				const terms = ps.searchTerms.split(',').map(term => decodeURIComponent(term).trim()).filter(term => term !== '');
+			if (ps.query) {
+				const terms = ps.query.split(' ').map((term: string) => decodeURIComponent(term).trim()).filter((term: string) => term !== '');
 				if (terms.length > 0) {
-					if (ps.operator === 'and') {
+					if (ps.searchOperator === 'and') {
 						// AND検索: すべての語を含む
 						searchQuery = terms.join(' ');
 					} else {

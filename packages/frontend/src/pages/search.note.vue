@@ -22,19 +22,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 			<div class="_gaps_s">
 				<div>
-					<strong>検索の使い方:</strong>
+					<strong>{{ i18n.ts._advancedSearch.usageTitle }}</strong>
 					<ul style="margin: 8px 0; padding-left: 20px;">
-						<li><code>ねこ いぬ</code> → AND検索（両方の語を含む）</li>
-						<li><code>ねこ いぬ -犬</code> → 「犬」を除外</li>
-						<li>下の設定でAND/ORを切り替え可能</li>
+						<li><code>{{ i18n.ts._advancedSearch.usageExample1 }}</code> → {{ i18n.ts._advancedSearch.usageExplanation1 }}</li>
+						<li><code>{{ i18n.ts._advancedSearch.usageExample2 }}</code> → {{ i18n.ts._advancedSearch.usageExplanation2 }}</li>
+						<li>{{ i18n.ts._advancedSearch.usageExplanation3 }}</li>
 					</ul>
 				</div>
 
 				<MkRadios v-model="searchOperator">
-					<template #label>{{ i18n.ts._advancedSearch.searchOperator }}</template>
-					<option value="and">{{ i18n.ts._advancedSearch.searchOperatorAnd }}</option>
-					<option value="or">{{ i18n.ts._advancedSearch.searchOperatorOr }}</option>
+					<template #label>{{ i18n.ts._advancedSearch._searchOperator.label }}</template>
+					<option value="and">{{ i18n.ts._advancedSearch._searchOperator.and }}</option>
+					<option value="or">{{ i18n.ts._advancedSearch._searchOperator.or }}</option>
 				</MkRadios>
+
+				<MkInput
+					v-model="excludeWords"
+					:placeholder="i18n.ts._advancedSearch.excludeWords"
+				>
+					<template #label>{{ i18n.ts._advancedSearch.excludeWords }}</template>
+					<template #caption>{{ i18n.ts._advancedSearch.excludeWordsCaption }}</template>
+				</MkInput>
 
 				<MkRadios v-model="visibilitySelect">
 					<template #label>{{ i18n.ts.visibility }}</template>
@@ -227,6 +235,7 @@ const props = withDefaults(defineProps<{
 	hasReply?: string;
 	hasPoll?: string;
 	searchOperator?: string;
+	excludeWords?: string;
 }>(), {
 	query: '',
 	userId: undefined,
@@ -240,6 +249,7 @@ const props = withDefaults(defineProps<{
 	hasReply: 'all',
 	hasPoll: 'all',
 	searchOperator: 'and',
+	excludeWords: '',
 });
 
 const router = useRouter();
@@ -255,6 +265,8 @@ const hasCw = ref<'all' | 'with' | 'without'>(toRef(props, 'hasCw').value as any
 const hasReply = ref<'all' | 'with' | 'without'>(toRef(props, 'hasReply').value as any);
 const hasPoll = ref<'all' | 'with' | 'without'>(toRef(props, 'hasPoll').value as any);
 const searchOperator = ref<'and' | 'or'>(toRef(props, 'searchOperator').value as any);
+const excludeWords = ref<string>(toRef(props, 'excludeWords').value);
+
 // URLパラメータからsinceDate/untilDateを適切に変換
 const convertTimestampToDatetimeLocal = (timestamp: string | undefined): string | null => {
 	if (!timestamp) return null;
@@ -320,6 +332,7 @@ const hasValidFilters = computed(() => {
 		sinceDate.value !== null ||
 		untilDate.value !== null ||
 		searchQuery.value.trim() !== '' ||
+		excludeWords.value.trim() !== '' ||
 		user.value !== null;
 });
 
@@ -429,6 +442,10 @@ async function copySearchUrl() {
 		params.set('operator', 'or');
 	}
 
+	if (excludeWords.value.trim() !== '') {
+		params.set('excludeWords', excludeWords.value);
+	}
+
 	if (sinceDate.value) {
 		params.set('sinceDate', new Date(sinceDate.value).getTime().toString());
 	}
@@ -481,6 +498,11 @@ async function search() {
 	}
 	if (untilDate.value) {
 		params.untilDate = new Date(untilDate.value).getTime();
+	}
+
+	// 除外語を処理
+	if (excludeWords.value.trim() !== '') {
+		params.excludeWords = excludeWords.value.split(',').map(word => word.trim()).filter(word => word !== '');
 	}
 
 	//#region AP lookup

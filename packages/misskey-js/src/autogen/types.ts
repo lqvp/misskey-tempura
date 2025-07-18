@@ -33468,13 +33468,6 @@ export interface operations {
                 'application/json': {
                     /** @default  */
                     query?: string;
-                    /** @default  */
-                    searchTerms?: string;
-                    /**
-                     * @default and
-                     * @enum {string}
-                     */
-                    operator?: 'and' | 'or';
                     /** Format: misskey:id */
                     sinceId?: string;
                     /** Format: misskey:id */
