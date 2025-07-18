@@ -1,10 +1,11 @@
-name: Create Release on Version Update
+name: Auto Release and Merge to Master
 
 on:
   workflow_dispatch:
   push:
     branches:
       - master
+      - develop
     paths:
       - 'package.json'
 
@@ -20,6 +21,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # masterブランチにマージする際に必要
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Parse version from package.json
         id: parse_version
@@ -53,6 +56,7 @@ jobs:
           echo "is_stable=$IS_STABLE" >> "$GITHUB_OUTPUT"
           echo "release_name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
           echo "skip_release=false" >> "$GITHUB_OUTPUT"
+          echo "current_branch=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
 
       - name: Check if tag already exists
         if: steps.parse_version.outputs.skip_release != 'true'
@@ -71,6 +75,44 @@ jobs:
             echo "::notice::Tag $TAG_NAME does not exist, proceeding with release creation"
             echo "tag_exists=false" >> "$GITHUB_OUTPUT"
           fi
+
+      # developブランチからstableリリースの場合、masterにマージ
+      - name: Merge to Master
+        if: |
+          steps.parse_version.outputs.skip_release != 'true' &&
+          steps.check_tag.outputs.tag_exists != 'true' &&
+          steps.parse_version.outputs.is_stable == 'true' &&
+          steps.parse_version.outputs.current_branch == 'develop'
+        id: merge_to_master
+        run: |
+          # Git設定
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # masterブランチに切り替え
+          git fetch origin master
+          git checkout master
+
+          # developブランチの内容をマージ
+          git merge origin/develop --no-ff -m "Release: Merge develop to master for ${{ steps.parse_version.outputs.tag_name }}"
+
+          # masterにプッシュ
+          git push origin master
+
+          echo "::notice::Successfully merged develop to master"
+          echo "merged_to_master=true" >> "$GITHUB_OUTPUT"
+
+      # masterブランチに切り替えてリリースを作成（developからマージした場合）
+      - name: Switch to Master for Release
+        if: |
+          steps.parse_version.outputs.skip_release != 'true' &&
+          steps.check_tag.outputs.tag_exists != 'true' &&
+          steps.parse_version.outputs.is_stable == 'true' &&
+          steps.parse_version.outputs.current_branch == 'develop' &&
+          steps.merge_to_master.outputs.merged_to_master == 'true'
+        run: |
+          git checkout master
+          git pull origin master
 
       - name: Generate Release Notes for Stable Release
         if: |
@@ -132,4 +174,9 @@ jobs:
           else
             echo "::notice::Successfully created release ${{ steps.parse_version.outputs.release_name }}"
             echo "::notice::Release URL: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.parse_version.outputs.tag_name }}"
+
+            # マージ結果も出力
+            if [ "${{ steps.merge_to_master.outputs.merged_to_master }}" == "true" ]; then
+              echo "::notice::Successfully merged develop to master for stable release"
+            fi
           fi
