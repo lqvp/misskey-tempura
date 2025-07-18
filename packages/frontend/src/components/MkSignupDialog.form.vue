@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</div>
 	<div class="_spacer" style="--MI_SPACER-min: 20px; --MI_SPACER-max: 32px;">
 		<form class="_gaps_m" autocomplete="new-password" @submit.prevent="onSubmit">
-			<MkInput v-if="showInvitationCodeInput" v-model="invitationCode" type="text" :spellcheck="false" :required="instance.disableRegistration">
+			<MkInput v-if="showInvitationCodeInput" v-model="invitationCode" type="text" :spellcheck="false" :required="instance.disableRegistration" data-cy-signup-invitation-code>
 				<template #label>{{ i18n.ts.invitationCode }}{{ !instance.disableRegistration && ` (${i18n.ts.optional})` }}<div v-tooltip:dialog="i18n.ts._signup.inviteCodeInfo" class="_button _help"><i class="ti ti-help-circle"></i></div></template>
 				<template #prefix><i class="ti ti-key"></i></template>
 			</MkInput>
