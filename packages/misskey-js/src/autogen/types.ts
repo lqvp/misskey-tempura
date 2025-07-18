@@ -465,6 +465,26 @@ export type paths = {
          */
         post: operations['admin___federation___delete-all-files'];
     };
+    '/admin/federation/followers': {
+        /**
+         * admin/federation/followers
+         * @description No description provided.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:federation*
+         */
+        post: operations['admin___federation___followers'];
+    };
+    '/admin/federation/following': {
+        /**
+         * admin/federation/following
+         * @description No description provided.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:federation*
+         */
+        post: operations['admin___federation___following'];
+    };
     '/admin/federation/refresh-remote-instance-metadata': {
         /**
          * admin/federation/refresh-remote-instance-metadata
@@ -2002,24 +2022,6 @@ export type paths = {
          *     **Credential required**: *Yes*
          */
         post: operations['export-custom-emojis'];
-    };
-    '/federation/followers': {
-        /**
-         * federation/followers
-         * @description No description provided.
-         *
-         *     **Credential required**: *No*
-         */
-        post: operations['federation___followers'];
-    };
-    '/federation/following': {
-        /**
-         * federation/following
-         * @description No description provided.
-         *
-         *     **Credential required**: *No*
-         */
-        post: operations['federation___following'];
     };
     '/federation/instances': {
         /**
@@ -4818,7 +4820,9 @@ export type components = {
              * @example xxxxxxxxxx
              */
             renoteId?: string | null;
+            /** @description The reply target note contents if exists. If the reply target has been deleted since the draft was created, this will be null while replyId is not null. */
             reply?: components['schemas']['Note'] | null;
+            /** @description The renote target note contents if exists. If the renote target has been deleted since the draft was created, this will be null while renoteId is not null. */
             renote?: components['schemas']['Note'] | null;
             /** @enum {string} */
             visibility: 'public' | 'public_non_ltl' | 'home' | 'followers' | 'specified';
@@ -9746,6 +9750,160 @@ export interface operations {
             204: {
                 headers: {
                     [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    admin___federation___followers: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    host: string;
+                    /** Format: misskey:id */
+                    sinceId?: string;
+                    /** Format: misskey:id */
+                    untilId?: string;
+                    sinceDate?: number;
+                    untilDate?: number;
+                    /** @default 10 */
+                    limit?: number;
+                    /** @default false */
+                    includeFollower?: boolean;
+                    /** @default true */
+                    includeFollowee?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Following'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    admin___federation___following: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    host: string;
+                    /** Format: misskey:id */
+                    sinceId?: string;
+                    /** Format: misskey:id */
+                    untilId?: string;
+                    sinceDate?: number;
+                    untilDate?: number;
+                    /** @default 10 */
+                    limit?: number;
+                    /** @default false */
+                    includeFollower?: boolean;
+                    /** @default true */
+                    includeFollowee?: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Following'][];
                 };
             };
             /** @description Client error */
@@ -22306,160 +22464,6 @@ export interface operations {
             };
         };
     };
-    federation___followers: {
-        requestBody: {
-            content: {
-                'application/json': {
-                    host: string;
-                    /** Format: misskey:id */
-                    sinceId?: string;
-                    /** Format: misskey:id */
-                    untilId?: string;
-                    sinceDate?: number;
-                    untilDate?: number;
-                    /** @default 10 */
-                    limit?: number;
-                    /** @default false */
-                    includeFollower?: boolean;
-                    /** @default true */
-                    includeFollowee?: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description OK (with results) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    'application/json': components['schemas']['Following'][];
-                };
-            };
-            /** @description Client error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    'application/json': components['schemas']['Error'];
-                };
-            };
-            /** @description Authentication error */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    'application/json': components['schemas']['Error'];
-                };
-            };
-            /** @description Forbidden error */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    'application/json': components['schemas']['Error'];
-                };
-            };
-            /** @description I'm Ai */
-            418: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    'application/json': components['schemas']['Error'];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    'application/json': components['schemas']['Error'];
-                };
-            };
-        };
-    };
-    federation___following: {
-        requestBody: {
-            content: {
-                'application/json': {
-                    host: string;
-                    /** Format: misskey:id */
-                    sinceId?: string;
-                    /** Format: misskey:id */
-                    untilId?: string;
-                    sinceDate?: number;
-                    untilDate?: number;
-                    /** @default 10 */
-                    limit?: number;
-                    /** @default false */
-                    includeFollower?: boolean;
-                    /** @default true */
-                    includeFollowee?: boolean;
-                };
-            };
-        };
-        responses: {
-            /** @description OK (with results) */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    'application/json': components['schemas']['Following'][];
-                };
-            };
-            /** @description Client error */
-            400: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    'application/json': components['schemas']['Error'];
-                };
-            };
-            /** @description Authentication error */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    'application/json': components['schemas']['Error'];
-                };
-            };
-            /** @description Forbidden error */
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    'application/json': components['schemas']['Error'];
-                };
-            };
-            /** @description I'm Ai */
-            418: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    'application/json': components['schemas']['Error'];
-                };
-            };
-            /** @description Internal server error */
-            500: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    'application/json': components['schemas']['Error'];
-                };
-            };
-        };
-    };
     federation___instances: {
         requestBody: {
             content: {
@@ -33463,7 +33467,7 @@ export interface operations {
             content: {
                 'application/json': {
                     /** @default  */
-                    query: string;
+                    query?: string;
                     /** Format: misskey:id */
                     sinceId?: string;
                     /** Format: misskey:id */
@@ -33511,6 +33515,13 @@ export interface operations {
                      * @enum {string}
                      */
                     hasPoll?: 'all' | 'with' | 'without';
+                    /**
+                     * @default and
+                     * @enum {string}
+                     */
+                    searchOperator?: 'and' | 'or';
+                    /** @default [] */
+                    excludeWords?: string[];
                 };
             };
         };

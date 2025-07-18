@@ -569,6 +569,30 @@ declare module '../api.js' {
     /**
      * No description provided.
      * 
+     * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+     * **Credential required**: *Yes* / **Permission**: *read:admin:federation*
+     */
+    request<E extends 'admin/federation/followers', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * No description provided.
+     * 
+     * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+     * **Credential required**: *Yes* / **Permission**: *read:admin:federation*
+     */
+    request<E extends 'admin/federation/following', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * No description provided.
+     * 
      * **Credential required**: *Yes* / **Permission**: *write:admin:federation*
      */
     request<E extends 'admin/federation/refresh-remote-instance-metadata', P extends Endpoints[E]['req']>(
@@ -2439,28 +2463,6 @@ declare module '../api.js' {
      * **Credential required**: *Yes*
      */
     request<E extends 'export-custom-emojis', P extends Endpoints[E]['req']>(
-      endpoint: E,
-      params: P,
-      credential?: string | null,
-    ): Promise<SwitchCaseResponseType<E, P>>;
-
-    /**
-     * No description provided.
-     * 
-     * **Credential required**: *No*
-     */
-    request<E extends 'federation/followers', P extends Endpoints[E]['req']>(
-      endpoint: E,
-      params: P,
-      credential?: string | null,
-    ): Promise<SwitchCaseResponseType<E, P>>;
-
-    /**
-     * No description provided.
-     * 
-     * **Credential required**: *No*
-     */
-    request<E extends 'federation/following', P extends Endpoints[E]['req']>(
       endpoint: E,
       params: P,
       credential?: string | null,

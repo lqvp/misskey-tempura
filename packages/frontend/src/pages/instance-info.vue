@@ -126,13 +126,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</div>
 		<div v-else-if="tab === 'following'" key="following" class="_gaps_m">
 			<MkPagination v-slot="{items}" :paginator="followingPaginator">
-				<div class="follow-relations-list">
-					<div v-for="followRelationship in items" :key="followRelationship.id" class="follow-relation">
-						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.followee.updatedAt)}`" :to="`/admin/user/${followRelationship.followee.id}`" class="user">
+				<div :class="$style.followRelationsList">
+					<div v-for="followRelationship in items" :key="followRelationship.id" :class="$style.followRelation">
+						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.followee.updatedAt)}`" :to="`/admin/user/${followRelationship.followee.id}`" :class="$style.user">
 							<MkUserCardMini :user="followRelationship.followee" :withChart="false"/>
 						</MkA>
 						<span class="arrow">→</span>
-						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.follower.updatedAt)}`" :to="`/admin/user/${followRelationship.follower.id}`" class="user">
+						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.follower.updatedAt)}`" :to="`/admin/user/${followRelationship.follower.id}`" :class="$style.user">
 							<MkUserCardMini :user="followRelationship.follower" :withChart="false"/>
 						</MkA>
 					</div>
@@ -141,13 +141,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</div>
 		<div v-else-if="tab === 'followers'" key="followers" class="_gaps_m">
 			<MkPagination v-slot="{items}" :paginator="followersPaginator">
-				<div class="follow-relations-list">
-					<div v-for="followRelationship in items" :key="followRelationship.id" class="follow-relation">
-						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.followee.updatedAt)}`" :to="`/admin/user/${followRelationship.followee.id}`" class="user">
+				<div :class="$style.followRelationsList">
+					<div v-for="followRelationship in items" :key="followRelationship.id" :class="$style.followRelation">
+						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.followee.updatedAt)}`" :to="`/admin/user/${followRelationship.followee.id}`" :class="$style.user">
 							<MkUserCardMini :user="followRelationship.followee" :withChart="false"/>
 						</MkA>
 						<span class="arrow">←</span>
-						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.follower.updatedAt)}`" :to="`/admin/user/${followRelationship.follower.id}`" class="user">
+						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.follower.updatedAt)}`" :to="`/admin/user/${followRelationship.follower.id}`" :class="$style.user">
 							<MkUserCardMini :user="followRelationship.follower" :withChart="false"/>
 						</MkA>
 					</div>
@@ -223,7 +223,7 @@ const usersPaginator = iAmModerator ? markRaw(new Paginator('admin/show-users', 
 	offsetMode: true,
 }));
 
-const followingPaginator = markRaw(new Paginator('federation/following', {
+const followingPaginator = markRaw(new Paginator('admin/federation/following', {
 	limit: 10,
 	params: {
 		host: props.host,
@@ -232,7 +232,7 @@ const followingPaginator = markRaw(new Paginator('federation/following', {
 	offsetMode: false,
 }));
 
-const followersPaginator = markRaw(new Paginator('federation/followers', {
+const followersPaginator = markRaw(new Paginator('admin/federation/followers', {
 	limit: 10,
 	params: {
 		host: props.host,
@@ -408,29 +408,33 @@ definePage(() => ({
 		}
 	}
 }
-.follow-relations-list {
+.followRelationsList {
   display: flex;
   flex-direction: column;
   gap: 12px;
 
-  .follow-relation {
+  .followRelation {
     display: flex;
     align-items: center;
     gap: 12px;
     flex-wrap: nowrap;
-    justify-content: space-between;
+    justify-content: flex-start;
+    width: 100%;
 
-    .user {
-      flex: 1;
+    > .user {
+      flex: 0 1 45%;
       max-width: 45%;
-      flex-shrink: 0;
       overflow: hidden;
       text-overflow: ellipsis;
+      min-width: 0;
     }
 
-    .arrow {
+    > .arrow {
       font-size: 1.5em;
       flex-shrink: 0;
+      flex: 0 0 auto;
+      text-align: center;
+      min-width: 24px;
     }
   }
 }

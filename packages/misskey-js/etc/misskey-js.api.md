@@ -249,6 +249,18 @@ type AdminEmojiUpdateRequest = operations['admin___emoji___update']['requestBody
 type AdminFederationDeleteAllFilesRequest = operations['admin___federation___delete-all-files']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
+type AdminFederationFollowersRequest = operations['admin___federation___followers']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminFederationFollowersResponse = operations['admin___federation___followers']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type AdminFederationFollowingRequest = operations['admin___federation___following']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminFederationFollowingResponse = operations['admin___federation___following']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type AdminFederationRefreshRemoteInstanceMetadataRequest = operations['admin___federation___refresh-remote-instance-metadata']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -1604,6 +1616,10 @@ declare namespace entities {
         AdminEmojiSetLicenseBulkRequest,
         AdminEmojiUpdateRequest,
         AdminFederationDeleteAllFilesRequest,
+        AdminFederationFollowersRequest,
+        AdminFederationFollowersResponse,
+        AdminFederationFollowingRequest,
+        AdminFederationFollowingResponse,
         AdminFederationRefreshRemoteInstanceMetadataRequest,
         AdminFederationRemoveAllFollowingRequest,
         AdminFederationUpdateInstanceRequest,
@@ -1869,10 +1885,6 @@ declare namespace entities {
         EndpointRequest,
         EndpointResponse,
         EndpointsResponse,
-        FederationFollowersRequest,
-        FederationFollowersResponse,
-        FederationFollowingRequest,
-        FederationFollowingResponse,
         FederationInstancesRequest,
         FederationInstancesResponse,
         FederationShowInstanceRequest,
@@ -2313,18 +2325,6 @@ export { entities }
 
 // @public (undocumented)
 type Error_2 = components['schemas']['Error'];
-
-// @public (undocumented)
-type FederationFollowersRequest = operations['federation___followers']['requestBody']['content']['application/json'];
-
-// @public (undocumented)
-type FederationFollowersResponse = operations['federation___followers']['responses']['200']['content']['application/json'];
-
-// @public (undocumented)
-type FederationFollowingRequest = operations['federation___following']['requestBody']['content']['application/json'];
-
-// @public (undocumented)
-type FederationFollowingResponse = operations['federation___following']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type FederationInstance = components['schemas']['FederationInstance'];
@@ -3118,7 +3118,7 @@ type ModerationLog = {
 });
 
 // @public (undocumented)
-export const moderationLogTypes: readonly ["updateServerSettings", "suspend", "approve", "unsuspend", "updateUserName", "updateUserNote", "sendNotification", "addCustomEmoji", "updateCustomEmoji", "deleteCustomEmoji", "assignRole", "unassignRole", "createRole", "updateRole", "deleteRole", "clearQueue", "promoteQueue", "deleteDriveFile", "deleteNote", "createGlobalAnnouncement", "createUserAnnouncement", "updateGlobalAnnouncement", "updateUserAnnouncement", "deleteGlobalAnnouncement", "deleteUserAnnouncement", "resetPassword", "regenerateUserToken", "suspendRemoteInstance", "unsuspendRemoteInstance", "updateRemoteInstanceNote", "markSensitiveDriveFile", "unmarkSensitiveDriveFile", "resolveAbuseReport", "forwardAbuseReport", "updateAbuseReportNote", "createInvitation", "createAd", "updateAd", "deleteAd", "createAvatarDecoration", "updateAvatarDecoration", "deleteAvatarDecoration", "unsetUserAvatar", "unsetUserBanner", "createSystemWebhook", "updateSystemWebhook", "deleteSystemWebhook", "createAbuseReportNotificationRecipient", "updateAbuseReportNotificationRecipient", "deleteAbuseReportNotificationRecipient", "deleteAccount", "deletePage", "deleteFlash", "deleteGalleryPost", "deleteChatRoom", "quarantineRemoteInstance", "unquarantineRemoteInstance", "dropAllNotes"];
+export const moderationLogTypes: readonly ["updateServerSettings", "suspend", "unsuspend", "updateUserName", "updateUserNote", "sendNotification", "addCustomEmoji", "updateCustomEmoji", "deleteCustomEmoji", "assignRole", "unassignRole", "createRole", "updateRole", "deleteRole", "clearQueue", "promoteQueue", "deleteDriveFile", "deleteNote", "createGlobalAnnouncement", "createUserAnnouncement", "createRolesAnnouncement", "updateGlobalAnnouncement", "updateUserAnnouncement", "updateRolesAnnouncement", "deleteGlobalAnnouncement", "deleteUserAnnouncement", "deleteRolesAnnouncement", "resetPassword", "regenerateUserToken", "suspendRemoteInstance", "unsuspendRemoteInstance", "updateRemoteInstanceNote", "markSensitiveDriveFile", "unmarkSensitiveDriveFile", "resolveAbuseReport", "forwardAbuseReport", "updateAbuseReportNote", "createInvitation", "createAd", "updateAd", "deleteAd", "createAvatarDecoration", "updateAvatarDecoration", "deleteAvatarDecoration", "unsetUserAvatar", "unsetUserBanner", "createSystemWebhook", "updateSystemWebhook", "deleteSystemWebhook", "createAbuseReportNotificationRecipient", "updateAbuseReportNotificationRecipient", "deleteAbuseReportNotificationRecipient", "deleteAccount", "deletePage", "deleteFlash", "deleteGalleryPost", "deleteChatRoom", "updateProxyAccountDescription", "approve", "decline", "quarantineRemoteInstance", "unquarantineRemoteInstance", "dropAllNotes", "unsetUserMutualLink"];
 
 // @public (undocumented)
 type MuteCreateRequest = operations['mute___create']['requestBody']['content']['application/json'];
@@ -3452,7 +3452,7 @@ type PartialRolePolicyOverride = Partial<{
 }>;
 
 // @public (undocumented)
-export const permissions: readonly ["read:account", "write:account", "read:blocks", "write:blocks", "read:drive", "write:drive", "read:favorites", "write:favorites", "read:following", "write:following", "read:messaging", "write:messaging", "read:mutes", "write:mutes", "read:notes", "write:notes", "read:notes-schedule", "write:notes-schedule", "read:notifications", "write:notifications", "read:reactions", "write:reactions", "write:votes", "read:pages", "write:pages", "write:page-likes", "read:page-likes", "read:user-groups", "write:user-groups", "read:channels", "write:channels", "read:gallery", "write:gallery", "read:gallery-likes", "write:gallery-likes", "read:flash", "write:flash", "read:flash-likes", "write:flash-likes", "read:admin:abuse-user-reports", "write:admin:delete-account", "write:admin:delete-all-files-of-a-user", "write:admin:approve-account", "write:admin:decline-account", "read:admin:index-stats", "read:admin:table-stats", "read:admin:user-ips", "read:admin:meta", "write:admin:reset-password", "write:admin:regenerate-user-token", "write:admin:resolve-abuse-user-report", "write:admin:send-email", "read:admin:server-info", "read:admin:show-moderation-log", "read:admin:show-user", "write:admin:suspend-user", "write:admin:unset-user-avatar", "write:admin:unset-user-banner", "write:admin:unsuspend-user", "write:admin:meta", "write:admin:user-name", "write:admin:user-note", "write:admin:send-notification", "write:admin:user-avatar", "write:admin:user-banner", "write:admin:user-mutual-link", "write:admin:roles", "read:admin:roles", "write:admin:relays", "read:admin:relays", "write:admin:invite-codes", "read:admin:invite-codes", "write:admin:announcements", "read:admin:announcements", "write:admin:avatar-decorations", "read:admin:avatar-decorations", "write:admin:federation", "write:admin:account", "read:admin:account", "write:admin:emoji", "read:admin:emoji", "write:admin:queue", "read:admin:queue", "write:admin:promo", "write:admin:drive", "read:admin:drive", "write:admin:ad", "read:admin:ad", "write:invite-codes", "read:invite-codes", "write:clip-favorite", "read:clip-favorite", "read:federation", "write:report-abuse", "write:chat", "read:chat", "read:achievements", "read:announcements", "read:stats", "read:clip", "write:community-role", "write:admin:drop-all-notes", "write:admin:contact-form", "read:admin:contact-form"];
+export const permissions: readonly ["read:account", "write:account", "read:blocks", "write:blocks", "read:drive", "write:drive", "read:favorites", "write:favorites", "read:following", "write:following", "read:messaging", "write:messaging", "read:mutes", "write:mutes", "read:notes", "write:notes", "read:notes-schedule", "write:notes-schedule", "read:notifications", "write:notifications", "read:reactions", "write:reactions", "write:votes", "read:pages", "write:pages", "write:page-likes", "read:page-likes", "read:user-groups", "write:user-groups", "read:channels", "write:channels", "read:gallery", "write:gallery", "read:gallery-likes", "write:gallery-likes", "read:flash", "write:flash", "read:flash-likes", "write:flash-likes", "read:admin:abuse-user-reports", "write:admin:delete-account", "write:admin:delete-all-files-of-a-user", "write:admin:approve-account", "write:admin:decline-account", "read:admin:index-stats", "read:admin:table-stats", "read:admin:user-ips", "read:admin:meta", "write:admin:reset-password", "write:admin:regenerate-user-token", "write:admin:resolve-abuse-user-report", "write:admin:send-email", "read:admin:server-info", "read:admin:show-moderation-log", "read:admin:show-user", "write:admin:suspend-user", "write:admin:unset-user-avatar", "write:admin:unset-user-banner", "write:admin:unsuspend-user", "write:admin:meta", "write:admin:user-name", "write:admin:user-note", "write:admin:send-notification", "write:admin:user-avatar", "write:admin:user-banner", "write:admin:user-mutual-link", "write:admin:roles", "read:admin:roles", "write:admin:relays", "read:admin:relays", "write:admin:invite-codes", "read:admin:invite-codes", "write:admin:announcements", "read:admin:announcements", "write:admin:avatar-decorations", "read:admin:avatar-decorations", "write:admin:federation", "write:admin:account", "read:admin:account", "write:admin:emoji", "read:admin:emoji", "write:admin:queue", "read:admin:queue", "write:admin:promo", "write:admin:drive", "read:admin:drive", "write:admin:ad", "read:admin:ad", "write:invite-codes", "read:invite-codes", "write:clip-favorite", "read:clip-favorite", "read:federation", "write:report-abuse", "write:chat", "read:chat", "read:achievements", "read:announcements", "read:stats", "read:clip", "write:community-role", "write:admin:drop-all-notes", "write:admin:contact-form", "read:admin:contact-form", "read:admin:federation"];
 
 // @public (undocumented)
 type PingResponse = operations['ping']['responses']['200']['content']['application/json'];

@@ -12,7 +12,7 @@ import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import type { MiNote } from '@/models/Note.js';
-import type { FastifyRequest } from 'fastify';
+import type { FastifyRequest, FastifyReply } from 'fastify';
 
 @Injectable()
 export class ActivityPubAccessControlService {
@@ -51,13 +51,21 @@ export class ActivityPubAccessControlService {
 
 	@bindThis
 	public async checkNoteAccess(note: MiNote, request: FastifyRequest): Promise<boolean> {
-		if (note.deliveryTargets == null || !Array.isArray(note.deliveryTargets.hosts)) {
-			return true;
-		}
-
 		const remoteHost = this.extractRemoteHostFromRequest(request);
 		if (remoteHost == null) {
 			// Not a remote request
+			return true;
+		}
+
+		// まずインスタンスの状態をチェック
+		const restrictions = await this.checkInstanceRestrictions(remoteHost);
+		if (restrictions.isBlocked || restrictions.isQuarantined || restrictions.isSilenced) {
+			this.logger.info(`Access to note ${note.id} denied for ${remoteHost}: ${restrictions.reason}`);
+			return false;
+		}
+
+		// deliveryTargetsのチェック
+		if (note.deliveryTargets == null || !Array.isArray(note.deliveryTargets.hosts)) {
 			return true;
 		}
 
@@ -87,21 +95,31 @@ export class ActivityPubAccessControlService {
 		const userAgent = request.headers['user-agent'];
 
 		if (!userAgent || typeof userAgent !== 'string') {
+			this.logger.debug('No User-Agent header found');
 			return null;
 		}
+
+		this.logger.debug(`Checking User-Agent: ${userAgent}`);
 
 		for (const pattern of ActivityPubAccessControlService.userAgentPatterns) {
 			const match = userAgent.match(pattern);
 			if (match && match[1]) {
 				const host = match[1].toLowerCase();
+				this.logger.debug(`Extracted host from User-Agent: ${host}`);
+
 				// 自分自身からのリクエストは除外
 				if (host === this.config.host.toLowerCase()) {
+					this.logger.debug('Request from self, allowing access');
 					return null;
 				}
-				return this.utilityService.toPuny(host);
+
+				const punyHost = this.utilityService.toPuny(host);
+				this.logger.debug(`Converted to punycode: ${punyHost}`);
+				return punyHost;
 			}
 		}
 
+		this.logger.debug('No matching User-Agent pattern found');
 		return null;
 	}
 
@@ -149,15 +167,21 @@ export class ActivityPubAccessControlService {
 		if (!remoteHost) {
 			// リモートホストが特定できない場合はアクセスを許可
 			// (通常のブラウザーやその他のクライアントからのアクセス)
+			this.logger.debug('No remote host detected, allowing access');
 			return null;
 		}
 
+		this.logger.debug(`Checking access for remote host: ${remoteHost}`);
+
 		// インスタンス制限をチェック
 		const restrictions = await this.checkInstanceRestrictions(remoteHost);
+		this.logger.debug(`Instance restrictions: ${JSON.stringify(restrictions)}`);
 
 		// isBlocked と isQuarantined は常に拒否。
 		// isSilenced は allowLimitedHosts が true の場合のみ許可。
 		const shouldDeny = restrictions.isBlocked || restrictions.isQuarantined || (!allowLimitedHosts && restrictions.isSilenced);
+		this.logger.debug(`Should deny access: ${shouldDeny} (allowLimitedHosts: ${allowLimitedHosts})`);
+
 		if (shouldDeny) {
 			this.logger.info(`ActivityPub access denied from ${remoteHost}: ${restrictions.reason}`, {
 				host: remoteHost,
@@ -182,5 +206,24 @@ export class ActivityPubAccessControlService {
 
 		// アクセス許可
 		return null;
+	}
+
+	/**
+	 * ActivityPubリクエストのアクセス制御を適用します
+	 * @param request FastifyRequest
+	 * @param reply FastifyReply
+	 * @param allowLimitedHosts サイレンスされたホストからのアクセスを許可するかどうか
+	 * @returns アクセスが拒否された場合はtrue、許可された場合はfalse
+	 */
+	@bindThis
+	public async applyAccessControl(request: FastifyRequest, reply: FastifyReply, allowLimitedHosts = false): Promise<boolean> {
+		const accessControl = await this.checkAccess(request, allowLimitedHosts);
+		if (accessControl) {
+			reply.code(404);
+			reply.header('Content-Type', 'text/plain; charset=utf-8');
+			reply.send(`Access denied: ${accessControl.reason}`);
+			return true;
+		}
+		return false;
 	}
 }

@@ -5447,7 +5447,7 @@ export interface Locale extends ILocale {
      */
     "prohibitedWordsForNameOfUser": string;
     /**
-     * このリストに含まれる文字列がユーザーの名前に含まれる場合、ユーザーの名前の変更を拒否します。モデレーター権限を持つユーザーはこの制限の影響を受けません。
+     * このリストに含まれる文字列がユーザーの名前に含まれる場合、ユーザーの名前の変更を拒否します。モデレーター権限を持つユーザーはこの制限の影響を受けません。ユーザー名(username)に対しても全て小文字に置き換えて検査します。
      */
     "prohibitedWordsForNameOfUserDescription": string;
     /**
@@ -8601,9 +8601,8 @@ export interface Locale extends ILocale {
     };
     "_misskeyTempura": {
         /**
-         * misskey-tempuraは隠居特化型のMisskeyフォークです。
-         * ユーザー保護を重視した設計を目指しています。
-         * その他、ユーザー体験をより快適にする改造を行っています。
+         * Misskey-tempuraは隠居特化型のMisskeyフォークです。
+         * ユーザー保護を重視した設計を目指していますが、変な機能も沢山あります。
          */
         "about": string;
         /**
@@ -8611,9 +8610,13 @@ export interface Locale extends ILocale {
          */
         "contributors": string;
         /**
-         * misskey-tempuraについて
+         * Misskey-tempuraについて
          */
         "aboutTempura": string;
+        /**
+         * 更新履歴
+         */
+        "diff": string;
     };
     "_displayOfSensitiveMedia": {
         /**
@@ -9682,6 +9685,10 @@ export interface Locale extends ILocale {
          * お問い合わせフォームを見る
          */
         "read:admin:contact-form": string;
+        /**
+         * 連合に関する情報を見る
+         */
+        "read:admin:federation": string;
     };
     "_auth": {
         /**
@@ -14211,9 +14218,9 @@ export interface Locale extends ILocale {
          */
         "overflow": string;
         /**
-         * アップロードがレート制限により中止されました。しばらく時間をおいてから再試行してください。
+         * レート制限によりアップロードが中止されました。しばらく時間をおいてから再試行してください。
          */
-        "rateLimit": string;
+        "rateLimitError": string;
         /**
          * ファイルアップロード中に{retries}回のリトライを試みましたが、失敗しました。
          * しばらく時間をおいてから再試行してください。
@@ -14224,6 +14231,18 @@ export interface Locale extends ILocale {
          * {status}: {statusText}
          */
         "failedToCreateMultipart": ParameterizedString<"status" | "statusText">;
+        /**
+         * ドライブの容量が不足しています。
+         */
+        "noFreeSpace": string;
+        /**
+         * ファイルサイズの不一致が検出されました。
+         */
+        "fileSizeMismatch": string;
+        /**
+         * アップロードが不完全です。
+         */
+        "incompleteUpload": string;
     };
     "_customCursor": {
         /**
@@ -14593,7 +14612,7 @@ export interface Locale extends ILocale {
     /**
      * 通知を送る
      */
-    "notificationSend": string;
+    "sendNotification": string;
     /**
      * 通知内容を入力
      */
@@ -14601,7 +14620,7 @@ export interface Locale extends ILocale {
     /**
      * 通知を送信しますか？
      */
-    "notificationSendConfirm": string;
+    "sendNotificationConfirm": string;
     "_reactionStats": {
         /**
          * リアクション統計
@@ -15177,6 +15196,78 @@ export interface Locale extends ILocale {
      * ボットアカウント
      */
     "isBot": string;
+    "_advancedSearch": {
+        /**
+         * 高度な検索
+         */
+        "title": string;
+        /**
+         * 検索語
+         */
+        "searchTerms": string;
+        /**
+         * 除外語
+         */
+        "excludeWords": string;
+        /**
+         * カンマ区切りで複数の除外語を入力できます（例：犬,猫,鳥）
+         */
+        "excludeWordsCaption": string;
+        "_searchOperator": {
+            /**
+             * 検索演算子
+             */
+            "label": string;
+            /**
+             * AND（すべての語を含む）
+             */
+            "and": string;
+            /**
+             * OR（いずれかの語を含む）
+             */
+            "or": string;
+        };
+        /**
+         * 検索語を追加
+         */
+        "addSearchTerm": string;
+        /**
+         * 除外語を追加
+         */
+        "addExcludeWord": string;
+        /**
+         * 開始日時
+         */
+        "sinceDate": string;
+        /**
+         * 終了日時
+         */
+        "untilDate": string;
+        /**
+         * 検索の使い方:
+         */
+        "usageTitle": string;
+        /**
+         * ねこ いぬ
+         */
+        "usageExample1": string;
+        /**
+         * ねこ いぬ → AND検索（両方の語を含む）
+         */
+        "usageExplanation1": string;
+        /**
+         * ねこ いぬ -犬
+         */
+        "usageExample2": string;
+        /**
+         * ねこ いぬ -犬 → 「犬」を除外
+         */
+        "usageExplanation2": string;
+        /**
+         * 下の設定でAND/ORを切り替え可能
+         */
+        "usageExplanation3": string;
+    };
     "_enableViewedRenotes": {
         /**
          * 閲覧したリノートを記録

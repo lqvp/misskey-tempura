@@ -1357,7 +1357,7 @@ messageToFollower: "フォロワーへのメッセージ"
 target: "対象"
 testCaptchaWarning: "CAPTCHAのテストを目的とした機能です。<strong>本番環境で使用しないでください。</strong>"
 prohibitedWordsForNameOfUser: "禁止ワード（ユーザーの名前）"
-prohibitedWordsForNameOfUserDescription: "このリストに含まれる文字列がユーザーの名前に含まれる場合、ユーザーの名前の変更を拒否します。モデレーター権限を持つユーザーはこの制限の影響を受けません。"
+prohibitedWordsForNameOfUserDescription: "このリストに含まれる文字列がユーザーの名前に含まれる場合、ユーザーの名前の変更を拒否します。モデレーター権限を持つユーザーはこの制限の影響を受けません。ユーザー名(username)に対しても全て小文字に置き換えて検査します。"
 yourNameContainsProhibitedWords: "変更しようとした名前に禁止された文字列が含まれています"
 yourNameContainsProhibitedWordsDescription: "名前に禁止されている文字列が含まれています。この名前を使用したい場合は、サーバー管理者にお問い合わせください。"
 validateMinimumUsernameLength: "ユーザー名の長さ(最低文字数)"
@@ -2244,9 +2244,10 @@ _aboutMisskey:
   projectMembers: "プロジェクトメンバー"
 
 _misskeyTempura:
-  about: "misskey-tempuraは隠居特化型のMisskeyフォークです。\nユーザー保護を重視した設計を目指しています。\nその他、ユーザー体験をより快適にする改造を行っています。"
+  about: "Misskey-tempuraは隠居特化型のMisskeyフォークです。\nユーザー保護を重視した設計を目指していますが、変な機能も沢山あります。"
   contributors: "優秀なコントリビューター(?)"
-  aboutTempura: "misskey-tempuraについて"
+  aboutTempura: "Misskey-tempuraについて"
+  diff: "更新履歴"
 
 _displayOfSensitiveMedia:
   respect: "センシティブ設定されたメディアを隠す"
@@ -2538,6 +2539,7 @@ _permissions:
   "write:admin:drop-all-notes": "全てのノートを削除する"
   "write:admin:contact-form": "お問い合わせフォームを操作する"
   "read:admin:contact-form": "お問い合わせフォームを見る"
+  "read:admin:federation": "連合に関する情報を見る"
 
 _auth:
   shareAccessTitle: "アプリへのアクセス許可"
@@ -3804,9 +3806,12 @@ _earthquakeWarning:
 _uploadMultipart:
   error: "アップロードエラー"
   overflow: "ファイルサイズが大きすぎます（最大: 2GB）。データベースの制限により、現在2GB以上のファイルはアップロードできません。"
-  rateLimit: "アップロードがレート制限により中止されました。しばらく時間をおいてから再試行してください。"
+  rateLimitError: "レート制限によりアップロードが中止されました。しばらく時間をおいてから再試行してください。"
   tooManyRetries: "ファイルアップロード中に{retries}回のリトライを試みましたが、失敗しました。\nしばらく時間をおいてから再試行してください。"
   failedToCreateMultipart: "ファイルアップロード中に失敗しました。\n{status}: {statusText}"
+  noFreeSpace: "ドライブの容量が不足しています。"
+  fileSizeMismatch: "ファイルサイズの不一致が検出されました。"
+  incompleteUpload: "アップロードが不完全です。"
 
 _customCursor:
   title: "カスタムカーソル設定"
@@ -3923,9 +3928,9 @@ showInstanceTickerVersionDescription: "インスタンスのバージョンを�
 textAreaAutoResize: "テキストエリアの自動リサイズ"
 textAreaAutoResizeDescription: "テキストエリアの高さを自動で調整します。"
 
-notificationSend: "通知を送る"
+sendNotification: "通知を送る"
 enterNotificationText: "通知内容を入力"
-notificationSendConfirm: "通知を送信しますか？"
+sendNotificationConfirm: "通知を送信しますか？"
 
 _reactionStats:
   reactionStats: "リアクション統計"
@@ -4102,6 +4107,26 @@ _contactForm:
 
 isLocked: "鍵アカウント"
 isBot: "ボットアカウント"
+
+_advancedSearch:
+  title: "高度な検索"
+  searchTerms: "検索語"
+  excludeWords: "除外語"
+  excludeWordsCaption: "カンマ区切りで複数の除外語を入力できます（例：犬,猫,鳥）"
+  _searchOperator:
+    label: "検索演算子"
+    and: "AND（すべての語を含む）"
+    or: "OR（いずれかの語を含む）"
+  addSearchTerm: "検索語を追加"
+  addExcludeWord: "除外語を追加"
+  sinceDate: "開始日時"
+  untilDate: "終了日時"
+  usageTitle: "検索の使い方:"
+  usageExample1: "ねこ いぬ"
+  usageExplanation1: "ねこ いぬ → AND検索（両方の語を含む）"
+  usageExample2: "ねこ いぬ -犬"
+  usageExplanation2: "ねこ いぬ -犬 → 「犬」を除外"
+  usageExplanation3: "下の設定でAND/ORを切り替え可能"
 
 _enableViewedRenotes:
   title: "閲覧したリノートを記録"

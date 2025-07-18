@@ -120,7 +120,7 @@ definePage(() => ({
 .message {
 	margin-bottom: 24px;
 	opacity: 0.85;
-	background: rgba(255,255,255,0.85);
+	background: var(--MI_THEME-bg);
 	padding: 12px 10px;
 	border-radius: 8px;
 	display: inline-block;

@@ -132,12 +132,12 @@ export const permissions = [
 	'write:admin:drop-all-notes',
 	'write:admin:contact-form',
 	'read:admin:contact-form',
+	'read:admin:federation',
 ] as const;
 
 export const moderationLogTypes = [
 	'updateServerSettings',
 	'suspend',
-	'approve',
 	'unsuspend',
 	'updateUserName',
 	'updateUserNote',
@@ -156,10 +156,13 @@ export const moderationLogTypes = [
 	'deleteNote',
 	'createGlobalAnnouncement',
 	'createUserAnnouncement',
+	'createRolesAnnouncement',
 	'updateGlobalAnnouncement',
 	'updateUserAnnouncement',
+	'updateRolesAnnouncement',
 	'deleteGlobalAnnouncement',
 	'deleteUserAnnouncement',
+	'deleteRolesAnnouncement',
 	'resetPassword',
 	'regenerateUserToken',
 	'suspendRemoteInstance',
@@ -190,9 +193,13 @@ export const moderationLogTypes = [
 	'deleteFlash',
 	'deleteGalleryPost',
 	'deleteChatRoom',
+	'updateProxyAccountDescription',
+	'approve',
+	'decline',
 	'quarantineRemoteInstance',
 	'unquarantineRemoteInstance',
 	'dropAllNotes',
+	'unsetUserMutualLink',
 ] as const;
 
 export const queueTypes = [
