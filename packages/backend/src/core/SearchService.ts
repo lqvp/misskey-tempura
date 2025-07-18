@@ -43,6 +43,10 @@ export type SearchOpts = {
 	hasCw?: 'all' | 'with' | 'without';
 	hasReply?: 'all' | 'with' | 'without';
 	hasPoll?: 'all' | 'with' | 'without';
+	searchOperator?: 'and' | 'or';
+	excludeWords?: string[];
+	sinceDate?: number;
+	untilDate?: number;
 };
 
 export type SearchPagination = {
@@ -195,7 +199,6 @@ export class SearchService {
 				return this.searchNoteByMeiliSearch(q, me, opts, pagination);
 			}
 			default: {
-				// eslint-disable-next-line @typescript-eslint/no-unused-vars
 				const typeCheck: never = this.provider;
 				return [];
 			}
@@ -209,7 +212,7 @@ export class SearchService {
 		opts: SearchOpts,
 		pagination: SearchPagination,
 	): Promise<MiNote[]> {
-		const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), pagination.sinceId, pagination.untilId);
+		const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), pagination.sinceId, pagination.untilId, opts.sinceDate, opts.untilDate);
 
 		if (opts.userId) {
 			query.andWhere('note.userId = :userId', { userId: opts.userId });
@@ -257,11 +260,37 @@ export class SearchService {
 			.leftJoinAndSelect('reply.user', 'replyUser')
 			.leftJoinAndSelect('renote.user', 'renoteUser');
 
-		// クエリが空でない場合のみテキスト検索条件を追加
-		if (q !== '') {
-			if (this.config.fulltextSearch?.provider === 'sqlPgroonga') {
-				query.andWhere('note.text &@~ :q', { q });
+		// テキスト検索条件の追加
+		if (this.config.fulltextSearch?.provider === 'sqlPgroonga') {
+			// sqlPgroongaの高度な検索機能を使用
+			let searchQuery = q;
+
+			// 除外語の処理
+			if (opts.excludeWords && opts.excludeWords.length > 0) {
+				const excludeQuery = opts.excludeWords.map(word => `-${word}`).join(' ');
+				searchQuery = q ? `${q} ${excludeQuery}` : excludeQuery;
+			}
+
+			if (searchQuery) {
+				query.andWhere('note.text &@~ :q', { q: searchQuery });
+			}
+		} else if (q !== '') {
+			// sqlLikeプロバイダーでの検索処理
+			if (q.includes(' OR ')) {
+				// OR検索の場合、各語句をOR条件で結合
+				const terms = q.split(' OR ').map(term => term.trim()).filter(term => term !== '');
+				if (terms.length > 0) {
+					const orConditions = terms.map((term, index) =>
+						`LOWER(note.text) LIKE :term${index}`,
+					).join(' OR ');
+					const params: Record<string, string> = {};
+					terms.forEach((term, index) => {
+						params[`term${index}`] = `%${sqlLikeEscape(term.toLowerCase())}%`;
+					});
+					query.andWhere(`(${orConditions})`, params);
+				}
 			} else {
+				// AND検索の場合、従来通りの処理
 				query.andWhere('LOWER(note.text) LIKE :q', { q: `%${ sqlLikeEscape(q.toLowerCase()) }%` });
 			}
 		}

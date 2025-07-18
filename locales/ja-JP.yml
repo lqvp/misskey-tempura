@@ -4107,3 +4107,23 @@ _contactForm:
 
 isLocked: "鍵アカウント"
 isBot: "ボットアカウント"
+
+_advancedSearch:
+  title: "高度な検索"
+  searchTerms: "検索語"
+  excludeWords: "除外語"
+  excludeWordsCaption: "カンマ区切りで複数の除外語を入力できます（例：犬,猫,鳥）"
+  _searchOperator:
+    label: "検索演算子"
+    and: "AND（すべての語を含む）"
+    or: "OR（いずれかの語を含む）"
+  addSearchTerm: "検索語を追加"
+  addExcludeWord: "除外語を追加"
+  sinceDate: "開始日時"
+  untilDate: "終了日時"
+  usageTitle: "検索の使い方:"
+  usageExample1: "ねこ いぬ"
+  usageExplanation1: "ねこ いぬ → AND検索（両方の語を含む）"
+  usageExample2: "ねこ いぬ -犬"
+  usageExplanation2: "ねこ いぬ -犬 → 「犬」を除外"
+  usageExplanation3: "下の設定でAND/ORを切り替え可能"

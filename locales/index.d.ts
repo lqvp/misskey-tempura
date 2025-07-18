@@ -15196,6 +15196,78 @@ export interface Locale extends ILocale {
      * ボットアカウント
      */
     "isBot": string;
+    "_advancedSearch": {
+        /**
+         * 高度な検索
+         */
+        "title": string;
+        /**
+         * 検索語
+         */
+        "searchTerms": string;
+        /**
+         * 除外語
+         */
+        "excludeWords": string;
+        /**
+         * カンマ区切りで複数の除外語を入力できます（例：犬,猫,鳥）
+         */
+        "excludeWordsCaption": string;
+        "_searchOperator": {
+            /**
+             * 検索演算子
+             */
+            "label": string;
+            /**
+             * AND（すべての語を含む）
+             */
+            "and": string;
+            /**
+             * OR（いずれかの語を含む）
+             */
+            "or": string;
+        };
+        /**
+         * 検索語を追加
+         */
+        "addSearchTerm": string;
+        /**
+         * 除外語を追加
+         */
+        "addExcludeWord": string;
+        /**
+         * 開始日時
+         */
+        "sinceDate": string;
+        /**
+         * 終了日時
+         */
+        "untilDate": string;
+        /**
+         * 検索の使い方:
+         */
+        "usageTitle": string;
+        /**
+         * ねこ いぬ
+         */
+        "usageExample1": string;
+        /**
+         * ねこ いぬ → AND検索（両方の語を含む）
+         */
+        "usageExplanation1": string;
+        /**
+         * ねこ いぬ -犬
+         */
+        "usageExample2": string;
+        /**
+         * ねこ いぬ -犬 → 「犬」を除外
+         */
+        "usageExplanation2": string;
+        /**
+         * 下の設定でAND/ORを切り替え可能
+         */
+        "usageExplanation3": string;
+    };
 }
 declare const locales: {
     [lang: string]: Locale;

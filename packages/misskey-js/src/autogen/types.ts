@@ -33467,7 +33467,7 @@ export interface operations {
             content: {
                 'application/json': {
                     /** @default  */
-                    query: string;
+                    query?: string;
                     /** Format: misskey:id */
                     sinceId?: string;
                     /** Format: misskey:id */
@@ -33515,6 +33515,13 @@ export interface operations {
                      * @enum {string}
                      */
                     hasPoll?: 'all' | 'with' | 'without';
+                    /**
+                     * @default and
+                     * @enum {string}
+                     */
+                    searchOperator?: 'and' | 'or';
+                    /** @default [] */
+                    excludeWords?: string[];
                 };
             };
         };
