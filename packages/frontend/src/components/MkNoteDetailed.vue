@@ -176,8 +176,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<i class="ti ti-heart"></i>
 			</button>
 			<button ref="reactButton" :class="$style.noteFooterButton" class="_button" @click="toggleReact()">
-				<i v-if="appearNote.reactionAcceptance === 'likeOnly' && $appearNote.myReaction != null" class="ti ti-heart-filled" style="color: var(--MI_THEME-love);"></i>
-				<i v-else-if="$appearNote.myReaction != null" class="ti ti-minus" style="color: var(--MI_THEME-accent);"></i>
+				<i v-if="appearNote.reactionAcceptance === 'likeOnly' && $appearNote.myReaction != null && $appearNote.myReaction.length > 0" class="ti ti-heart-filled" style="color: var(--MI_THEME-love);"></i>
+				<i v-else-if="$appearNote.myReaction != null && $appearNote.myReaction.length > 0" class="ti ti-minus" style="color: var(--MI_THEME-accent);"></i>
 				<i v-else-if="appearNote.reactionAcceptance === 'likeOnly'" class="ti ti-heart"></i>
 				<i v-else class="ti ti-mood-plus"></i>
 				<p v-if="(appearNote.reactionAcceptance === 'likeOnly' || prefer.s.showReactionsCount) && $appearNote.reactionCount > 0" :class="$style.noteFooterButtonCount">{{ number($appearNote.reactionCount) }}</p>
@@ -581,7 +581,6 @@ async function heartReact(): Promise<void> {
 		noteId: appearNote.id,
 		reaction: prefer.s.selectReaction,
 	}).then(() => {
-		$appearNote.myReaction = prefer.s.selectReaction;
 		noteEvents.emit(`reacted:${appearNote.id}`, {
 			userId: $i!.id,
 			reaction: prefer.s.selectReaction,
@@ -603,32 +602,41 @@ async function heartReact(): Promise<void> {
 	}
 }
 
-function undoReact(targetNote: Misskey.entities.Note): void {
-	const oldReaction = targetNote.myReaction;
-	if (!oldReaction) return;
+function undoReact(targetReaction?: string): void {
+	if (!$appearNote.myReaction || $appearNote.myReaction.length === 0) return;
+
+	// 特定のリアクションが指定されていない場合は、最初のリアクションを削除
+	const reactionToRemove = targetReaction || $appearNote.myReaction[0];
+
 	misskeyApi('notes/reactions/delete', {
-		noteId: targetNote.id,
+		noteId: appearNote.id,
+		reaction: reactionToRemove,
 	}).then(() => {
 		noteEvents.emit(`unreacted:${appearNote.id}`, {
 			userId: $i!.id,
-			reaction: oldReaction,
+			reaction: reactionToRemove,
 		});
 	});
 }
 
 function toggleReact() {
-	if (appearNote.myReaction == null) {
+	if (!$appearNote.myReaction || $appearNote.myReaction.length === 0) {
 		react();
+	} else if (appearNote.reactionAcceptance === 'likeOnly') {
+		// likeOnlyの場合は、既にリアクションがあれば削除
+		undoReact();
 	} else {
-		undoReact(appearNote);
+		// 通常の場合は、リアクションピッカーを表示
+		react();
 	}
 }
 
 function toggleHeartReact() {
-	if ($appearNote.myReaction == null) {
+	const hasHeartReaction = $appearNote.myReaction?.includes(prefer.s.selectReaction);
+	if (!hasHeartReaction) {
 		heartReact();
 	} else {
-		undoReact(appearNote);
+		undoReact(prefer.s.selectReaction);
 	}
 }
 
