@@ -9,7 +9,10 @@ import { MiUser } from './User.js';
 import { MiNote } from './Note.js';
 
 @Entity('note_reaction')
-@Index(['userId', 'noteId'], { unique: true })
+// A user can now add multiple different reactions to the same note.
+// Ensure uniqueness only when the user tries to add exactly the same reaction twice.
+// (userId, noteId, reaction) tuple must be unique.
+@Index(['userId', 'noteId', 'reaction'], { unique: true })
 export class MiNoteReaction {
 	@PrimaryColumn(id())
 	public id: string;
