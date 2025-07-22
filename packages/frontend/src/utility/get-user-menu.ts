@@ -309,7 +309,47 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 	}
 
 	if ($i) {
-		menuItems.push({ type: 'divider' }, {
+		const items: MenuItem[] = [{ type: 'divider' }];
+
+		if ($i.policies.canUseGeminiLLMAPI || prefer.s.geminiToken) {
+			items.push({
+				icon: 'ti ti-file-text',
+				text: i18n.ts._llm.summarizeProfile,
+				action: async () => {
+					// プロフィール要約で取得するノート数を指定できるようにする
+					const { canceled: canceledNotesLimit, result: notesLimit } = await os.inputNumber({
+						title: i18n.ts._llm.summarizeProfile,
+						text: i18n.ts._llm.notesLimitPrompt,
+						default: 15,
+					});
+
+					if (canceledNotesLimit) return;
+
+					// followersの投稿を含めるか確認
+					const { canceled: canceledFollowers } = await os.confirm({
+						type: 'question',
+						title: i18n.ts._llm.summarizeProfile,
+						text: i18n.ts._llm.includeFollowersNotesPrompt,
+					});
+					const includeFollowers = !canceledFollowers;
+
+					// キャンセルされなかった場合、指定された数値でプロフィール要約を実行
+					await summarizeUserProfile(user.id, notesLimit, includeFollowers);
+				},
+			});
+		}
+
+		if (prefer.s.nicknameEnabled) {
+			items.push({
+				icon: 'ti ti-edit',
+				text: 'ニックネームを編集',
+				action: () => {
+					editNickname(user);
+				},
+			});
+		}
+
+		items.push({ type: 'divider' }, {
 			icon: 'ti ti-pencil',
 			text: i18n.ts.editMemo,
 			action: editMemo,
@@ -374,6 +414,8 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 				}));
 			},
 		});
+
+		menuItems.push(...items);
 	}
 
 	if ($i && meId !== user.id) {
