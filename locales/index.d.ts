@@ -15286,6 +15286,160 @@ export interface Locale extends ILocale {
      * {search}件
      */
     "searchResults": ParameterizedString<"search">;
+    "_deliveryTargetPreset": {
+        /**
+         * 配送制御プリセット
+         */
+        "title": string;
+        /**
+         * 配送制御設定をプリセットとして保存・管理できます
+         */
+        "description": string;
+        /**
+         * プリセット作成
+         */
+        "createPreset": string;
+        /**
+         * プリセット編集
+         */
+        "editPreset": string;
+        /**
+         * プリセット削除
+         */
+        "deletePreset": string;
+        /**
+         * プリセット複製
+         */
+        "duplicatePreset": string;
+        /**
+         * プリセット名
+         */
+        "presetName": string;
+        /**
+         * 説明（任意）
+         */
+        "presetDescription": string;
+        /**
+         * デフォルトプリセット
+         */
+        "defaultPreset": string;
+        /**
+         * デフォルトに設定
+         */
+        "setAsDefault": string;
+        /**
+         * デフォルト解除
+         */
+        "removeDefault": string;
+        /**
+         * プリセットインポート
+         */
+        "importPreset": string;
+        /**
+         * プリセットエクスポート
+         */
+        "exportPreset": string;
+        /**
+         * プリセットがありません
+         */
+        "noPresets": string;
+        /**
+         * プリセットを作成しました
+         */
+        "presetCreated": string;
+        /**
+         * プリセットを更新しました
+         */
+        "presetUpdated": string;
+        /**
+         * プリセットを削除しました
+         */
+        "presetDeleted": string;
+        /**
+         * プリセットを複製しました
+         */
+        "presetDuplicated": string;
+        /**
+         * このプリセットを削除しますか？
+         */
+        "confirmDelete": string;
+        /**
+         * デフォルトプリセットを削除しますか？
+         */
+        "confirmDeleteDefault": string;
+        /**
+         * プリセット選択
+         */
+        "selectPreset": string;
+        /**
+         * プリセット適用
+         */
+        "applyPreset": string;
+        /**
+         * プリセットとして保存
+         */
+        "saveAsPreset": string;
+        /**
+         * プリセットを適用しました
+         */
+        "presetApplied": string;
+        /**
+         * プリセットとして保存しました
+         */
+        "presetSaved": string;
+        /**
+         * 無効なプリセットデータです
+         */
+        "invalidPresetData": string;
+        /**
+         * プリセットをインポートしました
+         */
+        "importSuccess": string;
+        /**
+         * プリセットをエクスポートしました
+         */
+        "exportSuccess": string;
+        /**
+         * プリセット名は必須です
+         */
+        "presetNameRequired": string;
+        /**
+         * 同じ名前のプリセットが既に存在します
+         */
+        "presetNameExists": string;
+        /**
+         * サーバー
+         */
+        "servers": string;
+        /**
+         * すべてのサーバー
+         */
+        "allServers": string;
+        /**
+         * サーバーなし
+         */
+        "noServers": string;
+        /**
+         * 更新日時
+         */
+        "updated": string;
+        /**
+         * {count}サーバー
+         */
+        "serverCount": ParameterizedString<"count">;
+        /**
+         * 含まれるサーバー: {count}台
+         */
+        "includedServers": ParameterizedString<"count">;
+        /**
+         * 除外されるサーバー: {count}台
+         */
+        "excludedServers": ParameterizedString<"count">;
+        /**
+         * 選択されたサーバー: {count}台
+         */
+        "selectedServers": ParameterizedString<"count">;
+    };
 }
 declare const locales: {
     [lang: string]: Locale;

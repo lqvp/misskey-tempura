@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: syuilo and misskey-project
+SPDX-FileCopyrightText: lqvp
 SPDX-License-Identifier: AGPL-3.0-only
 -->
 
@@ -13,7 +13,30 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<option value="exclude">{{ i18n.ts._deliveryTargetControl.deliveryTargetExclude }}</option>
 		</MkRadios>
 
-		<div :class="$style.serverSelection">
+		<MkDeliveryTargetPresetSelector
+			v-model="props.modelValue"
+			@presetSelected="onPresetSelected"
+			@presetCleared="onPresetCleared"
+		/>
+
+		<!-- プリセットが選択されている場合の簡易表示 -->
+		<div v-if="currentPreset" :class="$style.presetInfo">
+			<div :class="$style.presetStatus">
+				<i class="ti ti-fw" :class="getModeIcon(currentPreset.mode)"></i>
+				<span v-if="currentPreset.mode === 'include'">
+					{{ i18n.tsx._deliveryTargetPreset.includedServers({ count: currentPreset.hosts.length }) }}
+				</span>
+				<span v-else>
+					{{ i18n.tsx._deliveryTargetPreset.excludedServers({ count: currentPreset.hosts.length }) }}
+				</span>
+			</div>
+			<div v-if="currentPreset.description" :class="$style.presetDescription">
+				{{ currentPreset.description }}
+			</div>
+		</div>
+
+		<!-- プリセットが選択されていない場合のみサーバー選択UIを表示 -->
+		<div v-else :class="$style.serverSelection">
 			<MkLoading v-if="serversLoading"/>
 			<div v-else-if="loadError" :class="$style.errorMessage">
 				<i class="ti ti-alert-circle"></i>
@@ -66,12 +89,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { ref, onMounted, watch, nextTick, computed } from 'vue';
+import type { DeliveryTargetPreset } from '@/utility/delivery-target-preset.js';
 import MkRadios from '@/components/MkRadios.vue';
 import MkLoading from '@/components/global/MkLoading.vue';
 import MkInput from '@/components/MkInput.vue';
 import MkCheckbox from '@/components/MkCheckbox.vue';
+import MkDeliveryTargetPresetSelector from '@/components/MkDeliveryTargetPresetSelector.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
+import { prefer } from '@/preferences.js';
 
 export type DeliveryTargetEditorModelValue = {
 	mode: 'include' | 'exclude';
@@ -98,6 +124,23 @@ const searchQuery = ref('');
 
 // 内部更新中フラグ（無限ループ防止）
 const isInternalUpdate = ref(false);
+
+// 現在選択されているプリセットを取得
+const currentPreset = computed(() => {
+	if (!props.modelValue.hosts || props.modelValue.hosts.length === 0) {
+		return null;
+	}
+
+	return prefer.r.deliveryTargetPresets.value.find(preset =>
+		preset.mode === props.modelValue.mode &&
+		JSON.stringify(preset.hosts.sort()) === JSON.stringify(props.modelValue.hosts.sort())
+	) || null;
+});
+
+// モードアイコンを取得
+function getModeIcon(mode: 'include' | 'exclude'): string {
+	return mode === 'include' ? 'ti-check' : 'ti-x';
+}
 
 // Search functionality
 const filteredServers = computed(() => {
@@ -147,6 +190,17 @@ watch([deliveryMode, selectedHosts], () => {
 	}
 }, { deep: true });
 
+// プリセット選択時の処理
+function onPresetSelected(preset: DeliveryTargetPreset) {
+	deliveryMode.value = preset.mode;
+	selectedHosts.value = [...preset.hosts];
+}
+
+function onPresetCleared() {
+	deliveryMode.value = 'include';
+	selectedHosts.value = [];
+}
+
 const loadServers = async () => {
 	serversLoading.value = true;
 	loadError.value = false;
@@ -179,9 +233,6 @@ onMounted(() => {
 	padding: 0 0 8px 0;
 	user-select: none;
 	color: var(--MI_THEME-accent);
-	display: flex;
-	align-items: center;
-	gap: 4px;
 }
 
 .body {
@@ -190,92 +241,129 @@ onMounted(() => {
 	gap: 12px;
 }
 
-.serverSelection {
-	padding: 8px 0;
+.presetInfo {
+	background: var(--MI_THEME-background);
+	border: 1px solid var(--MI_THEME-border);
+	border-radius: 8px;
+	padding: 12px;
+	margin: 8px 0;
 }
 
-.searchInput {
-	margin-bottom: 8px;
-}
-
-.noServers {
-	text-align: center;
-	color: var(--MI_THEME-fgTransparentWeak);
-	padding: 16px;
+.presetStatus {
 	display: flex;
 	align-items: center;
-	justify-content: center;
 	gap: 8px;
-	font-size: 0.9em;
+	font-weight: 500;
+	color: var(--MI_THEME-accent);
+
+	i {
+		font-size: 1.1em;
+	}
 }
 
-.servers {
+.presetDescription {
+	margin-top: 8px;
+	font-size: 0.9em;
+	color: var(--MI_THEME-text);
+	opacity: 0.8;
+}
+
+.serverSelection {
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
-	max-height: 240px;
-	overflow-y: auto;
-	padding: 8px;
-	border: 1px solid var(--MI_THEME-divider);
-	border-radius: 6px;
-	background: var(--MI_THEME-bg);
-}
-
-.serverItem {
-	width: 100%;
-}
-
-.serverInfo {
-	flex: 1;
-	min-width: 0;
-}
-
-.serverHost {
-	font-weight: 500;
-	color: var(--MI_THEME-fg);
-	word-break: break-all;
-	line-height: 1.3;
-}
-
-.serverCount {
-	font-size: 0.8em;
-	color: var(--MI_THEME-fgTransparentWeak);
-	margin-top: 2px;
-	line-height: 1.2;
-}
-
-.searchInfo {
-	margin-top: 8px;
-	font-size: 0.8em;
-	color: var(--MI_THEME-fgTransparentWeak);
-	text-align: center;
-	padding: 4px 8px;
+	gap: 12px;
 }
 
 .errorMessage {
 	display: flex;
-	flex-direction: column;
 	align-items: center;
 	gap: 8px;
-	padding: 16px;
 	color: var(--MI_THEME-error);
 	font-size: 0.9em;
-	text-align: center;
+	padding: 12px;
+	background: var(--MI_THEME-errorBackground);
+	border-radius: 8px;
 }
 
 .retryButton {
 	display: flex;
 	align-items: center;
 	gap: 4px;
-	padding: 6px 12px;
+	padding: 4px 8px;
 	border-radius: 4px;
-	background: var(--MI_THEME-buttonBg);
-	color: var(--MI_THEME-fg);
-	font-size: 0.85em;
+	background: var(--MI_THEME-buttonBackground);
+	color: var(--MI_THEME-buttonText);
+	border: 1px solid var(--MI_THEME-buttonBorder);
+	font-size: 0.8em;
+	cursor: pointer;
+
+	&:hover {
+		background: var(--MI_THEME-buttonBackgroundHover);
+	}
+}
+
+.noServers {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--MI_THEME-text);
+	opacity: 0.7;
+	font-size: 0.9em;
+	padding: 12px;
+	background: var(--MI_THEME-background);
+	border: 1px solid var(--MI_THEME-border);
+	border-radius: 8px;
+}
+
+.searchInput {
+	margin-bottom: 8px;
+}
+
+.servers {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	max-height: 300px;
+	overflow-y: auto;
+	border: 1px solid var(--MI_THEME-border);
+	border-radius: 8px;
+	padding: 8px;
+	background: var(--MI_THEME-background);
+}
+
+.serverItem {
+	padding: 8px;
+	border-radius: 4px;
 	transition: background-color 0.2s;
 
 	&:hover {
-		background: var(--MI_THEME-buttonHoverBg);
+		background: var(--MI_THEME-hover);
 	}
+}
+
+.serverInfo {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	width: 100%;
+}
+
+.serverHost {
+	font-weight: 500;
+	color: var(--MI_THEME-text);
+}
+
+.serverCount {
+	font-size: 0.85em;
+	color: var(--MI_THEME-text);
+	opacity: 0.7;
+}
+
+.searchInfo {
+	font-size: 0.85em;
+	color: var(--MI_THEME-text);
+	opacity: 0.7;
+	text-align: center;
+	padding: 8px;
 }
 </style>

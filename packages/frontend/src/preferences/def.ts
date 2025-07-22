@@ -15,6 +15,7 @@ import type { WatermarkPreset } from '@/utility/watermark.js';
 import { genId } from '@/utility/id.js';
 import { DEFAULT_DEVICE_KIND } from '@/utility/device-kind.js';
 import { deepEqual } from '@/utility/deep-equal.js';
+import type { DeliveryTargetPreset } from '@/utility/delivery-target-preset.js';
 
 /** サウンド設定 */
 export type SoundStore = {
@@ -420,6 +421,30 @@ export const PREF_DEF = definePreferences({
 	defaultWatermarkPresetId: {
 		accountDependent: true,
 		default: null as WatermarkPreset['id'] | null,
+	},
+	deliveryTargetPresets: {
+		accountDependent: true,
+		default: [] as DeliveryTargetPreset[],
+		mergeStrategy: (a, b) => {
+			const mergedItems = [] as typeof a;
+			for (const x of a.concat(b)) {
+				const sameIdItem = mergedItems.find(y => y.id === x.id);
+				if (sameIdItem != null) {
+					if (deepEqual(x, sameIdItem)) { // 完全な重複は無視
+						continue;
+					} else { // IDは同じなのに内容が違う場合はマージ不可とする
+						throw new Error();
+					}
+				} else {
+					mergedItems.push(x);
+				}
+			}
+			return mergedItems;
+		},
+	},
+	defaultDeliveryTargetPresetId: {
+		accountDependent: true,
+		default: null as DeliveryTargetPreset['id'] | null,
 	},
 	defaultImageCompressionLevel: {
 		default: 2 as 0 | 1 | 2 | 3,

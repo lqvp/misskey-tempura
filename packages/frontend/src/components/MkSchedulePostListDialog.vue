@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 >
 	<template #header>{{ i18n.ts.schedulePostList }}</template>
 	<div class="_spacer" style="--MI_SPACER-marginMin: 14px; --MI_SPACER-marginMax: 16px;">
-		<MkPagination ref="paginationEl" :pagination="pagination">
+		<MkPagination ref="paginationEl" :paginator="paginator">
 			<template #empty>
 				<div class="_fullinfo">
 					<MkResult type="empty" :text="i18n.ts.nothing"/>
@@ -30,12 +30,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
-import type { Paging } from '@/components/MkPagination.vue';
+import { ref, markRaw } from 'vue';
 import MkModalWindow from '@/components/MkModalWindow.vue';
 import MkPagination from '@/components/MkPagination.vue';
 import MkNoteSimple from '@/components/MkNoteSimple.vue';
 import { i18n } from '@/i18n.js';
+import { Paginator } from '@/utility/paginator.js';
 
 const emit = defineEmits<{
 	(ev: 'cancel'): void;
@@ -48,11 +48,10 @@ const cancel = () => {
 };
 
 const paginationEl = ref();
-const pagination: Paging = {
-	endpoint: 'notes/schedule/list',
+const paginator = markRaw(new Paginator('notes/schedule/list', {
 	limit: 10,
 	offsetMode: true,
-};
+}));
 
 function listUpdate() {
 	paginationEl.value.reload();

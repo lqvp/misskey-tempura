@@ -1395,7 +1395,20 @@ async function loadSavedUsers() {
 	}
 }
 
+// デフォルトプリセットの適用
 onMounted(() => {
+	// デフォルトプリセットがある場合は適用
+	const defaultPresetId = prefer.s.defaultDeliveryTargetPresetId;
+	if (defaultPresetId) {
+		const defaultPreset = prefer.s.deliveryTargetPresets.find(p => p.id === defaultPresetId);
+		if (defaultPreset) {
+			deliveryTargets.value = {
+				mode: defaultPreset.mode,
+				hosts: [...defaultPreset.hosts],
+			};
+		}
+	}
+
 	if (props.autofocus) {
 		focus();
 
