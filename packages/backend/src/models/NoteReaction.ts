@@ -9,8 +9,7 @@ import { MiUser } from './User.js';
 import { MiNote } from './Note.js';
 
 @Entity('note_reaction')
-@Index(['userId', 'noteId']) // ユニーク制約を削除
-@Index(['noteId', 'reaction']) // リアクションタイプでの検索効率化
+@Index(["userId", "noteId", "reaction"])
 export class MiNoteReaction {
 	@PrimaryColumn(id())
 	public id: string;
