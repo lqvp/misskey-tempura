@@ -66,9 +66,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<i v-else-if="appearNote.visibility === 'specified'" ref="specified" class="ti ti-mail"></i>
 						</span>
 						<span v-if="appearNote.localOnly" style="margin-left: 0.5em;" :title="i18n.ts._visibility['disableFederation']"><i class="ti ti-rocket-off"></i></span>
-						<span v-if="appearNote.deliveryTargets && (appearNote.deliveryTargets.mode === 'include' || appearNote.deliveryTargets.hosts?.length)" :title="i18n.ts._deliveryTargetControl[appearNote.deliveryTargets.mode === 'include' ? 'deliveryTargetsInclude' : 'deliveryTargetsExclude'] + (appearNote.deliveryTargets.hosts?.length ? '\n' + appearNote.deliveryTargets.hosts.join('\n') : '')" style="margin-left: 0.5em;">
-							<i v-if="appearNote.deliveryTargets.mode === 'include'" class="ti ti-list-check"></i>
-							<i v-else class="ti ti-list-details"></i>
+						<span v-if="appearNote.deliveryTargets && (appearNote.deliveryTargets.mode === 'include' || appearNote.deliveryTargets.hosts?.length)" style="margin-left: 0.5em;">
+							<i v-if="appearNote.deliveryTargets.mode === 'include'" ref="deliveryTargetsIcon" class="ti ti-list-check"></i>
+							<i v-else ref="deliveryTargetsIcon" class="ti ti-list-details"></i>
 						</span>
 					</div>
 				</div>
@@ -297,6 +297,7 @@ import MkUserCardMini from '@/components/MkUserCardMini.vue';
 import MkPagination from '@/components/MkPagination.vue';
 import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import MkButton from '@/components/MkButton.vue';
+import MkDeliveryTargetsDisplay from '@/components/MkDeliveryTargetsDisplay.vue';
 import { isEnabledUrlPreview } from '@/utility/url-preview.js';
 import { getAppearNote } from '@/utility/get-appear-note.js';
 import { prefer } from '@/preferences.js';
@@ -375,6 +376,24 @@ const hideReactionCount = computed(() => {
 });
 const showReplies = ref(false);
 const showQuotes = ref(false);
+
+const deliveryTargetsIcon = useTemplateRef('deliveryTargetsIcon');
+
+// 配信先サーバーのツールチップを設定
+if (appearNote.deliveryTargets && (appearNote.deliveryTargets.mode === 'include' || appearNote.deliveryTargets.hosts?.length)) {
+	useTooltip(deliveryTargetsIcon, (showing) => {
+		if (deliveryTargetsIcon.value == null) return;
+
+		const { dispose } = os.popup(MkDeliveryTargetsDisplay, {
+			showing,
+			mode: appearNote.deliveryTargets!.mode,
+			hosts: appearNote.deliveryTargets!.hosts || [],
+			targetElement: deliveryTargetsIcon.value,
+		}, {
+			closed: () => dispose(),
+		});
+	});
+}
 
 const pleaseLoginContext = computed<OpenOnRemoteOptions>(() => ({
 	type: 'lookup',
