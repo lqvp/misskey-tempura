@@ -59,6 +59,7 @@ import { CollapsedQueue } from '@/misc/collapsed-queue.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import type Logger from '@/logger.js';
 import { CacheService } from '@/core/CacheService.js';
+import { sanitizeUrls } from '@/misc/sanitize-url.js';
 
 type NotificationType = 'reply' | 'renote' | 'quote' | 'mention';
 
@@ -361,6 +362,10 @@ export class NoteCreateService implements OnApplicationShutdown {
 				data.text = data.text.slice(0, DB_MAX_NOTE_TEXT_LENGTH);
 			}
 			data.text = data.text.trim();
+			
+			// Sanitize URLs by removing tracking parameters
+			data.text = sanitizeUrls(data.text);
+			
 			if (data.text === '') {
 				data.text = null;
 			}
@@ -456,7 +461,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 			hasPoll: data.poll != null,
 			deleteAt: data.deleteAt,
 			isScheduledForPrivate: data.isScheduledForPrivate,
-			cw: data.cw ?? null,
+			cw: data.cw ? sanitizeUrls(data.cw) : null,
 			tags: tags.map(tag => normalizeForSearch(tag)),
 			emojis,
 			userId: user.id,
