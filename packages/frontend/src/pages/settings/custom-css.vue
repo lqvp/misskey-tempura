@@ -59,7 +59,7 @@ async function backup() {
 	const blob = new Blob([localCustomCss.value], { type: 'text/css' });
 	const url = URL.createObjectURL(blob);
 	
-	const a = document.createElement('a');
+	const a = window.document.createElement('a');
 	a.href = url;
 	a.download = fileName;
 	a.click();
@@ -70,7 +70,7 @@ async function backup() {
 }
 
 async function restore() {
-	const input = document.createElement('input');
+	const input = window.document.createElement('input');
 	input.type = 'file';
 	input.accept = '.css,text/css';
 	
