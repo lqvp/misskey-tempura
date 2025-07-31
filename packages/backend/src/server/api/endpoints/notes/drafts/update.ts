@@ -171,7 +171,7 @@ export const paramDef = {
 	type: 'object',
 	properties: {
 		draftId: { type: 'string', nullable: false, format: 'misskey:id' },
-		visibility: { type: 'string', enum: ['public', 'home', 'followers', 'specified'], default: 'public' },
+		visibility: { type: 'string', enum: ['public', 'home', 'followers', 'specified', 'public_non_ltl'], default: 'public' },
 		visibleUserIds: { type: 'array', uniqueItems: true, items: {
 			type: 'string', format: 'misskey:id',
 		} },
