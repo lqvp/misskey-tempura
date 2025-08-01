@@ -88,8 +88,7 @@ export function computeWorkerArguments(config: Partial<Config>, envs: Partial<ty
 			});
 		}
 	} else if (workerSettings.length > clusterCount) {
-		// 何を削っていいかわからないのでWorkerの設定が多いときはエラーにする
-		throw new Error('Too many worker settings');
+throw new Error(`Too many worker settings: configured for ${workerSettings.length} instances, but clusterLimit is ${clusterCount}`);
 	}
 
 	return workerSettings.map((it, idx) => ({
