@@ -370,21 +370,21 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 					if (!user.lastActiveDate) return true;
 					return user.lastActiveDate.valueOf() < (Date.now() - (value.sec * 1000));
 				}
-				// ユーザー名が正規表現にマッチ
+				// ユーザー名に文字列が含まれているか（大文字小文字を区別しない）
 				case 'usernameContains': {
 					return user.username.toLowerCase().includes(value.value.toLowerCase());
 				}
-				// 表示名が正規表現にマッチ
+				// 表示名に文字列が含まれているか（大文字小文字を区別しない）
 				case 'nameContains': {
 					if (user.name == null) return false;
 					return user.name.toLowerCase().includes(value.value.toLowerCase());
 				}
-				// bioが正規表現にマッチ
+				// bioに文字列が含まれているか（大文字小文字を区別しない）
 				case 'bioContains': {
 					if (userProfile?.description == null) return false;
 					return userProfile.description.toLowerCase().includes(value.value.toLowerCase());
 				}
-				// 場所が正規表現にマッチ
+				// 場所に文字列が含まれているか（大文字小文字を区別しない）
 				case 'locationContains': {
 					if (userProfile?.location == null) return false;
 					return userProfile.location.toLowerCase().includes(value.value.toLowerCase());

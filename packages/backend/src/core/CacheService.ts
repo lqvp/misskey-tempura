@@ -191,6 +191,18 @@ export class CacheService implements OnApplicationShutdown {
 	public async getManyUserProfiles(userIds: MiUser['id'][]): Promise<(MiUserProfile | null)[]> {
 		if (userIds.length === 0) return [];
 
+		// Large amounts of IDs can cause performance issues, so we'll batch them.
+		const BATCH_SIZE = 1000;
+		if (userIds.length > BATCH_SIZE) {
+			const results: (MiUserProfile | null)[] = [];
+			for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
+				const batch = userIds.slice(i, i + BATCH_SIZE);
+				const batchResults = await this.getManyUserProfiles(batch);
+				results.push(...batchResults);
+			}
+			return results;
+		}
+
 		const results: (MiUserProfile | null)[] = new Array(userIds.length);
 		const cacheMissUserIds: MiUser['id'][] = [];
 		const cacheMissIndices: number[] = [];
