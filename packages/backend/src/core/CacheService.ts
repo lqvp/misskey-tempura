@@ -207,16 +207,25 @@ export class CacheService implements OnApplicationShutdown {
 		});
 
 		if (cacheMissUserIds.length > 0) {
-			const profilesFromDb = await this.userProfilesRepository.findBy({ userId: In(cacheMissUserIds) });
-			const profileMap = new Map(profilesFromDb.map(p => [p.userId, p]));
+			try {
+				const profilesFromDb = await this.userProfilesRepository.findBy({ userId: In(cacheMissUserIds) });
+				const profileMap = new Map(profilesFromDb.map(p => [p.userId, p]));
 
-			cacheMissUserIds.forEach((userId, i) => {
-				const profile = profileMap.get(userId) ?? null;
-				results[cacheMissIndices[i]] = profile;
-				if (profile) {
-					this.userProfileCache.set(userId, profile);
-				}
-			});
+				cacheMissUserIds.forEach((userId, i) => {
+					const profile = profileMap.get(userId) ?? null;
+					results[cacheMissIndices[i]] = profile;
+					if (profile) {
+						this.userProfileCache.set(userId, profile);
+					}
+				});
+			} catch (error) {
+				// エラーログを記録し、キャッシュミスのユーザーはnullとして扱う
+				console.error('Failed to fetch user profiles from database:', error);
+				// キャッシュミスのインデックスにnullを設定
+				cacheMissIndices.forEach(index => {
+					results[index] = null;
+				});
+			}
 		}
 
 		return results;
