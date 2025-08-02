@@ -8214,6 +8214,22 @@ export interface Locale extends ILocale {
              */
             "activedLessThan": string;
             /**
+             * ユーザー名が～にマッチ(regex)
+             */
+            "usernameContains": string;
+            /**
+             * 名前が～にマッチ(regex)
+             */
+            "nameContains": string;
+            /**
+             * Bioが～にマッチ(regex)
+             */
+            "bioContains": string;
+            /**
+             * 場所が～にマッチ(regex)
+             */
+            "locationContains": string;
+            /**
              * ～かつ～
              */
             "and": string;

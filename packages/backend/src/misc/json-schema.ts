@@ -47,6 +47,7 @@ import { packedFlashSchema } from '@/models/json-schema/flash.js';
 import { packedAnnouncementSchema } from '@/models/json-schema/announcement.js';
 import { packedSigninSchema } from '@/models/json-schema/signin.js';
 import {
+	packedRoleCondFormulaValueContainsSchema,
 	packedRoleCondFormulaFollowersOrFollowingOrNotesSchema,
 	packedRoleCondFormulaLogicsSchema,
 	packedRoleCondFormulaValueAssignedRoleSchema,
@@ -127,6 +128,7 @@ export const refs = {
 	RoleCondFormulaValueAssignedRole: packedRoleCondFormulaValueAssignedRoleSchema,
 	RoleCondFormulaValueCreated: packedRoleCondFormulaValueCreatedSchema,
 	RoleCondFormulaFollowersOrFollowingOrNotes: packedRoleCondFormulaFollowersOrFollowingOrNotesSchema,
+	RoleCondFormulaValueContains: packedRoleCondFormulaValueContainsSchema,
 	RoleCondFormulaValue: packedRoleCondFormulaValueSchema,
 	RoleLite: packedRoleLiteSchema,
 	Role: packedRoleSchema,

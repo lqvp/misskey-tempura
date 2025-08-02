@@ -49,6 +49,7 @@ export type RoleCondFormulaValueUserSettingBooleanSchema = components['schemas']
 export type RoleCondFormulaValueAssignedRole = components['schemas']['RoleCondFormulaValueAssignedRole'];
 export type RoleCondFormulaValueCreated = components['schemas']['RoleCondFormulaValueCreated'];
 export type RoleCondFormulaFollowersOrFollowingOrNotes = components['schemas']['RoleCondFormulaFollowersOrFollowingOrNotes'];
+export type RoleCondFormulaValueContains = components['schemas']['RoleCondFormulaValueContains'];
 export type RoleCondFormulaValue = components['schemas']['RoleCondFormulaValue'];
 export type RoleLite = components['schemas']['RoleLite'];
 export type Role = components['schemas']['Role'];
