@@ -8214,19 +8214,19 @@ export interface Locale extends ILocale {
              */
             "activedLessThan": string;
             /**
-             * ユーザー名が～にマッチ(regex)
+             * ユーザー名が正規表現～に一致
              */
             "usernameContains": string;
             /**
-             * 名前が～にマッチ(regex)
+             * 名前が正規表現～に一致
              */
             "nameContains": string;
             /**
-             * Bioが～にマッチ(regex)
+             * Bio が正規表現～に一致
              */
             "bioContains": string;
             /**
-             * 場所が～にマッチ(regex)
+             * 場所が正規表現～に一致
              */
             "locationContains": string;
             /**

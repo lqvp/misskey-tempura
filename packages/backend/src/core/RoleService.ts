@@ -372,22 +372,22 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 				}
 				// ユーザー名が正規表現にマッチ
 				case 'usernameContains': {
-					return new RegExp(value.value, 'i').test(user.username);
+					return user.username.toLowerCase().includes(value.value.toLowerCase());
 				}
 				// 表示名が正規表現にマッチ
 				case 'nameContains': {
 					if (user.name == null) return false;
-					return new RegExp(value.value, 'i').test(user.name);
+					return user.name.toLowerCase().includes(value.value.toLowerCase());
 				}
 				// bioが正規表現にマッチ
 				case 'bioContains': {
 					if (userProfile?.description == null) return false;
-					return new RegExp(value.value, 'i').test(userProfile.description);
+					return userProfile.description.toLowerCase().includes(value.value.toLowerCase());
 				}
 				// 場所が正規表現にマッチ
 				case 'locationContains': {
 					if (userProfile?.location == null) return false;
-					return new RegExp(value.value, 'i').test(userProfile.location);
+					return userProfile.location.toLowerCase().includes(value.value.toLowerCase());
 				}
 				default:
 					return false;
@@ -418,8 +418,9 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 		const roles = await this.rolesCache.fetch(() => this.rolesRepository.findBy({}));
 		const assigns = await this.getUserAssigns(userId);
 		const assignedRoles = roles.filter(r => assigns.map(x => x.roleId).includes(r.id));
-		const user = roles.some(r => r.target === 'conditional') ? await this.cacheService.findUserById(userId) : null;
-		const userProfile = roles.some(r => r.target === 'conditional') ? await this.cacheService.userProfileCache.get(userId) ?? null : null;
+		const hasConditionalRoles = roles.some(r => r.target === 'conditional');
+		const user = hasConditionalRoles ? await this.cacheService.findUserById(userId) : null;
+		const userProfile = hasConditionalRoles ? await this.cacheService.userProfileCache.get(userId) ?? null : null;
 		const matchedCondRoles = roles.filter(r => r.target === 'conditional' && this.evalCond(user!, userProfile, assignedRoles, r.condFormula));
 		return [...assignedRoles, ...matchedCondRoles];
 	}
@@ -450,7 +451,9 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 				// 現状はユーザー情報から判定しているため、ロール側からユーザーを取得するのが難しい
 				// せめてローカルユーザーのみを対象にするようにした
 				const users = (await this.usersRepository.findBy({ host: IsNull() }));
-				const usersWithProfile = await Promise.all(users.map(async u => ({ user: u, profile: await this.cacheService.userProfileCache.get(u.id) ?? null })));
+				const userIds = users.map(u => u.id);
+				const profiles = await this.cacheService.getManyUserProfiles(userIds);
+				const usersWithProfile = users.map((user, i) => ({ user, profile: profiles[i] }));
 				return usersWithProfile.filter(x => this.evalCond(x.user, x.profile, [role], role.condFormula)).map(x => x.user);
 			}));
 		})() : [] as MiUser[];

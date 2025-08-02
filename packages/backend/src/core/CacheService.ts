@@ -5,6 +5,7 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import * as Redis from 'ioredis';
+import { In } from 'typeorm';
 import type { BlockingsRepository, FollowingsRepository, MutingsRepository, RenoteMutingsRepository, QuoteMutingsRepository, MiUserProfile, UserProfilesRepository, UsersRepository, MiFollowing } from '@/models/_.js';
 import { MemoryKVCache, RedisKVCache } from '@/misc/cache.js';
 import type { MiLocalUser, MiUser } from '@/models/User.js';
@@ -184,6 +185,41 @@ export class CacheService implements OnApplicationShutdown {
 					break;
 			}
 		}
+	}
+
+	@bindThis
+	public async getManyUserProfiles(userIds: MiUser['id'][]): Promise<(MiUserProfile | null)[]> {
+		if (userIds.length === 0) return [];
+
+		const results: (MiUserProfile | null)[] = new Array(userIds.length);
+		const cacheMissUserIds: MiUser['id'][] = [];
+		const cacheMissIndices: number[] = [];
+
+		const cachedProfiles = await Promise.all(userIds.map(id => this.userProfileCache.get(id)));
+
+		cachedProfiles.forEach((profile, i) => {
+			if (profile) {
+				results[i] = profile;
+			} else {
+				cacheMissUserIds.push(userIds[i]);
+				cacheMissIndices.push(i);
+			}
+		});
+
+		if (cacheMissUserIds.length > 0) {
+			const profilesFromDb = await this.userProfilesRepository.findBy({ userId: In(cacheMissUserIds) });
+			const profileMap = new Map(profilesFromDb.map(p => [p.userId, p]));
+
+			cacheMissUserIds.forEach((userId, i) => {
+				const profile = profileMap.get(userId) ?? null;
+				results[cacheMissIndices[i]] = profile;
+				if (profile) {
+					this.userProfileCache.set(userId, profile);
+				}
+			});
+		}
+
+		return results;
 	}
 
 	@bindThis
