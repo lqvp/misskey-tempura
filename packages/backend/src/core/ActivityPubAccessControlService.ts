@@ -59,8 +59,13 @@ export class ActivityPubAccessControlService {
 
 		// まずインスタンスの状態をチェック
 		const restrictions = await this.checkInstanceRestrictions(remoteHost);
-		if (restrictions.isBlocked || restrictions.isQuarantined || restrictions.isSilenced) {
+		if (restrictions.isBlocked || restrictions.isSuspended) {
 			this.logger.info(`Access to note ${note.id} denied for ${remoteHost}: ${restrictions.reason}`);
+			return false;
+		}
+
+		if (restrictions.isQuarantined && !['public', 'home'].includes(note.visibility)) {
+			this.logger.info(`Access to note ${note.id} denied for ${remoteHost}: quarantined and not public`);
 			return false;
 		}
 
@@ -129,25 +134,24 @@ export class ActivityPubAccessControlService {
 	@bindThis
 	private async checkInstanceRestrictions(host: string): Promise<{
 		isBlocked: boolean;
-		isSilenced: boolean;
+		isSuspended: boolean;
 		isQuarantined: boolean;
 		reason?: string;
 	}> {
 		const isBlocked = this.utilityService.isBlockedHost(this.meta.blockedHosts, host);
 		if (isBlocked) {
-			return { isBlocked: true, isSilenced: false, isQuarantined: false, reason: 'blocked' };
+			return { isBlocked: true, isSuspended: false, isQuarantined: false, reason: 'blocked' };
 		}
 
-		const isSilenced = this.utilityService.isSilencedHost(this.meta.silencedHosts, host);
-
 		const instance = await this.instancesRepository.findOneBy({ host });
+		const isSuspended = instance?.suspensionState !== 'none';
 		const isQuarantined = instance?.quarantineLimited ?? false;
 
 		return {
 			isBlocked: false,
-			isSilenced,
+			isSuspended,
 			isQuarantined,
-			reason: isQuarantined ? 'quarantined' : isSilenced ? 'silenced' : undefined,
+			reason: isSuspended ? 'suspended' : isQuarantined ? 'quarantined' : undefined,
 		};
 	}
 
@@ -177,10 +181,9 @@ export class ActivityPubAccessControlService {
 		const restrictions = await this.checkInstanceRestrictions(remoteHost);
 		this.logger.debug(`Instance restrictions: ${JSON.stringify(restrictions)}`);
 
-		// isBlocked と isQuarantined は常に拒否。
-		// isSilenced は allowLimitedHosts が true の場合のみ許可。
-		const shouldDeny = restrictions.isBlocked || restrictions.isQuarantined || (!allowLimitedHosts && restrictions.isSilenced);
-		this.logger.debug(`Should deny access: ${shouldDeny} (allowLimitedHosts: ${allowLimitedHosts})`);
+		// isBlocked, isSuspended, isQuarantined は常に拒否。
+		const shouldDeny = restrictions.isBlocked || restrictions.isSuspended || restrictions.isQuarantined;
+		this.logger.debug(`Should deny access: ${shouldDeny}`);
 
 		if (shouldDeny) {
 			this.logger.info(`ActivityPub access denied from ${remoteHost}: ${restrictions.reason}`, {
