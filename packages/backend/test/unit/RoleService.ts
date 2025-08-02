@@ -19,8 +19,10 @@ import {
 	MiRole,
 	MiRoleAssignment,
 	MiUser,
+	MiUserProfile,
 	RoleAssignmentsRepository,
 	RolesRepository,
+	UserProfilesRepository,
 	UsersRepository,
 } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
@@ -42,11 +44,12 @@ describe('RoleService', () => {
 	let usersRepository: UsersRepository;
 	let rolesRepository: RolesRepository;
 	let roleAssignmentsRepository: RoleAssignmentsRepository;
+	let userProfilesRepository: UserProfilesRepository;
 	let meta: jest.Mocked<MiMeta>;
 	let notificationService: jest.Mocked<NotificationService>;
 	let clock: lolex.InstalledClock;
 
-	async function createUser(data: Partial<MiUser> = {}) {
+	async function createUser(data: Partial<MiUser> = {}, profileData: Partial<MiUserProfile> = {}) {
 		const un = secureRndstr(16);
 		const x = await usersRepository.insert({
 			id: genAidx(Date.now()),
@@ -54,7 +57,12 @@ describe('RoleService', () => {
 			usernameLower: un,
 			...data,
 		});
-		return await usersRepository.findOneByOrFail(x.identifiers[0]);
+		const user = await usersRepository.findOneByOrFail(x.identifiers[0]);
+		await userProfilesRepository.insert({
+			userId: user.id,
+			...profileData,
+		});
+		return user;
 	}
 
 	async function createRoot(data: Partial<MiUser> = {}) {
@@ -148,6 +156,7 @@ describe('RoleService', () => {
 		usersRepository = app.get<UsersRepository>(DI.usersRepository);
 		rolesRepository = app.get<RolesRepository>(DI.rolesRepository);
 		roleAssignmentsRepository = app.get<RoleAssignmentsRepository>(DI.roleAssignmentsRepository);
+		userProfilesRepository = app.get<UserProfilesRepository>(DI.userProfilesRepository);
 
 		meta = app.get<MiMeta>(DI.meta) as jest.Mocked<MiMeta>;
 		notificationService = app.get<NotificationService>(NotificationService) as jest.Mocked<NotificationService>;
@@ -163,6 +172,7 @@ describe('RoleService', () => {
 			usersRepository.createQueryBuilder().delete().execute(),
 			rolesRepository.createQueryBuilder().delete().execute(),
 			roleAssignmentsRepository.createQueryBuilder().delete().execute(),
+			userProfilesRepository.createQueryBuilder().delete().execute(),
 		]);
 
 		await app.close();
@@ -903,6 +913,86 @@ describe('RoleService', () => {
 			const actual3 = await roleService.getUserRoles(user3.id);
 			expect(actual1.some(r => r.id === role.id)).toBe(false);
 			expect(actual2.some(r => r.id === role.id)).toBe(true);
+			expect(actual3.some(r => r.id === role.id)).toBe(true);
+		});
+
+		test('ユーザー名が正規表現にマッチ', async () => {
+			const [user1, user2, user3] = await Promise.all([
+				createUser({ username: 'test_user' }),
+				createUser({ username: 'another_user' }),
+				createUser({ username: 'test_user_2' }),
+			]);
+			const role = await createConditionalRole({
+				id: aidx(),
+				type: 'usernameContains',
+				value: 'test',
+			});
+
+			const actual1 = await roleService.getUserRoles(user1.id);
+			const actual2 = await roleService.getUserRoles(user2.id);
+			const actual3 = await roleService.getUserRoles(user3.id);
+			expect(actual1.some(r => r.id === role.id)).toBe(true);
+			expect(actual2.some(r => r.id === role.id)).toBe(false);
+			expect(actual3.some(r => r.id === role.id)).toBe(true);
+		});
+
+		test('表示名が正規表現にマッチ', async () => {
+			const [user1, user2, user3] = await Promise.all([
+				createUser({ name: 'Misskey User' }),
+				createUser({ name: 'Test Account' }),
+				createUser({ name: 'Misskey Fan' }),
+			]);
+			const role = await createConditionalRole({
+				id: aidx(),
+				type: 'nameContains',
+				value: 'Misskey',
+			});
+
+			const actual1 = await roleService.getUserRoles(user1.id);
+			const actual2 = await roleService.getUserRoles(user2.id);
+			const actual3 = await roleService.getUserRoles(user3.id);
+			expect(actual1.some(r => r.id === role.id)).toBe(true);
+			expect(actual2.some(r => r.id === role.id)).toBe(false);
+			expect(actual3.some(r => r.id === role.id)).toBe(true);
+		});
+
+		test('bioが正規表現にマッチ', async () => {
+			const [user1, user2, user3] = await Promise.all([
+				createUser({}, { description: 'I love Misskey!' }),
+				createUser({}, { description: 'Just a test user.' }),
+				createUser({}, { description: 'Misskey is the best SNS.' }),
+			]);
+			const role = await createConditionalRole({
+				id: aidx(),
+				type: 'bioContains',
+				value: 'Misskey',
+			});
+
+			const actual1 = await roleService.getUserRoles(user1.id);
+			const actual2 = await roleService.getUserRoles(user2.id);
+			const actual3 = await roleService.getUserRoles(user3.id);
+			expect(actual1.some(r => r.id === role.id)).toBe(true);
+			expect(actual2.some(r => r.id === role.id)).toBe(false);
+			expect(actual3.some(r => r.id === role.id)).toBe(true);
+		});
+
+		test('場所が正規表現にマッチ', async () => {
+			const [user1, user2, user3] = await Promise.all([
+				createUser({}, { location: 'Tokyo, Japan' }),
+				createUser({}, { location: 'Osaka' }),
+				createUser({}, { location: 'Kyoto, Japan' }),
+			]);
+			const role = await createConditionalRole({
+				id: aidx(),
+				type: 'locationContains',
+				value: 'Japan',
+			});
+
+			const actual1 = await roleService.getUserRoles(user1.id);
+			const actual2 = await roleService.getUserRoles(user2.id);
+			const actual3 = await roleService.getUserRoles(user3.id);
+			expect(actual1.some(r => r.id === role.id)).toBe(true);
+			expect(actual2.some(r => r.id === role.id)).toBe(false);
 			expect(actual3.some(r => r.id === role.id)).toBe(true);
 		});
 	});

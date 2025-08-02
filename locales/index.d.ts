@@ -8214,6 +8214,22 @@ export interface Locale extends ILocale {
              */
             "activedLessThan": string;
             /**
+             * ユーザー名が正規表現～に一致
+             */
+            "usernameContains": string;
+            /**
+             * 名前が正規表現～に一致
+             */
+            "nameContains": string;
+            /**
+             * Bio が正規表現～に一致
+             */
+            "bioContains": string;
+            /**
+             * 場所が正規表現～に一致
+             */
+            "locationContains": string;
+            /**
              * ～かつ～
              */
             "and": string;

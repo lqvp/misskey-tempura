@@ -11,6 +11,7 @@ import type {
 	MiMeta,
 	MiRole,
 	MiRoleAssignment,
+	MiUserProfile,
 	RoleAssignmentsRepository,
 	RolesRepository,
 	UsersRepository,
@@ -282,20 +283,20 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 	}
 
 	@bindThis
-	private evalCond(user: MiUser, roles: MiRole[], value: RoleCondFormulaValue): boolean {
+	private evalCond(user: MiUser, userProfile: MiUserProfile | null, roles: MiRole[], value: RoleCondFormulaValue): boolean {
 		try {
 			switch (value.type) {
 				// ～かつ～
 				case 'and': {
-					return value.values.every(v => this.evalCond(user, roles, v));
+					return value.values.every(v => this.evalCond(user, userProfile, roles, v));
 				}
 				// ～または～
 				case 'or': {
-					return value.values.some(v => this.evalCond(user, roles, v));
+					return value.values.some(v => this.evalCond(user, userProfile, roles, v));
 				}
 				// ～ではない
 				case 'not': {
-					return !this.evalCond(user, roles, value.value);
+					return !this.evalCond(user, userProfile, roles, value.value);
 				}
 				// マニュアルロールがアサインされている
 				case 'roleAssignedTo': {
@@ -369,6 +370,25 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 					if (!user.lastActiveDate) return true;
 					return user.lastActiveDate.valueOf() < (Date.now() - (value.sec * 1000));
 				}
+				// ユーザー名に文字列が含まれているか（大文字小文字を区別しない）
+				case 'usernameContains': {
+					return user.username.toLowerCase().includes(value.value.toLowerCase());
+				}
+				// 表示名に文字列が含まれているか（大文字小文字を区別しない）
+				case 'nameContains': {
+					if (user.name == null) return false;
+					return user.name.toLowerCase().includes(value.value.toLowerCase());
+				}
+				// bioに文字列が含まれているか（大文字小文字を区別しない）
+				case 'bioContains': {
+					if (userProfile?.description == null) return false;
+					return userProfile.description.toLowerCase().includes(value.value.toLowerCase());
+				}
+				// 場所に文字列が含まれているか（大文字小文字を区別しない）
+				case 'locationContains': {
+					if (userProfile?.location == null) return false;
+					return userProfile.location.toLowerCase().includes(value.value.toLowerCase());
+				}
 				default:
 					return false;
 			}
@@ -398,8 +418,10 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 		const roles = await this.rolesCache.fetch(() => this.rolesRepository.findBy({}));
 		const assigns = await this.getUserAssigns(userId);
 		const assignedRoles = roles.filter(r => assigns.map(x => x.roleId).includes(r.id));
-		const user = roles.some(r => r.target === 'conditional') ? await this.cacheService.findUserById(userId) : null;
-		const matchedCondRoles = roles.filter(r => r.target === 'conditional' && this.evalCond(user!, assignedRoles, r.condFormula));
+		const hasConditionalRoles = roles.some(r => r.target === 'conditional');
+		const user = hasConditionalRoles ? await this.cacheService.findUserById(userId) : null;
+		const userProfile = hasConditionalRoles ? await this.cacheService.userProfileCache.get(userId) ?? null : null;
+		const matchedCondRoles = roles.filter(r => r.target === 'conditional' && this.evalCond(user!, userProfile, assignedRoles, r.condFormula));
 		return [...assignedRoles, ...matchedCondRoles];
 	}
 
@@ -428,8 +450,11 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 				// TODO: 全件取得は重いので、条件に合致するユーザーを取得するようにする
 				// 現状はユーザー情報から判定しているため、ロール側からユーザーを取得するのが難しい
 				// せめてローカルユーザーのみを対象にするようにした
-				const users = (await this.usersRepository.findBy({ host: IsNull() })).filter((u) => this.evalCond(u, [role], role.condFormula));
-				return users;
+				const users = (await this.usersRepository.findBy({ host: IsNull() }));
+				const userIds = users.map(u => u.id);
+				const profiles = await this.cacheService.getManyUserProfiles(userIds);
+				const usersWithProfile = users.map((user, i) => ({ user, profile: profiles[i] }));
+				return usersWithProfile.filter(x => this.evalCond(x.user, x.profile, [role], role.condFormula)).map(x => x.user);
 			}));
 		})() : [] as MiUser[];
 		return [...assignedUsers, ...matchedCondUsers];
@@ -449,8 +474,9 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 		const assignedBadgeRoles = assignedRoles.filter(r => r.asBadge);
 		const badgeCondRoles = roles.filter(r => r.asBadge && (r.target === 'conditional'));
 		if (badgeCondRoles.length > 0) {
-			const user = roles.some(r => r.target === 'conditional') ? await this.cacheService.findUserById(userId) : null;
-			const matchedBadgeCondRoles = badgeCondRoles.filter(r => this.evalCond(user!, assignedRoles, r.condFormula));
+			const user = await this.cacheService.findUserById(userId);
+			const userProfile = await this.cacheService.userProfileCache.get(userId) ?? null;
+			const matchedBadgeCondRoles = badgeCondRoles.filter(r => this.evalCond(user, userProfile, assignedRoles, r.condFormula));
 			return [...assignedBadgeRoles, ...matchedBadgeCondRoles];
 		} else {
 			return assignedBadgeRoles;

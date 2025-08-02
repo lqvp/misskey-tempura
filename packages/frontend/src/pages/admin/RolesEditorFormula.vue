@@ -25,6 +25,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<option value="notesMoreThanOrEq">{{ i18n.ts._role._condition.notesMoreThanOrEq }}</option>
 			<option value="activedMoreThan">{{ i18n.ts._role._condition.activedMoreThan }}</option>
 			<option value="activedLessThan">{{ i18n.ts._role._condition.activedLessThan }}</option>
+			<option value="usernameContains">{{ i18n.ts._role._condition.usernameContains }}</option>
+			<option value="nameContains">{{ i18n.ts._role._condition.nameContains }}</option>
+			<option value="bioContains">{{ i18n.ts._role._condition.bioContains }}</option>
+			<option value="locationContains">{{ i18n.ts._role._condition.locationContains }}</option>
 			<option value="and">{{ i18n.ts._role._condition.and }}</option>
 			<option value="or">{{ i18n.ts._role._condition.or }}</option>
 			<option value="not">{{ i18n.ts._role._condition.not }}</option>
@@ -58,6 +62,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</MkInput>
 
 	<MkInput v-else-if="['followersLessThanOrEq', 'followersMoreThanOrEq', 'followingLessThanOrEq', 'followingMoreThanOrEq', 'notesLessThanOrEq', 'notesMoreThanOrEq'].includes(type)" v-model="v.value" type="number">
+	</MkInput>
+
+	<MkInput v-else-if="['usernameContains', 'nameContains', 'bioContains', 'locationContains'].includes(type)" v-model="v.value" type="text">
 	</MkInput>
 
 	<MkSelect v-else-if="type === 'roleAssignedTo'" v-model="v.roleId">
@@ -116,6 +123,10 @@ const type = computed({
 		if (t === 'followingMoreThanOrEq') v.value.value = 10;
 		if (t === 'notesLessThanOrEq') v.value.value = 10;
 		if (t === 'notesMoreThanOrEq') v.value.value = 10;
+		if (t === 'usernameContains') v.value.value = '';
+		if (t === 'nameContains') v.value.value = '';
+		if (t === 'bioContains') v.value.value = '';
+		if (t === 'locationContains') v.value.value = '';
 		v.value.type = t;
 	},
 });

@@ -171,6 +171,38 @@ type CondFormulaValueActivedLessThan = {
 	sec: number;
 };
 
+/**
+ * ユーザー名に指定の文字列が含まれる場合のみ成立とする
+ */
+type CondFormulaValueUsernameContains = {
+	type: 'usernameContains';
+	value: string;
+};
+
+/**
+ * 表示名に指定の文字列が含まれる場合のみ成立とする
+ */
+type CondFormulaValueNameContains = {
+	type: 'nameContains';
+	value: string;
+};
+
+/**
+ * プロフィールに指定の文字列が含まれる場合のみ成立とする
+ */
+type CondFormulaValueBioContains = {
+	type: 'bioContains';
+	value: string;
+};
+
+/**
+ * 場所に指定の文字列が含まれる場合のみ成立とする
+ */
+type CondFormulaValueLocationContains = {
+	type: 'locationContains';
+	value: string;
+};
+
 export type RoleCondFormulaValue = { id: string } & (
 	CondFormulaValueAnd |
 	CondFormulaValueOr |
@@ -192,7 +224,11 @@ export type RoleCondFormulaValue = { id: string } & (
 	CondFormulaValueNotesLessThanOrEq |
 	CondFormulaValueNotesMoreThanOrEq |
 	CondFormulaValueActivedMoreThan |
-	CondFormulaValueActivedLessThan
+	CondFormulaValueActivedLessThan |
+	CondFormulaValueUsernameContains |
+	CondFormulaValueNameContains |
+	CondFormulaValueBioContains |
+	CondFormulaValueLocationContains
 );
 
 export type RolePermissionGroupValue = 'Admin' | 'MainModerator' | 'Normal' | 'Community';
