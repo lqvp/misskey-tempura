@@ -238,6 +238,10 @@ export const ROUTE_DEF = [{
 	component: page(() => import('@/pages/about-misskey-tempura.vue')),
 	hash: 'initialTab',
 }, {
+	path: '/tempura-changelog',
+	component: page(() => import('@/pages/tempura-changelog.vue')),
+	hash: 'initialTab',
+}, {
 	path: '/contact',
 	component: page(() => import('@/pages/contact.vue')),
 }, {

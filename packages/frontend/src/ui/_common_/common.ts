@@ -186,6 +186,12 @@ export function openInstanceMenu(ev: MouseEvent) {
 		to: '/about-misskey-tempura',
 	});
 
+	menuItems.push({
+		type: 'link',
+		text: i18n.ts.tempuraChangelog,
+		to: '/tempura-changelog',
+	});
+
 	os.popupMenu(menuItems, ev.currentTarget ?? ev.target, {
 		align: 'left',
 	});
