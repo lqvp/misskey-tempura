@@ -6,19 +6,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <PageWithHeader>
 	<div class="_spacer" style="--MI_SPACER-w: 800px;">
-		<div class="changelog-container _gaps_s">
+		<div v-if="error" class="$style.errorMessage">
+			{{ error }}
+		</div>
+		<div v-else :class="$style.changelogContainer" class="_gaps_s">
 			<MkFolder
 				v-for="changelog in changelogs"
 				:key="changelog.version"
-				:defaultOpen="changelog.isDefault"
+				:defaultOpen="version.split('tempura-')[1]?.startsWith(changelog.version)"
 			>
-				<template #label><span class="version-label">{{ changelog.version }}</span></template>
+				<template #label>
+					<MkSparkle v-if="version.split('tempura-')[1]?.startsWith(changelog.version)">
+						<span :class="$style.versionLabel">{{ changelog.version }}</span>
+					</MkSparkle>
+					<span v-else :class="$style.versionLabel">{{ changelog.version }}</span>
+				</template>
 
-				<div class="content">
-					<div v-for="(items, category) in changelog.context" :key="category" class="category-section">
-						<h4 class="category-title">{{ category }}</h4>
-						<ul class="change-list">
-							<li v-for="(item, i) in items" :key="i" class="change-item">
+				<div :class="$style.content">
+					<div v-for="(items, category) in changelog.context" :key="category" :class="$style.categorySection">
+						<h4 :class="$style.categoryTitle">{{ category }}</h4>
+						<ul :class="$style.changeList">
+							<li v-for="(item, i) in items" :key="i" :class="$style.changeItem">
 								<Mfm :text="item" :isNote="false"/>
 							</li>
 						</ul>
@@ -31,56 +39,49 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
+import { version } from '@@/js/config.js';
 import { computed, ref, onMounted } from 'vue';
 import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';
 import MkFolder from '@/components/MkFolder.vue';
+import MkSparkle from '@/components/MkSparkle.vue';
 
-const headerActions = computed(() => []);
-const headerTabs = computed(() => []);
+interface Changelog {
+	version: string;
+	context: Record<string, string[]>;
+}
 
-definePage(() => ({
-	title: i18n.ts._misskeyTempura.diff,
-	icon: 'ti ti-pencil-star',
-}));
-
-const changelogs = ref<any[]>([]);
+const changelogs = ref<Changelog[]>([]);
+const error = ref<string | null>(null);
 
 const parseMarkdown = (markdown: string) => {
 	const sections = markdown.split('---');
 	const parsedChangelogs = sections
 		.map(section => section.trim())
 		.filter(section => section.length > 0 && (section.startsWith('# ') || section.startsWith('## ')))
-		.map((section, index) => {
+		.map((section) => {
 			const lines = section.split('\n').map(line => line.trim());
-			const versionLine = lines.shift() || '';
-			const version = versionLine.replace(/^#+\s*/, '');
+			const versionLine = lines.shift() ?? '';
+			const v = versionLine.replace(/^#+\s*/, '');
 
-			lines.shift(); // Base or empty line
+			lines.shift();
 
-			const context: { [key: string]: string[] } = {};
+			const context: { [key: string]: string[] } = { 'General': [] };
 			let currentCategory = 'General';
 
 			for (const line of lines) {
 				if (line.startsWith('### ')) {
 					currentCategory = line.replace(/^###\s*/, '');
-					if (!context[currentCategory]) {
-						context[currentCategory] = [];
-					}
+					context[currentCategory] = [];
 				} else if (line.startsWith('* ') || /^[a-zA-Z]+:/.test(line)) {
-					if (!context[currentCategory]) {
-						context[currentCategory] = [];
-					}
 					context[currentCategory].push(line.replace(/^\*\s*/, ''));
 				}
 			}
 
-			// カテゴリが General しかなく、中身も空の場合は無視する
-			if (Object.keys(context).length === 1 && context['General']?.length === 0) {
+			if (Object.keys(context).length === 1 && context['General'].length === 0) {
 				return null;
 			}
 
-			// contextが空のカテゴリを削除
 			for (const key in context) {
 				if (context[key].length === 0) {
 					delete context[key];
@@ -88,14 +89,13 @@ const parseMarkdown = (markdown: string) => {
 			}
 
 			return {
-				isDefault: index === 0,
-				version: version,
+				version: v,
 				context: context,
 			};
 		})
 		.filter(Boolean);
 
-	changelogs.value = parsedChangelogs as any[];
+	changelogs.value = parsedChangelogs as Changelog[];
 };
 
 onMounted(async () => {
@@ -104,49 +104,68 @@ onMounted(async () => {
 		if (res.ok) {
 			const markdown = await res.text();
 			parseMarkdown(markdown);
+		} else {
+			console.error(`Failed to fetch changelog: ${res.status}`);
+			error.value = 'チェンジログの取得に失敗しました';
 		}
-	} catch (e) {
-		console.error(e);
+	} catch (err) {
+		console.error(err);
+		error.value = 'チェンジログの取得に失敗しました';
 	}
 });
+
+const headerActions = computed(() => []);
+const headerTabs = computed(() => []);
+
+definePage(() => ({
+	title: i18n.ts._misskeyTempura.diff,
+	icon: 'ti ti-pencil-star',
+}));
 </script>
 
 <style lang="scss" module>
-.changelog-container {
+.changelogContainer {
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
 }
 
-.version-label {
+.errorMessage {
+	color: var(--MI_THEME-error);
+	background-color: var(--MI_THEME-infoWarnBg);
+	border: 1px solid var(--MI_THEME-error);
+	padding: 12px;
+	border-radius: 8px;
+	text-align: center;
+}
+
+.versionLabel {
 	font-weight: bold;
-	font-size: 1.2em;
 }
 
 .content {
 	padding: 12px 16px;
-	background-color: var(--bg);
-	border-top: 1px solid var(--divider);
+	border-top: 1px solid var(--MI_THEME-divider);
 
-	> .category-section {
+	> .categorySection {
 		&:not(:last-child) {
 			margin-bottom: 1em;
 		}
 	}
 }
 
-.category-title {
+.categoryTitle {
 	font-size: 1.1em;
 	font-weight: bold;
 	margin-bottom: 0.5em;
-	color: var(--accent);
+	color: var(--MI_THEME-accent);
 }
 
-.change-list {
+.changeList {
 	list-style-type: disc;
 	padding-left: 20px;
 
-	.change-item {
+	.changeItem {
 		margin-bottom: 0.5em;
 		line-height: 1.5;
 	}
