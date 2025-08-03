@@ -16,6 +16,9 @@ export class MiAvatarDecoration {
 	})
 	public updatedAt: Date | null;
 
+	@Column('character varying', { nullable: true, length: 256 })
+	public host: string | null;
+
 	@Column('varchar', {
 		length: 1024,
 	})

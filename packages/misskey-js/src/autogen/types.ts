@@ -25274,6 +25274,7 @@ export interface operations {
                         name: string;
                         description: string;
                         url: string;
+                        host?: string | null;
                         roleIdsThatCanBeUsedThisDecoration: string[];
                     }[];
                 };

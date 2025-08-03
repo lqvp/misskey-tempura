@@ -65,20 +65,20 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				const matchesQuery = decoration.name.toLowerCase().includes(query) ||
 					(decoration.description && decoration.description.toLowerCase().includes(query));
 
-				const isRemote = decoration.name.startsWith('import_');
+				const isRemote = decoration.host != null;
 				const isLocal = !isRemote;
 
 				return matchesQuery &&
 					(ps.origin === 'combined' ||
 					(ps.origin === 'local' && isLocal) ||
 					(ps.origin === 'remote' && isRemote && (!me || (policies && policies.canUseRemoteIconDecorations)))) &&
-					(!ps.host || !isRemote || decoration.name.split('_')[1] === ps.host);
+					(!ps.host || !isRemote || decoration.host === ps.host);
 			});
 
 			// ソート: ローカルデコレーションを優先し、その後は名前順
 			filtered.sort((a, b) => {
-				const aIsRemote = a.name.startsWith('import_');
-				const bIsRemote = b.name.startsWith('import_');
+				const aIsRemote = a.host != null;
+				const bIsRemote = b.host != null;
 				if (aIsRemote !== bIsRemote) return aIsRemote ? 1 : -1;
 				return a.name.localeCompare(b.name);
 			});
