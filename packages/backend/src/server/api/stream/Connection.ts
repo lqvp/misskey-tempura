@@ -40,6 +40,7 @@ export default class Connection {
 	public userIdsWhoBlockingMe: Set<string> = new Set();
 	public userIdsWhoMeMutingRenotes: Set<string> = new Set();
 	public userIdsWhoMeMutingQuotes: Set<string> = new Set();
+	public userIdsWhoMeMutingAvatarDecorations: Set<string> = new Set();
 	public userMutedInstances: Set<string> = new Set();
 	private fetchIntervalId: NodeJS.Timeout | null = null;
 
@@ -59,7 +60,7 @@ export default class Connection {
 	@bindThis
 	public async fetch() {
 		if (this.user == null) return;
-		const [userProfile, following, followingChannels, userIdsWhoMeMuting, userIdsWhoBlockingMe, userIdsWhoMeMutingRenotes, userIdsWhoMeMutingQuotes] = await Promise.all([
+		const [userProfile, following, followingChannels, userIdsWhoMeMuting, userIdsWhoBlockingMe, userIdsWhoMeMutingRenotes, userIdsWhoMeMutingQuotes, userIdsWhoMeMutingAvatarDecorations] = await Promise.all([
 			this.cacheService.userProfileCache.fetch(this.user.id),
 			this.cacheService.userFollowingsCache.fetch(this.user.id),
 			this.channelFollowingService.userFollowingChannelsCache.fetch(this.user.id),
@@ -67,6 +68,7 @@ export default class Connection {
 			this.cacheService.userBlockedCache.fetch(this.user.id),
 			this.cacheService.renoteMutingsCache.fetch(this.user.id),
 			this.cacheService.quoteMutingsCache.fetch(this.user.id),
+			this.cacheService.avatarDecorationMutingsCache.fetch(this.user.id),
 		]);
 		this.userProfile = userProfile;
 		this.following = following;
@@ -75,6 +77,7 @@ export default class Connection {
 		this.userIdsWhoBlockingMe = userIdsWhoBlockingMe;
 		this.userIdsWhoMeMutingRenotes = userIdsWhoMeMutingRenotes;
 		this.userIdsWhoMeMutingQuotes = userIdsWhoMeMutingQuotes;
+		this.userIdsWhoMeMutingAvatarDecorations = userIdsWhoMeMutingAvatarDecorations;
 		this.userMutedInstances = new Set(userProfile.mutedInstances);
 	}
 

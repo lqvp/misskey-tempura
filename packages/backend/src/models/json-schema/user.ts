@@ -478,6 +478,10 @@ export const packedUserDetailedNotMeOnlySchema = {
 			type: 'boolean',
 			nullable: false, optional: true,
 		},
+		isAvatarDecorationMuted: {
+			type: 'boolean',
+			nullable: false, optional: true,
+		},
 		notify: {
 			type: 'string',
 			nullable: false, optional: true,

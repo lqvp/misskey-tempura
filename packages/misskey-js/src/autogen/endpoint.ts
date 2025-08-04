@@ -180,6 +180,10 @@ import type {
 	AuthSessionShowResponse,
 	AuthSessionUserkeyRequest,
 	AuthSessionUserkeyResponse,
+	AvatarDecorationMutingCreateRequest,
+	AvatarDecorationMutingDeleteRequest,
+	AvatarDecorationMutingListRequest,
+	AvatarDecorationMutingListResponse,
 	BlockingCreateRequest,
 	BlockingCreateResponse,
 	BlockingDeleteRequest,
@@ -833,6 +837,9 @@ export type Endpoints = {
 	'auth/session/generate': { req: AuthSessionGenerateRequest; res: AuthSessionGenerateResponse };
 	'auth/session/show': { req: AuthSessionShowRequest; res: AuthSessionShowResponse };
 	'auth/session/userkey': { req: AuthSessionUserkeyRequest; res: AuthSessionUserkeyResponse };
+	'avatar-decoration-muting/create': { req: AvatarDecorationMutingCreateRequest; res: EmptyResponse };
+	'avatar-decoration-muting/delete': { req: AvatarDecorationMutingDeleteRequest; res: EmptyResponse };
+	'avatar-decoration-muting/list': { req: AvatarDecorationMutingListRequest; res: AvatarDecorationMutingListResponse };
 	'blocking/create': { req: BlockingCreateRequest; res: BlockingCreateResponse };
 	'blocking/delete': { req: BlockingDeleteRequest; res: BlockingDeleteResponse };
 	'blocking/list': { req: BlockingListRequest; res: BlockingListResponse };

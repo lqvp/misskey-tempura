@@ -4134,3 +4134,7 @@ _enableViewedRenotes:
   caption: "リノートを閲覧した際に、そのノートIDを記録します。記録されたリノートは自動的に折りたたまれます。"
 
 searchResults: "{search}件"
+
+_decorationMuting:
+  mute: "デコレーションをミュート"
+  unmute: "デコレーションのミュートを解除"

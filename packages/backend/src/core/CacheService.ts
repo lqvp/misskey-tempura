@@ -5,7 +5,7 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import * as Redis from 'ioredis';
-import type { BlockingsRepository, FollowingsRepository, MutingsRepository, RenoteMutingsRepository, QuoteMutingsRepository, MiUserProfile, UserProfilesRepository, UsersRepository, MiFollowing } from '@/models/_.js';
+import type { BlockingsRepository, FollowingsRepository, MutingsRepository, RenoteMutingsRepository, QuoteMutingsRepository, AvatarDecorationMutingsRepository, MiUserProfile, UserProfilesRepository, UsersRepository, MiFollowing } from '@/models/_.js';
 import { MemoryKVCache, RedisKVCache } from '@/misc/cache.js';
 import type { MiLocalUser, MiUser } from '@/models/User.js';
 import { DI } from '@/di-symbols.js';
@@ -26,6 +26,7 @@ export class CacheService implements OnApplicationShutdown {
 	public userBlockedCache: RedisKVCache<Set<string>>; // NOTE: 「被」Blockキャッシュ
 	public renoteMutingsCache: RedisKVCache<Set<string>>;
 	public quoteMutingsCache: RedisKVCache<Set<string>>;
+	public avatarDecorationMutingsCache: RedisKVCache<Set<string>>;
 	public userFollowingsCache: RedisKVCache<Record<string, Pick<MiFollowing, 'withReplies'> | undefined>>;
 
 	constructor(
@@ -52,6 +53,9 @@ export class CacheService implements OnApplicationShutdown {
 
 		@Inject(DI.quoteMutingsRepository)
 		private quoteMutingsRepository: QuoteMutingsRepository,
+
+		@Inject(DI.avatarDecorationMutingsRepository)
+		private avatarDecorationMutingsRepository: AvatarDecorationMutingsRepository,
 
 		@Inject(DI.followingsRepository)
 		private followingsRepository: FollowingsRepository,
@@ -109,6 +113,14 @@ export class CacheService implements OnApplicationShutdown {
 			lifetime: 1000 * 60 * 30, // 30m
 			memoryCacheLifetime: 1000 * 60, // 1m
 			fetcher: (key) => this.quoteMutingsRepository.find({ where: { muterId: key }, select: ['muteeId'] }).then(xs => new Set(xs.map(x => x.muteeId))),
+			toRedisConverter: (value) => JSON.stringify(Array.from(value)),
+			fromRedisConverter: (value) => new Set(JSON.parse(value)),
+		});
+
+		this.avatarDecorationMutingsCache = new RedisKVCache<Set<string>>(this.redisClient, 'avatarDecorationMutings', {
+			lifetime: 1000 * 60 * 30, // 30m
+			memoryCacheLifetime: 1000 * 60, // 1m
+			fetcher: (key) => this.avatarDecorationMutingsRepository.find({ where: { muterId: key }, select: ['muteeId'] }).then(xs => new Set(xs.map(x => x.muteeId))),
 			toRedisConverter: (value) => JSON.stringify(Array.from(value)),
 			fromRedisConverter: (value) => new Set(JSON.parse(value)),
 		});
@@ -204,6 +216,7 @@ export class CacheService implements OnApplicationShutdown {
 		this.userBlockedCache.dispose();
 		this.renoteMutingsCache.dispose();
 		this.quoteMutingsCache.dispose();
+		this.avatarDecorationMutingsCache.dispose();
 		this.userFollowingsCache.dispose();
 	}
 

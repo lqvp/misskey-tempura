@@ -1,0 +1,113 @@
+/*
+ * SPDX-FileCopyrightText: lqvp
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+import { Inject, Injectable } from '@nestjs/common';
+import ms from 'ms';
+import { Endpoint } from '@/server/api/endpoint-base.js';
+import { DI } from '@/di-symbols.js';
+import { GetterService } from '@/server/api/GetterService.js';
+import { UserAvatarDecorationMutingService } from '@/core/UserAvatarDecorationMutingService.js';
+import type { AvatarDecorationMutingsRepository } from '@/models/_.js';
+import { IdentifiableError } from '@/misc/identifiable-error.js';
+import { ApiError } from '../../error.js';
+
+export const meta = {
+	tags: ['account'],
+
+	requireCredential: true,
+	prohibitMoved: true,
+
+	kind: 'write:mutes',
+
+	limit: {
+		duration: ms('1hour'),
+		max: 20,
+	},
+
+	errors: {
+		noSuchUser: {
+			message: 'No such user.',
+			code: 'NO_SUCH_USER',
+			id: '5e0a5dff-1e94-4202-87ae-4d9c89eb2271',
+		},
+
+		muteeIsYourself: {
+			message: 'Mutee is yourself.',
+			code: 'MUTEE_IS_YOURSELF',
+			id: '37285718-52f7-4aef-b7de-c38b8e8a8420',
+		},
+
+		alreadyMuting: {
+			message: 'You are already muting that user.',
+			code: 'ALREADY_MUTING',
+			id: 'ccfecbe4-1f1c-4fc2-8a3d-c3ffee61cb7b',
+		},
+
+		cannotMuteDueToServerPolicy: {
+			message: 'You cannot mute that user due to server policy.',
+			code: 'CANNOT_MUTE_DUE_TO_SERVER_POLICY',
+			id: '15273a89-374d-49fa-8df6-8bb3feeea455',
+			httpStatusCode: 403,
+		},
+	},
+} as const;
+
+export const paramDef = {
+	type: 'object',
+	properties: {
+		userId: { type: 'string', format: 'misskey:id' },
+		expiresAt: { type: 'integer', nullable: true },
+	},
+	required: ['userId'],
+} as const;
+
+@Injectable()
+export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
+	constructor(
+		@Inject(DI.avatarDecorationMutingsRepository)
+		private avatarDecorationMutingsRepository: AvatarDecorationMutingsRepository,
+
+		private getterService: GetterService,
+		private userAvatarDecorationMutingService: UserAvatarDecorationMutingService,
+	) {
+		super(meta, paramDef, async (ps, me) => {
+			const muter = me;
+
+			// 自分自身
+			if (me.id === ps.userId) {
+				throw new ApiError(meta.errors.muteeIsYourself);
+			}
+
+			// Get mutee
+			const mutee = await this.getterService.getUser(ps.userId).catch(err => {
+				if (err.id === '15348ddd-432d-49c2-8a5a-8069753becff') throw new ApiError(meta.errors.noSuchUser);
+				throw err;
+			});
+
+			// Check if already muting
+			const exist = await this.avatarDecorationMutingsRepository.exists({
+				where: {
+					muterId: muter.id,
+					muteeId: mutee.id,
+				},
+			});
+
+			if (exist === true) {
+				throw new ApiError(meta.errors.alreadyMuting);
+			}
+
+			if (ps.expiresAt && ps.expiresAt <= Date.now()) {
+				return;
+			}
+
+			// Create mute
+			await this.userAvatarDecorationMutingService.mute(muter, mutee, ps.expiresAt ? new Date(ps.expiresAt) : null).catch((err) => {
+				if (err instanceof IdentifiableError && err.id === meta.errors.cannotMuteDueToServerPolicy.id) {
+					throw new ApiError(meta.errors.cannotMuteDueToServerPolicy);
+				}
+			});
+		});
+	}
+}
