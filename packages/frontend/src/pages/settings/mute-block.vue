@@ -134,6 +134,36 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</SearchMarker>
 
 			<SearchMarker
+				:keywords="['avatar', 'decoration', 'mute', 'hide', 'user']"
+			>
+				<MkFolder>
+					<template #icon><i class="ti ti-repeat-off"></i></template>
+					<template #label><SearchLabel>{{ i18n.ts.mutedUsers }} ({{ i18n.ts.avatarDecorations }})</SearchLabel><span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+
+					<MkPagination :paginator="avatarDecorationMutingPaginator" withControl>
+						<template #empty><MkResult type="empty" :text="i18n.ts.noUsers"/></template>
+
+						<template #default="{ items }">
+							<div class="_gaps_s">
+								<div v-for="item in items" :key="item.mutee.id" :class="[$style.userItem, { [$style.userItemOpend]: expandedAvatarDecorationMuteItems.includes(item.id) }]">
+									<div :class="$style.userItemMain">
+										<MkA :class="$style.userItemMainBody" :to="userPage(item.mutee)">
+											<MkUserCardMini :user="item.mutee"/>
+										</MkA>
+										<button class="_button" :class="$style.userToggle" @click="toggleAvatarDecorationMuteItem(item)"><i :class="$style.chevron" class="ti ti-chevron-down"></i></button>
+										<button class="_button" :class="$style.remove" @click="unavatarDecorationMute(item.mutee, $event)"><i class="ti ti-x"></i></button>
+									</div>
+									<div v-if="expandedAvatarDecorationMuteItems.includes(item.id)" :class="$style.userItemSub">
+										<div>Muted at: <MkTime :time="item.createdAt" mode="detail"/></div>
+									</div>
+								</div>
+							</div>
+						</template>
+					</MkPagination>
+				</MkFolder>
+			</SearchMarker>
+
+			<SearchMarker
 				:label="i18n.ts.mutedUsers"
 				:keywords="['note', 'mute', 'hide', 'user']"
 			>
@@ -235,6 +265,10 @@ const quoteMutingPaginator = markRaw(new Paginator('quote-mute/list', {
 	limit: 10,
 }));
 
+const avatarDecorationMutingPaginator = markRaw(new Paginator('avatar-decoration-muting/list', {
+	limit: 10,
+}));
+
 const mutingPaginator = markRaw(new Paginator('mute/list', {
 	limit: 10,
 }));
@@ -245,6 +279,7 @@ const blockingPaginator = markRaw(new Paginator('blocking/list', {
 
 const expandedRenoteMuteItems = ref<string[]>([]);
 const expandedQuoteMuteItems = ref<string[]>([]);
+const expandedAvatarDecorationMuteItems = ref<string[]>([]);
 const expandedMuteItems = ref<string[]>([]);
 const expandedBlockItems = ref<string[]>([]);
 const showSoftWordMutedWord = prefer.model('showSoftWordMutedWord');
@@ -272,6 +307,16 @@ async function unquoteMute(user, ev) {
 		icon: 'ti ti-x',
 		action: async () => {
 			await os.apiWithDialog('quote-mute/delete', { userId: user.id });
+		},
+	}], ev.currentTarget ?? ev.target);
+}
+
+async function unavatarDecorationMute(user, ev) {
+	os.popupMenu([{
+		text: i18n.ts._decoration.unmute,
+		icon: 'ti ti-x',
+		action: async () => {
+			await os.apiWithDialog('avatar-decoration-muting/delete', { userId: user.id });
 		},
 	}], ev.currentTarget ?? ev.target);
 }
@@ -311,6 +356,14 @@ async function toggleQuoteMuteItem(item: { id: string }) {
 		expandedQuoteMuteItems.value = expandedQuoteMuteItems.value.filter(x => x !== item.id);
 	} else {
 		expandedQuoteMuteItems.value.push(item.id);
+	}
+}
+
+async function toggleAvatarDecorationMuteItem(item: { id: string }) {
+	if (expandedAvatarDecorationMuteItems.value.includes(item.id)) {
+		expandedAvatarDecorationMuteItems.value = expandedAvatarDecorationMuteItems.value.filter(x => x !== item.id);
+	} else {
+		expandedAvatarDecorationMuteItems.value.push(item.id);
 	}
 }
 

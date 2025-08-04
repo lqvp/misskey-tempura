@@ -34,6 +34,7 @@ import type {
 	MutingsRepository,
 	RenoteMutingsRepository,
 	QuoteMutingsRepository,
+	AvatarDecorationMutingsRepository,
 	UserMemoRepository,
 	UserNotePiningsRepository,
 	UserProfilesRepository,
@@ -82,6 +83,7 @@ export type UserRelation = {
 	isMuted: boolean
 	isRenoteMuted: boolean
 	isQuoteMuted: boolean
+	isAvatarDecorationMuted: boolean
 };
 
 @Injectable()
@@ -133,6 +135,9 @@ export class UserEntityService implements OnModuleInit {
 		@Inject(DI.quoteMutingsRepository)
 		private quoteMutingsRepository: QuoteMutingsRepository,
 
+		@Inject(DI.avatarDecorationMutingsRepository)
+		private avatarDecorationMutingsRepository: AvatarDecorationMutingsRepository,
+
 		@Inject(DI.userNotePiningsRepository)
 		private userNotePiningsRepository: UserNotePiningsRepository,
 
@@ -182,6 +187,7 @@ export class UserEntityService implements OnModuleInit {
 			isMuted,
 			isRenoteMuted,
 			isQuoteMuted,
+			isAvatarDecorationMuted,
 		] = await Promise.all([
 			this.followingsRepository.findOneBy({
 				followerId: me,
@@ -235,6 +241,12 @@ export class UserEntityService implements OnModuleInit {
 					muteeId: target,
 				},
 			}),
+			this.avatarDecorationMutingsRepository.exists({
+				where: {
+					muterId: me,
+					muteeId: target,
+				},
+			}),
 		]);
 
 		return {
@@ -249,6 +261,7 @@ export class UserEntityService implements OnModuleInit {
 			isMuted,
 			isRenoteMuted,
 			isQuoteMuted,
+			isAvatarDecorationMuted,
 		};
 	}
 
@@ -264,6 +277,7 @@ export class UserEntityService implements OnModuleInit {
 			muters,
 			renoteMuters,
 			quoteMuters,
+			avatarDecorationMuters,
 		] = await Promise.all([
 			this.followingsRepository.findBy({ followerId: me })
 				.then(f => new Map(f.map(it => [it.followeeId, it]))),
@@ -307,6 +321,11 @@ export class UserEntityService implements OnModuleInit {
 				.where('m.muterId = :me', { me })
 				.getRawMany<{ m_muteeId: string }>()
 				.then(it => it.map(it => it.m_muteeId)),
+			this.avatarDecorationMutingsRepository.createQueryBuilder('m')
+				.select('m.muteeId')
+				.where('m.muterId = :me', { me })
+				.getRawMany<{ m_muteeId: string }>()
+				.then(it => it.map(it => it.m_muteeId)),
 		]);
 
 		return new Map(
@@ -327,6 +346,7 @@ export class UserEntityService implements OnModuleInit {
 						isMuted: muters.includes(target),
 						isRenoteMuted: renoteMuters.includes(target),
 						isQuoteMuted: quoteMuters.includes(target),
+						isAvatarDecorationMuted: avatarDecorationMuters.includes(target),
 					},
 				];
 			}),
@@ -502,6 +522,11 @@ export class UserEntityService implements OnModuleInit {
 
 		const notificationsInfo = isMe && isDetailed ? await this.getNotificationsInfo(user.id) : null;
 
+		const isAvatarDecorationMuted = meId && !isMe
+			? (relation?.isAvatarDecorationMuted ?? await this.avatarDecorationMutingsRepository.existsBy({ muterId: meId, muteeId: user.id }))
+			: false;
+		console.log('Decoration Muting: ', isAvatarDecorationMuted);
+
 		const packed = {
 			id: user.id,
 			name: user.name,
@@ -509,7 +534,7 @@ export class UserEntityService implements OnModuleInit {
 			host: user.host,
 			avatarUrl: (user.avatarId == null ? null : user.avatarUrl) ?? this.getIdenticonUrl(user),
 			avatarBlurhash: (user.avatarId == null ? null : user.avatarBlurhash),
-			avatarDecorations: user.avatarDecorations.length > 0 ? this.avatarDecorationService.getAll().then(decorations => user.avatarDecorations.filter(ud => decorations.some(d => d.id === ud.id)).map(ud => ({
+			avatarDecorations: isAvatarDecorationMuted ? [] : user.avatarDecorations.length > 0 ? this.avatarDecorationService.getAll().then(decorations => user.avatarDecorations.filter(ud => decorations.some(d => d.id === ud.id)).map(ud => ({
 				id: ud.id,
 				angle: ud.angle || undefined,
 				flipH: ud.flipH || undefined,
@@ -691,6 +716,7 @@ export class UserEntityService implements OnModuleInit {
 				isMuted: relation.isMuted,
 				isRenoteMuted: relation.isRenoteMuted,
 				isQuoteMuted: relation.isQuoteMuted,
+				isAvatarDecorationMuted: relation.isAvatarDecorationMuted,
 				notify: relation.following?.notify ?? 'none',
 				withReplies: relation.following?.withReplies ?? false,
 				followedMessage: relation.isFollowing ? profile!.followedMessage : undefined,

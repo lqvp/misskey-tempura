@@ -103,6 +103,7 @@ describe('ユーザー', () => {
 			isMuted: user.isMuted ?? false,
 			isRenoteMuted: user.isRenoteMuted ?? false,
 			isQuoteMuted: user.isQuoteMuted ?? false,
+			isAvatarDecorationMuted: user.isAvatarDecorationMuted ?? false,
 			notify: user.notify ?? 'none',
 			withReplies: user.withReplies ?? false,
 			followedMessage: user.isFollowing ? (user.followedMessage ?? null) : undefined,
@@ -202,6 +203,8 @@ describe('ユーザー', () => {
 	let userRnMutedByAlice: misskey.entities.SignupResponse;
 	let userQuoteMutingAlice: misskey.entities.SignupResponse;
 	let userQuoteMutedByAlice: misskey.entities.SignupResponse;
+	let userAvatarDecorationMutingAlice: misskey.entities.SignupResponse;
+	let userAvatarDecorationMutedByAlice: misskey.entities.SignupResponse;
 	let userFollowRequesting: misskey.entities.SignupResponse;
 	let userFollowRequested: misskey.entities.SignupResponse;
 
@@ -287,6 +290,12 @@ describe('ユーザー', () => {
 		userQuoteMutedByAlice = await signup({ username: 'userQuoteMutedByAlice' });
 		await post(userQuoteMutedByAlice, { text: 'test' });
 		await api('quote-mute/create', { userId: userQuoteMutedByAlice.id }, alice);
+		userAvatarDecorationMutingAlice = await signup({ username: 'userAvatarDecorationMutingAlice' });
+		await post(userAvatarDecorationMutingAlice, { text: 'test' });
+		await api('avatar-decoration-muting/create', { userId: alice.id }, userAvatarDecorationMutingAlice);
+		userAvatarDecorationMutedByAlice = await signup({ username: 'userAvatarDecorationMutedByAlice' });
+		await post(userAvatarDecorationMutedByAlice, { text: 'test' });
+		await api('avatar-decoration-muting/create', { userId: userAvatarDecorationMutedByAlice.id }, alice);
 		userFollowRequesting = await signup({ username: 'userFollowRequesting' });
 		await post(userFollowRequesting, { text: 'test' });
 		userFollowRequested = userLocking;
@@ -654,6 +663,7 @@ describe('ユーザー', () => {
 		{ label: 'ミュート中になっている', user: () => userMutedByAlice, selector: (user: misskey.entities.UserDetailed) => user.isMuted },
 		{ label: 'リノートミュート中になっている', user: () => userRnMutedByAlice, selector: (user: misskey.entities.UserDetailed) => user.isRenoteMuted },
 		{ label: '引用ミュート中になっている', user: () => userQuoteMutedByAlice, selector: (user: misskey.entities.UserDetailed) => user.isQuoteMuted },
+		{ label: 'デコレーションミュート中になっている', user: () => userAvatarDecorationMutedByAlice, selector: (user: misskey.entities.UserDetailed) => user.isAvatarDecorationMuted },
 		{ label: 'フォローリクエスト中になっている', user: () => userFollowRequested, me: () => userFollowRequesting, selector: (user: misskey.entities.UserDetailed) => user.hasPendingFollowRequestFromYou },
 		{ label: 'フォローリクエストされている', user: () => userFollowRequesting, me: () => userFollowRequested, selector: (user: misskey.entities.UserDetailed) => user.hasPendingFollowRequestToYou },
 	] as const)('を取得することができ、$labelこと', async ({ user, me, selector, expected }) => {

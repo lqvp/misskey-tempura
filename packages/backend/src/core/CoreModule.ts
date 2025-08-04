@@ -67,6 +67,7 @@ import { UserListService } from './UserListService.js';
 import { UserMutingService } from './UserMutingService.js';
 import { UserRenoteMutingService } from './UserRenoteMutingService.js';
 import { UserQuoteMutingService } from './UserQuoteMutingService.js';
+import { UserAvatarDecorationMutingService } from './UserAvatarDecorationMutingService.js';
 import { UserSuspendService } from './UserSuspendService.js';
 import { UserAuthService } from './UserAuthService.js';
 import { VideoProcessingService } from './VideoProcessingService.js';
@@ -123,6 +124,7 @@ import { ModerationLogEntityService } from './entities/ModerationLogEntityServic
 import { MutingEntityService } from './entities/MutingEntityService.js';
 import { RenoteMutingEntityService } from './entities/RenoteMutingEntityService.js';
 import { QuoteMutingEntityService } from './entities/QuoteMutingEntityService.js';
+import { AvatarDecorationMutingEntityService } from './entities/AvatarDecorationMutingEntityService.js';
 import { NoteEntityService } from './entities/NoteEntityService.js';
 import { NoteFavoriteEntityService } from './entities/NoteFavoriteEntityService.js';
 import { NoteReactionEntityService } from './entities/NoteReactionEntityService.js';
@@ -219,6 +221,7 @@ const $UserListService: Provider = { provide: 'UserListService', useExisting: Us
 const $UserMutingService: Provider = { provide: 'UserMutingService', useExisting: UserMutingService };
 const $UserRenoteMutingService: Provider = { provide: 'UserRenoteMutingService', useExisting: UserRenoteMutingService };
 const $UserQuoteMutingService: Provider = { provide: 'UserQuoteMutingService', useExisting: UserQuoteMutingService };
+const $UserAvatarDecorationMutingService: Provider = { provide: 'UserAvatarDecorationMutingService', useExisting: UserAvatarDecorationMutingService };
 const $UserSearchService: Provider = { provide: 'UserSearchService', useExisting: UserSearchService };
 const $UserSuspendService: Provider = { provide: 'UserSuspendService', useExisting: UserSuspendService };
 const $UserAuthService: Provider = { provide: 'UserAuthService', useExisting: UserAuthService };
@@ -279,6 +282,7 @@ const $ModerationLogEntityService: Provider = { provide: 'ModerationLogEntitySer
 const $MutingEntityService: Provider = { provide: 'MutingEntityService', useExisting: MutingEntityService };
 const $RenoteMutingEntityService: Provider = { provide: 'RenoteMutingEntityService', useExisting: RenoteMutingEntityService };
 const $QuoteMutingEntityService: Provider = { provide: 'QuoteMutingEntityService', useExisting: QuoteMutingEntityService };
+const $AvatarDecorationMutingEntityService: Provider = { provide: 'AvatarDecorationMutingEntityService', useExisting: AvatarDecorationMutingEntityService };
 const $NoteEntityService: Provider = { provide: 'NoteEntityService', useExisting: NoteEntityService };
 const $NoteFavoriteEntityService: Provider = { provide: 'NoteFavoriteEntityService', useExisting: NoteFavoriteEntityService };
 const $NoteReactionEntityService: Provider = { provide: 'NoteReactionEntityService', useExisting: NoteReactionEntityService };
@@ -379,6 +383,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		UserMutingService,
 		UserRenoteMutingService,
 		UserQuoteMutingService,
+		UserAvatarDecorationMutingService,
 		UserSearchService,
 		UserSuspendService,
 		UserAuthService,
@@ -441,6 +446,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		MutingEntityService,
 		RenoteMutingEntityService,
 		QuoteMutingEntityService,
+		AvatarDecorationMutingEntityService,
 		NoteEntityService,
 		NoteFavoriteEntityService,
 		NoteReactionEntityService,
@@ -535,6 +541,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$UserMutingService,
 		$UserRenoteMutingService,
 		$UserQuoteMutingService,
+		$UserAvatarDecorationMutingService,
 		$UserSearchService,
 		$UserSuspendService,
 		$UserAuthService,
@@ -595,6 +602,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$MutingEntityService,
 		$RenoteMutingEntityService,
 		$QuoteMutingEntityService,
+		$AvatarDecorationMutingEntityService,
 		$NoteEntityService,
 		$NoteFavoriteEntityService,
 		$NoteReactionEntityService,
@@ -692,6 +700,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		UserMutingService,
 		UserRenoteMutingService,
 		UserQuoteMutingService,
+		UserAvatarDecorationMutingService,
 		UserSearchService,
 		UserSuspendService,
 		UserAuthService,
@@ -753,6 +762,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		MutingEntityService,
 		RenoteMutingEntityService,
 		QuoteMutingEntityService,
+		AvatarDecorationMutingEntityService,
 		NoteEntityService,
 		NoteFavoriteEntityService,
 		NoteReactionEntityService,
@@ -847,6 +857,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$UserMutingService,
 		$UserRenoteMutingService,
 		$UserQuoteMutingService,
+		$UserAvatarDecorationMutingService,
 		$UserSearchService,
 		$UserSuspendService,
 		$UserAuthService,
@@ -905,6 +916,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$MutingEntityService,
 		$RenoteMutingEntityService,
 		$QuoteMutingEntityService,
+		$AvatarDecorationMutingEntityService,
 		$NoteEntityService,
 		$NoteFavoriteEntityService,
 		$NoteReactionEntityService,

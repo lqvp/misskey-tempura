@@ -15286,6 +15286,16 @@ export interface Locale extends ILocale {
      * {search}件
      */
     "searchResults": ParameterizedString<"search">;
+    "_decorationMuting": {
+        /**
+         * デコレーションをミュート
+         */
+        "mute": string;
+        /**
+         * デコレーションのミュートを解除
+         */
+        "unmute": string;
+    };
 }
 declare const locales: {
     [lang: string]: Locale;

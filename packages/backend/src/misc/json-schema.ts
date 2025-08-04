@@ -22,6 +22,7 @@ import { packedFollowingSchema } from '@/models/json-schema/following.js';
 import { packedMutingSchema } from '@/models/json-schema/muting.js';
 import { packedRenoteMutingSchema } from '@/models/json-schema/renote-muting.js';
 import { packedQuoteMutingSchema } from '@/models/json-schema/quote-muting.js';
+import { packedAvatarDecorationMutingSchema } from '@/models/json-schema/avatar-decoration-muting.js';
 import { packedBlockingSchema } from '@/models/json-schema/blocking.js';
 import { packedNoteReactionSchema } from '@/models/json-schema/note-reaction.js';
 import { packedHashtagSchema } from '@/models/json-schema/hashtag.js';
@@ -102,6 +103,7 @@ export const refs = {
 	Muting: packedMutingSchema,
 	RenoteMuting: packedRenoteMutingSchema,
 	QuoteMuting: packedQuoteMutingSchema,
+	AvatarDecorationMuting: packedAvatarDecorationMutingSchema,
 	Blocking: packedBlockingSchema,
 	Hashtag: packedHashtagSchema,
 	InviteCode: packedInviteCodeSchema,

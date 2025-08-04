@@ -62,6 +62,10 @@ export const meta = {
 						type: 'boolean',
 						optional: false, nullable: false,
 					},
+					isAvatarDecorationMuted: {
+						type: 'boolean',
+						optional: false, nullable: false,
+					},
 				},
 			},
 			{
@@ -108,6 +112,10 @@ export const meta = {
 							optional: false, nullable: false,
 						},
 						isQuoteMuted: {
+							type: 'boolean',
+							optional: false, nullable: false,
+						},
+						isAvatarDecorationMuted: {
 							type: 'boolean',
 							optional: false, nullable: false,
 						},

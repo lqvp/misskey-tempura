@@ -1158,6 +1158,33 @@ export type paths = {
          */
         post: operations['auth___session___userkey'];
     };
+    '/avatar-decoration-muting/create': {
+        /**
+         * avatar-decoration-muting/create
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:mutes*
+         */
+        post: operations['avatar-decoration-muting___create'];
+    };
+    '/avatar-decoration-muting/delete': {
+        /**
+         * avatar-decoration-muting/delete
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:mutes*
+         */
+        post: operations['avatar-decoration-muting___delete'];
+    };
+    '/avatar-decoration-muting/list': {
+        /**
+         * avatar-decoration-muting/list
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:mutes*
+         */
+        post: operations['avatar-decoration-muting___list'];
+    };
     '/blocking/create': {
         /**
          * blocking/create
@@ -4393,6 +4420,7 @@ export type components = {
             isMuted?: boolean;
             isRenoteMuted?: boolean;
             isQuoteMuted?: boolean;
+            isAvatarDecorationMuted?: boolean;
             /** @enum {string} */
             notify?: 'normal' | 'none';
             withReplies?: boolean;
@@ -5278,6 +5306,18 @@ export type components = {
             /** Format: id */
             muteeId: string;
             mutee: components['schemas']['UserDetailedNotMe'];
+        };
+        AvatarDecorationMuting: {
+            /**
+             * Format: id
+             * @example xxxxxxxxxx
+             */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: id */
+            muterId: string;
+            muter: components['schemas']['UserDetailedNotMe'];
         };
         Blocking: {
             /**
@@ -15533,6 +15573,213 @@ export interface operations {
                         accessToken: string;
                         user: components['schemas']['UserDetailedNotMe'];
                     };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'avatar-decoration-muting___create': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    userId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'avatar-decoration-muting___delete': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    userId: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'avatar-decoration-muting___list': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** @default 30 */
+                    limit?: number;
+                    /** Format: misskey:id */
+                    sinceId?: string;
+                    /** Format: misskey:id */
+                    untilId?: string;
+                    sinceDate?: number;
+                    untilDate?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['AvatarDecorationMuting'][];
                 };
             };
             /** @description Client error */
@@ -39540,6 +39787,7 @@ export interface operations {
                         isMuted: boolean;
                         isRenoteMuted: boolean;
                         isQuoteMuted: boolean;
+                        isAvatarDecorationMuted: boolean;
                     } | {
                         /** Format: id */
                         id: string;
@@ -39552,6 +39800,7 @@ export interface operations {
                         isMuted: boolean;
                         isRenoteMuted: boolean;
                         isQuoteMuted: boolean;
+                        isAvatarDecorationMuted: boolean;
                     }[];
                 };
             };

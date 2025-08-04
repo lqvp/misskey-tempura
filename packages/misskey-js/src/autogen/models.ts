@@ -24,6 +24,7 @@ export type Following = components['schemas']['Following'];
 export type Muting = components['schemas']['Muting'];
 export type RenoteMuting = components['schemas']['RenoteMuting'];
 export type QuoteMuting = components['schemas']['QuoteMuting'];
+export type AvatarDecorationMuting = components['schemas']['AvatarDecorationMuting'];
 export type Blocking = components['schemas']['Blocking'];
 export type Hashtag = components['schemas']['Hashtag'];
 export type InviteCode = components['schemas']['InviteCode'];

@@ -136,6 +136,14 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 		});
 	}
 
+	async function toggleAvatarDecorationMute() {
+		os.apiWithDialog(user.isAvatarDecorationMuted ? 'avatar-decoration-muting/delete' : 'avatar-decoration-muting/create', {
+			userId: user.id,
+		}).then(() => {
+			user.isAvatarDecorationMuted = !user.isAvatarDecorationMuted;
+		});
+	}
+
 	async function toggleBlock() {
 		if (!await getConfirmed(user.isBlocking ? i18n.ts.unblockConfirm : i18n.ts.blockConfirm)) return;
 
@@ -495,6 +503,10 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 			icon: user.isQuoteMuted ? 'ti ti-quote' : 'ti ti-quote-off',
 			text: user.isQuoteMuted ? i18n.ts.quoteUnmute : i18n.ts.quoteMute,
 			action: toggleQuoteMute,
+		}, {
+			icon: user.isAvatarDecorationMuted ? 'ti ti-eye' : 'ti ti-eye-off',
+			text: user.isAvatarDecorationMuted ? i18n.ts._decorationMuting.unmute : i18n.ts._decorationMuting.mute,
+			action: toggleAvatarDecorationMute,
 		}, {
 			icon: 'ti ti-ban',
 			text: user.isBlocking ? i18n.ts.unblock : i18n.ts.block,

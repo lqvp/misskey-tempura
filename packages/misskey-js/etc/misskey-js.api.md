@@ -628,6 +628,21 @@ type AuthSessionUserkeyRequest = operations['auth___session___userkey']['request
 type AuthSessionUserkeyResponse = operations['auth___session___userkey']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type AvatarDecorationMuting = components['schemas']['AvatarDecorationMuting'];
+
+// @public (undocumented)
+type AvatarDecorationMutingCreateRequest = operations['avatar-decoration-muting___create']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AvatarDecorationMutingDeleteRequest = operations['avatar-decoration-muting___delete']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AvatarDecorationMutingListRequest = operations['avatar-decoration-muting___list']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AvatarDecorationMutingListResponse = operations['avatar-decoration-muting___list']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type Blocking = components['schemas']['Blocking'];
 
 // @public (undocumented)
@@ -1726,6 +1741,10 @@ declare namespace entities {
         AuthSessionShowResponse,
         AuthSessionUserkeyRequest,
         AuthSessionUserkeyResponse,
+        AvatarDecorationMutingCreateRequest,
+        AvatarDecorationMutingDeleteRequest,
+        AvatarDecorationMutingListRequest,
+        AvatarDecorationMutingListResponse,
         BlockingCreateRequest,
         BlockingCreateResponse,
         BlockingDeleteRequest,
@@ -2275,6 +2294,7 @@ declare namespace entities {
         Muting,
         RenoteMuting,
         QuoteMuting,
+        AvatarDecorationMuting,
         Blocking,
         Hashtag,
         InviteCode,
