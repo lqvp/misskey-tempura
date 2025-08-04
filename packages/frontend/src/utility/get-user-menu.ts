@@ -139,6 +139,11 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 	async function toggleAvatarDecorationMute() {
 		os.apiWithDialog(user.isAvatarDecorationMuted ? 'avatar-decoration-muting/delete' : 'avatar-decoration-muting/create', {
 			userId: user.id,
+		}, undefined, {
+			'15273a89-374d-49fa-8df6-8bb3feeea455': {
+				title: i18n.ts.permissionDeniedError,
+				text: i18n.ts._extraSettings.muteThisUserIsProhibited,
+			},
 		}).then(() => {
 			user.isAvatarDecorationMuted = !user.isAvatarDecorationMuted;
 		});

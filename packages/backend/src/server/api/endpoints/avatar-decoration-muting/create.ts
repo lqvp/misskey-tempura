@@ -8,10 +8,10 @@ import ms from 'ms';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 import { GetterService } from '@/server/api/GetterService.js';
-import { ApiError } from '../../error.js';
 import { UserAvatarDecorationMutingService } from '@/core/UserAvatarDecorationMutingService.js';
 import type { AvatarDecorationMutingsRepository } from '@/models/_.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
+import { ApiError } from '../../error.js';
 
 export const meta = {
 	tags: ['account'],

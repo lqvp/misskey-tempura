@@ -522,10 +522,10 @@ export class UserEntityService implements OnModuleInit {
 
 		const notificationsInfo = isMe && isDetailed ? await this.getNotificationsInfo(user.id) : null;
 
+		// const isAvatarDecorationMuted = meId && !isMe ? relation?.isAvatarDecorationMuted : false;
 		const isAvatarDecorationMuted = meId && !isMe
 			? (relation?.isAvatarDecorationMuted ?? await this.avatarDecorationMutingsRepository.existsBy({ muterId: meId, muteeId: user.id }))
 			: false;
-		console.log('Decoration Muting: ', isAvatarDecorationMuted);
 
 		const packed = {
 			id: user.id,

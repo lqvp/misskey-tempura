@@ -5316,8 +5316,8 @@ export type components = {
             /** Format: date-time */
             createdAt: string;
             /** Format: id */
-            muterId: string;
-            muter: components['schemas']['UserDetailedNotMe'];
+            muteeId: string;
+            muterId: components['schemas']['UserDetailedNotMe'];
         };
         Blocking: {
             /**

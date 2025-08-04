@@ -313,7 +313,7 @@ async function unquoteMute(user, ev) {
 
 async function unavatarDecorationMute(user, ev) {
 	os.popupMenu([{
-		text: i18n.ts._decoration.unmute,
+		text: i18n.ts._decorationMuting.unmute,
 		icon: 'ti ti-x',
 		action: async () => {
 			await os.apiWithDialog('avatar-decoration-muting/delete', { userId: user.id });

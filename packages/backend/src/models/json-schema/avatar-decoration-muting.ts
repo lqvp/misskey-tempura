@@ -17,12 +17,12 @@ export const packedAvatarDecorationMutingSchema = {
 			optional: false, nullable: false,
 			format: 'date-time',
 		},
-		muterId: {
+		muteeId: {
 			type: 'string',
 			optional: false, nullable: false,
 			format: 'id',
 		},
-		muter: {
+		muterId: {
 			type: 'object',
 			optional: false, nullable: false,
 			ref: 'UserDetailedNotMe',
