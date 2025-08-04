@@ -22,7 +22,7 @@ export const packedAvatarDecorationMutingSchema = {
 			optional: false, nullable: false,
 			format: 'id',
 		},
-		muterId: {
+		mutee: {
 			type: 'object',
 			optional: false, nullable: false,
 			ref: 'UserDetailedNotMe',

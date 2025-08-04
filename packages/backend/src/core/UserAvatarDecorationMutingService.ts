@@ -34,7 +34,7 @@ export class UserAvatarDecorationMutingService {
 
 	@bindThis
 	public async mute(user: MiUser, target: MiUser, expiresAt: Date | null = null): Promise<void> {
-		// フォロー解除できない（＝リノートミュートもできない）ユーザーの場合
+		// フォロー解除できない（＝デコレーションのミュートもできない）ユーザーの場合
 		if (
 			user.host == null &&
 			this.serverSettings.forciblyFollowedUsers.includes(target.id) &&
