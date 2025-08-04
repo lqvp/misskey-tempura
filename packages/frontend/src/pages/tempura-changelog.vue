@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <PageWithHeader>
 	<div class="_spacer" style="--MI_SPACER-w: 800px;">
-		<div v-if="error" class="$style.errorMessage">
+		<div v-if="error" :class="$style.errorMessage">
 			{{ error }}
 		</div>
 		<div v-else :class="$style.changelogContainer" class="_gaps_s">
@@ -106,11 +106,11 @@ onMounted(async () => {
 			parseMarkdown(markdown);
 		} else {
 			console.error(`Failed to fetch changelog: ${res.status}`);
-			error.value = 'チェンジログの取得に失敗しました';
+			error.value = 'changelogの取得に失敗しました';
 		}
 	} catch (err) {
 		console.error(err);
-		error.value = 'チェンジログの取得に失敗しました';
+		error.value = 'changelogの取得に失敗しました';
 	}
 });
 
