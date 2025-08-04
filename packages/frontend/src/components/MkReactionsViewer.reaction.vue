@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	ref="buttonEl"
 	v-ripple="canToggle"
 	class="_button"
-	:class="[$style.root, { [$style.reacted]: myReaction == reaction, [$style.canToggle]: (isLocal && canToggle), [$style.canToggleFallback]: props.reaction.includes('@'), [$style.small]: prefer.s.reactionsDisplaySize === 'small', [$style.large]: prefer.s.reactionsDisplaySize === 'large' }]"
+	:class="[$style.root, { [$style.reacted]: isReacted, [$style.canToggle]: (isLocal && canToggle), [$style.canToggleFallback]: props.reaction.includes('@'), [$style.small]: prefer.s.reactionsDisplaySize === 'small', [$style.large]: prefer.s.reactionsDisplaySize === 'large' }]"
 	@click="toggleReaction()"
 	@contextmenu.prevent.stop="menu"
 >
@@ -45,7 +45,7 @@ const props = defineProps<{
 	noteId: Misskey.entities.Note['id'];
 	reaction: string;
 	reactionEmojis: Misskey.entities.Note['reactionEmojis'];
-	myReaction: Misskey.entities.Note['myReaction'];
+	myReaction: string[] | null;
 	count: number;
 	isInitial: boolean;
 }>();
@@ -79,6 +79,8 @@ const isLocalCustomEmoji = props.reaction[0] === ':' && props.reaction.includes(
 
 const plainReaction = computed(() => customEmojisMap.has(emojiName.value) ? getReactionName(props.reaction, true) : props.reaction);
 
+const isReacted = computed(() => props.myReaction?.includes(props.reaction) ?? false);
+
 const hideReactionCount = computed(() => {
 	switch (prefer.s.hideReactionCount) {
 		case 'none': return false;
@@ -93,9 +95,9 @@ async function toggleReaction() {
 	if (!canToggle.value) return;
 
 	const reaction = getReactionName(props.reaction, true);
-	const oldReaction = props.myReaction ? getReactionName(props.myReaction, true) : null;
+	const hasReacted = isReacted.value;
 
-	if (prefer.s.enableReactionConfirm && !oldReaction) {
+	if (prefer.s.enableReactionConfirm && !hasReacted) {
 		const confirm = await os.confirm({
 			type: 'info',
 			text: i18n.ts.addReactionConfirm,
@@ -103,16 +105,12 @@ async function toggleReaction() {
 		if (confirm.canceled) return;
 	}
 
-	if (oldReaction) {
+	if (hasReacted) {
 		const confirm = await os.confirm({
 			type: 'warning',
-			text: oldReaction !== reaction ? i18n.ts.changeReactionConfirm : i18n.ts.cancelReactionConfirm,
+			text: i18n.ts.cancelReactionConfirm,
 		});
 		if (confirm.canceled) return;
-
-		if (oldReaction !== reaction) {
-			sound.playMisskeySfx('reaction');
-		}
 
 		if (mock) {
 			emit('reactionToggled', reaction, (props.count - 1));
@@ -121,23 +119,12 @@ async function toggleReaction() {
 
 		misskeyApi('notes/reactions/delete', {
 			noteId: props.noteId,
+			reaction: reaction,
 		}).then(() => {
 			noteEvents.emit(`unreacted:${props.noteId}`, {
 				userId: $i!.id,
-				reaction: oldReaction,
+				reaction: reaction,
 			});
-			if (oldReaction !== reaction) {
-				misskeyApi('notes/reactions/create', {
-					noteId: props.noteId,
-					reaction: reaction,
-				}).then(() => {
-					noteEvents.emit(`reacted:${props.noteId}`, {
-						userId: $i!.id,
-						reaction: props.reaction,
-						emoji: emoji.value,
-					});
-				});
-			}
 		});
 	} else {
 		// enableReactionConfirmが有効な場合は上部で既に確認済みなので、confirmOnReactのみチェック

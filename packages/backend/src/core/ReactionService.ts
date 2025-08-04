@@ -204,6 +204,17 @@ export class ReactionService {
 			throw new IdentifiableError('ea07adfd-4fe2-4075-b8cd-b2403944516e', 'Invalid reaction.');
 		}
 
+		// 同じリアクションが既に存在するかチェック
+		const existingSameReaction = await this.noteReactionsRepository.findOneBy({
+			noteId: note.id,
+			userId: user.id,
+			reaction: reaction,
+		});
+
+		if (existingSameReaction) {
+			throw new IdentifiableError('51c42bb4-931a-456b-bff7-e5a8a70dd298', 'You have already reacted with this emoji.');
+		}
+
 		const record: MiNoteReaction = {
 			id: this.idService.gen(),
 			noteId: note.id,
@@ -211,27 +222,7 @@ export class ReactionService {
 			reaction,
 		};
 
-		try {
-			await this.noteReactionsRepository.insert(record);
-		} catch (e) {
-			if (isDuplicateKeyValueError(e)) {
-				const exists = await this.noteReactionsRepository.findOneByOrFail({
-					noteId: note.id,
-					userId: user.id,
-				});
-
-				if (exists.reaction !== reaction) {
-					// 別のリアクションがすでにされていたら置き換える
-					await this.delete(user, note);
-					await this.noteReactionsRepository.insert(record);
-				} else {
-					// 同じリアクションがすでにされていたらエラー
-					throw new IdentifiableError('51c42bb4-931a-456b-bff7-e5a8a70dd298');
-				}
-			} else {
-				throw e;
-			}
-		}
+		await this.noteReactionsRepository.insert(record);
 
 		// Increment reactions count
 		if (this.meta.enableReactionsBuffering) {
@@ -326,12 +317,18 @@ export class ReactionService {
 	}
 
 	@bindThis
-	public async delete(user: { id: MiUser['id']; host: MiUser['host']; isBot: MiUser['isBot']; }, note: MiNote) {
+	public async delete(user: { id: MiUser['id']; host: MiUser['host']; isBot: MiUser['isBot']; }, note: MiNote, reaction?: string | null) {
 		// if already unreacted
-		const exist = await this.noteReactionsRepository.findOneBy({
-			noteId: note.id,
-			userId: user.id,
-		});
+		const query = this.noteReactionsRepository.createQueryBuilder('reaction')
+			.where('reaction.noteId = :noteId', { noteId: note.id })
+			.andWhere('reaction.userId = :userId', { userId: user.id });
+
+		// 特定のリアクションが指定されている場合
+		if (reaction != null) {
+			query.andWhere('reaction.reaction = :reaction', { reaction });
+		}
+
+		const exist = await query.getOne();
 
 		if (exist == null) {
 			throw new IdentifiableError('60527ec9-b4cb-4a88-a6bd-32d3ad26817d', 'not reacted');

@@ -267,8 +267,12 @@ export const packedNoteSchema = {
 		},
 
 		myReaction: {
-			type: 'string',
+			type: 'array',
 			optional: true, nullable: true,
+			items: {
+				type: 'string',
+				optional: false, nullable: false,
+			},
 		},
 
 		dontShowOnLtl: {

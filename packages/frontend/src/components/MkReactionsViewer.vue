@@ -44,7 +44,7 @@ const props = withDefaults(defineProps<{
 	noteId: Misskey.entities.Note['id'];
 	reactions: Misskey.entities.Note['reactions'];
 	reactionEmojis: Misskey.entities.Note['reactionEmojis'];
-	myReaction: Misskey.entities.Note['myReaction'];
+	myReaction: string[] | null;
 	maxNumber?: number;
 }>(), {
 	maxNumber: Infinity,
@@ -154,8 +154,13 @@ watch(() => props.reactions, (newSource) => {
 
 	newReactions = [...existingReactions, ...sortedNew].slice(0, props.maxNumber);
 
-	if (props.myReaction && !newReactions.map(([x]) => x).includes(props.myReaction)) {
-		newReactions.push([props.myReaction, newSource[props.myReaction]]);
+	if (props.myReaction && props.myReaction.length > 0) {
+		// 自分のリアクションを全て表示に含める
+		for (const myReaction of props.myReaction) {
+			if (!newReactions.map(([x]) => x).includes(myReaction) && newSource[myReaction]) {
+				newReactions.push([myReaction, newSource[myReaction]]);
+			}
+		}
 	}
 
 	_reactions.value = newReactions;

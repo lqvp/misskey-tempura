@@ -193,7 +193,7 @@ export type ReactiveNoteData = {
 	reactions: Misskey.entities.Note['reactions'];
 	reactionCount: Misskey.entities.Note['reactionCount'];
 	reactionEmojis: Misskey.entities.Note['reactionEmojis'];
-	myReaction: Misskey.entities.Note['myReaction'];
+	myReaction: string[] | null;
 	pollChoices: NonNullable<Misskey.entities.Note['poll']>['choices'];
 };
 
@@ -222,7 +222,7 @@ export function useNoteCapture(props: {
 		}, {} as Misskey.entities.Note['reactions']),
 		reactionCount: note.reactionCount,
 		reactionEmojis: note.reactionEmojis,
-		myReaction: note.myReaction,
+		myReaction: note.myReaction ?? null,
 		pollChoices: note.poll?.choices ?? [],
 	});
 
@@ -231,14 +231,21 @@ export function useNoteCapture(props: {
 	noteEvents.on(`pollVoted:${note.id}`, onPollVoted);
 
 	// 操作がダブっていないかどうかを簡易的に記録するためのMap
-	const reactionUserMap = new Map<Misskey.entities.User['id'], string | typeof noReaction>();
+	const reactionUserMap = new Map<Misskey.entities.User['id'], Set<string>>();
 	let latestPollVotedKey: string | null = null;
 
 	function onReacted(ctx: { userId: Misskey.entities.User['id']; reaction: string; emoji?: { name: string; url: string; }; }): void {
 		let normalizedName = ctx.reaction.replace(/^:(\w+):$/, ':$1@.:');
 		normalizedName = normalizedName.match('\u200d') ? normalizedName : normalizedName.replace(/\ufe0f/g, '');
-		if (reactionUserMap.has(ctx.userId) && reactionUserMap.get(ctx.userId) === normalizedName) return;
-		reactionUserMap.set(ctx.userId, normalizedName);
+		
+		// ユーザーのリアクションセットを取得または作成
+		if (!reactionUserMap.has(ctx.userId)) {
+			reactionUserMap.set(ctx.userId, new Set());
+		}
+		const userReactions = reactionUserMap.get(ctx.userId)!;
+		
+		if (userReactions.has(normalizedName)) return;
+		userReactions.add(normalizedName);
 
 		if (ctx.emoji && !(ctx.emoji.name in $note.reactionEmojis)) {
 			$note.reactionEmojis[ctx.emoji.name] = ctx.emoji.url;
@@ -250,7 +257,12 @@ export function useNoteCapture(props: {
 		$note.reactionCount += 1;
 
 		if ($i && (ctx.userId === $i.id)) {
-			$note.myReaction = normalizedName;
+			if (!$note.myReaction) {
+				$note.myReaction = [];
+			}
+			if (!$note.myReaction.includes(normalizedName)) {
+				$note.myReaction.push(normalizedName);
+			}
 		}
 	}
 
@@ -258,9 +270,11 @@ export function useNoteCapture(props: {
 		let normalizedName = ctx.reaction.replace(/^:(\w+):$/, ':$1@.:');
 		normalizedName = normalizedName.match('\u200d') ? normalizedName : normalizedName.replace(/\ufe0f/g, '');
 
-		// 確実に一度リアクションされて取り消されている場合のみ処理をとめる（APIで初回読み込み→Streamでアップデート等の場合、reactionUserMapに情報がないため）
-		if (reactionUserMap.has(ctx.userId) && reactionUserMap.get(ctx.userId) === noReaction) return;
-		reactionUserMap.set(ctx.userId, noReaction);
+		// ユーザーのリアクションセットを更新
+		const userReactions = reactionUserMap.get(ctx.userId);
+		if (userReactions) {
+			userReactions.delete(normalizedName);
+		}
 
 		const currentCount = $note.reactions[normalizedName] || 0;
 
@@ -268,8 +282,11 @@ export function useNoteCapture(props: {
 		$note.reactionCount = Math.max(0, $note.reactionCount - 1);
 		if ($note.reactions[normalizedName] === 0) delete $note.reactions[normalizedName];
 
-		if ($i && (ctx.userId === $i.id)) {
-			$note.myReaction = null;
+		if ($i && (ctx.userId === $i.id) && $note.myReaction) {
+			$note.myReaction = $note.myReaction.filter(r => r !== normalizedName);
+			if ($note.myReaction.length === 0) {
+				$note.myReaction = null;
+			}
 		}
 	}
 
