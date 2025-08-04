@@ -14,6 +14,13 @@ export class MiAvatarDecorationMuting {
 	public id: string;
 
 	@Index()
+	@Column('timestamp with time zone', {
+		nullable: true,
+		default: null,
+	})
+	public expiresAt: Date | null;
+
+	@Index()
 	@Column({
 		...id(),
 		comment: 'The mutee user ID.',

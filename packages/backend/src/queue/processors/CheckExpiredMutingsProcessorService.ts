@@ -6,10 +6,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { In } from 'typeorm';
 import { DI } from '@/di-symbols.js';
-import type { MutingsRepository } from '@/models/_.js';
+import type { AvatarDecorationMutingsRepository, MutingsRepository } from '@/models/_.js';
 import type Logger from '@/logger.js';
 import { bindThis } from '@/decorators.js';
 import { UserMutingService } from '@/core/UserMutingService.js';
+import { UserAvatarDecorationMutingService } from '@/core/UserAvatarDecorationMutingService.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import type * as Bull from 'bullmq';
 
@@ -21,6 +22,10 @@ export class CheckExpiredMutingsProcessorService {
 		@Inject(DI.mutingsRepository)
 		private mutingsRepository: MutingsRepository,
 
+		@Inject(DI.avatarDecorationMutingsRepository)
+		private avatarDecorationMutingsRepository: AvatarDecorationMutingsRepository,
+
+		private userAvatarDecorationMutingService: UserAvatarDecorationMutingService,
 		private userMutingService: UserMutingService,
 		private queueLoggerService: QueueLoggerService,
 	) {
@@ -37,8 +42,18 @@ export class CheckExpiredMutingsProcessorService {
 			.innerJoinAndSelect('muting.mutee', 'mutee')
 			.getMany();
 
+		const expiredAvatarDecorationMutings = await this.avatarDecorationMutingsRepository.createQueryBuilder('avatar_decoration_muting')
+			.where('avatar_decoration_muting.expiresAt IS NOT NULL')
+			.andWhere('avatar_decoration_muting.expiresAt < :now', { now: new Date() })
+			.innerJoinAndSelect('avatar_decoration_muting.mutee', 'mutee')
+			.getMany();
+
 		if (expired.length > 0) {
 			await this.userMutingService.unmute(expired);
+		}
+
+		if (expiredAvatarDecorationMutings.length > 0) {
+			await this.userAvatarDecorationMutingService.unmute(expiredAvatarDecorationMutings);
 		}
 
 		this.logger.succ('All expired mutings checked.');
