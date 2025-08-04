@@ -68,7 +68,7 @@ const pageProps = ref({});
 const noMaintainerInformation = computed(() => isEmpty(instance.maintainerName) || isEmpty(instance.maintainerEmail));
 const noBotProtection = computed(() => !instance.disableRegistration && !instance.enableHcaptcha && !instance.enableRecaptcha && !instance.enableTurnstile && !instance.enableMcaptcha);
 const noEmailServer = computed(() => !instance.enableEmail);
-const noInquiryUrl = computed(() => isEmpty(instance.inquiryUrl));
+const noInquiryUrl = computed(() => isEmpty(instance.inquiryUrl) && !instance.enableContactForm);
 const thereIsUnresolvedAbuseReport = ref(false);
 const pendingUserApprovals = ref(false);
 const currentPage = computed(() => router.currentRef.value.child);
