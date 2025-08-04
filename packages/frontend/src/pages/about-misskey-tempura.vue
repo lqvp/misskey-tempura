@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</div>
 				</div>
 				<MkMfm :text="i18n.ts._misskeyTempura.about" style="text-align: center;"/>
-				<FormLink to="https://hackmd.io/@il2/misskey-tempura" external>
+				<FormLink to="/tempura-changelog">
 					<template #icon><i class="ti ti-sparkles"></i></template>
 					{{ i18n.ts._misskeyTempura.diff }}
 				</FormLink>

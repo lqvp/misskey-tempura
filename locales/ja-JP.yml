@@ -2247,7 +2247,7 @@ _misskeyTempura:
   about: "Misskey-tempuraは隠居特化型のMisskeyフォークです。\nユーザー保護を重視した設計を目指していますが、変な機能も沢山あります。"
   contributors: "優秀なコントリビューター(?)"
   aboutTempura: "Misskey-tempuraについて"
-  diff: "更新履歴"
+  diff: "tempuraの更新履歴"
 
 _displayOfSensitiveMedia:
   respect: "センシティブ設定されたメディアを隠す"

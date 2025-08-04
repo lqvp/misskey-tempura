@@ -8614,7 +8614,7 @@ export interface Locale extends ILocale {
          */
         "aboutTempura": string;
         /**
-         * 更新履歴
+         * tempuraの更新履歴
          */
         "diff": string;
     };
