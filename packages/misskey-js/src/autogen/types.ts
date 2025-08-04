@@ -5317,7 +5317,7 @@ export type components = {
             createdAt: string;
             /** Format: id */
             muteeId: string;
-            muterId: components['schemas']['UserDetailedNotMe'];
+            mutee: components['schemas']['UserDetailedNotMe'];
         };
         Blocking: {
             /**
