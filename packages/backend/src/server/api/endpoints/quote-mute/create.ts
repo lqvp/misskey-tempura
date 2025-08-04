@@ -58,6 +58,7 @@ export const paramDef = {
 	type: 'object',
 	properties: {
 		userId: { type: 'string', format: 'misskey:id' },
+		expiresAt: { type: 'integer', nullable: true },
 	},
 	required: ['userId'],
 } as const;
@@ -96,9 +97,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			if (exist === true) {
 				throw new ApiError(meta.errors.alreadyMuting);
 			}
+			if (ps.expiresAt && ps.expiresAt <= Date.now()) {
+				return;
+			}
 
 			// Create mute
-			await this.userQuoteMutingService.mute(muter, mutee).catch((err) => {
+			await this.userQuoteMutingService.mute(muter, mutee, ps.expiresAt ? new Date(ps.expiresAt) : null).catch((err) => {
 				if (err instanceof IdentifiableError && err.id === meta.errors.cannotMuteDueToServerPolicy.id) {
 					throw new ApiError(meta.errors.cannotMuteDueToServerPolicy);
 				}

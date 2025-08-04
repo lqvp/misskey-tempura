@@ -5291,6 +5291,8 @@ export type components = {
             id: string;
             /** Format: date-time */
             createdAt: string;
+            /** Format: date-time */
+            expiresAt: string | null;
             /** Format: id */
             muteeId: string;
             mutee: components['schemas']['UserDetailedNotMe'];
@@ -5303,6 +5305,8 @@ export type components = {
             id: string;
             /** Format: date-time */
             createdAt: string;
+            /** Format: date-time */
+            expiresAt: string | null;
             /** Format: id */
             muteeId: string;
             mutee: components['schemas']['UserDetailedNotMe'];
@@ -35581,6 +35585,7 @@ export interface operations {
                 'application/json': {
                     /** Format: misskey:id */
                     userId: string;
+                    expiresAt?: number | null;
                 };
             };
         };
@@ -35857,6 +35862,7 @@ export interface operations {
                 'application/json': {
                     /** Format: misskey:id */
                     userId: string;
+                    expiresAt?: number | null;
                 };
             };
         };

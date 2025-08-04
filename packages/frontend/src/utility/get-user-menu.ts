@@ -111,29 +111,61 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 	}
 
 	async function toggleRenoteMute() {
-		os.apiWithDialog(user.isRenoteMuted ? 'renote-mute/delete' : 'renote-mute/create', {
-			userId: user.id,
-		}, undefined, {
-			'15273a89-374d-49fa-8df6-8bb3feeea455': {
-				title: i18n.ts.permissionDeniedError,
-				text: i18n.ts._extraSettings.muteThisUserIsProhibited,
-			},
-		}).then(() => {
-			user.isRenoteMuted = !user.isRenoteMuted;
-		});
+		if (user.isRenoteMuted) {
+			os.apiWithDialog('renote-mute/delete', {
+				userId: user.id,
+			}).then(() => {
+				user.isRenoteMuted = false;
+			});
+		} else {
+			const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkMuteDialog.vue')), {}, {
+				done: (expiresAt: number | null) => {
+					os.apiWithDialog('renote-mute/create', {
+						userId: user.id,
+						expiresAt,
+					}, undefined, {
+						'15273a89-374d-49fa-8df6-8bb3feeea455': {
+							title: i18n.ts.permissionDeniedError,
+							text: i18n.ts._extraSettings.muteThisUserIsProhibited,
+						},
+					}).then(() => {
+						user.isRenoteMuted = true;
+					});
+				},
+				closed: () => {
+					dispose();
+				},
+			});
+		}
 	}
 
 	async function toggleQuoteMute() {
-		os.apiWithDialog(user.isQuoteMuted ? 'quote-mute/delete' : 'quote-mute/create', {
-			userId: user.id,
-		}, undefined, {
-			'15273a89-374d-49fa-8df6-8bb3feeea455': {
-				title: i18n.ts.permissionDeniedError,
-				text: i18n.ts._extraSettings.muteThisUserIsProhibited,
-			},
-		}).then(() => {
-			user.isQuoteMuted = !user.isQuoteMuted;
-		});
+		if (user.isQuoteMuted) {
+			os.apiWithDialog('quote-mute/delete', {
+				userId: user.id,
+			}).then(() => {
+				user.isQuoteMuted = false;
+			});
+		} else {
+			const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkMuteDialog.vue')), {}, {
+				done: (expiresAt: number | null) => {
+					os.apiWithDialog('quote-mute/create', {
+						userId: user.id,
+						expiresAt,
+					}, undefined, {
+						'15273a89-374d-49fa-8df6-8bb3feeea455': {
+							title: i18n.ts.permissionDeniedError,
+							text: i18n.ts._extraSettings.muteThisUserIsProhibited,
+						},
+					}).then(() => {
+						user.isQuoteMuted = true;
+					});
+				},
+				closed: () => {
+					dispose();
+				},
+			});
+		}
 	}
 
 	async function toggleAvatarDecorationMute() {
