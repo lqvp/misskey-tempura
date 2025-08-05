@@ -303,7 +303,7 @@ export class SearchService {
 			}
 		}
 
-		this.queryService.generateVisibilityQuery(query, me);
+		this.queryService.generateVisibilityQuery(query, me, { search: true });
 		this.queryService.generateBaseNoteFilteringQuery(query, me);
 
 		return query.limit(pagination.limit).getMany();

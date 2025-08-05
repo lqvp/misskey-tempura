@@ -30,6 +30,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span v-if="visibility === 'specified'"><i class="ti ti-mail"></i></span>
 					<span :class="$style.headerRightButtonText">{{ i18n.ts._visibility[visibility] }}</span>
 				</button>
+				<button v-if="channel == null" ref="searchbilityButton" v-click-anime v-tooltip="i18n.ts._searchbility.tooltip" :class="['_button', $style.headerRightItem, $style.visibility]" @click="setSearchbility">
+					<span v-if="searchableBy === 'public'"><i class="ti ti-world-search"></i></span>
+					<span v-if="searchableBy === 'followersAndReacted'"><i class="ti ti-user-search"></i></span>
+					<span v-if="searchableBy === 'reactedOnly'"><i class="ti ti-lock-search"></i></span>
+					<span v-if="searchableBy === 'private'"><i class="ti ti-mail-search"></i></span>
+					<span :class="$style.headerRightButtonText">{{ i18n.ts._searchbility[searchableBy] }}</span>
+				</button>
 				<button v-else class="_button" :class="[$style.headerRightItem, $style.visibility]" disabled>
 					<span><i class="ti ti-device-tv"></i></span>
 					<span :class="$style.headerRightButtonText">{{ targetChannel.name }}</span>
@@ -194,6 +201,7 @@ const cwInputEl = useTemplateRef('cwInputEl');
 const hashtagsInputEl = useTemplateRef('hashtagsInputEl');
 const visibilityButton = useTemplateRef('visibilityButton');
 const otherSettingsButton = useTemplateRef('otherSettingsButton');
+const searchbilityButton = useTemplateRef('searchbilityButton');
 
 const posting = ref(false);
 const posted = ref(false);
@@ -209,6 +217,7 @@ watch(showAddMfmFunction, () => prefer.commit('enableQuickAddMfmFunction', showA
 const cw = ref<string | null>(props.initialCw ?? null);
 const localOnly = ref(props.initialLocalOnly ?? (prefer.s.rememberNoteVisibility ? store.s.localOnly : prefer.s.defaultNoteLocalOnly));
 const visibility = ref(props.initialVisibility ?? (prefer.s.rememberNoteVisibility ? store.s.visibility : prefer.s.defaultNoteVisibility));
+const searchableBy = ref(props.initialSearchableBy ?? (prefer.s.rememberNoteSearchbility ? store.s.searchableBy : prefer.s.defaultNoteSearchbility));
 const visibleUsers = ref<Misskey.entities.UserDetailed[]>([]);
 if (props.initialVisibleUsers) {
 	props.initialVisibleUsers.forEach(u => pushVisibleUser(u));
@@ -512,6 +521,7 @@ function watchForDraft() {
 	watch(scheduleNote, () => saveDraft());
 	watch(files, () => saveDraft(), { deep: true });
 	watch(visibility, () => saveDraft());
+	watch(searchableBy, () => saveDraft());
 	watch(localOnly, () => saveDraft());
 	watch(quoteId, () => saveDraft());
 	watch(reactionAcceptance, () => saveDraft());
@@ -712,6 +722,21 @@ async function toggleLocalOnly() {
 	if (prefer.s.rememberNoteVisibility) {
 		store.set('localOnly', localOnly.value);
 	}
+}
+
+function setSearchbility() {
+	const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkSearchbilityPicker.vue')), {
+		currentSearchbility: searchableBy.value,
+		anchorElement: searchbilityButton.value,
+	}, {
+		changeSearchbility: v => {
+			searchableBy.value = v;
+			if (prefer.s.rememberNoteSearchbility) {
+				store.set('searchbility', searchableBy.value);
+			}
+		},
+		closed: () => dispose(),
+	});
 }
 
 async function toggleReactionAcceptance() {
@@ -951,6 +976,7 @@ function saveDraft() {
 			useCw: useCw.value,
 			cw: cw.value,
 			visibility: visibility.value,
+			searchableBy: searchableBy.value,
 			localOnly: localOnly.value,
 			files: files.value,
 			poll: poll.value,
@@ -980,6 +1006,7 @@ async function saveServerDraft(clearLocal = false) {
 		useCw: useCw.value,
 		cw: cw.value,
 		visibility: visibility.value,
+		searchableBy: searchableBy.value,
 		localOnly: localOnly.value,
 		hashtag: hashtags.value,
 		...(files.value.length > 0 ? { fileIds: files.value.map(f => f.id) } : {}),
@@ -1075,6 +1102,7 @@ async function post(ev?: MouseEvent) {
 		localOnly: localOnly.value,
 		visibility: visibility.value,
 		visibleUserIds: visibility.value === 'specified' ? visibleUsers.value.map(u => u.id) : undefined,
+		searchableBy: searchableBy.value,
 		reactionAcceptance: reactionAcceptance.value,
 		scheduleNote: scheduleNote.value ?? undefined,
 		deliveryTargets: deliveryTargets.value && !(deliveryTargets.value.mode === 'exclude' && deliveryTargets.value.hosts.length === 0) ? deliveryTargets.value : undefined,
@@ -1418,6 +1446,7 @@ onMounted(() => {
 				useCw.value = draft.data.useCw;
 				cw.value = draft.data.cw;
 				visibility.value = draft.data.visibility;
+				searchableBy.value = draft.data.searchableBy;
 				localOnly.value = draft.data.localOnly;
 				files.value = (draft.data.files || []).filter(draftFile => draftFile);
 				if (draft.data.poll) {

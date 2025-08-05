@@ -717,4 +717,10 @@ export const PREF_DEF = definePreferences({
 	viewedRenotes: {
 		default: [] as string[],
 	},
+	rememberNoteSearchbility: {
+		default: false,
+	},
+	defaultNoteSearchbility: {
+		default: 'public' as (typeof Misskey.noteSearchbility)[number],
+	},
 });

@@ -132,6 +132,7 @@ export interface IPost extends IObject {
 	_misskey_quote?: string;
 	_misskey_content?: string;
 	quoteUrl?: string;
+	searchableBy?: string[];
 }
 
 export interface IQuestion extends IObject {
@@ -181,6 +182,7 @@ export interface IActor extends IObject {
 	movedTo?: string;
 	alsoKnownAs?: string[];
 	discoverable?: boolean;
+	searchableBy?: string[];
 	inbox: string;
 	sharedInbox?: string;	// 後方互換性のため
 	publicKey?: {

@@ -5,6 +5,7 @@
 
 import { Entity, Index, Column, PrimaryColumn } from 'typeorm';
 import { MiNote } from '@/models/Note.js';
+import { searchableTypes } from '@/types.js';
 import { id } from './util/id.js';
 import { MiUser } from './User.js';
 import { MiChannel } from './Channel.js';
@@ -20,6 +21,7 @@ type MinimumUser = {
 export type MiScheduleNoteType = {
 	visibility: 'public' | 'home' | 'followers' | 'specified';
 	visibleUsers: MinimumUser[];
+	searchableBy: typeof searchableTypes[number] | null;
 	channel?: MiChannel['id'];
 	poll: {
 		multiple: boolean;

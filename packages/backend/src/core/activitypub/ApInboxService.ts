@@ -353,6 +353,7 @@ export class ApInboxService {
 				createdAt,
 				renote,
 				visibility: activityAudience.visibility,
+				searchableBy: null,
 				visibleUsers: activityAudience.visibleUsers,
 				uri,
 			});

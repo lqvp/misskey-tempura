@@ -41,6 +41,7 @@ import { checkHttps } from '@/misc/check-https.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { AvatarDecorationService } from '@/core/AvatarDecorationService.js';
 import { getApId, getApType, getOneApHrefNullable, isActor, isCollection, isCollectionOrOrderedCollection, isPropertyValue } from '../type.js';
+import { parseSearchableByFromTags, parseSearchableByFromProperty } from '../misc/searchableBy.js';
 import { extractApHashtags } from './tag.js';
 import type { OnModuleInit } from '@nestjs/common';
 import type { ApNoteService } from './ApNoteService.js';
@@ -464,6 +465,9 @@ export class ApPersonService implements OnModuleInit {
 					movedAt: person.movedTo ? new Date() : null,
 					alsoKnownAs: person.alsoKnownAs,
 					isExplorable: person.discoverable,
+					searchableBy: person.searchableBy ?
+						parseSearchableByFromProperty(uri, person.followers ? getApId(person.followers) : undefined, person.searchableBy) :
+						parseSearchableByFromTags(tags),
 					username: person.preferredUsername,
 					approved: true,
 					usernameLower: person.preferredUsername?.toLowerCase(),
@@ -710,6 +714,9 @@ export class ApPersonService implements OnModuleInit {
 
 		const updates = {
 			lastFetchedAt: new Date(),
+			searchableBy: person.searchableBy ?
+				parseSearchableByFromProperty(uri, person.followers ? getApId(person.followers) : undefined, person.searchableBy) :
+				parseSearchableByFromTags(tags),
 			inbox: person.inbox,
 			sharedInbox: person.sharedInbox ?? person.endpoints?.sharedInbox ?? null,
 			followersUri: person.followers ? getApId(person.followers) : undefined,

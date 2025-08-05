@@ -16,6 +16,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</MkFolder>
 
 	<MkFolder>
+		<template #label>{{ i18n.ts.makeSearchableBy }}</template>
+		<template #icon><i class="ti ti-search"></i></template>
+		<div class="_gaps_m">
+			<MkSelect v-model="searchableBy">
+				<option value="public">{{ i18n.ts._searchbility.public }}</option>
+				<option value="followersAndReacted">{{ i18n.ts._searchbility.followersAndReacted }}</option>
+				<option value="reactedOnly">{{ i18n.ts._searchbility.reactedOnly }}</option>
+				<option value="private">{{ i18n.ts._searchbility.private }}</option>
+			</MkSelect>
+			<MkInfo>{{ i18n.ts.makeSearchableByDescription }}</MkInfo>
+		</div>
+	</MkFolder>
+
+	<MkFolder>
 		<template #label>{{ i18n.ts.hideOnlineStatus }}</template>
 		<template #icon><i class="ti ti-eye-off"></i></template>
 		<template #suffix>{{ hideOnlineStatus ? i18n.ts.on : i18n.ts.off }}</template>
@@ -49,12 +63,14 @@ import { i18n } from '@/i18n.js';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import MkFolder from '@/components/MkFolder.vue';
+import MkSelect from '@/components/MkSelect.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
 
 const isLocked = ref(false);
 const hideOnlineStatus = ref(false);
 const noCrawle = ref(false);
 const preventAiLearning = ref(true);
+const searchableBy = ref('public');
 
 watch([isLocked, hideOnlineStatus, noCrawle, preventAiLearning], () => {
 	misskeyApi('i/update', {
@@ -62,6 +78,7 @@ watch([isLocked, hideOnlineStatus, noCrawle, preventAiLearning], () => {
 		hideOnlineStatus: !!hideOnlineStatus.value,
 		noCrawle: !!noCrawle.value,
 		preventAiLearning: !!preventAiLearning.value,
+		searchableBy: searchableBy.value,
 	});
 });
 </script>

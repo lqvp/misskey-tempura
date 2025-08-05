@@ -28,6 +28,8 @@ import { bindThis } from '@/decorators.js';
 import { CustomEmojiService } from '@/core/CustomEmojiService.js';
 import { IdService } from '@/core/IdService.js';
 import { UtilityService } from '@/core/UtilityService.js';
+import { searchableTypes } from '@/types.js';
+import { toSerchableByProperty } from './misc/searchableBy.js';
 import { JsonLdService } from './JsonLdService.js';
 import { ApMfmService } from './ApMfmService.js';
 import { CONTEXT } from './misc/contexts.js';
@@ -432,6 +434,19 @@ export class ApRendererService {
 			to = mentions;
 		}
 
+		let searchableBy: string[] | undefined = [];
+		if (note.searchableBy === null) {
+			searchableBy = undefined;
+		} else	if (note.searchableBy === searchableTypes[0]) {
+			searchableBy = ['https://www.w3.org/ns/activitystreams#Public'];
+		} else if (note.searchableBy === searchableTypes[1]) {
+			searchableBy = [`${this.config.url}/users/${note.userId}/followers`];
+		} else if (note.searchableBy === searchableTypes[2]) {
+			searchableBy = [`${this.config.url}/users/${note.userId}`];
+		} else { // if (note.searchableBy === searchableTypes[3])
+			searchableBy = ['as:Limited', 'kmyblue:Limited'];
+		}
+
 		const mentionedUsers = note.mentions.length > 0 ? await this.usersRepository.findBy({
 			id: In(note.mentions),
 		}) : [];
@@ -513,6 +528,7 @@ export class ApRendererService {
 			published: this.idService.parse(note.id).date.toISOString(),
 			to,
 			cc,
+			...(searchableBy ? { searchableBy: searchableBy } : {}),
 			inReplyTo,
 			attachment: files.map(x => this.renderDocument(x)),
 			sensitive: note.cw != null || files.some(file => file.isSensitive),
@@ -568,6 +584,7 @@ export class ApRendererService {
 		];
 
 		const keypair = await this.userKeypairService.getUserKeypair(user.id);
+		const searchableByData = toSerchableByProperty(this.config.url, user.id, user.searchableBy);
 
 		const person: any = {
 			type: isSystem ? 'Application' : user.isBot ? 'Service' : 'Person',
@@ -593,6 +610,7 @@ export class ApRendererService {
 			tag,
 			manuallyApprovesFollowers: user.isLocked,
 			discoverable: user.isExplorable,
+			...( searchableByData ? { searchableBy: searchableByData } : {}),
 			publicKey: this.renderKey(user, keypair, '#main-key'),
 			isCat: user.isCat,
 			attachment: attachment.length ? attachment : undefined,

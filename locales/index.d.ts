@@ -15296,6 +15296,47 @@ export interface Locale extends ILocale {
          */
         "unmute": string;
     };
+    /**
+     * 検索可能範囲を記憶する
+     */
+    "rememberNoteSearchbility": string;
+    /**
+     * ノート検索の許可
+     */
+    "makeSearchableBy": string;
+    /**
+     * ノートを検索できる人を制限できます。
+     * ノートにも設定した場合ノートの設定が優先されます。
+     * リモートのサーバーが対応していない場合設定が無視されるか、
+     * ノートを見つけやすくする値が使われます。
+     */
+    "makeSearchableByDescription": string;
+    "_searchbility": {
+        /**
+         * 検索可能範囲
+         */
+        "tooltip": string;
+        /**
+         * が検索できます
+         */
+        "canSearch": string;
+        /**
+         * すべてのユーザー
+         */
+        "public": string;
+        /**
+         * フォロワーと反応した人
+         */
+        "followersAndReacted": string;
+        /**
+         * 反応した人
+         */
+        "reactedOnly": string;
+        /**
+         * 自分だけ
+         */
+        "private": string;
+    };
 }
 declare const locales: {
     [lang: string]: Locale;

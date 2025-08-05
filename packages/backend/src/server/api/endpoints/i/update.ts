@@ -34,7 +34,7 @@ import type { Config } from '@/config.js';
 import { safeForSql } from '@/misc/safe-for-sql.js';
 import { AvatarDecorationService } from '@/core/AvatarDecorationService.js';
 import { notificationRecieveConfig } from '@/models/json-schema/user.js';
-import { receiveSpecifiedNotesFromVisibilities } from '@/types.js';
+import { receiveSpecifiedNotesFromVisibilities, searchableTypes } from '@/types.js';
 import { ApiLoggerService } from '../../ApiLoggerService.js';
 import { ApiError } from '../../error.js';
 
@@ -175,6 +175,12 @@ export const paramDef = {
 		},
 		isLocked: { type: 'boolean' },
 		isExplorable: { type: 'boolean' },
+		searchableBy: {
+			type: 'string',
+			enum: ['public', 'followersAndReacted', 'reactedOnly', 'private', null],
+			nullable: true,
+			description: '検索結果に表示される範囲を設定します。',
+		},
 		hideOnlineStatus: { type: 'boolean' },
 		publicReactions: { type: 'boolean' },
 		hideActivity: { type: 'boolean' },
@@ -315,6 +321,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			if (ps.listenbrainz !== undefined) profileUpdates.listenbrainz = ps.listenbrainz;
 			if (ps.followingVisibility !== undefined) profileUpdates.followingVisibility = ps.followingVisibility;
 			if (ps.followersVisibility !== undefined) profileUpdates.followersVisibility = ps.followersVisibility;
+			if (ps.searchableBy !== undefined) updates.searchableBy = ps.searchableBy;
 			if (ps.chatScope !== undefined) updates.chatScope = ps.chatScope;
 
 			function checkMuteWordCount(mutedWords: (string[] | string)[], limit: number) {
@@ -565,6 +572,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			const updatedProfile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });
 
+			const updatedUser = await this.usersRepository.findOneByOrFail({ id: user.id });
+			this.cacheService.userByIdCache.set(user.id, updatedUser);
 			this.cacheService.userProfileCache.set(user.id, updatedProfile);
 
 			// Publish meUpdated event

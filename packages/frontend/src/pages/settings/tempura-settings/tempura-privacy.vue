@@ -99,6 +99,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkSwitch>
 			</SearchMarker>
 
+			<MkSearchMarker :keywords="['search', 'searchable']">
+				<div class="_gaps_m">
+					<MkSelect v-model="searchableBy" @update:modelValue="save_privacy()">
+						<template #label>{{ i18n.ts.makeSearchableBy }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+						<option value="public">{{ i18n.ts._searchbility.public }}</option>
+						<option value="followersAndReacted">{{ i18n.ts._searchbility.followersAndReacted }}</option>
+						<option value="reactedOnly">{{ i18n.ts._searchbility.reactedOnly }}</option>
+						<option value="private">{{ i18n.ts._searchbility.private }}</option>
+					</MkSelect>
+				</div>
+			</MkSearchMarker>
+
 			<SearchMarker :keywords="['direct message', 'specified', 'note', 'receive']">
 				<MkSelect v-model="receiveSpecifiedNotesFrom" @update:modelValue="save_privacy()">
 					<template #label><SearchLabel>{{ i18n.ts.receiveSpecifiedNotesFrom }}</SearchLabel></template>
@@ -136,6 +148,7 @@ const hidePublicNotes = ref($i.hidePublicNotes);
 const hideHomeNotes = ref($i.hideHomeNotes);
 const hideLocalOnlyNotes = ref($i.hideLocalOnlyNotes);
 const receiveSpecifiedNotesFrom = ref($i.receiveSpecifiedNotesFrom ?? 'all');
+const searchableBy = ref($i.searchableBy ?? 'public');
 
 function save_privacy() {
 	misskeyApi('i/update', {
@@ -154,6 +167,7 @@ function save_privacy() {
 		hideHomeNotes: !!hideHomeNotes.value,
 		hideLocalOnlyNotes: !!hideLocalOnlyNotes.value,
 		receiveSpecifiedNotesFrom: receiveSpecifiedNotesFrom.value,
+		searchableBy: searchableBy.value,
 	});
 }
 </script>

@@ -27,6 +27,8 @@ export const followingVisibilities = ['public', 'followers', 'private'] as const
 
 export const followersVisibilities = ['public', 'followers', 'private'] as const;
 
+export const noteSearchbility = ['public', 'followersAndReacted', 'reactedOnly', 'private'] as const;
+
 export const permissions = [
 	'read:account',
 	'write:account',

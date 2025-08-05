@@ -27,6 +27,7 @@ import { IdService } from '@/core/IdService.js';
 import { MiScheduleNoteType } from '@/models/NoteSchedule.js';
 import { RoleService } from '@/core/RoleService.js';
 import { isQuote, isRenote } from '@/misc/is-renote.js';
+import { searchableTypes } from '@/types.js';
 import { ApiError } from '../../../error.js';
 
 export const meta = {
@@ -151,6 +152,7 @@ export const paramDef = {
 		} },
 		cw: { type: 'string', nullable: true, minLength: 1, maxLength: 100 },
 		reactionAcceptance: { type: 'string', nullable: true, enum: [null, 'likeOnly', 'likeOnlyForRemote', 'nonSensitiveOnly', 'nonSensitiveOnlyForLocalLikeOnlyForRemote'], default: null },
+		searchableBy: { type: 'string', nullable: true, enum: searchableTypes, default: 'public' },
 		noExtractMentions: { type: 'boolean', default: false },
 		noExtractHashtags: { type: 'boolean', default: false },
 		noExtractEmojis: { type: 'boolean', default: false },
@@ -260,7 +262,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 		private queueService: QueueService,
 		private roleService: RoleService,
-    private idService: IdService,
+		private idService: IdService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const scheduleNoteCount = await this.noteScheduleRepository.countBy({ userId: me.id });
@@ -398,6 +400,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				cw: ps.cw,
 				localOnly: false,
 				reactionAcceptance: ps.reactionAcceptance,
+				searchableBy: ps.searchableBy ?? 'public',
 				visibility: ps.visibility,
 				visibleUsers,
 				apMentions: ps.noExtractMentions ? [] : undefined,

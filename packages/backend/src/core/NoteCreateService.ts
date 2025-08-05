@@ -178,6 +178,7 @@ type Option = {
 	cw?: string | null;
 	visibility?: string;
 	visibleUsers?: MinimumUser[] | null;
+	searchableBy?: string | null;
 	channel?: MiChannel | null;
 	apMentions?: MinimumUser[] | null;
 	apHashtags?: string[] | null;
@@ -508,6 +509,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 					? data.visibleUsers.map(u => u.id)
 					: []
 				: [],
+			searchableBy: data.searchableBy as any,
 
 			attachedFileTypes: data.files ? data.files.map(file => file.type) : [],
 			deliveryTargets: data.deliveryTargets,

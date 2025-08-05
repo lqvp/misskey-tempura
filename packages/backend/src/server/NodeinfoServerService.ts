@@ -131,6 +131,7 @@ export class NodeinfoServerService {
 						'emoji_keywords',
 						'emoji_reaction',
 						'quote',
+						'searchability',
 					],
 				},
 			};

@@ -4138,3 +4138,14 @@ searchResults: "{search}件"
 _decorationMuting:
   mute: "デコレーションをミュート"
   unmute: "デコレーションのミュートを解除"
+
+rememberNoteSearchbility: "検索可能範囲を記憶する"
+makeSearchableBy: "ノート検索の許可"
+makeSearchableByDescription: "ノートを検索できる人を制限できます。\nノートにも設定した場合ノートの設定が優先されます。\nリモートのサーバーが対応していない場合設定が無視されるか、\nノートを見つけやすくする値が使われます。"
+_searchbility:
+    tooltip: "検索可能範囲"
+    canSearch: "が検索できます"
+    public: "すべてのユーザー"
+    followersAndReacted: "フォロワーと反応した人"
+    reactedOnly: "反応した人"
+    private: "自分だけ"

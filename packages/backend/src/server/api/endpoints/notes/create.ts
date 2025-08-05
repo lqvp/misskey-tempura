@@ -18,6 +18,7 @@ import { NoteCreateService } from '@/core/NoteCreateService.js';
 import { DI } from '@/di-symbols.js';
 import { isQuote, isRenote } from '@/misc/is-renote.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
+import { searchableTypes } from '@/types.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -155,6 +156,7 @@ export const paramDef = {
 		cw: { type: 'string', nullable: true, maxLength: 100 },
 		localOnly: { type: 'boolean', default: false },
 		reactionAcceptance: { type: 'string', nullable: true, enum: [null, 'likeOnly', 'likeOnlyForRemote', 'nonSensitiveOnly', 'nonSensitiveOnlyForLocalLikeOnlyForRemote'], default: null },
+		searchableBy: { type: 'string', nullable: true, enum: searchableTypes, default: 'public' },
 		noExtractMentions: { type: 'boolean', default: false },
 		noExtractHashtags: { type: 'boolean', default: false },
 		noExtractEmojis: { type: 'boolean', default: false },
@@ -424,6 +426,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					cw: ps.cw,
 					localOnly: ps.localOnly,
 					reactionAcceptance: ps.reactionAcceptance,
+					searchableBy: ps.searchableBy,
 					visibility: ps.visibility,
 					visibleUsers,
 					channel,
