@@ -202,6 +202,7 @@ export class MiUser {
 	 * reacted ... 返信かリアクションしたユーザーのみ
 	 * null ... デフォルト（public）
 	 */
+	@Index() // パフォーマンスが上がるかもしれない
 	@Column('enum',
 		{
 			enum: searchableTypes,

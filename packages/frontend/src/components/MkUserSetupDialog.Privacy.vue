@@ -16,16 +16,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</MkFolder>
 
 	<MkFolder>
-		<template #label>{{ i18n.ts.makeSearchableBy }}</template>
+		<template #label>{{ i18n.ts.makeSearchability }}</template>
 		<template #icon><i class="ti ti-search"></i></template>
 		<div class="_gaps_m">
 			<MkSelect v-model="searchableBy">
-				<option value="public">{{ i18n.ts._searchbility.public }}</option>
-				<option value="followersAndReacted">{{ i18n.ts._searchbility.followersAndReacted }}</option>
-				<option value="reactedOnly">{{ i18n.ts._searchbility.reactedOnly }}</option>
-				<option value="private">{{ i18n.ts._searchbility.private }}</option>
+				<option value="public">{{ i18n.ts._searchability.public }}</option>
+				<option value="followersAndReacted">{{ i18n.ts._searchability.followersAndReacted }}</option>
+				<option value="reactedOnly">{{ i18n.ts._searchability.reactedOnly }}</option>
+				<option value="private">{{ i18n.ts._searchability.private }}</option>
 			</MkSelect>
-			<MkInfo>{{ i18n.ts.makeSearchableByDescription }}</MkInfo>
+			<MkInfo>{{ i18n.ts.makeSearchabilityDescription }}</MkInfo>
 		</div>
 	</MkFolder>
 

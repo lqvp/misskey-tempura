@@ -713,9 +713,9 @@ export const store = markRaw(new Pizzax('base', {
 		default: 'any' as 'any' | 'nth' | 'final' | 'both', // フィルタモード
 	},
 	//#endregion
-	searchbility: {
+	searchableBy: {
 		where: 'deviceAccount',
-		default: 'public' as (typeof Misskey.noteSearchbility)[number],
+		default: 'public' as (typeof Misskey.noteSearchability)[number],
 	},
 }));
 

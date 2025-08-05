@@ -15299,19 +15299,19 @@ export interface Locale extends ILocale {
     /**
      * 検索可能範囲を記憶する
      */
-    "rememberNoteSearchbility": string;
+    "remembernoteSearchability": string;
     /**
      * ノート検索の許可
      */
-    "makeSearchableBy": string;
+    "makeSearchability": string;
     /**
      * ノートを検索できる人を制限できます。
      * ノートにも設定した場合ノートの設定が優先されます。
      * リモートのサーバーが対応していない場合設定が無視されるか、
      * ノートを見つけやすくする値が使われます。
      */
-    "makeSearchableByDescription": string;
-    "_searchbility": {
+    "makeSearchabilityDescription": string;
+    "_searchability": {
         /**
          * 検索可能範囲
          */

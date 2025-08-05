@@ -28,8 +28,8 @@ export function parseSearchableByFromProperty (uri: string, followersUri?: strin
 	return null;
 }
 
-export function toSerchableByProperty (configUrl: string, userId: string, serchableType: 'public' | 'followersAndReacted' | 'reactedOnly' | 'private' | null) : string[] | null {
-	switch (serchableType)	{
+export function toSearchableByProperty (configUrl: string, userId: string, searchableType: 'public' | 'followersAndReacted' | 'reactedOnly' | 'private' | null) : string[] | null {
+	switch (searchableType)	{
 		case 'public' :
 			return ['https://www.w3.org/ns/activitystreams#Public'];
 		case 'followersAndReacted' :

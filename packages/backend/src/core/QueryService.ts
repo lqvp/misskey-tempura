@@ -371,6 +371,7 @@ export class QueryService {
 							.andWhere(new Brackets(applyIsReactedCondition));
 					}))
 					// Default fallback (if both note and user settings are null)
+					// When both are null, treat as 'reactedOnly' for backward compatibility
 					.orWhere(new Brackets(qb2 => {
 						qb2.where(`COALESCE(note."searchableBy"::text, ${userSearchableByQuery}) IS NULL`)
 							.andWhere(new Brackets(applyIsReactedCondition));

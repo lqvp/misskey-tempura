@@ -29,7 +29,7 @@ import { CustomEmojiService } from '@/core/CustomEmojiService.js';
 import { IdService } from '@/core/IdService.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import { searchableTypes } from '@/types.js';
-import { toSerchableByProperty } from './misc/searchableBy.js';
+import { toSearchableByProperty } from './misc/searchableBy.js';
 import { JsonLdService } from './JsonLdService.js';
 import { ApMfmService } from './ApMfmService.js';
 import { CONTEXT } from './misc/contexts.js';
@@ -584,7 +584,7 @@ export class ApRendererService {
 		];
 
 		const keypair = await this.userKeypairService.getUserKeypair(user.id);
-		const searchableByData = toSerchableByProperty(this.config.url, user.id, user.searchableBy);
+		const searchableByData = toSearchableByProperty(this.config.url, user.id, user.searchableBy);
 
 		const person: any = {
 			type: isSystem ? 'Application' : user.isBot ? 'Service' : 'Person',

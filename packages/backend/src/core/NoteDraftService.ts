@@ -16,6 +16,7 @@ import { IPoll } from '@/models/Poll.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { isRenote, isQuote } from '@/misc/is-renote.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
+import { searchableTypes } from '@/types.js';
 
 export type NoteDraftOptions = {
 	replyId?: MiNote['id'] | null;
@@ -30,6 +31,7 @@ export type NoteDraftOptions = {
 	hashtag?: string;
 	channelId?: MiChannel['id'] | null;
 	poll?: (IPoll & { expiredAfter?: number | null }) | null;
+	searchableBy?: typeof searchableTypes[number] | null;
 };
 
 @Injectable()

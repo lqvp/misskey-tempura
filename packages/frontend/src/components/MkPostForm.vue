@@ -30,12 +30,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span v-if="visibility === 'specified'"><i class="ti ti-mail"></i></span>
 					<span :class="$style.headerRightButtonText">{{ i18n.ts._visibility[visibility] }}</span>
 				</button>
-				<button v-if="channel == null" ref="searchbilityButton" v-click-anime v-tooltip="i18n.ts._searchbility.tooltip" :class="['_button', $style.headerRightItem, $style.visibility]" @click="setSearchbility">
+				<button v-if="channel == null" ref="searchbilityButton" v-click-anime v-tooltip="i18n.ts._searchability.tooltip" :class="['_button', $style.headerRightItem, $style.visibility]" @click="setSearchbility">
 					<span v-if="searchableBy === 'public'"><i class="ti ti-world-search"></i></span>
 					<span v-if="searchableBy === 'followersAndReacted'"><i class="ti ti-user-search"></i></span>
 					<span v-if="searchableBy === 'reactedOnly'"><i class="ti ti-lock-search"></i></span>
 					<span v-if="searchableBy === 'private'"><i class="ti ti-mail-search"></i></span>
-					<span :class="$style.headerRightButtonText">{{ i18n.ts._searchbility[searchableBy] }}</span>
+					<span :class="$style.headerRightButtonText">{{ i18n.ts._searchability[searchableBy] }}</span>
 				</button>
 				<button v-else class="_button" :class="[$style.headerRightItem, $style.visibility]" disabled>
 					<span><i class="ti ti-device-tv"></i></span>
@@ -217,7 +217,7 @@ watch(showAddMfmFunction, () => prefer.commit('enableQuickAddMfmFunction', showA
 const cw = ref<string | null>(props.initialCw ?? null);
 const localOnly = ref(props.initialLocalOnly ?? (prefer.s.rememberNoteVisibility ? store.s.localOnly : prefer.s.defaultNoteLocalOnly));
 const visibility = ref(props.initialVisibility ?? (prefer.s.rememberNoteVisibility ? store.s.visibility : prefer.s.defaultNoteVisibility));
-const searchableBy = ref(props.initialSearchableBy ?? (prefer.s.rememberNoteSearchbility ? store.s.searchableBy : prefer.s.defaultNoteSearchbility));
+const searchableBy = ref(props.initialSearchableBy ?? (prefer.s.remembernoteSearchability ? store.s.searchableBy : prefer.s.defaultnoteSearchability));
 const visibleUsers = ref<Misskey.entities.UserDetailed[]>([]);
 if (props.initialVisibleUsers) {
 	props.initialVisibleUsers.forEach(u => pushVisibleUser(u));
@@ -725,13 +725,13 @@ async function toggleLocalOnly() {
 }
 
 function setSearchbility() {
-	const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkSearchbilityPicker.vue')), {
+	const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkSearchabilityPicker.vue')), {
 		currentSearchbility: searchableBy.value,
 		anchorElement: searchbilityButton.value,
 	}, {
 		changeSearchbility: v => {
 			searchableBy.value = v;
-			if (prefer.s.rememberNoteSearchbility) {
+			if (prefer.s.remembernoteSearchability) {
 				store.set('searchbility', searchableBy.value);
 			}
 		},
@@ -1446,7 +1446,7 @@ onMounted(() => {
 				useCw.value = draft.data.useCw;
 				cw.value = draft.data.cw;
 				visibility.value = draft.data.visibility;
-				searchableBy.value = draft.data.searchableBy;
+				searchableBy.value = draft.data.searchableBy ?? (prefer.s.remembernoteSearchability ? store.s.searchableBy : prefer.s.defaultnoteSearchability);
 				localOnly.value = draft.data.localOnly;
 				files.value = (draft.data.files || []).filter(draftFile => draftFile);
 				if (draft.data.poll) {

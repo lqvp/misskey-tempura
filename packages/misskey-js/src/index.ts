@@ -15,7 +15,7 @@ export const followersVisibilities = consts.followersVisibilities;
 export const moderationLogTypes = consts.moderationLogTypes;
 export const queueTypes = consts.queueTypes;
 export const reversiUpdateKeys = consts.reversiUpdateKeys;
-export const noteSearchbility = consts.noteSearchbility;
+export const noteSearchability = consts.noteSearchability;
 
 // api extractor not supported yet
 //export * as api from './api.js';

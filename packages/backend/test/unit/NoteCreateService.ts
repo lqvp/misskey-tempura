@@ -63,6 +63,7 @@ describe('NoteCreateService', () => {
 			deleteAt: null,
 			isScheduledForPrivate: false,
 			deliveryTargets: null,
+			searchableBy: 'public',
 		};
 
 		const poll: IPoll = {

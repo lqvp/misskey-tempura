@@ -3235,7 +3235,7 @@ type NotesDraftsUpdateRequest = operations['notes___drafts___update']['requestBo
 type NotesDraftsUpdateResponse = operations['notes___drafts___update']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
-export const noteSearchbility: readonly ["public", "followersAndReacted", "reactedOnly", "private"];
+export const noteSearchability: readonly ["public", "followersAndReacted", "reactedOnly", "private"];
 
 // @public (undocumented)
 type NotesFavoritesCreateRequest = operations['notes___favorites___create']['requestBody']['content']['application/json'];

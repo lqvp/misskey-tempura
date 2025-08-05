@@ -353,21 +353,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 											<MkSwitch v-model="defaultNoteLocalOnly">{{ i18n.ts._visibility.disableFederation }}</MkSwitch>
 										</MkPreferenceContainer>
 
-										<MkPreferenceContainer k="rememberNoteSearchbility">
-											<MkSwitch v-model="rememberNoteSearchbility">{{ i18n.ts.rememberNoteSearchbility }}</MkSwitch>
+										<MkPreferenceContainer k="remembernoteSearchability">
+											<MkSwitch v-model="remembernoteSearchability">{{ i18n.ts.remembernoteSearchability }}</MkSwitch>
 										</MkPreferenceContainer>
 
-										<MkFolder v-if="!rememberNoteSearchbility">
-											<template #label>{{ i18n.ts.makeSearchableBy }}</template>
+										<MkFolder v-if="!remembernoteSearchability">
+											<template #label>{{ i18n.ts.makeSearchability }}</template>
 											<template #icon><i class="ti ti-search"></i></template>
 											<div class="_gaps_m">
-												<MkInfo>{{ i18n.ts.makeSearchableByDescription }}</MkInfo>
-												<MkPreferenceContainer k="defaultNoteSearchbility">
-													<MkSelect v-model="defaultNoteSearchbility">
-														<option value="public">{{ i18n.ts._searchbility.public }}</option>
-														<option value="followersAndReacted">{{ i18n.ts._searchbility.followersAndReacted }}</option>
-														<option value="reactedOnly">{{ i18n.ts._searchbility.reactedOnly }}</option>
-														<option value="private">{{ i18n.ts._searchbility.private }}</option>
+												<MkInfo>{{ i18n.ts.makeSearchabilityDescription }}</MkInfo>
+												<MkPreferenceContainer k="defaultnoteSearchability">
+													<MkSelect v-model="defaultnoteSearchability">
+														<option value="public">{{ i18n.ts._searchability.public }}</option>
+														<option value="followersAndReacted">{{ i18n.ts._searchability.followersAndReacted }}</option>
+														<option value="reactedOnly">{{ i18n.ts._searchability.reactedOnly }}</option>
+														<option value="private">{{ i18n.ts._searchability.private }}</option>
 													</MkSelect>
 												</MkPreferenceContainer>
 											</div>
@@ -891,8 +891,8 @@ const useNativeUiForVideoAudioPlayer = prefer.model('useNativeUiForVideoAudioPla
 const contextMenu = prefer.model('contextMenu');
 const menuStyle = prefer.model('menuStyle');
 const makeEveryTextElementsSelectable = prefer.model('makeEveryTextElementsSelectable');
-const rememberNoteSearchbility = prefer.model('rememberNoteSearchbility');
-const defaultNoteSearchbility = prefer.model('defaultNoteSearchbility');
+const remembernoteSearchability = prefer.model('remembernoteSearchability');
+const defaultnoteSearchability = prefer.model('defaultnoteSearchability');
 
 const fontSize = ref(miLocalStorage.getItem('fontSize'));
 const useSystemFont = ref(miLocalStorage.getItem('useSystemFont') != null);

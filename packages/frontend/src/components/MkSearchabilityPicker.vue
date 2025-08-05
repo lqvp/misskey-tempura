@@ -7,37 +7,37 @@ SPDX-License-Identifier: AGPL-3.0-only
 <MkModal ref="modal" v-slot="{ type }" :zPriority="'high'" :anchorElement="anchorElement" @click="modal?.close()" @closed="emit('closed')" @esc="modal?.close()">
 	<div class="_popup" :class="{ [$style.root]: true, [$style.asDrawer]: type === 'drawer', _popupAcrylic: prefer.s.useBlurEffect && prefer.s.useBlurEffectForModal }">
 		<div :class="[$style.label, $style.item]">
-			{{ i18n.ts._searchbility.tooltip }}
+			{{ i18n.ts._searchability.tooltip }}
 		</div>
 		<button key="public" class="_button" :class="[$style.item, { [$style.active]: v === 'public' }]" data-index="1" @click="choose('public')">
 			<div :class="$style.icon"><i class="ti ti-world-search"></i></div>
 			<div :class="$style.body">
-				<span :class="$style.itemTitle">{{ i18n.ts._searchbility.public }}</span>
+				<span :class="$style.itemTitle">{{ i18n.ts._searchability.public }}</span>
 			</div>
 		</button>
 		<button key="followersAndReacted" class="_button" :class="[$style.item, { [$style.active]: v === 'followersAndReacted' }]" data-index="2" @click="choose('followersAndReacted')">
 			<div :class="$style.icon"><i class="ti ti-user-search"></i></div>
 			<div :class="$style.body">
-				<span :class="$style.itemTitle">{{ i18n.ts._searchbility.followersAndReacted }}</span>
+				<span :class="$style.itemTitle">{{ i18n.ts._searchability.followersAndReacted }}</span>
 			</div>
 		</button>
 		<button key="reactedOnly" class="_button" :class="[$style.item, { [$style.active]: v === 'reactedOnly' }]" data-index="3" @click="choose('reactedOnly')">
 			<div :class="$style.icon"><i class="ti ti-lock-search"></i></div>
 			<div :class="$style.body">
-				<span :class="$style.itemTitle">{{ i18n.ts._searchbility.reactedOnly }}</span>
+				<span :class="$style.itemTitle">{{ i18n.ts._searchability.reactedOnly }}</span>
 			</div>
 		</button>
 		<button key="private" class="_button" :class="[$style.item, { [$style.active]: v === 'private' }]" data-index="4" @click="choose('private')">
 			<div :class="$style.icon"><i class="ti ti-mail-search"></i></div>
 			<div :class="$style.body">
-				<span :class="$style.itemTitle">{{ i18n.ts._searchbility.private }}</span>
+				<span :class="$style.itemTitle">{{ i18n.ts._searchability.private }}</span>
 			</div>
 		</button>
 
 		<MkDivider style="margin: 5px 0;"/>
 
 		<div :class="$style.item">
-			<MkSwitch v-model="rememberNoteSearchbility">{{ i18n.ts.rememberNoteSearchbility }}</MkSwitch>
+			<MkSwitch v-model="remembernoteSearchability">{{ i18n.ts.remembernoteSearchability }}</MkSwitch>
 		</div>
 	</div>
 </MkModal>
@@ -55,21 +55,21 @@ import { prefer } from '@/preferences.js';
 const modal = shallowRef<InstanceType<typeof MkModal>>();
 
 const props = withDefaults(defineProps<{
-	currentSearchbility: typeof Misskey.noteSearchbility[number];
+	currentSearchbility: typeof Misskey.noteSearchability[number];
 	anchorElement?: HTMLElement;
 }>(), {
 });
 
 const emit = defineEmits<{
-	(ev: 'changeSearchbility', v: typeof Misskey.noteSearchbility[number]): void;
+	(ev: 'changeSearchbility', v: typeof Misskey.noteSearchability[number]): void;
 	(ev: 'closed'): void;
 }>();
 
-const rememberNoteSearchbility = prefer.s.rememberNoteSearchbility;
+const remembernoteSearchability = prefer.s.remembernoteSearchability;
 
 const v = ref(props.currentSearchbility);
 
-function choose(searchbility: typeof Misskey.noteSearchbility[number]): void {
+function choose(searchbility: typeof Misskey.noteSearchability[number]): void {
 	v.value = searchbility;
 	emit('changeSearchbility', searchbility);
 	nextTick(() => {
