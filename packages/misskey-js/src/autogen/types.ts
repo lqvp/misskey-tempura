@@ -4401,7 +4401,7 @@ export type components = {
             /** @enum {string} */
             followersVisibility: 'public' | 'followers' | 'private';
             /** @enum {string|null} */
-            searchableBy: 'public' | 'followers' | 'private' | null;
+            searchableBy: 'public' | 'followersAndReacted' | 'reactedOnly' | 'private' | null;
             /** @enum {string} */
             chatScope: 'everyone' | 'following' | 'followers' | 'mutual' | 'none';
             canChat: boolean;

@@ -55,7 +55,7 @@ import { prefer } from '@/preferences.js';
 const modal = shallowRef<InstanceType<typeof MkModal>>();
 
 const props = withDefaults(defineProps<{
-	currentSearchbility: typeof Misskey.noteSearchability[number];
+	currentSearchability: typeof Misskey.noteSearchability[number];
 	anchorElement?: HTMLElement;
 }>(), {
 });
@@ -67,7 +67,7 @@ const emit = defineEmits<{
 
 const remembernoteSearchability = prefer.s.remembernoteSearchability;
 
-const v = ref(props.currentSearchbility);
+const v = ref(props.currentSearchability);
 
 function choose(searchbility: typeof Misskey.noteSearchability[number]): void {
 	v.value = searchbility;

@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { hi } from 'date-fns/locale';
-
 export const notificationRecieveConfig = {
 	type: 'object',
 	oneOf: [
@@ -398,7 +396,7 @@ export const packedUserDetailedNotMeOnlySchema = {
 		searchableBy: {
 			type: 'string',
 			nullable: true, optional: false,
-			enum: ['public', 'followers', 'private'],
+			enum: ['public', 'followersAndReacted', 'reactedOnly', 'private'],
 		},
 		chatScope: {
 			type: 'string',

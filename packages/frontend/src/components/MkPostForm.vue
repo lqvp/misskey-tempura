@@ -30,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span v-if="visibility === 'specified'"><i class="ti ti-mail"></i></span>
 					<span :class="$style.headerRightButtonText">{{ i18n.ts._visibility[visibility] }}</span>
 				</button>
-				<button v-if="channel == null" ref="searchbilityButton" v-click-anime v-tooltip="i18n.ts._searchability.tooltip" :class="['_button', $style.headerRightItem, $style.visibility]" @click="setSearchbility">
+				<button v-if="channel == null" ref="searchabilityButton" v-click-anime v-tooltip="i18n.ts._searchability.tooltip" :class="['_button', $style.headerRightItem, $style.visibility]" @click="setSearchability">
 					<span v-if="searchableBy === 'public'"><i class="ti ti-world-search"></i></span>
 					<span v-if="searchableBy === 'followersAndReacted'"><i class="ti ti-user-search"></i></span>
 					<span v-if="searchableBy === 'reactedOnly'"><i class="ti ti-lock-search"></i></span>
@@ -201,7 +201,7 @@ const cwInputEl = useTemplateRef('cwInputEl');
 const hashtagsInputEl = useTemplateRef('hashtagsInputEl');
 const visibilityButton = useTemplateRef('visibilityButton');
 const otherSettingsButton = useTemplateRef('otherSettingsButton');
-const searchbilityButton = useTemplateRef('searchbilityButton');
+const searchabilityButton = useTemplateRef('searchabilityButton');
 
 const posting = ref(false);
 const posted = ref(false);
@@ -724,19 +724,23 @@ async function toggleLocalOnly() {
 	}
 }
 
-function setSearchbility() {
-	const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkSearchabilityPicker.vue')), {
-		currentSearchbility: searchableBy.value,
-		anchorElement: searchbilityButton.value,
-	}, {
-		changeSearchbility: v => {
-			searchableBy.value = v;
-			if (prefer.s.remembernoteSearchability) {
-				store.set('searchbility', searchableBy.value);
-			}
+function setSearchability() {
+	const { dispose } = os.popup(
+		defineAsyncComponent(() => import('@/components/MkSearchabilityPicker.vue')),
+		{
+			currentSearchability: searchableBy.value,
+			anchorElement: searchabilityButton.value,
 		},
-		closed: () => dispose(),
-	});
+		{
+			changeSearchability: v => {
+				searchableBy.value = v;
+				if (prefer.s.remembernoteSearchability) {
+					store.set('searchableBy', searchableBy.value);
+				}
+			},
+			closed: () => dispose(),
+		},
+	);
 }
 
 async function toggleReactionAcceptance() {
