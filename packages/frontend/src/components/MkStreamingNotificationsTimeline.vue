@@ -74,6 +74,7 @@ const paginator = props.notUseGrouped ? markRaw(new Paginator('i/notifications',
 	limit: 20,
 	computedParams: computed(() => ({
 		excludeTypes: props.excludeTypes ?? undefined,
+		groupNote: true,
 	})),
 })) : markRaw(new Paginator('i/notifications', {
 	limit: 20,

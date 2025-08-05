@@ -28288,6 +28288,11 @@ export interface operations {
                     untilDate?: number;
                     /** @default true */
                     markAsRead?: boolean;
+                    /**
+                     * @description 新着ノート通知をまとめるか
+                     * @default false
+                     */
+                    groupNote?: boolean;
                     includeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'blocked' | 'unblocked' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'loginFailed' | 'createToken' | 'scheduledNotePosted' | 'scheduledNoteFailed' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
                     excludeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'blocked' | 'unblocked' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'loginFailed' | 'createToken' | 'scheduledNotePosted' | 'scheduledNoteFailed' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
                 };
