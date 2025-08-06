@@ -4138,3 +4138,10 @@ searchResults: "{search}件"
 _decorationMuting:
   mute: "デコレーションをミュート"
   unmute: "デコレーションのミュートを解除"
+
+_webFeedFilter:
+  title: "Webフィードのフィルター"
+  description: "Webフィードのフィルターを設定します。"
+  disableRss: "RSSを無効にする"
+  disableAtom: "Atomを無効にする"
+  disableJson: "JSONを無効にする"

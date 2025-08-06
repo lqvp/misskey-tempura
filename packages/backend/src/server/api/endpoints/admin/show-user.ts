@@ -248,6 +248,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				autoFollowBack: profile.autoFollowBack,
 				autoFollowOnMove: profile.autoFollowOnMove,
 				outboxFilter: profile.outboxFilter,
+				webFeedFilter: profile.webFeedFilter,
 				receiveSpecifiedNotesFrom: profile.receiveSpecifiedNotesFrom,
 				noCrawle: profile.noCrawle,
 				preventAiLearning: profile.preventAiLearning,

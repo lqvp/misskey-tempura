@@ -40,7 +40,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkFolder>
 				<template #label>{{ i18n.ts._outboxFilter.title }}</template>
 				<template #caption>{{ i18n.ts._outboxFilter.description }}</template>
-				<div class="_gpas_m">
+				<div class="_gaps_m">
 					<SearchMarker :keywords="['outbox', 'filter', 'public']">
 						<MkSwitch v-model="outboxFilter.public" @update:modelValue="save_privacy()">
 							{{ i18n.ts._outboxFilter.publicVisibility }}
@@ -59,6 +59,30 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkSwitch v-model="outboxFilter.home" @update:modelValue="save_privacy()">
 							{{ i18n.ts._outboxFilter.homeVisibility }}
 							<template #caption>{{ i18n.ts._outboxFilter.homeVisibilityDescription }}</template>
+						</MkSwitch>
+					</SearchMarker>
+				</div>
+			</MkFolder>
+
+			<MkFolder>
+				<template #label>{{ i18n.ts._webFeedFilter.title }}</template>
+				<template #caption>{{ i18n.ts._webFeedFilter.description }}</template>
+				<div class="_gaps_m">
+					<SearchMarker :keywords="['outbox', 'filter', 'public']">
+						<MkSwitch v-model="outboxFilter.public" @update:modelValue="save_privacy()">
+							{{ i18n.ts._webFeedFilter.disableRss }}
+						</MkSwitch>
+					</SearchMarker>
+
+					<SearchMarker :keywords="['outbox', 'filter', 'public_non_ltl']">
+						<MkSwitch v-model="outboxFilter.public_non_ltl" @update:modelValue="save_privacy()">
+							{{ i18n.ts._webFeedFilter.disableAtom }}
+						</MkSwitch>
+					</SearchMarker>
+
+					<SearchMarker :keywords="['outbox', 'filter', 'home']">
+						<MkSwitch v-model="outboxFilter.home" @update:modelValue="save_privacy()">
+							{{ i18n.ts._webFeedFilter.disableJson }}
 						</MkSwitch>
 					</SearchMarker>
 				</div>
@@ -129,6 +153,7 @@ const autoRejectFollowRequest = ref($i.autoRejectFollowRequest);
 const autoFollowBack = ref($i.autoFollowBack);
 const autoFollowOnMove = ref($i.autoFollowOnMove);
 const outboxFilter = ref({ public: true, public_non_ltl: true, home: true, ...$i.outboxFilter });
+const webFeedFilter = ref({ rss: true, atom: true, json: true, ...$i.webFeedFilter });
 const carefulBot = ref($i.carefulBot);
 const hideActivity = ref($i.hideActivity);
 const hideNoteFromOverview = ref($i.hideNoteFromOverview);
@@ -146,6 +171,11 @@ function save_privacy() {
 			public: !!outboxFilter.value.public,
 			public_non_ltl: !!outboxFilter.value.public_non_ltl,
 			home: !!outboxFilter.value.home,
+		},
+		webFeedFilter: {
+			rss: !!webFeedFilter.value.rss,
+			atom: !!webFeedFilter.value.atom,
+			json: !!webFeedFilter.value.json,
 		},
 		carefulBot: !!carefulBot.value,
 		hideActivity: !!hideActivity.value,

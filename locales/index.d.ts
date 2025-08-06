@@ -15296,6 +15296,28 @@ export interface Locale extends ILocale {
          */
         "unmute": string;
     };
+    "_webFeedFilter": {
+        /**
+         * Webフィードのフィルター
+         */
+        "title": string;
+        /**
+         * Webフィードのフィルターを設定します。
+         */
+        "description": string;
+        /**
+         * RSSを無効にする
+         */
+        "disableRss": string;
+        /**
+         * Atomを無効にする
+         */
+        "disableAtom": string;
+        /**
+         * JSONを無効にする
+         */
+        "disableJson": string;
+    };
 }
 declare const locales: {
     [lang: string]: Locale;
