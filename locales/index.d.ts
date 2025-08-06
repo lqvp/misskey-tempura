@@ -10813,6 +10813,15 @@ export interface Locale extends ILocale {
          * 心当たりがない場合は「{text}」を通じてアクセストークンを削除してください。
          */
         "createTokenDescription": ParameterizedString<"text">;
+        /**
+         * フォロー関係を整理しました。
+         */
+        "cleanupDanglingFollowsCompleted": string;
+        /**
+         * {count}件のゾンビ関係を削除しました。
+         * これにより、フォロー数やフォロワー数が変わるかもしれません。
+         */
+        "cleanupDanglingFollowsCompletedDescription": ParameterizedString<"count">;
         "_types": {
             /**
              * すべて
@@ -10902,6 +10911,10 @@ export interface Locale extends ILocale {
              * アクセストークンの作成
              */
             "createToken": string;
+            /**
+             * フォロー関係の整理が完了した
+             */
+            "cleanupDanglingFollowsCompleted": string;
             /**
              * 通知のテスト
              */
@@ -15295,6 +15308,28 @@ export interface Locale extends ILocale {
          * デコレーションのミュートを解除
          */
         "unmute": string;
+    };
+    "_relationCleanup": {
+        /**
+         * フォロー関係の整理
+         */
+        "title": string;
+        /**
+         * フォローまたはフォロワーの中から、現在削除されているアカウントとの関係を削除し、フォロー・フォロワー数を再計算します。
+         */
+        "description": string;
+        /**
+         * クリーンアップを実行
+         */
+        "cleanup": string;
+        /**
+         * 削除済みアカウントとのフォロー関係を整理しますか？
+         */
+        "cleanupConfirm": string;
+        /**
+         * フォロー関係のクリーンアップ処理を開始しました。完了すると通知が届きます。
+         */
+        "cleanupStarted": string;
     };
 }
 declare const locales: {

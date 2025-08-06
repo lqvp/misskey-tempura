@@ -51,6 +51,7 @@ import { ReDownloadRemoteFileProcessorService } from './processors/ReDownloadRem
 import { ScheduleNotePostProcessorService } from './processors/ScheduleNotePostProcessorService.js';
 import { ScheduledNoteDeleteProcessorService } from './processors/ScheduledNoteDeleteProcessorService.js';
 import { CleanExpiredMultipartUploadsProcessorService } from './processors/CleanExpiredMultipartUploadsProcessorService.js';
+import { CleanupDanglingFollowsProcessorService } from './processors/CleanupDanglingFollowsProcessorService.js';
 
 // ref. https://github.com/misskey-dev/misskey/pull/7635#issue-971097019
 function httpRelatedBackoff(attemptsMade: number) {
@@ -137,6 +138,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 		private scheduleNotePostProcessorService: ScheduleNotePostProcessorService,
 		private scheduledNoteDeleteProcessorService: ScheduledNoteDeleteProcessorService,
 		private cleanExpiredMultipartUploadsProcessorService: CleanExpiredMultipartUploadsProcessorService,
+		private cleanupDanglingFollowsProcessorService: CleanupDanglingFollowsProcessorService,
 	) {
 		this.logger = this.queueLoggerService.logger;
 
@@ -237,6 +239,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					case 'importAntennas': return this.importAntennasProcessorService.process(job);
 					case 'deleteAccount': return this.deleteAccountProcessorService.process(job);
 					case 'truncateAccount': return this.truncateAccountProcessorService.process(job);
+					case 'cleanupDanglingFollows': return this.cleanupDanglingFollowsProcessorService.process(job);
 					default: throw new Error(`unrecognized job type ${job.name} for db`);
 				}
 			};

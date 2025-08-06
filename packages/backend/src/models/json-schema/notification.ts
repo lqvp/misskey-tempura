@@ -463,16 +463,6 @@ export const packedNotificationSchema = {
 			type: {
 				type: 'string',
 				optional: false, nullable: false,
-				enum: ['createToken'],
-			},
-		},
-	}, {
-		type: 'object',
-		properties: {
-			...baseSchema.properties,
-			type: {
-				type: 'string',
-				optional: false, nullable: false,
 				enum: ['app'],
 			},
 			body: {
@@ -523,6 +513,20 @@ export const packedNotificationSchema = {
 				enum: ['scheduledNoteFailed'],
 			},
 			reason: {
+				type: 'string',
+				optional: false, nullable: false,
+			},
+		},
+	}, {
+		type: 'object',
+		properties: {
+			...baseSchema.properties,
+			type: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['cleanupDanglingFollowsCompleted'],
+			},
+			count: {
 				type: 'string',
 				optional: false, nullable: false,
 			},

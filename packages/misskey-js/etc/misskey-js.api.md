@@ -1998,6 +1998,7 @@ declare namespace entities {
         IAuthorizedAppsResponse,
         IChangePasswordRequest,
         IClaimAchievementRequest,
+        ICleanupDanglingFollowsResponse,
         IDeleteAccountRequest,
         IExportFollowingRequest,
         IFavoritesRequest,
@@ -2677,6 +2678,9 @@ export interface IChannelConnection<Channel extends AnyOf<Channels> = AnyOf<Chan
 
 // @public (undocumented)
 type IClaimAchievementRequest = operations['i___claim-achievement']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type ICleanupDanglingFollowsResponse = operations['i___cleanup-dangling-follows']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type ID = string;
