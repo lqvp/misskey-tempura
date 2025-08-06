@@ -39,6 +39,41 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			autoRejectFollowRequest: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			autoFollowBack: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			autoFollowOnMove: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			outboxFilter: {
+				type: 'object',
+				optional: false, nullable: false,
+				properties: {
+					public: { type: 'boolean', nullable: false, optional: false },
+					public_non_ltl: { type: 'boolean', nullable: false, optional: false },
+					home: { type: 'boolean', nullable: false, optional: false },
+				},
+			},
+			webFeedFilter: {
+				type: 'object',
+				optional: false, nullable: false,
+				properties: {
+					rss: { type: 'boolean', nullable: false, optional: false },
+					atom: { type: 'boolean', nullable: false, optional: false },
+					json: { type: 'boolean', nullable: false, optional: false },
+				},
+			},
+			receiveSpecifiedNotesFrom: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['all', 'following', 'nobody'],
+			},
 			noCrawle: {
 				type: 'boolean',
 				optional: false, nullable: false,

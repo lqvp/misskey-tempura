@@ -68,20 +68,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<template #label>{{ i18n.ts._webFeedFilter.title }}</template>
 				<template #caption>{{ i18n.ts._webFeedFilter.description }}</template>
 				<div class="_gaps_m">
-					<SearchMarker :keywords="['outbox', 'filter', 'public']">
-						<MkSwitch v-model="outboxFilter.public" @update:modelValue="save_privacy()">
+					<SearchMarker :keywords="['web', 'feed', 'filter', 'rss']">
+						<MkSwitch v-model="webFeedFilter.rss" @update:modelValue="save_privacy()">
 							{{ i18n.ts._webFeedFilter.disableRss }}
 						</MkSwitch>
 					</SearchMarker>
 
-					<SearchMarker :keywords="['outbox', 'filter', 'public_non_ltl']">
-						<MkSwitch v-model="outboxFilter.public_non_ltl" @update:modelValue="save_privacy()">
+					<SearchMarker :keywords="['web', 'feed', 'filter', 'atom']">
+						<MkSwitch v-model="webFeedFilter.atom" @update:modelValue="save_privacy()">
 							{{ i18n.ts._webFeedFilter.disableAtom }}
 						</MkSwitch>
 					</SearchMarker>
 
-					<SearchMarker :keywords="['outbox', 'filter', 'home']">
-						<MkSwitch v-model="outboxFilter.home" @update:modelValue="save_privacy()">
+					<SearchMarker :keywords="['web', 'feed', 'filter', 'json']">
+						<MkSwitch v-model="webFeedFilter.json" @update:modelValue="save_privacy()">
 							{{ i18n.ts._webFeedFilter.disableJson }}
 						</MkSwitch>
 					</SearchMarker>
@@ -153,7 +153,7 @@ const autoRejectFollowRequest = ref($i.autoRejectFollowRequest);
 const autoFollowBack = ref($i.autoFollowBack);
 const autoFollowOnMove = ref($i.autoFollowOnMove);
 const outboxFilter = ref({ public: true, public_non_ltl: true, home: true, ...$i.outboxFilter });
-const webFeedFilter = ref({ rss: true, atom: true, json: true, ...$i.webFeedFilter });
+const webFeedFilter = ref({ disableRss: true, disableAtom: true, disableJson: true, ...$i.webFeedFilter });
 const carefulBot = ref($i.carefulBot);
 const hideActivity = ref($i.hideActivity);
 const hideNoteFromOverview = ref($i.hideNoteFromOverview);
@@ -173,9 +173,9 @@ function save_privacy() {
 			home: !!outboxFilter.value.home,
 		},
 		webFeedFilter: {
-			rss: !!webFeedFilter.value.rss,
-			atom: !!webFeedFilter.value.atom,
-			json: !!webFeedFilter.value.json,
+			disableRss: !!webFeedFilter.value.disableRss,
+			disableAtom: !!webFeedFilter.value.disableAtom,
+			disableJson: !!webFeedFilter.value.disableJson,
 		},
 		carefulBot: !!carefulBot.value,
 		hideActivity: !!hideActivity.value,

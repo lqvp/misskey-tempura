@@ -12998,6 +12998,21 @@ export interface operations {
                         emailVerified: boolean;
                         followedMessage: string | null;
                         autoAcceptFollowed: boolean;
+                        autoRejectFollowRequest: boolean;
+                        autoFollowBack: boolean;
+                        autoFollowOnMove: boolean;
+                        outboxFilter: {
+                            public: boolean;
+                            public_non_ltl: boolean;
+                            home: boolean;
+                        };
+                        webFeedFilter: {
+                            rss: boolean;
+                            atom: boolean;
+                            json: boolean;
+                        };
+                        /** @enum {string} */
+                        receiveSpecifiedNotesFrom: 'all' | 'following' | 'nobody';
                         noCrawle: boolean;
                         preventAiLearning: boolean;
                         alwaysMarkNsfw: boolean;
