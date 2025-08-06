@@ -64,9 +64,9 @@ export const meta = {
 				type: 'object',
 				optional: false, nullable: false,
 				properties: {
-					rss: { type: 'boolean', nullable: false, optional: false },
-					atom: { type: 'boolean', nullable: false, optional: false },
-					json: { type: 'boolean', nullable: false, optional: false },
+					disableRss: { type: 'boolean', nullable: false, optional: false },
+					disableAtom: { type: 'boolean', nullable: false, optional: false },
+					disableJson: { type: 'boolean', nullable: false, optional: false },
 				},
 			},
 			receiveSpecifiedNotesFrom: {
