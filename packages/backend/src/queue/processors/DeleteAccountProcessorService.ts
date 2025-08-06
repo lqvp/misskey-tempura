@@ -4,7 +4,7 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import { MoreThan } from 'typeorm';
+import { In, MoreThan } from 'typeorm';
 import { DI } from '@/di-symbols.js';
 import type { DriveFilesRepository, FollowingsRepository, NotesRepository, UserProfilesRepository, UsersRepository } from '@/models/_.js';
 import type Logger from '@/logger.js';
@@ -60,7 +60,7 @@ export class DeleteAccountProcessorService {
 
 		{ // Unfollow all
 			let cursor: MiFollowing['id'] | null = null;
-			const BATCH_SIZE = 100;
+			const BATCH_SIZE = 50;
 
 			while (true) {
 				const relations = await this.followingsRepository.find({
@@ -80,23 +80,27 @@ export class DeleteAccountProcessorService {
 
 				cursor = relations[relations.length - 1].id;
 
-				for (const f of relations) {
-					const followee = await this.usersRepository.findOneBy({ id: f.followeeId });
+				const followeeIds = relations.map(f => f.followeeId);
+				if (followeeIds.length === 0) continue;
+				const followees = await this.usersRepository.findBy({ id: In(followeeIds) });
+				const followeesMap = new Map(followees.map(u => [u.id, u]));
+
+				await Promise.all(relations.map(f => {
+					const followee = followeesMap.get(f.followeeId);
 					if (followee) {
-						try {
-							await this.userFollowingService.unfollow(user, followee, true);
-						} catch (error) {
+						return this.userFollowingService.unfollow(user, followee, true).catch(error => {
 							this.logger.warn(error as any);
-						}
+						});
 					}
-				}
+					return Promise.resolve();
+				}));
 			}
 			this.logger.succ('All of following deleted');
 		}
 
 		{ // Unfollowed by all
 			let cursor: MiFollowing['id'] | null = null;
-			const BATCH_SIZE = 100;
+			const BATCH_SIZE = 50;
 
 			while (true) {
 				const relations = await this.followingsRepository.find({
@@ -116,16 +120,20 @@ export class DeleteAccountProcessorService {
 
 				cursor = relations[relations.length - 1].id;
 
-				for (const f of relations) {
-					const follower = await this.usersRepository.findOneBy({ id: f.followerId });
+				const followerIds = relations.map(f => f.followerId);
+				if (followerIds.length === 0) continue;
+				const followers = await this.usersRepository.findBy({ id: In(followerIds) });
+				const followersMap = new Map(followers.map(u => [u.id, u]));
+
+				await Promise.all(relations.map(f => {
+					const follower = followersMap.get(f.followerId);
 					if (follower) {
-						try {
-							await this.userFollowingService.unfollow(follower, user, true);
-						} catch (error) {
+						return this.userFollowingService.unfollow(follower, user, true).catch(error => {
 							this.logger.warn(error as any);
-						}
+						});
 					}
-				}
+					return Promise.resolve();
+				}));
 			}
 			this.logger.succ('All of followers deleted');
 		}
