@@ -13007,9 +13007,9 @@ export interface operations {
                             home: boolean;
                         };
                         webFeedFilter: {
-                            rss: boolean;
-                            atom: boolean;
-                            json: boolean;
+                            disableRss: boolean;
+                            disableAtom: boolean;
+                            disableJson: boolean;
                         };
                         /** @enum {string} */
                         receiveSpecifiedNotesFrom: 'all' | 'following' | 'nobody';
