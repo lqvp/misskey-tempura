@@ -208,6 +208,9 @@ export class NotificationEntityService implements OnModuleInit {
 			...(notification.type === 'scheduledNoteFailed' ? {
 				reason: notification.reason,
 			} : {}),
+			...(notification.type === 'cleanupDanglingFollowsCompleted' ? {
+				count: notification.count,
+			} : {}),
 			...(notification.type === 'login' ? {
 				ip: notification.userIp,
 			} : {}),

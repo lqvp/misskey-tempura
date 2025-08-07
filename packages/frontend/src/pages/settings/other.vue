@@ -67,6 +67,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkFolder>
 			</SearchMarker>
 
+			<SearchMarker :keywords="['account', 'follow', 'follower', 'cleanup']">
+				<MkFolder>
+					<template #icon><SearchIcon><i class="ti ti-user-off"></i></SearchIcon></template>
+					<template #label><SearchLabel>{{ i18n.ts._relationCleanup.title }}</SearchLabel></template>
+
+					<div class="_gaps_m">
+						<FormInfo>{{ i18n.ts._relationCleanup.description }}</FormInfo>
+						<MkButton @click="cleanupDanglingFollows">{{ i18n.ts._relationCleanup.cleanup }}</MkButton>
+					</div>
+				</MkFolder>
+			</SearchMarker>
+
 			<SearchMarker :keywords="['account', 'close', 'delete']">
 				<MkFolder>
 					<template #icon><SearchIcon><i class="ti ti-alert-triangle"></i></SearchIcon></template>
@@ -81,17 +93,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkFolder>
 			</SearchMarker>
 
-				<SearchMarker :keywords="['account', 'truncate']">
-					<MkFolder v-if="$i.policies.canUseTruncate">
-						<template #icon><i class="ti ti-recycle"></i></template>
-						<template #label><SearchLabel>{{ i18n.ts._accountTruncate.truncateAccount }}</SearchLabel><span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-						<div class="_gaps_m">
-							<FormInfo warn>{{ i18n.ts._accountTruncate.mayTakeTime }}</FormInfo>
-							<MkButton v-if="!$i.isDeleted" danger @click="truncateAccount">{{ i18n.ts._accountTruncate.requestAccountTruncate }}</MkButton>
-							<MkButton v-else disabled>{{ i18n.ts._accountTruncate.inProgress }}</MkButton>
-						</div>
-					</MkFolder>
-				</SearchMarker>
+			<SearchMarker :keywords="['account', 'truncate']">
+				<MkFolder v-if="$i.policies.canUseTruncate">
+					<template #icon><i class="ti ti-recycle"></i></template>
+					<template #label><SearchLabel>{{ i18n.ts._accountTruncate.truncateAccount }}</SearchLabel><span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+					<div class="_gaps_m">
+						<FormInfo warn>{{ i18n.ts._accountTruncate.mayTakeTime }}</FormInfo>
+						<MkButton v-if="!$i.isDeleted" danger @click="truncateAccount">{{ i18n.ts._accountTruncate.requestAccountTruncate }}</MkButton>
+						<MkButton v-else disabled>{{ i18n.ts._accountTruncate.inProgress }}</MkButton>
+					</div>
+				</MkFolder>
+			</SearchMarker>
 
 			<SearchMarker :keywords="['experimental', 'feature', 'flags']">
 				<MkFolder>
@@ -210,6 +222,17 @@ async function deleteAccount() {
 	});
 
 	await signout();
+}
+
+async function cleanupDanglingFollows() {
+	const { canceled } = await os.confirm({
+		text: i18n.ts._relationCleanup.cleanupConfirm,
+	});
+	if (canceled) return;
+
+	await os.apiWithDialog('i/cleanup-dangling-follows', {});
+
+	os.toast(i18n.ts._relationCleanup.cleanupStarted);
 }
 
 function migrate() {

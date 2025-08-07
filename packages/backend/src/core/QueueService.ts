@@ -17,6 +17,7 @@ import { bindThis } from '@/decorators.js';
 import type { Antenna } from '@/server/api/endpoints/i/import-antennas.js';
 import { ApRequestCreator } from '@/core/activitypub/ApRequestService.js';
 import { type SystemWebhookPayload } from '@/core/SystemWebhookService.js';
+import type { Packed } from '@/misc/json-schema.js';
 import { type UserWebhookPayload } from './UserWebhookService.js';
 import type {
 	DbJobData,
@@ -43,7 +44,6 @@ import type {
 } from './QueueModule.js';
 import type httpSignature from '@peertube/http-signature';
 import type * as Bull from 'bullmq';
-import type { Packed } from '@/misc/json-schema.js';
 
 export const QUEUE_TYPES = [
 	'system',
@@ -608,6 +608,22 @@ export class QueueService {
 	@bindThis
 	public createTruncateAccountJob(user: ThinUser) {
 		return this.dbQueue.add('truncateAccount', {
+			user: { id: user.id },
+		}, {
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
+		});
+	}
+
+	@bindThis
+	public createCleanupDanglingFollowsJob(user: ThinUser) {
+		return this.dbQueue.add('cleanupDanglingFollows', {
 			user: { id: user.id },
 		}, {
 			removeOnComplete: {
