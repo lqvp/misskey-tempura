@@ -452,7 +452,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkFolder>
 
 			<MkFolder v-if="matchQuery([i18n.ts._role._options.canSearchUsers, 'canSearchUsers'])">
-				<template #label>{{ i18n.ts._role._options.canSearchUsers }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+				<template #label>{{ i18n.ts._role._options.canSearchUsers }}</template>
 				<template #suffix>
 					<span v-if="role.policies.canSearchUsers.useDefault" :class="$style.useDefaultLabel">{{ i18n.ts._role.useBaseValue }}</span>
 					<span v-else>{{ role.policies.canSearchUsers.value ? i18n.ts.yes : i18n.ts.no }}</span>

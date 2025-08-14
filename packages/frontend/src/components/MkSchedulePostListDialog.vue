@@ -40,13 +40,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 										<i class="ti ti-eye-off"></i> {{ schedule.note.cw }}
 									</div>
 									<div v-if="schedule.note.fileIds.length > 0" class="_nowrap">
-										<i class="ti ti-photo"></i> {{ i18n.t('withNFiles', { n: schedule.note.fileIds.length }) }}
+										<i class="ti ti-photo"></i> {{ i18n.tsx.withNFiles({ n: schedule.note.fileIds.length }) }}
 									</div>
 								</div>
 							</div>
 							<div :class="$style.scheduleContent">
 								<Mfm v-if="schedule.note.text" :text="schedule.note.text" :plain="true" :author="schedule.note.user"/>
-								<div v-else class="empty">{{ i18n.ts.noText }}</div>
+								<div v-else class="empty">{{ i18n.ts.nothing }}</div>
 							</div>
 							<div :class="$style.scheduleFooter">
 								<div :class="$style.scheduleVisibility">
@@ -190,7 +190,7 @@ async function editSchedule(schedule: SchedulePost) {
 async function deleteSchedule(schedule: SchedulePost) {
 	const { canceled } = await os.confirm({
 		type: 'warning',
-		text: String(i18n.tsx.deleteAreYouSure({ x: schedule.note.text ?? String(i18n.ts.noText) })),
+		text: String(i18n.tsx.deleteAreYouSure({ x: schedule.note.text ?? String(i18n.ts.nothing) })),
 	});
 
 	if (canceled) return;

@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkPagination :paginator="paginator">
 					<template #empty>
 						<div class="_fullinfo">
-							<MkResult type="empty" :text="i18n.t(`${i18nScope}.empty` as any)"/>
+							<MkResult type="empty" :text="i18nScope === '_followHistory' ? i18n.ts._followHistory.empty : i18n.ts._followRequestHistory.empty"/>
 						</div>
 					</template>
 					<template #default="{ items }: { items: HistoryItem[] }">
@@ -59,12 +59,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 										</div>
 										<p class="action">
 											<i :class="getActionConfig(history.type).icon"></i>
-											<Mfm
-												:text="getActionText(history.type, history)"
-												:author="(getActionConfig(history.type).avatarUser === 'fromUser' ? history.fromUser : history.toUser) ?? undefined"
-												:plain="true"
-												:emojiUrls="(getActionConfig(history.type).avatarUser === 'fromUser' ? history.fromUser?.emojis : history.toUser?.emojis) ?? {}"
-											/>
+											<span v-if="history.type === 'follow'">{{ i18n.tsx._followHistory.follow({ user: history.toUser?.name ?? history.toUser?.username ?? i18n.ts.unknown }) }}</span>
+											<span v-else-if="history.type === 'unFollow'">{{ i18n.tsx._followHistory.unFollow({ user: history.toUser?.name ?? history.toUser?.username ?? i18n.ts.unknown }) }}</span>
+											<span v-else-if="history.type === 'wasFollow'">{{ i18n.tsx._followHistory.wasFollow({ user: history.fromUser?.name ?? history.fromUser?.username ?? i18n.ts.unknown }) }}</span>
+											<span v-else-if="history.type === 'wasUnFollow'">{{ i18n.tsx._followHistory.wasUnFollow({ user: history.fromUser?.name ?? history.fromUser?.username ?? i18n.ts.unknown }) }}</span>
+											<span v-else-if="history.type === 'blocked'">{{ i18n.tsx._followHistory.blocked({ user: history.toUser?.name ?? history.toUser?.username ?? i18n.ts.unknown }) }}</span>
+											<span v-else-if="history.type === 'unBlocked'">{{ i18n.tsx._followHistory.unBlocked({ user: history.toUser?.name ?? history.toUser?.username ?? i18n.ts.unknown }) }}</span>
+											<span v-else-if="history.type === 'wasBlocked'">{{ i18n.tsx._followHistory.wasBlocked({ user: history.fromUser?.name ?? history.fromUser?.username ?? i18n.ts.unknown }) }}</span>
+											<span v-else-if="history.type === 'wasUnBlocked'">{{ i18n.tsx._followHistory.wasUnBlocked({ user: history.fromUser?.name ?? history.fromUser?.username ?? i18n.ts.unknown }) }}</span>
+											<span v-else-if="history.type === 'sent'">{{ i18n.tsx._followRequestHistory.sent({ user: history.toUser?.name ?? history.toUser?.username ?? i18n.ts.unknown }) }}</span>
+											<span v-else-if="history.type === 'received'">{{ i18n.tsx._followRequestHistory.received({ user: history.fromUser?.name ?? history.fromUser?.username ?? i18n.ts.unknown }) }}</span>
+											<span v-else-if="history.type === 'approved'">{{ i18n.tsx._followRequestHistory.approved({ user: history.toUser?.name ?? history.toUser?.username ?? i18n.ts.unknown }) }}</span>
+											<span v-else-if="history.type === 'rejected'">{{ i18n.tsx._followRequestHistory.rejected({ user: history.toUser?.name ?? history.toUser?.username ?? i18n.ts.unknown }) }}</span>
+											<span v-else-if="history.type === 'wasApproved'">{{ i18n.tsx._followRequestHistory.wasApproved({ user: history.fromUser?.name ?? history.fromUser?.username ?? i18n.ts.unknown }) }}</span>
+											<span v-else-if="history.type === 'wasRejected'">{{ i18n.tsx._followRequestHistory.wasRejected({ user: history.fromUser?.name ?? history.fromUser?.username ?? i18n.ts.unknown }) }}</span>
 										</p>
 									</div>
 									<div class="info">
@@ -114,7 +122,6 @@ const {
 	tab,
 	paginator,
 	getActionConfig,
-	getActionText,
 	headerActions,
 	headerTabs,
 } = useHistoryPage(props.endpoint, props.actionConfig, props.i18nScope);

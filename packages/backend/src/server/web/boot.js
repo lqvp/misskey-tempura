@@ -173,55 +173,31 @@ class Systemd {
 		});
 	}
 
-	//#region Detect language & fetch translations
-	if (!localStorage.hasOwnProperty('locale')) {
-		const supportedLangs = LANGS;
-		let lang = localStorage.getItem('lang');
-		if (lang == null || !supportedLangs.includes(lang)) {
+	//#region Detect language
+	const supportedLangs = LANGS;
+	/** @type { string } */
+	let lang = localStorage.getItem('lang');
+	if (lang == null || !supportedLangs.includes(lang)) {
+		if (supportedLangs.includes(navigator.language)) {
 			lang = 'ja-JP';
-		}
-
-		const metaRes = await systemd.start('Fetch /api/meta', window.fetch('/api/meta', {
-			method: 'POST',
-			body: JSON.stringify({}),
-			credentials: 'omit',
-			cache: 'no-cache',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-		}));
-		if (metaRes.status !== 200) {
-			renderError('META_FETCH');
-			return;
-		}
-		const meta = await systemd.start('Parse /api/meta', metaRes.json());
-		const v = meta.version;
-		if (v == null) {
-			renderError('META_FETCH_V');
-			return;
-		}
-
-		// for https://github.com/misskey-dev/misskey/issues/10202
-		if (lang == null || lang.toString == null || lang.toString() === 'null') {
-			console.error('invalid lang value detected!!!', typeof lang, lang);
-			lang = 'en-US';
-		}
-
-		const localRes = await systemd.start('Fetch Locale files', window.fetch(`/assets/locales/${lang}.${v}.json`));
-		if (localRes.status === 200) {
-			localStorage.setItem('lang', lang);
-			localStorage.setItem('locale', await localRes.text());
-			localStorage.setItem('localeVersion', v);
 		} else {
-			renderError('LOCALE_FETCH');
-			return;
+			lang = supportedLangs.find(x => x.split('-')[0] === navigator.language);
+
+			// Fallback
+			if (lang == null) lang = 'en-US';
 		}
+	}
+
+	// for https://github.com/misskey-dev/misskey/issues/10202
+	if (lang == null || lang.toString == null || lang.toString() === 'null') {
+		console.error('invalid lang value detected!!!', typeof lang, lang);
+		lang = 'en-US';
 	}
 	//#endregion
 
 	//#region Script
 	async function importAppScript() {
-		await systemd.start('Load App Script', import(`/vite/${CLIENT_ENTRY}`))
+		await systemd.start('Load App Script', import(CLIENT_ENTRY ? `/vite/${CLIENT_ENTRY.replace('scripts', lang)}` : '/vite/src/_boot_.ts'))
 			.catch(async e => {
 				console.error(e);
 				renderError('APP_IMPORT', e);
@@ -244,25 +220,39 @@ class Systemd {
 	}
 	//#endregion
 
-	//#region Theme
-	const theme = localStorage.getItem('theme');
-	if (theme) {
-		await systemd.startSync('Apply theme', () => {
-			for (const [k, v] of Object.entries(JSON.parse(theme))) {
-				document.documentElement.style.setProperty(`--MI_THEME-${k}`, v.toString());
+	let isSafeMode = (localStorage.getItem('isSafeMode') === 'true');
 
-				// HTMLの theme-color 適用
-				if (k === 'htmlThemeColor') {
-					for (const tag of document.head.children) {
-						if (tag.tagName === 'META' && tag.getAttribute('name') === 'theme-color') {
-							tag.setAttribute('content', v);
-							break;
+	if (!isSafeMode) {
+		const urlParams = new URLSearchParams(window.location.search);
+
+		if (urlParams.has('safemode') && urlParams.get('safemode') === 'true') {
+			localStorage.setItem('isSafeMode', 'true');
+			isSafeMode = true;
+		}
+	}
+
+	//#region Theme
+	if (!isSafeMode) {
+		const theme = localStorage.getItem('theme');
+		if (theme) {
+		await systemd.startSync('Apply theme', () => {
+				for (const [k, v] of Object.entries(JSON.parse(theme))) {
+					document.documentElement.style.setProperty(`--MI_THEME-${k}`, v.toString());
+
+					// HTMLの theme-color 適用
+					if (k === 'htmlThemeColor') {
+						for (const tag of document.head.children) {
+							if (tag.tagName === 'META' && tag.getAttribute('name') === 'theme-color') {
+								tag.setAttribute('content', v);
+								break;
+							}
 						}
 					}
 				}
-			}
 		});
+		}
 	}
+
 	const colorScheme = localStorage.getItem('colorScheme');
 	if (colorScheme) {
 		document.documentElement.style.setProperty('color-scheme', colorScheme);
@@ -279,13 +269,15 @@ class Systemd {
 		document.documentElement.classList.add('useSystemFont');
 	}
 
-	const customCss = localStorage.getItem('customCss');
-	if (customCss && customCss.length > 0) {
+	if (!isSafeMode) {
+		const customCss = localStorage.getItem('customCss');
+		if (customCss && customCss.length > 0) {
 		await systemd.startSync('Apply custom CSS', () => {
-			const style = document.createElement('style');
-			style.innerHTML = customCss;
-			document.head.appendChild(style);
+				const style = document.createElement('style');
+				style.innerHTML = customCss;
+				document.head.appendChild(style);
 		});
+		}
 	}
 
 	async function addStyle(styleText) {

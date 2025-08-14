@@ -15,9 +15,8 @@ import { ApiError } from '../../error.js';
 export const meta = {
 	tags: ['users'],
 
-	requireCredential: true,
-
-	kind: 'read:account',
+	requireCredential: false,
+	requiredRolePolicy: 'canSearchUsers',
 
 	description: 'Search for users.',
 
