@@ -20,6 +20,7 @@ const oneDayMillis = 24 * 60 * 60 * 1000;
 function generateDummyUser(override?: Partial<MiUser>): MiUser {
 	return {
 		id: 'dummy-user-1',
+		searchableBy: 'public',
 		updatedAt: new Date(Date.now() - oneDayMillis * 7),
 		lastFetchedAt: new Date(Date.now() - oneDayMillis * 5),
 		lastActiveDate: new Date(Date.now() - oneDayMillis * 3),
@@ -72,6 +73,7 @@ function generateDummyUser(override?: Partial<MiUser>): MiUser {
 function generateDummyNote(override?: Partial<MiNote>): MiNote {
 	return {
 		id: 'dummy-note-1',
+		searchableBy: 'public',
 		replyId: null,
 		reply: null,
 		renoteId: null,
@@ -397,6 +399,7 @@ export class WebhookTestService {
 			renoteId: note.renoteId,
 			isHidden: false,
 			visibility: note.visibility !== 'public_non_ltl' ? note.visibility : 'public',
+			searchableBy: note.searchableBy,
 			mentions: note.mentions,
 			visibleUserIds: note.visibleUserIds,
 			fileIds: note.fileIds,
@@ -513,6 +516,7 @@ export class WebhookTestService {
 			hideHomeNotes: false,
 			hideLocalOnlyNotes: false,
 			ListenBrainz: null,
+			searchableBy: 'public',
 			...override,
 		};
 	}

@@ -11,6 +11,7 @@ import { MAX_NOTE_TEXT_LENGTH } from '@/const.js';
 import { ApiError } from '@/server/api/error.js';
 import { NoteDraftEntityService } from '@/core/entities/NoteDraftEntityService.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
+import { searchableTypes } from '@/types.js';
 
 export const meta = {
 	tags: ['notes', 'drafts'],
@@ -148,6 +149,7 @@ export const paramDef = {
 		hashtag: { type: 'string', nullable: true, maxLength: 200 },
 		localOnly: { type: 'boolean', default: false },
 		reactionAcceptance: { type: 'string', nullable: true, enum: [null, 'likeOnly', 'likeOnlyForRemote', 'nonSensitiveOnly', 'nonSensitiveOnlyForLocalLikeOnlyForRemote'], default: null },
+		searchableBy: { type: 'string', nullable: true, enum: searchableTypes, default: 'public' },
 		replyId: { type: 'string', format: 'misskey:id', nullable: true },
 		renoteId: { type: 'string', format: 'misskey:id', nullable: true },
 		channelId: { type: 'string', format: 'misskey:id', nullable: true },
@@ -209,6 +211,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				...(ps.hashtag ? { hashtag: ps.hashtag } : {}),
 				localOnly: ps.localOnly,
 				reactionAcceptance: ps.reactionAcceptance,
+				searchableBy: ps.searchableBy ?? 'public',
 				visibility: ps.visibility,
 				visibleUserIds: ps.visibleUserIds ?? [],
 				channelId: ps.channelId ?? undefined,

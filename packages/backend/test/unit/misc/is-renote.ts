@@ -45,8 +45,9 @@ const base: MiNote = {
 	renoteUserHost: null,
 	deleteAt: null,
 	isScheduledForPrivate: false,
-	deliveryTargets: null,
-};
+				deliveryTargets: null,
+			searchableBy: 'public',
+		};
 
 describe('misc:is-renote', () => {
 	test('note without renoteId should not be Renote', () => {

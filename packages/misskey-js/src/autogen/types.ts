@@ -4409,6 +4409,8 @@ export type components = {
             followingVisibility: 'public' | 'followers' | 'private';
             /** @enum {string} */
             followersVisibility: 'public' | 'followers' | 'private';
+            /** @enum {string|null} */
+            searchableBy: 'public' | 'followersAndReacted' | 'reactedOnly' | 'private' | null;
             /** @enum {string} */
             chatScope: 'everyone' | 'following' | 'followers' | 'mutual' | 'none';
             canChat: boolean;
@@ -4776,6 +4778,8 @@ export type components = {
             isHidden?: boolean;
             /** @enum {string} */
             visibility: 'public' | 'home' | 'followers' | 'specified';
+            /** @enum {string|null} */
+            searchableBy?: 'public' | 'followersAndReacted' | 'reactedOnly' | 'private' | null;
             mentions?: string[];
             visibleUserIds?: string[];
             fileIds?: string[];
@@ -29690,6 +29694,11 @@ export interface operations {
                     }[];
                     isLocked?: boolean;
                     isExplorable?: boolean;
+                    /**
+                     * @description 検索結果に表示される範囲を設定します。
+                     * @enum {string|null}
+                     */
+                    searchableBy?: 'public' | 'followersAndReacted' | 'reactedOnly' | 'private' | null;
                     hideOnlineStatus?: boolean;
                     publicReactions?: boolean;
                     hideActivity?: boolean;
@@ -31556,6 +31565,11 @@ export interface operations {
                      * @enum {string|null}
                      */
                     reactionAcceptance?: null | 'likeOnly' | 'likeOnlyForRemote' | 'nonSensitiveOnly' | 'nonSensitiveOnlyForLocalLikeOnlyForRemote';
+                    /**
+                     * @default public
+                     * @enum {string|null}
+                     */
+                    searchableBy?: 'public' | 'followersAndReacted' | 'reactedOnly' | 'private' | null;
                     /** @default false */
                     noExtractMentions?: boolean;
                     /** @default false */
@@ -31807,6 +31821,11 @@ export interface operations {
                      * @enum {string|null}
                      */
                     reactionAcceptance?: null | 'likeOnly' | 'likeOnlyForRemote' | 'nonSensitiveOnly' | 'nonSensitiveOnlyForLocalLikeOnlyForRemote';
+                    /**
+                     * @default public
+                     * @enum {string|null}
+                     */
+                    searchableBy?: 'public' | 'followersAndReacted' | 'reactedOnly' | 'private' | null;
                     /** Format: misskey:id */
                     replyId?: string | null;
                     /** Format: misskey:id */
@@ -33531,6 +33550,11 @@ export interface operations {
                      * @enum {string|null}
                      */
                     reactionAcceptance?: null | 'likeOnly' | 'likeOnlyForRemote' | 'nonSensitiveOnly' | 'nonSensitiveOnlyForLocalLikeOnlyForRemote';
+                    /**
+                     * @default public
+                     * @enum {string|null}
+                     */
+                    searchableBy?: 'public' | 'followersAndReacted' | 'reactedOnly' | 'private' | null;
                     /** @default false */
                     noExtractMentions?: boolean;
                     /** @default false */

@@ -352,6 +352,26 @@ SPDX-License-Identifier: AGPL-3.0-only
 										<MkPreferenceContainer k="defaultNoteLocalOnly">
 											<MkSwitch v-model="defaultNoteLocalOnly">{{ i18n.ts._visibility.disableFederation }}</MkSwitch>
 										</MkPreferenceContainer>
+
+										<MkPreferenceContainer k="remembernoteSearchability">
+											<MkSwitch v-model="remembernoteSearchability">{{ i18n.ts.remembernoteSearchability }}</MkSwitch>
+										</MkPreferenceContainer>
+
+										<MkFolder v-if="!remembernoteSearchability">
+											<template #label>{{ i18n.ts.makeSearchability }}</template>
+											<template #icon><i class="ti ti-search"></i></template>
+											<div class="_gaps_m">
+												<MkInfo>{{ i18n.ts.makeSearchabilityDescription }}</MkInfo>
+												<MkPreferenceContainer k="defaultnoteSearchability">
+													<MkSelect v-model="defaultnoteSearchability">
+														<option value="public">{{ i18n.ts._searchability.public }}</option>
+														<option value="followersAndReacted">{{ i18n.ts._searchability.followersAndReacted }}</option>
+														<option value="reactedOnly">{{ i18n.ts._searchability.reactedOnly }}</option>
+														<option value="private">{{ i18n.ts._searchability.private }}</option>
+													</MkSelect>
+												</MkPreferenceContainer>
+											</div>
+										</MkFolder>
 									</div>
 								</MkFolder>
 							</MkDisableSection>
@@ -880,6 +900,8 @@ const useNativeUiForVideoAudioPlayer = prefer.model('useNativeUiForVideoAudioPla
 const contextMenu = prefer.model('contextMenu');
 const menuStyle = prefer.model('menuStyle');
 const makeEveryTextElementsSelectable = prefer.model('makeEveryTextElementsSelectable');
+const remembernoteSearchability = prefer.model('remembernoteSearchability');
+const defaultnoteSearchability = prefer.model('defaultnoteSearchability');
 
 const fontSize = ref(miLocalStorage.getItem('fontSize'));
 const useSystemFont = ref(miLocalStorage.getItem('useSystemFont') != null);

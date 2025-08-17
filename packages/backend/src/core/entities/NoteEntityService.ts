@@ -450,6 +450,7 @@ export class NoteEntityService implements OnModuleInit {
 			user: packedUsers?.get(note.userId) ?? this.userEntityService.pack(note.user ?? note.userId, me),
 			text: text,
 			cw: note.cw,
+			searchableBy: note.searchableBy,
 			visibility: note.visibility !== 'public_non_ltl' ? note.visibility : 'public',
 			localOnly: note.localOnly,
 			reactionAcceptance: note.reactionAcceptance,

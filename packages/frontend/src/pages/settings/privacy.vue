@@ -92,6 +92,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 		</MkFolder>
 
+		<MkSearchMarker :keywords="['search', 'searchable']">
+			<div class="_gaps_m">
+				<MkSelect v-model="searchableBy" @update:modelValue="save()">
+					<template #label>{{ i18n.ts.makeSearchability }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+					<option value="public">{{ i18n.ts._searchability.public }}</option>
+					<option value="followersAndReacted">{{ i18n.ts._searchability.followersAndReacted }}</option>
+					<option value="reactedOnly">{{ i18n.ts._searchability.reactedOnly }}</option>
+					<option value="private">{{ i18n.ts._searchability.private }}</option>
+				</MkSelect>
+			</div>
+		</MkSearchMarker>
+
 		<SearchMarker :keywords="['reaction', 'public']">
 			<MkSwitch v-model="publicReactions" @update:modelValue="save()">
 				<template #label><SearchLabel>{{ i18n.ts.makeReactionsPublic }}</SearchLabel></template>
@@ -318,6 +330,7 @@ const followingVisibility = ref($i.followingVisibility);
 const followersVisibility = ref($i.followersVisibility);
 const chatScope = ref($i.chatScope);
 const receiveSpecifiedNotesFrom = ref($i.receiveSpecifiedNotesFrom ?? 'all');
+const searchableBy = ref($i.searchableBy ?? 'public');
 
 const makeNotesFollowersOnlyBefore_type = computed(() => {
 	if (makeNotesFollowersOnlyBefore.value == null) {
@@ -386,6 +399,7 @@ function save() {
 		followersVisibility: followersVisibility.value,
 		chatScope: chatScope.value,
 		receiveSpecifiedNotesFrom: receiveSpecifiedNotesFrom.value,
+		searchableBy: searchableBy.value,
 	});
 }
 

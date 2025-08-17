@@ -64,6 +64,7 @@ const exampleCWNote = reactive<Misskey.entities.Note>({
 	text: i18n.ts._initialTutorial._postNote._cw._exampleNote.note,
 	cw: i18n.ts._initialTutorial._postNote._cw._exampleNote.cw,
 	visibility: 'public',
+	searchableBy: 'public',
 	localOnly: false,
 	reactionAcceptance: null,
 	renoteCount: 0,

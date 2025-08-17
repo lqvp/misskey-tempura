@@ -713,6 +713,10 @@ export const store = markRaw(new Pizzax('base', {
 		default: 'any' as 'any' | 'nth' | 'final' | 'both', // フィルタモード
 	},
 	//#endregion
+	searchableBy: {
+		where: 'deviceAccount',
+		default: 'public' as (typeof Misskey.noteSearchability)[number],
+	},
 }));
 
 // TODO: 他のタブと永続化されたstateを同期

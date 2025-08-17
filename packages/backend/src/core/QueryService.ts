@@ -4,7 +4,7 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import { Brackets, ObjectLiteral } from 'typeorm';
+import { Brackets, ObjectLiteral, WhereExpressionBuilder } from 'typeorm';
 import { DI } from '@/di-symbols.js';
 import type { MiUser } from '@/models/User.js';
 import type { UserProfilesRepository, FollowingsRepository, ChannelFollowingsRepository, BlockingsRepository, NoteThreadMutingsRepository, MutingsRepository, RenoteMutingsRepository, QuoteMutingsRepository, MiMeta } from '@/models/_.js';
@@ -261,7 +261,7 @@ export class QueryService {
 	}
 
 	@bindThis
-	public generateVisibilityQuery(q: SelectQueryBuilder<any>, me?: { id: MiUser['id'] } | null): void {
+	public generateVisibilityQuery(q: SelectQueryBuilder<any>, me?: { id: MiUser['id'] } | null, opts?: { search?: boolean }): void {
 		// This code must always be synchronized with the checks in Notes.isVisibleForMe.
 		if (me == null) {
 			const profileSubQuery = this.userProfilesRepository.createQueryBuilder('profile')
@@ -281,10 +281,16 @@ export class QueryService {
 				// プロフィールで非表示設定されているノートを除外
 					.andWhere(`NOT EXISTS (${profileSubQuery.getQuery()})`);
 			}));
+
+			if (opts?.search) {
+				this.generateSearchableQuery(q, me);
+			}
 		} else {
 			const followingQuery = this.followingsRepository.createQueryBuilder('following')
 				.select('following.followeeId')
 				.where('following.followerId = :meId');
+
+			const fq = followingQuery.getQuery();
 
 			q.andWhere(new Brackets(qb => {
 				qb
@@ -306,7 +312,7 @@ export class QueryService {
 							.andWhere(new Brackets(qb => {
 								qb
 								// 自分がフォロワーである
-									.where(`note.userId IN (${ followingQuery.getQuery() })`)
+									.where(`note.userId IN (${ fq })`)
 								// または 自分の投稿へのリプライ
 									.orWhere('note.replyUserId = :meId');
 							}));
@@ -314,6 +320,63 @@ export class QueryService {
 			}));
 
 			q.setParameters({ meId: me.id, meIdAsList: [me.id] });
+
+			if (opts?.search) {
+				this.generateSearchableQuery(q, me, fq);
+			}
+		}
+	}
+
+	@bindThis
+	public generateSearchableQuery(q: SelectQueryBuilder<any>, me?: { id: MiUser['id'] } | null, followingQuery?: string): void {
+		const userSearchableByQuery = '(select "searchableBy"::text from "user" as u where u.id = note."userId")';
+
+		if (me == null) {
+			// ログインしていないユーザーは検索不可
+			q.andWhere('1 = 0');
+			return;
+		}
+
+		if (followingQuery) {
+			const applyIsReactedCondition = (qb: WhereExpressionBuilder) => {
+				// リアクション、投票、お気に入り、クリップ、リノート、返信のいずれかを行っているか
+				qb.where('(EXISTS (SELECT 1 FROM "note_reaction" WHERE "noteId" = note.id AND "userId" = :meId))')
+					.orWhere(new Brackets(qbb => {
+						qbb.where('note."hasPoll" IS TRUE')
+							.andWhere('(EXISTS (SELECT 1 FROM "poll_vote" WHERE "noteId"=note.id AND "userId" = :meId))');
+					}))
+					.orWhere('(EXISTS (SELECT 1 FROM "note_favorite" WHERE "noteId" = note.id AND "userId" = :meId))')
+					.orWhere('(EXISTS (SELECT 1 FROM "clip_note" WHERE ("clipId" = ANY (SELECT id FROM "clip" WHERE "userId" = :meId)) AND "noteId" = note.id))')
+					.orWhere('(EXISTS (SELECT 1 FROM "note" AS r WHERE "renoteId" = note.id AND r."userId" = :meId))')
+					.orWhere('(EXISTS (SELECT 1 FROM "note" AS r WHERE "replyId" = note.id AND r."userId" = :meId))');
+			};
+
+			q.andWhere(new Brackets(qb => {
+				qb
+					// 自分の投稿
+					.where('note.userId = :meId')
+					// Public
+					.orWhere(`COALESCE(note."searchableBy"::text, ${userSearchableByQuery}) = 'public'`)
+					// Followers and Reacted
+					.orWhere(new Brackets(qb2 => {
+						qb2.where(`COALESCE(note."searchableBy"::text, ${userSearchableByQuery}) = 'followersAndReacted'`)
+							.andWhere(new Brackets(qb3 => {
+								qb3.where(`note.userId IN (${followingQuery})`)
+									.orWhere(new Brackets(applyIsReactedCondition));
+							}));
+					}))
+					// Reacted Only
+					.orWhere(new Brackets(qb2 => {
+						qb2.where(`COALESCE(note."searchableBy"::text, ${userSearchableByQuery}) = 'reactedOnly'`)
+							.andWhere(new Brackets(applyIsReactedCondition));
+					}))
+					// Default fallback (if both note and user settings are null)
+					// When both are null, treat as 'reactedOnly' for backward compatibility
+					.orWhere(new Brackets(qb2 => {
+						qb2.where(`COALESCE(note."searchableBy"::text, ${userSearchableByQuery}) IS NULL`)
+							.andWhere(new Brackets(applyIsReactedCondition));
+					}));
+			}));
 		}
 	}
 

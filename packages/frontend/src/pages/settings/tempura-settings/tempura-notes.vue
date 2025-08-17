@@ -204,6 +204,7 @@ const noteMock: Misskey.entities.Note = {
 	text: 'テストメッセージです！な！',
 	cw: null,
 	visibility: 'public',
+	searchableBy: 'public',
 	localOnly: false,
 	reactionAcceptance: null,
 	renoteCount: 0,
