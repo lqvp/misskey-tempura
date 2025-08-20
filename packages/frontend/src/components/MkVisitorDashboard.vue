@@ -49,7 +49,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkStreamingNotesTimeline src="local"/>
 		</div>
 	</div>
-	<div v-if="instance.clientOptions.showActivityiesForVisitor !== false" v-if="instance.entranceShowStats" :class="$style.panel">
+	<div v-if="instance.clientOptions.showActivityiesForVisitor !== false && instance.entranceShowStats" :class="$style.panel">
 		<XActiveUsersChart/>
 	</div>
 </div>
