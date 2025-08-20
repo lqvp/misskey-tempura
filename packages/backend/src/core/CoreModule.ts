@@ -82,6 +82,7 @@ import { ChannelFollowingService } from './ChannelFollowingService.js';
 import { ChatService } from './ChatService.js';
 import { RegistryApiService } from './RegistryApiService.js';
 import { ReversiService } from './ReversiService.js';
+import { PageService } from './PageService.js';
 import { ActivityPubAccessControlService } from './ActivityPubAccessControlService.js';
 import { ContactFormService } from './ContactFormService.js';
 import { HistoryService } from './HistoryService.js';
@@ -241,6 +242,7 @@ const $ChannelFollowingService: Provider = { provide: 'ChannelFollowingService',
 const $ChatService: Provider = { provide: 'ChatService', useExisting: ChatService };
 const $RegistryApiService: Provider = { provide: 'RegistryApiService', useExisting: RegistryApiService };
 const $ReversiService: Provider = { provide: 'ReversiService', useExisting: ReversiService };
+const $PageService: Provider = { provide: 'PageService', useExisting: PageService };
 const $ActivityPubAccessControlService: Provider = { provide: 'ActivityPubAccessControlService', useExisting: ActivityPubAccessControlService };
 
 const $ChartLoggerService: Provider = { provide: 'ChartLoggerService', useExisting: ChartLoggerService };
@@ -403,6 +405,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		ChatService,
 		RegistryApiService,
 		ReversiService,
+		PageService,
 		ActivityPubAccessControlService,
 		ContactFormService,
 		HistoryService,
@@ -561,6 +564,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$ChatService,
 		$RegistryApiService,
 		$ReversiService,
+		$PageService,
 		$ActivityPubAccessControlService,
 
 		$ChartLoggerService,
@@ -720,6 +724,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		ChatService,
 		RegistryApiService,
 		ReversiService,
+		PageService,
 		ActivityPubAccessControlService,
 		ContactFormService,
 		HistoryService,
@@ -876,6 +881,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$ChatService,
 		$RegistryApiService,
 		$ReversiService,
+		$PageService,
 		$ActivityPubAccessControlService,
 
 		$FederationChart,

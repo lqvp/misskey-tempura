@@ -769,6 +769,11 @@ export class MiMeta {
 	})
 	public remoteNotesCleaningExpiryDaysForEachNotes: number;
 
+	@Column('jsonb', {
+		default: { },
+	})
+	public clientOptions: Record<string, any>;
+
 	@Column('varchar', {
 		length: 1024,
 		array: true,

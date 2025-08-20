@@ -7,7 +7,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 <div v-if="instance">
 	<XSetup v-if="instance.requireSetup"/>
 	<XEntranceHana v-else-if="instance.useHanaEntrance"/>
-	<XEntrance v-else/>
+	<XEntranceClassic v-else-if="(instance.clientOptions.entrancePageStyle ?? 'classic') === 'classic'"/>
+	<XEntranceSimple v-else/>
 </div>
 </template>
 
@@ -15,9 +16,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { computed, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { instanceName } from '@@/js/config.js';
-import XSetup from './welcome.setup.vue';
-import XEntrance from './welcome.entrance.a.vue';
 import XEntranceHana from './welcome.entrance.hana.vue';
+import XSetup from './welcome.setup.vue';
+import XEntranceClassic from './welcome.entrance.classic.vue';
+import XEntranceSimple from './welcome.entrance.simple.vue';
 import { definePage } from '@/page.js';
 import { fetchInstance } from '@/instance.js';
 

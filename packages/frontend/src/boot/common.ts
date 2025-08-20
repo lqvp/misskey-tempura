@@ -30,6 +30,7 @@ import { fetchCustomEmojis } from '@/custom-emojis.js';
 import { prefer } from '@/preferences.js';
 import { applyFont } from '@/utility/font.js';
 import { $i } from '@/i.js';
+import { launchPlugins } from '@/plugin.js';
 
 export async function common(createVue: () => Promise<App<Element>>) {
 	console.log(
@@ -388,6 +389,12 @@ export async function common(createVue: () => Promise<App<Element>>) {
 
 			...instance.sentryForFrontend.options,
 		});
+	}
+
+	try {
+		await launchPlugins();
+	} catch (error) {
+		console.error('Failed to launch plugins:', error);
 	}
 
 	app.mount(rootEl);

@@ -457,6 +457,10 @@ export const meta = {
 				type: 'string',
 				optional: false, nullable: true,
 			},
+			clientOptions: {
+				type: 'object',
+				optional: false, nullable: false,
+			},
 			description: {
 				type: 'string',
 				optional: false, nullable: true,
@@ -918,6 +922,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				logoImageUrl: instance.logoImageUrl,
 				defaultLightTheme: instance.defaultLightTheme,
 				defaultDarkTheme: instance.defaultDarkTheme,
+				clientOptions: instance.clientOptions,
 				enableEmail: instance.enableEmail,
 				enableServiceWorker: instance.enableServiceWorker,
 				translatorAvailable: instance.deeplAuthKey != null,
