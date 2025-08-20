@@ -128,12 +128,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkPagination v-slot="{items}" :paginator="followingPaginator">
 				<div :class="$style.followRelationsList">
 					<div v-for="followRelationship in items" :key="followRelationship.id" :class="$style.followRelation">
-						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.followee.updatedAt)}`" :to="`/admin/user/${followRelationship.followee.id}`" :class="$style.user">
-							<MkUserCardMini :user="followRelationship.followee" :withChart="false"/>
-						</MkA>
-						<span class="arrow">→</span>
 						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.follower.updatedAt)}`" :to="`/admin/user/${followRelationship.follower.id}`" :class="$style.user">
 							<MkUserCardMini :user="followRelationship.follower" :withChart="false"/>
+						</MkA>
+						<span class="arrow">→</span>
+						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.followee.updatedAt)}`" :to="`/admin/user/${followRelationship.followee.id}`" :class="$style.user">
+							<MkUserCardMini :user="followRelationship.followee" :withChart="false"/>
 						</MkA>
 					</div>
 				</div>
