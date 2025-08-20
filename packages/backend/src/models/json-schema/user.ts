@@ -574,6 +574,15 @@ export const packedMeDetailedOnlySchema = {
 				},
 			},
 		},
+		webFeedFilter: {
+			type: 'object',
+			nullable: false, optional: false,
+			properties: {
+				disableRss: { type: 'boolean', nullable: false, optional: false },
+				disableAtom: { type: 'boolean', nullable: false, optional: false },
+				disableJson: { type: 'boolean', nullable: false, optional: false },
+			},
+		},
 		receiveSpecifiedNotesFrom: {
 			type: 'string',
 			nullable: false, optional: false,

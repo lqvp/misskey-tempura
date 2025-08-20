@@ -4456,6 +4456,11 @@ export type components = {
                 public_non_ltl: boolean;
                 home: boolean;
             };
+            webFeedFilter: {
+                disableRss: boolean;
+                disableAtom: boolean;
+                disableJson: boolean;
+            };
             /** @enum {string} */
             receiveSpecifiedNotesFrom: 'all' | 'following' | 'nobody';
             noCrawle: boolean;
@@ -13074,6 +13079,21 @@ export interface operations {
                         emailVerified: boolean;
                         followedMessage: string | null;
                         autoAcceptFollowed: boolean;
+                        autoRejectFollowRequest: boolean;
+                        autoFollowBack: boolean;
+                        autoFollowOnMove: boolean;
+                        outboxFilter: {
+                            public: boolean;
+                            public_non_ltl: boolean;
+                            home: boolean;
+                        };
+                        webFeedFilter: {
+                            disableRss: boolean;
+                            disableAtom: boolean;
+                            disableJson: boolean;
+                        };
+                        /** @enum {string} */
+                        receiveSpecifiedNotesFrom: 'all' | 'following' | 'nobody';
                         noCrawle: boolean;
                         preventAiLearning: boolean;
                         alwaysMarkNsfw: boolean;
@@ -29709,6 +29729,11 @@ export interface operations {
                         public: boolean;
                         public_non_ltl: boolean;
                         home: boolean;
+                    };
+                    webFeedFilter?: {
+                        disableRss: boolean;
+                        disableAtom: boolean;
+                        disableJson: boolean;
                     };
                     /** @enum {string} */
                     receiveSpecifiedNotesFrom?: 'all' | 'following' | 'nobody';

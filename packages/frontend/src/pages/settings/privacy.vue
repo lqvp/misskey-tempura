@@ -44,7 +44,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkFolder>
 			<template #label>{{ i18n.ts._outboxFilter.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 			<template #caption>{{ i18n.ts._outboxFilter.description }}</template>
-			<div class="_gpas_m">
+			<div class="_gaps_m">
 				<MkSwitch v-model="outboxFilter.public" @update:modelValue="save()">
 					{{ i18n.ts._outboxFilter.publicVisibility }}
 					<template #caption>{{ i18n.ts._outboxFilter.publicVisibilityDescription }}</template>
@@ -62,6 +62,24 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 		</MkFolder>
 
+		<MkFolder>
+			<template #label>{{ i18n.ts._webFeedFilter.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+			<template #caption>{{ i18n.ts._webFeedFilter.description }}</template>
+			<div class="_gaps_m">
+				<MkSwitch v-model="webFeedFilter.disableRss" @update:modelValue="save()">
+					{{ i18n.ts._webFeedFilter.disableRss }}
+				</MkSwitch>
+
+				<MkSwitch v-model="webFeedFilter.disableAtom" @update:modelValue="save()">
+					{{ i18n.ts._webFeedFilter.disableAtom }}
+				</MkSwitch>
+
+				<MkSwitch v-model="webFeedFilter.disableJson" @update:modelValue="save()">
+					{{ i18n.ts._webFeedFilter.disableJson }}
+				</MkSwitch>
+			</div>
+		</MkFolder>
+
 		<MkSwitch v-model="hideActivity" @update:modelValue="save()">
 			{{ i18n.ts.hideActivity }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 			<template #caption>{{ i18n.ts.hideActivityDescription }}</template>
@@ -69,7 +87,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		<MkFolder>
 			<template #label>{{ i18n.ts.visibility }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-			<div class="_gpas_m">
+			<div class="_gaps_m">
 				<MkSwitch v-model="hideNoteFromOverview" @update:modelValue="save()">
 					{{ i18n.ts.hideNoteFromOverview }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 					<template #caption>{{ i18n.ts.hideNoteFromOverviewDescription }}</template>
@@ -308,6 +326,7 @@ const autoRejectFollowRequest = ref($i.autoRejectFollowRequest);
 const autoFollowBack = ref($i.autoFollowBack);
 const autoFollowOnMove = ref($i.autoFollowOnMove);
 const outboxFilter = ref({ public: true, public_non_ltl: true, home: true, ...$i.outboxFilter });
+const webFeedFilter = ref({ disableRss: false, disableAtom: false, disableJson: false, ...$i.webFeedFilter });
 const carefulBot = ref($i.carefulBot);
 const noCrawle = ref($i.noCrawle);
 const preventAiLearning = ref($i.preventAiLearning);
@@ -437,6 +456,11 @@ function save() {
 			public: !!outboxFilter.value.public,
 			public_non_ltl: !!outboxFilter.value.public_non_ltl,
 			home: !!outboxFilter.value.home,
+		},
+		webFeedFilter: {
+			disableRss: !!webFeedFilter.value.disableRss,
+			disableAtom: !!webFeedFilter.value.disableAtom,
+			disableJson: !!webFeedFilter.value.disableJson,
 		},
 		carefulBot: !!carefulBot.value,
 		noCrawle: !!noCrawle.value,
