@@ -95,6 +95,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 									</div>
 									<div v-if="expandedRenoteMuteItems.includes(item.id)" :class="$style.userItemSub">
 										<div>Muted at: <MkTime :time="item.createdAt" mode="detail"/></div>
+										<div v-if="item.expiresAt">Period: <MkTime :time="item.expiresAt" mode="detail"/></div>
+										<div v-else>Period: {{ i18n.ts.indefinitely }}</div>
 									</div>
 								</div>
 							</div>
@@ -125,6 +127,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 									</div>
 									<div v-if="expandedQuoteMuteItems.includes(item.id)" :class="$style.userItemSub">
 										<div>Muted at: <MkTime :time="item.createdAt" mode="detail"/></div>
+										<div v-if="item.expiresAt">Period: <MkTime :time="item.expiresAt" mode="detail"/></div>
+										<div v-else>Period: {{ i18n.ts.indefinitely }}</div>
 									</div>
 								</div>
 							</div>
