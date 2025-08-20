@@ -229,6 +229,15 @@ export class MiUserProfile {
 		home: boolean;
 	};
 
+	@Column('jsonb', {
+		default: { disableRss: false, disableAtom: false, disableJson: false },
+	})
+	public webFeedFilter: {
+		disableRss: boolean;
+		disableAtom: boolean;
+		disableJson: boolean;
+	};
+
 	@Column('boolean', {
 		default: false,
 		comment: 'Whether reject index by crawler.',

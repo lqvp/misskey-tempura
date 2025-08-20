@@ -474,19 +474,29 @@ export class ClientServerService {
 				requireSigninToViewContents: false,
 			});
 
-			return user && await this.feedService.packFeed(user);
+			if (!user) return null;
+
+			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });
+			const feed = await this.feedService.packFeed(user);
+
+			return { profile, feed };
 		};
 
 		// Atom
 		fastify.get<{ Params: { user?: string; } }>('/@:user.atom', async (request, reply) => {
 			if (request.params.user == null) return await renderBase(reply);
 
-			const feed = await getFeed(request.params.user);
+			const result = await getFeed(request.params.user);
 
-			if (feed) {
-				// reply.header('Content-Type', 'application/atom+xml; charset=utf-8');
-				// return feed.atom1();
-				reply.code(204).send();
+			if (result) {
+				// Check if Atom feed is disabled for this user
+				if (result.profile.webFeedFilter?.disableAtom === true) {
+					reply.code(404);
+					return;
+				}
+
+				reply.header('Content-Type', 'application/atom+xml; charset=utf-8');
+				return result.feed.atom1();
 			} else {
 				reply.code(404);
 				return;
@@ -497,12 +507,17 @@ export class ClientServerService {
 		fastify.get<{ Params: { user?: string; } }>('/@:user.rss', async (request, reply) => {
 			if (request.params.user == null) return await renderBase(reply);
 
-			const feed = await getFeed(request.params.user);
+			const result = await getFeed(request.params.user);
 
-			if (feed) {
-				// reply.header('Content-Type', 'application/rss+xml; charset=utf-8');
-				// return feed.rss2();
-				reply.code(204).send();
+			if (result) {
+				// Check if RSS feed is disabled for this user
+				if (result.profile.webFeedFilter?.disableRss === true) {
+					reply.code(404);
+					return;
+				}
+
+				reply.header('Content-Type', 'application/rss+xml; charset=utf-8');
+				return result.feed.rss2();
 			} else {
 				reply.code(404);
 				return;
@@ -513,12 +528,17 @@ export class ClientServerService {
 		fastify.get<{ Params: { user?: string; } }>('/@:user.json', async (request, reply) => {
 			if (request.params.user == null) return await renderBase(reply);
 
-			const feed = await getFeed(request.params.user);
+			const result = await getFeed(request.params.user);
 
-			if (feed) {
-				// reply.header('Content-Type', 'application/json; charset=utf-8');
-				// return feed.json1();
-				reply.code(204).send();
+			if (result) {
+				// Check if JSON feed is disabled for this user
+				if (result.profile.webFeedFilter?.disableJson === true) {
+					reply.code(404);
+					return;
+				}
+
+				reply.header('Content-Type', 'application/json; charset=utf-8');
+				return result.feed.json1();
 			} else {
 				reply.code(404);
 				return;
