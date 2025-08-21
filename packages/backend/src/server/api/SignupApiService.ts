@@ -8,7 +8,7 @@ import bcrypt from 'bcryptjs';
 import { IsNull } from 'typeorm';
 import * as Redis from 'ioredis';
 import { DI } from '@/di-symbols.js';
-import type { RegistrationTicketsRepository, UsedUsernamesRepository, UserPendingsRepository, UserProfilesRepository, UsersRepository, MiRegistrationTicket, MiMeta } from '@/models/_.js';
+import type { RegistrationTicketsRepository, UsedUsernamesRepository, UserPendingsRepository, UserProfilesRepository, UsersRepository, MiRegistrationTicket, MiMeta, MiUser } from '@/models/_.js';
 import type { Config } from '@/config.js';
 import { CaptchaService } from '@/core/CaptchaService.js';
 import { IdService } from '@/core/IdService.js';
@@ -347,9 +347,7 @@ export class SignupApiService {
 						usedById: account.id,
 					});
 
-					if (ticket.followInviter && ticket.createdBy) {
-						await this.userFollowingService.follow(account, ticket.createdBy);
-					}
+					await this.followInviterIfNeeded(ticket, account);
 				}
 
 				this.redisClient.set('signup:lastSignupAt', new Date().toISOString());
@@ -395,7 +393,7 @@ export class SignupApiService {
 				emailVerifyCode: null,
 			});
 
-			const ticket = await this.registrationTicketsRepository.findOneBy({ pendingUserId: pendingUser.id });
+			const ticket = await this.registrationTicketsRepository.findOne({ where: { pendingUserId: pendingUser.id }, relations: ['createdBy'] });
 			if (ticket) {
 				await this.registrationTicketsRepository.update(ticket.id, {
 					usedBy: account,
@@ -403,9 +401,7 @@ export class SignupApiService {
 					pendingUserId: null,
 				});
 
-				if (ticket.followInviter && ticket.createdBy) {
-					await this.userFollowingService.follow(account, ticket.createdBy);
-				}
+				await this.followInviterIfNeeded(ticket, account);
 			}
 
 			if (this.meta.approvalRequiredForSignup && (ticket == null || ticket.skipApproval === false)) {
@@ -435,6 +431,12 @@ export class SignupApiService {
 			return this.signinService.signin(request, reply, account as MiLocalUser);
 		} catch (err) {
 			throw new FastifyReplyError(400, typeof err === 'string' ? err : (err as Error).toString());
+		}
+	}
+
+	private async followInviterIfNeeded(ticket: MiRegistrationTicket, account: MiUser): Promise<void> {
+		if (ticket.followInviter && ticket.createdBy) {
+			await this.userFollowingService.follow(account, ticket.createdBy);
 		}
 	}
 }
