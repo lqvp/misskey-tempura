@@ -5166,7 +5166,7 @@ declare module '../api.js' {
     /**
      * Search for users.
      * 
-     * **Credential required**: *Yes* / **Permission**: *read:account*
+     * **Credential required**: *No*
      */
     request<E extends 'users/search', P extends Endpoints[E]['req']>(
       endpoint: E,

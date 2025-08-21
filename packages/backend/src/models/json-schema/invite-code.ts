@@ -54,6 +54,10 @@ export const packedInviteCodeSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
+		followInviter: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
 		description: {
 			type: 'string',
 			optional: false, nullable: true,

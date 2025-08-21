@@ -41,7 +41,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span>{{ i18n.ts._signupEnhance.successInviteCodeValid }}</span>
 				</div>
 
-				<div v-if="validationResult.skipEmailAuth || validationResult.skipApproval" :class="$style.benefits">
+				<div v-if="validationResult.skipEmailAuth || validationResult.skipApproval || validationResult.followInviter" :class="$style.benefits">
 					<p>{{ i18n.ts._signupEnhance.infoBenefitsDescription }}</p>
 					<ul :class="$style.benefitsList">
 						<li v-if="validationResult.skipEmailAuth">
@@ -51,6 +51,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<li v-if="validationResult.skipApproval">
 							<i class="ti ti-user-check"></i>
 							<span>{{ i18n.ts._signupEnhance.infoSkipApproval }}</span>
+						</li>
+						<li v-if="validationResult.followInviter">
+							<i class="ti ti-user-plus"></i>
+							<span>{{ i18n.ts._signupEnhance.infoFollowInviter }}</span>
 						</li>
 					</ul>
 				</div>
@@ -115,6 +119,7 @@ interface InviteCheckResponse {
 	expiresAt?: string | null;
 	skipEmailAuth: boolean;
 	skipApproval: boolean;
+	followInviter: boolean;
 }
 
 onMounted(() => {
@@ -125,7 +130,7 @@ onMounted(() => {
 });
 
 const emit = defineEmits<{
-	(eventName: 'verified', inviteInfo: { code: string; skipEmailAuth: boolean; skipApproval: boolean; expiresAt?: Date | null }): void;
+	(eventName: 'verified', inviteInfo: { code: string; skipEmailAuth: boolean; skipApproval: boolean; followInviter: boolean; expiresAt?: Date | null }): void;
 	(eventName: 'proceedWithoutCode'): void;
 }>();
 
@@ -189,6 +194,7 @@ function confirmAndProceed() {
 		code: inviteCode.value.trim(),
 		skipEmailAuth: validationResult.value.skipEmailAuth,
 		skipApproval: validationResult.value.skipApproval,
+		followInviter: validationResult.value.followInviter,
 		expiresAt: validationResult.value.expiresAt ? new Date(validationResult.value.expiresAt) : null,
 	});
 }

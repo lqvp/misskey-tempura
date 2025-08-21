@@ -46,6 +46,7 @@ export const paramDef = {
 		expiresAt: { type: 'string', nullable: true },
 		skipEmailAuth: { type: 'boolean', default: false },
 		skipApproval: { type: 'boolean', default: false },
+		followInviter: { type: 'boolean', default: false },
 		description: { type: 'string', nullable: true, maxLength: 256 },
 	},
 	required: [],
@@ -77,6 +78,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					code: generateInviteCode(),
 					skipEmailAuth: ps.skipEmailAuth,
 					skipApproval: ps.skipApproval,
+					followInviter: ps.followInviter,
 					description: ps.description?.trim() ? ps.description : null,
 				}));
 			}

@@ -4241,7 +4241,7 @@ export type paths = {
          * users/search
          * @description Search for users.
          *
-         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         *     **Credential required**: *No*
          */
         post: operations['users___search'];
     };
@@ -5380,6 +5380,7 @@ export type components = {
             used: boolean;
             skipEmailAuth: boolean;
             skipApproval: boolean;
+            followInviter: boolean;
             description: string | null;
         };
         Page: {
@@ -10471,6 +10472,8 @@ export interface operations {
                     skipEmailAuth?: boolean;
                     /** @default false */
                     skipApproval?: boolean;
+                    /** @default false */
+                    followInviter?: boolean;
                     description?: string | null;
                 };
             };
@@ -11615,7 +11618,7 @@ export interface operations {
             content: {
                 'application/json': {
                     /** @enum {string} */
-                    queue: 'system' | 'endedPollNotification' | 'deliver' | 'inbox' | 'db' | 'relationship' | 'objectStorage' | 'userWebhookDeliver' | 'systemWebhookDeliver';
+                    queue: 'system' | 'endedPollNotification' | 'deliver' | 'inbox' | 'db' | 'relationship' | 'objectStorage' | 'userWebhookDeliver' | 'systemWebhookDeliver' | 'scheduleNotePost' | 'scheduledNoteDelete';
                     jobId: string;
                 };
             };
@@ -14315,6 +14318,9 @@ export interface operations {
                     proxyRemoteFiles?: boolean;
                     signToActivityPubGet?: boolean;
                     allowExternalApRedirect?: boolean;
+                    enableRemoteNotesCleaning?: boolean;
+                    remoteNotesCleaningExpiryDaysForEachNotes?: number;
+                    remoteNotesCleaningMaxProcessingDurationInMinutes?: number;
                     customSplashText?: string[] | null;
                     defaultFollowedUsers?: string[] | null;
                     forciblyFollowedUsers?: string[] | null;
@@ -14361,9 +14367,6 @@ export interface operations {
                         order: number;
                         isDefault: boolean;
                     }[];
-                    enableRemoteNotesCleaning?: boolean;
-                    remoteNotesCleaningExpiryDaysForEachNotes?: number;
-                    remoteNotesCleaningMaxProcessingDurationInMinutes?: number;
                 };
             };
         };
@@ -30545,6 +30548,7 @@ export interface operations {
                         expiresAt: string | null;
                         skipEmailAuth: boolean;
                         skipApproval: boolean;
+                        followInviter: boolean;
                     };
                 };
             };
@@ -30612,6 +30616,8 @@ export interface operations {
                     skipEmailAuth?: boolean;
                     /** @default false */
                     skipApproval?: boolean;
+                    /** @default false */
+                    followInviter?: boolean;
                     description?: string | null;
                 };
             };
