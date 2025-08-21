@@ -556,8 +556,6 @@ export class UserFollowingService implements OnModuleInit {
 
 			// TODO: adjust charts
 		}
-
-		await this.historyService.addUnfollowHistory(follower, followee);
 	}
 
 	@bindThis
