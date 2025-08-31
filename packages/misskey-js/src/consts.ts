@@ -194,6 +194,7 @@ export const moderationLogTypes = [
 	'deleteGalleryPost',
 	'deleteChatRoom',
 	'updateProxyAccountDescription',
+	'updateProxyAccountDescription',
 	'approve',
 	'decline',
 	'quarantineRemoteInstance',
@@ -226,7 +227,15 @@ export const reversiUpdateKeys = [
 
 export type ReversiUpdateKey = typeof reversiUpdateKeys[number];
 
-type AvatarDecoration = UserLite['avatarDecorations'][number];
+type AvatarDecoration = {
+	id: string;
+	name: string;
+	url: string;
+	angle?: number;
+	flipH?: boolean;
+	offsetX?: number;
+	offsetY?: number;
+};
 
 type ReceivedAbuseReport = {
 	reportId: AbuseReportNotificationRecipient['id'];
@@ -511,6 +520,10 @@ export type ModerationLogPayloads = {
 		roomId: string;
 		room: ChatRoom;
 	};
+	updateProxyAccountDescription: {
+		before: string | null;
+		after: string | null;
+	}
 	quarantineRemoteInstance: {
 		id: string;
 		host: string;

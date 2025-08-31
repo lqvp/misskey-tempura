@@ -60,7 +60,6 @@ const emit = defineEmits<{
 const buttonEl = useTemplateRef('buttonEl');
 
 const emojiName = computed(() => props.reaction.replace(/:/g, '').replace(/@\./, ''));
-const emoji = computed(() => customEmojisMap.get(emojiName.value) ?? getUnicodeEmoji(props.reaction));
 
 function getReactionName(reaction: string, formated = false) {
 	const r = reaction.replaceAll(':', '').replace(/@.*/, '');
@@ -71,9 +70,11 @@ const isLocal = computed(() => !props.reaction.match(/@\w/));
 const isAvailable = computed(() => isLocal.value ? true : customEmojisMap.has(getReactionName(props.reaction)));
 
 const canToggle = computed(() => {
+	const emoji = customEmojisMap.get(emojiName.value) ?? getUnicodeEmoji(props.reaction);
+
 	// TODO
-	//return isAvailable.value && $i && emoji.value && checkReactionPermissions($i, props.note, emoji.value);
-	return $i && emoji.value;
+	//return isAvailable.value && $i && emoji && checkReactionPermissions($i, props.note, emoji);
+	return $i && emoji;
 });
 const canGetInfo = computed(() => props.reaction.includes(':'));
 const isLocalCustomEmoji = props.reaction[0] === ':' && props.reaction.includes('@.');
@@ -92,6 +93,9 @@ const hideReactionCount = computed(() => {
 
 async function toggleReaction() {
 	if (!canToggle.value) return;
+		if ($i == null) return;
+
+	const me = $i;
 
 	const reaction = getReactionName(props.reaction, true);
 	const oldReaction = props.myReaction ? getReactionName(props.myReaction, true) : null;
@@ -125,7 +129,7 @@ async function toggleReaction() {
 			noteId: props.noteId,
 		}).then(() => {
 			noteEvents.emit(`unreacted:${props.noteId}`, {
-				userId: $i!.id,
+				userId: me.id,
 				reaction: oldReaction,
 			});
 			if (oldReaction !== reaction) {
@@ -133,10 +137,12 @@ async function toggleReaction() {
 					noteId: props.noteId,
 					reaction: reaction,
 				}).then(() => {
+					const emoji = customEmojisMap.get(emojiName.value);
+					if (emoji == null) return;
 					noteEvents.emit(`reacted:${props.noteId}`, {
-						userId: $i!.id,
+						userId: me.id,
 						reaction: props.reaction,
-						emoji: emoji.value,
+						emoji: emoji,
 					});
 				});
 			}
@@ -164,10 +170,13 @@ async function toggleReaction() {
 			noteId: props.noteId,
 			reaction: props.reaction,
 		}).then(() => {
+			const emoji = customEmojisMap.get(emojiName.value);
+			if (emoji == null) return;
+
 			noteEvents.emit(`reacted:${props.noteId}`, {
-				userId: $i!.id,
+				userId: me.id,
 				reaction: props.reaction,
-				emoji: emoji.value,
+				emoji: emoji,
 			});
 		});
 		// TODO: 上位コンポーネントでやる
@@ -250,6 +259,8 @@ onMounted(() => {
 
 if (!mock) {
 	useTooltip(buttonEl, async (showing) => {
+		if (buttonEl.value == null) return;
+
 		const useGet = !reactionChecksMuting.value;
 		const apiCall = useGet ? misskeyApiGet : misskeyApi;
 		const reactions = !prefer.s.hideReactionUsers ? await apiCall('notes/reactions', {
@@ -267,7 +278,7 @@ if (!mock) {
 			reaction: props.reaction,
 			users,
 			count,
-			targetElement: buttonEl.value,
+			anchorElement: buttonEl.value,
 		}, {
 			closed: () => dispose(),
 		});

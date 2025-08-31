@@ -1260,6 +1260,9 @@ type ClipsDeleteRequest = operations['clips___delete']['requestBody']['content']
 type ClipsFavoriteRequest = operations['clips___favorite']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
+type ClipsListRequest = operations['clips___list']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
 type ClipsListResponse = operations['clips___list']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
@@ -1851,6 +1854,7 @@ declare namespace entities {
         ClipsCreateResponse,
         ClipsDeleteRequest,
         ClipsFavoriteRequest,
+        ClipsListRequest,
         ClipsListResponse,
         ClipsMyFavoritesResponse,
         ClipsNotesRequest,
@@ -2277,6 +2281,7 @@ declare namespace entities {
         UsersUpdateMemoRequest,
         V2AdminEmojiListRequest,
         V2AdminEmojiListResponse,
+        VerifyEmailRequest,
         Error_2 as Error,
         UserLite,
         UserDetailedNotMeOnly,
@@ -2294,6 +2299,7 @@ declare namespace entities {
         Note,
         NoteDraft,
         NoteReaction,
+        NoteReactionWithNote,
         NoteFavorite,
         Notification_2 as Notification,
         DriveFile,
@@ -2337,6 +2343,7 @@ declare namespace entities {
         MetaLite,
         MetaDetailedOnly,
         MetaDetailed,
+        UserWebhook,
         SystemWebhook,
         AbuseReportNotificationRecipient,
         ChatMessage,
@@ -2971,7 +2978,7 @@ type ModerationLog = {
     id: ID;
     createdAt: DateString;
     userId: User['id'];
-    user: UserDetailedNotMe | null;
+    user: UserDetailedNotMe;
 } & ({
     type: 'updateServerSettings';
     info: ModerationLogPayloads['updateServerSettings'];
@@ -3138,6 +3145,9 @@ type ModerationLog = {
     type: 'deleteChatRoom';
     info: ModerationLogPayloads['deleteChatRoom'];
 } | {
+    type: 'updateProxyAccountDescription';
+    info: ModerationLogPayloads['updateProxyAccountDescription'];
+} | {
     type: 'quarantineRemoteInstance';
     info: ModerationLogPayloads['quarantineRemoteInstance'];
 } | {
@@ -3146,7 +3156,7 @@ type ModerationLog = {
 });
 
 // @public (undocumented)
-export const moderationLogTypes: readonly ["updateServerSettings", "suspend", "unsuspend", "updateUserName", "updateUserNote", "sendNotification", "addCustomEmoji", "updateCustomEmoji", "deleteCustomEmoji", "assignRole", "unassignRole", "createRole", "updateRole", "deleteRole", "clearQueue", "promoteQueue", "deleteDriveFile", "deleteNote", "createGlobalAnnouncement", "createUserAnnouncement", "createRolesAnnouncement", "updateGlobalAnnouncement", "updateUserAnnouncement", "updateRolesAnnouncement", "deleteGlobalAnnouncement", "deleteUserAnnouncement", "deleteRolesAnnouncement", "resetPassword", "regenerateUserToken", "suspendRemoteInstance", "unsuspendRemoteInstance", "updateRemoteInstanceNote", "markSensitiveDriveFile", "unmarkSensitiveDriveFile", "resolveAbuseReport", "forwardAbuseReport", "updateAbuseReportNote", "createInvitation", "createAd", "updateAd", "deleteAd", "createAvatarDecoration", "updateAvatarDecoration", "deleteAvatarDecoration", "unsetUserAvatar", "unsetUserBanner", "createSystemWebhook", "updateSystemWebhook", "deleteSystemWebhook", "createAbuseReportNotificationRecipient", "updateAbuseReportNotificationRecipient", "deleteAbuseReportNotificationRecipient", "deleteAccount", "deletePage", "deleteFlash", "deleteGalleryPost", "deleteChatRoom", "updateProxyAccountDescription", "approve", "decline", "quarantineRemoteInstance", "unquarantineRemoteInstance", "dropAllNotes", "unsetUserMutualLink"];
+export const moderationLogTypes: readonly ["updateServerSettings", "suspend", "unsuspend", "updateUserName", "updateUserNote", "sendNotification", "addCustomEmoji", "updateCustomEmoji", "deleteCustomEmoji", "assignRole", "unassignRole", "createRole", "updateRole", "deleteRole", "clearQueue", "promoteQueue", "deleteDriveFile", "deleteNote", "createGlobalAnnouncement", "createUserAnnouncement", "createRolesAnnouncement", "updateGlobalAnnouncement", "updateUserAnnouncement", "updateRolesAnnouncement", "deleteGlobalAnnouncement", "deleteUserAnnouncement", "deleteRolesAnnouncement", "resetPassword", "regenerateUserToken", "suspendRemoteInstance", "unsuspendRemoteInstance", "updateRemoteInstanceNote", "markSensitiveDriveFile", "unmarkSensitiveDriveFile", "resolveAbuseReport", "forwardAbuseReport", "updateAbuseReportNote", "createInvitation", "createAd", "updateAd", "deleteAd", "createAvatarDecoration", "updateAvatarDecoration", "deleteAvatarDecoration", "unsetUserAvatar", "unsetUserBanner", "createSystemWebhook", "updateSystemWebhook", "deleteSystemWebhook", "createAbuseReportNotificationRecipient", "updateAbuseReportNotificationRecipient", "deleteAbuseReportNotificationRecipient", "deleteAccount", "deletePage", "deleteFlash", "deleteGalleryPost", "deleteChatRoom", "updateProxyAccountDescription", "updateProxyAccountDescription", "approve", "decline", "quarantineRemoteInstance", "unquarantineRemoteInstance", "dropAllNotes", "unsetUserMutualLink"];
 
 // @public (undocumented)
 type MuteCreateRequest = operations['mute___create']['requestBody']['content']['application/json'];
@@ -3190,6 +3200,9 @@ type NoteFavorite = components['schemas']['NoteFavorite'];
 
 // @public (undocumented)
 type NoteReaction = components['schemas']['NoteReaction'];
+
+// @public (undocumented)
+type NoteReactionWithNote = components['schemas']['NoteReactionWithNote'];
 
 // @public (undocumented)
 type NotesChildrenRequest = operations['notes___children']['requestBody']['content']['application/json'];
@@ -4065,10 +4078,16 @@ type UsersShowResponse = operations['users___show']['responses']['200']['content
 type UsersUpdateMemoRequest = operations['users___update-memo']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
+type UserWebhook = components['schemas']['UserWebhook'];
+
+// @public (undocumented)
 type V2AdminEmojiListRequest = operations['v2___admin___emoji___list']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
 type V2AdminEmojiListResponse = operations['v2___admin___emoji___list']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type VerifyEmailRequest = operations['verify-email']['requestBody']['content']['application/json'];
 
 // Warnings were encountered during analysis:
 //

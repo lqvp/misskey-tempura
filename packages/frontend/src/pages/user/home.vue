@@ -27,8 +27,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 								</div>
 								<div class="bottom">
 									<span class="username"><MkAcct :user="user" :detail="true"/></span>
-									<span v-if="user.isLocked" :title="i18n.ts.isLocked"><i class="ti ti-lock"></i></span>
-									<span v-if="user.isBot" :title="i18n.ts.isBot"><i class="ti ti-robot"></i></span>
+									<span v-if="user.isLocked"><i class="ti ti-lock"></i></span>
+									<span v-if="user.isBot"><i class="ti ti-robot"></i></span>
 									<button v-if="$i && !isEditingMemo && !memoDraft" class="_button add-note-button" @click="showMemoTextarea">
 										<i class="ti ti-edit"/> {{ i18n.ts.addMemo }}
 									</button>
@@ -47,8 +47,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkUserName :user="user" :nowrap="false" class="name" @click="editNickname(props.user)"/>
 							<div class="bottom">
 								<span class="username"><MkAcct :user="user" :detail="true"/></span>
-								<span v-if="user.isLocked" :title="i18n.ts.isLocked"><i class="ti ti-lock"></i></span>
-								<span v-if="user.isBot" :title="i18n.ts.isBot"><i class="ti ti-robot"></i></span>
+								<span v-if="user.isLocked"><i class="ti ti-lock"></i></span>
+								<span v-if="user.isBot"><i class="ti ti-robot"></i></span>
 							</div>
 						</div>
 
@@ -73,7 +73,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkFoldableSection v-if="user.communityRoles.length > 0" class="role-folder" :expanded="user.communityRoles.length < 5">
 								<template #header>{{ i18n.ts.community + " " + i18n.ts.roles }}</template>
 								<div class="roles">
-									<span v-for="role in user.communityRoles" :key="role.id" v-tooltip="role.description" class="role" :class="{ 'rainbow': role.isRainbow }" :style="role.isRainbow ? {} : { '--color': role.color }">
+									<span v-for="role in user.communityRoles" :key="role.id" v-tooltip="role.description" class="role" :class="{ 'rainbow': role.isRainbow }" :style="role.isRainbow ? {} : { '--color': role.color ?? '' }">
 										<MkA v-adaptive-bg :to="`/roles/${role.id}`">
 											<img v-if="role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="role.iconUrl"/>
 											{{ role.name }}
@@ -285,7 +285,7 @@ const bannerEl = ref<null | HTMLElement>(null);
 const memoTextareaEl = ref<null | HTMLElement>(null);
 const memoDraft = ref(props.user.memo);
 const isEditingMemo = ref(false);
-const moderationNote = ref(props.user.moderationNote);
+const moderationNote = ref(props.user.moderationNote ?? '');
 const editModerationNote = ref(false);
 
 const listenbrainzdata = ref(false);
@@ -326,7 +326,7 @@ const style = computed(() => {
 });
 
 const age = computed(() => {
-	return calcAge(props.user.birthday);
+	return props.user.birthday ? calcAge(props.user.birthday) : NaN;
 });
 
 function menu(ev: MouseEvent) {

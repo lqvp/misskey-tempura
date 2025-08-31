@@ -33,7 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 		</div>
 	</div>
-	<div v-if="instance.entranceShowStats && stats && instance.clientOptions.showActivityiesForVisitor !== false" :class="$style.stats">
+	<div v-if="instance.entranceShowStats && stats && instance.clientOptions.showActivitiesForVisitor !== false" :class="$style.stats">
 		<div :class="[$style.statsItem, $style.panel]">
 			<div :class="$style.statsItemLabel">{{ i18n.ts.users }}</div>
 			<div :class="$style.statsItemCount"><MkNumber :value="stats.originalUsersCount"/></div>
@@ -49,7 +49,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkStreamingNotesTimeline src="local"/>
 		</div>
 	</div>
-	<div v-if="instance.clientOptions.showActivityiesForVisitor !== false && instance.entranceShowStats" :class="$style.panel">
+	<div v-if="instance.clientOptions.showActivitiesForVisitor !== false && instance.entranceShowStats" :class="$style.panel">
 		<XActiveUsersChart/>
 	</div>
 </div>
@@ -75,7 +75,7 @@ import { openInstanceMenu } from '@/ui/_common_/common.js';
 
 const stats = ref<Misskey.entities.StatsResponse | null>(null);
 
-if (instance.clientOptions.showActivityiesForVisitor !== false) {
+if (instance.clientOptions.showActivitiesForVisitor !== false) {
 	if (instance.entranceShowStats) {
 	misskeyApi('stats', {}).then((res) => {
 			stats.value = res;
