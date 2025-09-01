@@ -174,9 +174,19 @@ class Systemd {
 	}
 
 	//#region Detect language
+	const supportedLangs = LANGS;
 	/** @type { string } */
-	// ja-JPを強制的に使用する
-	let lang = 'ja-JP';
+	let lang = localStorage.getItem('lang');
+	if (lang == null || !supportedLangs.includes(lang)) {
+		if (supportedLangs.includes(navigator.language)) {
+			lang = 'ja-JP';
+		} else {
+			lang = supportedLangs.find(x => x.split('-')[0] === navigator.language);
+
+			// Fallback
+			if (lang == null) lang = 'en-US';
+		}
+	}
 
 	// for https://github.com/misskey-dev/misskey/issues/10202
 	if (lang == null || lang.toString == null || lang.toString() === 'null') {
