@@ -5,6 +5,7 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import * as Misskey from 'misskey-js';
+import * as Redis from 'ioredis';
 import { DI } from '@/di-symbols.js';
 import type { SigninsRepository, UserProfilesRepository } from '@/models/_.js';
 import { IdService } from '@/core/IdService.js';
@@ -14,11 +15,15 @@ import { SigninEntityService } from '@/core/entities/SigninEntityService.js';
 import { bindThis } from '@/decorators.js';
 import { EmailService } from '@/core/EmailService.js';
 import { NotificationService } from '@/core/NotificationService.js';
+import { getIpCountry } from '@/misc/ip-geolocation.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 
 @Injectable()
 export class SigninService {
 	constructor(
+		@Inject(DI.redis)
+		private redisClient: Redis.Redis,
+
 		@Inject(DI.signinsRepository)
 		private signinsRepository: SigninsRepository,
 
@@ -41,8 +46,10 @@ export class SigninService {
 	@bindThis
 	public signin(request: FastifyRequest, reply: FastifyReply, user: MiLocalUser) {
 		setImmediate(async () => {
+			const country = await getIpCountry(request.ip, this.redisClient);
 			this.notificationService.createNotification(user.id, 'login', {
 				userIp: request.ip,
+				...(country ? { userCountry: country } : {}),
 			});
 
 			const record = await this.signinsRepository.insertOne({

@@ -138,10 +138,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 				{{ notification.reason }}
 			</div>
 			<MkA v-else-if="notification.type === 'login'" :class="$style.text" to="/settings/security">
-				<Mfm :text="i18n.tsx._notification.loginDescription({ ip: notification.ip, text: i18n.ts.regenerateLoginToken })"/>
+				<Mfm :text="i18n.tsx._notification.loginDescription({ ip: ((notification as any).country ? `${notification.ip} (${(notification as any).country})` : notification.ip), text: i18n.ts.regenerateLoginToken })"/>
 			</MkA>
 			<MkA v-else-if="notification.type === 'loginFailed'" :class="$style.text" to="/settings/security">
-				<Mfm :text="i18n.tsx._notification.loginFailedDescription({ ip: notification.ip })"/>
+				<Mfm :text="i18n.tsx._notification.loginFailedDescription({ ip: ((notification as any).country ? `${notification.ip} (${(notification as any).country})` : notification.ip) })"/>
 			</MkA>
 			<MkA v-else-if="notification.type === 'createToken'" :class="$style.text" to="/settings/apps">
 				<Mfm :text="i18n.tsx._notification.createTokenDescription({ text: i18n.ts.manageAccessTokens })"/>

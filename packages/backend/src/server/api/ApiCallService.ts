@@ -8,6 +8,7 @@ import * as fs from 'node:fs';
 import * as stream from 'node:stream/promises';
 import { Inject, Injectable } from '@nestjs/common';
 import * as Sentry from '@sentry/node';
+import * as Redis from 'ioredis';
 import { DI } from '@/di-symbols.js';
 import { getIpHash } from '@/misc/get-ip-hash.js';
 import type { MiLocalUser, MiUser } from '@/models/User.js';
@@ -19,6 +20,8 @@ import { bindThis } from '@/decorators.js';
 import { RoleService } from '@/core/RoleService.js';
 import { MetaService } from '@/core/MetaService.js';
 import type { Config } from '@/config.js';
+import { NotificationService } from '@/core/NotificationService.js';
+import { getIpCountry } from '@/misc/ip-geolocation.js';
 import { ApiError } from './error.js';
 import { RateLimiterService } from './RateLimiterService.js';
 import { ApiLoggerService } from './ApiLoggerService.js';
@@ -37,6 +40,7 @@ const accessDenied = {
 export class ApiCallService implements OnApplicationShutdown {
 	private logger: Logger;
 	private userIpHistories: Map<MiUser['id'], Set<string>>;
+	private userCountryHistories: Map<MiUser['id'], string>;
 	private userIpHistoriesClearIntervalId: NodeJS.Timeout;
 
 	constructor(
@@ -46,6 +50,9 @@ export class ApiCallService implements OnApplicationShutdown {
 		@Inject(DI.config)
 		private config: Config,
 
+		@Inject(DI.redis)
+		private redisClient: Redis.Redis,
+
 		@Inject(DI.userIpsRepository)
 		private userIpsRepository: UserIpsRepository,
 
@@ -54,9 +61,11 @@ export class ApiCallService implements OnApplicationShutdown {
 		private roleService: RoleService,
 		private apiLoggerService: ApiLoggerService,
 		private metaService: MetaService,
+		private notificationService: NotificationService,
 	) {
 		this.logger = this.apiLoggerService.logger;
 		this.userIpHistories = new Map<MiUser['id'], Set<string>>();
+		this.userCountryHistories = new Map<MiUser['id'], string>();
 
 		this.userIpHistoriesClearIntervalId = setInterval(() => {
 			this.userIpHistories.clear();
@@ -268,7 +277,7 @@ export class ApiCallService implements OnApplicationShutdown {
 	}
 
 	@bindThis
-	private logIp(request: FastifyRequest, user: MiLocalUser) {
+	private async logIp(request: FastifyRequest, user: MiLocalUser) {
 		if (!this.meta.enableIpLogging) return;
 		const ip = request.ip;
 		const ips = this.userIpHistories.get(user.id);
@@ -286,6 +295,19 @@ export class ApiCallService implements OnApplicationShutdown {
 					ip: ip,
 				}).orIgnore(true).execute();
 			} catch {
+			}
+
+			// Geolocation check
+			const country = await getIpCountry(ip, this.redisClient);
+			if (country) {
+				const lastCountry = this.userCountryHistories.get(user.id);
+				if (lastCountry && lastCountry !== country) {
+					this.notificationService.createNotification(user.id, 'login', {
+						userIp: ip,
+						userCountry: country,
+					});
+				}
+				this.userCountryHistories.set(user.id, country);
 			}
 		}
 	}

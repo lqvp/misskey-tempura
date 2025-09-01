@@ -7,6 +7,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 import { IsNull } from 'typeorm';
 import * as Misskey from 'misskey-js';
+import * as Redis from 'ioredis';
 import { DI } from '@/di-symbols.js';
 import type {
 	MiMeta,
@@ -25,6 +26,7 @@ import { UserAuthService } from '@/core/UserAuthService.js';
 import { CaptchaService } from '@/core/CaptchaService.js';
 import { FastifyReplyError } from '@/misc/fastify-reply-error.js';
 import { MetaService } from '@/core/MetaService.js';
+import { getIpCountry } from '@/misc/ip-geolocation.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { EmailService } from '@/core/EmailService.js';
 import { RateLimiterService } from './RateLimiterService.js';
@@ -40,6 +42,9 @@ export class SigninApiService {
 
 		@Inject(DI.meta)
 		private meta: MiMeta,
+
+		@Inject(DI.redis)
+		private redisClient: Redis.Redis,
 
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
@@ -193,8 +198,10 @@ export class SigninApiService {
 			});
 
 			// ログインに失敗したことを通知
+			const country = await getIpCountry(request.ip, this.redisClient);
 			await this.notificationService.createNotification(user.id, 'loginFailed', {
 				userIp: request.ip,
+				...(country ? { userCountry: country } : {}),
 			});
 
 			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });

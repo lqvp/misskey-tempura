@@ -118,11 +118,15 @@ export type MiNotification = {
 	id: string;
 	createdAt: string;
 	userIp: string;
+	/** ISO country name determined by IP geolocation (optional) */
+	userCountry?: string;
 } | {
 	type: 'loginFailed';
 	id: string;
 	createdAt: string;
 	userIp: string;
+	/** ISO country name determined by IP geolocation (optional) */
+	userCountry?: string;
 } | {
 	type: 'createToken';
 	id: string;
