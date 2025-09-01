@@ -42,9 +42,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</I18n>
 		</MkInfo>
 		<p>{{ i18n.ts.preview }}</p>
-		<MkNotesTimeline :pagination="notePagination"></MkNotesTimeline>
+		<MkNotesTimeline :paginator="notepaginator"></MkNotesTimeline>
 		<p><br>...<br></p>
-		<MkNotesTimeline :pagination="notePaginationRev"></MkNotesTimeline>
+		<MkNotesTimeline :paginator="notepaginationRev"></MkNotesTimeline>
 	</div>
 </MkStickyContainer>
 <div v-else>
@@ -53,12 +53,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue';
+import { computed, ref, watch, markRaw } from 'vue';
 import { debounce } from 'throttle-debounce';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { $i } from '@/i.js';
 import { misskeyApi } from '@/utility/misskey-api';
+import { Paginator } from '@/utility/paginator.js';
 import * as os from '@/os';
 import MkInput from '@/components/MkInput.vue';
 import FormSplit from '@/components/form/split.vue';
@@ -82,24 +83,28 @@ const noteNumber = ref(0);
 const shouldInputText = computed(() => `これらの ${noteNumber.value} 件のノートを、${since.value} から ${until.value} まで非公開にします`);
 const didInputText = ref('');
 
-const notePagination = ref({
-	endpoint: 'users/notes' as const,
-	noPaging: true,
-	params: {
-		userId: $i!.id,
-		sinceDate: sinceNumber.value,
-		untilDate: untilNumber.value,
-	},
-	limit: 5,
-});
+const notePaginationParams = computed(() => ({
+	userId: $i!.id,
+	sinceDate: sinceNumber.value,
+	untilDate: untilNumber.value,
+}));
 
-const notePaginationRev = computed(() => ({
-	...notePagination.value,
-	params: {
-		userId: $i!.id,
-		sinceDate: sinceNumber.value,
-	},
-	reversed: true,
+const notepaginator = markRaw(new Paginator('users/notes', {
+	noPaging: true,
+	computedParams: notePaginationParams,
+	limit: 5,
+}));
+
+const notepaginationRevParams = computed(() => ({
+	userId: $i!.id,
+	sinceDate: sinceNumber.value,
+}));
+
+const notepaginationRev = markRaw(new Paginator('users/notes', {
+	noPaging: true,
+	computedParams: notepaginationRevParams,
+	limit: 5,
+	order: 'oldest',
 }));
 
 watch([since, until], () => {
@@ -108,11 +113,7 @@ watch([since, until], () => {
 
 async function updateNoteNumber() {
 	noteNumber.value = await countPrivateMany(sinceNumber.value, untilNumber.value);
-	notePagination.value.params = {
-		userId: $i!.id,
-		sinceDate: sinceNumber.value,
-		untilDate: untilNumber.value,
-	};
+	// computedParams を使っているので不要
 }
 
 const debouncedUpdateNoteNumber = debounce(1000, updateNoteNumber);
