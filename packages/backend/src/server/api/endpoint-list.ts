@@ -70,6 +70,7 @@ export * as 'admin/queue/inbox-delayed' from './endpoints/admin/queue/inbox-dela
 export * as 'admin/queue/retry-job' from './endpoints/admin/queue/retry-job.js';
 export * as 'admin/queue/remove-job' from './endpoints/admin/queue/remove-job.js';
 export * as 'admin/queue/show-job' from './endpoints/admin/queue/show-job.js';
+export * as 'admin/queue/show-job-logs' from './endpoints/admin/queue/show-job-logs.js';
 export * as 'admin/queue/promote-jobs' from './endpoints/admin/queue/promote-jobs.js';
 export * as 'admin/queue/jobs' from './endpoints/admin/queue/jobs.js';
 export * as 'admin/queue/stats' from './endpoints/admin/queue/stats.js';
@@ -414,6 +415,7 @@ export * as 'users/search' from './endpoints/users/search.js';
 export * as 'users/search-by-username-and-host' from './endpoints/users/search-by-username-and-host.js';
 export * as 'users/show' from './endpoints/users/show.js';
 export * as 'users/update-memo' from './endpoints/users/update-memo.js';
+export * as 'verify-email' from './endpoints/verify-email.js';
 export * as 'chat/messages/create-to-user' from './endpoints/chat/messages/create-to-user.js';
 export * as 'chat/messages/create-to-room' from './endpoints/chat/messages/create-to-room.js';
 export * as 'chat/messages/delete' from './endpoints/chat/messages/delete.js';
@@ -471,6 +473,9 @@ export * as 'i/followers-servers' from './endpoints/i/followers-servers.js';
 export * as 'quote-mute/create' from './endpoints/quote-mute/create.js';
 export * as 'quote-mute/delete' from './endpoints/quote-mute/delete.js';
 export * as 'quote-mute/list' from './endpoints/quote-mute/list.js';
+export * as 'avatar-decoration-muting/create' from './endpoints/avatar-decoration-muting/create.js';
+export * as 'avatar-decoration-muting/delete' from './endpoints/avatar-decoration-muting/delete.js';
+export * as 'avatar-decoration-muting/list' from './endpoints/avatar-decoration-muting/list.js';
 
 // region ContactForm
 export * as 'admin/contact-form/list' from './endpoints/admin/contact-form/list.js';

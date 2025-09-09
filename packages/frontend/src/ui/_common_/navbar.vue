@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div :class="$style.top">
 			<button v-tooltip.noDelay.right="instance.name ?? i18n.ts.instance" class="_button" :class="$style.instance" @click="openInstanceMenu">
 				<img
-					:src="(instance.enableLongIconUrl && instance.longIconUrl) || instance.iconUrl || instance.faviconUrl || '/favicon.ico'"
+					:src="(instance.enableLongIconUrl && instance.longIconUrl) || instance.iconUrl || '/favicon.ico'"
 					alt=""
 					:class="[instance.enableLongIconUrl ? $style.instanceIconLong : $style.instanceIcon]" style="viewTransitionName: navbar-serverIcon"
 				/>

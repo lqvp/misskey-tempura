@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { computed, markRaw, ref } from 'vue';
-import { notificationTypes } from '@@/js/const.js';
+import { notificationTypes } from 'misskey-js';
 import MkStreamingNotificationsTimeline from '@/components/MkStreamingNotificationsTimeline.vue';
 import MkNotesTimeline from '@/components/MkNotesTimeline.vue';
 import * as os from '@/os.js';
@@ -34,7 +34,7 @@ import { Paginator } from '@/utility/paginator.js';
 
 const tab = ref('all');
 const includeTypes = ref<string[] | null>(null);
-const excludeTypes = computed(() => includeTypes.value ? notificationTypes.filter(t => !includeTypes.value!.includes(t)) : undefined);
+const excludeTypes = computed(() => includeTypes.value ? notificationTypes.filter(t => !includeTypes.value!!.includes(t)) : undefined);
 const newNoteExcludeTypes = computed(() => notificationTypes.filter(t => !['note'].includes(t)));
 
 const mentionsPaginator = markRaw(new Paginator('notes/mentions', {

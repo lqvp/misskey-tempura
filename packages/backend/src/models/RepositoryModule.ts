@@ -60,6 +60,7 @@ import {
 	MiRelay,
 	MiRenoteMuting,
 	MiQuoteMuting,
+	MiAvatarDecorationMuting,
 	MiRepository,
 	miRepository,
 	MiRetentionAggregation,
@@ -307,6 +308,12 @@ const $renoteMutingsRepository: Provider = {
 const $quoteMutingsRepository: Provider = {
 	provide: DI.quoteMutingsRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiQuoteMuting).extend(miRepository as MiRepository<MiQuoteMuting>),
+	inject: [DI.db],
+};
+
+const $avatarDecorationMutingsRepository: Provider = {
+	provide: DI.avatarDecorationMutingsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiAvatarDecorationMuting).extend(miRepository as MiRepository<MiAvatarDecorationMuting>),
 	inject: [DI.db],
 };
 
@@ -625,6 +632,7 @@ const $contactFormsRepository: Provider = {
 		$mutingsRepository,
 		$renoteMutingsRepository,
 		$quoteMutingsRepository,
+		$avatarDecorationMutingsRepository,
 		$blockingsRepository,
 		$swSubscriptionsRepository,
 		$systemAccountsRepository,
@@ -709,6 +717,7 @@ const $contactFormsRepository: Provider = {
 		$mutingsRepository,
 		$renoteMutingsRepository,
 		$quoteMutingsRepository,
+		$avatarDecorationMutingsRepository,
 		$blockingsRepository,
 		$swSubscriptionsRepository,
 		$systemAccountsRepository,

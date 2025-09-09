@@ -1,10 +1,11 @@
-name: Create Release on Version Update
+name: Auto Release and Merge to Master
 
 on:
   workflow_dispatch:
   push:
     branches:
       - master
+      - develop
     paths:
       - 'package.json'
 
@@ -20,6 +21,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          # masterブランチにマージする際に必要
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Parse version from package.json
         id: parse_version
@@ -53,6 +56,7 @@ jobs:
           echo "is_stable=$IS_STABLE" >> "$GITHUB_OUTPUT"
           echo "release_name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
           echo "skip_release=false" >> "$GITHUB_OUTPUT"
+          echo "current_branch=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
 
       - name: Check if tag already exists
         if: steps.parse_version.outputs.skip_release != 'true'
@@ -71,6 +75,44 @@ jobs:
             echo "::notice::Tag $TAG_NAME does not exist, proceeding with release creation"
             echo "tag_exists=false" >> "$GITHUB_OUTPUT"
           fi
+
+      # developブランチからstableリリースの場合、masterにマージ
+      - name: Merge to Master
+        if: |
+          steps.parse_version.outputs.skip_release != 'true' &&
+          steps.check_tag.outputs.tag_exists != 'true' &&
+          steps.parse_version.outputs.is_stable == 'true' &&
+          steps.parse_version.outputs.current_branch == 'develop'
+        id: merge_to_master
+        run: |
+          # Git設定
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # masterブランチに切り替え
+          git fetch origin master
+          git checkout master
+
+          # developブランチの内容をマージ
+          git merge origin/develop --no-ff -m "Release: Merge develop to master for ${{ steps.parse_version.outputs.tag_name }}"
+
+          # masterにプッシュ
+          git push origin master
+
+          echo "::notice::Successfully merged develop to master"
+          echo "merged_to_master=true" >> "$GITHUB_OUTPUT"
+
+      # masterブランチに切り替えてリリースを作成（developからマージした場合）
+      - name: Switch to Master for Release
+        if: |
+          steps.parse_version.outputs.skip_release != 'true' &&
+          steps.check_tag.outputs.tag_exists != 'true' &&
+          steps.parse_version.outputs.is_stable == 'true' &&
+          steps.parse_version.outputs.current_branch == 'develop' &&
+          steps.merge_to_master.outputs.merged_to_master == 'true'
+        run: |
+          git checkout master
+          git pull origin master
 
       - name: Generate Release Notes for Stable Release
         if: |
@@ -124,6 +166,63 @@ jobs:
           prerelease: ${{ steps.parse_version.outputs.is_stable == 'false' }}
           make_latest: ${{ steps.parse_version.outputs.is_stable == 'true' }}
 
+      # stableリリース後にdevelopブランチのバージョンを次のバージョンに更新
+      - name: Update version in develop branch
+        if: |
+          steps.parse_version.outputs.skip_release != 'true' &&
+          steps.check_tag.outputs.tag_exists != 'true' &&
+          steps.parse_version.outputs.is_stable == 'true'
+        id: update_version
+        run: |
+          # Git設定
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # developブランチに切り替え
+          git fetch origin develop
+          git checkout develop
+
+          # 現在のバージョンを取得
+          CURRENT_VERSION=$(jq -r .version package.json)
+          echo "Current version: $CURRENT_VERSION"
+
+          # tempura-部分を抽出
+          TEMPURA_PART=$(echo "$CURRENT_VERSION" | sed -n 's/.*tempura-\([0-9]\+\.[0-9]\+\.[0-9]\+[^[:space:]]*\).*/\1/p')
+          echo "Current tempura part: $TEMPURA_PART"
+
+          # バージョン番号を分割（例：1.9.2）
+          IFS='.' read -ra VERSION_PARTS <<< "$TEMPURA_PART"
+          MAJOR="${VERSION_PARTS[0]}"
+          MINOR="${VERSION_PARTS[1]}"
+          PATCH="${VERSION_PARTS[2]}"
+
+          # パッチバージョンをインクリメント
+          NEW_PATCH=$((PATCH + 1))
+          NEW_TEMPURA_PART="${MAJOR}.${MINOR}.${NEW_PATCH}-dev"
+          echo "New tempura part: $NEW_TEMPURA_PART"
+
+          # 新しいバージョンを構築
+          NEW_VERSION=$(echo "$CURRENT_VERSION" | sed "s/tempura-[0-9]\+\.[0-9]\+\.[0-9]\+[^[:space:]]*/tempura-$NEW_TEMPURA_PART/")
+          echo "New version: $NEW_VERSION"
+
+          # package.jsonを更新
+          jq --arg version "$NEW_VERSION" '.version = $version' package.json > package.json.tmp && mv package.json.tmp package.json
+
+          # misskey-jsのpackage.jsonも更新
+          if [ -f "packages/misskey-js/package.json" ]; then
+            jq --arg version "$NEW_VERSION" '.version = $version' packages/misskey-js/package.json > packages/misskey-js/package.json.tmp && mv packages/misskey-js/package.json.tmp packages/misskey-js/package.json
+          fi
+
+          # 変更をコミット
+          git add package.json packages/misskey-js/package.json
+          git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
+
+          # developブランチにプッシュ
+          git push origin develop
+
+          echo "::notice::Successfully updated version to $NEW_VERSION in develop branch"
+          echo "new_version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+
       - name: Output release result
         if: steps.parse_version.outputs.skip_release != 'true'
         run: |
@@ -132,4 +231,14 @@ jobs:
           else
             echo "::notice::Successfully created release ${{ steps.parse_version.outputs.release_name }}"
             echo "::notice::Release URL: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.parse_version.outputs.tag_name }}"
+
+            # マージ結果も出力
+            if [ "${{ steps.merge_to_master.outputs.merged_to_master }}" == "true" ]; then
+              echo "::notice::Successfully merged develop to master for stable release"
+            fi
+
+            # バージョン更新結果も出力
+            if [ "${{ steps.parse_version.outputs.is_stable }}" == "true" ]; then
+              echo "::notice::Successfully updated version to ${{ steps.update_version.outputs.new_version }} in develop branch"
+            fi
           fi

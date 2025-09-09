@@ -79,6 +79,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 										<i v-else-if="draft.visibility === 'home'" class="ti ti-home"></i>
 										<i v-else-if="draft.visibility === 'followers'" class="ti ti-lock"></i>
 										<i v-else-if="draft.visibility === 'specified'" class="ti ti-mail"></i>
+										<i v-else-if="draft.visibility === 'public_non_ltl'" class="ti ti-broadcast"></i>
+
 									</span>
 									<span v-if="draft.localOnly" :title="i18n.ts._visibility['disableFederation']"><i class="ti ti-rocket-off"></i></span>
 								</div>

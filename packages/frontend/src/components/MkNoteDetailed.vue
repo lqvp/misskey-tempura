@@ -17,7 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</div>
 		<MkNoteSub v-for="note in conversation" :key="note.id" :class="$style.replyToMore" :note="note"/>
 	</div>
-	<MkNoteSub v-if="appearNote.reply" :note="appearNote.reply" :class="$style.replyTo"/>
+	<MkNoteSub v-if="appearNote.replyId" :note="appearNote.reply" :class="$style.replyTo"/>
 	<div v-if="isRenote" :class="$style.renote">
 		<MkAvatar :class="$style.renoteAvatar" :user="note.user" link preview/>
 		<i class="ti ti-repeat" style="margin-right: 4px;"></i>
@@ -66,9 +66,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<i v-else-if="appearNote.visibility === 'specified'" ref="specified" class="ti ti-mail"></i>
 						</span>
 						<span v-if="appearNote.localOnly" style="margin-left: 0.5em;" :title="i18n.ts._visibility['disableFederation']"><i class="ti ti-rocket-off"></i></span>
-						<span v-if="appearNote.deliveryTargets && (appearNote.deliveryTargets.mode === 'include' || appearNote.deliveryTargets.hosts?.length)" :title="i18n.ts._deliveryTargetControl[appearNote.deliveryTargets.mode === 'include' ? 'deliveryTargetsInclude' : 'deliveryTargetsExclude'] + (appearNote.deliveryTargets.hosts?.length ? '\n' + appearNote.deliveryTargets.hosts.join('\n') : '')" style="margin-left: 0.5em;">
-							<i v-if="appearNote.deliveryTargets.mode === 'include'" class="ti ti-list-check"></i>
-							<i v-else class="ti ti-list-details"></i>
+						<span v-if="appearNote.deliveryTargets && (appearNote.deliveryTargets.mode === 'include' || appearNote.deliveryTargets.hosts?.length)" style="margin-left: 0.5em;">
+							<i v-if="appearNote.deliveryTargets.mode === 'include'" ref="deliveryTargetsIcon" class="ti ti-list-check"></i>
+							<i v-else ref="deliveryTargetsIcon" class="ti ti-list-details"></i>
 						</span>
 					</div>
 				</div>
@@ -297,6 +297,7 @@ import MkUserCardMini from '@/components/MkUserCardMini.vue';
 import MkPagination from '@/components/MkPagination.vue';
 import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import MkButton from '@/components/MkButton.vue';
+import MkDeliveryTargetsDisplay from '@/components/MkDeliveryTargetsDisplay.vue';
 import { isEnabledUrlPreview } from '@/utility/url-preview.js';
 import { getAppearNote } from '@/utility/get-appear-note.js';
 import { prefer } from '@/preferences.js';
@@ -316,23 +317,22 @@ const inChannel = inject('inChannel', null);
 
 let note = deepClone(props.note);
 
-// コンポーネント初期化に非同期的な処理を行うとTransitionのレンダリングがバグるため同期的に実行できるメソッドが実装されるのを待つ必要がある
-//// plugin
-//const noteViewInterruptors = getPluginHandlers('note_view_interruptor');
-//if (noteViewInterruptors.length > 0) {
-//	let result: Misskey.entities.Note | null = deepClone(note);
-//	for (const interruptor of noteViewInterruptors) {
-//		try {
-//			result = await interruptor.handler(result!) as Misskey.entities.Note | null;
-//		} catch (err) {
-//			console.error(err);
-//		}
-//	}
-//	note = result as Misskey.entities.Note;
-//}
+// plugin
+const noteViewInterruptors = getPluginHandlers('note_view_interruptor');
+if (noteViewInterruptors.length > 0) {
+	let result: Misskey.entities.Note | null = deepClone(note);
+	for (const interruptor of noteViewInterruptors) {
+		try {
+			result = interruptor.handler(result!) as Misskey.entities.Note | null;
+		} catch (err) {
+			console.error(err);
+		}
+	}
+	note = result as Misskey.entities.Note;
+}
 
 const isRenote = Misskey.note.isPureRenote(note);
-const appearNote = getAppearNote(note);
+const appearNote = getAppearNote(note) ?? note;
 const { $note: $appearNote, subscribe: subscribeManuallyToNoteCapture } = useNoteCapture({
 	note: appearNote,
 	parentNote: note,
@@ -375,6 +375,24 @@ const hideReactionCount = computed(() => {
 });
 const showReplies = ref(false);
 const showQuotes = ref(false);
+
+const deliveryTargetsIcon = useTemplateRef('deliveryTargetsIcon');
+
+// 配信先サーバーのツールチップを設定
+if (appearNote.deliveryTargets && (appearNote.deliveryTargets.mode === 'include' || appearNote.deliveryTargets.hosts?.length)) {
+	useTooltip(deliveryTargetsIcon, (showing) => {
+		if (deliveryTargetsIcon.value == null) return;
+
+		const { dispose } = os.popup(MkDeliveryTargetsDisplay, {
+			showing,
+			mode: appearNote.deliveryTargets!.mode,
+			hosts: appearNote.deliveryTargets!.hosts || [],
+			targetElement: deliveryTargetsIcon.value,
+		}, {
+			closed: () => dispose(),
+		});
+	});
+}
 
 const pleaseLoginContext = computed<OpenOnRemoteOptions>(() => ({
 	type: 'lookup',
@@ -441,7 +459,8 @@ const reactionsPaginator = markRaw(new Paginator('notes/reactions', {
 }));
 
 useTooltip(renoteButton, async (showing) => {
-	if (renoteButton.value == null) return;
+	const anchorElement = renoteButton.value;
+	if (anchorElement == null) return;
 
 	const renotes = await misskeyApi('notes/renotes', {
 		noteId: appearNote.id,
@@ -456,7 +475,7 @@ useTooltip(renoteButton, async (showing) => {
 		showing,
 		users,
 		count: appearNote.renoteCount,
-		targetElement: renoteButton.value,
+		anchorElement: anchorElement,
 	}, {
 		closed: () => dispose(),
 	});
@@ -479,7 +498,7 @@ if (appearNote.reactionAcceptance === 'likeOnly') {
 			reaction: '❤️',
 			users,
 			count: $appearNote.reactionCount,
-			targetElement: reactButton.value!,
+			anchorElement: reactButton.value!,
 		}, {
 			closed: () => dispose(),
 		});

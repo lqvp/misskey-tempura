@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div v-if="summary.mostUsed" class="summary-item">
 				<div class="label">{{ i18n.ts._reactionStats.mostUsedReaction }}</div>
 				<div class="value most-used">
-					<Mfm :text="summary.mostUsed.reaction"/>
+					<MkReactionIcon :reaction="summary.mostUsed.reaction" :emojiUrl="getEmojiUrl(summary.mostUsed.reaction)" :noStyle="true"/>
 					<span>{{ summary.mostUsed.count }}</span>
 				</div>
 			</div>
@@ -31,6 +31,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		<div v-if="chartData" class="chart-container _spacer">
 			<canvas ref="chartEl"></canvas>
+			<div class="chart-labels">
+				<div v-for="item in chartData" :key="item.reaction" class="label-item">
+					<MkReactionIcon :reaction="item.reaction" :emojiUrl="getEmojiUrl(item.reaction)" :noStyle="true"/>
+				</div>
+			</div>
 		</div>
 		<div v-else class="loading">
 			<MkLoading/>
@@ -49,7 +54,9 @@ import { definePage } from '@/page.js';
 import { ensureSignin } from '@/i.js';
 import MkInfo from '@/components/MkInfo.vue';
 import MkLoading from '@/components/global/MkLoading.vue';
+import MkReactionIcon from '@/components/MkReactionIcon.vue';
 import { initChart } from '@/utility/init-chart.js';
+import { customEmojisMap } from '@/custom-emojis.js';
 
 const $i = ensureSignin();
 
@@ -75,13 +82,6 @@ const summary = computed(() => {
 	const mostUsed = chartData.value[0]; // data is already sorted by count DESC
 
 	return { total, unique, mostUsed };
-});
-
-const maxCount = computed(() => {
-	if (!chartData.value || chartData.value.length === 0) {
-		return 1;
-	}
-	return Math.max(...chartData.value.map(x => x.count));
 });
 
 watch(tab, async () => {
@@ -135,13 +135,20 @@ function getColor(i: number) {
 	return colorPalette[i % colorPalette.length];
 }
 
+function getEmojiUrl(reaction: string): string | undefined {
+	if (reaction[0] !== ':') return undefined;
+	const name = reaction.substring(1, reaction.length - 1).replace('@.', '');
+	const emoji = customEmojisMap.get(name);
+	return emoji?.url;
+}
+
 function renderChart() {
 	if (!chartData.value || chartData.value.length === 0 || !chartEl.value) return;
 	if (chartInstance) chartInstance.destroy();
 	chartInstance = new Chart(chartEl.value, {
 		type: 'bar',
 		data: {
-			labels: chartData.value.map(x => x.reaction),
+			labels: chartData.value.map((_, i) => ''), // 空のラベルを使用
 			datasets: [{
 				label: i18n.ts._reactionStats.totalReactions,
 				data: chartData.value.map(x => x.count),
@@ -155,12 +162,27 @@ function renderChart() {
 			aspectRatio: 2.5,
 			plugins: {
 				legend: { display: false },
-				tooltip: { enabled: true },
+				tooltip: {
+					enabled: true,
+					callbacks: {
+						label: (context) => {
+							const item = chartData.value?.[context.dataIndex];
+							if (!item) return '';
+							// Remove leading and trailing colons from reaction for display
+							const reactionName = item.reaction.startsWith(':') && item.reaction.endsWith(':')
+								? item.reaction.slice(1, -1)
+								: item.reaction;
+							return `${reactionName}: ${item.count}`;
+						},
+					},
+				},
 			},
 			scales: {
 				x: {
 					grid: { display: false },
-					ticks: { font: { size: 16 } },
+					ticks: {
+						display: false, // ラベルを非表示
+					},
 				},
 				y: {
 					beginAtZero: true,
@@ -207,61 +229,89 @@ watch(chartData, async () => {
 			font-weight: bold;
 		}
 		.most-used {
-			display: flex;
+			display: inline-flex;
 			align-items: center;
 			justify-content: center;
 			gap: 8px;
 			font-size: 1.2em;
+			line-height: 1.5;
+
+			:deep(.custom-emoji) {
+				height: 1.2em;
+				max-height: 1.2em;
+				width: auto;
+				max-width: 2em;
+				object-fit: contain;
+				vertical-align: middle;
+			}
+
+			:deep(img) {
+				height: 1.2em;
+				max-height: 1.2em;
+				width: auto;
+				max-width: 2em;
+				object-fit: contain;
+				vertical-align: middle;
+			}
 
 			:deep(.mfm) {
-				font-size: 1.5em;
+				font-size: 1.2em;
+				vertical-align: middle;
 			}
 		}
 	}
 }
 
 .chart-container {
-	ul {
-		padding: 0;
-		margin: 0;
-		list-style: none;
+	position: relative;
+	overflow-x: auto;
+	padding-bottom: 10px;
+
+	canvas {
+		min-width: 600px;
+		margin-bottom: 10px;
 	}
 
-	.chart-item {
+	.chart-labels {
 		display: flex;
+		justify-content: space-evenly;
 		align-items: center;
-		margin-bottom: 8px;
-		gap: 8px;
+		padding: 12px 8px;
+		margin-top: 4px;
+		min-width: 600px;
 
-		.reaction {
-			width: 32px;
-			height: 32px;
-			font-size: 24px;
+		.label-item {
+			flex: 0 1 auto;
 			display: flex;
-			align-items: center;
 			justify-content: center;
-			flex-shrink: 0;
-		}
-
-		.bar-container {
-			flex-grow: 1;
-			height: 24px;
-			background: var(--bg);
-			border-radius: 4px;
-			overflow: hidden;
-		}
-
-		.bar {
-			height: 100%;
-			background: var(--accent);
-			border-radius: 4px;
-		}
-
-		.count {
+			align-items: center;
+			font-size: 20px;
+			height: 40px;
 			min-width: 40px;
-			text-align: right;
-			font-family: var(--font-monospace);
-			flex-shrink: 0;
+			padding: 0 4px;
+			overflow: visible;
+
+			:deep(.custom-emoji) {
+				height: 32px;
+				max-height: 32px;
+				width: auto;
+				max-width: 56px;
+				object-fit: contain;
+				vertical-align: middle;
+			}
+
+			:deep(.mfm) {
+				font-size: 20px;
+			}
+
+			:deep(img) {
+				height: 32px;
+				max-height: 32px;
+				width: auto;
+				max-width: 56px;
+				object-fit: contain;
+				vertical-align: middle;
+			}
 		}
 	}
 }

@@ -49,17 +49,18 @@ export function useHistoryPage<
 		};
 	}
 
-	function getActionText(type: ActionType, history: HistoryItem) {
-		const sourceUser = history.fromUser?.name || history.fromUser?.username || '(unknown)';
-		const targetUser = history.toUser?.name || history.toUser?.username || '(unknown)';
-
-		return i18n.t(`${i18nScope}.${type! as string}` as any, { user: type!.startsWith('was') ? sourceUser : targetUser });
-	}
+	const i18nBase = computed(() => {
+		if (i18nScope === '_followHistory') {
+			return i18n.ts._followHistory;
+		} else {
+			return i18n.ts._followRequestHistory;
+		}
+	});
 
 	const deleteHistory = () => {
 		os.confirm({
 			type: 'warning',
-			text: i18n.t(`${i18nScope}.deleteConfirm` as any),
+			text: i18nBase.value.deleteConfirm,
 		}).then(({ canceled }) => {
 			if (canceled) return;
 
@@ -73,19 +74,19 @@ export function useHistoryPage<
 
 	const headerActions = computed(() => [{
 		icon: 'ti ti-trash',
-		text: i18n.t(`${i18nScope}.deleteAll` as any),
+		text: i18nBase.value.deleteAll,
 		handler: deleteHistory,
 	}]);
 
 	const headerTabs = computed(() => [
 		{
 			key: 'all',
-			title: i18n.t(`${i18nScope}.types.all` as any),
+			title: i18nBase.value.types.all,
 			icon: endpoint === 'following/history' ? 'ti ti-history' : 'ti ti-history-toggle',
 		},
 		...Object.entries(actionConfig).map(([key, config]) => ({
 			key,
-			title: i18n.t(`${i18nScope}.types.${key}` as any),
+			title: i18nBase.value.types[key],
 			icon: config.tabIcon,
 		})),
 	]);
@@ -94,7 +95,6 @@ export function useHistoryPage<
 		tab,
 		paginator,
 		getActionConfig,
-		getActionText,
 		headerActions,
 		headerTabs,
 	};

@@ -111,29 +111,90 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 	}
 
 	async function toggleRenoteMute() {
-		os.apiWithDialog(user.isRenoteMuted ? 'renote-mute/delete' : 'renote-mute/create', {
-			userId: user.id,
-		}, undefined, {
-			'15273a89-374d-49fa-8df6-8bb3feeea455': {
-				title: i18n.ts.permissionDeniedError,
-				text: i18n.ts._extraSettings.muteThisUserIsProhibited,
-			},
-		}).then(() => {
-			user.isRenoteMuted = !user.isRenoteMuted;
-		});
+		if (user.isRenoteMuted) {
+			os.apiWithDialog('renote-mute/delete', {
+				userId: user.id,
+			}).then(() => {
+				user.isRenoteMuted = false;
+			});
+		} else {
+			const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkMuteDialog.vue')), {}, {
+				done: (expiresAt: number | null) => {
+					os.apiWithDialog('renote-mute/create', {
+						userId: user.id,
+						expiresAt,
+					}, undefined, {
+						'15273a89-374d-49fa-8df6-8bb3feeea455': {
+							title: i18n.ts.permissionDeniedError,
+							text: i18n.ts._extraSettings.muteThisUserIsProhibited,
+						},
+					}).then(() => {
+						user.isRenoteMuted = true;
+					});
+				},
+				closed: () => {
+					dispose();
+				},
+			});
+		}
 	}
 
 	async function toggleQuoteMute() {
-		os.apiWithDialog(user.isQuoteMuted ? 'quote-mute/delete' : 'quote-mute/create', {
-			userId: user.id,
-		}, undefined, {
-			'15273a89-374d-49fa-8df6-8bb3feeea455': {
-				title: i18n.ts.permissionDeniedError,
-				text: i18n.ts._extraSettings.muteThisUserIsProhibited,
-			},
-		}).then(() => {
-			user.isQuoteMuted = !user.isQuoteMuted;
-		});
+		if (user.isQuoteMuted) {
+			os.apiWithDialog('quote-mute/delete', {
+				userId: user.id,
+			}).then(() => {
+				user.isQuoteMuted = false;
+			});
+		} else {
+			const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkMuteDialog.vue')), {}, {
+				done: (expiresAt: number | null) => {
+					os.apiWithDialog('quote-mute/create', {
+						userId: user.id,
+						expiresAt,
+					}, undefined, {
+						'15273a89-374d-49fa-8df6-8bb3feeea455': {
+							title: i18n.ts.permissionDeniedError,
+							text: i18n.ts._extraSettings.muteThisUserIsProhibited,
+						},
+					}).then(() => {
+						user.isQuoteMuted = true;
+					});
+				},
+				closed: () => {
+					dispose();
+				},
+			});
+		}
+	}
+
+	async function toggleAvatarDecorationMute() {
+		if (user.isAvatarDecorationMuted) {
+			os.apiWithDialog('avatar-decoration-muting/delete', {
+				userId: user.id,
+			}).then(() => {
+				user.isAvatarDecorationMuted = false;
+			});
+		} else {
+			const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkMuteDialog.vue')), {}, {
+				done: (expiresAt: number | null) => {
+					os.apiWithDialog('avatar-decoration-muting/create', {
+						userId: user.id,
+						expiresAt,
+					}, undefined, {
+						'15273a89-374d-49fa-8df6-8bb3feeea455': {
+							title: i18n.ts.permissionDeniedError,
+							text: i18n.ts._extraSettings.muteThisUserIsProhibited,
+						},
+					}).then(() => {
+						user.isAvatarDecorationMuted = true;
+					});
+				},
+				closed: () => {
+					dispose();
+				},
+			});
+		}
 	}
 
 	async function toggleBlock() {
@@ -245,7 +306,11 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 			icon: 'ti ti-user-exclamation',
 			text: i18n.ts.moderation,
 			action: () => {
-				router.push(`/admin/user/${user.id}`);
+				router.push('/admin/user/:userId', {
+					params: {
+						userId: user.id,
+					},
+				});
 			},
 		}, { type: 'divider' });
 	}
@@ -303,13 +368,58 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 			icon: 'ti ti-search',
 			text: i18n.ts.searchThisUsersNotes,
 			action: () => {
-				router.push(`/search?username=${encodeURIComponent(user.username)}${user.host != null ? '&host=' + encodeURIComponent(user.host) : ''}`);
+				router.push('/search', {
+					query: {
+						username: user.username,
+						host: user.host ?? undefined,
+					},
+				});
 			},
 		});
 	}
 
 	if ($i) {
-		menuItems.push({ type: 'divider' }, {
+		const items: MenuItem[] = [{ type: 'divider' }];
+
+		if ($i.policies.canUseGeminiLLMAPI || prefer.s.geminiToken) {
+			items.push({
+				icon: 'ti ti-file-text',
+				text: i18n.ts._llm.summarizeProfile,
+				action: async () => {
+					// プロフィール要約で取得するノート数を指定できるようにする
+					const { canceled: canceledNotesLimit, result: notesLimit } = await os.inputNumber({
+						title: i18n.ts._llm.summarizeProfile,
+						text: i18n.ts._llm.notesLimitPrompt,
+						default: 15,
+					});
+
+					if (canceledNotesLimit) return;
+
+					// followersの投稿を含めるか確認
+					const { canceled: canceledFollowers } = await os.confirm({
+						type: 'question',
+						title: i18n.ts._llm.summarizeProfile,
+						text: i18n.ts._llm.includeFollowersNotesPrompt,
+					});
+					const includeFollowers = !canceledFollowers;
+
+					// キャンセルされなかった場合、指定された数値でプロフィール要約を実行
+					await summarizeUserProfile(user.id, notesLimit, includeFollowers);
+				},
+			});
+		}
+
+		if (prefer.s.nicknameEnabled) {
+			items.push({
+				icon: 'ti ti-edit',
+				text: 'ニックネームを編集',
+				action: () => {
+					editNickname(user);
+				},
+			});
+		}
+
+		items.push({ type: 'divider' }, {
 			icon: 'ti ti-pencil',
 			text: i18n.ts.editMemo,
 			action: editMemo,
@@ -374,6 +484,8 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 				}));
 			},
 		});
+
+		menuItems.push(...items);
 	}
 
 	if ($i && meId !== user.id) {
@@ -453,6 +565,10 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 			icon: user.isQuoteMuted ? 'ti ti-quote' : 'ti ti-quote-off',
 			text: user.isQuoteMuted ? i18n.ts.quoteUnmute : i18n.ts.quoteMute,
 			action: toggleQuoteMute,
+		}, {
+			icon: user.isAvatarDecorationMuted ? 'ti ti-eye' : 'ti ti-eye-off',
+			text: user.isAvatarDecorationMuted ? i18n.ts._decorationMuting.unmute : i18n.ts._decorationMuting.mute,
+			action: toggleAvatarDecorationMute,
 		}, {
 			icon: 'ti ti-ban',
 			text: user.isBlocking ? i18n.ts.unblock : i18n.ts.block,

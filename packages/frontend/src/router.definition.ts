@@ -218,6 +218,9 @@ export const ROUTE_DEF = [{
 	path: '/signup-complete/:code',
 	component: page(() => import('@/pages/signup-complete.vue')),
 }, {
+	path: '/verify-email/:code',
+	component: page(() => import('@/pages/verify-email.vue')),
+}, {
 	path: '/announcements',
 	component: page(() => import('@/pages/announcements.vue')),
 	loginRequired: true,
@@ -236,6 +239,10 @@ export const ROUTE_DEF = [{
 }, {
 	path: '/about-misskey-tempura',
 	component: page(() => import('@/pages/about-misskey-tempura.vue')),
+	hash: 'initialTab',
+}, {
+	path: '/tempura-changelog',
+	component: page(() => import('@/pages/tempura-changelog.vue')),
 	hash: 'initialTab',
 }, {
 	path: '/contact',
@@ -538,10 +545,6 @@ export const ROUTE_DEF = [{
 		name: 'performance',
 		component: page(() => import('@/pages/admin/performance.vue')),
 	}, {
-		path: '/server-rules',
-		name: 'server-rules',
-		component: page(() => import('@/pages/admin/server-rules.vue')),
-	}, {
 		path: '/invites',
 		name: 'invites',
 		component: page(() => import('@/pages/admin/invites.vue')),
@@ -685,4 +688,4 @@ export const ROUTE_DEF = [{
 }, {
 	path: '/:(*)',
 	component: page(() => import('@/pages/not-found.vue')),
-}] satisfies RouteDef[];
+}] as const satisfies RouteDef[];

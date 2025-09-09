@@ -238,40 +238,6 @@ export class ServerService implements OnApplicationShutdown {
 			}
 		});
 
-		fastify.get<{ Params: { code: string } }>('/api/verify-email/:code', async (request, reply) => {
-			const profile = await this.userProfilesRepository.findOneBy({
-				emailVerifyCode: request.params.code,
-			});
-
-			if (profile != null) {
-				await this.userProfilesRepository.update({ userId: profile.userId }, {
-					emailVerified: true,
-					emailVerifyCode: null,
-				});
-
-				this.globalEventService.publishMainStream(profile.userId, 'meUpdated', await this.userEntityService.pack(profile.userId, { id: profile.userId }, {
-					schema: 'MeDetailed',
-					includeSecrets: true,
-				}));
-
-				reply.code(200).header('content-type', 'text/json; charset=utf-8')
-					.send(JSON.stringify({
-						code: 200,
-						status: 'success',
-						message: 'Verification succeeded! \nメールアドレスの認証に成功しました。',
-					}));
-				return;
-			} else {
-				reply.code(404).header('content-type', 'text/json; charset=utf-8')
-					.send(JSON.stringify({
-						code: 404,
-						status: 'failed',
-						message: 'Verification failed. Please try again. \nメールアドレスの認証に失敗しました。もう一度お試しください',
-					}));
-				return;
-			}
-		});
-
 		fastify.register(this.clientServerService.createServer);
 
 		this.streamingApiServerService.attach(fastify.server);

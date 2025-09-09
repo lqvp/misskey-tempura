@@ -50,6 +50,7 @@ export const DI = {
 	mutingsRepository: Symbol('mutingsRepository'),
 	renoteMutingsRepository: Symbol('renoteMutingsRepository'),
 	quoteMutingsRepository: Symbol('quoteMutingsRepository'),
+	avatarDecorationMutingsRepository: Symbol('avatarDecorationMutingsRepository'),
 	blockingsRepository: Symbol('blockingsRepository'),
 	swSubscriptionsRepository: Symbol('swSubscriptionsRepository'),
 	hashtagsRepository: Symbol('hashtagsRepository'),

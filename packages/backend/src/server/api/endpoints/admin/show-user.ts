@@ -39,6 +39,41 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			autoRejectFollowRequest: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			autoFollowBack: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			autoFollowOnMove: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			outboxFilter: {
+				type: 'object',
+				optional: false, nullable: false,
+				properties: {
+					public: { type: 'boolean', nullable: false, optional: false },
+					public_non_ltl: { type: 'boolean', nullable: false, optional: false },
+					home: { type: 'boolean', nullable: false, optional: false },
+				},
+			},
+			webFeedFilter: {
+				type: 'object',
+				optional: false, nullable: false,
+				properties: {
+					disableRss: { type: 'boolean', nullable: false, optional: false },
+					disableAtom: { type: 'boolean', nullable: false, optional: false },
+					disableJson: { type: 'boolean', nullable: false, optional: false },
+				},
+			},
+			receiveSpecifiedNotesFrom: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['all', 'following', 'nobody'],
+			},
 			noCrawle: {
 				type: 'boolean',
 				optional: false, nullable: false,
@@ -247,6 +282,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				autoRejectFollowRequest: profile.autoRejectFollowRequest,
 				autoFollowBack: profile.autoFollowBack,
 				autoFollowOnMove: profile.autoFollowOnMove,
+				outboxFilter: profile.outboxFilter,
+				webFeedFilter: profile.webFeedFilter,
 				receiveSpecifiedNotesFrom: profile.receiveSpecifiedNotesFrom,
 				noCrawle: profile.noCrawle,
 				preventAiLearning: profile.preventAiLearning,

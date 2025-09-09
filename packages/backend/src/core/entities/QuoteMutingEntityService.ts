@@ -39,6 +39,7 @@ export class QuoteMutingEntityService {
 		return await awaitAll({
 			id: muting.id,
 			createdAt: this.idService.parse(muting.id).date.toISOString(),
+			expiresAt: muting.expiresAt ? muting.expiresAt.toISOString() : null,
 			muteeId: muting.muteeId,
 			mutee: hints?.packedMutee ?? this.userEntityService.pack(muting.muteeId, me, {
 				schema: 'UserDetailedNotMe',

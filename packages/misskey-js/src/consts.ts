@@ -17,7 +17,32 @@ import type {
 	ChatRoom,
 } from './autogen/models.js';
 
-export const notificationTypes = ['note', 'follow', 'mention', 'reply', 'renote', 'quote', 'reaction', 'pollVote', 'pollEnded', 'receiveFollowRequest', 'followRequestAccepted', 'followRequestRejected', 'blocked', 'unblocked', 'groupInvited', 'app', 'roleAssigned', 'chatRoomInvitationReceived', 'achievementEarned', 'scheduledNoteFailed', 'scheduledNotePosted'] as const;
+export const notificationTypes = [
+	'note',
+	'follow',
+	'mention',
+	'reply',
+	'renote',
+	'quote',
+	'reaction',
+	'pollEnded',
+	'receiveFollowRequest',
+	'followRequestAccepted',
+	'followRequestRejected',
+	'blocked',
+	'unblocked',
+	'groupInvited',
+	'app',
+	'roleAssigned',
+	'chatRoomInvitationReceived',
+	'achievementEarned',
+	'scheduledNoteFailed',
+	'scheduledNotePosted',
+	'exportCompleted',
+	'test',
+	'login',
+	'createToken',
+] as const;
 
 export const noteVisibilities = ['public', 'public_non_ltl', 'home', 'followers', 'specified'] as const;
 
@@ -194,12 +219,71 @@ export const moderationLogTypes = [
 	'deleteGalleryPost',
 	'deleteChatRoom',
 	'updateProxyAccountDescription',
+	'updateProxyAccountDescription',
 	'approve',
 	'decline',
 	'quarantineRemoteInstance',
 	'unquarantineRemoteInstance',
 	'dropAllNotes',
 	'unsetUserMutualLink',
+] as const;
+
+export const rolePolicies = [
+	'gtlAvailable',
+	'ltlAvailable',
+	'canPublicNote',
+	'canHomeNote',
+	'scheduleNoteMax',
+	'mentionLimit',
+	'canInvite',
+	'inviteLimit',
+	'inviteLimitCycle',
+	'inviteExpirationTime',
+	'canManageCustomEmojis',
+	'canEmojiDeletion',
+	'canManageAvatarDecorations',
+	'canUseRemoteIconDecorations',
+	'canSearchNotes',
+	'canSearchUsers',
+	'canUseTranslator',
+	'canHideAds',
+	'driveCapacityMb',
+	'maxFileSizeMb',
+	'alwaysMarkNsfw',
+	'canUpdateBioMedia',
+	'pinLimit',
+	'antennaLimit',
+	'wordMuteLimit',
+	'webhookLimit',
+	'clipLimit',
+	'noteEachClipsLimit',
+	'userListLimit',
+	'userEachUserListsLimit',
+	'rateLimitFactor',
+	'avatarDecorationLimit',
+	'canImportAntennas',
+	'canImportBlocking',
+	'canImportFollowing',
+	'canImportMuting',
+	'canImportUserLists',
+	'chatAvailability',
+	'uploadableFileTypes',
+	'noteDraftLimit',
+	'watermarkAvailable',
+	'canAddRoles',
+	'canCreateRole',
+	'canUseUnFollowNotification',
+	'canUseBlockedNotification',
+	'canUseUnBlockedNotification',
+	'canPublicNonLtlNote',
+	'canReadFollowHistory',
+	'canAutoFollowBack',
+	'canUseTruncate',
+	'canUseMakePrivate',
+	'canUpdateCounters',
+	'canUseGeminiLLMAPI',
+	'canSkipInviteEmailAuth',
+	'canSkipInviteApproval',
 ] as const;
 
 export const queueTypes = [
@@ -226,7 +310,15 @@ export const reversiUpdateKeys = [
 
 export type ReversiUpdateKey = typeof reversiUpdateKeys[number];
 
-type AvatarDecoration = UserLite['avatarDecorations'][number];
+type AvatarDecoration = {
+	id: string;
+	name: string;
+	url: string;
+	angle?: number;
+	flipH?: boolean;
+	offsetX?: number;
+	offsetY?: number;
+};
 
 type ReceivedAbuseReport = {
 	reportId: AbuseReportNotificationRecipient['id'];
@@ -511,6 +603,10 @@ export type ModerationLogPayloads = {
 		roomId: string;
 		room: ChatRoom;
 	};
+	updateProxyAccountDescription: {
+		before: string | null;
+		after: string | null;
+	}
 	quarantineRemoteInstance: {
 		id: string;
 		host: string;

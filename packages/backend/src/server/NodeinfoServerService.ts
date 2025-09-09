@@ -125,6 +125,13 @@ export class NodeinfoServerService {
 					enableServiceWorker: meta.enableServiceWorker,
 					proxyAccountName: proxyAccount.username,
 					themeColor: meta.themeColor ?? '#86b300',
+					features: [
+						'enable_wide_emoji',
+						'enable_wide_emoji_reaction',
+						'emoji_keywords',
+						'emoji_reaction',
+						'quote',
+					],
 				},
 			};
 			if (version >= 21) {

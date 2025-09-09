@@ -41,7 +41,7 @@ export async function getNoteClipMenu(props: {
 		}
 	}
 
-	const appearNote = getAppearNote(props.note);
+	const appearNote = getAppearNote(props.note) ?? props.note;
 
 	const clips = await clipsCache.fetch();
 	const menu: MenuItem[] = [...clips.map(clip => ({
@@ -181,7 +181,7 @@ export function getNoteMenu(props: {
 	translating: Ref<boolean>;
 	currentClip?: Misskey.entities.Clip;
 }) {
-	const appearNote = getAppearNote(props.note);
+	const appearNote = getAppearNote(props.note) ?? props.note;
 	const link = appearNote.url ?? appearNote.uri;
 
 	const cleanups = [] as (() => void)[];
@@ -668,7 +668,7 @@ export function getRenoteMenu(props: {
 	renoteButton: ShallowRef<HTMLElement | null | undefined>;
 	mock?: boolean;
 }) {
-	const appearNote = getAppearNote(props.note);
+	const appearNote = getAppearNote(props.note) ?? props.note;
 
 	const channelRenoteItems: MenuItem[] = [];
 	const normalRenoteItems: MenuItem[] = [];

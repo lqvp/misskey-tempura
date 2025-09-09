@@ -300,7 +300,7 @@ import MkButton from '@/components/MkButton.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import MkMfm from '@/components/global/MkMfm.js';
-import { reloadAsk } from '@/utility/reload-ask.js';
+import { suggestReload } from '@/utility/reload-suggest.js';
 import { testEarthquakeAlert, getConnectionLogs, getDataLogs, clearAllLogs } from '@/utility/tempura-script/earthquake-warning.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
@@ -534,10 +534,7 @@ function clearLogs() {
  * 設定を保存してページをリロードし、WebSocketの接続を更新します
  */
 async function save() {
-	await reloadAsk({
-		reason: i18n.ts.reloadToApplySetting,
-		unison: true,
-	});
+	await suggestReload();
 }
 </script>
 

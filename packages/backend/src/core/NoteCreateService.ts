@@ -5,7 +5,7 @@
 
 import { setImmediate } from 'node:timers/promises';
 import * as mfm from 'mfm-js';
-import { In, DataSource, IsNull, LessThan } from 'typeorm';
+import { In, DataSource, IsNull, LessThan, Any } from 'typeorm';
 import * as Redis from 'ioredis';
 import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
 import { Data } from 'ws';
@@ -73,6 +73,7 @@ class NotificationManager {
 	constructor(
 		private mutingsRepository: MutingsRepository,
 		private notificationService: NotificationService,
+		private followingsRepository: FollowingsRepository,
 		notifier: { id: MiUser['id']; },
 		note: MiNote,
 	) {
@@ -103,7 +104,46 @@ class NotificationManager {
 
 	@bindThis
 	public async notify() {
+		if (this.queue.length === 0) {
+			return;
+		}
+
+		const targetUserIds = this.queue.map(x => x.target);
+		let visibleUserIds: Set<string>;
+
+		switch (this.note.visibility) {
+			case 'public':
+			case 'home':
+				visibleUserIds = new Set(targetUserIds);
+				break;
+
+			case 'specified':
+				visibleUserIds = new Set(this.note.visibleUserIds.filter(id => targetUserIds.includes(id)));
+				break;
+
+			case 'followers': {
+				const followers = await this.followingsRepository.find({
+					where: {
+						followeeId: this.note.userId,
+						followerId: In(targetUserIds),
+						isFollowerHibernated: false,
+					},
+					select: ['followerId'],
+				});
+				visibleUserIds = new Set(followers.map(f => f.followerId));
+				break;
+			}
+
+			default:
+				visibleUserIds = new Set();
+				break;
+		}
+
 		for (const x of this.queue) {
+			if (!visibleUserIds.has(x.target)) {
+				continue;
+			}
+
 			if (x.reason === 'renote') {
 				this.notificationService.createNotification(x.target, 'renote', {
 					noteId: this.note.id,
@@ -461,7 +501,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 			emojis,
 			userId: user.id,
 			localOnly: data.localOnly!,
-			reactionAcceptance: data.reactionAcceptance,
+			reactionAcceptance: data.reactionAcceptance ?? null,
 			visibility: data.visibility as any,
 			visibleUserIds: data.visibility === 'specified'
 				? data.visibleUsers
@@ -524,7 +564,11 @@ export class NoteCreateService implements OnApplicationShutdown {
 				await this.notesRepository.insert(insert);
 			}
 
-			return insert;
+			return {
+				...insert,
+				reply: data.reply ?? null,
+				renote: data.renote ?? null,
+			};
 		} catch (e) {
 			// duplicate key error
 			if (isDuplicateKeyValueError(e)) {
@@ -660,7 +704,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 
 			this.webhookService.enqueueUserWebhook(user.id, 'note', { note: noteObj });
 
-			const nm = new NotificationManager(this.mutingsRepository, this.notificationService, user, note);
+			const nm = new NotificationManager(this.mutingsRepository, this.notificationService, this.followingsRepository, user, note);
 
 			let usersToNotifyForMention = [...mentionedUsers]; // Default to all mentioned users
 

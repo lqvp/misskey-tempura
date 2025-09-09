@@ -196,6 +196,15 @@ export const paramDef = {
 			},
 			required: ['public', 'public_non_ltl', 'home'],
 		},
+		webFeedFilter: {
+			type: 'object',
+			properties: {
+				disableRss: { type: 'boolean' },
+				disableAtom: { type: 'boolean' },
+				disableJson: { type: 'boolean' },
+			},
+			required: ['disableRss', 'disableAtom', 'disableJson'],
+		},
 		receiveSpecifiedNotesFrom: { type: 'string', enum: receiveSpecifiedNotesFromVisibilities },
 		noCrawle: { type: 'boolean' },
 		preventAiLearning: { type: 'boolean' },
@@ -374,6 +383,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			if (ps.outboxFilter) {
 				const { public: publicFilter, public_non_ltl, home } = ps.outboxFilter;
 				profileUpdates.outboxFilter = { public: publicFilter, public_non_ltl, home };
+			}
+			if (ps.webFeedFilter) {
+				const { disableRss, disableAtom, disableJson } = ps.webFeedFilter;
+				profileUpdates.webFeedFilter = { disableRss, disableAtom, disableJson };
 			}
 			if (typeof ps.receiveSpecifiedNotesFrom === 'string') profileUpdates.receiveSpecifiedNotesFrom = ps.receiveSpecifiedNotesFrom;
 			if (typeof ps.noCrawle === 'boolean') profileUpdates.noCrawle = ps.noCrawle;

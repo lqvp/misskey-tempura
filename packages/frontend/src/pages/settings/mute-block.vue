@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <SearchMarker path="/settings/mute-block" :label="i18n.ts.muteAndBlock" icon="ti ti-ban" :keywords="['mute', 'block']">
 	<div class="_gaps_m">
 		<MkFeatureBanner icon="/client-assets/prohibited_3d.png" color="#ff2600">
-			<SearchKeyword>{{ i18n.ts._settings.muteAndBlockBanner }}</SearchKeyword>
+			<SearchText>{{ i18n.ts._settings.muteAndBlockBanner }}</SearchText>
 		</MkFeatureBanner>
 
 		<div class="_gaps_s">
@@ -95,6 +95,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 									</div>
 									<div v-if="expandedRenoteMuteItems.includes(item.id)" :class="$style.userItemSub">
 										<div>Muted at: <MkTime :time="item.createdAt" mode="detail"/></div>
+										<div v-if="item.expiresAt">Period: <MkTime :time="item.expiresAt" mode="detail"/></div>
+										<div v-else>Period: {{ i18n.ts.indefinitely }}</div>
 									</div>
 								</div>
 							</div>
@@ -125,6 +127,40 @@ SPDX-License-Identifier: AGPL-3.0-only
 									</div>
 									<div v-if="expandedQuoteMuteItems.includes(item.id)" :class="$style.userItemSub">
 										<div>Muted at: <MkTime :time="item.createdAt" mode="detail"/></div>
+										<div v-if="item.expiresAt">Period: <MkTime :time="item.expiresAt" mode="detail"/></div>
+										<div v-else>Period: {{ i18n.ts.indefinitely }}</div>
+									</div>
+								</div>
+							</div>
+						</template>
+					</MkPagination>
+				</MkFolder>
+			</SearchMarker>
+
+			<SearchMarker
+				:keywords="['avatar', 'decoration', 'mute', 'hide', 'user']"
+			>
+				<MkFolder>
+					<template #icon><i class="ti ti-eye-off"></i></template>
+					<template #label><SearchLabel>{{ i18n.ts.mutedUsers }} ({{ i18n.ts.avatarDecorations }})</SearchLabel><span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+
+					<MkPagination :paginator="avatarDecorationMutingPaginator" withControl>
+						<template #empty><MkResult type="empty" :text="i18n.ts.noUsers"/></template>
+
+						<template #default="{ items }">
+							<div class="_gaps_s">
+								<div v-for="item in items" :key="item.mutee.id" :class="[$style.userItem, { [$style.userItemOpend]: expandedAvatarDecorationMuteItems.includes(item.id) }]">
+									<div :class="$style.userItemMain">
+										<MkA :class="$style.userItemMainBody" :to="userPage(item.mutee)">
+											<MkUserCardMini :user="item.mutee"/>
+										</MkA>
+										<button class="_button" :class="$style.userToggle" @click="toggleAvatarDecorationMuteItem(item)"><i :class="$style.chevron" class="ti ti-chevron-down"></i></button>
+										<button class="_button" :class="$style.remove" @click="unavatarDecorationMute(item.mutee, $event)"><i class="ti ti-x"></i></button>
+									</div>
+									<div v-if="expandedAvatarDecorationMuteItems.includes(item.id)" :class="$style.userItemSub">
+										<div>Muted at: <MkTime :time="item.createdAt" mode="detail"/></div>
+										<div v-if="item.expiresAt">Period: <MkTime :time="item.expiresAt" mode="detail"/></div>
+										<div v-else>Period: {{ i18n.ts.indefinitely }}</div>
 									</div>
 								</div>
 							</div>
@@ -189,8 +225,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 									</div>
 									<div v-if="expandedBlockItems.includes(item.id)" :class="$style.userItemSub">
 										<div>Blocked at: <MkTime :time="item.createdAt" mode="detail"/></div>
-										<div v-if="item.expiresAt">Period: {{ new Date(item.expiresAt).toLocaleString() }}</div>
-										<div v-else>Period: {{ i18n.ts.indefinitely }}</div>
 									</div>
 								</div>
 							</div>
@@ -220,10 +254,10 @@ import { ensureSignin } from '@/i.js';
 import MkInfo from '@/components/MkInfo.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
-import { reloadAsk } from '@/utility/reload-ask.js';
 import { prefer } from '@/preferences.js';
 import MkFeatureBanner from '@/components/MkFeatureBanner.vue';
 import { Paginator } from '@/utility/paginator.js';
+import { suggestReload } from '@/utility/reload-suggest.js';
 
 const $i = ensureSignin();
 
@@ -232,6 +266,10 @@ const renoteMutingPaginator = markRaw(new Paginator('renote-mute/list', {
 }));
 
 const quoteMutingPaginator = markRaw(new Paginator('quote-mute/list', {
+	limit: 10,
+}));
+
+const avatarDecorationMutingPaginator = markRaw(new Paginator('avatar-decoration-muting/list', {
 	limit: 10,
 }));
 
@@ -245,14 +283,15 @@ const blockingPaginator = markRaw(new Paginator('blocking/list', {
 
 const expandedRenoteMuteItems = ref<string[]>([]);
 const expandedQuoteMuteItems = ref<string[]>([]);
+const expandedAvatarDecorationMuteItems = ref<string[]>([]);
 const expandedMuteItems = ref<string[]>([]);
 const expandedBlockItems = ref<string[]>([]);
 const showSoftWordMutedWord = prefer.model('showSoftWordMutedWord');
 
 watch([
 	showSoftWordMutedWord,
-], async () => {
-	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
+], () => {
+	suggestReload();
 });
 
 async function unrenoteMute(user, ev) {
@@ -272,6 +311,16 @@ async function unquoteMute(user, ev) {
 		icon: 'ti ti-x',
 		action: async () => {
 			await os.apiWithDialog('quote-mute/delete', { userId: user.id });
+		},
+	}], ev.currentTarget ?? ev.target);
+}
+
+async function unavatarDecorationMute(user, ev) {
+	os.popupMenu([{
+		text: i18n.ts._decorationMuting.unmute,
+		icon: 'ti ti-x',
+		action: async () => {
+			await os.apiWithDialog('avatar-decoration-muting/delete', { userId: user.id });
 		},
 	}], ev.currentTarget ?? ev.target);
 }
@@ -311,6 +360,14 @@ async function toggleQuoteMuteItem(item: { id: string }) {
 		expandedQuoteMuteItems.value = expandedQuoteMuteItems.value.filter(x => x !== item.id);
 	} else {
 		expandedQuoteMuteItems.value.push(item.id);
+	}
+}
+
+async function toggleAvatarDecorationMuteItem(item: { id: string }) {
+	if (expandedAvatarDecorationMuteItems.value.includes(item.id)) {
+		expandedAvatarDecorationMuteItems.value = expandedAvatarDecorationMuteItems.value.filter(x => x !== item.id);
+	} else {
+		expandedAvatarDecorationMuteItems.value.push(item.id);
 	}
 }
 

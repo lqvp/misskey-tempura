@@ -62,7 +62,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</button>
 				</div>
 			</div>
-			<div v-else :class="$style.wrapper">
+			<div v-else :class="$style.wrapper" :style="wrapperStyle">
 				<component
 					:is="`widget-${currentWidget?.name}`"
 					v-if="currentWidget?.name"
@@ -95,6 +95,7 @@ const widgetPropsDef = {
 	showHeader: { type: 'boolean' as const, default: true },
 	customTitle: { type: 'string' as const, default: '' },
 	interval: { type: 'number' as const, default: 10 },
+	maxHeight: { type: 'number' as const, default: 0, description: '0 の場合は無制限' },
 	widgets: {
 		type: 'array' as const,
 		default: [] as Array<{ id: string; name: string; data: Record<string, any> }>,
@@ -108,6 +109,17 @@ const props = defineProps<WidgetComponentProps<WidgetProps>>();
 const emit = defineEmits<WidgetComponentEmits<WidgetProps>>();
 
 const { widgetProps, configure, save } = useWidgetPropsManager(name, widgetPropsDef, props, emit);
+
+const wrapperStyle = computed(() => {
+	if (widgetProps.maxHeight > 0) {
+		return {
+			height: 'auto',
+			maxHeight: `${widgetProps.maxHeight}px`,
+			overflowY: 'auto' as const,
+		};
+	}
+	return {};
+});
 
 const currentIndex = ref(0);
 const autoRotate = ref(true);

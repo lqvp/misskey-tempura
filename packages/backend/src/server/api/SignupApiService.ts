@@ -328,7 +328,7 @@ export class SignupApiService {
 					password,
 					host,
 					reason,
-					approved: ticket != null && ticket.skipApproval,
+					approved: (ticket != null && ticket.skipApproval) || !this.meta.approvalRequiredForSignup,
 				});
 
 				const res = await this.userEntityService.pack(account, account, {
@@ -396,7 +396,7 @@ export class SignupApiService {
 				});
 			}
 
-			if (this.meta.approvalRequiredForSignup) {
+			if (this.meta.approvalRequiredForSignup && (ticket == null || ticket.skipApproval === false)) {
 				if (pendingUser.email) {
 					this.emailService.sendEmail(pendingUser.email, 'Approval pending',
 						'Your account is now pending approval. You will get notified when you have been accepted.',
@@ -417,7 +417,7 @@ export class SignupApiService {
 
 				return { pendingApproval: true };
 			} else {
-				await this.usersRepository.update({ username: pendingUser.username }, { approved: true });
+				await this.usersRepository.update({ id: account.id }, { approved: true });
 			}
 
 			return this.signinService.signin(request, reply, account as MiLocalUser);

@@ -4,10 +4,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkModal ref="modal" :zPriority="'middle'" @click="modal?.close()" @closed="$emit('closed')">
+<MkModal ref="modal" preferType="dialog" :zPriority="'middle'" @click="modal?.close()" @closed="$emit('closed')">
 	<div :class="$style.root">
 		<div :class="$style.title"><MkSparkle>{{ i18n.ts.misskeyUpdated }}</MkSparkle></div>
 		<div :class="$style.version">✨{{ version }}🚀</div>
+		<div v-if="isBeta" :class="$style.beta">{{ i18n.ts.thankYouForTestingBeta }}</div>
 		<div>
 			<MkButton v-if="shouldShowMisskeyButton" :class="$style.updateButton" full @click="whatIsNew">{{ i18n.ts.whatIsNew }}</MkButton>
 			<MkButton v-if="shouldShowTempButton" :class="$style.updateButton" full @click="whatIsNewFork">{{ i18n.ts.whatIsNew }} (misskey-tempura)</MkButton>
@@ -34,6 +35,8 @@ const props = withDefaults(defineProps<{
 
 const modal = useTemplateRef('modal');
 
+const isBeta = version.includes('-beta') || version.includes('-alpha') || version.includes('-rc') || version.includes('-dev');
+
 const shouldShowMisskeyButton = computed(() =>
 	props.updatedComponent === 'misskey' || props.updatedComponent === 'both',
 );
@@ -41,6 +44,16 @@ const shouldShowMisskeyButton = computed(() =>
 const shouldShowTempButton = computed(() =>
 	props.updatedComponent === 'tempura' || props.updatedComponent === 'both',
 );
+
+function whatIsNew() {
+	modal.value?.close();
+	window.open(`https://misskey-hub.net/docs/releases/#_${version.replace(/\./g, '')}`, '_blank');
+}
+
+function whatIsNewFork() {
+	modal.value?.close();
+	window.open(`/tempura-changelog`, '_blank');
+}
 
 onMounted(() => {
 	confetti({
@@ -67,6 +80,10 @@ onMounted(() => {
 }
 
 .version {
+	margin: 1em 0;
+}
+
+.beta {
 	margin: 1em 0;
 }
 

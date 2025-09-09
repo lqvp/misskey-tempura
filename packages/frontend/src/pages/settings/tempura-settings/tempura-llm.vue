@@ -164,7 +164,7 @@ import MkSwitch from '@/components/MkSwitch.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkButton from '@/components/MkButton.vue';
 import { prefer } from '@/preferences.js';
-import { reloadAsk } from '@/utility/reload-ask.js';
+import { suggestReload } from '@/utility/reload-suggest.js';
 import { $i } from '@/i.js';
 import { i18n } from '@/i18n.js';
 import { fetchInstance } from '@/instance.js';
@@ -194,7 +194,7 @@ const geminiNoteCustomText = prefer.model('geminiNoteCustomText');
 const geminiThinkingBudget = prefer.model('geminiThinkingBudget');
 
 async function saveLLMSettings() {
-	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
+	await suggestReload();
 }
 </script>
 

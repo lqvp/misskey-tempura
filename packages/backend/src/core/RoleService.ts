@@ -31,6 +31,7 @@ import { FanoutTimelineService } from '@/core/FanoutTimelineService.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import type { OnApplicationShutdown, OnModuleInit } from '@nestjs/common';
 
+// misskey-js の rolePolicies と同期すべし
 export type RolePolicies = {
 	gtlAvailable: boolean;
 	ltlAvailable: boolean;
@@ -105,7 +106,7 @@ export const DEFAULT_POLICIES: RolePolicies = {
 	canManageAvatarDecorations: false,
 	canUseRemoteIconDecorations: true,
 	canSearchNotes: false,
-	canSearchUsers: false,
+	canSearchUsers: true,
 	canUseTranslator: true,
 	canHideAds: false,
 	driveCapacityMb: 100,

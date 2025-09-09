@@ -39,9 +39,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<i v-else-if="note.reactionAcceptance === 'likeOnly'" v-tooltip="i18n.ts.likeOnly" class="ti ti-heart"></i>
 		</span>
 		<span v-if="note.localOnly" style="margin-left: 0.5em;"><i v-tooltip="i18n.ts._visibility['disableFederation']" class="ti ti-rocket-off"></i></span>
-		<span v-if="note.deliveryTargets && (note.deliveryTargets.mode === 'include' || note.deliveryTargets.hosts?.length)" v-tooltip="`${i18n.ts._deliveryTargetControl[note.deliveryTargets.mode === 'include' ? 'deliveryTargetsInclude' : 'deliveryTargetsExclude']}${note.deliveryTargets.hosts?.length ? `\n${note.deliveryTargets.hosts.join('\n')}` : ''}`" style="margin-left: 0.5em;">
-			<i v-if="note.deliveryTargets.mode === 'include'" class="ti ti-list-check"></i>
-			<i v-else class="ti ti-list-details"></i>
+		<span v-if="note.deliveryTargets && (note.deliveryTargets.mode === 'include' || note.deliveryTargets.hosts?.length)" style="margin-left: 0.5em;">
+			<i v-if="note.deliveryTargets.mode === 'include'" ref="deliveryTargetsIcon" class="ti ti-list-check"></i>
+			<i v-else ref="deliveryTargetsIcon" class="ti ti-list-details"></i>
 		</span>
 		<span v-if="note.channel" style="margin-left: 0.5em;"><i v-tooltip="note.channel.name" class="ti ti-device-tv"></i></span>
 		<span v-if="note.deleteAt" style="margin-left: 0.5em;" :title="i18n.tsx.noteDeletationAt({ time: dateTimeFormat.format(new Date(note.deleteAt)) })"><i class="ti ti-bomb"></i></span>
@@ -50,15 +50,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { inject } from 'vue';
+import { inject, useTemplateRef } from 'vue';
 import * as Misskey from 'misskey-js';
+import MkDeliveryTargetsDisplay from './MkDeliveryTargetsDisplay.vue';
 import { i18n } from '@/i18n.js';
 import { notePage } from '@/filters/note.js';
 import { userPage } from '@/filters/user.js';
 import { dateTimeFormat } from '@/utility/intl-const.js';
 import { DI } from '@/di.js';
+import { useTooltip } from '@/composables/use-tooltip.js';
+import * as os from '@/os.js';
 
-defineProps<{
+const props = defineProps<{
 	note: Misskey.entities.Note & {
 		isSchedule?: boolean,
 		deliveryTargets?: {
@@ -70,6 +73,24 @@ defineProps<{
 }>();
 
 const mock = inject(DI.mock, false);
+
+const deliveryTargetsIcon = useTemplateRef('deliveryTargetsIcon');
+
+// 配信先サーバーのツールチップを設定
+if (props.note.deliveryTargets && (props.note.deliveryTargets.mode === 'include' || props.note.deliveryTargets.hosts?.length)) {
+	useTooltip(deliveryTargetsIcon, (showing) => {
+		if (deliveryTargetsIcon.value == null) return;
+
+		const { dispose } = os.popup(MkDeliveryTargetsDisplay, {
+			showing,
+			mode: props.note.deliveryTargets!.mode,
+			hosts: props.note.deliveryTargets!.hosts || [],
+			targetElement: deliveryTargetsIcon.value,
+		}, {
+			closed: () => dispose(),
+		});
+	});
+}
 </script>
 
 <style lang="scss" module>

@@ -1,135 +1,122 @@
 <!--
-SPDX-FileCopyrightText: lqvp
+SPDX-FileCopyrightText: syuilo and misskey-project
 SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
 <PageWithAnimBg>
 	<div :class="$style.formContainer">
-		<div :class="[$style.form, '_panel']">
-			<div :class="$style.icon"><i :class="iconClass"></i></div>
-			<div :class="$style.title">{{ title }}</div>
-			<div :class="$style.message">
-				<span v-for="(line, i) in messageLines" :key="i">
-					{{ line }}<br v-if="i !== messageLines.length - 1"/>
-				</span>
+		<form :class="$style.form" class="_panel" @submit.prevent="submit()">
+			<div :class="$style.banner">
+				<i class="ti ti-mail-check"></i>
 			</div>
-			<div :class="$style.actions">
-				<MkButton v-if="status === 'success'" gradate large rounded link to="/">
-					{{ i18n.ts.gotIt }}
-				</MkButton>
-				<MkButton v-else-if="status === 'error'" large rounded link to="/settings/email">
-					{{ i18n.ts.goToEmailSettings }}
-				</MkButton>
-			</div>
-		</div>
+			<Transition
+				mode="out-in"
+				:enterActiveClass="$style.transition_enterActive"
+				:leaveActiveClass="$style.transition_leaveActive"
+				:enterFromClass="$style.transition_enterFrom"
+				:leaveToClass="$style.transition_leaveTo"
+			>
+				<div v-if="!succeeded" key="input" class="_gaps_m" style="padding: 32px;">
+					<div :class="$style.mainText">{{ i18n.tsx.clickToFinishEmailVerification({ ok: i18n.ts.gotIt }) }}</div>
+					<div>
+						<MkButton gradate large rounded type="submit" :disabled="submitting" style="margin: 0 auto;">
+							{{ submitting ? i18n.ts.processing : i18n.ts.gotIt }}<MkEllipsis v-if="submitting"/>
+						</MkButton>
+					</div>
+				</div>
+				<div v-else key="success" class="_gaps_m" style="padding: 32px;">
+					<div :class="$style.mainText">{{ i18n.ts.emailVerified }}</div>
+					<div>
+						<MkButton large rounded link to="/" linkBehavior="browser" style="margin: 0 auto;">
+							{{ i18n.ts.goToMisskey }}
+						</MkButton>
+					</div>
+				</div>
+			</Transition>
+		</form>
 	</div>
 </PageWithAnimBg>
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted } from 'vue';
-import { useRouter } from '@/router.js';
+import { ref } from 'vue';
 import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
-import { definePage } from '@/page.js';
+import * as os from '@/os.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 
-const status = ref<'pending' | 'success' | 'error'>('pending');
-const message = ref('');
-const router = useRouter();
+const submitting = ref(false);
+const succeeded = ref(false);
 
-const iconClass = computed(() =>
-	status.value === 'success'
-		? 'ti ti-check'
-		: status.value === 'error'
-			? 'ti ti-circle-x'
-			: 'ti ti-loader-2',
-);
+const props = defineProps<{
+	code: string;
+}>();
 
-const title = computed(() =>
-	status.value === 'success'
-		? i18n.ts.verifyEmail.successTitle
-		: status.value === 'error'
-			? i18n.ts.verifyEmail.failureTitle
-			: '',
-);
+function submit() {
+	if (submitting.value) return;
+	submitting.value = true;
 
-const messageLines = computed(() => message.value.split('\n'));
+	misskeyApi('verify-email', {
+		code: props.code,
+	}).then(() => {
+		succeeded.value = true;
+		submitting.value = false;
+	}).catch(() => {
+		submitting.value = false;
 
-async function verify(code: string) {
-	try {
-		const res = await window.fetch(`/api/verify-email/${encodeURIComponent(code)}`);
-		const data = await res.json();
-		if (data.status === 'success') {
-			status.value = 'success';
-			message.value = i18n.ts.verifyEmail.successMessage;
-		} else {
-			status.value = 'error';
-			message.value = i18n.ts.verifyEmail.failureMessage;
-		}
-	} catch {
-		status.value = 'error';
-		message.value = i18n.ts.verifyEmail.failureMessage;
-	}
+		os.alert({
+			type: 'error',
+			title: i18n.ts.somethingHappened,
+			text: i18n.ts.emailVerificationFailedError,
+		});
+	});
 }
-
-onMounted(() => {
-	const code = router.current.props.get('code') as string | undefined;
-	if (code) {
-		verify(code);
-	} else {
-		status.value = 'error';
-		message.value = i18n.ts.verifyEmail.failureMessage;
-	}
-});
-
-const headerActions = computed(() => []);
-
-const headerTabs = computed(() => []);
-
-definePage(() => ({
-	title: i18n.ts.verifyEmail.title,
-}));
 </script>
 
 <style lang="scss" module>
+.transition_enterActive,
+.transition_leaveActive {
+	transition: opacity 0.3s cubic-bezier(0,0,.35,1), transform 0.3s cubic-bezier(0,0,.35,1);
+}
+.transition_enterFrom {
+	opacity: 0;
+	transform: translateX(50px);
+}
+.transition_leaveTo {
+	opacity: 0;
+	transform: translateX(-50px);
+}
+
 .formContainer {
-	min-height: 100vh;
+	min-height: 100svh;
+	padding: 32px 32px 64px 32px;
+	box-sizing: border-box;
 	display: flex;
 	align-items: center;
-	justify-content: center;
-	padding: 32px;
 }
+
 .form {
-	max-width: 400px;
-	width: 100%;
-	padding: 32px 24px;
-	text-align: center;
+	position: relative;
+	display: block;
+	margin: 0 auto;
+	z-index: 10;
 	border-radius: var(--MI-radius);
+	box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+	overflow: clip;
+	width: 100%;
+	max-width: 500px;
 }
-.icon {
-	font-size: 32px;
-	margin-bottom: 16px;
+
+.banner {
+	padding: 16px;
+	text-align: center;
+	font-size: 26px;
+	background-color: var(--MI_THEME-accentedBg);
 	color: var(--MI_THEME-accent);
 }
-.title {
-	font-size: 1.3rem;
-	font-weight: bold;
-	margin-bottom: 12px;
-}
-.message {
-	margin-bottom: 24px;
-	opacity: 0.85;
-	background: var(--MI_THEME-bg);
-	padding: 12px 10px;
-	border-radius: 8px;
-	display: inline-block;
-	max-width: 100%;
-	word-break: break-word;
-}
-.actions {
-	display: flex;
-	justify-content: center;
+
+.mainText {
+	text-align: center;
 }
 </style>
-

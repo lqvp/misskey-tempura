@@ -17,6 +17,11 @@ export const packedQuoteMutingSchema = {
 			optional: false, nullable: false,
 			format: 'date-time',
 		},
+		expiresAt: {
+			type: 'string',
+			optional: false, nullable: true,
+			format: 'date-time',
+		},
 		muteeId: {
 			type: 'string',
 			optional: false, nullable: false,
