@@ -101,7 +101,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</FormSection>
 
 	<template v-if="$i">
-		<FormSuspense v-slot="{ result: stats }" :p="initStats">
+		<MkSuspense v-slot="{ result: stats }" :p="initStats">
 			<FormSection>
 				<template #label>{{ i18n.ts.statistics }}</template>
 				<FormSplit>
@@ -115,7 +115,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkKeyValue>
 				</FormSplit>
 			</FormSection>
-		</FormSuspense>
+		</MkSuspense>
 	</template>
 
 	<FormSection>
@@ -141,7 +141,6 @@ import { $i } from '@/i.js';
 import FormLink from '@/components/form/link.vue';
 import FormSection from '@/components/form/section.vue';
 import FormSplit from '@/components/form/split.vue';
-import FormSuspense from '@/components/form/suspense.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkKeyValue from '@/components/MkKeyValue.vue';
 import MkLink from '@/components/MkLink.vue';
