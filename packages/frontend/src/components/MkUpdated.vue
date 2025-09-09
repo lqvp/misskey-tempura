@@ -35,7 +35,7 @@ const props = withDefaults(defineProps<{
 
 const modal = useTemplateRef('modal');
 
-const isBeta = version.includes('-beta') || version.includes('-alpha') || version.includes('-rc');
+const isBeta = version.includes('-beta') || version.includes('-alpha') || version.includes('-rc') || version.includes('-dev');
 
 const shouldShowMisskeyButton = computed(() =>
 	props.updatedComponent === 'misskey' || props.updatedComponent === 'both',
