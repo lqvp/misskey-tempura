@@ -12,11 +12,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div class="_gaps_m" style="text-align: center;">
 			<div v-if="resetCycle && inviteLimit">{{ i18n.tsx.inviteLimitResetCycle({ time: resetCycle, limit: inviteLimit }) }}</div>
 			<MkButton inline primary rounded :disabled="currentInviteLimit !== null && currentInviteLimit <= 0" @click="create"><i class="ti ti-user-plus"></i> {{ i18n.ts.createInviteCode }}</MkButton>
-			<MkFolder v-if="$i?.policies.canSkipInviteEmailAuth || $i?.policies.canSkipInviteApproval">
+			<MkFolder>
 				<template #label>{{ i18n.ts.options }}</template>
 				<div class="_gaps_s">
 					<MkSwitch v-if="$i?.policies.canSkipInviteEmailAuth" v-model="skipEmailAuth">{{ i18n.ts.skipEmailAuth }}</MkSwitch>
 					<MkSwitch v-if="$i?.policies.canSkipInviteApproval" v-model="skipApproval">{{ i18n.ts.skipApproval }}</MkSwitch>
+					<MkSwitch v-model="followInviter">{{ i18n.ts.followInviter }}</MkSwitch>
 					<MkInput v-model="description" type="text" :maxlength="256">
 						<template #label>{{ i18n.ts.description }}<span class="_beta">{{ i18n.ts.optional }}</span></template>
 					</MkInput>
@@ -70,6 +71,7 @@ const paginator = markRaw(new Paginator('invite/list', {
 
 const skipEmailAuth = ref(false);
 const skipApproval = ref(false);
+const followInviter = ref(false);
 const description = ref('');
 
 const resetCycle = computed<null | string>(() => {
@@ -86,6 +88,7 @@ async function create() {
 	const ticket = await misskeyApi('invite/create', {
 		skipEmailAuth: skipEmailAuth.value,
 		skipApproval: skipApproval.value,
+		followInviter: followInviter.value,
 		description: description.value,
 	});
 	const { result } = await os.actions({

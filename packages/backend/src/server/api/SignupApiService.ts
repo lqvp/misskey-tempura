@@ -8,7 +8,7 @@ import bcrypt from 'bcryptjs';
 import { IsNull } from 'typeorm';
 import * as Redis from 'ioredis';
 import { DI } from '@/di-symbols.js';
-import type { RegistrationTicketsRepository, UsedUsernamesRepository, UserPendingsRepository, UserProfilesRepository, UsersRepository, MiRegistrationTicket, MiMeta } from '@/models/_.js';
+import type { RegistrationTicketsRepository, UsedUsernamesRepository, UserPendingsRepository, UserProfilesRepository, UsersRepository, MiRegistrationTicket, MiMeta, MiUser } from '@/models/_.js';
 import type { Config } from '@/config.js';
 import { CaptchaService } from '@/core/CaptchaService.js';
 import { IdService } from '@/core/IdService.js';
@@ -20,6 +20,7 @@ import { FastifyReplyError } from '@/misc/fastify-reply-error.js';
 import { bindThis } from '@/decorators.js';
 import { L_CHARS, secureRndstr } from '@/misc/secure-rndstr.js';
 import { RoleService } from '@/core/RoleService.js';
+import { UserFollowingService } from '@/core/UserFollowingService.js';
 import { SigninService } from './SigninService.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 
@@ -57,6 +58,7 @@ export class SignupApiService {
 		private signinService: SigninService,
 		private emailService: EmailService,
 		private roleService: RoleService,
+		private userFollowingService: UserFollowingService,
 	) {
 	}
 
@@ -126,7 +128,7 @@ export class SignupApiService {
 
 		// ticket の取得を emailRequiredForSignup のチェック前に移動
 		if (invitationCode && typeof invitationCode === 'string') {
-			ticket = await this.registrationTicketsRepository.findOneBy({ code: invitationCode });
+			ticket = await this.registrationTicketsRepository.findOne({ where: { code: invitationCode }, relations: ['createdBy'] });
 		}
 
 		if (this.meta.emailRequiredForSignup) {
@@ -160,7 +162,7 @@ export class SignupApiService {
 		}
 
 		if (invitationCode && typeof invitationCode === 'string') {
-			ticket = await this.registrationTicketsRepository.findOneBy({ code: invitationCode });
+			ticket = await this.registrationTicketsRepository.findOne({ where: { code: invitationCode }, relations: ['createdBy'] });
 
 			if (ticket != null) {
 				if (ticket.usedById != null) {
@@ -181,8 +183,9 @@ export class SignupApiService {
 				return;
 			}
 
-			ticket = await this.registrationTicketsRepository.findOneBy({
-				code: invitationCode,
+			ticket = await this.registrationTicketsRepository.findOne({
+				where: { code: invitationCode },
+				relations: ['createdBy'],
 			});
 
 			if (ticket == null || ticket.usedById != null) {
@@ -217,8 +220,9 @@ export class SignupApiService {
 			let usingInvitationCode = false;
 
 			if (invitationCode && typeof invitationCode === 'string') {
-				ticket = await this.registrationTicketsRepository.findOneBy({
-					code: invitationCode,
+				ticket = await this.registrationTicketsRepository.findOne({
+					where: { code: invitationCode },
+					relations: ['createdBy'],
 				});
 
 				if (ticket && ticket.usedBy == null && (!ticket.expiresAt || ticket.expiresAt > new Date()) && (!ticket.usedAt || ticket.usedAt.getTime() + (1000 * 60 * 30) < Date.now())) {
@@ -342,6 +346,8 @@ export class SignupApiService {
 						usedBy: account,
 						usedById: account.id,
 					});
+
+					await this.followInviterIfNeeded(ticket, account);
 				}
 
 				this.redisClient.set('signup:lastSignupAt', new Date().toISOString());
@@ -387,13 +393,15 @@ export class SignupApiService {
 				emailVerifyCode: null,
 			});
 
-			const ticket = await this.registrationTicketsRepository.findOneBy({ pendingUserId: pendingUser.id });
+			const ticket = await this.registrationTicketsRepository.findOne({ where: { pendingUserId: pendingUser.id }, relations: ['createdBy'] });
 			if (ticket) {
 				await this.registrationTicketsRepository.update(ticket.id, {
 					usedBy: account,
 					usedById: account.id,
 					pendingUserId: null,
 				});
+
+				await this.followInviterIfNeeded(ticket, account);
 			}
 
 			if (this.meta.approvalRequiredForSignup && (ticket == null || ticket.skipApproval === false)) {
@@ -423,6 +431,12 @@ export class SignupApiService {
 			return this.signinService.signin(request, reply, account as MiLocalUser);
 		} catch (err) {
 			throw new FastifyReplyError(400, typeof err === 'string' ? err : (err as Error).toString());
+		}
+	}
+
+	private async followInviterIfNeeded(ticket: MiRegistrationTicket, account: MiUser): Promise<void> {
+		if (ticket.followInviter && ticket.createdBy) {
+			await this.userFollowingService.follow(account, ticket.createdBy);
 		}
 	}
 }

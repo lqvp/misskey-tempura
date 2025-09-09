@@ -79,6 +79,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</template>
 				</div>
 			</div>
+			<div>
+				<div :class="$style.label">{{ i18n.ts.followInviter }}</div>
+				<div>
+					<template v-if="invite.followInviter">
+						✅️
+					</template>
+					<template v-else>
+						❌
+					</template>
+				</div>
+			</div>
 			<div v-if="invite.description">
 				<div :class="$style.label">{{ i18n.ts.description }}</div>
 				<div>{{ invite.description }}</div>

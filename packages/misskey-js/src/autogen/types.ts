@@ -5395,6 +5395,7 @@ export type components = {
             used: boolean;
             skipEmailAuth: boolean;
             skipApproval: boolean;
+            followInviter: boolean;
             description: string | null;
         };
         Page: {
@@ -10511,6 +10512,8 @@ export interface operations {
                     skipEmailAuth?: boolean;
                     /** @default false */
                     skipApproval?: boolean;
+                    /** @default false */
+                    followInviter?: boolean;
                     description?: string | null;
                 };
             };
@@ -30578,6 +30581,7 @@ export interface operations {
                         expiresAt: string | null;
                         skipEmailAuth: boolean;
                         skipApproval: boolean;
+                        followInviter: boolean;
                     };
                 };
             };
@@ -30645,6 +30649,8 @@ export interface operations {
                     skipEmailAuth?: boolean;
                     /** @default false */
                     skipApproval?: boolean;
+                    /** @default false */
+                    followInviter?: boolean;
                     description?: string | null;
                 };
             };

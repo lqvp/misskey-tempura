@@ -75,4 +75,9 @@ export class MiRegistrationTicket {
 		default: false,
 	})
 	public skipApproval: boolean;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public followInviter: boolean;
 }

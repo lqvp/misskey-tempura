@@ -45,8 +45,9 @@ export const meta = {
 			expiresAt: { type: 'string', format: 'date-time', nullable: true },
 			skipEmailAuth: { type: 'boolean' },
 			skipApproval: { type: 'boolean' },
+			followInviter: { type: 'boolean' },
 		},
-		required: ['isValid', 'skipEmailAuth', 'skipApproval'],
+		required: ['isValid', 'skipEmailAuth', 'skipApproval', 'followInviter'],
 	},
 } as const;
 
@@ -88,6 +89,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				expiresAt: ticket.expiresAt ? ticket.expiresAt.toISOString() : null,
 				skipEmailAuth: ticket.skipEmailAuth,
 				skipApproval: ticket.skipApproval,
+				followInviter: ticket.followInviter,
 			};
 		});
 	}

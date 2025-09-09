@@ -14562,6 +14562,10 @@ export interface Locale extends ILocale {
          */
         "errorInviteCodeCheckFailed": string;
         /**
+         * 不明なエラーが発生しました。
+         */
+        "errorUnknown": string;
+        /**
          * 招待コードは有効です。
          */
         "successInviteCodeValid": string;
@@ -14573,6 +14577,10 @@ export interface Locale extends ILocale {
          * 管理者承認はスキップされます。
          */
         "infoSkipApproval": string;
+        /**
+         * 招待者をフォローします。
+         */
+        "infoFollowInviter": string;
         /**
          * 招待コードの確認
          */
@@ -15536,6 +15544,10 @@ export interface Locale extends ILocale {
          */
         "disableJson": string;
     };
+    /**
+     * 招待したユーザーにフォローさせる
+     */
+    "followInviter": string;
 }
 declare const locales: {
     [lang: string]: Locale;

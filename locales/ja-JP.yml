@@ -3896,9 +3896,11 @@ _signupEnhance:
   errorInviteCodeExpired: "招待コードの有効期限が切れています。"
   errorInviteCodeUsed: "この招待コードは既に使用されています。"
   errorInviteCodeCheckFailed: "招待コードの検証中にエラーが発生しました。"
+  errorUnknown: "不明なエラーが発生しました。"
   successInviteCodeValid: "招待コードは有効です。"
   infoSkipEmailAuth: "メール認証はスキップされます。"
   infoSkipApproval: "管理者承認はスキップされます。"
+  infoFollowInviter: "招待者をフォローします。"
   inviteCodeConfirmTitle: "招待コードの確認"
   useInviteCodeButton: "このコードを使用する"
   tryAnotherInviteCodeButton: "別のコードを試す"
@@ -4201,3 +4203,5 @@ _webFeedFilter:
   disableRss: "RSSを無効にする"
   disableAtom: "Atomを無効にする"
   disableJson: "JSONを無効にする"
+
+followInviter: "招待したユーザーにフォローさせる"
