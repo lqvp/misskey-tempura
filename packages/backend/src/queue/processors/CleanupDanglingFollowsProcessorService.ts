@@ -79,25 +79,39 @@ export class CleanupDanglingFollowsProcessorService {
 			}
 		}
 
-		// ユーザーのカウンターを再計算
-		const followingCount = await this.followingsRepository.countBy({ followerId: user.id });
-		const followersCount = await this.followingsRepository.countBy({ followeeId: user.id });
-		await this.usersRepository.update(user.id, {
-			followingCount,
-			followersCount,
-		});
+        // トランザクションでデータの整合性を保証
+        await this.followingsRepository.manager.transaction(async manager => {
+            // ダングリングフォローの削除 (あらかじめ danglingFollows を取得している想定)
+            if (deletedUsersCount > 0 && danglingFollows.length > 0) {
+                const idsToDelete = danglingFollows.map(f => f.id);
+                await manager.delete('followings', idsToDelete);
+            }
 
-		if (deletedUsersCount > 0) {
-			message = `Cleaned up relationships with ${deletedUsersCount} deleted users for user ${user.id}.`;
-		} else {
-			message = `No dangling relationships to clean up for user ${user.id}.`;
-		}
-		this.logger.succ(message);
+            // ユーザーのカウンターを再計算
+            const followingCount = await manager.count('followings', { followerId: user.id });
+            const followersCount = await manager.count('followings', { followeeId: user.id });
+            await manager.update('users', user.id, {
+                followingCount,
+                followersCount,
+            });
+        });
 
-		this.notificationService.createNotification(user.id, 'cleanupDanglingFollowsCompleted', {
-			count: deletedUsersCount.toString(),
-		});
+        if (deletedUsersCount > 0) {
+            message = `Cleaned up relationships with ${deletedUsersCount} deleted users for user ${user.id}.`;
+        } else {
+            message = `No dangling relationships to clean up for user ${user.id}.`;
+        }
+        this.logger.succ(message);
 
-		return message;
+        // 通知作成時の失敗を拾ってログに記録
+        try {
+            this.notificationService.createNotification(user.id, 'cleanupDanglingFollowsCompleted', {
+                count: deletedUsersCount.toString(),
+            });
+        } catch (error) {
+            this.logger.warn(`Failed to create notification for user ${user.id}:`, error);
+        }
+
+        return message;
 	}
 }
