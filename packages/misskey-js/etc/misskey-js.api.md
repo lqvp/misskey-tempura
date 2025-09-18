@@ -3438,7 +3438,7 @@ type Notification_2 = components['schemas']['Notification'];
 type NotificationsCreateRequest = operations['notifications___create']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
-export const notificationTypes: readonly ["note", "follow", "mention", "reply", "renote", "quote", "reaction", "pollEnded", "receiveFollowRequest", "followRequestAccepted", "followRequestRejected", "blocked", "unblocked", "groupInvited", "app", "roleAssigned", "chatRoomInvitationReceived", "achievementEarned", "scheduledNoteFailed", "scheduledNotePosted", "exportCompleted", "test", "login", "createToken"];
+export const notificationTypes: readonly ["note", "follow", "mention", "reply", "renote", "quote", "reaction", "pollEnded", "receiveFollowRequest", "followRequestAccepted", "followRequestRejected", "blocked", "unblocked", "groupInvited", "app", "roleAssigned", "chatRoomInvitationReceived", "achievementEarned", "scheduledNoteFailed", "scheduledNotePosted", "cleanupDanglingFollowsCompleted", "exportCompleted", "test", "login", "createToken"];
 
 // @public (undocumented)
 export function nyaize(text: string): string;
