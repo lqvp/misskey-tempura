@@ -36,45 +36,44 @@ export class CleanupDanglingFollowsProcessorService {
 		const { user } = job.data;
 		this.logger.info(`Cleaning up dangling follow relationships for user ${user.id}...`);
 
-		// ユーザーがフォローしているアカウントのIDリストを取得
-		const followingIds = (await this.followingsRepository.find({
-			where: { followerId: user.id },
-			select: ['followeeId'],
-		})).map(f => f.followeeId);
+		// ユーザーに関連するフォロー関係を一度に取得
+		const relationships = await this.followingsRepository.find({
+			where: [
+				{ followerId: user.id },
+				{ followeeId: user.id },
+			],
+			select: ['followerId', 'followeeId'],
+		});
 
-		// ユーザーをフォローしているアカウントのIDリストを取得
-		const followerIds = (await this.followingsRepository.find({
-			where: { followeeId: user.id },
-			select: ['followerId'],
-		})).map(f => f.followerId);
+		const followingIds = relationships
+			.filter(r => r.followerId === user.id)
+			.map(r => r.followeeId);
+		const followerIds = relationships
+			.filter(r => r.followeeId === user.id)
+			.map(r => r.followerId);
 
 		const relatedUserIds = [...new Set([...followingIds, ...followerIds])];
 
 		let deletedUsersCount = 0;
 		let message: string;
-
 		if (relatedUserIds.length > 0) {
-			// 関連アカウントの中から削除済みのアカウントを特定
-			const deletedUserIds = (await this.usersRepository.find({
-				where: { id: In(relatedUserIds), isDeleted: true },
-				select: ['id'],
-			})).map(u => u.id);
+			const BATCH_SIZE = 100; // 要検討？
+			for (let i = 0; i < relatedUserIds.length; i += BATCH_SIZE) {
+				const batch = relatedUserIds.slice(i, i + BATCH_SIZE);
+				// 関連アカウントの中から削除済みのアカウントを特定
+				const deletedUserIds = (await this.usersRepository.find({
+					where: { id: In(batch), isDeleted: true },
+					select: ['id'],
+				})).map(u => u.id);
 
-			deletedUsersCount = deletedUserIds.length;
+				if (deletedUserIds.length > 0) {
+					deletedUsersCount += deletedUserIds.length;
 
-			if (deletedUsersCount > 0) {
-				const danglingFollows = await this.followingsRepository.find({
-					where: [
+					// より効率的な削除クエリ
+					await this.followingsRepository.delete([
 						{ followerId: user.id, followeeId: In(deletedUserIds) },
 						{ followeeId: user.id, followerId: In(deletedUserIds) },
-					],
-					select: ['id'],
-				});
-
-				if (danglingFollows.length > 0) {
-					const idsToDelete = danglingFollows.map(f => f.id);
-					// ゾンビ関係を削除
-					await this.followingsRepository.delete(idsToDelete);
+					]);
 				}
 			}
 		}
