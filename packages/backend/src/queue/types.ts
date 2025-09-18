@@ -64,9 +64,14 @@ export type DbJobMap = {
 	importCustomEmojis: DbUserImportJobData;
 	deleteAccount: DbUserDeleteJobData;
 	truncateAccount: DbUserTruncateJobData;
+	cleanupDanglingFollows: DbCleanupDanglingFollowsJobData;
 };
 
 export type DbJobDataWithUser = {
+	user: ThinUser;
+};
+
+export type DbCleanupDanglingFollowsJobData = {
 	user: ThinUser;
 };
 

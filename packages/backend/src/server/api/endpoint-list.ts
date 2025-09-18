@@ -476,6 +476,7 @@ export * as 'quote-mute/list' from './endpoints/quote-mute/list.js';
 export * as 'avatar-decoration-muting/create' from './endpoints/avatar-decoration-muting/create.js';
 export * as 'avatar-decoration-muting/delete' from './endpoints/avatar-decoration-muting/delete.js';
 export * as 'avatar-decoration-muting/list' from './endpoints/avatar-decoration-muting/list.js';
+export * as 'i/cleanup-dangling-follows' from './endpoints/i/cleanup-dangling-follows.js';
 
 // region ContactForm
 export * as 'admin/contact-form/list' from './endpoints/admin/contact-form/list.js';
