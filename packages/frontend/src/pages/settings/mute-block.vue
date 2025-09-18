@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <SearchMarker path="/settings/mute-block" :label="i18n.ts.muteAndBlock" icon="ti ti-ban" :keywords="['mute', 'block']">
 	<div class="_gaps_m">
 		<MkFeatureBanner icon="/client-assets/prohibited_3d.png" color="#ff2600">
-			<SearchKeyword>{{ i18n.ts._settings.muteAndBlockBanner }}</SearchKeyword>
+			<SearchText>{{ i18n.ts._settings.muteAndBlockBanner }}</SearchText>
 		</MkFeatureBanner>
 
 		<div class="_gaps_s">
@@ -95,6 +95,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 									</div>
 									<div v-if="expandedRenoteMuteItems.includes(item.id)" :class="$style.userItemSub">
 										<div>Muted at: <MkTime :time="item.createdAt" mode="detail"/></div>
+										<div v-if="item.expiresAt">Period: <MkTime :time="item.expiresAt" mode="detail"/></div>
+										<div v-else>Period: {{ i18n.ts.indefinitely }}</div>
 									</div>
 								</div>
 							</div>
@@ -125,6 +127,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 									</div>
 									<div v-if="expandedQuoteMuteItems.includes(item.id)" :class="$style.userItemSub">
 										<div>Muted at: <MkTime :time="item.createdAt" mode="detail"/></div>
+										<div v-if="item.expiresAt">Period: <MkTime :time="item.expiresAt" mode="detail"/></div>
+										<div v-else>Period: {{ i18n.ts.indefinitely }}</div>
 									</div>
 								</div>
 							</div>
@@ -221,8 +225,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 									</div>
 									<div v-if="expandedBlockItems.includes(item.id)" :class="$style.userItemSub">
 										<div>Blocked at: <MkTime :time="item.createdAt" mode="detail"/></div>
-										<div v-if="item.expiresAt">Period: {{ new Date(item.expiresAt).toLocaleString() }}</div>
-										<div v-else>Period: {{ i18n.ts.indefinitely }}</div>
 									</div>
 								</div>
 							</div>
@@ -252,10 +254,10 @@ import { ensureSignin } from '@/i.js';
 import MkInfo from '@/components/MkInfo.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
-import { reloadAsk } from '@/utility/reload-ask.js';
 import { prefer } from '@/preferences.js';
 import MkFeatureBanner from '@/components/MkFeatureBanner.vue';
 import { Paginator } from '@/utility/paginator.js';
+import { suggestReload } from '@/utility/reload-suggest.js';
 
 const $i = ensureSignin();
 
@@ -288,8 +290,8 @@ const showSoftWordMutedWord = prefer.model('showSoftWordMutedWord');
 
 watch([
 	showSoftWordMutedWord,
-], async () => {
-	await reloadAsk({ reason: i18n.ts.reloadToApplySetting, unison: true });
+], () => {
+	suggestReload();
 });
 
 async function unrenoteMute(user, ev) {

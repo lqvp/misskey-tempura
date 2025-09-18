@@ -7,13 +7,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 <SearchMarker path="/settings/privacy" :label="i18n.ts.privacy" :keywords="['privacy']" icon="ti ti-lock-open">
 	<div class="_gaps_m">
 		<MkFeatureBanner icon="/client-assets/unlocked_3d.png" color="#aeff00">
-			<SearchKeyword>{{ i18n.ts._settings.privacyBanner }}</SearchKeyword>
+			<SearchText>{{ i18n.ts._settings.privacyBanner }}</SearchText>
 		</MkFeatureBanner>
 
 		<SearchMarker :keywords="['follow', 'lock']">
 			<MkSwitch v-model="isLocked" @update:modelValue="save()">
 				<template #label><SearchLabel>{{ i18n.ts.makeFollowManuallyApprove }}</SearchLabel></template>
-				<template #caption><SearchKeyword>{{ i18n.ts.lockedAccountInfo }}</SearchKeyword></template>
+				<template #caption><SearchText>{{ i18n.ts.lockedAccountInfo }}</SearchText></template>
 			</MkSwitch>
 		</SearchMarker>
 
@@ -44,7 +44,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkFolder>
 			<template #label>{{ i18n.ts._outboxFilter.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 			<template #caption>{{ i18n.ts._outboxFilter.description }}</template>
-			<div class="_gpas_m">
+			<div class="_gaps_m">
 				<MkSwitch v-model="outboxFilter.public" @update:modelValue="save()">
 					{{ i18n.ts._outboxFilter.publicVisibility }}
 					<template #caption>{{ i18n.ts._outboxFilter.publicVisibilityDescription }}</template>
@@ -62,6 +62,24 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 		</MkFolder>
 
+		<MkFolder>
+			<template #label>{{ i18n.ts._webFeedFilter.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+			<template #caption>{{ i18n.ts._webFeedFilter.description }}</template>
+			<div class="_gaps_m">
+				<MkSwitch v-model="webFeedFilter.disableRss" @update:modelValue="save()">
+					{{ i18n.ts._webFeedFilter.disableRss }}
+				</MkSwitch>
+
+				<MkSwitch v-model="webFeedFilter.disableAtom" @update:modelValue="save()">
+					{{ i18n.ts._webFeedFilter.disableAtom }}
+				</MkSwitch>
+
+				<MkSwitch v-model="webFeedFilter.disableJson" @update:modelValue="save()">
+					{{ i18n.ts._webFeedFilter.disableJson }}
+				</MkSwitch>
+			</div>
+		</MkFolder>
+
 		<MkSwitch v-model="hideActivity" @update:modelValue="save()">
 			{{ i18n.ts.hideActivity }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 			<template #caption>{{ i18n.ts.hideActivityDescription }}</template>
@@ -69,7 +87,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		<MkFolder>
 			<template #label>{{ i18n.ts.visibility }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-			<div class="_gpas_m">
+			<div class="_gaps_m">
 				<MkSwitch v-model="hideNoteFromOverview" @update:modelValue="save()">
 					{{ i18n.ts.hideNoteFromOverview }}<span class="_beta">{{ i18n.ts.originalFeature }}</span>
 					<template #caption>{{ i18n.ts.hideNoteFromOverviewDescription }}</template>
@@ -95,7 +113,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<SearchMarker :keywords="['reaction', 'public']">
 			<MkSwitch v-model="publicReactions" @update:modelValue="save()">
 				<template #label><SearchLabel>{{ i18n.ts.makeReactionsPublic }}</SearchLabel></template>
-				<template #caption><SearchKeyword>{{ i18n.ts.makeReactionsPublicDescription }}</SearchKeyword></template>
+				<template #caption><SearchText>{{ i18n.ts.makeReactionsPublicDescription }}</SearchText></template>
 			</MkSwitch>
 		</SearchMarker>
 
@@ -130,28 +148,28 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<SearchMarker :keywords="['online', 'status']">
 			<MkSwitch v-model="hideOnlineStatus" @update:modelValue="save()">
 				<template #label><SearchLabel>{{ i18n.ts.hideOnlineStatus }}</SearchLabel></template>
-				<template #caption><SearchKeyword>{{ i18n.ts.hideOnlineStatusDescription }}</SearchKeyword></template>
+				<template #caption><SearchText>{{ i18n.ts.hideOnlineStatusDescription }}</SearchText></template>
 			</MkSwitch>
 		</SearchMarker>
 
 		<SearchMarker :keywords="['crawle', 'index', 'search']">
 			<MkSwitch v-model="noCrawle" @update:modelValue="save()">
 				<template #label><SearchLabel>{{ i18n.ts.noCrawle }}</SearchLabel></template>
-				<template #caption><SearchKeyword>{{ i18n.ts.noCrawleDescription }}</SearchKeyword></template>
+				<template #caption><SearchText>{{ i18n.ts.noCrawleDescription }}</SearchText></template>
 			</MkSwitch>
 		</SearchMarker>
 
 		<SearchMarker :keywords="['crawle', 'ai']">
 			<MkSwitch v-model="preventAiLearning" @update:modelValue="save()">
 				<template #label><SearchLabel>{{ i18n.ts.preventAiLearning }}</SearchLabel></template>
-				<template #caption><SearchKeyword>{{ i18n.ts.preventAiLearningDescription }}</SearchKeyword></template>
+				<template #caption><SearchText>{{ i18n.ts.preventAiLearningDescription }}</SearchText></template>
 			</MkSwitch>
 		</SearchMarker>
 
 		<SearchMarker :keywords="['explore']">
 			<MkSwitch v-model="isExplorable" @update:modelValue="save()">
 				<template #label><SearchLabel>{{ i18n.ts.makeExplorable }}</SearchLabel></template>
-				<template #caption><SearchKeyword>{{ i18n.ts.makeExplorableDescription }}</SearchKeyword></template>
+				<template #caption><SearchText>{{ i18n.ts.makeExplorableDescription }}</SearchText></template>
 			</MkSwitch>
 		</SearchMarker>
 
@@ -202,15 +220,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<option value="absolute">{{ i18n.ts._accountSettings.notesOlderThanSpecifiedDateAndTime }}</option>
 								</MkSelect>
 
-								<MkSelect v-if="makeNotesFollowersOnlyBefore_type === 'relative'" v-model="makeNotesFollowersOnlyBefore">
-									<option :value="-3600">{{ i18n.ts.oneHour }}</option>
-									<option :value="-86400">{{ i18n.ts.oneDay }}</option>
-									<option :value="-259200">{{ i18n.ts.threeDays }}</option>
-									<option :value="-604800">{{ i18n.ts.oneWeek }}</option>
-									<option :value="-2592000">{{ i18n.ts.oneMonth }}</option>
-									<option :value="-7776000">{{ i18n.ts.threeMonths }}</option>
-									<option :value="-31104000">{{ i18n.ts.oneYear }}</option>
+								<MkSelect v-if="makeNotesFollowersOnlyBefore_type === 'relative'" v-model="makeNotesFollowersOnlyBefore_selection">
+									<option v-for="preset in makeNotesFollowersOnlyBefore_presets" :value="preset.value">{{ preset.label }}</option>
+									<option value="custom">{{ i18n.ts.custom }}</option>
 								</MkSelect>
+
+								<MkInput
+									v-if="makeNotesFollowersOnlyBefore_type === 'relative' && makeNotesFollowersOnlyBefore_isCustomMode"
+									v-model="makeNotesFollowersOnlyBefore_customMonths"
+									type="number"
+									:min="1"
+								>
+									<template #suffix>{{ i18n.ts._time.month }}</template>
+								</MkInput>
 
 								<MkInput
 									v-if="makeNotesFollowersOnlyBefore_type === 'absolute'"
@@ -223,7 +245,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</div>
 
 							<template #caption>
-								<div><SearchKeyword>{{ i18n.ts._accountSettings.makeNotesFollowersOnlyBeforeDescription }}</SearchKeyword></div>
+								<div><SearchText>{{ i18n.ts._accountSettings.makeNotesFollowersOnlyBeforeDescription }}</SearchText></div>
 							</template>
 						</FormSlot>
 					</SearchMarker>
@@ -233,21 +255,33 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<template #label><SearchLabel>{{ i18n.ts._accountSettings.makeNotesHiddenBefore }}</SearchLabel></template>
 
 							<div class="_gaps_s">
-								<MkSelect :modelValue="makeNotesHiddenBefore_type" @update:modelValue="makeNotesHiddenBefore = $event === 'relative' ? -604800 : $event === 'absolute' ? Math.floor(Date.now() / 1000) : null">
-									<option :value="null">{{ i18n.ts.none }}</option>
-									<option value="relative">{{ i18n.ts._accountSettings.notesHavePassedSpecifiedPeriod }}</option>
-									<option value="absolute">{{ i18n.ts._accountSettings.notesOlderThanSpecifiedDateAndTime }}</option>
+								<MkSelect
+									:items="[{
+										value: null,
+										label: i18n.ts.none
+									}, {
+										value: 'relative',
+										label: i18n.ts._accountSettings.notesHavePassedSpecifiedPeriod
+									}, {
+										value: 'absolute',
+										label: i18n.ts._accountSettings.notesOlderThanSpecifiedDateAndTime
+									}] as const" :modelValue="makeNotesHiddenBefore_type" @update:modelValue="makeNotesHiddenBefore = $event === 'relative' ? -604800 : $event === 'absolute' ? Math.floor(Date.now() / 1000) : null"
+								>
 								</MkSelect>
 
-								<MkSelect v-if="makeNotesHiddenBefore_type === 'relative'" v-model="makeNotesHiddenBefore">
-									<option :value="-3600">{{ i18n.ts.oneHour }}</option>
-									<option :value="-86400">{{ i18n.ts.oneDay }}</option>
-									<option :value="-259200">{{ i18n.ts.threeDays }}</option>
-									<option :value="-604800">{{ i18n.ts.oneWeek }}</option>
-									<option :value="-2592000">{{ i18n.ts.oneMonth }}</option>
-									<option :value="-7776000">{{ i18n.ts.threeMonths }}</option>
-									<option :value="-31104000">{{ i18n.ts.oneYear }}</option>
+								<MkSelect v-if="makeNotesHiddenBefore_type === 'relative'" v-model="makeNotesHiddenBefore_selection">
+									<option v-for="preset in makeNotesHiddenBefore_presets" :value="preset.value">{{ preset.label }}</option>
+									<option value="custom">{{ i18n.ts.custom }}</option>
 								</MkSelect>
+
+								<MkInput
+									v-if="makeNotesHiddenBefore_type === 'relative' && makeNotesHiddenBefore_isCustomMode"
+									v-model="makeNotesHiddenBefore_customMonths"
+									type="number"
+									:min="1"
+								>
+									<template #suffix>{{ i18n.ts._time.month }}</template>
+								</MkInput>
 
 								<MkInput
 									v-if="makeNotesHiddenBefore_type === 'absolute'"
@@ -260,7 +294,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</div>
 
 							<template #caption>
-								<div><SearchKeyword>{{ i18n.ts._accountSettings.makeNotesHiddenBeforeDescription }}</SearchKeyword></div>
+								<div><SearchText>{{ i18n.ts._accountSettings.makeNotesHiddenBeforeDescription }}</SearchText></div>
 							</template>
 						</FormSlot>
 					</SearchMarker>
@@ -300,6 +334,7 @@ const autoRejectFollowRequest = ref($i.autoRejectFollowRequest);
 const autoFollowBack = ref($i.autoFollowBack);
 const autoFollowOnMove = ref($i.autoFollowOnMove);
 const outboxFilter = ref({ public: true, public_non_ltl: true, home: true, ...$i.outboxFilter });
+const webFeedFilter = ref({ disableRss: false, disableAtom: false, disableJson: false, ...$i.webFeedFilter });
 const carefulBot = ref($i.carefulBot);
 const noCrawle = ref($i.noCrawle);
 const preventAiLearning = ref($i.preventAiLearning);
@@ -329,6 +364,37 @@ const makeNotesFollowersOnlyBefore_type = computed(() => {
 	}
 });
 
+const makeNotesFollowersOnlyBefore_presets = [
+	{ label: i18n.ts.oneHour, value: -3600 },
+	{ label: i18n.ts.oneDay, value: -86400 },
+	{ label: i18n.ts.threeDays, value: -259200 },
+	{ label: i18n.ts.oneWeek, value: -604800 },
+	{ label: i18n.ts.oneMonth, value: -2592000 },
+	{ label: i18n.ts.threeMonths, value: -7776000 },
+	{ label: i18n.ts.oneYear, value: -31104000 },
+];
+
+const makeNotesFollowersOnlyBefore_isCustomMode = ref(
+	makeNotesFollowersOnlyBefore.value != null &&
+	makeNotesFollowersOnlyBefore.value < 0 &&
+	!makeNotesFollowersOnlyBefore_presets.some((preset) => preset.value === makeNotesFollowersOnlyBefore.value),
+);
+
+const makeNotesFollowersOnlyBefore_selection = computed({
+	get: () => makeNotesFollowersOnlyBefore_isCustomMode.value ? 'custom' : makeNotesFollowersOnlyBefore.value,
+	set(value) {
+		makeNotesFollowersOnlyBefore_isCustomMode.value = value === 'custom';
+		if (value !== 'custom') makeNotesFollowersOnlyBefore.value = value;
+	},
+});
+
+const makeNotesFollowersOnlyBefore_customMonths = computed({
+	get: () => makeNotesFollowersOnlyBefore.value ? Math.abs(makeNotesFollowersOnlyBefore.value) / (30 * 24 * 60 * 60) : null,
+	set(value) {
+		if (value != null && value > 0) makeNotesFollowersOnlyBefore.value = -Math.abs(Math.floor(Number(value))) * 30 * 24 * 60 * 60;
+	},
+});
+
 const makeNotesHiddenBefore_type = computed(() => {
 	if (makeNotesHiddenBefore.value == null) {
 		return null;
@@ -337,6 +403,37 @@ const makeNotesHiddenBefore_type = computed(() => {
 	} else {
 		return 'relative';
 	}
+});
+
+const makeNotesHiddenBefore_presets = [
+	{ label: i18n.ts.oneHour, value: -3600 },
+	{ label: i18n.ts.oneDay, value: -86400 },
+	{ label: i18n.ts.threeDays, value: -259200 },
+	{ label: i18n.ts.oneWeek, value: -604800 },
+	{ label: i18n.ts.oneMonth, value: -2592000 },
+	{ label: i18n.ts.threeMonths, value: -7776000 },
+	{ label: i18n.ts.oneYear, value: -31104000 },
+];
+
+const makeNotesHiddenBefore_isCustomMode = ref(
+	makeNotesHiddenBefore.value != null &&
+	makeNotesHiddenBefore.value < 0 &&
+	!makeNotesHiddenBefore_presets.some((preset) => preset.value === makeNotesHiddenBefore.value),
+);
+
+const makeNotesHiddenBefore_selection = computed({
+	get: () => makeNotesHiddenBefore_isCustomMode.value ? 'custom' : makeNotesHiddenBefore.value,
+	set(value) {
+		makeNotesHiddenBefore_isCustomMode.value = value === 'custom';
+		if (value !== 'custom') makeNotesHiddenBefore.value = value;
+	},
+});
+
+const makeNotesHiddenBefore_customMonths = computed({
+	get: () => makeNotesHiddenBefore.value ? Math.abs(makeNotesHiddenBefore.value) / (30 * 24 * 60 * 60) : null,
+	set(value) {
+		if (value != null && value > 0) makeNotesHiddenBefore.value = -Math.abs(Math.floor(Number(value))) * 30 * 24 * 60 * 60;
+	},
 });
 
 watch([makeNotesFollowersOnlyBefore, makeNotesHiddenBefore], () => {
@@ -367,6 +464,11 @@ function save() {
 			public: !!outboxFilter.value.public,
 			public_non_ltl: !!outboxFilter.value.public_non_ltl,
 			home: !!outboxFilter.value.home,
+		},
+		webFeedFilter: {
+			disableRss: !!webFeedFilter.value.disableRss,
+			disableAtom: !!webFeedFilter.value.disableAtom,
+			disableJson: !!webFeedFilter.value.disableJson,
 		},
 		carefulBot: !!carefulBot.value,
 		noCrawle: !!noCrawle.value,

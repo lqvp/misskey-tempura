@@ -6,7 +6,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { In, MoreThan } from 'typeorm';
 import { DI } from '@/di-symbols.js';
-import type { DriveFilesRepository, FollowingsRepository, NotesRepository, UserProfilesRepository, UsersRepository } from '@/models/_.js';
+import type { DriveFilesRepository, FollowingsRepository, NotesRepository, PagesRepository, UserProfilesRepository, UsersRepository } from '@/models/_.js';
 import type Logger from '@/logger.js';
 import { DriveService } from '@/core/DriveService.js';
 import type { MiDriveFile } from '@/models/DriveFile.js';
@@ -14,6 +14,7 @@ import type { MiNote } from '@/models/Note.js';
 import { EmailService } from '@/core/EmailService.js';
 import { bindThis } from '@/decorators.js';
 import { SearchService } from '@/core/SearchService.js';
+import { PageService } from '@/core/PageService.js';
 import { UserFollowingService } from '@/core/UserFollowingService.js';
 import type { MiFollowing } from '@/models/Following.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
@@ -37,10 +38,14 @@ export class DeleteAccountProcessorService {
 		@Inject(DI.driveFilesRepository)
 		private driveFilesRepository: DriveFilesRepository,
 
+		@Inject(DI.pagesRepository)
+		private pagesRepository: PagesRepository,
+
 		@Inject(DI.followingsRepository)
 		private followingsRepository: FollowingsRepository,
 
 		private driveService: DriveService,
+		private pageService: PageService,
 		private emailService: EmailService,
 		private queueLoggerService: QueueLoggerService,
 		private searchService: SearchService,
@@ -196,6 +201,28 @@ export class DeleteAccountProcessorService {
 			}
 
 			this.logger.succ('All of files deleted');
+		}
+
+		{
+			// delete pages. Necessary for decrementing pageCount of notes.
+			while (true) {
+				const pages = await this.pagesRepository.find({
+					where: {
+						userId: user.id,
+					},
+					take: 100,
+					order: {
+						id: 1,
+					},
+				});
+
+				if (pages.length === 0) {
+					break;
+				}
+				for (const page of pages) {
+					await this.pageService.delete(user, page.id);
+				}
+			}
 		}
 
 		{ // Send email notification

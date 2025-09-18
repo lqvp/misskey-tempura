@@ -42,7 +42,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkButton primary @click="read(announcement)"><i class="ti ti-check"></i> {{ i18n.ts.gotIt }}</MkButton>
 				</div>
 			</div>
-			<MkError v-else-if="error" @retry="fetch()"/>
+			<MkError v-else-if="error" @retry="_fetch_()"/>
 			<MkLoading v-else/>
 		</Transition>
 	</div>
@@ -69,7 +69,7 @@ const announcement = ref<Misskey.entities.Announcement | null>(null);
 const error = ref<any>(null);
 const path = computed(() => props.announcementId);
 
-function fetch() {
+function _fetch_() {
 	announcement.value = null;
 	misskeyApi('announcements/show', {
 		announcementId: props.announcementId,
@@ -99,7 +99,7 @@ async function read(target: Misskey.entities.Announcement): Promise<void> {
 	}
 }
 
-watch(() => path.value, fetch, { immediate: true });
+watch(() => path.value, _fetch_, { immediate: true });
 
 const headerActions = computed(() => []);
 

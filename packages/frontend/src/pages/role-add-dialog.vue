@@ -132,10 +132,10 @@ onMounted(async () => {
 	}).then(v => v.filter(r => !assignedList.some(ra => r.id === ra.id)));
 });
 
-const tab = ref($i?.policies.canCreateRole ? 'add' : 'manage');
+const tab = ref(($i?.policies.canAddRoles || $i?.policies.canCreateRole) ? 'add' : 'manage');
 const headerTabs = computed(() => {
 	const tabs: { key: string; title: string; }[] = [];
-	if ($i?.policies.canCreateRole) {
+	if ($i?.policies.canAddRoles || $i?.policies.canCreateRole) {
 		tabs.push({
 			key: 'add',
 			title: i18n.ts.add,

@@ -92,11 +92,32 @@ export class ActivityPubAccessControlService {
 	}
 
 	/**
+	 * ActivityPubリクエストかどうかを判定する
+	 * Accept ヘッダーに application/ld+json が含まれているかチェック
+	 */
+	@bindThis
+	private isActivityPubRequest(request: FastifyRequest): boolean {
+		const acceptHeader = request.headers.accept;
+		if (!acceptHeader || typeof acceptHeader !== 'string') {
+			return false;
+		}
+
+		// application/ld+json, application/activity+json を含むかチェック
+		return acceptHeader.includes('application/ld+json') || acceptHeader.includes('application/activity+json');
+	}
+
+	/**
 	 * リクエストからリモートホストを推測
-	 * User-Agentや他のヘッダーから推測
+	 * User-Agentや他のヘッダーから推測（ActivityPubリクエストのみ）
 	 */
 	@bindThis
 	private extractRemoteHostFromRequest(request: FastifyRequest): string | null {
+		// まずActivityPubリクエストかどうかをチェック
+		if (!this.isActivityPubRequest(request)) {
+			this.logger.debug('Not an ActivityPub request (no application/ld+json or application/activity+json in Accept header)');
+			return null;
+		}
+
 		const userAgent = request.headers['user-agent'];
 
 		if (!userAgent || typeof userAgent !== 'string') {
@@ -104,7 +125,7 @@ export class ActivityPubAccessControlService {
 			return null;
 		}
 
-		this.logger.debug(`Checking User-Agent: ${userAgent}`);
+		this.logger.debug(`ActivityPub request detected. Checking User-Agent: ${userAgent}`);
 
 		for (const pattern of ActivityPubAccessControlService.userAgentPatterns) {
 			const match = userAgent.match(pattern);
@@ -124,7 +145,7 @@ export class ActivityPubAccessControlService {
 			}
 		}
 
-		this.logger.debug('No matching User-Agent pattern found');
+		this.logger.debug('ActivityPub request detected but no matching User-Agent pattern found');
 		return null;
 	}
 

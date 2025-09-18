@@ -452,7 +452,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkFolder>
 
 			<MkFolder v-if="matchQuery([i18n.ts._role._options.canSearchUsers, 'canSearchUsers'])">
-				<template #label>{{ i18n.ts._role._options.canSearchUsers }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+				<template #label>{{ i18n.ts._role._options.canSearchUsers }}</template>
 				<template #suffix>
 					<span v-if="role.policies.canSearchUsers.useDefault" :class="$style.useDefaultLabel">{{ i18n.ts._role.useBaseValue }}</span>
 					<span v-else>{{ role.policies.canSearchUsers.value ? i18n.ts.yes : i18n.ts.no }}</span>
@@ -1193,8 +1193,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { watch, ref, computed } from 'vue';
 import { throttle } from 'throttle-debounce';
-import { ROLE_POLICIES } from '@@/js/const.js';
+import * as Misskey from 'misskey-js';
 import RolesEditorFormula from './RolesEditorFormula.vue';
+import type { GetMkSelectValueTypesFromDef, MkSelectItem } from '@/components/MkSelect.vue';
 import MkInput from '@/components/MkInput.vue';
 import MkColorInput from '@/components/MkColorInput.vue';
 import MkSelect from '@/components/MkSelect.vue';
@@ -1219,7 +1220,7 @@ const props = defineProps<{
 const role = ref(deepClone(props.modelValue));
 
 // fill missing policy
-for (const ROLE_POLICY of ROLE_POLICIES) {
+for (const ROLE_POLICY of Misskey.rolePolicies) {
 	if (role.value.policies[ROLE_POLICY] == null) {
 		role.value.policies[ROLE_POLICY] = {
 			useDefault: true,
