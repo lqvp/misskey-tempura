@@ -328,6 +328,13 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 						data,
 					}];
 
+				case 'cleanupDanglingFollowsCompleted':
+					return [i18n.ts._notification.cleanupDanglingFollowsCompleted, {
+						body: i18n.ts._notification.cleanupDanglingFollowsCompleted,
+						badge: iconUrl('bell'),
+						data,
+					}];
+
 				default:
 					return null;
 			}

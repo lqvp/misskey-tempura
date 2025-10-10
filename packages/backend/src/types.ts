@@ -27,6 +27,7 @@
  * createToken - トークン作成
  * scheduledNotePosted - 予約投稿をノート
  * scheduledNoteFailed - 予約投稿に失敗
+ * cleanupDanglingFollowsCompleted - リレーションのゾンビ関係を削除
  * app - アプリ通知
  * test - テスト通知（サーバー側）
  */
@@ -54,6 +55,7 @@ export const notificationTypes = [
 	'createToken',
 	'scheduledNotePosted',
 	'scheduledNoteFailed',
+	'cleanupDanglingFollowsCompleted',
 	'app',
 	'test',
 ] as const;

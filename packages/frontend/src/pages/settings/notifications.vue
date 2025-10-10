@@ -88,7 +88,7 @@ const $i = ensureSignin();
 
 const nonConfigurableNotificationTypes = ['note', 'roleAssigned', 'followRequestAccepted', 'followRequestRejected', 'test', 'exportCompleted'] satisfies (typeof notificationTypes[number])[] as string[];
 
-const onlyOnOrOffNotificationTypes = ['app', 'achievementEarned', 'login', 'loginFailed', 'createToken'] satisfies (typeof notificationTypes[number])[] as string[];
+const onlyOnOrOffNotificationTypes = ['app', 'achievementEarned', 'login', 'loginFailed', 'createToken', 'cleanupDanglingFollowsCompleted'] satisfies (typeof notificationTypes[number])[] as string[];
 
 const allowButton = useTemplateRef('allowButton');
 const pushRegistrationInServer = computed(() => allowButton.value?.pushRegistrationInServer);

@@ -38,6 +38,7 @@ export const notificationTypes = [
 	'achievementEarned',
 	'scheduledNoteFailed',
 	'scheduledNotePosted',
+	'cleanupDanglingFollowsCompleted',
 	'exportCompleted',
 	'test',
 	'login',

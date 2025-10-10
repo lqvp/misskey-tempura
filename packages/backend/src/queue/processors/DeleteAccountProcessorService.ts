@@ -4,9 +4,9 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import { MoreThan } from 'typeorm';
+import { In, MoreThan } from 'typeorm';
 import { DI } from '@/di-symbols.js';
-import type { DriveFilesRepository, NotesRepository, PagesRepository, UserProfilesRepository, UsersRepository } from '@/models/_.js';
+import type { DriveFilesRepository, FollowingsRepository, NotesRepository, PagesRepository, UserProfilesRepository, UsersRepository } from '@/models/_.js';
 import type Logger from '@/logger.js';
 import { DriveService } from '@/core/DriveService.js';
 import type { MiDriveFile } from '@/models/DriveFile.js';
@@ -15,6 +15,8 @@ import { EmailService } from '@/core/EmailService.js';
 import { bindThis } from '@/decorators.js';
 import { SearchService } from '@/core/SearchService.js';
 import { PageService } from '@/core/PageService.js';
+import { UserFollowingService } from '@/core/UserFollowingService.js';
+import type { MiFollowing } from '@/models/Following.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import type * as Bull from 'bullmq';
 import type { DbUserDeleteJobData } from '../types.js';
@@ -39,11 +41,15 @@ export class DeleteAccountProcessorService {
 		@Inject(DI.pagesRepository)
 		private pagesRepository: PagesRepository,
 
+		@Inject(DI.followingsRepository)
+		private followingsRepository: FollowingsRepository,
+
 		private driveService: DriveService,
 		private pageService: PageService,
 		private emailService: EmailService,
 		private queueLoggerService: QueueLoggerService,
 		private searchService: SearchService,
+		private userFollowingService: UserFollowingService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('delete-account');
 	}
@@ -55,6 +61,86 @@ export class DeleteAccountProcessorService {
 		const user = await this.usersRepository.findOneBy({ id: job.data.user.id });
 		if (user == null) {
 			return;
+		}
+
+		{ // Unfollow all
+			let cursor: MiFollowing['id'] | null = null;
+			const BATCH_SIZE = 50;
+
+			while (true) {
+				const relations = await this.followingsRepository.find({
+					where: {
+						followerId: user.id,
+						...(cursor ? { id: MoreThan(cursor) } : {}),
+					},
+					take: BATCH_SIZE,
+					order: {
+						id: 'ASC',
+					},
+				});
+
+				if (relations.length === 0) {
+					break;
+				}
+
+				cursor = relations[relations.length - 1].id;
+
+				const followeeIds = relations.map(f => f.followeeId);
+				if (followeeIds.length === 0) continue;
+				const followees = await this.usersRepository.findBy({ id: In(followeeIds) });
+				const followeesMap = new Map(followees.map(u => [u.id, u]));
+
+				await Promise.all(relations.map(f => {
+					const followee = followeesMap.get(f.followeeId);
+					if (followee) {
+						return this.userFollowingService.unfollow(user, followee, true).catch(error => {
+							this.logger.warn(error as any);
+						});
+					}
+					return Promise.resolve();
+				}));
+			}
+			this.logger.succ('All of following deleted');
+		}
+
+		{ // Unfollowed by all
+			let cursor: MiFollowing['id'] | null = null;
+			const BATCH_SIZE = 50;
+
+			while (true) {
+				const relations = await this.followingsRepository.find({
+					where: {
+						followeeId: user.id,
+						...(cursor ? { id: MoreThan(cursor) } : {}),
+					},
+					take: BATCH_SIZE,
+					order: {
+						id: 'ASC',
+					},
+				});
+
+				if (relations.length === 0) {
+					break;
+				}
+
+				cursor = relations[relations.length - 1].id;
+
+				const followerIds = relations.map(f => f.followerId);
+				if (followerIds.length === 0) continue;
+				const followers = await this.usersRepository.findBy({ id: In(followerIds) });
+				const followersMap = new Map(followers.map(u => [u.id, u]));
+
+				await Promise.all(relations.map(f => {
+					const follower = followersMap.get(f.followerId);
+					if (follower) {
+						return this.userFollowingService.unfollow(follower, user, true).catch(error => {
+							this.logger.warn(error as any);
+						});
+					}
+					return Promise.resolve();
+				}));
+			}
+			this.logger.succ('All of followers deleted');
 		}
 
 		{ // Delete notes

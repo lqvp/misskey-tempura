@@ -608,6 +608,22 @@ export class QueueService {
 	}
 
 	@bindThis
+	public createCleanupDanglingFollowsJob(user: ThinUser) {
+		return this.dbQueue.add('cleanupDanglingFollows', {
+			user: { id: user.id },
+		}, {
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
+		});
+	}
+
+	@bindThis
 	public createFollowJob(followings: { from: ThinUser, to: ThinUser, requestId?: string, silent?: boolean, withReplies?: boolean }[]) {
 		const jobs = followings.map(rel => this.generateRelationshipJobData('follow', rel));
 		return this.relationshipQueue.addBulk(jobs);

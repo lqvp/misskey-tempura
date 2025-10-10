@@ -443,6 +443,7 @@ export type IAuthorizedAppsRequest = operations['i___authorized-apps']['requestB
 export type IAuthorizedAppsResponse = operations['i___authorized-apps']['responses']['200']['content']['application/json'];
 export type IChangePasswordRequest = operations['i___change-password']['requestBody']['content']['application/json'];
 export type IClaimAchievementRequest = operations['i___claim-achievement']['requestBody']['content']['application/json'];
+export type ICleanupDanglingFollowsResponse = operations['i___cleanup-dangling-follows']['responses']['200']['content']['application/json'];
 export type IDeleteAccountRequest = operations['i___delete-account']['requestBody']['content']['application/json'];
 export type IExportFollowingRequest = operations['i___export-following']['requestBody']['content']['application/json'];
 export type IFavoritesRequest = operations['i___favorites']['requestBody']['content']['application/json'];
