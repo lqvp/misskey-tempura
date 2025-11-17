@@ -54,6 +54,7 @@ const contributors = [
 	{ github: 'r2iz', name: 'r2iz' },
 	{ github: 'tai-cha', name: 'taichan' },
 	{ github: 'sim1222', name: 'こけっち' },
+	{ github: 'harumaki2000', name: 'harumaki2000' },
 ];
 
 const displayVersion = computed(() => {
