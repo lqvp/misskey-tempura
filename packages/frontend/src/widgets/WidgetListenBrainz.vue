@@ -58,7 +58,7 @@ const widgetPropsDef = {
 		type: 'string' as const,
 		multiline: true,
 		default: 'Now Playing: {artist_name} - {track_name} #nowplaying',
-		description: '利用可能なプレースホルダー: {artist_name}, {track_name}, {release_name}, {media_player}, {music_service_name}, {music_service}, {client}, {client_version}, {url}, {duration}, {duration_formatted}, {duration_ms}, {recording_mbid}, {release_mbid}, {tracknumber}, {isrc}, {spotify_id}, {tags}',
+		description: '利用可能なプレースホルダー: {artist_name}, {track_name}, {release_name}, {media_player}, {music_service_name}, {music_service}, {client}, {client_version}, {url}, {duration}, {duration_formatted}, {duration_ms}, {recording_mbid}, {release_mbid}, {tracknumber}, {isrc}, {spotify_id}, {tags}, {release_date}, {first_release_date}',
 	},
 	visibility: {
 		type: 'enum' as const,
@@ -87,8 +87,11 @@ const { widgetProps, configure, save } = useWidgetPropsManager(name, widgetProps
 
 const playingNow = ref(false);
 const trackMetadata = ref<any>(null);
+const musicBrainzData = ref<{ date?: string; firstReleaseDate?: string } | null>(null);
 const fetching = ref(true);
 let intervalId: number | null = null;
+let lastReleaseMbid: string | null = null;
+let lastSearchKey: string | null = null;
 
 const formattedNote = computed(() => {
 	if (!trackMetadata.value) return '';
@@ -116,6 +119,8 @@ const formattedNote = computed(() => {
 		'{isrc}': trackMetadata.value.additional_info?.isrc ?? '',
 		'{spotify_id}': trackMetadata.value.additional_info?.spotify_id ?? '',
 		'{tags}': tags,
+		'{release_date}': musicBrainzData.value?.date ?? '',
+		'{first_release_date}': musicBrainzData.value?.firstReleaseDate ?? '',
 	};
 
 	return widgetProps.noteFormat.replace(
@@ -140,9 +145,88 @@ const fetchPlayingNow = async () => {
 	if (data.payload.count > 0) {
 		playingNow.value = true;
 		trackMetadata.value = data.payload.listens[0].track_metadata;
+
+		const releaseMbid = trackMetadata.value.additional_info?.release_mbid;
+		const artistName = trackMetadata.value.artist_name;
+		const releaseName = trackMetadata.value.release_name;
+		const trackName = trackMetadata.value.track_name;
+
+		let searchKey: string | null = null;
+		if (artistName) {
+			if (releaseName) {
+				searchKey = `release:${artistName}|${releaseName}`;
+			} else if (trackName) {
+				searchKey = `recording:${artistName}|${trackName}`;
+			}
+		}
+
+		if (releaseMbid) {
+			if (releaseMbid !== lastReleaseMbid) {
+				lastReleaseMbid = releaseMbid;
+				lastSearchKey = null;
+				try {
+					const mbUrl = `https://musicbrainz.org/ws/2/release/${releaseMbid}?fmt=json&inc=release-groups`;
+					const mbResponse = await window.fetch(mbUrl);
+					const mbData = await mbResponse.json();
+					musicBrainzData.value = {
+						date: mbData.date,
+						firstReleaseDate: mbData['release-group']?.['first-release-date'],
+					};
+				} catch (error) {
+					console.error('Failed to fetch MusicBrainz data', error);
+					musicBrainzData.value = null;
+				}
+			}
+		} else if (searchKey) {
+			if (searchKey !== lastSearchKey) {
+				lastSearchKey = searchKey;
+				lastReleaseMbid = null;
+				try {
+					if (releaseName) {
+						const query = `artist:"${artistName.replace(/"/g, '\\"')}" AND release:"${releaseName.replace(/"/g, '\\"')}"`;
+						const mbUrl = `https://musicbrainz.org/ws/2/release?query=${encodeURIComponent(query)}&fmt=json`;
+						const mbResponse = await window.fetch(mbUrl);
+						const mbData = await mbResponse.json();
+						if (mbData.releases && mbData.releases.length > 0) {
+							const release = mbData.releases[0];
+							musicBrainzData.value = {
+								date: release.date,
+								firstReleaseDate: release['release-group']?.['first-release-date'],
+							};
+						} else {
+							musicBrainzData.value = null;
+						}
+					} else {
+						const query = `artist:"${artistName.replace(/"/g, '\\"')}" AND recording:"${trackName.replace(/"/g, '\\"')}"`;
+						const mbUrl = `https://musicbrainz.org/ws/2/recording?query=${encodeURIComponent(query)}&fmt=json`;
+						const mbResponse = await window.fetch(mbUrl);
+						const mbData = await mbResponse.json();
+						if (mbData.recordings && mbData.recordings.length > 0 && mbData.recordings[0].releases && mbData.recordings[0].releases.length > 0) {
+							const release = mbData.recordings[0].releases[0];
+							musicBrainzData.value = {
+								date: release.date,
+								firstReleaseDate: release['release-group']?.['first-release-date'],
+							};
+						} else {
+							musicBrainzData.value = null;
+						}
+					}
+				} catch (error) {
+					console.error('Failed to search MusicBrainz data', error);
+					musicBrainzData.value = null;
+				}
+			}
+		} else {
+			lastReleaseMbid = null;
+			lastSearchKey = null;
+			musicBrainzData.value = null;
+		}
 	} else {
 		playingNow.value = false;
 		trackMetadata.value = null;
+		lastReleaseMbid = null;
+		lastSearchKey = null;
+		musicBrainzData.value = null;
 	}
 
 	fetching.value = false;
