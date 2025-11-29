@@ -64,8 +64,15 @@ function accept(user: Misskey.entities.UserLite) {
 	});
 }
 
-function reject(user: Misskey.entities.UserLite) {
-	os.apiWithDialog('following/requests/reject', { userId: user.id }).then(() => {
+async function reject(user: Misskey.entities.UserLite) {
+	const { canceled } = await os.confirm({
+		type: 'question',
+		text: i18n.tsx.rejectFollowRequestConfirm({ name: user.name || user.username }),
+	});
+
+	if (canceled) return;
+
+	await os.apiWithDialog('following/requests/reject', { userId: user.id }).then(() => {
 		paginator.reload();
 	});
 }
@@ -76,8 +83,15 @@ function reject_noSendActivity(user: Misskey.entities.UserLite) {
 	});
 }
 
-function cancel(user: Misskey.entities.UserLite) {
-	os.apiWithDialog('following/requests/cancel', { userId: user.id }).then(() => {
+async function cancel(user: Misskey.entities.UserLite) {
+	const { canceled } = await os.confirm({
+		type: 'question',
+		text: i18n.tsx.cancelFollowRequestConfirm({ name: user.name || user.username }),
+	});
+
+	if (canceled) return;
+
+	await os.apiWithDialog('following/requests/cancel', { userId: user.id }).then(() => {
 		paginator.reload();
 	});
 }
