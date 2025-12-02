@@ -170,7 +170,6 @@ const detailRemoteEmoji = (emoji) => {
 const importEmoji = (emoji) => {
 	os.apiWithDialog('admin/emoji/copy', {
 		emojiId: emoji.id,
-		license: emoji.license,
 	});
 };
 

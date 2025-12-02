@@ -41,7 +41,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkSwitch v-model="category.isDefault" @change="onDefaultChange(index)">
 								<template #label>{{ i18n.ts._contactForm._category.defaultCategory }}</template>
 							</MkSwitch>
-							<MkInput v-model.number="category.order" type="number" :placeholder="i18n.ts._contactForm._category.categoryOrderPlaceholder" style="width: 100px;"/>
+							<MkInput v-model="category.order" type="number" :placeholder="i18n.ts._contactForm._category.categoryOrderPlaceholder" style="width: 100px;"/>
 						</div>
 					</div>
 				</div>
@@ -82,7 +82,7 @@ const headerTabs = computed(() => []);
 
 async function loadCategories() {
 	try {
-		const loadedCategories = instance.contactFormCategories;
+		const loadedCategories = instance.contactFormCategories as ContactFormCategory[];
 
 		categories.value = [...loadedCategories];
 		originalCategories.value = JSON.parse(JSON.stringify(loadedCategories));

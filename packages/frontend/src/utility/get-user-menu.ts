@@ -71,6 +71,7 @@ async function getPeriod(title: string, text?: string) {
 		items: period.map(x => ({
 			value: x.key,
 			text: x.text,
+			label: x.text,
 		})),
 		default: 'indefinitely',
 	});

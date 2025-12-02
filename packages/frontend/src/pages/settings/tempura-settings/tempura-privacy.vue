@@ -23,12 +23,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkSwitch>
 			</SearchMarker>
 
-			<SearchMarker :keywords="['follow', 'back', 'auto']">
-				<MkSwitch v-if="$i.policies.canAutoFollowBack" v-model="autoFollowBack" @update:modelValue="save_privacy()">
-					<SearchLabel>{{ i18n.ts.autoFollowBack }}</SearchLabel>
-					<template #caption>{{ i18n.ts.autoFollowBackDescription }}</template>
-				</MkSwitch>
-			</SearchMarker>
+				<SearchMarker :keywords="['follow', 'back', 'auto']">
+					<MkSwitch v-if="me.policies.canAutoFollowBack" v-model="autoFollowBack" @update:modelValue="save_privacy()">
+						<SearchLabel>{{ i18n.ts.autoFollowBack }}</SearchLabel>
+						<template #caption>{{ i18n.ts.autoFollowBackDescription }}</template>
+					</MkSwitch>
+				</SearchMarker>
 
 			<SearchMarker :keywords="['follow', 'move', 'auto']">
 				<MkSwitch v-model="autoFollowOnMove" @update:modelValue="save_privacy()">
@@ -68,22 +68,22 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<template #label>{{ i18n.ts._webFeedFilter.title }}</template>
 				<template #caption>{{ i18n.ts._webFeedFilter.description }}</template>
 				<div class="_gaps_m">
-					<SearchMarker :keywords="['web', 'feed', 'filter', 'rss']">
-						<MkSwitch v-model="webFeedFilter.rss" @update:modelValue="save_privacy()">
-							{{ i18n.ts._webFeedFilter.disableRss }}
-						</MkSwitch>
-					</SearchMarker>
+				<SearchMarker :keywords="['web', 'feed', 'filter', 'rss']">
+					<MkSwitch v-model="webFeedFilter.disableRss" @update:modelValue="save_privacy()">
+						{{ i18n.ts._webFeedFilter.disableRss }}
+					</MkSwitch>
+				</SearchMarker>
 
-					<SearchMarker :keywords="['web', 'feed', 'filter', 'atom']">
-						<MkSwitch v-model="webFeedFilter.atom" @update:modelValue="save_privacy()">
-							{{ i18n.ts._webFeedFilter.disableAtom }}
-						</MkSwitch>
-					</SearchMarker>
+				<SearchMarker :keywords="['web', 'feed', 'filter', 'atom']">
+					<MkSwitch v-model="webFeedFilter.disableAtom" @update:modelValue="save_privacy()">
+						{{ i18n.ts._webFeedFilter.disableAtom }}
+					</MkSwitch>
+				</SearchMarker>
 
-					<SearchMarker :keywords="['web', 'feed', 'filter', 'json']">
-						<MkSwitch v-model="webFeedFilter.json" @update:modelValue="save_privacy()">
-							{{ i18n.ts._webFeedFilter.disableJson }}
-						</MkSwitch>
+				<SearchMarker :keywords="['web', 'feed', 'filter', 'json']">
+					<MkSwitch v-model="webFeedFilter.disableJson" @update:modelValue="save_privacy()">
+						{{ i18n.ts._webFeedFilter.disableJson }}
+					</MkSwitch>
 					</SearchMarker>
 				</div>
 			</MkFolder>
@@ -135,29 +135,37 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import * as Misskey from 'misskey-js';
 import { ref } from 'vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import { i18n } from '@/i18n.js';
-import { $i } from '@/i.js';
+import { ensureSignin } from '@/i.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 
-const isLocked = ref($i.isLocked);
+const me = ensureSignin();
+const isLocked = ref(me.isLocked ?? false);
 
-const autoRejectFollowRequest = ref($i.autoRejectFollowRequest);
-const autoFollowBack = ref($i.autoFollowBack);
-const autoFollowOnMove = ref($i.autoFollowOnMove);
-const outboxFilter = ref({ public: true, public_non_ltl: true, home: true, ...$i.outboxFilter });
-const webFeedFilter = ref({ disableRss: true, disableAtom: true, disableJson: true, ...$i.webFeedFilter });
-const carefulBot = ref($i.carefulBot);
-const hideActivity = ref($i.hideActivity);
-const hideNoteFromOverview = ref($i.hideNoteFromOverview);
-const hidePublicNotes = ref($i.hidePublicNotes);
-const hideHomeNotes = ref($i.hideHomeNotes);
-const hideLocalOnlyNotes = ref($i.hideLocalOnlyNotes);
-const receiveSpecifiedNotesFrom = ref($i.receiveSpecifiedNotesFrom ?? 'all');
+const autoRejectFollowRequest = ref(me.autoRejectFollowRequest ?? false);
+const autoFollowBack = ref(me.autoFollowBack ?? false);
+const autoFollowOnMove = ref(me.autoFollowOnMove ?? false);
+const outboxFilter = ref({
+	public: me.outboxFilter?.public ?? true,
+	public_non_ltl: me.outboxFilter?.public_non_ltl ?? true,
+	home: me.outboxFilter?.home ?? true,
+});
+const webFeedFilter = ref({
+	disableRss: me.webFeedFilter?.disableRss ?? true,
+	disableAtom: me.webFeedFilter?.disableAtom ?? true,
+	disableJson: me.webFeedFilter?.disableJson ?? true,
+});
+const carefulBot = ref(me.carefulBot ?? false);
+const hideActivity = ref(me.hideActivity ?? false);
+const hideNoteFromOverview = ref(me.hideNoteFromOverview ?? false);
+const hidePublicNotes = ref(me.hidePublicNotes ?? false);
+const hideHomeNotes = ref(me.hideHomeNotes ?? false);
+const hideLocalOnlyNotes = ref(me.hideLocalOnlyNotes ?? false);
+const receiveSpecifiedNotesFrom = ref(me.receiveSpecifiedNotesFrom ?? 'all');
 
 const receiveSpecifiedNotesFromItems = [
 	{ value: 'all', label: i18n.ts._receiveSpecifiedNotesFrom.all },

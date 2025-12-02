@@ -69,7 +69,9 @@ export default class Connection {
 			userIdsWhoMeMuting,
 			userIdsWhoBlockingMe,
 			userIdsWhoMeMutingRenotes,
-		, userIdsWhoMeMutingQuotes, userIdsWhoMeMutingAvatarDecorations] = await Promise.all([
+			userIdsWhoMeMutingQuotes,
+			userIdsWhoMeMutingAvatarDecorations,
+		] = await Promise.all([
 			this.cacheService.userProfileCache.fetch(this.user.id),
 			this.cacheService.userFollowingsCache.fetch(this.user.id),
 			this.channelFollowingService.userFollowingChannelsCache.fetch(this.user.id),

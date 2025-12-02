@@ -14,15 +14,15 @@ import MkRippleEffect from '@/components/MkRippleEffect.vue';
 
 export function directRenote(props: {
 	note: Misskey.entities.Note;
-	renoteButton: ShallowRef<HTMLElement | undefined>;
+	renoteButton: Readonly<ShallowRef<HTMLElement | null | undefined>>;
 	mock?: boolean;
 }) {
-	const appearNote = getAppearNote(props.note);
+	const appearNote = getAppearNote(props.note) ?? props.note;
 
-	const configuredVisibility = store.s.rememberNoteVisibility ? store.s.visibility : store.s.defaultNoteVisibility;
+	const configuredVisibility = (store.s.rememberNoteVisibility ? store.s.visibility : store.s.defaultNoteVisibility) as (typeof Misskey.noteVisibilities)[number];
 	const localOnly = store.s.rememberNoteVisibility ? store.s.localOnly : store.s.defaultNoteLocalOnly;
 
-	let visibility = appearNote.visibility;
+	let visibility: (typeof Misskey.noteVisibilities)[number] = appearNote.visibility as (typeof Misskey.noteVisibilities)[number];
 	visibility = smallerVisibility(visibility, configuredVisibility);
 
 	const el = props.renoteButton.value;

@@ -64,12 +64,12 @@ function roleAction(ev) {
 	...(props.role.isOwner ? [{
 		text: i18n.ts.edit,
 		icon: 'ti ti-edit',
-		action: () => {
-			os.popup(defineAsyncComponent(() => import('./role-add-dialog.vue')), {
-				role: props.role,
-			}, {}, 'closed');
-		},
-	}] : [])], ev.currentTarget ?? ev.target);
+			action: () => {
+				os.popup(defineAsyncComponent(() => import('./role-add-dialog.vue')), {
+					role: props.role,
+				}, {});
+			},
+		}] : [])], ev.currentTarget ?? ev.target);
 }
 </script>
 

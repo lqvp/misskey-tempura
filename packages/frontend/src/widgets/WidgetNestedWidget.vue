@@ -169,20 +169,21 @@ const prev = () => {
 
 const addWidget = async () => {
 	try {
-		const { canceled, result: widgetName } = await os.select({
-			title: i18n.ts.selectWidget,
-			items: widgetDefs.map(w => ({
-				value: w,
-				text: i18n.ts._widgets[w],
-			})),
-		});
-		if (canceled || !widgetName) return;
+	const { canceled, result: widgetName } = await os.select({
+		title: i18n.ts.selectWidget,
+		items: widgetDefs.map(w => ({
+			value: w,
+			text: i18n.ts._widgets[w],
+			label: i18n.ts._widgets[w],
+		})),
+	});
+	if (canceled || !widgetName) return;
 
-		const newWidget = {
-			id: crypto.randomUUID(),
-			name: widgetName,
-			data: {},
-		};
+	const newWidget = {
+		id: crypto.randomUUID(),
+		name: widgetName as string,
+		data: {},
+	};
 
 		widgetProps.widgets = [...widgetProps.widgets, newWidget];
 		currentIndex.value = widgetProps.widgets.length - 1;
@@ -418,4 +419,3 @@ defineExpose<WidgetComponentExpose>({
 	max-width: calc(100% - 210px);
 }
 </style>
-

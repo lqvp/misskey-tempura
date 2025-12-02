@@ -152,9 +152,9 @@ async function checkInviteCode() {
 	validationResult.value = null;
 
 	try {
-		const response = await misskeyApi<InviteCheckResponse>('invite/check', {
-			code: inviteCode.value.trim(),
-		});
+	const response = await misskeyApi('invite/check', {
+		code: inviteCode.value.trim(),
+	} as any) as InviteCheckResponse;
 
 		validationResult.value = response;
 
@@ -175,7 +175,7 @@ async function checkInviteCode() {
 			errorMessage.value = i18n.ts._signupEnhance.errorInviteCodeUsed;
 		} else {
 			console.error('Invite code check error:', error);
-			errorMessage.value = i18n.ts._signupEnhance.errorUnknown;
+			errorMessage.value = i18n.ts._signupEnhance.errorInviteCodeCheckFailed;
 		}
 	} finally {
 		isLoading.value = false;

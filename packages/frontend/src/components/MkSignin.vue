@@ -135,16 +135,18 @@ function onPasskeyDone(credential: AuthenticationPublicKeyCredential): void {
 	waiting.value = true;
 
 	if (doingPasskeyFromInputPage.value) {
-		misskeyApi<Misskey.entities.SigninWithPasskeyResponse>('signin-with-passkey', {
+		misskeyApi('signin-with-passkey', {
+			// 型定義が追随していないため明示キャスト
 			credential: credential.toJSON(),
 			context: passkeyContext.value,
-		}).then((res) => {
-			if (res.signinResponse == null) {
+		} as any).then((res) => {
+			const signed = res as Misskey.entities.SigninWithPasskeyResponse;
+			if (signed.signinResponse == null) {
 				onSigninApiError();
 				return;
 			}
-			emit('login', res.signinResponse);
-			onLoginSucceeded(res.signinResponse);
+			emit('login', signed.signinResponse);
+			onLoginSucceeded(signed.signinResponse);
 		}).catch(onSigninApiError);
 	} else if (userInfo.value != null) {
 		tryLogin({

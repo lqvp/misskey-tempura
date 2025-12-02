@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import * as Misskey from 'misskey-js';
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import MkMiniChart from '@/components/MkMiniChart.vue';
 import { misskeyApiGet } from '@/utility/misskey-api.js';
 import { acct } from '@/filters/user.js';
@@ -27,14 +27,25 @@ import { i18n } from '@/i18n.js';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 
+type UserLike = Pick<Misskey.entities.UserDetailed, 'id' | 'username' | 'host' | 'name' | 'avatarUrl' | 'avatarBlurhash' | 'isCat' | 'isMuted' | 'approved' | 'emojis' | 'onlineStatus'> &
+	Partial<Omit<Misskey.entities.UserDetailed, 'id' | 'username' | 'host' | 'name' | 'avatarUrl' | 'avatarBlurhash' | 'isCat' | 'isMuted' | 'approved' | 'emojis' | 'onlineStatus'>> & {
+		avatarDecorations?: Misskey.entities.UserDetailed['avatarDecorations'];
+		approved?: boolean;
+	};
+
 const props = withDefaults(defineProps<{
-	user: Misskey.entities.UserDetailed;
+	user: UserLike;
 	withChart?: boolean;
 }>(), {
 	withChart: true,
 });
 
 const chartValues = ref<number[] | null>(null);
+const user = computed(() => ({
+	...props.user,
+	avatarDecorations: props.user.avatarDecorations ?? [],
+	onlineStatus: props.user.onlineStatus ?? 'unknown',
+}));
 
 onMounted(() => {
 	if (props.withChart) {

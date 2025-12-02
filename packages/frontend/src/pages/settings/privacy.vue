@@ -333,8 +333,16 @@ const autoAcceptFollowed = ref($i.autoAcceptFollowed);
 const autoRejectFollowRequest = ref($i.autoRejectFollowRequest);
 const autoFollowBack = ref($i.autoFollowBack);
 const autoFollowOnMove = ref($i.autoFollowOnMove);
-const outboxFilter = ref({ public: true, public_non_ltl: true, home: true, ...$i.outboxFilter });
-const webFeedFilter = ref({ disableRss: false, disableAtom: false, disableJson: false, ...$i.webFeedFilter });
+const outboxFilter = ref({
+	public: $i.outboxFilter?.public ?? true,
+	public_non_ltl: $i.outboxFilter?.public_non_ltl ?? true,
+	home: $i.outboxFilter?.home ?? true,
+});
+const webFeedFilter = ref({
+	disableRss: $i.webFeedFilter?.disableRss ?? false,
+	disableAtom: $i.webFeedFilter?.disableAtom ?? false,
+	disableJson: $i.webFeedFilter?.disableJson ?? false,
+});
 const carefulBot = ref($i.carefulBot);
 const noCrawle = ref($i.noCrawle);
 const preventAiLearning = ref($i.preventAiLearning);
@@ -359,7 +367,7 @@ const {
 		{ label: i18n.ts.followers, value: 'followers' },
 		{ label: i18n.ts.private, value: 'private' },
 	],
-	initialValue: $i.followingVisibility,
+	initialValue: $i.followingVisibility as 'public' | 'followers' | 'private',
 });
 const {
 	model: followersVisibility,
@@ -370,7 +378,7 @@ const {
 		{ label: i18n.ts.followers, value: 'followers' },
 		{ label: i18n.ts.private, value: 'private' },
 	],
-	initialValue: $i.followersVisibility,
+	initialValue: $i.followersVisibility as 'public' | 'followers' | 'private',
 });
 const {
 	model: chatScope,
@@ -383,18 +391,18 @@ const {
 		{ label: i18n.ts._chat._chatAllowedUsers.mutual, value: 'mutual' },
 		{ label: i18n.ts._chat._chatAllowedUsers.none, value: 'none' },
 	],
-	initialValue: $i.chatScope,
+	initialValue: $i.chatScope as 'everyone' | 'followers' | 'following' | 'mutual' | 'none',
 });
 const {
 	model: receiveSpecifiedNotesFrom,
 	def: receiveSpecifiedNotesFromDef,
 } = useMkSelect({
-	items: computed(() => [
-		{ value: 'all', label: i18n.ts._receiveSpecifiedNotesFrom.all },
-		{ value: 'following', label: i18n.ts._receiveSpecifiedNotesFrom.following },
-		{ value: 'nobody', label: i18n.ts._receiveSpecifiedNotesFrom.nobody },
-	]),
-	initialValue: $i.receiveSpecifiedNotesFrom ?? 'all',
+	items: [
+		{ value: 'all' as const, label: i18n.ts._receiveSpecifiedNotesFrom.all },
+		{ value: 'following' as const, label: i18n.ts._receiveSpecifiedNotesFrom.following },
+		{ value: 'nobody' as const, label: i18n.ts._receiveSpecifiedNotesFrom.nobody },
+	],
+	initialValue: ($i.receiveSpecifiedNotesFrom ?? 'all') as 'all' | 'following' | 'nobody',
 });
 
 const makeNotesFollowersOnlyBefore_type = computed({

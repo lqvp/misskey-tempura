@@ -332,11 +332,11 @@ async function refreshUser() {
 	user.value = result.user;
 	info.value = result.info;
 	ips.value = result.ips;
-	administrator.value = info.value.isAdministrator;
-	moderator.value = info.value.isModerator;
-	silenced.value = info.value.isSilenced;
-	suspended.value = info.value.isSuspended;
-	approved.value = info.value.isApproved;
+		administrator.value = info.value.roles?.some(r => r.isAdministrator) ?? false;
+		moderator.value = info.value.isModerator;
+		silenced.value = info.value.isSilenced;
+		suspended.value = info.value.isSuspended;
+		approved.value = info.value.approved;
 	isSystem.value = user.value.host == null && user.value.username.includes('.');
 	moderationNote.value = info.value.moderationNote;
 }

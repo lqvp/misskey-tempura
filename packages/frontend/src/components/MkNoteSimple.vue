@@ -4,17 +4,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div v-show="!isDeleted" v-if="note" :class="$style.root" :tabindex="!isDeleted ? '-1' : undefined">
-	<MkAvatar :class="[$style.avatar, prefer.s.useStickyIcons ? $style.useSticky : null]" :user="note.user" link preview/>
+<div v-show="!isDeleted" v-if="normalizedNote" :class="$style.root" :tabindex="!isDeleted ? '-1' : undefined">
+	<MkAvatar :class="[$style.avatar, prefer.s.useStickyIcons ? $style.useSticky : null]" :user="normalizedNote.user" link preview/>
 	<div :class="$style.main">
-		<MkNoteHeader :class="$style.header" :note="note" :mini="true"/>
+		<MkNoteHeader :class="$style.header" :note="normalizedNote" :mini="true"/>
 		<div>
-			<p v-if="note.cw != null" :class="$style.cw">
-				<Mfm v-if="note.cw != ''" style="margin-right: 8px;" :text="note.cw" :author="note.user" :nyaize="'respect'" :emojiUrls="note.emojis"/>
-				<MkCwButton v-model="showContent" :text="note.text" :files="note.files" :poll="note.poll"/>
+			<p v-if="normalizedNote.cw != null" :class="$style.cw">
+				<Mfm v-if="normalizedNote.cw != ''" style="margin-right: 8px;" :text="normalizedNote.cw" :author="normalizedNote.user" :nyaize="'respect'" :emojiUrls="normalizedNote.emojis"/>
+				<MkCwButton v-model="showContent" :text="normalizedNote.text" :files="normalizedNote.files" :poll="normalizedNote.poll"/>
 			</p>
-			<div v-show="note.cw == null || showContent">
-				<MkSubNoteContent :class="$style.text" :note="note"/>
+			<div v-show="normalizedNote.cw == null || showContent">
+				<MkSubNoteContent :class="$style.text" :note="normalizedNote"/>
 			</div>
 		</div>
 	</div>
@@ -25,13 +25,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import * as Misskey from 'misskey-js';
 import { i18n } from '@/i18n';
 import MkNoteHeader from '@/components/MkNoteHeader.vue';
 import MkSubNoteContent from '@/components/MkSubNoteContent.vue';
 import MkCwButton from '@/components/MkCwButton.vue';
 import { prefer } from '@/preferences.js';
+import type { NormalizedNote } from '@/utility/normalize-note.js';
+import { normalizeNote } from '@/utility/normalize-note.js';
 
 const props = defineProps<{
 	note: Misskey.entities.Note & {
@@ -42,6 +44,7 @@ const props = defineProps<{
 
 const showContent = ref(false);
 const isDeleted = ref(false);
+const normalizedNote = computed<NormalizedNote | null>(() => props.note ? normalizeNote(props.note) : null);
 
 </script>
 

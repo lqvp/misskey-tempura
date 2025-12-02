@@ -45,7 +45,7 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import { lookupUser, lookupUserByEmail, lookupFile } from '@/utility/admin-lookup.js';
 import { definePage, provideMetadataReceiver, provideReactiveMetadata } from '@/page.js';
 import { useRouter } from '@/router.js';
-import { $i } from '@/i.js';
+import { ensureSignin } from '@/i.js';
 import { genSearchIndexes } from '@/utility/inapp-search.js';
 
 const searchIndex = await import('search-index:admin').then(({ searchIndexes }) => genSearchIndexes(searchIndexes));
@@ -53,6 +53,7 @@ const searchIndex = await import('search-index:admin').then(({ searchIndexes }) 
 const isEmpty = (x: string | null) => x == null || x === '';
 
 const router = useRouter();
+const $i = ensureSignin();
 
 const indexInfo = {
 	title: i18n.ts.controlPanel,

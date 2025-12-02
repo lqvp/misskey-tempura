@@ -301,6 +301,7 @@ const headerTabs = computed(() => {
 
 	if (isTabVisible('lists')) {
 		tabs.push({
+			key: 'lists',
 			icon: 'ti ti-list',
 			title: i18n.ts.lists,
 			iconOnly: true,
@@ -310,6 +311,7 @@ const headerTabs = computed(() => {
 
 	if (isTabVisible('antennas')) {
 		tabs.push({
+			key: 'antennas',
 			icon: 'ti ti-antenna',
 			title: i18n.ts.antennas,
 			iconOnly: true,
@@ -319,6 +321,7 @@ const headerTabs = computed(() => {
 
 	if (isTabVisible('channel')) {
 		tabs.push({
+			key: 'channel',
 			icon: 'ti ti-device-tv',
 			title: i18n.ts.channel,
 			iconOnly: true,

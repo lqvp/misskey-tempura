@@ -70,14 +70,14 @@ export function uploadFile(file: File | Blob, options: {
 			return reject();
 		}
 
-		// Use multipart upload for large files (if the browser supports it)
-		// Cloudflare has a 100MB limit, so we'll use multipart for anything over 95MB to be safe
-		if (file.size > 95 * 1024 * 1024 && canUseMultipartUpload()) {
-			uploadFileMultipart(file, options.folderId, options.name ?? (file instanceof File ? file.name : 'untitled'), options.onProgress)
-				.then(resolve)
-				.catch(reject);
-			return; // Prevent standard XHR logic from running for multipart uploads
-		}
+	// Use multipart upload for large files (if the browser supports it)
+	// Cloudflare has a 100MB limit, so we'll use multipart for anything over 95MB to be safe
+	if (file instanceof File && file.size > 95 * 1024 * 1024 && canUseMultipartUpload()) {
+		uploadFileMultipart(file, options.folderId, options.name ?? file.name, options.onProgress)
+			.then(resolve)
+			.catch(reject);
+		return; // Prevent standard XHR logic from running for multipart uploads
+	}
 
 		signal.addEventListener('abort', () => {
 			reject(new UploadAbortedError());

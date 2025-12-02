@@ -59,10 +59,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<div><MkSparkle><Mfm :plain="true" :text="user.followedMessage" :author="user" class="_selectable"/></MkSparkle></div>
 								</MkFukidashi>
 							</div>
-							<MkFoldableSection v-if="user.roles.length > 0" class="role-folder" :expanded="user.roles.length < 5">
-								<template #header>{{ i18n.ts.roles }}</template>
-								<div class="roles">
-									<span v-for="role in user.roles" :key="role.id" v-tooltip="role.description" class="role" :class="{ 'rainbow': role.isRainbow }" :style="role.isRainbow ? {} : { '--color': role.color }">
+					<MkFoldableSection v-if="user.roles.length > 0" class="role-folder" :expanded="user.roles.length < 5">
+						<template #header>{{ i18n.ts.roles }}</template>
+						<div class="roles">
+							<span v-for="role in user.roles" :key="role.id" v-tooltip="role.description" class="role" :class="{ 'rainbow': role.isRainbow }" :style="role.isRainbow ? {} : { '--color': role.color ?? '' }">
 										<MkA v-adaptive-bg :to="`/roles/${role.id}`">
 											<img v-if="role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="role.iconUrl"/>
 											{{ role.name }}
@@ -70,13 +70,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 									</span>
 								</div>
 							</MkFoldableSection>
-							<MkFoldableSection v-if="user.communityRoles.length > 0" class="role-folder" :expanded="user.communityRoles.length < 5">
-								<template #header>{{ i18n.ts.community + " " + i18n.ts.roles }}</template>
-								<div class="roles">
-									<span v-for="role in user.communityRoles" :key="role.id" v-tooltip="role.description" class="role" :class="{ 'rainbow': role.isRainbow }" :style="role.isRainbow ? {} : { '--color': role.color ?? '' }">
-										<MkA v-adaptive-bg :to="`/roles/${role.id}`">
-											<img v-if="role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="role.iconUrl"/>
-											{{ role.name }}
+					<MkFoldableSection v-if="(user.communityRoles?.length ?? 0) > 0" class="role-folder" :expanded="(user.communityRoles?.length ?? 0) < 5">
+						<template #header>{{ i18n.ts.community + " " + i18n.ts.roles }}</template>
+						<div class="roles">
+							<span v-for="role in user.communityRoles ?? []" :key="role.id" v-tooltip="role.description" class="role" :class="{ 'rainbow': role.isRainbow }" :style="role.isRainbow ? {} : { '--color': role.color ?? '' }">
+								<MkA v-adaptive-bg :to="`/roles/${role.id}`">
+									<img v-if="role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="role.iconUrl"/>
+									{{ role.name }}
 										</MkA>
 									</span>
 								</div>
@@ -264,7 +264,7 @@ const XTimeline = defineAsyncComponent(() => import('./index.timeline.vue'));
 const XListenBrainz = defineAsyncComponent(() => import('./index.listenbrainz.vue')); ;
 
 const props = withDefaults(defineProps<{
-	user: Misskey.entities.UserDetailed;
+	user: Misskey.entities.UserDetailed & { communityRoles?: Misskey.entities.RoleLite[] };
 	/** Test only; MkNotesTimeline currently causes problems in vitest */
 	disableNotes?: boolean;
 }>(), {
@@ -277,7 +277,7 @@ const emit = defineEmits<{
 
 const router = useRouter();
 
-const user = ref(props.user);
+const user = ref({ ...props.user, communityRoles: props.user.communityRoles ?? [] });
 const narrow = ref<null | boolean>(null);
 const rootEl = useTemplateRef('rootEl');
 const bannerEl = useTemplateRef('bannerEl');
@@ -286,6 +286,13 @@ const memoDraft = ref(props.user.memo);
 const isEditingMemo = ref(false);
 const moderationNote = ref(props.user.moderationNote ?? '');
 const editModerationNote = ref(false);
+const isForeignLanguage = computed(() => false);
+const translating = ref(false);
+const translation = ref<{ text: string; sourceLang: string } | null>(null);
+const translate = () => {
+	translation.value = null;
+	translating.value = false;
+};
 
 const listenbrainzdata = ref(false);
 if (props.user.ListenBrainz) {

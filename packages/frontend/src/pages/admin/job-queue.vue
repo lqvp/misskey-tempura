@@ -191,7 +191,7 @@ import kmg from '@/filters/kmg.js';
 import MkInput from '@/components/MkInput.vue';
 import bytes from '@/filters/bytes.js';
 
-const tab = ref<typeof Misskey.queueTypes[number] | '-'>('-');
+const tab = ref<typeof Misskey.queueTypes[number] | 'scheduledNoteDelete' | '-'>('-');
 const jobState = ref<'all' | 'latest' | 'completed' | 'failed' | 'active' | 'delayed' | 'wait' | 'paused'>('all');
 const jobs = ref<Misskey.entities.QueueJob[]>([]);
 const jobsFetching = ref(true);

@@ -34,8 +34,8 @@ useTooltip(rootEl, (showing) => {
 		popup(defineAsyncComponent(() => import('@/components/MkUrlPreviewPopup.vue')), {
 			showing,
 			url: props.url,
-			source: rootEl.value,
-		}, {}, 'closed');
+			anchorElement: rootEl.value,
+		});
 	}
 });
 </script>

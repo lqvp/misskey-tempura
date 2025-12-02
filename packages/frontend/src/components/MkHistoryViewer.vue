@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 								<MkAvatar
 									v-if="hasUserProps(history[getActionConfig(history.type).avatarUser])"
 									class="avatar"
-									:user="history[getActionConfig(history.type).avatarUser]"
+									:user="ensureUser(history[getActionConfig(history.type).avatarUser])"
 									indicator
 									link
 									preview
@@ -37,22 +37,22 @@ SPDX-License-Identifier: AGPL-3.0-only
 										<div class="users">
 											<MkA
 												v-if="hasUserProps(history.fromUser)"
-												v-user-preview="history.fromUser!.id"
+												v-user-preview="ensureUser(history.fromUser).id"
 												class="name"
-												:to="userPage(history.fromUser!)"
+												:to="userPage(ensureUser(history.fromUser))"
 											>
-												<MkUserName v-if="hasUserProps(history.fromUser)" :user="history.fromUser!"/>
+												<MkUserName v-if="hasUserProps(history.fromUser)" :user="ensureUser(history.fromUser)"/>
 												<span v-else>unknown user</span>
 											</MkA>
 											<span v-else>unknown user</span>
 											<i class="ti ti-arrow-right"></i>
 											<MkA
 												v-if="hasUserProps(history.toUser)"
-												v-user-preview="history.toUser!.id"
+												v-user-preview="ensureUser(history.toUser).id"
 												class="name"
-												:to="userPage(history.toUser!)"
+												:to="userPage(ensureUser(history.toUser))"
 											>
-												<MkUserName v-if="hasUserProps(history.toUser)" :user="history.toUser!"/>
+												<MkUserName v-if="hasUserProps(history.toUser)" :user="ensureUser(history.toUser)"/>
 												<span v-else>unknown user</span>
 											</MkA>
 											<span v-else>unknown user</span>
@@ -94,6 +94,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import type { Endpoints } from 'misskey-js';
+import type * as Misskey from 'misskey-js';
 import { userPage } from '@/filters/user.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
@@ -106,6 +107,18 @@ import { useHistoryPage } from '@/composables/useHistoryPage.js';
 
 type HistoryEndpoint = 'following/history' | 'following/requests/history';
 type HistoryItem = Endpoints[HistoryEndpoint]['res'][number];
+const dummyUser: Misskey.entities.UserLite = {
+	id: 'unknown',
+	name: null,
+	username: 'unknown',
+	host: null,
+	approved: true,
+	emojis: {},
+	avatarDecorations: [],
+	avatarUrl: '',
+	avatarBlurhash: null,
+	onlineStatus: 'unknown',
+};
 
 const props = withDefaults(defineProps<{
 	endpoint: HistoryEndpoint;
@@ -128,6 +141,10 @@ const {
 
 function hasUserProps(user: any): boolean {
 	return !!(user && (user.id || user.username || user.avatarUrl));
+}
+
+function ensureUser(user?: HistoryItem['fromUser'] | HistoryItem['toUser'] | null): Misskey.entities.UserLite {
+	return (user ?? dummyUser) as Misskey.entities.UserLite;
 }
 
 definePage(() => ({

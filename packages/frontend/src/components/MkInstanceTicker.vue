@@ -9,10 +9,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div :class="$style.name">
 		{{ instanceName }}
 		<template v-if="showInstanceTickerSoftwareName">
-			| {{ instance.softwareName }}
+			| {{ tickerSoftwareName }}
 		</template>
-		<template v-if="showInstanceTickerVersion">
-			| {{ instance.softwareVersion }}
+		<template v-if="showInstanceTickerVersion && tickerSoftwareVersion">
+			| {{ tickerSoftwareVersion }}
 		</template>
 	</div>
 </div>
@@ -36,8 +36,29 @@ const props = defineProps<{
 		name?: string | null
 		themeColor?: string | null
 		softwareName?: string | null
+		softwareVersion?: string | null
 	}
 }>();
+
+type InstanceInfo = {
+	faviconUrl?: string | null;
+	name?: string | null;
+	themeColor?: string | null;
+	softwareName?: string | null;
+	softwareVersion?: string | null;
+	shortName?: string | null;
+	version?: string | null;
+};
+
+const resolvedInstance = computed<InstanceInfo>(() => (props.host == null ? localInstance : props.instance ?? {}));
+
+const tickerSoftwareName = computed(() => props.host == null
+	? (localInstance.name ?? localInstance.shortName ?? 'Misskey')
+	: resolvedInstance.value.softwareName ?? resolvedInstance.value.name ?? resolvedInstance.value.shortName ?? props.host ?? '');
+
+const tickerSoftwareVersion = computed(() => props.host == null
+	? localInstance.version
+	: resolvedInstance.value.softwareVersion ?? resolvedInstance.value.version ?? null);
 
 // if no instance data is given, this is for the local instance
 const instanceName = computed(() => props.host == null ? localInstanceName : props.instance?.name ?? props.host);
@@ -51,13 +72,13 @@ const faviconUrl = computed(() => {
 			imageSrc = localInstance.iconUrl;
 		}
 	} else {
-		imageSrc = props.instance?.faviconUrl ?? null;
+		imageSrc = resolvedInstance.value.faviconUrl ?? null;
 	}
 	return getProxiedImageUrlNullable(imageSrc);
 });
 
 const themeColorStyle = computed<CSSProperties>(() => {
-	const themeColor = (props.host == null ? localInstance.themeColor : props.instance?.themeColor) ?? '#777777';
+	const themeColor = (props.host == null ? localInstance.themeColor : resolvedInstance.value.themeColor) ?? '#777777';
 	return {
 		background: `linear-gradient(90deg, ${themeColor}, ${themeColor}00)`,
 	};

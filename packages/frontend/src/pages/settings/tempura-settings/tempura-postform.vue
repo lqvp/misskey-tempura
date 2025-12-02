@@ -90,13 +90,14 @@ import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import MkContainer from '@/components/MkContainer.vue';
 import MkDeleteScheduleEditor from '@/components/MkDeleteScheduleEditor.vue';
+import type { DeleteScheduleEditorModelValue } from '@/components/MkDeleteScheduleEditor.vue';
 import { bottomItemDef, normalizePostFormActions } from '@/utility/post-form.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 
 const useTextAreaAutoSize = prefer.model('useTextAreaAutoSize');
 const Sortable = defineAsyncComponent(() => import('vuedraggable').then(x => x.default));
 const defaultScheduledNoteDelete = prefer.model('defaultScheduledNoteDelete');
-const scheduledNoteDelete = ref({ deleteAt: null, deleteAfter: prefer.s.defaultScheduledNoteDeleteTime, isValid: true, isScheduledForPrivate: false });
+const scheduledNoteDelete = ref<DeleteScheduleEditorModelValue>({ deleteAt: null, deleteAfter: prefer.s.defaultScheduledNoteDeleteTime, isValid: true, isScheduledForPrivate: false });
 const chooseFileFrom = prefer.model('chooseFileFrom');
 
 const chooseFileFromItems = [
@@ -104,9 +105,9 @@ const chooseFileFromItems = [
 	{ value: 'old', label: i18n.ts._chooseFileFrom.old },
 ];
 
-const items = ref(normalizePostFormActions(prefer.s.postFormActions).map(x => ({
+const items = ref<{ id: string; type: keyof typeof bottomItemDef; }[]>(normalizePostFormActions(prefer.s.postFormActions).map(x => ({
 	id: Math.random().toString(),
-	type: x,
+	type: x as keyof typeof bottomItemDef,
 })));
 
 function getHTMLElement(ev: MouseEvent): HTMLElement {
@@ -116,17 +117,19 @@ function getHTMLElement(ev: MouseEvent): HTMLElement {
 
 async function addItem() {
 	const currentItems = items.value.map(x => x.type);
-	const bottomItem = Object.keys(bottomItemDef).filter(k => !currentItems.includes(k));
+	const bottomItem = (Object.keys(bottomItemDef) as (keyof typeof bottomItemDef)[]).filter(k => !currentItems.includes(k));
 	const { canceled, result: item } = await os.select({
 		title: i18n.ts.addItem,
 		items: bottomItem.map(k => ({
-			value: k, label: bottomItemDef[k].title,
+			value: k,
+			label: bottomItemDef[k].title,
+			text: bottomItemDef[k].title,
 		})),
 	});
 	if (canceled || item == null) return;
 	items.value = [...items.value, {
 		id: Math.random().toString(),
-		type: item,
+		type: item as keyof typeof bottomItemDef,
 	}];
 }
 
@@ -156,14 +159,16 @@ async function reset_postform() {
 
 	items.value = PREF_DEF.postFormActions.default.map(x => ({
 		id: Math.random().toString(),
-		type: x,
+		type: x as keyof typeof bottomItemDef,
 	}));
 	save_postform();
 }
 
 watch(scheduledNoteDelete, () => {
 	if (!scheduledNoteDelete.value.isValid) return;
-	prefer.commit('defaultScheduledNoteDeleteTime', scheduledNoteDelete.value.deleteAfter);
+	if (scheduledNoteDelete.value.deleteAfter != null) {
+		prefer.commit('defaultScheduledNoteDeleteTime', scheduledNoteDelete.value.deleteAfter);
+	}
 });
 
 </script>

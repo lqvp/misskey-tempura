@@ -61,11 +61,12 @@ const loading = ref(true);
 
 misskeyApi('roles/list')
 	.then((res: Misskey.entities.Role[]) => {
-		const sorted = [...res].sort((a, b) => b.displayOrder - a.displayOrder);
-		roles.value = sorted;
-		rolesManual.value = sorted.filter((x) => x.target === 'manual' && x.permissionGroup !== 'Community');
-		rolesConditional.value = sorted.filter((x) => x.target === 'conditional' && x.permissionGroup !== 'Community');
-		rolesCommunity.value = sorted.filter((x) => x.permissionGroup === 'Community');
+		const sorted = [...res].sort((a, b) => b.displayOrder - a.displayOrder) as (Misskey.entities.Role & { permissionGroup?: string })[];
+		const withPermission = sorted.map(r => ({ ...r, permissionGroup: r.permissionGroup ?? 'Normal' }));
+		roles.value = withPermission;
+		rolesManual.value = withPermission.filter((x) => x.target === 'manual' && x.permissionGroup !== 'Community');
+		rolesConditional.value = withPermission.filter((x) => x.target === 'conditional' && x.permissionGroup !== 'Community');
+		rolesCommunity.value = withPermission.filter((x) => x.permissionGroup === 'Community');
 	})
 	.finally(() => {
 		loading.value = false;
@@ -79,4 +80,3 @@ misskeyApi('roles/list')
 		grid-gap: var(--margin);
 	}
 </style>
-
