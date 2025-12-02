@@ -114,7 +114,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkPagination>
 		</div>
 		<div v-else-if="tab === 'following'" key="following" class="_gaps_m">
-				<MkPagination v-slot="{ items }: { items: Misskey.entities.FollowRelationship[] }" :paginator="followingPaginator">
+				<MkPagination v-slot="{ items }: { items: any[] }" :paginator="followingPaginator">
 					<div :class="$style.followRelationsList">
 						<template v-for="followRelationship in items" :key="followRelationship.id">
 							<div v-if="followRelationship.followee && followRelationship.follower" :class="$style.followRelation">
@@ -131,7 +131,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkPagination>
 		</div>
 		<div v-else-if="tab === 'followers'" key="followers" class="_gaps_m">
-				<MkPagination v-slot="{ items }: { items: Misskey.entities.FollowRelationship[] }" :paginator="followersPaginator">
+				<MkPagination v-slot="{ items }: { items: any[] }" :paginator="followersPaginator">
 					<div :class="$style.followRelationsList">
 						<template v-for="followRelationship in items" :key="followRelationship.id">
 							<div v-if="followRelationship.followee && followRelationship.follower" :class="$style.followRelation">

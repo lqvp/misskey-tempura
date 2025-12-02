@@ -161,7 +161,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						class="_monospace"
 					>
 						<template #right="{ event: job }">
-							<XJob :job="job" :queueType="tab" style="margin: 4px 0;" @needRefresh="refreshJob(job.id)"/>
+							<XJob :job="job" :queueType="tabAny" style="margin: 4px 0;" @needRefresh="refreshJob(job.id)"/>
 						</template>
 					</MkTl>
 				</div>
@@ -199,6 +199,8 @@ const queueInfos = ref<Misskey.entities.AdminQueueQueuesResponse>([]);
 const queueInfo = ref<Misskey.entities.AdminQueueQueueStatsResponse | null>(null);
 const searchQuery = ref('');
 
+const tabAny = computed(() => tab.value as any);
+
 async function fetchQueues() {
 	if (tab.value !== '-') return;
 	queueInfos.value = await misskeyApi('admin/queue/queues');
@@ -206,7 +208,7 @@ async function fetchQueues() {
 
 async function fetchCurrentQueue() {
 	if (tab.value === '-') return;
-	queueInfo.value = await misskeyApi('admin/queue/queue-stats', { queue: tab.value });
+	queueInfo.value = await misskeyApi('admin/queue/queue-stats', { queue: tab.value as any });
 }
 
 async function fetchJobs() {
@@ -214,7 +216,7 @@ async function fetchJobs() {
 	jobsFetching.value = true;
 	const state = jobState.value;
 	jobs.value = await misskeyApi('admin/queue/jobs', {
-		queue: tab.value,
+		queue: tab.value as any,
 		state: state === 'all' ? ['completed', 'failed', 'active', 'delayed', 'wait'] : state === 'latest' ? ['completed', 'failed'] : [state],
 		search: searchQuery.value.trim() === '' ? undefined : searchQuery.value,
 	}).then((res: Misskey.entities.AdminQueueJobsResponse) => {
@@ -271,7 +273,7 @@ async function clearQueue() {
 	});
 	if (canceled) return;
 
-	os.apiWithDialog('admin/queue/clear', { queue: tab.value, state: '*' });
+	os.apiWithDialog('admin/queue/clear', { queue: tab.value as any, state: '*' });
 
 	fetchCurrentQueue();
 	fetchJobs();
@@ -286,7 +288,7 @@ async function promoteAllJobs() {
 	});
 	if (canceled) return;
 
-	os.apiWithDialog('admin/queue/promote-jobs', { queue: tab.value });
+	os.apiWithDialog('admin/queue/promote-jobs', { queue: tab.value as any });
 
 	fetchCurrentQueue();
 	fetchJobs();
@@ -301,7 +303,7 @@ async function removeJobs() {
 	});
 	if (canceled) return;
 
-	os.apiWithDialog('admin/queue/clear', { queue: tab.value, state: jobState.value === 'all' ? '*' : jobState.value });
+	os.apiWithDialog('admin/queue/clear', { queue: tab.value as any, state: jobState.value === 'all' ? '*' : jobState.value });
 
 	fetchCurrentQueue();
 	fetchJobs();
@@ -309,7 +311,7 @@ async function removeJobs() {
 
 async function refreshJob(jobId: string) {
 	if (tab.value === '-') return;
-	const newJob = await misskeyApi('admin/queue/show-job', { queue: tab.value, jobId });
+	const newJob = await misskeyApi('admin/queue/show-job', { queue: tab.value as any, jobId });
 	const index = jobs.value.findIndex((job) => job.id === jobId);
 	if (index !== -1) {
 		jobs.value[index] = newJob;

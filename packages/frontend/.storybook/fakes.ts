@@ -257,12 +257,11 @@ export function note(id = 'somenoteid'): entities.Note {
 			channelId: null,
 			channel: null,
 			localOnly: false,
-			app: null,
-		quoteId: null,
-		quote: null,
+
+
 		visibleUserIds: [],
-		visibilitySilenced: false,
-		deliverToRemoteFollowers: true,
+
+
 		deliveryTargets: null,
 	};
 }

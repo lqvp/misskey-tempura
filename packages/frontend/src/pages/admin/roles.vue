@@ -508,7 +508,7 @@ import MkTextarea from '@/components/MkTextarea.vue';
 const router = useRouter();
 const baseRoleQ = ref('');
 
-const roles = await misskeyApi('admin/roles/list') as (Misskey.entities.RoleLite & { permissionGroup?: string })[];
+const roles = await misskeyApi('admin/roles/list') as (Misskey.entities.RoleLite & { permissionGroup?: string; target: string })[];
 
 const policies = reactive(deepClone(instance.policies));
 
