@@ -242,7 +242,7 @@ export const isHashtag = (object: IObject): object is IApHashtag =>
 export interface IApEmoji extends IObject {
 	type: 'Emoji';
 	name: string;
-	host: string ;
+	host: string;
 	updated: string;
 	keywords: string[];
 	// Misskey拡張。後方互換性のためにoptional。
