@@ -57,6 +57,7 @@ if (props.id) {
 		target: 'manual',
 		condFormula: { id: genId(), type: 'isRemote' },
 		isPublic: false,
+		permissionGroup: 'Normal',
 		isExplorable: false,
 		isRainbow: false,
 		asBadge: false,
