@@ -6067,13 +6067,15 @@ export type components = {
             entranceShowFeatured: boolean;
             /** @default false */
             entranceShowEmojis: boolean;
-            /** @default [
+            /**
+             * @default [
              *       "👍",
              *       "❤",
              *       "😆",
              *       "🎉",
              *       "🍮"
-             *     ] */
+             *     ]
+             */
             entranceSelectEmojis: string[];
             /** @default false */
             entranceShowStats: boolean;
