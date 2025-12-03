@@ -286,13 +286,6 @@ const memoDraft = ref(props.user.memo);
 const isEditingMemo = ref(false);
 const moderationNote = ref(props.user.moderationNote ?? '');
 const editModerationNote = ref(false);
-const isForeignLanguage = computed(() => false);
-const translating = ref(false);
-const translation = ref<{ text: string; sourceLang: string } | null>(null);
-const translate = () => {
-	translation.value = null;
-	translating.value = false;
-};
 
 const listenbrainzdata = ref(false);
 if (props.user.ListenBrainz) {
