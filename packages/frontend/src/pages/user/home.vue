@@ -286,6 +286,9 @@ const memoDraft = ref(props.user.memo);
 const isEditingMemo = ref(false);
 const moderationNote = ref(props.user.moderationNote ?? '');
 const editModerationNote = ref(false);
+const translation = ref<string | null>(null);
+const translating = ref(false);
+const isForeignLanguage = computed(() => false);
 
 const listenbrainzdata = ref(false);
 if (props.user.ListenBrainz) {
@@ -344,6 +347,17 @@ function adjustMemoTextarea() {
 	if (!memoTextareaEl.value) return;
 	memoTextareaEl.value.style.height = '0px';
 	memoTextareaEl.value.style.height = `${memoTextareaEl.value.scrollHeight}px`;
+}
+
+async function translate() {
+	if (translating.value) return;
+	translating.value = true;
+	try {
+		// Translation service not implemented yet; keep UI responsive.
+		translation.value = null;
+	} finally {
+		translating.value = false;
+	}
 }
 
 async function updateMemo() {
