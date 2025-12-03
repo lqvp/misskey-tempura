@@ -289,7 +289,7 @@ function save() {
 		location: profile.location || null,
 		// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
 		birthday: profile.birthday || null,
-		listenbrainz: (profile as any).listenbrainz || null,
+		listenbrainz: (profile as any).listenbrainz ?? (profile as any).ListenBrainz ?? null,
 		// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
 		lang: profile.lang || null,
 		isBot: !!profile.isBot,

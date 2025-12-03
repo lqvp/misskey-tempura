@@ -177,7 +177,7 @@ export function migrateOldSettings() {
 		prefer.commit('useGeminiLLMAPI', store.s.useGeminiLLMAPI);
 		prefer.commit('useGeminiWithMedia', store.s.useGeminiWithMedia);
 		prefer.commit('geminiToken', store.s.geminiToken);
-		prefer.commit('geminiModel', (store.s as any).geminiModels ?? (store.s as any).geminiModel ?? prefer.s.geminiModel);
+		prefer.commit('geminiModel', (store.s as any).geminiModel ?? prefer.s.geminiModel);
 		prefer.commit('geminiSystemPrompt', store.s.geminiSystemPrompt);
 		prefer.commit('geminiPromptNote', store.s.geminiPromptNote);
 		prefer.commit('geminiPromptProfile', store.s.geminiPromptProfile);

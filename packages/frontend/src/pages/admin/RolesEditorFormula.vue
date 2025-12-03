@@ -97,12 +97,12 @@ const typeDef = [
 	{ label: i18n.ts._role._condition.followingMoreThanOrEq, value: 'followingMoreThanOrEq' },
 	{ label: i18n.ts._role._condition.notesLessThanOrEq, value: 'notesLessThanOrEq' },
 	{ label: i18n.ts._role._condition.notesMoreThanOrEq, value: 'notesMoreThanOrEq' },
-		{ label: i18n.ts._role._condition.activedMoreThan, value: 'activedMoreThan' },
-		{ label: i18n.ts._role._condition.activedLessThan, value: 'activedLessThan' },
+	{ label: i18n.ts._role._condition.activedMoreThan, value: 'activedMoreThan' },
+	{ label: i18n.ts._role._condition.activedLessThan, value: 'activedLessThan' },
 	{ label: i18n.ts._role._condition.and, value: 'and' },
 	{ label: i18n.ts._role._condition.or, value: 'or' },
 	{ label: i18n.ts._role._condition.not, value: 'not' },
-] as const satisfies MkSelectItem[];
+] satisfies MkSelectItem[];
 
 const type = computed<GetMkSelectValueTypesFromDef<typeof typeDef>>({
 	get: () => v.value.type,
@@ -111,11 +111,11 @@ const type = computed<GetMkSelectValueTypesFromDef<typeof typeDef>>({
 		if (t === 'or') v.value.values = [];
 		if (t === 'not') v.value.value = { id: genId(), type: 'isRemote' };
 		if (t === 'roleAssignedTo') v.value.roleId = '';
-			if (t === 'createdLessThan') v.value.sec = 86400;
-			if (t === 'createdMoreThan') v.value.sec = 86400;
-			if (t === 'activedMoreThan') v.value.sec = 86400;
-			if (t === 'activedLessThan') v.value.sec = 86400;
-			if (t === 'followersLessThanOrEq') v.value.value = 10;
+		if (t === 'createdLessThan') v.value.sec = 86400;
+		if (t === 'createdMoreThan') v.value.sec = 86400;
+		if (t === 'activedMoreThan') v.value.sec = 86400;
+		if (t === 'activedLessThan') v.value.sec = 86400;
+		if (t === 'followersLessThanOrEq') v.value.value = 10;
 		if (t === 'followersMoreThanOrEq') v.value.value = 10;
 		if (t === 'followingLessThanOrEq') v.value.value = 10;
 		if (t === 'followingMoreThanOrEq') v.value.value = 10;

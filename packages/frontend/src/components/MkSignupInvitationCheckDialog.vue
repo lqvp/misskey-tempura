@@ -112,7 +112,7 @@ import MkInput from '@/components/MkInput.vue';
 
 interface InviteCheckResponse {
 	isValid: boolean;
-	expiresAt?: string | null;
+	expiresAt: string | null;
 	skipEmailAuth: boolean;
 	skipApproval: boolean;
 }
@@ -125,7 +125,7 @@ onMounted(() => {
 });
 
 const emit = defineEmits<{
-	(eventName: 'verified', inviteInfo: { code: string; skipEmailAuth: boolean; skipApproval: boolean; expiresAt?: Date | null }): void;
+	(eventName: 'verified', inviteInfo: { code: string; skipEmailAuth: boolean; skipApproval: boolean; expiresAt: Date | null }): void;
 	(eventName: 'proceedWithoutCode'): void;
 }>();
 
@@ -154,7 +154,7 @@ async function checkInviteCode() {
 	try {
 	const response = await misskeyApi('invite/check', {
 		code: inviteCode.value.trim(),
-	} as any) as InviteCheckResponse;
+	}) as InviteCheckResponse;
 
 		validationResult.value = response;
 
