@@ -49,7 +49,7 @@ import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import { genId } from '@/utility/id.js';
 import MkInput from '@/components/MkInput.vue';
 import MkSelect from '@/components/MkSelect.vue';
-import type { GetMkSelectValueTypesFromDef, MkSelectItem } from '@/components/MkSelect.vue';
+import type { MkSelectItem } from '@/components/MkSelect.vue';
 import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
 import { deepClone } from '@/utility/clone.js';
@@ -80,7 +80,7 @@ watch(v, () => {
 	emit('update:modelValue', v.value);
 }, { deep: true });
 
-const typeDef = [
+const typeDefConst = [
 	{ label: i18n.ts._role._condition.isLocal, value: 'isLocal' },
 	{ label: i18n.ts._role._condition.isRemote, value: 'isRemote' },
 	{ label: i18n.ts._role._condition.isSuspended, value: 'isSuspended' },
@@ -102,9 +102,14 @@ const typeDef = [
 	{ label: i18n.ts._role._condition.and, value: 'and' },
 	{ label: i18n.ts._role._condition.or, value: 'or' },
 	{ label: i18n.ts._role._condition.not, value: 'not' },
-] satisfies MkSelectItem[];
+];
+/**
+ * readonly タプルでリテラル型を保持しつつ、MkSelect には可変配列を渡す
+ */
+const typeDef: MkSelectItem[] = [...typeDefConst];
+type TypeDefValue = (typeof typeDefConst)[number]['value'];
 
-const type = computed<GetMkSelectValueTypesFromDef<typeof typeDef>>({
+const type = computed<TypeDefValue>({
 	get: () => v.value.type,
 	set: (t) => {
 		if (t === 'and') v.value.values = [];
@@ -125,7 +130,9 @@ const type = computed<GetMkSelectValueTypesFromDef<typeof typeDef>>({
 	},
 });
 
-const assignedToDef = computed(() => roles.filter(r => r.target === 'manual').map(r => ({ label: r.name, value: r.id })) satisfies MkSelectItem[]);
+const assignedToDef = computed(() => roles
+	.filter(r => r.target === 'manual')
+	.map(r => ({ label: r.name, value: r.id })) as MkSelectItem[]);
 
 function addValue() {
 	v.value.values.push({ id: genId(), type: 'isRemote' });

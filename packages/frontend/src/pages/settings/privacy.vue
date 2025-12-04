@@ -310,7 +310,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { ref, computed, watch } from 'vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkSelect from '@/components/MkSelect.vue';
-import type { MkSelectItem } from '@/components/MkSelect.vue';
+import type { MkSelectItem, ItemOption } from '@/components/MkSelect.vue';
 import FormSection from '@/components/form/section.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
@@ -426,7 +426,7 @@ const makeNotesFollowersOnlyBefore_type = computed({
 	},
 });
 
-const makeNotesFollowersOnlyBefore_presets = [
+const makeNotesFollowersOnlyBefore_presetsConst = [
 	{ label: i18n.ts.oneHour, value: -3600 },
 	{ label: i18n.ts.oneDay, value: -86400 },
 	{ label: i18n.ts.threeDays, value: -259200 },
@@ -434,7 +434,8 @@ const makeNotesFollowersOnlyBefore_presets = [
 	{ label: i18n.ts.oneMonth, value: -2592000 },
 	{ label: i18n.ts.threeMonths, value: -7776000 },
 	{ label: i18n.ts.oneYear, value: -31104000 },
-] satisfies MkSelectItem[];
+] as const;
+const makeNotesFollowersOnlyBefore_presets: ItemOption<number>[] = [...makeNotesFollowersOnlyBefore_presetsConst];
 
 const makeNotesFollowersOnlyBefore_isCustomMode = ref(
 	makeNotesFollowersOnlyBefore.value != null &&
@@ -478,7 +479,7 @@ const makeNotesHiddenBefore_type = computed({
 	},
 });
 
-const makeNotesHiddenBefore_presets = [
+const makeNotesHiddenBefore_presetsConst = [
 	{ label: i18n.ts.oneHour, value: -3600 },
 	{ label: i18n.ts.oneDay, value: -86400 },
 	{ label: i18n.ts.threeDays, value: -259200 },
@@ -486,7 +487,8 @@ const makeNotesHiddenBefore_presets = [
 	{ label: i18n.ts.oneMonth, value: -2592000 },
 	{ label: i18n.ts.threeMonths, value: -7776000 },
 	{ label: i18n.ts.oneYear, value: -31104000 },
-] satisfies MkSelectItem[];
+] as const;
+const makeNotesHiddenBefore_presets: ItemOption<number>[] = [...makeNotesHiddenBefore_presetsConst];
 
 const makeNotesHiddenBefore_isCustomMode = ref(
 	makeNotesHiddenBefore.value != null &&
