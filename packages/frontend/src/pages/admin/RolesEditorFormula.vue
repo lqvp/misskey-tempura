@@ -132,7 +132,7 @@ const type = computed<TypeDefValue>({
 
 const assignedToDef = computed(() => roles
 	.filter(r => r.target === 'manual')
-	.map(r => ({ label: r.name, value: r.id })) as MkSelectItem[]);
+	.map((r): MkSelectItem => ({ label: r.name, value: r.id })));
 
 function addValue() {
 	v.value.values.push({ id: genId(), type: 'isRemote' });
