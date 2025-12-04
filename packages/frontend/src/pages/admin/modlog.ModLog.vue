@@ -272,7 +272,7 @@ import { i18n } from '@/i18n.js';
 import MkFolder from '@/components/MkFolder.vue';
 
 const props = defineProps<{
-	log: any;
+	log: Misskey.entities.ModerationLog;
 }>();
 </script>
 

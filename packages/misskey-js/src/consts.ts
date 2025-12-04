@@ -340,6 +340,12 @@ export type ModerationLogPayloads = {
 		userUsername: string;
 		userHost: string | null;
 	};
+	decline: {
+		userId: string;
+		userUsername: string;
+		userHost?: string | null;
+		reason: string | null;
+	};
 	unsuspend: {
 		userId: string;
 		userUsername: string;
@@ -432,6 +438,12 @@ export type ModerationLogPayloads = {
 		userUsername: string;
 		userHost: string | null;
 	};
+	createRolesAnnouncement: {
+		announcementId: string;
+		announcement: Announcement;
+		roleIds: string[];
+		roles: Role[];
+	};
 	updateGlobalAnnouncement: {
 		announcementId: string;
 		before: Announcement;
@@ -445,6 +457,13 @@ export type ModerationLogPayloads = {
 		userUsername: string;
 		userHost: string | null;
 	};
+	updateRolesAnnouncement: {
+		announcementId: string;
+		before: Announcement;
+		after: Announcement;
+		roleIds: string[];
+		roles: Role[];
+	};
 	deleteGlobalAnnouncement: {
 		announcementId: string;
 		announcement: Announcement;
@@ -455,6 +474,12 @@ export type ModerationLogPayloads = {
 		userId: string;
 		userUsername: string;
 		userHost: string | null;
+	};
+	deleteRolesAnnouncement: {
+		announcementId: string;
+		announcement: Announcement;
+		roleIds: string[];
+		roles: Role[];
 	};
 	resetPassword: {
 		userId: string;
@@ -605,7 +630,7 @@ export type ModerationLogPayloads = {
 	updateProxyAccountDescription: {
 		before: string | null;
 		after: string | null;
-	}
+	};
 	quarantineRemoteInstance: {
 		id: string;
 		host: string;
@@ -615,6 +640,11 @@ export type ModerationLogPayloads = {
 		host: string;
 	};
 	dropAllNotes: {
+		userId: string;
+		userUsername: string;
+		userHost: string | null;
+	};
+	unsetUserMutualLink: {
 		userId: string;
 		userUsername: string;
 		userHost: string | null;
