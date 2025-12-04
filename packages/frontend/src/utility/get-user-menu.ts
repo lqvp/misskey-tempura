@@ -396,15 +396,15 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 			text: i18n.ts.searchThisUsersNotes,
 			action: () => {
 				const query = {
-						username: user.username,
-					} as { username: string, host?: string };
+					username: user.username,
+				} as { username: string, host?: string };
 
 				if (user.host !== null) {
 					query.host = user.host;
 				}
 
 				router.push('/search', {
-					query
+					query,
 				});
 			},
 		});
@@ -526,17 +526,17 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 				icon: 'ti ti-badges',
 				text: i18n.ts.roles,
 				children: async () => {
-				const roles = await rolesCache.fetch();
+					const roles = await rolesCache.fetch();
 
-				return roles.filter(r => r.target === 'manual').map(r => ({
-					text: r.name,
-					action: async () => {
-						const expiresAt = await getPeriod(i18n.ts.period + ': ' + r.name);
-						if (expiresAt === false) return;
+					return roles.filter(r => r.target === 'manual').map(r => ({
+						text: r.name,
+						action: async () => {
+							const expiresAt = await getPeriod(i18n.ts.period + ': ' + r.name);
+							if (expiresAt === false) return;
 
-						os.apiWithDialog('admin/roles/assign', { roleId: r.id, userId: user.id, expiresAt });
-					},
-				}));
+							os.apiWithDialog('admin/roles/assign', { roleId: r.id, userId: user.id, expiresAt });
+						},
+					}));
 				},
 			});
 		}
