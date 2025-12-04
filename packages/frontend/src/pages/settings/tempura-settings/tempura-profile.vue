@@ -58,6 +58,7 @@ import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { $i } from '@/i.js';
 import { globalEvents } from '@/events.js';
+import { clearCache } from '@/utility/clear-cache.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import SearchLabel from '@/components/global/SearchLabel.vue';
 
@@ -103,7 +104,7 @@ async function saveCounts() {
 		const updatedUser = await misskeyApi('users/show', { userId: me.id });
 		Object.assign(me, updatedUser);
 
-		globalEvents.emit('requestClearPageCache' as any);
+		await clearCache();
 	} catch (err: any) {
 		os.alert({
 			type: 'error',

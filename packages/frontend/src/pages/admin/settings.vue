@@ -476,20 +476,20 @@ const urlPreviewForm = useForm({
 
 const federationForm = useForm({
 	federation: meta.federation,
-	federationHosts: ((meta as any).federationHosts ?? []).join('\n'),
-	deliverSuspendedSoftware: meta.deliverSuspendedSoftware,
-	signToActivityPubGet: meta.signToActivityPubGet,
-	proxyRemoteFiles: meta.proxyRemoteFiles,
-	allowExternalApRedirect: meta.allowExternalApRedirect,
+	federationHosts: meta.federationHosts?.join('\n') ?? '',
+	deliverSuspendedSoftware: meta.deliverSuspendedSoftware ?? [],
+	signToActivityPubGet: meta.signToActivityPubGet ?? false,
+	proxyRemoteFiles: meta.proxyRemoteFiles ?? false,
+	allowExternalApRedirect: meta.allowExternalApRedirect ?? false,
 	cacheRemoteFiles: meta.cacheRemoteFiles,
 	cacheRemoteSensitiveFiles: meta.cacheRemoteSensitiveFiles,
-	}, async (state) => {
-		await os.apiWithDialog('admin/update-meta', {
-			federation: state.federation,
-			federationHosts: state.federationHosts ? state.federationHosts.split('\n') : [],
-			deliverSuspendedSoftware: state.deliverSuspendedSoftware,
-			signToActivityPubGet: state.signToActivityPubGet,
-			proxyRemoteFiles: state.proxyRemoteFiles,
+}, async (state) => {
+	await os.apiWithDialog('admin/update-meta', {
+		federation: state.federation,
+		federationHosts: state.federationHosts ? state.federationHosts.split('\n') : [],
+		deliverSuspendedSoftware: state.deliverSuspendedSoftware,
+		signToActivityPubGet: state.signToActivityPubGet,
+		proxyRemoteFiles: state.proxyRemoteFiles,
 		allowExternalApRedirect: state.allowExternalApRedirect,
 		cacheRemoteFiles: state.cacheRemoteFiles,
 		cacheRemoteSensitiveFiles: state.cacheRemoteSensitiveFiles,
