@@ -42,7 +42,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 								<template #label>{{ i18n.ts._contactForm._category.defaultCategory }}</template>
 							</MkSwitch>
 							<MkInput
-								v-model="category.order"
+								:modelValue="category.order"
 								type="number"
 								:placeholder="i18n.ts._contactForm._category.categoryOrderPlaceholder"
 								style="width: 100px;"
@@ -82,15 +82,16 @@ function normalizeCategory(cat: unknown): ContactFormCategory {
 		key: typeof obj.key === 'string' ? obj.key : '',
 		text: typeof obj.text === 'string' ? obj.text : '',
 		enabled: Boolean(obj.enabled),
-		order: typeof obj.order === 'number' ? obj.order : Number((obj as { order?: unknown }).order) || 0,
+		order: typeof obj.order === 'number' && Number.isFinite(obj.order)
+			? obj.order
+			: toFiniteNumber((obj as { order?: unknown }).order, 0),
 		isDefault: Boolean(obj.isDefault),
 	};
 }
 
-function toNumber(val: unknown): number {
-	if (typeof val === 'number') return val;
-	const parsed = Number(val);
-	return Number.isFinite(parsed) ? parsed : 0;
+function toFiniteNumber(val: unknown, fallback: number): number {
+	const parsed = typeof val === 'number' ? val : Number(val);
+	return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 const categories = ref<ContactFormCategory[]>([]);
@@ -177,7 +178,8 @@ function addCategory() {
 }
 
 function onOrderChange(category: ContactFormCategory, value: unknown) {
-	category.order = toNumber(value);
+	const parsed = toFiniteNumber(value, category.order);
+	category.order = parsed;
 }
 
 function removeCategory(index: number) {
