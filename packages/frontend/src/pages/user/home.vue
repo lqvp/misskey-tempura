@@ -59,10 +59,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<div><MkSparkle><Mfm :plain="true" :text="user.followedMessage" :author="user" class="_selectable"/></MkSparkle></div>
 								</MkFukidashi>
 							</div>
-					<MkFoldableSection v-if="user.roles.length > 0" class="role-folder" :expanded="user.roles.length < 5">
-						<template #header>{{ i18n.ts.roles }}</template>
-						<div class="roles">
-							<span v-for="role in user.roles" :key="role.id" v-tooltip="role.description" class="role" :class="{ 'rainbow': role.isRainbow }" :style="role.isRainbow ? {} : { '--color': role.color ?? '' }">
+							<MkFoldableSection v-if="user.roles.length > 0" class="role-folder" :expanded="user.roles.length < 5">
+								<template #header>{{ i18n.ts.roles }}</template>
+								<div class="roles">
+									<span
+										v-for="role in user.roles"
+										:key="role.id"
+										v-tooltip="role.description"
+										class="role"
+										:class="{ rainbow: role.isRainbow }"
+										:style="role.isRainbow || !role.color ? {} : { '--color': role.color }"
+									>
 										<MkA v-adaptive-bg :to="`/roles/${role.id}`">
 											<img v-if="role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="role.iconUrl"/>
 											{{ role.name }}
@@ -70,13 +77,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 									</span>
 								</div>
 							</MkFoldableSection>
-					<MkFoldableSection v-if="(user.communityRoles?.length ?? 0) > 0" class="role-folder" :expanded="(user.communityRoles?.length ?? 0) < 5">
-						<template #header>{{ i18n.ts.community + " " + i18n.ts.roles }}</template>
-						<div class="roles">
-							<span v-for="role in user.communityRoles ?? []" :key="role.id" v-tooltip="role.description" class="role" :class="{ 'rainbow': role.isRainbow }" :style="role.isRainbow ? {} : { '--color': role.color ?? '' }">
-								<MkA v-adaptive-bg :to="`/roles/${role.id}`">
-									<img v-if="role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="role.iconUrl"/>
-									{{ role.name }}
+							<MkFoldableSection v-if="(user.communityRoles?.length ?? 0) > 0" class="role-folder" :expanded="(user.communityRoles?.length ?? 0) < 5">
+								<template #header>{{ i18n.ts.community + " " + i18n.ts.roles }}</template>
+								<div class="roles">
+									<span
+										v-for="role in user.communityRoles ?? []"
+										:key="role.id"
+										v-tooltip="role.description"
+										class="role"
+										:class="{ rainbow: role.isRainbow }"
+										:style="role.isRainbow || !role.color ? {} : { '--color': role.color }"
+									>
+										<MkA v-adaptive-bg :to="`/roles/${role.id}`">
+											<img v-if="role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="role.iconUrl"/>
+											{{ role.name }}
 										</MkA>
 									</span>
 								</div>
@@ -288,6 +302,7 @@ const moderationNote = ref(props.user.moderationNote ?? '');
 const editModerationNote = ref(false);
 const translation = ref<string | null>(null);
 const translating = ref(false);
+// TODO: Enable translation detection once the service is implemented; keep false to avoid exposing unfinished UI.
 const isForeignLanguage = computed(() => false);
 
 const listenbrainzdata = ref(false);
