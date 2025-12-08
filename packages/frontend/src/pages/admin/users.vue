@@ -46,6 +46,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { computed, markRaw, ref, watchEffect } from 'vue';
+import type { MkSelectItem } from '@/components/MkSelect.vue';
 import { defaultMemoryStorage } from '@/memory-storage';
 import MkButton from '@/components/MkButton.vue';
 import MkInput from '@/components/MkInput.vue';
@@ -113,9 +114,9 @@ const {
 	],
 	initialValue: (storedQuery.origin ?? 'local') as any,
 });
-const sortItems = sortDef as any;
-const stateItems = stateDef as any;
-const originItems = originDef as any;
+const sortItems: MkSelectItem[] = sortDef;
+const stateItems: MkSelectItem[] = stateDef;
+const originItems: MkSelectItem[] = originDef;
 const searchUsername = ref(storedQuery.username ?? '');
 const searchHost = ref(storedQuery.hostname ?? '');
 const paginator = markRaw(new Paginator('admin/show-users', {
