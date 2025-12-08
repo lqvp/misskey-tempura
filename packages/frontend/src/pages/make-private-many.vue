@@ -57,7 +57,7 @@ import { computed, ref, watch, markRaw } from 'vue';
 import { debounce } from 'throttle-debounce';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
-import { $i } from '@/i.js';
+import { ensureSignin } from '@/i.js';
 import { misskeyApi } from '@/utility/misskey-api';
 import { Paginator } from '@/utility/paginator.js';
 import * as os from '@/os';
@@ -83,8 +83,10 @@ const noteNumber = ref(0);
 const shouldInputText = computed(() => `これらの ${noteNumber.value} 件のノートを、${since.value} から ${until.value} まで非公開にします`);
 const didInputText = ref('');
 
+const $i = ensureSignin();
+
 const notePaginationParams = computed(() => ({
-	userId: $i!.id,
+	userId: $i.id,
 	sinceDate: sinceNumber.value,
 	untilDate: untilNumber.value,
 }));

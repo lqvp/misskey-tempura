@@ -263,7 +263,7 @@ if (!mock) {
 	useTooltip(buttonEl, async (showing) => {
 		if (buttonEl.value == null) return;
 
-		const useGet = !reactionChecksMuting.value;
+	const useGet = !reactionChecksMuting;
 		const apiCall = useGet ? misskeyApiGet : misskeyApi;
 		const reactions = !prefer.s.hideReactionUsers ? await apiCall('notes/reactions', {
 			noteId: props.noteId,

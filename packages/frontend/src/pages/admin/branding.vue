@@ -196,7 +196,7 @@ const serverErrorImageUrl = ref(meta.serverErrorImageUrl);
 const infoImageUrl = ref(meta.infoImageUrl);
 const notFoundImageUrl = ref(meta.notFoundImageUrl);
 const youBlockedImageUrl = ref(meta.youBlockedImageUrl);
-const customSplashText = ref(meta.customSplashText);
+const customSplashText = ref(meta.customSplashText ? meta.customSplashText.join('\n') : '');
 const repositoryUrl = ref(meta.repositoryUrl);
 const feedbackUrl = ref(meta.feedbackUrl);
 const manifestJsonOverride = ref(meta.manifestJsonOverride === '' ? '{}' : JSON.stringify(JSON.parse(meta.manifestJsonOverride), null, '\t'));
@@ -223,7 +223,7 @@ function save() {
 		repositoryUrl: repositoryUrl.value === '' ? null : repositoryUrl.value,
 		feedbackUrl: feedbackUrl.value === '' ? null : feedbackUrl.value,
 		manifestJsonOverride: manifestJsonOverride.value === '' ? '{}' : JSON.stringify(JSON5.parse(manifestJsonOverride.value)),
-		customSplashText: customSplashText.value.split('\n'),
+		customSplashText: customSplashText.value === '' ? null : customSplashText.value.split('\n'),
 	}).then(() => {
 		fetchInstance(true);
 	});

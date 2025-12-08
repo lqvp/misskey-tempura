@@ -566,6 +566,14 @@ export const meta = {
 				enum: ['all', 'specified', 'none'],
 				optional: false, nullable: false,
 			},
+			federationHosts: {
+				type: 'array',
+				optional: false, nullable: false,
+				items: {
+					type: 'string',
+					optional: false, nullable: false,
+				},
+			},
 			customSplashText: {
 				type: 'array',
 				optional: false, nullable: false,

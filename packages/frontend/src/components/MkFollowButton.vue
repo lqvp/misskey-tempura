@@ -60,10 +60,11 @@ const props = withDefaults(defineProps<{
 });
 
 const emit = defineEmits<
-	(_: 'update:user', value: Misskey.entities.UserDetailed) => void
+	(_: 'update:user', value: { id: string } & Partial<Misskey.entities.UserDetailed>) => void
 >();
 
 const userDetailed = ref<{ id: string } & Partial<Misskey.entities.UserDetailed>>(props.user);
+const hasPendingFollowRequestFromYou = ref(!!props.user.hasPendingFollowRequestFromYou);
 const wait = ref(props.user.isLocked === undefined);
 const connection = useStream().useChannel('main');
 
@@ -116,7 +117,7 @@ async function onClick() {
 		} else if (hasPendingFollowRequestFromYou.value) {
 			const { canceled } = await os.confirm({
 				type: 'question',
-				text: i18n.tsx.cancelFollowRequestConfirm({ name: props.user.name || props.user.username }),
+				text: i18n.tsx.cancelFollowRequestConfirm({ name: props.user.name ?? props.user.username ?? '' }),
 			});
 
 			if (canceled) {
@@ -132,8 +133,8 @@ async function onClick() {
 			if (prefer.s.alwaysConfirmFollow) {
 				const { canceled } = await os.confirm({
 					type: 'question',
-					text: i18n.tsx.followConfirm({ name: props.user.name || props.user.username }),
-				});
+				text: i18n.tsx.followConfirm({ name: props.user.name ?? props.user.username ?? '' }),
+			});
 
 				if (canceled) {
 					wait.value = false;
@@ -154,15 +155,19 @@ async function onClick() {
 				emit('update:user', {
 					...props.user,
 					withReplies: prefer.s.defaultFollowWithReplies,
+					hasPendingFollowRequestFromYou: true,
+					name: props.user.name ?? null,
+					username: props.user.username ?? '',
+					host: props.user.host ?? null,
 				});
-				hasPendingFollowRequestFromYou.value = true;
+			hasPendingFollowRequestFromYou.value = true;
 
 			if ($i == null) {
 				wait.value = false;
 				return;
 			}
 
-				claimAchievement('following1');
+			claimAchievement('following1');
 
 				if ($i.followingCount >= 10) {
 					claimAchievement('following10');

@@ -34,7 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</div>
 
 				<div class="_gaps">
-					<MkInput v-model="validateMinimumUsernameLength" type="number" @update:modelValue="onUsernameMinLengthChange">
+					<MkInput :modelValue="validateMinimumUsernameLength" type="number" @update:modelValue="onUsernameMinLengthChange">
 						<template #label>
 							<span>{{ i18n.ts.validateMinimumUsernameLength }}</span>
 							<span v-if="validateMinimumUsernameLengthChanged" class="_modified">{{ i18n.ts.modified }}</span>
@@ -119,8 +119,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkInput
 							v-model="hanaSettingsForm.state.hanaThemeWeakOpacity"
 							type="number"
-							min="0"
-							max="1"
+							:min="0"
+							:max="1"
 							step="0.1"
 						>
 							<template #label>
@@ -144,7 +144,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkInput
 							v-model="hanaSettingsForm.state.hanaModeIconSize"
 							type="number"
-							min="0"
+							:min="0"
 						>
 							<template #label>
 								<span>{{ i18n.ts._hana.hanaModeIconSize }}</span>
@@ -156,8 +156,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkInput
 							v-model="hanaSettingsForm.state.hanaModeIconRadius"
 							type="number"
-							min="0"
-							max="100"
+							:min="0"
+							:max="100"
 						>
 							<template #label>
 								<span>{{ i18n.ts._hana.hanaModeIconRadius }}</span>
@@ -249,19 +249,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<template #label>{{ i18n.ts._entrance.marginSettings }}</template>
 
 							<div class="_gaps_m">
-								<MkInput v-model="entranceSettingsForm.state.entranceMarginLeft" type="number" :min="0">
+								<MkInput :modelValue="entranceSettingsForm.state.entranceMarginLeft" type="number" :min="0" @update:modelValue="v => entranceSettingsForm.state.entranceMarginLeft = v">
 									<template #label>{{ i18n.ts._entrance.marginLeft }}</template>
 								</MkInput>
 
-								<MkInput v-model="entranceSettingsForm.state.entranceMarginRight" type="number" :min="0">
+								<MkInput :modelValue="entranceSettingsForm.state.entranceMarginRight" type="number" :min="0" @update:modelValue="v => entranceSettingsForm.state.entranceMarginRight = v">
 									<template #label>{{ i18n.ts._entrance.marginRight }}</template>
 								</MkInput>
 
-								<MkInput v-model="entranceSettingsForm.state.entranceMarginTop" type="number" :min="0">
+								<MkInput :modelValue="entranceSettingsForm.state.entranceMarginTop" type="number" :min="0" @update:modelValue="v => entranceSettingsForm.state.entranceMarginTop = v">
 									<template #label>{{ i18n.ts._entrance.marginTop }}</template>
 								</MkInput>
 
-								<MkInput v-model="entranceSettingsForm.state.entranceMarginBottom" type="number" :min="0">
+								<MkInput :modelValue="entranceSettingsForm.state.entranceMarginBottom" type="number" :min="0" @update:modelValue="v => entranceSettingsForm.state.entranceMarginBottom = v">
 									<template #label>{{ i18n.ts._entrance.marginBottom }}</template>
 								</MkInput>
 							</div>
@@ -437,21 +437,21 @@ const meta = await misskeyApi('admin/meta');
 
 const approvalRequiredForSignup = ref<boolean>(false);
 const blockMentionsFromUnfamiliarRemoteUsers = ref<boolean>(false);
-const validateMinimumUsernameLength = ref<number>();
+const validateMinimumUsernameLength = ref<number | null>(null);
 const useHanaEntrance = ref<boolean>(false);
 const hanaThemeColor = ref<string>();
 const hanaThemeAltColor = ref<string>();
 const hanaThemeWeakOpacity = ref<number>();
-const hanaModeIcon = ref<string>();
+const hanaModeIcon = ref<string | null>(null);
 const hanaModeIconSize = ref<number>(128);
 const hanaModeIconRadius = ref<number>(50);
-const hanaModeBackground = ref<string>();
+const hanaModeBackground = ref<string | null>(null);
 const defaultFollowedUsers = ref<string>('');
 const forciblyFollowedUsers = ref<string>('');
 const backgroundImageUrls = ref<string[]>([]);
 const customSplashText = ref<string>('');
 const enableLongIconUrl = ref<boolean>(false);
-const longIconUrl = ref<string>();
+const longIconUrl = ref<string | null>(null);
 const entranceShowTimeLine = ref<boolean>(false);
 const entranceShowFeatured = ref<boolean>(false);
 const entranceShowEmojis = ref<boolean>(false);
@@ -462,10 +462,10 @@ const entranceShowDashboard = ref<boolean>(false);
 const entranceShowSignup = ref<boolean>(false);
 const entranceShowAnotherInstance = ref<boolean>(false);
 const entranceShowSignin = ref<boolean>(false);
-const entranceMarginLeft = ref<number>();
-const entranceMarginRight = ref<number>();
-const entranceMarginTop = ref<number>();
-const entranceMarginBottom = ref<number>();
+const entranceMarginLeft = ref<number | null>(null);
+const entranceMarginRight = ref<number | null>(null);
+const entranceMarginTop = ref<number | null>(null);
+const entranceMarginBottom = ref<number | null>(null);
 const serverGeminiEnabled = ref<boolean>(false);
 const serverGeminiApiKey = ref<string>('');
 const serverGeminiModels = ref<string>('gemini-2.0-flash');
@@ -482,7 +482,7 @@ const enableContactForm = ref<boolean>(true);
 const contactFormLimit = ref<number>(3);
 const contactFormRequireAuth = ref<boolean>(false);
 
-const originalMinimumUsernameLength = ref<number>();
+const originalMinimumUsernameLength = ref<number | null>(null);
 const validateMinimumUsernameLengthChanged = computed(() =>
 	validateMinimumUsernameLength.value !== originalMinimumUsernameLength.value,
 );
@@ -501,22 +501,22 @@ const emailSettingsForm = useForm({
 async function init() {
 	approvalRequiredForSignup.value = meta.approvalRequiredForSignup;
 	blockMentionsFromUnfamiliarRemoteUsers.value = meta.blockMentionsFromUnfamiliarRemoteUsers;
-	validateMinimumUsernameLength.value = meta.validateMinimumUsernameLength;
-	originalMinimumUsernameLength.value = meta.validateMinimumUsernameLength;
+	validateMinimumUsernameLength.value = meta.validateMinimumUsernameLength ?? null;
+	originalMinimumUsernameLength.value = meta.validateMinimumUsernameLength ?? null;
 	useHanaEntrance.value = meta.useHanaEntrance;
 	hanaThemeColor.value = meta.hanaThemeColor;
 	hanaThemeAltColor.value = meta.hanaThemeAltColor;
-	hanaModeIcon.value = meta.hanaModeIcon;
+	hanaModeIcon.value = meta.hanaModeIcon ?? null;
 	hanaModeIconSize.value = meta.hanaModeIconSize;
 	hanaModeIconRadius.value = meta.hanaModeIconRadius;
-	hanaModeBackground.value = meta.hanaModeBackground;
+	hanaModeBackground.value = meta.hanaModeBackground ?? null;
 	hanaThemeWeakOpacity.value = meta.hanaThemeWeakOpacity;
 	defaultFollowedUsers.value = meta.defaultFollowedUsers.join('\n');
 	forciblyFollowedUsers.value = meta.forciblyFollowedUsers.join('\n');
-	backgroundImageUrls.value = meta.backgroundImageUrls;
-	customSplashText.value = meta.customSplashText.join('\n');
+	backgroundImageUrls.value = (meta.backgroundImageUrls ?? []) as string[];
+	customSplashText.value = meta.customSplashText ? meta.customSplashText.join('\n') : '';
 	enableLongIconUrl.value = meta.enableLongIconUrl;
-	longIconUrl.value = meta.longIconUrl;
+	longIconUrl.value = meta.longIconUrl ?? null;
 	entranceShowTimeLine.value = meta.entranceShowTimeLine;
 	entranceShowFeatured.value = meta.entranceShowFeatured;
 	entranceShowEmojis.value = meta.entranceShowEmojis;
@@ -527,12 +527,12 @@ async function init() {
 	entranceShowSignup.value = meta.entranceShowSignup;
 	entranceShowAnotherInstance.value = meta.entranceShowAnotherInstance;
 	entranceShowSignin.value = meta.entranceShowSignin;
-	entranceMarginLeft.value = meta.entranceMarginLeft;
-	entranceMarginRight.value = meta.entranceMarginRight;
-	entranceMarginTop.value = meta.entranceMarginTop;
-	entranceMarginBottom.value = meta.entranceMarginBottom;
+	entranceMarginLeft.value = meta.entranceMarginLeft ?? null;
+	entranceMarginRight.value = meta.entranceMarginRight ?? null;
+	entranceMarginTop.value = meta.entranceMarginTop ?? null;
+	entranceMarginBottom.value = meta.entranceMarginBottom ?? null;
 	serverGeminiEnabled.value = meta.serverGeminiEnabled;
-	serverGeminiApiKey.value = meta.serverGeminiApiKey;
+	serverGeminiApiKey.value = meta.serverGeminiApiKey ?? '';
 	serverGeminiModels.value = meta.serverGeminiModels;
 	customCursorUrl.value = meta.customCursorUrl;
 	customCursorPointerUrl.value = meta.customCursorPointerUrl;
@@ -651,10 +651,10 @@ const entranceSettingsForm = useForm({
 	entranceShowSignup: meta.entranceShowSignup,
 	entranceShowAnotherInstance: meta.entranceShowAnotherInstance,
 	entranceShowSignin: meta.entranceShowSignin,
-	entranceMarginLeft: Number(meta.entranceMarginLeft),
-	entranceMarginRight: Number(meta.entranceMarginRight),
-	entranceMarginTop: Number(meta.entranceMarginTop),
-	entranceMarginBottom: Number(meta.entranceMarginBottom),
+	entranceMarginLeft: meta.entranceMarginLeft,
+	entranceMarginRight: meta.entranceMarginRight,
+	entranceMarginTop: meta.entranceMarginTop,
+	entranceMarginBottom: meta.entranceMarginBottom,
 }, async (state) => {
 	const emojis = state.entranceSelectEmojis.split('\n').filter(emoji => emoji.trim() !== '');
 	if (emojis.length > 5) {
@@ -712,7 +712,7 @@ function save_longIconUrl() {
 
 function save_validateMinimumUsernameLength() {
 	os.apiWithDialog('admin/update-meta', {
-		validateMinimumUsernameLength: validateMinimumUsernameLength.value,
+		validateMinimumUsernameLength: validateMinimumUsernameLength.value ?? undefined,
 	}).then(() => {
 		fetchInstance(true);
 		originalMinimumUsernameLength.value = validateMinimumUsernameLength.value;

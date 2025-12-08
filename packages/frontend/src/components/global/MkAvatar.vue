@@ -54,11 +54,13 @@ import MkUserOnlineIndicator from '@/components/MkUserOnlineIndicator.vue';
 import { prefer } from '@/preferences.js';
 import { instance } from '@/instance.js';
 
+type UserLike = Pick<Misskey.entities.UserDetailed, 'id' | 'username' | 'host' | 'name' | 'avatarUrl' | 'avatarBlurhash' | 'avatarDecorations' | 'isCat' | 'isMuted' | 'approved' | 'emojis' | 'onlineStatus'> & Partial<Omit<Misskey.entities.UserDetailed, 'id' | 'username' | 'host' | 'name' | 'avatarUrl' | 'avatarBlurhash' | 'avatarDecorations' | 'isCat' | 'isMuted' | 'approved' | 'emojis' | 'onlineStatus'>> & { approved?: boolean };
+
 const animation = ref(prefer.s.animation);
 const squareAvatars = ref(prefer.s.squareAvatars);
 
 const props = withDefaults(defineProps<{
-	user: Misskey.entities.UserDetailed;
+	user: UserLike;
 	target?: string | null;
 	link?: boolean;
 	preview?: boolean;

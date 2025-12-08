@@ -51,13 +51,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkFoldableSection>
 						<template #header>{{ i18n.ts.assignedRole }}</template>
 						<div class="_gaps_s">
-							<DialogRole v-for="role in rolesAssigned" :key="role.id" :role="role" :isAssigned="true"/>
+					<DialogRole v-for="role in rolesAssigned" :key="role.id" :role="{ ...role, iconUrl: role.iconUrl ?? '', color: role.color ?? '' }" :isAssigned="true"/>
 						</div>
 					</MkFoldableSection>
 					<MkFoldableSection>
 						<template #header>{{ i18n.ts.assignableRole }}</template>
 						<div class="_gaps_s">
-							<DialogRole v-for="role in roles" :key="role.id" :role="role" :isAssigned="false"/>
+					<DialogRole v-for="role in roles" :key="role.id" :role="{ ...role, iconUrl: role.iconUrl ?? '', color: role.color ?? '' }" :isAssigned="false"/>
 						</div>
 					</MkFoldableSection>
 				</div>
@@ -99,12 +99,13 @@ interface Role {
 	id: string;
 	name: string;
 	color: string | null;
-	iconUrl: string | null;
+	iconUrl: string;
 	description: string;
 	isModerator: boolean;
 	isAdministrator: boolean;
 	displayOrder: number;
 	isRainbow: boolean;
+	isOwner: boolean;
 }
 
 let assignedList: Role[] = [];
@@ -119,17 +120,18 @@ onMounted(() => {
 		description.value = props.role.description;
 		color.value = props.role.color;
 		isPublic.value = props.role.isPublic;
-		imgUrl.value = props.role.iconUrl;
+		imgUrl.value = props.role.iconUrl ?? '';
 	}
 });
 
 onMounted(async () => {
-	assignedList = await misskeyApi('roles/list', {
+	assignedList = (await misskeyApi('roles/list', {
 		assignedOnly: true,
-	});
-	roleList = await misskeyApi('roles/list', {
+	})).map(r => ({ ...r, iconUrl: r.iconUrl ?? '', isOwner: (r as any).isOwner ?? false }));
+	roleList = (await misskeyApi('roles/list', {
 		communityPublicOnly: true,
-	}).then(v => v.filter(r => !assignedList.some(ra => r.id === ra.id)));
+	})).map(r => ({ ...r, iconUrl: r.iconUrl ?? '', isOwner: (r as any).isOwner ?? false }))
+		.filter(r => !assignedList.some(ra => r.id === ra.id));
 });
 
 const tab = ref(($i?.policies.canAddRoles || $i?.policies.canCreateRole) ? 'add' : 'manage');
@@ -154,9 +156,9 @@ const emit = defineEmits<{
 }>();
 
 async function changeImage(ev) {
-	const file = await selectFile(ev.currentTarget ?? ev.target, null);
+	const file = await selectFile(ev.currentTarget ?? ev.target);
 	if (file != null) {
-		imgUrl.value = file.url;
+		imgUrl.value = (file as any).url ?? (file as any).thumbnailUrl ?? '';
 	}
 }
 

@@ -100,7 +100,7 @@ watch(roleIdsThatCanBeUsedThisDecoration, async () => {
 }, { immediate: true });
 
 async function selectImage(ev) {
-	const file = await selectFile(ev.currentTarget ?? ev.target, null);
+	const file = await selectFile({ anchorElement: ev.currentTarget ?? ev.target, multiple: false });
 	name.value = file.name.replace(/\.(.+)$/, '');
 	url.value = file.url;
 }

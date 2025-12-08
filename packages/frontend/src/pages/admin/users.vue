@@ -11,13 +11,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkButton style="margin-left: auto" @click="resetQuery">{{ i18n.ts.reset }}</MkButton>
 			</div>
 			<div :class="$style.inputs">
-				<MkSelect v-model="sort" :items="sortDef" style="flex: 1;">
+				<MkSelect v-model="sort" :items="sortItems" style="flex: 1;">
 					<template #label>{{ i18n.ts.sort }}</template>
 				</MkSelect>
-				<MkSelect v-model="state" :items="stateDef" style="flex: 1;">
+				<MkSelect v-model="state" :items="stateItems" style="flex: 1;">
 					<template #label>{{ i18n.ts.state }}</template>
 				</MkSelect>
-				<MkSelect v-model="origin" :items="originDef" style="flex: 1;">
+				<MkSelect v-model="origin" :items="originItems" style="flex: 1;">
 					<template #label>{{ i18n.ts.instance }}</template>
 				</MkSelect>
 			</div>
@@ -46,6 +46,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { computed, markRaw, ref, watchEffect } from 'vue';
+import type { MkSelectItem } from '@/components/MkSelect.vue';
 import { defaultMemoryStorage } from '@/memory-storage';
 import MkButton from '@/components/MkButton.vue';
 import MkInput from '@/components/MkInput.vue';
@@ -81,46 +82,49 @@ const {
 	def: sortDef,
 } = useMkSelect({
 	items: [
-		{ label: `${i18n.ts.registeredDate} (${i18n.ts.ascendingOrder})`, value: '-createdAt' },
-		{ label: `${i18n.ts.registeredDate} (${i18n.ts.descendingOrder})`, value: '+createdAt' },
-		{ label: `${i18n.ts.lastUsed} (${i18n.ts.ascendingOrder})`, value: '-updatedAt' },
-		{ label: `${i18n.ts.lastUsed} (${i18n.ts.descendingOrder})`, value: '+updatedAt' },
+		{ label: `${i18n.ts.registeredDate} (${String(i18n.ts.ascendingOrder)})`, value: '-createdAt' },
+		{ label: `${i18n.ts.registeredDate} (${String(i18n.ts.descendingOrder)})`, value: '+createdAt' },
+		{ label: `${i18n.ts.lastUsed} (${String(i18n.ts.ascendingOrder)})`, value: '-updatedAt' },
+		{ label: `${i18n.ts.lastUsed} (${String(i18n.ts.descendingOrder)})`, value: '+updatedAt' },
 	],
-	initialValue: storedQuery.sort ?? '+createdAt',
+	initialValue: (storedQuery.sort ?? '+createdAt') as any,
 });
 const {
 	model: state,
 	def: stateDef,
 } = useMkSelect({
 	items: [
-		{ label: i18n.ts.all, value: 'all' },
-		{ label: i18n.ts.normal, value: 'available' },
-		{ label: i18n.ts.administrator, value: 'admin' },
-		{ label: i18n.ts.moderator, value: 'moderator' },
-		{ label: i18n.ts.suspend, value: 'suspended' },
-		{ label: i18n.ts.pending, value: 'pending' },
+		{ label: String(i18n.ts.all), value: 'all' },
+		{ label: String(i18n.ts.normal), value: 'available' },
+		{ label: String(i18n.ts.administrator), value: 'admin' },
+		{ label: String(i18n.ts.moderator), value: 'moderator' },
+		{ label: String(i18n.ts.suspend), value: 'suspended' },
+		{ label: String(i18n.ts.pending), value: 'pending' },
 	],
-	initialValue: storedQuery.state ?? 'all',
+	initialValue: (storedQuery.state ?? 'all') as any,
 });
 const {
 	model: origin,
 	def: originDef,
 } = useMkSelect({
 	items: [
-		{ label: i18n.ts.all, value: 'combined' },
-		{ label: i18n.ts.local, value: 'local' },
-		{ label: i18n.ts.remote, value: 'remote' },
+		{ label: String(i18n.ts.all), value: 'combined' },
+		{ label: String(i18n.ts.local), value: 'local' },
+		{ label: String(i18n.ts.remote), value: 'remote' },
 	],
-	initialValue: storedQuery.origin ?? 'local',
+	initialValue: (storedQuery.origin ?? 'local') as any,
 });
+const sortItems: MkSelectItem[] = sortDef;
+const stateItems: MkSelectItem[] = stateDef;
+const originItems: MkSelectItem[] = originDef;
 const searchUsername = ref(storedQuery.username ?? '');
 const searchHost = ref(storedQuery.hostname ?? '');
 const paginator = markRaw(new Paginator('admin/show-users', {
 	limit: 10,
 	computedParams: computed(() => ({
-		sort: sort.value,
-		state: state.value,
-		origin: origin.value,
+		sort: sort.value as any,
+		state: state.value as any,
+		origin: origin.value as any,
 		username: searchUsername.value,
 		hostname: searchHost.value,
 	})),

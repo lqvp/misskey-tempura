@@ -143,7 +143,7 @@ const objectStorageUseProxy = ref(meta.objectStorageUseProxy);
 const objectStorageSetPublicRead = ref(meta.objectStorageSetPublicRead);
 const objectStorageS3ForcePathStyle = ref(meta.objectStorageS3ForcePathStyle);
 const objectStoragePrefixForRemote = ref(meta.objectStoragePrefixForRemote);
-const objectStorageCacheDays = ref(meta.objectStorageCacheDays);
+const objectStorageCacheDays = ref(meta.objectStorageCacheDays?.toString() ?? '');
 
 function save() {
 	os.apiWithDialog('admin/update-meta', {
@@ -161,7 +161,7 @@ function save() {
 		objectStorageUseProxy: objectStorageUseProxy.value,
 		objectStorageSetPublicRead: objectStorageSetPublicRead.value,
 		objectStorageS3ForcePathStyle: objectStorageS3ForcePathStyle.value,
-		objectStorageCacheDays: Number(objectStorageCacheDays.value),
+		objectStorageCacheDays: objectStorageCacheDays.value === '' ? null : Number(objectStorageCacheDays.value),
 	}).then(() => {
 		fetchInstance(true);
 	});

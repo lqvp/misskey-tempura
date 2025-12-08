@@ -331,7 +331,8 @@ function onChangeEmail(): void {
 
 	// Active Email Validationが有効な場合のみAPI呼び出し
 	// （サーバー設定に応じて詳細検証をスキップ）
-	if (!instance.enableActiveEmailValidation) {
+	const enableActiveEmailValidation = (instance as any).enableActiveEmailValidation ?? false;
+	if (!enableActiveEmailValidation) {
 		emailState.value = 'ok';
 		return;
 	}

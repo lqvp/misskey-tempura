@@ -41,7 +41,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkSwitch v-model="category.isDefault" @change="onDefaultChange(index)">
 								<template #label>{{ i18n.ts._contactForm._category.defaultCategory }}</template>
 							</MkSwitch>
-							<MkInput v-model.number="category.order" type="number" :placeholder="i18n.ts._contactForm._category.categoryOrderPlaceholder" style="width: 100px;"/>
+							<MkInput
+								:modelValue="category.order"
+								type="number"
+								:placeholder="i18n.ts._contactForm._category.categoryOrderPlaceholder"
+								style="width: 100px;"
+								@update:modelValue="val => onOrderChange(category, val)"
+							/>
 						</div>
 					</div>
 				</div>
@@ -70,6 +76,24 @@ interface ContactFormCategory {
 	isDefault: boolean;
 }
 
+function normalizeCategory(cat: unknown): ContactFormCategory {
+	const obj = (cat ?? {}) as Record<string, unknown>;
+	return {
+		key: typeof obj.key === 'string' ? obj.key : '',
+		text: typeof obj.text === 'string' ? obj.text : '',
+		enabled: Boolean(obj.enabled),
+		order: typeof obj.order === 'number' && Number.isFinite(obj.order)
+			? obj.order
+			: toFiniteNumber((obj as { order?: unknown }).order, 0),
+		isDefault: Boolean(obj.isDefault),
+	};
+}
+
+function toFiniteNumber(val: unknown, fallback: number): number {
+	const parsed = typeof val === 'number' ? val : Number(val);
+	return Number.isFinite(parsed) ? parsed : fallback;
+}
+
 const categories = ref<ContactFormCategory[]>([]);
 const originalCategories = ref<ContactFormCategory[]>([]);
 
@@ -82,7 +106,7 @@ const headerTabs = computed(() => []);
 
 async function loadCategories() {
 	try {
-		const loadedCategories = instance.contactFormCategories;
+		const loadedCategories = (instance.contactFormCategories ?? []).map(normalizeCategory);
 
 		categories.value = [...loadedCategories];
 		originalCategories.value = JSON.parse(JSON.stringify(loadedCategories));
@@ -151,6 +175,11 @@ function addCategory() {
 		order: newOrder,
 		isDefault: false,
 	});
+}
+
+function onOrderChange(category: ContactFormCategory, value: unknown) {
+	const parsed = toFiniteNumber(value, category.order);
+	category.order = parsed;
 }
 
 function removeCategory(index: number) {

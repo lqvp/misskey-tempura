@@ -81,8 +81,8 @@ async function openDecoration(avatarDecoration: {
 	roleIdsThatCanBeUsedThisDecoration: string[];
 }, index?: number) {
 	const { dispose } = os.popup(XDialog, {
-		decoration: avatarDecorations.value.find(d => d.id === selectedDecoration.value!),
-		usingIndex: index ?? null ?? null,
+		decoration: avatarDecorations.value.find(d => d.id === (selectedDecoration.value ?? avatarDecoration.id)) ?? avatarDecoration,
+		usingIndex: index ?? null,
 	}, {
 		'attach': async (payload) => {
 			const newDecoration = {

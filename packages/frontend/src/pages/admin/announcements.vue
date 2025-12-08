@@ -203,6 +203,14 @@ async function archive(announcement) {
 	refresh();
 }
 
+async function unarchive(announcement) {
+	await os.apiWithDialog('admin/announcements/update', {
+		...announcement,
+		isActive: true,
+	});
+	refresh();
+}
+
 async function save(announcement) {
 	announcement.roleIds = announcement.roles.map(role => role.id);
 	if (announcement.roleIds.length === 0) {

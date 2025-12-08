@@ -10,7 +10,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<template #label><SearchLabel>{{ i18n.ts.profile }}</SearchLabel></template>
 
 		<div class="_gaps_m">
-			<MkFolder v-if="$i.policies.canUpdateCounters">
+			<MkFolder v-if="me?.policies?.canUpdateCounters">
 				<template #label>{{ i18n.ts._updateCount.title }}</template>
 				<div class="_gaps_m">
 					<SearchMarker :keywords="['profile', 'followers', 'count', 'statistics']">
@@ -58,17 +58,21 @@ import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { $i } from '@/i.js';
 import { globalEvents } from '@/events.js';
+import { clearCache } from '@/utility/clear-cache.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import SearchLabel from '@/components/global/SearchLabel.vue';
 
-const followersCount = ref($i.followersCount);
-const followingCount = ref($i.followingCount);
-const notesCount = ref($i.notesCount);
+const me = $i;
+
+const followersCount = ref(me?.followersCount ?? 0);
+const followingCount = ref(me?.followingCount ?? 0);
+const notesCount = ref(me?.notesCount ?? 0);
 
 const hasChanges = computed(() => {
-	return followersCount.value !== $i.followersCount ||
-    followingCount.value !== $i.followingCount ||
-    notesCount.value !== $i.notesCount;
+	if (me == null) return false;
+	return followersCount.value !== me.followersCount ||
+		followingCount.value !== me.followingCount ||
+		notesCount.value !== me.notesCount;
 });
 
 async function saveCounts() {
@@ -80,26 +84,27 @@ async function saveCounts() {
 	});
 
 	if (confirm.canceled) return;
+	if (me == null) return;
 
 	try {
 		const params = {} as Record<string, number>;
 
-		if (followersCount.value !== $i.followersCount) {
+		if (followersCount.value !== me.followersCount) {
 			params.followersCount = followersCount.value;
 		}
-		if (followingCount.value !== $i.followingCount) {
+		if (followingCount.value !== me.followingCount) {
 			params.followingCount = followingCount.value;
 		}
-		if (notesCount.value !== $i.notesCount) {
+		if (notesCount.value !== me.notesCount) {
 			params.notesCount = notesCount.value;
 		}
 
 		await os.apiWithDialog('i/profile-counts-control', params);
 
-		const updatedUser = await misskeyApi('users/show', { userId: $i.id });
-		Object.assign($i, updatedUser);
+		const updatedUser = await misskeyApi('users/show', { userId: me.id });
+		Object.assign(me, updatedUser);
 
-		globalEvents.emit('requestClearPageCache');
+		await clearCache();
 	} catch (err: any) {
 		os.alert({
 			type: 'error',

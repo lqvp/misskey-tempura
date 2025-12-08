@@ -57,6 +57,9 @@ export type ModerationLog = {
 	type: 'approve';
 	info: ModerationLogPayloads['approve'];
 } | {
+	type: 'decline';
+	info: ModerationLogPayloads['decline'];
+} | {
 	type: 'suspend';
 	info: ModerationLogPayloads['suspend'];
 } | {
@@ -114,17 +117,26 @@ export type ModerationLog = {
 	type: 'createUserAnnouncement';
 	info: ModerationLogPayloads['createUserAnnouncement'];
 } | {
+	type: 'createRolesAnnouncement';
+	info: ModerationLogPayloads['createRolesAnnouncement'];
+} | {
 	type: 'updateGlobalAnnouncement';
 	info: ModerationLogPayloads['updateGlobalAnnouncement'];
 } | {
 	type: 'updateUserAnnouncement';
 	info: ModerationLogPayloads['updateUserAnnouncement'];
 } | {
+	type: 'updateRolesAnnouncement';
+	info: ModerationLogPayloads['updateRolesAnnouncement'];
+} | {
 	type: 'deleteGlobalAnnouncement';
 	info: ModerationLogPayloads['deleteGlobalAnnouncement'];
 } | {
 	type: 'deleteUserAnnouncement';
 	info: ModerationLogPayloads['deleteUserAnnouncement'];
+} | {
+	type: 'deleteRolesAnnouncement';
+	info: ModerationLogPayloads['deleteRolesAnnouncement'];
 } | {
 	type: 'resetPassword';
 	info: ModerationLogPayloads['resetPassword'];
@@ -224,6 +236,12 @@ export type ModerationLog = {
 } | {
 	type: 'unquarantineRemoteInstance';
 	info: ModerationLogPayloads['unquarantineRemoteInstance'];
+} | {
+	type: 'dropAllNotes';
+	info: ModerationLogPayloads['dropAllNotes'];
+} | {
+	type: 'unsetUserMutualLink';
+	info: ModerationLogPayloads['unsetUserMutualLink'];
 });
 
 export type ServerStats = {

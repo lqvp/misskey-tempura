@@ -114,34 +114,38 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkPagination>
 		</div>
 		<div v-else-if="tab === 'following'" key="following" class="_gaps_m">
-			<MkPagination v-slot="{items}" :paginator="followingPaginator">
-				<div :class="$style.followRelationsList">
-					<div v-for="followRelationship in items" :key="followRelationship.id" :class="$style.followRelation">
-						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.follower.updatedAt)}`" :to="`/admin/user/${followRelationship.follower.id}`" :class="$style.user">
-							<MkUserCardMini :user="followRelationship.follower" :withChart="false"/>
-						</MkA>
-						<span class="arrow">→</span>
-						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.followee.updatedAt)}`" :to="`/admin/user/${followRelationship.followee.id}`" :class="$style.user">
-							<MkUserCardMini :user="followRelationship.followee" :withChart="false"/>
-						</MkA>
+				<MkPagination v-slot="{ items }: { items: any[] }" :paginator="followingPaginator">
+					<div :class="$style.followRelationsList">
+						<template v-for="followRelationship in items" :key="followRelationship.id">
+							<div v-if="followRelationship.followee && followRelationship.follower" :class="$style.followRelation">
+								<MkA v-tooltip.mfm="`Last posted: ${followRelationship.follower.updatedAt ? dateString(followRelationship.follower.updatedAt) : 'unknown'}`" :to="`/admin/user/${followRelationship.follower.id}`" :class="$style.user">
+									<MkUserCardMini :user="followRelationship.follower" :withChart="false"/>
+								</MkA>
+								<span class="arrow">→</span>
+								<MkA v-tooltip.mfm="`Last posted: ${followRelationship.followee.updatedAt ? dateString(followRelationship.followee.updatedAt) : 'unknown'}`" :to="`/admin/user/${followRelationship.followee.id}`" :class="$style.user">
+									<MkUserCardMini :user="followRelationship.followee" :withChart="false"/>
+								</MkA>
+							</div>
+						</template>
 					</div>
-				</div>
-			</MkPagination>
+				</MkPagination>
 		</div>
 		<div v-else-if="tab === 'followers'" key="followers" class="_gaps_m">
-			<MkPagination v-slot="{items}" :paginator="followersPaginator">
-				<div :class="$style.followRelationsList">
-					<div v-for="followRelationship in items" :key="followRelationship.id" :class="$style.followRelation">
-						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.followee.updatedAt)}`" :to="`/admin/user/${followRelationship.followee.id}`" :class="$style.user">
-							<MkUserCardMini :user="followRelationship.followee" :withChart="false"/>
-						</MkA>
-						<span class="arrow">←</span>
-						<MkA v-tooltip.mfm="`Last posted: ${dateString(followRelationship.follower.updatedAt)}`" :to="`/admin/user/${followRelationship.follower.id}`" :class="$style.user">
-							<MkUserCardMini :user="followRelationship.follower" :withChart="false"/>
-						</MkA>
+				<MkPagination v-slot="{ items }: { items: any[] }" :paginator="followersPaginator">
+					<div :class="$style.followRelationsList">
+						<template v-for="followRelationship in items" :key="followRelationship.id">
+							<div v-if="followRelationship.followee && followRelationship.follower" :class="$style.followRelation">
+								<MkA v-tooltip.mfm="`Last posted: ${followRelationship.followee.updatedAt ? dateString(followRelationship.followee.updatedAt) : 'unknown'}`" :to="`/admin/user/${followRelationship.followee.id}`" :class="$style.user">
+									<MkUserCardMini :user="followRelationship.followee" :withChart="false"/>
+								</MkA>
+								<span class="arrow">←</span>
+								<MkA v-tooltip.mfm="`Last posted: ${followRelationship.follower.updatedAt ? dateString(followRelationship.follower.updatedAt) : 'unknown'}`" :to="`/admin/user/${followRelationship.follower.id}`" :class="$style.user">
+									<MkUserCardMini :user="followRelationship.follower" :withChart="false"/>
+								</MkA>
+							</div>
+						</template>
 					</div>
-				</div>
-			</MkPagination>
+				</MkPagination>
 		</div>
 		<div v-else-if="tab === 'raw'" class="_gaps_m">
 			<MkObjectView tall :value="instance">

@@ -67,36 +67,41 @@ import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
+import type { DeleteScheduleEditorModelValue } from '@/components/MkDeleteScheduleEditor.vue';
 
 const defaultScheduledNoteDelete = prefer.model('defaultScheduledNoteDelete');
 
-const scheduledNoteDelete = ref({ deleteAt: null, deleteAfter: prefer.s.defaultScheduledNoteDeleteTime, isValid: true });
+const scheduledNoteDelete = ref<DeleteScheduleEditorModelValue>({ deleteAt: null, deleteAfter: prefer.s.defaultScheduledNoteDeleteTime, isValid: true, isScheduledForPrivate: false });
 
 watch(scheduledNoteDelete, () => {
 	if (!scheduledNoteDelete.value.isValid) return;
-	prefer.commit('defaultScheduledNoteDeleteTime', scheduledNoteDelete.value.deleteAfter);
+	if (scheduledNoteDelete.value.deleteAfter != null) {
+		prefer.commit('defaultScheduledNoteDeleteTime', scheduledNoteDelete.value.deleteAfter);
+	}
 });
 
 const Sortable = defineAsyncComponent(() => import('vuedraggable').then(x => x.default));
 
-const items = ref(normalizePostFormActions(prefer.s.postFormActions).map(x => ({
+const items = ref<{ id: string; type: keyof typeof bottomItemDef; }[]>(normalizePostFormActions(prefer.s.postFormActions).map(x => ({
 	id: Math.random().toString(),
-	type: x,
+	type: x as keyof typeof bottomItemDef,
 })));
 
 async function addItem() {
 	const currentItems = items.value.map(x => x.type);
-	const bottomItem = Object.keys(bottomItemDef).filter(k => !currentItems.includes(k));
+	const bottomItem = (Object.keys(bottomItemDef) as (keyof typeof bottomItemDef)[]).filter(k => !currentItems.includes(k));
 	const { canceled, result: item } = await os.select({
 		title: i18n.ts.addItem,
 		items: bottomItem.map(k => ({
-			value: k, text: bottomItemDef[k].title,
+			value: k,
+			text: bottomItemDef[k].title,
+			label: bottomItemDef[k].title,
 		})),
 	});
 	if (canceled || item == null) return;
 	items.value = [...items.value, {
 		id: Math.random().toString(),
-		type: item,
+		type: item as keyof typeof bottomItemDef,
 	}];
 }
 
@@ -131,7 +136,7 @@ async function reset() {
 
 	items.value = store.def.postFormActions.default.map(x => ({
 		id: Math.random().toString(),
-		type: x,
+		type: x as keyof typeof bottomItemDef,
 	}));
 }
 

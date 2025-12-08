@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<img v-if="type === 'error' && instance.serverErrorImageUrl" :src="instance.serverErrorImageUrl" draggable="false" :class="$style.img"/>
 		<MkSystemIcon v-else-if="type === 'error'" type="error" :class="$style.icon"/>
 		<img v-if="type === 'blocked' && instance.youBlockedImageUrl" :src="instance.youBlockedImageUrl" draggable="false" :class="$style.img"/>
-		<MkSystemIcon v-else-if="type === 'blocked'" type="block" :class="$style.icon"/>
+		<MkSystemIcon v-else-if="type === 'blocked'" type="warn" :class="$style.icon"/>
 
 		<div style="opacity: 0.7;">{{ props.text ?? (type === 'empty' ? i18n.ts.nothing : type === 'notFound' ? i18n.ts.notFound : type === 'error' ? i18n.ts.somethingHappened : null) }}</div>
 		<slot></slot>

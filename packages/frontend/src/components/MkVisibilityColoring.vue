@@ -13,13 +13,13 @@ import { defineProps, computed } from 'vue';
 import { prefer } from '@/preferences.js';
 
 const props = defineProps<{
-	visibility: 'public' | 'home' | 'followers' | 'specified';
+	visibility: 'public' | 'public_non_ltl' | 'home' | 'followers' | 'specified';
 	localOnly: boolean;
 	dontShowOnLtl?: boolean;
 }>();
 
 const color = computed(() => {
-	if (props.visibility === 'public' && props.dontShowOnLtl === true) {
+	if (props.visibility === 'public_non_ltl' || (props.visibility === 'public' && props.dontShowOnLtl === true)) {
 		return prefer.s['noteVisibilityColorPublicNonLtl'];
 	}
 	switch (props.visibility) {

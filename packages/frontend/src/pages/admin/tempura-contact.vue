@@ -60,7 +60,7 @@ import { useContactFormCategories } from '@/composables/useContactFormCategories
 const { fetchCategories, categoryOptions } = useContactFormCategories();
 
 const loading = ref(false);
-const status = ref('all');
+const status = ref<'all' | 'pending' | 'in_progress' | 'resolved' | 'closed'>('all');
 const category = ref('all');
 const assignedUserId = ref('');
 const statusItems = computed(() => [
@@ -81,7 +81,7 @@ onMounted(async () => {
 	loadItems(true);
 });
 
-const items = ref([]);
+const items = ref<any[]>([]);
 const offset = ref(0);
 const limit = 10;
 const hasMore = ref(true);
@@ -95,7 +95,7 @@ async function loadItems(reset = false) {
 			items.value = [];
 		}
 
-		const params = {
+		const params: Record<string, any> = {
 			limit: limit,
 			offset: offset.value,
 			status: status.value === 'all' ? undefined : status.value,

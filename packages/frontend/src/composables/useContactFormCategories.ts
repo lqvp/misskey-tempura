@@ -38,11 +38,11 @@ export function useContactFormCategories() {
 			if (!instance) {
 				throw new Error('Instance is not available');
 			}
-			const allCategories = instance.contactFormCategories;
+			const allCategories = instance.contactFormCategories as ContactFormCategory[] | undefined;
 			if (allCategories && Array.isArray(allCategories)) {
 				const enabledCategories = allCategories
-					.filter((cat: ContactFormCategory) => cat.enabled)
-					.sort((a: ContactFormCategory, b: ContactFormCategory) => a.order - b.order);
+					.filter((cat) => (cat as ContactFormCategory).enabled)
+					.sort((a, b) => (a as ContactFormCategory).order - (b as ContactFormCategory).order) as ContactFormCategory[];
 				categories.value = enabledCategories;
 				return enabledCategories;
 			} else {

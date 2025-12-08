@@ -112,7 +112,8 @@ function pollingSubscribe(props: {
 }
 
 function realtimeSubscribe(props: {
-	note: Pick<Misskey.entities.Note, 'id' | 'createdAt'>;
+	note: Pick<Misskey.entities.Note, 'id' | 'createdAt' | 'userId' | 'visibility'>;
+	isDeletedRef?: { value: boolean };
 }): void {
 	const note = props.note;
 	const connection = useStream();
@@ -155,10 +156,9 @@ function realtimeSubscribe(props: {
 			}
 
 			case 'madePrivate': {
-				if ($i?.id === note.value.userId) {
-					note.value.visibility = 'specified';
-				} else {
-					// perform delete
+				if ($i?.id === note.userId) {
+					(note as any).visibility = 'specified';
+				} else if (props.isDeletedRef) {
 					props.isDeletedRef.value = true;
 				}
 				break;
@@ -203,6 +203,7 @@ export function useNoteCapture(props: {
 	note: Misskey.entities.Note;
 	parentNote: Misskey.entities.Note | null;
 	mock?: boolean;
+	isDeletedRef?: { value: boolean };
 }): {
 		$note: Reactive<ReactiveNoteData>;
 		subscribe: () => void;

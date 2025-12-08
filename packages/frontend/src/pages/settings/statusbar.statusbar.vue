@@ -105,9 +105,9 @@ const props = defineProps<{
 const statusbar = reactive<StatusbarStore>(deepClone(prefer.s.statusbars.find(x => x.id === props._id)!));
 
 const statusbarTypeDef = computed(() => {
-	const items = [
+	const items: MkSelectItem[] = [
 		{ label: 'RSS', value: 'rss' },
-	] satisfies MkSelectItem[];
+	];
 	if (instance.federation !== 'none') {
 		items.push({ label: 'Federation', value: 'federation' });
 	}
@@ -118,7 +118,7 @@ const statusbarTypeDef = computed(() => {
 });
 
 const userListsDef = computed(() => {
-	return (props.userLists ?? []).map(x => ({ label: x.name, value: x.id })) satisfies MkSelectItem[];
+	return (props.userLists ?? []).map(x => ({ label: x.name, value: x.id })) as MkSelectItem[];
 });
 
 watch(() => statusbar.type, () => {

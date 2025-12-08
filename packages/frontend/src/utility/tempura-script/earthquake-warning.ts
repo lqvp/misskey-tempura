@@ -135,7 +135,7 @@ function getSoundTypeForIntensity(intensity: string, isWarning: boolean, isCance
 }
 
 let wsConnection: WebSocket | null = null;
-let reconnectTimeout: NodeJS.Timeout | null = null;
+let reconnectTimeout: number | null = null;
 
 /**
  * Get the minimum intensity threshold from user settings

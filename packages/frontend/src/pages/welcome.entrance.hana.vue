@@ -157,8 +157,8 @@ const rootStyle = computed(() => {
 		'--hana-theme': instance.hanaThemeColor || '#fd709a',
 		'--hana-themeAlt': instance.hanaThemeAltColor || '#f77062',
 		'--hana-themeWeak': `rgba(${hexToRgb(instance.hanaThemeColor || '#fd709a')}, ${instance.hanaThemeWeakOpacity || 0.2})`,
-		'--hana-icon': instance.hanaModeIcon || instance.iconUrl,
-		'--hana-background': instance.hanaModeBackground || instance.backgroundImageUrl,
+		'--hana-icon': instance.hanaModeIcon ?? instance.iconUrl ?? '',
+		'--hana-background': instance.hanaModeBackground ?? instance.backgroundImageUrl ?? '',
 		'--hana-icon-radius': instance.hanaModeIconRadius != null ? `${instance.hanaModeIconRadius}%` : '50%',
 		'--hana-icon-size': `${instance.hanaModeIconSize || 128}px`,
 	};

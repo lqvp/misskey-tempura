@@ -112,7 +112,7 @@ import MkInput from '@/components/MkInput.vue';
 
 interface InviteCheckResponse {
 	isValid: boolean;
-	expiresAt?: string | null;
+	expiresAt: string | null;
 	skipEmailAuth: boolean;
 	skipApproval: boolean;
 }
@@ -125,7 +125,7 @@ onMounted(() => {
 });
 
 const emit = defineEmits<{
-	(eventName: 'verified', inviteInfo: { code: string; skipEmailAuth: boolean; skipApproval: boolean; expiresAt?: Date | null }): void;
+	(eventName: 'verified', inviteInfo: { code: string; skipEmailAuth: boolean; skipApproval: boolean; expiresAt: Date | null }): void;
 	(eventName: 'proceedWithoutCode'): void;
 }>();
 
@@ -152,9 +152,9 @@ async function checkInviteCode() {
 	validationResult.value = null;
 
 	try {
-		const response = await misskeyApi<InviteCheckResponse>('invite/check', {
-			code: inviteCode.value.trim(),
-		});
+	const response = await misskeyApi('invite/check', {
+		code: inviteCode.value.trim(),
+	}) as InviteCheckResponse;
 
 		validationResult.value = response;
 
@@ -175,7 +175,7 @@ async function checkInviteCode() {
 			errorMessage.value = i18n.ts._signupEnhance.errorInviteCodeUsed;
 		} else {
 			console.error('Invite code check error:', error);
-			errorMessage.value = i18n.ts._signupEnhance.errorUnknown;
+			errorMessage.value = i18n.ts._signupEnhance.errorInviteCodeCheckFailed;
 		}
 	} finally {
 		isLoading.value = false;

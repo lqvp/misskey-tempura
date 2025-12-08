@@ -62,7 +62,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkFoldableSection v-if="user.roles.length > 0" class="role-folder" :expanded="user.roles.length < 5">
 								<template #header>{{ i18n.ts.roles }}</template>
 								<div class="roles">
-									<span v-for="role in user.roles" :key="role.id" v-tooltip="role.description" class="role" :class="{ 'rainbow': role.isRainbow }" :style="role.isRainbow ? {} : { '--color': role.color }">
+									<span
+										v-for="role in user.roles"
+										:key="role.id"
+										v-tooltip="role.description"
+										class="role"
+										:class="{ rainbow: role.isRainbow }"
+										:style="role.isRainbow || !role.color ? {} : { '--color': role.color }"
+									>
 										<MkA v-adaptive-bg :to="`/roles/${role.id}`">
 											<img v-if="role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="role.iconUrl"/>
 											{{ role.name }}
@@ -70,10 +77,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 									</span>
 								</div>
 							</MkFoldableSection>
-							<MkFoldableSection v-if="user.communityRoles.length > 0" class="role-folder" :expanded="user.communityRoles.length < 5">
+							<MkFoldableSection v-if="communityRoles.length > 0" class="role-folder" :expanded="communityRoles.length < 5">
 								<template #header>{{ i18n.ts.community + " " + i18n.ts.roles }}</template>
 								<div class="roles">
-									<span v-for="role in user.communityRoles" :key="role.id" v-tooltip="role.description" class="role" :class="{ 'rainbow': role.isRainbow }" :style="role.isRainbow ? {} : { '--color': role.color ?? '' }">
+									<span
+										v-for="role in communityRoles"
+										:key="role.id"
+										v-tooltip="role.description"
+										class="role"
+										:class="{ rainbow: role.isRainbow }"
+										:style="role.isRainbow || !role.color ? {} : { '--color': role.color }"
+									>
 										<MkA v-adaptive-bg :to="`/roles/${role.id}`">
 											<img v-if="role.iconUrl" style="height: 1.3em; vertical-align: -22%;" :src="role.iconUrl"/>
 											{{ role.name }}
@@ -264,7 +278,7 @@ const XTimeline = defineAsyncComponent(() => import('./index.timeline.vue'));
 const XListenBrainz = defineAsyncComponent(() => import('./index.listenbrainz.vue')); ;
 
 const props = withDefaults(defineProps<{
-	user: Misskey.entities.UserDetailed;
+	user: Misskey.entities.UserDetailed & { communityRoles?: Misskey.entities.RoleLite[] };
 	/** Test only; MkNotesTimeline currently causes problems in vitest */
 	disableNotes?: boolean;
 }>(), {
@@ -277,7 +291,8 @@ const emit = defineEmits<{
 
 const router = useRouter();
 
-const user = ref(props.user);
+const user = ref({ ...props.user, communityRoles: props.user.communityRoles ?? [] });
+const communityRoles = computed(() => user.value.communityRoles ?? []);
 const narrow = ref<null | boolean>(null);
 const rootEl = useTemplateRef('rootEl');
 const bannerEl = useTemplateRef('bannerEl');
@@ -286,6 +301,10 @@ const memoDraft = ref(props.user.memo);
 const isEditingMemo = ref(false);
 const moderationNote = ref(props.user.moderationNote ?? '');
 const editModerationNote = ref(false);
+const translation = ref<string | null>(null);
+const translating = ref(false);
+// TODO: Enable translation detection once the service is implemented; keep false to avoid exposing unfinished UI.
+const isForeignLanguage = computed(() => false);
 
 const listenbrainzdata = ref(false);
 if (props.user.ListenBrainz) {
@@ -344,6 +363,17 @@ function adjustMemoTextarea() {
 	if (!memoTextareaEl.value) return;
 	memoTextareaEl.value.style.height = '0px';
 	memoTextareaEl.value.style.height = `${memoTextareaEl.value.scrollHeight}px`;
+}
+
+async function translate() {
+	if (translating.value) return;
+	translating.value = true;
+	try {
+		// Translation service not implemented yet; keep UI responsive.
+		translation.value = null;
+	} finally {
+		translating.value = false;
+	}
 }
 
 async function updateMemo() {
@@ -959,3 +989,9 @@ onDeactivated(disposeBannerParallaxResizeObserver);
 	display: flex;
 }
 </style>
+watch(
+	() => props.user,
+	(newUser) => {
+		user.value = { ...newUser, communityRoles: newUser.communityRoles ?? [] };
+	},
+);

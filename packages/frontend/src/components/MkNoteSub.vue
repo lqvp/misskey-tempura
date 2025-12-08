@@ -4,22 +4,22 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div v-if="note == null" :class="$style.deleted">
+<div v-if="normalizedNote == null" :class="$style.deleted">
 	{{ i18n.ts.deletedNote }}
 </div>
-<div v-else-if="!muted" :class="[$style.root, { [$style.children]: depth > 1 }]">
+<div v-else-if="normalizedNote && !muted" :class="[$style.root, { [$style.children]: depth > 1 }]">
 	<div :class="$style.main">
-		<div v-if="note.channel" :class="$style.colorBar" :style="{ background: note.channel.color }"></div>
-		<MkAvatar :class="$style.avatar" :user="note.user" link preview/>
+		<div v-if="normalizedNote.channel" :class="$style.colorBar" :style="{ background: normalizedNote.channel.color }"></div>
+		<MkAvatar :class="$style.avatar" :user="normalizedNote.user" link preview/>
 		<div :class="$style.body">
-			<MkNoteHeader :class="$style.header" :note="note" :mini="true"/>
+			<MkNoteHeader :class="$style.header" :note="normalizedNote" :mini="true"/>
 			<div>
-				<p v-if="note.cw != null" :class="$style.cw">
-					<Mfm v-if="note.cw != ''" style="margin-right: 8px;" :text="note.cw" :author="note.user" :nyaize="'respect'"/>
-					<MkCwButton v-model="showContent" :text="note.text" :files="note.files" :poll="note.poll"/>
+				<p v-if="normalizedNote.cw != null" :class="$style.cw">
+					<Mfm v-if="normalizedNote.cw != ''" style="margin-right: 8px;" :text="normalizedNote.cw" :author="normalizedNote.user" :nyaize="'respect'"/>
+					<MkCwButton v-model="showContent" :text="normalizedNote.text" :files="normalizedNote.files" :poll="normalizedNote.poll"/>
 				</p>
-				<div v-show="note.cw == null || showContent">
-					<MkSubNoteContent :class="$style.text" :note="note"/>
+				<div v-show="normalizedNote.cw == null || showContent">
+					<MkSubNoteContent :class="$style.text" :note="normalizedNote"/>
 				</div>
 			</div>
 		</div>
@@ -28,14 +28,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkNoteSub v-for="reply in replies" :key="reply.id" :note="reply" :class="$style.reply" :detail="true" :depth="depth + 1"/>
 	</template>
 	<div v-else :class="$style.more">
-		<MkA class="_link" :to="notePage(note)">{{ i18n.ts.continueThread }} <i class="ti ti-chevron-double-right"></i></MkA>
+		<MkA class="_link" :to="notePage(normalizedNote)">{{ i18n.ts.continueThread }} <i class="ti ti-chevron-double-right"></i></MkA>
 	</div>
 </div>
 <div v-else :class="$style.muted" @click="muted = false">
 	<I18n :src="i18n.ts.userSaysSomething" tag="small">
 		<template #name>
-			<MkA v-user-preview="note.userId" :to="userPage(note.user)">
-				<MkUserName :user="note.user"/>
+			<MkA v-user-preview="normalizedNote.userId" :to="userPage(normalizedNote.user)">
+				<MkUserName :user="normalizedNote.user"/>
 			</MkA>
 		</template>
 	</I18n>
@@ -43,7 +43,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import * as Misskey from 'misskey-js';
 import MkNoteHeader from '@/components/MkNoteHeader.vue';
 import MkSubNoteContent from '@/components/MkSubNoteContent.vue';
@@ -54,6 +54,8 @@ import { i18n } from '@/i18n.js';
 import { $i } from '@/i.js';
 import { userPage } from '@/filters/user.js';
 import { checkWordMute } from '@/utility/check-word-mute.js';
+import type { NormalizedNote } from '@/utility/normalize-note.js';
+import { normalizeNote } from '@/utility/normalize-note.js';
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note | null;
@@ -65,17 +67,18 @@ const props = withDefaults(defineProps<{
 	depth: 1,
 });
 
-const muted = ref(props.note && $i ? checkWordMute(props.note, $i, $i.mutedWords) : false);
+const normalizedNote = computed<NormalizedNote | null>(() => props.note ? normalizeNote(props.note) : null);
+const muted = ref(normalizedNote.value && $i ? checkWordMute(normalizedNote.value, $i, $i.mutedWords) : false);
 
 const showContent = ref(false);
-const replies = ref<Misskey.entities.Note[]>([]);
+const replies = ref<NormalizedNote[]>([]);
 
-if (props.detail && props.note) {
+if (props.detail && normalizedNote.value) {
 	misskeyApi('notes/children', {
-		noteId: props.note.id,
+		noteId: normalizedNote.value.id,
 		limit: 5,
 	}).then(res => {
-		replies.value = res;
+		replies.value = res.map(n => normalizeNote(n as Misskey.entities.Note));
 	});
 }
 </script>

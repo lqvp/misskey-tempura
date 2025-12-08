@@ -166,7 +166,7 @@ export function migrateOldSettings() {
 		prefer.commit('nicknameMap', store.s.nicknameMap);
 		prefer.commit('directRenote', store.s.directRenote);
 		prefer.commit('reactionChecksMuting', store.s.reactionChecksMuting);
-		prefer.commit('imageCompressionMode', store.s.imageCompressionMode);
+		prefer.commit('defaultImageCompressionLevel', (store.s as any).imageCompressionMode ?? prefer.s.defaultImageCompressionLevel);
 		prefer.commit('anonymizeMutedUsers', store.s.anonymizeMutedUsers);
 		prefer.commit('enableReactionConfirm', store.s.enableReactionConfirm);
 		prefer.commit('enableLikeConfirm', store.s.enableLikeConfirm);
@@ -177,7 +177,7 @@ export function migrateOldSettings() {
 		prefer.commit('useGeminiLLMAPI', store.s.useGeminiLLMAPI);
 		prefer.commit('useGeminiWithMedia', store.s.useGeminiWithMedia);
 		prefer.commit('geminiToken', store.s.geminiToken);
-		prefer.commit('geminiModels', store.s.geminiModels);
+		prefer.commit('geminiModel', (store.s as any).geminiModel ?? prefer.s.geminiModel);
 		prefer.commit('geminiSystemPrompt', store.s.geminiSystemPrompt);
 		prefer.commit('geminiPromptNote', store.s.geminiPromptNote);
 		prefer.commit('geminiPromptProfile', store.s.geminiPromptProfile);

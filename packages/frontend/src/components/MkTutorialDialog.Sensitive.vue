@@ -55,6 +55,7 @@ const exampleNote = reactive<Misskey.entities.Note>({
 	cw: null,
 	visibility: 'public',
 	localOnly: false,
+	dontShowOnLtl: false,
 	reactionAcceptance: null,
 	renoteCount: 0,
 	repliesCount: 1,

@@ -310,7 +310,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { ref, computed, watch } from 'vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkSelect from '@/components/MkSelect.vue';
-import type { MkSelectItem } from '@/components/MkSelect.vue';
+import type { MkSelectItem, ItemOption } from '@/components/MkSelect.vue';
 import FormSection from '@/components/form/section.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
@@ -333,8 +333,16 @@ const autoAcceptFollowed = ref($i.autoAcceptFollowed);
 const autoRejectFollowRequest = ref($i.autoRejectFollowRequest);
 const autoFollowBack = ref($i.autoFollowBack);
 const autoFollowOnMove = ref($i.autoFollowOnMove);
-const outboxFilter = ref({ public: true, public_non_ltl: true, home: true, ...$i.outboxFilter });
-const webFeedFilter = ref({ disableRss: false, disableAtom: false, disableJson: false, ...$i.webFeedFilter });
+const outboxFilter = ref({
+	public: $i.outboxFilter?.public ?? true,
+	public_non_ltl: $i.outboxFilter?.public_non_ltl ?? true,
+	home: $i.outboxFilter?.home ?? true,
+});
+const webFeedFilter = ref({
+	disableRss: $i.webFeedFilter?.disableRss ?? false,
+	disableAtom: $i.webFeedFilter?.disableAtom ?? false,
+	disableJson: $i.webFeedFilter?.disableJson ?? false,
+});
 const carefulBot = ref($i.carefulBot);
 const noCrawle = ref($i.noCrawle);
 const preventAiLearning = ref($i.preventAiLearning);
@@ -359,7 +367,7 @@ const {
 		{ label: i18n.ts.followers, value: 'followers' },
 		{ label: i18n.ts.private, value: 'private' },
 	],
-	initialValue: $i.followingVisibility,
+	initialValue: $i.followingVisibility as 'public' | 'followers' | 'private',
 });
 const {
 	model: followersVisibility,
@@ -370,7 +378,7 @@ const {
 		{ label: i18n.ts.followers, value: 'followers' },
 		{ label: i18n.ts.private, value: 'private' },
 	],
-	initialValue: $i.followersVisibility,
+	initialValue: $i.followersVisibility as 'public' | 'followers' | 'private',
 });
 const {
 	model: chatScope,
@@ -383,18 +391,18 @@ const {
 		{ label: i18n.ts._chat._chatAllowedUsers.mutual, value: 'mutual' },
 		{ label: i18n.ts._chat._chatAllowedUsers.none, value: 'none' },
 	],
-	initialValue: $i.chatScope,
+	initialValue: $i.chatScope as 'everyone' | 'followers' | 'following' | 'mutual' | 'none',
 });
 const {
 	model: receiveSpecifiedNotesFrom,
 	def: receiveSpecifiedNotesFromDef,
 } = useMkSelect({
-	items: computed(() => [
-		{ value: 'all', label: i18n.ts._receiveSpecifiedNotesFrom.all },
-		{ value: 'following', label: i18n.ts._receiveSpecifiedNotesFrom.following },
-		{ value: 'nobody', label: i18n.ts._receiveSpecifiedNotesFrom.nobody },
-	]),
-	initialValue: $i.receiveSpecifiedNotesFrom ?? 'all',
+	items: [
+		{ value: 'all' as const, label: i18n.ts._receiveSpecifiedNotesFrom.all },
+		{ value: 'following' as const, label: i18n.ts._receiveSpecifiedNotesFrom.following },
+		{ value: 'nobody' as const, label: i18n.ts._receiveSpecifiedNotesFrom.nobody },
+	],
+	initialValue: ($i.receiveSpecifiedNotesFrom ?? 'all') as 'all' | 'following' | 'nobody',
 });
 
 const makeNotesFollowersOnlyBefore_type = computed({
@@ -418,7 +426,7 @@ const makeNotesFollowersOnlyBefore_type = computed({
 	},
 });
 
-const makeNotesFollowersOnlyBefore_presets = [
+const makeNotesFollowersOnlyBefore_presetsConst = [
 	{ label: i18n.ts.oneHour, value: -3600 },
 	{ label: i18n.ts.oneDay, value: -86400 },
 	{ label: i18n.ts.threeDays, value: -259200 },
@@ -426,7 +434,8 @@ const makeNotesFollowersOnlyBefore_presets = [
 	{ label: i18n.ts.oneMonth, value: -2592000 },
 	{ label: i18n.ts.threeMonths, value: -7776000 },
 	{ label: i18n.ts.oneYear, value: -31104000 },
-] satisfies MkSelectItem[];
+] as const;
+const makeNotesFollowersOnlyBefore_presets: ItemOption<number>[] = [...makeNotesFollowersOnlyBefore_presetsConst];
 
 const makeNotesFollowersOnlyBefore_isCustomMode = ref(
 	makeNotesFollowersOnlyBefore.value != null &&
@@ -470,7 +479,7 @@ const makeNotesHiddenBefore_type = computed({
 	},
 });
 
-const makeNotesHiddenBefore_presets = [
+const makeNotesHiddenBefore_presetsConst = [
 	{ label: i18n.ts.oneHour, value: -3600 },
 	{ label: i18n.ts.oneDay, value: -86400 },
 	{ label: i18n.ts.threeDays, value: -259200 },
@@ -478,7 +487,8 @@ const makeNotesHiddenBefore_presets = [
 	{ label: i18n.ts.oneMonth, value: -2592000 },
 	{ label: i18n.ts.threeMonths, value: -7776000 },
 	{ label: i18n.ts.oneYear, value: -31104000 },
-] satisfies MkSelectItem[];
+] as const;
+const makeNotesHiddenBefore_presets: ItemOption<number>[] = [...makeNotesHiddenBefore_presetsConst];
 
 const makeNotesHiddenBefore_isCustomMode = ref(
 	makeNotesHiddenBefore.value != null &&

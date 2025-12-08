@@ -267,7 +267,7 @@ export class Paginator<
 		if (!this.canFetchOlder.value || this.fetching.value || this.fetchingOlder.value || this.items.value.length === 0) return;
 		this.fetchingOlder.value = true;
 
-		const data: E['req'] = {
+		const data = {
 			...(typeof this.params === 'function' ? this.params() : this.params),
 			...(this.computedParams ? this.computedParams.value : {}),
 			...(this.searchQuery.value != null && this.searchQuery.value.trim() !== '' ? { [this.searchParamName]: this.searchQuery.value } : {}),
@@ -277,9 +277,9 @@ export class Paginator<
 			} : {
 				untilId: this.getOldestId(),
 			}),
-		};
+		} as E['req'];
 
-		const apiRes = (await misskeyApi<T[]>(this.endpoint, data).catch(err => {
+		const apiRes = (await misskeyApi<T[]>(this.endpoint, data as any).catch(err => {
 			return null;
 		})) as T[] | null;
 
@@ -320,7 +320,7 @@ export class Paginator<
 	} = {}): Promise<void> {
 		this.fetchingNewer.value = true;
 
-		const data: E['req'] = {
+		const data = {
 			...(typeof this.params === 'function' ? this.params() : this.params),
 			...(this.computedParams ? this.computedParams.value : {}),
 			...(this.searchQuery.value != null && this.searchQuery.value.trim() !== '' ? { [this.searchParamName]: this.searchQuery.value } : {}),
@@ -330,9 +330,9 @@ export class Paginator<
 			} : {
 				sinceId: this.getNewestId(),
 			}),
-		};
+		} as E['req'];
 
-		const apiRes = (await misskeyApi<T[]>(this.endpoint, data).catch(err => {
+		const apiRes = (await misskeyApi<T[]>(this.endpoint, data as any).catch(err => {
 			return null;
 		})) as T[] | null;
 

@@ -49,7 +49,7 @@ import { computed, defineAsyncComponent, ref, watch } from 'vue';
 import { genId } from '@/utility/id.js';
 import MkInput from '@/components/MkInput.vue';
 import MkSelect from '@/components/MkSelect.vue';
-import type { GetMkSelectValueTypesFromDef, MkSelectItem } from '@/components/MkSelect.vue';
+import type { MkSelectItem } from '@/components/MkSelect.vue';
 import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
 import { deepClone } from '@/utility/clone.js';
@@ -80,7 +80,7 @@ watch(v, () => {
 	emit('update:modelValue', v.value);
 }, { deep: true });
 
-const typeDef = [
+const typeDefConst = [
 	{ label: i18n.ts._role._condition.isLocal, value: 'isLocal' },
 	{ label: i18n.ts._role._condition.isRemote, value: 'isRemote' },
 	{ label: i18n.ts._role._condition.isSuspended, value: 'isSuspended' },
@@ -97,14 +97,19 @@ const typeDef = [
 	{ label: i18n.ts._role._condition.followingMoreThanOrEq, value: 'followingMoreThanOrEq' },
 	{ label: i18n.ts._role._condition.notesLessThanOrEq, value: 'notesLessThanOrEq' },
 	{ label: i18n.ts._role._condition.notesMoreThanOrEq, value: 'notesMoreThanOrEq' },
-	{ label: i18n.ts._role._condition.activitiesMoreThan, value: 'activitiesMoreThan' },
-	{ label: i18n.ts._role._condition.activitiesLessThan, value: 'activitiesLessThan' },
+	{ label: i18n.ts._role._condition.activedMoreThan, value: 'activedMoreThan' },
+	{ label: i18n.ts._role._condition.activedLessThan, value: 'activedLessThan' },
 	{ label: i18n.ts._role._condition.and, value: 'and' },
 	{ label: i18n.ts._role._condition.or, value: 'or' },
 	{ label: i18n.ts._role._condition.not, value: 'not' },
-] as const satisfies MkSelectItem[];
+];
+/**
+ * readonly タプルでリテラル型を保持しつつ、MkSelect には可変配列を渡す
+ */
+const typeDef: MkSelectItem[] = [...typeDefConst];
+type TypeDefValue = (typeof typeDefConst)[number]['value'];
 
-const type = computed<GetMkSelectValueTypesFromDef<typeof typeDef>>({
+const type = computed<TypeDefValue>({
 	get: () => v.value.type,
 	set: (t) => {
 		if (t === 'and') v.value.values = [];
@@ -113,6 +118,8 @@ const type = computed<GetMkSelectValueTypesFromDef<typeof typeDef>>({
 		if (t === 'roleAssignedTo') v.value.roleId = '';
 		if (t === 'createdLessThan') v.value.sec = 86400;
 		if (t === 'createdMoreThan') v.value.sec = 86400;
+		if (t === 'activedMoreThan') v.value.sec = 86400;
+		if (t === 'activedLessThan') v.value.sec = 86400;
 		if (t === 'followersLessThanOrEq') v.value.value = 10;
 		if (t === 'followersMoreThanOrEq') v.value.value = 10;
 		if (t === 'followingLessThanOrEq') v.value.value = 10;
@@ -123,7 +130,9 @@ const type = computed<GetMkSelectValueTypesFromDef<typeof typeDef>>({
 	},
 });
 
-const assignedToDef = computed(() => roles.filter(r => r.target === 'manual').map(r => ({ label: r.name, value: r.id })) satisfies MkSelectItem[]);
+const assignedToDef = computed(() => roles
+	.filter(r => r.target === 'manual')
+	.map((r): MkSelectItem => ({ label: r.name, value: r.id })));
 
 function addValue() {
 	v.value.values.push({ id: genId(), type: 'isRemote' });

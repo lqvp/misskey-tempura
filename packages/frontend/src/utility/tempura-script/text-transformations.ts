@@ -34,7 +34,7 @@ export async function transformTextWithGemini(noteText: string, onApplied: (newT
 	// 変換スタイルの選択（os.select を使用）
 	const styleSelection = await os.select({
 		title: '変換スタイルを選択してください',
-		items: styles.map(style => ({ text: style.label, value: style.key })),
+		items: styles.map(style => ({ label: style.label, value: style.key })),
 	});
 	if (styleSelection.canceled) return;
 	const selectedStyleKey = styleSelection.result!;

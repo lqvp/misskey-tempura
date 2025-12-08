@@ -212,6 +212,7 @@ import type { Ref } from 'vue';
 import type { MenuItem } from '@/types/menu.js';
 import type { OpenOnRemoteOptions } from '@/utility/please-login.js';
 import type { Keymap } from '@/utility/hotkey.js';
+import type { NormalizedNote } from '@/utility/normalize-note.js';
 import MkNoteSub from '@/components/MkNoteSub.vue';
 import MkNoteHeader from '@/components/MkNoteHeader.vue';
 import MkNoteSimple from '@/components/MkNoteSimple.vue';
@@ -246,6 +247,7 @@ import { showMovedDialog } from '@/utility/show-moved-dialog.js';
 import { isEnabledUrlPreview } from '@/utility/url-preview.js';
 import { focusPrev, focusNext } from '@/utility/focus.js';
 import { getAppearNote } from '@/utility/get-appear-note.js';
+import { normalizeNote } from '@/utility/normalize-note.js';
 import { directRenote } from '@/utility/direct-renote.js';
 import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
@@ -253,6 +255,8 @@ import { DI } from '@/di.js';
 import { globalEvents } from '@/events.js';
 import MkVisibilityColoring from '@/components/MkVisibilityColoring.vue';
 import { useViewedRenotes } from '@/composables/useViewedRenotes.js';
+
+type NoteEntity = NormalizedNote;
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
@@ -275,7 +279,7 @@ const tl_withSensitive = inject<Ref<boolean>>('tl_withSensitive', ref(true));
 const inChannel = inject('inChannel', null);
 const currentClip = inject<Ref<Misskey.entities.Clip> | null>('currentClip', null);
 
-let note = deepClone(props.note);
+let note: NoteEntity = normalizeNote(deepClone(props.note));
 
 // plugin
 const noteViewInterruptors = getPluginHandlers('note_view_interruptor');
@@ -288,13 +292,13 @@ if (noteViewInterruptors.length > 0) {
 			console.error(err);
 		}
 	}
-	note = result as Misskey.entities.Note;
+	note = result ? normalizeNote(result) : note;
 }
 
 const { add: addViewedRenote, has: isViewedRenote } = useViewedRenotes();
 
 const isRenote = Misskey.note.isPureRenote(note);
-const appearNote = getAppearNote(note) ?? note;
+const appearNote = normalizeNote((getAppearNote(note) ?? note) as NoteEntity);
 const { $note: $appearNote, subscribe: subscribeManuallyToNoteCapture } = useNoteCapture({
 	note: appearNote,
 	parentNote: note,
@@ -484,9 +488,7 @@ function renote(viaKeyboard = false) {
 		directRenote({ note: note, renoteButton, mock: props.mock });
 	} else {
 		const { menu } = getRenoteMenu({ note: note, renoteButton, mock: props.mock });
-		os.popupMenu(menu, renoteButton.value, {
-			viaKeyboard,
-		});
+		os.popupMenu(menu, renoteButton.value ?? undefined);
 
 		subscribeManuallyToNoteCapture();
 	}

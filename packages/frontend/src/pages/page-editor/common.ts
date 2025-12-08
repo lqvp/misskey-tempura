@@ -7,10 +7,11 @@ import { i18n } from '@/i18n.js';
 import type { MkSelectItem } from '@/components/MkSelect.vue';
 
 export function getPageBlockList() {
-	return [
+	const defs: MkSelectItem[] = [
 		{ value: 'section', label: i18n.ts._pages.blocks.section },
 		{ value: 'text', label: i18n.ts._pages.blocks.text },
 		{ value: 'image', label: i18n.ts._pages.blocks.image },
 		{ value: 'note', label: i18n.ts._pages.blocks.note },
-	] as const satisfies MkSelectItem[];
+	];
+	return defs;
 }

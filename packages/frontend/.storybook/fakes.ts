@@ -209,6 +209,7 @@ export function federationInstance(): entities.FederationInstance {
 		suspensionState: 'none',
 		isBlocked: false,
 		isMediaSilenced: false,
+		isQuarantineLimited: false,
 		softwareName: 'misskey',
 		softwareVersion: '2024.5.0',
 		openRegistrations: false,
@@ -235,6 +236,7 @@ export function note(id = 'somenoteid'): entities.Note {
 		userId: 'someuserid',
 		user: userLite(),
 		visibility: 'public',
+		dontShowOnLtl: false,
 		reactionAcceptance: 'nonSensitiveOnly',
 		reactionEmojis: {},
 		reactions: {},
@@ -242,6 +244,25 @@ export function note(id = 'somenoteid'): entities.Note {
 		reactionCount: 0,
 		renoteCount: 0,
 		repliesCount: 0,
+		uri: undefined,
+		url: undefined,
+		renoteId: null,
+			replyId: null,
+			mentions: [],
+			fileIds: [],
+			files: [],
+			tags: [],
+			emojis: {},
+			poll: null,
+			channelId: null,
+			channel: null,
+			localOnly: false,
+
+
+		visibleUserIds: [],
+
+
+		deliveryTargets: null,
 	};
 }
 
@@ -260,7 +281,7 @@ export function userLite(id = 'someuserid', username = 'miskist', host: entities
 	};
 }
 
-export function userDetailed(id = 'someuserid', username = 'miskist', host: entities.UserDetailed['host'] = 'misskey-hub.net', name: entities.UserDetailed['name'] = 'Misskey User'): entities.UserDetailed {
+export function userDetailed(id = 'someuserid', username = 'miskist', host: entities.UserDetailed['host'] = 'misskey-hub.net', name: entities.UserDetailed['name'] = 'Misskey User'): entities.UserDetailed & { communityRoles?: entities.RoleLite[] } {
 	return {
 		...userLite(id, username, host, name),
 		bannerBlurhash: 'eQA^IW^-MH8w9tE8I=S^o{$*R4RikXtSxutRozjEnNR.RQadoyozog',
@@ -268,9 +289,11 @@ export function userDetailed(id = 'someuserid', username = 'miskist', host: enti
 		birthday: '2014-06-20',
 		createdAt: '2016-12-28T22:49:51.000Z',
 		description: 'I am a cool user!',
+		ListenBrainz: null,
 		followingVisibility: 'public',
 		followersVisibility: 'public',
 		roles: [],
+		communityRoles: [],
 		fields: [
 			{
 				name: 'Website',
@@ -293,7 +316,12 @@ export function userDetailed(id = 'someuserid', username = 'miskist', host: enti
 		isModerator: false,
 		isMuted: false,
 		isSilenced: false,
-		isSuspended: false,
+			isSuspended: false,
+		hideActivity: false,
+		hideNoteFromOverview: false,
+		hidePublicNotes: false,
+		hideHomeNotes: false,
+		hideLocalOnlyNotes: false,
 		lang: 'en',
 		location: 'Fediverse',
 		notesCount: 65536,
@@ -311,7 +339,7 @@ export function userDetailed(id = 'someuserid', username = 'miskist', host: enti
 		uri: null,
 		url: null,
 		movedTo: null,
-		alsoKnownAs: null,
+		alsoKnownAs: [],
 		notify: 'none',
 		memo: null,
 		canChat: true,
@@ -374,6 +402,7 @@ export function role(params: {
 		description: params.description ?? '',
 		isModerator: params.isModerator ?? false,
 		isAdministrator: params.isAdministrator ?? false,
+		isRainbow: false,
 		displayOrder: params.displayOrder ?? 0,
 		createdAt: createdAt,
 		updatedAt: updatedAt,

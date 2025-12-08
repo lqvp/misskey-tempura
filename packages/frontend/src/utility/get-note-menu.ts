@@ -204,7 +204,7 @@ export function getNoteMenu(props: {
 				globalEvents.emit('noteDeleted', appearNote.id);
 			});
 
-			if (Date.now() - new Date(appearNote.createdAt).getTime() < 1000 * 60 && appearNote.userId === $i.id) {
+			if ($i && Date.now() - new Date(appearNote.createdAt).getTime() < 1000 * 60 && appearNote.userId === $i.id) {
 				claimAchievement('noteDeletedWithin1min');
 			}
 		});
@@ -226,7 +226,7 @@ export function getNoteMenu(props: {
 
 			os.post({ initialNote: appearNote, renote: appearNote.renote, reply: appearNote.reply, channel: appearNote.channel });
 
-			if (Date.now() - new Date(appearNote.createdAt).getTime() < 1000 * 60 && appearNote.userId === $i.id) {
+			if ($i && Date.now() - new Date(appearNote.createdAt).getTime() < 1000 * 60 && appearNote.userId === $i.id) {
 				claimAchievement('noteDeletedWithin1min');
 			}
 		});
@@ -253,49 +253,9 @@ export function getNoteMenu(props: {
 				);
 			}
 
-			if (Date.now() - new Date(appearNote.createdAt).getTime() < 1000 * 60 && appearNote.userId === $i.id) {
-				claimAchievement('noteDeletedWithin1min');
-			}
-		});
-	}
-
-	function makePrivate(): void {
-		os.confirm({
-			type: 'warning',
-			text: `${i18n.ts._makePrivate.description} ${i18n.ts._makePrivate.confirm}`,
-		}).then(({ canceled }) => {
-			if (canceled) return;
-
-			misskeyApi('notes/make-private', {
-				noteId: appearNote.id,
-			});
-		});
-	}
-
-	function deleteWithFiles(): void {
-		os.confirm({
-			type: 'warning',
-			text: i18n.ts.deleteWithFilesConfirm,
-		}).then(async ({ canceled }) => {
-			if (canceled) return;
-
-			await misskeyApi('notes/delete', {
-				noteId: appearNote.id,
-			});
-
-			if (appearNote.files && appearNote.files.length > 0) {
-				await Promise.all(
-					appearNote.files.map(file =>
-						misskeyApi('drive/files/delete', {
-							fileId: file.id,
-						}),
-					),
-				);
-			}
-
-			if (Date.now() - new Date(appearNote.createdAt).getTime() < 1000 * 60 && appearNote.userId === $i.id) {
-				claimAchievement('noteDeletedWithin1min');
-			}
+				if (Date.now() - new Date(appearNote.createdAt).getTime() < 1000 * 60 && $i && appearNote.userId === $i.id) {
+					claimAchievement('noteDeletedWithin1min');
+				}
 		});
 	}
 
@@ -431,20 +391,20 @@ export function getNoteMenu(props: {
 			}, { type: 'divider' });
 		}
 
-		menuItems.push({
-			icon: 'ti ti-info-circle',
-			text: i18n.ts.details,
-			action: openDetail,
-		}, (prefer.s.directRenote) ? {
-			icon: 'ti ti-quote',
-			text: i18n.ts.quote,
-			action: () => {
-				directQuote({ note: appearNote });
-			},
-		} : undefined, {
-			icon: 'ti ti-copy',
-			text: i18n.ts.copyContent,
-			action: copyContent,
+			menuItems.push({
+				icon: 'ti ti-info-circle',
+				text: i18n.ts.details,
+				action: openDetail,
+			}, ...(prefer.s.directRenote && $i ? [{
+				icon: 'ti ti-quote',
+				text: i18n.ts.quote,
+				action: () => {
+					directQuote({ note: appearNote });
+				},
+			}] as MenuItem[] : []), {
+				icon: 'ti ti-copy',
+				text: i18n.ts.copyContent,
+				action: copyContent,
 		}, getCopyNoteLinkMenu(appearNote, i18n.ts.copyLink));
 
 		if (link) {
@@ -698,6 +658,7 @@ export function smallerVisibility(a: Visibility, b: Visibility): Visibility {
 	if (a === 'specified' || b === 'specified') return 'specified';
 	if (a === 'followers' || b === 'followers') return 'followers';
 	if (a === 'home' || b === 'home') return 'home';
+	if (a === 'public_non_ltl' || b === 'public_non_ltl') return 'public_non_ltl';
 	// if (a === 'public' || b === 'public')
 	return 'public';
 }
@@ -767,10 +728,10 @@ export function getRenoteMenu(props: {
 					});
 				}
 
-				const configuredVisibility = prefer.s.rememberNoteVisibility ? store.s.visibility : prefer.s.defaultNoteVisibility;
+				const configuredVisibility = (prefer.s.rememberNoteVisibility ? store.s.visibility : prefer.s.defaultNoteVisibility) as (typeof Misskey.noteVisibilities)[number];
 				const localOnly = prefer.s.rememberNoteVisibility ? store.s.localOnly : prefer.s.defaultNoteLocalOnly;
 
-				let visibility = appearNote.visibility;
+				let visibility: (typeof Misskey.noteVisibilities)[number] = appearNote.visibility as (typeof Misskey.noteVisibilities)[number];
 				visibility = smallerVisibility(visibility, configuredVisibility);
 				if (appearNote.channel?.isSensitive) {
 					visibility = smallerVisibility(visibility, 'home');
