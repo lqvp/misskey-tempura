@@ -44,7 +44,6 @@ import { correctFilename } from '@/misc/correct-filename.js';
 import { isMimeImage } from '@/misc/is-mime-image.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { UtilityService } from '@/core/UtilityService.js';
-import { AppLockService } from '@/core/AppLockService.js';
 
 type AddFileArgs = {
 	/** User who wish to add file */
@@ -95,6 +94,7 @@ export class DriveService {
 	private registerLogger: Logger;
 	private downloaderLogger: Logger;
 	private deleteLogger: Logger;
+	private readonly reCacheLockKeyPrefix = 'DriveFileLock:';
 
 	constructor(
 		@Inject(DI.config)
@@ -135,7 +135,6 @@ export class DriveService {
 		private perUserDriveChart: PerUserDriveChart,
 		private instanceChart: InstanceChart,
 		private utilityService: UtilityService,
-		private appLockService: AppLockService,
 	) {
 		const logger = new Logger('drive', 'blue');
 		this.registerLogger = logger.createSubLogger('register', 'yellow');
@@ -733,7 +732,11 @@ export class DriveService {
 	@bindThis
 	public async reCacheFile(fileId: MiDriveFile['id']) {
 		if (!this.meta.cacheRemoteFiles) return;
-		const unlock = await this.appLockService.getApLock(`DriveFile://${fileId}`, 30000);
+		const unlock = await this.acquireReCacheLock(fileId, 30000);
+		if (!unlock) {
+			this.registerLogger.debug(`Skip Re-Cache (Lock not acquired): DriveFile://${fileId}`);
+			return;
+		}
 
 		const file = await this.driveFilesRepository.findOne({ where: { id: fileId } });
 		if (!file || !file.uri || !file.isLink || (file.isSensitive && !this.meta.cacheRemoteSensitiveFiles)) {
@@ -757,8 +760,34 @@ export class DriveService {
 		} catch (err) {
 			this.registerLogger.warn(`Fail to Re-Cache Remote file: ${err}`);
 		} finally {
-			unlock();
+			await unlock();
 			cleanup();
+		}
+	}
+
+	/**
+	 * Acquire a short-lived lock in Redis for remote file re-cache operations.
+	 * Returns an unlock function when successful, otherwise null if the lock is already held.
+	 */
+	private async acquireReCacheLock(fileId: MiDriveFile['id'], ttlMs: number): Promise<(() => Promise<void>) | null> {
+		const key = `${this.reCacheLockKeyPrefix}${fileId}`;
+
+		try {
+			// NX ensures we only acquire if the key does not exist; PX sets an expiry to avoid deadlocks.
+			const acquired = await this.redisForSub.set(key, '1', 'PX', ttlMs, 'NX');
+			if (acquired !== 'OK') return null;
+
+			return async () => {
+				try {
+					await this.redisForSub.del(key);
+				} catch (err) {
+					this.registerLogger.warn(`Failed to release re-cache lock for ${key}: ${err}`);
+				}
+			};
+		} catch (err) {
+			// If Redis is unavailable, fall back to running without a distributed lock.
+			this.registerLogger.warn(`Failed to acquire re-cache lock for ${key}: ${err}`);
+			return async () => {};
 		}
 	}
 

@@ -5,7 +5,7 @@
 
 import { lang } from '@@/js/config.js';
 
-export const versatileLang = (lang ?? 'ja-JP').replace('ja-KS', 'ja-JP');
+export const versatileLang = (lang ?? 'ja-JP').replace('ja-KS', 'ja-JP').replace('ja-NYA', 'ja-JP');
 
 let _dateTimeFormat: Intl.DateTimeFormat;
 try {

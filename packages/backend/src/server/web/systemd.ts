@@ -6,9 +6,34 @@
 export class Systemd {
 	private tty_dom: HTMLDivElement;
 	constructor() {
-		this.tty_dom = document.querySelector('#tty') as HTMLDivElement;
+		const existing = document.querySelector('#tty') as HTMLDivElement | null;
+
+		// Layout TSX no longer includes #tty; create it lazily to avoid crashes
+		if (existing) {
+			this.tty_dom = existing;
+		} else {
+			const tty = document.createElement('div');
+			tty.id = 'tty';
+			const splash = document.getElementById('splash');
+			if (splash?.parentNode) {
+				splash.parentNode.insertBefore(tty, splash);
+			} else {
+				const body = document.body || document.documentElement;
+				body.prepend(tty);
+			}
+			this.tty_dom = tty;
+		}
 
 		console.log('Systemd started');
+	}
+
+	public finish() {
+		if (!this.tty_dom) return;
+		this.tty_dom.style.opacity = '0';
+		this.tty_dom.style.pointerEvents = 'none';
+		window.setTimeout(() => {
+			this.tty_dom?.remove();
+		}, 500);
 	}
 
 	async start<T>(id: string, promise: Promise<T>): Promise<T> {
