@@ -75,6 +75,8 @@ export class HtmlTemplateService {
 	public async getCommonData(): Promise<CommonData> {
 		await this.prepareFrontendBootloaders();
 
+		const customSplashText = this.meta.customSplashText?.length ? this.meta.customSplashText[0] : '';
+
 		return {
 			version: this.config.version,
 			config: this.config,
@@ -87,6 +89,7 @@ export class HtmlTemplateService {
 			infoImageUrl: this.meta.infoImageUrl ?? 'https://xn--931a.moe/assets/info.jpg',
 			notFoundImageUrl: this.meta.notFoundImageUrl ?? 'https://xn--931a.moe/assets/not-found.jpg',
 			youBlockedImageUrl: this.meta.youBlockedImageUrl ?? 'https://xn--931a.moe/assets/you-blocked.jpg',
+			customSplashText,
 			instanceUrl: this.config.url,
 			metaJson: htmlSafeJsonStringify(await this.metaEntityService.packDetailed(this.meta)),
 			now: Date.now(),

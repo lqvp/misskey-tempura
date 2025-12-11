@@ -71,7 +71,7 @@ const registration = ref<ServiceWorkerRegistration | undefined>();
 const supported = ref(false);
 // If this browser has already subscribed to push notification
 const pushSubscription = ref<PushSubscription | null>(null);
-const pushRegistrationInServer = ref<{ state?: string; key?: string; userId: string; endpoint: string; sendReadMessage: boolean; } | undefined>();
+const pushRegistrationInServer = ref<{ state?: string; key?: string | null; userId: string; endpoint: string; sendReadMessage: boolean; } | undefined>();
 
 async function subscribe() {
 	if (!registration.value || !supported.value || !instance.swPublickey) return;

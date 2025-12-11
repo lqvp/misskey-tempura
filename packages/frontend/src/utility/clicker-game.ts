@@ -4,6 +4,7 @@
  */
 
 import { ref, computed } from 'vue';
+import * as Misskey from 'misskey-js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 
 type SaveData = {
@@ -23,7 +24,7 @@ let prev = '';
 
 export async function load() {
 	try {
-		saveData.value = await misskeyApi('i/registry/get', {
+		saveData.value = await misskeyApi<'i/registry/get', Misskey.Endpoints['i/registry/get']['req'], SaveData>('i/registry/get', {
 			scope: ['clickerGame'],
 			key: 'saveData',
 		});

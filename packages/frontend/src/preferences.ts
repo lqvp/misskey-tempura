@@ -4,6 +4,7 @@
  */
 
 import { BroadcastChannel } from 'broadcast-channel';
+import * as Misskey from 'misskey-js';
 import type { StorageProvider } from '@/preferences/manager.js';
 import { cloudBackup } from '@/preferences/utility.js';
 import { miLocalStorage } from '@/local-storage.js';
@@ -35,10 +36,13 @@ const io: StorageProvider = {
 		// TODO: この取得方法だとアカウントが変わると保存場所も変わってしまうので改修する
 		// 例えば複数アカウントある場合でも設定値を保存するための「プライマリアカウント」を設定できるようにするとか
 		try {
-			const cloudData = await misskeyApi('i/registry/get', {
-				scope: ['client', 'preferences', 'sync'],
-				key: syncGroup + ':' + ctx.key,
-			}) as [any, any][];
+			const cloudData = await misskeyApi<'i/registry/get', Misskey.Endpoints['i/registry/get']['req'], [any, any][]>(
+				'i/registry/get',
+				{
+					scope: ['client', 'preferences', 'sync'],
+					key: syncGroup + ':' + ctx.key,
+				},
+			);
 			const target = cloudData.find(([scope]) => isSameScope(scope, ctx.scope));
 			if (target == null) return null;
 			return {
@@ -56,10 +60,13 @@ const io: StorageProvider = {
 	cloudSet: async (ctx) => {
 		let cloudData: [any, any][] = [];
 		try {
-			cloudData = await misskeyApi('i/registry/get', {
-				scope: ['client', 'preferences', 'sync'],
-				key: syncGroup + ':' + ctx.key,
-			}) as [any, any][];
+			cloudData = await misskeyApi<'i/registry/get', Misskey.Endpoints['i/registry/get']['req'], [any, any][]>(
+				'i/registry/get',
+				{
+					scope: ['client', 'preferences', 'sync'],
+					key: syncGroup + ':' + ctx.key,
+				},
+			);
 		} catch (err: any) {
 			if (err.code === 'NO_SUCH_KEY') { // TODO: いちいちエラーキャッチするのは面倒なのでキーが無くてもエラーにならない maybe-get のようなエンドポイントをバックエンドに実装する
 				cloudData = [];

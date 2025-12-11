@@ -1,3 +1,4 @@
+/// <reference lib="dom" />
 /*
  * SPDX-FileCopyrightText: yume/yumechi-no-kun
  * SPDX-License-Identifier: AGPL-3.0-only

@@ -11,32 +11,33 @@ export const pendingApiRequestsCount = ref(0);
 
 // Implements Misskey.api.ApiClient.request
 export function misskeyApi<
-	ResT = void,
-	E extends keyof Misskey.Endpoints = keyof Misskey.Endpoints,
+	E extends keyof Misskey.Endpoints,
 	P extends Misskey.Endpoints[E]['req'] = Misskey.Endpoints[E]['req'],
-	_ResT = ResT extends void ? Misskey.api.SwitchCaseResponseType<E, P> : ResT,
+	R = Misskey.api.SwitchCaseResponseType<E, P>,
 >(
 	endpoint: E,
-	data: P & { i?: string | null; } = {} as any,
+	data: P = {} as any,
 	token?: string | null | undefined,
 	signal?: AbortSignal,
-): Promise<_ResT> {
+): Promise<R> {
 	if (endpoint.includes('://')) throw new Error('invalid endpoint');
 	pendingApiRequestsCount.value++;
+
+	const payload = data as P & { i?: string | null };
 
 	const onFinally = () => {
 		pendingApiRequestsCount.value--;
 	};
 
-	const promise = new Promise<_ResT>((resolve, reject) => {
+	const promise = new Promise<R>((resolve, reject) => {
 		// Append a credential
-		if ($i) data.i = $i.token;
-		if (token !== undefined) data.i = token;
+		if ($i) payload.i = $i.token;
+		if (token !== undefined) payload.i = token;
 
 		// Send request
 		window.fetch(`${apiUrl}/${endpoint}`, {
 			method: 'POST',
-			body: JSON.stringify(data),
+			body: JSON.stringify(payload),
 			credentials: 'omit',
 			cache: 'no-cache',
 			headers: {
@@ -47,9 +48,9 @@ export function misskeyApi<
 			const body = res.status === 204 ? null : await res.json();
 
 			if (res.status === 200) {
-				resolve(body);
+				resolve(body as R);
 			} else if (res.status === 204) {
-				resolve(undefined as _ResT); // void -> undefined
+				resolve(undefined as R); // void -> undefined
 			} else {
 				reject(body.error);
 			}
@@ -62,29 +63,33 @@ export function misskeyApi<
 }
 
 // Implements Misskey.api.ApiClient.request
+
 export function misskeyApiGet<
-    ResT = void,
-    E extends keyof Misskey.Endpoints = keyof Misskey.Endpoints,
-    P extends Misskey.Endpoints[E]['req'] = Misskey.Endpoints[E]['req'],
-    _ResT = ResT extends void ? Misskey.api.SwitchCaseResponseType<E, P> : ResT,
+	E extends keyof Misskey.Endpoints,
+	P extends Misskey.Endpoints[E]['req'] = Misskey.Endpoints[E]['req'],
+	R = Misskey.api.SwitchCaseResponseType<E, P>,
 >(
 	endpoint: E,
 	data: P = {} as any,
 	token?: string | null | undefined,
-): Promise<_ResT> {
+): Promise<R> {
 	pendingApiRequestsCount.value++;
 
 	const onFinally = () => {
 		pendingApiRequestsCount.value--;
 	};
 
-	const params = { ...data as any };
+	const params = { ...data as any } as P & { i?: string | null };
 	if ($i) params.i = $i.token;
 	if (token !== undefined) params.i = token;
 
-	const query = new URLSearchParams(params);
+	const query = new URLSearchParams(Object.entries(params).reduce((acc, [k, v]) => {
+		if (v == null) return acc;
+		acc[k] = String(v);
+		return acc;
+	}, {} as Record<string, string>));
 
-	const promise = new Promise<_ResT>((resolve, reject) => {
+	const promise = new Promise<R>((resolve, reject) => {
 		// Send request
 		window.fetch(`${apiUrl}/${endpoint}?${query}`, {
 			method: 'GET',
@@ -97,9 +102,9 @@ export function misskeyApiGet<
 			const body = res.status === 204 ? null : await res.json();
 
 			if (res.status === 200) {
-				resolve(body);
+				resolve(body as R);
 			} else if (res.status === 204) {
-				resolve(undefined as _ResT); // void -> undefined
+				resolve(undefined as R); // void -> undefined
 			} else {
 				reject(body.error);
 			}
