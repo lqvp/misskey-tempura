@@ -64,6 +64,8 @@
 			importAppScript();
 		});
 	}
+
+	localStorage.setItem('lang', lang);
 	//#endregion
 
 	async function addStyle(styleText) {

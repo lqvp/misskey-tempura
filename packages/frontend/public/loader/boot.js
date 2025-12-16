@@ -215,6 +215,8 @@ class Systemd {
 		console.error('invalid lang value detected!!!', typeof lang, lang);
 		lang = 'ja-JP';
 	}
+
+	localStorage.setItem('lang', lang);
 	//#endregion
 
 	//#region Script
