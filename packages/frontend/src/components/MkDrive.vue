@@ -257,7 +257,6 @@ const filteredFilesTimeline = computed(() => {
 	})).filter(group => group.items.length > 0);
 });
 
-
 watch(folder, () => emit('cd', folder.value));
 watch(sortModeSelect, () => {
 	initialize();
