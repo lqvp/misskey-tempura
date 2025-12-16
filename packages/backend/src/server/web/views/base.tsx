@@ -16,6 +16,7 @@ export function Layout(props: PropsWithChildren<CommonProps<{
 	serverErrorImageUrl?: string;
 	infoImageUrl?: string;
 	notFoundImageUrl?: string;
+	customSplashText?: string[] | null;
 	metaJson?: string;
 	clientCtxJson?: string;
 
