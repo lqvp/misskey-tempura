@@ -1,40 +1,14 @@
-/// <reference lib="dom" />
 /*
- * SPDX-FileCopyrightText: yume/yumechi-no-kun
+ * SPDX-FileCopyrightText: yume/yumechi-no-kuni and lqvp
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
 export class Systemd {
 	private tty_dom: HTMLDivElement;
 	constructor() {
-		const existing = document.querySelector('#tty') as HTMLDivElement | null;
-
-		// Layout TSX no longer includes #tty; create it lazily to avoid crashes
-		if (existing) {
-			this.tty_dom = existing;
-		} else {
-			const tty = document.createElement('div');
-			tty.id = 'tty';
-			const splash = document.getElementById('splash');
-			if (splash?.parentNode) {
-				splash.parentNode.insertBefore(tty, splash);
-			} else {
-				const body = document.body || document.documentElement;
-				body.prepend(tty);
-			}
-			this.tty_dom = tty;
-		}
+		this.tty_dom = document.querySelector('#tty') as HTMLDivElement;
 
 		console.log('Systemd started');
-	}
-
-	public finish() {
-		if (!this.tty_dom) return;
-		this.tty_dom.style.opacity = '0';
-		this.tty_dom.style.pointerEvents = 'none';
-		window.setTimeout(() => {
-			this.tty_dom?.remove();
-		}, 500);
 	}
 
 	async start<T>(id: string, promise: Promise<T>): Promise<T> {
@@ -172,30 +146,12 @@ export class Systemd {
 		})());
 	}
 
-	public emergency_mode(code?: string, details?: Error | string) {
-		const tty = this.tty_dom;
-
-		const addLine = (html: string) => {
-			const div = document.createElement('div');
-			div.className = 'tty-line';
-			div.innerHTML = html;
-			tty.appendChild(div);
-		};
-
-		const escapeHtml = (str: string | undefined | null): string => {
-			if (str == null) return '';
-			const el = document.createElement('div');
-			el.innerText = str;
-			return el.innerHTML;
-		};
-
-		if (code && details) {
-			const message = (details instanceof Error) ? details.message : details;
-			addLine(`Critical error occurred [${code}]: ${escapeHtml(message)}`);
-		}
-
-		addLine('You are in emergency mode. After solving the problem, please try <a href="/flush">/flush</a> to reboot.');
-		addLine('Other tools: <a href="/cli">/cli</a>, <a href="/bios">/bios</a>');
-		addLine('Type Ctrl-Shift-I to view logs.');
+	public emergency_mode() {
+		const div = document.createElement('div');
+		div.className = 'tty-line';
+		div.innerHTML = 'You are in emergency mode. After solving the problem, please try <a href="/flush">/flush</a> to reboot.';
+		div.innerHTML += ' Other tools: <a href="/cli">/cli</a>, <a href="/bios">/bios</a>';
+		div.innerHTML += ' Type Ctrl-Shift-I to view logs.';
+		this.tty_dom.appendChild(div);
 	}
 }

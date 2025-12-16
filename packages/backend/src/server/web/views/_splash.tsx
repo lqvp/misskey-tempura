@@ -11,6 +11,7 @@ export function Splash(props: {
 
 	return (
 		<div id="splash">
+			<div id="tty"></div>
 			<img id="splashIcon" src={props.icon || '/static-assets/splash.png'} />
 			<span id="splashText">{customSplashText}</span>
 			<div id="splashSpinner">

@@ -5,38 +5,29 @@
 
 'use strict';
 
+let isSafeMode = (localStorage.getItem('isSafeMode') === 'true');
+
+if (!isSafeMode) {
+	const urlParams = new URLSearchParams(window.location.search);
+
+	if (urlParams.has('safemode') && urlParams.get('safemode') === 'true') {
+		localStorage.setItem('isSafeMode', 'true');
+		isSafeMode = true;
+	}
+}
+
 class Systemd {
 	constructor(version, cmdline) {
 		this.tty_dom = document.querySelector('#tty');
-
-		// The TSX layouts no longer ship a #tty container; create one on demand
-		// so the boot log can render instead of throwing and halting the loader.
 		if (!this.tty_dom) {
-			const tty = document.createElement('div');
-			tty.id = 'tty';
-			// keep the tty above the splash for visibility while avoiding layout shift
-			const splash = document.getElementById('splash');
-			if (splash?.parentNode) {
-				splash.parentNode.insertBefore(tty, splash);
-			} else {
-				const body = document.body || document.documentElement;
-				body.prepend(tty);
-			}
-			this.tty_dom = tty;
+			this.tty_dom = document.createElement('div');
+			this.tty_dom.id = 'tty';
+			document.body.appendChild(this.tty_dom);
 		}
 		const welcome = document.createElement('div');
 		welcome.className = 'tty-line';
-		welcome.innerText = `misskey-tempura ${version} running in Web mode. cmdline: ${cmdline}`;
-		this.tty_dom.appendChild(welcome);
-	}
-
-	finish() {
-		if (!this.tty_dom) return;
-		this.tty_dom.style.opacity = '0';
-		this.tty_dom.style.pointerEvents = 'none';
-		setTimeout(() => {
-			this.tty_dom?.remove();
-		}, 500);
+		welcome.innerText = `misskey-tempura ${version} running in ${isSafeMode ? 'Safe' : 'Web'} mode. (+mproxy, +metrics, +csp) cmdline: ${cmdline}`;
+	//	this.tty_dom.appendChild(welcome);
 	}
 	async start(id, promise) {
 		let state = { state: 'running' };
@@ -143,39 +134,20 @@ class Systemd {
 		})());
 	}
 	emergency_mode(code, details) {
-		const tty = this.tty_dom;
-
-		const addLine = (html) => {
-			const div = document.createElement('div');
-			div.className = 'tty-line';
-			div.innerHTML = html;
-			tty.appendChild(div);
-		};
-
-		const escapeHtml = (str) => {
-			if (str == null) return '';
-			const el = document.createElement('div');
-			el.innerText = str;
-			return el.innerHTML;
-		};
-
-		const message = details?.message ? details.message : details;
-		addLine(`Critical error occurred [${code}]: ${escapeHtml(message)}`);
-
-		addLine('You are in emergency mode. After solving the problem, please try <a href="/flush">/flush</a> to reboot.');
-		addLine('Other tools: <a href="/cli">/cli</a>, <a href="/bios">/bios</a>');
+		const divPrev = document.createElement('div');
+		divPrev.className = 'tty-line';
+		divPrev.innerText = 'Critical error occurred [' + code + '] : ' + details.message ? details.message : details;
+		this.tty_dom.appendChild(divPrev);
+		const div = document.createElement('div');
+		div.className = 'tty-line';
+		div.innerHTML = 'You are in emergency mode. After solving the problem, please try <a href="/flush">/flush</a> to reboot.';
+		div.innerHTML += ' Other tools: <a href="/cli">/cli</a>, <a href="/bios">/bios</a>';
+		this.tty_dom.appendChild(div);
 	}
 }
 
 // ブロックの中に入れないと、定義した変数がブラウザのグローバルスコープに登録されてしまい邪魔なので
-
-(async () => {
-	const cmdline = new URLSearchParams(location.search).get('cmdline') || '';
-	const cmdlineArray = cmdline.split(',').map(x => x.trim());
-
-	// Instantiate early so error handlers can safely use it
-	const systemd = new Systemd(VERSION, cmdline);
-
+document.addEventListener('DOMContentLoaded', async () => {
 	window.onerror = (e) => {
 		console.error(e);
 		renderError('SOMETHING_HAPPENED', e);
@@ -185,10 +157,14 @@ class Systemd {
 		renderError('SOMETHING_HAPPENED_IN_PROMISE', e.reason || e);
 	};
 
+	const cmdline = new URLSearchParams(location.search).get('cmdline') || '';
+	const cmdlineArray = cmdline.split(',').map(x => x.trim());
 	if (cmdlineArray.includes('nosplash')) {
 		document.querySelector('#splashIcon').classList.add('hidden');
 		document.querySelector('#splashSpinner').classList.add('hidden');
 	}
+
+	const systemd = new Systemd(VERSION, cmdline);
 
 	if (cmdlineArray.includes('leak')) {
 		await systemd.start('Promise Leak Service', new Promise(() => { }));
@@ -228,8 +204,6 @@ class Systemd {
 			});
 	}
 
-	let importAppPromise = null;
-
 	if (cmdlineArray.includes('fail')) {
 		await systemd.startSync('Force Error Service', () => {
 			throw new Error('This error is forced by having fail in command line.');
@@ -238,36 +212,19 @@ class Systemd {
 
 	// タイミングによっては、この時点でDOMの構築が済んでいる場合とそうでない場合とがある
 	if (document.readyState !== 'loading') {
-	 	importAppPromise = systemd.start('import App Script', importAppScript()).then((res) => {
-	 		systemd.finish();
-	 		return res;
-	 	}).catch((err) => { throw err; });
+		systemd.start('import App Script', importAppScript());
 	} else {
 		window.addEventListener('DOMContentLoaded', () => {
-			importAppPromise = systemd.start('import App Script', importAppScript()).then((res) => {
-				systemd.finish();
-				return res;
-			}).catch((err) => { throw err; });
+			systemd.start('import App Script', importAppScript());
 		});
 	}
 	//#endregion
 
-	let isSafeMode = (localStorage.getItem('isSafeMode') === 'true');
-
-	if (!isSafeMode) {
-		const urlParams = new URLSearchParams(window.location.search);
-
-		if (urlParams.has('safemode') && urlParams.get('safemode') === 'true') {
-			localStorage.setItem('isSafeMode', 'true');
-			isSafeMode = true;
-		}
-	}
-
 	//#region Theme
 	if (!isSafeMode) {
-		const theme = localStorage.getItem('theme');
-		if (theme) {
 		await systemd.startSync('Apply theme', () => {
+			const theme = localStorage.getItem('theme');
+			if (theme) {
 				for (const [k, v] of Object.entries(JSON.parse(theme))) {
 					document.documentElement.style.setProperty(`--MI_THEME-${k}`, v.toString());
 
@@ -281,8 +238,8 @@ class Systemd {
 						}
 					}
 				}
+			}
 		});
-		}
 	}
 
 	const colorScheme = localStorage.getItem('colorScheme');
@@ -304,11 +261,11 @@ class Systemd {
 	if (!isSafeMode) {
 		const customCss = localStorage.getItem('customCss');
 		if (customCss && customCss.length > 0) {
-		await systemd.startSync('Apply custom CSS', () => {
+			await systemd.startSync('Apply custom CSS', () => {
 				const style = document.createElement('style');
 				style.innerHTML = customCss;
 				document.head.appendChild(style);
-		});
+			});
 		}
 	}
 
@@ -321,6 +278,6 @@ class Systemd {
 	}
 
 	async function renderError(code, details) {
-		systemd.emergency_mode(code, details);
+	//	systemd.emergency_mode(code, details);
 	}
-})();
+});
