@@ -136,6 +136,53 @@ function getSoundTypeForIntensity(intensity: string, isWarning: boolean, isCance
 
 let wsConnection: WebSocket | null = null;
 let reconnectTimeout: number | null = null;
+let reconnectAttemptCount = 0;
+let reconnectCooldownUntil = 0;
+let lastReconnectNotifyAt = 0;
+
+const MAX_RECONNECT_ATTEMPTS = 5;
+const RECONNECT_BASE_DELAY_MS = 5000;
+const RECONNECT_MAX_DELAY_MS = 60_000;
+const RECONNECT_COOLDOWN_MS = 60 * 60 * 1000; // 1時間
+const RECONNECT_NOTIFY_COOLDOWN_MS = 60_000; // 通知の連打防止
+
+function scheduleEarthquakeWarningReconnect(): void {
+	if (!prefer.s.enableEarthquakeWarning) return;
+	if (reconnectTimeout) return;
+
+	const now = Date.now();
+	if (now < reconnectCooldownUntil) return;
+
+	if (reconnectAttemptCount >= MAX_RECONNECT_ATTEMPTS) {
+		reconnectCooldownUntil = now + RECONNECT_COOLDOWN_MS;
+		reconnectAttemptCount = 0;
+		addToConnectionLog('warning', new Date(), `Reconnect suspended for ${Math.round(RECONNECT_COOLDOWN_MS / 1000)}s after ${MAX_RECONNECT_ATTEMPTS} attempts`);
+
+		if (prefer.s.earthquakeWarningConnectionNotify) {
+			toast(i18n.ts._earthquakeWarning.connectionFailed, {
+				duration: 5000,
+			});
+		}
+		return;
+	}
+
+	reconnectAttemptCount += 1;
+	const delay = Math.min(RECONNECT_BASE_DELAY_MS * (2 ** (reconnectAttemptCount - 1)), RECONNECT_MAX_DELAY_MS);
+
+	addToConnectionLog('info', new Date(), `Scheduling reconnect attempt ${reconnectAttemptCount}/${MAX_RECONNECT_ATTEMPTS} in ${delay}ms`);
+
+	reconnectTimeout = window.setTimeout(() => {
+		reconnectTimeout = null;
+		connectEarthquakeWarningWs();
+	}, delay);
+
+	if (prefer.s.earthquakeWarningConnectionNotify && (now - lastReconnectNotifyAt >= RECONNECT_NOTIFY_COOLDOWN_MS)) {
+		lastReconnectNotifyAt = now;
+		toast(i18n.ts._earthquakeWarning.reconnecting, {
+			duration: 3000,
+		});
+	}
+}
 
 /**
  * Get the minimum intensity threshold from user settings
@@ -509,6 +556,9 @@ export function connectEarthquakeWarningWs(): void {
 				window.clearTimeout(reconnectTimeout);
 				reconnectTimeout = null;
 			}
+			reconnectAttemptCount = 0;
+			reconnectCooldownUntil = 0;
+			lastReconnectNotifyAt = 0;
 
 			// Notify user of successful connection if notification setting is enabled
 			if (prefer.s.earthquakeWarningConnectionNotify) {
@@ -553,21 +603,7 @@ export function connectEarthquakeWarningWs(): void {
 				});
 			}
 
-			// Attempt to reconnect after delay
-			if (prefer.s.enableEarthquakeWarning && !reconnectTimeout) {
-				const reconnectDelay = 5000; // 5秒後に再接続
-				reconnectTimeout = window.setTimeout(() => {
-					reconnectTimeout = null;
-					connectEarthquakeWarningWs();
-				}, reconnectDelay);
-
-				// ユーザーに再接続を試みることを通知
-				if (prefer.s.earthquakeWarningConnectionNotify) {
-					toast(i18n.ts._earthquakeWarning.reconnecting, {
-						duration: 3000,
-					});
-				}
-			}
+			scheduleEarthquakeWarningReconnect();
 		};
 
 		wsConnection.onerror = (error) => {
@@ -597,6 +633,9 @@ export function connectEarthquakeWarningWs(): void {
 				duration: 5000,
 			});
 		}
+
+		// WebSocket生成自体が失敗した場合も、一定回数だけリトライしてクールダウンする
+		scheduleEarthquakeWarningReconnect();
 	}
 }
 
@@ -613,6 +652,10 @@ export function disconnectEarthquakeWarningWs(): void {
 		window.clearTimeout(reconnectTimeout);
 		reconnectTimeout = null;
 	}
+
+	reconnectAttemptCount = 0;
+	reconnectCooldownUntil = 0;
+	lastReconnectNotifyAt = 0;
 }
 
 /**
