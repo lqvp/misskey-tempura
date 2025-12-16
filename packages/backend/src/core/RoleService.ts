@@ -637,11 +637,14 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 	public async getAdministratorIds(): Promise<MiUser['id'][]> {
 		const roles = await this.rolesCache.fetch(() => this.rolesRepository.findBy({}));
 		const administratorRoles = roles.filter(r => r.permissionGroup === 'Admin');
-		const assigns = administratorRoles.length > 0 ? await this.roleAssignmentsRepository.findBy({
-			roleId: In(administratorRoles.map(r => r.id)),
-		}) : [];
+		const assigns = administratorRoles.length > 0
+			? await this.roleAssignmentsRepository.findBy({
+				roleId: In(administratorRoles.map(r => r.id)),
+			})
+			: [];
 		// TODO: isRootなアカウントも含める
-		return assigns.map(a => a.userId);
+		// Setを経由して重複を除去（ユーザIDは重複する可能性があるので）
+		return [...new Set(assigns.map(a => a.userId))].sort((x, y) => x.localeCompare(y));
 	}
 
 	@bindThis

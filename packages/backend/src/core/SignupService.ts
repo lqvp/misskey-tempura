@@ -194,7 +194,7 @@ export class SignupService {
 
 		const adminIds = await this.roleService.getAdministratorIds();
 		await Promise.all(adminIds.map(async adminId => {
-			this.notificationService.createNotification(adminId, 'app', {
+			await this.notificationService.createNotification(adminId, 'app', {
 				appAccessTokenId: null,
 				customBody: `新しいユーザー @${account.username} が作成されました。`,
 				customHeader: '[システム] 通知',
@@ -205,4 +205,3 @@ export class SignupService {
 		return { account, secret };
 	}
 }
-

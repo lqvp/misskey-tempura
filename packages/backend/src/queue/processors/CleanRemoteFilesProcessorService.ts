@@ -102,8 +102,8 @@ export class CleanRemoteFilesProcessorService {
 		// 管理者に通知
 		const humanReadableSize = this.formatBytes(totalSize);
 		const adminIds = await this.roleService.getAdministratorIds();
-		Promise.all(adminIds.map(async adminId => {
-			this.notificationService.createNotification(adminId, 'app', {
+		await Promise.all(adminIds.map(async adminId => {
+			await this.notificationService.createNotification(adminId, 'app', {
 				appAccessTokenId: null,
 				customBody: `リモートファイルのクリーンアップが完了しました。\n削除されたファイル数: ${deletedCount}\n解放された容量: ${humanReadableSize}`,
 				customHeader: '[システム] ストレージクリーンアップ',
