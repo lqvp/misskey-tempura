@@ -5,10 +5,14 @@
 
 export function Splash(props: {
 	icon?: string | null;
+	customSplashText?: string[] | null;
 }) {
+	const customSplashText = getRandomSplashText(props.customSplashText);
+
 	return (
 		<div id="splash">
 			<img id="splashIcon" src={props.icon || '/static-assets/splash.png'} />
+			<span id="splashText">{customSplashText}</span>
 			<div id="splashSpinner">
 				<svg class="spinner bg" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">
 					<g transform="matrix(1,0,0,1,12,12)">
@@ -24,3 +28,12 @@ export function Splash(props: {
 		</div>
 	);
 }
+
+function getRandomSplashText(splashText: string[] | null | undefined): string | null {
+	if (!splashText || splashText.length === 0) {
+		return null;
+	}
+	const randomIndex = Math.floor(Math.random() * splashText.length);
+	return splashText[randomIndex];
+}
+

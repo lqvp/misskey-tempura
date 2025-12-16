@@ -16,7 +16,6 @@ export function Layout(props: PropsWithChildren<CommonProps<{
 	serverErrorImageUrl?: string;
 	infoImageUrl?: string;
 	notFoundImageUrl?: string;
-	customSplashText?: string;
 	metaJson?: string;
 	clientCtxJson?: string;
 
@@ -97,7 +96,7 @@ export function Layout(props: PropsWithChildren<CommonProps<{
 							Please turn on your JavaScript
 						</p>
 					</noscript>
-					<Splash icon={props.icon} />
+					<Splash icon={props.icon} customSplashText={props.customSplashText} />
 					{props.children}
 				</body>
 			</html>
