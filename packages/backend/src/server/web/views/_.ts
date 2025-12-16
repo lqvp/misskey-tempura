@@ -34,7 +34,7 @@ export type CommonData = MinimumCommonData & {
 	infoImageUrl: string;
 	notFoundImageUrl: string;
 	youBlockedImageUrl: string;
-	customSplashText: string;
+	customSplashText: string[] | null;
 	instanceUrl: string;
 	now: number;
 	federationEnabled: boolean;

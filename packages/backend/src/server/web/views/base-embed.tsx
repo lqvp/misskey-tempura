@@ -17,6 +17,7 @@ export function BaseEmbed(props: PropsWithChildren<CommonProps<{
 	infoImageUrl?: string;
 	notFoundImageUrl?: string;
 	youBlockedImageUrl?: string;
+	customSplashText?: string[] | null;
 	metaJson?: string;
 	embedCtxJson?: string;
 
@@ -79,7 +80,7 @@ export function BaseEmbed(props: PropsWithChildren<CommonProps<{
 							Please turn on your JavaScript
 						</p>
 					</noscript>
-					<Splash icon={props.icon} />
+					<Splash icon={props.icon} customSplashText={props.customSplashText} />
 					{props.children}
 				</body>
 			</html>

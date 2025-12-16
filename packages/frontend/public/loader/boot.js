@@ -162,6 +162,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 	if (cmdlineArray.includes('nosplash')) {
 		document.querySelector('#splashIcon').classList.add('hidden');
 		document.querySelector('#splashSpinner').classList.add('hidden');
+		document.querySelector('#splashText').classList.add('hidden');
 	}
 
 	const systemd = new Systemd(VERSION, cmdline);

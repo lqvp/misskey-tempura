@@ -160,6 +160,13 @@ export const packedMetaLiteSchema = {
 			type: 'string',
 			optional: false, nullable: true,
 		},
+		customSplashText: {
+			type: 'array',
+			optional: false, nullable: true,
+			items: {
+				type: 'string',
+			},
+		},
 		iconUrl: {
 			type: 'string',
 			optional: false, nullable: true,

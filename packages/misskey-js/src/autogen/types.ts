@@ -5986,6 +5986,7 @@ export type components = {
             infoImageUrl: string | null;
             notFoundImageUrl: string | null;
             youBlockedImageUrl: string | null;
+            customSplashText: string[] | null;
             iconUrl: string | null;
             enableLongIconUrl: boolean;
             longIconUrl: string | null;
