@@ -31,7 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</FormSection>
 				<FormSection>
 					<template #label>{{ i18n.ts._misskeyTempura.servers.official }}</template>
-					<template #caption>{{ i18n.ts._misskeyTempura.servers.officialDescription }}</template>
+					<template #description>{{ i18n.ts._misskeyTempura.servers.officialDescription }}</template>
 
 					<div :class="$style.serverGrid">
 						<a v-for="s in officialServers" :key="s.url" :href="s.url" target="_blank" rel="noopener noreferrer" :class="[$style.serverCard, $style.serverCardOfficial]">
@@ -49,7 +49,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 				<FormSection>
 					<template #label>{{ i18n.ts._misskeyTempura.servers.partner }}</template>
-					<template #caption>{{ i18n.ts._misskeyTempura.servers.partnerDescription }}</template>
+					<template #description>{{ i18n.ts._misskeyTempura.servers.partnerDescription }}</template>
 
 					<div :class="$style.serverList">
 						<a v-for="s in endorsedServers" :key="s.url" :href="s.url" target="_blank" rel="noopener noreferrer" :class="[$style.serverCard, $style.serverCardPartner]">
@@ -100,6 +100,7 @@ const officialServers = [
 
 const endorsedServers = [
 	{ name: 'アストラルル', url: 'https://astla.ruru.homes', description: 'デバッグに貢献しているサーバー' },
+	{ name: 'しゃふすきー', url: 'https://shahu.ski', description: 'tempuraを利用した信頼できるサーバー' },
 ];
 
 type ServerMeta = {
@@ -147,15 +148,14 @@ function getServerIconUrl(server: { url: string }): string {
 }
 
 onMounted(async () => {
-	const allServers = officialServers.concat(endorsedServers);
-	const results = await Promise.all(allServers.map(async (s) => [s.url, await fetchServerMeta(s.url)] as const));
+	const allServers = [...officialServers, ...endorsedServers];
+	const results = await Promise.all(
+		allServers.map(async (s) => [s.url, await fetchServerMeta(s.url)] as const),
+	);
 
-	const next = new Map(serverMetaByUrl.value);
-	for (const [serverUrl, meta] of results) {
-		if (meta == null) continue;
-		next.set(serverUrl, meta);
-	}
-	serverMetaByUrl.value = next;
+	serverMetaByUrl.value = new Map(
+		results.filter((result): result is [string, ServerMeta] => result[1] != null),
+	);
 });
 
 const displayVersion = computed(() => {
