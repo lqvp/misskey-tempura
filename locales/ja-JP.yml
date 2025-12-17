@@ -2358,7 +2358,7 @@ _misskeyTempura:
     official: "公式サーバー"
     officialDescription: "Misskey-tempuraの公式サーバーです。"
     partner: "公認サポートサーバー"
-    partnerDescription: "開発と連携し、ユーザーサポートや新機能テストを行ったり信頼できるサーバー"
+    partnerDescription: "開発デバッグ・テストへの協力や、安心してお使いいただける信頼されたサーバーです。"
 
 _displayOfSensitiveMedia:
   respect: "センシティブ設定されたメディアを隠す"

@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 					<div :class="$style.serverGrid">
 						<a v-for="s in officialServers" :key="s.url" :href="s.url" target="_blank" rel="noopener noreferrer" :class="[$style.serverCard, $style.serverCardOfficial]">
-							<img :src="getServerIconUrl(s)" :class="$style.serverIcon" alt="">
+							<img :src="getServerIconUrl(s)" :class="$style.serverIcon" :alt="`${s.name} icon`">
 							<div :class="$style.serverInfo">
 								<div :class="$style.serverNameRow">
 									<span :class="$style.serverName">{{ s.name }}</span>
@@ -53,7 +53,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 					<div :class="$style.serverList">
 						<a v-for="s in endorsedServers" :key="s.url" :href="s.url" target="_blank" rel="noopener noreferrer" :class="[$style.serverCard, $style.serverCardPartner]">
-							<img :src="getServerIconUrl(s)" :class="$style.serverIcon" alt="">
+							<img :src="getServerIconUrl(s)" :class="$style.serverIcon" :alt="`${s.name} icon`">
 							<div :class="$style.serverInfo">
 								<div :class="$style.serverNameRow">
 									<span :class="$style.serverName">{{ s.name }}</span>
@@ -122,14 +122,15 @@ async function fetchServerMeta(serverUrl: string): Promise<ServerMeta | null> {
 				'content-type': 'application/json',
 			},
 			body: JSON.stringify({ detail: false }),
+			signal: AbortSignal.timeout(5000),
 		});
 
 		if (!res.ok) return null;
 		const data = (await res.json()) as unknown;
 		if (typeof data !== 'object' || data == null) return null;
 
-		const maybeIconUrl = (data as { iconUrl?: unknown }).iconUrl;
-		const maybeFaviconUrl = (data as { faviconUrl?: unknown }).faviconUrl;
+		const maybeIconUrl = (data as Record<string, unknown>).iconUrl;
+		const maybeFaviconUrl = (data as Record<string, unknown>).faviconUrl;
 
 		return {
 			iconUrl: typeof maybeIconUrl === 'string' ? maybeIconUrl : null,
@@ -343,11 +344,11 @@ definePage(() => ({
 
 .badgeOfficial {
 	background: var(--MI_THEME-love);
-  color: #fff;
+  color: var(--MI_THEME-fgOnAccent);
 }
 
 .badgeEndorsed {
 	background: var(--MI_THEME-badge);
-	color: #fff;
+	color: var(--MI_THEME-fgOnAccent);
 }
 </style>

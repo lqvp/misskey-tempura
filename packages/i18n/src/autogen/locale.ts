@@ -9025,7 +9025,7 @@ export interface Locale extends ILocale {
              */
             "partner": string;
             /**
-             * 開発と連携し、ユーザーサポートや新機能テストを行ったり信頼できるサーバー
+             * 開発デバッグ・テストへの協力や、安心してお使いいただける信頼されたサーバーです。
              */
             "partnerDescription": string;
         };
