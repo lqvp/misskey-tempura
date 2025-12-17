@@ -13,10 +13,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkFolder
 				v-for="changelog in changelogs"
 				:key="changelog.version"
-				:defaultOpen="version.split('tempura-')[1]?.startsWith(changelog.version)"
+				:defaultOpen="isCurrentVersion(changelog.version)"
 			>
 				<template #label>
-					<MkSparkle v-if="version.split('tempura-')[1]?.startsWith(changelog.version)">
+					<MkSparkle v-if="isCurrentVersion(changelog.version)">
 						<span :class="$style.versionLabel">{{ changelog.version }}</span>
 					</MkSparkle>
 					<span v-else :class="$style.versionLabel">{{ changelog.version }}</span>
@@ -45,57 +45,23 @@ import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';
 import MkFolder from '@/components/MkFolder.vue';
 import MkSparkle from '@/components/MkSparkle.vue';
+import { parseTempuraChangelogMarkdown, type TempuraChangelogEntry } from '@/utility/parse-tempura-changelog.js';
 
-interface Changelog {
-	version: string;
-	context: Record<string, string[]>;
-}
-
-const changelogs = ref<Changelog[]>([]);
+const changelogs = ref<TempuraChangelogEntry[]>([]);
 const error = ref<string | null>(null);
 
+const currentTempuraVersion = computed(() => version.split('tempura-')[1] ?? '');
+const isCurrentVersion = (changelogVersion: string): boolean => {
+	const current = currentTempuraVersion.value;
+	if (current === changelogVersion) return true;
+	if (!current.startsWith(changelogVersion)) return false;
+
+	const next = current[changelogVersion.length];
+	return next === undefined || next === '-' || next === '+' || next === '.';
+};
+
 const parseMarkdown = (markdown: string) => {
-	const sections = markdown.split('---');
-	const parsedChangelogs = sections
-		.map(section => section.trim())
-		.filter(section => section.length > 0 && (section.startsWith('# ') || section.startsWith('## ')))
-		.map((section) => {
-			const lines = section.split('\n').map(line => line.trim());
-			const versionLine = lines.shift() ?? '';
-			const v = versionLine.replace(/^#+\s*/, '');
-
-			lines.shift();
-
-			const context: { [key: string]: string[] } = { 'General': [] };
-			let currentCategory = 'General';
-
-			for (const line of lines) {
-				if (line.startsWith('### ')) {
-					currentCategory = line.replace(/^###\s*/, '');
-					context[currentCategory] = [];
-				} else if (line.startsWith('* ') || /^[a-zA-Z]+:/.test(line)) {
-					context[currentCategory].push(line.replace(/^\*\s*/, ''));
-				}
-			}
-
-			if (Object.keys(context).length === 1 && context['General'].length === 0) {
-				return null;
-			}
-
-			for (const key in context) {
-				if (context[key].length === 0) {
-					delete context[key];
-				}
-			}
-
-			return {
-				version: v,
-				context: context,
-			};
-		})
-		.filter(Boolean);
-
-	changelogs.value = parsedChangelogs as Changelog[];
+	changelogs.value = parseTempuraChangelogMarkdown(markdown);
 };
 
 onMounted(async () => {

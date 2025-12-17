@@ -198,7 +198,7 @@ export function openInstanceMenu(ev: MouseEvent) {
 
 	menuItems.push({
 		type: 'link',
-text: i18n.ts._misskeyTempura.diff,
+		text: i18n.ts._misskeyTempura.diff,
 		to: '/tempura-changelog',
 	});
 
