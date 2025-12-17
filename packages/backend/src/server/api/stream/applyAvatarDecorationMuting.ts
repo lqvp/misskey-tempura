@@ -13,11 +13,15 @@ export function applyAvatarDecorationMuting(value: unknown, mutedUserIds: Readon
 	if (mutedUserIds.size === 0) return;
 
 	const stack: unknown[] = [value];
+	const visited = new WeakSet<object>();
 
 	while (stack.length > 0) {
 		const current = stack.pop();
 
-		if (current == null) continue;
+		if (current == null || typeof current !== 'object') continue;
+
+		if (visited.has(current)) continue;
+		visited.add(current);
 
 		if (Array.isArray(current)) {
 			for (let i = 0; i < current.length; i++) {
@@ -26,17 +30,17 @@ export function applyAvatarDecorationMuting(value: unknown, mutedUserIds: Readon
 			continue;
 		}
 
-		if (typeof current !== 'object') continue;
-
 		const obj = current as Record<string, unknown>;
 
 		// UserLite/UserDetailed-like objects always have `id` and `avatarDecorations`.
 		const id = obj.id;
 		const username = obj.username;
+		const avatarUrl = obj.avatarUrl;
 		const avatarDecorations = obj.avatarDecorations;
 		if (
 			typeof id === 'string' &&
 			typeof username === 'string' &&
+			typeof avatarUrl === 'string' &&
 			Array.isArray(avatarDecorations) &&
 			mutedUserIds.has(id)
 		) {
@@ -48,4 +52,3 @@ export function applyAvatarDecorationMuting(value: unknown, mutedUserIds: Readon
 		}
 	}
 }
-

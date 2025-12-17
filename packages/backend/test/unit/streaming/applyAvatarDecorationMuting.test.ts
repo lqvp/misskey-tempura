@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: lqvp
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 import { describe, expect, test } from '@jest/globals';
 import { applyAvatarDecorationMuting } from '@/server/api/stream/applyAvatarDecorationMuting.js';
 
@@ -13,6 +18,7 @@ describe('applyAvatarDecorationMuting', () => {
 					user: {
 						id: 'muted-user',
 						username: 'muted',
+						avatarUrl: 'https://example.test/a.png',
 						avatarDecorations: [{ id: 'd1', url: 'https://example.test/d1.png' }],
 					},
 					renote: {
@@ -20,6 +26,7 @@ describe('applyAvatarDecorationMuting', () => {
 						user: {
 							id: 'ok-user',
 							username: 'ok',
+							avatarUrl: 'https://example.test/b.png',
 							avatarDecorations: [{ id: 'd2', url: 'https://example.test/d2.png' }],
 						},
 						reply: {
@@ -27,6 +34,7 @@ describe('applyAvatarDecorationMuting', () => {
 							user: {
 								id: 'muted-user',
 								username: 'muted',
+								avatarUrl: 'https://example.test/a.png',
 								avatarDecorations: [{ id: 'd3', url: 'https://example.test/d3.png' }],
 							},
 						},
@@ -46,6 +54,7 @@ describe('applyAvatarDecorationMuting', () => {
 		const user: any = {
 			id: 'u1',
 			username: 'u1',
+			avatarUrl: 'https://example.test/a.png',
 			avatarDecorations: [{ id: 'd1', url: 'https://example.test/d1.png' }],
 		};
 
@@ -53,5 +62,20 @@ describe('applyAvatarDecorationMuting', () => {
 
 		expect(user.avatarDecorations).toHaveLength(1);
 	});
-});
 
+	test('handles circular references', () => {
+		const user: any = {
+			id: 'muted-user',
+			username: 'muted',
+			avatarUrl: 'https://example.test/a.png',
+			avatarDecorations: [{ id: 'd1', url: 'https://example.test/d1.png' }],
+		};
+		const wrapper: any = { user };
+		wrapper.self = wrapper;
+		user.wrapper = wrapper;
+
+		applyAvatarDecorationMuting(wrapper, new Set(['muted-user']));
+
+		expect(user.avatarDecorations).toEqual([]);
+	});
+});
