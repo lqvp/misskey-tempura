@@ -101,6 +101,7 @@ const officialServers = [
 const endorsedServers = [
 	{ name: 'アストラルル', url: 'https://astla.ruru.homes', description: 'デバッグに貢献しているサーバー' },
 	{ name: 'しゃふすきー', url: 'https://shahu.ski', description: 'tempuraを利用した信頼できるサーバー' },
+	{ name: 'もじもじデート', url: 'https://mojimoji.date', description: 'tempuraを利用した信頼できるサーバー2' },
 ];
 
 type ServerMeta = {
