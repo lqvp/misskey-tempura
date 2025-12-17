@@ -65,7 +65,7 @@ html.embed.noborder #splash {
 	left: 0;
 	margin: auto;
 	display: inline-block;
-	width: 60px;
+	width: 28px;
 	height: 28px;
 	transform: translateY(70px);
 	color: var(--MI_THEME-accent);
