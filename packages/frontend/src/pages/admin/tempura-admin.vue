@@ -249,19 +249,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<template #label>{{ i18n.ts._entrance.marginSettings }}</template>
 
 							<div class="_gaps_m">
-								<MkInput :modelValue="entranceSettingsForm.state.entranceMarginLeft" type="number" :min="0" @update:modelValue="v => entranceSettingsForm.state.entranceMarginLeft = v">
+								<MkInput :modelValue="entranceSettingsForm.state.entranceMarginLeft" type="number" :min="0" step="1" @update:modelValue="v => entranceSettingsForm.state.entranceMarginLeft = v">
 									<template #label>{{ i18n.ts._entrance.marginLeft }}</template>
 								</MkInput>
 
-								<MkInput :modelValue="entranceSettingsForm.state.entranceMarginRight" type="number" :min="0" @update:modelValue="v => entranceSettingsForm.state.entranceMarginRight = v">
+								<MkInput :modelValue="entranceSettingsForm.state.entranceMarginRight" type="number" :min="0" step="1" @update:modelValue="v => entranceSettingsForm.state.entranceMarginRight = v">
 									<template #label>{{ i18n.ts._entrance.marginRight }}</template>
 								</MkInput>
 
-								<MkInput :modelValue="entranceSettingsForm.state.entranceMarginTop" type="number" :min="0" @update:modelValue="v => entranceSettingsForm.state.entranceMarginTop = v">
+								<MkInput :modelValue="entranceSettingsForm.state.entranceMarginTop" type="number" :min="0" step="1" @update:modelValue="v => entranceSettingsForm.state.entranceMarginTop = v">
 									<template #label>{{ i18n.ts._entrance.marginTop }}</template>
 								</MkInput>
 
-								<MkInput :modelValue="entranceSettingsForm.state.entranceMarginBottom" type="number" :min="0" @update:modelValue="v => entranceSettingsForm.state.entranceMarginBottom = v">
+								<MkInput :modelValue="entranceSettingsForm.state.entranceMarginBottom" type="number" :min="0" step="1" @update:modelValue="v => entranceSettingsForm.state.entranceMarginBottom = v">
 									<template #label>{{ i18n.ts._entrance.marginBottom }}</template>
 								</MkInput>
 							</div>
@@ -656,6 +656,19 @@ const entranceSettingsForm = useForm({
 	entranceMarginTop: meta.entranceMarginTop,
 	entranceMarginBottom: meta.entranceMarginBottom,
 }, async (state) => {
+	const parseOptionalNonNegativeInt = (value: unknown): { value?: number; error?: string } => {
+		if (value === null || value === undefined || value === '') return {};
+
+		const numberValue = typeof value === 'number' ? value : Number(value);
+		if (!Number.isFinite(numberValue) || !Number.isInteger(numberValue)) {
+			return { error: 'マージン値は整数で入力してください' };
+		}
+		if (numberValue < 0) {
+			return { error: 'マージン値は0以上の値を指定してください' };
+		}
+		return { value: numberValue };
+	};
+
 	const emojis = state.entranceSelectEmojis.split('\n').filter(emoji => emoji.trim() !== '');
 	if (emojis.length > 5) {
 		os.alert({
@@ -665,20 +678,20 @@ const entranceSettingsForm = useForm({
 		return;
 	}
 
-	const parsedMargins = {
-		entranceMarginLeft: Number(state.entranceMarginLeft),
-		entranceMarginRight: Number(state.entranceMarginRight),
-		entranceMarginTop: Number(state.entranceMarginTop),
-		entranceMarginBottom: Number(state.entranceMarginBottom),
-	};
+	const left = parseOptionalNonNegativeInt(state.entranceMarginLeft);
+	const right = parseOptionalNonNegativeInt(state.entranceMarginRight);
+	const top = parseOptionalNonNegativeInt(state.entranceMarginTop);
+	const bottom = parseOptionalNonNegativeInt(state.entranceMarginBottom);
+	const marginError = left.error ?? right.error ?? top.error ?? bottom.error;
 
-	if (Object.values(parsedMargins).some(isNaN)) {
+	if (marginError) {
 		os.alert({
 			type: 'error',
-			text: 'マージン値は数値で入力してください',
+			text: marginError,
 		});
 		return;
 	}
+
 	await os.apiWithDialog('admin/update-meta', {
 		entranceShowTimeLine: state.entranceShowTimeLine,
 		entranceShowFeatured: state.entranceShowFeatured,
@@ -690,10 +703,10 @@ const entranceSettingsForm = useForm({
 		entranceShowSignup: state.entranceShowSignup,
 		entranceShowAnotherInstance: state.entranceShowAnotherInstance,
 		entranceShowSignin: state.entranceShowSignin,
-		entranceMarginLeft: state.entranceMarginLeft,
-		entranceMarginRight: state.entranceMarginRight,
-		entranceMarginTop: state.entranceMarginTop,
-		entranceMarginBottom: state.entranceMarginBottom,
+		entranceMarginLeft: left.value,
+		entranceMarginRight: right.value,
+		entranceMarginTop: top.value,
+		entranceMarginBottom: bottom.value,
 	});
 	fetchInstance(true);
 });
