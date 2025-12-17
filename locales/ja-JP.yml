@@ -2353,6 +2353,12 @@ _misskeyTempura:
   contributors: "優秀なコントリビューター(?)"
   aboutTempura: "Misskey-tempuraについて"
   diff: "tempuraの更新履歴"
+  servers:
+    title: "Misskey-tempura サーバー"
+    official: "公式サーバー"
+    officialDescription: "Misskey-tempuraの公式サーバーです。"
+    partner: "公認サポートサーバー"
+    partnerDescription: "開発と連携し、ユーザーサポートや新機能テストを行う信頼できるサーバー"
 
 _displayOfSensitiveMedia:
   respect: "センシティブ設定されたメディアを隠す"

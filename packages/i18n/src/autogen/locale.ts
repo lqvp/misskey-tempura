@@ -9007,6 +9007,28 @@ export interface Locale extends ILocale {
          * tempuraの更新履歴
          */
         "diff": string;
+        "servers": {
+            /**
+             * Misskey-tempura サーバー
+             */
+            "title": string;
+            /**
+             * 公式サーバー
+             */
+            "official": string;
+            /**
+             * Misskey-tempuraの公式サーバーです。
+             */
+            "officialDescription": string;
+            /**
+             * 公認サポートサーバー
+             */
+            "partner": string;
+            /**
+             * 開発と連携し、ユーザーサポートや新機能テストを行う信頼できるサーバー
+             */
+            "partnerDescription": string;
+        };
     };
     "_displayOfSensitiveMedia": {
         /**
