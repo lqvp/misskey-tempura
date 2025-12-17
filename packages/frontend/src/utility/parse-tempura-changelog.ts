@@ -79,9 +79,7 @@ export function parseTempuraChangelogMarkdown(markdown: string): TempuraChangelo
 		currentCategory = 'General';
 	};
 
-	for (const rawLine of lines) {
-		const line = rawLine;
-
+	for (const line of lines) {
 		const heading = matchHeading(line);
 		if (heading && heading.level === 1) {
 			finalize();
@@ -141,4 +139,3 @@ export function parseTempuraChangelogMarkdown(markdown: string): TempuraChangelo
 	finalize();
 	return entries;
 }
-

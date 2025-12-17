@@ -57,7 +57,7 @@ const isCurrentVersion = (changelogVersion: string): boolean => {
 	if (!current.startsWith(changelogVersion)) return false;
 
 	const next = current[changelogVersion.length];
-	return next === undefined || next === '-' || next === '+' || next === '.';
+	return next === '-' || next === '+' || next === '.';
 };
 
 const parseMarkdown = (markdown: string) => {
@@ -65,8 +65,12 @@ const parseMarkdown = (markdown: string) => {
 };
 
 onMounted(async () => {
+	const controller = new AbortController();
+	const timeoutId = window.setTimeout(() => controller.abort(), 10_000);
 	try {
-		const res = await window.fetch('https://hackmd.io/@il2/misskey-tempura/download');
+		const res = await window.fetch('https://hackmd.io/@il2/misskey-tempura/download', {
+			signal: controller.signal,
+		});
 		if (res.ok) {
 			const markdown = await res.text();
 			parseMarkdown(markdown);
@@ -76,7 +80,11 @@ onMounted(async () => {
 		}
 	} catch (err) {
 		console.error(err);
-		error.value = 'changelogの取得に失敗しました';
+		error.value = err instanceof DOMException && err.name === 'AbortError'
+			? 'changelogの取得がタイムアウトしました'
+			: 'changelogの取得に失敗しました';
+	} finally {
+		window.clearTimeout(timeoutId);
 	}
 });
 
