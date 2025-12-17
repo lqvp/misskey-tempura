@@ -30,7 +30,9 @@ const matchBullet = (line: string): { indent: number; text: string } | null => {
  * - Categories: `## Frontend`, `### Backend`, etc.
  * - Items: bullet lines (`* ...` / `- ...`) and plain text lines
  */
-export function parseTempuraChangelogMarkdown(markdown: string): TempuraChangelogEntry[] {
+export function parseTempuraChangelogMarkdown(markdown: string | null | undefined): TempuraChangelogEntry[] {
+	if (markdown == null) return [];
+
 	const normalized = markdown.replaceAll('\r\n', '\n').replaceAll('\r', '\n');
 	const lines = normalized.split('\n');
 
