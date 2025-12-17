@@ -41,11 +41,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { version } from '@@/js/config.js';
 import { computed, ref, onMounted } from 'vue';
+import type { TempuraChangelogEntry } from '@/utility/tempura-script/parse-tempura-changelog.js';
 import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';
 import MkFolder from '@/components/MkFolder.vue';
 import MkSparkle from '@/components/MkSparkle.vue';
-import { parseTempuraChangelogMarkdown, type TempuraChangelogEntry } from '@/utility/parse-tempura-changelog.js';
+import { parseTempuraChangelogMarkdown } from '@/utility/tempura-script/parse-tempura-changelog.js';
 
 const changelogs = ref<TempuraChangelogEntry[]>([]);
 const error = ref<string | null>(null);
