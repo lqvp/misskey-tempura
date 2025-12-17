@@ -102,10 +102,8 @@ export function parseTempuraChangelogMarkdown(markdown: string | null | undefine
 		if (/^\s*Base:\s*/.test(line)) {
 			const base = line.replace(/^\s*Base:\s*/, '').trim();
 			if (base.length > 0) {
-				const previousCategory = currentCategory;
-				currentCategory = 'Base';
-				pushItem(base);
-				currentCategory = previousCategory;
+				ensureCategory('Base');
+				current.context['Base']!.push(base);
 			}
 			continue;
 		}
