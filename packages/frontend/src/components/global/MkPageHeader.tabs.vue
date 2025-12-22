@@ -50,6 +50,7 @@ export type Tab = {
 	iconOnly?: boolean;
 	title: string;
 	icon?: string;
+	selectable?: boolean;
 };
 </script>
 
@@ -91,7 +92,7 @@ function getTabStyle(t: Tab) {
 
 function onTabMousedown(tab: Tab, ev: MouseEvent): void {
 	// ユーザビリティの観点からmousedown時にはonClickは呼ばない
-	if (tab.key) {
+	if (tab.key && tab.selectable !== false) {
 		emit('update:tab', tab.key);
 	}
 }
@@ -105,7 +106,7 @@ function onTabClick(t: Tab, ev: MouseEvent): void {
 		t.onClick(ev);
 	}
 
-	if (t.key) {
+	if (t.key && t.selectable !== false) {
 		emit('update:tab', t.key);
 	}
 }

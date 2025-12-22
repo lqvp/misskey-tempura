@@ -305,6 +305,7 @@ const headerTabs = computed(() => {
 			icon: 'ti ti-list',
 			title: i18n.ts.lists,
 			iconOnly: true,
+			selectable: false,
 			onClick: chooseList,
 		});
 	}
@@ -315,6 +316,7 @@ const headerTabs = computed(() => {
 			icon: 'ti ti-antenna',
 			title: i18n.ts.antennas,
 			iconOnly: true,
+			selectable: false,
 			onClick: chooseAntenna,
 		});
 	}
@@ -325,6 +327,7 @@ const headerTabs = computed(() => {
 			icon: 'ti ti-device-tv',
 			title: i18n.ts.channel,
 			iconOnly: true,
+			selectable: false,
 			onClick: chooseChannel,
 		});
 	}

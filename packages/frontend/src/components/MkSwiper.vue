@@ -121,10 +121,10 @@ function touchMove(event: TouchEvent) {
 	if (Math.abs(distanceX) < MIN_SWIPE_DISTANCE) return;
 	if (Math.abs(distanceX) > MAX_SWIPE_DISTANCE) return;
 
-	if (currentTabIndex.value === 0 || props.tabs[currentTabIndex.value - 1].onClick) {
+	if (currentTabIndex.value === 0 || props.tabs[currentTabIndex.value - 1].onClick || props.tabs[currentTabIndex.value - 1].selectable === false) {
 		distanceX = Math.min(distanceX, 0);
 	}
-	if (currentTabIndex.value === props.tabs.length - 1 || props.tabs[currentTabIndex.value + 1].onClick) {
+	if (currentTabIndex.value === props.tabs.length - 1 || props.tabs[currentTabIndex.value + 1].onClick || props.tabs[currentTabIndex.value + 1].selectable === false) {
 		distanceX = Math.max(distanceX, 0);
 	}
 	if (distanceX === 0) return;
@@ -158,12 +158,12 @@ function touchEnd(event: TouchEvent) {
 
 	if (Math.abs(distance) > SWIPE_DISTANCE_THRESHOLD) {
 		if (distance > 0) {
-			if (props.tabs[currentTabIndex.value - 1] && !props.tabs[currentTabIndex.value - 1].onClick) {
+			if (props.tabs[currentTabIndex.value - 1] && !props.tabs[currentTabIndex.value - 1].onClick && props.tabs[currentTabIndex.value - 1].selectable !== false) {
 				tabModel.value = props.tabs[currentTabIndex.value - 1].key;
 				emit('swiped', props.tabs[currentTabIndex.value - 1].key, 'right');
 			}
 		} else {
-			if (props.tabs[currentTabIndex.value + 1] && !props.tabs[currentTabIndex.value + 1].onClick) {
+			if (props.tabs[currentTabIndex.value + 1] && !props.tabs[currentTabIndex.value + 1].onClick && props.tabs[currentTabIndex.value + 1].selectable !== false) {
 				tabModel.value = props.tabs[currentTabIndex.value + 1].key;
 				emit('swiped', props.tabs[currentTabIndex.value + 1].key, 'left');
 			}
