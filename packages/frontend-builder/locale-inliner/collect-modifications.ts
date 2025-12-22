@@ -160,10 +160,12 @@ export function collectModifications(sourceCode: string, fileName: string, fileL
 
 			if (node.type === 'Identifier') {
 				assertType<estree.Identifier>(node);
-				assertType<estree.Property | estree.MemberExpression | estree.ExportSpecifier>(parent);
+				assertType<estree.Property | estree.MemberExpression | estree.ExportSpecifier | estree.PropertyDefinition | estree.MethodDefinition>(parent);
 				if (parent.type === 'Property' && !parent.computed && property === 'key') return; // we don't care 'id' part of { id: expr }
 				if (parent.type === 'MemberExpression' && !parent.computed && property === 'property') return; // we don't care 'id' part of { id: expr }
 				if (parent.type === 'ExportSpecifier' && property === 'exported') return; // we don't care 'id' part of { id: expr }
+				if (parent.type === 'PropertyDefinition' && !parent.computed && property === 'key') return; // class field name
+				if (parent.type === 'MethodDefinition' && !parent.computed && property === 'key') return; // class method name
 				if (node.name === localI18nIdentifier) {
 					fileLogger.error(`${lineCol(sourceCode, node)}: Using i18n identifier "${localI18nIdentifier}" directly. Skipping inlining.`);
 					preserveI18nImport = true;
