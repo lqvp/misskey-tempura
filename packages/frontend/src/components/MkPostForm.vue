@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div
-	:class="[$style.root, { [$style.modal]: modal, _popup: modal }]"
+	:class="[$style.root]"
 	@dragover.stop="onDragover"
 	@dragenter="onDragenter"
 	@dragleave="onDragleave"
@@ -117,7 +117,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { inject, watch, nextTick, onMounted, defineAsyncComponent, provide, shallowRef, ref, computed, reactive, useTemplateRef, onUnmounted } from 'vue';
+import { watch, nextTick, onMounted, defineAsyncComponent, provide, shallowRef, ref, computed, reactive, useTemplateRef, onUnmounted } from 'vue';
 import * as mfm from 'mfm-js';
 import * as Misskey from 'misskey-js';
 import insertTextAtCursor from 'insert-text-at-cursor';
@@ -170,8 +170,6 @@ import { closeTip } from '@/tips.js';
 import MkVisibilityColoring from '@/components/MkVisibilityColoring.vue';
 
 const $i = ensureSignin();
-
-const modal = inject(DI.inModal, false);
 
 const props = withDefaults(defineProps<PostFormProps & {
 	fixed?: boolean;
@@ -1607,13 +1605,6 @@ defineExpose({
 .root {
 	position: relative;
 	container-type: inline-size;
-
-	&.modal {
-		width: 100%;
-		max-width: 520px;
-		overflow-x: clip;
-		overflow-y: auto;
-	}
 }
 
 //#region header
@@ -1890,7 +1881,8 @@ html[data-color-scheme=light] .preview {
 	min-width: 100%;
 	width: 100%;
 	min-height: 90px;
-	height: 100%;
+	max-height: 500px;
+	field-sizing: content;
 }
 
 .textCount {

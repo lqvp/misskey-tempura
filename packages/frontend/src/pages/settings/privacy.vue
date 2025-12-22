@@ -185,7 +185,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		<SearchMarker :keywords="['lockdown']">
 			<FormSection>
-				<template #label><SearchLabel>{{ i18n.ts.lockdown }}</SearchLabel><span class="_beta">{{ i18n.ts.beta }}</span></template>
+				<template #label><SearchLabel>{{ i18n.ts.lockdown }}</SearchLabel></template>
 
 				<div class="_gaps_m">
 					<SearchMarker :keywords="['login', 'signin']">
@@ -310,7 +310,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { ref, computed, watch } from 'vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkSelect from '@/components/MkSelect.vue';
-import type { MkSelectItem, ItemOption } from '@/components/MkSelect.vue';
+import type { ItemOption } from '@/components/MkSelect.vue';
 import FormSection from '@/components/form/section.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
