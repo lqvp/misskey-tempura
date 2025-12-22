@@ -9,7 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { defineProps, computed } from 'vue';
+import { computed } from 'vue';
 import { prefer } from '@/preferences.js';
 
 const props = defineProps<{
