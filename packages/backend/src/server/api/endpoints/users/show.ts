@@ -144,6 +144,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					id: In(ps.userIds),
 				} : {
 					id: In(ps.userIds),
+					isDeleted: false,
 					isSuspended: false,
 				});
 
