@@ -317,6 +317,7 @@ type AvatarDecoration = {
 	flipH?: boolean;
 	offsetX?: number;
 	offsetY?: number;
+	showBehind?: boolean;
 };
 
 type ReceivedAbuseReport = {

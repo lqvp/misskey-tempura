@@ -4340,6 +4340,7 @@ export type components = {
                 url: string;
                 offsetX?: number;
                 offsetY?: number;
+                showBehind?: boolean;
             }[];
             isBot?: boolean;
             isCat?: boolean;
