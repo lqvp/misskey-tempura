@@ -6,6 +6,7 @@
 import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
+import * as os from 'node:os';
 import { type FastifyServerOptions } from 'fastify';
 import type * as Sentry from '@sentry/node';
 import type * as SentryVue from '@sentry/vue';
@@ -84,6 +85,7 @@ type Source = {
 	allowedPrivateNetworks?: string[];
 
 	maxFileSize?: number;
+	multipartTempDir?: string;
 
 	clusterLimit?: number;
 	clusterOverClock?: boolean;
@@ -162,6 +164,7 @@ export type Config = {
 	proxyBypassHosts: string[] | undefined;
 	allowedPrivateNetworks: string[] | undefined;
 	maxFileSize: number;
+	multipartTempDir: string;
 	clusterLimit: number | undefined;
 	clusterOverClock?: boolean;
 	id: string;
@@ -262,6 +265,9 @@ export function loadConfig(): Config {
 		: null;
 	const internalMediaProxy = `${scheme}://${host}/proxy`;
 	const redis = convertRedisOptions(config.redis, host);
+	const multipartTempDir = (config.multipartTempDir && config.multipartTempDir.trim().length > 0)
+		? config.multipartTempDir.replace(/\/+$/, '')
+		: os.tmpdir();
 
 	return {
 		version,
@@ -307,6 +313,7 @@ export function loadConfig(): Config {
 		proxyBypassHosts: config.proxyBypassHosts,
 		allowedPrivateNetworks: config.allowedPrivateNetworks,
 		maxFileSize: config.maxFileSize ?? 262144000,
+		multipartTempDir,
 		clusterLimit: config.clusterLimit,
 		clusterOverClock: config.clusterOverClock ?? false,
 		outgoingAddress: config.outgoingAddress,

@@ -3,11 +3,26 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import * as fs from 'node:fs';
 import * as tmp from 'tmp';
 
 export function createTemp(): Promise<[string, () => void]> {
 	return new Promise<[string, () => void]>((res, rej) => {
 		tmp.file((e, path, fd, cleanup) => {
+			if (e) return rej(e);
+			res([path, process.env.NODE_ENV === 'production' ? cleanup : () => {}]);
+		});
+	});
+}
+
+export function createTempIn(dir: string): Promise<[string, () => void]> {
+	return new Promise<[string, () => void]>((res, rej) => {
+		try {
+			fs.mkdirSync(dir, { recursive: true });
+		} catch (e) {
+			return rej(e);
+		}
+		tmp.file({ dir }, (e, path, fd, cleanup) => {
 			if (e) return rej(e);
 			res([path, process.env.NODE_ENV === 'production' ? cleanup : () => {}]);
 		});

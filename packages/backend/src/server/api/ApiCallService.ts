@@ -13,7 +13,7 @@ import type { MiLocalUser, MiUser } from '@/models/User.js';
 import type { MiAccessToken } from '@/models/AccessToken.js';
 import type Logger from '@/logger.js';
 import type { MiMeta, UserIpsRepository } from '@/models/_.js';
-import { createTemp } from '@/misc/create-temp.js';
+import { createTemp, createTempIn } from '@/misc/create-temp.js';
 import { bindThis } from '@/decorators.js';
 import { RoleService } from '@/core/RoleService.js';
 import { MetaService } from '@/core/MetaService.js';
@@ -208,7 +208,9 @@ export class ApiCallService implements OnApplicationShutdown {
 			return;
 		}
 
-		const [path, cleanup] = await createTemp();
+		const [path, cleanup] = this.config.multipartTempDir
+			? await createTempIn(this.config.multipartTempDir)
+			: await createTemp();
 		await stream.pipeline(multipartData.file, fs.createWriteStream(path));
 
 		// ファイルサイズが制限を超えていた場合

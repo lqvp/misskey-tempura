@@ -4,11 +4,13 @@
  */
 
 import * as fs from 'node:fs';
+import * as path from 'node:path';
 import ms from 'ms';
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
-import { createTemp } from '@/misc/create-temp.js';
+import { createTemp, createTempIn } from '@/misc/create-temp.js';
+import type { Config } from '@/config.js';
 import type { MultipartUploadsRepository } from '@/models/_.js';
 import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.js';
 import { DriveService } from '@/core/DriveService.js';
@@ -77,6 +79,9 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
+		@Inject(DI.config)
+		private config: Config,
+
 		@Inject(DI.multipartUploadsRepository)
 		private multipartUploadsRepository: MultipartUploadsRepository,
 		private driveFileEntityService: DriveFileEntityService,
@@ -112,7 +117,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			// Verify that all parts have been uploaded regardless of completedParts counter
-			const partDir = `/tmp/misskey_multipart_${multipartUpload.id}`;
+			const partDir = path.join(this.config.multipartTempDir, `misskey_multipart_${multipartUpload.id}`);
 			let allPartsExist = true;
 			const missingParts = [];
 
@@ -136,7 +141,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			// Create a temporary file for the complete file
-			const [completeFilePath] = await createTemp();
+			const [completeFilePath] = this.config.multipartTempDir
+				? await createTempIn(this.config.multipartTempDir)
+				: await createTemp();
 
 			// Combine all parts using streams instead of loading into memory
 			const writeStream = fs.createWriteStream(completeFilePath);
@@ -193,25 +200,25 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					requestHeaders: headers,
 				});
 
-				// Clean up temp files
+				// Clean up part files and directory
+				let cleanupFailed = false;
 				try {
 					if (fs.existsSync(partDir)) {
-						for (let i = 1; i <= multipartUpload.totalParts; i++) {
-							const partPath = `${partDir}/part_${i}`;
-							if (fs.existsSync(partPath)) {
-								fs.unlinkSync(partPath);
-							}
-						}
-						fs.rmdirSync(partDir);
+						await fs.promises.rm(partDir, { recursive: true, force: true });
 					}
 				} catch (e) {
+					cleanupFailed = true;
 					console.error('Failed to clean up multipart upload parts', e);
 				}
 
-				// Delete the multipart upload record
-				await this.multipartUploadsRepository.delete({
-					id: multipartUpload.id,
-				});
+				// Delete the multipart upload record only after cleanup succeeds
+				if (!cleanupFailed) {
+					await this.multipartUploadsRepository.delete({
+						id: multipartUpload.id,
+					});
+				} else {
+					console.error(`Skipping multipart upload record deletion due to cleanup failure: ${multipartUpload.id}`);
+				}
 
 				return await this.driveFileEntityService.pack(driveFile, { self: true });
 			} catch (err) {
