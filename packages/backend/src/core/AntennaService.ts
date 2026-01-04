@@ -169,23 +169,27 @@ export class AntennaService implements OnApplicationShutdown {
 			if (accts.includes(this.utilityService.getFullApAccount(noteUser.username, noteUser.host).toLowerCase())) return false;
 		}
 
-		const mustExcludeKeywords = antenna.mustExcludeKeywords
-			// Clean up
-			.map(xs => xs.filter(x => x !== ''))
-			.filter(xs => xs.length > 0);
 
-		if (mustExcludeKeywords.length > 0) {
-			if (note.text != null || note.cw != null) {
-				const _text = (note.text ?? '') + '\n' + (note.cw ?? '');
+		// 強制除外ワードは、スコアリングモード利用時のみ有効とする
+		if (antenna.expression === 'SCORE') {
+			const mustExcludeKeywords = antenna.mustExcludeKeywords
+				// Clean up
+				.map(xs => xs.filter(x => x !== ''))
+				.filter(xs => xs.length > 0);
 
-				const matched = mustExcludeKeywords.some(and =>
-					and.every(keyword =>
-						antenna.caseSensitive
-							? _text.includes(keyword)
-							: _text.toLowerCase().includes(keyword.toLowerCase()),
-					));
+			if (mustExcludeKeywords.length > 0) {
+				if (note.text != null || note.cw != null) {
+					const _text = (note.text ?? '') + '\n' + (note.cw ?? '');
 
-				if (matched) return false;
+					const matched = mustExcludeKeywords.some(and =>
+						and.every(keyword =>
+							antenna.caseSensitive
+								? _text.includes(keyword)
+								: _text.toLowerCase().includes(keyword.toLowerCase()),
+						));
+
+					if (matched) return false;
+				}
 			}
 		}
 

@@ -31,7 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<template #label>{{ i18n.ts.antennaExcludeKeywords }}</template>
 				<template #caption>{{ isScoringMode ? i18n.ts._tempuraFutureAntenna.scoringModeDescription : i18n.ts.antennaKeywordsDescription }}</template>
 			</MkTextarea>
-			<MkTextarea v-model="mustExcludeKeywords">
+			<MkTextarea v-if="isScoringMode" v-model="mustExcludeKeywords">
 				<template #label>{{ i18n.ts._tempuraFutureAntenna.mustExcludeKeywords }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 				<template #caption>{{ i18n.ts._tempuraFutureAntenna.mustExcludeKeywordsDescription }}</template>
 			</MkTextarea>
