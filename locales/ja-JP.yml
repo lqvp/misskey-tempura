@@ -4386,6 +4386,6 @@ _weatherWidgets:
 
 _tempuraFutureAntenna:
   scoringMode: "高度なスコアリング"
-  scoringModeDescription: "スコアを1減らす"
+  scoringModeDescription: "ヒット時の評価スコアを1ポイント減算し、表示優先度を下げます。(通常モードでは変更しません)"
   mustExcludeKeywords: "強制除外キーワード"
   mustExcludeKeywordsDescription: "これらのキーワードのいずれかが一致した場合、スコアに関係なく除外されます。"
