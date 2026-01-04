@@ -78,6 +78,8 @@ export class ExportAntennasProcessorService {
 					src: antenna.src,
 					keywords: antenna.keywords,
 					excludeKeywords: antenna.excludeKeywords,
+					mustExcludeKeywords: antenna.mustExcludeKeywords,
+					expression: antenna.expression,
 					users: antenna.users,
 					userListAccts: typeof users !== 'undefined' ? users.map((u) => {
 						return this.utilityService.getFullApAccount(u.username, u.host); // acct

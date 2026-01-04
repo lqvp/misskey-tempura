@@ -169,44 +169,91 @@ export class AntennaService implements OnApplicationShutdown {
 			if (accts.includes(this.utilityService.getFullApAccount(noteUser.username, noteUser.host).toLowerCase())) return false;
 		}
 
-		const keywords = antenna.keywords
+		const mustExcludeKeywords = antenna.mustExcludeKeywords
 			// Clean up
 			.map(xs => xs.filter(x => x !== ''))
 			.filter(xs => xs.length > 0);
 
-		if (keywords.length > 0) {
-			if (note.text == null && note.cw == null) return false;
+		if (mustExcludeKeywords.length > 0) {
+			if (note.text != null || note.cw != null) {
+				const _text = (note.text ?? '') + '\n' + (note.cw ?? '');
 
-			const _text = (note.text ?? '') + '\n' + (note.cw ?? '');
+				const matched = mustExcludeKeywords.some(and =>
+					and.every(keyword =>
+						antenna.caseSensitive
+							? _text.includes(keyword)
+							: _text.toLowerCase().includes(keyword.toLowerCase()),
+					));
 
-			const matched = keywords.some(and =>
-				and.every(keyword =>
-					antenna.caseSensitive
-						? _text.includes(keyword)
-						: _text.toLowerCase().includes(keyword.toLowerCase()),
-				));
-
-			if (!matched) return false;
+				if (matched) return false;
+			}
 		}
+
+		const keywords = antenna.keywords
+			// Clean up
+			.map(xs => xs.filter(x => x !== ''))
+			.filter(xs => xs.length > 0);
 
 		const excludeKeywords = antenna.excludeKeywords
 			// Clean up
 			.map(xs => xs.filter(x => x !== ''))
 			.filter(xs => xs.length > 0);
 
-		if (excludeKeywords.length > 0) {
-			if (note.text == null && note.cw == null) return false;
-
+		if (antenna.expression === 'SCORE') {
+			let score = 0;
 			const _text = (note.text ?? '') + '\n' + (note.cw ?? '');
 
-			const matched = excludeKeywords.some(and =>
-				and.every(keyword =>
-					antenna.caseSensitive
-						? _text.includes(keyword)
-						: _text.toLowerCase().includes(keyword.toLowerCase()),
-				));
+			if (keywords.length > 0) {
+				if (note.text == null && note.cw == null) return false;
 
-			if (matched) return false;
+				for (const and of keywords) {
+					if (and.every(keyword => antenna.caseSensitive ? _text.includes(keyword) : _text.toLowerCase().includes(keyword.toLowerCase()))) {
+						score++;
+					}
+				}
+			}
+
+			if (excludeKeywords.length > 0) {
+				if (note.text != null || note.cw != null) {
+					for (const and of excludeKeywords) {
+						if (and.every(keyword => antenna.caseSensitive ? _text.includes(keyword) : _text.toLowerCase().includes(keyword.toLowerCase()))) {
+							score--;
+						}
+					}
+				}
+			}
+
+			if (score <= 0) return false;
+		} else {
+			if (keywords.length > 0) {
+				if (note.text == null && note.cw == null) return false;
+
+				const _text = (note.text ?? '') + '\n' + (note.cw ?? '');
+
+				const matched = keywords.some(and =>
+					and.every(keyword =>
+						antenna.caseSensitive
+							? _text.includes(keyword)
+							: _text.toLowerCase().includes(keyword.toLowerCase()),
+					));
+
+				if (!matched) return false;
+			}
+
+			if (excludeKeywords.length > 0) {
+				if (note.text == null && note.cw == null) return false;
+
+				const _text = (note.text ?? '') + '\n' + (note.cw ?? '');
+
+				const matched = excludeKeywords.some(and =>
+					and.every(keyword =>
+						antenna.caseSensitive
+							? _text.includes(keyword)
+							: _text.toLowerCase().includes(keyword.toLowerCase()),
+					));
+
+				if (matched) return false;
+			}
 		}
 
 		if (antenna.withFile) {

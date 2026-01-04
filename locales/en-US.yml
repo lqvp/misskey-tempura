@@ -3415,3 +3415,9 @@ _qr:
   scanFile: "Scan image from device"
   raw: "Text"
   mfm: "MFM"
+
+_tempuraFutureAntenna:
+  scoringMode: "Advanced Scoring Mode"
+  scoringModeDescription: "Reduces score by 1"
+  mustExcludeKeywords: "Must Exclude Keywords"
+  mustExcludeKeywordsDescription: "If any of these keywords match, the note will be excluded regardless of score."
