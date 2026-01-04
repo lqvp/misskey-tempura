@@ -169,7 +169,6 @@ export class AntennaService implements OnApplicationShutdown {
 			if (accts.includes(this.utilityService.getFullApAccount(noteUser.username, noteUser.host).toLowerCase())) return false;
 		}
 
-
 		// 強制除外ワードは、スコアリングモード利用時のみ有効とする
 		if (antenna.expression === 'SCORE') {
 			const mustExcludeKeywords = antenna.mustExcludeKeywords
