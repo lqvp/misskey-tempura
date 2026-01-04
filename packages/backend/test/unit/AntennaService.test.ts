@@ -84,6 +84,13 @@ describe('AntennaService', () => {
             expect(result).toBe(false);
         });
 
+        it('Classic: Should NOT exclude text-less note even if excludeKeywords is set (Regression)', async () => {
+            const antenna = { ...baseAntenna, excludeKeywords: [['banana']] };
+            const note = { ...mockNote, text: null, cw: null };
+            const result = await antennaService.checkHitAntenna(antenna, note, mockUser);
+            expect(result).toBe(true);
+        });
+
         // --- Scoring Mode Tests ---
         it('Scoring: Hit if Score > 0', async () => {
             const antenna = { ...baseAntenna, expression: 'SCORE', keywords: [['apple']] };

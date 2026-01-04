@@ -241,18 +241,18 @@ export class AntennaService implements OnApplicationShutdown {
 			}
 
 			if (excludeKeywords.length > 0) {
-				if (note.text == null && note.cw == null) return false;
+				if (note.text != null || note.cw != null) {
+					const _text = (note.text ?? '') + '\n' + (note.cw ?? '');
 
-				const _text = (note.text ?? '') + '\n' + (note.cw ?? '');
+					const matched = excludeKeywords.some(and =>
+						and.every(keyword =>
+							antenna.caseSensitive
+								? _text.includes(keyword)
+								: _text.toLowerCase().includes(keyword.toLowerCase()),
+						));
 
-				const matched = excludeKeywords.some(and =>
-					and.every(keyword =>
-						antenna.caseSensitive
-							? _text.includes(keyword)
-							: _text.toLowerCase().includes(keyword.toLowerCase()),
-					));
-
-				if (matched) return false;
+					if (matched) return false;
+				}
 			}
 		}
 
