@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<header :class="$style.header">
 		<div :class="[$style.headerLeft, {[$style.headerFixedBasis]: fixed}]">
 			<button v-if="!fixed" :class="$style.cancel" class="_button" @click="cancel"><i class="ti ti-x"></i></button>
-			<button ref="accountMenuEl" v-click-anime v-tooltip="i18n.ts.account" :class="$style.account" class="_button" @click="openAccountMenu">
+			<button ref="accountMenuEl" v-click-anime v-tooltip="i18n.ts.account" class="_button" @click="openAccountMenu">
 				<img :class="$style.avatar" :src="(postAccount ?? $i).avatarUrl" style="border-radius: 100%;"/>
 			</button>
 		</div>
@@ -345,9 +345,9 @@ const canSaveAsServerDraft = computed((): boolean => {
 	return canPost.value && (textLength.value > 0 || files.value.length > 0 || poll.value != null);
 });
 
-const withHashtags = computed(store.makeGetterSetter('postFormWithHashtags'));
-const hashtags = computed(store.makeGetterSetter('postFormHashtags'));
-const geminiToken = computed(store.makeGetterSetter('geminiToken'));
+const withHashtags = store.model('postFormWithHashtags');
+const hashtags = store.model('postFormHashtags');
+const geminiToken = store.model('geminiToken');
 
 const bottomItemActionDef: Record<keyof typeof bottomItemDef, {
 	hide?: boolean;
@@ -1633,11 +1633,16 @@ defineExpose({
 	flex-basis: 70px;
 }
 
-.cancel {
-	padding: 8px;
+.headerFixedBasis {
+	flex-basis: 70px;
 }
 
-.account {
+.headerFixedBasis {
+	flex-basis: 70px;
+}
+
+.cancel {
+	padding: 8px;
 }
 
 .avatar {
