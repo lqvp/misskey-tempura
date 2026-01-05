@@ -234,7 +234,7 @@ export class AntennaService implements OnApplicationShutdown {
 				}
 			}
 
-			if (score <= 0) return false;
+			if (keywords.length > 0 && score <= 0) return false;
 		} else {
 			if (keywords.length > 0) {
 				if (note.text == null && note.cw == null) return false;

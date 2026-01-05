@@ -124,6 +124,14 @@ describe('AntennaService', () => {
             expect(result).toBe(false);
         });
 
+        it('Scoring: Empty keywords should NOT exclude (Score=0, but keywords empty)', async () => {
+             const antenna = { ...baseAntenna, expression: 'SCORE', keywords: [] };
+             const result = await antennaService.checkHitAntenna(antenna, mockNote, mockUser);
+             // Score = 0
+             // keywords.length = 0 -> Condition (0 > 0 && 0 <= 0) is False -> Returns True
+             expect(result).toBe(true);
+        });
+
 
         it('Classic: Should ignore mustExcludeKeywords', async () => {
             const antenna = {
