@@ -210,10 +210,11 @@ export class AntennaService implements OnApplicationShutdown {
 
 		if (antenna.expression === 'SCORE') {
 			let score = 0;
-			const _text = this.getCombinedNoteText(note);
+
 
 			if (keywords.length > 0) {
 				if (note.text == null && note.cw == null) return false;
+				const _text = this.getCombinedNoteText(note);
 
 				for (const and of keywords) {
 					if (and.every(keyword => antenna.caseSensitive ? _text.includes(keyword) : _text.toLowerCase().includes(keyword.toLowerCase()))) {
@@ -224,6 +225,7 @@ export class AntennaService implements OnApplicationShutdown {
 
 			if (excludeKeywords.length > 0) {
 				if (note.text != null || note.cw != null) {
+					const _text = this.getCombinedNoteText(note);
 					for (const and of excludeKeywords) {
 						if (and.every(keyword => antenna.caseSensitive ? _text.includes(keyword) : _text.toLowerCase().includes(keyword.toLowerCase()))) {
 							score--;
