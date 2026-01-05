@@ -26,6 +26,12 @@ export class AntennaService implements OnApplicationShutdown {
 	private antennasFetched: boolean;
 	private antennas: MiAntenna[];
 
+	private getCombinedNoteText(note: MiNote | Packed<'Note'>): string {
+		return [note.text, note.cw]
+			.filter((t): t is string => t != null && t !== '')
+			.join('\n');
+	}
+
 	constructor(
 		@Inject(DI.redisForTimelines)
 		private redisForTimelines: Redis.Redis,
@@ -178,7 +184,7 @@ export class AntennaService implements OnApplicationShutdown {
 
 			if (mustExcludeKeywords.length > 0) {
 				if (note.text != null || note.cw != null) {
-					const _text = (note.text ?? '') + '\n' + (note.cw ?? '');
+					const _text = this.getCombinedNoteText(note);
 
 					const matched = mustExcludeKeywords.some(and =>
 						and.every(keyword =>
@@ -204,7 +210,7 @@ export class AntennaService implements OnApplicationShutdown {
 
 		if (antenna.expression === 'SCORE') {
 			let score = 0;
-			const _text = (note.text ?? '') + '\n' + (note.cw ?? '');
+			const _text = this.getCombinedNoteText(note);
 
 			if (keywords.length > 0) {
 				if (note.text == null && note.cw == null) return false;
@@ -231,7 +237,7 @@ export class AntennaService implements OnApplicationShutdown {
 			if (keywords.length > 0) {
 				if (note.text == null && note.cw == null) return false;
 
-				const _text = (note.text ?? '') + '\n' + (note.cw ?? '');
+				const _text = this.getCombinedNoteText(note);
 
 				const matched = keywords.some(and =>
 					and.every(keyword =>
@@ -245,7 +251,7 @@ export class AntennaService implements OnApplicationShutdown {
 
 			if (excludeKeywords.length > 0) {
 				if (note.text != null || note.cw != null) {
-					const _text = (note.text ?? '') + '\n' + (note.cw ?? '');
+					const _text = this.getCombinedNoteText(note);
 
 					const matched = excludeKeywords.some(and =>
 						and.every(keyword =>
