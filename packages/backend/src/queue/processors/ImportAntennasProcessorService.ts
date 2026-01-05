@@ -40,6 +40,12 @@ const exportedAntennaSchema = {
 				type: 'string',
 			},
 		} },
+		mustExcludeKeywords: { type: 'array', items: {
+			type: 'array', items: {
+				type: 'string',
+			},
+		} },
+		expression: { type: 'string', nullable: true },
 		users: { type: 'array', items: {
 			type: 'string',
 		} },
@@ -92,6 +98,8 @@ export class ImportAntennasProcessorService {
 					userListId: null,
 					keywords: antenna.keywords,
 					excludeKeywords: antenna.excludeKeywords,
+					mustExcludeKeywords: antenna.mustExcludeKeywords ?? [],
+					expression: antenna.expression ?? null,
 					users: (antenna.src === 'list' && antenna.userListAccts !== null ? antenna.userListAccts : antenna.users).filter(Boolean),
 					caseSensitive: antenna.caseSensitive,
 					localOnly: antenna.localOnly,

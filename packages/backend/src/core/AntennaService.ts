@@ -26,6 +26,12 @@ export class AntennaService implements OnApplicationShutdown {
 	private antennasFetched: boolean;
 	private antennas: MiAntenna[];
 
+	private getCombinedNoteText(note: MiNote | Packed<'Note'>): string {
+		return [note.text, note.cw]
+			.filter((t): t is string => t != null && t !== '')
+			.join('\n');
+	}
+
 	constructor(
 		@Inject(DI.redisForTimelines)
 		private redisForTimelines: Redis.Redis,
@@ -169,44 +175,95 @@ export class AntennaService implements OnApplicationShutdown {
 			if (accts.includes(this.utilityService.getFullApAccount(noteUser.username, noteUser.host).toLowerCase())) return false;
 		}
 
+		// 強制除外ワードは、スコアリングモード利用時のみ有効とする
+		if (antenna.expression === 'SCORE') {
+			const mustExcludeKeywords = antenna.mustExcludeKeywords
+				// Clean up
+				.map(xs => xs.filter(x => x !== ''))
+				.filter(xs => xs.length > 0);
+
+			if (mustExcludeKeywords.length > 0) {
+				if (note.text != null || note.cw != null) {
+					const _text = this.getCombinedNoteText(note);
+
+					const matched = mustExcludeKeywords.some(and =>
+						and.every(keyword =>
+							antenna.caseSensitive
+								? _text.includes(keyword)
+								: _text.toLowerCase().includes(keyword.toLowerCase()),
+						));
+
+					if (matched) return false;
+				}
+			}
+		}
+
 		const keywords = antenna.keywords
 			// Clean up
 			.map(xs => xs.filter(x => x !== ''))
 			.filter(xs => xs.length > 0);
-
-		if (keywords.length > 0) {
-			if (note.text == null && note.cw == null) return false;
-
-			const _text = (note.text ?? '') + '\n' + (note.cw ?? '');
-
-			const matched = keywords.some(and =>
-				and.every(keyword =>
-					antenna.caseSensitive
-						? _text.includes(keyword)
-						: _text.toLowerCase().includes(keyword.toLowerCase()),
-				));
-
-			if (!matched) return false;
-		}
 
 		const excludeKeywords = antenna.excludeKeywords
 			// Clean up
 			.map(xs => xs.filter(x => x !== ''))
 			.filter(xs => xs.length > 0);
 
-		if (excludeKeywords.length > 0) {
-			if (note.text == null && note.cw == null) return false;
+		if (antenna.expression === 'SCORE') {
+			let score = 0;
 
-			const _text = (note.text ?? '') + '\n' + (note.cw ?? '');
+			if (keywords.length > 0) {
+				if (note.text == null && note.cw == null) return false;
+				const _text = this.getCombinedNoteText(note);
 
-			const matched = excludeKeywords.some(and =>
-				and.every(keyword =>
-					antenna.caseSensitive
-						? _text.includes(keyword)
-						: _text.toLowerCase().includes(keyword.toLowerCase()),
-				));
+				for (const and of keywords) {
+					if (and.every(keyword => antenna.caseSensitive ? _text.includes(keyword) : _text.toLowerCase().includes(keyword.toLowerCase()))) {
+						score++;
+					}
+				}
+			}
 
-			if (matched) return false;
+			if (excludeKeywords.length > 0) {
+				if (note.text != null || note.cw != null) {
+					const _text = this.getCombinedNoteText(note);
+					for (const and of excludeKeywords) {
+						if (and.every(keyword => antenna.caseSensitive ? _text.includes(keyword) : _text.toLowerCase().includes(keyword.toLowerCase()))) {
+							score--;
+						}
+					}
+				}
+			}
+
+			if (keywords.length > 0 && score <= 0) return false;
+		} else {
+			if (keywords.length > 0) {
+				if (note.text == null && note.cw == null) return false;
+
+				const _text = this.getCombinedNoteText(note);
+
+				const matched = keywords.some(and =>
+					and.every(keyword =>
+						antenna.caseSensitive
+							? _text.includes(keyword)
+							: _text.toLowerCase().includes(keyword.toLowerCase()),
+					));
+
+				if (!matched) return false;
+			}
+
+			if (excludeKeywords.length > 0) {
+				if (note.text != null || note.cw != null) {
+					const _text = this.getCombinedNoteText(note);
+
+					const matched = excludeKeywords.some(and =>
+						and.every(keyword =>
+							antenna.caseSensitive
+								? _text.includes(keyword)
+								: _text.toLowerCase().includes(keyword.toLowerCase()),
+						));
+
+					if (matched) return false;
+				}
+			}
 		}
 
 		if (antenna.withFile) {

@@ -65,6 +65,12 @@ export const paramDef = {
 				type: 'string',
 			},
 		} },
+		mustExcludeKeywords: { type: 'array', items: {
+			type: 'array', items: {
+				type: 'string',
+			},
+		} },
+		expression: { type: 'string', nullable: true, maxLength: 2048 },
 		users: { type: 'array', items: {
 			type: 'string',
 		} },
@@ -129,6 +135,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				userListId: userList ? userList.id : null,
 				keywords: ps.keywords,
 				excludeKeywords: ps.excludeKeywords,
+				mustExcludeKeywords: ps.mustExcludeKeywords ?? [],
+				expression: ps.expression,
 				users: ps.users,
 				caseSensitive: ps.caseSensitive,
 				localOnly: ps.localOnly,

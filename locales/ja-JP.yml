@@ -4383,3 +4383,9 @@ _weatherWidgets:
     thunderstormWithHail: "雹を伴う雷雨"
     severeThunderstormWithHail: "激しい雹を伴う雷雨"
     unknown: "不明"
+
+_tempuraFutureAntenna:
+  scoringMode: "高度なスコアリング"
+  scoringModeDescription: "ヒット時の評価スコアを1ポイント減算し、表示優先度を下げます。(通常モードでは変更しません)"
+  mustExcludeKeywords: "強制除外キーワード"
+  mustExcludeKeywordsDescription: "これらのキーワードのいずれかが一致した場合、スコアに関係なく除外されます。"

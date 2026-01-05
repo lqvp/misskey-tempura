@@ -67,6 +67,11 @@ export class MiAntenna {
 	})
 	public excludeKeywords: string[][];
 
+	@Column('jsonb', {
+		default: [],
+	})
+	public mustExcludeKeywords: string[][];
+
 	@Column('boolean', {
 		default: false,
 	})

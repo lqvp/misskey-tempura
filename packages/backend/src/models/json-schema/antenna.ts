@@ -44,6 +44,22 @@ export const packedAntennaSchema = {
 				},
 			},
 		},
+		mustExcludeKeywords: {
+			type: 'array',
+			optional: false, nullable: false,
+			items: {
+				type: 'array',
+				optional: false, nullable: false,
+				items: {
+					type: 'string',
+					optional: false, nullable: false,
+				},
+			},
+		},
+		expression: {
+			type: 'string',
+			optional: false, nullable: true,
+		},
 		src: {
 			type: 'string',
 			optional: false, nullable: false,

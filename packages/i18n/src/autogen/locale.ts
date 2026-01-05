@@ -16210,4 +16210,22 @@ export interface Locale extends ILocale {
             "unknown": string;
         };
     };
+    "_tempuraFutureAntenna": {
+        /**
+         * 高度なスコアリング
+         */
+        "scoringMode": string;
+        /**
+         * スコアを1減らす
+         */
+        "scoringModeDescription": string;
+        /**
+         * 強制除外キーワード
+         */
+        "mustExcludeKeywords": string;
+        /**
+         * これらのキーワードのいずれかが一致した場合、スコアに関係なく除外されます。
+         */
+        "mustExcludeKeywordsDescription": string;
+    };
 }

@@ -5539,6 +5539,8 @@ export type components = {
             name: string;
             keywords: string[][];
             excludeKeywords: string[][];
+            mustExcludeKeywords: string[][];
+            expression: string | null;
             /** @enum {string} */
             src: 'home' | 'all' | 'users' | 'list' | 'users_blacklist';
             /** Format: id */
@@ -14861,6 +14863,8 @@ export interface operations {
                     userListId?: string | null;
                     keywords: string[][];
                     excludeKeywords: string[][];
+                    mustExcludeKeywords?: string[][];
+                    expression?: string | null;
                     users: string[];
                     caseSensitive: boolean;
                     localOnly?: boolean;
@@ -15203,6 +15207,8 @@ export interface operations {
                     userListId?: string | null;
                     keywords?: string[][];
                     excludeKeywords?: string[][];
+                    mustExcludeKeywords?: string[][];
+                    expression?: string | null;
                     users?: string[];
                     caseSensitive?: boolean;
                     localOnly?: boolean;
