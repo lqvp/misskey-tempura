@@ -211,7 +211,6 @@ export class AntennaService implements OnApplicationShutdown {
 		if (antenna.expression === 'SCORE') {
 			let score = 0;
 
-
 			if (keywords.length > 0) {
 				if (note.text == null && note.cw == null) return false;
 				const _text = this.getCombinedNoteText(note);
