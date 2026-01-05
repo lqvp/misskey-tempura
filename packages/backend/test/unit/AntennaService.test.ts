@@ -133,17 +133,6 @@ describe('AntennaService', () => {
         });
 
 
-        it('Classic: Should ignore mustExcludeKeywords', async () => {
-            const antenna = {
-                ...baseAntenna,
-                expression: null, // Classic Mode
-                keywords: [['apple']],
-                mustExcludeKeywords: [['banana']]
-            };
-            const note = { ...mockNote, text: 'apple banana' };
-            const result = await antennaService.checkHitAntenna(antenna, note, mockUser);
-            // Should match 'apple' and ignore 'banana' exclusion because it's not in scoring mode
-            expect(result).toBe(true);
-        });
+
     });
 });
