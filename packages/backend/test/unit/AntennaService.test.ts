@@ -133,6 +133,18 @@ describe('AntennaService', () => {
         });
 
 
+        it('Classic: Matches keywords in cw field', async () => {
+            const antenna = { ...baseAntenna, keywords: [['apple']] };
+            const note = { ...mockNote, text: null, cw: 'apple pie' };
+            const result = await antennaService.checkHitAntenna(antenna, note, mockUser);
+            expect(result).toBe(true);
+        });
 
+        it('Classic: Matches keywords across text and cw', async () => {
+            const antenna = { ...baseAntenna, keywords: [['apple', 'pie']] }; // AND conjunction
+            const note = { ...mockNote, text: 'apple', cw: 'pie recipe' };
+            const result = await antennaService.checkHitAntenna(antenna, note, mockUser);
+            expect(result).toBe(true);
+        });
     });
 });
