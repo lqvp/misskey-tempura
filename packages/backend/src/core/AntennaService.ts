@@ -89,6 +89,15 @@ export class AntennaService implements OnApplicationShutdown {
 			if (match.start >= lastEnd) {
 				result.push(match);
 				lastEnd = match.end;
+			} else {
+				// 重複した場合
+				// 現在のマッチが前のマッチよりも後ろまで続いているか確認（より長いマッチを採用するため）
+				if (match.end > lastEnd) {
+					// 前のマッチを今回のマッチで置き換え
+					result.pop();
+					result.push(match);
+					lastEnd = match.end;
+				}
 			}
 		}
 

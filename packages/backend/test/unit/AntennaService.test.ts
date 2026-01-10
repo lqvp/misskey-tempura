@@ -220,17 +220,17 @@ describe('AntennaService', () => {
 			expect(result[0].keyword).toBe('ABC');
 		});
 
-		it('keeps first match and discard overlapping second match', () => {
+		it('keeps matches that extend further (replace shorter/earlier-ending overlap)', () => {
 			const matches: any[] = [
 				// A: [0, 3)
 				{ keyword: 'ABC', start: 0, end: 3 },
-				// B: [2, 4) - Overlaps with A at 2
+				// B: [2, 4) - Overlaps with A at 2, but ends later (4 > 3)
 				{ keyword: 'BC', start: 2, end: 4 },
 			];
-			// Should keep ABC. BC is discarded because it overlaps with accepted ABC.
+			// Should keep BC because it extends further than ABC.
 			const result = antennaService.deduplicateOverlappingMatches(matches);
 			expect(result).toHaveLength(1);
-			expect(result[0].keyword).toBe('ABC');
+			expect(result[0].keyword).toBe('BC');
 		});
 
 		it('handles nested matches properly (longer one preferred if starts earlier)', () => {
