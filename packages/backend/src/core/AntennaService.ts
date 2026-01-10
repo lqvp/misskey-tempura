@@ -300,13 +300,29 @@ export class AntennaService implements OnApplicationShutdown {
 					...collectMatches(excludeKeywords, 'exclude'),
 				];
 
-				// 重複排除
-				const validMatches = this.deduplicateOverlappingMatches(allMatches);
+				// グループごと（type, groupIndex）に重複排除を行い、独立評価
+				const validMatchesMap = new Map<string, Match[]>();
+				const groupBy = (m: Match) => `${m.type}:${m.groupIndex}`;
+
+				const groupedMatches = new Map<string, Match[]>();
+				for (const match of allMatches) {
+					const key = groupBy(match);
+					if (!groupedMatches.has(key)) {
+						groupedMatches.set(key, []);
+					}
+					groupedMatches.get(key)!.push(match);
+				}
+
+				// 各グループ内で重複排除
+				for (const [key, matches] of groupedMatches) {
+					validMatchesMap.set(key, this.deduplicateOverlappingMatches(matches));
+				}
 
 				// スコア計算
 				const countMetGroups = (keywordGroups: string[][], type: 'include' | 'exclude'): number => {
 					return keywordGroups.reduce((count, and, i) => {
-						const groupMatches = validMatches.filter(m => m.type === type && m.groupIndex === i);
+						const key = `${type}:${i}`;
+						const groupMatches = validMatchesMap.get(key) || [];
 						// このグループ内のすべてのキーワードについて、少なくとも1つの有効なものが存在するか確認
 						if (and.every(kw => groupMatches.some(m => m.keyword === kw))) {
 							return count + 1;

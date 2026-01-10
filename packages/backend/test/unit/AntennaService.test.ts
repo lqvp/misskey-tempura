@@ -276,46 +276,52 @@ describe('AntennaService', () => {
 			isActive: true,
 		} as any;
 
-		it('overlaps: "ABC" (Include) vs "BC" (Exclude) -> Match (Score 1)', async () => {
+		it('overlaps: "ABC" (Include) vs "BC" (Exclude) -> Miss (Score 0)', async () => {
 			// Include: ABC, Exclude: BC
 			// Text: ABC
-			// Match ABC: [0, 3) len 3
-			// Match BC: [1, 3) len 2
-			// Dedupe favors ABC. BC matches nothing.
-			// Score: Includes(+1) - Excludes(0) = 1 -> Hit
+			// Match ABC: [0, 3)
+			// Match BC: [1, 3)
+			// Per-Group Deduplication:
+			//   Include Group: Keep "ABC"
+			//   Exclude Group: Keep "BC" (no overlap within this group)
+			// Score: Includes(+1) - Excludes(1) = 0 -> Miss
 			const antenna = {
 				...baseAntenna,
 				keywords: [['ABC']],
 				excludeKeywords: [['BC']],
 			};
 			const result = await antennaService.checkHitAntenna(antenna, mockNote, mockUser);
-			expect(result).toBe(true);
+			expect(result).toBe(false);
 		});
 
-		it('OR intersection: Group A="ABC" vs Group B="BC" -> Match A only', async () => {
+		it('OR intersection: Group A="ABC" vs Group B="BC" -> Match Both (Score 2)', async () => {
 			// Keywords: [['ABC'], ['BC']] (OR logic)
 			// Text: ABC
 			// Match ABC: [0, 3)
 			// Match BC: [1, 3)
-			// Dedupe favors ABC.
-			// Group A met (ABC matched). Group B not met (BC consumed).
-			// Score: 1 -> Hit
+			// Per-Group Deduplication:
+			//   Group A: Keep "ABC"
+			//   Group B: Keep "BC"
+			// Score: 1 + 1 = 2 -> Hit
 			const antenna = {
 				...baseAntenna,
 				keywords: [['ABC'], ['BC']],
 			};
 			const result = await antennaService.checkHitAntenna(antenna, mockNote, mockUser);
-			expect(result).toBe(true); 
+			expect(result).toBe(true);
 		});
 
 		it('AND intersection: "ABC" AND "BC" -> Miss (Score < Group Count)', async () => {
 			// Keywords: [['ABC', 'BC']] (AND logic)
 			// Text: ABC
 			// Match ABC: [0, 3)
-			// Match BC: [1, 3) -> Deduplicated
-			// Group has ABC mathed, but BC NOT matched.
-			// Group NOT met.
-			// Score: 0 -> Miss
+			// Match BC: [1, 3)
+			// Per-Group Deduplication:
+			// Group 0 ("ABC", "BC"):
+			//    Matches: ABC [0, 3), BC [1, 3).
+			//   Dedupe: "BC" is shorter than "ABC" and overlaps within same group. "ABC" kept.
+			//   Group Checks: 'ABC' found? Yes. 'BC' found? NO (deduplicated away).
+			// Group result: False (NOT all keywords found)
 			const antenna = {
 				...baseAntenna,
 				keywords: [['ABC', 'BC']],
@@ -328,7 +334,7 @@ describe('AntennaService', () => {
 			// Keywords: [['ABC', 'BC']]
 			// Text: ABC BC
 			// Match ABC at 0. Match BC at 4. No overlap. both valid.
-			// Score: 1 -> Hit
+			// Score: 1 + 1 = 2 -> Hit
 			const antenna = {
 				...baseAntenna,
 				keywords: [['ABC', 'BC']],
@@ -338,27 +344,28 @@ describe('AntennaService', () => {
 			expect(result).toBe(true);
 		});
 
-		it('Nested Exclude: "ABC" (Include) vs "B" (Exclude) -> Match (Include wins)', async () => {
+		it('Nested Exclude: "ABC" (Include) vs "B" (Exclude) -> Miss (Score 0)', async () => {
 			// Text: ABC
-			// Match ABC (Include) [0, 3)
-			// Match B (Exclude) [1, 2)
-			// Dedupe: ABC chosen. B discarded.
-			// Score: 1 - 0 = 1 -> Hit
+			// Match ABC (Include) [0, 3) -> Kept
+			// Match B (Exclude) [1, 2) -> Kept (Different group)
+			// Score: 1 - 1 = 0 -> Miss
 			const antenna = {
 				...baseAntenna,
 				keywords: [['ABC']],
 				excludeKeywords: [['B']],
 			};
 			const result = await antennaService.checkHitAntenna(antenna, mockNote, mockUser);
-			expect(result).toBe(true);
+			expect(result).toBe(false);
 		});
 
 		it('Exclude wins if longer: "B" (Include) vs "ABC" (Exclude) -> Miss', async () => {
 			// Text: ABC
 			// Match B (Include) [1, 2)
 			// Match ABC (Exclude) [0, 3)
-			// Dedupe: ABC chosen. B discarded.
-			// Score: 0 - 1 = -1 -> Miss
+			// Dedupe: Per Group
+			// Include Group: Keep B
+			// Exclude Group: Keep ABC
+			// Score: 1 - 1 = 0 -> Miss
 			const antenna = {
 				...baseAntenna,
 				keywords: [['B']],
