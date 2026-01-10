@@ -3,13 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-export interface Match {
-	keyword: string;
-	start: number;
-	end: number;
-	groupIndex?: number;
-	type?: 'include' | 'exclude';
-}
+const MAX_NOTE_TEXT_LENGTH = 1000; // Example constant if needed, or just empty
 
 import { Inject, Injectable } from '@nestjs/common';
 import * as Redis from 'ioredis';
@@ -28,6 +22,14 @@ import type { MiNote } from '@/models/Note.js';
 import type { MiUser } from '@/models/User.js';
 import { CacheService } from './CacheService.js';
 import type { OnApplicationShutdown } from '@nestjs/common';
+
+export interface Match {
+	keyword: string;
+	start: number;
+	end: number;
+	groupIndex?: number;
+	type?: 'include' | 'exclude';
+}
 
 @Injectable()
 export class AntennaService implements OnApplicationShutdown {
