@@ -185,14 +185,18 @@ describe('AntennaService', () => {
 			expect(result[1].end).toBe(12);
 		});
 
-		it('handles unicode length differences in case-insensitive search (e.g. ẞ -> ss)', () => {
-			const text = 'foo ẞ bar';
-			const keywords = ['ss'];
+		it('handles unicode length differences in case-insensitive search (e.g. İ -> i̇)', () => {
+			// U+0130 (İ) has length 1, but toLowerCase() returns 'i̇' (length 2)
+			// Text: 'İA' (length 2)
+			// Lower: 'i̇a' (length 3) -> 'a' is at index 2
+			// Original match for 'A' should be at index 1
+			const text = '\u0130A';
+			const keywords = ['a'];
 			const result = antennaService.findAllMatches(text, keywords, false);
 			expect(result).toHaveLength(1);
-			expect(result[0].keyword).toBe('ss');
-			expect(result[0].start).toBe(4);
-			expect(result[0].end).toBe(5);
+			expect(result[0].keyword).toBe('a');
+			expect(result[0].start).toBe(1);
+			expect(result[0].end).toBe(2);
 		});
 	});
 
