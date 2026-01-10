@@ -42,23 +42,28 @@ export class AntennaService implements OnApplicationShutdown {
 			.join('\n');
 	}
 
+	private escapeRegExp(s: string): string {
+		return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	}
+
 	@bindThis
 	public findAllMatches(text: string, keywords: string[], caseSensitive: boolean): Match[] {
 		if (!text) return [];
 		const matches: Match[] = [];
-		const searchTarget = caseSensitive ? text : text.toLowerCase();
 
 		for (const keyword of keywords) {
 			if (!keyword) continue;
-			const searchKeyword = caseSensitive ? keyword : keyword.toLowerCase();
-			let pos = searchTarget.indexOf(searchKeyword);
-			while (pos !== -1) {
+			const escapedKeyword = this.escapeRegExp(keyword);
+			const pattern = `(?=(${escapedKeyword}))`;
+			const flags = caseSensitive ? 'gu' : 'gui';
+			const regex = new RegExp(pattern, flags);
+
+			for (const match of text.matchAll(regex)) {
 				matches.push({
 					keyword: keyword,
-					start: pos,
-					end: pos + keyword.length,
+					start: match.index!,
+					end: match.index! + match[1].length,
 				});
-				pos = searchTarget.indexOf(searchKeyword, pos + 1);
 			}
 		}
 		return matches;
