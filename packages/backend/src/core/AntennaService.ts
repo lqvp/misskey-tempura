@@ -231,7 +231,7 @@ export class AntennaService implements OnApplicationShutdown {
 			if (accts.includes(this.utilityService.getFullApAccount(noteUser.username, noteUser.host).toLowerCase())) return false;
 		}
 
-	// 強制除外ワードは、スコアリングモード利用時のみ有効とする
+		// 強制除外ワードは、スコアリングモード利用時のみ有効とする
 		if (antenna.expression === 'SCORE') {
 			const mustExcludeKeywords = antenna.mustExcludeKeywords
 				// Clean up
@@ -269,50 +269,38 @@ export class AntennaService implements OnApplicationShutdown {
 
 			if ((keywords.length > 0 || excludeKeywords.length > 0) && (note.text != null || note.cw != null)) {
 				const _text = this.getCombinedNoteText(note);
-				let allMatches: Match[] = [];
+				const collectMatches = (keywordGroups: string[][], type: 'include' | 'exclude'): Match[] => {
+					return keywordGroups.flatMap((and, groupIdx) =>
+						this.findAllMatches(_text, and, antenna.caseSensitive).map(match => ({
+							...match,
+							groupIndex: groupIdx,
+							type: type,
+						}))
+					);
+				};
 
-				// キーワードをいい感じに収集
-				keywords.forEach((and, groupIdx) => {
-					const groupMatches = this.findAllMatches(_text, and, antenna.caseSensitive);
-					groupMatches.forEach(m => {
-						m.groupIndex = groupIdx;
-						m.type = 'include';
-					});
-					allMatches = allMatches.concat(groupMatches);
-				});
-
-				// 除外キーワードをいい感じに収集
-				excludeKeywords.forEach((and, groupIdx) => {
-					const groupMatches = this.findAllMatches(_text, and, antenna.caseSensitive);
-					groupMatches.forEach(m => {
-						m.groupIndex = groupIdx;
-						m.type = 'exclude';
-					});
-					allMatches = allMatches.concat(groupMatches);
-				});
+				const allMatches: Match[] = [
+					...collectMatches(keywords, 'include'),
+					...collectMatches(excludeKeywords, 'exclude'),
+				];
 
 				// 重複排除
 				const validMatches = this.deduplicateOverlappingMatches(allMatches);
 
 				// スコア計算
-				for (let i = 0; i < keywords.length; i++) {
-					const and = keywords[i];
-					const groupMatches = validMatches.filter(m => m.type === 'include' && m.groupIndex === i);
-					// このグループ内のすべてのキーワードについて、少なくとも1つの有効なものが存在するか確認
-					if (and.every(kw => groupMatches.some(m => m.keyword === kw))) {
-						score++;
-					}
-				}
+				const countMetGroups = (keywordGroups: string[][], type: 'include' | 'exclude'): number => {
+					return keywordGroups.reduce((count, and, i) => {
+						const groupMatches = validMatches.filter(m => m.type === type && m.groupIndex === i);
+						// このグループ内のすべてのキーワードについて、少なくとも1つの有効なものが存在するか確認
+						if (and.every(kw => groupMatches.some(m => m.keyword === kw))) {
+							return count + 1;
+						}
+						return count;
+					}, 0);
+				};
 
-				// 除外キーワード
-				for (let i = 0; i < excludeKeywords.length; i++) {
-					const and = excludeKeywords[i];
-					const groupMatches = validMatches.filter(m => m.type === 'exclude' && m.groupIndex === i);
-					// このグループ内のすべてのキーワードについて、少なくとも1つの有効なものが存在するか確認
-					if (and.every(kw => groupMatches.some(m => m.keyword === kw))) {
-						score--;
-					}
-				}
+				score += countMetGroups(keywords, 'include');
+				score -= countMetGroups(excludeKeywords, 'exclude');
 			} else if (keywords.length > 0) {
 				// キーワードは設定されているがテキストが無い場合
 				return false;
