@@ -184,6 +184,16 @@ describe('AntennaService', () => {
 			expect(result[1].start).toBe(7);
 			expect(result[1].end).toBe(12);
 		});
+
+		it('handles unicode length differences in case-insensitive search (e.g. ẞ -> ss)', () => {
+			const text = 'foo ẞ bar';
+			const keywords = ['ss'];
+			const result = antennaService.findAllMatches(text, keywords, false);
+			expect(result).toHaveLength(1);
+			expect(result[0].keyword).toBe('ss');
+			expect(result[0].start).toBe(4);
+			expect(result[0].end).toBe(5);
+		});
 	});
 
 	describe('deduplicateOverlappingMatches', () => {
