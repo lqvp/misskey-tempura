@@ -70,25 +70,21 @@ export class AntennaService implements OnApplicationShutdown {
 	public deduplicateOverlappingMatches(matches: Match[]): Match[] {
 		if (matches.length === 0) return [];
 
-		// キーワードごとにグループ化して重複排除
-		const byKeyword = new Map<string, Match[]>();
-		for (const m of matches) {
-			if (!byKeyword.has(m.keyword)) {
-				byKeyword.set(m.keyword, []);
-			}
-			byKeyword.get(m.keyword)!.push(m);
-		}
+		// Sort by end position descending, then start position ascending
+		// This prioritizes matches that extend further
+		const sorted = [...matches].sort((a, b) => {
+			if (b.end !== a.end) return b.end - a.end;
+			return a.start - b.start;
+		});
 
 		const result: Match[] = [];
-		for (const [, keywordMatches] of byKeyword) {
-			// 同一キーワード内でのみ重複排除
-			const sorted = [...keywordMatches].sort((a, b) => a.start - b.start);
-			let lastEnd = -1;
-			for (const match of sorted) {
-				if (match.start >= lastEnd) {
-					result.push(match);
-					lastEnd = match.end;
-				}
+		for (const match of sorted) {
+			// Check if this match overlaps with any already selected match
+			const overlaps = result.some(kept => 
+				!(match.end <= kept.start || match.start >= kept.end)
+			);
+			if (!overlaps) {
+				result.push(match);
 			}
 		}
 		return result;
