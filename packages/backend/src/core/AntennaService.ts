@@ -319,12 +319,8 @@ export class AntennaService implements OnApplicationShutdown {
 
 				score += countMetGroups(keywords, 'include');
 				score -= countMetGroups(excludeKeywords, 'exclude');
-			} else if (keywords.length > 0) {
-				// キーワードは設定されているがテキストが無い場合
-				return false;
-			}
-
 			if (keywords.length > 0 && score <= 0) return false;
+			if (keywords.length === 0 && excludeKeywords.length > 0 && score < 0) return false;
 		} else {
 			if (keywords.length > 0) {
 				if (note.text == null && note.cw == null) return false;
