@@ -26,7 +26,6 @@ import type {
 	SystemWebhookDeliverJobData,
 	ThinUser,
 	UserWebhookDeliverJobData,
-	ScheduledNoteDeleteJobData,
 } from '../queue/types.js';
 import type {
 	DbQueue,
