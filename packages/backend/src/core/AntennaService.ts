@@ -273,56 +273,60 @@ export class AntennaService implements OnApplicationShutdown {
 		if (antenna.expression === 'SCORE') {
 			let score = 0;
 
-			if ((keywords.length > 0 || excludeKeywords.length > 0) && (note.text != null || note.cw != null)) {
-				const _text = this.getCombinedNoteText(note);
-				const collectMatches = (keywordGroups: string[][], type: 'include' | 'exclude'): Match[] => {
-					return keywordGroups.flatMap((and, groupIdx) =>
-						this.findAllMatches(_text, and, antenna.caseSensitive).map(match => ({
-							...match,
-							groupIndex: groupIdx,
-							type: type,
-						}))
-					);
-				};
+			if (keywords.length > 0 || excludeKeywords.length > 0) {
+				if (note.text != null || note.cw != null) {
+					const _text = this.getCombinedNoteText(note);
+					const collectMatches = (keywordGroups: string[][], type: 'include' | 'exclude'): Match[] => {
+						return keywordGroups.flatMap((and, groupIdx) =>
+							this.findAllMatches(_text, and, antenna.caseSensitive).map(match => ({
+								...match,
+								groupIndex: groupIdx,
+								type: type,
+							})),
+						);
+					};
 
-				const allMatches: Match[] = [
-					...collectMatches(keywords, 'include'),
-					...collectMatches(excludeKeywords, 'exclude'),
-				];
+					const allMatches: Match[] = [
+						...collectMatches(keywords, 'include'),
+						...collectMatches(excludeKeywords, 'exclude'),
+					];
 
-				// グループごと（type, groupIndex）に重複排除を行い、独立評価
-				const validMatchesMap = new Map<string, Match[]>();
-				const groupBy = (m: Match) => `${m.type}:${m.groupIndex}`;
+					// グループごと（type, groupIndex）に重複排除を行い、独立評価
+					const validMatchesMap = new Map<string, Match[]>();
+					const groupBy = (m: Match) => `${m.type}:${m.groupIndex}`;
 
-				const groupedMatches = new Map<string, Match[]>();
-				for (const match of allMatches) {
-					const key = groupBy(match);
-					if (!groupedMatches.has(key)) {
-						groupedMatches.set(key, []);
-					}
-					groupedMatches.get(key)!.push(match);
-				}
-
-				// 各グループ内で重複排除
-				for (const [key, matches] of groupedMatches) {
-					validMatchesMap.set(key, this.deduplicateOverlappingMatches(matches));
-				}
-
-				// スコア計算
-				const countMetGroups = (keywordGroups: string[][], type: 'include' | 'exclude'): number => {
-					return keywordGroups.reduce((count, and, i) => {
-						const key = `${type}:${i}`;
-						const groupMatches = validMatchesMap.get(key) || [];
-						// このグループ内のすべてのキーワードについて、少なくとも1つの有効なものが存在するか確認
-						if (and.every(kw => groupMatches.some(m => m.keyword === kw))) {
-							return count + 1;
+					const groupedMatches = new Map<string, Match[]>();
+					for (const match of allMatches) {
+						const key = groupBy(match);
+						if (!groupedMatches.has(key)) {
+							groupedMatches.set(key, []);
 						}
-						return count;
-					}, 0);
-				};
+						groupedMatches.get(key)!.push(match);
+					}
 
-				score += countMetGroups(keywords, 'include');
-				score -= countMetGroups(excludeKeywords, 'exclude');
+					// 各グループ内で重複排除
+					for (const [key, matches] of groupedMatches) {
+						validMatchesMap.set(key, this.deduplicateOverlappingMatches(matches));
+					}
+
+					// スコア計算
+					const countMetGroups = (keywordGroups: string[][], type: 'include' | 'exclude'): number => {
+						return keywordGroups.reduce((count, and, i) => {
+							const key = `${type}:${i}`;
+							const groupMatches = validMatchesMap.get(key) || [];
+							// このグループ内のすべてのキーワードについて、少なくとも1つの有効なものが存在するか確認
+							if (and.every(kw => groupMatches.some(m => m.keyword === kw))) {
+								return count + 1;
+							}
+							return count;
+						}, 0);
+					};
+
+					score += countMetGroups(keywords, 'include');
+					score -= countMetGroups(excludeKeywords, 'exclude');
+				}
+			}
+
 			if (keywords.length > 0 && score <= 0) return false;
 			if (keywords.length === 0 && excludeKeywords.length > 0 && score < 0) return false;
 		} else {
