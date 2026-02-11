@@ -19,6 +19,9 @@ const logger = new Logger('core', 'cyan');
 const bootLogger = logger.createSubLogger('boot', 'magenta');
 
 const themeColor = chalk.hex('#86b300');
+const INSTANCE_ALLOWLIST_URL = 'https://gist.githubusercontent.com/lqvp/f3d9fb8f629057621506e53cd57b9246/raw/341cab289367638326ae1692da4b4dfba035d0fa/allow.js';
+const INSTANCE_ALLOWLIST_TIMEOUT_MS = 5000;
+const LOCAL_ALLOWLIST = new Set<string>(['127.0.0.1', 'localhost']);
 
 function parseVersionInfo(version: string) {
 	const versionParts = version.split('-');
@@ -191,53 +194,61 @@ function loadConfigBoot(): Config {
 }
 
 async function enforceInstanceLock(config: Config): Promise<void> {
-	const lock = config.instanceLock;
-	if (!lock) return;
-
 	const lockLogger = bootLogger.createSubLogger('instance-lock');
-	if (!lock.allowlistUrl) {
-		lockLogger.error('instanceLock.allowlistUrl is not set.');
+	const instanceUrl = new URL(config.url);
+	const instanceHostname = instanceUrl.hostname;
+
+	if (LOCAL_ALLOWLIST.has(instanceHostname)) {
+		lockLogger.succ(`Instance "${instanceHostname}" allowed (local dev).`);
+		return;
+	}
+
+	if (instanceUrl.protocol !== 'https:') {
+		lockLogger.error('Instance URL must use https.');
 		process.exit(1);
 	}
 
-	const timeoutMs = lock.allowlistTimeoutMs ?? 5000;
-	const controller = new AbortController();
-	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-	let responseText: string;
+	let allowlist: string[];
 	try {
-		const response = await fetch(lock.allowlistUrl, {
-			signal: controller.signal,
-			headers: lock.allowlistUserAgent ? { 'user-agent': lock.allowlistUserAgent } : undefined,
-		});
-		if (!response.ok) {
-			lockLogger.error(`Allowlist fetch failed: HTTP ${response.status} from ${lock.allowlistUrl}`);
-			process.exit(1);
-		}
-		responseText = await response.text();
+		allowlist = await fetchAllowlist();
 	} catch (error) {
 		const message = error instanceof Error ? error.message : String(error);
 		lockLogger.error(`Allowlist fetch failed: ${message}`);
 		process.exit(1);
-	} finally {
-		clearTimeout(timeoutId);
+		return;
 	}
 
-	const allowlist = parseAllowlistEntries(responseText);
 	if (allowlist.length === 0) {
 		lockLogger.error('Allowlist is empty or invalid.');
 		process.exit(1);
+		return;
 	}
 
-	const instanceUrl = new URL(config.url);
-	const instanceHost = instanceUrl.host;
-	const instanceHostname = instanceUrl.hostname;
-	const isAllowed = allowlist.some(entry => entry === instanceHost || entry === instanceHostname);
-	if (!isAllowed) {
-		lockLogger.error(`Instance "${instanceHost}" is not in allowlist.`);
+	const allowedFqdns = new Set<string>(allowlist);
+	if (!allowedFqdns.has(instanceHostname)) {
+		lockLogger.error(`Instance "${instanceHostname}" is not in allowlist.`);
 		process.exit(1);
 	}
-	lockLogger.succ(`Instance "${instanceHost}" allowed.`);
+	lockLogger.succ(`Instance "${instanceHostname}" allowed.`);
+}
+
+async function fetchAllowlist(): Promise<string[]> {
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), INSTANCE_ALLOWLIST_TIMEOUT_MS);
+
+	try {
+		const response = await fetch(INSTANCE_ALLOWLIST_URL, {
+			signal: controller.signal,
+			headers: { 'user-agent': 'misskey-tempura-instance-lock' },
+		});
+		if (!response.ok) {
+			throw new Error(`HTTP ${response.status} from ${INSTANCE_ALLOWLIST_URL}`);
+		}
+		const text = await response.text();
+		return parseAllowlistEntries(text);
+	} finally {
+		clearTimeout(timeoutId);
+	}
 }
 
 function parseAllowlistEntries(raw: string): string[] {
@@ -245,17 +256,11 @@ function parseAllowlistEntries(raw: string): string[] {
 	if (trimmed.length === 0) return [];
 
 	let entries: string[] | null = null;
-	if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+	if (trimmed.startsWith('[')) {
 		try {
 			const parsed = JSON.parse(trimmed) as unknown;
 			if (Array.isArray(parsed)) {
 				entries = parsed.map(String);
-			} else if (parsed && typeof parsed === 'object') {
-				const obj = parsed as Record<string, unknown>;
-				const candidate = obj.allowlist ?? obj.instances ?? obj.urls ?? obj.hosts;
-				if (Array.isArray(candidate)) {
-					entries = candidate.map(String);
-				}
 			}
 		} catch {
 			entries = null;
@@ -280,7 +285,7 @@ function normalizeAllowlistEntry(entry: string): string | null {
 
 	if (trimmed.includes('://')) {
 		try {
-			return new URL(trimmed).host;
+			return new URL(trimmed).hostname;
 		} catch {
 			return null;
 		}
