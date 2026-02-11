@@ -388,6 +388,15 @@ proxyBypassHosts:
 # Upload or download file size limits (bytes)
 #maxFileSize: 262144000
 
+# Instance lock (start-up allowlist)
+# If set, Misskey will fetch an allowlist and refuse to start when this instance
+# is not present in the list. Allowlist can be a plain text list (one host per line)
+# or JSON (array or { allowlist: [...] }).
+#instanceLock:
+#  allowlistUrl: https://example.com/misskey-allowlist.txt
+#  allowlistTimeoutMs: 5000
+#  allowlistUserAgent: 'misskey-tempura-allowlist'
+
 # PID File of master process
 #pidFile: /tmp/misskey.pid
 

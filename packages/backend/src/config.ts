@@ -21,6 +21,12 @@ type RedisOptionsSource = Partial<RedisOptions> & {
 	prefix?: string;
 };
 
+type InstanceLockConfig = {
+	allowlistUrl: string;
+	allowlistTimeoutMs?: number;
+	allowlistUserAgent?: string;
+};
+
 /**
  * 設定ファイルの型
  */
@@ -119,6 +125,7 @@ type Source = {
 
 	userAgent?: string;
 	version?: string;
+	instanceLock?: InstanceLockConfig;
 };
 
 export type Config = {
@@ -201,6 +208,7 @@ export type Config = {
 	mediaProxy: string;
 	externalMediaProxyEnabled: boolean;
 	videoThumbnailGenerator: string | null;
+	instanceLock: InstanceLockConfig | undefined;
 	redis: RedisOptions & RedisOptionsSource;
 	redisForPubsub: RedisOptions & RedisOptionsSource;
 	redisForJobQueue: RedisOptions & RedisOptionsSource;
@@ -343,6 +351,7 @@ export function loadConfig(): Config {
 			config.videoThumbnailGenerator.endsWith('/') ? config.videoThumbnailGenerator.substring(0, config.videoThumbnailGenerator.length - 1) : config.videoThumbnailGenerator
 			: null,
 		userAgent: config.userAgent ?? `Misskey/${version} (${config.url})`,
+		instanceLock: config.instanceLock,
 		frontendEntry: frontendManifest['src/_boot_.ts'],
 		frontendManifestExists: frontendManifestExists,
 		frontendEmbedEntry: frontendEmbedManifest['src/boot.ts'],

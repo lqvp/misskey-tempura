@@ -77,6 +77,7 @@ export async function masterMain() {
 	// initialize app
 	try {
 		config = loadConfigBoot();
+		await enforceInstanceLock(config);
 		greet({ version: config.version });
 		showEnvironment();
 		await showMachineInfo(bootLogger);
@@ -187,6 +188,105 @@ function loadConfigBoot(): Config {
 	configLogger.succ('Loaded');
 
 	return config;
+}
+
+async function enforceInstanceLock(config: Config): Promise<void> {
+	const lock = config.instanceLock;
+	if (!lock) return;
+
+	const lockLogger = bootLogger.createSubLogger('instance-lock');
+	if (!lock.allowlistUrl) {
+		lockLogger.error('instanceLock.allowlistUrl is not set.');
+		process.exit(1);
+	}
+
+	const timeoutMs = lock.allowlistTimeoutMs ?? 5000;
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+	let responseText: string;
+	try {
+		const response = await fetch(lock.allowlistUrl, {
+			signal: controller.signal,
+			headers: lock.allowlistUserAgent ? { 'user-agent': lock.allowlistUserAgent } : undefined,
+		});
+		if (!response.ok) {
+			lockLogger.error(`Allowlist fetch failed: HTTP ${response.status} from ${lock.allowlistUrl}`);
+			process.exit(1);
+		}
+		responseText = await response.text();
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		lockLogger.error(`Allowlist fetch failed: ${message}`);
+		process.exit(1);
+	} finally {
+		clearTimeout(timeoutId);
+	}
+
+	const allowlist = parseAllowlistEntries(responseText);
+	if (allowlist.length === 0) {
+		lockLogger.error('Allowlist is empty or invalid.');
+		process.exit(1);
+	}
+
+	const instanceUrl = new URL(config.url);
+	const instanceHost = instanceUrl.host;
+	const instanceHostname = instanceUrl.hostname;
+	const isAllowed = allowlist.some(entry => entry === instanceHost || entry === instanceHostname);
+	if (!isAllowed) {
+		lockLogger.error(`Instance "${instanceHost}" is not in allowlist.`);
+		process.exit(1);
+	}
+	lockLogger.succ(`Instance "${instanceHost}" allowed.`);
+}
+
+function parseAllowlistEntries(raw: string): string[] {
+	const trimmed = raw.trim();
+	if (trimmed.length === 0) return [];
+
+	let entries: string[] | null = null;
+	if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+		try {
+			const parsed = JSON.parse(trimmed) as unknown;
+			if (Array.isArray(parsed)) {
+				entries = parsed.map(String);
+			} else if (parsed && typeof parsed === 'object') {
+				const obj = parsed as Record<string, unknown>;
+				const candidate = obj.allowlist ?? obj.instances ?? obj.urls ?? obj.hosts;
+				if (Array.isArray(candidate)) {
+					entries = candidate.map(String);
+				}
+			}
+		} catch {
+			entries = null;
+		}
+	}
+
+	if (!entries) {
+		entries = trimmed
+			.split('\n')
+			.map(line => line.trim())
+			.filter(line => line.length > 0 && !line.startsWith('#'));
+	}
+
+	return entries
+		.map(entry => normalizeAllowlistEntry(entry))
+		.filter((entry): entry is string => entry !== null);
+}
+
+function normalizeAllowlistEntry(entry: string): string | null {
+	const trimmed = entry.trim();
+	if (trimmed.length === 0) return null;
+
+	if (trimmed.includes('://')) {
+		try {
+			return new URL(trimmed).host;
+		} catch {
+			return null;
+		}
+	}
+
+	return trimmed;
 }
 
 /*
