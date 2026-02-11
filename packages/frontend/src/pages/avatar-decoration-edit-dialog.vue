@@ -80,7 +80,7 @@ import { ensureSignin } from '@/i.js';
 const $i = ensureSignin();
 
 const props = defineProps<{
-	avatarDecoration?: any,
+	avatarDecoration?: Misskey.entities.AdminAvatarDecorationsListResponse[number],
 }>();
 
 const emit = defineEmits<{
@@ -117,7 +117,7 @@ async function addRole() {
 	rolesThatCanBeUsedThisDecoration.value.push(roles.find(r => r.id === roleId)!);
 }
 
-async function removeRole(role, ev) {
+async function removeRole(role: Misskey.entities.Role, ev: PointerEvent) {
 	rolesThatCanBeUsedThisDecoration.value = rolesThatCanBeUsedThisDecoration.value.filter(x => x.id !== role.id);
 }
 
@@ -155,6 +155,8 @@ async function done() {
 }
 
 async function del() {
+	if (props.avatarDecoration == null) return;
+
 	const { canceled } = await os.confirm({
 		type: 'warning',
 		text: i18n.tsx.removeAreYouSure({ x: name.value }),

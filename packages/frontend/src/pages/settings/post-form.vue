@@ -9,20 +9,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<template #label>{{ i18n.ts.postForm }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 		<MkPreferenceContainer k="postFormActions">
 			<MkContainer :showHeader="false">
-				<Sortable
+				<MkDraggable
 					v-model="items"
+					direction="horizontal"
 					:class="$style.items"
-					:itemKey="items => items"
-					:animation="100"
-					:delay="50"
-					:delayOnTouchOnly="true"
 				>
-					<template #item="{element}">
-						<button v-tooltip="bottomItemDef[element.type].title" class="_button" :class="$style.item" @click="removeItem(element.type, $event)">
-							<i class="ti ti-fw" :class="[$style.itemIcon, bottomItemDef[element.type].icon]"></i>
+					<template #default="{ item }">
+						<button v-tooltip="bottomItemDef[item.type].title" class="_button" :class="$style.item" @click="removeItem(item.type, $event)">
+							<i class="ti ti-fw" :class="[$style.itemIcon, bottomItemDef[item.type].icon]"></i>
 						</button>
 					</template>
-				</Sortable>
+				</MkDraggable>
 			</MkContainer>
 		</MkPreferenceContainer>
 	</FormSlot>
@@ -53,13 +50,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, defineAsyncComponent, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import MkButton from '@/components/MkButton.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
-import MkSelect from '@/components/MkSelect.vue';
 import MkDeleteScheduleEditor from '@/components/MkDeleteScheduleEditor.vue';
 import FormSlot from '@/components/form/slot.vue';
 import MkContainer from '@/components/MkContainer.vue';
+import MkDraggable from '@/components/MkDraggable.vue';
 import { bottomItemDef, normalizePostFormActions } from '@/utility/post-form.js';
 import * as os from '@/os.js';
 import { store } from '@/store.js';
@@ -79,8 +76,6 @@ watch(scheduledNoteDelete, () => {
 		prefer.commit('defaultScheduledNoteDeleteTime', scheduledNoteDelete.value.deleteAfter);
 	}
 });
-
-const Sortable = defineAsyncComponent(() => import('vuedraggable').then(x => x.default));
 
 const items = ref<{ id: string; type: keyof typeof bottomItemDef; }[]>(normalizePostFormActions(prefer.s.postFormActions).map(x => ({
 	id: Math.random().toString(),

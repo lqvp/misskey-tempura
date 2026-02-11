@@ -12,20 +12,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<SearchMarker :keywords="['post', 'form', 'compose']">
 				<MkPreferenceContainer k="postFormActions">
 					<MkContainer :showHeader="false">
-						<Sortable
+						<MkDraggable
 							v-model="items"
+							direction="horizontal"
 							:class="$style.items"
-							:itemKey="items => items"
-							:animation="100"
-							:delay="50"
-							:delayOnTouchOnly="true"
 						>
-							<template #item="{element}">
-								<button v-tooltip="bottomItemDef[element.type].title" class="_button" :class="$style.item" @click="removeItem(element.type, $event)">
-									<i class="ti ti-fw" :class="[$style.itemIcon, bottomItemDef[element.type].icon]"></i>
+							<template #default="{ item }">
+								<button v-tooltip="bottomItemDef[item.type].title" class="_button" :class="$style.item" @click="removeItem(item.type, $event)">
+									<i class="ti ti-fw" :class="[$style.itemIcon, bottomItemDef[item.type].icon]"></i>
 								</button>
 							</template>
-						</Sortable>
+						</MkDraggable>
 					</MkContainer>
 				</MkPreferenceContainer>
 			</SearchMarker>
@@ -77,9 +74,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, watch } from 'vue';
-import * as Misskey from 'misskey-js';
-import { defineAsyncComponent, ref } from 'vue';
+import { watch } from 'vue';
+import { ref } from 'vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkButton from '@/components/MkButton.vue';
@@ -89,13 +85,12 @@ import { PREF_DEF } from '@/preferences/def.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import MkContainer from '@/components/MkContainer.vue';
-import MkDeleteScheduleEditor from '@/components/MkDeleteScheduleEditor.vue';
+import MkDraggable from '@/components/MkDraggable.vue';
 import type { DeleteScheduleEditorModelValue } from '@/components/MkDeleteScheduleEditor.vue';
 import { bottomItemDef, normalizePostFormActions } from '@/utility/post-form.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 
 const useTextAreaAutoSize = prefer.model('useTextAreaAutoSize');
-const Sortable = defineAsyncComponent(() => import('vuedraggable').then(x => x.default));
 const defaultScheduledNoteDelete = prefer.model('defaultScheduledNoteDelete');
 const scheduledNoteDelete = ref<DeleteScheduleEditorModelValue>({ deleteAt: null, deleteAfter: prefer.s.defaultScheduledNoteDeleteTime, isValid: true, isScheduledForPrivate: false });
 const chooseFileFrom = prefer.model('chooseFileFrom');
