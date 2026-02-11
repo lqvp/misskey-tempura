@@ -103,9 +103,6 @@ async function updateVisibility() {
 		// フォールバックとして全て表示
 		visibleReactions.value = new Set(Object.keys(props.reactions));
 	}
-
-if (props.myReaction != null && !(props.myReaction in props.reactions)) {
-	_reactions.value.push([props.myReaction, props.reactions[props.myReaction]]);
 }
 
 function onMockToggleReaction(emoji: string, count: number) {
