@@ -1953,6 +1953,54 @@ export interface Locale extends ILocale {
      */
     "moderationLogs": string;
     /**
+     * LLMモデレーション
+     */
+    "llmModeration": string;
+    /**
+     * LLMモデレーションキュー
+     */
+    "llmModerationQueue": string;
+    /**
+     * LLMモデレーション
+     */
+    "openLlmModeration": string;
+    /**
+     * LLMモデレーションAPIで投稿を検出し、モデレーターの確認用にフラグを立てます。
+     */
+    "openLlmModerationDescription": string;
+    /**
+     * LLMモデレーションを有効化
+     */
+    "openLlmModerationEnabled": string;
+    /**
+     * LLM APIキー
+     */
+    "openLlmModerationApiKey": string;
+    /**
+     * サーバーに保存されます。秘密にしてください。
+     */
+    "openLlmModerationApiKeyDescription": string;
+    /**
+     * リモート投稿も対象にする
+     */
+    "openLlmModerationIncludeRemote": string;
+    /**
+     * 連合先の投稿もチェックします。
+     */
+    "openLlmModerationIncludeRemoteDescription": string;
+    /**
+     * 対象の公開範囲
+     */
+    "openLlmModerationVisibilities": string;
+    /**
+     * 選択した公開範囲のみAPIへ送信します。
+     */
+    "openLlmModerationVisibilitiesDescription": string;
+    /**
+     * モデレーションキューを開く
+     */
+    "openLlmModerationQueueLink": string;
+    /**
      * {n}人が投稿
      */
     "nUsersMentioned": ParameterizedString<"n">;
@@ -4036,6 +4084,14 @@ export interface Locale extends ILocale {
      * 未対応の通報があります。
      */
     "thereIsUnresolvedAbuseReportWarning": string;
+    /**
+     * 未対応のLLMモデレーション項目があります。
+     */
+    "thereIsUnresolvedLlmModerationQueueWarning": string;
+    /**
+     * LLMモデレーションの新しい項目があります。
+     */
+    "newLlmModerationQueueItem": string;
     /**
      * 承認待ちのユーザーがいます。
      */
@@ -6584,6 +6640,56 @@ export interface Locale extends ILocale {
          * 内容が正当でない通報の場合は「否認」を選択し、否定的にケースが解決されたことをマークします。
          */
         "resolveTutorial": string;
+    };
+    "_llmModerationQueue": {
+        /**
+         * LLMモデレーションでフラグされた投稿がここに表示されます。
+         */
+        "description": string;
+        /**
+         * 投稿元
+         */
+        "origin": string;
+        /**
+         * フラグカテゴリ
+         */
+        "flaggedCategories": string;
+        /**
+         * カテゴリスコア
+         */
+        "categoryScores": string;
+        /**
+         * 警告を送る
+         */
+        "warnUser": string;
+        /**
+         * 通知メッセージ
+         */
+        "warnUserPrompt": string;
+        /**
+         * 投稿を削除
+         */
+        "deleteNote": string;
+        /**
+         * この投稿を削除しますか？
+         */
+        "deleteNoteConfirm": string;
+        /**
+         * ユーザーを凍結
+         */
+        "suspendUser": string;
+        /**
+         * このユーザーを凍結しますか？
+         */
+        "suspendUserConfirm": string;
+        /**
+         * 解決
+         */
+        "resolve": string;
+        /**
+         * 投稿が見つからないか削除されています。
+         */
+        "noteMissing": string;
     };
     "_delivery": {
         /**
@@ -9870,6 +9976,10 @@ export interface Locale extends ILocale {
          */
         "read:admin:abuse-user-reports": string;
         /**
+         * LLMモデレーションキューを見る
+         */
+        "read:admin:llm-moderation": string;
+        /**
          * ユーザーアカウントを削除する
          */
         "write:admin:delete-account": string;
@@ -9905,6 +10015,10 @@ export interface Locale extends ILocale {
          * ユーザーからの通報を解決する
          */
         "write:admin:resolve-abuse-user-report": string;
+        /**
+         * LLMモデレーションキューを管理する
+         */
+        "write:admin:llm-moderation": string;
         /**
          * メールを送る
          */
@@ -11372,6 +11486,18 @@ export interface Locale extends ILocale {
          */
         "testNotification": string;
         /**
+         * LLMモデレーションキュー
+         */
+        "llmModerationQueue": string;
+        /**
+         * LLMモデレーションキューに新しい項目があります。
+         */
+        "llmModerationQueueDescription": string;
+        /**
+         * LLMモデレーションキューを開く
+         */
+        "llmModerationQueueLink": string;
+        /**
          * 通知の表示を確かめる
          */
         "checkNotificationBehavior": string;
@@ -11542,6 +11668,10 @@ export interface Locale extends ILocale {
              * 通知のテスト
              */
             "test": string;
+            /**
+             * LLMモデレーションキュー
+             */
+            "llmModerationQueue": string;
             /**
              * 連携アプリからの通知
              */

@@ -202,7 +202,13 @@ export type Channels = {
 				targetUserId: string;
 				reporterId: string;
 				comment: string;
-			}
+			};
+			newLlmModerationQueueItem: {
+				id: string;
+				noteId: string;
+				noteUserId: string;
+				flaggedCategories: string[];
+			};
 		};
 		receives: null;
 	};

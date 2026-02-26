@@ -11,10 +11,10 @@ import { common } from './common.js';
 import type { Component } from 'vue';
 import type { Keymap } from '@/utility/hotkey.js';
 import { i18n } from '@/i18n.js';
-import { alert, confirm, popup, post } from '@/os.js';
+import { alert, confirm, popup, post, toast } from '@/os.js';
 import { useStream } from '@/stream.js';
 import * as sound from '@/utility/sound.js';
-import { $i } from '@/i.js';
+import { $i, iAmModerator } from '@/i.js';
 import { instance } from '@/instance.js';
 import { store } from '@/store.js';
 import { reactionPicker } from '@/utility/reaction-picker.js';
@@ -372,6 +372,14 @@ export async function mainBoot() {
 
 			// 個人宛てお知らせが発行されたとき
 			main.on('announcementCreated', onAnnouncementCreated);
+
+			if (iAmModerator) {
+				const admin = markRaw(stream.useChannel('admin', null, 'Admin'));
+
+				admin.on('newLlmModerationQueueItem', () => {
+					toast(i18n.ts.newLlmModerationQueueItem);
+				});
+			}
 		}
 	}
 

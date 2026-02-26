@@ -5218,6 +5218,13 @@ export type components = {
             /** Format: date-time */
             createdAt: string;
             /** @enum {string} */
+            type: 'llmModerationQueue';
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
             type: 'app';
             body: string;
             header: string | null;

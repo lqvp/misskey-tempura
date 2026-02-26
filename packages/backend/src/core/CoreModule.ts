@@ -6,6 +6,7 @@
 import { Module } from '@nestjs/common';
 import { FanoutTimelineEndpointService } from '@/core/FanoutTimelineEndpointService.js';
 import { AbuseReportService } from '@/core/AbuseReportService.js';
+import { LlmModerationQueueService } from '@/core/LlmModerationQueueService.js';
 import { SystemWebhookEntityService } from '@/core/entities/SystemWebhookEntityService.js';
 import {
 	AbuseReportNotificationRecipientEntityService,
@@ -35,6 +36,7 @@ import { FetchInstanceMetadataService } from './FetchInstanceMetadataService.js'
 import { GlobalEventService } from './GlobalEventService.js';
 import { HashtagService } from './HashtagService.js';
 import { HttpRequestService } from './HttpRequestService.js';
+import { OpenLlmModerationService } from './OpenLlmModerationService.js';
 import { IdService } from './IdService.js';
 import { ImageProcessingService } from './ImageProcessingService.js';
 import { SystemAccountService } from './SystemAccountService.js';
@@ -142,6 +144,7 @@ import { RoleEntityService } from './entities/RoleEntityService.js';
 import { ReversiGameEntityService } from './entities/ReversiGameEntityService.js';
 import { MetaEntityService } from './entities/MetaEntityService.js';
 import { ContactFormEntityService } from './entities/ContactFormEntityService.js';
+import { LlmModerationQueueEntityService } from './entities/LlmModerationQueueEntityService.js';
 
 import { ApAudienceService } from './activitypub/ApAudienceService.js';
 import { ApDbResolverService } from './activitypub/ApDbResolverService.js';
@@ -173,6 +176,7 @@ const $AbuseReportNotificationService: Provider = { provide: 'AbuseReportNotific
 const $AccountMoveService: Provider = { provide: 'AccountMoveService', useExisting: AccountMoveService };
 const $AccountUpdateService: Provider = { provide: 'AccountUpdateService', useExisting: AccountUpdateService };
 const $AiService: Provider = { provide: 'AiService', useExisting: AiService };
+const $LlmModerationQueueService: Provider = { provide: 'LlmModerationQueueService', useExisting: LlmModerationQueueService };
 const $AnnouncementService: Provider = { provide: 'AnnouncementService', useExisting: AnnouncementService };
 const $AntennaService: Provider = { provide: 'AntennaService', useExisting: AntennaService };
 const $AchievementService: Provider = { provide: 'AchievementService', useExisting: AchievementService };
@@ -189,6 +193,7 @@ const $FetchInstanceMetadataService: Provider = { provide: 'FetchInstanceMetadat
 const $GlobalEventService: Provider = { provide: 'GlobalEventService', useExisting: GlobalEventService };
 const $HashtagService: Provider = { provide: 'HashtagService', useExisting: HashtagService };
 const $HttpRequestService: Provider = { provide: 'HttpRequestService', useExisting: HttpRequestService };
+const $OpenLlmModerationService: Provider = { provide: 'OpenLlmModerationService', useExisting: OpenLlmModerationService };
 const $IdService: Provider = { provide: 'IdService', useExisting: IdService };
 const $ImageProcessingService: Provider = { provide: 'ImageProcessingService', useExisting: ImageProcessingService };
 const $InternalStorageService: Provider = { provide: 'InternalStorageService', useExisting: InternalStorageService };
@@ -263,6 +268,7 @@ const $ChartManagementService: Provider = { provide: 'ChartManagementService', u
 const $AbuseUserReportEntityService: Provider = { provide: 'AbuseUserReportEntityService', useExisting: AbuseUserReportEntityService };
 const $AnnouncementEntityService: Provider = { provide: 'AnnouncementEntityService', useExisting: AnnouncementEntityService };
 const $AbuseReportNotificationRecipientEntityService: Provider = { provide: 'AbuseReportNotificationRecipientEntityService', useExisting: AbuseReportNotificationRecipientEntityService };
+const $LlmModerationQueueEntityService: Provider = { provide: 'LlmModerationQueueEntityService', useExisting: LlmModerationQueueEntityService };
 const $AntennaEntityService: Provider = { provide: 'AntennaEntityService', useExisting: AntennaEntityService };
 const $AppEntityService: Provider = { provide: 'AppEntityService', useExisting: AppEntityService };
 const $AuthSessionEntityService: Provider = { provide: 'AuthSessionEntityService', useExisting: AuthSessionEntityService };
@@ -332,6 +338,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 	providers: [
 		LoggerService,
 		AbuseReportService,
+		LlmModerationQueueService,
 		AbuseReportNotificationService,
 		AccountMoveService,
 		AccountUpdateService,
@@ -352,6 +359,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		GlobalEventService,
 		HashtagService,
 		HttpRequestService,
+		OpenLlmModerationService,
 		IdService,
 		ImageProcessingService,
 		InternalStorageService,
@@ -428,6 +436,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		AbuseUserReportEntityService,
 		AnnouncementEntityService,
 		AbuseReportNotificationRecipientEntityService,
+		LlmModerationQueueEntityService,
 		AntennaEntityService,
 		AppEntityService,
 		AuthSessionEntityService,
@@ -496,6 +505,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$AccountMoveService,
 		$AccountUpdateService,
 		$AiService,
+		$LlmModerationQueueService,
 		$AnnouncementService,
 		$AntennaService,
 		$AchievementService,
@@ -512,6 +522,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$GlobalEventService,
 		$HashtagService,
 		$HttpRequestService,
+		$OpenLlmModerationService,
 		$IdService,
 		$ImageProcessingService,
 		$InternalStorageService,
@@ -586,6 +597,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$AbuseUserReportEntityService,
 		$AnnouncementEntityService,
 		$AbuseReportNotificationRecipientEntityService,
+		$LlmModerationQueueEntityService,
 		$AntennaEntityService,
 		$AppEntityService,
 		$AuthSessionEntityService,
@@ -652,6 +664,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		QueueModule,
 		LoggerService,
 		AbuseReportService,
+		LlmModerationQueueService,
 		AbuseReportNotificationService,
 		AccountMoveService,
 		AccountUpdateService,
@@ -672,6 +685,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		GlobalEventService,
 		HashtagService,
 		HttpRequestService,
+		OpenLlmModerationService,
 		IdService,
 		ImageProcessingService,
 		InternalStorageService,
@@ -747,6 +761,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		AbuseUserReportEntityService,
 		AnnouncementEntityService,
 		AbuseReportNotificationRecipientEntityService,
+		LlmModerationQueueEntityService,
 		AntennaEntityService,
 		AppEntityService,
 		AuthSessionEntityService,
@@ -815,6 +830,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$AccountMoveService,
 		$AccountUpdateService,
 		$AiService,
+		$LlmModerationQueueService,
 		$AnnouncementService,
 		$AntennaService,
 		$AchievementService,
@@ -831,6 +847,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$GlobalEventService,
 		$HashtagService,
 		$HttpRequestService,
+		$OpenLlmModerationService,
 		$IdService,
 		$ImageProcessingService,
 		$InternalStorageService,
@@ -903,6 +920,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$AbuseUserReportEntityService,
 		$AnnouncementEntityService,
 		$AbuseReportNotificationRecipientEntityService,
+		$LlmModerationQueueEntityService,
 		$AntennaEntityService,
 		$AppEntityService,
 		$AuthSessionEntityService,

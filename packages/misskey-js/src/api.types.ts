@@ -9,6 +9,10 @@ import {
 } from './autogen/entities.js';
 import {
 	PartialRolePolicyOverride,
+	AdminLlmModerationQueueRequest,
+	AdminLlmModerationQueueResponse,
+	AdminLlmModerationQueueResolveRequest,
+	AdminLlmModerationQueueUpdateRequest,
 	SigninFlowRequest,
 	SigninFlowResponse,
 	SigninWithPasskeyInitResponse,
@@ -112,6 +116,18 @@ export type Endpoints = Overwrite<
 		'admin/roles/create': {
 			req: Overwrite<AdminRolesCreateRequest, { policies: PartialRolePolicyOverride }>;
 			res: AdminRolesCreateResponse;
+		},
+		'admin/llm-moderation/queue': {
+			req: AdminLlmModerationQueueRequest;
+			res: AdminLlmModerationQueueResponse;
+		},
+		'admin/llm-moderation/queue/resolve': {
+			req: AdminLlmModerationQueueResolveRequest;
+			res: EmptyResponse;
+		},
+		'admin/llm-moderation/queue/update': {
+			req: AdminLlmModerationQueueUpdateRequest;
+			res: EmptyResponse;
 		},
 		'clear-browser-cache': {
 			req: EmptyRequest;

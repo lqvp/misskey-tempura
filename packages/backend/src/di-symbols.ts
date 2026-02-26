@@ -56,6 +56,7 @@ export const DI = {
 	hashtagsRepository: Symbol('hashtagsRepository'),
 	abuseUserReportsRepository: Symbol('abuseUserReportsRepository'),
 	abuseReportNotificationRecipientRepository: Symbol('abuseReportNotificationRecipientRepository'),
+	llmModerationQueueRepository: Symbol('llmModerationQueueRepository'),
 	registrationTicketsRepository: Symbol('registrationTicketsRepository'),
 	authSessionsRepository: Symbol('authSessionsRepository'),
 	accessTokensRepository: Symbol('accessTokensRepository'),
