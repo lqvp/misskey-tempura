@@ -283,7 +283,7 @@ export type AdminLlmModerationQueueResolveRequest = {
 
 export type AdminLlmModerationQueueUpdateRequest = {
 	queueId: ID;
-	moderationNote: string;
+	moderationNote?: string;
 };
 
 export type ServerStats = {
