@@ -1,3 +1,8 @@
+/*
+ * SPDX-FileCopyrightText: chan-mai and lqvp
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
 export const noSuchLlmModerationQueueError = {
 	message: 'No such LLM moderation queue item.',
 	code: 'NO_SUCH_LLM_MODERATION_QUEUE',
