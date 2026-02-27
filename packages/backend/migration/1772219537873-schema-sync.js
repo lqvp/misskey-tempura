@@ -7,8 +7,8 @@
  * @class
  * @implements {MigrationInterface}
  */
-module.exports = class SchemaSync1772218750295 {
-    name = 'SchemaSync1772218750295'
+module.exports = class SchemaSync1772219537873 {
+    name = 'SchemaSync1772219537873'
 
     /**
      * @param {QueryRunner} queryRunner
