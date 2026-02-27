@@ -232,7 +232,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import * as Misskey from 'misskey-js';
 import XServerRules from './server-rules.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
@@ -266,19 +266,26 @@ const openLlmVisibilityOptions = [
 
 const openLlmModerationForm = useForm({
 	openLlmModerationEnabled: meta.openLlmModerationEnabled,
-	openLlmModerationApiKey: meta.openLlmModerationApiKey ?? '',
+	openLlmModerationApiKey: '',
 	openLlmModerationIncludeRemote: meta.openLlmModerationIncludeRemote,
 	openLlmModerationVisibilities: meta.openLlmModerationVisibilities?.length
 		? meta.openLlmModerationVisibilities
 		: defaultLlmVisibilities,
 }, async (state) => {
-	await os.apiWithDialog('admin/update-meta', {
+	const payload: Misskey.Endpoints['admin/update-meta']['req'] = {
 		openLlmModerationEnabled: state.openLlmModerationEnabled,
-		openLlmModerationApiKey: state.openLlmModerationApiKey.trim() === '' ? null : state.openLlmModerationApiKey,
 		openLlmModerationIncludeRemote: state.openLlmModerationIncludeRemote,
 		openLlmModerationVisibilities: state.openLlmModerationVisibilities,
-	});
+	};
+	if (openLlmModerationApiKeyChanged.value) {
+		payload.openLlmModerationApiKey = state.openLlmModerationApiKey.trim() === '' ? null : state.openLlmModerationApiKey;
+	}
+	await os.apiWithDialog('admin/update-meta', payload);
 	fetchInstance(true);
+});
+const openLlmModerationApiKeyChanged = ref(false);
+watch(() => openLlmModerationForm.state.openLlmModerationApiKey, (value, prev) => {
+	if (value !== prev) openLlmModerationApiKeyChanged.value = true;
 });
 
 const enableRegistration = ref(!meta.disableRegistration);
