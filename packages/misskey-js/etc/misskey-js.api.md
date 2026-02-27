@@ -310,7 +310,7 @@ type AdminLlmModerationQueueRequest_2 = {
 // @public (undocumented)
 type AdminLlmModerationQueueResolveRequest_2 = {
     queueId: ID;
-    moderationNote?: string | null;
+    moderationNote?: string;
 };
 
 // @public (undocumented)

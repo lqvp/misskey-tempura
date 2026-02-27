@@ -11036,7 +11036,7 @@ export interface operations {
                         setSensitiveFlagAutomatically: boolean;
                         enableSensitiveMediaDetectionForVideos: boolean;
                         openLlmModerationEnabled: boolean;
-                        openLlmModerationApiKey: string | null;
+                        openLlmModerationApiConfigured: boolean;
                         openLlmModerationIncludeRemote: boolean;
                         openLlmModerationVisibilities: string[];
                         /** Format: id */
@@ -40901,4 +40901,3 @@ export interface operations {
         };
     };
 }
-

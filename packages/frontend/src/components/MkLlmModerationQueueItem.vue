@@ -89,7 +89,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue';
+import { computed, onUnmounted, ref, watch } from 'vue';
 import { debounce } from 'throttle-debounce';
 import * as Misskey from 'misskey-js';
 import MkButton from '@/components/MkButton.vue';
@@ -110,12 +110,23 @@ const emit = defineEmits<{
 
 const moderationNote = ref(props.queue.moderationNote ?? '');
 let skipModerationNoteUpdate = false;
-const saveModerationNote = debounce(800, () => {
+const saveModerationNoteImmediate = () => {
 	return os.apiWithDialog('admin/llm-moderation/queue/update', {
 		queueId: props.queue.id,
 		moderationNote: moderationNote.value,
 	});
-});
+};
+const saveModerationNote = debounce(800, saveModerationNoteImmediate);
+
+async function flushModerationNoteSave() {
+	saveModerationNote();
+	const flush = (saveModerationNote as { flush?: () => Promise<void> }).flush;
+	if (flush) {
+		await flush();
+		return;
+	}
+	await saveModerationNoteImmediate();
+}
 
 const flaggedLabel = computed(() => props.queue.flaggedCategories.length > 0
 	? props.queue.flaggedCategories.join(', ')
@@ -142,7 +153,7 @@ watch(moderationNote, async () => {
 		skipModerationNoteUpdate = false;
 		return;
 	}
-	await saveModerationNote();
+	await flushModerationNoteSave();
 });
 
 watch(() => props.queue.moderationNote, (next) => {
@@ -194,6 +205,8 @@ async function suspendUser() {
 }
 
 async function resolve() {
+	saveModerationNote.cancel({ upcomingOnly: true });
+	await saveModerationNoteImmediate();
 	await os.apiWithDialog('admin/llm-moderation/queue/resolve', {
 		queueId: props.queue.id,
 		moderationNote: moderationNote.value,
@@ -205,6 +218,10 @@ async function resolve() {
 function formatScore(score: number): string {
 	return score.toFixed(3);
 }
+
+onUnmounted(() => {
+	saveModerationNote.cancel({ upcomingOnly: true });
+});
 </script>
 
 <style lang="scss" module>

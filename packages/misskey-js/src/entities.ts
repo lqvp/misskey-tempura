@@ -278,7 +278,7 @@ export type AdminLlmModerationQueueResponse = LlmModerationQueue[];
 
 export type AdminLlmModerationQueueResolveRequest = {
 	queueId: ID;
-	moderationNote?: string | null;
+	moderationNote?: string;
 };
 
 export type AdminLlmModerationQueueUpdateRequest = {
