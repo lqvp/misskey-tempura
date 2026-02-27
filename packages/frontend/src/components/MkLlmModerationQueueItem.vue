@@ -108,6 +108,7 @@ const emit = defineEmits<{
 }>();
 
 const moderationNote = ref(props.queue.moderationNote ?? '');
+let skipModerationNoteUpdate = false;
 
 const flaggedLabel = computed(() => props.queue.flaggedCategories.length > 0
 	? props.queue.flaggedCategories.join(', ')
@@ -130,10 +131,21 @@ const scoreEntries = computed(() => Object.entries(props.queue.categoryScores ??
 	.sort((a, b) => b.score - a.score));
 
 watch(moderationNote, async () => {
+	if (skipModerationNoteUpdate) {
+		skipModerationNoteUpdate = false;
+		return;
+	}
 	await os.apiWithDialog('admin/llm-moderation/queue/update', {
 		queueId: props.queue.id,
 		moderationNote: moderationNote.value,
 	});
+});
+
+watch(() => props.queue.moderationNote, (next) => {
+	const nextValue = next ?? '';
+	if (nextValue === moderationNote.value) return;
+	skipModerationNoteUpdate = true;
+	moderationNote.value = nextValue;
 });
 
 async function warnUser() {
