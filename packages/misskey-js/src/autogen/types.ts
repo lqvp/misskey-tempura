@@ -10852,7 +10852,7 @@ export interface operations {
                 'application/json': {
                     /** Format: misskey:id */
                     queueId: string;
-                    moderationNote?: string | null;
+                    moderationNote?: string;
                 };
             };
         };
