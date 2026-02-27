@@ -64,6 +64,7 @@ export type MetaClientOptions = components['schemas']['MetaClientOptions'];
 export type UserWebhook = components['schemas']['UserWebhook'];
 export type SystemWebhook = components['schemas']['SystemWebhook'];
 export type AbuseReportNotificationRecipient = components['schemas']['AbuseReportNotificationRecipient'];
+export type LlmModerationQueue = components['schemas']['LlmModerationQueue'];
 export type ChatMessage = components['schemas']['ChatMessage'];
 export type ChatMessageLite = components['schemas']['ChatMessageLite'];
 export type ChatMessageLiteFor1on1 = components['schemas']['ChatMessageLiteFor1on1'];

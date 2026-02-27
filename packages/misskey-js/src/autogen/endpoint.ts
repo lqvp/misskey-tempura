@@ -86,6 +86,10 @@ import type {
 	AdminInviteCreateResponse,
 	AdminInviteListRequest,
 	AdminInviteListResponse,
+	AdminLlmModerationQueueRequest,
+	AdminLlmModerationQueueResponse,
+	AdminLlmModerationQueueResolveRequest,
+	AdminLlmModerationQueueUpdateRequest,
 	AdminMetaResponse,
 	AdminPromoCreateRequest,
 	AdminQueueClearRequest,
@@ -777,6 +781,9 @@ export type Endpoints = {
 	'admin/get-user-ips': { req: AdminGetUserIpsRequest; res: AdminGetUserIpsResponse };
 	'admin/invite/create': { req: AdminInviteCreateRequest; res: AdminInviteCreateResponse };
 	'admin/invite/list': { req: AdminInviteListRequest; res: AdminInviteListResponse };
+	'admin/llm-moderation/queue': { req: AdminLlmModerationQueueRequest; res: AdminLlmModerationQueueResponse };
+	'admin/llm-moderation/queue/resolve': { req: AdminLlmModerationQueueResolveRequest; res: EmptyResponse };
+	'admin/llm-moderation/queue/update': { req: AdminLlmModerationQueueUpdateRequest; res: EmptyResponse };
 	'admin/meta': { req: EmptyRequest; res: AdminMetaResponse };
 	'admin/promo/create': { req: AdminPromoCreateRequest; res: EmptyResponse };
 	'admin/queue/clear': { req: AdminQueueClearRequest; res: EmptyResponse };
