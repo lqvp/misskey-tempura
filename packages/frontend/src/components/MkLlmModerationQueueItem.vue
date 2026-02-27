@@ -90,6 +90,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue';
+import { debounce } from 'throttle-debounce';
 import * as Misskey from 'misskey-js';
 import MkButton from '@/components/MkButton.vue';
 import MkFolder from '@/components/MkFolder.vue';
@@ -109,6 +110,12 @@ const emit = defineEmits<{
 
 const moderationNote = ref(props.queue.moderationNote ?? '');
 let skipModerationNoteUpdate = false;
+const saveModerationNote = debounce(800, () => {
+	return os.apiWithDialog('admin/llm-moderation/queue/update', {
+		queueId: props.queue.id,
+		moderationNote: moderationNote.value,
+	});
+});
 
 const flaggedLabel = computed(() => props.queue.flaggedCategories.length > 0
 	? props.queue.flaggedCategories.join(', ')
@@ -135,10 +142,7 @@ watch(moderationNote, async () => {
 		skipModerationNoteUpdate = false;
 		return;
 	}
-	await os.apiWithDialog('admin/llm-moderation/queue/update', {
-		queueId: props.queue.id,
-		moderationNote: moderationNote.value,
-	});
+	await saveModerationNote();
 });
 
 watch(() => props.queue.moderationNote, (next) => {
