@@ -11,7 +11,6 @@ export class LlmModerationQueue1768000000000 {
 	 */
 	async up(queryRunner) {
 		await queryRunner.query(`CREATE TABLE "llm_moderation_queue" ("id" character varying(32) NOT NULL, "noteId" character varying(32) NOT NULL, "noteUserId" character varying(32) NOT NULL, "noteUserHost" character varying(128), "noteVisibility" character varying(64) NOT NULL, "isRemote" boolean NOT NULL DEFAULT false, "provider" character varying(32) NOT NULL, "model" character varying(128) NOT NULL, "flaggedCategories" character varying(128) array NOT NULL DEFAULT '{}', "categoryScores" jsonb NOT NULL, "rawResult" jsonb, "resolved" boolean NOT NULL DEFAULT false, "assigneeId" character varying(32), "moderationNote" character varying(8192) NOT NULL DEFAULT '', CONSTRAINT "PK_llm_moderation_queue_id" PRIMARY KEY ("id"))`);
-		await queryRunner.query(`CREATE INDEX "IDX_llm_moderation_queue_noteId" ON "llm_moderation_queue" ("noteId")`);
 		await queryRunner.query(`CREATE INDEX "IDX_llm_moderation_queue_noteUserId" ON "llm_moderation_queue" ("noteUserId")`);
 		await queryRunner.query(`CREATE INDEX "IDX_llm_moderation_queue_noteUserHost" ON "llm_moderation_queue" ("noteUserHost")`);
 		await queryRunner.query(`CREATE INDEX "IDX_llm_moderation_queue_isRemote" ON "llm_moderation_queue" ("isRemote")`);
@@ -40,7 +39,6 @@ export class LlmModerationQueue1768000000000 {
 		await queryRunner.query(`DROP INDEX "IDX_llm_moderation_queue_isRemote"`);
 		await queryRunner.query(`DROP INDEX "IDX_llm_moderation_queue_noteUserHost"`);
 		await queryRunner.query(`DROP INDEX "IDX_llm_moderation_queue_noteUserId"`);
-		await queryRunner.query(`DROP INDEX "IDX_llm_moderation_queue_noteId"`);
 		await queryRunner.query(`DROP TABLE "llm_moderation_queue"`);
 	}
 }

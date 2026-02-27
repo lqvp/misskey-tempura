@@ -12,6 +12,8 @@ import { RoleService } from '@/core/RoleService.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js';
+import { ApiError } from '@/server/api/error.js';
+import { noSuchLlmModerationQueueError } from '@/core/errors/llm-moderation-queue.js';
 
 @Injectable()
 export class LlmModerationQueueService {
@@ -76,7 +78,10 @@ export class LlmModerationQueueService {
 			moderationNote?: string;
 		},
 	): Promise<void> {
-		const queue = await this.llmModerationQueueRepository.findOneByOrFail({ id: queueId });
+		const queue = await this.llmModerationQueueRepository.findOneBy({ id: queueId });
+		if (!queue) {
+			throw new ApiError(noSuchLlmModerationQueueError);
+		}
 		const nextNote = params?.moderationNote ?? queue.moderationNote;
 
 		await this.llmModerationQueueRepository.update(queue.id, {

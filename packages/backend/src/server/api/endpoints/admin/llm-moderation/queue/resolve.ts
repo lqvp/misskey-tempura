@@ -5,10 +5,8 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
-import type { LlmModerationQueueRepository } from '@/models/_.js';
-import { DI } from '@/di-symbols.js';
-import { ApiError } from '@/server/api/error.js';
 import { LlmModerationQueueService } from '@/core/LlmModerationQueueService.js';
+import { noSuchLlmModerationQueueError } from '@/core/errors/llm-moderation-queue.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -18,13 +16,7 @@ export const meta = {
 	kind: 'write:admin:llm-moderation',
 
 	errors: {
-		noSuchLlmModerationQueue: {
-			message: 'No such LLM moderation queue item.',
-			code: 'NO_SUCH_LLM_MODERATION_QUEUE',
-			id: '15a7c5d2-1533-44a6-9ff4-cfc40dce8a75',
-			kind: 'server',
-			httpStatusCode: 404,
-		},
+		noSuchLlmModerationQueue: noSuchLlmModerationQueueError,
 	},
 } as const;
 
@@ -40,17 +32,10 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
-		@Inject(DI.llmModerationQueueRepository)
-		private llmModerationQueueRepository: LlmModerationQueueRepository,
 		private llmModerationQueueService: LlmModerationQueueService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			const queue = await this.llmModerationQueueRepository.findOneBy({ id: ps.queueId });
-			if (!queue) {
-				throw new ApiError(meta.errors.noSuchLlmModerationQueue);
-			}
-
-			await this.llmModerationQueueService.resolve(queue.id, me, {
+			await this.llmModerationQueueService.resolve(ps.queueId, me, {
 				moderationNote: ps.moderationNote ?? undefined,
 			});
 		});
