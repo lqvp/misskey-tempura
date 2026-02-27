@@ -132,11 +132,13 @@ const {
 const loading = ref(true);
 const loadingMore = ref(false);
 
-const announcements = ref<(Omit<Misskey.entities.AdminAnnouncementsListResponse[number], 'id' | 'createdAt' | 'updatedAt' | 'reads' | 'isActive'> & {
+const announcements = ref<(Omit<Misskey.entities.AdminAnnouncementsListResponse[number], 'id' | 'createdAt' | 'updatedAt' | 'reads' | 'isActive' | 'roles'> & {
 	id: string | null;
 	_id?: string;
 	isActive?: Misskey.entities.AdminAnnouncementsListResponse[number]['isActive'];
 	reads?: Misskey.entities.AdminAnnouncementsListResponse[number]['reads'];
+	roles: Misskey.entities.RoleLite[];
+	roleIds?: string[];
 })[]>([]);
 
 watch(announcementsStatus, (to) => {
@@ -153,7 +155,7 @@ misskeyApi('admin/announcements/list').then(announcementResponse => {
 	announcements.value = announcementResponse;
 });
 
-async function selectRole(initialRoleIds: string[] = []): Promise<{ id: string, name: string }[]> {
+async function selectRole(initialRoleIds: string[] = []): Promise<Misskey.entities.RoleLite[]> {
 	const result = await os.selectRole({
 		initialRoleIds,
 		title: i18n.ts.rolesThatCanBeUsedThisEmojiAsReaction,
@@ -165,10 +167,10 @@ async function selectRole(initialRoleIds: string[] = []): Promise<{ id: string, 
 		return [];
 	}
 
-	return result.result.map(it => ({ id: it.id, name: it.name }));
+	return result.result;
 }
 
-async function addRole(announcement) {
+async function addRole(announcement: (typeof announcements)['value'][number]) {
 	const roles = await selectRole();
 	if (roles.length > 0) {
 		const index = announcements.value.findIndex(x => x.id === announcement.id);
@@ -176,7 +178,7 @@ async function addRole(announcement) {
 	}
 }
 
-function removeRole(index: number, role) {
+function removeRole(index: number, role: Misskey.entities.RoleLite) {
 	announcements.value[index].roles = announcements.value[index].roles.filter(x => x.id !== role.id);
 }
 
@@ -194,7 +196,7 @@ function add() {
 		needConfirmationToRead: false,
 		userId: null,
 		isRoleSpecified: false,
-		roles: [],
+		roles: [] as Misskey.entities.RoleLite[],
 		roleIds: [] as string[],
 	});
 }

@@ -95,15 +95,7 @@ export const meta = {
 					optional: false, nullable: false,
 					items: {
 						type: 'object',
-						properties: {
-							id: {
-								type: 'string',
-								format: 'id',
-							},
-							name: {
-								type: 'string',
-							},
-						},
+						ref: 'RoleLite',
 					},
 				},
 				reads: {

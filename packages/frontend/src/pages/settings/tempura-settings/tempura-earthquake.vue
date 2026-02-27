@@ -374,11 +374,12 @@ const regionFilters = reactive({
 	shikoku: false,
 	kyushu: false,
 });
+type RegionKey = keyof typeof regionFilters;
 
 // 地域フィルタの取得・設定
 watch(regionFilters, () => {
 	const regions: string[] = [];
-	for (const [region, selected] of Object.entries(regionFilters) as [string, boolean][]) {
+	for (const [region, selected] of Object.entries(regionFilters) as Array<[RegionKey, boolean]>) {
 		if (selected) regions.push(region);
 	}
 	prefer.commit('earthquakeWarningRegionFilter', regions);
@@ -389,7 +390,9 @@ onMounted(() => {
 	const savedRegions = prefer.r.earthquakeWarningRegionFilter.value;
 	if (Array.isArray(savedRegions)) {
 		for (const region of savedRegions) {
-			regionFilters[region] = true;
+			if (region in regionFilters) {
+				regionFilters[region as RegionKey] = true;
+			}
 		}
 	}
 

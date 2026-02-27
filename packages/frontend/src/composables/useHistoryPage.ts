@@ -86,7 +86,7 @@ export function useHistoryPage<
 		},
 		...Object.entries(actionConfig).map(([key, config]) => ({
 			key,
-			title: i18nBase.value.types[key],
+			title: (i18nBase.value.types as Record<string, string>)[key],
 			icon: config.tabIcon,
 		})),
 	]);

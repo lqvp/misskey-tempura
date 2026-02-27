@@ -155,8 +155,11 @@ const emit = defineEmits<{
 	(ev: 'closed'): void
 }>();
 
-async function changeImage(ev) {
-	const file = await selectFile(ev.currentTarget ?? ev.target);
+async function changeImage(ev: PointerEvent) {
+	const file = await selectFile({
+		anchorElement: ev.currentTarget ?? ev.target,
+		multiple: false,
+	});
 	if (file != null) {
 		imgUrl.value = (file as any).url ?? (file as any).thumbnailUrl ?? '';
 	}

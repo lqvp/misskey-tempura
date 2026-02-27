@@ -47,7 +47,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<span :class="$style.itemHandle" :draggable="true" @dragstart.stop="dragStart">
 								<i class="ti ti-grip-vertical"></i>
 							</span>
-							<span :class="$style.itemTitle">{{ i18n.ts._widgets[item.name] || item.name }}</span>
+							<span :class="$style.itemTitle">{{ i18n.ts._widgets[item.name as keyof typeof i18n.ts._widgets] || item.name }}</span>
 							<button :class="[$style.actionButton, $style.deleteButton]" @click.stop="removeWidget(index)">
 								<i class="ti ti-trash"></i>
 							</button>
@@ -87,8 +87,9 @@ import MkDraggable from '@/components/MkDraggable.vue';
 import { i18n } from '@/i18n.js';
 import * as os from '@/os.js';
 import { widgets as widgetDefs } from '@/widgets/index.js';
+import type { WidgetName } from '@/widgets/index.js';
 
-const name = i18n.ts._widgets.nestedWidget;
+const name = 'nestedWidget' as const;
 
 const widgetPropsDef = {
 	showHeader: { type: 'boolean' as const, default: true },
@@ -97,7 +98,7 @@ const widgetPropsDef = {
 	maxHeight: { type: 'number' as const, default: 0, description: '0 の場合は無制限' },
 	widgets: {
 		type: 'array' as const,
-		default: [] as Array<{ id: string; name: string; data: Record<string, any> }>,
+		default: [] as Array<{ id: string; name: WidgetName; data: Record<string, any> }>,
 		hidden: true,
 	},
 };
@@ -126,7 +127,7 @@ const editMode = ref(false);
 
 const currentWidget = computed(() => {
 	const widget = widgetProps.widgets[currentIndex.value];
-	return widget as { id: string; name: string; data: Record<string, any> } | null;
+	return widget as { id: string; name: WidgetName; data: Record<string, any> } | null;
 });
 
 const hasWidgets = computed(() => widgetProps.widgets.length > 0);
@@ -180,7 +181,7 @@ const addWidget = async () => {
 
 	const newWidget = {
 		id: crypto.randomUUID(),
-		name: widgetName as string,
+		name: widgetName as WidgetName,
 		data: {},
 	};
 

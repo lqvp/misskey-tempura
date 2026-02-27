@@ -408,10 +408,12 @@ export function role(params: {
 		updatedAt: updatedAt,
 		target: params.target ?? 'manual',
 		isPublic: params.isPublic ?? true,
+		permissionGroup: 'Normal',
 		isExplorable: params.isExplorable ?? true,
 		asBadge: params.asBadge ?? true,
 		canEditMembersByModerator: params.canEditMembersByModerator ?? false,
 		usersCount: params.usersCount ?? 10,
+		isOwner: false,
 		preserveAssignmentOnMoveAccount: false,
 		condFormula: {
 			id: '',

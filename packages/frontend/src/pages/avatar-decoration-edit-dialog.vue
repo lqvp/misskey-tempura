@@ -79,8 +79,15 @@ import { ensureSignin } from '@/i.js';
 
 const $i = ensureSignin();
 
+type AvatarDecorationEditable = Pick<
+	Misskey.entities.AdminAvatarDecorationsListResponse[number],
+	'id' | 'name' | 'url' | 'roleIdsThatCanBeUsedThisDecoration'
+> & {
+	description: string | null;
+};
+
 const props = defineProps<{
-	avatarDecoration?: Misskey.entities.AdminAvatarDecorationsListResponse[number],
+	avatarDecoration?: AvatarDecorationEditable,
 }>();
 
 const emit = defineEmits<{
@@ -91,7 +98,7 @@ const emit = defineEmits<{
 const windowEl = useTemplateRef('windowEl');
 const url = ref<string>(props.avatarDecoration ? props.avatarDecoration.url : '');
 const name = ref<string>(props.avatarDecoration ? props.avatarDecoration.name : '');
-const description = ref<string>(props.avatarDecoration ? props.avatarDecoration.description : '');
+const description = ref<string>(props.avatarDecoration?.description ?? '');
 const roleIdsThatCanBeUsedThisDecoration = ref(props.avatarDecoration ? props.avatarDecoration.roleIdsThatCanBeUsedThisDecoration : []);
 const rolesThatCanBeUsedThisDecoration = ref<Misskey.entities.Role[]>([]);
 
@@ -99,7 +106,7 @@ watch(roleIdsThatCanBeUsedThisDecoration, async () => {
 	rolesThatCanBeUsedThisDecoration.value = (await Promise.all(roleIdsThatCanBeUsedThisDecoration.value.map((id) => misskeyApi('admin/roles/show', { roleId: id }).catch(() => null)))).filter(x => x != null);
 }, { immediate: true });
 
-async function selectImage(ev) {
+async function selectImage(ev: PointerEvent) {
 	const file = await selectFile({ anchorElement: ev.currentTarget ?? ev.target, multiple: false });
 	name.value = file.name.replace(/\.(.+)$/, '');
 	url.value = file.url;

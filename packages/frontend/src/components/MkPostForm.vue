@@ -598,7 +598,7 @@ function focus() {
 
 function postFormFileUpload(ev: MouseEvent) {
 	if (prefer.s.chooseFileFrom === 'new') {
-		chooseFileFromPc(ev);
+		chooseFileFromPc();
 	} else {
 		chooseFileFrom(ev);
 	}
@@ -617,7 +617,7 @@ function chooseFileFrom(ev: MouseEvent) {
 	});
 }
 
-function chooseFileFromPc(ev: PointerEvent) {
+function chooseFileFromPc() {
 	if (props.mock) return;
 
 	os.chooseFileFromPc({ multiple: true }).then(files => {
@@ -626,7 +626,7 @@ function chooseFileFromPc(ev: PointerEvent) {
 	});
 }
 
-function chooseFileFromDrive(ev: PointerEvent) {
+function chooseFileFromDrive() {
 	if (props.mock) return;
 
 	chooseDriveFile({ multiple: true }).then(driveFiles => {
@@ -994,7 +994,7 @@ type StoredDrafts = {
 			text: string;
 			useCw: boolean;
 			cw: string | null;
-			visibility: 'public' | 'home' | 'followers' | 'specified';
+			visibility: 'public' | 'public_non_ltl' | 'home' | 'followers' | 'specified';
 			localOnly: boolean;
 			files: Misskey.entities.DriveFile[];
 			poll: PollEditorModelValue | null;
@@ -1002,6 +1002,7 @@ type StoredDrafts = {
 			quoteId: string | null;
 			reactionAcceptance: 'likeOnly' | 'likeOnlyForRemote' | 'nonSensitiveOnly' | 'nonSensitiveOnlyForLocalLikeOnlyForRemote' | null;
 			scheduledAt: number | null;
+			scheduledNoteDelete?: DeleteScheduleEditorModelValue | null;
 		};
 	};
 };

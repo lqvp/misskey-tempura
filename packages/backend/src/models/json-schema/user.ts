@@ -721,6 +721,7 @@ export const packedMeDetailedOnlySchema = {
 				test: { optional: true, ...notificationRecieveConfig },
 				login: { optional: true, ...notificationRecieveConfig },
 				createToken: { optional: true, ...notificationRecieveConfig },
+				llmModerationQueue: { optional: true, ...notificationRecieveConfig },
 				exportCompleted: { optional: true, ...notificationRecieveConfig },
 			},
 		},

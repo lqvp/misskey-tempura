@@ -61,7 +61,14 @@ async function add(ev: PointerEvent) {
 	});
 }
 
-async function edit(decoration: Misskey.entities.AdminAvatarDecorationsListResponse[number]) {
+type AvatarDecorationEditable = Pick<
+	Misskey.entities.AdminAvatarDecorationsListResponse[number],
+	'id' | 'name' | 'url' | 'roleIdsThatCanBeUsedThisDecoration'
+> & {
+	description: string | null;
+};
+
+async function edit(decoration: AvatarDecorationEditable) {
 	const { dispose } = await os.popupAsyncWithDialog(import('./avatar-decoration-edit-dialog.vue').then(x => x.default), {
 		avatarDecoration: decoration,
 	}, {

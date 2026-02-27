@@ -101,7 +101,7 @@ export const fontList = {
 	},
 };
 
-export function applyFont(fontname: null | string) {
+export function applyFont(fontname: string | null) {
 	let style = window.document.getElementById('custom-font');
 
 	if (!fontname) {
@@ -115,7 +115,8 @@ export function applyFont(fontname: null | string) {
 		window.document.head.appendChild(style);
 	}
 
-	const font = fontList[fontname];
+	if (!fontname || !(fontname in fontList)) return;
+	const font = fontList[fontname as keyof typeof fontList];
 	if (!font) return;
 
 	style.innerHTML = `

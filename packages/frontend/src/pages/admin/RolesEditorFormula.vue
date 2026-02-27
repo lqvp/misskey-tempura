@@ -45,7 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<RolesEditorFormula v-model="v.value"/>
 	</div>
 
-	<MkInput v-else-if="v.type === 'createdLessThan' || v.type === 'createdMoreThan' || type === 'activedMoreThan' || type === 'activedLessThan'" v-model="v.sec" type="number">
+	<MkInput v-else-if="v.type === 'createdLessThan' || v.type === 'createdMoreThan' || v.type === 'activedMoreThan' || v.type === 'activedLessThan'" v-model="v.sec" type="number">
 		<template #suffix>sec</template>
 	</MkInput>
 
@@ -148,7 +148,22 @@ const typeModelForMkSelect = computed<TypeDefValue>({
 			case 'followingMoreThanOrEq': newValue = { type: 'followingMoreThanOrEq', value: 10 }; break;
 			case 'notesLessThanOrEq': newValue = { type: 'notesLessThanOrEq', value: 10 }; break;
 			case 'notesMoreThanOrEq': newValue = { type: 'notesMoreThanOrEq', value: 10 }; break;
-			default: newValue = { type: t }; break;
+			default: {
+				if (
+					t === 'isLocal' ||
+					t === 'isRemote' ||
+					t === 'isSuspended' ||
+					t === 'isLocked' ||
+					t === 'isBot' ||
+					t === 'isCat' ||
+					t === 'isExplorable'
+				) {
+					newValue = { type: t };
+				} else {
+					newValue = { type: 'isRemote' };
+				}
+				break;
+			}
 		}
 		v.value = { id: v.value.id, ...newValue };
 	},

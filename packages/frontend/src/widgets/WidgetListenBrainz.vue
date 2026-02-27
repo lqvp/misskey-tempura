@@ -43,7 +43,7 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import { $i } from '@/i.js';
 import MkMfm from '@/components/global/MkMfm.js';
 
-const name = i18n.ts._widgets.listenBrainz;
+const name = 'listenBrainz' as const;
 
 const widgetPropsDef = {
 	showHeader: {

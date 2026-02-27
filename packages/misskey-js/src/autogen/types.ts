@@ -4737,6 +4737,15 @@ export type components = {
                     /** Format: misskey:id */
                     userListId: string;
                 };
+                llmModerationQueue?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
                 exportCompleted?: {
                     /** @enum {string} */
                     type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
@@ -5826,7 +5835,7 @@ export type components = {
         RoleCondFormulaValueCreated: {
             id: string;
             /** @enum {string} */
-            type: 'createdLessThan' | 'createdMoreThan';
+            type: 'createdLessThan' | 'createdMoreThan' | 'activedMoreThan' | 'activedLessThan';
             sec: number;
         };
         RoleCondFormulaFollowersOrFollowingOrNotes: {
@@ -5867,6 +5876,8 @@ export type components = {
             condFormula: components['schemas']['RoleCondFormulaValue'];
             /** @example false */
             isPublic: boolean;
+            /** @enum {string} */
+            permissionGroup: 'Admin' | 'MainModerator' | 'Normal' | 'Community';
             /** @example false */
             isExplorable: boolean;
             /** @example false */
@@ -5885,6 +5896,8 @@ export type components = {
                 };
             };
             usersCount: number;
+            /** @example false */
+            isOwner: boolean;
         };
         RolePolicies: {
             gtlAvailable: boolean;
@@ -7548,11 +7561,7 @@ export interface operations {
                         userId: string | null;
                         imageUrl: string | null;
                         isRoleSpecified: boolean;
-                        roles: {
-                            /** Format: id */
-                            id: string;
-                            name: string;
-                        }[];
+                        roles: components['schemas']['RoleLite'][];
                         reads: number;
                     }[];
                 };

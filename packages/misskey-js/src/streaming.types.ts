@@ -325,6 +325,9 @@ export type NoteUpdatedEvent = { id: Note['id'] } & ({
 		choice: number;
 		userId: User['id'];
 	};
+} | {
+	type: 'madePrivate';
+	body: Record<string, never>;
 });
 
 export type BroadcastEvents = {

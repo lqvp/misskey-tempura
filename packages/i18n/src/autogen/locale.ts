@@ -9884,6 +9884,10 @@ export interface Locale extends ILocale {
          */
         "write:mutes": string;
         /**
+         * ノートを見る
+         */
+        "read:notes": string;
+        /**
          * ノートを作成・削除する
          */
         "write:notes": string;
@@ -9980,6 +9984,14 @@ export interface Locale extends ILocale {
          */
         "read:admin:llm-moderation": string;
         /**
+         * アカウントの承認を行う
+         */
+        "write:admin:approve-account": string;
+        /**
+         * アカウントの承認を却下する
+         */
+        "write:admin:decline-account": string;
+        /**
          * ユーザーアカウントを削除する
          */
         "write:admin:delete-account": string;
@@ -10075,6 +10087,10 @@ export interface Locale extends ILocale {
          * モデレーションノートを操作する
          */
         "write:admin:user-note": string;
+        /**
+         * ユーザーの相互リンクを設定する
+         */
+        "write:admin:user-mutual-link": string;
         /**
          * ロールを操作する
          */
@@ -12120,6 +12136,10 @@ export interface Locale extends ILocale {
          */
         "createUserAnnouncement": string;
         /**
+         * ロール対象のお知らせを作成
+         */
+        "createRolesAnnouncement": string;
+        /**
          * 全体のお知らせを更新
          */
         "updateGlobalAnnouncement": string;
@@ -12128,6 +12148,10 @@ export interface Locale extends ILocale {
          */
         "updateUserAnnouncement": string;
         /**
+         * ロール対象のお知らせを更新
+         */
+        "updateRolesAnnouncement": string;
+        /**
          * 全体のお知らせを削除
          */
         "deleteGlobalAnnouncement": string;
@@ -12135,6 +12159,10 @@ export interface Locale extends ILocale {
          * ユーザーのお知らせを削除
          */
         "deleteUserAnnouncement": string;
+        /**
+         * ロール対象のお知らせを削除
+         */
+        "deleteRolesAnnouncement": string;
         /**
          * パスワードをリセット
          */
@@ -12207,6 +12235,10 @@ export interface Locale extends ILocale {
          * ユーザーのバナーを解除
          */
         "unsetUserBanner": string;
+        /**
+         * ユーザーの相互リンクを解除
+         */
+        "unsetUserMutualLink": string;
         /**
          * SystemWebhookを作成
          */

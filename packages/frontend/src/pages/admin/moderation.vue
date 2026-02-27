@@ -254,7 +254,7 @@ import MkSelect from '@/components/MkSelect.vue';
 
 const meta = await misskeyApi('admin/meta');
 
-const defaultLlmVisibilities = ['public', 'public_non_ltl', 'home', 'followers', 'specified'];
+const defaultLlmVisibilities = ['public', 'public_non_ltl', 'home', 'followers', 'specified'] as (typeof Misskey.noteVisibilities)[number][];
 const openLlmVisibilityLabels = i18n.ts._visibility as Record<string, string>;
 const openLlmVisibilityOptions = [
 	{ value: 'public', label: openLlmVisibilityLabels.public ?? 'Public' },
@@ -268,14 +268,14 @@ const openLlmModerationForm = useForm({
 	openLlmModerationEnabled: meta.openLlmModerationEnabled,
 	openLlmModerationApiKey: '',
 	openLlmModerationIncludeRemote: meta.openLlmModerationIncludeRemote,
-	openLlmModerationVisibilities: meta.openLlmModerationVisibilities?.length
+	openLlmModerationVisibilities: (meta.openLlmModerationVisibilities?.length
 		? meta.openLlmModerationVisibilities
-		: defaultLlmVisibilities,
+		: defaultLlmVisibilities) as (typeof Misskey.noteVisibilities)[number][],
 }, async (state) => {
 	const payload: Misskey.Endpoints['admin/update-meta']['req'] = {
 		openLlmModerationEnabled: state.openLlmModerationEnabled,
 		openLlmModerationIncludeRemote: state.openLlmModerationIncludeRemote,
-		openLlmModerationVisibilities: state.openLlmModerationVisibilities,
+		openLlmModerationVisibilities: state.openLlmModerationVisibilities as Misskey.Endpoints['admin/update-meta']['req']['openLlmModerationVisibilities'],
 	};
 	if (openLlmModerationApiKeyChanged.value) {
 		payload.openLlmModerationApiKey = state.openLlmModerationApiKey.trim() === '' ? null : state.openLlmModerationApiKey;

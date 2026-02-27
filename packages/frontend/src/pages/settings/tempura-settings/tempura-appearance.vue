@@ -19,11 +19,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 			<SearchMarker :keywords="['widget', 'drawer', 'direction', 'mobile']">
 				<MkPreferenceContainer k="widgetDrawerDirection">
-					<MkRadios v-model="widgetDrawerDirection">
+					<MkRadios
+						v-model="widgetDrawerDirection"
+						:options="[
+							{ value: 'left', label: i18n.ts._widgetDrawerDirection.left, icon: 'ti ti-arrow-left' },
+							{ value: 'right', label: i18n.ts._widgetDrawerDirection.right, icon: 'ti ti-arrow-right' },
+						]"
+					>
 						<template #label><SearchLabel>{{ i18n.ts.widgetDrawerDirection }}</SearchLabel></template>
-						<template #description>{{ i18n.ts.widgetDrawerDirectionDescription }}</template>
-						<option value="left"><i class="ti ti-arrow-left"></i> {{ i18n.ts._widgetDrawerDirection.left }}</option>
-						<option value="right"><i class="ti ti-arrow-right"></i> {{ i18n.ts._widgetDrawerDirection.right }}</option>
+						<template #caption>{{ i18n.ts.widgetDrawerDirectionDescription }}</template>
 					</MkRadios>
 				</MkPreferenceContainer>
 			</SearchMarker>
@@ -149,10 +153,13 @@ const colorPrefKeys = {
 	localOnly: 'noteVisibilityColorLocalOnly',
 } as const;
 
+type ColorKey = keyof typeof colorPrefKeys;
+
 // Helper to get current colors from the central store
 const getColorsFromStore = () => Object.fromEntries(
-	Object.entries(colorPrefKeys).map(([key, prefKey]) => [key, prefer.s[prefKey]]),
-) as Record<keyof typeof colorPrefKeys, string>;
+	(Object.entries(colorPrefKeys) as Array<[ColorKey, (typeof colorPrefKeys)[ColorKey]]>)
+		.map(([key, prefKey]) => [key, prefer.s[prefKey]]),
+) as Record<ColorKey, string>;
 
 // Holds the current state of the UI color pickers
 const colors = reactive(getColorsFromStore());
@@ -164,7 +171,7 @@ const originalColors = reactive(getColorsFromStore());
 const colorInputKey = ref(0);
 
 const isChanged = computed(() => {
-	return Object.entries(colorPrefKeys).some(([key]) => {
+	return (Object.keys(colorPrefKeys) as ColorKey[]).some((key) => {
 		return colors[key] !== originalColors[key];
 	});
 });
@@ -184,7 +191,7 @@ const twitterEmbedModeItems = computed(() => [
 function saveColors() {
 	if (!isChanged.value) return;
 
-	for (const [key, prefKey] of Object.entries(colorPrefKeys)) {
+	for (const [key, prefKey] of Object.entries(colorPrefKeys) as Array<[ColorKey, (typeof colorPrefKeys)[ColorKey]]>) {
 		prefer.commit(prefKey, colors[key]);
 	}
 
@@ -193,7 +200,7 @@ function saveColors() {
 }
 
 function resetToDefault() {
-	for (const [key, prefKey] of Object.entries(colorPrefKeys)) {
+	for (const [key, prefKey] of Object.entries(colorPrefKeys) as Array<[ColorKey, (typeof colorPrefKeys)[ColorKey]]>) {
 		colors[key] = PREF_DEF[prefKey].default;
 	}
 
