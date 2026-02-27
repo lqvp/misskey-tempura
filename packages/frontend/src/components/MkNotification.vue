@@ -184,7 +184,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div v-if="full && !followRequestDone" :class="$style.followRequestCommands">
 					<MkButton :class="$style.followRequestCommandButton" rounded primary @click="acceptFollowRequest()"><i class="ti ti-check"></i> {{ i18n.ts.accept }}</MkButton>
 					<MkButton :class="$style.followRequestCommandButton" rounded danger @click="rejectFollowRequest()"><i class="ti ti-x"></i> {{ i18n.ts.reject }}</MkButton>
-					<MkButton v-if="notification.user.host" :class="$style.followRequestCommandButton" rounded danger @click="noSendActivity_reject()"><i class="ti ti-x"/>{{ i18n.ts.reject }}({{ i18n.ts.noSendActivity }})</MkButton>
+					<MkButton v-if="notification.user.host" :class="$style.followRequestCommandButton" rounded danger @click="noSendActivity_reject()"><i class="ti ti-x"></i>{{ i18n.ts.reject }}({{ i18n.ts.noSendActivity }})</MkButton>
 				</div>
 			</template>
 			<template v-else-if="notification.type === 'blocked'">

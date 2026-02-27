@@ -52,39 +52,36 @@ export class CleanExpiredRemoteFilesProcessorService {
 	}
 	
 	@bindThis
-	private updateAvatarUrl(userIds: Set<MiUser['id']>) {
-		return new Promise<void>(async (resolve) => {
-			let counter = 0;
+	private async updateAvatarUrl(userIds: Set<MiUser['id']>) {
+		let counter = 0;
 
-			for (const uid of userIds) {
-				try {
-					await this.db.transaction(async (entityManager) => {
-						const user = await entityManager.findOneBy(MiUser, { id: uid });
-						if (!user) return;
-						const userAvatarFile = user.avatarId != null ? await entityManager.findOneBy(MiDriveFile, { id: user.avatarId }) : null;
-						const userBannerFile = user.bannerId != null ? await entityManager.findOneBy(MiDriveFile, { id: user.bannerId }) : null;
-						const update: Partial<MiUser> = {};
-						if (userAvatarFile?.isLink) {
-							update.avatarUrl = userAvatarFile.uri != null ? this.getProxiedUrl(userAvatarFile.uri, 'avatar') : null;
-						}
-						if (userBannerFile?.isLink) {
-							update.bannerUrl = userBannerFile.uri != null ? this.getProxiedUrl(userBannerFile.uri) : null;
-						}
-						
-						if (update.avatarUrl != null || update.bannerUrl != null) {
-							counter++;
-							this.logger.debug(`Update User ${user.id}'s avatar / banner URL...: ${JSON.stringify(update)}`);
-							await entityManager.update(MiUser, { id: user.id }, update);
-						}
-					});
-				} catch (err) {
-					this.logger.warn(JSON.stringify(err));
-				}
+		for (const uid of userIds) {
+			try {
+				await this.db.transaction(async (entityManager) => {
+					const user = await entityManager.findOneBy(MiUser, { id: uid });
+					if (!user) return;
+					const userAvatarFile = user.avatarId != null ? await entityManager.findOneBy(MiDriveFile, { id: user.avatarId }) : null;
+					const userBannerFile = user.bannerId != null ? await entityManager.findOneBy(MiDriveFile, { id: user.bannerId }) : null;
+					const update: Partial<MiUser> = {};
+					if (userAvatarFile?.isLink) {
+						update.avatarUrl = userAvatarFile.uri != null ? this.getProxiedUrl(userAvatarFile.uri, 'avatar') : null;
+					}
+					if (userBannerFile?.isLink) {
+						update.bannerUrl = userBannerFile.uri != null ? this.getProxiedUrl(userBannerFile.uri) : null;
+					}
+					
+					if (update.avatarUrl != null || update.bannerUrl != null) {
+						counter++;
+						this.logger.debug(`Update User ${user.id}'s avatar / banner URL...: ${JSON.stringify(update)}`);
+						await entityManager.update(MiUser, { id: user.id }, update);
+					}
+				});
+			} catch (err) {
+				this.logger.warn(JSON.stringify(err));
 			}
-			
-			this.logger.info(`Updated ${counter} avatar/banner URL`);
-			resolve();
-		});
+		}
+		
+		this.logger.info(`Updated ${counter} avatar/banner URL`);
 	}
 	@bindThis
 	public async process(): Promise<void> {

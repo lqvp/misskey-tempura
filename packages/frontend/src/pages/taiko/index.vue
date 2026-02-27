@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		frameborder="0"
 		allowfullscreen
 		style="width: 100%; height: 100%; display: block; border: none;"
-	/>
+	></iframe>
 </div>
 </template>
 

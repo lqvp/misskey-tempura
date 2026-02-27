@@ -20,7 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<div v-if="tab === 'list'" class="commands">
 								<MkButton class="command" rounded primary @click="accept(displayUser(req))"><i class="ti ti-check"></i> {{ i18n.ts.accept }}</MkButton>
 								<MkButton class="command" rounded danger @click="reject(displayUser(req))"><i class="ti ti-x"></i> {{ i18n.ts.reject }}</MkButton>
-									<MkButton v-if="displayUser(req).host" class="command" rounded danger @click="reject_noSendActivity(displayUser(req))"><i class="ti ti-x"/>{{ i18n.ts.reject }}({{ i18n.ts.noSendActivity }})</MkButton>
+									<MkButton v-if="displayUser(req).host" class="command" rounded danger @click="reject_noSendActivity(displayUser(req))"><i class="ti ti-x"></i>{{ i18n.ts.reject }}({{ i18n.ts.noSendActivity }})</MkButton>
 							</div>
 							<div v-else class="commands">
 								<MkButton class="command" rounded danger @click="cancel(displayUser(req))"><i class="ti ti-x"></i> {{ i18n.ts.cancel }}</MkButton>

@@ -34,8 +34,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span :class="$style.headerRightButtonText">{{ targetChannel.name }}</span>
 				</button>
 			</template>
-			<button v-if="visibility === 'specified'" v-click-anime v-tooltip="i18n.ts.save" class="_button" :class="$style.headerRightItem" @click="saveCurrentUsers"><i class="ti ti-device-floppy"/></button>
-			<button v-if="visibility === 'specified'" v-click-anime v-tooltip="i18n.ts.load" class="_button" :class="$style.headerRightItem" @click="loadSavedUsers"><i class="ti ti-users"/></button>
+			<button v-if="visibility === 'specified'" v-click-anime v-tooltip="i18n.ts.save" class="_button" :class="$style.headerRightItem" @click="saveCurrentUsers"><i class="ti ti-device-floppy"></i></button>
+			<button v-if="visibility === 'specified'" v-click-anime v-tooltip="i18n.ts.load" class="_button" :class="$style.headerRightItem" @click="loadSavedUsers"><i class="ti ti-users"></i></button>
 			<button v-if="visibility !== 'specified'" v-tooltip="i18n.ts._visibility.disableFederation" class="_button" :class="[$style.headerRightItem, { [$style.danger]: localOnly }]" :disabled="targetChannel != null" @click="toggleLocalOnly">
 				<span v-if="!localOnly"><i class="ti ti-rocket"></i></span>
 				<span v-else><i class="ti ti-rocket-off"></i></span>
