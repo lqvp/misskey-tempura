@@ -3,8 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { hi } from "date-fns/locale";
-
 export const notificationRecieveConfig = {
 	type: 'object',
 	oneOf: [

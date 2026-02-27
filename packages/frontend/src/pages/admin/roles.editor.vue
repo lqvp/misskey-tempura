@@ -1259,6 +1259,8 @@ const rolePermission = computed<GetMkSelectValueTypesFromDef<typeof rolePermissi
 		if (val == null) return;
 		if (val === 'Admin' || val === 'MainModerator' || val === 'Normal' || val === 'Community') {
 			role.value.permissionGroup = val;
+			role.value.isAdministrator = val === 'Admin';
+			role.value.isModerator = val === 'Admin' || val === 'MainModerator';
 		}
 	},
 });

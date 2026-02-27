@@ -70,14 +70,21 @@ export class CleanExpiredRemoteFilesProcessorService {
 						update.bannerUrl = userBannerFile.uri != null ? this.getProxiedUrl(userBannerFile.uri) : null;
 					}
 					
-					if (update.avatarUrl != null || update.bannerUrl != null) {
+					const shouldUpdate =
+						Object.prototype.hasOwnProperty.call(update, 'avatarUrl')
+						|| Object.prototype.hasOwnProperty.call(update, 'bannerUrl');
+
+					if (shouldUpdate) {
 						counter++;
 						this.logger.debug(`Update User ${user.id}'s avatar / banner URL...: ${JSON.stringify(update)}`);
 						await entityManager.update(MiUser, { id: user.id }, update);
 					}
 				});
 			} catch (err) {
-				this.logger.warn(JSON.stringify(err));
+				this.logger.warn('Failed to update user avatar/banner URL', {
+					errorMessage: err instanceof Error ? err.message : String(err),
+					errorStack: err instanceof Error ? err.stack : undefined,
+				});
 			}
 		}
 		

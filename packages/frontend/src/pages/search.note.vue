@@ -32,10 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 				<MkRadios
 					v-model="searchOperator"
-					:options="[
-						{ value: 'and', label: i18n.ts._advancedSearch._searchOperator.and },
-						{ value: 'or', label: i18n.ts._advancedSearch._searchOperator.or },
-					]"
+					:options="searchOperatorOptions"
 				>
 					<template #label>{{ i18n.ts._advancedSearch._searchOperator.label }}</template>
 				</MkRadios>
@@ -50,53 +47,31 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 				<MkRadios
 					v-model="visibilitySelect"
-					:options="[
-						{ value: 'all', label: i18n.ts.all },
-						{ value: 'public', label: i18n.ts._visibility.public },
-						{ value: 'home', label: i18n.ts._visibility.home },
-						{ value: 'followers', label: i18n.ts._visibility.followers },
-						{ value: 'specified', label: i18n.ts._visibility.specified },
-					]"
+					:options="visibilityOptions"
 				>
 					<template #label>{{ i18n.ts.visibility }}</template>
 				</MkRadios>
 				<MkRadios
 					v-model="hasFiles"
-					:options="[
-						{ value: 'all', label: i18n.ts.all },
-						{ value: 'with', label: i18n.ts._noteSearch._option.with },
-						{ value: 'without', label: i18n.ts._noteSearch._option.without },
-					]"
+					:options="triStateOptions"
 				>
 					<template #label>{{ i18n.ts._noteSearch._type.withFiles }}</template>
 				</MkRadios>
 				<MkRadios
 					v-model="hasCw"
-					:options="[
-						{ value: 'all', label: i18n.ts.all },
-						{ value: 'with', label: i18n.ts._noteSearch._option.with },
-						{ value: 'without', label: i18n.ts._noteSearch._option.without },
-					]"
+					:options="triStateOptions"
 				>
 					<template #label>{{ i18n.ts._noteSearch._type.cw }}</template>
 				</MkRadios>
 				<MkRadios
 					v-model="hasReply"
-					:options="[
-						{ value: 'all', label: i18n.ts.all },
-						{ value: 'with', label: i18n.ts._noteSearch._option.with },
-						{ value: 'without', label: i18n.ts._noteSearch._option.without },
-					]"
+					:options="triStateOptions"
 				>
 					<template #label>{{ i18n.ts._noteSearch._type.reply }}</template>
 				</MkRadios>
 				<MkRadios
 					v-model="hasPoll"
-					:options="[
-						{ value: 'all', label: i18n.ts.all },
-						{ value: 'with', label: i18n.ts._noteSearch._option.with },
-						{ value: 'without', label: i18n.ts._noteSearch._option.without },
-					]"
+					:options="triStateOptions"
 				>
 					<template #label>{{ i18n.ts._noteSearch._type.poll }}</template>
 				</MkRadios>
@@ -249,6 +224,25 @@ import MkUserCardMini from '@/components/MkUserCardMini.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import { Paginator } from '@/utility/paginator.js';
 import type { MkRadiosOption } from '@/components/MkRadios.vue';
+
+const searchOperatorOptions: MkRadiosOption[] = [
+	{ value: 'and', label: i18n.ts._advancedSearch._searchOperator.and },
+	{ value: 'or', label: i18n.ts._advancedSearch._searchOperator.or },
+];
+
+const visibilityOptions: MkRadiosOption[] = [
+	{ value: 'all', label: i18n.ts.all },
+	{ value: 'public', label: i18n.ts._visibility.public },
+	{ value: 'home', label: i18n.ts._visibility.home },
+	{ value: 'followers', label: i18n.ts._visibility.followers },
+	{ value: 'specified', label: i18n.ts._visibility.specified },
+];
+
+const triStateOptions: MkRadiosOption[] = [
+	{ value: 'all', label: i18n.ts.all },
+	{ value: 'with', label: i18n.ts._noteSearch._option.with },
+	{ value: 'without', label: i18n.ts._noteSearch._option.without },
+];
 
 const props = withDefaults(defineProps<{
 	query?: string;

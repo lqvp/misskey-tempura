@@ -268,9 +268,7 @@ const openLlmModerationForm = useForm({
 	openLlmModerationEnabled: meta.openLlmModerationEnabled,
 	openLlmModerationApiKey: '',
 	openLlmModerationIncludeRemote: meta.openLlmModerationIncludeRemote,
-	openLlmModerationVisibilities: (meta.openLlmModerationVisibilities?.length
-		? meta.openLlmModerationVisibilities
-		: defaultLlmVisibilities) as (typeof Misskey.noteVisibilities)[number][],
+	openLlmModerationVisibilities: (meta.openLlmModerationVisibilities ?? defaultLlmVisibilities) as (typeof Misskey.noteVisibilities)[number][],
 }, async (state) => {
 	const payload: Misskey.Endpoints['admin/update-meta']['req'] = {
 		openLlmModerationEnabled: state.openLlmModerationEnabled,
@@ -278,7 +276,8 @@ const openLlmModerationForm = useForm({
 		openLlmModerationVisibilities: state.openLlmModerationVisibilities as Misskey.Endpoints['admin/update-meta']['req']['openLlmModerationVisibilities'],
 	};
 	if (openLlmModerationApiKeyChanged.value) {
-		payload.openLlmModerationApiKey = state.openLlmModerationApiKey.trim() === '' ? null : state.openLlmModerationApiKey;
+		const trimmedApiKey = state.openLlmModerationApiKey.trim();
+		payload.openLlmModerationApiKey = trimmedApiKey === '' ? null : trimmedApiKey;
 	}
 	await os.apiWithDialog('admin/update-meta', payload);
 	fetchInstance(true);

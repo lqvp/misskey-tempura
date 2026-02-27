@@ -14,6 +14,9 @@ import { NotificationService } from '@/core/NotificationService.js';
 import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js';
 import { ApiError } from '@/server/api/error.js';
 import { noSuchLlmModerationQueueError } from '@/core/errors/llm-moderation-queue.js';
+import Logger from '@/logger.js';
+
+const logger = new Logger('llm-moderation-queue');
 
 @Injectable()
 export class LlmModerationQueueService {
@@ -66,7 +69,14 @@ export class LlmModerationQueueService {
 			return existing;
 		}
 
-		await this.notifyModerators(record);
+		try {
+			await this.notifyModerators(record);
+		} catch (err) {
+			logger.warn('Failed to notify moderators about LLM moderation queue item', {
+				errorMessage: err instanceof Error ? err.message : String(err),
+				errorStack: err instanceof Error ? err.stack : undefined,
+			});
+		}
 
 		return record;
 	}
@@ -98,7 +108,12 @@ export class LlmModerationQueueService {
 		},
 		moderator: MiUser,
 	): Promise<void> {
-		await this.llmModerationQueueRepository.update(queueId, {
+		const queue = await this.llmModerationQueueRepository.findOneBy({ id: queueId });
+		if (!queue) {
+			throw new ApiError(noSuchLlmModerationQueueError);
+		}
+
+		await this.llmModerationQueueRepository.update(queue.id, {
 			moderationNote: params.moderationNote,
 			assigneeId: moderator.id,
 		});

@@ -109,15 +109,14 @@ export function applyFont(fontname: string | null) {
 		return style.remove();
 	}
 
+	const font = fontList[fontname as keyof typeof fontList];
+	if (!font) return;
+
 	if (!style) {
 		style = window.document.createElement('style');
 		style.id = 'custom-font';
 		window.document.head.appendChild(style);
 	}
-
-	if (!fontname || !(fontname in fontList)) return;
-	const font = fontList[fontname as keyof typeof fontList];
-	if (!font) return;
 
 	style.innerHTML = `
 		@import url('${font.importUrl}');

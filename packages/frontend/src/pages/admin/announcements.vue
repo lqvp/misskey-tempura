@@ -74,7 +74,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<button class="_button" :class="$style.remove" @click="removeRole(announcementIndex, role)"><i class="ti ti-x"></i></button>
 								</div>
 							</div>
-							<MkButton @click="addRole(announcement)">{{ i18n.ts.add }}</MkButton>
+							<MkButton @click="addRole(announcementIndex)">{{ i18n.ts.add }}</MkButton>
 						</div>
 						<MkInfo v-if="announcement.display === 'dialog'" warn>{{ i18n.ts._announcement.dialogAnnouncementUxWarn }}</MkInfo>
 						<MkSwitch v-model="announcement.forExistingUsers" :helpText="i18n.ts._announcement.forExistingUsersDescription">
@@ -155,7 +155,7 @@ misskeyApi('admin/announcements/list').then(announcementResponse => {
 	announcements.value = announcementResponse;
 });
 
-async function selectRole(initialRoleIds: string[] = []): Promise<Misskey.entities.RoleLite[]> {
+async function selectRole(initialRoleIds: string[] = []): Promise<Misskey.entities.Role[]> {
 	const result = await os.selectRole({
 		initialRoleIds,
 		title: i18n.ts.rolesThatCanBeUsedThisEmojiAsReaction,
@@ -170,11 +170,12 @@ async function selectRole(initialRoleIds: string[] = []): Promise<Misskey.entiti
 	return result.result;
 }
 
-async function addRole(announcement: (typeof announcements)['value'][number]) {
+async function addRole(announcementIndex: number) {
 	const roles = await selectRole();
 	if (roles.length > 0) {
-		const index = announcements.value.findIndex(x => x.id === announcement.id);
-		announcements.value[index].roles.push(...roles);
+		const announcement = announcements.value[announcementIndex];
+		if (!announcement) return;
+		announcement.roles.push(...roles);
 	}
 }
 

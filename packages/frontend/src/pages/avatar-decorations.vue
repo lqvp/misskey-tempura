@@ -75,6 +75,10 @@ async function edit(decoration: AvatarDecorationEditable) {
 		done: result => {
 			if (result.updated) {
 				const index = avatarDecorations.value.findIndex(x => x.id === decoration.id);
+				if (index === -1) {
+					console.warn('avatar decoration not found', decoration.id);
+					return;
+				}
 				avatarDecorations.value[index] = {
 					...avatarDecorations.value[index],
 					...result.updated,

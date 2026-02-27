@@ -89,7 +89,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, onUnmounted, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { debounce } from 'throttle-debounce';
 import * as Misskey from 'misskey-js';
 import MkButton from '@/components/MkButton.vue';
@@ -118,16 +118,6 @@ const saveModerationNoteImmediate = () => {
 };
 const saveModerationNote = debounce(800, saveModerationNoteImmediate);
 
-async function flushModerationNoteSave() {
-	saveModerationNote();
-	const flush = (saveModerationNote as { flush?: () => Promise<void> }).flush;
-	if (flush) {
-		await flush();
-		return;
-	}
-	await saveModerationNoteImmediate();
-}
-
 const flaggedLabel = computed(() => props.queue.flaggedCategories.length > 0
 	? props.queue.flaggedCategories.join(', ')
 	: i18n.ts.none);
@@ -153,7 +143,7 @@ watch(moderationNote, async () => {
 		skipModerationNoteUpdate = false;
 		return;
 	}
-	await flushModerationNoteSave();
+	saveModerationNote();
 });
 
 watch(() => props.queue.moderationNote, (next) => {

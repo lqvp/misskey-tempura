@@ -156,8 +156,10 @@ const emit = defineEmits<{
 }>();
 
 async function changeImage(ev: PointerEvent) {
+	const anchorCandidate = ev.currentTarget ?? ev.target;
+	const anchorElement = anchorCandidate instanceof HTMLElement ? anchorCandidate : null;
 	const file = await selectFile({
-		anchorElement: ev.currentTarget ?? ev.target,
+		anchorElement,
 		multiple: false,
 	});
 	if (file != null) {
