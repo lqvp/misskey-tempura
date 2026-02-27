@@ -32,7 +32,7 @@ export const paramDef = {
 	type: 'object',
 	properties: {
 		queueId: { type: 'string', format: 'misskey:id' },
-		moderationNote: { type: 'string', nullable: true },
+		moderationNote: { type: 'string' },
 	},
 	required: ['queueId'],
 } as const;
