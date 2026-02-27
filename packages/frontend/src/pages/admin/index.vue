@@ -91,6 +91,8 @@ misskeyApi('admin/llm-moderation/queue', {
 	limit: 1,
 }).then(queues => {
 	if (queues.length > 0) thereIsUnresolvedLlmModerationQueue.value = true;
+}).catch(err => {
+	console.error('Failed to load LLM moderation queue status.', err);
 });
 
 misskeyApi('admin/show-users', {
