@@ -79,8 +79,6 @@ export const packedLlmModerationQueueSchema = {
 			nullable: false,
 			additionalProperties: {
 				type: 'number',
-				optional: false,
-				nullable: false,
 			},
 		},
 		resolved: {

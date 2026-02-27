@@ -5896,7 +5896,6 @@ export type components = {
                 };
             };
             usersCount: number;
-            /** @example false */
             isOwner: boolean;
         };
         RolePolicies: {
@@ -6280,7 +6279,9 @@ export type components = {
             provider: string;
             model: string;
             flaggedCategories: string[];
-            categoryScores: Record<string, never>;
+            categoryScores: {
+                [key: string]: number;
+            };
             resolved: boolean;
             /** Format: id */
             assigneeId: string | null;
@@ -40910,3 +40911,4 @@ export interface operations {
         };
     };
 }
+
