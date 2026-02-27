@@ -13,7 +13,7 @@ export class MiLlmModerationQueue {
 	@PrimaryColumn(id())
 	public id: string;
 
-	@Index()
+	@Index({ unique: true })
 	@Column(id())
 	public noteId: MiNote['id'];
 

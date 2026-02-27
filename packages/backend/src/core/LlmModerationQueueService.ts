@@ -11,6 +11,7 @@ import { IdService } from '@/core/IdService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { NotificationService } from '@/core/NotificationService.js';
+import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js';
 
 @Injectable()
 export class LlmModerationQueueService {
@@ -36,27 +37,32 @@ export class LlmModerationQueueService {
 		categoryScores: Record<string, number>;
 		rawResult: Record<string, any> | null;
 	}): Promise<MiLlmModerationQueue | null> {
-		const exists = await this.llmModerationQueueRepository.findOneBy({ noteId: params.note.id });
-		if (exists) return exists;
-
 		const noteUser = await this.usersRepository.findOneByOrFail({ id: params.note.userId });
 
-		const record = await this.llmModerationQueueRepository.insertOne({
-			id: this.idService.gen(),
-			noteId: params.note.id,
-			noteUserId: params.note.userId,
-			noteUserHost: noteUser.host,
-			noteVisibility: params.note.visibility,
-			isRemote: noteUser.host != null,
-			provider: params.provider,
-			model: params.model,
-			flaggedCategories: params.flaggedCategories,
-			categoryScores: params.categoryScores,
-			rawResult: params.rawResult,
-			resolved: false,
-			assigneeId: null,
-			moderationNote: '',
-		});
+		let record: MiLlmModerationQueue;
+		try {
+			record = await this.llmModerationQueueRepository.insertOne({
+				id: this.idService.gen(),
+				noteId: params.note.id,
+				noteUserId: params.note.userId,
+				noteUserHost: noteUser.host,
+				noteVisibility: params.note.visibility,
+				isRemote: noteUser.host != null,
+				provider: params.provider,
+				model: params.model,
+				flaggedCategories: params.flaggedCategories,
+				categoryScores: params.categoryScores,
+				rawResult: params.rawResult,
+				resolved: false,
+				assigneeId: null,
+				moderationNote: '',
+			});
+		} catch (err) {
+			if (!isDuplicateKeyValueError(err)) throw err;
+			const existing = await this.llmModerationQueueRepository.findOneBy({ noteId: params.note.id });
+			if (!existing) throw err;
+			return existing;
+		}
 
 		await this.notifyModerators(record);
 

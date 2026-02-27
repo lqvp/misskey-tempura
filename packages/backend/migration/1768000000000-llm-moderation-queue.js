@@ -16,6 +16,7 @@ export class LlmModerationQueue1768000000000 {
 		await queryRunner.query(`CREATE INDEX "IDX_llm_moderation_queue_noteUserHost" ON "llm_moderation_queue" ("noteUserHost")`);
 		await queryRunner.query(`CREATE INDEX "IDX_llm_moderation_queue_isRemote" ON "llm_moderation_queue" ("isRemote")`);
 		await queryRunner.query(`CREATE INDEX "IDX_llm_moderation_queue_resolved" ON "llm_moderation_queue" ("resolved")`);
+		await queryRunner.query(`CREATE UNIQUE INDEX "UQ_llm_moderation_queue_noteId" ON "llm_moderation_queue" ("noteId")`);
 		await queryRunner.query(`ALTER TABLE "llm_moderation_queue" ADD CONSTRAINT "FK_llm_moderation_queue_assignee" FOREIGN KEY ("assigneeId") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
 
 		await queryRunner.query(`ALTER TABLE "meta" ADD "openLlmModerationEnabled" boolean NOT NULL DEFAULT false`);
@@ -34,6 +35,7 @@ export class LlmModerationQueue1768000000000 {
 		await queryRunner.query(`ALTER TABLE "meta" DROP COLUMN "openLlmModerationEnabled"`);
 
 		await queryRunner.query(`ALTER TABLE "llm_moderation_queue" DROP CONSTRAINT "FK_llm_moderation_queue_assignee"`);
+		await queryRunner.query(`DROP INDEX "UQ_llm_moderation_queue_noteId"`);
 		await queryRunner.query(`DROP INDEX "IDX_llm_moderation_queue_resolved"`);
 		await queryRunner.query(`DROP INDEX "IDX_llm_moderation_queue_isRemote"`);
 		await queryRunner.query(`DROP INDEX "IDX_llm_moderation_queue_noteUserHost"`);
