@@ -8728,11 +8728,11 @@ export interface Locale extends ILocale {
             /**
              * 最終アクティブ日時が～未満
              */
-            "activedMoreThan": string;
+            "activatedMoreThan": string;
             /**
              * 最終アクティブ日時が～以上
              */
-            "activedLessThan": string;
+            "activatedLessThan": string;
             /**
              * ～かつ～
              */

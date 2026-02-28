@@ -103,8 +103,8 @@ export const packedRoleCondFormulaValueCreatedSchema = {
 			enum: [
 				'createdLessThan',
 				'createdMoreThan',
-				'activedMoreThan',
-				'activedLessThan',
+				'activatedMoreThan',
+				'activatedLessThan',
 			],
 		},
 		sec: {

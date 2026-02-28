@@ -175,11 +175,16 @@ async function addRole(announcementIndex: number) {
 	if (roles.length > 0) {
 		const announcement = announcements.value[announcementIndex];
 		if (!announcement) return;
-		announcement.roles.push(...roles);
+		const existingRoleIds = new Set(announcement.roles.map(role => role.id));
+		const newRoles = roles.filter(role => !existingRoleIds.has(role.id));
+		if (newRoles.length === 0) return;
+		announcement.roles.push(...newRoles);
 	}
 }
 
 function removeRole(index: number, role: Misskey.entities.RoleLite) {
+	if (index < 0 || index >= announcements.value.length) return;
+	if (!announcements.value[index]?.roles) return;
 	announcements.value[index].roles = announcements.value[index].roles.filter(x => x.id !== role.id);
 }
 

@@ -284,7 +284,7 @@ const openLlmModerationForm = useForm({
 });
 const openLlmModerationApiKeyChanged = ref(false);
 watch(() => openLlmModerationForm.state.openLlmModerationApiKey, (value, prev) => {
-	if (value !== prev) openLlmModerationApiKeyChanged.value = true;
+	openLlmModerationApiKeyChanged.value = true;
 });
 
 const enableRegistration = ref(!meta.disableRegistration);

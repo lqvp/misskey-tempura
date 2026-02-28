@@ -5835,7 +5835,7 @@ export type components = {
         RoleCondFormulaValueCreated: {
             id: string;
             /** @enum {string} */
-            type: 'createdLessThan' | 'createdMoreThan' | 'activedMoreThan' | 'activedLessThan';
+            type: 'createdLessThan' | 'createdMoreThan' | 'activatedMoreThan' | 'activatedLessThan';
             sec: number;
         };
         RoleCondFormulaFollowersOrFollowingOrNotes: {

@@ -110,7 +110,15 @@ export function applyFont(fontname: string | null) {
 	}
 
 	const font = fontList[fontname as keyof typeof fontList];
-	if (!font) return;
+	if (!font) {
+		if (style) {
+			style.remove();
+		} else {
+			const existingStyle = window.document.getElementById('custom-font');
+			existingStyle?.remove();
+		}
+		return;
+	}
 
 	if (!style) {
 		style = window.document.createElement('style');

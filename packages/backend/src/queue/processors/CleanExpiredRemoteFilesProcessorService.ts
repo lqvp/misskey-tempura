@@ -125,14 +125,14 @@ export class CleanExpiredRemoteFilesProcessorService {
 
 			cursor = files.at(-1)?.id ?? null;
 
-			await Promise.all(files.map(file => {
+			for (const file of files) {
 				if (file.userId) {
 					userIds.add(file.userId);
 				}
-			}));
+			}
 			await Promise.all(files.map(file => this.driveService.deleteFileSync(file, true)));
 
-			deletedCount += 8;
+			deletedCount += files.length;
 		}
 		await this.updateAvatarUrl(userIds);
 		this.logger.succ(`${deletedCount} cached remote files has been deleted.`);

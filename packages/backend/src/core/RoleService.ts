@@ -362,11 +362,11 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 				case 'notesMoreThanOrEq': {
 					return user.notesCount >= value.value;
 				}
-				case 'activedMoreThan': {
+				case 'activatedMoreThan': {
 					if (!user.lastActiveDate) return false;
 					return user.lastActiveDate.valueOf() > (Date.now() - (value.sec * 1000));
 				}
-				case 'activedLessThan': {
+				case 'activatedLessThan': {
 					if (!user.lastActiveDate) return true;
 					return user.lastActiveDate.valueOf() < (Date.now() - (value.sec * 1000));
 				}
