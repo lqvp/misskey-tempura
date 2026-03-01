@@ -566,6 +566,33 @@ export type paths = {
          */
         post: operations['admin___invite___list'];
     };
+    '/admin/llm-moderation/queue': {
+        /**
+         * admin/llm-moderation/queue
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:llm-moderation*
+         */
+        post: operations['admin___llm-moderation___queue'];
+    };
+    '/admin/llm-moderation/queue/resolve': {
+        /**
+         * admin/llm-moderation/queue/resolve
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:llm-moderation*
+         */
+        post: operations['admin___llm-moderation___queue___resolve'];
+    };
+    '/admin/llm-moderation/queue/update': {
+        /**
+         * admin/llm-moderation/queue/update
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:llm-moderation*
+         */
+        post: operations['admin___llm-moderation___queue___update'];
+    };
     '/admin/meta': {
         /**
          * admin/meta
@@ -4710,6 +4737,15 @@ export type components = {
                     /** Format: misskey:id */
                     userListId: string;
                 };
+                llmModerationQueue?: {
+                    /** @enum {string} */
+                    type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
+                } | {
+                    /** @enum {string} */
+                    type: 'list';
+                    /** Format: misskey:id */
+                    userListId: string;
+                };
                 exportCompleted?: {
                     /** @enum {string} */
                     type: 'all' | 'following' | 'follower' | 'mutualFollow' | 'followingOrFollower' | 'never';
@@ -5205,6 +5241,13 @@ export type components = {
             createdAt: string;
             /** @enum {string} */
             type: 'createToken';
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
+            type: 'llmModerationQueue';
         } | {
             /** Format: id */
             id: string;
@@ -5792,7 +5835,7 @@ export type components = {
         RoleCondFormulaValueCreated: {
             id: string;
             /** @enum {string} */
-            type: 'createdLessThan' | 'createdMoreThan';
+            type: 'createdLessThan' | 'createdMoreThan' | 'activatedMoreThan' | 'activatedLessThan';
             sec: number;
         };
         RoleCondFormulaFollowersOrFollowingOrNotes: {
@@ -5833,6 +5876,8 @@ export type components = {
             condFormula: components['schemas']['RoleCondFormulaValue'];
             /** @example false */
             isPublic: boolean;
+            /** @enum {string} */
+            permissionGroup: 'Admin' | 'MainModerator' | 'Normal' | 'Community';
             /** @example false */
             isExplorable: boolean;
             /** @example false */
@@ -5851,6 +5896,7 @@ export type components = {
                 };
             };
             usersCount: number;
+            isOwner: boolean;
         };
         RolePolicies: {
             gtlAvailable: boolean;
@@ -6216,6 +6262,31 @@ export type components = {
             user?: components['schemas']['UserLite'];
             systemWebhookId?: string;
             systemWebhook?: components['schemas']['SystemWebhook'];
+        };
+        LlmModerationQueue: {
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: id */
+            noteId: string;
+            note?: components['schemas']['Note'] | null;
+            /** Format: id */
+            noteUserId: string;
+            noteUser?: components['schemas']['UserDetailedNotMe'] | null;
+            noteUserHost: string | null;
+            noteVisibility: string;
+            isRemote: boolean;
+            provider: string;
+            model: string;
+            flaggedCategories: string[];
+            categoryScores: {
+                [key: string]: number;
+            };
+            resolved: boolean;
+            /** Format: id */
+            assigneeId: string | null;
+            assignee: components['schemas']['UserDetailedNotMe'] | null;
+            moderationNote: string;
         };
         ChatMessage: {
             id: string;
@@ -7491,11 +7562,7 @@ export interface operations {
                         userId: string | null;
                         imageUrl: string | null;
                         isRoleSpecified: boolean;
-                        roles: {
-                            /** Format: id */
-                            id: string;
-                            name: string;
-                        }[];
+                        roles: components['schemas']['RoleLite'][];
                         reads: number;
                     }[];
                 };
@@ -10707,6 +10774,216 @@ export interface operations {
             };
         };
     };
+    'admin___llm-moderation___queue': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** @default 10 */
+                    limit?: number;
+                    /** Format: misskey:id */
+                    sinceId?: string;
+                    /** Format: misskey:id */
+                    untilId?: string;
+                    sinceDate?: number;
+                    untilDate?: number;
+                    /**
+                     * @default unresolved
+                     * @enum {string}
+                     */
+                    state?: 'all' | 'resolved' | 'unresolved';
+                    /**
+                     * @default combined
+                     * @enum {string}
+                     */
+                    origin?: 'combined' | 'local' | 'remote';
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['LlmModerationQueue'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___llm-moderation___queue___resolve': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    queueId: string;
+                    moderationNote?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___llm-moderation___queue___update': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    queueId: string;
+                    moderationNote?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     admin___meta: {
         responses: {
             /** @description OK (with results) */
@@ -10768,6 +11045,10 @@ export interface operations {
                         sensitiveMediaDetectionSensitivity: 'medium' | 'low' | 'high' | 'veryLow' | 'veryHigh';
                         setSensitiveFlagAutomatically: boolean;
                         enableSensitiveMediaDetectionForVideos: boolean;
+                        openLlmModerationEnabled: boolean;
+                        openLlmModerationApiConfigured: boolean;
+                        openLlmModerationIncludeRemote: boolean;
+                        openLlmModerationVisibilities: string[];
                         /** Format: id */
                         proxyAccountId: string;
                         email: string | null;
@@ -14349,6 +14630,10 @@ export interface operations {
                     sensitiveMediaDetectionSensitivity?: 'medium' | 'low' | 'high' | 'veryLow' | 'veryHigh';
                     setSensitiveFlagAutomatically?: boolean;
                     enableSensitiveMediaDetectionForVideos?: boolean;
+                    openLlmModerationEnabled?: boolean;
+                    openLlmModerationApiKey?: string | null;
+                    openLlmModerationIncludeRemote?: boolean;
+                    openLlmModerationVisibilities?: ('public' | 'public_non_ltl' | 'home' | 'followers' | 'specified')[];
                     maintainerName?: string | null;
                     maintainerEmail?: string | null;
                     langs?: string[];
@@ -28650,8 +28935,8 @@ export interface operations {
                     untilDate?: number;
                     /** @default true */
                     markAsRead?: boolean;
-                    includeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'blocked' | 'unblocked' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'loginFailed' | 'createToken' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
-                    excludeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'blocked' | 'unblocked' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'loginFailed' | 'createToken' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
+                    includeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'blocked' | 'unblocked' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'loginFailed' | 'createToken' | 'llmModerationQueue' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
+                    excludeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'blocked' | 'unblocked' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'loginFailed' | 'createToken' | 'llmModerationQueue' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
                 };
             };
         };
@@ -28740,8 +29025,8 @@ export interface operations {
                      * @default false
                      */
                     groupNote?: boolean;
-                    includeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'blocked' | 'unblocked' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'loginFailed' | 'createToken' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
-                    excludeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'blocked' | 'unblocked' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'loginFailed' | 'createToken' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
+                    includeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'blocked' | 'unblocked' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'loginFailed' | 'createToken' | 'llmModerationQueue' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
+                    excludeTypes?: ('note' | 'follow' | 'unfollow' | 'mention' | 'reply' | 'renote' | 'quote' | 'reaction' | 'pollEnded' | 'scheduledNotePosted' | 'scheduledNotePostFailed' | 'receiveFollowRequest' | 'followRequestAccepted' | 'followRequestRejected' | 'blocked' | 'unblocked' | 'roleAssigned' | 'chatRoomInvitationReceived' | 'achievementEarned' | 'exportCompleted' | 'login' | 'loginFailed' | 'createToken' | 'llmModerationQueue' | 'app' | 'test' | 'pollVote' | 'groupInvited')[];
                 };
             };
         };

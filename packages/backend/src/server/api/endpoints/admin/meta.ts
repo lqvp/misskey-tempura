@@ -258,6 +258,28 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			openLlmModerationEnabled: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			openLlmModerationApiConfigured: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			openLlmModerationIncludeRemote: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			openLlmModerationVisibilities: {
+				type: 'array',
+				optional: false,
+				nullable: false,
+				items: {
+					type: 'string',
+					optional: false,
+					nullable: false,
+				},
+			},
 			proxyAccountId: {
 				type: 'string',
 				optional: false, nullable: false,
@@ -962,6 +984,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				sensitiveMediaDetectionSensitivity: instance.sensitiveMediaDetectionSensitivity,
 				setSensitiveFlagAutomatically: instance.setSensitiveFlagAutomatically,
 				enableSensitiveMediaDetectionForVideos: instance.enableSensitiveMediaDetectionForVideos,
+				openLlmModerationEnabled: instance.openLlmModerationEnabled,
+				openLlmModerationApiConfigured: instance.openLlmModerationApiKey != null,
+				openLlmModerationIncludeRemote: instance.openLlmModerationIncludeRemote,
+				openLlmModerationVisibilities: instance.openLlmModerationVisibilities,
 				proxyAccountId: proxy.id,
 				email: instance.email,
 				smtpSecure: instance.smtpSecure,

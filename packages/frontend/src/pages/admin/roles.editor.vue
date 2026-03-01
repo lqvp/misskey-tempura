@@ -1211,7 +1211,7 @@ import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
 import { deepClone } from '@/utility/clone.js';
 
-type RoleLike = Pick<Misskey.entities.Role, 'name' | 'description' | 'isAdministrator' | 'isModerator' | 'color' | 'iconUrl' | 'target' | 'isPublic' | 'isExplorable' | 'asBadge' | 'canEditMembersByModerator' | 'displayOrder' | 'preserveAssignmentOnMoveAccount'> & {
+type RoleLike = Pick<Misskey.entities.Role, 'name' | 'description' | 'isAdministrator' | 'isModerator' | 'color' | 'iconUrl' | 'target' | 'isPublic' | 'isExplorable' | 'asBadge' | 'canEditMembersByModerator' | 'displayOrder' | 'preserveAssignmentOnMoveAccount' | 'permissionGroup' | 'isRainbow'> & {
 	id?: Misskey.entities.Role['id'] | null;
 	condFormula: any;
 	policies: any;
@@ -1256,7 +1256,12 @@ const rolePermissionDef: MkSelectItem[] = [
 const rolePermission = computed<GetMkSelectValueTypesFromDef<typeof rolePermissionDef>>({
 	get: () => role.value.permissionGroup,
 	set: (val) => {
-		role.value.permissionGroup = val;
+		if (val == null) return;
+		if (val === 'Admin' || val === 'MainModerator' || val === 'Normal' || val === 'Community') {
+			role.value.permissionGroup = val;
+			role.value.isAdministrator = val === 'Admin';
+			role.value.isModerator = val === 'Admin' || val === 'MainModerator';
+		}
 	},
 });
 
@@ -1283,6 +1288,8 @@ const save = throttle(100, () => {
 		target: role.value.target,
 		condFormula: role.value.condFormula,
 		permissionGroup: role.value.permissionGroup,
+		isAdministrator: role.value.isAdministrator,
+		isModerator: role.value.isModerator,
 		isPublic: role.value.isPublic,
 		isExplorable: role.value.isExplorable,
 		isRainbow: role.value.isRainbow,

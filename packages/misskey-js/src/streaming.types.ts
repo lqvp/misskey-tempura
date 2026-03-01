@@ -202,7 +202,13 @@ export type Channels = {
 				targetUserId: string;
 				reporterId: string;
 				comment: string;
-			}
+			};
+			newLlmModerationQueueItem: {
+				id: string;
+				noteId: string;
+				noteUserId: string;
+				flaggedCategories: string[];
+			};
 		};
 		receives: null;
 	};
@@ -319,6 +325,9 @@ export type NoteUpdatedEvent = { id: Note['id'] } & ({
 		choice: number;
 		userId: User['id'];
 	};
+} | {
+	type: 'madePrivate';
+	body: Record<string, never>;
 });
 
 export type BroadcastEvents = {

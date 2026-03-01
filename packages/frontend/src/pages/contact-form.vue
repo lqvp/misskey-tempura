@@ -66,10 +66,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 				<FormSection>
 					<template #label><i class="ti ti-mail-forward"></i> {{ i18n.ts._contactForm._userForm.replyMethod }} *</template>
-					<MkRadios v-model="replyMethod" :required="true">
-						<option value="email">{{ i18n.ts._contactForm._userForm.replyByEmail }}</option>
-						<option value="misskey">{{ i18n.ts._contactForm._userForm.replyByMisskey }}</option>
-					</MkRadios>
+					<MkRadios
+						v-model="replyMethod"
+						:required="true"
+						:options="[
+							{ value: 'email', label: i18n.ts._contactForm._userForm.replyByEmail },
+							{ value: 'misskey', label: i18n.ts._contactForm._userForm.replyByMisskey },
+						]"
+					/>
 				</FormSection>
 
 				<FormSection v-if="replyMethod === 'email'">

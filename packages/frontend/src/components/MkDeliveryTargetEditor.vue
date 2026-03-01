@@ -8,10 +8,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div :class="$style.label"><i class="ti ti-server-2"></i> {{ i18n.ts._deliveryTargetControl.deliveryTargetControl }}</div>
 
 	<div :class="$style.body">
-		<MkRadios v-model="deliveryMode" direction="vertical">
-			<option value="include">{{ i18n.ts._deliveryTargetControl.deliveryTargetInclude }}</option>
-			<option value="exclude">{{ i18n.ts._deliveryTargetControl.deliveryTargetExclude }}</option>
-		</MkRadios>
+		<MkRadios
+			v-model="deliveryMode"
+			:vertical="true"
+			:options="[
+				{ value: 'include', label: i18n.ts._deliveryTargetControl.deliveryTargetInclude },
+				{ value: 'exclude', label: i18n.ts._deliveryTargetControl.deliveryTargetExclude },
+			]"
+		/>
 
 		<div :class="$style.serverSelection">
 			<MkLoading v-if="serversLoading"/>

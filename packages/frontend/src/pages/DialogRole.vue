@@ -33,7 +33,7 @@ const props = defineProps<{
 	isAssigned: boolean,
 }>();
 
-function roleAction(ev) {
+function roleAction(ev: PointerEvent) {
 	os.popupMenu([{
 		type: 'label',
 		text: props.role.name,

@@ -45,7 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<RolesEditorFormula v-model="v.value"/>
 	</div>
 
-	<MkInput v-else-if="v.type === 'createdLessThan' || v.type === 'createdMoreThan' || type === 'activedMoreThan' || type === 'activedLessThan'" v-model="v.sec" type="number">
+	<MkInput v-else-if="v.type === 'createdLessThan' || v.type === 'createdMoreThan' || v.type === 'activatedMoreThan' || v.type === 'activatedLessThan'" v-model="v.sec" type="number">
 		<template #suffix>sec</template>
 	</MkInput>
 
@@ -111,8 +111,8 @@ const typeDefConst = [
 	{ label: i18n.ts._role._condition.followingMoreThanOrEq, value: 'followingMoreThanOrEq' },
 	{ label: i18n.ts._role._condition.notesLessThanOrEq, value: 'notesLessThanOrEq' },
 	{ label: i18n.ts._role._condition.notesMoreThanOrEq, value: 'notesMoreThanOrEq' },
-	{ label: i18n.ts._role._condition.activedMoreThan, value: 'activedMoreThan' },
-	{ label: i18n.ts._role._condition.activedLessThan, value: 'activedLessThan' },
+	{ label: i18n.ts._role._condition.activatedMoreThan, value: 'activatedMoreThan' },
+	{ label: i18n.ts._role._condition.activatedLessThan, value: 'activatedLessThan' },
 	{ label: i18n.ts._role._condition.and, value: 'and' },
 	{ label: i18n.ts._role._condition.or, value: 'or' },
 	{ label: i18n.ts._role._condition.not, value: 'not' },
@@ -140,15 +140,30 @@ const typeModelForMkSelect = computed<TypeDefValue>({
 			case 'roleAssignedTo': newValue = { type: 'roleAssignedTo', roleId: '' }; break;
 			case 'createdLessThan': newValue = { type: 'createdLessThan', sec: 86400 }; break;
 			case 'createdMoreThan': newValue = { type: 'createdMoreThan', sec: 86400 }; break;
-			case 'activedMoreThan': newValue = { type: 'activedMoreThan', sec: 86400 }; break;
-			case 'activedLessThan': newValue = { type: 'activedLessThan', sec: 86400 }; break;
+			case 'activatedMoreThan': newValue = { type: 'activatedMoreThan', sec: 86400 }; break;
+			case 'activatedLessThan': newValue = { type: 'activatedLessThan', sec: 86400 }; break;
 			case 'followersLessThanOrEq': newValue = { type: 'followersLessThanOrEq', value: 10 }; break;
 			case 'followersMoreThanOrEq': newValue = { type: 'followersMoreThanOrEq', value: 10 }; break;
 			case 'followingLessThanOrEq': newValue = { type: 'followingLessThanOrEq', value: 10 }; break;
 			case 'followingMoreThanOrEq': newValue = { type: 'followingMoreThanOrEq', value: 10 }; break;
 			case 'notesLessThanOrEq': newValue = { type: 'notesLessThanOrEq', value: 10 }; break;
 			case 'notesMoreThanOrEq': newValue = { type: 'notesMoreThanOrEq', value: 10 }; break;
-			default: newValue = { type: t }; break;
+			default: {
+				if (
+					t === 'isLocal' ||
+					t === 'isRemote' ||
+					t === 'isSuspended' ||
+					t === 'isLocked' ||
+					t === 'isBot' ||
+					t === 'isCat' ||
+					t === 'isExplorable'
+				) {
+					newValue = { type: t };
+				} else {
+					newValue = { type: 'isRemote' };
+				}
+				break;
+			}
 		}
 		v.value = { id: v.value.id, ...newValue };
 	},

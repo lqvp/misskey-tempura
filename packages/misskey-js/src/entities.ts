@@ -244,6 +244,48 @@ export type ModerationLog = {
 	info: ModerationLogPayloads['unsetUserMutualLink'];
 });
 
+export type LlmModerationQueue = {
+	id: ID;
+	createdAt: DateString;
+	noteId: Note['id'];
+	note: Note | null;
+	noteUserId: User['id'];
+	noteUser: UserDetailedNotMe | null;
+	noteUserHost: string | null;
+	noteVisibility: string;
+	isRemote: boolean;
+	provider: string;
+	model: string;
+	flaggedCategories: string[];
+	categoryScores: Record<string, number>;
+	resolved: boolean;
+	assigneeId: User['id'] | null;
+	assignee: UserDetailedNotMe | null;
+	moderationNote: string;
+};
+
+export type AdminLlmModerationQueueRequest = {
+	limit?: number;
+	sinceId?: ID;
+	untilId?: ID;
+	sinceDate?: number;
+	untilDate?: number;
+	state?: 'all' | 'resolved' | 'unresolved';
+	origin?: 'combined' | 'local' | 'remote';
+};
+
+export type AdminLlmModerationQueueResponse = LlmModerationQueue[];
+
+export type AdminLlmModerationQueueResolveRequest = {
+	queueId: ID;
+	moderationNote?: string;
+};
+
+export type AdminLlmModerationQueueUpdateRequest = {
+	queueId: ID;
+	moderationNote?: string;
+};
+
 export type ServerStats = {
 	cpu: number;
 	mem: {

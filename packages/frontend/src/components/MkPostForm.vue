@@ -34,8 +34,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span :class="$style.headerRightButtonText">{{ targetChannel.name }}</span>
 				</button>
 			</template>
-			<button v-if="visibility === 'specified'" v-click-anime v-tooltip="i18n.ts.save" class="_button" :class="$style.headerRightItem" @click="saveCurrentUsers"><i class="ti ti-device-floppy"/></button>
-			<button v-if="visibility === 'specified'" v-click-anime v-tooltip="i18n.ts.load" class="_button" :class="$style.headerRightItem" @click="loadSavedUsers"><i class="ti ti-users"/></button>
+			<button v-if="visibility === 'specified'" v-click-anime v-tooltip="i18n.ts.save" class="_button" :class="$style.headerRightItem" @click="saveCurrentUsers"><i class="ti ti-device-floppy"></i></button>
+			<button v-if="visibility === 'specified'" v-click-anime v-tooltip="i18n.ts.load" class="_button" :class="$style.headerRightItem" @click="loadSavedUsers"><i class="ti ti-users"></i></button>
 			<button v-if="visibility !== 'specified'" v-tooltip="i18n.ts._visibility.disableFederation" class="_button" :class="[$style.headerRightItem, { [$style.danger]: localOnly }]" :disabled="targetChannel != null" @click="toggleLocalOnly">
 				<span v-if="!localOnly"><i class="ti ti-rocket"></i></span>
 				<span v-else><i class="ti ti-rocket-off"></i></span>
@@ -598,7 +598,7 @@ function focus() {
 
 function postFormFileUpload(ev: MouseEvent) {
 	if (prefer.s.chooseFileFrom === 'new') {
-		chooseFileFromPc(ev);
+		chooseFileFromPc();
 	} else {
 		chooseFileFrom(ev);
 	}
@@ -617,7 +617,7 @@ function chooseFileFrom(ev: MouseEvent) {
 	});
 }
 
-function chooseFileFromPc(ev: PointerEvent) {
+function chooseFileFromPc() {
 	if (props.mock) return;
 
 	os.chooseFileFromPc({ multiple: true }).then(files => {
@@ -626,7 +626,7 @@ function chooseFileFromPc(ev: PointerEvent) {
 	});
 }
 
-function chooseFileFromDrive(ev: PointerEvent) {
+function chooseFileFromDrive() {
 	if (props.mock) return;
 
 	chooseDriveFile({ multiple: true }).then(driveFiles => {
@@ -994,7 +994,7 @@ type StoredDrafts = {
 			text: string;
 			useCw: boolean;
 			cw: string | null;
-			visibility: 'public' | 'home' | 'followers' | 'specified';
+			visibility: 'public' | 'public_non_ltl' | 'home' | 'followers' | 'specified';
 			localOnly: boolean;
 			files: Misskey.entities.DriveFile[];
 			poll: PollEditorModelValue | null;
@@ -1002,6 +1002,7 @@ type StoredDrafts = {
 			quoteId: string | null;
 			reactionAcceptance: 'likeOnly' | 'likeOnlyForRemote' | 'nonSensitiveOnly' | 'nonSensitiveOnlyForLocalLikeOnlyForRemote' | null;
 			scheduledAt: number | null;
+			scheduledNoteDelete?: DeleteScheduleEditorModelValue | null;
 		};
 	};
 };

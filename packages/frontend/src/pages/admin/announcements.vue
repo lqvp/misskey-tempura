@@ -74,7 +74,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<button class="_button" :class="$style.remove" @click="removeRole(announcementIndex, role)"><i class="ti ti-x"></i></button>
 								</div>
 							</div>
-							<MkButton @click="addRole(announcement)">{{ i18n.ts.add }}</MkButton>
+							<MkButton @click="addRole(announcementIndex)">{{ i18n.ts.add }}</MkButton>
 						</div>
 						<MkInfo v-if="announcement.display === 'dialog'" warn>{{ i18n.ts._announcement.dialogAnnouncementUxWarn }}</MkInfo>
 						<MkSwitch v-model="announcement.forExistingUsers" :helpText="i18n.ts._announcement.forExistingUsersDescription">
@@ -132,11 +132,13 @@ const {
 const loading = ref(true);
 const loadingMore = ref(false);
 
-const announcements = ref<(Omit<Misskey.entities.AdminAnnouncementsListResponse[number], 'id' | 'createdAt' | 'updatedAt' | 'reads' | 'isActive'> & {
+const announcements = ref<(Omit<Misskey.entities.AdminAnnouncementsListResponse[number], 'id' | 'createdAt' | 'updatedAt' | 'reads' | 'isActive' | 'roles'> & {
 	id: string | null;
 	_id?: string;
 	isActive?: Misskey.entities.AdminAnnouncementsListResponse[number]['isActive'];
 	reads?: Misskey.entities.AdminAnnouncementsListResponse[number]['reads'];
+	roles: Misskey.entities.RoleLite[];
+	roleIds?: string[];
 })[]>([]);
 
 watch(announcementsStatus, (to) => {
@@ -153,7 +155,7 @@ misskeyApi('admin/announcements/list').then(announcementResponse => {
 	announcements.value = announcementResponse;
 });
 
-async function selectRole(initialRoleIds: string[] = []): Promise<{ id: string, name: string }[]> {
+async function selectRole(initialRoleIds: string[] = []): Promise<Misskey.entities.Role[]> {
 	const result = await os.selectRole({
 		initialRoleIds,
 		title: i18n.ts.rolesThatCanBeUsedThisEmojiAsReaction,
@@ -165,18 +167,24 @@ async function selectRole(initialRoleIds: string[] = []): Promise<{ id: string, 
 		return [];
 	}
 
-	return result.result.map(it => ({ id: it.id, name: it.name }));
+	return result.result;
 }
 
-async function addRole(announcement) {
+async function addRole(announcementIndex: number) {
 	const roles = await selectRole();
 	if (roles.length > 0) {
-		const index = announcements.value.findIndex(x => x.id === announcement.id);
-		announcements.value[index].roles.push(...roles);
+		const announcement = announcements.value[announcementIndex];
+		if (!announcement) return;
+		const existingRoleIds = new Set(announcement.roles.map(role => role.id));
+		const newRoles = roles.filter(role => !existingRoleIds.has(role.id));
+		if (newRoles.length === 0) return;
+		announcement.roles.push(...newRoles);
 	}
 }
 
-function removeRole(index: number, role) {
+function removeRole(index: number, role: Misskey.entities.RoleLite) {
+	if (index < 0 || index >= announcements.value.length) return;
+	if (!announcements.value[index]?.roles) return;
 	announcements.value[index].roles = announcements.value[index].roles.filter(x => x.id !== role.id);
 }
 
@@ -194,7 +202,7 @@ function add() {
 		needConfirmationToRead: false,
 		userId: null,
 		isRoleSpecified: false,
-		roles: [],
+		roles: [] as Misskey.entities.RoleLite[],
 		roleIds: [] as string[],
 	});
 }

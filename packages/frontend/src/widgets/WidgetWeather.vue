@@ -51,7 +51,7 @@ const OPEN_METEO_GEOCODING_API = 'https://geocoding-api.open-meteo.com/v1/search
 const WEATHER_ICON_BASE = 'https://basmilius.github.io/weather-icons/production/fill/all'; // Meteocons by Bas Milius (MIT)
 const MAX_FORECAST_DAYS = 3;
 
-const name = i18n.ts._widgets.weather;
+const name = 'weather' as const;
 
 const widgetPropsDef = {
 	showHeader: {

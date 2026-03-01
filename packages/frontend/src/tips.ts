@@ -20,6 +20,7 @@ export const TIPS = [
 	'abuses',
 	'contactFormCategories',
 	'contactForms',
+	'llmModerationQueue',
 ] as const;
 
 export function closeTip(tip: typeof TIPS[number]) {

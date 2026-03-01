@@ -103,6 +103,8 @@ export const packedRoleCondFormulaValueCreatedSchema = {
 			enum: [
 				'createdLessThan',
 				'createdMoreThan',
+				'activatedMoreThan',
+				'activatedLessThan',
 			],
 		},
 		sec: {
@@ -481,6 +483,11 @@ export const packedRoleSchema = {
 					optional: false, nullable: false,
 					example: false,
 				},
+				permissionGroup: {
+					type: 'string',
+					optional: false, nullable: false,
+					enum: ['Admin', 'MainModerator', 'Normal', 'Community'],
+				},
 				isExplorable: {
 					type: 'boolean',
 					optional: false, nullable: false,
@@ -535,6 +542,10 @@ export const packedRoleSchema = {
 				},
 				usersCount: {
 					type: 'integer',
+					optional: false, nullable: false,
+				},
+				isOwner: {
+					type: 'boolean',
 					optional: false, nullable: false,
 				},
 			},

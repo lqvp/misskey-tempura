@@ -14,6 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 				<div class="_gaps_s">
 					<MkInfo v-if="thereIsUnresolvedAbuseReport" warn>{{ i18n.ts.thereIsUnresolvedAbuseReportWarning }} <MkA to="/admin/abuses" class="_link">{{ i18n.ts.check }}</MkA></MkInfo>
+					<MkInfo v-if="thereIsUnresolvedLlmModerationQueue" warn>{{ i18n.ts.thereIsUnresolvedLlmModerationQueueWarning }} <MkA to="/admin/llm-moderation" class="_link">{{ i18n.ts.check }}</MkA></MkInfo>
 					<MkInfo v-if="noMaintainerInformation" warn>{{ i18n.ts.noMaintainerInformationWarning }} <MkA to="/admin/settings" class="_link">{{ i18n.ts.configure }}</MkA></MkInfo>
 					<MkInfo v-if="noInquiryUrl" warn>{{ i18n.ts.noInquiryUrlWarning }} <MkA to="/admin/settings" class="_link">{{ i18n.ts.configure }}</MkA></MkInfo>
 					<MkInfo v-if="noBotProtection" warn>{{ i18n.ts.noBotProtectionWarning }} <MkA to="/admin/security" class="_link">{{ i18n.ts.configure }}</MkA></MkInfo>
@@ -74,6 +75,7 @@ const noBotProtection = computed(() => !instance.disableRegistration && !instanc
 const noEmailServer = computed(() => !instance.enableEmail);
 const noInquiryUrl = computed(() => isEmpty(instance.inquiryUrl) && !instance.enableContactForm);
 const thereIsUnresolvedAbuseReport = ref(false);
+const thereIsUnresolvedLlmModerationQueue = ref(false);
 const pendingUserApprovals = ref(false);
 const currentPage = computed(() => router.currentRef.value.child);
 
@@ -82,6 +84,15 @@ misskeyApi('admin/abuse-user-reports', {
 	limit: 1,
 }).then(reports => {
 	if (reports.length > 0) thereIsUnresolvedAbuseReport.value = true;
+});
+
+misskeyApi('admin/llm-moderation/queue', {
+	state: 'unresolved',
+	limit: 1,
+}).then(queues => {
+	if (queues.length > 0) thereIsUnresolvedLlmModerationQueue.value = true;
+}).catch(err => {
+	console.error('Failed to load LLM moderation queue status.', err);
 });
 
 misskeyApi('admin/show-users', {
@@ -188,6 +199,11 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 		text: i18n.ts.abuseReports,
 		to: '/admin/abuses',
 		active: currentPage.value?.route.name === 'abuses',
+	}, {
+		icon: 'ti ti-shield-exclamation',
+		text: i18n.ts.llmModerationQueue,
+		to: '/admin/llm-moderation',
+		active: currentPage.value?.route.name === 'llmModeration',
 	}, {
 		icon: 'ti ti-mail',
 		text: i18n.ts._contactForm._adminList.list,

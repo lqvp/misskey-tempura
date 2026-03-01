@@ -379,6 +379,7 @@ export function role(params: {
 	description?: string,
 	isModerator?: boolean,
 	isAdministrator?: boolean,
+	permissionGroup?: entities.Role['permissionGroup'],
 	displayOrder?: number,
 	createdAt?: string,
 	updatedAt?: string,
@@ -388,6 +389,7 @@ export function role(params: {
 	asBadge?: boolean,
 	canEditMembersByModerator?: boolean,
 	usersCount?: number,
+	isOwner?: boolean,
 }, seed?: string): entities.Role {
 	const prefix = params.displayOrder ? params.displayOrder.toString().padStart(3, '0') + '-' : '';
 	const genId = text(36, seed);
@@ -408,10 +410,12 @@ export function role(params: {
 		updatedAt: updatedAt,
 		target: params.target ?? 'manual',
 		isPublic: params.isPublic ?? true,
+		permissionGroup: params.permissionGroup ?? 'Normal',
 		isExplorable: params.isExplorable ?? true,
 		asBadge: params.asBadge ?? true,
 		canEditMembersByModerator: params.canEditMembersByModerator ?? false,
 		usersCount: params.usersCount ?? 10,
+		isOwner: params.isOwner ?? false,
 		preserveAssignmentOnMoveAccount: false,
 		condFormula: {
 			id: '',
