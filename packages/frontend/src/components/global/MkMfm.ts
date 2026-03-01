@@ -250,7 +250,7 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 						if (!useAnim) {
 							return genEl(token.children, { scale, disableNyaize, disableRjNumber });
 						}
-						return h(MkSparkle, {}, genEl(token.children, { scale, disableNyaize, disableRjNumber }));
+						return h(MkSparkle, {}, { default: () => genEl(token.children, { scale, disableNyaize, disableRjNumber }) });
 					}
 					case 'rotate': {
 						const degrees = safeParseFloat(token.props.args.deg) ?? 90;
@@ -380,7 +380,7 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 					url: token.props.url,
 					rel: 'nofollow noopener',
 					navigationBehavior: props.linkNavigationBehavior,
-				}, genEl(token.children, { scale, disableNyaize: true, disableRjNumber: true }))];
+				}, { default: () => genEl(token.children, { scale, disableNyaize: true, disableRjNumber: true }) })];
 			}
 
 			case 'mention': {
@@ -398,7 +398,7 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 					to: isNote ? `/tags/${encodeURIComponent(token.props.hashtag)}` : `/user-tags/${encodeURIComponent(token.props.hashtag)}`,
 					style: 'color:var(--MI_THEME-hashtag);',
 					behavior: props.linkNavigationBehavior,
-				}, `#${token.props.hashtag}`)];
+				}, { default: () => `#${token.props.hashtag}` })];
 			}
 
 			case 'blockCode': {

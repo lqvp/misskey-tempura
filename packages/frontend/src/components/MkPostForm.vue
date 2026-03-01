@@ -117,7 +117,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { watch, nextTick, onMounted, defineAsyncComponent, provide, shallowRef, ref, computed, reactive, useTemplateRef, onUnmounted } from 'vue';
+import { watch, nextTick, onMounted, defineAsyncComponent, provide, shallowRef, ref, computed, reactive, useTemplateRef, onUnmounted, onBeforeUnmount } from 'vue';
 import * as mfm from 'mfm-js';
 import * as Misskey from 'misskey-js';
 import insertTextAtCursor from 'insert-text-at-cursor';
@@ -244,6 +244,10 @@ const serverDraftId = ref<string | null>(null);
 const dontShowOnLtl = computed(() => visibility.value === 'public_non_ltl');
 const postFormActions = getPluginHandlers('post_form_action');
 const normalizedPostFormActions = computed(() => normalizePostFormActions(prefer.r.postFormActions.value));
+
+let textAutocomplete: Autocomplete | null = null;
+let cwAutocomplete: Autocomplete | null = null;
+let hashtagAutocomplete: Autocomplete | null = null;
 
 const uploader = useUploader({
 	multiple: true,
@@ -1566,10 +1570,9 @@ onMounted(() => {
 		});
 	}
 
-	// TODO: detach when unmount
-	if (textareaEl.value) new Autocomplete(textareaEl.value, text);
-	if (cwInputEl.value) new Autocomplete(cwInputEl.value, cw);
-	if (hashtagsInputEl.value) new Autocomplete(hashtagsInputEl.value, hashtags);
+	if (textareaEl.value) textAutocomplete = new Autocomplete(textareaEl.value, text);
+	if (cwInputEl.value) cwAutocomplete = new Autocomplete(cwInputEl.value, cw);
+	if (hashtagsInputEl.value) hashtagAutocomplete = new Autocomplete(hashtagsInputEl.value, hashtags);
 
 	nextTick(() => {
 		// 書きかけの投稿を復元
@@ -1627,6 +1630,19 @@ onMounted(() => {
 
 		nextTick(() => watchForDraft());
 	});
+});
+
+onBeforeUnmount(() => {
+	uploader.abortAll();
+	if (textAutocomplete) {
+		textAutocomplete.detach();
+	}
+	if (cwAutocomplete) {
+		cwAutocomplete.detach();
+	}
+	if (hashtagAutocomplete) {
+		hashtagAutocomplete.detach();
+	}
 });
 
 async function canClose() {
