@@ -1,6 +1,6 @@
 {
 	"name": "misskey",
-	"version": "2026.2.0-beta.0-tempura-2.0.1-dev",
+	"version": "2026.3.0-tempura-2.0.1-dev",
 	"codename": "nasubi",
 	"repository": {
 		"type": "git",

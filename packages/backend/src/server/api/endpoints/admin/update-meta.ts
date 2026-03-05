@@ -460,7 +460,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.clientOptions !== undefined) {
 				set.clientOptions = {
-					...serverSettings.clientOptions,
+					...this.serverSettings.clientOptions,
 					...ps.clientOptions,
 				};
 			}
