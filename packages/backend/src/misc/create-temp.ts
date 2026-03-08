@@ -17,14 +17,14 @@ export function createTemp(): Promise<[string, () => void]> {
 
 export function createTempIn(dir: string): Promise<[string, () => void]> {
 	return new Promise<[string, () => void]>((res, rej) => {
-		try {
-			fs.mkdirSync(dir, { recursive: true });
-		} catch (e) {
-			return rej(e);
-		}
-		tmp.file({ dir }, (e, path, fd, cleanup) => {
-			if (e) return rej(e);
-			res([path, process.env.NODE_ENV === 'production' ? cleanup : () => {}]);
+		fs.mkdir(dir, { recursive: true }, (err) => {
+			if (err) {
+				return rej(err);
+			}
+			tmp.file({ dir }, (e, path, fd, cleanup) => {
+				if (e) return rej(e);
+				res([path, process.env.NODE_ENV === 'production' ? cleanup : () => {}]);
+			});
 		});
 	});
 }
