@@ -33,6 +33,8 @@ export class AntennaEntityService {
 			name: antenna.name,
 			keywords: antenna.keywords,
 			excludeKeywords: antenna.excludeKeywords,
+			mustExcludeKeywords: antenna.mustExcludeKeywords,
+			expression: antenna.expression,
 			src: antenna.src,
 			userListId: antenna.userListId,
 			users: antenna.users,

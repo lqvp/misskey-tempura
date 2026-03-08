@@ -81,7 +81,14 @@ export const paramDef = {
 		description: { type: 'string', nullable: true },
 		defaultLightTheme: { type: 'string', nullable: true },
 		defaultDarkTheme: { type: 'string', nullable: true },
-		clientOptions: { type: 'object', nullable: false },
+		clientOptions: {
+			type: 'object', nullable: false,
+			properties: {
+				entrancePageStyle: { type: 'string', nullable: false, enum: ['classic', 'simple'] },
+				showTimelineForVisitor: { type: 'boolean', nullable: false },
+				showActivitiesForVisitor: { type: 'boolean', nullable: false },
+			},
+		},
 		cacheRemoteFiles: { type: 'boolean' },
 		cacheRemoteSensitiveFiles: { type: 'boolean' },
 		emailRequiredForSignup: { type: 'boolean' },
@@ -105,6 +112,16 @@ export const paramDef = {
 		sensitiveMediaDetectionSensitivity: { type: 'string', enum: ['medium', 'low', 'high', 'veryLow', 'veryHigh'] },
 		setSensitiveFlagAutomatically: { type: 'boolean' },
 		enableSensitiveMediaDetectionForVideos: { type: 'boolean' },
+		openLlmModerationEnabled: { type: 'boolean' },
+		openLlmModerationApiKey: { type: 'string', nullable: true },
+		openLlmModerationIncludeRemote: { type: 'boolean' },
+		openLlmModerationVisibilities: {
+			type: 'array',
+			items: {
+				type: 'string',
+				enum: ['public', 'public_non_ltl', 'home', 'followers', 'specified'],
+			},
+		},
 		maintainerName: { type: 'string', nullable: true },
 		maintainerEmail: { type: 'string', nullable: true },
 		langs: {
@@ -442,7 +459,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			if (ps.clientOptions !== undefined) {
-				set.clientOptions = ps.clientOptions;
+				set.clientOptions = {
+					...this.serverSettings.clientOptions,
+					...ps.clientOptions,
+				};
 			}
 
 			if (ps.cacheRemoteFiles !== undefined) {
@@ -537,6 +557,26 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.enableSensitiveMediaDetectionForVideos !== undefined) {
 				set.enableSensitiveMediaDetectionForVideos = ps.enableSensitiveMediaDetectionForVideos;
+			}
+
+			if (ps.openLlmModerationEnabled !== undefined) {
+				set.openLlmModerationEnabled = ps.openLlmModerationEnabled;
+			}
+
+			if (ps.openLlmModerationApiKey !== undefined) {
+				if (ps.openLlmModerationApiKey === '') {
+					set.openLlmModerationApiKey = null;
+				} else {
+					set.openLlmModerationApiKey = ps.openLlmModerationApiKey;
+				}
+			}
+
+			if (ps.openLlmModerationIncludeRemote !== undefined) {
+				set.openLlmModerationIncludeRemote = ps.openLlmModerationIncludeRemote;
+			}
+
+			if (ps.openLlmModerationVisibilities !== undefined) {
+				set.openLlmModerationVisibilities = ps.openLlmModerationVisibilities;
 			}
 
 			if (ps.maintainerName !== undefined) {

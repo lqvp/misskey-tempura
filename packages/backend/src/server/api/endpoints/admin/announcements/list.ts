@@ -54,11 +54,13 @@ export const meta = {
 				},
 				icon: {
 					type: 'string',
-					optional: false, nullable: true,
+					optional: false, nullable: false,
+					enum: ['info', 'warning', 'error', 'success'],
 				},
 				display: {
 					type: 'string',
 					optional: false, nullable: false,
+					enum: ['normal', 'banner', 'dialog'],
 				},
 				isActive: {
 					type: 'boolean',
@@ -93,15 +95,7 @@ export const meta = {
 					optional: false, nullable: false,
 					items: {
 						type: 'object',
-						properties: {
-							id: {
-								type: 'string',
-								format: 'id',
-							},
-							name: {
-								type: 'string',
-							},
-						},
+						ref: 'RoleLite',
 					},
 				},
 				reads: {

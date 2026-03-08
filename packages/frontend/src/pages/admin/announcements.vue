@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div class="_spacer" style="--MI_SPACER-w: 900px;">
 		<div class="_gaps">
 			<MkInfo>{{ i18n.ts._announcement.shouldNotBeUsedToPresentPermanentInfo }}</MkInfo>
-			<MkInfo v-if="announcements.length > 5" warn>{{ i18n.ts._announcement.tooManyActiveAnnouncementDescription }}</MkInfo>
+			<MkInfo v-if="announcementsStatus === 'active' && announcements.length > 5" warn>{{ i18n.ts._announcement.tooManyActiveAnnouncementDescription }}</MkInfo>
 
 			<MkSelect v-model="announcementsStatus" :items="announcementsStatusDef">
 				<template #label>{{ i18n.ts.filter }}</template>
@@ -45,18 +45,26 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<MkInput v-model="announcement.imageUrl" type="url">
 							<template #label>{{ i18n.ts.imageUrl }}</template>
 						</MkInput>
-						<MkRadios v-model="announcement.icon">
+						<MkRadios
+							v-model="announcement.icon"
+							:options="[
+								{ value: 'info', icon: 'ti ti-info-circle' },
+								{ value: 'warning', icon: 'ti ti-alert-triangle', iconStyle: 'color: var(--MI_THEME-warn);' },
+								{ value: 'error', icon: 'ti ti-circle-x', iconStyle: 'color: var(--MI_THEME-error);' },
+								{ value: 'success', icon: 'ti ti-check', iconStyle: 'color: var(--MI_THEME-success);' },
+							]"
+						>
 							<template #label>{{ i18n.ts.icon }}</template>
-							<option value="info"><i class="ti ti-info-circle"></i></option>
-							<option value="warning"><i class="ti ti-alert-triangle" style="color: var(--MI_THEME-warn);"></i></option>
-							<option value="error"><i class="ti ti-circle-x" style="color: var(--MI_THEME-error);"></i></option>
-							<option value="success"><i class="ti ti-check" style="color: var(--MI_THEME-success);"></i></option>
 						</MkRadios>
-						<MkRadios v-model="announcement.display">
+						<MkRadios
+							v-model="announcement.display"
+							:options="[
+								{ value: 'normal', label: i18n.ts.normal },
+								{ value: 'banner', label: i18n.ts.banner },
+								{ value: 'dialog', label: i18n.ts.dialog },
+							]"
+						>
 							<template #label>{{ i18n.ts.display }}</template>
-							<option value="normal">{{ i18n.ts.normal }}</option>
-							<option value="banner">{{ i18n.ts.banner }}</option>
-							<option value="dialog">{{ i18n.ts.dialog }}</option>
 						</MkRadios>
 						<div class="_gaps_s">
 							<div class="label" :class="$style.rolesLabel">{{ i18n.ts.roles }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></div>
@@ -66,7 +74,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<button class="_button" :class="$style.remove" @click="removeRole(announcementIndex, role)"><i class="ti ti-x"></i></button>
 								</div>
 							</div>
-							<MkButton @click="addRole(announcement)">{{ i18n.ts.add }}</MkButton>
+							<MkButton @click="addRole(announcementIndex)">{{ i18n.ts.add }}</MkButton>
 						</div>
 						<MkInfo v-if="announcement.display === 'dialog'" warn>{{ i18n.ts._announcement.dialogAnnouncementUxWarn }}</MkInfo>
 						<MkSwitch v-model="announcement.forExistingUsers" :helpText="i18n.ts._announcement.forExistingUsersDescription">
@@ -93,6 +101,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { ref, computed, watch } from 'vue';
+import * as Misskey from 'misskey-js';
 import MkButton from '@/components/MkButton.vue';
 import MkInput from '@/components/MkInput.vue';
 import MkSelect from '@/components/MkSelect.vue';
@@ -123,7 +132,14 @@ const {
 const loading = ref(true);
 const loadingMore = ref(false);
 
-const announcements = ref<any[]>([]);
+const announcements = ref<(Omit<Misskey.entities.AdminAnnouncementsListResponse[number], 'id' | 'createdAt' | 'updatedAt' | 'reads' | 'isActive' | 'roles'> & {
+	id: string | null;
+	_id?: string;
+	isActive?: Misskey.entities.AdminAnnouncementsListResponse[number]['isActive'];
+	reads?: Misskey.entities.AdminAnnouncementsListResponse[number]['reads'];
+	roles: Misskey.entities.RoleLite[];
+	roleIds?: string[];
+})[]>([]);
 
 watch(announcementsStatus, (to) => {
 	loading.value = true;
@@ -139,7 +155,7 @@ misskeyApi('admin/announcements/list').then(announcementResponse => {
 	announcements.value = announcementResponse;
 });
 
-async function selectRole(initialRoleIds: string[] = []): Promise<{ id: string, name: string }[]> {
+async function selectRole(initialRoleIds: string[] = []): Promise<Misskey.entities.Role[]> {
 	const result = await os.selectRole({
 		initialRoleIds,
 		title: i18n.ts.rolesThatCanBeUsedThisEmojiAsReaction,
@@ -151,18 +167,24 @@ async function selectRole(initialRoleIds: string[] = []): Promise<{ id: string, 
 		return [];
 	}
 
-	return result.result.map(it => ({ id: it.id, name: it.name }));
+	return result.result;
 }
 
-async function addRole(announcement) {
+async function addRole(announcementIndex: number) {
 	const roles = await selectRole();
 	if (roles.length > 0) {
-		const index = announcements.value.findIndex(x => x.id === announcement.id);
-		announcements.value[index].roles.push(...roles);
+		const announcement = announcements.value[announcementIndex];
+		if (!announcement) return;
+		const existingRoleIds = new Set(announcement.roles.map(role => role.id));
+		const newRoles = roles.filter(role => !existingRoleIds.has(role.id));
+		if (newRoles.length === 0) return;
+		announcement.roles.push(...newRoles);
 	}
 }
 
-function removeRole(index: number, role) {
+function removeRole(index: number, role: Misskey.entities.RoleLite) {
+	if (index < 0 || index >= announcements.value.length) return;
+	if (!announcements.value[index]?.roles) return;
 	announcements.value[index].roles = announcements.value[index].roles.filter(x => x.id !== role.id);
 }
 
@@ -178,40 +200,50 @@ function add() {
 		forExistingUsers: false,
 		silence: false,
 		needConfirmationToRead: false,
+		userId: null,
 		isRoleSpecified: false,
-		roles: [],
+		roles: [] as Misskey.entities.RoleLite[],
 		roleIds: [] as string[],
 	});
 }
 
-function del(announcement) {
-	os.confirm({
+async function del(announcement: (typeof announcements)['value'][number]) {
+	if (announcement.id == null) return;
+	const { canceled } = await os.confirm({
 		type: 'warning',
 		text: i18n.tsx.deleteAreYouSure({ x: announcement.title }),
-	}).then(({ canceled }) => {
-		if (canceled) return;
-		announcements.value = announcements.value.filter(x => x !== announcement);
-		misskeyApi('admin/announcements/delete', announcement);
+	});
+	if (canceled) return;
+	announcements.value = announcements.value.filter(x => x !== announcement);
+	misskeyApi('admin/announcements/delete', {
+		id: announcement.id,
 	});
 }
 
-async function archive(announcement) {
+async function archive(announcement: (typeof announcements)['value'][number]) {
+	if (announcement.id == null) return;
+	const { _id, ...data } = announcement; // _idを消す
 	await os.apiWithDialog('admin/announcements/update', {
-		...announcement,
+		...data,
+		id: announcement.id, // TSを黙らすため
 		isActive: false,
 	});
 	refresh();
 }
 
-async function unarchive(announcement) {
+async function unarchive(announcement: (typeof announcements)['value'][number]) {
+	if (announcement.id == null) return;
+	const { _id, ...data } = announcement; // _idを消す
 	await os.apiWithDialog('admin/announcements/update', {
-		...announcement,
+		...data,
+		id: announcement.id, // TSを黙らすため
 		isActive: true,
 	});
 	refresh();
 }
 
-async function save(announcement) {
+async function save(announcement: (typeof announcements)['value'][number]) {
+	const { _id, ...data } = announcement; // _idを消す
 	announcement.roleIds = announcement.roles.map(role => role.id);
 	if (announcement.roleIds.length === 0) {
 		announcement.isRoleSpecified = false;
@@ -219,10 +251,13 @@ async function save(announcement) {
 		announcement.isRoleSpecified = true;
 	}
 	if (announcement.id == null) {
-		await os.apiWithDialog('admin/announcements/create', announcement);
+		await os.apiWithDialog('admin/announcements/create', data);
 		refresh();
 	} else {
-		os.apiWithDialog('admin/announcements/update', announcement);
+		os.apiWithDialog('admin/announcements/update', {
+			...data,
+			id: announcement.id, // TSを黙らすため
+		});
 	}
 }
 
@@ -230,7 +265,7 @@ function more() {
 	loadingMore.value = true;
 	misskeyApi('admin/announcements/list', {
 		status: announcementsStatus.value,
-		untilId: announcements.value.reduce((acc, announcement) => announcement.id != null ? announcement : acc).id,
+		untilId: announcements.value.reduce((acc, announcement) => announcement.id != null ? announcement : acc).id!,
 	}).then(announcementResponse => {
 		announcements.value = announcements.value.concat(announcementResponse);
 		loadingMore.value = false;

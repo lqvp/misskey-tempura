@@ -16,6 +16,9 @@ export * as 'admin/abuse-report/notification-recipient/list' from './endpoints/a
 export * as 'admin/abuse-report/notification-recipient/show' from './endpoints/admin/abuse-report/notification-recipient/show.js';
 export * as 'admin/abuse-report/notification-recipient/update' from './endpoints/admin/abuse-report/notification-recipient/update.js';
 export * as 'admin/abuse-user-reports' from './endpoints/admin/abuse-user-reports.js';
+export * as 'admin/llm-moderation/queue' from './endpoints/admin/llm-moderation/queue.js';
+export * as 'admin/llm-moderation/queue/resolve' from './endpoints/admin/llm-moderation/queue/resolve.js';
+export * as 'admin/llm-moderation/queue/update' from './endpoints/admin/llm-moderation/queue/update.js';
 export * as 'admin/accounts/create' from './endpoints/admin/accounts/create.js';
 export * as 'admin/accounts/delete' from './endpoints/admin/accounts/delete.js';
 export * as 'admin/accounts/find-by-email' from './endpoints/admin/accounts/find-by-email.js';
@@ -394,6 +397,7 @@ export * as 'users/featured-notes' from './endpoints/users/featured-notes.js';
 export * as 'users/flashs' from './endpoints/users/flashs.js';
 export * as 'users/followers' from './endpoints/users/followers.js';
 export * as 'users/following' from './endpoints/users/following.js';
+export * as 'users/get-following-users-by-birthday' from './endpoints/users/get-following-users-by-birthday.js';
 export * as 'users/gallery/posts' from './endpoints/users/gallery/posts.js';
 export * as 'users/get-frequently-replied-users' from './endpoints/users/get-frequently-replied-users.js';
 export * as 'users/lists/create' from './endpoints/users/lists/create.js';

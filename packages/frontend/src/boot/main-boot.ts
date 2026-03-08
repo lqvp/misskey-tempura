@@ -11,10 +11,10 @@ import { common } from './common.js';
 import type { Component } from 'vue';
 import type { Keymap } from '@/utility/hotkey.js';
 import { i18n } from '@/i18n.js';
-import { alert, confirm, popup, post } from '@/os.js';
+import { alert, confirm, popup, post, toast } from '@/os.js';
 import { useStream } from '@/stream.js';
 import * as sound from '@/utility/sound.js';
-import { $i } from '@/i.js';
+import { $i, iAmModerator } from '@/i.js';
 import { instance } from '@/instance.js';
 import { store } from '@/store.js';
 import { reactionPicker } from '@/utility/reaction-picker.js';
@@ -30,6 +30,7 @@ import { prefer } from '@/preferences.js';
 import { updateCurrentAccountPartial } from '@/accounts.js';
 import { migrateOldSettings } from '@/pref-migrate.js';
 import { unisonReload } from '@/utility/unison-reload.js';
+import { isBirthday } from '@/utility/is-birthday.js';
 
 export async function mainBoot() {
 	const { isClientUpdated, updatedComponent, lastVersion } = await common(async () => {
@@ -147,12 +148,8 @@ export async function mainBoot() {
 		const m = now.getMonth() + 1;
 		const d = now.getDate();
 
-		if ($i.birthday) {
-			const bm = parseInt($i.birthday.split('-')[1]);
-			const bd = parseInt($i.birthday.split('-')[2]);
-			if (m === bm && d === bd) {
-				claimAchievement('loggedInOnBirthday');
-			}
+		if (isBirthday($i, now)) {
+			claimAchievement('loggedInOnBirthday');
 		}
 
 		if (m === 1 && d === 1) {
@@ -375,6 +372,14 @@ export async function mainBoot() {
 
 			// 個人宛てお知らせが発行されたとき
 			main.on('announcementCreated', onAnnouncementCreated);
+
+			if (iAmModerator) {
+				const admin = markRaw(stream.useChannel('admin', null, 'Admin'));
+
+				admin.on('newLlmModerationQueueItem', () => {
+					toast(i18n.ts.newLlmModerationQueueItem);
+				});
+			}
 		}
 	}
 

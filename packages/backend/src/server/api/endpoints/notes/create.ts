@@ -255,6 +255,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			try {
+				const scheduledDeleteAt = ps.scheduledDelete?.deleteAt
+					? new Date(ps.scheduledDelete.deleteAt)
+					: ps.scheduledDelete?.deleteAfter
+						? new Date(Date.now() + ps.scheduledDelete.deleteAfter)
+						: null;
+
 				const note = await this.noteCreateService.fetchAndCreate(me, {
 					createdAt: new Date(),
 					fileIds: ps.fileIds ?? ps.mediaIds ?? [],
@@ -275,7 +281,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					apMentions: ps.noExtractMentions ? [] : undefined,
 					apHashtags: ps.noExtractHashtags ? [] : undefined,
 					apEmojis: ps.noExtractEmojis ? [] : undefined,
-					deleteAt: ps.scheduledDelete?.deleteAt ? new Date(ps.scheduledDelete.deleteAt) : null,
+					deleteAt: scheduledDeleteAt,
 					isScheduledForPrivate: ps.scheduledDelete?.isScheduledForPrivate ?? false,
 					deliveryTargets: ps.deliveryTargets ?? undefined,
 				});

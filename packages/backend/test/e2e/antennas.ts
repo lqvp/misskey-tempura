@@ -153,6 +153,8 @@ describe('アンテナ', () => {
 			caseSensitive: false,
 			createdAt: new Date(response.createdAt).toISOString(),
 			excludeKeywords: [['']],
+			mustExcludeKeywords: [],
+			expression: null,
 			excludeNotesInSensitiveChannel: false,
 			hasUnreadNote: false,
 			isActive: true,

@@ -126,6 +126,50 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkFolder>
 				</SearchMarker>
 
+				<SearchMarker :keywords="['open', 'llm', 'moderation']">
+					<MkFolder>
+						<template #icon><SearchIcon><i class="ti ti-shield-check"></i></SearchIcon></template>
+						<template #label><SearchLabel>{{ i18n.ts.openLlmModeration }}</SearchLabel></template>
+						<template v-if="openLlmModerationForm.modified.value" #footer>
+							<MkFormFooter :form="openLlmModerationForm"/>
+						</template>
+
+						<div class="_gaps_m">
+							<MkSwitch v-model="openLlmModerationForm.state.openLlmModerationEnabled">
+								<template #label>{{ i18n.ts.openLlmModerationEnabled }}</template>
+								<template #caption>{{ i18n.ts.openLlmModerationDescription }}</template>
+							</MkSwitch>
+
+							<MkInput v-model="openLlmModerationForm.state.openLlmModerationApiKey" type="password">
+								<template #label>{{ i18n.ts.openLlmModerationApiKey }}</template>
+								<template #caption>{{ i18n.ts.openLlmModerationApiKeyDescription }}</template>
+							</MkInput>
+
+							<MkSwitch v-model="openLlmModerationForm.state.openLlmModerationIncludeRemote">
+								<template #label>{{ i18n.ts.openLlmModerationIncludeRemote }}</template>
+								<template #caption>{{ i18n.ts.openLlmModerationIncludeRemoteDescription }}</template>
+							</MkSwitch>
+
+							<div class="_gaps_s">
+								<div>{{ i18n.ts.openLlmModerationVisibilities }}</div>
+								<div style="display: flex; flex-wrap: wrap; gap: 8px;">
+									<MkCheckbox
+										v-for="visibility in openLlmVisibilityOptions"
+										:key="visibility.value"
+										v-model="openLlmModerationForm.state.openLlmModerationVisibilities"
+										:value="visibility.value"
+									>
+										{{ visibility.label }}
+									</MkCheckbox>
+								</div>
+								<div class="_gaps_s" style="font-size: 0.85em; opacity: 0.8;">{{ i18n.ts.openLlmModerationVisibilitiesDescription }}</div>
+							</div>
+
+							<FormLink to="/admin/llm-moderation">{{ i18n.ts.openLlmModerationQueueLink }}</FormLink>
+						</div>
+					</MkFolder>
+				</SearchMarker>
+
 				<SearchMarker :keywords="['hidden', 'tags', 'hashtags']">
 					<MkFolder>
 						<template #icon><SearchIcon><i class="ti ti-eye-off"></i></SearchIcon></template>
@@ -188,24 +232,60 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import * as Misskey from 'misskey-js';
 import XServerRules from './server-rules.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkInput from '@/components/MkInput.vue';
 import MkTextarea from '@/components/MkTextarea.vue';
+import MkCheckbox from '@/components/MkCheckbox.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { fetchInstance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { useMkSelect } from '@/composables/use-mkselect.js';
+import { useForm } from '@/composables/use-form.js';
 import MkButton from '@/components/MkButton.vue';
+import MkFormFooter from '@/components/MkFormFooter.vue';
 import FormLink from '@/components/form/link.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkSelect from '@/components/MkSelect.vue';
 
 const meta = await misskeyApi('admin/meta');
+
+const defaultLlmVisibilities = ['public', 'public_non_ltl', 'home', 'followers', 'specified'] as (typeof Misskey.noteVisibilities)[number][];
+const openLlmVisibilityLabels = i18n.ts._visibility as Record<string, string>;
+const openLlmVisibilityOptions = [
+	{ value: 'public', label: openLlmVisibilityLabels.public ?? 'Public' },
+	{ value: 'public_non_ltl', label: openLlmVisibilityLabels.public_non_ltl ?? 'Public (non-LTL)' },
+	{ value: 'home', label: openLlmVisibilityLabels.home ?? 'Home' },
+	{ value: 'followers', label: openLlmVisibilityLabels.followers ?? 'Followers' },
+	{ value: 'specified', label: openLlmVisibilityLabels.specified ?? 'Direct' },
+];
+
+const openLlmModerationForm = useForm({
+	openLlmModerationEnabled: meta.openLlmModerationEnabled,
+	openLlmModerationApiKey: '',
+	openLlmModerationIncludeRemote: meta.openLlmModerationIncludeRemote,
+	openLlmModerationVisibilities: (meta.openLlmModerationVisibilities ?? defaultLlmVisibilities) as (typeof Misskey.noteVisibilities)[number][],
+}, async (state) => {
+	const payload: Misskey.Endpoints['admin/update-meta']['req'] = {
+		openLlmModerationEnabled: state.openLlmModerationEnabled,
+		openLlmModerationIncludeRemote: state.openLlmModerationIncludeRemote,
+		openLlmModerationVisibilities: state.openLlmModerationVisibilities as Misskey.Endpoints['admin/update-meta']['req']['openLlmModerationVisibilities'],
+	};
+	if (openLlmModerationApiKeyChanged.value) {
+		const trimmedApiKey = state.openLlmModerationApiKey.trim();
+		payload.openLlmModerationApiKey = trimmedApiKey === '' ? null : trimmedApiKey;
+	}
+	await os.apiWithDialog('admin/update-meta', payload);
+	fetchInstance(true);
+});
+const openLlmModerationApiKeyChanged = ref(false);
+watch(() => openLlmModerationForm.state.openLlmModerationApiKey, (value, prev) => {
+	openLlmModerationApiKeyChanged.value = true;
+});
 
 const enableRegistration = ref(!meta.disableRegistration);
 const emailRequiredForSignup = ref(meta.emailRequiredForSignup);

@@ -29,7 +29,7 @@ export class MiMeta {
 	})
 	public rootUserId: MiUser['id'] | null;
 
-	@ManyToOne(type => MiUser, {
+	@ManyToOne(() => MiUser, {
 		onDelete: 'SET NULL',
 		nullable: true,
 	})
@@ -327,6 +327,29 @@ export class MiMeta {
 		default: false,
 	})
 	public enableSensitiveMediaDetectionForVideos: boolean;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public openLlmModerationEnabled: boolean;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public openLlmModerationApiKey: string | null;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public openLlmModerationIncludeRemote: boolean;
+
+	@Column('varchar', {
+		length: 64,
+		array: true,
+		default: ['public', 'public_non_ltl', 'home', 'followers', 'specified'],
+	})
+	public openLlmModerationVisibilities: string[];
 
 	@Column('boolean', {
 		default: false,
@@ -777,7 +800,11 @@ export class MiMeta {
 	@Column('jsonb', {
 		default: { },
 	})
-	public clientOptions: Record<string, any>;
+	public clientOptions: {
+		entrancePageStyle: 'classic' | 'simple';
+		showTimelineForVisitor: boolean;
+		showActivitiesForVisitor: boolean;
+	};
 
 	@Column('varchar', {
 		length: 1024,

@@ -27,6 +27,7 @@
  * login - ログイン
  * loginFailed - ログインに失敗
  * createToken - トークン作成
+ * llmModerationQueue - LLMモデレーションキューの通知
  * app - アプリ通知
  * test - テスト通知（サーバー側）
  */
@@ -54,6 +55,7 @@ export const notificationTypes = [
 	'login',
 	'loginFailed',
 	'createToken',
+	'llmModerationQueue',
 	'app',
 	'test',
 ] as const;

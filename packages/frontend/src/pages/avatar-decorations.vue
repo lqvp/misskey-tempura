@@ -49,7 +49,7 @@ function load() {
 
 load();
 
-async function add(ev: MouseEvent) {
+async function add(ev: PointerEvent) {
 	const { dispose } = await os.popupAsyncWithDialog(import('./avatar-decoration-edit-dialog.vue').then(x => x.default), {
 	}, {
 		done: result => {
@@ -61,13 +61,24 @@ async function add(ev: MouseEvent) {
 	});
 }
 
-async function edit(decoration) {
+type AvatarDecorationEditable = Pick<
+	Misskey.entities.AdminAvatarDecorationsListResponse[number],
+	'id' | 'name' | 'url' | 'roleIdsThatCanBeUsedThisDecoration'
+> & {
+	description: string | null;
+};
+
+async function edit(decoration: AvatarDecorationEditable) {
 	const { dispose } = await os.popupAsyncWithDialog(import('./avatar-decoration-edit-dialog.vue').then(x => x.default), {
 		avatarDecoration: decoration,
 	}, {
 		done: result => {
 			if (result.updated) {
 				const index = avatarDecorations.value.findIndex(x => x.id === decoration.id);
+				if (index === -1) {
+					console.warn('avatar decoration not found', decoration.id);
+					return;
+				}
 				avatarDecorations.value[index] = {
 					...avatarDecorations.value[index],
 					...result.updated,

@@ -57,6 +57,7 @@ import { trackPromise } from '@/misc/promise-tracker.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { CollapsedQueue } from '@/misc/collapsed-queue.js';
 import { LoggerService } from '@/core/LoggerService.js';
+import { OpenLlmModerationService } from '@/core/OpenLlmModerationService.js';
 import type Logger from '@/logger.js';
 import { CacheService } from '@/core/CacheService.js';
 import { isQuote, isRenote } from '@/misc/is-renote.js';
@@ -272,6 +273,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 		private utilityService: UtilityService,
 		private userBlockingService: UserBlockingService,
 		private loggerService: LoggerService,
+		private openLlmModerationService: OpenLlmModerationService,
 		private cacheService: CacheService,
 	) {
 		this.logger = this.loggerService.getLogger('note-create-service');
@@ -769,6 +771,12 @@ export class NoteCreateService implements OnApplicationShutdown {
 		if (note.visibility !== 'specified' && (this.meta.enableChartsForRemoteUser || (user.host == null))) {
 			this.perUserNotesChart.update(user, note, true);
 		}
+
+		trackPromise(this.openLlmModerationService.moderateNote(note, {
+			text: data.text,
+			cw: data.cw,
+			pollChoices: data.poll?.choices ?? null,
+		}));
 
 		// Register host
 		if (this.meta.enableStatsForFederatedInstances) {

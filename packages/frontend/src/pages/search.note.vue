@@ -30,10 +30,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</ul>
 				</div>
 
-				<MkRadios v-model="searchOperator">
+				<MkRadios
+					v-model="searchOperator"
+					:options="searchOperatorOptions"
+				>
 					<template #label>{{ i18n.ts._advancedSearch._searchOperator.label }}</template>
-					<option value="and">{{ i18n.ts._advancedSearch._searchOperator.and }}</option>
-					<option value="or">{{ i18n.ts._advancedSearch._searchOperator.or }}</option>
 				</MkRadios>
 
 				<MkInput
@@ -44,37 +45,35 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #caption>{{ i18n.ts._advancedSearch.excludeWordsCaption }}</template>
 				</MkInput>
 
-				<MkRadios v-model="visibilitySelect">
+				<MkRadios
+					v-model="visibilitySelect"
+					:options="visibilityOptions"
+				>
 					<template #label>{{ i18n.ts.visibility }}</template>
-					<option value="all" default>{{ i18n.ts.all }}</option>
-					<option value="public">{{ i18n.ts._visibility.public	}}</option>
-					<option value="home">{{ i18n.ts._visibility.home	}}</option>
-					<option value="followers">{{ i18n.ts._visibility.followers	}}</option>
-					<option value="specified">{{ i18n.ts._visibility.specified	}}</option>
 				</MkRadios>
-				<MkRadios v-model="hasFiles">
+				<MkRadios
+					v-model="hasFiles"
+					:options="triStateOptions"
+				>
 					<template #label>{{ i18n.ts._noteSearch._type.withFiles }}</template>
-					<option value="all">{{ i18n.ts.all }}</option>
-					<option value="with">{{ i18n.ts._noteSearch._option.with }}</option>
-					<option value="without">{{ i18n.ts._noteSearch._option.without }}</option>
 				</MkRadios>
-				<MkRadios v-model="hasCw">
+				<MkRadios
+					v-model="hasCw"
+					:options="triStateOptions"
+				>
 					<template #label>{{ i18n.ts._noteSearch._type.cw }}</template>
-					<option value="all" default>{{ i18n.ts.all }}</option>
-					<option value="with">{{ i18n.ts._noteSearch._option.with }}</option>
-					<option value="without">{{ i18n.ts._noteSearch._option.without }}</option>
 				</MkRadios>
-				<MkRadios v-model="hasReply">
+				<MkRadios
+					v-model="hasReply"
+					:options="triStateOptions"
+				>
 					<template #label>{{ i18n.ts._noteSearch._type.reply }}</template>
-					<option value="all" default>{{ i18n.ts.all }}</option>
-					<option value="with">{{ i18n.ts._noteSearch._option.with }}</option>
-					<option value="without">{{ i18n.ts._noteSearch._option.without }}</option>
 				</MkRadios>
-				<MkRadios v-model="hasPoll">
+				<MkRadios
+					v-model="hasPoll"
+					:options="triStateOptions"
+				>
 					<template #label>{{ i18n.ts._noteSearch._type.poll }}</template>
-					<option value="all" default>{{ i18n.ts.all }}</option>
-					<option value="with">{{ i18n.ts._noteSearch._option.with }}</option>
-					<option value="without">{{ i18n.ts._noteSearch._option.without }}</option>
 				</MkRadios>
 
 				<div class="_gaps_s">
@@ -100,11 +99,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<template #header>{{ i18n.ts.options }}</template>
 
 			<div class="_gaps_m">
-				<MkRadios v-model="searchScope">
-					<option v-if="instance.federation !== 'none' && noteSearchableScope === 'global'" value="all">{{ i18n.ts._search.searchScopeAll }}</option>
-					<option value="local">{{ instance.federation === 'none' ? i18n.ts._search.searchScopeAll : i18n.ts._search.searchScopeLocal }}</option>
-					<option v-if="instance.federation !== 'none' && noteSearchableScope === 'global'" value="server">{{ i18n.ts._search.searchScopeServer }}</option>
-					<option value="user">{{ i18n.ts._search.searchScopeUser }}</option>
+				<MkRadios
+					v-model="searchScope"
+					:options="searchScopeDef"
+				>
 				</MkRadios>
 
 				<div v-if="instance.federation !== 'none' && searchScope === 'server'" :class="$style.subOptionRoot">
@@ -152,7 +150,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 								<MkUserCardMini
 									:user="user"
 									:withChart="false"
-									:class="$style.userSelectedCard"
 								/>
 							</div>
 							<div>
@@ -226,6 +223,26 @@ import MkRadios from '@/components/MkRadios.vue';
 import MkUserCardMini from '@/components/MkUserCardMini.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import { Paginator } from '@/utility/paginator.js';
+import type { MkRadiosOption } from '@/components/MkRadios.vue';
+
+const searchOperatorOptions: MkRadiosOption[] = [
+	{ value: 'and', label: i18n.ts._advancedSearch._searchOperator.and },
+	{ value: 'or', label: i18n.ts._advancedSearch._searchOperator.or },
+];
+
+const visibilityOptions: MkRadiosOption[] = [
+	{ value: 'all', label: i18n.ts.all },
+	{ value: 'public', label: i18n.ts._visibility.public },
+	{ value: 'home', label: i18n.ts._visibility.home },
+	{ value: 'followers', label: i18n.ts._visibility.followers },
+	{ value: 'specified', label: i18n.ts._visibility.specified },
+];
+
+const triStateOptions: MkRadiosOption[] = [
+	{ value: 'all', label: i18n.ts.all },
+	{ value: 'with', label: i18n.ts._noteSearch._option.with },
+	{ value: 'without', label: i18n.ts._noteSearch._option.without },
+];
 
 const props = withDefaults(defineProps<{
 	query?: string;
@@ -320,6 +337,24 @@ const searchScope = ref<'all' | 'local' | 'server' | 'user'>((() => {
 	if (hostInput.value) return 'server';
 	return 'all';
 })());
+
+const searchScopeDef = computed<MkRadiosOption[]>(() => {
+	const options: MkRadiosOption[] = [];
+
+	if (instance.federation !== 'none' && noteSearchableScope === 'global') {
+		options.push({ value: 'all', label: i18n.ts._search.searchScopeAll });
+	}
+
+	options.push({ value: 'local', label: instance.federation === 'none' ? i18n.ts._search.searchScopeAll : i18n.ts._search.searchScopeLocal });
+
+	if (instance.federation !== 'none' && noteSearchableScope === 'global') {
+		options.push({ value: 'server', label: i18n.ts._search.searchScopeServer });
+	}
+
+	options.push({ value: 'user', label: i18n.ts._search.searchScopeUser });
+
+	return options;
+});
 
 type SearchParams = {
 	readonly query: string;

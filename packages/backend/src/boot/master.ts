@@ -4,8 +4,6 @@
  */
 
 import * as fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname } from 'node:path';
 import * as os from 'node:os';
 import cluster from 'node:cluster';
 import chalk from 'chalk';
@@ -16,11 +14,6 @@ import type { Config } from '@/config.js';
 import { showMachineInfo } from '@/misc/show-machine-info.js';
 import { envOption } from '@/env.js';
 import { jobQueue, server } from './common.js';
-
-const _filename = fileURLToPath(import.meta.url);
-const _dirname = dirname(_filename);
-
-const meta = JSON.parse(fs.readFileSync(`${_dirname}/../../../../built/meta.json`, 'utf-8'));
 
 const logger = new Logger('core', 'cyan');
 const bootLogger = logger.createSubLogger('boot', 'magenta');
@@ -43,10 +36,10 @@ function parseVersionInfo(version: string) {
 	return { baseMisskeyVersion, forkVersionString };
 }
 
-function greet() {
+function greet(props: { version: string }) {
 	if (!envOption.quiet) {
 		//#region logo
-		const { baseMisskeyVersion, forkVersionString } = parseVersionInfo(meta.version);
+		const { baseMisskeyVersion, forkVersionString } = parseVersionInfo(props.version);
 		console.log(themeColor(' __                                                       '));
 		console.log(themeColor('/\\ \\__                                                    '));
 		console.log(themeColor('\\ \\ ,_\\    __    ___ ___   _____   __  __  _ __    __     '));
@@ -68,7 +61,7 @@ function greet() {
 
 	bootLogger.info('Welcome to Misskey!');
 
-	const { baseMisskeyVersion, forkVersionString } = parseVersionInfo(meta.version);
+	const { baseMisskeyVersion, forkVersionString } = parseVersionInfo(props.version);
 	bootLogger.info(`Base: Misskey ${baseMisskeyVersion}`, null, true);
 	if (forkVersionString) {
 		bootLogger.info(`Fork: ${forkVersionString}`, null, true);
@@ -83,15 +76,15 @@ export async function masterMain() {
 
 	// initialize app
 	try {
-		greet();
+		config = loadConfigBoot();
+		greet({ version: config.version });
 		showEnvironment();
 		await showMachineInfo(bootLogger);
 		showNodejsVersion();
-		config = loadConfigBoot();
 		//await connectDb();
 		if (config.pidFile) fs.writeFileSync(config.pidFile, process.pid.toString());
 	} catch (e) {
-		bootLogger.error('Fatal error occurred during initialization', null, true);
+		bootLogger.error('Fatal error occurred during initialization: ' + e, null, true);
 		process.exit(1);
 	}
 

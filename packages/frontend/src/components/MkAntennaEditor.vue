@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<div class="_spacer" style="--MI_SPACER-w: 700px;">
+	<div class="_spacer" style="--MI_SPACER-w: 700px;">
 	<div>
 		<div class="_gaps_m">
 			<MkInput v-model="name">
@@ -22,13 +22,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</MkTextarea>
 			<MkSwitch v-model="excludeBots">{{ i18n.ts.antennaExcludeBots }}</MkSwitch>
 			<MkSwitch v-model="withReplies">{{ i18n.ts.withReplies }}</MkSwitch>
+			<MkSwitch v-model="isScoringMode">{{ i18n.ts._tempuraFutureAntenna.scoringMode }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
 			<MkTextarea v-model="keywords">
 				<template #label>{{ i18n.ts.antennaKeywords }}</template>
 				<template #caption>{{ i18n.ts.antennaKeywordsDescription }}</template>
 			</MkTextarea>
 			<MkTextarea v-model="excludeKeywords">
 				<template #label>{{ i18n.ts.antennaExcludeKeywords }}</template>
-				<template #caption>{{ i18n.ts.antennaKeywordsDescription }}</template>
+				<template #caption>{{ isScoringMode ? i18n.ts._tempuraFutureAntenna.scoringModeDescription : i18n.ts.antennaKeywordsDescription }}</template>
+			</MkTextarea>
+			<MkTextarea v-if="isScoringMode" v-model="mustExcludeKeywords">
+				<template #label>{{ i18n.ts._tempuraFutureAntenna.mustExcludeKeywords }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+				<template #caption>{{ i18n.ts._tempuraFutureAntenna.mustExcludeKeywordsDescription }}</template>
 			</MkTextarea>
 			<MkSwitch v-model="localOnly">{{ i18n.ts.localOnly }}</MkSwitch>
 			<MkSwitch v-model="caseSensitive">{{ i18n.ts.caseSensitive }}</MkSwitch>
@@ -78,6 +83,7 @@ const initialAntenna = deepMerge<PartialAllowedAntenna>(props.antenna ?? {}, {
 	users: [],
 	keywords: [],
 	excludeKeywords: [],
+	mustExcludeKeywords: [],
 	excludeBots: false,
 	withReplies: false,
 	caseSensitive: false,
@@ -88,6 +94,7 @@ const initialAntenna = deepMerge<PartialAllowedAntenna>(props.antenna ?? {}, {
 	hasUnreadNote: false,
 	notify: false,
 	onlyFollowers: false,
+	expression: null,
 });
 
 const emit = defineEmits<{
@@ -128,6 +135,7 @@ const name = ref<string>(initialAntenna.name);
 const users = ref<string>(initialAntenna.users.join('\n'));
 const keywords = ref<string>(initialAntenna.keywords.map(x => x.join(' ')).join('\n'));
 const excludeKeywords = ref<string>(initialAntenna.excludeKeywords.map(x => x.join(' ')).join('\n'));
+const mustExcludeKeywords = ref<string>(initialAntenna.mustExcludeKeywords ? initialAntenna.mustExcludeKeywords.map(x => x.join(' ')).join('\n') : '');
 const caseSensitive = ref<boolean>(initialAntenna.caseSensitive);
 const localOnly = ref<boolean>(initialAntenna.localOnly);
 const excludeBots = ref<boolean>(initialAntenna.excludeBots);
@@ -136,6 +144,7 @@ const withFile = ref<boolean>(initialAntenna.withFile);
 const excludeNotesInSensitiveChannel = ref<boolean>(initialAntenna.excludeNotesInSensitiveChannel);
 const onlyFollowers = ref<boolean>(initialAntenna.onlyFollowers);
 const userLists = ref<Misskey.entities.UserList[] | null>(null);
+const isScoringMode = ref<boolean>(initialAntenna.expression === 'SCORE');
 
 watch(() => src.value, async () => {
 	if (src.value === 'list' && userLists.value === null) {
@@ -157,7 +166,9 @@ async function saveAntenna() {
 		users: users.value.trim().split('\n').map(x => x.trim()),
 		keywords: keywords.value.trim().split('\n').map(x => x.trim().split(' ')),
 		excludeKeywords: excludeKeywords.value.trim().split('\n').map(x => x.trim().split(' ')),
+		mustExcludeKeywords: mustExcludeKeywords.value.trim().split('\n').map(x => x.trim().split(' ')),
 		onlyFollowers: onlyFollowers.value,
+		expression: isScoringMode.value ? 'SCORE' : null,
 	};
 
 	if (initialAntenna.id == null) {

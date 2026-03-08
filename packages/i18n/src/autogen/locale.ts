@@ -1953,6 +1953,54 @@ export interface Locale extends ILocale {
      */
     "moderationLogs": string;
     /**
+     * LLMモデレーション
+     */
+    "llmModeration": string;
+    /**
+     * LLMモデレーションキュー
+     */
+    "llmModerationQueue": string;
+    /**
+     * LLMモデレーション
+     */
+    "openLlmModeration": string;
+    /**
+     * LLMモデレーションAPIで投稿を検出し、モデレーターの確認用にフラグを立てます。
+     */
+    "openLlmModerationDescription": string;
+    /**
+     * LLMモデレーションを有効化
+     */
+    "openLlmModerationEnabled": string;
+    /**
+     * LLM APIキー
+     */
+    "openLlmModerationApiKey": string;
+    /**
+     * サーバーに保存されます。秘密にしてください。
+     */
+    "openLlmModerationApiKeyDescription": string;
+    /**
+     * リモート投稿も対象にする
+     */
+    "openLlmModerationIncludeRemote": string;
+    /**
+     * 連合先の投稿もチェックします。
+     */
+    "openLlmModerationIncludeRemoteDescription": string;
+    /**
+     * 対象の公開範囲
+     */
+    "openLlmModerationVisibilities": string;
+    /**
+     * 選択した公開範囲のみAPIへ送信します。
+     */
+    "openLlmModerationVisibilitiesDescription": string;
+    /**
+     * モデレーションキューを開く
+     */
+    "openLlmModerationQueueLink": string;
+    /**
      * {n}人が投稿
      */
     "nUsersMentioned": ParameterizedString<"n">;
@@ -2264,6 +2312,10 @@ export interface Locale extends ILocale {
      * {x}を上限に
      */
     "limitTo": ParameterizedString<"x">;
+    /**
+     * 画面幅が広いときはメディアリストを横並びで表示する
+     */
+    "showMediaListByGridInWideArea": string;
     /**
      * フォロー申請はありません
      */
@@ -4032,6 +4084,14 @@ export interface Locale extends ILocale {
      * 未対応の通報があります。
      */
     "thereIsUnresolvedAbuseReportWarning": string;
+    /**
+     * 未対応のLLMモデレーション項目があります。
+     */
+    "thereIsUnresolvedLlmModerationQueueWarning": string;
+    /**
+     * LLMモデレーションの新しい項目があります。
+     */
+    "newLlmModerationQueueItem": string;
     /**
      * 承認待ちのユーザーがいます。
      */
@@ -5859,6 +5919,10 @@ export interface Locale extends ILocale {
      * ゼロ埋め
      */
     "zeroPadding": string;
+    /**
+     * 設定項目はありません
+     */
+    "nothingToConfigure": string;
     "_imageEditing": {
         "_vars": {
             /**
@@ -6576,6 +6640,56 @@ export interface Locale extends ILocale {
          * 内容が正当でない通報の場合は「否認」を選択し、否定的にケースが解決されたことをマークします。
          */
         "resolveTutorial": string;
+    };
+    "_llmModerationQueue": {
+        /**
+         * LLMモデレーションでフラグされた投稿がここに表示されます。
+         */
+        "description": string;
+        /**
+         * 投稿元
+         */
+        "origin": string;
+        /**
+         * フラグカテゴリ
+         */
+        "flaggedCategories": string;
+        /**
+         * カテゴリスコア
+         */
+        "categoryScores": string;
+        /**
+         * 警告を送る
+         */
+        "warnUser": string;
+        /**
+         * 通知メッセージ
+         */
+        "warnUserPrompt": string;
+        /**
+         * 投稿を削除
+         */
+        "deleteNote": string;
+        /**
+         * この投稿を削除しますか？
+         */
+        "deleteNoteConfirm": string;
+        /**
+         * ユーザーを凍結
+         */
+        "suspendUser": string;
+        /**
+         * このユーザーを凍結しますか？
+         */
+        "suspendUserConfirm": string;
+        /**
+         * 解決
+         */
+        "resolve": string;
+        /**
+         * 投稿が見つからないか削除されています。
+         */
+        "noteMissing": string;
     };
     "_delivery": {
         /**
@@ -8614,11 +8728,11 @@ export interface Locale extends ILocale {
             /**
              * 最終アクティブ日時が～未満
              */
-            "activedMoreThan": string;
+            "activatedMoreThan": string;
             /**
              * 最終アクティブ日時が～以上
              */
-            "activedLessThan": string;
+            "activatedLessThan": string;
             /**
              * ～かつ～
              */
@@ -9770,6 +9884,10 @@ export interface Locale extends ILocale {
          */
         "write:mutes": string;
         /**
+         * ノートを見る
+         */
+        "read:notes": string;
+        /**
          * ノートを作成・削除する
          */
         "write:notes": string;
@@ -9862,6 +9980,18 @@ export interface Locale extends ILocale {
          */
         "read:admin:abuse-user-reports": string;
         /**
+         * LLMモデレーションキューを見る
+         */
+        "read:admin:llm-moderation": string;
+        /**
+         * アカウントの承認を行う
+         */
+        "write:admin:approve-account": string;
+        /**
+         * アカウントの承認を却下する
+         */
+        "write:admin:decline-account": string;
+        /**
          * ユーザーアカウントを削除する
          */
         "write:admin:delete-account": string;
@@ -9897,6 +10027,10 @@ export interface Locale extends ILocale {
          * ユーザーからの通報を解決する
          */
         "write:admin:resolve-abuse-user-report": string;
+        /**
+         * LLMモデレーションキューを管理する
+         */
+        "write:admin:llm-moderation": string;
         /**
          * メールを送る
          */
@@ -9953,6 +10087,10 @@ export interface Locale extends ILocale {
          * モデレーションノートを操作する
          */
         "write:admin:user-note": string;
+        /**
+         * ユーザーの相互リンクを設定する
+         */
+        "write:admin:user-mutual-link": string;
         /**
          * ロールを操作する
          */
@@ -10336,7 +10474,7 @@ export interface Locale extends ILocale {
          */
         "clicker": string;
         /**
-         * 今日誕生日のユーザー
+         * もうすぐ誕生日のユーザー
          */
         "birthdayFollowings": string;
         /**
@@ -10383,6 +10521,144 @@ export interface Locale extends ILocale {
          * 連合ジョブキュー
          */
         "federationJobQueue": string;
+    };
+    "_widgetOptions": {
+        /**
+         * ヘッダーを表示
+         */
+        "showHeader": string;
+        /**
+         * 背景を透明にする
+         */
+        "transparent": string;
+        /**
+         * 高さ
+         */
+        "height": string;
+        "_button": {
+            /**
+             * 色付き
+             */
+            "colored": string;
+        };
+        "_clock": {
+            /**
+             * サイズ
+             */
+            "size": string;
+            /**
+             * 針の太さ
+             */
+            "thickness": string;
+            /**
+             * 細い
+             */
+            "thicknessThin": string;
+            /**
+             * 普通
+             */
+            "thicknessMedium": string;
+            /**
+             * 太い
+             */
+            "thicknessThick": string;
+            /**
+             * 文字盤の目盛り
+             */
+            "graduations": string;
+            /**
+             * ドット
+             */
+            "graduationDots": string;
+            /**
+             * アラビア数字
+             */
+            "graduationArabic": string;
+            /**
+             * 目盛りをフェード
+             */
+            "fadeGraduations": string;
+            /**
+             * 秒針のアニメーション
+             */
+            "sAnimation": string;
+            /**
+             * リアル
+             */
+            "sAnimationElastic": string;
+            /**
+             * 滑らか
+             */
+            "sAnimationEaseOut": string;
+            /**
+             * 24時間表示
+             */
+            "twentyFour": string;
+            /**
+             * 時刻
+             */
+            "labelTime": string;
+            /**
+             * タイムゾーン
+             */
+            "labelTz": string;
+            /**
+             * 時刻とタイムゾーン
+             */
+            "labelTimeAndTz": string;
+            /**
+             * タイムゾーン
+             */
+            "timezone": string;
+            /**
+             * ミリ秒を表示
+             */
+            "showMs": string;
+            /**
+             * ラベルを表示
+             */
+            "showLabel": string;
+        };
+        "_jobQueue": {
+            /**
+             * 音を鳴らす
+             */
+            "sound": string;
+        };
+        "_rss": {
+            /**
+             * RSSフィードのURL
+             */
+            "url": string;
+            /**
+             * 更新間隔(秒)
+             */
+            "refreshIntervalSec": string;
+            /**
+             * 最大表示件数
+             */
+            "maxEntries": string;
+        };
+        "_rssTicker": {
+            /**
+             * 表示順をシャッフル
+             */
+            "shuffle": string;
+            /**
+             * ティッカーのスクロール速度(秒)
+             */
+            "duration": string;
+            /**
+             * 逆方向にスクロール
+             */
+            "reverse": string;
+        };
+        "_birthdayFollowings": {
+            /**
+             * 期間
+             */
+            "period": string;
+        };
     };
     "_cw": {
         /**
@@ -11226,6 +11502,18 @@ export interface Locale extends ILocale {
          */
         "testNotification": string;
         /**
+         * LLMモデレーションキュー
+         */
+        "llmModerationQueue": string;
+        /**
+         * LLMモデレーションキューに新しい項目があります。
+         */
+        "llmModerationQueueDescription": string;
+        /**
+         * LLMモデレーションキューを開く
+         */
+        "llmModerationQueueLink": string;
+        /**
          * 通知の表示を確かめる
          */
         "checkNotificationBehavior": string;
@@ -11396,6 +11684,10 @@ export interface Locale extends ILocale {
              * 通知のテスト
              */
             "test": string;
+            /**
+             * LLMモデレーションキュー
+             */
+            "llmModerationQueue": string;
             /**
              * 連携アプリからの通知
              */
@@ -11844,6 +12136,10 @@ export interface Locale extends ILocale {
          */
         "createUserAnnouncement": string;
         /**
+         * ロール対象のお知らせを作成
+         */
+        "createRolesAnnouncement": string;
+        /**
          * 全体のお知らせを更新
          */
         "updateGlobalAnnouncement": string;
@@ -11852,6 +12148,10 @@ export interface Locale extends ILocale {
          */
         "updateUserAnnouncement": string;
         /**
+         * ロール対象のお知らせを更新
+         */
+        "updateRolesAnnouncement": string;
+        /**
          * 全体のお知らせを削除
          */
         "deleteGlobalAnnouncement": string;
@@ -11859,6 +12159,10 @@ export interface Locale extends ILocale {
          * ユーザーのお知らせを削除
          */
         "deleteUserAnnouncement": string;
+        /**
+         * ロール対象のお知らせを削除
+         */
+        "deleteRolesAnnouncement": string;
         /**
          * パスワードをリセット
          */
@@ -11931,6 +12235,10 @@ export interface Locale extends ILocale {
          * ユーザーのバナーを解除
          */
         "unsetUserBanner": string;
+        /**
+         * ユーザーの相互リンクを解除
+         */
+        "unsetUserMutualLink": string;
         /**
          * SystemWebhookを作成
          */
@@ -13364,10 +13672,6 @@ export interface Locale extends ILocale {
          * 変更を破棄して終了しますか？
          */
         "discardChangesConfirm": string;
-        /**
-         * 設定項目はありません
-         */
-        "nothingToConfigure": string;
         /**
          * 画像の読み込みに失敗しました
          */
@@ -16209,5 +16513,23 @@ export interface Locale extends ILocale {
              */
             "unknown": string;
         };
+    };
+    "_tempuraFutureAntenna": {
+        /**
+         * 高度なスコアリング
+         */
+        "scoringMode": string;
+        /**
+         * ヒット時の評価スコアを1ポイント減算し、表示優先度を下げます。(通常モードでは変更しません)
+         */
+        "scoringModeDescription": string;
+        /**
+         * 強制除外キーワード
+         */
+        "mustExcludeKeywords": string;
+        /**
+         * これらのキーワードのいずれかが一致した場合、スコアに関係なく除外されます。
+         */
+        "mustExcludeKeywordsDescription": string;
     };
 }

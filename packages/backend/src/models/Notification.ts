@@ -170,6 +170,10 @@ export type MiNotification = {
 	 */
 	appAccessTokenId: MiAccessToken['id'] | null;
 } | {
+	type: 'llmModerationQueue';
+	id: string;
+	createdAt: string;
+} | {
 	type: 'test';
 	id: string;
 	createdAt: string;

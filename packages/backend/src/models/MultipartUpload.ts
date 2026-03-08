@@ -64,7 +64,7 @@ export class MiMultipartUpload {
 	})
 	public force: boolean;
 
-	@Column('integer', {
+	@Column('bigint', {
 		comment: 'The total size of the file in bytes.',
 	})
 	public totalSize: number;

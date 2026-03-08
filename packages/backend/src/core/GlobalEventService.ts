@@ -15,6 +15,7 @@ import type { MiDriveFile } from '@/models/DriveFile.js';
 import type { MiDriveFolder } from '@/models/DriveFolder.js';
 import type { MiUserList } from '@/models/UserList.js';
 import type { MiAbuseUserReport } from '@/models/AbuseUserReport.js';
+import type { MiLlmModerationQueue } from '@/models/LlmModerationQueue.js';
 import type { MiSignin } from '@/models/Signin.js';
 import type { MiPage } from '@/models/Page.js';
 import type { MiWebhook } from '@/models/Webhook.js';
@@ -38,11 +39,7 @@ export interface BroadcastTypes {
 		emojis: Packed<'EmojiDetailed'>[];
 	};
 	emojiDeleted: {
-		emojis: {
-			id?: string;
-			name: string;
-			[other: string]: any;
-		}[];
+		emojis: Packed<'EmojiDetailed'>[];
 	};
 	announcementCreated: {
 		announcement: Packed<'Announcement'>;
@@ -161,6 +158,12 @@ export interface AdminEventTypes {
 		targetUserId: MiUser['id'],
 		reporterId: MiUser['id'],
 		comment: string;
+	};
+	newLlmModerationQueueItem: {
+		id: MiLlmModerationQueue['id'];
+		noteId: MiNote['id'];
+		noteUserId: MiUser['id'];
+		flaggedCategories: string[];
 	};
 }
 

@@ -2,7 +2,6 @@
  * SPDX-FileCopyrightText: syuilo and misskey-project
  * SPDX-License-Identifier: AGPL-3.0-only
  */
-
 import { Inject, Injectable } from '@nestjs/common';
 import * as Redis from 'ioredis';
 import { In } from 'typeorm';
@@ -21,10 +20,79 @@ import type { MiUser } from '@/models/User.js';
 import { CacheService } from './CacheService.js';
 import type { OnApplicationShutdown } from '@nestjs/common';
 
+export interface Match {
+	keyword: string;
+	start: number;
+	end: number;
+	groupIndex?: number;
+	type?: 'include' | 'exclude';
+}
+
 @Injectable()
 export class AntennaService implements OnApplicationShutdown {
 	private antennasFetched: boolean;
 	private antennas: MiAntenna[];
+
+	private getCombinedNoteText(note: MiNote | Packed<'Note'>): string {
+		return [note.text, note.cw]
+			.filter((t): t is string => t != null && t !== '')
+			.join('\n');
+	}
+
+	private escapeRegExp(s: string): string {
+		return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+	}
+
+	@bindThis
+	public findAllMatches(text: string, keywords: string[], caseSensitive: boolean): Match[] {
+		if (!text) return [];
+		const matches: Match[] = [];
+
+		for (const keyword of keywords) {
+			if (!keyword) continue;
+			const escapedKeyword = this.escapeRegExp(keyword);
+			const pattern = `(?=(${escapedKeyword}))`;
+			const flags = caseSensitive ? 'gu' : 'gui';
+			const regex = new RegExp(pattern, flags);
+
+			for (const match of text.matchAll(regex)) {
+				matches.push({
+					keyword: keyword,
+					start: match.index!,
+					end: match.index! + match[1].length,
+				});
+			}
+		}
+		return matches;
+	}
+
+	@bindThis
+	public deduplicateOverlappingMatches(matches: Match[]): Match[] {
+		if (matches.length === 0) return [];
+
+		// キーワードごとにグループ化して重複排除
+		const byKeyword = new Map<string, Match[]>();
+		for (const m of matches) {
+			if (!byKeyword.has(m.keyword)) {
+				byKeyword.set(m.keyword, []);
+			}
+			byKeyword.get(m.keyword)!.push(m);
+		}
+
+		const result: Match[] = [];
+		for (const [, keywordMatches] of byKeyword) {
+			// 同一キーワード内でのみ重複排除
+			const sorted = [...keywordMatches].sort((a, b) => a.start - b.start);
+			let lastEnd = -1;
+			for (const match of sorted) {
+				if (match.start >= lastEnd) {
+					result.push(match);
+					lastEnd = match.end;
+				}
+			}
+		}
+		return result;
+	}
 
 	constructor(
 		@Inject(DI.redisForTimelines)
@@ -169,44 +237,128 @@ export class AntennaService implements OnApplicationShutdown {
 			if (accts.includes(this.utilityService.getFullApAccount(noteUser.username, noteUser.host).toLowerCase())) return false;
 		}
 
+		// 強制除外ワードは、スコアリングモード利用時のみ有効とする
+		if (antenna.expression === 'SCORE') {
+			const mustExcludeKeywords = antenna.mustExcludeKeywords
+				// Clean up
+				.map(xs => xs.filter(x => x !== ''))
+				.filter(xs => xs.length > 0);
+
+			if (mustExcludeKeywords.length > 0) {
+				if (note.text != null || note.cw != null) {
+					const _text = this.getCombinedNoteText(note);
+
+					const matched = mustExcludeKeywords.some(and =>
+						and.every(keyword =>
+							antenna.caseSensitive
+								? _text.includes(keyword)
+								: _text.toLowerCase().includes(keyword.toLowerCase()),
+						));
+
+					if (matched) return false;
+				}
+			}
+		}
+
 		const keywords = antenna.keywords
 			// Clean up
 			.map(xs => xs.filter(x => x !== ''))
 			.filter(xs => xs.length > 0);
-
-		if (keywords.length > 0) {
-			if (note.text == null && note.cw == null) return false;
-
-			const _text = (note.text ?? '') + '\n' + (note.cw ?? '');
-
-			const matched = keywords.some(and =>
-				and.every(keyword =>
-					antenna.caseSensitive
-						? _text.includes(keyword)
-						: _text.toLowerCase().includes(keyword.toLowerCase()),
-				));
-
-			if (!matched) return false;
-		}
 
 		const excludeKeywords = antenna.excludeKeywords
 			// Clean up
 			.map(xs => xs.filter(x => x !== ''))
 			.filter(xs => xs.length > 0);
 
-		if (excludeKeywords.length > 0) {
-			if (note.text == null && note.cw == null) return false;
+		if (antenna.expression === 'SCORE') {
+			let score = 0;
 
-			const _text = (note.text ?? '') + '\n' + (note.cw ?? '');
+			if (keywords.length > 0 || excludeKeywords.length > 0) {
+				if (note.text != null || note.cw != null) {
+					const _text = this.getCombinedNoteText(note);
+					const collectMatches = (keywordGroups: string[][], type: 'include' | 'exclude'): Match[] => {
+						return keywordGroups.flatMap((and, groupIdx) =>
+							this.findAllMatches(_text, and, antenna.caseSensitive).map(match => ({
+								...match,
+								groupIndex: groupIdx,
+								type: type,
+							})),
+						);
+					};
 
-			const matched = excludeKeywords.some(and =>
-				and.every(keyword =>
-					antenna.caseSensitive
-						? _text.includes(keyword)
-						: _text.toLowerCase().includes(keyword.toLowerCase()),
-				));
+					const allMatches: Match[] = [
+						...collectMatches(keywords, 'include'),
+						...collectMatches(excludeKeywords, 'exclude'),
+					];
 
-			if (matched) return false;
+					// グループごと（type, groupIndex）に重複排除を行い、独立評価
+					const validMatchesMap = new Map<string, Match[]>();
+					const groupBy = (m: Match) => `${m.type}:${m.groupIndex}`;
+
+					const groupedMatches = new Map<string, Match[]>();
+					for (const match of allMatches) {
+						const key = groupBy(match);
+						if (!groupedMatches.has(key)) {
+							groupedMatches.set(key, []);
+						}
+						groupedMatches.get(key)!.push(match);
+					}
+
+					// 各グループ内で重複排除
+					for (const [key, matches] of groupedMatches) {
+						validMatchesMap.set(key, this.deduplicateOverlappingMatches(matches));
+					}
+
+					// スコア計算
+					const countMetGroups = (keywordGroups: string[][], type: 'include' | 'exclude'): number => {
+						return keywordGroups.reduce((count, and, i) => {
+							const key = `${type}:${i}`;
+							const groupMatches = validMatchesMap.get(key) || [];
+							// このグループ内のすべてのキーワードについて、少なくとも1つの有効なものが存在するか確認
+							if (and.every(kw => groupMatches.some(m => m.keyword === kw))) {
+								return count + 1;
+							}
+							return count;
+						}, 0);
+					};
+
+					score += countMetGroups(keywords, 'include');
+					score -= countMetGroups(excludeKeywords, 'exclude');
+				}
+			}
+
+			if (keywords.length > 0 && score <= 0) return false;
+			if (keywords.length === 0 && excludeKeywords.length > 0 && score < 0) return false;
+		} else {
+			if (keywords.length > 0) {
+				if (note.text == null && note.cw == null) return false;
+
+				const _text = this.getCombinedNoteText(note);
+
+				const matched = keywords.some(and =>
+					and.every(keyword =>
+						antenna.caseSensitive
+							? _text.includes(keyword)
+							: _text.toLowerCase().includes(keyword.toLowerCase()),
+					));
+
+				if (!matched) return false;
+			}
+
+			if (excludeKeywords.length > 0) {
+				if (note.text != null || note.cw != null) {
+					const _text = this.getCombinedNoteText(note);
+
+					const matched = excludeKeywords.some(and =>
+						and.every(keyword =>
+							antenna.caseSensitive
+								? _text.includes(keyword)
+								: _text.toLowerCase().includes(keyword.toLowerCase()),
+						));
+
+					if (matched) return false;
+				}
+			}
 		}
 
 		if (antenna.withFile) {

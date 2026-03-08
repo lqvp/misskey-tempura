@@ -35,26 +35,25 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</div>
 		<div v-else>
 			<div v-if="editMode" :class="$style.editModeContainer">
-				<Sortable
+				<MkDraggable
 					v-model="widgetProps.widgets"
-					itemKey="id"
-					handle=".handle"
-					:animation="150"
+					direction="vertical"
+					manualDragStart
 					:class="$style.sortableList"
 					@update:modelValue="save"
 				>
-					<template #item="{ element, index }">
+					<template #default="{ item, index, dragStart }">
 						<div :class="$style.sortableItem">
-							<span :class="[$style.itemHandle, 'handle']">
+							<span :class="$style.itemHandle" :draggable="true" @dragstart.stop="dragStart">
 								<i class="ti ti-grip-vertical"></i>
 							</span>
-							<span :class="$style.itemTitle">{{ i18n.ts._widgets[element.name] || element.name }}</span>
+							<span :class="$style.itemTitle">{{ i18n.ts._widgets[item.name as keyof typeof i18n.ts._widgets] || item.name }}</span>
 							<button :class="[$style.actionButton, $style.deleteButton]" @click.stop="removeWidget(index)">
 								<i class="ti ti-trash"></i>
 							</button>
 						</div>
 					</template>
-				</Sortable>
+				</MkDraggable>
 				<div :class="$style.editModeFooter">
 					<button :class="$style.doneButton" @click="toggleEditMode">
 						<i class="ti ti-check"></i>
@@ -79,17 +78,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { ref, computed, watch } from 'vue';
 import { useInterval } from '@@/js/use-interval.js';
-import Sortable from 'vuedraggable';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { GetFormResultType } from '@/utility/form.js';
 import MkContainer from '@/components/MkContainer.vue';
 import MkResult from '@/components/global/MkResult.vue';
+import MkDraggable from '@/components/MkDraggable.vue';
 import { i18n } from '@/i18n.js';
 import * as os from '@/os.js';
 import { widgets as widgetDefs } from '@/widgets/index.js';
+import type { WidgetName } from '@/widgets/index.js';
 
-const name = i18n.ts._widgets.nestedWidget;
+const name = 'nestedWidget' as const;
 
 const widgetPropsDef = {
 	showHeader: { type: 'boolean' as const, default: true },
@@ -98,7 +98,7 @@ const widgetPropsDef = {
 	maxHeight: { type: 'number' as const, default: 0, description: '0 の場合は無制限' },
 	widgets: {
 		type: 'array' as const,
-		default: [] as Array<{ id: string; name: string; data: Record<string, any> }>,
+		default: [] as Array<{ id: string; name: WidgetName; data: Record<string, any> }>,
 		hidden: true,
 	},
 };
@@ -127,7 +127,7 @@ const editMode = ref(false);
 
 const currentWidget = computed(() => {
 	const widget = widgetProps.widgets[currentIndex.value];
-	return widget as { id: string; name: string; data: Record<string, any> } | null;
+	return widget as { id: string; name: WidgetName; data: Record<string, any> } | null;
 });
 
 const hasWidgets = computed(() => widgetProps.widgets.length > 0);
@@ -181,7 +181,7 @@ const addWidget = async () => {
 
 	const newWidget = {
 		id: crypto.randomUUID(),
-		name: widgetName as string,
+		name: widgetName as WidgetName,
 		data: {},
 	};
 

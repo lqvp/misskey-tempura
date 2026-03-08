@@ -10,6 +10,7 @@ import {
 	MiAbuseUserReport,
 	MiAccessToken,
 	MiAd,
+	MiLlmModerationQueue,
 	MiAnnouncement,
 	MiAnnouncementRole,
 	MiAnnouncementRead,
@@ -353,6 +354,12 @@ const $abuseReportNotificationRecipientRepository: Provider = {
 	inject: [DI.db],
 };
 
+const $llmModerationQueueRepository: Provider = {
+	provide: DI.llmModerationQueueRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiLlmModerationQueue).extend(miRepository as MiRepository<MiLlmModerationQueue>),
+	inject: [DI.db],
+};
+
 const $registrationTicketsRepository: Provider = {
 	provide: DI.registrationTicketsRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiRegistrationTicket).extend(miRepository as MiRepository<MiRegistrationTicket>),
@@ -639,6 +646,7 @@ const $contactFormsRepository: Provider = {
 		$hashtagsRepository,
 		$abuseUserReportsRepository,
 		$abuseReportNotificationRecipientRepository,
+		$llmModerationQueueRepository,
 		$registrationTicketsRepository,
 		$authSessionsRepository,
 		$accessTokensRepository,
@@ -724,6 +732,7 @@ const $contactFormsRepository: Provider = {
 		$hashtagsRepository,
 		$abuseUserReportsRepository,
 		$abuseReportNotificationRecipientRepository,
+		$llmModerationQueueRepository,
 		$registrationTicketsRepository,
 		$authSessionsRepository,
 		$accessTokensRepository,

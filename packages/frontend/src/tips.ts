@@ -20,6 +20,7 @@ export const TIPS = [
 	'abuses',
 	'contactFormCategories',
 	'contactForms',
+	'llmModerationQueue',
 ] as const;
 
 export function closeTip(tip: typeof TIPS[number]) {
@@ -34,7 +35,7 @@ export function resetAllTips() {
 }
 
 export function hideAllTips() {
-	const v = {};
+	const v = {} as Record<typeof TIPS[number], boolean>;
 	for (const k of TIPS) {
 		v[k] = true;
 	}

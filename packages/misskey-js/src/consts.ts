@@ -13,13 +13,13 @@ import type {
 	Role,
 	ReversiGameDetailed,
 	SystemWebhook,
-	UserLite,
 	ChatRoom,
 } from './autogen/models.js';
 
 export const notificationTypes = [
 	'note',
 	'follow',
+	'unfollow',
 	'mention',
 	'reply',
 	'renote',
@@ -41,6 +41,7 @@ export const notificationTypes = [
 	'test',
 	'login',
 	'createToken',
+	'llmModerationQueue',
 ] as const;
 
 export const noteVisibilities = ['public', 'public_non_ltl', 'home', 'followers', 'specified'] as const;
@@ -90,6 +91,7 @@ export const permissions = [
 	'read:flash-likes',
 	'write:flash-likes',
 	'read:admin:abuse-user-reports',
+	'read:admin:llm-moderation',
 	'write:admin:delete-account',
 	'write:admin:delete-all-files-of-a-user',
 	'write:admin:approve-account',
@@ -101,6 +103,7 @@ export const permissions = [
 	'write:admin:reset-password',
 	'write:admin:regenerate-user-token',
 	'write:admin:resolve-abuse-user-report',
+	'write:admin:llm-moderation',
 	'write:admin:send-email',
 	'read:admin:server-info',
 	'read:admin:show-moderation-log',
