@@ -669,6 +669,10 @@ export interface Locale extends ILocale {
      */
     "unsuspend": string;
     /**
+     * 保留中
+     */
+    "pending": string;
+    /**
      * ブロックしますか？
      */
     "blockConfirm": string;
