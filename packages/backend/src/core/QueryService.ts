@@ -262,7 +262,7 @@ export class QueryService {
 
 	@bindThis
 	public generateVisibilityQuery(q: SelectQueryBuilder<any>, me?: { id: MiUser['id'] } | null): void {
-		// This code must always be synchronized with the checks in Notes.isVisibleForMe.
+		// This code must always be synchronized with the checks in NoteEntityService.isVisibleForMe and Stream abstract class Channel.isNoteVisibleForMe.
 		if (me == null) {
 			const profileSubQuery = this.userProfilesRepository.createQueryBuilder('profile')
 				.select('1')

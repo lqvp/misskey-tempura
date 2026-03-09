@@ -508,3 +508,5 @@ export type FilterUnionByProperty<
 
 // Added for receiveSpecifiedNotesFrom feature
 export const receiveSpecifiedNotesFromVisibilities = ['all', 'following', 'nobody'] as const;
+
+export type Awaitable<T> = T | Promise<T>;
