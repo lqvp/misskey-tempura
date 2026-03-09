@@ -148,7 +148,7 @@ export class NoteDeleteService {
 			//#region ローカルの投稿なら削除アクティビティを配送
 			if (this.userEntityService.isLocalUser(user) && !note.localOnly) {
 				let renote: MiNote | null = null;
-				this.globalEventService.publishNoteStream(note.id, 'madePrivate', {
+				this.globalEventService.publishNoteStream(note, 'madePrivate', {
 					deletedAt: deletedAt,
 				});
 				// if deleted note is renote
