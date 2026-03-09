@@ -137,7 +137,7 @@ export class NoteEntityService implements OnModuleInit {
 	@bindThis
 	public async shouldHideNote(packedNote: Packed<'Note'>, meId: MiUser['id'] | null, isAdmin = false): Promise<boolean> {
 		// If the user is root, always return true
-		if (isAdmin) return true;
+		if (isAdmin) return false;
 
 		if (meId === packedNote.userId) return false;
 		// TODO: isVisibleForMe を使うようにしても良さそう(型違うけど)
