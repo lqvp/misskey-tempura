@@ -26,7 +26,6 @@ import type { MiNote } from '@/models/Note.js';
 import { QueryService } from '@/core/QueryService.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
-import { FanoutTimelineEndpointService } from '@/core/FanoutTimelineEndpointService.js';
 import { ActivityPubAccessControlService } from '@/core/ActivityPubAccessControlService.js';
 import { bindThis } from '@/decorators.js';
 import { IActivity } from '@/core/activitypub/type.js';
