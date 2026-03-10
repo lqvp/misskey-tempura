@@ -913,15 +913,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	) {
 		super(meta, paramDef, async () => {
 			const instance = await this.metaService.fetch(true);
-			const normalizedOpenLlmModerationVisibilities = (
-				Array.isArray(instance.openLlmModerationVisibilities)
-					? instance.openLlmModerationVisibilities.filter((visibility): visibility is (typeof DEFAULT_OPEN_LLM_MODERATION_VISIBILITIES)[number] =>
-						DEFAULT_OPEN_LLM_MODERATION_VISIBILITIES.includes(visibility as (typeof DEFAULT_OPEN_LLM_MODERATION_VISIBILITIES)[number]))
-					: []
-			);
-			const openLlmModerationVisibilities = normalizedOpenLlmModerationVisibilities.length > 0
-				? normalizedOpenLlmModerationVisibilities
-				: [...DEFAULT_OPEN_LLM_MODERATION_VISIBILITIES];
+			const normalizedOpenLlmModerationVisibilities = Array.isArray(instance.openLlmModerationVisibilities)
+				? instance.openLlmModerationVisibilities.filter((visibility): visibility is (typeof DEFAULT_OPEN_LLM_MODERATION_VISIBILITIES)[number] =>
+					DEFAULT_OPEN_LLM_MODERATION_VISIBILITIES.includes(visibility as (typeof DEFAULT_OPEN_LLM_MODERATION_VISIBILITIES)[number]))
+				: null;
+			const openLlmModerationVisibilities = normalizedOpenLlmModerationVisibilities
+				?? [...DEFAULT_OPEN_LLM_MODERATION_VISIBILITIES];
 
 			const proxy = await this.systemAccountService.fetch('proxy');
 

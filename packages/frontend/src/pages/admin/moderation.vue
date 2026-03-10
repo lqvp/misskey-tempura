@@ -260,13 +260,10 @@ const normalizedOpenLlmModerationIncludeRemote = meta.openLlmModerationIncludeRe
 const normalizedOpenLlmModerationVisibilities = normalizeOpenLlmModerationVisibilities(meta.openLlmModerationVisibilities);
 
 const openLlmVisibilityLabels = i18n.ts._visibility as Record<string, string>;
-const openLlmVisibilityOptions = [
-	{ value: 'public', label: openLlmVisibilityLabels.public ?? 'Public' },
-	{ value: 'public_non_ltl', label: openLlmVisibilityLabels.public_non_ltl ?? 'Public (non-LTL)' },
-	{ value: 'home', label: openLlmVisibilityLabels.home ?? 'Home' },
-	{ value: 'followers', label: openLlmVisibilityLabels.followers ?? 'Followers' },
-	{ value: 'specified', label: openLlmVisibilityLabels.specified ?? 'Direct' },
-];
+const openLlmVisibilityOptions = defaultOpenLlmModerationVisibilities.map((value) => ({
+	value,
+	label: openLlmVisibilityLabels[value] ?? value,
+}));
 
 const openLlmModerationForm = useForm({
 	openLlmModerationEnabled: normalizedOpenLlmModerationEnabled,
