@@ -23,7 +23,7 @@ jobs:
           platform=${{ matrix.platform }}
           echo "PLATFORM_PAIR=${platform//\//-}" >> $GITHUB_ENV
       - name: Check out the repo
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.3.0
       - name: Parse version from package.json
         id: parse_version
         run: |
