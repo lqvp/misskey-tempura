@@ -11,6 +11,8 @@ import { DI } from '@/di-symbols.js';
 import { DEFAULT_POLICIES } from '@/core/RoleService.js';
 import { SystemAccountService } from '@/core/SystemAccountService.js';
 
+const DEFAULT_OPEN_LLM_MODERATION_VISIBILITIES = ['public', 'public_non_ltl', 'home', 'followers', 'specified'] as const;
+
 export const meta = {
 	tags: ['meta'],
 
@@ -911,6 +913,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	) {
 		super(meta, paramDef, async () => {
 			const instance = await this.metaService.fetch(true);
+			const normalizedOpenLlmModerationVisibilities = Array.isArray(instance.openLlmModerationVisibilities)
+				? instance.openLlmModerationVisibilities.filter((visibility): visibility is (typeof DEFAULT_OPEN_LLM_MODERATION_VISIBILITIES)[number] =>
+					DEFAULT_OPEN_LLM_MODERATION_VISIBILITIES.includes(visibility as (typeof DEFAULT_OPEN_LLM_MODERATION_VISIBILITIES)[number]))
+				: null;
+			const openLlmModerationVisibilities = normalizedOpenLlmModerationVisibilities
+				?? [...DEFAULT_OPEN_LLM_MODERATION_VISIBILITIES];
 
 			const proxy = await this.systemAccountService.fetch('proxy');
 
@@ -984,10 +992,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				sensitiveMediaDetectionSensitivity: instance.sensitiveMediaDetectionSensitivity,
 				setSensitiveFlagAutomatically: instance.setSensitiveFlagAutomatically,
 				enableSensitiveMediaDetectionForVideos: instance.enableSensitiveMediaDetectionForVideos,
-				openLlmModerationEnabled: instance.openLlmModerationEnabled,
+				openLlmModerationEnabled: instance.openLlmModerationEnabled ?? false,
 				openLlmModerationApiConfigured: instance.openLlmModerationApiKey != null,
-				openLlmModerationIncludeRemote: instance.openLlmModerationIncludeRemote,
-				openLlmModerationVisibilities: instance.openLlmModerationVisibilities,
+				openLlmModerationIncludeRemote: instance.openLlmModerationIncludeRemote ?? false,
+				openLlmModerationVisibilities,
 				proxyAccountId: proxy.id,
 				email: instance.email,
 				smtpSecure: instance.smtpSecure,
