@@ -48,7 +48,7 @@ import * as os from '@/os.js';
 
 const OPEN_METEO_API = 'https://api.open-meteo.com/v1/forecast';
 const OPEN_METEO_GEOCODING_API = 'https://geocoding-api.open-meteo.com/v1/search';
-const WEATHER_ICON_BASE = 'https://basmilius.github.io/weather-icons/production/fill/all'; // Meteocons by Bas Milius (MIT)
+const WEATHER_ICON_BASE = 'https://cdn.meteocons.com/3.0.0-next.10/svg/fill'; // Meteocons by Bas Milius (MIT)
 const MAX_FORECAST_DAYS = 3;
 
 const name = 'weather' as const;
