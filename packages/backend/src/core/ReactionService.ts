@@ -135,34 +135,37 @@ export class ReactionService {
 			const custom = reaction.match(decodeCustomEmojiRegexp);
 			if (custom) {
 				const reacterHost = this.utilityService.toPunyNullable(user.host);
+				const localHost = this.utilityService.toPunyNullable(this.config.host);
 
 				let emoji: MiEmoji | null = null;
 
 				const name = custom[1];
 				const noteHost = note.userHost;
-				const emojiDeclaratedHost = custom?.[2]; // リアクションで指定された絵文字のホスト
+				const emojiDeclaratedHostRaw = custom.at(2); // リアクションで指定された絵文字のホスト
+				const emojiDeclaratedHost = emojiDeclaratedHostRaw == null
+					? undefined
+					: emojiDeclaratedHostRaw === '.'
+						? null
+						: this.utilityService.toPunyNullable(emojiDeclaratedHostRaw);
+				const resolvedDeclaratedHost = emojiDeclaratedHost === localHost ? null : emojiDeclaratedHost;
 
 				let hostsToSearch: (string | null | undefined)[] = [];
 
 				if (!reacterHost) { // ローカルユーザーからのリアクション
-					if (emojiDeclaratedHost === this.config.host) { // :emoji@local:
-						hostsToSearch = [null, reacterHost];
-					} else if (emojiDeclaratedHost) { // :emoji@remote:
-						hostsToSearch = [emojiDeclaratedHost, reacterHost, null];
+					if (resolvedDeclaratedHost !== undefined) { // :emoji@host: / :emoji@.:
+						hostsToSearch = [resolvedDeclaratedHost, null, noteHost];
 					} else { // :emoji:
-						hostsToSearch = [null, reacterHost, noteHost];
+						hostsToSearch = [null, noteHost];
 					}
 				} else { // リモートユーザーからのリアクション
-					if (emojiDeclaratedHost === this.config.host) { // :emoji@local: (リモートユーザーがローカル絵文字を指定)
-						hostsToSearch = [null, reacterHost];
-					} else if (emojiDeclaratedHost) { // :emoji@remote:
-						hostsToSearch = [emojiDeclaratedHost, reacterHost];
-					} else { // :emoji: (リモートユーザーがホスト指定なし)
-						hostsToSearch = [reacterHost]; // リアクターのホストのみ検索
+					if (resolvedDeclaratedHost !== undefined) { // :emoji@host: / :emoji@.:
+						hostsToSearch = [resolvedDeclaratedHost];
+					} else { // :emoji: (host 指定なし)
+						hostsToSearch = [reacterHost];
 					}
 				}
 
-				const hosts = hostsToSearch.filter((x): x is string | null => x !== undefined);
+				const hosts = [...new Set(hostsToSearch.filter((x): x is string | null => x !== undefined))];
 
 				for (const host of hosts) {
 					emoji = host == null
