@@ -123,6 +123,42 @@ class NotificationManager {
 				visibleUserIds = new Set(this.note.visibleUserIds.filter(id => targetUserIds.includes(id)));
 				break;
 
+			// TODO: フォロワー限定ノートにフォロワーではない人がメンションされた場合通知されるのが正しい挙動なのか確認（一部に挙動の不一致がありそう）。現状は通知されるためフィルタしない
+			// case 'followers': {
+			// 	const followers = await this.followingsRepository.find({
+			// 		where: {
+			// 			followeeId: this.note.userId,
+			// 			followerId: In(targetUserIds),
+			// 			isFollowerHibernated: false,
+			// 		},
+			// 		select: ['followerId'],
+			// 	});
+			// 	visibleUserIds = new Set(followers.map(f => f.followerId));
+			// 	break;
+			// }
+
+			default:
+				visibleUserIds = new Set();
+				break;
+		}
+
+		if (this.queue.length === 0) {
+			return;
+		}
+
+		const targetUserIds = this.queue.map(x => x.target);
+		let visibleUserIds: Set<string>;
+
+		switch (this.note.visibility) {
+			case 'public':
+			case 'home':
+				visibleUserIds = new Set(targetUserIds);
+				break;
+
+			case 'specified':
+				visibleUserIds = new Set(this.note.visibleUserIds.filter(id => targetUserIds.includes(id)));
+				break;
+
 			case 'followers': {
 				const followers = await this.followingsRepository.find({
 					where: {
