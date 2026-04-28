@@ -111,7 +111,6 @@ class NotificationManager {
 		}
 
 		const targetUserIds = this.queue.map(x => x.target);
-		let visibleUserIds: Set<string>;
 
 		switch (this.note.visibility) {
 			case 'public':
@@ -146,7 +145,6 @@ class NotificationManager {
 			return;
 		}
 
-		const targetUserIds = this.queue.map(x => x.target);
 		let visibleUserIds: Set<string>;
 
 		switch (this.note.visibility) {
