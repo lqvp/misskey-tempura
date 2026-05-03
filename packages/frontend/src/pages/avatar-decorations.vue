@@ -8,15 +8,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<template #header><MkPageHeader :actions="headerActions" :tabs="headerTabs"/></template>
 	<div class="_spacer" style="--MI_SPACER-w: 800px;">
 		<div class="_gaps">
-			<MkAvatarDecorationSelect
-				v-model="selectedDecoration"
-				:showLocalDecorations="true"
-				:showRemoteDecorations="true"
-				@select="edit"
-			/>
-
-			<div v-if="loading">
-				<MkLoading/>
+			<div :class="$style.decorations">
+				<div
+					v-for="avatarDecoration in avatarDecorations"
+					:key="avatarDecoration.id"
+					v-panel
+					:class="$style.decoration"
+					@click="edit(avatarDecoration)"
+				>
+					<div :class="$style.decorationName"><MkCondensedLine :minScale="0.5">{{ avatarDecoration.name }}</MkCondensedLine></div>
+					<MkAvatar style="width: 60px; height: 60px;" :user="$i" :decorations="[{ url: avatarDecoration.url }]" forceShowDecoration/>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -31,14 +33,13 @@ import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
-import MkButton from '@/components/MkButton.vue';
-import MkAvatarDecorationSelect from '@/components/MkAvatarDecorationSelect.vue';
 
 const $i = ensureSignin();
 
 const selectedDecoration = ref<string | null>(null);
 const loading = ref(true);
 const avatarDecorations = ref<Misskey.entities.AdminAvatarDecorationsListResponse>([]);
+const groupedDecorations = computed(() => groupAvatarDecorations(avatarDecorations.value));
 
 function load() {
 	misskeyApi('admin/avatar-decorations/list').then(_avatarDecorations => {
@@ -51,6 +52,7 @@ load();
 
 async function add(ev: PointerEvent) {
 	const { dispose } = await os.popupAsyncWithDialog(import('./avatar-decoration-edit-dialog.vue').then(x => x.default), {
+		categories: Object.keys(groupedDecorations.value),
 	}, {
 		done: result => {
 			if (result.created) {
@@ -70,7 +72,7 @@ type AvatarDecorationEditable = Pick<
 
 async function edit(decoration: AvatarDecorationEditable) {
 	const { dispose } = await os.popupAsyncWithDialog(import('./avatar-decoration-edit-dialog.vue').then(x => x.default), {
-		avatarDecoration: decoration,
+		avatarDecoration: avatarDecoration,
 	}, {
 		done: result => {
 			if (result.updated) {

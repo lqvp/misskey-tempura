@@ -85,7 +85,6 @@ const contributors = [
 	{ github: 'lqvp', name: 'lqvp' },
 	{ github: 'r-ca', name: 'ろむねこ' },
 	{ github: 'chan-mai', name: 'mq1' },
-	{ github: 'ruruke', name: 'ruruke' },
 	{ github: 'Steve-0628', name: 'すてさん' },
 	{ github: 'r2iz', name: 'r2iz' },
 	{ github: 'tai-cha', name: 'taichan' },
@@ -99,9 +98,9 @@ const officialServers = [
 ];
 
 const endorsedServers = [
-	{ name: 'アストラルル', url: 'https://astla.ruru.homes', description: 'デバッグに貢献しているサーバー' },
 	{ name: 'しゃふすきー', url: 'https://shahu.ski', description: 'tempuraを利用した信頼できるサーバー' },
 	{ name: 'もじもじデート', url: 'https://mojimoji.date', description: 'tempuraを利用した信頼できるサーバー2' },
+	{ name: 'よるすきー', url: 'https://misskey.blue', description: 'tempuraを利用した信頼できるサーバー3' },
 ];
 
 type ServerMeta = {

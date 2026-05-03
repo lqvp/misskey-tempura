@@ -83,3 +83,5 @@ vite.config.local-dev.ts.timestamp-*
 .favorites.json
 
 .serena
+
+AGENTS.md

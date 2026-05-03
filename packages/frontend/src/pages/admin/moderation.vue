@@ -246,6 +246,7 @@ import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { useMkSelect } from '@/composables/use-mkselect.js';
 import { useForm } from '@/composables/use-form.js';
+import { defaultOpenLlmModerationVisibilities, normalizeOpenLlmModerationVisibilities } from './moderation.llm.js';
 import MkButton from '@/components/MkButton.vue';
 import MkFormFooter from '@/components/MkFormFooter.vue';
 import FormLink from '@/components/form/link.vue';
@@ -254,21 +255,21 @@ import MkSelect from '@/components/MkSelect.vue';
 
 const meta = await misskeyApi('admin/meta');
 
-const defaultLlmVisibilities = ['public', 'public_non_ltl', 'home', 'followers', 'specified'] as (typeof Misskey.noteVisibilities)[number][];
+const normalizedOpenLlmModerationEnabled = meta.openLlmModerationEnabled ?? false;
+const normalizedOpenLlmModerationIncludeRemote = meta.openLlmModerationIncludeRemote ?? false;
+const normalizedOpenLlmModerationVisibilities = normalizeOpenLlmModerationVisibilities(meta.openLlmModerationVisibilities);
+
 const openLlmVisibilityLabels = i18n.ts._visibility as Record<string, string>;
-const openLlmVisibilityOptions = [
-	{ value: 'public', label: openLlmVisibilityLabels.public ?? 'Public' },
-	{ value: 'public_non_ltl', label: openLlmVisibilityLabels.public_non_ltl ?? 'Public (non-LTL)' },
-	{ value: 'home', label: openLlmVisibilityLabels.home ?? 'Home' },
-	{ value: 'followers', label: openLlmVisibilityLabels.followers ?? 'Followers' },
-	{ value: 'specified', label: openLlmVisibilityLabels.specified ?? 'Direct' },
-];
+const openLlmVisibilityOptions = defaultOpenLlmModerationVisibilities.map((value) => ({
+	value,
+	label: openLlmVisibilityLabels[value] ?? value,
+}));
 
 const openLlmModerationForm = useForm({
-	openLlmModerationEnabled: meta.openLlmModerationEnabled,
+	openLlmModerationEnabled: normalizedOpenLlmModerationEnabled,
 	openLlmModerationApiKey: '',
-	openLlmModerationIncludeRemote: meta.openLlmModerationIncludeRemote,
-	openLlmModerationVisibilities: (meta.openLlmModerationVisibilities ?? defaultLlmVisibilities) as (typeof Misskey.noteVisibilities)[number][],
+	openLlmModerationIncludeRemote: normalizedOpenLlmModerationIncludeRemote,
+	openLlmModerationVisibilities: normalizedOpenLlmModerationVisibilities,
 }, async (state) => {
 	const payload: Misskey.Endpoints['admin/update-meta']['req'] = {
 		openLlmModerationEnabled: state.openLlmModerationEnabled,

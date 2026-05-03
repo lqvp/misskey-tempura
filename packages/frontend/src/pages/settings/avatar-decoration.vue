@@ -31,12 +31,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkButton danger @click="detachAllDecorations">{{ i18n.ts.detachAll }}</MkButton>
 			</div>
 
-			<MkAvatarDecorationSelect
-				v-model="selectedDecoration"
-				:showLocalDecorations="true"
-				:showRemoteDecorations="true"
-				@select="openDecoration"
-			/>
+			<div :class="$style.decorations">
+				<XDecoration
+					v-for="avatarDecoration in avatarDecorations"
+					:key="avatarDecoration.id"
+					:decoration="avatarDecoration"
+					@click="openDecoration(avatarDecoration)"
+				/>
+			</div>
 		</div>
 		<div v-else>
 			<MkLoading/>
@@ -51,19 +53,20 @@ import * as Misskey from 'misskey-js';
 import XDecoration from './avatar-decoration.decoration.vue';
 import XDialog from './avatar-decoration.dialog.vue';
 import MkButton from '@/components/MkButton.vue';
+import MkFoldableSection from '@/components/MkFoldableSection.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { ensureSignin } from '@/i.js';
 import MkInfo from '@/components/MkInfo.vue';
 import { definePage } from '@/page.js';
-import MkAvatarDecorationSelect from '@/components/MkAvatarDecorationSelect.vue';
 
 const $i = ensureSignin();
 
 const selectedDecoration = ref<string | null>(null);
 const loading = ref(true);
 const avatarDecorations = ref<Misskey.entities.GetAvatarDecorationsResponse>([]);
+const groupedDecorations = computed(() => groupAvatarDecorations(avatarDecorations.value));
 
 // Initial data loading
 misskeyApi('get-avatar-decorations').then(_avatarDecorations => {

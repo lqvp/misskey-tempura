@@ -1,4 +1,0 @@
-user-agent: *
-disallow: /
-
-# todo: sitemap
