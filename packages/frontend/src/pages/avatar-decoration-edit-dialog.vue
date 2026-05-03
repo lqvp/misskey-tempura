@@ -84,7 +84,7 @@ const $i = ensureSignin();
 
 type AvatarDecorationEditable = Pick<
 	Misskey.entities.AdminAvatarDecorationsListResponse[number],
-	'id' | 'name' | 'url' | 'roleIdsThatCanBeUsedThisDecoration'
+	'id' | 'name' | 'url' | 'category' | 'roleIdsThatCanBeUsedThisDecoration'
 > & {
 	description: string | null;
 };

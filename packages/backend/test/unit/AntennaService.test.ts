@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
 */
 import { Test, TestingModule } from '@nestjs/testing';
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AntennaService } from '../../src/core/AntennaService.js';
 import { DI } from '../../src/di-symbols.js';
 import { GlobalEventService } from '../../src/core/GlobalEventService.js';
@@ -15,14 +15,14 @@ describe('AntennaService', () => {
 	let antennaService: AntennaService;
 
 	// Mock dependencies
-	const mockRedisForTimelines = { pipeline: jest.fn(() => ({ exec: jest.fn() })) };
-	const mockRedisForSub = { on: jest.fn(), off: jest.fn() };
+	const mockRedisForTimelines = { pipeline: vi.fn(() => ({ exec: vi.fn() })) };
+	const mockRedisForSub = { on: vi.fn(), off: vi.fn() };
 	const mockAntennasRepository = {};
 	const mockUserListMembershipsRepository = {};
-	const mockCacheService = { userFollowingsCache: { fetch: jest.fn() } };
-	const mockUtilityService = { getFullApAccount: jest.fn() };
-	const mockGlobalEventService = { publishAntennaStream: jest.fn() };
-	const mockFanoutTimelineService = { push: jest.fn() };
+	const mockCacheService = { userFollowingsCache: { fetch: vi.fn() } };
+	const mockUtilityService = { getFullApAccount: vi.fn() };
+	const mockGlobalEventService = { publishAntennaStream: vi.fn() };
+	const mockFanoutTimelineService = { push: vi.fn() };
 
 	beforeEach(async () => {
 		const module: TestingModule = await Test.createTestingModule({

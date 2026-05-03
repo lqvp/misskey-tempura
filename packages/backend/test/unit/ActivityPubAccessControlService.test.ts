@@ -4,7 +4,7 @@
  */
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { describe, test, expect, beforeEach } from '@jest/globals';
+import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { ActivityPubAccessControlService } from '@/core/ActivityPubAccessControlService.js';
 import { DI } from '@/di-symbols.js';
 import { UtilityService } from '@/core/UtilityService.js';
@@ -21,21 +21,21 @@ describe('ActivityPubAccessControlService', () => {
 
 	beforeEach(async () => {
 		mockInstancesRepository = {
-			findOneBy: jest.fn(),
+			findOneBy: vi.fn(),
 		};
 
 		mockUtilityService = {
-			toPuny: jest.fn((host: string) => host.toLowerCase()),
-			isBlockedHost: jest.fn(() => false),
-			isSilencedHost: jest.fn(() => false),
+			toPuny: vi.fn((host: string) => host.toLowerCase()),
+			isBlockedHost: vi.fn(() => false),
+			isSilencedHost: vi.fn(() => false),
 		};
 
 		mockLoggerService = {
-			getLogger: jest.fn(() => ({
-				info: jest.fn(),
-				debug: jest.fn(),
-				warn: jest.fn(),
-				error: jest.fn(),
+			getLogger: vi.fn(() => ({
+				info: vi.fn(),
+				debug: vi.fn(),
+				warn: vi.fn(),
+				error: vi.fn(),
 			})),
 		};
 
