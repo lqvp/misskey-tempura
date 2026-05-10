@@ -121,6 +121,10 @@ type RoleLike = Pick<Misskey.entities.Role, 'name' | 'description' | 'isAdminist
 	policies: any;
 };
 
+type PolicyMetaRecord = {
+	[K in keyof Misskey.entities.RolePolicies]: PolicyMeta;
+};
+
 const emit = defineEmits<{
 	(ev: 'update:modelValue', v: RoleLike): void;
 }>();
@@ -165,6 +169,39 @@ const rolePermission = computed<GetMkSelectValueTypesFromDef<typeof rolePermissi
 			role.value.permissionGroup = val;
 			role.value.isAdministrator = val === 'Admin';
 			role.value.isModerator = val === 'Admin' || val === 'MainModerator';
+		}
+	},
+});
+
+const rolePolicyValues = computed<Misskey.entities.RolePolicies>({
+	get: () => {
+		return Object.fromEntries(Misskey.rolePolicies.map((ROLE_POLICY) => [
+			ROLE_POLICY,
+			role.value.policies[ROLE_POLICY].value,
+		])) as Misskey.entities.RolePolicies;
+	},
+	set: (values) => {
+		for (const ROLE_POLICY of Misskey.rolePolicies) {
+			role.value.policies[ROLE_POLICY].value = values[ROLE_POLICY];
+		}
+	},
+});
+
+const rolePolicyMeta = computed<PolicyMetaRecord>({
+	get: () => {
+		const meta = {} as PolicyMetaRecord;
+		for (const ROLE_POLICY of Misskey.rolePolicies) {
+			meta[ROLE_POLICY] = {
+				useDefault: role.value.policies[ROLE_POLICY].useDefault,
+				priority: role.value.policies[ROLE_POLICY].priority,
+			};
+		}
+		return meta;
+	},
+	set: (meta) => {
+		for (const ROLE_POLICY of Misskey.rolePolicies) {
+			role.value.policies[ROLE_POLICY].useDefault = meta[ROLE_POLICY].useDefault;
+			role.value.policies[ROLE_POLICY].priority = meta[ROLE_POLICY].priority;
 		}
 	},
 });

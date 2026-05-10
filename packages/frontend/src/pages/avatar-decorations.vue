@@ -33,6 +33,7 @@ import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
+import { groupAvatarDecorations } from '@/utility/group-avatar-decorations.js';
 
 const $i = ensureSignin();
 
@@ -65,14 +66,14 @@ async function add(ev: PointerEvent) {
 
 type AvatarDecorationEditable = Pick<
 	Misskey.entities.AdminAvatarDecorationsListResponse[number],
-	'id' | 'name' | 'url' | 'roleIdsThatCanBeUsedThisDecoration'
+	'id' | 'name' | 'url' | 'category' | 'roleIdsThatCanBeUsedThisDecoration'
 > & {
 	description: string | null;
 };
 
 async function edit(decoration: AvatarDecorationEditable) {
 	const { dispose } = await os.popupAsyncWithDialog(import('./avatar-decoration-edit-dialog.vue').then(x => x.default), {
-		avatarDecoration: avatarDecoration,
+		avatarDecoration: decoration,
 	}, {
 		done: result => {
 			if (result.updated) {
