@@ -170,6 +170,9 @@ id: 'aidx'
 #clusterLimit: 1
 #clusterOverClock: false
 
+# Number of threads of extra thread pool for CPU-intensive tasks (per worker)
+#threadPoolSize: 1
+
 # Job concurrency per worker
 # deliverJobConcurrency: 128
 # inboxJobConcurrency: 16
