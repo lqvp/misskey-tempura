@@ -86,6 +86,7 @@ type Source = {
 
 	clusterLimit?: number;
 	clusterOverClock?: boolean;
+	threadPoolSize?: number;
 
 	id: string;
 
@@ -163,6 +164,7 @@ export type Config = {
 	maxFileSize: number;
 	clusterLimit: number | undefined;
 	clusterOverClock?: boolean;
+	threadPoolSize: number;
 	id: string;
 	outgoingAddress: string | undefined;
 	outgoingAddressFamily: 'ipv4' | 'ipv6' | 'dual' | undefined;
@@ -319,6 +321,7 @@ export function loadConfig(): Config {
 		maxFileSize: config.maxFileSize ?? 262144000,
 		clusterLimit: config.clusterLimit,
 		clusterOverClock: config.clusterOverClock ?? false,
+		threadPoolSize: config.threadPoolSize ?? 1,
 		outgoingAddress: config.outgoingAddress,
 		outgoingAddressFamily: config.outgoingAddressFamily,
 		deliverJobConcurrency: config.deliverJobConcurrency,
