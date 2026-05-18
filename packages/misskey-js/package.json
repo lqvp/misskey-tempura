@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "misskey-js",
-  "version": "2026.5.2-tempura-2.0.6",
+  "version": "2026.5.3-tempura-2.0.6",
   "description": "Misskey SDK for JavaScript",
   "license": "MIT",
   "main": "./built/index.js",
