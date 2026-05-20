@@ -932,6 +932,7 @@ import { claimAchievement } from '@/utility/achievements.js';
 import { instance } from '@/instance.js';
 import { ensureSignin } from '@/i.js';
 import { genId } from '@/utility/id.js';
+import { normalizeGlobalShortcutPattern } from '@/utility/global-shortcut.js';
 import { suggestReload } from '@/utility/reload-suggest.js';
 
 const $i = ensureSignin();
@@ -940,18 +941,12 @@ const lang = ref(miLocalStorage.getItem('lang'));
 const dataSaver = ref(prefer.s.dataSaver);
 const realtimeMode = store.model('realtimeMode');
 
-const normalizeShortcutInput = (value: string) => {
-	const normalized = value.trim().toLowerCase();
-	if (normalized === '' || normalized === 'none') return null;
-	return normalized;
-};
-
 const overridedDeviceKind = prefer.model('overridedDeviceKind');
 const pollingInterval = prefer.model('pollingInterval');
-const globalShortcutPost = prefer.model('globalShortcutPost', v => v ?? 'none', v => normalizeShortcutInput(v));
-const globalShortcutDarkModeToggle = prefer.model('globalShortcutDarkModeToggle', v => v ?? 'none', v => normalizeShortcutInput(v));
-const globalShortcutSearch = prefer.model('globalShortcutSearch', v => v ?? 'none', v => normalizeShortcutInput(v));
-const globalShortcutSafeMode = prefer.model('globalShortcutSafeMode', v => v ?? 'none', v => normalizeShortcutInput(v));
+const globalShortcutPost = prefer.model('globalShortcutPost', v => v ?? 'none', v => normalizeGlobalShortcutPattern(v));
+const globalShortcutDarkModeToggle = prefer.model('globalShortcutDarkModeToggle', v => v ?? 'none', v => normalizeGlobalShortcutPattern(v));
+const globalShortcutSearch = prefer.model('globalShortcutSearch', v => v ?? 'none', v => normalizeGlobalShortcutPattern(v));
+const globalShortcutSafeMode = prefer.model('globalShortcutSafeMode', v => v ?? 'none', v => normalizeGlobalShortcutPattern(v));
 const showTitlebar = prefer.model('showTitlebar');
 const keepCw = prefer.model('keepCw');
 const serverDisconnectedBehavior = prefer.model('serverDisconnectedBehavior');

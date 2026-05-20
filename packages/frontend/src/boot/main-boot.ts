@@ -26,6 +26,7 @@ import { mainRouter } from '@/router.js';
 import { makeHotkey } from '@/utility/hotkey.js';
 import { addCustomEmoji, removeCustomEmojis, updateCustomEmojis } from '@/custom-emojis.js';
 import { initEarthquakeWarning } from '@/utility/tempura-script/earthquake-warning.js';
+import { isGlobalShortcutPreferenceKey, normalizeGlobalShortcutPattern } from '@/utility/global-shortcut.js';
 import { prefer } from '@/preferences.js';
 import { updateCurrentAccountPartial } from '@/accounts.js';
 import { migrateOldSettings } from '@/pref-migrate.js';
@@ -386,12 +387,6 @@ export async function mainBoot() {
 	// shortcut
 	let safemodeRequestCount = 0;
 	let safemodeRequestTimer: number | null = null;
-	const normalizeShortcutPattern = (value: string | null | undefined) => {
-		if (value == null) return null;
-		const normalized = value.trim().toLowerCase();
-		if (normalized === '' || normalized === 'none') return null;
-		return normalized;
-	};
 	const buildShortcutKeymap = () => {
 		const keymap: Keymap = {};
 		const setShortcut = (pattern: string | null, callback: Keymap[keyof Keymap]) => {
@@ -399,17 +394,17 @@ export async function mainBoot() {
 			keymap[pattern] = callback;
 		};
 
-		setShortcut(normalizeShortcutPattern(prefer.s.globalShortcutPost), () => {
+		setShortcut(normalizeGlobalShortcutPattern(prefer.s.globalShortcutPost), () => {
 			if ($i == null) return;
 			post();
 		});
-		setShortcut(normalizeShortcutPattern(prefer.s.globalShortcutDarkModeToggle), () => {
+		setShortcut(normalizeGlobalShortcutPattern(prefer.s.globalShortcutDarkModeToggle), () => {
 			store.set('darkMode', !store.s.darkMode);
 		});
-		setShortcut(normalizeShortcutPattern(prefer.s.globalShortcutSearch), () => {
+		setShortcut(normalizeGlobalShortcutPattern(prefer.s.globalShortcutSearch), () => {
 			mainRouter.push('/search');
 		});
-		setShortcut(normalizeShortcutPattern(prefer.s.globalShortcutSafeMode), {
+		setShortcut(normalizeGlobalShortcutPattern(prefer.s.globalShortcutSafeMode), {
 			callback: () => {
 				// mを5回押すとセーフモードに入る
 				safemodeRequestCount++;
@@ -434,12 +429,7 @@ export async function mainBoot() {
 	let shortcutHandler = makeHotkey(buildShortcutKeymap());
 	window.document.addEventListener('keydown', shortcutHandler, { passive: false });
 	prefer.on('committed', ({ key }) => {
-		if (
-			key !== 'globalShortcutPost' &&
-			key !== 'globalShortcutDarkModeToggle' &&
-			key !== 'globalShortcutSearch' &&
-			key !== 'globalShortcutSafeMode'
-		) return;
+		if (!isGlobalShortcutPreferenceKey(key)) return;
 
 		window.document.removeEventListener('keydown', shortcutHandler);
 		shortcutHandler = makeHotkey(buildShortcutKeymap());
