@@ -406,7 +406,7 @@ export async function mainBoot() {
 		});
 		setShortcut(normalizeGlobalShortcutPattern(prefer.s.globalShortcutSafeMode), {
 			callback: () => {
-				// mを5回押すとセーフモードに入る
+				// 設定されたショートカットを5回押すとセーフモードに入る
 				safemodeRequestCount++;
 				if (safemodeRequestCount >= 5) {
 					miLocalStorage.setItem('isSafeMode', 'true');
