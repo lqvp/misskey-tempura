@@ -26,6 +26,7 @@ import { mainRouter } from '@/router.js';
 import { makeHotkey } from '@/utility/hotkey.js';
 import { addCustomEmoji, removeCustomEmojis, updateCustomEmojis } from '@/custom-emojis.js';
 import { initEarthquakeWarning } from '@/utility/tempura-script/earthquake-warning.js';
+import { isGlobalShortcutPreferenceKey, normalizeGlobalShortcutPattern } from '@/utility/global-shortcut.js';
 import { prefer } from '@/preferences.js';
 import { updateCurrentAccountPartial } from '@/accounts.js';
 import { migrateOldSettings } from '@/pref-migrate.js';
@@ -386,20 +387,26 @@ export async function mainBoot() {
 	// shortcut
 	let safemodeRequestCount = 0;
 	let safemodeRequestTimer: number | null = null;
-	const keymap = {
-		'p|n': () => {
+	const buildShortcutKeymap = () => {
+		const keymap: Keymap = {};
+		const setShortcut = (pattern: string | null, callback: Keymap[keyof Keymap]) => {
+			if (pattern == null) return;
+			keymap[pattern] = callback;
+		};
+
+		setShortcut(normalizeGlobalShortcutPattern(prefer.s.globalShortcutPost), () => {
 			if ($i == null) return;
 			post();
-		},
-		'd': () => {
+		});
+		setShortcut(normalizeGlobalShortcutPattern(prefer.s.globalShortcutDarkModeToggle), () => {
 			store.set('darkMode', !store.s.darkMode);
-		},
-		's': () => {
+		});
+		setShortcut(normalizeGlobalShortcutPattern(prefer.s.globalShortcutSearch), () => {
 			mainRouter.push('/search');
-		},
-		'g': {
+		});
+		setShortcut(normalizeGlobalShortcutPattern(prefer.s.globalShortcutSafeMode), {
 			callback: () => {
-				// mを5回押すとセーフモードに入る
+				// 設定されたショートカットを5回押すとセーフモードに入る
 				safemodeRequestCount++;
 				if (safemodeRequestCount >= 5) {
 					miLocalStorage.setItem('isSafeMode', 'true');
@@ -414,9 +421,20 @@ export async function mainBoot() {
 				}
 			},
 			allowRepeat: true,
-		},
-	} as const satisfies Keymap;
-	window.document.addEventListener('keydown', makeHotkey(keymap), { passive: false });
+		});
+
+		return keymap;
+	};
+
+	let shortcutHandler = makeHotkey(buildShortcutKeymap());
+	window.document.addEventListener('keydown', shortcutHandler, { passive: false });
+	prefer.on('committed', ({ key }) => {
+		if (!isGlobalShortcutPreferenceKey(key)) return;
+
+		window.document.removeEventListener('keydown', shortcutHandler);
+		shortcutHandler = makeHotkey(buildShortcutKeymap());
+		window.document.addEventListener('keydown', shortcutHandler, { passive: false });
+	});
 
 	// もしURLのクエリにinvite-codeを持っていたらsignupダイアログを開く
 	const params = new URLSearchParams(window.location.search);

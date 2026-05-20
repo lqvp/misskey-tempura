@@ -1,3 +1,13 @@
+## Unreleased
+
+### General
+
+### Client
+- Enhance: グローバルショートカットキーを設定画面から自由に変更・無効化（none）できるように
+
+### Server
+
+
 ## 2026.5.3
 
 ### General

@@ -6418,6 +6418,34 @@ export interface Locale extends ILocale {
          */
         "timelineAndNote": string;
         /**
+         * キーボードショートカット
+         */
+        "keyboardShortcuts": string;
+        /**
+         * ショートカットキーを自由に変更できます。無効化する場合は none を入力してください。
+         */
+        "keyboardShortcutsDescription": string;
+        /**
+         * 例: ctrl+k / g|s / none
+         */
+        "keyboardShortcutNoneHint": string;
+        /**
+         * 投稿作成
+         */
+        "keyboardShortcutPost": string;
+        /**
+         * ダークモード切り替え
+         */
+        "keyboardShortcutToggleDarkMode": string;
+        /**
+         * 検索を開く
+         */
+        "keyboardShortcutSearch": string;
+        /**
+         * セーフモード切り替え
+         */
+        "keyboardShortcutSafeMode": string;
+        /**
          * 全てのテキスト要素を選択可能にする
          */
         "makeEveryTextElementsSelectable": string;

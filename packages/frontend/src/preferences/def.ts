@@ -396,6 +396,18 @@ export const PREF_DEF = definePreferences({
 	showTitlebar: {
 		default: false,
 	},
+	globalShortcutPost: {
+		default: 'p|n' as string | null,
+	},
+	globalShortcutDarkModeToggle: {
+		default: 'd' as string | null,
+	},
+	globalShortcutSearch: {
+		default: 's' as string | null,
+	},
+	globalShortcutSafeMode: {
+		default: 'g' as string | null,
+	},
 	showAvailableReactionsFirstInNote: {
 		default: false,
 	},
