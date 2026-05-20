@@ -64,6 +64,51 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</SearchMarker>
 						</MkDisableSection>
 
+						<SearchMarker :keywords="['shortcut', 'keyboard', 'hotkey', 'keybind']">
+							<MkFolder>
+								<template #label><SearchLabel>{{ i18n.ts._settings.keyboardShortcuts }}</SearchLabel></template>
+								<template #caption><SearchText>{{ i18n.ts._settings.keyboardShortcutsDescription }}</SearchText></template>
+
+								<div class="_gaps_s">
+									<SearchMarker :keywords="['post', 'note', 'create']">
+										<MkPreferenceContainer k="globalShortcutPost">
+											<MkInput v-model="globalShortcutPost">
+												<template #label><SearchLabel>{{ i18n.ts._settings.keyboardShortcutPost }}</SearchLabel></template>
+												<template #caption><SearchText>{{ i18n.ts._settings.keyboardShortcutNoneHint }}</SearchText></template>
+											</MkInput>
+										</MkPreferenceContainer>
+									</SearchMarker>
+
+									<SearchMarker :keywords="['dark', 'theme', 'mode']">
+										<MkPreferenceContainer k="globalShortcutDarkModeToggle">
+											<MkInput v-model="globalShortcutDarkModeToggle">
+												<template #label><SearchLabel>{{ i18n.ts._settings.keyboardShortcutToggleDarkMode }}</SearchLabel></template>
+												<template #caption><SearchText>{{ i18n.ts._settings.keyboardShortcutNoneHint }}</SearchText></template>
+											</MkInput>
+										</MkPreferenceContainer>
+									</SearchMarker>
+
+									<SearchMarker :keywords="['search']">
+										<MkPreferenceContainer k="globalShortcutSearch">
+											<MkInput v-model="globalShortcutSearch">
+												<template #label><SearchLabel>{{ i18n.ts._settings.keyboardShortcutSearch }}</SearchLabel></template>
+												<template #caption><SearchText>{{ i18n.ts._settings.keyboardShortcutNoneHint }}</SearchText></template>
+											</MkInput>
+										</MkPreferenceContainer>
+									</SearchMarker>
+
+									<SearchMarker :keywords="['safe', 'mode']">
+										<MkPreferenceContainer k="globalShortcutSafeMode">
+											<MkInput v-model="globalShortcutSafeMode">
+												<template #label><SearchLabel>{{ i18n.ts._settings.keyboardShortcutSafeMode }}</SearchLabel></template>
+												<template #caption><SearchText>{{ i18n.ts._settings.keyboardShortcutNoneHint }}</SearchText></template>
+											</MkInput>
+										</MkPreferenceContainer>
+									</SearchMarker>
+								</div>
+							</MkFolder>
+						</SearchMarker>
+
 						<div class="_gaps_s">
 							<SearchMarker :keywords="['titlebar', 'show']">
 								<MkPreferenceContainer k="showTitlebar">
@@ -868,6 +913,7 @@ import MkRadios from '@/components/MkRadios.vue';
 import MkRange from '@/components/MkRange.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkButton from '@/components/MkButton.vue';
+import MkInput from '@/components/MkInput.vue';
 import MkDisableSection from '@/components/MkDisableSection.vue';
 import FormLink from '@/components/form/link.vue';
 import MkLink from '@/components/MkLink.vue';
@@ -894,8 +940,18 @@ const lang = ref(miLocalStorage.getItem('lang'));
 const dataSaver = ref(prefer.s.dataSaver);
 const realtimeMode = store.model('realtimeMode');
 
+const normalizeShortcutInput = (value: string) => {
+	const normalized = value.trim().toLowerCase();
+	if (normalized === '' || normalized === 'none') return null;
+	return normalized;
+};
+
 const overridedDeviceKind = prefer.model('overridedDeviceKind');
 const pollingInterval = prefer.model('pollingInterval');
+const globalShortcutPost = prefer.model('globalShortcutPost', v => v ?? 'none', v => normalizeShortcutInput(v));
+const globalShortcutDarkModeToggle = prefer.model('globalShortcutDarkModeToggle', v => v ?? 'none', v => normalizeShortcutInput(v));
+const globalShortcutSearch = prefer.model('globalShortcutSearch', v => v ?? 'none', v => normalizeShortcutInput(v));
+const globalShortcutSafeMode = prefer.model('globalShortcutSafeMode', v => v ?? 'none', v => normalizeShortcutInput(v));
 const showTitlebar = prefer.model('showTitlebar');
 const keepCw = prefer.model('keepCw');
 const serverDisconnectedBehavior = prefer.model('serverDisconnectedBehavior');

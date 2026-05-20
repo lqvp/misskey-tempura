@@ -386,18 +386,30 @@ export async function mainBoot() {
 	// shortcut
 	let safemodeRequestCount = 0;
 	let safemodeRequestTimer: number | null = null;
-	const keymap = {
-		'p|n': () => {
+	const normalizeShortcutPattern = (value: string | null | undefined) => {
+		if (value == null) return null;
+		const normalized = value.trim().toLowerCase();
+		if (normalized === '' || normalized === 'none') return null;
+		return normalized;
+	};
+	const buildShortcutKeymap = () => {
+		const keymap: Keymap = {};
+		const setShortcut = (pattern: string | null, callback: Keymap[keyof Keymap]) => {
+			if (pattern == null) return;
+			keymap[pattern] = callback;
+		};
+
+		setShortcut(normalizeShortcutPattern(prefer.s.globalShortcutPost), () => {
 			if ($i == null) return;
 			post();
-		},
-		'd': () => {
+		});
+		setShortcut(normalizeShortcutPattern(prefer.s.globalShortcutDarkModeToggle), () => {
 			store.set('darkMode', !store.s.darkMode);
-		},
-		's': () => {
+		});
+		setShortcut(normalizeShortcutPattern(prefer.s.globalShortcutSearch), () => {
 			mainRouter.push('/search');
-		},
-		'g': {
+		});
+		setShortcut(normalizeShortcutPattern(prefer.s.globalShortcutSafeMode), {
 			callback: () => {
 				// mを5回押すとセーフモードに入る
 				safemodeRequestCount++;
@@ -414,9 +426,25 @@ export async function mainBoot() {
 				}
 			},
 			allowRepeat: true,
-		},
-	} as const satisfies Keymap;
-	window.document.addEventListener('keydown', makeHotkey(keymap), { passive: false });
+		});
+
+		return keymap;
+	};
+
+	let shortcutHandler = makeHotkey(buildShortcutKeymap());
+	window.document.addEventListener('keydown', shortcutHandler, { passive: false });
+	prefer.on('committed', ({ key }) => {
+		if (
+			key !== 'globalShortcutPost' &&
+			key !== 'globalShortcutDarkModeToggle' &&
+			key !== 'globalShortcutSearch' &&
+			key !== 'globalShortcutSafeMode'
+		) return;
+
+		window.document.removeEventListener('keydown', shortcutHandler);
+		shortcutHandler = makeHotkey(buildShortcutKeymap());
+		window.document.addEventListener('keydown', shortcutHandler, { passive: false });
+	});
 
 	// もしURLのクエリにinvite-codeを持っていたらsignupダイアログを開く
 	const params = new URLSearchParams(window.location.search);
