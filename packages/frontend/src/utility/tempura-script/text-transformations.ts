@@ -56,16 +56,24 @@ export async function transformTextWithGemini(noteText: string, onApplied: (newT
 		}
 
 		const dialogResult: string = await new Promise((resolve) => {
+			let resolved = false;
+			const safeResolve = (value: string) => {
+				if (!resolved) {
+					resolved = true;
+					resolve(value);
+				}
+			};
+
 			const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkDialog.vue')), {
 				title: '変換結果',
 				text: transformedText,
 				actions: [
-					{ text: '決定', primary: true, callback: () => { dispose(); resolve('confirm'); } },
-					{ text: '再生成', callback: () => { dispose(); resolve('regenerate'); } },
-					{ text: 'キャンセル', danger: true, callback: () => { dispose(); resolve('cancel'); } },
+					{ text: '決定', primary: true, callback: () => { dispose(); safeResolve('confirm'); } },
+					{ text: '再生成', callback: () => { dispose(); safeResolve('regenerate'); } },
+					{ text: 'キャンセル', danger: true, callback: () => { dispose(); safeResolve('cancel'); } },
 				],
 			}, {
-				closed: () => resolve('cancel'),
+				closed: () => safeResolve('cancel'),
 			});
 		});
 

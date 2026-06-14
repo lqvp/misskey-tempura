@@ -8,6 +8,8 @@ export class AddLlmModerationQueueNoteFk1781401914034 {
 
 	async up(queryRunner) {
 		await queryRunner.query(`ALTER TABLE "llm_moderation_queue" ADD "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()`);
+		// Clean up orphan records before adding FK constraint
+		await queryRunner.query(`DELETE FROM "llm_moderation_queue" WHERE "noteId" NOT IN (SELECT "id" FROM "note")`);
 		await queryRunner.query(`ALTER TABLE "llm_moderation_queue" ADD CONSTRAINT "FK_llm_moderation_queue_noteId" FOREIGN KEY ("noteId") REFERENCES "note"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
 	}
 

@@ -25,6 +25,13 @@ import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { isQuote, isRenote } from '@/misc/is-renote.js';
 import { IdService } from '@/core/IdService.js';
 
+export class TooManyNotesError extends Error {
+	constructor(message: string = 'too many notes') {
+		super(message);
+		this.name = 'TooManyNotesError';
+	}
+}
+
 @Injectable()
 export class NoteDeleteService {
 	constructor(
@@ -190,7 +197,7 @@ export class NoteDeleteService {
 			return query.getCount();
 		} else {
 			if (await query.getCount() > 500) {
-				throw new Error('too many notes');
+				throw new TooManyNotesError('too many notes');
 			}
 			const shouldMakePrivateNotes = await query.getMany();
 			const chunkSize = 10;

@@ -165,7 +165,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				});
 
 				const responseData: any = await response.json();
-				const text = responseData?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+				const parts = responseData?.candidates?.[0]?.content?.parts;
+				if (!parts || !Array.isArray(parts)) {
+					throw new ApiError(meta.errors.llmApiError, 'No content parts in API response');
+				}
+
+				// Concatenate text from all parts
+				const textParts = parts.map((part: any) => part.text || '').filter((t: string) => t.length > 0);
+				if (textParts.length === 0) {
+					throw new ApiError(meta.errors.llmApiError, 'No text content found in API response');
+				}
+
+				const text = textParts.join('');
 				return { text };
 			} catch (error) {
 				const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';

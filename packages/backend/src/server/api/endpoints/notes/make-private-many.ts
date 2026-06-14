@@ -7,7 +7,7 @@ import ms from 'ms';
 import { Inject, Injectable } from '@nestjs/common';
 import type { UsersRepository } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
-import { NoteDeleteService } from '@/core/NoteDeleteService.js';
+import { NoteDeleteService, TooManyNotesError } from '@/core/NoteDeleteService.js';
 import { DI } from '@/di-symbols.js';
 import { GetterService } from '@/server/api/GetterService.js';
 import { RoleService } from '@/core/RoleService.js';
@@ -67,7 +67,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			try {
 				return await this.noteDeleteService.makePrivateMany(me, sinceDate, untilDate);
 			} catch (e) {
-				if (e instanceof Error && e.message === 'too many notes') {
+				if (e instanceof TooManyNotesError) {
 					throw new ApiError(meta.errors.tooManyNotes);
 				}
 				throw e;
