@@ -366,15 +366,7 @@ function showEarthquakeAlert(data: EarthquakeAlertData): void {
 			try {
 				const soundType = getSoundTypeForIntensity(data.MaxIntensity, data.isWarn, data.isCancel);
 				playEarthquakeSound(soundType).catch(error => {
-					console.error('Failed to play earthquake sound, falling back to legacy sound', error);
-					// フォールバック
-					try {
-						// alertSound.pause();
-						// alertSound.currentTime = 0;
-						// alertSound.play().catch(error => console.error('Failed to play legacy alert sound:', error));
-					} catch (error) {
-						console.error('Error playing legacy alert sound:', error);
-					}
+					console.error('Failed to play earthquake sound', error);
 				});
 			} catch (error) {
 				console.error('Error determining sound type:', error);
@@ -451,7 +443,6 @@ export function testEarthquakeAlert(): void {
 	};
 
 	// 震度をユーザー設定+1にして確実に通知されるようにする(ただし震度7を超えないように)
-	const intensityOrder = ['1', '2', '3', '4', '5-', '5+', '6-', '6+', '7'];
 	const currentIndex = intensityOrder.indexOf(getIntensityThreshold());
 	if (currentIndex < intensityOrder.length - 1) {
 		mockData.MaxIntensity = intensityOrder[currentIndex + 1];
@@ -470,15 +461,7 @@ export function testEarthquakeAlert(): void {
 			const soundType = getSoundTypeForIntensity(mockData.MaxIntensity, mockData.isWarn, mockData.isCancel);
 			playEarthquakeSound(soundType)
 				.catch(error => {
-					console.error('Failed to play earthquake sound, falling back to legacy sound', error);
-					// フォールバック
-					try {
-						// alertSound.pause();
-						// alertSound.currentTime = 0;
-						// alertSound.play().catch(error => console.error('Failed to play legacy alert sound:', error));
-					} catch (error) {
-						console.error('Error playing legacy alert sound:', error);
-					}
+					console.error('Failed to play earthquake sound', error);
 				});
 		}
 

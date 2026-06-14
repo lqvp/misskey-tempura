@@ -44,8 +44,8 @@ export const meta = {
 export const paramDef = {
 	type: 'object',
 	properties: {
-		untilDate: { type: 'integer' },
-		sinceDate: { type: 'integer' },
+		untilDate: { type: 'integer', minimum: 1 },
+		sinceDate: { type: 'integer', minimum: 0 },
 	},
 	required: ['untilDate', 'sinceDate'],
 } as const;
@@ -67,7 +67,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			try {
 				return await this.noteDeleteService.makePrivateMany(me, sinceDate, untilDate);
 			} catch (e) {
-				throw new ApiError(meta.errors.tooManyNotes);
+				if (e instanceof Error && e.message === 'too many notes') {
+					throw new ApiError(meta.errors.tooManyNotes);
+				}
+				throw e;
 			}
 		});
 	}

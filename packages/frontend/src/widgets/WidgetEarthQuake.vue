@@ -98,7 +98,6 @@ interface EarthquakeData {
 
 const earthquakeData = ref<EarthquakeData | null>(null);
 const fetching = ref(true);
-const md5 = ref('');
 let intervalId: number | null = null;
 
 const getShindoColor = (shindoValue: string | number): { bg: string; fg: string } => {
@@ -176,13 +175,13 @@ const fetchEarthquakeData = async () => {
 	fetching.value = true;
 
 	try {
-		const url = `${widgetProps.apiUrl}?${Date.now()}`;
+		const separator = widgetProps.apiUrl.includes('?') ? '&' : '?';
+		const url = `${widgetProps.apiUrl}${separator}${Date.now()}`;
 		const response = await window.fetch(url);
 		const data = await response.json();
 
 		if (!earthquakeData.value || earthquakeData.value.md5 !== data.md5) {
 			earthquakeData.value = data;
-			md5.value = data.md5;
 		}
 	} catch (error) {
 		console.error('Failed to fetch earthquake data:', error);
@@ -308,34 +307,6 @@ defineExpose<WidgetComponentExpose>({
 .depth {
   font-size: 0.8rem;
   color: var(--MI_THEME-fg);
-}
-
-.intensityBox {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-left: 10px;
-  border-radius: 0;
-
-  :global(.shindominusfirst),
-  :global(.shindominus) {
-    font-size: 0.75rem;
-    position: relative;
-    top: 5px;
-    right: 1px;
-  }
-
-  :global(.shindoplusfirst),
-  :global(.shindoplus) {
-    font-size: 0.75rem;
-    position: relative;
-    top: 5px;
-    right: 1px;
-  }
 }
 </style>
 

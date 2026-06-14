@@ -47,6 +47,7 @@ export class UserAvatarDecorationMutingService {
 			id: this.idService.gen(),
 			muterId: user.id,
 			muteeId: target.id,
+			expiresAt: expiresAt,
 		});
 
 		await this.cacheService.avatarDecorationMutingsCache.refresh(user.id);

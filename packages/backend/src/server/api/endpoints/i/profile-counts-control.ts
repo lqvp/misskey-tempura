@@ -37,9 +37,9 @@ export const meta = {
 export const paramDef = {
 	type: 'object',
 	properties: {
-		followersCount: { type: 'integer', nullable: true, minimum: 0 },
-		followingCount: { type: 'integer', nullable: true, minimum: 0 },
-		notesCount: { type: 'integer', nullable: true, minimum: 0 },
+		followersCount: { type: 'integer', nullable: true, minimum: 0, maximum: 999999999 },
+		followingCount: { type: 'integer', nullable: true, minimum: 0, maximum: 999999999 },
+		notesCount: { type: 'integer', nullable: true, minimum: 0, maximum: 999999999 },
 	},
 	anyOf: [
 		{ required: ['followersCount'] },
@@ -51,11 +51,11 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> {
 	constructor(
-        @Inject(DI.usersRepository)
-        private usersRepository: UsersRepository,
+		@Inject(DI.usersRepository)
+		private usersRepository: UsersRepository,
 
-        private globalEventService: GlobalEventService,
-        private roleService: RoleService,
+		private globalEventService: GlobalEventService,
+		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			// ロールポリシーチェック
@@ -65,10 +65,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 			}
 
 			const updates: Partial<{
-                followersCount: number;
-                followingCount: number;
-                notesCount: number;
-            }> = {};
+				followersCount: number;
+				followingCount: number;
+				notesCount: number;
+			}> = {};
 
 			if (ps.followersCount !== undefined && ps.followersCount !== null) {
 				updates.followersCount = ps.followersCount;

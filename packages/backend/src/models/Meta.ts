@@ -1018,13 +1018,13 @@ export class MiMeta {
 	public serverGeminiEnabled: boolean;
 
 	@Column('varchar', {
-		length: 50,
+		length: 1024,
 		nullable: true,
 	})
 	public serverGeminiApiKey: string | null;
 
 	@Column('varchar', {
-		length: 50,
+		length: 256,
 		default: 'gemini-2.0-flash',
 		nullable: true,
 	})
