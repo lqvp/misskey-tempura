@@ -314,11 +314,7 @@ export class ApRendererService {
 		const reaction = noteReaction.reaction;
 
 		const custom = reaction.match(/^:([\w+-]+)(?:@([\w.-]+))?:$/);
-		const sendReaction = custom
-			? custom[2]
-				? `:${custom[1]}:`
-				: reaction
-			: reaction;
+		const sendReaction = reaction;
 
 		const object: ILike = {
 			type: 'Like',
