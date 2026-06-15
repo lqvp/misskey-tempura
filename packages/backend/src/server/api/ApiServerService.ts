@@ -164,7 +164,7 @@ export class ApiServerService {
 			try {
 				const result = await this.oidcService.handleCallback(request, reply, code, state);
 				if (result.type === 'login') {
-					reply.redirect(`${this.config.url}/oidc/callback?token=${encodeURIComponent(result.token)}`);
+					reply.redirect(`${this.config.url}`#token`=${encodeURIComponent(result.token)}`);
 				} else {
 					reply.redirect(`${this.config.url}/settings/security`);
 				}
