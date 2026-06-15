@@ -48,6 +48,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<i class="ti ti-device-usb" style="font-size: medium;"></i>{{ i18n.ts.signinWithPasskey }}
 			</MkButton>
 		</div>
+
+		<!-- OIDC ログイン -->
+		<div v-if="instance.oidcEnabled">
+			<MkButton type="button" style="margin: auto auto;" large rounded @click="oidcLogin()">
+				<i class="ti ti-key" style="font-size: medium;"></i>{{ instance.oidcButtonLabel || i18n.ts.oidcLogin }}
+			</MkButton>
+		</div>
 	</div>
 </div>
 </template>
@@ -60,6 +67,7 @@ import { query, extractDomain } from '@@/js/url.js';
 import { host as configHost } from '@@/js/config.js';
 import type { OpenOnRemoteOptions } from '@/utility/please-login.js';
 import { i18n } from '@/i18n.js';
+import { instance } from '@/instance.js';
 import * as os from '@/os.js';
 
 import MkButton from '@/components/MkButton.vue';
@@ -84,6 +92,10 @@ const emit = defineEmits<{
 const host = toUnicode(configHost);
 
 const username = ref(props.initialUsername ?? '');
+
+function oidcLogin(): void {
+	window.location.href = '/oidc/initiate';
+}
 
 //#region Open on remote
 function openRemote(options: OpenOnRemoteOptions, targetHost?: string): void {

@@ -164,6 +164,57 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</div>
 					</MkFolder>
 				</SearchMarker>
+
+				<SearchMarker v-slot="slotProps" :keywords="['oidc', 'sso', 'openid', 'connect']">
+					<MkFolder :defaultOpen="slotProps.isParentOfTarget">
+						<template #icon><SearchIcon><i class="ti ti-key"></i></SearchIcon></template>
+						<template #label><SearchLabel>{{ i18n.ts.oidcSettings }}</SearchLabel></template>
+						<template v-if="oidcForm.savedState.oidcEnabled" #suffix>Enabled</template>
+						<template v-else #suffix>Disabled</template>
+						<template v-if="oidcForm.modified.value" #footer>
+							<MkFormFooter :form="oidcForm"/>
+						</template>
+
+						<div class="_gaps_m">
+							<div><SearchText>{{ i18n.ts.oidcSettingsDescription }}</SearchText></div>
+
+							<SearchMarker>
+								<MkSwitch v-model="oidcForm.state.oidcEnabled">
+									<template #label><SearchLabel>{{ i18n.ts.oidcEnable }}</SearchLabel></template>
+								</MkSwitch>
+							</SearchMarker>
+
+							<SearchMarker>
+								<MkInput v-model="oidcForm.state.oidcIssuerUrl" :disabled="!oidcForm.state.oidcEnabled">
+									<template #prefix><i class="ti ti-link"></i></template>
+									<template #label><SearchLabel>{{ i18n.ts.oidcIssuerUrl }}</SearchLabel></template>
+								</MkInput>
+							</SearchMarker>
+
+							<SearchMarker>
+								<MkInput v-model="oidcForm.state.oidcClientId" :disabled="!oidcForm.state.oidcEnabled">
+									<template #prefix><i class="ti ti-id"></i></template>
+									<template #label><SearchLabel>{{ i18n.ts.oidcClientId }}</SearchLabel></template>
+								</MkInput>
+							</SearchMarker>
+
+							<SearchMarker>
+								<MkInput v-model="oidcForm.state.oidcClientSecret" type="password" :disabled="!oidcForm.state.oidcEnabled">
+									<template #prefix><i class="ti ti-lock"></i></template>
+									<template #label><SearchLabel>{{ i18n.ts.oidcClientSecret }}</SearchLabel></template>
+								</MkInput>
+							</SearchMarker>
+
+							<SearchMarker>
+								<MkInput v-model="oidcForm.state.oidcButtonLabel" :disabled="!oidcForm.state.oidcEnabled">
+									<template #prefix><i class="ti ti-tag"></i></template>
+									<template #label><SearchLabel>{{ i18n.ts.oidcButtonLabel }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts.oidcButtonLabelDescription }}</template>
+								</MkInput>
+							</SearchMarker>
+						</div>
+					</MkFolder>
+				</SearchMarker>
 			</div>
 		</SearchMarker>
 	</div>
@@ -249,6 +300,23 @@ const emailValidationForm = useForm({
 		enableTruemailApi: state.enableTruemailApi,
 		truemailInstance: state.truemailInstance,
 		truemailAuthKey: state.truemailAuthKey,
+	});
+	fetchInstance(true);
+});
+
+const oidcForm = useForm({
+	oidcEnabled: meta.oidcEnabled,
+	oidcIssuerUrl: meta.oidcIssuerUrl ?? '',
+	oidcClientId: meta.oidcClientId ?? '',
+	oidcClientSecret: '',
+	oidcButtonLabel: meta.oidcButtonLabel ?? '',
+}, async (state) => {
+	await os.apiWithDialog('admin/update-meta', {
+		oidcEnabled: state.oidcEnabled,
+		oidcIssuerUrl: state.oidcIssuerUrl || null,
+		oidcClientId: state.oidcClientId || null,
+		oidcClientSecret: state.oidcClientSecret || null,
+		oidcButtonLabel: state.oidcButtonLabel || null,
 	});
 	fetchInstance(true);
 });

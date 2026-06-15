@@ -24,6 +24,29 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		<X2fa/>
 
+		<SearchMarker v-if="instance.oidcEnabled" :keywords="['oidc', 'sso', 'external', 'auth']">
+			<FormSection>
+				<template #label><SearchLabel>{{ i18n.ts.oidcExternalAuth }}</SearchLabel></template>
+				<div v-if="oidcStatus === null" class="_gaps_s">
+					<MkLoading />
+				</div>
+				<div v-else-if="oidcStatus.linked" class="_gaps_s">
+					<div style="display: flex; align-items: center; gap: 8px;">
+						<i class="ti ti-check" style="color: var(--MI_THEME-success);"></i>
+						<span>{{ i18n.ts.oidcLinked }}</span>
+					</div>
+					<MkButton danger @click="unlinkOidc()">{{ i18n.ts.oidcUnlinkAccount }}</MkButton>
+				</div>
+				<div v-else class="_gaps_s">
+					<div style="display: flex; align-items: center; gap: 8px;">
+						<i class="ti ti-x" style="opacity: 0.5;"></i>
+						<span>{{ i18n.ts.oidcNotLinked }}</span>
+					</div>
+					<MkButton primary @click="linkOidc()">{{ i18n.ts.oidcLinkAccount }}</MkButton>
+				</div>
+			</FormSection>
+		</SearchMarker>
+
 		<SearchMarker :keywords="['signin', 'login', 'history', 'log']">
 			<FormSection>
 				<template #label><SearchLabel>{{ i18n.ts.signinHistory }}</SearchLabel></template>
@@ -57,7 +80,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, markRaw } from 'vue';
+import { computed, markRaw, ref, onMounted } from 'vue';
 import X2fa from './2fa.vue';
 import FormSection from '@/components/form/section.vue';
 import FormSlot from '@/components/form/slot.vue';
@@ -66,9 +89,56 @@ import MkPagination from '@/components/MkPagination.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
+import { instance } from '@/instance.js';
 import { definePage } from '@/page.js';
 import MkFeatureBanner from '@/components/MkFeatureBanner.vue';
 import { Paginator } from '@/utility/paginator.js';
+
+const oidcStatus = ref<{ linked: boolean; providerUserId?: string } | null>(null);
+
+onMounted(async () => {
+	if (instance.oidcEnabled) {
+		try {
+			oidcStatus.value = await misskeyApi('oidc/status', {});
+		} catch {
+			oidcStatus.value = { linked: false };
+		}
+	}
+});
+
+async function linkOidc() {
+	try {
+		const res = await misskeyApi('oidc/link', {});
+		window.location.href = res.authorizationUrl;
+	} catch (err) {
+		os.alert({
+			type: 'error',
+			title: i18n.ts.error,
+			text: i18n.ts.somethingHappened,
+		});
+	}
+}
+
+async function unlinkOidc() {
+	const { canceled } = await os.confirm({
+		type: 'warning',
+		title: i18n.ts.oidcUnlinkAccount,
+		text: i18n.ts.oidcUnlinkConfirm,
+	});
+	if (canceled) return;
+
+	try {
+		await misskeyApi('oidc/unlink', {});
+		oidcStatus.value = { linked: false };
+		os.success();
+	} catch {
+		os.alert({
+			type: 'error',
+			title: i18n.ts.error,
+			text: i18n.ts.somethingHappened,
+		});
+	}
+}
 
 const paginator = markRaw(new Paginator('i/signin-history', {
 	limit: 5,

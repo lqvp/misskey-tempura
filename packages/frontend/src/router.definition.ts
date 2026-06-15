@@ -338,6 +338,9 @@ export const ROUTE_DEF = [{
 	path: '/oauth/authorize',
 	component: page(() => import('@/pages/oauth.vue')),
 }, {
+	path: '/oidc/callback',
+	component: page(() => import('@/pages/oidc-callback.vue')),
+}, {
 	path: '/tags/:tag',
 	component: page(() => import('@/pages/tag.vue')),
 	loginRequired: true,

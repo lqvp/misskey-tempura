@@ -321,6 +321,11 @@ export const paramDef = {
 				required: ['key', 'text', 'enabled', 'order', 'isDefault'],
 			},
 		},
+		oidcEnabled: { type: 'boolean' },
+		oidcIssuerUrl: { type: 'string', nullable: true, maxLength: 1024 },
+		oidcClientId: { type: 'string', nullable: true, maxLength: 1024 },
+		oidcClientSecret: { type: 'string', nullable: true, maxLength: 1024 },
+		oidcButtonLabel: { type: 'string', nullable: true, maxLength: 128 },
 	},
 	required: [],
 } as const;
@@ -1148,6 +1153,26 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				}
 
 				set.contactFormCategories = ps.contactFormCategories;
+			}
+
+			if (ps.oidcEnabled !== undefined) {
+				set.oidcEnabled = ps.oidcEnabled;
+			}
+
+			if (ps.oidcIssuerUrl !== undefined) {
+				set.oidcIssuerUrl = ps.oidcIssuerUrl;
+			}
+
+			if (ps.oidcClientId !== undefined) {
+				set.oidcClientId = ps.oidcClientId;
+			}
+
+			if (ps.oidcClientSecret !== undefined) {
+				set.oidcClientSecret = ps.oidcClientSecret;
+			}
+
+			if (ps.oidcButtonLabel !== undefined) {
+				set.oidcButtonLabel = ps.oidcButtonLabel;
 			}
 
 			const before = await this.metaService.fetch(true);

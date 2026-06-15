@@ -596,6 +596,9 @@ import type {
 	NotesUserListTimelineRequest,
 	NotesUserListTimelineResponse,
 	NotificationsCreateRequest,
+	OidcLinkResponse,
+	OidcStatusResponse,
+	OidcUnlinkResponse,
 	PagePushRequest,
 	PagesCreateRequest,
 	PagesCreateResponse,
@@ -1116,6 +1119,9 @@ export type Endpoints = {
 	'notifications/flush': { req: EmptyRequest; res: EmptyResponse };
 	'notifications/mark-all-as-read': { req: EmptyRequest; res: EmptyResponse };
 	'notifications/test-notification': { req: EmptyRequest; res: EmptyResponse };
+	'oidc/link': { req: EmptyRequest; res: OidcLinkResponse };
+	'oidc/status': { req: EmptyRequest; res: OidcStatusResponse };
+	'oidc/unlink': { req: EmptyRequest; res: OidcUnlinkResponse };
 	'page-push': { req: PagePushRequest; res: EmptyResponse };
 	'pages/create': { req: PagesCreateRequest; res: PagesCreateResponse };
 	'pages/delete': { req: PagesDeleteRequest; res: EmptyResponse };

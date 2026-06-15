@@ -18,6 +18,7 @@ import { ApiCallService } from './ApiCallService.js';
 import { SignupApiService } from './SignupApiService.js';
 import { SigninApiService } from './SigninApiService.js';
 import { SigninWithPasskeyApiService } from './SigninWithPasskeyApiService.js';
+import { OidcService } from './OidcService.js';
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 
 @Injectable()
@@ -39,6 +40,7 @@ export class ApiServerService {
 		private signupApiService: SignupApiService,
 		private signinApiService: SigninApiService,
 		private signinWithPasskeyApiService: SigninWithPasskeyApiService,
+		private oidcService: OidcService,
 	) {
 		//this.createServer = this.createServer.bind(this);
 	}
@@ -141,6 +143,35 @@ export class ApiServerService {
 				context?: string;
 			};
 		}>('/signin-with-passkey', (request, reply) => this.signinWithPasskeyApiService.signin(request, reply));
+
+		fastify.get('/oidc/initiate', async (request, reply) => {
+			try {
+				const authorizationUrl = await this.oidcService.initiate('login');
+				reply.redirect(authorizationUrl);
+			} catch (err) {
+				reply.code(500).send({ error: { message: 'Failed to initiate OIDC login', code: 'OIDC_INITIATE_FAILED', id: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d' } });
+			}
+		});
+
+		fastify.get<{
+			Querystring: { code?: string; state?: string; };
+		}>('/oidc/callback', async (request, reply) => {
+			const { code, state } = request.query;
+			if (!code || !state) {
+				reply.code(400).send({ error: { message: 'Missing code or state parameter', code: 'INVALID_REQUEST', id: 'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e' } });
+				return;
+			}
+			try {
+				const result = await this.oidcService.handleCallback(request, reply, code, state);
+				if (result.type === 'login') {
+					reply.redirect(`${this.config.url}?token=${encodeURIComponent(result.token)}`);
+				} else {
+					reply.redirect(`${this.config.url}/settings/security`);
+				}
+			} catch (err) {
+				reply.redirect(`${this.config.url}?oidc_error=1`);
+			}
+		});
 
 		fastify.post<{ Body: { code: string; } }>('/signup-pending', (request, reply) => this.signupApiService.signupPending(request, reply));
 
