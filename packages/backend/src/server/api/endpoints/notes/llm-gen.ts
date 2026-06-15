@@ -165,6 +165,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				});
 
 				const responseData: any = await response.json();
+				if (!responseData?.candidates?.[0]?.content?.parts?.[0]?.text) {
+					throw new ApiError(meta.errors.llmApiError, 'Invalid response format from Gemini API');
+				}
 				const text = responseData?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 				return { text };
 			} catch (error) {
