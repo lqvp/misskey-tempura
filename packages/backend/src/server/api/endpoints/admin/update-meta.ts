@@ -1160,19 +1160,22 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			if (ps.oidcIssuerUrl !== undefined) {
-				set.oidcIssuerUrl = ps.oidcIssuerUrl;
+				const value = (ps.oidcIssuerUrl ?? '').trim();
+				set.oidcIssuerUrl = value === '' ? null : value;
 			}
 
 			if (ps.oidcClientId !== undefined) {
-				set.oidcClientId = ps.oidcClientId;
+				const value = (ps.oidcClientId ?? '').trim();
+				set.oidcClientId = value === '' ? null : value;
 			}
 
 			if (ps.oidcClientSecret !== undefined) {
-				set.oidcClientSecret = ps.oidcClientSecret;
+				set.oidcClientSecret = ps.oidcClientSecret === '' ? null : ps.oidcClientSecret;
 			}
 
 			if (ps.oidcButtonLabel !== undefined) {
-				set.oidcButtonLabel = ps.oidcButtonLabel;
+				const value = (ps.oidcButtonLabel ?? '').trim();
+				set.oidcButtonLabel = value === '' ? null : value;
 			}
 
 			const before = await this.metaService.fetch(true);
