@@ -171,6 +171,14 @@ export class OidcService {
 				throw new Error('This OIDC account is already linked to another user');
 			}
 
+			const existingUserLink = await this.userOidcLinkRepository.findOneBy({
+				userId: stateData.userId,
+				provider: 'oidc',
+			});
+			if (existingUserLink) {
+				throw new Error('This user is already linked to an OIDC account');
+			}
+
 			await this.userOidcLinkRepository.insert({
 				id: this.idService.gen(),
 				userId: stateData.userId,
