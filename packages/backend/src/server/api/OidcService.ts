@@ -171,7 +171,7 @@ export class OidcService {
 				throw new Error('This OIDC account is already linked to another user');
 			}
 
-			await this.userOidcLinkRepository.insertOne({
+			await this.userOidcLinkRepository.insert({
 				id: this.idService.gen(),
 				userId: stateData.userId,
 				provider: 'oidc',
