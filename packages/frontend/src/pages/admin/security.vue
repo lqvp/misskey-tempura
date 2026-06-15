@@ -311,13 +311,24 @@ const oidcForm = useForm({
 	oidcClientSecret: '',
 	oidcButtonLabel: meta.oidcButtonLabel ?? '',
 }, async (state) => {
-	await os.apiWithDialog('admin/update-meta', {
+	const payload: {
+		oidcEnabled: boolean;
+		oidcIssuerUrl: string | null;
+		oidcClientId: string | null;
+		oidcClientSecret?: string;
+		oidcButtonLabel: string | null;
+	} = {
 		oidcEnabled: state.oidcEnabled,
 		oidcIssuerUrl: state.oidcIssuerUrl || null,
 		oidcClientId: state.oidcClientId || null,
-		oidcClientSecret: state.oidcClientSecret || null,
 		oidcButtonLabel: state.oidcButtonLabel || null,
-	});
+	};
+	if (state.oidcClientSecret !== '') {
+		payload.oidcClientSecret = state.oidcClientSecret;
+	}
+	await os.apiWithDialog('admin/update-meta', payload);
+	fetchInstance(true);
+});
 	fetchInstance(true);
 });
 
