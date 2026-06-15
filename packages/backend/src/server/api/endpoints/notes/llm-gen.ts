@@ -145,7 +145,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 
 			// Gemini APIへのリクエスト
 			try {
-				if (!/^gemini-/.test(serverGeminiModels)) {
+				if (!serverGeminiModels || !/^gemini-/.test(serverGeminiModels)) {
 					throw new ApiError(meta.errors.llmApiError, 'Invalid model name');
 				}
 
