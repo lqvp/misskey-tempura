@@ -226,7 +226,7 @@ export class OidcService {
 
 	@bindThis
 	public async unlinkAccount(userId: string): Promise<void> {
-		await this.userOidcLinkRepository.delete({ userId });
+		await this.userOidcLinkRepository.delete({ userId, provider: 'oidc' });
 	}
 
 	@bindThis
