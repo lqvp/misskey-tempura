@@ -81,19 +81,22 @@ export class OidcService {
 		if (this.configPromise) return this.configPromise;
 
 		this.configPromise = (async () => {
-			const meta = await this.metaService.fetch(true);
-			if (!meta.oidcIssuerUrl || !meta.oidcClientId || !meta.oidcClientSecret) {
-				throw new Error('OIDC is not configured');
+			try {
+				const meta = await this.metaService.fetch(true);
+				if (!meta.oidcIssuerUrl || !meta.oidcClientId || !meta.oidcClientSecret) {
+					throw new Error('OIDC is not configured');
+				}
+
+				this.config_cache = await discovery(
+					new URL(meta.oidcIssuerUrl),
+					meta.oidcClientId,
+					meta.oidcClientSecret,
+				);
+
+				return this.config_cache;
+			} finally {
+				this.configPromise = null;
 			}
-
-			this.config_cache = await discovery(
-				new URL(meta.oidcIssuerUrl),
-				meta.oidcClientId,
-				meta.oidcClientSecret,
-			);
-
-			this.configPromise = null;
-			return this.config_cache;
 		})();
 
 		return this.configPromise;
