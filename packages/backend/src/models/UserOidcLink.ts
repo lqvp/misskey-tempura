@@ -22,11 +22,18 @@ export class MiUserOidcLink {
 	@JoinColumn()
 	public user: MiUser | null;
 
+	@Index({ unique: true })
 	@Column('varchar', {
 		length: 128,
 	})
 	public provider: string;
 
+	@Column('varchar', {
+		length: 1024,
+	})
+	public issuer: string;
+
+	@Index({ unique: true })
 	@Column('varchar', {
 		length: 1024,
 	})

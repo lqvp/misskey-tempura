@@ -107,6 +107,9 @@ onMounted(async () => {
 });
 
 async function linkOidc() {
+	const auth = await os.authenticateDialog();
+	if (auth.canceled) return;
+
 	try {
 		const res = await misskeyApi('oidc/link', {});
 		window.location.href = res.authorizationUrl;
@@ -126,6 +129,9 @@ async function unlinkOidc() {
 		text: i18n.ts.oidcUnlinkConfirm,
 	});
 	if (canceled) return;
+
+	const auth = await os.authenticateDialog();
+	if (auth.canceled) return;
 
 	try {
 		await misskeyApi('oidc/unlink', {});

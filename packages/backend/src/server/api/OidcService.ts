@@ -13,7 +13,6 @@ import {
 	randomPKCECodeVerifier,
 	calculatePKCECodeChallenge,
 	randomState,
-	skipSubjectCheck,
 	type Configuration,
 } from 'openid-client';
 import { DI } from '@/di-symbols.js';
@@ -39,12 +38,18 @@ interface OidcState {
 	createdAt: number;
 }
 
+interface OidcLoginCode {
+	token: string;
+	createdAt: number;
+}
+
 @Injectable()
 export class OidcService {
 	private logger: Logger;
 	private config_cache: Configuration | null = null;
 	private configPromise: Promise<Configuration> | null = null;
 	private pendingStates = new Map<string, OidcState>();
+	private pendingLoginCodes = new Map<string, OidcLoginCode>();
 
 	constructor(
 		@Inject(DI.config)
@@ -73,6 +78,11 @@ export class OidcService {
 				this.pendingStates.delete(key);
 			}
 		}
+		for (const [key, loginCode] of this.pendingLoginCodes) {
+			if (now - loginCode.createdAt > 5 * 60 * 1000) {
+				this.pendingLoginCodes.delete(key);
+			}
+		}
 	}
 
 	@bindThis
@@ -83,7 +93,7 @@ export class OidcService {
 		this.configPromise = (async () => {
 			try {
 				const meta = await this.metaService.fetch(true);
-				if (!meta.oidcIssuerUrl || !meta.oidcClientId || !meta.oidcClientSecret) {
+				if (!meta.oidcEnabled || !meta.oidcIssuerUrl || !meta.oidcClientId || !meta.oidcClientSecret) {
 					throw new Error('OIDC is not configured');
 				}
 
@@ -140,7 +150,7 @@ export class OidcService {
 		reply: FastifyReply,
 		code: string,
 		state: string,
-	): Promise<{ type: 'login'; token: string } | { type: 'link'; userId: string }> {
+	): Promise<{ type: 'login'; loginCode: string } | { type: 'link'; userId: string }> {
 		const stateData = this.pendingStates.get(state);
 		if (!stateData) {
 			throw new Error('Invalid or expired state');
@@ -155,11 +165,16 @@ export class OidcService {
 			pkceCodeVerifier: stateData.codeVerifier,
 		});
 
-		const userinfo = await fetchUserInfo(oidcConfig, tokenResponse.access_token, skipSubjectCheck);
-		const sub = userinfo.sub;
-		if (!sub) {
-			throw new Error('No sub claim in userinfo');
+		const expectedSub = tokenResponse.claims()?.sub;
+		if (!expectedSub) {
+			throw new Error('No sub claim in ID token');
 		}
+
+		const userinfo = await fetchUserInfo(oidcConfig, tokenResponse.access_token, expectedSub);
+		const sub = expectedSub;
+
+		const meta = await this.metaService.fetch(true);
+		const issuer = meta.oidcIssuerUrl!;
 
 		if (stateData.type === 'link') {
 			if (!stateData.userId) {
@@ -167,7 +182,7 @@ export class OidcService {
 			}
 
 			const existingLink = await this.userOidcLinkRepository.findOneBy({
-				provider: 'oidc',
+				issuer,
 				providerUserId: sub,
 			});
 			if (existingLink) {
@@ -176,7 +191,7 @@ export class OidcService {
 
 			const existingUserLink = await this.userOidcLinkRepository.findOneBy({
 				userId: stateData.userId,
-				provider: 'oidc',
+				issuer,
 			});
 			if (existingUserLink) {
 				throw new Error('This user is already linked to an OIDC account');
@@ -186,6 +201,7 @@ export class OidcService {
 				id: this.idService.gen(),
 				userId: stateData.userId,
 				provider: 'oidc',
+				issuer,
 				providerUserId: sub,
 				createdAt: new Date(),
 			});
@@ -194,7 +210,7 @@ export class OidcService {
 		}
 
 		const link = await this.userOidcLinkRepository.findOneBy({
-			provider: 'oidc',
+			issuer,
 			providerUserId: sub,
 		});
 		if (!link) {
@@ -216,7 +232,23 @@ export class OidcService {
 
 		this.signinService.signin(request, reply, user);
 
-		return { type: 'login', token: user.token! };
+		const loginCode = randomState();
+		this.pendingLoginCodes.set(loginCode, {
+			token: user.token!,
+			createdAt: Date.now(),
+		});
+
+		return { type: 'login', loginCode };
+	}
+
+	@bindThis
+	public exchangeLoginCode(loginCode: string): string | null {
+		const data = this.pendingLoginCodes.get(loginCode);
+		if (!data) {
+			return null;
+		}
+		this.pendingLoginCodes.delete(loginCode);
+		return data.token;
 	}
 
 	@bindThis
@@ -226,14 +258,18 @@ export class OidcService {
 
 	@bindThis
 	public async unlinkAccount(userId: string): Promise<void> {
-		await this.userOidcLinkRepository.delete({ userId, provider: 'oidc' });
+		const meta = await this.metaService.fetch(true);
+		const issuer = meta.oidcIssuerUrl!;
+		await this.userOidcLinkRepository.delete({ userId, issuer });
 	}
 
 	@bindThis
 	public async getStatus(userId: string): Promise<{ linked: boolean; providerUserId?: string }> {
+		const meta = await this.metaService.fetch(true);
+		const issuer = meta.oidcIssuerUrl!;
 		const link = await this.userOidcLinkRepository.findOneBy({
 			userId,
-			provider: 'oidc',
+			issuer,
 		});
 		if (link) {
 			return { linked: true, providerUserId: link.providerUserId };

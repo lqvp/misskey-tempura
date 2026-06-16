@@ -31,7 +31,7 @@ function goToLogin(): void {
 
 onMounted(async () => {
 	const url = new URL(window.location.href);
-	const token = url.searchParams.get('token');
+	const code = url.searchParams.get('code');
 	const oidcError = url.searchParams.get('oidc_error');
 
 	if (oidcError) {
@@ -40,9 +40,30 @@ onMounted(async () => {
 		return;
 	}
 
-	if (token) {
-		login(token);
-		return;
+	if (code) {
+		try {
+			const res = await fetch('/api/oidc/exchange-code', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({ code }),
+			});
+
+			if (!res.ok) {
+				processing.value = false;
+				error.value = true;
+				return;
+			}
+
+			const data = await res.json();
+			login(data.token);
+			return;
+		} catch {
+			processing.value = false;
+			error.value = true;
+			return;
+		}
 	}
 
 	processing.value = false;

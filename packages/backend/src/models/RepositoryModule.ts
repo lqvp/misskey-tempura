@@ -694,6 +694,7 @@ const $userOidcLinkRepository: Provider = {
 		$reversiGamesRepository,
 		$multipartUploadsRepository,
 		$contactFormsRepository,
+		$userOidcLinkRepository,
 	],
 	exports: [
 		$usersRepository,

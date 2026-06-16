@@ -314,6 +314,7 @@ export * as 'mute/create' from './endpoints/mute/create.js';
 export * as 'mute/delete' from './endpoints/mute/delete.js';
 export * as 'mute/list' from './endpoints/mute/list.js';
 export * as 'my/apps' from './endpoints/my/apps.js';
+export * as 'oidc/exchange-code' from './endpoints/oidc/exchange-code.js';
 export * as 'oidc/link' from './endpoints/oidc/link.js';
 export * as 'oidc/status' from './endpoints/oidc/status.js';
 export * as 'oidc/unlink' from './endpoints/oidc/unlink.js';
