@@ -16,7 +16,7 @@ export class MiContactForm {
 	@CreateDateColumn()
 	public createdAt: Date;
 
-	`@UpdateDateColumn`({ nullable: true })
+	@UpdateDateColumn({ nullable: true })
 	public updatedAt: Date | null;
 
 	// 必須項目

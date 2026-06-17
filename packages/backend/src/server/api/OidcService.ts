@@ -5,6 +5,7 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import { IsNull } from 'typeorm';
+import * as Redis from 'ioredis';
 import {
 	discovery,
 	buildAuthorizationUrl,
@@ -48,8 +49,6 @@ export class OidcService {
 	private logger: Logger;
 	private config_cache: Configuration | null = null;
 	private configPromise: Promise<Configuration> | null = null;
-	private pendingStates = new Map<string, OidcState>();
-	private pendingLoginCodes = new Map<string, OidcLoginCode>();
 
 	constructor(
 		@Inject(DI.config)
@@ -61,29 +60,17 @@ export class OidcService {
 		@Inject(DI.userOidcLinkRepository)
 		private userOidcLinkRepository: UserOidcLinkRepository,
 
+		@Inject(DI.redis)
+		private redisClient: Redis.Redis,
+
 		private idService: IdService,
 		private metaService: MetaService,
 		private signinService: SigninService,
 		private loggerService: LoggerService,
 	) {
 		this.logger = this.loggerService.getLogger('oidc');
-
-		setInterval(() => this.cleanupExpiredStates(), 60 * 1000);
 	}
 
-	private cleanupExpiredStates(): void {
-		const now = Date.now();
-		for (const [key, state] of this.pendingStates) {
-			if (now - state.createdAt > 10 * 60 * 1000) {
-				this.pendingStates.delete(key);
-			}
-		}
-		for (const [key, loginCode] of this.pendingLoginCodes) {
-			if (now - loginCode.createdAt > 5 * 60 * 1000) {
-				this.pendingLoginCodes.delete(key);
-			}
-		}
-	}
 
 	@bindThis
 	public async getConfig(): Promise<Configuration> {
@@ -125,13 +112,7 @@ export class OidcService {
 		const codeVerifier = randomPKCECodeVerifier();
 		const codeChallenge = await calculatePKCECodeChallenge(codeVerifier);
 
-		this.pendingStates.set(state, {
-			state,
-			codeVerifier,
-			type,
-			userId,
-			createdAt: Date.now(),
-		});
+		await this.redisClient.set(`oidc:state:${state}`, JSON.stringify({ state, codeVerifier, type, userId, createdAt: Date.now() }), 'EX', 600);
 
 		const authorizationUrl = buildAuthorizationUrl(oidcConfig, {
 			scope: 'openid email profile',
@@ -151,11 +132,11 @@ export class OidcService {
 		code: string,
 		state: string,
 	): Promise<{ type: 'login'; loginCode: string } | { type: 'link'; userId: string }> {
-		const stateData = this.pendingStates.get(state);
-		if (!stateData) {
+		const raw = await this.redisClient.getdel(`oidc:state:${state}`);
+		if (!raw) {
 			throw new Error('Invalid or expired state');
 		}
-		this.pendingStates.delete(state);
+		const stateData: OidcState = JSON.parse(raw);
 
 		const oidcConfig = await this.getConfig();
 		const currentUrl = new URL(`${this.config.url}/oidc/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`);
@@ -233,21 +214,18 @@ export class OidcService {
 		this.signinService.signin(request, reply, user);
 
 		const loginCode = randomState();
-		this.pendingLoginCodes.set(loginCode, {
-			token: user.token!,
-			createdAt: Date.now(),
-		});
+		await this.redisClient.set(`oidc:loginCode:${loginCode}`, JSON.stringify({ token: user.token!, createdAt: Date.now() }), 'EX', 300);
 
 		return { type: 'login', loginCode };
 	}
 
 	@bindThis
-	public exchangeLoginCode(loginCode: string): string | null {
-		const data = this.pendingLoginCodes.get(loginCode);
-		if (!data) {
+	public async exchangeLoginCode(loginCode: string): Promise<string | null> {
+		const raw = await this.redisClient.getdel(`oidc:loginCode:${loginCode}`);
+		if (!raw) {
 			return null;
 		}
-		this.pendingLoginCodes.delete(loginCode);
+		const data: OidcLoginCode = JSON.parse(raw);
 		return data.token;
 	}
 
