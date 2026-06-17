@@ -133,29 +133,39 @@ const fetchPlayingNow = async () => {
 	}
 	fetching.value = true;
 
-	const url = `https://api.listenbrainz.org/1/user/${widgetProps.userId}/playing-now`;
-	const response = await window.fetch(url);
-	const data = await response.json();
+	try {
+		const url = `https://api.listenbrainz.org/1/user/${widgetProps.userId}/playing-now`;
+		const response = await window.fetch(url);
+		const data = await response.json();
 
-	if (data.payload.count > 0) {
-		playingNow.value = true;
-		trackMetadata.value = data.payload.listens[0].track_metadata;
-	} else {
+		if (data.payload.count > 0) {
+			playingNow.value = true;
+			trackMetadata.value = data.payload.listens[0].track_metadata;
+		} else {
+			playingNow.value = false;
+			trackMetadata.value = null;
+		}
+	} catch (error) {
+		console.error('ListenBrainz fetch error:', error);
 		playingNow.value = false;
 		trackMetadata.value = null;
+	} finally {
+		fetching.value = false;
 	}
-
-	fetching.value = false;
 };
 
 const postNote = async () => {
 	if (!trackMetadata.value) return;
 
 	const note = formattedNote.value;
-	misskeyApi('notes/create', {
-		text: note,
-		visibility: widgetProps.visibility as any,
-	});
+	try {
+		await misskeyApi('notes/create', {
+			text: note,
+			visibility: widgetProps.visibility as 'public' | 'home' | 'followers' | 'specified',
+		});
+	} catch (error) {
+		console.error('ListenBrainz post error:', error);
+	}
 };
 
 watch(() => widgetProps.userId, fetchPlayingNow, { immediate: true });
@@ -166,12 +176,6 @@ watch(() => widgetProps.refreshIntervalSec, (newInterval) => {
 		intervalId = window.setInterval(fetchPlayingNow, newInterval * 1000);
 	}
 }, { immediate: true });
-
-onMounted(() => {
-	if (widgetProps.refreshIntervalSec > 0) {
-		intervalId = window.setInterval(fetchPlayingNow, widgetProps.refreshIntervalSec * 1000);
-	}
-});
 
 onUnmounted(() => {
 	if (intervalId) window.clearInterval(intervalId);
@@ -189,8 +193,4 @@ defineExpose<WidgetComponentExpose>({
 		padding: 16px;
 }
 
-.ghostImage {
-    max-width: 100%;
-    max-height: 100px;
-}
 </style>

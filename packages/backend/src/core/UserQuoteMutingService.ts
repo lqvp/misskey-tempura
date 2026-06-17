@@ -47,6 +47,7 @@ export class UserQuoteMutingService {
 			id: this.idService.gen(),
 			muterId: user.id,
 			muteeId: target.id,
+			expiresAt: expiresAt,
 		});
 
 		await this.cacheService.quoteMutingsCache.refresh(user.id);

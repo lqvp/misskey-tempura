@@ -165,7 +165,7 @@ export class ContactFormService {
 	@bindThis
 	public async submit(data: ContactFormSubmitData): Promise<MiContactForm> {
 		// カテゴリのバリデーション
-		const category = data.category || await this.getDefaultCategory();
+		const category = (data.category || await this.getDefaultCategory() || '').trim();
 		if (!(await this.validateCategory(category))) {
 			throw new Error('Invalid category');
 		}

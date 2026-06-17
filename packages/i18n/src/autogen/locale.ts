@@ -5545,6 +5545,70 @@ export interface Locale extends ILocale {
      */
     "passkeyVerificationSucceededButPasswordlessLoginDisabled": string;
     /**
+     * SSOでログイン
+     */
+    "oidcLogin": string;
+    /**
+     * SSO認証に失敗しました
+     */
+    "oidcCallbackError": string;
+    /**
+     * 外部認証 (SSO)
+     */
+    "oidcExternalAuth": string;
+    /**
+     * SSOアカウント連携済み
+     */
+    "oidcLinked": string;
+    /**
+     * SSOアカウント未連携
+     */
+    "oidcNotLinked": string;
+    /**
+     * SSOアカウントを紐付け
+     */
+    "oidcLinkAccount": string;
+    /**
+     * SSOアカウントの紐付けを解除
+     */
+    "oidcUnlinkAccount": string;
+    /**
+     * SSOアカウントの紐付けを解除しますか？
+     */
+    "oidcUnlinkConfirm": string;
+    /**
+     * OIDC (SSO) 設定
+     */
+    "oidcSettings": string;
+    /**
+     * OpenID Connect を使用したSSOログインを設定します。Authentik、Keycloak 等のOIDCプロバイダーに対応しています。
+     */
+    "oidcSettingsDescription": string;
+    /**
+     * OIDCを有効にする
+     */
+    "oidcEnable": string;
+    /**
+     * Issuer URL
+     */
+    "oidcIssuerUrl": string;
+    /**
+     * Client ID
+     */
+    "oidcClientId": string;
+    /**
+     * Client Secret
+     */
+    "oidcClientSecret": string;
+    /**
+     * ボタンのラベル
+     */
+    "oidcButtonLabel": string;
+    /**
+     * ログイン画面に表示するボタンのテキスト。未設定の場合は「SSOでログイン」が使用されます。
+     */
+    "oidcButtonLabelDescription": string;
+    /**
      * フォロワーへのメッセージ
      */
     "messageToFollower": string;

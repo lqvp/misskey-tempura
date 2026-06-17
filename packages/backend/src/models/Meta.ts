@@ -1018,13 +1018,13 @@ export class MiMeta {
 	public serverGeminiEnabled: boolean;
 
 	@Column('varchar', {
-		length: 50,
+		length: 1024,
 		nullable: true,
 	})
 	public serverGeminiApiKey: string | null;
 
 	@Column('varchar', {
-		length: 50,
+		length: 256,
 		default: 'gemini-2.0-flash',
 		nullable: true,
 	})
@@ -1080,6 +1080,35 @@ export class MiMeta {
 		default: [],
 	})
 	public contactFormCategories: ContactFormCategory[];
+
+	@Column('boolean', {
+		default: false,
+	})
+	public oidcEnabled: boolean;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public oidcIssuerUrl: string | null;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public oidcClientId: string | null;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public oidcClientSecret: string | null;
+
+	@Column('varchar', {
+		length: 128,
+		nullable: true,
+	})
+	public oidcButtonLabel: string | null;
 }
 
 export type SoftwareSuspension = {

@@ -836,6 +836,22 @@ export const meta = {
 					},
 				},
 			},
+			oidcEnabled: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			oidcIssuerUrl: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
+			oidcClientId: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
+			oidcButtonLabel: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
 			deliverSuspendedSoftware: {
 				type: 'array',
 				optional: false, nullable: false,
@@ -1115,6 +1131,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				contactFormLimit: instance.contactFormLimit,
 				contactFormRequireAuth: instance.contactFormRequireAuth,
 				contactFormCategories: instance.contactFormCategories,
+				oidcEnabled: instance.oidcEnabled,
+				oidcIssuerUrl: instance.oidcIssuerUrl,
+				oidcClientId: instance.oidcClientId,
+				oidcButtonLabel: instance.oidcButtonLabel,
 			};
 		});
 	}

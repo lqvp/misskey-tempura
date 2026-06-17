@@ -2253,6 +2253,9 @@ declare namespace entities {
         NotesUserListTimelineRequest,
         NotesUserListTimelineResponse,
         NotificationsCreateRequest,
+        OidcLinkResponse,
+        OidcStatusResponse,
+        OidcUnlinkResponse,
         PagePushRequest,
         PagesCreateRequest,
         PagesCreateResponse,
@@ -3570,6 +3573,15 @@ export const notificationTypes: readonly ["note", "follow", "unfollow", "mention
 
 // @public (undocumented)
 export function nyaize(text: string): string;
+
+// @public (undocumented)
+type OidcLinkResponse = operations['oidc___link']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type OidcStatusResponse = operations['oidc___status']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type OidcUnlinkResponse = operations['oidc___unlink']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type Page = components['schemas']['Page'];

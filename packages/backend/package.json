@@ -124,6 +124,7 @@
 		"nsfwjs": "4.3.0",
 		"oauth2orize": "1.12.0",
 		"oauth2orize-pkce": "0.1.2",
+		"openid-client": "6.8.4",
 		"os-utils": "0.0.14",
 		"otpauth": "9.5.1",
 		"pg": "8.20.0",

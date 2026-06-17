@@ -321,6 +321,11 @@ export const paramDef = {
 				required: ['key', 'text', 'enabled', 'order', 'isDefault'],
 			},
 		},
+		oidcEnabled: { type: 'boolean' },
+		oidcIssuerUrl: { type: 'string', nullable: true, maxLength: 1024 },
+		oidcClientId: { type: 'string', nullable: true, maxLength: 1024 },
+		oidcClientSecret: { type: 'string', nullable: true, maxLength: 1024 },
+		oidcButtonLabel: { type: 'string', nullable: true, maxLength: 128 },
 	},
 	required: [],
 } as const;
@@ -1148,6 +1153,29 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				}
 
 				set.contactFormCategories = ps.contactFormCategories;
+			}
+
+			if (ps.oidcEnabled !== undefined) {
+				set.oidcEnabled = ps.oidcEnabled;
+			}
+
+			if (ps.oidcIssuerUrl !== undefined) {
+				const value = (ps.oidcIssuerUrl ?? '').trim();
+				set.oidcIssuerUrl = value === '' ? null : value;
+			}
+
+			if (ps.oidcClientId !== undefined) {
+				const value = (ps.oidcClientId ?? '').trim();
+				set.oidcClientId = value === '' ? null : value;
+			}
+
+			if (ps.oidcClientSecret !== undefined) {
+				set.oidcClientSecret = ps.oidcClientSecret === '' ? null : ps.oidcClientSecret;
+			}
+
+			if (ps.oidcButtonLabel !== undefined) {
+				const value = (ps.oidcButtonLabel ?? '').trim();
+				set.oidcButtonLabel = value === '' ? null : value;
 			}
 
 			const before = await this.metaService.fetch(true);

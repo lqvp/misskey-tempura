@@ -36,7 +36,9 @@ export class ReactionStatsCacheService implements OnApplicationShutdown {
 
 	@bindThis
 	private async fetcher(key: string): Promise<ReactionStat[]> {
-		const [type, id] = key.split(':');
+		const parts = key.split(':');
+		const type = parts[0];
+		const id = parts[1] ?? '';
 		const limit = 100;
 
 		const query =
