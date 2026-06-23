@@ -106,7 +106,7 @@ export class ContactFormService {
 	public async show(contactFormId: string): Promise<MiContactForm | null> {
 		return this.contactFormsRepository.findOne({
 			where: { id: contactFormId },
-			relations: ['user', 'assignedUser'],
+			relations: { user: true, assignedUser: true },
 		});
 	}
 

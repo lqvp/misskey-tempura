@@ -85,3 +85,6 @@ vite.config.local-dev.ts.timestamp-*
 .serena
 
 AGENTS.md
+
+# Affinity
+*.af~lock~

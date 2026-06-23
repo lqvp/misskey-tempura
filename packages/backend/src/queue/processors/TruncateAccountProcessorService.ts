@@ -107,7 +107,7 @@ export class TruncateAccountProcessorService {
 				visibility: In(['public', 'home', 'followers']),
 				id: Not(In(notesToKeep)),
 			},
-			select: ['id', 'fileIds'], // 必要なフィールドのみ取得
+			select: { id: true, fileIds: true }, // 必要なフィールドのみ取得
 		});
 
 		// 保持するノートのファイルIDを収集

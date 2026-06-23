@@ -188,6 +188,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkInput v-model="valuesModel.maxFileSizeMb" type="number" :disabled="disabled">
 					<template #suffix>MB</template>
 					<template #caption>
+						<div>{{ i18n.tsx._role._options.maxFileSize_caption2({ max: `${Math.floor(instance.maxFileSize / (1024 * 1024))}MB` }) }}</div>
 						<div><i class="ti ti-alert-triangle" style="color: var(--MI_THEME-warn);"></i> {{ i18n.ts._role._options.maxFileSize_caption }}</div>
 					</template>
 				</MkInput>
@@ -396,11 +397,152 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkSwitch>
 			</template>
 		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canAddRoles, 'canAddRoles'])" v-model:policyMeta="policyMetaModel.canAddRoles" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canAddRoles }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+			<template #valueText>{{ valuesModel.canAddRoles ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canAddRoles" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canCreateRole, 'canCreateRole'])" v-model:policyMeta="policyMetaModel.canCreateRole" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canCreateRole }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+			<template #valueText>{{ valuesModel.canCreateRole ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canCreateRole" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canUseUnFollowNotification, 'canUseUnFollowNotification'])" v-model:policyMeta="policyMetaModel.canUseUnFollowNotification" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canUseUnFollowNotification }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+			<template #valueText>{{ valuesModel.canUseUnFollowNotification ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canUseUnFollowNotification" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canUseBlockedNotification, 'canUseBlockedNotification'])" v-model:policyMeta="policyMetaModel.canUseBlockedNotification" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canUseBlockedNotification }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+			<template #valueText>{{ valuesModel.canUseBlockedNotification ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canUseBlockedNotification" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canUseUnBlockedNotification, 'canUseUnBlockedNotification'])" v-model:policyMeta="policyMetaModel.canUseUnBlockedNotification" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canUseUnBlockedNotification }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+			<template #valueText>{{ valuesModel.canUseUnBlockedNotification ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canUseUnBlockedNotification" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canPublicNonLtlNote, 'canPublicNonLtlNote'])" v-model:policyMeta="policyMetaModel.canPublicNonLtlNote" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canPublicNonLtlNote }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+			<template #valueText>{{ valuesModel.canPublicNonLtlNote ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canPublicNonLtlNote" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canReadFollowHistory, 'canReadFollowHistory'])" v-model:policyMeta="policyMetaModel.canReadFollowHistory" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canReadFollowHistory }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+			<template #valueText>{{ valuesModel.canReadFollowHistory ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canReadFollowHistory" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canAutoFollowBack, 'canAutoFollowBack'])" v-model:policyMeta="policyMetaModel.canAutoFollowBack" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canAutoFollowBack }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+			<template #valueText>{{ valuesModel.canAutoFollowBack ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canAutoFollowBack" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canUseTruncate, 'canUseTruncate'])" v-model:policyMeta="policyMetaModel.canUseTruncate" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canUseTruncate }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+			<template #valueText>{{ valuesModel.canUseTruncate ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canUseTruncate" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canUseMakePrivate, 'canUseMakePrivate'])" v-model:policyMeta="policyMetaModel.canUseMakePrivate" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canUseMakePrivate }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+			<template #valueText>{{ valuesModel.canUseMakePrivate ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canUseMakePrivate" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canUpdateCounters, 'canUpdateCounters'])" v-model:policyMeta="policyMetaModel.canUpdateCounters" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canUpdateCounters }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+			<template #valueText>{{ valuesModel.canUpdateCounters ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canUpdateCounters" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canUseGeminiLLMAPI, 'canUseGeminiLLMAPI'])" v-model:policyMeta="policyMetaModel.canUseGeminiLLMAPI" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canUseGeminiLLMAPI }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+			<template #valueText>{{ valuesModel.canUseGeminiLLMAPI ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canUseGeminiLLMAPI" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canSkipInviteEmailAuth, 'canSkipInviteEmailAuth'])" v-model:policyMeta="policyMetaModel.canSkipInviteEmailAuth" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canSkipInviteEmailAuth }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+			<template #valueText>{{ valuesModel.canSkipInviteEmailAuth ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canSkipInviteEmailAuth" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canSkipInviteApproval, 'canSkipInviteApproval'])" v-model:policyMeta="policyMetaModel.canSkipInviteApproval" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canSkipInviteApproval }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+			<template #valueText>{{ valuesModel.canSkipInviteApproval ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canSkipInviteApproval" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
 	</div>
 </template>
 
 <script lang="ts">
 import * as Misskey from 'misskey-js';
+import { instance } from '@/instance.js';
 
 export type PolicyMeta = {
 	useDefault: boolean;

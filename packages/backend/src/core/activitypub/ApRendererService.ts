@@ -175,6 +175,8 @@ export class ApRendererService {
 			mediaType: file.webpublicType ?? file.type,
 			url: this.driveFileEntityService.getPublicUrl(file),
 			name: file.comment,
+			width: file.properties?.width,
+			height: file.properties?.height,
 			sensitive: file.isSensitive,
 		};
 	}
@@ -314,11 +316,7 @@ export class ApRendererService {
 		const reaction = noteReaction.reaction;
 
 		const custom = reaction.match(/^:([\w+-]+)(?:@([\w.-]+))?:$/);
-		const sendReaction = custom
-			? custom[2]
-				? `:${custom[1]}:`
-				: reaction
-			: reaction;
+		const sendReaction = reaction;
 
 		const object: ILike = {
 			type: 'Like',
