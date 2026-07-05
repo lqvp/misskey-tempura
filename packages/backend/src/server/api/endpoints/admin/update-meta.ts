@@ -122,6 +122,8 @@ export const paramDef = {
 				enum: ['public', 'public_non_ltl', 'home', 'followers', 'specified'],
 			},
 		},
+		openLlmModerationApiUrl: { type: 'string', nullable: true },
+		openLlmModerationModel: { type: 'string', nullable: true },
 		maintainerName: { type: 'string', nullable: true },
 		maintainerEmail: { type: 'string', nullable: true },
 		langs: {
@@ -577,6 +579,16 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.openLlmModerationVisibilities !== undefined) {
 				set.openLlmModerationVisibilities = ps.openLlmModerationVisibilities;
+			}
+
+			if (ps.openLlmModerationApiUrl !== undefined) {
+				const trimmed = ps.openLlmModerationApiUrl?.trim() ?? '';
+				set.openLlmModerationApiUrl = trimmed === '' ? null : trimmed;
+			}
+
+			if (ps.openLlmModerationModel !== undefined) {
+				const trimmed = ps.openLlmModerationModel?.trim() ?? '';
+				set.openLlmModerationModel = trimmed === '' ? null : trimmed;
 			}
 
 			if (ps.maintainerName !== undefined) {

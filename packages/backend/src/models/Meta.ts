@@ -351,6 +351,18 @@ export class MiMeta {
 	})
 	public openLlmModerationVisibilities: string[];
 
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public openLlmModerationApiUrl: string | null;
+
+	@Column('varchar', {
+		length: 256,
+		nullable: true,
+	})
+	public openLlmModerationModel: string | null;
+
 	@Column('boolean', {
 		default: false,
 	})

@@ -145,6 +145,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 								<template #caption>{{ i18n.ts.openLlmModerationApiKeyDescription }}</template>
 							</MkInput>
 
+							<MkInput v-model="openLlmModerationForm.state.openLlmModerationApiUrl" type="url" :placeholder="defaultOpenLlmModerationApiUrl">
+								<template #label>{{ i18n.ts.openLlmModerationApiUrl }}</template>
+								<template #caption>{{ i18n.ts.openLlmModerationApiUrlDescription }}</template>
+							</MkInput>
+
+							<MkInput v-model="openLlmModerationForm.state.openLlmModerationModel" :placeholder="defaultOpenLlmModerationModel">
+								<template #label>{{ i18n.ts.openLlmModerationModel }}</template>
+								<template #caption>{{ i18n.ts.openLlmModerationModelDescription }}</template>
+							</MkInput>
+
 							<MkSwitch v-model="openLlmModerationForm.state.openLlmModerationIncludeRemote">
 								<template #label>{{ i18n.ts.openLlmModerationIncludeRemote }}</template>
 								<template #caption>{{ i18n.ts.openLlmModerationIncludeRemoteDescription }}</template>
@@ -246,7 +256,7 @@ import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { useMkSelect } from '@/composables/use-mkselect.js';
 import { useForm } from '@/composables/use-form.js';
-import { defaultOpenLlmModerationVisibilities, normalizeOpenLlmModerationVisibilities } from './moderation.llm.js';
+import { defaultOpenLlmModerationApiUrl, defaultOpenLlmModerationModel, defaultOpenLlmModerationVisibilities, normalizeOpenLlmModerationVisibilities } from './moderation.llm.js';
 import MkButton from '@/components/MkButton.vue';
 import MkFormFooter from '@/components/MkFormFooter.vue';
 import FormLink from '@/components/form/link.vue';
@@ -268,11 +278,17 @@ const openLlmVisibilityOptions = defaultOpenLlmModerationVisibilities.map((value
 const openLlmModerationForm = useForm({
 	openLlmModerationEnabled: normalizedOpenLlmModerationEnabled,
 	openLlmModerationApiKey: '',
+	openLlmModerationApiUrl: meta.openLlmModerationApiUrl ?? '',
+	openLlmModerationModel: meta.openLlmModerationModel ?? '',
 	openLlmModerationIncludeRemote: normalizedOpenLlmModerationIncludeRemote,
 	openLlmModerationVisibilities: normalizedOpenLlmModerationVisibilities,
 }, async (state) => {
+	const trimmedApiUrl = state.openLlmModerationApiUrl.trim();
+	const trimmedModel = state.openLlmModerationModel.trim();
 	const payload: Misskey.Endpoints['admin/update-meta']['req'] = {
 		openLlmModerationEnabled: state.openLlmModerationEnabled,
+		openLlmModerationApiUrl: trimmedApiUrl === '' ? null : trimmedApiUrl,
+		openLlmModerationModel: trimmedModel === '' ? null : trimmedModel,
 		openLlmModerationIncludeRemote: state.openLlmModerationIncludeRemote,
 		openLlmModerationVisibilities: state.openLlmModerationVisibilities as Misskey.Endpoints['admin/update-meta']['req']['openLlmModerationVisibilities'],
 	};

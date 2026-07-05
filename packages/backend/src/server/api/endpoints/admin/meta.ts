@@ -282,6 +282,14 @@ export const meta = {
 					nullable: false,
 				},
 			},
+			openLlmModerationApiUrl: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
+			openLlmModerationModel: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
 			proxyAccountId: {
 				type: 'string',
 				optional: false, nullable: false,
@@ -996,6 +1004,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				openLlmModerationApiConfigured: instance.openLlmModerationApiKey != null,
 				openLlmModerationIncludeRemote: instance.openLlmModerationIncludeRemote ?? false,
 				openLlmModerationVisibilities,
+				openLlmModerationApiUrl: instance.openLlmModerationApiUrl,
+				openLlmModerationModel: instance.openLlmModerationModel,
 				proxyAccountId: proxy.id,
 				email: instance.email,
 				smtpSecure: instance.smtpSecure,
