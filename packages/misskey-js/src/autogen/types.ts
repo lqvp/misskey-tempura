@@ -11090,6 +11090,8 @@ export interface operations {
                         openLlmModerationApiConfigured: boolean;
                         openLlmModerationIncludeRemote: boolean;
                         openLlmModerationVisibilities: string[];
+                        openLlmModerationApiUrl: string | null;
+                        openLlmModerationModel: string | null;
                         /** Format: id */
                         proxyAccountId: string;
                         email: string | null;
@@ -14801,6 +14803,8 @@ export interface operations {
                     openLlmModerationApiKey?: string | null;
                     openLlmModerationIncludeRemote?: boolean;
                     openLlmModerationVisibilities?: ('public' | 'public_non_ltl' | 'home' | 'followers' | 'specified')[];
+                    openLlmModerationApiUrl?: string | null;
+                    openLlmModerationModel?: string | null;
                     maintainerName?: string | null;
                     maintainerEmail?: string | null;
                     langs?: string[];

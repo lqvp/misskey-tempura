@@ -17,6 +17,9 @@ type ModerationInput = {
 	pollChoices?: string[] | null;
 };
 
+const DEFAULT_OPEN_LLM_MODERATION_API_URL = 'https://api.openai.com/v1/moderations';
+const DEFAULT_OPEN_LLM_MODERATION_MODEL = 'omni-moderation-latest';
+
 @Injectable()
 export class OpenLlmModerationService {
 	private logger;
@@ -46,10 +49,13 @@ export class OpenLlmModerationService {
 		const content = this.buildInputText(input);
 		if (!content) return;
 
-		const model = 'omni-moderation-latest';
+		const model = this.meta.openLlmModerationModel ?? DEFAULT_OPEN_LLM_MODERATION_MODEL;
+		const apiUrl = this.meta.openLlmModerationApiUrl ?? DEFAULT_OPEN_LLM_MODERATION_API_URL;
+		// カスタムURL設定時のみローカルアドレスを許可
+		const isLocalAddressAllowed = this.meta.openLlmModerationApiUrl != null;
 
 		try {
-			const response = await this.httpRequestService.send('https://api.openai.com/v1/moderations', {
+			const response = await this.httpRequestService.send(apiUrl, {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -60,7 +66,7 @@ export class OpenLlmModerationService {
 					input: content,
 				}),
 				timeout: 30000,
-				isLocalAddressAllowed: false,
+				isLocalAddressAllowed,
 			}, {
 				throwErrorWhenResponseNotOk: true,
 			});
