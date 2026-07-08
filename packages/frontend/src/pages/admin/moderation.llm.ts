@@ -5,6 +5,10 @@
 
 export type OpenLlmModerationVisibility = 'public' | 'public_non_ltl' | 'home' | 'followers' | 'specified';
 
+// 未設定時のフォールバック先
+export const defaultOpenLlmModerationApiUrl = 'https://api.openai.com/v1/moderations';
+export const defaultOpenLlmModerationModel = 'omni-moderation-latest';
+
 export const defaultOpenLlmModerationVisibilities = ['public', 'public_non_ltl', 'home', 'followers', 'specified'] as const satisfies readonly OpenLlmModerationVisibility[];
 
 export function normalizeOpenLlmModerationVisibilities(value: unknown): OpenLlmModerationVisibility[] {

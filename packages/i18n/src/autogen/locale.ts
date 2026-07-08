@@ -1985,6 +1985,22 @@ export interface Locale extends ILocale {
      */
     "openLlmModerationApiKeyDescription": string;
     /**
+     * APIエンドポイントURL
+     */
+    "openLlmModerationApiUrl": string;
+    /**
+     * OpenAI互換のmoderations APIエンドポイント。未入力時はOpenAI公式を使用します。セルフホストLLMやプロキシのURLも指定できます。
+     */
+    "openLlmModerationApiUrlDescription": string;
+    /**
+     * モデル名
+     */
+    "openLlmModerationModel": string;
+    /**
+     * モデレーションに使うモデル名。未入力時はomni-moderation-latestを使用します。
+     */
+    "openLlmModerationModelDescription": string;
+    /**
      * リモート投稿も対象にする
      */
     "openLlmModerationIncludeRemote": string;
