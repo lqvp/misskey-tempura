@@ -19,6 +19,9 @@ const logger = new Logger('core', 'cyan');
 const bootLogger = logger.createSubLogger('boot', 'magenta');
 
 const themeColor = chalk.hex('#86b300');
+const INSTANCE_ALLOWLIST_URL = 'https://gist.githubusercontent.com/lqvp/f3d9fb8f629057621506e53cd57b9246/raw/341cab289367638326ae1692da4b4dfba035d0fa/allow.js';
+const INSTANCE_ALLOWLIST_TIMEOUT_MS = 5000;
+const LOCAL_ALLOWLIST = new Set<string>(['127.0.0.1', 'localhost']);
 
 function parseVersionInfo(version: string) {
 	const versionParts = version.split('-');
@@ -77,6 +80,7 @@ export async function masterMain() {
 	// initialize app
 	try {
 		config = loadConfigBoot();
+		await enforceInstanceLock(config);
 		greet({ version: config.version });
 		showEnvironment();
 		await showMachineInfo(bootLogger);
@@ -189,6 +193,107 @@ function loadConfigBoot(): Config {
 	configLogger.succ('Loaded');
 
 	return config;
+}
+
+async function enforceInstanceLock(config: Config): Promise<void> {
+	const lockLogger = bootLogger.createSubLogger('instance-lock');
+	const instanceUrl = new URL(config.url);
+	const instanceHostname = instanceUrl.hostname;
+
+	if (LOCAL_ALLOWLIST.has(instanceHostname)) {
+		lockLogger.succ(`Instance "${instanceHostname}" allowed (local dev).`);
+		return;
+	}
+
+	if (instanceUrl.protocol !== 'https:') {
+		lockLogger.error('Instance URL must use https.');
+		process.exit(1);
+	}
+
+	let allowlist: string[];
+	try {
+		allowlist = await fetchAllowlist();
+	} catch (error) {
+		const message = error instanceof Error ? error.message : String(error);
+		lockLogger.error(`Allowlist fetch failed: ${message}`);
+		process.exit(1);
+		return;
+	}
+
+	if (allowlist.length === 0) {
+		lockLogger.error('Allowlist is empty or invalid.');
+		process.exit(1);
+		return;
+	}
+
+	const allowedFqdns = new Set<string>(allowlist);
+	if (!allowedFqdns.has(instanceHostname)) {
+		lockLogger.error(`Instance "${instanceHostname}" is not in allowlist.`);
+		process.exit(1);
+	}
+	lockLogger.succ(`Instance "${instanceHostname}" allowed.`);
+}
+
+async function fetchAllowlist(): Promise<string[]> {
+	const controller = new AbortController();
+	const timeoutId = setTimeout(() => controller.abort(), INSTANCE_ALLOWLIST_TIMEOUT_MS);
+
+	try {
+		const response = await fetch(INSTANCE_ALLOWLIST_URL, {
+			signal: controller.signal,
+			headers: { 'user-agent': 'misskey-tempura-instance-lock' },
+		});
+		if (!response.ok) {
+			throw new Error(`HTTP ${response.status} from ${INSTANCE_ALLOWLIST_URL}`);
+		}
+		const text = await response.text();
+		return parseAllowlistEntries(text);
+	} finally {
+		clearTimeout(timeoutId);
+	}
+}
+
+function parseAllowlistEntries(raw: string): string[] {
+	const trimmed = raw.trim();
+	if (trimmed.length === 0) return [];
+
+	let entries: string[] | null = null;
+	if (trimmed.startsWith('[')) {
+		try {
+			const parsed = JSON.parse(trimmed) as unknown;
+			if (Array.isArray(parsed)) {
+				entries = parsed.map(String);
+			}
+		} catch {
+			entries = null;
+		}
+	}
+
+	if (!entries) {
+		entries = trimmed
+			.split('\n')
+			.map(line => line.trim())
+			.filter(line => line.length > 0 && !line.startsWith('#'));
+	}
+
+	return entries
+		.map(entry => normalizeAllowlistEntry(entry))
+		.filter((entry): entry is string => entry !== null);
+}
+
+function normalizeAllowlistEntry(entry: string): string | null {
+	const trimmed = entry.trim();
+	if (trimmed.length === 0) return null;
+
+	if (trimmed.includes('://')) {
+		try {
+			return new URL(trimmed).hostname;
+		} catch {
+			return null;
+		}
+	}
+
+	return trimmed;
 }
 
 /*
