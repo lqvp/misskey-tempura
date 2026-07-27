@@ -4,10 +4,12 @@
  */
 
 import * as fs from 'node:fs';
+import * as path from 'node:path';
 import ms from 'ms';
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
+import type { Config } from '@/config.js';
 import type { MultipartUploadsRepository } from '@/models/_.js';
 import { ApiError } from '../../../error.js';
 
@@ -82,6 +84,9 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
+		@Inject(DI.config)
+		private config: Config,
+
 		@Inject(DI.multipartUploadsRepository)
 		private multipartUploadsRepository: MultipartUploadsRepository,
 	) {
@@ -108,7 +113,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				}
 
 				// Create part directory if it doesn't exist
-				const partDir = `/tmp/misskey_multipart_${multipartUpload.id}`;
+				const partDir = path.join(this.config.multipartTempDir, `misskey_multipart_${multipartUpload.id}`);
 				if (!fs.existsSync(partDir)) {
 					fs.mkdirSync(partDir, { recursive: true });
 				}

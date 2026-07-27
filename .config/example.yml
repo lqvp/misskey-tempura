@@ -391,6 +391,9 @@ proxyBypassHosts:
 # Upload or download file size limits (bytes)
 #maxFileSize: 262144000
 
+# Directory for temporary multipart upload files (default: system temp dir)
+#multipartTempDir: /var/lib/misskey/tmp
+
 # PID File of master process
 #pidFile: /tmp/misskey.pid
 

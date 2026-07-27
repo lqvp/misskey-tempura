@@ -4,6 +4,7 @@
  */
 
 import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { Inject, Injectable } from '@nestjs/common';
 import { LessThan } from 'typeorm';
 import { DI } from '@/di-symbols.js';
@@ -55,23 +56,25 @@ export class CleanExpiredMultipartUploadsProcessorService {
 		for (const upload of expiredUploads) {
 			try {
 				// 一時ファイルをクリーンアップ
-				const partDir = `/tmp/misskey_multipart_${upload.id}`;
+				const partDir = path.join(this.config.multipartTempDir, `misskey_multipart_${upload.id}`);
+				let cleanupFailed = false;
 				if (fs.existsSync(partDir)) {
-					// パートファイルの削除
-					for (let i = 1; i <= upload.totalParts; i++) {
-						const partPath = `${partDir}/part_${i}`;
-						if (fs.existsSync(partPath)) {
-							fs.unlinkSync(partPath);
-						}
+					try {
+						await fs.promises.rm(partDir, { recursive: true, force: true });
+						this.logger.info(`Cleaned up temporary files for expired upload: ${upload.id}`);
+					} catch (e) {
+						cleanupFailed = true;
+						this.logger.error(`Failed to clean up temporary files for expired upload: ${upload.id}`, e as Error);
 					}
-					// ディレクトリの削除
-					fs.rmdirSync(partDir);
-					this.logger.info(`Cleaned up temporary files for expired upload: ${upload.id}`);
 				}
 
-				// データベースからアップロードレコードを削除
-				await this.multipartUploadsRepository.delete(upload.id);
-				deletedCount++;
+				if (!cleanupFailed) {
+					// データベースからアップロードレコードを削除
+					await this.multipartUploadsRepository.delete(upload.id);
+					deletedCount++;
+				} else {
+					failedCount++;
+				}
 			} catch (err) {
 				this.logger.error(`Failed to clean up expired upload ${upload.id}:`, err as Error);
 				failedCount++;
