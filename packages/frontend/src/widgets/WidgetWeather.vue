@@ -328,11 +328,11 @@ const fetchWeatherData = async () => {
 		updateTime.value = new Date().toLocaleString();
 	} catch (error) {
 		console.error('Failed to fetch weather data:', error);
-		await os.alert({
-			type: 'error',
-			title: 'エラー',
-			text: error instanceof Error ? error.message : '予期せぬエラーが発生しました',
-		});
+		// await os.alert({
+		// 	type: 'error',
+		// 	title: 'エラー',
+		// 	text: error instanceof Error ? error.message : '予期せぬエラーが発生しました',
+		// });
 	} finally {
 		fetching.value = false;
 	}

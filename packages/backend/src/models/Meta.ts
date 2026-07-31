@@ -328,6 +328,26 @@ export class MiMeta {
 	})
 	public enableSensitiveMediaDetectionForVideos: boolean;
 
+	@Column('varchar', {
+		length: 1024, nullable: true,
+	})
+	public sensitiveMediaDetectionApiUrl: string | null;
+
+	@Column('varchar', {
+		length: 1024, nullable: true,
+	})
+	public sensitiveMediaDetectionApiKey: string | null;
+
+	@Column('integer', {
+		default: 60000,
+	})
+	public sensitiveMediaDetectionTimeout: number;
+
+	@Column('integer', {
+		default: 4,
+	})
+	public sensitiveMediaDetectionMaxImagesPerRequest: number;
+
 	@Column('boolean', {
 		default: false,
 	})
@@ -350,6 +370,18 @@ export class MiMeta {
 		default: ['public', 'public_non_ltl', 'home', 'followers', 'specified'],
 	})
 	public openLlmModerationVisibilities: string[];
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public openLlmModerationApiUrl: string | null;
+
+	@Column('varchar', {
+		length: 256,
+		nullable: true,
+	})
+	public openLlmModerationModel: string | null;
 
 	@Column('boolean', {
 		default: false,
@@ -726,6 +758,11 @@ export class MiMeta {
 		default: null,
 	})
 	public urlPreviewUserAgent: string | null;
+
+	@Column('varchar', {
+		length: 3072, array: true, default: '{}',
+	})
+	public urlPreviewSensitiveList: string[];
 
 	@Column('varchar', {
 		length: 128,

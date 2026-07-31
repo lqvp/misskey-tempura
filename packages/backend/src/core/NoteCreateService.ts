@@ -587,6 +587,11 @@ export class NoteCreateService implements OnApplicationShutdown {
 					// specified / direct noteはreject
 					throw new Error('Renote target is not public or home');
 			}
+
+			// ローカルのみをRenoteしたらローカルのみにする
+			if (data.renote.localOnly && data.channel == null) {
+				data.localOnly = true;
+			}
 		}
 
 		// Check blocking
@@ -601,19 +606,36 @@ export class NoteCreateService implements OnApplicationShutdown {
 			}
 		}
 
-		// 返信対象がpublicまたはpublic_non_ltlではないならhomeにする
-		if (data.reply && !['public', 'public_non_ltl'].includes(data.reply.visibility) && ['public', 'public_non_ltl'].includes(data.visibility)) {
-			data.visibility = 'home';
-		}
+		if (data.reply) {
+			switch (data.reply.visibility) {
+				case 'public':
+				case 'public_non_ltl':
+					// public noteは無条件にreply可能
+					break;
+				case 'home':
+					// home noteはhome以下にreply可能
+					if (data.visibility === 'public' || data.visibility === 'public_non_ltl') {
+						data.visibility = 'home';
+					}
+					break;
+				case 'followers':
+					// followers noteはfollowers以下にreply可能
+					if (data.visibility === 'public' || data.visibility === 'public_non_ltl' || data.visibility === 'home') {
+						data.visibility = 'followers';
+					}
+					break;
+				case 'specified':
+					// specified / direct noteはspecifiedのみreply可能
+					if (data.visibility !== 'specified') {
+						data.visibility = 'specified';
+					}
+					break;
+			}
 
-		// ローカルのみをRenoteしたらローカルのみにする
-		if (data.renote && data.renote.localOnly && data.channel == null) {
-			data.localOnly = true;
-		}
-
-		// ローカルのみにリプライしたらローカルのみにする
-		if (data.reply && data.reply.localOnly && data.channel == null) {
-			data.localOnly = true;
+			// ローカルのみにリプライしたらローカルのみにする
+			if (data.reply.localOnly && data.channel == null) {
+				data.localOnly = true;
+			}
 		}
 
 		if (data.text) {
