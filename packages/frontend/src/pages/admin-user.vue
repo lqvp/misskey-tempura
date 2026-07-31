@@ -104,6 +104,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<div class="_buttons">
 						<div v-if="user.host == null" inline style="margin-right: 8px;" class="_buttons">
 							<MkButton @click="resetPassword"><i class="ti ti-key"></i> {{ i18n.ts.resetPassword }}</MkButton>
+							<MkButton v-if="user.host == null" inline @click="unsetMfa"><i class="ti ti-shield"></i> {{ i18n.ts.unsetMfa }}</MkButton>
 							<MkButton danger @click="regenerateLoginToken"><i class="ti ti-refresh"></i> {{ i18n.ts.regenerateLoginToken }}</MkButton>
 							<MkButton danger @click="sendNotification"><i class="ti ti-bell"></i> {{ i18n.ts.sendNotification }}</MkButton>
 							<MkButton inline danger @click="updateUserName"><i class="ti ti-user-edit"></i> {{ i18n.ts.rename }}</MkButton>
@@ -360,6 +361,20 @@ async function resetPassword() {
 		os.alert({
 			type: 'success',
 			text: i18n.tsx.newPasswordIs({ password }),
+		});
+	}
+}
+
+async function unsetMfa() {
+	const confirm = await os.confirm({
+		type: 'warning',
+		text: i18n.ts.unsetMfaConfirm,
+	});
+	if (confirm.canceled) {
+		return;
+	} else {
+		await os.apiWithDialog('admin/unset-mfa', {
+			userId: user.value.id,
 		});
 	}
 }
