@@ -81,7 +81,7 @@ import: "Importa"
 export: "Esporta"
 files: "Allegati"
 download: "Scarica"
-driveFileDeleteConfirm: "Vuoi davvero eliminare il file \"{name}\", e le Note a cui è stato allegato?"
+driveFileDeleteConfirm: 'Vuoi davvero eliminare il file "{name}", e le Note a cui è stato allegato?'
 unfollowConfirm: "Vuoi davvero togliere il Following a {name}?"
 cancelFollowRequestConfirm: "Vuoi annullare la tua richiesta di follow inviata a {name}?"
 rejectFollowRequestConfirm: "Vuoi rifiutare la richiesta di follow ricevuta da {name}?"
@@ -138,7 +138,7 @@ pinnedEmojisSettingDescription: "Scegli quale sia l'emoji in cima, quando reagis
 emojiPickerDisplay: "Visualizza selettore"
 overwriteFromPinnedEmojisForReaction: "Sovrascrivi con le impostazioni reazioni"
 overwriteFromPinnedEmojis: "Sovrascrivi con le impostazioni globali"
-reactionSettingDescription2: "Trascina per riorganizzare, clicca per cancellare, usa il pulsante \"+\" per aggiungere."
+reactionSettingDescription2: 'Trascina per riorganizzare, clicca per cancellare, usa il pulsante "+" per aggiungere.'
 rememberNoteVisibility: "Ricordare le impostazioni di visibilità delle note"
 attachCancel: "Rimuovi allegato"
 deleteFile: "Elimina un file dal Drive"
@@ -287,8 +287,8 @@ announcements: "Annunci"
 imageUrl: "URL dell'immagine"
 remove: "Elimina"
 removed: "Eliminato con successo"
-removeAreYouSure: "Vuoi davvero eliminare \"{x}\"?"
-deleteAreYouSure: "Vuoi davvero eliminare \"{x}\"?"
+removeAreYouSure: 'Vuoi davvero eliminare "{x}"?'
+deleteAreYouSure: 'Vuoi davvero eliminare "{x}"?'
 resetAreYouSure: "Ripristinare?"
 areYouSure: "Confermi?"
 saved: "Salvato"
@@ -399,7 +399,7 @@ bannerUrl: "URL dell'immagine d'intestazione"
 backgroundImageUrl: "URL dello sfondo"
 basicInfo: "Informazioni fondamentali"
 pinnedUsers: "Profili in evidenza"
-pinnedUsersDescription: "Elenca i profili delle persone che vuoi fissare nella pagina \"Esplora\"."
+pinnedUsersDescription: 'Elenca i profili delle persone che vuoi fissare nella pagina "Esplora".'
 pinnedPages: "Pagine in evidenza"
 pinnedPagesDescription: "Specifica il percorso delle pagine che vuoi fissare in cima alla pagina dell'istanza. Una pagina per riga."
 pinnedClipId: "ID della Clip in evidenza"
@@ -421,7 +421,7 @@ turnstile: "Accesso"
 enableTurnstile: "Abilita l'accesso"
 turnstileSiteKey: "Chiave del sito"
 turnstileSecretKey: "Chiave segreta"
-avoidMultiCaptchaConfirm: "Utilizzare diversi Captcha può causare interferenze. Vuoi disattivare l'altro Captcha? Puoi lasciare diversi Captcha attivi premendo \"Cancella\"."
+avoidMultiCaptchaConfirm: 'Utilizzare diversi Captcha può causare interferenze. Vuoi disattivare l''altro Captcha? Puoi lasciare diversi Captcha attivi premendo "Cancella".'
 antennas: "Antenne"
 manageAntennas: "Gestore delle antenne"
 name: "Nome"
@@ -576,7 +576,7 @@ objectStorageUseSSL: "Usare SSL"
 objectStorageUseSSLDesc: "Disabilita quest'opzione se non utilizzi HTTPS per le connessioni API."
 objectStorageUseProxy: "Usa proxy"
 objectStorageUseProxyDesc: "Disabilita quest'opzione se non usi proxy per la connessione API."
-objectStorageSetPublicRead: "Imposta \"visibilità pubblica\" al momento di caricare"
+objectStorageSetPublicRead: 'Imposta "visibilità pubblica" al momento di caricare'
 s3ForcePathStyleDesc: "L'attivazione di s3ForcePathStyle impone di specificare il nome del bucket come parte del percorso nell'URL anziché del nome host. Potrebbe tornare utile quando si utilizzano applicazioni come Minio."
 serverLogs: "Log del server"
 deleteAll: "Cancella cronologia"
@@ -619,6 +619,8 @@ output: "Output"
 script: "Script"
 disablePagesScript: "Disabilitare AiScript nelle pagine"
 updateRemoteUser: "Aggiorna dati dal profilo remoto"
+unsetMfa: "Rimuovere l'autenticazione a due fattori (2FA/MFA)"
+unsetMfaConfirm: "Vuoi davvero rimuovere l'autenticazione a due fattori?"
 unsetUserAvatar: "Rimozione foto profilo"
 unsetUserAvatarConfirm: "Vuoi davvero rimuovere la foto profilo?"
 unsetUserBanner: "Rimuovi intestazione profilo"
@@ -698,12 +700,12 @@ wordMute: "Parole silenziate"
 wordMuteDescription: "Comprimi le Note che hanno la parola o la regola specificata. Cliccale per espanderle e leggerne comunque il contenuto."
 hardWordMute: "Filtro per parole"
 showMutedWord: "Elenca le parole silenziate"
-hardWordMuteDescription: "Ignora le Note con la parola o la regola specificata. A differenza delle \"Parole Silenziate\", queste Note non ti verranno proprio recapitate."
+hardWordMuteDescription: 'Ignora le Note con la parola o la regola specificata. A differenza delle "Parole Silenziate", queste Note non ti verranno proprio recapitate.'
 regexpError: "errore regex"
 regexpErrorDescription: "Si è verificato un errore nell'espressione regolare alla riga {line} della parola muta {tab}:"
 instanceMute: "Silenziare l'istanza"
 userSaysSomething: "{name} ha scritto qualcosa"
-userSaysSomethingAbout: "{name} ha anNotato qualcosa su \"{word}\""
+userSaysSomethingAbout: '{name} ha anNotato qualcosa su "{word}"'
 makeActive: "Attiva"
 display: "Visualizza"
 copy: "Copia"
@@ -752,7 +754,7 @@ createNew: "Crea"
 optional: "facoltativo"
 createNewClip: "Crea una Clip"
 unclip: "Togli Nota dalla Clip"
-confirmToUnclipAlreadyClippedNote: "Questa nota è già inclusa in \"{name}\". Si desidera escludere la nota?"
+confirmToUnclipAlreadyClippedNote: 'Questa nota è già inclusa in "{name}". Si desidera escludere la nota?'
 removeFromAntenna: "Elimina da questa Antenna"
 removeNoteFromAntennaConfirm: "Vuoi davvero eliminare la Nota di {name} ?"
 public: "Pubblica"
@@ -777,7 +779,7 @@ driveFilesCount: "Quantità di file nel Drive"
 driveUsage: "Utilizzazione del Drive"
 noCrawle: "Rifiuta l'indicizzazione dai robot."
 noCrawleDescription: "Richiedi che i motori di ricerca non indicizzino la tua pagina di profilo, le tue note, pagine, ecc."
-lockedAccountInfo: "A meno che non imposti la visibilità delle tue note su \"Solo ai follower\", le tue note sono visibili da tutti, anche se hai configurato l'account per confermare manualmente le richieste di follow."
+lockedAccountInfo: 'A meno che non imposti la visibilità delle tue note su "Solo ai follower", le tue note sono visibili da tutti, anche se hai configurato l''account per confermare manualmente le richieste di follow.'
 alwaysMarkSensitive: "Segnare automaticamente come espliciti gli allegati"
 loadRawImages: "Visualizza le intere immagini allegate invece delle miniature."
 disableShowingAnimatedImages: "Disabilitare le immagini animate"
@@ -788,7 +790,7 @@ notSet: "Non impostato"
 emailVerified: "Il tuo indirizzo email è stato verificato"
 noteFavoritesCount: "Conteggio note tra i preferiti"
 pageLikesCount: "Quantità di pagine che ti piacciono"
-pageLikedCount: "Numero delle tue pagine che hanno ricevuto \"Mi piace\""
+pageLikedCount: 'Numero delle tue pagine che hanno ricevuto "Mi piace"'
 contact: "Contatti"
 useSystemFont: "Usa il carattere predefinito del sistema"
 clips: "Clip"
@@ -796,8 +798,8 @@ experimentalFeatures: "Funzioni sperimentali"
 experimental: "Sperimentale"
 thisIsExperimentalFeature: "Questa è una funzionalità sperimentale. Potrebbe essere malfunzionante o cambiare in futuro."
 developer: "Sviluppatore"
-makeExplorable: "Profilo visibile pubblicamente nella pagina \"Esplora\""
-makeExplorableDescription: "Disabilitando questa opzione, il tuo profilo non verrà elencato nella pagina \"Esplora\"."
+makeExplorable: 'Profilo visibile pubblicamente nella pagina "Esplora"'
+makeExplorableDescription: 'Disabilitando questa opzione, il tuo profilo non verrà elencato nella pagina "Esplora".'
 duplicate: "Duplica"
 left: "Sinistra"
 center: "Centro"
@@ -852,7 +854,7 @@ unlikeConfirm: "Non ti piace più?"
 fullView: "Schermo intero"
 quitFullView: "Esci dalla modalità a schermo intero"
 addDescription: "Aggiungi descrizione"
-userPagePinTip: "Qui puoi appuntare note, premendo \"Fissa sul profilo\" nel menù delle singole note."
+userPagePinTip: 'Qui puoi appuntare note, premendo "Fissa sul profilo" nel menù delle singole note.'
 notSpecifiedMentionWarning: "Sono stati menzionati profili non inclusi fra i destinatari"
 info: "Informazioni"
 userInfo: "Informazioni sul profilo"
@@ -946,7 +948,7 @@ voteConfirm: "Votare per「{choice}」?"
 hide: "Nascondere"
 useDrawerReactionPickerForMobile: "Mostra sul drawer da dispositivo mobile"
 welcomeBackWithName: "Ciao, {name}! Eccoti di nuovo!"
-clickToFinishEmailVerification: "Premi il bottone \"{ok}\" per completare la verifica dell'indirizzo email."
+clickToFinishEmailVerification: 'Premi il bottone "{ok}" per completare la verifica dell''indirizzo email.'
 overridedDeviceKind: "Tipo di dispositivo"
 smartphone: "Smartphone"
 tablet: "Tablet"
@@ -1027,7 +1029,7 @@ unsubscribePushNotification: "Disattivare le notifiche push"
 pushNotificationAlreadySubscribed: "Le notifiche push sono già attivate"
 pushNotificationNotSupported: "Il client o il server non supporta le notifiche push"
 sendPushNotificationReadMessage: "Eliminare le notifiche push dopo la relativa lettura"
-sendPushNotificationReadMessageCaption: "Se possibile, verrà mostrata brevemente una notifica con il testo \"{emptyPushNotificationMessage}\". Potrebbe influire negativamente sulla durata della batteria."
+sendPushNotificationReadMessageCaption: 'Se possibile, verrà mostrata brevemente una notifica con il testo "{emptyPushNotificationMessage}". Potrebbe influire negativamente sulla durata della batteria.'
 pleaseAllowPushNotification: "Per favore, acconsenti alla ricezione di notifiche nel browser"
 browserPushNotificationDisabled: "Non è stato possibile ottenere il consenso alla ricezione di notifche"
 browserPushNotificationDisabledDescription: "Non hai concesso a {serverName} di spedire notifiche. Per favore, acconsenti alla ricezione nelle impostazioni del browser e riprova."
@@ -1098,11 +1100,11 @@ nonSensitiveOnlyForLocalLikeOnlyForRemote: "Soltanto non espliciti (reazioni rem
 rolesAssignedToMe: "I miei ruoli"
 resetPasswordConfirm: "Vuoi davvero ripristinare la password?"
 sensitiveWords: "Parole esplicite"
-sensitiveWordsDescription: "Imposta automaticamente \"Home\" alla visibilità delle Note che contengono una qualsiasi parola tra queste configurate. Puoi separarle per riga."
-sensitiveWordsDescription2: "Gli spazi creano la relazione \"E\" tra parole (questo E quello). Racchiudere una parola nelle slash \"/\" la trasforma in Espressione Regolare."
+sensitiveWordsDescription: 'Imposta automaticamente "Home" alla visibilità delle Note che contengono una qualsiasi parola tra queste configurate. Puoi separarle per riga.'
+sensitiveWordsDescription2: 'Gli spazi creano la relazione "E" tra parole (questo E quello). Racchiudere una parola nelle slash "/" la trasforma in Espressione Regolare.'
 prohibitedWords: "Parole proibite"
 prohibitedWordsDescription: "Verrà impedito di pubblicare Note che abbiano le parole indicate. Puoi impostare più parole, separatamente, su ogni riga."
-prohibitedWordsDescription2: "Gli spazi creano la relazione \"E\" tra parole (questo E quello). Racchiudere una parola nelle slash \"/\" la trasforma in Espressione Regolare."
+prohibitedWordsDescription2: 'Gli spazi creano la relazione "E" tra parole (questo E quello). Racchiudere una parola nelle slash "/" la trasforma in Espressione Regolare.'
 hiddenTags: "Hashtag nascosti"
 hiddenTagsDescription: "Impedire la visualizzazione del tag impostato nei trend. Puoi impostare più valori, uno per riga."
 notesSearchNotAvailable: "Non è possibile cercare tra le Note."
@@ -1161,7 +1163,7 @@ displayOfNote: "Visualizzazione delle Note"
 initialAccountSetting: "Impostazioni iniziali del profilo"
 youFollowing: "Following"
 preventAiLearning: "Impedisci l'apprendimento della IA"
-preventAiLearningDescription: "Aggiungendo il campo \"noai\" alla risposta HTML, si indica ai Robot esterni di non usare testi e allegati per addestrare sistemi di Machine Learning (IA predittiva/generativa). Anche se è impossibile sapere se la richiesta venga onorata o semplicemente ignorata."
+preventAiLearningDescription: 'Aggiungendo il campo "noai" alla risposta HTML, si indica ai Robot esterni di non usare testi e allegati per addestrare sistemi di Machine Learning (IA predittiva/generativa). Anche se è impossibile sapere se la richiesta venga onorata o semplicemente ignorata.'
 options: "Opzioni del ruolo"
 specifyUser: "Profilo specifico"
 lookupConfirm: "Vuoi davvero richiedere informazioni?"
@@ -1202,7 +1204,7 @@ used: "Utilizzato"
 expired: "Scaduto"
 doYouAgree: "Accetti le condizioni?"
 beSureToReadThisAsItIsImportant: "Si prega di leggere attentamente perché è importante."
-iHaveReadXCarefullyAndAgree: "Dichiaro di aver letto attentamente \"{x}\" e accettarne le condizioni."
+iHaveReadXCarefullyAndAgree: 'Dichiaro di aver letto attentamente "{x}" e accettarne le condizioni.'
 dialog: "Dialogo"
 icon: "Ritratto"
 forYou: "Per te"
@@ -1361,14 +1363,11 @@ information: "Informazioni"
 chat: "Chat"
 directMessage: "Chattare insieme"
 directMessage_short: "Messaggio"
-migrateOldSettings: "Migrare le vecchie impostazioni"
-migrateOldSettings_description: "Di solito, viene fatto automaticamente. Se per qualche motivo non fossero migrate con successo, è possibile avviare il processo di migrazione manualmente, sovrascrivendo le configurazioni attuali."
 compress: "Compressione"
 right: "Destra"
 bottom: "Sotto"
 top: "Sopra"
 embed: "Incorporare"
-settingsMigrating: "Migrazione delle impostazioni. Attendere prego ... (Puoi anche migrare manualmente in un secondo momento, nel menu: Impostazioni → Altro → Migrazione delle impostazioni)"
 readonly: "Sola lettura"
 goToDeck: "Torna al Deck"
 federationJobs: "Coda di federazione"
@@ -1420,6 +1419,8 @@ addToEmojiPalette: "Aggiungi alla tavolozza emoji"
 emojiPaletteAlreadyAddedConfirm: "Questa emoji è già inclusa in nella tavolozza. Vuoi davvero aggiungerla?"
 append: "Accodare"
 prepend: "Anteporre"
+urlPreviewSensitiveList: "URL da impedire alla vista delle anteprime"
+urlPreviewSensitiveListDescription: "Separando con uno spazio si indica E, separando con una linea si indica O. Circondando con barre / si indica una Espressione Regolare.\nLe URL che coincidono con le indicazioni non verranno visualizzate."
 _imageEditing:
   _vars:
     caption: "Didascalia dell'immagine"
@@ -1573,10 +1574,10 @@ _settings:
 _preferencesProfile:
   profileName: "Nome del profilo"
   profileNameDescription: "Impostare il nome che indentifica questo dispositivo."
-  profileNameDescription2: "Es: \"PC principale\" o \"Cellulare\""
+  profileNameDescription2: 'Es: "PC principale" o "Cellulare"'
   manageProfiles: "Gestione profili"
   shareSameProfileBetweenDevicesIsNotRecommended: "Si sconsiglia di condividere lo stesso profilo su più dispositivi."
-  useSyncBetweenDevicesOptionIfYouWantToSyncSetting: "Se intendi sincronizzare solo alcuni parametri di configurazione su più dispositivi, devi attivare  l'opzione \"Sincronizzazione tra dispositivi\" per ogni parametro interessato."
+  useSyncBetweenDevicesOptionIfYouWantToSyncSetting: 'Se intendi sincronizzare solo alcuni parametri di configurazione su più dispositivi, devi attivare  l''opzione "Sincronizzazione tra dispositivi" per ogni parametro interessato.'
 _preferencesBackup:
   autoBackup: "Backup automatico"
   restoreFromBackup: "Ripristinare da backup"
@@ -1636,13 +1637,13 @@ _announcement:
   forExistingUsers: "Solo ai profili attuali"
   forExistingUsersDescription: "L'annuncio sarà visibile solo ai profili esistenti in questo momento. Se disabilitato, sarà visibile anche ai profili che verranno creati dopo la pubblicazione di questo annuncio."
   needConfirmationToRead: "Conferma di lettura obbligatoria"
-  needConfirmationToReadDescription: "I profili riceveranno una finestra di dialogo che richiede di accettare obbligatoriamente per procedere. Tale richiesta è esente da  \"conferma tutte\"."
+  needConfirmationToReadDescription: 'I profili riceveranno una finestra di dialogo che richiede di accettare obbligatoriamente per procedere. Tale richiesta è esente da  "conferma tutte".'
   end: "Archivia l'annuncio"
   tooManyActiveAnnouncementDescription: "L'esperienza delle persone può peggiorare se ci sono troppi annunci attivi. Considera anche l'archiviazione degli annunci conclusi."
   readConfirmTitle: "Segnare come già letto?"
-  readConfirmText: "Hai già letto \"{title}˝?"
+  readConfirmText: 'Hai già letto "{title}˝?'
   shouldNotBeUsedToPresentPermanentInfo: "Ti consigliamo di utilizzare gli annunci per pubblicare informazioni tempestive e limitate nel tempo, anziché informazioni importanti a lungo andare nel tempo, poiché potrebbero risultare difficili da ritrovare e peggiorare la fruibilità del servizio, specialmente alle nuove persone iscritte."
-  dialogAnnouncementUxWarn: "Ti consigliamo di usarli con cautela, poiché è molto probabile che avere più di un annuncio in stile \"finestra di dialogo\" peggiori sensibilmente la fruibilità del servizio, specialmente alle nuove persone iscritte."
+  dialogAnnouncementUxWarn: 'Ti consigliamo di usarli con cautela, poiché è molto probabile che avere più di un annuncio in stile "finestra di dialogo" peggiori sensibilmente la fruibilità del servizio, specialmente alle nuove persone iscritte.'
   silence: "Annuncio silenzioso"
   silenceDescription: "Attivando questa opzione, non invierai la notifica, evitando che debba essere contrassegnata come già letta."
 _initialAccountSetting:
@@ -1652,7 +1653,7 @@ _initialAccountSetting:
   profileSetting: "Impostazioni del profilo"
   privacySetting: "Impostazioni sulla privacy"
   theseSettingsCanEditLater: "In seguito, potrai cambiare la tua scelta."
-  youCanEditMoreSettingsInSettingsPageLater: "Nella pagina \"Impostazioni\", è possibile personalizzare di più il tuo profilo. Dacci un'occhiata dopo!"
+  youCanEditMoreSettingsInSettingsPageLater: 'Nella pagina "Impostazioni", è possibile personalizzare di più il tuo profilo. Dacci un''occhiata dopo!'
   followUsers: "Per comporre la tua Timeline Home (personale) segui i profili delle persone che ti interessano."
   pushNotificationDescription: "Attivare le notifiche push ti permettera di ricevere informazioni sulla attività di {name} direttamente sul tuo dispositivo."
   initialAccountSettingCompleted: "Hai completato la configurazione iniziale!"
@@ -1671,18 +1672,18 @@ _initialTutorial:
     description: "Qui puoi verificare l'uso delle funzionalità base di Misskey."
   _note:
     title: "Cosa sono le Note?"
-    description: "Gli status su Misskey sono chiamati \"Note\". Le Note sono elencate in ordine cronologico nelle timeline e vengono aggiornate in tempo reale."
+    description: 'Gli status su Misskey sono chiamati "Note". Le Note sono elencate in ordine cronologico nelle timeline e vengono aggiornate in tempo reale.'
     reply: "Puoi rispondere alle Note, alle altre risposte e dialogare in conversazioni."
     renote: "Puoi ri-condividere le Note, ritorneranno sulla Timeline. Aggiungendo del testo, scriverai una Citazione."
     reaction: "Puoi aggiungere una reazione. Nella pagina successiva ti spiego come."
     menu: "Per altre attività, ad esempio, vedere i dettagli delle Note o copiare i collegamenti."
   _reaction:
     title: "Cosa sono le Reazioni?"
-    description: "Reazioni alle Note. Le sensazioni che non si possono descrivere con \"Mi piace\" si esprimono facilmente con le reazioni."
-    letsTryReacting: "Puoi aggiungere una Reazione cliccando il bottone \"+\" (più) della relativa Nota. Prova ad aggiungerne una a questa Nota di esempio!"
+    description: 'Reazioni alle Note. Le sensazioni che non si possono descrivere con "Mi piace" si esprimono facilmente con le reazioni.'
+    letsTryReacting: 'Puoi aggiungere una Reazione cliccando il bottone "+" (più) della relativa Nota. Prova ad aggiungerne una a questa Nota di esempio!'
     reactToContinue: "Aggiungere la Reazione ti consentirà di procedere col tutorial."
     reactNotification: "Quando qualcuno reagisce alle tue Note, ricevi una notifica in tempo reale."
-    reactDone: "Annulla la tua Reazione premendo il bottone \"ー\" (meno)"
+    reactDone: 'Annulla la tua Reazione premendo il bottone "ー" (meno)'
   _timeline:
     title: "Come funziona la Timeline"
     description1: "Misskey fornisce alcune Timeline (sequenze cronologiche di Note). Una di queste potrebbe essere stata disattivata dagli amministratori."
@@ -1699,14 +1700,14 @@ _initialTutorial:
       description: "Puoi limitare chi può vedere la tua Nota."
       public: "Visibile a tutti."
       home: "Pubblicato solo sulla Timeline Home (personale). Visibile anche da profili remoti follower, visitatori del tuo profilo e tramite i Rinota dei follower."
-      followers: "Visibile solo ai profili tuoi follower (locali o remoti). Nessun altro oltre a te può \"Rinotare\"."
+      followers: 'Visibile solo ai profili tuoi follower (locali o remoti). Nessun altro oltre a te può "Rinotare".'
       direct: "Visibile solo ai profili specificati, i quali riceveranno una notifica. Puoi usarlo come se fossero messaggi diretti."
       doNotSendConfidencialOnDirect1: "Attenzione, quando si inviano informazioni confidenziali."
       doNotSendConfidencialOnDirect2: "Poiché le Note non sono crittografate, l'amministratore del server di destinazione potrebbe leggere cosa è stato scritto, quindi se spedisci una Nota diretta a un profilo che risiede su un server non attendibile, evita di scrivere informazioni riservate."
       localOnly: "Indipendentemente dalla visualizzazione sopra indicata, i profili su altri server non saranno in grado di visualizzare la Nota, se questa impostazione è attivata. Non non verrà comunicata ad altri server."
     _cw:
       title: "Nascondere il contenuto esplicito"
-      description: "Verrà visualizzato il testo scritto nel campo \"Annotazione preventiva\" al posto del testo principale della Nota. Premere il bottone \"Continua la lettura\" se si intende davvero leggere il testo."
+      description: 'Verrà visualizzato il testo scritto nel campo "Annotazione preventiva" al posto del testo principale della Nota. Premere il bottone "Continua la lettura" se si intende davvero leggere il testo.'
       _exampleNote:
         cw: "Attenzione: contiene zuccheri"
         note: "Ho appena mangiato una ciambella ricoperta di cioccolato 🍩😋"
@@ -1717,7 +1718,7 @@ _initialTutorial:
     tryThisFile: "Prova a rendere esplicite le immagini allegate a questo modulo!"
     _exampleNote:
       note: "AAA! Ho rotto il coperchio del natto... (fagioli di soia fermentati)"
-    method: "Tocca il file, si aprirà il menu, scegli la voce \"Segna come esplicito\""
+    method: 'Tocca il file, si aprirà il menu, scegli la voce "Segna come esplicito"'
     sensitiveSucceeded: "Quando alleghi file, assicurati di indicare se è materiale esplicito in modo appropriato, decidi in base al regolamento dell'istanza."
     doItToContinue: "Imposta l'immagine come esplicita per procedere col tutorial."
   _done:
@@ -2152,6 +2153,15 @@ _sensitiveMediaDetection:
   setSensitiveFlagAutomaticallyDescription: "Anche se questa impostazione è disattivata, il risultato della decisione viene conservato internamente."
   analyzeVideos: "Abilitazione dell'analisi video."
   analyzeVideosDescription: "Assicuratevi che vengano analizzati anche i video oltre alle immagini fisse. Il carico del server aumenterà leggermente."
+  externalServiceInfo: "Abbiamo spostato esternamente il riconoscimento di media espliciti (sensitive-detector). Per usufruirne devi impostare un servizio separato e indicare di seguito la destinazione. Se non è impostata, non viene emesso alcun giudizio (contenuto NON esplicito)."
+  apiUrl: "URL di connessione a Sensitive-Detector"
+  apiUrlDescription: "L'URL di base del servizio (ad esempio http://localhost:3009). Collegandosi a una rete privata, autorizzare la rete nel parametro allowedPrivateNetworks nel file di configurazione.\nCollegandosi con un proxy, è anche necessario impostare proxyBypassHosts. Nel caso il campo sia vuoto, non vengono emessi giudizi di sensibilità."
+  apiKey: "Chiave API"
+  apiKeyDescription: "Indicare il token di autenticazione (Bearer token), soltanto se occorre, altrimenti lasciare vuoto."
+  timeout: "Timeout (ms)"
+  timeoutDescription: "Tempo limite per ogni richiesta"
+  maxImagesPerRequest: "Numero massimo di media per ogni richiesta"
+  maxImagesPerRequestDescription: "In caso ci siano più fotogrammi, come nei video, questo è il numero massimo di immagini da inviare in una richiesta. Oltre questo numero, il totale sarà diviso e inviato in sequenza.\nImpostare in modo che non superi il valore maxParts (default: 10) in Sensitive-Detector. Se viene superato, il media sarà considerato non esplicito."
 _emailUnavailable:
   used: "Email già in uso"
   format: "Formato email non valido"
@@ -2211,12 +2221,12 @@ _preferencesBackups:
   save: "Sovrascrivi il backup"
   inputName: "Inserire il nome del backup."
   cannotSave: "Impossibile salvare."
-  nameAlreadyExists: "Il nome del backup \"{name}\" esiste già. Si prega di specificare un nome diverso."
+  nameAlreadyExists: 'Il nome del backup "{name}" esiste già. Si prega di specificare un nome diverso.'
   applyConfirm: "Si desidera applicare il backup '{name}' al dispositivo corrente? La configurazione attuale del dispositivo viene persa."
   saveConfirm: "Si vuole sovrascrivere {name}?"
-  deleteConfirm: "Vuoi davvero eliminare \"{name}\"?"
-  renameConfirm: "Volete cambiare \"{old}\" con \"{new}\"?"
-  noBackups: "Non è disponibile alcun backup. Salva nuovo\" consente di salvare la configurazione corrente del client sul server."
+  deleteConfirm: 'Vuoi davvero eliminare "{name}"?'
+  renameConfirm: 'Volete cambiare "{old}" con "{new}"?'
+  noBackups: 'Non è disponibile alcun backup. Salva nuovo" consente di salvare la configurazione corrente del client sul server.'
   createdAt: "Data di creazione: {date} {time}"
   updatedAt: "Data di aggiornamento: {date} {time}"
   cannotLoad: "Impossibile da caricare."
@@ -2401,7 +2411,7 @@ _2fa:
   securityKeyName: "Inserisci il nome della chiave"
   tapSecurityKey: "Segui le istruzioni del browser e registra la chiave di sicurezza."
   removeKey: "Elimina la chiave di sicurezza"
-  removeKeyConfirm: "Vuoi davvero eliminare \"{name}\"?"
+  removeKeyConfirm: 'Vuoi davvero eliminare "{name}"?'
   whyTOTPOnlyRenew: "Se c'è una chiave di sicurezza attiva, non è possibile rimuovere l'app di autenticazione."
   renewTOTP: "Riconfigura l'app di autenticazione"
   renewTOTPConfirm: "I codici di verifica nelle app di autenticazione esistenti smetteranno di funzionare"
@@ -2464,6 +2474,7 @@ _permissions:
   "read:admin:show-moderation-log": "Vedere lo storico di moderazione"
   "read:admin:show-user": "Vedere le informazioni private dei profili"
   "write:admin:suspend-user": "Sospendere i profili"
+  "write:admin:unset-mfa": "Può rimuovere l'autenticazione a due fattori (2FA/MFA)"
   "write:admin:user-avatar": "Rimuovere la foto profilo dai profili"
   "write:admin:user-banner": "Rimuovere l'immagine testata dai profili"
   "write:admin:unsuspend-user": "Rimuovere la sospensione ai profili"
@@ -2655,7 +2666,7 @@ _postForm:
     menu_title: "Menù"
     menu_description: "Puoi svolgere varie azioni, come salvare in bozza, pianificare le annotazioni, regolare le reazioni ricevute e altro."
     submit_title: "Bottone invia"
-    submit_description: "Pubblica la Nota. Funziona anche con \"Ctrl + Invio\", oppure \"Cmd + Invio\"."
+    submit_description: 'Pubblica la Nota. Funziona anche con "Ctrl + Invio", oppure "Cmd + Invio".'
   _placeholders:
     a: "Come va?"
     b: "Hai qualcosa da raccontare? Inizia pure..."
@@ -2868,9 +2879,9 @@ _deck:
   deleteProfile: "Cancellare il profilo."
   introduction: "Crea la tua interfaccia combinando le colonne!"
   introduction2: "Per aggiungere una colonna, cliccare il bottone + (più) visibile al margine dello schermo."
-  widgetsIntroduction: "Dal menu della colonna, selezionare \"Modifica i riquadri\" per aggiungere un un riquadro con funzionalità"
+  widgetsIntroduction: 'Dal menu della colonna, selezionare "Modifica i riquadri" per aggiungere un un riquadro con funzionalità'
   useSimpleUiForNonRootPages: "Visualizza sotto pagine con interfaccia web semplice"
-  usedAsMinWidthWhenFlexible: "Se \"larghezza flessibile\" è abilitato, questa diventa la larghezza minima"
+  usedAsMinWidthWhenFlexible: 'Se "larghezza flessibile" è abilitato, questa diventa la larghezza minima'
   flexible: "Larghezza flessibile"
   enableSyncBetweenDevicesForProfiles: "Abilita la sincronizzazione delle informazioni profilo tra dispositivi"
   showHowToUse: "Guarda la spiegazione dell'interfaccia grafica"
@@ -2922,7 +2933,7 @@ _webhookSettings:
     abuseReportResolved: "Quando una segnalazione è risolta"
     userCreated: "Quando viene creato un profilo"
     inactiveModeratorsWarning: "Quando un profilo moderatore rimane inattivo per un determinato periodo"
-    inactiveModeratorsInvitationOnlyChanged: "Quando la moderazione è rimasta inattiva per un determinato periodo e il sistema è cambiato in modalità \"solo inviti\""
+    inactiveModeratorsInvitationOnlyChanged: 'Quando la moderazione è rimasta inattiva per un determinato periodo e il sistema è cambiato in modalità "solo inviti"'
   deleteConfirm: "Vuoi davvero eliminare il Webhook?"
   testRemarks: "Clicca il bottone a destra dell'interruttore, per provare l'invio di un webhook con dati fittizi."
 _abuseReport:
@@ -2979,6 +2990,7 @@ _moderationLogTypes:
   createAvatarDecoration: "Crea una decorazione della foto profilo"
   updateAvatarDecoration: "Modifica una decorazione della foto profilo"
   deleteAvatarDecoration: "Elimina una decorazione della foto profilo"
+  unsetMfa: "Rimossa l'autenticazione a due fattori (2FA7MFA)"
   unsetUserAvatar: "Toglie una foto profilo"
   unsetUserBanner: "Toglie una immagine di intestazione profilo"
   createSystemWebhook: "Aggiunge un System Webhook"
@@ -3205,7 +3217,7 @@ _embedCodeGen:
   codeGeneratedDescription: "Incolla il codice appena generato sul tuo sito web."
 _selfXssPrevention:
   warning: "Avviso"
-  title: "\"Incolla qualcosa su questa schermata\" è tutta una truffa."
+  title: '"Incolla qualcosa su questa schermata" è tutta una truffa.'
   description1: "Incollando qualcosa qui, malintenzionati potrebbero prendere il controllo del tuo profilo o rubare i tuoi dati personali."
   description2: "Se non sai esattamente cosa stai facendo, %c smetti subito e chiudi questa finestra."
   description3: "Per favore, controlla questo collegamento per avere maggiori dettagli. {link}"
@@ -3290,7 +3302,7 @@ _serverSetupWizard:
   largeScaleServerAdvice: "Configurare grandi server potrebbe richiedere conoscenze infrastrutturali avanzate, ad esempio, il bilanciamento del carico e la replicazione del database."
   doYouConnectToFediverse: "Vuoi connetterti al Fediverso?"
   doYouConnectToFediverse_description1: "Collegandosi a una rete di server distribuiti, denominata Fediverso, potrai scambiare contenuti con altri server, tramite il protocollo di comunicazione ActivityPub."
-  doYouConnectToFediverse_description2: "Connettersi al Fediverso è anche detto \"federazione\"."
+  doYouConnectToFediverse_description2: 'Connettersi al Fediverso è anche detto "federazione".'
   youCanConfigureMoreFederationSettingsLater: "Puoi svolgere la configurazione avanzata anche dopo. Ad esempio specificando quali server possono federarsi."
   remoteContentsCleaning: "Pulizia automatica dei contenuti in arrivo"
   remoteContentsCleaning_description: "Con la federazione funzionante, riceverai sempre più contenuti. Abilitando la pulizia automatica, i contenuti non referenziati e obsoleti verranno rimossi automaticamente dai tuoi server, risparmiando spazio di archiviazione."
@@ -3316,7 +3328,7 @@ _uploader:
   doneConfirm: "Alcuni file non sono stati caricati. Vuoi completarli?"
   maxFileSizeIsX: "La dimensione massima del file che puoi caricare è {x}."
   allowedTypes: "Tipi di file caricabili"
-  tip: "Il file non è ancora stato caricato. Puoi controllare, rinominare, comprimere, ritagliare, prima del caricamento. Quando hai finito, premi il bottone \"Carica\" ​​per completare."
+  tip: 'Il file non è ancora stato caricato. Puoi controllare, rinominare, comprimere, ritagliare, prima del caricamento. Quando hai finito, premi il bottone "Carica" ​​per completare.'
 _clientPerformanceIssueTip:
   title: "Se ritieni che la batteria si stia scaricando troppo"
   makeSureDisabledAdBlocker: "Disattiva il tuo AdBlocker"

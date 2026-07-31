@@ -4,6 +4,7 @@
  */
 
 import { BroadcastChannel } from 'broadcast-channel';
+import { createVisibilityAwareInterval } from '@@/js/interval.js';
 import * as Misskey from 'misskey-js';
 import type { StorageProvider } from '@/preferences/manager.js';
 import { cloudBackup } from '@/preferences/utility.js';
@@ -165,10 +166,10 @@ preferencesChannel.addEventListener('message', (msg) => {
 //#region 定期クラウドバックアップ
 let latestBackupAt = 0;
 
-window.setInterval(() => {
+// documentが非表示の間は実行されない (同期されていない古い値がバックアップされるのを防ぐ意味もある)
+createVisibilityAwareInterval(() => {
 	if ($i == null) return;
 	if (!store.s.enablePreferencesAutoCloudBackup) return;
-	if (window.document.visibilityState !== 'visible') return; // 同期されていない古い値がバックアップされるのを防ぐ
 	if (prefer.profile.modifiedAt <= latestBackupAt) return;
 
 	cloudBackup().then(() => {
