@@ -165,7 +165,8 @@ export class ActivityPubAccessControlService {
 		}
 
 		const instance = await this.instancesRepository.findOneBy({ host });
-		const isSuspended = instance?.suspensionState !== 'none';
+		// 未登録ホストは制限なし
+		const isSuspended = instance != null && instance.suspensionState !== 'none';
 		const isQuarantined = instance?.quarantineLimited ?? false;
 
 		return {
