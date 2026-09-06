@@ -12,7 +12,7 @@ export const meta = {
 
 	requireCredential: true,
 	requireAdmin: true,
-	kind: 'read:admin:emoji',
+	kind: 'read:admin:queue',
 
 	res: {
 		type: 'object',
