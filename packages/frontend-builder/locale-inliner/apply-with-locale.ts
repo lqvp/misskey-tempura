@@ -32,7 +32,11 @@ export function applyWithLocale(
 				if (accessed == null) {
 					fileLogger.warn(`Cannot find localization key ${modification.localizationKey.join('.')}`);
 				}
-				sourceCode.update(modification.begin, modification.end, JSON.stringify(accessed));
+
+				// オブジェクトリテラルは括弧で包み式として展開する
+				const replacement = JSON.stringify(accessed);
+				const wrapped = replacement.startsWith('{') ? `(${replacement})` : replacement;
+				sourceCode.update(modification.begin, modification.end, wrapped);
 				break;
 			}
 			case 'parameterized-function': {

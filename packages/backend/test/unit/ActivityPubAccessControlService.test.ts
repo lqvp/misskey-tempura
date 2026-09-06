@@ -187,4 +187,36 @@ describe('ActivityPubAccessControlService', () => {
 		const result = await service.checkAccess(mockRequest);
 		expect(result).toBeNull();
 	});
+
+	test('should allow access from hosts not registered in instance table', async () => {
+		const mockRequest = {
+			headers: {
+				'accept': 'application/activity+json',
+				'user-agent': 'http.rb/5.3.0 (Mastodon/4.2.0; +https://unknown.example.com/)',
+			},
+		} as FastifyRequest;
+
+		mockInstancesRepository.findOneBy.mockResolvedValue(null);
+
+		const result = await service.checkAccess(mockRequest);
+		expect(result).toBeNull();
+	});
+
+	test('should block access from suspended hosts', async () => {
+		const mockRequest = {
+			headers: {
+				'accept': 'application/activity+json',
+				'user-agent': 'http.rb/5.3.0 (Mastodon/4.2.0; +https://suspended.example.com/)',
+			},
+		} as FastifyRequest;
+
+		mockInstancesRepository.findOneBy.mockResolvedValue({ suspensionState: 'autoSuspendedForNotResponding', quarantineLimited: false });
+
+		const result = await service.checkAccess(mockRequest);
+		expect(result).toEqual({
+			blocked: true,
+			reason: 'suspended',
+			host: 'suspended.example.com',
+		});
+	});
 });

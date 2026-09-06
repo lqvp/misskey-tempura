@@ -34,6 +34,7 @@ import * as Misskey from 'misskey-js';
 import { inject, watch, ref, computed } from 'vue';
 import { TransitionGroup } from 'vue';
 import { isSupportedEmoji } from '@@/js/emojilist.js';
+import { getEmojiNameFromReaction, isLocalCustomEmojiReaction } from '@@/js/emoji-name.js';
 import XReaction from '@/components/MkReactionsViewer.reaction.vue';
 import { $i } from '@/i.js';
 import { prefer } from '@/preferences.js';
@@ -117,7 +118,9 @@ function onMockToggleReaction(emoji: string, count: number) {
 function canReact(reaction: string) {
 	if (!$i) return false;
 	// TODO: CheckPermissions
-	return !reaction.match(/@\w/) && (customEmojisMap.has(reaction) || isSupportedEmoji(reaction));
+	return isLocalCustomEmojiReaction(reaction)
+		? customEmojisMap.has(getEmojiNameFromReaction(reaction))
+		: isSupportedEmoji(reaction);
 }
 
 let isInitialReactionSet = false;
@@ -156,7 +159,7 @@ watch(() => props.reactions, (newSource) => {
 
 	newReactions = [...existingReactions, ...sortedNew].slice(0, props.maxNumber);
 
-	if (props.myReaction && !newReactions.map(([x]) => x).includes(props.myReaction)) {
+	if (props.myReaction && !newReactions.some(([x]) => x === props.myReaction)) {
 		newReactions.push([props.myReaction, newSource[props.myReaction]]);
 	}
 

@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	@click="toggleReaction()"
 	@contextmenu.prevent.stop="menu"
 >
-	<MkReactionIcon style="pointer-events: none;" :class="prefer.s.limitWidthOfReaction ? $style.limitWidth : ''" :reaction="reaction" :emojiUrl="reactionEmojis[reaction.substring(1, reaction.length - 1)]"/>
+	<MkReactionIcon style="pointer-events: none;" :class="prefer.s.limitWidthOfReaction ? $style.limitWidth : ''" :reaction="reaction" :emojiUrl="reactionEmojis[emojiName]"/>
 	<span v-if="!hideReactionCount" :class="$style.count">{{ count }}</span>
 </button>
 </template>
@@ -21,6 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { computed, inject, onMounted, useTemplateRef, watch } from 'vue';
 import * as Misskey from 'misskey-js';
 import { getUnicodeEmojiOrNull } from '@@/js/emojilist.js';
+import { getEmojiNameFromReaction, isLocalCustomEmojiReaction } from '@@/js/emoji-name.js';
 import MkCustomEmojiDetailedDialog from './MkCustomEmojiDetailedDialog.vue';
 import type { MenuItem } from '@/types/menu';
 import XDetails from '@/components/MkReactionsViewer.details.vue';
@@ -41,8 +42,6 @@ import { mute as muteEmoji, unmute as unmuteEmoji, checkMuted as isEmojiMuted } 
 import { addToEmojiPalette } from '@/utility/emoji-palette.js';
 import { haptic } from '@/utility/haptic.js';
 
-const reactionChecksMuting = prefer.s.reactionChecksMuting;
-
 const props = defineProps<{
 	note: Misskey.entities.Note;
 	noteId: Misskey.entities.Note['id'];
@@ -61,7 +60,9 @@ const emit = defineEmits<{
 
 const buttonEl = useTemplateRef('buttonEl');
 
-const emojiName = computed(() => props.reaction.replace(/:/g, '').replace(/@\./, ''));
+const emojiName = computed(() => getEmojiNameFromReaction(props.reaction));
+
+const isLocalCustomEmoji = computed(() => isLocalCustomEmojiReaction(props.reaction));
 
 function getReactionName(reaction: string, formated = false) {
 	const r = reaction.replace(/:/g, '').replace(/@.*/, '');
@@ -80,7 +81,6 @@ const canToggle = computed(() => {
 	return emoji != null || !isLocal.value;
 });
 const canGetInfo = computed(() => props.reaction.includes(':'));
-const isLocalCustomEmoji = props.reaction[0] === ':' && props.reaction.includes('@.');
 
 const plainReaction = computed(() => customEmojisMap.has(emojiName.value) ? getReactionName(props.reaction, true) : props.reaction);
 
@@ -196,14 +196,14 @@ async function toggleReaction() {
 async function menu(ev: PointerEvent) {
 	let menuItems: MenuItem[] = [];
 
-	if (canGetInfo.value) {
+	if (isLocalCustomEmoji.value) {
 		menuItems.push({
 			text: i18n.ts.info,
 			icon: 'ti ti-info-circle',
 			action: async () => {
 				const { dispose } = os.popup(MkCustomEmojiDetailedDialog, {
 					emoji: await misskeyApiGet('emoji', {
-						name: props.reaction.replace(/:/g, '').replace(/@\./, ''),
+						name: emojiName.value,
 					}),
 				}, {
 					closed: () => dispose(),
@@ -219,7 +219,7 @@ async function menu(ev: PointerEvent) {
 			action: () => {
 				os.confirm({
 					type: 'question',
-					title: i18n.tsx.unmuteX({ x: isLocalCustomEmoji ? `:${emojiName.value}:` : props.reaction }),
+					title: i18n.tsx.unmuteX({ x: isLocalCustomEmoji.value ? `:${emojiName.value}:` : props.reaction }),
 				}).then(({ canceled }) => {
 					if (canceled) return;
 					unmuteEmoji(props.reaction);
@@ -233,7 +233,7 @@ async function menu(ev: PointerEvent) {
 			action: () => {
 				os.confirm({
 					type: 'question',
-					title: i18n.tsx.muteX({ x: isLocalCustomEmoji ? `:${emojiName.value}:` : props.reaction }),
+					title: i18n.tsx.muteX({ x: isLocalCustomEmoji.value ? `:${emojiName.value}:` : props.reaction }),
 				}).then(({ canceled }) => {
 					if (canceled) return;
 					muteEmoji(props.reaction);
@@ -247,7 +247,7 @@ async function menu(ev: PointerEvent) {
 			text: i18n.ts.addToEmojiPalette,
 			icon: 'ti ti-palette',
 			action: () => {
-				addToEmojiPalette(isLocalCustomEmoji ? `:${emojiName.value}:` : props.reaction);
+				addToEmojiPalette(isLocalCustomEmoji.value ? `:${emojiName.value}:` : props.reaction);
 			},
 		});
 	}
@@ -278,13 +278,10 @@ if (!mock) {
 	useTooltip(buttonEl, async (showing) => {
 		if (buttonEl.value == null) return;
 
-	const useGet = !reactionChecksMuting;
-		const apiCall = useGet ? misskeyApiGet : misskeyApi;
-		const reactions = !prefer.s.hideReactionUsers ? await apiCall('notes/reactions', {
+		const reactions = !prefer.s.hideReactionUsers ? await misskeyApi('notes/reactions', {
 			noteId: props.noteId,
 			type: props.reaction,
 			limit: 10,
-			_cacheKey_: props.count,
 		}) : [];
 
 		const users = reactions.map(x => x.user);
