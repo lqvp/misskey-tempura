@@ -37,10 +37,6 @@ function createQueue<T extends object>(queueName: string, config: Config): Bull.
 	return new Bull.Queue<T>(queueName, baseQueueOptions(config, queueName));
 }
 
-function createQueue<T extends object>(queueName: string, config: Config): Bull.Queue<T> {
-	return new Bull.Queue<T>(queueName, baseQueueOptions(config, queueName));
-}
-
 const $system: Provider = {
 	provide: 'queue:system',
 	useFactory: (config: Config) => createQueue<Record<string, unknown>>(QUEUE.SYSTEM, config),
