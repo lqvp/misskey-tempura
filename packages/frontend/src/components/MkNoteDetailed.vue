@@ -304,7 +304,7 @@ import MkDeliveryTargetsDisplay from '@/components/MkDeliveryTargetsDisplay.vue'
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
-	initialTab?: 'replies' | 'renotes' | 'reactions';
+	initialTab?: 'replies' | 'renotes' | 'quotes' | 'reactions';
 }>(), {
 	initialTab: 'replies',
 });

@@ -370,22 +370,6 @@ export const meta = {
 				optional: false,
 				nullable: true,
 			},
-			sensitiveMediaDetectionApiUrl: {
-				type: 'string',
-				optional: false, nullable: true,
-			},
-			sensitiveMediaDetectionApiKey: {
-				type: 'string',
-				optional: false, nullable: true,
-			},
-			sensitiveMediaDetectionTimeout: {
-				type: 'number',
-				optional: false, nullable: false,
-			},
-			sensitiveMediaDetectionMaxImagesPerRequest: {
-				type: 'number',
-				optional: false, nullable: false,
-			},
 			proxyAccountId: {
 				type: "string",
 				optional: false,
@@ -770,14 +754,6 @@ export const meta = {
 					type: "string",
 					optional: false,
 					nullable: false,
-				},
-			},
-			urlPreviewSensitiveList: {
-				type: 'array',
-				optional: false, nullable: false,
-				items: {
-					type: 'string',
-					optional: false, nullable: false,
 				},
 			},
 			federation: {
