@@ -121,7 +121,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</div>
 					</div>
 					<div v-if="appearNote.files && appearNote.files.length > 0">
-						<MkMediaList ref="galleryEl" :mediaList="appearNote.files"/>
+						<MkMediaList ref="galleryEl" :mediaList="appearNote.files" :user="appearNote.user"/>
 					</div>
 					<MkPoll
 						v-if="appearNote.poll"
@@ -304,7 +304,7 @@ import MkDeliveryTargetsDisplay from '@/components/MkDeliveryTargetsDisplay.vue'
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
-	initialTab?: string;
+	initialTab?: 'replies' | 'renotes' | 'reactions';
 }>(), {
 	initialTab: 'replies',
 });
@@ -451,7 +451,7 @@ function loadConversation() {
 
 // MkNoteDetailed固有: 返信時はチャンネルを引き継がない
 async function reply() {
-	const isLoggedIn = await pleaseLogin({ openOnRemote: pleaseLoginContext.value });
+	const isLoggedIn = await pleaseLogin({ openOnRemote: pleaseLoginContext });
 	if (!isLoggedIn) return;
 
 	showMovedDialog();

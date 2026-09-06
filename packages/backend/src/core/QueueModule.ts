@@ -37,6 +37,10 @@ function createQueue<T extends object>(queueName: string, config: Config): Bull.
 	return new Bull.Queue<T>(queueName, baseQueueOptions(config, queueName));
 }
 
+function createQueue<T extends object>(queueName: string, config: Config): Bull.Queue<T> {
+	return new Bull.Queue<T>(queueName, baseQueueOptions(config, queueName));
+}
+
 const $system: Provider = {
 	provide: 'queue:system',
 	useFactory: (config: Config) => createQueue<Record<string, unknown>>(QUEUE.SYSTEM, config),
@@ -99,7 +103,7 @@ const $systemWebhookDeliver: Provider = {
 
 const $scheduledNoteDeleted: Provider = {
 	provide: 'queue:scheduledNoteDelete',
-	useFactory: (config: Config) => new Bull.Queue(QUEUE.SCHEDULED_NOTE_DELETE, baseQueueOptions(config, QUEUE.SCHEDULED_NOTE_DELETE)),
+	useFactory: (config: Config) => createQueue<ScheduledNoteDeleteJobData>(QUEUE.SCHEDULED_NOTE_DELETE, config),
 	inject: [DI.config],
 };
 
