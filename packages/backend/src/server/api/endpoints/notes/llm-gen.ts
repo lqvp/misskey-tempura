@@ -67,6 +67,7 @@ export const paramDef = {
 		fileUris: {
 			type: 'array',
 			nullable: true,
+			maxItems: 20,
 			items: {
 				type: 'object',
 				properties: {
@@ -144,26 +145,40 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 
 			// Gemini APIへのリクエスト
 			try {
-				const url = `https://generativelanguage.googleapis.com/v1beta/models/${serverGeminiModels}:generateContent?key=${serverGeminiApiKey}`;
+				if (!/^gemini-/.test(serverGeminiModels)) {
+					throw new ApiError(meta.errors.llmApiError, 'Invalid model name');
+				}
+
+				const url = `https://generativelanguage.googleapis.com/v1beta/models/${serverGeminiModels}:generateContent`;
 
 				const response = await this.httpRequestService.send(url, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
+						'x-goog-api-key': serverGeminiApiKey,
 					},
 					body: requestBody,
-					timeout: 30000, // 30秒タイムアウト
+					timeout: 30000,
 					isLocalAddressAllowed: false,
 				}, {
 					throwErrorWhenResponseNotOk: true,
 				});
 
-				// JSONレスポンスを返す
-				const responseData = await response.json();
-				return responseData;
+				const responseData: any = await response.json();
+				const parts = responseData?.candidates?.[0]?.content?.parts;
+				if (!parts || !Array.isArray(parts)) {
+					throw new ApiError(meta.errors.llmApiError, 'No content parts in API response');
+				}
+
+				// Concatenate text from all parts
+				const textParts = parts.map((part: any) => part.text || '').filter((t: string) => t.length > 0);
+				if (textParts.length === 0) {
+					throw new ApiError(meta.errors.llmApiError, 'No text content found in API response');
+				}
+
+				const text = textParts.join('');
+				return { text };
 			} catch (error) {
-				// エラーの詳細を記録
-				console.error('LLM API error:', error);
 				const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
 				throw new ApiError(meta.errors.llmApiError, errorMessage);
 			}

@@ -31,7 +31,7 @@ export const paramDef = {
 	properties: {
 		contactFormId: { type: 'string', format: 'misskey:id' },
 		status: { type: 'string', enum: ['pending', 'in_progress', 'resolved', 'closed'], nullable: true },
-		adminNote: { type: 'string', nullable: true },
+		adminNote: { type: 'string', nullable: true, maxLength: 8192 },
 		assignedUserId: { type: 'string', format: 'misskey:id', nullable: true },
 		assignedNickname: { type: 'string', nullable: true },
 	},

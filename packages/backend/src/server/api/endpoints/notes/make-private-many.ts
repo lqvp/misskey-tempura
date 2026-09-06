@@ -7,7 +7,7 @@ import ms from 'ms';
 import { Inject, Injectable } from '@nestjs/common';
 import type { UsersRepository } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
-import { NoteDeleteService } from '@/core/NoteDeleteService.js';
+import { NoteDeleteService, TooManyNotesError } from '@/core/NoteDeleteService.js';
 import { DI } from '@/di-symbols.js';
 import { GetterService } from '@/server/api/GetterService.js';
 import { RoleService } from '@/core/RoleService.js';
@@ -44,8 +44,8 @@ export const meta = {
 export const paramDef = {
 	type: 'object',
 	properties: {
-		untilDate: { type: 'integer' },
-		sinceDate: { type: 'integer' },
+		untilDate: { type: 'integer', minimum: 1 },
+		sinceDate: { type: 'integer', minimum: 0 },
 	},
 	required: ['untilDate', 'sinceDate'],
 } as const;
@@ -67,7 +67,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			try {
 				return await this.noteDeleteService.makePrivateMany(me, sinceDate, untilDate);
 			} catch (e) {
-				throw new ApiError(meta.errors.tooManyNotes);
+				if (e instanceof TooManyNotesError) {
+					throw new ApiError(meta.errors.tooManyNotes);
+				}
+				throw e;
 			}
 		});
 	}
