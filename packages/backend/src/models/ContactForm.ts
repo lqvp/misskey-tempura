@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { PrimaryColumn, Entity, Index, JoinColumn, Column, ManyToOne } from 'typeorm';
+import { PrimaryColumn, Entity, Index, JoinColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 import { id } from './util/id.js';
 import { MiUser } from './User.js';
 
@@ -13,10 +13,10 @@ export class MiContactForm {
 	public id: string;
 
 	@Index()
-	@Column('timestamp with time zone')
+	@CreateDateColumn()
 	public createdAt: Date;
 
-	@Column('timestamp with time zone', { nullable: true })
+	@UpdateDateColumn()
 	public updatedAt: Date | null;
 
 	// 必須項目

@@ -4,7 +4,6 @@
  */
 
 import { defineAsyncComponent } from 'vue';
-import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 import * as os from '@/os.js';
 import { generateGeminiSummary, extractCandidateText } from '@/utility/tempura-script/llm.js';
@@ -41,50 +40,48 @@ export async function transformTextWithGemini(noteText: string, onApplied: (newT
 
 	// 繰り返し処理で「再生成」が選択された場合も対応
 	while (true) {
-		// store内の該当プロンプト（geminiNote*）を利用してプロンプト生成
 		const state = (prefer.s as unknown) as Record<string, string> | null;
 		const stylePrompt = state?.[selectedStyleKey] ?? '';
 
-		let result: any;
+		let transformedText: string;
 		try {
 			const data = await generateGeminiSummary({
 				userContent: noteText,
 				systemInstruction: stylePrompt,
 			});
-			result = data;
+			transformedText = extractCandidateText(data);
 		} catch (error: any) {
-			// 変更: エラー表示にlocaleの値を参照
 			displayLlmError(error, i18n.ts._llm._error.transformExecute);
+			return;
 		}
 
-		let transformedText: string;
-		try {
-			transformedText = extractCandidateText(result);
-		} catch (error: any) {
-			displayLlmError(error, i18n.ts._llm._error.transformResult);
-		}
-
-		// 結果の確認ダイアログを表示（MkDialog.vue を利用）
 		const dialogResult: string = await new Promise((resolve) => {
-			os.popup(defineAsyncComponent(() => import('@/components/MkDialog.vue')), {
+			let resolved = false;
+			const safeResolve = (value: string) => {
+				if (!resolved) {
+					resolved = true;
+					resolve(value);
+				}
+			};
+
+			const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkDialog.vue')), {
 				title: '変換結果',
 				text: transformedText,
 				actions: [
-					{ text: '決定', primary: true, callback: () => resolve('confirm') },
-					{ text: '再生成', callback: () => resolve('regenerate') },
-					{ text: 'キャンセル', danger: true, callback: () => resolve('cancel') },
+					{ text: '決定', primary: true, callback: () => { dispose(); safeResolve('confirm'); } },
+					{ text: '再生成', callback: () => { dispose(); safeResolve('regenerate'); } },
+					{ text: 'キャンセル', danger: true, callback: () => { dispose(); safeResolve('cancel'); } },
 				],
+			}, {
+				closed: () => safeResolve('cancel'),
 			});
 		});
 
 		if (dialogResult === 'confirm') {
-			// 決定時：変換結果をコールバック経由で適用
 			onApplied(transformedText);
 			break;
 		} else if (dialogResult === 'cancel') {
-			// キャンセル時：何もせず終了
 			break;
 		}
-		// 'regenerate'の場合はループで再生成
 	}
 }

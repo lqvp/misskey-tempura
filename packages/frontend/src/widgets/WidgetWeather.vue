@@ -532,12 +532,12 @@ defineExpose<WidgetComponentExpose>({
 .temp-max {
 	font-size: 14px;
 	font-weight: bold;
-	color: #f04715;
+	color: var(--MI_THEME-error);
 }
 
 .temp-min {
 	font-size: 12px;
-	color: #0988e6;
+	color: var(--MI_THEME-link);
 }
 
 .weather-update-time {

@@ -7,7 +7,6 @@ import { defineAsyncComponent, ref } from 'vue';
 import * as os from '@/os.js';
 import { generateGeminiSummary, extractCandidateText } from '@/utility/tempura-script/llm.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
-import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 import { displayLlmError } from '@/utils/errorHandler.js';
 import { i18n } from '@/i18n.js';
@@ -53,10 +52,10 @@ export async function summarizeUserProfile(userId: string, notesLimit?: number, 
 		closed: () => { /* ... */ },
 	});
 	try {
-		// プロフィール情報を取得 (name, location, description)
 		const profile = await misskeyApi('users/show', { userId });
 		if (!profile) {
 			displayLlmError(new Error(i18n.ts._llm._error.profileNotFound));
+			return;
 		}
 		const { name, location, description } = profile;
 
@@ -144,15 +143,9 @@ export async function summarizeUserProfile(userId: string, notesLimit?: number, 
 			userContent,
 			systemInstruction,
 		});
-		let summarizedText: string;
-		try {
-			summarizedText = extractCandidateText(summaryResult);
-		} catch (error: unknown) {
-			displayLlmError(error as Error, i18n.ts._llm._error.responseFormat);
-		}
+		const summarizedText = extractCandidateText(summaryResult);
 		os.alert({ type: 'info', text: summarizedText });
 	} catch (error: unknown) {
-		// catch節内も統一してハンドリング（この呼び出しによりalertとthrowが行われる）
 		displayLlmError(error as Error, i18n.ts._llm._error.profileSummarization);
 	} finally {
 		waitingFlag.value = false;

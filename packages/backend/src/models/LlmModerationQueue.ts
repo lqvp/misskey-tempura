@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { PrimaryColumn, Entity, Index, JoinColumn, Column, ManyToOne } from 'typeorm';
+import { PrimaryColumn, Entity, Index, JoinColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
 import { id } from './util/id.js';
 import { MiNote } from './Note.js';
 import { MiUser } from './User.js';
@@ -13,9 +13,18 @@ export class MiLlmModerationQueue {
 	@PrimaryColumn(id())
 	public id: string;
 
+	@CreateDateColumn()
+	public createdAt: Date;
+
 	@Index('UQ_llm_moderation_queue_noteId', { unique: true })
 	@Column(id())
 	public noteId: MiNote['id'];
+
+	@ManyToOne(type => MiNote, {
+		onDelete: 'CASCADE',
+	})
+	@JoinColumn()
+	public note: MiNote | null;
 
 	@Index()
 	@Column(id())

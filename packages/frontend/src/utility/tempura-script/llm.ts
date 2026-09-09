@@ -5,11 +5,9 @@
 
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { fetchInstance } from '@/instance.js';
-import { displayLlmError } from '@/utils/errorHandler.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 
@@ -17,6 +15,8 @@ const instance = ref<Misskey.entities.MetaDetailed | null>(null);
 
 fetchInstance(true).then((res) => {
 	instance.value = res;
+}).catch((err) => {
+	console.error('Failed to fetch instance for LLM:', err);
 });
 
 /**
@@ -261,7 +261,9 @@ export async function generateGeminiSummary({
 }
 
 export function extractCandidateText(result: any): string {
-	// 共通の候補抽出処理
+	if (result && typeof result.text === 'string') {
+		return result.text;
+	}
 	if (
 		!result.candidates ||
 		result.candidates.length === 0 ||
@@ -271,5 +273,8 @@ export function extractCandidateText(result: any): string {
 	) {
 		throw new Error('LLM応答の形式が不正です。candidates, content, partsのいずれかが存在しません。');
 	}
-	return result.candidates[0].content.parts[0].text;
+	return result.candidates[0].content.parts
+		.filter((part: any) => typeof part.text === 'string')
+		.map((part: any) => part.text)
+		.join('');
 }
