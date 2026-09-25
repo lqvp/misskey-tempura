@@ -12,8 +12,10 @@ import { Test } from '@nestjs/testing';
 import { GlobalModule } from '@/GlobalModule.js';
 import { AnnouncementService } from '@/core/AnnouncementService.js';
 import { AnnouncementEntityService } from '@/core/entities/AnnouncementEntityService.js';
+import { RoleService } from '@/core/RoleService.js';
 import type {
 	AnnouncementReadsRepository,
+	AnnouncementRolesRepository,
 	AnnouncementsRepository,
 	MiAnnouncement,
 	MiUser,
@@ -34,6 +36,7 @@ describe('AnnouncementService', () => {
 	let usersRepository: UsersRepository;
 	let announcementsRepository: AnnouncementsRepository;
 	let announcementReadsRepository: AnnouncementReadsRepository;
+	let announcementRolesRepository: AnnouncementRolesRepository;
 	let globalEventService: Mocked<GlobalEventService>;
 	let moderationLogService: Mocked<ModerationLogService>;
 
@@ -67,6 +70,14 @@ describe('AnnouncementService', () => {
 			providers: [
 				AnnouncementService,
 				AnnouncementEntityService,
+				{
+					provide: RoleService,
+					useFactory: () => ({
+						getUserRoles: vi.fn().mockResolvedValue([]),
+						getRoleUsers: vi.fn().mockResolvedValue([]),
+						getRoles: vi.fn().mockResolvedValue([]),
+					}),
+				},
 				CacheService,
 				IdService,
 			],
@@ -93,17 +104,17 @@ describe('AnnouncementService', () => {
 		usersRepository = app.get<UsersRepository>(DI.usersRepository);
 		announcementsRepository = app.get<AnnouncementsRepository>(DI.announcementsRepository);
 		announcementReadsRepository = app.get<AnnouncementReadsRepository>(DI.announcementReadsRepository);
+		announcementRolesRepository = app.get<AnnouncementRolesRepository>(DI.announcementRolesRepository);
 		globalEventService = app.get<GlobalEventService>(GlobalEventService) as Mocked<GlobalEventService>;
 		moderationLogService = app.get<ModerationLogService>(ModerationLogService) as Mocked<ModerationLogService>;
 	});
 
 	afterEach(async () => {
-		await Promise.all([
-			app.get(DI.metasRepository).createQueryBuilder().delete().execute(),
-			usersRepository.createQueryBuilder().delete().execute(),
-			announcementsRepository.createQueryBuilder().delete().execute(),
-			announcementReadsRepository.createQueryBuilder().delete().execute(),
-		]);
+		await app.get(DI.metasRepository).createQueryBuilder().delete().execute();
+		await announcementReadsRepository.createQueryBuilder().delete().execute();
+		await announcementRolesRepository.createQueryBuilder().delete().execute();
+		await announcementsRepository.createQueryBuilder().delete().execute();
+		await usersRepository.createQueryBuilder().delete().execute();
 
 		await app.close();
 	});

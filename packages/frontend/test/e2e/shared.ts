@@ -6,8 +6,6 @@
 import type { Locator, Page } from 'playwright';
 
 export const ADMIN_SETUP_PASSWORD = 'example_password_please_change_this_or_you_will_get_hacked';
-export const DEFAULT_INVITATION_CODE = 'test-invitation-code';
-
 export interface RegisteredUser {
 	id: string;
 	token: string;
@@ -51,6 +49,18 @@ export async function registerUser(
 	return result as RegisteredUser;
 }
 
+export async function createInvitationCode(baseUrl: string, token: string): Promise<string> {
+	const result = await api(baseUrl, 'invite/create', {
+		i: token,
+	}) as { code?: unknown } | null;
+
+	if (!result || typeof result.code !== 'string') {
+		throw new Error('/api/invite/create did not return an invitation code');
+	}
+
+	return result.code;
+}
+
 export function locateMkInput(page: Page, testId: string): Locator {
 	return page.locator(`[data-testid="${testId}"] input`);
 }
@@ -68,8 +78,8 @@ export async function visitHome(page: Page, baseUrl: string): Promise<void> {
 	await page.locator('button').first().waitFor({ state: 'visible', timeout: 30_000 });
 }
 
-export async function waitApiResponse(page: Page, path: string, timeout = 30_000): Promise<void> {
-	await page.waitForResponse((response) => {
+export function waitApiResponse(page: Page, path: string, timeout = 30_000): ReturnType<Page['waitForResponse']> {
+	return page.waitForResponse((response) => {
 		return response.url().endsWith(path) && response.request().method() === 'POST';
 	}, { timeout });
 }
@@ -84,7 +94,35 @@ export async function signIn(page: Page, baseUrl: string, username: string, pass
 	await locateMkInput(page, 'signin-password').fill(password);
 	const signinResponse = waitApiResponse(page, '/api/signin-flow');
 	await page.keyboard.press('Enter');
-	await signinResponse;
+	const response = await signinResponse;
+	assertOk(response.status(), '/api/signin-flow');
+	const result = await response.json() as { finished?: unknown; id?: unknown; i?: unknown } | null;
+	if (!result || result.finished !== true || typeof result.id !== 'string' || typeof result.i !== 'string') {
+		throw new Error('/api/signin-flow returned an incomplete sign-in response');
+	}
+}
+
+export async function acceptInvitationCode(page: Page, invitationCode: string): Promise<void> {
+	const inviteCodeField = page.locator('#invite-code');
+	const inviteCodeInput = inviteCodeField.locator('input');
+	await inviteCodeInput.fill(invitationCode);
+
+	const inviteCheckResponse = waitApiResponse(page, '/api/invite/check');
+	await inviteCodeInput.press('Enter');
+	const response = await inviteCheckResponse;
+	assertOk(response.status(), '/api/invite/check');
+	const result = await response.json() as {
+		isValid?: unknown;
+		skipEmailAuth?: unknown;
+		skipApproval?: unknown;
+	} | null;
+	if (!result || result.isValid !== true || typeof result.skipEmailAuth !== 'boolean' || typeof result.skipApproval !== 'boolean') {
+		throw new Error('/api/invite/check returned an invalid invitation response');
+	}
+
+	// The verified state removes the input and exposes the proceed button.
+	await inviteCodeField.waitFor({ state: 'detached' });
+	await page.getByRole('button').filter({ has: page.locator('i.ti-arrow-right') }).click();
 }
 
 export async function acceptSignupRules(page: Page): Promise<void> {
@@ -99,20 +137,25 @@ export async function signupThroughUi(
 	options: {
 		username: string;
 		password: string;
-		invitationCode?: string;
+		invitationCode: string;
 	},
 ): Promise<void> {
 	await page.getByTestId('signup').click();
 	await acceptSignupRules(page);
+	await acceptInvitationCode(page, options.invitationCode);
 
 	await locateMkInput(page, 'signup-username').fill(options.username);
 	await locateMkInput(page, 'signup-password').fill(options.password);
 	await locateMkInput(page, 'signup-password-retype').fill(options.password);
-	await locateMkInput(page, 'signup-invitation-code').fill(options.invitationCode ?? DEFAULT_INVITATION_CODE);
 
 	const signupResponse = waitApiResponse(page, '/api/signup');
 	await page.getByTestId('signup-submit').click();
-	await signupResponse;
+	const response = await signupResponse;
+	assertOk(response.status(), '/api/signup');
+	const result = await response.json() as { id?: unknown; token?: unknown } | null;
+	if (!result || typeof result.id !== 'string' || typeof result.token !== 'string') {
+		throw new Error('/api/signup returned an incomplete account response');
+	}
 }
 
 // 表示に時間がかかるのでPlaywrightのデフォルトのタイムアウトだと間に合わない

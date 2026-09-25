@@ -80,7 +80,7 @@ describe('Timelines', () => {
 
 	beforeAll(async () => {
 		redisForTimelines = new Redis(loadConfig().redisForTimelines);
-		root = await signup({ username: 'root' });
+		root = await signup({ username: 'root01' });
 	}, 1000 * 60 * 2);
 
 	// afterEach(async () => {
@@ -187,7 +187,7 @@ describe('Timelines', () => {
 				await api('following/create', { userId: bob.id }, alice);
 				await api('following/update', { userId: bob.id, withReplies: true }, alice);
 				const carolNote = await post(carol, { text: 'hi' });
-				const bobNote = await post(bob, { text: 'hi', replyId: carolNote.id, visibility: 'specified', visibleUserIds: [carolNote.id] });
+				const bobNote = await post(bob, { text: 'hi', replyId: carolNote.id, visibility: 'specified', visibleUserIds: [carol.id] });
 
 				await waitForPushToTl();
 
@@ -261,7 +261,7 @@ describe('Timelines', () => {
 				await api('following/create', { userId: carol.id }, alice);
 				await api('following/update', { userId: bob.id, withReplies: true }, alice);
 				const carolNote = await post(carol, { text: 'hi' });
-				const bobNote = await post(bob, { text: 'hi', replyId: carolNote.id, visibility: 'specified', visibleUserIds: [carolNote.id] });
+				const bobNote = await post(bob, { text: 'hi', replyId: carolNote.id, visibility: 'specified', visibleUserIds: [carol.id] });
 
 				await vi.waitFor(async () => {
 					const res = await api('notes/timeline', { limit: 100 }, alice);
@@ -3008,7 +3008,7 @@ describe('Timelines', () => {
 				await redisForTimelines.del('list:userTimeline:' + alice.id);
 				const note3 = await post(alice, { text: '3' });
 
-				const res = await api('users/notes', { userId: alice.id, sinceId: noteSince.id });
+				const res = await api('users/notes', { userId: alice.id, sinceId: noteSince.id }, alice);
 				assert.deepStrictEqual(res.body, [note1, note2, note3]);
 			});
 
@@ -3022,7 +3022,7 @@ describe('Timelines', () => {
 				const noteUntil = await post(alice, { text: 'Note where id will be `untilId`.' });
 				await post(alice, { text: '4' });
 
-				const res = await api('users/notes', { userId: alice.id, sinceId: noteSince.id, untilId: noteUntil.id });
+				const res = await api('users/notes', { userId: alice.id, sinceId: noteSince.id, untilId: noteUntil.id }, alice);
 				assert.deepStrictEqual(res.body, [note3, note2, note1]);
 			});
 

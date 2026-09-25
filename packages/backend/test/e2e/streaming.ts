@@ -55,7 +55,7 @@ describe('Streaming', () => {
 			kyoko = await signup({ username: 'kyoko' });
 			chitose = await signup({ username: 'chitose' });
 			kanako = await signup({ username: 'kanako' });
-			erin = await signup({ username: 'erin' }); // erin:  A generic fifth participant
+			erin = await signup({ username: 'erin01' }); // erin:  A generic fifth participant
 
 			akari = await signup({ username: 'akari', host: 'example.com' });
 			chinatsu = await signup({ username: 'chinatsu', host: 'example.com' });

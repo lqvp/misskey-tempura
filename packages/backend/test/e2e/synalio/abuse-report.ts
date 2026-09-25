@@ -91,7 +91,7 @@ describe('[シナリオ] ユーザ通報', () => {
 		queue = await startJobQueue();
 		admin = await signup({ username: 'admin' });
 		alice = await signup({ username: 'alice' });
-		bob = await signup({ username: 'bob' });
+		bob = await signup({ username: 'bob01' });
 
 		await role(admin, { isAdministrator: true });
 	}, 1000 * 60 * 2);

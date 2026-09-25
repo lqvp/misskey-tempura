@@ -70,25 +70,26 @@ export class AntennaService implements OnApplicationShutdown {
 	public deduplicateOverlappingMatches(matches: Match[]): Match[] {
 		if (matches.length === 0) return [];
 
-		// キーワードごとにグループ化して重複排除
-		const byKeyword = new Map<string, Match[]>();
-		for (const m of matches) {
-			if (!byKeyword.has(m.keyword)) {
-				byKeyword.set(m.keyword, []);
-			}
-			byKeyword.get(m.keyword)!.push(m);
-		}
+		// The caller supplies one (type, groupIndex) group, so keep that grouping intact.
+		const sorted = [...matches].sort((a, b) => {
+			if (a.start !== b.start) return a.start - b.start;
+			if (a.end !== b.end) return b.end - a.end;
+			if (a.keyword !== b.keyword) return a.keyword < b.keyword ? -1 : 1;
+
+			const groupIndexComparison = (a.groupIndex ?? -1) - (b.groupIndex ?? -1);
+			if (groupIndexComparison !== 0) return groupIndexComparison;
+			if (a.type !== b.type) return (a.type ?? '') < (b.type ?? '') ? -1 : 1;
+			return 0;
+		});
 
 		const result: Match[] = [];
-		for (const [, keywordMatches] of byKeyword) {
-			// 同一キーワード内でのみ重複排除
-			const sorted = [...keywordMatches].sort((a, b) => a.start - b.start);
-			let lastEnd = -1;
-			for (const match of sorted) {
-				if (match.start >= lastEnd) {
-					result.push(match);
-					lastEnd = match.end;
-				}
+		for (const match of sorted) {
+			const previous = result.at(-1);
+			if (previous == null || match.start >= previous.end) {
+				result.push(match);
+			} else if (match.end > previous.end) {
+				// Prefer a later overlap when it extends beyond the current match.
+				result[result.length - 1] = match;
 			}
 		}
 		return result;

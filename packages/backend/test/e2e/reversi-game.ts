@@ -17,7 +17,7 @@ describe('ReversiGame', () => {
 
 	beforeAll(async () => {
 		alice = await signup({ username: 'alice' });
-		bob = await signup({ username: 'bob' });
+		bob = await signup({ username: 'bob01' });
 	}, 1000 * 60 * 2);
 
 	test('matches when alice invites bob and bob accepts', async () => {

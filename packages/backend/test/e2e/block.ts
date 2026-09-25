@@ -20,7 +20,7 @@ describe('Block', () => {
 
 	beforeAll(async () => {
 		alice = await signup({ username: 'alice' });
-		bob = await signup({ username: 'bob' });
+		bob = await signup({ username: 'bob01' });
 		carol = await signup({ username: 'carol' });
 	}, 1000 * 60 * 2);
 

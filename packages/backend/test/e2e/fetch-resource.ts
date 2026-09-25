@@ -23,6 +23,7 @@ const HTML = 'text/html; charset=utf-8';
 const JSON_UTF8 = 'application/json; charset=utf-8';
 
 describe('Webリソース', () => {
+	let root: misskey.entities.SignupResponse;
 	let alice: misskey.entities.SignupResponse;
 	let aliceUploadedFile: misskey.entities.DriveFile | null;
 	let alicesPost: misskey.entities.Note;
@@ -78,8 +79,12 @@ describe('Webリソース', () => {
 	};
 
 	beforeAll(async () => {
+		root = await signup({ username: 'root01' });
 		alice = await signup({ username: 'alice' });
-		await api('admin/update-meta', { federation: 'all' }, alice as misskey.entities.SignupResponse);
+		// These cases exercise public web resources, so opt in explicitly without
+		// changing the server-wide sign-in requirement.
+		assert.strictEqual((await api('i/update', { requireSigninToViewContents: false }, alice)).status, 200);
+		assert.strictEqual((await api('admin/update-meta', { federation: 'all' }, root)).status, 204);
 		aliceUploadedFile = (await uploadFile(alice)).body;
 		alicesPost = await post(alice, {
 			text: 'test',
@@ -92,7 +97,8 @@ describe('Webリソース', () => {
 		});
 		aliceChannel = await channel(alice, {});
 
-		bob = await signup({ username: 'bob' });
+		bob = await signup({ username: 'bob01' });
+		assert.strictEqual((await api('i/update', { requireSigninToViewContents: false }, bob)).status, 200);
 	}, 1000 * 60 * 2);
 
 	describe.each([
@@ -157,8 +163,8 @@ describe('Webリソース', () => {
 		}));
 
 		describe(' has entry such ', () => {
-			beforeEach(() => {
-				post(alice, { text: '**a**' });
+			beforeEach(async () => {
+				await post(alice, { text: '**a**' });
 			});
 
 			test('MFMを含まない。', async () => {

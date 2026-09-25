@@ -17,17 +17,19 @@ import { MiUser } from '@/models/_.js';
 const waitForPushToTlOptions = { timeout: 3000, interval: 25 };
 
 describe('Endpoints', () => {
+	let root: misskey.entities.SignupResponse;
 	let alice: misskey.entities.SignupResponse;
 	let bob: misskey.entities.SignupResponse;
 	let carol: misskey.entities.SignupResponse;
 	let dave: misskey.entities.SignupResponse;
 
 	beforeAll(async () => {
+		root = await signup({ username: 'root01' });
 		alice = await signup({ username: 'alice' });
-		bob = await signup({ username: 'bob' });
+		bob = await signup({ username: 'bob01' });
 		carol = await signup({ username: 'carol' });
-		dave = await signup({ username: 'dave' });
-		await api('admin/update-meta', { federation: 'all' }, alice as misskey.entities.SignupResponse);
+		dave = await signup({ username: 'dave01' });
+		assert.strictEqual((await api('admin/update-meta', { federation: 'all' }, root)).status, 204);
 	}, 1000 * 60 * 2);
 
 	describe('signup', () => {
@@ -167,7 +169,7 @@ describe('Endpoints', () => {
 			}, alice);
 
 			assert.strictEqual(res.status, 200);
-			assert.strictEqual(typeof res.body === 'object' && !Array.isArray(res.body), true);
+			assert.ok(res.body !== null && typeof res.body === 'object' && !Array.isArray(res.body));
 			assert.strictEqual((res.body as unknown as { id: string }).id, alice.id);
 		});
 
@@ -317,7 +319,7 @@ describe('Endpoints', () => {
 
 			const reaction = await api('notes/reactions', {
 				noteId: bobNote.id,
-			});
+			}, alice);
 
 			assert.strictEqual(reaction.body.length, 1);
 			assert.strictEqual(reaction.body[0].type, '\u2764');
@@ -335,7 +337,7 @@ describe('Endpoints', () => {
 
 			const reaction = await api('notes/reactions', {
 				noteId: bobNote.id,
-			});
+			}, alice);
 
 			assert.strictEqual(reaction.body.length, 1);
 			assert.strictEqual(reaction.body[0].type, '\u2764');
@@ -585,12 +587,12 @@ describe('Endpoints', () => {
 
 	describe('drive/files/create', () => {
 		const assignRole = async (userId: string, policies: Record<string, unknown>) => {
-			const createdRole = await role(alice, {}, policies);
+			const createdRole = await role(root, {}, policies);
 
 			const assign = await api('admin/roles/assign', {
 				userId,
 				roleId: createdRole.id,
-			}, alice);
+			}, root);
 
 			assert.strictEqual(assign.status, 204);
 
@@ -601,11 +603,11 @@ describe('Endpoints', () => {
 			await api('admin/roles/unassign', {
 				userId,
 				roleId,
-			}, alice);
+			}, root);
 
 			await api('admin/roles/delete', {
 				roleId,
-			}, alice);
+			}, root);
 		};
 
 		test('ファイルを作成できる', async () => {
@@ -613,7 +615,8 @@ describe('Endpoints', () => {
 
 			assert.strictEqual(res.status, 200);
 			assert.strictEqual(typeof res.body === 'object' && !Array.isArray(res.body), true);
-			assert.strictEqual(res.body!.name, '192.jpg');
+			assert.ok(res.body);
+			assert.strictEqual(res.body.name, '192.jpg');
 		});
 
 		test('ファイルに名前を付けられる', async () => {
@@ -621,7 +624,8 @@ describe('Endpoints', () => {
 
 			assert.strictEqual(res.status, 200);
 			assert.strictEqual(typeof res.body === 'object' && !Array.isArray(res.body), true);
-			assert.strictEqual(res.body!.name, 'Belmond.jpg');
+			assert.ok(res.body);
+			assert.strictEqual(res.body.name, 'Belmond.jpg');
 		});
 
 		test('ファイルに名前を付けられるが、拡張子は正しいものになる', async () => {
@@ -629,7 +633,8 @@ describe('Endpoints', () => {
 
 			assert.strictEqual(res.status, 200);
 			assert.strictEqual(typeof res.body === 'object' && !Array.isArray(res.body), true);
-			assert.strictEqual(res.body!.name, 'Belmond.png.jpg');
+			assert.ok(res.body);
+			assert.strictEqual(res.body.name, 'Belmond.png.jpg');
 		});
 
 		test('ファイル無しで怒られる', async () => {
@@ -644,8 +649,9 @@ describe('Endpoints', () => {
 
 			assert.strictEqual(res.status, 200);
 			assert.strictEqual(typeof res.body === 'object' && !Array.isArray(res.body), true);
-			assert.strictEqual(res.body!.name, 'image.svg');
-			assert.strictEqual(res.body!.type, 'image/svg+xml');
+			assert.ok(res.body);
+			assert.strictEqual(res.body.name, 'image.svg');
+			assert.strictEqual(res.body.type, 'image/svg+xml');
 		});
 
 		for (const type of ['webp', 'avif']) {
@@ -668,10 +674,11 @@ describe('Endpoints', () => {
 				const res = await uploadFile(alice, { path });
 
 				assert.strictEqual(res.status, 200);
-				assert.strictEqual(res.body!.name, path);
-				assert.strictEqual(res.body!.type, mediaType);
+				assert.ok(res.body);
+				assert.strictEqual(res.body.name, path);
+				assert.strictEqual(res.body.type, mediaType);
 
-				const webpublicType = await getWebpublicType(alice, res.body!.id);
+				const webpublicType = await getWebpublicType(alice, res.body.id);
 				assert.strictEqual(webpublicType, 'image/webp');
 			});
 
@@ -679,10 +686,11 @@ describe('Endpoints', () => {
 				const path = `without-alpha.${type}`;
 				const res = await uploadFile(alice, { path });
 				assert.strictEqual(res.status, 200);
-				assert.strictEqual(res.body!.name, path);
-				assert.strictEqual(res.body!.type, mediaType);
+				assert.ok(res.body);
+				assert.strictEqual(res.body.name, path);
+				assert.strictEqual(res.body.type, mediaType);
 
-				const webpublicType = await getWebpublicType(alice, res.body!.id);
+				const webpublicType = await getWebpublicType(alice, res.body.id);
 				assert.strictEqual(webpublicType, 'image/webp');
 			});
 		}

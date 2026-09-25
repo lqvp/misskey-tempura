@@ -303,28 +303,53 @@ describe('User', () => {
 		});
 
 		describe('Send follow request from Bob to Alice and cancel', () => {
+			let cancelAlice: LoginUser, cancelBob: LoginUser;
+			let cancelBobInA: Misskey.entities.UserDetailedNotMe, cancelAliceInB: Misskey.entities.UserDetailedNotMe;
+
+			beforeAll(async () => {
+				[cancelAlice, cancelBob] = await Promise.all([
+					createAccount('a.test'),
+					createAccount('b.test'),
+				]);
+
+				[cancelBobInA, cancelAliceInB] = await Promise.all([
+					resolveRemoteUser('b.test', cancelBob.id, cancelAlice),
+					resolveRemoteUser('a.test', cancelAlice.id, cancelBob),
+				]);
+
+				await cancelAlice.client.request('i/update', { isLocked: true });
+			});
+
 			describe('Bob sends follow request to Alice', () => {
 				beforeAll(async () => {
-					await bob.client.request('following/create', { userId: aliceInB.id });
-					await waitForFollowRequests(alice, 1);
+					await cancelBob.client.request('following/create', { userId: cancelAliceInB.id });
+					await waitForFollowRequests(cancelAlice, 1);
 				});
 
 				test('Alice should have a request', async () => {
-					const requests = await alice.client.request('following/requests/list', {});
+					const requests = await cancelAlice.client.request('following/requests/list', {});
 					strictEqual(requests.length, 1);
-					strictEqual(requests[0].followee.id, alice.id);
-					strictEqual(requests[0].follower.id, bobInA.id);
+					strictEqual(requests[0].followee.id, cancelAlice.id);
+					strictEqual(requests[0].follower.id, cancelBobInA.id);
 				});
 			});
 
 			describe('Alice cancels it', () => {
 				beforeAll(async () => {
-					await bob.client.request('following/requests/cancel', { userId: aliceInB.id });
-					await waitForFollowRequests(alice, 0);
+					await cancelBob.client.request('following/requests/cancel', { userId: cancelAliceInB.id });
+					await waitForFollowRequests(cancelAlice, 0);
 				});
 
 				test('Alice should have no requests', async () => {
-					const requests = await alice.client.request('following/requests/list', {});
+					const requests = await cancelAlice.client.request('following/requests/list', {});
+					strictEqual(requests.length, 0);
+				});
+
+				test('Cancelling an already absent request is idempotent', async () => {
+					const canceled = await cancelBob.client.request('following/requests/cancel', { userId: cancelAliceInB.id });
+					strictEqual(canceled.id, cancelAliceInB.id);
+
+					const requests = await cancelBob.client.request('following/requests/sent', {});
 					strictEqual(requests.length, 0);
 				});
 			});
@@ -340,16 +365,6 @@ describe('User', () => {
 					const sent = await bob.client.request('following/requests/sent', {});
 					strictEqual(sent.length, 0);
 				}, WAIT_FOR_FEDERATION);
-			});
-
-			test('Bob should have no requests', async () => {
-				await rejects(
-					async () => await bob.client.request('following/requests/cancel', { userId: aliceInB.id }),
-					(err: any) => {
-						strictEqual(err.code, 'FOLLOW_REQUEST_NOT_FOUND');
-						return true;
-					},
-				);
 			});
 
 			test('Bob doesn\'t follow Alice', async () => {

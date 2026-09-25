@@ -17,17 +17,17 @@ describe('Note thread mute', () => {
 
 	beforeAll(async () => {
 		alice = await signup({ username: 'alice' });
-		bob = await signup({ username: 'bob' });
+		bob = await signup({ username: 'bob01' });
 		carol = await signup({ username: 'carol' });
 	}, 1000 * 60 * 2);
 
 	test('notes/mentions にミュートしているスレッドの投稿が含まれない', async () => {
 		const bobNote = await post(bob, { text: '@alice @carol root note' });
-		const aliceReply = await post(alice, { replyId: bobNote.id, text: '@bob @carol child note' });
+		const aliceReply = await post(alice, { replyId: bobNote.id, text: '@bob01 @carol child note' });
 
 		await api('notes/thread-muting/create', { noteId: bobNote.id }, alice);
 
-		const carolReply = await post(carol, { replyId: bobNote.id, text: '@bob @alice child note' });
+		const carolReply = await post(carol, { replyId: bobNote.id, text: '@bob01 @alice child note' });
 		const carolReplyWithoutMention = await post(carol, { replyId: aliceReply.id, text: 'child note' });
 
 		const res = await api('notes/mentions', {}, alice);
@@ -41,11 +41,11 @@ describe('Note thread mute', () => {
 
 	test('i/notifications にミュートしているスレッドの通知が含まれない', async () => {
 		const bobNote = await post(bob, { text: '@alice @carol root note' });
-		const aliceReply = await post(alice, { replyId: bobNote.id, text: '@bob @carol child note' });
+		const aliceReply = await post(alice, { replyId: bobNote.id, text: '@bob01 @carol child note' });
 
 		await api('notes/thread-muting/create', { noteId: bobNote.id }, alice);
 
-		const carolReply = await post(carol, { replyId: bobNote.id, text: '@bob @alice child note' });
+		const carolReply = await post(carol, { replyId: bobNote.id, text: '@bob01 @alice child note' });
 		const carolReplyWithoutMention = await post(carol, { replyId: aliceReply.id, text: 'child note' });
 
 		const res = await api('i/notifications', {}, alice);
