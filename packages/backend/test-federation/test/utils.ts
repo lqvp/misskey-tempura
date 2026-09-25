@@ -10,6 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export const ADMIN_PARAMS = { username: 'admin', password: 'admin' };
+const ADMIN_ACCOUNT_CREATE_ACCESS_DENIED_ID = '1fb7cb09-d46a-4fff-b8df-057708cce513';
 const ADMIN_CACHE = new Map<Host, SigninResponse>();
 
 await Promise.all([
@@ -66,7 +67,6 @@ async function signin(
 	return await (new Misskey.api.APIClient({ origin: `https://${host}` }).request as Request)('signin-flow', params)
 		.then(res => {
 			strictEqual(res.finished, true);
-			if (params.username === ADMIN_PARAMS.username) ADMIN_CACHE.set(host, res);
 			return res;
 		})
 		.then(({ id, i }) => ({ id, i }))
@@ -79,28 +79,24 @@ async function signin(
 		});
 }
 
-async function createAdmin(host: Host): Promise<Misskey.entities.SignupResponse | undefined> {
+async function configureAdmin(host: Host, admin: SigninResponse): Promise<void> {
+	const client = new Misskey.api.APIClient({ origin: `https://${host}`, credential: admin.i });
+	await client.request('admin/roles/update-default-policies', {
+		policies: {
+			/** TODO: @see https://github.com/misskey-dev/misskey/issues/14169 */
+			rateLimitFactor: 0 as never,
+		},
+	});
+	await client.request('admin/update-meta', {
+		federation: 'all',
+		blockMentionsFromUnfamiliarRemoteUsers: false,
+	});
+}
+
+async function createAdmin(host: Host): Promise<void> {
 	const client = new Misskey.api.APIClient({ origin: `https://${host}` });
-	return await client.request('admin/accounts/create', ADMIN_PARAMS).then(res => {
-		ADMIN_CACHE.set(host, {
-			id: res.id,
-			i: res.token,
-		});
-		return res as Misskey.entities.SignupResponse;
-	}).then(async res => {
-		await client.request('admin/roles/update-default-policies', {
-			policies: {
-				/** TODO: @see https://github.com/misskey-dev/misskey/issues/14169 */
-				rateLimitFactor: 0 as never,
-			},
-		}, res.token);
-		await client.request('admin/update-meta', {
-			federation: 'all',
-		}, res.token);
-		return res;
-	}).catch(err => {
-		if (err.info.e.message === 'access denied') return undefined;
-		throw err;
+	await client.request('admin/accounts/create', ADMIN_PARAMS).catch(err => {
+		if (err.id !== ADMIN_ACCOUNT_CREATE_ACCESS_DENIED_ID) throw err;
 	});
 }
 
@@ -113,6 +109,9 @@ export async function fetchAdmin(host: Host): Promise<LoginUser> {
 			}
 			throw err;
 		});
+
+	await configureAdmin(host, admin);
+	ADMIN_CACHE.set(host, admin);
 
 	return {
 		...admin,

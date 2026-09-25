@@ -74,11 +74,11 @@ describe('アンテナ', () => {
 	let testMutedChannel: misskey.entities.Channel;
 
 	beforeAll(async () => {
-		root = await signup({ username: 'root' });
+		root = await signup({ username: 'root01' });
 		alice = await signup({ username: 'alice' });
 		alicePost = await post(alice, { text: 'test' });
 		aliceList = await userList(alice, {});
-		bob = await signup({ username: 'bob' });
+		bob = await signup({ username: 'bob01' });
 		aliceList = await userList(alice, {});
 		bobFile = (await uploadFile(bob)).body!;
 		bobList = await userList(bob);

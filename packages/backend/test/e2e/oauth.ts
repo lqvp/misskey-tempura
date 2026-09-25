@@ -164,7 +164,7 @@ describe('OAuth', () => {
 
 	beforeAll(async () => {
 		alice = await signup({ username: 'alice' });
-		bob = await signup({ username: 'bob' });
+		bob = await signup({ username: 'bob01' });
 
 		fastify = Fastify();
 		fastify.get('/', async (request, reply) => {
@@ -314,7 +314,7 @@ describe('OAuth', () => {
 		assert.strictEqual(createResultBodyAlice.createdNote.user.username, 'alice');
 
 		const createResultBodyBob = await createResultBob.body as misskey.Endpoints['notes/create']['res'];
-		assert.strictEqual(createResultBodyBob.createdNote.user.username, 'bob');
+		assert.strictEqual(createResultBodyBob.createdNote.user.username, 'bob01');
 	});
 
 	// https://datatracker.ietf.org/doc/html/rfc7636.html

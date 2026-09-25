@@ -41,12 +41,12 @@ describe('Account Move', () => {
 		const config = loadConfig();
 		url = new URL(config.url);
 		const connection = await initTestDb(false);
-		root = await signup({ username: 'root' });
+		root = await signup({ username: 'root01' });
 		alice = await signup({ username: 'alice' });
-		bob = await signup({ username: 'bob' });
+		bob = await signup({ username: 'bob01' });
 		carol = await signup({ username: 'carol' });
-		dave = await signup({ username: 'dave' });
-		eve = await signup({ username: 'eve' });
+		dave = await signup({ username: 'dave01' });
+		eve = await signup({ username: 'eve01' });
 		frank = await signup({ username: 'frank' });
 		Users = connection.getRepository(MiUser).extend(miRepository as MiRepository<MiUser>);
 	}, 1000 * 60 * 2);
@@ -114,7 +114,7 @@ describe('Account Move', () => {
 
 		test('Unable to add itself', async () => {
 			const res = await api('i/update', {
-				alsoKnownAs: [`@bob@${url.hostname}`],
+				alsoKnownAs: [`@bob01@${url.hostname}`],
 			}, bob);
 
 			assert.strictEqual(res.status, 400);
@@ -156,7 +156,7 @@ describe('Account Move', () => {
 				alsoKnownAs: [`@alice@${url.hostname}`],
 			}, bob);
 			await api('i/update', {
-				alsoKnownAs: [`@carol@${url.hostname}`, `@dave@${url.hostname}`],
+				alsoKnownAs: [`@carol@${url.hostname}`, `@dave01@${url.hostname}`],
 			}, bob);
 
 			const newBob = await Users.findOneByOrFail({ id: bob.id });
@@ -242,7 +242,7 @@ describe('Account Move', () => {
 
 		test('Prohibit the root account from moving', async () => {
 			const res = await api('i/move', {
-				moveToAccount: `@bob@${url.hostname}`,
+				moveToAccount: `@bob01@${url.hostname}`,
 			}, root);
 
 			assert.strictEqual(res.status, 400);
@@ -272,7 +272,7 @@ describe('Account Move', () => {
 
 		test('Relationships have been properly migrated', async () => {
 			const move = await api('i/move', {
-				moveToAccount: `@bob@${url.hostname}`,
+				moveToAccount: `@bob01@${url.hostname}`,
 			}, alice);
 
 			assert.strictEqual(move.status, 200);
@@ -479,7 +479,7 @@ describe('Account Move', () => {
 
 		test('Prohibit updating alsoKnownAs after moving', async () => {
 			const res = await api('i/update', {
-				alsoKnownAs: [`@eve@${url.hostname}`],
+				alsoKnownAs: [`@eve01@${url.hostname}`],
 			}, alice);
 
 			assert.strictEqual(res.status, 403);

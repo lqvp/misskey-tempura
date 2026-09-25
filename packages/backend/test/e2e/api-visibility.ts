@@ -6,13 +6,35 @@
 process.env.NODE_ENV = 'test';
 
 import * as assert from 'assert';
-import { describe, beforeAll, beforeEach, test, vi } from 'vitest';
-import { UserToken, api, failedApiCall, post, signup } from '../utils.js';
+import { describe, beforeAll, test, vi } from 'vitest';
+import { UserToken, api, failedApiCall, hiddenNote, post, react, signup } from '../utils.js';
 import type * as misskey from 'misskey-js';
 
 const waitForPushToTlOptions = { timeout: 3000, interval: 25 };
 
 describe('API visibility', () => {
+	describe('default sign-in requirement', () => {
+		let user: misskey.entities.SignupResponse;
+		let note: misskey.entities.Note;
+
+		beforeAll(async () => {
+			user = await signup({ username: 'defaultGate' });
+			note = await post(user, { text: 'default sign-in gate' });
+		});
+
+		test('unauthenticated notes/show returns the exact content restriction error', async () => {
+			await failedApiCall({
+				endpoint: 'notes/show',
+				parameters: { noteId: note.id },
+				user: undefined,
+			}, {
+				status: 400,
+				code: 'CONTENT_RESTRICTED_BY_USER',
+				id: 'fbcc002d-37d9-4944-a6b0-d9e29f2d33ab',
+			});
+		});
+	});
+
 	describe('Note visibility', () => {
 		//#region vars
 		/** ヒロイン */
@@ -63,6 +85,23 @@ describe('API visibility', () => {
 			}, by);
 		};
 
+		const assertHiddenNote = (actual: misskey.entities.Note, source: misskey.entities.Note, includeDeliveryTargets = false) => {
+			const expected = hiddenNote(source, { includeDeliveryTargets });
+			assert.strictEqual(actual.id, expected.id);
+			assert.strictEqual(actual.isHidden, expected.isHidden);
+			assert.strictEqual(actual.text, expected.text);
+			assert.strictEqual(actual.cw, expected.cw);
+			assert.deepStrictEqual(actual.fileIds, expected.fileIds);
+			assert.deepStrictEqual(actual.files, expected.files);
+			assert.strictEqual('visibleUserIds' in actual, false);
+			assert.strictEqual('poll' in actual, false);
+			if (includeDeliveryTargets) {
+				assert.deepStrictEqual(actual.deliveryTargets, expected.deliveryTargets);
+			} else {
+				assert.strictEqual('deliveryTargets' in actual, false);
+			}
+		};
+
 		beforeAll(async () => {
 			//#region prepare
 			// signup
@@ -71,6 +110,10 @@ describe('API visibility', () => {
 			other = await signup({ username: 'other' });
 			target = await signup({ username: 'target' });
 			target2 = await signup({ username: 'target2' });
+
+			// Keep the visibility matrix focused on note visibility rather than the
+			// server's sign-in requirement, which is covered by the dedicated regression above.
+			assert.strictEqual((await api('i/update', { requireSigninToViewContents: false }, alice)).status, 200);
 
 			// follow alice <= follower
 			await api('following/create', { userId: alice.id }, follower);
@@ -152,12 +195,12 @@ describe('API visibility', () => {
 
 		test('[show] followers-postを非フォロワーが見れない', async () => {
 			const res = await show(fol.id, other);
-			assert.strictEqual(res.body.isHidden, true);
+			assertHiddenNote(res.body, fol, true);
 		});
 
 		test('[show] followers-postを未認証が見れない', async () => {
 			const res = await show(fol.id);
-			assert.strictEqual(res.body.isHidden, true);
+			assertHiddenNote(res.body, fol);
 		});
 
 		// specified
@@ -173,17 +216,17 @@ describe('API visibility', () => {
 
 		test('[show] specified-postをフォロワーが見れない', async () => {
 			const res = await show(spe.id, follower);
-			assert.strictEqual(res.body.isHidden, true);
+			assertHiddenNote(res.body, spe, true);
 		});
 
 		test('[show] specified-postを非フォロワーが見れない', async () => {
 			const res = await show(spe.id, other);
-			assert.strictEqual(res.body.isHidden, true);
+			assertHiddenNote(res.body, spe, true);
 		});
 
 		test('[show] specified-postを未認証が見れない', async () => {
 			const res = await show(spe.id);
-			assert.strictEqual(res.body.isHidden, true);
+			assertHiddenNote(res.body, spe);
 		});
 		//#endregion
 
@@ -258,12 +301,12 @@ describe('API visibility', () => {
 
 		test('[show] followers-replyを非フォロワーが見れない', async () => {
 			const res = await show(folR.id, other);
-			assert.strictEqual(res.body.isHidden, true);
+			assertHiddenNote(res.body, folR, true);
 		});
 
 		test('[show] followers-replyを未認証が見れない', async () => {
 			const res = await show(folR.id);
-			assert.strictEqual(res.body.isHidden, true);
+			assertHiddenNote(res.body, folR);
 		});
 
 		// specified
@@ -284,17 +327,17 @@ describe('API visibility', () => {
 
 		test('[show] specified-replyをフォロワーが見れない', async () => {
 			const res = await show(speR.id, follower);
-			assert.strictEqual(res.body.isHidden, true);
+			assertHiddenNote(res.body, speR, true);
 		});
 
 		test('[show] specified-replyを非フォロワーが見れない', async () => {
 			const res = await show(speR.id, other);
-			assert.strictEqual(res.body.isHidden, true);
+			assertHiddenNote(res.body, speR, true);
 		});
 
 		test('[show] specified-replyを未認証が見れない', async () => {
 			const res = await show(speR.id);
-			assert.strictEqual(res.body.isHidden, true);
+			assertHiddenNote(res.body, speR);
 		});
 		//#endregion
 
@@ -369,12 +412,12 @@ describe('API visibility', () => {
 
 		test('[show] followers-mentionを非フォロワーが見れない', async () => {
 			const res = await show(folM.id, other);
-			assert.strictEqual(res.body.isHidden, true);
+			assertHiddenNote(res.body, folM, true);
 		});
 
 		test('[show] followers-mentionを未認証が見れない', async () => {
 			const res = await show(folM.id);
-			assert.strictEqual(res.body.isHidden, true);
+			assertHiddenNote(res.body, folM);
 		});
 
 		// specified
@@ -390,22 +433,22 @@ describe('API visibility', () => {
 
 		test('[show] specified-mentionをされた人が指定されてなかったら見れない', async () => {
 			const res = await show(speM.id, target2);
-			assert.strictEqual(res.body.isHidden, true);
+			assertHiddenNote(res.body, speM, true);
 		});
 
 		test('[show] specified-mentionをフォロワーが見れない', async () => {
 			const res = await show(speM.id, follower);
-			assert.strictEqual(res.body.isHidden, true);
+			assertHiddenNote(res.body, speM, true);
 		});
 
 		test('[show] specified-mentionを非フォロワーが見れない', async () => {
 			const res = await show(speM.id, other);
-			assert.strictEqual(res.body.isHidden, true);
+			assertHiddenNote(res.body, speM, true);
 		});
 
 		test('[show] specified-mentionを未認証が見れない', async () => {
 			const res = await show(speM.id);
-			assert.strictEqual(res.body.isHidden, true);
+			assertHiddenNote(res.body, speM);
 		});
 		//#endregion
 
@@ -431,16 +474,16 @@ describe('API visibility', () => {
 			};
 
 			beforeAll(async () => {
-				await api('notes/reactions/create', { noteId: pub.id, reaction: '👍' }, follower);
-				await api('notes/reactions/create', { noteId: fol.id, reaction: '👍' }, follower);
-				await api('notes/reactions/create', { noteId: spe.id, reaction: '👍' }, target);
-				await api('notes/reactions/create', { noteId: folR.id, reaction: '👍' }, follower);
+				await react(follower, pub, '👍');
+				await react(follower, fol, '👍');
+				await react(target, spe, '👍');
+				await react(follower, folR, '👍');
 			});
 
-			test('[reactions] public-postのリアクションを未認証が見れる', async () => {
+			test('[reactions] public-postのリアクションを未認証から見ると空になる', async () => {
 				const res = await reactions(pub.id);
 				assert.strictEqual(res.status, 200);
-				assert.strictEqual(res.body.length, 1);
+				assert.deepStrictEqual(res.body, []);
 			});
 
 			test('[reactions] followers-postのリアクションを自分が見れる', async () => {
@@ -459,8 +502,10 @@ describe('API visibility', () => {
 				await cannotSeeReactions(fol.id, other);
 			});
 
-			test('[reactions] followers-postのリアクションを未認証が見れない', async () => {
-				await cannotSeeReactions(fol.id);
+			test('[reactions] followers-postのリアクションを未認証から見ると空になる', async () => {
+				const res = await reactions(fol.id);
+				assert.strictEqual(res.status, 200);
+				assert.deepStrictEqual(res.body, []);
 			});
 
 			test('[reactions] specified-postのリアクションを指定ユーザーが見れる', async () => {
@@ -473,8 +518,10 @@ describe('API visibility', () => {
 				await cannotSeeReactions(spe.id, follower);
 			});
 
-			test('[reactions] specified-postのリアクションを未認証が見れない', async () => {
-				await cannotSeeReactions(spe.id);
+			test('[reactions] specified-postのリアクションを未認証から見ると空になる', async () => {
+				const res = await reactions(spe.id);
+				assert.strictEqual(res.status, 200);
+				assert.deepStrictEqual(res.body, []);
 			});
 
 			test('[reactions] followers-replyのリアクションを非フォロワー (リプライ先である) が見れる', async () => {

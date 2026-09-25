@@ -20,38 +20,6 @@ import {
 	UsersRepository,
 } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
-import { AvatarDecorationService } from '@/core/AvatarDecorationService.js';
-import { ApPersonService } from '@/core/activitypub/models/ApPersonService.js';
-import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
-import { PageEntityService } from '@/core/entities/PageEntityService.js';
-import { CustomEmojiService } from '@/core/CustomEmojiService.js';
-import { AnnouncementService } from '@/core/AnnouncementService.js';
-import { RoleService } from '@/core/RoleService.js';
-import { FederatedInstanceService } from '@/core/FederatedInstanceService.js';
-import { IdService } from '@/core/IdService.js';
-import { UtilityService } from '@/core/UtilityService.js';
-import { EmojiEntityService } from '@/core/entities/EmojiEntityService.js';
-import { ModerationLogService } from '@/core/ModerationLogService.js';
-import { GlobalEventService } from '@/core/GlobalEventService.js';
-import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.js';
-import { MetaService } from '@/core/MetaService.js';
-import { FetchInstanceMetadataService } from '@/core/FetchInstanceMetadataService.js';
-import { CacheService } from '@/core/CacheService.js';
-import { ApResolverService } from '@/core/activitypub/ApResolverService.js';
-import { ApNoteService } from '@/core/activitypub/models/ApNoteService.js';
-import { ApImageService } from '@/core/activitypub/models/ApImageService.js';
-import { ApMfmService } from '@/core/activitypub/ApMfmService.js';
-import { MfmService } from '@/core/MfmService.js';
-import { HashtagService } from '@/core/HashtagService.js';
-import UsersChart from '@/core/chart/charts/users.js';
-import { ChartLoggerService } from '@/core/chart/ChartLoggerService.js';
-import InstanceChart from '@/core/chart/charts/instance.js';
-import { ApLoggerService } from '@/core/activitypub/ApLoggerService.js';
-import { AccountMoveService } from '@/core/AccountMoveService.js';
-import { ReactionService } from '@/core/ReactionService.js';
-import { NotificationService } from '@/core/NotificationService.js';
-import { ReactionsBufferingService } from '@/core/ReactionsBufferingService.js';
-import { ChatService } from '@/core/ChatService.js';
 
 process.env.NODE_ENV = 'test';
 
@@ -141,48 +109,8 @@ describe('UserEntityService', () => {
 		}
 
 		beforeAll(async () => {
-			const services = [
-				UserEntityService,
-				ApPersonService,
-				NoteEntityService,
-				PageEntityService,
-				CustomEmojiService,
-				AnnouncementService,
-				RoleService,
-				FederatedInstanceService,
-				IdService,
-				AvatarDecorationService,
-				UtilityService,
-				EmojiEntityService,
-				ModerationLogService,
-				GlobalEventService,
-				DriveFileEntityService,
-				MetaService,
-				FetchInstanceMetadataService,
-				CacheService,
-				ApResolverService,
-				ApNoteService,
-				ApImageService,
-				ApMfmService,
-				MfmService,
-				HashtagService,
-				UsersChart,
-				ChartLoggerService,
-				InstanceChart,
-				ApLoggerService,
-				AccountMoveService,
-				ReactionService,
-				ReactionsBufferingService,
-				NotificationService,
-				ChatService,
-			];
-
 			app = await Test.createTestingModule({
 				imports: [GlobalModule, CoreModule],
-				providers: [
-					...services,
-					...services.map(x => ({ provide: x.name, useExisting: x })),
-				],
 			}).compile();
 			await app.init();
 			app.enableShutdownHooks();
@@ -199,6 +127,15 @@ describe('UserEntityService', () => {
 		});
 
 		afterAll(async () => {
+			await userMemosRepository.createQueryBuilder().delete().execute();
+			await followingRepository.createQueryBuilder().delete().execute();
+			await followingRequestRepository.createQueryBuilder().delete().execute();
+			await blockingRepository.createQueryBuilder().delete().execute();
+			await mutingRepository.createQueryBuilder().delete().execute();
+			await renoteMutingsRepository.createQueryBuilder().delete().execute();
+			await userProfileRepository.createQueryBuilder().delete().execute();
+			await usersRepository.createQueryBuilder().delete().execute();
+
 			await app.close();
 		});
 

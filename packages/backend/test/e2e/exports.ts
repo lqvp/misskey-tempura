@@ -36,7 +36,7 @@ describe('export-clips', () => {
 	beforeAll(async () => {
 		queue = await startJobQueue();
 		alice = await signup({ username: 'alice' });
-		bob = await signup({ username: 'bob' });
+		bob = await signup({ username: 'bob01' });
 	}, 1000 * 60 * 2);
 
 	afterAll(async () => {
@@ -224,6 +224,6 @@ describe('export-clips', () => {
 		assert.strictEqual(exported[0].name, 'kawaii');
 		assert.strictEqual(exported[0].clipNotes.length, 1);
 		assert.strictEqual(exported[0].clipNotes[0].note.text, 'baz');
-		assert.strictEqual(exported[0].clipNotes[0].note.user.username, 'bob');
+		assert.strictEqual(exported[0].clipNotes[0].note.user.username, 'bob01');
 	});
 });

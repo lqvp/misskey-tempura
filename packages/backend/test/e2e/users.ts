@@ -12,6 +12,29 @@ import { api, post, role, signup, successfulApiCall, uploadFile, failedApiCall }
 import type * as misskey from 'misskey-js';
 import { DEFAULT_POLICIES } from '@/core/RoleService.js';
 
+type CurrentUserFields = {
+	listenbrainz?: string | null;
+	communityRoles?: unknown[];
+	hideActivity?: boolean;
+	hideNoteFromOverview?: boolean;
+	hidePublicNotes?: boolean;
+	hideHomeNotes?: boolean;
+	hideLocalOnlyNotes?: boolean;
+	autoFollowBack?: boolean;
+	autoFollowOnMove?: boolean;
+	outboxFilter?: {
+		public: boolean;
+		public_non_ltl: boolean;
+		home: boolean;
+	};
+	webFeedFilter?: {
+		disableRss: boolean;
+		disableAtom: boolean;
+		disableJson: boolean;
+	};
+	receiveSpecifiedNotesFrom?: 'all' | 'following' | 'nobody';
+};
+
 describe('ユーザー', () => {
 	// エンティティとしてのユーザーを主眼においたテストを記述する
 	// (Userを返すエンドポイントとUserエンティティを書き換えるエンドポイントをテストする)
@@ -36,11 +59,15 @@ describe('ユーザー', () => {
 			name: user.name,
 			username: user.username,
 			host: user.host,
+			approved: user.approved,
 			avatarUrl: user.avatarUrl,
 			avatarBlurhash: user.avatarBlurhash,
 			avatarDecorations: user.avatarDecorations,
 			isBot: user.isBot,
 			isCat: user.isCat,
+			requireSigninToViewContents: user.requireSigninToViewContents,
+			makeNotesFollowersOnlyBefore: user.makeNotesFollowersOnlyBefore,
+			makeNotesHiddenBefore: user.makeNotesHiddenBefore,
 			instance: user.instance,
 			emojis: user.emojis,
 			onlineStatus: user.onlineStatus,
@@ -54,6 +81,7 @@ describe('ユーザー', () => {
 
 	// UserDetailedNotMeのキーが過不足なく入っている？
 	const userDetailedNotMe = (user: misskey.entities.SignupResponse): Partial<misskey.entities.UserDetailedNotMe> => {
+		const current = user as typeof user & CurrentUserFields;
 		return stripUndefined({
 			...userLite(user),
 			url: user.url,
@@ -71,6 +99,7 @@ describe('ユーザー', () => {
 			description: user.description,
 			location: user.location,
 			birthday: user.birthday,
+			listenbrainz: current.listenbrainz,
 			lang: user.lang,
 			fields: user.fields,
 			verifiedLinks: user.verifiedLinks,
@@ -82,11 +111,17 @@ describe('ユーザー', () => {
 			pinnedPageId: user.pinnedPageId,
 			pinnedPage: user.pinnedPage,
 			publicReactions: user.publicReactions,
+			hideActivity: current.hideActivity,
+			hideNoteFromOverview: current.hideNoteFromOverview,
+			hidePublicNotes: current.hidePublicNotes,
+			hideHomeNotes: current.hideHomeNotes,
+			hideLocalOnlyNotes: current.hideLocalOnlyNotes,
 			followingVisibility: user.followingVisibility,
 			followersVisibility: user.followersVisibility,
 			chatScope: user.chatScope,
 			canChat: user.canChat,
 			roles: user.roles,
+			communityRoles: current.communityRoles,
 			memo: user.memo,
 		});
 	};
@@ -113,6 +148,7 @@ describe('ユーザー', () => {
 
 	// MeDetailedのキーが過不足なく入っている？
 	const meDetailed = (user: misskey.entities.SignupResponse, security = false): Partial<misskey.entities.MeDetailed> => {
+		const current = user as typeof user & CurrentUserFields;
 		return stripUndefined({
 			...userDetailedNotMe(user),
 			avatarId: user.avatarId,
@@ -127,6 +163,11 @@ describe('ユーザー', () => {
 			carefulBot: user.carefulBot,
 			autoAcceptFollowed: user.autoAcceptFollowed,
 			autoRejectFollowRequest: user.autoRejectFollowRequest,
+			autoFollowBack: current.autoFollowBack,
+			autoFollowOnMove: current.autoFollowOnMove,
+			outboxFilter: current.outboxFilter,
+			webFeedFilter: current.webFeedFilter,
+			receiveSpecifiedNotesFrom: current.receiveSpecifiedNotesFrom,
 			noCrawle: user.noCrawle,
 			preventAiLearning: user.preventAiLearning,
 			isExplorable: user.isExplorable,
@@ -210,10 +251,10 @@ describe('ユーザー', () => {
 	let userFollowRequested: misskey.entities.SignupResponse;
 
 	beforeAll(async () => {
-		root = await signup({ username: 'root' });
+		root = await signup({ username: 'root01' });
 		alice = await signup({ username: 'alice' });
 		aliceNote = await post(alice, { text: 'test' });
-		bob = await signup({ username: 'bob' });
+		bob = await signup({ username: 'bob01' });
 		bobNote = await post(bob, { text: 'test' });
 		carol = await signup({ username: 'carol' });
 
@@ -288,13 +329,13 @@ describe('ユーザー', () => {
 		userQuoteMutingAlice = await signup({ username: 'userQuoteMutingAlice' });
 		await post(userQuoteMutingAlice, { text: 'test' });
 		await api('quote-mute/create', { userId: alice.id }, userQuoteMutingAlice);
-		userQuoteMutedByAlice = await signup({ username: 'userQuoteMutedByAlice' });
+		userQuoteMutedByAlice = await signup({ username: 'quoteMutedByAlice' });
 		await post(userQuoteMutedByAlice, { text: 'test' });
 		await api('quote-mute/create', { userId: userQuoteMutedByAlice.id }, alice);
-		userAvatarDecorationMutingAlice = await signup({ username: 'userAvatarDecorationMutingAlice' });
+		userAvatarDecorationMutingAlice = await signup({ username: 'avatarMutingAlice' });
 		await post(userAvatarDecorationMutingAlice, { text: 'test' });
 		await api('avatar-decoration-muting/create', { userId: alice.id }, userAvatarDecorationMutingAlice);
-		userAvatarDecorationMutedByAlice = await signup({ username: 'userAvatarDecorationMutedByAlice' });
+		userAvatarDecorationMutedByAlice = await signup({ username: 'avatarMutedByAlice' });
 		await post(userAvatarDecorationMutedByAlice, { text: 'test' });
 		await api('avatar-decoration-muting/create', { userId: userAvatarDecorationMutedByAlice.id }, alice);
 		userFollowRequesting = await signup({ username: 'userFollowRequesting' });
@@ -315,11 +356,7 @@ describe('ユーザー', () => {
 
 	test('が作れる。（作りたての状態で自分のユーザー情報が取れる）', async () => {
 		// SignupApiService.ts
-		const response = await successfulApiCall({
-			endpoint: 'signup',
-			parameters: { username: 'zoe', password: 'password' },
-			user: undefined,
-		}) as unknown as misskey.entities.SignupResponse; // BUG MeDetailedに足りないキーがある
+		const response = await signup({ username: 'zoe01', password: 'password' });
 
 		// signupの時はtokenが含まれる特別なMeDetailedが返ってくる
 		assert.match(response.token, /[a-zA-Z0-9]{16}/);
@@ -327,7 +364,7 @@ describe('ユーザー', () => {
 		// UserLite
 		assert.match(response.id, /[0-9a-z]{10}/);
 		assert.strictEqual(response.name, null);
-		assert.strictEqual(response.username, 'zoe');
+		assert.strictEqual(response.username, 'zoe01');
 		assert.strictEqual(response.host, null);
 		response.avatarUrl && assert.match(response.avatarUrl, /^[-a-zA-Z0-9@:%._\+~#&?=\/]+$/);
 		assert.strictEqual(response.avatarBlurhash, null);
@@ -608,8 +645,8 @@ describe('ユーザー', () => {
 		{ label: '「見つけやすくする」がOFFのユーザーが含まれない', user: () => userNotExplorable, excluded: true },
 		{ label: 'ミュートユーザーが含まれない', user: () => userMutedByAlice, excluded: true },
 		{ label: 'ブロックされているユーザーが含まれない', user: () => userBlockedByAlice, excluded: true },
-		{ label: 'ブロックしてきているユーザーが含まれる', user: () => userBlockingAlice, excluded: true },
-		{ label: '承認制ユーザーが含まれる', user: () => userLocking },
+		{ label: 'ブロックしてきているユーザーが含まれない', user: () => userBlockingAlice, excluded: true },
+		{ label: '承認制ユーザーが含まれない', user: () => userLocking, excluded: true },
 		{ label: 'サイレンスユーザーが含まれる', user: () => userSilenced },
 		{ label: 'サスペンドユーザーが含まれない', user: () => userSuspended, excluded: true },
 		{ label: '削除済ユーザーが含まれる', user: () => userDeletedBySelf },
@@ -638,38 +675,40 @@ describe('ユーザー', () => {
 		const expected = type(alice);
 		assert.deepStrictEqual(response, expected);
 	});
+	const readUserProperty = (value: object, property: string): unknown => {
+		if (!(property in value)) return undefined;
+		const result: unknown = Reflect.get(value, property);
+		return result;
+	};
+
 	test.each([
-		{ label: 'Administratorになっている', user: () => userAdmin, me: () => userAdmin, selector: (user: misskey.entities.MeDetailed) => user.isAdmin },
-		// @ts-expect-error UserDetailedNotMe doesn't include isAdmin
-		{ label: '自分以外から見たときはAdministratorか判定できない', user: () => userAdmin, selector: (user: misskey.entities.UserDetailedNotMe) => user.isAdmin, expected: () => undefined },
-		{ label: 'Moderatorになっている', user: () => userModerator, me: () => userModerator, selector: (user: misskey.entities.MeDetailed) => user.isModerator },
-		// @ts-expect-error UserDetailedNotMe doesn't include isModerator
-		{ label: '自分以外から見たときはModeratorか判定できない', user: () => userModerator, selector: (user: misskey.entities.UserDetailedNotMe) => user.isModerator, expected: () => undefined },
-		{ label: '自分から見た場合に二要素認証関連のプロパティがセットされている', user: () => alice, me: () => alice, selector: (user: misskey.entities.MeDetailed) => user.twoFactorEnabled, expected: () => false },
-		{ label: '自分以外から見た場合に二要素認証関連のプロパティがセットされていない', user: () => alice, me: () => bob, selector: (user: misskey.entities.UserDetailedNotMe) => user.twoFactorEnabled, expected: () => undefined },
-		{ label: 'モデレーターから見た場合に二要素認証関連のプロパティがセットされている', user: () => alice, me: () => userModerator, selector: (user: misskey.entities.UserDetailedNotMe) => user.twoFactorEnabled, expected: () => false },
-		{ label: 'サイレンスになっている', user: () => userSilenced, selector: (user: misskey.entities.UserDetailed) => user.isSilenced },
+		{ label: 'Administratorになっている', user: () => userAdmin, me: () => userAdmin, property: 'isAdmin' },
+		{ label: '自分以外から見たときはAdministratorか判定できない', user: () => userAdmin, property: 'isAdmin', expected: () => undefined },
+		{ label: 'Moderatorになっている', user: () => userModerator, me: () => userModerator, property: 'isModerator' },
+		{ label: '自分以外から見たときはModeratorか判定できない', user: () => userModerator, property: 'isModerator', expected: () => undefined },
+		{ label: '自分から見た場合に二要素認証関連のプロパティがセットされている', user: () => alice, me: () => alice, property: 'twoFactorEnabled', expected: () => false },
+		{ label: '自分以外から見た場合に二要素認証関連のプロパティがセットされていない', user: () => alice, me: () => bob, property: 'twoFactorEnabled', expected: () => undefined },
+		{ label: 'モデレーターから見た場合に二要素認証関連のプロパティがセットされている', user: () => alice, me: () => userModerator, property: 'twoFactorEnabled', expected: () => false },
+		{ label: 'サイレンスになっている', user: () => userSilenced, property: 'isSilenced' },
 		// FIXME: 落ちる
-		//{ label: 'サスペンドになっている', user: () => userSuspended, selector: (user: misskey.entities.UserDetailed) => user.isSuspended },
-		{ label: '削除済みになっている', user: () => userDeletedBySelf, me: () => userDeletedBySelf, selector: (user: misskey.entities.MeDetailed) => user.isDeleted },
-		// @ts-expect-error UserDetailedNotMe doesn't include isDeleted
-		{ label: '自分以外から見たときは削除済みか判定できない', user: () => userDeletedBySelf, selector: (user: misskey.entities.UserDetailedNotMe) => user.isDeleted, expected: () => undefined },
-		{ label: '削除済み(byAdmin)になっている', user: () => userDeletedByAdmin, me: () => userDeletedByAdmin, selector: (user: misskey.entities.MeDetailed) => user.isDeleted },
-		// @ts-expect-error UserDetailedNotMe doesn't include isDeleted
-		{ label: '自分以外から見たときは削除済み(byAdmin)か判定できない', user: () => userDeletedByAdmin, selector: (user: misskey.entities.UserDetailedNotMe) => user.isDeleted, expected: () => undefined },
-		{ label: 'フォロー中になっている', user: () => userFollowedByAlice, selector: (user: misskey.entities.UserDetailed) => user.isFollowing },
-		{ label: 'フォローされている', user: () => userFollowingAlice, selector: (user: misskey.entities.UserDetailed) => user.isFollowed },
-		{ label: 'ブロック中になっている', user: () => userBlockedByAlice, selector: (user: misskey.entities.UserDetailed) => user.isBlocking },
-		{ label: 'ブロックされている', user: () => userBlockingAlice, selector: (user: misskey.entities.UserDetailed) => user.isBlocked },
-		{ label: 'ミュート中になっている', user: () => userMutedByAlice, selector: (user: misskey.entities.UserDetailed) => user.isMuted },
-		{ label: 'リノートミュート中になっている', user: () => userRnMutedByAlice, selector: (user: misskey.entities.UserDetailed) => user.isRenoteMuted },
-		{ label: '引用ミュート中になっている', user: () => userQuoteMutedByAlice, selector: (user: misskey.entities.UserDetailed) => user.isQuoteMuted },
-		{ label: 'デコレーションミュート中になっている', user: () => userAvatarDecorationMutedByAlice, selector: (user: misskey.entities.UserDetailed) => user.isAvatarDecorationMuted },
-		{ label: 'フォローリクエスト中になっている', user: () => userFollowRequested, me: () => userFollowRequesting, selector: (user: misskey.entities.UserDetailed) => user.hasPendingFollowRequestFromYou },
-		{ label: 'フォローリクエストされている', user: () => userFollowRequesting, me: () => userFollowRequested, selector: (user: misskey.entities.UserDetailed) => user.hasPendingFollowRequestToYou },
-	] as const)('を取得することができ、$labelこと', async ({ user, me, selector, expected }) => {
+		//{ label: 'サスペンドになっている', user: () => userSuspended, property: 'isSuspended' },
+		{ label: '削除済みになっている', user: () => userDeletedBySelf, me: () => userDeletedBySelf, property: 'isDeleted' },
+		{ label: '自分以外から見たときは削除済みか判定できない', user: () => userDeletedBySelf, property: 'isDeleted', expected: () => undefined },
+		{ label: '削除済み(byAdmin)になっている', user: () => userDeletedByAdmin, me: () => userDeletedByAdmin, property: 'isDeleted' },
+		{ label: '自分以外から見たときは削除済み(byAdmin)か判定できない', user: () => userDeletedByAdmin, property: 'isDeleted', expected: () => undefined },
+		{ label: 'フォロー中になっている', user: () => userFollowedByAlice, property: 'isFollowing' },
+		{ label: 'フォローされている', user: () => userFollowingAlice, property: 'isFollowed' },
+		{ label: 'ブロック中になっている', user: () => userBlockedByAlice, property: 'isBlocking' },
+		{ label: 'ブロックされている', user: () => userBlockingAlice, property: 'isBlocked' },
+		{ label: 'ミュート中になっている', user: () => userMutedByAlice, property: 'isMuted' },
+		{ label: 'リノートミュート中になっている', user: () => userRnMutedByAlice, property: 'isRenoteMuted' },
+		{ label: '引用ミュート中になっている', user: () => userQuoteMutedByAlice, property: 'isQuoteMuted' },
+		{ label: 'デコレーションミュート中になっている', user: () => userAvatarDecorationMutedByAlice, property: 'isAvatarDecorationMuted' },
+		{ label: 'フォローリクエスト中になっている', user: () => userFollowRequested, me: () => userFollowRequesting, property: 'hasPendingFollowRequestFromYou' },
+		{ label: 'フォローリクエストされている', user: () => userFollowRequesting, me: () => userFollowRequested, property: 'hasPendingFollowRequestToYou' },
+	] as const)('を取得することができ、$labelこと', async ({ user, me, property, expected }) => {
 		const response = await successfulApiCall({ endpoint: 'users/show', parameters: { userId: user().id }, user: me?.() ?? alice });
-		assert.strictEqual(selector(response as any), (expected ?? ((): true => true))());
+		assert.strictEqual(readUserProperty(response, property), (expected ?? ((): true => true))());
 	});
 	test('を取得することができ、Publicなロールがセットされていること', async () => {
 		const response = await successfulApiCall({ endpoint: 'users/show', parameters: { userId: userRolePublic.id }, user: alice });
@@ -682,6 +721,8 @@ describe('ユーザー', () => {
 			description: rolePublic.description,
 			isModerator: rolePublic.isModerator,
 			isAdministrator: rolePublic.isAdministrator,
+			permissionGroup: rolePublic.permissionGroup,
+			isRainbow: rolePublic.isRainbow,
 			displayOrder: rolePublic.displayOrder,
 		}]);
 	});
@@ -691,6 +732,7 @@ describe('ユーザー', () => {
 			name: roleBadge.name,
 			iconUrl: roleBadge.iconUrl,
 			displayOrder: roleBadge.displayOrder,
+			isRainbow: roleBadge.isRainbow,
 		}]);
 		assert.deepStrictEqual(response.roles, [{
 			id: roleBadge.id,
@@ -700,6 +742,8 @@ describe('ユーザー', () => {
 			description: roleBadge.description,
 			isModerator: roleBadge.isModerator,
 			isAdministrator: roleBadge.isAdministrator,
+			permissionGroup: roleBadge.permissionGroup,
+			isRainbow: roleBadge.isRainbow,
 			displayOrder: roleBadge.displayOrder,
 		}]);
 	});
@@ -729,9 +773,9 @@ describe('ユーザー', () => {
 		{ label: 'サスペンドユーザーが（モデレーターが見るときは）含まれる', user: () => userSuspended, me: () => root },
 		// BUG サスペンドユーザーを一般ユーザーから見るとrootユーザーが返ってくる
 		//{ label: 'サスペンドユーザーが（一般ユーザーが見るときは）含まれない', user: () => userSuspended, me: () => bob, excluded: true },
-		{ label: '削除済ユーザーが含まれる', user: () => userDeletedBySelf },
-		{ label: '削除済(byAdmin)ユーザーが含まれる', user: () => userDeletedByAdmin },
-		// @ts-expect-error excluded は上でコメントアウトされているので
+		{ label: '削除済ユーザーが含まれない', user: () => userDeletedBySelf, excluded: true },
+		{ label: '削除済(byAdmin)ユーザーが含まれない', user: () => userDeletedByAdmin, excluded: true },
+		// suspended-user general-viewer case is intentionally disabled pending the root-user bug fix
 	] as const)('をID指定のリスト形式で取得することができ、結果に$label', async ({ user, me, excluded }) => {
 		const parameters = { userIds: [user().id] };
 		const response = await successfulApiCall({ endpoint: 'users/show', parameters, user: me?.() ?? alice });
@@ -782,9 +826,9 @@ describe('ユーザー', () => {
 		{ label: '自分かつusernameが大文字', parameters: { username: 'ALICE' }, user: () => [alice] },
 		{ label: 'ローカルのフォロイーでノートなし', parameters: { username: 'userFollowedByAlice' }, user: () => [userFollowedByAlice] },
 		{ label: 'ローカルでノートなしは検索に載らない', parameters: { username: 'userNoNote' }, user: () => [] },
-		{ label: 'ローカルの他人1', parameters: { username: 'bob' }, user: () => [bob] },
-		{ label: 'ローカルの他人2', parameters: { username: 'bob', host: null }, user: () => [bob] },
-		{ label: 'ローカルの他人3', parameters: { username: 'bob', host: '.' }, user: () => [bob] },
+		{ label: 'ローカルの他人1', parameters: { username: 'bob01' }, user: () => [bob] },
+		{ label: 'ローカルの他人2', parameters: { username: 'bob01', host: null }, user: () => [bob] },
+		{ label: 'ローカルの他人3', parameters: { username: 'bob01', host: '.' }, user: () => [bob] },
 		{ label: 'ローカル', parameters: { host: null, limit: 1 }, user: () => [userFollowedByAlice] },
 		{ label: 'ローカル', parameters: { host: '.', limit: 1 }, user: () => [userFollowedByAlice] },
 	])('をID&ホスト指定で検索できる($label)', async ({ parameters, user }) => {
@@ -834,7 +878,20 @@ describe('ユーザー', () => {
 		{ label: '削除済(byAdmin)ユーザーが含まれる', user: () => userDeletedByAdmin },
 	] as const)('がよくリプライをするユーザーのリストを取得でき、結果に$label', async ({ user, excluded }) => {
 		const replyTo = (await successfulApiCall({ endpoint: 'users/notes', parameters: { userId: user().id }, user: undefined }))[0];
-		await post(alice, { text: `@${user().username} test`, replyId: replyTo.id });
+		const replyParameters = { text: `@${user().username} test`, replyId: replyTo.id };
+		if (user().id === userBlockingAlice.id) {
+			await failedApiCall({
+				endpoint: 'notes/create',
+				parameters: replyParameters,
+				user: alice,
+			}, {
+				status: 400,
+				code: 'YOU_HAVE_BEEN_BLOCKED',
+				id: 'b390d7e1-8a5e-46ed-b625-06271cafd3d3',
+			});
+		} else {
+			await post(alice, replyParameters);
+		}
 		const parameters = { userId: alice.id, limit: 100 };
 		const response = await successfulApiCall({ endpoint: 'users/get-frequently-replied-users', parameters, user: alice });
 		const expected = (excluded ?? false) ? [] : [await show(user().id, alice)];

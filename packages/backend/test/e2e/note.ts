@@ -25,10 +25,10 @@ describe('Note', () => {
 	beforeAll(async () => {
 		const connection = await initTestDb(true);
 		Notes = connection.getRepository(MiNote);
-		root = await signup({ username: 'root' });
+		root = await signup({ username: 'root01' });
 		alice = await signup({ username: 'alice' });
-		bob = await signup({ username: 'bob' });
-		tom = await signup({ username: 'tom', host: 'example.com' });
+		bob = await signup({ username: 'bob01' });
+		tom = await signup({ username: 'tom01', host: 'example.com' });
 	}, 1000 * 60 * 2);
 
 	test('投稿できる', async () => {
@@ -329,7 +329,7 @@ describe('Note', () => {
 
 	test('同じユーザーに複数メンションしても内部的にまとめられる', async () => {
 		const post = {
-			text: '@bob @bob @bob yo',
+			text: '@bob01 @bob01 @bob01 yo',
 		};
 
 		const res = await api('notes/create', post, alice);
@@ -817,7 +817,7 @@ describe('Note', () => {
 			await new Promise(x => setTimeout(x, 2));
 
 			const note = await api('notes/create', {
-				text: '@bob potentially annoying text',
+				text: '@bob01 potentially annoying text',
 			}, alice);
 
 			assert.strictEqual(note.status, 400);
@@ -925,7 +925,7 @@ describe('Note', () => {
 			await new Promise(x => setTimeout(x, 2));
 
 			const note = await api('notes/create', {
-				text: '@bob potentially annoying text',
+				text: '@bob01 potentially annoying text',
 				visibility: 'specified',
 				visibleUserIds: [bob.id],
 			}, alice);

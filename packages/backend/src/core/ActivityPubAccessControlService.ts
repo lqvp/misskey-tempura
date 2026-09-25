@@ -157,23 +157,26 @@ export class ActivityPubAccessControlService {
 		isBlocked: boolean;
 		isSuspended: boolean;
 		isQuarantined: boolean;
+		isSilenced: boolean;
 		reason?: string;
 	}> {
 		const isBlocked = this.utilityService.isBlockedHost(this.meta.blockedHosts, host);
 		if (isBlocked) {
-			return { isBlocked: true, isSuspended: false, isQuarantined: false, reason: 'blocked' };
+			return { isBlocked: true, isSuspended: false, isQuarantined: false, isSilenced: false, reason: 'blocked' };
 		}
 
 		const instance = await this.instancesRepository.findOneBy({ host });
 		// 未登録ホストは制限なし
 		const isSuspended = instance != null && instance.suspensionState !== 'none';
 		const isQuarantined = instance?.quarantineLimited ?? false;
+		const isSilenced = this.utilityService.isSilencedHost(this.meta.silencedHosts, host);
 
 		return {
 			isBlocked: false,
 			isSuspended,
 			isQuarantined,
-			reason: isSuspended ? 'suspended' : isQuarantined ? 'quarantined' : undefined,
+			isSilenced,
+			reason: isSuspended ? 'suspended' : isQuarantined ? 'quarantined' : isSilenced ? 'silenced' : undefined,
 		};
 	}
 
@@ -188,12 +191,6 @@ export class ActivityPubAccessControlService {
 		reason: string;
 		host?: string;
 	} | null> {
-		const userAgent = request.headers['user-agent'];
-		if (typeof userAgent === 'string' && userAgent.toLowerCase().includes('tempura')) {
-			this.logger.debug('Bypassing ActivityPub access control for tempura client');
-			return null;
-		}
-
 		const remoteHost = this.extractRemoteHostFromRequest(request);
 
 		if (!remoteHost) {
@@ -209,8 +206,8 @@ export class ActivityPubAccessControlService {
 		const restrictions = await this.checkInstanceRestrictions(remoteHost);
 		this.logger.debug(`Instance restrictions: ${JSON.stringify(restrictions)}`);
 
-		// isBlocked, isSuspended, isQuarantined は常に拒否。
-		const shouldDeny = restrictions.isBlocked || restrictions.isSuspended || restrictions.isQuarantined;
+		// isBlocked, isSuspended, isQuarantined は常に拒否。isSilenced は許可設定に従う。
+		const shouldDeny = restrictions.isBlocked || restrictions.isSuspended || restrictions.isQuarantined || (restrictions.isSilenced && !allowLimitedHosts);
 		this.logger.debug(`Should deny access: ${shouldDeny}`);
 
 		if (shouldDeny) {

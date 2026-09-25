@@ -119,7 +119,7 @@ describe('クリップ', () => {
 
 	beforeAll(async () => {
 		alice = await signup({ username: 'alice' });
-		bob = await signup({ username: 'bob' });
+		bob = await signup({ username: 'bob01' });
 
 		aliceNote = await post(alice, { text: 'test' });
 		aliceHomeNote = await post(alice, { text: 'home only', visibility: 'home' });
@@ -328,7 +328,7 @@ describe('クリップ', () => {
 
 	test('のID指定取得は他人のPrivateなクリップは取得できない', async () => {
 		const clip = await create({ isPublic: false }, { user: bob } );
-		failedApiCall({
+		await failedApiCall({
 			endpoint: 'clips/show',
 			parameters: { clipId: clip.id },
 			user: alice,
@@ -385,16 +385,20 @@ describe('クリップ', () => {
 	test.each([
 		{ label: '' },
 		{ label: '他人アカウントから', user: () => bob },
-	])('の一覧が$label取得できる', async () => {
+	])('の一覧が$label取得できる', async ({ user }) => {
+		const viewer = (user ?? (() => alice))();
 		const clips = await createMany({ isPublic: true });
 		const res = await usersClips({
 			userId: alice.id,
+		}, {
+			user: viewer,
 		});
+		const expected = await Promise.all(clips.map(clip => show({ clipId: clip.id }, { user: viewer })));
 
 		// 返ってくる配列には順序保障がないのでidでソートして厳密比較
 		assert.deepStrictEqual(
 			res.sort(compareBy<Misskey.entities.Clip>(s => s.id)),
-			clips.sort(compareBy(s => s.id)));
+			expected.sort(compareBy(s => s.id)));
 
 		// 認証状態で見たときだけisFavoritedが入っている
 		for (const clip of res) {
@@ -402,23 +406,27 @@ describe('クリップ', () => {
 		}
 	});
 
-	test.each([
-		{ label: '未認証', user: () => undefined },
-		{ label: '存在しないユーザーのもの', parameters: { userId: 'xxxxxxx' } },
-	])('の一覧は$labelでも取得できる', async ({ parameters, user }) => {
+	test('の一覧は未認証では取得できない', async () => {
+		await createMany({ isPublic: true });
+		await failedApiCall({
+			endpoint: 'users/clips',
+			parameters: { userId: alice.id },
+			user: undefined,
+		}, {
+			status: 401,
+			code: 'CREDENTIAL_REQUIRED',
+			id: '1384574d-a912-4b81-8601-c7b1c4085df1',
+		});
+	});
+
+	test('の一覧は存在しないユーザーのものでも取得できる', async () => {
 		const clips = await createMany({ isPublic: true });
 		const res = await usersClips({
-			userId: alice.id,
+			userId: 'xxxxxxx',
 			limit: clips.length,
-			...parameters,
-		}, {
-			user: (user ?? (() => alice))(),
 		});
 
-		// 未認証で見たときはisFavoritedは入らない
-		for (const clip of res) {
-			assert.strictEqual('isFavorited' in clip, false);
-		}
+		assert.deepStrictEqual(res, []);
 	});
 
 	test('の一覧はPrivateなクリップを含まない(自分のものであっても。)', async () => {
@@ -697,14 +705,27 @@ describe('クリップ', () => {
 			}) as any as void;
 		};
 
-		const notes = async (parameters: Misskey.entities.ClipsNotesRequest, request: Partial<ApiRequest<'clips/notes'>> = {}): Promise<Misskey.entities.Note[]> => {
-			return successfulApiCall({
-				endpoint: 'clips/notes',
-				parameters,
-				user: alice,
-				...request,
-			});
-		};
+	const notes = async (parameters: Misskey.entities.ClipsNotesRequest, request: Partial<ApiRequest<'clips/notes'>> = {}): Promise<Misskey.entities.Note[]> => {
+		return successfulApiCall({
+			endpoint: 'clips/notes',
+			parameters,
+			user: alice,
+			...request,
+		});
+	};
+
+	const assertHiddenClipNote = (actual: Misskey.entities.Note, source: Misskey.entities.Note) => {
+		const expected = hiddenNote(source, { includeDeliveryTargets: true });
+		assert.strictEqual(actual.id, expected.id);
+		assert.strictEqual(actual.isHidden, expected.isHidden);
+		assert.strictEqual(actual.text, expected.text);
+		assert.strictEqual(actual.cw, expected.cw);
+		assert.deepStrictEqual(actual.fileIds, expected.fileIds);
+		assert.deepStrictEqual(actual.files, expected.files);
+		assert.strictEqual('visibleUserIds' in actual, false);
+		assert.strictEqual('poll' in actual, false);
+		assert.deepStrictEqual(actual.deliveryTargets, expected.deliveryTargets);
+	};
 
 		beforeEach(async () => {
 			aliceClip = await create();
@@ -911,7 +932,7 @@ describe('クリップ', () => {
 			assert.deepStrictEqual(res.map(x => x.id), [aliceNote.id]);
 		});
 
-		test('はPublicなクリップなら認証なしでも取得できる。(非公開ノートは含まれない)', async () => {
+		test('はPublicなクリップなら認証なしでも取得できる。(認証なしでは非公開ノートをhiddenNoteとして返す)', async () => {
 			const publicClip = await create({ isPublic: true });
 			await addNote({ clipId: publicClip.id, noteId: aliceNote.id });
 			await addNote({ clipId: publicClip.id, noteId: aliceHomeNote.id });
@@ -919,12 +940,15 @@ describe('クリップ', () => {
 			await addNote({ clipId: publicClip.id, noteId: aliceSpecifiedNote.id });
 
 			const res = await notes({ clipId: publicClip.id }, { user: undefined });
-			const expects = [
-				aliceNote, aliceHomeNote,
-			];
+			const expectedNotes = [aliceNote, aliceHomeNote];
 			assert.deepStrictEqual(
-				res.sort(compareBy(s => s.id)).map(x => x.id),
-				expects.sort(compareBy(s => s.id)).map(x => x.id));
+				res.map(note => note.id).sort(),
+				expectedNotes.map(note => note.id).sort());
+			for (const note of res) {
+				const source = expectedNotes.find(candidate => candidate.id === note.id);
+				assert.ok(source);
+				assertHiddenClipNote(note, source);
+			}
 		});
 
 		test.todo('ブロック、ミュートされたユーザーからの設定＆取得etc.');

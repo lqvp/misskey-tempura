@@ -42,13 +42,13 @@ function heapSnapshotPath(label: Label, round: number) {
  * ブラウザを使い回すとキャッシュや前ラウンドのGC残渣が乗るため、必ず作り直す。
  */
 async function measureSample(label: Label, round: number, heapSnapshotSavePath: string): Promise<BrowserMeasurementSample> {
-	await prepareInstance(baseUrl);
+	const invitationCode = await prepareInstance(baseUrl);
 
 	return await HeadlessChromeController.with(label, { scenarioTimeoutMs: 120000, baseUrl }, async chrome => {
 		await chrome.enableNetworkTracking();
 
 		const startedAt = Date.now();
-		await runSignupAndPostScenario(chrome, baseUrl);
+		await runSignupAndPostScenario(chrome, baseUrl, invitationCode);
 		const durationMs = Date.now() - startedAt;
 
 		await chrome.waitForNetworkDetails();

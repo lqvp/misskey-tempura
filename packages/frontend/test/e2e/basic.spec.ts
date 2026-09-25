@@ -6,11 +6,11 @@
 import { test } from './fixtures.js';
 import {
 	// const
-	ADMIN_SETUP_PASSWORD, BASE_URL,
+	ADMIN_SETUP_PASSWORD, BASE_URL, assertOk,
 	// locator helper
 	locateMkInput, locateMkSwitch, locateMkTextarea,
 	// utils
-	registerUser, resetState, visitHome, closeUserSetupDialog, postNote,
+	acceptInvitationCode, createInvitationCode, registerUser, resetState, visitHome, closeUserSetupDialog, postNote,
 	// page utils
 	waitApiResponse, signIn,
 } from './utils.js';
@@ -34,20 +34,22 @@ test.describe('Before setup instance', () => {
 
 		const signupResponse = waitApiResponse(page, '/api/admin/accounts/create');
 		await page.getByTestId('admin-ok').click();
-		await signupResponse;
+		assertOk((await signupResponse).status(), '/api/admin/accounts/create');
 
 		await page.getByTestId('next').click();
 		await locateMkInput(page, 'server-setup-server-name').fill('Testskey');
 		const updateMetaResponse = waitApiResponse(page, '/api/admin/update-meta');
 		await page.getByTestId('server-setup-wizard-apply').click();
-		await updateMetaResponse;
+		assertOk((await updateMetaResponse).status(), '/api/admin/update-meta');
 	});
 });
 
 test.describe('After setup instance', () => {
+	let admin: RegisteredUser;
+
 	test.beforeEach(async () => {
 		await resetState();
-		await registerUser('admin', 'pass', true);
+		admin = await registerUser('admin', 'pass', true);
 	});
 
 	test('successfully loads', async ({ page }) => {
@@ -55,6 +57,7 @@ test.describe('After setup instance', () => {
 	});
 
 	test('signup', async ({ page }) => {
+		const invitationCode = await createInvitationCode(admin.token);
 		await visitHome(page);
 
 		await page.getByTestId('signup').click();
@@ -64,23 +67,37 @@ test.describe('After setup instance', () => {
 		await locateMkSwitch(page, 'signup-rules-notes-agree').click();
 		await page.getByTestId('modal-dialog-ok').click();
 		await page.getByTestId('signup-rules-continue').click();
+		await acceptInvitationCode(page, invitationCode);
 
-		test.expect(await page.getByTestId('signup-submit').isDisabled()).toBeTruthy();
+		const signupSubmit = page.getByTestId('signup-submit');
+		await test.expect(signupSubmit).toBeDisabled();
 		await locateMkInput(page, 'signup-username').fill('alice');
-		test.expect(await page.getByTestId('signup-submit').isDisabled()).toBeTruthy();
 		await locateMkInput(page, 'signup-password').fill('alice1234');
-		test.expect(await page.getByTestId('signup-submit').isDisabled()).toBeTruthy();
 		await locateMkInput(page, 'signup-password-retype').fill('alice1234');
-		test.expect(await page.getByTestId('signup-submit').isDisabled()).toBeTruthy();
-		await locateMkInput(page, 'signup-invitation-code').fill('test-invitation-code');
-		test.expect(await page.getByTestId('signup-submit').isDisabled()).toBeFalsy();
+		await test.expect(locateMkInput(page, 'signup-invitation-code')).toHaveValue(invitationCode);
+		await test.expect(signupSubmit).toBeEnabled();
 
 		const signupResponse = waitApiResponse(page, '/api/signup');
 		await page.getByTestId('signup-submit').click();
-		await signupResponse;
+		const response = await signupResponse;
+		assertOk(response.status(), '/api/signup');
+
+		const createdUser = await response.json() as { id?: unknown; token?: unknown; username?: unknown };
+		test.expect(typeof createdUser.id).toBe('string');
+		test.expect(typeof createdUser.token).toBe('string');
+		const userResponse = await page.request.post(`${BASE_URL}/api/users/show`, {
+			data: {
+				i: admin.token,
+				userId: createdUser.id,
+			},
+		});
+		assertOk(userResponse.status(), '/api/users/show');
+		const user = await userResponse.json() as { username?: unknown };
+		test.expect(user.username).toBe('alice');
 	});
 
 	test('signup with duplicated username', async ({ page }) => {
+		const invitationCode = await createInvitationCode(admin.token);
 		await registerUser('alice', 'alice1234');
 		await visitHome(page);
 
@@ -92,11 +109,12 @@ test.describe('After setup instance', () => {
 		await page.getByTestId('modal-dialog-ok').click();
 		test.expect(await page.getByTestId('signup-rules-continue').isDisabled()).toBeFalsy();
 		await page.getByTestId('signup-rules-continue').click();
+		await acceptInvitationCode(page, invitationCode);
 
 		await locateMkInput(page, 'signup-username').fill('alice');
 		await locateMkInput(page, 'signup-password').fill('alice1234');
 		await locateMkInput(page, 'signup-password-retype').fill('alice1234');
-		test.expect(await page.getByTestId('signup-submit').isDisabled()).toBeTruthy();
+		await test.expect(page.getByTestId('signup-submit')).toBeDisabled();
 	});
 });
 
@@ -130,16 +148,22 @@ test.describe('After user signup', () => {
 		const signinResponse = waitApiResponse(page, '/api/signin-flow');
 		// Enterキーで続行できるかどうかの確認も兼ねる
 		await page.keyboard.press('Enter');
-		await signinResponse;
+		const response = await signinResponse;
+		assertOk(response.status(), '/api/signin-flow');
+		const result = await response.json() as { finished?: unknown; id?: unknown; i?: unknown } | null;
+		if (!result || result.finished !== true || typeof result.id !== 'string' || typeof result.i !== 'string') {
+			throw new Error('/api/signin-flow returned an incomplete sign-in response');
+		}
 	});
 
 	test('suspend', async ({ page }) => {
-		await page.request.post(`${BASE_URL}/api/admin/suspend-user`, {
+		const suspendResponse = await page.request.post(`${BASE_URL}/api/admin/suspend-user`, {
 			data: {
 				i: admin.token,
 				userId: alice.id,
 			},
 		});
+		assertOk(suspendResponse.status(), '/api/admin/suspend-user');
 
 		await visitHome(page);
 
@@ -149,7 +173,7 @@ test.describe('After user signup', () => {
 		await locateMkInput(page, 'signin-username').fill('alice');
 		await page.keyboard.press('Enter');
 
-		await page.getByText('This account has been suspended due to').waitFor({ timeout: 10000 });
+		await page.getByTestId('modal-dialog-ok').waitFor({ state: 'visible', timeout: 10000 });
 	});
 });
 

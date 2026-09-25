@@ -5,6 +5,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AntennaService } from '../../src/core/AntennaService.js';
+import type { Match } from '../../src/core/AntennaService.js';
 import { DI } from '../../src/di-symbols.js';
 import { GlobalEventService } from '../../src/core/GlobalEventService.js';
 import { UtilityService } from '../../src/core/UtilityService.js';
@@ -252,6 +253,58 @@ describe('AntennaService', () => {
 			];
 			const result = antennaService.deduplicateOverlappingMatches(matches);
 			expect(result).toHaveLength(2);
+		});
+
+		const chainMatches: Match[] = [
+			{ keyword: 'A', start: 0, end: 2 },
+			{ keyword: 'B', start: 1, end: 4 },
+			{ keyword: 'C', start: 3, end: 6 },
+		];
+
+		const chainOrders: Array<[string, Match[]]> = [
+			['ascending', chainMatches],
+			['middle-first', [chainMatches[1], chainMatches[0], chainMatches[2]]],
+			['last-first', [chainMatches[2], chainMatches[1], chainMatches[0]]],
+			['reverse', [...chainMatches].reverse()],
+		];
+
+		for (const [label, matches] of chainOrders) {
+			it(`replaces a transitive overlap chain deterministically (${label})`, () => {
+				const result = antennaService.deduplicateOverlappingMatches(matches);
+
+				expect(result).toEqual([{ keyword: 'C', start: 3, end: 6 }]);
+			});
+		}
+
+		it('returns exact deterministic output and order around a transitive chain', () => {
+			const prefix = { keyword: 'prefix', start: 0, end: 1 };
+			const chainEnd = { keyword: 'chain-end', start: 3, end: 7 };
+			const suffix = { keyword: 'suffix', start: 7, end: 8 };
+			const matches: Match[] = [
+				suffix,
+				{ keyword: 'chain-start', start: 1, end: 3 },
+				prefix,
+				{ keyword: 'chain-middle', start: 2, end: 5 },
+				chainEnd,
+			];
+
+			const result = antennaService.deduplicateOverlappingMatches(matches);
+
+			expect(result).toEqual([prefix, chainEnd, suffix]);
+			expect(result[0]).toBe(prefix);
+			expect(result[1]).toBe(chainEnd);
+			expect(result[2]).toBe(suffix);
+		});
+
+		it('preserves exact identities and order of adjacent intervals', () => {
+			const left: Match = { keyword: 'left', start: 0, end: 1, groupIndex: 0, type: 'include' };
+			const right: Match = { keyword: 'right', start: 1, end: 2, groupIndex: 0, type: 'include' };
+
+			const result = antennaService.deduplicateOverlappingMatches([right, left]);
+
+			expect(result).toEqual([left, right]);
+			expect(result[0]).toBe(left);
+			expect(result[1]).toBe(right);
 		});
 	});
 

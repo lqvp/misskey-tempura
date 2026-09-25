@@ -143,18 +143,32 @@ export const signup = async (params?: Partial<misskey.Endpoints['signup']['req']
 		password: 'test',
 	}, params);
 
-	const res = await api('signup', q);
+	const res = await successfulApiCall({
+		endpoint: 'signup',
+		parameters: q,
+		user: undefined,
+	}, { status: 200 });
 
-	return res.body;
+	assert.ok(res && typeof res === 'object' && !Array.isArray(res), 'signup response must be an object');
+	assert.ok(typeof res.id === 'string' && res.id.length > 0, 'signup response id must be a non-empty string');
+	assert.ok(typeof res.token === 'string' && res.token.length > 0, 'signup response token must be a non-empty string');
+	assert.ok(typeof res.username === 'string' && res.username.length > 0, 'signup response username must be a non-empty string');
+
+	return res;
 };
 
 export const post = async (user: UserToken, params: misskey.Endpoints['notes/create']['req']): Promise<misskey.entities.Note> => {
-	const q = params;
+	const res = await successfulApiCall({
+		endpoint: 'notes/create',
+		parameters: params,
+		user,
+	}, { status: 200 });
 
-	const res = await api('notes/create', q, user);
+	assert.ok(res && typeof res === 'object' && 'createdNote' in res, 'notes/create response must include createdNote');
+	assert.ok(res.createdNote && typeof res.createdNote === 'object', 'notes/create createdNote must be an object');
+	assert.ok(typeof res.createdNote.id === 'string' && res.createdNote.id.length > 0, 'notes/create createdNote.id must be a non-empty string');
 
-	// FIXME: the return type should reflect this fact.
-	return (res.body ? res.body.createdNote : null)!;
+	return res.createdNote;
 };
 
 export const createAppToken = async (user: UserToken, permissions: (typeof misskey.permissions)[number][]) => {
@@ -167,7 +181,7 @@ export const createAppToken = async (user: UserToken, permissions: (typeof missk
 };
 
 // 非公開ノートをAPI越しに見たときのノート NoteEntityService.ts
-export const hiddenNote = (note: misskey.entities.Note): misskey.entities.Note => {
+export const hiddenNote = (note: misskey.entities.Note, { includeDeliveryTargets = false }: { includeDeliveryTargets?: boolean } = {}): misskey.entities.Note => {
 	const temp: misskey.entities.Note = {
 		...note,
 		fileIds: [],
@@ -178,14 +192,21 @@ export const hiddenNote = (note: misskey.entities.Note): misskey.entities.Note =
 	};
 	delete temp.visibleUserIds;
 	delete temp.poll;
+	if (!includeDeliveryTargets) {
+		delete temp.deliveryTargets;
+	}
 	return temp;
 };
 
 export const react = async (user: UserToken, note: misskey.entities.Note, reaction: string): Promise<void> => {
-	await api('notes/reactions/create', {
-		noteId: note.id,
-		reaction: reaction,
-	}, user);
+	await successfulApiCall({
+		endpoint: 'notes/reactions/create',
+		parameters: {
+			noteId: note.id,
+			reaction,
+		},
+		user,
+	}, { status: 204 });
 };
 
 export const userList = async (user: UserToken, userList: Partial<misskey.entities.UserList> = {}): Promise<misskey.entities.UserList> => {
@@ -262,6 +283,13 @@ export const channel = async (user: UserToken, channel: Partial<misskey.entities
 };
 
 export const role = async (user: UserToken, role: Partial<misskey.entities.Role> = {}, policies: any = {}): Promise<misskey.entities.Role> => {
+	const { isAdministrator, isModerator, ...roleOptions } = role;
+	const permissionGroup = isAdministrator
+		? 'Admin'
+		: isModerator
+			? 'MainModerator'
+			: roleOptions.permissionGroup ?? 'Normal';
+
 	const res = await api('admin/roles/create', {
 		asBadge: false,
 		canEditMembersByModerator: false,
@@ -273,9 +301,7 @@ export const role = async (user: UserToken, role: Partial<misskey.entities.Role>
 		description: '',
 		displayOrder: 0,
 		iconUrl: null,
-		permissionGroup: 'Normal',
-		isAdministrator: false,
-		isModerator: false,
+		permissionGroup,
 		isPublic: false,
 		name: 'New Role',
 		target: 'manual',
@@ -287,7 +313,7 @@ export const role = async (user: UserToken, role: Partial<misskey.entities.Role>
 			}]),
 			...policies,
 		},
-		...role,
+		...roleOptions,
 	}, user);
 	return res.body;
 };

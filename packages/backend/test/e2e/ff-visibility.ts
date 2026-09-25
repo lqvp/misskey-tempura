@@ -7,18 +7,68 @@ process.env.NODE_ENV = 'test';
 
 import * as assert from 'assert';
 import { describe, beforeAll, test } from 'vitest';
-import { api, signup, simpleGet } from '../utils.js';
+import { api, failedApiCall, signup, simpleGet } from '../utils.js';
 import type * as misskey from 'misskey-js';
 
 describe('FF visibility', () => {
+	let root: misskey.entities.SignupResponse;
 	let alice: misskey.entities.SignupResponse;
 	let bob: misskey.entities.SignupResponse;
 
+	const followingForbidden = {
+		status: 400,
+		code: 'FORBIDDEN',
+		id: 'f6cdb0df-c19f-ec5c-7dbb-0ba84a1f92ba',
+	} as const;
+	const followersForbidden = {
+		status: 400,
+		code: 'FORBIDDEN',
+		id: '3c6a84db-d619-26af-ca14-06232a21df8a',
+	} as const;
+	const credentialRequired = {
+		status: 401,
+		code: 'CREDENTIAL_REQUIRED',
+		id: '1384574d-a912-4b81-8601-c7b1c4085df1',
+	} as const;
+
+	const assertFollowingForbidden = async (user: misskey.entities.SignupResponse) => {
+		await failedApiCall({
+			endpoint: 'users/following',
+			parameters: { userId: alice.id },
+			user,
+		}, followingForbidden);
+	};
+
+	const assertFollowersForbidden = async (user: misskey.entities.SignupResponse) => {
+		await failedApiCall({
+			endpoint: 'users/followers',
+			parameters: { userId: alice.id },
+			user,
+		}, followersForbidden);
+	};
+
 	beforeAll(async () => {
+		root = await signup({ username: 'root01' });
 		alice = await signup({ username: 'alice' });
-		bob = await signup({ username: 'bob' });
-		await api('admin/update-meta', { federation: 'all' }, alice as misskey.entities.SignupResponse);
+		bob = await signup({ username: 'bob01' });
+		assert.strictEqual((await api('admin/update-meta', { federation: 'all' }, root)).status, 204);
 	}, 1000 * 60 * 2);
+
+	test('users/following requires credentials', async () => {
+		await failedApiCall({
+			endpoint: 'users/following',
+			parameters: { userId: alice.id },
+			user: undefined,
+		}, credentialRequired);
+	});
+
+	test('users/followers requires credentials', async () => {
+		await failedApiCall({
+			endpoint: 'users/followers',
+			parameters: { userId: alice.id },
+			user: undefined,
+		}, credentialRequired);
+	});
 
 	test('followingVisibility, followersVisibility がともに public なユーザーのフォロー/フォロワーを誰でも見れる', async () => {
 		await api('i/update', {
@@ -220,15 +270,8 @@ describe('FF visibility', () => {
 			followersVisibility: 'followers',
 		}, alice);
 
-		const followingRes = await api('users/following', {
-			userId: alice.id,
-		}, bob);
-		const followersRes = await api('users/followers', {
-			userId: alice.id,
-		}, bob);
-
-		assert.strictEqual(followingRes.status, 400);
-		assert.strictEqual(followersRes.status, 400);
+		await assertFollowingForbidden(bob);
+		await assertFollowersForbidden(bob);
 	});
 
 	test('followingVisibility が followers なユーザーのフォローを followersVisibility の設定に関わらず非フォロワーが見れない', async () => {
@@ -238,10 +281,7 @@ describe('FF visibility', () => {
 				followersVisibility: 'public',
 			}, alice);
 
-			const followingRes = await api('users/following', {
-				userId: alice.id,
-			}, bob);
-			assert.strictEqual(followingRes.status, 400);
+			await assertFollowingForbidden(bob);
 		}
 		{
 			await api('i/update', {
@@ -249,10 +289,7 @@ describe('FF visibility', () => {
 				followersVisibility: 'followers',
 			}, alice);
 
-			const followingRes = await api('users/following', {
-				userId: alice.id,
-			}, bob);
-			assert.strictEqual(followingRes.status, 400);
+			await assertFollowingForbidden(bob);
 		}
 		{
 			await api('i/update', {
@@ -260,10 +297,7 @@ describe('FF visibility', () => {
 				followersVisibility: 'private',
 			}, alice);
 
-			const followingRes = await api('users/following', {
-				userId: alice.id,
-			}, bob);
-			assert.strictEqual(followingRes.status, 400);
+			await assertFollowingForbidden(bob);
 		}
 	});
 
@@ -274,10 +308,7 @@ describe('FF visibility', () => {
 				followersVisibility: 'followers',
 			}, alice);
 
-			const followersRes = await api('users/followers', {
-				userId: alice.id,
-			}, bob);
-			assert.strictEqual(followersRes.status, 400);
+			await assertFollowersForbidden(bob);
 		}
 		{
 			await api('i/update', {
@@ -285,10 +316,7 @@ describe('FF visibility', () => {
 				followersVisibility: 'followers',
 			}, alice);
 
-			const followersRes = await api('users/followers', {
-				userId: alice.id,
-			}, bob);
-			assert.strictEqual(followersRes.status, 400);
+			await assertFollowersForbidden(bob);
 		}
 		{
 			await api('i/update', {
@@ -296,10 +324,7 @@ describe('FF visibility', () => {
 				followersVisibility: 'followers',
 			}, alice);
 
-			const followersRes = await api('users/followers', {
-				userId: alice.id,
-			}, bob);
-			assert.strictEqual(followersRes.status, 400);
+			await assertFollowersForbidden(bob);
 		}
 	});
 
@@ -525,15 +550,8 @@ describe('FF visibility', () => {
 			followersVisibility: 'private',
 		}, alice);
 
-		const followingRes = await api('users/following', {
-			userId: alice.id,
-		}, bob);
-		const followersRes = await api('users/followers', {
-			userId: alice.id,
-		}, bob);
-
-		assert.strictEqual(followingRes.status, 400);
-		assert.strictEqual(followersRes.status, 400);
+		await assertFollowingForbidden(bob);
+		await assertFollowersForbidden(bob);
 	});
 
 	test('followingVisibility が private なユーザーのフォローを followersVisibility の設定に関わらず他人が見れない', async () => {
@@ -543,10 +561,7 @@ describe('FF visibility', () => {
 				followersVisibility: 'public',
 			}, alice);
 
-			const followingRes = await api('users/following', {
-				userId: alice.id,
-			}, bob);
-			assert.strictEqual(followingRes.status, 400);
+			await assertFollowingForbidden(bob);
 		}
 		{
 			await api('i/update', {
@@ -554,10 +569,7 @@ describe('FF visibility', () => {
 				followersVisibility: 'followers',
 			}, alice);
 
-			const followingRes = await api('users/following', {
-				userId: alice.id,
-			}, bob);
-			assert.strictEqual(followingRes.status, 400);
+			await assertFollowingForbidden(bob);
 		}
 		{
 			await api('i/update', {
@@ -565,10 +577,7 @@ describe('FF visibility', () => {
 				followersVisibility: 'private',
 			}, alice);
 
-			const followingRes = await api('users/following', {
-				userId: alice.id,
-			}, bob);
-			assert.strictEqual(followingRes.status, 400);
+			await assertFollowingForbidden(bob);
 		}
 	});
 
@@ -579,10 +588,7 @@ describe('FF visibility', () => {
 				followersVisibility: 'private',
 			}, alice);
 
-			const followersRes = await api('users/followers', {
-				userId: alice.id,
-			}, bob);
-			assert.strictEqual(followersRes.status, 400);
+			await assertFollowersForbidden(bob);
 		}
 		{
 			await api('i/update', {
@@ -590,10 +596,7 @@ describe('FF visibility', () => {
 				followersVisibility: 'private',
 			}, alice);
 
-			const followersRes = await api('users/followers', {
-				userId: alice.id,
-			}, bob);
-			assert.strictEqual(followersRes.status, 400);
+			await assertFollowersForbidden(bob);
 		}
 		{
 			await api('i/update', {
@@ -601,10 +604,7 @@ describe('FF visibility', () => {
 				followersVisibility: 'private',
 			}, alice);
 
-			const followersRes = await api('users/followers', {
-				userId: alice.id,
-			}, bob);
-			assert.strictEqual(followersRes.status, 400);
+			await assertFollowersForbidden(bob);
 		}
 	});
 

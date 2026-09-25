@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { vi } from 'vitest';
+import { beforeEach, vi } from 'vitest';
 import createFetchMock from 'vitest-fetch-mock';
 import type { Ref } from 'vue';
 import { ref } from 'vue';
@@ -37,11 +37,30 @@ vi.stubGlobal('localStorage', localStorageMock);
 // 中でlocalStorageを使うので上と順番を変えてはいけない
 const { default: locales } = await import('i18n');
 
-fetchMocker.mockIf(/^\/assets\/locales\/.*\.json$/, async () => {
-	return {
-		status: 200,
-		body: JSON.stringify(locales['en-US']),
-	};
+const mockUnitFetch = (request: Request) => {
+	const url = new URL(request.url, window.location.href);
+
+	if (/^\/assets\/locales\/.*\.json$/.test(url.pathname)) {
+		return {
+			status: 200,
+			body: JSON.stringify(locales['en-US']),
+		};
+	}
+
+	if (url.pathname === '/api/meta') {
+		return {
+			status: 200,
+			body: '{}',
+		};
+	}
+
+	throw new Error(`Unexpected unit test fetch: ${request.url}`);
+};
+
+fetchMocker.mockResponse(mockUnitFetch);
+beforeEach(() => {
+	fetchMocker.resetMocks();
+	fetchMocker.mockResponse(mockUnitFetch);
 });
 
 const { updateI18n } = await import('@/i18n.js');
@@ -58,9 +77,10 @@ export const preferState: Record<string, unknown> = {
 	},
 
 	mutingEmojis: [],
+	defaultFxTwitterEmbedProvider: 'fxtwitter.com',
 };
 
-export let preferReactive: Record<string, Ref<unknown>> = {};
+export const preferReactive: Record<string, Ref<unknown>> = {};
 
 for (const key in preferState) {
 	if (preferState[key] !== undefined) {
@@ -70,7 +90,6 @@ for (const key in preferState) {
 
 // XXX: store somehow becomes undefined in vitest?
 vi.mock('@/preferences.js', () => {
-
 	return {
 		prefer: {
 			s: preferState,

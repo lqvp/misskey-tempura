@@ -5,6 +5,7 @@
 
 import type { Page } from 'playwright';
 import {
+	createInvitationCode as createInvitationCodeWithBaseUrl,
 	registerUser as registerUserWithBaseUrl,
 	resetState as resetStateWithBaseUrl,
 	signIn as signInWithBaseUrl,
@@ -13,7 +14,7 @@ import {
 export type { RegisteredUser } from './shared.js';
 export {
 	ADMIN_SETUP_PASSWORD,
-	DEFAULT_INVITATION_CODE,
+	acceptInvitationCode,
 	acceptSignupRules,
 	assertOk,
 	closeUserSetupDialog,
@@ -38,6 +39,9 @@ export async function registerUser(
 	isAdmin = false,
 ): ReturnType<typeof registerUserWithBaseUrl> {
 	return registerUserWithBaseUrl(BASE_URL, username, password, isAdmin);
+}
+export async function createInvitationCode(token: string): Promise<string> {
+	return createInvitationCodeWithBaseUrl(BASE_URL, token);
 }
 //#endregion
 
