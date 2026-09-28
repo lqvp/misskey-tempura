@@ -96,6 +96,7 @@ async function createAdmin(host: Host): Promise<Misskey.entities.SignupResponse 
 		}, res.token);
 		await client.request('admin/update-meta', {
 			federation: 'all',
+			blockMentionsFromUnfamiliarRemoteUsers: false,
 		}, res.token);
 		return res;
 	}).catch(err => {
