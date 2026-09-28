@@ -4,12 +4,13 @@
  */
 
 import { beforeAll } from 'vitest';
-import { initTestDb, sendEnvResetRequest } from './utils.js';
+import { initTestDb, sendEnvResetRequest, sendEnvStartRequest } from './utils.js';
 
 beforeAll(async () => {
-	// 前ファイルのNestJSアプリをdispose(env-reset)した後にスキーマをdrop & 再作成する。
-	// 逆順だと、前ファイルの最後のテストが投げっぱなしにした非同期処理(cacheServiceのrefresh等)が
-	// dispose前のdrop中に発火し、Unhandled Rejection (relation does not exist) でクラッシュしうる。
+	// 前ファイルのNestJSアプリをdispose(env-reset) → スキーマdrop & 再作成 → 起動(env-start) の順。
+	// dispose前にdropすると前ファイルの投げっぱなし非同期処理がUnhandled Rejectionになる。
+	// 起動は必ずdropの完了後(paired: env-resetは停止のみ)。
 	await sendEnvResetRequest();
 	await initTestDb(false);
+	await sendEnvStartRequest();
 });
