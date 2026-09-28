@@ -102,6 +102,7 @@ describe('ActivityPubAccessControlService', () => {
 	test('should block access from blocked hosts', async () => {
 		const mockRequest = {
 			headers: {
+				'accept': 'application/activity+json',
 				'user-agent': 'http.rb/5.3.0 (Mastodon/4.2.0; +https://blocked.example.com/)',
 			},
 		} as FastifyRequest;
@@ -116,32 +117,31 @@ describe('ActivityPubAccessControlService', () => {
 		});
 	});
 
-	test('should block access from silenced hosts', async () => {
+	test('should allow access from silenced (but not suspended/quarantined) hosts', async () => {
+		//ce15674a13 以降、silenced はAPアクセス制御では遮断しない仕様
 		const mockRequest = {
 			headers: {
+				'accept': 'application/activity+json',
 				'user-agent': 'http.rb/5.3.0 (Mastodon/4.2.0; +https://silenced.example.com/)',
 			},
 		} as FastifyRequest;
 
 		mockUtilityService.isSilencedHost.mockReturnValue(true);
-		mockInstancesRepository.findOneBy.mockResolvedValue({ quarantineLimited: false });
+		mockInstancesRepository.findOneBy.mockResolvedValue({ suspensionState: 'none', quarantineLimited: false });
 
 		const result = await service.checkAccess(mockRequest);
-		expect(result).toEqual({
-			blocked: true,
-			reason: 'silenced',
-			host: 'silenced.example.com',
-		});
+		expect(result).toBeNull();
 	});
 
 	test('should block access from quarantined hosts', async () => {
 		const mockRequest = {
 			headers: {
+				'accept': 'application/activity+json',
 				'user-agent': 'http.rb/5.3.0 (Mastodon/4.2.0; +https://quarantined.example.com/)',
 			},
 		} as FastifyRequest;
 
-		mockInstancesRepository.findOneBy.mockResolvedValue({ quarantineLimited: true });
+		mockInstancesRepository.findOneBy.mockResolvedValue({ suspensionState: 'none', quarantineLimited: true });
 
 		const result = await service.checkAccess(mockRequest);
 		expect(result).toEqual({
