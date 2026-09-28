@@ -173,20 +173,34 @@ describe('MkUrlPreview', () => {
 	});
 
 	test('Loading a tweet in iframe', async () => {
+		// fork仕様: MkUrlPreviewはplayer.urlが提供されたときのみiframeを描画する
 		const iframe = await renderAndOpenPreview({
 			url: 'https://twitter.com/i/web/status/1685072521782325249',
+			player: {
+				url: 'https://twitter.com/i/embed/1685072521782325249',
+				width: null,
+				height: null,
+				allow: ['fullscreen', 'web-share'],
+			},
 		});
 		assert.exists(iframe, 'iframe should exist');
 		assert.strictEqual(iframe?.getAttribute('allow'), 'fullscreen;web-share');
-		assert.strictEqual(iframe?.getAttribute('sandbox'), 'allow-popups allow-popups-to-escape-sandbox allow-scripts allow-same-origin');
+		assert.strictEqual(iframe?.sandbox.toString(), 'allow-popups allow-popups-to-escape-sandbox allow-scripts allow-storage-access-by-user-activation allow-same-origin');
 	});
 
 	test('Loading a post in iframe', async () => {
+		// fork仕様: MkUrlPreviewはplayer.urlが提供されたときのみiframeを描画する
 		const iframe = await renderAndOpenPreview({
 			url: 'https://x.com/i/web/status/1685072521782325249',
+			player: {
+				url: 'https://x.com/i/embed/1685072521782325249',
+				width: null,
+				height: null,
+				allow: ['fullscreen', 'web-share'],
+			},
 		});
 		assert.exists(iframe, 'iframe should exist');
 		assert.strictEqual(iframe?.getAttribute('allow'), 'fullscreen;web-share');
-		assert.strictEqual(iframe?.getAttribute('sandbox'), 'allow-popups allow-popups-to-escape-sandbox allow-scripts allow-same-origin');
+		assert.strictEqual(iframe?.sandbox.toString(), 'allow-popups allow-popups-to-escape-sandbox allow-scripts allow-storage-access-by-user-activation allow-same-origin');
 	});
 });
