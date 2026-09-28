@@ -67,6 +67,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						v-if="canProceedWithoutCode"
 						inline rounded
 						:wait="isLoading"
+						data-testid="signup-invite-skip"
 						@click="proceedWithoutCode"
 					>
 						{{ i18n.ts._signupEnhance.proceedWithoutInviteCodeButton }}

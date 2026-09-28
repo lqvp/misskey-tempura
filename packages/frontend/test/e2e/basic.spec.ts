@@ -65,14 +65,15 @@ test.describe('After setup instance', () => {
 		await page.getByTestId('modal-dialog-ok').click();
 		await page.getByTestId('signup-rules-continue').click();
 
+		// 招待コード確認ステップ（e2e既定ではコード不要）をスキップしてフォームへ
+		await page.getByTestId('signup-invite-skip').click();
+
 		test.expect(await page.getByTestId('signup-submit').isDisabled()).toBeTruthy();
 		await locateMkInput(page, 'signup-username').fill('alice');
 		test.expect(await page.getByTestId('signup-submit').isDisabled()).toBeTruthy();
 		await locateMkInput(page, 'signup-password').fill('alice1234');
 		test.expect(await page.getByTestId('signup-submit').isDisabled()).toBeTruthy();
 		await locateMkInput(page, 'signup-password-retype').fill('alice1234');
-		test.expect(await page.getByTestId('signup-submit').isDisabled()).toBeTruthy();
-		await locateMkInput(page, 'signup-invitation-code').fill('test-invitation-code');
 		test.expect(await page.getByTestId('signup-submit').isDisabled()).toBeFalsy();
 
 		const signupResponse = waitApiResponse(page, '/api/signup');
@@ -92,6 +93,9 @@ test.describe('After setup instance', () => {
 		await page.getByTestId('modal-dialog-ok').click();
 		test.expect(await page.getByTestId('signup-rules-continue').isDisabled()).toBeFalsy();
 		await page.getByTestId('signup-rules-continue').click();
+
+		// 招待コード確認ステップをスキップしてフォームへ
+		await page.getByTestId('signup-invite-skip').click();
 
 		await locateMkInput(page, 'signup-username').fill('alice');
 		await locateMkInput(page, 'signup-password').fill('alice1234');
