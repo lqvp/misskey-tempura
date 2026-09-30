@@ -114,9 +114,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			// 検索クエリの構築
 			let searchQuery = ps.query;
 
-			// 複数の検索語がある場合
+			// 複数の検索語がある場合 (全角スペースなどの空白類でも区切る)
 			if (ps.query) {
-				const terms = ps.query.split(' ').map((term: string) => {
+				const terms = ps.query.split(/\s+/).map((term: string) => {
 					// URLエンコードされた文字列のみをデコード
 					try {
 						return decodeURIComponent(term).trim();
