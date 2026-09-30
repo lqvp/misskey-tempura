@@ -76,7 +76,19 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			const notes = await query.limit(ps.limit).getMany();
 
-			return await this.noteEntityService.packMany(notes, me);
+			const packedNotes = await this.noteEntityService.packMany(notes, me);
+
+			// Do not disclose internal scheduling/delivery metadata for notes
+			// hidden from the caller (matches the redaction notes/show applies
+			// to anonymous callers).
+			for (const packedNote of packedNotes) {
+				if (me == null || packedNote.isHidden) {
+					packedNote.deleteAt = undefined;
+					packedNote.deliveryTargets = undefined;
+				}
+			}
+
+			return packedNotes;
 		});
 	}
 }
