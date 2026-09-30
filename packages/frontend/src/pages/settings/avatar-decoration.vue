@@ -40,17 +40,38 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<template #prefix><i class="ti ti-search"></i></template>
 			</MkInput>
 
-			<div v-if="isSearching">
+			<template v-if="!isSearching && searchQuery.trim() === ''">
+				<template v-for="[category, decorations] in Object.entries(groupedDecorations)" :key="category">
+					<MkFolder v-if="category" :defaultOpen="category === defaultCategory">
+						<template #label>{{ category }}</template>
+						<div :class="$style.decorations">
+							<XDecoration
+								v-for="avatarDecoration in decorations"
+								:key="avatarDecoration.id"
+								:decoration="avatarDecoration"
+								@click="openDecoration(avatarDecoration)"
+							/>
+						</div>
+					</MkFolder>
+					<div v-else :class="$style.decorations">
+						<XDecoration
+							v-for="avatarDecoration in decorations"
+							:key="avatarDecoration.id"
+							:decoration="avatarDecoration"
+							@click="openDecoration(avatarDecoration)"
+						/>
+					</div>
+				</template>
+			</template>
+			<div v-else-if="isSearching">
 				<MkLoading/>
 			</div>
-
-			<div v-else-if="searchQuery && displayedDecorations.length === 0">
+			<div v-else-if="searchResults.length === 0">
 				<MkInfo>{{ i18n.ts.noResults }}</MkInfo>
 			</div>
-
-			<div :class="$style.decorations">
+			<div v-else :class="$style.decorations">
 				<XDecoration
-					v-for="avatarDecoration in displayedDecorations"
+					v-for="avatarDecoration in searchResults"
 					:key="avatarDecoration.id"
 					:decoration="avatarDecoration"
 					@click="openDecoration(avatarDecoration)"
@@ -77,21 +98,20 @@ import { i18n } from '@/i18n.js';
 import { ensureSignin } from '@/i.js';
 import MkInfo from '@/components/MkInfo.vue';
 import { definePage } from '@/page.js';
+import { groupAvatarDecorations } from '@/utility/group-avatar-decorations.js';
 
 const $i = ensureSignin();
 
 const loading = ref(true);
 const avatarDecorations = ref<Misskey.entities.GetAvatarDecorationsResponse>([]);
+const groupedDecorations = computed(() => groupAvatarDecorations(avatarDecorations.value));
+const defaultCategory = computed(() => Object.keys(groupedDecorations.value)[0] ?? '');
 
 // 検索: search-avatar-decorations エンドポイントを利用する
 const searchQuery = ref('');
 const searchResults = ref<Misskey.entities.SearchAvatarDecorationsResponse>([]);
 const isSearching = ref(false);
 let searchTimeout: number | null = null;
-
-const displayedDecorations = computed(() =>
-	searchQuery.value.trim() !== '' ? searchResults.value : avatarDecorations.value,
-);
 
 function onSearchInput() {
 	if (searchTimeout != null) {
