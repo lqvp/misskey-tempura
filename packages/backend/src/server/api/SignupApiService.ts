@@ -235,7 +235,20 @@ export class SignupApiService {
 				// チェック→登録の TOCTOU 競合を防ぎ、マーカー書き込みが
 				// 無かったメール認証ブランチでも機能するようになる。
 				const intervalMs = this.meta.secondsPerSignup * 1000;
-				const reserved = await this.redisClient.set('signup:lastSignupAt', new Date().toISOString(), 'PX', intervalMs, 'NX');
+				// 旧実装の失効なし signup:lastSignupAt キーは予約を恒久的に
+				// 妨げてしまうため、先に移行する:
+				// 旧キーの値が登録間隔内の間は従来どおり 429 を返し（キーは保持）、
+				// 登録間隔が経過したら旧キーを削除して予約を進める。
+				const legacySignupAt = await this.redisClient.get('signup:lastSignupAt');
+				if (legacySignupAt != null) {
+					const elapsed = Date.now() - new Date(legacySignupAt).getTime();
+					if (elapsed < intervalMs) {
+						throw new FastifyReplyError(429, 'SIGNUP_RATE_LIMIT_EXCEEDED');
+					}
+					await this.redisClient.del('signup:lastSignupAt');
+				}
+				// 予約専用の新しいキー（失効付き）を用いる
+				const reserved = await this.redisClient.set('signup:slotReserved', new Date().toISOString(), 'PX', intervalMs, 'NX');
 				if (reserved == null) {
 					throw new FastifyReplyError(429, 'SIGNUP_RATE_LIMIT_EXCEEDED');
 				}
@@ -311,9 +324,12 @@ export class SignupApiService {
 			// 承認待ちフロー
 			const { account } = await this.signupService.signup({
 				username, password, host, reason,
-			}).catch(err => {
-				// 確保したコードが無駄に消費されたままになるのを防ぐ
-				if (ticket) void this.releaseRegistrationTicket(ticket);
+			}).catch(async err => {
+				// 確保したコードが無駄に消費されたままになるのを防ぐ。
+				// signup() はトランザクションコミット後の後続処理で失敗することも
+				// あるため、アカウント作成がコミットされていない場合のみ解除し、
+				// コミット済みの場合はチケットを消費したまま保持する
+				await this.releaseTicketIfSignupNotCommitted(ticket, username);
 				throw err;
 			});
 
@@ -343,7 +359,7 @@ export class SignupApiService {
 				}
 			}
 
-			// signup:lastSignupAt は signup スロット予約時に原子的に設定済み
+			// signup:slotReserved は signup スロット予約時に原子的に設定済み
 
 			reply.code(204);
 			return;
@@ -375,15 +391,16 @@ export class SignupApiService {
 					includeSecrets: true,
 				});
 
-				// signup:lastSignupAt は signup スロット予約時に原子的に設定済み
+				// signup:slotReserved は signup スロット予約時に原子的に設定済み
 				return {
 					...res,
 					token: secret,
 				};
 			} catch (err) {
-				// 確保したコードが無駄に消費されたままになるのを防ぐ
-				// (アカウントと紐付け済みの場合は release 側の条件により戻らない)
-				if (ticket) await this.releaseRegistrationTicket(ticket);
+				// 確保したコードが無駄に消費されたままになるのを防ぐ。
+				// (アカウント作成がコミット済みの場合はチケットを保持する。
+				//  アカウントと紐付け済みの場合も release 側の条件により戻らない)
+				await this.releaseTicketIfSignupNotCommitted(ticket, username);
 				throw new FastifyReplyError(400, typeof err === 'string' ? err : (err as Error).toString());
 			}
 		}
@@ -430,6 +447,25 @@ export class SignupApiService {
 			usedAt: null,
 			pendingUserId: null,
 		});
+	}
+
+	/**
+	 * アカウント作成がコミットされていない場合に限り、
+	 * 確保した招待コードを未使用に戻す
+	 *
+	 * SignupService.signup はアカウント作成トランザクションのコミット後
+	 * (後続の通知処理など) に失敗することがあるため、失敗時のみ解除し、
+	 * コミット済みだった場合はチケットを消費したまま保持する
+	 */
+	@bindThis
+	private async releaseTicketIfSignupNotCommitted(ticket: MiRegistrationTicket | null | undefined, username: string): Promise<void> {
+		if (ticket == null) return;
+		const committed = await this.usersRepository.exists({
+			where: { usernameLower: username.toLowerCase(), host: IsNull() },
+		});
+		if (!committed) {
+			await this.releaseRegistrationTicket(ticket);
+		}
 	}
 
 	@bindThis

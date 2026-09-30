@@ -15,7 +15,7 @@ import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.j
 import { DriveService } from '@/core/DriveService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { ApiError } from '../../../error.js';
-import { getMultipartStagingDir } from '@/misc/multipart-staging.js';
+import { getLegacyMultipartStagingDir, getMultipartStagingDir, resolveMultipartStagingDir } from '@/misc/multipart-staging.js';
 
 export const meta = {
 	tags: ['drive'],
@@ -117,7 +117,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			// Verify that all parts have been uploaded regardless of completedParts counter
-			const partDir = getMultipartStagingDir(this.config.multipartTempDir, multipartUpload.id);
+			// （旧スティージングパスにデータがある場合はそちらを使う）
+			const partDir = resolveMultipartStagingDir(this.config.multipartTempDir, multipartUpload.id);
 			let allPartsExist = true;
 			const missingParts = [];
 
@@ -198,19 +199,15 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					requestHeaders: headers,
 				});
 
-				// Clean up temp files
-				try {
-					if (fs.existsSync(partDir)) {
-						for (let i = 1; i <= multipartUpload.totalParts; i++) {
-							const partPath = `${partDir}/part_${i}`;
-							if (fs.existsSync(partPath)) {
-								fs.unlinkSync(partPath);
-							}
+				// Clean up temp files（新旧どちらのスティージングディレクトリも削除する）
+				for (const dir of [getMultipartStagingDir(this.config.multipartTempDir, multipartUpload.id), getLegacyMultipartStagingDir(multipartUpload.id)]) {
+					try {
+						if (fs.existsSync(dir)) {
+							fs.rmSync(dir, { recursive: true, force: true });
 						}
-						fs.rmdirSync(partDir);
+					} catch (e) {
+						console.error(`Failed to clean up multipart upload parts in ${dir}`, e);
 					}
-				} catch (e) {
-					console.error('Failed to clean up multipart upload parts', e);
 				}
 
 				// Delete the multipart upload record

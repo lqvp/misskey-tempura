@@ -108,8 +108,8 @@ export class ActivityPubAccessControlService {
 
 	/**
 	 * Signature ヘッダーの keyId からホストを抽出する
-	 * keyId は通常 https://<host>/... を指す。署名検証自体は行わないが、
-	 * keyId を UA よりも信頼できる帰属情報として扱う（vuln-0017）。
+	 * keyId は通常 https://<host>/... を指す。この層では署名検証を行わないため
+	 * 帰属には使用せず、UA host との食い違いの検知 (改竦・偽装の観察) のみに使う (vuln-0017)。
 	 */
 	@bindThis
 	private extractHostFromSignatureHeader(request: FastifyRequest): string | null {
@@ -153,16 +153,17 @@ export class ActivityPubAccessControlService {
 			}
 		}
 
-		// 署名の keyId を優先する（署名検証を通す限り UA より信頼できる）。
-		// keyId と UA が食い違ったら改竦の可能性があるため warn を出す。
+		// 帰属には User-Agent 由来のホストのみを用いる。
+		// Signature ヘッダーの keyId はこの層で暗号検証されないため帰属には使用しない
+		// (未検証の signatureHost を信頼すると、ブロック/検疫ホストが clean な keyId を
+		// 偽装してアクセス制限を回避できる)。signatureHost と UA host が食い違ったら
+		// 偽装の可能性があるため warn を出す (vuln-0017)。
 		let identified: string | null = null;
-		if (signatureHost != null) {
-			identified = signatureHost;
-			if (userAgentHost != null && userAgentHost !== signatureHost) {
-				this.logger.warn(`Host attribution mismatch: signature says ${signatureHost}, User-Agent says ${userAgentHost} (using signature host)`);
-			}
-		} else if (userAgentHost != null) {
+		if (userAgentHost != null) {
 			identified = userAgentHost;
+		}
+		if (signatureHost != null && signatureHost !== userAgentHost) {
+			this.logger.warn(`Host attribution mismatch: signature says ${signatureHost} (unverified, not used), User-Agent says ${userAgentHost ?? '(none)'} (using User-Agent host)`);
 		}
 
 		if (identified == null) {
@@ -232,7 +233,7 @@ export class ActivityPubAccessControlService {
 			// リモートホストが特定できない場合はアクセスを許可
 			// (通常のブラウザーやその他のクライアントからのアクセス)
 			if (this.isActivityPubRequest(request)) {
-				this.logger.warn(`ActivityPub request with unattributable host (no keyId / UA host): ua=${userAgent ?? '(none)'} signed=${request.headers.signature != null} path=${request.url} — allowed, watch for evasion`);
+				this.logger.warn(`ActivityPub request with unattributable host (no UA host): ua=${userAgent ?? '(none)'} signed=${request.headers.signature != null} path=${request.url} — allowed, watch for evasion`);
 			}
 			this.logger.debug('No remote host detected, allowing access');
 			return null;

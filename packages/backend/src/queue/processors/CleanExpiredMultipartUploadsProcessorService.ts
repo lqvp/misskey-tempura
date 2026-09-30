@@ -12,7 +12,7 @@ import type { Config } from '@/config.js';
 import Logger from '@/logger.js';
 import type { MultipartUploadsRepository } from '@/models/_.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
-import { getMultipartStagingDir } from '@/misc/multipart-staging.js';
+import { getLegacyMultipartStagingDir, getMultipartStagingDir } from '@/misc/multipart-staging.js';
 
 /**
  * マルチパートアップロードの期限切れによる一時ファイルの削除を担当するプロセッサー
@@ -55,18 +55,15 @@ export class CleanExpiredMultipartUploadsProcessorService {
 		// 各期限切れアップロードの処理
 		for (const upload of expiredUploads) {
 			try {
-				// 一時ファイルをクリーンアップ
-				const partDir = getMultipartStagingDir(this.config.multipartTempDir, upload.id);
-				if (fs.existsSync(partDir)) {
-					// パートファイルの削除
-					for (let i = 1; i <= upload.totalParts; i++) {
-						const partPath = `${partDir}/part_${i}`;
-						if (fs.existsSync(partPath)) {
-							fs.unlinkSync(partPath);
-						}
+				// 一時ファイルをクリーンアップ（新旧どちらのスティージングディレクトリも削除する）
+				let cleanedAny = false;
+				for (const partDir of [getMultipartStagingDir(this.config.multipartTempDir, upload.id), getLegacyMultipartStagingDir(upload.id)]) {
+					if (fs.existsSync(partDir)) {
+						fs.rmSync(partDir, { recursive: true, force: true });
+						cleanedAny = true;
 					}
-					// ディレクトリの削除
-					fs.rmdirSync(partDir);
+				}
+				if (cleanedAny) {
 					this.logger.info(`Cleaned up temporary files for expired upload: ${upload.id}`);
 				}
 

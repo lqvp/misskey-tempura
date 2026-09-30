@@ -318,11 +318,12 @@ export class ApPersonService implements OnModuleInit {
 				const res: any = await userMetaRequest.json();
 				if (Array.isArray(res.avatarDecorations)) {
 					const localDecos = await this.avatarDecorationService.getAll();
-					// ローカルのデコレーションとして登録する
-					// remote payload は untrusted として検証する (vuln-0018)
+					// ローカルのデコレーションとして登録し、ユーザーに付与するのは
+					// 検証を通過した項目のみ (remote payload は untrusted, vuln-0018)
+					const validatedDecorations: { id: string }[] = [];
 					for (const deco of res.avatarDecorations) {
-						if (localDecos.some((v) => v.id === deco.id)) continue;
-						if (typeof deco.id !== 'string' || deco.id.length === 0 || deco.id.length > 128) continue;
+						// 既存 ID の項目も含め、保存対象に含める前に必ず検証する
+						if (typeof deco?.id !== 'string' || deco.id.length === 0 || deco.id.length > 128) continue;
 						if (typeof deco.url !== 'string' || !deco.url.startsWith('https://')) continue;
 						let decoHost: string | undefined;
 						try {
@@ -333,15 +334,18 @@ export class ApPersonService implements OnModuleInit {
 						if (decoHost == null) continue;
 						// 画像 URL は actor の所属ホスト由来のものでなければ取り込まない
 						if (decoHost !== instance.host && !decoHost.endsWith(`.${instance.host}`)) continue;
-						await this.avatarDecorationService.create({
-							id: deco.id,
-							updatedAt: null,
-							url: deco.url,
-							name: `import_${host}_${deco.id}`.slice(0, 256),
-							description: `Imported from ${host}`,
-						});
+						if (!localDecos.some((v) => v.id === deco.id)) {
+							await this.avatarDecorationService.create({
+								id: deco.id,
+								updatedAt: null,
+								url: deco.url,
+								name: `import_${host}_${deco.id}`.slice(0, 256),
+								description: `Imported from ${host}`,
+							});
+						}
+						validatedDecorations.push({ id: deco.id });
 					}
-					Object.assign(returnData, { avatarDecorations: res.avatarDecorations });
+					Object.assign(returnData, { avatarDecorations: validatedDecorations });
 				}
 			}
 		}

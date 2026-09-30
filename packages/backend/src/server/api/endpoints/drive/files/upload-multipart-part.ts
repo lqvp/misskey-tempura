@@ -5,6 +5,7 @@
 
 import * as fs from 'node:fs';
 import ms from 'ms';
+import * as Redis from 'ioredis';
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
@@ -12,10 +13,11 @@ import type { MultipartUploadsRepository } from '@/models/_.js';
 import type { Config } from '@/config.js';
 import { ApiError } from '../../../error.js';
 import {
-	getMultipartStagingDir,
-	getStagedBytesOfUpload,
+	getUploadStagedBytes,
+	resolveMultipartStagingDir,
 	MULTIPART_STAGING_QUOTA_BYTES,
 } from '@/misc/multipart-staging.js';
+import { acquireDistributedLock } from '@/misc/distributed-lock.js';
 
 export const meta = {
 	tags: ['drive'],
@@ -98,6 +100,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 		@Inject(DI.config)
 		private config: Config,
+
+		@Inject(DI.redis)
+		private redisClient: Redis.Redis,
 	) {
 		super(meta, paramDef, async (ps, me, _, file, cleanup) => {
 			try {
@@ -121,71 +126,85 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					throw new ApiError(meta.errors.invalidPartNumber);
 				}
 
-				// Create part directory if it doesn't exist
-				const partDir = getMultipartStagingDir(this.config.multipartTempDir, multipartUpload.id);
-				if (!fs.existsSync(partDir)) {
-					fs.mkdirSync(partDir, { recursive: true });
-				}
-
-				// Save part
+				// パート读写先は旧スティージングパスとの互換を保って解決する
+				const partDir = resolveMultipartStagingDir(this.config.multipartTempDir, multipartUpload.id);
 				const partPath = `${partDir}/part_${ps.partNumber}`;
 
 				// Check if this part was already uploaded
 				const partExists = fs.existsSync(partPath);
 
-				// 新しいパートでスティージング合計がアカウントのクォータを超えたら拒否する
-				if (!partExists) {
+				// クォータ判定とパート保存をユーザー単位で直列化し、
+				// 並行アップロードが同じ使用量に対してチェックを通過して
+				// クォータ超過になるのを防ぐ
+				const unlock = await acquireDistributedLock(this.redisClient, `multipart-quota:${me.id}`, 30 * 1000, 50, 100);
+				try {
+					// 新しいパートをスティージングに加えた合計がアカウントの
+					// クォータを超えたら拒否する。既存パートの置換の場合は
+					// そのバイト数を差し引く
 					const userUploads = await this.multipartUploadsRepository.findBy({ userId: me.id });
 					let stagedBytes = fs.statSync(file!.path).size;
 					for (const upload of userUploads) {
-						if (upload.id === multipartUpload.id) continue;
-						stagedBytes += getStagedBytesOfUpload(getMultipartStagingDir(this.config.multipartTempDir, upload.id));
+						stagedBytes += getUploadStagedBytes(this.config.multipartTempDir, upload.id);
+					}
+					if (partExists) {
+						try {
+							stagedBytes -= fs.statSync(partPath).size;
+						} catch {
+							// existsSync と stat の間に消えたファイルはサイズ 0 扱い
+						}
 					}
 					if (stagedBytes > MULTIPART_STAGING_QUOTA_BYTES) {
 						throw new ApiError(meta.errors.stagingQuotaExceeded);
 					}
-				}
 
-				// Move the uploaded file to the part path
-				// （スティージング先が一時領域と別ファイルシステムの場合は EXDEV になるため copy+削除にフォールバックする）
-				try {
-					fs.renameSync(file!.path, partPath);
-				} catch (err) {
-					if ((err as NodeJS.ErrnoException).code === 'EXDEV') {
-						fs.copyFileSync(file!.path, partPath);
-						fs.rmSync(file!.path, { force: true });
-					} else {
-						throw err;
+					// Create part directory if it doesn't exist
+					if (!fs.existsSync(partDir)) {
+						fs.mkdirSync(partDir, { recursive: true });
 					}
-				}
 
-				// Calculate ETag (MD5 hash would be ideal, but we'll just use a simple identifier for now)
-				const etag = `part_${ps.partNumber}_${Date.now()}`;
-
-				// Only increment completedParts if this is a new part
-				if (!partExists) {
-					// Use a database transaction to ensure atomic update and avoid race conditions
-					await this.multipartUploadsRepository.manager.transaction(async transactionalEntityManager => {
-						// Get the latest upload status within the transaction
-						const currentUpload = await transactionalEntityManager.findOneBy(this.multipartUploadsRepository.target, {
-							id: multipartUpload.id,
-						});
-
-						if (currentUpload) {
-							await transactionalEntityManager.update(
-								this.multipartUploadsRepository.target,
-								{ id: multipartUpload.id },
-								{ completedParts: currentUpload.completedParts + 1 },
-							);
+					// Move the uploaded file to the part path
+					// （スティージング先が一時領域と別ファイルシステムの場合は EXDEV になるため copy+削除にフォールバックする）
+					try {
+						fs.renameSync(file!.path, partPath);
+					} catch (err) {
+						if ((err as NodeJS.ErrnoException).code === 'EXDEV') {
+							fs.copyFileSync(file!.path, partPath);
+							fs.rmSync(file!.path, { force: true });
+						} else {
+							throw err;
 						}
-					});
-				}
+					}
 
-				return {
-					id: multipartUpload.id,
-					partNumber: ps.partNumber,
-					etag,
-				};
+					// Calculate ETag (MD5 hash would be ideal, but we'll just use a simple identifier for now)
+					const etag = `part_${ps.partNumber}_${Date.now()}`;
+
+					// Only increment completedParts if this is a new part
+					if (!partExists) {
+						// Use a database transaction to ensure atomic update and avoid race conditions
+						await this.multipartUploadsRepository.manager.transaction(async transactionalEntityManager => {
+							// Get the latest upload status within the transaction
+							const currentUpload = await transactionalEntityManager.findOneBy(this.multipartUploadsRepository.target, {
+								id: multipartUpload.id,
+							});
+
+							if (currentUpload) {
+								await transactionalEntityManager.update(
+									this.multipartUploadsRepository.target,
+									{ id: multipartUpload.id },
+									{ completedParts: currentUpload.completedParts + 1 },
+								);
+							}
+						});
+					}
+
+					return {
+						id: multipartUpload.id,
+						partNumber: ps.partNumber,
+						etag,
+					};
+				} finally {
+					await unlock();
+				}
 			} catch (err) {
 				if (file && cleanup) cleanup();
 				throw err;
