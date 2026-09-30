@@ -113,6 +113,11 @@ export class NotificationService implements OnApplicationShutdown {
 				return null;
 			}
 
+			const blockings = await this.cacheService.userBlockingCache.fetch(notifieeId);
+			if (blockings.has(notifierId)) {
+				return null;
+			}
+
 			if (recieveConfig?.type === 'following') {
 				const isFollowing = await this.cacheService.userFollowingsCache.fetch(notifieeId).then(followings => Object.hasOwn(followings, notifierId));
 				if (!isFollowing) {
