@@ -113,9 +113,14 @@ export class NotificationService implements OnApplicationShutdown {
 				return null;
 			}
 
-			const blockings = await this.cacheService.userBlockingCache.fetch(notifieeId);
-			if (blockings.has(notifierId)) {
-				return null;
+			// blocked/unblocked notifications themselves must still be delivered
+			// even in mutual-block situations (the blockee is meant to learn
+			// that the block state changed).
+			if (type !== 'blocked' && type !== 'unblocked') {
+				const blockings = await this.cacheService.userBlockingCache.fetch(notifieeId);
+				if (blockings.has(notifierId)) {
+					return null;
+				}
 			}
 
 			if (recieveConfig?.type === 'following') {
