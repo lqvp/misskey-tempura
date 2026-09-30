@@ -146,6 +146,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					id: In(ps.userIds),
 					isDeleted: false,
 					isSuspended: false,
+					// ugcVisibilityForVisitor: anonymous visitors must not resolve remote
+					// users via userIds either (same gate as the username/host branches)
+					...(this.serverSettings.ugcVisibilityForVisitor === 'local' && me == null
+						? { host: IsNull() }
+						: {}),
 				});
 
 				// リクエストされた通りに並べ替え
