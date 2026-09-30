@@ -16,6 +16,7 @@ import { bindThis } from '@/decorators.js';
 import { IdService } from '@/core/IdService.js';
 import { MfmService } from "@/core/MfmService.js";
 import { parse as mfmParse } from 'mfm-js';
+import { shouldHideNoteByTime } from '@/misc/should-hide-note-by-time.js';
 
 @Injectable()
 export class FeedService {
@@ -56,7 +57,19 @@ export class FeedService {
 			},
 			order: { id: -1 },
 			take: 20,
-		});
+		}).then(notes => notes.filter(note =>
+			// Web feeds are anonymous: apply the same per-user privacy rules the
+			// REST paths enforce (NoteEntityService.shouldHideNote with meId = null /
+			// QueryService.generateVisibilityQuery anonymous branch). localOnly notes
+			// are hidden from anonymous readers outright.
+			!note.localOnly &&
+			!(note.visibility === 'public' && profile.hidePublicNotes) &&
+			!(note.visibility === 'home' && profile.hideHomeNotes) &&
+			!shouldHideNoteByTime(user.makeNotesHiddenBefore, this.idService.parse(note.id).date) &&
+			// 'home' demoted to followers-only by age is not visible to anonymous
+			// readers (mirrors NoteEntityService.treatVisibility + shouldHideNote).
+			!(note.visibility === 'home' && shouldHideNoteByTime(user.makeNotesFollowersOnlyBefore, this.idService.parse(note.id).date)),
+		));
 
 		const feed = new Feed({
 			id: author.link,
