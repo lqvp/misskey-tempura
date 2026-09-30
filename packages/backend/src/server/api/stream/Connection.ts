@@ -13,6 +13,7 @@ import { ChannelFollowingService } from '@/core/ChannelFollowingService.js';
 import type { GlobalEvents, StreamEventEmitter } from '@/core/GlobalEventService.js';
 import { MiFollowing, MiUserProfile } from '@/models/_.js';
 import { CacheService } from '@/core/CacheService.js';
+import { MetaService } from '@/core/MetaService.js';
 import { bindThis } from '@/decorators.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import type { MiAccessToken } from '@/models/AccessToken.js';
@@ -74,6 +75,7 @@ export default class Connection {
 		private cacheService: CacheService,
 		private channelFollowingService: ChannelFollowingService,
 		private channelMutingService: ChannelMutingService,
+		private metaService: MetaService,
 		@Inject(REQUEST)
 		request: ConnectionRequest,
 	) {
@@ -250,6 +252,28 @@ export default class Connection {
 				return;
 			}
 		}
+
+		// 匿名クライアントへの noteUpdated 配信にも ugcVisibilityForVisitor ゲートを適用する。
+		// ノート投稿者（data.body.userId）が remote ユーザーなら匿名配信は行わない。
+		// REST の notes/reactions は me なしでは [] を返すため、reacted / unreacted /
+		// pollVoted では発信者（data.body.body.userId）も伏せる。
+		if (this.user == null) {
+			const meta = await this.metaService.fetch();
+			if (meta.ugcVisibilityForVisitor === 'none') return;
+			if (meta.ugcVisibilityForVisitor === 'local') {
+				const author = await this.cacheService.findUserById(data.body.userId);
+				if (author.host != null) return;
+			}
+			if (data.type === 'reacted' || data.type === 'unreacted' || data.type === 'pollVoted') {
+				this.sendMessageToWs('noteUpdated', {
+					id: data.body.id,
+					type: data.type,
+					body: { ...data.body.body, userId: null },
+				});
+				return;
+			}
+		}
+
 		this.sendMessageToWs('noteUpdated', {
 			id: data.body.id,
 			type: data.type,

@@ -4,6 +4,7 @@
  */
 
 import { Injectable } from '@nestjs/common';
+import { MetaService } from '@/core/MetaService.js';
 import { bindThis } from '@/decorators.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { deepClone } from '@/misc/clone.js';
@@ -16,6 +17,7 @@ import type { MiUser } from '@/models/User.js';
 export class NoteStreamingHidingService {
 	constructor(
 		private noteEntityService: NoteEntityService,
+		private metaService: MetaService,
 	) {}
 
 	private collectRenoteChain(note: Packed<'Note'>): Packed<'Note'>[] {
@@ -41,12 +43,28 @@ export class NoteStreamingHidingService {
 	 */
 	@bindThis
 	public async filter(note: Packed<'Note'>, meId: MiUser['id'] | null): Promise<Packed<'Note'> | null> {
+		// ugcVisibilityForVisitor はサーバー設定レベルの anonymity ゲート。
+		// notes/show.ts / users/show.ts と同じ判定をストリーミング配信にも適用する。
+		if (meId == null) {
+			const meta = await this.metaService.fetch();
+			if (meta.ugcVisibilityForVisitor === 'none') return null;
+			if (meta.ugcVisibilityForVisitor === 'local' && note.user.host != null) return null;
+		}
+
 		const renoteChain = this.collectRenoteChain(note);
 		const shouldHide = await Promise.all(renoteChain.map(n => this.noteEntityService.shouldHideNote(n, meId)));
+		// REST の notes/reactions は me なしでは [] を返すため、匿名配信では
+		// reactionAndUserPairCache（userId/reaction ペア）も隠す。
+		const stripReactionCache = meId == null;
 
 		if (!shouldHide.some(h => h)) {
 			// 隠す必要がない場合は元のノートをそのまま返す
-			return note;
+			if (!stripReactionCache) return note;
+			const stripped = deepClone(note);
+			for (let current: Packed<'Note'> | null | undefined = stripped; current != null; current = current.renote) {
+				current.reactionAndUserPairCache = undefined;
+			}
+			return stripped;
 		}
 
 		if (renoteChain.some(n => isRenotePacked(n) && !isQuotePacked(n))) {
@@ -60,6 +78,9 @@ export class NoteStreamingHidingService {
 		for (let i = 0; i < renoteChain.length; i++) {
 			if (shouldHide[i]) {
 				this.noteEntityService.hideNote(currentCloned);
+			}
+			if (stripReactionCache) {
+				currentCloned.reactionAndUserPairCache = undefined;
 			}
 			currentCloned = currentCloned.renote!;
 		}
