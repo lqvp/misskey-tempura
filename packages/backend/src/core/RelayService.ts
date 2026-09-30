@@ -92,6 +92,28 @@ export class RelayService {
 	}
 
 	@bindThis
+	public async acceptedFromRelay(id: string, actor: { inbox: string | null; sharedInbox: string | null; }): Promise<string> {
+		return JSON.stringify(await this.transitionFromRelay(id, actor, 'accepted'));
+	}
+
+	@bindThis
+	public async rejectedFromRelay(id: string, actor: { inbox: string | null; sharedInbox: string | null; }): Promise<string> {
+		return JSON.stringify(await this.transitionFromRelay(id, actor, 'rejected'));
+	}
+
+	@bindThis
+	private async transitionFromRelay(id: string, actor: { inbox: string | null; sharedInbox: string | null; }, status: 'accepted' | 'rejected'): Promise<{ affected: number; }> {
+		const relay = await this.relaysRepository.findOneBy({ id: id });
+		if (relay == null) return { affected: 0 };
+		// the responding actor must actually be the relay endpoint itself
+		if (actor.inbox !== relay.inbox && actor.sharedInbox !== relay.inbox) return { affected: 0 };
+		// only complete a handshake we actually initiated
+		if (relay.status !== 'requesting') return { affected: 0 };
+		const result = await this.relaysRepository.update({ id: id, status: 'requesting' }, { status: status });
+		return { affected: result.affected ?? 0 };
+	}
+
+	@bindThis
 	public async isRelayActor(actor: { inbox: string | null; sharedInbox: string | null }): Promise<boolean> {
 		const relays = await this.getAcceptedRelays();
 		return relays.some(relay =>
