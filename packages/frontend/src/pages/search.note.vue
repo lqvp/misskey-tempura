@@ -312,7 +312,8 @@ const convertTimestampToDatetimeLocal = (timestamp: string | undefined): string 
 	if (isNaN(parsedTimestamp)) return null;
 	const date = new Date(parsedTimestamp);
 	if (isNaN(date.getTime())) return null;
-	return date.toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM形式
+	const pad = (value: number) => String(value).padStart(2, '0');
+	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
 const sinceDate = ref<string | null>(convertTimestampToDatetimeLocal(toRef(props, 'sinceDate').value));

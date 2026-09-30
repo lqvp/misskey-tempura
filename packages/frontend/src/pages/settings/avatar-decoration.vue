@@ -31,14 +31,53 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkButton danger @click="detachAllDecorations">{{ i18n.ts.detachAll }}</MkButton>
 			</div>
 
-			<div :class="$style.decorations">
-				<XDecoration
-					v-for="avatarDecoration in avatarDecorations"
-					:key="avatarDecoration.id"
-					:decoration="avatarDecoration"
-					@click="openDecoration(avatarDecoration)"
-				/>
-			</div>
+			<MkInput
+				v-model="searchQuery"
+				type="search"
+				:placeholder="i18n.ts.search"
+				@update:modelValue="onSearchInput"
+			>
+				<template #prefix><i class="ti ti-search"></i></template>
+			</MkInput>
+
+			<MkRadios
+				v-if="canUseRemote"
+				v-model="searchOrigin"
+				:options="originOptions"
+				@update:modelValue="onOriginChange"
+			/>
+
+			<template v-if="isSearching && searchResults.length === 0">
+				<MkLoading/>
+			</template>
+
+			<template v-else>
+				<div v-if="searchResults.length === 0">
+					<MkInfo>{{ i18n.ts.noResults }}</MkInfo>
+				</div>
+				<template v-for="[category, decorations] in Object.entries(groupedDecorations)" :key="category">
+					<MkFolder v-if="category" :defaultOpen="category === defaultCategory">
+						<template #label>{{ category }}</template>
+						<div :class="$style.decorations">
+							<XDecoration
+								v-for="avatarDecoration in decorations"
+								:key="avatarDecoration.id"
+								:decoration="avatarDecoration"
+								@click="openDecoration(avatarDecoration)"
+							/>
+						</div>
+					</MkFolder>
+					<div v-else :class="$style.decorations">
+						<XDecoration
+							v-for="avatarDecoration in decorations"
+							:key="avatarDecoration.id"
+							:decoration="avatarDecoration"
+							@click="openDecoration(avatarDecoration)"
+						/>
+					</div>
+				</template>
+				<MkButton v-if="canLoadMore" @click="loadMore">{{ i18n.ts.loadMore }}</MkButton>
+			</template>
 		</div>
 		<div v-else>
 			<MkLoading/>
@@ -48,7 +87,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, defineAsyncComponent, computed } from 'vue';
+import { ref, computed } from 'vue';
 import * as Misskey from 'misskey-js';
 import XDecoration from './avatar-decoration.decoration.vue';
 import XDialog from './avatar-decoration.dialog.vue';
@@ -59,6 +98,9 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { ensureSignin } from '@/i.js';
 import MkInfo from '@/components/MkInfo.vue';
+import MkInput from '@/components/MkInput.vue';
+import MkRadios from '@/components/MkRadios.vue';
+import MkFolder from '@/components/MkFolder.vue';
 import { definePage } from '@/page.js';
 import { groupAvatarDecorations } from '@/utility/group-avatar-decorations.js';
 
@@ -66,13 +108,100 @@ const $i = ensureSignin();
 
 const loading = ref(true);
 const avatarDecorations = ref<Misskey.entities.GetAvatarDecorationsResponse>([]);
-const groupedDecorations = computed(() => groupAvatarDecorations(avatarDecorations.value));
+
+// 検索: search-avatar-decorations エンドポイントを利用する
+type DecorationItem = {
+	id: string;
+	name: string;
+	description?: string | null;
+	url: string;
+	roleIdsThatCanBeUsedThisDecoration: string[];
+	category?: string | null;
+};
+
+const PAGE_SIZE = 50;
+let searchRequestId = 0;
+
+const searchQuery = ref('');
+const canUseRemote = $i.policies.canUseRemoteIconDecorations === true;
+const searchOrigin = ref<'local' | 'remote' | 'combined'>(canUseRemote ? 'combined' : 'local');
+const searchResults = ref<DecorationItem[]>([]);
+const isSearching = ref(false);
+const canLoadMore = ref(false);
+let searchTimeout: number | null = null;
+
+const originOptions = computed(() => {
+	const options: { value: 'local' | 'remote' | 'combined'; label: string }[] = [
+		{ value: 'local', label: i18n.ts.local },
+	];
+	if (canUseRemote) {
+		options.push(
+			{ value: 'remote', label: i18n.ts.remote },
+			{ value: 'combined', label: i18n.ts.all },
+		);
+	}
+	return options;
+});
+
+// 検索結果もカテゴリで分组する
+const groupedDecorations = computed(() => groupAvatarDecorations(searchResults.value));
+const defaultCategory = computed(() => Object.keys(groupedDecorations.value)[0] ?? '');
+
+// 一度に大量のデコレーションを描画するとクライアントがクラッシュするため、
+// エンドポイントの limit/offset で少しずつ読み込む
+async function fetchDecorations(offset = searchResults.value.length): Promise<void> {
+	const id = ++searchRequestId;
+	isSearching.value = true;
+	try {
+		const results = await misskeyApi('search-avatar-decorations', {
+			query: searchQuery.value,
+			origin: searchOrigin.value,
+			limit: PAGE_SIZE,
+			offset,
+		});
+		if (id !== searchRequestId) return; // 途中で検索条件が変わった場合は破棄
+		searchResults.value = offset === 0 ? results : [...searchResults.value, ...results];
+		canLoadMore.value = results.length === PAGE_SIZE;
+	} catch (err) {
+		if (id === searchRequestId) console.error(err);
+	} finally {
+		if (id === searchRequestId) isSearching.value = false;
+	}
+}
+
+function loadMore() {
+	if (isSearching.value) return;
+	void fetchDecorations();
+}
+
+function onSearchInput() {
+	searchRequestId++;
+	if (searchTimeout != null) {
+		window.clearTimeout(searchTimeout);
+	}
+	searchResults.value = [];
+	canLoadMore.value = false;
+	searchTimeout = window.setTimeout(() => { void fetchDecorations(0); }, 300);
+}
+
+function onOriginChange() {
+	searchRequestId++;
+	if (searchTimeout != null) {
+		window.clearTimeout(searchTimeout);
+	}
+	searchResults.value = [];
+	canLoadMore.value = false;
+	void fetchDecorations(0);
+}
 
 // Initial data loading
 misskeyApi('get-avatar-decorations').then(_avatarDecorations => {
 	avatarDecorations.value = _avatarDecorations;
 	loading.value = false;
 });
+
+// グリッドの最初の1ページを取得する
+void fetchDecorations();
 
 function openAttachedDecoration(index: number) {
 	openDecoration(avatarDecorations.value.find(d => d.id === $i.avatarDecorations[index].id) ?? { id: '', url: '', name: '?', roleIdsThatCanBeUsedThisDecoration: [] }, index);
