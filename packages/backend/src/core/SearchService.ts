@@ -4,7 +4,7 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import { In } from 'typeorm';
+import { Brackets, In } from 'typeorm';
 import { DI } from '@/di-symbols.js';
 import { type Config, FulltextSearchProvider } from '@/config.js';
 import { bindThis } from '@/decorators.js';
@@ -267,17 +267,49 @@ export class SearchService {
 
 		// テキスト検索条件の追加
 		if (this.config.fulltextSearch?.provider === 'sqlPgroonga') {
-			// sqlPgroongaの高度な検索機能を使用
-			let searchQuery = q;
+			// &@~ は検索文字列を Groonga のクエリ構文として解釈するため、
+			// ユーザー入力を素のまま渡すと ( ) " \ などの特殊文字や - による否定が
+			// 演算子として解釈され、意図しない除外や構文崩れでノートがこぼれ落ちる。
+			// また OR キーワードは PGroonga のバージョンに依存する (v2 では ||)。
+			// そこで各検索語をダブルクォートで囲んで字面語として扱い、
+			// AND は Groonga 側 (空白区切り)、OR と否定は SQL 側で結合する。
+			const quoteTerm = (term: string): string => `"${term.replace(/[\\"]/g, '\\$1')}"`;
 
-			// 除外語の処理
-			if (opts.excludeWords && opts.excludeWords.length > 0) {
-				const excludeQuery = opts.excludeWords.map(word => `-${word}`).join(' ');
-				searchQuery = q ? `${q} ${excludeQuery}` : excludeQuery;
+			const terms = (opts.searchOperator === 'or'
+				? q.split(' OR ') // notes/search.ts が or 検索時に ' OR ' で連結した区切り
+				: q.split(/\s+/)
+			).map(term => term.trim()).filter(term => term !== '');
+
+			if (terms.length > 0) {
+				if (opts.searchOperator === 'or' && terms.length > 1) {
+					// OR検索はSQL側で条件結合し、クエリ構文のORキーワードに依存しない
+					const params: Record<string, string> = {};
+					const conditions = terms.map((term, index) => {
+						params[`pgQuery${index}`] = quoteTerm(term);
+						return `note.text &@~ :pgQuery${index}`;
+					});
+					query.andWhere(new Brackets(qb => {
+						qb.where(conditions.join(' OR '));
+					}), params);
+				} else {
+					// AND検索は引用した各語を空白区切りで渡す (Groongaクエリ構文のAND)
+					query.andWhere('note.text &@~ :pgQuery', { pgQuery: terms.map(quoteTerm).join(' ') });
+				}
 			}
 
-			if (searchQuery) {
-				query.andWhere('note.text &@~ :q', { q: searchQuery });
+			// 除外語はSQL側でNOTとして適用する。
+			// クエリ構文では否定のみの検索 (-a -b) が成立しないため、
+			// 肯定クエリが空でも除外語だけで検索できるようにする。
+			if (opts.excludeWords) {
+				opts.excludeWords.forEach((word, index) => {
+					const trimmed = word.trim();
+					if (trimmed === '') return;
+					query.andWhere(new Brackets(qb => {
+						qb
+							.where('note.text IS NULL')
+							.orWhere(`NOT (note.text &@~ :pgExclude${index})`);
+					}), { [`pgExclude${index}`]: quoteTerm(trimmed) });
+				});
 			}
 		} else if (q !== '') {
 			// sqlLikeプロバイダーでの検索処理
