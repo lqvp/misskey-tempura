@@ -13,6 +13,7 @@ import { contentDisposition } from '@/misc/content-disposition.js';
 import { correctFilename } from '@/misc/correct-filename.js';
 import { isMimeImage } from '@/misc/is-mime-image.js';
 import { IImageStreamable, ImageProcessingService, webpDefault } from '@/core/ImageProcessingService.js';
+import { validateRemoteUrl } from '@/misc/validate-remote-url.js';
 import { createRangeStream, attachStreamCleanup, needsCleanup } from './FileServerUtils.js';
 import type { DownloadedFileResult, FileResolveResult, FileServerFileResolver } from './FileServerFileResolver.js';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -265,6 +266,13 @@ export class FileServerProxyHandler {
 			if (!key) throw new StatusError('Invalid File Key', 400, 'Invalid File Key');
 
 			return await this.fileResolver.resolveFileByAccessKey(key);
+		}
+
+		// SSRF pre-check for attacker-controlled download URLs: the download path
+		// (DownloadService) uses unfiltered agents, so this validation is the only
+		// egress control on this route.
+		if (!validateRemoteUrl(url, this.config)) {
+			throw new StatusError('Invalid url', 400, 'Invalid url');
 		}
 
 		return await this.fileResolver.downloadAndDetectTypeFromUrl(url);
