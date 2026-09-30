@@ -40,7 +40,9 @@ describe('ActivityPub verified host on note routes', () => {
 		const app = Fastify();
 		app.register((instance, options, done) => service.createServer(instance, options, done));
 		try {
-			expect((await app.inject({ url: path, headers: headers(path) })).statusCode).toBe(200);
+			const allowed = await app.inject({ url: path, headers: headers(path) });
+			expect(allowed.statusCode).toBe(200);
+			expect(allowed.headers['cache-control']).toBe('no-store');
 			expect(resolver.getAuthUserFromKeyId).toHaveBeenCalledTimes(1);
 			note.deliveryTargets.hosts = ['local.example'];
 			expect((await app.inject({ url: path, headers: headers(path) })).statusCode).toBe(404);
@@ -52,6 +54,44 @@ describe('ActivityPub verified host on note routes', () => {
 			const unsigned = headers(path);
 			delete (unsigned as any).signature;
 			expect((await app.inject({ url: path, headers: unsigned })).statusCode).toBe(404);
+		} finally {
+			await app.close();
+		}
+	});
+});
+
+
+describe('ActivityPub unsigned bootstrap', () => {
+	test.each([
+		['/users/actor', 'system.actor', null, 200],
+		['/@system.actor', 'system.actor', null, 200],
+		['/users/ordinary', 'ordinary', null, 404],
+		['/users/relay', 'system.relay', null, 404],
+		['/users/remote', 'system.actor', 'remote.example', 404],
+		['/users/ordinary/publickey', 'ordinary', null, 200],
+	] as const)('%s unsigned returns %s', async (path, username, host, status) => {
+		const settings = { blockedHosts: [] as string[], federation: 'all' };
+		const utility = { toPuny: (value: string) => value, isBlockedHost: (hosts: string[], value: string) => hosts.includes(value), isSelfHost: () => false };
+		const access = new ActivityPubAccessControlService(settings as any, { findOneBy: async () => null } as any, utility as any,
+			{ getLogger: () => ({ info: vi.fn(), debug: vi.fn() }) } as any);
+		const resolver = { getAuthUserFromKeyId: vi.fn(async () => null), getAuthUserFromApId: vi.fn(async () => null) };
+		const service: any = Object.assign(Object.create(ActivityPubServerService.prototype), {
+			config: { host: 'local.example' }, meta: settings, utilityService: utility,
+			verifiedHosts: new WeakMap(), apDbResolverService: resolver, activityPubAccessControlService: access,
+			usersRepository: { findOneBy: async () => ({ id: 'actor', username, host }) },
+			userEntityService: { isLocalUser: () => host === null },
+			userKeypairService: { getUserKeypair: async () => ({}) },
+			apRendererService: { addContext: (value: any) => value, renderPerson: async () => ({ id: 'actor' }), renderKey: () => ({ id: 'key' }) },
+		});
+		const app = Fastify();
+		app.register((instance, options, done) => service.createServer(instance, options, done));
+		try {
+			const unsigned = { host: 'local.example', accept: 'application/activity+json' };
+			expect((await app.inject({ url: path, headers: unsigned })).statusCode).toBe(status);
+			expect(resolver.getAuthUserFromKeyId).not.toHaveBeenCalled();
+			expect((await app.inject({ url: path, headers: headers(path, false) })).statusCode).toBe(404);
+			settings.federation = 'none';
+			expect((await app.inject({ url: path, headers: unsigned })).statusCode).toBe(403);
 		} finally {
 			await app.close();
 		}

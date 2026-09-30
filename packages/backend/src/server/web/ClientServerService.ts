@@ -810,6 +810,8 @@ export class ClientServerService {
 
 		// 個別お知らせページ
 		fastify.get<{ Params: { announcementId: string; } }>('/announcements/:announcementId', async (request, reply) => {
+			if (this.meta.ugcVisibilityForVisitor === 'none') return await renderBase(reply);
+
 			const announcement = await this.announcementsRepository.findOneBy({
 				id: request.params.announcementId,
 				userId: IsNull(),

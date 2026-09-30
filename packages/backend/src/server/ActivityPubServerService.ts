@@ -636,7 +636,9 @@ export class ActivityPubServerService {
 			return;
 		}
 
-		if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true, await this.getVerifiedHost(request))) {
+		// Only the local system actor document may bootstrap without a signature.
+		const unsignedBootstrap = request.headers.signature == null && user?.host === null && user.username === 'system.actor';
+		if (!unsignedBootstrap && await this.activityPubAccessControlService.applyAccessControl(request, reply, true, await this.getVerifiedHost(request))) {
 			return;
 		}
 
@@ -725,6 +727,7 @@ export class ActivityPubServerService {
 		// note
 		fastify.get<{ Params: { note: string; } }>('/notes/:note', { constraints: { apOrHtml: 'ap' } }, async (request, reply) => {
 			vary(reply.raw, 'Accept');
+			reply.header('Cache-Control', 'no-store');
 
 			if (this.meta.federation === 'none') {
 				reply.code(403);
@@ -761,7 +764,6 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			reply.header('Cache-Control', 'public, max-age=180');
 			this.setResponseType(request, reply);
 			return this.apRendererService.addContext(await this.apRendererService.renderNote(note, false));
 		});
@@ -769,6 +771,7 @@ export class ActivityPubServerService {
 		// note activity
 		fastify.get<{ Params: { note: string; } }>('/notes/:note/activity', async (request, reply) => {
 			vary(reply.raw, 'Accept');
+			reply.header('Cache-Control', 'no-store');
 
 			if (this.meta.federation === 'none') {
 				reply.code(403);
@@ -796,7 +799,6 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			reply.header('Cache-Control', 'public, max-age=180');
 			this.setResponseType(request, reply);
 			return (this.apRendererService.addContext(await this.packActivity(note)));
 		});
@@ -829,7 +831,7 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true, await this.getVerifiedHost(request))) {
+			if (request.headers.signature != null && await this.activityPubAccessControlService.applyAccessControl(request, reply, true, await this.getVerifiedHost(request))) {
 				return;
 			}
 

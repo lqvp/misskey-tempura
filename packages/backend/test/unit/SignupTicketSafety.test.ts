@@ -58,7 +58,7 @@ describe('registration ticket safety', () => {
 			usedUsernamesRepository: { exists: async () => false },
 			utilityService: { toPunyNullable: () => null }, idService: { gen: () => 'newid' },
 			db: { transaction: async (cb: any) => {
-				await cb({ findOneBy: async () => null, save: async (value: any) => value });
+				await cb({ query: async () => [], findOneBy: async () => null, save: async (value: any) => value });
 				if (outcome === 'rollback') throw new Error('rollback');
 			} },
 			usersChart: { update: () => { throw new Error('post-commit'); } },

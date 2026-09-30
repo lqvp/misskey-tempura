@@ -95,3 +95,25 @@ describe('NoteStreamingHidingService reaction cache gating', () => {
 		expect(out!.reactionAndUserPairCache).toEqual(['u9/❤', 'u10/❤']);
 	});
 });
+
+
+describe('NoteStreamingHidingService reply visibility', () => {
+	test.each([false, true])('hides replies throughout the cloned chain, pure renote=%s', async pureRenote => {
+		const svc = new NoteStreamingHidingService({
+			shouldHideNote: async (note: any) => note.id.endsWith('reply'),
+			hideNote: (note: any) => { note.text = null; },
+		} as any, meta('all') as any);
+		const note = mkNote('top', {
+			text: pureRenote ? null : 'quote', renoteId: 'inner',
+			...(pureRenote ? {} : { reply: mkNote('top-reply') }),
+			renote: mkNote('inner', { reply: mkNote('inner-reply') }),
+		});
+		const out = await svc.filter(note as any, 'viewer');
+		expect(out).not.toBeNull();
+		expect(out).not.toBe(note);
+		expect(out!.renote!.text).toBe('hello');
+		expect(out!.renote!.reply!.text).toBeNull();
+		if (!pureRenote) expect(out!.reply!.text).toBeNull();
+		expect((note as any).renote.reply.text).toBe('hello');
+	});
+});

@@ -149,9 +149,8 @@ const defaultCategory = computed(() => Object.keys(groupedDecorations.value)[0] 
 
 // 一度に大量のデコレーションを描画するとクライアントがクラッシュするため、
 // エンドポイントの limit/offset で少しずつ読み込む
-async function fetchDecorations(): Promise<void> {
+async function fetchDecorations(offset = searchResults.value.length): Promise<void> {
 	const id = ++searchRequestId;
-	const offset = searchResults.value.length;
 	isSearching.value = true;
 	try {
 		const results = await misskeyApi('search-avatar-decorations', {
@@ -176,21 +175,23 @@ function loadMore() {
 }
 
 function onSearchInput() {
+	searchRequestId++;
 	if (searchTimeout != null) {
 		window.clearTimeout(searchTimeout);
 	}
 	searchResults.value = [];
 	canLoadMore.value = false;
-	searchTimeout = window.setTimeout(fetchDecorations, 300);
+	searchTimeout = window.setTimeout(() => { void fetchDecorations(0); }, 300);
 }
 
 function onOriginChange() {
+	searchRequestId++;
 	if (searchTimeout != null) {
 		window.clearTimeout(searchTimeout);
 	}
 	searchResults.value = [];
 	canLoadMore.value = false;
-	void fetchDecorations();
+	void fetchDecorations(0);
 }
 
 // Initial data loading

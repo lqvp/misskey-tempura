@@ -173,11 +173,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					// Move the uploaded file to the part path
 					// （スティージング先が一時領域と別ファイルシステムの場合は EXDEV になるため copy+削除にフォールバックする）
 					try {
-						fs.renameSync(file!.path, partPath);
+						await fs.promises.rename(file!.path, partPath);
 					} catch (err) {
 						if ((err as NodeJS.ErrnoException).code === 'EXDEV') {
-							fs.copyFileSync(file!.path, partPath);
-							fs.rmSync(file!.path, { force: true });
+							await fs.promises.copyFile(file!.path, partPath);
+							await fs.promises.rm(file!.path, { force: true });
 						} else {
 							throw err;
 						}

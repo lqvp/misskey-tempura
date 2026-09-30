@@ -5,7 +5,6 @@
 
 import * as fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { type FastifyServerOptions } from 'fastify';
 import type * as Sentry from '@sentry/node';
@@ -340,7 +339,7 @@ export function loadConfig(): Config {
 		proxyBypassHosts: config.proxyBypassHosts,
 		allowedPrivateNetworks: config.allowedPrivateNetworks,
 		maxFileSize: config.maxFileSize ?? 262144000,
-		multipartTempDir: config.multipartTempDir ?? tmpdir(),
+		multipartTempDir: config.multipartTempDir ?? resolve(rootDir, '.data'),
 		clusterLimit: config.clusterLimit,
 		clusterOverClock: config.clusterOverClock ?? false,
 		threadPoolSize: config.threadPoolSize ?? 1,

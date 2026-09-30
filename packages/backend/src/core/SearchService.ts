@@ -274,14 +274,14 @@ export class SearchService {
 			// また OR キーワードは PGroonga のバージョンに依存する (v2 では ||)。
 			// そこで各検索語をダブルクォートで囲んで字面語として扱い、
 			// AND は Groonga 側 (空白区切り)、OR と否定は SQL 側で結合する。
-			const quoteTerm = (term: string): string => `"${term.replace(/[\\"]/g, '\\$1')}"`;
+			const quoteTerm = (term: string): string => `"${term.replace(/[\\"]/g, '\\$&')}"`;
 
-			// advancedSyntax=true のときだけ、語の先頭の + - ~ (必須/除外/部分一致) と
+			// advancedSyntax=true のときだけ、語の先頭の + ~ (必須/部分一致) と
 			// 末尾の * (前方一致) を Groonga クエリ構文として透過する。
 			// 素の語は従来どおり引用し、括弧はバランスが取れている場合のみ透過する。
 			const compileTerm = (term: string): string => {
 				if (!opts.advancedSyntax) return quoteTerm(term);
-				const match = term.match(/^([+~-]?)(.+?)(\*?)$/);
+				const match = term.match(/^([+~]?)(.+?)(\*?)$/);
 				if (match == null) return quoteTerm(term);
 				const [, prefix, core, wildcard] = match;
 				if (core.includes('(') || core.includes(')')) {
@@ -292,10 +292,14 @@ export class SearchService {
 				return `${prefix}${quoteTerm(core)}${wildcard}`;
 			};
 
-			const terms = (opts.searchOperator === 'or'
+			const parsedTerms = (opts.searchOperator === 'or'
 				? q.split(' OR ') // notes/search.ts が or 検索時に ' OR ' で連結した区切り
 				: q.split(/\s+/)
 			).map(term => term.trim()).filter(term => term !== '');
+
+			const excludedTerms = opts.advancedSyntax ? parsedTerms.filter(term => term.startsWith('-') && term.length > 1) : [];
+			const terms = parsedTerms.filter(term => !excludedTerms.includes(term));
+			const excludeWords = [...(opts.excludeWords ?? []), ...excludedTerms.map(term => term.slice(1))];
 
 			if (terms.length > 0) {
 				if (opts.searchOperator === 'or' && terms.length > 1) {
@@ -317,8 +321,8 @@ export class SearchService {
 			// 除外語はSQL側でNOTとして適用する。
 			// クエリ構文では否定のみの検索 (-a -b) が成立しないため、
 			// 肯定クエリが空でも除外語だけで検索できるようにする。
-			if (opts.excludeWords) {
-				opts.excludeWords.forEach((word, index) => {
+			if (excludeWords.length > 0) {
+				excludeWords.forEach((word, index) => {
 					const trimmed = word.trim();
 					if (trimmed === '') return;
 					query.andWhere(new Brackets(qb => {
