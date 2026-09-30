@@ -211,6 +211,13 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			try {
 				const object = await this.noteEntityService.pack(note, me, { detail: true });
 
+				// Do not disclose internal scheduling/delivery metadata for notes
+				// hidden from the caller (matches the redaction notes/show applies).
+				if (me == null || object.isHidden) {
+					object.deleteAt = undefined;
+					object.deliveryTargets = undefined;
+				}
+
 				return {
 					type: 'Note',
 					object,
