@@ -34599,6 +34599,8 @@ export interface operations {
                     searchOperator?: 'and' | 'or';
                     /** @default [] */
                     excludeWords?: string[];
+                    /** @default false */
+                    advancedSyntax?: boolean;
                 };
             };
         };

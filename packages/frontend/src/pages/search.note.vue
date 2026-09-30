@@ -37,6 +37,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #label>{{ i18n.ts._advancedSearch._searchOperator.label }}</template>
 				</MkRadios>
 
+				<MkSwitch v-model="advancedSyntax">
+					<template #label>{{ i18n.ts._advancedSearch.advancedSyntax }}</template>
+					<template #caption>{{ i18n.ts._advancedSearch.advancedSyntaxCaption }}</template>
+				</MkSwitch>
+
 				<MkInput
 					v-model="excludeWords"
 					:placeholder="i18n.ts._advancedSearch.excludeWords"
@@ -269,6 +274,7 @@ const props = withDefaults(defineProps<{
 	excludeWords?: string;
 	rangeStartAt?: string;
 	rangeEndAt?: string;
+	advancedSyntax?: string;
 }>(), {
 	query: '',
 	userId: undefined,
@@ -285,6 +291,7 @@ const props = withDefaults(defineProps<{
 	excludeWords: '',
 	rangeStartAt: undefined,
 	rangeEndAt: undefined,
+	advancedSyntax: undefined,
 });
 
 const router = useRouter();
@@ -304,6 +311,8 @@ const hasReply = ref<'all' | 'with' | 'without'>(toRef(props, 'hasReply').value 
 const hasPoll = ref<'all' | 'with' | 'without'>(toRef(props, 'hasPoll').value as any);
 const searchOperator = ref<'and' | 'or'>(toRef(props, 'searchOperator').value as any);
 const excludeWords = ref<string>(toRef(props, 'excludeWords').value);
+// URLパラメータは文字列で届くため 'true' の場合のみ有効化する
+const advancedSyntax = ref<boolean>(toRef(props, 'advancedSyntax').value === 'true');
 
 // URLパラメータからsinceDate/untilDateを適切に変換
 const convertTimestampToDatetimeLocal = (timestamp: string | undefined): string | null => {
@@ -520,6 +529,10 @@ async function copySearchUrl() {
 		params.set('searchOperator', 'or');
 	}
 
+	if (advancedSyntax.value) {
+		params.set('advancedSyntax', 'true');
+	}
+
 	if (excludeWords.value.trim() !== '') {
 		params.set('excludeWords', excludeWords.value);
 	}
@@ -569,6 +582,10 @@ async function search() {
 		params.searchOperator = 'and';
 	} else if (searchOperator.value === 'or') {
 		params.searchOperator = 'or';
+	}
+
+	if (advancedSyntax.value) {
+		params.advancedSyntax = true;
 	}
 
 	// 複数の検索語を処理
