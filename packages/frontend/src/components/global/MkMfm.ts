@@ -251,7 +251,7 @@ export default function (props: MfmProps, { emit }: { emit: SetupContext<MfmEven
 							return genEl(token.children, { scale, disableNyaize, disableRjNumber });
 						}
 						// スロット関数の中で genEl を呼ぶと MkSparkle が再描画されるたびに子の VNode が作り直される
-						const sparkleChildren = genEl(token.children, scale, disableNyaize, disableRjNumber);
+						const sparkleChildren = genEl(token.children, { scale, disableNyaize, disableRjNumber });
 						return h(MkSparkle, {}, { default: () => sparkleChildren });
 					}
 					case 'rotate': {
