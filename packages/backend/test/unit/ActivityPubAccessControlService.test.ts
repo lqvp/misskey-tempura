@@ -3,220 +3,65 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { Test, TestingModule } from '@nestjs/testing';
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { ActivityPubAccessControlService } from '@/core/ActivityPubAccessControlService.js';
-import { DI } from '@/di-symbols.js';
-import { UtilityService } from '@/core/UtilityService.js';
-import { LoggerService } from '@/core/LoggerService.js';
 import type { FastifyRequest } from 'fastify';
 
-describe('ActivityPubAccessControlService', () => {
+const request = (userAgent?: string, accept?: string) => ({ headers: {
+	'user-agent': userAgent,
+	accept,
+	signature: 'keyId="https://blocked.example/key"',
+} }) as unknown as FastifyRequest;
+
+const note = (mode: 'include' | 'exclude', hosts: string[]) => ({
+	id: 'note', visibility: 'public', deliveryTargets: { mode, hosts },
+}) as any;
+
+describe('ActivityPubAccessControlService verified attribution', () => {
 	let service: ActivityPubAccessControlService;
-	let mockInstancesRepository: any;
-	let mockUtilityService: any;
-	let mockLoggerService: any;
-	let mockConfig: any;
-	let mockMeta: any;
+	let instances: any;
+	let utility: any;
 
-	beforeEach(async () => {
-		mockInstancesRepository = {
-			findOneBy: vi.fn(),
+	beforeEach(() => {
+		instances = { findOneBy: vi.fn().mockResolvedValue(null) };
+		utility = {
+			toPuny: (host: string) => host.toLowerCase(),
+			isBlockedHost: vi.fn((hosts: string[], host: string) => hosts.includes(host)),
 		};
-
-		mockUtilityService = {
-			toPuny: vi.fn((host: string) => host.toLowerCase()),
-			isBlockedHost: vi.fn(() => false),
-			isSilencedHost: vi.fn(() => false),
-		};
-
-		mockLoggerService = {
-			getLogger: vi.fn(() => ({
-				info: vi.fn(),
-				debug: vi.fn(),
-				warn: vi.fn(),
-				error: vi.fn(),
-			})),
-		};
-
-		mockConfig = {
-			host: 'test.example.com',
-		};
-
-		mockMeta = {
-			blockedHosts: [],
-			silencedHosts: [],
-		};
-
-		const module: TestingModule = await Test.createTestingModule({
-			providers: [
-				ActivityPubAccessControlService,
-				{ provide: DI.config, useValue: mockConfig },
-				{ provide: DI.meta, useValue: mockMeta },
-				{ provide: DI.instancesRepository, useValue: mockInstancesRepository },
-				{ provide: UtilityService, useValue: mockUtilityService },
-				{ provide: LoggerService, useValue: mockLoggerService },
-			],
-		}).compile();
-
-		service = module.get<ActivityPubAccessControlService>(ActivityPubAccessControlService);
+		service = new ActivityPubAccessControlService({ blockedHosts: ['blocked.example'] } as any, instances, utility,
+			{ getLogger: () => ({ info: vi.fn(), debug: vi.fn() }) } as any);
 	});
 
-	test('should be defined', () => {
-		expect(service).toBeDefined();
+	test.each([undefined, 'Mozilla/5.0', 'Misskey/13.0.0 (https://local.example/)', 'tempura'])('does not trust unsigned UA %s, even without Accept', async ua => {
+		for (const accept of [undefined, 'application/activity+json']) {
+			expect(await service.checkAccess(request(ua, accept))).toEqual({ blocked: true, reason: 'unattributable' });
+			expect(await service.checkNoteAccess(note('exclude', []), request(ua, accept))).toBe(false);
+		}
 	});
 
-	test('should allow access when no User-Agent is provided', async () => {
-		const mockRequest = {
-			headers: {},
-		} as FastifyRequest;
-
-		const result = await service.checkAccess(mockRequest);
-		expect(result).toBeNull();
+	test.each(['Misskey/13.0.0 (https://local.example/)', 'tempura', undefined])('enforces the verified blocked host despite UA %s', async ua => {
+		expect(await service.checkAccess(request(ua), true, 'blocked.example')).toEqual({ blocked: true, reason: 'blocked', host: 'blocked.example' });
+		expect(await service.checkNoteAccess(note('exclude', []), request(ua), 'blocked.example')).toBe(false);
 	});
 
-	test('should allow access from non-ActivityPub clients', async () => {
-		const mockRequest = {
-			headers: {
-				'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-			},
-		} as FastifyRequest;
-
-		const result = await service.checkAccess(mockRequest);
-		expect(result).toBeNull();
+	test('allows a verified unrestricted host without a User-Agent', async () => {
+		expect(await service.checkAccess(request(), false, 'CLEAN.EXAMPLE')).toBeNull();
+		expect(instances.findOneBy).toHaveBeenCalledWith({ host: 'clean.example' });
 	});
 
-	test('should detect Mastodon User-Agent and check restrictions', async () => {
-		const mockRequest = {
-			headers: {
-				'user-agent': 'http.rb/5.3.0 (Mastodon/4.2.0; +https://mastodon.example.com/)',
-			},
-		} as FastifyRequest;
-
-		mockInstancesRepository.findOneBy.mockResolvedValue(null);
-
-		const result = await service.checkAccess(mockRequest);
-		expect(result).toBeNull();
+	test.each([
+		['suspended', { suspensionState: 'manuallySuspended', quarantineLimited: false }],
+		['quarantined', { suspensionState: 'none', quarantineLimited: true }],
+	])('keeps %s instance restrictions', async (reason, instance) => {
+		instances.findOneBy.mockResolvedValue(instance);
+		expect(await service.checkAccess(request('tempura'), true, 'remote.example')).toMatchObject({ blocked: true, reason });
 	});
 
-	test('should block access from blocked hosts', async () => {
-		const mockRequest = {
-			headers: {
-				'user-agent': 'http.rb/5.3.0 (Mastodon/4.2.0; +https://blocked.example.com/)',
-			},
-		} as FastifyRequest;
-
-		mockUtilityService.isBlockedHost.mockReturnValue(true);
-
-		const result = await service.checkAccess(mockRequest);
-		expect(result).toEqual({
-			blocked: true,
-			reason: 'blocked',
-			host: 'blocked.example.com',
-		});
-	});
-
-	test('should block access from silenced hosts', async () => {
-		const mockRequest = {
-			headers: {
-				'user-agent': 'http.rb/5.3.0 (Mastodon/4.2.0; +https://silenced.example.com/)',
-			},
-		} as FastifyRequest;
-
-		mockUtilityService.isSilencedHost.mockReturnValue(true);
-		mockInstancesRepository.findOneBy.mockResolvedValue({ quarantineLimited: false });
-
-		const result = await service.checkAccess(mockRequest);
-		expect(result).toEqual({
-			blocked: true,
-			reason: 'silenced',
-			host: 'silenced.example.com',
-		});
-	});
-
-	test('should block access from quarantined hosts', async () => {
-		const mockRequest = {
-			headers: {
-				'user-agent': 'http.rb/5.3.0 (Mastodon/4.2.0; +https://quarantined.example.com/)',
-			},
-		} as FastifyRequest;
-
-		mockInstancesRepository.findOneBy.mockResolvedValue({ quarantineLimited: true });
-
-		const result = await service.checkAccess(mockRequest);
-		expect(result).toEqual({
-			blocked: true,
-			reason: 'quarantined',
-			host: 'quarantined.example.com',
-		});
-	});
-
-	test('should detect Misskey User-Agent', async () => {
-		const mockRequest = {
-			headers: {
-				'user-agent': 'Misskey/13.0.0 (https://misskey.example.com/)',
-			},
-		} as FastifyRequest;
-
-		mockInstancesRepository.findOneBy.mockResolvedValue(null);
-
-		const result = await service.checkAccess(mockRequest);
-		expect(result).toBeNull();
-	});
-
-	test('should detect Pleroma User-Agent', async () => {
-		const mockRequest = {
-			headers: {
-				'user-agent': 'Pleroma 2.5.0; https://pleroma.example.com <team@pleroma.example.com>',
-			},
-		} as FastifyRequest;
-
-		mockInstancesRepository.findOneBy.mockResolvedValue(null);
-
-		const result = await service.checkAccess(mockRequest);
-		expect(result).toBeNull();
-	});
-
-	test('should ignore requests from own instance', async () => {
-		const mockRequest = {
-			headers: {
-				'user-agent': 'Misskey/13.0.0 (https://test.example.com/)',
-			},
-		} as FastifyRequest;
-
-		const result = await service.checkAccess(mockRequest);
-		expect(result).toBeNull();
-	});
-
-	test('should allow access from hosts not registered in instance table', async () => {
-		const mockRequest = {
-			headers: {
-				'accept': 'application/activity+json',
-				'user-agent': 'http.rb/5.3.0 (Mastodon/4.2.0; +https://unknown.example.com/)',
-			},
-		} as FastifyRequest;
-
-		mockInstancesRepository.findOneBy.mockResolvedValue(null);
-
-		const result = await service.checkAccess(mockRequest);
-		expect(result).toBeNull();
-	});
-
-	test('should block access from suspended hosts', async () => {
-		const mockRequest = {
-			headers: {
-				'accept': 'application/activity+json',
-				'user-agent': 'http.rb/5.3.0 (Mastodon/4.2.0; +https://suspended.example.com/)',
-			},
-		} as FastifyRequest;
-
-		mockInstancesRepository.findOneBy.mockResolvedValue({ suspensionState: 'autoSuspendedForNotResponding', quarantineLimited: false });
-
-		const result = await service.checkAccess(mockRequest);
-		expect(result).toEqual({
-			blocked: true,
-			reason: 'suspended',
-			host: 'suspended.example.com',
-		});
+	test('applies deliveryTargets to the verified host', async () => {
+		const req = request('Misskey/13.0.0 (https://allowed.example/)');
+		expect(await service.checkNoteAccess(note('include', ['allowed.example']), req, 'other.example')).toBe(false);
+		expect(await service.checkNoteAccess(note('exclude', ['other.example']), req, 'other.example')).toBe(false);
+		expect(await service.checkNoteAccess(note('include', ['other.example']), req, 'other.example')).toBe(true);
+		expect(await service.checkNoteAccess(note('exclude', ['allowed.example']), req, 'other.example')).toBe(true);
 	});
 });

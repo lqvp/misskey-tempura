@@ -54,9 +54,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private config: Config,
 	) {
 		super(meta, paramDef, async (ps, user, _1, _2, _3, ip, headers) => {
-			// SSRF pre-check: DownloadService uses unfiltered download agents,
-			// so loopback/private targets must be rejected before the download.
-			if (!validateRemoteUrl(ps.url, this.config)) {
+			// Reject unsafe URLs before starting the asynchronous download.
+			// DownloadService also validates and pins each connection target.
+			if (!await validateRemoteUrl(ps.url, this.config)) {
 				throw new ApiError({
 					message: 'Invalid url.',
 					code: 'INVALID_URL',

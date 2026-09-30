@@ -39,6 +39,8 @@ import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.j
 import type { AccountMoveService } from '@/core/AccountMoveService.js';
 import { checkHttps } from '@/misc/check-https.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
+import type { DriveService } from '@/core/DriveService.js';
+import { validateRemoteUrl } from '@/misc/validate-remote-url.js';
 import { AvatarDecorationService } from '@/core/AvatarDecorationService.js';
 import { getApId, getApType, getOneApHrefNullable, isActor, isCollection, isCollectionOrOrderedCollection, isPropertyValue } from '../type.js';
 import { extractApHashtags } from './tag.js';
@@ -79,6 +81,7 @@ export class ApPersonService implements OnModuleInit {
 	private logger: Logger;
 	private httpRequestService: HttpRequestService;
 	private avatarDecorationService: AvatarDecorationService;
+	private driveService: DriveService;
 
 	constructor(
 		private moduleRef: ModuleRef,
@@ -132,6 +135,7 @@ export class ApPersonService implements OnModuleInit {
 		this.accountMoveService = this.moduleRef.get('AccountMoveService');
 		this.httpRequestService = this.moduleRef.get('HttpRequestService');
 		this.avatarDecorationService = this.moduleRef.get('AvatarDecorationService');
+		this.driveService = this.moduleRef.get('DriveService');
 		this.logger = this.apLoggerService.logger;
 	}
 
@@ -304,7 +308,6 @@ export class ApPersonService implements OnModuleInit {
 
 		if (host) {
 			const instance = await this.federatedInstanceService.fetch(host);
-			console.log('avatarDecorationFetch: start');
 			if (instance?.softwareName === 'misskey') {
 				const remoteUserId = user.uri.split('/users/')[1];
 				const userMetaRequest = await this.httpRequestService.send(`https://${instance.host}/api/users/show`, {
@@ -317,20 +320,44 @@ export class ApPersonService implements OnModuleInit {
 					}),
 				});
 				const res: any = await userMetaRequest.json();
-				if (res.avatarDecorations) {
-					const localDecos = await this.avatarDecorationService.getAll();
-					// ローカルのデコレーションとして登録する
+				if (Array.isArray(res.avatarDecorations)) {
+					const localDecos = [...await this.avatarDecorationService.getAll()];
+					// ローカルのデコレーションとして登録し、ユーザーに付与するのは
+					// 検証を通過した項目のみ (remote payload は untrusted, vuln-0018)
+					const validatedDecorations: MiUser['avatarDecorations'] = [];
 					for (const deco of res.avatarDecorations) {
-						if (localDecos.some((v) => v.id === deco.id)) continue;
-						await this.avatarDecorationService.create({
+						// 既存 ID の項目も含め、保存対象に含める前に必ず検証する
+						if (typeof deco?.id !== 'string' || deco.id.length === 0 || deco.id.length > 128) continue;
+						if (typeof deco.url !== 'string' || !deco.url.startsWith('https://')) continue;
+						if (!await validateRemoteUrl(deco.url, this.config)) continue;
+						if (!localDecos.some((v) => v.id === deco.id)) {
+							try {
+								const file = await this.driveService.uploadFromUrl({ url: deco.url, user: null, force: true, isLink: false });
+								if (!file.type.startsWith('image/')) {
+									await this.driveService.deleteFile(file);
+									continue;
+								}
+								const created = await this.avatarDecorationService.create({
+									id: deco.id,
+									updatedAt: null,
+									url: file.url,
+									name: `import_${host}_${deco.id}`.slice(0, 256),
+									description: `Imported from ${host}`,
+								});
+								localDecos.push(created);
+							} catch (err) {
+								this.logger.warn('Failed to import remote avatar decoration', { stack: err });
+								continue;
+							}
+						}
+						validatedDecorations.push({
 							id: deco.id,
-							updatedAt: null,
-							url: deco.url,
-							name: `import_${host}_${deco.id}`,
-							description: `Imported from ${host}`,
+							angle: typeof deco.angle === 'number' && Number.isFinite(deco.angle) && deco.angle >= -0.5 && deco.angle <= 0.5 ? deco.angle : 0,
+							flipH: typeof deco.flipH === 'boolean' ? deco.flipH : false,
+							offsetX: typeof deco.offsetX === 'number' && Number.isFinite(deco.offsetX) && deco.offsetX >= -0.25 && deco.offsetX <= 0.25 ? deco.offsetX : 0,
 						});
 					}
-					Object.assign(returnData, { avatarDecorations: res.avatarDecorations });
+					Object.assign(returnData, { avatarDecorations: validatedDecorations });
 				}
 			}
 		}
@@ -397,8 +424,10 @@ export class ApPersonService implements OnModuleInit {
 
 		if (typeof person.followers === 'string') {
 			try {
-				const data = await fetch(person.followers, {
+				const data = await this.httpRequestService.send(person.followers, {
 					headers: { Accept: 'application/json' },
+					timeout: 10000,
+					size: 512 * 1024,
 				});
 				const jsonData = JSON.parse(await data.text());
 
@@ -412,8 +441,10 @@ export class ApPersonService implements OnModuleInit {
 
 		if (typeof person.following === 'string') {
 			try {
-				const data = await fetch(person.following, {
+				const data = await this.httpRequestService.send(person.following, {
 					headers: { Accept: 'application/json' },
+					timeout: 10000,
+					size: 512 * 1024,
 				});
 				const jsonData = JSON.parse(await data.text());
 
@@ -427,8 +458,10 @@ export class ApPersonService implements OnModuleInit {
 
 		if (typeof person.outbox === 'string') {
 			try {
-				const data = await fetch(person.outbox, {
+				const data = await this.httpRequestService.send(person.outbox, {
 					headers: { Accept: 'application/json' },
+					timeout: 10000,
+					size: 512 * 1024,
 				});
 				const jsonData = JSON.parse(await data.text());
 
@@ -663,8 +696,10 @@ export class ApPersonService implements OnModuleInit {
 
 		if (typeof person.followers === 'string') {
 			try {
-				const data = await fetch(person.followers, {
+				const data = await this.httpRequestService.send(person.followers, {
 					headers: { Accept: 'application/json' },
+					timeout: 10000,
+					size: 512 * 1024,
 				});
 				const jsonData = JSON.parse(await data.text());
 
@@ -678,8 +713,10 @@ export class ApPersonService implements OnModuleInit {
 
 		if (typeof person.following === 'string') {
 			try {
-				const data = await fetch(person.following, {
+				const data = await this.httpRequestService.send(person.following, {
 					headers: { Accept: 'application/json' },
+					timeout: 10000,
+					size: 512 * 1024,
 				});
 				const jsonData = JSON.parse(await data.text());
 
@@ -693,8 +730,10 @@ export class ApPersonService implements OnModuleInit {
 
 		if (typeof person.outbox === 'string') {
 			try {
-				const data = await fetch(person.outbox, {
+				const data = await this.httpRequestService.send(person.outbox, {
 					headers: { Accept: 'application/json' },
+					timeout: 10000,
+					size: 512 * 1024,
 				});
 				const jsonData = JSON.parse(await data.text());
 

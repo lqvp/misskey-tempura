@@ -114,6 +114,8 @@ export class QueryService {
 		}
 	}
 
+	// ugcVisibilityForVisitor: anonymous visitors must not be served UGC the instance
+	// lockdown denies them (server-level gate, same behavior as notes/show.ts)
 	@bindThis
 	public generateUgcVisibilityQueryForVisitor(q: SelectQueryBuilder<any>): void {
 		if (this.meta.ugcVisibilityForVisitor === 'none') {
@@ -273,8 +275,7 @@ export class QueryService {
 	public generateVisibilityQuery(q: SelectQueryBuilder<any>, me?: { id: MiUser['id'] } | null): void {
 		// This code must always be synchronized with the checks in NoteEntityService.isVisibleForMe and Stream abstract class Channel.isNoteVisibleForMe.
 		if (me == null) {
-			// TODO: ugcVisibilityForVisitor が local の場合の扱い (付随するリモートのノートを隠して表示するか) を検討する
-			if (this.meta.ugcVisibilityForVisitor === 'none') q.andWhere('1=0');
+			this.generateUgcVisibilityQueryForVisitor(q);
 
 			const profileSubQuery = this.userProfilesRepository.createQueryBuilder('profile')
 				.select('1')
@@ -288,8 +289,11 @@ export class QueryService {
 
 			q.andWhere(new Brackets(qb => {
 				qb
-					.where('note.visibility = \'public\'')
-					.orWhere('note.visibility = \'home\'')
+					.where(new Brackets(qb2 => {
+						qb2
+							.where('note.visibility = \'public\'')
+							.orWhere('note.visibility = \'home\'');
+					}))
 				// プロフィールで非表示設定されているノートを除外
 					.andWhere(`NOT EXISTS (${profileSubQuery.getQuery()})`);
 			}));
@@ -419,45 +423,5 @@ export class QueryService {
 				.andWhere(brakets('replyUser'))
 				.andWhere(brakets('renoteUser'));
 		}
-	}
-
-	/**
-	 * フォロー関係 (following テーブルの行) を、一覧の持ち主の公開範囲設定に従って閲覧者に開示してよいものだけに絞り込む。
-	 * - `followers`: フォロイーのフォロワー一覧として扱い、フォロイーの followersVisibility で判定する (users/followers と同一基準)
-	 * - `following`: フォロワーのフォロー一覧として扱い、フォロワーの followingVisibility で判定する (users/following と同一基準)
-	 * モデレーターによる例外は呼び出し元で扱う。
-	 */
-	@bindThis
-	public generateFollowingRelationVisibilityQuery(q: SelectQueryBuilder<any>, list: 'followers' | 'following', me?: { id: MiUser['id'] } | null): void {
-		const alias = q.alias;
-		const ownerColumn = list === 'followers' ? `${alias}.followeeId` : `${alias}.followerId`;
-		const visibilityColumn = list === 'followers' ? 'ownerProfile.followersVisibility' : 'ownerProfile.followingVisibility';
-
-		q.innerJoin(this.userProfilesRepository.metadata.targetName, 'ownerProfile', `ownerProfile.userId = ${ownerColumn}`);
-
-		if (me == null) {
-			q.andWhere(`${visibilityColumn} = 'public'`);
-			return;
-		}
-
-		const meFollowingQuery = this.followingsRepository.createQueryBuilder('meFollowing')
-			.select('meFollowing.followeeId')
-			.where('meFollowing.followerId = :meId');
-
-		q.andWhere(new Brackets(qb => {
-			qb
-				// 公開されている
-				.where(`${visibilityColumn} = 'public'`)
-				// または 自分自身の一覧
-				.orWhere(`${ownerColumn} = :meId`)
-				// または フォロワー限定で、自分が持ち主をフォローしている
-				.orWhere(new Brackets(qb => {
-					qb
-						.where(`${visibilityColumn} = 'followers'`)
-						.andWhere(`${ownerColumn} IN (${ meFollowingQuery.getQuery() })`);
-				}));
-		}));
-
-		q.setParameters({ meId: me.id });
 	}
 }

@@ -461,9 +461,12 @@ export class ClientServerService {
 				requireSigninToViewContents: false,
 			});
 
-			if (user == null) return null;
+			if (!user) return null;
 
-			if (this.meta.ugcVisibilityForVisitor === 'none' || (this.meta.ugcVisibilityForVisitor === 'local' && user.host != null)) {
+			// Anonymous (feed-reader) callers are subject to the same
+			// ugcVisibilityForVisitor gate applied by users/show / notes/show.
+			if (this.meta.ugcVisibilityForVisitor === 'none' ||
+				(this.meta.ugcVisibilityForVisitor === 'local' && user.host != null)) {
 				return null;
 			}
 

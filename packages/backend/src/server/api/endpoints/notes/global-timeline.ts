@@ -82,7 +82,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				.leftJoinAndSelect('renote.user', 'renoteUser');
 
 			this.queryService.generateBaseNoteFilteringQuery(query, me);
-			if (me == null) this.queryService.generateUgcVisibilityQueryForVisitor(query);
+			if (me == null) {
+				this.queryService.generateUgcVisibilityQueryForVisitor(query);
+			}
 			if (me) this.queryService.generateMutedUserRenotesQueryForNotes(query, me);
 			if (me) this.queryService.generateMutedUserQuoteQueryForNotes(query, me);
 

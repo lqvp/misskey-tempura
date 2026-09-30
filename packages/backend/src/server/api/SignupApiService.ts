@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import bcrypt from 'bcryptjs';
 import { IsNull, LessThanOrEqual } from 'typeorm';
@@ -17,14 +18,15 @@ import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { EmailService } from '@/core/EmailService.js';
 import { MiLocalUser } from '@/models/User.js';
 import { FastifyReplyError } from '@/misc/fastify-reply-error.js';
+import { escapeHtml } from '@/misc/escape-html.js';
 import { bindThis } from '@/decorators.js';
 import { L_CHARS, secureRndstr } from '@/misc/secure-rndstr.js';
+import { getIpHash } from '@/misc/get-ip-hash.js';
 import { RoleService } from '@/core/RoleService.js';
 import { SigninService } from './SigninService.js';
+import { RateLimiterService } from './RateLimiterService.js';
 import type { FindOptionsWhere } from 'typeorm';
 import type { FastifyRequest, FastifyReply } from 'fastify';
-
-const invitationCodeMailTimeoutMs = 1000 * 60 * 30;
 
 @Injectable()
 export class SignupApiService {
@@ -60,6 +62,7 @@ export class SignupApiService {
 		private signinService: SigninService,
 		private emailService: EmailService,
 		private roleService: RoleService,
+		private rateLimiterService: RateLimiterService,
 	) {
 	}
 
@@ -83,6 +86,18 @@ export class SignupApiService {
 		reply: FastifyReply,
 	) {
 		const body = request.body;
+
+		// 生 Fastify ルートは endpoint-meta の limit を通らないため、
+		// SigninApiService と同じ IP ベースのレート制限を明示的に適用する。
+		// captcha と secondsPerSignup はデフォルト無効であり、このルートは
+		// 無認証のまま無限の登録要求（メール通知のフォールアウト含む）を許してしまう。
+		if (this.config.enableIpRateLimit) {
+			const rateLimit = await this.rateLimiterService.limit({ key: 'signup', duration: 60 * 60 * 1000, max: 10, minInterval: 1000 }, getIpHash(request.ip));
+			if (rateLimit != null) {
+				reply.code(429);
+				return;
+			}
+		}
 
 		// Verify *Captcha
 		// ただしテスト時はこの機構は障害となるため無効にする
@@ -126,6 +141,8 @@ export class SignupApiService {
 		const emailAddress = body['emailAddress'];
 
 		let ticket: MiRegistrationTicket | null = null;
+		let slotToken: string | null = null;
+		let committed = false;
 
 		// ticket の取得を emailRequiredForSignup のチェック前に移動
 		if (invitationCode && typeof invitationCode === 'string') {
@@ -209,7 +226,7 @@ export class SignupApiService {
 				}
 
 				// 認証しておらず、メール送信から30分以内ならエラー
-				if (ticket.usedAt && ticket.usedAt.getTime() + invitationCodeMailTimeoutMs > Date.now()) {
+				if (ticket.usedAt && ticket.usedAt.getTime() + (1000 * 60 * 30) > Date.now()) {
 					reply.code(400);
 					return;
 				}
@@ -231,148 +248,194 @@ export class SignupApiService {
 				}
 			}
 
-			const lastSignup = await this.redisClient.get('signup:lastSignupAt'); // ISO8601
-			if (lastSignup && !usingInvitationCode) {
-				const lastSignupAt = new Date(lastSignup);
-				const now = new Date();
-				const diff = now.getTime() - lastSignupAt.getTime();
-				if (diff < this.meta.secondsPerSignup * 1000) {
+			if (!usingInvitationCode) {
+				// 登録スロットを NX + 期限付きで原子的に確保する。
+				// チェック→登録の TOCTOU 競合を防ぎ、マーカー書き込みが
+				// 無かったメール認証ブランチでも機能するようになる。
+				const intervalMs = this.meta.secondsPerSignup * 1000;
+				// 旧実装の失効なし signup:lastSignupAt キーは予約を恒久的に
+				// 妨げてしまうため、先に移行する:
+				// 旧キーの値が登録間隔内の間は従来どおり 429 を返し（キーは保持）、
+				// 登録間隔が経過したら旧キーを削除して予約を進める。
+				const legacySignupAt = await this.redisClient.get('signup:lastSignupAt');
+				if (legacySignupAt != null) {
+					const elapsed = Date.now() - new Date(legacySignupAt).getTime();
+					if (elapsed < intervalMs) {
+						throw new FastifyReplyError(429, 'SIGNUP_RATE_LIMIT_EXCEEDED');
+					}
+					await this.redisClient.del('signup:lastSignupAt');
+				}
+				// 予約専用の新しいキー（失効付き）を用いる
+				const token = randomUUID();
+				const reserved = await this.redisClient.set('signup:slotReserved', token, 'PX', intervalMs, 'NX');
+				if (reserved == null) {
 					throw new FastifyReplyError(429, 'SIGNUP_RATE_LIMIT_EXCEEDED');
 				}
+				slotToken = token;
 			}
 		}
 
-		if (this.meta.emailRequiredForSignup && !(ticket && ticket.skipEmailAuth)) {
-			if (!emailAddress) {
-				throw new FastifyReplyError(400, 'EMAIL_NOT_PROVIDED');
-			}
-			if (await this.usersRepository.exists({ where: { usernameLower: username.toLowerCase(), host: IsNull() } })) {
-				throw new FastifyReplyError(400, 'DUPLICATED_USERNAME');
-			}
+		try {
+			if (this.meta.emailRequiredForSignup && !(ticket && ticket.skipEmailAuth)) {
+				if (!emailAddress) {
+					throw new FastifyReplyError(400, 'EMAIL_NOT_PROVIDED');
+				}
+				if (await this.usersRepository.exists({ where: { usernameLower: username.toLowerCase(), host: IsNull() } })) {
+					throw new FastifyReplyError(400, 'DUPLICATED_USERNAME');
+				}
 
-			// Check deleted username duplication
-			if (await this.usedUsernamesRepository.exists({ where: { username: username.toLowerCase() } })) {
-				throw new FastifyReplyError(400, 'USED_USERNAME');
-			}
+				// Check deleted username duplication
+				if (await this.usedUsernamesRepository.exists({ where: { username: username.toLowerCase() } })) {
+					throw new FastifyReplyError(400, 'USED_USERNAME');
+				}
 
-			const isPreserved = this.meta.preservedUsernames.map(x => x.toLowerCase()).includes(username.toLowerCase());
-			if (isPreserved) {
-				throw new FastifyReplyError(400, 'DENIED_USERNAME');
-			}
+				const isPreserved = this.meta.preservedUsernames.map(x => x.toLowerCase()).includes(username.toLowerCase());
+				if (isPreserved) {
+					throw new FastifyReplyError(400, 'DENIED_USERNAME');
+				}
 
-			const code = secureRndstr(16, { chars: L_CHARS });
+				const code = secureRndstr(16, { chars: L_CHARS });
 
-			// Generate hash of password
-			const salt = await bcrypt.genSalt(8);
-			const hash = await bcrypt.hash(password, salt);
+				// Generate hash of password
+				const salt = await bcrypt.genSalt(8);
+				const hash = await bcrypt.hash(password, salt);
 
-			if (ticket && !await this.claimRegistrationTicket(ticket)) {
-				reply.code(400);
-				return;
-			}
+				if (ticket && !await this.claimRegistrationTicket(ticket)) {
+					reply.code(400);
+					return;
+				}
 
-			try {
-				const pendingUser = await this.userPendingsRepository.insertOne({
-					id: this.idService.gen(),
-					code,
-					email: emailAddress!,
-					username: username,
-					password: hash,
-					reason: reason,
-				});
-
-				const link = `${this.config.url}/signup-complete/${code}`;
-
-				this.emailService.sendEmail(emailAddress!, 'Signup',
-					`To complete signup, please click this link:<br><a href="${link}">${link}</a>`,
-					`To complete signup, please click this link: ${link}`);
-
-				if (ticket) {
-					await this.registrationTicketsRepository.update(ticket.id, {
-						pendingUserId: pendingUser.id,
+				try {
+					const pendingUser = await this.userPendingsRepository.insertOne({
+						id: this.idService.gen(),
+						code,
+						email: emailAddress!,
+						username: username,
+						password: hash,
+						reason: typeof reason === 'string' ? reason : '',
 					});
+
+					committed = true;
+
+					const link = `${this.config.url}/signup-complete/${code}`;
+
+					this.emailService.sendEmail(emailAddress!, 'Signup',
+						`To complete signup, please click this link:<br><a href="${link}">${link}</a>`,
+						`To complete signup, please click this link: ${link}`);
+
+					if (ticket) {
+						await this.registrationTicketsRepository.update(ticket.id, {
+							pendingUserId: pendingUser.id,
+						});
+					}
+				} catch (err) {
+					// 確保したコードが無駄に消費されたままになるのを防ぐ
+					if (ticket) await this.releaseRegistrationTicket(ticket);
+					throw err;
 				}
-			} catch (err) {
-				// 確保したコードが無駄に消費されたままになるのを防ぐ
-				if (ticket) await this.releaseRegistrationTicket(ticket);
-				throw err;
-			}
 
-			reply.code(204);
-			return;
-		} else if (this.meta.approvalRequiredForSignup && (ticket == null || ticket.skipApproval === false)) {
-			const { account } = await this.signupService.signup({
-				username, password, host, reason,
-			});
-				// 承認待ちフロー
-			if (emailAddress) {
-				this.emailService.sendEmail(emailAddress, 'Approval pending',
-					'Your account is now pending approval.<br>You will get notified when you have been accepted.',
-					'Your account is now pending approval. You will get notified when you have been accepted.');
-			}
-
-			// if (ticket) {
-			// 	await this.registrationTicketsRepository.update(ticket.id, {
-			// 		usedAt: new Date(),
-			// 		usedBy: account,
-			// 		usedById: account.id,
-			// 	});
-			// }
-
-			const administrators = await this.roleService.getAdministrators();
-
-			for (const administrator of administrators) {
-				const profile = await this.userProfilesRepository.findOneBy({ userId: administrator.id });
-
-				if (profile?.email) {
-					this.emailService.sendEmail(profile.email, 'New user awaiting approval',
-						`A new user called ${account.username} is awaiting approval with the following reason: "${reason}"`,
-						`A new user called ${account.username} is awaiting approval with the following reason: "${reason}"`);
-				}
-			}
-
-			this.redisClient.set('signup:lastSignupAt', new Date().toISOString());
-
-			reply.code(204);
-			return;
-		} else {
-			if (ticket && !await this.claimRegistrationTicket(ticket)) {
-				reply.code(400);
+				reply.code(204);
 				return;
-			}
+			} else if (this.meta.approvalRequiredForSignup && (ticket == null || ticket.skipApproval === false)) {
+				// 承認待ちフローでも招待コードを確保・消費する
+				// （消費しないと1つのコードで承認待ちアカウントを無限に作れる）
+				if (ticket && !await this.claimRegistrationTicket(ticket)) {
+					reply.code(400);
+					return;
+				}
 
-			try {
-				// ticket があれば承認待ちをスキップ
-				const { account, secret } = await this.signupService.signup({
-					username,
-					password,
-					host,
-					reason,
-					approved: (ticket != null && ticket.skipApproval) || !this.meta.approvalRequiredForSignup,
+				// 承認待ちフロー
+				const { account } = await this.signupService.signup({
+					username, password, host, reason,
+					onCommitted: () => { committed = true; },
+				}).catch(async err => {
+					// 確保したコードが無駄に消費されたままになるのを防ぐ。
+					// signup() はトランザクションコミット後の後続処理で失敗することも
+					// あるため、アカウント作成がコミットされていない場合のみ解除し、
+					// コミット済みの場合はチケットを消費したまま保持する
+					await this.releaseTicketIfSignupNotCommitted(ticket, committed);
+					throw err;
 				});
 
+				// 招待コードを消費する（承認待ちでもコードの再利用をさせない）
 				if (ticket) {
 					await this.registrationTicketsRepository.update(ticket.id, {
+						usedAt: new Date(),
 						usedBy: account,
 						usedById: account.id,
 					});
 				}
+				if (emailAddress) {
+					this.emailService.sendEmail(emailAddress, 'Approval pending',
+						'Your account is now pending approval.<br>You will get notified when you have been accepted.',
+						'Your account is now pending approval. You will get notified when you have been accepted.');
+				}
 
-				const res = await this.userEntityService.pack(account, account, {
-					schema: 'MeDetailed',
-					includeSecrets: true,
-				});
+				const administrators = await this.roleService.getAdministrators();
 
-				this.redisClient.set('signup:lastSignupAt', new Date().toISOString());
-				return {
-					...res,
-					token: secret,
-				};
-			} catch (err) {
-				// 確保したコードが無駄に消費されたままになるのを防ぐ
-				// (アカウントと紐付け済みの場合は release 側の条件により戻らない)
-				if (ticket) await this.releaseRegistrationTicket(ticket);
-				throw new FastifyReplyError(400, typeof err === 'string' ? err : (err as Error).toString());
+				for (const administrator of administrators) {
+					const profile = await this.userProfilesRepository.findOneBy({ userId: administrator.id });
+
+					if (profile?.email) {
+						this.emailService.sendEmail(profile.email, 'New user awaiting approval',
+							`A new user called ${escapeHtml(account.username)} is awaiting approval with the following reason: "${escapeHtml(reason ?? '')}"`,
+							`A new user called ${account.username} is awaiting approval with the following reason: "${reason ?? ''}"`);
+					}
+				}
+
+				// signup:slotReserved は signup スロット予約時に原子的に設定済み
+
+				reply.code(204);
+				return;
+			} else {
+				if (ticket && !await this.claimRegistrationTicket(ticket)) {
+					reply.code(400);
+					return;
+				}
+
+				try {
+					// ticket があれば承認待ちをスキップ
+					const { account, secret } = await this.signupService.signup({
+						username,
+						password,
+						host,
+						reason,
+						onCommitted: () => { committed = true; },
+						approved: (ticket != null && ticket.skipApproval) || !this.meta.approvalRequiredForSignup,
+					});
+
+					if (ticket) {
+						await this.registrationTicketsRepository.update(ticket.id, {
+							usedBy: account,
+							usedById: account.id,
+						});
+					}
+
+					const res = await this.userEntityService.pack(account, account, {
+						schema: 'MeDetailed',
+						includeSecrets: true,
+					});
+
+					// signup:slotReserved は signup スロット予約時に原子的に設定済み
+					return {
+						...res,
+						token: secret,
+					};
+				} catch (err) {
+					// 確保したコードが無駄に消費されたままになるのを防ぐ。
+					// (アカウント作成がコミット済みの場合はチケットを保持する。
+					//  アカウントと紐付け済みの場合も release 側の条件により戻らない)
+					await this.releaseTicketIfSignupNotCommitted(ticket, committed);
+					throw new FastifyReplyError(400, typeof err === 'string' ? err : (err as Error).toString());
+				}
+			}
+		} finally {
+			if (slotToken != null && !committed) {
+				// An expired reservation may already belong to another request.
+				await this.redisClient.eval(
+					'if redis.call("get", KEYS[1]) == ARGV[1] then return redis.call("del", KEYS[1]) else return 0 end',
+					1, 'signup:slotReserved', slotToken,
+				);
 			}
 		}
 	}
@@ -393,8 +456,11 @@ export class SignupApiService {
 			where.push({
 				id: ticket.id,
 				usedById: IsNull(),
-				usedAt: LessThanOrEqual(new Date(Date.now() - invitationCodeMailTimeoutMs)),
-				// pendingUser は usedAt より後に作られるので、usedAt 起点だと pendingUser の有効期限内に再使用できてしまう
+				usedAt: LessThanOrEqual(new Date(Date.now() - (1000 * 60 * 30))),
+				// ただし pending 登録がまだ有効な間は再claims不可。
+				// pendingUser.id は claims 後 (usedAt より後) に生成されるため、
+				// usedAt 起点の再claimsが pending の有効期限より先に成立し、
+				// 1つの招待コードから複数アカウントが作成できてしまう。
 				pendingUserId: IsNull(),
 			});
 		}
@@ -405,7 +471,9 @@ export class SignupApiService {
 
 		if ((result.affected ?? 0) > 0) return true;
 
-		// 期限切れの pendingUser に紐付いたままのコードは、紐付けを解除してから確保し直す
+		// 期限切れの pending に紐付いたまま再claimsできないコードが
+		// 永久に埋もれないよう、pending 自身の有効期限を超過していれば
+		// 片付けてから再claimsを試みる
 		if (this.meta.emailRequiredForSignup) {
 			const stale = await this.registrationTicketsRepository.findOneBy({
 				id: ticket.id,
@@ -414,7 +482,7 @@ export class SignupApiService {
 			if (stale?.pendingUserId != null) {
 				const pending = await this.userPendingsRepository.findOneBy({ id: stale.pendingUserId });
 				const pendingExpired = pending == null
-					|| this.idService.parse(pending.id).date.getTime() + invitationCodeMailTimeoutMs < Date.now();
+					|| this.idService.parse(pending.id).date.getTime() + (1000 * 60 * 30) < Date.now();
 				if (pendingExpired) {
 					const detached = await this.registrationTicketsRepository.update({
 						id: stale.id,
@@ -447,16 +515,42 @@ export class SignupApiService {
 		});
 	}
 
+	/**
+	 * アカウント作成がコミットされていない場合に限り、
+	 * 確保した招待コードを未使用に戻す
+	 *
+	 * SignupService.signup はアカウント作成トランザクションのコミット後
+	 * (後続の通知処理など) に失敗することがあるため、失敗時のみ解除し、
+	 * コミット済みだった場合はチケットを消費したまま保持する
+	 */
+	@bindThis
+	private async releaseTicketIfSignupNotCommitted(ticket: MiRegistrationTicket | null | undefined, committed: boolean): Promise<void> {
+		if (ticket == null) return;
+		if (!committed) {
+			await this.releaseRegistrationTicket(ticket);
+		}
+	}
+
 	@bindThis
 	public async signupPending(request: FastifyRequest<{ Body: { code: string; } }>, reply: FastifyReply) {
 		const body = request.body;
 
 		const code = body['code'];
 
+		// signup と同様に、生ルートは endpoint-meta の limit を通らないため
+		// IP ベースのレート制限を明示的に適用する
+		if (this.config.enableIpRateLimit) {
+			const rateLimit = await this.rateLimiterService.limit({ key: 'signupPending', duration: 60 * 60 * 1000, max: 10, minInterval: 1000 }, getIpHash(request.ip));
+			if (rateLimit != null) {
+				reply.code(429);
+				return;
+			}
+		}
+
 		try {
 			const pendingUser = await this.userPendingsRepository.findOneByOrFail({ code });
 
-			if (this.idService.parse(pendingUser.id).date.getTime() + invitationCodeMailTimeoutMs < Date.now()) {
+			if (this.idService.parse(pendingUser.id).date.getTime() + (1000 * 60 * 30) < Date.now()) {
 				throw new FastifyReplyError(400, 'EXPIRED');
 			}
 
@@ -501,7 +595,7 @@ export class SignupApiService {
 
 					if (profile?.email) {
 						this.emailService.sendEmail(profile.email, 'New user awaiting approval',
-							`A new user called ${pendingUser.username} is awaiting approval with the following reason: "${pendingUser.reason}"`,
+							`A new user called ${escapeHtml(pendingUser.username)} is awaiting approval with the following reason: "${escapeHtml(pendingUser.reason)}"`,
 							`A new user called ${pendingUser.username} is awaiting approval with the following reason: "${pendingUser.reason}"`);
 					}
 				}

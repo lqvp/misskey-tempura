@@ -85,6 +85,9 @@ export class FileServerDriveHandler {
 				attachStreamCleanup(image.data, file.cleanup);
 
 				reply.header('Content-Type', getSafeContentType(image.type));
+				if (request.headers.range == null) {
+					reply.header('Content-Length', file.file.size);
+				}
 				reply.header('Cache-Control', 'max-age=31536000, immutable');
 				reply.header('Content-Disposition',
 					contentDisposition(
@@ -102,10 +105,9 @@ export class FileServerDriveHandler {
 				}).toString();
 
 				setFileResponseHeaders(reply, { mime: file.mime, filename });
-				const size = (await fs.promises.stat(file.path)).size;
-				return handleRangeRequest(reply, request.headers.range as string | undefined, size, file.path);
+				return handleRangeRequest(reply, request.headers.range as string | undefined, file.file.size, file.path);
 			} else {
-				setFileResponseHeaders(reply, { mime: file.file.type, filename: file.filename });
+				setFileResponseHeaders(reply, { mime: file.file.type, filename: file.filename, size: file.file.size });
 				return handleRangeRequest(reply, request.headers.range as string | undefined, file.file.size, file.path);
 			}
 		} catch (e) {

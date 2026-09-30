@@ -268,10 +268,9 @@ export class FileServerProxyHandler {
 			return await this.fileResolver.resolveFileByAccessKey(key);
 		}
 
-		// SSRF pre-check for attacker-controlled download URLs: the download path
-		// (DownloadService) uses unfiltered agents, so this validation is the only
-		// egress control on this route.
-		if (!validateRemoteUrl(url, this.config)) {
+		// Reject unsafe URLs early; DownloadService also validates and pins
+		// each connection target, including redirects.
+		if (!await validateRemoteUrl(url, this.config)) {
 			throw new StatusError('Invalid url', 400, 'Invalid url');
 		}
 

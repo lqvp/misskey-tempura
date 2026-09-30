@@ -6,6 +6,7 @@
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { bindThis } from '@/decorators.js';
+import { RoleService } from '@/core/RoleService.js';
 import { NoteStreamingHidingService } from '../NoteStreamingHidingService.js';
 import { isRenotePacked, isQuotePacked } from '@/misc/is-renote.js';
 import { DI } from '@/di-symbols.js';
@@ -30,6 +31,7 @@ export class RoleTimelineChannel extends Channel {
 		private rolesRepository: RolesRepository,
 
 		private noteEntityService: NoteEntityService,
+		private roleservice: RoleService,
 		private noteStreamingHidingService: NoteStreamingHidingService,
 	) {
 		super(request);
@@ -37,26 +39,29 @@ export class RoleTimelineChannel extends Channel {
 	}
 
 	@bindThis
-	public async init(params: JsonObject) {
+	public async init(params: JsonObject): Promise<boolean> {
 		if (typeof params.roleId !== 'string') return false;
 		this.roleId = params.roleId;
 
-		if (!await this.isAvailable()) return false;
+		// REST 側の roles/notes と同じゲート: isPublic かつ isExplorable のロールのみ購読を許可する。
+		// 匿名購読者 (requireCredential: false) が非公開ロールのタイムラインに
+		// ライブ接続できてしまうのを防ぐ。
+		const role = await this.rolesRepository.findOneBy({
+			id: this.roleId,
+			isPublic: true,
+		});
+		if (role == null || !role.isExplorable) {
+			return false;
+		}
 
 		this.subscriber.on(`roleTimelineStream:${this.roleId}`, this.onEvent);
 		return true;
 	}
 
 	@bindThis
-	private async isAvailable() {
-		return await this.rolesRepository.exists({
-			where: { id: this.roleId, isPublic: true, isExplorable: true },
-		});
-	}
-
-	@bindThis
 	private async onEvent(data: GlobalEvents['roleTimeline']['payload']) {
-		if (!await this.isAvailable()) return;
+		const role = await this.rolesRepository.findOneBy({ id: this.roleId, isPublic: true });
+		if (role == null || !(await this.roleservice.isExplorable({ id: this.roleId }))) return;
 
 		if (data.type === 'note') {
 			let note = data.body;

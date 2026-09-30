@@ -9,7 +9,7 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import { AnnouncementService } from '@/core/AnnouncementService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { DI } from '@/di-symbols.js';
-import type { AnnouncementsRepository, AnnouncementRolesRepository } from '@/models/_.js';
+import type { AnnouncementsRepository, AnnouncementRolesRepository, MiMeta } from '@/models/_.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -56,8 +56,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
         private announcementService: AnnouncementService,
         private roleService: RoleService,
+
+        @Inject(DI.meta)
+        private serverSettings: MiMeta,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			// ugcVisibilityForVisitor: anonymous visitors must not read announcements on locked-down instances
+			// (announcements.ts is requireCredential; this endpoint must stay consistent for 'none' instances)
+			if (me == null && this.serverSettings.ugcVisibilityForVisitor === 'none') {
+				throw new ApiError(meta.errors.noSuchAnnouncement);
+			}
+
 			const announcement = await this.announcementsRepository.findOneBy({ id: ps.announcementId });
 			if (announcement == null) {
 				throw new ApiError(meta.errors.noSuchAnnouncement);

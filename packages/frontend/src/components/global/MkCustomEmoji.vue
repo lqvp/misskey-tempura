@@ -66,7 +66,7 @@ const props = defineProps<{
 	ignoreMuted?: boolean;
 }>();
 
-const react = inject(DI.mfmEmojiReactCallback, null);
+const react = inject(DI.mfmEmojiReactCallback);
 
 const customEmojiName = computed(() => normalizeCustomEmojiName(props.name));
 const isLocal = computed(() => isLocalCustomEmojiName(customEmojiName.value, props.host));

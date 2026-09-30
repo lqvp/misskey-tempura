@@ -73,14 +73,19 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		super(meta, paramDef, async (ps, me) => {
 			const decorations = await this.avatarDecorationService.getAll(true);
 			const allRoles = await this.roleService.getRoles();
-			const visibleRoles = me == null ? allRoles.filter(role => role.isPublic) : allRoles;
+
+			// ugcVisibilityForVisitor 系と同じ匿名列挙境界: 非公開ロールの ID を
+			// 認証なしで列挙できないようにする (vuln-0046)
+			const isRoleIdVisible = (me == null)
+				? (roleId: string): boolean => allRoles.some(role => role.id === roleId && role.isPublic)
+				: (roleId: string): boolean => allRoles.some(role => role.id === roleId);
 
 			return decorations.map(decoration => ({
 				id: decoration.id,
 				name: decoration.name,
 				description: decoration.description,
 				url: decoration.url,
-				roleIdsThatCanBeUsedThisDecoration: decoration.roleIdsThatCanBeUsedThisDecoration.filter(roleId => visibleRoles.some(role => role.id === roleId)),
+				roleIdsThatCanBeUsedThisDecoration: decoration.roleIdsThatCanBeUsedThisDecoration.filter(isRoleIdVisible),
 				category: decoration.category,
 			}));
 		});
