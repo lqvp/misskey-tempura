@@ -101,7 +101,7 @@ export class ActivityPubServerService {
 				});
 				if (request.headers.host !== this.config.host) return undefined;
 				const authUser = await this.apDbResolverService.getAuthUserFromKeyId(signature.keyId)
-					?? await this.apDbResolverService.getAuthUserFromApId(signature.keyId);
+					?? await this.apDbResolverService.getAuthUserFromApId(signature.keyId.split('#')[0]);
 				if (authUser?.key == null || authUser.key.keyId !== signature.keyId || authUser.user.host == null) return undefined;
 				if (!httpSignature.verifySignature(signature, authUser.key.keyPem)) return undefined;
 				return this.utilityService.toPuny(authUser.user.host.toLowerCase());

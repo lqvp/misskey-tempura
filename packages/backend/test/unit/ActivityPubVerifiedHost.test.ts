@@ -60,7 +60,6 @@ describe('ActivityPub verified host on note routes', () => {
 	});
 });
 
-
 describe('ActivityPub unsigned bootstrap', () => {
 	test.each([
 		['/users/actor', 'system.actor', null, 200],
@@ -92,6 +91,31 @@ describe('ActivityPub unsigned bootstrap', () => {
 			expect((await app.inject({ url: path, headers: headers(path, false) })).statusCode).toBe(404);
 			settings.federation = 'none';
 			expect((await app.inject({ url: path, headers: unsigned })).statusCode).toBe(403);
+		} finally {
+			await app.close();
+		}
+	});
+});
+
+describe('ActivityPub actor fallback', () => {
+	test.each([true, false])('removes only the fragment for discovery and requires the original key ID (matching=%s)', async matching => {
+		const resolver = {
+			getAuthUserFromKeyId: vi.fn(async () => null),
+			getAuthUserFromApId: vi.fn(async () => ({
+				user: { host: 'signer.example' },
+				key: { keyId: matching ? keyId : 'https://signer.example/users/actor#other', keyPem: keys.publicKey.export({ type: 'spki', format: 'pem' }) },
+			})),
+		};
+		const service: any = Object.assign(Object.create(ActivityPubServerService.prototype), {
+			config: { host: 'local.example' }, verifiedHosts: new WeakMap(), apDbResolverService: resolver,
+			utilityService: { toPuny: (host: string) => host },
+		});
+		const app = Fastify();
+		app.get('/verify', async request => ({ host: await service.getVerifiedHost(request) }));
+		try {
+			expect((await app.inject({ url: '/verify', headers: headers('/verify') })).json()).toEqual(matching ? { host: 'signer.example' } : {});
+			expect(resolver.getAuthUserFromKeyId).toHaveBeenCalledWith(keyId);
+			expect(resolver.getAuthUserFromApId).toHaveBeenCalledWith('https://signer.example/users/actor');
 		} finally {
 			await app.close();
 		}

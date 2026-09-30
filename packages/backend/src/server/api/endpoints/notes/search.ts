@@ -96,6 +96,27 @@ export const paramDef = {
 	required: [],
 } as const;
 
+// Keep balanced groups (including their operator prefix) together in advanced OR searches.
+function splitGroupedTerms(query: string): string[] {
+	const terms: string[] = [];
+	let depth = 0;
+	let start = 0;
+	for (let i = 0; i < query.length; i++) {
+		if (query[i] === '(') depth++;
+		if (query[i] === ')') {
+			if (depth === 0) return query.split(/\s+/);
+			depth--;
+		}
+		if (depth === 0 && /\s/.test(query[i])) {
+			terms.push(query.slice(start, i));
+			start = i + 1;
+		}
+	}
+	if (depth !== 0) return query.split(/\s+/);
+	terms.push(query.slice(start));
+	return terms;
+}
+
 // TODO: ロジックをサービスに切り出す
 
 @Injectable()
@@ -120,7 +141,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			// 複数の検索語がある場合 (全角スペースなどの空白類でも区切る)
 			if (ps.query) {
-				const terms = ps.query.split(/\s+/).map((term: string) => {
+				const rawTerms = ps.advancedSyntax && ps.searchOperator === 'or' ? splitGroupedTerms(ps.query) : ps.query.split(/\s+/);
+				const terms = rawTerms.map((term: string) => {
 					// URLエンコードされた文字列のみをデコード
 					try {
 						return decodeURIComponent(term).trim();

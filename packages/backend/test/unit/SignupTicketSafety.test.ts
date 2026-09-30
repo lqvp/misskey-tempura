@@ -67,3 +67,51 @@ describe('registration ticket safety', () => {
 		expect(onCommitted).toHaveBeenCalledTimes(outcome === 'committed' ? 1 : 0);
 	});
 });
+
+describe('signup interval reservation', () => {
+	test.each(['normal', 'approval', 'email'])('%s releases pre-commit failures but retains committed reservations', async flow => {
+		for (const outcome of ['failed', 'committed', 'success', 'replaced', 'denied'] as const) {
+			let storedToken: string | null = null;
+			const redis = {
+				get: vi.fn().mockResolvedValue(null),
+				set: vi.fn(async (_key: string, token: string) => {
+					if (outcome === 'denied') return null;
+					storedToken = token;
+					return 'OK';
+				}),
+				eval: vi.fn(async (_script: string, _count: number, _key: string, token: string) => {
+					if (storedToken === token) storedToken = null;
+				}),
+			};
+			const failBeforeCommit = () => {
+				if (outcome === 'replaced') storedToken = 'another-reservation';
+				if (outcome === 'failed' || outcome === 'replaced') throw new Error('creation failed');
+			};
+			const service = makeService(SignupApiService, {
+				meta: { secondsPerSignup: 60, approvalRequiredForSignup: flow === 'approval', emailRequiredForSignup: flow === 'email', preservedUsernames: [] },
+				redisClient: redis, config: { url: 'https://local.example' }, idService: { gen: () => 'pending' },
+				usersRepository: { exists: async () => false }, usedUsernamesRepository: { exists: async () => false },
+				userPendingsRepository: { insertOne: async () => { failBeforeCommit(); return { id: 'pending' }; } },
+				emailService: {
+					validateEmailForAccount: async () => ({ available: true }),
+					sendEmail: () => { if (outcome === 'committed') throw new Error('email failed'); },
+				},
+				roleService: { getAdministrators: async () => [] }, userEntityService: { pack: async () => ({}) },
+				signupService: { signup: async (opts: any) => {
+					failBeforeCommit();
+					opts.onCommitted();
+					if (outcome === 'committed') throw new Error('notification failed');
+					return { account: { id: 'account' }, secret: 'local-test' };
+				} },
+			});
+			const result = service.signup({ body: { username: 'new', password: 'pass', reason: '', emailAddress: 'new@example.com' } }, { code: vi.fn() });
+			if (outcome === 'success') await result;
+			else await expect(result).rejects.toThrow();
+			expect(redis.set).toHaveBeenCalledWith('signup:slotReserved', expect.stringMatching(/^[0-9a-f-]{36}$/), 'PX', 60000, 'NX');
+			expect(redis.eval).toHaveBeenCalledTimes(outcome === 'failed' || outcome === 'replaced' ? 1 : 0);
+			if (outcome === 'failed' || outcome === 'denied') expect(storedToken).toBeNull();
+			else if (outcome === 'replaced') expect(storedToken).toBe('another-reservation');
+			else expect(storedToken).toBe(redis.set.mock.calls[0][1]);
+		}
+	});
+});

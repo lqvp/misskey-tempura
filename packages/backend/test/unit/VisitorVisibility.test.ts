@@ -4,12 +4,17 @@
  */
 
 import { describe, test, expect, vi } from 'vitest';
+import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { SearchService } from '@/core/SearchService.js';
 import FeaturedEndpoint from '@/server/api/endpoints/notes/featured.js';
 import { FeedService } from '@/server/web/FeedService.js';
 import { RoleTimelineChannel } from '@/server/api/stream/channels/role-timeline.js';
 
-const makeService = (type: any, fields: Record<string, unknown>): any => Object.assign(Object.create(type.prototype), fields);
+const makeService = (type: any, fields: Record<string, unknown>): any => {
+	const service = Object.create(type.prototype);
+	for (const [key, value] of Object.entries(fields)) Object.defineProperty(service, key, { value });
+	return service;
+};
 
 describe('visitor visibility before limits', () => {
 	test.each(['local', 'all', 'none'])('Meilisearch applies visitor visibility %s before limiting', async visibility => {
@@ -68,5 +73,26 @@ describe('visitor visibility before limits', () => {
 		isPublic = false;
 		await service.onEvent(event);
 		expect(send).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe('reaction diff visitor visibility', () => {
+	test.each(['none', 'local', 'all'])('applies %s only to visitors and retains note visibility checks', async visibility => {
+		const notes = [
+			{ id: 'local', userHost: null, reactions: {} },
+			{ id: 'remote', userHost: 'remote.example', reactions: {} },
+			{ id: 'private', userHost: null, reactions: {} },
+		];
+		const service = makeService(NoteEntityService, {
+			meta: { ugcVisibilityForVisitor: visibility }, notesRepository: { find: async () => notes },
+			isVisibleForMe: vi.fn(async (note: any) => note.id !== 'private'),
+			reactionService: { convertLegacyReactions: (value: any) => value },
+			reactionsBufferingService: { mergeReactions: (value: any) => value },
+			customEmojiService: { populateEmojis: async () => [] },
+		});
+		expect((await service.fetchDiffs(notes.map(n => n.id))).map((n: any) => n.id))
+			.toEqual(visibility === 'none' ? [] : visibility === 'local' ? ['local'] : ['local', 'remote']);
+		expect(service.isVisibleForMe).toHaveBeenCalledTimes(visibility === 'none' ? 0 : visibility === 'local' ? 2 : 3);
+		expect((await service.fetchDiffs(notes.map(n => n.id), 'viewer')).map((n: any) => n.id)).toEqual(['local', 'remote']);
 	});
 });

@@ -671,6 +671,8 @@ export class NoteEntityService implements OnModuleInit {
 		// leaks to any caller who knows the note id (IDOR).
 		const notes: MiNote[] = [];
 		for (const note of fetched) {
+			if (meId == null && (this.meta.ugcVisibilityForVisitor === 'none' ||
+				(this.meta.ugcVisibilityForVisitor === 'local' && note.userHost != null))) continue;
 			if (await this.isVisibleForMe(note, meId)) {
 				notes.push(note);
 			}

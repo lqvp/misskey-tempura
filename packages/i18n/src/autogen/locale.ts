@@ -16426,7 +16426,7 @@ export interface Locale extends ILocale {
          */
         "excludeWords": string;
         /**
-         * カンマ区切りで複数の除外語を入力できます（例：犬,猫,鳥）
+         * カンマ・空白・改行で区切って複数の除外語を入力できます。空白を含む語句も空白で分割されます（例：犬,猫 鳥 → 犬・猫・鳥）
          */
         "excludeWordsCaption": string;
         /**
@@ -16434,7 +16434,7 @@ export interface Locale extends ILocale {
          */
         "advancedSyntax": string;
         /**
-         * 語の先頭に ~（部分一致）・-（除外）、末尾に *（前方一致）を使えるようにします。pgroonga利用時のみ有効です。
+         * 語の先頭に -（除外）、末尾に *（前方一致）を使えるようにします。pgroonga利用時のみ有効です。
          */
         "advancedSyntaxCaption": string;
         "_searchOperator": {

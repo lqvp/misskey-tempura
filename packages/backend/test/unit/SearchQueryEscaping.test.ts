@@ -4,6 +4,7 @@
  */
 
 import { describe, expect, test, vi } from 'vitest';
+import SearchEndpoint from '@/server/api/endpoints/notes/search.js';
 import { Brackets } from 'typeorm';
 import { SearchService, type SearchOpts } from '@/core/SearchService.js';
 
@@ -67,5 +68,24 @@ describe('PGroonga search query compilation', () => {
 	test('disabled advanced syntax and lone minus stay literal', async () => {
 		expect((await compile('-cat -', {})).parameters).toEqual({ pgQuery: '"-cat" "-"' });
 		expect((await compile('-', { advancedSyntax: true })).parameters).toEqual({ pgQuery: '"-"' });
+	});
+});
+
+describe('notes/search term boundaries', () => {
+	test.each([
+		['cat +(dog bird) fish', true, 'or', 'cat OR +(dog bird) OR fish'],
+		['cat +((dog bird) fish)\tfox', true, 'or', 'cat OR +((dog bird) fish) OR fox'],
+		['  +(犬　猫\n鳥)  魚 ', true, 'or', '+(犬　猫\n鳥) OR 魚'],
+		['cat +(dog bird', true, 'or', 'cat OR +(dog OR bird'],
+		['cat dog) bird', true, 'or', 'cat OR dog) OR bird'],
+		['cat +(dog bird)', false, 'or', 'cat OR +(dog OR bird)'],
+		['cat +(dog bird)', true, 'and', 'cat +(dog bird)'],
+		['cat%20dog %ZZ', true, 'or', 'cat dog OR %ZZ'],
+	] as const)('parses %s (advanced=%s, operator=%s)', async (query, advancedSyntax, searchOperator, expected) => {
+		const searchNote = vi.fn().mockResolvedValue([]);
+		const endpoint = new SearchEndpoint({ packMany: async (notes: any) => notes } as any, { searchNote } as any,
+			{ getUserPolicies: async () => ({ canSearchNotes: true }) } as any, {} as any);
+		await endpoint.exec({ query, advancedSyntax, searchOperator }, null, null);
+		expect(searchNote.mock.calls[0][0]).toBe(expected);
 	});
 });
