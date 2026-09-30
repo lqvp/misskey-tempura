@@ -288,8 +288,11 @@ export class QueryService {
 
 			q.andWhere(new Brackets(qb => {
 				qb
-					.where('note.visibility = \'public\'')
-					.orWhere('note.visibility = \'home\'')
+					.where(new Brackets(qb2 => {
+						qb2
+							.where('note.visibility = \'public\'')
+							.orWhere('note.visibility = \'home\'');
+					}))
 				// プロフィールで非表示設定されているノートを除外
 					.andWhere(`NOT EXISTS (${profileSubQuery.getQuery()})`);
 			}));

@@ -17,6 +17,7 @@ import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { EmailService } from '@/core/EmailService.js';
 import { MiLocalUser } from '@/models/User.js';
 import { FastifyReplyError } from '@/misc/fastify-reply-error.js';
+import { escapeHtml } from '@/misc/escape-html.js';
 import { bindThis } from '@/decorators.js';
 import { L_CHARS, secureRndstr } from '@/misc/secure-rndstr.js';
 import { RoleService } from '@/core/RoleService.js';
@@ -278,7 +279,7 @@ export class SignupApiService {
 					email: emailAddress!,
 					username: username,
 					password: hash,
-					reason: reason,
+					reason: typeof reason === 'string' ? reason : '',
 				});
 
 				const link = `${this.config.url}/signup-complete/${code}`;
@@ -326,7 +327,7 @@ export class SignupApiService {
 
 				if (profile?.email) {
 					this.emailService.sendEmail(profile.email, 'New user awaiting approval',
-						`A new user called ${account.username} is awaiting approval with the following reason: "${reason}"`,
+						`A new user called ${escapeHtml(account.username)} is awaiting approval with the following reason: "${escapeHtml(reason)}"`,
 						`A new user called ${account.username} is awaiting approval with the following reason: "${reason}"`);
 				}
 			}
@@ -501,7 +502,7 @@ export class SignupApiService {
 
 					if (profile?.email) {
 						this.emailService.sendEmail(profile.email, 'New user awaiting approval',
-							`A new user called ${pendingUser.username} is awaiting approval with the following reason: "${pendingUser.reason}"`,
+							`A new user called ${escapeHtml(pendingUser.username)} is awaiting approval with the following reason: "${escapeHtml(pendingUser.reason)}"`,
 							`A new user called ${pendingUser.username} is awaiting approval with the following reason: "${pendingUser.reason}"`);
 					}
 				}
