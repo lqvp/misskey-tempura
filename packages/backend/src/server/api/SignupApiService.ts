@@ -423,6 +423,11 @@ export class SignupApiService {
 				id: ticket.id,
 				usedById: IsNull(),
 				usedAt: LessThanOrEqual(new Date(Date.now() - (1000 * 60 * 30))),
+				// ただし pending 登録がまだ有効な間は再claims不可。
+				// pendingUser.id は claims 後 (usedAt より後) に生成されるため、
+				// usedAt 起点の再claimsが pending の有効期限より先に成立し、
+				// 1つの招待コードから複数アカウントが作成できてしまう。
+				pendingUserId: IsNull(),
 			});
 		}
 
@@ -430,7 +435,29 @@ export class SignupApiService {
 			usedAt: new Date(),
 		});
 
-		return (result.affected ?? 0) > 0;
+		if ((result.affected ?? 0) > 0) return true;
+
+		// 期限切れの pending に紐付いたまま再claimsできないコードが
+		// 永久に埋もれないよう、pending 自身の有効期限を超過していれば
+		// 片付けてから再claimsを試みる
+		if (this.meta.emailRequiredForSignup) {
+			const stale = await this.registrationTicketsRepository.findOneBy({
+				id: ticket.id,
+				usedById: IsNull(),
+			});
+			if (stale?.pendingUserId != null) {
+				const pending = await this.userPendingsRepository.findOneBy({ id: stale.pendingUserId });
+				const pendingExpired = pending == null
+					|| this.idService.parse(pending.id).date.getTime() + (1000 * 60 * 30) < Date.now();
+				if (pendingExpired) {
+					if (pending != null) await this.userPendingsRepository.delete({ id: pending.id });
+					await this.registrationTicketsRepository.update({ id: stale.id }, { pendingUserId: null });
+					return this.claimRegistrationTicket(ticket);
+				}
+			}
+		}
+
+		return false;
 	}
 
 	/**
