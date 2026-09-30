@@ -42,7 +42,15 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		super(meta, paramDef, async (ps, me) => {
 			await this.chatService.checkChatAvailability(me.id, 'write');
 
-			await this.chatService.unreact(ps.messageId, me.id, ps.reaction);
+			// Normalize both "message does not exist" and "message exists but is
+			// not yours" to the same error so the response cannot be used as an
+			// existence oracle for arbitrary message ids.
+			try {
+				await this.chatService.unreact(ps.messageId, me.id, ps.reaction);
+			} catch (e) {
+				if (e instanceof ApiError) throw e;
+				throw new ApiError(meta.errors.noSuchMessage);
+			}
 		});
 	}
 }
