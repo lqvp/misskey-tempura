@@ -761,6 +761,11 @@ export class ActivityPubServerService {
 				return;
 			}
 
+			if (!await this.activityPubAccessControlService.checkNoteAccess(note, request)) {
+				reply.code(404);
+				return;
+			}
+
 			reply.header('Cache-Control', 'public, max-age=180');
 			this.setResponseType(request, reply);
 			return (this.apRendererService.addContext(await this.packActivity(note)));
