@@ -9,6 +9,8 @@ import { bindThis } from '@/decorators.js';
 import { RoleService } from '@/core/RoleService.js';
 import { NoteStreamingHidingService } from '../NoteStreamingHidingService.js';
 import { isRenotePacked, isQuotePacked } from '@/misc/is-renote.js';
+import { DI } from '@/di-symbols.js';
+import type { RolesRepository } from '@/models/_.js';
 import type { GlobalEvents } from '@/core/GlobalEventService.js';
 import type { JsonObject } from '@/misc/json-value.js';
 import Channel, { type ChannelRequest } from '../channel.js';
@@ -25,6 +27,9 @@ export class RoleTimelineChannel extends Channel {
 		@Inject(REQUEST)
 		request: ChannelRequest,
 
+		@Inject(DI.rolesRepository)
+		private rolesRepository: RolesRepository,
+
 		private noteEntityService: NoteEntityService,
 		private roleservice: RoleService,
 		private noteStreamingHidingService: NoteStreamingHidingService,
@@ -34,11 +39,23 @@ export class RoleTimelineChannel extends Channel {
 	}
 
 	@bindThis
-	public async init(params: JsonObject) {
-		if (typeof params.roleId !== 'string') return;
+	public async init(params: JsonObject): Promise<boolean> {
+		if (typeof params.roleId !== 'string') return false;
 		this.roleId = params.roleId;
 
+		// REST 側の roles/notes と同じゲート: isPublic かつ isExplorable のロールのみ購読を許可する。
+		// 匿名購読者 (requireCredential: false) が非公開ロールのタイムラインに
+		// ライブ接続できてしまうのを防ぐ。
+		const role = await this.rolesRepository.findOneBy({
+			id: this.roleId,
+			isPublic: true,
+		});
+		if (role == null || !role.isExplorable) {
+			return false;
+		}
+
 		this.subscriber.on(`roleTimelineStream:${this.roleId}`, this.onEvent);
+		return true;
 	}
 
 	@bindThis
