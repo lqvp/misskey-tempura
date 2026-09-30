@@ -98,6 +98,7 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import { ensureSignin } from '@/i.js';
 import MkInfo from '@/components/MkInfo.vue';
+import MkInput from '@/components/MkInput.vue';
 import MkRadios from '@/components/MkRadios.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import { definePage } from '@/page.js';
