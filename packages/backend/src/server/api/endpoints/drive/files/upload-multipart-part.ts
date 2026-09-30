@@ -138,6 +138,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				// クォータ超過になるのを防ぐ
 				const unlock = await acquireDistributedLock(this.redisClient, `multipart-quota:${me.id}`, 30 * 1000, 50, 100);
 				try {
+					// ロック待機中に期限切れクリーンアップや完了処理がスティージング
+					// ディレクトリとレコードを削除した可能性がある。そのまま書き戻すと
+					// DB レコードのない孤立ディレクトリになりクォータ集計から逃れるため、
+					// ロック取得後にセッションの存在を再検証する
+					if (!(await this.multipartUploadsRepository.exists({ where: { id: multipartUpload.id, userId: me.id } }))) {
+						throw new ApiError(meta.errors.noSuchMultipartUpload);
+					}
+
 					// 新しいパートをスティージングに加えた合計がアカウントの
 					// クォータを超えたら拒否する。既存パートの置換の場合は
 					// そのバイト数を差し引く

@@ -199,6 +199,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					requestHeaders: headers,
 				});
 
+				// Delete the multipart upload record
+				// (レコードを先に消す: 逆順だとタイムスリップしたパート書き込みが
+				//  ディレクトリを再生成して孤立バイトになり、クリーンアップは
+				//  レコードを辿るため永久に残る。残りは再検証と orphan reap で回収する)
+				await this.multipartUploadsRepository.delete({
+					id: multipartUpload.id,
+				});
+
 				// Clean up temp files（新旧どちらのスティージングディレクトリも削除する）
 				for (const dir of [getMultipartStagingDir(this.config.multipartTempDir, multipartUpload.id), getLegacyMultipartStagingDir(multipartUpload.id)]) {
 					try {
@@ -209,11 +217,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						console.error(`Failed to clean up multipart upload parts in ${dir}`, e);
 					}
 				}
-
-				// Delete the multipart upload record
-				await this.multipartUploadsRepository.delete({
-					id: multipartUpload.id,
-				});
 
 				return await this.driveFileEntityService.pack(driveFile, { self: true });
 			} catch (err) {

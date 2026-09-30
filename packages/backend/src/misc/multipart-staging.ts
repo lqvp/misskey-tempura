@@ -20,12 +20,26 @@ export function getMultipartStagingDir(dataDir: string, uploadId: string): strin
 }
 
 /**
+ * スティージングディレクトリのルート。
+ * 下位階層の各ディレクトリ名がそのままアップロード ID になる。
+ */
+export function getMultipartStagingRoot(dataDir: string): string {
+	return `${dataDir}/multipart`;
+}
+
+/**
  * 旧実装のスティージングディレクトリ。
  * パス変更前に作成されたアップロードの互換性のために残す。
  */
 export function getLegacyMultipartStagingDir(uploadId: string): string {
 	return `/tmp/misskey_multipart_${uploadId}`;
 }
+
+/**
+ * 旧実装のスティージングが置かれていたディレクトリと識別プレフィックス。
+ */
+export const LEGACY_MULTIPART_STAGING_ROOT = '/tmp';
+export const LEGACY_MULTIPART_STAGING_PREFIX = 'misskey_multipart_';
 
 /**
  * アップロードのパート读写に使うスティージングディレクトリを解決する。
