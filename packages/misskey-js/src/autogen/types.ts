@@ -38191,6 +38191,7 @@ export interface operations {
                         description: string | null;
                         url: string;
                         roleIdsThatCanBeUsedThisDecoration: string[];
+                        category?: string | null;
                     }[];
                 };
             };
