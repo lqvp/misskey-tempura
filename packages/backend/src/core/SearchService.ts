@@ -397,6 +397,9 @@ export class SearchService {
 
 		this.queryService.generateBlockedHostQueryForNote(query);
 		this.queryService.generateSuspendedUserQueryForNote(query);
+		if (me == null) {
+			this.queryService.generateUgcVisibilityQueryForVisitor(query);
+		}
 
 		const notes = (await query.getMany()).filter(note => {
 			if (me && isUserRelated(note, userIdsWhoBlockingMe)) return false;

@@ -166,6 +166,18 @@ export class FanoutTimelineEndpointService {
 				};
 			}
 
+			if (ps.me == null && this.meta.ugcVisibilityForVisitor !== 'all') {
+				// ugcVisibilityForVisitor: anonymous visitors must not receive UGC the
+				// instance lockdown denies them (same behavior as notes/show.ts)
+				const parentFilter = filter;
+				filter = (note) => {
+					if (this.meta.ugcVisibilityForVisitor === 'none') return false;
+					if (this.meta.ugcVisibilityForVisitor === 'local' && note.userHost != null) return false;
+
+					return parentFilter(note);
+				};
+			}
+
 			{
 				const parentFilter = filter;
 				filter = (note) => {

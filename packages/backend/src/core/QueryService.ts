@@ -114,6 +114,17 @@ export class QueryService {
 		}
 	}
 
+	// ugcVisibilityForVisitor: anonymous visitors must not be served UGC the instance
+	// lockdown denies them (server-level gate, same behavior as notes/show.ts)
+	@bindThis
+	public generateUgcVisibilityQueryForVisitor(q: SelectQueryBuilder<any>): void {
+		if (this.meta.ugcVisibilityForVisitor === 'none') {
+			q.andWhere('1=0');
+		} else if (this.meta.ugcVisibilityForVisitor === 'local') {
+			q.andWhere(`${q.alias}.userHost IS NULL`);
+		}
+	}
+
 	// ここでいうBlockedは被Blockedの意
 	@bindThis
 	public generateBlockedUserQueryForNotes(
@@ -264,6 +275,8 @@ export class QueryService {
 	public generateVisibilityQuery(q: SelectQueryBuilder<any>, me?: { id: MiUser['id'] } | null): void {
 		// This code must always be synchronized with the checks in NoteEntityService.isVisibleForMe and Stream abstract class Channel.isNoteVisibleForMe.
 		if (me == null) {
+			this.generateUgcVisibilityQueryForVisitor(q);
+
 			const profileSubQuery = this.userProfilesRepository.createQueryBuilder('profile')
 				.select('1')
 				.where('profile.userId = note.userId')
