@@ -16429,6 +16429,14 @@ export interface Locale extends ILocale {
          * カンマ区切りで複数の除外語を入力できます（例：犬,猫,鳥）
          */
         "excludeWordsCaption": string;
+        /**
+         * 高度な構文（pgroonga）
+         */
+        "advancedSyntax": string;
+        /**
+         * 語の先頭に ~（部分一致）・-（除外）、末尾に *（前方一致）を使えるようにします。pgroonga利用時のみ有効です。
+         */
+        "advancedSyntaxCaption": string;
         "_searchOperator": {
             /**
              * 検索演算子

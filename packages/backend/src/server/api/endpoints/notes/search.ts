@@ -88,6 +88,10 @@ export const paramDef = {
 			items: { type: 'string' },
 			default: [],
 		},
+		advancedSyntax: {
+			type: 'boolean',
+			default: false,
+		},
 	},
 	required: [],
 } as const;
@@ -151,6 +155,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				untilDate: ps.untilDate,
 				rangeStartAt: ps.rangeStartAt,
 				rangeEndAt: ps.rangeEndAt,
+				advancedSyntax: ps.advancedSyntax,
 			}, {
 				untilId: untilId,
 				sinceId: sinceId,

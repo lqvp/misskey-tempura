@@ -4435,6 +4435,8 @@ _advancedSearch:
   searchTerms: "検索語"
   excludeWords: "除外語"
   excludeWordsCaption: "カンマ区切りで複数の除外語を入力できます（例：犬,猫,鳥）"
+  advancedSyntax: "高度な構文（pgroonga）"
+  advancedSyntaxCaption: "語の先頭に ~（部分一致）・-（除外）、末尾に *（前方一致）を使えるようにします。pgroonga利用時のみ有効です。"
   _searchOperator:
     label: "検索演算子"
     and: "AND（すべての語を含む）"

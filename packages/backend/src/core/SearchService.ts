@@ -45,6 +45,7 @@ export type SearchOpts = {
 	hasPoll?: 'all' | 'with' | 'without';
 	searchOperator?: 'and' | 'or';
 	excludeWords?: string[];
+	advancedSyntax?: boolean;
 	sinceDate?: number;
 	untilDate?: number;
 	rangeStartAt?: number | null;
@@ -275,6 +276,22 @@ export class SearchService {
 			// AND は Groonga 側 (空白区切り)、OR と否定は SQL 側で結合する。
 			const quoteTerm = (term: string): string => `"${term.replace(/[\\"]/g, '\\$1')}"`;
 
+			// advancedSyntax=true のときだけ、語の先頭の + - ~ (必須/除外/部分一致) と
+			// 末尾の * (前方一致) を Groonga クエリ構文として透過する。
+			// 素の語は従来どおり引用し、括弧はバランスが取れている場合のみ透過する。
+			const compileTerm = (term: string): string => {
+				if (!opts.advancedSyntax) return quoteTerm(term);
+				const match = term.match(/^([+~-]?)(.+?)(\*?)$/);
+				if (match == null) return quoteTerm(term);
+				const [, prefix, core, wildcard] = match;
+				if (core.includes('(') || core.includes(')')) {
+					const open = (core.match(/\(/g) ?? []).length;
+					const close = (core.match(/\)/g) ?? []).length;
+					if (open !== close) return quoteTerm(term);
+				}
+				return `${prefix}${quoteTerm(core)}${wildcard}`;
+			};
+
 			const terms = (opts.searchOperator === 'or'
 				? q.split(' OR ') // notes/search.ts が or 検索時に ' OR ' で連結した区切り
 				: q.split(/\s+/)
@@ -285,15 +302,15 @@ export class SearchService {
 					// OR検索はSQL側で条件結合し、クエリ構文のORキーワードに依存しない
 					const params: Record<string, string> = {};
 					const conditions = terms.map((term, index) => {
-						params[`pgQuery${index}`] = quoteTerm(term);
+						params[`pgQuery${index}`] = compileTerm(term);
 						return `note.text &@~ :pgQuery${index}`;
 					});
 					query.andWhere(new Brackets(qb => {
 						qb.where(conditions.join(' OR '));
 					}), params);
 				} else {
-					// AND検索は引用した各語を空白区切りで渡す (Groongaクエリ構文のAND)
-					query.andWhere('note.text &@~ :pgQuery', { pgQuery: terms.map(quoteTerm).join(' ') });
+					// AND検索は各語を空白区切りで渡す (Groongaクエリ構文のAND)
+					query.andWhere('note.text &@~ :pgQuery', { pgQuery: terms.map(compileTerm).join(' ') });
 				}
 			}
 
@@ -308,7 +325,7 @@ export class SearchService {
 						qb
 							.where('note.text IS NULL')
 							.orWhere(`NOT (note.text &@~ :pgExclude${index})`);
-					}), { [`pgExclude${index}`]: quoteTerm(trimmed) });
+					}), { [`pgExclude${index}`]: compileTerm(trimmed) });
 				});
 			}
 		} else if (q !== '') {
