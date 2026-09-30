@@ -243,7 +243,8 @@ export class UserSearchService {
 					.where('user.updatedAt IS NULL')
 					.orWhere('user.updatedAt > :activeThreshold', { activeThreshold: activeThreshold });
 			}))
-			.andWhere('user.isSuspended = FALSE');
+			.andWhere('user.isSuspended = FALSE')
+			.andWhere('user.isLocked = FALSE');
 
 		if (mutingQuery) {
 			nameQuery.andWhere(`user.id NOT IN (${mutingQuery.getQuery()})`);
@@ -286,6 +287,7 @@ export class UserSearchService {
 						.orWhere('user.updatedAt > :activeThreshold', { activeThreshold: activeThreshold });
 				}))
 				.andWhere('user.isSuspended = FALSE')
+				.andWhere('user.isLocked = FALSE')
 				.setParameters(profQuery.getParameters());
 
 			users = users.concat(await userQuery
