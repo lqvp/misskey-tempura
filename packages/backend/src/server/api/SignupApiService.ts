@@ -322,14 +322,16 @@ export class SignupApiService {
 			}
 
 			// 承認待ちフロー
+			let committed = false;
 			const { account } = await this.signupService.signup({
 				username, password, host, reason,
+				onCommitted: () => { committed = true; },
 			}).catch(async err => {
 				// 確保したコードが無駄に消費されたままになるのを防ぐ。
 				// signup() はトランザクションコミット後の後続処理で失敗することも
 				// あるため、アカウント作成がコミットされていない場合のみ解除し、
 				// コミット済みの場合はチケットを消費したまま保持する
-				await this.releaseTicketIfSignupNotCommitted(ticket, username);
+				await this.releaseTicketIfSignupNotCommitted(ticket, committed);
 				throw err;
 			});
 
@@ -369,6 +371,7 @@ export class SignupApiService {
 				return;
 			}
 
+			let committed = false;
 			try {
 				// ticket があれば承認待ちをスキップ
 				const { account, secret } = await this.signupService.signup({
@@ -376,6 +379,7 @@ export class SignupApiService {
 					password,
 					host,
 					reason,
+					onCommitted: () => { committed = true; },
 					approved: (ticket != null && ticket.skipApproval) || !this.meta.approvalRequiredForSignup,
 				});
 
@@ -400,7 +404,7 @@ export class SignupApiService {
 				// 確保したコードが無駄に消費されたままになるのを防ぐ。
 				// (アカウント作成がコミット済みの場合はチケットを保持する。
 				//  アカウントと紐付け済みの場合も release 側の条件により戻らない)
-				await this.releaseTicketIfSignupNotCommitted(ticket, username);
+				await this.releaseTicketIfSignupNotCommitted(ticket, committed);
 				throw new FastifyReplyError(400, typeof err === 'string' ? err : (err as Error).toString());
 			}
 		}
@@ -450,8 +454,13 @@ export class SignupApiService {
 				const pendingExpired = pending == null
 					|| this.idService.parse(pending.id).date.getTime() + (1000 * 60 * 30) < Date.now();
 				if (pendingExpired) {
+					const detached = await this.registrationTicketsRepository.update({
+						id: stale.id,
+						pendingUserId: stale.pendingUserId,
+						usedById: IsNull(),
+					}, { pendingUserId: null });
+					if ((detached.affected ?? 0) === 0) return false;
 					if (pending != null) await this.userPendingsRepository.delete({ id: pending.id });
-					await this.registrationTicketsRepository.update({ id: stale.id }, { pendingUserId: null });
 					return this.claimRegistrationTicket(ticket);
 				}
 			}
@@ -485,11 +494,8 @@ export class SignupApiService {
 	 * コミット済みだった場合はチケットを消費したまま保持する
 	 */
 	@bindThis
-	private async releaseTicketIfSignupNotCommitted(ticket: MiRegistrationTicket | null | undefined, username: string): Promise<void> {
+	private async releaseTicketIfSignupNotCommitted(ticket: MiRegistrationTicket | null | undefined, committed: boolean): Promise<void> {
 		if (ticket == null) return;
-		const committed = await this.usersRepository.exists({
-			where: { usernameLower: username.toLowerCase(), host: IsNull() },
-		});
 		if (!committed) {
 			await this.releaseRegistrationTicket(ticket);
 		}

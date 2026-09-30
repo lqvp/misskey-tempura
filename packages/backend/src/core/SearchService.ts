@@ -10,7 +10,7 @@ import { type Config, FulltextSearchProvider } from '@/config.js';
 import { bindThis } from '@/decorators.js';
 import { MiNote } from '@/models/Note.js';
 import type { NotesRepository } from '@/models/_.js';
-import { MiUser } from '@/models/_.js';
+import { MiUser, type MiMeta } from '@/models/_.js';
 import { sqlLikeEscape } from '@/misc/sql-like-escape.js';
 import { isUserRelated } from '@/misc/is-user-related.js';
 import { CacheService } from '@/core/CacheService.js';
@@ -105,6 +105,9 @@ export class SearchService {
 		private queryService: QueryService,
 		private idService: IdService,
 		private loggerService: LoggerService,
+
+		@Inject(DI.meta)
+		private meta: MiMeta,
 	) {
 		if (meilisearch) {
 			this.meilisearchNoteIndex = meilisearch.index(`${config.meilisearch!.index}---notes`);
@@ -364,6 +367,10 @@ export class SearchService {
 			} else {
 				filter.qs.push({ op: '=', k: 'userHost', v: opts.host });
 			}
+		}
+		if (me == null) {
+			if (this.meta.ugcVisibilityForVisitor === 'none') return [];
+			if (this.meta.ugcVisibilityForVisitor === 'local') filter.qs.push({ op: 'is null', k: 'userHost' });
 		}
 		const res = await this.meilisearchNoteIndex.search(q, {
 			sort: ['createdAt:desc'],

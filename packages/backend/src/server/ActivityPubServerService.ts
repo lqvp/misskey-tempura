@@ -16,6 +16,7 @@ import { DI } from '@/di-symbols.js';
 import type { FollowingsRepository, NotesRepository, EmojisRepository, NoteReactionsRepository, UserProfilesRepository, UserNotePiningsRepository, UsersRepository, FollowRequestsRepository, MiMeta } from '@/models/_.js';
 import * as url from '@/misc/prelude/url.js';
 import type { Config } from '@/config.js';
+import { ApDbResolverService } from '@/core/activitypub/ApDbResolverService.js';
 import { ApRendererService } from '@/core/activitypub/ApRendererService.js';
 import { QueueService } from '@/core/QueueService.js';
 import type { MiLocalUser, MiRemoteUser, MiUser } from '@/models/User.js';
@@ -40,6 +41,8 @@ const LD_JSON = 'application/ld+json; profile="https://www.w3.org/ns/activitystr
 
 @Injectable()
 export class ActivityPubServerService {
+	private verifiedHosts = new WeakMap<FastifyRequest, Promise<string | undefined>>();
+
 	constructor(
 		@Inject(DI.config)
 		private config: Config,
@@ -79,8 +82,35 @@ export class ActivityPubServerService {
 		private queryService: QueryService,
 		private fanoutTimelineEndpointService: FanoutTimelineEndpointService,
 		private activityPubAccessControlService: ActivityPubAccessControlService,
+		private apDbResolverService: ApDbResolverService,
 	) {
 		//this.createServer = this.createServer.bind(this);
+	}
+
+	/** Verify once per request; never use User-Agent or an unverified keyId for authorization. */
+	@bindThis
+	private getVerifiedHost(request: FastifyRequest): Promise<string | undefined> {
+		const cached = this.verifiedHosts.get(request);
+		if (cached) return cached;
+
+		const verification = (async () => {
+			try {
+				const signature = httpSignature.parseRequest(request.raw, {
+					headers: ['(request-target)', 'host', 'date'],
+					authorizationHeaderName: 'signature',
+				});
+				if (request.headers.host !== this.config.host) return undefined;
+				const authUser = await this.apDbResolverService.getAuthUserFromKeyId(signature.keyId)
+					?? await this.apDbResolverService.getAuthUserFromApId(signature.keyId);
+				if (authUser?.key == null || authUser.key.keyId !== signature.keyId || authUser.user.host == null) return undefined;
+				if (!httpSignature.verifySignature(signature, authUser.key.keyPem)) return undefined;
+				return this.utilityService.toPuny(authUser.user.host.toLowerCase());
+			} catch {
+				return undefined;
+			}
+		})();
+		this.verifiedHosts.set(request, verification);
+		return verification;
 	}
 
 	@bindThis
@@ -196,7 +226,7 @@ export class ActivityPubServerService {
 		request: FastifyRequest<{ Params: { user: string; }; Querystring: { cursor?: string; page?: string; }; }>,
 		reply: FastifyReply,
 	) {
-		if (await this.activityPubAccessControlService.applyAccessControl(request, reply)) {
+		if (await this.activityPubAccessControlService.applyAccessControl(request, reply, false, await this.getVerifiedHost(request))) {
 			return;
 		}
 
@@ -297,7 +327,7 @@ export class ActivityPubServerService {
 		request: FastifyRequest<{ Params: { user: string; }; Querystring: { cursor?: string; page?: string; }; }>,
 		reply: FastifyReply,
 	) {
-		if (await this.activityPubAccessControlService.applyAccessControl(request, reply)) {
+		if (await this.activityPubAccessControlService.applyAccessControl(request, reply, false, await this.getVerifiedHost(request))) {
 			return;
 		}
 
@@ -395,7 +425,7 @@ export class ActivityPubServerService {
 
 	@bindThis
 	private async featured(request: FastifyRequest<{ Params: { user: string; }; }>, reply: FastifyReply) {
-		if (await this.activityPubAccessControlService.applyAccessControl(request, reply)) {
+		if (await this.activityPubAccessControlService.applyAccessControl(request, reply, false, await this.getVerifiedHost(request))) {
 			return;
 		}
 
@@ -448,7 +478,7 @@ export class ActivityPubServerService {
 		}>,
 		reply: FastifyReply,
 	) {
-		if (await this.activityPubAccessControlService.applyAccessControl(request, reply)) {
+		if (await this.activityPubAccessControlService.applyAccessControl(request, reply, false, await this.getVerifiedHost(request))) {
 			return;
 		}
 
@@ -606,7 +636,7 @@ export class ActivityPubServerService {
 			return;
 		}
 
-		if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true)) {
+		if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true, await this.getVerifiedHost(request))) {
 			return;
 		}
 
@@ -701,7 +731,7 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true)) {
+			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true, await this.getVerifiedHost(request))) {
 				return;
 			}
 
@@ -716,7 +746,7 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			if (!await this.activityPubAccessControlService.checkNoteAccess(note, request)) {
+			if (!await this.activityPubAccessControlService.checkNoteAccess(note, request, await this.getVerifiedHost(request))) {
 				reply.code(404);
 				return;
 			}
@@ -745,7 +775,7 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true)) {
+			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true, await this.getVerifiedHost(request))) {
 				return;
 			}
 
@@ -761,7 +791,7 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			if (!await this.activityPubAccessControlService.checkNoteAccess(note, request)) {
+			if (!await this.activityPubAccessControlService.checkNoteAccess(note, request, await this.getVerifiedHost(request))) {
 				reply.code(404);
 				return;
 			}
@@ -799,7 +829,7 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true)) {
+			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true, await this.getVerifiedHost(request))) {
 				return;
 			}
 
@@ -874,7 +904,7 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true)) {
+			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true, await this.getVerifiedHost(request))) {
 				return;
 			}
 
@@ -900,7 +930,7 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true)) {
+			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true, await this.getVerifiedHost(request))) {
 				return;
 			}
 
@@ -930,7 +960,7 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true)) {
+			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true, await this.getVerifiedHost(request))) {
 				return;
 			}
 
@@ -965,7 +995,7 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true)) {
+			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true, await this.getVerifiedHost(request))) {
 				return;
 			}
 

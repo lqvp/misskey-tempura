@@ -66,9 +66,9 @@ export class FeedService {
 			!(note.visibility === 'public' && profile.hidePublicNotes) &&
 			!(note.visibility === 'home' && profile.hideHomeNotes) &&
 			!shouldHideNoteByTime(user.makeNotesHiddenBefore, this.idService.parse(note.id).date) &&
-			// 'home' demoted to followers-only by age is not visible to anonymous
+			// Notes demoted to followers-only by age are not visible to anonymous
 			// readers (mirrors NoteEntityService.treatVisibility + shouldHideNote).
-			!(note.visibility === 'home' && shouldHideNoteByTime(user.makeNotesFollowersOnlyBefore, this.idService.parse(note.id).date)),
+			!shouldHideNoteByTime(user.makeNotesFollowersOnlyBefore, this.idService.parse(note.id).date),
 		));
 
 		const feed = new Feed({

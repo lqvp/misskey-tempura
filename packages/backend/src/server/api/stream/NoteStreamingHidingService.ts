@@ -63,6 +63,7 @@ export class NoteStreamingHidingService {
 			const stripped = deepClone(note);
 			for (let current: Packed<'Note'> | null | undefined = stripped; current != null; current = current.renote) {
 				current.reactionAndUserPairCache = undefined;
+				if (current.reply) current.reply.reactionAndUserPairCache = undefined;
 			}
 			return stripped;
 		}
@@ -81,6 +82,7 @@ export class NoteStreamingHidingService {
 			}
 			if (stripReactionCache) {
 				currentCloned.reactionAndUserPairCache = undefined;
+				if (currentCloned.reply) currentCloned.reply.reactionAndUserPairCache = undefined;
 			}
 			currentCloned = currentCloned.renote!;
 		}

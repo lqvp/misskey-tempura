@@ -46,6 +46,19 @@ describe('NoteStreamingHidingService reaction cache gating', () => {
 		expect(out!.renote!.reactionAndUserPairCache).toBeUndefined();
 	});
 
+	test.each([false, true])('anonymous: reply caches are stripped with hidden=%s without mutating shared notes', async hidden => {
+		const svc = new NoteStreamingHidingService(entity(hidden) as any, meta('all') as any);
+		const note = mkNote('quote', {
+			reply: mkNote('reply'),
+			renote: mkNote('renote', { reply: mkNote('renote-reply') }),
+		});
+		const out = await svc.filter(note as any, null);
+		expect(out!.reply!.reactionAndUserPairCache).toBeUndefined();
+		expect(out!.renote!.reply!.reactionAndUserPairCache).toBeUndefined();
+		expect(((note as any).reply).reactionAndUserPairCache).toHaveLength(2);
+		expect(((note as any).renote).reply.reactionAndUserPairCache).toHaveLength(2);
+	});
+
 	test('authenticated: cache is preserved', async () => {
 		const svc = new NoteStreamingHidingService(entity() as any, meta('all') as any);
 		const out = await svc.filter(mkNote('a') as any, 'me');

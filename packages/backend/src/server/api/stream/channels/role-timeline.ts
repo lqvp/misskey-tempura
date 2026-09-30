@@ -60,12 +60,12 @@ export class RoleTimelineChannel extends Channel {
 
 	@bindThis
 	private async onEvent(data: GlobalEvents['roleTimeline']['payload']) {
+		const role = await this.rolesRepository.findOneBy({ id: this.roleId, isPublic: true });
+		if (role == null || !(await this.roleservice.isExplorable({ id: this.roleId }))) return;
+
 		if (data.type === 'note') {
 			let note = data.body;
 
-			if (!(await this.roleservice.isExplorable({ id: this.roleId }))) {
-				return;
-			}
 			if (note.visibility !== 'public') return;
 			if (note.user.requireSigninToViewContents && this.user == null) return;
 			if (note.renote && note.renote.user.requireSigninToViewContents && this.user == null) return;

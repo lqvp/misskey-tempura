@@ -320,7 +320,7 @@ export class ApPersonService implements OnModuleInit {
 					const localDecos = await this.avatarDecorationService.getAll();
 					// ローカルのデコレーションとして登録し、ユーザーに付与するのは
 					// 検証を通過した項目のみ (remote payload は untrusted, vuln-0018)
-					const validatedDecorations: { id: string }[] = [];
+					const validatedDecorations: MiUser['avatarDecorations'] = [];
 					for (const deco of res.avatarDecorations) {
 						// 既存 ID の項目も含め、保存対象に含める前に必ず検証する
 						if (typeof deco?.id !== 'string' || deco.id.length === 0 || deco.id.length > 128) continue;
@@ -343,7 +343,12 @@ export class ApPersonService implements OnModuleInit {
 								description: `Imported from ${host}`,
 							});
 						}
-						validatedDecorations.push({ id: deco.id });
+						validatedDecorations.push({
+							id: deco.id,
+							angle: typeof deco.angle === 'number' && Number.isFinite(deco.angle) && deco.angle >= -0.5 && deco.angle <= 0.5 ? deco.angle : 0,
+							flipH: typeof deco.flipH === 'boolean' ? deco.flipH : false,
+							offsetX: typeof deco.offsetX === 'number' && Number.isFinite(deco.offsetX) && deco.offsetX >= -0.25 && deco.offsetX <= 0.25 ? deco.offsetX : 0,
+						});
 					}
 					Object.assign(returnData, { avatarDecorations: validatedDecorations });
 				}

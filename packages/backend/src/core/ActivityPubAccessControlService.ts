@@ -6,7 +6,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { DI } from '@/di-symbols.js';
 import type { InstancesRepository, MiMeta } from '@/models/_.js';
-import type { Config } from '@/config.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
@@ -18,23 +17,7 @@ import type { FastifyRequest, FastifyReply } from 'fastify';
 export class ActivityPubAccessControlService {
 	private logger: Logger;
 
-	private static readonly userAgentPatterns: readonly RegExp[] = [
-		// Mastodon
-		/http\.rb\/[\d.]+\s+\(Mastodon\/[\d.]+;\s+\+https?:\/\/([^/\)]+)/i,
-		// Pleroma
-		/Pleroma\s+[\d.]+;\s+https?:\/\/([^/\s<]+)/i,
-		// Misskey
-		/Misskey\/[\d.]+\s+\(https?:\/\/([^/\)]+)/i,
-		// Pixelfed
-		/pixelfed\/[\d.]+\s+\(https?:\/\/([^/\)]+)/i,
-		// Friendica
-		/friendica-[\d.]+\s+\(https?:\/\/([^/\)]+)/i,
-	];
-
 	constructor(
-		@Inject(DI.config)
-		private config: Config,
-
 		@Inject(DI.meta)
 		private meta: MiMeta,
 
@@ -48,16 +31,12 @@ export class ActivityPubAccessControlService {
 	}
 
 	@bindThis
-	public async checkNoteAccess(note: MiNote, request: FastifyRequest): Promise<boolean> {
-		const remoteHost = this.extractRemoteHostFromRequest(request);
-		// undefined = AP リクエストだがホストを帰属できない → fail-closed で拒否 (vuln-0017)
+	public async checkNoteAccess(note: MiNote, request: FastifyRequest, verifiedHost?: string): Promise<boolean> {
+		const remoteHost = verifiedHost ? this.utilityService.toPuny(verifiedHost.toLowerCase()) : undefined;
+		// Only a cryptographically verified signer can establish request attribution.
 		if (remoteHost === undefined) {
 			this.logger.info(`Access to note ${note.id} denied for unattributable ActivityPub request`);
 			return false;
-		}
-		if (remoteHost === null) {
-			// Not a remote request
-			return true;
 		}
 
 		// まずインスタンスの状態をチェック
@@ -95,98 +74,6 @@ export class ActivityPubAccessControlService {
 	}
 
 	/**
-	 * ActivityPubリクエストかどうかを判定する
-	 * Accept ヘッダーに application/ld+json が含まれているかチェック
-	 */
-	@bindThis
-	private isActivityPubRequest(request: FastifyRequest): boolean {
-		const acceptHeader = request.headers.accept;
-		if (!acceptHeader || typeof acceptHeader !== 'string') {
-			return false;
-		}
-
-		// application/ld+json, application/activity+json を含むかチェック
-		return acceptHeader.includes('application/ld+json') || acceptHeader.includes('application/activity+json');
-	}
-
-	/**
-	 * Signature ヘッダーの keyId からホストを抽出する
-	 * keyId は通常 https://<host>/... を指す。この層では署名検証を行わないため
-	 * 帰属には使用せず、UA host との食い違いの検知 (改竦・偽装の観察) のみに使う (vuln-0017)。
-	 */
-	@bindThis
-	private extractHostFromSignatureHeader(request: FastifyRequest): string | null {
-		const signatureHeader = request.headers.signature;
-		if (typeof signatureHeader !== 'string') {
-			return null;
-		}
-
-		const match = signatureHeader.match(/keyId="?https?:\/\/([^/"'\s,]+)/i);
-		if (match && match[1]) {
-			return this.utilityService.toPuny(match[1].toLowerCase());
-		}
-
-		return null;
-	}
-
-	/**
-	 * リクエストからリモートホストを推測
-	 * User-Agentや他のヘッダーから推測（ActivityPubリクエストのみ）
-	 */
-	@bindThis
-	private extractRemoteHostFromRequest(request: FastifyRequest): string | null | undefined {
-		// まずActivityPubリクエストかどうかをチェック
-		if (!this.isActivityPubRequest(request)) {
-			this.logger.debug('Not an ActivityPub request (no application/ld+json or application/activity+json in Accept header)');
-			return null;
-		}
-
-		const userAgent = request.headers['user-agent'];
-		const signatureHost = this.extractHostFromSignatureHeader(request);
-
-		// User-Agent からホストを推測
-		let userAgentHost: string | null = null;
-		if (userAgent && typeof userAgent === 'string') {
-			for (const pattern of ActivityPubAccessControlService.userAgentPatterns) {
-				const match = userAgent.match(pattern);
-				if (match && match[1]) {
-					userAgentHost = this.utilityService.toPuny(match[1].toLowerCase());
-					break;
-				}
-			}
-		}
-
-		// 帰属には User-Agent 由来のホストのみを用いる。
-		// Signature ヘッダーの keyId はこの層で暗号検証されないため帰属には使用しない
-		// (未検証の signatureHost を信頼すると、ブロック/検疫ホストが clean な keyId を
-		// 偽装してアクセス制限を回避できる)。signatureHost と UA host が食い違ったら
-		// 偽装の可能性があるため warn を出す (vuln-0017)。
-		let identified: string | null = null;
-		if (userAgentHost != null) {
-			identified = userAgentHost;
-		}
-		if (signatureHost != null && signatureHost !== userAgentHost) {
-			this.logger.warn(`Host attribution mismatch: signature says ${signatureHost} (unverified, not used), User-Agent says ${userAgentHost ?? '(none)'} (using User-Agent host)`);
-		}
-
-		if (identified == null) {
-			// AP リクエストでホストを帰属できない場合は undefined を返し、呼び出し側で fail-closed とする。
-			// 従来はここで null を返し許可していたが、UA を消すだけでアクセス制御を
-			// 回避できたため、ブロック/検疫ホストによる回避に悪用されていた (vuln-0017)。
-			this.logger.debug('ActivityPub request detected but host attribution failed (deny)');
-			return undefined;
-		}
-
-		// 自分自身からのリクエストは除外
-		if (identified === this.config.host.toLowerCase()) {
-			this.logger.debug('Request from self, allowing access');
-			return null;
-		}
-
-		return identified;
-	}
-
-	/**
 	 * リモートインスタンスのアクセス制限設定をチェック
 	 */
 	@bindThis
@@ -220,35 +107,23 @@ export class ActivityPubAccessControlService {
 	 * @returns アクセス許可の場合はnull、拒否の場合は理由を含むオブジェクト
 	 */
 	@bindThis
-	public async checkAccess(request: FastifyRequest, allowLimitedHosts = false): Promise<{
+	public async checkAccess(request: FastifyRequest, allowLimitedHosts = false, verifiedHost?: string): Promise<{
 		blocked: boolean;
 		reason: string;
 		host?: string;
 	} | null> {
 		const userAgent = request.headers['user-agent'];
-		if (typeof userAgent === 'string' && userAgent.toLowerCase().includes('tempura')) {
-			// tempura 同士は UA ベースのアクセス制御を通すと連合が成立しない不具合があるため、
-			// バイパスは当面温存する (vuln-0017 の段階移行: まず keyId 優先と改竦ログで観察する)
-			this.logger.debug('Bypassing ActivityPub access control for tempura client');
-			return null;
-		}
 
-		const remoteHost = this.extractRemoteHostFromRequest(request);
+		const remoteHost = verifiedHost ? this.utilityService.toPuny(verifiedHost.toLowerCase()) : undefined;
 
-		// undefined = AP リクエストだがホストを帰属できない → fail-closed (vuln-0017)。
-		// 従来は許可+warn のみで、UA を消すだけでブロック/検疫を回避できた。
+		// These checks protect AP routes, including requests without an AP Accept header.
+		// User-Agent and unverified keyId values cannot establish attribution.
 		if (remoteHost === undefined) {
 			this.logger.info(`ActivityPub access denied for unattributable host: ua=${userAgent ?? '(none)'} signed=${request.headers.signature != null} path=${request.url}`);
 			return {
 				blocked: true,
 				reason: 'unattributable',
 			};
-		}
-
-		if (remoteHost === null) {
-			// 非 AP リクエストまたは自己からのリクエスト: 通常のブラウザーやその他のクライアントからのアクセス
-			this.logger.debug('No remote host detected, allowing access');
-			return null;
 		}
 
 		this.logger.debug(`Checking access for remote host: ${remoteHost}`);
@@ -295,8 +170,8 @@ export class ActivityPubAccessControlService {
 	 * @returns アクセスが拒否された場合はtrue、許可された場合はfalse
 	 */
 	@bindThis
-	public async applyAccessControl(request: FastifyRequest, reply: FastifyReply, allowLimitedHosts = false): Promise<boolean> {
-		const accessControl = await this.checkAccess(request, allowLimitedHosts);
+	public async applyAccessControl(request: FastifyRequest, reply: FastifyReply, allowLimitedHosts = false, verifiedHost?: string): Promise<boolean> {
+		const accessControl = await this.checkAccess(request, allowLimitedHosts, verifiedHost);
 		if (accessControl) {
 			reply.code(404);
 			reply.header('Content-Type', 'text/plain; charset=utf-8');

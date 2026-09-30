@@ -3,12 +3,10 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { In, Not } from 'typeorm';
 import { Inject, Injectable } from '@nestjs/common';
 import type { Config } from '@/config.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
-import type { DriveFilesRepository } from '@/models/_.js';
 import { AvatarDecorationService } from '@/core/AvatarDecorationService.js';
 import { DriveService } from '@/core/DriveService.js';
 import { IdService } from '@/core/IdService.js';
@@ -95,8 +93,6 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
-		@Inject(DI.driveFilesRepository)
-		private driveFilesRepository: DriveFilesRepository,
 		@Inject(DI.config)
 		private config: Config,
 		private avatarDecorationService: AvatarDecorationService,
@@ -117,16 +113,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				force: true,
 			});
 
-			// 元ファイルの削除（実ファイルで、他所で参照されていなければ削除する）
-			const originalDriveFile = await this.driveFilesRepository.findOneBy({ url: ps.url, id: Not(sysFileData.id) });
-			if (originalDriveFile != null) {
-				const referenceCount = await this.driveFilesRepository.count({
-					where: { url: ps.url, id: Not(In([originalDriveFile.id, sysFileData.id])) },
-				});
-				if (referenceCount === 0) {
-					await this.driveService.deleteFile(originalDriveFile);
-				}
-			}
+			// Keep the source file: matching DriveFile URLs do not prove that notes or users no longer reference it.
 
 			const created = await this.avatarDecorationService.create({
 				name: ps.name,
