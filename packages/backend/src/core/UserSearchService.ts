@@ -208,6 +208,7 @@ export class UserSearchService {
 		}
 
 		userQuery.andWhere('user.isSuspended = FALSE');
+		userQuery.andWhere('user.isLocked = FALSE');
 
 		return userQuery;
 	}
