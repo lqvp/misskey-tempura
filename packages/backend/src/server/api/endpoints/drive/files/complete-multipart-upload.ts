@@ -15,7 +15,7 @@ import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.j
 import { DriveService } from '@/core/DriveService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { ApiError } from '../../../error.js';
-import { getMultipartStagingDir } from '@/misc/multipart-staging.js';
+import { getLegacyMultipartStagingDir, getMultipartStagingDir, resolveMultipartStagingDir } from '@/misc/multipart-staging.js';
 
 export const meta = {
 	tags: ['drive'],
@@ -117,7 +117,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			// Verify that all parts have been uploaded regardless of completedParts counter
-			const partDir = getMultipartStagingDir(this.config.multipartTempDir, multipartUpload.id);
+			// （旧スティージングパスにデータがある場合はそちらを使う）
+			const partDir = resolveMultipartStagingDir(this.config.multipartTempDir, multipartUpload.id);
 			let allPartsExist = true;
 			const missingParts = [];
 
@@ -198,25 +199,24 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					requestHeaders: headers,
 				});
 
-				// Clean up temp files
-				try {
-					if (fs.existsSync(partDir)) {
-						for (let i = 1; i <= multipartUpload.totalParts; i++) {
-							const partPath = `${partDir}/part_${i}`;
-							if (fs.existsSync(partPath)) {
-								fs.unlinkSync(partPath);
-							}
-						}
-						fs.rmdirSync(partDir);
-					}
-				} catch (e) {
-					console.error('Failed to clean up multipart upload parts', e);
-				}
-
 				// Delete the multipart upload record
+				// (レコードを先に消す: 逆順だとタイムスリップしたパート書き込みが
+				//  ディレクトリを再生成して孤立バイトになり、クリーンアップは
+				//  レコードを辿るため永久に残る。残りは再検証と orphan reap で回収する)
 				await this.multipartUploadsRepository.delete({
 					id: multipartUpload.id,
 				});
+
+				// Clean up temp files（新旧どちらのスティージングディレクトリも削除する）
+				for (const dir of [getMultipartStagingDir(this.config.multipartTempDir, multipartUpload.id), getLegacyMultipartStagingDir(multipartUpload.id)]) {
+					try {
+						if (fs.existsSync(dir)) {
+							fs.rmSync(dir, { recursive: true, force: true });
+						}
+					} catch (e) {
+						console.error(`Failed to clean up multipart upload parts in ${dir}`, e);
+					}
+				}
 
 				return await this.driveFileEntityService.pack(driveFile, { self: true });
 			} catch (err) {
