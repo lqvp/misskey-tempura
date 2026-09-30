@@ -31,9 +31,26 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkButton danger @click="detachAllDecorations">{{ i18n.ts.detachAll }}</MkButton>
 			</div>
 
+			<MkInput
+				v-model="searchQuery"
+				type="search"
+				:placeholder="i18n.ts.search"
+				@update:modelValue="onSearchInput"
+			>
+				<template #prefix><i class="ti ti-search"></i></template>
+			</MkInput>
+
+			<div v-if="isSearching">
+				<MkLoading/>
+			</div>
+
+			<div v-else-if="searchQuery && displayedDecorations.length === 0">
+				<MkInfo>{{ i18n.ts.noResults }}</MkInfo>
+			</div>
+
 			<div :class="$style.decorations">
 				<XDecoration
-					v-for="avatarDecoration in avatarDecorations"
+					v-for="avatarDecoration in displayedDecorations"
 					:key="avatarDecoration.id"
 					:decoration="avatarDecoration"
 					@click="openDecoration(avatarDecoration)"
@@ -60,13 +77,47 @@ import { i18n } from '@/i18n.js';
 import { ensureSignin } from '@/i.js';
 import MkInfo from '@/components/MkInfo.vue';
 import { definePage } from '@/page.js';
-import { groupAvatarDecorations } from '@/utility/group-avatar-decorations.js';
 
 const $i = ensureSignin();
 
 const loading = ref(true);
 const avatarDecorations = ref<Misskey.entities.GetAvatarDecorationsResponse>([]);
-const groupedDecorations = computed(() => groupAvatarDecorations(avatarDecorations.value));
+
+// 検索: search-avatar-decorations エンドポイントを利用する
+const searchQuery = ref('');
+const searchResults = ref<Misskey.entities.SearchAvatarDecorationsResponse>([]);
+const isSearching = ref(false);
+let searchTimeout: number | null = null;
+
+const displayedDecorations = computed(() =>
+	searchQuery.value.trim() !== '' ? searchResults.value : avatarDecorations.value,
+);
+
+function onSearchInput() {
+	if (searchTimeout != null) {
+		window.clearTimeout(searchTimeout);
+	}
+	if (searchQuery.value.trim() === '') {
+		searchResults.value = [];
+		isSearching.value = false;
+		return;
+	}
+	isSearching.value = true;
+	searchTimeout = window.setTimeout(async () => {
+		try {
+			const results = await misskeyApi('search-avatar-decorations', {
+				query: searchQuery.value,
+				origin: $i.policies.canUseRemoteIconDecorations ? 'combined' : 'local',
+				limit: 100,
+			});
+			searchResults.value = results;
+		} catch (err) {
+			console.error(err);
+		} finally {
+			isSearching.value = false;
+		}
+	}, 300);
+}
 
 // Initial data loading
 misskeyApi('get-avatar-decorations').then(_avatarDecorations => {
