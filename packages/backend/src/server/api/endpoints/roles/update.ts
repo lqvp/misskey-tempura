@@ -9,6 +9,7 @@ import type { RolesRepository } from '@/models/_.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '@/server/api/error.js';
+import { RoleService } from '@/core/RoleService.js';
 
 export const meta = {
 	tags: ['role'],
@@ -68,6 +69,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 		private rolesRepository: RolesRepository,
 
 		private globalEventService: GlobalEventService,
+		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			if (ps.name.trim().length === 0) throw new ApiError(meta.errors.emptyName);
@@ -81,7 +83,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				throw new ApiError(meta.errors.accessDenied);
 			}
 
-			if (role.userId != null && role.userId !== me.id) {
+			if (role.userId == null) {
+				// 管理者が作成した Community ロール（userId = null）は管理者のみ編集できる
+				if (!await this.roleService.isAdministrator(me)) {
+					throw new ApiError(meta.errors.notOwnerOrpermissionDenied);
+				}
+			} else if (role.userId !== me.id) {
 				throw new ApiError(meta.errors.notOwnerOrpermissionDenied);
 			}
 
