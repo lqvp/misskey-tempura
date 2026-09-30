@@ -91,7 +91,16 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				await get(note.replyId);
 			}
 
-			return await this.noteEntityService.packMany(conversation, me);
+			return await this.noteEntityService.packMany(
+				me == null
+					? conversation.filter(n => {
+						if (this.serverSettings.ugcVisibilityForVisitor === 'none') return false;
+						if (this.serverSettings.ugcVisibilityForVisitor === 'local' && n.userHost != null) return false;
+						return true;
+					})
+					: conversation,
+				me,
+			);
 		});
 	}
 }
