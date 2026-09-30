@@ -665,6 +665,7 @@ export class NoteEntityService implements OnModuleInit {
 				visibleUserIds: true,
 				mentions: true,
 				replyUserId: true,
+				localOnly: true,
 				reactions: true,
 				reactionAndUserPairCache: true,
 			},
