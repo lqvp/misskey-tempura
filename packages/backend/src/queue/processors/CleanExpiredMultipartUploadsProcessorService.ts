@@ -12,6 +12,7 @@ import type { Config } from '@/config.js';
 import Logger from '@/logger.js';
 import type { MultipartUploadsRepository } from '@/models/_.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
+import { getMultipartStagingDir } from '@/misc/multipart-staging.js';
 
 /**
  * マルチパートアップロードの期限切れによる一時ファイルの削除を担当するプロセッサー
@@ -55,7 +56,7 @@ export class CleanExpiredMultipartUploadsProcessorService {
 		for (const upload of expiredUploads) {
 			try {
 				// 一時ファイルをクリーンアップ
-				const partDir = `/tmp/misskey_multipart_${upload.id}`;
+				const partDir = getMultipartStagingDir(this.config.multipartTempDir, upload.id);
 				if (fs.existsSync(partDir)) {
 					// パートファイルの削除
 					for (let i = 1; i <= upload.totalParts; i++) {

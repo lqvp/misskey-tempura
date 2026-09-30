@@ -107,6 +107,26 @@ export class ActivityPubAccessControlService {
 	}
 
 	/**
+	 * Signature ヘッダーの keyId からホストを抽出する
+	 * keyId は通常 https://<host>/... を指す。署名検証自体は行わないが、
+	 * keyId を UA よりも信頼できる帰属情報として扱う（vuln-0017）。
+	 */
+	@bindThis
+	private extractHostFromSignatureHeader(request: FastifyRequest): string | null {
+		const signatureHeader = request.headers.signature;
+		if (typeof signatureHeader !== 'string') {
+			return null;
+		}
+
+		const match = signatureHeader.match(/keyId="?https?:\/\/([^/"'\s,]+)/i);
+		if (match && match[1]) {
+			return this.utilityService.toPuny(match[1].toLowerCase());
+		}
+
+		return null;
+	}
+
+	/**
 	 * リクエストからリモートホストを推測
 	 * User-Agentや他のヘッダーから推測（ActivityPubリクエストのみ）
 	 */
@@ -119,34 +139,44 @@ export class ActivityPubAccessControlService {
 		}
 
 		const userAgent = request.headers['user-agent'];
+		const signatureHost = this.extractHostFromSignatureHeader(request);
 
-		if (!userAgent || typeof userAgent !== 'string') {
-			this.logger.debug('No User-Agent header found');
-			return null;
-		}
-
-		this.logger.debug(`ActivityPub request detected. Checking User-Agent: ${userAgent}`);
-
-		for (const pattern of ActivityPubAccessControlService.userAgentPatterns) {
-			const match = userAgent.match(pattern);
-			if (match && match[1]) {
-				const host = match[1].toLowerCase();
-				this.logger.debug(`Extracted host from User-Agent: ${host}`);
-
-				// 自分自身からのリクエストは除外
-				if (host === this.config.host.toLowerCase()) {
-					this.logger.debug('Request from self, allowing access');
-					return null;
+		// User-Agent からホストを推測
+		let userAgentHost: string | null = null;
+		if (userAgent && typeof userAgent === 'string') {
+			for (const pattern of ActivityPubAccessControlService.userAgentPatterns) {
+				const match = userAgent.match(pattern);
+				if (match && match[1]) {
+					userAgentHost = this.utilityService.toPuny(match[1].toLowerCase());
+					break;
 				}
-
-				const punyHost = this.utilityService.toPuny(host);
-				this.logger.debug(`Converted to punycode: ${punyHost}`);
-				return punyHost;
 			}
 		}
 
-		this.logger.debug('ActivityPub request detected but no matching User-Agent pattern found');
-		return null;
+		// 署名の keyId を優先する（署名検証を通す限り UA より信頼できる）。
+		// keyId と UA が食い違ったら改竦の可能性があるため warn を出す。
+		let identified: string | null = null;
+		if (signatureHost != null) {
+			identified = signatureHost;
+			if (userAgentHost != null && userAgentHost !== signatureHost) {
+				this.logger.warn(`Host attribution mismatch: signature says ${signatureHost}, User-Agent says ${userAgentHost} (using signature host)`);
+			}
+		} else if (userAgentHost != null) {
+			identified = userAgentHost;
+		}
+
+		if (identified == null) {
+			this.logger.debug('ActivityPub request detected but host attribution failed (allowing)');
+			return null;
+		}
+
+		// 自分自身からのリクエストは除外
+		if (identified === this.config.host.toLowerCase()) {
+			this.logger.debug('Request from self, allowing access');
+			return null;
+		}
+
+		return identified;
 	}
 
 	/**
@@ -190,6 +220,8 @@ export class ActivityPubAccessControlService {
 	} | null> {
 		const userAgent = request.headers['user-agent'];
 		if (typeof userAgent === 'string' && userAgent.toLowerCase().includes('tempura')) {
+			// tempura 同士は UA ベースのアクセス制御を通すと連合が成立しない不具合があるため、
+			// バイパスは当面温存する (vuln-0017 の段階移行: まず keyId 優先と改竦ログで観察する)
 			this.logger.debug('Bypassing ActivityPub access control for tempura client');
 			return null;
 		}
@@ -199,6 +231,9 @@ export class ActivityPubAccessControlService {
 		if (!remoteHost) {
 			// リモートホストが特定できない場合はアクセスを許可
 			// (通常のブラウザーやその他のクライアントからのアクセス)
+			if (this.isActivityPubRequest(request)) {
+				this.logger.warn(`ActivityPub request with unattributable host (no keyId / UA host): ua=${userAgent ?? '(none)'} signed=${request.headers.signature != null} path=${request.url} — allowed, watch for evasion`);
+			}
 			this.logger.debug('No remote host detected, allowing access');
 			return null;
 		}
