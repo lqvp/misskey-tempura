@@ -230,12 +230,13 @@ export class SignupApiService {
 				}
 			}
 
-			const lastSignup = await this.redisClient.get('signup:lastSignupAt'); // ISO8601
-			if (lastSignup && !usingInvitationCode) {
-				const lastSignupAt = new Date(lastSignup);
-				const now = new Date();
-				const diff = now.getTime() - lastSignupAt.getTime();
-				if (diff < this.meta.secondsPerSignup * 1000) {
+			if (!usingInvitationCode) {
+				// 登録スロットを NX + 期限付きで原子的に確保する。
+				// チェック→登録の TOCTOU 競合を防ぎ、マーカー書き込みが
+				// 無かったメール認証ブランチでも機能するようになる。
+				const intervalMs = this.meta.secondsPerSignup * 1000;
+				const reserved = await this.redisClient.set('signup:lastSignupAt', new Date().toISOString(), 'PX', intervalMs, 'NX');
+				if (reserved == null) {
 					throw new FastifyReplyError(429, 'SIGNUP_RATE_LIMIT_EXCEEDED');
 				}
 			}
@@ -300,23 +301,35 @@ export class SignupApiService {
 			reply.code(204);
 			return;
 		} else if (this.meta.approvalRequiredForSignup && (ticket == null || ticket.skipApproval === false)) {
+			// 承認待ちフローでも招待コードを確保・消費する
+			// （消費しないと1つのコードで承認待ちアカウントを無限に作れる）
+			if (ticket && !await this.claimRegistrationTicket(ticket)) {
+				reply.code(400);
+				return;
+			}
+
+			// 承認待ちフロー
 			const { account } = await this.signupService.signup({
 				username, password, host, reason,
+			}).catch(err => {
+				// 確保したコードが無駄に消費されたままになるのを防ぐ
+				if (ticket) void this.releaseRegistrationTicket(ticket);
+				throw err;
 			});
-				// 承認待ちフロー
+
+			// 招待コードを消費する（承認待ちでもコードの再利用をさせない）
+			if (ticket) {
+				await this.registrationTicketsRepository.update(ticket.id, {
+					usedAt: new Date(),
+					usedBy: account,
+					usedById: account.id,
+				});
+			}
 			if (emailAddress) {
 				this.emailService.sendEmail(emailAddress, 'Approval pending',
 					'Your account is now pending approval.<br>You will get notified when you have been accepted.',
 					'Your account is now pending approval. You will get notified when you have been accepted.');
 			}
-
-			// if (ticket) {
-			// 	await this.registrationTicketsRepository.update(ticket.id, {
-			// 		usedAt: new Date(),
-			// 		usedBy: account,
-			// 		usedById: account.id,
-			// 	});
-			// }
 
 			const administrators = await this.roleService.getAdministrators();
 
@@ -325,12 +338,12 @@ export class SignupApiService {
 
 				if (profile?.email) {
 					this.emailService.sendEmail(profile.email, 'New user awaiting approval',
-						`A new user called ${escapeHtml(account.username)} is awaiting approval with the following reason: "${escapeHtml(reason)}"`,
-						`A new user called ${account.username} is awaiting approval with the following reason: "${reason}"`);
+						`A new user called ${escapeHtml(account.username)} is awaiting approval with the following reason: "${escapeHtml(reason ?? '')}"`,
+						`A new user called ${account.username} is awaiting approval with the following reason: "${reason ?? ''}"`);
 				}
 			}
 
-			this.redisClient.set('signup:lastSignupAt', new Date().toISOString());
+			// signup:lastSignupAt は signup スロット予約時に原子的に設定済み
 
 			reply.code(204);
 			return;
@@ -362,7 +375,7 @@ export class SignupApiService {
 					includeSecrets: true,
 				});
 
-				this.redisClient.set('signup:lastSignupAt', new Date().toISOString());
+				// signup:lastSignupAt は signup スロット予約時に原子的に設定済み
 				return {
 					...res,
 					token: secret,

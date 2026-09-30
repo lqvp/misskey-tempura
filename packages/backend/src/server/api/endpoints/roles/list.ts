@@ -62,9 +62,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				: await this.rolesRepository.findBy({
 					...(ps.communityOnly || ps.communityPublicOnly ? {
 						permissionGroup: 'Community',
-						...(ps.communityPublicOnly ? {
-							isPublic: true,
-						} : {}),
+						// communityOnly でも非公開の Community ロール（とポリシー一式）が
+						// 認証済みユーザー全員に見えてしまうため、公開ロールのみ返す
+						isPublic: true,
 					} : {
 						isExplorable: true,
 						isPublic: true,
