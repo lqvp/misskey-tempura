@@ -304,7 +304,6 @@ export class ApPersonService implements OnModuleInit {
 
 		if (host) {
 			const instance = await this.federatedInstanceService.fetch(host);
-			console.log('avatarDecorationFetch: start');
 			if (instance?.softwareName === 'misskey') {
 				const remoteUserId = user.uri.split('/users/')[1];
 				const userMetaRequest = await this.httpRequestService.send(`https://${instance.host}/api/users/show`, {
@@ -317,16 +316,28 @@ export class ApPersonService implements OnModuleInit {
 					}),
 				});
 				const res: any = await userMetaRequest.json();
-				if (res.avatarDecorations) {
+				if (Array.isArray(res.avatarDecorations)) {
 					const localDecos = await this.avatarDecorationService.getAll();
 					// ローカルのデコレーションとして登録する
+					// remote payload は untrusted として検証する (vuln-0018)
 					for (const deco of res.avatarDecorations) {
 						if (localDecos.some((v) => v.id === deco.id)) continue;
+						if (typeof deco.id !== 'string' || deco.id.length === 0 || deco.id.length > 128) continue;
+						if (typeof deco.url !== 'string' || !deco.url.startsWith('https://')) continue;
+						let decoHost: string | undefined;
+						try {
+							decoHost = new URL(deco.url).host;
+						} catch {
+							// URL として解釈できないものは取り込まない
+						}
+						if (decoHost == null) continue;
+						// 画像 URL は actor の所属ホスト由来のものでなければ取り込まない
+						if (decoHost !== instance.host && !decoHost.endsWith(`.${instance.host}`)) continue;
 						await this.avatarDecorationService.create({
 							id: deco.id,
 							updatedAt: null,
 							url: deco.url,
-							name: `import_${host}_${deco.id}`,
+							name: `import_${host}_${deco.id}`.slice(0, 256),
 							description: `Imported from ${host}`,
 						});
 					}
@@ -397,8 +408,10 @@ export class ApPersonService implements OnModuleInit {
 
 		if (typeof person.followers === 'string') {
 			try {
-				const data = await fetch(person.followers, {
+				const data = await this.httpRequestService.send(person.followers, {
 					headers: { Accept: 'application/json' },
+					timeout: 10000,
+					size: 512 * 1024,
 				});
 				const jsonData = JSON.parse(await data.text());
 
@@ -412,8 +425,10 @@ export class ApPersonService implements OnModuleInit {
 
 		if (typeof person.following === 'string') {
 			try {
-				const data = await fetch(person.following, {
+				const data = await this.httpRequestService.send(person.following, {
 					headers: { Accept: 'application/json' },
+					timeout: 10000,
+					size: 512 * 1024,
 				});
 				const jsonData = JSON.parse(await data.text());
 
@@ -427,8 +442,10 @@ export class ApPersonService implements OnModuleInit {
 
 		if (typeof person.outbox === 'string') {
 			try {
-				const data = await fetch(person.outbox, {
+				const data = await this.httpRequestService.send(person.outbox, {
 					headers: { Accept: 'application/json' },
+					timeout: 10000,
+					size: 512 * 1024,
 				});
 				const jsonData = JSON.parse(await data.text());
 
@@ -663,8 +680,10 @@ export class ApPersonService implements OnModuleInit {
 
 		if (typeof person.followers === 'string') {
 			try {
-				const data = await fetch(person.followers, {
+				const data = await this.httpRequestService.send(person.followers, {
 					headers: { Accept: 'application/json' },
+					timeout: 10000,
+					size: 512 * 1024,
 				});
 				const jsonData = JSON.parse(await data.text());
 
@@ -678,8 +697,10 @@ export class ApPersonService implements OnModuleInit {
 
 		if (typeof person.following === 'string') {
 			try {
-				const data = await fetch(person.following, {
+				const data = await this.httpRequestService.send(person.following, {
 					headers: { Accept: 'application/json' },
+					timeout: 10000,
+					size: 512 * 1024,
 				});
 				const jsonData = JSON.parse(await data.text());
 
@@ -693,8 +714,10 @@ export class ApPersonService implements OnModuleInit {
 
 		if (typeof person.outbox === 'string') {
 			try {
-				const data = await fetch(person.outbox, {
+				const data = await this.httpRequestService.send(person.outbox, {
 					headers: { Accept: 'application/json' },
+					timeout: 10000,
+					size: 512 * 1024,
 				});
 				const jsonData = JSON.parse(await data.text());
 
