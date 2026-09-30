@@ -102,6 +102,7 @@ describe('ActivityPubAccessControlService', () => {
 	test('should block access from blocked hosts', async () => {
 		const mockRequest = {
 			headers: {
+				'accept': 'application/activity+json',
 				'user-agent': 'http.rb/5.3.0 (Mastodon/4.2.0; +https://blocked.example.com/)',
 			},
 		} as FastifyRequest;
@@ -137,11 +138,12 @@ describe('ActivityPubAccessControlService', () => {
 	test('should block access from quarantined hosts', async () => {
 		const mockRequest = {
 			headers: {
+				'accept': 'application/activity+json',
 				'user-agent': 'http.rb/5.3.0 (Mastodon/4.2.0; +https://quarantined.example.com/)',
 			},
 		} as FastifyRequest;
 
-		mockInstancesRepository.findOneBy.mockResolvedValue({ quarantineLimited: true });
+		mockInstancesRepository.findOneBy.mockResolvedValue({ suspensionState: 'none', quarantineLimited: true });
 
 		const result = await service.checkAccess(mockRequest);
 		expect(result).toEqual({
@@ -217,6 +219,40 @@ describe('ActivityPubAccessControlService', () => {
 			blocked: true,
 			reason: 'suspended',
 			host: 'suspended.example.com',
+		});
+	});
+
+	test('should fail closed on AP requests with unattributable host (vuln-0017)', async () => {
+		for (const userAgent of [undefined, 'curl/8.5.0', 'Mozilla/5.0']) {
+			const mockRequest = {
+				headers: {
+					'accept': 'application/ld+json',
+					...(userAgent ? { 'user-agent': userAgent } : {}),
+				},
+			} as FastifyRequest;
+
+			const result = await service.checkAccess(mockRequest);
+			expect(result).toEqual({
+				blocked: true,
+				reason: 'unattributable',
+			});
+		}
+	});
+
+	test('should not attribute hosts from arbitrary URLs embedded in User-Agent', async () => {
+		const mockRequest = {
+			headers: {
+				'accept': 'application/activity+json',
+				'user-agent': 'MyCustomCrawler/1.0 (ref: https://benign.example/page)',
+			},
+		} as FastifyRequest;
+
+		mockInstancesRepository.findOneBy.mockResolvedValue(null);
+
+		const result = await service.checkAccess(mockRequest);
+		expect(result).toEqual({
+			blocked: true,
+			reason: 'unattributable',
 		});
 	});
 });

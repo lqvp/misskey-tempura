@@ -29,8 +29,6 @@ export class ActivityPubAccessControlService {
 		/pixelfed\/[\d.]+\s+\(https?:\/\/([^/\)]+)/i,
 		// Friendica
 		/friendica-[\d.]+\s+\(https?:\/\/([^/\)]+)/i,
-		// Generic ActivityPub pattern: contains hostname (厳密化)
-		/https?:\/\/([a-zA-Z0-9.-]+[a-zA-Z0-9])/i,
 	];
 
 	constructor(
@@ -52,7 +50,12 @@ export class ActivityPubAccessControlService {
 	@bindThis
 	public async checkNoteAccess(note: MiNote, request: FastifyRequest): Promise<boolean> {
 		const remoteHost = this.extractRemoteHostFromRequest(request);
-		if (remoteHost == null) {
+		// undefined = AP リクエストだがホストを帰属できない → fail-closed で拒否 (vuln-0017)
+		if (remoteHost === undefined) {
+			this.logger.info(`Access to note ${note.id} denied for unattributable ActivityPub request`);
+			return false;
+		}
+		if (remoteHost === null) {
 			// Not a remote request
 			return true;
 		}
@@ -131,7 +134,7 @@ export class ActivityPubAccessControlService {
 	 * User-Agentや他のヘッダーから推測（ActivityPubリクエストのみ）
 	 */
 	@bindThis
-	private extractRemoteHostFromRequest(request: FastifyRequest): string | null {
+	private extractRemoteHostFromRequest(request: FastifyRequest): string | null | undefined {
 		// まずActivityPubリクエストかどうかをチェック
 		if (!this.isActivityPubRequest(request)) {
 			this.logger.debug('Not an ActivityPub request (no application/ld+json or application/activity+json in Accept header)');
@@ -167,8 +170,11 @@ export class ActivityPubAccessControlService {
 		}
 
 		if (identified == null) {
-			this.logger.debug('ActivityPub request detected but host attribution failed (allowing)');
-			return null;
+			// AP リクエストでホストを帰属できない場合は undefined を返し、呼び出し側で fail-closed とする。
+			// 従来はここで null を返し許可していたが、UA を消すだけでアクセス制御を
+			// 回避できたため、ブロック/検疫ホストによる回避に悪用されていた (vuln-0017)。
+			this.logger.debug('ActivityPub request detected but host attribution failed (deny)');
+			return undefined;
 		}
 
 		// 自分自身からのリクエストは除外
@@ -229,12 +235,18 @@ export class ActivityPubAccessControlService {
 
 		const remoteHost = this.extractRemoteHostFromRequest(request);
 
-		if (!remoteHost) {
-			// リモートホストが特定できない場合はアクセスを許可
-			// (通常のブラウザーやその他のクライアントからのアクセス)
-			if (this.isActivityPubRequest(request)) {
-				this.logger.warn(`ActivityPub request with unattributable host (no UA host): ua=${userAgent ?? '(none)'} signed=${request.headers.signature != null} path=${request.url} — allowed, watch for evasion`);
-			}
+		// undefined = AP リクエストだがホストを帰属できない → fail-closed (vuln-0017)。
+		// 従来は許可+warn のみで、UA を消すだけでブロック/検疫を回避できた。
+		if (remoteHost === undefined) {
+			this.logger.info(`ActivityPub access denied for unattributable host: ua=${userAgent ?? '(none)'} signed=${request.headers.signature != null} path=${request.url}`);
+			return {
+				blocked: true,
+				reason: 'unattributable',
+			};
+		}
+
+		if (remoteHost === null) {
+			// 非 AP リクエストまたは自己からのリクエスト: 通常のブラウザーやその他のクライアントからのアクセス
 			this.logger.debug('No remote host detected, allowing access');
 			return null;
 		}
