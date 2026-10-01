@@ -4,6 +4,8 @@
  */
 
 import * as fs from 'node:fs';
+import type { Agent } from 'node:http';
+import { Agent as HttpsAgent } from 'node:https';
 import * as stream from 'node:stream/promises';
 import { Inject, Injectable } from '@nestjs/common';
 import chalk from 'chalk';
@@ -13,6 +15,7 @@ import { DI } from '@/di-symbols.js';
 import type { Config } from '@/config.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { createTemp } from '@/misc/create-temp.js';
+import { resolveRemoteUrl } from '@/misc/validate-remote-url.js';
 import { StatusError } from '@/misc/status-error.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import type Logger from '@/logger.js';
@@ -46,6 +49,7 @@ export class DownloadService {
 		const urlObj = new URL(url);
 		let filename = urlObj.pathname.split('/').pop() ?? 'untitled';
 
+		const agents: Agent[] = [];
 		const req = got.stream(url, {
 			headers: {
 				'User-Agent': this.config.userAgent,
@@ -59,9 +63,16 @@ export class DownloadService {
 				send: timeout,
 				request: operationTimeout,	// whole operation timeout
 			},
-			agent: {
-				http: this.httpRequestService.getAgentForHttp(urlObj, true),
-				https: this.httpRequestService.getAgentForHttps(urlObj, true),
+			hooks: {
+				// Got runs beforeRequest for the initial request and every redirect.
+				beforeRequest: [async options => {
+					const target = options.url!;
+					const resolved = await resolveRemoteUrl(target.href, this.config);
+					if (resolved == null) throw new Error('Invalid remote URL');
+					const agent = this.httpRequestService.getAgentForPinnedUrl(target, resolved.address);
+					agents.push(agent);
+					options.agent = agent instanceof HttpsAgent ? { https: agent } : { http: agent };
+				}],
 			},
 			http2: false,	// default
 			retry: {
@@ -104,6 +115,8 @@ export class DownloadService {
 			} else {
 				throw e;
 			}
+		} finally {
+			for (const agent of agents) agent.destroy();
 		}
 
 		this.logger.succ(`Download finished: ${chalk.cyan(url)}`);

@@ -3,20 +3,15 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import { lookup } from 'node:dns/promises';
+import { isIP } from 'node:net';
+import type { LookupAddress } from 'node:dns';
 import ipaddr from 'ipaddr.js';
 import type { Config } from '@/config.js';
 
 const LOCAL_HOSTNAMES = ['localhost', 'localhost.localdomain', 'metadata.google.internal'];
 
-/**
- * Whether fetching `url` must be blocked because its host resolves to a
- * loopback / private / link-local address that is not covered by the
- * instance's allowedPrivateNetworks exception list.
- *
- * This mirrors the runtime socket guard of HttpRequestService agents
- * (which is production-gated) so user-supplied remote URLs can be
- * validated synchronously, before any fetch is issued.
- */
+/** Check hostnames and addresses against the instance's private-network policy. */
 export function isLocalOrPrivateHost(host: string, config: Config): boolean {
 	const hostname = host.toLowerCase().replace(/^\[(.*)\]$/, '$1').replace(/\.$/, '');
 
@@ -27,7 +22,7 @@ export function isLocalOrPrivateHost(host: string, config: Config): boolean {
 	try {
 		parsed = ipaddr.parse(hostname);
 	} catch {
-		// not an IP literal — leave DNS-name validation to the fetch-time guard
+		// DNS names are resolved by resolveRemoteUrl before a connection is opened.
 		return false;
 	}
 
@@ -41,20 +36,36 @@ export function isLocalOrPrivateHost(host: string, config: Config): boolean {
 	return parsed.range() !== 'unicast';
 }
 
-/**
- * Validate a user-supplied remote URL whose content the server is about to
- * fetch (SSRF pre-check). Returns true when the request should proceed.
- */
-export function validateRemoteUrl(url: string, config: Config): boolean {
-	let parsed: URL;
+/** Resolve and validate all addresses before selecting the connection target. */
+export async function resolveRemoteUrl(url: string, config: Config): Promise<LookupAddress | null> {
 	try {
-		parsed = new URL(url);
+		const parsed = new URL(url);
+		if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+		if (parsed.username !== '' || parsed.password !== '') return null;
+		if (isLocalOrPrivateHost(parsed.hostname, config)) return null;
+
+		const hostname = parsed.hostname.replace(/^\[(.*)\]$/, '$1');
+		const family = isIP(hostname);
+		let timer: ReturnType<typeof setTimeout> | undefined;
+		let addresses: LookupAddress[];
+		try {
+			addresses = family ? [{ address: hostname, family }] : await Promise.race([
+				lookup(hostname, { all: true }),
+				new Promise<never>((_resolve, reject) => {
+					timer = setTimeout(() => reject(new Error('DNS lookup timed out')), 30_000);
+				}),
+			]);
+		} finally {
+			clearTimeout(timer);
+		}
+		if (addresses.length === 0 || addresses.some(({ address }) => isLocalOrPrivateHost(address, config))) return null;
+		return addresses[0];
 	} catch {
-		return false;
+		return null;
 	}
+}
 
-	if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
-	if (parsed.username !== '' || parsed.password !== '') return false;
-
-	return !isLocalOrPrivateHost(parsed.hostname, config);
+/** Pre-check only: downloads must also pin their connection to a validated address. */
+export async function validateRemoteUrl(url: string, config: Config): Promise<boolean> {
+	return await resolveRemoteUrl(url, config) !== null;
 }

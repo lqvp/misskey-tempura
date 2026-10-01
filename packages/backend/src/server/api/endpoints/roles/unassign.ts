@@ -4,7 +4,7 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import { Brackets } from 'typeorm';
+import { Brackets, IsNull, MoreThan, Or } from 'typeorm';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { RoleAssignmentsRepository, RolesRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
@@ -70,9 +70,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 			// キャラーがこのロールに実際にアサインされているかを確認する
 			// （これがないと、唯一のメンバーを持つロールに第三者がjoin→unassign→join済み扱いで
 			//  自動削除分岐に入り、他人のロールを削除できてしまう）
+			const now = new Date();
 			const myAssign = await this.roleAssignmentsRepository.findOneBy({
 				roleId: role.id,
 				userId: me.id,
+				expiresAt: Or(IsNull(), MoreThan(now)),
 			});
 			if (myAssign == null) {
 				throw new ApiError(meta.errors.accessDenied);
@@ -83,7 +85,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				.andWhere(new Brackets(qb => {
 					qb
 						.where('assign.expiresAt IS NULL')
-						.orWhere('assign.expiresAt > :now', { now: new Date() });
+						.orWhere('assign.expiresAt > :now', { now });
 				}))
 				.getCount();
 

@@ -31,21 +31,23 @@ describe('registration ticket safety', () => {
 	test.each([false, true])('duplicate failure releases the ticket in approval=%s flow', async approval => {
 		const tickets = { findOneBy: vi.fn().mockResolvedValue({ id: 'ticket', skipApproval: false }), update: vi.fn().mockResolvedValue({ affected: 1 }) };
 		const service = makeService(SignupApiService, {
+			config: { enableIpRateLimit: false },
 			meta: { approvalRequiredForSignup: approval }, registrationTicketsRepository: tickets,
 			usersRepository: { exists: vi.fn().mockResolvedValue(true) },
 			signupService: { signup: vi.fn().mockRejectedValue(new Error('DUPLICATED_USERNAME')) },
 		});
-		await expect(service.signup({ body: { username: 'existing', password: 'pass', invitationCode: 'invite', reason: '' } }, {})).rejects.toThrow();
+		await expect(service.signup({ body: { username: 'existing', password: 'pass', invitationCode: 'invite', reason: '' } }, {})).rejects.toThrow('DUPLICATED_USERNAME');
 		expect(tickets.update).toHaveBeenCalledWith({ id: 'ticket', usedById: IsNull() }, { usedAt: null, pendingUserId: null });
 	});
 
 	test.each([false, true])('post-commit failure retains the ticket in approval=%s flow', async approval => {
 		const tickets = { findOneBy: vi.fn().mockResolvedValue({ id: 'ticket', skipApproval: false }), update: vi.fn().mockResolvedValue({ affected: 1 }) };
 		const service = makeService(SignupApiService, {
+			config: { enableIpRateLimit: false },
 			meta: { approvalRequiredForSignup: approval }, registrationTicketsRepository: tickets,
 			signupService: { signup: async (opts: any) => { opts.onCommitted(); throw new Error('notification failed'); } },
 		});
-		await expect(service.signup({ body: { username: 'new', password: 'pass', invitationCode: 'invite', reason: '' } }, {})).rejects.toThrow();
+		await expect(service.signup({ body: { username: 'new', password: 'pass', invitationCode: 'invite', reason: '' } }, {})).rejects.toThrow('notification failed');
 		expect(tickets.update).toHaveBeenCalledTimes(1);
 	});
 

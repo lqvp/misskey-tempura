@@ -6,6 +6,7 @@
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as net from 'node:net';
+import { checkServerIdentity } from 'node:tls';
 import * as stream from 'node:stream';
 import ipaddr from 'ipaddr.js';
 import CacheableLookup from 'cacheable-lookup';
@@ -199,6 +200,29 @@ export class HttpRequestService {
 				localAddress: config.outgoingAddress,
 			})
 			: this.https;
+	}
+
+	/** A fresh agent pins the target, including the CONNECT destination when using a proxy. */
+	@bindThis
+	public getAgentForPinnedUrl(url: URL, address: string): http.Agent | https.Agent {
+		const proxy = (this.config.proxyBypassHosts ?? []).includes(url.hostname) ? undefined : this.config.proxy;
+		const options = { keepAlive: false, localAddress: this.config.outgoingAddress };
+		const agent = url.protocol === 'https:'
+			? (proxy ? new HttpsProxyAgent({ ...options, proxy }) : new https.Agent(options))
+			: (proxy ? new HttpProxyAgent({ ...options, proxy }) : new http.Agent(options));
+		const createConnection = agent.createConnection.bind(agent);
+		const hostname = url.hostname.replace(/^\[(.*)\]$/, '$1');
+		agent.createConnection = (connectionOptions, callback) => {
+			const pinnedOptions = {
+				...connectionOptions,
+				// hpagent writes this value directly into the CONNECT authority.
+				host: proxy && net.isIP(address) === 6 ? `[${address}]` : address,
+				servername: net.isIP(hostname) ? '' : hostname,
+				checkServerIdentity: (_host: string, cert: Parameters<typeof checkServerIdentity>[1]) => checkServerIdentity(hostname, cert),
+			};
+			return createConnection(pinnedOptions, callback);
+		};
+		return agent;
 	}
 
 	/**

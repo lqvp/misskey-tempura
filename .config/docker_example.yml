@@ -262,7 +262,7 @@ proxyBypassHosts:
 
 # Upload or download file size limits (bytes)
 #maxFileSize: 262144000
-#multipartTempDir: /tmp/misskey-multipart
+#multipartTempDir: /misskey/.data
 
 # Log settings
 # logging:

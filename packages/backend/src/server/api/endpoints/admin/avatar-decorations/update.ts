@@ -57,7 +57,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			if (typeof ps.url !== 'undefined' || typeof ps.url === 'string' ) {
 				// SSRFガード: canManageAvatarDecorations ポリシー保持者なら管理者でなくても
 				// 到達できるため、サーバーによる外部URL取得の前にプライベート/ループバック宛を拒否する
-				if (!validateRemoteUrl(ps.url, this.config)) {
+				if (!await validateRemoteUrl(ps.url, this.config)) {
 					throw new ApiError(meta.errors.invalidRemoteUrl);
 				}
 				// システムユーザーとして再アップロード

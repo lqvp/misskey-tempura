@@ -39,6 +39,8 @@ import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.j
 import type { AccountMoveService } from '@/core/AccountMoveService.js';
 import { checkHttps } from '@/misc/check-https.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
+import type { DriveService } from '@/core/DriveService.js';
+import { validateRemoteUrl } from '@/misc/validate-remote-url.js';
 import { AvatarDecorationService } from '@/core/AvatarDecorationService.js';
 import { getApId, getApType, getOneApHrefNullable, isActor, isCollection, isCollectionOrOrderedCollection, isPropertyValue } from '../type.js';
 import { extractApHashtags } from './tag.js';
@@ -79,6 +81,7 @@ export class ApPersonService implements OnModuleInit {
 	private logger: Logger;
 	private httpRequestService: HttpRequestService;
 	private avatarDecorationService: AvatarDecorationService;
+	private driveService: DriveService;
 
 	constructor(
 		private moduleRef: ModuleRef,
@@ -132,6 +135,7 @@ export class ApPersonService implements OnModuleInit {
 		this.accountMoveService = this.moduleRef.get('AccountMoveService');
 		this.httpRequestService = this.moduleRef.get('HttpRequestService');
 		this.avatarDecorationService = this.moduleRef.get('AvatarDecorationService');
+		this.driveService = this.moduleRef.get('DriveService');
 		this.logger = this.apLoggerService.logger;
 	}
 
@@ -317,7 +321,7 @@ export class ApPersonService implements OnModuleInit {
 				});
 				const res: any = await userMetaRequest.json();
 				if (Array.isArray(res.avatarDecorations)) {
-					const localDecos = await this.avatarDecorationService.getAll();
+					const localDecos = [...await this.avatarDecorationService.getAll()];
 					// ローカルのデコレーションとして登録し、ユーザーに付与するのは
 					// 検証を通過した項目のみ (remote payload は untrusted, vuln-0018)
 					const validatedDecorations: MiUser['avatarDecorations'] = [];
@@ -325,23 +329,26 @@ export class ApPersonService implements OnModuleInit {
 						// 既存 ID の項目も含め、保存対象に含める前に必ず検証する
 						if (typeof deco?.id !== 'string' || deco.id.length === 0 || deco.id.length > 128) continue;
 						if (typeof deco.url !== 'string' || !deco.url.startsWith('https://')) continue;
-						let decoHost: string | undefined;
-						try {
-							decoHost = new URL(deco.url).host;
-						} catch {
-							// URL として解釈できないものは取り込まない
-						}
-						if (decoHost == null) continue;
-						// 画像 URL は actor の所属ホスト由来のものでなければ取り込まない
-						if (decoHost !== instance.host && !decoHost.endsWith(`.${instance.host}`)) continue;
+						if (!await validateRemoteUrl(deco.url, this.config)) continue;
 						if (!localDecos.some((v) => v.id === deco.id)) {
-							await this.avatarDecorationService.create({
-								id: deco.id,
-								updatedAt: null,
-								url: deco.url,
-								name: `import_${host}_${deco.id}`.slice(0, 256),
-								description: `Imported from ${host}`,
-							});
+							try {
+								const file = await this.driveService.uploadFromUrl({ url: deco.url, user: null, force: true, isLink: false });
+								if (!file.type.startsWith('image/')) {
+									await this.driveService.deleteFile(file);
+									continue;
+								}
+								const created = await this.avatarDecorationService.create({
+									id: deco.id,
+									updatedAt: null,
+									url: file.url,
+									name: `import_${host}_${deco.id}`.slice(0, 256),
+									description: `Imported from ${host}`,
+								});
+								localDecos.push(created);
+							} catch (err) {
+								this.logger.warn('Failed to import remote avatar decoration', { stack: err });
+								continue;
+							}
 						}
 						validatedDecorations.push({
 							id: deco.id,
