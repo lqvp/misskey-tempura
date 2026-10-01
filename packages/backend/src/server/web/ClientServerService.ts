@@ -461,7 +461,11 @@ export class ClientServerService {
 				requireSigninToViewContents: false,
 			});
 
-			if (!user) return null;
+			if (user == null) return null;
+
+			if (this.meta.ugcVisibilityForVisitor === 'none' || (this.meta.ugcVisibilityForVisitor === 'local' && user.host != null)) {
+				return null;
+			}
 
 			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });
 			const feed = await this.feedService.packFeed(user);
