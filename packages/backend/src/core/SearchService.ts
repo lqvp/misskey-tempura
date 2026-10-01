@@ -60,7 +60,7 @@ export type SearchPagination = {
 
 function compileValue(value: V): string {
 	if (typeof value === 'string') {
-		return `'${value}'`; // TODO: escape
+		return `'${value.replaceAll("'", "\\'")}'`;
 	} else if (typeof value === 'number') {
 		return value.toString();
 	} else if (typeof value === 'boolean') {
@@ -457,9 +457,11 @@ export class SearchService {
 
 		this.queryService.generateBlockedHostQueryForNote(query);
 		this.queryService.generateSuspendedUserQueryForNote(query);
-		if (me == null) {
-			this.queryService.generateUgcVisibilityQueryForVisitor(query);
-		}
+		// The Meilisearch index carries no per-caller visibility fields, so the
+		// per-caller visibility gate must be applied to the fetch query itself.
+		// This mirrors the sqlLike/sqlPgroonga provider path (generateVisibilityQuery),
+		// and also enforces the anonymous (visitor) visibility rules.
+		this.queryService.generateVisibilityQuery(query, me);
 
 		const notes = (await query.getMany()).filter(note => {
 			if (me && isUserRelated(note, userIdsWhoBlockingMe)) return false;
