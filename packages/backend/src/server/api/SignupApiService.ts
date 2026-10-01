@@ -21,8 +21,10 @@ import { FastifyReplyError } from '@/misc/fastify-reply-error.js';
 import { escapeHtml } from '@/misc/escape-html.js';
 import { bindThis } from '@/decorators.js';
 import { L_CHARS, secureRndstr } from '@/misc/secure-rndstr.js';
+import { getIpHash } from '@/misc/get-ip-hash.js';
 import { RoleService } from '@/core/RoleService.js';
 import { SigninService } from './SigninService.js';
+import { RateLimiterService } from './RateLimiterService.js';
 import type { FindOptionsWhere } from 'typeorm';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 
@@ -60,6 +62,7 @@ export class SignupApiService {
 		private signinService: SigninService,
 		private emailService: EmailService,
 		private roleService: RoleService,
+		private rateLimiterService: RateLimiterService,
 	) {
 	}
 
@@ -83,6 +86,18 @@ export class SignupApiService {
 		reply: FastifyReply,
 	) {
 		const body = request.body;
+
+		// 生 Fastify ルートは endpoint-meta の limit を通らないため、
+		// SigninApiService と同じ IP ベースのレート制限を明示的に適用する。
+		// captcha と secondsPerSignup はデフォルト無効であり、このルートは
+		// 無認証のまま無限の登録要求（メール通知のフォールアウト含む）を許してしまう。
+		if (this.config.enableIpRateLimit) {
+			const rateLimit = await this.rateLimiterService.limit({ key: 'signup', duration: 60 * 60 * 1000, max: 10, minInterval: 1000 }, getIpHash(request.ip));
+			if (rateLimit != null) {
+				reply.code(429);
+				return;
+			}
+		}
 
 		// Verify *Captcha
 		// ただしテスト時はこの機構は障害となるため無効にする
@@ -521,6 +536,16 @@ export class SignupApiService {
 		const body = request.body;
 
 		const code = body['code'];
+
+		// signup と同様に、生ルートは endpoint-meta の limit を通らないため
+		// IP ベースのレート制限を明示的に適用する
+		if (this.config.enableIpRateLimit) {
+			const rateLimit = await this.rateLimiterService.limit({ key: 'signupPending', duration: 60 * 60 * 1000, max: 10, minInterval: 1000 }, getIpHash(request.ip));
+			if (rateLimit != null) {
+				reply.code(429);
+				return;
+			}
+		}
 
 		try {
 			const pendingUser = await this.userPendingsRepository.findOneByOrFail({ code });
