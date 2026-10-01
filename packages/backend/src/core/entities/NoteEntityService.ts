@@ -650,6 +650,9 @@ export class NoteEntityService implements OnModuleInit {
 		// TODO: ugcVisibilityForVisitor が local の場合の扱いを shouldHideNote と揃える
 		if (meId == null && this.meta.ugcVisibilityForVisitor === 'none') return [];
 
+		// pack() と同じ判定で管理者はプライバシーゲートを免除する (shouldHideNote 準拠)
+		const isAdmin = meId != null ? await this.roleService.isAdministrator({ id: meId }) : false;
+
 		const fetched = await this.notesRepository.find({
 			where: {
 				id: In(noteIds),
@@ -668,7 +671,28 @@ export class NoteEntityService implements OnModuleInit {
 		});
 
 		const notes: MiNote[] = [];
-		for (const note of fetched) {
+		for (const rawNote of fetched) {
+			if (meId == null && (this.meta.ugcVisibilityForVisitor === 'none' ||
+				(this.meta.ugcVisibilityForVisitor === 'local' && rawNote.userHost != null))) continue;
+			let note = rawNote;
+			const createdAt = this.idService.parse(rawNote.id).date.toISOString();
+			// User-level privacy gates (same checks as shouldHideNote; the
+			// author themselves and admins are exempt, mirroring shouldHideNote).
+			if (!isAdmin && !(meId != null && meId === rawNote.userId)) {
+				const author = await this.cacheService.findUserById(rawNote.userId);
+				if (shouldHideNoteByTime(author.makeNotesHiddenBefore, createdAt)) continue;
+				if (meId == null) {
+					if (author.requireSigninToViewContents) continue;
+					const profile = await this.cacheService.userProfileCache.fetch(rawNote.userId);
+					if (rawNote.visibility === 'public' && profile.hidePublicNotes) continue;
+					if (rawNote.visibility === 'home' && profile.hideHomeNotes) continue;
+					if (rawNote.localOnly && profile.hideLocalOnlyNotes) continue;
+				}
+				if ((rawNote.visibility === 'public' || rawNote.visibility === 'home') &&
+					shouldHideNoteByTime(author.makeNotesFollowersOnlyBefore, createdAt)) {
+					note = { ...rawNote, visibility: 'followers' as const };
+				}
+			}
 			if (await this.isVisibleForMe(note, meId)) {
 				notes.push(note);
 			}
