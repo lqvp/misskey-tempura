@@ -97,16 +97,29 @@ export async function acceptSignupRules(page: Page): Promise<void> {
 /**
  * fork固有の招待コード確認ステップを捌く。
  * invitationCode が与えられた場合は入力して確認し、そうでない場合は
- * 「招待コードなしで進む」で登録フォームへ進む (disableRegistration=false が前提)。
+ * 「招待コードなしで進む」で登録フォームへ進む。
  */
 export async function acceptSignupInviteCheck(page: Page, invitationCode?: string): Promise<void> {
-	if (invitationCode != null) {
-		await page.fill('#invite-code', invitationCode);
-		await page.getByTestId('signup-invite-check').click();
-		await page.getByTestId('signup-invite-confirm').click();
-	} else {
-		await page.getByTestId('signup-invite-skip').click();
+	if (invitationCode == null) {
+		// disableRegistration=false なら「招待コードなしで進む」でスキップできる
+		if (await page.getByTestId('signup-invite-skip').isVisible().catch(() => false)) {
+			await page.getByTestId('signup-invite-skip').click();
+			return;
+		}
+		throw new Error('signup invite check requires an invitation code on this instance');
 	}
+	await page.fill('#invite-code', invitationCode);
+	const inviteCheck = page.waitForResponse((response) => {
+		return response.url().endsWith('/api/invite/check') && response.request().method() === 'POST';
+	}, { timeout: 30_000 });
+	await page.getByTestId('signup-invite-check').click();
+	const response = await inviteCheck;
+	assertOk(response.status(), "/api/invite/check");
+	const result = await response.json() as { isValid?: unknown } | null;
+	if (result == null || result.isValid !== true) {
+		throw new Error('/api/invite/check rejected the invitation code');
+	}
+	await page.getByTestId('signup-invite-confirm').click();
 }
 
 export async function signupThroughUi(
