@@ -62,11 +62,13 @@ describe('visitor visibility before limits', () => {
 		let isPublic = true;
 		const send = vi.fn();
 		const service = makeService(RoleTimelineChannel, {
-			roleId: 'role', rolesRepository: { findOneBy: async () => isPublic ? { isPublic: true } : null },
+			rolesRepository: { exists: async ({ where }: any) => isPublic && where.isPublic && where.isExplorable },
 			roleservice: { isExplorable: async () => true }, connection: { user: null },
+			subscriber: { on: () => {}, off: () => {} },
 			isNoteMutedOrBlocked: () => false, noteStreamingHidingService: { filter: async (note: any) => note },
 		});
 		Object.defineProperty(service, 'send', { value: send });
+		expect(await service.init({ roleId: 'role' })).toBe(true);
 		const event = { type: 'note', body: { visibility: 'public', user: {} } };
 		await service.onEvent(event);
 		expect(send).toHaveBeenCalledTimes(1);

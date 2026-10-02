@@ -3,24 +3,21 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { Inject, Injectable } from '@nestjs/common';
-import { DI } from '@/di-symbols.js';
+import { Injectable } from '@nestjs/common';
+import { MetaService } from '@/core/MetaService.js';
 import { bindThis } from '@/decorators.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { deepClone } from '@/misc/clone.js';
 import { isRenotePacked, isQuotePacked } from '@/misc/is-renote.js';
 import type { Packed } from '@/misc/json-schema.js';
 import type { MiUser } from '@/models/User.js';
-import type { MiMeta } from '@/models/_.js';
 
 /** Streamにおいて、ノートを隠す（hideNote）を適用するためのService */
 @Injectable()
 export class NoteStreamingHidingService {
 	constructor(
-		@Inject(DI.meta)
-		private meta: MiMeta,
-
 		private noteEntityService: NoteEntityService,
+		private metaService: MetaService,
 	) {}
 
 	private collectRenoteChain(note: Packed<'Note'>): Packed<'Note'>[] {
@@ -47,8 +44,9 @@ export class NoteStreamingHidingService {
 	@bindThis
 	public async filter(note: Packed<'Note'>, meId: MiUser['id'] | null): Promise<Packed<'Note'> | null> {
 		if (meId == null) {
-			if (this.meta.ugcVisibilityForVisitor === 'none') return null;
-			if (this.meta.ugcVisibilityForVisitor === 'local' && note.user.host != null) return null;
+			const meta = await this.metaService.fetch();
+			if (meta.ugcVisibilityForVisitor === 'none') return null;
+			if (meta.ugcVisibilityForVisitor === 'local' && note.user.host != null) return null;
 		}
 
 		const renoteChain = this.collectRenoteChain(note);
