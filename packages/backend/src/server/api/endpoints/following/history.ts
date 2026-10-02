@@ -14,7 +14,7 @@ import { HistoryService } from '@/core/HistoryService.js';
 export const meta = {
 	tags: ['following', 'account'],
 	requireCredential: true,
-	requireRolePolicy: 'canReadFollowHistory',
+	requiredRolePolicy: 'canReadFollowHistory',
 	kind: 'read:following',
 
 	res: {

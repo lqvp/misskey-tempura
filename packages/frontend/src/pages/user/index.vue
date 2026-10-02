@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <PageWithHeader v-model:tab="tab" :tabs="headerTabs" :actions="headerActions" :swipable="true">
 	<div v-if="user">
 		<template v-if="hasTabAccess(tab)">
-			<XHome v-if="tab === 'home'" :user="user" :disableNotes="false" @showMoreFiles="() => { tab = 'files'; }"/>
+			<XHome v-if="tab === 'home'" :user="user" :disableNotes="false" :refreshUser="refreshUser" @showMoreFiles="() => { tab = 'files'; }"/>
 			<XNotes v-else-if="tab === 'notes'" :user="user"/>
 			<XFiles v-else-if="tab === 'files'" :user="user"/>
 			<XActivity v-else-if="tab === 'activity'" :user="user"/>
@@ -78,6 +78,7 @@ const error = ref<null | any>(null);
 const userstatus = ref<null | any>(null);
 const showContent = ref(true);
 
+// 初回読込時専用（使える場合はサーバーコンテキストから取得する）
 function fetchUser(): void {
 	if (props.acct == null) return;
 
@@ -153,6 +154,14 @@ const hasTabAccess = (tabName: string): boolean => {
 watch(tab, (newTab) => {
 	showContent.value = hasTabAccess(newTab);
 });
+
+// 再読込時専用（強制fetch）
+async function refreshUser(): Promise<void> {
+	if (props.acct == null) return;
+
+	const { username, host } = Misskey.acct.parse(props.acct);
+	user.value = await misskeyApi('users/show', { username, host });
+}
 
 const headerActions = computed(() => []);
 

@@ -5,7 +5,7 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import type { MiNote } from '@/models/Note.js';
-import type { NotesRepository } from '@/models/_.js';
+import type { MiMeta, NotesRepository } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { DI } from '@/di-symbols.js';
@@ -52,10 +52,15 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		@Inject(DI.notesRepository)
 		private notesRepository: NotesRepository,
 
+		@Inject(DI.meta)
+		private serverSettings: MiMeta,
+
 		private noteEntityService: NoteEntityService,
 		private getterService: GetterService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			if (me == null && this.serverSettings.ugcVisibilityForVisitor === 'none') return [];
+
 			const note = await this.getterService.getNote(ps.noteId).catch(err => {
 				if (err.id === '9725d0ce-ba28-4dde-95a7-2cbb2c15de24') throw new ApiError(meta.errors.noSuchNote);
 				throw err;
@@ -86,7 +91,28 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				await get(note.replyId);
 			}
 
-			return await this.noteEntityService.packMany(conversation, me);
+			const packedConversation = await this.noteEntityService.packMany(
+				me == null
+					? conversation.filter(n => {
+						if (this.serverSettings.ugcVisibilityForVisitor === 'none') return false;
+						if (this.serverSettings.ugcVisibilityForVisitor === 'local' && n.userHost != null) return false;
+						return true;
+					})
+					: conversation,
+				me,
+			);
+
+			// Do not disclose internal scheduling/delivery metadata for notes
+			// hidden from the caller (matches the redaction notes/show applies
+			// to anonymous callers).
+			for (const packedNote of packedConversation) {
+				if (me == null || packedNote.isHidden) {
+					packedNote.deleteAt = undefined;
+					packedNote.deliveryTargets = undefined;
+				}
+			}
+
+			return packedConversation;
 		});
 	}
 }

@@ -4,13 +4,13 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import { In } from 'typeorm';
+import { Brackets, In } from 'typeorm';
 import { DI } from '@/di-symbols.js';
 import { type Config, FulltextSearchProvider } from '@/config.js';
 import { bindThis } from '@/decorators.js';
 import { MiNote } from '@/models/Note.js';
 import type { NotesRepository } from '@/models/_.js';
-import { MiUser } from '@/models/_.js';
+import { MiUser, type MiMeta } from '@/models/_.js';
 import { sqlLikeEscape } from '@/misc/sql-like-escape.js';
 import { isUserRelated } from '@/misc/is-user-related.js';
 import { CacheService } from '@/core/CacheService.js';
@@ -45,6 +45,7 @@ export type SearchOpts = {
 	hasPoll?: 'all' | 'with' | 'without';
 	searchOperator?: 'and' | 'or';
 	excludeWords?: string[];
+	advancedSyntax?: boolean;
 	sinceDate?: number;
 	untilDate?: number;
 	rangeStartAt?: number | null;
@@ -59,7 +60,9 @@ export type SearchPagination = {
 
 function compileValue(value: V): string {
 	if (typeof value === 'string') {
-		return `'${value}'`; // TODO: escape
+		// Meilisearch のリテラルではバックスラッシュがエスケープ文字のため、
+		// シングルクォートより先にバックスラッシュをエスケープする
+		return `'${value.replace(/\\/g, '\\\\').replaceAll("'", "\\'")}'`;
 	} else if (typeof value === 'number') {
 		return value.toString();
 	} else if (typeof value === 'boolean') {
@@ -105,6 +108,9 @@ export class SearchService {
 		private queryService: QueryService,
 		private idService: IdService,
 		private loggerService: LoggerService,
+
+		@Inject(DI.meta)
+		private meta: MiMeta,
 	) {
 		if (meilisearch) {
 			this.meilisearchNoteIndex = meilisearch.index(`${config.meilisearch!.index}---notes`);
@@ -264,17 +270,144 @@ export class SearchService {
 
 		// テキスト検索条件の追加
 		if (this.config.fulltextSearch?.provider === 'sqlPgroonga') {
-			// sqlPgroongaの高度な検索機能を使用
-			let searchQuery = q;
+			// &@~ は検索文字列を Groonga のクエリ構文として解釈するため、
+			// ユーザー入力を素のまま渡すと ( ) " \ などの特殊文字や - による否定が
+			// 演算子として解釈され、意図しない除外や構文崩れでノートがこぼれ落ちる。
+			// また OR キーワードは PGroonga のバージョンに依存する (v2 では ||)。
+			// そこで各検索語をダブルクォートで囲んで字面語として扱い、
+			// AND は Groonga 側 (空白区切り)、OR と否定は SQL 側で結合する。
+			const quoteTerm = (term: string): string => `"${term.replace(/[\\"]/g, '\\$&')}"`;
 
-			// 除外語の処理
-			if (opts.excludeWords && opts.excludeWords.length > 0) {
-				const excludeQuery = opts.excludeWords.map(word => `-${word}`).join(' ');
-				searchQuery = q ? `${q} ${excludeQuery}` : excludeQuery;
+			// advancedSyntax=true のときだけ、語の先頭の + ~ (必須/部分一致) と
+			// 末尾の * (前方一致) を Groonga クエリ構文として透過する。
+			// 素の語は従来どおり引用し、括弧はバランスが取れている場合のみ透過する。
+			const compileTerm = (term: string): string => {
+				if (!opts.advancedSyntax) return quoteTerm(term);
+				const match = term.match(/^([+~]?)(.+?)(\*?)$/);
+				if (match == null) return quoteTerm(term);
+				const [, prefix, core, wildcard] = match;
+				if (core.includes('(') || core.includes(')')) {
+					// バランスの取れた括弧は Groonga のグループ記号として保ち、
+					// 内部の語を空白で分割して個別に引用する (例: +(dog bird) -> +("dog" "bird"))
+					// 開閉の個数一致だけでは ')' が先に来るケース (例: ")(") を弾けないため、
+					// ネスト深度を追跡して不正な括弧は従来どおり引用する
+					let parenDepth = 0;
+					let parenBalanced = true;
+					for (const ch of core) {
+						if (ch === '(') parenDepth++;
+						else if (ch === ')') parenDepth--;
+						if (parenDepth < 0) { parenBalanced = false; break; }
+					}
+					if (!parenBalanced || parenDepth !== 0) return quoteTerm(term);
+					const joiner = opts.searchOperator === 'or' ? ' OR ' : ' ';
+					// 括弧 (グループ記号) はそのまま残し、語だけを引用する。
+					// 括弧の外側 (depth === 0) のテキストは従来どおり引用のみ行う。
+					let grouped = '';
+					let token = '';
+					let depth = 0;
+					const flush = (): void => {
+						if (token === '') return;
+						// グループ内の直前の語と区切りを挟む (例: +("dog" "bird") または OR 時は +("dog" OR "bird"))
+						// 直前が '(' のとき (グループ開始直後) は区切り不要
+						const prev = grouped.slice(-1);
+						if (prev !== '' && prev !== '(') grouped += joiner;
+						grouped += depth > 0 ? token.split(/\s+/).filter(t => t !== '').map(quoteTerm).join(joiner) : quoteTerm(token);
+						token = '';
+					};
+					for (const ch of core) {
+						if (ch === '(') {
+							flush();
+							depth++;
+							grouped += ch;
+						} else if (ch === ')') {
+							flush();
+							depth--;
+							grouped += ch;
+						} else if (/\s/.test(ch) && depth > 0) {
+							flush();
+						} else if (/\s/.test(ch) && depth === 0) {
+							flush();
+							grouped += ch;
+						} else {
+							token += ch;
+						}
+					}
+					flush();
+					return `${prefix}${grouped}${wildcard}`;
+				}
+				return `${prefix}${quoteTerm(core)}${wildcard}`;
+			};
+
+			// バランスの取れた括弧 (例: +(dog bird)) を1トークンとして保つ。
+			// 不平衡な括弧は従来どおり空白で分割する。
+			const regroupBalanced = (raw: string[]): string[] => {
+				if (!opts.advancedSyntax) return raw;
+				const out: string[] = [];
+				let buffer: string[] | null = null;
+				let depth = 0;
+				for (const token of raw) {
+					const open = (token.match(/\(/g) ?? []).length;
+					const close = (token.match(/\)/g) ?? []).length;
+					if (buffer != null) {
+						buffer.push(token);
+						depth += open - close;
+						if (depth === 0) {
+							out.push(buffer.join(' '));
+							buffer = null;
+						}
+						continue;
+					}
+					depth = open - close;
+					if (depth > 0) {
+						buffer = [token];
+					} else {
+						out.push(token);
+					}
+				}
+				// 閉じ括弧が無いまま終わった場合は平衡でないので従来どおり分割
+				if (buffer != null) out.push(...buffer);
+				return out;
+			};
+
+			const parsedTerms = regroupBalanced((opts.searchOperator === 'or'
+				? q.split(' OR ') // notes/search.ts が or 検索時に ' OR ' で連結した区切り
+				: q.split(/\s+/)
+			).map(term => term.trim()).filter(term => term !== ''));
+
+			const excludedTerms = opts.advancedSyntax ? parsedTerms.filter(term => term.startsWith('-') && term.length > 1) : [];
+			const terms = parsedTerms.filter(term => !excludedTerms.includes(term));
+			const excludeWords = [...(opts.excludeWords ?? []), ...excludedTerms.map(term => term.slice(1))];
+
+			if (terms.length > 0) {
+				if (opts.searchOperator === 'or' && terms.length > 1) {
+					// OR検索はSQL側で条件結合し、クエリ構文のORキーワードに依存しない
+					const params: Record<string, string> = {};
+					const conditions = terms.map((term, index) => {
+						params[`pgQuery${index}`] = compileTerm(term);
+						return `note.text &@~ :pgQuery${index}`;
+					});
+					query.andWhere(new Brackets(qb => {
+						qb.where(conditions.join(' OR '));
+					}), params);
+				} else {
+					// AND検索は各語を空白区切りで渡す (Groongaクエリ構文のAND)
+					query.andWhere('note.text &@~ :pgQuery', { pgQuery: terms.map(compileTerm).join(' ') });
+				}
 			}
 
-			if (searchQuery) {
-				query.andWhere('note.text &@~ :q', { q: searchQuery });
+			// 除外語はSQL側でNOTとして適用する。
+			// クエリ構文では否定のみの検索 (-a -b) が成立しないため、
+			// 肯定クエリが空でも除外語だけで検索できるようにする。
+			if (excludeWords.length > 0) {
+				excludeWords.forEach((word, index) => {
+					const trimmed = word.trim();
+					if (trimmed === '') return;
+					query.andWhere(new Brackets(qb => {
+						qb
+							.where('note.text IS NULL')
+							.orWhere(`NOT (note.text &@~ :pgExclude${index})`);
+					}), { [`pgExclude${index}`]: compileTerm(trimmed) });
+				});
 			}
 		} else if (q !== '') {
 			// sqlLikeプロバイダーでの検索処理
@@ -365,6 +498,10 @@ export class SearchService {
 				filter.qs.push({ op: '=', k: 'userHost', v: opts.host });
 			}
 		}
+		if (me == null) {
+			if (this.meta.ugcVisibilityForVisitor === 'none') return [];
+			if (this.meta.ugcVisibilityForVisitor === 'local') filter.qs.push({ op: 'is null', k: 'userHost' });
+		}
 		const res = await this.meilisearchNoteIndex.search(q, {
 			sort: ['createdAt:desc'],
 			matchingStrategy: 'all',
@@ -397,6 +534,11 @@ export class SearchService {
 
 		this.queryService.generateBlockedHostQueryForNote(query);
 		this.queryService.generateSuspendedUserQueryForNote(query);
+		// The Meilisearch index carries no per-caller visibility fields, so the
+		// per-caller visibility gate must be applied to the fetch query itself.
+		// This mirrors the sqlLike/sqlPgroonga provider path (generateVisibilityQuery),
+		// and also enforces the anonymous (visitor) visibility rules.
+		this.queryService.generateVisibilityQuery(query, me);
 
 		const notes = (await query.getMany()).filter(note => {
 			if (me && isUserRelated(note, userIdsWhoBlockingMe)) return false;

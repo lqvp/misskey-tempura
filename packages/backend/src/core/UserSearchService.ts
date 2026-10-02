@@ -126,12 +126,12 @@ export class UserSearchService {
 			.select('following.followeeId')
 			.where('following.followerId = :followerId', { followerId: me.id });
 
-		const activeFollowingUsersQuery = this.generateUserQueryBuilder(params)
+		const activeFollowingUsersQuery = this.generateUserQueryBuilder(params, false)
 			.andWhere(`user.id IN (${followingUserQuery.getQuery()})`)
 			.andWhere('user.updatedAt > :activeThreshold', { activeThreshold });
 		activeFollowingUsersQuery.setParameters(followingUserQuery.getParameters());
 
-		const inactiveFollowingUsersQuery = this.generateUserQueryBuilder(params)
+		const inactiveFollowingUsersQuery = this.generateUserQueryBuilder(params, false)
 			.andWhere(`user.id IN (${followingUserQuery.getQuery()})`)
 			.andWhere(new Brackets(qb => {
 				qb
@@ -141,12 +141,12 @@ export class UserSearchService {
 		inactiveFollowingUsersQuery.setParameters(followingUserQuery.getParameters());
 
 		// 自分自身がヒットするとしたらここ
-		const activeUserQuery = this.generateUserQueryBuilder(params)
+		const activeUserQuery = this.generateUserQueryBuilder(params, false)
 			.andWhere(`user.id NOT IN (${followingUserQuery.getQuery()})`)
 			.andWhere('user.updatedAt > :activeThreshold', { activeThreshold });
 		activeUserQuery.setParameters(followingUserQuery.getParameters());
 
-		const inactiveUserQuery = this.generateUserQueryBuilder(params)
+		const inactiveUserQuery = this.generateUserQueryBuilder(params, false)
 			.andWhere(`user.id NOT IN (${followingUserQuery.getQuery()})`)
 			.andWhere('user.updatedAt <= :activeThreshold', { activeThreshold });
 		inactiveUserQuery.setParameters(followingUserQuery.getParameters());
@@ -190,7 +190,7 @@ export class UserSearchService {
 	private generateUserQueryBuilder(params: {
 		username?: string | null,
 		host?: string | null,
-	}): SelectQueryBuilder<MiUser> {
+	}, isAnonymous = true): SelectQueryBuilder<MiUser> {
 		const userQuery = this.usersRepository.createQueryBuilder('user');
 
 		if (params.username) {
@@ -208,6 +208,7 @@ export class UserSearchService {
 		}
 
 		userQuery.andWhere('user.isSuspended = FALSE');
+		if (isAnonymous) userQuery.andWhere('user.isLocked = FALSE');
 
 		return userQuery;
 	}
@@ -244,6 +245,11 @@ export class UserSearchService {
 					.orWhere('user.updatedAt > :activeThreshold', { activeThreshold: activeThreshold });
 			}))
 			.andWhere('user.isSuspended = FALSE');
+		// ロック済みユーザーの除外は匿名検索のみ (ログイン済みは検索可能)。
+		// searchByUsernameAndHost と同じ挙動に揃える。
+		if (meId == null) {
+			nameQuery.andWhere('user.isLocked = FALSE');
+		}
 
 		if (mutingQuery) {
 			nameQuery.andWhere(`user.id NOT IN (${mutingQuery.getQuery()})`);
@@ -287,6 +293,10 @@ export class UserSearchService {
 				}))
 				.andWhere('user.isSuspended = FALSE')
 				.setParameters(profQuery.getParameters());
+			// プロフィール検索側も同じく、ロック済み除外は匿名検索のみ
+			if (meId == null) {
+				userQuery.andWhere('user.isLocked = FALSE');
+			}
 
 			users = users.concat(await userQuery
 				.orderBy('user.updatedAt', 'DESC', 'NULLS LAST')

@@ -34599,6 +34599,8 @@ export interface operations {
                     searchOperator?: 'and' | 'or';
                     /** @default [] */
                     excludeWords?: string[];
+                    /** @default false */
+                    advancedSyntax?: boolean;
                 };
             };
         };
@@ -38189,6 +38191,7 @@ export interface operations {
                         description: string | null;
                         url: string;
                         roleIdsThatCanBeUsedThisDecoration: string[];
+                        category?: string | null;
                     }[];
                 };
             };
@@ -38533,6 +38536,8 @@ export interface operations {
             content: {
                 'application/json': {
                     endpoint: string;
+                    auth: string;
+                    publickey: string;
                 };
             };
         };
@@ -38572,6 +38577,15 @@ export interface operations {
             };
             /** @description I'm Ai */
             418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
