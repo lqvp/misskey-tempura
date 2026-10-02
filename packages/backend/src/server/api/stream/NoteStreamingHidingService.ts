@@ -84,6 +84,8 @@ export class NoteStreamingHidingService {
 			}
 			if (stripReactionCache) {
 				currentCloned.reactionAndUserPairCache = undefined;
+				// 早期リターン側と同じく、返信の reactionAndUserPairCache も匿名配信では隠す
+				if (currentCloned.reply) currentCloned.reply.reactionAndUserPairCache = undefined;
 			}
 			currentCloned = currentCloned.renote!;
 		}

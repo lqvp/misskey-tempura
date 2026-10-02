@@ -88,4 +88,15 @@ describe('notes/search term boundaries', () => {
 		await endpoint.exec({ query, advancedSyntax, searchOperator }, null, null);
 		expect(searchNote.mock.calls[0][0]).toBe(expected);
 	});
+
+	test('+(dog bird) compiles as a Groonga group, not a quoted phrase', async () => {
+		// AND検索では括弧付きトークンが1トークンとして compileTerm に届く。
+		// グループ記号はそのまま、内部の語だけ個別に引用されること。
+		const { parameters } = await compile('cat +(dog bird) fish', { advancedSyntax: true, searchOperator: 'and' });
+		expect(parameters.pgQuery).toBe('"cat" +("dog" "bird") "fish"');
+		// OR検索でもグループは保たれる
+		const { parameters: orParams } = await compile('cat OR +(dog bird)', { advancedSyntax: true, searchOperator: 'or' });
+		expect(orParams.pgQuery0).toBe('"cat"');
+		expect(orParams.pgQuery1).toBe('+("dog" OR "bird")');
+	});
 });

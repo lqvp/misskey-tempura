@@ -320,10 +320,14 @@ export class ApPersonService implements OnModuleInit {
 					const localDecos = await this.avatarDecorationService.getAll();
 					// ローカルのデコレーションとして登録する
 					// remote payload は untrusted として検証する (vuln-0018)
+					const collected: typeof res.avatarDecorations = [];
 					for (const deco of res.avatarDecorations) {
-						if (localDecos.some((v) => v.id === deco.id)) continue;
+						// null やオブジェクトでない要素は検証せず除外する
+						if (deco == null || typeof deco !== 'object') continue;
 						if (typeof deco.id !== 'string' || deco.id.length === 0 || deco.id.length > 128) continue;
 						if (typeof deco.url !== 'string' || !deco.url.startsWith('https://')) continue;
+						// 検証を通過した要素に対して重複チェックする
+						if (localDecos.some((v) => v.id === deco.id)) continue;
 						let decoHost: string | undefined;
 						try {
 							decoHost = new URL(deco.url).host;
@@ -340,8 +344,11 @@ export class ApPersonService implements OnModuleInit {
 							name: `import_${host}_${deco.id}`.slice(0, 256),
 							description: `Imported from ${host}`,
 						});
+						collected.push(deco);
 					}
-					Object.assign(returnData, { avatarDecorations: res.avatarDecorations });
+					if (collected.length > 0) {
+						Object.assign(returnData, { avatarDecorations: collected });
+					}
 				}
 			}
 		}

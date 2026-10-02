@@ -106,7 +106,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		super(meta, paramDef, async (ps, me) => {
 			// SSRFガード: canManageAvatarDecorations ポリシー保持者なら管理者でなくても
 			// 到達できるため、サーバーによる外部URL取得の前にプライベート/ループバック宛を拒否する
-			if (!validateRemoteUrl(ps.url, this.config)) {
+			if (!await validateRemoteUrl(ps.url, this.config)) {
 				throw new ApiError(meta.errors.invalidRemoteUrl);
 			}
 

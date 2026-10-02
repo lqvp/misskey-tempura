@@ -181,6 +181,7 @@ function onSearchInput() {
 	}
 	searchResults.value = [];
 	canLoadMore.value = false;
+	if (searchQuery.value !== '') isSearching.value = true;
 	searchTimeout = window.setTimeout(() => { void fetchDecorations(0); }, 300);
 }
 

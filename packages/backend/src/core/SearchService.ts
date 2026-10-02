@@ -60,7 +60,9 @@ export type SearchPagination = {
 
 function compileValue(value: V): string {
 	if (typeof value === 'string') {
-		return `'${value.replaceAll("'", "\\'")}'`;
+		// Meilisearch のリテラルではバックスラッシュがエスケープ文字のため、
+		// シングルクォートより先にバックスラッシュをエスケープする
+		return `'${value.replace(/\\/g, '\\\\').replaceAll("'", "\\'")}'`;
 	} else if (typeof value === 'number') {
 		return value.toString();
 	} else if (typeof value === 'boolean') {
@@ -285,17 +287,83 @@ export class SearchService {
 				if (match == null) return quoteTerm(term);
 				const [, prefix, core, wildcard] = match;
 				if (core.includes('(') || core.includes(')')) {
-					const open = (core.match(/\(/g) ?? []).length;
-					const close = (core.match(/\)/g) ?? []).length;
-					if (open !== close) return quoteTerm(term);
+					// バランスの取れた括弧は Groonga のグループ記号として保ち、
+					// 内部の語を空白で分割して個別に引用する (例: +(dog bird) -> +("dog" "bird"))
+					if ((core.match(/\(/g) ?? []).length !== (core.match(/\)/g) ?? []).length) return quoteTerm(term);
+					const joiner = opts.searchOperator === 'or' ? ' OR ' : ' ';
+					// 括弧 (グループ記号) はそのまま残し、語だけを引用する。
+					// 括弧の外側 (depth === 0) のテキストは従来どおり引用のみ行う。
+					let grouped = '';
+					let token = '';
+					let depth = 0;
+					const flush = (): void => {
+						if (token === '') return;
+						// グループ内の直前の語と区切りを挟む (例: +("dog" "bird") または OR 時は +("dog" OR "bird"))
+						// 直前が '(' のとき (グループ開始直後) は区切り不要
+						const prev = grouped.slice(-1);
+						if (prev !== '' && prev !== '(') grouped += joiner;
+						grouped += depth > 0 ? token.split(/\s+/).filter(t => t !== '').map(quoteTerm).join(joiner) : quoteTerm(token);
+						token = '';
+					};
+					for (const ch of core) {
+						if (ch === '(') {
+							flush();
+							depth++;
+							grouped += ch;
+						} else if (ch === ')') {
+							flush();
+							depth--;
+							grouped += ch;
+						} else if (/\s/.test(ch) && depth > 0) {
+							flush();
+						} else if (/\s/.test(ch) && depth === 0) {
+							flush();
+							grouped += ch;
+						} else {
+							token += ch;
+						}
+					}
+					flush();
+					return `${prefix}${grouped}${wildcard}`;
 				}
 				return `${prefix}${quoteTerm(core)}${wildcard}`;
 			};
 
-			const parsedTerms = (opts.searchOperator === 'or'
+			// バランスの取れた括弧 (例: +(dog bird)) を1トークンとして保つ。
+			// 不平衡な括弧は従来どおり空白で分割する。
+			const regroupBalanced = (raw: string[]): string[] => {
+				if (!opts.advancedSyntax) return raw;
+				const out: string[] = [];
+				let buffer: string[] | null = null;
+				let depth = 0;
+				for (const token of raw) {
+					const open = (token.match(/\(/g) ?? []).length;
+					const close = (token.match(/\)/g) ?? []).length;
+					if (buffer != null) {
+						buffer.push(token);
+						depth += open - close;
+						if (depth === 0) {
+							out.push(buffer.join(' '));
+							buffer = null;
+						}
+						continue;
+					}
+					depth = open - close;
+					if (depth > 0) {
+						buffer = [token];
+					} else {
+						out.push(token);
+					}
+				}
+				// 閉じ括弧が無いまま終わった場合は平衡でないので従来どおり分割
+				if (buffer != null) out.push(...buffer);
+				return out;
+			};
+
+			const parsedTerms = regroupBalanced((opts.searchOperator === 'or'
 				? q.split(' OR ') // notes/search.ts が or 検索時に ' OR ' で連結した区切り
 				: q.split(/\s+/)
-			).map(term => term.trim()).filter(term => term !== '');
+			).map(term => term.trim()).filter(term => term !== ''));
 
 			const excludedTerms = opts.advancedSyntax ? parsedTerms.filter(term => term.startsWith('-') && term.length > 1) : [];
 			const terms = parsedTerms.filter(term => !excludedTerms.includes(term));

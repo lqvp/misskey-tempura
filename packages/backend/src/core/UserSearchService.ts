@@ -244,8 +244,12 @@ export class UserSearchService {
 					.where('user.updatedAt IS NULL')
 					.orWhere('user.updatedAt > :activeThreshold', { activeThreshold: activeThreshold });
 			}))
-			.andWhere('user.isSuspended = FALSE')
-			.andWhere('user.isLocked = FALSE');
+			.andWhere('user.isSuspended = FALSE');
+		// ロック済みユーザーの除外は匿名検索のみ (ログイン済みは検索可能)。
+		// searchByUsernameAndHost と同じ挙動に揃える。
+		if (meId == null) {
+			nameQuery.andWhere('user.isLocked = FALSE');
+		}
 
 		if (mutingQuery) {
 			nameQuery.andWhere(`user.id NOT IN (${mutingQuery.getQuery()})`);
@@ -288,8 +292,11 @@ export class UserSearchService {
 						.orWhere('user.updatedAt > :activeThreshold', { activeThreshold: activeThreshold });
 				}))
 				.andWhere('user.isSuspended = FALSE')
-				.andWhere('user.isLocked = FALSE')
 				.setParameters(profQuery.getParameters());
+			// プロフィール検索側も同じく、ロック済み除外は匿名検索のみ
+			if (meId == null) {
+				userQuery.andWhere('user.isLocked = FALSE');
+			}
 
 			users = users.concat(await userQuery
 				.orderBy('user.updatedAt', 'DESC', 'NULLS LAST')
