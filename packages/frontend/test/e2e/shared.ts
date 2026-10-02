@@ -94,6 +94,21 @@ export async function acceptSignupRules(page: Page): Promise<void> {
 	await page.getByTestId('signup-rules-continue').click();
 }
 
+/**
+ * fork固有の招待コード確認ステップを捌く。
+ * invitationCode が与えられた場合は入力して確認し、そうでない場合は
+ * 「招待コードなしで進む」で登録フォームへ進む (disableRegistration=false が前提)。
+ */
+export async function acceptSignupInviteCheck(page: Page, invitationCode?: string): Promise<void> {
+	if (invitationCode != null) {
+		await page.fill('#invite-code', invitationCode);
+		await page.getByTestId('signup-invite-check').click();
+		await page.getByTestId('signup-invite-confirm').click();
+	} else {
+		await page.getByTestId('signup-invite-skip').click();
+	}
+}
+
 export async function signupThroughUi(
 	page: Page,
 	options: {
@@ -104,11 +119,15 @@ export async function signupThroughUi(
 ): Promise<void> {
 	await page.getByTestId('signup').click();
 	await acceptSignupRules(page);
+	await acceptSignupInviteCheck(page, options.invitationCode);
 
 	await locateMkInput(page, 'signup-username').fill(options.username);
 	await locateMkInput(page, 'signup-password').fill(options.password);
 	await locateMkInput(page, 'signup-password-retype').fill(options.password);
-	await locateMkInput(page, 'signup-invitation-code').fill(options.invitationCode ?? DEFAULT_INVITATION_CODE);
+	// 招待コード確認ステップで入力済みの場合はフォーム側の入力はスキップする
+	if (options.invitationCode == null) {
+		await locateMkInput(page, 'signup-invitation-code').fill(DEFAULT_INVITATION_CODE);
+	}
 
 	const signupResponse = waitApiResponse(page, '/api/signup');
 	await page.getByTestId('signup-submit').click();
