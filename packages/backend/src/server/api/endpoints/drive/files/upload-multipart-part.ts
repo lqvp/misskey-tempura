@@ -126,13 +126,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					throw new ApiError(meta.errors.invalidPartNumber);
 				}
 
-				// パート读写先は旧スティージングパスとの互換を保って解決する
-				const partDir = resolveMultipartStagingDir(this.config.multipartTempDir, multipartUpload.id);
-				const partPath = `${partDir}/part_${ps.partNumber}`;
-
-				// Check if this part was already uploaded
-				const partExists = fs.existsSync(partPath);
-
 				// クォータ判定とパート保存をユーザー単位で直列化し、
 				// 並行アップロードが同じ使用量に対してチェックを通過して
 				// クォータ超過になるのを防ぐ
@@ -145,6 +138,13 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					if (!(await this.multipartUploadsRepository.exists({ where: { id: multipartUpload.id, userId: me.id } }))) {
 						throw new ApiError(meta.errors.noSuchMultipartUpload);
 					}
+
+					// パート读写先は旧スティージングパスとの互換を保って解決する
+					const partDir = resolveMultipartStagingDir(this.config.multipartTempDir, multipartUpload.id);
+					const partPath = `${partDir}/part_${ps.partNumber}`;
+
+					// Check if this part was already uploaded
+					const partExists = fs.existsSync(partPath);
 
 					// 新しいパートをスティージングに加えた合計がアカウントの
 					// クォータを超えたら拒否する。既存パートの置換の場合は
@@ -173,11 +173,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					// Move the uploaded file to the part path
 					// （スティージング先が一時領域と別ファイルシステムの場合は EXDEV になるため copy+削除にフォールバックする）
 					try {
-						fs.renameSync(file!.path, partPath);
+						await fs.promises.rename(file!.path, partPath);
 					} catch (err) {
 						if ((err as NodeJS.ErrnoException).code === 'EXDEV') {
-							fs.copyFileSync(file!.path, partPath);
-							fs.rmSync(file!.path, { force: true });
+							await fs.promises.copyFile(file!.path, partPath);
+							await fs.promises.rm(file!.path, { force: true });
 						} else {
 							throw err;
 						}
