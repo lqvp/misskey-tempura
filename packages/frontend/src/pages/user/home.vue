@@ -395,7 +395,7 @@ async function updateMemo() {
 }
 
 watch(() => props.user, () => {
-	user.value = props.user;
+	user.value = { ...props.user, communityRoles: props.user.communityRoles ?? [] };
 	// 編集中は上書きしない (入力中の内容を消してしまう)
 	if (!isModerationNoteDirty.value) moderationNote.value = props.user.moderationNote ?? '';
 	if (isEditingMemo.value) return;
