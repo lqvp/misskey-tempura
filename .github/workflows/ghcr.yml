@@ -1,6 +1,9 @@
 name: Publish Docker image for ghcr.io
 
 on:
+  push:
+    branches:
+      - master
   release:
     types: [published]
   workflow_dispatch:
