@@ -9,7 +9,13 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 import type { MultipartUploadsRepository } from '@/models/_.js';
+import type { Config } from '@/config.js';
 import { ApiError } from '../../../error.js';
+import {
+	getMultipartStagingDir,
+	getStagedBytesOfUpload,
+	MULTIPART_STAGING_QUOTA_BYTES,
+} from '@/misc/multipart-staging.js';
 
 export const meta = {
 	tags: ['drive'],
@@ -67,6 +73,11 @@ export const meta = {
 			code: 'MULTIPART_UPLOAD_EXPIRED',
 			id: '1c8f71a2-a080-4043-9caa-ca06eed63c25',
 		},
+		stagingQuotaExceeded: {
+			message: 'The total size of staged uploads exceeds the allowed quota.',
+			code: 'STAGING_QUOTA_EXCEEDED',
+			id: '5f0a3b2e-7c41-4f02-9a6d-2e8b5c1d4a73',
+		},
 	},
 } as const;
 
@@ -84,6 +95,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	constructor(
 		@Inject(DI.multipartUploadsRepository)
 		private multipartUploadsRepository: MultipartUploadsRepository,
+
+		@Inject(DI.config)
+		private config: Config,
 	) {
 		super(meta, paramDef, async (ps, me, _, file, cleanup) => {
 			try {
@@ -108,7 +122,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				}
 
 				// Create part directory if it doesn't exist
-				const partDir = `/tmp/misskey_multipart_${multipartUpload.id}`;
+				const partDir = getMultipartStagingDir(this.config.multipartTempDir, multipartUpload.id);
 				if (!fs.existsSync(partDir)) {
 					fs.mkdirSync(partDir, { recursive: true });
 				}
@@ -119,8 +133,31 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				// Check if this part was already uploaded
 				const partExists = fs.existsSync(partPath);
 
+				// 新しいパートでスティージング合計がアカウントのクォータを超えたら拒否する
+				if (!partExists) {
+					const userUploads = await this.multipartUploadsRepository.findBy({ userId: me.id });
+					let stagedBytes = fs.statSync(file!.path).size;
+					for (const upload of userUploads) {
+						if (upload.id === multipartUpload.id) continue;
+						stagedBytes += getStagedBytesOfUpload(getMultipartStagingDir(this.config.multipartTempDir, upload.id));
+					}
+					if (stagedBytes > MULTIPART_STAGING_QUOTA_BYTES) {
+						throw new ApiError(meta.errors.stagingQuotaExceeded);
+					}
+				}
+
 				// Move the uploaded file to the part path
-				fs.renameSync(file!.path, partPath);
+				// （スティージング先が一時領域と別ファイルシステムの場合は EXDEV になるため copy+削除にフォールバックする）
+				try {
+					fs.renameSync(file!.path, partPath);
+				} catch (err) {
+					if ((err as NodeJS.ErrnoException).code === 'EXDEV') {
+						fs.copyFileSync(file!.path, partPath);
+						fs.rmSync(file!.path, { force: true });
+					} else {
+						throw err;
+					}
+				}
 
 				// Calculate ETag (MD5 hash would be ideal, but we'll just use a simple identifier for now)
 				const etag = `part_${ps.partNumber}_${Date.now()}`;

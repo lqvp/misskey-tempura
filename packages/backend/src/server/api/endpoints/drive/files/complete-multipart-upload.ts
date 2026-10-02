@@ -10,10 +10,12 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 import { createTemp } from '@/misc/create-temp.js';
 import type { MultipartUploadsRepository } from '@/models/_.js';
+import type { Config } from '@/config.js';
 import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.js';
 import { DriveService } from '@/core/DriveService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { ApiError } from '../../../error.js';
+import { getMultipartStagingDir } from '@/misc/multipart-staging.js';
 
 export const meta = {
 	tags: ['drive'],
@@ -79,6 +81,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	constructor(
 		@Inject(DI.multipartUploadsRepository)
 		private multipartUploadsRepository: MultipartUploadsRepository,
+
+		@Inject(DI.config)
+		private config: Config,
 		private driveFileEntityService: DriveFileEntityService,
 		private driveService: DriveService,
 		private roleService: RoleService,
@@ -112,7 +117,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			// Verify that all parts have been uploaded regardless of completedParts counter
-			const partDir = `/tmp/misskey_multipart_${multipartUpload.id}`;
+			const partDir = getMultipartStagingDir(this.config.multipartTempDir, multipartUpload.id);
 			let allPartsExist = true;
 			const missingParts = [];
 
