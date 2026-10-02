@@ -31,6 +31,7 @@ export const meta = {
 				description: { type: 'string', nullable: true },
 				url: { type: 'string' },
 				roleIdsThatCanBeUsedThisDecoration: { type: 'array', items: { type: 'string' } },
+				category: { type: 'string', optional: true, nullable: true },
 			},
 		},
 	},

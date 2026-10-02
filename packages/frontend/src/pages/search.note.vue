@@ -37,6 +37,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #label>{{ i18n.ts._advancedSearch._searchOperator.label }}</template>
 				</MkRadios>
 
+				<MkSwitch v-model="advancedSyntax">
+					<template #label>{{ i18n.ts._advancedSearch.advancedSyntax }}</template>
+					<template #caption>{{ i18n.ts._advancedSearch.advancedSyntaxCaption }}</template>
+				</MkSwitch>
+
 				<MkInput
 					v-model="excludeWords"
 					:placeholder="i18n.ts._advancedSearch.excludeWords"
@@ -267,6 +272,9 @@ const props = withDefaults(defineProps<{
 	hasPoll?: string;
 	searchOperator?: string;
 	excludeWords?: string;
+	rangeStartAt?: string;
+	rangeEndAt?: string;
+	advancedSyntax?: string;
 }>(), {
 	query: '',
 	userId: undefined,
@@ -281,6 +289,9 @@ const props = withDefaults(defineProps<{
 	hasPoll: 'all',
 	searchOperator: 'and',
 	excludeWords: '',
+	rangeStartAt: undefined,
+	rangeEndAt: undefined,
+	advancedSyntax: undefined,
 });
 
 const router = useRouter();
@@ -290,7 +301,9 @@ const paginator = shallowRef<Paginator<'notes/search'> | null>(null);
 const hitCount = ref<number | null>(null);
 
 const searchQuery = ref(toRef(props, 'query').value);
-const hostInput = ref(toRef(props, 'host').value);
+// 検索URLのコピーでローカルスコープは host=local として書き出されるため、
+// URLから復元する際はホスト名の代わりに空文字を入れる
+const hostInput = ref(toRef(props, 'host').value === 'local' ? '' : toRef(props, 'host').value);
 const visibilitySelect = ref<'all' | 'public' | 'home' | 'followers' | 'specified'>(toRef(props, 'visibility').value as any);
 const hasFiles = ref<'all' | 'with' | 'without'>(toRef(props, 'hasFiles').value as any);
 const hasCw = ref<'all' | 'with' | 'without'>(toRef(props, 'hasCw').value as any);
@@ -298,6 +311,8 @@ const hasReply = ref<'all' | 'with' | 'without'>(toRef(props, 'hasReply').value 
 const hasPoll = ref<'all' | 'with' | 'without'>(toRef(props, 'hasPoll').value as any);
 const searchOperator = ref<'and' | 'or'>(toRef(props, 'searchOperator').value as any);
 const excludeWords = ref<string>(toRef(props, 'excludeWords').value);
+// URLパラメータは文字列で届くため 'true' の場合のみ有効化する
+const advancedSyntax = ref<boolean>(toRef(props, 'advancedSyntax').value === 'true');
 
 // URLパラメータからsinceDate/untilDateを適切に変換
 const convertTimestampToDatetimeLocal = (timestamp: string | undefined): string | null => {
@@ -306,13 +321,14 @@ const convertTimestampToDatetimeLocal = (timestamp: string | undefined): string 
 	if (isNaN(parsedTimestamp)) return null;
 	const date = new Date(parsedTimestamp);
 	if (isNaN(date.getTime())) return null;
-	return date.toISOString().slice(0, 16); // YYYY-MM-DDTHH:MM形式
+	const pad = (value: number) => String(value).padStart(2, '0');
+	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
 const sinceDate = ref<string | null>(convertTimestampToDatetimeLocal(toRef(props, 'sinceDate').value));
 const untilDate = ref<string | null>(convertTimestampToDatetimeLocal(toRef(props, 'untilDate').value));
-const rangeStartAt = ref<string | null>(null);
-const rangeEndAt = ref<string | null>(null);
+const rangeStartAt = ref<string | null>(convertTimestampToDatetimeLocal(toRef(props, 'rangeStartAt').value));
+const rangeEndAt = ref<string | null>(convertTimestampToDatetimeLocal(toRef(props, 'rangeEndAt').value));
 
 const user = shallowRef<Misskey.entities.UserDetailed | null>(null);
 
@@ -345,6 +361,9 @@ if (fetchedUser != null) {
 const searchScope = ref<'all' | 'local' | 'server' | 'user'>((() => {
 	if (user.value != null) return 'user';
 	if (noteSearchableScope === 'local') return 'local';
+	// host=local で復元されたURLはサーバー名ではなくローカルスコープとして扱う
+	// (hostInputの判定より前で評価しないと host='local' がそのままAPIへ送信される)
+	if (toRef(props, 'host').value === 'local') return 'local';
 	if (hostInput.value) return 'server';
 	return 'all';
 })());
@@ -510,6 +529,10 @@ async function copySearchUrl() {
 		params.set('searchOperator', 'or');
 	}
 
+	if (advancedSyntax.value) {
+		params.set('advancedSyntax', 'true');
+	}
+
 	if (excludeWords.value.trim() !== '') {
 		params.set('excludeWords', excludeWords.value);
 	}
@@ -519,6 +542,12 @@ async function copySearchUrl() {
 	}
 	if (untilDate.value) {
 		params.set('untilDate', new Date(untilDate.value).getTime().toString());
+	}
+	if (rangeStartAt.value) {
+		params.set('rangeStartAt', new Date(rangeStartAt.value).getTime().toString());
+	}
+	if (rangeEndAt.value) {
+		params.set('rangeEndAt', new Date(rangeEndAt.value).getTime().toString());
 	}
 
 	const url = new URL(window.location.origin + window.location.pathname);
@@ -555,6 +584,10 @@ async function search() {
 		params.searchOperator = 'or';
 	}
 
+	if (advancedSyntax.value) {
+		params.advancedSyntax = true;
+	}
+
 	// 複数の検索語を処理
 	const trimmedQuery = searchQuery.value.trim();
 	if (trimmedQuery !== '') {
@@ -568,9 +601,9 @@ async function search() {
 		params.untilDate = new Date(untilDate.value).getTime();
 	}
 
-	// 除外語を処理
+	// 除外語を処理 (カンマ以外に空白・改行でも区切る)
 	if (excludeWords.value.trim() !== '') {
-		params.excludeWords = excludeWords.value.split(',').map(word => word.trim()).filter(word => word !== '');
+		params.excludeWords = excludeWords.value.split(/[,\s]+/).filter(word => word !== '');
 	}
 
 	//#region AP lookup

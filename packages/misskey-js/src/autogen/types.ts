@@ -34599,6 +34599,8 @@ export interface operations {
                     searchOperator?: 'and' | 'or';
                     /** @default [] */
                     excludeWords?: string[];
+                    /** @default false */
+                    advancedSyntax?: boolean;
                 };
             };
         };
@@ -38189,6 +38191,7 @@ export interface operations {
                         description: string | null;
                         url: string;
                         roleIdsThatCanBeUsedThisDecoration: string[];
+                        category?: string | null;
                     }[];
                 };
             };

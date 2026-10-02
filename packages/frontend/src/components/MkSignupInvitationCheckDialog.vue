@@ -67,6 +67,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						v-if="canProceedWithoutCode"
 						inline rounded
 						:wait="isLoading"
+						data-testid="signup-invite-skip"
 						@click="proceedWithoutCode"
 					>
 						{{ i18n.ts._signupEnhance.proceedWithoutInviteCodeButton }}
@@ -74,6 +75,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkButton
 						inline rounded primary gradate
 						:wait="isLoading"
+						data-testid="signup-invite-check"
 						@click="checkInviteCode"
 					>
 						{{ isLoading ? i18n.ts._signupEnhance.checkingInviteCodeButton : i18n.ts._signupEnhance.checkInviteCodeButton }}
@@ -90,6 +92,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkButton>
 					<MkButton
 						inline rounded primary gradate
+						data-testid="signup-invite-confirm"
 						@click="confirmAndProceed"
 					>
 						{{ i18n.ts._signupEnhance.useInviteCodeButton }}

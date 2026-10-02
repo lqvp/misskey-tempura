@@ -3,24 +3,21 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { Inject, Injectable } from '@nestjs/common';
-import { DI } from '@/di-symbols.js';
+import { Injectable } from '@nestjs/common';
+import { MetaService } from '@/core/MetaService.js';
 import { bindThis } from '@/decorators.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { deepClone } from '@/misc/clone.js';
 import { isRenotePacked, isQuotePacked } from '@/misc/is-renote.js';
 import type { Packed } from '@/misc/json-schema.js';
 import type { MiUser } from '@/models/User.js';
-import type { MiMeta } from '@/models/_.js';
 
 /** Streamにおいて、ノートを隠す（hideNote）を適用するためのService */
 @Injectable()
 export class NoteStreamingHidingService {
 	constructor(
-		@Inject(DI.meta)
-		private meta: MiMeta,
-
 		private noteEntityService: NoteEntityService,
+		private metaService: MetaService,
 	) {}
 
 	private collectRenoteChain(note: Packed<'Note'>): Packed<'Note'>[] {
@@ -47,17 +44,27 @@ export class NoteStreamingHidingService {
 	@bindThis
 	public async filter(note: Packed<'Note'>, meId: MiUser['id'] | null): Promise<Packed<'Note'> | null> {
 		if (meId == null) {
-			if (this.meta.ugcVisibilityForVisitor === 'none') return null;
-			if (this.meta.ugcVisibilityForVisitor === 'local' && note.user.host != null) return null;
+			const meta = await this.metaService.fetch();
+			if (meta.ugcVisibilityForVisitor === 'none') return null;
+			if (meta.ugcVisibilityForVisitor === 'local' && note.user.host != null) return null;
 		}
 
 		const renoteChain = this.collectRenoteChain(note);
 		const shouldHide = await Promise.all(renoteChain.map(n => this.noteEntityService.shouldHideNote(n, meId)));
 		const shouldHideReply = await Promise.all(renoteChain.map(n => n.reply ? this.noteEntityService.shouldHideNote(n.reply, meId) : false));
+		// REST の notes/reactions は me なしでは [] を返すため、匿名配信では
+		// reactionAndUserPairCache（userId/reaction ペア）も隠す。
+		const stripReactionCache = meId == null;
 
 		if (!shouldHide.some(h => h) && !shouldHideReply.some(h => h)) {
 			// 隠す必要がない場合は元のノートをそのまま返す
-			return note;
+			if (!stripReactionCache) return note;
+			const stripped = deepClone(note);
+			for (let current: Packed<'Note'> | null | undefined = stripped; current != null; current = current.renote) {
+				current.reactionAndUserPairCache = undefined;
+				if (current.reply) current.reply.reactionAndUserPairCache = undefined;
+			}
+			return stripped;
 		}
 
 		if (shouldHide.some(h => h) && renoteChain.some(n => isRenotePacked(n) && !isQuotePacked(n))) {
@@ -74,6 +81,11 @@ export class NoteStreamingHidingService {
 			}
 			if (shouldHideReply[i] && currentCloned.reply) {
 				this.noteEntityService.hideNote(currentCloned.reply);
+			}
+			if (stripReactionCache) {
+				currentCloned.reactionAndUserPairCache = undefined;
+				// 早期リターン側と同じく、返信の reactionAndUserPairCache も匿名配信では隠す
+				if (currentCloned.reply) currentCloned.reply.reactionAndUserPairCache = undefined;
 			}
 			currentCloned = currentCloned.renote!;
 		}

@@ -114,6 +114,8 @@ export class QueryService {
 		}
 	}
 
+	// ugcVisibilityForVisitor: anonymous visitors must not be served UGC the instance
+	// lockdown denies them (server-level gate, same behavior as notes/show.ts)
 	@bindThis
 	public generateUgcVisibilityQueryForVisitor(q: SelectQueryBuilder<any>): void {
 		if (this.meta.ugcVisibilityForVisitor === 'none') {
@@ -273,8 +275,7 @@ export class QueryService {
 	public generateVisibilityQuery(q: SelectQueryBuilder<any>, me?: { id: MiUser['id'] } | null): void {
 		// This code must always be synchronized with the checks in NoteEntityService.isVisibleForMe and Stream abstract class Channel.isNoteVisibleForMe.
 		if (me == null) {
-			// TODO: ugcVisibilityForVisitor が local の場合の扱い (付随するリモートのノートを隠して表示するか) を検討する
-			if (this.meta.ugcVisibilityForVisitor === 'none') q.andWhere('1=0');
+			this.generateUgcVisibilityQueryForVisitor(q);
 
 			const profileSubQuery = this.userProfilesRepository.createQueryBuilder('profile')
 				.select('1')
@@ -288,8 +289,11 @@ export class QueryService {
 
 			q.andWhere(new Brackets(qb => {
 				qb
-					.where('note.visibility = \'public\'')
-					.orWhere('note.visibility = \'home\'')
+					.where(new Brackets(qb2 => {
+						qb2
+							.where('note.visibility = \'public\'')
+							.orWhere('note.visibility = \'home\'');
+					}))
 				// プロフィールで非表示設定されているノートを除外
 					.andWhere(`NOT EXISTS (${profileSubQuery.getQuery()})`);
 			}));

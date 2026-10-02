@@ -39,6 +39,12 @@ export const meta = {
 			code: 'ALREADY_FAVORITED',
 			id: 'a402c12b-34dd-41d2-97d8-4d2ffd96a1a6',
 		},
+
+		noteNotAccessibleForYou: {
+			message: 'Note not accessible for you.',
+			code: 'NOTE_NOT_ACCESSIBLE_FOR_YOU',
+			id: 'cb3aa025-89c7-4a06-be1b-39d2ab87c91c',
+		},
 	},
 } as const;
 
@@ -70,7 +76,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			// check visibility
 			if (!await this.noteEntityService.isVisibleForMe(note, me.id)) {
-				throw new ApiError(meta.errors.noSuchNote);
+				throw new ApiError(meta.errors.noteNotAccessibleForYou);
 			}
 
 			// if already favorited
