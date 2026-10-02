@@ -326,6 +326,7 @@ export class SignupApiService {
 			}
 
 			// 承認待ちフロー
+			let committed = false;
 			const { account } = await this.signupService.signup({
 				username, password, host, reason,
 			}).catch(err => {
@@ -370,6 +371,7 @@ export class SignupApiService {
 				return;
 			}
 
+			let committed = false;
 			try {
 				// ticket があれば承認待ちをスキップ
 				const { account, secret } = await this.signupService.signup({
@@ -377,6 +379,7 @@ export class SignupApiService {
 					password,
 					host,
 					reason,
+					onCommitted: () => { committed = true; },
 					approved: (ticket != null && ticket.skipApproval) || !this.meta.approvalRequiredForSignup,
 				});
 

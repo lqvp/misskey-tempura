@@ -63,6 +63,8 @@ export class SignupService {
 		ignorePreservedUsernames?: boolean;
 		reason?: string | null;
 		approved?: boolean;
+		/** Called only after this signup transaction commits, before post-signup work. */
+		onCommitted?: () => void;
 	}) {
 		const { username, password, passwordHash, host } = opts;
 		let hash = passwordHash;
@@ -176,6 +178,8 @@ export class SignupService {
 				username: username.toLowerCase(),
 			}));
 		});
+
+		opts.onCommitted?.();
 
 		this.usersChart.update(account, true);
 
