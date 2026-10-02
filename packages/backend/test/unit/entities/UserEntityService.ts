@@ -48,6 +48,7 @@ import { ChartLoggerService } from '@/core/chart/ChartLoggerService.js';
 import InstanceChart from '@/core/chart/charts/instance.js';
 import { ApLoggerService } from '@/core/activitypub/ApLoggerService.js';
 import { AccountMoveService } from '@/core/AccountMoveService.js';
+import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { ReactionService } from '@/core/ReactionService.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { ReactionsBufferingService } from '@/core/ReactionsBufferingService.js';
@@ -171,6 +172,7 @@ describe('UserEntityService', () => {
 				InstanceChart,
 				ApLoggerService,
 				AccountMoveService,
+				HttpRequestService,
 				ReactionService,
 				ReactionsBufferingService,
 				NotificationService,

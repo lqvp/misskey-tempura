@@ -44,6 +44,15 @@ fetchMocker.mockIf(/^\/assets\/locales\/.*\.json$/, async () => {
 	};
 });
 
+// 未モックのリクエスト(emoji一覧などのコンポーネント内fetch)は実ネットワークに出ると
+// ECONNREFUSED が unhandled error になりジョブが落ちる。無害な空レスポンスで受ける。
+fetchMocker.mockIf(/^[\s\S]*$/, async () => {
+	return {
+		status: 200,
+		body: '{}',
+	};
+});
+
 const { updateI18n } = await import('@/i18n.js');
 updateI18n(locales['en-US']);
 

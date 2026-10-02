@@ -23,6 +23,7 @@ import { DI } from '@/di-symbols.js';
 import { genAidx } from '@/misc/id/aidx.js';
 import { CacheService } from '@/core/CacheService.js';
 import { IdService } from '@/core/IdService.js';
+import { RoleService } from '@/core/RoleService.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { secureRndstr } from '@/misc/secure-rndstr.js';
@@ -80,6 +81,12 @@ describe('AnnouncementService', () => {
 				} else if (token === ModerationLogService) {
 					return {
 						log: vi.fn(),
+					};
+				} else if (token === RoleService) {
+					return {
+						getUserRoles: vi.fn(async () => []),
+						getRoles: vi.fn(async () => []),
+						getRoleUsers: vi.fn(async () => []),
 					};
 				} else if (typeof token === 'function') {
 					return mockDeep<typeof token>();

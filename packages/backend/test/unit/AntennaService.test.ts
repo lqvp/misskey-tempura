@@ -210,30 +210,29 @@ describe('AntennaService', () => {
 			expect(result).toHaveLength(2);
 		});
 
-		it('keeps longest match when started at same position', () => {
+		it('keeps overlapping matches of different keywords (per-keyword deduplication)', () => {
+			// fork仕様: キーワード単位でのみ重複排除するため、別キーワードの重なりは保持される
 			const matches: any[] = [
 				{ keyword: 'A', start: 0, end: 1 },
 				{ keyword: 'ABC', start: 0, end: 3 },
 			];
 			const result = antennaService.deduplicateOverlappingMatches(matches);
-			expect(result).toHaveLength(1);
-			expect(result[0].keyword).toBe('ABC');
+			expect(result).toHaveLength(2);
 		});
 
-		it('keeps matches that extend further (replace shorter/earlier-ending overlap)', () => {
+		it('keeps both matches when one extends further (no cross-keyword replacement)', () => {
 			const matches: any[] = [
 				// A: [0, 3)
 				{ keyword: 'ABC', start: 0, end: 3 },
 				// B: [2, 4) - Overlaps with A at 2, but ends later (4 > 3)
 				{ keyword: 'BC', start: 2, end: 4 },
 			];
-			// Should keep BC because it extends further than ABC.
+			// キーワード単位dedupのため両方残る
 			const result = antennaService.deduplicateOverlappingMatches(matches);
-			expect(result).toHaveLength(1);
-			expect(result[0].keyword).toBe('BC');
+			expect(result).toHaveLength(2);
 		});
 
-		it('handles nested matches properly (longer one preferred if starts earlier)', () => {
+		it('keeps nested matches of different keywords', () => {
 			const matches: any[] = [
 				// A: [0, 5)
 				{ keyword: 'ABCDE', start: 0, end: 5 },
@@ -241,8 +240,7 @@ describe('AntennaService', () => {
 				{ keyword: 'BCD', start: 1, end: 4 },
 			];
 			const result = antennaService.deduplicateOverlappingMatches(matches);
-			expect(result).toHaveLength(1);
-			expect(result[0].keyword).toBe('ABCDE');
+			expect(result).toHaveLength(2);
 		});
 
 		it('keeps adjacent matches', () => {
@@ -311,23 +309,20 @@ describe('AntennaService', () => {
 			expect(result).toBe(true);
 		});
 
-		it('AND intersection: "ABC" AND "BC" -> Miss (Score < Group Count)', async () => {
+		it('AND intersection: "ABC" AND "BC" -> Hit (per-keyword dedup keeps both)', async () => {
 			// Keywords: [['ABC', 'BC']] (AND logic)
 			// Text: ABC
 			// Match ABC: [0, 3)
 			// Match BC: [1, 3)
-			// Per-Group Deduplication:
-			// Group 0 ("ABC", "BC"):
-			//    Matches: ABC [0, 3), BC [1, 3).
-			//   Dedupe: "BC" is shorter than "ABC" and overlaps within same group. "ABC" kept.
-			//   Group Checks: 'ABC' found? Yes. 'BC' found? NO (deduplicated away).
-			// Group result: False (NOT all keywords found)
+			// Per-Keyword Deduplication (fork仕様):
+			// キーワード単位でのみ重複排除するため、ABC・BCはどちらも有効。
+			// Group 0 の全キーワードが見つかる → ヒット
 			const antenna = {
 				...baseAntenna,
 				keywords: [['ABC', 'BC']],
 			};
 			const result = await antennaService.checkHitAntenna(antenna, mockNote, mockUser);
-			expect(result).toBe(false);
+			expect(result).toBe(true);
 		});
 
 		it('Separate occurrences work', async () => {

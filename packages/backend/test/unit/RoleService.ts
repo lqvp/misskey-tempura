@@ -451,8 +451,8 @@ describe('RoleService', () => {
 				createUser(), createUser(), createUser(), createUser(), createUser(), createUser(), createRoot(),
 			]);
 
-			const role1 = await createRole({ name: 'admin', isAdministrator: true });
-			const role2 = await createRole({ name: 'moderator', isModerator: true });
+			const role1 = await createRole({ name: 'admin', isAdministrator: true, permissionGroup: 'Admin' as const });
+			const role2 = await createRole({ name: 'moderator', isModerator: true, permissionGroup: 'MainModerator' as const });
 			const role3 = await createRole({ name: 'normal' });
 
 			await Promise.all([
@@ -477,8 +477,8 @@ describe('RoleService', () => {
 				createUser(), createUser(), createUser(), createUser(), createUser(), createUser(), createRoot(),
 			]);
 
-			const role1 = await createRole({ name: 'admin', isAdministrator: true });
-			const role2 = await createRole({ name: 'moderator', isModerator: true });
+			const role1 = await createRole({ name: 'admin', isAdministrator: true, permissionGroup: 'Admin' as const });
+			const role2 = await createRole({ name: 'moderator', isModerator: true, permissionGroup: 'MainModerator' as const });
 			const role3 = await createRole({ name: 'normal' });
 
 			await Promise.all([
@@ -503,8 +503,8 @@ describe('RoleService', () => {
 				createUser(), createUser(), createUser(), createUser(), createUser(), createUser(), createRoot(),
 			]);
 
-			const role1 = await createRole({ name: 'admin', isAdministrator: true });
-			const role2 = await createRole({ name: 'moderator', isModerator: true });
+			const role1 = await createRole({ name: 'admin', isAdministrator: true, permissionGroup: 'Admin' as const });
+			const role2 = await createRole({ name: 'moderator', isModerator: true, permissionGroup: 'MainModerator' as const });
 			const role3 = await createRole({ name: 'normal' });
 
 			await Promise.all([
@@ -529,8 +529,8 @@ describe('RoleService', () => {
 				createUser(), createUser(), createUser(), createUser(), createUser(), createUser(), createRoot(),
 			]);
 
-			const role1 = await createRole({ name: 'admin', isAdministrator: true });
-			const role2 = await createRole({ name: 'moderator', isModerator: true });
+			const role1 = await createRole({ name: 'admin', isAdministrator: true, permissionGroup: 'Admin' as const });
+			const role2 = await createRole({ name: 'moderator', isModerator: true, permissionGroup: 'MainModerator' as const });
 			const role3 = await createRole({ name: 'normal' });
 
 			await Promise.all([
@@ -555,8 +555,8 @@ describe('RoleService', () => {
 				createUser(), createUser(), createUser(), createUser(), createUser(), createUser(), createRoot(),
 			]);
 
-			const role1 = await createRole({ name: 'admin', isAdministrator: true });
-			const role2 = await createRole({ name: 'moderator', isModerator: true });
+			const role1 = await createRole({ name: 'admin', isAdministrator: true, permissionGroup: 'Admin' as const });
+			const role2 = await createRole({ name: 'moderator', isModerator: true, permissionGroup: 'MainModerator' as const });
 			const role3 = await createRole({ name: 'normal' });
 
 			await Promise.all([
@@ -581,8 +581,8 @@ describe('RoleService', () => {
 				createUser(), createUser(), createUser(), createUser(), createUser(), createUser(), createRoot(),
 			]);
 
-			const role1 = await createRole({ name: 'admin', isAdministrator: true });
-			const role2 = await createRole({ name: 'moderator', isModerator: true });
+			const role1 = await createRole({ name: 'admin', isAdministrator: true, permissionGroup: 'Admin' as const });
+			const role2 = await createRole({ name: 'moderator', isModerator: true, permissionGroup: 'MainModerator' as const });
 			const role3 = await createRole({ name: 'normal' });
 
 			await Promise.all([
@@ -607,8 +607,8 @@ describe('RoleService', () => {
 				createUser(), createUser(), createUser(), createUser(), createUser(), createUser(), createRoot(),
 			]);
 
-			const role1 = await createRole({ name: 'admin', isAdministrator: true });
-			const role2 = await createRole({ name: 'moderator', isModerator: true });
+			const role1 = await createRole({ name: 'admin', isAdministrator: true, permissionGroup: 'Admin' as const });
+			const role2 = await createRole({ name: 'moderator', isModerator: true, permissionGroup: 'MainModerator' as const });
 			const role3 = await createRole({ name: 'normal' });
 
 			await Promise.all([
@@ -633,8 +633,8 @@ describe('RoleService', () => {
 				createUser(), createUser(), createUser(), createUser(), createUser(), createUser(), createRoot(),
 			]);
 
-			const role1 = await createRole({ name: 'admin', isAdministrator: true });
-			const role2 = await createRole({ name: 'moderator', isModerator: true });
+			const role1 = await createRole({ name: 'admin', isAdministrator: true, permissionGroup: 'Admin' as const });
+			const role2 = await createRole({ name: 'moderator', isModerator: true, permissionGroup: 'MainModerator' as const });
 			const role3 = await createRole({ name: 'normal' });
 
 			await Promise.all([
@@ -662,8 +662,8 @@ describe('RoleService', () => {
 			const normalUser = await createUser();
 			const moderatorUser = await createUser();
 
-			const adminRole = await createRole({ name: 'admin', isAdministrator: true, isModerator: false });
-			const moderatorRole = await createRole({ name: 'moderator', isModerator: true, isAdministrator: false });
+			const adminRole = await createRole({ name: 'admin', isAdministrator: true, isModerator: false, permissionGroup: 'Admin' as const });
+			const moderatorRole = await createRole({ name: 'moderator', isModerator: true, isAdministrator: false, permissionGroup: 'MainModerator' as const });
 			const normalRole = await createRole({ name: 'normal', isAdministrator: false, isModerator: false });
 
 			await roleService.assign(adminUser1.id, adminRole.id);
@@ -698,8 +698,8 @@ describe('RoleService', () => {
 
 		test('should not include duplicate user IDs if a user has multiple administrator roles', async () => {
 			const adminUser = await createUser();
-			const adminRole1 = await createRole({ name: 'admin1', isAdministrator: true });
-			const adminRole2 = await createRole({ name: 'admin2', isAdministrator: true });
+			const adminRole1 = await createRole({ name: 'admin1', isAdministrator: true, permissionGroup: 'Admin' as const });
+			const adminRole2 = await createRole({ name: 'admin2', isAdministrator: true, permissionGroup: 'Admin' as const });
 
 			await roleService.assign(adminUser.id, adminRole1.id);
 			await roleService.assign(adminUser.id, adminRole2.id);

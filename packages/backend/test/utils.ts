@@ -645,6 +645,20 @@ export async function sendEnvResetRequest() {
 	}
 }
 
+export async function sendEnvStartRequest() {
+	const res = await fetch(
+		`http://localhost:${port + 1000}/env-start`,
+		{
+			method: 'POST',
+			body: JSON.stringify({}),
+		},
+	);
+
+	if (res.status !== 200) {
+		throw new Error('server env start failed.');
+	}
+}
+
 // 与えられた値を強制的にエラーとみなす。この関数は型安全性を破壊するため、異常系のアサーション以外で用いられるべきではない。
 // FIXME(misskey-js): misskey-jsがエラー情報を公開するようになったらこの関数を廃止する
 export function castAsError(obj: Record<string, unknown>): { error: ApiError } {
