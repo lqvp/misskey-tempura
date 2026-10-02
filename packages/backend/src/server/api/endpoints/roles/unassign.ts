@@ -4,7 +4,7 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import { Brackets, IsNull, MoreThan, Or } from 'typeorm';
+import { Brackets } from 'typeorm';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { RoleAssignmentsRepository, RolesRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
@@ -67,38 +67,21 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				throw new ApiError(meta.errors.accessDenied);
 			}
 
-			// キャラーがこのロールに実際にアサインされているかを確認する
-			// （これがないと、唯一のメンバーを持つロールに第三者がjoin→unassign→join済み扱いで
-			//  自動削除分岐に入り、他人のロールを削除できてしまう）
-			const now = new Date();
-			const myAssign = await this.roleAssignmentsRepository.findOneBy({
-				roleId: role.id,
-				userId: me.id,
-				expiresAt: Or(IsNull(), MoreThan(now)),
-			});
-			if (myAssign == null) {
-				throw new ApiError(meta.errors.accessDenied);
-			}
-
 			const assignedCount = await this.roleAssignmentsRepository.createQueryBuilder('assign')
 				.where('assign.roleId = :roleId', { roleId: role.id })
 				.andWhere(new Brackets(qb => {
 					qb
 						.where('assign.expiresAt IS NULL')
-						.orWhere('assign.expiresAt > :now', { now });
+						.orWhere('assign.expiresAt > :now', { now: new Date() });
 				}))
 				.getCount();
 
 			if (assignedCount === 1) {
-				// 自動削除（ロール作成者本人が抜ける場合のみ削除する）
-				if (role.userId === me.id) {
-					await this.rolesRepository.delete({
-						id: ps.roleId,
-					});
-					this.globalEventService.publishInternalEvent('roleDeleted', role);
-				} else {
-					await this.roleService.unassign(me.id, role.id);
-				}
+				// 自動削除
+				await this.rolesRepository.delete({
+					id: ps.roleId,
+				});
+				this.globalEventService.publishInternalEvent('roleDeleted', role);
 			} else {
 				await this.roleService.unassign(me.id, role.id);
 			}

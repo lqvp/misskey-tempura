@@ -58,12 +58,6 @@ export const meta = {
 			id: '1022a357-b085-4054-9083-8f8de358337e',
 		},
 
-		noteNotAccessibleForYou: {
-			message: 'Note not accessible for you.',
-			code: 'NOTE_NOT_ACCESSIBLE_FOR_YOU',
-			id: '759d8f23-4585-41d2-8303-f1be20b25198',
-		},
-
 		youHaveBeenBlocked: {
 			message: 'You cannot vote this poll because you have been blocked by this user.',
 			code: 'YOU_HAVE_BEEN_BLOCKED',
@@ -115,7 +109,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			// check visibility
 			if (!await this.noteEntityService.isVisibleForMe(note, me.id)) {
-				throw new ApiError(meta.errors.noteNotAccessibleForYou);
+				throw new ApiError(meta.errors.noSuchNote);
 			}
 
 			if (!note.hasPoll) {

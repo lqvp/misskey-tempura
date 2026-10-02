@@ -57,19 +57,11 @@ export class FeedService {
 			},
 			order: { id: -1 },
 			take: 20,
-		}).then(notes => notes.filter(note =>
-			// Web feeds are anonymous: apply the same per-user privacy rules the
-			// REST paths enforce (NoteEntityService.shouldHideNote with meId = null /
-			// QueryService.generateVisibilityQuery anonymous branch). localOnly notes
-			// are hidden from anonymous readers outright.
-			!note.localOnly &&
-			!(note.visibility === 'public' && profile.hidePublicNotes) &&
-			!(note.visibility === 'home' && profile.hideHomeNotes) &&
-			!shouldHideNoteByTime(user.makeNotesHiddenBefore, this.idService.parse(note.id).date) &&
-			// Notes demoted to followers-only by age are not visible to anonymous
-			// readers (mirrors NoteEntityService.treatVisibility + shouldHideNote).
-			!shouldHideNoteByTime(user.makeNotesFollowersOnlyBefore, this.idService.parse(note.id).date),
-		));
+		}).then(notes => notes.filter(note => {
+			const createdAt = this.idService.parse(note.id).date;
+			return !shouldHideNoteByTime(user.makeNotesHiddenBefore, createdAt)
+				&& !shouldHideNoteByTime(user.makeNotesFollowersOnlyBefore, createdAt);
+		}));
 
 		const feed = new Feed({
 			id: author.link,

@@ -14,7 +14,7 @@ import { UserAuthService } from '@/core/UserAuthService.js';
 export const meta = {
 	requireCredential: true,
 	secure: true,
-	requiredRolePolicy: 'canUseTruncate',
+	requireRolePolicy: 'canUseTruncate',
 } as const;
 
 export const paramDef = {

@@ -63,8 +63,6 @@ export class SignupService {
 		ignorePreservedUsernames?: boolean;
 		reason?: string | null;
 		approved?: boolean;
-		/** Called only after this signup transaction commits, before post-signup work. */
-		onCommitted?: () => void;
 	}) {
 		const { username, password, passwordHash, host } = opts;
 		let hash = passwordHash;
@@ -135,15 +133,6 @@ export class SignupService {
 
 		// Start transaction
 		await this.db.transaction(async transactionalEntityManager => {
-			// ローカルユーザーのユーザー名は host が NULL のため、(usernameLower, host) の
-			// 複合ユニークインデックスでは重複を防げない（NULLは互いにdistinct扱い）。
-			// 同一ユーザー名の並行サインアップをトランザクション単位のadvisory lockで直列化し、
-			// チェック→挿入のTOCTOU競合を排除する。
-			await transactionalEntityManager.query(
-				'SELECT pg_advisory_xact_lock(hashtext($1))',
-				[`signup:username:${username.toLowerCase()}`],
-			);
-
 			const exist = await transactionalEntityManager.findOneBy(MiUser, {
 				usernameLower: username.toLowerCase(),
 				host: IsNull(),
@@ -178,8 +167,6 @@ export class SignupService {
 				username: username.toLowerCase(),
 			}));
 		});
-
-		opts.onCommitted?.();
 
 		this.usersChart.update(account, true);
 

@@ -4,16 +4,18 @@
  */
 
 import * as WebSocket from 'ws';
+import promiseLimit from 'promise-limit';
 import { ContextIdFactory, ModuleRef, REQUEST } from '@nestjs/core';
 import { Inject, Injectable, Scope } from '@nestjs/common';
+import { DI } from '@/di-symbols.js';
 import { isJsonObject } from '@/misc/json-value.js';
 import type { JsonObject, JsonValue } from '@/misc/json-value.js';
 import { ChannelMutingService } from '@/core/ChannelMutingService.js';
 import { ChannelFollowingService } from '@/core/ChannelFollowingService.js';
 import type { GlobalEvents, StreamEventEmitter } from '@/core/GlobalEventService.js';
 import { MiFollowing, MiUserProfile } from '@/models/_.js';
+import type { MiMeta } from '@/models/_.js';
 import { CacheService } from '@/core/CacheService.js';
-import { MetaService } from '@/core/MetaService.js';
 import { bindThis } from '@/decorators.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import type { MiAccessToken } from '@/models/AccessToken.js';
@@ -54,6 +56,7 @@ export default class Connection {
 	public user?: MiUser;
 	public token?: MiAccessToken;
 	private wsConnection: WebSocket.WebSocket;
+	private messageQueue = promiseLimit<void>(1);
 	public subscriber: StreamEventEmitter;
 	private channels: Map<string, Channel> = new Map();
 	private subscribingNotes: Map<string, number> = new Map();
@@ -75,7 +78,8 @@ export default class Connection {
 		private cacheService: CacheService,
 		private channelFollowingService: ChannelFollowingService,
 		private channelMutingService: ChannelMutingService,
-		private metaService: MetaService,
+		@Inject(DI.meta)
+		private meta: MiMeta,
 		@Inject(REQUEST)
 		request: ConnectionRequest,
 	) {
@@ -135,7 +139,7 @@ export default class Connection {
 		this.subscriber = subscriber;
 
 		this.wsConnection = wsConnection;
-		this.wsConnection.on('message', this.onWsConnectionMessage);
+		this.wsConnection.on('message', data => this.messageQueue(() => this.onWsConnectionMessage(data)));
 
 		this.subscriber.on('broadcast', data => {
 			this.onBroadcastMessage(data);
@@ -147,6 +151,8 @@ export default class Connection {
 	 */
 	@bindThis
 	private async onWsConnectionMessage(data: WebSocket.RawData) {
+		if (this.wsConnection.readyState !== WebSocket.WebSocket.OPEN) return;
+
 		let obj: JsonObject;
 
 		try {
@@ -164,7 +170,7 @@ export default class Connection {
 			case 'sr': this.onSubscribeNote(body); break;
 			case 'unsubNote': this.onUnsubscribeNote(body); break;
 			case 'un': this.onUnsubscribeNote(body); break; // alias
-			case 'connect': this.onChannelConnectRequested(body); break;
+			case 'connect': await this.onChannelConnectRequested(body); break;
 			case 'disconnect': this.onChannelDisconnectRequested(body); break;
 			case 'channel': this.onChannelMessageRequested(body); break;
 			case 'ch': this.onChannelMessageRequested(body); break; // alias
@@ -245,31 +251,13 @@ export default class Connection {
 			}
 		}
 
+		// TODO: ugcVisibilityForVisitor が local の場合の扱いを NoteEntityService.shouldHideNote と揃える
+		if (this.user == null && this.meta.ugcVisibilityForVisitor === 'none') return;
+
 		if ((data.type === 'reacted' || data.type === 'unreacted') && this.user) {
 			const userIdReactedFrom = data.body.body.userId;
 			const mutings = await this.cacheService.userMutingsCache.fetch(this.user.id);
 			if (mutings.has(userIdReactedFrom)) {
-				return;
-			}
-		}
-
-		// 匿名クライアントへの noteUpdated 配信にも ugcVisibilityForVisitor ゲートを適用する。
-		// ノート投稿者（data.body.userId）が remote ユーザーなら匿名配信は行わない。
-		// REST の notes/reactions は me なしでは [] を返すため、reacted / unreacted /
-		// pollVoted では発信者（data.body.body.userId）も伏せる。
-		if (this.user == null) {
-			const meta = await this.metaService.fetch();
-			if (meta.ugcVisibilityForVisitor === 'none') return;
-			if (meta.ugcVisibilityForVisitor === 'local') {
-				const author = await this.cacheService.findUserById(data.body.userId);
-				if (author.host != null) return;
-			}
-			if (data.type === 'reacted' || data.type === 'unreacted' || data.type === 'pollVoted') {
-				this.sendMessageToWs('noteUpdated', {
-					id: data.body.id,
-					type: data.type,
-					body: { ...data.body.body, userId: null },
-				});
 				return;
 			}
 		}
@@ -285,14 +273,14 @@ export default class Connection {
 	 * チャンネル接続要求時
 	 */
 	@bindThis
-	private onChannelConnectRequested(payload: JsonValue | undefined) {
+	private async onChannelConnectRequested(payload: JsonValue | undefined) {
 		if (!isJsonObject(payload)) return;
 		const { channel, id, params, pong } = payload;
 		if (typeof id !== 'string') return;
 		if (typeof channel !== 'string') return;
 		if (typeof pong !== 'boolean' && typeof pong !== 'undefined' && pong !== null) return;
 		if (typeof params !== 'undefined' && !isJsonObject(params)) return;
-		this.connectChannel(id, params, channel, pong ?? undefined);
+		await this.connectChannel(id, params, channel, pong ?? undefined);
 	}
 
 	/**
@@ -360,6 +348,7 @@ export default class Connection {
 			connection: this,
 		}, contextId);
 		const ch: Channel = await this.moduleRef.create<Channel>(channelConstructor, contextId);
+		if (this.wsConnection.readyState !== WebSocket.WebSocket.OPEN) return;
 
 		this.channels.set(ch.id, ch);
 		const valid = await ch.init(params ?? {});

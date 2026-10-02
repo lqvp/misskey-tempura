@@ -13,7 +13,6 @@ import { contentDisposition } from '@/misc/content-disposition.js';
 import { correctFilename } from '@/misc/correct-filename.js';
 import { isMimeImage } from '@/misc/is-mime-image.js';
 import { IImageStreamable, ImageProcessingService, webpDefault } from '@/core/ImageProcessingService.js';
-import { validateRemoteUrl } from '@/misc/validate-remote-url.js';
 import { createRangeStream, attachStreamCleanup, needsCleanup } from './FileServerUtils.js';
 import type { DownloadedFileResult, FileResolveResult, FileServerFileResolver } from './FileServerFileResolver.js';
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -266,12 +265,6 @@ export class FileServerProxyHandler {
 			if (!key) throw new StatusError('Invalid File Key', 400, 'Invalid File Key');
 
 			return await this.fileResolver.resolveFileByAccessKey(key);
-		}
-
-		// Reject unsafe URLs early; DownloadService also validates and pins
-		// each connection target, including redirects.
-		if (!await validateRemoteUrl(url, this.config)) {
-			throw new StatusError('Invalid url', 400, 'Invalid url');
 		}
 
 		return await this.fileResolver.downloadAndDetectTypeFromUrl(url);

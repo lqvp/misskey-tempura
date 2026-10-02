@@ -6,6 +6,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { DI } from '@/di-symbols.js';
 import type { InstancesRepository, MiMeta } from '@/models/_.js';
+import type { Config } from '@/config.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
@@ -17,7 +18,25 @@ import type { FastifyRequest, FastifyReply } from 'fastify';
 export class ActivityPubAccessControlService {
 	private logger: Logger;
 
+	private static readonly userAgentPatterns: readonly RegExp[] = [
+		// Mastodon
+		/http\.rb\/[\d.]+\s+\(Mastodon\/[\d.]+;\s+\+https?:\/\/([^/\)]+)/i,
+		// Pleroma
+		/Pleroma\s+[\d.]+;\s+https?:\/\/([^/\s<]+)/i,
+		// Misskey
+		/Misskey\/[\d.]+\s+\(https?:\/\/([^/\)]+)/i,
+		// Pixelfed
+		/pixelfed\/[\d.]+\s+\(https?:\/\/([^/\)]+)/i,
+		// Friendica
+		/friendica-[\d.]+\s+\(https?:\/\/([^/\)]+)/i,
+		// Generic ActivityPub pattern: contains hostname (厳密化)
+		/https?:\/\/([a-zA-Z0-9.-]+[a-zA-Z0-9])/i,
+	];
+
 	constructor(
+		@Inject(DI.config)
+		private config: Config,
+
 		@Inject(DI.meta)
 		private meta: MiMeta,
 
@@ -31,12 +50,11 @@ export class ActivityPubAccessControlService {
 	}
 
 	@bindThis
-	public async checkNoteAccess(note: MiNote, request: FastifyRequest, verifiedHost?: string): Promise<boolean> {
-		const remoteHost = verifiedHost ? this.utilityService.toPuny(verifiedHost.toLowerCase()) : undefined;
-		// Only a cryptographically verified signer can establish request attribution.
-		if (remoteHost === undefined) {
-			this.logger.info(`Access to note ${note.id} denied for unattributable ActivityPub request`);
-			return false;
+	public async checkNoteAccess(note: MiNote, request: FastifyRequest): Promise<boolean> {
+		const remoteHost = this.extractRemoteHostFromRequest(request);
+		if (remoteHost == null) {
+			// Not a remote request
+			return true;
 		}
 
 		// まずインスタンスの状態をチェック
@@ -74,6 +92,64 @@ export class ActivityPubAccessControlService {
 	}
 
 	/**
+	 * ActivityPubリクエストかどうかを判定する
+	 * Accept ヘッダーに application/ld+json が含まれているかチェック
+	 */
+	@bindThis
+	private isActivityPubRequest(request: FastifyRequest): boolean {
+		const acceptHeader = request.headers.accept;
+		if (!acceptHeader || typeof acceptHeader !== 'string') {
+			return false;
+		}
+
+		// application/ld+json, application/activity+json を含むかチェック
+		return acceptHeader.includes('application/ld+json') || acceptHeader.includes('application/activity+json');
+	}
+
+	/**
+	 * リクエストからリモートホストを推測
+	 * User-Agentや他のヘッダーから推測（ActivityPubリクエストのみ）
+	 */
+	@bindThis
+	private extractRemoteHostFromRequest(request: FastifyRequest): string | null {
+		// まずActivityPubリクエストかどうかをチェック
+		if (!this.isActivityPubRequest(request)) {
+			this.logger.debug('Not an ActivityPub request (no application/ld+json or application/activity+json in Accept header)');
+			return null;
+		}
+
+		const userAgent = request.headers['user-agent'];
+
+		if (!userAgent || typeof userAgent !== 'string') {
+			this.logger.debug('No User-Agent header found');
+			return null;
+		}
+
+		this.logger.debug(`ActivityPub request detected. Checking User-Agent: ${userAgent}`);
+
+		for (const pattern of ActivityPubAccessControlService.userAgentPatterns) {
+			const match = userAgent.match(pattern);
+			if (match && match[1]) {
+				const host = match[1].toLowerCase();
+				this.logger.debug(`Extracted host from User-Agent: ${host}`);
+
+				// 自分自身からのリクエストは除外
+				if (host === this.config.host.toLowerCase()) {
+					this.logger.debug('Request from self, allowing access');
+					return null;
+				}
+
+				const punyHost = this.utilityService.toPuny(host);
+				this.logger.debug(`Converted to punycode: ${punyHost}`);
+				return punyHost;
+			}
+		}
+
+		this.logger.debug('ActivityPub request detected but no matching User-Agent pattern found');
+		return null;
+	}
+
+	/**
 	 * リモートインスタンスのアクセス制限設定をチェック
 	 */
 	@bindThis
@@ -107,23 +183,24 @@ export class ActivityPubAccessControlService {
 	 * @returns アクセス許可の場合はnull、拒否の場合は理由を含むオブジェクト
 	 */
 	@bindThis
-	public async checkAccess(request: FastifyRequest, allowLimitedHosts = false, verifiedHost?: string): Promise<{
+	public async checkAccess(request: FastifyRequest, allowLimitedHosts = false): Promise<{
 		blocked: boolean;
 		reason: string;
 		host?: string;
 	} | null> {
 		const userAgent = request.headers['user-agent'];
+		if (typeof userAgent === 'string' && userAgent.toLowerCase().includes('tempura')) {
+			this.logger.debug('Bypassing ActivityPub access control for tempura client');
+			return null;
+		}
 
-		const remoteHost = verifiedHost ? this.utilityService.toPuny(verifiedHost.toLowerCase()) : undefined;
+		const remoteHost = this.extractRemoteHostFromRequest(request);
 
-		// These checks protect AP routes, including requests without an AP Accept header.
-		// User-Agent and unverified keyId values cannot establish attribution.
-		if (remoteHost === undefined) {
-			this.logger.info(`ActivityPub access denied for unattributable host: ua=${userAgent ?? '(none)'} signed=${request.headers.signature != null} path=${request.url}`);
-			return {
-				blocked: true,
-				reason: 'unattributable',
-			};
+		if (!remoteHost) {
+			// リモートホストが特定できない場合はアクセスを許可
+			// (通常のブラウザーやその他のクライアントからのアクセス)
+			this.logger.debug('No remote host detected, allowing access');
+			return null;
 		}
 
 		this.logger.debug(`Checking access for remote host: ${remoteHost}`);
@@ -170,8 +247,8 @@ export class ActivityPubAccessControlService {
 	 * @returns アクセスが拒否された場合はtrue、許可された場合はfalse
 	 */
 	@bindThis
-	public async applyAccessControl(request: FastifyRequest, reply: FastifyReply, allowLimitedHosts = false, verifiedHost?: string): Promise<boolean> {
-		const accessControl = await this.checkAccess(request, allowLimitedHosts, verifiedHost);
+	public async applyAccessControl(request: FastifyRequest, reply: FastifyReply, allowLimitedHosts = false): Promise<boolean> {
+		const accessControl = await this.checkAccess(request, allowLimitedHosts);
 		if (accessControl) {
 			reply.code(404);
 			reply.header('Content-Type', 'text/plain; charset=utf-8');

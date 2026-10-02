@@ -461,12 +461,9 @@ export class ClientServerService {
 				requireSigninToViewContents: false,
 			});
 
-			if (!user) return null;
+			if (user == null) return null;
 
-			// Anonymous (feed-reader) callers are subject to the same
-			// ugcVisibilityForVisitor gate applied by users/show / notes/show.
-			if (this.meta.ugcVisibilityForVisitor === 'none' ||
-				(this.meta.ugcVisibilityForVisitor === 'local' && user.host != null)) {
+			if (this.meta.ugcVisibilityForVisitor === 'none' || (this.meta.ugcVisibilityForVisitor === 'local' && user.host != null)) {
 				return null;
 			}
 
@@ -810,8 +807,6 @@ export class ClientServerService {
 
 		// 個別お知らせページ
 		fastify.get<{ Params: { announcementId: string; } }>('/announcements/:announcementId', async (request, reply) => {
-			if (this.meta.ugcVisibilityForVisitor === 'none') return await renderBase(reply);
-
 			const announcement = await this.announcementsRepository.findOneBy({
 				id: request.params.announcementId,
 				userId: IsNull(),

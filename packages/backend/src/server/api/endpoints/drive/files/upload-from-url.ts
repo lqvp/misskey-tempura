@@ -4,15 +4,11 @@
  */
 
 import ms from 'ms';
-import { Inject, Injectable } from '@nestjs/common';
-import { DI } from '@/di-symbols.js';
-import type { Config } from '@/config.js';
+import { Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
-import { ApiError } from '@/server/api/error.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.js';
 import { DriveService } from '@/core/DriveService.js';
-import { validateRemoteUrl } from '@/misc/validate-remote-url.js';
 
 export const meta = {
 	tags: ['drive'],
@@ -50,20 +46,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private driveFileEntityService: DriveFileEntityService,
 		private driveService: DriveService,
 		private globalEventService: GlobalEventService,
-		@Inject(DI.config)
-		private config: Config,
 	) {
 		super(meta, paramDef, async (ps, user, _1, _2, _3, ip, headers) => {
-			// Reject unsafe URLs before starting the asynchronous download.
-			// DownloadService also validates and pins each connection target.
-			if (!await validateRemoteUrl(ps.url, this.config)) {
-				throw new ApiError({
-					message: 'Invalid url.',
-					code: 'INVALID_URL',
-					id: '7a35a567-5e67-464d-b27b-42e130b6c172',
-					kind: 'client',
-				});
-			}
 			this.driveService.uploadFromUrl({ url: ps.url, user, folderId: ps.folderId, sensitive: ps.isSensitive, force: ps.force, comment: ps.comment, requestIp: ip, requestHeaders: headers }).then(file => {
 				this.driveFileEntityService.pack(file, { self: true }).then(packedFile => {
 					this.globalEventService.publishMainStream(user.id, 'urlUploadFinished', {

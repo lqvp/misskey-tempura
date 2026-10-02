@@ -59,7 +59,6 @@ api-docs.json
 *.code-workspace
 .DS_Store
 /files
-/.data
 ormconfig.json
 temp
 /packages/frontend/src/**/*.stories.ts

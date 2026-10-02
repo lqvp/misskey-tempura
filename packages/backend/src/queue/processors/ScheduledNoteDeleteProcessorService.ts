@@ -12,7 +12,6 @@ import type Logger from '@/logger.js';
 import { bindThis } from '@/decorators.js';
 import { NoteDeleteService } from '@/core/NoteDeleteService.js';
 import { DriveService } from '@/core/DriveService.js';
-import { RoleService } from '@/core/RoleService.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import type * as Bull from 'bullmq';
 import type { ScheduledNoteDeleteJobData } from '../types.js';
@@ -34,7 +33,6 @@ export class ScheduledNoteDeleteProcessorService {
 		private noteDeleteService: NoteDeleteService,
 		private driveService: DriveService,
 		private queueLoggerService: QueueLoggerService,
-		private roleService: RoleService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('scheduled-note-delete');
 	}
@@ -52,14 +50,6 @@ export class ScheduledNoteDeleteProcessorService {
 		}
 
 		if (job.data.isScheduledForPrivate) {
-			// notes/make-private 系と同じく canUseMakePrivate ポリシーで gates する。
-			// スケジュール時点では持っていたポリシーが処理時点で失われている場合も
-			// この経路で sink に到達できないようにする。
-			const policies = await this.roleService.getUserPolicies(user.id);
-			if (!policies.canUseMakePrivate) {
-				this.logger.info(`Skipped making note ${note.id} private: user ${user.id} lacks canUseMakePrivate policy`);
-				return;
-			}
 			await this.noteDeleteService.makePrivate(user, note);
 			this.logger.info(`Made note ${note.id} private`);
 		} else {

@@ -59,6 +59,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private getterService: GetterService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			if (me == null && this.serverSettings.ugcVisibilityForVisitor === 'none') return [];
+
 			const note = await this.getterService.getNote(ps.noteId).catch(err => {
 				if (err.id === '9725d0ce-ba28-4dde-95a7-2cbb2c15de24') throw new ApiError(meta.errors.noSuchNote);
 				throw err;
@@ -89,28 +91,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				await get(note.replyId);
 			}
 
-			const packedConversation = await this.noteEntityService.packMany(
-				me == null
-					? conversation.filter(n => {
-						if (this.serverSettings.ugcVisibilityForVisitor === 'none') return false;
-						if (this.serverSettings.ugcVisibilityForVisitor === 'local' && n.userHost != null) return false;
-						return true;
-					})
-					: conversation,
-				me,
-			);
-
-			// Do not disclose internal scheduling/delivery metadata for notes
-			// hidden from the caller (matches the redaction notes/show applies
-			// to anonymous callers).
-			for (const packedNote of packedConversation) {
-				if (me == null || packedNote.isHidden) {
-					packedNote.deleteAt = undefined;
-					packedNote.deliveryTargets = undefined;
-				}
-			}
-
-			return packedConversation;
+			return await this.noteEntityService.packMany(conversation, me);
 		});
 	}
 }

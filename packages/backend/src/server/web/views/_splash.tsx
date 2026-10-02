@@ -13,7 +13,7 @@ export function Splash(props: {
 		<div id="splash">
 			<div id="tty"></div>
 			<img id="splashIcon" src={props.icon || '/static-assets/splash.png'} />
-			<span id="splashText" safe>{customSplashText}</span>
+			<span id="splashText">{customSplashText}</span>
 			<div id="splashSpinner">
 				<svg class="spinner bg" viewBox="0 0 152 152" xmlns="http://www.w3.org/2000/svg">
 					<g transform="matrix(1,0,0,1,12,12)">

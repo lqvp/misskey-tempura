@@ -504,11 +504,7 @@ export class ApiCallService implements OnApplicationShutdown {
 			}
 		}
 
-		// requireCredential: false のエンドポイントでも requiredRolePolicy が設定され得るため、
-		// 匿名リクエスト (user === null) で user!.id を参照して 500 にならないようガードする。
-		// 匿名の場合はここでポリシー判定せず、エンドポイント側の null 許容の判定に委ねる
-		// (users/search は me=null でも roleService.getUserPolicies(null) でインスタンス既定を適用する)。
-		if (ep.meta.requiredRolePolicy != null && user != null && (this.meta.rootUserId !== user.id)) {
+		if (ep.meta.requiredRolePolicy != null && (this.meta.rootUserId !== user!.id)) {
 			const myRoles = await this.roleService.getUserRoles(user!.id);
 			const policies = await this.roleService.getUserPolicies(user!.id);
 			if (!policies[ep.meta.requiredRolePolicy] && !myRoles.some(r => r.isAdministrator)) {

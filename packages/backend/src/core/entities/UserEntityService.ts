@@ -626,7 +626,7 @@ export class UserEntityService implements OnModuleInit {
 					displayOrder: role.displayOrder,
 					isRainbow: role.isRainbow,
 				}))),
-				communityRoles: this.roleService.getUserRoles(user.id).then(roles => roles.filter(role => role.isPublic && role.permissionGroup === 'Community').sort((a, b) => b.displayOrder - a.displayOrder).map(role => ({
+				communityRoles: this.roleService.getUserRoles(user.id).then(roles => roles.filter(role => role.permissionGroup === 'Community').sort((a, b) => b.displayOrder - a.displayOrder).map(role => ({
 					id: role.id,
 					name: role.name,
 					color: role.color,

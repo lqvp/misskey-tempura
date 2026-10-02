@@ -21,29 +21,26 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<template #label>{{ i18n.ts._advancedSearch.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 
 			<div class="_gaps_s">
-				<MkFolder>
-					<template #label>{{ i18n.ts._advancedSearch.usageTitle }}</template>
-
-					<ul :class="$style.usageList">
+				<div>
+					<strong>{{ i18n.ts._advancedSearch.usageTitle }}</strong>
+					<ul style="margin: 8px 0; padding-left: 20px;">
 						<li><code>{{ i18n.ts._advancedSearch.usageExample1 }}</code> → {{ i18n.ts._advancedSearch.usageExplanation1 }}</li>
 						<li><code>{{ i18n.ts._advancedSearch.usageExample2 }}</code> → {{ i18n.ts._advancedSearch.usageExplanation2 }}</li>
 						<li>{{ i18n.ts._advancedSearch.usageExplanation3 }}</li>
 					</ul>
-				</MkFolder>
-
-				<div :class="$style.formGrid">
-					<MkRadios
-						v-model="searchOperator"
-						:options="searchOperatorOptions"
-					>
-						<template #label>{{ i18n.ts._advancedSearch._searchOperator.label }}</template>
-					</MkRadios>
-
-					<MkSwitch v-model="advancedSyntax">
-						<template #label>{{ i18n.ts._advancedSearch.advancedSyntax }}</template>
-						<template #caption>{{ i18n.ts._advancedSearch.advancedSyntaxCaption }}</template>
-					</MkSwitch>
 				</div>
+
+				<MkRadios
+					v-model="searchOperator"
+					:options="searchOperatorOptions"
+				>
+					<template #label>{{ i18n.ts._advancedSearch._searchOperator.label }}</template>
+				</MkRadios>
+
+				<MkSwitch v-model="advancedSyntax">
+					<template #label>{{ i18n.ts._advancedSearch.advancedSyntax }}</template>
+					<template #caption>{{ i18n.ts._advancedSearch.advancedSyntaxCaption }}</template>
+				</MkSwitch>
 
 				<MkInput
 					v-model="excludeWords"
@@ -53,40 +50,38 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #caption>{{ i18n.ts._advancedSearch.excludeWordsCaption }}</template>
 				</MkInput>
 
-				<div :class="$style.formGrid">
-					<MkRadios
-						v-model="visibilitySelect"
-						:options="visibilityOptions"
-					>
-						<template #label>{{ i18n.ts.visibility }}</template>
-					</MkRadios>
-					<MkRadios
-						v-model="hasFiles"
-						:options="triStateOptions"
-					>
-						<template #label>{{ i18n.ts._noteSearch._type.withFiles }}</template>
-					</MkRadios>
-					<MkRadios
-						v-model="hasCw"
-						:options="triStateOptions"
-					>
-						<template #label>{{ i18n.ts._noteSearch._type.cw }}</template>
-					</MkRadios>
-					<MkRadios
-						v-model="hasReply"
-						:options="triStateOptions"
-					>
-						<template #label>{{ i18n.ts._noteSearch._type.reply }}</template>
-					</MkRadios>
-					<MkRadios
-						v-model="hasPoll"
-						:options="triStateOptions"
-					>
-						<template #label>{{ i18n.ts._noteSearch._type.poll }}</template>
-					</MkRadios>
-				</div>
+				<MkRadios
+					v-model="visibilitySelect"
+					:options="visibilityOptions"
+				>
+					<template #label>{{ i18n.ts.visibility }}</template>
+				</MkRadios>
+				<MkRadios
+					v-model="hasFiles"
+					:options="triStateOptions"
+				>
+					<template #label>{{ i18n.ts._noteSearch._type.withFiles }}</template>
+				</MkRadios>
+				<MkRadios
+					v-model="hasCw"
+					:options="triStateOptions"
+				>
+					<template #label>{{ i18n.ts._noteSearch._type.cw }}</template>
+				</MkRadios>
+				<MkRadios
+					v-model="hasReply"
+					:options="triStateOptions"
+				>
+					<template #label>{{ i18n.ts._noteSearch._type.reply }}</template>
+				</MkRadios>
+				<MkRadios
+					v-model="hasPoll"
+					:options="triStateOptions"
+				>
+					<template #label>{{ i18n.ts._noteSearch._type.poll }}</template>
+				</MkRadios>
 
-				<div :class="$style.formGrid">
+				<div class="_gaps_s">
 					<MkInput
 						v-model="sinceDate"
 						type="datetime-local"
@@ -704,17 +699,6 @@ async function search() {
 }
 </script>
 <style lang="scss" module>
-.formGrid {
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-	gap: var(--MI-margin);
-}
-
-.usageList {
-	margin: 8px 0;
-	padding-left: 20px;
-}
-
 .subOptionRoot {
 	background: var(--MI_THEME-panel);
 	border-radius: var(--MI-radius);

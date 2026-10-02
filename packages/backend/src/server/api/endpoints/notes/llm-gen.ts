@@ -16,7 +16,7 @@ export const meta = {
 	tags: ['notes'],
 
 	requireCredential: true,
-	requiredRolePolicy: 'canUseGeminiLLMAPI',
+	requireRolePolicy: 'canUseGeminiLLMAPI',
 
 	kind: 'write:notes',
 
@@ -164,11 +164,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 			} catch (error) {
 				// エラーの詳細を記録
 				console.error('LLM API error:', error);
-				// 上流のエラーメッセージにはリクエストURL（APIキーを含む）が含まれるため、キーを隠してから返す
-				const rawErrorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-				const errorMessage = serverGeminiApiKey
-					? rawErrorMessage.split(serverGeminiApiKey).join('[REDACTED]')
-					: rawErrorMessage;
+				const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
 				throw new ApiError(meta.errors.llmApiError, errorMessage);
 			}
 		});

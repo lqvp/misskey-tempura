@@ -87,11 +87,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			// ページネーション
 			filtered = filtered.slice(ps.offset, ps.offset + ps.limit);
 
-			const allRoles = await this.roleService.getRoles();
-			return filtered.map(decoration => ({
-				...decoration,
-				roleIdsThatCanBeUsedThisDecoration: decoration.roleIdsThatCanBeUsedThisDecoration.filter(roleId => allRoles.some(role => role.id === roleId)),
-			}));
+			return filtered;
 		});
 	}
 }
