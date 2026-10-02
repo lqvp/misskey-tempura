@@ -428,6 +428,7 @@ proxyBypassHosts:
 
 # Upload or download file size limits (bytes)
 #maxFileSize: 262144000
+#multipartTempDir: /tmp/misskey-multipart
 
 # PID File of master process
 #pidFile: /tmp/misskey.pid

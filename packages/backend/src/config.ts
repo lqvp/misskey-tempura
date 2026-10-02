@@ -93,6 +93,7 @@ type Source = {
 	allowedPrivateNetworks?: string[];
 
 	maxFileSize?: number;
+	multipartTempDir?: string;
 
 	clusterLimit?: number;
 	clusterOverClock?: boolean;
@@ -176,6 +177,7 @@ export type Config = {
 	proxyBypassHosts: string[] | undefined;
 	allowedPrivateNetworks: string[] | undefined;
 	maxFileSize: number;
+	multipartTempDir: string;
 	clusterLimit: number | undefined;
 	clusterOverClock?: boolean;
 	threadPoolSize: number;
@@ -337,6 +339,7 @@ export function loadConfig(): Config {
 		proxyBypassHosts: config.proxyBypassHosts,
 		allowedPrivateNetworks: config.allowedPrivateNetworks,
 		maxFileSize: config.maxFileSize ?? 262144000,
+		multipartTempDir: config.multipartTempDir ?? resolve(rootDir, '.data'),
 		clusterLimit: config.clusterLimit,
 		clusterOverClock: config.clusterOverClock ?? false,
 		threadPoolSize: config.threadPoolSize ?? 1,
