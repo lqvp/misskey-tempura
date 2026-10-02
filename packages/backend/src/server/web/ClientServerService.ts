@@ -467,13 +467,6 @@ export class ClientServerService {
 				return null;
 			}
 
-			// Anonymous (feed-reader) callers are subject to the same
-			// ugcVisibilityForVisitor gate applied by users/show / notes/show.
-			if (this.meta.ugcVisibilityForVisitor === 'none' ||
-				(this.meta.ugcVisibilityForVisitor === 'local' && user.host != null)) {
-				return null;
-			}
-
 			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });
 			const feed = await this.feedService.packFeed(user);
 
