@@ -53,7 +53,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 			<template v-else>
 				<div v-if="searchResults.length === 0">
-					<MkInfo>{{ i18n.ts.noResults }}</MkInfo>
+					<MkInfo v-if="searchError" warn>{{ i18n.ts.searchFailed }}</MkInfo>
+					<MkButton v-if="searchError" inline rounded style="margin: 0 auto;" @click="fetchDecorations(0)"><i class="ti ti-reload"></i> {{ i18n.ts.retry }}</MkButton>
+					<MkInfo v-else>{{ i18n.ts.noResults }}</MkInfo>
 				</div>
 				<template v-for="[category, decorations] in Object.entries(groupedDecorations)" :key="category">
 					<MkFolder v-if="category" :defaultOpen="category === defaultCategory">
@@ -127,6 +129,7 @@ const canUseRemote = $i.policies.canUseRemoteIconDecorations === true;
 const searchOrigin = ref<'local' | 'remote' | 'combined'>(canUseRemote ? 'combined' : 'local');
 const searchResults = ref<DecorationItem[]>([]);
 const isSearching = ref(false);
+const searchError = ref(false);
 const canLoadMore = ref(false);
 let searchTimeout: number | null = null;
 
@@ -152,6 +155,7 @@ const defaultCategory = computed(() => Object.keys(groupedDecorations.value)[0] 
 async function fetchDecorations(offset = searchResults.value.length): Promise<void> {
 	const id = ++searchRequestId;
 	isSearching.value = true;
+	if (offset === 0) searchError.value = false;
 	try {
 		const results = await misskeyApi('search-avatar-decorations', {
 			query: searchQuery.value,
@@ -163,7 +167,11 @@ async function fetchDecorations(offset = searchResults.value.length): Promise<vo
 		searchResults.value = offset === 0 ? results : [...searchResults.value, ...results];
 		canLoadMore.value = results.length === PAGE_SIZE;
 	} catch (err) {
-		if (id === searchRequestId) console.error(err);
+		if (id === searchRequestId) {
+			// 最初のページの失敗は「結果なし」と区別できるようエラー状態を保持する
+			if (offset === 0) searchError.value = true;
+			console.error(err);
+		}
 	} finally {
 		if (id === searchRequestId) isSearching.value = false;
 	}

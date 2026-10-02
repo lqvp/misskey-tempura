@@ -327,7 +327,12 @@ export class ApPersonService implements OnModuleInit {
 						if (typeof deco.id !== 'string' || deco.id.length === 0 || deco.id.length > 128) continue;
 						if (typeof deco.url !== 'string' || !deco.url.startsWith('https://')) continue;
 						// 検証を通過した要素に対して重複チェックする
-						if (localDecos.some((v) => v.id === deco.id)) continue;
+						const existing = localDecos.find((v) => v.id === deco.id);
+						if (existing != null) {
+							// 既に登録済みでも URL が一致すればユーザーの装飾として採用し、作成のみスキップする
+							if (existing.url === deco.url) collected.push(deco);
+							continue;
+						}
 						let decoHost: string | undefined;
 						try {
 							decoHost = new URL(deco.url).host;
@@ -346,9 +351,10 @@ export class ApPersonService implements OnModuleInit {
 						});
 						collected.push(deco);
 					}
-					if (collected.length > 0) {
-						Object.assign(returnData, { avatarDecorations: collected });
-					}
+					// 検証済み（または登録済みで一致）の装飾のみを設定する。
+					// remote が配列を返したなら、検証を全通過しなくても空配列で上書きし、
+					// 不正な装飾がユーザーデータに残らないようにする。
+					Object.assign(returnData, { avatarDecorations: collected });
 				}
 			}
 		}

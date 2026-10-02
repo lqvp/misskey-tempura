@@ -337,9 +337,10 @@ export class SignupApiService {
 				// 承認待ちフロー
 				const { account } = await this.signupService.signup({
 					username, password, host, reason,
-				}).catch(err => {
+				}).catch(async err => {
 					// 確保したコードが無駄に消費されたままになるのを防ぐ
-					if (ticket) void this.releaseRegistrationTicket(ticket);
+					// (release を await してから元のエラーを送出する。他の release フローと同じ)
+					if (ticket) await this.releaseRegistrationTicket(ticket);
 					throw err;
 				});
 

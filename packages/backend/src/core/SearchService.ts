@@ -289,7 +289,16 @@ export class SearchService {
 				if (core.includes('(') || core.includes(')')) {
 					// バランスの取れた括弧は Groonga のグループ記号として保ち、
 					// 内部の語を空白で分割して個別に引用する (例: +(dog bird) -> +("dog" "bird"))
-					if ((core.match(/\(/g) ?? []).length !== (core.match(/\)/g) ?? []).length) return quoteTerm(term);
+					// 開閉の個数一致だけでは ')' が先に来るケース (例: ")(") を弾けないため、
+					// ネスト深度を追跡して不正な括弧は従来どおり引用する
+					let parenDepth = 0;
+					let parenBalanced = true;
+					for (const ch of core) {
+						if (ch === '(') parenDepth++;
+						else if (ch === ')') parenDepth--;
+						if (parenDepth < 0) { parenBalanced = false; break; }
+					}
+					if (!parenBalanced || parenDepth !== 0) return quoteTerm(term);
 					const joiner = opts.searchOperator === 'or' ? ' OR ' : ' ';
 					// 括弧 (グループ記号) はそのまま残し、語だけを引用する。
 					// 括弧の外側 (depth === 0) のテキストは従来どおり引用のみ行う。

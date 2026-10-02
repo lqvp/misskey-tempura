@@ -6,6 +6,7 @@ poweredByMisskeyDescription: "{name}は、オープンソースのプラット�
 poweredBytempForkDescription: "{name}は、オープンソースのプラットフォーム<b>Misskey</b>のフォーク版であるmisskey-tempuraを使用しています。"
 monthAndDay: "{month}月 {day}日"
 search: "検索"
+searchFailed: "検索に失敗しました"
 reset: "リセット"
 notifications: "通知"
 username: "ユーザー名"

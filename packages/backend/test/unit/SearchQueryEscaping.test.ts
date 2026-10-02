@@ -99,4 +99,14 @@ describe('notes/search term boundaries', () => {
 		expect(orParams.pgQuery0).toBe('"cat"');
 		expect(orParams.pgQuery1).toBe('+("dog" OR "bird")');
 	});
+
+	test('closing parenthesis first falls back to quoting the whole term', async () => {
+		// 開閉の個数が同じでも ')' が先頭に来るトークンはグループとして扱わない
+		const { parameters } = await compile('dog)(cat', { advancedSyntax: true, searchOperator: 'and' });
+		expect(parameters.pgQuery).toBe('"dog)(cat"');
+		const { parameters: nested } = await compile('+(dog bird', { advancedSyntax: true, searchOperator: 'and' });
+		// 閉じ括弧が無いトークンは regroupBalanced が従来どおり空白で分割し、
+		// 括弧を含む語はcompileTerm が丸ごと引用する
+		expect(nested.pgQuery).toBe('"+(dog" "bird"');
+	});
 });
