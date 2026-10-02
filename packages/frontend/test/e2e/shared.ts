@@ -108,7 +108,7 @@ export async function acceptSignupInviteCheck(page: Page, invitationCode?: strin
 		}
 		throw new Error('signup invite check requires an invitation code on this instance');
 	}
-	await page.fill('#invite-code', invitationCode);
+	await page.locator('#invite-code').locator('input').fill(invitationCode);
 	const inviteCheck = page.waitForResponse((response) => {
 		return response.url().endsWith('/api/invite/check') && response.request().method() === 'POST';
 	}, { timeout: 30_000 });
