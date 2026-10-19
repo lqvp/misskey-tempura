@@ -146,6 +146,12 @@ type AdminAvatarDecorationsListRequest = operations['admin___avatar-decorations_
 type AdminAvatarDecorationsListResponse = operations['admin___avatar-decorations___list']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type AdminAvatarDecorationsSearchRequest = operations['admin___avatar-decorations___search']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminAvatarDecorationsSearchResponse = operations['admin___avatar-decorations___search']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type AdminAvatarDecorationsUpdateRequest = operations['admin___avatar-decorations___update']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -1710,6 +1716,8 @@ declare namespace entities {
         AdminAvatarDecorationsDeleteRequest,
         AdminAvatarDecorationsListRequest,
         AdminAvatarDecorationsListResponse,
+        AdminAvatarDecorationsSearchRequest,
+        AdminAvatarDecorationsSearchResponse,
         AdminAvatarDecorationsUpdateRequest,
         AdminCaptchaCurrentResponse,
         AdminCaptchaSaveRequest,

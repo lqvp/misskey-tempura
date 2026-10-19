@@ -33,6 +33,7 @@ export * as 'admin/announcements/update' from './endpoints/admin/announcements/u
 export * as 'admin/avatar-decorations/create' from './endpoints/admin/avatar-decorations/create.js';
 export * as 'admin/avatar-decorations/delete' from './endpoints/admin/avatar-decorations/delete.js';
 export * as 'admin/avatar-decorations/list' from './endpoints/admin/avatar-decorations/list.js';
+export * as 'admin/avatar-decorations/search' from './endpoints/admin/avatar-decorations/search.js';
 export * as 'admin/avatar-decorations/update' from './endpoints/admin/avatar-decorations/update.js';
 export * as 'admin/captcha/current' from './endpoints/admin/captcha/current.js';
 export * as 'admin/captcha/save' from './endpoints/admin/captcha/save.js';

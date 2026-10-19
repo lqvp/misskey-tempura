@@ -197,6 +197,15 @@ export type paths = {
          */
         post: operations['admin___avatar-decorations___list'];
     };
+    '/admin/avatar-decorations/search': {
+        /**
+         * admin/avatar-decorations/search
+         * @description Search avatar decorations for management. Unlike search-avatar-decorations, imported (remote) decorations are always included.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:avatar-decorations*
+         */
+        post: operations['admin___avatar-decorations___search'];
+    };
     '/admin/avatar-decorations/update': {
         /**
          * admin/avatar-decorations/update
@@ -7981,6 +7990,96 @@ export interface operations {
                         url: string;
                         roleIdsThatCanBeUsedThisDecoration: string[];
                         category?: string | null;
+                    }[];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___avatar-decorations___search': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** @default  */
+                    query?: string;
+                    /**
+                     * @default combined
+                     * @enum {string}
+                     */
+                    origin?: 'local' | 'remote' | 'combined';
+                    /** @default 30 */
+                    limit?: number;
+                    /** @default 0 */
+                    offset?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /**
+                         * Format: id
+                         * @example xxxxxxxxxx
+                         */
+                        id: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string | null;
+                        name: string;
+                        description: string;
+                        url: string;
+                        roleIdsThatCanBeUsedThisDecoration: string[];
+                        category: string | null;
                     }[];
                 };
             };

@@ -241,6 +241,17 @@ declare module '../api.js' {
     ): Promise<SwitchCaseResponseType<E, P>>;
 
     /**
+     * Search avatar decorations for management. Unlike search-avatar-decorations, imported (remote) decorations are always included.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *read:admin:avatar-decorations*
+     */
+    request<E extends 'admin/avatar-decorations/search', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
      * No description provided.
      * 
      * **Credential required**: *Yes* / **Permission**: *write:admin:avatar-decorations*
