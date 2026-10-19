@@ -258,5 +258,27 @@ describe('IpIntelligenceService', () => {
 			expect(http.send).not.toHaveBeenCalled();
 			expect(svc.lookup('192.0.2.1', {}).datacenter).toBe(true);
 		});
+
+		test('sync downloads the data when the local file is broken', async () => {
+			const brokenDir = join(tmpDir, 'broken');
+			fs.mkdirSync(brokenDir, { recursive: true });
+			fs.writeFileSync(join(brokenDir, 'torbulkexitlist'), 'garbage\n');
+			const good = bodies['https://check.torproject.org/torbulkexitlist'];
+			await redis.hset(VERSIONS_KEY, 'tor', `${createHash('sha256').update(good).digest('hex')}|${new Date().toISOString()}`);
+
+			const app3 = await createService({ dataDir: brokenDir, autoUpdate: true });
+			const http3 = app3.get(HttpRequestService) as Mocked<HttpRequestService>;
+			http3.send.mockImplementation(http.send.getMockImplementation()!);
+			try {
+				const svc3 = app3.get(IpIntelligenceService);
+				await svc3.syncWithRemoteVersions();
+
+				expect(http3.send).toHaveBeenCalledWith('https://check.torproject.org/torbulkexitlist', expect.anything());
+				expect(svc3.lookup('171.25.193.25', {}).tor).toBe(true);
+				expect(fs.readFileSync(join(brokenDir, 'torbulkexitlist'), 'utf-8')).toBe(good);
+			} finally {
+				await app3.close();
+			}
+		});
 	});
 });

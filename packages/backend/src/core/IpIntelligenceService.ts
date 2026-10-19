@@ -262,8 +262,13 @@ export class IpIntelligenceService implements OnModuleInit, OnApplicationShutdow
 				try {
 					// 保存先を共有している構成では、ファイルがすでに新しい版になっている
 					await this.loadFromDisk(source);
-					if (this.sources.get(source.name)?.version === remoteVersion) continue;
+				} catch (err) {
+					// 手元のファイルが壊れていても取り直せるよう、ダウンロードに進む
+					this.logger.warn(`failed to load ${source.fileName}, downloading it again: ${err}`);
+				}
+				if (this.sources.get(source.name)?.version === remoteVersion) continue;
 
+				try {
 					await this.downloadAndApply(source);
 				} catch (err) {
 					this.logger.warn(`failed to sync ${source.name}, keeping the current data: ${err}`);

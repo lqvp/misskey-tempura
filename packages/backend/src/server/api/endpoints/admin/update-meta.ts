@@ -10,6 +10,7 @@ import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { MetaService } from '@/core/MetaService.js';
 import { QueueService } from '@/core/QueueService.js';
+import { ApiLoggerService } from '../../ApiLoggerService.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -356,6 +357,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private metaService: MetaService,
 		private moderationLogService: ModerationLogService,
 		private queueService: QueueService,
+		private apiLoggerService: ApiLoggerService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const set = {} as Partial<MiMeta>;
@@ -1233,19 +1235,23 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			const after = await this.metaService.fetch(true);
 
-			// 無効から有効に切り替えたら、03:30 を待たずにデータを取得する
-			if (!before.enableLoginRiskDetection && after.enableLoginRiskDetection) {
-				await this.queueService.systemQueue.add('updateIpIntelligence', {}, {
-					jobId: 'updateIpIntelligence-oneshot',
-					removeOnComplete: true,
-					removeOnFail: true,
-				});
-			}
-
 			this.moderationLogService.log(me, 'updateServerSettings', {
 				before,
 				after,
 			});
+
+			// 無効から有効に切り替えたら、03:30 を待たずにデータを取得する。失敗しても設定の更新は成功させる
+			if (!before.enableLoginRiskDetection && after.enableLoginRiskDetection) {
+				try {
+					await this.queueService.systemQueue.add('updateIpIntelligence', {}, {
+						jobId: 'updateIpIntelligence-oneshot',
+						removeOnComplete: true,
+						removeOnFail: true,
+					});
+				} catch (err) {
+					this.apiLoggerService.logger.warn(`failed to enqueue the IP intelligence update: ${err}`);
+				}
+			}
 		});
 	}
 }
