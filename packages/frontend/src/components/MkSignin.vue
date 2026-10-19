@@ -89,7 +89,7 @@ import XPassword from '@/components/MkSignin.password.vue';
 import XTotp from '@/components/MkSignin.totp.vue';
 import XPasskey from '@/components/MkSignin.passkey.vue';
 import XEmailCode from '@/components/MkSignin.emailCode.vue';
-import { miLocalStorage } from '@/local-storage.js';
+import { getLoginDeviceToken, saveLoginDeviceToken } from '@/utility/login-device-token.js';
 import { login } from '@/accounts.js';
 
 const emit = defineEmits<{
@@ -117,23 +117,6 @@ const needCaptcha = ref(false);
 const userInfo = ref<null | Misskey.entities.UserDetailed>(null);
 const password = ref('');
 const emailCodeChallengeId = ref<string | null>(null);
-
-function getDeviceToken(): string | undefined {
-	try {
-		return miLocalStorage.getItem('loginDeviceToken') ?? undefined;
-	} catch {
-		return undefined;
-	}
-}
-
-function saveDeviceToken(deviceToken: string | undefined): void {
-	if (deviceToken == null) return;
-	try {
-		miLocalStorage.setItem('loginDeviceToken', deviceToken);
-	} catch {
-		// localStorage が使えない環境では端末トークンを保存しない
-	}
-}
 
 //#region Passkey Passwordless
 const credentialRequest = shallowRef<PublicKeyCredentialRequestOptionsJSON | null>(null);
@@ -163,7 +146,7 @@ function onPasskeyDone(credential: AuthenticationResponseJSON): void {
 		misskeyApi('signin-with-passkey', {
 			credential: credential,
 			context: passkeyContext.value,
-			deviceToken: getDeviceToken(),
+			deviceToken: getLoginDeviceToken(),
 		} as any).then((res) => {
 			const signed = res as Misskey.entities.SigninWithPasskeyResponse;
 			if (signed.signinResponse == null) {
@@ -267,7 +250,7 @@ async function onEmailCodeSubmitted(code: string) {
 async function tryLogin(req: Partial<Misskey.entities.SigninFlowRequest>): Promise<Misskey.entities.SigninFlowResponse> {
 	const _req = {
 		username: req.username ?? userInfo.value?.username,
-		deviceToken: getDeviceToken(),
+		deviceToken: getLoginDeviceToken(),
 		...req,
 	};
 
@@ -334,7 +317,7 @@ async function tryLogin(req: Partial<Misskey.entities.SigninFlowRequest>): Promi
 
 async function onLoginSucceeded(res: Misskey.entities.SigninFlowResponse & { finished: true }) {
 	emailCodeChallengeId.value = null;
-	saveDeviceToken(res.deviceToken);
+	saveLoginDeviceToken(res.deviceToken);
 	if (props.autoSet) {
 		await login(res.i);
 	}

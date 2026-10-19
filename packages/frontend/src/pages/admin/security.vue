@@ -242,6 +242,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<div class="_gaps_m">
 										<MkButton inline :disabled="loginRiskDiagnoseFetching" @click="fetchLoginRiskDiagnose"><i class="ti ti-refresh"></i> {{ i18n.ts.reload }}</MkButton>
 
+										<MkInfo v-if="loginRiskDiagnoseError != null" warn>{{ i18n.ts.somethingHappened }}: {{ loginRiskDiagnoseError }}</MkInfo>
+
 										<MkLoading v-if="loginRiskDiagnoseFetching && loginRiskDiagnose == null"/>
 										<template v-else-if="loginRiskDiagnose != null">
 											<MkInfo v-if="loginRiskDiagnose.verdict === 'privateIp'" warn>{{ i18n.ts._loginRisk.privateIpWarning }}</MkInfo>
@@ -391,6 +393,7 @@ const loginRiskForm = useForm({
 
 const loginRiskDiagnose = ref<Misskey.entities.AdminLoginRiskDiagnoseResponse | null>(null);
 const loginRiskDiagnoseFetching = ref(false);
+const loginRiskDiagnoseError = ref<string | null>(null);
 
 const loginRiskDiagnoseMatchedLists = computed(() => {
 	const intel = loginRiskDiagnose.value?.intel;
@@ -401,9 +404,11 @@ const loginRiskDiagnoseMatchedLists = computed(() => {
 async function fetchLoginRiskDiagnose() {
 	loginRiskDiagnoseFetching.value = true;
 	try {
-		loginRiskDiagnose.value = await os.apiWithDialog('admin/login-risk/diagnose', {});
-	} catch {
-		// エラーダイアログは apiWithDialog が表示する
+		loginRiskDiagnose.value = await misskeyApi('admin/login-risk/diagnose', {});
+		loginRiskDiagnoseError.value = null;
+	} catch (err) {
+		// ページを開くたびにダイアログを出さないよう、エラーはインラインで表示する
+		loginRiskDiagnoseError.value = (err as { message?: string } | null)?.message ?? String(err);
 	} finally {
 		loginRiskDiagnoseFetching.value = false;
 	}
