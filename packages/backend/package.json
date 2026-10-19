@@ -109,6 +109,7 @@
 		"mime-types": "3.0.2",
 		"misskey-js": "workspace:*",
 		"misskey-reversi": "workspace:*",
+		"mmdb-lib": "3.0.3",
 		"ms": "3.0.0-canary.202508261828",
 		"nanoid": "6.0.1",
 		"nested-property": "4.0.0",

@@ -153,6 +153,15 @@ port: 3000
 #  # If you're using Cloudflare, you can find IP Ranges at:
 #  # https://www.cloudflare.com/ips/
 
+# Login risk detection: where free IP intelligence data (country / ASN /
+# Tor / Spamhaus DROP / datacenter / VPN lists) is stored and updated daily.
+# With Docker, the default <rootDir>/files/ipdata lives under the `files` volume and persists.
+#
+#loginRisk:
+#  dataDir: /path/to/ipdata     # default: <rootDir>/files/ipdata
+#  autoUpdate: true             # false: never download; only read files placed in dataDir
+#  trustCloudflareHeaders: false # true: prefer the CF-IPCountry header (only behind Cloudflare)
+
 #   ┌──────────────────────────┐
 #───┘ PostgreSQL configuration └────────────────────────────────
 

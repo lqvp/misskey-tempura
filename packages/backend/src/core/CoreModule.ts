@@ -25,6 +25,7 @@ import { AntennaService } from './AntennaService.js';
 import { AchievementService } from './AchievementService.js';
 import { AvatarDecorationService } from './AvatarDecorationService.js';
 import { CaptchaService } from './CaptchaService.js';
+import { IpIntelligenceService } from './IpIntelligenceService.js';
 import { CustomEmojiService } from './CustomEmojiService.js';
 import { DeleteAccountService } from './DeleteAccountService.js';
 import { TruncateAccountService } from './TruncateAccountService.js';
@@ -184,6 +185,7 @@ const $AntennaService: Provider = { provide: 'AntennaService', useExisting: Ante
 const $AchievementService: Provider = { provide: 'AchievementService', useExisting: AchievementService };
 const $AvatarDecorationService: Provider = { provide: 'AvatarDecorationService', useExisting: AvatarDecorationService };
 const $CaptchaService: Provider = { provide: 'CaptchaService', useExisting: CaptchaService };
+const $IpIntelligenceService: Provider = { provide: 'IpIntelligenceService', useExisting: IpIntelligenceService };
 const $CustomEmojiService: Provider = { provide: 'CustomEmojiService', useExisting: CustomEmojiService };
 const $DeleteAccountService: Provider = { provide: 'DeleteAccountService', useExisting: DeleteAccountService };
 const $TruncateAccountService: Provider = { provide: 'TruncateAccountService', useExisting: TruncateAccountService };
@@ -350,6 +352,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		AchievementService,
 		AvatarDecorationService,
 		CaptchaService,
+		IpIntelligenceService,
 		CustomEmojiService,
 		DeleteAccountService,
 		TruncateAccountService,
@@ -514,6 +517,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$AchievementService,
 		$AvatarDecorationService,
 		$CaptchaService,
+		$IpIntelligenceService,
 		$CustomEmojiService,
 		$DeleteAccountService,
 		$TruncateAccountService,
@@ -678,6 +682,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		AchievementService,
 		AvatarDecorationService,
 		CaptchaService,
+		IpIntelligenceService,
 		CustomEmojiService,
 		DeleteAccountService,
 		TruncateAccountService,
@@ -841,6 +846,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$AchievementService,
 		$AvatarDecorationService,
 		$CaptchaService,
+		$IpIntelligenceService,
 		$CustomEmojiService,
 		$DeleteAccountService,
 		$TruncateAccountService,
