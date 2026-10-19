@@ -6,7 +6,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { In, LessThan } from 'typeorm';
 import { DI } from '@/di-symbols.js';
-import type { AntennasRepository, RoleAssignmentsRepository, UserIpsRepository } from '@/models/_.js';
+import type { AntennasRepository, RoleAssignmentsRepository, UserIpsRepository, UserLoginContextsRepository } from '@/models/_.js';
 import type Logger from '@/logger.js';
 import { bindThis } from '@/decorators.js';
 import { IdService } from '@/core/IdService.js';
@@ -32,6 +32,9 @@ export class CleanProcessorService {
 		@Inject(DI.roleAssignmentsRepository)
 		private roleAssignmentsRepository: RoleAssignmentsRepository,
 
+		@Inject(DI.userLoginContextsRepository)
+		private userLoginContextsRepository: UserLoginContextsRepository,
+
 		private queueLoggerService: QueueLoggerService,
 		private reversiService: ReversiService,
 		private idService: IdService,
@@ -45,6 +48,11 @@ export class CleanProcessorService {
 
 		this.userIpsRepository.delete({
 			createdAt: LessThan(new Date(Date.now() - (1000 * 60 * 60 * 24 * 90))),
+		});
+
+		// 180日使われていないログイン環境の学習データを削除
+		await this.userLoginContextsRepository.delete({
+			lastSeenAt: LessThan(new Date(Date.now() - (1000 * 60 * 60 * 24 * 180))),
 		});
 
 		// 使われてないアンテナを停止
