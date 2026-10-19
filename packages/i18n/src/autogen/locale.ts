@@ -35,6 +35,10 @@ export interface Locale extends ILocale {
      */
     "search": string;
     /**
+     * 検索に失敗しました
+     */
+    "searchFailed": string;
+    /**
      * リセット
      */
     "reset": string;
