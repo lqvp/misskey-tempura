@@ -1145,6 +1145,28 @@ describe('Endpoints', () => {
 		});
 	});
 
+	describe('admin/clear-suspicious-login-flag', () => {
+		test('存在しないユーザーは noSuchUser', async () => {
+			const res = await api('admin/clear-suspicious-login-flag', { userId: '000000000000000000000000' }, alice);
+
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual((res.body as any).error.code, 'NO_SUCH_USER');
+		});
+
+		test('フラグを外せる', async () => {
+			const connection = await initTestDb(true);
+			const Users = connection.getRepository(MiUser);
+			await Users.update(alice.id, { suspiciousLoginDetectedAt: new Date() });
+
+			const res = await api('admin/clear-suspicious-login-flag', { userId: alice.id }, alice);
+
+			assert.strictEqual(res.status, 204);
+			const updated = await Users.findOneByOrFail({ id: alice.id });
+			assert.strictEqual(updated.suspiciousLoginDetectedAt, null);
+			connection.destroy();
+		});
+	});
+
 	describe('notes/replies', () => {
 		test('自分に閲覧権限のない投稿は含まれない', async () => {
 			const alicePost = await post(alice, {
