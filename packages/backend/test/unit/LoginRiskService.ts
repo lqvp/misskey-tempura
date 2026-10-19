@@ -236,6 +236,12 @@ describe('LoginRiskService', () => {
 			expect(svc.buildLearnOnlyEvaluation('203.0.113.5', {})).toBeNull();
 		});
 
+		test('intel が例外を投げても例外にならず null', () => {
+			fakeIntel.lookup = () => { throw new Error('x'); };
+			expect(() => svc.buildLearnOnlyEvaluation('203.0.113.5', {})).not.toThrow();
+			expect(svc.buildLearnOnlyEvaluation('203.0.113.5', {})).toBeNull();
+		});
+
 		test('学習用の評価を返し、learn で国などが記録される', async () => {
 			const ev = svc.buildLearnOnlyEvaluation('203.0.113.5', {});
 			expect(ev).toMatchObject({ skipped: false, score: 0, level: 'allow', reasons: [], country: 'JP', asn: 64500, deviceTokenHash: null });

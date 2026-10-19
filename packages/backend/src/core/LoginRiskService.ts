@@ -136,27 +136,32 @@ export class LoginRiskService {
 
 	/**
 	 * サインアップ直後のログインのように、判定せずに学習だけするときの評価を作る。
-	 * 機能が無効、または IP がプライベート・不正なら null
+	 * 機能が無効、IP がプライベート・不正、または例外が出たら null(例外を投げない)
 	 */
 	@bindThis
 	public buildLearnOnlyEvaluation(ip: string, headers: IncomingHttpHeaders): LoginRiskEvaluation | null {
 		if (!this.isEnabled()) return null;
-		const normalized = normalizeIp(ip);
-		if (normalized == null || isPrivateOrLoopbackIp(normalized)) return null;
+		try {
+			const normalized = normalizeIp(ip);
+			if (normalized == null || isPrivateOrLoopbackIp(normalized)) return null;
 
-		const intel = this.ipIntelligenceService.lookup(normalized, headers);
-		const prefix = getIpPrefix(normalized);
-		return {
-			skipped: false,
-			score: 0,
-			level: 'allow',
-			reasons: [],
-			country: intel.country,
-			asn: intel.asn,
-			asnOrg: intel.asnOrg,
-			prefixHash: prefix != null ? this.hmac(prefix) : null,
-			deviceTokenHash: null,
-		};
+			const intel = this.ipIntelligenceService.lookup(normalized, headers);
+			const prefix = getIpPrefix(normalized);
+			return {
+				skipped: false,
+				score: 0,
+				level: 'allow',
+				reasons: [],
+				country: intel.country,
+				asn: intel.asn,
+				asnOrg: intel.asnOrg,
+				prefixHash: prefix != null ? this.hmac(prefix) : null,
+				deviceTokenHash: null,
+			};
+		} catch (err) {
+			this.logger.error('failed to build learn-only login risk evaluation; skipping learning', { error: err });
+			return null;
+		}
 	}
 
 	/** skipped の評価は学習しない。失敗してもログインは止めないので例外を投げない */
