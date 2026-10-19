@@ -43,6 +43,7 @@ export const LOGIN_CHALLENGE_INVALID = 'b3fddf43-a0d3-41f3-9ca9-8de701a6f418';
 export const LOGIN_CHALLENGE_EXPIRED = '9939b972-0830-4a48-a1b4-f6fe9d259a89';
 export const LOGIN_CHALLENGE_TOO_MANY_ATTEMPTS = '7606fbea-f065-4c3f-9040-4fb2c884e1b6';
 export const LOGIN_CHALLENGE_RATE_LIMITED = '20345fd1-1f7c-4d48-b4e8-cd169c500f2c';
+export const LOGIN_CHALLENGE_SEND_FAILED = '23ce18ed-2f0a-4d17-83df-88b4e28275f5';
 
 @Injectable()
 export class SigninApiService {
@@ -285,6 +286,15 @@ export class SigninApiService {
 					return error(403, { id: LOGIN_CHALLENGE_RATE_LIMITED });
 				}
 
+				if (issued.error === 'sendFailed') {
+					// 確認コードを届けられないので、追加認証を省かずにログインを止める。メールは届かないのでアプリ内通知だけ出す
+					await this.signinService.recordSignin(request, user.id, { success: false, ev, challenge: 'emailCode' });
+					await this.notificationService.createNotification(user.id, 'loginFailed', {
+						userIp: request.ip,
+					});
+					return error(503, { id: LOGIN_CHALLENGE_SEND_FAILED });
+				}
+
 				// Redis に保存できなければ、通知したうえで通す(学習はしない)
 				return await this.signinService.signin(request, reply, user, { ev, learn: false });
 			}
@@ -427,6 +437,8 @@ export class SigninApiService {
 			`${user.name ?? ''}(@${user.username}) \n` +
 			`ip: ${request.ip} \n` +
 			location.map(l => `${l} \n`).join('') +
-			message);
+			message).catch(err => {
+			this.logger.error(`failed to send login blocked email to ${user.id}`, { error: err });
+		});
 	}
 }

@@ -68,11 +68,15 @@ export class LoginChallengeService {
 		this.logger = loggerService.getLogger('login-challenge');
 	}
 
-	/** 確認コードを発行してメールで送る。発行上限を超えたら rateLimited、Redis に保存できなければ storeFailed */
+	/**
+	 * 確認コードを発行してメールで送る。
+	 * 発行上限を超えたら rateLimited、Redis に保存できなければ storeFailed、メールを送れなければ sendFailed
+	 */
 	@bindThis
-	public async issue(p: { user: MiLocalUser; email: string; ev: LoginRiskEvaluation; ip: string }): Promise<{ challengeId: string } | { error: 'rateLimited' | 'storeFailed' }> {
+	public async issue(p: { user: MiLocalUser; email: string; ev: LoginRiskEvaluation; ip: string }): Promise<{ challengeId: string } | { error: 'rateLimited' | 'storeFailed' | 'sendFailed' }> {
 		const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
 		const challengeId = randomUUID();
+		const issueKey = `loginRisk:challengeIssue:${p.user.id}`;
 		const stored: StoredChallenge = {
 			attempts: 0,
 			userId: p.user.id,
@@ -82,7 +86,6 @@ export class LoginChallengeService {
 		};
 
 		try {
-			const issueKey = `loginRisk:challengeIssue:${p.user.id}`;
 			// 固定の1時間枠で数える。SET NX で初回だけ期限を付ける
 			const results = await this.redisClient.multi()
 				.set(issueKey, 0, 'EX', ISSUE_WINDOW_SEC, 'NX')
@@ -101,10 +104,12 @@ export class LoginChallengeService {
 		try {
 			await this.sendCodeEmail(p.email, code, p.ev);
 		} catch (err) {
-			// コードが届かないまま確認画面に進めると、本人が発行上限までやり直して締め出されるので通す側に倒す
+			// 通してしまうと、SMTP が止まっている間は追加認証を素通りできるので拒否する。
+			// 届かなかった発行は上限に数えず、SMTP が直れば本人はすぐやり直せるようにする
 			this.logger.error(`failed to send login challenge email for ${p.user.id}`, { error: err });
 			await this.redisClient.del(this.challengeKey(challengeId)).catch(() => {});
-			return { error: 'storeFailed' };
+			await this.redisClient.decr(issueKey).catch(() => {});
+			return { error: 'sendFailed' };
 		}
 
 		return { challengeId };

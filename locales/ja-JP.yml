@@ -4529,6 +4529,7 @@ _loginRisk:
   challengeExpired: "確認コードの有効期限が切れました。もう一度ログインしてください。"
   challengeTooManyAttempts: "確認コードの試行回数が上限に達しました。もう一度ログインしてください。"
   challengeRateLimited: "確認コードの発行回数が上限に達しました。しばらく時間をおいてからもう一度お試しください。"
+  challengeSendFailed: "確認コードのメールを送信できませんでした。しばらく時間をおいてからもう一度お試しください。"
   suspiciousLoginDetected: "不審なログインが検知されています"
   clearSuspiciousLoginFlag: "不審なログインの検知を解除"
   clearSuspiciousLoginFlagConfirm: "このユーザーの「不審なログインを検知」の状態を解除しますか？"

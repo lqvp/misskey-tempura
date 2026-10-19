@@ -441,6 +441,15 @@ function onSigninApiError(err?: any): void {
 			});
 			break;
 		}
+		case '23ce18ed-2f0a-4d17-83df-88b4e28275f5': {
+			// LOGIN_CHALLENGE_SEND_FAILED: 確認コードのメールを送れなかった
+			os.alert({
+				type: 'error',
+				title: i18n.ts.loginFailed,
+				text: i18n.ts._loginRisk.challengeSendFailed,
+			});
+			break;
+		}
 		default: {
 			console.error(err);
 			os.alert({

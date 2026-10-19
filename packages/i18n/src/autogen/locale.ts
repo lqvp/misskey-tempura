@@ -16762,6 +16762,10 @@ export interface Locale extends ILocale {
          */
         "challengeRateLimited": string;
         /**
+         * 確認コードのメールを送信できませんでした。しばらく時間をおいてからもう一度お試しください。
+         */
+        "challengeSendFailed": string;
+        /**
          * 不審なログインが検知されています
          */
         "suspiciousLoginDetected": string;

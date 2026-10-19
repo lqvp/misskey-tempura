@@ -37,6 +37,7 @@ const LOGIN_CHALLENGE_INVALID = 'b3fddf43-a0d3-41f3-9ca9-8de701a6f418';
 const LOGIN_CHALLENGE_EXPIRED = '9939b972-0830-4a48-a1b4-f6fe9d259a89';
 const LOGIN_CHALLENGE_TOO_MANY_ATTEMPTS = '7606fbea-f065-4c3f-9040-4fb2c884e1b6';
 const LOGIN_CHALLENGE_RATE_LIMITED = '20345fd1-1f7c-4d48-b4e8-cd169c500f2c';
+const LOGIN_CHALLENGE_SEND_FAILED = '23ce18ed-2f0a-4d17-83df-88b4e28275f5';
 
 const JP_IP = '203.0.113.5';
 const US_IP = '198.51.100.5';
@@ -331,20 +332,29 @@ describe('SigninApiService', () => {
 		expect(createNotification).toHaveBeenCalledWith(user.id, 'login', expect.anything());
 	});
 
-	it('確認コードのメールを送れなければ challenge を消し、通知したうえで通す', async () => {
+	it('確認コードのメールを送れなければログインを止め、challenge を消し、発行回数に数えない', async () => {
 		const user = await createUser();
 		await seedKnownEnvironment(user);
+		const createNotification = vi.spyOn(notificationService, 'createNotification');
 		const sendEmail = fakeEmail.sendEmail.bind(fakeEmail);
-		vi.spyOn(fakeEmail, 'sendEmail').mockImplementation(async (to, subject, html, text) => {
+		const failing = vi.spyOn(fakeEmail, 'sendEmail').mockImplementation(async (to, subject, html, text) => {
 			if (subject.startsWith('Login verification code')) throw new Error('smtp down');
 			return sendEmail(to, subject, html, text);
 		});
-		const { res } = await call({ username: user.username, password: PASSWORD }, US_IP);
-		expect(res.finished).toBe(true);
-		expect(res.i).toBe(user.token);
+
+		const { status, res } = await call({ username: user.username, password: PASSWORD }, US_IP);
+		expect(status).toBe(503);
+		expect(res.error.id).toBe(LOGIN_CHALLENGE_SEND_FAILED);
+		expect(res.i).toBeUndefined();
 		expect(await redis.keys('loginRisk:challenge:*')).toEqual([]);
+		expect(Number(await redis.get(`loginRisk:challengeIssue:${user.id}`))).toBe(0);
 		expect(await userLoginContextsRepository.countBy({ userId: user.id, kind: 'country', value: 'US' })).toBe(0);
-		await vi.waitFor(() => expect(fakeEmail.sent.some(e => e.subject.startsWith('New login'))).toBe(true));
+		expect(createNotification).toHaveBeenCalledWith(user.id, 'loginFailed', expect.anything());
+
+		// SMTP が直れば、すぐに確認コードを受け取れる
+		failing.mockRestore();
+		const retried = await call({ username: user.username, password: PASSWORD }, US_IP);
+		expect(retried.res).toEqual({ finished: false, next: 'emailCode', challengeId: expect.any(String) });
 	});
 
 	it('learn や端末トークンの発行が例外を投げてもログインできる', async () => {
