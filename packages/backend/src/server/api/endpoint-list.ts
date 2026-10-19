@@ -111,6 +111,7 @@ export * as 'admin/system-webhook/update' from './endpoints/admin/system-webhook
 export * as 'admin/unset-mfa' from './endpoints/admin/unset-mfa.js';
 export * as 'admin/unset-user-avatar' from './endpoints/admin/unset-user-avatar.js';
 export * as 'admin/unset-user-banner' from './endpoints/admin/unset-user-banner.js';
+export * as 'admin/clear-suspicious-login-flag' from './endpoints/admin/clear-suspicious-login-flag.js';
 export * as 'admin/unsuspend-user' from './endpoints/admin/unsuspend-user.js';
 export * as 'admin/update-abuse-user-report' from './endpoints/admin/update-abuse-user-report.js';
 export * as 'admin/update-meta' from './endpoints/admin/update-meta.js';
