@@ -506,6 +506,11 @@ export const meta = {
 				optional: false,
 				nullable: false,
 			},
+			loginRiskShowDetailsToUser: {
+				type: "boolean",
+				optional: false,
+				nullable: false,
+			},
 			enableActiveEmailValidation: {
 				type: "boolean",
 				optional: false,
@@ -1311,6 +1316,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				loginRiskNotifyThreshold: instance.loginRiskNotifyThreshold,
 				loginRiskStepUpThreshold: instance.loginRiskStepUpThreshold,
 				loginRiskFlagUnverifiedUsers: instance.loginRiskFlagUnverifiedUsers,
+				loginRiskShowDetailsToUser: instance.loginRiskShowDetailsToUser,
 				enableActiveEmailValidation: instance.enableActiveEmailValidation,
 				enableVerifymailApi: instance.enableVerifymailApi,
 				verifymailAuthKey: instance.verifymailAuthKey,

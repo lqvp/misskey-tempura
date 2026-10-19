@@ -234,6 +234,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 								</MkSwitch>
 							</SearchMarker>
 
+							<SearchMarker :keywords="['footprint', 'history', 'user']">
+								<MkSwitch v-model="loginRiskForm.state.loginRiskShowDetailsToUser">
+									<template #label><SearchLabel>{{ i18n.ts._loginRisk.showDetailsToUser }}</SearchLabel></template>
+									<template #caption><SearchText>{{ i18n.ts._loginRisk.showDetailsToUserDescription }}</SearchText></template>
+								</MkSwitch>
+							</SearchMarker>
+
 							<SearchMarker :keywords="['diagnose', 'ipAddress', 'proxy']">
 								<MkFolder>
 									<template #icon><i class="ti ti-stethoscope"></i></template>
@@ -377,12 +384,14 @@ const loginRiskForm = useForm({
 	loginRiskNotifyThreshold: meta.loginRiskNotifyThreshold,
 	loginRiskStepUpThreshold: meta.loginRiskStepUpThreshold,
 	loginRiskFlagUnverifiedUsers: meta.loginRiskFlagUnverifiedUsers,
+	loginRiskShowDetailsToUser: meta.loginRiskShowDetailsToUser,
 }, async (state) => {
 	await os.apiWithDialog('admin/update-meta', {
 		enableLoginRiskDetection: state.enableLoginRiskDetection,
 		loginRiskNotifyThreshold: state.loginRiskNotifyThreshold,
 		loginRiskStepUpThreshold: state.loginRiskStepUpThreshold,
 		loginRiskFlagUnverifiedUsers: state.loginRiskFlagUnverifiedUsers,
+		loginRiskShowDetailsToUser: state.loginRiskShowDetailsToUser,
 	}, undefined, {
 		'0b4b9a0e-6f0d-4c8e-9d3a-5f2f7a1c8e41': {
 			text: i18n.ts._loginRisk.invalidThresholds,

@@ -145,6 +145,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 								<span class="ip">{{ record.ip }}</span>
 							</div>
 						</template>
+
+						<FormSection v-if="iAmModerator && user.host == null">
+							<template #label>{{ i18n.ts._loginRisk.footprints }}</template>
+							<template #description>{{ i18n.ts._loginRisk.footprintsDescription }}</template>
+							<MkPagination :paginator="footprintsPaginator" withControl :forceDisableInfiniteScroll="true">
+								<template #default="{items}">
+									<MkSigninRiskItem v-for="item in items" :key="item.id" :signin="item"/>
+								</template>
+							</MkPagination>
+						</FormSection>
 					</MkFolder>
 
 					<div>
@@ -255,6 +265,7 @@ import { useMkSelect } from '@/composables/use-mkselect.js';
 import { ensureSignin, iAmAdmin, iAmModerator } from '@/i.js';
 import MkRolePreview from '@/components/MkRolePreview.vue';
 import MkPagination from '@/components/MkPagination.vue';
+import MkSigninRiskItem from '@/components/MkSigninRiskItem.vue';
 import { Paginator } from '@/utility/paginator.js';
 
 const $i = ensureSignin();
@@ -290,6 +301,13 @@ const suspended = ref(info.value.isSuspended);
 const isSystem = ref(user.value.host == null && user.value.username.includes('.'));
 const moderationNote = ref(info.value.moderationNote);
 const filesPaginator = markRaw(new Paginator('admin/drive/files', {
+	limit: 10,
+	computedParams: computed(() => ({
+		userId: props.userId,
+	})),
+}));
+
+const footprintsPaginator = markRaw(new Paginator('admin/login-risk/user-footprints', {
 	limit: 10,
 	computedParams: computed(() => ({
 		userId: props.userId,

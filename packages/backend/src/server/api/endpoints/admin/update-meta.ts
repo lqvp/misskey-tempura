@@ -180,6 +180,7 @@ export const paramDef = {
 		loginRiskNotifyThreshold: { type: 'integer', minimum: 1, maximum: 1000 },
 		loginRiskStepUpThreshold: { type: 'integer', minimum: 1, maximum: 1000 },
 		loginRiskFlagUnverifiedUsers: { type: 'boolean' },
+		loginRiskShowDetailsToUser: { type: 'boolean' },
 		enableActiveEmailValidation: { type: 'boolean' },
 		enableVerifymailApi: { type: 'boolean' },
 		verifymailAuthKey: { type: 'string', nullable: true },
@@ -796,6 +797,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.loginRiskFlagUnverifiedUsers !== undefined) {
 				set.loginRiskFlagUnverifiedUsers = ps.loginRiskFlagUnverifiedUsers;
+			}
+
+			if (ps.loginRiskShowDetailsToUser !== undefined) {
+				set.loginRiskShowDetailsToUser = ps.loginRiskShowDetailsToUser;
 			}
 
 			if (ps.loginRiskNotifyThreshold !== undefined || ps.loginRiskStepUpThreshold !== undefined) {

@@ -16817,5 +16817,87 @@ export interface Locale extends ILocale {
          * 通知のしきい値は、確認コードを要求するしきい値より小さくしてください。
          */
         "invalidThresholds": string;
+        /**
+         * 不審なログインの記録
+         */
+        "footprints": string;
+        /**
+         * 通知のしきい値以上と判定されたログインと、確認コードを要求したログインを表示します。
+         */
+        "footprintsDescription": string;
+        /**
+         * 不審なログインの記録を本人にも表示する
+         */
+        "showDetailsToUser": string;
+        /**
+         * オフにすると、点数と判定理由は管理者とモデレーターだけが確認できます。
+         */
+        "showDetailsToUserDescription": string;
+        /**
+         * 点数
+         */
+        "riskScore": string;
+        /**
+         * 判定理由
+         */
+        "reasons": string;
+        "_reasons": {
+            /**
+             * 新しい端末
+             */
+            "newDevice": string;
+            /**
+             * 新しい国
+             */
+            "newCountry": string;
+            /**
+             * 新しい回線事業者
+             */
+            "newAsn": string;
+            /**
+             * 新しいIPアドレス帯
+             */
+            "newPrefix": string;
+            /**
+             * 直前に別の国からログイン
+             */
+            "recentOtherCountry": string;
+            /**
+             * Tor
+             */
+            "tor": string;
+            /**
+             * Spamhaus DROP
+             */
+            "spamhausDrop": string;
+            /**
+             * データセンター
+             */
+            "datacenter": string;
+            /**
+             * VPN
+             */
+            "vpn": string;
+            /**
+             * ログイン失敗の多発
+             */
+            "accountFailures": string;
+            /**
+             * 同じIPから複数アカウントへの失敗
+             */
+            "ipSpray": string;
+            /**
+             * 長期間ログインなし
+             */
+            "dormant": string;
+            /**
+             * 学習期間中
+             */
+            "learning": string;
+            /**
+             * 接続元IPを判定できない
+             */
+            "untrustedIp": string;
+        };
     };
 }

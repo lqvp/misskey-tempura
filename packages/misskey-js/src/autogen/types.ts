@@ -620,6 +620,15 @@ export type paths = {
          */
         post: operations['admin___login-risk___diagnose'];
     };
+    '/admin/login-risk/user-footprints': {
+        /**
+         * admin/login-risk/user-footprints
+         * @description Lists sign-in attempts of a user that the login risk detection judged suspicious.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:show-user*
+         */
+        post: operations['admin___login-risk___user-footprints'];
+    };
     '/admin/meta': {
         /**
          * admin/meta
@@ -2894,6 +2903,16 @@ export type paths = {
          *     **Credential required**: *Yes*
          */
         post: operations['i___import-user-lists'];
+    };
+    '/i/login-risk-footprints': {
+        /**
+         * i/login-risk-footprints
+         * @description Lists sign-in attempts of yourself that the login risk detection judged suspicious. Available only when the server shows these details to users.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes*
+         */
+        post: operations['i___login-risk-footprints'];
     };
     '/i/move': {
         /**
@@ -11301,6 +11320,80 @@ export interface operations {
             };
         };
     };
+    'admin___login-risk___user-footprints': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    userId: string;
+                    /** @default 10 */
+                    limit?: number;
+                    /** Format: misskey:id */
+                    sinceId?: string;
+                    /** Format: misskey:id */
+                    untilId?: string;
+                    sinceDate?: number;
+                    untilDate?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Signin'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     admin___meta: {
         responses: {
             /** @description OK (with results) */
@@ -11400,6 +11493,7 @@ export interface operations {
                         loginRiskNotifyThreshold: number;
                         loginRiskStepUpThreshold: number;
                         loginRiskFlagUnverifiedUsers: boolean;
+                        loginRiskShowDetailsToUser: boolean;
                         enableActiveEmailValidation: boolean;
                         enableVerifymailApi: boolean;
                         verifymailAuthKey: string | null;
@@ -15200,6 +15294,7 @@ export interface operations {
                     loginRiskNotifyThreshold?: number;
                     loginRiskStepUpThreshold?: number;
                     loginRiskFlagUnverifiedUsers?: boolean;
+                    loginRiskShowDetailsToUser?: boolean;
                     enableActiveEmailValidation?: boolean;
                     enableVerifymailApi?: boolean;
                     verifymailAuthKey?: string | null;
@@ -29485,6 +29580,78 @@ export interface operations {
             };
             /** @description Too many requests */
             429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'i___login-risk-footprints': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** @default 10 */
+                    limit?: number;
+                    /** Format: misskey:id */
+                    sinceId?: string;
+                    /** Format: misskey:id */
+                    untilId?: string;
+                    sinceDate?: number;
+                    untilDate?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Signin'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
                 headers: {
                     [name: string]: unknown;
                 };

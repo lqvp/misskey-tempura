@@ -608,6 +608,14 @@ export class MiMeta {
 	})
 	public loginRiskFlagUnverifiedUsers: boolean;
 
+	/**
+	 * 不審なログインの記録(点数・判定理由)を本人にも見せるか。false なら管理側だけ
+	 */
+	@Column('boolean', {
+		default: false,
+	})
+	public loginRiskShowDetailsToUser: boolean;
+
 	@Column('boolean', {
 		default: true,
 	})

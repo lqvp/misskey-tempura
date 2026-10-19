@@ -6,7 +6,9 @@
 import { createHmac, randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import * as Redis from 'ioredis';
-import { In } from 'typeorm';
+import { Brackets, In } from 'typeorm';
+import type { SelectQueryBuilder } from 'typeorm';
+import type { MiSignin } from '@/models/Signin.js';
 import { DI } from '@/di-symbols.js';
 import type { MiMeta, SigninsRepository, UserLoginContextsRepository } from '@/models/_.js';
 import { MiUserLoginContext } from '@/models/UserLoginContext.js';
@@ -75,6 +77,24 @@ export class LoginRiskService {
 	@bindThis
 	public isEnabled(): boolean {
 		return this.meta.enableLoginRiskDetection;
+	}
+
+	/** 不審なログインの記録(点数・判定理由)を本人にも見せてよいか */
+	@bindThis
+	public isDetailVisibleToUser(): boolean {
+		return this.meta.enableLoginRiskDetection && this.meta.loginRiskShowDetailsToUser;
+	}
+
+	/**
+	 * サインイン履歴を「不審なログインの記録」に絞る。
+	 * 確認コードを求めたもの、または点数が今の通知しきい値以上のもの
+	 */
+	@bindThis
+	public filterSuspiciousSignins(query: SelectQueryBuilder<MiSignin>, alias: string): SelectQueryBuilder<MiSignin> {
+		return query.andWhere(new Brackets(qb => {
+			qb.where(`${alias}.challenge IS NOT NULL`)
+				.orWhere(`${alias}.riskScore >= :loginRiskNotifyThreshold`, { loginRiskNotifyThreshold: this.meta.loginRiskNotifyThreshold });
+		}));
 	}
 
 	/** 例外を投げない。判定できなければ skipped を付けて allow で返す */

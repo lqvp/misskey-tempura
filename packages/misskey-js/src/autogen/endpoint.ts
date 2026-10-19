@@ -94,6 +94,8 @@ import type {
 	AdminLlmModerationQueueResolveRequest,
 	AdminLlmModerationQueueUpdateRequest,
 	AdminLoginRiskDiagnoseResponse,
+	AdminLoginRiskUserFootprintsRequest,
+	AdminLoginRiskUserFootprintsResponse,
 	AdminMetaResponse,
 	AdminPromoCreateRequest,
 	AdminQueueClearRequest,
@@ -471,6 +473,8 @@ import type {
 	IImportFollowingRequest,
 	IImportMutingRequest,
 	IImportUserListsRequest,
+	ILoginRiskFootprintsRequest,
+	ILoginRiskFootprintsResponse,
 	IMoveRequest,
 	IMoveResponse,
 	INotificationsRequest,
@@ -797,6 +801,7 @@ export type Endpoints = {
 	'admin/llm-moderation/queue/resolve': { req: AdminLlmModerationQueueResolveRequest; res: EmptyResponse };
 	'admin/llm-moderation/queue/update': { req: AdminLlmModerationQueueUpdateRequest; res: EmptyResponse };
 	'admin/login-risk/diagnose': { req: EmptyRequest; res: AdminLoginRiskDiagnoseResponse };
+	'admin/login-risk/user-footprints': { req: AdminLoginRiskUserFootprintsRequest; res: AdminLoginRiskUserFootprintsResponse };
 	'admin/meta': { req: EmptyRequest; res: AdminMetaResponse };
 	'admin/promo/create': { req: AdminPromoCreateRequest; res: EmptyResponse };
 	'admin/queue/clear': { req: AdminQueueClearRequest; res: EmptyResponse };
@@ -1046,6 +1051,7 @@ export type Endpoints = {
 	'i/import-following': { req: IImportFollowingRequest; res: EmptyResponse };
 	'i/import-muting': { req: IImportMutingRequest; res: EmptyResponse };
 	'i/import-user-lists': { req: IImportUserListsRequest; res: EmptyResponse };
+	'i/login-risk-footprints': { req: ILoginRiskFootprintsRequest; res: ILoginRiskFootprintsResponse };
 	'i/move': { req: IMoveRequest; res: IMoveResponse };
 	'i/notifications': { req: INotificationsRequest; res: INotificationsResponse };
 	'i/notifications-grouped': { req: INotificationsGroupedRequest; res: INotificationsGroupedResponse };

@@ -337,6 +337,12 @@ type AdminLlmModerationQueueUpdateRequest_2 = {
 type AdminLoginRiskDiagnoseResponse = operations['admin___login-risk___diagnose']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type AdminLoginRiskUserFootprintsRequest = operations['admin___login-risk___user-footprints']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AdminLoginRiskUserFootprintsResponse = operations['admin___login-risk___user-footprints']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type AdminMetaResponse = operations['admin___meta']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
@@ -1777,6 +1783,8 @@ declare namespace entities {
         AdminInviteListRequest,
         AdminInviteListResponse,
         AdminLoginRiskDiagnoseResponse,
+        AdminLoginRiskUserFootprintsRequest,
+        AdminLoginRiskUserFootprintsResponse,
         AdminMetaResponse,
         AdminPromoCreateRequest,
         AdminQueueClearRequest,
@@ -2152,6 +2160,8 @@ declare namespace entities {
         IImportFollowingRequest,
         IImportMutingRequest,
         IImportUserListsRequest,
+        ILoginRiskFootprintsRequest,
+        ILoginRiskFootprintsResponse,
         IMoveRequest,
         IMoveResponse,
         INotificationsRequest,
@@ -2875,6 +2885,12 @@ type IImportMutingRequest = operations['i___import-muting']['requestBody']['cont
 
 // @public (undocumented)
 type IImportUserListsRequest = operations['i___import-user-lists']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type ILoginRiskFootprintsRequest = operations['i___login-risk-footprints']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type ILoginRiskFootprintsResponse = operations['i___login-risk-footprints']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type IMoveRequest = operations['i___move']['requestBody']['content']['application/json'];
