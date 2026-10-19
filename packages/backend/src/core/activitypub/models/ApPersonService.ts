@@ -40,6 +40,7 @@ import type { AccountMoveService } from '@/core/AccountMoveService.js';
 import { checkHttps } from '@/misc/check-https.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { AvatarDecorationService } from '@/core/AvatarDecorationService.js';
+import { MAX_REMOTE_AVATAR_DECORATIONS, sanitizeRemoteAvatarDecoration } from '@/misc/sanitize-remote-avatar-decoration.js';
 import { getApId, getApType, getOneApHrefNullable, isActor, isCollection, isCollectionOrOrderedCollection, isPropertyValue } from '../type.js';
 import { extractApHashtags } from './tag.js';
 import type { OnModuleInit } from '@nestjs/common';
@@ -320,22 +321,22 @@ export class ApPersonService implements OnModuleInit {
 					const localDecos = await this.avatarDecorationService.getAll();
 					// ローカルのデコレーションとして登録する
 					// remote payload は untrusted として検証する (vuln-0018)
-					const collected: typeof res.avatarDecorations = [];
-					for (const deco of res.avatarDecorations) {
-						// null やオブジェクトでない要素は検証せず除外する
-						if (deco == null || typeof deco !== 'object') continue;
-						if (typeof deco.id !== 'string' || deco.id.length === 0 || deco.id.length > 128) continue;
-						if (typeof deco.url !== 'string' || !deco.url.startsWith('https://')) continue;
+					const collected: MiUser['avatarDecorations'] = [];
+					for (const raw of res.avatarDecorations.slice(0, MAX_REMOTE_AVATAR_DECORATIONS)) {
+						// 形式・範囲を検証し、保存するフィールドだけを取り出す
+						const sanitized = sanitizeRemoteAvatarDecoration(raw);
+						if (sanitized == null) continue;
+						const { url, decoration } = sanitized;
 						// 検証を通過した要素に対して重複チェックする
-						const existing = localDecos.find((v) => v.id === deco.id);
+						const existing = localDecos.find((v) => v.id === decoration.id);
 						if (existing != null) {
 							// 既に登録済みでも URL が一致すればユーザーの装飾として採用し、作成のみスキップする
-							if (existing.url === deco.url) collected.push(deco);
+							if (existing.url === url) collected.push(decoration);
 							continue;
 						}
 						let decoHost: string | undefined;
 						try {
-							decoHost = new URL(deco.url).host;
+							decoHost = new URL(url).host;
 						} catch {
 							// URL として解釈できないものは取り込まない
 						}
@@ -343,13 +344,13 @@ export class ApPersonService implements OnModuleInit {
 						// 画像 URL は actor の所属ホスト由来のものでなければ取り込まない
 						if (decoHost !== instance.host && !decoHost.endsWith(`.${instance.host}`)) continue;
 						await this.avatarDecorationService.create({
-							id: deco.id,
+							id: decoration.id,
 							updatedAt: null,
-							url: deco.url,
-							name: `import_${host}_${deco.id}`.slice(0, 256),
+							url,
+							name: `import_${host}_${decoration.id}`.slice(0, 256),
 							description: `Imported from ${host}`,
 						});
-						collected.push(deco);
+						collected.push(decoration);
 					}
 					// 検証済み（または登録済みで一致）の装飾のみを設定する。
 					// remote が配列を返したなら、検証を全通過しなくても空配列で上書きし、
