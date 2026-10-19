@@ -75,6 +75,7 @@ import {
 	MiUsedUsername,
 	MiUser,
 	MiUserIp,
+	MiUserLoginContext,
 	MiUserKeypair,
 	MiUserList,
 	MiUserListFavorite,
@@ -225,6 +226,12 @@ const $userListMembershipsRepository: Provider = {
 const $userNotePiningsRepository: Provider = {
 	provide: DI.userNotePiningsRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiUserNotePining).extend(miRepository as MiRepository<MiUserNotePining>),
+	inject: [DI.db],
+};
+
+const $userLoginContextsRepository: Provider = {
+	provide: DI.userLoginContextsRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiUserLoginContext).extend(miRepository as MiRepository<MiUserLoginContext>),
 	inject: [DI.db],
 };
 
@@ -626,6 +633,7 @@ const $contactFormsRepository: Provider = {
 		$userListMembershipsRepository,
 		$userNotePiningsRepository,
 		$userIpsRepository,
+		$userLoginContextsRepository,
 		$usedUsernamesRepository,
 		$followingsRepository,
 		$followRequestsRepository,
@@ -712,6 +720,7 @@ const $contactFormsRepository: Provider = {
 		$userListMembershipsRepository,
 		$userNotePiningsRepository,
 		$userIpsRepository,
+		$userLoginContextsRepository,
 		$usedUsernamesRepository,
 		$followingsRepository,
 		$followRequestsRepository,

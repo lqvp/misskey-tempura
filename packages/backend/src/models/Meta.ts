@@ -589,6 +589,26 @@ export class MiMeta {
 	public enableIpLogging: boolean;
 
 	@Column('boolean', {
+		default: false,
+	})
+	public enableLoginRiskDetection: boolean;
+
+	@Column('integer', {
+		default: 30,
+	})
+	public loginRiskNotifyThreshold: number;
+
+	@Column('integer', {
+		default: 60,
+	})
+	public loginRiskStepUpThreshold: number;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public loginRiskFlagUnverifiedUsers: boolean;
+
+	@Column('boolean', {
 		default: true,
 	})
 	public enableActiveEmailValidation: boolean;

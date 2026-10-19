@@ -32,4 +32,33 @@ export class MiSignin {
 
 	@Column('boolean')
 	public success: boolean;
+
+	@Column('varchar', {
+		length: 2,
+		nullable: true,
+	})
+	public country: string | null;
+
+	@Column('integer', {
+		nullable: true,
+	})
+	public asn: number | null;
+
+	@Column('smallint', {
+		nullable: true,
+	})
+	public riskScore: number | null;
+
+	@Column('varchar', {
+		length: 32,
+		array: true,
+		default: '{}',
+	})
+	public riskReasons: string[];
+
+	@Column('varchar', {
+		length: 16,
+		nullable: true,
+	})
+	public challenge: 'emailCode' | 'passed' | 'failed' | null;
 }

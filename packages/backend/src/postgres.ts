@@ -66,6 +66,7 @@ import { MiSwSubscription } from '@/models/SwSubscription.js';
 import { MiUsedUsername } from '@/models/UsedUsername.js';
 import { MiUser } from '@/models/User.js';
 import { MiUserIp } from '@/models/UserIp.js';
+import { MiUserLoginContext } from '@/models/UserLoginContext.js';
 import { MiUserKeypair } from '@/models/UserKeypair.js';
 import { MiUserList } from '@/models/UserList.js';
 import { MiUserListFavorite } from '@/models/UserListFavorite.js';
@@ -255,6 +256,7 @@ export const entities = [
 	MiWebhook,
 	MiSystemWebhook,
 	MiUserIp,
+	MiUserLoginContext,
 	MiRetentionAggregation,
 	MiRole,
 	MiRoleAssignment,

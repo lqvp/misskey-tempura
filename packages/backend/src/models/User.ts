@@ -80,6 +80,12 @@ export class MiUser {
 	})
 	public movedAt: Date | null;
 
+	@Column('timestamp with time zone', {
+		nullable: true,
+		comment: 'The last time an unverifiable suspicious login was detected.',
+	})
+	public suspiciousLoginDetectedAt: Date | null;
+
 	@Column('simple-array', {
 		nullable: true,
 		comment: 'URIs the user is known as too',
