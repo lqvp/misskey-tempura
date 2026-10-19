@@ -30707,6 +30707,7 @@ export interface operations {
                         flipH?: boolean | null;
                         offsetX?: number | null;
                         offsetY?: number | null;
+                        showBehind?: boolean | null;
                     }[];
                     /** Format: misskey:id */
                     bannerId?: string | null;
