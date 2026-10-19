@@ -217,6 +217,8 @@ export class IpIntelligenceService implements OnModuleInit, OnApplicationShutdow
 		return this.serialize(async () => {
 			if (!this.config.loginRisk.autoUpdate) {
 				await this.loadAllFromDisk();
+				// 他のプロセスにも再読み込みさせる
+				this.globalEventService.publishInternalEvent('ipIntelligenceUpdated', {});
 				return;
 			}
 
@@ -243,6 +245,12 @@ export class IpIntelligenceService implements OnModuleInit, OnApplicationShutdow
 	@bindThis
 	public syncWithRemoteVersions(): Promise<void> {
 		return this.serialize(async () => {
+			// autoUpdate=false では Redis に版が記録されないので、ファイルを読み直すだけにする
+			if (!this.config.loginRisk.autoUpdate) {
+				await this.loadAllFromDisk();
+				return;
+			}
+
 			const remote = await this.redisClient.hgetall(VERSIONS_KEY);
 
 			for (const source of IP_INTEL_SOURCES) {
@@ -255,7 +263,6 @@ export class IpIntelligenceService implements OnModuleInit, OnApplicationShutdow
 					// 保存先を共有している構成では、ファイルがすでに新しい版になっている
 					await this.loadFromDisk(source);
 					if (this.sources.get(source.name)?.version === remoteVersion) continue;
-					if (!this.config.loginRisk.autoUpdate) continue;
 
 					await this.downloadAndApply(source);
 				} catch (err) {

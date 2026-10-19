@@ -132,6 +132,47 @@ describe('IpIntelligenceService', () => {
 		});
 	});
 
+	describe('autoUpdate=false', () => {
+		let app: TestingModule;
+		let svc: IpIntelligenceService;
+		let http: Mocked<HttpRequestService>;
+		let events: Mocked<GlobalEventService>;
+		let dataDir: string;
+
+		beforeAll(async () => {
+			dataDir = join(tmpDir, 'offline');
+			fs.mkdirSync(dataDir, { recursive: true });
+			app = await createService({ dataDir, autoUpdate: false });
+			svc = app.get(IpIntelligenceService);
+			http = app.get(HttpRequestService) as Mocked<HttpRequestService>;
+			events = app.get(GlobalEventService) as Mocked<GlobalEventService>;
+		});
+
+		afterAll(async () => {
+			await app.close();
+		});
+
+		test('sync reloads files placed by the admin without downloading', async () => {
+			expect(svc.lookup('171.25.193.25', {}).tor).toBe(false);
+			fs.writeFileSync(join(dataDir, 'torbulkexitlist'), '171.25.193.25\n');
+
+			await svc.syncWithRemoteVersions();
+
+			expect(svc.lookup('171.25.193.25', {}).tor).toBe(true);
+			expect(http.send).not.toHaveBeenCalled();
+		});
+
+		test('updateAll reloads files and notifies other processes without downloading', async () => {
+			fs.writeFileSync(join(dataDir, 'x4bnet-vpn-ipv4.txt'), '192.0.2.0/24\n');
+
+			await svc.updateAll();
+
+			expect(svc.lookup('192.0.2.1', {}).vpn).toBe(true);
+			expect(http.send).not.toHaveBeenCalled();
+			expect(events.publishInternalEvent).toHaveBeenCalledWith('ipIntelligenceUpdated', {});
+		});
+	});
+
 	describe('updateAll', () => {
 		let app: TestingModule;
 		let svc: IpIntelligenceService;
