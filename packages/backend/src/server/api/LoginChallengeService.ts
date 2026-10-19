@@ -50,6 +50,16 @@ end
 return n
 `;
 
+/**
+ * 発行回数を1戻す。枠の期限が切れてキーが消えていたら何もしない。
+ * DECR だけだと期限の無いキーを作り、発行回数がいつまでも消えなくなる
+ */
+const REFUND_ISSUE_SCRIPT = `
+local n = tonumber(redis.call('GET', KEYS[1]))
+if n == nil or n <= 0 then return 0 end
+return redis.call('DECR', KEYS[1])
+`;
+
 function sha256(value: string): string {
 	return createHash('sha256').update(value).digest('hex');
 }
@@ -108,7 +118,7 @@ export class LoginChallengeService {
 			// 届かなかった発行は上限に数えず、SMTP が直れば本人はすぐやり直せるようにする
 			this.logger.error(`failed to send login challenge email for ${p.user.id}`, { error: err });
 			await this.redisClient.del(this.challengeKey(challengeId)).catch(() => {});
-			await this.redisClient.decr(issueKey).catch(() => {});
+			await this.redisClient.eval(REFUND_ISSUE_SCRIPT, 1, issueKey).catch(() => {});
 			return { error: 'sendFailed' };
 		}
 

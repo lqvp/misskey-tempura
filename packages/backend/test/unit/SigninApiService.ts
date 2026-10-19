@@ -351,6 +351,18 @@ describe('SigninApiService', () => {
 		expect(await userLoginContextsRepository.countBy({ userId: user.id, kind: 'country', value: 'US' })).toBe(0);
 		expect(createNotification).toHaveBeenCalledWith(user.id, 'loginFailed', expect.anything());
 
+		// 送信中に発行回数の枠が切れても、期限の無いキーを作らない
+		const issueKey = `loginRisk:challengeIssue:${user.id}`;
+		failing.mockImplementation(async (to, subject, html, text) => {
+			if (subject.startsWith('Login verification code')) {
+				await redis.del(issueKey);
+				throw new Error('smtp down');
+			}
+			return sendEmail(to, subject, html, text);
+		});
+		await call({ username: user.username, password: PASSWORD }, US_IP);
+		expect(await redis.exists(issueKey)).toBe(0);
+
 		// SMTP が直れば、すぐに確認コードを受け取れる
 		failing.mockRestore();
 		const retried = await call({ username: user.username, password: PASSWORD }, US_IP);
