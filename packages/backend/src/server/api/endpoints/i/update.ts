@@ -31,7 +31,7 @@ import { RemoteUserResolveService } from '@/core/RemoteUserResolveService.js';
 import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import type { Config } from '@/config.js';
-import { AvatarDecorationService } from '@/core/AvatarDecorationService.js';
+import { AvatarDecorationService, isImportedAvatarDecoration } from '@/core/AvatarDecorationService.js';
 import { notificationRecieveConfig } from '@/models/json-schema/user.js';
 import { receiveSpecifiedNotesFromVisibilities } from '@/types.js';
 import { ApiLoggerService } from '../../ApiLoggerService.js';
@@ -456,15 +456,16 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			if (ps.avatarDecorations) {
-				policies ??= await this.roleService.getUserPolicies(user.id);
+				const decorationPolicies = policies ??= await this.roleService.getUserPolicies(user.id);
 				const decorations = await this.avatarDecorationService.getAll(true);
 				const myRoles = await this.roleService.getUserRoles(user.id);
 				const allRoles = await this.roleService.getRoles();
 				const decorationIds = decorations
 					.filter(d => d.roleIdsThatCanBeUsedThisDecoration.filter(roleId => allRoles.some(r => r.id === roleId)).length === 0 || myRoles.some(r => d.roleIdsThatCanBeUsedThisDecoration.includes(r.id)))
+					.filter(d => decorationPolicies.canUseRemoteIconDecorations || !isImportedAvatarDecoration(d))
 					.map(d => d.id);
 
-				if (ps.avatarDecorations.length > policies.avatarDecorationLimit) throw new ApiError(meta.errors.restrictedByRole);
+				if (ps.avatarDecorations.length > decorationPolicies.avatarDecorationLimit) throw new ApiError(meta.errors.restrictedByRole);
 
 				updates.avatarDecorations = ps.avatarDecorations.filter(d => decorationIds.includes(d.id)).map(d => ({
 					id: d.id,

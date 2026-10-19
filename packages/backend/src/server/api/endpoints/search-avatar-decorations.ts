@@ -6,7 +6,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
-import { AvatarDecorationService } from '@/core/AvatarDecorationService.js';
+import { AvatarDecorationService, isImportedAvatarDecoration } from '@/core/AvatarDecorationService.js';
 import { RoleService } from '@/core/RoleService.js';
 
 export const meta = {
@@ -58,27 +58,26 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			// SQL ではなくメモリ上の部分一致なので LIKE 用のエスケープは不要
 			const query = ps.query.toLowerCase();
 
-			// ユーザーの権限を事前に取得
-			const policies = me ? await this.roleService.getUserPolicies(me.id) : null;
+			const policies = await this.roleService.getUserPolicies(me.id);
 
 			let filtered = decorations.filter(decoration => {
 				const matchesQuery = decoration.name.toLowerCase().includes(query) ||
 					(decoration.description && decoration.description.toLowerCase().includes(query));
+				if (!matchesQuery) return false;
 
-				const isRemote = decoration.name.startsWith('import_');
-				const isLocal = !isRemote;
+				const isRemote = isImportedAvatarDecoration(decoration);
+				// リモート由来のデコレーションは、利用できるユーザーにだけ返す (i/update 側でも同じ判定をしている)
+				if (isRemote && !policies.canUseRemoteIconDecorations) return false;
+				if (ps.origin === 'local' && isRemote) return false;
+				if (ps.origin === 'remote' && !isRemote) return false;
 
-				return matchesQuery &&
-					(ps.origin === 'combined' ||
-					(ps.origin === 'local' && isLocal) ||
-					(ps.origin === 'remote' && isRemote && (!me || (policies && policies.canUseRemoteIconDecorations)))) &&
-					(!ps.host || !isRemote || decoration.name.split('_')[1] === ps.host);
+				return !ps.host || !isRemote || decoration.name.split('_')[1] === ps.host;
 			});
 
 			// ソート: ローカルデコレーションを優先し、その後は名前順
 			filtered.sort((a, b) => {
-				const aIsRemote = a.name.startsWith('import_');
-				const bIsRemote = b.name.startsWith('import_');
+				const aIsRemote = isImportedAvatarDecoration(a);
+				const bIsRemote = isImportedAvatarDecoration(b);
 				if (aIsRemote !== bIsRemote) return aIsRemote ? 1 : -1;
 				return a.name.localeCompare(b.name);
 			});
