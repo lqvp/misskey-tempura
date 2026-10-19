@@ -45,8 +45,7 @@ function submit() {
 	misskeyApi('signup-pending', {
 		code: props.code,
 	}).then(res => {
-		// サーバーは Misskey.entities.SignupPendingResponse に加えて端末トークンを返すことがある
-		saveLoginDeviceToken((res as { deviceToken?: string }).deviceToken);
+		saveLoginDeviceToken(res.deviceToken);
 		return login(res.i, '/');
 	}).catch(() => {
 		submitting.value = false;

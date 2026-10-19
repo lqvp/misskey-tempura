@@ -147,7 +147,7 @@ function onPasskeyDone(credential: AuthenticationResponseJSON): void {
 			credential: credential,
 			context: passkeyContext.value,
 			deviceToken: getLoginDeviceToken(),
-		} as any).then((res) => {
+		}).then((res) => {
 			const signed = res as Misskey.entities.SigninWithPasskeyResponse;
 			if (signed.signinResponse == null) {
 				onSigninApiError();

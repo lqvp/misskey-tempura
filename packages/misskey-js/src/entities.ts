@@ -180,6 +180,7 @@ export type SignupPendingRequest = {
 export type SignupPendingResponse = {
 	id: User['id'],
 	i: string,
+	deviceToken?: string,
 };
 
 export type SigninFlowRequest = {

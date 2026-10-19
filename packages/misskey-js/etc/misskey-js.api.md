@@ -3783,6 +3783,7 @@ type SignupPendingRequest = {
 type SignupPendingResponse = {
     id: User['id'];
     i: string;
+    deviceToken?: string;
 };
 
 // @public (undocumented)
