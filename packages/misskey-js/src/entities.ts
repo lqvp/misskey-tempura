@@ -187,6 +187,9 @@ export type SigninFlowRequest = {
 	password?: string;
 	token?: string;
 	credential?: AuthenticationResponseJSON;
+	deviceToken?: string;
+	challengeId?: string;
+	emailCode?: string;
 	'hcaptcha-response'?: string | null;
 	'g-recaptcha-response'?: string | null;
 	'turnstile-response'?: string | null;
@@ -198,6 +201,7 @@ export type SigninFlowResponse = {
 	finished: true;
 	id: User['id'];
 	i: string;
+	deviceToken?: string;
 } | {
 	finished: false;
 	next: 'captcha' | 'password' | 'totp';
@@ -205,11 +209,16 @@ export type SigninFlowResponse = {
 	finished: false;
 	next: 'passkey';
 	authRequest: PublicKeyCredentialRequestOptionsJSON;
+} | {
+	finished: false;
+	next: 'emailCode';
+	challengeId: string;
 };
 
 export type SigninWithPasskeyRequest = {
 	credential?: AuthenticationResponseJSON;
 	context?: string;
+	deviceToken?: string;
 };
 
 export type SigninWithPasskeyInitResponse = {

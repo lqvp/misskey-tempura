@@ -26,6 +26,11 @@ export class SigninEntityService {
 			ip: src.ip,
 			headers: src.headers,
 			success: src.success,
+			country: src.country,
+			asn: src.asn,
+			riskScore: src.riskScore,
+			riskReasons: src.riskReasons,
+			challenge: src.challenge,
 		};
 	}
 }
