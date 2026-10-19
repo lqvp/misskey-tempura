@@ -19,6 +19,7 @@ import { UserAuthService } from '@/core/UserAuthService.js';
 import { IpIntelligenceService } from '@/core/IpIntelligenceService.js';
 import type { IpIntel } from '@/core/IpIntelligenceService.js';
 import { LoginRiskService } from '@/core/LoginRiskService.js';
+import { NotificationService } from '@/core/NotificationService.js';
 import { genAidx } from '@/misc/id/aidx.js';
 import { secureRndstr } from '@/misc/secure-rndstr.js';
 import { getIpHash } from '@/misc/get-ip-hash.js';
@@ -41,12 +42,18 @@ const JP_IP = '203.0.113.5';
 const US_IP = '198.51.100.5';
 const PASSWORD = 'correct horse';
 
+const DROP_IP = '192.0.2.5';
+const NO_INTEL: IpIntel = { country: null, asn: null, asnOrg: null, tor: false, spamhausDrop: false, datacenter: false, vpn: false };
+
 function fakeLookup(ip: string): IpIntel {
-	const intel: IpIntel = { country: null, asn: null, asnOrg: null, tor: false, spamhausDrop: false, datacenter: false, vpn: false };
+	const intel = NO_INTEL;
 	if (ip.startsWith('203.0.113.')) return { ...intel, country: 'JP', asn: 64500, asnOrg: 'Example JP' };
 	if (ip.startsWith('198.51.100.')) return { ...intel, country: 'US', asn: 64501, asnOrg: 'Example US' };
+	if (ip.startsWith('192.0.2.')) return { ...intel, country: 'NL', asn: 64502, asnOrg: 'Example DROP', spamhausDrop: true };
 	return intel;
 }
+
+const fakeIntel: { lookup: (ip: string) => IpIntel } = { lookup: fakeLookup };
 
 class FakeLimiter {
 	public async limit() {
@@ -100,6 +107,8 @@ describe('SigninApiService', () => {
 	let idService: IdService;
 	let fakeEmail: FakeEmailService;
 	let signinService: SigninService;
+	let loginChallengeService: LoginChallengeService;
+	let notificationService: NotificationService;
 	let passwordHash: string;
 	const createdUserIds: string[] = [];
 	/** レスポンス後に行う記録・メール。後片付けの前に待つ */
@@ -169,7 +178,7 @@ describe('SigninApiService', () => {
 			],
 		})
 			.overrideProvider(EmailService).useValue(fakeEmail)
-			.overrideProvider(IpIntelligenceService).useValue({ lookup: fakeLookup })
+			.overrideProvider(IpIntelligenceService).useValue(fakeIntel)
 			.useMocker((token) => {
 				if (typeof token === 'function') {
 					return mockDeep<typeof token>();
@@ -179,6 +188,8 @@ describe('SigninApiService', () => {
 
 		signinApiService = app.get(SigninApiService);
 		signinService = app.get(SigninService);
+		loginChallengeService = app.get(LoginChallengeService);
+		notificationService = app.get(NotificationService);
 		loginRiskService = app.get(LoginRiskService);
 		userAuthService = app.get(UserAuthService);
 		meta = app.get(DI.meta);
@@ -201,6 +212,7 @@ describe('SigninApiService', () => {
 		meta.loginRiskFlagUnverifiedUsers = false;
 		meta.enableEmail = true;
 		fakeEmail.sent.length = 0;
+		fakeIntel.lookup = fakeLookup;
 
 		const afterSignin = (signinService as any).afterSignin.bind(signinService);
 		vi.spyOn(signinService as any, 'afterSignin').mockImplementation((...args: unknown[]) => {
@@ -215,7 +227,7 @@ describe('SigninApiService', () => {
 		vi.restoreAllMocks();
 		const keys = [
 			...createdUserIds.flatMap(id => [`loginRisk:fail:user:${id}`, `loginRisk:challengeIssue:${id}`]),
-			...[JP_IP, US_IP].map(ip => `loginRisk:fail:ip:${getIpHash(ip)}`),
+			...[JP_IP, US_IP, DROP_IP].map(ip => `loginRisk:fail:ip:${getIpHash(ip)}`),
 		];
 		if (keys.length > 0) await redis.del(...keys);
 		await userLoginContextsRepository.createQueryBuilder().delete().execute();
@@ -236,14 +248,108 @@ describe('SigninApiService', () => {
 		expect(await userLoginContextsRepository.countBy({ userId: user.id })).toBe(0);
 	});
 
-	it('既知環境: finished:true + deviceToken を返す', async () => {
+	it('既知環境: finished:true、送られた端末トークンを使い続ける(新しいトークンを発行しない)', async () => {
 		const user = await createUser();
 		const deviceToken = await seedKnownEnvironment(user);
 		const { res } = await call({ username: user.username, password: PASSWORD, deviceToken }, JP_IP);
 		expect(res.finished).toBe(true);
 		expect(res.i).toBe(user.token);
+		expect(res.deviceToken).toBeUndefined();
+		expect(await userLoginContextsRepository.countBy({ userId: user.id, kind: 'device' })).toBe(1);
+		const next = await loginRiskService.evaluate({ user, ip: JP_IP, headers: {}, deviceToken });
+		expect(next.reasons).not.toContain('newDevice');
+	});
+
+	it('端末トークンを送らなければ新しいトークンを発行する', async () => {
+		const user = await createUser();
+		await seedKnownEnvironment(user);
+		const { res } = await call({ username: user.username, password: PASSWORD }, JP_IP);
+		expect(res.finished).toBe(true);
+		expect(res.deviceToken).toMatch(/^[A-Za-z0-9_-]{43}$/);
+	});
+
+	it('同じブラウザで複数アカウント: 他のアカウントの端末トークンを覚え、元のアカウントでも既知のまま', async () => {
+		const alice = await createUser();
+		const bob = await createUser();
+		const token = await seedKnownEnvironment(alice);
+		await seedKnownEnvironment(bob);
+
+		const first = await call({ username: bob.username, password: PASSWORD, deviceToken: token }, JP_IP);
+		expect(first.res.finished).toBe(true);
+		expect(first.res.deviceToken).toBeUndefined();
+
+		const bobNext = await loginRiskService.evaluate({ user: bob, ip: JP_IP, headers: {}, deviceToken: token });
+		expect(bobNext.reasons).not.toContain('newDevice');
+		expect(bobNext.level).toBe('allow');
+		const aliceNext = await loginRiskService.evaluate({ user: alice, ip: JP_IP, headers: {}, deviceToken: token });
+		expect(aliceNext.reasons).not.toContain('newDevice');
+		expect(aliceNext.level).toBe('allow');
+
+		const aliceLogin = await call({ username: alice.username, password: PASSWORD, deviceToken: token }, JP_IP);
+		expect(aliceLogin.res.finished).toBe(true);
+		expect(aliceLogin.res.deviceToken).toBeUndefined();
+	});
+
+	it('学習期間中に stepUp 相当のログインは通すが学習しない(通知・メールは送る)', async () => {
+		const user = await createUser();
+		await loginRiskService.issueDeviceToken(user.id);
+		const createNotification = vi.spyOn(notificationService, 'createNotification');
+		const { res } = await call({ username: user.username, password: PASSWORD }, DROP_IP);
+		expect(res.finished).toBe(true);
+		expect(res.deviceToken).toBeUndefined();
+		expect(await userLoginContextsRepository.countBy({ userId: user.id, kind: 'prefix' })).toBe(0);
+		expect(await userLoginContextsRepository.countBy({ userId: user.id, kind: 'country' })).toBe(0);
+		expect(await userLoginContextsRepository.countBy({ userId: user.id, kind: 'device' })).toBe(1);
+		await vi.waitFor(() => expect(fakeEmail.sent.some(e => e.subject.startsWith('New login'))).toBe(true));
+		expect(createNotification).toHaveBeenCalledWith(user.id, 'login', expect.anything());
+	});
+
+	it('学習期間中でも TOTP 通過済みなら stepUp 相当のログインを学習する', async () => {
+		const user = await createUser({ twoFactorEnabled: true });
+		await loginRiskService.issueDeviceToken(user.id);
+		vi.spyOn(userAuthService, 'twoFactorAuthenticate').mockResolvedValue();
+		const { res } = await call({ username: user.username, password: PASSWORD, token: '123456' }, DROP_IP);
+		expect(res.finished).toBe(true);
 		expect(typeof res.deviceToken).toBe('string');
-		expect(res.deviceToken).not.toBe(deviceToken);
+		expect(await userLoginContextsRepository.countBy({ userId: user.id, kind: 'prefix' })).toBe(1);
+	});
+
+	it('確認コードを保存できなければ通知したうえで通し、学習しない', async () => {
+		const user = await createUser();
+		await seedKnownEnvironment(user);
+		const createNotification = vi.spyOn(notificationService, 'createNotification');
+		const set = redis.set.bind(redis);
+		vi.spyOn(redis, 'set').mockImplementation(((key: string, ...args: unknown[]) => {
+			if (typeof key === 'string' && key.startsWith('loginRisk:challenge:')) return Promise.reject(new Error('redis down'));
+			return (set as any)(key, ...args);
+		}) as any);
+		const { res } = await call({ username: user.username, password: PASSWORD }, US_IP);
+		expect(res.finished).toBe(true);
+		expect(res.deviceToken).toBeUndefined();
+		expect(await userLoginContextsRepository.countBy({ userId: user.id, kind: 'country', value: 'US' })).toBe(0);
+		await vi.waitFor(() => expect(fakeEmail.sent.some(e => e.subject.startsWith('New login'))).toBe(true));
+		expect(createNotification).toHaveBeenCalledWith(user.id, 'login', expect.anything());
+	});
+
+	it('learn や端末トークンの発行が例外を投げてもログインできる', async () => {
+		const user = await createUser();
+		await seedKnownEnvironment(user);
+		vi.spyOn(loginRiskService, 'learn').mockRejectedValue(new Error('x'));
+		vi.spyOn(loginRiskService, 'issueDeviceToken').mockRejectedValue(new Error('x'));
+		const withoutToken = await call({ username: user.username, password: PASSWORD }, JP_IP);
+		expect(withoutToken.res.finished).toBe(true);
+		expect(withoutToken.res.i).toBe(user.token);
+		expect(withoutToken.res.deviceToken).toBeUndefined();
+	});
+
+	it('IP の情報が何も無くてもログインできる', async () => {
+		fakeIntel.lookup = () => NO_INTEL;
+		const user = await createUser();
+		const deviceToken = await seedKnownEnvironment(user);
+		const { status, res } = await call({ username: user.username, password: PASSWORD, deviceToken }, JP_IP);
+		expect(status).toBe(200);
+		expect(res.finished).toBe(true);
+		expect(res.i).toBe(user.token);
 	});
 
 	it('新しい国+新端末+メールあり: next=emailCode、メールに6桁コード', async () => {
@@ -397,6 +503,21 @@ describe('SigninApiService', () => {
 		expect(res.deviceToken).toBeUndefined();
 		const updated = await usersRepository.findOneByOrFail({ id: user.id });
 		expect(updated.suspiciousLoginDetectedAt).not.toBeNull();
+	});
+
+	it('メールなし+フラグ有効: フラグを保存できなくてもログインできる', async () => {
+		meta.loginRiskFlagUnverifiedUsers = true;
+		const user = await createUser({ email: null });
+		await seedKnownEnvironment(user);
+		const update = usersRepository.update.bind(usersRepository);
+		const flagWrite = vi.spyOn(usersRepository, 'update').mockImplementation(((criteria: unknown, partial: Record<string, unknown>) => {
+			if ('suspiciousLoginDetectedAt' in partial) return Promise.reject(new Error('db down'));
+			return (update as any)(criteria, partial);
+		}) as any);
+		const { res } = await call({ username: user.username, password: PASSWORD }, US_IP);
+		expect(flagWrite).toHaveBeenCalledWith(user.id, expect.objectContaining({ suspiciousLoginDetectedAt: expect.any(Date) }));
+		expect(res.finished).toBe(true);
+		expect(res.i).toBe(user.token);
 	});
 
 	it('メールなし+フラグ無効: suspiciousLoginDetectedAt は null のまま', async () => {

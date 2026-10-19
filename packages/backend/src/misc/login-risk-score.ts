@@ -24,7 +24,14 @@ export type LoginRiskSignals = {
 	learning: boolean;
 };
 
-export type LoginRiskResult = { score: number; level: LoginRiskLevel; reasons: LoginRiskReason[] };
+export type LoginRiskResult = {
+	score: number;
+	/** 学習期間中は notify が上限 */
+	level: LoginRiskLevel;
+	/** 学習期間の上限をかける前のレベル */
+	uncappedLevel: LoginRiskLevel;
+	reasons: LoginRiskReason[];
+};
 
 /**
  * ログインのリスク点数とレベルを計算する(純粋関数)。
@@ -53,12 +60,13 @@ export function calculateLoginRisk(s: LoginRiskSignals, t: { notify: number; ste
 	let score = reasons.reduce((sum, r) => sum + (points[r] ?? 0), 0);
 	if (s.isPrivileged) score = Math.round(score * 1.5);
 
-	let level: LoginRiskLevel = score >= t.stepUp ? 'stepUp' : score >= t.notify ? 'notify' : 'allow';
+	const uncappedLevel: LoginRiskLevel = score >= t.stepUp ? 'stepUp' : score >= t.notify ? 'notify' : 'allow';
+	let level = uncappedLevel;
 
 	if (s.learning) {
 		if (level === 'stepUp') level = 'notify';
 		reasons.push('learning');
 	}
 
-	return { score, level, reasons };
+	return { score, level, uncappedLevel, reasons };
 }

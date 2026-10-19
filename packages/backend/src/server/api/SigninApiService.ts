@@ -261,7 +261,9 @@ export class SigninApiService {
 
 			// TOTP / パスキーを通過済みなら stepUp でも通知だけにする
 			if (ev.level !== 'stepUp' || passedSecondFactor) {
-				return await this.signinService.signin(request, reply, user, { ev, learn: true });
+				// 学習期間中で notify に抑えた stepUp 相当のログインは、本人と確かめられていないので学習しない
+				const learn = passedSecondFactor || ev.uncappedLevel !== 'stepUp';
+				return await this.signinService.signin(request, reply, user, { ev, learn });
 			}
 
 			if (this.meta.enableEmail && profile.email && profile.emailVerified) {
@@ -289,8 +291,13 @@ export class SigninApiService {
 
 			// 確認手段がないので、通知したうえで通す(学習はしない)
 			if (this.meta.loginRiskFlagUnverifiedUsers) {
-				await this.usersRepository.update(user.id, { suspiciousLoginDetectedAt: new Date() });
-				this.globalEventService.publishInternalEvent('localUserUpdated', { id: user.id });
+				// 失敗してもログインは止めない
+				try {
+					await this.usersRepository.update(user.id, { suspiciousLoginDetectedAt: new Date() });
+					this.globalEventService.publishInternalEvent('localUserUpdated', { id: user.id });
+				} catch (err) {
+					this.logger.error(`failed to set suspiciousLoginDetectedAt of ${user.id}`, { error: err });
+				}
 			}
 			return await this.signinService.signin(request, reply, user, { ev, learn: false });
 		};

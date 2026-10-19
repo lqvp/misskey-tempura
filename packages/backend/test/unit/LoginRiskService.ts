@@ -159,6 +159,25 @@ describe('LoginRiskService', () => {
 		expect(ev.reasons).toEqual(['newDevice', 'newCountry', 'newAsn', 'newPrefix']);
 	});
 
+	test('国や ASN が分からなくても、3回学習すれば learning ではなくなる', async () => {
+		fakeIntel.lookup = ip => ({ ...fakeLookup(ip), country: null, asn: null, asnOrg: null });
+		for (let i = 0; i < 3; i++) {
+			const ev = await svc.evaluate(p('203.0.113.5'));
+			expect(ev.reasons).toContain('learning');
+			await svc.learn(user.id, ev);
+		}
+		expect((await svc.evaluate(p('203.0.113.5'))).reasons).not.toContain('learning');
+	});
+
+	test('学習期間中でも uncappedLevel は上限をかける前のレベル', async () => {
+		fakeIntel.lookup = ip => ({ ...fakeLookup(ip), spamhausDrop: true });
+		await svc.issueDeviceToken(user.id);
+		const ev = await svc.evaluate(p('198.51.100.5'));
+		expect(ev.reasons).toContain('learning');
+		expect(ev.level).toBe('notify');
+		expect(ev.uncappedLevel).toBe('stepUp');
+	});
+
 	test('learn は hits を増やし lastSeenAt を更新する', async () => {
 		const token = await svc.issueDeviceToken(user.id);
 		const ev = await svc.evaluate(p('203.0.113.5', token));

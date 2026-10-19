@@ -44,7 +44,7 @@ const LEARNING_LOGINS = 3;
 const DAY_MS = 1000 * 60 * 60 * 24;
 
 function skippedEvaluation(skipped: Exclude<LoginRiskEvaluation['skipped'], false>, reasons: LoginRiskReason[] = []): LoginRiskEvaluation {
-	return { skipped, score: 0, level: 'allow', reasons, country: null, asn: null, asnOrg: null, prefixHash: null, deviceTokenHash: null };
+	return { skipped, score: 0, level: 'allow', uncappedLevel: 'allow', reasons, country: null, asn: null, asnOrg: null, prefixHash: null, deviceTokenHash: null };
 }
 
 @Injectable()
@@ -151,6 +151,7 @@ export class LoginRiskService {
 				skipped: false,
 				score: 0,
 				level: 'allow',
+				uncappedLevel: 'allow',
 				reasons: [],
 				country: intel.country,
 				asn: intel.asn,
@@ -182,7 +183,7 @@ export class LoginRiskService {
 		}
 	}
 
-	/** 32バイトの乱数を base64url で返し、そのハッシュを端末として保存する */
+	/** 32バイトの乱数を base64url で返し、そのハッシュを端末として保存する。正しい形式のトークンが送られていないときだけ使う */
 	@bindThis
 	public async issueDeviceToken(userId: MiUser['id']): Promise<string> {
 		const token = randomBytes(32).toString('base64url');
@@ -313,9 +314,12 @@ export class LoginRiskService {
 		return await this.userLoginContextsRepository.exists({ where: { userId, kind, value } });
 	}
 
-	/** 学習済みのログイン回数。country 行の hits の合計で数える */
+	/**
+	 * 学習済みのログイン回数。prefix 行の hits の合計で数える。
+	 * 公開 IP なら prefix は必ず記録されるので、国が分からない環境でも学習期間が終わる
+	 */
 	private async countLearnedLogins(userId: MiUser['id']): Promise<number> {
-		const sum = await this.userLoginContextsRepository.sum('hits', { userId, kind: 'country' });
+		const sum = await this.userLoginContextsRepository.sum('hits', { userId, kind: 'prefix' });
 		return sum ?? 0;
 	}
 

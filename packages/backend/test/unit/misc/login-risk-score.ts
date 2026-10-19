@@ -27,7 +27,7 @@ const base: LoginRiskSignals = {
 };
 
 describe('calculateLoginRisk', () => {
-	test('既知環境は allow / 0点', () => expect(calculateLoginRisk(base, T)).toEqual({ score: 0, level: 'allow', reasons: [] }));
+	test('既知環境は allow / 0点', () => expect(calculateLoginRisk(base, T)).toEqual({ score: 0, level: 'allow', uncappedLevel: 'allow', reasons: [] }));
 
 	test('新しい国+新しい端末で stepUp', () => {
 		const r = calculateLoginRisk({ ...base, deviceKnown: false, countryKnown: false, asnKnown: false }, T);
@@ -56,6 +56,19 @@ describe('calculateLoginRisk', () => {
 		const r = calculateLoginRisk({ ...base, spamhausDrop: true, deviceKnown: false, learning: true }, T);
 		expect(r.level).toBe('notify');
 		expect(r.reasons).toContain('learning');
+	});
+
+	test('学習期間中でも uncappedLevel は上限をかける前のレベル', () => {
+		const r = calculateLoginRisk({ ...base, spamhausDrop: true, deviceKnown: false, learning: true }, T);
+		expect(r.level).toBe('notify');
+		expect(r.uncappedLevel).toBe('stepUp');
+	});
+
+	test('学習期間でなければ uncappedLevel は level と同じ', () => {
+		for (const s of [base, { ...base, deviceKnown: false }, { ...base, spamhausDrop: true, deviceKnown: false }]) {
+			const r = calculateLoginRisk(s, T);
+			expect(r.uncappedLevel).toBe(r.level);
+		}
 	});
 
 	test('しきい値の境界', () => {

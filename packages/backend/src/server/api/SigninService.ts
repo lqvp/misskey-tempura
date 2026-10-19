@@ -44,7 +44,7 @@ export function describeLoginLocation(ev: Pick<LoginRiskEvaluation, 'country' | 
 export type SigninOptions = {
 	/** 判定結果。無ければ判定していないログインとして扱う */
 	ev?: LoginRiskEvaluation;
-	/** 判定できていれば学習し、端末トークンを発行する */
+	/** 判定できていれば学習する。正しい形式の端末トークンが送られていなければ新しく発行する */
 	learn?: boolean;
 	/** 判定せずに学習だけする(サインアップ直後) */
 	learnOnly?: boolean;
@@ -104,7 +104,10 @@ export class SigninService {
 		if (ev != null && ev.skipped === false && (opts.learn || opts.learnOnly) && this.loginRiskService.isEnabled()) {
 			try {
 				await this.loginRiskService.learn(user.id, ev);
-				deviceToken = await this.loginRiskService.issueDeviceToken(user.id);
+				// 送られたトークンは learn で覚えたので、そのまま使い続けてもらう(同じブラウザの複数アカウントで共有するため)
+				if (ev.deviceTokenHash == null) {
+					deviceToken = await this.loginRiskService.issueDeviceToken(user.id);
+				}
 			} catch (err) {
 				this.logger.error(`failed to learn login context or issue device token for ${user.id}`, { error: err });
 			}
