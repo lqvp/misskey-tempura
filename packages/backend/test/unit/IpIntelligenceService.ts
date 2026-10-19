@@ -173,6 +173,32 @@ describe('IpIntelligenceService', () => {
 		});
 	});
 
+	describe('ipIntelligenceUpdated event', () => {
+		const message = JSON.stringify({ channel: 'internal', message: { type: 'ipIntelligenceUpdated', body: {} } });
+
+		test('does not sync while the feature is disabled, and syncs once it is enabled', async () => {
+			const app = await createService({ dataDir: join(tmpDir, 'event'), autoUpdate: true });
+			const meta = app.get(DI.meta) as { enableLoginRiskDetection: boolean };
+			const original = meta.enableLoginRiskDetection;
+			try {
+				const svc = app.get(IpIntelligenceService);
+				const sync = vi.spyOn(svc, 'syncWithRemoteVersions').mockResolvedValue();
+				const redisForSub = app.get(DI.redisForSub) as Redis.Redis;
+
+				meta.enableLoginRiskDetection = false;
+				redisForSub.emit('message', 'internal', message);
+				expect(sync).not.toHaveBeenCalled();
+
+				meta.enableLoginRiskDetection = true;
+				redisForSub.emit('message', 'internal', message);
+				expect(sync).toHaveBeenCalledTimes(1);
+			} finally {
+				meta.enableLoginRiskDetection = original;
+				await app.close();
+			}
+		});
+	});
+
 	describe('updateAll', () => {
 		let app: TestingModule;
 		let svc: IpIntelligenceService;

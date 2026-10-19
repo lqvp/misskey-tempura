@@ -331,6 +331,22 @@ describe('SigninApiService', () => {
 		expect(createNotification).toHaveBeenCalledWith(user.id, 'login', expect.anything());
 	});
 
+	it('確認コードのメールを送れなければ challenge を消し、通知したうえで通す', async () => {
+		const user = await createUser();
+		await seedKnownEnvironment(user);
+		const sendEmail = fakeEmail.sendEmail.bind(fakeEmail);
+		vi.spyOn(fakeEmail, 'sendEmail').mockImplementation(async (to, subject, html, text) => {
+			if (subject.startsWith('Login verification code')) throw new Error('smtp down');
+			return sendEmail(to, subject, html, text);
+		});
+		const { res } = await call({ username: user.username, password: PASSWORD }, US_IP);
+		expect(res.finished).toBe(true);
+		expect(res.i).toBe(user.token);
+		expect(await redis.keys('loginRisk:challenge:*')).toEqual([]);
+		expect(await userLoginContextsRepository.countBy({ userId: user.id, kind: 'country', value: 'US' })).toBe(0);
+		await vi.waitFor(() => expect(fakeEmail.sent.some(e => e.subject.startsWith('New login'))).toBe(true));
+	});
+
 	it('learn や端末トークンの発行が例外を投げてもログインできる', async () => {
 		const user = await createUser();
 		await seedKnownEnvironment(user);

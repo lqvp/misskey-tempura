@@ -21,6 +21,7 @@ const CHALLENGE_TTL_SEC = 600;
 const MAX_ATTEMPTS = 5;
 const ISSUE_WINDOW_SEC = 60 * 60;
 const MAX_ISSUES_PER_WINDOW = 3;
+const SEND_TIMEOUT_MS = 15_000;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 type StoredChallenge = {
@@ -97,7 +98,15 @@ export class LoginChallengeService {
 			return { error: 'storeFailed' };
 		}
 
-		this.sendCodeEmail(p.email, code, p.ev);
+		try {
+			await this.sendCodeEmail(p.email, code, p.ev);
+		} catch (err) {
+			// コードが届かないまま確認画面に進めると、本人が発行上限までやり直して締め出されるので通す側に倒す
+			this.logger.error(`failed to send login challenge email for ${p.user.id}`, { error: err });
+			await this.redisClient.del(this.challengeKey(challengeId)).catch(() => {});
+			return { error: 'storeFailed' };
+		}
+
 		return { challengeId };
 	}
 
@@ -155,12 +164,13 @@ export class LoginChallengeService {
 		return ab.length === bb.length && timingSafeEqual(ab, bb);
 	}
 
-	private sendCodeEmail(email: string, code: string, ev: LoginRiskEvaluation): void {
+	/** SMTP が応答しないとログインが止まるので、SEND_TIMEOUT_MS で打ち切る */
+	private sendCodeEmail(email: string, code: string, ev: LoginRiskEvaluation): Promise<void> {
 		const location = describeLoginLocation(ev);
 		const date = new Date().toISOString();
 		const guide = 'Enter this code to finish signing in. It expires in 10 minutes. If you did not try to sign in, change your password. / ログインを完了するには、このコードを入力してください。有効期限は10分です。心当たりがなければパスワードを変更してください。';
 
-		this.emailService.sendEmail(email, 'Login verification code / ログイン確認コード',
+		const sending = this.emailService.sendEmail(email, 'Login verification code / ログイン確認コード',
 			`code: <b>${escapeHtml(code)}</b><br>` +
 			location.map(l => `${escapeHtml(l)}<br>`).join('') +
 			`date: ${escapeHtml(date)}<br>` +
@@ -169,5 +179,13 @@ export class LoginChallengeService {
 			location.map(l => `${l}\n`).join('') +
 			`date: ${date}\n` +
 			guide);
+
+		let timer: NodeJS.Timeout | undefined;
+		const timeout = new Promise<never>((_, reject) => {
+			timer = setTimeout(() => reject(new Error(`sending timed out after ${SEND_TIMEOUT_MS}ms`)), SEND_TIMEOUT_MS);
+		});
+		// 打ち切った後に送信が失敗しても未処理の reject にしない
+		sending.catch(() => {});
+		return Promise.race([sending, timeout]).finally(() => clearTimeout(timer));
 	}
 }

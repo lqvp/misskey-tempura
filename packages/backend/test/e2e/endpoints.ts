@@ -1153,16 +1153,31 @@ describe('Endpoints', () => {
 			assert.strictEqual((res.body as any).error.code, 'NO_SUCH_USER');
 		});
 
-		test('フラグを外せる', async () => {
+		test('他のユーザーのフラグを外せる', async () => {
+			const connection = await initTestDb(true);
+			const Users = connection.getRepository(MiUser);
+			await Users.update(carol.id, { suspiciousLoginDetectedAt: new Date() });
+
+			const res = await api('admin/clear-suspicious-login-flag', { userId: carol.id }, alice);
+
+			assert.strictEqual(res.status, 204);
+			const updated = await Users.findOneByOrFail({ id: carol.id });
+			assert.strictEqual(updated.suspiciousLoginDetectedAt, null);
+			connection.destroy();
+		});
+
+		test('自分のフラグは外せない', async () => {
 			const connection = await initTestDb(true);
 			const Users = connection.getRepository(MiUser);
 			await Users.update(alice.id, { suspiciousLoginDetectedAt: new Date() });
 
 			const res = await api('admin/clear-suspicious-login-flag', { userId: alice.id }, alice);
 
-			assert.strictEqual(res.status, 204);
-			const updated = await Users.findOneByOrFail({ id: alice.id });
-			assert.strictEqual(updated.suspiciousLoginDetectedAt, null);
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual((res.body as any).error.code, 'CANNOT_CLEAR_OWN_FLAG');
+			const unchanged = await Users.findOneByOrFail({ id: alice.id });
+			assert.notStrictEqual(unchanged.suspiciousLoginDetectedAt, null);
+			await Users.update(alice.id, { suspiciousLoginDetectedAt: null });
 			connection.destroy();
 		});
 	});

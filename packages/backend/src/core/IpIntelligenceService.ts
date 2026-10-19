@@ -12,6 +12,7 @@ import { Reader } from 'mmdb-lib';
 import type { Response as MmdbResponse } from 'mmdb-lib';
 import { DI } from '@/di-symbols.js';
 import type { Config } from '@/config.js';
+import type { MiMeta } from '@/models/_.js';
 import type Logger from '@/logger.js';
 import { bindThis } from '@/decorators.js';
 import { IpRangeSet } from '@/misc/ip-range-set.js';
@@ -136,6 +137,9 @@ export class IpIntelligenceService implements OnModuleInit, OnApplicationShutdow
 		@Inject(DI.config)
 		private config: Config,
 
+		@Inject(DI.meta)
+		private meta: MiMeta,
+
 		@Inject(DI.redis)
 		private redisClient: Redis.Redis,
 
@@ -154,7 +158,8 @@ export class IpIntelligenceService implements OnModuleInit, OnApplicationShutdow
 	public async onModuleInit(): Promise<void> {
 		await this.serialize(() => this.loadAllFromDisk());
 
-		if (process.env.NODE_ENV !== 'test') {
+		// 機能が無効の間は外部へ取りに行かない
+		if (process.env.NODE_ENV !== 'test' && this.meta.enableLoginRiskDetection) {
 			// 他のプロセスが更新した版に追いつく。起動は待たせない
 			this.syncWithRemoteVersions().catch(err => {
 				this.logger.warn(`failed to sync ip data: ${err}`);
@@ -168,7 +173,7 @@ export class IpIntelligenceService implements OnModuleInit, OnApplicationShutdow
 
 		if (obj.channel === 'internal') {
 			const { type } = obj.message as GlobalEvents['internal']['payload'];
-			if (type === 'ipIntelligenceUpdated') {
+			if (type === 'ipIntelligenceUpdated' && this.meta.enableLoginRiskDetection) {
 				this.syncWithRemoteVersions().catch(err => {
 					this.logger.warn(`failed to sync ip data: ${err}`);
 				});
