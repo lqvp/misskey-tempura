@@ -40,6 +40,7 @@ import type {
 	AdminAvatarDecorationsUpdateRequest,
 	AdminCaptchaCurrentResponse,
 	AdminCaptchaSaveRequest,
+	AdminClearSuspiciousLoginFlagRequest,
 	AdminContactFormDeleteRequest,
 	AdminContactFormListRequest,
 	AdminContactFormListResponse,
@@ -92,6 +93,7 @@ import type {
 	AdminLlmModerationQueueResponse,
 	AdminLlmModerationQueueResolveRequest,
 	AdminLlmModerationQueueUpdateRequest,
+	AdminLoginRiskDiagnoseResponse,
 	AdminMetaResponse,
 	AdminPromoCreateRequest,
 	AdminQueueClearRequest,
@@ -753,6 +755,7 @@ export type Endpoints = {
 	'admin/avatar-decorations/update': { req: AdminAvatarDecorationsUpdateRequest; res: EmptyResponse };
 	'admin/captcha/current': { req: EmptyRequest; res: AdminCaptchaCurrentResponse };
 	'admin/captcha/save': { req: AdminCaptchaSaveRequest; res: EmptyResponse };
+	'admin/clear-suspicious-login-flag': { req: AdminClearSuspiciousLoginFlagRequest; res: EmptyResponse };
 	'admin/contact-form/delete': { req: AdminContactFormDeleteRequest; res: EmptyResponse };
 	'admin/contact-form/list': { req: AdminContactFormListRequest; res: AdminContactFormListResponse };
 	'admin/contact-form/show': { req: AdminContactFormShowRequest; res: AdminContactFormShowResponse };
@@ -793,6 +796,7 @@ export type Endpoints = {
 	'admin/llm-moderation/queue': { req: AdminLlmModerationQueueRequest; res: AdminLlmModerationQueueResponse };
 	'admin/llm-moderation/queue/resolve': { req: AdminLlmModerationQueueResolveRequest; res: EmptyResponse };
 	'admin/llm-moderation/queue/update': { req: AdminLlmModerationQueueUpdateRequest; res: EmptyResponse };
+	'admin/login-risk/diagnose': { req: EmptyRequest; res: AdminLoginRiskDiagnoseResponse };
 	'admin/meta': { req: EmptyRequest; res: AdminMetaResponse };
 	'admin/promo/create': { req: AdminPromoCreateRequest; res: EmptyResponse };
 	'admin/queue/clear': { req: AdminQueueClearRequest; res: EmptyResponse };

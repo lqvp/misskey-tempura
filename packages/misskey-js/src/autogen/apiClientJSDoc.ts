@@ -287,6 +287,17 @@ declare module '../api.js' {
     /**
      * No description provided.
      * 
+     * **Credential required**: *Yes* / **Permission**: *write:admin:clear-suspicious-login-flag*
+     */
+    request<E extends 'admin/clear-suspicious-login-flag', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * No description provided.
+     * 
      * **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
      * **Credential required**: *Yes* / **Permission**: *write:admin:contact-form*
      */
@@ -728,6 +739,17 @@ declare module '../api.js' {
      * **Credential required**: *Yes* / **Permission**: *write:admin:llm-moderation*
      */
     request<E extends 'admin/llm-moderation/queue/update', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * No description provided.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *read:admin:meta*
+     */
+    request<E extends 'admin/login-risk/diagnose', P extends Endpoints[E]['req']>(
       endpoint: E,
       params: P,
       credential?: string | null,

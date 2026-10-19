@@ -1117,6 +1117,34 @@ describe('Endpoints', () => {
 		});
 	});
 
+	describe('admin/login-risk/diagnose', () => {
+		test('loopback から接続すると verdict が privateIp になる', async () => {
+			const res = await api('admin/login-risk/diagnose', {}, alice);
+
+			assert.strictEqual(res.status, 200);
+			assert.strictEqual((res.body as any).verdict, 'privateIp');
+			assert.strictEqual('socketRemoteAddress' in (res.body as any), false);
+		});
+	});
+
+	describe('admin/update-meta loginRisk', () => {
+		test('notify >= stepUp は拒否される', async () => {
+			const res = await api('admin/update-meta', {
+				loginRiskNotifyThreshold: 50,
+				loginRiskStepUpThreshold: 50,
+			}, alice);
+
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual((res.body as any).error.code, 'INVALID_LOGIN_RISK_THRESHOLDS');
+		});
+
+		test('範囲外のしきい値は拒否される', async () => {
+			const res = await api('admin/update-meta', { loginRiskNotifyThreshold: 0 }, alice);
+
+			assert.strictEqual(res.status, 400);
+		});
+	});
+
 	describe('notes/replies', () => {
 		test('自分に閲覧権限のない投稿は含まれない', async () => {
 			const alicePost = await post(alice, {

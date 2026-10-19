@@ -233,6 +233,15 @@ export type paths = {
          */
         post: operations['admin___captcha___save'];
     };
+    '/admin/clear-suspicious-login-flag': {
+        /**
+         * admin/clear-suspicious-login-flag
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:clear-suspicious-login-flag*
+         */
+        post: operations['admin___clear-suspicious-login-flag'];
+    };
     '/admin/contact-form/delete': {
         /**
          * admin/contact-form/delete
@@ -601,6 +610,15 @@ export type paths = {
          *     **Credential required**: *Yes* / **Permission**: *write:admin:llm-moderation*
          */
         post: operations['admin___llm-moderation___queue___update'];
+    };
+    '/admin/login-risk/diagnose': {
+        /**
+         * admin/login-risk/diagnose
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:meta*
+         */
+        post: operations['admin___login-risk___diagnose'];
     };
     '/admin/meta': {
         /**
@@ -5852,6 +5870,12 @@ export type components = {
             ip: string;
             headers: Record<string, never>;
             success: boolean;
+            country: string | null;
+            asn: number | null;
+            riskScore: number | null;
+            riskReasons: string[] | null;
+            /** @enum {string|null} */
+            challenge: 'emailCode' | 'passed' | 'failed' | null;
         };
         RoleCondFormulaLogics: {
             id: string;
@@ -5873,7 +5897,7 @@ export type components = {
         RoleCondFormulaValueUserSettingBooleanSchema: {
             id: string;
             /** @enum {string} */
-            type: 'isSuspended' | 'isLocked' | 'isBot' | 'isCat' | 'isExplorable';
+            type: 'isSuspended' | 'isSuspiciousLoginDetected' | 'isLocked' | 'isBot' | 'isCat' | 'isExplorable';
         };
         RoleCondFormulaValueAssignedRole: {
             id: string;
@@ -8286,6 +8310,69 @@ export interface operations {
                     sitekey?: string | null;
                     secret?: string | null;
                     instanceUrl?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___clear-suspicious-login-flag': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    userId: string;
                 };
             };
         };
@@ -11132,6 +11219,88 @@ export interface operations {
             };
         };
     };
+    'admin___login-risk___diagnose': {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        ip: string;
+                        xForwardedFor: string | null;
+                        hasCfConnectingIp: boolean;
+                        hasCfIpCountry: boolean;
+                        /** @enum {string} */
+                        verdict: 'ok' | 'privateIp';
+                        intel: {
+                            country: string | null;
+                            asn: number | null;
+                            asnOrg: string | null;
+                            tor: boolean;
+                            spamhausDrop: boolean;
+                            datacenter: boolean;
+                            vpn: boolean;
+                        };
+                        sources: {
+                            /** @enum {string} */
+                            name: 'country' | 'asn' | 'tor' | 'spamhausDropV4' | 'spamhausDropV6' | 'spamhausAsnDrop' | 'datacenter' | 'vpn';
+                            loaded: boolean;
+                            version: string | null;
+                            updatedAt: string | null;
+                            entries: number | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     admin___meta: {
         responses: {
             /** @description OK (with results) */
@@ -11227,6 +11396,10 @@ export interface operations {
                         objectStorageSetPublicRead: boolean;
                         objectStorageCacheDays: number | null;
                         enableIpLogging: boolean;
+                        enableLoginRiskDetection: boolean;
+                        loginRiskNotifyThreshold: number;
+                        loginRiskStepUpThreshold: number;
+                        loginRiskFlagUnverifiedUsers: boolean;
                         enableActiveEmailValidation: boolean;
                         enableVerifymailApi: boolean;
                         verifymailAuthKey: string | null;
@@ -13968,6 +14141,8 @@ export interface operations {
                         isModerator: boolean;
                         isSilenced: boolean;
                         isSuspended: boolean;
+                        /** Format: date-time */
+                        suspiciousLoginDetectedAt: string | null;
                         isHibernated: boolean;
                         lastActiveDate: string | null;
                         moderationNote: string;
@@ -15021,6 +15196,10 @@ export interface operations {
                     objectStorageS3ForcePathStyle?: boolean;
                     objectStorageCacheDays?: number | null;
                     enableIpLogging?: boolean;
+                    enableLoginRiskDetection?: boolean;
+                    loginRiskNotifyThreshold?: number;
+                    loginRiskStepUpThreshold?: number;
+                    loginRiskFlagUnverifiedUsers?: boolean;
                     enableActiveEmailValidation?: boolean;
                     enableVerifymailApi?: boolean;
                     verifymailAuthKey?: string | null;

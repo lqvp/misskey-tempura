@@ -10204,6 +10204,10 @@ export interface Locale extends ILocale {
          */
         "write:admin:unsuspend-user": string;
         /**
+         * ユーザーの不審なログイン検知フラグを解除する
+         */
+        "write:admin:clear-suspicious-login-flag": string;
+        /**
          * インスタンスのメタデータを操作する
          */
         "write:admin:meta": string;
