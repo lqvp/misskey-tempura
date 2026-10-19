@@ -102,6 +102,7 @@ const typeDefConst = [
 	{ label: i18n.ts._role._condition.isBot, value: 'isBot' },
 	{ label: i18n.ts._role._condition.isCat, value: 'isCat' },
 	{ label: i18n.ts._role._condition.isExplorable, value: 'isExplorable' },
+	{ label: i18n.ts._role._condition.isSuspiciousLoginDetected, value: 'isSuspiciousLoginDetected' },
 	{ label: i18n.ts._role._condition.roleAssignedTo, value: 'roleAssignedTo' },
 	{ label: i18n.ts._role._condition.createdLessThan, value: 'createdLessThan' },
 	{ label: i18n.ts._role._condition.createdMoreThan, value: 'createdMoreThan' },
@@ -156,7 +157,8 @@ const typeModelForMkSelect = computed<TypeDefValue>({
 					t === 'isLocked' ||
 					t === 'isBot' ||
 					t === 'isCat' ||
-					t === 'isExplorable'
+					t === 'isExplorable' ||
+					t === 'isSuspiciousLoginDetected'
 				) {
 					newValue = { type: t };
 				} else {

@@ -57,6 +57,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 			@done="onPasskeyDone"
 			@useTotp="onUseTotp"
 		/>
+
+		<!-- 5. メール確認コード -->
+		<XEmailCode
+			v-else-if="page === 'emailCode'"
+			key="emailCode"
+
+			@emailCodeSubmitted="onEmailCodeSubmitted"
+		/>
 	</Transition>
 	<div v-if="waiting" :class="$style.waitingRoot">
 		<MkLoading/>
@@ -80,6 +88,8 @@ import XInput from '@/components/MkSignin.input.vue';
 import XPassword from '@/components/MkSignin.password.vue';
 import XTotp from '@/components/MkSignin.totp.vue';
 import XPasskey from '@/components/MkSignin.passkey.vue';
+import XEmailCode from '@/components/MkSignin.emailCode.vue';
+import { miLocalStorage } from '@/local-storage.js';
 import { login } from '@/accounts.js';
 
 const emit = defineEmits<{
@@ -98,7 +108,7 @@ const props = withDefaults(defineProps<{
 	initialUsername: undefined,
 });
 
-const page = ref<'input' | 'password' | 'totp' | 'passkey'>('input');
+const page = ref<'input' | 'password' | 'totp' | 'passkey' | 'emailCode'>('input');
 const waiting = ref(false);
 
 const passwordPageEl = useTemplateRef('passwordPageEl');
@@ -106,6 +116,24 @@ const needCaptcha = ref(false);
 
 const userInfo = ref<null | Misskey.entities.UserDetailed>(null);
 const password = ref('');
+const emailCodeChallengeId = ref<string | null>(null);
+
+function getDeviceToken(): string | undefined {
+	try {
+		return miLocalStorage.getItem('loginDeviceToken') ?? undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+function saveDeviceToken(deviceToken: string | undefined): void {
+	if (deviceToken == null) return;
+	try {
+		miLocalStorage.setItem('loginDeviceToken', deviceToken);
+	} catch {
+		// localStorage が使えない環境では端末トークンを保存しない
+	}
+}
 
 //#region Passkey Passwordless
 const credentialRequest = shallowRef<PublicKeyCredentialRequestOptionsJSON | null>(null);
@@ -135,6 +163,7 @@ function onPasskeyDone(credential: AuthenticationResponseJSON): void {
 		misskeyApi('signin-with-passkey', {
 			credential: credential,
 			context: passkeyContext.value,
+			deviceToken: getDeviceToken(),
 		} as any).then((res) => {
 			const signed = res as Misskey.entities.SigninWithPasskeyResponse;
 			if (signed.signinResponse == null) {
@@ -215,9 +244,30 @@ async function onTotpSubmitted(token: string) {
 	}
 }
 
+async function onEmailCodeSubmitted(code: string) {
+	waiting.value = true;
+
+	if (userInfo.value == null || emailCodeChallengeId.value == null) {
+		await os.alert({
+			type: 'error',
+			title: i18n.ts.noSuchUser,
+			text: i18n.ts.signinFailed,
+		});
+		waiting.value = false;
+		return;
+	} else {
+		await tryLogin({
+			username: userInfo.value.username,
+			challengeId: emailCodeChallengeId.value,
+			emailCode: code,
+		});
+	}
+}
+
 async function tryLogin(req: Partial<Misskey.entities.SigninFlowRequest>): Promise<Misskey.entities.SigninFlowResponse> {
 	const _req = {
 		username: req.username ?? userInfo.value?.username,
+		deviceToken: getDeviceToken(),
 		...req,
 	};
 
@@ -249,6 +299,11 @@ async function tryLogin(req: Partial<Misskey.entities.SigninFlowRequest>): Promi
 					page.value = 'totp';
 					break;
 				}
+				case 'emailCode': {
+					emailCodeChallengeId.value = res.challengeId;
+					page.value = 'emailCode';
+					break;
+				}
 				case 'passkey': {
 					if (browserSupportsWebAuthn()) {
 						credentialRequest.value = res.authRequest;
@@ -278,6 +333,8 @@ async function tryLogin(req: Partial<Misskey.entities.SigninFlowRequest>): Promi
 }
 
 async function onLoginSucceeded(res: Misskey.entities.SigninFlowResponse & { finished: true }) {
+	emailCodeChallengeId.value = null;
+	saveDeviceToken(res.deviceToken);
 	if (props.autoSet) {
 		await login(res.i);
 	}
@@ -363,6 +420,44 @@ function onSigninApiError(err?: any): void {
 			});
 			break;
 		}
+		case 'b3fddf43-a0d3-41f3-9ca9-8de701a6f418': {
+			// LOGIN_CHALLENGE_INVALID: コードが違う。チャレンジは有効なので入力画面に留まる
+			os.alert({
+				type: 'error',
+				title: i18n.ts.loginFailed,
+				text: i18n.ts._loginRisk.challengeInvalid,
+			});
+			break;
+		}
+		case '9939b972-0830-4a48-a1b4-f6fe9d259a89': {
+			// LOGIN_CHALLENGE_EXPIRED: チャレンジは消えているので最初からやり直す
+			os.alert({
+				type: 'error',
+				title: i18n.ts.loginFailed,
+				text: i18n.ts._loginRisk.challengeExpired,
+			});
+			resetEmailCodeChallenge();
+			break;
+		}
+		case '7606fbea-f065-4c3f-9040-4fb2c884e1b6': {
+			// LOGIN_CHALLENGE_TOO_MANY_ATTEMPTS: チャレンジは消えているので最初からやり直す
+			os.alert({
+				type: 'error',
+				title: i18n.ts.loginFailed,
+				text: i18n.ts._loginRisk.challengeTooManyAttempts,
+			});
+			resetEmailCodeChallenge();
+			break;
+		}
+		case '20345fd1-1f7c-4d48-b4e8-cd169c500f2c': {
+			// LOGIN_CHALLENGE_RATE_LIMITED: 確認コードの発行上限
+			os.alert({
+				type: 'error',
+				title: i18n.ts.loginFailed,
+				text: i18n.ts._loginRisk.challengeRateLimited,
+			});
+			break;
+		}
 		default: {
 			console.error(err);
 			os.alert({
@@ -384,8 +479,15 @@ function onSigninApiError(err?: any): void {
 	});
 }
 
+function resetEmailCodeChallenge(): void {
+	emailCodeChallengeId.value = null;
+	password.value = '';
+	page.value = 'input';
+}
+
 onBeforeUnmount(() => {
 	password.value = '';
+	emailCodeChallengeId.value = null;
 	needCaptcha.value = false;
 	userInfo.value = null;
 });

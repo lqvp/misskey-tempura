@@ -25,6 +25,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 			<MkInfo v-if="isSystem">{{ i18n.ts.isSystemAccount }}</MkInfo>
 
+			<MkInfo v-if="info.suspiciousLoginDetectedAt != null" warn>
+				<div class="_gaps_s">
+					<div>{{ i18n.ts._loginRisk.suspiciousLoginDetected }}: <MkTime :time="info.suspiciousLoginDetectedAt" mode="detail"/></div>
+					<div><MkButton inline small @click="clearSuspiciousLoginFlag"><i class="ti ti-shield-check"></i> {{ i18n.ts._loginRisk.clearSuspiciousLoginFlag }}</MkButton></div>
+				</div>
+			</MkInfo>
+
 			<FormLink v-if="user.host" :to="`/instance-info/${user.host}`">{{ i18n.ts.instanceInfo }}</FormLink>
 
 			<div style="display: flex; flex-direction: column; gap: 1em;">
@@ -363,6 +370,18 @@ async function resetPassword() {
 			text: i18n.tsx.newPasswordIs({ password }),
 		});
 	}
+}
+
+async function clearSuspiciousLoginFlag() {
+	const confirm = await os.confirm({
+		type: 'warning',
+		text: i18n.ts._loginRisk.clearSuspiciousLoginFlagConfirm,
+	});
+	if (confirm.canceled) return;
+
+	await os.apiWithDialog('admin/clear-suspicious-login-flag', {
+		userId: user.value.id,
+	}).then(refreshUser);
 }
 
 async function unsetMfa() {
