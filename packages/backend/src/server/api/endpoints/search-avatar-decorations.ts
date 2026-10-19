@@ -4,11 +4,9 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import { Brackets } from 'typeorm';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 import { AvatarDecorationService } from '@/core/AvatarDecorationService.js';
-import { sqlLikeEscape } from '@/misc/sql-like-escape.js';
 import { RoleService } from '@/core/RoleService.js';
 
 export const meta = {
@@ -57,7 +55,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const decorations = await this.avatarDecorationService.getAll(true);
-			const query = sqlLikeEscape(ps.query.toLowerCase()); // 検索クエリを小文字に変換
+			// SQL ではなくメモリ上の部分一致なので LIKE 用のエスケープは不要
+			const query = ps.query.toLowerCase();
 
 			// ユーザーの権限を事前に取得
 			const policies = me ? await this.roleService.getUserPolicies(me.id) : null;
