@@ -101,35 +101,41 @@ export class LoginChallengeService {
 		return { challengeId };
 	}
 
-	/** 確認コードを照合する。成功したら challenge を消し、1回しか使えないようにする */
+	/**
+	 * 確認コードを照合する。成功したら challenge を消し、1回しか使えないようにする。
+	 * invalid / tooManyAttempts は、このユーザーの challenge に誤ったコードを送ったときだけ返す。
+	 * challenge が無い・不正な形式(noChallenge)、他人の challenge(otherUser)は試行に数えない
+	 */
 	@bindThis
-	public async verify(p: { challengeId: unknown; code: unknown; ip: string }): Promise<{ ok: true; userId: MiUser['id']; ev: LoginRiskEvaluation } | { ok: false; reason: 'invalid' | 'expired' | 'tooManyAttempts' }> {
-		if (typeof p.challengeId !== 'string' || !UUID_RE.test(p.challengeId)) return { ok: false, reason: 'invalid' };
+	public async verify(p: { userId: MiUser['id']; challengeId: unknown; code: unknown; ip: string }): Promise<{ ok: true; ev: LoginRiskEvaluation } | { ok: false; reason: 'invalid' | 'tooManyAttempts' | 'noChallenge' | 'otherUser' }> {
+		if (typeof p.challengeId !== 'string' || !UUID_RE.test(p.challengeId)) return { ok: false, reason: 'noChallenge' };
 		const key = this.challengeKey(p.challengeId);
 
 		try {
 			const raw = await this.redisClient.get(key);
-			if (raw == null) return { ok: false, reason: 'expired' };
+			if (raw == null) return { ok: false, reason: 'noChallenge' };
 			const stored = JSON.parse(raw) as StoredChallenge;
+			// ユーザー名の表記ではなく id で比べる。他人の challenge は消費も試行の加算もしない
+			if (stored.userId !== p.userId) return { ok: false, reason: 'otherUser' };
 
 			const codeOk = typeof p.code === 'string' && this.hashEquals(sha256(p.code), stored.codeHash);
 			const prefixOk = stored.prefixHash == null || stored.prefixHash === this.prefixHash(p.ip);
 
 			if (!codeOk || !prefixOk) {
 				const attempts = Number(await this.redisClient.eval(INCREMENT_ATTEMPTS_SCRIPT, 1, key, MAX_ATTEMPTS));
-				if (attempts < 0) return { ok: false, reason: 'expired' };
+				if (attempts < 0) return { ok: false, reason: 'noChallenge' };
 				if (attempts >= MAX_ATTEMPTS) return { ok: false, reason: 'tooManyAttempts' };
 				return { ok: false, reason: 'invalid' };
 			}
 
 			// 同時に送られても GETDEL を取れた側だけを通す
 			const consumed = await this.redisClient.getdel(key);
-			if (consumed == null) return { ok: false, reason: 'expired' };
+			if (consumed == null) return { ok: false, reason: 'noChallenge' };
 			const challenge = JSON.parse(consumed) as StoredChallenge;
-			return { ok: true, userId: challenge.userId, ev: challenge.ev };
+			return { ok: true, ev: challenge.ev };
 		} catch (err) {
 			this.logger.error('failed to verify login challenge', { error: err });
-			return { ok: false, reason: 'expired' };
+			return { ok: false, reason: 'noChallenge' };
 		}
 	}
 

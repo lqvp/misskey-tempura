@@ -111,9 +111,13 @@ export class SigninService {
 		}
 
 		if (opts.challenge === 'passed' && user.suspiciousLoginDetectedAt != null) {
-			// メールの確認コードで本人確認できたのでフラグを外す
-			await this.usersRepository.update(user.id, { suspiciousLoginDetectedAt: null });
-			this.globalEventService.publishInternalEvent('localUserUpdated', { id: user.id });
+			// メールの確認コードで本人確認できたのでフラグを外す。失敗してもログインは止めない
+			try {
+				await this.usersRepository.update(user.id, { suspiciousLoginDetectedAt: null });
+				this.globalEventService.publishInternalEvent('localUserUpdated', { id: user.id });
+			} catch (err) {
+				this.logger.error(`failed to clear suspiciousLoginDetectedAt of ${user.id}`, { error: err });
+			}
 		}
 
 		setImmediate(() => {

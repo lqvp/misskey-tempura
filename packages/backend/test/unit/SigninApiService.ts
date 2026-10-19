@@ -309,7 +309,24 @@ describe('SigninApiService', () => {
 		const { challengeId, code } = await requestChallenge(user);
 		const { status, res } = await call({ username: other.username, challengeId, emailCode: code }, US_IP);
 		expect(status).toBe(403);
-		expect(res.error.id).toBe(LOGIN_CHALLENGE_INVALID);
+		expect(res.error.id).toBe(LOGIN_CHALLENGE_EXPIRED);
+		// 他人の challenge では失敗として数えない
+		expect(await redis.get(`loginRisk:fail:user:${other.id}`)).toBeNull();
+		expect(await signinsRepository.countBy({ userId: other.id })).toBe(0);
+		// 持ち主の challenge は消費されず、本人はまだ使える
+		const own = await call({ username: user.username, challengeId, emailCode: code }, US_IP);
+		expect(own.res.finished).toBe(true);
+	});
+
+	it('challenge が無い・不正な形式なら失敗として数えない', async () => {
+		const user = await createUser();
+		for (const challengeId of ['x', '00000000-0000-4000-8000-000000000000']) {
+			const { status, res } = await call({ username: user.username, challengeId, emailCode: 'y' }, US_IP);
+			expect(status).toBe(403);
+			expect(res.error.id).toBe(LOGIN_CHALLENGE_EXPIRED);
+		}
+		expect(await redis.get(`loginRisk:fail:user:${user.id}`)).toBeNull();
+		expect(await signinsRepository.countBy({ userId: user.id })).toBe(0);
 	});
 
 	it('IP プレフィックスが変わると照合できない', async () => {
@@ -337,7 +354,7 @@ describe('SigninApiService', () => {
 		const after = await call({ username: user.username, challengeId, emailCode: code }, US_IP);
 		expect(after.res.error.id).toBe(LOGIN_CHALLENGE_EXPIRED);
 
-		expect(await signinsRepository.countBy({ userId: user.id, challenge: 'failed', success: false })).toBe(6);
+		expect(await signinsRepository.countBy({ userId: user.id, challenge: 'failed', success: false })).toBe(5);
 		// 誤コードは失敗として数える
 		expect(Number(await redis.get(`loginRisk:fail:user:${user.id}`))).toBe(5);
 	});

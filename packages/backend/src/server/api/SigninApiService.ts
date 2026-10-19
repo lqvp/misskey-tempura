@@ -169,19 +169,20 @@ export class SigninApiService {
 
 		// 確認コードの入力(2回目のリクエスト)。パスワードと captcha は再要求しない
 		if (body.challengeId != null && body.emailCode != null) {
-			const result = await this.loginChallengeService.verify({ challengeId: body.challengeId, code: body.emailCode, ip: request.ip });
-			// ユーザー名の表記ではなく id で比べる
-			if (result.ok && result.userId === user.id) {
+			const result = await this.loginChallengeService.verify({ userId: user.id, challengeId: body.challengeId, code: body.emailCode, ip: request.ip });
+			if (result.ok) {
 				return await this.signinService.signin(request, reply, user, { ev: result.ev, learn: true, challenge: 'passed' });
 			}
 
-			const reason = result.ok ? 'invalid' : result.reason;
+			// challenge が無い・他人のものなら、パスワードを知らなくても送れるので失敗として数えない
+			if (result.reason === 'noChallenge' || result.reason === 'otherUser') {
+				return error(403, { id: LOGIN_CHALLENGE_EXPIRED });
+			}
+
 			await this.signinService.recordSignin(request, user.id, { success: false, challenge: 'failed' });
-			if (reason !== 'expired') await this.loginRiskService.recordFailure(user.id, request.ip);
+			await this.loginRiskService.recordFailure(user.id, request.ip);
 			return error(403, {
-				id: reason === 'expired' ? LOGIN_CHALLENGE_EXPIRED
-					: reason === 'tooManyAttempts' ? LOGIN_CHALLENGE_TOO_MANY_ATTEMPTS
-					: LOGIN_CHALLENGE_INVALID,
+				id: result.reason === 'tooManyAttempts' ? LOGIN_CHALLENGE_TOO_MANY_ATTEMPTS : LOGIN_CHALLENGE_INVALID,
 			});
 		}
 
