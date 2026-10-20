@@ -113,6 +113,7 @@ export const permissions = [
 	'write:admin:unset-user-avatar',
 	'write:admin:unset-user-banner',
 	'write:admin:unsuspend-user',
+	'write:admin:clear-suspicious-login-flag',
 	'write:admin:meta',
 	'write:admin:user-name',
 	'write:admin:user-note',
@@ -165,6 +166,7 @@ export const moderationLogTypes = [
 	'updateServerSettings',
 	'suspend',
 	'unsuspend',
+	'clearSuspiciousLoginFlag',
 	'updateUserName',
 	'updateUserNote',
 	'sendNotification',
@@ -354,6 +356,11 @@ export type ModerationLogPayloads = {
 		reason: string | null;
 	};
 	unsuspend: {
+		userId: string;
+		userUsername: string;
+		userHost: string | null;
+	};
+	clearSuspiciousLoginFlag: {
 		userId: string;
 		userUsername: string;
 		userHost: string | null;

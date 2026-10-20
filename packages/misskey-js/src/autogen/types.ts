@@ -197,6 +197,15 @@ export type paths = {
          */
         post: operations['admin___avatar-decorations___list'];
     };
+    '/admin/avatar-decorations/search': {
+        /**
+         * admin/avatar-decorations/search
+         * @description Search avatar decorations for management. Unlike search-avatar-decorations, imported (remote) decorations are always included.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:avatar-decorations*
+         */
+        post: operations['admin___avatar-decorations___search'];
+    };
     '/admin/avatar-decorations/update': {
         /**
          * admin/avatar-decorations/update
@@ -223,6 +232,15 @@ export type paths = {
          *     **Credential required**: *Yes* / **Permission**: *write:admin:meta*
          */
         post: operations['admin___captcha___save'];
+    };
+    '/admin/clear-suspicious-login-flag': {
+        /**
+         * admin/clear-suspicious-login-flag
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:admin:clear-suspicious-login-flag*
+         */
+        post: operations['admin___clear-suspicious-login-flag'];
     };
     '/admin/contact-form/delete': {
         /**
@@ -592,6 +610,24 @@ export type paths = {
          *     **Credential required**: *Yes* / **Permission**: *write:admin:llm-moderation*
          */
         post: operations['admin___llm-moderation___queue___update'];
+    };
+    '/admin/login-risk/diagnose': {
+        /**
+         * admin/login-risk/diagnose
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:meta*
+         */
+        post: operations['admin___login-risk___diagnose'];
+    };
+    '/admin/login-risk/user-footprints': {
+        /**
+         * admin/login-risk/user-footprints
+         * @description Lists sign-in attempts of a user that the login risk detection judged suspicious.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:show-user*
+         */
+        post: operations['admin___login-risk___user-footprints'];
     };
     '/admin/meta': {
         /**
@@ -1905,6 +1941,15 @@ export type paths = {
          */
         post: operations['drive___files'];
     };
+    '/drive/files/abort-multipart-upload': {
+        /**
+         * drive/files/abort-multipart-upload
+         * @description Abort a multipart upload and discard its uploaded parts.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:drive*
+         */
+        post: operations['drive___files___abort-multipart-upload'];
+    };
     '/drive/files/attached-chat-messages': {
         /**
          * drive/files/attached-chat-messages
@@ -2867,6 +2912,16 @@ export type paths = {
          *     **Credential required**: *Yes*
          */
         post: operations['i___import-user-lists'];
+    };
+    '/i/login-risk-footprints': {
+        /**
+         * i/login-risk-footprints
+         * @description Lists sign-in attempts of yourself that the login risk detection judged suspicious. Available only when the server shows these details to users.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes*
+         */
+        post: operations['i___login-risk-footprints'];
     };
     '/i/move': {
         /**
@@ -5843,6 +5898,12 @@ export type components = {
             ip: string;
             headers: Record<string, never>;
             success: boolean;
+            country: string | null;
+            asn: number | null;
+            riskScore: number | null;
+            riskReasons: string[] | null;
+            /** @enum {string|null} */
+            challenge: 'emailCode' | 'passed' | 'failed' | null;
         };
         RoleCondFormulaLogics: {
             id: string;
@@ -5864,7 +5925,7 @@ export type components = {
         RoleCondFormulaValueUserSettingBooleanSchema: {
             id: string;
             /** @enum {string} */
-            type: 'isSuspended' | 'isLocked' | 'isBot' | 'isCat' | 'isExplorable';
+            type: 'isSuspended' | 'isSuspiciousLoginDetected' | 'isLocked' | 'isBot' | 'isCat' | 'isExplorable';
         };
         RoleCondFormulaValueAssignedRole: {
             id: string;
@@ -8031,6 +8092,96 @@ export interface operations {
             };
         };
     };
+    'admin___avatar-decorations___search': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** @default  */
+                    query?: string;
+                    /**
+                     * @default combined
+                     * @enum {string}
+                     */
+                    origin?: 'local' | 'remote' | 'combined';
+                    /** @default 30 */
+                    limit?: number;
+                    /** @default 0 */
+                    offset?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /**
+                         * Format: id
+                         * @example xxxxxxxxxx
+                         */
+                        id: string;
+                        /** Format: date-time */
+                        createdAt: string;
+                        /** Format: date-time */
+                        updatedAt: string | null;
+                        name: string;
+                        description: string;
+                        url: string;
+                        roleIdsThatCanBeUsedThisDecoration: string[];
+                        category: string | null;
+                    }[];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     'admin___avatar-decorations___update': {
         requestBody: {
             content: {
@@ -8187,6 +8338,69 @@ export interface operations {
                     sitekey?: string | null;
                     secret?: string | null;
                     instanceUrl?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___clear-suspicious-login-flag': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    userId: string;
                 };
             };
         };
@@ -11033,6 +11247,162 @@ export interface operations {
             };
         };
     };
+    'admin___login-risk___diagnose': {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        ip: string;
+                        xForwardedFor: string | null;
+                        hasCfConnectingIp: boolean;
+                        hasCfIpCountry: boolean;
+                        /** @enum {string} */
+                        verdict: 'ok' | 'privateIp';
+                        intel: {
+                            country: string | null;
+                            asn: number | null;
+                            asnOrg: string | null;
+                            tor: boolean;
+                            spamhausDrop: boolean;
+                            datacenter: boolean;
+                            vpn: boolean;
+                        };
+                        sources: {
+                            /** @enum {string} */
+                            name: 'country' | 'asn' | 'tor' | 'spamhausDropV4' | 'spamhausDropV6' | 'spamhausAsnDrop' | 'datacenter' | 'vpn';
+                            loaded: boolean;
+                            version: string | null;
+                            updatedAt: string | null;
+                            entries: number | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___login-risk___user-footprints': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    userId: string;
+                    /** @default 10 */
+                    limit?: number;
+                    /** Format: misskey:id */
+                    sinceId?: string;
+                    /** Format: misskey:id */
+                    untilId?: string;
+                    sinceDate?: number;
+                    untilDate?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Signin'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     admin___meta: {
         responses: {
             /** @description OK (with results) */
@@ -11045,7 +11415,6 @@ export interface operations {
                         cacheRemoteFiles: boolean;
                         cacheRemoteSensitiveFiles: boolean;
                         emailRequiredForSignup: boolean;
-                        approvalRequiredForSignup: boolean;
                         enableHcaptcha: boolean;
                         hcaptchaSiteKey: string | null;
                         enableMcaptcha: boolean;
@@ -11064,10 +11433,7 @@ export interface operations {
                         serverErrorImageUrl: string | null;
                         infoImageUrl: string | null;
                         notFoundImageUrl: string | null;
-                        youBlockedImageUrl: string | null;
                         iconUrl: string | null;
-                        enableLongIconUrl: boolean;
-                        longIconUrl: string | null;
                         app192IconUrl: string | null;
                         app512IconUrl: string | null;
                         enableEmail: boolean;
@@ -11082,7 +11448,6 @@ export interface operations {
                         prohibitedWords: string[];
                         prohibitedWordsForNameOfUser: string[];
                         bannedEmailDomains?: string[];
-                        emailWhitelist: boolean;
                         preservedUsernames: string[];
                         hcaptchaSecretKey: string | null;
                         mcaptchaSecretKey: string | null;
@@ -11098,12 +11463,6 @@ export interface operations {
                         sensitiveMediaDetectionApiKey: string | null;
                         sensitiveMediaDetectionTimeout: number;
                         sensitiveMediaDetectionMaxImagesPerRequest: number;
-                        openLlmModerationEnabled: boolean;
-                        openLlmModerationApiConfigured: boolean;
-                        openLlmModerationIncludeRemote: boolean;
-                        openLlmModerationVisibilities: string[];
-                        openLlmModerationApiUrl: string | null;
-                        openLlmModerationModel: string | null;
                         /** Format: id */
                         proxyAccountId: string;
                         email: string | null;
@@ -11117,7 +11476,6 @@ export interface operations {
                         objectStorageBaseUrl: string | null;
                         objectStorageBucket: string | null;
                         objectStoragePrefix: string | null;
-                        objectStoragePrefixForRemote: string | null;
                         objectStorageEndpoint: string | null;
                         objectStorageRegion: string | null;
                         objectStoragePort: number | null;
@@ -11126,7 +11484,6 @@ export interface operations {
                         objectStorageUseSSL: boolean;
                         objectStorageUseProxy: boolean;
                         objectStorageSetPublicRead: boolean;
-                        objectStorageCacheDays: number | null;
                         enableIpLogging: boolean;
                         enableActiveEmailValidation: boolean;
                         enableVerifymailApi: boolean;
@@ -11150,7 +11507,6 @@ export interface operations {
                         enableReactionsBuffering: boolean;
                         notesPerOneAd: number;
                         backgroundImageUrl: string | null;
-                        backgroundImageUrls: unknown[] | null;
                         deeplAuthKey: string | null;
                         deeplIsPro: boolean;
                         defaultDarkTheme: string | null;
@@ -11188,6 +11544,39 @@ export interface operations {
                         /** @enum {string} */
                         federation: 'all' | 'specified' | 'none';
                         federationHosts: string[];
+                        deliverSuspendedSoftware: {
+                            software: string;
+                            versionRange: string;
+                        }[];
+                        singleUserMode: boolean;
+                        /** @enum {string} */
+                        ugcVisibilityForVisitor: 'all' | 'local' | 'none';
+                        proxyRemoteFiles: boolean;
+                        signToActivityPubGet: boolean;
+                        allowExternalApRedirect: boolean;
+                        enableRemoteNotesCleaning: boolean;
+                        remoteNotesCleaningExpiryDaysForEachNotes: number;
+                        remoteNotesCleaningMaxProcessingDurationInMinutes: number;
+                        showRoleBadgesOfRemoteUsers: boolean;
+                        approvalRequiredForSignup: boolean;
+                        youBlockedImageUrl: string | null;
+                        enableLongIconUrl: boolean;
+                        longIconUrl: string | null;
+                        emailWhitelist: boolean;
+                        openLlmModerationEnabled: boolean;
+                        openLlmModerationApiConfigured: boolean;
+                        openLlmModerationIncludeRemote: boolean;
+                        openLlmModerationVisibilities: string[];
+                        openLlmModerationApiUrl: string | null;
+                        openLlmModerationModel: string | null;
+                        objectStoragePrefixForRemote: string | null;
+                        objectStorageCacheDays: number | null;
+                        enableLoginRiskDetection: boolean;
+                        loginRiskNotifyThreshold: number;
+                        loginRiskStepUpThreshold: number;
+                        loginRiskFlagUnverifiedUsers: boolean;
+                        loginRiskShowDetailsToUser: boolean;
+                        backgroundImageUrls: unknown[] | null;
                         customSplashText: string[];
                         blockMentionsFromUnfamiliarRemoteUsers: boolean;
                         validateMinimumUsernameLength: number;
@@ -11244,20 +11633,7 @@ export interface operations {
                             order: number;
                             isDefault: boolean;
                         }[];
-                        deliverSuspendedSoftware: {
-                            software: string;
-                            versionRange: string;
-                        }[];
-                        singleUserMode: boolean;
-                        /** @enum {string} */
-                        ugcVisibilityForVisitor: 'all' | 'local' | 'none';
-                        proxyRemoteFiles: boolean;
-                        signToActivityPubGet: boolean;
-                        allowExternalApRedirect: boolean;
-                        enableRemoteNotesCleaning: boolean;
-                        remoteNotesCleaningExpiryDaysForEachNotes: number;
-                        remoteNotesCleaningMaxProcessingDurationInMinutes: number;
-                        showRoleBadgesOfRemoteUsers: boolean;
+                        requireSignedApFetch: boolean;
                     };
                 };
             };
@@ -13869,6 +14245,8 @@ export interface operations {
                         isModerator: boolean;
                         isSilenced: boolean;
                         isSuspended: boolean;
+                        /** Format: date-time */
+                        suspiciousLoginDetectedAt: string | null;
                         isHibernated: boolean;
                         lastActiveDate: string | null;
                         moderationNote: string;
@@ -14830,14 +15208,10 @@ export interface operations {
                     serverErrorImageUrl?: string | null;
                     infoImageUrl?: string | null;
                     notFoundImageUrl?: string | null;
-                    youBlockedImageUrl?: string | null;
                     iconUrl?: string | null;
-                    enableLongIconUrl?: boolean;
-                    longIconUrl?: string | null;
                     app192IconUrl?: string | null;
                     app512IconUrl?: string | null;
                     backgroundImageUrl?: string | null;
-                    backgroundImageUrls?: unknown[] | null;
                     logoImageUrl?: string | null;
                     name?: string | null;
                     shortName?: string | null;
@@ -14853,7 +15227,6 @@ export interface operations {
                     cacheRemoteFiles?: boolean;
                     cacheRemoteSensitiveFiles?: boolean;
                     emailRequiredForSignup?: boolean;
-                    approvalRequiredForSignup?: boolean;
                     enableHcaptcha?: boolean;
                     hcaptchaSiteKey?: string | null;
                     hcaptchaSecretKey?: string | null;
@@ -14879,12 +15252,6 @@ export interface operations {
                     sensitiveMediaDetectionApiKey?: string | null;
                     sensitiveMediaDetectionTimeout?: number;
                     sensitiveMediaDetectionMaxImagesPerRequest?: number;
-                    openLlmModerationEnabled?: boolean;
-                    openLlmModerationApiKey?: string | null;
-                    openLlmModerationIncludeRemote?: boolean;
-                    openLlmModerationVisibilities?: ('public' | 'public_non_ltl' | 'home' | 'followers' | 'specified')[];
-                    openLlmModerationApiUrl?: string | null;
-                    openLlmModerationModel?: string | null;
                     maintainerName?: string | null;
                     maintainerEmail?: string | null;
                     langs?: string[];
@@ -14910,7 +15277,6 @@ export interface operations {
                     objectStorageBaseUrl?: string | null;
                     objectStorageBucket?: string | null;
                     objectStoragePrefix?: string | null;
-                    objectStoragePrefixForRemote?: string | null;
                     objectStorageEndpoint?: string | null;
                     objectStorageRegion?: string | null;
                     objectStoragePort?: number | null;
@@ -14920,7 +15286,6 @@ export interface operations {
                     objectStorageUseProxy?: boolean;
                     objectStorageSetPublicRead?: boolean;
                     objectStorageS3ForcePathStyle?: boolean;
-                    objectStorageCacheDays?: number | null;
                     enableIpLogging?: boolean;
                     enableActiveEmailValidation?: boolean;
                     enableVerifymailApi?: boolean;
@@ -14935,7 +15300,6 @@ export interface operations {
                     enableIdenticonGeneration?: boolean;
                     serverRules?: string[];
                     bannedEmailDomains?: string[];
-                    emailWhitelist?: boolean;
                     preservedUsernames?: string[];
                     manifestJsonOverride?: string;
                     enableFanoutTimeline?: boolean;
@@ -14946,16 +15310,6 @@ export interface operations {
                     perUserListTimelineCacheMax?: number;
                     enableReactionsBuffering?: boolean;
                     notesPerOneAd?: number;
-                    blockMentionsFromUnfamiliarRemoteUsers?: boolean;
-                    validateMinimumUsernameLength?: number;
-                    useHanaEntrance?: boolean;
-                    hanaThemeColor?: string;
-                    hanaThemeAltColor?: string;
-                    hanaThemeWeakOpacity?: number;
-                    hanaModeIcon?: string | null;
-                    hanaModeIconSize?: number;
-                    hanaModeIconRadius?: number;
-                    hanaModeBackground?: string | null;
                     silencedHosts?: string[] | null;
                     mediaSilencedHosts?: string[] | null;
                     /** @description [Deprecated] Use "urlPreviewSummaryProxyUrl" instead. */
@@ -14985,6 +15339,36 @@ export interface operations {
                     remoteNotesCleaningExpiryDaysForEachNotes?: number;
                     remoteNotesCleaningMaxProcessingDurationInMinutes?: number;
                     showRoleBadgesOfRemoteUsers?: boolean;
+                    youBlockedImageUrl?: string | null;
+                    enableLongIconUrl?: boolean;
+                    longIconUrl?: string | null;
+                    backgroundImageUrls?: unknown[] | null;
+                    approvalRequiredForSignup?: boolean;
+                    openLlmModerationEnabled?: boolean;
+                    openLlmModerationApiKey?: string | null;
+                    openLlmModerationIncludeRemote?: boolean;
+                    openLlmModerationVisibilities?: ('public' | 'public_non_ltl' | 'home' | 'followers' | 'specified')[];
+                    openLlmModerationApiUrl?: string | null;
+                    openLlmModerationModel?: string | null;
+                    objectStoragePrefixForRemote?: string | null;
+                    objectStorageCacheDays?: number | null;
+                    enableLoginRiskDetection?: boolean;
+                    loginRiskNotifyThreshold?: number;
+                    loginRiskStepUpThreshold?: number;
+                    loginRiskFlagUnverifiedUsers?: boolean;
+                    loginRiskShowDetailsToUser?: boolean;
+                    emailWhitelist?: boolean;
+                    blockMentionsFromUnfamiliarRemoteUsers?: boolean;
+                    validateMinimumUsernameLength?: number;
+                    useHanaEntrance?: boolean;
+                    hanaThemeColor?: string;
+                    hanaThemeAltColor?: string;
+                    hanaThemeWeakOpacity?: number;
+                    hanaModeIcon?: string | null;
+                    hanaModeIconSize?: number;
+                    hanaModeIconRadius?: number;
+                    hanaModeBackground?: string | null;
+                    requireSignedApFetch?: boolean;
                     customSplashText?: string[] | null;
                     defaultFollowedUsers?: string[] | null;
                     forciblyFollowedUsers?: string[] | null;
@@ -15159,7 +15543,7 @@ export interface operations {
                 'application/json': {
                     /** Format: misskey:id */
                     userId: string;
-                    name?: string;
+                    name: string | null;
                 };
             };
         };
@@ -21808,6 +22192,78 @@ export interface operations {
             };
             /** @description I'm Ai */
             418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'drive___files___abort-multipart-upload': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -29225,6 +29681,78 @@ export interface operations {
             };
         };
     };
+    'i___login-risk-footprints': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** @default 10 */
+                    limit?: number;
+                    /** Format: misskey:id */
+                    sinceId?: string;
+                    /** Format: misskey:id */
+                    untilId?: string;
+                    sinceDate?: number;
+                    untilDate?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Signin'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     i___move: {
         requestBody: {
             content: {
@@ -30707,6 +31235,7 @@ export interface operations {
                         flipH?: boolean | null;
                         offsetX?: number | null;
                         offsetY?: number | null;
+                        showBehind?: boolean | null;
                     }[];
                     /** Format: misskey:id */
                     bannerId?: string | null;

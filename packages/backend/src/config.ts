@@ -134,6 +134,12 @@ type Source = {
 
 	userAgent?: string;
 	version?: string;
+
+	loginRisk?: {
+		dataDir?: string;
+		autoUpdate?: boolean;
+		trustCloudflareHeaders?: boolean;
+	};
 };
 
 export type Config = {
@@ -218,6 +224,11 @@ export type Config = {
 	frontendManifestExists: boolean;
 	frontendEmbedManifestExists: boolean;
 	rootDir: string;
+	loginRisk: {
+		dataDir: string;
+		autoUpdate: boolean;
+		trustCloudflareHeaders: boolean;
+	};
 	mediaProxy: string;
 	externalMediaProxyEnabled: boolean;
 	videoThumbnailGenerator: string | null;
@@ -362,6 +373,11 @@ export function loadConfig(): Config {
 		frontendManifestExists: frontendManifestExists,
 		frontendEmbedManifestExists: frontendEmbedManifestExists,
 		rootDir,
+		loginRisk: {
+			dataDir: config.loginRisk?.dataDir ?? resolve(rootDir, 'files', 'ipdata'),
+			autoUpdate: config.loginRisk?.autoUpdate ?? true,
+			trustCloudflareHeaders: config.loginRisk?.trustCloudflareHeaders ?? false,
+		},
 		perChannelMaxNoteCacheCount: config.perChannelMaxNoteCacheCount ?? 1000,
 		perUserNotificationsMaxCount: config.perUserNotificationsMaxCount ?? 500,
 		deactivateAntennaThreshold: config.deactivateAntennaThreshold ?? (1000 * 60 * 60 * 24 * 7),

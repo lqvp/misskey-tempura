@@ -12,7 +12,8 @@ import { describe, beforeAll, test, expect, vi } from 'vitest';
 import { Blob } from 'node-fetch';
 import { api, castAsError, initTestDb, post, role, signup, simpleGet, uploadFile } from '../utils.js';
 import type * as misskey from 'misskey-js';
-import { MiUser } from '@/models/_.js';
+import { MiSignin, MiUser } from '@/models/_.js';
+import { genAidx } from '@/misc/id/aidx.js';
 
 const waitForPushToTlOptions = { timeout: 3000, interval: 25 };
 
@@ -1114,6 +1115,266 @@ describe('Endpoints', () => {
 			}, alice);
 
 			assert.strictEqual(res.status, 400);
+		});
+	});
+
+	describe('admin/login-risk/diagnose', () => {
+		test('loopback から接続すると verdict が privateIp になる', async () => {
+			const res = await api('admin/login-risk/diagnose', {}, alice);
+
+			assert.strictEqual(res.status, 200);
+			assert.strictEqual((res.body as any).verdict, 'privateIp');
+			assert.strictEqual('socketRemoteAddress' in (res.body as any), false);
+		});
+	});
+
+	describe('admin/update-meta loginRisk', () => {
+		test('notify >= stepUp は拒否される', async () => {
+			const res = await api('admin/update-meta', {
+				loginRiskNotifyThreshold: 50,
+				loginRiskStepUpThreshold: 50,
+			}, alice);
+
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual((res.body as any).error.code, 'INVALID_LOGIN_RISK_THRESHOLDS');
+		});
+
+		test('範囲外のしきい値は拒否される', async () => {
+			const res = await api('admin/update-meta', { loginRiskNotifyThreshold: 0 }, alice);
+
+			assert.strictEqual(res.status, 400);
+		});
+	});
+
+	describe('不審なログインの記録', () => {
+		async function seedSignins() {
+			const connection = await initTestDb(true);
+			const Signins = connection.getRepository(MiSignin);
+			await Signins.delete({ userId: carol.id });
+			const base = { userId: carol.id, ip: '203.0.113.5', headers: {}, country: 'US', asn: 64501 };
+			const now = Date.now();
+			// 普段どおりのログイン(点数0)、通知相当(点数45)、確認コード要求(点数80)
+			await Signins.insert({ ...base, id: genAidx(now - 3000), success: true, riskScore: 0, riskReasons: [], challenge: null });
+			await Signins.insert({ ...base, id: genAidx(now - 2000), success: true, riskScore: 45, riskReasons: ['newCountry', 'newAsn'], challenge: null });
+			await Signins.insert({ ...base, id: genAidx(now - 1000), success: false, riskScore: 80, riskReasons: ['newDevice', 'newCountry'], challenge: 'emailCode' });
+			await connection.destroy();
+		}
+
+		async function setMeta(params: { enableLoginRiskDetection: boolean; loginRiskShowDetailsToUser: boolean }) {
+			const res = await api('admin/update-meta', params, alice);
+			assert.strictEqual(res.status, 204);
+		}
+
+		test('管理者は不審な試行だけを見られる', async () => {
+			await seedSignins();
+			const res = await api('admin/login-risk/user-footprints', { userId: carol.id }, alice);
+
+			assert.strictEqual(res.status, 200);
+			assert.deepStrictEqual(res.body.map(s => s.riskScore), [80, 45]);
+			assert.deepStrictEqual(res.body[0].riskReasons, ['newDevice', 'newCountry']);
+			assert.strictEqual(res.body[0].challenge, 'emailCode');
+		});
+
+		test('存在しないユーザーは noSuchUser', async () => {
+			const res = await api('admin/login-risk/user-footprints', { userId: '000000000000000000000000' }, alice);
+
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual((res.body as any).error.code, 'NO_SUCH_USER');
+		});
+
+		test('本人に見せない設定なら、本人は記録を取れない', async () => {
+			await seedSignins();
+			await setMeta({ enableLoginRiskDetection: true, loginRiskShowDetailsToUser: false });
+
+			const footprints = await api('i/login-risk-footprints', {}, alice);
+			assert.strictEqual(footprints.status, 400);
+			assert.strictEqual((footprints.body as any).error.code, 'NOT_AVAILABLE');
+		});
+
+		test('本人に見せる設定なら、本人は自分の記録を取れる', async () => {
+			await setMeta({ enableLoginRiskDetection: true, loginRiskShowDetailsToUser: true });
+			const connection = await initTestDb(true);
+			const Signins = connection.getRepository(MiSignin);
+			await Signins.delete({ userId: alice.id });
+			await Signins.insert({ id: genAidx(Date.now()), userId: alice.id, ip: '198.51.100.5', headers: {}, success: false, riskScore: 90, riskReasons: ['tor'], challenge: 'emailCode' });
+			await connection.destroy();
+
+			try {
+				const footprints = await api('i/login-risk-footprints', {}, alice);
+				assert.strictEqual(footprints.status, 200);
+				assert.strictEqual(footprints.body.length, 1);
+				assert.strictEqual(footprints.body[0].riskScore, 90);
+
+				const history = await api('i/signin-history', {}, alice);
+				assert.strictEqual(history.status, 200);
+				assert.strictEqual(history.body?.find(s => s.riskScore === 90)?.riskReasons?.[0], 'tor');
+
+				await setMeta({ enableLoginRiskDetection: true, loginRiskShowDetailsToUser: false });
+				const hidden = await api('i/signin-history', {}, alice);
+				assert.ok(hidden.body?.every(s => s.riskScore === null && (s.riskReasons ?? []).length === 0));
+			} finally {
+				await setMeta({ enableLoginRiskDetection: false, loginRiskShowDetailsToUser: false });
+			}
+		});
+	});
+
+	describe('admin/update-user-name', () => {
+		let moderator: misskey.entities.SignupResponse;
+		let target: misskey.entities.SignupResponse;
+
+		beforeAll(async () => {
+			moderator = await signup({ username: 'renamemod' });
+			target = await signup({ username: 'renametarget' });
+			const moderatorRole = await role(alice, { permissionGroup: 'MainModerator' });
+			await api('admin/roles/assign', { roleId: moderatorRole.id, userId: moderator.id }, alice);
+		});
+
+		test('長すぎる名前は拒否する', async () => {
+			const res = await api('admin/update-user-name', { userId: target.id, name: 'a'.repeat(101) }, moderator);
+
+			assert.strictEqual(res.status, 400);
+		});
+
+		test('100 文字ちょうどの名前は受け付ける', async () => {
+			const res = await api('admin/update-user-name', { userId: target.id, name: 'a'.repeat(100) }, moderator);
+
+			assert.strictEqual(res.status, 204);
+		});
+
+		test('存在しないユーザーは NO_SUCH_USER', async () => {
+			const res = await api('admin/update-user-name', { userId: '000000000000000000000000', name: 'x' }, moderator);
+
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual((res.body as any).error.code, 'NO_SUCH_USER');
+		});
+
+		test('モデレーターでなければ使えない', async () => {
+			const res = await api('admin/update-user-name', { userId: target.id, name: 'x' }, carol);
+
+			assert.strictEqual(res.status, 403);
+		});
+
+		test('変更した名前と絵文字がキャッシュ越しにもすぐ反映される', async () => {
+			// 本人の i は認証時にキャッシュしたユーザー情報を返すので、先に一度呼んでキャッシュに載せる
+			await api('i', {}, target);
+
+			const res = await api('admin/update-user-name', { userId: target.id, name: '  renamed :blobcat:  ' }, moderator);
+			assert.strictEqual(res.status, 204);
+
+			const me = await api('i', {}, target);
+			assert.strictEqual(me.body.name, 'renamed :blobcat:');
+			const connection = await initTestDb(true);
+			const saved = await connection.getRepository(MiUser).findOneByOrFail({ id: target.id });
+			assert.deepStrictEqual(saved.emojis, ['blobcat']);
+			connection.destroy();
+		});
+
+		test('null を送ると名前を消す', async () => {
+			const res = await api('admin/update-user-name', { userId: target.id, name: null }, moderator);
+			assert.strictEqual(res.status, 204);
+
+			const me = await api('i', {}, target);
+			assert.strictEqual(me.body.name, null);
+		});
+
+		test('name を省略するとエラーになる (うっかり消さないように)', async () => {
+			const res = await api('admin/update-user-name', { userId: target.id } as any, moderator);
+
+			assert.strictEqual(res.status, 400);
+		});
+	});
+
+	describe('admin/regenerate-user-token', () => {
+		let moderator: misskey.entities.SignupResponse;
+		let normalUser: misskey.entities.SignupResponse;
+
+		beforeAll(async () => {
+			moderator = await signup({ username: 'regenmod' });
+			normalUser = await signup({ username: 'regentarget' });
+			const moderatorRole = await role(alice, { permissionGroup: 'MainModerator' });
+			await api('admin/roles/assign', { roleId: moderatorRole.id, userId: moderator.id }, alice);
+		});
+
+		test('モデレーターは管理者のトークンを再発行できない', async () => {
+			const res = await api('admin/regenerate-user-token', { userId: alice.id }, moderator);
+
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual((res.body as any).error.code, 'ACCESS_DENIED');
+		});
+
+		test('モデレーターは一般ユーザーのトークンを再発行できる', async () => {
+			const res = await api('admin/regenerate-user-token', { userId: normalUser.id }, moderator);
+
+			assert.strictEqual(res.status, 204);
+		});
+
+		test('モデレーターは管理者の名前を変えられない', async () => {
+			const res = await api('admin/update-user-name', { userId: alice.id, name: 'renamed' }, moderator);
+
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual((res.body as any).error.code, 'ACCESS_DENIED');
+		});
+
+		test('モデレーターは他のモデレーターのトークン再発行も名前変更もできない', async () => {
+			const otherModerator = await signup({ username: 'regenmod2' });
+			const moderatorRole2 = await role(alice, { permissionGroup: 'MainModerator' });
+			await api('admin/roles/assign', { roleId: moderatorRole2.id, userId: otherModerator.id }, alice);
+
+			const regen = await api('admin/regenerate-user-token', { userId: otherModerator.id }, moderator);
+			assert.strictEqual(regen.status, 400);
+			assert.strictEqual((regen.body as any).error.code, 'ACCESS_DENIED');
+
+			const rename = await api('admin/update-user-name', { userId: otherModerator.id, name: 'renamed' }, moderator);
+			assert.strictEqual(rename.status, 400);
+			assert.strictEqual((rename.body as any).error.code, 'ACCESS_DENIED');
+
+			// 管理者ならできる
+			const byAdmin = await api('admin/update-user-name', { userId: otherModerator.id, name: 'renamed by admin' }, alice);
+			assert.strictEqual(byAdmin.status, 204);
+		});
+
+		test('存在しないユーザーは noSuchUser', async () => {
+			const res = await api('admin/regenerate-user-token', { userId: '000000000000000000000000' }, moderator);
+
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual((res.body as any).error.code, 'NO_SUCH_USER');
+		});
+	});
+
+	describe('admin/clear-suspicious-login-flag', () => {
+		test('存在しないユーザーは noSuchUser', async () => {
+			const res = await api('admin/clear-suspicious-login-flag', { userId: '000000000000000000000000' }, alice);
+
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual((res.body as any).error.code, 'NO_SUCH_USER');
+		});
+
+		test('他のユーザーのフラグを外せる', async () => {
+			const connection = await initTestDb(true);
+			const Users = connection.getRepository(MiUser);
+			await Users.update(carol.id, { suspiciousLoginDetectedAt: new Date() });
+
+			const res = await api('admin/clear-suspicious-login-flag', { userId: carol.id }, alice);
+
+			assert.strictEqual(res.status, 204);
+			const updated = await Users.findOneByOrFail({ id: carol.id });
+			assert.strictEqual(updated.suspiciousLoginDetectedAt, null);
+			connection.destroy();
+		});
+
+		test('自分のフラグは外せない', async () => {
+			const connection = await initTestDb(true);
+			const Users = connection.getRepository(MiUser);
+			await Users.update(alice.id, { suspiciousLoginDetectedAt: new Date() });
+
+			const res = await api('admin/clear-suspicious-login-flag', { userId: alice.id }, alice);
+
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual((res.body as any).error.code, 'CANNOT_CLEAR_OWN_FLAG');
+			const unchanged = await Users.findOneByOrFail({ id: alice.id });
+			assert.notStrictEqual(unchanged.suspiciousLoginDetectedAt, null);
+			await Users.update(alice.id, { suspiciousLoginDetectedAt: null });
+			connection.destroy();
 		});
 	});
 

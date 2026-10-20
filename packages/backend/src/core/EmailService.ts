@@ -16,6 +16,7 @@ import { LoggerService } from '@/core/LoggerService.js';
 import { bindThis } from '@/decorators.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { escapeHtml } from '@/misc/escape-html.js';
+import { normalizeEmailForComparison, normalizedEmailSql } from '@/misc/normalize-email.js';
 
 @Injectable()
 export class EmailService {
@@ -175,10 +176,12 @@ export class EmailService {
 			};
 		}
 
-		const exist = await this.userProfilesRepository.countBy({
-			emailVerified: true,
-			email: emailAddress,
-		});
+		// 大文字小文字や + の別名、Gmail のドットを変えただけのアドレスでの使い回しも弾く
+		const exist = await this.userProfilesRepository.createQueryBuilder('profile')
+			.where('"profile"."emailVerified" = true')
+			.andWhere('"profile"."email" IS NOT NULL')
+			.andWhere(`(${normalizedEmailSql('"profile"."email"')}) = :normalized`, { normalized: normalizeEmailForComparison(emailAddress) })
+			.getCount();
 
 		if (exist !== 0) {
 			return {
@@ -232,22 +235,22 @@ export class EmailService {
 			const isWhitelisted = this.utilityService.isBlockedHost(this.meta.bannedEmailDomains, emailDomain);
 
 			if (!isWhitelisted) {
-					return {
-							available: false,
-							reason: 'banned',
-					};
+				return {
+					available: false,
+					reason: 'banned',
+				};
 			}
-	} else {
+		} else {
 			// 従来のブラックリストとしての動作
 			const isBanned = this.utilityService.isBlockedHost(this.meta.bannedEmailDomains, emailDomain);
 
 			if (isBanned) {
-					return {
-							available: false,
-							reason: 'banned',
-					};
+				return {
+					available: false,
+					reason: 'banned',
+				};
 			}
-	}
+		}
 
 		return {
 			available: true,

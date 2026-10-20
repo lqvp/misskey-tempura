@@ -31,6 +31,7 @@ function generateDummyUser(override?: Partial<MiUser>): MiUser {
 		followingCount: 5,
 		movedToUri: null,
 		movedAt: null,
+		suspiciousLoginDetectedAt: null,
 		alsoKnownAs: null,
 		notesCount: 30,
 		avatarId: null,

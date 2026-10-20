@@ -96,6 +96,7 @@ export const moderationLogTypes = [
 	'updateServerSettings',
 	'suspend',
 	'unsuspend',
+	'clearSuspiciousLoginFlag',
 	'updateUserName',
 	'updateUserNote',
 	'sendNotification',
@@ -184,6 +185,11 @@ export type ModerationLogPayloads = {
 		reason: string | null;
 	};
 	unsuspend: {
+		userId: string;
+		userUsername: string;
+		userHost: string | null;
+	};
+	clearSuspiciousLoginFlag: {
 		userId: string;
 		userUsername: string;
 		userHost: string | null;

@@ -12,6 +12,11 @@ import { fetchInstance } from '@/instance.js';
 import { displayLlmError } from '@/utils/errorHandler.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
+import { extractCandidateText } from '@/utility/tempura-script/llm-response.js';
+import type { GeminiGenerateContentResponse, GeminiPart } from '@/utility/tempura-script/llm-response.js';
+
+export { extractCandidateText };
+export type { GeminiGenerateContentResponse };
 
 const instance = ref<Misskey.entities.MetaDetailed | null>(null);
 
@@ -38,9 +43,11 @@ async function uploadFileToGemini(file: Misskey.entities.DriveFile, apiKey: stri
 		const uploadUrl = 'https://generativelanguage.googleapis.com/upload/v1beta/files';
 
 		// メタデータアップロードのリクエスト
-		const metadataResponse = await window.fetch(`${uploadUrl}?key=${apiKey}`, {
+		// API キーは URL に入れるとログや履歴に残りやすいのでヘッダーで送る
+		const metadataResponse = await window.fetch(uploadUrl, {
 			method: 'POST',
 			headers: {
+				'x-goog-api-key': apiKey,
 				'X-Goog-Upload-Protocol': 'resumable',
 				'X-Goog-Upload-Command': 'start',
 				'X-Goog-Upload-Header-Content-Length': String(fileBlob.size),
@@ -77,7 +84,7 @@ async function uploadFileToGemini(file: Misskey.entities.DriveFile, apiKey: stri
 			throw new Error(i18n.ts._llm._error.upload);
 		}
 
-		const fileInfo = await fileUploadResponse.json();
+		const fileInfo = await fileUploadResponse.json() as { file?: { uri?: string } };
 		if (!fileInfo.file || !fileInfo.file.uri) {
 			throw new Error(i18n.ts._llm._error.uploadedFileUri);
 		}
@@ -97,7 +104,7 @@ export async function generateGeminiSummary({
 	note?: Misskey.entities.Note;
 	userContent?: string;
 	systemInstruction?: string;
-}): Promise<any> {
+}): Promise<GeminiGenerateContentResponse> {
 	const { geminiToken, geminiModel, geminiThinkingBudget, useGeminiLLMAPI, useGeminiWithMedia = true } = prefer.s;
 
 	// ノートからコンテンツを取得
@@ -172,11 +179,12 @@ export async function generateGeminiSummary({
 					prompt: systemInstruction ?? '',
 					fileUris: fileUris.length > 0 ? fileUris : undefined,
 				});
-			} catch (error: any) {
-				if (error.code === 'ROLE_PERMISSION_DENIED') {
+			} catch (error: unknown) {
+				const err = error as { code?: string; message?: string };
+				if (err?.code === 'ROLE_PERMISSION_DENIED') {
 					throw new Error(i18n.ts._llm._error.serverPermission);
 				}
-				throw new Error(i18n.ts._llm._error.serverLLMApi + (error.message || error));
+				throw new Error(i18n.ts._llm._error.serverLLMApi + (err?.message || String(error)));
 			}
 		}
 	}
@@ -187,7 +195,11 @@ export async function generateGeminiSummary({
 	}
 
 	// リクエストボディの作成
-	const requestBody: any = {
+	const requestBody: {
+		system_instruction?: { parts: { text: string }[] };
+		contents: { parts: GeminiPart[] }[];
+		generationConfig: { thinkingConfig: { thinkingBudget: number } };
+	} = {
 		system_instruction: systemInstruction
 			? {
 				parts: [{ text: systemInstruction }],
@@ -243,10 +255,12 @@ export async function generateGeminiSummary({
 
 	// Gemini APIにリクエスト送信
 	const response = await window.fetch(
-		`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiToken}`,
+		// モデルを空にしている場合は既定のモデルを使う (以前は models/null を呼んで失敗していた)
+		`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(geminiModel?.trim() || 'gemini-2.5-flash')}:generateContent`,
 		{
 			method: 'POST',
 			headers: {
+				'x-goog-api-key': geminiToken,
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify(requestBody),
@@ -257,19 +271,5 @@ export async function generateGeminiSummary({
 		throw new Error(i18n.ts._llm._error.api + `${response.status} ${response.statusText}`);
 	}
 
-	return response.json();
-}
-
-export function extractCandidateText(result: any): string {
-	// 共通の候補抽出処理
-	if (
-		!result.candidates ||
-		result.candidates.length === 0 ||
-		!result.candidates[0].content ||
-		!result.candidates[0].content.parts ||
-		result.candidates[0].content.parts.length === 0
-	) {
-		throw new Error('LLM応答の形式が不正です。candidates, content, partsのいずれかが存在しません。');
-	}
-	return result.candidates[0].content.parts[0].text;
+	return response.json() as Promise<GeminiGenerateContentResponse>;
 }

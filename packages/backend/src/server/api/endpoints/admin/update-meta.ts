@@ -9,6 +9,8 @@ import type { MiMeta } from '@/models/Meta.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { MetaService } from '@/core/MetaService.js';
+import { QueueService } from '@/core/QueueService.js';
+import { ApiLoggerService } from '../../ApiLoggerService.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -23,6 +25,11 @@ export const meta = {
 			message: 'Some items in "defaultFollowedUsers" and "forciblyFollowedUsers" are duplicated.',
 			code: 'FOLLOWED_USER_DUPLICATED',
 			id: 'bcf088ec-fec5-42d0-8b9e-16d3b4797a4d',
+		},
+		invalidLoginRiskThresholds: {
+			message: 'loginRiskNotifyThreshold must be less than loginRiskStepUpThreshold.',
+			code: 'INVALID_LOGIN_RISK_THRESHOLDS',
+			id: '0b4b9a0e-6f0d-4c8e-9d3a-5f2f7a1c8e41',
 		},
 	},
 } as const;
@@ -67,14 +74,10 @@ export const paramDef = {
 		serverErrorImageUrl: { type: 'string', nullable: true },
 		infoImageUrl: { type: 'string', nullable: true },
 		notFoundImageUrl: { type: 'string', nullable: true },
-		youBlockedImageUrl: { type: 'string', nullable: true },
 		iconUrl: { type: 'string', nullable: true },
-		enableLongIconUrl: { type: 'boolean' },
-		longIconUrl: { type: 'string', nullable: true },
 		app192IconUrl: { type: 'string', nullable: true },
 		app512IconUrl: { type: 'string', nullable: true },
 		backgroundImageUrl: { type: 'string', nullable: true },
-		backgroundImageUrls: { type: 'array', nullable: true },
 		logoImageUrl: { type: 'string', nullable: true },
 		name: { type: 'string', nullable: true },
 		shortName: { type: 'string', nullable: true },
@@ -92,7 +95,6 @@ export const paramDef = {
 		cacheRemoteFiles: { type: 'boolean' },
 		cacheRemoteSensitiveFiles: { type: 'boolean' },
 		emailRequiredForSignup: { type: 'boolean' },
-		approvalRequiredForSignup: { type: 'boolean' },
 		enableHcaptcha: { type: 'boolean' },
 		hcaptchaSiteKey: { type: 'string', nullable: true },
 		hcaptchaSecretKey: { type: 'string', nullable: true },
@@ -116,18 +118,6 @@ export const paramDef = {
 		sensitiveMediaDetectionApiKey: { type: 'string', nullable: true },
 		sensitiveMediaDetectionTimeout: { type: 'integer', minimum: 1 },
 		sensitiveMediaDetectionMaxImagesPerRequest: { type: 'integer', minimum: 1 },
-		openLlmModerationEnabled: { type: 'boolean' },
-		openLlmModerationApiKey: { type: 'string', nullable: true },
-		openLlmModerationIncludeRemote: { type: 'boolean' },
-		openLlmModerationVisibilities: {
-			type: 'array',
-			items: {
-				type: 'string',
-				enum: ['public', 'public_non_ltl', 'home', 'followers', 'specified'],
-			},
-		},
-		openLlmModerationApiUrl: { type: 'string', nullable: true },
-		openLlmModerationModel: { type: 'string', nullable: true },
 		maintainerName: { type: 'string', nullable: true },
 		maintainerEmail: { type: 'string', nullable: true },
 		langs: {
@@ -157,7 +147,6 @@ export const paramDef = {
 		objectStorageBaseUrl: { type: 'string', nullable: true },
 		objectStorageBucket: { type: 'string', nullable: true },
 		objectStoragePrefix: { type: 'string', pattern: /^[a-zA-Z0-9-._]*$/.source, nullable: true },
-		objectStoragePrefixForRemote: { type: 'string', nullable: true },
 		objectStorageEndpoint: { type: 'string', nullable: true },
 		objectStorageRegion: { type: 'string', nullable: true },
 		objectStoragePort: { type: 'integer', nullable: true },
@@ -167,7 +156,6 @@ export const paramDef = {
 		objectStorageUseProxy: { type: 'boolean' },
 		objectStorageSetPublicRead: { type: 'boolean' },
 		objectStorageS3ForcePathStyle: { type: 'boolean' },
-		objectStorageCacheDays: { type: 'integer', nullable: true },
 		enableIpLogging: { type: 'boolean' },
 		enableActiveEmailValidation: { type: 'boolean' },
 		enableVerifymailApi: { type: 'boolean' },
@@ -182,7 +170,6 @@ export const paramDef = {
 		enableIdenticonGeneration: { type: 'boolean' },
 		serverRules: { type: 'array', items: { type: 'string' } },
 		bannedEmailDomains: { type: 'array', items: { type: 'string' } },
-		emailWhitelist: { type: 'boolean' },
 		preservedUsernames: { type: 'array', items: { type: 'string' } },
 		manifestJsonOverride: { type: 'string' },
 		enableFanoutTimeline: { type: 'boolean' },
@@ -193,16 +180,6 @@ export const paramDef = {
 		perUserListTimelineCacheMax: { type: 'integer' },
 		enableReactionsBuffering: { type: 'boolean' },
 		notesPerOneAd: { type: 'integer' },
-		blockMentionsFromUnfamiliarRemoteUsers: { type: 'boolean' },
-		validateMinimumUsernameLength: { type: 'integer', minimum: 1, maximum: 20 },
-		useHanaEntrance: { type: 'boolean' },
-		hanaThemeColor: { type: 'string' },
-		hanaThemeAltColor: { type: 'string' },
-		hanaThemeWeakOpacity: { type: 'number' },
-		hanaModeIcon: { type: 'string', nullable: true },
-		hanaModeIconSize: { type: 'number' },
-		hanaModeIconRadius: { type: 'number' },
-		hanaModeBackground: { type: 'string', nullable: true },
 		silencedHosts: {
 			type: 'array',
 			nullable: true,
@@ -267,6 +244,43 @@ export const paramDef = {
 		remoteNotesCleaningExpiryDaysForEachNotes: { type: 'number' },
 		remoteNotesCleaningMaxProcessingDurationInMinutes: { type: 'number' },
 		showRoleBadgesOfRemoteUsers: { type: 'boolean' },
+		// tempura: フォーク独自の設定
+		youBlockedImageUrl: { type: 'string', nullable: true },
+		enableLongIconUrl: { type: 'boolean' },
+		longIconUrl: { type: 'string', nullable: true },
+		backgroundImageUrls: { type: 'array', nullable: true },
+		approvalRequiredForSignup: { type: 'boolean' },
+		openLlmModerationEnabled: { type: 'boolean' },
+		openLlmModerationApiKey: { type: 'string', nullable: true },
+		openLlmModerationIncludeRemote: { type: 'boolean' },
+		openLlmModerationVisibilities: {
+			type: 'array',
+			items: {
+				type: 'string',
+				enum: ['public', 'public_non_ltl', 'home', 'followers', 'specified'],
+			},
+		},
+		openLlmModerationApiUrl: { type: 'string', nullable: true },
+		openLlmModerationModel: { type: 'string', nullable: true },
+		objectStoragePrefixForRemote: { type: 'string', nullable: true },
+		objectStorageCacheDays: { type: 'integer', nullable: true },
+		enableLoginRiskDetection: { type: 'boolean' },
+		loginRiskNotifyThreshold: { type: 'integer', minimum: 1, maximum: 1000 },
+		loginRiskStepUpThreshold: { type: 'integer', minimum: 1, maximum: 1000 },
+		loginRiskFlagUnverifiedUsers: { type: 'boolean' },
+		loginRiskShowDetailsToUser: { type: 'boolean' },
+		emailWhitelist: { type: 'boolean' },
+		blockMentionsFromUnfamiliarRemoteUsers: { type: 'boolean' },
+		validateMinimumUsernameLength: { type: 'integer', minimum: 1, maximum: 20 },
+		useHanaEntrance: { type: 'boolean' },
+		hanaThemeColor: { type: 'string' },
+		hanaThemeAltColor: { type: 'string' },
+		hanaThemeWeakOpacity: { type: 'number' },
+		hanaModeIcon: { type: 'string', nullable: true },
+		hanaModeIconSize: { type: 'number' },
+		hanaModeIconRadius: { type: 'number' },
+		hanaModeBackground: { type: 'string', nullable: true },
+		requireSignedApFetch: { type: 'boolean' },
 		customSplashText: { type: 'array', nullable: true, items: {
 			type: 'string',
 		} },
@@ -345,6 +359,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 		private metaService: MetaService,
 		private moderationLogService: ModerationLogService,
+		private queueService: QueueService,
+		private apiLoggerService: ApiLoggerService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const set = {} as Partial<MiMeta>;
@@ -406,14 +422,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.iconUrl = ps.iconUrl;
 			}
 
-			if (ps.enableLongIconUrl !== undefined) {
-				set.enableLongIconUrl = ps.enableLongIconUrl;
-			}
-
-			if (ps.longIconUrl !== undefined) {
-				set.longIconUrl = ps.longIconUrl;
-			}
-
 			if (ps.app192IconUrl !== undefined) {
 				set.app192IconUrl = ps.app192IconUrl;
 			}
@@ -434,16 +442,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.notFoundImageUrl = ps.notFoundImageUrl;
 			}
 
-			if (ps.youBlockedImageUrl !== undefined) {
-				set.youBlockedImageUrl = ps.youBlockedImageUrl;
-			}
-
 			if (ps.backgroundImageUrl !== undefined) {
 				set.backgroundImageUrl = ps.backgroundImageUrl;
-			}
-
-			if (ps.backgroundImageUrls !== undefined) {
-				set.backgroundImageUrls = ps.backgroundImageUrls ?? [];
 			}
 
 			if (ps.logoImageUrl !== undefined) {
@@ -487,10 +487,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.emailRequiredForSignup !== undefined) {
 				set.emailRequiredForSignup = ps.emailRequiredForSignup;
-			}
-
-			if (ps.approvalRequiredForSignup !== undefined) {
-				set.approvalRequiredForSignup = ps.approvalRequiredForSignup;
 			}
 
 			if (ps.enableHcaptcha !== undefined) {
@@ -587,36 +583,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.sensitiveMediaDetectionMaxImagesPerRequest = ps.sensitiveMediaDetectionMaxImagesPerRequest;
 			}
 
-			if (ps.openLlmModerationEnabled !== undefined) {
-				set.openLlmModerationEnabled = ps.openLlmModerationEnabled;
-			}
-
-			if (ps.openLlmModerationApiKey !== undefined) {
-				if (ps.openLlmModerationApiKey === '') {
-					set.openLlmModerationApiKey = null;
-				} else {
-					set.openLlmModerationApiKey = ps.openLlmModerationApiKey;
-				}
-			}
-
-			if (ps.openLlmModerationIncludeRemote !== undefined) {
-				set.openLlmModerationIncludeRemote = ps.openLlmModerationIncludeRemote;
-			}
-
-			if (ps.openLlmModerationVisibilities !== undefined) {
-				set.openLlmModerationVisibilities = ps.openLlmModerationVisibilities;
-			}
-
-			if (ps.openLlmModerationApiUrl !== undefined) {
-				const trimmed = ps.openLlmModerationApiUrl?.trim() ?? '';
-				set.openLlmModerationApiUrl = trimmed === '' ? null : trimmed;
-			}
-
-			if (ps.openLlmModerationModel !== undefined) {
-				const trimmed = ps.openLlmModerationModel?.trim() ?? '';
-				set.openLlmModerationModel = trimmed === '' ? null : trimmed;
-			}
-
 			if (ps.maintainerName !== undefined) {
 				set.maintainerName = ps.maintainerName;
 			}
@@ -709,10 +675,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.objectStoragePrefix = ps.objectStoragePrefix;
 			}
 
-			if (ps.objectStoragePrefixForRemote !== undefined) {
-				set.objectStoragePrefixForRemote = ps.objectStoragePrefixForRemote;
-			}
-
 			if (ps.objectStorageEndpoint !== undefined) {
 				set.objectStorageEndpoint = ps.objectStorageEndpoint;
 			}
@@ -747,10 +709,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.objectStorageS3ForcePathStyle !== undefined) {
 				set.objectStorageS3ForcePathStyle = ps.objectStorageS3ForcePathStyle;
-			}
-
-			if (ps.objectStorageCacheDays !== undefined) {
-				set.objectStorageCacheDays = ps.objectStorageCacheDays;
 			}
 
 			if (ps.deeplAuthKey !== undefined) {
@@ -873,10 +831,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.bannedEmailDomains = ps.bannedEmailDomains;
 			}
 
-			if (ps.emailWhitelist !== undefined) {
-				set.emailWhitelist = ps.emailWhitelist;
-			}
-
 			if (ps.urlPreviewEnabled !== undefined) {
 				set.urlPreviewEnabled = ps.urlPreviewEnabled;
 			}
@@ -957,6 +911,102 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.showRoleBadgesOfRemoteUsers !== undefined) {
 				set.showRoleBadgesOfRemoteUsers = ps.showRoleBadgesOfRemoteUsers;
+			}
+
+			// tempura: フォーク独自の設定
+
+			if (ps.enableLongIconUrl !== undefined) {
+				set.enableLongIconUrl = ps.enableLongIconUrl;
+			}
+
+			if (ps.longIconUrl !== undefined) {
+				set.longIconUrl = ps.longIconUrl;
+			}
+
+			if (ps.youBlockedImageUrl !== undefined) {
+				set.youBlockedImageUrl = ps.youBlockedImageUrl;
+			}
+
+			if (ps.backgroundImageUrls !== undefined) {
+				set.backgroundImageUrls = ps.backgroundImageUrls ?? [];
+			}
+
+			if (ps.approvalRequiredForSignup !== undefined) {
+				set.approvalRequiredForSignup = ps.approvalRequiredForSignup;
+			}
+
+			if (ps.openLlmModerationEnabled !== undefined) {
+				set.openLlmModerationEnabled = ps.openLlmModerationEnabled;
+			}
+
+			if (ps.openLlmModerationApiKey !== undefined) {
+				if (ps.openLlmModerationApiKey === '') {
+					set.openLlmModerationApiKey = null;
+				} else {
+					set.openLlmModerationApiKey = ps.openLlmModerationApiKey;
+				}
+			}
+
+			if (ps.openLlmModerationIncludeRemote !== undefined) {
+				set.openLlmModerationIncludeRemote = ps.openLlmModerationIncludeRemote;
+			}
+
+			if (ps.openLlmModerationVisibilities !== undefined) {
+				set.openLlmModerationVisibilities = ps.openLlmModerationVisibilities;
+			}
+
+			if (ps.openLlmModerationApiUrl !== undefined) {
+				const trimmed = ps.openLlmModerationApiUrl?.trim() ?? '';
+				set.openLlmModerationApiUrl = trimmed === '' ? null : trimmed;
+			}
+
+			if (ps.openLlmModerationModel !== undefined) {
+				const trimmed = ps.openLlmModerationModel?.trim() ?? '';
+				set.openLlmModerationModel = trimmed === '' ? null : trimmed;
+			}
+
+			if (ps.objectStoragePrefixForRemote !== undefined) {
+				set.objectStoragePrefixForRemote = ps.objectStoragePrefixForRemote;
+			}
+
+			if (ps.objectStorageCacheDays !== undefined) {
+				set.objectStorageCacheDays = ps.objectStorageCacheDays;
+			}
+
+			if (ps.enableLoginRiskDetection !== undefined) {
+				set.enableLoginRiskDetection = ps.enableLoginRiskDetection;
+			}
+
+			if (ps.loginRiskNotifyThreshold !== undefined) {
+				set.loginRiskNotifyThreshold = ps.loginRiskNotifyThreshold;
+			}
+
+			if (ps.loginRiskStepUpThreshold !== undefined) {
+				set.loginRiskStepUpThreshold = ps.loginRiskStepUpThreshold;
+			}
+
+			if (ps.loginRiskNotifyThreshold !== undefined || ps.loginRiskStepUpThreshold !== undefined) {
+				const notify = set.loginRiskNotifyThreshold ?? this.serverSettings.loginRiskNotifyThreshold;
+				const stepUp = set.loginRiskStepUpThreshold ?? this.serverSettings.loginRiskStepUpThreshold;
+				if (notify >= stepUp) {
+					throw new ApiError(meta.errors.invalidLoginRiskThresholds);
+				}
+			}
+
+			if (ps.loginRiskFlagUnverifiedUsers !== undefined) {
+				set.loginRiskFlagUnverifiedUsers = ps.loginRiskFlagUnverifiedUsers;
+			}
+
+			if (ps.loginRiskShowDetailsToUser !== undefined) {
+				set.loginRiskShowDetailsToUser = ps.loginRiskShowDetailsToUser;
+			}
+
+			if (ps.emailWhitelist !== undefined) {
+				set.emailWhitelist = ps.emailWhitelist;
+			}
+
+			if (ps.requireSignedApFetch !== undefined) {
+				set.requireSignedApFetch = ps.requireSignedApFetch;
 			}
 
 			if (Array.isArray(ps.customSplashText)) {
@@ -1202,6 +1252,19 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				before,
 				after,
 			});
+
+			// 無効から有効に切り替えたら、03:30 を待たずにデータを取得する。失敗しても設定の更新は成功させる
+			if (!before.enableLoginRiskDetection && after.enableLoginRiskDetection) {
+				try {
+					await this.queueService.systemQueue.add('updateIpIntelligence', {}, {
+						jobId: 'updateIpIntelligence-oneshot',
+						removeOnComplete: true,
+						removeOnFail: true,
+					});
+				} catch (err) {
+					this.apiLoggerService.logger.warn(`failed to enqueue the IP intelligence update: ${err}`);
+				}
+			}
 		});
 	}
 }

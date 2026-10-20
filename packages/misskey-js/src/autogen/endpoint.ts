@@ -35,9 +35,12 @@ import type {
 	AdminAvatarDecorationsDeleteRequest,
 	AdminAvatarDecorationsListRequest,
 	AdminAvatarDecorationsListResponse,
+	AdminAvatarDecorationsSearchRequest,
+	AdminAvatarDecorationsSearchResponse,
 	AdminAvatarDecorationsUpdateRequest,
 	AdminCaptchaCurrentResponse,
 	AdminCaptchaSaveRequest,
+	AdminClearSuspiciousLoginFlagRequest,
 	AdminContactFormDeleteRequest,
 	AdminContactFormListRequest,
 	AdminContactFormListResponse,
@@ -90,6 +93,9 @@ import type {
 	AdminLlmModerationQueueResponse,
 	AdminLlmModerationQueueResolveRequest,
 	AdminLlmModerationQueueUpdateRequest,
+	AdminLoginRiskDiagnoseResponse,
+	AdminLoginRiskUserFootprintsRequest,
+	AdminLoginRiskUserFootprintsResponse,
 	AdminMetaResponse,
 	AdminPromoCreateRequest,
 	AdminQueueClearRequest,
@@ -311,6 +317,7 @@ import type {
 	DriveResponse,
 	DriveFilesRequest,
 	DriveFilesResponse,
+	DriveFilesAbortMultipartUploadRequest,
 	DriveFilesAttachedChatMessagesRequest,
 	DriveFilesAttachedChatMessagesResponse,
 	DriveFilesAttachedNotesRequest,
@@ -467,6 +474,8 @@ import type {
 	IImportFollowingRequest,
 	IImportMutingRequest,
 	IImportUserListsRequest,
+	ILoginRiskFootprintsRequest,
+	ILoginRiskFootprintsResponse,
 	IMoveRequest,
 	IMoveResponse,
 	INotificationsRequest,
@@ -747,9 +756,11 @@ export type Endpoints = {
 	'admin/avatar-decorations/create': { req: AdminAvatarDecorationsCreateRequest; res: AdminAvatarDecorationsCreateResponse };
 	'admin/avatar-decorations/delete': { req: AdminAvatarDecorationsDeleteRequest; res: EmptyResponse };
 	'admin/avatar-decorations/list': { req: AdminAvatarDecorationsListRequest; res: AdminAvatarDecorationsListResponse };
+	'admin/avatar-decorations/search': { req: AdminAvatarDecorationsSearchRequest; res: AdminAvatarDecorationsSearchResponse };
 	'admin/avatar-decorations/update': { req: AdminAvatarDecorationsUpdateRequest; res: EmptyResponse };
 	'admin/captcha/current': { req: EmptyRequest; res: AdminCaptchaCurrentResponse };
 	'admin/captcha/save': { req: AdminCaptchaSaveRequest; res: EmptyResponse };
+	'admin/clear-suspicious-login-flag': { req: AdminClearSuspiciousLoginFlagRequest; res: EmptyResponse };
 	'admin/contact-form/delete': { req: AdminContactFormDeleteRequest; res: EmptyResponse };
 	'admin/contact-form/list': { req: AdminContactFormListRequest; res: AdminContactFormListResponse };
 	'admin/contact-form/show': { req: AdminContactFormShowRequest; res: AdminContactFormShowResponse };
@@ -790,6 +801,8 @@ export type Endpoints = {
 	'admin/llm-moderation/queue': { req: AdminLlmModerationQueueRequest; res: AdminLlmModerationQueueResponse };
 	'admin/llm-moderation/queue/resolve': { req: AdminLlmModerationQueueResolveRequest; res: EmptyResponse };
 	'admin/llm-moderation/queue/update': { req: AdminLlmModerationQueueUpdateRequest; res: EmptyResponse };
+	'admin/login-risk/diagnose': { req: EmptyRequest; res: AdminLoginRiskDiagnoseResponse };
+	'admin/login-risk/user-footprints': { req: AdminLoginRiskUserFootprintsRequest; res: AdminLoginRiskUserFootprintsResponse };
 	'admin/meta': { req: EmptyRequest; res: AdminMetaResponse };
 	'admin/promo/create': { req: AdminPromoCreateRequest; res: EmptyResponse };
 	'admin/queue/clear': { req: AdminQueueClearRequest; res: EmptyResponse };
@@ -935,6 +948,7 @@ export type Endpoints = {
 	'contact-form/submit': { req: ContactFormSubmitRequest; res: ContactFormSubmitResponse };
 	'drive': { req: EmptyRequest; res: DriveResponse };
 	'drive/files': { req: DriveFilesRequest; res: DriveFilesResponse };
+	'drive/files/abort-multipart-upload': { req: DriveFilesAbortMultipartUploadRequest; res: EmptyResponse };
 	'drive/files/attached-chat-messages': { req: DriveFilesAttachedChatMessagesRequest; res: DriveFilesAttachedChatMessagesResponse };
 	'drive/files/attached-notes': { req: DriveFilesAttachedNotesRequest; res: DriveFilesAttachedNotesResponse };
 	'drive/files/check-existence': { req: DriveFilesCheckExistenceRequest; res: DriveFilesCheckExistenceResponse };
@@ -1039,6 +1053,7 @@ export type Endpoints = {
 	'i/import-following': { req: IImportFollowingRequest; res: EmptyResponse };
 	'i/import-muting': { req: IImportMutingRequest; res: EmptyResponse };
 	'i/import-user-lists': { req: IImportUserListsRequest; res: EmptyResponse };
+	'i/login-risk-footprints': { req: ILoginRiskFootprintsRequest; res: ILoginRiskFootprintsResponse };
 	'i/move': { req: IMoveRequest; res: IMoveResponse };
 	'i/notifications': { req: INotificationsRequest; res: INotificationsResponse };
 	'i/notifications-grouped': { req: INotificationsGroupedRequest; res: INotificationsGroupedResponse };

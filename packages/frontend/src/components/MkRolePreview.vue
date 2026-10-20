@@ -49,22 +49,22 @@ const props = withDefaults(defineProps<{
 });
 </script>
 
-	<style lang="scss" module>
-	.root {
+<style lang="scss" module>
+.root {
 	display: flex;
 	align-items: center;
-	}
+}
 
-	.icon {
+.icon {
 	margin: 0 12px;
-	}
+}
 
-	.body {
+.body {
 	display: block;
 	padding: 16px 20px;
 	flex: 1;
 	border-left: solid 6px var(--color);
-	}
+}
 
 	.rainbow .body {
 	border-left: none;
@@ -103,28 +103,28 @@ const props = withDefaults(defineProps<{
 
 	.bodyTitle {
 	display: flex;
-	}
+}
 
-	.bodyIcon {
+.bodyIcon {
 	margin-right: 8px;
-	}
+}
 
-	.bodyBadge {
+.bodyBadge {
 	height: 1.3em;
 	vertical-align: -20%;
-	}
+}
 
-	.bodyName {
+.bodyName {
 	font-weight: bold;
-	}
+}
 
-	.bodyUsers {
+.bodyUsers {
 	margin-left: auto;
 	opacity: 0.7;
-	}
+}
 
-	.bodyDescription {
+.bodyDescription {
 	opacity: 0.7;
 	font-size: 85%;
-	}
-	</style>
+}
+</style>

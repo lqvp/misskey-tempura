@@ -890,6 +890,22 @@ describe('RoleService', () => {
 			expect(actual2.some(r => r.id === role.id)).toBe(true);
 		});
 
+		test('不審なログインが検知されている', async () => {
+			const [user1, user2] = await Promise.all([
+				createUser({ suspiciousLoginDetectedAt: null }),
+				createUser({ suspiciousLoginDetectedAt: new Date() }),
+			]);
+			const role = await createConditionalRole({
+				id: aidx(),
+				type: 'isSuspiciousLoginDetected',
+			});
+
+			const actual1 = await roleService.getUserRoles(user1.id);
+			const actual2 = await roleService.getUserRoles(user2.id);
+			expect(actual1.some(r => r.id === role.id)).toBe(false);
+			expect(actual2.some(r => r.id === role.id)).toBe(true);
+		});
+
 		test('鍵アカウントユーザである', async () => {
 			const [user1, user2] = await Promise.all([
 				createUser({ isLocked: false }),

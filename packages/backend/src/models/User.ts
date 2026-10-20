@@ -80,6 +80,12 @@ export class MiUser {
 	})
 	public movedAt: Date | null;
 
+	@Column('timestamp with time zone', {
+		nullable: true,
+		comment: 'The last time an unverifiable suspicious login was detected.',
+	})
+	public suspiciousLoginDetectedAt: Date | null;
+
 	@Column('simple-array', {
 		nullable: true,
 		comment: 'URIs the user is known as too',
@@ -334,5 +340,5 @@ export const nameSchema = { type: 'string', minLength: 1, maxLength: 100 } as co
 export const descriptionSchema = { type: 'string', minLength: 1, maxLength: 1500 } as const;
 export const followedMessageSchema = { type: 'string', minLength: 1, maxLength: 256 } as const;
 export const locationSchema = { type: 'string', minLength: 1, maxLength: 50 } as const;
-export const listenbrainzSchema = { type: "string", minLength: 1, maxLength: 128 } as const;
+export const listenbrainzSchema = { type: 'string', minLength: 1, maxLength: 128 } as const;
 export const birthdaySchema = { type: 'string', pattern: /^([0-9]{4})-([0-9]{2})-([0-9]{2})$/.toString().slice(1, -1) } as const;

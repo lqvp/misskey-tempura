@@ -275,6 +275,7 @@ export interface InternalEventTypes {
 	userListMemberRemoved: { userListId: MiUserList['id']; memberId: MiUser['id']; };
 	remoteFileCacheMiss: { fileId: MiDriveFile['id']; }
 	clearQuarantinedHostsCache: string;
+	ipIntelligenceUpdated: Record<string, never>;
 }
 
 export type EventTypesToEventPayload<T> = EventUnionFromDictionary<UndefinedAsNullAll<SerializedAll<T>>>;

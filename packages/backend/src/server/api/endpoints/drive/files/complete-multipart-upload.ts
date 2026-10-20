@@ -109,10 +109,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			const driveCapacity = 1024 * 1024 * policies.driveCapacityMb;
 			const currentUsage = await this.driveFileEntityService.calcDriveUsageOf(me.id);
 
-			console.log(`Multipart upload ${multipartUpload.id}: capacity=${driveCapacity}, usage=${currentUsage}, totalSize=${multipartUpload.totalSize}`);
-
 			if (driveCapacity < currentUsage + multipartUpload.totalSize) {
-				console.error(`Drive capacity exceeded: ${currentUsage + multipartUpload.totalSize} > ${driveCapacity}`);
 				throw new ApiError(meta.errors.noFreeSpace);
 			}
 

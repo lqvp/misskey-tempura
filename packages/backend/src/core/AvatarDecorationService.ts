@@ -14,6 +14,14 @@ import { MemorySingleCache } from '@/misc/cache.js';
 import type { GlobalEvents } from '@/core/GlobalEventService.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 
+/**
+ * リモートユーザーから取り込んだデコレーションかどうか。
+ * 取り込み時に ApPersonService が `import_{host}_{id}` という名前で登録する。
+ */
+export function isImportedAvatarDecoration(decoration: Pick<MiAvatarDecoration, 'name'>): boolean {
+	return decoration.name.startsWith('import_');
+}
+
 @Injectable()
 export class AvatarDecorationService implements OnApplicationShutdown {
 	public cache: MemorySingleCache<MiAvatarDecoration[]>;
@@ -29,7 +37,7 @@ export class AvatarDecorationService implements OnApplicationShutdown {
 		private moderationLogService: ModerationLogService,
 		private globalEventService: GlobalEventService,
 	) {
-		this.cache = new MemorySingleCache<MiAvatarDecoration[]>(1000 * 60 * 30); // 30s
+		this.cache = new MemorySingleCache<MiAvatarDecoration[]>(1000 * 60 * 30); // 30m
 
 		this.redisForSub.on('message', this.onMessage);
 	}

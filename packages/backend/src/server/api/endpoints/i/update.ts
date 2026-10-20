@@ -8,7 +8,7 @@ import * as mfm from 'mfm-js';
 import { Inject, Injectable } from '@nestjs/common';
 import ms from 'ms';
 import * as htmlParser from 'node-html-parser';
-import { extractCustomEmojisFromMfm } from '@/misc/extract-custom-emojis-from-mfm.js';
+import { collectProfileEmojis } from '@/misc/collect-profile-emojis.js';
 import { extractHashtags } from '@/misc/extract-hashtags.js';
 import * as Acct from '@/misc/acct.js';
 import type { UsersRepository, DriveFilesRepository, MiMeta, UserProfilesRepository, PagesRepository } from '@/models/_.js';
@@ -31,7 +31,7 @@ import { RemoteUserResolveService } from '@/core/RemoteUserResolveService.js';
 import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import type { Config } from '@/config.js';
-import { AvatarDecorationService } from '@/core/AvatarDecorationService.js';
+import { AvatarDecorationService, isImportedAvatarDecoration } from '@/core/AvatarDecorationService.js';
 import { notificationRecieveConfig } from '@/models/json-schema/user.js';
 import { receiveSpecifiedNotesFromVisibilities } from '@/types.js';
 import { ApiLoggerService } from '../../ApiLoggerService.js';
@@ -155,6 +155,7 @@ export const paramDef = {
 				flipH: { type: 'boolean', nullable: true },
 				offsetX: { type: 'number', nullable: true, maximum: 0.25, minimum: -0.25 },
 				offsetY: { type: 'number', nullable: true, maximum: 0.25, minimum: -0.25 },
+				showBehind: { type: 'boolean', nullable: true },
 			},
 			required: ['id'],
 		} },
@@ -455,15 +456,16 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			if (ps.avatarDecorations) {
-				policies ??= await this.roleService.getUserPolicies(user.id);
+				const decorationPolicies = policies ??= await this.roleService.getUserPolicies(user.id);
 				const decorations = await this.avatarDecorationService.getAll(true);
 				const myRoles = await this.roleService.getUserRoles(user.id);
 				const allRoles = await this.roleService.getRoles();
 				const decorationIds = decorations
 					.filter(d => d.roleIdsThatCanBeUsedThisDecoration.filter(roleId => allRoles.some(r => r.id === roleId)).length === 0 || myRoles.some(r => d.roleIdsThatCanBeUsedThisDecoration.includes(r.id)))
+					.filter(d => decorationPolicies.canUseRemoteIconDecorations || !isImportedAvatarDecoration(d))
 					.map(d => d.id);
 
-				if (ps.avatarDecorations.length > policies.avatarDecorationLimit) throw new ApiError(meta.errors.restrictedByRole);
+				if (ps.avatarDecorations.length > decorationPolicies.avatarDecorationLimit) throw new ApiError(meta.errors.restrictedByRole);
 
 				updates.avatarDecorations = ps.avatarDecorations.filter(d => decorationIds.includes(d.id)).map(d => ({
 					id: d.id,
@@ -471,6 +473,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					flipH: d.flipH ?? false,
 					offsetX: d.offsetX ?? 0,
 					offsetY: d.offsetY ?? 0,
+					showBehind: d.showBehind ?? false,
 				}));
 			}
 
@@ -526,7 +529,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			//#region emojis/tags
 
-			let emojis = [] as string[];
 			let tags = [] as string[];
 
 			const newName = updates.name === undefined ? user.name : updates.name;
@@ -542,32 +544,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				if (hasProhibitedWords) {
 					throw new ApiError(meta.errors.nameContainsProhibitedWords);
 				}
-
-				const tokens = mfm.parseSimple(newName);
-				emojis = emojis.concat(extractCustomEmojisFromMfm(tokens));
 			}
 
 			if (newDescription != null) {
-				const tokens = mfm.parse(newDescription);
-				emojis = emojis.concat(extractCustomEmojisFromMfm(tokens));
-				tags = extractHashtags(tokens).map(tag => normalizeForSearch(tag)).splice(0, 32);
+				tags = extractHashtags(mfm.parse(newDescription)).map(tag => normalizeForSearch(tag)).splice(0, 32);
 			}
 
-			for (const field of newFields) {
-				const nameTokens = mfm.parseSimple(field.name);
-				const valueTokens = mfm.parseSimple(field.value);
-				emojis = emojis.concat([
-					...extractCustomEmojisFromMfm(nameTokens),
-					...extractCustomEmojisFromMfm(valueTokens),
-				]);
-			}
-
-			if (newFollowedMessage != null) {
-				const tokens = mfm.parse(newFollowedMessage);
-				emojis = emojis.concat(extractCustomEmojisFromMfm(tokens));
-			}
-
-			updates.emojis = emojis;
+			// admin/update-user-name と同じ規則で集める
+			updates.emojis = collectProfileEmojis({ name: newName, description: newDescription, fields: newFields, followedMessage: newFollowedMessage });
 			updates.tags = tags;
 
 			// ハッシュタグ更新
@@ -633,7 +617,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				await this.userProfilesRepository.createQueryBuilder('profile').update()
 					.where('userId = :userId', { userId: user.id })
 					.set({
-						verifiedLinks: () => `array_append("verifiedLinks", :url)`,
+						verifiedLinks: () => 'array_append("verifiedLinks", :url)',
 					})
 					.setParameter('url', url)
 					.execute();

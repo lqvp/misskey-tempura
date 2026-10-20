@@ -41,17 +41,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 								<MkSwitch v-model="deeplIsPro">
 									<template #label><SearchLabel>Pro account</SearchLabel></template>
 								</MkSwitch>
-						<MkSwitch v-model="deeplFreeMode">
-						<template #label>{{ i18n.ts.deeplFreeMode }}</template>
-					</MkSwitch>
-					<MkInput v-if="deeplFreeMode" v-model="deeplFreeInstance" :placeholder="'example.com/translate'">
-						<template #prefix><i class="ph-globe-simple ph-bold ph-lg"></i></template>
-						<template #label>DeepLX-JS URL</template>
-						<template #caption>{{ i18n.ts.deeplFreeModeDescription }}</template>
-					</MkInput>
 							</SearchMarker>
 
-						<MkButton primary @click="save_deepl">Save</MkButton>
+							<MkButton primary @click="save_deepl">Save</MkButton>
 						</div>
 					</MkFolder>
 				</SearchMarker>
@@ -77,16 +69,12 @@ const meta = await misskeyApi('admin/meta');
 
 const deeplAuthKey = ref(meta.deeplAuthKey ?? '');
 const deeplIsPro = ref(meta.deeplIsPro);
-const deeplFreeMode = ref(meta.deeplFreeMode);
-const deeplFreeInstance = ref(meta.deeplFreeInstance ?? '');
 const googleAnalyticsMeasurementId = ref(meta.googleAnalyticsMeasurementId ?? '');
 
 function save_deepl() {
 	os.apiWithDialog('admin/update-meta', {
 		deeplAuthKey: deeplAuthKey.value,
 		deeplIsPro: deeplIsPro.value,
-		deeplFreeMode: deeplFreeMode.value,
-		deeplFreeInstance: deeplFreeInstance.value,
 	}).then(() => {
 		fetchInstance(true);
 	});

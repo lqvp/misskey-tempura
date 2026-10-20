@@ -84,3 +84,8 @@ vite.config.local-dev.ts.timestamp-*
 
 # Affinity
 *.af~lock~
+
+# opencode
+/.opencode
+/.tmp
+/docs

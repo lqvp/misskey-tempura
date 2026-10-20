@@ -317,7 +317,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<template #caption><SearchText>{{ i18n.ts._serverSettings.signToActivityPubGet_description }}</SearchText></template>
 								</MkSwitch>
 							</SearchMarker>
-
 							<SearchMarker :keywords="['proxy', 'remote', 'files']">
 								<MkSwitch v-model="federationForm.state.proxyRemoteFiles">
 									<template #label><SearchLabel>{{ i18n.ts._serverSettings.proxyRemoteFiles }}</SearchLabel><span v-if="federationForm.modifiedStates.proxyRemoteFiles" class="_modified">{{ i18n.ts.modified }}</span></template>

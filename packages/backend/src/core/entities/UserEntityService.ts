@@ -51,6 +51,7 @@ import type { CustomEmojiService } from '@/core/CustomEmojiService.js';
 import { AvatarDecorationService } from '@/core/AvatarDecorationService.js';
 import { ChatService } from '@/core/ChatService.js';
 import type { OnModuleInit } from '@nestjs/common';
+import type { CacheService } from '@/core/CacheService.js';
 import type { NoteEntityService } from './NoteEntityService.js';
 import type { PageEntityService } from './PageEntityService.js';
 import { toArray } from '@/misc/prelude/array.js';
@@ -99,6 +100,7 @@ export class UserEntityService implements OnModuleInit {
 	private idService: IdService;
 	private avatarDecorationService: AvatarDecorationService;
 	private chatService: ChatService;
+	private cacheService: CacheService;
 
 	constructor(
 		private moduleRef: ModuleRef,
@@ -161,6 +163,7 @@ export class UserEntityService implements OnModuleInit {
 		this.idService = this.moduleRef.get('IdService');
 		this.avatarDecorationService = this.moduleRef.get('AvatarDecorationService');
 		this.chatService = this.moduleRef.get('ChatService');
+		this.cacheService = this.moduleRef.get('CacheService');
 	}
 
 	//#region Validators
@@ -523,9 +526,9 @@ export class UserEntityService implements OnModuleInit {
 
 		const notificationsInfo = isMe && isDetailed ? await this.getNotificationsInfo(user.id) : null;
 
-		// const isAvatarDecorationMuted = meId && !isMe ? relation?.isAvatarDecorationMuted : false;
+		// タイムラインではノートの投稿者ごとに呼ばれるので、DB ではなくミュートしている相手の一覧のキャッシュを引く
 		const isAvatarDecorationMuted = meId && !isMe
-			? (relation?.isAvatarDecorationMuted ?? await this.avatarDecorationMutingsRepository.existsBy({ muterId: meId, muteeId: user.id }))
+			? (relation?.isAvatarDecorationMuted ?? (await this.cacheService.avatarDecorationMutingsCache.fetch(meId)).has(user.id))
 			: false;
 
 		// TODO: 例えば avatarUrl: true など間違った型を設定しても型エラーにならないのをどうにかする(ジェネリクス使わない方法で実装するしかなさそう？)

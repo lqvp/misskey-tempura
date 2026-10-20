@@ -234,14 +234,14 @@ export async function common(createVue: () => Promise<App<Element>>) {
 			}
 		});
 
-	//# Custom font
-	if (prefer.s.customFont) {
-		applyFont(prefer.s.customFont);
-	}
+		//# Custom font
+		if (prefer.s.customFont) {
+			applyFont(prefer.s.customFont);
+		}
 
-	watch(() => prefer.s.customFont ?? '', (font) => {
-		applyFont(font);
-	});
+		watch(() => prefer.s.customFont ?? '', (font) => {
+			applyFont(font);
+		});
 	}
 
 	watch(prefer.r.overridedDeviceKind, (kind) => {

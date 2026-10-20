@@ -21,8 +21,9 @@ import { WebAuthnService } from '@/core/WebAuthnService.js';
 import Logger from '@/logger.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import type { IdentifiableError } from '@/misc/identifiable-error.js';
+import { LoginRiskService } from '@/core/LoginRiskService.js';
 import { RateLimiterService } from './RateLimiterService.js';
-import { SigninService } from './SigninService.js';
+import { SigninService, sanitizeSigninHeaders } from './SigninService.js';
 import type { AuthenticationResponseJSON } from '@simplewebauthn/server';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
@@ -47,6 +48,7 @@ export class SigninWithPasskeyApiService {
 		private signinService: SigninService,
 		private webAuthnService: WebAuthnService,
 		private loggerService: LoggerService,
+		private loginRiskService: LoginRiskService,
 	) {
 		this.logger = this.loggerService.getLogger('PasskeyAuth');
 	}
@@ -57,6 +59,7 @@ export class SigninWithPasskeyApiService {
 			Body: {
 				credential?: AuthenticationResponseJSON;
 				context?: string;
+				deviceToken?: string;
 			};
 		}>,
 		reply: FastifyReply,
@@ -78,7 +81,7 @@ export class SigninWithPasskeyApiService {
 				id: this.idService.gen(),
 				userId: userId,
 				ip: request.ip,
-				headers: request.headers as any,
+				headers: sanitizeSigninHeaders(request.headers as any),
 				success: false,
 			});
 			return error(status ?? 500, failure ?? { id: '4e30e80c-e338-45a0-8c8f-44455efa3b76' });
@@ -171,7 +174,9 @@ export class SigninWithPasskeyApiService {
 			});
 		}
 
-		const signinResponse = this.signinService.signin(request, reply, user);
+		// パスキーで本人確認済みなので、stepUp でも通知だけにして学習もする
+		const ev = await this.loginRiskService.evaluate({ user, ip: request.ip, headers: request.headers, deviceToken: body.deviceToken });
+		const signinResponse = await this.signinService.signin(request, reply, user, { ev, learn: true });
 		return {
 			signinResponse: signinResponse,
 		};

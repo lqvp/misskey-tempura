@@ -100,11 +100,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkInput>
 				</SearchMarker>
 
-				<MkInput v-model="youBlockedImageUrl" type="url">
-					<template #prefix><i class="ti ti-link"></i></template>
-					<template #label>{{ i18n.ts.youBlocked }}</template>
-				</MkInput>
-
 				<SearchMarker :keywords="['theme', 'color']">
 					<MkColorInput v-model="themeColor">
 						<template #label><SearchLabel>{{ i18n.ts.themeColor }}</SearchLabel></template>
@@ -144,11 +139,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<template #label><SearchLabel>{{ i18n.ts._serverSettings.manifestJsonOverride }}</SearchLabel></template>
 					</MkTextarea>
 				</SearchMarker>
-
-				<MkTextarea v-model="customSplashText">
-					<template #label>{{ i18n.ts.customSplashText }}</template>
-					<template #caption>{{ i18n.ts.customSplashTextDescription }}</template>
-				</MkTextarea>
 			</div>
 		</SearchMarker>
 	</div>
@@ -199,8 +189,6 @@ const defaultDarkTheme = ref(meta.defaultDarkTheme);
 const serverErrorImageUrl = ref(meta.serverErrorImageUrl);
 const infoImageUrl = ref(meta.infoImageUrl);
 const notFoundImageUrl = ref(meta.notFoundImageUrl);
-const youBlockedImageUrl = ref(meta.youBlockedImageUrl);
-const customSplashText = ref(meta.customSplashText ? meta.customSplashText.join('\n') : '');
 const repositoryUrl = ref(meta.repositoryUrl);
 const feedbackUrl = ref(meta.feedbackUrl);
 const manifestJsonOverride = ref(meta.manifestJsonOverride === '' ? '{}' : JSON.stringify(JSON.parse(meta.manifestJsonOverride), null, '\t'));
@@ -222,12 +210,10 @@ function save() {
 		defaultDarkTheme: defaultDarkTheme.value === '' ? null : defaultDarkTheme.value,
 		infoImageUrl: infoImageUrl.value === '' ? null : infoImageUrl.value,
 		notFoundImageUrl: notFoundImageUrl.value === '' ? null : notFoundImageUrl.value,
-		youBlockedImageUrl: youBlockedImageUrl.value === '' ? null : youBlockedImageUrl.value,
 		serverErrorImageUrl: serverErrorImageUrl.value === '' ? null : serverErrorImageUrl.value,
 		repositoryUrl: repositoryUrl.value === '' ? null : repositoryUrl.value,
 		feedbackUrl: feedbackUrl.value === '' ? null : feedbackUrl.value,
 		manifestJsonOverride: manifestJsonOverride.value === '' ? '{}' : JSON.stringify(JSON5.parse(manifestJsonOverride.value)),
-		customSplashText: customSplashText.value === '' ? null : customSplashText.value.split('\n'),
 	}).then(() => {
 		fetchInstance(true);
 	});

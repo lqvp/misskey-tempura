@@ -38,6 +38,8 @@ export class MainChannel extends Channel {
 
 	@bindThis
 	private async onData(data: EventTypesToEventPayload<MainEventTypes>) {
+		// data は同じユーザーの他の接続とも共有しているので、書き換えずに送る内容を作る
+		let body: typeof data.body = data.body;
 		switch (data.type) {
 			case 'notification': {
 				// Ignore notifications from instances the user has muted
@@ -48,7 +50,7 @@ export class MainChannel extends Channel {
 					const note = await this.noteEntityService.pack(data.body.note.id, this.user, {
 						detail: true,
 					});
-					data.body.note = note;
+					body = { ...data.body, note };
 				}
 				break;
 			}
@@ -60,13 +62,13 @@ export class MainChannel extends Channel {
 					const note = await this.noteEntityService.pack(data.body.id, this.user, {
 						detail: true,
 					});
-					data.body = note;
+					body = note;
 				}
 				break;
 			}
 		}
 
-		this.send(data.type, data.body);
+		this.send(data.type, body);
 	}
 
 	@bindThis

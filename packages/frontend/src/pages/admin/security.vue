@@ -151,32 +151,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkFolder>
 				</SearchMarker>
 
-				<SearchMarker v-slot="slotProps" :keywords="['banned', 'email', 'domains', 'blacklist']">
-					<MkFolder :defaultOpen="slotProps.isParentOfTarget">
-						<template #label><SearchLabel>Email Domain Settings<span class="_beta">{{ i18n.ts.originalFeature }}</span></SearchLabel></template>
-						<template v-if="emailSettingsForm.savedState.emailWhitelist" #suffix>Enabled</template>
-				<template v-else #suffix>Disabled</template>
-				<template v-if="emailSettingsForm.modified.value" #footer>
-							<MkFormFooter :form="emailSettingsForm"/>
-						</template>
-
-						<div class="_gaps_m">
-					<MkSwitch v-model="emailSettingsForm.state.emailWhitelist">
-						<template #label>Enable Whitelist Mode</template>
-					</MkSwitch>
-
-							<SearchMarker>
-								<MkTextarea v-model="emailSettingsForm.state.bannedEmailDomains">
-									<template #label><SearchLabel>
-							<span v-if="emailSettingsForm.state.emailWhitelist">Whitelist Email Domains List</span>
-							<span v-else>Banned Email Domains List</span>
-						</SearchLabel></template>
-								</MkTextarea>
-							</SearchMarker>
-						</div>
-					</MkFolder>
-				</SearchMarker>
-
 				<SearchMarker v-slot="slotProps" :keywords="['log', 'ipAddress']">
 					<MkFolder :defaultOpen="slotProps.isParentOfTarget">
 						<template #label><SearchLabel>Log IP address</SearchLabel></template>
@@ -195,6 +169,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</div>
 					</MkFolder>
 				</SearchMarker>
+
 			</div>
 		</SearchMarker>
 	</div>
@@ -202,14 +177,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 import XBotProtection from './bot-protection.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkRadios from '@/components/MkRadios.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkRange from '@/components/MkRange.vue';
 import MkInput from '@/components/MkInput.vue';
-import MkTextarea from '@/components/MkTextarea.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
@@ -259,17 +233,6 @@ const ipLoggingForm = useForm({
 }, async (state) => {
 	await os.apiWithDialog('admin/update-meta', {
 		enableIpLogging: state.enableIpLogging,
-	});
-	fetchInstance(true);
-});
-
-const emailSettingsForm = useForm({
-	emailWhitelist: meta.emailWhitelist,
-	bannedEmailDomains: meta.bannedEmailDomains?.join('\n') || '',
-}, async (state) => {
-	await os.apiWithDialog('admin/update-meta', {
-		emailWhitelist: state.emailWhitelist,
-		bannedEmailDomains: state.bannedEmailDomains.split('\n'),
 	});
 	fetchInstance(true);
 });

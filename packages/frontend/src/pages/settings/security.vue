@@ -35,10 +35,24 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<i v-if="item.success" class="ti ti-check icon succ"></i>
 									<i v-else class="ti ti-circle-x icon fail"></i>
 									<code class="ip _monospace">{{ item.ip }}</code>
+									<span v-if="item.country" class="country" :title="i18n.ts._loginRisk.country">{{ item.country }}</span>
+									<span v-if="item.challenge != null" class="challenge" :class="item.challenge" :title="i18n.ts._loginRisk.challengeStatus">{{ challengeLabel(item.challenge) }}</span>
 									<MkTime :time="item.createdAt" class="time"/>
 								</header>
 							</div>
 						</div>
+					</template>
+				</MkPagination>
+			</FormSection>
+		</SearchMarker>
+
+		<SearchMarker v-if="footprintsAvailable" :keywords="['signin', 'login', 'suspicious', 'risk']">
+			<FormSection>
+				<template #label><SearchLabel>{{ i18n.ts._loginRisk.footprints }}</SearchLabel></template>
+				<template #description>{{ i18n.ts._loginRisk.footprintsDescription }}</template>
+				<MkPagination :paginator="footprintsPaginator" withControl :forceDisableInfiniteScroll="true">
+					<template #default="{items}">
+						<MkSigninRiskItem v-for="item in items" :key="item.id" :signin="item"/>
 					</template>
 				</MkPagination>
 			</FormSection>
@@ -57,12 +71,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, markRaw } from 'vue';
+import { computed, markRaw, ref } from 'vue';
+import type * as Misskey from 'misskey-js';
 import X2fa from './2fa.vue';
 import FormSection from '@/components/form/section.vue';
 import FormSlot from '@/components/form/slot.vue';
 import MkButton from '@/components/MkButton.vue';
 import MkPagination from '@/components/MkPagination.vue';
+import MkSigninRiskItem from '@/components/MkSigninRiskItem.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
@@ -73,6 +89,27 @@ import { Paginator } from '@/utility/paginator.js';
 const paginator = markRaw(new Paginator('i/signin-history', {
 	limit: 5,
 }));
+
+// サーバーが本人にも見せる設定のときだけ表示する。見せない設定なら NOT_AVAILABLE が返る。
+// それ以外のエラーは隠さず、一覧の側でエラーを表示させる
+const LOGIN_RISK_FOOTPRINTS_NOT_AVAILABLE = 'c614de8d-5423-450b-9cea-e88da2a7e962';
+const footprintsAvailable = ref(false);
+const footprintsPaginator = markRaw(new Paginator('i/login-risk-footprints', {
+	limit: 5,
+}));
+misskeyApi('i/login-risk-footprints', { limit: 1 }).then(() => {
+	footprintsAvailable.value = true;
+}, (err) => {
+	footprintsAvailable.value = err?.id !== LOGIN_RISK_FOOTPRINTS_NOT_AVAILABLE;
+});
+
+function challengeLabel(challenge: NonNullable<Misskey.entities.Signin['challenge']>): string {
+	switch (challenge) {
+		case 'emailCode': return i18n.ts._loginRisk.challengeStatusEmailCode;
+		case 'passed': return i18n.ts._loginRisk.challengeStatusPassed;
+		case 'failed': return i18n.ts._loginRisk.challengeStatusFailed;
+	}
+}
 
 async function change() {
 	const { canceled: canceled2, result: newPassword } = await os.inputText({
@@ -169,6 +206,26 @@ definePage(() => ({
 			overflow: hidden;
 			text-overflow: ellipsis;
 			margin-right: 12px;
+		}
+
+		> .country {
+			margin-right: 12px;
+			opacity: 0.7;
+		}
+
+		> .challenge {
+			margin-right: 12px;
+			padding: 2px 6px;
+			border-radius: 4px;
+			font-size: 85%;
+			white-space: nowrap;
+			background: var(--MI_THEME-infoBg);
+			color: var(--MI_THEME-infoFg);
+
+			&.failed {
+				background: var(--MI_THEME-infoWarnBg);
+				color: var(--MI_THEME-infoWarnFg);
+			}
 		}
 
 		> .time {

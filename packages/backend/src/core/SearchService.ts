@@ -62,7 +62,7 @@ function compileValue(value: V): string {
 	if (typeof value === 'string') {
 		// Meilisearch のリテラルではバックスラッシュがエスケープ文字のため、
 		// シングルクォートより先にバックスラッシュをエスケープする
-		return `'${value.replace(/\\/g, '\\\\').replaceAll("'", "\\'")}'`;
+		return `'${value.replace(/\\/g, '\\\\').replaceAll('\'', '\\\'')}'`;
 	} else if (typeof value === 'number') {
 		return value.toString();
 	} else if (typeof value === 'boolean') {
