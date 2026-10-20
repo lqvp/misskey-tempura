@@ -209,8 +209,8 @@ export class ActivityPubAccessControlService {
 		const restrictions = await this.checkInstanceRestrictions(remoteHost);
 		this.logger.debug(`Instance restrictions: ${JSON.stringify(restrictions)}`);
 
-		// isBlocked, isSuspended, isQuarantined は常に拒否。
-		const shouldDeny = restrictions.isBlocked || restrictions.isSuspended || restrictions.isQuarantined;
+		// isBlocked, isSuspended は常に拒否。isQuarantined は allowLimitedHosts が false のときだけ拒否する
+		const shouldDeny = restrictions.isBlocked || restrictions.isSuspended || (restrictions.isQuarantined && !allowLimitedHosts);
 		this.logger.debug(`Should deny access: ${shouldDeny}`);
 
 		if (shouldDeny) {
