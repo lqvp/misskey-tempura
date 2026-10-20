@@ -25,7 +25,6 @@ import { emojiPicker } from '@/utility/emoji-picker.js';
 import { mainRouter } from '@/router.js';
 import { makeHotkey } from '@/utility/hotkey.js';
 import { addCustomEmoji, removeCustomEmojis, updateCustomEmojis } from '@/custom-emojis.js';
-import { initEarthquakeWarning } from '@/utility/tempura-script/earthquake-warning.js';
 import { prefer } from '@/preferences.js';
 import { updateCurrentAccountPartial } from '@/accounts.js';
 import { unisonReload } from '@/utility/unison-reload.js';
@@ -432,5 +431,13 @@ export async function mainBoot() {
 	}
 
 	initializeSw();
-	initEarthquakeWarning();
+
+	// 地震情報警告は機能が有効な場合のみ必要なので、遅延ロードして初期バンドルのサイズを削減する
+	if (prefer.s.enableEarthquakeWarning) {
+		void import('@/utility/tempura-script/earthquake-warning.js')
+			.then(({ initEarthquakeWarning }) => initEarthquakeWarning())
+			.catch((error: unknown) => {
+				console.error('Failed to load the earthquake warning module', error);
+			});
+	}
 }

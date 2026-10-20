@@ -189,6 +189,14 @@
 - APフェッチのリトライ・キャッシュ改善
 - フロントエンドバンドルのチャンク分割改善
 
+# 地震情報警告機能の分割 (フォーク独自)
+- `utility/tempura-script/earthquake-warning.ts` (778行) を 8 モジュールへ分割
+  - 強度判定 (`intensity.ts`) / スロットリング (`throttle.ts`) / 地域フィルタ (`region-filter.ts`)
+  - メッセージ整形 (`alert-format.ts`) / TTS (`tts.ts`) / ログ (`logs.ts`)
+  - WebSocket クライアント (`ws-client.ts`) / エントリーポイント (`index.ts`)
+  - 元ファイルは各モジュールを再エクスポートする barrel として公開 API は変更なし
+- 地震情報警告モジュールは設定が有効な場合のみ読み込むように遅延ロード化
+- フロントエンド: 地震情報 (強度判定 / スロットリング / 地域フィルタ / メッセージ整形) のユニットテストを追加
 # 管理者設定の統合 (フォーク独自)
 - フォーク独自の管理設定は `/admin/tempura-admin` に集約し、上流の admin ページから独立させる
   - Fetching: `/admin/tempura-admin` (セクションコンポーネントに分割済み)
