@@ -292,7 +292,7 @@ describe('ActivityPubAccessControlService', () => {
 		test('鍵が合わなければアカウントを取り直して一度だけ検証し直す', async () => {
 			mockApDbResolverService.getAuthUserFromKeyId.mockResolvedValue(signerOf('allowed.example.com', 'OLD'));
 			mockUserPublickeysRepository.findOneBy.mockResolvedValue({ keyPem: 'NEW' });
-			vi.mocked(httpSignature.verifySignature).mockImplementation((_sig: unknown, pem: string) => pem === 'NEW');
+			vi.mocked(httpSignature.verifySignature).mockImplementation((_sig, pem) => pem === 'NEW');
 
 			expect(await service.checkNoteAccess(includeNote(), signedRequest('https://allowed.example.com/actor#main-key'))).toBe(true);
 			expect(mockApPersonService.updatePerson).toHaveBeenCalledTimes(1);
