@@ -1235,15 +1235,52 @@ describe('Endpoints', () => {
 			assert.strictEqual(res.status, 400);
 		});
 
-		test('変更した名前がすぐ users/show に反映される', async () => {
-			// 先に一度取得してキャッシュに載せる
-			await api('users/show', { userId: target.id }, alice);
+		test('100 文字ちょうどの名前は受け付ける', async () => {
+			const res = await api('admin/update-user-name', { userId: target.id, name: 'a'.repeat(100) }, moderator);
 
-			const res = await api('admin/update-user-name', { userId: target.id, name: 'renamed by moderator' }, moderator);
+			assert.strictEqual(res.status, 204);
+		});
+
+		test('存在しないユーザーは NO_SUCH_USER', async () => {
+			const res = await api('admin/update-user-name', { userId: '000000000000000000000000', name: 'x' }, moderator);
+
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual((res.body as any).error.code, 'NO_SUCH_USER');
+		});
+
+		test('モデレーターでなければ使えない', async () => {
+			const res = await api('admin/update-user-name', { userId: target.id, name: 'x' }, carol);
+
+			assert.strictEqual(res.status, 403);
+		});
+
+		test('変更した名前と絵文字がキャッシュ越しにもすぐ反映される', async () => {
+			// 本人の i は認証時にキャッシュしたユーザー情報を返すので、先に一度呼んでキャッシュに載せる
+			await api('i', {}, target);
+
+			const res = await api('admin/update-user-name', { userId: target.id, name: '  renamed :blobcat:  ' }, moderator);
 			assert.strictEqual(res.status, 204);
 
-			const shown = await api('users/show', { userId: target.id }, alice);
-			assert.strictEqual(shown.body.name, 'renamed by moderator');
+			const me = await api('i', {}, target);
+			assert.strictEqual(me.body.name, 'renamed :blobcat:');
+			const connection = await initTestDb(true);
+			const saved = await connection.getRepository(MiUser).findOneByOrFail({ id: target.id });
+			assert.deepStrictEqual(saved.emojis, ['blobcat']);
+			connection.destroy();
+		});
+
+		test('null を送ると名前を消す', async () => {
+			const res = await api('admin/update-user-name', { userId: target.id, name: null }, moderator);
+			assert.strictEqual(res.status, 204);
+
+			const me = await api('i', {}, target);
+			assert.strictEqual(me.body.name, null);
+		});
+
+		test('name を省略するとエラーになる (うっかり消さないように)', async () => {
+			const res = await api('admin/update-user-name', { userId: target.id } as any, moderator);
+
+			assert.strictEqual(res.status, 400);
 		});
 	});
 

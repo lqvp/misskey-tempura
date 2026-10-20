@@ -4,13 +4,17 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { UsersRepository } from '@/models/_.js';
+import type { UserProfilesRepository, UsersRepository } from '@/models/_.js';
 import { nameSchema } from '@/models/User.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { AccountUpdateService } from '@/core/AccountUpdateService.js';
+import { UserEntityService } from '@/core/entities/UserEntityService.js';
+import { LoggerService } from '@/core/LoggerService.js';
+import { collectProfileEmojis } from '@/misc/collect-profile-emojis.js';
+import type Logger from '@/logger.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -33,22 +37,29 @@ export const paramDef = {
 	type: 'object',
 	properties: {
 		userId: { type: 'string', format: 'misskey:id' },
-		// i/update と同じ上限。省略すると名前を消す
+		// i/update と同じ上限。名前を消すときは null を明示する (省略で消えないように必須にしている)
 		name: { ...nameSchema, nullable: true },
 	},
-	required: ['userId'],
+	required: ['userId', 'name'],
 } as const;
 
 // eslint-disable-next-line import/no-default-export
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> {
+	private logger: Logger;
+
 	constructor(
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
 
+		@Inject(DI.userProfilesRepository)
+		private userProfilesRepository: UserProfilesRepository,
+
 		private moderationLogService: ModerationLogService,
 		private globalEventService: GlobalEventService,
 		private accountUpdateService: AccountUpdateService,
+		private userEntityService: UserEntityService,
+		private loggerService: LoggerService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const user = await this.usersRepository.findOneBy({ id: ps.userId });
@@ -57,14 +68,30 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				throw new ApiError(meta.errors.noSuchUser);
 			}
 
-			const name = ps.name ?? null;
-			await this.usersRepository.update(user.id, { name });
+			// i/update と同じく前後の空白を除き、空なら名前を消す
+			const trimmed = ps.name?.trim() ?? '';
+			const name = trimmed === '' ? null : trimmed;
+			if (name === user.name) return;
 
-			// キャッシュを更新し、ローカルユーザーならフォロワーのサーバーにも Update を配送する
 			if (user.host == null) {
+				// 名前に含まれるカスタム絵文字も含めて users.emojis を計算し直す
+				const profile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });
+				const emojis = collectProfileEmojis({ name, description: profile.description, fields: profile.fields, followedMessage: profile.followedMessage });
+				await this.usersRepository.update(user.id, { name, emojis });
+
+				// キャッシュを更新し、本人の画面とフォロワーのサーバーにも知らせる
 				this.globalEventService.publishInternalEvent('localUserUpdated', { id: user.id });
-				this.accountUpdateService.publishToFollowers(user.id);
+				const updatedUser = await this.usersRepository.findOneByOrFail({ id: user.id });
+				this.globalEventService.publishMainStream(user.id, 'meUpdated', await this.userEntityService.pack(updatedUser, updatedUser, {
+					schema: 'MeDetailed',
+					includeSecrets: true,
+				}));
+				this.accountUpdateService.publishToFollowers(user.id).catch(err => {
+					this.logger.warn(`Failed to deliver the name change of ${user.id}: ${err}`);
+				});
 			} else {
+				// リモートユーザーの絵文字は相手のサーバーのタグから決まるので触らない
+				await this.usersRepository.update(user.id, { name });
 				this.globalEventService.publishInternalEvent('remoteUserUpdated', { id: user.id });
 			}
 
@@ -76,5 +103,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				after: name,
 			});
 		});
+		this.logger = this.loggerService.getLogger('admin-update-user-name');
 	}
 }
