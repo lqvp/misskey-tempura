@@ -6,10 +6,15 @@
 import { Inject, Injectable } from '@nestjs/common';
 import httpSignature from '@peertube/http-signature';
 import { DI } from '@/di-symbols.js';
-import type { InstancesRepository, MiMeta } from '@/models/_.js';
+import type { InstancesRepository, MiMeta, UserPublickeysRepository } from '@/models/_.js';
 import type { Config } from '@/config.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import { ApDbResolverService } from '@/core/activitypub/ApDbResolverService.js';
+import { ApResolverService } from '@/core/activitypub/ApResolverService.js';
+import { ApPersonService } from '@/core/activitypub/models/ApPersonService.js';
+import { MemoryKVCache } from '@/misc/cache.js';
+import type { MiRemoteUser } from '@/models/User.js';
+import type { MiUserPublickey } from '@/models/UserPublickey.js';
 import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
 import { LoggerService } from '@/core/LoggerService.js';
@@ -17,6 +22,7 @@ import type { MiNote } from '@/models/Note.js';
 import type { FastifyRequest, FastifyReply } from 'fastify';
 
 type ParsedSignature = ReturnType<typeof httpSignature.parseRequest>;
+type Signer = { user: MiRemoteUser; key: MiUserPublickey | null };
 
 type Requester = {
 	/** 署名の keyId か User-Agent から読み取った相手のホスト。自己申告なので拒否の判定にしか使わない */
@@ -54,6 +60,13 @@ export class ActivityPubAccessControlService {
 	private requesterCache = new WeakMap<FastifyRequest, Requester>();
 	private verifiedHostCache = new WeakMap<FastifyRequest, Promise<string | null>>();
 
+	// 未認証の GET から外向きの取得や DB への登録を何度も起こされないよう、
+	// 取得に失敗した keyId を覚えておき、同じ keyId への同時取得は 1 回にまとめる
+	private failedKeyIds = new MemoryKVCache<true>(1000 * 60 * 10, 10000);
+	private resolvingSigners = new Map<string, Promise<Signer | null>>();
+	// 鍵の更新に追従するための取り直しは、同じ keyId につき 10 分に 1 回まで
+	private refreshedKeyIds = new MemoryKVCache<true>(1000 * 60 * 10, 10000);
+
 	constructor(
 		@Inject(DI.config)
 		private config: Config,
@@ -64,8 +77,13 @@ export class ActivityPubAccessControlService {
 		@Inject(DI.instancesRepository)
 		private instancesRepository: InstancesRepository,
 
+		@Inject(DI.userPublickeysRepository)
+		private userPublickeysRepository: UserPublickeysRepository,
+
 		private utilityService: UtilityService,
 		private apDbResolverService: ApDbResolverService,
+		private apResolverService: ApResolverService,
+		private apPersonService: ApPersonService,
 		private loggerService: LoggerService,
 	) {
 		this.logger = this.loggerService.getLogger('ap-access-control');
@@ -75,35 +93,32 @@ export class ActivityPubAccessControlService {
 	public async checkNoteAccess(note: MiNote, request: FastifyRequest): Promise<boolean> {
 		const deliveryTargets = note.deliveryTargets;
 		const hasDeliveryTargets = deliveryTargets != null && Array.isArray(deliveryTargets.hosts);
+		const targetHosts = hasDeliveryTargets ? deliveryTargets.hosts.map(h => this.normalizeHost(h)) : [];
 
-		// include リストは「指定したサーバーにだけ見せる」ので、署名を検証できた相手だけ通す
-		if (hasDeliveryTargets && deliveryTargets.mode === 'include') {
-			const verifiedHost = await this.getVerifiedHost(request);
-			if (verifiedHost == null || !deliveryTargets.hosts.includes(verifiedHost)) {
-				this.logger.info(`Access to note ${note.id} denied for ${verifiedHost ?? 'unverified requester'} (not in include list)`);
+		// 安い判定 (自己申告のホストでの拒否) を先にする
+		const remoteHost = this.getRequester(request).claimedHost;
+		if (remoteHost != null) {
+			const restrictions = await this.checkInstanceRestrictions(remoteHost);
+			if (restrictions.isBlocked || restrictions.isSuspended) {
+				this.logger.info(`Access to note ${note.id} denied for ${remoteHost}: ${restrictions.reason}`);
+				return false;
+			}
+
+			if (hasDeliveryTargets && deliveryTargets.mode !== 'include' && targetHosts.includes(remoteHost)) {
+				this.logger.info(`Access to note ${note.id} denied for ${remoteHost} (in exclude list)`);
 				return false;
 			}
 		}
 
-		const remoteHost = this.getRequester(request).claimedHost;
-		if (remoteHost == null) {
-			return true;
-		}
-
-		const restrictions = await this.checkInstanceRestrictions(remoteHost);
-		if (restrictions.isBlocked || restrictions.isSuspended) {
-			this.logger.info(`Access to note ${note.id} denied for ${remoteHost}: ${restrictions.reason}`);
-			return false;
-		}
-
-		if (restrictions.isQuarantined && !['public', 'home'].includes(note.visibility)) {
-			this.logger.info(`Access to note ${note.id} denied for ${remoteHost}: quarantined and not public`);
-			return false;
-		}
-
-		if (hasDeliveryTargets && deliveryTargets.mode !== 'include' && deliveryTargets.hosts.includes(remoteHost)) {
-			this.logger.info(`Access to note ${note.id} denied for ${remoteHost} (in exclude list)`);
-			return false;
+		// include リストは「指定したサーバーにだけ見せる」ので、署名を検証できた相手だけ通す。
+		// 鍵を知らない相手のアカウントを取りに行くのは、名乗ったホストがリストにある場合だけ
+		if (hasDeliveryTargets && deliveryTargets.mode === 'include') {
+			const canFetchSigner = remoteHost != null && targetHosts.includes(remoteHost);
+			const verifiedHost = await this.getVerifiedHost(request, canFetchSigner);
+			if (verifiedHost == null || !targetHosts.includes(verifiedHost)) {
+				this.logger.info(`Access to note ${note.id} denied for ${verifiedHost ?? 'unverified requester'} (not in include list)`);
+				return false;
+			}
 		}
 
 		return true;
@@ -134,7 +149,7 @@ export class ActivityPubAccessControlService {
 		try {
 			const signature = httpSignature.parseRequest(request.raw, { 'headers': ['(request-target)', 'host', 'date'], authorizationHeaderName: 'signature' });
 			// 他のサーバー宛ての署名を使い回されないように、host が署名に含まれていて自分宛てであることを確かめる
-			if (!signature.params.headers.includes('host') || request.headers.host !== this.config.host) {
+			if (!signature.params.headers.includes('host') || !this.isOwnHostHeader(request.headers.host)) {
 				return null;
 			}
 			return signature;
@@ -142,6 +157,21 @@ export class ActivityPubAccessControlService {
 			this.logger.debug(`Failed to parse HTTP signature: ${err}`);
 			return null;
 		}
+	}
+
+	/**
+	 * Host ヘッダーが自分宛てか。大文字小文字と https の既定ポートの有無は区別しない
+	 */
+	@bindThis
+	private isOwnHostHeader(hostHeader: string | undefined): boolean {
+		if (hostHeader == null) return false;
+		const normalized = hostHeader.trim().toLowerCase().replace(/:443$/, '');
+		return normalized === this.config.host.toLowerCase();
+	}
+
+	@bindThis
+	private normalizeHost(host: string): string {
+		return this.utilityService.toPuny(host.trim().toLowerCase());
 	}
 
 	@bindThis
@@ -164,8 +194,8 @@ export class ActivityPubAccessControlService {
 		const signature = this.parseSignature(request);
 		let claimedHost = signature ? this.hostFromKeyId(signature.keyId) : this.extractHostFromUserAgent(request);
 
-		// 自分自身からのリクエストは除外
-		if (claimedHost != null && claimedHost === this.utilityService.toPuny(this.config.host)) {
+		// 自分自身からのリクエストは除外 (keyId や UA から読んだホストにはポートが含まれないので hostname と比べる)
+		if (claimedHost != null && claimedHost === this.utilityService.toPuny(this.config.hostname)) {
 			claimedHost = null;
 		}
 
@@ -200,45 +230,109 @@ export class ActivityPubAccessControlService {
 
 	/**
 	 * HTTP Signature を検証し、検証できた相手のホストを返す。検証できなければ null。
-	 * 鍵を知らない相手はアカウントを取得して鍵を得るので、本当に検証が必要なときだけ呼ぶこと
+	 * 例外は投げない (検証できなかったものとして扱う)
+	 * @param canFetchSigner 鍵を知らない相手のアカウントを取りに行ってよいか
 	 */
 	@bindThis
-	private getVerifiedHost(request: FastifyRequest): Promise<string | null> {
+	private getVerifiedHost(request: FastifyRequest, canFetchSigner: boolean): Promise<string | null> {
 		const cached = this.verifiedHostCache.get(request);
 		if (cached) return cached;
 
-		const promise = this.verifyRequester(request);
+		const promise = this.verifyRequester(request, canFetchSigner).catch(err => {
+			this.logger.warn(`Failed to verify HTTP signature: ${err}`);
+			return null;
+		});
 		this.verifiedHostCache.set(request, promise);
 		return promise;
 	}
 
 	@bindThis
-	private async verifyRequester(request: FastifyRequest): Promise<string | null> {
+	private async verifyRequester(request: FastifyRequest, canFetchSigner: boolean): Promise<string | null> {
 		const { signature, claimedHost } = this.getRequester(request);
 		if (signature == null || claimedHost == null) return null;
 
 		// ブロックしているサーバーのアカウントは取りに行かない
 		if (!this.utilityService.isFederationAllowedHost(claimedHost)) return null;
 
-		let authUser: Awaited<ReturnType<ApDbResolverService['getAuthUserFromApId']>> = await this.apDbResolverService.getAuthUserFromKeyId(signature.keyId);
-		if (authUser == null) {
-			try {
-				// keyId は通常 "<actor>#main-key" の形
-				authUser = await this.apDbResolverService.getAuthUserFromApId(signature.keyId.replace(/#.*$/, ''));
-			} catch (err) {
-				this.logger.debug(`Failed to resolve signer ${signature.keyId}: ${err}`);
-				return null;
-			}
+		let signer: Signer | null = await this.apDbResolverService.getAuthUserFromKeyId(signature.keyId);
+		if (signer == null) {
+			if (!canFetchSigner) return null;
+			signer = await this.resolveSigner(signature.keyId);
+		}
+		if (signer?.key == null) return null;
+
+		let verified = httpSignature.verifySignature(signature, signer.key.keyPem);
+		if (!verified) {
+			// 相手が鍵を作り直した場合に備えて、アカウントを取り直してから一度だけ検証し直す
+			const refreshedKey = canFetchSigner ? await this.refreshSignerKey(signature.keyId, signer.user) : null;
+			if (refreshedKey == null) return null;
+			signer = { user: signer.user, key: refreshedKey };
+			verified = httpSignature.verifySignature(signature, refreshedKey.keyPem);
+			if (!verified) return null;
 		}
 
-		if (authUser?.key == null) return null;
-		if (!httpSignature.verifySignature(signature, authUser.key.keyPem)) return null;
-
-		const host = authUser.user.host != null ? this.utilityService.toPuny(authUser.user.host) : null;
+		const host = signer.user.host != null ? this.normalizeHost(signer.user.host) : null;
 		// 署名者のホストと keyId のホストが食い違う場合は信用しない
 		if (host == null || host !== claimedHost) return null;
 
 		return host;
+	}
+
+	/**
+	 * 鍵を知らない署名者のアカウントを取得する。失敗した keyId は一定時間取りに行かず、同時の取得は 1 回にまとめる
+	 */
+	@bindThis
+	private resolveSigner(keyId: string): Promise<Signer | null> {
+		if (this.failedKeyIds.get(keyId)) return Promise.resolve(null);
+
+		const inflight = this.resolvingSigners.get(keyId);
+		if (inflight) return inflight;
+
+		const promise = (async (): Promise<Signer | null> => {
+			try {
+				const signer = await this.apDbResolverService.getAuthUserFromApId(await this.actorUriFromKeyId(keyId));
+				if (signer?.key == null) {
+					this.failedKeyIds.set(keyId, true);
+					return null;
+				}
+				return signer;
+			} catch (err) {
+				this.logger.debug(`Failed to resolve signer ${keyId}: ${err}`);
+				this.failedKeyIds.set(keyId, true);
+				return null;
+			} finally {
+				this.resolvingSigners.delete(keyId);
+			}
+		})();
+		this.resolvingSigners.set(keyId, promise);
+		return promise;
+	}
+
+	/**
+	 * keyId からアカウントの URI を得る。多くの実装は "<actor>#main-key" だが、
+	 * GoToSocial などは "<actor>/main-key" のように fragment を使わないので、その場合は鍵の文書の owner を見る
+	 */
+	@bindThis
+	private async actorUriFromKeyId(keyId: string): Promise<string> {
+		if (keyId.includes('#')) return keyId.replace(/#.*$/, '');
+
+		const keyObject = await (await this.apResolverService.createResolver()).resolve(keyId) as { id?: unknown; owner?: unknown };
+		if (typeof keyObject.owner === 'string') return keyObject.owner;
+		if (typeof keyObject.id === 'string') return keyObject.id;
+		throw new Error(`cannot find the owner of ${keyId}`);
+	}
+
+	/**
+	 * 署名者のアカウントを取り直して最新の鍵を返す。同じ keyId につき一定時間に 1 回まで
+	 */
+	@bindThis
+	private async refreshSignerKey(keyId: string, user: MiRemoteUser): Promise<MiUserPublickey | null> {
+		if (this.refreshedKeyIds.get(keyId) || user.uri == null) return null;
+		this.refreshedKeyIds.set(keyId, true);
+
+		await this.apPersonService.updatePerson(user.uri);
+		// ApDbResolverService は鍵をメモリにキャッシュしているので、DB から最新の値を読む
+		return await this.userPublickeysRepository.findOneBy({ userId: user.id });
 	}
 
 	/**
@@ -285,7 +379,9 @@ export class ActivityPubAccessControlService {
 		let remoteHost = this.getRequester(request).claimedHost;
 
 		if (this.meta.requireSignedApFetch && requireSignature) {
-			const verifiedHost = await this.getVerifiedHost(request);
+			// 鍵を知らない相手のアカウントは、やり取りしたことがあるサーバーのものだけ取りに行く
+			const canFetchSigner = remoteHost != null && await this.instancesRepository.existsBy({ host: remoteHost });
+			const verifiedHost = await this.getVerifiedHost(request, canFetchSigner);
 			if (verifiedHost == null) {
 				this.logger.info('ActivityPub access denied: signature required', { path: request.url });
 				return { blocked: true, reason: 'signatureRequired' };
@@ -334,7 +430,12 @@ export class ActivityPubAccessControlService {
 	public async applyAccessControl(request: FastifyRequest, reply: FastifyReply, allowLimitedHosts = false, requireSignature = true): Promise<boolean> {
 		const accessControl = await this.checkAccess(request, allowLimitedHosts, requireSignature);
 		if (accessControl) {
-			reply.code(accessControl.reason === 'signatureRequired' ? 401 : 404);
+			if (accessControl.reason === 'signatureRequired') {
+				reply.code(401);
+				reply.header('WWW-Authenticate', `Signature realm="${this.config.host}",headers="(request-target) host date"`);
+			} else {
+				reply.code(404);
+			}
 			reply.header('Content-Type', 'text/plain; charset=utf-8');
 			reply.send(`Access denied: ${accessControl.reason}`);
 			return true;

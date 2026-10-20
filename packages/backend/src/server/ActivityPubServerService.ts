@@ -423,7 +423,8 @@ export class ActivityPubServerService {
 
 		const pinnedNotes = (await Promise.all(pinings.map(pining =>
 			this.notesRepository.findOneByOrFail({ id: pining.noteId }))))
-			.filter(note => !note.localOnly && ['public', 'home'].includes(note.visibility));
+			// 配送先を指定したノートは相手ごとに見せるかが変わるので、誰でも取れる featured には載せない
+			.filter(note => !note.localOnly && ['public', 'home'].includes(note.visibility) && note.deliveryTargets?.hosts == null);
 
 		const renderedNotes = await Promise.all(pinnedNotes.map(note => this.apRendererService.renderNote(note)));
 
@@ -505,6 +506,8 @@ export class ActivityPubServerService {
 
 			const noteFilter = (note: MiNote) => {
 				if (note.localOnly) return false;
+				// 配送先を指定したノートは相手ごとに見せるかが変わるので載せない (getUserNotesFromDb と同じ)
+				if (note.deliveryTargets?.hosts != null) return false;
 				return (visibilitiesToShow as (MiNote['visibility'])[]).includes(note.visibility);
 			};
 
@@ -595,6 +598,8 @@ export class ActivityPubServerService {
 
 		return await qb
 			.andWhere('note.localOnly = FALSE')
+			// 配送先を指定したノートは相手ごとに見せるかが変わるので、誰でも取れる outbox には載せない
+			.andWhere('(note.deliveryTargets IS NULL OR NOT jsonb_exists(note.deliveryTargets, \'hosts\'))')
 			.limit(ps.limit)
 			.getMany();
 	}
@@ -677,6 +682,17 @@ export class ActivityPubServerService {
 		// raw-body shares `request.raw` with the body parser, so a string parser here would switch that stream
 		// to string mode and break raw-body. Keep only the `parseAs: 'buffer'` parsers below. The rest get 415 error.
 		fastify.removeAllContentTypeParsers();
+		// ブロックや配送先の指定で、同じ URL でも相手によって返す内容が変わる。
+		// 共有キャッシュ (CDN やリバースプロキシ) が別の相手に使い回さないよう、private にして署名ごとに分ける
+		fastify.addHook('onSend', async (_request, reply, payload) => {
+			const cacheControl = reply.getHeader('Cache-Control');
+			if (typeof cacheControl === 'string' && /^\s*public\b/.test(cacheControl)) {
+				reply.header('Cache-Control', cacheControl.replace(/^\s*public\b/, 'private'));
+			}
+			vary(reply.raw, 'Signature');
+			return payload;
+		});
+
 		fastify.addContentTypeParser('application/activity+json', { parseAs: 'buffer' }, almostDefaultJsonParser);
 		fastify.addContentTypeParser('application/ld+json', { parseAs: 'buffer' }, almostDefaultJsonParser);
 
@@ -758,6 +774,12 @@ export class ActivityPubServerService {
 			});
 
 			if (note == null) {
+				reply.code(404);
+				return;
+			}
+
+			// /notes/:note と同じく、配送先の指定に従う
+			if (!await this.activityPubAccessControlService.checkNoteAccess(note, request)) {
 				reply.code(404);
 				return;
 			}

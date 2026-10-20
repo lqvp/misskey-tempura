@@ -11,6 +11,8 @@ import { DI } from '@/di-symbols.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import { ApDbResolverService } from '@/core/activitypub/ApDbResolverService.js';
+import { ApResolverService } from '@/core/activitypub/ApResolverService.js';
+import { ApPersonService } from '@/core/activitypub/models/ApPersonService.js';
 import type { MiNote } from '@/models/Note.js';
 import type { FastifyRequest } from 'fastify';
 
@@ -59,6 +61,9 @@ describe('ActivityPubAccessControlService', () => {
 	let mockUtilityService: any;
 	let mockApDbResolverService: any;
 	let mockMeta: any;
+	let mockResolver: any;
+	let mockApPersonService: any;
+	let mockUserPublickeysRepository: any;
 
 	beforeEach(async () => {
 		vi.mocked(httpSignature.parseRequest).mockReset();
@@ -66,6 +71,7 @@ describe('ActivityPubAccessControlService', () => {
 
 		mockInstancesRepository = {
 			findOneBy: vi.fn(() => Promise.resolve(null)),
+			existsBy: vi.fn(() => Promise.resolve(true)),
 		};
 
 		mockUtilityService = {
@@ -84,10 +90,17 @@ describe('ActivityPubAccessControlService', () => {
 			requireSignedApFetch: false,
 		};
 
+		mockResolver = { resolve: vi.fn() };
+		mockApPersonService = { updatePerson: vi.fn(() => Promise.resolve()) };
+		mockUserPublickeysRepository = { findOneBy: vi.fn(() => Promise.resolve(null)) };
+
 		const module: TestingModule = await Test.createTestingModule({
 			providers: [
 				ActivityPubAccessControlService,
-				{ provide: DI.config, useValue: { host: 'test.example.com' } },
+				{ provide: DI.config, useValue: { host: 'test.example.com', hostname: 'test.example.com' } },
+				{ provide: DI.userPublickeysRepository, useValue: mockUserPublickeysRepository },
+				{ provide: ApResolverService, useValue: { createResolver: vi.fn(async () => mockResolver) } },
+				{ provide: ApPersonService, useValue: mockApPersonService },
 				{ provide: DI.meta, useValue: mockMeta },
 				{ provide: DI.instancesRepository, useValue: mockInstancesRepository },
 				{ provide: UtilityService, useValue: mockUtilityService },
@@ -104,7 +117,7 @@ describe('ActivityPubAccessControlService', () => {
 	});
 
 	function signerOf(host: string, keyPem = 'PEM') {
-		return { user: { host }, key: { keyPem } };
+		return { user: { id: `user-${host}`, host, uri: `https://${host}/users/a` }, key: { keyPem } };
 	}
 
 	describe('checkAccess', () => {
@@ -232,6 +245,84 @@ describe('ActivityPubAccessControlService', () => {
 			const excludeNote = note({ mode: 'exclude', hosts: ['excluded.example.com'] });
 			expect(await service.checkNoteAccess(excludeNote, uaRequest('Misskey/13.0.0 (https://excluded.example.com/)'))).toBe(false);
 			expect(await service.checkNoteAccess(excludeNote, uaRequest('Misskey/13.0.0 (https://other.example.com/)'))).toBe(true);
+		});
+	});
+
+	describe('取得と検証の安全策', () => {
+		const includeNote = () => note({ mode: 'include', hosts: ['allowed.example.com'] });
+
+		test('include リストに無いホストを名乗る相手のアカウントは取りに行かない', async () => {
+			await service.checkNoteAccess(includeNote(), signedRequest('https://attacker.example.com/actor#main-key'));
+			expect(mockApDbResolverService.getAuthUserFromApId).not.toHaveBeenCalled();
+		});
+
+		test('取得に失敗した keyId は一定時間取りに行かない', async () => {
+			mockApDbResolverService.getAuthUserFromApId.mockRejectedValue(new Error('gone'));
+			await service.checkNoteAccess(includeNote(), signedRequest('https://allowed.example.com/actor#main-key'));
+			await service.checkNoteAccess(includeNote(), signedRequest('https://allowed.example.com/actor#main-key'));
+			expect(mockApDbResolverService.getAuthUserFromApId).toHaveBeenCalledTimes(1);
+		});
+
+		test('同じ keyId への同時の取得は 1 回にまとめる', async () => {
+			let release!: () => void;
+			mockApDbResolverService.getAuthUserFromApId.mockImplementation(() => new Promise(resolve => {
+				release = () => resolve(signerOf('allowed.example.com'));
+			}));
+			vi.mocked(httpSignature.verifySignature).mockReturnValue(true);
+			const a = service.checkNoteAccess(includeNote(), signedRequest('https://allowed.example.com/actor#main-key'));
+			const b = service.checkNoteAccess(includeNote(), signedRequest('https://allowed.example.com/actor#main-key'));
+			await vi.waitFor(() => expect(mockApDbResolverService.getAuthUserFromApId).toHaveBeenCalled());
+			release();
+			expect(await Promise.all([a, b])).toEqual([true, true]);
+			expect(mockApDbResolverService.getAuthUserFromApId).toHaveBeenCalledTimes(1);
+		});
+
+		test('署名必須モードでは、やり取りしたことのないサーバーの鍵は取りに行かない', async () => {
+			mockMeta.requireSignedApFetch = true;
+			mockInstancesRepository.existsBy.mockResolvedValue(false);
+			expect((await service.checkAccess(signedRequest('https://new.example.com/actor#main-key')))?.reason).toBe('signatureRequired');
+			expect(mockApDbResolverService.getAuthUserFromApId).not.toHaveBeenCalled();
+		});
+
+		test('検証中の例外は未検証として扱う', async () => {
+			mockApDbResolverService.getAuthUserFromKeyId.mockRejectedValue(new Error('db down'));
+			expect(await service.checkNoteAccess(includeNote(), signedRequest('https://allowed.example.com/actor#main-key'))).toBe(false);
+		});
+
+		test('鍵が合わなければアカウントを取り直して一度だけ検証し直す', async () => {
+			mockApDbResolverService.getAuthUserFromKeyId.mockResolvedValue(signerOf('allowed.example.com', 'OLD'));
+			mockUserPublickeysRepository.findOneBy.mockResolvedValue({ keyPem: 'NEW' });
+			vi.mocked(httpSignature.verifySignature).mockImplementation((_sig: unknown, pem: string) => pem === 'NEW');
+
+			expect(await service.checkNoteAccess(includeNote(), signedRequest('https://allowed.example.com/actor#main-key'))).toBe(true);
+			expect(mockApPersonService.updatePerson).toHaveBeenCalledTimes(1);
+
+			// 直後にもう一度失敗しても、取り直しはしない
+			vi.mocked(httpSignature.verifySignature).mockReturnValue(false);
+			await service.checkNoteAccess(includeNote(), signedRequest('https://allowed.example.com/actor#main-key'));
+			expect(mockApPersonService.updatePerson).toHaveBeenCalledTimes(1);
+		});
+
+		test('fragment の無い keyId (GoToSocial) は鍵の文書の owner からアカウントを得る', async () => {
+			mockResolver.resolve.mockResolvedValue({ id: 'https://allowed.example.com/users/a/main-key', owner: 'https://allowed.example.com/users/a' });
+			mockApDbResolverService.getAuthUserFromApId.mockResolvedValue(signerOf('allowed.example.com'));
+			vi.mocked(httpSignature.verifySignature).mockReturnValue(true);
+
+			expect(await service.checkNoteAccess(includeNote(), signedRequest('https://allowed.example.com/users/a/main-key'))).toBe(true);
+			expect(mockApDbResolverService.getAuthUserFromApId).toHaveBeenCalledWith('https://allowed.example.com/users/a');
+		});
+
+		test('配送先のホスト名は大文字小文字を区別しない', async () => {
+			const excludeNote = note({ mode: 'exclude', hosts: ['Excluded.Example.com'] });
+			expect(await service.checkNoteAccess(excludeNote, uaRequest('Misskey/13.0.0 (https://excluded.example.com/)'))).toBe(false);
+		});
+
+		test('署名が無くて拒否するときは WWW-Authenticate を付けて 401 を返す', async () => {
+			mockMeta.requireSignedApFetch = true;
+			const reply = { code: vi.fn(), header: vi.fn(), send: vi.fn() };
+			expect(await service.applyAccessControl(uaRequest('Misskey/13.0.0 (https://remote.example.com/)'), reply as any)).toBe(true);
+			expect(reply.code).toHaveBeenCalledWith(401);
+			expect(reply.header).toHaveBeenCalledWith('WWW-Authenticate', expect.stringContaining('Signature'));
 		});
 	});
 });
