@@ -39,6 +39,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</div>
 					<span v-else class="no-jobs">{{ i18n.ts.noJobs }}</span>
 				</div>
+				<div class="queue-actions">
+					<MkButton small inline @click="promote('deliver')"><i class="ti ti-reload"></i> {{ i18n.ts.retryAllQueuesNow }}</MkButton>
+					<MkButton small inline danger @click="clear('deliver')"><i class="ti ti-trash"></i> {{ i18n.ts.clearQueue }}</MkButton>
+				</div>
 			</div>
 
 			<div v-if="tab === 'inbox'" class="queue-section">
@@ -55,6 +59,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</div>
 					</div>
 					<span v-else class="no-jobs">{{ i18n.ts.noJobs }}</span>
+				</div>
+				<div class="queue-actions">
+					<MkButton small inline @click="promote('inbox')"><i class="ti ti-reload"></i> {{ i18n.ts.retryAllQueuesNow }}</MkButton>
+					<MkButton small inline danger @click="clear('inbox')"><i class="ti ti-trash"></i> {{ i18n.ts.clearQueue }}</MkButton>
 				</div>
 			</div>
 		</template>
@@ -76,6 +84,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</div>
 					<span v-else class="no-jobs">{{ i18n.ts.noJobs }}</span>
 				</div>
+				<div class="queue-actions">
+					<MkButton small inline @click="promote('deliver')"><i class="ti ti-reload"></i> {{ i18n.ts.retryAllQueuesNow }}</MkButton>
+					<MkButton small inline danger @click="clear('deliver')"><i class="ti ti-trash"></i> {{ i18n.ts.clearQueue }}</MkButton>
+				</div>
 			</div>
 
 			<div class="queue-section">
@@ -93,6 +105,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</div>
 					<span v-else class="no-jobs">{{ i18n.ts.noJobs }}</span>
 				</div>
+				<div class="queue-actions">
+					<MkButton small inline @click="promote('inbox')"><i class="ti ti-reload"></i> {{ i18n.ts.retryAllQueuesNow }}</MkButton>
+					<MkButton small inline danger @click="clear('inbox')"><i class="ti ti-trash"></i> {{ i18n.ts.clearQueue }}</MkButton>
+				</div>
 			</div>
 		</template>
 	</div>
@@ -109,6 +125,8 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
 import MkContainer from '@/components/MkContainer.vue';
 import MkTabs from '@/components/MkTabs.vue';
+import MkButton from '@/components/MkButton.vue';
+import * as os from '@/os.js';
 import { iAmAdmin } from '@/i.js';
 
 export type ApQueueDomain = 'deliver' | 'inbox';
@@ -176,6 +194,30 @@ const fetchErroredJobs = async () => {
 	}
 };
 
+async function promote(queue: ApQueueDomain) {
+	const { canceled } = await os.confirm({
+		type: 'warning',
+		title: i18n.ts.retryAllQueuesConfirmTitle,
+		text: i18n.ts.retryAllQueuesConfirmText,
+	});
+	if (canceled) return;
+
+	await os.apiWithDialog('admin/queue/promote-jobs', { queue });
+	fetchErroredJobs();
+}
+
+async function clear(queue: ApQueueDomain) {
+	const { canceled } = await os.confirm({
+		type: 'warning',
+		title: i18n.ts.clearQueueConfirmTitle,
+		text: i18n.ts.clearQueueConfirmText,
+	});
+	if (canceled) return;
+
+	await os.apiWithDialog('admin/queue/clear', { queue, state: '*' });
+	fetchErroredJobs();
+}
+
 // intervalを設定
 const setupInterval = () => {
 	if (intervalId) {
@@ -241,6 +283,13 @@ defineExpose<WidgetComponentExpose>({
 			font-weight: normal;
 			opacity: 0.7;
 		}
+	}
+
+	.queue-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+		padding: 0 16px 12px;
 	}
 
 	.queue-content {
