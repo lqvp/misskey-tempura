@@ -179,6 +179,13 @@
   - 参照できないロールで通知が壊れるのを修正
   - ログイン失敗時に通知をするように
 
+# コード品質・テスト強化 (フォーク独自)
+- リファクタリング
+  - `utility/tempura-script/llm-response.ts` を新設し、Gemini レスポンスの型定義と候補テキスト抽出を依存のない純粋モジュールとして分離 (`llm.ts` から抽出)
+- テストの追加
+  - バックエンド: LLMモデレーション (`OpenLlmModerationService`) / LLMモデレーションキュー (`LlmModerationQueueService` / `LlmModerationQueueEntityService`) / 連絡フォーム (`ContactFormService`) / アカウント整理 (`TruncateAccountService`) のユニットテスト
+  - フロントエンド: Gemini 応答解析 (`llm-response`) / 独自 changelog パーサ (`parse-tempura-changelog`) のユニットテスト
+
 # パフォーマンス・最適化 (フォーク独自)
 - アンテナキーワード正規表現のキャッシュ
 - ノートパッキング時のプロフィールクエリ・ロール評価の削減
