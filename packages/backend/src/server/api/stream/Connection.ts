@@ -37,7 +37,7 @@ import { ChatUserChannel } from '@/server/api/stream/channels/chat-user.js';
 import { ChatRoomChannel } from '@/server/api/stream/channels/chat-room.js';
 import { ReversiChannel } from '@/server/api/stream/channels/reversi.js';
 import { ReversiGameChannel } from '@/server/api/stream/channels/reversi-game.js';
-import { stringifyWithAvatarDecorationMuting } from './applyAvatarDecorationMuting.js';
+import { stringifyWithAvatarDecorationMuting } from './stringifyWithAvatarDecorationMuting.js';
 import type { ChannelRequest } from './channel.js';
 import type { ChannelConstructor } from './channel.js';
 import type Channel from './channel.js';
@@ -315,10 +315,8 @@ export default class Connection {
 	 */
 	@bindThis
 	public sendMessageToWs(type: string, payload: JsonObject) {
-		const message = { type, body: payload };
-		this.wsConnection.send(this.user != null
-			? stringifyWithAvatarDecorationMuting(message, this.userIdsWhoMeMutingAvatarDecorations)
-			: JSON.stringify(message));
+		// 未ログインやミュートが無い場合は空の Set なので、そのまま JSON.stringify と同じ結果になる
+		this.wsConnection.send(stringifyWithAvatarDecorationMuting({ type, body: payload }, this.userIdsWhoMeMutingAvatarDecorations));
 	}
 
 	/**

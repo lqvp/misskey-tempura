@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, test } from 'vitest';
-import { stringifyWithAvatarDecorationMuting } from '@/server/api/stream/applyAvatarDecorationMuting.js';
+import { stringifyWithAvatarDecorationMuting } from '@/server/api/stream/stringifyWithAvatarDecorationMuting.js';
 
 function user(id: string, decorationId: string) {
 	return {
@@ -56,5 +56,26 @@ describe('stringifyWithAvatarDecorationMuting', () => {
 		const payload = { body: { user: user('u1', 'd1') } };
 
 		expect(stringifyWithAvatarDecorationMuting(payload, new Set())).toBe(JSON.stringify(payload));
+	});
+
+	test('removes decorations inside arrays (e.g. notes in a list)', () => {
+		const payload = { body: [{ user: user('muted-user', 'd1') }, { user: user('ok-user', 'd2') }] };
+
+		const result = JSON.parse(stringifyWithAvatarDecorationMuting(payload, new Set(['muted-user'])));
+
+		expect(result.body[0].user.avatarDecorations).toEqual([]);
+		expect(result.body[1].user.avatarDecorations).toHaveLength(1);
+	});
+
+	test('removes decorations from chat messages and noteUpdated bodies', () => {
+		const chat = { type: 'message', body: { id: 'm1', fromUser: user('muted-user', 'd1'), toUser: user('ok-user', 'd2') } };
+		const noteUpdated = { type: 'noteUpdated', body: { id: 'n1', type: 'reacted', body: { reaction: '👍', userId: 'muted-user' } } };
+
+		const chatResult = JSON.parse(stringifyWithAvatarDecorationMuting(chat, new Set(['muted-user'])));
+		expect(chatResult.body.fromUser.avatarDecorations).toEqual([]);
+		expect(chatResult.body.toUser.avatarDecorations).toHaveLength(1);
+
+		// ユーザーのオブジェクトを含まないものはそのまま
+		expect(stringifyWithAvatarDecorationMuting(noteUpdated, new Set(['muted-user']))).toBe(JSON.stringify(noteUpdated));
 	});
 });

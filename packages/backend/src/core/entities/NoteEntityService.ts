@@ -11,7 +11,7 @@ import type { Packed } from '@/misc/json-schema.js';
 import { awaitAll } from '@/misc/prelude/await-all.js';
 import type { MiUser } from '@/models/User.js';
 import type { MiNote } from '@/models/Note.js';
-import type { UsersRepository, NotesRepository, FollowingsRepository, PollsRepository, PollVotesRepository, NoteReactionsRepository, ChannelsRepository, MiMeta } from '@/models/_.js';
+import type { UsersRepository, UserProfilesRepository, NotesRepository, FollowingsRepository, PollsRepository, PollVotesRepository, NoteReactionsRepository, ChannelsRepository, MiMeta } from '@/models/_.js';
 import { bindThis } from '@/decorators.js';
 import { DebounceLoader } from '@/misc/loader.js';
 import { IdService } from '@/core/IdService.js';
@@ -79,6 +79,9 @@ export class NoteEntityService implements OnModuleInit {
 
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
+
+		@Inject(DI.userProfilesRepository)
+		private userProfilesRepository: UserProfilesRepository,
 
 		@Inject(DI.notesRepository)
 		private notesRepository: NotesRepository,
@@ -171,8 +174,8 @@ export class NoteEntityService implements OnModuleInit {
 
 		// 未ログインかつプロフィールで非表示設定されている場合は非表示
 		if (!meId) {
-			// 未ログインのページ表示ではノートごとに呼ばれるので、DB ではなくキャッシュを引く
-			const profile = await this.cacheService.userProfileCache.fetch(packedNote.userId);
+			// プライバシー設定なので、キャッシュ (他プロセスでは最大 1 分古い) ではなく DB の最新値で判定する
+			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: packedNote.userId });
 			if (packedNote.visibility === 'public' && profile.hidePublicNotes) {
 				return true;
 			}
@@ -264,7 +267,7 @@ export class NoteEntityService implements OnModuleInit {
 
 	@bindThis
 	public async populateMyReaction(note: { id: MiNote['id']; reactions: MiNote['reactions']; reactionAndUserPairCache?: MiNote['reactionAndUserPairCache']; }, meId: MiUser['id'], _hint_?: {
-		myReactions: Map<MiNote['id'], string | null>;
+		myReactions?: Map<MiNote['id'], string | null>;
 	}) {
 		if (_hint_?.myReactions) {
 			const reaction = _hint_.myReactions.get(note.id);
@@ -382,16 +385,18 @@ export class NoteEntityService implements OnModuleInit {
 	@bindThis
 	public async pack(
 		src: MiNote['id'] | MiNote,
-		me?: { id: MiUser['id'], isAdmin?: boolean } | null | undefined,
+		me?: { id: MiUser['id'] } | null | undefined,
 		options?: {
 			detail?: boolean;
 			skipHide?: boolean;
 			withReactionAndUserPairCache?: boolean;
 			_hint_?: {
-				bufferedReactions: Map<MiNote['id'], { deltas: Record<string, number>; pairs: ([MiUser['id'], string])[] }> | null;
-				myReactions: Map<MiNote['id'], string | null>;
-				packedFiles: Map<MiNote['fileIds'][number], Packed<'DriveFile'> | null>;
-				packedUsers: Map<MiUser['id'], Packed<'UserLite'>>
+				bufferedReactions?: Map<MiNote['id'], { deltas: Record<string, number>; pairs: ([MiUser['id'], string])[] }> | null;
+				myReactions?: Map<MiNote['id'], string | null>;
+				packedFiles?: Map<MiNote['fileIds'][number], Packed<'DriveFile'> | null>;
+				packedUsers?: Map<MiUser['id'], Packed<'UserLite'>>;
+				/** 閲覧者が管理者かどうか。packMany や返信・リノート先の pack で判定済みの値を引き回す (内部用) */
+				isAdmin?: boolean;
 			};
 		},
 	): Promise<Packed<'Note'>> {
@@ -403,7 +408,7 @@ export class NoteEntityService implements OnModuleInit {
 
 		const meId = me ? me.id : null;
 		// packMany や返信・リノート先の pack では判定済みの値が渡されるので、ノートごとにロールを評価し直さない
-		const isAdmin = me?.isAdmin ?? (meId ? await this.roleService.isAdministrator({ id: meId }) : false);
+		const isAdmin = opts._hint_?.isAdmin ?? (meId ? await this.roleService.isAdministrator({ id: meId }) : false);
 		const note = typeof src === 'object' ? src : await this.noteLoader.load(src);
 		const host = note.userHost;
 
@@ -477,19 +482,19 @@ export class NoteEntityService implements OnModuleInit {
 				clippedCount: note.clippedCount,
 
 				// そもそもJOINしていない場合はundefined、JOINしたけど存在していなかった場合はnullで区別される
-				reply: (note.replyId && note.reply === null) ? null : note.replyId ? nullIfEntityNotFound(this.pack(note.reply ?? note.replyId, meId ? { id: meId, isAdmin } : null, {
+				reply: (note.replyId && note.reply === null) ? null : note.replyId ? nullIfEntityNotFound(this.pack(note.reply ?? note.replyId, me, {
 					detail: false,
 					skipHide: opts.skipHide,
 					withReactionAndUserPairCache: opts.withReactionAndUserPairCache,
-					_hint_: options?._hint_,
+					_hint_: { ...options?._hint_, isAdmin },
 				})) : undefined,
 
 				// そもそもJOINしていない場合はundefined、JOINしたけど存在していなかった場合はnullで区別される
-				renote: (note.renoteId && note.renote === null) ? null : note.renoteId ? nullIfEntityNotFound(this.pack(note.renote ?? note.renoteId, meId ? { id: meId, isAdmin } : null, {
+				renote: (note.renoteId && note.renote === null) ? null : note.renoteId ? nullIfEntityNotFound(this.pack(note.renote ?? note.renoteId, me, {
 					detail: true,
 					skipHide: opts.skipHide,
 					withReactionAndUserPairCache: opts.withReactionAndUserPairCache,
-					_hint_: options?._hint_,
+					_hint_: { ...options?._hint_, isAdmin },
 				})) : undefined,
 
 				poll: note.hasPoll ? this.populatePoll(note, meId) : undefined,
@@ -517,7 +522,7 @@ export class NoteEntityService implements OnModuleInit {
 	@bindThis
 	public async packMany(
 		notes: MiNote[],
-		me?: { id: MiUser['id'], isAdmin?: boolean } | null | undefined,
+		me?: { id: MiUser['id'] } | null | undefined,
 		options?: {
 			detail?: boolean;
 			skipHide?: boolean;
@@ -596,13 +601,14 @@ export class NoteEntityService implements OnModuleInit {
 		const packedUsers = await this.userEntityService.packMany(users, me)
 			.then(users => new Map(users.map(u => [u.id, u])));
 
-		return await Promise.all(notes.map(n => this.pack(n, meId ? { id: meId, isAdmin } : null, {
+		return await Promise.all(notes.map(n => this.pack(n, me, {
 			...options,
 			_hint_: {
 				bufferedReactions,
 				myReactions: myReactionsMap,
 				packedFiles,
 				packedUsers,
+				isAdmin,
 			},
 		})));
 	}
