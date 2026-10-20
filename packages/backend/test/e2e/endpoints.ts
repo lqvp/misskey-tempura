@@ -1218,6 +1218,35 @@ describe('Endpoints', () => {
 		});
 	});
 
+	describe('admin/update-user-name', () => {
+		let moderator: misskey.entities.SignupResponse;
+		let target: misskey.entities.SignupResponse;
+
+		beforeAll(async () => {
+			moderator = await signup({ username: 'renamemod' });
+			target = await signup({ username: 'renametarget' });
+			const moderatorRole = await role(alice, { permissionGroup: 'MainModerator' });
+			await api('admin/roles/assign', { roleId: moderatorRole.id, userId: moderator.id }, alice);
+		});
+
+		test('長すぎる名前は拒否する', async () => {
+			const res = await api('admin/update-user-name', { userId: target.id, name: 'a'.repeat(101) }, moderator);
+
+			assert.strictEqual(res.status, 400);
+		});
+
+		test('変更した名前がすぐ users/show に反映される', async () => {
+			// 先に一度取得してキャッシュに載せる
+			await api('users/show', { userId: target.id }, alice);
+
+			const res = await api('admin/update-user-name', { userId: target.id, name: 'renamed by moderator' }, moderator);
+			assert.strictEqual(res.status, 204);
+
+			const shown = await api('users/show', { userId: target.id }, alice);
+			assert.strictEqual(shown.body.name, 'renamed by moderator');
+		});
+	});
+
 	describe('admin/clear-suspicious-login-flag', () => {
 		test('存在しないユーザーは noSuchUser', async () => {
 			const res = await api('admin/clear-suspicious-login-flag', { userId: '000000000000000000000000' }, alice);

@@ -15532,7 +15532,7 @@ export interface operations {
                 'application/json': {
                     /** Format: misskey:id */
                     userId: string;
-                    name?: string;
+                    name?: string | null;
                 };
             };
         };
