@@ -78,10 +78,31 @@ export async function getStagedBytesOfUpload(stagingDir: string): Promise<number
 	let names: string[];
 	try {
 		names = await fs.promises.readdir(stagingDir);
-	} catch {
-		return 0;
+	} catch (err) {
+		// ディレクトリが無いだけなら 0。それ以外の失敗で 0 と数えるとクォータをすり抜けるので投げる
+		if (isNotFound(err)) return 0;
+		throw err;
 	}
-	// readdir と stat の間になくなったファイルは 0 として数える
-	const sizes = await Promise.all(names.map(name => fs.promises.stat(`${stagingDir}/${name}`).then(s => s.size, () => 0)));
-	return sizes.reduce((a, b) => a + b, 0);
+
+	// libuv のスレッドプールを占有しないよう、stat は少しずつ投げる
+	let total = 0;
+	for (let i = 0; i < names.length; i += STAT_CONCURRENCY) {
+		const sizes = await Promise.all(names.slice(i, i + STAT_CONCURRENCY).map(async name => {
+			try {
+				return (await fs.promises.stat(`${stagingDir}/${name}`)).size;
+			} catch (err) {
+				// readdir と stat の間になくなったファイルは 0 として数える
+				if (isNotFound(err)) return 0;
+				throw err;
+			}
+		}));
+		total += sizes.reduce((a, b) => a + b, 0);
+	}
+	return total;
+}
+
+const STAT_CONCURRENCY = 8;
+
+function isNotFound(err: unknown): boolean {
+	return (err as NodeJS.ErrnoException | null)?.code === 'ENOENT';
 }

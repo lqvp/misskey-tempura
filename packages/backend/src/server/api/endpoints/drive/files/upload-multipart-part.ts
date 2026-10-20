@@ -7,6 +7,7 @@ import * as fs from 'node:fs';
 import ms from 'ms';
 import * as Redis from 'ioredis';
 import { Inject, Injectable } from '@nestjs/common';
+import { MoreThan } from 'typeorm';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 import type { MultipartUploadsRepository } from '@/models/_.js';
@@ -134,7 +135,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				// クォータ判定とパート保存をユーザー単位で直列化し、
 				// 並行アップロードが同じ使用量に対してチェックを通過して
 				// クォータ超過になるのを防ぐ
-				const unlock = await acquireDistributedLock(this.redisClient, `multipart-quota:${me.id}`, 30 * 1000, 50, 100);
+				// 待ち時間をロックの有効期限 (30 秒) に合わせる。短いと前の処理が長引いたときに取れず 500 になる
+				const unlock = await acquireDistributedLock(this.redisClient, `multipart-quota:${me.id}`, 30 * 1000, 300, 100);
 				try {
 					// ロック待機中に期限切れクリーンアップや完了処理がスティージング
 					// ディレクトリとレコードを削除した可能性がある。そのまま書き戻すと
@@ -154,18 +156,21 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					// 新しいパートをスティージングに加えた合計がアカウントの
 					// クォータを超えたら拒否する。既存パートの置換の場合は
 					// そのバイト数を差し引く
-					const userUploads = await this.multipartUploadsRepository.findBy({ userId: me.id });
+					// 期限切れのアップロードは作成時の容量確認と同じく数えない (掃除されるまでの間に残っているだけ)
+					const userUploads = await this.multipartUploadsRepository.findBy({ userId: me.id, expiresAt: MoreThan(new Date()) });
 					const incomingBytes = (await fs.promises.stat(file!.path)).size;
 					// 存在確認と stat の間に消えたファイルはサイズ 0 扱い
 					const replacedBytes = partExists ? await fs.promises.stat(partPath).then(s => s.size, () => 0) : 0;
-					const stagedByUpload = await Promise.all(userUploads.map(upload => getUploadStagedBytes(this.config.multipartTempDir, upload.id)));
+					const stagedByUpload: number[] = [];
+					for (const upload of userUploads) {
+						stagedByUpload.push(await getUploadStagedBytes(this.config.multipartTempDir, upload.id));
+					}
 					const thisUploadIndex = userUploads.findIndex(upload => upload.id === multipartUpload.id);
 					const thisUploadStaged = thisUploadIndex === -1 ? 0 : stagedByUpload[thisUploadIndex];
 					const userStaged = stagedByUpload.reduce((a, b) => a + b, 0);
 
 					// 作成時に宣言した合計サイズでドライブ容量を確認しているので、それを超えるパートは受け付けない
-					// totalSize は bigint 列なので実行時は文字列で返る
-					if (thisUploadStaged - replacedBytes + incomingBytes > Number(multipartUpload.totalSize)) {
+					if (thisUploadStaged - replacedBytes + incomingBytes > multipartUpload.totalSize) {
 						throw new ApiError(meta.errors.exceedsDeclaredSize);
 					}
 					if (userStaged - replacedBytes + incomingBytes > MULTIPART_STAGING_QUOTA_BYTES) {
