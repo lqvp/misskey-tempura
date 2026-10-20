@@ -12,17 +12,13 @@ import { fetchInstance } from '@/instance.js';
 import { displayLlmError } from '@/utils/errorHandler.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
+import { extractCandidateText } from '@/utility/tempura-script/llm-response.js';
+import type { GeminiGenerateContentResponse, GeminiPart } from '@/utility/tempura-script/llm-response.js';
+
+export { extractCandidateText };
+export type { GeminiGenerateContentResponse };
 
 const instance = ref<Misskey.entities.MetaDetailed | null>(null);
-
-// Gemini generateContent API レスポンスの最小限の型定義
-type GeminiPart = { text?: string; file_data?: { mime_type: string; file_uri: string } };
-type GeminiContent = { parts?: GeminiPart[] };
-type GeminiCandidate = { content?: GeminiContent };
-export type GeminiGenerateContentResponse = {
-	candidates?: GeminiCandidate[];
-	error?: { message?: string; code?: number };
-};
 
 fetchInstance(true).then((res) => {
 	instance.value = res;
@@ -276,18 +272,4 @@ export async function generateGeminiSummary({
 	}
 
 	return response.json() as Promise<GeminiGenerateContentResponse>;
-}
-
-export function extractCandidateText(result: GeminiGenerateContentResponse): string {
-	// 共通の候補抽出処理
-	if (
-		!result.candidates ||
-		result.candidates.length === 0 ||
-		!result.candidates[0].content ||
-		!result.candidates[0].content.parts ||
-		result.candidates[0].content.parts.length === 0
-	) {
-		throw new Error('LLM応答の形式が不正です。candidates, content, partsのいずれかが存在しません。');
-	}
-	return result.candidates[0].content.parts[0].text ?? '';
 }
