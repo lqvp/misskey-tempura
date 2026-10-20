@@ -151,6 +151,24 @@ describe('ActivityPubAccessControlService', () => {
 		});
 	});
 
+	test('should allow quarantined hosts when allowLimitedHosts is true', async () => {
+		const mockRequest = {
+			headers: {
+				'accept': 'application/activity+json',
+				'user-agent': 'http.rb/5.3.0 (Mastodon/4.2.0; +https://quarantined.example.com/)',
+			},
+		} as FastifyRequest;
+
+		mockInstancesRepository.findOneBy.mockResolvedValue({ suspensionState: 'none', quarantineLimited: true });
+
+		expect(await service.checkAccess(mockRequest, true)).toBeNull();
+		expect(await service.checkAccess(mockRequest, false)).toEqual({
+			blocked: true,
+			reason: 'quarantined',
+			host: 'quarantined.example.com',
+		});
+	});
+
 	test('should detect Misskey User-Agent', async () => {
 		const mockRequest = {
 			headers: {
