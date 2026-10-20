@@ -7367,6 +7367,14 @@ export interface Locale extends ILocale {
          */
         "signToActivityPubGet_description": string;
         /**
+         * 署名の無いActivityPubの取得を拒否する
+         */
+        "requireSignedApFetch": string;
+        /**
+         * 有効にすると、HTTP署名を検証できないリクエストにはノートなどを返しません。ブロックしたサーバーが身元を隠して取得するのを防げますが、署名しないソフトウェアからは取得できなくなります。アカウント情報と公開鍵の取得は対象外です。
+         */
+        "requireSignedApFetch_description": string;
+        /**
          * リモートファイルをプロキシする
          */
         "proxyRemoteFiles": string;

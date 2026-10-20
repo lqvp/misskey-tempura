@@ -274,6 +274,7 @@ export const paramDef = {
 		},
 		proxyRemoteFiles: { type: 'boolean' },
 		signToActivityPubGet: { type: 'boolean' },
+		requireSignedApFetch: { type: 'boolean' },
 		allowExternalApRedirect: { type: 'boolean' },
 		enableRemoteNotesCleaning: { type: 'boolean' },
 		remoteNotesCleaningExpiryDaysForEachNotes: { type: 'number' },
@@ -979,6 +980,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.signToActivityPubGet !== undefined) {
 				set.signToActivityPubGet = ps.signToActivityPubGet;
+			}
+
+			if (ps.requireSignedApFetch !== undefined) {
+				set.requireSignedApFetch = ps.requireSignedApFetch;
 			}
 
 			if (ps.allowExternalApRedirect !== undefined) {

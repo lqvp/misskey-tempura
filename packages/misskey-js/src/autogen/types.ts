@@ -11619,6 +11619,7 @@ export interface operations {
                         ugcVisibilityForVisitor: 'all' | 'local' | 'none';
                         proxyRemoteFiles: boolean;
                         signToActivityPubGet: boolean;
+                        requireSignedApFetch: boolean;
                         allowExternalApRedirect: boolean;
                         enableRemoteNotesCleaning: boolean;
                         remoteNotesCleaningExpiryDaysForEachNotes: number;
@@ -15353,6 +15354,7 @@ export interface operations {
                     ugcVisibilityForVisitor?: 'all' | 'local' | 'none';
                     proxyRemoteFiles?: boolean;
                     signToActivityPubGet?: boolean;
+                    requireSignedApFetch?: boolean;
                     allowExternalApRedirect?: boolean;
                     enableRemoteNotesCleaning?: boolean;
                     remoteNotesCleaningExpiryDaysForEachNotes?: number;
