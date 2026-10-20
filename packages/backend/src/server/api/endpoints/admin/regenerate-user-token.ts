@@ -60,8 +60,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				throw new ApiError(meta.errors.noSuchUser);
 			}
 
-			// モデレーターが管理者を強制的にログアウトさせられないようにする (admin/reset-password と同じ)
-			if (await this.roleService.isAdministrator(user) && me.id !== user.id) {
+			// 管理者以外は、自分以外のモデレーター・管理者のトークンを再発行できないようにする (admin/suspend-user と同じ考え方)
+			if (me.id !== user.id && await this.roleService.isModerator(user) && !await this.roleService.isAdministrator(me)) {
 				throw new ApiError(meta.errors.accessDenied);
 			}
 
