@@ -94,10 +94,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</MkKeyValue>
 					</div>
 
-					<MkButton v-if="user.host != null" @click="updateRemoteUser"><i class="ti ti-refresh"></i> {{ i18n.ts.updateRemoteUser }}</MkButton>
+						<MkButton v-if="user.host != null" @click="updateRemoteUser"><i class="ti ti-refresh"></i> {{ i18n.ts.updateRemoteUser }}</MkButton>
 
-					<MkFolder>
-						<template #label>Raw</template>
+						<MkFolder>
+							<template #label>Raw</template>
 
 						<MkObjectView v-if="ap" tall :value="ap">
 						</MkObjectView>
@@ -358,11 +358,11 @@ async function refreshUser() {
 	user.value = result.user;
 	info.value = result.info;
 	ips.value = result.ips;
-		administrator.value = info.value.roles?.some(r => r.isAdministrator) ?? false;
-		moderator.value = info.value.isModerator;
-		silenced.value = info.value.isSilenced;
-		suspended.value = info.value.isSuspended;
-		approved.value = info.value.approved;
+	administrator.value = info.value.roles?.some(r => r.isAdministrator) ?? false;
+	moderator.value = info.value.isModerator;
+	silenced.value = info.value.isSilenced;
+	suspended.value = info.value.isSuspended;
+	approved.value = info.value.approved;
 	isSystem.value = user.value.host == null && user.value.username.includes('.');
 	moderationNote.value = info.value.moderationNote;
 }

@@ -428,11 +428,11 @@ const thereIsTreasure = ref($i && !claimedAchievements.includes('foundTreasure')
 
 let easterEggReady = false;
 const easterEggEmojis = ref<{
-		id: string,
-		top: number,
-		left: number,
-		emoji: string
-	}[]>([]);
+	id: string,
+	top: number,
+	left: number,
+	emoji: string
+}[]>([]);
 const easterEggEngine = ref<{ stop: () => void } | null>(null);
 const containerEl = useTemplateRef('containerEl');
 

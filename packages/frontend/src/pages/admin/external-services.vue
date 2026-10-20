@@ -51,7 +51,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkInput>
 							</SearchMarker>
 
-						<MkButton primary @click="save_deepl">Save</MkButton>
+							<MkButton primary @click="save_deepl">Save</MkButton>
 						</div>
 					</MkFolder>
 				</SearchMarker>

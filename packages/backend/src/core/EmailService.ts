@@ -235,22 +235,22 @@ export class EmailService {
 			const isWhitelisted = this.utilityService.isBlockedHost(this.meta.bannedEmailDomains, emailDomain);
 
 			if (!isWhitelisted) {
-					return {
-							available: false,
-							reason: 'banned',
-					};
+				return {
+					available: false,
+					reason: 'banned',
+				};
 			}
-	} else {
+		} else {
 			// 従来のブラックリストとしての動作
 			const isBanned = this.utilityService.isBlockedHost(this.meta.bannedEmailDomains, emailDomain);
 
 			if (isBanned) {
-					return {
-							available: false,
-							reason: 'banned',
-					};
+				return {
+					available: false,
+					reason: 'banned',
+				};
 			}
-	}
+		}
 
 		return {
 			available: true,
