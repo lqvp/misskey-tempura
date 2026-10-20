@@ -7,14 +7,6 @@ import { Entity, Column, PrimaryColumn, ManyToOne } from 'typeorm';
 import { id } from './util/id.js';
 import { MiUser } from './User.js';
 
-export interface ContactFormCategory {
-	key: string; // カテゴリキー (例: 'bug_report', 'feature_request')
-	text: string; // 表示テキスト (例: 'バグ報告', 'Bug Report')
-	enabled: boolean; // 有効/無効フラグ
-	order: number; // 表示順序
-	isDefault: boolean; // デフォルトカテゴリフラグ
-}
-
 @Entity('meta')
 export class MiMeta {
 	@PrimaryColumn({
@@ -140,12 +132,6 @@ export class MiMeta {
 	})
 	public backgroundImageUrl: string | null;
 
-	@Column('jsonb', {
-		default: [],
-		nullable: true,
-	})
-	public backgroundImageUrls: { url: string }[];
-
 	@Column('varchar', {
 		length: 1024,
 		nullable: true,
@@ -157,17 +143,6 @@ export class MiMeta {
 		nullable: true,
 	})
 	public iconUrl: string | null;
-
-	@Column('boolean', {
-		default: false,
-	})
-	public enableLongIconUrl: boolean;
-
-	@Column('varchar', {
-		length: 1024,
-		nullable: true,
-	})
-	public longIconUrl: string | null;
 
 	@Column('varchar', {
 		length: 1024,
@@ -199,12 +174,6 @@ export class MiMeta {
 	})
 	public infoImageUrl: string | null;
 
-	@Column('varchar', {
-		length: 1024,
-		nullable: true,
-	})
-	public youBlockedImageUrl: string | null;
-
 	@Column('boolean', {
 		default: false,
 	})
@@ -219,11 +188,6 @@ export class MiMeta {
 		default: false,
 	})
 	public emailRequiredForSignup: boolean;
-
-	@Column('boolean', {
-		default: false,
-	})
-	public approvalRequiredForSignup: boolean;
 
 	@Column('boolean', {
 		default: false,
@@ -347,41 +311,6 @@ export class MiMeta {
 		default: 4,
 	})
 	public sensitiveMediaDetectionMaxImagesPerRequest: number;
-
-	@Column('boolean', {
-		default: false,
-	})
-	public openLlmModerationEnabled: boolean;
-
-	@Column('varchar', {
-		length: 1024,
-		nullable: true,
-	})
-	public openLlmModerationApiKey: string | null;
-
-	@Column('boolean', {
-		default: false,
-	})
-	public openLlmModerationIncludeRemote: boolean;
-
-	@Column('varchar', {
-		length: 64,
-		array: true,
-		default: ['public', 'public_non_ltl', 'home', 'followers', 'specified'],
-	})
-	public openLlmModerationVisibilities: string[];
-
-	@Column('varchar', {
-		length: 1024,
-		nullable: true,
-	})
-	public openLlmModerationApiUrl: string | null;
-
-	@Column('varchar', {
-		length: 256,
-		nullable: true,
-	})
-	public openLlmModerationModel: string | null;
 
 	@Column('boolean', {
 		default: false,
@@ -521,12 +450,6 @@ export class MiMeta {
 		length: 1024,
 		nullable: true,
 	})
-	public objectStoragePrefixForRemote: string | null;
-
-	@Column('varchar', {
-		length: 1024,
-		nullable: true,
-	})
 	public objectStorageBaseUrl: string | null;
 
 	@Column('varchar', {
@@ -578,53 +501,10 @@ export class MiMeta {
 	})
 	public objectStorageS3ForcePathStyle: boolean;
 
-	@Column('integer', {
-		nullable: true,
-	})
-	public objectStorageCacheDays: number | null;
-
 	@Column('boolean', {
 		default: false,
 	})
 	public enableIpLogging: boolean;
-
-	@Column('boolean', {
-		default: false,
-	})
-	public enableLoginRiskDetection: boolean;
-
-	@Column('integer', {
-		default: 30,
-	})
-	public loginRiskNotifyThreshold: number;
-
-	@Column('integer', {
-		default: 60,
-	})
-	public loginRiskStepUpThreshold: number;
-
-	@Column('boolean', {
-		default: false,
-	})
-	public loginRiskFlagUnverifiedUsers: boolean;
-
-	/**
-	 * 不審なログインの記録(点数・判定理由)を本人にも見せるか。false なら管理側だけ
-	 */
-	@Column('boolean', {
-		default: false,
-	})
-	public loginRiskShowDetailsToUser: boolean;
-
-	/**
-	 * 不審ログイン検知で、端末トークンと IP プレフィックスをハッシュにするときの鍵。
-	 * 最初に使うときに乱数で作る。API では返さない
-	 */
-	@Column('varchar', {
-		length: 128,
-		nullable: true,
-	})
-	public loginRiskSecret: string | null;
 
 	@Column('boolean', {
 		default: true,
@@ -708,11 +588,6 @@ export class MiMeta {
 		default: '{}',
 	})
 	public bannedEmailDomains: string[];
-
-	@Column('boolean', {
-		default: false,
-	})
-	public emailWhitelist: boolean;
 
 	@Column('varchar', {
 		length: 1024, array: true, default: ['admin', 'administrator', 'root', 'system', 'maintainer', 'host', 'mod', 'moderator', 'owner', 'superuser', 'staff', 'auth', 'i', 'me', 'everyone', 'all', 'mention', 'mentions', 'example', 'user', 'users', 'account', 'accounts', 'official', 'help', 'helps', 'support', 'supports', 'info', 'information', 'informations', 'announce', 'announces', 'announcement', 'announcements', 'notice', 'notification', 'notifications', 'dev', 'developer', 'developers', 'tech', 'misskey'],
@@ -847,14 +722,6 @@ export class MiMeta {
 	})
 	public signToActivityPubGet: boolean;
 
-	/**
-	 * 署名の無い ActivityPub の取得リクエストを拒否するか (アカウントと公開鍵の取得は除く)
-	 */
-	@Column('boolean', {
-		default: false,
-	})
-	public requireSignedApFetch: boolean;
-
 	@Column('boolean', {
 		default: true,
 	})
@@ -888,6 +755,134 @@ export class MiMeta {
 		showTimelineForVisitor: boolean;
 		showActivitiesForVisitor: boolean;
 	};
+
+	// Contact Form Settings
+
+	// tempura: フォーク独自の設定
+	@Column('jsonb', {
+		default: [],
+		nullable: true,
+	})
+	public backgroundImageUrls: { url: string }[];
+
+	@Column('boolean', {
+		default: false,
+	})
+	public enableLongIconUrl: boolean;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public longIconUrl: string | null;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public youBlockedImageUrl: string | null;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public approvalRequiredForSignup: boolean;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public openLlmModerationEnabled: boolean;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public openLlmModerationApiKey: string | null;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public openLlmModerationIncludeRemote: boolean;
+
+	@Column('varchar', {
+		length: 64,
+		array: true,
+		default: ['public', 'public_non_ltl', 'home', 'followers', 'specified'],
+	})
+	public openLlmModerationVisibilities: string[];
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public openLlmModerationApiUrl: string | null;
+
+	@Column('varchar', {
+		length: 256,
+		nullable: true,
+	})
+	public openLlmModerationModel: string | null;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public objectStoragePrefixForRemote: string | null;
+
+	@Column('integer', {
+		nullable: true,
+	})
+	public objectStorageCacheDays: number | null;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public enableLoginRiskDetection: boolean;
+
+	@Column('integer', {
+		default: 30,
+	})
+	public loginRiskNotifyThreshold: number;
+
+	@Column('integer', {
+		default: 60,
+	})
+	public loginRiskStepUpThreshold: number;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public loginRiskFlagUnverifiedUsers: boolean;
+
+	/**
+	 * 不審なログインの記録(点数・判定理由)を本人にも見せるか。false なら管理側だけ
+	 */
+	@Column('boolean', {
+		default: false,
+	})
+	public loginRiskShowDetailsToUser: boolean;
+
+	/**
+	 * 不審ログイン検知で、端末トークンと IP プレフィックスをハッシュにするときの鍵。
+	 * 最初に使うときに乱数で作る。API では返さない
+	 */
+	@Column('varchar', {
+		length: 128,
+		nullable: true,
+	})
+	public loginRiskSecret: string | null;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public emailWhitelist: boolean;
+
+	/**
+	 * 署名の無い ActivityPub の取得リクエストを拒否するか (アカウントと公開鍵の取得は除く)
+	 */
+	@Column('boolean', {
+		default: false,
+	})
+	public requireSignedApFetch: boolean;
 
 	@Column('varchar', {
 		length: 1024,
@@ -1143,7 +1138,6 @@ export class MiMeta {
 	})
 	public customCursorWaitUrl: string | null;
 
-	// Contact Form Settings
 	@Column('boolean', {
 		default: true,
 	})
@@ -1165,7 +1159,15 @@ export class MiMeta {
 	public contactFormCategories: ContactFormCategory[];
 }
 
+export interface ContactFormCategory {
+	key: string; // カテゴリキー (例: 'bug_report', 'feature_request')
+	text: string; // 表示テキスト (例: 'バグ報告', 'Bug Report')
+	enabled: boolean; // 有効/無効フラグ
+	order: number; // 表示順序
+	isDefault: boolean; // デフォルトカテゴリフラグ
+}
+
 export type SoftwareSuspension = {
-	software: string;
-	versionRange: string;
+	software: string,
+	versionRange: string,
 };

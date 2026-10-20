@@ -616,15 +616,15 @@ async function search() {
 			if (!confirm.canceled) {
 				const res = await apLookup(searchParams.value.query);
 
-				if (res.type === 'User') {
-					router.push('/@:acct/:page?', {
+			if (res.type === 'User') {
+				router.push('/@:acct/:page?', {
 					params: {
 						acct: `${res.object.username}@${res.object.host}`,
 					},
 				});
-				// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-				} else if (res.type === 'Note') {
-					router.push('/notes/:noteId/:initialTab?', {
+			// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+			} else if (res.type === 'Note') {
+				router.push('/notes/:noteId/:initialTab?', {
 					params: {
 						noteId: res.object.id,
 					},
@@ -646,13 +646,13 @@ async function search() {
 				}
 			}
 
-			if (searchParams.value.query.startsWith('#')) {
-				const confirm = await os.confirm({
-					type: 'info',
-					text: i18n.ts.openTagPageConfirm,
-				});
-				if (!confirm.canceled) {
-					router.push('/tags/:tag', {
+		if (searchParams.value.query.startsWith('#')) {
+			const confirm = await os.confirm({
+				type: 'info',
+				text: i18n.ts.openTagPageConfirm,
+			});
+			if (!confirm.canceled) {
+				router.push('/tags/:tag', {
 					params: {
 						tag: searchParams.value.query.substring(1),
 					},

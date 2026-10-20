@@ -77,6 +77,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { computed, defineAsyncComponent, onDeactivated, onUnmounted, ref } from 'vue';
 import { url as local } from '@@/js/config.js';
 import { versatileLang } from '@@/js/intl-const.js';
+import { maybeMakeRelative } from '@@/js/url.js';
+import MkTwitterEmbed from './MkTwitterEmbed.vue';
 import type { SummalyResult } from '@misskey-dev/summaly';
 import { i18n } from '@/i18n.js';
 import * as os from '@/os.js';
@@ -85,15 +87,13 @@ import MkButton from '@/components/MkButton.vue';
 import { transformPlayerUrl } from '@/utility/url-preview.js';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
-import { maybeMakeRelative } from '@@/js/url.js';
-import MkTwitterEmbed from './MkTwitterEmbed.vue';
 
 const props = withDefaults(defineProps<{
-		url: string;
-		detail?: boolean;
-		compact?: boolean;
-		showActions?: boolean;
-	}>(), {
+	url: string;
+	detail?: boolean;
+	compact?: boolean;
+	showActions?: boolean;
+}>(), {
 	detail: false,
 	compact: false,
 	showActions: true,
@@ -178,11 +178,11 @@ function openPlayer(): void {
 }
 </script>
 
-	<style lang="scss" module>
-	.player {
-		position: relative;
-		width: 100%;
-	}
+<style lang="scss" module>
+.player {
+	position: relative;
+	width: 100%;
+}
 
 	.disablePlayer {
 		position: absolute;
@@ -202,13 +202,13 @@ function openPlayer(): void {
 		}
 	}
 
-	.playerIframe {
-		height: 100%;
-		left: 0;
-		position: absolute;
-		top: 0;
-		width: 100%;
-	}
+.playerIframe {
+	height: 100%;
+	left: 0;
+	position: absolute;
+	top: 0;
+	width: 100%;
+}
 
 .link {
 	position: relative;
@@ -219,9 +219,9 @@ function openPlayer(): void {
 	overflow: clip;
 	text-align: left;
 
-		&:hover {
-			text-decoration: none;
-			border-color: rgba(0, 0, 0, 0.2);
+	&:hover {
+		text-decoration: none;
+		border-color: rgba(0, 0, 0, 0.2);
 
 			> .body > .header > .title {
 				text-decoration: underline;
@@ -345,21 +345,21 @@ function openPlayer(): void {
 			}
 		}
 
-		.thumbnail {
-			height: 70px;
-		}
+	.thumbnail {
+		height: 70px;
+	}
 
-		.body {
-			padding: 8px;
-		}
+	.body {
+		padding: 8px;
+	}
 
-		.header {
-			margin-bottom: 4px;
-		}
+	.header {
+		margin-bottom: 4px;
+	}
 
-		.footer {
-			margin-top: 4px;
-		}
+	.footer {
+		margin-top: 4px;
+	}
 
 		.siteIcon {
 			width: 12px;

@@ -3,91 +3,91 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { markRaw } from "vue";
-import * as Misskey from "misskey-js";
-import { prefersReducedMotion } from "@@/js/config.js";
-import { hemisphere } from "@@/js/intl-const.js";
-import type { DeviceKind } from "@/utility/device-kind.js";
-import type { TIPS } from "@/tips.js";
-import { Pizzax } from "@/lib/pizzax.js";
-import { DEFAULT_DEVICE_KIND } from "@/utility/device-kind.js";
+import { markRaw } from 'vue';
+import * as Misskey from 'misskey-js';
+import { prefersReducedMotion } from '@@/js/config.js';
+import { hemisphere } from '@@/js/intl-const.js';
+import type { DeviceKind } from '@/utility/device-kind.js';
+import type { TIPS } from '@/tips.js';
+import { Pizzax } from '@/lib/pizzax.js';
+import { DEFAULT_DEVICE_KIND } from '@/utility/device-kind.js';
 
 /**
  * 「状態」を管理するストア(not「設定」)
  */
 export const store = markRaw(
-	new Pizzax("base", {
+	new Pizzax('base', {
 		accountSetupWizard: {
-			where: "account",
+			where: 'account',
 			default: 0,
 		},
 		tips: {
-			where: "device",
+			where: 'device',
 			default: {} as Partial<Record<(typeof TIPS)[number], boolean>>, // true = 既読
 		},
 		defaultScheduledNoteDelete: {
-			where: "account",
+			where: 'account',
 			default: false,
 		},
 		defaultScheduledNoteDeleteTime: {
-			where: "account",
+			where: 'account',
 			default: 86400000,
 		},
 		pastedFileName: {
-			where: "account",
-			default: "yyyy-MM-dd HH-mm-ss [{{number}}]",
+			where: 'account',
+			default: 'yyyy-MM-dd HH-mm-ss [{{number}}]',
 		},
 		memo: {
-			where: "account",
+			where: 'account',
 			default: null as string | null,
 		},
 		reactionAcceptance: {
-			where: "account",
+			where: 'account',
 			default: null as
-				| "likeOnly"
-				| "likeOnlyForRemote"
-				| "nonSensitiveOnly"
-				| "nonSensitiveOnlyForLocalLikeOnlyForRemote"
+				| 'likeOnly'
+				| 'likeOnlyForRemote'
+				| 'nonSensitiveOnly'
+				| 'nonSensitiveOnlyForLocalLikeOnlyForRemote'
 				| null,
 		},
 		mutedAds: {
-			where: "account",
+			where: 'account',
 			default: [] as string[],
 		},
 		postFormActions: {
-			where: "deviceAccount",
+			where: 'deviceAccount',
 			default: [
-				"attachFileUpload",
-				"attachFileFromDrive",
-				"poll",
-				"scheduledNoteDelete",
-				"useCw",
-				"mention",
-				"hashtags",
-				"plugins",
-				"addMfmFunction",
+				'attachFileUpload',
+				'attachFileFromDrive',
+				'poll',
+				'scheduledNoteDelete',
+				'useCw',
+				'mention',
+				'hashtags',
+				'plugins',
+				'addMfmFunction',
 			],
 		},
 		visibility: {
-			where: "deviceAccount",
-			default: "public" as (typeof Misskey.noteVisibilities)[number],
+			where: 'deviceAccount',
+			default: 'public' as (typeof Misskey.noteVisibilities)[number],
 		},
 		localOnly: {
-			where: "deviceAccount",
+			where: 'deviceAccount',
 			default: false,
 		},
 		showPreview: {
-			where: "device",
+			where: 'device',
 			default: false,
 		},
 		tl: {
-			where: "deviceAccount",
+			where: 'deviceAccount',
 			default: {
-				src: "home" as
-					| "home"
-					| "local"
-					| "social"
-					| "global"
+				src: 'home' as
+					| 'home'
+					| 'local'
+					| 'social'
+					| 'global'
 					| `list:${string}`,
 				userList: null as Misskey.entities.UserList | null,
 				filter: {
@@ -99,86 +99,86 @@ export const store = markRaw(
 			},
 		},
 		darkMode: {
-			where: "device",
+			where: 'device',
 			default: false,
 		},
 		realtimeMode: {
-			where: "device",
+			where: 'device',
 			default: true,
 		},
 		recentlyUsedEmojis: {
-			where: "device",
+			where: 'device',
 			default: [] as string[],
 		},
 		recentlyUsedUsers: {
-			where: "device",
+			where: 'device',
 			default: [] as string[],
 		},
 		menuDisplay: {
-			where: "device",
-			default: "sideFull" as "sideFull" | "sideIcon" /* | 'top' */,
+			where: 'device',
+			default: 'sideFull' as 'sideFull' | 'sideIcon' /* | 'top' */,
 		},
 		postFormWithHashtags: {
-			where: "device",
+			where: 'device',
 			default: false,
 		},
 		postFormHashtags: {
-			where: "device",
-			default: "",
+			where: 'device',
+			default: '',
 		},
 		additionalUnicodeEmojiIndexes: {
-			where: "device",
+			where: 'device',
 			default: {} as Record<string, Record<string, string[]>>,
 		},
 		pluginTokens: {
-			where: "deviceAccount",
+			where: 'deviceAccount',
 			default: {} as Record<string, string>, // plugin id, token
 		},
 		accountTokens: {
-			where: "device",
+			where: 'device',
 			default: {} as Record<string, string>, // host/userId, token
 		},
 		accountInfos: {
-			where: "device",
+			where: 'device',
 			default: {} as Record<string, Misskey.entities.MeDetailed>, // host/userId, user
 		},
 
 		enablePreferencesAutoCloudBackup: {
-			where: "device",
+			where: 'device',
 			default: false,
 		},
 		showPreferencesAutoCloudBackupSuggestion: {
-			where: "device",
+			where: 'device',
 			default: true,
 		},
 		showStoragePersistenceSuggestion: {
-			where: "device",
+			where: 'device',
 			default: true,
 		},
 
 		// tempura 独自のキー (upstream の prefer 移行に伴い store.ts から消えたものを復元)
 		rememberNoteVisibility: {
-			where: "account",
+			where: 'account',
 			default: false,
 		},
 		defaultNoteVisibility: {
-			where: "account",
-			default: "public" as (typeof Misskey.noteVisibilities)[number],
+			where: 'account',
+			default: 'public' as (typeof Misskey.noteVisibilities)[number],
 		},
 		defaultNoteLocalOnly: {
-			where: "account",
+			where: 'account',
 			default: false,
 		},
 		nicknameMap: {
-			where: "account",
+			where: 'account',
 			default: {} as Record<string, string>,
 		},
 		specifiedUsers: {
-			where: "account",
+			where: 'account',
 			default: [] as string[],
 		},
 		geminiToken: {
-			where: "account",
+			where: 'account',
 			default: null as string | null,
 		},
 	}),
@@ -186,7 +186,7 @@ export const store = markRaw(
 
 // TODO: 他のタブと永続化されたstateを同期
 
-const PREFIX = "miux:" as const;
+const PREFIX = 'miux:' as const;
 
 interface Watcher {
 	key: string;
