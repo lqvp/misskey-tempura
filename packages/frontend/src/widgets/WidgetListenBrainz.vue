@@ -134,18 +134,26 @@ const fetchPlayingNow = async () => {
 	fetching.value = true;
 
 	const url = `https://api.listenbrainz.org/1/user/${encodeURIComponent(widgetProps.userId)}/playing-now`;
-	const response = await window.fetch(url);
-	const data = await response.json();
+	try {
+		const response = await window.fetch(url);
+		if (!response.ok) throw new Error(`ListenBrainz returned ${response.status}`);
+		const data = await response.json();
 
-	if (data.payload.count > 0) {
-		playingNow.value = true;
-		trackMetadata.value = data.payload.listens[0].track_metadata;
-	} else {
+		if (data.payload.count > 0) {
+			playingNow.value = true;
+			trackMetadata.value = data.payload.listens[0].track_metadata;
+		} else {
+			playingNow.value = false;
+			trackMetadata.value = null;
+		}
+	} catch (err) {
+		// ユーザーが存在しない・一時的に落ちているなどの場合は「再生していない」として扱う
+		console.error('Failed to fetch ListenBrainz playing-now:', err);
 		playingNow.value = false;
 		trackMetadata.value = null;
+	} finally {
+		fetching.value = false;
 	}
-
-	fetching.value = false;
 };
 
 const postNote = async () => {

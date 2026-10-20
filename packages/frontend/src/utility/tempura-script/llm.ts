@@ -246,7 +246,7 @@ export async function generateGeminiSummary({
 	// Gemini APIにリクエスト送信
 	const response = await window.fetch(
 		// モデルを空にしている場合は既定のモデルを使う (以前は models/null を呼んで失敗していた)
-		`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(geminiModel ?? 'gemini-2.5-flash')}:generateContent`,
+		`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(geminiModel?.trim() || 'gemini-2.5-flash')}:generateContent`,
 		{
 			method: 'POST',
 			headers: {

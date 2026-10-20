@@ -52,13 +52,18 @@ export class AntennaService implements OnApplicationShutdown {
 		const flags = caseSensitive ? 'gu' : 'gui';
 		const cacheKey = `${flags}:${keyword}`;
 		let regex = this.keywordRegExpCache.get(cacheKey);
-		if (regex == null) {
-			if (this.keywordRegExpCache.size >= AntennaService.KEYWORD_REGEXP_CACHE_MAX) {
-				this.keywordRegExpCache.clear();
-			}
+		if (regex != null) {
+			// Map は挿入順を保つので、使ったものを末尾に移して LRU にする
+			this.keywordRegExpCache.delete(cacheKey);
+		} else {
 			regex = new RegExp(`(?=(${this.escapeRegExp(keyword)}))`, flags);
-			this.keywordRegExpCache.set(cacheKey, regex);
+			if (this.keywordRegExpCache.size >= AntennaService.KEYWORD_REGEXP_CACHE_MAX) {
+				// いちばん長く使われていないものを捨てる
+				const oldest = this.keywordRegExpCache.keys().next().value;
+				if (oldest != null) this.keywordRegExpCache.delete(oldest);
+			}
 		}
+		this.keywordRegExpCache.set(cacheKey, regex);
 		return regex;
 	}
 
