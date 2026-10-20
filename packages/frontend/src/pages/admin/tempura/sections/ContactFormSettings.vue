@@ -52,7 +52,7 @@ const form = useForm({
 }, async (state) => {
 	if (state.contactFormLimit < 1 || state.contactFormLimit > 10) {
 		os.alert({ type: 'error', text: '制限値は1から10の間で設定してください' });
-		return;
+		throw new Error('invalid contactFormLimit');
 	}
 	await os.apiWithDialog('admin/update-meta', {
 		enableContactForm: state.enableContactForm,

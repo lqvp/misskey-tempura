@@ -60,6 +60,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { ref, watch } from 'vue';
 import * as Misskey from 'misskey-js';
+import { defaultOpenLlmModerationApiUrl, defaultOpenLlmModerationModel, defaultOpenLlmModerationVisibilities, normalizeOpenLlmModerationVisibilities } from '../../moderation.llm.js';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkInput from '@/components/MkInput.vue';
 import MkCheckbox from '@/components/MkCheckbox.vue';
@@ -70,7 +71,6 @@ import * as os from '@/os.js';
 import { useForm } from '@/composables/use-form.js';
 import { fetchInstance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
-import { defaultOpenLlmModerationApiUrl, defaultOpenLlmModerationModel, defaultOpenLlmModerationVisibilities, normalizeOpenLlmModerationVisibilities } from '../../moderation.llm.js';
 
 const props = defineProps<{ meta: Misskey.Endpoints['admin/meta']['res'] }>();
 
@@ -106,7 +106,7 @@ const form = useForm({
 		openLlmModerationIncludeRemote: state.openLlmModerationIncludeRemote,
 		openLlmModerationVisibilities: state.openLlmModerationVisibilities as Misskey.Endpoints['admin/update-meta']['req']['openLlmModerationVisibilities'],
 	};
-	if (apiKeyChanged.value) {
+	if (form.modifiedStates.openLlmModerationApiKey) {
 		const trimmedApiKey = state.openLlmModerationApiKey.trim();
 		payload.openLlmModerationApiKey = trimmedApiKey === '' ? null : trimmedApiKey;
 	}
@@ -114,7 +114,4 @@ const form = useForm({
 	fetchInstance(true);
 });
 
-watch(() => form.state.openLlmModerationApiKey, () => {
-	apiKeyChanged.value = true;
-});
 </script>

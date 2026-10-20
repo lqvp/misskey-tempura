@@ -96,8 +96,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { useForm } from '@/composables/use-form.js';
 import * as Misskey from 'misskey-js';
+import { useForm } from '@/composables/use-form.js';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkInput from '@/components/MkInput.vue';
 import MkTextarea from '@/components/MkTextarea.vue';
@@ -158,7 +158,7 @@ const form = useForm({
 		entranceShowTimeLine: state.entranceShowTimeLine,
 		entranceShowFeatured: state.entranceShowFeatured,
 		entranceShowEmojis: state.entranceShowEmojis,
-		entranceSelectEmojis: state.entranceSelectEmojis.split('\n').slice(0, 5),
+		entranceSelectEmojis: emojis,
 		entranceShowStats: state.entranceShowStats,
 		entranceShowFederation: state.entranceShowFederation,
 		entranceShowDashboard: state.entranceShowDashboard,
