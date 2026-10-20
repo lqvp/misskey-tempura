@@ -255,6 +255,13 @@ function isThrottled(eventId: string): boolean {
 	// 最新の通知時刻を記録
 	recentAlerts.set(eventId, now);
 
+	// TTL 経過したエントリを掃除 (無制限成長を防ぐ)
+	for (const [key, timestamp] of recentAlerts) {
+		if (now - timestamp >= throttleTime) {
+			recentAlerts.delete(key);
+		}
+	}
+
 	// マップのサイズを制限（古いエントリを削除）
 	if (recentAlerts.size > 100) {
 		const oldestKey = recentAlerts.keys().next().value;
@@ -549,7 +556,7 @@ export function connectEarthquakeWarningWs(): void {
 		wsConnection = new WebSocket('wss://ws-api.wolfx.jp/jma_eew');
 
 		wsConnection.onopen = () => {
-			console.log('Earthquake warning WebSocket connected');
+			console.debug('Earthquake warning WebSocket connected');
 
 			// Clear any reconnect timeout if it exists
 			if (reconnectTimeout) {
@@ -593,7 +600,7 @@ export function connectEarthquakeWarningWs(): void {
 		};
 
 		wsConnection.onclose = (event) => {
-			console.log('Earthquake warning WebSocket closed', event);
+			console.debug('Earthquake warning WebSocket closed', event);
 			wsConnection = null;
 
 			// Notify user of connection closure if notification setting is enabled
@@ -691,7 +698,7 @@ function addToConnectionLog(type: 'info' | 'error' | 'warning', timestamp: Date,
 	if (logLevel === 'basic' && type !== 'error') return;
 
 	// Log to console for easier debugging
-	console.log(`[EarthquakeWarning] [${type}] ${message}`);
+	console.debug(`[EarthquakeWarning] [${type}] ${message}`);
 
 	// Add to log
 	connectionLog.unshift({ type, timestamp, message });
@@ -711,7 +718,7 @@ function addToDataLog(type: 'received' | 'processed' | 'error', timestamp: Date,
 	if (logLevel !== 'detailed') return;
 
 	// Log to console for easier debugging
-	console.log(`[EarthquakeWarning] [Data ${type}]`, data);
+	console.debug(`[EarthquakeWarning] [Data ${type}]`, data);
 
 	// Add to log
 	dataLog.unshift({ type, timestamp, data });
