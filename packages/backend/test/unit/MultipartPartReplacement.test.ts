@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, test, vi } from 'vitest';
 import UploadPartEndpoint from '@/server/api/endpoints/drive/files/upload-multipart-part.js';
-import { MULTIPART_STAGING_QUOTA_BYTES } from '@/misc/multipart-staging.js';
+import { getStagedBytesOfUpload, MULTIPART_STAGING_QUOTA_BYTES } from '@/misc/multipart-staging.js';
 
 test('a part created while waiting for the lock is replaced without consuming quota or incrementing completedParts', async () => {
 	const dir = fs.mkdtempSync(join(tmpdir(), 'multipart-replacement-'));
@@ -16,7 +16,7 @@ test('a part created while waiting for the lock is replaced without consuming qu
 	const partPath = join(partDir, 'part_1');
 	const incoming = join(dir, 'incoming');
 	fs.writeFileSync(incoming, 'replacement');
-	const upload = { id: 'upload', totalParts: 1, completedParts: 1, expiresAt: new Date(Date.now() + 60000) };
+	const upload = { id: 'upload', totalParts: 1, completedParts: 1, totalSize: 1024, expiresAt: new Date(Date.now() + 60000) };
 	const transaction = vi.fn();
 	const repository = {
 		findOneBy: async () => upload, exists: async () => true, findBy: async () => [upload], manager: { transaction },
@@ -37,6 +37,57 @@ test('a part created while waiting for the lock is replaced without consuming qu
 			.resolves.toMatchObject({ id: 'upload', partNumber: 1 });
 		expect(fs.readFileSync(partPath, 'utf8')).toBe('replacement');
 		expect(transaction).not.toHaveBeenCalled();
+	} finally {
+		fs.rmSync(dir, { recursive: true, force: true });
+	}
+});
+
+test('a part that would exceed the declared total size is rejected', async () => {
+	const dir = fs.mkdtempSync(join(tmpdir(), 'multipart-declared-size-'));
+	const incoming = join(dir, 'incoming');
+	fs.writeFileSync(incoming, 'more than five bytes');
+	const upload = { id: 'upload', totalParts: 2, completedParts: 0, totalSize: 5, expiresAt: new Date(Date.now() + 60000) };
+	const transaction = vi.fn();
+	const repository = {
+		findOneBy: async () => upload, exists: async () => true, findBy: async () => [upload], manager: { transaction },
+	};
+	const redis = { set: vi.fn(async () => 'OK'), get: vi.fn().mockResolvedValue(null), del: vi.fn() };
+	try {
+		const endpoint = new UploadPartEndpoint(repository as any, { multipartTempDir: dir } as any, redis as any);
+		await expect(endpoint.exec({ id: 'upload', partNumber: 1 }, { id: 'viewer' } as any, null, { name: 'part', path: incoming }))
+			.rejects.toMatchObject({ code: 'EXCEEDS_DECLARED_SIZE' });
+		expect(transaction).not.toHaveBeenCalled();
+	} finally {
+		fs.rmSync(dir, { recursive: true, force: true });
+	}
+});
+
+test('a part that fills exactly the declared total size is accepted', async () => {
+	const dir = fs.mkdtempSync(join(tmpdir(), 'multipart-exact-size-'));
+	const incoming = join(dir, 'incoming');
+	fs.writeFileSync(incoming, 'exact');
+	const upload = { id: 'upload', totalParts: 1, completedParts: 0, totalSize: 5, expiresAt: new Date(Date.now() + 60000) };
+	const transaction = vi.fn();
+	const repository = {
+		findOneBy: async () => upload, exists: async () => true, findBy: async () => [upload], manager: { transaction },
+	};
+	const redis = { set: vi.fn(async () => 'OK'), get: vi.fn().mockResolvedValue(null), del: vi.fn() };
+	try {
+		const endpoint = new UploadPartEndpoint(repository as any, { multipartTempDir: dir } as any, redis as any);
+		await expect(endpoint.exec({ id: 'upload', partNumber: 1 }, { id: 'viewer' } as any, null, { name: 'part', path: incoming }))
+			.resolves.toMatchObject({ id: 'upload', partNumber: 1 });
+	} finally {
+		fs.rmSync(dir, { recursive: true, force: true });
+	}
+});
+
+test('staged size counting fails closed on errors other than a missing directory', async () => {
+	const dir = fs.mkdtempSync(join(tmpdir(), 'multipart-staged-'));
+	const notADirectory = join(dir, 'file');
+	fs.writeFileSync(notADirectory, 'x');
+	try {
+		expect(await getStagedBytesOfUpload(join(dir, 'missing'))).toBe(0);
+		await expect(getStagedBytesOfUpload(notADirectory)).rejects.toMatchObject({ code: 'ENOTDIR' });
 	} finally {
 		fs.rmSync(dir, { recursive: true, force: true });
 	}

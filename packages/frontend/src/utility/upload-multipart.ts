@@ -119,144 +119,193 @@ export async function uploadFileMultipart(
 
 	const { id: uploadId } = await createMultipartRes.json();
 
-	// Step 2: Upload parts with dynamic queue
-	// Maximum number of concurrent uploads
-	const MAX_CONCURRENT_UPLOADS = 5;
-	const results: { partNumber: number }[] = [];
-
-	// Create a queue of all parts that need to be uploaded
-	const partQueue: number[] = [];
-	for (let i = 1; i <= totalParts; i++) {
-		partQueue.push(i);
+	try {
+		return await uploadPartsAndComplete();
+	} catch (err) {
+		// 途中で諦めたら、サーバーが予約している容量と退避済みのパートをすぐ解放させる
+		await abortMultipartUpload(uploadId);
+		throw err;
 	}
 
-	// Process the queue with controlled concurrency
-	const processQueue = async () => {
-		const workers: Promise<void>[] = [];
-		// アップロード失敗時のグローバルカウント
-		let globalRetryCount = 0;
-		const MAX_GLOBAL_RETRIES = 10;
-		let isAborting = false;
-		// 429レート制限エラーを検出したかどうか
-		let isRateLimited = false;
+	async function uploadPartsAndComplete() {
+		if ($i == null) throw new Error('Not logged in');
 
-		const processNext = async (): Promise<void> => {
+		// Step 2: Upload parts with dynamic queue
+		// Maximum number of concurrent uploads
+		const MAX_CONCURRENT_UPLOADS = 5;
+		const results: { partNumber: number }[] = [];
+
+		// Create a queue of all parts that need to be uploaded
+		const partQueue: number[] = [];
+		for (let i = 1; i <= totalParts; i++) {
+			partQueue.push(i);
+		}
+
+		// Process the queue with controlled concurrency
+		const processQueue = async () => {
+			const workers: Promise<void>[] = [];
+			// アップロード失敗時のグローバルカウント
+			let globalRetryCount = 0;
+			const MAX_GLOBAL_RETRIES = 10;
+			let isAborting = false;
+			// 429レート制限エラーを検出したかどうか
+			let isRateLimited = false;
+
+			const processNext = async (): Promise<void> => {
 			// レート制限発生時または処理中止中は何も処理しない
-			if (isRateLimited || isAborting) {
-				return;
-			}
-
-			// Get next part from queue
-			const partNumber = partQueue.shift();
-			if (partNumber === undefined) return;
-
-			// Upload the part
-			const start = (partNumber - 1) * chunkSize;
-			const end = Math.min(partNumber * chunkSize, file.size);
-			const chunk = file.slice(start, end);
-
-			try {
-				await uploadPart(uploadId, partNumber, chunk);
-				completedSize += chunk.size;
-				onProgress?.({ total: file.size, loaded: completedSize });
-				results.push({ partNumber });
-			} catch (err) {
-				// レート制限エラー(429)が発生した場合
-				if (err instanceof RateLimitExceededError) {
-					console.error('Rate limit exceeded, aborting upload:', err.message);
-					isRateLimited = true;
-					isAborting = true;
-					await alert({
-						type: 'error',
-						title: i18n.ts._uploadMultipart.error,
-						text: i18n.ts._uploadMultipart.rateLimitError ?? 'Rate limit exceeded',
-					});
-					throw new Error('Rate limit exceeded');
+				if (isRateLimited || isAborting) {
+					return;
 				}
 
-				// Re-add failed part to the beginning of the queue for retry
-				partQueue.unshift(partNumber);
+				// Get next part from queue
+				const partNumber = partQueue.shift();
+				if (partNumber === undefined) return;
 
-				// エラーの重大度を評価
-				// グローバルリトライ回数を超えた場合はアップロードを中止
-				globalRetryCount++;
-				if (globalRetryCount > MAX_GLOBAL_RETRIES) {
-					isAborting = true;
-					console.error(`Too many global retries (${globalRetryCount}), aborting multipart upload.`);
-					await alert({
-						type: 'error',
-						title: i18n.ts._uploadMultipart.error,
-						text: i18n.tsx._uploadMultipart.tooManyRetries({ retries: MAX_GLOBAL_RETRIES }) ?? `Too many retries (${MAX_GLOBAL_RETRIES})`,
-					});
-					throw new Error('Too many retries');
+				// Upload the part
+				const start = (partNumber - 1) * chunkSize;
+				const end = Math.min(partNumber * chunkSize, file.size);
+				const chunk = file.slice(start, end);
+
+				try {
+					await uploadPart(uploadId, partNumber, chunk);
+					completedSize += chunk.size;
+					onProgress?.({ total: file.size, loaded: completedSize });
+					results.push({ partNumber });
+				} catch (err) {
+				// 429 以外の 4xx (宣言サイズ超過など) は再試行しても通らないので、すぐに中止する
+					if (err instanceof NonRetryablePartError) {
+						isAborting = true;
+						await alert({
+							type: 'error',
+							title: i18n.ts._uploadMultipart.error,
+							text: err.message,
+						});
+						throw err;
+					}
+
+					// レート制限エラー(429)が発生した場合
+					if (err instanceof RateLimitExceededError) {
+						console.error('Rate limit exceeded, aborting upload:', err.message);
+						isRateLimited = true;
+						isAborting = true;
+						await alert({
+							type: 'error',
+							title: i18n.ts._uploadMultipart.error,
+							text: i18n.ts._uploadMultipart.rateLimitError ?? 'Rate limit exceeded',
+						});
+						throw new Error('Rate limit exceeded');
+					}
+
+					// Re-add failed part to the beginning of the queue for retry
+					partQueue.unshift(partNumber);
+
+					// エラーの重大度を評価
+					// グローバルリトライ回数を超えた場合はアップロードを中止
+					globalRetryCount++;
+					if (globalRetryCount > MAX_GLOBAL_RETRIES) {
+						isAborting = true;
+						console.error(`Too many global retries (${globalRetryCount}), aborting multipart upload.`);
+						await alert({
+							type: 'error',
+							title: i18n.ts._uploadMultipart.error,
+							text: i18n.tsx._uploadMultipart.tooManyRetries({ retries: MAX_GLOBAL_RETRIES }) ?? `Too many retries (${MAX_GLOBAL_RETRIES})`,
+						});
+						throw new Error('Too many retries');
+					}
+
+					console.error(`Error uploading part ${partNumber}:`, err);
+
+					// 少し待ってから次の処理を試行（制御フローの混雑を緩和）
+					await new Promise(resolve => window.setTimeout(resolve, 500));
 				}
 
-				console.error(`Error uploading part ${partNumber}:`, err);
+				// Process next part if any remain and not aborting
+				if (partQueue.length > 0) {
+					return processNext();
+				}
+			};
 
-				// 少し待ってから次の処理を試行（制御フローの混雑を緩和）
-				await new Promise(resolve => window.setTimeout(resolve, 500));
+			// Start workers
+			for (let i = 0; i < Math.min(MAX_CONCURRENT_UPLOADS, totalParts); i++) {
+				workers.push(processNext());
 			}
 
-			// Process next part if any remain and not aborting
-			if (partQueue.length > 0) {
-				return processNext();
-			}
+			// Wait for all workers to complete
+			await Promise.all(workers);
 		};
 
-		// Start workers
-		for (let i = 0; i < Math.min(MAX_CONCURRENT_UPLOADS, totalParts); i++) {
-			workers.push(processNext());
+		// Start processing the queue
+		await processQueue();
+
+		// Step 3: Complete multipart upload
+		const completeMultipartRes = await window.fetch(`${apiUrl}/drive/files/complete-multipart-upload`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				i: $i.token,
+				id: uploadId,
+				parts: results.sort((a, b) => a.partNumber - b.partNumber),
+			}),
+		});
+
+		if (!completeMultipartRes.ok) {
+			const error = await completeMultipartRes.json();
+			const errorMessage = error.error?.message ?? 'Failed to complete multipart upload';
+
+			// Handle specific error cases
+			if (error.error?.code === 'NO_FREE_SPACE') {
+				await alert({
+					type: 'error',
+					title: i18n.ts._uploadMultipart.error,
+					text: i18n.ts._uploadMultipart.noFreeSpace ?? 'No free space in drive',
+				});
+			} else if (error.error?.code === 'FILE_SIZE_MISMATCH') {
+				await alert({
+					type: 'error',
+					title: i18n.ts._uploadMultipart.error,
+					text: i18n.ts._uploadMultipart.fileSizeMismatch ?? 'File size mismatch detected',
+				});
+			} else if (error.error?.code === 'MULTIPART_UPLOAD_NOT_COMPLETE') {
+				await alert({
+					type: 'error',
+					title: i18n.ts._uploadMultipart.error,
+					text: i18n.ts._uploadMultipart.incompleteUpload ?? 'Upload is incomplete',
+				});
+			}
+
+			throw new Error(errorMessage);
 		}
 
-		// Wait for all workers to complete
-		await Promise.all(workers);
-	};
-
-	// Start processing the queue
-	await processQueue();
-
-	// Step 3: Complete multipart upload
-	const completeMultipartRes = await window.fetch(`${apiUrl}/drive/files/complete-multipart-upload`, {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify({
-			i: $i.token,
-			id: uploadId,
-			parts: results.sort((a, b) => a.partNumber - b.partNumber),
-		}),
-	});
-
-	if (!completeMultipartRes.ok) {
-		const error = await completeMultipartRes.json();
-		const errorMessage = error.error?.message ?? 'Failed to complete multipart upload';
-
-		// Handle specific error cases
-		if (error.error?.code === 'NO_FREE_SPACE') {
-			await alert({
-				type: 'error',
-				title: i18n.ts._uploadMultipart.error,
-				text: i18n.ts._uploadMultipart.noFreeSpace ?? 'No free space in drive',
-			});
-		} else if (error.error?.code === 'FILE_SIZE_MISMATCH') {
-			await alert({
-				type: 'error',
-				title: i18n.ts._uploadMultipart.error,
-				text: i18n.ts._uploadMultipart.fileSizeMismatch ?? 'File size mismatch detected',
-			});
-		} else if (error.error?.code === 'MULTIPART_UPLOAD_NOT_COMPLETE') {
-			await alert({
-				type: 'error',
-				title: i18n.ts._uploadMultipart.error,
-				text: i18n.ts._uploadMultipart.incompleteUpload ?? 'Upload is incomplete',
-			});
-		}
-
-		throw new Error(errorMessage);
+		return completeMultipartRes.json();
 	}
+}
 
-	return completeMultipartRes.json();
+/**
+ * 分割アップロードを中止する。失敗してもサーバー側は期限切れで掃除されるので、エラーは無視する
+ */
+async function abortMultipartUpload(uploadId: string): Promise<void> {
+	if ($i == null) return;
+	try {
+		await window.fetch(`${apiUrl}/drive/files/abort-multipart-upload`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ i: $i.token, id: uploadId }),
+		});
+	} catch (err) {
+		console.error('Failed to abort multipart upload:', err);
+	}
+}
+
+/**
+ * 再試行しても通らないエラー (429 以外の 4xx)
+ */
+class NonRetryablePartError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = 'NonRetryablePartError';
+	}
 }
 
 /**
@@ -292,6 +341,9 @@ async function uploadPart(uploadId: string, partNumber: number, chunk: Blob): Pr
 		const error = await res.json();
 		if (res.status === 429) {
 			throw new RateLimitExceededError(error.error?.message ?? 'Rate limit exceeded');
+		}
+		if (res.status >= 400 && res.status < 500) {
+			throw new NonRetryablePartError(error.error?.message ?? 'Failed to upload part');
 		}
 		throw new Error(error.error?.message ?? 'Failed to upload part');
 	}

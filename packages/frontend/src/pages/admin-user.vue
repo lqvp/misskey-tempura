@@ -471,7 +471,7 @@ async function updateUserName() {
 
 	await os.apiWithDialog('admin/update-user-name', {
 		userId: user.value.id,
-		name: name || undefined,
+		name: name || null,
 	}).then(refreshUser);
 }
 

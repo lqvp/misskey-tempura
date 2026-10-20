@@ -320,6 +320,7 @@ export type ContactFormSubmitResponse = operations['contact-form___submit']['res
 export type DriveResponse = operations['drive']['responses']['200']['content']['application/json'];
 export type DriveFilesRequest = operations['drive___files']['requestBody']['content']['application/json'];
 export type DriveFilesResponse = operations['drive___files']['responses']['200']['content']['application/json'];
+export type DriveFilesAbortMultipartUploadRequest = operations['drive___files___abort-multipart-upload']['requestBody']['content']['application/json'];
 export type DriveFilesAttachedChatMessagesRequest = operations['drive___files___attached-chat-messages']['requestBody']['content']['application/json'];
 export type DriveFilesAttachedChatMessagesResponse = operations['drive___files___attached-chat-messages']['responses']['200']['content']['application/json'];
 export type DriveFilesAttachedNotesRequest = operations['drive___files___attached-notes']['requestBody']['content']['application/json'];

@@ -7,6 +7,7 @@ import * as fs from 'node:fs';
 import ms from 'ms';
 import * as Redis from 'ioredis';
 import { Inject, Injectable } from '@nestjs/common';
+import { MoreThan } from 'typeorm';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 import type { MultipartUploadsRepository } from '@/models/_.js';
@@ -75,6 +76,11 @@ export const meta = {
 			code: 'MULTIPART_UPLOAD_EXPIRED',
 			id: '1c8f71a2-a080-4043-9caa-ca06eed63c25',
 		},
+		exceedsDeclaredSize: {
+			message: 'The uploaded parts exceed the size declared when the multipart upload was created.',
+			code: 'EXCEEDS_DECLARED_SIZE',
+			id: '192fb6e7-28cc-4c54-86d9-55f047e8d922',
+		},
 		stagingQuotaExceeded: {
 			message: 'The total size of staged uploads exceeds the allowed quota.',
 			code: 'STAGING_QUOTA_EXCEEDED',
@@ -129,7 +135,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				// クォータ判定とパート保存をユーザー単位で直列化し、
 				// 並行アップロードが同じ使用量に対してチェックを通過して
 				// クォータ超過になるのを防ぐ
-				const unlock = await acquireDistributedLock(this.redisClient, `multipart-quota:${me.id}`, 30 * 1000, 50, 100);
+				// 待ち時間をロックの有効期限 (30 秒) に合わせる。短いと前の処理が長引いたときに取れず 500 になる
+				const unlock = await acquireDistributedLock(this.redisClient, `multipart-quota:${me.id}`, 30 * 1000, 300, 100);
 				try {
 					// ロック待機中に期限切れクリーンアップや完了処理がスティージング
 					// ディレクトリとレコードを削除した可能性がある。そのまま書き戻すと
@@ -144,31 +151,34 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					const partPath = `${partDir}/part_${ps.partNumber}`;
 
 					// Check if this part was already uploaded
-					const partExists = fs.existsSync(partPath);
+					const partExists = await fs.promises.access(partPath).then(() => true, () => false);
 
 					// 新しいパートをスティージングに加えた合計がアカウントの
 					// クォータを超えたら拒否する。既存パートの置換の場合は
 					// そのバイト数を差し引く
-					const userUploads = await this.multipartUploadsRepository.findBy({ userId: me.id });
-					let stagedBytes = fs.statSync(file!.path).size;
+					// 期限切れのアップロードは作成時の容量確認と同じく数えない (掃除されるまでの間に残っているだけ)
+					const userUploads = await this.multipartUploadsRepository.findBy({ userId: me.id, expiresAt: MoreThan(new Date()) });
+					const incomingBytes = (await fs.promises.stat(file!.path)).size;
+					// 存在確認と stat の間に消えたファイルはサイズ 0 扱い
+					const replacedBytes = partExists ? await fs.promises.stat(partPath).then(s => s.size, () => 0) : 0;
+					const stagedByUpload: number[] = [];
 					for (const upload of userUploads) {
-						stagedBytes += getUploadStagedBytes(this.config.multipartTempDir, upload.id);
+						stagedByUpload.push(await getUploadStagedBytes(this.config.multipartTempDir, upload.id));
 					}
-					if (partExists) {
-						try {
-							stagedBytes -= fs.statSync(partPath).size;
-						} catch {
-							// existsSync と stat の間に消えたファイルはサイズ 0 扱い
-						}
+					const thisUploadIndex = userUploads.findIndex(upload => upload.id === multipartUpload.id);
+					const thisUploadStaged = thisUploadIndex === -1 ? 0 : stagedByUpload[thisUploadIndex];
+					const userStaged = stagedByUpload.reduce((a, b) => a + b, 0);
+
+					// 作成時に宣言した合計サイズでドライブ容量を確認しているので、それを超えるパートは受け付けない
+					if (thisUploadStaged - replacedBytes + incomingBytes > multipartUpload.totalSize) {
+						throw new ApiError(meta.errors.exceedsDeclaredSize);
 					}
-					if (stagedBytes > MULTIPART_STAGING_QUOTA_BYTES) {
+					if (userStaged - replacedBytes + incomingBytes > MULTIPART_STAGING_QUOTA_BYTES) {
 						throw new ApiError(meta.errors.stagingQuotaExceeded);
 					}
 
 					// Create part directory if it doesn't exist
-					if (!fs.existsSync(partDir)) {
-						fs.mkdirSync(partDir, { recursive: true });
-					}
+					await fs.promises.mkdir(partDir, { recursive: true });
 
 					// Move the uploaded file to the part path
 					// （スティージング先が一時領域と別ファイルシステムの場合は EXDEV になるため copy+削除にフォールバックする）

@@ -1941,6 +1941,15 @@ export type paths = {
          */
         post: operations['drive___files'];
     };
+    '/drive/files/abort-multipart-upload': {
+        /**
+         * drive/files/abort-multipart-upload
+         * @description Abort a multipart upload and discard its uploaded parts.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *write:drive*
+         */
+        post: operations['drive___files___abort-multipart-upload'];
+    };
     '/drive/files/attached-chat-messages': {
         /**
          * drive/files/attached-chat-messages
@@ -15534,7 +15543,7 @@ export interface operations {
                 'application/json': {
                     /** Format: misskey:id */
                     userId: string;
-                    name?: string;
+                    name: string | null;
                 };
             };
         };
@@ -22183,6 +22192,78 @@ export interface operations {
             };
             /** @description I'm Ai */
             418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'drive___files___abort-multipart-upload': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (without any results) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };
