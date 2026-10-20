@@ -43,6 +43,25 @@ export class AntennaService implements OnApplicationShutdown {
 		return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 	}
 
+	// ノートごと・アンテナごとに同じキーワードの正規表現を作り直さないよう使い回す。
+	// matchAll は内部で正規表現を複製するので、g フラグ付きでも共有して問題ない
+	private keywordRegExpCache = new Map<string, RegExp>();
+	private static readonly KEYWORD_REGEXP_CACHE_MAX = 10000;
+
+	private getKeywordRegExp(keyword: string, caseSensitive: boolean): RegExp {
+		const flags = caseSensitive ? 'gu' : 'gui';
+		const cacheKey = `${flags}:${keyword}`;
+		let regex = this.keywordRegExpCache.get(cacheKey);
+		if (regex == null) {
+			if (this.keywordRegExpCache.size >= AntennaService.KEYWORD_REGEXP_CACHE_MAX) {
+				this.keywordRegExpCache.clear();
+			}
+			regex = new RegExp(`(?=(${this.escapeRegExp(keyword)}))`, flags);
+			this.keywordRegExpCache.set(cacheKey, regex);
+		}
+		return regex;
+	}
+
 	@bindThis
 	public findAllMatches(text: string, keywords: string[], caseSensitive: boolean): Match[] {
 		if (!text) return [];
@@ -50,10 +69,7 @@ export class AntennaService implements OnApplicationShutdown {
 
 		for (const keyword of keywords) {
 			if (!keyword) continue;
-			const escapedKeyword = this.escapeRegExp(keyword);
-			const pattern = `(?=(${escapedKeyword}))`;
-			const flags = caseSensitive ? 'gu' : 'gui';
-			const regex = new RegExp(pattern, flags);
+			const regex = this.getKeywordRegExp(keyword, caseSensitive);
 
 			for (const match of text.matchAll(regex)) {
 				matches.push({
