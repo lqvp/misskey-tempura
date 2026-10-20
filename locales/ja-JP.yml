@@ -1878,7 +1878,7 @@ _serverSettings:
   signToActivityPubGet: "GETリクエストに署名する"
   signToActivityPubGet_description: "通常は有効にしてください。連合の通信に関する問題がある場合に、無効にすると改善することがありますが、逆にサーバーによっては通信が不可になることがあります。"
   requireSignedApFetch: "署名の無いActivityPubの取得を拒否する"
-  requireSignedApFetch_description: "有効にすると、HTTP署名を検証できないリクエストにはノートなどを返しません。ブロックしたサーバーが身元を隠して取得するのを防げますが、署名しないソフトウェアからは取得できなくなります。アカウント情報と公開鍵の取得は対象外です。"
+  requireSignedApFetch_description: "有効にすると、HTTP署名を検証できないリクエストにはノートなどを返しません。ブロックしたサーバーが名乗らずに取得するのを防ぎやすくなりますが、署名しないソフトウェアや、このサーバーとまだやり取りしたことのないサーバーからは取得できなくなります。アカウント情報と公開鍵の取得は対象外です。"
   proxyRemoteFiles: "リモートファイルをプロキシする"
   proxyRemoteFiles_description: "有効にすると、リモートのファイルをプロキシして提供します。画像のサムネイル生成やユーザーのプライバシー保護に役立ちます。"
   allowExternalApRedirect: "ActivityPub経由の照会にリダイレクトを許可する"
