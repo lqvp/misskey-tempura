@@ -511,7 +511,7 @@ export class ApiCallService implements OnApplicationShutdown {
 		if (ep.meta.requiredRolePolicy != null && user != null && (this.meta.rootUserId !== user.id)) {
 			const myRoles = await this.roleService.getUserRoles(user!.id);
 			const policies = await this.roleService.getUserPolicies(user!.id);
-			if (!policies[ep.meta.requiredRolePolicy] && !myRoles.some(r => r.isAdministrator)) {
+			if (!policies[ep.meta.requiredRolePolicy] && !myRoles.some(r => r.permissionGroup === 'Admin')) {
 				throw new ApiError({
 					message: 'You are not assigned to a required role.',
 					code: 'ROLE_PERMISSION_DENIED',
