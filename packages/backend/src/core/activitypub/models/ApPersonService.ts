@@ -57,6 +57,11 @@ const summaryLength = 2048;
 
 type Field = Record<'name' | 'value', string>;
 
+type CollectionInfo = {
+	isPublic: boolean;
+	totalItems: number | undefined;
+};
+
 @Injectable()
 export class ApPersonService implements OnModuleInit {
 	private utilityService: UtilityService;
@@ -391,20 +396,16 @@ export class ApPersonService implements OnModuleInit {
 
 		const isBot = getApType(object) === 'Service' || getApType(object) === 'Application';
 
-		const [followingVisibility, followersVisibility] = await Promise.all(
-			[
-				this.isPublicCollection(person.following, resolver),
-				this.isPublicCollection(person.followers, resolver),
-			].map((p): Promise<'public' | 'private'> => p
-				.then(isPublic => isPublic ? 'public' : 'private')
-				.catch(err => {
-					if (!(err instanceof StatusError) || err.isRetryable) {
-						this.logger.error('error occurred while fetching following/followers collection', { stack: err });
-					}
-					return 'private';
-				}),
-			),
-		);
+		const collections = await this.fetchCollections(person, resolver);
+		const [followingVisibility, followersVisibility] = [collections.following, collections.followers].map((c): 'public' | 'private' => {
+			if (c.status === 'rejected') {
+				if (!(c.reason instanceof StatusError) || c.reason.isRetryable) {
+					this.logger.error('error occurred while fetching following/followers collection', { stack: c.reason });
+				}
+				return 'private';
+			}
+			return c.value.isPublic ? 'public' : 'private';
+		});
 
 		const bday = person['vcard:bday']?.match(/^\d{4}-\d{2}-\d{2}/);
 
@@ -418,56 +419,10 @@ export class ApPersonService implements OnModuleInit {
 			throw new Error('unexpected schema of person url: ' + url);
 		}
 
-		let followersCount: number | undefined;
-
-		if (typeof person.followers === 'string') {
-			try {
-				const data = await this.httpRequestService.send(person.followers, {
-					headers: { Accept: 'application/json' },
-					timeout: 10000,
-					size: 512 * 1024,
-				});
-				const jsonData = JSON.parse(await data.text());
-
-				followersCount = jsonData.totalItems;
-			} catch {
-				followersCount = undefined;
-			}
-		}
-
-		let followingCount: number | undefined;
-
-		if (typeof person.following === 'string') {
-			try {
-				const data = await this.httpRequestService.send(person.following, {
-					headers: { Accept: 'application/json' },
-					timeout: 10000,
-					size: 512 * 1024,
-				});
-				const jsonData = JSON.parse(await data.text());
-
-				followingCount = jsonData.totalItems;
-			} catch (e) {
-				followingCount = undefined;
-			}
-		}
-
-		let notesCount: number | undefined;
-
-		if (typeof person.outbox === 'string') {
-			try {
-				const data = await this.httpRequestService.send(person.outbox, {
-					headers: { Accept: 'application/json' },
-					timeout: 10000,
-					size: 512 * 1024,
-				});
-				const jsonData = JSON.parse(await data.text());
-
-				notesCount = jsonData.totalItems;
-			} catch (e) {
-				notesCount = undefined;
-			}
-		}
+		// 件数は公開範囲の判定と同じ取得結果から読む (署名付きで取得するので、署名を求めるサーバーからも取れる)
+		const followersCount = this.totalItemsOf(collections.followers);
+		const followingCount = this.totalItemsOf(collections.following);
+		const notesCount = this.totalItemsOf(collections.outbox);
 
 		// Create user
 		let user: MiRemoteUser | null = null;
@@ -663,22 +618,18 @@ export class ApPersonService implements OnModuleInit {
 
 		const tags = extractApHashtags(person.tag).map(normalizeForSearch).splice(0, 32);
 
-		const [followingVisibility, followersVisibility] = await Promise.all(
-			[
-				this.isPublicCollection(person.following, resolver),
-				this.isPublicCollection(person.followers, resolver),
-			].map((p): Promise<'public' | 'private' | undefined> => p
-				.then(isPublic => isPublic ? 'public' : 'private')
-				.catch(err => {
-					if (!(err instanceof StatusError) || err.isRetryable) {
-						this.logger.error('error occurred while fetching following/followers collection', { stack: err });
-						// Do not update the visibiility on transient errors.
-						return undefined;
-					}
-					return 'private';
-				}),
-			),
-		);
+		const collections = await this.fetchCollections(person, resolver);
+		const [followingVisibility, followersVisibility] = [collections.following, collections.followers].map((c): 'public' | 'private' | undefined => {
+			if (c.status === 'rejected') {
+				if (!(c.reason instanceof StatusError) || c.reason.isRetryable) {
+					this.logger.error('error occurred while fetching following/followers collection', { stack: c.reason });
+					// Do not update the visibiility on transient errors.
+					return undefined;
+				}
+				return 'private';
+			}
+			return c.value.isPublic ? 'public' : 'private';
+		});
 
 		const bday = person['vcard:bday']?.match(/^\d{4}-\d{2}-\d{2}/);
 
@@ -690,56 +641,10 @@ export class ApPersonService implements OnModuleInit {
 			throw new Error('unexpected schema of person url: ' + url);
 		}
 
-		let followersCount: number | undefined;
-
-		if (typeof person.followers === 'string') {
-			try {
-				const data = await this.httpRequestService.send(person.followers, {
-					headers: { Accept: 'application/json' },
-					timeout: 10000,
-					size: 512 * 1024,
-				});
-				const jsonData = JSON.parse(await data.text());
-
-				followersCount = jsonData.totalItems;
-			} catch {
-				followersCount = undefined;
-			}
-		}
-
-		let followingCount: number | undefined;
-
-		if (typeof person.following === 'string') {
-			try {
-				const data = await this.httpRequestService.send(person.following, {
-					headers: { Accept: 'application/json' },
-					timeout: 10000,
-					size: 512 * 1024,
-				});
-				const jsonData = JSON.parse(await data.text());
-
-				followingCount = jsonData.totalItems;
-			} catch {
-				followingCount = undefined;
-			}
-		}
-
-		let notesCount: number | undefined;
-
-		if (typeof person.outbox === 'string') {
-			try {
-				const data = await this.httpRequestService.send(person.outbox, {
-					headers: { Accept: 'application/json' },
-					timeout: 10000,
-					size: 512 * 1024,
-				});
-				const jsonData = JSON.parse(await data.text());
-
-				notesCount = jsonData.totalItems;
-			} catch (e) {
-				notesCount = undefined;
-			}
-		}
+		// 件数は公開範囲の判定と同じ取得結果から読む (署名付きで取得するので、署名を求めるサーバーからも取れる)
+		const followersCount = this.totalItemsOf(collections.followers);
+		const followingCount = this.totalItemsOf(collections.following);
+		const notesCount = this.totalItemsOf(collections.outbox);
 
 		if (url) {
 			host = new URL(url).host;
@@ -1012,14 +917,29 @@ export class ApPersonService implements OnModuleInit {
 	}
 
 	@bindThis
-	private async isPublicCollection(collection: string | ICollection | IOrderedCollection | undefined, resolver: Resolver): Promise<boolean> {
-		if (collection) {
-			const resolved = await resolver.resolveCollection(collection);
-			if (resolved.first || (resolved as ICollection).items || (resolved as IOrderedCollection).orderedItems) {
-				return true;
-			}
-		}
+	/**
+	 * following / followers / outbox をそれぞれ一度だけ並列に取得する
+	 */
+	private async fetchCollections(person: IActor, resolver: Resolver): Promise<Record<'following' | 'followers' | 'outbox', PromiseSettledResult<CollectionInfo>>> {
+		const [following, followers, outbox] = await Promise.allSettled([
+			this.fetchCollectionInfo(person.following, resolver),
+			this.fetchCollectionInfo(person.followers, resolver),
+			this.fetchCollectionInfo(person.outbox, resolver),
+		]);
+		return { following, followers, outbox };
+	}
 
-		return false;
+	private async fetchCollectionInfo(collection: string | ICollection | IOrderedCollection | undefined, resolver: Resolver): Promise<CollectionInfo> {
+		if (!collection) return { isPublic: false, totalItems: undefined };
+
+		const resolved = await resolver.resolveCollection(collection);
+		return {
+			isPublic: !!(resolved.first || (resolved as ICollection).items || (resolved as IOrderedCollection).orderedItems),
+			totalItems: typeof resolved.totalItems === 'number' ? resolved.totalItems : undefined,
+		};
+	}
+
+	private totalItemsOf(result: PromiseSettledResult<CollectionInfo>): number | undefined {
+		return result.status === 'fulfilled' ? result.value.totalItems : undefined;
 	}
 }

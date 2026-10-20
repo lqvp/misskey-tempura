@@ -339,7 +339,8 @@ describe('ActivityPub', () => {
 			await personService.createPerson(actor.id, resolver);
 
 			// All notes in `featured` are same-origin, no need to fetch notes again
-			assert.deepStrictEqual(resolver.remoteGetTrials(), [actor.id, actor.featured]);
+			// outbox は件数を読むために取得する
+			assert.deepStrictEqual(resolver.remoteGetTrials(), [actor.id, actor.outbox, actor.featured]);
 
 			// Created notes without resolving anything
 			for (const item of featured.items as IPost[]) {
@@ -372,7 +373,7 @@ describe('ActivityPub', () => {
 			// actor2Note is from a different server and needs to be fetched again
 			assert.deepStrictEqual(
 				resolver.remoteGetTrials(),
-				[actor1.id, actor1.featured, actor2Note.id, actor2.id],
+				[actor1.id, actor1.outbox, actor1.featured, actor2Note.id, actor2.id, actor2.outbox],
 			);
 
 			const note = await noteService.fetchNote(actor2Note.id);
