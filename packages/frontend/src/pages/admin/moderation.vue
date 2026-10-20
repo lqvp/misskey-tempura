@@ -32,41 +32,41 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<div><i class="ti ti-alert-triangle" style="color: var(--MI_THEME-warn);"></i> <SearchText>{{ i18n.ts._serverSettings.userGeneratedContentsVisibilityForVisitor_description2 }}</SearchText></div>
 						</template>
 					</MkSelect>
-
-					<MkSwitch v-model="approvalRequiredForSignup" @change="onChange_approvalRequiredForSignup">
-						<template #label>{{ i18n.ts.approvalRequiredForSignup }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-						<template #caption>{{ i18n.ts.registerApprovalEmailRecommended }}</template>
-					</MkSwitch>
-
-					<MkSwitch v-model="blockMentionsFromUnfamiliarRemoteUsers" @change="onChange_blockMentionsFromUnfamiliarRemoteUsers">
-						<template #label>{{ i18n.ts.blockMentionsFromUnfamiliarRemoteUsers }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-						<template #caption>{{ i18n.ts.blockMentionsFromUnfamiliarRemoteUsersDescription }} Cherry-picked from Misskey.io (https://github.com/MisskeyIO/misskey/commit/82cc3987c13db4ad0da1589386027c222ce85ff8)</template>
-					</MkSwitch>
-
-					<div class="_gaps">
-						<MkInput v-model="validateMinimumUsernameLength" type="number" @update:modelValue="onUsernameMinLengthChange">
-							<template #label>
-								<span>{{ i18n.ts.validateMinimumUsernameLength }}</span>
-								<span v-if="validateMinimumUsernameLengthChanged" class="_modified">{{ i18n.ts.modified }}</span>
-								<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-							</template>
-							<template #caption>{{ i18n.ts.validateMinimumUsernameLengthDescription }}</template>
-						</MkInput>
-						<MkButton v-if="validateMinimumUsernameLengthChanged" primary @click="save_validateMinimumUsernameLength">{{ i18n.ts.save }}</MkButton>
-					</div>
-
-					<div class="_gaps">
-						<MkInput v-model="secondsPerSignup" type="number" @update:modelValue="v => secondsPerSignup = Number(v)">
-							<template #label>
-								<span>{{ i18n.ts.secondsPerSignup }}</span>
-								<span v-if="secondsPerSignupChanged" class="_modified">{{ i18n.ts.modified }}</span>
-								<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-							</template>
-							<template #caption>{{ i18n.ts.secondsPerSignupDescription }}</template>
-						</MkInput>
-						<MkButton v-if="secondsPerSignupChanged" primary @click="save_secondsPerSignup">{{ i18n.ts.save }}</MkButton>
-					</div>
 				</SearchMarker>
+
+				<MkSwitch v-model="approvalRequiredForSignup" @change="onChange_approvalRequiredForSignup">
+					<template #label>{{ i18n.ts.approvalRequiredForSignup }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+					<template #caption>{{ i18n.ts.registerApprovalEmailRecommended }}</template>
+				</MkSwitch>
+
+				<MkSwitch v-model="blockMentionsFromUnfamiliarRemoteUsers" @change="onChange_blockMentionsFromUnfamiliarRemoteUsers">
+					<template #label>{{ i18n.ts.blockMentionsFromUnfamiliarRemoteUsers }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+					<template #caption>{{ i18n.ts.blockMentionsFromUnfamiliarRemoteUsersDescription }} Cherry-picked from Misskey.io (https://github.com/MisskeyIO/misskey/commit/82cc3987c13db4ad0da1589386027c222ce85ff8)</template>
+				</MkSwitch>
+
+				<div class="_gaps">
+					<MkInput v-model="validateMinimumUsernameLength" type="number" @update:modelValue="onUsernameMinLengthChange">
+						<template #label>
+							<span>{{ i18n.ts.validateMinimumUsernameLength }}</span>
+							<span v-if="validateMinimumUsernameLengthChanged" class="_modified">{{ i18n.ts.modified }}</span>
+							<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+						</template>
+						<template #caption>{{ i18n.ts.validateMinimumUsernameLengthDescription }}</template>
+					</MkInput>
+					<MkButton v-if="validateMinimumUsernameLengthChanged" primary @click="save_validateMinimumUsernameLength">{{ i18n.ts.save }}</MkButton>
+				</div>
+
+				<div class="_gaps">
+					<MkInput v-model="secondsPerSignup" type="number" @update:modelValue="v => secondsPerSignup = Number(v)">
+						<template #label>
+							<span>{{ i18n.ts.secondsPerSignup }}</span>
+							<span v-if="secondsPerSignupChanged" class="_modified">{{ i18n.ts.modified }}</span>
+							<span class="_beta">{{ i18n.ts.originalFeature }}</span>
+						</template>
+						<template #caption>{{ i18n.ts.secondsPerSignupDescription }}</template>
+					</MkInput>
+					<MkButton v-if="secondsPerSignupChanged" primary @click="save_secondsPerSignup">{{ i18n.ts.save }}</MkButton>
+				</div>
 
 				<XServerRules/>
 
@@ -129,7 +129,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<SearchMarker :keywords="['open', 'llm', 'moderation']">
 					<MkFolder>
 						<template #icon><SearchIcon><i class="ti ti-shield-check"></i></SearchIcon></template>
-						<template #label><SearchLabel>{{ i18n.ts.openLlmModeration }}</SearchLabel></template>
+						<template #label><SearchLabel>{{ i18n.ts.openLlmModeration }}</SearchLabel><span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 						<template v-if="openLlmModerationForm.modified.value" #footer>
 							<MkFormFooter :form="openLlmModerationForm"/>
 						</template>
@@ -329,8 +329,8 @@ const approvalRequiredForSignup = ref(meta.approvalRequiredForSignup);
 const blockMentionsFromUnfamiliarRemoteUsers = ref(meta.blockMentionsFromUnfamiliarRemoteUsers);
 const validateMinimumUsernameLength = ref(meta.validateMinimumUsernameLength);
 const secondsPerSignup = ref(meta.secondsPerSignup);
-const originalMinimumUsernameLength = ref<number>();
-const originalSecondsPerSignup = ref<number>(0);
+const originalMinimumUsernameLength = ref<number>(meta.validateMinimumUsernameLength);
+const originalSecondsPerSignup = ref<number>(meta.secondsPerSignup);
 const validateMinimumUsernameLengthChanged = computed(() =>
 	validateMinimumUsernameLength.value !== originalMinimumUsernameLength.value
 );

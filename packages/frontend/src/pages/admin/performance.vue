@@ -51,65 +51,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<template #caption>{{ i18n.ts.turnOffToImprovePerformance }}</template>
 						</MkSwitch>
 					</div>
-
-			<MkFolder :defaultOpen="true">
-				<template #icon><i class="ti ti-server-2"></i></template>
-				<template #label>{{ i18n.ts._serverStats.title }}</template>
-				<template v-if="serverStatsForm.savedState.enableServerMachineStats" #suffix>Enabled</template>
-				<template v-else #suffix>Disabled</template>
-				<template v-if="serverStatsForm.modified.value" #footer>
-					<MkFormFooter :form="serverStatsForm"/>
-				</template>
-
-				<div class="_gaps">
-					<MkSwitch v-model="serverStatsForm.state.enableServerMachineStats">
-						<template #label>{{ i18n.ts.enableServerMachineStats }}<span v-if="serverStatsForm.modifiedStates.enableServerMachineStats" class="_modified">{{ i18n.ts.modified }}</span></template>
-						<template #caption>{{ i18n.ts.turnOffToImprovePerformance }}</template>
-					</MkSwitch>
-
-					<template v-if="serverStatsForm.state.enableServerMachineStats">
-						<MkSwitch v-model="serverStatsForm.state.enableCpuModel">
-							<template #label>{{ i18n.ts._serverStats.enableCpuModel }}<span v-if="serverStatsForm.modifiedStates.enableCpuModel" class="_modified">{{ i18n.ts.modified }}</span></template>
-							<template #caption>{{ i18n.ts._serverStats.enableCpuModelDescription }}</template>
-						</MkSwitch>
-
-						<MkInput v-if="serverStatsForm.state.enableCpuModel" v-model="serverStatsForm.state.customCpuModel">
-							<template #label>{{ i18n.ts._serverStats.customCpuModel }}<span v-if="serverStatsForm.modifiedStates.customCpuModel" class="_modified">{{ i18n.ts.modified }}</span></template>
-							<template #caption>{{ i18n.ts._serverStats.customCpuModelDescription }}</template>
-						</MkInput>
-
-						<MkSwitch v-model="serverStatsForm.state.enableCpuCore">
-							<template #label>{{ i18n.ts._serverStats.enableCpuCore }}<span v-if="serverStatsForm.modifiedStates.enableCpuCore" class="_modified">{{ i18n.ts.modified }}</span></template>
-							<template #caption>{{ i18n.ts._serverStats.enableCpuCoreDescription }}</template>
-						</MkSwitch>
-
-						<MkInput v-if="serverStatsForm.state.enableCpuCore" v-model="serverStatsForm.state.customCpuCore" type="number">
-							<template #label>{{ i18n.ts._serverStats.customCpuCore }}<span v-if="serverStatsForm.modifiedStates.customCpuCore" class="_modified">{{ i18n.ts.modified }}</span></template>
-							<template #caption>{{ i18n.ts._serverStats.customCpuCoreDescription }}</template>
-						</MkInput>
-
-						<MkSwitch v-model="serverStatsForm.state.enableMemTotal">
-							<template #label>{{ i18n.ts._serverStats.enableMemTotal }}<span v-if="serverStatsForm.modifiedStates.enableMemTotal" class="_modified">{{ i18n.ts.modified }}</span></template>
-							<template #caption>{{ i18n.ts._serverStats.enableMemTotalDescription }}</template>
-						</MkSwitch>
-
-						<MkInput v-if="serverStatsForm.state.enableMemTotal" v-model="serverStatsForm.state.customMemTotal" type="number">
-							<template #label>{{ i18n.ts._serverStats.customMemTotal }}<span v-if="serverStatsForm.modifiedStates.customMemTotal" class="_modified">{{ i18n.ts.modified }}</span></template>
-							<template #caption>{{ i18n.ts._serverStats.customMemTotalDescription }}</template>
-						</MkInput>
-
-						<MkSwitch v-model="serverStatsForm.state.enableFsTotal">
-							<template #label>{{ i18n.ts._serverStats.enableFsTotal }}<span v-if="serverStatsForm.modifiedStates.enableFsTotal" class="_modified">{{ i18n.ts.modified }}</span></template>
-							<template #caption>{{ i18n.ts._serverStats.enableFsTotalDescription }}</template>
-						</MkSwitch>
-
-						<MkInput v-if="serverStatsForm.state.enableFsTotal" v-model="serverStatsForm.state.customFsTotal" type="number">
-							<template #label>{{ i18n.ts._serverStats.customFsTotal }}<span v-if="serverStatsForm.modifiedStates.customFsTotal" class="_modified">{{ i18n.ts.modified }}</span></template>
-							<template #caption>{{ i18n.ts._serverStats.customFsTotalDescription }}</template>
-						</MkInput>
-					</template>
-				</div>
-			</MkFolder>
 				</SearchMarker>
 
 				<SearchMarker>
@@ -119,6 +60,67 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<template #caption>{{ i18n.ts.turnOffToImprovePerformance }}</template>
 						</MkSwitch>
 					</div>
+				</SearchMarker>
+
+				<SearchMarker>
+					<MkFolder :defaultOpen="true">
+						<template #icon><i class="ti ti-server-2"></i></template>
+						<template #label>{{ i18n.ts._serverStats.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+						<template v-if="serverStatsForm.savedState.enableServerMachineStats" #suffix>Enabled</template>
+						<template v-else #suffix>Disabled</template>
+						<template v-if="serverStatsForm.modified.value" #footer>
+							<MkFormFooter :form="serverStatsForm"/>
+						</template>
+
+						<div class="_gaps">
+							<MkSwitch v-model="serverStatsForm.state.enableServerMachineStats">
+								<template #label>{{ i18n.ts.enableServerMachineStats }}<span v-if="serverStatsForm.modifiedStates.enableServerMachineStats" class="_modified">{{ i18n.ts.modified }}</span></template>
+								<template #caption>{{ i18n.ts.turnOffToImprovePerformance }}</template>
+							</MkSwitch>
+
+							<template v-if="serverStatsForm.state.enableServerMachineStats">
+								<MkSwitch v-model="serverStatsForm.state.enableCpuModel">
+									<template #label>{{ i18n.ts._serverStats.enableCpuModel }}<span v-if="serverStatsForm.modifiedStates.enableCpuModel" class="_modified">{{ i18n.ts.modified }}</span></template>
+									<template #caption>{{ i18n.ts._serverStats.enableCpuModelDescription }}</template>
+								</MkSwitch>
+
+								<MkInput v-if="serverStatsForm.state.enableCpuModel" v-model="serverStatsForm.state.customCpuModel">
+									<template #label>{{ i18n.ts._serverStats.customCpuModel }}<span v-if="serverStatsForm.modifiedStates.customCpuModel" class="_modified">{{ i18n.ts.modified }}</span></template>
+									<template #caption>{{ i18n.ts._serverStats.customCpuModelDescription }}</template>
+								</MkInput>
+
+								<MkSwitch v-model="serverStatsForm.state.enableCpuCore">
+									<template #label>{{ i18n.ts._serverStats.enableCpuCore }}<span v-if="serverStatsForm.modifiedStates.enableCpuCore" class="_modified">{{ i18n.ts.modified }}</span></template>
+									<template #caption>{{ i18n.ts._serverStats.enableCpuCoreDescription }}</template>
+								</MkSwitch>
+
+								<MkInput v-if="serverStatsForm.state.enableCpuCore" v-model="serverStatsForm.state.customCpuCore" type="number">
+									<template #label>{{ i18n.ts._serverStats.customCpuCore }}<span v-if="serverStatsForm.modifiedStates.customCpuCore" class="_modified">{{ i18n.ts.modified }}</span></template>
+									<template #caption>{{ i18n.ts._serverStats.customCpuCoreDescription }}</template>
+								</MkInput>
+
+								<MkSwitch v-model="serverStatsForm.state.enableMemTotal">
+									<template #label>{{ i18n.ts._serverStats.enableMemTotal }}<span v-if="serverStatsForm.modifiedStates.enableMemTotal" class="_modified">{{ i18n.ts.modified }}</span></template>
+									<template #caption>{{ i18n.ts._serverStats.enableMemTotalDescription }}</template>
+								</MkSwitch>
+
+								<MkInput v-if="serverStatsForm.state.enableMemTotal" v-model="serverStatsForm.state.customMemTotal" type="number">
+									<template #label>{{ i18n.ts._serverStats.customMemTotal }}<span v-if="serverStatsForm.modifiedStates.customMemTotal" class="_modified">{{ i18n.ts.modified }}</span></template>
+									<template #caption>{{ i18n.ts._serverStats.customMemTotalDescription }}</template>
+								</MkInput>
+
+								<MkSwitch v-model="serverStatsForm.state.enableFsTotal">
+									<template #label>{{ i18n.ts._serverStats.enableFsTotal }}<span v-if="serverStatsForm.modifiedStates.enableFsTotal" class="_modified">{{ i18n.ts.modified }}</span></template>
+									<template #caption>{{ i18n.ts._serverStats.enableFsTotalDescription }}</template>
+								</MkSwitch>
+
+								<MkInput v-if="serverStatsForm.state.enableFsTotal" v-model="serverStatsForm.state.customFsTotal" type="number">
+									<template #label>{{ i18n.ts._serverStats.customFsTotal }}<span v-if="serverStatsForm.modifiedStates.customFsTotal" class="_modified">{{ i18n.ts.modified }}</span></template>
+									<template #caption>{{ i18n.ts._serverStats.customFsTotalDescription }}</template>
+								</MkInput>
+							</template>
+						</div>
+					</MkFolder>
 				</SearchMarker>
 
 				<SearchMarker>
