@@ -151,32 +151,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkFolder>
 				</SearchMarker>
 
-				<SearchMarker v-slot="slotProps" :keywords="['banned', 'email', 'domains', 'blacklist']">
-					<MkFolder :defaultOpen="slotProps.isParentOfTarget">
-						<template #label><SearchLabel>Email Domain Settings<span class="_beta">{{ i18n.ts.originalFeature }}</span></SearchLabel></template>
-						<template v-if="emailSettingsForm.savedState.emailWhitelist" #suffix>Enabled</template>
-				<template v-else #suffix>Disabled</template>
-				<template v-if="emailSettingsForm.modified.value" #footer>
-							<MkFormFooter :form="emailSettingsForm"/>
-						</template>
-
-						<div class="_gaps_m">
-					<MkSwitch v-model="emailSettingsForm.state.emailWhitelist">
-						<template #label>Enable Whitelist Mode</template>
-					</MkSwitch>
-
-							<SearchMarker>
-								<MkTextarea v-model="emailSettingsForm.state.bannedEmailDomains">
-									<template #label><SearchLabel>
-							<span v-if="emailSettingsForm.state.emailWhitelist">Whitelist Email Domains List</span>
-							<span v-else>Banned Email Domains List</span>
-						</SearchLabel></template>
-								</MkTextarea>
-							</SearchMarker>
-						</div>
-					</MkFolder>
-				</SearchMarker>
-
 				<SearchMarker v-slot="slotProps" :keywords="['log', 'ipAddress']">
 					<MkFolder :defaultOpen="slotProps.isParentOfTarget">
 						<template #label><SearchLabel>Log IP address</SearchLabel></template>
@@ -196,118 +170,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkFolder>
 				</SearchMarker>
 
-				<SearchMarker v-slot="slotProps" :keywords="['login', 'risk', 'suspicious', 'signin']">
-					<MkFolder :defaultOpen="slotProps.isParentOfTarget">
-						<template #icon><SearchIcon><i class="ti ti-shield-search"></i></SearchIcon></template>
-						<template #label><SearchLabel>{{ i18n.ts._loginRisk.title }}</SearchLabel></template>
-						<template v-if="loginRiskForm.savedState.enableLoginRiskDetection" #suffix>{{ i18n.ts.enabled }}</template>
-						<template v-else #suffix>{{ i18n.ts.disabled }}</template>
-						<template v-if="loginRiskForm.modified.value" #footer>
-							<MkFormFooter :form="loginRiskForm"/>
-						</template>
-
-						<div class="_gaps_m">
-							<div><SearchText>{{ i18n.ts._loginRisk.description }}</SearchText></div>
-
-							<SearchMarker>
-								<MkSwitch v-model="loginRiskForm.state.enableLoginRiskDetection">
-									<template #label><SearchLabel>{{ i18n.ts._loginRisk.enable }}</SearchLabel></template>
-								</MkSwitch>
-							</SearchMarker>
-
-							<SearchMarker :keywords="['notify', 'threshold']">
-								<MkInput v-model="loginRiskForm.state.loginRiskNotifyThreshold" type="number" :min="1" :max="1000">
-									<template #label><SearchLabel>{{ i18n.ts._loginRisk.notifyThreshold }}</SearchLabel></template>
-								</MkInput>
-							</SearchMarker>
-
-							<SearchMarker :keywords="['stepUp', 'threshold', 'email', 'code']">
-								<MkInput v-model="loginRiskForm.state.loginRiskStepUpThreshold" type="number" :min="1" :max="1000">
-									<template #label><SearchLabel>{{ i18n.ts._loginRisk.stepUpThreshold }}</SearchLabel></template>
-								</MkInput>
-							</SearchMarker>
-
-							<SearchMarker :keywords="['flag', 'unverified']">
-								<MkSwitch v-model="loginRiskForm.state.loginRiskFlagUnverifiedUsers">
-									<template #label><SearchLabel>{{ i18n.ts._loginRisk.flagUnverifiedUsers }}</SearchLabel></template>
-									<template #caption><SearchText>{{ i18n.ts._loginRisk.flagUnverifiedUsersDescription }}</SearchText></template>
-								</MkSwitch>
-							</SearchMarker>
-
-							<SearchMarker :keywords="['footprint', 'history', 'user']">
-								<MkSwitch v-model="loginRiskForm.state.loginRiskShowDetailsToUser">
-									<template #label><SearchLabel>{{ i18n.ts._loginRisk.showDetailsToUser }}</SearchLabel></template>
-									<template #caption><SearchText>{{ i18n.ts._loginRisk.showDetailsToUserDescription }}</SearchText></template>
-								</MkSwitch>
-							</SearchMarker>
-
-							<SearchMarker :keywords="['diagnose', 'ipAddress', 'proxy']">
-								<MkFolder>
-									<template #icon><i class="ti ti-stethoscope"></i></template>
-									<template #label><SearchLabel>{{ i18n.ts._loginRisk.diagnose }}</SearchLabel></template>
-
-									<div class="_gaps_m">
-										<MkButton inline :disabled="loginRiskDiagnoseFetching" @click="fetchLoginRiskDiagnose"><i class="ti ti-refresh"></i> {{ i18n.ts.reload }}</MkButton>
-
-										<MkInfo v-if="loginRiskDiagnoseError != null" warn>{{ i18n.ts.somethingHappened }}: {{ loginRiskDiagnoseError }}</MkInfo>
-
-										<MkLoading v-if="loginRiskDiagnoseFetching && loginRiskDiagnose == null"/>
-										<template v-else-if="loginRiskDiagnose != null">
-											<MkInfo v-if="loginRiskDiagnose.verdict === 'privateIp'" warn>{{ i18n.ts._loginRisk.privateIpWarning }}</MkInfo>
-
-											<div class="_gaps_s">
-												<MkKeyValue oneline>
-													<template #key>{{ i18n.ts._loginRisk.ipAddress }}</template>
-													<template #value><span class="_monospace">{{ loginRiskDiagnose.ip }}</span></template>
-												</MkKeyValue>
-												<MkKeyValue oneline>
-													<template #key>X-Forwarded-For</template>
-													<template #value><span class="_monospace">{{ loginRiskDiagnose.xForwardedFor ?? i18n.ts.none }}</span></template>
-												</MkKeyValue>
-												<MkKeyValue oneline>
-													<template #key>CF-Connecting-IP</template>
-													<template #value>{{ loginRiskDiagnose.hasCfConnectingIp ? i18n.ts.yes : i18n.ts.no }}</template>
-												</MkKeyValue>
-												<MkKeyValue oneline>
-													<template #key>CF-IPCountry</template>
-													<template #value>{{ loginRiskDiagnose.hasCfIpCountry ? i18n.ts.yes : i18n.ts.no }}</template>
-												</MkKeyValue>
-												<MkKeyValue oneline>
-													<template #key>{{ i18n.ts._loginRisk.country }}</template>
-													<template #value>{{ loginRiskDiagnose.intel.country ?? i18n.ts.unknown }}</template>
-												</MkKeyValue>
-												<MkKeyValue oneline>
-													<template #key>{{ i18n.ts._loginRisk.asn }}</template>
-													<template #value>{{ loginRiskDiagnose.intel.asn != null ? `AS${loginRiskDiagnose.intel.asn}` : i18n.ts.unknown }}{{ loginRiskDiagnose.intel.asnOrg ? ` (${loginRiskDiagnose.intel.asnOrg})` : '' }}</template>
-												</MkKeyValue>
-												<MkKeyValue oneline>
-													<template #key>{{ i18n.ts._loginRisk.reputation }}</template>
-													<template #value>{{ loginRiskDiagnoseMatchedLists.length > 0 ? loginRiskDiagnoseMatchedLists.join(', ') : i18n.ts.none }}</template>
-												</MkKeyValue>
-											</div>
-
-											<div class="_gaps_s">
-												<div><b>{{ i18n.ts._loginRisk.sources }}</b></div>
-												<MkKeyValue v-for="source in loginRiskDiagnose.sources" :key="source.name">
-													<template #key><span class="_monospace">{{ source.name }}</span></template>
-													<template #value>
-														<span v-if="source.loaded"><i class="ti ti-check" style="color: var(--MI_THEME-success);"></i> {{ i18n.ts._loginRisk.loaded }}</span>
-														<span v-else><i class="ti ti-alert-triangle" style="color: var(--MI_THEME-warn);"></i> {{ i18n.ts._loginRisk.notLoaded }}</span>
-														<span v-if="source.version != null"> / {{ i18n.ts.version }}: {{ source.version }}</span>
-														<span v-if="source.entries != null"> / {{ i18n.ts._loginRisk.entries }}: {{ source.entries.toLocaleString() }}</span>
-														<span v-if="source.updatedAt != null"> / {{ i18n.ts.updatedAt }}: <MkTime :time="source.updatedAt" mode="detail"/></span>
-													</template>
-												</MkKeyValue>
-											</div>
-										</template>
-									</div>
-								</MkFolder>
-							</SearchMarker>
-
-							<div style="font-size: 85%; opacity: 0.7;"><SearchText>{{ i18n.ts._loginRisk.spamhausCredit }}</SearchText></div>
-						</div>
-					</MkFolder>
-				</SearchMarker>
 			</div>
 		</SearchMarker>
 	</div>
@@ -315,18 +177,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
-import * as Misskey from 'misskey-js';
+import { computed } from 'vue';
 import XBotProtection from './bot-protection.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkRadios from '@/components/MkRadios.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkRange from '@/components/MkRange.vue';
 import MkInput from '@/components/MkInput.vue';
-import MkTextarea from '@/components/MkTextarea.vue';
 import MkInfo from '@/components/MkInfo.vue';
-import MkButton from '@/components/MkButton.vue';
-import MkKeyValue from '@/components/MkKeyValue.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { fetchInstance } from '@/instance.js';
@@ -375,63 +233,6 @@ const ipLoggingForm = useForm({
 }, async (state) => {
 	await os.apiWithDialog('admin/update-meta', {
 		enableIpLogging: state.enableIpLogging,
-	});
-	fetchInstance(true);
-});
-
-const loginRiskForm = useForm({
-	enableLoginRiskDetection: meta.enableLoginRiskDetection,
-	loginRiskNotifyThreshold: meta.loginRiskNotifyThreshold,
-	loginRiskStepUpThreshold: meta.loginRiskStepUpThreshold,
-	loginRiskFlagUnverifiedUsers: meta.loginRiskFlagUnverifiedUsers,
-	loginRiskShowDetailsToUser: meta.loginRiskShowDetailsToUser,
-}, async (state) => {
-	await os.apiWithDialog('admin/update-meta', {
-		enableLoginRiskDetection: state.enableLoginRiskDetection,
-		loginRiskNotifyThreshold: state.loginRiskNotifyThreshold,
-		loginRiskStepUpThreshold: state.loginRiskStepUpThreshold,
-		loginRiskFlagUnverifiedUsers: state.loginRiskFlagUnverifiedUsers,
-		loginRiskShowDetailsToUser: state.loginRiskShowDetailsToUser,
-	}, undefined, {
-		'0b4b9a0e-6f0d-4c8e-9d3a-5f2f7a1c8e41': {
-			text: i18n.ts._loginRisk.invalidThresholds,
-		},
-	});
-	fetchInstance(true);
-});
-
-const loginRiskDiagnose = ref<Misskey.entities.AdminLoginRiskDiagnoseResponse | null>(null);
-const loginRiskDiagnoseFetching = ref(false);
-const loginRiskDiagnoseError = ref<string | null>(null);
-
-const loginRiskDiagnoseMatchedLists = computed(() => {
-	const intel = loginRiskDiagnose.value?.intel;
-	if (intel == null) return [];
-	return (['tor', 'spamhausDrop', 'datacenter', 'vpn'] as const).filter(k => intel[k]);
-});
-
-async function fetchLoginRiskDiagnose() {
-	loginRiskDiagnoseFetching.value = true;
-	try {
-		loginRiskDiagnose.value = await misskeyApi('admin/login-risk/diagnose', {});
-		loginRiskDiagnoseError.value = null;
-	} catch (err) {
-		// ページを開くたびにダイアログを出さないよう、エラーはインラインで表示する
-		loginRiskDiagnoseError.value = (err as { message?: string } | null)?.message ?? String(err);
-	} finally {
-		loginRiskDiagnoseFetching.value = false;
-	}
-}
-
-fetchLoginRiskDiagnose();
-
-const emailSettingsForm = useForm({
-	emailWhitelist: meta.emailWhitelist,
-	bannedEmailDomains: meta.bannedEmailDomains?.join('\n') || '',
-}, async (state) => {
-	await os.apiWithDialog('admin/update-meta', {
-		emailWhitelist: state.emailWhitelist,
-		bannedEmailDomains: state.bannedEmailDomains.split('\n'),
 	});
 	fetchInstance(true);
 });

@@ -32,11 +32,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<template #label><SearchLabel>{{ i18n.ts.objectStoragePrefix }}</SearchLabel></template>
 							<template #caption><SearchText>{{ i18n.ts.objectStoragePrefixDesc }}</SearchText></template>
 						</MkInput>
-
-					<MkInput v-model="objectStoragePrefixForRemote">
-						<template #label>{{ i18n.ts.objectStoragePrefixForRemote }}</template>
-						<template #caption>{{ i18n.ts.objectStoragePrefixForRemoteDesc }}</template>
-					</MkInput>
 					</SearchMarker>
 
 					<SearchMarker>
@@ -95,11 +90,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<template #label><SearchLabel>s3ForcePathStyle</SearchLabel></template>
 							<template #caption><SearchText>{{ i18n.ts.s3ForcePathStyleDesc }}</SearchText></template>
 						</MkSwitch>
-
-					<MkInput v-model="objectStorageCacheDays">
-						<template #label>{{ i18n.ts.objectStorageCacheDays }}</template>
-						<template #caption>{{ i18n.ts.objectStorageCacheDaysDesc }}</template>
-					</MkInput>
 					</SearchMarker>
 				</template>
 			</div>
@@ -142,8 +132,6 @@ const objectStorageUseSSL = ref(meta.objectStorageUseSSL);
 const objectStorageUseProxy = ref(meta.objectStorageUseProxy);
 const objectStorageSetPublicRead = ref(meta.objectStorageSetPublicRead);
 const objectStorageS3ForcePathStyle = ref(meta.objectStorageS3ForcePathStyle);
-const objectStoragePrefixForRemote = ref(meta.objectStoragePrefixForRemote);
-const objectStorageCacheDays = ref(meta.objectStorageCacheDays?.toString() ?? '');
 
 function save() {
 	os.apiWithDialog('admin/update-meta', {
@@ -151,7 +139,6 @@ function save() {
 		objectStorageBaseUrl: objectStorageBaseUrl.value,
 		objectStorageBucket: objectStorageBucket.value,
 		objectStoragePrefix: objectStoragePrefix.value,
-		objectStoragePrefixForRemote: objectStoragePrefixForRemote.value,
 		objectStorageEndpoint: objectStorageEndpoint.value,
 		objectStorageRegion: objectStorageRegion.value,
 		objectStoragePort: objectStoragePort.value,
@@ -161,7 +148,6 @@ function save() {
 		objectStorageUseProxy: objectStorageUseProxy.value,
 		objectStorageSetPublicRead: objectStorageSetPublicRead.value,
 		objectStorageS3ForcePathStyle: objectStorageS3ForcePathStyle.value,
-		objectStorageCacheDays: objectStorageCacheDays.value === '' ? null : Number(objectStorageCacheDays.value),
 	}).then(() => {
 		fetchInstance(true);
 	});

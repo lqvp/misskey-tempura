@@ -34,40 +34,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkSelect>
 				</SearchMarker>
 
-				<MkSwitch v-model="approvalRequiredForSignup" @change="onChange_approvalRequiredForSignup">
-					<template #label>{{ i18n.ts.approvalRequiredForSignup }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-					<template #caption>{{ i18n.ts.registerApprovalEmailRecommended }}</template>
-				</MkSwitch>
-
-				<MkSwitch v-model="blockMentionsFromUnfamiliarRemoteUsers" @change="onChange_blockMentionsFromUnfamiliarRemoteUsers">
-					<template #label>{{ i18n.ts.blockMentionsFromUnfamiliarRemoteUsers }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-					<template #caption>{{ i18n.ts.blockMentionsFromUnfamiliarRemoteUsersDescription }} Cherry-picked from Misskey.io (https://github.com/MisskeyIO/misskey/commit/82cc3987c13db4ad0da1589386027c222ce85ff8)</template>
-				</MkSwitch>
-
-				<div class="_gaps">
-					<MkInput v-model="validateMinimumUsernameLength" type="number" @update:modelValue="onUsernameMinLengthChange">
-						<template #label>
-							<span>{{ i18n.ts.validateMinimumUsernameLength }}</span>
-							<span v-if="validateMinimumUsernameLengthChanged" class="_modified">{{ i18n.ts.modified }}</span>
-							<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-						</template>
-						<template #caption>{{ i18n.ts.validateMinimumUsernameLengthDescription }}</template>
-					</MkInput>
-					<MkButton v-if="validateMinimumUsernameLengthChanged" primary @click="save_validateMinimumUsernameLength">{{ i18n.ts.save }}</MkButton>
-				</div>
-
-				<div class="_gaps">
-					<MkInput v-model="secondsPerSignup" type="number" @update:modelValue="v => secondsPerSignup = Number(v)">
-						<template #label>
-							<span>{{ i18n.ts.secondsPerSignup }}</span>
-							<span v-if="secondsPerSignupChanged" class="_modified">{{ i18n.ts.modified }}</span>
-							<span class="_beta">{{ i18n.ts.originalFeature }}</span>
-						</template>
-						<template #caption>{{ i18n.ts.secondsPerSignupDescription }}</template>
-					</MkInput>
-					<MkButton v-if="secondsPerSignupChanged" primary @click="save_secondsPerSignup">{{ i18n.ts.save }}</MkButton>
-				</div>
-
 				<XServerRules/>
 
 				<SearchMarker :keywords="['preserved', 'usernames']">
@@ -122,60 +88,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 								<template #caption>{{ i18n.ts.prohibitedWordsForNameOfUserDescription }}<br>{{ i18n.ts.prohibitedWordsDescription2 }}</template>
 							</MkTextarea>
 							<MkButton primary @click="save_prohibitedWordsForNameOfUser">{{ i18n.ts.save }}</MkButton>
-						</div>
-					</MkFolder>
-				</SearchMarker>
-
-				<SearchMarker :keywords="['open', 'llm', 'moderation']">
-					<MkFolder>
-						<template #icon><SearchIcon><i class="ti ti-shield-check"></i></SearchIcon></template>
-						<template #label><SearchLabel>{{ i18n.ts.openLlmModeration }}</SearchLabel><span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-						<template v-if="openLlmModerationForm.modified.value" #footer>
-							<MkFormFooter :form="openLlmModerationForm"/>
-						</template>
-
-						<div class="_gaps_m">
-							<MkSwitch v-model="openLlmModerationForm.state.openLlmModerationEnabled">
-								<template #label>{{ i18n.ts.openLlmModerationEnabled }}</template>
-								<template #caption>{{ i18n.ts.openLlmModerationDescription }}</template>
-							</MkSwitch>
-
-							<MkInput v-model="openLlmModerationForm.state.openLlmModerationApiKey" type="password">
-								<template #label>{{ i18n.ts.openLlmModerationApiKey }}</template>
-								<template #caption>{{ i18n.ts.openLlmModerationApiKeyDescription }}</template>
-							</MkInput>
-
-							<MkInput v-model="openLlmModerationForm.state.openLlmModerationApiUrl" type="url" :placeholder="defaultOpenLlmModerationApiUrl">
-								<template #label>{{ i18n.ts.openLlmModerationApiUrl }}</template>
-								<template #caption>{{ i18n.ts.openLlmModerationApiUrlDescription }}</template>
-							</MkInput>
-
-							<MkInput v-model="openLlmModerationForm.state.openLlmModerationModel" :placeholder="defaultOpenLlmModerationModel">
-								<template #label>{{ i18n.ts.openLlmModerationModel }}</template>
-								<template #caption>{{ i18n.ts.openLlmModerationModelDescription }}</template>
-							</MkInput>
-
-							<MkSwitch v-model="openLlmModerationForm.state.openLlmModerationIncludeRemote">
-								<template #label>{{ i18n.ts.openLlmModerationIncludeRemote }}</template>
-								<template #caption>{{ i18n.ts.openLlmModerationIncludeRemoteDescription }}</template>
-							</MkSwitch>
-
-							<div class="_gaps_s">
-								<div>{{ i18n.ts.openLlmModerationVisibilities }}</div>
-								<div style="display: flex; flex-wrap: wrap; gap: 8px;">
-									<MkCheckbox
-										v-for="visibility in openLlmVisibilityOptions"
-										:key="visibility.value"
-										v-model="openLlmModerationForm.state.openLlmModerationVisibilities"
-										:value="visibility.value"
-									>
-										{{ visibility.label }}
-									</MkCheckbox>
-								</div>
-								<div class="_gaps_s" style="font-size: 0.85em; opacity: 0.8;">{{ i18n.ts.openLlmModerationVisibilitiesDescription }}</div>
-							</div>
-
-							<FormLink to="/admin/llm-moderation">{{ i18n.ts.openLlmModerationQueueLink }}</FormLink>
 						</div>
 					</MkFolder>
 				</SearchMarker>
@@ -242,67 +154,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch } from 'vue';
-import * as Misskey from 'misskey-js';
+import { ref, computed } from 'vue';
 import XServerRules from './server-rules.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
-import MkInput from '@/components/MkInput.vue';
 import MkTextarea from '@/components/MkTextarea.vue';
-import MkCheckbox from '@/components/MkCheckbox.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { fetchInstance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
 import { definePage } from '@/page.js';
 import { useMkSelect } from '@/composables/use-mkselect.js';
-import { useForm } from '@/composables/use-form.js';
-import { defaultOpenLlmModerationApiUrl, defaultOpenLlmModerationModel, defaultOpenLlmModerationVisibilities, normalizeOpenLlmModerationVisibilities } from './moderation.llm.js';
 import MkButton from '@/components/MkButton.vue';
-import MkFormFooter from '@/components/MkFormFooter.vue';
-import FormLink from '@/components/form/link.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkSelect from '@/components/MkSelect.vue';
 
 const meta = await misskeyApi('admin/meta');
-
-const normalizedOpenLlmModerationEnabled = meta.openLlmModerationEnabled ?? false;
-const normalizedOpenLlmModerationIncludeRemote = meta.openLlmModerationIncludeRemote ?? false;
-const normalizedOpenLlmModerationVisibilities = normalizeOpenLlmModerationVisibilities(meta.openLlmModerationVisibilities);
-
-const openLlmVisibilityLabels = i18n.ts._visibility as Record<string, string>;
-const openLlmVisibilityOptions = defaultOpenLlmModerationVisibilities.map((value) => ({
-	value,
-	label: openLlmVisibilityLabels[value] ?? value,
-}));
-
-const openLlmModerationForm = useForm({
-	openLlmModerationEnabled: normalizedOpenLlmModerationEnabled,
-	openLlmModerationApiKey: '',
-	openLlmModerationApiUrl: meta.openLlmModerationApiUrl ?? '',
-	openLlmModerationModel: meta.openLlmModerationModel ?? '',
-	openLlmModerationIncludeRemote: normalizedOpenLlmModerationIncludeRemote,
-	openLlmModerationVisibilities: normalizedOpenLlmModerationVisibilities,
-}, async (state) => {
-	const trimmedApiUrl = state.openLlmModerationApiUrl.trim();
-	const trimmedModel = state.openLlmModerationModel.trim();
-	const payload: Misskey.Endpoints['admin/update-meta']['req'] = {
-		openLlmModerationEnabled: state.openLlmModerationEnabled,
-		openLlmModerationApiUrl: trimmedApiUrl === '' ? null : trimmedApiUrl,
-		openLlmModerationModel: trimmedModel === '' ? null : trimmedModel,
-		openLlmModerationIncludeRemote: state.openLlmModerationIncludeRemote,
-		openLlmModerationVisibilities: state.openLlmModerationVisibilities as Misskey.Endpoints['admin/update-meta']['req']['openLlmModerationVisibilities'],
-	};
-	if (openLlmModerationApiKeyChanged.value) {
-		const trimmedApiKey = state.openLlmModerationApiKey.trim();
-		payload.openLlmModerationApiKey = trimmedApiKey === '' ? null : trimmedApiKey;
-	}
-	await os.apiWithDialog('admin/update-meta', payload);
-	fetchInstance(true);
-});
-const openLlmModerationApiKeyChanged = ref(false);
-watch(() => openLlmModerationForm.state.openLlmModerationApiKey, (value, prev) => {
-	openLlmModerationApiKeyChanged.value = true;
-});
 
 const enableRegistration = ref(!meta.disableRegistration);
 const emailRequiredForSignup = ref(meta.emailRequiredForSignup);
@@ -325,18 +191,6 @@ const preservedUsernames = ref(meta.preservedUsernames.join('\n'));
 const blockedHosts = ref(meta.blockedHosts.join('\n'));
 const silencedHosts = ref(meta.silencedHosts?.join('\n') ?? '');
 const mediaSilencedHosts = ref(meta.mediaSilencedHosts.join('\n'));
-const approvalRequiredForSignup = ref(meta.approvalRequiredForSignup);
-const blockMentionsFromUnfamiliarRemoteUsers = ref(meta.blockMentionsFromUnfamiliarRemoteUsers);
-const validateMinimumUsernameLength = ref(meta.validateMinimumUsernameLength);
-const secondsPerSignup = ref(meta.secondsPerSignup);
-const originalMinimumUsernameLength = ref<number>(meta.validateMinimumUsernameLength);
-const originalSecondsPerSignup = ref<number>(meta.secondsPerSignup);
-const validateMinimumUsernameLengthChanged = computed(() =>
-	validateMinimumUsernameLength.value !== originalMinimumUsernameLength.value
-);
-const secondsPerSignupChanged = computed(() =>
-	secondsPerSignup.value !== originalSecondsPerSignup.value
-);
 
 async function onChange_enableRegistration(value: boolean) {
 	if (value) {
@@ -369,44 +223,6 @@ function onChange_ugcVisibilityForVisitor(value: typeof ugcVisibilityForVisitor.
 		ugcVisibilityForVisitor: value,
 	}).then(() => {
 		fetchInstance(true);
-	});
-}
-
-function onChange_approvalRequiredForSignup(value: boolean) {
-	os.apiWithDialog('admin/update-meta', {
-		approvalRequiredForSignup: value,
-	}).then(() => {
-		fetchInstance(true);
-	});
-}
-
-function onChange_blockMentionsFromUnfamiliarRemoteUsers(value: boolean) {
-	os.apiWithDialog('admin/update-meta', {
-		blockMentionsFromUnfamiliarRemoteUsers: value,
-	}).then(() => {
-		fetchInstance(true);
-	});
-}
-
-function onUsernameMinLengthChange(value: string | number) {
-	validateMinimumUsernameLength.value = Number(value);
-}
-
-function save_validateMinimumUsernameLength() {
-	os.apiWithDialog('admin/update-meta', {
-		validateMinimumUsernameLength: validateMinimumUsernameLength.value ?? undefined,
-	}).then(() => {
-		fetchInstance(true);
-		originalMinimumUsernameLength.value = validateMinimumUsernameLength.value ?? undefined;
-	});
-}
-
-function save_secondsPerSignup() {
-	os.apiWithDialog('admin/update-meta', {
-		secondsPerSignup: secondsPerSignup.value,
-	}).then(() => {
-		fetchInstance(true);
-		originalSecondsPerSignup.value = secondsPerSignup.value;
 	});
 }
 
