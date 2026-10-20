@@ -11,7 +11,7 @@ import type { Packed } from '@/misc/json-schema.js';
 import { awaitAll } from '@/misc/prelude/await-all.js';
 import type { MiUser } from '@/models/User.js';
 import type { MiNote } from '@/models/Note.js';
-import type { UsersRepository, UserProfilesRepository, NotesRepository, FollowingsRepository, PollsRepository, PollVotesRepository, NoteReactionsRepository, ChannelsRepository, MiMeta } from '@/models/_.js';
+import type { UsersRepository, NotesRepository, FollowingsRepository, PollsRepository, PollVotesRepository, NoteReactionsRepository, ChannelsRepository, MiMeta } from '@/models/_.js';
 import { bindThis } from '@/decorators.js';
 import { DebounceLoader } from '@/misc/loader.js';
 import { IdService } from '@/core/IdService.js';
@@ -79,9 +79,6 @@ export class NoteEntityService implements OnModuleInit {
 
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
-
-		@Inject(DI.userProfilesRepository)
-		private userProfilesRepository: UserProfilesRepository,
 
 		@Inject(DI.notesRepository)
 		private notesRepository: NotesRepository,
@@ -174,7 +171,8 @@ export class NoteEntityService implements OnModuleInit {
 
 		// 未ログインかつプロフィールで非表示設定されている場合は非表示
 		if (!meId) {
-			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: packedNote.userId });
+			// 未ログインのページ表示ではノートごとに呼ばれるので、DB ではなくキャッシュを引く
+			const profile = await this.cacheService.userProfileCache.fetch(packedNote.userId);
 			if (packedNote.visibility === 'public' && profile.hidePublicNotes) {
 				return true;
 			}
@@ -404,7 +402,8 @@ export class NoteEntityService implements OnModuleInit {
 		}, options);
 
 		const meId = me ? me.id : null;
-		const isAdmin = meId ? await this.roleService.isAdministrator({ id: meId }) : false;
+		// packMany や返信・リノート先の pack では判定済みの値が渡されるので、ノートごとにロールを評価し直さない
+		const isAdmin = me?.isAdmin ?? (meId ? await this.roleService.isAdministrator({ id: meId }) : false);
 		const note = typeof src === 'object' ? src : await this.noteLoader.load(src);
 		const host = note.userHost;
 
@@ -478,7 +477,7 @@ export class NoteEntityService implements OnModuleInit {
 				clippedCount: note.clippedCount,
 
 				// そもそもJOINしていない場合はundefined、JOINしたけど存在していなかった場合はnullで区別される
-				reply: (note.replyId && note.reply === null) ? null : note.replyId ? nullIfEntityNotFound(this.pack(note.reply ?? note.replyId, me, {
+				reply: (note.replyId && note.reply === null) ? null : note.replyId ? nullIfEntityNotFound(this.pack(note.reply ?? note.replyId, meId ? { id: meId, isAdmin } : null, {
 					detail: false,
 					skipHide: opts.skipHide,
 					withReactionAndUserPairCache: opts.withReactionAndUserPairCache,
@@ -486,7 +485,7 @@ export class NoteEntityService implements OnModuleInit {
 				})) : undefined,
 
 				// そもそもJOINしていない場合はundefined、JOINしたけど存在していなかった場合はnullで区別される
-				renote: (note.renoteId && note.renote === null) ? null : note.renoteId ? nullIfEntityNotFound(this.pack(note.renote ?? note.renoteId, me, {
+				renote: (note.renoteId && note.renote === null) ? null : note.renoteId ? nullIfEntityNotFound(this.pack(note.renote ?? note.renoteId, meId ? { id: meId, isAdmin } : null, {
 					detail: true,
 					skipHide: opts.skipHide,
 					withReactionAndUserPairCache: opts.withReactionAndUserPairCache,
