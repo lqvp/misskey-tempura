@@ -197,3 +197,8 @@
   - 元ファイルは各モジュールを再エクスポートする barrel として公開 API は変更なし
 - 地震情報警告モジュールは設定が有効な場合のみ読み込むように遅延ロード化
 - フロントエンド: 地震情報 (強度判定 / スロットリング / 地域フィルタ / メッセージ整形) のユニットテストを追加
+# 管理者設定の統合 (フォーク独自)
+- フォーク独自の管理設定は `/admin/tempura-admin` に集約し、上流の admin ページから独立させる
+  - Fetching: `/admin/tempura-admin` (セクションコンポーネントに分割済み)
+  - 上流ページから独自設定を撤去した例: `branding.vue` (カスタムスプラッシュテキスト / ブロック画像), `moderation.vue` (承認制 / メンション遮断 / 最小ユーザー名長 / 登録間隔 / LLMモデレーション), `security.vue` (メールアドレス許可ドメイン / ログインリスク検知), `performance.vue` (サーバー情報の詳細表示), `settings.vue` (署名必須 AP フェッチ), `external-services.vue` (DeepL フリーモード), `object-storage.vue` (リモートプレフィックス / キャッシュ日数)
+  - 各セクションは `packages/frontend/src/pages/admin/tempura/sections/` に個別コンポーネントとして実装

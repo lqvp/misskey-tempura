@@ -317,14 +317,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<template #caption><SearchText>{{ i18n.ts._serverSettings.signToActivityPubGet_description }}</SearchText></template>
 								</MkSwitch>
 							</SearchMarker>
-
-							<SearchMarker :keywords="['sign', 'signature', 'secure', 'fetch']">
-								<MkSwitch v-model="federationForm.state.requireSignedApFetch">
-									<template #label><SearchLabel>{{ i18n.ts._serverSettings.requireSignedApFetch }}</SearchLabel><span v-if="federationForm.modifiedStates.requireSignedApFetch" class="_modified">{{ i18n.ts.modified }}</span></template>
-									<template #caption><SearchText>{{ i18n.ts._serverSettings.requireSignedApFetch_description }}</SearchText></template>
-								</MkSwitch>
-							</SearchMarker>
-
 							<SearchMarker :keywords="['proxy', 'remote', 'files']">
 								<MkSwitch v-model="federationForm.state.proxyRemoteFiles">
 									<template #label><SearchLabel>{{ i18n.ts._serverSettings.proxyRemoteFiles }}</SearchLabel><span v-if="federationForm.modifiedStates.proxyRemoteFiles" class="_modified">{{ i18n.ts.modified }}</span></template>
@@ -499,7 +491,6 @@ const federationForm = useForm({
 	federationHosts: meta.federationHosts?.join('\n') ?? '',
 	deliverSuspendedSoftware: meta.deliverSuspendedSoftware ?? [],
 	signToActivityPubGet: meta.signToActivityPubGet ?? false,
-	requireSignedApFetch: meta.requireSignedApFetch ?? false,
 	proxyRemoteFiles: meta.proxyRemoteFiles ?? false,
 	allowExternalApRedirect: meta.allowExternalApRedirect ?? false,
 	cacheRemoteFiles: meta.cacheRemoteFiles,
@@ -510,7 +501,6 @@ const federationForm = useForm({
 		federationHosts: state.federationHosts ? state.federationHosts.split('\n') : [],
 		deliverSuspendedSoftware: state.deliverSuspendedSoftware,
 		signToActivityPubGet: state.signToActivityPubGet,
-		requireSignedApFetch: state.requireSignedApFetch,
 		proxyRemoteFiles: state.proxyRemoteFiles,
 		allowExternalApRedirect: state.allowExternalApRedirect,
 		cacheRemoteFiles: state.cacheRemoteFiles,
