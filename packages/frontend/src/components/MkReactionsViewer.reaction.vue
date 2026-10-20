@@ -94,6 +94,11 @@ const hideReactionCount = computed(() => {
 	}
 });
 
+// :x: と :x@.: はどちらもローカル絵文字なので揃える。Unicode 絵文字は異体字セレクタの有無を無視する
+function normalizeReactionForCompare(reaction: string): string {
+	return reaction.replace(/^:([^:@]+)@\.:$/, ':$1:').replace(/\ufe0f/g, '');
+}
+
 function emitReacted(userId: Misskey.entities.User['id']) {
 	let emoji: { name: string; url: string } | undefined;
 	if (isLocal.value) {
@@ -122,6 +127,8 @@ async function toggleReaction() {
 
 	const reaction = getReactionName(props.reaction, true);
 	const oldReaction = props.myReaction ? getReactionName(props.myReaction, true) : null;
+	// 別ホストの同名絵文字を同じリアクションとみなさないよう、ホストを残したまま比べる
+	const isSameReaction = props.myReaction != null && normalizeReactionForCompare(props.myReaction) === normalizeReactionForCompare(props.reaction);
 
 	if (prefer.s.enableReactionConfirm && !oldReaction) {
 		const confirm = await os.confirm({
@@ -134,11 +141,11 @@ async function toggleReaction() {
 	if (oldReaction) {
 		const confirm = await os.confirm({
 			type: 'warning',
-			text: oldReaction !== reaction ? i18n.ts.changeReactionConfirm : i18n.ts.cancelReactionConfirm,
+			text: !isSameReaction ? i18n.ts.changeReactionConfirm : i18n.ts.cancelReactionConfirm,
 		});
 		if (confirm.canceled) return;
 
-		if (oldReaction !== reaction) {
+		if (!isSameReaction) {
 			sound.playMisskeySfx('reaction');
 			haptic();
 		}
@@ -157,7 +164,7 @@ async function toggleReaction() {
 				userId: me.id,
 				reaction: rawOldReaction,
 			});
-			if (oldReaction !== reaction) {
+			if (!isSameReaction) {
 				misskeyApi('notes/reactions/create', {
 					noteId: props.noteId,
 					reaction: props.reaction,

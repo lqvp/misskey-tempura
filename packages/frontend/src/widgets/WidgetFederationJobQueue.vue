@@ -40,8 +40,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span v-else class="no-jobs">{{ i18n.ts.noJobs }}</span>
 				</div>
 				<div class="queue-actions">
-					<MkButton small inline @click="promote('deliver')"><i class="ti ti-reload"></i> {{ i18n.ts.retryAllQueuesNow }}</MkButton>
-					<MkButton small inline danger @click="clear('deliver')"><i class="ti ti-trash"></i> {{ i18n.ts.clearQueue }}</MkButton>
+					<MkButton small inline :disabled="processing" @click="promote('deliver')"><i class="ti ti-reload"></i> {{ i18n.ts.retryAllQueuesNow }}</MkButton>
+					<MkButton small inline danger :disabled="processing" @click="clear('deliver')"><i class="ti ti-trash"></i> {{ i18n.ts.clearQueue }}</MkButton>
 				</div>
 			</div>
 
@@ -61,8 +61,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span v-else class="no-jobs">{{ i18n.ts.noJobs }}</span>
 				</div>
 				<div class="queue-actions">
-					<MkButton small inline @click="promote('inbox')"><i class="ti ti-reload"></i> {{ i18n.ts.retryAllQueuesNow }}</MkButton>
-					<MkButton small inline danger @click="clear('inbox')"><i class="ti ti-trash"></i> {{ i18n.ts.clearQueue }}</MkButton>
+					<MkButton small inline :disabled="processing" @click="promote('inbox')"><i class="ti ti-reload"></i> {{ i18n.ts.retryAllQueuesNow }}</MkButton>
+					<MkButton small inline danger :disabled="processing" @click="clear('inbox')"><i class="ti ti-trash"></i> {{ i18n.ts.clearQueue }}</MkButton>
 				</div>
 			</div>
 		</template>
@@ -85,8 +85,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span v-else class="no-jobs">{{ i18n.ts.noJobs }}</span>
 				</div>
 				<div class="queue-actions">
-					<MkButton small inline @click="promote('deliver')"><i class="ti ti-reload"></i> {{ i18n.ts.retryAllQueuesNow }}</MkButton>
-					<MkButton small inline danger @click="clear('deliver')"><i class="ti ti-trash"></i> {{ i18n.ts.clearQueue }}</MkButton>
+					<MkButton small inline :disabled="processing" @click="promote('deliver')"><i class="ti ti-reload"></i> {{ i18n.ts.retryAllQueuesNow }}</MkButton>
+					<MkButton small inline danger :disabled="processing" @click="clear('deliver')"><i class="ti ti-trash"></i> {{ i18n.ts.clearQueue }}</MkButton>
 				</div>
 			</div>
 
@@ -106,8 +106,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span v-else class="no-jobs">{{ i18n.ts.noJobs }}</span>
 				</div>
 				<div class="queue-actions">
-					<MkButton small inline @click="promote('inbox')"><i class="ti ti-reload"></i> {{ i18n.ts.retryAllQueuesNow }}</MkButton>
-					<MkButton small inline danger @click="clear('inbox')"><i class="ti ti-trash"></i> {{ i18n.ts.clearQueue }}</MkButton>
+					<MkButton small inline :disabled="processing" @click="promote('inbox')"><i class="ti ti-reload"></i> {{ i18n.ts.retryAllQueuesNow }}</MkButton>
+					<MkButton small inline danger :disabled="processing" @click="clear('inbox')"><i class="ti ti-trash"></i> {{ i18n.ts.clearQueue }}</MkButton>
 				</div>
 			</div>
 		</template>
@@ -194,28 +194,32 @@ const fetchErroredJobs = async () => {
 	}
 };
 
-async function promote(queue: ApQueueDomain) {
-	const { canceled } = await os.confirm({
-		type: 'warning',
-		title: i18n.ts.retryAllQueuesConfirmTitle,
-		text: i18n.ts.retryAllQueuesConfirmText,
-	});
-	if (canceled) return;
+const processing = ref(false);
 
-	await os.apiWithDialog('admin/queue/promote-jobs', { queue });
-	fetchErroredJobs();
+async function runQueueAction(confirmTitle: string, confirmText: string, action: () => Promise<unknown>) {
+	if (processing.value) return;
+	// 確認ダイアログを開いている間も二重に押せないようにする
+	processing.value = true;
+	try {
+		const { canceled } = await os.confirm({ type: 'warning', title: confirmTitle, text: confirmText });
+		if (canceled) return;
+
+		await action();
+		await fetchErroredJobs();
+	} catch (err) {
+		// apiWithDialog がエラーを表示するのでここでは握りつぶす
+		console.error('Failed to run queue action:', err);
+	} finally {
+		processing.value = false;
+	}
 }
 
-async function clear(queue: ApQueueDomain) {
-	const { canceled } = await os.confirm({
-		type: 'warning',
-		title: i18n.ts.clearQueueConfirmTitle,
-		text: i18n.ts.clearQueueConfirmText,
-	});
-	if (canceled) return;
+function promote(queue: ApQueueDomain) {
+	return runQueueAction(i18n.ts.retryAllQueuesConfirmTitle, i18n.ts.retryAllQueuesConfirmText, () => os.apiWithDialog('admin/queue/promote-jobs', { queue }));
+}
 
-	await os.apiWithDialog('admin/queue/clear', { queue, state: '*' });
-	fetchErroredJobs();
+function clear(queue: ApQueueDomain) {
+	return runQueueAction(i18n.ts.clearQueueConfirmTitle, i18n.ts.clearQueueConfirmText, () => os.apiWithDialog('admin/queue/clear', { queue, state: '*' }));
 }
 
 // intervalを設定
