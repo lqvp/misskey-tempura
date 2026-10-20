@@ -1135,6 +1135,11 @@ export const meta = {
 				optional: false,
 				nullable: false,
 			},
+			requireSignedApFetch: {
+				type: 'boolean',
+				optional: false,
+				nullable: false,
+			},
 			allowExternalApRedirect: {
 				type: "boolean",
 				optional: false,
@@ -1360,6 +1365,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				ugcVisibilityForVisitor: instance.ugcVisibilityForVisitor,
 				proxyRemoteFiles: instance.proxyRemoteFiles,
 				signToActivityPubGet: instance.signToActivityPubGet,
+				requireSignedApFetch: instance.requireSignedApFetch,
 				allowExternalApRedirect: instance.allowExternalApRedirect,
 				enableRemoteNotesCleaning: instance.enableRemoteNotesCleaning,
 				remoteNotesCleaningExpiryDaysForEachNotes:
