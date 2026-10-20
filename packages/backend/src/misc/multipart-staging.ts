@@ -62,29 +62,26 @@ export function resolveMultipartStagingDir(dataDir: string, uploadId: string): s
  * 新旧どちらのスティージングディレクトリに退避済みのバイト数の合計。
  * クォータ判定など、場所に依存しない集計に使う。
  */
-export function getUploadStagedBytes(dataDir: string, uploadId: string): number {
-	return getStagedBytesOfUpload(getMultipartStagingDir(dataDir, uploadId))
-		+ getStagedBytesOfUpload(getLegacyMultipartStagingDir(uploadId));
+export async function getUploadStagedBytes(dataDir: string, uploadId: string): Promise<number> {
+	const [current, legacy] = await Promise.all([
+		getStagedBytesOfUpload(getMultipartStagingDir(dataDir, uploadId)),
+		getStagedBytesOfUpload(getLegacyMultipartStagingDir(uploadId)),
+	]);
+	return current + legacy;
 }
 
 /**
  * スティージングディレクトリ内に退避済みのバイト数の合計。
  * ディレクトリが存在しない場合は 0 を返す。
  */
-export function getStagedBytesOfUpload(stagingDir: string): number {
+export async function getStagedBytesOfUpload(stagingDir: string): Promise<number> {
 	let names: string[];
 	try {
-		names = fs.readdirSync(stagingDir);
+		names = await fs.promises.readdir(stagingDir);
 	} catch {
 		return 0;
 	}
-	let total = 0;
-	for (const name of names) {
-		try {
-			total += fs.statSync(`${stagingDir}/${name}`).size;
-		} catch {
-			// readdir と stat の間になくなったファイルはスキップ
-		}
-	}
-	return total;
+	// readdir と stat の間になくなったファイルは 0 として数える
+	const sizes = await Promise.all(names.map(name => fs.promises.stat(`${stagingDir}/${name}`).then(s => s.size, () => 0)));
+	return sizes.reduce((a, b) => a + b, 0);
 }

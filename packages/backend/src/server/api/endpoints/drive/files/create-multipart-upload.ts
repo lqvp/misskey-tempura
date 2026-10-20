@@ -5,6 +5,7 @@
 
 import ms from 'ms';
 import { Inject, Injectable } from '@nestjs/common';
+import { MoreThan } from 'typeorm';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 import { MiMultipartUpload } from '@/models/MultipartUpload.js';
@@ -91,10 +92,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			const driveCapacity = 1024 * 1024 * policies.driveCapacityMb;
 			const currentUsage = await this.driveFileEntityService.calcDriveUsageOf(me.id);
 
-			console.log(`Creating multipart upload: capacity=${driveCapacity}, usage=${currentUsage}, totalSize=${ps.totalSize}`);
+			// まだ完了していないアップロードの分も使用中とみなす。数を開けば容量を超えて退避できてしまうので
+			const pendingUploads = await this.multipartUploadsRepository.findBy({ userId: me.id, expiresAt: MoreThan(new Date()) });
+			// totalSize は bigint 列なので実行時は文字列で返る
+			const pendingBytes = pendingUploads.reduce((sum, upload) => sum + Number(upload.totalSize), 0);
 
-			if (driveCapacity < currentUsage + ps.totalSize) {
-				console.error(`Drive capacity exceeded: ${currentUsage + ps.totalSize} > ${driveCapacity}`);
+			if (driveCapacity < currentUsage + pendingBytes + ps.totalSize) {
 				throw new ApiError(meta.errors.noFreeSpace);
 			}
 
