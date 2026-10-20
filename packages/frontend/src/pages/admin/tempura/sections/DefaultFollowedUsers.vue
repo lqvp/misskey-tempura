@@ -50,4 +50,3 @@ function save() {
 	});
 }
 </script>
-EOF

@@ -3910,6 +3910,7 @@ _serverStats:
   enableFsTotalDescription: "ストレージ容量を表示します。無効の場合は、「？」が表示されます。"
   customFsTotal: "カスタムストレージ容量"
   customFsTotalDescription: "ストレージ容量をカスタムで表示します。(オプション)"
+  masterToggleHint: "これらの設定は「サーバー情報の表示」が有効なときに反映されます。メインのスイッチは /admin/performance にあります。"
 
 _hana:
   useHanaEntrance: "はなみすきー仕様のエントランスを使う"

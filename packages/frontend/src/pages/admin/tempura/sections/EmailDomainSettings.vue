@@ -52,4 +52,3 @@ const form = useForm({
 	fetchInstance(true);
 });
 </script>
-EOF

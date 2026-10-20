@@ -47,4 +47,3 @@ function save() {
 	});
 }
 </script>
-EOF

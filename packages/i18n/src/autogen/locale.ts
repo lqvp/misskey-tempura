@@ -14614,6 +14614,10 @@ export interface Locale extends ILocale {
          * ストレージ容量をカスタムで表示します。(オプション)
          */
         "customFsTotalDescription": string;
+        /**
+         * これらの設定は「サーバー情報の表示」が有効なときに反映されます。メインのスイッチは /admin/performance にあります。
+         */
+        "masterToggleHint": string;
     };
     "_hana": {
         /**
