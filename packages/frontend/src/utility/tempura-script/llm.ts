@@ -38,9 +38,11 @@ async function uploadFileToGemini(file: Misskey.entities.DriveFile, apiKey: stri
 		const uploadUrl = 'https://generativelanguage.googleapis.com/upload/v1beta/files';
 
 		// メタデータアップロードのリクエスト
-		const metadataResponse = await window.fetch(`${uploadUrl}?key=${apiKey}`, {
+		// API キーは URL に入れるとログや履歴に残りやすいのでヘッダーで送る
+		const metadataResponse = await window.fetch(uploadUrl, {
 			method: 'POST',
 			headers: {
+				'x-goog-api-key': apiKey,
 				'X-Goog-Upload-Protocol': 'resumable',
 				'X-Goog-Upload-Command': 'start',
 				'X-Goog-Upload-Header-Content-Length': String(fileBlob.size),
@@ -243,10 +245,12 @@ export async function generateGeminiSummary({
 
 	// Gemini APIにリクエスト送信
 	const response = await window.fetch(
-		`https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiToken}`,
+		// モデルを空にしている場合は既定のモデルを使う (以前は models/null を呼んで失敗していた)
+		`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(geminiModel ?? 'gemini-2.5-flash')}:generateContent`,
 		{
 			method: 'POST',
 			headers: {
+				'x-goog-api-key': geminiToken,
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify(requestBody),

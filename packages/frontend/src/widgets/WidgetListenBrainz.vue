@@ -133,7 +133,7 @@ const fetchPlayingNow = async () => {
 	}
 	fetching.value = true;
 
-	const url = `https://api.listenbrainz.org/1/user/${widgetProps.userId}/playing-now`;
+	const url = `https://api.listenbrainz.org/1/user/${encodeURIComponent(widgetProps.userId)}/playing-now`;
 	const response = await window.fetch(url);
 	const data = await response.json();
 
