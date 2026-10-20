@@ -144,12 +144,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 
 			// Gemini APIへのリクエスト
 			try {
-				const url = `https://generativelanguage.googleapis.com/v1beta/models/${serverGeminiModels}:generateContent?key=${serverGeminiApiKey}`;
+				// API キーは URL に入れるとエラーやログに出るので、ヘッダーで送る
+				const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(serverGeminiModels)}:generateContent`;
 
 				const response = await this.httpRequestService.send(url, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
+						'x-goog-api-key': serverGeminiApiKey,
 					},
 					body: requestBody,
 					timeout: 30000, // 30秒タイムアウト
@@ -162,13 +164,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				const responseData = await response.json();
 				return responseData;
 			} catch (error) {
-				// エラーの詳細を記録
-				console.error('LLM API error:', error);
-				// 上流のエラーメッセージにはリクエストURL（APIキーを含む）が含まれるため、キーを隠してから返す
+				// 念のため、メッセージにキーが含まれていたら隠してから記録・返却する
 				const rawErrorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
 				const errorMessage = serverGeminiApiKey
 					? rawErrorMessage.split(serverGeminiApiKey).join('[REDACTED]')
 					: rawErrorMessage;
+				console.error('LLM API error:', errorMessage);
 				throw new ApiError(meta.errors.llmApiError, errorMessage);
 			}
 		});

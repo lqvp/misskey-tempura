@@ -1218,6 +1218,72 @@ describe('Endpoints', () => {
 		});
 	});
 
+	describe('admin/update-user-name', () => {
+		let moderator: misskey.entities.SignupResponse;
+		let target: misskey.entities.SignupResponse;
+
+		beforeAll(async () => {
+			moderator = await signup({ username: 'renamemod' });
+			target = await signup({ username: 'renametarget' });
+			const moderatorRole = await role(alice, { permissionGroup: 'MainModerator' });
+			await api('admin/roles/assign', { roleId: moderatorRole.id, userId: moderator.id }, alice);
+		});
+
+		test('長すぎる名前は拒否する', async () => {
+			const res = await api('admin/update-user-name', { userId: target.id, name: 'a'.repeat(101) }, moderator);
+
+			assert.strictEqual(res.status, 400);
+		});
+
+		test('100 文字ちょうどの名前は受け付ける', async () => {
+			const res = await api('admin/update-user-name', { userId: target.id, name: 'a'.repeat(100) }, moderator);
+
+			assert.strictEqual(res.status, 204);
+		});
+
+		test('存在しないユーザーは NO_SUCH_USER', async () => {
+			const res = await api('admin/update-user-name', { userId: '000000000000000000000000', name: 'x' }, moderator);
+
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual((res.body as any).error.code, 'NO_SUCH_USER');
+		});
+
+		test('モデレーターでなければ使えない', async () => {
+			const res = await api('admin/update-user-name', { userId: target.id, name: 'x' }, carol);
+
+			assert.strictEqual(res.status, 403);
+		});
+
+		test('変更した名前と絵文字がキャッシュ越しにもすぐ反映される', async () => {
+			// 本人の i は認証時にキャッシュしたユーザー情報を返すので、先に一度呼んでキャッシュに載せる
+			await api('i', {}, target);
+
+			const res = await api('admin/update-user-name', { userId: target.id, name: '  renamed :blobcat:  ' }, moderator);
+			assert.strictEqual(res.status, 204);
+
+			const me = await api('i', {}, target);
+			assert.strictEqual(me.body.name, 'renamed :blobcat:');
+			const connection = await initTestDb(true);
+			const saved = await connection.getRepository(MiUser).findOneByOrFail({ id: target.id });
+			assert.deepStrictEqual(saved.emojis, ['blobcat']);
+			connection.destroy();
+		});
+
+		test('null を送ると名前を消す', async () => {
+			const res = await api('admin/update-user-name', { userId: target.id, name: null }, moderator);
+			assert.strictEqual(res.status, 204);
+
+			const me = await api('i', {}, target);
+			assert.strictEqual(me.body.name, null);
+		});
+
+		test('name を省略するとエラーになる (うっかり消さないように)', async () => {
+			const res = await api('admin/update-user-name', { userId: target.id } as any, moderator);
+
+			assert.strictEqual(res.status, 400);
+		});
+	});
+
 	describe('admin/regenerate-user-token', () => {
 		let moderator: misskey.entities.SignupResponse;
 		let normalUser: misskey.entities.SignupResponse;

@@ -62,29 +62,47 @@ export function resolveMultipartStagingDir(dataDir: string, uploadId: string): s
  * 新旧どちらのスティージングディレクトリに退避済みのバイト数の合計。
  * クォータ判定など、場所に依存しない集計に使う。
  */
-export function getUploadStagedBytes(dataDir: string, uploadId: string): number {
-	return getStagedBytesOfUpload(getMultipartStagingDir(dataDir, uploadId))
-		+ getStagedBytesOfUpload(getLegacyMultipartStagingDir(uploadId));
+export async function getUploadStagedBytes(dataDir: string, uploadId: string): Promise<number> {
+	const [current, legacy] = await Promise.all([
+		getStagedBytesOfUpload(getMultipartStagingDir(dataDir, uploadId)),
+		getStagedBytesOfUpload(getLegacyMultipartStagingDir(uploadId)),
+	]);
+	return current + legacy;
 }
 
 /**
  * スティージングディレクトリ内に退避済みのバイト数の合計。
  * ディレクトリが存在しない場合は 0 を返す。
  */
-export function getStagedBytesOfUpload(stagingDir: string): number {
+export async function getStagedBytesOfUpload(stagingDir: string): Promise<number> {
 	let names: string[];
 	try {
-		names = fs.readdirSync(stagingDir);
-	} catch {
-		return 0;
+		names = await fs.promises.readdir(stagingDir);
+	} catch (err) {
+		// ディレクトリが無いだけなら 0。それ以外の失敗で 0 と数えるとクォータをすり抜けるので投げる
+		if (isNotFound(err)) return 0;
+		throw err;
 	}
+
+	// libuv のスレッドプールを占有しないよう、stat は少しずつ投げる
 	let total = 0;
-	for (const name of names) {
-		try {
-			total += fs.statSync(`${stagingDir}/${name}`).size;
-		} catch {
-			// readdir と stat の間になくなったファイルはスキップ
-		}
+	for (let i = 0; i < names.length; i += STAT_CONCURRENCY) {
+		const sizes = await Promise.all(names.slice(i, i + STAT_CONCURRENCY).map(async name => {
+			try {
+				return (await fs.promises.stat(`${stagingDir}/${name}`)).size;
+			} catch (err) {
+				// readdir と stat の間になくなったファイルは 0 として数える
+				if (isNotFound(err)) return 0;
+				throw err;
+			}
+		}));
+		total += sizes.reduce((a, b) => a + b, 0);
 	}
 	return total;
+}
+
+const STAT_CONCURRENCY = 8;
+
+function isNotFound(err: unknown): boolean {
+	return (err as NodeJS.ErrnoException | null)?.code === 'ENOENT';
 }

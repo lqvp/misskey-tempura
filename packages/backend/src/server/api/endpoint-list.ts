@@ -189,6 +189,7 @@ export * as 'drive/files/create' from './endpoints/drive/files/create.js';
 export * as 'drive/files/create-multipart-upload' from './endpoints/drive/files/create-multipart-upload.js';
 export * as 'drive/files/upload-multipart-part' from './endpoints/drive/files/upload-multipart-part.js';
 export * as 'drive/files/complete-multipart-upload' from './endpoints/drive/files/complete-multipart-upload.js';
+export * as 'drive/files/abort-multipart-upload' from './endpoints/drive/files/abort-multipart-upload.js';
 export * as 'drive/files/delete' from './endpoints/drive/files/delete.js';
 export * as 'drive/files/find' from './endpoints/drive/files/find.js';
 export * as 'drive/files/find-by-hash' from './endpoints/drive/files/find-by-hash.js';

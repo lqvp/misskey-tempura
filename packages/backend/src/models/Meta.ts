@@ -847,6 +847,14 @@ export class MiMeta {
 	})
 	public signToActivityPubGet: boolean;
 
+	/**
+	 * 署名の無い ActivityPub の取得リクエストを拒否するか (アカウントと公開鍵の取得は除く)
+	 */
+	@Column('boolean', {
+		default: false,
+	})
+	public requireSignedApFetch: boolean;
+
 	@Column('boolean', {
 		default: true,
 	})

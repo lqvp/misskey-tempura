@@ -317,6 +317,7 @@ import type {
 	DriveResponse,
 	DriveFilesRequest,
 	DriveFilesResponse,
+	DriveFilesAbortMultipartUploadRequest,
 	DriveFilesAttachedChatMessagesRequest,
 	DriveFilesAttachedChatMessagesResponse,
 	DriveFilesAttachedNotesRequest,
@@ -947,6 +948,7 @@ export type Endpoints = {
 	'contact-form/submit': { req: ContactFormSubmitRequest; res: ContactFormSubmitResponse };
 	'drive': { req: EmptyRequest; res: DriveResponse };
 	'drive/files': { req: DriveFilesRequest; res: DriveFilesResponse };
+	'drive/files/abort-multipart-upload': { req: DriveFilesAbortMultipartUploadRequest; res: EmptyResponse };
 	'drive/files/attached-chat-messages': { req: DriveFilesAttachedChatMessagesRequest; res: DriveFilesAttachedChatMessagesResponse };
 	'drive/files/attached-notes': { req: DriveFilesAttachedNotesRequest; res: DriveFilesAttachedNotesResponse };
 	'drive/files/check-existence': { req: DriveFilesCheckExistenceRequest; res: DriveFilesCheckExistenceResponse };
