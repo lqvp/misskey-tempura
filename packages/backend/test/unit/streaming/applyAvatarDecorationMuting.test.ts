@@ -4,78 +4,57 @@
  */
 
 import { describe, expect, test } from 'vitest';
-import { applyAvatarDecorationMuting } from '@/server/api/stream/applyAvatarDecorationMuting.js';
+import { stringifyWithAvatarDecorationMuting } from '@/server/api/stream/applyAvatarDecorationMuting.js';
 
-describe('applyAvatarDecorationMuting', () => {
+function user(id: string, decorationId: string) {
+	return {
+		id,
+		username: id,
+		avatarUrl: `https://example.test/${id}.png`,
+		avatarDecorations: [{ id: decorationId, url: `https://example.test/${decorationId}.png` }],
+	};
+}
+
+describe('stringifyWithAvatarDecorationMuting', () => {
 	test('removes avatarDecorations for muted users recursively', () => {
-		const payload: any = {
+		const payload = {
 			type: 'channel',
 			body: {
 				id: 'ch-1',
 				type: 'note',
 				body: {
 					id: 'note-1',
-					user: {
-						id: 'muted-user',
-						username: 'muted',
-						avatarUrl: 'https://example.test/a.png',
-						avatarDecorations: [{ id: 'd1', url: 'https://example.test/d1.png' }],
-					},
+					user: user('muted-user', 'd1'),
 					renote: {
 						id: 'note-2',
-						user: {
-							id: 'ok-user',
-							username: 'ok',
-							avatarUrl: 'https://example.test/b.png',
-							avatarDecorations: [{ id: 'd2', url: 'https://example.test/d2.png' }],
-						},
+						user: user('ok-user', 'd2'),
 						reply: {
 							id: 'note-3',
-							user: {
-								id: 'muted-user',
-								username: 'muted',
-								avatarUrl: 'https://example.test/a.png',
-								avatarDecorations: [{ id: 'd3', url: 'https://example.test/d3.png' }],
-							},
+							user: user('muted-user', 'd3'),
 						},
 					},
 				},
 			},
 		};
 
-		applyAvatarDecorationMuting(payload, new Set(['muted-user']));
+		const result = JSON.parse(stringifyWithAvatarDecorationMuting(payload, new Set(['muted-user'])));
 
-		expect(payload.body.body.user.avatarDecorations).toEqual([]);
-		expect(payload.body.body.renote.user.avatarDecorations).toHaveLength(1);
-		expect(payload.body.body.renote.reply.user.avatarDecorations).toEqual([]);
+		expect(result.body.body.user.avatarDecorations).toEqual([]);
+		expect(result.body.body.renote.user.avatarDecorations).toHaveLength(1);
+		expect(result.body.body.renote.reply.user.avatarDecorations).toEqual([]);
 	});
 
-	test('does nothing for empty muted set', () => {
-		const user: any = {
-			id: 'u1',
-			username: 'u1',
-			avatarUrl: 'https://example.test/a.png',
-			avatarDecorations: [{ id: 'd1', url: 'https://example.test/d1.png' }],
-		};
+	test('does not mutate the shared payload', () => {
+		const payload = { body: { user: user('muted-user', 'd1') } };
 
-		applyAvatarDecorationMuting(user, new Set());
+		stringifyWithAvatarDecorationMuting(payload, new Set(['muted-user']));
 
-		expect(user.avatarDecorations).toHaveLength(1);
+		expect(payload.body.user.avatarDecorations).toHaveLength(1);
 	});
 
-	test('handles circular references', () => {
-		const user: any = {
-			id: 'muted-user',
-			username: 'muted',
-			avatarUrl: 'https://example.test/a.png',
-			avatarDecorations: [{ id: 'd1', url: 'https://example.test/d1.png' }],
-		};
-		const wrapper: any = { user };
-		wrapper.self = wrapper;
-		user.wrapper = wrapper;
+	test('matches JSON.stringify for empty muted set', () => {
+		const payload = { body: { user: user('u1', 'd1') } };
 
-		applyAvatarDecorationMuting(wrapper, new Set(['muted-user']));
-
-		expect(user.avatarDecorations).toEqual([]);
+		expect(stringifyWithAvatarDecorationMuting(payload, new Set())).toBe(JSON.stringify(payload));
 	});
 });
