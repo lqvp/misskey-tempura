@@ -66,6 +66,9 @@ export class ActivityPubAccessControlService {
 	private resolvingSigners = new Map<string, Promise<Signer | null>>();
 	// 鍵の更新に追従するための取り直しは、同じ keyId につき 10 分に 1 回まで
 	private refreshedKeyIds = new MemoryKVCache<true>(1000 * 60 * 10, 10000);
+	// 署名者 (リモートアクター) の解決結果を短時間キャッシュし、同一 keyId からの連続リクエストでの
+	// リモート取得・DB 検索を削減する。鍵の更新時は refreshSignerKey で無効化する。
+	private signerCache = new MemoryKVCache<Signer>(1000 * 60 * 5, 10000);
 
 	constructor(
 		@Inject(DI.config)
@@ -285,6 +288,10 @@ export class ActivityPubAccessControlService {
 	private resolveSigner(keyId: string): Promise<Signer | null> {
 		if (this.failedKeyIds.get(keyId)) return Promise.resolve(null);
 
+		// 署名者解決結果のキャッシュ (TTL 5 分)。同一 keyId の連続リクエストでのリモート取得を避ける。
+		const cachedSigner = this.signerCache.get(keyId);
+		if (cachedSigner != null) return Promise.resolve(cachedSigner);
+
 		const inflight = this.resolvingSigners.get(keyId);
 		if (inflight) return inflight;
 
@@ -295,6 +302,7 @@ export class ActivityPubAccessControlService {
 					this.failedKeyIds.set(keyId, true);
 					return null;
 				}
+				this.signerCache.set(keyId, signer);
 				return signer;
 			} catch (err) {
 				this.logger.debug(`Failed to resolve signer ${keyId}: ${err}`);
@@ -329,6 +337,8 @@ export class ActivityPubAccessControlService {
 	private async refreshSignerKey(keyId: string, user: MiRemoteUser): Promise<MiUserPublickey | null> {
 		if (this.refreshedKeyIds.get(keyId) || user.uri == null) return null;
 		this.refreshedKeyIds.set(keyId, true);
+		// 鍵を更新するので、キャッシュされた署名者は無効化する
+		this.signerCache.delete(keyId);
 
 		await this.apPersonService.updatePerson(user.uri);
 		// ApDbResolverService は鍵をメモリにキャッシュしているので、DB から最新の値を読む
