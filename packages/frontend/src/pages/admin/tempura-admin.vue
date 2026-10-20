@@ -61,4 +61,3 @@ definePage(() => ({
 	icon: 'ti ti-shield',
 }));
 </script>
-EOF
