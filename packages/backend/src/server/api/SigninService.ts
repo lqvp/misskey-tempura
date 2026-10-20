@@ -146,7 +146,7 @@ export class SigninService {
 
 		const record = await this.recordSignin(request, user.id, { success: true, ev: opts.learnOnly ? null : ev, challenge: opts.challenge });
 
-		this.globalEventService.publishMainStream(user.id, 'signin', await this.signinEntityService.pack(record));
+		this.globalEventService.publishMainStream(user.id, 'signin', await this.signinEntityService.packForSelf(record));
 
 		// 判定できたときは notify 以上だけ送る。無効・スキップ・判定しないとき(サインアップ直後)は今までどおり毎回送る
 		const evaluated = !opts.learnOnly && ev != null && ev.skipped === false;

@@ -20,6 +20,7 @@ import { IpIntelligenceService } from '@/core/IpIntelligenceService.js';
 import type { IpIntel } from '@/core/IpIntelligenceService.js';
 import { LoginRiskService } from '@/core/LoginRiskService.js';
 import { NotificationService } from '@/core/NotificationService.js';
+import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { genAidx } from '@/misc/id/aidx.js';
 import { secureRndstr } from '@/misc/secure-rndstr.js';
 import { getIpHash } from '@/misc/get-ip-hash.js';
@@ -211,6 +212,7 @@ describe('SigninApiService', () => {
 		meta.loginRiskNotifyThreshold = 30;
 		meta.loginRiskStepUpThreshold = 60;
 		meta.loginRiskFlagUnverifiedUsers = false;
+		meta.loginRiskShowDetailsToUser = false;
 		meta.enableEmail = true;
 		fakeEmail.sent.length = 0;
 		fakeIntel.lookup = fakeLookup;
@@ -236,6 +238,28 @@ describe('SigninApiService', () => {
 		await userProfilesRepository.createQueryBuilder().delete().execute();
 		await usersRepository.createQueryBuilder().delete().execute();
 		createdUserIds.length = 0;
+	});
+
+	it('ストリーミングで本人に送るサインイン記録も、見せない設定なら点数と判定理由を隠す', async () => {
+		// 通知止まりにして、確認コードを求めずにログインを完了させる
+		meta.loginRiskStepUpThreshold = 1000;
+		const publish = vi.spyOn(app.get(GlobalEventService), 'publishMainStream');
+		const signinPayload = () => publish.mock.calls.find(([, type]) => type === 'signin')?.[2] as { riskScore: number | null; riskReasons: string[] } | undefined;
+
+		const hidden = await createUser();
+		await seedKnownEnvironment(hidden);
+		await call({ username: hidden.username, password: PASSWORD }, US_IP);
+		await vi.waitFor(() => expect(signinPayload()).toBeDefined());
+		expect(signinPayload()).toMatchObject({ riskScore: null, riskReasons: [] });
+
+		publish.mockClear();
+		meta.loginRiskShowDetailsToUser = true;
+		const shown = await createUser();
+		await seedKnownEnvironment(shown);
+		await call({ username: shown.username, password: PASSWORD }, US_IP);
+		await vi.waitFor(() => expect(signinPayload()).toBeDefined());
+		expect(signinPayload()?.riskScore).toBeGreaterThan(0);
+		expect(signinPayload()?.riskReasons).toContain('newCountry');
 	});
 
 	it('機能無効: 従来どおり finished:true、deviceToken なし', async () => {
