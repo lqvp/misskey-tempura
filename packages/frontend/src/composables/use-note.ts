@@ -169,7 +169,11 @@ export function useNote(
 	const collapsed = ref(appearNote.cw == null && isLong);
 	const canRenote = ['public', 'home'].includes(appearNote.visibility) || (appearNote.visibility === 'followers' && appearNote.userId === $i?.id);
 	const showTicker = (prefer.s.instanceTicker === 'always') || (prefer.s.instanceTicker === 'remote' && appearNote.user.instance);
-	const renoteCollapsed = ref(prefer.s.collapseRenotes && isRenote && (($i && ($i.id === rawNote.userId || $i.id === appearNote.userId)) || ($appearNote.myReaction != null) || isViewedRenote(appearNote.id)));
+	// 閲覧済みリノートは collapseRenotes とは独立した設定なので、collapseRenotes が OFF でも折りたたむ
+	const renoteCollapsed = ref(isRenote && (
+		(prefer.s.collapseRenotes && (($i && ($i.id === rawNote.userId || $i.id === appearNote.userId)) || ($appearNote.myReaction != null))) ||
+		isViewedRenote(appearNote.id)
+	));
 
 	const pleaseLoginContext: OpenOnRemoteOptions = {
 		type: 'lookup',

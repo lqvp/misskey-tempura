@@ -238,7 +238,8 @@ export class InboxProcessorService implements OnApplicationShutdown {
 
 			this.updateInstanceQueue.enqueue(i.id, {
 				latestRequestReceivedAt: new Date(),
-				shouldUnsuspend: i.suspensionState === 'autoSuspendedForNotResponding',
+				// 410 で止めたサーバーも、署名付きのアクティビティを送ってきたなら復活したとみなして配送を再開する
+				shouldUnsuspend: i.suspensionState === 'autoSuspendedForNotResponding' || i.suspensionState === 'goneSuspended',
 			});
 
 			if (this.meta.enableChartsForFederatedInstances) {
