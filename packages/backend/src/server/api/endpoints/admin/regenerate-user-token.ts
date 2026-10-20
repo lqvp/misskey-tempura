@@ -10,6 +10,8 @@ import { generateNativeUserToken } from '@/misc/token.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { DI } from '@/di-symbols.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
+import { RoleService } from '@/core/RoleService.js';
+import { ApiError } from '../../error.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -17,6 +19,19 @@ export const meta = {
 	requireCredential: true,
 	requireModerator: true,
 	kind: 'write:admin:regenerate-user-token',
+
+	errors: {
+		noSuchUser: {
+			message: 'No such user.',
+			code: 'NO_SUCH_USER',
+			id: '0e016c85-8dff-4b26-b515-72f5b3458e47',
+		},
+		accessDenied: {
+			message: 'Access denied.',
+			code: 'ACCESS_DENIED',
+			id: 'fde42a50-8370-4f76-a06b-431f49b0e892',
+		},
+	},
 } as const;
 
 export const paramDef = {
@@ -36,12 +51,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 
 		private globalEventService: GlobalEventService,
 		private moderationLogService: ModerationLogService,
+		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const user = await this.usersRepository.findOneBy({ id: ps.userId });
 
 			if (user == null) {
-				throw new Error('user not found');
+				throw new ApiError(meta.errors.noSuchUser);
+			}
+
+			// モデレーターが管理者を強制的にログアウトさせられないようにする (admin/reset-password と同じ)
+			if (await this.roleService.isAdministrator(user) && me.id !== user.id) {
+				throw new ApiError(meta.errors.accessDenied);
 			}
 
 			const oldToken = user.token;
