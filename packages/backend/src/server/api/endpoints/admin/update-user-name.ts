@@ -9,6 +9,7 @@ import { nameSchema } from '@/models/User.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
+import { RoleService } from '@/core/RoleService.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { AccountUpdateService } from '@/core/AccountUpdateService.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
@@ -29,6 +30,11 @@ export const meta = {
 			message: 'No such user.',
 			code: 'NO_SUCH_USER',
 			id: '2466528e-ea93-495c-8c29-de2bf52034f5',
+		},
+		accessDenied: {
+			message: 'Access denied.',
+			code: 'ACCESS_DENIED',
+			id: 'f817d1db-b4fe-493f-bf1c-2e6b177fa7ca',
 		},
 	},
 } as const;
@@ -56,6 +62,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 		private userProfilesRepository: UserProfilesRepository,
 
 		private moderationLogService: ModerationLogService,
+		private roleService: RoleService,
 		private globalEventService: GlobalEventService,
 		private accountUpdateService: AccountUpdateService,
 		private userEntityService: UserEntityService,
@@ -66,6 +73,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 
 			if (user == null) {
 				throw new ApiError(meta.errors.noSuchUser);
+			}
+
+			// 管理者以外は、自分以外のモデレーター・管理者の名前を変えられないようにする (admin/suspend-user と同じ考え方)
+			if (me.id !== user.id && await this.roleService.isModerator(user) && !await this.roleService.isAdministrator(me)) {
+				throw new ApiError(meta.errors.accessDenied);
 			}
 
 			// i/update と同じく前後の空白を除き、空なら名前を消す

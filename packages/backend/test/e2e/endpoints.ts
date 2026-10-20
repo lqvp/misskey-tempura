@@ -1284,6 +1284,63 @@ describe('Endpoints', () => {
 		});
 	});
 
+	describe('admin/regenerate-user-token', () => {
+		let moderator: misskey.entities.SignupResponse;
+		let normalUser: misskey.entities.SignupResponse;
+
+		beforeAll(async () => {
+			moderator = await signup({ username: 'regenmod' });
+			normalUser = await signup({ username: 'regentarget' });
+			const moderatorRole = await role(alice, { permissionGroup: 'MainModerator' });
+			await api('admin/roles/assign', { roleId: moderatorRole.id, userId: moderator.id }, alice);
+		});
+
+		test('モデレーターは管理者のトークンを再発行できない', async () => {
+			const res = await api('admin/regenerate-user-token', { userId: alice.id }, moderator);
+
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual((res.body as any).error.code, 'ACCESS_DENIED');
+		});
+
+		test('モデレーターは一般ユーザーのトークンを再発行できる', async () => {
+			const res = await api('admin/regenerate-user-token', { userId: normalUser.id }, moderator);
+
+			assert.strictEqual(res.status, 204);
+		});
+
+		test('モデレーターは管理者の名前を変えられない', async () => {
+			const res = await api('admin/update-user-name', { userId: alice.id, name: 'renamed' }, moderator);
+
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual((res.body as any).error.code, 'ACCESS_DENIED');
+		});
+
+		test('モデレーターは他のモデレーターのトークン再発行も名前変更もできない', async () => {
+			const otherModerator = await signup({ username: 'regenmod2' });
+			const moderatorRole2 = await role(alice, { permissionGroup: 'MainModerator' });
+			await api('admin/roles/assign', { roleId: moderatorRole2.id, userId: otherModerator.id }, alice);
+
+			const regen = await api('admin/regenerate-user-token', { userId: otherModerator.id }, moderator);
+			assert.strictEqual(regen.status, 400);
+			assert.strictEqual((regen.body as any).error.code, 'ACCESS_DENIED');
+
+			const rename = await api('admin/update-user-name', { userId: otherModerator.id, name: 'renamed' }, moderator);
+			assert.strictEqual(rename.status, 400);
+			assert.strictEqual((rename.body as any).error.code, 'ACCESS_DENIED');
+
+			// 管理者ならできる
+			const byAdmin = await api('admin/update-user-name', { userId: otherModerator.id, name: 'renamed by admin' }, alice);
+			assert.strictEqual(byAdmin.status, 204);
+		});
+
+		test('存在しないユーザーは noSuchUser', async () => {
+			const res = await api('admin/regenerate-user-token', { userId: '000000000000000000000000' }, moderator);
+
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual((res.body as any).error.code, 'NO_SUCH_USER');
+		});
+	});
+
 	describe('admin/clear-suspicious-login-flag', () => {
 		test('存在しないユーザーは noSuchUser', async () => {
 			const res = await api('admin/clear-suspicious-login-flag', { userId: '000000000000000000000000' }, alice);
