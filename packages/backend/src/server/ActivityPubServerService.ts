@@ -606,7 +606,8 @@ export class ActivityPubServerService {
 			return;
 		}
 
-		if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true)) {
+		// 相手が署名を検証するために鍵を取りに来るので、署名必須モードでも署名を求めない
+		if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true, false)) {
 			return;
 		}
 
@@ -794,7 +795,8 @@ export class ActivityPubServerService {
 				return;
 			}
 
-			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true)) {
+			// 相手が署名を検証するために鍵を取りに来るので、署名必須モードでも署名を求めない
+			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true, false)) {
 				return;
 			}
 
