@@ -315,6 +315,42 @@ describe('ActivityPub', () => {
 			assert.deepStrictEqual(userProfile.followingVisibility, 'private');
 			assert.deepStrictEqual(userProfile.followersVisibility, 'private');
 		});
+
+		test('Counts are read from the same collection fetches', async () => {
+			const actor = createRandomActor();
+			actor.following = `${actor.id}/following`;
+			actor.followers = `${actor.id}/followers`;
+
+			resolver.register(actor.id, actor);
+			resolver.register(actor.following, { id: actor.following, type: 'OrderedCollection', totalItems: 3, first: `${actor.following}?page=1` });
+			resolver.register(actor.followers, { id: actor.followers, type: 'OrderedCollection', totalItems: '5', first: `${actor.followers}?page=1` } as any);
+			resolver.register(actor.outbox as string, { id: actor.outbox, type: 'OrderedCollection', totalItems: 7, first: `${actor.outbox}?page=1` });
+
+			const user = await personService.createPerson(actor.id, resolver);
+
+			assert.strictEqual(user.followingCount, 3);
+			// 文字列で届いた件数も読む
+			assert.strictEqual(user.followersCount, 5);
+			assert.strictEqual(user.notesCount, 7);
+			// 各コレクションは一度だけ取得する
+			assert.deepStrictEqual(resolver.remoteGetTrials(), [actor.id, actor.following, actor.followers, actor.outbox]);
+		});
+
+		test('A failing outbox does not affect following/followers visibility', async () => {
+			const actor = createRandomActor();
+			actor.followers = `${actor.id}/followers`;
+
+			resolver.register(actor.id, actor);
+			resolver.register(actor.followers, { id: actor.followers, type: 'OrderedCollection', totalItems: 2, first: `${actor.followers}?page=1` });
+			// outbox は登録しないので取得に失敗する
+
+			const user = await personService.createPerson(actor.id, resolver);
+			const userProfile = await userProfilesRepository.findOneByOrFail({ userId: user.id });
+
+			assert.deepStrictEqual(userProfile.followersVisibility, 'public');
+			assert.strictEqual(user.followersCount, 2);
+			assert.strictEqual(user.notesCount, 0);
+		});
 	});
 
 	describe('Renderer', () => {

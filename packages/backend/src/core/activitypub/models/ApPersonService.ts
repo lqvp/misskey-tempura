@@ -57,6 +57,12 @@ const summaryLength = 2048;
 
 type Field = Record<'name' | 'value', string>;
 
+// 実装によっては数値を文字列で返すので、0 以上の整数として読めるものだけ受け付ける
+function parseTotalItems(value: unknown): number | undefined {
+	const n = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
+	return typeof n === 'number' && Number.isSafeInteger(n) && n >= 0 ? n : undefined;
+}
+
 type CollectionInfo = {
 	isPublic: boolean;
 	totalItems: number | undefined;
@@ -419,7 +425,7 @@ export class ApPersonService implements OnModuleInit {
 			throw new Error('unexpected schema of person url: ' + url);
 		}
 
-		// 件数は公開範囲の判定と同じ取得結果から読む (署名付きで取得するので、署名を求めるサーバーからも取れる)
+		// 件数は公開範囲の判定と同じ取得結果から読む。取得は resolver を通すので、signToActivityPubGet が有効なら署名付きになる
 		const followersCount = this.totalItemsOf(collections.followers);
 		const followingCount = this.totalItemsOf(collections.following);
 		const notesCount = this.totalItemsOf(collections.outbox);
@@ -641,7 +647,7 @@ export class ApPersonService implements OnModuleInit {
 			throw new Error('unexpected schema of person url: ' + url);
 		}
 
-		// 件数は公開範囲の判定と同じ取得結果から読む (署名付きで取得するので、署名を求めるサーバーからも取れる)
+		// 件数は公開範囲の判定と同じ取得結果から読む。取得は resolver を通すので、signToActivityPubGet が有効なら署名付きになる
 		const followersCount = this.totalItemsOf(collections.followers);
 		const followingCount = this.totalItemsOf(collections.following);
 		const notesCount = this.totalItemsOf(collections.outbox);
@@ -916,10 +922,10 @@ export class ApPersonService implements OnModuleInit {
 		return 'ok';
 	}
 
-	@bindThis
 	/**
 	 * following / followers / outbox をそれぞれ一度だけ並列に取得する
 	 */
+	@bindThis
 	private async fetchCollections(person: IActor, resolver: Resolver): Promise<Record<'following' | 'followers' | 'outbox', PromiseSettledResult<CollectionInfo>>> {
 		const [following, followers, outbox] = await Promise.allSettled([
 			this.fetchCollectionInfo(person.following, resolver),
@@ -935,7 +941,7 @@ export class ApPersonService implements OnModuleInit {
 		const resolved = await resolver.resolveCollection(collection);
 		return {
 			isPublic: !!(resolved.first || (resolved as ICollection).items || (resolved as IOrderedCollection).orderedItems),
-			totalItems: typeof resolved.totalItems === 'number' ? resolved.totalItems : undefined,
+			totalItems: parseTotalItems(resolved.totalItems),
 		};
 	}
 
