@@ -8,6 +8,8 @@ import type { UsersRepository } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
+import { RoleService } from '@/core/RoleService.js';
+import { ApiError } from '../../error.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -15,6 +17,14 @@ export const meta = {
 	requireCredential: true,
 	requireModerator: true,
 	kind: 'write:admin:user-name',
+
+	errors: {
+		accessDenied: {
+			message: 'Access denied.',
+			code: 'ACCESS_DENIED',
+			id: 'f817d1db-b4fe-493f-bf1c-2e6b177fa7ca',
+		},
+	},
 } as const;
 
 export const paramDef = {
@@ -34,12 +44,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 		private usersRepository: UsersRepository,
 
 		private moderationLogService: ModerationLogService,
+		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const user = await this.usersRepository.findOneBy({ id: ps.userId });
 
 			if (user == null) {
 				throw new Error('user not found');
+			}
+
+			// モデレーターが管理者の名前を変えられないようにする (admin/reset-password と同じ)
+			if (await this.roleService.isAdministrator(user) && me.id !== user.id) {
+				throw new ApiError(meta.errors.accessDenied);
 			}
 
 			await this.usersRepository.update(user.id, {

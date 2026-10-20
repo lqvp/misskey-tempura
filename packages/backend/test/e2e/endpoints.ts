@@ -1242,6 +1242,13 @@ describe('Endpoints', () => {
 			assert.strictEqual(res.status, 204);
 		});
 
+		test('モデレーターは管理者の名前を変えられない', async () => {
+			const res = await api('admin/update-user-name', { userId: alice.id, name: 'renamed' }, moderator);
+
+			assert.strictEqual(res.status, 400);
+			assert.strictEqual((res.body as any).error.code, 'ACCESS_DENIED');
+		});
+
 		test('存在しないユーザーは noSuchUser', async () => {
 			const res = await api('admin/regenerate-user-token', { userId: '000000000000000000000000' }, moderator);
 
