@@ -94,6 +94,26 @@ const hideReactionCount = computed(() => {
 	}
 });
 
+function emitReacted(userId: Misskey.entities.User['id']) {
+	let emoji: { name: string; url: string } | undefined;
+	if (isLocal.value) {
+		emoji = customEmojisMap.get(emojiName.value);
+		if (emoji == null && getUnicodeEmojiOrNull(props.reaction) == null) return;
+	} else {
+		// ローカルに無いリモート絵文字はノートに付いている絵文字情報を使う
+		const name = props.reaction.replace(/^:|:$/g, '');
+		const url = props.reactionEmojis[name];
+		if (url == null) return;
+		emoji = { name, url };
+	}
+
+	noteEvents.emit(`reacted:${props.noteId}`, {
+		userId,
+		reaction: props.reaction,
+		emoji,
+	});
+}
+
 async function toggleReaction() {
 	if (!canToggle.value) return;
 	if ($i == null) return;
@@ -128,27 +148,21 @@ async function toggleReaction() {
 			return;
 		}
 
+		// 取り消しの通知と変更先の送信には整形前の名前を使う。整形後の名前だと ❤ が :❤: になったり、リモート絵文字のホストが落ちたりする
+		const rawOldReaction = props.myReaction!;
 		misskeyApi('notes/reactions/delete', {
 			noteId: props.noteId,
 		}).then(() => {
 			noteEvents.emit(`unreacted:${props.noteId}`, {
 				userId: me.id,
-				reaction: oldReaction,
+				reaction: rawOldReaction,
 			});
 			if (oldReaction !== reaction) {
 				misskeyApi('notes/reactions/create', {
 					noteId: props.noteId,
-					reaction: reaction,
+					reaction: props.reaction,
 				}).then(() => {
-					const emoji = customEmojisMap.get(emojiName.value);
-					if (emoji == null && getUnicodeEmojiOrNull(props.reaction) == null) {
-						return;
-					}
-					noteEvents.emit(`reacted:${props.noteId}`, {
-						userId: me.id,
-						reaction: props.reaction,
-						emoji: emoji,
-					});
+					emitReacted(me.id);
 				});
 			}
 		});
@@ -175,16 +189,7 @@ async function toggleReaction() {
 			noteId: props.noteId,
 			reaction: props.reaction,
 		}).then(() => {
-			const emoji = customEmojisMap.get(emojiName.value);
-			if (emoji == null && getUnicodeEmojiOrNull(props.reaction) == null) {
-				return;
-			}
-
-			noteEvents.emit(`reacted:${props.noteId}`, {
-				userId: me.id,
-				reaction: props.reaction,
-				emoji: emoji,
-			});
+			emitReacted(me.id);
 		});
 		// TODO: 上位コンポーネントでやる
 		//if (props.note.text && props.note.text.length > 100 && (Date.now() - new Date(props.note.createdAt).getTime() < 1000 * 3)) {
