@@ -580,7 +580,7 @@ export class SignupApiService {
 				await this.usersRepository.update({ id: account.id }, { approved: true });
 			}
 
-			return this.signinService.signin(request, reply, account as MiLocalUser);
+			return await this.signinService.signin(request, reply, account as MiLocalUser, { learnOnly: true });
 		} catch (err) {
 			throw new FastifyReplyError(400, typeof err === 'string' ? err : (err as Error).toString());
 		}

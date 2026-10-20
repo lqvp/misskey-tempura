@@ -320,6 +320,10 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 				case 'isSuspended': {
 					return user.isSuspended;
 				}
+				// 不審なログインが検知されているユーザである
+				case 'isSuspiciousLoginDetected': {
+					return user.suspiciousLoginDetectedAt != null;
+				}
 				// 鍵アカウントユーザである
 				case 'isLocked': {
 					return user.isLocked;

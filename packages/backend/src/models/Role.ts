@@ -64,6 +64,13 @@ type CondFormulaValueIsSuspended = {
 };
 
 /**
+ * 不審なログインが検知されている(フラグが立っている)場合のみ成立とする
+ */
+type CondFormulaValueIsSuspiciousLoginDetected = {
+	type: 'isSuspiciousLoginDetected';
+};
+
+/**
  * 鍵アカウントの場合のみ成立とする
  */
 type CondFormulaValueIsLocked = {
@@ -178,6 +185,7 @@ export type RoleCondFormulaValue = { id: string } & (
 	CondFormulaValueIsLocal |
 	CondFormulaValueIsRemote |
 	CondFormulaValueIsSuspended |
+	CondFormulaValueIsSuspiciousLoginDetected |
 	CondFormulaValueIsLocked |
 	CondFormulaValueIsBot |
 	CondFormulaValueIsCat |

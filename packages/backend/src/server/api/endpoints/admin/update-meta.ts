@@ -9,6 +9,8 @@ import type { MiMeta } from '@/models/Meta.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { MetaService } from '@/core/MetaService.js';
+import { QueueService } from '@/core/QueueService.js';
+import { ApiLoggerService } from '../../ApiLoggerService.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -23,6 +25,11 @@ export const meta = {
 			message: 'Some items in "defaultFollowedUsers" and "forciblyFollowedUsers" are duplicated.',
 			code: 'FOLLOWED_USER_DUPLICATED',
 			id: 'bcf088ec-fec5-42d0-8b9e-16d3b4797a4d',
+		},
+		invalidLoginRiskThresholds: {
+			message: 'loginRiskNotifyThreshold must be less than loginRiskStepUpThreshold.',
+			code: 'INVALID_LOGIN_RISK_THRESHOLDS',
+			id: '0b4b9a0e-6f0d-4c8e-9d3a-5f2f7a1c8e41',
 		},
 	},
 } as const;
@@ -169,6 +176,11 @@ export const paramDef = {
 		objectStorageS3ForcePathStyle: { type: 'boolean' },
 		objectStorageCacheDays: { type: 'integer', nullable: true },
 		enableIpLogging: { type: 'boolean' },
+		enableLoginRiskDetection: { type: 'boolean' },
+		loginRiskNotifyThreshold: { type: 'integer', minimum: 1, maximum: 1000 },
+		loginRiskStepUpThreshold: { type: 'integer', minimum: 1, maximum: 1000 },
+		loginRiskFlagUnverifiedUsers: { type: 'boolean' },
+		loginRiskShowDetailsToUser: { type: 'boolean' },
 		enableActiveEmailValidation: { type: 'boolean' },
 		enableVerifymailApi: { type: 'boolean' },
 		verifymailAuthKey: { type: 'string', nullable: true },
@@ -345,6 +357,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 		private metaService: MetaService,
 		private moderationLogService: ModerationLogService,
+		private queueService: QueueService,
+		private apiLoggerService: ApiLoggerService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const set = {} as Partial<MiMeta>;
@@ -767,6 +781,34 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.enableIpLogging !== undefined) {
 				set.enableIpLogging = ps.enableIpLogging;
+			}
+
+			if (ps.enableLoginRiskDetection !== undefined) {
+				set.enableLoginRiskDetection = ps.enableLoginRiskDetection;
+			}
+
+			if (ps.loginRiskNotifyThreshold !== undefined) {
+				set.loginRiskNotifyThreshold = ps.loginRiskNotifyThreshold;
+			}
+
+			if (ps.loginRiskStepUpThreshold !== undefined) {
+				set.loginRiskStepUpThreshold = ps.loginRiskStepUpThreshold;
+			}
+
+			if (ps.loginRiskFlagUnverifiedUsers !== undefined) {
+				set.loginRiskFlagUnverifiedUsers = ps.loginRiskFlagUnverifiedUsers;
+			}
+
+			if (ps.loginRiskShowDetailsToUser !== undefined) {
+				set.loginRiskShowDetailsToUser = ps.loginRiskShowDetailsToUser;
+			}
+
+			if (ps.loginRiskNotifyThreshold !== undefined || ps.loginRiskStepUpThreshold !== undefined) {
+				const notify = set.loginRiskNotifyThreshold ?? this.serverSettings.loginRiskNotifyThreshold;
+				const stepUp = set.loginRiskStepUpThreshold ?? this.serverSettings.loginRiskStepUpThreshold;
+				if (notify >= stepUp) {
+					throw new ApiError(meta.errors.invalidLoginRiskThresholds);
+				}
 			}
 
 			if (ps.enableActiveEmailValidation !== undefined) {
@@ -1202,6 +1244,19 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				before,
 				after,
 			});
+
+			// 無効から有効に切り替えたら、03:30 を待たずにデータを取得する。失敗しても設定の更新は成功させる
+			if (!before.enableLoginRiskDetection && after.enableLoginRiskDetection) {
+				try {
+					await this.queueService.systemQueue.add('updateIpIntelligence', {}, {
+						jobId: 'updateIpIntelligence-oneshot',
+						removeOnComplete: true,
+						removeOnFail: true,
+					});
+				} catch (err) {
+					this.apiLoggerService.logger.warn(`failed to enqueue the IP intelligence update: ${err}`);
+				}
+			}
 		});
 	}
 }

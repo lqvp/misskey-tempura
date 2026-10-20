@@ -30,10 +30,20 @@ import { escapeHtml } from '@/misc/escape-html.js';
 import { MetaService } from '@/core/MetaService.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { EmailService } from '@/core/EmailService.js';
+import { LoginRiskService } from '@/core/LoginRiskService.js';
+import type { LoginRiskEvaluation } from '@/core/LoginRiskService.js';
+import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { RateLimiterService } from './RateLimiterService.js';
-import { SigninService } from './SigninService.js';
+import { SigninService, describeLoginLocation, formatSigninHeaders, sanitizeSigninHeaders } from './SigninService.js';
+import { LoginChallengeService } from './LoginChallengeService.js';
 import type { AuthenticationResponseJSON } from '@simplewebauthn/server';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+
+export const LOGIN_CHALLENGE_INVALID = 'b3fddf43-a0d3-41f3-9ca9-8de701a6f418';
+export const LOGIN_CHALLENGE_EXPIRED = '9939b972-0830-4a48-a1b4-f6fe9d259a89';
+export const LOGIN_CHALLENGE_TOO_MANY_ATTEMPTS = '7606fbea-f065-4c3f-9040-4fb2c884e1b6';
+export const LOGIN_CHALLENGE_RATE_LIMITED = '20345fd1-1f7c-4d48-b4e8-cd169c500f2c';
+export const LOGIN_CHALLENGE_SEND_FAILED = '23ce18ed-2f0a-4d17-83df-88b4e28275f5';
 
 @Injectable()
 export class SigninApiService {
@@ -68,14 +78,11 @@ export class SigninApiService {
 		private captchaService: CaptchaService,
 		private metaService: MetaService,
 		private notificationService: NotificationService,
+		private loginRiskService: LoginRiskService,
+		private loginChallengeService: LoginChallengeService,
+		private globalEventService: GlobalEventService,
 	) {
 		this.logger = this.loggerService.getLogger('Signin');
-	}
-
-	private formatHeaders(headers: Record<string, any>): string {
-		return Object.entries(headers)
-			.map(([key, val]) => `${key}: ${val}`)
-			.join('\n');
 	}
 
 	@bindThis
@@ -86,6 +93,9 @@ export class SigninApiService {
 				password?: string;
 				token?: string;
 				credential?: AuthenticationResponseJSON;
+				deviceToken?: string;
+				challengeId?: string;
+				emailCode?: string;
 				'hcaptcha-response'?: string;
 				'g-recaptcha-response'?: string;
 				'turnstile-response'?: string;
@@ -157,6 +167,27 @@ export class SigninApiService {
 		}
 
 		const profile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });
+
+		// 確認コードの入力(2回目のリクエスト)。パスワードと captcha は再要求しない
+		if (body.challengeId != null && body.emailCode != null) {
+			const result = await this.loginChallengeService.verify({ userId: user.id, challengeId: body.challengeId, code: body.emailCode, ip: request.ip });
+			if (result.ok) {
+				return await this.signinService.signin(request, reply, user, { ev: result.ev, learn: true, challenge: 'passed' });
+			}
+
+			// challenge が無い・他人のものなら、パスワードを知らなくても送れるので失敗として数えない。
+			// 発行時と別のネットワーク(回線の切り替えなど)なら、ログインからやり直してもらう
+			if (result.reason === 'noChallenge' || result.reason === 'otherUser' || result.reason === 'prefixMismatch') {
+				return error(403, { id: LOGIN_CHALLENGE_EXPIRED });
+			}
+
+			await this.signinService.recordSignin(request, user.id, { success: false, challenge: 'failed' });
+			await this.loginRiskService.recordFailure(user.id, request.ip);
+			return error(403, {
+				id: result.reason === 'tooManyAttempts' ? LOGIN_CHALLENGE_TOO_MANY_ATTEMPTS : LOGIN_CHALLENGE_INVALID,
+			});
+		}
+
 		const securityKeysAvailable = await this.userSecurityKeysRepository.countBy({ userId: user.id }).then(result => result >= 1);
 
 		if (password == null) {
@@ -200,9 +231,10 @@ export class SigninApiService {
 				id: this.idService.gen(),
 				userId: user.id,
 				ip: request.ip,
-				headers: request.headers as any,
+				headers: sanitizeSigninHeaders(request.headers as any),
 				success: false,
 			});
+			await this.loginRiskService.recordFailure(user.id, request.ip);
 
 			// ログインに失敗したことを通知
 			await this.notificationService.createNotification(user.id, 'loginFailed', {
@@ -214,15 +246,75 @@ export class SigninApiService {
 				this.emailService.sendEmail(profile.email, 'Login failed / ログインに失敗しました',
 					`${escapeHtml(user.name ?? '')}(@${escapeHtml(user.username)}) <br>` +
 					`ip: ${escapeHtml(request.ip)} <br>` +
-					`header: <pre>${escapeHtml(this.formatHeaders(request.headers as any))}</pre><br>` +
+					`header: <pre>${escapeHtml(formatSigninHeaders(request.headers as any))}</pre><br>` +
 					'There is a new login. If you do not recognize this login, update the security status of your account, including changing your password. / 新しいログインがありました。このログインに心当たりがない場合は、パスワードを変更するなど、アカウントのセキュリティ状態を更新してください。',
 					`${user.name}(@${user.username}) \n` +
 					`ip: ${request.ip} \n` +
-					'header:\n' + this.formatHeaders(request.headers as any) + '\n' +
+					'header:\n' + formatSigninHeaders(request.headers as any) + '\n' +
 					'There is a new login. If you do not recognize this login, update the security status of your account, including changing your password. / 新しいログインがありました。このログインに心当たりがない場合は、パスワードを変更するなど、アカウントのセキュリティ状態を更新してください。');
 			}
 
 			return error(status ?? 500, failure ?? { id: '4e30e80c-e338-45a0-8c8f-44455efa3b76' });
+		};
+
+		const finishSignin = async (passedSecondFactor: boolean) => {
+			// 今回のログインを記録する前に判定する(記録すると前回のログインからの日数が変わる)
+			const ev = await this.loginRiskService.evaluate({ user, ip: request.ip, headers: request.headers, deviceToken: body.deviceToken });
+
+			// TOTP / パスキーを通過済みなら stepUp でも通知だけにする
+			if (ev.level !== 'stepUp' || passedSecondFactor) {
+				// 学習期間中で notify に抑えた stepUp 相当のログインは、本人と確かめられていないので学習しない
+				const learn = passedSecondFactor || ev.uncappedLevel !== 'stepUp';
+				return await this.signinService.signin(request, reply, user, { ev, learn });
+			}
+
+			if (this.meta.enableEmail && profile.email && profile.emailVerified) {
+				const issued = await this.loginChallengeService.issue({ user, email: profile.email, ev, ip: request.ip });
+				if ('challengeId' in issued) {
+					await this.signinService.recordSignin(request, user.id, { success: false, ev, challenge: 'emailCode' });
+					reply.code(200);
+					return {
+						finished: false,
+						next: 'emailCode',
+						challengeId: issued.challengeId,
+					} satisfies Misskey.entities.SigninFlowResponse;
+				}
+
+				if (issued.error === 'rateLimited') {
+					// 止めないと、パスワードを知る攻撃者が発行回数を使い切るだけで素通りできてしまう
+					await this.signinService.recordSignin(request, user.id, { success: false, ev, challenge: 'emailCode' });
+					await this.notifyBlockedLogin(request, user, profile.email, ev);
+					return error(403, { id: LOGIN_CHALLENGE_RATE_LIMITED });
+				}
+
+				if (issued.error === 'sendFailed') {
+					// 確認コードを届けられないので、追加認証を省かずにログインを止める。メールは届かないのでアプリ内通知だけ出す
+					await this.signinService.recordSignin(request, user.id, { success: false, ev, challenge: 'emailCode' });
+					await this.notificationService.createNotification(user.id, 'loginFailed', {
+						userIp: request.ip,
+					});
+					return error(503, { id: LOGIN_CHALLENGE_SEND_FAILED });
+				}
+
+				// Redis に保存できなければ、通知したうえで通す(学習はしない)。
+				// 本人を締め出さないことを優先した、意図した fail-open(仕様で決めた扱い)。
+				// メールを送れないとき(sendFailed)は止めるのと扱いが違うが、Redis はサインインのレート制限などにも使っていて、
+				// Redis が止まっている状態は外から作りにくいため
+				// 注: 攻撃者が Redis を止められる環境では、この経路で追加認証を省けてしまう
+				return await this.signinService.signin(request, reply, user, { ev, learn: false });
+			}
+
+			// 確認手段がないので、通知したうえで通す(学習はしない)
+			if (this.meta.loginRiskFlagUnverifiedUsers) {
+				// 失敗してもログインは止めない
+				try {
+					await this.usersRepository.update(user.id, { suspiciousLoginDetectedAt: new Date() });
+					this.globalEventService.publishInternalEvent('localUserUpdated', { id: user.id });
+				} catch (err) {
+					this.logger.error(`failed to set suspiciousLoginDetectedAt of ${user.id}`, { error: err });
+				}
+			}
+			return await this.signinService.signin(request, reply, user, { ev, learn: false });
 		};
 
 		if (!profile.twoFactorEnabled) {
@@ -260,7 +352,7 @@ export class SigninApiService {
 
 			if (same) {
 				if (!instance.approvalRequiredForSignup && !user.approved) this.usersRepository.update(user.id, { approved: true });
-				return this.signinService.signin(request, reply, user);
+				return await finishSignin(false);
 			} else {
 				return await fail(403, {
 					id: '932c904e-9460-45b7-9ce6-7ed33be7eb2c',
@@ -285,7 +377,7 @@ export class SigninApiService {
 
 			if (!instance.approvalRequiredForSignup && !user.approved) this.usersRepository.update(user.id, { approved: true });
 
-			return this.signinService.signin(request, reply, user);
+			return await finishSignin(true);
 		} else if (body.credential) {
 			if (!same && !profile.usePasswordLessLogin) {
 				return await fail(403, {
@@ -297,7 +389,7 @@ export class SigninApiService {
 
 			if (authorized) {
 				if (!instance.approvalRequiredForSignup && !user.approved) this.usersRepository.update(user.id, { approved: true });
-				return this.signinService.signin(request, reply, user);
+				return await finishSignin(true);
 			} else {
 				return await fail(403, {
 					id: '93b86c4b-72f9-40eb-9815-798928603d1e',
@@ -332,5 +424,26 @@ export class SigninApiService {
 			}
 		}
 		// never get here
+	}
+
+	/** 確認コードを出せずにログインを止めたことを本人に知らせる */
+	private async notifyBlockedLogin(request: FastifyRequest, user: MiLocalUser, email: string, ev: LoginRiskEvaluation): Promise<void> {
+		await this.notificationService.createNotification(user.id, 'loginFailed', {
+			userIp: request.ip,
+		});
+
+		const location = describeLoginLocation(ev);
+		const message = 'A sign-in with your correct password was blocked because too many verification codes were requested. If you do not recognize this, change your password. / 確認コードの発行回数が上限に達したため、正しいパスワードでのログインを止めました。心当たりがなければパスワードを変更してください。';
+		this.emailService.sendEmail(email, 'Login blocked / ログインを止めました',
+			`${escapeHtml(user.name ?? '')}(@${escapeHtml(user.username)}) <br>` +
+			`ip: ${escapeHtml(request.ip)} <br>` +
+			location.map(l => `${escapeHtml(l)} <br>`).join('') +
+			escapeHtml(message),
+			`${user.name ?? ''}(@${user.username}) \n` +
+			`ip: ${request.ip} \n` +
+			location.map(l => `${l} \n`).join('') +
+			message).catch(err => {
+			this.logger.error(`failed to send login blocked email to ${user.id}`, { error: err });
+		});
 	}
 }

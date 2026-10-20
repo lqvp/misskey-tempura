@@ -93,6 +93,10 @@ const REPEATABLE_SYSTEM_JOB_DEF = [{
 	name: 'cleanExpiredMultipartUploads',
 	// 毎時0分に起動
 	pattern: '0 * * * *',
+}, {
+	name: 'updateIpIntelligence',
+	// 毎日午前3時30分に起動
+	pattern: '30 3 * * *',
 }];
 
 function parseRedisInfo(infoText: string): Record<string, string> {

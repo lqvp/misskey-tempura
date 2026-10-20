@@ -486,6 +486,31 @@ export const meta = {
 				optional: false,
 				nullable: false,
 			},
+			enableLoginRiskDetection: {
+				type: "boolean",
+				optional: false,
+				nullable: false,
+			},
+			loginRiskNotifyThreshold: {
+				type: "number",
+				optional: false,
+				nullable: false,
+			},
+			loginRiskStepUpThreshold: {
+				type: "number",
+				optional: false,
+				nullable: false,
+			},
+			loginRiskFlagUnverifiedUsers: {
+				type: "boolean",
+				optional: false,
+				nullable: false,
+			},
+			loginRiskShowDetailsToUser: {
+				type: "boolean",
+				optional: false,
+				nullable: false,
+			},
 			enableActiveEmailValidation: {
 				type: "boolean",
 				optional: false,
@@ -1287,6 +1312,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				deeplAuthKey: instance.deeplAuthKey,
 				deeplIsPro: instance.deeplIsPro,
 				enableIpLogging: instance.enableIpLogging,
+				enableLoginRiskDetection: instance.enableLoginRiskDetection,
+				loginRiskNotifyThreshold: instance.loginRiskNotifyThreshold,
+				loginRiskStepUpThreshold: instance.loginRiskStepUpThreshold,
+				loginRiskFlagUnverifiedUsers: instance.loginRiskFlagUnverifiedUsers,
+				loginRiskShowDetailsToUser: instance.loginRiskShowDetailsToUser,
 				enableActiveEmailValidation: instance.enableActiveEmailValidation,
 				enableVerifymailApi: instance.enableVerifymailApi,
 				verifymailAuthKey: instance.verifymailAuthKey,

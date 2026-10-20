@@ -53,6 +53,7 @@ import { CleanExpiredRemoteFilesProcessorService } from './processors/CleanExpir
 import { ReDownloadRemoteFileProcessorService } from './processors/ReDownloadRemoteFileProcessorService.js';
 import { ScheduledNoteDeleteProcessorService } from './processors/ScheduledNoteDeleteProcessorService.js';
 import { CleanExpiredMultipartUploadsProcessorService } from './processors/CleanExpiredMultipartUploadsProcessorService.js';
+import { UpdateIpIntelligenceProcessorService } from './processors/UpdateIpIntelligenceProcessorService.js';
 
 // ref. https://github.com/misskey-dev/misskey/pull/7635#issue-971097019
 function httpRelatedBackoff(attemptsMade: number) {
@@ -141,6 +142,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 		private reDownloadRemoteFileProcessorService: ReDownloadRemoteFileProcessorService,
 		private scheduledNoteDeleteProcessorService: ScheduledNoteDeleteProcessorService,
 		private cleanExpiredMultipartUploadsProcessorService: CleanExpiredMultipartUploadsProcessorService,
+		private updateIpIntelligenceProcessorService: UpdateIpIntelligenceProcessorService,
 	) {
 		this.logger = this.queueLoggerService.logger;
 
@@ -186,6 +188,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					case 'cleanRemoteNotes': return this.cleanRemoteNotesProcessorService.process(job);
 					case 'CleanExpiredRemoteFiles': return this.cleanExpiredRemoteFilesProcessorService.process();
 					case 'cleanExpiredMultipartUploads': return this.cleanExpiredMultipartUploadsProcessorService.process();
+					case 'updateIpIntelligence': return this.updateIpIntelligenceProcessorService.process();
 					default: throw new Error(`unrecognized job type ${job.name} for system`);
 				}
 			};

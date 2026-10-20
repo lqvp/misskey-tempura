@@ -30,6 +30,7 @@ import { i18n } from '@/i18n.js';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { login } from '@/accounts.js';
+import { saveLoginDeviceToken } from '@/utility/login-device-token.js';
 
 const submitting = ref(false);
 
@@ -44,6 +45,7 @@ function submit() {
 	misskeyApi('signup-pending', {
 		code: props.code,
 	}).then(res => {
+		saveLoginDeviceToken(res.deviceToken);
 		return login(res.i, '/');
 	}).catch(() => {
 		submitting.value = false;

@@ -589,6 +589,44 @@ export class MiMeta {
 	public enableIpLogging: boolean;
 
 	@Column('boolean', {
+		default: false,
+	})
+	public enableLoginRiskDetection: boolean;
+
+	@Column('integer', {
+		default: 30,
+	})
+	public loginRiskNotifyThreshold: number;
+
+	@Column('integer', {
+		default: 60,
+	})
+	public loginRiskStepUpThreshold: number;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public loginRiskFlagUnverifiedUsers: boolean;
+
+	/**
+	 * 不審なログインの記録(点数・判定理由)を本人にも見せるか。false なら管理側だけ
+	 */
+	@Column('boolean', {
+		default: false,
+	})
+	public loginRiskShowDetailsToUser: boolean;
+
+	/**
+	 * 不審ログイン検知で、端末トークンと IP プレフィックスをハッシュにするときの鍵。
+	 * 最初に使うときに乱数で作る。API では返さない
+	 */
+	@Column('varchar', {
+		length: 128,
+		nullable: true,
+	})
+	public loginRiskSecret: string | null;
+
+	@Column('boolean', {
 		default: true,
 	})
 	public enableActiveEmailValidation: boolean;

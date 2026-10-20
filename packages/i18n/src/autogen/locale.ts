@@ -8786,6 +8786,10 @@ export interface Locale extends ILocale {
              */
             "isExplorable": string;
             /**
+             * 不審なログインが検知されたユーザー
+             */
+            "isSuspiciousLoginDetected": string;
+            /**
              * アカウント作成から～以内
              */
             "createdLessThan": string;
@@ -10203,6 +10207,10 @@ export interface Locale extends ILocale {
          * ユーザーの凍結を解除する
          */
         "write:admin:unsuspend-user": string;
+        /**
+         * ユーザーの不審なログイン検知フラグを解除する
+         */
+        "write:admin:clear-suspicious-login-flag": string;
         /**
          * インスタンスのメタデータを操作する
          */
@@ -12447,6 +12455,10 @@ export interface Locale extends ILocale {
          * 全てのノートを削除
          */
         "dropAllNotes": string;
+        /**
+         * 不審なログインの検知を解除
+         */
+        "clearSuspiciousLoginFlag": string;
     };
     "_fileViewer": {
         /**
@@ -16675,5 +16687,217 @@ export interface Locale extends ILocale {
          * これらのキーワードのいずれかが一致した場合、スコアに関係なく除外されます。
          */
         "mustExcludeKeywordsDescription": string;
+    };
+    "_loginRisk": {
+        /**
+         * 不審なログインの検知
+         */
+        "title": string;
+        /**
+         * 接続元の国やネットワーク、端末などからログインの危険度を判定し、しきい値に応じてメールで通知したり、メールの確認コードを要求したりします。各ユーザーの最初の数回のログインは学習に使うため、その間は確認コードを要求せず通知だけ行います。
+         */
+        "description": string;
+        /**
+         * 不審なログインの検知を有効にする
+         */
+        "enable": string;
+        /**
+         * 通知のしきい値
+         */
+        "notifyThreshold": string;
+        /**
+         * 確認コードを要求するしきい値
+         */
+        "stepUpThreshold": string;
+        /**
+         * 確認手段のないユーザーにフラグを立てる
+         */
+        "flagUnverifiedUsers": string;
+        /**
+         * 確認コードを要求すべきログインでメールアドレスが未登録のためそのまま通した場合に、「不審なログインを検知」のフラグを立てます。ロールの条件に使えます。
+         */
+        "flagUnverifiedUsersDescription": string;
+        /**
+         * 診断
+         */
+        "diagnose": string;
+        /**
+         * 接続元 IP
+         */
+        "ipAddress": string;
+        /**
+         * 国
+         */
+        "country": string;
+        /**
+         * ASN
+         */
+        "asn": string;
+        /**
+         * 該当したリスト
+         */
+        "reputation": string;
+        /**
+         * 接続元 IP がプライベートアドレスまたはループバックに見えます。リバースプロキシの設定(trustProxy)を確認してください。この状態では判定が行われません。
+         */
+        "privateIpWarning": string;
+        /**
+         * 登録されているメールアドレスに確認コードを送信しました。メールに記載された6桁のコードを入力してください。
+         */
+        "emailCodeDescription": string;
+        /**
+         * 確認コードが正しくありません。
+         */
+        "challengeInvalid": string;
+        /**
+         * 確認コードの有効期限が切れました。もう一度ログインしてください。
+         */
+        "challengeExpired": string;
+        /**
+         * 確認コードの試行回数が上限に達しました。もう一度ログインしてください。
+         */
+        "challengeTooManyAttempts": string;
+        /**
+         * 確認コードの発行回数が上限に達しました。しばらく時間をおいてからもう一度お試しください。
+         */
+        "challengeRateLimited": string;
+        /**
+         * 確認コードのメールを送信できませんでした。しばらく時間をおいてからもう一度お試しください。
+         */
+        "challengeSendFailed": string;
+        /**
+         * 不審なログインが検知されています
+         */
+        "suspiciousLoginDetected": string;
+        /**
+         * 不審なログインの検知を解除
+         */
+        "clearSuspiciousLoginFlag": string;
+        /**
+         * このユーザーの「不審なログインを検知」の状態を解除しますか？
+         */
+        "clearSuspiciousLoginFlagConfirm": string;
+        /**
+         * IP の評判データには Spamhaus DROP リスト(© The Spamhaus Project)を含みます。
+         */
+        "spamhausCredit": string;
+        /**
+         * 確認
+         */
+        "challengeStatus": string;
+        /**
+         * 確認コードを要求
+         */
+        "challengeStatusEmailCode": string;
+        /**
+         * 確認コードを通過
+         */
+        "challengeStatusPassed": string;
+        /**
+         * 確認コードに失敗
+         */
+        "challengeStatusFailed": string;
+        /**
+         * データソース
+         */
+        "sources": string;
+        /**
+         * 読み込み済み
+         */
+        "loaded": string;
+        /**
+         * 未読み込み
+         */
+        "notLoaded": string;
+        /**
+         * 件数
+         */
+        "entries": string;
+        /**
+         * 通知のしきい値は、確認コードを要求するしきい値より小さくしてください。
+         */
+        "invalidThresholds": string;
+        /**
+         * 不審なログインの記録
+         */
+        "footprints": string;
+        /**
+         * 通知のしきい値以上と判定されたログインと、確認コードを要求したログインを表示します。
+         */
+        "footprintsDescription": string;
+        /**
+         * 不審なログインの記録を本人にも表示する
+         */
+        "showDetailsToUser": string;
+        /**
+         * オフにすると、点数と判定理由は管理者とモデレーターだけが確認できます。
+         */
+        "showDetailsToUserDescription": string;
+        /**
+         * 点数
+         */
+        "riskScore": string;
+        /**
+         * 判定理由
+         */
+        "reasons": string;
+        "_reasons": {
+            /**
+             * 新しい端末
+             */
+            "newDevice": string;
+            /**
+             * 新しい国
+             */
+            "newCountry": string;
+            /**
+             * 新しい回線事業者
+             */
+            "newAsn": string;
+            /**
+             * 新しいIPアドレス帯
+             */
+            "newPrefix": string;
+            /**
+             * 直前に別の国からログイン
+             */
+            "recentOtherCountry": string;
+            /**
+             * Tor
+             */
+            "tor": string;
+            /**
+             * Spamhaus DROP
+             */
+            "spamhausDrop": string;
+            /**
+             * データセンター
+             */
+            "datacenter": string;
+            /**
+             * VPN
+             */
+            "vpn": string;
+            /**
+             * ログイン失敗の多発
+             */
+            "accountFailures": string;
+            /**
+             * 同じIPから複数アカウントへの失敗
+             */
+            "ipSpray": string;
+            /**
+             * 長期間ログインなし
+             */
+            "dormant": string;
+            /**
+             * 学習期間中
+             */
+            "learning": string;
+            /**
+             * 接続元IPを判定できない
+             */
+            "untrustedIp": string;
+        };
     };
 }

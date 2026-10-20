@@ -25,6 +25,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 			<MkInfo v-if="isSystem">{{ i18n.ts.isSystemAccount }}</MkInfo>
 
+			<MkInfo v-if="info.suspiciousLoginDetectedAt != null" warn>
+				<div class="_gaps_s">
+					<div>{{ i18n.ts._loginRisk.suspiciousLoginDetected }}: <MkTime :time="info.suspiciousLoginDetectedAt" mode="detail"/></div>
+					<div><MkButton inline small @click="clearSuspiciousLoginFlag"><i class="ti ti-shield-check"></i> {{ i18n.ts._loginRisk.clearSuspiciousLoginFlag }}</MkButton></div>
+				</div>
+			</MkInfo>
+
 			<FormLink v-if="user.host" :to="`/instance-info/${user.host}`">{{ i18n.ts.instanceInfo }}</FormLink>
 
 			<div style="display: flex; flex-direction: column; gap: 1em;">
@@ -138,6 +145,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 								<span class="ip">{{ record.ip }}</span>
 							</div>
 						</template>
+
+						<FormSection v-if="iAmModerator && user.host == null">
+							<template #label>{{ i18n.ts._loginRisk.footprints }}</template>
+							<template #description>{{ i18n.ts._loginRisk.footprintsDescription }}</template>
+							<MkPagination :paginator="footprintsPaginator" withControl :forceDisableInfiniteScroll="true">
+								<template #default="{items}">
+									<MkSigninRiskItem v-for="item in items" :key="item.id" :signin="item"/>
+								</template>
+							</MkPagination>
+						</FormSection>
 					</MkFolder>
 
 					<div>
@@ -248,6 +265,7 @@ import { useMkSelect } from '@/composables/use-mkselect.js';
 import { ensureSignin, iAmAdmin, iAmModerator } from '@/i.js';
 import MkRolePreview from '@/components/MkRolePreview.vue';
 import MkPagination from '@/components/MkPagination.vue';
+import MkSigninRiskItem from '@/components/MkSigninRiskItem.vue';
 import { Paginator } from '@/utility/paginator.js';
 
 const $i = ensureSignin();
@@ -283,6 +301,13 @@ const suspended = ref(info.value.isSuspended);
 const isSystem = ref(user.value.host == null && user.value.username.includes('.'));
 const moderationNote = ref(info.value.moderationNote);
 const filesPaginator = markRaw(new Paginator('admin/drive/files', {
+	limit: 10,
+	computedParams: computed(() => ({
+		userId: props.userId,
+	})),
+}));
+
+const footprintsPaginator = markRaw(new Paginator('admin/login-risk/user-footprints', {
 	limit: 10,
 	computedParams: computed(() => ({
 		userId: props.userId,
@@ -363,6 +388,18 @@ async function resetPassword() {
 			text: i18n.tsx.newPasswordIs({ password }),
 		});
 	}
+}
+
+async function clearSuspiciousLoginFlag() {
+	const confirm = await os.confirm({
+		type: 'warning',
+		text: i18n.ts._loginRisk.clearSuspiciousLoginFlagConfirm,
+	});
+	if (confirm.canceled) return;
+
+	await os.apiWithDialog('admin/clear-suspicious-login-flag', {
+		userId: user.value.id,
+	}).then(refreshUser);
 }
 
 async function unsetMfa() {

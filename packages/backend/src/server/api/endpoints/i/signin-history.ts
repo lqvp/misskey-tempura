@@ -52,7 +52,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			const history = await query.limit(ps.limit).getMany();
 
-			return await Promise.all(history.map(record => this.signinEntityService.pack(record)));
+			// 点数と判定理由は、管理者が本人にも見せると決めたときだけ返す
+			return await Promise.all(history.map(record => this.signinEntityService.packForSelf(record)));
 		});
 	}
 }
