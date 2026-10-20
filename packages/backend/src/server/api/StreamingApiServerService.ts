@@ -115,13 +115,9 @@ export class StreamingApiServerService {
 
 			const ev = new EventEmitter();
 
-			function cloneMessage<T>(message: T): T {
-				// `parsed` comes from JSON, so it is structured-cloneable.
-				return structuredClone(message);
-			}
-
+			// メッセージは全接続で共有する。接続ごとの加工は書き換えずに送信時に行うこと (stringifyWithAvatarDecorationMuting など)
 			function onRedisMessage(data: any): void {
-				ev.emit(data.channel, cloneMessage(data.message));
+				ev.emit(data.channel, data.message);
 			}
 
 			globalEv.on('message', onRedisMessage);
