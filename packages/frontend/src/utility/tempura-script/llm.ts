@@ -15,6 +15,15 @@ import { i18n } from '@/i18n.js';
 
 const instance = ref<Misskey.entities.MetaDetailed | null>(null);
 
+// Gemini generateContent API レスポンスの最小限の型定義
+type GeminiPart = { text?: string; file_data?: { mime_type: string; file_uri: string } };
+type GeminiContent = { parts?: GeminiPart[] };
+type GeminiCandidate = { content?: GeminiContent };
+export type GeminiGenerateContentResponse = {
+	candidates?: GeminiCandidate[];
+	error?: { message?: string; code?: number };
+};
+
 fetchInstance(true).then((res) => {
 	instance.value = res;
 });
@@ -79,7 +88,7 @@ async function uploadFileToGemini(file: Misskey.entities.DriveFile, apiKey: stri
 			throw new Error(i18n.ts._llm._error.upload);
 		}
 
-		const fileInfo = await fileUploadResponse.json();
+		const fileInfo = await fileUploadResponse.json() as { file?: { uri?: string } };
 		if (!fileInfo.file || !fileInfo.file.uri) {
 			throw new Error(i18n.ts._llm._error.uploadedFileUri);
 		}
@@ -99,7 +108,7 @@ export async function generateGeminiSummary({
 	note?: Misskey.entities.Note;
 	userContent?: string;
 	systemInstruction?: string;
-}): Promise<any> {
+}): Promise<GeminiGenerateContentResponse> {
 	const { geminiToken, geminiModel, geminiThinkingBudget, useGeminiLLMAPI, useGeminiWithMedia = true } = prefer.s;
 
 	// ノートからコンテンツを取得
@@ -174,11 +183,12 @@ export async function generateGeminiSummary({
 					prompt: systemInstruction ?? '',
 					fileUris: fileUris.length > 0 ? fileUris : undefined,
 				});
-			} catch (error: any) {
-				if (error.code === 'ROLE_PERMISSION_DENIED') {
+			} catch (error: unknown) {
+				const err = error as { code?: string; message?: string };
+				if (err?.code === 'ROLE_PERMISSION_DENIED') {
 					throw new Error(i18n.ts._llm._error.serverPermission);
 				}
-				throw new Error(i18n.ts._llm._error.serverLLMApi + (error.message || error));
+				throw new Error(i18n.ts._llm._error.serverLLMApi + (err?.message || String(error)));
 			}
 		}
 	}
@@ -189,7 +199,11 @@ export async function generateGeminiSummary({
 	}
 
 	// リクエストボディの作成
-	const requestBody: any = {
+	const requestBody: {
+		system_instruction?: { parts: { text: string }[] };
+		contents: { parts: GeminiPart[] }[];
+		generationConfig: { thinkingConfig: { thinkingBudget: number } };
+	} = {
 		system_instruction: systemInstruction
 			? {
 				parts: [{ text: systemInstruction }],
@@ -261,10 +275,10 @@ export async function generateGeminiSummary({
 		throw new Error(i18n.ts._llm._error.api + `${response.status} ${response.statusText}`);
 	}
 
-	return response.json();
+	return response.json() as Promise<GeminiGenerateContentResponse>;
 }
 
-export function extractCandidateText(result: any): string {
+export function extractCandidateText(result: GeminiGenerateContentResponse): string {
 	// 共通の候補抽出処理
 	if (
 		!result.candidates ||
@@ -275,5 +289,5 @@ export function extractCandidateText(result: any): string {
 	) {
 		throw new Error('LLM応答の形式が不正です。candidates, content, partsのいずれかが存在しません。');
 	}
-	return result.candidates[0].content.parts[0].text;
+	return result.candidates[0].content.parts[0].text ?? '';
 }
