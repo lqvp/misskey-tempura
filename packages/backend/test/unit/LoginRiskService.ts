@@ -6,6 +6,7 @@
 process.env.NODE_ENV = 'test';
 
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test } from 'vitest';
+import { createHmac } from 'node:crypto';
 import { Test } from '@nestjs/testing';
 import * as Redis from 'ioredis';
 import { GlobalModule } from '@/GlobalModule.js';
@@ -248,25 +249,46 @@ describe('LoginRiskService', () => {
 	});
 
 	describe('buildLearnOnlyEvaluation', () => {
-		test('無効・プライベートIP・不正なIPなら null', () => {
-			expect(svc.buildLearnOnlyEvaluation('127.0.0.1', {})).toBeNull();
-			expect(svc.buildLearnOnlyEvaluation('not-an-ip', {})).toBeNull();
+		test('無効・プライベートIP・不正なIPなら null', async () => {
+			expect(await svc.buildLearnOnlyEvaluation('127.0.0.1', {})).toBeNull();
+			expect(await svc.buildLearnOnlyEvaluation('not-an-ip', {})).toBeNull();
 			meta.enableLoginRiskDetection = false;
-			expect(svc.buildLearnOnlyEvaluation('203.0.113.5', {})).toBeNull();
+			expect(await svc.buildLearnOnlyEvaluation('203.0.113.5', {})).toBeNull();
 		});
 
-		test('intel が例外を投げても例外にならず null', () => {
+		test('intel が例外を投げても例外にならず null', async () => {
 			fakeIntel.lookup = () => { throw new Error('x'); };
-			expect(() => svc.buildLearnOnlyEvaluation('203.0.113.5', {})).not.toThrow();
-			expect(svc.buildLearnOnlyEvaluation('203.0.113.5', {})).toBeNull();
+			await expect(svc.buildLearnOnlyEvaluation('203.0.113.5', {})).resolves.toBeNull();
 		});
 
 		test('学習用の評価を返し、learn で国などが記録される', async () => {
-			const ev = svc.buildLearnOnlyEvaluation('203.0.113.5', {});
+			const ev = await svc.buildLearnOnlyEvaluation('203.0.113.5', {});
 			expect(ev).toMatchObject({ skipped: false, score: 0, level: 'allow', reasons: [], country: 'JP', asn: 64500, deviceTokenHash: null });
 			await svc.learn(user.id, ev!);
 			const rows = await userLoginContextsRepository.findBy({ userId: user.id });
 			expect(rows.map(r => r.kind).sort()).toEqual(['asn', 'country', 'prefix']);
+		});
+	});
+
+	describe('ハッシュの鍵', () => {
+		test('インスタンス固有の鍵を作って保存し、別のプロセスでも同じ鍵を使う', async () => {
+			const hash = await svc.keyedHash('203.0.113.0/24');
+
+			const row = await app.get(DI.metasRepository).findOneOrFail({ where: { id: meta.id }, select: { id: true, loginRiskSecret: true } });
+			expect(row.loginRiskSecret).toMatch(/^[0-9a-f]{64}$/);
+			// 以前の固定鍵(meta.id から作っていた鍵)とは違う
+			expect(hash).not.toBe(createHmac('sha256', `${meta.id}:login-risk`).update('203.0.113.0/24').digest('hex'));
+			expect(hash).toBe(createHmac('sha256', row.loginRiskSecret!).update('203.0.113.0/24').digest('hex'));
+
+			// 別のプロセスに見立てて手元の鍵を捨てても、DB に保存済みの鍵を読み直し、上書きはしない
+			(svc as unknown as { secret: string | null }).secret = null;
+			expect(await svc.keyedHash('203.0.113.0/24')).toBe(hash);
+
+			// 先に別のプロセスが保存していた鍵があれば、自分で作らずにそれを使う
+			const other = 'a'.repeat(64);
+			await app.get(DI.metasRepository).update({ id: meta.id }, { loginRiskSecret: other });
+			(svc as unknown as { secret: string | null }).secret = null;
+			expect(await svc.keyedHash('203.0.113.0/24')).toBe(createHmac('sha256', other).update('203.0.113.0/24').digest('hex'));
 		});
 	});
 });

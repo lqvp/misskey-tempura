@@ -616,6 +616,16 @@ export class MiMeta {
 	})
 	public loginRiskShowDetailsToUser: boolean;
 
+	/**
+	 * 不審ログイン検知で、端末トークンと IP プレフィックスをハッシュにするときの鍵。
+	 * 最初に使うときに乱数で作る。API では返さない
+	 */
+	@Column('varchar', {
+		length: 128,
+		nullable: true,
+	})
+	public loginRiskSecret: string | null;
+
 	@Column('boolean', {
 		default: true,
 	})

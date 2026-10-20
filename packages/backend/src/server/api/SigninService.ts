@@ -97,7 +97,7 @@ export class SigninService {
 	@bindThis
 	public async signin(request: FastifyRequest, reply: FastifyReply, user: MiLocalUser, opts: SigninOptions = {}): Promise<Misskey.entities.SigninFlowResponse> {
 		const ev = opts.learnOnly
-			? this.loginRiskService.buildLearnOnlyEvaluation(request.ip, request.headers) ?? undefined
+			? await this.loginRiskService.buildLearnOnlyEvaluation(request.ip, request.headers) ?? undefined
 			: opts.ev;
 
 		let deviceToken: string | undefined;

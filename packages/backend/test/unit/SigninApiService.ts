@@ -497,12 +497,22 @@ describe('SigninApiService', () => {
 		expect(await signinsRepository.countBy({ userId: user.id })).toBe(0);
 	});
 
-	it('IP プレフィックスが変わると照合できない', async () => {
+	it('IP プレフィックスが変わると照合せず、やり直しを求める(試行にも失敗にも数えない)', async () => {
 		const user = await createUser();
 		await seedKnownEnvironment(user);
 		const { challengeId, code } = await requestChallenge(user);
-		const { res } = await call({ username: user.username, challengeId, emailCode: code }, '198.51.101.5');
-		expect(res.error.id).toBe(LOGIN_CHALLENGE_INVALID);
+
+		// 回線が変わっても、正しいコード・誤ったコードのどちらにも同じ応答を返す(別のネットワークからは正誤が分からない)
+		for (const emailCode of [code, code === '000000' ? '000001' : '000000']) {
+			const { res } = await call({ username: user.username, challengeId, emailCode }, '198.51.101.5');
+			expect(res.error.id).toBe(LOGIN_CHALLENGE_EXPIRED);
+		}
+		expect(await signinsRepository.countBy({ userId: user.id, challenge: 'failed' })).toBe(0);
+		expect(await redis.get(`loginRisk:fail:user:${user.id}`)).toBeNull();
+
+		// 元のネットワークに戻れば、同じコードでそのまま通る
+		const back = await call({ username: user.username, challengeId, emailCode: code }, US_IP);
+		expect(back.res.finished).toBe(true);
 	});
 
 	it('誤コード5回で TOO_MANY_ATTEMPTS、その後 expired', async () => {

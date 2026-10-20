@@ -14,6 +14,7 @@ import { escapeHtml } from '@/misc/escape-html.js';
 import { getIpPrefix, normalizeIp } from '@/misc/ip-prefix.js';
 import { EmailService } from '@/core/EmailService.js';
 import { LoggerService } from '@/core/LoggerService.js';
+import { LoginRiskService } from '@/core/LoginRiskService.js';
 import type { LoginRiskEvaluation } from '@/core/LoginRiskService.js';
 import { describeLoginLocation } from './SigninService.js';
 
@@ -73,6 +74,7 @@ export class LoginChallengeService {
 		private redisClient: Redis.Redis,
 
 		private emailService: EmailService,
+		private loginRiskService: LoginRiskService,
 		loggerService: LoggerService,
 	) {
 		this.logger = loggerService.getLogger('login-challenge');
@@ -87,15 +89,15 @@ export class LoginChallengeService {
 		const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
 		const challengeId = randomUUID();
 		const issueKey = `loginRisk:challengeIssue:${p.user.id}`;
-		const stored: StoredChallenge = {
-			attempts: 0,
-			userId: p.user.id,
-			codeHash: sha256(code),
-			prefixHash: this.prefixHash(p.ip),
-			ev: p.ev,
-		};
-
 		try {
+			const stored: StoredChallenge = {
+				attempts: 0,
+				userId: p.user.id,
+				codeHash: sha256(code),
+				prefixHash: await this.prefixHash(p.ip),
+				ev: p.ev,
+			};
+
 			// 固定の1時間枠で数える。SET NX で初回だけ期限を付ける
 			const results = await this.redisClient.multi()
 				.set(issueKey, 0, 'EX', ISSUE_WINDOW_SEC, 'NX')
@@ -128,10 +130,11 @@ export class LoginChallengeService {
 	/**
 	 * 確認コードを照合する。成功したら challenge を消し、1回しか使えないようにする。
 	 * invalid / tooManyAttempts は、このユーザーの challenge に誤ったコードを送ったときだけ返す。
-	 * challenge が無い・不正な形式(noChallenge)、他人の challenge(otherUser)は試行に数えない
+	 * challenge が無い・不正な形式(noChallenge)、他人の challenge(otherUser)、
+	 * 発行時と別のネットワークからの送信(prefixMismatch)は試行に数えない
 	 */
 	@bindThis
-	public async verify(p: { userId: MiUser['id']; challengeId: unknown; code: unknown; ip: string }): Promise<{ ok: true; ev: LoginRiskEvaluation } | { ok: false; reason: 'invalid' | 'tooManyAttempts' | 'noChallenge' | 'otherUser' }> {
+	public async verify(p: { userId: MiUser['id']; challengeId: unknown; code: unknown; ip: string }): Promise<{ ok: true; ev: LoginRiskEvaluation } | { ok: false; reason: 'invalid' | 'tooManyAttempts' | 'noChallenge' | 'otherUser' | 'prefixMismatch' }> {
 		if (typeof p.challengeId !== 'string' || !UUID_RE.test(p.challengeId)) return { ok: false, reason: 'noChallenge' };
 		const key = this.challengeKey(p.challengeId);
 
@@ -142,10 +145,13 @@ export class LoginChallengeService {
 			// ユーザー名の表記ではなく id で比べる。他人の challenge は消費も試行の加算もしない
 			if (stored.userId !== p.userId) return { ok: false, reason: 'otherUser' };
 
-			const codeOk = typeof p.code === 'string' && this.hashEquals(sha256(p.code), stored.codeHash);
-			const prefixOk = stored.prefixHash == null || stored.prefixHash === this.prefixHash(p.ip);
+			// モバイル回線から Wi-Fi に切り替えた本人を誤ったコード扱いにしないよう、コードを照合する前に別扱いにする。
+			// コードは照合しないので、別のネットワークからは正誤を確かめられない
+			if (stored.prefixHash != null && stored.prefixHash !== await this.prefixHash(p.ip)) return { ok: false, reason: 'prefixMismatch' };
 
-			if (!codeOk || !prefixOk) {
+			const codeOk = typeof p.code === 'string' && this.hashEquals(sha256(p.code), stored.codeHash);
+
+			if (!codeOk) {
 				const attempts = Number(await this.redisClient.eval(INCREMENT_ATTEMPTS_SCRIPT, 1, key, MAX_ATTEMPTS));
 				if (attempts < 0) return { ok: false, reason: 'noChallenge' };
 				if (attempts >= MAX_ATTEMPTS) return { ok: false, reason: 'tooManyAttempts' };
@@ -167,10 +173,10 @@ export class LoginChallengeService {
 		return `loginRisk:challenge:${challengeId}`;
 	}
 
-	private prefixHash(ip: string): string | null {
+	private async prefixHash(ip: string): Promise<string | null> {
 		const normalized = normalizeIp(ip);
 		const prefix = normalized != null ? getIpPrefix(normalized) : null;
-		return prefix != null ? sha256(prefix) : null;
+		return prefix != null ? await this.loginRiskService.keyedHash(prefix) : null;
 	}
 
 	private hashEquals(a: string, b: string): boolean {

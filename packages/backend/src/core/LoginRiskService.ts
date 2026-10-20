@@ -10,7 +10,7 @@ import { Brackets, In } from 'typeorm';
 import type { SelectQueryBuilder } from 'typeorm';
 import type { MiSignin } from '@/models/Signin.js';
 import { DI } from '@/di-symbols.js';
-import type { MiMeta, SigninsRepository, UserLoginContextsRepository } from '@/models/_.js';
+import type { MetasRepository, MiMeta, SigninsRepository, UserLoginContextsRepository } from '@/models/_.js';
 import { MiUserLoginContext } from '@/models/UserLoginContext.js';
 import type { MiLocalUser, MiUser } from '@/models/User.js';
 import type Logger from '@/logger.js';
@@ -52,10 +52,16 @@ function skippedEvaluation(skipped: Exclude<LoginRiskEvaluation['skipped'], fals
 @Injectable()
 export class LoginRiskService {
 	private logger: Logger;
+	/** ハッシュの鍵。meta.loginRiskSecret から読む */
+	private secret: string | null = null;
+	private secretLoading: Promise<string> | null = null;
 
 	constructor(
 		@Inject(DI.meta)
 		private meta: MiMeta,
+
+		@Inject(DI.metasRepository)
+		private metasRepository: MetasRepository,
 
 		@Inject(DI.redis)
 		private redisClient: Redis.Redis,
@@ -109,6 +115,7 @@ export class LoginRiskService {
 				return skippedEvaluation('untrustedIp', ['untrustedIp']);
 			}
 
+			await this.ensureSecret();
 			const intel = this.ipIntelligenceService.lookup(ip, p.headers);
 			const prefix = getIpPrefix(ip);
 			const prefixHash = prefix != null ? this.hmac(prefix) : null;
@@ -159,12 +166,13 @@ export class LoginRiskService {
 	 * 機能が無効、IP がプライベート・不正、または例外が出たら null(例外を投げない)
 	 */
 	@bindThis
-	public buildLearnOnlyEvaluation(ip: string, headers: IncomingHttpHeaders): LoginRiskEvaluation | null {
+	public async buildLearnOnlyEvaluation(ip: string, headers: IncomingHttpHeaders): Promise<LoginRiskEvaluation | null> {
 		if (!this.isEnabled()) return null;
 		try {
 			const normalized = normalizeIp(ip);
 			if (normalized == null || isPrivateOrLoopbackIp(normalized)) return null;
 
+			await this.ensureSecret();
 			const intel = this.ipIntelligenceService.lookup(normalized, headers);
 			const prefix = getIpPrefix(normalized);
 			return {
@@ -206,6 +214,7 @@ export class LoginRiskService {
 	/** 32バイトの乱数を base64url で返し、そのハッシュを端末として保存する。正しい形式のトークンが送られていないときだけ使う */
 	@bindThis
 	public async issueDeviceToken(userId: MiUser['id']): Promise<string> {
+		await this.ensureSecret();
 		const token = randomBytes(32).toString('base64url');
 		await this.upsertContexts(userId, [{ kind: 'device', value: this.hmac(token) }]);
 		return token;
@@ -230,8 +239,41 @@ export class LoginRiskService {
 		}
 	}
 
+	/** インスタンス固有の鍵でハッシュにする。確認コードの IP プレフィックスの照合にも使う */
+	@bindThis
+	public async keyedHash(value: string): Promise<string> {
+		await this.ensureSecret();
+		return this.hmac(value);
+	}
+
+	/** ensureSecret() を済ませてから呼ぶ */
 	private hmac(value: string): string {
-		return createHmac('sha256', `${this.meta.id}:login-risk`).update(value).digest('hex');
+		if (this.secret == null) throw new Error('login risk secret is not loaded');
+		return createHmac('sha256', this.secret).update(value).digest('hex');
+	}
+
+	/**
+	 * 鍵を読む。無ければ作って保存する。
+	 * 複数のプロセスが同時に作っても、DB に先に書けた1つを全員が使う。失敗したら次の呼び出しでやり直す
+	 */
+	private async ensureSecret(): Promise<void> {
+		if (this.secret != null) return;
+		this.secretLoading ??= this.loadSecret().finally(() => {
+			this.secretLoading = null;
+		});
+		this.secret = await this.secretLoading;
+	}
+
+	private async loadSecret(): Promise<string> {
+		await this.metasRepository.createQueryBuilder()
+			.update()
+			.set({ loginRiskSecret: randomBytes(32).toString('hex') })
+			.where('id = :id', { id: this.meta.id })
+			.andWhere('"loginRiskSecret" IS NULL')
+			.execute();
+		const row = await this.metasRepository.findOne({ where: { id: this.meta.id }, select: { id: true, loginRiskSecret: true } });
+		if (row?.loginRiskSecret == null) throw new Error('failed to load the login risk secret');
+		return row.loginRiskSecret;
 	}
 
 	private userFailureKey(userId: MiUser['id']): string {

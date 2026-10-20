@@ -175,8 +175,9 @@ export class SigninApiService {
 				return await this.signinService.signin(request, reply, user, { ev: result.ev, learn: true, challenge: 'passed' });
 			}
 
-			// challenge が無い・他人のものなら、パスワードを知らなくても送れるので失敗として数えない
-			if (result.reason === 'noChallenge' || result.reason === 'otherUser') {
+			// challenge が無い・他人のものなら、パスワードを知らなくても送れるので失敗として数えない。
+			// 発行時と別のネットワーク(回線の切り替えなど)なら、ログインからやり直してもらう
+			if (result.reason === 'noChallenge' || result.reason === 'otherUser' || result.reason === 'prefixMismatch') {
 				return error(403, { id: LOGIN_CHALLENGE_EXPIRED });
 			}
 
@@ -295,7 +296,11 @@ export class SigninApiService {
 					return error(503, { id: LOGIN_CHALLENGE_SEND_FAILED });
 				}
 
-				// Redis に保存できなければ、通知したうえで通す(学習はしない)
+				// Redis に保存できなければ、通知したうえで通す(学習はしない)。
+				// 本人を締め出さないことを優先した、意図した fail-open(仕様で決めた扱い)。
+				// メールを送れないとき(sendFailed)は止めるのと扱いが違うが、Redis はサインインのレート制限などにも使っていて、
+				// Redis が止まっている状態は外から作りにくいため
+				// 注: 攻撃者が Redis を止められる環境では、この経路で追加認証を省けてしまう
 				return await this.signinService.signin(request, reply, user, { ev, learn: false });
 			}
 
