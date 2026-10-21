@@ -1,221 +1,407 @@
-# セキュリティとプライバシー強化
-- 認証要求の拡充
-  - フォロー/フォロワー/みつける/アナウンス/オンライン数
-  - ノート/ロール/タグ/検索ページ
-- アカウント管理の強化
-  - ユーザー登録の承認制オプション
-  - Botからのフォローを承認制に設定可能
-  - フォローリクエストの自動拒否機能
-  - メールアドレスのホワイトリスト制
-  - MXレコードのドメインにもブロックが適用される
-  - ログイン通知にIPアドレスを表示
-  - ユーザーIDの最低文字数設定を出来るように
-  - ログインリスク検出 (IP/UA/地理情報ベースのスコアリングと管理者通知)
-  - IPインテリジェンス (IPレンジ管理と定期更新キュー)
-  - 未署名ActivityPubフェッチの拒否オプション
-  - ActivityPubアクセスコントロール (ホスト別アクセス制御)
-- プライバシー設定の拡張
-  - 未ログインユーザーからの連合無し非表示設定
-  - 鍵アカウントの検索結果からの除外
-  - 未ログインユーザーのリアクションユーザー情報閲覧制限
-  - RSS/Atom/JSONフィードの無効化オプション
-  - ローカルユーザーの未フォローリモートユーザーからの通知制御
-  - ミュートユーザーからのリアクションをストリーミングで受信しない
-  - overviewからノートを隠せるように
-  - パブリック/ホームノートをロックダウンとは別で隠せるように
-  - 一部エンドポイントにて未ログインユーザーにデータを渡さないように
+# Misskey-Tempura フォーク機能一覧
 
-# システムの改善
-- カスタム絵文字インポート時にショートコードが被ってたらスキップするように
-- すでにローカルユーザーがフォローしてるユーザーの場合、ProxyAccountでフォローを飛ばさないように
-- 承認制で招待コードがあればスキップ出来るように
-- 招待コード発行時にメールのスキップを出来るオプションを追加
-- サーバーステータスを一部偽装・無効に出来るように
-- アカウント作成にインターバルを設定できるように
-- マルチパートアップロード (大容量ファイルの分割アップロードとクリーンアップキュー)
-- 連絡フォーム (カテゴリ別受付と管理者対応)
-- アカウント承認フロー (承認/拒否と管理者画面)
-- アカウント整理 (public/home/followersのノート・添付ファイルの一括削除)
-- 予約投稿の追加 (既存) の補足: ノートの指定時刻削除 (ファイル同時削除)
+Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey にはない、または異なる動作をする機能をまとめます。本家に既にある機能 (予約投稿など) はここでは扱いません。
 
+注意事項
 
-# UI/UX改善
-- ページデザインの改良
-  - ウェルカムページのカスタマイズ性の向上
-  - ウェルカムページの背景画像を複数設定できるように
-  - /aboutのページに独自機能へのリンクを設置
-  - about-misskey-tempを実装
-  - はなみすきー仕様LPを仕様可能に
-  - systemd風のロード画面
-  - 横長アイコンを設定出来るように(潰さずに表示出来る)
-- 未ログインユーザーに対する表示制限
-  - カスタム絵文字/フェデレーション情報の非表示
-  - explore/channelsの非表示
-  - ハンバーガーメニューの制限
-  - aboutの統計を非表示
-  - ノートのnext/prevボタンを非表示
-- ロックダウンの機能強化
-	- 有効にすることでプロフィールの表示をログイン必須へ
-- 投稿フォームの機能強化
-  - 下部メニューのカスタマイズ機能
-  - リセットボタンの追加
-  - フォームの高さを自動調整するように
-- システム動作の改善
-  - WebSocket再接続時のダイアログ自動クローズ
-- カスタムフォントの対応
-- カスタムスプラッシュテキスト
-- bootロゴの変更機能
-- タイムラインのタブをカスタマイズ可能に
-- デフォルトのテーマを追加
-- 雪を降らせるオプションを追加
-- 地震情報ウィジェット (気象庁API + 警報スクリプト)
-- Twitter埋め込みの改善
-- フォロー中ユーザーの鍵ノートのアンテナ検出
-- UIの切り替えでノート専用ページを追加
-- カスタム絵文字のカテゴリをソートして表示するように
-- インスタンスティッカーにソフトウェア名を表示できるように
-- 天気予報ウィジェット追加(気象庁)
-- コントロールパネルのファイル一覧にてシステムユーザーだけのを絞れるように
-- ファイル一覧にて絵文字ラベルを追加
-- センシティブフラグのあるファイルだけを表示できるように
-- 連合ページでソフトウェア名から検索できるように
-- ノート検索で公開範囲を指定できるように
-- ブロックされていることを表示
+* 本ページは HackMD のバージョン差分ページを置き換える用途を想定しています。アプリ内の /tempura-changelog は HackMD を取得してバージョン見出しを解析するため、置き換えると表示が空になる可能性があります。必要なら取得先や解析処理の変更を検討してください。
+* 一部の機能はロール権限やサーバー設定で有効化が必要です。
+* 記載内容は 2026.10.0-tempura-2.0.21-dev 時点のコードに基づきます。
 
-# ノート機能の拡張
-- 文字数制限の拡大
-  - 本文を8192文字まで
-  - 名前を100文字まで
-- 投稿管理機能
-  - ノートの自動消滅機能（デフォルト値設定可能）
-  - ダイレクトリノート
-  - ダイレクト選択時にユーザーリストを保存/呼び出し可能に
-- 自動リンク化の強化
-  - RJ番号
-  - nicovideoリンク
-  - Githubのコミットハッシュ
-  - セキュリティ情報（CVE/JVN/JVNVU/JVNTA/JVNDB）
-- DeepLX-JSのサポート
-- AI/LLM連携
-  - LLMによるテキスト生成・要約 (ノート/プロフィール)
-  - Gemini連携 (APIキーをヘッダー送信)
+## 本家との大きな違い
 
-# インタラクションと表示のカスタマイズ
-- リアクション機能の改善
-  - ミュート/ブロックユーザーからのリアクション制御
-  - ミュートしたユーザーを匿名表示に
-  - リアクションユーザーと数の表示制御
-  - ノートについたリアクションのピッカーへの追加
-  - カスタマイズ可能ないいねボタンの設置
-  - ミュートダイアログ (理由・期限設定)
-  - 可視性カラーリング (ノートの公開範囲を色分け)
-  - 閲覧済みリノートの折りたたみ
-- プロフィール表示のカスタマイズ
-  - プロフィール項目の選択的表示
-  - アクティビティの公開制御
-- リモート連携の強化
-  - リモートユーザーの統計情報表示
-  - リモートのデコレーション機能
+* ログインリスク判定と確認コード
+* フォロー履歴とフォローリクエスト履歴
+* 引用ミュートとアバター装飾ミュート
+* セミパブリック (public_non_ltl) と受信指定ノート
+* 配送先制御 (delivery targets)
+* アカウント整理 (truncate)
+* ノートの非公開化 (make private)
+* LLM モデレーションと Gemini 連携
+* 問い合わせフォーム
+* 地震情報
+* Hana entrance
+* カスタムスプラッシュ/背景画像/カーソル/長いアイコン
+* サーバー統計の偽装
+* DeepLX 無料モード
+* 署名必須の ActivityPub 取得
+* 検疫 (quarantine)
+* マルチパートアップロード
+* IP インテリジェンス
+* 天気ウィジェット (Open-Meteo)
+* ListenBrainz ウィジェット
+* 太鼓ゲームページ
+* ネストウィジェット
+* 連合ジョブキュー
+* fxtwitter 経由の X 埋め込み
+* ニックネーム (クライアント側)
+* テーマ night-pink と pink-candy
+* カスタムフォント
 
-# モデレーション機能の強化
-- 権限管理の細分化
-  - 絵文字のエクスポートにモデレーター権限必須化
-  - ユーザー名変更権限の分離
-  - トークン再生成権限の分離
-  - 絵文字管理と削除機能の分離
-  - LLMモデレーションキュー (OpenAI互換LLMによる自動モデレーションと管理者レビュー)
-  - アバターデコレーションミュート (ユーザー単位)
-  - クォートミュート (ユーザー単位)
-  - フォロー/フォローリクエスト履歴の閲覧
-  - リアクション統計 (ユーザー/サーバー)
-  - ノートの一括非公開化 (make-private-many)
-  - アカウント承認 (承認/拒否と管理者画面)
-- ユーザー管理の強化
-  - スパムブロック設定の制御
-  - 凍結/削除ユーザーの可視化
-  - 管理画面でのAdmin表示分離
-  - アクティビティベースのコンディショナルロール制御
-  - 凍結権限の管理者以上への拡大
-  - デフォルトでフォローさせるユーザーを追加出来るように
-  - isRootのユーザーは公開範囲を無視してノートを開示できるように
-  - 新しいアカウントが作成されたら通知を送るように
-- 通知周りの強化
-  - ロールに対してお知らせを出せるように
-  - ユーザー個別に通知を発行できるように
+## セキュリティとプライバシー
 
-# 上流マージの衝突を減らすためのコード整備 (フォーク独自)
-- フォーク固有の設定値を連続した 1 ブロックに集約
-  - `Meta.ts`: 71 項目をクラス末尾に集約 (差分 12 ハンク → 2 ハンク)
-  - `admin/update-meta.ts`: 70 項目のパラメータとセッターを末尾に集約 (22 ハンク → 6 ハンク)
-  - `admin/meta.ts`: クォートスタイルを上流の表記へ戻して、差分を追加のみに (9 ハンク / +1271 行 → 4 ハンク / +423 行)
-- コードスタイルのドリフトを上流の表記へ是正
-  - クォート (ダブル → シングル) とインデントのドリフト 41 ハンクを除去
-  - 対象はフロント 12 ファイル、バックエンド 7 ファイル
-  - クォートと空白を正規化しても内容が一致するハンクだけ上流の表記へ戻しているため、意味上の変化は含まれない
+### ログインリスク判定
 
-# その他の機能追加・改善
-- ユーザー体験の向上
-  - ニックネーム機能
-  - フォロー中ユーザーの鍵ノートのアンテナ検出
-  - nyaize（猫語）の無効化オプション
-  - ListenBrainzとの連携（Sharkey連合対応）
-  - 予約投稿の追加
-  - 投稿を指定した時間で削除出来るように
-    - ファイルも同時に消すように
-  - リモートと同名のリアクションを押せるように
-  - ファイルの圧縮形式を選択可能に
-  - コミュニティロールの実装
-  - フォロリク関連の履歴を見れるように
-  - フォロー関連の履歴を見れるように
-     - ロールで管理出来るように変更
-  - アカウントの整理機能(public/home/followersのノート・添付されたファイルを消去)
-  - ノートを後から非公開(ローカルは論理削除/リモートは物理削除)に出来るように
-  - ユーザー/サーバーのリアクションの統計を見れるように
-  - LTLに非掲載のパブリックノートを作成可能にする(セミパブリック)
-  - 自動でフォローバック出来るオプションを追加
-  - ユーザー検索もロールで制御できるように
-  - ノート/フォロー/フォロワーの値を変更できるように
-- ストレージ管理の最適化
-  - ドライブのファイル即時削除機能
-  - オブジェクトストレージのリモートキャッシュPATH分離
-  - 孤立S3ファイルの自動クリーンアップ
-  - 外部ファイルアクセスの再キャッシュ
-  - リモートメディアのキャッシュ期間設定
-- 通知システムの改善
-  - フォロー解除通知の追加
-  - ブロック/ブロック解除通知の追加
-  - 新着ノート通知のまとめ表示
-  - フォローリクエスト関連通知の改善
-  - 参照できないロールで通知が壊れるのを修正
-  - ログイン失敗時に通知をするように
+* IP インテリジェンス (国/ASN/プレフィックス/Tor/VPN/データセンター/Spamhaus DROP) を用いてログインのリスク点数を計算します
+* 閾値 (notify/stepUp) で allow / notify / stepUp を判定します
+* 新しい端末/国/ASN/プレフィックス、直近の他国ログイン、休眠アカウント、失敗回数、IP スプレーなどを加点します
+* learning 期間中は stepUp を notify に抑えます
+* 不審と判定した場合は確認コード (email code) を要求します
+* 管理者は login-risk/diagnose と user-footprints で診断できます
+* 不審ログインの記録は本人に見せるかどうかを設定できます
+* ログイン失敗時には通知 (loginFailed) が送られます
 
-# コード品質・テスト強化 (フォーク独自)
-- リファクタリング
-  - `utility/tempura-script/llm-response.ts` を新設し、Gemini レスポンスの型定義と候補テキスト抽出を依存のない純粋モジュールとして分離 (`llm.ts` から抽出)
-- テストの追加
-  - バックエンド: LLMモデレーション (`OpenLlmModerationService`) / LLMモデレーションキュー (`LlmModerationQueueService` / `LlmModerationQueueEntityService`) / 連絡フォーム (`ContactFormService`) / アカウント整理 (`TruncateAccountService`) のユニットテスト
-  - フロントエンド: Gemini 応答解析 (`llm-response`) / 独自 changelog パーサ (`parse-tempura-changelog`) のユニットテスト
+### IP インテリジェンス
 
-# パフォーマンス・最適化 (フォーク独自)
-- アンテナキーワード正規表現のキャッシュ
-- ノートパッキング時のプロフィールクエリ・ロール評価の削減
-- リモートコレクションの並列・署名付き取得
-- アバターデコレーションミュートのキャッシュ参照
-- ストリーミングメッセージのコネクション単位クローン削減
-- マルチパートステージングの容量制限と予約解放
-- APフェッチのリトライ・キャッシュ改善
-- フロントエンドバンドルのチャンク分割改善
+* sapics の MMDB を日次で取得し Redis に版管理します
+* 国/ASN の判定に使います
+* 管理画面で状態を確認できます
 
-# 地震情報警告機能の分割 (フォーク独自)
-- `utility/tempura-script/earthquake-warning.ts` (778行) を 8 モジュールへ分割
-  - 強度判定 (`intensity.ts`) / スロットリング (`throttle.ts`) / 地域フィルタ (`region-filter.ts`)
-  - メッセージ整形 (`alert-format.ts`) / TTS (`tts.ts`) / ログ (`logs.ts`)
-  - WebSocket クライアント (`ws-client.ts`) / エントリーポイント (`index.ts`)
-  - 元ファイルは各モジュールを再エクスポートする barrel として公開 API は変更なし
-- 地震情報警告モジュールは設定が有効な場合のみ読み込むように遅延ロード化
-- フロントエンド: 地震情報 (強度判定 / スロットリング / 地域フィルタ / メッセージ整形) のユニットテストを追加
-# 管理者設定の統合 (フォーク独自)
-- フォーク独自の管理設定は `/admin/tempura-admin` に集約し、上流の admin ページから独立させる
-  - Fetching: `/admin/tempura-admin` (セクションコンポーネントに分割済み)
-  - 上流ページから独自設定を撤去した例: `branding.vue` (カスタムスプラッシュテキスト / ブロック画像), `moderation.vue` (承認制 / メンション遮断 / 最小ユーザー名長 / 登録間隔 / LLMモデレーション), `security.vue` (メールアドレス許可ドメイン / ログインリスク検知), `performance.vue` (サーバー情報の詳細表示), `settings.vue` (署名必須 AP フェッチ), `external-services.vue` (DeepL フリーモード), `object-storage.vue` (リモートプレフィックス / キャッシュ日数)
-  - 各セクションは `packages/frontend/src/pages/admin/tempura/sections/` に個別コンポーネントとして実装
+### 署名必須の ActivityPub 取得
+
+* requireSignedApFetch が有効なとき、HTTP Signature を検証できない AP 取得を拒否します
+* アカウント/公開鍵取得は例外 (鍵交換のため)
+
+### 検疫
+
+* インスタンスを quarantineLimited にすると、そのサーバーへの配送は公開コンテンツのみになります
+* 隔離中のサーバーからのアクセス制御も行われます
+* 管理者は quarantineRemoteInstance / unquarantine で切り替えます
+
+### ActivityPub アクセス制御
+
+* ブロック/停止/検疫に応じて AP 取得を制御します
+* 配送先 include/exclude リストに従ってノートアクセスを制御します
+
+### 招待と承認
+
+* approvalRequiredForSignup でサインアップ承認制を有効化できます
+* 承認待ちユーザー一覧 (/admin/approvals) で承認/拒否できます
+* 承認拒否時には通知が送られます
+* 招待コード (invite) でメール認証や承認をスキップできます (ロール権限 canSkipInviteEmailAuth / canSkipInviteApproval が必要)
+* 招待コードの有効期限を設定できます
+
+### メールドメインホワイトリスト
+
+* emailWhitelist が有効なとき、指定ドメインのみ登録できます
+
+### 登録制限
+
+* secondsPerSignup で登録間隔を制限できます (0 で無効、招待コードはバイパス)
+* validateMinimumUsernameLength でユーザー名の最低文字数を設定できます (デフォルト 5)
+* blockMentionsFromUnfamiliarRemoteUsers で、ローカルフォロワーがいないリモートユーザーからのメンション付きノートをブロックできます (デフォルト true)
+* carefulBot で Bot のフォローに承認を要求できます
+* autoRejectFollowRequest で、フォロー済みユーザー以外からのフォローリクエストを自動拒否できます
+
+### Bot フォロー承認
+
+* Bot のフォローには管理者の承認が必要になります
+
+## ノートと公開範囲
+
+### セミパブリック
+
+* public_non_ltl: LTL には出さない public ノート
+* visibility coloring で公開範囲を色分け表示できます
+
+### 受信指定ノート
+
+* receiveSpecifiedNotesFrom で、DM 的なノートを誰から受信するか (all / following / nobody) を選べます
+* 返信相手と管理者/モデレーターは常に受信できます
+
+### アウトボックスと Web フィード
+
+* outboxFilter でアウトボックスに含める公開範囲 (public / public_non_ltl / home) を選びます
+* webFeedFilter で RSS/Atom/JSON フィードを無効化できます
+
+### 配送先制御
+
+* ノート投稿時に配送先サーバーを include / exclude で指定できます
+* フォロワー一覧のサーバーから選択します
+
+### すぐ消す (scheduledNoteDelete)
+
+* ノート投稿時に自動削除時刻を設定できます
+* defaultScheduledNoteDelete / defaultScheduledNoteDeleteTime でデフォルトを設定できます
+* 1 年以上先には設定できません
+* 削除の代わりに非公開化する選択 (makePrivateInsteadOfDelete) があります
+
+### ノートの非公開化 (make private)
+
+* 既存ノートを一括で非公開 (specified) にできます
+* make-private / make-private-many / make-private-many-count エンドポイントがあります
+* 1 時間に 1 回まで (irreversible 警告あり)
+* ノートと添付ファイルを削除する deleteWithFiles オプションがあります
+
+### 引用とリノート
+
+* directRenote でメニューを出さずに直接リノートできます
+* 引用は肉球メニューに移動します
+* 引用ミュートで、特定ユーザーの引用通知を抑制できます
+
+### ノート検索
+
+* withFiles / cw / reply / poll フィルタ
+* AND / OR 検索、除外語、日付範囲
+* pgroonga の高度な構文をサポートします
+
+### ノートの最大文字数
+
+* MAX_NOTE_TEXT_LENGTH は 8192 です
+
+### 見たリノートの記録
+
+* enableViewedRenotes で見たリノートを記録し、折りたたみ表示できます
+
+### ノートの匿名化/色分け
+
+* noteVisibilityColoring で公開範囲ごとに色を付けます
+* ミュートしたユーザーの名前とアイコンをサーバー情報に置き換える anonymizeMutedUsers があります
+
+### 非表示設定
+
+* hidePublicNotes / hideHomeNotes / hideLocalOnlyNotes / hideNoteFromOverview でログアウトユーザーに非表示にできます (ログインユーザーには表示)
+* hideActivity でアクティビティを非表示にできます
+
+## リアクション
+
+* selectReaction でデフォルトリアクションを変更できます (デフォルト 🩷)
+* showLikeButton でいいねボタンを表示できます
+* hideReactionUsers / hideReactionCount でリアクションユーザー/件数を隠せます
+* enableReactionConfirm / enableLikeConfirm で確認ダイアログを出せます
+* reactionChecksMuting でリアクションもミュートを尊重します (トラフィック増)
+* addToEmojiPicker でカスタム絵文字をピッカーに追加できます
+* reaction-stats でリアクション統計 (合計/ユニーク/最多) を見られます
+
+## ミュートとブロック
+
+* 引用ミュート (quote mute): 特定ユーザーの引用をミュート (期限付き)
+* アバター装飾ミュート: 特定ユーザーのアバター装飾を非表示 (期限付き)
+* ミュートしたユーザーの匿名化
+* ミュート期間の設定 (MkMuteDialog)
+
+## フォローと履歴
+
+### フォロー履歴
+
+* follow / unFollow / wasFollow / wasUnFollow / blocked / unBlocked / wasBlocked / wasUnBlocked を記録します
+* フィルタと全削除ができます
+* canReadFollowHistory 権限が必要です
+
+### フォローリクエスト履歴
+
+* sent / received / approved / rejected / wasApproved / wasRejected / wasBlocked / wasUnBlocked を記録します
+* フィルタと全削除ができます
+
+### フォロー制御
+
+* autoFollowBack: フォロー返しを自動化 (ロール権限 canAutoFollowBack)
+* autoFollowOnMove: 移動時の自動フォロー
+* defaultFollowedUsers: 新規ユーザーが自動フォローするユーザー
+* forciblyFollowedUsers: 解除/ミュート/ブロックできない強制フォロー
+* carefulBot: Bot フォローに承認要求
+* autoRejectFollowRequest: フォロー済み以外を自動拒否
+
+### フォロー通知
+
+* youGotUnFollower / followRequestRejected / youGotBlocked / youGotUnblocked 通知
+* unfollow 通知は canUseUnFollowNotification で制御
+* blocked/unblocked 通知は canUseBlockedNotification / canUseUnBlockedNotification で制御
+
+## モデレーション
+
+### LLM モデレーション
+
+* OpenAI 互換の moderations API を使い、投稿をモデレーター確認待ちにします
+* 設定: 有効化/API キー/API URL/モデル/リモート含む/公開範囲
+* キュー (/admin/llm-moderation) で warnUser / deleteNote / suspendUser / resolve
+* モデレーターに通知が送られます
+
+### 管理者操作
+
+* approve-user / decline-user: 承認制サインアップの承認/拒否
+* drop-all-notes: ユーザーの全ノート削除
+* regenerate-user-token: トークン再生成
+* send-notification: 通知送信
+* update-user-name: ユーザー名変更
+* clear-suspicious-login-flag: 不審ログインフラグ解除
+* unsetUserMutualLink: 相互フォロー解除
+* accountTruncate: 公開ノートとドライブファイルを削除 (DM とピン留めは保持)
+
+### 検疫と配信制御
+
+* quarantineRemoteInstance / unquarantine
+* delivery targets による配信先制御
+
+### ロール
+
+* community role: ユーザーが作成できるロール
+* isRainbow: レインボーロール
+* canHomeNote / canEmojiDeletion / canUseRemoteIconDecorations / canAddRoles / canCreateRole
+* canUseUnFollowNotification / canUseBlockedNotification / canUseUnBlockedNotification
+* canPublicNonLtlNote / canReadFollowHistory / canAutoFollowBack
+* canUseTruncate / canUseMakePrivate / canUpdateCounters
+* canUseGeminiLLMAPI / canSkipInviteEmailAuth / canSkipInviteApproval
+* role conditions: isSuspiciousLoginDetected / activatedMoreThan / activatedLessThan
+* announcement target roles (AnnouncementRole)
+
+### コンタクトフォーム
+
+* 有効化/IP あたりの時間制限/認証必須
+* カテゴリ/件名/本文 (20 文字以上)/名前/返信方法 (email or Misskey)
+* 管理画面で pending/inProgress/resolved/closed を管理
+
+## LLM 連携
+
+### サーバー Gemini
+
+* serverGeminiEnabled / apiKey / models
+* useGeminiLLMAPI でユーザーが利用
+* useGeminiWithMedia でメディア付き
+* geminiToken / geminiModel
+* system prompt と note/profile summarize prompts
+* ノート変換 (long/short/simple/casual/professional/cat/custom)
+* thinking budget (-1 で無制限)
+* notesLimitPrompt / includeFollowersNotesPrompt
+
+### LLM モデレーション
+
+* 上記参照
+
+## 通知
+
+* unfollow / followRequestRejected / blocked / unblocked / loginFailed / llmModerationQueue / receivedContactForm / roleAssigned
+* newNotes / notedBySomeUsers / renoteedBySomeUsers (grouped)
+* メール通知 (unfollow/blocked/unblocked)
+* loginDescription に IP を含む
+
+## プロフィールと表示
+
+### カスタム表示
+
+* customSplashText: 複数行のスプラッシュ
+* backgroundImageUrls: 背景画像
+* enableLongIconUrl / longIconUrl: 長いアイコン URL
+* customCursor: 5 種類の URL
+* customFont: カスタムフォント
+* nicknameEnabled / nicknameMap: クライアント側ニックネーム
+* isAdmin ラベル
+
+### Hana entrance
+
+* useHanaEntrance で花の入り口 UI に切り替え
+* hanaThemeColor / hanaThemeAltColor / hanaThemeWeakOpacity
+* hanaModeIcon / hanaModeIconSize / hanaModeIconRadius / hanaModeBackground
+* entranceShow* で表示要素を制御
+* entranceMarginLeft でマージン調整
+
+### サーバー統計の偽装
+
+* enableCpuModel / customCpuModel
+* enableCpuCore / customCpuCore
+* enableMemTotal / customMemTotal
+* enableFsTotal / customFsTotal
+
+### DeepLX 無料モード
+
+* deeplFreeMode / deeplFreeInstance (DeepLX-JS, 認証キー不要)
+
+### ロール表示
+
+* communityRole / community
+* manageRole / assignedRole / assignableRole
+* isRainbow
+
+## タイムラインと UI
+
+* hideLocalTimeLine / hideSocialTimeLine / hideGlobalTimeLine / hideLists / hideAntennas / hideChannel
+* widgetDrawerDirection (left/right)
+* textAreaAutoResize
+* showInstanceTickerSoftwareName / showInstanceTickerVersion
+* chooseFileFrom (OS ダイアログ vs Misskey ダイアログ)
+* directRenote
+* anonymizeMutedUsers
+* noteVisibilityColoring
+* reactionChecksMuting
+* enableReactionConfirm / enableLikeConfirm
+
+### 投稿フォーム
+
+* postFormActions で下部アクションを並び替え
+* defaultScheduledNoteDelete / defaultScheduledNoteDeleteTime
+
+### 季節エフェクト
+
+* enableSeasonalScreenEffect / hemisphere
+
+## ウィジェット
+
+* WidgetWeather (Open-Meteo)
+* WidgetEarthQuake
+* WidgetListenBrainz (userId)
+* WidgetNestedWidget
+* WidgetFederationJobQueue
+* ネストウィジェット
+
+## 地震情報
+
+* Wolfx WebSocket API
+* 有効化/強度閾値/TTS/通知スタイル/音/地域フィルタ/スロットル/ログ
+* テスト通知
+
+## ListenBrainz
+
+* WidgetListenBrainz (userId)
+* user/index.listenbrainz ページ
+
+## 太鼓
+
+* taiko ページ (iframe で cjdgrevival.com を埋め込み)
+* games ページに bubble-game / reversi / taiko
+
+## ドライブとアップロード
+
+* マルチパートアップロード (create/upload-part/complete/abort)
+* CleanExpiredMultipartUploads / CleanExpiredRemoteFiles / ReDownloadRemoteFile
+* showOnlySensitiveFiles
+* deleteWithFiles
+
+## 連合と ActivityPub
+
+* signed AP fetch
+* access control
+* quarantine
+* delivery targets
+* split remote cache / object storage remote prefix
+* requireSignedApFetch
+
+## サーバー管理
+
+### テンプラ管理画面
+
+* /admin/tempura-admin に集約
+* ApprovalRequired / BlockMentions / LongIconUrl / UsernameMinLength / SecondsPerSignup / CustomSplashText / EmailDomainSettings / LlmModerationSettings / HanaEntranceSettings / EntranceSettings / DefaultFollowedUsers / BackgroundImages / CustomCursor / GeminiSettings / ContactFormSettings / LoginRiskSettings / ServerStatsSettings / SignedApFetchSettings / DeeplFreeModeSettings / ObjectStorageRemoteSettings / BlockedUserImageSettings
+
+### インスタンス情報
+
+* about-misskey-tempura ページ
+* logo-tempura.svg / version / contributors / official & partner servers
+
+### チェンジログ
+
+* /tempura-changelog は HackMD を取得して解析
+
+## 検索
+
+* 高度な検索 (AND/OR/除外/日付範囲)
+* copySearchUrl
+
+## 互換性と注意
+
+* HackMD 置き換え時の in-app changelog 問題
+* 予約投稿は本家に導入済みのため除外
+* ニックネームはクライアント側のみ
+
+## バージョン
+
+* 2026.10.0-tempura-2.0.21-dev
