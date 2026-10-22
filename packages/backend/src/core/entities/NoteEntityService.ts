@@ -11,6 +11,7 @@ import type { Packed } from '@/misc/json-schema.js';
 import { awaitAll } from '@/misc/prelude/await-all.js';
 import type { MiUser } from '@/models/User.js';
 import type { MiNote } from '@/models/Note.js';
+import type { MiUserProfile } from '@/models/UserProfile.js';
 import type { UsersRepository, UserProfilesRepository, NotesRepository, FollowingsRepository, PollsRepository, PollVotesRepository, NoteReactionsRepository, ChannelsRepository, MiMeta } from '@/models/_.js';
 import { bindThis } from '@/decorators.js';
 import { DebounceLoader } from '@/misc/loader.js';
@@ -135,7 +136,7 @@ export class NoteEntityService implements OnModuleInit {
 	}
 
 	@bindThis
-	public async shouldHideNote(packedNote: Packed<'Note'>, meId: MiUser['id'] | null, isAdmin = false): Promise<boolean> {
+	public async shouldHideNote(packedNote: Packed<'Note'>, meId: MiUser['id'] | null, isAdmin = false, profileHint?: MiUserProfile | null): Promise<boolean> {
 		// If the user is root, always return true
 		if (isAdmin) return false;
 
@@ -175,7 +176,10 @@ export class NoteEntityService implements OnModuleInit {
 		// 未ログインかつプロフィールで非表示設定されている場合は非表示
 		if (!meId) {
 			// プライバシー設定なので、キャッシュ (他プロセスでは最大 1 分古い) ではなく DB の最新値で判定する
-			const profile = await this.userProfilesRepository.findOneBy({ userId: packedNote.userId });
+			// (packMany から渡されるプロフィールもリクエストのたびに DB から一括取得した最新値)
+			const profile = profileHint !== undefined
+				? profileHint
+				: await this.userProfilesRepository.findOneBy({ userId: packedNote.userId });
 			// プロフィールが存在しない異常データではプライバシー設定を判定できないため、非表示側に倒す
 			if (profile == null) return true;
 			if (packedNote.visibility === 'public' && profile.hidePublicNotes) {
@@ -399,6 +403,8 @@ export class NoteEntityService implements OnModuleInit {
 				packedUsers?: Map<MiUser['id'], Packed<'UserLite'>>;
 				/** 閲覧者が管理者かどうか。packMany や返信・リノート先の pack で判定済みの値を引き回す (内部用) */
 				isAdmin?: boolean;
+				/** 未ログイン時の shouldHideNote 用に packMany が DB から一括取得したプロフィール (内部用) */
+				userProfiles?: Map<MiUser['id'], MiUserProfile | null>;
 			};
 		},
 	): Promise<Packed<'Note'>> {
@@ -514,7 +520,10 @@ export class NoteEntityService implements OnModuleInit {
 
 		this.treatVisibility(packed);
 
-		if (!opts.skipHide && (await this.shouldHideNote(packed, meId, isAdmin))) {
+		const hintedProfile = opts._hint_?.userProfiles?.has(packed.userId)
+			? opts._hint_.userProfiles.get(packed.userId) ?? null
+			: undefined;
+		if (!opts.skipHide && (await this.shouldHideNote(packed, meId, isAdmin, hintedProfile))) {
 			this.hideNote(packed);
 		}
 
@@ -603,6 +612,15 @@ export class NoteEntityService implements OnModuleInit {
 		const packedUsers = await this.userEntityService.packMany(users, me)
 			.then(users => new Map(users.map(u => [u.id, u])));
 
+		// 未ログイン時は shouldHideNote がノートごとに userProfiles を引いてしまう (N+1) ため、
+		// まとめて DB から取得して渡す。リクエストのたびに最新値を取る点は従来と同じ。
+		let userProfiles: Map<MiUser['id'], MiUserProfile | null> | undefined;
+		if (meId == null) {
+			const authorIds = [...new Set(notes.map(n => n.userId))];
+			const profiles = await this.userProfilesRepository.findBy({ userId: In(authorIds) });
+			userProfiles = new Map(authorIds.map(id => [id, profiles.find(profile => profile.userId === id) ?? null]));
+		}
+
 		return await Promise.all(notes.map(n => this.pack(n, me, {
 			...options,
 			_hint_: {
@@ -611,6 +629,7 @@ export class NoteEntityService implements OnModuleInit {
 				packedFiles,
 				packedUsers,
 				isAdmin,
+				userProfiles,
 			},
 		})));
 	}
