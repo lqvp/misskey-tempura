@@ -622,6 +622,24 @@ export class QueueService {
 	}
 
 	@bindThis
+	public createMakePrivateManyJob(user: ThinUser, sinceDate: number, untilDate: number) {
+		return this.dbQueue.add('makePrivateMany', {
+			user: { id: user.id },
+			sinceDate,
+			untilDate,
+		}, {
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
+		});
+	}
+
+	@bindThis
 	public createFollowJob(followings: { from: ThinUser, to: ThinUser, requestId?: string, silent?: boolean, withReplies?: boolean }[]) {
 		const jobs = followings.map(rel => this.generateRelationshipJobData('follow', rel));
 		return this.relationshipQueue.addBulk(jobs);

@@ -64,6 +64,7 @@ export type DbJobMap = {
 	importCustomEmojis: DbUserImportJobData;
 	deleteAccount: DbUserDeleteJobData;
 	truncateAccount: DbUserTruncateJobData;
+	makePrivateMany: DbUserMakePrivateManyJobData;
 };
 
 export type DbJobDataWithUser = {
@@ -87,6 +88,12 @@ export type DbUserDeleteJobData = {
 
 export type DbUserTruncateJobData = {
 	user: ThinUser;
+};
+
+export type DbUserMakePrivateManyJobData = {
+	user: ThinUser;
+	sinceDate: number;
+	untilDate: number;
 };
 
 export type DbUserImportJobData = {
