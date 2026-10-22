@@ -175,7 +175,9 @@ export class NoteEntityService implements OnModuleInit {
 		// 未ログインかつプロフィールで非表示設定されている場合は非表示
 		if (!meId) {
 			// プライバシー設定なので、キャッシュ (他プロセスでは最大 1 分古い) ではなく DB の最新値で判定する
-			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: packedNote.userId });
+			const profile = await this.userProfilesRepository.findOneBy({ userId: packedNote.userId });
+			// プロフィールが存在しない異常データではプライバシー設定を判定できないため、非表示側に倒す
+			if (profile == null) return true;
 			if (packedNote.visibility === 'public' && profile.hidePublicNotes) {
 				return true;
 			}
