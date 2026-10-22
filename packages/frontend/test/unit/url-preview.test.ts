@@ -172,21 +172,28 @@ describe('MkUrlPreview', () => {
 		assert.strictEqual(iframe?.parentElement?.style.paddingTop, '200px');
 	});
 
-	test('Loading a tweet in iframe', async () => {
-		const iframe = await renderAndOpenPreview({
-			url: 'https://twitter.com/i/web/status/1685072521782325249',
+	// Twitter/X の埋め込みは iframe ではなく MkTwitterEmbed で表示する。
+	// ツイートのURL(/<screenName>/status/<id>)のときだけ「ツイートを展開」ボタンが出る。
+	test('Twitter URL shows the expand-tweet button instead of an iframe', async () => {
+		const mkUrlPreview = await renderPreviewBy({
+			url: 'https://twitter.com/misskey_io/status/1685072521782325249',
 		});
-		assert.exists(iframe, 'iframe should exist');
-		assert.strictEqual(iframe?.getAttribute('allow'), 'fullscreen;web-share');
-		assert.strictEqual(iframe?.getAttribute('sandbox'), 'allow-popups allow-popups-to-escape-sandbox allow-scripts allow-same-origin');
+		assert.lengthOf(mkUrlPreview.getAllByRole('button'), 1);
+		assert.notExists(mkUrlPreview.container.querySelector('iframe'), 'iframe should not exist');
 	});
 
-	test('Loading a post in iframe', async () => {
-		const iframe = await renderAndOpenPreview({
-			url: 'https://x.com/i/web/status/1685072521782325249',
+	test('X URL shows the expand-tweet button instead of an iframe', async () => {
+		const mkUrlPreview = await renderPreviewBy({
+			url: 'https://x.com/misskey_io/status/1685072521782325249',
 		});
-		assert.exists(iframe, 'iframe should exist');
-		assert.strictEqual(iframe?.getAttribute('allow'), 'fullscreen;web-share');
-		assert.strictEqual(iframe?.getAttribute('sandbox'), 'allow-popups allow-popups-to-escape-sandbox allow-scripts allow-same-origin');
+		assert.lengthOf(mkUrlPreview.getAllByRole('button'), 1);
+		assert.notExists(mkUrlPreview.container.querySelector('iframe'), 'iframe should not exist');
+	});
+
+	test('Twitter URL without a screen name does not show the expand-tweet button', async () => {
+		const mkUrlPreview = await renderPreviewBy({
+			url: 'https://twitter.com/i/web/status/1685072521782325249',
+		});
+		assert.lengthOf(mkUrlPreview.queryAllByRole('button'), 0);
 	});
 });
