@@ -82,6 +82,8 @@ describe('AnnouncementService', () => {
 					// getUnreadAnnouncements がユーザーのロールを参照する(ロールなしとして扱う)
 					return {
 						getUserRoles: vi.fn(async () => []),
+						getRoles: vi.fn(async () => []),
+						getRoleUsers: vi.fn(async () => []),
 					};
 				} else if (token === ModerationLogService) {
 					return {
