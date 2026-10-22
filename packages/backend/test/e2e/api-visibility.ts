@@ -437,10 +437,11 @@ describe('API visibility', () => {
 				await api('notes/reactions/create', { noteId: folR.id, reaction: '👍' }, follower);
 			});
 
-			test('[reactions] public-postのリアクションを未認証が見れる', async () => {
+			// fork仕様: notes/reactions は未認証には常に空配列を返す
+			test('[reactions] public-postのリアクションを未認証には見せない', async () => {
 				const res = await reactions(pub.id);
 				assert.strictEqual(res.status, 200);
-				assert.strictEqual(res.body.length, 1);
+				assert.strictEqual(res.body.length, 0);
 			});
 
 			test('[reactions] followers-postのリアクションを自分が見れる', async () => {
@@ -459,8 +460,11 @@ describe('API visibility', () => {
 				await cannotSeeReactions(fol.id, other);
 			});
 
+			// fork仕様: 未認証には NO_SUCH_NOTE ではなく空配列を返す
 			test('[reactions] followers-postのリアクションを未認証が見れない', async () => {
-				await cannotSeeReactions(fol.id);
+				const res = await reactions(fol.id);
+				assert.strictEqual(res.status, 200);
+				assert.strictEqual(res.body.length, 0);
 			});
 
 			test('[reactions] specified-postのリアクションを指定ユーザーが見れる', async () => {
@@ -473,8 +477,11 @@ describe('API visibility', () => {
 				await cannotSeeReactions(spe.id, follower);
 			});
 
+			// fork仕様: 未認証には NO_SUCH_NOTE ではなく空配列を返す
 			test('[reactions] specified-postのリアクションを未認証が見れない', async () => {
-				await cannotSeeReactions(spe.id);
+				const res = await reactions(spe.id);
+				assert.strictEqual(res.status, 200);
+				assert.strictEqual(res.body.length, 0);
 			});
 
 			test('[reactions] followers-replyのリアクションを非フォロワー (リプライ先である) が見れる', async () => {

@@ -28,7 +28,8 @@ export async function runSignupAndPostScenario(chrome: HeadlessChromeController,
 	const noteText = `Frontend browser metrics ${Date.now()}`;
 
 	await visitHome(page, baseUrl);
-	await signupThroughUi(page, { username: 'alice', password: 'password', invitationCode });
+	// パスワードは強度チェックで low にならないものを使う ('password' は low でsubmitが有効にならない)
+	await signupThroughUi(page, { username: 'alice', password: 'password1234', invitationCode });
 	await closeUserSetupDialog(page);
 	await postNote(page, noteText, 10_000);
 

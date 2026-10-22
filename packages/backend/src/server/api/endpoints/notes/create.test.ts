@@ -67,8 +67,9 @@ describe('api:notes/create', () => {
 			});
 
 			test('0 characters cw', () => {
+				// tempura: cwでテキスト無しにできるようにする (74891e252f)
 				expect(v({ text: 'Body', cw: '' }))
-					.toBe(INVALID);
+					.toBe(VALID);
 			});
 
 			test('reject only cw', () => {

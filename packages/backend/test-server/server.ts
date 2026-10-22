@@ -48,6 +48,7 @@ export async function teardown() {
 	await controller?.close();
 	controller = undefined;
 
+	if (app == null) return;
 	await serverService.dispose();
 	await app.close();
 	await killTestServer();
@@ -92,18 +93,30 @@ async function startControllerEndpoints(port = config.port + 1000) {
 	fastify.post<{ Body: { key?: string, value?: string } }>('/env-reset', async (req, res) => {
 		process.env = JSON.parse(originEnv);
 
-		await serverService.dispose();
-		await app.close();
+		// ここでアプリを再生成すると、その後の initTestDb(dropSchema) によって
+		// 既存pg接続のprepared statement/プランキャッシュが旧スキーマを指し、
+		// signup直後のtoken SELECT等が401(CREDENTIAL_REQUIRED)になる全滅バグの原因になる。
+		// そのため、ここでは停止のみを行い、起動は呼び出し側(drop完了後)に委譲する。
+		if (app != null) {
+			await serverService.dispose();
+			await app.close();
+			app = undefined as any;
+			serverService = undefined as any;
+		}
 
-		await killTestServer();
+		res.code(200).send({ success: true });
+	});
 
-		console.log('starting application...');
+	fastify.post<{ Body: { key?: string, value?: string } }>('/env-start', async (req, res) => {
+		if (app == null) {
+			console.log('starting application...');
 
-		app = await NestFactory.createApplicationContext(MainModule, {
-			logger: new NestLogger(),
-		});
-		serverService = app.get(ServerService);
-		await serverService.launch();
+			app = await NestFactory.createApplicationContext(MainModule, {
+				logger: new NestLogger(),
+			});
+			serverService = app.get(ServerService);
+			await serverService.launch();
+		}
 
 		res.code(200).send({ success: true });
 	});

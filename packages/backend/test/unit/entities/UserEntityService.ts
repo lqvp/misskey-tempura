@@ -20,6 +20,7 @@ import {
 	UsersRepository,
 } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
+import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { AvatarDecorationService } from '@/core/AvatarDecorationService.js';
 import { ApPersonService } from '@/core/activitypub/models/ApPersonService.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
@@ -170,6 +171,7 @@ describe('UserEntityService', () => {
 				ChartLoggerService,
 				InstanceChart,
 				ApLoggerService,
+				HttpRequestService,
 				AccountMoveService,
 				ReactionService,
 				ReactionsBufferingService,
