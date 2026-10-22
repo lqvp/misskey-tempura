@@ -167,15 +167,43 @@ export class SyncForkSchemaDrift1792633818497 {
         await queryRunner.query(`ALTER TABLE "quote_muting" ADD CONSTRAINT "FK_12ba3dfd034e8d03b978d67f799" FOREIGN KEY ("muterId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "avatar_decoration_muting" ADD CONSTRAINT "FK_ee630443ee7a63a930298a275fa" FOREIGN KEY ("muteeId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "avatar_decoration_muting" ADD CONSTRAINT "FK_23a693cfa7fa174817a19ffafca" FOREIGN KEY ("muterId") REFERENCES "user"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
-        await queryRunner.query(`ALTER TABLE "announcement_role" DROP CONSTRAINT IF EXISTS "PK_cb76dfa429c742b1a273ef18d71983ea"`);
-        await queryRunner.query(`ALTER TABLE "announcement_role" DROP CONSTRAINT IF EXISTS "PK_459bc2b8f588519978d0d1dfaaa"`);
-        await queryRunner.query(`ALTER TABLE "announcement_role" DROP CONSTRAINT IF EXISTS "PK_66cc4fa4c3c2852aaf54263e0"`);
-        await queryRunner.query(`ALTER TABLE "announcement_role" DROP CONSTRAINT IF EXISTS "PK_2b00ca52274499fd36b0e7ce45f"`);
+        // The existing primary key name varies between instances (TypeORM version/fork-specific
+        // hashes, or names like "announcement_role_pkey" on schemas created another way), so
+        // dropping by a hard-coded name can silently no-op and the ADD below then fails with
+        // "multiple primary keys for table announcement_role are not allowed". Look up and drop
+        // whichever primary key actually exists instead.
+        await queryRunner.query(`
+            DO $$
+            DECLARE pk_name text;
+            BEGIN
+                SELECT con.conname INTO pk_name
+                FROM pg_constraint con
+                JOIN pg_class rel ON rel.oid = con.conrelid
+                JOIN pg_namespace nsp ON nsp.oid = rel.relnamespace
+                WHERE nsp.nspname = 'public' AND rel.relname = 'announcement_role' AND con.contype = 'p';
+                IF pk_name IS NOT NULL THEN
+                    EXECUTE format('ALTER TABLE "announcement_role" DROP CONSTRAINT %I', pk_name);
+                END IF;
+            END $$;
+        `);
         await queryRunner.query(`ALTER TABLE "announcement_role" ADD CONSTRAINT "PK_2b00ca52274499fd36b0e7ce45f" PRIMARY KEY ("id")`);
     }
 
     async down(queryRunner) {
-        await queryRunner.query(`ALTER TABLE "announcement_role" DROP CONSTRAINT IF EXISTS "PK_2b00ca52274499fd36b0e7ce45f"`);
+        await queryRunner.query(`
+            DO $$
+            DECLARE pk_name text;
+            BEGIN
+                SELECT con.conname INTO pk_name
+                FROM pg_constraint con
+                JOIN pg_class rel ON rel.oid = con.conrelid
+                JOIN pg_namespace nsp ON nsp.oid = rel.relnamespace
+                WHERE nsp.nspname = 'public' AND rel.relname = 'announcement_role' AND con.contype = 'p';
+                IF pk_name IS NOT NULL THEN
+                    EXECUTE format('ALTER TABLE "announcement_role" DROP CONSTRAINT %I', pk_name);
+                END IF;
+            END $$;
+        `);
         await queryRunner.query(`ALTER TABLE "announcement_role" ADD CONSTRAINT "PK_cb76dfa429c742b1a273ef18d71983ea" PRIMARY KEY ("announcementId", "roleId", "id")`);
         await queryRunner.query(`ALTER TABLE "llm_moderation_queue" ADD CONSTRAINT "FK_llm_moderation_queue_assignee" FOREIGN KEY ("assigneeId") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "announcement_role" ADD CONSTRAINT "FK_56b0c35e2d1449e987b1c43a779" FOREIGN KEY ("announcementId") REFERENCES "announcement"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
