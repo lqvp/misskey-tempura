@@ -1036,7 +1036,7 @@ export class MiMeta {
 	@Column('varchar', {
 		length: 1024,
 		array: true,
-		default: '{ "👍", "❤", "😆", "🎉", "🍮" }',
+		default: '{👍,❤,😆,🎉,🍮}',
 	})
 	public entranceSelectEmojis: string[];
 
