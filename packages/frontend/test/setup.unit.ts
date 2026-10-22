@@ -37,7 +37,15 @@ vi.stubGlobal('localStorage', localStorageMock);
 // 中でlocalStorageを使うので上と順番を変えてはいけない
 const { default: locales } = await import('i18n');
 
-fetchMocker.mockIf(/^\/assets\/locales\/.*\.json$/, async () => {
+// /api/meta はfork側のコードがimport時に取得しにいく。実サーバーがないので空のメタを返して
+// ECONNREFUSEDによる Unhandled Rejection を防ぐ
+fetchMocker.mockIf(/^\/assets\/locales\/.*\.json$|\/api\/meta$/, async (req) => {
+	if (req.url.endsWith('/api/meta')) {
+		return {
+			status: 200,
+			body: JSON.stringify({}),
+		};
+	}
 	return {
 		status: 200,
 		body: JSON.stringify(locales['en-US']),
