@@ -85,9 +85,11 @@ export class TruncateAccountProcessorService {
 		const cascadingPiningNoteIds = await this.findCascadingNotes(piningNoteIds);
 
 		// 非公開ノートの取得
+		// public_non_ltl は公開投稿扱い(pack時に public として扱われる)なので、
+		// DM(specified)のように保持せず削除対象に含める
 		const specifiedNotes = await this.notesRepository.findBy({
 			userId,
-			visibility: Not(In(['public', 'home', 'followers'])),
+			visibility: Not(In(['public', 'public_non_ltl', 'home', 'followers'])),
 		});
 		const specifiedNoteIds = specifiedNotes.map(note => note.id);
 		const cascadingSpecifiedNoteIds = await this.findCascadingNotes(specifiedNoteIds);
@@ -100,11 +102,11 @@ export class TruncateAccountProcessorService {
 			...cascadingSpecifiedNoteIds,
 		];
 
-		// 削除対象のノートを取得（公開範囲が public, home, followers のノート）
+		// 削除対象のノートを取得（公開範囲が public, public_non_ltl, home, followers のノート）
 		const deletionTargetNotes = await this.notesRepository.find({
 			where: {
 				userId,
-				visibility: In(['public', 'home', 'followers']),
+				visibility: In(['public', 'public_non_ltl', 'home', 'followers']),
 				id: Not(In(notesToKeep)),
 			},
 			select: { id: true, fileIds: true }, // 必要なフィールドのみ取得
