@@ -111,6 +111,24 @@ describe('ユーザー', () => {
 		});
 	};
 
+	const forkMeDetailedKeys = [
+		'approved',
+		'autoFollowBack',
+		'autoFollowOnMove',
+		'communityRoles',
+		'hideActivity',
+		'hideHomeNotes',
+		'hideLocalOnlyNotes',
+		'hideNoteFromOverview',
+		'hidePublicNotes',
+		'listenbrainz',
+		'moderationNote',
+		'outboxFilter',
+		'receiveSpecifiedNotesFrom',
+		'requireSigninToViewContents',
+		'webFeedFilter',
+	] as const;
+
 	// MeDetailedのキーが過不足なく入っている？
 	const meDetailed = (user: misskey.entities.SignupResponse, security = false): Partial<misskey.entities.MeDetailed> => {
 		return stripUndefined({
@@ -127,6 +145,8 @@ describe('ユーザー', () => {
 			carefulBot: user.carefulBot,
 			autoAcceptFollowed: user.autoAcceptFollowed,
 			autoRejectFollowRequest: user.autoRejectFollowRequest,
+			// fork独自のMeDetailedキー(レスポンスに無ければstripUndefinedで落ちる)
+			...Object.fromEntries(forkMeDetailedKeys.map(key => [key, (user as Record<string, unknown>)[key]])),
 			noCrawle: user.noCrawle,
 			preventAiLearning: user.preventAiLearning,
 			isExplorable: user.isExplorable,
