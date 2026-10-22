@@ -147,9 +147,12 @@ export const signup = async (params?: Partial<misskey.Endpoints['signup']['req']
 
 	// forkではユーザーの requireSigninToViewContents の既定値が true なので、
 	// 未認証での閲覧を前提にした既存テストのために、テスト用ユーザーでは無効にしておく
-	const body = res.body as { token?: string } | null;
+	const body = res.body as { token?: string, requireSigninToViewContents?: boolean } | null;
 	if (body?.token != null) {
 		await api('i/update', { requireSigninToViewContents: false }, { token: body.token } as UserToken);
+		// 期待値がサインアップレスポンスから組み立てられるテスト(users.ts等)と齟齬が出ないよう、
+		// 返却オブジェクト側も更新後の値に揃える
+		body.requireSigninToViewContents = false;
 	}
 
 	return res.body;
