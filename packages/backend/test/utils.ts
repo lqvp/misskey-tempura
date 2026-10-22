@@ -145,6 +145,13 @@ export const signup = async (params?: Partial<misskey.Endpoints['signup']['req']
 
 	const res = await api('signup', q);
 
+	// forkではユーザーの requireSigninToViewContents の既定値が true なので、
+	// 未認証での閲覧を前提にした既存テストのために、テスト用ユーザーでは無効にしておく
+	const body = res.body as { token?: string } | null;
+	if (body?.token != null) {
+		await api('i/update', { requireSigninToViewContents: false }, { token: body.token } as UserToken);
+	}
+
 	return res.body;
 };
 
