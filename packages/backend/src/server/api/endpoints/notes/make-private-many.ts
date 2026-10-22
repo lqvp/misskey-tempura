@@ -67,7 +67,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			try {
 				return await this.noteDeleteService.makePrivateMany(me, sinceDate, untilDate);
 			} catch (e) {
-				throw new ApiError(meta.errors.tooManyNotes);
+				if (e instanceof Error && e.message === 'too many notes') {
+					throw new ApiError(meta.errors.tooManyNotes);
+				}
+				throw e;
 			}
 		});
 	}
