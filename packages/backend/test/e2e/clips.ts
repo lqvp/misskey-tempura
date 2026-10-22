@@ -408,6 +408,7 @@ describe('クリップ', () => {
 		await failedApiCall({
 			endpoint: 'users/clips',
 			parameters: { userId: alice.id },
+			user: undefined,
 		}, {
 			status: 401,
 			code: 'CREDENTIAL_REQUIRED',
