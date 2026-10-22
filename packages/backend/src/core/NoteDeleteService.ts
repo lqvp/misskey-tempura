@@ -198,9 +198,7 @@ export class NoteDeleteService {
 
 			for (let i = 0; i < shouldMakePrivateNotes.length; i += chunkSize) {
 				const chunk = shouldMakePrivateNotes.slice(i, i + chunkSize);
-				for (const note of chunk) {
-					this.makePrivate(user, note);
-				}
+				await Promise.all(chunk.map(note => this.makePrivate(user, note)));
 				if (i + chunkSize < shouldMakePrivateNotes.length) {
 					await new Promise(resolve => setTimeout(resolve, chunkInterval));
 				}
