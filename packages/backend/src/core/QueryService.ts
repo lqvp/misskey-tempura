@@ -283,6 +283,7 @@ export class QueryService {
 				.andWhere(new Brackets(qb => {
 					qb
 						.where('(note.visibility = \'public\' AND profile.hidePublicNotes = TRUE)')
+						.orWhere('(note.visibility = \'public_non_ltl\' AND profile.hidePublicNotes = TRUE)')
 						.orWhere('(note.visibility = \'home\' AND profile.hideHomeNotes = TRUE)')
 						.orWhere('(note.localOnly = TRUE AND profile.hideLocalOnlyNotes = TRUE)');
 				}));
@@ -292,6 +293,7 @@ export class QueryService {
 					.where(new Brackets(qb2 => {
 						qb2
 							.where('note.visibility = \'public\'')
+							.orWhere('note.visibility = \'public_non_ltl\'')
 							.orWhere('note.visibility = \'home\'');
 					}))
 				// プロフィールで非表示設定されているノートを除外
@@ -308,6 +310,7 @@ export class QueryService {
 					.where(new Brackets(qb => {
 						qb
 							.where('note.visibility = \'public\'')
+							.orWhere('note.visibility = \'public_non_ltl\'')
 							.orWhere('note.visibility = \'home\'');
 					}))
 				// または 自分自身
