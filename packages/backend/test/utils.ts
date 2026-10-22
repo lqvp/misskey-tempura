@@ -149,10 +149,15 @@ export const signup = async (params?: Partial<misskey.Endpoints['signup']['req']
 	// 未認証での閲覧を前提にした既存テストのために、テスト用ユーザーでは無効にしておく
 	const body = res.body as { token?: string, requireSigninToViewContents?: boolean } | null;
 	if (body?.token != null) {
-		await api('i/update', { requireSigninToViewContents: false }, { token: body.token } as UserToken);
+		const updateRes = await api('i/update', { requireSigninToViewContents: false }, { token: body.token } as UserToken);
 		// 期待値がサインアップレスポンスから組み立てられるテスト(users.ts等)と齟齬が出ないよう、
-		// 返却オブジェクト側も更新後の値に揃える
-		body.requireSigninToViewContents = false;
+		// 返却オブジェクト側も更新後の値に揃える。
+		// forkのUserEntityServiceは false のとき undefined(キー自体を落とす) でpackするため、
+		// ここでもキーを落とす。
+		// ただし api は非2xxでも例外を投げないため、i/update が成功した場合に限り返却値を書き換える
+		if (updateRes.status >= 200 && updateRes.status < 300) {
+			delete body.requireSigninToViewContents;
+		}
 	}
 
 	return res.body;
