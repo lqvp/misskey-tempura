@@ -105,6 +105,12 @@ interface IEndpointMetaBase {
 	 * 正常応答をキャッシュ (Cache-Control: public) する秒数
 	 */
 	readonly cacheSec?: number;
+
+	/**
+	 * 匿名(GET・未認証)の応答をキャッシュさせないか(Cache-Control: no-store を付与するか)
+	 * 省略した場合は false として解釈されます。cacheSec とは併用できません。
+	 */
+	readonly noStoreWhenAnonymous?: boolean;
 }
 
 export type IEndpointMeta = (Omit<IEndpointMetaBase, 'requireCrential' | 'requireModerator' | 'requireAdmin'> & {

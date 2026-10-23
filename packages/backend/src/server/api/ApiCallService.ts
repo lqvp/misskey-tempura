@@ -213,8 +213,14 @@ export class ApiCallService implements OnApplicationShutdown {
 
 		return this.telemetryService.startSpan('API: ' + endpoint.name, () => this.authenticateService.authenticate(token).then(([user, app]) => {
 			const call = this.call(endpoint, user, app, body, null, request).then((res) => {
-				if (request.method === 'GET' && endpoint.meta.cacheSec && !token && !user) {
-					reply.header('Cache-Control', `public, max-age=${endpoint.meta.cacheSec}`);
+				if (request.method === 'GET' && !token && !user) {
+					if (endpoint.meta.noStoreWhenAnonymous) {
+						// 匿名公開の可否を設定で切り替えるエンドポイントは、設定変更直後から
+						// 意図しない応答が配信され続けないようキャッシュさせない
+						reply.header('Cache-Control', 'no-store');
+					} else if (endpoint.meta.cacheSec) {
+						reply.header('Cache-Control', `public, max-age=${endpoint.meta.cacheSec}`);
+					}
 				}
 				this.send(reply, res);
 			}).catch((err: ApiError) => {

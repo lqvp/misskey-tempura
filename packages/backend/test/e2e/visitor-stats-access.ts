@@ -8,7 +8,7 @@ process.env.NODE_ENV = 'test';
 import * as assert from 'assert';
 import { beforeAll, describe, test } from 'vitest';
 import { MiUser } from '@/models/_.js';
-import { api, initTestDb, post, signup } from '../utils.js';
+import { api, initTestDb, post, relativeFetch, signup } from '../utils.js';
 import type * as misskey from 'misskey-js';
 
 // 統計系エンドポイント(stats, get-online-users-count, charts/*)の匿名アクセスは
@@ -96,5 +96,27 @@ describe('visitor stats access switches', () => {
 		const res = await api('stats', {}, admin);
 		assert.strictEqual(res.status, 200);
 		assert.ok(res.body.reactionsCount >= 1);
+	});
+
+	describe('匿名チャート応答のキャッシュ抑止', () => {
+		// 匿名公開の設定変更が即時に効くよう、ゲート付きチャートの匿名 GET は
+		// Cache-Control: no-store を返す(変更前に発行済みのキャッシュは TTL まで残り得る点に注意)
+		const CHART_ENDPOINTS = ['active-users', 'ap-request', 'drive', 'federation', 'instance', 'notes', 'users'];
+
+		test('ゲート付き7チャートの匿名 GET は no-store を返す', async () => {
+			for (const ep of CHART_ENDPOINTS) {
+				const res = await relativeFetch(`api/charts/${ep}?span=day`);
+				assert.strictEqual(res.status, 200, `${ep}: status=${res.status}`);
+				assert.strictEqual(res.headers.get('cache-control'), 'no-store',
+					`${ep}: cache-control=${res.headers.get('cache-control')}`);
+			}
+		});
+
+		test('対象外エンドポイントの匿名 GET キャッシュは維持される(get-online-users-count)', async () => {
+			const res = await relativeFetch('api/get-online-users-count');
+			assert.strictEqual(res.status, 200, `status=${res.status}`);
+			assert.strictEqual(res.headers.get('cache-control'), 'public, max-age=60',
+				`cache-control=${res.headers.get('cache-control')}`);
+		});
 	});
 });
