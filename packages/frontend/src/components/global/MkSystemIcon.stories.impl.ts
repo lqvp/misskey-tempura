@@ -29,6 +29,12 @@ export const Info = {
 			pauseAnimationAtEnd: true,
 		},
 	},
+	decorators: [
+		// svg には viewBox しかなく、利用側がサイズを与える前提のため (MkDialog 等と同様に) ストーリー側で明示する
+		() => ({
+			template: '<div style="width: 128px; height: 128px;"><story/></div>',
+		}),
+	],
 } satisfies StoryObj<typeof MkSystemIcon>;
 export const Question = {
 	...Info,
