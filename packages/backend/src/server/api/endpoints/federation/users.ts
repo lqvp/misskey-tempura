@@ -51,7 +51,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private queryService: QueryService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			if (!me && (this.serverSettings.ugcVisibilityForVisitor === 'none' || !this.serverSettings.allowAnonymousFederationUsers)) {
+			if (!me && (this.serverSettings.ugcVisibilityForVisitor !== 'all' || !this.serverSettings.allowAnonymousFederationUsers)) {
 				return [];
 			};
 			const query = this.queryService.makePaginationQuery(this.usersRepository.createQueryBuilder('user'), ps.sinceId, ps.untilId, ps.sinceDate, ps.untilDate)

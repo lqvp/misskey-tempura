@@ -63,7 +63,8 @@ describe('visitor federation access switches', () => {
 	});
 
 	test('フラグを on にすると匿名でも federation/users を返す', async () => {
-		await api('admin/update-meta', { allowAnonymousFederationUsers: true }, admin);
+		// 訪問者への公開範囲の既定は 'local' (リモートユーザーは匿名非公開) なので 'all' にしてから確認する
+		await api('admin/update-meta', { allowAnonymousFederationUsers: true, ugcVisibilityForVisitor: 'all' }, admin);
 		const res = await api('federation/users', { host: REMOTE_HOST });
 		assert.strictEqual(res.status, 200);
 		assert.ok(Array.isArray(res.body) && res.body.length === 1);
@@ -73,18 +74,22 @@ describe('visitor federation access switches', () => {
 		assert.deepStrictEqual(res2.body, []);
 	});
 
-	test('ugcVisibilityForVisitor=none の間はフラグ on でも匿名には federation/users を返さない', async () => {
-		await api('admin/update-meta', { allowAnonymousFederationUsers: true, ugcVisibilityForVisitor: 'none' }, admin);
-		try {
-			const res = await api('federation/users', { host: REMOTE_HOST });
-			assert.strictEqual(res.status, 200);
-			assert.deepStrictEqual(res.body, []);
-			// ログイン済みは visitor ポリシーの影響を受けない
-			const res2 = await api('federation/users', { host: REMOTE_HOST }, admin);
-			assert.strictEqual(res2.status, 200);
-			assert.strictEqual(res2.body.length, 1);
-		} finally {
-			await api('admin/update-meta', { ugcVisibilityForVisitor: 'all' }, admin);
+	test('ugcVisibilityForVisitor が all 以外の間はフラグ on でも匿名には federation/users を返さない', async () => {
+		// このエンドポイントはリモートユーザー専用のため、'local' でも匿名には返さない
+		// (users/show や ActivityPub サーバーの visitor ポリシーと同じ扱い)
+		for (const scope of ['none', 'local'] as const) {
+			await api('admin/update-meta', { allowAnonymousFederationUsers: true, ugcVisibilityForVisitor: scope }, admin);
+			try {
+				const res = await api('federation/users', { host: REMOTE_HOST });
+				assert.strictEqual(res.status, 200, `${scope}: status=${res.status}`);
+				assert.deepStrictEqual(res.body, [], `${scope}: anonymous body`);
+				// ログイン済みは visitor ポリシーの影響を受けない
+				const res2 = await api('federation/users', { host: REMOTE_HOST }, admin);
+				assert.strictEqual(res2.status, 200, `${scope}: status=${res2.status}`);
+				assert.strictEqual(res2.body.length, 1, `${scope}: authed body`);
+			} finally {
+				await api('admin/update-meta', { ugcVisibilityForVisitor: 'all' }, admin);
+			}
 		}
 	});
 
