@@ -20,11 +20,6 @@ const Base = {
 				};
 			},
 			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
 				events() {
 					return {
 						done: action('done'),
@@ -32,7 +27,7 @@ const Base = {
 					};
 				},
 			},
-			template: '<MkDialog v-bind="props" v-on="events" />',
+			template: '<MkDialog v-bind="args" v-on="events" />',
 		};
 	},
 	args: {

@@ -16,14 +16,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkResult v-bind="props" />',
+			template: '<MkResult v-bind="args" />',
 		};
 	},
 	args: {

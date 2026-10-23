@@ -18,14 +18,7 @@ export const Plugin = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkExtensionInstaller v-bind="props" />',
+			template: '<MkExtensionInstaller v-bind="args" />',
 		};
 	},
 	args: {
@@ -60,14 +53,7 @@ export const Theme = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkExtensionInstaller v-bind="props" />',
+			template: '<MkExtensionInstaller v-bind="args" />',
 		};
 	},
 	args: {

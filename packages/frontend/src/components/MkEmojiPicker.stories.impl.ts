@@ -20,18 +20,13 @@ export const Default = {
 				};
 			},
 			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
 				events() {
 					return {
 						chosen: action('chosen'),
 					};
 				},
 			},
-			template: '<MkEmojiPicker v-bind="props" v-on="events" />',
+			template: '<MkEmojiPicker v-bind="args" v-on="events" />',
 		};
 	},
 	async play({ canvasElement }) {

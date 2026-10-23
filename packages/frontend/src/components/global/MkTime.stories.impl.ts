@@ -27,14 +27,7 @@ export const Empty = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkTime v-bind="props" />',
+			template: '<MkTime v-bind="args" />',
 		};
 	},
 	async play({ canvasElement }) {

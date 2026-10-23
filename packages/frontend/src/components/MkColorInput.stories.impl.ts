@@ -25,18 +25,13 @@ export const Default = {
 				};
 			},
 			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
 				events() {
 					return {
 						'update:modelValue': action('update:modelValue'),
 					};
 				},
 			},
-			template: '<MkColorInput v-model="color" v-bind="props" v-on="events" />',
+			template: '<MkColorInput v-model="color" v-bind="args" v-on="events" />',
 		};
 	},
 	parameters: {

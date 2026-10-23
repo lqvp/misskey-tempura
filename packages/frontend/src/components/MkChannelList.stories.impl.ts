@@ -21,14 +21,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkChannelList v-bind="props" />',
+			template: '<MkChannelList v-bind="args" />',
 		};
 	},
 	args: {

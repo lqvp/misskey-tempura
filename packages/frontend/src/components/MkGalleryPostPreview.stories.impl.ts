@@ -19,14 +19,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkGalleryPostPreview v-bind="props" />',
+			template: '<MkGalleryPostPreview v-bind="args" />',
 		};
 	},
 	async play({ canvasElement }) {

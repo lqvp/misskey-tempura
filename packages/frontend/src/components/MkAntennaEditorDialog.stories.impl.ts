@@ -21,11 +21,6 @@ export const Default = {
 				};
 			},
 			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
 				events() {
 					return {
 						created: action('created'),
@@ -35,7 +30,7 @@ export const Default = {
 					};
 				},
 			},
-			template: '<MkAntennaEditorDialog v-bind="props" v-on="events" />',
+			template: '<MkAntennaEditorDialog v-bind="args" v-on="events" />',
 		};
 	},
 	args: {

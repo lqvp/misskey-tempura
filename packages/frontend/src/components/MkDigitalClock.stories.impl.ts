@@ -18,14 +18,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkDigitalClock v-bind="props" />',
+			template: '<MkDigitalClock v-bind="args" />',
 		};
 	},
 	args: {

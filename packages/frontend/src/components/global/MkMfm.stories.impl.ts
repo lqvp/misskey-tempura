@@ -17,14 +17,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkMfm v-bind="props" />',
+			template: '<MkMfm v-bind="args" />',
 		};
 	},
 	async play({ canvasElement, args }) {

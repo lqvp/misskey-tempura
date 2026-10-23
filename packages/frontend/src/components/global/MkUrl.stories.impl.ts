@@ -20,14 +20,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkUrl v-bind="props">Text</MkUrl>',
+			template: '<MkUrl v-bind="args">Text</MkUrl>',
 		};
 	},
 	async play({ canvasElement }) {

@@ -19,14 +19,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkA v-bind="props">Misskey</MkA>',
+			template: '<MkA v-bind="args">Misskey</MkA>',
 		};
 	},
 	async play({ canvasElement }) {

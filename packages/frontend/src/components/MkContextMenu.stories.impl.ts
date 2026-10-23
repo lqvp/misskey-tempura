@@ -15,13 +15,6 @@ export const Empty = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
 			methods: {
 				onContextmenu(ev: PointerEvent) {
 					os.contextMenu(args.items, ev);

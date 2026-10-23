@@ -21,14 +21,7 @@ export const Empty = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkSignupServerRules v-bind="props" />',
+			template: '<MkSignupServerRules v-bind="args" />',
 		};
 	},
 	async play({ canvasElement }) {

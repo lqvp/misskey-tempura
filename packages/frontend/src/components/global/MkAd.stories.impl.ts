@@ -19,14 +19,7 @@ const common = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkAd v-bind="props" />',
+			template: '<MkAd v-bind="args" />',
 		};
 	},
 	async play({ canvasElement, args }) {

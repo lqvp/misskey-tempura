@@ -24,11 +24,6 @@ const common = {
 				};
 			},
 			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
 				events() {
 					return {
 						open: action('open'),
@@ -36,7 +31,7 @@ const common = {
 					};
 				},
 			},
-			template: '<MkAutocomplete v-bind="props" v-on="events" :textarea="textarea" />',
+			template: '<MkAutocomplete v-bind="args" v-on="events" :textarea="textarea" />',
 		};
 	},
 	args: {

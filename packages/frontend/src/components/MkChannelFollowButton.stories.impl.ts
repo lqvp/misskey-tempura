@@ -27,14 +27,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkChannelFollowButton v-bind="props" />',
+			template: '<MkChannelFollowButton v-bind="args" />',
 		};
 	},
 	args: {

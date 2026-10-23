@@ -22,14 +22,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<search_ v-bind="props" />',
+			template: '<search_ v-bind="args" />',
 		};
 	},
 	args: {

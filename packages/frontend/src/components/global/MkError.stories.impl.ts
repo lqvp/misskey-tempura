@@ -20,18 +20,13 @@ export const Default = {
 				};
 			},
 			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
 				events() {
 					return {
 						retry: action('retry'),
 					};
 				},
 			},
-			template: '<MkError v-bind="props" v-on="events" />',
+			template: '<MkError v-bind="args" v-on="events" />',
 		};
 	},
 	async play({ canvasElement }) {

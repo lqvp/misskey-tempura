@@ -18,14 +18,7 @@ const common = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkAvatar v-bind="props" />',
+			template: '<MkAvatar v-bind="args" />',
 		};
 	},
 	args: {

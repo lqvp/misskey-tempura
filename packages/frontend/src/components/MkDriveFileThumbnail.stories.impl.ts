@@ -17,14 +17,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkDriveFileThumbnail v-bind="props" />',
+			template: '<MkDriveFileThumbnail v-bind="args" />',
 		};
 	},
 	args: {

@@ -21,14 +21,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkInstanceCardMini v-bind="props" />',
+			template: '<MkInstanceCardMini v-bind="args" />',
 		};
 	},
 	args: {

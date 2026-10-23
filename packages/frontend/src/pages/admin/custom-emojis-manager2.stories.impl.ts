@@ -28,14 +28,7 @@ function createRender(params: {
 						args,
 					};
 				},
-				computed: {
-					props() {
-						return {
-							...this.args,
-						};
-					},
-				},
-				template: '<custom_emojis_manager2 v-bind="props" />',
+				template: '<custom_emojis_manager2 v-bind="args" />',
 			};
 		},
 		args: {

@@ -25,14 +25,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkClickerGame v-bind="props" />',
+			template: '<MkClickerGame v-bind="args" />',
 		};
 	},
 	async play({ canvasElement }) {

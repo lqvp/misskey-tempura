@@ -19,14 +19,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkUserName v-bind="props"/>',
+			template: '<MkUserName v-bind="args"/>',
 		};
 	},
 	async play({ canvasElement }) {
