@@ -58,31 +58,52 @@ function initLocalStorage() {
 }
 
 initLocalStorage();
-queueMicrotask(() => {
-	Promise.all([
-		import('../src/components/index.js'),
-		import('../src/directives/index.js'),
-		import('../src/widgets/index.js'),
-		import('../src/theme.js'),
-		import('../src/preferences.js'),
-		import('../src/os.js'),
-	]).then(([{ default: components }, { default: directives }, { default: widgets }, { themeManager }, { prefer }, os]) => {
-		setup((app) => {
-			moduleInitialized = true;
-			if (app[appInitialized]) {
+// Start the MSW worker before importing app modules: several modules fire
+// API requests at import time (instance meta, preference registry), and they
+// must be intercepted rather than hit a nonexistent server.
+const mswWorker = setupWorker(...commonHandlers);
+const mswWorkerReady = mswWorker.start({ onUnhandledFrame }).then(async () => {
+	// Service worker activation races the first page load: probe until
+	// interception is actually live before app modules issue import-time
+	// API requests.
+	for (let i = 0; i < 150; i++) {
+		try {
+			const res = await fetch('/api/meta', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+			if (res.ok) {
 				return;
 			}
-			app[appInitialized] = true;
-			loadTheme(themeManager);
-			components(app);
-			directives(app);
-			widgets(app);
-			misskeyOS = os;
-			if (isChromatic()) {
-				prefer.commit('animation', false);
-			}
-		});
-	});
+		} catch {
+			// worker not controlling yet
+		}
+		await new Promise((resolve) => setTimeout(resolve, 100));
+	}
+});
+// Awaited at module top level: Storybook waits for the preview module before
+// rendering, so the global setup() (theme, components, widgets) is always
+// registered before the first story mounts.
+await mswWorkerReady;
+const [{ default: components }, { default: directives }, { default: widgets }, { themeManager }, { prefer }, os] = await Promise.all([
+	import('../src/components/index.js'),
+	import('../src/directives/index.js'),
+	import('../src/widgets/index.js'),
+	import('../src/theme.js'),
+	import('../src/preferences.js'),
+	import('../src/os.js'),
+]);
+setup((app) => {
+	moduleInitialized = true;
+	if (app[appInitialized]) {
+		return;
+	}
+	app[appInitialized] = true;
+	loadTheme(themeManager);
+	components(app);
+	directives(app);
+	widgets(app);
+	misskeyOS = os;
+	if (isChromatic()) {
+		prefer.commit('animation', false);
+	}
 });
 
 const preview = {
@@ -133,9 +154,8 @@ const preview = {
 		},
 	],
 	loaders: [mswLoader(async () => {
-		const worker = setupWorker();
-		await worker.start({ onUnhandledFrame });
-		return worker;
+		await mswWorkerReady;
+		return mswWorker;
 	})],
 	parameters: {
 		controls: {
