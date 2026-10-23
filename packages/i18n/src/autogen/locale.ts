@@ -7383,6 +7383,30 @@ export interface Locale extends ILocale {
          */
         "allowUnregisteredApSignerVerification_description": string;
         /**
+         * 返信一覧の匿名公開
+         */
+        "allowAnonymousReplies": string;
+        /**
+         * 有効にすると、ログインしていない人もノートへの返信一覧(/api/notes/replies)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousReplies_description": string;
+        /**
+         * リノート一覧の匿名公開
+         */
+        "allowAnonymousRenotes": string;
+        /**
+         * 有効にすると、ログインしていない人もノートのリノート一覧(/api/notes/renotes)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousRenotes_description": string;
+        /**
+         * 引用一覧の匿名公開
+         */
+        "allowAnonymousQuotes": string;
+        /**
+         * 有効にすると、ログインしていない人もノートの引用一覧(/api/notes/quotes)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousQuotes_description": string;
+        /**
          * リモートファイルをプロキシする
          */
         "proxyRemoteFiles": string;
