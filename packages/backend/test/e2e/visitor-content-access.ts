@@ -64,7 +64,7 @@ describe('visitor content access floor (pages/clips/channels/user search)', () =
 		assert.strictEqual(page.status, 200, JSON.stringify(page.body));
 		pageId = page.body.id;
 		// pages/featured は likedCount > 0 が条件のためいいねしておく
-		const like = await api('pages/like', { pageId }, admin);
+		const like = await api('pages/like', { pageId }, localUser); // 自分のページはいいねできないので別ユーザーで
 		assert.strictEqual(like.status, 204, JSON.stringify(like.body));
 
 		const clip = await api('clips/create', { name: 'visitor floor clip', isPublic: true }, admin);
