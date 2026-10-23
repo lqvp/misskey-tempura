@@ -33,10 +33,30 @@ jobs:
           submodules: true
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.0.10
-      - name: Install FFmpeg
+      - name: Setup FFmpeg cache
+        id: ffmpeg-cache
+        uses: actions/cache@v6.1.0
+        with:
+          path: .ci/ffmpeg
+          key: ffmpeg-7.0.2-static-linux-x64-ubuntu-latest-25d9b6cc
+      - name: Download FFmpeg
+        if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
+        timeout-minutes: 10
         run: |
-          sudo apt update
-          sudo apt install -y ffmpeg
+          mkdir -p .ci/ffmpeg/bin
+          curl -fsSL --retry 3 --max-time 240 -o /tmp/ffmpeg.gz https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffmpeg-linux-x64.gz
+          curl -fsSL --retry 3 --max-time 240 -o /tmp/ffprobe.gz https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffprobe-linux-x64.gz
+          echo "bfe8a8fc511530457b528c48d77b5737527b504a3797a9bc4866aeca69c2dffa  /tmp/ffmpeg.gz" | sha256sum -c -
+          echo "25d9b6ccb05e3d9de9e04e31e2506d8dd7f9f0418981965ac6df12e8d3afd067  /tmp/ffprobe.gz" | sha256sum -c -
+          gunzip -c /tmp/ffmpeg.gz > .ci/ffmpeg/bin/ffmpeg
+          gunzip -c /tmp/ffprobe.gz > .ci/ffmpeg/bin/ffprobe
+          chmod +x .ci/ffmpeg/bin/ffmpeg .ci/ffmpeg/bin/ffprobe
+      - name: Add FFmpeg to PATH
+        run: echo "$GITHUB_WORKSPACE/.ci/ffmpeg/bin" >> "$GITHUB_PATH"
+      - name: Verify FFmpeg
+        run: |
+          ffmpeg -version | head -n 1
+          ffprobe -version | head -n 1
       - name: Use Node.js
         uses: actions/setup-node@v7.0.0
         with:
