@@ -101,11 +101,20 @@ describe('visitor stats access switches', () => {
 	describe('匿名チャート応答のキャッシュ抑止', () => {
 		// 匿名公開の設定変更が即時に効くよう、ゲート付きチャートの匿名 GET は
 		// Cache-Control: no-store を返す(変更前に発行済みのキャッシュは TTL まで残り得る点に注意)
-		const CHART_ENDPOINTS = ['active-users', 'ap-request', 'drive', 'federation', 'instance', 'notes', 'users'];
+		// instance はリモートインスタンスのチャートで host 必須
+		const CHART_ENDPOINTS: [string, string][] = [
+			['active-users', 'span=day'],
+			['ap-request', 'span=day'],
+			['drive', 'span=day'],
+			['federation', 'span=day'],
+			['instance', 'span=day&host=example.com'],
+			['notes', 'span=day'],
+			['users', 'span=day'],
+		];
 
 		test('ゲート付き7チャートの匿名 GET は no-store を返す', async () => {
-			for (const ep of CHART_ENDPOINTS) {
-				const res = await relativeFetch(`api/charts/${ep}?span=day`);
+			for (const [ep, query] of CHART_ENDPOINTS) {
+				const res = await relativeFetch(`api/charts/${ep}?${query}`);
 				assert.strictEqual(res.status, 200, `${ep}: status=${res.status}`);
 				assert.strictEqual(res.headers.get('cache-control'), 'no-store',
 					`${ep}: cache-control=${res.headers.get('cache-control')}`);
