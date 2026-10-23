@@ -135,25 +135,45 @@ function groupState(group: { flags: FlagDef[] }): GroupState {
 	return 'custom';
 }
 
+let saveQueue: Promise<void> = Promise.resolve();
+
 async function save(partial: Partial<Record<FlagKey, boolean>>) {
-	await os.apiWithDialog('admin/update-meta', partial);
-	fetchInstance(true);
+	// admin/update-meta の要求を直列化し、後の要求が先に保存される競合を防ぐ。
+	// 失敗しても後続の保存は続行できるようにする。
+	const request = saveQueue.then(async () => {
+		await os.apiWithDialog('admin/update-meta', partial);
+		await fetchInstance(true);
+	});
+	saveQueue = request.catch(() => {});
+	await request;
 }
 
-function onFlagChange(key: FlagKey, value: boolean) {
+async function onFlagChange(key: FlagKey, value: boolean) {
+	const previous = flagValues[key];
 	flagValues[key] = value;
-	save({ [key]: value });
+	try {
+		await save({ [key]: value });
+	} catch {
+		// 保存失敗時は画面の状態をサーバー設定と一致させるため元に戻す
+		flagValues[key] = previous;
+	}
 }
 
-function onGroupChange(group: { flags: FlagDef[] }, state: GroupState) {
+async function onGroupChange(group: { flags: FlagDef[] }, state: GroupState) {
 	// custom は表示上の状態なので、選択しても個別フラグは変更しない
 	if (state === 'custom') return;
 	const value = state === 'allOn';
 	const partial: Partial<Record<FlagKey, boolean>> = {};
+	const previous: Partial<Record<FlagKey, boolean>> = {};
 	for (const flag of group.flags) {
+		previous[flag.key] = flagValues[flag.key];
 		flagValues[flag.key] = value;
 		partial[flag.key] = value;
 	}
-	save(partial);
+	try {
+		await save(partial);
+	} catch {
+		Object.assign(flagValues, previous);
+	}
 }
 </script>
