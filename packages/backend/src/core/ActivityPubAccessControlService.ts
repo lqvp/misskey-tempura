@@ -128,6 +128,16 @@ export class ActivityPubAccessControlService {
 	}
 
 	/**
+	 * HTTP 署名を検証できたリモートサーバーからの取得かどうかを返す。
+	 * 署名なしの取得(匿名アクセス)と署名済みの取得を区別するために使う。
+	 * 未知の署名者のアカウントは取りに行かない(副作用を起こさない判定)。
+	 */
+	@bindThis
+	public async isVerifiedRequester(request: FastifyRequest): Promise<boolean> {
+		return (await this.getVerifiedHost(request, false)) != null;
+	}
+
+	/**
 	 * ActivityPubリクエストかどうかを判定する
 	 * Accept ヘッダーに application/ld+json が含まれているかチェック
 	 */

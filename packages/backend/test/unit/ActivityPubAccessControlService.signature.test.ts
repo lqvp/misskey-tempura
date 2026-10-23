@@ -100,3 +100,73 @@ describe('ActivityPubAccessControlService (real HTTP signatures)', () => {
 		expect(await service.checkNoteAccess(includeNote, signedRequest({ signedPath: '/notes/other' }))).toBe(false);
 	});
 });
+
+describe('ActivityPubAccessControlService.isVerifiedRequester', () => {
+	const build = async (getAuthUserFromKeyId: (keyId: string) => Promise<unknown>) => {
+		const module = await Test.createTestingModule({
+			providers: [
+				ActivityPubAccessControlService,
+				{ provide: DI.config, useValue: { host: OWN_HOST, hostname: OWN_HOST } },
+				{ provide: DI.meta, useValue: { blockedHosts: [], requireSignedApFetch: false } },
+				{ provide: DI.instancesRepository, useValue: { findOneBy: vi.fn(async () => null), existsBy: vi.fn(async () => true) } },
+				{ provide: DI.userPublickeysRepository, useValue: { findOneBy: vi.fn(async () => null) } },
+				{
+					provide: UtilityService, useValue: {
+						toPuny: (h: string) => h.toLowerCase(),
+						isBlockedHost: () => false,
+						isFederationAllowedHost: () => true,
+					},
+				},
+				{
+					provide: ApDbResolverService, useValue: {
+						getAuthUserFromKeyId: vi.fn(getAuthUserFromKeyId),
+						getAuthUserFromApId: vi.fn(async () => null),
+					},
+				},
+				{ provide: ApResolverService, useValue: { createResolver: vi.fn() } },
+				{ provide: ApPersonService, useValue: { updatePerson: vi.fn(async () => {}) } },
+				{ provide: LoggerService, useValue: { getLogger: () => ({ info: vi.fn(), debug: vi.fn(), warn: vi.fn(), error: vi.fn() }) } },
+			],
+		}).compile();
+		return module.get(ActivityPubAccessControlService);
+	};
+
+	const knownSigner = async () => ({ user: { id: 'u', host: 'allowed.example.com', uri: 'https://allowed.example.com/users/a' }, key: { keyPem: publicKeyPem } });
+
+	test('検証できた署名の取得は true (匿名ではない)', async () => {
+		const service = await build(knownSigner);
+		expect(await service.isVerifiedRequester(signedRequest())).toBe(true);
+	});
+
+	test('署名が無い取得は false (匿名)', async () => {
+		const service = await build(knownSigner);
+		const unsigned = { headers: { host: OWN_HOST, accept: 'application/activity+json' }, url: '/notes/abc', raw: { method: 'GET', url: '/notes/abc', httpVersion: '1.1', headers: {} } } as unknown as FastifyRequest;
+		expect(await service.isVerifiedRequester(unsigned)).toBe(false);
+	});
+
+	test('未知の署名者は検証のための取得をせず false (匿名) に分類する', async () => {
+		const getAuthUserFromKeyId = vi.fn(async () => null);
+		const service = await build(getAuthUserFromKeyId);
+		expect(await service.isVerifiedRequester(signedRequest())).toBe(false);
+		expect(getAuthUserFromKeyId).toHaveBeenCalledTimes(1);
+	});
+
+	test('不正な署名は false (匿名)', async () => {
+		const service = await build(knownSigner);
+		const { privateKey: otherKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+		const date = new Date().toUTCString();
+		const signingString = ['(request-target): get /notes/abc', `host: ${OWN_HOST}`, `date: ${date}`].join('\n');
+		const badSignature = createSign('sha256').update(signingString).sign(otherKey, 'base64');
+		const request = {
+			headers: {
+				host: OWN_HOST,
+				date,
+				accept: 'application/activity+json',
+				signature: `keyId="${KEY_ID}",algorithm="rsa-sha256",headers="(request-target) host date",signature="${badSignature}"`,
+			},
+			url: '/notes/abc',
+			raw: { method: 'GET', url: '/notes/abc', httpVersion: '1.1', headers: {} },
+		} as unknown as FastifyRequest;
+		expect(await service.isVerifiedRequester(request)).toBe(false);
+	});
+});

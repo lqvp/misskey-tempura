@@ -24,6 +24,8 @@ import type { MiFollowing } from '@/models/Following.js';
 import { countIf } from '@/misc/prelude/array.js';
 import type { MiNote } from '@/models/Note.js';
 import { QueryService } from '@/core/QueryService.js';
+import { isNoteVisibleToAnonymousVisitor } from '@/misc/visitor-note-visibility.js';
+import { IdService } from '@/core/IdService.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { ActivityPubAccessControlService } from '@/core/ActivityPubAccessControlService.js';
@@ -76,6 +78,7 @@ export class ActivityPubServerService {
 		private apRendererService: ApRendererService,
 		private queueService: QueueService,
 		private userKeypairService: UserKeypairService,
+		private idService: IdService,
 		private queryService: QueryService,
 		private fanoutTimelineEndpointService: FanoutTimelineEndpointService,
 		private activityPubAccessControlService: ActivityPubAccessControlService,
@@ -91,6 +94,33 @@ export class ActivityPubServerService {
 		} else {
 			reply.type(ACTIVITY_JSON);
 		}
+	}
+
+	/**
+	 * HTTP 署名を検証できない取得(匿名アクセス)に、ローカルユーザーの非公開設定を反映する。
+	 * 拒否した場合は true を返す (404 送信済み)。
+	 *
+	 * 分類: 署名が無い・署名が不正・署名者の鍵をまだ知らない(未知の正当な署名者を含む)
+	 * 取得はすべて「匿名」に分類する。未知の署名者のアカウントを検証のためだけに
+	 * 取りに行くと匿名取得が外向きの取得を誘発できるため、副作用を避けて
+	 * プライバシー側(fail-closed)に倒す。公開ノート自体は匿名にも返る。
+	 */
+	@bindThis
+	private async denyAnonymousNoteAccess(note: MiNote, request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
+		if (await this.activityPubAccessControlService.isVerifiedRequester(request)) return false;
+
+		const noteUser = await this.usersRepository.findOneBy({ id: note.userId });
+		const noteProfile = await this.userProfilesRepository.findOneBy({ userId: note.userId });
+		if (noteUser == null || !isNoteVisibleToAnonymousVisitor({
+			note: { visibility: note.visibility, localOnly: note.localOnly, createdAt: this.idService.parse(note.id).date },
+			author: noteUser,
+			profile: noteProfile,
+			ugcVisibilityForVisitor: this.meta.ugcVisibilityForVisitor,
+		})) {
+			reply.code(404);
+			return true;
+		}
+		return false;
 	}
 
 	/**
@@ -496,6 +526,17 @@ export class ActivityPubServerService {
 			return;
 		}
 
+		// HTTP 署名を検証できない取得は匿名アクセスとして扱い、ローカルユーザーの非公開設定を反映する
+		const isAnonymousRequester = !(await this.activityPubAccessControlService.isVerifiedRequester(request));
+		if (isAnonymousRequester && (
+			user.requireSigninToViewContents ||
+			this.meta.ugcVisibilityForVisitor === 'none' ||
+			(this.meta.ugcVisibilityForVisitor === 'local' && user.host != null)
+		)) {
+			reply.code(404);
+			return;
+		}
+
 		const limit = 20;
 		const partOf = `${this.config.url}/users/${userId}/outbox`;
 
@@ -508,7 +549,14 @@ export class ActivityPubServerService {
 				if (note.localOnly) return false;
 				// 配送先を指定したノートは相手ごとに見せるかが変わるので載せない (getUserNotesFromDb と同じ)
 				if (note.deliveryTargets?.hosts != null) return false;
-				return (visibilitiesToShow as (MiNote['visibility'])[]).includes(note.visibility);
+				if (!(visibilitiesToShow as (MiNote['visibility'])[]).includes(note.visibility)) return false;
+				if (isAnonymousRequester && !isNoteVisibleToAnonymousVisitor({
+					note: { visibility: note.visibility, localOnly: note.localOnly, createdAt: this.idService.parse(note.id).date },
+					author: user,
+					profile: userProfile,
+					ugcVisibilityForVisitor: this.meta.ugcVisibilityForVisitor,
+				})) return false;
+				return true;
 			};
 
 			const notes = this.meta.enableFanoutTimeline ? await this.fanoutTimelineEndpointService.getMiNotes({
@@ -748,6 +796,8 @@ export class ActivityPubServerService {
 				return;
 			}
 
+			if (await this.denyAnonymousNoteAccess(note, request, reply)) return;
+
 			reply.header('Cache-Control', 'public, max-age=180');
 			this.setResponseType(request, reply);
 			return this.apRendererService.addContext(await this.apRendererService.renderNote(note, false));
@@ -783,6 +833,8 @@ export class ActivityPubServerService {
 				reply.code(404);
 				return;
 			}
+
+			if (await this.denyAnonymousNoteAccess(note, request, reply)) return;
 
 			reply.header('Cache-Control', 'public, max-age=180');
 			this.setResponseType(request, reply);

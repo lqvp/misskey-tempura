@@ -16,7 +16,7 @@ import { bindThis } from '@/decorators.js';
 import { IdService } from '@/core/IdService.js';
 import { MfmService } from "@/core/MfmService.js";
 import { parse as mfmParse } from 'mfm-js';
-import { shouldHideNoteByTime } from '@/misc/should-hide-note-by-time.js';
+import { isNoteVisibleToAnonymousVisitor } from '@/misc/visitor-note-visibility.js';
 
 @Injectable()
 export class FeedService {
@@ -60,15 +60,15 @@ export class FeedService {
 		}).then(notes => notes.filter(note =>
 			// Web feeds are anonymous: apply the same per-user privacy rules the
 			// REST paths enforce (NoteEntityService.shouldHideNote with meId = null /
-			// QueryService.generateVisibilityQuery anonymous branch). localOnly notes
-			// are hidden from anonymous readers outright.
-			!note.localOnly &&
-			!(note.visibility === 'public' && profile.hidePublicNotes) &&
-			!(note.visibility === 'home' && profile.hideHomeNotes) &&
-			!shouldHideNoteByTime(user.makeNotesHiddenBefore, this.idService.parse(note.id).date) &&
-			// Notes demoted to followers-only by age are not visible to anonymous
-			// readers (mirrors NoteEntityService.treatVisibility + shouldHideNote).
-			!shouldHideNoteByTime(user.makeNotesFollowersOnlyBefore, this.idService.parse(note.id).date),
+			// QueryService.generateVisibilityQuery anonymous branch).
+			// ugcVisibilityForVisitor と requireSigninToViewContents は
+			// ルート側 (ClientServerService.getFeed) でユーザー単位に判定済み。
+			isNoteVisibleToAnonymousVisitor({
+				note: { visibility: note.visibility, localOnly: note.localOnly, createdAt: this.idService.parse(note.id).date },
+				author: user,
+				profile,
+				ugcVisibilityForVisitor: 'all',
+			}),
 		));
 
 		const feed = new Feed({
