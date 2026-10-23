@@ -7383,6 +7383,14 @@ export interface Locale extends ILocale {
          */
         "allowUnregisteredApSignerVerification_description": string;
         /**
+         * ローカルタイムラインの匿名公開
+         */
+        "allowAnonymousLocalTimeline": string;
+        /**
+         * 有効にすると、ログインしていない人もローカルタイムライン(/api/notes/local-timeline)を取得できます。初期値は無効です。リアルタイム購読(stream)は従来どおりロールポリシー ltlAvailable で制御されます。
+         */
+        "allowAnonymousLocalTimeline_description": string;
+        /**
          * リモートファイルをプロキシする
          */
         "proxyRemoteFiles": string;

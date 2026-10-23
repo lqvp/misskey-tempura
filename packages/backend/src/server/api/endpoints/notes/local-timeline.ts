@@ -80,7 +80,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private channelMutingService: ChannelMutingService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			if (!me) {
+			if (!me && !this.serverSettings.allowAnonymousLocalTimeline) {
 				return [];
 			};
 			const untilId = ps.untilId ?? (ps.untilDate ? this.idService.gen(ps.untilDate!) : null);

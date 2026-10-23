@@ -956,6 +956,10 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			allowAnonymousLocalTimeline: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
 		},
 	},
 } as const;
@@ -1158,6 +1162,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				requireSignedApFetch: instance.requireSignedApFetch,
 				allowUnregisteredApSignerVerification:
 					instance.allowUnregisteredApSignerVerification,
+				allowAnonymousLocalTimeline: instance.allowAnonymousLocalTimeline,
 				customSplashText: instance.customSplashText,
 				blockMentionsFromUnfamiliarRemoteUsers:
 					instance.blockMentionsFromUnfamiliarRemoteUsers,
