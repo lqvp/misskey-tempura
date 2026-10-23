@@ -8,6 +8,7 @@
 import type { StoryObj } from '@storybook/vue3';
 import { action } from 'storybook/actions';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { ref } from 'vue';
 import { file } from '../../.storybook/fakes.js';
 import MkCwButton from './MkCwButton.vue';
 import { i18n } from '@/i18n.js';
@@ -18,24 +19,21 @@ export const Default = {
 			components: {
 				MkCwButton,
 			},
-			data() {
-				return {
-					showContent: false,
-				};
-			},
 			setup() {
+				// SB10 では data() + v-model + computed events の組み合わせで
+				// update:modelValue が反映されないため、setup の ref と明示的なハンドラで持つ
+				const showContent = ref(false);
+				const onUpdateModelValue = (v: boolean) => {
+					showContent.value = v;
+					action('update:modelValue')(v);
+				};
 				return {
 					args,
+					showContent,
+					onUpdateModelValue,
 				};
 			},
-			computed: {
-				events() {
-					return {
-						'update:modelValue': action('update:modelValue'),
-					};
-				},
-			},
-			template: '<MkCwButton v-model="showContent" v-bind="args" v-on="events" />',
+			template: '<MkCwButton :model-value="showContent" v-bind="args" @update:model-value="onUpdateModelValue" />',
 		};
 	},
 	args: {

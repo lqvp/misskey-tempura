@@ -39,4 +39,4 @@ export const Default = {
 	parameters: {
 		layout: 'centered',
 	},
-} satisfies StoryObj<typeof MkDraggable>;
+} satisfies StoryObj;  // ジェネリックコンポーネントのため StoryObj 型引数は付けない (TS2322 回避)
