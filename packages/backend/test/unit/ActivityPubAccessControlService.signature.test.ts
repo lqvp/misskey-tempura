@@ -153,6 +153,37 @@ describe('ActivityPubAccessControlService.isVerifiedRequester', () => {
 		expect(getAuthUserFromKeyId).toHaveBeenCalledTimes(1);
 	});
 
+	test('allowUnregisteredApSignerVerification が有効なら未登録ホストの署名者も取得して検証する', async () => {
+		const module = await Test.createTestingModule({
+			providers: [
+				ActivityPubAccessControlService,
+				{ provide: DI.config, useValue: { host: OWN_HOST, hostname: OWN_HOST } },
+				{ provide: DI.meta, useValue: { blockedHosts: [], requireSignedApFetch: false, allowUnregisteredApSignerVerification: true } },
+				{ provide: DI.instancesRepository, useValue: { findOneBy: vi.fn(async () => null), existsBy: vi.fn(async () => false) } },
+				{ provide: DI.userPublickeysRepository, useValue: { findOneBy: vi.fn(async () => null) } },
+				{
+					provide: UtilityService, useValue: {
+						toPuny: (h: string) => h.toLowerCase(),
+						isBlockedHost: () => false,
+						isFederationAllowedHost: () => true,
+					},
+				},
+				{
+					provide: ApDbResolverService, useValue: {
+						getAuthUserFromKeyId: vi.fn(async () => null),
+						// 鍵の取得に成功した想定 (取得したアカウントの鍵で検証できる)
+						getAuthUserFromApId: vi.fn(async () => ({ user: { id: 'u', host: 'allowed.example.com', uri: 'https://allowed.example.com/users/a' }, key: { keyPem: publicKeyPem } })),
+					},
+				},
+				{ provide: ApResolverService, useValue: { createResolver: vi.fn() } },
+				{ provide: ApPersonService, useValue: { updatePerson: vi.fn(async () => {}) } },
+				{ provide: LoggerService, useValue: { getLogger: () => ({ info: vi.fn(), debug: vi.fn(), warn: vi.fn(), error: vi.fn() }) } },
+			],
+		}).compile();
+		const service = module.get(ActivityPubAccessControlService);
+		expect(await service.isVerifiedRequester(signedRequest())).toBe(true);
+	});
+
 	test('未登録ホストの未知の署名者は取得に行かず false (匿名) に分類する', async () => {
 		const module = await Test.createTestingModule({
 			providers: [

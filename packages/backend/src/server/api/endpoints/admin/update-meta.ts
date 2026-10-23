@@ -281,6 +281,7 @@ export const paramDef = {
 		hanaModeIconRadius: { type: 'number' },
 		hanaModeBackground: { type: 'string', nullable: true },
 		requireSignedApFetch: { type: 'boolean' },
+		allowUnregisteredApSignerVerification: { type: 'boolean' },
 		customSplashText: { type: 'array', nullable: true, items: {
 			type: 'string',
 		} },
@@ -1007,6 +1008,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.requireSignedApFetch !== undefined) {
 				set.requireSignedApFetch = ps.requireSignedApFetch;
+			}
+
+			if (ps.allowUnregisteredApSignerVerification !== undefined) {
+				set.allowUnregisteredApSignerVerification = ps.allowUnregisteredApSignerVerification;
 			}
 
 			if (Array.isArray(ps.customSplashText)) {

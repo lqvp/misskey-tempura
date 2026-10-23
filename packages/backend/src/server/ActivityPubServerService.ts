@@ -103,7 +103,8 @@ export class ActivityPubServerService {
 	 * 分類: 署名が無い・署名が不正な取得は「匿名」に分類する。署名者の鍵をまだ知らない
 	 * 場合は、インスタンス登録済みのホストに限りアカウントを取りに行って検証する
 	 * (requireSignedApFetch 時の checkAccess と同じ方針)。未登録ホストの署名者は
-	 * fail-closed で匿名に分類する。
+	 * fail-closed で匿名に分類する (allowUnregisteredApSignerVerification が有効な
+	 * サーバーでは取得して検証する)。
 	 *
 	 * 匿名にも公開できるノートは署名の検証自体を行わない。検証のための外向きの取得を
 	 * 「匿名には見せられないノートへの取得」に限定し、通常の公開ノートの取得が新たな

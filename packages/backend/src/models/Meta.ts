@@ -884,6 +884,16 @@ export class MiMeta {
 	})
 	public requireSignedApFetch: boolean;
 
+	/**
+	 * まだやり取りしたことのない(インスタンス登録されていない)ホストからの署名でも、
+	 * 署名者のアカウントを取得して検証するか。
+	 * 無効の場合、未登録ホストの署名者は匿名アクセスとして扱う (fail-closed)。
+	 */
+	@Column('boolean', {
+		default: false,
+	})
+	public allowUnregisteredApSignerVerification: boolean;
+
 	@Column('varchar', {
 		length: 1024,
 		array: true,
