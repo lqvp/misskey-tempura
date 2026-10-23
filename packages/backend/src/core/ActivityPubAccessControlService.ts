@@ -128,6 +128,28 @@ export class ActivityPubAccessControlService {
 	}
 
 	/**
+	 * HTTP 署名を検証できたリモートサーバーからの取得かどうかを返す。
+	 * 署名なしの取得(匿名アクセス)と署名済みの取得を区別するために使う。
+	 *
+	 * 署名者の鍵をまだ知らない場合は、インスタンス登録済み(やり取りしたことがある)
+	 * ホストからの署名だけアカウントを取りに行って検証する。requireSignedApFetch 時の
+	 * checkAccess と同じ方針で、未登録ホストの署名者は取りに行かず匿名に分類する
+	 * (匿名取得が未登録ホストへの外向きの取得を誘発しないようにするため)。
+	 * allowUnregisteredApSignerVerification が有効なサーバーでは、未登録ホストの
+	 * 署名者も取得して検証する。
+	 */
+	@bindThis
+	public async isVerifiedRequester(request: FastifyRequest): Promise<boolean> {
+		const claimedHost = this.getRequester(request).claimedHost;
+		// checkAccess と同じく、知らないホストのアカウントは取りに行かない
+		const canFetchSigner = claimedHost != null && (
+			this.meta.allowUnregisteredApSignerVerification ||
+			await this.instancesRepository.existsBy({ host: claimedHost })
+		);
+		return (await this.getVerifiedHost(request, canFetchSigner)) != null;
+	}
+
+	/**
 	 * ActivityPubリクエストかどうかを判定する
 	 * Accept ヘッダーに application/ld+json が含まれているかチェック
 	 */

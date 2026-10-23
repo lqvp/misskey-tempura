@@ -952,6 +952,10 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			allowUnregisteredApSignerVerification: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
 		},
 	},
 } as const;
@@ -1152,6 +1156,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				loginRiskShowDetailsToUser: instance.loginRiskShowDetailsToUser,
 				emailWhitelist: instance.emailWhitelist,
 				requireSignedApFetch: instance.requireSignedApFetch,
+				allowUnregisteredApSignerVerification:
+					instance.allowUnregisteredApSignerVerification,
 				customSplashText: instance.customSplashText,
 				blockMentionsFromUnfamiliarRemoteUsers:
 					instance.blockMentionsFromUnfamiliarRemoteUsers,

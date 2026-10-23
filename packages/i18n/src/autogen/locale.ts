@@ -7375,6 +7375,14 @@ export interface Locale extends ILocale {
          */
         "requireSignedApFetch_description": string;
         /**
+         * 未登録サーバーからの署名を検証する
+         */
+        "allowUnregisteredApSignerVerification": string;
+        /**
+         * 有効にすると、まだやり取りしたことのないサーバーからの署名付き取得でも、署名者のアカウントを取得して検証し、検証できた場合は匿名には公開していないノートも返します。外部への取得を誘発できる範囲が増えるため、通常は無効のままにしてください。
+         */
+        "allowUnregisteredApSignerVerification_description": string;
+        /**
          * リモートファイルをプロキシする
          */
         "proxyRemoteFiles": string;
