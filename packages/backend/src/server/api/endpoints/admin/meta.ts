@@ -1012,6 +1012,7 @@ export const meta = {
 				optional: false, nullable: false,
 			},
 			allowAnonymousFeatured: {
+			allowAnonymousLocalTimeline: {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
@@ -1234,6 +1235,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				allowAnonymousQuotes: instance.allowAnonymousQuotes,
 				allowAnonymousFederationInstances: instance.allowAnonymousFederationInstances,
 				allowAnonymousFeatured: instance.allowAnonymousFeatured,
+				allowAnonymousLocalTimeline: instance.allowAnonymousLocalTimeline,
 				customSplashText: instance.customSplashText,
 				blockMentionsFromUnfamiliarRemoteUsers:
 					instance.blockMentionsFromUnfamiliarRemoteUsers,

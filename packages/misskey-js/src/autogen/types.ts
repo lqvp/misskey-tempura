@@ -11652,6 +11652,7 @@ export interface operations {
                         allowAnonymousQuotes: boolean;
                         allowAnonymousFederationInstances: boolean;
                         allowAnonymousFeatured: boolean;
+                        allowAnonymousLocalTimeline: boolean;
                     };
                 };
             };
@@ -15405,6 +15406,7 @@ export interface operations {
                     allowAnonymousQuotes?: boolean;
                     allowAnonymousFederationInstances?: boolean;
                     allowAnonymousFeatured?: boolean;
+                    allowAnonymousLocalTimeline?: boolean;
                     customSplashText?: string[] | null;
                     defaultFollowedUsers?: string[] | null;
                     forciblyFollowedUsers?: string[] | null;

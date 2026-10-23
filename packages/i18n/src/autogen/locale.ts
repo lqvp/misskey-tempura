@@ -7515,6 +7515,13 @@ export interface Locale extends ILocale {
          * 有効にすると、ログインしていない人も注目のノート(/api/notes/featured)を取得できます。entranceShowFeatured とは独立に制御されます。
          */
         "allowAnonymousFeatured_description": string;
+         * ローカルタイムラインの匿名公開
+         */
+        "allowAnonymousLocalTimeline": string;
+        /**
+         * 有効にすると、ログインしていない人もローカルタイムライン(/api/notes/local-timeline)を取得できます。初期値は無効です。リアルタイム購読(stream)は従来どおりロールポリシー ltlAvailable で制御されます。
+         */
+        "allowAnonymousLocalTimeline_description": string;
         /**
          * リモートファイルをプロキシする
          */

@@ -1915,6 +1915,8 @@ _serverSettings:
   allowAnonymousFederationInstances_description: "有効にすると、ログインしていない人もインスタンス一覧(/api/federation/instances)を取得できます。entranceShowFederation とは独立に制御されます。"
   allowAnonymousFeatured: "featured の匿名公開"
   allowAnonymousFeatured_description: "有効にすると、ログインしていない人も注目のノート(/api/notes/featured)を取得できます。entranceShowFeatured とは独立に制御されます。"
+  allowAnonymousLocalTimeline: "ローカルタイムラインの匿名公開"
+  allowAnonymousLocalTimeline_description: "有効にすると、ログインしていない人もローカルタイムライン(/api/notes/local-timeline)を取得できます。初期値は無効です。リアルタイム購読(stream)は従来どおりロールポリシー ltlAvailable で制御されます。"
   proxyRemoteFiles: "リモートファイルをプロキシする"
   proxyRemoteFiles_description: "有効にすると、リモートのファイルをプロキシして提供します。画像のサムネイル生成やユーザーのプライバシー保護に役立ちます。"
   allowExternalApRedirect: "ActivityPub経由の照会にリダイレクトを許可する"

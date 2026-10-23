@@ -299,6 +299,7 @@ export const paramDef = {
 		allowAnonymousQuotes: { type: 'boolean' },
 		allowAnonymousFederationInstances: { type: 'boolean' },
 		allowAnonymousFeatured: { type: 'boolean' },
+		allowAnonymousLocalTimeline: { type: 'boolean' },
 		customSplashText: { type: 'array', nullable: true, items: {
 			type: 'string',
 		} },
@@ -1091,6 +1092,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.allowAnonymousFeatured !== undefined) {
 				set.allowAnonymousFeatured = ps.allowAnonymousFeatured;
+			if (ps.allowAnonymousLocalTimeline !== undefined) {
+				set.allowAnonymousLocalTimeline = ps.allowAnonymousLocalTimeline;
 			}
 
 			if (Array.isArray(ps.customSplashText)) {

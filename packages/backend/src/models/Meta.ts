@@ -946,6 +946,7 @@ export class MiMeta {
 	public allowAnonymousShowInstance: boolean;
 	public allowAnonymousQuotes: boolean;
 	public allowAnonymousFeatured: boolean;
+	public allowAnonymousLocalTimeline: boolean;
 
 	@Column('varchar', {
 		length: 1024,
