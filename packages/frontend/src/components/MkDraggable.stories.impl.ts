@@ -7,7 +7,9 @@
 import { action } from 'storybook/actions';
 import type { StoryObj } from '@storybook/vue3';
 import MkDraggable from './MkDraggable.vue';
-export const Default = {
+// NOTE: MkDraggable はジェネリックコンポーネントのため StoryObj<typeof ...> の satisfies が
+// TS2322 になる。型引数なしの StoryObj 注釈で回避する。
+export const Default: StoryObj = {
 	render(args) {
 		return {
 			components: {
@@ -39,6 +41,4 @@ export const Default = {
 	parameters: {
 		layout: 'centered',
 	},
-}
-// NOTE: MkDraggable はジェネリックコンポーネントのため StoryObj<typeof ...> の satisfies が
-// TS2322 になる。型注釈を付けず素のオブジェクトとして export する。
+};
