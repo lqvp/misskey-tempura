@@ -138,6 +138,16 @@ function groupState(group: { flags: FlagDef[] }): GroupState {
 // 保存が確認できた最新の値。保存失敗時の復元は(表示上の楽観値ではなく)こちらを使う
 const confirmedValues: Record<FlagKey, boolean> = { ...flagValues };
 
+// フラグ毎の変更世代。保存失敗時のロールバックは、自分より後の変更が無い場合だけ行う
+// (値の等しさでは世代を区別できない: 同じ値への連続変更があり得るため)
+const flagRevisions: Partial<Record<FlagKey, number>> = {};
+
+function bumpRevision(key: FlagKey): number {
+	const rev = (flagRevisions[key] ?? 0) + 1;
+	flagRevisions[key] = rev;
+	return rev;
+}
+
 let saveQueue: Promise<void> = Promise.resolve();
 
 async function save(partial: Partial<Record<FlagKey, boolean>>) {
@@ -160,11 +170,12 @@ async function save(partial: Partial<Record<FlagKey, boolean>>) {
 
 async function onFlagChange(key: FlagKey, value: boolean) {
 	flagValues[key] = value;
+	const rev = bumpRevision(key);
 	try {
 		await save({ [key]: value });
 	} catch {
 		// 保存失敗時は、さらに後の変更が入っていなければ保存確認済みの値に戻す
-		if (flagValues[key] === value) flagValues[key] = confirmedValues[key];
+		if (flagRevisions[key] === rev) flagValues[key] = confirmedValues[key];
 	}
 }
 
@@ -173,16 +184,18 @@ async function onGroupChange(group: { flags: FlagDef[] }, state: GroupState) {
 	if (state === 'custom') return;
 	const value = state === 'allOn';
 	const partial: Partial<Record<FlagKey, boolean>> = {};
+	const revs: Partial<Record<FlagKey, number>> = {};
 	for (const flag of group.flags) {
 		flagValues[flag.key] = value;
 		partial[flag.key] = value;
+		revs[flag.key] = bumpRevision(flag.key);
 	}
 	try {
 		await save(partial);
 	} catch {
 		// 保存失敗時は、さらに後の変更が入っていないフラグだけ保存確認済みの値に戻す
 		for (const flag of group.flags) {
-			if (flagValues[flag.key] === value) flagValues[flag.key] = confirmedValues[flag.key];
+			if (flagRevisions[flag.key] === revs[flag.key]) flagValues[flag.key] = confirmedValues[flag.key];
 		}
 	}
 }
