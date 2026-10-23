@@ -5,6 +5,8 @@ on:
     branches:
       - master
       - develop
+  # 手動実行: マージ前の動作確認や再公開に使う。
+  workflow_dispatch:
   pull_request_target:
     branches-ignore:
       # Since pull requests targets master mostly is the "develop" branch.
@@ -183,7 +185,7 @@ jobs:
         fi
         if [ "${{ github.event_name }}" = "pull_request_target" ]; then
           ARGS+=(--exit-once-uploaded --branch-name "$BRANCH_NAME")
-        elif [ "${{ github.ref }}" = "refs/heads/master" ]; then
+        elif [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.ref }}" = "refs/heads/master" ]; then
           ARGS+=(--exit-once-uploaded)
         fi
         # lockfile の chromatic バージョンに合わせて固定する (packages/frontend/package.json)。
@@ -199,7 +201,7 @@ jobs:
     # push 時に Chromatic が変更を検出した場合だけコミットコメントを投稿する。
     # 書き込み権限を持つのはこのジョブだけで、PR (pull_request_target) では
     # 実行されない。
-    if: vars.CHROMATIC_ENABLED == 'true' && github.event_name != 'pull_request_target' && needs.publish.outputs.success == 'false'
+    if: vars.CHROMATIC_ENABLED == 'true' && github.event_name == 'push' && needs.publish.outputs.success == 'false'
     needs: publish
     runs-on: ubuntu-latest
     permissions:
