@@ -17,7 +17,7 @@ export const Default = {
 					args,
 				};
 			},
-			template: '<MkCondensedLine>{{ props.text }}</MkCondensedLine>',
+			template: '<MkCondensedLine>{{ args.text }}</MkCondensedLine>',
 		};
 	},
 	args: {

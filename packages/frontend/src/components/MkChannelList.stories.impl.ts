@@ -19,14 +19,14 @@ export const Default = {
 			setup() {
 				return {
 					args,
+					// Paginator は循環参照を含むため args (JSON シリアライズされる) には乗せず setup 経由で渡す
+					paginator: new Paginator('channels/search', {}),
 				};
 			},
-			template: '<MkChannelList v-bind="args" />',
+			template: '<MkChannelList v-bind="args" :paginator="paginator" />',
 		};
 	},
-	args: {
-		paginator: new Paginator('channels/search', {}),
-	},
+	args: {},
 	parameters: {
 		chromatic: {
 			// NOTE: ロードが終わるまで待つ
