@@ -81,7 +81,7 @@ jobs:
           if [ "$BRANCH" = "misskey-dev:${GITHUB_HEAD_REF}" ]; then
             BRANCH="${GITHUB_HEAD_REF}"
           fi
-        elif [ "${{ github.ref }}" != "refs/heads/master" ]; then
+        elif [ "$GITHUB_REF" != "refs/heads/master" ]; then
           DIFF="${{ github.event.before }} HEAD"
           if [ "$DIFF" = "0000000000000000000000000000000000000000 HEAD" ]; then
             DIFF="HEAD"
@@ -231,7 +231,7 @@ jobs:
         fi
         if [ "${{ github.event_name }}" = "pull_request_target" ]; then
           ARGS+=(--exit-once-uploaded --branch-name "$BRANCH_NAME")
-        elif [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.ref }}" = "refs/heads/master" ]; then
+        elif [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$GITHUB_REF" = "refs/heads/master" ]; then
           ARGS+=(--exit-once-uploaded)
         fi
         # lockfile の chromatic バージョンに合わせて固定する (packages/frontend/package.json)。
