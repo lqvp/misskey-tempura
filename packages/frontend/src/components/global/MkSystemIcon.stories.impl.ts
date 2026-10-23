@@ -24,6 +24,10 @@ export const Info = {
 	},
 	parameters: {
 		layout: 'centered',
+		chromatic: {
+			// アイコンの描画アニメーションが完了した状態でキャプチャする (SB10)
+			pauseAnimationAtEnd: true,
+		},
 	},
 } satisfies StoryObj<typeof MkSystemIcon>;
 export const Question = {
