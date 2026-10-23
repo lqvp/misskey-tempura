@@ -148,7 +148,7 @@ describe('visitor content access floor (pages/clips/channels/user search)', () =
 			}
 		});
 
-		test('ログイン済みは 'none' でも従来どおり取得できる', async () => {
+		test("ログイン済みは 'none' でも従来どおり取得できる", async () => {
 			await api('admin/update-meta', { ugcVisibilityForVisitor: 'none' }, admin);
 			try {
 				const page = await api('pages/show', { pageId }, localUser);
