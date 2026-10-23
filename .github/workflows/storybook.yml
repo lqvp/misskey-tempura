@@ -38,12 +38,12 @@ jobs:
       commit_sha: ${{ steps.params.outputs.commit_sha }}
 
     steps:
-    - uses: actions/checkout@v7.0.1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       if: github.event_name != 'pull_request_target'
       with:
         fetch-depth: 0
         submodules: true
-    - uses: actions/checkout@v7.0.1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       if: github.event_name == 'pull_request_target'
       with:
         fetch-depth: 0
@@ -53,9 +53,9 @@ jobs:
       if: github.event_name == 'pull_request_target'
       run: git checkout "$(git rev-list --parents -n1 HEAD | cut -d" " -f3)"
     - name: Setup pnpm
-      uses: pnpm/action-setup@v6.0.10
+      uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
     - name: Use Node.js
-      uses: actions/setup-node@v7.0.0
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
         node-version-file: '.node-version'
         cache: 'pnpm'
@@ -145,7 +145,7 @@ jobs:
         cat "$PARAMS_FILE" >> "$GITHUB_OUTPUT"
         echo "PARAMS_EOF" >> "$GITHUB_OUTPUT"
     - name: Upload Artifacts
-      uses: actions/upload-artifact@v7
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
       with:
         name: storybook
         path: packages/frontend/storybook-static
@@ -187,7 +187,7 @@ jobs:
         git symbolic-ref HEAD refs/heads/chromatic-publish
         git --no-pager log -n 1 --format="%H %ct %ae %an"
     - name: Download storybook artifact
-      uses: actions/download-artifact@v7
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
       with:
         name: storybook
         # 旧ジョブと同じ packages/frontend 基準のパスレイアウトに置く。
@@ -261,7 +261,7 @@ jobs:
 
     steps:
     - name: Notify that Chromatic detects changes
-      uses: actions/github-script@v9
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
