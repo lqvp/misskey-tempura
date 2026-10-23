@@ -680,11 +680,12 @@ export class NoteEntityService implements OnModuleInit {
 	@bindThis
 	public async fetchDiffs(noteIds: MiNote['id'][], meId: MiUser['id'] | null = null) {
 		if (noteIds.length === 0) return [];
-		// TODO: ugcVisibilityForVisitor が local の場合の扱いを shouldHideNote と揃える
-		if (meId == null && this.meta.ugcVisibilityForVisitor === 'none') return [];
-
-		// pack() と同じ判定で管理者はプライバシーゲートを免除する (shouldHideNote 準拠)
-		const isAdmin = meId != null ? await this.roleService.isAdministrator({ id: meId }) : false;
+		// 隠匿対象のノートの扱いは pack() のプレースホルダ(isHidden)に揃える。
+		// pack 層のプレースホルダは id・作者・件数・日時を残すので、この部分形状
+		// (id + リアクション件数)では通常エントリを返すのがプレースホルダ相当になる。
+		// ここで除外するのは「そもそも閲覧不可」のノート(isVisibleForMe)だけで、
+		// ugcVisibilityForVisitor やユーザー個別の非公開設定は pack 層と同じく
+		// プレースホルダ扱い(= 件数は返す)とする。
 
 		const fetched = await this.notesRepository.find({
 			where: {
@@ -706,24 +707,13 @@ export class NoteEntityService implements OnModuleInit {
 
 		const notes: MiNote[] = [];
 		for (const rawNote of fetched) {
-			if (meId == null && (this.meta.ugcVisibilityForVisitor === 'none' ||
-				(this.meta.ugcVisibilityForVisitor === 'local' && rawNote.userHost != null))) continue;
 			let note = rawNote;
 			const createdAt = this.idService.parse(rawNote.id).date.toISOString();
-			// User-level privacy gates (same checks as shouldHideNote; the
-			// author themselves and admins are exempt, mirroring shouldHideNote).
-			if (!isAdmin && !(meId != null && meId === rawNote.userId)) {
+			// 時限でフォロワー限定になるノートの公開範囲ダウングレードは
+			// pack() の treatVisibility と同じく適用する
+			if ((rawNote.visibility === 'public' || rawNote.visibility === 'home')) {
 				const author = await this.cacheService.findUserById(rawNote.userId);
-				if (shouldHideNoteByTime(author.makeNotesHiddenBefore, createdAt)) continue;
-				if (meId == null) {
-					if (author.requireSigninToViewContents) continue;
-					const profile = await this.cacheService.userProfileCache.fetch(rawNote.userId);
-					if (rawNote.visibility === 'public' && profile.hidePublicNotes) continue;
-					if (rawNote.visibility === 'home' && profile.hideHomeNotes) continue;
-					if (rawNote.localOnly && profile.hideLocalOnlyNotes) continue;
-				}
-				if ((rawNote.visibility === 'public' || rawNote.visibility === 'home') &&
-					shouldHideNoteByTime(author.makeNotesFollowersOnlyBefore, createdAt)) {
+				if (shouldHideNoteByTime(author.makeNotesFollowersOnlyBefore, createdAt)) {
 					note = { ...rawNote, visibility: 'followers' as const };
 				}
 			}
