@@ -989,6 +989,9 @@ export const meta = {
 				optional: false, nullable: false,
 			},
 			allowAnonymousChartUsers: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
 			allowAnonymousFederationUsers: {
 				type: 'boolean',
 				optional: false, nullable: false,
@@ -998,6 +1001,9 @@ export const meta = {
 				optional: false, nullable: false,
 			},
 			allowAnonymousShowInstance: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
 			allowAnonymousReplies: {
 				type: 'boolean',
 				optional: false, nullable: false,
@@ -1007,11 +1013,17 @@ export const meta = {
 				optional: false, nullable: false,
 			},
 			allowAnonymousQuotes: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
 			allowAnonymousFederationInstances: {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
 			allowAnonymousFeatured: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
 			allowAnonymousLocalTimeline: {
 				type: 'boolean',
 				optional: false, nullable: false,

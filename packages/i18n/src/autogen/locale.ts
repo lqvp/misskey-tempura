@@ -7454,6 +7454,7 @@ export interface Locale extends ILocale {
          * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
          */
         "allowAnonymousChartUsers_description": string;
+        /**
          * 連合ユーザー一覧の匿名公開
          */
         "allowAnonymousFederationUsers": string;
@@ -7477,6 +7478,7 @@ export interface Locale extends ILocale {
          * 有効にすると、ログインしていない人も個別インスタンスの情報(/api/federation/show-instance)を取得できます。初期値は無効です。
          */
         "allowAnonymousShowInstance_description": string;
+        /**
          * 返信一覧の匿名公開
          */
         "allowAnonymousReplies": string;
@@ -7500,6 +7502,7 @@ export interface Locale extends ILocale {
          * 有効にすると、ログインしていない人もノートの引用一覧(/api/notes/quotes)を取得できます。初期値は無効です。
          */
         "allowAnonymousQuotes_description": string;
+        /**
          * federation/instances の匿名公開
          */
         "allowAnonymousFederationInstances": string;
@@ -7515,6 +7518,7 @@ export interface Locale extends ILocale {
          * 有効にすると、ログインしていない人も注目のノート(/api/notes/featured)を取得できます。entranceShowFeatured とは独立に制御されます。
          */
         "allowAnonymousFeatured_description": string;
+        /**
          * ローカルタイムラインの匿名公開
          */
         "allowAnonymousLocalTimeline": string;

@@ -1066,6 +1066,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.allowAnonymousChartUsers !== undefined) {
 				set.allowAnonymousChartUsers = ps.allowAnonymousChartUsers;
+			}
+
 			if (ps.allowAnonymousFederationUsers !== undefined) {
 				set.allowAnonymousFederationUsers = ps.allowAnonymousFederationUsers;
 			}
@@ -1076,6 +1078,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.allowAnonymousShowInstance !== undefined) {
 				set.allowAnonymousShowInstance = ps.allowAnonymousShowInstance;
+			}
+
 			if (ps.allowAnonymousReplies !== undefined) {
 				set.allowAnonymousReplies = ps.allowAnonymousReplies;
 			}
@@ -1086,12 +1090,16 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.allowAnonymousQuotes !== undefined) {
 				set.allowAnonymousQuotes = ps.allowAnonymousQuotes;
+			}
+
 			if (ps.allowAnonymousFederationInstances !== undefined) {
 				set.allowAnonymousFederationInstances = ps.allowAnonymousFederationInstances;
 			}
 
 			if (ps.allowAnonymousFeatured !== undefined) {
 				set.allowAnonymousFeatured = ps.allowAnonymousFeatured;
+			}
+
 			if (ps.allowAnonymousLocalTimeline !== undefined) {
 				set.allowAnonymousLocalTimeline = ps.allowAnonymousLocalTimeline;
 			}
