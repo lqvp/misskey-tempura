@@ -527,6 +527,13 @@ export class NoteEntityService implements OnModuleInit {
 			this.hideNote(packed);
 		}
 
+		// deliveryTargets/deleteAt は配送ポリシーの内部情報なので、匿名および隠匿対象のノートには
+		// どの経路でも開示しない(従来 notes/show と notes/renotes のみで行っていたものを全経路に統一)
+		if (meId == null || packed.isHidden) {
+			packed.deleteAt = undefined;
+			packed.deliveryTargets = undefined;
+		}
+
 		return packed;
 	}
 
