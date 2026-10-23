@@ -6,8 +6,11 @@
 process.env.NODE_ENV = 'test';
 
 import * as assert from 'assert';
+import { createSign, generateKeyPairSync } from 'node:crypto';
 import { beforeAll, describe, test } from 'vitest';
-import { api, post, relativeFetch, signup } from '../utils.js';
+import { api, initTestDb, port, post, relativeFetch, signup } from '../utils.js';
+import { MiUser } from '@/models/User.js';
+import { MiUserPublickey } from '@/models/UserPublickey.js';
 import type * as misskey from 'misskey-js';
 
 const AP = 'application/activity+json';
@@ -179,6 +182,80 @@ describe('visitor anonymous access guarantee', () => {
 		test('時限で隠れたノートは埋め込みに含まれない', async () => {
 			const html = await (await relativeFetch(`embed/notes/${erinNote.id}`)).text();
 			assert.ok(!html.includes(erinNote.text ?? ''), 'note text must not leak into embed HTML');
+		});
+	});
+
+	// 署名済みリモートからの取得の分類 (実サーバー・実署名の統合テスト)
+	describe('signed remote fetch classification', () => {
+		const REMOTE_HOST = 'signed.example.com';
+		const REMOTE_KEY_ID = `https://${REMOTE_HOST}/users/remote#main-key`;
+		const { publicKey, privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+		const publicKeyPem = publicKey.export({ type: 'spki', format: 'pem' }).toString();
+
+		let bobRestrictedNote: misskey.entities.Note;
+
+		beforeAll(async () => {
+			bobRestrictedNote = await post(bob, { text: marker('bob-signed') });
+
+			// 稼働中サーバーのDBにリモートの署名者 (ユーザー+公開鍵) を直接登録する
+			const db = await initTestDb(true);
+			const remoteUserId = 'signedremoteuser0001';
+			await db.getRepository(MiUser).insert({
+				id: remoteUserId,
+				username: 'remote',
+				usernameLower: 'remote',
+				host: REMOTE_HOST,
+				uri: `https://${REMOTE_HOST}/users/remote`,
+				inbox: `https://${REMOTE_HOST}/users/remote/inbox`,
+				sharedInbox: `https://${REMOTE_HOST}/inbox`,
+			});
+			await db.getRepository(MiUserPublickey).insert({
+				userId: remoteUserId,
+				keyId: REMOTE_KEY_ID,
+				keyPem: publicKeyPem,
+			});
+			await db.destroy();
+		}, 1000 * 60 * 2);
+
+		const signedApFetch = (path: string, opts: { keyId?: string; signWith?: typeof privateKey } = {}) => {
+			const host = `127.0.0.1:${port}`;
+			const date = new Date().toUTCString();
+			const signingString = [
+				`(request-target): get /${path}`,
+				`host: ${host}`,
+				`date: ${date}`,
+			].join('\n');
+			const signature = createSign('sha256').update(signingString).sign(opts.signWith ?? privateKey, 'base64');
+			return relativeFetch(path, {
+				headers: {
+					'Accept': AP,
+					'Date': date,
+					'Signature': `keyId="${opts.keyId ?? REMOTE_KEY_ID}",algorithm="rsa-sha256",headers="(request-target) host date",signature="${signature}"`,
+				},
+			});
+		};
+
+		test('検証できた署名なら requireSigninToViewContents のノートも返る (署名済みリモートは制限の対象外)', async () => {
+			const res = await signedApFetch(`notes/${bobRestrictedNote.id}`);
+			assert.strictEqual(res.status, 200);
+		});
+
+		test('検証できた署名なら requireSigninToViewContents のユーザーの outbox も返る', async () => {
+			const res = await signedApFetch(`users/${bob.id}/outbox?page=true`);
+			assert.strictEqual(res.status, 200);
+		});
+
+		test('不正な署名は匿名として扱われ 404', async () => {
+			const { privateKey: otherKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+			const res = await signedApFetch(`notes/${bobRestrictedNote.id}`, { signWith: otherKey });
+			assert.strictEqual(res.status, 404);
+		});
+
+		test('未登録ホストの未知の署名者は匿名として扱われ 404 (公開ノートは返る)', async () => {
+			const resHidden = await signedApFetch(`notes/${bobRestrictedNote.id}`, { keyId: 'https://unregistered.example/users/x#main-key' });
+			assert.strictEqual(resHidden.status, 404);
+			const resPublic = await signedApFetch(`notes/${aliceNote.id}`, { keyId: 'https://unregistered.example/users/x#main-key' });
+			assert.strictEqual(resPublic.status, 200);
 		});
 	});
 });

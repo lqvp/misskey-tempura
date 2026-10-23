@@ -144,11 +144,43 @@ describe('ActivityPubAccessControlService.isVerifiedRequester', () => {
 		expect(await service.isVerifiedRequester(unsigned)).toBe(false);
 	});
 
-	test('未知の署名者は検証のための取得をせず false (匿名) に分類する', async () => {
+	test('登録済みホストの未知の署名者はアカウントを取りに行って検証し、見つからなければ false (匿名)', async () => {
 		const getAuthUserFromKeyId = vi.fn(async () => null);
 		const service = await build(getAuthUserFromKeyId);
+		// モックの instancesRepository.existsBy は true (登録済みホスト) なので取得を試みる
+		// (getAuthUserFromApId は null を返すため最終的に検証失敗)
 		expect(await service.isVerifiedRequester(signedRequest())).toBe(false);
 		expect(getAuthUserFromKeyId).toHaveBeenCalledTimes(1);
+	});
+
+	test('未登録ホストの未知の署名者は取得に行かず false (匿名) に分類する', async () => {
+		const module = await Test.createTestingModule({
+			providers: [
+				ActivityPubAccessControlService,
+				{ provide: DI.config, useValue: { host: OWN_HOST, hostname: OWN_HOST } },
+				{ provide: DI.meta, useValue: { blockedHosts: [], requireSignedApFetch: false } },
+				{ provide: DI.instancesRepository, useValue: { findOneBy: vi.fn(async () => null), existsBy: vi.fn(async () => false) } },
+				{ provide: DI.userPublickeysRepository, useValue: { findOneBy: vi.fn(async () => null) } },
+				{
+					provide: UtilityService, useValue: {
+						toPuny: (h: string) => h.toLowerCase(),
+						isBlockedHost: () => false,
+						isFederationAllowedHost: () => true,
+					},
+				},
+				{
+					provide: ApDbResolverService, useValue: {
+						getAuthUserFromKeyId: vi.fn(async () => null),
+						getAuthUserFromApId: vi.fn(async () => null),
+					},
+				},
+				{ provide: ApResolverService, useValue: { createResolver: vi.fn() } },
+				{ provide: ApPersonService, useValue: { updatePerson: vi.fn(async () => {}) } },
+				{ provide: LoggerService, useValue: { getLogger: () => ({ info: vi.fn(), debug: vi.fn(), warn: vi.fn(), error: vi.fn() }) } },
+			],
+		}).compile();
+		const service = module.get(ActivityPubAccessControlService);
+		expect(await service.isVerifiedRequester(signedRequest())).toBe(false);
 	});
 
 	test('不正な署名は false (匿名)', async () => {

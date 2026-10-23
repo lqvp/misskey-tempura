@@ -100,27 +100,30 @@ export class ActivityPubServerService {
 	 * HTTP 署名を検証できない取得(匿名アクセス)に、ローカルユーザーの非公開設定を反映する。
 	 * 拒否した場合は true を返す (404 送信済み)。
 	 *
-	 * 分類: 署名が無い・署名が不正・署名者の鍵をまだ知らない(未知の正当な署名者を含む)
-	 * 取得はすべて「匿名」に分類する。未知の署名者のアカウントを検証のためだけに
-	 * 取りに行くと匿名取得が外向きの取得を誘発できるため、副作用を避けて
-	 * プライバシー側(fail-closed)に倒す。公開ノート自体は匿名にも返る。
+	 * 分類: 署名が無い・署名が不正な取得は「匿名」に分類する。署名者の鍵をまだ知らない
+	 * 場合は、インスタンス登録済みのホストに限りアカウントを取りに行って検証する
+	 * (requireSignedApFetch 時の checkAccess と同じ方針)。未登録ホストの署名者は
+	 * fail-closed で匿名に分類する。
+	 *
+	 * 匿名にも公開できるノートは署名の検証自体を行わない。検証のための外向きの取得を
+	 * 「匿名には見せられないノートへの取得」に限定し、通常の公開ノートの取得が新たな
+	 * 外向きの取得を誘発しないようにするため。
 	 */
 	@bindThis
 	private async denyAnonymousNoteAccess(note: MiNote, request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
-		if (await this.activityPubAccessControlService.isVerifiedRequester(request)) return false;
-
 		const noteUser = await this.usersRepository.findOneBy({ id: note.userId });
 		const noteProfile = await this.userProfilesRepository.findOneBy({ userId: note.userId });
-		if (noteUser == null || !isNoteVisibleToAnonymousVisitor({
+		if (noteUser != null && isNoteVisibleToAnonymousVisitor({
 			note: { visibility: note.visibility, localOnly: note.localOnly, createdAt: this.idService.parse(note.id).date },
 			author: noteUser,
 			profile: noteProfile,
 			ugcVisibilityForVisitor: this.meta.ugcVisibilityForVisitor,
-		})) {
-			reply.code(404);
-			return true;
-		}
-		return false;
+		})) return false;
+
+		if (await this.activityPubAccessControlService.isVerifiedRequester(request)) return false;
+
+		reply.code(404);
+		return true;
 	}
 
 	/**
@@ -526,16 +529,21 @@ export class ActivityPubServerService {
 			return;
 		}
 
-		// HTTP 署名を検証できない取得は匿名アクセスとして扱い、ローカルユーザーの非公開設定を反映する
-		const isAnonymousRequester = !(await this.activityPubAccessControlService.isVerifiedRequester(request));
-		if (isAnonymousRequester && (
-			user.requireSigninToViewContents ||
+		// HTTP 署名を検証できない取得は匿名アクセスとして扱い、ローカルユーザーの非公開設定を反映する。
+		// 署名の検証は「匿名には見せられないものがある場合」にだけ行う
+		// (検証のための外向きの取得を通常の公開取得から誘発しないため)
+		const restrictedFromAnonymous = user.requireSigninToViewContents ||
 			this.meta.ugcVisibilityForVisitor === 'none' ||
-			(this.meta.ugcVisibilityForVisitor === 'local' && user.host != null)
-		)) {
+			(this.meta.ugcVisibilityForVisitor === 'local' && user.host != null);
+		if (restrictedFromAnonymous && !(await this.activityPubAccessControlService.isVerifiedRequester(request))) {
 			reply.code(404);
 			return;
 		}
+		// ノート単位の非公開設定が一切無いなら、ノートの絞り込みのための検証も不要
+		const mayHideNotesFromAnonymous = userProfile.hidePublicNotes || userProfile.hideHomeNotes ||
+			user.makeNotesHiddenBefore != null || user.makeNotesFollowersOnlyBefore != null;
+		const filterAsAnonymous = mayHideNotesFromAnonymous &&
+			!(await this.activityPubAccessControlService.isVerifiedRequester(request));
 
 		const limit = 20;
 		const partOf = `${this.config.url}/users/${userId}/outbox`;
@@ -550,7 +558,7 @@ export class ActivityPubServerService {
 				// 配送先を指定したノートは相手ごとに見せるかが変わるので載せない (getUserNotesFromDb と同じ)
 				if (note.deliveryTargets?.hosts != null) return false;
 				if (!(visibilitiesToShow as (MiNote['visibility'])[]).includes(note.visibility)) return false;
-				if (isAnonymousRequester && !isNoteVisibleToAnonymousVisitor({
+				if (filterAsAnonymous && !isNoteVisibleToAnonymousVisitor({
 					note: { visibility: note.visibility, localOnly: note.localOnly, createdAt: this.idService.parse(note.id).date },
 					author: user,
 					profile: userProfile,

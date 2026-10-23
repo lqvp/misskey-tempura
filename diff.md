@@ -77,7 +77,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 
 * 未ログインの Web アクセスと署名なしの ActivityPub 取得を「匿名アクセス」として扱い、ノートの公開判定を共有述語 (misc/visitor-note-visibility.ts) に共通化しました
 * SSR/OGP・埋め込み (/embed/notes/:id)・ActivityPub の /notes/:id・/notes/:id/activity・outbox で、requireSigninToViewContents・hidePublicNotes/hideHomeNotes・時限設定 (makeNotesHiddenBefore/makeNotesFollowersOnlyBefore)・localOnly・ugcVisibilityForVisitor を反映します
-* 署名が無い・検証できない・署名者の鍵をまだ知らない取得はすべて匿名に分類します (未知の署名者を検証のためだけに取得しに行くことはしません)
+* 署名が無い・検証できない取得は匿名に分類します。署名者の鍵をまだ知らない場合は、インスタンス登録済みのホストに限りアカウントを取りに行って検証します (署名必須モードと同じ方針)。未登録ホストの署名者は匿名に分類します
 * 署名を検証できたリモートサーバーからの取得と、配送済みのコピーは対象外です
 
 ### 招待と承認

@@ -130,11 +130,18 @@ export class ActivityPubAccessControlService {
 	/**
 	 * HTTP 署名を検証できたリモートサーバーからの取得かどうかを返す。
 	 * 署名なしの取得(匿名アクセス)と署名済みの取得を区別するために使う。
-	 * 未知の署名者のアカウントは取りに行かない(副作用を起こさない判定)。
+	 *
+	 * 署名者の鍵をまだ知らない場合は、インスタンス登録済み(やり取りしたことがある)
+	 * ホストからの署名だけアカウントを取りに行って検証する。requireSignedApFetch 時の
+	 * checkAccess と同じ方針で、未登録ホストの署名者は取りに行かず匿名に分類する
+	 * (匿名取得が未登録ホストへの外向きの取得を誘発しないようにするため)。
 	 */
 	@bindThis
 	public async isVerifiedRequester(request: FastifyRequest): Promise<boolean> {
-		return (await this.getVerifiedHost(request, false)) != null;
+		const claimedHost = this.getRequester(request).claimedHost;
+		// checkAccess と同じく、知らないホストのアカウントは取りに行かない
+		const canFetchSigner = claimedHost != null && await this.instancesRepository.existsBy({ host: claimedHost });
+		return (await this.getVerifiedHost(request, canFetchSigner)) != null;
 	}
 
 	/**
