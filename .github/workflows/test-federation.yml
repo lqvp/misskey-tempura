@@ -33,10 +33,25 @@ jobs:
           submodules: true
       - name: Setup pnpm
         uses: pnpm/action-setup@v6.0.10
-      - name: Install FFmpeg
+      - name: Setup FFmpeg cache
+        id: ffmpeg-cache
+        uses: actions/cache@v6.1.0
+        with:
+          path: .ci/ffmpeg
+          key: ffmpeg-static-n8.1-ubuntu-latest
+      - name: Download FFmpeg
+        if: steps.ffmpeg-cache.outputs.cache-hit != 'true'
+        timeout-minutes: 10
         run: |
-          sudo apt update
-          sudo apt install -y ffmpeg
+          mkdir -p .ci/ffmpeg
+          curl -fsSL --retry 3 --max-time 480 -o /tmp/ffmpeg.tar.xz https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n8.1-latest-linux64-gpl-8.1.tar.xz
+          tar -xJf /tmp/ffmpeg.tar.xz --strip-components=1 -C .ci/ffmpeg
+      - name: Add FFmpeg to PATH
+        run: echo "$GITHUB_WORKSPACE/.ci/ffmpeg/bin" >> "$GITHUB_PATH"
+      - name: Verify FFmpeg
+        run: |
+          ffmpeg -version | head -n 1
+          ffprobe -version | head -n 1
       - name: Use Node.js
         uses: actions/setup-node@v7.0.0
         with:
