@@ -35,6 +35,7 @@ jobs:
       chromatic_skip: ${{ steps.params.outputs.skip }}
       only_story_files: ${{ steps.params.outputs.only_story_files }}
       branch_name: ${{ steps.params.outputs.branch_name }}
+      commit_sha: ${{ steps.params.outputs.commit_sha }}
 
     steps:
     - uses: actions/checkout@v7.0.1
@@ -128,6 +129,17 @@ jobs:
           fi
           echo "branch_name=$BRANCH" >> "$GITHUB_OUTPUT"
         fi
+        # 公開対象のコミット。PR では head の SHA、それ以外はイベントの SHA。
+        # 公開ジョブは git を持たないため、検証済みの値だけを env で渡す。
+        SHA="${{ github.sha }}"
+        if [ "${{ github.event_name }}" = "pull_request_target" ]; then
+          SHA="${{ github.event.pull_request.head.sha }}"
+        fi
+        if [[ ! "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "refusing unsafe commit sha" >&2
+          exit 1
+        fi
+        echo "commit_sha=$SHA" >> "$GITHUB_OUTPUT"
         echo "skip=$SKIP" >> "$GITHUB_OUTPUT"
         echo "only_story_files<<PARAMS_EOF" >> "$GITHUB_OUTPUT"
         cat "$PARAMS_FILE" >> "$GITHUB_OUTPUT"
@@ -176,6 +188,11 @@ jobs:
         # 固定バージョンの chromatic 本体だけを信用し、依存ツリーの
         # ライフサイクルスクリプトは一切実行しない。
         npm_config_ignore_scripts: "true"
+        # このジョブは git リポジトリを持たない (チェックアウトしない) ため、
+        # CLI の git 参照を検証済みの環境変数で代替する。
+        CHROMATIC_SHA: ${{ needs.build.outputs.commit_sha }}
+        CHROMATIC_BRANCH: ${{ needs.build.outputs.branch_name || github.ref_name }}
+        CHROMATIC_SLUG: ${{ github.repository }}
       run: |
         set -uo pipefail
         ARGS=(-d storybook-static)
@@ -195,10 +212,16 @@ jobs:
           ARGS+=(--exit-once-uploaded)
         fi
         # lockfile の chromatic バージョンに合わせて固定する (packages/frontend/package.json)。
-        if npm exec --yes --package=chromatic@18.7.1 -- chromatic "${ARGS[@]}"; then
+        # 成功判定は終了コードだけに頼らない: 認証前のローカルエラー (git 不在など) でも
+        # 終了コード 0 を返す版があるため、"Build N published" の出力を必須とする。
+        LOG="$(mktemp)"
+        STATUS=0
+        npm exec --yes --package=chromatic@18.7.1 -- chromatic "${ARGS[@]}" 2>&1 | tee "$LOG" || STATUS=$?
+        if [ "$STATUS" -eq 0 ] && grep -qE "Build [0-9]+ published" "$LOG"; then
           echo "success=true" >> "$GITHUB_OUTPUT"
         else
           echo "success=false" >> "$GITHUB_OUTPUT"
+          exit 1
         fi
     outputs:
       success: ${{ steps.chromatic.outputs.success }}
@@ -207,7 +230,7 @@ jobs:
     # push 時に Chromatic が変更を検出した場合だけコミットコメントを投稿する。
     # 書き込み権限を持つのはこのジョブだけで、PR (pull_request_target) では
     # 実行されない。
-    if: vars.CHROMATIC_ENABLED == 'true' && github.event_name == 'push' && needs.publish.outputs.success == 'false'
+    if: vars.CHROMATIC_ENABLED == 'true' && github.event_name == 'push' && always() && (needs.publish.result == 'failure' || needs.publish.outputs.success == 'false')
     needs: publish
     runs-on: ubuntu-latest
     permissions:
