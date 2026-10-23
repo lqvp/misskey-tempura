@@ -74,6 +74,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 			// 'local' の間は匿名の検索結果をローカルユーザーに限定する(users/show と同じ訪問者ポリシーの扱い)
 			if (me == null && this.serverSettings.ugcVisibilityForVisitor === 'local') {
+				// 匿名ではリモートユーザーを返さない(users/show と同じ扱い)
+				if (ps.origin === 'remote') return [];
 				ps.origin = 'local';
 			}
 

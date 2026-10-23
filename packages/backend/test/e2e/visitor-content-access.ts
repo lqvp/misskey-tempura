@@ -179,5 +179,16 @@ describe('visitor content access floor (pages/clips/channels/user search)', () =
 				await api('admin/update-meta', { ugcVisibilityForVisitor: 'all' }, admin);
 			}
 		});
+
+		test('origin: remote を指定した匿名検索は空を返す(ローカル結果への置き換えをしない)', async () => {
+			await api('admin/update-meta', { ugcVisibilityForVisitor: 'local' }, admin);
+			try {
+				const res = await api('users/search', { query: 'vscan', origin: 'remote', detail: false });
+				assert.strictEqual(res.status, 200);
+				assert.deepStrictEqual(res.body, []);
+			} finally {
+				await api('admin/update-meta', { ugcVisibilityForVisitor: 'all' }, admin);
+			}
+		});
 	});
 });
