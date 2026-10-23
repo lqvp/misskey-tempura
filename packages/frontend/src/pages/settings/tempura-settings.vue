@@ -14,6 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<br>
 		<div class="_gaps_m">
 			<ProfileSettings/>
+			<PrivacySettings/>
 			<NotesSettings/>
 			<AppearanceSettings/>
 			<BehaviorSettings/>
@@ -36,6 +37,7 @@ import MkSparkle from '@/components/MkSparkle.vue';
 import MkFeatureBanner from '@/components/MkFeatureBanner.vue';
 
 const ProfileSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-profile.vue'));
+const PrivacySettings = defineAsyncComponent(() => import('./tempura-settings/tempura-privacy.vue'));
 const NotesSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-notes.vue'));
 const AppearanceSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-appearance.vue'));
 const BehaviorSettings = defineAsyncComponent(() => import('./tempura-settings/tempura-behavior.vue'));
