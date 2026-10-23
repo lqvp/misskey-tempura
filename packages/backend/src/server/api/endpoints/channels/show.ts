@@ -5,7 +5,7 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
-import type { ChannelsRepository } from '@/models/_.js';
+import type { MiMeta, ChannelsRepository } from '@/models/_.js';
 import { ChannelEntityService } from '@/core/entities/ChannelEntityService.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '../../error.js';
@@ -44,9 +44,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		@Inject(DI.channelsRepository)
 		private channelsRepository: ChannelsRepository,
 
+		@Inject(DI.meta)
+		private serverSettings: MiMeta,
+
 		private channelEntityService: ChannelEntityService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			// 訪問者への公開範囲が 'none' の間は匿名にチャンネルを返さない(users/show と同じ訪問者ポリシーの扱い)
+			if (me == null && this.serverSettings.ugcVisibilityForVisitor === 'none') {
+				throw new ApiError(meta.errors.noSuchChannel);
+			}
+
 			const channel = await this.channelsRepository.findOneBy({
 				id: ps.channelId,
 			});
