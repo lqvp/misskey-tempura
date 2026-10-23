@@ -6,7 +6,7 @@
 process.env.NODE_ENV = 'test';
 
 import * as assert from 'assert';
-import * as Redis from 'ioredis';
+import { Redis } from 'ioredis';
 import { beforeAll, describe, test } from 'vitest';
 import { loadConfig } from '@/config.js';
 import { MiInstance } from '@/models/_.js';
