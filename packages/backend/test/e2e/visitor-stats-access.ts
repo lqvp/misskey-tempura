@@ -1,0 +1,82 @@
+/*
+ * SPDX-FileCopyrightText: lqvp
+ * SPDX-License-Identifier: AGPL-3.0-only
+ */
+
+process.env.NODE_ENV = 'test';
+
+import * as assert from 'assert';
+import { beforeAll, describe, test } from 'vitest';
+import { api, initTestDb, signup } from '../utils.js';
+import type * as misskey from 'misskey-js';
+
+// 統計系エンドポイント(stats, get-online-users-count, charts/*)の匿名アクセスは
+// サーバー設定の個別フラグ(既定 off)で制御されること。
+// off の間は従来通りゼロ埋め/空の応答、on にすると匿名でも実データを返す。
+describe('visitor stats access switches', () => {
+	let admin: misskey.entities.SignupResponse;
+
+	beforeAll(async () => {
+		await initTestDb(true);
+		// 最初のサインアップユーザーは管理者になる
+		admin = await signup({ username: 'admin_stats' });
+	}, 1000 * 60 * 2);
+
+	test('匿名は stats のフラグが off の間ゼロ埋め応答', async () => {
+		const res = await api('stats', {});
+		assert.strictEqual(res.status, 200);
+		assert.strictEqual(res.body.notesCount, 0);
+		assert.strictEqual(res.body.usersCount, 0);
+	});
+
+	test('フラグを on にすると匿名でも stats の実データを返す', async () => {
+		await api('admin/update-meta', { allowAnonymousStats: true }, admin);
+		const res = await api('stats', {});
+		assert.strictEqual(res.status, 200);
+		assert.ok(res.body.usersCount > 0);
+		await api('admin/update-meta', { allowAnonymousStats: false }, admin);
+		const res2 = await api('stats', {});
+		assert.strictEqual(res2.body.usersCount, 0);
+	});
+
+	test('匿名は get-online-users-count のフラグが off の間 0', async () => {
+		const res = await api('get-online-users-count', {});
+		assert.strictEqual(res.status, 200);
+		assert.strictEqual(res.body.count, 0);
+	});
+
+	test('フラグを on にすると匿名でもオンライン数を返す', async () => {
+		await api('admin/update-meta', { allowAnonymousOnlineUsersCount: true }, admin);
+		const res = await api('get-online-users-count', {});
+		assert.strictEqual(res.status, 200);
+		assert.ok(res.body.count >= 1);
+		await api('admin/update-meta', { allowAnonymousOnlineUsersCount: false }, admin);
+	});
+
+	test('匿名は charts/notes のフラグが off の間空のチャート', async () => {
+		const res = await api('charts/notes', { span: 'day', limit: 1 }, undefined);
+		assert.strictEqual(res.status, 200);
+		assert.deepStrictEqual(res.body.local.inc, []);
+	});
+
+	test('フラグを on にすると匿名でも charts/notes を返す', async () => {
+		await api('admin/update-meta', { allowAnonymousChartNotes: true }, admin);
+		const res = await api('charts/notes', { span: 'day', limit: 1 }, undefined);
+		assert.strictEqual(res.status, 200);
+		assert.ok(Array.isArray(res.body.local.inc) && res.body.local.inc.length === 1);
+		await api('admin/update-meta', { allowAnonymousChartNotes: false }, admin);
+	});
+
+	test('他のチャートのフラグは独立(charts/users を on にしても charts/notes は遮断のまま)', async () => {
+		await api('admin/update-meta', { allowAnonymousChartUsers: true }, admin);
+		const notesRes = await api('charts/notes', { span: 'day', limit: 1 }, undefined);
+		assert.deepStrictEqual(notesRes.body.local.inc, []);
+		await api('admin/update-meta', { allowAnonymousChartUsers: false }, admin);
+	});
+
+	test('ログイン済みユーザーはフラグに関係なく取得できる', async () => {
+		const res = await api('stats', {}, admin);
+		assert.strictEqual(res.status, 200);
+		assert.ok(res.body.usersCount > 0);
+	});
+});
