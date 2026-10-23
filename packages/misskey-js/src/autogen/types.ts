@@ -11635,6 +11635,8 @@ export interface operations {
                         }[];
                         requireSignedApFetch: boolean;
                         allowUnregisteredApSignerVerification: boolean;
+                        allowAnonymousFederationInstances: boolean;
+                        allowAnonymousFeatured: boolean;
                     };
                 };
             };
@@ -15371,6 +15373,8 @@ export interface operations {
                     hanaModeBackground?: string | null;
                     requireSignedApFetch?: boolean;
                     allowUnregisteredApSignerVerification?: boolean;
+                    allowAnonymousFederationInstances?: boolean;
+                    allowAnonymousFeatured?: boolean;
                     customSplashText?: string[] | null;
                     defaultFollowedUsers?: string[] | null;
                     forciblyFollowedUsers?: string[] | null;

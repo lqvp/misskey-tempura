@@ -7383,6 +7383,22 @@ export interface Locale extends ILocale {
          */
         "allowUnregisteredApSignerVerification_description": string;
         /**
+         * federation/instances の匿名公開
+         */
+        "allowAnonymousFederationInstances": string;
+        /**
+         * 有効にすると、ログインしていない人もインスタンス一覧(/api/federation/instances)を取得できます。entranceShowFederation とは独立に制御されます。
+         */
+        "allowAnonymousFederationInstances_description": string;
+        /**
+         * featured の匿名公開
+         */
+        "allowAnonymousFeatured": string;
+        /**
+         * 有効にすると、ログインしていない人も注目のノート(/api/notes/featured)を取得できます。entranceShowFeatured とは独立に制御されます。
+         */
+        "allowAnonymousFeatured_description": string;
+        /**
          * リモートファイルをプロキシする
          */
         "proxyRemoteFiles": string;
