@@ -38,7 +38,7 @@ describe('visitor visibility before limits', () => {
 			innerJoinAndSelect: () => query, leftJoinAndSelect: () => query,
 			getMany: async () => rows.filter(n => ids.includes(n.id) && (!local || n.userHost == null)),
 		};
-		const endpoint = new FeaturedEndpoint({ entranceShowFeatured: true } as any, { createQueryBuilder: () => query } as any, {} as any,
+		const endpoint = new FeaturedEndpoint({ allowAnonymousFeatured: true } as any, { createQueryBuilder: () => query } as any, {} as any,
 			{ packMany: async (notes: any) => notes } as any, { getGlobalNotesRanking: async () => rows.map(n => n.id) } as any,
 			{ generateBlockedHostQueryForNote: () => {}, generateSuspendedUserQueryForNote: () => {}, generateUgcVisibilityQueryForVisitor: () => { local = true; } } as any);
 		expect(await endpoint.exec({ limit: 2 }, null, null)).toEqual(rows.slice(2));
