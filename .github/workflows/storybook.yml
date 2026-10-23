@@ -159,6 +159,12 @@ jobs:
         # upload-artifact はシンボリックリンクを保存しないため、
         # 成果物経由のパストラバーサルは成立しない。
         path: packages/frontend/storybook-static
+    - name: Create minimal project manifest
+      working-directory: packages/frontend
+      # chromatic CLI は package.json を上位に要求する。チェックアウトしない
+      # このジョブではワークフロー側が最小のマニフェストを生成する
+      # (PR 由来の package.json / chromatic.config.json は使わない)。
+      run: printf '{"name":"chromatic-publish","private":true,"version":"0.0.0"}' > package.json
     - name: Publish to Chromatic
       id: chromatic
       working-directory: packages/frontend
