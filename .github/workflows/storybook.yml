@@ -43,11 +43,13 @@ jobs:
       with:
         fetch-depth: 0
         submodules: true
+        persist-credentials: false
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       if: github.event_name == 'pull_request_target'
       with:
         fetch-depth: 0
         submodules: true
+        persist-credentials: false
         ref: "refs/pull/${{ github.event.number }}/merge"
     - name: Checkout actual HEAD
       if: github.event_name == 'pull_request_target'
@@ -178,10 +180,12 @@ jobs:
         set -euo pipefail
         REPO_URL="https://github.com/${{ github.repository }}.git"
         git init -q .
+        # blob なしの部分取得で全履歴を持つ (chromatic がベースライン解決に
+        # 履歴を必要とする)。作業ツリーには一切展開しない。
         if [ "$EVENT_NAME" = "pull_request_target" ]; then
-          git fetch -q --depth 1 "$REPO_URL" "refs/pull/${PR_NUMBER}/head"
+          git fetch -q --filter=blob:none "$REPO_URL" "refs/pull/${PR_NUMBER}/head"
         else
-          git fetch -q --depth 1 "$REPO_URL" "$COMMIT_SHA"
+          git fetch -q --filter=blob:none "$REPO_URL" "$COMMIT_SHA"
         fi
         git update-ref refs/heads/chromatic-publish FETCH_HEAD
         git symbolic-ref HEAD refs/heads/chromatic-publish
