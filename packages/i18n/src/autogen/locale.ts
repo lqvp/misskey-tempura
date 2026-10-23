@@ -7383,6 +7383,78 @@ export interface Locale extends ILocale {
          */
         "allowUnregisteredApSignerVerification_description": string;
         /**
+         * 統計情報の匿名公開
+         */
+        "allowAnonymousStats": string;
+        /**
+         * 有効にすると、ログインしていない人もサーバー統計情報(/api/stats)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousStats_description": string;
+        /**
+         * オンラインユーザー数の匿名公開
+         */
+        "allowAnonymousOnlineUsersCount": string;
+        /**
+         * 有効にすると、ログインしていない人もオンラインユーザー数を取得できます。初期値は無効です。
+         */
+        "allowAnonymousOnlineUsersCount_description": string;
+        /**
+         * アクティブユーザーチャートの匿名公開
+         */
+        "allowAnonymousChartActiveUsers": string;
+        /**
+         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartActiveUsers_description": string;
+        /**
+         * ActivityPubリクエストチャートの匿名公開
+         */
+        "allowAnonymousChartApRequest": string;
+        /**
+         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartApRequest_description": string;
+        /**
+         * ドライブチャートの匿名公開
+         */
+        "allowAnonymousChartDrive": string;
+        /**
+         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartDrive_description": string;
+        /**
+         * 連合チャートの匿名公開
+         */
+        "allowAnonymousChartFederation": string;
+        /**
+         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartFederation_description": string;
+        /**
+         * インスタンスチャートの匿名公開
+         */
+        "allowAnonymousChartInstance": string;
+        /**
+         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartInstance_description": string;
+        /**
+         * ノートチャートの匿名公開
+         */
+        "allowAnonymousChartNotes": string;
+        /**
+         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartNotes_description": string;
+        /**
+         * ユーザーチャートの匿名公開
+         */
+        "allowAnonymousChartUsers": string;
+        /**
+         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartUsers_description": string;
+        /**
          * リモートファイルをプロキシする
          */
         "proxyRemoteFiles": string;

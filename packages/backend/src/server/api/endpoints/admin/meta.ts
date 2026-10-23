@@ -956,6 +956,42 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			allowAnonymousStats: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousOnlineUsersCount: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousChartActiveUsers: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousChartApRequest: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousChartDrive: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousChartFederation: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousChartInstance: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousChartNotes: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousChartUsers: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
 		},
 	},
 } as const;
@@ -1158,6 +1194,15 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				requireSignedApFetch: instance.requireSignedApFetch,
 				allowUnregisteredApSignerVerification:
 					instance.allowUnregisteredApSignerVerification,
+				allowAnonymousStats: instance.allowAnonymousStats,
+				allowAnonymousOnlineUsersCount: instance.allowAnonymousOnlineUsersCount,
+				allowAnonymousChartActiveUsers: instance.allowAnonymousChartActiveUsers,
+				allowAnonymousChartApRequest: instance.allowAnonymousChartApRequest,
+				allowAnonymousChartDrive: instance.allowAnonymousChartDrive,
+				allowAnonymousChartFederation: instance.allowAnonymousChartFederation,
+				allowAnonymousChartInstance: instance.allowAnonymousChartInstance,
+				allowAnonymousChartNotes: instance.allowAnonymousChartNotes,
+				allowAnonymousChartUsers: instance.allowAnonymousChartUsers,
 				customSplashText: instance.customSplashText,
 				blockMentionsFromUnfamiliarRemoteUsers:
 					instance.blockMentionsFromUnfamiliarRemoteUsers,

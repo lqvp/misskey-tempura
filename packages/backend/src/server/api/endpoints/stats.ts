@@ -4,7 +4,7 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { InstancesRepository, NoteReactionsRepository } from '@/models/_.js';
+import type { InstancesRepository, MiMeta, NoteReactionsRepository } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 import NotesChart from '@/core/chart/charts/notes.js';
@@ -70,6 +70,8 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
+		@Inject(DI.meta)
+		private serverSettings: MiMeta,
 		@Inject(DI.instancesRepository)
 		private instancesRepository: InstancesRepository,
 
@@ -80,7 +82,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private usersChart: UsersChart,
 	) {
 		super(meta, paramDef, async (me) => {
-			if (!me) {
+			if (!me && !this.serverSettings.allowAnonymousStats) {
 				return {
 					notesCount: 0,
 					originalNotesCount: 0,
