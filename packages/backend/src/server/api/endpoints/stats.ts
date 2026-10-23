@@ -81,7 +81,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private notesChart: NotesChart,
 		private usersChart: UsersChart,
 	) {
-		super(meta, paramDef, async (me) => {
+		super(meta, paramDef, async (ps, me) => {
 			if (!me && !this.serverSettings.allowAnonymousStats) {
 				return {
 					notesCount: 0,
