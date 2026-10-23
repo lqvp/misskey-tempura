@@ -7527,6 +7527,34 @@ export interface Locale extends ILocale {
          */
         "allowAnonymousLocalTimeline_description": string;
         /**
+         * 匿名アクセスの公開設定
+         */
+        "anonymousVisitorAccess": string;
+        /**
+         * 統計・チャート
+         */
+        "anonymousVisitorAccessStats": string;
+        /**
+         * 連合
+         */
+        "anonymousVisitorAccessFederation": string;
+        /**
+         * ノート・タイムライン
+         */
+        "anonymousVisitorAccessNotes": string;
+        /**
+         * すべて on
+         */
+        "anonymousAccessGroupAllOn": string;
+        /**
+         * すべて off
+         */
+        "anonymousAccessGroupAllOff": string;
+        /**
+         * カスタム(混合)
+         */
+        "anonymousAccessGroupCustom": string;
+        /**
          * リモートファイルをプロキシする
          */
         "proxyRemoteFiles": string;
