@@ -1,0 +1,39 @@
+name: Storybook build verification
+
+on:
+  pull_request:
+    paths:
+      - 'packages/frontend/**'
+      - 'packages/frontend-shared/**'
+      - 'packages/i18n/**'
+      - 'pnpm-lock.yaml'
+      - '.github/workflows/storybook-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  storybook-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NODE_OPTIONS: '--max_old_space_size=7168'
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          submodules: true
+      - uses: pnpm/action-setup@v6.0.10
+      - uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: '.node-version'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: git diff --exit-code pnpm-lock.yaml
+      - run: pnpm -F i18n -F misskey-js -F misskey-bubble-game -F misskey-reversi build
+      - run: pnpm --filter frontend build-storybook
+      - uses: actions/upload-artifact@v4
+        with:
+          name: storybook-static
+          path: packages/frontend/storybook-static
+          retention-days: 3
