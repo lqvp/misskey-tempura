@@ -12,15 +12,27 @@ on:
       # This is a waste of chromatic build quota, so we don't run storybook CI on pull requests targets master.
       - master
 
+# 既定では一切の権限を付与しない。必要なジョブで個別に許可する。
+permissions: {}
+
 jobs:
   build:
     # リポジトリ変数 CHROMATIC_ENABLED=true が設定された場合のみ実行する。
-    # 実行には CHROMATIC_PROJECT_TOKEN シークレットと CHROMATIC_APP_ID 変数が必要。
+    # このジョブは pull_request_target であってもシークレットを一切参照しない。
+    # PR 由来のコード (依存関係・changes.js を含む) を実行してよいのは、
+    # シークレットが存在しないこのジョブだけ。
     if: vars.CHROMATIC_ENABLED == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     env:
       NODE_OPTIONS: "--max_old_space_size=7168"
+
+    outputs:
+      chromatic_skip: ${{ steps.params.outputs.skip }}
+      only_story_files: ${{ steps.params.outputs.only_story_files }}
+      branch_name: ${{ steps.params.outputs.branch_name }}
 
     steps:
     - uses: actions/checkout@v7.0.1
@@ -51,48 +63,144 @@ jobs:
       run: pnpm -F misskey-js -F misskey-bubble-game -F misskey-reversi build
     - name: Build storybook
       run: pnpm --filter frontend build-storybook
+    - name: Compute Chromatic parameters
+      id: params
+      env:
+        HEAD_USER_LOGIN: ${{ github.event.pull_request.head.user.login }}
+      run: |
+        set -euo pipefail
+        cd packages/frontend
+        FILES=""
+        BRANCH=""
+        if [ "${{ github.event_name }}" = "pull_request_target" ]; then
+          FILES="$(git diff --name-only "origin/${GITHUB_BASE_REF}...origin/${GITHUB_HEAD_REF}" | xargs || true)"
+          BRANCH="${HEAD_USER_LOGIN}:${GITHUB_HEAD_REF}"
+          if [ "$BRANCH" = "misskey-dev:${GITHUB_HEAD_REF}" ]; then
+            BRANCH="${GITHUB_HEAD_REF}"
+          fi
+        elif [ "${{ github.ref }}" != "refs/heads/master" ]; then
+          DIFF="${{ github.event.before }} HEAD"
+          if [ "$DIFF" = "0000000000000000000000000000000000000000 HEAD" ]; then
+            DIFF="HEAD"
+          fi
+          FILES="$(git diff-tree --no-commit-id --name-only -r $(echo "$DIFF") | xargs || true)"
+        fi
+        # master への push では changes.js を実行しない (従来どおり全ストーリー対象)。
+        RAW=""
+        if [ -n "$FILES" ]; then
+          RAW="$(node .storybook/changes.js $FILES || true)"
+        fi
+        # 出力を厳格に検査する。許可するのは `--skip` と
+        # `--only-story-files ./src/...stories.ts` の組だけ。
+        # PR は変更ファイル名を制御できるため、ここで受け入れる文字種を限定し、
+        # publish ジョブに任意のフラグやシェル文字を渡させない。
+        SKIP="false"
+        PARAMS_FILE="$(mktemp)"
+        expect_path="false"
+        for tok in $RAW; do
+          if [ "$expect_path" = "true" ]; then
+            if [[ "$tok" =~ ^\./src/[A-Za-z0-9_./@%+-]+\.stories\.ts$ ]]; then
+              echo "$tok" >> "$PARAMS_FILE"
+              expect_path="false"
+            else
+              echo "refusing unsafe --only-story-files value: $tok" >&2
+              exit 1
+            fi
+          elif [ "$tok" = "--skip" ]; then
+            SKIP="true"
+          elif [ "$tok" = "--only-story-files" ]; then
+            expect_path="true"
+          else
+            echo "refusing unexpected token from changes.js: $tok" >&2
+            exit 1
+          fi
+        done
+        if [ "$expect_path" = "true" ]; then
+          echo "dangling --only-story-files flag from changes.js" >&2
+          exit 1
+        fi
+        if [ -n "$BRANCH" ]; then
+          if [[ ! "$BRANCH" =~ ^[A-Za-z0-9._:/-]+$ ]]; then
+            echo "refusing unsafe branch name" >&2
+            exit 1
+          fi
+          echo "branch_name=$BRANCH" >> "$GITHUB_OUTPUT"
+        fi
+        echo "skip=$SKIP" >> "$GITHUB_OUTPUT"
+        echo "only_story_files<<PARAMS_EOF" >> "$GITHUB_OUTPUT"
+        cat "$PARAMS_FILE" >> "$GITHUB_OUTPUT"
+        echo "PARAMS_EOF" >> "$GITHUB_OUTPUT"
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v7
+      with:
+        name: storybook
+        path: packages/frontend/storybook-static
+
+  publish:
+    # 信頼境界: このジョブはリポジトリをチェックアウトせず、PR 由来のコード・
+    # パッケージスクリプト・lockfile・node_modules を一切実行しない。
+    # build ジョブの生成物 (storybook-static) と、バージョン固定した
+    # chromatic CLI だけを使って公開する。
+    # 実行には CHROMATIC_PROJECT_TOKEN シークレットが必要。
+    # 通知リンク用の CHROMATIC_APP_ID はリポジトリ変数から参照する。
+    if: vars.CHROMATIC_ENABLED == 'true'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions: {}
+
+    steps:
+    - name: Download storybook artifact
+      uses: actions/download-artifact@v7
+      with:
+        name: storybook
+        path: storybook-static
     - name: Publish to Chromatic
-      if: github.event_name != 'pull_request_target' && github.ref == 'refs/heads/master'
-      run: pnpm --filter frontend chromatic --exit-once-uploaded -d storybook-static
+      id: chromatic
       env:
         CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
-    - name: Publish to Chromatic
-      if: github.event_name != 'pull_request_target' && github.ref != 'refs/heads/master'
-      id: chromatic_push
+        ONLY_STORY_FILES: ${{ needs.build.outputs.only_story_files }}
+        BRANCH_NAME: ${{ needs.build.outputs.branch_name }}
+        CHROMATIC_SKIP: ${{ needs.build.outputs.chromatic_skip }}
       run: |
-        DIFF="${{ github.event.before }} HEAD"
-        if [ "$DIFF" = "0000000000000000000000000000000000000000 HEAD" ]; then
-          DIFF="HEAD"
+        set -uo pipefail
+        ARGS=(-d storybook-static)
+        if [ "${CHROMATIC_SKIP:-}" = "true" ]; then
+          ARGS+=(--skip)
         fi
-        CHROMATIC_PARAMETER="$(node packages/frontend/.storybook/changes.js $(git diff-tree --no-commit-id --name-only -r $(echo "$DIFF") | xargs))"
-        if [ "$CHROMATIC_PARAMETER" = " --skip" ]; then
-          echo "skip=true" >> $GITHUB_OUTPUT
+        if [ -n "${ONLY_STORY_FILES:-}" ]; then
+          while IFS= read -r p; do
+            if [ -n "$p" ]; then
+              ARGS+=(--only-story-files "$p")
+            fi
+          done <<< "$ONLY_STORY_FILES"
         fi
-        if pnpm --filter frontend chromatic -d storybook-static $(echo "$CHROMATIC_PARAMETER"); then
-          echo "success=true" >> $GITHUB_OUTPUT
+        if [ "${{ github.event_name }}" = "pull_request_target" ]; then
+          ARGS+=(--exit-once-uploaded --branch-name "$BRANCH_NAME")
+        elif [ "${{ github.ref }}" = "refs/heads/master" ]; then
+          ARGS+=(--exit-once-uploaded)
+        fi
+        # lockfile の chromatic バージョンに合わせて固定する (packages/frontend/package.json)。
+        if npm exec --yes --package=chromatic@18.7.1 -- chromatic "${ARGS[@]}"; then
+          echo "success=true" >> "$GITHUB_OUTPUT"
         else
-          echo "success=false" >> $GITHUB_OUTPUT
+          echo "success=false" >> "$GITHUB_OUTPUT"
         fi
-      env:
-        CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
-    - name: Publish to Chromatic
-      if: github.event_name == 'pull_request_target'
-      id: chromatic_pull_request
-      run: |
-        CHROMATIC_PARAMETER="$(node packages/frontend/.storybook/changes.js $(git diff --name-only origin/${GITHUB_BASE_REF}...origin/${GITHUB_HEAD_REF} | xargs))"
-        if [ "$CHROMATIC_PARAMETER" = " --skip" ]; then
-          echo "skip=true" >> $GITHUB_OUTPUT
-        fi
-        BRANCH="${{ github.event.pull_request.head.user.login }}:$GITHUB_HEAD_REF"
-        if [ "$BRANCH" = "misskey-dev:$GITHUB_HEAD_REF" ]; then
-          BRANCH="$GITHUB_HEAD_REF"
-        fi
-        pnpm --filter frontend chromatic --exit-once-uploaded -d storybook-static --branch-name "$BRANCH" $(echo "$CHROMATIC_PARAMETER")
-      env:
-        CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+    outputs:
+      success: ${{ steps.chromatic.outputs.success }}
+
+  notify:
+    # push 時に Chromatic が変更を検出した場合だけコミットコメントを投稿する。
+    # 書き込み権限を持つのはこのジョブだけで、PR (pull_request_target) では
+    # 実行されない。
+    if: vars.CHROMATIC_ENABLED == 'true' && github.event_name != 'pull_request_target' && needs.publish.outputs.success == 'false'
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
     - name: Notify that Chromatic detects changes
       uses: actions/github-script@v9
-      if: github.event_name != 'pull_request_target' && steps.chromatic_push.outputs.success == 'false'
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -102,8 +210,3 @@ jobs:
             commit_sha: context.sha,
             body: 'Chromatic detects changes. Please [review the changes on Chromatic](https://www.chromatic.com/builds?appId=${{ vars.CHROMATIC_APP_ID }}).'
           })
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v7
-      with:
-        name: storybook
-        path: packages/frontend/storybook-static
