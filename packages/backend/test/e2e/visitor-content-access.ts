@@ -8,7 +8,7 @@ process.env.NODE_ENV = 'test';
 import * as assert from 'assert';
 import { afterEach, beforeAll, describe, test } from 'vitest';
 import { MiUser, MiUserProfile } from '@/models/_.js';
-import { api, initTestDb, post, signup } from '../utils.js';
+import { api, castAsError, initTestDb, post, signup } from '../utils.js';
 import type * as misskey from 'misskey-js';
 
 // Pages / Clips / Channels / ユーザー検索の匿名アクセスは、訪問者への公開範囲
@@ -124,20 +124,20 @@ describe('visitor content access floor (pages/clips/channels/user search)', () =
 			try {
 				const page = await api('pages/show', { pageId });
 				assert.strictEqual(page.status, 400);
-				assert.strictEqual(page.body.error.code, 'NO_SUCH_PAGE');
+				assert.strictEqual(castAsError(page.body as any).error.code, 'NO_SUCH_PAGE');
 				const pagesFeatured = await api('pages/featured', {});
 				assert.deepStrictEqual(pagesFeatured.body, []);
 
 				const clip = await api('clips/show', { clipId });
 				assert.strictEqual(clip.status, 400);
-				assert.strictEqual(clip.body.error.code, 'NO_SUCH_CLIP');
+				assert.strictEqual(castAsError(clip.body as any).error.code, 'NO_SUCH_CLIP');
 				const clipNotes = await api('clips/notes', { clipId });
 				assert.strictEqual(clipNotes.status, 400);
-				assert.strictEqual(clipNotes.body.error.code, 'NO_SUCH_CLIP');
+				assert.strictEqual(castAsError(clipNotes.body as any).error.code, 'NO_SUCH_CLIP');
 
 				const channel = await api('channels/show', { channelId });
 				assert.strictEqual(channel.status, 400);
-				assert.strictEqual(channel.body.error.code, 'NO_SUCH_CHANNEL');
+				assert.strictEqual(castAsError(channel.body as any).error.code, 'NO_SUCH_CHANNEL');
 				const channelsFeatured = await api('channels/featured', {});
 				assert.deepStrictEqual(channelsFeatured.body, []);
 
