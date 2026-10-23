@@ -5,12 +5,11 @@
 
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import { action } from 'storybook/actions';
-import type { StoryObj } from '@storybook/vue3';
 import MkDraggable from './MkDraggable.vue';
-// NOTE: MkDraggable はジェネリックコンポーネントのため StoryObj<typeof ...> の satisfies が
-// TS2322 になる。型引数なしの StoryObj 注釈で回避する。
-export const Default: StoryObj = {
-	render(args) {
+// NOTE: MkDraggable はジェネリックコンポーネントのため StoryObj 系の型注釈/satisfies が
+// TS2322 になる。素のオブジェクトとして export し、render の args に明示的な型を付ける。
+export const Default = {
+	render(args: { modelValue: { id: string; name: string }[]; direction: string }) {
 		return {
 			components: {
 				MkDraggable,
