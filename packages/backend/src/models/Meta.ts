@@ -894,6 +894,21 @@ export class MiMeta {
 	})
 	public allowUnregisteredApSignerVerification: boolean;
 
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousFederationUsers: boolean;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousFederationStats: boolean;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousShowInstance: boolean;
+
 	@Column('varchar', {
 		length: 1024,
 		array: true,

@@ -956,6 +956,18 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			allowAnonymousFederationUsers: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousFederationStats: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousShowInstance: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
 		},
 	},
 } as const;
@@ -1158,6 +1170,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				requireSignedApFetch: instance.requireSignedApFetch,
 				allowUnregisteredApSignerVerification:
 					instance.allowUnregisteredApSignerVerification,
+				allowAnonymousFederationUsers: instance.allowAnonymousFederationUsers,
+				allowAnonymousFederationStats: instance.allowAnonymousFederationStats,
+				allowAnonymousShowInstance: instance.allowAnonymousShowInstance,
 				customSplashText: instance.customSplashText,
 				blockMentionsFromUnfamiliarRemoteUsers:
 					instance.blockMentionsFromUnfamiliarRemoteUsers,

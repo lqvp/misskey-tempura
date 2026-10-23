@@ -282,6 +282,9 @@ export const paramDef = {
 		hanaModeBackground: { type: 'string', nullable: true },
 		requireSignedApFetch: { type: 'boolean' },
 		allowUnregisteredApSignerVerification: { type: 'boolean' },
+		allowAnonymousFederationUsers: { type: 'boolean' },
+		allowAnonymousFederationStats: { type: 'boolean' },
+		allowAnonymousShowInstance: { type: 'boolean' },
 		customSplashText: { type: 'array', nullable: true, items: {
 			type: 'string',
 		} },
@@ -1012,6 +1015,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.allowUnregisteredApSignerVerification !== undefined) {
 				set.allowUnregisteredApSignerVerification = ps.allowUnregisteredApSignerVerification;
+			}
+
+			if (ps.allowAnonymousFederationUsers !== undefined) {
+				set.allowAnonymousFederationUsers = ps.allowAnonymousFederationUsers;
+			}
+
+			if (ps.allowAnonymousFederationStats !== undefined) {
+				set.allowAnonymousFederationStats = ps.allowAnonymousFederationStats;
+			}
+
+			if (ps.allowAnonymousShowInstance !== undefined) {
+				set.allowAnonymousShowInstance = ps.allowAnonymousShowInstance;
 			}
 
 			if (Array.isArray(ps.customSplashText)) {

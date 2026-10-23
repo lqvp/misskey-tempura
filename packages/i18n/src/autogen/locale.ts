@@ -7383,6 +7383,30 @@ export interface Locale extends ILocale {
          */
         "allowUnregisteredApSignerVerification_description": string;
         /**
+         * 連合ユーザー一覧の匿名公開
+         */
+        "allowAnonymousFederationUsers": string;
+        /**
+         * 有効にすると、ログインしていない人もリモートユーザーの一覧(/api/federation/users)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousFederationUsers_description": string;
+        /**
+         * 連合統計の匿名公開
+         */
+        "allowAnonymousFederationStats": string;
+        /**
+         * 有効にすると、ログインしていない人も連合の統計(/api/federation/stats)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousFederationStats_description": string;
+        /**
+         * インスタンス情報の匿名公開
+         */
+        "allowAnonymousShowInstance": string;
+        /**
+         * 有効にすると、ログインしていない人も個別インスタンスの情報(/api/federation/show-instance)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousShowInstance_description": string;
+        /**
          * リモートファイルをプロキシする
          */
         "proxyRemoteFiles": string;
