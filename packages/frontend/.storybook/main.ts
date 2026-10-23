@@ -34,8 +34,10 @@ const config = {
 			config.plugins?.splice(replacePluginForIsChromatic, 1);
 		}
 
-		//pluginsからcreateSearchIndexを削除、複数あるかもしれないので全て削除
-		config.plugins = config.plugins?.filter((plugin: PluginOption) => pluginName(plugin) !== 'createSearchIndex') ?? [];
+		// Storybookでは不要な本番ビルド向けpluginを削除、複数あるかもしれないので全て削除
+		// (UnwindCssModuleClassName は renderChunk での再parseがTLAを含むchunkで失敗するため)
+		const unnecessaryPlugins = new Set(['createSearchIndex', 'UnwindCssModuleClassName']);
+		config.plugins = config.plugins?.filter((plugin: PluginOption) => !unnecessaryPlugins.has(pluginName(plugin) ?? '')) ?? [];
 
 		return mergeConfig(config, {
 			plugins: [
