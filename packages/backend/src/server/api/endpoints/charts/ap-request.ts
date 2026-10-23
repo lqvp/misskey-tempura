@@ -3,9 +3,11 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { getJsonSchema } from '@/core/chart/core.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
+import { DI } from '@/di-symbols.js';
+import type { MiMeta } from '@/models/_.js';
 import ApRequestChart from '@/core/chart/charts/ap-request.js';
 import { schema } from '@/core/chart/charts/entities/ap-request.js';
 
@@ -31,10 +33,12 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
+		@Inject(DI.meta)
+		private serverSettings: MiMeta,
 		private apRequestChart: ApRequestChart,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			if (!me) {
+			if (!me && !this.serverSettings.allowAnonymousChartApRequest) {
 				return {
 					deliveredInstances: [],
 					inboxInstances: [],

@@ -6,7 +6,7 @@
 import { MoreThan } from 'typeorm';
 import { Inject, Injectable } from '@nestjs/common';
 import { USER_ONLINE_THRESHOLD } from '@/const.js';
-import type { UsersRepository } from '@/models/_.js';
+import type { MiMeta, UsersRepository } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 
@@ -36,11 +36,13 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
+		@Inject(DI.meta)
+		private serverSettings: MiMeta,
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
 	) {
 		super(meta, paramDef, async (me) => {
-			if (!me) {
+			if (!me && !this.serverSettings.allowAnonymousOnlineUsersCount) {
 				return {
 					count: 0,
 				};
