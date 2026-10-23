@@ -39,4 +39,6 @@ export const Default = {
 	parameters: {
 		layout: 'centered',
 	},
-} satisfies StoryObj;  // ジェネリックコンポーネントのため StoryObj 型引数は付けない (TS2322 回避)
+}
+// NOTE: MkDraggable はジェネリックコンポーネントのため StoryObj<typeof ...> の satisfies が
+// TS2322 になる。型注釈を付けず素のオブジェクトとして export する。
