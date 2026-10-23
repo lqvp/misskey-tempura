@@ -82,7 +82,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				detail: true,
 			});
 
-
 			return packedNote;
 		});
 	}

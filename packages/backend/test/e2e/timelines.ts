@@ -3008,7 +3008,7 @@ describe('Timelines', () => {
 				await redisForTimelines.del('list:userTimeline:' + alice.id);
 				const note3 = await post(alice, { text: '3' });
 
-				const res = await api('users/notes', { userId: alice.id, sinceId: noteSince.id });
+				const res = await api('users/notes', { userId: alice.id, sinceId: noteSince.id }, alice);
 				assert.deepStrictEqual(res.body, [note1, note2, note3]);
 			});
 
@@ -3022,7 +3022,7 @@ describe('Timelines', () => {
 				const noteUntil = await post(alice, { text: 'Note where id will be `untilId`.' });
 				await post(alice, { text: '4' });
 
-				const res = await api('users/notes', { userId: alice.id, sinceId: noteSince.id, untilId: noteUntil.id });
+				const res = await api('users/notes', { userId: alice.id, sinceId: noteSince.id, untilId: noteUntil.id }, alice);
 				assert.deepStrictEqual(res.body, [note3, note2, note1]);
 			});
 
