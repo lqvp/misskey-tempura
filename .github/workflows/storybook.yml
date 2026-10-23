@@ -153,14 +153,21 @@ jobs:
       uses: actions/download-artifact@v7
       with:
         name: storybook
-        path: storybook-static
+        # 旧ジョブと同じ packages/frontend 基準のパスレイアウトに置く。
+        # upload-artifact はシンボリックリンクを保存しないため、
+        # 成果物経由のパストラバーサルは成立しない。
+        path: packages/frontend/storybook-static
     - name: Publish to Chromatic
       id: chromatic
+      working-directory: packages/frontend
       env:
         CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
         ONLY_STORY_FILES: ${{ needs.build.outputs.only_story_files }}
         BRANCH_NAME: ${{ needs.build.outputs.branch_name }}
         CHROMATIC_SKIP: ${{ needs.build.outputs.chromatic_skip }}
+        # 固定バージョンの chromatic 本体だけを信用し、依存ツリーの
+        # ライフサイクルスクリプトは一切実行しない。
+        npm_config_ignore_scripts: "true"
       run: |
         set -uo pipefail
         ARGS=(-d storybook-static)
