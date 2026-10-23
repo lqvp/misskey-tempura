@@ -12,7 +12,7 @@ import type * as misskey from 'misskey-js';
 
 // #630 の設定 UI が前提とする18フラグについて、実サーバーで
 // admin/meta への公開と admin/update-meta の往復(永続化)を確認する。
-// allowAnonymousFeatured / allowAnonymousLocalTimeline は migration が
+// allowAnonymousFederationInstances / allowAnonymousFeatured は migration が
 // entrance 系設定の現行値を引き継ぐ設計のため、スキーマ初期値の assert は行わず
 // 「公開されていること」と「往復できること」のみを検証する。
 const FLAGS = [

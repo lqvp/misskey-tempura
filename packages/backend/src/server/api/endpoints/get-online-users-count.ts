@@ -41,7 +41,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
 	) {
-		super(meta, paramDef, async (me) => {
+		super(meta, paramDef, async (ps, me) => {
 			if (!me && !this.serverSettings.allowAnonymousOnlineUsersCount) {
 				return {
 					count: 0,
