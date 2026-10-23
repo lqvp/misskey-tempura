@@ -6,7 +6,9 @@
 process.env.NODE_ENV = 'test';
 
 import * as assert from 'assert';
+import { Redis } from 'ioredis';
 import { beforeAll, describe, test } from 'vitest';
+import { loadConfig } from '@/config.js';
 import { MiInstance } from '@/models/_.js';
 import { api, initTestDb, post, signup } from '../utils.js';
 import type * as misskey from 'misskey-js';
@@ -15,7 +17,7 @@ import type * as misskey from 'misskey-js';
 // 分離された個別フラグ(初期値は migration が entrance の現行値をコピー)で制御されること。
 describe('visitor entrance access separation', () => {
 	let admin: misskey.entities.SignupResponse;
-	let bob: misskey.entities.SignupResponse;
+	let note: misskey.entities.Note;
 
 	const REMOTE_HOST = 'entrance-remote.example';
 
@@ -23,11 +25,15 @@ describe('visitor entrance access separation', () => {
 		const db = await initTestDb(true);
 		// 最初のサインアップユーザーは管理者になる
 		admin = await signup({ username: 'admin_entrance' });
-		bob = await signup({ username: 'bob_entrance' });
 
-		const note = await post(admin, { text: 'entrance access target' });
-		// featured のランキングはリアクション駆動なので1件リアクションを付ける
-		await api('notes/reactions/create', { noteId: note.id, reaction: '❤️' }, bob);
+		note = await post(admin, { text: 'entrance access target' });
+		// featured のランキングはリアクション駆動かつ確率更新のため、
+		// 決定的にするためランキング(Redis)に直接登録する
+		const redis = new Redis(loadConfig().redis);
+		const featuredWindow = Math.floor(
+			(Date.now() - new Date('2023-01-01T00:00:00Z').getTime()) / (1000 * 60 * 60 * 24 * 3));
+		await redis.zadd(`featuredGlobalNotesRanking:${featuredWindow}`, 1, note.id);
+		redis.disconnect();
 		await db.getRepository(MiInstance).insert({
 			id: 'entranceremote01',
 			firstRetrievedAt: new Date(),
@@ -64,7 +70,7 @@ describe('visitor entrance access separation', () => {
 		await api('admin/update-meta', { allowAnonymousFeatured: true }, admin);
 		const res = await api('notes/featured', {});
 		assert.strictEqual(res.status, 200);
-		assert.ok(Array.isArray(res.body) && res.body.length >= 1);
+		assert.ok(Array.isArray(res.body) && res.body.some((x: misskey.entities.Note) => x.id === note.id));
 		await api('admin/update-meta', { allowAnonymousFeatured: false }, admin);
 		const res2 = await api('notes/featured', {});
 		assert.deepStrictEqual(res2.body, []);
