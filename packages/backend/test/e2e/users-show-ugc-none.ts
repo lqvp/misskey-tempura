@@ -25,7 +25,7 @@ describe('users/show ugcVisibilityForVisitor none', () => {
 		await api('admin/update-meta', { ugcVisibilityForVisitor: 'none' }, admin);
 		const res = await api('users/show', { username: 'admin_ugc' });
 		assert.notStrictEqual(res.status, 200);
-		assert.strictEqual(res.body.error.code, 'NO_SUCH_USER');
+		assert.strictEqual((res.body as any).error.code, 'NO_SUCH_USER');
 	});
 
 	test('none 設定中でもログイン済みなら取得できる', async () => {
