@@ -61,7 +61,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private queryService: QueryService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			if (!this.serverSettings.entranceShowFeatured && !me) {
+			if (!this.serverSettings.allowAnonymousFeatured && !me) {
 				return [];
 			}
 

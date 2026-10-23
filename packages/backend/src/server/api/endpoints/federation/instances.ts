@@ -88,7 +88,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (!me) {
 				// 未認証ユーザーの場合、metaの設定に応じて空配列にする
-				if (!metaData.entranceShowFederation) {
+				if (!metaData.allowAnonymousFederationInstances) {
 					return [];
 				}
 				// デフォルトのフィルタ条件を強制する

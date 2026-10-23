@@ -900,6 +900,7 @@ export class MiMeta {
 	public allowAnonymousStats: boolean;
 	public allowAnonymousFederationUsers: boolean;
 	public allowAnonymousReplies: boolean;
+	public allowAnonymousFederationInstances: boolean;
 
 	@Column('boolean', {
 		default: false,
@@ -944,6 +945,7 @@ export class MiMeta {
 	public allowAnonymousChartUsers: boolean;
 	public allowAnonymousShowInstance: boolean;
 	public allowAnonymousQuotes: boolean;
+	public allowAnonymousFeatured: boolean;
 
 	@Column('varchar', {
 		length: 1024,
