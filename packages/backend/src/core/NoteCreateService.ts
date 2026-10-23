@@ -678,8 +678,11 @@ export class NoteCreateService implements OnApplicationShutdown {
 			|| data.reply?.userHost === null || (this.isRenote(data) && this.isQuote(data) && data.renote.userHost === null) || false;
 
 		if (this.meta.blockMentionsFromUnfamiliarRemoteUsers && user.host !== null && willCauseNotification) {
-			const userEntity = await this.usersRepository.findOneBy({ id: user.id });
-			if ((userEntity?.followersCount ?? 0) === 0) {
+			// followersCount はリモートを含む総数なので、説明文どおり「ローカルフォロワー」の有無で判定する
+			const hasLocalFollower = await this.followingsRepository.exists({
+				where: { followeeId: user.id, followerHost: IsNull() },
+			});
+			if (!hasLocalFollower) {
 				this.logger.error('Request rejected because user has no local followers', { user: user.id, note: data });
 				throw new IdentifiableError('e11b3a16-f543-4885-8eb1-66cad131dbfd', 'Notes including mentions, replies, or renotes from remote users are not allowed until user has at least one local follower.');
 			}
