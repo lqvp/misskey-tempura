@@ -123,10 +123,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private apiLoggerService: ApiLoggerService,
 	) {
 		super(meta, paramDef, async (ps, me, _1, _2, _3, ip) => {
-			// ログイン時にusers/showできなくなってしまう
-			//if (this.serverSettings.ugcVisibilityForVisitor === 'none' && me == null) {
-			//	throw new ApiError(meta.errors.noSuchUser);
-			//}
+			// 匿名のみ拒否する(かつてログイン時も拒否してしまっていたためコメントアウトされていた)
+			if (this.serverSettings.ugcVisibilityForVisitor === 'none' && me == null) {
+				throw new ApiError(meta.errors.noSuchUser);
+			}
 
 			let user;
 
