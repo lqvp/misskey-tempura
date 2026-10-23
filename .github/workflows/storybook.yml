@@ -151,8 +151,10 @@ jobs:
         path: packages/frontend/storybook-static
 
   publish:
-    # 信頼境界: このジョブはリポジトリをチェックアウトせず、PR 由来のコード・
-    # パッケージスクリプト・lockfile・node_modules を一切実行しない。
+    # 信頼境界: このジョブは作業ツリーにリポジトリのファイルを一切展開せず
+    # (sparse-checkout: '' により .git のコミットメタデータのみ)、
+    # PR 由来のコード・パッケージスクリプト・lockfile・node_modules を
+    # 一切実行しない。
     # build ジョブの生成物 (storybook-static) と、バージョン固定した
     # chromatic CLI だけを使って公開する。
     # 実行には CHROMATIC_PROJECT_TOKEN シークレットが必要。
@@ -163,6 +165,27 @@ jobs:
     permissions: {}
 
     steps:
+    # chromatic CLI はコミットのメタデータ (git log) を必要とする。
+    # 作業ツリーは空のまま .git だけを取得し、認証情報は残さない。
+    # PR 由来のファイルは一切展開されず、取得するのは読み取り専用の
+    # コミット情報のみ。
+    - name: Fetch git metadata only
+      env:
+        PR_NUMBER: ${{ github.event.number }}
+        EVENT_NAME: ${{ github.event_name }}
+        COMMIT_SHA: ${{ needs.build.outputs.commit_sha }}
+      run: |
+        set -euo pipefail
+        REPO_URL="https://github.com/${{ github.repository }}.git"
+        git init -q .
+        if [ "$EVENT_NAME" = "pull_request_target" ]; then
+          git fetch -q --depth 1 "$REPO_URL" "refs/pull/${PR_NUMBER}/head"
+        else
+          git fetch -q --depth 1 "$REPO_URL" "$COMMIT_SHA"
+        fi
+        git update-ref refs/heads/chromatic-publish FETCH_HEAD
+        git symbolic-ref HEAD refs/heads/chromatic-publish
+        git --no-pager log -n 1 --format="%H %ct %ae %an"
     - name: Download storybook artifact
       uses: actions/download-artifact@v7
       with:
