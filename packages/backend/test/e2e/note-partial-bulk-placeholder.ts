@@ -54,7 +54,9 @@ describe('notes/show-partial-bulk placeholder consistency', () => {
 	});
 
 	test('hidePublicNotes のノートは pack のプレースホルダと同じく匿名にも件数を返す', async () => {
-		await api('i/update', { hidePublicNotes: true }, admin);
+		const updateRes = await api('i/update', { hidePublicNotes: true }, admin);
+		assert.strictEqual(updateRes.status, 200);
+		assert.strictEqual(updateRes.body.hidePublicNotes, true);
 		try {
 			const res = await api('notes/show-partial-bulk', { noteIds: [note.id] });
 			assert.strictEqual(res.status, 200);

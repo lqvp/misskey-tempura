@@ -20,7 +20,8 @@ export const meta = {
 	requireCredential: false,
 	kind: 'read:notes',
 	allowGet: true,
-	cacheSec: 3600,
+	// 匿名公開の設定変更が即時に反映されるよう、匿名応答はキャッシュさせない
+	noStoreWhenAnonymous: true,
 
 	res: {
 		type: 'array',

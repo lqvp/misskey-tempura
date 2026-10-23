@@ -73,6 +73,21 @@ describe('visitor federation access switches', () => {
 		assert.deepStrictEqual(res2.body, []);
 	});
 
+	test('ugcVisibilityForVisitor=none の間はフラグ on でも匿名には federation/users を返さない', async () => {
+		await api('admin/update-meta', { allowAnonymousFederationUsers: true, ugcVisibilityForVisitor: 'none' }, admin);
+		try {
+			const res = await api('federation/users', { host: REMOTE_HOST });
+			assert.strictEqual(res.status, 200);
+			assert.deepStrictEqual(res.body, []);
+			// ログイン済みは visitor ポリシーの影響を受けない
+			const res2 = await api('federation/users', { host: REMOTE_HOST }, admin);
+			assert.strictEqual(res2.status, 200);
+			assert.strictEqual(res2.body.length, 1);
+		} finally {
+			await api('admin/update-meta', { ugcVisibilityForVisitor: 'all' }, admin);
+		}
+	});
+
 	test('匿名は federation/show-instance のフラグが off の間 null', async () => {
 		// null 応答は 204 (No Content) として返る
 		const res = await api('federation/show-instance', { host: REMOTE_HOST });

@@ -98,7 +98,7 @@ describe('visitor stats access switches', () => {
 		assert.ok(res.body.reactionsCount >= 1);
 	});
 
-	describe('匿名チャート応答のキャッシュ抑止', () => {
+	describe('匿名応答のキャッシュ抑止', () => {
 		// 匿名公開の設定変更が即時に効くよう、ゲート付きチャートの匿名 GET は
 		// Cache-Control: no-store を返す(変更前に発行済みのキャッシュは TTL まで残り得る点に注意)
 		// instance はリモートインスタンスのチャートで host 必須
@@ -121,10 +121,26 @@ describe('visitor stats access switches', () => {
 			}
 		});
 
-		test('対象外エンドポイントの匿名 GET キャッシュは維持される(get-online-users-count)', async () => {
-			const res = await relativeFetch('api/get-online-users-count');
+		// 匿名公開の可否を設定で切り替えるこれらのエンドポイントも同じ方針
+		test('設定依存の4エンドポイントの匿名 GET も no-store を返す', async () => {
+			const targets = [
+				'api/federation/instances',
+				'api/federation/stats',
+				'api/notes/featured',
+				'api/get-online-users-count',
+			];
+			for (const ep of targets) {
+				const res = await relativeFetch(ep);
+				assert.strictEqual(res.status, 200, `${ep}: status=${res.status}`);
+				assert.strictEqual(res.headers.get('cache-control'), 'no-store',
+					`${ep}: cache-control=${res.headers.get('cache-control')}`);
+			}
+		});
+
+		test('対象外エンドポイントの匿名 GET キャッシュは維持される(emojis)', async () => {
+			const res = await relativeFetch('api/emojis');
 			assert.strictEqual(res.status, 200, `status=${res.status}`);
-			assert.strictEqual(res.headers.get('cache-control'), 'public, max-age=60',
+			assert.strictEqual(res.headers.get('cache-control'), 'public, max-age=3600',
 				`cache-control=${res.headers.get('cache-control')}`);
 		});
 	});

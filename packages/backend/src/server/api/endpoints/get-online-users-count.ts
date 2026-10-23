@@ -14,7 +14,8 @@ export const meta = {
 	tags: ['meta'],
 
 	allowGet: true,
-	cacheSec: 60 * 1,
+	// 匿名公開の設定変更が即時に反映されるよう、匿名応答はキャッシュさせない
+	noStoreWhenAnonymous: true,
 	res: {
 		type: 'object',
 		optional: false, nullable: false,
