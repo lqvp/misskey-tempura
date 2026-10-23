@@ -7,7 +7,7 @@
 /* eslint-disable import/no-default-export */
 import type { StoryObj } from '@storybook/vue3';
 import { action } from 'storybook/actions';
-import { expect, userEvent, within } from 'storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { file } from '../../.storybook/fakes.js';
 import MkCwButton from './MkCwButton.vue';
 import { i18n } from '@/i18n.js';
@@ -47,7 +47,8 @@ export const Default = {
 		await expect(buttonElement).toHaveTextContent(i18n.ts._cw.show);
 		await expect(buttonElement).toHaveTextContent(i18n.tsx._cw.chars({ count: 15 }));
 		await userEvent.click(buttonElement);
-		await expect(buttonElement).toHaveTextContent(i18n.ts._cw.hide);
+		// クリック後の再レンダリング反映待ち。capture 環境では flush が遅れて flaky になるため waitFor でリトライする
+		await waitFor(() => expect(buttonElement).toHaveTextContent(i18n.ts._cw.hide));
 		await userEvent.click(buttonElement);
 	},
 	parameters: {
