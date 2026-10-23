@@ -11644,6 +11644,9 @@ export interface operations {
                         allowAnonymousChartInstance: boolean;
                         allowAnonymousChartNotes: boolean;
                         allowAnonymousChartUsers: boolean;
+                        allowAnonymousFederationUsers: boolean;
+                        allowAnonymousFederationStats: boolean;
+                        allowAnonymousShowInstance: boolean;
                     };
                 };
             };
@@ -15389,6 +15392,9 @@ export interface operations {
                     allowAnonymousChartInstance?: boolean;
                     allowAnonymousChartNotes?: boolean;
                     allowAnonymousChartUsers?: boolean;
+                    allowAnonymousFederationUsers?: boolean;
+                    allowAnonymousFederationStats?: boolean;
+                    allowAnonymousShowInstance?: boolean;
                     customSplashText?: string[] | null;
                     defaultFollowedUsers?: string[] | null;
                     forciblyFollowedUsers?: string[] | null;

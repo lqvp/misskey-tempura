@@ -989,6 +989,15 @@ export const meta = {
 				optional: false, nullable: false,
 			},
 			allowAnonymousChartUsers: {
+			allowAnonymousFederationUsers: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousFederationStats: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousShowInstance: {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
@@ -1203,6 +1212,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				allowAnonymousChartInstance: instance.allowAnonymousChartInstance,
 				allowAnonymousChartNotes: instance.allowAnonymousChartNotes,
 				allowAnonymousChartUsers: instance.allowAnonymousChartUsers,
+				allowAnonymousFederationUsers: instance.allowAnonymousFederationUsers,
+				allowAnonymousFederationStats: instance.allowAnonymousFederationStats,
+				allowAnonymousShowInstance: instance.allowAnonymousShowInstance,
 				customSplashText: instance.customSplashText,
 				blockMentionsFromUnfamiliarRemoteUsers:
 					instance.blockMentionsFromUnfamiliarRemoteUsers,
