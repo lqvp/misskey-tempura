@@ -6,8 +6,8 @@
 process.env.NODE_ENV = 'test';
 
 import * as assert from 'assert';
-import { beforeAll, describe, test } from 'vitest';
-import { MiInstance, MiUser } from '@/models/_.js';
+import { afterEach, beforeAll, describe, test } from 'vitest';
+import { MiInstance, MiUser, MiUserProfile } from '@/models/_.js';
 import { api, initTestDb, signup } from '../utils.js';
 import type * as misskey from 'misskey-js';
 
@@ -19,6 +19,14 @@ describe('visitor federation access switches', () => {
 	let admin: misskey.entities.SignupResponse;
 
 	const REMOTE_HOST = 'fedremote.example';
+
+	// 途中のテスト失敗でフラグが on のまま残って後続テストに波及しないよう毎回戻す
+	afterEach(async () => {
+		await api('admin/update-meta', {
+			allowAnonymousFederationUsers: false,
+			allowAnonymousShowInstance: false,
+		}, admin);
+	});
 
 	beforeAll(async () => {
 		const db = await initTestDb(true);
@@ -41,6 +49,10 @@ describe('visitor federation access switches', () => {
 			inbox: `https://${REMOTE_HOST}/users/fedremote/inbox`,
 			sharedInbox: `https://${REMOTE_HOST}/inbox`,
 		});
+		// pack(UserDetailedNotMe) がプロフィールを参照するため併せて登録する
+		await db.getRepository(MiUserProfile).insert({
+			userId: 'fedremoteuser0001',
+		});
 		await db.destroy();
 	}, 1000 * 60 * 2);
 
@@ -62,15 +74,17 @@ describe('visitor federation access switches', () => {
 	});
 
 	test('匿名は federation/show-instance のフラグが off の間 null', async () => {
+		// null 応答は 204 (No Content) として返る
 		const res = await api('federation/show-instance', { host: REMOTE_HOST });
-		assert.strictEqual(res.status, 200);
-		assert.strictEqual(res.body, null);
+		assert.strictEqual(res.status, 204);
+		assert.ok(res.body == null);
 	});
 
 	test('フラグを on にすると匿名でも federation/show-instance を返す', async () => {
 		await api('admin/update-meta', { allowAnonymousShowInstance: true }, admin);
 		const res = await api('federation/show-instance', { host: REMOTE_HOST });
 		assert.strictEqual(res.status, 200);
+		assert.ok(res.body);
 		assert.strictEqual(res.body.host, REMOTE_HOST);
 		await api('admin/update-meta', { allowAnonymousShowInstance: false }, admin);
 	});
