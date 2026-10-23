@@ -55,8 +55,8 @@ const config = {
 					// shims/ 側の実装に差し替える
 					name: 'storybook-strip-tla-shims',
 					enforce: 'pre',
-					resolveId(source, importer) {
-						if (process.env.SB_DISABLE_TLA_SHIMS) return null;
+					resolveId(source: string, importer: string | undefined) {
+						if (process.env['SB_DISABLE_TLA_SHIMS']) return null;
 						const m = /(?:^|\/)(custom-emojis|idb-proxy|locale|use-note-capture)(?:\.js|\.ts)?$/.exec(source);
 						if (!m) return null;
 						// shims/locale.ts が import する生成済み ../locale.ts だけは shim に戻さない
