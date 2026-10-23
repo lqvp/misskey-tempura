@@ -135,6 +135,9 @@ function groupState(group: { flags: FlagDef[] }): GroupState {
 	return 'custom';
 }
 
+// 保存が確認できた最新の値。保存失敗時の復元は(表示上の楽観値ではなく)こちらを使う
+const confirmedValues: Record<FlagKey, boolean> = { ...flagValues };
+
 let saveQueue: Promise<void> = Promise.resolve();
 
 async function save(partial: Partial<Record<FlagKey, boolean>>) {
@@ -142,20 +145,26 @@ async function save(partial: Partial<Record<FlagKey, boolean>>) {
 	// 失敗しても後続の保存は続行できるようにする。
 	const request = saveQueue.then(async () => {
 		await os.apiWithDialog('admin/update-meta', partial);
-		await fetchInstance(true);
+		// ここまで来たら保存は成功している。後続の再取得の失敗で保存済みの値を
+		// 巻き戻さないよう、確認値の更新と再取得は保存と分離する
+		Object.assign(confirmedValues, partial);
+		try {
+			await fetchInstance(true);
+		} catch {
+			// 表示用インスタンス情報の再取得失敗は保存結果に影響しない
+		}
 	});
 	saveQueue = request.catch(() => {});
 	await request;
 }
 
 async function onFlagChange(key: FlagKey, value: boolean) {
-	const previous = flagValues[key];
 	flagValues[key] = value;
 	try {
 		await save({ [key]: value });
 	} catch {
-		// 保存失敗時は画面の状態をサーバー設定と一致させるため元に戻す
-		flagValues[key] = previous;
+		// 保存失敗時は、さらに後の変更が入っていなければ保存確認済みの値に戻す
+		if (flagValues[key] === value) flagValues[key] = confirmedValues[key];
 	}
 }
 
@@ -164,16 +173,17 @@ async function onGroupChange(group: { flags: FlagDef[] }, state: GroupState) {
 	if (state === 'custom') return;
 	const value = state === 'allOn';
 	const partial: Partial<Record<FlagKey, boolean>> = {};
-	const previous: Partial<Record<FlagKey, boolean>> = {};
 	for (const flag of group.flags) {
-		previous[flag.key] = flagValues[flag.key];
 		flagValues[flag.key] = value;
 		partial[flag.key] = value;
 	}
 	try {
 		await save(partial);
 	} catch {
-		Object.assign(flagValues, previous);
+		// 保存失敗時は、さらに後の変更が入っていないフラグだけ保存確認済みの値に戻す
+		for (const flag of group.flags) {
+			if (flagValues[flag.key] === value) flagValues[flag.key] = confirmedValues[flag.key];
+		}
 	}
 }
 </script>
