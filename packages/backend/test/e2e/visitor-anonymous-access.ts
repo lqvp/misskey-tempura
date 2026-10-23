@@ -282,4 +282,22 @@ describe('visitor anonymous access guarantee', () => {
 			assert.strictEqual(resPublic.status, 200);
 		});
 	});
+
+	describe('設定の往復 (admin/update-meta → admin/meta)', () => {
+		test('allowUnregisteredApSignerVerification は保存・読み出し・復元できる (既定は無効)', async () => {
+			const before = await api('admin/meta', {}, admin);
+			assert.strictEqual(before.body.allowUnregisteredApSignerVerification, false);
+
+			await api('admin/update-meta', { allowUnregisteredApSignerVerification: true }, admin);
+			const after = await api('admin/meta', {}, admin);
+			assert.strictEqual(after.body.allowUnregisteredApSignerVerification, true);
+
+			// 有効にしても既存の分類は変わらない: 登録済みホストの検証済み署名は引き続き対象外
+			// (未登録ホストへの実際の取得を伴う経路はユニットテストでモック検証済み)
+
+			await api('admin/update-meta', { allowUnregisteredApSignerVerification: false }, admin);
+			const restored = await api('admin/meta', {}, admin);
+			assert.strictEqual(restored.body.allowUnregisteredApSignerVerification, false);
+		});
+	});
 });
