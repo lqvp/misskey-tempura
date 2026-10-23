@@ -236,11 +236,13 @@ jobs:
         fi
         # lockfile の chromatic バージョンに合わせて固定する (packages/frontend/package.json)。
         # 成功判定は終了コードだけに頼らない: 認証前のローカルエラー (git 不在など) でも
-        # 終了コード 0 を返す版があるため、"Build N published" の出力を必須とする。
+        # 終了コード 0 を返す版があるため、公開成功の出力を必須とする。
+        # (--exit-once-uploaded 時は "Storybook published"、通常完了時は
+        # "Build N published" が出力される。)
         LOG="$(mktemp)"
         STATUS=0
         npm exec --yes --package=chromatic@18.7.1 -- chromatic "${ARGS[@]}" 2>&1 | tee "$LOG" || STATUS=$?
-        if [ "$STATUS" -eq 0 ] && grep -qE "Build [0-9]+ published" "$LOG"; then
+        if [ "$STATUS" -eq 0 ] && grep -qE "(Storybook published|Build [0-9]+ published)" "$LOG"; then
           echo "success=true" >> "$GITHUB_OUTPUT"
         else
           echo "success=false" >> "$GITHUB_OUTPUT"
