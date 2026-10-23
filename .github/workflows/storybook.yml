@@ -173,8 +173,6 @@ jobs:
     # コミット情報のみ。
     - name: Fetch git metadata only
       env:
-        PR_NUMBER: ${{ github.event.number }}
-        EVENT_NAME: ${{ github.event_name }}
         COMMIT_SHA: ${{ needs.build.outputs.commit_sha }}
       run: |
         set -euo pipefail
@@ -182,11 +180,9 @@ jobs:
         git init -q .
         # blob なしの部分取得で全履歴を持つ (chromatic がベースライン解決に
         # 履歴を必要とする)。作業ツリーには一切展開しない。
-        if [ "$EVENT_NAME" = "pull_request_target" ]; then
-          git fetch -q --filter=blob:none "$REPO_URL" "refs/pull/${PR_NUMBER}/head"
-        else
-          git fetch -q --filter=blob:none "$REPO_URL" "$COMMIT_SHA"
-        fi
+        # 取得は常に検証済みの不変 SHA で行い、可変の ref 参照による
+        # ビルド対象とのズレ (TOCTOU) を排除する。
+        git fetch -q --filter=blob:none "$REPO_URL" "$COMMIT_SHA"
         git update-ref refs/heads/chromatic-publish FETCH_HEAD
         git symbolic-ref HEAD refs/heads/chromatic-publish
         git --no-pager log -n 1 --format="%H %ct %ae %an"
