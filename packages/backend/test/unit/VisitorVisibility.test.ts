@@ -123,16 +123,17 @@ describe('reaction diff visitor visibility', () => {
 		expect((await service.fetchDiffs(['n1'], 'viewer')).map((n: any) => n.id)).toEqual(['n1']);
 	});
 
-	test.each([['public', 'hidePublicNotes'], ['home', 'hideHomeNotes']] as const)('profile %s hides reaction diffs from visitors', async (visibility, flag) => {
+	test.each([['public', 'hidePublicNotes'], ['home', 'hideHomeNotes']] as const)('profile %s notes keep diff entries for visitors as placeholder parity (#617 item 9)', async (visibility, flag) => {
 		const { service } = makeGateService({ requireSigninToViewContents: false }, { [flag]: true }, visibility);
-		expect((await service.fetchDiffs(['n1'])).map((n: any) => n.id)).toEqual([]);
+		// pack 層のプレースホルダ(isHidden)が id・件数を残すのと同じく、この部分形状でもエントリを落とさない
+		expect((await service.fetchDiffs(['n1'])).map((n: any) => n.id)).toEqual(['n1']);
 		expect((await service.fetchDiffs(['n1'], 'viewer')).map((n: any) => n.id)).toEqual(['n1']);
 	});
 
-	test('makeNotesHiddenBefore hides reaction diffs from all non-author callers', async () => {
+	test('makeNotesHiddenBefore notes keep diff entries as placeholder parity (#617 item 9)', async () => {
 		const { service } = makeGateService({ makeNotesHiddenBefore: -1 }, {}, 'public', 'author', new Date(Date.now() - 10000));
-		expect((await service.fetchDiffs(['n1'])).map((n: any) => n.id)).toEqual([]);
-		expect((await service.fetchDiffs(['n1'], 'viewer')).map((n: any) => n.id)).toEqual([]);
+		expect((await service.fetchDiffs(['n1'])).map((n: any) => n.id)).toEqual(['n1']);
+		expect((await service.fetchDiffs(['n1'], 'viewer')).map((n: any) => n.id)).toEqual(['n1']);
 		expect((await service.fetchDiffs(['n1'], 'author')).map((n: any) => n.id)).toEqual(['n1']);
 	});
 

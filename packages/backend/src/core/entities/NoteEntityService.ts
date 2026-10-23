@@ -673,12 +673,14 @@ export class NoteEntityService implements OnModuleInit {
 	@bindThis
 	public async fetchDiffs(noteIds: MiNote['id'][], meId: MiUser['id'] | null = null) {
 		if (noteIds.length === 0) return [];
-		// 隠匿対象のノートの扱いは pack() のプレースホルダ(isHidden)に揃える。
-		// pack 層のプレースホルダは id・作者・件数・日時を残すので、この部分形状
-		// (id + リアクション件数)では通常エントリを返すのがプレースホルダ相当になる。
-		// ここで除外するのは「そもそも閲覧不可」のノート(isVisibleForMe)だけで、
-		// ugcVisibilityForVisitor やユーザー個別の非公開設定は pack 層と同じく
-		// プレースホルダ扱い(= 件数は返す)とする。
+		// サーバーの visitor ポリシー(ugcVisibilityForVisitor)と閲覧自体を制限する
+		// ユーザー設定(requireSigninToViewContents)は従来どおり除外する。
+		// プレースホルダ化されるノート(pack 層で isHidden になるもの)は、プレースホルダが
+		// id・作者・件数・日時を残すのと同じく、この部分形状でもエントリ(件数)を返す(#617 item 9)。
+		if (meId == null && this.meta.ugcVisibilityForVisitor === 'none') return [];
+
+		// pack() と同じ判定で管理者はプライバシーゲートを免除する (shouldHideNote 準拠)
+		const isAdmin = meId != null ? await this.roleService.isAdministrator({ id: meId }) : false;
 
 		const fetched = await this.notesRepository.find({
 			where: {
@@ -700,15 +702,17 @@ export class NoteEntityService implements OnModuleInit {
 
 		const notes: MiNote[] = [];
 		for (const rawNote of fetched) {
+			if (meId == null && this.meta.ugcVisibilityForVisitor === 'local' && rawNote.userHost != null) continue;
 			let note = rawNote;
 			const createdAt = this.idService.parse(rawNote.id).date.toISOString();
+			const author = await this.cacheService.findUserById(rawNote.userId);
+			if (meId == null && author.requireSigninToViewContents) continue;
 			// 時限でフォロワー限定になるノートの公開範囲ダウングレードは
-			// pack() の treatVisibility と同じく適用する
-			if ((rawNote.visibility === 'public' || rawNote.visibility === 'home')) {
-				const author = await this.cacheService.findUserById(rawNote.userId);
-				if (shouldHideNoteByTime(author.makeNotesFollowersOnlyBefore, createdAt)) {
-					note = { ...rawNote, visibility: 'followers' as const };
-				}
+			// pack() の treatVisibility と同じく適用する(作者と管理者は shouldHideNote 準拠で免除)
+			if (!isAdmin && !(meId != null && meId === rawNote.userId) &&
+				(rawNote.visibility === 'public' || rawNote.visibility === 'home') &&
+				shouldHideNoteByTime(author.makeNotesFollowersOnlyBefore, createdAt)) {
+				note = { ...rawNote, visibility: 'followers' as const };
 			}
 			if (await this.isVisibleForMe(note, meId)) {
 				notes.push(note);
