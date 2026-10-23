@@ -5,7 +5,7 @@
 
 import { HttpResponse, http } from 'msw';
 import { action } from 'storybook/actions';
-import { expect, userEvent, within } from '@storybook/test';
+import { expect, userEvent, within } from 'storybook/test';
 import { commonHandlers } from '../../.storybook/mocks.js';
 import MkClickerGame from './MkClickerGame.vue';
 import type { StoryObj } from '@storybook/vue3';
@@ -25,14 +25,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkClickerGame v-bind="props" />',
+			template: '<MkClickerGame v-bind="args" />',
 		};
 	},
 	async play({ canvasElement }) {

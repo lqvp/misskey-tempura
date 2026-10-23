@@ -7,7 +7,7 @@
 /* eslint-disable import/no-default-export */
 import type { StoryObj } from '@storybook/vue3';
 import { action } from 'storybook/actions';
-import { expect, userEvent, within } from '@storybook/test';
+import { expect, userEvent, within } from 'storybook/test';
 import { file } from '../../.storybook/fakes.js';
 import MkCwButton from './MkCwButton.vue';
 import { i18n } from '@/i18n.js';
@@ -29,18 +29,13 @@ export const Default = {
 				};
 			},
 			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
 				events() {
 					return {
 						'update:modelValue': action('update:modelValue'),
 					};
 				},
 			},
-			template: '<MkCwButton v-model="showContent" v-bind="props" v-on="events" />',
+			template: '<MkCwButton v-model="showContent" v-bind="args" v-on="events" />',
 		};
 	},
 	args: {

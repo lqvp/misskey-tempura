@@ -21,14 +21,7 @@ export const Empty = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkAchievements v-bind="props" />',
+			template: '<MkAchievements v-bind="args" />',
 		};
 	},
 	args: {

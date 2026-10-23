@@ -106,7 +106,7 @@ function createRender(params: { settings: GridSetting, data: DataSource[] }) {
 						};
 					},
 				},
-				template: '<div style="padding:20px"><MkGrid v-bind="props" v-on="events" /></div>',
+				template: '<div style="padding:20px"><MkGrid v-bind="args" v-on="events" /></div>',
 			};
 		},
 		args: {

@@ -17,14 +17,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkUserSetupDialog_Profile v-bind="props" />',
+			template: '<MkUserSetupDialog_Profile v-bind="args" />',
 		};
 	},
 	args: {

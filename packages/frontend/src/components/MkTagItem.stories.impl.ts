@@ -21,11 +21,6 @@ export const Default = {
 				};
 			},
 			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
 				events() {
 					return {
 						click: action('click'),
@@ -33,7 +28,7 @@ export const Default = {
 					};
 				},
 			},
-			template: '<MkTagItem v-bind="props" v-on="events"></MkTagItem>',
+			template: '<MkTagItem v-bind="args" v-on="events"></MkTagItem>',
 		};
 	},
 	args: {

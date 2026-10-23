@@ -20,18 +20,13 @@ export const Default = {
 				};
 			},
 			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
 				events() {
 					return {
 						click: action('click'),
 					};
 				},
 			},
-			template: '<MkButton v-bind="props" v-on="events">Text</MkButton>',
+			template: '<MkButton v-bind="args" v-on="events">Text</MkButton>',
 		};
 	},
 	args: {

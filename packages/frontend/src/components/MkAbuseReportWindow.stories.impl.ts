@@ -21,18 +21,13 @@ export const Default = {
 				};
 			},
 			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
 				events() {
 					return {
 						'closed': action('closed'),
 					};
 				},
 			},
-			template: '<MkAbuseReportWindow v-bind="props" v-on="events" />',
+			template: '<MkAbuseReportWindow v-bind="args" v-on="events" />',
 		};
 	},
 	args: {

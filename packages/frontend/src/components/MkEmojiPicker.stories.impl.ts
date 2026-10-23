@@ -4,7 +4,7 @@
  */
 
 import { action } from 'storybook/actions';
-import { expect, userEvent, waitFor, within } from '@storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import type { StoryObj } from '@storybook/vue3';
 import { i18n } from '@/i18n.js';
 import MkEmojiPicker from './MkEmojiPicker.vue';
@@ -20,18 +20,13 @@ export const Default = {
 				};
 			},
 			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
 				events() {
 					return {
 						chosen: action('chosen'),
 					};
 				},
 			},
-			template: '<MkEmojiPicker v-bind="props" v-on="events" />',
+			template: '<MkEmojiPicker v-bind="args" v-on="events" />',
 		};
 	},
 	async play({ canvasElement }) {

@@ -4,7 +4,7 @@
  */
 
 import type { StoryObj } from '@storybook/vue3';
-import { expect, within } from '@storybook/test';
+import { expect, within } from 'storybook/test';
 import MkMfm from './MkMfm.js';
 export const Default = {
 	render(args) {
@@ -17,14 +17,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkMfm v-bind="props" />',
+			template: '<MkMfm v-bind="args" />',
 		};
 	},
 	async play({ canvasElement, args }) {

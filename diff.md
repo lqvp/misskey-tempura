@@ -405,3 +405,9 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 ## バージョン
 
 * 2026.10.0-tempura-2.0.21-dev
+
+## 開発用 Storybook / Chromatic
+
+* Storybook 10 用に旧addonとimportを移行。Misskeyテーマ切替は既存addonのMITライセンスを保持したローカル版へ移植。
+* PRでは秘密情報を使わない静的Storybookビルドを検証し、成果物を短期保存する。Chromatic公開は別workflowで明示的に有効化する。
+* ChromaticにはRepository secret `CHROMATIC_PROJECT_TOKEN` とVariables `CHROMATIC_ENABLED=true` / `CHROMATIC_APP_ID` が必要。トークンはチャットに貼らずGitHubへ直接登録する。

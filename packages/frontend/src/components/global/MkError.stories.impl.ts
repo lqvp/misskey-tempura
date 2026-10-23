@@ -5,7 +5,7 @@
 
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import { action } from 'storybook/actions';
-import { expect, waitFor } from '@storybook/test';
+import { expect, waitFor } from 'storybook/test';
 import type { StoryObj } from '@storybook/vue3';
 import MkError from './MkError.vue';
 export const Default = {
@@ -20,18 +20,13 @@ export const Default = {
 				};
 			},
 			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
 				events() {
 					return {
 						retry: action('retry'),
 					};
 				},
 			},
-			template: '<MkError v-bind="props" v-on="events" />',
+			template: '<MkError v-bind="args" v-on="events" />',
 		};
 	},
 	async play({ canvasElement }) {

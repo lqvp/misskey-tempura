@@ -19,14 +19,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkChannelPreview v-bind="props" />',
+			template: '<MkChannelPreview v-bind="args" />',
 		};
 	},
 	args: {

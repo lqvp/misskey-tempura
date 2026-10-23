@@ -31,11 +31,6 @@ export const Default = {
 				};
 			},
 			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
 				events() {
 					return {
 						'change': action('change'),
@@ -45,7 +40,7 @@ export const Default = {
 					};
 				},
 			},
-			template: '<MkCodeEditor v-model="code" v-bind="props" v-on="events" />',
+			template: '<MkCodeEditor v-model="code" v-bind="args" v-on="events" />',
 		};
 	},
 	args: {

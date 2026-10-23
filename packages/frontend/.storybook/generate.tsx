@@ -341,50 +341,8 @@ function toStories(component: string): Promise<string> {
 																												kind={'init' as const}
 																											/> as estree.Property,
 																											<property
-																												key={<identifier name='computed' /> as estree.Identifier}
-																												value={
-																													<object-expression
-																														properties={[
-																															<property
-																																key={<identifier name='props' /> as estree.Identifier}
-																																value={
-																																	<function-expression
-																																		params={[]}
-																																		body={
-																																			<block-statement
-																																				body={[
-																																					<return-statement
-																																						argument={
-																																							<object-expression
-																																								properties={[
-																																									<spread-element
-																																										argument={
-																																											<member-expression
-																																												object={<this-expression /> as estree.ThisExpression}
-																																												property={<identifier name='args' /> as estree.Identifier}
-																																											/> as estree.MemberExpression
-																																										}
-																																									/> as estree.SpreadElement,
-																																								]}
-																																							/> as estree.ObjectExpression
-																																						}
-																																					/> as estree.ReturnStatement,
-																																				]}
-																																			/> as estree.BlockStatement
-																																		}
-																																	/> as estree.FunctionExpression
-																																}
-																																method
-																																kind={'init' as const}
-																															/> as estree.Property,
-																														]}
-																													/> as estree.ObjectExpression
-																												}
-																												kind={'init' as const}
-																											/> as estree.Property,
-																											<property
 																												key={<identifier name='template' /> as estree.Identifier}
-																												value={<literal value={`<${identifier.name} v-bind="props" />`} /> as estree.Literal}
+																												value={<literal value={`<${identifier.name} v-bind="args" />`} /> as estree.Literal}
 																												kind={'init' as const}
 																											/> as estree.Property,
 																										]}

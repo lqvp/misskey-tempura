@@ -17,14 +17,7 @@ export const Public = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkFlashPreview v-bind="props" />',
+			template: '<MkFlashPreview v-bind="args" />',
 		};
 	},
 	args: {

@@ -22,11 +22,6 @@ export const Default = {
 				};
 			},
 			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
 				events() {
 					return {
 						selected: action('selected'),
@@ -37,7 +32,7 @@ export const Default = {
 					};
 				},
 			},
-			template: '<MkDrive v-bind="props" v-on="events" />',
+			template: '<MkDrive v-bind="args" v-on="events" />',
 		};
 	},
 	parameters: {

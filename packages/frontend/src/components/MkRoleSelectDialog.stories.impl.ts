@@ -28,14 +28,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkRoleSelectDialog v-bind="props" />',
+			template: '<MkRoleSelectDialog v-bind="args" />',
 		};
 	},
 	args: {

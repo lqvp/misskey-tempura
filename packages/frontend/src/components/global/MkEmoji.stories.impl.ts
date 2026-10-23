@@ -17,14 +17,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkEmoji v-bind="props" />',
+			template: '<MkEmoji v-bind="args" />',
 		};
 	},
 	args: {

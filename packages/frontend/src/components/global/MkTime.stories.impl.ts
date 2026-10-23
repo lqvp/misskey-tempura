@@ -4,7 +4,7 @@
  */
 
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
-import { expect } from '@storybook/test';
+import { expect } from 'storybook/test';
 import type { StoryObj } from '@storybook/vue3';
 import MkTime from './MkTime.vue';
 import { i18n } from '@/i18n.js';
@@ -27,14 +27,7 @@ export const Empty = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkTime v-bind="props" />',
+			template: '<MkTime v-bind="args" />',
 		};
 	},
 	async play({ canvasElement }) {

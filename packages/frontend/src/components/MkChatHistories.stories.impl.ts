@@ -20,14 +20,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkChatHistories v-bind="props" />',
+			template: '<MkChatHistories v-bind="args" />',
 		};
 	},
 	parameters: {
