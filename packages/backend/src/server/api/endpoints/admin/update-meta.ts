@@ -294,6 +294,9 @@ export const paramDef = {
 		allowAnonymousFederationUsers: { type: 'boolean' },
 		allowAnonymousFederationStats: { type: 'boolean' },
 		allowAnonymousShowInstance: { type: 'boolean' },
+		allowAnonymousReplies: { type: 'boolean' },
+		allowAnonymousRenotes: { type: 'boolean' },
+		allowAnonymousQuotes: { type: 'boolean' },
 		customSplashText: { type: 'array', nullable: true, items: {
 			type: 'string',
 		} },
@@ -1070,6 +1073,16 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.allowAnonymousShowInstance !== undefined) {
 				set.allowAnonymousShowInstance = ps.allowAnonymousShowInstance;
+			if (ps.allowAnonymousReplies !== undefined) {
+				set.allowAnonymousReplies = ps.allowAnonymousReplies;
+			}
+
+			if (ps.allowAnonymousRenotes !== undefined) {
+				set.allowAnonymousRenotes = ps.allowAnonymousRenotes;
+			}
+
+			if (ps.allowAnonymousQuotes !== undefined) {
+				set.allowAnonymousQuotes = ps.allowAnonymousQuotes;
 			}
 
 			if (Array.isArray(ps.customSplashText)) {

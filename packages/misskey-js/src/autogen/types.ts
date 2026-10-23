@@ -11647,6 +11647,9 @@ export interface operations {
                         allowAnonymousFederationUsers: boolean;
                         allowAnonymousFederationStats: boolean;
                         allowAnonymousShowInstance: boolean;
+                        allowAnonymousReplies: boolean;
+                        allowAnonymousRenotes: boolean;
+                        allowAnonymousQuotes: boolean;
                     };
                 };
             };
@@ -15395,6 +15398,9 @@ export interface operations {
                     allowAnonymousFederationUsers?: boolean;
                     allowAnonymousFederationStats?: boolean;
                     allowAnonymousShowInstance?: boolean;
+                    allowAnonymousReplies?: boolean;
+                    allowAnonymousRenotes?: boolean;
+                    allowAnonymousQuotes?: boolean;
                     customSplashText?: string[] | null;
                     defaultFollowedUsers?: string[] | null;
                     forciblyFollowedUsers?: string[] | null;
