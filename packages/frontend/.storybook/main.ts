@@ -48,6 +48,22 @@ const config = {
 					}),
 					name: 'fake-turbosnap',
 				},
+				{
+					// src/custom-emojis.ts や src/utility/idb-proxy.ts の top-level await が
+					// rolldown の chunk 生成を壊す (async でない wrapper 内に await が出力され
+					// 実行時 SyntaxError になる) ため、Storybook ビルドでは TLA を取り除いた
+					// shims/ 側の実装に差し替える
+					name: 'storybook-strip-tla-shims',
+					enforce: 'pre',
+					resolveId(source, importer) {
+						if (process.env.SB_DISABLE_TLA_SHIMS) return null;
+						const m = /(?:^|\/)(custom-emojis|idb-proxy|locale|use-note-capture)(?:\.js|\.ts)?$/.exec(source);
+						if (!m) return null;
+						// shims/locale.ts が import する生成済み ../locale.ts だけは shim に戻さない
+						if (m[1] === 'locale' && importer && importer.includes('/.storybook/shims/')) return null;
+						return resolve(_dirname, `shims/${m[1]}.ts`);
+					},
+				},
 			],
 		});
 	},
