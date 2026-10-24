@@ -1673,6 +1673,9 @@ export type Endpoints = Overwrite<Endpoints_2, {
             code: string;
             token?: string;
             credential?: AuthenticationResponseJSON;
+            deviceToken?: string;
+            challengeId?: string;
+            emailCode?: string;
         };
         res: SigninFlowResponse;
     };
