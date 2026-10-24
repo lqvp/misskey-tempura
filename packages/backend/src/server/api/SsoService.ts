@@ -273,10 +273,10 @@ export class SsoService {
 		}
 	}
 
-	/** ログインコードを消費する (サインイン完了時に呼ぶ) */
+	/** ログインコードを原子的に消費する。既に消費済み (同時リクエストの敗北側) なら false */
 	@bindThis
-	public async consumeLoginCode(loginCode: string): Promise<void> {
-		await this.redisClient.del(`sso:loginCode:${loginCode}`);
+	public async consumeLoginCode(loginCode: string): Promise<boolean> {
+		return (await this.redisClient.getdel(`sso:loginCode:${loginCode}`)) != null;
 	}
 
 	/**

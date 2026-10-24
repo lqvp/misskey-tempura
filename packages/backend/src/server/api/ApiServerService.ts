@@ -292,7 +292,11 @@ export class ApiServerService {
 				}
 			}
 
-			await this.ssoService.consumeLoginCode(code);
+			// 消費は原子的に行い、同時リクエストでは片方だけが成功する
+			if (!await this.ssoService.consumeLoginCode(code)) {
+				reply.code(400).send({ error: { message: 'Invalid or expired code', code: 'INVALID_CODE', id: '7d0e5a6c-1f2b-4c9d-3e4f-5a6b7c8d9e0f' } });
+				return;
+			}
 			return await this.signinService.signin(request, reply, user);
 		});
 
