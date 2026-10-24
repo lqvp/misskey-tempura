@@ -27,7 +27,7 @@ import { ref, shallowRef, computed, onMounted } from 'vue';
 import type { PublicKeyCredentialRequestOptionsJSON, AuthenticationResponseJSON } from '@simplewebauthn/browser';
 import { i18n } from '@/i18n.js';
 import { login } from '@/accounts.js';
-import { misskeyApi } from '@/utility/misskey-api.js';
+import { apiUrl } from '@@/js/config.js';
 import * as Misskey from 'misskey-js';
 import * as os from '@/os.js';
 import { definePage } from '@/page.js';
@@ -43,8 +43,19 @@ const emailCodeChallengeId = ref<string | null>(null);
 let loginCode: string | null = null;
 
 // ログインリスクの判定に使う端末トークンを毎回付ける
+// 認可を開始したブラウザかをサーバーが確認するため、束縛Cookie (HttpOnly) を送る必要がある。
+// misskeyApi は credentials: 'omit' なので、ここでは直接 fetch する
 async function exchange(req: { code: string; token?: string; credential?: AuthenticationResponseJSON; challengeId?: string; emailCode?: string }) {
-	return await misskeyApi('sso/exchange-code', { ...req, deviceToken: getLoginDeviceToken() });
+	const res = await window.fetch(`${apiUrl}/sso/exchange-code`, {
+		method: 'POST',
+		body: JSON.stringify({ ...req, deviceToken: getLoginDeviceToken() }),
+		credentials: 'include',
+		cache: 'no-cache',
+		headers: { 'Content-Type': 'application/json' },
+	});
+	const body = await res.json();
+	if (res.status === 200) return body as Misskey.entities.SigninFlowResponse;
+	throw body.error;
 }
 
 const errorMessage = computed(() => {

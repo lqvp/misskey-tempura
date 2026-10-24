@@ -230,27 +230,35 @@ export class ApiServerService {
 			const { code, state, iss } = request.query;
 			const webCallbackUrl = `${this.config.url}/sso/callback`;
 
-			// 成否にかかわらず束縛Cookieは必ず削除する
+			// ログイン成功時だけ、ログインコードの交換まで束縛Cookieを残す (交換時に同じブラウザかを確認する)。
+			// それ以外 (失敗・連携) は必ず削除する
 			const binding = this.getSsoBindingCookie(request);
-			this.clearSsoBindingCookie(reply);
 
 			if (request.query.error) {
+				this.clearSsoBindingCookie(reply);
 				reply.redirect(`${webCallbackUrl}?sso_error=PROVIDER_ERROR`);
 				return;
 			}
 			if (!code || !state) {
+				this.clearSsoBindingCookie(reply);
 				reply.code(400).send({ error: { message: 'Missing code or state parameter', code: 'INVALID_REQUEST', id: '5b8c3e4a-9d0f-4a7b-1c2d-3e4f5a6b7c8d' } });
 				return;
 			}
-			if (!await this.limitSsoRequest(request, reply, 'sso-callback')) return;
+			if (!await this.limitSsoRequest(request, reply, 'sso-callback')) {
+				this.clearSsoBindingCookie(reply);
+				return;
+			}
 			try {
 				const result = await this.ssoService.handleCallback(providerKey, code, state, binding, iss);
 				if (result.type === 'login') {
+					// 束縛Cookieはそのまま残す (ブラウザに設定済みで有効期間 600 秒)
 					reply.redirect(`${webCallbackUrl}?code=${encodeURIComponent(result.loginCode)}`);
 				} else {
+					this.clearSsoBindingCookie(reply);
 					reply.redirect(`${this.config.url}/settings/security?sso_linked=${encodeURIComponent(providerKey)}`);
 				}
 			} catch (err) {
+				this.clearSsoBindingCookie(reply);
 				if (err instanceof SsoError) {
 					this.logger.warn(`SSO callback failed (provider=${providerKey}): ${err.message}`);
 					reply.redirect(`${webCallbackUrl}?sso_error=${encodeURIComponent(err.code)}`);
@@ -277,6 +285,12 @@ export class ApiServerService {
 			// 追加認証が必要な場合があるため、この時点ではコードを消費しない
 			const pending = await this.ssoService.peekLoginCode(code);
 			if (!pending) {
+				reply.code(400).send({ error: { message: 'Invalid or expired code', code: 'INVALID_CODE', id: '7d0e5a6c-1f2b-4c9d-3e4f-5a6b7c8d9e0f' } });
+				return;
+			}
+
+			// 認可を開始したブラウザ以外からの交換は受け付けない (作為的なリンクで別人をログインさせる攻撃の防止)
+			if (!this.ssoService.isLoginCodeBoundTo(pending, this.getSsoBindingCookie(request))) {
 				reply.code(400).send({ error: { message: 'Invalid or expired code', code: 'INVALID_CODE', id: '7d0e5a6c-1f2b-4c9d-3e4f-5a6b7c8d9e0f' } });
 				return;
 			}
@@ -360,6 +374,10 @@ export class ApiServerService {
 				await this.ssoService.extendLoginCodeForEmailChallenge(code).catch(err => {
 					this.logger.warn(`failed to extend SSO login code for email challenge: ${err}`);
 				});
+			}
+			// ログインが確定したら束縛Cookieを削除する
+			if ('finished' in result && result.finished === true) {
+				this.clearSsoBindingCookie(reply);
 			}
 			return result;
 		});

@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import { createHash } from 'node:crypto';
 import { describe, expect, test } from 'vitest';
 import { mockDeep } from 'vitest-mock-extended';
 import { SsoService, resolveSsoAdditionalAuthRequirement } from '@/server/api/SsoService.js';
@@ -158,3 +159,23 @@ describe('SsoService ログインコードの寿命と失敗回数 (メール確
 		expect(results.filter(Boolean)).toHaveLength(1);
 	});
 });
+
+describe('SsoService ログインコードのブラウザ束縛', () => {
+	const service = new SsoService({} as any, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any, mockDeep<LoggerService>());
+	const hash = createHash('sha256').update('bind-1').digest('hex');
+
+	test('発行時と同じ束縛値だけ受け付ける', () => {
+		expect(service.isLoginCodeBoundTo({ bindingHash: hash }, 'bind-1')).toBe(true);
+	});
+
+	test('別のブラウザ (束縛値が違う・無い) は拒否する', () => {
+		expect(service.isLoginCodeBoundTo({ bindingHash: hash }, 'bind-2')).toBe(false);
+		expect(service.isLoginCodeBoundTo({ bindingHash: hash }, undefined)).toBe(false);
+		expect(service.isLoginCodeBoundTo({ bindingHash: hash }, '')).toBe(false);
+	});
+
+	test('束縛情報のないコードは受け付けない', () => {
+		expect(service.isLoginCodeBoundTo({}, 'bind-1')).toBe(false);
+	});
+});
+

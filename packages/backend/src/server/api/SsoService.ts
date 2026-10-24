@@ -281,26 +281,34 @@ export class SsoService {
 
 		// ワンタイムのログインコードを発行する (トークンは置かない)。
 		// 追加認証の要否・連携の存続・プロバイダーの有効性は発行時ではなく交換時に必ず再検証するため、
-		// ここでは連携を一意に特定する情報だけを保存する
+		// ここでは連携を一意に特定する情報と、認可を開始したブラウザの束縛ハッシュだけを保存する。
+		// 交換時に同じブラウザの束縛Cookieを要求し、第三者が作ったログインリンクで別人をログインさせる攻撃を防ぐ
 		const loginCode = randomState();
-		await this.redisClient.set(`sso:loginCode:${loginCode}`, JSON.stringify({ userId: link.userId, provider: provider.key, subject }), 'EX', LOGIN_CODE_TTL_SEC);
+		await this.redisClient.set(`sso:loginCode:${loginCode}`, JSON.stringify({ userId: link.userId, provider: provider.key, subject, bindingHash: stateData.bindingHash }), 'EX', LOGIN_CODE_TTL_SEC);
 
 		return { type: 'login', loginCode };
 	}
 
+	/** ログインコードを発行したブラウザ (認可開始時の束縛Cookie) と同じかを判定する。束縛が無いコードは受け付けない */
+	@bindThis
+	public isLoginCodeBoundTo(pending: { bindingHash?: string }, binding: string | undefined): boolean {
+		if (pending.bindingHash == null || binding == null || binding.length === 0) return false;
+		return createHash('sha256').update(binding).digest('hex') === pending.bindingHash;
+	}
+
 	/** ログインコードを消費せずに読み出す (追加認証の確認前に照合するため) */
 	@bindThis
-	public async peekLoginCode(loginCode: string): Promise<{ userId: string; provider: string; subject: string } | null> {
+	public async peekLoginCode(loginCode: string): Promise<{ userId: string; provider: string; subject: string; bindingHash?: string } | null> {
 		const raw = await this.redisClient.get(`sso:loginCode:${loginCode}`);
 		if (!raw) {
 			return null;
 		}
 		try {
-			const parsed = JSON.parse(raw) as { userId?: string; provider?: string; subject?: string };
+			const parsed = JSON.parse(raw) as { userId?: string; provider?: string; subject?: string; bindingHash?: string };
 			if (typeof parsed.userId !== 'string' || typeof parsed.provider !== 'string' || typeof parsed.subject !== 'string') {
 				return null;
 			}
-			return { userId: parsed.userId, provider: parsed.provider, subject: parsed.subject };
+			return { userId: parsed.userId, provider: parsed.provider, subject: parsed.subject, bindingHash: typeof parsed.bindingHash === 'string' ? parsed.bindingHash : undefined };
 		} catch {
 			return null;
 		}
