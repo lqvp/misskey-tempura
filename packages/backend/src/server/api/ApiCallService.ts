@@ -510,13 +510,10 @@ export class ApiCallService implements OnApplicationShutdown {
 			}
 		}
 
-		// requireCredential: false のエンドポイントでも requiredRolePolicy が設定され得るため、
-		// 匿名リクエスト (user === null) で user!.id を参照して 500 にならないようガードする。
-		// 匿名の場合はここでポリシー判定せず、エンドポイント側の null 許容の判定に委ねる
-		// (users/search は me=null でも roleService.getUserPolicies(null) でインスタンス既定を適用する)。
-		if (ep.meta.requiredRolePolicy != null && user != null && (this.meta.rootUserId !== user.id)) {
-			const myRoles = await this.roleService.getUserRoles(user.id);
-			const policies = await this.roleService.getUserPolicies(user.id);
+		// 未ログイン時は既定ポリシーで判定 (upstream 2026.10.1 に追従。tempura の匿名ガード ff0e9ca2b は upstream の修正で不要になったため撤廃)
+		if (ep.meta.requiredRolePolicy != null && (user == null || this.meta.rootUserId !== user.id)) {
+			const myRoles = user != null ? await this.roleService.getUserRoles(user.id) : [];
+			const policies = await this.roleService.getUserPolicies(user?.id ?? null);
 			if (!policies[ep.meta.requiredRolePolicy] && !myRoles.some(r => r.permissionGroup === 'Admin')) {
 				throw new ApiError({
 					message: 'You are not assigned to a required role.',

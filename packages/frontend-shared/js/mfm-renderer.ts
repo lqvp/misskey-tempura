@@ -498,8 +498,8 @@ export function createMfmRenderer<P extends MfmBaseProps = MfmBaseProps>(config:
 								normal: props.plain,
 								host: props.author.host,
 								useOriginalSize: scale >= 2.5,
-								// リモートの絵文字はリアクションできないので menuReaction は常に false
-								...(supportsEmojiMenu ? { menu: props.enableEmojiMenu, menuReaction: false } : {}),
+								// tempura: リモートの絵文字でもリアクションできるようにする (resolve: #323, upstreamは menuReaction: false 固定)
+								...(supportsEmojiMenu ? { menu: props.enableEmojiMenu, menuReaction: props.enableEmojiMenuReaction } : {}),
 							})];
 						}
 					}
