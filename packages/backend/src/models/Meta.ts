@@ -1267,6 +1267,8 @@ export interface SsoProviderConfig {
 	/** ログインボタンの表示ラベル。未設定時はデフォルトラベル */
 	buttonLabel?: string | null;
 	enabled: boolean;
+	/** IdP 側の MFA を信頼し、Misskey 側のローカル 2FA 追加認証をスキップするか (既定: false)。IdP で MFA を強制している場合のみ有効にすること */
+	trustUpstreamMfa?: boolean;
 }
 
 export interface ContactFormCategory {

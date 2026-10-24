@@ -17,7 +17,8 @@ import {
 	type Configuration,
 } from 'openid-client';
 import { DI } from '@/di-symbols.js';
-import type { UserSsoLinkRepository } from '@/models/_.js';
+import type { UserSsoLinkRepository, UserProfilesRepository } from '@/models/_.js';
+import { UserAuthService } from '@/core/UserAuthService.js';
 import type { Config } from '@/config.js';
 import type { SsoProviderConfig } from '@/models/Meta.js';
 import { IdService } from '@/core/IdService.js';
@@ -66,6 +67,11 @@ export class SsoService {
 
 		@Inject(DI.redis)
 		private redisClient: Redis.Redis,
+
+		@Inject(DI.userProfilesRepository)
+		private userProfilesRepository: UserProfilesRepository,
+
+		private userAuthService: UserAuthService,
 
 		private idService: IdService,
 		private metaService: MetaService,
@@ -241,24 +247,53 @@ export class SsoService {
 			throw new SsoError('NOT_LINKED', 'No account linked to this external identity');
 		}
 
+		// ローカル 2FA が有効で、プロバイダーが IdP 側 MFA を信頼しない設定なら追加認証を要求する
+		const profile = await this.userProfilesRepository.findOneBy({ userId: link.userId });
+		const requireTotp = profile?.twoFactorEnabled === true && provider.trustUpstreamMfa !== true;
+
 		// ワンタイムのログインコードを発行する (userId のみ保存し、トークンは置かない)
 		const loginCode = randomState();
-		await this.redisClient.set(`sso:loginCode:${loginCode}`, JSON.stringify({ userId: link.userId }), 'EX', LOGIN_CODE_TTL_SEC);
+		await this.redisClient.set(`sso:loginCode:${loginCode}`, JSON.stringify({ userId: link.userId, requireTotp }), 'EX', LOGIN_CODE_TTL_SEC);
 
 		return { type: 'login', loginCode };
 	}
 
-	/** ログインコードを消費してユーザーIDを返す。無効なら null */
+	/** ログインコードを消費せずに読み出す (追加認証の確認前に照合するため) */
 	@bindThis
-	public async consumeLoginCode(loginCode: string): Promise<string | null> {
-		const raw = await this.redisClient.getdel(`sso:loginCode:${loginCode}`);
+	public async peekLoginCode(loginCode: string): Promise<{ userId: string; requireTotp: boolean } | null> {
+		const raw = await this.redisClient.get(`sso:loginCode:${loginCode}`);
 		if (!raw) {
 			return null;
 		}
 		try {
-			return (JSON.parse(raw) as { userId: string }).userId;
+			const parsed = JSON.parse(raw) as { userId: string; requireTotp?: boolean };
+			return { userId: parsed.userId, requireTotp: parsed.requireTotp === true };
 		} catch {
 			return null;
+		}
+	}
+
+	/** ログインコードを消費する (サインイン完了時に呼ぶ) */
+	@bindThis
+	public async consumeLoginCode(loginCode: string): Promise<void> {
+		await this.redisClient.del(`sso:loginCode:${loginCode}`);
+	}
+
+	/**
+	 * SSO ログインの追加認証 (ローカル 2FA の TOTP / バックアップコード) を検証する。
+	 * 認証に成功するまではログインコードを消費しない。
+	 */
+	@bindThis
+	public async verifyAdditionalAuth(userId: string, token: string): Promise<boolean> {
+		const profile = await this.userProfilesRepository.findOneBy({ userId });
+		if (profile == null || !profile.twoFactorEnabled) {
+			return true;
+		}
+		try {
+			await this.userAuthService.twoFactorAuthenticate(profile, token);
+			return true;
+		} catch {
+			return false;
 		}
 	}
 

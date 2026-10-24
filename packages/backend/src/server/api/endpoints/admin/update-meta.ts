@@ -381,6 +381,8 @@ export const paramDef = {
 					issuerUrl: { type: 'string', nullable: true, maxLength: 1024 },
 					buttonLabel: { type: 'string', nullable: true, maxLength: 128 },
 					enabled: { type: 'boolean' },
+					// IdP 側の MFA を信頼してローカル 2FA の追加認証をスキップするか (未指定時は false)
+					trustUpstreamMfa: { type: 'boolean', optional: true },
 				},
 				required: ['key', 'type', 'enabled'],
 			},
@@ -1404,6 +1406,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						issuerUrl: p.issuerUrl?.trim() || null,
 						buttonLabel: p.buttonLabel?.trim() || null,
 						enabled: p.enabled,
+						trustUpstreamMfa: p.trustUpstreamMfa ?? false,
 					};
 				});
 			}

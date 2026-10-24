@@ -11682,6 +11682,7 @@ export interface operations {
                             issuerUrl?: string | null;
                             buttonLabel?: string | null;
                             enabled: boolean;
+                            trustUpstreamMfa: boolean;
                         }[];
                         requireSignedApFetch: boolean;
                         allowUnregisteredApSignerVerification: boolean;
@@ -15512,6 +15513,7 @@ export interface operations {
                         issuerUrl?: string | null;
                         buttonLabel?: string | null;
                         enabled: boolean;
+                        trustUpstreamMfa?: boolean;
                     }[];
                 };
             };

@@ -21,6 +21,7 @@ import { ref, computed, onMounted } from 'vue';
 import { i18n } from '@/i18n.js';
 import { login } from '@/accounts.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
+import * as os from '@/os.js';
 import { definePage } from '@/page.js';
 import MkButton from '@/components/MkButton.vue';
 
@@ -60,14 +61,35 @@ onMounted(async () => {
 	}
 
 	try {
-		const res = await misskeyApi('sso/exchange-code', { code });
+		let res = await misskeyApi('sso/exchange-code', { code });
+
+		// ローカル 2FA が有効で IdP 側 MFA を信頼しないプロバイダーの場合、TOTP / バックアップコードを追加で要求される
+		let totpAttempts = 0;
+		while (!res.finished && res.next === 'totp' && totpAttempts < 5) {
+			totpAttempts++;
+			const input = await os.inputText({
+				type: 'text',
+				title: i18n.ts.totp,
+				text: i18n.ts.totpDescription,
+				placeholder: '123456',
+			});
+			if (input.canceled || input.result == null || input.result === '') {
+				throw new Error('TOTP_CANCELLED');
+			}
+			try {
+				res = await misskeyApi('sso/exchange-code', { code, token: input.result });
+			} catch (err) {
+				// コード自体はまだ有効 (検証成功までは消費されない) のため再入力を促す
+				os.toast(i18n.ts.somethingHappened);
+			}
+		}
+
 		if (res.finished) {
 			// login() はページをリロードする。code が URL に残ったままだと
 			// リロード後に同じコードを再交換して失敗画面になるため、トップへ遷移させる
 			await login(res.i, '/');
 			return;
 		}
-		// SSOログインでは finished:false (captcha/2FA等) は発生しない想定
 		errorCode.value = 'UNEXPECTED_FLOW';
 		processing.value = false;
 	} catch {

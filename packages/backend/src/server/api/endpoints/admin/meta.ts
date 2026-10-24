@@ -983,6 +983,10 @@ export const meta = {
 							type: 'boolean',
 							optional: false, nullable: false,
 						},
+						trustUpstreamMfa: {
+							type: 'boolean',
+							optional: false, nullable: false,
+						},
 					},
 				},
 			},
@@ -1346,6 +1350,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					issuerUrl: p.issuerUrl ?? null,
 					buttonLabel: p.buttonLabel ?? null,
 					enabled: p.enabled,
+					trustUpstreamMfa: p.trustUpstreamMfa ?? false,
 				})),
 				openLlmModerationVisibilities,
 			};

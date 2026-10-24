@@ -257,26 +257,42 @@ export class ApiServerService {
 		});
 
 		fastify.post<{
-			Body: { code?: string; };
+			Body: { code?: string; token?: string; };
 		}>('/sso/exchange-code', async (request, reply) => {
+			if (!await this.limitSsoRequest(request, reply, 'sso-exchange-code')) return;
+
 			const code = request.body?.code;
 			if (typeof code !== 'string' || code.length === 0) {
 				reply.code(400).send({ error: { message: 'Missing code', code: 'INVALID_REQUEST', id: '6c9d4f5b-0e1a-4b8c-2d3e-4f5a6b7c8d9e' } });
 				return;
 			}
 
-			const userId = await this.ssoService.consumeLoginCode(code);
-			if (!userId) {
+			// 追加認証が必要な場合があるため、この時点ではコードを消費しない
+			const pending = await this.ssoService.peekLoginCode(code);
+			if (!pending) {
 				reply.code(400).send({ error: { message: 'Invalid or expired code', code: 'INVALID_CODE', id: '7d0e5a6c-1f2b-4c9d-3e4f-5a6b7c8d9e0f' } });
 				return;
 			}
 
-			const user = await this.usersRepository.findOneBy({ id: userId, host: IsNull() }) as MiLocalUser | null;
+			const user = await this.usersRepository.findOneBy({ id: pending.userId, host: IsNull() }) as MiLocalUser | null;
 			if (!user || user.isSuspended) {
 				reply.code(403).send({ error: { message: 'User not found or suspended', code: 'USER_NOT_FOUND', id: '8e1f6b7d-2a3c-4d0e-4f5a-6b7c8d9e0f1a' } });
 				return;
 			}
 
+			// ローカル 2FA が有効で IdP 側 MFA を信頼しないプロバイダーの場合、TOTP / バックアップコードを要求する
+			if (pending.requireTotp) {
+				const token = request.body?.token;
+				if (typeof token !== 'string' || token.length === 0) {
+					return { finished: false, next: 'totp' };
+				}
+				if (!await this.ssoService.verifyAdditionalAuth(user.id, token)) {
+					reply.code(403).send({ error: { message: 'Two-factor authentication failed', code: 'TWO_FACTOR_AUTH_FAILED', id: '9f2a7c8e-3b4d-5e1f-6a7b-8c9d0e1f2a3b' } });
+					return;
+				}
+			}
+
+			await this.ssoService.consumeLoginCode(code);
 			return await this.signinService.signin(request, reply, user);
 		});
 
