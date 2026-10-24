@@ -251,7 +251,8 @@ export class ApiServerService {
 			try {
 				const result = await this.ssoService.handleCallback(providerKey, code, state, binding, iss);
 				if (result.type === 'login') {
-					// 束縛Cookieはそのまま残す (ブラウザに設定済みで有効期間 600 秒)
+					// 束縛Cookieはログインコードの交換まで残す。有効期間は認可開始時から数えて切れないよう、ここで 600 秒に延ばし直す
+					if (binding != null) this.setSsoBindingCookie(reply, binding, 600);
 					reply.redirect(`${webCallbackUrl}?code=${encodeURIComponent(result.loginCode)}`);
 				} else {
 					this.clearSsoBindingCookie(reply);
@@ -294,6 +295,11 @@ export class ApiServerService {
 				reply.code(400).send({ error: { message: 'Invalid or expired code', code: 'INVALID_CODE', id: '7d0e5a6c-1f2b-4c9d-3e4f-5a6b7c8d9e0f' } });
 				return;
 			}
+
+			// メール確認コードや追加認証の待機中に束縛Cookieだけが先に切れないよう、受け付けるたびに延ばし直す
+			// (ログインが確定したら末尾で削除する)
+			const bindingValue = this.getSsoBindingCookie(request)!;
+			this.setSsoBindingCookie(reply, bindingValue, 600);
 
 			const user = await this.usersRepository.findOneBy({ id: pending.userId, host: IsNull() }) as MiLocalUser | null;
 			if (!user || user.isSuspended) {
