@@ -13,14 +13,17 @@ describe('resolveSsoAdditionalAuthRequirement', () => {
 		expect(resolveSsoAdditionalAuthRequirement(null, false, true)).toBe('none');
 	});
 
-	test('TOTP が有効なら TOTP を要求する (セキュリティキーがあっても TOTP 優先 = ローカルサインインと同一ポリシー)', () => {
+	test('TOTP 有効・セキュリティキーなしなら TOTP を要求する', () => {
 		expect(resolveSsoAdditionalAuthRequirement({ twoFactorEnabled: true }, false, false)).toBe('totp');
-		expect(resolveSsoAdditionalAuthRequirement({ twoFactorEnabled: true }, true, false)).toBe('totp');
 	});
 
-	test('TOTP 未設定でセキュリティキーがあればパスキーを要求する (ローカルのセキュリティキー必須ポリシーと同一)', () => {
-		expect(resolveSsoAdditionalAuthRequirement({ twoFactorEnabled: false }, true, false)).toBe('passkey');
-		expect(resolveSsoAdditionalAuthRequirement(null, true, false)).toBe('passkey');
+	test('TOTP 有効・セキュリティキーありならパスキーを提示する (TOTP は代替として引き続き受け付ける = ローカルサインインと同一ポリシー)', () => {
+		expect(resolveSsoAdditionalAuthRequirement({ twoFactorEnabled: true }, true, false)).toBe('passkey');
+	});
+
+	test('セキュリティキーのみの登録では追加認証なし (ローカルでもパスワード単独でサインインできる)', () => {
+		expect(resolveSsoAdditionalAuthRequirement({ twoFactorEnabled: false }, true, false)).toBe('none');
+		expect(resolveSsoAdditionalAuthRequirement(null, true, false)).toBe('none');
 	});
 
 	test('TOTP もセキュリティキーもなければ追加認証なし', () => {

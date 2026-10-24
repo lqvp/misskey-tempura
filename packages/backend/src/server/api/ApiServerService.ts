@@ -290,26 +290,27 @@ export class ApiServerService {
 				return;
 			}
 
-			// ローカルのサインインポリシーと揃え、IdP 側 MFA を信頼しないプロバイダーでは
-			// TOTP / バックアップコード、またはセキュリティキー (パスキー) による追加認証を要求する
+			// ローカルのサインインポリシーと揃える: 追加認証が必須なのはローカル 2FA (TOTP) が
+			// 有効なアカウントのみ。セキュリティキーが登録されていれば TOTP の代替として
+			// パスキー確認も受け付ける (IdP 側 MFA を信頼しないプロバイダーの場合)
 			const additionalAuth = resolveSsoAdditionalAuthRequirement(revalidation.profile, revalidation.securityKeysAvailable, revalidation.provider.trustUpstreamMfa === true);
-			if (additionalAuth === 'totp') {
+			if (additionalAuth !== 'none') {
 				const token = request.body?.token;
-				if (typeof token !== 'string' || token.length === 0) {
-					return { finished: false, next: 'totp' };
-				}
-				if (!await this.ssoService.verifyAdditionalAuth(user.id, token)) {
-					reply.code(403).send({ error: { message: 'Two-factor authentication failed', code: 'TWO_FACTOR_AUTH_FAILED', id: '9f2a7c8e-3b4d-5e1f-6a7b-8c9d0e1f2a3b' } });
-					return;
-				}
-			} else if (additionalAuth === 'passkey') {
 				const credential = request.body?.credential;
-				if (credential == null) {
+				if (typeof token === 'string' && token.length > 0) {
+					if (!await this.ssoService.verifyAdditionalAuth(user.id, token)) {
+						reply.code(403).send({ error: { message: 'Two-factor authentication failed', code: 'TWO_FACTOR_AUTH_FAILED', id: '9f2a7c8e-3b4d-5e1f-6a7b-8c9d0e1f2a3b' } });
+						return;
+					}
+				} else if (credential != null && additionalAuth === 'passkey') {
+					if (!await this.webAuthnService.verifyAuthentication(user.id, credential)) {
+						reply.code(403).send({ error: { message: 'Two-factor authentication failed', code: 'TWO_FACTOR_AUTH_FAILED', id: '6b3a9d1e-4f5c-4a2b-8c7d-9e0f1a2b3c4d' } });
+						return;
+					}
+				} else if (additionalAuth === 'passkey') {
 					return { finished: false, next: 'passkey', authRequest: await this.webAuthnService.initiateAuthentication(user.id) };
-				}
-				if (!await this.webAuthnService.verifyAuthentication(user.id, credential)) {
-					reply.code(403).send({ error: { message: 'Two-factor authentication failed', code: 'TWO_FACTOR_AUTH_FAILED', id: '6b3a9d1e-4f5c-4a2b-8c7d-9e0f1a2b3c4d' } });
-					return;
+				} else {
+					return { finished: false, next: 'totp' };
 				}
 			}
 

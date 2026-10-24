@@ -55,9 +55,11 @@ export class SsoError extends Error {
 
 /**
  * 交換時点の最新状態から、SSO での追加認証の要否を決定する (純粋関数)。
- * ローカルのサインインポリシーと揃える: TOTP が有効なら TOTP、そうでなくセキュリティキーが
- * 登録されていればパスキーによる追加認証を必須とする。プロバイダーが IdP 側 MFA を信頼する
- * 設定 (trustUpstreamMfa) の場合のみ省略する。
+ * ローカルのサインインポリシー (SigninApiService) と揃える:
+ * - 追加認証が必須なのはローカル 2FA (TOTP) が有効なアカウントのみ
+ *   (セキュリティキーのみの登録ではローカルでもパスワード単独でサインインできる)
+ * - セキュリティキーが登録されていれば、TOTP の代替としてパスキー確認を提示する
+ * - プロバイダーが IdP 側 MFA を信頼する設定 (trustUpstreamMfa) の場合は省略する
  */
 export function resolveSsoAdditionalAuthRequirement(
 	profile: { twoFactorEnabled: boolean } | null,
@@ -65,9 +67,8 @@ export function resolveSsoAdditionalAuthRequirement(
 	trustUpstreamMfa: boolean,
 ): 'none' | 'totp' | 'passkey' {
 	if (trustUpstreamMfa) return 'none';
-	if (profile?.twoFactorEnabled === true) return 'totp';
-	if (securityKeysAvailable) return 'passkey';
-	return 'none';
+	if (profile?.twoFactorEnabled !== true) return 'none';
+	return securityKeysAvailable ? 'passkey' : 'totp';
 }
 
 @Injectable()

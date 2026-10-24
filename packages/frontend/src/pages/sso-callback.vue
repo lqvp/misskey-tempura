@@ -8,7 +8,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div :class="$style.container">
 		<MkLoading v-if="processing"/>
 		<div v-else-if="passkeyRequest != null" :class="$style.passkey">
-			<XPasskey :credentialRequest="passkeyRequest" :isPerformingPasswordlessLogin="true" @done="onPasskeyDone"/>
+			<XPasskey :credentialRequest="passkeyRequest" @done="onPasskeyDone" @useTotp="onUseTotp"/>
 		</div>
 		<div v-else :class="$style.error">
 			<i class="ti ti-alert-triangle" style="font-size: 2em; color: var(--MI_THEME-error);"></i>
@@ -115,6 +115,18 @@ async function processExchangeResponse(initialRes: Misskey.entities.SigninFlowRe
 	// login() はページをリロードする。code が URL に残ったままだと
 	// リロード後に同じコードを再交換して失敗画面になるため、トップへ遷移させる
 	await login(res.i, '/');
+}
+
+async function onUseTotp(): Promise<void> {
+	// パスキーの代わりに TOTP / バックアップコードで追加認証する (ローカルサインインと同じ切り替え)
+	passkeyRequest.value = null;
+	processing.value = true;
+	try {
+		await processExchangeResponse({ finished: false, next: 'totp' });
+	} catch {
+		errorCode.value = 'EXCHANGE_FAILED';
+		processing.value = false;
+	}
 }
 
 async function onPasskeyDone(credential: AuthenticationResponseJSON): Promise<void> {
