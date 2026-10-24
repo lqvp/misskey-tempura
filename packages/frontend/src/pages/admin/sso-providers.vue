@@ -35,12 +35,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 								<template #caption>{{ i18n.ts._sso.providerKeyDescription }}</template>
 							</MkInput>
 
-							<MkSelect v-model="provider.type">
+							<MkSelect v-model="provider.type" :items="[
+								{ label: 'OpenID Connect (authentik, Keycloak, ...)', value: 'oidc' },
+								{ label: 'Google', value: 'google' },
+								{ label: 'GitHub', value: 'github' },
+								{ label: 'Discord', value: 'discord' },
+							]">
 								<template #label>{{ i18n.ts._sso.providerType }}</template>
-								<option value="oidc">OpenID Connect (authentik, Keycloak, ...)</option>
-								<option value="google">Google</option>
-								<option value="github">GitHub</option>
-								<option value="discord">Discord</option>
 							</MkSelect>
 
 							<MkInput v-if="provider.type === 'oidc'" v-model="provider.issuerUrl" placeholder="https://authentik.example.com/application/o/<slug>/">
