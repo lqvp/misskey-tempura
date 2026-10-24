@@ -152,6 +152,63 @@ export class SyncForkSchemaDrift1792633818497 {
         await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_ee630443ee7a63a930298a275f" ON "avatar_decoration_muting"  ("muteeId")`);
         await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_23a693cfa7fa174817a19ffafc" ON "avatar_decoration_muting"  ("muterId")`);
         await queryRunner.query(`CREATE UNIQUE INDEX IF NOT EXISTS "IDX_b98955c35cc7b4c3fddd0d3ba2" ON "avatar_decoration_muting"  ("muterId", "muteeId")`);
+        // これらのforkテーブルの一部 (follow_request_history / follow_history など) は
+        // 作成時にFKが無かったため、参照先ユーザー等が既に存在しない孤児行が残っている
+        // ことがある (v2.0.21 の本番障害)。entity の定義 (ON DELETE CASCADE / SET NULL)
+        // どおりに後始末した場合と同じ結果になるよう、FK追加の前に孤児参照を整理する:
+        // CASCADE のFKでは孤児行を削除、SET NULL のFKでは参照をNULLに戻す。
+        // 既存データの扱いは Rei 承認済み (2026-10-24)。整理した件数は WARNING に出す。
+        await queryRunner.query(`
+            DO $$
+            DECLARE
+                n bigint;
+                details text := '';
+            BEGIN
+                UPDATE "llm_moderation_queue" SET "assigneeId" = NULL WHERE "assigneeId" IS NOT NULL AND "assigneeId" NOT IN (SELECT "id" FROM "user");
+                GET DIAGNOSTICS n = ROW_COUNT;
+                IF n > 0 THEN details := details || format('llm_moderation_queue.assigneeId: %s orphaned refs set to NULL; ', n); END IF;
+
+                DELETE FROM "announcement_role" WHERE "announcementId" NOT IN (SELECT "id" FROM "announcement") OR "roleId" NOT IN (SELECT "id" FROM "role");
+                GET DIAGNOSTICS n = ROW_COUNT;
+                IF n > 0 THEN details := details || format('announcement_role: %s orphaned rows deleted; ', n); END IF;
+
+                UPDATE "contact_form" SET "userId" = NULL WHERE "userId" IS NOT NULL AND "userId" NOT IN (SELECT "id" FROM "user");
+                GET DIAGNOSTICS n = ROW_COUNT;
+                IF n > 0 THEN details := details || format('contact_form.userId: %s orphaned refs set to NULL; ', n); END IF;
+
+                UPDATE "contact_form" SET "assignedUserId" = NULL WHERE "assignedUserId" IS NOT NULL AND "assignedUserId" NOT IN (SELECT "id" FROM "user");
+                GET DIAGNOSTICS n = ROW_COUNT;
+                IF n > 0 THEN details := details || format('contact_form.assignedUserId: %s orphaned refs set to NULL; ', n); END IF;
+
+                DELETE FROM "follow_request_history" WHERE "fromUserId" NOT IN (SELECT "id" FROM "user") OR "toUserId" NOT IN (SELECT "id" FROM "user");
+                GET DIAGNOSTICS n = ROW_COUNT;
+                IF n > 0 THEN details := details || format('follow_request_history: %s orphaned rows deleted; ', n); END IF;
+
+                DELETE FROM "follow_history" WHERE "fromUserId" NOT IN (SELECT "id" FROM "user") OR "toUserId" NOT IN (SELECT "id" FROM "user");
+                GET DIAGNOSTICS n = ROW_COUNT;
+                IF n > 0 THEN details := details || format('follow_history: %s orphaned rows deleted; ', n); END IF;
+
+                DELETE FROM "multipart_upload" WHERE "userId" IS NOT NULL AND "userId" NOT IN (SELECT "id" FROM "user");
+                GET DIAGNOSTICS n = ROW_COUNT;
+                IF n > 0 THEN details := details || format('multipart_upload: %s orphaned rows deleted; ', n); END IF;
+
+                UPDATE "multipart_upload" SET "folderId" = NULL WHERE "folderId" IS NOT NULL AND "folderId" NOT IN (SELECT "id" FROM "drive_folder");
+                GET DIAGNOSTICS n = ROW_COUNT;
+                IF n > 0 THEN details := details || format('multipart_upload.folderId: %s orphaned refs set to NULL; ', n); END IF;
+
+                DELETE FROM "quote_muting" WHERE "muterId" NOT IN (SELECT "id" FROM "user") OR "muteeId" NOT IN (SELECT "id" FROM "user");
+                GET DIAGNOSTICS n = ROW_COUNT;
+                IF n > 0 THEN details := details || format('quote_muting: %s orphaned rows deleted; ', n); END IF;
+
+                DELETE FROM "avatar_decoration_muting" WHERE "muterId" NOT IN (SELECT "id" FROM "user") OR "muteeId" NOT IN (SELECT "id" FROM "user");
+                GET DIAGNOSTICS n = ROW_COUNT;
+                IF n > 0 THEN details := details || format('avatar_decoration_muting: %s orphaned rows deleted; ', n); END IF;
+
+                IF details <> '' THEN
+                    RAISE WARNING 'SyncForkSchemaDrift: removed references to missing rows before adding FKs: %', details;
+                END IF;
+            END $$;
+        `);
         await queryRunner.query(`ALTER TABLE "llm_moderation_queue" ADD CONSTRAINT "FK_047dbfa2f8ccb387b05c60458e3" FOREIGN KEY ("assigneeId") REFERENCES "user"("id") ON DELETE SET NULL ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "announcement_role" ADD CONSTRAINT "FK_55946f272deb125ea78f7867523" FOREIGN KEY ("announcementId") REFERENCES "announcement"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
         await queryRunner.query(`ALTER TABLE "announcement_role" ADD CONSTRAINT "FK_c430694525bc64a8b81d10a0c38" FOREIGN KEY ("roleId") REFERENCES "role"("id") ON DELETE CASCADE ON UPDATE NO ACTION`);
