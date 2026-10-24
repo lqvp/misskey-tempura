@@ -159,6 +159,16 @@ describe('SsoService コールバック全体 (実 openid-client + ローカル 
 		expect(service.isLoginCodeBoundTo(pending!, 'other-browser')).toBe(false);
 	});
 
+	test('連携していない外部アカウントはログインできず、アカウントも作られない (既存アカウントへの連携のみ)', async () => {
+		const { service, links } = create();
+		const { authorizationUrl, binding } = await service.initiate('login', 'idp');
+		expect(new URL(authorizationUrl).searchParams.get('scope')).toBe('openid');
+		const state = prepare(authorizationUrl, 'sub-unlinked');
+
+		await expect(service.handleCallback('idp', 'code', state, binding)).rejects.toMatchObject({ code: 'NOT_LINKED' });
+		expect(links.rows).toHaveLength(0);
+	});
+
 	test('別のブラウザ (束縛値が違う) からのコールバックは拒否し、state は使い切られる', async () => {
 		const { service, links } = create();
 		links.rows.push({ id: 'l1', userId: 'user-1', provider: 'idp', providerIssuer: `oidc:${issuer}`, providerUserId: 'sub-A', createdAt: new Date() });

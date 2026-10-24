@@ -207,7 +207,8 @@ export class SsoService {
 			ssoState.nonce = nonce;
 
 			authorizationUrl = buildAuthorizationUrl(oidcConfig, {
-				scope: 'openid profile email',
+				// 使うのは sub だけ。メールアドレスやプロフィールは要求しない (メール一致での自動連携や新規作成を行わないため)
+				scope: 'openid',
 				state,
 				nonce,
 				code_challenge: codeChallenge,
