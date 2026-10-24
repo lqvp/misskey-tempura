@@ -5,7 +5,7 @@
 
 import { IsNull } from 'typeorm';
 import { Inject, Injectable } from '@nestjs/common';
-import type { UsersRepository, PagesRepository } from '@/models/_.js';
+import type { MiMeta, UsersRepository, PagesRepository } from '@/models/_.js';
 import type { MiPage } from '@/models/Page.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { PageEntityService } from '@/core/entities/PageEntityService.js';
@@ -61,9 +61,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		@Inject(DI.pagesRepository)
 		private pagesRepository: PagesRepository,
 
+		@Inject(DI.meta)
+		private serverSettings: MiMeta,
+
 		private pageEntityService: PageEntityService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			// 訪問者への公開範囲が 'none' の間は匿名にページを返さない(users/show と同じ訪問者ポリシーの扱い)
+			if (me == null && this.serverSettings.ugcVisibilityForVisitor === 'none') {
+				throw new ApiError(meta.errors.noSuchPage);
+			}
+
 			let page: MiPage | null = null;
 
 			if ('pageId' in ps) {

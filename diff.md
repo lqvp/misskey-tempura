@@ -79,6 +79,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * SSR/OGP・埋め込み (/embed/notes/:id)・ActivityPub の /notes/:id・/notes/:id/activity・outbox で、requireSigninToViewContents・hidePublicNotes/hideHomeNotes・時限設定 (makeNotesHiddenBefore/makeNotesFollowersOnlyBefore)・localOnly・ugcVisibilityForVisitor を反映します
 * 署名が無い・検証できない取得は匿名に分類します。署名者の鍵をまだ知らない場合は、インスタンス登録済みのホストに限りアカウントを取りに行って検証します (署名必須モードと同じ方針)。未登録ホストの署名者は匿名に分類します
 * 署名を検証できたリモートサーバーからの取得と、配送済みのコピーは対象外です
+* API でも Pages (pages/show, pages/featured)・Clips (clips/show, clips/notes)・Channels (channels/show, channels/featured)・ユーザー検索 (users/search) に同じポリシーを適用します。ugcVisibilityForVisitor が 'none' の間は匿名には返さず、'local' の間は匿名のユーザー検索をローカルユーザーに限定します (users/show と同じ扱い)
 
 ### 招待と承認
 

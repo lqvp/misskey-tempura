@@ -9,6 +9,7 @@ import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { DI } from '@/di-symbols.js';
 import { UserSearchService } from '@/core/UserSearchService.js';
+import type { MiMeta } from '@/models/_.js';
 import { type Config } from '@/config.js';
 import { ApiError } from '../../error.js';
 
@@ -54,6 +55,9 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
+		@Inject(DI.meta)
+		private serverSettings: MiMeta,
+
 		private userEntityService: UserEntityService,
 		private userSearchService: UserSearchService,
 		private roleService: RoleService,
@@ -62,6 +66,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			const policies = await this.roleService.getUserPolicies(me ? me.id : null);
 			if (!policies.canSearchUsers) {
 				throw new ApiError(meta.errors.unavailable);
+			}
+
+			// 訪問者への公開範囲が 'none' の間は匿名のユーザー検索を返さない
+			if (me == null && this.serverSettings.ugcVisibilityForVisitor === 'none') {
+				return [];
+			}
+			// 'local' の間は匿名の検索結果をローカルユーザーに限定する(users/show と同じ訪問者ポリシーの扱い)
+			if (me == null && this.serverSettings.ugcVisibilityForVisitor === 'local') {
+				// 匿名ではリモートユーザーを返さない(users/show と同じ扱い)
+				if (ps.origin === 'remote') return [];
+				ps.origin = 'local';
 			}
 
 			const users = await this.userSearchService.search(ps.query.trim(), me?.id ?? null, {
