@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import { createHash } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import * as Redis from 'ioredis';
 import {
@@ -36,6 +37,8 @@ interface SsoState {
 	userId?: string;
 	codeVerifier?: string;
 	nonce?: string;
+	/** 認可を開始したブラウザに束縛するランダム値のSHA-256ハッシュ (login のみ) */
+	bindingHash?: string;
 	createdAt: number;
 }
 
@@ -97,7 +100,8 @@ export class SsoService {
 	/** OIDC (google 含む) の discovery 結果をキャッシュ付きで取得する */
 	private async getOidcConfiguration(provider: SsoProviderConfig): Promise<Configuration> {
 		const issuerUrl = provider.type === 'google' ? 'https://accounts.google.com' : provider.issuerUrl!;
-		const cacheKey = `${provider.key}:${issuerUrl}:${provider.clientId}:${provider.clientSecret.length}`;
+		const secretHash = createHash('sha256').update(provider.clientSecret).digest('hex');
+		const cacheKey = `${provider.key}:${issuerUrl}:${provider.clientId}:${secretHash}`;
 		const cached = this.oidcConfigCache.get(cacheKey);
 		if (cached) return cached;
 
@@ -112,13 +116,23 @@ export class SsoService {
 		}
 	}
 
-	/** 認可URLを生成し、検証用の状態を Redis に保存する */
+	/**
+	 * 認可URLを生成し、検証用の状態を Redis に保存する。
+	 * login の場合はブラウザ束縛用のランダム値も返す (呼び出し側がHttpOnly Cookieに設定する)。
+	 */
 	@bindThis
-	public async initiate(type: 'login' | 'link', providerKey: string, userId?: string): Promise<string> {
+	public async initiate(type: 'login' | 'link', providerKey: string, userId?: string): Promise<{ authorizationUrl: string; binding: string | null }> {
 		const provider = await this.getProviderConfig(providerKey);
 		const redirectUri = this.getRedirectUri(provider.key);
 		const state = randomState();
 		const ssoState: SsoState = { provider: provider.key, type, userId, createdAt: Date.now() };
+
+		// ログインCSRF対策: 開始したブラウザだけが持つ値のハッシュを state に紐付ける
+		let binding: string | null = null;
+		if (type === 'login') {
+			binding = randomState();
+			ssoState.bindingHash = createHash('sha256').update(binding).digest('hex');
+		}
 
 		let authorizationUrl: string;
 
@@ -157,7 +171,7 @@ export class SsoService {
 		}
 
 		await this.redisClient.set(`sso:state:${state}`, JSON.stringify(ssoState), 'EX', STATE_TTL_SEC);
-		return authorizationUrl;
+		return { authorizationUrl, binding };
 	}
 
 	/**
@@ -169,6 +183,7 @@ export class SsoService {
 		providerKey: string,
 		code: string,
 		state: string,
+		binding?: string,
 	): Promise<{ type: 'login'; loginCode: string } | { type: 'link'; userId: string }> {
 		const raw = await this.redisClient.getdel(`sso:state:${state}`);
 		if (!raw) {
@@ -177,6 +192,12 @@ export class SsoService {
 		const stateData = JSON.parse(raw) as SsoState;
 		if (stateData.provider !== providerKey) {
 			throw new SsoError('INVALID_STATE', 'State does not match the provider');
+		}
+		if (stateData.bindingHash != null) {
+			const actual = binding != null ? createHash('sha256').update(binding).digest('hex') : null;
+			if (actual !== stateData.bindingHash) {
+				throw new SsoError('INVALID_STATE', 'Browser binding does not match');
+			}
 		}
 
 		const provider = await this.getProviderConfig(providerKey);
@@ -317,6 +338,7 @@ export class SsoService {
 		const tokenResponse = await authorizationCodeGrant(oidcConfig, currentUrl, {
 			pkceCodeVerifier: stateData.codeVerifier,
 			expectedNonce: stateData.nonce,
+			expectedState: state,
 		});
 
 		const sub = tokenResponse.claims()?.sub;
@@ -329,7 +351,8 @@ export class SsoService {
 	/** 連携用の認可URLを発行する (要ログイン) */
 	@bindThis
 	public async linkAccount(userId: string, providerKey: string): Promise<string> {
-		return this.initiate('link', providerKey, userId);
+		const { authorizationUrl } = await this.initiate('link', providerKey, userId);
+		return authorizationUrl;
 	}
 
 	@bindThis

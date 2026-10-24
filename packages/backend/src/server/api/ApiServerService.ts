@@ -21,10 +21,12 @@ import { SigninApiService } from './SigninApiService.js';
 import { SigninWithPasskeyApiService } from './SigninWithPasskeyApiService.js';
 import { SigninService } from './SigninService.js';
 import { SsoService, SsoError } from './SsoService.js';
+import { RateLimiterService } from './RateLimiterService.js';
+import { getIpHash } from '@/misc/get-ip-hash.js';
 import type { MiLocalUser } from '@/models/User.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import type Logger from '@/logger.js';
-import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
+import type { FastifyInstance, FastifyPluginOptions, FastifyReply, FastifyRequest } from 'fastify';
 
 @Injectable()
 export class ApiServerService {
@@ -52,10 +54,43 @@ export class ApiServerService {
 		private signinWithPasskeyApiService: SigninWithPasskeyApiService,
 		private signinService: SigninService,
 		private ssoService: SsoService,
+		private rateLimiterService: RateLimiterService,
 		loggerService: LoggerService,
 	) {
 		this.logger = loggerService.getLogger('sso');
 		//this.createServer = this.createServer.bind(this);
+	}
+
+	private ssoBindingCookieName = 'sso_binding';
+
+	private setSsoBindingCookie(reply: FastifyReply, value: string, maxAge: number): void {
+		const secure = this.config.url.startsWith('https://') ? '; Secure' : '';
+		reply.header('set-cookie', `${this.ssoBindingCookieName}=${value}; Path=/api/sso; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${secure}`);
+	}
+
+	private clearSsoBindingCookie(reply: FastifyReply): void {
+		this.setSsoBindingCookie(reply, '', 0);
+	}
+
+	private getSsoBindingCookie(request: FastifyRequest): string | undefined {
+		const header = request.headers.cookie;
+		if (header == null) return undefined;
+		for (const part of header.split(';')) {
+			const [name, ...rest] = part.trim().split('=');
+			if (name === this.ssoBindingCookieName) return rest.join('=');
+		}
+		return undefined;
+	}
+
+	/** SSO の生ルートは endpoint-meta のレート制限を通らないため、明示的に制限する */
+	private async limitSsoRequest(request: FastifyRequest, reply: FastifyReply, key: string): Promise<boolean> {
+		if (!this.config.enableIpRateLimit) return true;
+		const rateLimit = await this.rateLimiterService.limit({ key, duration: 10 * 60 * 1000, max: 30, minInterval: 1000 }, getIpHash(request.ip));
+		if (rateLimit != null) {
+			reply.code(429).send({ error: { message: 'Rate limit exceeded. Try again later.', code: 'RATE_LIMIT_EXCEEDED', id: '7d0e1f2a-3b4c-4d5e-8f9a-0b1c2d3e4f5a' } });
+			return false;
+		}
+		return true;
 	}
 
 	@bindThis
@@ -166,8 +201,12 @@ export class ApiServerService {
 				reply.code(400).send({ error: { message: 'Missing provider parameter', code: 'MISSING_PROVIDER', id: '3f6a1c2e-7b8d-4e5f-9a0b-1c2d3e4f5a6b' } });
 				return;
 			}
+			if (!await this.limitSsoRequest(request, reply, 'sso-initiate')) return;
 			try {
-				const authorizationUrl = await this.ssoService.initiate('login', providerKey);
+				const { authorizationUrl, binding } = await this.ssoService.initiate('login', providerKey);
+				if (binding != null) {
+					this.setSsoBindingCookie(reply, binding, 600);
+				}
 				reply.redirect(authorizationUrl);
 			} catch (err) {
 				if (err instanceof SsoError) {
@@ -194,8 +233,11 @@ export class ApiServerService {
 				reply.code(400).send({ error: { message: 'Missing code or state parameter', code: 'INVALID_REQUEST', id: '5b8c3e4a-9d0f-4a7b-1c2d-3e4f5a6b7c8d' } });
 				return;
 			}
+			if (!await this.limitSsoRequest(request, reply, 'sso-callback')) return;
+			const binding = this.getSsoBindingCookie(request);
+			this.clearSsoBindingCookie(reply);
 			try {
-				const result = await this.ssoService.handleCallback(providerKey, code, state);
+				const result = await this.ssoService.handleCallback(providerKey, code, state, binding);
 				if (result.type === 'login') {
 					reply.redirect(`${webCallbackUrl}?code=${encodeURIComponent(result.loginCode)}`);
 				} else {

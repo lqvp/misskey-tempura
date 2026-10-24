@@ -214,7 +214,6 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 		text: i18n.ts._contactForm._category.categoryManagement,
 		to: '/admin/contact-form-categories',
 		active: currentPage.value?.route.name === 'contact-form-categories',
-	}
 	}, {
 		icon: 'ti ti-key',
 		text: i18n.ts._sso.providers,

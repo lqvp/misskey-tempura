@@ -337,8 +337,7 @@ export const ROUTE_DEF = [{
 }, {
 	path: '/oauth/authorize',
 	component: page(() => import('@/pages/oauth.vue')),
-}
-{
+}, {
 	path: '/sso/callback',
 	component: page(() => import('@/pages/sso-callback.vue')),
 }, {
@@ -580,8 +579,7 @@ export const ROUTE_DEF = [{
 		path: '/contact-form-categories',
 		name: 'contact-form-categories',
 		component: page(() => import('@/pages/admin/contact-form-categories.vue')),
-	}
-	{
+	}, {
 		path: '/sso-providers',
 		name: 'sso-providers',
 		component: page(() => import('@/pages/admin/sso-providers.vue')),

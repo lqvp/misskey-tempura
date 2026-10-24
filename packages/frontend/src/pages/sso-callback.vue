@@ -62,7 +62,7 @@ onMounted(async () => {
 	try {
 		const res = await misskeyApi('sso/exchange-code', { code });
 		if (res.finished) {
-			login(res.i);
+			await login(res.i);
 			return;
 		}
 		// SSOログインでは finished:false (captcha/2FA等) は発生しない想定

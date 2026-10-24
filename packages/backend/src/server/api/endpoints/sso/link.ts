@@ -12,7 +12,8 @@ export const meta = {
 	tags: ['account'],
 
 	requireCredential: true,
-	kind: 'write:account',
+
+	secure: true,
 
 	errors: {
 		providerNotFound: {

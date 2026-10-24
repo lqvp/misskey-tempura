@@ -4058,7 +4058,8 @@ export type paths = {
          * sso/link
          * @description No description provided.
          *
-         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes*
          */
         post: operations['sso___link'];
     };
@@ -4076,7 +4077,8 @@ export type paths = {
          * sso/unlink
          * @description No description provided.
          *
-         *     **Credential required**: *Yes* / **Permission**: *write:account*
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes*
          */
         post: operations['sso___unlink'];
     };
