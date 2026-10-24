@@ -106,6 +106,7 @@ interface SsoProviderEdit {
 	issuerUrl: string;
 	buttonLabel: string;
 	enabled: boolean;
+	trustUpstreamMfa: boolean;
 }
 
 const providers = ref<SsoProviderEdit[]>([]);
@@ -143,6 +144,7 @@ async function loadProviders() {
 			issuerUrl: p.issuerUrl ?? '',
 			buttonLabel: p.buttonLabel ?? '',
 			enabled: p.enabled,
+			trustUpstreamMfa: p.trustUpstreamMfa ?? false,
 		}));
 		originalProviders.value = JSON.parse(JSON.stringify(providers.value));
 	} catch (error) {
@@ -182,6 +184,7 @@ async function saveProviders() {
 				issuerUrl: p.issuerUrl || null,
 				buttonLabel: p.buttonLabel || null,
 				enabled: p.enabled,
+				trustUpstreamMfa: p.trustUpstreamMfa ?? false,
 			})),
 		});
 
@@ -204,6 +207,7 @@ function addProvider() {
 		issuerUrl: '',
 		buttonLabel: '',
 		enabled: false,
+		trustUpstreamMfa: false,
 	});
 }
 

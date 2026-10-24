@@ -211,6 +211,7 @@ export class SsoService {
 		code: string,
 		state: string,
 		binding?: string,
+		iss?: string,
 	): Promise<{ type: 'login'; loginCode: string } | { type: 'link'; userId: string }> {
 		const raw = await this.redisClient.getdel(`sso:state:${state}`);
 		if (!raw) {
@@ -228,7 +229,7 @@ export class SsoService {
 		}
 
 		const provider = await this.getProviderConfig(providerKey);
-		const subject = await this.fetchSubject(provider, code, state, stateData);
+		const subject = await this.fetchSubject(provider, code, state, stateData, iss);
 
 		if (stateData.type === 'link') {
 			if (!stateData.userId) {
@@ -368,7 +369,7 @@ export class SsoService {
 	}
 
 	/** IdP から安定識別子 (sub 相当) を取得する */
-	private async fetchSubject(provider: SsoProviderConfig, code: string, state: string, stateData: SsoState): Promise<string> {
+	private async fetchSubject(provider: SsoProviderConfig, code: string, state: string, stateData: SsoState, iss?: string): Promise<string> {
 		const redirectUri = this.getRedirectUri(provider.key);
 
 		if (provider.type === 'github') {
@@ -436,7 +437,7 @@ export class SsoService {
 
 		// google / oidc
 		const oidcConfig = await this.getOidcConfiguration(provider);
-		const currentUrl = new URL(`${redirectUri}?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}`);
+		const currentUrl = new URL(`${redirectUri}?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state)}${iss ? `&iss=${encodeURIComponent(iss)}` : ""}`);
 		const tokenResponse = await authorizationCodeGrant(oidcConfig, currentUrl, {
 			pkceCodeVerifier: stateData.codeVerifier,
 			expectedNonce: stateData.nonce,

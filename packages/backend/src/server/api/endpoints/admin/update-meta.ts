@@ -1417,6 +1417,13 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						trustUpstreamMfa: p.trustUpstreamMfa ?? false,
 					};
 				});
+
+				// 有効なプロバイダーは認証情報の必須チェック (既存シークレット引き継ぎ後の実効値で判定)
+				for (const provider of set.ssoProviders) {
+					if (provider.enabled && (provider.clientId.trim() === '' || provider.clientSecret === '')) {
+						throw new Error(`Provider "${provider.key}" is enabled but missing clientId/clientSecret`);
+					}
+				}
 			}
 
 			const before = await this.metaService.fetch(true);

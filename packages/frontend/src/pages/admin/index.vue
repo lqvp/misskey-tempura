@@ -215,11 +215,6 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 		to: '/admin/contact-form-categories',
 		active: currentPage.value?.route.name === 'contact-form-categories',
 	}, {
-		icon: 'ti ti-key',
-		text: i18n.ts._sso.providers,
-		to: '/admin/sso-providers',
-		active: currentPage.value?.route.name === 'sso-providers',
-	}, {
 		icon: 'ti ti-list-search',
 		text: i18n.ts.moderationLogs,
 		to: '/admin/modlog',
@@ -228,6 +223,11 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 }, ...($i.isAdmin ? [{
 	title: i18n.ts.settings,
 	items: [{
+		icon: 'ti ti-key',
+		text: i18n.ts._sso.providers,
+		to: '/admin/sso-providers',
+		active: currentPage.value?.route.name === 'sso-providers',
+	}, {
 		icon: 'ti ti-settings',
 		text: i18n.ts.general,
 		to: '/admin/settings',

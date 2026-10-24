@@ -168,14 +168,14 @@ async function linkSso(providerKey: string) {
 }
 
 async function unlinkSso(providerKey: string) {
-	const { canceled } = await os.confirm({
-		type: 'warning',
-		text: i18n.ts.ssoUnlinkConfirm,
-	});
-	if (canceled) return;
-
 	ssoBusy.value = true;
 	try {
+		const { canceled } = await os.confirm({
+			type: 'warning',
+			text: i18n.ts.ssoUnlinkConfirm,
+		});
+		if (canceled) return;
+
 		await misskeyApi('sso/unlink', { provider: providerKey });
 		await reloadSsoStatus();
 		os.success();

@@ -226,10 +226,10 @@ export class ApiServerService {
 
 		fastify.get<{
 			Params: { provider: string; };
-			Querystring: { code?: string; state?: string; error?: string; };
+			Querystring: { code?: string; state?: string; error?: string; iss?: string; };
 		}>('/sso/callback/:provider', async (request, reply) => {
 			const providerKey = request.params.provider;
-			const { code, state } = request.query;
+			const { code, state, iss } = request.query;
 			const webCallbackUrl = `${this.config.url}/sso/callback`;
 
 			// 成否にかかわらず束縛Cookieは必ず削除する
@@ -246,7 +246,7 @@ export class ApiServerService {
 			}
 			if (!await this.limitSsoRequest(request, reply, 'sso-callback')) return;
 			try {
-				const result = await this.ssoService.handleCallback(providerKey, code, state, binding);
+				const result = await this.ssoService.handleCallback(providerKey, code, state, binding, iss);
 				if (result.type === 'login') {
 					reply.redirect(`${webCallbackUrl}?code=${encodeURIComponent(result.loginCode)}`);
 				} else {
