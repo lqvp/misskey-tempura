@@ -56,6 +56,7 @@ describe('ユーザー', () => {
 	const userDetailedNotMe = (user: misskey.entities.SignupResponse): Partial<misskey.entities.UserDetailedNotMe> => {
 		return stripUndefined({
 			...userLite(user),
+			...Object.fromEntries(forkUserDetailedNotMeKeys.map(key => [key, (user as Record<string, unknown>)[key]])),
 			url: user.url,
 			uri: user.uri,
 			movedTo: user.movedTo,
@@ -111,6 +112,35 @@ describe('ユーザー', () => {
 		});
 	};
 
+	const forkMeDetailedKeys = [
+		'approved',
+		'autoFollowBack',
+		'autoFollowOnMove',
+		'communityRoles',
+		'hideActivity',
+		'hideHomeNotes',
+		'hideLocalOnlyNotes',
+		'hideNoteFromOverview',
+		'hidePublicNotes',
+		'listenbrainz',
+		'moderationNote',
+		'outboxFilter',
+		'receiveSpecifiedNotesFrom',
+		'requireSigninToViewContents',
+		'webFeedFilter',
+	] as const;
+
+	// fork独自のUserDetailedNotMeキー(レスポンスに無ければstripUndefinedで落ちる)
+	const forkUserDetailedNotMeKeys = [
+		'communityRoles',
+		'hideActivity',
+		'hideHomeNotes',
+		'hideLocalOnlyNotes',
+		'hideNoteFromOverview',
+		'hidePublicNotes',
+		'listenbrainz',
+	] as const;
+
 	// MeDetailedのキーが過不足なく入っている？
 	const meDetailed = (user: misskey.entities.SignupResponse, security = false): Partial<misskey.entities.MeDetailed> => {
 		return stripUndefined({
@@ -127,6 +157,10 @@ describe('ユーザー', () => {
 			carefulBot: user.carefulBot,
 			autoAcceptFollowed: user.autoAcceptFollowed,
 			autoRejectFollowRequest: user.autoRejectFollowRequest,
+			// fork独自のMeDetailedキー(レスポンスに無ければstripUndefinedで落ちる)
+			...Object.fromEntries(forkMeDetailedKeys.map(key => [key, (user as Record<string, unknown>)[key]])),
+			followApprovalLocalSeconds: user.followApprovalLocalSeconds,
+			followApprovalRemoteSeconds: user.followApprovalRemoteSeconds,
 			noCrawle: user.noCrawle,
 			preventAiLearning: user.preventAiLearning,
 			isExplorable: user.isExplorable,
@@ -236,10 +270,10 @@ describe('ユーザー', () => {
 		await post(userLocking, { text: 'test' });
 		await api('i/update', { isLocked: true }, userLocking);
 		userAdmin = await signup({ username: 'userAdmin' });
-		roleAdmin = await role(root, { isAdministrator: true, name: 'Admin Role' });
+		roleAdmin = await role(root, { permissionGroup: 'Admin', name: 'Admin Role' }); // fork仕様: isAdministratorフラグではなくpermissionGroupで判定される
 		await api('admin/roles/assign', { userId: userAdmin.id, roleId: roleAdmin.id }, root);
 		userModerator = await signup({ username: 'userModerator' });
-		roleModerator = await role(root, { isModerator: true, name: 'Moderator Role' });
+		roleModerator = await role(root, { permissionGroup: 'MainModerator', name: 'Moderator Role' }); // fork仕様: isModeratorフラグではなくpermissionGroupで判定される
 		await api('admin/roles/assign', { userId: userModerator.id, roleId: roleModerator.id }, root);
 		userRolePublic = await signup({ username: 'userRolePublic' });
 		rolePublic = await role(root, { isPublic: true, name: 'Public Role' });
@@ -288,13 +322,13 @@ describe('ユーザー', () => {
 		userQuoteMutingAlice = await signup({ username: 'userQuoteMutingAlice' });
 		await post(userQuoteMutingAlice, { text: 'test' });
 		await api('quote-mute/create', { userId: alice.id }, userQuoteMutingAlice);
-		userQuoteMutedByAlice = await signup({ username: 'userQuoteMutedByAlice' });
+		userQuoteMutedByAlice = await signup({ username: 'quoteMutedByAlice' });
 		await post(userQuoteMutedByAlice, { text: 'test' });
 		await api('quote-mute/create', { userId: userQuoteMutedByAlice.id }, alice);
-		userAvatarDecorationMutingAlice = await signup({ username: 'userAvatarDecorationMutingAlice' });
+		userAvatarDecorationMutingAlice = await signup({ username: 'decoMutingAlice' });
 		await post(userAvatarDecorationMutingAlice, { text: 'test' });
 		await api('avatar-decoration-muting/create', { userId: alice.id }, userAvatarDecorationMutingAlice);
-		userAvatarDecorationMutedByAlice = await signup({ username: 'userAvatarDecorationMutedByAlice' });
+		userAvatarDecorationMutedByAlice = await signup({ username: 'decoMutedByAlice' });
 		await post(userAvatarDecorationMutedByAlice, { text: 'test' });
 		await api('avatar-decoration-muting/create', { userId: userAvatarDecorationMutedByAlice.id }, alice);
 		userFollowRequesting = await signup({ username: 'userFollowRequesting' });
@@ -384,6 +418,8 @@ describe('ユーザー', () => {
 		assert.strictEqual(response.autoSensitive, false);
 		assert.strictEqual(response.carefulBot, false);
 		assert.strictEqual(response.autoAcceptFollowed, true);
+		assert.strictEqual(response.followApprovalLocalSeconds, null);
+		assert.strictEqual(response.followApprovalRemoteSeconds, null);
 		assert.strictEqual(response.noCrawle, false);
 		assert.strictEqual(response.preventAiLearning, true);
 		assert.strictEqual(response.isExplorable, true);
@@ -609,7 +645,8 @@ describe('ユーザー', () => {
 		{ label: 'ミュートユーザーが含まれない', user: () => userMutedByAlice, excluded: true },
 		{ label: 'ブロックされているユーザーが含まれない', user: () => userBlockedByAlice, excluded: true },
 		{ label: 'ブロックしてきているユーザーが含まれる', user: () => userBlockingAlice, excluded: true },
-		{ label: '承認制ユーザーが含まれる', user: () => userLocking },
+		// fork仕様: users/listは鍵垢を返さない(e6c799a1d4)
+		{ label: '承認制ユーザーが含まれない', user: () => userLocking, excluded: true },
 		{ label: 'サイレンスユーザーが含まれる', user: () => userSilenced },
 		{ label: 'サスペンドユーザーが含まれない', user: () => userSuspended, excluded: true },
 		{ label: '削除済ユーザーが含まれる', user: () => userDeletedBySelf },
@@ -683,6 +720,9 @@ describe('ユーザー', () => {
 			isModerator: rolePublic.isModerator,
 			isAdministrator: rolePublic.isAdministrator,
 			displayOrder: rolePublic.displayOrder,
+			// forkで追加されたキー
+			isRainbow: false,
+			permissionGroup: 'Normal',
 		}]);
 	});
 	test('を取得することができ、バッヂロールがセットされていること', async () => {
@@ -691,6 +731,8 @@ describe('ユーザー', () => {
 			name: roleBadge.name,
 			iconUrl: roleBadge.iconUrl,
 			displayOrder: roleBadge.displayOrder,
+			// forkで追加されたキー
+			isRainbow: false,
 		}]);
 		assert.deepStrictEqual(response.roles, [{
 			id: roleBadge.id,
@@ -701,6 +743,9 @@ describe('ユーザー', () => {
 			isModerator: roleBadge.isModerator,
 			isAdministrator: roleBadge.isAdministrator,
 			displayOrder: roleBadge.displayOrder,
+			// forkで追加されたキー
+			isRainbow: false,
+			permissionGroup: 'Normal',
 		}]);
 	});
 	test('をID指定のリスト形式で取得することができる（空）', async () => {
@@ -729,9 +774,9 @@ describe('ユーザー', () => {
 		{ label: 'サスペンドユーザーが（モデレーターが見るときは）含まれる', user: () => userSuspended, me: () => root },
 		// BUG サスペンドユーザーを一般ユーザーから見るとrootユーザーが返ってくる
 		//{ label: 'サスペンドユーザーが（一般ユーザーが見るときは）含まれない', user: () => userSuspended, me: () => bob, excluded: true },
-		{ label: '削除済ユーザーが含まれる', user: () => userDeletedBySelf },
-		{ label: '削除済(byAdmin)ユーザーが含まれる', user: () => userDeletedByAdmin },
-		// @ts-expect-error excluded は上でコメントアウトされているので
+		// fork仕様: users/showのIDリスト指定は削除済ユーザーを返さない(b6a4c8937d)
+		{ label: '削除済ユーザーが含まれない', user: () => userDeletedBySelf, excluded: true },
+				{ label: '削除済(byAdmin)ユーザーが含まれない', user: () => userDeletedByAdmin, excluded: true },
 	] as const)('をID指定のリスト形式で取得することができ、結果に$label', async ({ user, me, excluded }) => {
 		const parameters = { userIds: [user().id] };
 		const response = await successfulApiCall({ endpoint: 'users/show', parameters, user: me?.() ?? alice });
@@ -747,6 +792,12 @@ describe('ユーザー', () => {
 		const parameters = { query: 'carol', limit: 10 };
 		const response = await successfulApiCall({ endpoint: 'users/search', parameters, user: alice });
 		const expected = [await show(carol.id, alice)];
+		assert.deepStrictEqual(response, expected);
+	});
+	test('を検索することができる(未認証)', async () => {
+		const parameters = { query: 'carol', limit: 10 };
+		const response = await successfulApiCall({ endpoint: 'users/search', parameters, user: undefined });
+		const expected = [await successfulApiCall({ endpoint: 'users/show', parameters: { userId: carol.id }, user: undefined })];
 		assert.deepStrictEqual(response, expected);
 	});
 	test('を検索することができる(UserLite)', async () => {

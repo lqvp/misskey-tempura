@@ -63,8 +63,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				.select('ar.announcementId')
 				.where('ar.roleId IN (:...roles)', { roles: userRoles.map(x => x.id) });
 
+			const now = new Date();
 			const query = this.queryService.makePaginationQuery(this.announcementsRepository.createQueryBuilder('announcement'), ps.sinceId, ps.untilId, ps.sinceDate, ps.untilDate)
-				.andWhere('announcement.isActive = :isActive', { isActive: ps.isActive })
 				.andWhere(new Brackets(qb => {
 					if (me) qb.orWhere('announcement.userId = :meId', { meId: me.id });
 					qb.orWhere('announcement.userId IS NULL');
@@ -79,6 +79,19 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					qb.orWhere('announcement.isRoleSpecified = false');
 				}))
 				.setParameters(announcementRolesQuery.getParameters());
+
+			if (ps.isActive) {
+				query.andWhere('announcement.isActive = true');
+				query.andWhere(new Brackets(qb => {
+					qb.where('announcement.autoArchiveAt IS NULL');
+					qb.orWhere('announcement.autoArchiveAt > :now', { now });
+				}));
+			} else {
+				query.andWhere(new Brackets(qb => {
+					qb.where('announcement.isActive = false');
+					qb.orWhere('announcement.autoArchiveAt <= :now', { now });
+				}));
+			}
 
 			const announcements = await query.limit(ps.limit).getMany();
 

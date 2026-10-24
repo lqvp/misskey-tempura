@@ -20,18 +20,13 @@ export const Default = {
 				};
 			},
 			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
 				events() {
 					return {
 						closed: action('closed'),
 					};
 				},
 			},
-			template: '<MkDonation v-bind="props" v-on="events" />',
+			template: '<MkDonation v-bind="args" v-on="events" />',
 		};
 	},
 	args: {

@@ -2,41 +2,32 @@
  * SPDX-FileCopyrightText: syuilo and misskey-project
  * SPDX-License-Identifier: AGPL-3.0-only
  */
-
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-/* eslint-disable import/no-default-export */
-import type { StoryObj } from '@storybook/vue3';
+ 
 import { action } from 'storybook/actions';
+import { ref } from 'vue';
 import MkColorInput from './MkColorInput.vue';
+import type { StoryObj } from '@storybook/vue3';
 export const Default = {
 	render(args) {
 		return {
 			components: {
 				MkColorInput,
 			},
-			data() {
-				return {
-					color: '#cccccc',
-				};
-			},
 			setup() {
+				// SB10 では data() + v-model + computed events の組み合わせで
+				// update:modelValue が反映されないため、setup の ref と明示的なハンドラで持つ
+				const value = ref('#cccccc');
+				const onUpdateModelValue = (v: string) => {
+					value.value = v;
+					action('update:modelValue')(v);
+				};
 				return {
 					args,
+					value,
+					onUpdateModelValue,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-				events() {
-					return {
-						'update:modelValue': action('update:modelValue'),
-					};
-				},
-			},
-			template: '<MkColorInput v-model="color" v-bind="props" v-on="events" />',
+			template: '<MkColorInput :model-value="value" v-bind="args" @update:model-value="onUpdateModelValue" />',
 		};
 	},
 	parameters: {

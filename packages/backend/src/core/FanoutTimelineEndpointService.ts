@@ -141,6 +141,9 @@ export class FanoutTimelineEndpointService {
 							if (!ps.ignoreAuthorFromMute && userIdsWhoMeMutingQuotes.has(note.userId)) return false;
 						} else {
 							// リノート
+							// リノートした人自身がミュートされている場合も非表示にする
+							// (ストリーミング側 Channel.isNoteMutedOrBlocked と同じ判定)
+							if (isUserRelated(note, userIdsWhoMeMuting, ps.ignoreAuthorFromMute)) return false;
 							if (isUserRelated(note.renote, userIdsWhoMeMuting, ps.ignoreAuthorFromMute)) return false;
 							if (!ps.ignoreAuthorFromMute && userIdsWhoMeMutingRenotes.has(note.userId)) return false;
 						}

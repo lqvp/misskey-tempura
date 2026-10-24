@@ -1,0 +1,15 @@
+{
+	"name": "storybook-addon-misskey-theme",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"exports": {
+		".": "./preview.js",
+		"./manager": "./manager.js",
+		"./preview": "./preview.js",
+		"./package.json": "./package.json",
+		"./preset": "./preset.js",
+		"./preset.js": "./preset.js"
+	},
+	"license": "MIT"
+}

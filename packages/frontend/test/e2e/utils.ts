@@ -5,6 +5,7 @@
 
 import type { Page } from 'playwright';
 import {
+	api,
 	registerUser as registerUserWithBaseUrl,
 	resetState as resetStateWithBaseUrl,
 	signIn as signInWithBaseUrl,
@@ -13,6 +14,8 @@ import {
 export type { RegisteredUser } from './shared.js';
 export {
 	ADMIN_SETUP_PASSWORD,
+	acceptSignupInviteCheck,
+	api,
 	DEFAULT_INVITATION_CODE,
 	acceptSignupRules,
 	assertOk,
@@ -30,6 +33,14 @@ export const BASE_URL = 'http://localhost:61812';
 //#region Misc
 export async function resetState(): Promise<void> {
 	await resetStateWithBaseUrl(BASE_URL);
+}
+
+export async function createInvitationCode(adminToken: string): Promise<string> {
+	const result = await api(BASE_URL, 'invite/create', { i: adminToken }) as { code?: unknown } | null;
+	if (result == null || typeof result.code !== 'string') {
+		throw new Error('/api/invite/create did not return an invitation code');
+	}
+	return result.code;
 }
 
 export async function registerUser(

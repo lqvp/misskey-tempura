@@ -7,7 +7,6 @@ import { Inject, Injectable, Scope } from '@nestjs/common';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { bindThis } from '@/decorators.js';
 import { NoteStreamingHidingService } from '../NoteStreamingHidingService.js';
-import { isRenotePacked, isQuotePacked } from '@/misc/is-renote.js';
 import { DI } from '@/di-symbols.js';
 import type { RolesRepository } from '@/models/_.js';
 import type { GlobalEvents } from '@/core/GlobalEventService.js';
@@ -72,10 +71,7 @@ export class RoleTimelineChannel extends Channel {
 			if (!filtered) return;
 			note = filtered;
 
-			// eslint-disable-next-line no-param-reassign -- 共有ノートを書き換えないよう、コピーに差し替える
-			note = await this.withMyRenoteReaction(note, this.noteEntityService);
-
-			this.send('note', note);
+			this.send('note', await this.noteEntityService.withMyRenoteReaction(note, this.user?.id ?? null));
 		} else {
 			this.send(data.type, data.body);
 		}

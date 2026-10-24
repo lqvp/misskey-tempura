@@ -5,7 +5,7 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
-import type { ChannelsRepository } from '@/models/_.js';
+import type { MiMeta, ChannelsRepository } from '@/models/_.js';
 import { ChannelEntityService } from '@/core/entities/ChannelEntityService.js';
 import { DI } from '@/di-symbols.js';
 
@@ -37,9 +37,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		@Inject(DI.channelsRepository)
 		private channelsRepository: ChannelsRepository,
 
+		@Inject(DI.meta)
+		private serverSettings: MiMeta,
+
 		private channelEntityService: ChannelEntityService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			// 訪問者への公開範囲が 'none' の間は匿名には空を返す
+			if (me == null && this.serverSettings.ugcVisibilityForVisitor === 'none') {
+				return [];
+			}
+
 			const query = this.channelsRepository.createQueryBuilder('channel')
 				.where('channel.lastNotedAt IS NOT NULL')
 				.andWhere('channel.isArchived = FALSE')

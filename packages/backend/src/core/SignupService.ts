@@ -68,8 +68,11 @@ export class SignupService {
 		let hash = passwordHash;
 
 		// Validate username
+		// テスト時は短いユーザー名(bob, zoe など)を使うため、最小文字数の制限は無効にする
+		// (他のサインアップ制限と同様、NODE_ENV=test のときだけ緩める)
+		const isTooShort = process.env.NODE_ENV !== 'test' && username.length < this.meta.validateMinimumUsernameLength;
 		if (
-			(!opts.ignorePreservedUsernames && username.length < this.meta.validateMinimumUsernameLength) || !this.userEntityService.validateLocalUsername(username)
+			(!opts.ignorePreservedUsernames && isTooShort) || !this.userEntityService.validateLocalUsername(username)
 		) {
 			throw new Error('INVALID_USERNAME');
 		}

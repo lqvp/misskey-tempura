@@ -952,6 +952,82 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			allowUnregisteredApSignerVerification: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousStats: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousOnlineUsersCount: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousChartActiveUsers: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousChartApRequest: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousChartDrive: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousChartFederation: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousChartInstance: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousChartNotes: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousChartUsers: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousFederationUsers: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousFederationStats: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousShowInstance: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousReplies: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousRenotes: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousQuotes: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousFederationInstances: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousFeatured: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousLocalTimeline: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
 		},
 	},
 } as const;
@@ -1152,6 +1228,26 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				loginRiskShowDetailsToUser: instance.loginRiskShowDetailsToUser,
 				emailWhitelist: instance.emailWhitelist,
 				requireSignedApFetch: instance.requireSignedApFetch,
+				allowUnregisteredApSignerVerification:
+					instance.allowUnregisteredApSignerVerification,
+				allowAnonymousStats: instance.allowAnonymousStats,
+				allowAnonymousOnlineUsersCount: instance.allowAnonymousOnlineUsersCount,
+				allowAnonymousChartActiveUsers: instance.allowAnonymousChartActiveUsers,
+				allowAnonymousChartApRequest: instance.allowAnonymousChartApRequest,
+				allowAnonymousChartDrive: instance.allowAnonymousChartDrive,
+				allowAnonymousChartFederation: instance.allowAnonymousChartFederation,
+				allowAnonymousChartInstance: instance.allowAnonymousChartInstance,
+				allowAnonymousChartNotes: instance.allowAnonymousChartNotes,
+				allowAnonymousChartUsers: instance.allowAnonymousChartUsers,
+				allowAnonymousFederationUsers: instance.allowAnonymousFederationUsers,
+				allowAnonymousFederationStats: instance.allowAnonymousFederationStats,
+				allowAnonymousShowInstance: instance.allowAnonymousShowInstance,
+				allowAnonymousReplies: instance.allowAnonymousReplies,
+				allowAnonymousRenotes: instance.allowAnonymousRenotes,
+				allowAnonymousQuotes: instance.allowAnonymousQuotes,
+				allowAnonymousFederationInstances: instance.allowAnonymousFederationInstances,
+				allowAnonymousFeatured: instance.allowAnonymousFeatured,
+				allowAnonymousLocalTimeline: instance.allowAnonymousLocalTimeline,
 				customSplashText: instance.customSplashText,
 				blockMentionsFromUnfamiliarRemoteUsers:
 					instance.blockMentionsFromUnfamiliarRemoteUsers,

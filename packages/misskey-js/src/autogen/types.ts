@@ -4608,6 +4608,8 @@ export type components = {
             };
             /** @enum {string} */
             receiveSpecifiedNotesFrom: 'all' | 'following' | 'nobody';
+            followApprovalLocalSeconds: number | null;
+            followApprovalRemoteSeconds: number | null;
             noCrawle: boolean;
             preventAiLearning: boolean;
             isExplorable: boolean;
@@ -7480,6 +7482,8 @@ export interface operations {
                     isRoleSpecified?: boolean;
                     /** @default null */
                     roleIds?: string[] | null;
+                    /** @default null */
+                    autoArchiveAt?: number | null;
                 };
             };
         };
@@ -7662,6 +7666,8 @@ export interface operations {
                         /** @enum {string} */
                         display: 'normal' | 'banner' | 'dialog';
                         isActive: boolean;
+                        /** Format: date-time */
+                        autoArchiveAt: string | null;
                         forExistingUsers: boolean;
                         silence: boolean;
                         needConfirmationToRead: boolean;
@@ -7739,6 +7745,7 @@ export interface operations {
                     isActive?: boolean;
                     isRoleSpecified?: boolean;
                     roleIds?: string[];
+                    autoArchiveAt?: number | null;
                 };
             };
         };
@@ -11634,6 +11641,25 @@ export interface operations {
                             isDefault: boolean;
                         }[];
                         requireSignedApFetch: boolean;
+                        allowUnregisteredApSignerVerification: boolean;
+                        allowAnonymousStats: boolean;
+                        allowAnonymousOnlineUsersCount: boolean;
+                        allowAnonymousChartActiveUsers: boolean;
+                        allowAnonymousChartApRequest: boolean;
+                        allowAnonymousChartDrive: boolean;
+                        allowAnonymousChartFederation: boolean;
+                        allowAnonymousChartInstance: boolean;
+                        allowAnonymousChartNotes: boolean;
+                        allowAnonymousChartUsers: boolean;
+                        allowAnonymousFederationUsers: boolean;
+                        allowAnonymousFederationStats: boolean;
+                        allowAnonymousShowInstance: boolean;
+                        allowAnonymousReplies: boolean;
+                        allowAnonymousRenotes: boolean;
+                        allowAnonymousQuotes: boolean;
+                        allowAnonymousFederationInstances: boolean;
+                        allowAnonymousFeatured: boolean;
+                        allowAnonymousLocalTimeline: boolean;
                     };
                 };
             };
@@ -15369,6 +15395,25 @@ export interface operations {
                     hanaModeIconRadius?: number;
                     hanaModeBackground?: string | null;
                     requireSignedApFetch?: boolean;
+                    allowUnregisteredApSignerVerification?: boolean;
+                    allowAnonymousStats?: boolean;
+                    allowAnonymousOnlineUsersCount?: boolean;
+                    allowAnonymousChartActiveUsers?: boolean;
+                    allowAnonymousChartApRequest?: boolean;
+                    allowAnonymousChartDrive?: boolean;
+                    allowAnonymousChartFederation?: boolean;
+                    allowAnonymousChartInstance?: boolean;
+                    allowAnonymousChartNotes?: boolean;
+                    allowAnonymousChartUsers?: boolean;
+                    allowAnonymousFederationUsers?: boolean;
+                    allowAnonymousFederationStats?: boolean;
+                    allowAnonymousShowInstance?: boolean;
+                    allowAnonymousReplies?: boolean;
+                    allowAnonymousRenotes?: boolean;
+                    allowAnonymousQuotes?: boolean;
+                    allowAnonymousFederationInstances?: boolean;
+                    allowAnonymousFeatured?: boolean;
+                    allowAnonymousLocalTimeline?: boolean;
                     customSplashText?: string[] | null;
                     defaultFollowedUsers?: string[] | null;
                     forciblyFollowedUsers?: string[] | null;
@@ -31269,6 +31314,8 @@ export interface operations {
                     };
                     /** @enum {string} */
                     receiveSpecifiedNotesFrom?: 'all' | 'following' | 'nobody';
+                    followApprovalLocalSeconds?: number | null;
+                    followApprovalRemoteSeconds?: number | null;
                     noCrawle?: boolean;
                     preventAiLearning?: boolean;
                     requireSigninToViewContents?: boolean;

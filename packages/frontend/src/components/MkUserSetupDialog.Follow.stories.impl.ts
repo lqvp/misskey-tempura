@@ -20,14 +20,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkUserSetupDialog_Follow v-bind="props" />',
+			template: '<MkUserSetupDialog_Follow v-bind="args" />',
 		};
 	},
 	args: {

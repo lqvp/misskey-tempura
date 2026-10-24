@@ -402,20 +402,30 @@ describe('クリップ', () => {
 		}
 	});
 
-	test.each([
-		{ label: '未認証', user: () => undefined },
-		{ label: '存在しないユーザーのもの', parameters: { userId: 'xxxxxxx' } },
-	])('の一覧は$labelでも取得できる', async ({ parameters, user }) => {
+	// fork仕様: users/clips は requireCredential のため未認証では取得できない (93edd472d9)
+	test('の一覧は未認証では取得できない', async () => {
+		await createMany({ isPublic: true });
+		await failedApiCall({
+			endpoint: 'users/clips',
+			parameters: { userId: alice.id },
+			user: undefined,
+		}, {
+			status: 401,
+			code: 'CREDENTIAL_REQUIRED',
+			id: '1384574d-a912-4b81-8601-c7b1c4085df1',
+		});
+	});
+
+	test('の一覧は存在しないユーザーのものでも取得できる', async () => {
 		const clips = await createMany({ isPublic: true });
 		const res = await usersClips({
-			userId: alice.id,
+			userId: 'xxxxxxx',
 			limit: clips.length,
-			...parameters,
 		}, {
-			user: (user ?? (() => alice))(),
+			user: alice,
 		});
 
-		// 未認証で見たときはisFavoritedは入らない
+		// 自分以外で見たときはisFavoritedは入らない
 		for (const clip of res) {
 			assert.strictEqual('isFavorited' in clip, false);
 		}

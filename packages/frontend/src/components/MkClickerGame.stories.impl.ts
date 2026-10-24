@@ -5,7 +5,7 @@
 
 import { HttpResponse, http } from 'msw';
 import { action } from 'storybook/actions';
-import { expect, userEvent, within } from '@storybook/test';
+import { expect, userEvent, within } from 'storybook/test';
 import { commonHandlers } from '../../.storybook/mocks.js';
 import MkClickerGame from './MkClickerGame.vue';
 import type { StoryObj } from '@storybook/vue3';
@@ -25,16 +25,15 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkClickerGame v-bind="props" />',
+			template: '<MkClickerGame v-bind="args" />',
 		};
 	},
+	decorators: [
+		// capture の安定化: アニメーション/トランジションを即時完了させる (表示内容自体は変えない)
+		() => ({
+			template: '<div><style>*, *::before, *::after { animation-duration: 0.01s !important; animation-delay: 0s !important; transition-duration: 0.01s !important; transition-delay: 0s !important; }</style><story/></div>',
+		}),
+	],
 	async play({ canvasElement }) {
 		await sleep(1000);
 		const canvas = within(canvasElement);
@@ -45,6 +44,11 @@ export const Default = {
 		await expect(count).toHaveTextContent('1');
 	},
 	parameters: {
+		chromatic: {
+			// NOTE: cps カウンタや +1 エフェクトが時間経過で変化するため、
+			// アニメーションを無効化する decorator と併用した上で十分に待ってから capture する
+			delay: 8000,
+		},
 		layout: 'centered',
 		msw: {
 			handlers: [

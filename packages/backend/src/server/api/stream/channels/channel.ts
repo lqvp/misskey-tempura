@@ -58,10 +58,7 @@ export class ChannelChannel extends Channel {
 		// eslint-disable-next-line no-param-reassign -- これ以降元の Note オブジェクトは見てはいけないので、いっそ再代入した方が安全
 		note = filtered;
 
-		// eslint-disable-next-line no-param-reassign -- 共有ノートを書き換えないよう、コピーに差し替える
-		note = await this.withMyRenoteReaction(note, this.noteEntityService);
-
-		this.send('note', note);
+		this.send('note', await this.noteEntityService.withMyRenoteReaction(note, this.user?.id ?? null));
 	}
 
 	/*
@@ -69,7 +66,7 @@ export class ChannelChannel extends Channel {
 	 */
 	protected override isNoteMutedOrBlocked(note: Packed<'Note'>): boolean {
 		// 流れてきたNoteがインスタンスミュートしたインスタンスが関わる
-		if (isInstanceMuted(note, new Set<string>(this.userProfile?.mutedInstances ?? []))) return true;
+		if (isInstanceMuted(note, this.userMutedInstances)) return true;
 
 		// 流れてきたNoteがミュートしているユーザーが関わる
 		if (isUserRelated(note, this.userIdsWhoMeMuting)) return true;

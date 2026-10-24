@@ -154,14 +154,15 @@ describe('API', () => {
 			id: '1370e5b7-d4eb-4566-bb1d-7748ee6a1838',
 		});
 
+		// 権限のないアプリトークンはロール判定より先にトークンのパーミッション判定で弾かれる (#15896)
 		await failedApiCall({
 			endpoint: 'admin/get-index-stats',
 			parameters: {},
 			user: { token: application3 },
 		}, {
 			status: 403,
-			code: 'ROLE_PERMISSION_DENIED',
-			id: 'c3d38592-54c0-429d-be96-5636b0431a61',
+			code: 'PERMISSION_DENIED',
+			id: '1370e5b7-d4eb-4566-bb1d-7748ee6a1838',
 		});
 
 		await failedApiCall({

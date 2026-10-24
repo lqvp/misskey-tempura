@@ -4,7 +4,7 @@
  */
 
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
-import { expect, userEvent, waitFor, within } from '@storybook/test';
+import { expect, userEvent, waitFor, within } from 'storybook/test';
 import type { StoryObj } from '@storybook/vue3';
 import { HttpResponse, http } from 'msw';
 import { commonHandlers } from '../../../.storybook/mocks.js';
@@ -20,14 +20,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkUrl v-bind="props">Text</MkUrl>',
+			template: '<MkUrl v-bind="args">Text</MkUrl>',
 		};
 	},
 	async play({ canvasElement }) {

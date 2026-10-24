@@ -26,6 +26,7 @@ export class TruncateAccountProcessorService {
 	private static readonly BATCH_SIZE = 5;
 	private static readonly DELETION_PAUSE_MS = 30000;
 	private static readonly FILE_BATCH_SIZE = 10;
+	private static readonly CASCADING_MAX_DEPTH = 32;
 
 	constructor(
 		@Inject(DI.usersRepository)
@@ -52,26 +53,37 @@ export class TruncateAccountProcessorService {
 	private async findCascadingNotes(noteIds: string[]): Promise<string[]> {
 		if (noteIds.length === 0) return [];
 
-		const findRelatedNotes = async (targetNoteIds: string[]): Promise<string[]> => {
-			const query = this.notesRepository.createQueryBuilder('note')
+		// 無制限の再帰だと長い連鎖でスタックオーバーフローや長時間クエリになり得るため、
+		// 深さを制限しつつ訪問済みIDを除外する
+		const seen = new Set<string>(noteIds);
+		const result: string[] = [];
+		let frontier = noteIds;
+
+		for (let depth = 0; depth < TruncateAccountProcessorService.CASCADING_MAX_DEPTH && frontier.length > 0; depth++) {
+			const relatedNotes = await this.notesRepository.createQueryBuilder('note')
 				.where(new Brackets(qb => {
-					qb.where('note.replyId IN(:...targetNoteIds)', { targetNoteIds })
+					qb.where('note.replyId IN(:...frontier)', { frontier })
 						.orWhere(new Brackets(q => {
-							q.where('note.renoteId IN(:...targetNoteIds)', { targetNoteIds })
+							q.where('note.renoteId IN(:...frontier)', { frontier })
 								.andWhere('note.text IS NOT NULL');
 						}));
-				}));
+				}))
+				.getMany();
 
-			const relatedNotes = await query.getMany();
-			if (relatedNotes.length === 0) return [];
+			const newIds: string[] = [];
+			for (const note of relatedNotes) {
+				if (!seen.has(note.id)) {
+					seen.add(note.id);
+					newIds.push(note.id);
+					result.push(note.id);
+				}
+			}
 
-			const relatedNoteIds = relatedNotes.map(note => note.id);
-			const cascadingIds = await findRelatedNotes(relatedNoteIds);
+			if (newIds.length === 0) break;
+			frontier = newIds;
+		}
 
-			return [...relatedNoteIds, ...cascadingIds];
-		};
-
-		return findRelatedNotes(noteIds);
+		return result;
 	}
 
 	private async getNotesToKeep(userId: string): Promise<{
@@ -85,9 +97,11 @@ export class TruncateAccountProcessorService {
 		const cascadingPiningNoteIds = await this.findCascadingNotes(piningNoteIds);
 
 		// 非公開ノートの取得
+		// public_non_ltl は公開投稿扱い(pack時に public として扱われる)なので、
+		// DM(specified)のように保持せず削除対象に含める
 		const specifiedNotes = await this.notesRepository.findBy({
 			userId,
-			visibility: Not(In(['public', 'home', 'followers'])),
+			visibility: Not(In(['public', 'public_non_ltl', 'home', 'followers'])),
 		});
 		const specifiedNoteIds = specifiedNotes.map(note => note.id);
 		const cascadingSpecifiedNoteIds = await this.findCascadingNotes(specifiedNoteIds);
@@ -100,11 +114,11 @@ export class TruncateAccountProcessorService {
 			...cascadingSpecifiedNoteIds,
 		];
 
-		// 削除対象のノートを取得（公開範囲が public, home, followers のノート）
+		// 削除対象のノートを取得（公開範囲が public, public_non_ltl, home, followers のノート）
 		const deletionTargetNotes = await this.notesRepository.find({
 			where: {
 				userId,
-				visibility: In(['public', 'home', 'followers']),
+				visibility: In(['public', 'public_non_ltl', 'home', 'followers']),
 				id: Not(In(notesToKeep)),
 			},
 			select: { id: true, fileIds: true }, // 必要なフィールドのみ取得

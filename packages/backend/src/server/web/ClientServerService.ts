@@ -42,12 +42,15 @@ import { FlashEntityService } from '@/core/entities/FlashEntityService.js';
 import { ReversiGameEntityService } from '@/core/entities/ReversiGameEntityService.js';
 import { AnnouncementEntityService } from '@/core/entities/AnnouncementEntityService.js';
 import { escapeValue } from '@/misc/prelude/xml.js';
+import { isNoteVisibleToAnonymousVisitor } from '@/misc/visitor-note-visibility.js';
+import { IdService } from '@/core/IdService.js';
 import { FeedService } from './FeedService.js';
 import { UrlPreviewService } from './UrlPreviewService.js';
 import { ClientLoggerService } from './ClientLoggerService.js';
 import { HtmlTemplateService } from './HtmlTemplateService.js';
 
 import { BasePage } from './views/base.js';
+import { htmlToPlainText } from '@/misc/html-to-plain-text.js';
 import { UserPage } from './views/user.js';
 import { NotePage } from './views/note.js';
 import { PagePage } from './views/page.js';
@@ -128,6 +131,7 @@ export class ClientServerService {
 		private feedService: FeedService,
 		private htmlTemplateService: HtmlTemplateService,
 		private clientLoggerService: ClientLoggerService,
+		private idService: IdService,
 	) {
 		//this.createServer = this.createServer.bind(this);
 		const backendRootdir = resolve(this.config.rootDir, 'packages/backend');
@@ -443,7 +447,7 @@ export class ClientServerService {
 			return await HtmlTemplateService.replyHtml(reply, BasePage({
 				img: this.meta.bannerUrl ?? undefined,
 				title: this.meta.name ?? 'Misskey',
-				desc: this.meta.description ?? undefined,
+				desc: this.meta.description == null ? undefined : htmlToPlainText(this.meta.description),
 				...(await this.htmlTemplateService.getCommonData()),
 				...data,
 			}));
@@ -632,15 +636,20 @@ export class ClientServerService {
 				},
 			});
 
+			const profile = note ? await this.userProfilesRepository.findOneBy({ userId: note.userId }) : null;
+
+			// SSR/OGP も匿名アクセスの経路なので、REST/feed と同じ非公開設定を適用する
 			if (
 				note &&
-				!note.user!.requireSigninToViewContents &&
-				(this.meta.ugcVisibilityForVisitor === 'all' ||
-					(this.meta.ugcVisibilityForVisitor === 'local' && note.userHost == null)
-				)
+				profile != null &&
+				isNoteVisibleToAnonymousVisitor({
+					note: { visibility: note.visibility, localOnly: note.localOnly, createdAt: this.idService.parse(note.id).date },
+					author: note.user!,
+					profile,
+					ugcVisibilityForVisitor: this.meta.ugcVisibilityForVisitor,
+				})
 			) {
 				const _note = await this.noteEntityService.pack(note);
-				const profile = await this.userProfilesRepository.findOneByOrFail({ userId: note.userId });
 				reply.header('Cache-Control', 'public, max-age=15');
 				if (profile.preventAiLearning) {
 					reply.header('X-Robots-Tag', 'noimageai');
@@ -877,6 +886,15 @@ export class ClientServerService {
 			if (note == null) return;
 			if (['specified', 'followers'].includes(note.visibility)) return;
 			if (note.userHost != null) return;
+
+			// 埋め込みも匿名アクセスの経路なので、REST/feed と同じ非公開設定を適用する
+			const embedProfile = await this.userProfilesRepository.findOneBy({ userId: note.userId });
+			if (!isNoteVisibleToAnonymousVisitor({
+				note: { visibility: note.visibility, localOnly: note.localOnly, createdAt: this.idService.parse(note.id).date },
+				author: note.user!,
+				profile: embedProfile,
+				ugcVisibilityForVisitor: this.meta.ugcVisibilityForVisitor,
+			})) return;
 
 			const _note = await this.noteEntityService.pack(note, null, { detail: true });
 

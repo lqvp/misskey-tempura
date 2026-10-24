@@ -4,7 +4,7 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { PagesRepository } from '@/models/_.js';
+import type { MiMeta, PagesRepository } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { PageEntityService } from '@/core/entities/PageEntityService.js';
 import { DI } from '@/di-symbols.js';
@@ -37,9 +37,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		@Inject(DI.pagesRepository)
 		private pagesRepository: PagesRepository,
 
+		@Inject(DI.meta)
+		private serverSettings: MiMeta,
+
 		private pageEntityService: PageEntityService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			// 訪問者への公開範囲が 'none' の間は匿名には空を返す
+			if (me == null && this.serverSettings.ugcVisibilityForVisitor === 'none') {
+				return [];
+			}
+
 			const query = this.pagesRepository.createQueryBuilder('page')
 				.where('page.visibility = \'public\'')
 				.andWhere('page.likedCount > 0')

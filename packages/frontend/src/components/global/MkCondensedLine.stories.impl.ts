@@ -17,14 +17,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkCondensedLine>{{ props.text }}</MkCondensedLine>',
+			template: '<MkCondensedLine>{{ args.text }}</MkCondensedLine>',
 		};
 	},
 	args: {

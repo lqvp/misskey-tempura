@@ -18,6 +18,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<template #label>{{ i18n.ts._serverSettings.requireSignedApFetch }}<span v-if="form.modifiedStates.requireSignedApFetch" class="_modified">{{ i18n.ts.modified }}</span></template>
 			<template #caption>{{ i18n.ts._serverSettings.requireSignedApFetch_description }}</template>
 		</MkSwitch>
+
+		<MkSwitch v-model="form.state.allowUnregisteredApSignerVerification">
+			<template #label>{{ i18n.ts._serverSettings.allowUnregisteredApSignerVerification }}<span v-if="form.modifiedStates.allowUnregisteredApSignerVerification" class="_modified">{{ i18n.ts.modified }}</span></template>
+			<template #caption>{{ i18n.ts._serverSettings.allowUnregisteredApSignerVerification_description }}</template>
+		</MkSwitch>
 	</div>
 </MkFolder>
 </template>
@@ -36,9 +41,11 @@ const props = defineProps<{ meta: Misskey.Endpoints['admin/meta']['res'] }>();
 
 const form = useForm({
 	requireSignedApFetch: props.meta.requireSignedApFetch ?? false,
+	allowUnregisteredApSignerVerification: props.meta.allowUnregisteredApSignerVerification ?? false,
 }, async (state) => {
 	await os.apiWithDialog('admin/update-meta', {
 		requireSignedApFetch: state.requireSignedApFetch,
+		allowUnregisteredApSignerVerification: state.allowUnregisteredApSignerVerification,
 	});
 	fetchInstance(true);
 });

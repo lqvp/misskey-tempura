@@ -5,7 +5,7 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
-import type { InstancesRepository } from '@/models/_.js';
+import type { InstancesRepository, MiMeta } from '@/models/_.js';
 import { InstanceEntityService } from '@/core/entities/InstanceEntityService.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import { DI } from '@/di-symbols.js';
@@ -34,6 +34,8 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
+		@Inject(DI.meta)
+		private serverSettings: MiMeta,
 		@Inject(DI.instancesRepository)
 		private instancesRepository: InstancesRepository,
 
@@ -46,7 +48,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				.findOneBy({ host: this.utilityService.toPuny(ps.host) });
 			const isRoot = await this.roleService.isAdministrator(me);
 
-			if (!me) {
+			if (!me && !this.serverSettings.allowAnonymousShowInstance) {
 				return null;
 			}
 

@@ -142,8 +142,16 @@ export async function signupThroughUi(
 		await locateMkInput(page, 'signup-invitation-code').fill(DEFAULT_INVITATION_CODE);
 	}
 
+	// 招待コード確認・ユーザー名チェック等の非同期バリデーション中はsubmitがdisabled。
+	// disabledのままclickのactionability待ちに入るとレスポンス待ちが先にタイムアウトするので、
+	// 先に有効化を待ってからレスポンス待ちを開始する。
+	const submit = page.getByTestId('signup-submit');
+	await submit.waitFor({ state: 'visible' });
+	const submitHandle = await submit.elementHandle();
+	await page.waitForFunction((el) => !(el as HTMLButtonElement).disabled, submitHandle, { timeout: 30_000 });
+
 	const signupResponse = waitApiResponse(page, '/api/signup');
-	await page.getByTestId('signup-submit').click();
+	await submit.click();
 	await signupResponse;
 }
 

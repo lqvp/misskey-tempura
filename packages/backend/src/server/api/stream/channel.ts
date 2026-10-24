@@ -12,7 +12,6 @@ import type { Awaitable } from '@/types.js';
 import type { Packed } from '@/misc/json-schema.js';
 import type { JsonObject, JsonValue } from '@/misc/json-value.js';
 import type Connection from './Connection.js';
-import type { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 
 /**
  * Stream channel
@@ -28,20 +27,6 @@ export default abstract class Channel {
 
 	protected get user() {
 		return this.connection.user;
-	}
-
-	/**
-	 * 純粋リノートのリノート先に、この接続のユーザーのリアクションを付けたノートを返す。
-	 * 受け取ったノートは全接続で共有しているので、書き換えずにコピーを返すこと
-	 */
-	@bindThis
-	protected async withMyRenoteReaction(note: Packed<'Note'>, noteEntityService: NoteEntityService): Promise<Packed<'Note'>> {
-		if (this.user == null) return note;
-		if (!isRenotePacked(note) || isQuotePacked(note)) return note;
-		if (note.renote == null || Object.keys(note.renote.reactions).length === 0) return note;
-
-		const myReaction = await noteEntityService.populateMyReaction(note.renote, this.user.id);
-		return { ...note, renote: { ...note.renote, myReaction } };
 	}
 
 	protected get userProfile() {
@@ -122,7 +107,7 @@ export default abstract class Channel {
 	 */
 	protected isNoteMutedOrBlocked(note: Packed<'Note'>): boolean {
 		// 流れてきたNoteがインスタンスミュートしたインスタンスが関わる
-		if (isInstanceMuted(note, new Set<string>(this.userProfile?.mutedInstances ?? []))) return true;
+		if (isInstanceMuted(note, this.userMutedInstances)) return true;
 
 		// 流れてきたNoteがミュートしているユーザーが関わる
 		if (isUserRelated(note, this.userIdsWhoMeMuting)) return true;

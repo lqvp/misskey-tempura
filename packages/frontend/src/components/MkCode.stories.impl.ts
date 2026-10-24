@@ -24,14 +24,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkCode v-bind="props" />',
+			template: '<MkCode v-bind="args" />',
 		};
 	},
 	args: {

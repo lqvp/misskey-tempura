@@ -19,14 +19,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkCustomEmojiDetailedDialog v-bind="props" />',
+			template: '<MkCustomEmojiDetailedDialog v-bind="args" />',
 		};
 	},
 	args: {

@@ -24,6 +24,8 @@ import type { MiFollowing } from '@/models/Following.js';
 import { countIf } from '@/misc/prelude/array.js';
 import type { MiNote } from '@/models/Note.js';
 import { QueryService } from '@/core/QueryService.js';
+import { isNoteVisibleToAnonymousVisitor } from '@/misc/visitor-note-visibility.js';
+import { IdService } from '@/core/IdService.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { ActivityPubAccessControlService } from '@/core/ActivityPubAccessControlService.js';
@@ -76,6 +78,7 @@ export class ActivityPubServerService {
 		private apRendererService: ApRendererService,
 		private queueService: QueueService,
 		private userKeypairService: UserKeypairService,
+		private idService: IdService,
 		private queryService: QueryService,
 		private fanoutTimelineEndpointService: FanoutTimelineEndpointService,
 		private activityPubAccessControlService: ActivityPubAccessControlService,
@@ -91,6 +94,37 @@ export class ActivityPubServerService {
 		} else {
 			reply.type(ACTIVITY_JSON);
 		}
+	}
+
+	/**
+	 * HTTP 署名を検証できない取得(匿名アクセス)に、ローカルユーザーの非公開設定を反映する。
+	 * 拒否した場合は true を返す (404 送信済み)。
+	 *
+	 * 分類: 署名が無い・署名が不正な取得は「匿名」に分類する。署名者の鍵をまだ知らない
+	 * 場合は、インスタンス登録済みのホストに限りアカウントを取りに行って検証する
+	 * (requireSignedApFetch 時の checkAccess と同じ方針)。未登録ホストの署名者は
+	 * fail-closed で匿名に分類する (allowUnregisteredApSignerVerification が有効な
+	 * サーバーでは取得して検証する)。
+	 *
+	 * 匿名にも公開できるノートは署名の検証自体を行わない。検証のための外向きの取得を
+	 * 「匿名には見せられないノートへの取得」に限定し、通常の公開ノートの取得が新たな
+	 * 外向きの取得を誘発しないようにするため。
+	 */
+	@bindThis
+	private async denyAnonymousNoteAccess(note: MiNote, request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
+		const noteUser = await this.usersRepository.findOneBy({ id: note.userId });
+		const noteProfile = await this.userProfilesRepository.findOneBy({ userId: note.userId });
+		if (noteUser != null && isNoteVisibleToAnonymousVisitor({
+			note: { visibility: note.visibility, localOnly: note.localOnly, createdAt: this.idService.parse(note.id).date },
+			author: noteUser,
+			profile: noteProfile,
+			ugcVisibilityForVisitor: this.meta.ugcVisibilityForVisitor,
+		})) return false;
+
+		if (await this.activityPubAccessControlService.isVerifiedRequester(request)) return false;
+
+		reply.code(404);
+		return true;
 	}
 
 	/**
@@ -496,6 +530,22 @@ export class ActivityPubServerService {
 			return;
 		}
 
+		// HTTP 署名を検証できない取得は匿名アクセスとして扱い、ローカルユーザーの非公開設定を反映する。
+		// 署名の検証は「匿名には見せられないものがある場合」にだけ行う
+		// (検証のための外向きの取得を通常の公開取得から誘発しないため)
+		const restrictedFromAnonymous = user.requireSigninToViewContents ||
+			this.meta.ugcVisibilityForVisitor === 'none' ||
+			(this.meta.ugcVisibilityForVisitor === 'local' && user.host != null);
+		if (restrictedFromAnonymous && !(await this.activityPubAccessControlService.isVerifiedRequester(request))) {
+			reply.code(404);
+			return;
+		}
+		// ノート単位の非公開設定が一切無いなら、ノートの絞り込みのための検証も不要
+		const mayHideNotesFromAnonymous = userProfile.hidePublicNotes || userProfile.hideHomeNotes ||
+			user.makeNotesHiddenBefore != null || user.makeNotesFollowersOnlyBefore != null;
+		const filterAsAnonymous = mayHideNotesFromAnonymous &&
+			!(await this.activityPubAccessControlService.isVerifiedRequester(request));
+
 		const limit = 20;
 		const partOf = `${this.config.url}/users/${userId}/outbox`;
 
@@ -508,7 +558,14 @@ export class ActivityPubServerService {
 				if (note.localOnly) return false;
 				// 配送先を指定したノートは相手ごとに見せるかが変わるので載せない (getUserNotesFromDb と同じ)
 				if (note.deliveryTargets?.hosts != null) return false;
-				return (visibilitiesToShow as (MiNote['visibility'])[]).includes(note.visibility);
+				if (!(visibilitiesToShow as (MiNote['visibility'])[]).includes(note.visibility)) return false;
+				if (filterAsAnonymous && !isNoteVisibleToAnonymousVisitor({
+					note: { visibility: note.visibility, localOnly: note.localOnly, createdAt: this.idService.parse(note.id).date },
+					author: user,
+					profile: userProfile,
+					ugcVisibilityForVisitor: this.meta.ugcVisibilityForVisitor,
+				})) return false;
+				return true;
 			};
 
 			const notes = this.meta.enableFanoutTimeline ? await this.fanoutTimelineEndpointService.getMiNotes({
@@ -748,6 +805,8 @@ export class ActivityPubServerService {
 				return;
 			}
 
+			if (await this.denyAnonymousNoteAccess(note, request, reply)) return;
+
 			reply.header('Cache-Control', 'public, max-age=180');
 			this.setResponseType(request, reply);
 			return this.apRendererService.addContext(await this.apRendererService.renderNote(note, false));
@@ -783,6 +842,8 @@ export class ActivityPubServerService {
 				reply.code(404);
 				return;
 			}
+
+			if (await this.denyAnonymousNoteAccess(note, request, reply)) return;
 
 			reply.header('Cache-Control', 'public, max-age=180');
 			this.setResponseType(request, reply);

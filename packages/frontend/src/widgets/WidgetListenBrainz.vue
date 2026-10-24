@@ -31,7 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onUnmounted } from 'vue';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { GetFormResultType } from '@/utility/form.js';
@@ -174,12 +174,6 @@ watch(() => widgetProps.refreshIntervalSec, (newInterval) => {
 		intervalId = window.setInterval(fetchPlayingNow, newInterval * 1000);
 	}
 }, { immediate: true });
-
-onMounted(() => {
-	if (widgetProps.refreshIntervalSec > 0) {
-		intervalId = window.setInterval(fetchPlayingNow, widgetProps.refreshIntervalSec * 1000);
-	}
-});
 
 onUnmounted(() => {
 	if (intervalId) window.clearInterval(intervalId);

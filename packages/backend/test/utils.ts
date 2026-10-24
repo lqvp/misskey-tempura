@@ -145,6 +145,21 @@ export const signup = async (params?: Partial<misskey.Endpoints['signup']['req']
 
 	const res = await api('signup', q);
 
+	// forkではユーザーの requireSigninToViewContents の既定値が true なので、
+	// 未認証での閲覧を前提にした既存テストのために、テスト用ユーザーでは無効にしておく
+	const body = res.body as { token?: string, requireSigninToViewContents?: boolean } | null;
+	if (body?.token != null) {
+		const updateRes = await api('i/update', { requireSigninToViewContents: false }, { token: body.token } as UserToken);
+		// 期待値がサインアップレスポンスから組み立てられるテスト(users.ts等)と齟齬が出ないよう、
+		// 返却オブジェクト側も更新後の値に揃える。
+		// forkのUserEntityServiceは false のとき undefined(キー自体を落とす) でpackするため、
+		// ここでもキーを落とす。
+		// ただし api は非2xxでも例外を投げないため、i/update が成功した場合に限り返却値を書き換える
+		if (updateRes.status >= 200 && updateRes.status < 300) {
+			delete body.requireSigninToViewContents;
+		}
+	}
+
 	return res.body;
 };
 
@@ -642,6 +657,20 @@ export async function sendEnvResetRequest() {
 
 	if (res.status !== 200) {
 		throw new Error('server env update failed.');
+	}
+}
+
+export async function sendEnvStartRequest() {
+	const res = await fetch(
+		`http://localhost:${port + 1000}/env-start`,
+		{
+			method: 'POST',
+			body: JSON.stringify({}),
+		},
+	);
+
+	if (res.status !== 200) {
+		throw new Error('server env start failed.');
 	}
 }
 

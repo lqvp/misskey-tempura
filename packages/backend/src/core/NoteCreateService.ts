@@ -23,7 +23,7 @@ import type { IPoll } from '@/models/Poll.js';
 import { MiPoll } from '@/models/Poll.js';
 import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js';
 import type { MiChannel } from '@/models/Channel.js';
-import { normalizeForSearch } from '@/misc/normalize-for-search.js';
+import { normalizeTag } from '@/misc/normalize-tag.js';
 import { RelayService } from '@/core/RelayService.js';
 import { FederatedInstanceService } from '@/core/FederatedInstanceService.js';
 import { DI } from '@/di-symbols.js';
@@ -60,6 +60,7 @@ import { OpenLlmModerationService } from '@/core/OpenLlmModerationService.js';
 import type Logger from '@/logger.js';
 import { CacheService } from '@/core/CacheService.js';
 import { isQuote, isRenote } from '@/misc/is-renote.js';
+import { extractUrlsForKeyWordCheck } from '@/misc/extract-urls-for-keyword-check.js';
 
 type NotificationType = 'reply' | 'renote' | 'quote' | 'mention';
 
@@ -521,7 +522,8 @@ export class NoteCreateService implements OnApplicationShutdown {
 
 		if (['public', 'public_non_ltl', 'home'].includes(data.visibility) && data.channel == null) {
 			const sensitiveWords = this.meta.sensitiveWords;
-			if (this.utilityService.isKeyWordIncluded(data.cw ?? data.text ?? '', sensitiveWords)) {
+			const sensitiveWordsTarget = data.cw ?? data.text ?? '';
+			if (sensitiveWords.length > 0 && this.utilityService.isKeyWordIncluded([sensitiveWordsTarget, ...extractUrlsForKeyWordCheck(sensitiveWordsTarget)].join('\n'), sensitiveWords)) {
 				data.visibility = 'home';
 			} else {
 				const policies = await this.roleService.getUserPolicies(user.id);
@@ -678,8 +680,11 @@ export class NoteCreateService implements OnApplicationShutdown {
 			|| data.reply?.userHost === null || (this.isRenote(data) && this.isQuote(data) && data.renote.userHost === null) || false;
 
 		if (this.meta.blockMentionsFromUnfamiliarRemoteUsers && user.host !== null && willCauseNotification) {
-			const userEntity = await this.usersRepository.findOneBy({ id: user.id });
-			if ((userEntity?.followersCount ?? 0) === 0) {
+			// followersCount はリモートを含む総数なので、説明文どおり「ローカルフォロワー」の有無で判定する
+			const hasLocalFollower = await this.followingsRepository.exists({
+				where: { followeeId: user.id, followerHost: IsNull() },
+			});
+			if (!hasLocalFollower) {
 				this.logger.error('Request rejected because user has no local followers', { user: user.id, note: data });
 				throw new IdentifiableError('e11b3a16-f543-4885-8eb1-66cad131dbfd', 'Notes including mentions, replies, or renotes from remote users are not allowed until user has at least one local follower.');
 			}
@@ -739,7 +744,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 			deleteAt: data.deleteAt,
 			isScheduledForPrivate: data.isScheduledForPrivate,
 			cw: data.cw ?? null,
-			tags: tags.map(tag => normalizeForSearch(tag)),
+			tags: tags.map(tag => normalizeTag(tag)),
 			emojis,
 			userId: user.id,
 			localOnly: data.localOnly!,
@@ -866,7 +871,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 
 		this.pushToTl(note, user);
 
-		this.antennaService.addNoteToAntennas({
+		const matchedAntennas = this.antennaService.addNoteToAntennas({
 			...note,
 			channel: data.channel ?? null,
 		}, user);
@@ -950,6 +955,12 @@ export class NoteCreateService implements OnApplicationShutdown {
 			this.globalEventService.publishNotesStream(noteObj);
 
 			this.roleService.addNoteToRoleTimeline(noteObj);
+
+			matchedAntennas.then(antennas => {
+				for (const antenna of antennas) {
+					this.globalEventService.publishAntennaStream(antenna.id, 'note', noteObj);
+				}
+			});
 
 			this.webhookService.enqueueUserWebhook(user.id, 'note', { note: noteObj });
 
@@ -1505,9 +1516,20 @@ export class NoteCreateService implements OnApplicationShutdown {
 			prohibitedWords = this.meta.prohibitedWords;
 		}
 
+		if (prohibitedWords.length === 0) {
+			return false;
+		}
+
 		if (
 			this.utilityService.isKeyWordIncluded(
-				this.utilityService.concatNoteContentsForKeyWordCheck(content),
+				this.utilityService.concatNoteContentsForKeyWordCheck({
+					...content,
+					others: [
+						...(content.others ?? []),
+						...extractUrlsForKeyWordCheck(content.cw ?? ''),
+						...extractUrlsForKeyWordCheck(content.text ?? ''),
+					],
+				}),
 				prohibitedWords,
 			)
 		) {

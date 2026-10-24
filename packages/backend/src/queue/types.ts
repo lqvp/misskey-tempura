@@ -5,6 +5,7 @@
 
 import type { Antenna } from '@/server/api/endpoints/i/import-antennas.js';
 import type { MiDriveFile } from '@/models/DriveFile.js';
+import type { MiAnnouncement } from '@/models/Announcement.js';
 import type { MiNote } from '@/models/Note.js';
 import type { SystemWebhookEventType } from '@/models/SystemWebhook.js';
 import type { MiUser } from '@/models/User.js';
@@ -64,6 +65,7 @@ export type DbJobMap = {
 	importCustomEmojis: DbUserImportJobData;
 	deleteAccount: DbUserDeleteJobData;
 	truncateAccount: DbUserTruncateJobData;
+	makePrivateMany: DbUserMakePrivateManyJobData;
 };
 
 export type DbJobDataWithUser = {
@@ -87,6 +89,12 @@ export type DbUserDeleteJobData = {
 
 export type DbUserTruncateJobData = {
 	user: ThinUser;
+};
+
+export type DbUserMakePrivateManyJobData = {
+	user: ThinUser;
+	sinceDate: number;
+	untilDate: number;
 };
 
 export type DbUserImportJobData = {
@@ -118,6 +126,11 @@ export type EndedPollNotificationJobData = {
 
 export type PostScheduledNoteJobData = {
 	noteDraftId: string;
+};
+
+export type ArchiveAnnouncementJobData = {
+	announcementId: MiAnnouncement['id'];
+	autoArchiveAt: number;
 };
 
 export type SystemWebhookDeliverJobData<T extends SystemWebhookEventType = SystemWebhookEventType> = {

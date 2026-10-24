@@ -343,13 +343,11 @@ describe('User', () => {
 			});
 
 			test('Bob should have no requests', async () => {
-				await rejects(
-					async () => await bob.client.request('following/requests/cancel', { userId: aliceInB.id }),
-					(err: any) => {
-						strictEqual(err.code, 'FOLLOW_REQUEST_NOT_FOUND');
-						return true;
-					},
-				);
+				// fork仕様: 存在しないフォローリクエストのcancelはFOLLOW_REQUEST_NOT_FOUNDにならず
+				// 冪等に成功する（自動拒否機能との整合のため。UserFollowingService.cancelFollowRequest）
+				await bob.client.request('following/requests/cancel', { userId: aliceInB.id });
+				const sent = await bob.client.request('following/requests/sent', {});
+				strictEqual(sent.length, 0);
 			});
 
 			test('Bob doesn\'t follow Alice', async () => {

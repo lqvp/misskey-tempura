@@ -11,6 +11,7 @@ import {
 	locateMkInput, locateMkSwitch, locateMkTextarea,
 	// utils
 	registerUser, resetState, visitHome, closeUserSetupDialog, postNote,
+	acceptSignupRules, acceptSignupInviteCheck, createInvitationCode,
 	// page utils
 	waitApiResponse, signIn,
 } from './utils.js';
@@ -45,9 +46,13 @@ test.describe('Before setup instance', () => {
 });
 
 test.describe('After setup instance', () => {
+	let invitationCode: string;
+
 	test.beforeEach(async () => {
 		await resetState();
-		await registerUser('admin', 'pass', true);
+		const admin = await registerUser('admin', 'pass', true);
+		// fork では disableRegistration が既定で true なので、実在する招待コードが必要
+		invitationCode = await createInvitationCode(admin.token);
 	});
 
 	test('successfully loads', async ({ page }) => {
@@ -65,14 +70,15 @@ test.describe('After setup instance', () => {
 		await page.getByTestId('modal-dialog-ok').click();
 		await page.getByTestId('signup-rules-continue').click();
 
+		// fork固有の招待コード確認ステップ
+		await acceptSignupInviteCheck(page, invitationCode);
+
 		test.expect(await page.getByTestId('signup-submit').isDisabled()).toBeTruthy();
 		await locateMkInput(page, 'signup-username').fill('alice');
 		test.expect(await page.getByTestId('signup-submit').isDisabled()).toBeTruthy();
 		await locateMkInput(page, 'signup-password').fill('alice1234');
 		test.expect(await page.getByTestId('signup-submit').isDisabled()).toBeTruthy();
 		await locateMkInput(page, 'signup-password-retype').fill('alice1234');
-		test.expect(await page.getByTestId('signup-submit').isDisabled()).toBeTruthy();
-		await locateMkInput(page, 'signup-invitation-code').fill('test-invitation-code');
 		test.expect(await page.getByTestId('signup-submit').isDisabled()).toBeFalsy();
 
 		const signupResponse = waitApiResponse(page, '/api/signup');
@@ -85,13 +91,8 @@ test.describe('After setup instance', () => {
 		await visitHome(page);
 
 		await page.getByTestId('signup').click();
-		await page.getByTestId('signup-rules-continue').waitFor({ state: 'visible' });
-		test.expect(await page.getByTestId('signup-rules-continue').isDisabled()).toBeTruthy();
-
-		await locateMkSwitch(page, 'signup-rules-notes-agree').click();
-		await page.getByTestId('modal-dialog-ok').click();
-		test.expect(await page.getByTestId('signup-rules-continue').isDisabled()).toBeFalsy();
-		await page.getByTestId('signup-rules-continue').click();
+		await acceptSignupRules(page);
+		await acceptSignupInviteCheck(page, invitationCode);
 
 		await locateMkInput(page, 'signup-username').fill('alice');
 		await locateMkInput(page, 'signup-password').fill('alice1234');
@@ -149,7 +150,8 @@ test.describe('After user signup', () => {
 		await locateMkInput(page, 'signin-username').fill('alice');
 		await page.keyboard.press('Enter');
 
-		await page.getByText('This account has been suspended due to').waitFor({ timeout: 10000 });
+		// UIの言語がテスト環境のロケールに依存しないよう、英語・日本語どちらの文言でも検出する
+		await page.getByText(/This account has been suspended due to|このアカウントは、サーバーの利用規約に違反/).waitFor({ timeout: 10000 });
 	});
 });
 

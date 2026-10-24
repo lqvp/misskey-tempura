@@ -22,7 +22,7 @@ import * as Misskey from 'misskey-js';
 import { computed, onMounted, ref } from 'vue';
 import MkMiniChart from '@/components/MkMiniChart.vue';
 import { misskeyApiGet } from '@/utility/misskey-api.js';
-import { acct } from '@/filters/user.js';
+import { acct } from '@@/js/user.js';
 import { i18n } from '@/i18n.js';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';

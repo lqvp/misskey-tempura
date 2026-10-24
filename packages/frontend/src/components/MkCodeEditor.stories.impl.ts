@@ -3,16 +3,15 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-/* eslint-disable import/no-default-export */
-import type { StoryObj } from '@storybook/vue3';
 import { action } from 'storybook/actions';
+import { ref } from 'vue';
 import MkCodeEditor from './MkCodeEditor.vue';
-const code = `for (let i, 100) {
+import type { StoryObj } from '@storybook/vue3';
+const initialCode = `for (let i, 100) {
 	<: if (i % 15 == 0) "FizzBuzz"
-		elif (i % 3 == 0) "Fizz"
-		elif (i % 5 == 0) "Buzz"
-		else i
+	elif (i % 3 == 0) "Fizz"
+	elif (i % 5 == 0) "Buzz"
+	else i
 }`;
 export const Default = {
 	render(args) {
@@ -20,32 +19,21 @@ export const Default = {
 			components: {
 				MkCodeEditor,
 			},
-			data() {
-				return {
-					code,
-				};
-			},
 			setup() {
+				// SB10 では data() + v-model + computed events の組み合わせで
+				// update:modelValue が反映されないため、setup の ref と明示的なハンドラで持つ
+				const value = ref(initialCode);
+				const onUpdateModelValue = (v: string) => {
+					value.value = v;
+					action('update:modelValue')(v);
+				};
 				return {
 					args,
+					value,
+					onUpdateModelValue,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-				events() {
-					return {
-						'change': action('change'),
-						'keydown': action('keydown'),
-						'enter': action('enter'),
-						'update:modelValue': action('update:modelValue'),
-					};
-				},
-			},
-			template: '<MkCodeEditor v-model="code" v-bind="props" v-on="events" />',
+			template: '<MkCodeEditor :model-value="value" v-bind="args" @update:model-value="onUpdateModelValue" />',
 		};
 	},
 	args: {

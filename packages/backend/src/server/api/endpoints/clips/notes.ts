@@ -6,7 +6,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Brackets } from 'typeorm';
 import { Endpoint } from '@/server/api/endpoint-base.js';
-import type { NotesRepository, ClipsRepository, ClipNotesRepository } from '@/models/_.js';
+import type { MiMeta, NotesRepository, ClipsRepository, ClipNotesRepository } from '@/models/_.js';
 import { QueryService } from '@/core/QueryService.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { DI } from '@/di-symbols.js';
@@ -65,10 +65,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		@Inject(DI.clipNotesRepository)
 		private clipNotesRepository: ClipNotesRepository,
 
+		@Inject(DI.meta)
+		private serverSettings: MiMeta,
+
 		private noteEntityService: NoteEntityService,
 		private queryService: QueryService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			// 訪問者への公開範囲が 'none' の間は匿名にクリップを返さない(users/show と同じ訪問者ポリシーの扱い)
+			if (me == null && this.serverSettings.ugcVisibilityForVisitor === 'none') {
+				throw new ApiError(meta.errors.noSuchClip);
+			}
+
 			const clip = await this.clipsRepository.findOneBy({
 				id: ps.clipId,
 			});

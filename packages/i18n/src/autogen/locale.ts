@@ -721,6 +721,10 @@ export interface Locale extends ILocale {
      */
     "selectAntenna": string;
     /**
+     * クリップを選択
+     */
+    "selectClip": string;
+    /**
      * アンテナを編集
      */
     "editAntenna": string;
@@ -5505,6 +5509,15 @@ export interface Locale extends ILocale {
      */
     "keepOriginalFilenameDescription": string;
     /**
+     * センシティブなメディアは選択できません
+     */
+    "cannotSelectSensitiveMedia": string;
+    /**
+     * 自分でセンシティブ設定を行っていないのにこのエラーが出ている場合、自動判定によりセンシティブなメディアとされている可能性があります。
+     * サーバーの規則に照らして不要な場合は、ファイルのセンシティブ設定を解除してもう一度お試しください。
+     */
+    "cannotSelectSensitiveMediaDescription": string;
+    /**
      * 説明文はありません
      */
     "noDescription": string;
@@ -6648,6 +6661,64 @@ export interface Locale extends ILocale {
          */
         "forceBackup": string;
     };
+    "_followApproval": {
+        /**
+         * フォロー承認
+         */
+        "groupTitle": string;
+        /**
+         * すべてのフォローが承認制になるため、期間による設定は適用されません。フォローの承認制を解除すると、以下の設定が再び適用されます。
+         */
+        "inactiveDescription": string;
+        /**
+         * 新しいアカウントからのフォローを承認制にする
+         */
+        "title": string;
+        /**
+         * フォローを承認制にしている場合や、新しいアカウントからのフォローを保留する場合にも、あなたがフォローしている相手は自動承認します。
+         */
+        "autoAcceptDescription": string;
+        /**
+         * 指定した期間が経過していない相手からのフォローを、フォローリクエストとして保留します。既存のフォロワーには影響しません。フォローしている相手の自動承認が有効な場合、その相手は自動承認されます。
+         */
+        "description": string;
+        /**
+         * ローカルユーザーからのフォロー
+         */
+        "local": string;
+        /**
+         * このサーバーでのアカウント作成からの期間で判定します。
+         */
+        "localDescription": string;
+        /**
+         * リモートユーザーからのフォロー
+         */
+        "remote": string;
+        /**
+         * 相手のサーバーでの作成日時ではなく、このサーバーが初めてそのアカウントを認識してからの期間で判定します。
+         */
+        "remoteDescription": string;
+        /**
+         * 既定値を使う（現在は無効）
+         */
+        "useDefault": string;
+        /**
+         * 期間を指定する
+         */
+        "custom": string;
+        /**
+         * 承認が必要な期間
+         */
+        "period": string;
+        /**
+         * 単位
+         */
+        "unit": string;
+        /**
+         * 期間が正しくありません。1秒以上の期間を、指定できる範囲内で入力してください。
+         */
+        "invalidPeriod": string;
+    };
     "_accountSettings": {
         /**
          * コンテンツの表示にログインを必須にする
@@ -6894,6 +6965,18 @@ export interface Locale extends ILocale {
          * 有効にすると、このお知らせを既読にする際に確認ダイアログが表示されます。また、一括既読操作の対象になりません。
          */
         "needConfirmationToReadDescription": string;
+        /**
+         * 自動アーカイブ日時
+         */
+        "autoArchiveAt": string;
+        /**
+         * 指定した日時を過ぎると、このお知らせは自動的にアーカイブされます。空欄の場合は自動的にアーカイブされません。
+         */
+        "autoArchiveAtDescription": string;
+        /**
+         * 自動アーカイブ日時には現在より後の日時を指定してください。
+         */
+        "autoArchiveAtMustBeInFuture": string;
         /**
          * お知らせを終了
          */
@@ -7374,6 +7457,186 @@ export interface Locale extends ILocale {
          * 有効にすると、HTTP署名を検証できないリクエストにはノートなどを返しません。ブロックしたサーバーが名乗らずに取得するのを防ぎやすくなりますが、署名しないソフトウェアや、このサーバーとまだやり取りしたことのないサーバーからは取得できなくなります。アカウント情報と公開鍵の取得は対象外です。
          */
         "requireSignedApFetch_description": string;
+        /**
+         * 未登録サーバーからの署名を検証する
+         */
+        "allowUnregisteredApSignerVerification": string;
+        /**
+         * 有効にすると、まだやり取りしたことのないサーバーからの署名付き取得でも、署名者のアカウントを取得して検証し、検証できた場合は匿名には公開していないノートも返します。外部への取得を誘発できる範囲が増えるため、通常は無効のままにしてください。
+         */
+        "allowUnregisteredApSignerVerification_description": string;
+        /**
+         * 統計情報の匿名公開
+         */
+        "allowAnonymousStats": string;
+        /**
+         * 有効にすると、ログインしていない人もサーバー統計情報(/api/stats)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousStats_description": string;
+        /**
+         * オンラインユーザー数の匿名公開
+         */
+        "allowAnonymousOnlineUsersCount": string;
+        /**
+         * 有効にすると、ログインしていない人もオンラインユーザー数を取得できます。初期値は無効です。
+         */
+        "allowAnonymousOnlineUsersCount_description": string;
+        /**
+         * アクティブユーザーチャートの匿名公開
+         */
+        "allowAnonymousChartActiveUsers": string;
+        /**
+         * 有効にすると、ログインしていない人もアクティブユーザー数の推移チャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartActiveUsers_description": string;
+        /**
+         * ActivityPubリクエストチャートの匿名公開
+         */
+        "allowAnonymousChartApRequest": string;
+        /**
+         * 有効にすると、ログインしていない人もActivityPubリクエスト数のチャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartApRequest_description": string;
+        /**
+         * ドライブチャートの匿名公開
+         */
+        "allowAnonymousChartDrive": string;
+        /**
+         * 有効にすると、ログインしていない人もドライブ使用量のチャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartDrive_description": string;
+        /**
+         * 連合チャートの匿名公開
+         */
+        "allowAnonymousChartFederation": string;
+        /**
+         * 有効にすると、ログインしていない人も連合インスタンス数の推移チャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartFederation_description": string;
+        /**
+         * インスタンスチャートの匿名公開
+         */
+        "allowAnonymousChartInstance": string;
+        /**
+         * 有効にすると、ログインしていない人も個別インスタンスのチャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartInstance_description": string;
+        /**
+         * ノートチャートの匿名公開
+         */
+        "allowAnonymousChartNotes": string;
+        /**
+         * 有効にすると、ログインしていない人もノート数の推移チャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartNotes_description": string;
+        /**
+         * ユーザーチャートの匿名公開
+         */
+        "allowAnonymousChartUsers": string;
+        /**
+         * 有効にすると、ログインしていない人もユーザー数の推移チャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartUsers_description": string;
+        /**
+         * 連合ユーザー一覧の匿名公開
+         */
+        "allowAnonymousFederationUsers": string;
+        /**
+         * 有効にすると、ログインしていない人もリモートユーザーの一覧(/api/federation/users)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousFederationUsers_description": string;
+        /**
+         * 連合統計の匿名公開
+         */
+        "allowAnonymousFederationStats": string;
+        /**
+         * 有効にすると、ログインしていない人も連合の統計(/api/federation/stats)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousFederationStats_description": string;
+        /**
+         * インスタンス情報の匿名公開
+         */
+        "allowAnonymousShowInstance": string;
+        /**
+         * 有効にすると、ログインしていない人も個別インスタンスの情報(/api/federation/show-instance)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousShowInstance_description": string;
+        /**
+         * 返信一覧の匿名公開
+         */
+        "allowAnonymousReplies": string;
+        /**
+         * 有効にすると、ログインしていない人もノートへの返信一覧(/api/notes/replies)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousReplies_description": string;
+        /**
+         * リノート一覧の匿名公開
+         */
+        "allowAnonymousRenotes": string;
+        /**
+         * 有効にすると、ログインしていない人もノートのリノート一覧(/api/notes/renotes)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousRenotes_description": string;
+        /**
+         * 引用一覧の匿名公開
+         */
+        "allowAnonymousQuotes": string;
+        /**
+         * 有効にすると、ログインしていない人もノートの引用一覧(/api/notes/quotes)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousQuotes_description": string;
+        /**
+         * federation/instances の匿名公開
+         */
+        "allowAnonymousFederationInstances": string;
+        /**
+         * 有効にすると、ログインしていない人もインスタンス一覧(/api/federation/instances)を取得できます。entranceShowFederation とは独立に制御されます。
+         */
+        "allowAnonymousFederationInstances_description": string;
+        /**
+         * featured の匿名公開
+         */
+        "allowAnonymousFeatured": string;
+        /**
+         * 有効にすると、ログインしていない人も注目のノート(/api/notes/featured)を取得できます。entranceShowFeatured とは独立に制御されます。
+         */
+        "allowAnonymousFeatured_description": string;
+        /**
+         * ローカルタイムラインの匿名公開
+         */
+        "allowAnonymousLocalTimeline": string;
+        /**
+         * 有効にすると、ログインしていない人もローカルタイムライン(/api/notes/local-timeline)を取得できます。初期値は無効です。リアルタイム購読(stream)は従来どおりロールポリシー ltlAvailable で制御されます。
+         */
+        "allowAnonymousLocalTimeline_description": string;
+        /**
+         * 匿名アクセスの公開設定
+         */
+        "anonymousVisitorAccess": string;
+        /**
+         * 統計・チャート
+         */
+        "anonymousVisitorAccessStats": string;
+        /**
+         * 連合
+         */
+        "anonymousVisitorAccessFederation": string;
+        /**
+         * ノート・タイムライン
+         */
+        "anonymousVisitorAccessNotes": string;
+        /**
+         * すべて on
+         */
+        "anonymousAccessGroupAllOn": string;
+        /**
+         * すべて off
+         */
+        "anonymousAccessGroupAllOff": string;
+        /**
+         * カスタム(混合)
+         */
+        "anonymousAccessGroupCustom": string;
         /**
          * リモートファイルをプロキシする
          */
@@ -12012,6 +12275,10 @@ export interface Locale extends ILocale {
              * チャンネル
              */
             "channel": string;
+            /**
+             * クリップ
+             */
+            "clip": string;
             /**
              * メンション
              */

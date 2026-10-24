@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { waitFor } from '@storybook/test';
+import { waitFor } from 'storybook/test';
 import MkPageHeader from './MkPageHeader.vue';
 import type { StoryObj } from '@storybook/vue3';
 export const Empty = {
@@ -17,14 +17,7 @@ export const Empty = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkPageHeader v-bind="props" />',
+			template: '<MkPageHeader v-bind="args" />',
 		};
 	},
 	async play() {

@@ -11,11 +11,13 @@ import type { Packed } from '@/misc/json-schema.js';
 import { awaitAll } from '@/misc/prelude/await-all.js';
 import type { MiUser } from '@/models/User.js';
 import type { MiNote } from '@/models/Note.js';
+import type { MiUserProfile } from '@/models/UserProfile.js';
 import type { UsersRepository, UserProfilesRepository, NotesRepository, FollowingsRepository, PollsRepository, PollVotesRepository, NoteReactionsRepository, ChannelsRepository, MiMeta } from '@/models/_.js';
 import { bindThis } from '@/decorators.js';
 import { DebounceLoader } from '@/misc/loader.js';
 import { IdService } from '@/core/IdService.js';
 import { shouldHideNoteByTime } from '@/misc/should-hide-note-by-time.js';
+import { isQuotePacked, isRenotePacked } from '@/misc/is-renote.js';
 import { ReactionsBufferingService } from '@/core/ReactionsBufferingService.js';
 import { CacheService } from '@/core/CacheService.js';
 import { RoleService } from '@/core/RoleService.js';
@@ -135,7 +137,7 @@ export class NoteEntityService implements OnModuleInit {
 	}
 
 	@bindThis
-	public async shouldHideNote(packedNote: Packed<'Note'>, meId: MiUser['id'] | null, isAdmin = false): Promise<boolean> {
+	public async shouldHideNote(packedNote: Packed<'Note'>, meId: MiUser['id'] | null, isAdmin = false, profileHint?: MiUserProfile | null): Promise<boolean> {
 		// If the user is root, always return true
 		if (isAdmin) return false;
 
@@ -175,7 +177,12 @@ export class NoteEntityService implements OnModuleInit {
 		// 未ログインかつプロフィールで非表示設定されている場合は非表示
 		if (!meId) {
 			// プライバシー設定なので、キャッシュ (他プロセスでは最大 1 分古い) ではなく DB の最新値で判定する
-			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: packedNote.userId });
+			// (packMany から渡されるプロフィールもリクエストのたびに DB から一括取得した最新値)
+			const profile = profileHint !== undefined
+				? profileHint
+				: await this.userProfilesRepository.findOneBy({ userId: packedNote.userId });
+			// プロフィールが存在しない異常データではプライバシー設定を判定できないため、非表示側に倒す
+			if (profile == null) return true;
 			if (packedNote.visibility === 'public' && profile.hidePublicNotes) {
 				return true;
 			}
@@ -307,6 +314,23 @@ export class NoteEntityService implements OnModuleInit {
 	}
 
 	@bindThis
+	public async withMyRenoteReaction(note: Packed<'Note'>, meId: MiUser['id'] | null): Promise<Packed<'Note'>> {
+		if (meId == null) return note;
+		if (!isRenotePacked(note) || isQuotePacked(note)) return note;
+		if (note.renote == null || Object.keys(note.renote.reactions).length === 0) return note;
+
+		const myReaction = await this.populateMyReaction(note.renote, meId);
+
+		return {
+			...note,
+			renote: {
+				...note.renote,
+				myReaction,
+			},
+		};
+	}
+
+	@bindThis
 	public async isVisibleForMe(note: MiNote, meId: MiUser['id'] | null, isAdmin = false): Promise<boolean> {
 		// If the user is root, always return true
 		if (isAdmin) return true;
@@ -397,6 +421,8 @@ export class NoteEntityService implements OnModuleInit {
 				packedUsers?: Map<MiUser['id'], Packed<'UserLite'>>;
 				/** 閲覧者が管理者かどうか。packMany や返信・リノート先の pack で判定済みの値を引き回す (内部用) */
 				isAdmin?: boolean;
+				/** 未ログイン時の shouldHideNote 用に packMany が DB から一括取得したプロフィール (内部用) */
+				userProfiles?: Map<MiUser['id'], MiUserProfile | null>;
 			};
 		},
 	): Promise<Packed<'Note'>> {
@@ -512,8 +538,18 @@ export class NoteEntityService implements OnModuleInit {
 
 		this.treatVisibility(packed);
 
-		if (!opts.skipHide && (await this.shouldHideNote(packed, meId, isAdmin))) {
+		const hintedProfile = opts._hint_?.userProfiles?.has(packed.userId)
+			? opts._hint_.userProfiles.get(packed.userId) ?? null
+			: undefined;
+		if (!opts.skipHide && (await this.shouldHideNote(packed, meId, isAdmin, hintedProfile))) {
 			this.hideNote(packed);
+		}
+
+		// deliveryTargets/deleteAt は配送ポリシーの内部情報なので、匿名および隠匿対象のノートには
+		// どの経路でも開示しない(従来 notes/show と notes/renotes のみで行っていたものを全経路に統一)
+		if (meId == null || packed.isHidden) {
+			packed.deleteAt = undefined;
+			packed.deliveryTargets = undefined;
 		}
 
 		return packed;
@@ -601,6 +637,15 @@ export class NoteEntityService implements OnModuleInit {
 		const packedUsers = await this.userEntityService.packMany(users, me)
 			.then(users => new Map(users.map(u => [u.id, u])));
 
+		// 未ログイン時は shouldHideNote がノートごとに userProfiles を引いてしまう (N+1) ため、
+		// まとめて DB から取得して渡す。リクエストのたびに最新値を取る点は従来と同じ。
+		let userProfiles: Map<MiUser['id'], MiUserProfile | null> | undefined;
+		if (meId == null) {
+			const authorIds = [...new Set(notes.map(n => n.userId))];
+			const profiles = await this.userProfilesRepository.findBy({ userId: In(authorIds) });
+			userProfiles = new Map(authorIds.map(id => [id, profiles.find(profile => profile.userId === id) ?? null]));
+		}
+
 		return await Promise.all(notes.map(n => this.pack(n, me, {
 			...options,
 			_hint_: {
@@ -609,6 +654,7 @@ export class NoteEntityService implements OnModuleInit {
 				packedFiles,
 				packedUsers,
 				isAdmin,
+				userProfiles,
 			},
 		})));
 	}
@@ -652,7 +698,10 @@ export class NoteEntityService implements OnModuleInit {
 	@bindThis
 	public async fetchDiffs(noteIds: MiNote['id'][], meId: MiUser['id'] | null = null) {
 		if (noteIds.length === 0) return [];
-		// TODO: ugcVisibilityForVisitor が local の場合の扱いを shouldHideNote と揃える
+		// サーバーの visitor ポリシー(ugcVisibilityForVisitor)と閲覧自体を制限する
+		// ユーザー設定(requireSigninToViewContents)は従来どおり除外する。
+		// プレースホルダ化されるノート(pack 層で isHidden になるもの)は、プレースホルダが
+		// id・作者・件数・日時を残すのと同じく、この部分形状でもエントリ(件数)を返す(#617 item 9)。
 		if (meId == null && this.meta.ugcVisibilityForVisitor === 'none') return [];
 
 		// pack() と同じ判定で管理者はプライバシーゲートを免除する (shouldHideNote 準拠)
@@ -678,26 +727,17 @@ export class NoteEntityService implements OnModuleInit {
 
 		const notes: MiNote[] = [];
 		for (const rawNote of fetched) {
-			if (meId == null && (this.meta.ugcVisibilityForVisitor === 'none' ||
-				(this.meta.ugcVisibilityForVisitor === 'local' && rawNote.userHost != null))) continue;
+			if (meId == null && this.meta.ugcVisibilityForVisitor === 'local' && rawNote.userHost != null) continue;
 			let note = rawNote;
 			const createdAt = this.idService.parse(rawNote.id).date.toISOString();
-			// User-level privacy gates (same checks as shouldHideNote; the
-			// author themselves and admins are exempt, mirroring shouldHideNote).
-			if (!isAdmin && !(meId != null && meId === rawNote.userId)) {
-				const author = await this.cacheService.findUserById(rawNote.userId);
-				if (shouldHideNoteByTime(author.makeNotesHiddenBefore, createdAt)) continue;
-				if (meId == null) {
-					if (author.requireSigninToViewContents) continue;
-					const profile = await this.cacheService.userProfileCache.fetch(rawNote.userId);
-					if (rawNote.visibility === 'public' && profile.hidePublicNotes) continue;
-					if (rawNote.visibility === 'home' && profile.hideHomeNotes) continue;
-					if (rawNote.localOnly && profile.hideLocalOnlyNotes) continue;
-				}
-				if ((rawNote.visibility === 'public' || rawNote.visibility === 'home') &&
-					shouldHideNoteByTime(author.makeNotesFollowersOnlyBefore, createdAt)) {
-					note = { ...rawNote, visibility: 'followers' as const };
-				}
+			const author = await this.cacheService.findUserById(rawNote.userId);
+			if (meId == null && author.requireSigninToViewContents) continue;
+			// 時限でフォロワー限定になるノートの公開範囲ダウングレードは
+			// pack() の treatVisibility と同じく適用する(作者と管理者は shouldHideNote 準拠で免除)
+			if (!isAdmin && !(meId != null && meId === rawNote.userId) &&
+				(rawNote.visibility === 'public' || rawNote.visibility === 'home') &&
+				shouldHideNoteByTime(author.makeNotesFollowersOnlyBefore, createdAt)) {
+				note = { ...rawNote, visibility: 'followers' as const };
 			}
 			if (await this.isVisibleForMe(note, meId)) {
 				notes.push(note);

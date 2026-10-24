@@ -6,7 +6,7 @@
 import { MoreThan } from 'typeorm';
 import { Inject, Injectable } from '@nestjs/common';
 import { USER_ONLINE_THRESHOLD } from '@/const.js';
-import type { UsersRepository } from '@/models/_.js';
+import type { MiMeta, UsersRepository } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 
@@ -14,7 +14,8 @@ export const meta = {
 	tags: ['meta'],
 
 	allowGet: true,
-	cacheSec: 60 * 1,
+	// 匿名公開の設定変更が即時に反映されるよう、匿名応答はキャッシュさせない
+	noStoreWhenAnonymous: true,
 	res: {
 		type: 'object',
 		optional: false, nullable: false,
@@ -36,11 +37,13 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
+		@Inject(DI.meta)
+		private serverSettings: MiMeta,
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
 	) {
-		super(meta, paramDef, async (me) => {
-			if (!me) {
+		super(meta, paramDef, async (ps, me) => {
+			if (!me && !this.serverSettings.allowAnonymousOnlineUsersCount) {
 				return {
 					count: 0,
 				};

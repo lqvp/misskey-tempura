@@ -18,14 +18,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkEllipsis v-bind="props" />',
+			template: '<MkEllipsis v-bind="args" />',
 		};
 	},
 	args: {

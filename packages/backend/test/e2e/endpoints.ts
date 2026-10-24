@@ -316,9 +316,10 @@ describe('Endpoints', () => {
 
 			assert.strictEqual(res.status, 204);
 
+			// forkでは notes/reactions は未認証に空配列を返すので、認証済みで確認する
 			const reaction = await api('notes/reactions', {
 				noteId: bobNote.id,
-			});
+			}, alice);
 
 			assert.strictEqual(reaction.body.length, 1);
 			assert.strictEqual(reaction.body[0].type, '\u2764');
@@ -334,9 +335,10 @@ describe('Endpoints', () => {
 
 			assert.strictEqual(res.status, 204);
 
+			// forkでは notes/reactions は未認証に空配列を返すので、認証済みで確認する
 			const reaction = await api('notes/reactions', {
 				noteId: bobNote.id,
-			});
+			}, alice);
 
 			assert.strictEqual(reaction.body.length, 1);
 			assert.strictEqual(reaction.body[0].type, '\u2764');

@@ -21,14 +21,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkInviteCode v-bind="props" />',
+			template: '<MkInviteCode v-bind="args" />',
 		};
 	},
 	args: {

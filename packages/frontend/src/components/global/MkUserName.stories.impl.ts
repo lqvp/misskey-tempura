@@ -4,7 +4,7 @@
  */
 
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
-import { expect } from '@storybook/test';
+import { expect } from 'storybook/test';
 import type { StoryObj } from '@storybook/vue3';
 import { userDetailed } from '../../../.storybook/fakes.js';
 import MkUserName from './MkUserName.vue';
@@ -19,14 +19,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkUserName v-bind="props"/>',
+			template: '<MkUserName v-bind="args"/>',
 		};
 	},
 	async play({ canvasElement }) {

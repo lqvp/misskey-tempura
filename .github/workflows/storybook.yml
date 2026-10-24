@@ -5,6 +5,8 @@ on:
     branches:
       - master
       - develop
+  # 手動実行: マージ前の動作確認や再公開に使う。
+  workflow_dispatch:
   pull_request_target:
     branches-ignore:
       # Since pull requests targets master mostly is the "develop" branch.
@@ -12,34 +14,50 @@ on:
       # This is a waste of chromatic build quota, so we don't run storybook CI on pull requests targets master.
       - master
 
+# 既定では一切の権限を付与しない。必要なジョブで個別に許可する。
+permissions: {}
+
 jobs:
   build:
-    # Chromatic is not likely to be available for fork repositories, so we disable for fork repositories.
-    if: github.repository == 'misskey-dev/misskey'
+    # リポジトリ変数 CHROMATIC_ENABLED=true が設定された場合のみ実行する。
+    # このジョブは pull_request_target であってもシークレットを一切参照しない。
+    # PR 由来のコード (依存関係・changes.js を含む) を実行してよいのは、
+    # シークレットが存在しないこのジョブだけ。
+    if: vars.CHROMATIC_ENABLED == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
     env:
       NODE_OPTIONS: "--max_old_space_size=7168"
 
+    outputs:
+      chromatic_skip: ${{ steps.params.outputs.skip }}
+      only_story_files: ${{ steps.params.outputs.only_story_files }}
+      branch_name: ${{ steps.params.outputs.branch_name }}
+      commit_sha: ${{ steps.params.outputs.commit_sha }}
+
     steps:
-    - uses: actions/checkout@v7.0.1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       if: github.event_name != 'pull_request_target'
       with:
         fetch-depth: 0
         submodules: true
-    - uses: actions/checkout@v7.0.1
+        persist-credentials: false
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       if: github.event_name == 'pull_request_target'
       with:
         fetch-depth: 0
         submodules: true
+        persist-credentials: false
         ref: "refs/pull/${{ github.event.number }}/merge"
     - name: Checkout actual HEAD
       if: github.event_name == 'pull_request_target'
       run: git checkout "$(git rev-list --parents -n1 HEAD | cut -d" " -f3)"
     - name: Setup pnpm
-      uses: pnpm/action-setup@v6.0.10
+      uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
     - name: Use Node.js
-      uses: actions/setup-node@v7.0.0
+      uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
       with:
         node-version-file: '.node-version'
         cache: 'pnpm'
@@ -47,51 +65,205 @@ jobs:
     - name: Check pnpm-lock.yaml
       run: git diff --exit-code pnpm-lock.yaml
     - name: Build dependent packages
-      run: pnpm -F misskey-js -F misskey-bubble-game -F misskey-reversi build
+      run: pnpm -F i18n -F misskey-js -F misskey-bubble-game -F misskey-reversi build
     - name: Build storybook
       run: pnpm --filter frontend build-storybook
+    - name: Compute Chromatic parameters
+      id: params
+      env:
+        HEAD_USER_LOGIN: ${{ github.event.pull_request.head.user.login }}
+      run: |
+        set -euo pipefail
+        cd packages/frontend
+        FILES=""
+        BRANCH=""
+        if [ "${{ github.event_name }}" = "pull_request_target" ]; then
+          FILES="$(git diff --name-only "origin/${GITHUB_BASE_REF}...origin/${GITHUB_HEAD_REF}" | xargs || true)"
+          BRANCH="${HEAD_USER_LOGIN}:${GITHUB_HEAD_REF}"
+          if [ "$BRANCH" = "misskey-dev:${GITHUB_HEAD_REF}" ]; then
+            BRANCH="${GITHUB_HEAD_REF}"
+          fi
+        elif [ "$GITHUB_REF" != "refs/heads/master" ]; then
+          DIFF="${{ github.event.before }} HEAD"
+          if [ "$DIFF" = "0000000000000000000000000000000000000000 HEAD" ]; then
+            DIFF="HEAD"
+          fi
+          FILES="$(git diff-tree --no-commit-id --name-only -r $(echo "$DIFF") | xargs || true)"
+        fi
+        # master への push では changes.js を実行しない (従来どおり全ストーリー対象)。
+        RAW=""
+        if [ -n "$FILES" ]; then
+          RAW="$(node .storybook/changes.js $FILES || true)"
+        fi
+        # 出力を厳格に検査する。許可するのは `--skip` と
+        # `--only-story-files ./src/...stories.ts` の組だけ。
+        # PR は変更ファイル名を制御できるため、ここで受け入れる文字種を限定し、
+        # publish ジョブに任意のフラグやシェル文字を渡させない。
+        SKIP="false"
+        PARAMS_FILE="$(mktemp)"
+        expect_path="false"
+        for tok in $RAW; do
+          if [ "$expect_path" = "true" ]; then
+            if [[ "$tok" =~ ^\./src/[A-Za-z0-9_./@%+-]+\.stories\.ts$ ]]; then
+              echo "$tok" >> "$PARAMS_FILE"
+              expect_path="false"
+            else
+              echo "refusing unsafe --only-story-files value: $tok" >&2
+              exit 1
+            fi
+          elif [ "$tok" = "--skip" ]; then
+            SKIP="true"
+          elif [ "$tok" = "--only-story-files" ]; then
+            expect_path="true"
+          else
+            echo "refusing unexpected token from changes.js: $tok" >&2
+            exit 1
+          fi
+        done
+        if [ "$expect_path" = "true" ]; then
+          echo "dangling --only-story-files flag from changes.js" >&2
+          exit 1
+        fi
+        if [ -n "$BRANCH" ]; then
+          if [[ ! "$BRANCH" =~ ^[A-Za-z0-9._:/-]+$ ]]; then
+            echo "refusing unsafe branch name" >&2
+            exit 1
+          fi
+          echo "branch_name=$BRANCH" >> "$GITHUB_OUTPUT"
+        fi
+        # 公開対象のコミット。PR では head の SHA、それ以外はイベントの SHA。
+        # 公開ジョブは git を持たないため、検証済みの値だけを env で渡す。
+        SHA="${{ github.sha }}"
+        if [ "${{ github.event_name }}" = "pull_request_target" ]; then
+          SHA="${{ github.event.pull_request.head.sha }}"
+        fi
+        if [[ ! "$SHA" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "refusing unsafe commit sha" >&2
+          exit 1
+        fi
+        echo "commit_sha=$SHA" >> "$GITHUB_OUTPUT"
+        echo "skip=$SKIP" >> "$GITHUB_OUTPUT"
+        echo "only_story_files<<PARAMS_EOF" >> "$GITHUB_OUTPUT"
+        cat "$PARAMS_FILE" >> "$GITHUB_OUTPUT"
+        echo "PARAMS_EOF" >> "$GITHUB_OUTPUT"
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+      with:
+        name: storybook
+        path: packages/frontend/storybook-static
+
+  publish:
+    # 信頼境界: このジョブは作業ツリーにリポジトリのファイルを一切展開せず
+    # (sparse-checkout: '' により .git のコミットメタデータのみ)、
+    # PR 由来のコード・パッケージスクリプト・lockfile・node_modules を
+    # 一切実行しない。
+    # build ジョブの生成物 (storybook-static) と、バージョン固定した
+    # chromatic CLI だけを使って公開する。
+    # 実行には CHROMATIC_PROJECT_TOKEN シークレットが必要。
+    # 通知リンク用の CHROMATIC_APP_ID はリポジトリ変数から参照する。
+    if: vars.CHROMATIC_ENABLED == 'true'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions: {}
+
+    steps:
+    # chromatic CLI はコミットのメタデータ (git log) を必要とする。
+    # 作業ツリーは空のまま .git だけを取得し、認証情報は残さない。
+    # PR 由来のファイルは一切展開されず、取得するのは読み取り専用の
+    # コミット情報のみ。
+    - name: Fetch git metadata only
+      env:
+        COMMIT_SHA: ${{ needs.build.outputs.commit_sha }}
+      run: |
+        set -euo pipefail
+        REPO_URL="https://github.com/${{ github.repository }}.git"
+        git init -q .
+        # blob なしの部分取得で全履歴を持つ (chromatic がベースライン解決に
+        # 履歴を必要とする)。作業ツリーには一切展開しない。
+        # 取得は常に検証済みの不変 SHA で行い、可変の ref 参照による
+        # ビルド対象とのズレ (TOCTOU) を排除する。
+        git fetch -q --filter=blob:none "$REPO_URL" "$COMMIT_SHA"
+        git update-ref refs/heads/chromatic-publish FETCH_HEAD
+        git symbolic-ref HEAD refs/heads/chromatic-publish
+        git --no-pager log -n 1 --format="%H %ct %ae %an"
+    - name: Download storybook artifact
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+      with:
+        name: storybook
+        # 旧ジョブと同じ packages/frontend 基準のパスレイアウトに置く。
+        # upload-artifact はシンボリックリンクを保存しないため、
+        # 成果物経由のパストラバーサルは成立しない。
+        path: packages/frontend/storybook-static
+    - name: Create minimal project manifest
+      working-directory: packages/frontend
+      # chromatic CLI は package.json を上位に要求する。チェックアウトしない
+      # このジョブではワークフロー側が最小のマニフェストを生成する
+      # (PR 由来の package.json / chromatic.config.json は使わない)。
+      run: printf '{"name":"chromatic-publish","private":true,"version":"0.0.0"}' > package.json
     - name: Publish to Chromatic
-      if: github.event_name != 'pull_request_target' && github.ref == 'refs/heads/master'
-      run: pnpm --filter frontend chromatic --exit-once-uploaded -d storybook-static
+      id: chromatic
+      working-directory: packages/frontend
       env:
         CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
-    - name: Publish to Chromatic
-      if: github.event_name != 'pull_request_target' && github.ref != 'refs/heads/master'
-      id: chromatic_push
+        ONLY_STORY_FILES: ${{ needs.build.outputs.only_story_files }}
+        BRANCH_NAME: ${{ needs.build.outputs.branch_name }}
+        CHROMATIC_SKIP: ${{ needs.build.outputs.chromatic_skip }}
+        # 固定バージョンの chromatic 本体だけを信用し、依存ツリーの
+        # ライフサイクルスクリプトは一切実行しない。
+        npm_config_ignore_scripts: "true"
+        # このジョブは git リポジトリを持たない (チェックアウトしない) ため、
+        # CLI の git 参照を検証済みの環境変数で代替する。
+        CHROMATIC_SHA: ${{ needs.build.outputs.commit_sha }}
+        CHROMATIC_BRANCH: ${{ needs.build.outputs.branch_name || github.ref_name }}
+        CHROMATIC_SLUG: ${{ github.repository }}
       run: |
-        DIFF="${{ github.event.before }} HEAD"
-        if [ "$DIFF" = "0000000000000000000000000000000000000000 HEAD" ]; then
-          DIFF="HEAD"
+        set -uo pipefail
+        ARGS=(-d storybook-static)
+        if [ "${CHROMATIC_SKIP:-}" = "true" ]; then
+          ARGS+=(--skip)
         fi
-        CHROMATIC_PARAMETER="$(node packages/frontend/.storybook/changes.js $(git diff-tree --no-commit-id --name-only -r $(echo "$DIFF") | xargs))"
-        if [ "$CHROMATIC_PARAMETER" = " --skip" ]; then
-          echo "skip=true" >> $GITHUB_OUTPUT
+        if [ -n "${ONLY_STORY_FILES:-}" ]; then
+          while IFS= read -r p; do
+            if [ -n "$p" ]; then
+              ARGS+=(--only-story-files "$p")
+            fi
+          done <<< "$ONLY_STORY_FILES"
         fi
-        if pnpm --filter frontend chromatic -d storybook-static $(echo "$CHROMATIC_PARAMETER"); then
-          echo "success=true" >> $GITHUB_OUTPUT
+        if [ "${{ github.event_name }}" = "pull_request_target" ]; then
+          ARGS+=(--exit-once-uploaded --branch-name "$BRANCH_NAME")
+        elif [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "$GITHUB_REF" = "refs/heads/master" ]; then
+          ARGS+=(--exit-once-uploaded)
+        fi
+        # lockfile の chromatic バージョンに合わせて固定する (packages/frontend/package.json)。
+        # 成功判定は終了コードだけに頼らない: 認証前のローカルエラー (git 不在など) でも
+        # 終了コード 0 を返す版があるため、公開成功の出力を必須とする。
+        # (--exit-once-uploaded 時は "Storybook published"、通常完了時は
+        # "Build N published" が出力される。)
+        LOG="$(mktemp)"
+        STATUS=0
+        npm exec --yes --package=chromatic@18.7.1 -- chromatic "${ARGS[@]}" 2>&1 | tee "$LOG" || STATUS=$?
+        if [ "$STATUS" -eq 0 ] && grep -qE "(Storybook published|Build [0-9]+ published)" "$LOG"; then
+          echo "success=true" >> "$GITHUB_OUTPUT"
         else
-          echo "success=false" >> $GITHUB_OUTPUT
+          echo "success=false" >> "$GITHUB_OUTPUT"
+          exit 1
         fi
-      env:
-        CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
-    - name: Publish to Chromatic
-      if: github.event_name == 'pull_request_target'
-      id: chromatic_pull_request
-      run: |
-        CHROMATIC_PARAMETER="$(node packages/frontend/.storybook/changes.js $(git diff --name-only origin/${GITHUB_BASE_REF}...origin/${GITHUB_HEAD_REF} | xargs))"
-        if [ "$CHROMATIC_PARAMETER" = " --skip" ]; then
-          echo "skip=true" >> $GITHUB_OUTPUT
-        fi
-        BRANCH="${{ github.event.pull_request.head.user.login }}:$GITHUB_HEAD_REF"
-        if [ "$BRANCH" = "misskey-dev:$GITHUB_HEAD_REF" ]; then
-          BRANCH="$GITHUB_HEAD_REF"
-        fi
-        pnpm --filter frontend chromatic --exit-once-uploaded -d storybook-static --branch-name "$BRANCH" $(echo "$CHROMATIC_PARAMETER")
-      env:
-        CHROMATIC_PROJECT_TOKEN: ${{ secrets.CHROMATIC_PROJECT_TOKEN }}
+    outputs:
+      success: ${{ steps.chromatic.outputs.success }}
+
+  notify:
+    # push 時に Chromatic が変更を検出した場合だけコミットコメントを投稿する。
+    # 書き込み権限を持つのはこのジョブだけで、PR (pull_request_target) では
+    # 実行されない。
+    if: vars.CHROMATIC_ENABLED == 'true' && github.event_name == 'push' && always() && (needs.publish.result == 'failure' || needs.publish.outputs.success == 'false')
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
     - name: Notify that Chromatic detects changes
-      uses: actions/github-script@v9
-      if: github.event_name != 'pull_request_target' && steps.chromatic_push.outputs.success == 'false'
+      uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
@@ -99,10 +271,5 @@ jobs:
             owner: context.repo.owner,
             repo: context.repo.repo,
             commit_sha: context.sha,
-            body: 'Chromatic detects changes. Please [review the changes on Chromatic](https://www.chromatic.com/builds?appId=6428f7d7b962f0b79f97d6e4).'
+            body: 'Chromatic detects changes. Please [review the changes on Chromatic](https://www.chromatic.com/builds?appId=${{ vars.CHROMATIC_APP_ID }}).'
           })
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v7
-      with:
-        name: storybook
-        path: packages/frontend/storybook-static

@@ -21,11 +21,6 @@ export const Default = {
 				};
 			},
 			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
 				events() {
 					return {
 						'ok': action('ok'),
@@ -34,7 +29,7 @@ export const Default = {
 					};
 				},
 			},
-			template: '<MkCropperDialog v-bind="props" v-on="events" />',
+			template: '<MkCropperDialog v-bind="args" v-on="events" />',
 		};
 	},
 	args: {

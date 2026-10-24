@@ -20,14 +20,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkAvatars v-bind="props" />',
+			template: '<MkAvatars v-bind="args" />',
 		};
 	},
 	args: {

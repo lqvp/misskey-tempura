@@ -21,14 +21,7 @@ export const Default = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkAccountMoved v-bind="props" />',
+			template: '<MkAccountMoved v-bind="args" />',
 		};
 	},
 	args: {

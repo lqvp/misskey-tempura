@@ -22,14 +22,7 @@ const Base = {
 					args,
 				};
 			},
-			computed: {
-				props() {
-					return {
-						...this.args,
-					};
-				},
-			},
-			template: '<MkChart v-bind="props" />',
+			template: '<MkChart v-bind="args" />',
 		};
 	},
 	args: {
