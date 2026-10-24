@@ -11,7 +11,6 @@ import * as path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import type { AddressInfo } from 'node:net';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
-import { mockDeep } from 'vitest-mock-extended';
 import { SsoService, SsoError } from '@/server/api/SsoService.js';
 import type { LoggerService } from '@/core/LoggerService.js';
 
@@ -121,7 +120,7 @@ describe('SsoService コールバック全体 (実 openid-client + ローカル 
 			{ gen: () => `id${++seq}` } as any,
 			{ fetch: async () => ({ ssoProviders: [provider] }) } as any,
 			{ getAgentByUrl: () => agent } as any,
-			mockDeep<LoggerService>(),
+			{ getLogger: () => ({ info: () => {}, warn: () => {}, error: () => {}, debug: () => {} }) } as unknown as LoggerService,
 		);
 		return { service, links, redis };
 	}
