@@ -5,7 +5,7 @@
 
 import { IsNull, MoreThan, Not } from 'typeorm';
 import { Inject, Injectable } from '@nestjs/common';
-import type { FollowingsRepository, InstancesRepository } from '@/models/_.js';
+import type { FollowingsRepository, InstancesRepository, MiMeta } from '@/models/_.js';
 import { awaitAll } from '@/misc/prelude/await-all.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { InstanceEntityService } from '@/core/entities/InstanceEntityService.js';
@@ -17,7 +17,8 @@ export const meta = {
 	requireCredential: false,
 
 	allowGet: true,
-	cacheSec: 60 * 60,
+	// 匿名公開の設定変更が即時に反映されるよう、匿名応答はキャッシュさせない
+	noStoreWhenAnonymous: true,
 
 	res: {
 		type: 'object',
@@ -63,6 +64,8 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
+		@Inject(DI.meta)
+		private serverSettings: MiMeta,
 		@Inject(DI.instancesRepository)
 		private instancesRepository: InstancesRepository,
 
@@ -72,7 +75,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private instanceEntityService: InstanceEntityService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			if (!me) {
+			if (!me && !this.serverSettings.allowAnonymousFederationStats) {
 				return {
 					topSubInstances: [],
 					otherFollowersCount: 0,

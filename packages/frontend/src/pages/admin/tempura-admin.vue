@@ -26,6 +26,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<LoginRiskSettings :meta="meta"/>
 				<ServerStatsSettings :meta="meta"/>
 				<SignedApFetchSettings :meta="meta"/>
+				<AnonymousAccessSettings :meta="meta"/>
 				<DeeplFreeModeSettings :meta="meta"/>
 				<ObjectStorageRemoteSettings :meta="meta"/>
 				<BlockedUserImageSettings :meta="meta"/>
@@ -56,6 +57,7 @@ import ContactFormSettings from './tempura/sections/ContactFormSettings.vue';
 import LoginRiskSettings from './tempura/sections/LoginRiskSettings.vue';
 import ServerStatsSettings from './tempura/sections/ServerStatsSettings.vue';
 import SignedApFetchSettings from './tempura/sections/SignedApFetchSettings.vue';
+import AnonymousAccessSettings from './tempura/sections/AnonymousAccessSettings.vue';
 import DeeplFreeModeSettings from './tempura/sections/DeeplFreeModeSettings.vue';
 import ObjectStorageRemoteSettings from './tempura/sections/ObjectStorageRemoteSettings.vue';
 import BlockedUserImageSettings from './tempura/sections/BlockedUserImageSettings.vue';

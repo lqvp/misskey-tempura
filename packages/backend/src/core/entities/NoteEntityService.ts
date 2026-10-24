@@ -527,6 +527,13 @@ export class NoteEntityService implements OnModuleInit {
 			this.hideNote(packed);
 		}
 
+		// deliveryTargets/deleteAt は配送ポリシーの内部情報なので、匿名および隠匿対象のノートには
+		// どの経路でも開示しない(従来 notes/show と notes/renotes のみで行っていたものを全経路に統一)
+		if (meId == null || packed.isHidden) {
+			packed.deleteAt = undefined;
+			packed.deliveryTargets = undefined;
+		}
+
 		return packed;
 	}
 
@@ -673,7 +680,10 @@ export class NoteEntityService implements OnModuleInit {
 	@bindThis
 	public async fetchDiffs(noteIds: MiNote['id'][], meId: MiUser['id'] | null = null) {
 		if (noteIds.length === 0) return [];
-		// TODO: ugcVisibilityForVisitor が local の場合の扱いを shouldHideNote と揃える
+		// サーバーの visitor ポリシー(ugcVisibilityForVisitor)と閲覧自体を制限する
+		// ユーザー設定(requireSigninToViewContents)は従来どおり除外する。
+		// プレースホルダ化されるノート(pack 層で isHidden になるもの)は、プレースホルダが
+		// id・作者・件数・日時を残すのと同じく、この部分形状でもエントリ(件数)を返す(#617 item 9)。
 		if (meId == null && this.meta.ugcVisibilityForVisitor === 'none') return [];
 
 		// pack() と同じ判定で管理者はプライバシーゲートを免除する (shouldHideNote 準拠)
@@ -699,26 +709,17 @@ export class NoteEntityService implements OnModuleInit {
 
 		const notes: MiNote[] = [];
 		for (const rawNote of fetched) {
-			if (meId == null && (this.meta.ugcVisibilityForVisitor === 'none' ||
-				(this.meta.ugcVisibilityForVisitor === 'local' && rawNote.userHost != null))) continue;
+			if (meId == null && this.meta.ugcVisibilityForVisitor === 'local' && rawNote.userHost != null) continue;
 			let note = rawNote;
 			const createdAt = this.idService.parse(rawNote.id).date.toISOString();
-			// User-level privacy gates (same checks as shouldHideNote; the
-			// author themselves and admins are exempt, mirroring shouldHideNote).
-			if (!isAdmin && !(meId != null && meId === rawNote.userId)) {
-				const author = await this.cacheService.findUserById(rawNote.userId);
-				if (shouldHideNoteByTime(author.makeNotesHiddenBefore, createdAt)) continue;
-				if (meId == null) {
-					if (author.requireSigninToViewContents) continue;
-					const profile = await this.cacheService.userProfileCache.fetch(rawNote.userId);
-					if (rawNote.visibility === 'public' && profile.hidePublicNotes) continue;
-					if (rawNote.visibility === 'home' && profile.hideHomeNotes) continue;
-					if (rawNote.localOnly && profile.hideLocalOnlyNotes) continue;
-				}
-				if ((rawNote.visibility === 'public' || rawNote.visibility === 'home') &&
-					shouldHideNoteByTime(author.makeNotesFollowersOnlyBefore, createdAt)) {
-					note = { ...rawNote, visibility: 'followers' as const };
-				}
+			const author = await this.cacheService.findUserById(rawNote.userId);
+			if (meId == null && author.requireSigninToViewContents) continue;
+			// 時限でフォロワー限定になるノートの公開範囲ダウングレードは
+			// pack() の treatVisibility と同じく適用する(作者と管理者は shouldHideNote 準拠で免除)
+			if (!isAdmin && !(meId != null && meId === rawNote.userId) &&
+				(rawNote.visibility === 'public' || rawNote.visibility === 'home') &&
+				shouldHideNoteByTime(author.makeNotesFollowersOnlyBefore, createdAt)) {
+				note = { ...rawNote, visibility: 'followers' as const };
 			}
 			if (await this.isVisibleForMe(note, meId)) {
 				notes.push(note);

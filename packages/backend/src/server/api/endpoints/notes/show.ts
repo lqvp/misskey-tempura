@@ -82,11 +82,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				detail: true,
 			});
 
-			if (me == null || packedNote.isHidden) {
-				packedNote.deleteAt = undefined;
-				packedNote.deliveryTargets = undefined;
-			}
-
 			return packedNote;
 		});
 	}

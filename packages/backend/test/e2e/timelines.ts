@@ -3008,8 +3008,20 @@ describe('Timelines', () => {
 				await redisForTimelines.del('list:userTimeline:' + alice.id);
 				const note3 = await post(alice, { text: '3' });
 
-				const res = await api('users/notes', { userId: alice.id, sinceId: noteSince.id });
+				const res = await api('users/notes', { userId: alice.id, sinceId: noteSince.id }, alice);
 				assert.deepStrictEqual(res.body, [note1, note2, note3]);
+
+				// 匿名でも同じノートが返るが、deliveryTargets/deleteAt は redact される
+				const resAnon = await api('users/notes', { userId: alice.id, sinceId: noteSince.id });
+				assert.strictEqual(resAnon.status, 200);
+				assert.deepStrictEqual(
+					resAnon.body.map(note => note.id),
+					res.body.map(note => note.id),
+				);
+				for (const note of resAnon.body) {
+					assert.ok(!('deliveryTargets' in note), 'anonymous must not see deliveryTargets');
+					assert.ok(!('deleteAt' in note), 'anonymous must not see deleteAt');
+				}
 			});
 
 			test('FTT: sinceId にキャッシュより古いノートを指定しても、sinceId と untilId による絞り込みが正しく動作する', async () => {
@@ -3022,8 +3034,20 @@ describe('Timelines', () => {
 				const noteUntil = await post(alice, { text: 'Note where id will be `untilId`.' });
 				await post(alice, { text: '4' });
 
-				const res = await api('users/notes', { userId: alice.id, sinceId: noteSince.id, untilId: noteUntil.id });
+				const res = await api('users/notes', { userId: alice.id, sinceId: noteSince.id, untilId: noteUntil.id }, alice);
 				assert.deepStrictEqual(res.body, [note3, note2, note1]);
+
+				// 匿名でも同じノートが返るが、deliveryTargets/deleteAt は redact される
+				const resAnon = await api('users/notes', { userId: alice.id, sinceId: noteSince.id, untilId: noteUntil.id });
+				assert.strictEqual(resAnon.status, 200);
+				assert.deepStrictEqual(
+					resAnon.body.map(note => note.id),
+					res.body.map(note => note.id),
+				);
+				for (const note of resAnon.body) {
+					assert.ok(!('deliveryTargets' in note), 'anonymous must not see deliveryTargets');
+					assert.ok(!('deleteAt' in note), 'anonymous must not see deleteAt');
+				}
 			});
 
 			describe('Channel', () => {

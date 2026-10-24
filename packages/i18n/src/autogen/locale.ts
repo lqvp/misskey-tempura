@@ -7383,6 +7383,178 @@ export interface Locale extends ILocale {
          */
         "allowUnregisteredApSignerVerification_description": string;
         /**
+         * 統計情報の匿名公開
+         */
+        "allowAnonymousStats": string;
+        /**
+         * 有効にすると、ログインしていない人もサーバー統計情報(/api/stats)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousStats_description": string;
+        /**
+         * オンラインユーザー数の匿名公開
+         */
+        "allowAnonymousOnlineUsersCount": string;
+        /**
+         * 有効にすると、ログインしていない人もオンラインユーザー数を取得できます。初期値は無効です。
+         */
+        "allowAnonymousOnlineUsersCount_description": string;
+        /**
+         * アクティブユーザーチャートの匿名公開
+         */
+        "allowAnonymousChartActiveUsers": string;
+        /**
+         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartActiveUsers_description": string;
+        /**
+         * ActivityPubリクエストチャートの匿名公開
+         */
+        "allowAnonymousChartApRequest": string;
+        /**
+         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartApRequest_description": string;
+        /**
+         * ドライブチャートの匿名公開
+         */
+        "allowAnonymousChartDrive": string;
+        /**
+         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartDrive_description": string;
+        /**
+         * 連合チャートの匿名公開
+         */
+        "allowAnonymousChartFederation": string;
+        /**
+         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartFederation_description": string;
+        /**
+         * インスタンスチャートの匿名公開
+         */
+        "allowAnonymousChartInstance": string;
+        /**
+         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartInstance_description": string;
+        /**
+         * ノートチャートの匿名公開
+         */
+        "allowAnonymousChartNotes": string;
+        /**
+         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartNotes_description": string;
+        /**
+         * ユーザーチャートの匿名公開
+         */
+        "allowAnonymousChartUsers": string;
+        /**
+         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         */
+        "allowAnonymousChartUsers_description": string;
+        /**
+         * 連合ユーザー一覧の匿名公開
+         */
+        "allowAnonymousFederationUsers": string;
+        /**
+         * 有効にすると、ログインしていない人もリモートユーザーの一覧(/api/federation/users)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousFederationUsers_description": string;
+        /**
+         * 連合統計の匿名公開
+         */
+        "allowAnonymousFederationStats": string;
+        /**
+         * 有効にすると、ログインしていない人も連合の統計(/api/federation/stats)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousFederationStats_description": string;
+        /**
+         * インスタンス情報の匿名公開
+         */
+        "allowAnonymousShowInstance": string;
+        /**
+         * 有効にすると、ログインしていない人も個別インスタンスの情報(/api/federation/show-instance)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousShowInstance_description": string;
+        /**
+         * 返信一覧の匿名公開
+         */
+        "allowAnonymousReplies": string;
+        /**
+         * 有効にすると、ログインしていない人もノートへの返信一覧(/api/notes/replies)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousReplies_description": string;
+        /**
+         * リノート一覧の匿名公開
+         */
+        "allowAnonymousRenotes": string;
+        /**
+         * 有効にすると、ログインしていない人もノートのリノート一覧(/api/notes/renotes)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousRenotes_description": string;
+        /**
+         * 引用一覧の匿名公開
+         */
+        "allowAnonymousQuotes": string;
+        /**
+         * 有効にすると、ログインしていない人もノートの引用一覧(/api/notes/quotes)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousQuotes_description": string;
+        /**
+         * federation/instances の匿名公開
+         */
+        "allowAnonymousFederationInstances": string;
+        /**
+         * 有効にすると、ログインしていない人もインスタンス一覧(/api/federation/instances)を取得できます。entranceShowFederation とは独立に制御されます。
+         */
+        "allowAnonymousFederationInstances_description": string;
+        /**
+         * featured の匿名公開
+         */
+        "allowAnonymousFeatured": string;
+        /**
+         * 有効にすると、ログインしていない人も注目のノート(/api/notes/featured)を取得できます。entranceShowFeatured とは独立に制御されます。
+         */
+        "allowAnonymousFeatured_description": string;
+        /**
+         * ローカルタイムラインの匿名公開
+         */
+        "allowAnonymousLocalTimeline": string;
+        /**
+         * 有効にすると、ログインしていない人もローカルタイムライン(/api/notes/local-timeline)を取得できます。初期値は無効です。リアルタイム購読(stream)は従来どおりロールポリシー ltlAvailable で制御されます。
+         */
+        "allowAnonymousLocalTimeline_description": string;
+        /**
+         * 匿名アクセスの公開設定
+         */
+        "anonymousVisitorAccess": string;
+        /**
+         * 統計・チャート
+         */
+        "anonymousVisitorAccessStats": string;
+        /**
+         * 連合
+         */
+        "anonymousVisitorAccessFederation": string;
+        /**
+         * ノート・タイムライン
+         */
+        "anonymousVisitorAccessNotes": string;
+        /**
+         * すべて on
+         */
+        "anonymousAccessGroupAllOn": string;
+        /**
+         * すべて off
+         */
+        "anonymousAccessGroupAllOff": string;
+        /**
+         * カスタム(混合)
+         */
+        "anonymousAccessGroupCustom": string;
+        /**
          * リモートファイルをプロキシする
          */
         "proxyRemoteFiles": string;

@@ -282,6 +282,24 @@ export const paramDef = {
 		hanaModeBackground: { type: 'string', nullable: true },
 		requireSignedApFetch: { type: 'boolean' },
 		allowUnregisteredApSignerVerification: { type: 'boolean' },
+		allowAnonymousStats: { type: 'boolean' },
+		allowAnonymousOnlineUsersCount: { type: 'boolean' },
+		allowAnonymousChartActiveUsers: { type: 'boolean' },
+		allowAnonymousChartApRequest: { type: 'boolean' },
+		allowAnonymousChartDrive: { type: 'boolean' },
+		allowAnonymousChartFederation: { type: 'boolean' },
+		allowAnonymousChartInstance: { type: 'boolean' },
+		allowAnonymousChartNotes: { type: 'boolean' },
+		allowAnonymousChartUsers: { type: 'boolean' },
+		allowAnonymousFederationUsers: { type: 'boolean' },
+		allowAnonymousFederationStats: { type: 'boolean' },
+		allowAnonymousShowInstance: { type: 'boolean' },
+		allowAnonymousReplies: { type: 'boolean' },
+		allowAnonymousRenotes: { type: 'boolean' },
+		allowAnonymousQuotes: { type: 'boolean' },
+		allowAnonymousFederationInstances: { type: 'boolean' },
+		allowAnonymousFeatured: { type: 'boolean' },
+		allowAnonymousLocalTimeline: { type: 'boolean' },
 		customSplashText: { type: 'array', nullable: true, items: {
 			type: 'string',
 		} },
@@ -1012,6 +1030,78 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.allowUnregisteredApSignerVerification !== undefined) {
 				set.allowUnregisteredApSignerVerification = ps.allowUnregisteredApSignerVerification;
+			}
+
+			if (ps.allowAnonymousStats !== undefined) {
+				set.allowAnonymousStats = ps.allowAnonymousStats;
+			}
+
+			if (ps.allowAnonymousOnlineUsersCount !== undefined) {
+				set.allowAnonymousOnlineUsersCount = ps.allowAnonymousOnlineUsersCount;
+			}
+
+			if (ps.allowAnonymousChartActiveUsers !== undefined) {
+				set.allowAnonymousChartActiveUsers = ps.allowAnonymousChartActiveUsers;
+			}
+
+			if (ps.allowAnonymousChartApRequest !== undefined) {
+				set.allowAnonymousChartApRequest = ps.allowAnonymousChartApRequest;
+			}
+
+			if (ps.allowAnonymousChartDrive !== undefined) {
+				set.allowAnonymousChartDrive = ps.allowAnonymousChartDrive;
+			}
+
+			if (ps.allowAnonymousChartFederation !== undefined) {
+				set.allowAnonymousChartFederation = ps.allowAnonymousChartFederation;
+			}
+
+			if (ps.allowAnonymousChartInstance !== undefined) {
+				set.allowAnonymousChartInstance = ps.allowAnonymousChartInstance;
+			}
+
+			if (ps.allowAnonymousChartNotes !== undefined) {
+				set.allowAnonymousChartNotes = ps.allowAnonymousChartNotes;
+			}
+
+			if (ps.allowAnonymousChartUsers !== undefined) {
+				set.allowAnonymousChartUsers = ps.allowAnonymousChartUsers;
+			}
+
+			if (ps.allowAnonymousFederationUsers !== undefined) {
+				set.allowAnonymousFederationUsers = ps.allowAnonymousFederationUsers;
+			}
+
+			if (ps.allowAnonymousFederationStats !== undefined) {
+				set.allowAnonymousFederationStats = ps.allowAnonymousFederationStats;
+			}
+
+			if (ps.allowAnonymousShowInstance !== undefined) {
+				set.allowAnonymousShowInstance = ps.allowAnonymousShowInstance;
+			}
+
+			if (ps.allowAnonymousReplies !== undefined) {
+				set.allowAnonymousReplies = ps.allowAnonymousReplies;
+			}
+
+			if (ps.allowAnonymousRenotes !== undefined) {
+				set.allowAnonymousRenotes = ps.allowAnonymousRenotes;
+			}
+
+			if (ps.allowAnonymousQuotes !== undefined) {
+				set.allowAnonymousQuotes = ps.allowAnonymousQuotes;
+			}
+
+			if (ps.allowAnonymousFederationInstances !== undefined) {
+				set.allowAnonymousFederationInstances = ps.allowAnonymousFederationInstances;
+			}
+
+			if (ps.allowAnonymousFeatured !== undefined) {
+				set.allowAnonymousFeatured = ps.allowAnonymousFeatured;
+			}
+
+			if (ps.allowAnonymousLocalTimeline !== undefined) {
+				set.allowAnonymousLocalTimeline = ps.allowAnonymousLocalTimeline;
 			}
 
 			if (Array.isArray(ps.customSplashText)) {

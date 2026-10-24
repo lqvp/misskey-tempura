@@ -894,6 +894,87 @@ export class MiMeta {
 	})
 	public allowUnregisteredApSignerVerification: boolean;
 
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousStats: boolean;
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousFederationUsers: boolean;
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousReplies: boolean;
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousFederationInstances: boolean;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousOnlineUsersCount: boolean;
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousFederationStats: boolean;
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousRenotes: boolean;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousChartActiveUsers: boolean;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousChartApRequest: boolean;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousChartDrive: boolean;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousChartFederation: boolean;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousChartInstance: boolean;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousChartNotes: boolean;
+
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousChartUsers: boolean;
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousShowInstance: boolean;
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousQuotes: boolean;
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousFeatured: boolean;
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousLocalTimeline: boolean;
+
 	@Column('varchar', {
 		length: 1024,
 		array: true,
