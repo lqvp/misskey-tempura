@@ -11,10 +11,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div>{{ i18n.ts._sso.providersDescription }}</div>
 
 				<div class="_buttons">
-					<MkButton primary @click="addProvider">
+					<MkButton primary :disabled="!loaded" @click="addProvider">
 						<i class="ti ti-plus"></i> {{ i18n.ts.add }}
 					</MkButton>
-					<MkButton :disabled="!hasChanges" @click="saveProviders">
+					<MkButton :disabled="!loaded || !hasChanges" @click="saveProviders">
 						<i class="ti ti-device-floppy"></i> {{ i18n.ts.save }}
 					</MkButton>
 					<MkButton @click="resetProviders">
@@ -116,6 +116,8 @@ interface SsoProviderEdit {
 
 const providers = ref<SsoProviderEdit[]>([]);
 const originalProviders = ref<SsoProviderEdit[]>([]);
+// 読み込みに失敗した空の一覧を保存して、既存のプロバイダー設定を消さないための印
+const loaded = ref(false);
 
 const hasChanges = computed(() => {
 	return JSON.stringify(providers.value) !== JSON.stringify(originalProviders.value);
@@ -152,6 +154,7 @@ async function loadProviders() {
 			trustUpstreamMfa: p.trustUpstreamMfa ?? false,
 		}));
 		originalProviders.value = JSON.parse(JSON.stringify(providers.value));
+		loaded.value = true;
 	} catch (error) {
 		console.error('Failed to load SSO providers:', error);
 		os.alert({ type: 'error', text: i18n.ts.somethingHappened });
@@ -159,6 +162,7 @@ async function loadProviders() {
 }
 
 async function saveProviders() {
+	if (!loaded.value) return;
 	for (const p of providers.value) {
 		if (!p.key || !/^[a-z0-9][a-z0-9_-]*$/.test(p.key)) {
 			os.alert({ type: 'error', text: i18n.ts._sso.invalidProviderKey });

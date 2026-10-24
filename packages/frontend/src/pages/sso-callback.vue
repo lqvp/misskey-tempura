@@ -93,8 +93,9 @@ onMounted(async () => {
 	loginCode = code;
 	try {
 		await processExchangeResponse(await exchange({ code }));
-	} catch {
-		errorCode.value = 'EXCHANGE_FAILED';
+	} catch (err) {
+		const c = (err as { code?: unknown } | null)?.code;
+		errorCode.value = typeof c === 'string' ? c : 'EXCHANGE_FAILED';
 		processing.value = false;
 	}
 });
