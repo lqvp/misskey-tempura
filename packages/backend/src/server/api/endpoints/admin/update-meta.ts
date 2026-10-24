@@ -7,6 +7,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { DI } from '@/di-symbols.js';
 import type { MiMeta } from '@/models/Meta.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
+import { redactMetaForModerationLog } from '@/misc/redact-sso-secrets.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { SsoProviderConfig } from '@/models/Meta.js';
 import type { UserSsoLinkRepository } from '@/models/_.js';
@@ -1432,9 +1433,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			const after = await this.metaService.fetch(true);
 
+			// clientSecret は監査ログに残さない(ログは別の管理者 API から読めるため)
 			this.moderationLogService.log(me, 'updateServerSettings', {
-				before,
-				after,
+				before: redactMetaForModerationLog(before),
+				after: redactMetaForModerationLog(after),
 			});
 
 			// 無効から有効に切り替えたら、03:30 を待たずにデータを取得する。失敗しても設定の更新は成功させる

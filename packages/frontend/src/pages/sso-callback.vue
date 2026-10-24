@@ -7,6 +7,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 <div :class="$style.root">
 	<div :class="$style.container">
 		<MkLoading v-if="processing"/>
+		<div v-else-if="emailCodeChallengeId != null" :class="$style.passkey">
+			<XEmailCode @emailCodeSubmitted="onEmailCodeSubmitted"/>
+		</div>
 		<div v-else-if="passkeyRequest != null" :class="$style.passkey">
 			<XPasskey :credentialRequest="passkeyRequest" @done="onPasskeyDone" @useTotp="onUseTotp"/>
 		</div>
@@ -30,11 +33,19 @@ import * as os from '@/os.js';
 import { definePage } from '@/page.js';
 import MkButton from '@/components/MkButton.vue';
 import XPasskey from '@/components/MkSignin.passkey.vue';
+import XEmailCode from '@/components/MkSignin.emailCode.vue';
+import { getLoginDeviceToken, saveLoginDeviceToken } from '@/utility/login-device-token.js';
 
 const processing = ref(true);
 const errorCode = ref<string | null>(null);
 const passkeyRequest = shallowRef<PublicKeyCredentialRequestOptionsJSON | null>(null);
+const emailCodeChallengeId = ref<string | null>(null);
 let loginCode: string | null = null;
+
+// ログインリスクの判定に使う端末トークンを毎回付ける
+async function exchange(req: { code: string; token?: string; credential?: AuthenticationResponseJSON; challengeId?: string; emailCode?: string }) {
+	return await misskeyApi('sso/exchange-code', { ...req, deviceToken: getLoginDeviceToken() });
+}
 
 const errorMessage = computed(() => {
 	switch (errorCode.value) {
@@ -70,7 +81,7 @@ onMounted(async () => {
 
 	loginCode = code;
 	try {
-		await processExchangeResponse(await misskeyApi('sso/exchange-code', { code }));
+		await processExchangeResponse(await exchange({ code }));
 	} catch {
 		errorCode.value = 'EXCHANGE_FAILED';
 		processing.value = false;
@@ -95,7 +106,7 @@ async function processExchangeResponse(initialRes: Misskey.entities.SigninFlowRe
 				throw new Error('TOTP_CANCELLED');
 			}
 			try {
-				res = await misskeyApi('sso/exchange-code', { code: loginCode!, token: input.result });
+				res = await exchange({ code: loginCode!, token: input.result });
 			} catch (err) {
 				// TOTP 不一致のみ再入力を促す (コード自体は検証成功まで消費されない)。
 				// INVALID_CODE (TTL 切れ) やレート制限など再試行しても回復しないエラーは外側の catch でエラー画面にする
@@ -107,6 +118,11 @@ async function processExchangeResponse(initialRes: Misskey.entities.SigninFlowRe
 			passkeyRequest.value = res.authRequest;
 			processing.value = false;
 			return;
+		} else if (res.next === 'emailCode') {
+			// ログインリスクが高いときの確認コード。コード入力は onEmailCodeSubmitted で再開する
+			emailCodeChallengeId.value = res.challengeId;
+			processing.value = false;
+			return;
 		} else {
 			throw new Error('UNEXPECTED_FLOW');
 		}
@@ -114,7 +130,28 @@ async function processExchangeResponse(initialRes: Misskey.entities.SigninFlowRe
 
 	// login() はページをリロードする。code が URL に残ったままだと
 	// リロード後に同じコードを再交換して失敗画面になるため、トップへ遷移させる
+	saveLoginDeviceToken(res.deviceToken);
 	await login(res.i, '/');
+}
+
+async function onEmailCodeSubmitted(emailCode: string): Promise<void> {
+	const challengeId = emailCodeChallengeId.value;
+	if (challengeId == null) return;
+	processing.value = true;
+	try {
+		await processExchangeResponse(await exchange({ code: loginCode!, challengeId, emailCode }));
+		emailCodeChallengeId.value = null;
+	} catch (err) {
+		// コードの誤りは入力し直せる。それ以外(期限切れ・回数超過・ログインコード失効)はエラー画面へ
+		if ((err as { id?: string }).id === 'b3fddf43-a0d3-41f3-9ca9-8de701a6f418') {
+			os.toast(i18n.ts.somethingHappened);
+			processing.value = false;
+			return;
+		}
+		emailCodeChallengeId.value = null;
+		errorCode.value = 'EXCHANGE_FAILED';
+		processing.value = false;
+	}
 }
 
 async function onUseTotp(): Promise<void> {
@@ -133,13 +170,13 @@ async function onPasskeyDone(credential: AuthenticationResponseJSON): Promise<vo
 	processing.value = true;
 	passkeyRequest.value = null;
 	try {
-		await processExchangeResponse(await misskeyApi('sso/exchange-code', { code: loginCode!, credential }));
+		await processExchangeResponse(await exchange({ code: loginCode!, credential }));
 	} catch (err) {
 		// パスキー確認の失敗のみ新しいチャレンジを取得してやり直せる。それ以外はエラー画面へ
 		if ((err as { code?: string }).code === 'TWO_FACTOR_AUTH_FAILED') {
 			os.toast(i18n.ts.somethingHappened);
 			try {
-				await processExchangeResponse(await misskeyApi('sso/exchange-code', { code: loginCode! }));
+				await processExchangeResponse(await exchange({ code: loginCode! }));
 			} catch {
 				errorCode.value = 'EXCHANGE_FAILED';
 				processing.value = false;

@@ -151,6 +151,9 @@ export type Endpoints = Overwrite<
 			code: string;
 			token?: string;
 			credential?: AuthenticationResponseJSON;
+			deviceToken?: string;
+			challengeId?: string;
+			emailCode?: string;
 		};
 		res: SigninFlowResponse;
 	};

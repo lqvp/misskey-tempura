@@ -19,7 +19,6 @@ import { ApiCallService } from './ApiCallService.js';
 import { SignupApiService } from './SignupApiService.js';
 import { SigninApiService } from './SigninApiService.js';
 import { SigninWithPasskeyApiService } from './SigninWithPasskeyApiService.js';
-import { SigninService } from './SigninService.js';
 import { SsoService, SsoError, resolveSsoAdditionalAuthRequirement } from './SsoService.js';
 import { WebAuthnService } from '@/core/WebAuthnService.js';
 import { RateLimiterService } from './RateLimiterService.js';
@@ -53,7 +52,6 @@ export class ApiServerService {
 		private signupApiService: SignupApiService,
 		private signinApiService: SigninApiService,
 		private signinWithPasskeyApiService: SigninWithPasskeyApiService,
-		private signinService: SigninService,
 		private ssoService: SsoService,
 		private webAuthnService: WebAuthnService,
 		private rateLimiterService: RateLimiterService,
@@ -264,7 +262,7 @@ export class ApiServerService {
 		});
 
 		fastify.post<{
-			Body: { code?: string; token?: string; credential?: AuthenticationResponseJSON; };
+			Body: { code?: string; token?: string; credential?: AuthenticationResponseJSON; deviceToken?: string; challengeId?: string; emailCode?: string; };
 		}>('/sso/exchange-code', async (request, reply) => {
 			// パスキー確認はチャレンジ取得の1秒以内に完了しうるため、追加認証の送信には minInterval を課さない
 			const hasAdditionalAuth = (typeof request.body?.token === 'string' && request.body.token.length > 0) || request.body?.credential != null;
@@ -300,6 +298,7 @@ export class ApiServerService {
 			// ローカルのサインインポリシーと揃える: 追加認証が必須なのはローカル 2FA (TOTP) が
 			// 有効なアカウントのみ。セキュリティキーが登録されていれば TOTP の代替として
 			// パスキー確認も受け付ける (IdP 側 MFA を信頼しないプロバイダーの場合)
+			let passedSecondFactor = false;
 			const additionalAuth = resolveSsoAdditionalAuthRequirement(revalidation.profile, revalidation.securityKeysAvailable, revalidation.provider.trustUpstreamMfa === true);
 			if (additionalAuth !== 'none') {
 				const token = request.body?.token;
@@ -310,6 +309,7 @@ export class ApiServerService {
 						reply.code(403).send({ error: { message: 'Two-factor authentication failed', code: 'TWO_FACTOR_AUTH_FAILED', id: '9f2a7c8e-3b4d-5e1f-6a7b-8c9d0e1f2a3b' } });
 						return;
 					}
+					passedSecondFactor = true;
 				} else if (credential != null && additionalAuth === 'passkey') {
 					// verifyAuthentication はチャレンジ失効・未登録キー等で例外を投げるため、
 					// 例外も検証失敗として失敗回数にカウントする
@@ -324,6 +324,7 @@ export class ApiServerService {
 						reply.code(403).send({ error: { message: 'Two-factor authentication failed', code: 'TWO_FACTOR_AUTH_FAILED', id: '6b3a9d1e-4f5c-4a2b-8c7d-9e0f1a2b3c4d' } });
 						return;
 					}
+					passedSecondFactor = true;
 				} else if (additionalAuth === 'passkey') {
 					return { finished: false, next: 'passkey', authRequest: await this.webAuthnService.initiateAuthentication(user.id) };
 				} else {
@@ -331,12 +332,27 @@ export class ApiServerService {
 				}
 			}
 
-			// 消費は原子的に行い、同時リクエストでは片方だけが成功する
-			if (!await this.ssoService.consumeLoginCode(code)) {
-				reply.code(400).send({ error: { message: 'Invalid or expired code', code: 'INVALID_CODE', id: '7d0e5a6c-1f2b-4c9d-3e4f-5a6b7c8d9e0f' } });
-				return;
+			// ここから先は通常のパスワード/パスキーログインと同じリスク判定。
+			// IdP 側 MFA を信頼する設定はローカル 2FA を省くだけで、リスクに応じた追加認証(メール確認コード)は省かない。
+			// 確認コードを送る場合に備え、ログインコードはログインを確定する直前まで消費しない
+			const consume = async () => await this.ssoService.consumeLoginCode(code);
+			if (request.body?.challengeId != null && request.body?.emailCode != null) {
+				// メール確認コードの照合は追加認証が不要な(または通過済みの)場合だけ到達する。
+				// 通過済みの場合は確認コードを要求していないので、そのまま通常のリスク判定に進む
+				if (!passedSecondFactor) {
+					return await this.signinApiService.finishWithEmailCode(request, reply, user, {
+						challengeId: request.body.challengeId,
+						emailCode: request.body.emailCode,
+						beforeSignin: consume,
+						onCountedFailure: async () => await this.ssoService.recordAdditionalAuthFailure(code),
+					});
+				}
 			}
-			return await this.signinService.signin(request, reply, user);
+			return await this.signinApiService.finishWithRisk(request, reply, user, { email: revalidation.profile?.email ?? null, emailVerified: revalidation.profile?.emailVerified === true }, {
+				passedSecondFactor,
+				deviceToken: request.body?.deviceToken,
+				beforeSignin: consume,
+			});
 		});
 
 		fastify.post<{ Body: { code: string; } }>('/signup-pending', (request, reply) => this.signupApiService.signupPending(request, reply));
