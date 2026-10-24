@@ -1,8 +1,3 @@
-## Unreleased
-
-### General
-- Feat: OpenID Connect / OAuth2 によるSSOログインを追加 (authentik等の汎用OIDCプロバイダー、Google、GitHub、Discordに対応。管理画面の「SSOプロバイダー」から設定し、ユーザーは設定 > セキュリティから外部アカウントを連携できます)
-
 ## 2026.10.1
 
 ### Note
@@ -36,6 +31,7 @@
 - Fix: サーバーの紹介にHTMLを使うとリンクプレビューの説明文にHTMLタグが表示される問題を修正
 - Fix: ルーム招待時にブロック状態を考慮するように
 
+=======
 ## 2026.10.0
 
 ### General

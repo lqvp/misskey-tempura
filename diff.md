@@ -105,6 +105,15 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 
 * Bot のフォローには管理者の承認が必要になります
 
+### SSO (外部アカウント) ログイン
+
+* OpenID Connect / OAuth2 による外部アカウントでのログインとアカウント連携に対応します (汎用 OIDC プロバイダー、Google、GitHub、Discord)
+* 管理者は admin/update-meta の ssoProviders でプロバイダーを設定します (key / type / clientId / clientSecret / issuerUrl / buttonLabel / enabled)
+* ユーザーは設定 > セキュリティから外部アカウントを連携・解除できます。無効化・削除されたプロバイダーの残った連携も解除のみ可能です
+* 認可コードフロー + PKCE、state とブラウザ束縛 Cookie で CSRF を防ぎ、ログインコードはワンタイムです
+* 同一キーの issuerUrl は既存の連携がある場合に変更できません (OIDC の sub は発行者ごとにしか一意でないため)
+* trustUpstreamMfa (既定: false): IdP 側の MFA を信頼して Misskey 側のローカル 2FA 追加認証をスキップするかどうかをプロバイダーごとに設定できます。false の場合、ローカル 2FA が有効なユーザーは SSO ログイン時に TOTP / バックアップコードによる追加認証が必要です。IdP で MFA を強制している場合のみ true にしてください
+
 ## ノートと公開範囲
 
 ### セミパブリック
