@@ -85,9 +85,14 @@ export class ApiServerService {
 	}
 
 	/** SSO の生ルートは endpoint-meta のレート制限を通らないため、明示的に制限する */
-	private async limitSsoRequest(request: FastifyRequest, reply: FastifyReply, key: string): Promise<boolean> {
+	private async limitSsoRequest(request: FastifyRequest, reply: FastifyReply, key: string, opts?: { skipMinInterval?: boolean }): Promise<boolean> {
 		if (!this.config.enableIpRateLimit) return true;
-		const rateLimit = await this.rateLimiterService.limit({ key, duration: 10 * 60 * 1000, max: 30, minInterval: 1000 }, getIpHash(request.ip));
+		// 追加認証の送信 (TOTP/パスキー) は直前のチャレンジ取得に即座に続くため minInterval を適用しない。
+		// 長期上限 (30回/10分/IP) は引き続き全リクエストに適用され、ブルートフォース耐性は維持される。
+		const rateLimit = await this.rateLimiterService.limit(
+			opts?.skipMinInterval ? { key, duration: 10 * 60 * 1000, max: 30 } : { key, duration: 10 * 60 * 1000, max: 30, minInterval: 1000 },
+			getIpHash(request.ip),
+		);
 		if (rateLimit != null) {
 			reply.code(429).send({ error: { message: 'Rate limit exceeded. Try again later.', code: 'RATE_LIMIT_EXCEEDED', id: '7d0e1f2a-3b4c-4d5e-8f9a-0b1c2d3e4f5a' } });
 			return false;
@@ -261,7 +266,9 @@ export class ApiServerService {
 		fastify.post<{
 			Body: { code?: string; token?: string; credential?: AuthenticationResponseJSON; };
 		}>('/sso/exchange-code', async (request, reply) => {
-			if (!await this.limitSsoRequest(request, reply, 'sso-exchange-code')) return;
+			// パスキー確認はチャレンジ取得の1秒以内に完了しうるため、追加認証の送信には minInterval を課さない
+			const hasAdditionalAuth = (typeof request.body?.token === 'string' && request.body.token.length > 0) || request.body?.credential != null;
+			if (!await this.limitSsoRequest(request, reply, 'sso-exchange-code', { skipMinInterval: hasAdditionalAuth })) return;
 
 			const code = request.body?.code;
 			if (typeof code !== 'string' || code.length === 0) {
