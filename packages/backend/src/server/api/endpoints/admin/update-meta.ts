@@ -1384,12 +1384,20 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				// (変更後の発行者が同じ sub を返すと、別人が既存ユーザーの連携に一致してログインできてしまう)
 				for (const provider of ps.ssoProviders) {
 					const current = currentByKey.get(provider.key);
-					if (current == null) continue;
-					const nextIssuerUrl = provider.issuerUrl?.trim() || null;
-					if ((current.issuerUrl ?? null) !== nextIssuerUrl) {
+					if (current == null) {
+						// 削除済みプロバイダーのキー再利用も拒否する。連携レコードは削除後も残るため、
+						// 別の発行者が同じ key で登録されると同じ sub で既存連携に一致してログインできてしまう
 						const linkCount = await this.userSsoLinkRepository.countBy({ provider: provider.key });
 						if (linkCount > 0) {
-							throw new Error(`Cannot change issuerUrl of provider "${provider.key}" while users are linked to it`);
+							throw new Error(`Cannot reuse provider key "${provider.key}" while users are still linked to it`);
+						}
+						continue;
+					}
+					const nextIssuerUrl = provider.issuerUrl?.trim() || null;
+					if ((current.issuerUrl ?? null) !== nextIssuerUrl || current.type !== provider.type) {
+						const linkCount = await this.userSsoLinkRepository.countBy({ provider: provider.key });
+						if (linkCount > 0) {
+							throw new Error(`Cannot change issuerUrl or type of provider "${provider.key}" while users are linked to it`);
 						}
 					}
 				}

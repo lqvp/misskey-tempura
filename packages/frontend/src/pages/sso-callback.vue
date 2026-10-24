@@ -79,7 +79,9 @@ onMounted(async () => {
 			try {
 				res = await misskeyApi('sso/exchange-code', { code, token: input.result });
 			} catch (err) {
-				// コード自体はまだ有効 (検証成功までは消費されない) のため再入力を促す
+				// TOTP 不一致のみ再入力を促す (コード自体は検証成功まで消費されない)。
+				// INVALID_CODE (TTL 切れ) やレート制限など再試行しても回復しないエラーは外側の catch でエラー画面にする
+				if ((err as { code?: string }).code !== 'TWO_FACTOR_AUTH_FAILED') throw err;
 				os.toast(i18n.ts.somethingHappened);
 			}
 		}
