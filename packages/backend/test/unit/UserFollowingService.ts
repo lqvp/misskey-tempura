@@ -12,6 +12,8 @@ import { UserFollowingService } from '@/core/UserFollowingService.js';
 import { DI } from '@/di-symbols.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { IdService } from '@/core/IdService.js';
+import { EntityNotFoundError } from 'typeorm';
+import { IdentifiableError } from '@/misc/identifiable-error.js';
 
 describe('鍵解除時のフォローリクエスト承認', () => {
 	let service: UserFollowingService;
@@ -89,5 +91,53 @@ describe('鍵解除時のフォローリクエスト承認', () => {
 		expect(followings.find).toHaveBeenCalledTimes(1);
 		expect(followings.exists).not.toHaveBeenCalled();
 		expect(users.findOneBy).not.toHaveBeenCalled();
+	});
+});
+
+describe('鍵解除時のフォローリクエスト拒否', () => {
+	let service: UserFollowingService;
+	const users = mockDeep<UsersRepository>();
+	const requests = mockDeep<FollowRequestsRepository>();
+	const receiver = { id: 'receiver', host: null, uri: null, inbox: null, sharedInbox: null };
+
+	beforeEach(async () => {
+		mockReset(users);
+		mockReset(requests);
+		const module = await Test.createTestingModule({
+			providers: [
+				UserFollowingService,
+				{ provide: DI.usersRepository, useValue: users },
+				{ provide: DI.followRequestsRepository, useValue: requests },
+			],
+		}).useMocker(() => mockDeep()).compile();
+		service = module.get(UserFollowingService);
+		requests.findBy.mockResolvedValue([
+			{ followerId: 'first' }, { followerId: 'second' }, { followerId: 'third' },
+		] as Awaited<ReturnType<FollowRequestsRepository['findBy']>>);
+		users.findOneByOrFail.mockImplementation((async ({ id }: { id: string }) => ({ id, host: null })) as never);
+	});
+
+	test('1件の拒否が想定外のエラーで失敗しても、残りのリクエストの拒否を続ける', async () => {
+		const reject = vi.spyOn(service, 'rejectFollowRequest')
+			.mockRejectedValueOnce(new Error('DB error'))
+			.mockResolvedValue();
+
+		await expect(service.rejectAllFollowRequests(receiver)).resolves.toBeUndefined();
+
+		expect(reject.mock.calls.map(([, follower]) => follower.id)).toEqual(['first', 'second', 'third']);
+	});
+
+	test('取り消されたリクエストや削除された相手はスキップし、残りを拒否する', async () => {
+		users.findOneByOrFail.mockImplementation((async ({ id }: { id: string }) => {
+			if (id === 'first') throw new EntityNotFoundError('MiUser', { id });
+			return { id, host: null };
+		}) as never);
+		const reject = vi.spyOn(service, 'rejectFollowRequest')
+			.mockRejectedValueOnce(new IdentifiableError('8884c2dd-5795-4ac9-b27e-6a01d38190f9', 'canceled'))
+			.mockResolvedValue();
+
+		await expect(service.rejectAllFollowRequests(receiver)).resolves.toBeUndefined();
+
+		expect(reject.mock.calls.map(([, follower]) => follower.id)).toEqual(['second', 'third']);
 	});
 });
