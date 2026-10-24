@@ -169,4 +169,18 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		const viaApp = await api('sso/status', {}, { token: appToken } as any);
 		assert.notStrictEqual(viaApp.status, 200);
 	});
+
+	test('連携の開始には再認証が必要で、パスワード不一致・2FAトークンなしは拒否する', async () => {
+		const noPassword = await api('sso/link', { provider: providerKey } as any, plain);
+		assert.strictEqual(noPassword.status, 400);
+
+		const wrongPassword = await api('sso/link', { provider: providerKey, password: 'wrong-password' }, plain);
+		assert.notStrictEqual(wrongPassword.status, 200);
+
+		// 2FA有効なアカウントは、パスワードが正しくてもトークンがなければ拒否する
+		const noToken = await api('sso/link', { provider: providerKey, password: 'test' }, totpUser);
+		assert.notStrictEqual(noToken.status, 200);
+		const badToken = await api('sso/link', { provider: providerKey, password: 'test', token: '000000' }, totpUser);
+		assert.notStrictEqual(badToken.status, 200);
+	});
 });

@@ -3,8 +3,12 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { Injectable } from '@nestjs/common';
+import bcrypt from 'bcryptjs';
+import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
+import type { UserProfilesRepository } from '@/models/_.js';
+import { DI } from '@/di-symbols.js';
+import { UserAuthService } from '@/core/UserAuthService.js';
 import { SsoService, SsoError } from '../../SsoService.js';
 import { ApiError } from '../../error.js';
 
@@ -43,16 +47,42 @@ export const paramDef = {
 	type: 'object',
 	properties: {
 		provider: { type: 'string', minLength: 1, maxLength: 128 },
+		// 乗っ取られたセッションから攻撃者の外部アカウントを連携されないよう、再認証を要求する
+		password: { type: 'string' },
+		token: { type: 'string', nullable: true },
 	},
-	required: ['provider'],
+	required: ['provider', 'password'],
 } as const;
 
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
+		@Inject(DI.userProfilesRepository)
+		private userProfilesRepository: UserProfilesRepository,
+
+		private userAuthService: UserAuthService,
 		private ssoService: SsoService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: me.id });
+
+			if (profile.twoFactorEnabled) {
+				if (ps.token == null) {
+					throw new Error('authentication failed');
+				}
+
+				try {
+					await this.userAuthService.twoFactorAuthenticate(profile, ps.token);
+				} catch (_) {
+					throw new Error('authentication failed');
+				}
+			}
+
+			const passwordMatched = profile.password != null && await bcrypt.compare(ps.password, profile.password);
+			if (!passwordMatched) {
+				throw new Error('incorrect password');
+			}
+
 			try {
 				return await this.ssoService.linkAccount(me.id, ps.provider);
 			} catch (err) {

@@ -38950,6 +38950,8 @@ export interface operations {
             content: {
                 'application/json': {
                     provider: string;
+                    password: string;
+                    token?: string | null;
                 };
             };
         };

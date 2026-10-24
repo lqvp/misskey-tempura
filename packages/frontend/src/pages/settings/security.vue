@@ -154,9 +154,13 @@ reloadSsoStatus();
 }
 
 async function linkSso(providerKey: string) {
+	if (ssoBusy.value) return;
+	// 連携は以後そのアカウントへのログイン手段になるため、パスワード(と2FA)で再認証する
+	const auth = await os.authenticateDialog();
+	if (auth.canceled) return;
 	ssoBusy.value = true;
 	try {
-		const res = await misskeyApi('sso/link', { provider: providerKey });
+		const res = await misskeyApi('sso/link', { provider: providerKey, password: auth.result.password, token: auth.result.token });
 		// CSRF対策のブラウザ束縛値をCookieに保存してからIdPへ遷移する (callbackで照合される)
 		const secure = window.location.protocol === 'https:' ? '; Secure' : '';
 		window.document.cookie = `sso_binding=${res.binding}; Path=/api/sso; SameSite=Lax; Max-Age=600${secure}`;
