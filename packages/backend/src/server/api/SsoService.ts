@@ -31,6 +31,9 @@ import { LoggerService } from '@/core/LoggerService.js';
 const STATE_TTL_SEC = 600;
 const LOGIN_CODE_TTL_SEC = 120;
 
+/** 1つのログインコードに対する追加認証 (TOTP/パスキー) の失敗許容回数。超過したコードは失効する */
+const MAX_ADDITIONAL_AUTH_ATTEMPTS = 5;
+
 interface SsoState {
 	provider: string;
 	type: 'login' | 'link';
@@ -322,6 +325,22 @@ export class SsoService {
 		const profile = await this.userProfilesRepository.findOneBy({ userId: pending.userId });
 		const securityKeysAvailable = await this.userSecurityKeysRepository.countBy({ userId: pending.userId }).then(result => result >= 1);
 		return { provider, profile, securityKeysAvailable };
+	}
+
+	/**
+	 * 追加認証の失敗をコード単位で記録するサーバー側の上限 (フロントの入力回数制限は防御ではない)。
+	 * 規定回数に達したらログインコード自体を失効させ、以降の試行を INVALID_CODE にする。
+	 */
+	@bindThis
+	public async recordAdditionalAuthFailure(loginCode: string): Promise<void> {
+		const key = `sso:loginCodeAttempts:${loginCode}`;
+		const attempts = await this.redisClient.incr(key);
+		if (attempts === 1) {
+			await this.redisClient.expire(key, LOGIN_CODE_TTL_SEC);
+		}
+		if (attempts >= MAX_ADDITIONAL_AUTH_ATTEMPTS) {
+			await this.redisClient.del(`sso:loginCode:${loginCode}`);
+		}
 	}
 
 	/** ログインコードを原子的に消費する。既に消費済み (同時リクエストの敗北側) なら false */
