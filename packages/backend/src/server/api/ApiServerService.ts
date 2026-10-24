@@ -306,6 +306,7 @@ export class ApiServerService {
 				if (typeof token === 'string' && token.length > 0) {
 					if (!await this.ssoService.verifyAdditionalAuth(user.id, token)) {
 						await this.ssoService.recordAdditionalAuthFailure(code);
+						await this.signinApiService.recordSecondFactorFailure(request, user);
 						reply.code(403).send({ error: { message: 'Two-factor authentication failed', code: 'TWO_FACTOR_AUTH_FAILED', id: '9f2a7c8e-3b4d-5e1f-6a7b-8c9d0e1f2a3b' } });
 						return;
 					}
@@ -321,6 +322,7 @@ export class ApiServerService {
 					}
 					if (!verified) {
 						await this.ssoService.recordAdditionalAuthFailure(code);
+						await this.signinApiService.recordSecondFactorFailure(request, user);
 						reply.code(403).send({ error: { message: 'Two-factor authentication failed', code: 'TWO_FACTOR_AUTH_FAILED', id: '6b3a9d1e-4f5c-4a2b-8c7d-9e0f1a2b3c4d' } });
 						return;
 					}

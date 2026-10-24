@@ -356,6 +356,19 @@ export class SigninApiService {
 	}
 
 	/**
+	 * SSO などパスワード以外の経路で追加認証(TOTP/パスキー)に失敗したときの記録。
+	 * パスワードログインの失敗と同じく、サインイン履歴・ログインリスクの失敗記録・本人への通知を行う
+	 */
+	@bindThis
+	public async recordSecondFactorFailure(request: FastifyRequest, user: MiLocalUser): Promise<void> {
+		await this.signinService.recordSignin(request, user.id, { success: false });
+		await this.loginRiskService.recordFailure(user.id, request.ip);
+		await this.notificationService.createNotification(user.id, 'loginFailed', {
+			userIp: request.ip,
+		});
+	}
+
+	/**
 	 * メールの確認コードを照合してログインを確定する。パスワードログインと SSO ログインで共通。
 	 * beforeSignin は照合に成功した後、ログインを確定する直前に呼ばれる(false ならログインしない)。
 	 * onCountedFailure は誤コードとして数えた失敗ごとに呼ばれる

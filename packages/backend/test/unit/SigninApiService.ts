@@ -694,6 +694,15 @@ describe('SigninApiService', () => {
 			return { status: reply.statusCode, res };
 		}
 
+		it('追加認証(TOTP/パスキー)の失敗を履歴・通知に記録する', async () => {
+			const user = await createUser();
+			const createNotification = vi.spyOn(notificationService, 'createNotification');
+			const req = new DummyFastifyRequest({}, JP_IP) as unknown as FastifyRequest;
+			await signinApiService.recordSecondFactorFailure(req, user);
+			expect(await signinsRepository.countBy({ userId: user.id, success: false })).toBe(1);
+			expect(createNotification).toHaveBeenCalledWith(user.id, 'loginFailed', expect.anything());
+		});
+
 		it('既知環境: そのままログインでき、ログインコードを消費し、端末トークンを使い続ける', async () => {
 			const user = await createUser();
 			const token = await seedKnownEnvironment(user);
