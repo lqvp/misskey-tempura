@@ -764,9 +764,17 @@ export class UserFollowingService implements OnModuleInit {
 			id: MiUser['id']; host: MiUser['host']; uri: MiUser['host']; inbox: MiUser['inbox']; sharedInbox: MiUser['sharedInbox'];
 		},
 	): Promise<void> {
-		const requests = await this.followRequestsRepository.findBy({
-			followeeId: user.id,
-		});
+		// 鍵解除は保存済みで再実行できないため、このメソッドは例外を投げない (i/update を中断させない)。
+		let requests: Awaited<ReturnType<FollowRequestsRepository['findBy']>>;
+		try {
+			requests = await this.followRequestsRepository.findBy({
+				followeeId: user.id,
+			});
+		} catch (err) {
+			// 保留中のリクエストは残るが、フォローリクエスト一覧から手動で拒否できる。
+			logger.warn(`鍵解除時の保留中フォローリクエストの取得に失敗しました: followee=${user.id}: ${err}`);
+			return;
+		}
 
 		for (const request of requests) {
 			try {
@@ -780,14 +788,16 @@ export class UserFollowingService implements OnModuleInit {
 				await this.rejectFollowRequest(localUser, follower as Both);
 			} catch (err) {
 				// 処理中に取り消されたリクエストや削除されたフォロワーはスキップする。
-				// (鍵解除の i/update を失敗させないため。acceptAllFollowRequests と同じ方針)
 				if (err instanceof IdentifiableError && err.id === '8884c2dd-5795-4ac9-b27e-6a01d38190f9') {
 					continue;
 				}
 				if (err instanceof EntityNotFoundError) {
 					continue;
 				}
-				throw err;
+				// 想定外のエラーでも残りのリクエストの処理は続ける。
+				// 鍵解除は保存済みで再実行もできないため、1件の失敗で残りが保留のまま取り残されないようにする。
+				// 失敗したリクエストは保留のまま残り、フォローリクエスト一覧から手動で拒否できる。
+				logger.warn(`鍵解除時のフォローリクエスト拒否に失敗しました: followee=${user.id} follower=${request.followerId}: ${err}`);
 			}
 		}
 	}

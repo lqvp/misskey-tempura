@@ -140,4 +140,13 @@ describe('鍵解除時のフォローリクエスト拒否', () => {
 
 		expect(reject.mock.calls.map(([, follower]) => follower.id)).toEqual(['second', 'third']);
 	});
+
+	test('保留中リクエストの取得に失敗しても例外を投げず、何も拒否しない', async () => {
+		requests.findBy.mockRejectedValue(new Error('DB error'));
+		const reject = vi.spyOn(service, 'rejectFollowRequest').mockResolvedValue();
+
+		await expect(service.rejectAllFollowRequests(receiver)).resolves.toBeUndefined();
+
+		expect(reject).not.toHaveBeenCalled();
+	});
 });

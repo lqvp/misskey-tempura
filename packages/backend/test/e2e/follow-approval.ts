@@ -94,7 +94,7 @@ describe('アカウント作成後の期間によるフォロー承認', () => {
 		await api('i/update', { isLocked: true, followApprovalLocalSeconds: 43200 }, receiver);
 		await api('following/create', { userId: receiver.id }, follower);
 		expect((await api('i/update', { isLocked: false }, receiver)).status).toBe(200);
-		// tempura: rejectAllFollowRequests は非同期で実行されるためポーリングで確認する
+		// tempura: rejectAllFollowRequests は i/update 内で await されるが、結果の反映はポーリングで確認する
 		await expect.poll(async () => (await api('users/show', { userId: receiver.id }, follower)).body)
 			.toMatchObject({ isLocked: false, isFollowing: false, hasPendingFollowRequestFromYou: false });
 	});
@@ -127,7 +127,7 @@ describe('アカウント作成後の期間によるフォロー承認', () => {
 		await api('i/update', { isLocked: true }, receiver);
 		await api('following/create', { userId: receiver.id }, follower);
 		expect((await api('i/update', { isLocked: false, followApprovalLocalSeconds: 43200 }, receiver)).status).toBe(200);
-		// tempura: rejectAllFollowRequests は非同期で実行されるためポーリングで確認する
+		// tempura: rejectAllFollowRequests は i/update 内で await されるが、結果の反映はポーリングで確認する
 		await expect.poll(async () => (await api('users/show', { userId: receiver.id }, follower)).body)
 			.toMatchObject({ isFollowing: false, hasPendingFollowRequestFromYou: false });
 	});
@@ -139,7 +139,7 @@ describe('アカウント作成後の期間によるフォロー承認', () => {
 		await api('following/create', { userId: receiver.id }, follower);
 		await api('following/create', { userId: follower.id }, receiver);
 		expect((await api('i/update', { isLocked: false }, receiver)).status).toBe(200);
-		// tempura: rejectAllFollowRequests は非同期で実行されるためポーリングで確認する
+		// tempura: rejectAllFollowRequests は i/update 内で await されるが、結果の反映はポーリングで確認する
 		await expect.poll(async () => (await api('users/show', { userId: receiver.id }, follower)).body)
 			.toMatchObject({ isFollowing: false, hasPendingFollowRequestFromYou: false });
 	});
