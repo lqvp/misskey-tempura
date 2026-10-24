@@ -306,6 +306,11 @@ export class ApiServerService {
 				reply.code(403).send({ error: { message: 'User not found or suspended', code: 'USER_NOT_FOUND', id: '8e1f6b7d-2a3c-4d0e-4f5a-6b7c8d9e0f1a' } });
 				return;
 			}
+			// パスワードログインと同じく、承認待ちのアカウントは SSO でもログインさせない
+			if (await this.ssoService.isApprovalPending(user)) {
+				reply.code(403).send({ error: { message: 'Your account is not approved yet.', code: 'YOUR_ACCOUNT_NOT_APPROVED', id: '2fe70810-0ed2-47db-a70b-dc3ecbf5f069' } });
+				return;
+			}
 
 			// 発行後の状態変化を必ず再検証する: 連携が解除されていないか、プロバイダーが無効化されていないか。
 			// 追加認証の要否も発行時の値ではなく、最新のプロフィール・プロバイダー設定から決定する

@@ -109,6 +109,13 @@ export class SsoService {
 		this.logger = this.loggerService.getLogger('sso');
 	}
 
+	/** 新規登録の承認が必須の設定で、まだ承認されていないアカウントか (パスワードログインと同じ条件) */
+	@bindThis
+	public async isApprovalPending(user: { approved: boolean }): Promise<boolean> {
+		const meta = await this.metaService.fetch(true);
+		return user.approved === false && meta.approvalRequiredForSignup;
+	}
+
 	/** 連携が作られた発行者の識別子。OIDC の sub は発行者ごとにしか一意でないため、連携と一緒に保存して照合する */
 	private issuerOf(provider: SsoProviderConfig): string {
 		return `${provider.type}:${provider.type === 'oidc' ? (provider.issuerUrl ?? '').trim() : ''}`;
