@@ -60,12 +60,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				}))
 				.innerJoinAndSelect('note.user', 'user')
 				.leftJoinAndSelect('note.renote', 'renote')
-				.leftJoinAndSelect('renote.user', 'renoteUser');
+				.leftJoinAndSelect('renote.user', 'renoteUser')
+				.leftJoin('note.reply', 'reply')
+				.leftJoin('reply.user', 'replyUser');
 			this.queryService.generateVisibilityQuery(query, me);
-			if (me) {
-				this.queryService.generateMutedUserQueryForNotes(query, me);
-				this.queryService.generateBlockedUserQueryForNotes(query, me);
-			}
+			this.queryService.generateBaseNoteFilteringQuery(query, me);
 			const notes = await query.limit(ps.limit).getMany();
 			return await this.noteEntityService.packMany(notes, me);
 		});
