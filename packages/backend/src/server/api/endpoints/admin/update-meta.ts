@@ -9,6 +9,7 @@ import type { MiMeta } from '@/models/Meta.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { SsoProviderConfig } from '@/models/Meta.js';
+import type { UserSsoLinkRepository } from '@/models/_.js';
 import { MetaService } from '@/core/MetaService.js';
 import { QueueService } from '@/core/QueueService.js';
 import { ApiLoggerService } from '../../ApiLoggerService.js';
@@ -393,6 +394,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	constructor(
 		@Inject(DI.meta)
 		private serverSettings: MiMeta,
+
+		@Inject(DI.userSsoLinkRepository)
+		private userSsoLinkRepository: UserSsoLinkRepository,
 
 		private metaService: MetaService,
 		private moderationLogService: ModerationLogService,
@@ -1373,6 +1377,20 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				// clientSecret が空文字なら既存の値を保持する
 				const currentMeta = await this.metaService.fetch(true);
 				const currentByKey = new Map(currentMeta.ssoProviders.map(p => [p.key, p]));
+
+				// OIDC の sub は発行者ごとにしか一意でないため、既存の連携があるプロバイダーの issuerUrl 変更は拒否する
+				// (変更後の発行者が同じ sub を返すと、別人が既存ユーザーの連携に一致してログインできてしまう)
+				for (const provider of ps.ssoProviders) {
+					const current = currentByKey.get(provider.key);
+					if (current == null) continue;
+					const nextIssuerUrl = provider.issuerUrl?.trim() || null;
+					if ((current.issuerUrl ?? null) !== nextIssuerUrl) {
+						const linkCount = await this.userSsoLinkRepository.countBy({ provider: provider.key });
+						if (linkCount > 0) {
+							throw new Error(`Cannot change issuerUrl of provider "${provider.key}" while users are linked to it`);
+						}
+					}
+				}
 				set.ssoProviders = ps.ssoProviders.map(p => {
 					let clientSecret = p.clientSecret ?? '';
 					if (clientSecret === '') {

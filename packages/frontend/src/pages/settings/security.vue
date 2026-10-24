@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		<X2fa/>
 
-		<SearchMarker v-if="(instance.ssoProviders ?? []).length > 0" :keywords="['sso', 'oidc', 'external', 'auth']">
+		<SearchMarker v-if="(instance.ssoProviders ?? []).length > 0 || ssoOrphanedProviders.length > 0" :keywords="['sso', 'oidc', 'external', 'auth']">
 			<FormSection>
 				<template #label><SearchLabel>{{ i18n.ts.ssoExternalAuth }}</SearchLabel></template>
 
@@ -35,6 +35,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<span v-if="ssoLinkedProviders.has(provider.key)" style="color: var(--MI_THEME-success); font-size: 0.9em;">{{ i18n.ts.ssoLinked }}</span>
 						<MkButton v-if="ssoLinkedProviders.has(provider.key)" danger :disabled="ssoBusy" @click="unlinkSso(provider.key)">{{ i18n.ts.ssoUnlinkAccount }}</MkButton>
 						<MkButton v-else primary :disabled="ssoBusy" @click="linkSso(provider.key)">{{ i18n.ts.ssoLinkAccount }}</MkButton>
+					</div>
+					<!-- 無効化・削除されたプロバイダーの残った連携 (解除のみ可能) -->
+					<div v-for="providerKey in ssoOrphanedProviders" :key="providerKey" class="_gaps_s" style="display: flex; align-items: center; gap: 8px;">
+						<i class="ti ti-key"></i>
+						<span style="flex: 1;">{{ providerKey }}</span>
+						<span style="color: var(--MI_THEME-warn); font-size: 0.9em;">{{ i18n.ts.ssoLinked }}</span>
+						<MkButton danger :disabled="ssoBusy" @click="unlinkSso(providerKey)">{{ i18n.ts.ssoUnlinkAccount }}</MkButton>
 					</div>
 				</div>
 			</FormSection>
@@ -110,6 +117,12 @@ const paginator = markRaw(new Paginator('i/signin-history', {
 const ssoLinkedProviders = ref(new Set<string>());
 const ssoBusy = ref(false);
 
+// instance.ssoProviders に存在しない (無効化・削除された) プロバイダーの残った連携
+const ssoOrphanedProviders = computed(() => {
+	const knownKeys = new Set((instance.ssoProviders ?? []).map(p => p.key));
+	return [...ssoLinkedProviders.value].filter(key => !knownKeys.has(key));
+});
+
 function ssoProviderIcon(type: string): string {
 	switch (type) {
 		case 'github': return 'ti-brand-github';
@@ -120,7 +133,6 @@ function ssoProviderIcon(type: string): string {
 }
 
 async function reloadSsoStatus() {
-	if ((instance.ssoProviders ?? []).length === 0) return;
 	try {
 		const status = await misskeyApi('sso/status');
 		ssoLinkedProviders.value = new Set(status.links.map(l => l.provider));
