@@ -661,6 +661,11 @@ import type {
 	SearchAvatarDecorationsRequest,
 	SearchAvatarDecorationsResponse,
 	ServerInfoResponse,
+	SsoLinkRequest,
+	SsoLinkResponse,
+	SsoStatusResponse,
+	SsoUnlinkRequest,
+	SsoUnlinkResponse,
 	StatsResponse,
 	SwRegisterRequest,
 	SwRegisterResponse,
@@ -1178,6 +1183,9 @@ export type Endpoints = {
 	'roles/users': { req: RolesUsersRequest; res: RolesUsersResponse };
 	'search-avatar-decorations': { req: SearchAvatarDecorationsRequest; res: SearchAvatarDecorationsResponse };
 	'server-info': { req: EmptyRequest; res: ServerInfoResponse };
+	'sso/link': { req: SsoLinkRequest; res: SsoLinkResponse };
+	'sso/status': { req: EmptyRequest; res: SsoStatusResponse };
+	'sso/unlink': { req: SsoUnlinkRequest; res: SsoUnlinkResponse };
 	'stats': { req: EmptyRequest; res: StatsResponse };
 	'sw/register': { req: SwRegisterRequest; res: SwRegisterResponse };
 	'sw/show-registration': { req: SwShowRegistrationRequest; res: SwShowRegistrationResponse };

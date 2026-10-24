@@ -96,6 +96,7 @@ import { MiSystemAccount } from '@/models/SystemAccount.js';
 import { MiAnnouncementRole } from './models/AnnouncementRole.js';
 import { MiMultipartUpload } from '@/models/MultipartUpload.js';
 import { MiContactForm } from '@/models/ContactForm.js';
+import { MiUserSsoLink } from '@/models/UserSsoLink.js';
 
 pg.types.setTypeParser(20, Number);
 
@@ -272,6 +273,7 @@ export const entities = [
 	MiReversiGame,
 	MiMultipartUpload,
 	MiContactForm,
+	MiUserSsoLink,
 	...charts,
 ];
 

@@ -116,6 +116,7 @@
 		"nodemailer": "10.1.1",
 		"os-utils": "0.0.14",
 		"otpauth": "9.5.2",
+		"openid-client": "6.8.8",
 		"pg": "8.23.1",
 		"pkce-challenge": "6.0.0",
 		"probe-image-size": "7.4.0",

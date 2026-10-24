@@ -4053,6 +4053,36 @@ export type paths = {
          */
         post: operations['server-info'];
     };
+    '/sso/link': {
+        /**
+         * sso/link
+         * @description No description provided.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes*
+         */
+        post: operations['sso___link'];
+    };
+    '/sso/status': {
+        /**
+         * sso/status
+         * @description No description provided.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes*
+         */
+        post: operations['sso___status'];
+    };
+    '/sso/unlink': {
+        /**
+         * sso/unlink
+         * @description No description provided.
+         *
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes*
+         */
+        post: operations['sso___unlink'];
+    };
     '/stats': {
         /**
          * stats
@@ -6303,6 +6333,11 @@ export type components = {
             contactFormLimit: number;
             contactFormRequireAuth: boolean;
             contactFormCategories: unknown[];
+            ssoProviders: {
+                key: string;
+                type: string;
+                buttonLabel: string | null;
+            }[];
         };
         MetaDetailedOnly: {
             features?: {
@@ -11640,6 +11675,16 @@ export interface operations {
                             order: number;
                             isDefault: boolean;
                         }[];
+                        ssoProviders: {
+                            key: string;
+                            type: string;
+                            clientId: string;
+                            hasClientSecret: boolean;
+                            issuerUrl?: string | null;
+                            buttonLabel?: string | null;
+                            enabled: boolean;
+                            trustUpstreamMfa: boolean;
+                        }[];
                         requireSignedApFetch: boolean;
                         allowUnregisteredApSignerVerification: boolean;
                         allowAnonymousStats: boolean;
@@ -15459,6 +15504,17 @@ export interface operations {
                         enabled: boolean;
                         order: number;
                         isDefault: boolean;
+                    }[];
+                    ssoProviders?: {
+                        key: string;
+                        /** @enum {string} */
+                        type: 'github' | 'discord' | 'google' | 'oidc';
+                        clientId?: string;
+                        clientSecret?: string;
+                        issuerUrl?: string | null;
+                        buttonLabel?: string | null;
+                        enabled: boolean;
+                        trustUpstreamMfa?: boolean;
                     }[];
                 };
             };
@@ -38839,6 +38895,207 @@ export interface operations {
                             total: number;
                             used: number;
                         };
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    sso___link: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    provider: string;
+                    password: string;
+                    token?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        authorizationUrl: string;
+                        binding: string;
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    sso___status: {
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        links: {
+                            provider: string;
+                            /** Format: date-time */
+                            createdAt: string;
+                        }[];
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    sso___unlink: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    provider: string;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        success: boolean;
                     };
                 };
             };

@@ -24,6 +24,29 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		<X2fa/>
 
+		<SearchMarker v-if="(instance.ssoProviders ?? []).length > 0 || ssoOrphanedProviders.length > 0" :keywords="['sso', 'oidc', 'external', 'auth']">
+			<FormSection>
+				<template #label><SearchLabel>{{ i18n.ts.ssoExternalAuth }}</SearchLabel></template>
+
+				<div class="_gaps_s">
+					<div v-for="provider in instance.ssoProviders" :key="provider.key" class="_gaps_s" style="display: flex; align-items: center; gap: 8px;">
+						<i class="ti" :class="ssoProviderIcon(provider.type)"></i>
+						<span style="flex: 1;">{{ provider.buttonLabel || provider.key }}</span>
+						<span v-if="ssoLinkedProviders.has(provider.key)" style="color: var(--MI_THEME-success); font-size: 0.9em;">{{ i18n.ts.ssoLinked }}</span>
+						<MkButton v-if="ssoLinkedProviders.has(provider.key)" danger :disabled="ssoBusy" @click="unlinkSso(provider.key)">{{ i18n.ts.ssoUnlinkAccount }}</MkButton>
+						<MkButton v-else primary :disabled="ssoBusy" @click="linkSso(provider.key)">{{ i18n.ts.ssoLinkAccount }}</MkButton>
+					</div>
+					<!-- 無効化・削除されたプロバイダーの残った連携 (解除のみ可能) -->
+					<div v-for="providerKey in ssoOrphanedProviders" :key="providerKey" class="_gaps_s" style="display: flex; align-items: center; gap: 8px;">
+						<i class="ti ti-key"></i>
+						<span style="flex: 1;">{{ providerKey }}</span>
+						<span style="color: var(--MI_THEME-warn); font-size: 0.9em;">{{ i18n.ts.ssoLinked }}</span>
+						<MkButton danger :disabled="ssoBusy" @click="unlinkSso(providerKey)">{{ i18n.ts.ssoUnlinkAccount }}</MkButton>
+					</div>
+				</div>
+			</FormSection>
+		</SearchMarker>
+
 		<SearchMarker :keywords="['signin', 'login', 'history', 'log']">
 			<FormSection>
 				<template #label><SearchLabel>{{ i18n.ts.signinHistory }}</SearchLabel></template>
@@ -82,6 +105,7 @@ import MkSigninRiskItem from '@/components/MkSigninRiskItem.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
+import { instance, fetchInstance } from '@/instance.js';
 import { definePage } from '@/page.js';
 import MkFeatureBanner from '@/components/MkFeatureBanner.vue';
 import { Paginator } from '@/utility/paginator.js';
@@ -89,6 +113,88 @@ import { Paginator } from '@/utility/paginator.js';
 const paginator = markRaw(new Paginator('i/signin-history', {
 	limit: 5,
 }));
+
+const ssoLinkedProviders = ref(new Set<string>());
+const ssoBusy = ref(false);
+
+// instance.ssoProviders に存在しない (無効化・削除された) プロバイダーの残った連携
+const ssoOrphanedProviders = computed(() => {
+	const knownKeys = new Set((instance.ssoProviders ?? []).map(p => p.key));
+	return [...ssoLinkedProviders.value].filter(key => !knownKeys.has(key));
+});
+
+function ssoProviderIcon(type: string): string {
+	switch (type) {
+		case 'github': return 'ti-brand-github';
+		case 'discord': return 'ti-brand-discord';
+		case 'google': return 'ti-brand-google';
+		default: return 'ti-key';
+	}
+}
+
+async function reloadSsoStatus() {
+	try {
+		const status = await misskeyApi('sso/status');
+		ssoLinkedProviders.value = new Set(status.links.map(l => l.provider));
+	} catch (err) {
+		console.error('Failed to fetch SSO status:', err);
+	}
+}
+
+reloadSsoStatus();
+
+// SSO連携のコールバックから戻ってきた場合
+{
+	const url = new URL(window.location.href);
+	if (url.searchParams.get('sso_linked')) {
+		os.toast(i18n.ts.ssoLinkSucceeded);
+		url.searchParams.delete('sso_linked');
+		window.history.replaceState(null, '', url.toString());
+	}
+}
+
+async function linkSso(providerKey: string) {
+	if (ssoBusy.value) return;
+	// 連携は以後そのアカウントへのログイン手段になるため、パスワード(と2FA)で再認証する
+	const auth = await os.authenticateDialog();
+	if (auth.canceled) return;
+	ssoBusy.value = true;
+	try {
+		const res = await misskeyApi('sso/link', { provider: providerKey, password: auth.result.password, token: auth.result.token });
+		// CSRF対策のブラウザ束縛値をCookieに保存してからIdPへ遷移する (callbackで照合される)
+		const secure = window.location.protocol === 'https:' ? '; Secure' : '';
+		window.document.cookie = `sso_binding=${res.binding}; Path=/api/sso; SameSite=Lax; Max-Age=600${secure}`;
+		window.location.href = res.authorizationUrl;
+	} catch (err) {
+		ssoBusy.value = false;
+		os.alert({ type: 'error', text: i18n.ts.somethingHappened });
+	}
+}
+
+async function unlinkSso(providerKey: string) {
+	// 確認ダイアログの待機中に解除ボタンが再度押されて、ダイアログが重複して開かないようにする
+	if (ssoBusy.value) return;
+	ssoBusy.value = true;
+	try {
+		const { canceled } = await os.confirm({
+			type: 'warning',
+			text: i18n.ts.ssoUnlinkConfirm,
+		});
+		if (canceled) return;
+
+		await misskeyApi('sso/unlink', { provider: providerKey });
+		// 解除は成功したので、状態の再取得に失敗しても表示から先に外す
+		const next = new Set(ssoLinkedProviders.value);
+		next.delete(providerKey);
+		ssoLinkedProviders.value = next;
+		await reloadSsoStatus();
+		os.success();
+	} catch (err) {
+		os.alert({ type: 'error', text: i18n.ts.somethingHappened });
+	} finally {
+		ssoBusy.value = false;
+	}
+}
 
 // サーバーが本人にも見せる設定のときだけ表示する。見せない設定なら NOT_AVAILABLE が返る。
 // それ以外のエラーは隠さず、一覧の側でエラーを表示させる

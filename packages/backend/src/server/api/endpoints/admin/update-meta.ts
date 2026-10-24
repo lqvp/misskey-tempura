@@ -7,7 +7,11 @@ import { Injectable, Inject } from '@nestjs/common';
 import { DI } from '@/di-symbols.js';
 import type { MiMeta } from '@/models/Meta.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
+import { redactMetaForModerationLog } from '@/misc/redact-sso-secrets.js';
+import { assertValidOidcIssuerUrl } from '@/misc/sso-issuer-url.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
+import type { SsoProviderConfig } from '@/models/Meta.js';
+import type { UserSsoLinkRepository } from '@/models/_.js';
 import { MetaService } from '@/core/MetaService.js';
 import { QueueService } from '@/core/QueueService.js';
 import { ApiLoggerService } from '../../ApiLoggerService.js';
@@ -366,6 +370,25 @@ export const paramDef = {
 				required: ['key', 'text', 'enabled', 'order', 'isDefault'],
 			},
 		},
+		ssoProviders: {
+			type: 'array',
+			items: {
+				type: 'object',
+				properties: {
+					key: { type: 'string', minLength: 1, maxLength: 128 },
+					type: { type: 'string', enum: ['github', 'discord', 'google', 'oidc'] },
+					clientId: { type: 'string', maxLength: 1024 },
+					// 空文字を送ると既存の値を保持する (管理画面が secret を参照できないため)
+					clientSecret: { type: 'string', maxLength: 1024 },
+					issuerUrl: { type: 'string', nullable: true, maxLength: 1024 },
+					buttonLabel: { type: 'string', nullable: true, maxLength: 128 },
+					enabled: { type: 'boolean' },
+					// IdP 側の MFA を信頼してローカル 2FA の追加認証をスキップするか (未指定時は false)
+					trustUpstreamMfa: { type: 'boolean' },
+				},
+				required: ['key', 'type', 'enabled'],
+			},
+		},
 	},
 	required: [],
 } as const;
@@ -375,6 +398,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	constructor(
 		@Inject(DI.meta)
 		private serverSettings: MiMeta,
+
+		@Inject(DI.userSsoLinkRepository)
+		private userSsoLinkRepository: UserSsoLinkRepository,
 
 		private metaService: MetaService,
 		private moderationLogService: ModerationLogService,
@@ -1337,15 +1363,85 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.contactFormCategories = ps.contactFormCategories;
 			}
 
+			if (ps.ssoProviders !== undefined) {
+				// key の重複は禁止 (リンクの紐付けキーになるため)
+				const providerKeys = ps.ssoProviders.map(p => p.key);
+				if (new Set(providerKeys).size !== providerKeys.length) {
+					throw new Error('Duplicate provider keys are not allowed');
+				}
+				for (const provider of ps.ssoProviders) {
+					if (!/^[a-z0-9][a-z0-9_-]*$/.test(provider.key)) {
+						throw new Error('Provider key must be lowercase alphanumeric (with - or _)');
+					}
+					if (provider.type === 'oidc' && (provider.issuerUrl == null || provider.issuerUrl.trim() === '')) {
+						throw new Error('issuerUrl is required for oidc providers');
+					}
+					if (provider.type === 'oidc') {
+						// 保存後にログインボタンだけが出て、ログイン時に失敗するのを防ぐ
+						assertValidOidcIssuerUrl(provider.issuerUrl!);
+					}
+				}
+
+				// clientSecret が空文字なら既存の値を保持する
+				const currentMeta = await this.metaService.fetch(true);
+				const currentByKey = new Map(currentMeta.ssoProviders.map(p => [p.key, p]));
+
+				// OIDC の sub は発行者ごとにしか一意でないため、既存の連携があるプロバイダーの issuerUrl 変更は拒否する
+				// (変更後の発行者が同じ sub を返すと、別人が既存ユーザーの連携に一致してログインできてしまう)
+				for (const provider of ps.ssoProviders) {
+					const current = currentByKey.get(provider.key);
+					if (current == null) {
+						// 削除済みプロバイダーのキー再利用も拒否する。連携レコードは削除後も残るため、
+						// 別の発行者が同じ key で登録されると同じ sub で既存連携に一致してログインできてしまう
+						const linkCount = await this.userSsoLinkRepository.countBy({ provider: provider.key });
+						if (linkCount > 0) {
+							throw new Error(`Cannot reuse provider key "${provider.key}" while users are still linked to it`);
+						}
+						continue;
+					}
+					const nextIssuerUrl = provider.issuerUrl?.trim() || null;
+					if ((current.issuerUrl ?? null) !== nextIssuerUrl || current.type !== provider.type) {
+						const linkCount = await this.userSsoLinkRepository.countBy({ provider: provider.key });
+						if (linkCount > 0) {
+							throw new Error(`Cannot change issuerUrl or type of provider "${provider.key}" while users are linked to it`);
+						}
+					}
+				}
+				set.ssoProviders = ps.ssoProviders.map(p => {
+					let clientSecret = p.clientSecret ?? '';
+					if (clientSecret === '') {
+						clientSecret = currentByKey.get(p.key)?.clientSecret ?? '';
+					}
+					return {
+						key: p.key,
+						type: p.type as SsoProviderConfig['type'],
+						clientId: p.clientId ?? '',
+						clientSecret,
+						issuerUrl: p.issuerUrl?.trim() || null,
+						buttonLabel: p.buttonLabel?.trim() || null,
+						enabled: p.enabled,
+						trustUpstreamMfa: p.trustUpstreamMfa ?? false,
+					};
+				});
+
+				// 有効なプロバイダーは認証情報の必須チェック (既存シークレット引き継ぎ後の実効値で判定)
+				for (const provider of set.ssoProviders) {
+					if (provider.enabled && (provider.clientId.trim() === '' || provider.clientSecret === '')) {
+						throw new Error(`Provider "${provider.key}" is enabled but missing clientId/clientSecret`);
+					}
+				}
+			}
+
 			const before = await this.metaService.fetch(true);
 
 			await this.metaService.update(set);
 
 			const after = await this.metaService.fetch(true);
 
+			// clientSecret は監査ログに残さない(ログは別の管理者 API から読めるため)
 			this.moderationLogService.log(me, 'updateServerSettings', {
-				before,
-				after,
+				before: redactMetaForModerationLog(before),
+				after: redactMetaForModerationLog(after),
 			});
 
 			// 無効から有効に切り替えたら、03:30 を待たずにデータを取得する。失敗しても設定の更新は成功させる

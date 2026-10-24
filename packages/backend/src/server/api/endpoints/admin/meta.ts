@@ -948,6 +948,48 @@ export const meta = {
 					},
 				},
 			},
+			ssoProviders: {
+				type: 'array',
+				optional: false, nullable: false,
+				items: {
+					type: 'object',
+					optional: false, nullable: false,
+					properties: {
+						key: {
+							type: 'string',
+							optional: false, nullable: false,
+						},
+						type: {
+							type: 'string',
+							optional: false, nullable: false,
+						},
+						clientId: {
+							type: 'string',
+							optional: false, nullable: false,
+						},
+						hasClientSecret: {
+							type: 'boolean',
+							optional: false, nullable: false,
+						},
+						issuerUrl: {
+							type: 'string',
+							optional: true, nullable: true,
+						},
+						buttonLabel: {
+							type: 'string',
+							optional: true, nullable: true,
+						},
+						enabled: {
+							type: 'boolean',
+							optional: false, nullable: false,
+						},
+						trustUpstreamMfa: {
+							type: 'boolean',
+							optional: false, nullable: false,
+						},
+					},
+				},
+			},
 			requireSignedApFetch: {
 				type: 'boolean',
 				optional: false, nullable: false,
@@ -1299,6 +1341,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				contactFormLimit: instance.contactFormLimit,
 				contactFormRequireAuth: instance.contactFormRequireAuth,
 				contactFormCategories: instance.contactFormCategories,
+				// clientSecret は返さず、設定済みかどうかだけ返す
+				ssoProviders: instance.ssoProviders.map(p => ({
+					key: p.key,
+					type: p.type,
+					clientId: p.clientId,
+					hasClientSecret: p.clientSecret != null && p.clientSecret !== '',
+					issuerUrl: p.issuerUrl ?? null,
+					buttonLabel: p.buttonLabel ?? null,
+					enabled: p.enabled,
+					trustUpstreamMfa: p.trustUpstreamMfa ?? false,
+				})),
 				openLlmModerationVisibilities,
 			};
 		});

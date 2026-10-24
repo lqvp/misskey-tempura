@@ -1668,6 +1668,17 @@ export type Endpoints = Overwrite<Endpoints_2, {
         req: EmptyRequest;
         res: EmptyResponse;
     };
+    'sso/exchange-code': {
+        req: {
+            code: string;
+            token?: string;
+            credential?: AuthenticationResponseJSON;
+            deviceToken?: string;
+            challengeId?: string;
+            emailCode?: string;
+        };
+        res: SigninFlowResponse;
+    };
 }>;
 
 // @public (undocumented)
@@ -2361,6 +2372,11 @@ declare namespace entities {
         SearchAvatarDecorationsRequest,
         SearchAvatarDecorationsResponse,
         ServerInfoResponse,
+        SsoLinkRequest,
+        SsoLinkResponse,
+        SsoStatusResponse,
+        SsoUnlinkRequest,
+        SsoUnlinkResponse,
         StatsResponse,
         SwRegisterRequest,
         SwRegisterResponse,
@@ -3835,6 +3851,21 @@ type SignupRequest = {
 type SignupResponse = MeDetailed & {
     token: string;
 };
+
+// @public (undocumented)
+type SsoLinkRequest = operations['sso___link']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type SsoLinkResponse = operations['sso___link']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type SsoStatusResponse = operations['sso___status']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type SsoUnlinkRequest = operations['sso___unlink']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type SsoUnlinkResponse = operations['sso___unlink']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type StatsResponse = operations['stats']['responses']['200']['content']['application/json'];

@@ -17179,4 +17179,126 @@ export interface Locale extends ILocale {
             "untrustedIp": string;
         };
     };
+    /**
+     * SSOでログイン
+     */
+    "signinWithSso": string;
+    /**
+     * 外部アカウント連携 (SSO)
+     */
+    "ssoExternalAuth": string;
+    /**
+     * 連携済み
+     */
+    "ssoLinked": string;
+    /**
+     * 連携する
+     */
+    "ssoLinkAccount": string;
+    /**
+     * 解除
+     */
+    "ssoUnlinkAccount": string;
+    /**
+     * この外部アカウントとの連携を解除しますか？
+     */
+    "ssoUnlinkConfirm": string;
+    /**
+     * 外部アカウントを連携しました
+     */
+    "ssoLinkSucceeded": string;
+    /**
+     * SSO認証に失敗しました
+     */
+    "ssoErrorGeneric": string;
+    /**
+     * この外部アカウントはどのアカウントにも連携されていません。先にログインして設定画面から連携してください。
+     */
+    "ssoErrorNotLinked": string;
+    /**
+     * このアカウントは既にこのプロバイダーと連携しています
+     */
+    "ssoErrorAlreadyLinked": string;
+    /**
+     * この外部アカウントは既に別のアカウントに連携されています
+     */
+    "ssoErrorAlreadyLinkedToOther": string;
+    /**
+     * 認証の有効期限が切れました。もう一度やり直してください
+     */
+    "ssoErrorInvalidState": string;
+    /**
+     * 認証プロバイダー側でエラーが発生しました
+     */
+    "ssoErrorProviderError": string;
+    "_sso": {
+        /**
+         * SSOプロバイダー
+         */
+        "providers": string;
+        /**
+         * OpenID Connect / OAuth2 によるSSOログインのプロバイダーを設定します。authentik、Keycloak、Google、GitHub、Discord 等に対応しています。
+         */
+        "providersDescription": string;
+        /**
+         * プロバイダーキー
+         */
+        "providerKey": string;
+        /**
+         * プロバイダーの識別子 (例: authentik, github)。連携の紐付けに使われるため、一度設定したら変更しないでください。
+         */
+        "providerKeyDescription": string;
+        /**
+         * プロバイダー種別
+         */
+        "providerType": string;
+        /**
+         * Issuer URL
+         */
+        "issuerUrl": string;
+        /**
+         * Client ID
+         */
+        "clientId": string;
+        /**
+         * Client Secret
+         */
+        "clientSecret": string;
+        /**
+         * (設定済み)
+         */
+        "clientSecretKeepPlaceholder": string;
+        /**
+         * 変更する場合のみ入力してください。空欄のまま保存すると既存の値が保持されます。
+         */
+        "clientSecretKeepDescription": string;
+        /**
+         * ボタンのラベル
+         */
+        "buttonLabel": string;
+        /**
+         * ログイン画面に表示するボタンのテキスト。未設定の場合は「SSOでログイン」が使用されます。
+         */
+        "buttonLabelDescription": string;
+        /**
+         * プロバイダーに登録するリダイレクトURI
+         */
+        "redirectUri": string;
+        /**
+         * プロバイダーキーは小文字の英数字で始まり、- または _ を含めることができます
+         */
+        "invalidProviderKey": string;
+        /**
+         * 有効なプロバイダーには Client ID と Client Secret が必要です
+         */
+        "missingClientConfig": string;
+        /**
+         * OIDCプロバイダーには Issuer URL が必要です
+         */
+        "missingIssuerUrl": string;
+        /**
+         * プロバイダーキーが重複しています
+         */
+        "duplicateProviderKey": string;
+    };
 }
