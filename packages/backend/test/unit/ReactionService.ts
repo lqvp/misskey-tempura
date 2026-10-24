@@ -158,6 +158,7 @@ describe('ReactionService', () => {
 					}),
 				} as never,
 				{ findOne: vi.fn() } as never,
+				{ host: 'misskey.local' } as never,
 				{ toPunyNullable: (host: string | null) => host, isMediaSilencedHost: () => false } as never,
 				{
 					localEmojisCache: {

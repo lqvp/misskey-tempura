@@ -7486,7 +7486,7 @@ export interface Locale extends ILocale {
          */
         "allowAnonymousChartActiveUsers": string;
         /**
-         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         * 有効にすると、ログインしていない人もアクティブユーザー数の推移チャートを取得できます。初期値は無効です。
          */
         "allowAnonymousChartActiveUsers_description": string;
         /**
@@ -7494,7 +7494,7 @@ export interface Locale extends ILocale {
          */
         "allowAnonymousChartApRequest": string;
         /**
-         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         * 有効にすると、ログインしていない人もActivityPubリクエスト数のチャートを取得できます。初期値は無効です。
          */
         "allowAnonymousChartApRequest_description": string;
         /**
@@ -7502,7 +7502,7 @@ export interface Locale extends ILocale {
          */
         "allowAnonymousChartDrive": string;
         /**
-         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         * 有効にすると、ログインしていない人もドライブ使用量のチャートを取得できます。初期値は無効です。
          */
         "allowAnonymousChartDrive_description": string;
         /**
@@ -7510,7 +7510,7 @@ export interface Locale extends ILocale {
          */
         "allowAnonymousChartFederation": string;
         /**
-         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         * 有効にすると、ログインしていない人も連合インスタンス数の推移チャートを取得できます。初期値は無効です。
          */
         "allowAnonymousChartFederation_description": string;
         /**
@@ -7518,7 +7518,7 @@ export interface Locale extends ILocale {
          */
         "allowAnonymousChartInstance": string;
         /**
-         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         * 有効にすると、ログインしていない人も個別インスタンスのチャートを取得できます。初期値は無効です。
          */
         "allowAnonymousChartInstance_description": string;
         /**
@@ -7526,7 +7526,7 @@ export interface Locale extends ILocale {
          */
         "allowAnonymousChartNotes": string;
         /**
-         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         * 有効にすると、ログインしていない人もノート数の推移チャートを取得できます。初期値は無効です。
          */
         "allowAnonymousChartNotes_description": string;
         /**
@@ -7534,7 +7534,7 @@ export interface Locale extends ILocale {
          */
         "allowAnonymousChartUsers": string;
         /**
-         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         * 有効にすると、ログインしていない人もユーザー数の推移チャートを取得できます。初期値は無効です。
          */
         "allowAnonymousChartUsers_description": string;
         /**

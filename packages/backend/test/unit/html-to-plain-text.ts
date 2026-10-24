@@ -59,6 +59,7 @@ describe('HTML descriptions as plain text', () => {
 			version: 'test', langs: [], instanceName: 'Test', instanceUrl: 'https://example.test',
 			icon: null, appleTouchIcon: null, themeColor: null,
 			serverErrorImageUrl: '', infoImageUrl: '', notFoundImageUrl: '',
+			youBlockedImageUrl: '', customSplashText: null,
 			now: 0, federationEnabled: true, frontendViteFiles: null,
 			frontendBootloaderJs: null, frontendBootloaderCss: null,
 			frontendEmbedViteFiles: null, frontendEmbedBootloaderJs: null, frontendEmbedBootloaderCss: null,
@@ -72,6 +73,7 @@ describe('HTML descriptions as plain text', () => {
 			mockDeep(), mockDeep(), mockDeep(), mockDeep(), mockDeep(), mockDeep(),
 			htmlTemplateService,
 			clientLoggerService,
+			mockDeep(),
 		);
 		const server = Fastify();
 		try {
