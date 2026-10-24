@@ -12,7 +12,7 @@ import * as OTPAuth from 'otpauth';
 import { afterAll, beforeAll, describe, test } from 'vitest';
 import { loadConfig } from '@/config.js';
 import { MiUserSsoLink, MiSignin } from '@/models/_.js';
-import { api, createAppToken, initTestDb, port, signup } from '../utils.js';
+import { api, createAppToken, initTestDb, port, sendEnvUpdateRequest, signup } from '../utils.js';
 import type { DataSource } from 'typeorm';
 import type * as misskey from 'misskey-js';
 
@@ -58,7 +58,8 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 			headers: { 'Content-Type': 'application/json', ...(cookie != null ? { cookie: `sso_binding=${cookie}` } : {}) },
 			body: JSON.stringify(body),
 		});
-		const setCookie = res.headers.getSetCookie().find(c => c.startsWith('sso_binding=')) ?? null;
+		// 同じ Cookie の延長と削除が両方付くことがあるので、ブラウザが最終的に採用する最後の指定を見る
+		const setCookie = res.headers.getSetCookie().filter(c => c.startsWith('sso_binding=')).at(-1) ?? null;
 		return { status: res.status, body: await res.json() as any, setCookie };
 	}
 
@@ -88,6 +89,7 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 	}, 1000 * 60 * 2);
 
 	afterAll(async () => {
+		await sendEnvUpdateRequest({ key: 'MISSKEY_TEST_CHECK_DUPLICATED_TOTP', value: '' });
 		await db.getRepository(MiUserSsoLink).delete({ provider: providerKey });
 		await api('admin/update-meta', { ssoProviders: [] }, admin);
 		await db.destroy();
@@ -126,6 +128,8 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 	});
 
 	test('追加認証の失敗では Cookie を削除せず、失敗を記録して再試行できる', async () => {
+		// テスト環境の TOTP 検証は既定で常に成功するため、実際に検証させる
+		await sendEnvUpdateRequest({ key: 'MISSKEY_TEST_CHECK_DUPLICATED_TOTP', value: '1' });
 		const binding = 'binding-totp';
 		const code = await issueLoginCode(totpUser.id, 'sub-totp', binding);
 
