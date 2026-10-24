@@ -1,0 +1,223 @@
+<!--
+SPDX-FileCopyrightText: lqvp
+SPDX-License-Identifier: AGPL-3.0-only
+-->
+
+<template>
+<PageWithHeader :actions="headerActions" :tabs="headerTabs">
+	<div class="_spacer" style="--MI_SPACER-w: 900px;">
+		<div class="_gaps">
+			<div class="_gaps">
+				<div>{{ i18n.ts._sso.providersDescription }}</div>
+
+				<div class="_buttons">
+					<MkButton primary @click="addProvider">
+						<i class="ti ti-plus"></i> {{ i18n.ts.add }}
+					</MkButton>
+					<MkButton :disabled="!hasChanges" @click="saveProviders">
+						<i class="ti ti-device-floppy"></i> {{ i18n.ts.save }}
+					</MkButton>
+					<MkButton @click="resetProviders">
+						<i class="ti ti-restore"></i> {{ i18n.ts.reset }}
+					</MkButton>
+				</div>
+
+				<div class="_gaps_s">
+					<MkFolder v-for="(provider, index) in providers" :key="index">
+						<template #icon><i class="ti" :class="providerIcon(provider.type)"></i></template>
+						<template #label>{{ provider.buttonLabel || provider.key || '(new)' }}</template>
+						<template v-if="provider.enabled" #suffix>Enabled</template>
+						<template v-else #suffix>Disabled</template>
+
+						<div class="_gaps_m" style="padding: 16px;">
+							<MkInput v-model="provider.key" :disabled="provider.hasClientSecret">
+								<template #label>{{ i18n.ts._sso.providerKey }}</template>
+								<template #caption>{{ i18n.ts._sso.providerKeyDescription }}</template>
+							</MkInput>
+
+							<MkSelect v-model="provider.type">
+								<template #label>{{ i18n.ts._sso.providerType }}</template>
+								<option value="oidc">OpenID Connect (authentik, Keycloak, ...)</option>
+								<option value="google">Google</option>
+								<option value="github">GitHub</option>
+								<option value="discord">Discord</option>
+							</MkSelect>
+
+							<MkInput v-if="provider.type === 'oidc'" v-model="provider.issuerUrl" placeholder="https://authentik.example.com/application/o/<slug>/">
+								<template #label>{{ i18n.ts._sso.issuerUrl }}</template>
+							</MkInput>
+
+							<MkInput v-model="provider.clientId">
+								<template #label>{{ i18n.ts._sso.clientId }}</template>
+							</MkInput>
+
+							<MkInput v-model="provider.clientSecret" type="password" :placeholder="provider.hasClientSecret ? i18n.ts._sso.clientSecretKeepPlaceholder : ''">
+								<template #label>{{ i18n.ts._sso.clientSecret }}</template>
+								<template v-if="provider.hasClientSecret" #caption>{{ i18n.ts._sso.clientSecretKeepDescription }}</template>
+							</MkInput>
+
+							<MkInput v-model="provider.buttonLabel">
+								<template #label>{{ i18n.ts._sso.buttonLabel }}</template>
+								<template #caption>{{ i18n.ts._sso.buttonLabelDescription }}</template>
+							</MkInput>
+
+							<MkSwitch v-model="provider.enabled">
+								<template #label>{{ i18n.ts.enable }}</template>
+							</MkSwitch>
+
+							<MkInfo v-if="provider.key">
+								{{ i18n.ts._sso.redirectUri }}: <code>{{ redirectUri(provider.key) }}</code>
+							</MkInfo>
+
+							<MkButton danger @click="removeProvider(index)">
+								<i class="ti ti-trash"></i> {{ i18n.ts.delete }}
+							</MkButton>
+						</div>
+					</MkFolder>
+				</div>
+			</div>
+		</div>
+	</div>
+</PageWithHeader>
+</template>
+
+<script lang="ts" setup>
+import { ref, computed } from 'vue';
+import MkButton from '@/components/MkButton.vue';
+import MkFolder from '@/components/MkFolder.vue';
+import MkInfo from '@/components/MkInfo.vue';
+import MkInput from '@/components/MkInput.vue';
+import MkSelect from '@/components/MkSelect.vue';
+import MkSwitch from '@/components/MkSwitch.vue';
+import * as os from '@/os.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
+import { i18n } from '@/i18n.js';
+import { instance, fetchInstance } from '@/instance.js';
+import { definePage } from '@/page.js';
+
+interface SsoProviderEdit {
+	key: string;
+	type: 'github' | 'discord' | 'google' | 'oidc';
+	clientId: string;
+	/** 空文字 = 保存時に既存値を保持 */
+	clientSecret: string;
+	hasClientSecret: boolean;
+	issuerUrl: string;
+	buttonLabel: string;
+	enabled: boolean;
+}
+
+const providers = ref<SsoProviderEdit[]>([]);
+const originalProviders = ref<SsoProviderEdit[]>([]);
+
+const hasChanges = computed(() => {
+	return JSON.stringify(providers.value) !== JSON.stringify(originalProviders.value);
+});
+
+const headerActions = computed(() => []);
+const headerTabs = computed(() => []);
+
+function providerIcon(type: string): string {
+	switch (type) {
+		case 'github': return 'ti-brand-github';
+		case 'discord': return 'ti-brand-discord';
+		case 'google': return 'ti-brand-google';
+		default: return 'ti-key';
+	}
+}
+
+function redirectUri(key: string): string {
+	return `${instance.uri}/api/sso/callback/${encodeURIComponent(key)}`;
+}
+
+async function loadProviders() {
+	try {
+		const meta = await misskeyApi('admin/meta');
+		providers.value = (meta.ssoProviders ?? []).map(p => ({
+			key: p.key,
+			type: p.type as SsoProviderEdit['type'],
+			clientId: p.clientId,
+			clientSecret: '',
+			hasClientSecret: p.hasClientSecret,
+			issuerUrl: p.issuerUrl ?? '',
+			buttonLabel: p.buttonLabel ?? '',
+			enabled: p.enabled,
+		}));
+		originalProviders.value = JSON.parse(JSON.stringify(providers.value));
+	} catch (error) {
+		console.error('Failed to load SSO providers:', error);
+		os.alert({ type: 'error', text: i18n.ts.somethingHappened });
+	}
+}
+
+async function saveProviders() {
+	for (const p of providers.value) {
+		if (!p.key || !/^[a-z0-9][a-z0-9_-]*$/.test(p.key)) {
+			os.alert({ type: 'error', text: i18n.ts._sso.invalidProviderKey });
+			return;
+		}
+		if (p.enabled && (!p.clientId || (!p.clientSecret && !p.hasClientSecret))) {
+			os.alert({ type: 'error', text: i18n.ts._sso.missingClientConfig });
+			return;
+		}
+		if (p.type === 'oidc' && !p.issuerUrl) {
+			os.alert({ type: 'error', text: i18n.ts._sso.missingIssuerUrl });
+			return;
+		}
+	}
+	const keys = providers.value.map(p => p.key);
+	if (new Set(keys).size !== keys.length) {
+		os.alert({ type: 'error', text: i18n.ts._sso.duplicateProviderKey });
+		return;
+	}
+
+	try {
+		await misskeyApi('admin/update-meta', {
+			ssoProviders: providers.value.map(p => ({
+				key: p.key,
+				type: p.type,
+				clientId: p.clientId,
+				clientSecret: p.clientSecret,
+				issuerUrl: p.issuerUrl || null,
+				buttonLabel: p.buttonLabel || null,
+				enabled: p.enabled,
+			})),
+		});
+
+		await loadProviders();
+		fetchInstance(true);
+		os.success();
+	} catch (error) {
+		console.error('Failed to save SSO providers:', error);
+		os.alert({ type: 'error', text: i18n.ts.somethingHappened });
+	}
+}
+
+function addProvider() {
+	providers.value.push({
+		key: '',
+		type: 'oidc',
+		clientId: '',
+		clientSecret: '',
+		hasClientSecret: false,
+		issuerUrl: '',
+		buttonLabel: '',
+		enabled: false,
+	});
+}
+
+function removeProvider(index: number) {
+	providers.value.splice(index, 1);
+}
+
+function resetProviders() {
+	providers.value = JSON.parse(JSON.stringify(originalProviders.value));
+}
+
+loadProviders();
+
+definePage(() => ({
+	title: i18n.ts._sso.providers,
+	icon: 'ti ti-key',
+}));
+</script>

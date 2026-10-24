@@ -24,6 +24,22 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 		<X2fa/>
 
+		<SearchMarker v-if="(instance.ssoProviders ?? []).length > 0" :keywords="['sso', 'oidc', 'external', 'auth']">
+			<FormSection>
+				<template #label><SearchLabel>{{ i18n.ts.ssoExternalAuth }}</SearchLabel></template>
+
+				<div class="_gaps_s">
+					<div v-for="provider in instance.ssoProviders" :key="provider.key" class="_gaps_s" style="display: flex; align-items: center; gap: 8px;">
+						<i class="ti" :class="ssoProviderIcon(provider.type)"></i>
+						<span style="flex: 1;">{{ provider.buttonLabel || provider.key }}</span>
+						<span v-if="ssoLinkedProviders.has(provider.key)" style="color: var(--MI_THEME-success); font-size: 0.9em;">{{ i18n.ts.ssoLinked }}</span>
+						<MkButton v-if="ssoLinkedProviders.has(provider.key)" danger :disabled="ssoBusy" @click="unlinkSso(provider.key)">{{ i18n.ts.ssoUnlinkAccount }}</MkButton>
+						<MkButton v-else primary :disabled="ssoBusy" @click="linkSso(provider.key)">{{ i18n.ts.ssoLinkAccount }}</MkButton>
+					</div>
+				</div>
+			</FormSection>
+		</SearchMarker>
+
 		<SearchMarker :keywords="['signin', 'login', 'history', 'log']">
 			<FormSection>
 				<template #label><SearchLabel>{{ i18n.ts.signinHistory }}</SearchLabel></template>
@@ -82,6 +98,7 @@ import MkSigninRiskItem from '@/components/MkSigninRiskItem.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
+import { instance, fetchInstance } from '@/instance.js';
 import { definePage } from '@/page.js';
 import MkFeatureBanner from '@/components/MkFeatureBanner.vue';
 import { Paginator } from '@/utility/paginator.js';
@@ -89,6 +106,70 @@ import { Paginator } from '@/utility/paginator.js';
 const paginator = markRaw(new Paginator('i/signin-history', {
 	limit: 5,
 }));
+
+const ssoLinkedProviders = ref(new Set<string>());
+const ssoBusy = ref(false);
+
+function ssoProviderIcon(type: string): string {
+	switch (type) {
+		case 'github': return 'ti-brand-github';
+		case 'discord': return 'ti-brand-discord';
+		case 'google': return 'ti-brand-google';
+		default: return 'ti-key';
+	}
+}
+
+async function reloadSsoStatus() {
+	if ((instance.ssoProviders ?? []).length === 0) return;
+	try {
+		const status = await misskeyApi('sso/status');
+		ssoLinkedProviders.value = new Set(status.links.map(l => l.provider));
+	} catch (err) {
+		console.error('Failed to fetch SSO status:', err);
+	}
+}
+
+reloadSsoStatus();
+
+// SSO連携のコールバックから戻ってきた場合
+{
+	const url = new URL(window.location.href);
+	if (url.searchParams.get('sso_linked')) {
+		os.toast(i18n.ts.ssoLinkSucceeded);
+		url.searchParams.delete('sso_linked');
+		window.history.replaceState(null, '', url.toString());
+	}
+}
+
+async function linkSso(providerKey: string) {
+	ssoBusy.value = true;
+	try {
+		const res = await misskeyApi('sso/link', { provider: providerKey });
+		window.location.href = res.authorizationUrl;
+	} catch (err) {
+		ssoBusy.value = false;
+		os.alert({ type: 'error', text: i18n.ts.somethingHappened });
+	}
+}
+
+async function unlinkSso(providerKey: string) {
+	const { canceled } = await os.confirm({
+		type: 'warning',
+		text: i18n.ts.ssoUnlinkConfirm,
+	});
+	if (canceled) return;
+
+	ssoBusy.value = true;
+	try {
+		await misskeyApi('sso/unlink', { provider: providerKey });
+		await reloadSsoStatus();
+		os.success();
+	} catch (err) {
+		os.alert({ type: 'error', text: i18n.ts.somethingHappened });
+	} finally {
+		ssoBusy.value = false;
+	}
+}
 
 // サーバーが本人にも見せる設定のときだけ表示する。見せない設定なら NOT_AVAILABLE が返る。
 // それ以外のエラーは隠さず、一覧の側でエラーを表示させる

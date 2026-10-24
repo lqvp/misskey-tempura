@@ -145,5 +145,11 @@ export type Endpoints = Overwrite<
 			req: EmptyRequest;
 			res: EmptyResponse;
 		},
+	'sso/exchange-code': {
+		req: {
+			code: string;
+		};
+		res: SigninFlowResponse;
+	};
 	}
 >;
