@@ -168,6 +168,8 @@ async function linkSso(providerKey: string) {
 }
 
 async function unlinkSso(providerKey: string) {
+	// 確認ダイアログの待機中に解除ボタンが再度押されて、ダイアログが重複して開かないようにする
+	if (ssoBusy.value) return;
 	ssoBusy.value = true;
 	try {
 		const { canceled } = await os.confirm({
@@ -177,6 +179,10 @@ async function unlinkSso(providerKey: string) {
 		if (canceled) return;
 
 		await misskeyApi('sso/unlink', { provider: providerKey });
+		// 解除は成功したので、状態の再取得に失敗しても表示から先に外す
+		const next = new Set(ssoLinkedProviders.value);
+		next.delete(providerKey);
+		ssoLinkedProviders.value = next;
 		await reloadSsoStatus();
 		os.success();
 	} catch (err) {
