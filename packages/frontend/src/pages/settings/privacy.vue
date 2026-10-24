@@ -379,7 +379,6 @@ const webFeedFilter = ref({
 });
 const carefulBot = ref($i.carefulBot);
 
-
 type FollowApprovalSetting = {
 	key: 'followApprovalLocalSeconds' | 'followApprovalRemoteSeconds';
 	mode: 'default' | 'disabled' | 'custom';

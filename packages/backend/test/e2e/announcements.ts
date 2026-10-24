@@ -66,7 +66,8 @@ describe('Announcements', () => {
 		assert.ok(archivedAnnouncement);
 		assert.strictEqual(archivedAnnouncement.isActive, false);
 
-		const publicAnnouncements = await api('announcements', {});
+		// tempura: announcements は requireCredential: true (ロール限定お知らせ機能のため認証必須)
+		const publicAnnouncements = await api('announcements', {}, admin);
 		assert.strictEqual(publicAnnouncements.status, 200);
 		assert.strictEqual(publicAnnouncements.body.some(announcement => announcement.id === id), false);
 	});

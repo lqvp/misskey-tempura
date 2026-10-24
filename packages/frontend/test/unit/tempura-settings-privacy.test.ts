@@ -4,13 +4,12 @@
  */
 
 import { afterEach, assert, describe, expect, test, vi } from 'vitest';
-import { h } from 'vue';
+import { h, type Component } from 'vue';
 import { cleanup, fireEvent, render, type RenderResult } from '@testing-library/vue';
 import { directives } from '@/directives/index.js';
 import { components } from '@/components/index.js';
 import { i18n } from '@/i18n.js';
 import XTempuraSettings from '@/pages/settings/tempura-settings.vue';
-import XPrivacySettings from '@/pages/settings/tempura-settings/tempura-privacy.vue';
 
 const { apiMock, meFixture } = vi.hoisted(() => {
 	return {
@@ -89,6 +88,9 @@ describe('Tempura設定 > プライバシーセクション', () => {
 
 	test('復元したプライバシー設定が描画され、スイッチ切替が i/update に同じ設定値で保存される', async () => {
 		vi.doUnmock('@/pages/settings/tempura-settings/tempura-privacy.vue');
+		// vitest 5 では静的 import 済みのモジュールに vi.doMock が効かないため、
+		// スタブを無効化したうえで実モジュールを動的に取得する
+		const { default: XPrivacySettings } = await vi.importActual<{ default: Component }>('@/pages/settings/tempura-settings/tempura-privacy.vue');
 		const page = render(XPrivacySettings, { global: { directives, components } });
 		// フォルダを開く
 		const header = page.container.querySelector<HTMLElement>('[data-testid="folder-header"]');

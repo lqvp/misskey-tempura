@@ -6,6 +6,9 @@
 import { describe, expect, test } from 'vitest';
 import { api, signup } from '../utils.js';
 
+// tempura: 鍵解除時の挙動が upstream と異なる (upstream は期間条件つきで承認、
+// tempura は保留中リクエストを全件拒否する rejectAllFollowRequests 仕様)。
+// そのため鍵解除系のテストは tempura の仕様に合わせて書き換えてある。
 describe('アカウント作成後の期間によるフォロー承認', () => {
 	test('設定の初期値はnullで、項目ごとに更新・リセットでき、本人以外には公開されない', async () => {
 		const user = await signup();
@@ -85,17 +88,18 @@ describe('アカウント作成後の期間によるフォロー承認', () => {
 			.toMatchObject({ isFollowing: false, hasPendingFollowRequestFromYou: true });
 	});
 
-	test('鍵を解除しても指定期間に達していない相手のリクエストは保留される', async () => {
+	test('鍵を解除すると指定期間に達していない相手のリクエストは拒否される (tempura: 全件拒否)', async () => {
 		const receiver = await signup();
 		const follower = await signup();
 		await api('i/update', { isLocked: true, followApprovalLocalSeconds: 43200 }, receiver);
 		await api('following/create', { userId: receiver.id }, follower);
 		expect((await api('i/update', { isLocked: false }, receiver)).status).toBe(200);
-		expect((await api('users/show', { userId: receiver.id }, follower)).body)
-			.toMatchObject({ isLocked: false, isFollowing: false, hasPendingFollowRequestFromYou: true });
+		// tempura: rejectAllFollowRequests は非同期で実行されるためポーリングで確認する
+		await expect.poll(async () => (await api('users/show', { userId: receiver.id }, follower)).body)
+			.toMatchObject({ isLocked: false, isFollowing: false, hasPendingFollowRequestFromYou: false });
 	});
 
-	test('指定期間を経過した相手のリクエストは鍵の解除時に承認される', async () => {
+	test('指定期間を経過した相手のリクエストも鍵の解除時に拒否される (tempura: 全件拒否)', async () => {
 		const receiver = await signup();
 		const follower = await signup();
 		await api('i/update', { isLocked: true, followApprovalLocalSeconds: 1 }, receiver);
@@ -104,37 +108,39 @@ describe('アカウント作成後の期間によるフォロー承認', () => {
 			.toBeGreaterThanOrEqual(1000);
 		expect((await api('i/update', { isLocked: false }, receiver)).status).toBe(200);
 		await expect.poll(async () => (await api('users/show', { userId: receiver.id }, follower)).body)
-			.toMatchObject({ isFollowing: true, hasPendingFollowRequestFromYou: false });
+			.toMatchObject({ isFollowing: false, hasPendingFollowRequestFromYou: false });
 	});
 
-	test.each([null, 0])('鍵の解除と同時に期間の設定を %s に変更するとリクエストが承認される', async seconds => {
+	test.each([null, 0])('鍵の解除と同時に期間の設定を %s に変更してもリクエストは拒否される (tempura: 全件拒否)', async seconds => {
 		const receiver = await signup();
 		const follower = await signup();
 		await api('i/update', { isLocked: true, followApprovalLocalSeconds: 43200 }, receiver);
 		await api('following/create', { userId: receiver.id }, follower);
 		expect((await api('i/update', { isLocked: false, followApprovalLocalSeconds: seconds }, receiver)).status).toBe(200);
 		await expect.poll(async () => (await api('users/show', { userId: receiver.id }, follower)).body)
-			.toMatchObject({ isFollowing: true, hasPendingFollowRequestFromYou: false });
+			.toMatchObject({ isFollowing: false, hasPendingFollowRequestFromYou: false });
 	});
 
-	test('鍵の解除と同時に期間による承認を有効にすると更新後の設定で保留される', async () => {
+	test('鍵の解除と同時に期間による承認を有効にしてもリクエストは拒否される (tempura: 全件拒否)', async () => {
 		const receiver = await signup();
 		const follower = await signup();
 		await api('i/update', { isLocked: true }, receiver);
 		await api('following/create', { userId: receiver.id }, follower);
 		expect((await api('i/update', { isLocked: false, followApprovalLocalSeconds: 43200 }, receiver)).status).toBe(200);
-		expect((await api('users/show', { userId: receiver.id }, follower)).body)
-			.toMatchObject({ isFollowing: false, hasPendingFollowRequestFromYou: true });
+		// tempura: rejectAllFollowRequests は非同期で実行されるためポーリングで確認する
+		await expect.poll(async () => (await api('users/show', { userId: receiver.id }, follower)).body)
+			.toMatchObject({ isFollowing: false, hasPendingFollowRequestFromYou: false });
 	});
 
-	test.each([false, true])('保留後にフォローした相手は鍵の解除時も自動承認設定に従う（自動承認: %s）', async autoAcceptFollowed => {
+	test.each([false, true])('保留後にフォローした相手も鍵の解除時に拒否される（自動承認: %s） (tempura: 全件拒否)', async autoAcceptFollowed => {
 		const receiver = await signup();
 		const follower = await signup();
 		await api('i/update', { isLocked: true, followApprovalLocalSeconds: 43200, autoAcceptFollowed }, receiver);
 		await api('following/create', { userId: receiver.id }, follower);
 		await api('following/create', { userId: follower.id }, receiver);
 		expect((await api('i/update', { isLocked: false }, receiver)).status).toBe(200);
-		expect((await api('users/show', { userId: receiver.id }, follower)).body)
-			.toMatchObject({ isFollowing: autoAcceptFollowed, hasPendingFollowRequestFromYou: !autoAcceptFollowed });
+		// tempura: rejectAllFollowRequests は非同期で実行されるためポーリングで確認する
+		await expect.poll(async () => (await api('users/show', { userId: receiver.id }, follower)).body)
+			.toMatchObject({ isFollowing: false, hasPendingFollowRequestFromYou: false });
 	});
 });
