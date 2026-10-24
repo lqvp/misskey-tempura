@@ -8,6 +8,7 @@ import { DI } from '@/di-symbols.js';
 import type { MiMeta } from '@/models/Meta.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { redactMetaForModerationLog } from '@/misc/redact-sso-secrets.js';
+import { assertValidOidcIssuerUrl } from '@/misc/sso-issuer-url.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { SsoProviderConfig } from '@/models/Meta.js';
 import type { UserSsoLinkRepository } from '@/models/_.js';
@@ -1376,16 +1377,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						throw new Error('issuerUrl is required for oidc providers');
 					}
 					if (provider.type === 'oidc') {
-						// 保存後にログインボタンだけが出て、ログイン時に URL として解釈できず失敗するのを防ぐ
-						let issuerProtocol: string;
-						try {
-							issuerProtocol = new URL(provider.issuerUrl!.trim()).protocol;
-						} catch {
-							throw new Error('issuerUrl must be a valid URL');
-						}
-						if (issuerProtocol !== 'https:' && issuerProtocol !== 'http:') {
-							throw new Error('issuerUrl must be an http(s) URL');
-						}
+						// 保存後にログインボタンだけが出て、ログイン時に失敗するのを防ぐ
+						assertValidOidcIssuerUrl(provider.issuerUrl!);
 					}
 				}
 
