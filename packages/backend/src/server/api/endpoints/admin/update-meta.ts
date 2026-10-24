@@ -1375,6 +1375,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					if (provider.type === 'oidc' && (provider.issuerUrl == null || provider.issuerUrl.trim() === '')) {
 						throw new Error('issuerUrl is required for oidc providers');
 					}
+					if (provider.type === 'oidc') {
+						// 保存後にログインボタンだけが出て、ログイン時に URL として解釈できず失敗するのを防ぐ
+						let issuerProtocol: string;
+						try {
+							issuerProtocol = new URL(provider.issuerUrl!.trim()).protocol;
+						} catch {
+							throw new Error('issuerUrl must be a valid URL');
+						}
+						if (issuerProtocol !== 'https:' && issuerProtocol !== 'http:') {
+							throw new Error('issuerUrl must be an http(s) URL');
+						}
+					}
 				}
 
 				// clientSecret が空文字なら既存の値を保持する
