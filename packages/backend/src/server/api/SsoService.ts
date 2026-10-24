@@ -30,6 +30,8 @@ import { LoggerService } from '@/core/LoggerService.js';
 
 const STATE_TTL_SEC = 600;
 const LOGIN_CODE_TTL_SEC = 120;
+/** メール確認コード待ちの間だけ延ばすログインコードの寿命 (確認コード自体の有効期間と同じ) */
+const LOGIN_CODE_EMAIL_CHALLENGE_TTL_SEC = 600;
 
 /** 1つのログインコードに対する追加認証 (TOTP/パスキー) の失敗許容回数。超過したコードは失効する */
 const MAX_ADDITIONAL_AUTH_ATTEMPTS = 5;
@@ -337,10 +339,24 @@ export class SsoService {
 		const key = `sso:loginCodeAttempts:${loginCode}`;
 		const attempts = await this.redisClient.incr(key);
 		if (attempts === 1) {
-			await this.redisClient.expire(key, LOGIN_CODE_TTL_SEC);
+			// 確認コード待ちでログインコードが延長されても、失敗回数の上限が先に消えないようにする
+			await this.redisClient.expire(key, LOGIN_CODE_EMAIL_CHALLENGE_TTL_SEC);
 		}
 		if (attempts >= MAX_ADDITIONAL_AUTH_ATTEMPTS) {
 			await this.redisClient.del(`sso:loginCode:${loginCode}`);
+		}
+	}
+
+	/**
+	 * メールの確認コードを送った後、ログインコードの寿命を確認コードと同じ長さまで延ばす。
+	 * 短くする方向には動かさず、存在しないコードは復活させない。確認コードの発行は1時間3回までに制限されている
+	 */
+	@bindThis
+	public async extendLoginCodeForEmailChallenge(loginCode: string): Promise<void> {
+		const key = `sso:loginCode:${loginCode}`;
+		const ttl = await this.redisClient.ttl(key);
+		if (ttl > 0 && ttl < LOGIN_CODE_EMAIL_CHALLENGE_TTL_SEC) {
+			await this.redisClient.expire(key, LOGIN_CODE_EMAIL_CHALLENGE_TTL_SEC);
 		}
 	}
 

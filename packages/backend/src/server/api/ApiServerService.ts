@@ -348,11 +348,18 @@ export class ApiServerService {
 					});
 				}
 			}
-			return await this.signinApiService.finishWithRisk(request, reply, user, { email: revalidation.profile?.email ?? null, emailVerified: revalidation.profile?.emailVerified === true }, {
+			const result = await this.signinApiService.finishWithRisk(request, reply, user, { email: revalidation.profile?.email ?? null, emailVerified: revalidation.profile?.emailVerified === true }, {
 				passedSecondFactor,
 				deviceToken: request.body?.deviceToken,
 				beforeSignin: consume,
 			});
+			// メールの確認コードを待つ間にログインコードが先に切れて、SSO をやり直すことにならないようにする
+			if ('finished' in result && result.finished === false && result.next === 'emailCode') {
+				await this.ssoService.extendLoginCodeForEmailChallenge(code).catch(err => {
+					this.logger.warn(`failed to extend SSO login code for email challenge: ${err}`);
+				});
+			}
+			return result;
 		});
 
 		fastify.post<{ Body: { code: string; } }>('/signup-pending', (request, reply) => this.signupApiService.signupPending(request, reply));
