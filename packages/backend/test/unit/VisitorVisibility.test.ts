@@ -66,6 +66,7 @@ describe('visitor visibility before limits', () => {
 			roleservice: { isExplorable: async () => true }, connection: { user: null },
 			subscriber: { on: () => {}, off: () => {} },
 			isNoteMutedOrBlocked: () => false, noteStreamingHidingService: { filter: async (note: any) => note },
+			noteEntityService: { withMyRenoteReaction: async (note: any) => note },
 		});
 		Object.defineProperty(service, 'send', { value: send });
 		expect(await service.init({ roleId: 'role' })).toBe(true);

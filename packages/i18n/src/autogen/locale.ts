@@ -721,6 +721,10 @@ export interface Locale extends ILocale {
      */
     "selectAntenna": string;
     /**
+     * クリップを選択
+     */
+    "selectClip": string;
+    /**
      * アンテナを編集
      */
     "editAntenna": string;
@@ -5505,6 +5509,15 @@ export interface Locale extends ILocale {
      */
     "keepOriginalFilenameDescription": string;
     /**
+     * センシティブなメディアは選択できません
+     */
+    "cannotSelectSensitiveMedia": string;
+    /**
+     * 自分でセンシティブ設定を行っていないのにこのエラーが出ている場合、自動判定によりセンシティブなメディアとされている可能性があります。
+     * サーバーの規則に照らして不要な場合は、ファイルのセンシティブ設定を解除してもう一度お試しください。
+     */
+    "cannotSelectSensitiveMediaDescription": string;
+    /**
      * 説明文はありません
      */
     "noDescription": string;
@@ -6648,6 +6661,64 @@ export interface Locale extends ILocale {
          */
         "forceBackup": string;
     };
+    "_followApproval": {
+        /**
+         * フォロー承認
+         */
+        "groupTitle": string;
+        /**
+         * すべてのフォローが承認制になるため、期間による設定は適用されません。フォローの承認制を解除すると、以下の設定が再び適用されます。
+         */
+        "inactiveDescription": string;
+        /**
+         * 新しいアカウントからのフォローを承認制にする
+         */
+        "title": string;
+        /**
+         * フォローを承認制にしている場合や、新しいアカウントからのフォローを保留する場合にも、あなたがフォローしている相手は自動承認します。
+         */
+        "autoAcceptDescription": string;
+        /**
+         * 指定した期間が経過していない相手からのフォローを、フォローリクエストとして保留します。既存のフォロワーには影響しません。フォローしている相手の自動承認が有効な場合、その相手は自動承認されます。
+         */
+        "description": string;
+        /**
+         * ローカルユーザーからのフォロー
+         */
+        "local": string;
+        /**
+         * このサーバーでのアカウント作成からの期間で判定します。
+         */
+        "localDescription": string;
+        /**
+         * リモートユーザーからのフォロー
+         */
+        "remote": string;
+        /**
+         * 相手のサーバーでの作成日時ではなく、このサーバーが初めてそのアカウントを認識してからの期間で判定します。
+         */
+        "remoteDescription": string;
+        /**
+         * 既定値を使う（現在は無効）
+         */
+        "useDefault": string;
+        /**
+         * 期間を指定する
+         */
+        "custom": string;
+        /**
+         * 承認が必要な期間
+         */
+        "period": string;
+        /**
+         * 単位
+         */
+        "unit": string;
+        /**
+         * 期間が正しくありません。1秒以上の期間を、指定できる範囲内で入力してください。
+         */
+        "invalidPeriod": string;
+    };
     "_accountSettings": {
         /**
          * コンテンツの表示にログインを必須にする
@@ -6894,6 +6965,18 @@ export interface Locale extends ILocale {
          * 有効にすると、このお知らせを既読にする際に確認ダイアログが表示されます。また、一括既読操作の対象になりません。
          */
         "needConfirmationToReadDescription": string;
+        /**
+         * 自動アーカイブ日時
+         */
+        "autoArchiveAt": string;
+        /**
+         * 指定した日時を過ぎると、このお知らせは自動的にアーカイブされます。空欄の場合は自動的にアーカイブされません。
+         */
+        "autoArchiveAtDescription": string;
+        /**
+         * 自動アーカイブ日時には現在より後の日時を指定してください。
+         */
+        "autoArchiveAtMustBeInFuture": string;
         /**
          * お知らせを終了
          */
@@ -7403,7 +7486,7 @@ export interface Locale extends ILocale {
          */
         "allowAnonymousChartActiveUsers": string;
         /**
-         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         * 有効にすると、ログインしていない人もアクティブユーザー数の推移チャートを取得できます。初期値は無効です。
          */
         "allowAnonymousChartActiveUsers_description": string;
         /**
@@ -7411,7 +7494,7 @@ export interface Locale extends ILocale {
          */
         "allowAnonymousChartApRequest": string;
         /**
-         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         * 有効にすると、ログインしていない人もActivityPubリクエスト数のチャートを取得できます。初期値は無効です。
          */
         "allowAnonymousChartApRequest_description": string;
         /**
@@ -7419,7 +7502,7 @@ export interface Locale extends ILocale {
          */
         "allowAnonymousChartDrive": string;
         /**
-         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         * 有効にすると、ログインしていない人もドライブ使用量のチャートを取得できます。初期値は無効です。
          */
         "allowAnonymousChartDrive_description": string;
         /**
@@ -7427,7 +7510,7 @@ export interface Locale extends ILocale {
          */
         "allowAnonymousChartFederation": string;
         /**
-         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         * 有効にすると、ログインしていない人も連合インスタンス数の推移チャートを取得できます。初期値は無効です。
          */
         "allowAnonymousChartFederation_description": string;
         /**
@@ -7435,7 +7518,7 @@ export interface Locale extends ILocale {
          */
         "allowAnonymousChartInstance": string;
         /**
-         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         * 有効にすると、ログインしていない人も個別インスタンスのチャートを取得できます。初期値は無効です。
          */
         "allowAnonymousChartInstance_description": string;
         /**
@@ -7443,7 +7526,7 @@ export interface Locale extends ILocale {
          */
         "allowAnonymousChartNotes": string;
         /**
-         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         * 有効にすると、ログインしていない人もノート数の推移チャートを取得できます。初期値は無効です。
          */
         "allowAnonymousChartNotes_description": string;
         /**
@@ -7451,7 +7534,7 @@ export interface Locale extends ILocale {
          */
         "allowAnonymousChartUsers": string;
         /**
-         * 有効にすると、ログインしていない人もこのチャートを取得できます。初期値は無効です。
+         * 有効にすると、ログインしていない人もユーザー数の推移チャートを取得できます。初期値は無効です。
          */
         "allowAnonymousChartUsers_description": string;
         /**
@@ -12192,6 +12275,10 @@ export interface Locale extends ILocale {
              * チャンネル
              */
             "channel": string;
+            /**
+             * クリップ
+             */
+            "clip": string;
             /**
              * メンション
              */

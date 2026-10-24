@@ -668,6 +668,8 @@ export class UserEntityService implements OnModuleInit {
 				outboxFilter: profile!.outboxFilter,
 				webFeedFilter: profile!.webFeedFilter,
 				receiveSpecifiedNotesFrom: profile!.receiveSpecifiedNotesFrom,
+				followApprovalLocalSeconds: profile!.followApprovalLocalSeconds,
+				followApprovalRemoteSeconds: profile!.followApprovalRemoteSeconds,
 				noCrawle: profile!.noCrawle,
 				preventAiLearning: profile!.preventAiLearning,
 				isExplorable: user.isExplorable,
