@@ -11,7 +11,7 @@ import { Redis } from 'ioredis';
 import * as OTPAuth from 'otpauth';
 import { afterAll, beforeAll, describe, test } from 'vitest';
 import { loadConfig } from '@/config.js';
-import { MiUserSsoLink, MiSignin } from '@/models/_.js';
+import { MiUserSsoLink, MiSignin, MiUser } from '@/models/_.js';
 import { api, createAppToken, initTestDb, port, sendEnvUpdateRequest, signup } from '../utils.js';
 import type { DataSource } from 'typeorm';
 import type * as misskey from 'misskey-js';
@@ -135,6 +135,23 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		const res = await exchange({ code }, 'binding-stale');
 		assert.strictEqual(res.status, 400);
 		assert.strictEqual(res.body.error?.code ?? res.body.code, 'INVALID_CODE');
+	});
+
+	test('承認待ちのアカウントは、承認必須の設定ならログインコードを受け付けない (パスワードログインと同じ)', async () => {
+		const pending = await signup({ username: 'ssoex_pending' });
+		await linkUser(pending.id, 'sub-pending');
+		await db.getRepository(MiUser).update({ id: pending.id }, { approved: false });
+		try {
+			const on = await api('admin/update-meta', { approvalRequiredForSignup: true }, admin);
+			assert.strictEqual(on.status, 204);
+			const code = await issueLoginCode(pending.id, 'sub-pending', 'binding-pending');
+			const res = await exchange({ code }, 'binding-pending');
+			assert.strictEqual(res.status, 403);
+			assert.strictEqual(res.body.error?.code, 'YOUR_ACCOUNT_NOT_APPROVED');
+			assert.strictEqual(await codeExists(code), true);
+		} finally {
+			await api('admin/update-meta', { approvalRequiredForSignup: false }, admin);
+		}
 	});
 
 	test('追加認証の失敗では Cookie を削除せず、失敗を記録して再試行できる', async () => {
