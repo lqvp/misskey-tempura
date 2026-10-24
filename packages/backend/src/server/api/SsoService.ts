@@ -14,6 +14,7 @@ import {
 	calculatePKCECodeChallenge,
 	randomState,
 	randomNonce,
+	customFetch,
 	type Configuration,
 } from 'openid-client';
 import { DI } from '@/di-symbols.js';
@@ -23,6 +24,7 @@ import type { Config } from '@/config.js';
 import type { SsoProviderConfig } from '@/models/Meta.js';
 import { IdService } from '@/core/IdService.js';
 import { bindThis } from '@/decorators.js';
+import { createOidcFetch } from '@/misc/sso-oidc-fetch.js';
 import { MetaService } from '@/core/MetaService.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import type Logger from '@/logger.js';
@@ -137,7 +139,10 @@ export class SsoService {
 		const cached = this.oidcConfigCache.get(cacheKey);
 		if (cached) return cached;
 
-		const promise = discovery(new URL(issuerUrl), provider.clientId, provider.clientSecret);
+		const promise = discovery(new URL(issuerUrl), provider.clientId, provider.clientSecret, undefined, {
+			// 以降のトークン交換・JWKS 取得にも同じ fetch が使われる
+			[customFetch]: createOidcFetch(url => this.httpRequestService.getAgentByUrl(url, false, true), this.config.userAgent),
+		});
 		this.oidcConfigCache.set(cacheKey, promise);
 		try {
 			return await promise;
