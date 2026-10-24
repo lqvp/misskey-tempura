@@ -11,7 +11,8 @@ export const meta = {
 	tags: ['account'],
 
 	requireCredential: true,
-	kind: 'read:account',
+	// 外部アカウントの連携状態は本人のセッションだけが読める。第三者アプリのトークンには公開しない
+	secure: true,
 
 	res: {
 		type: 'object',
@@ -25,10 +26,6 @@ export const meta = {
 					optional: false, nullable: false,
 					properties: {
 						provider: {
-							type: 'string',
-							optional: false, nullable: false,
-						},
-						providerUserId: {
 							type: 'string',
 							optional: false, nullable: false,
 						},

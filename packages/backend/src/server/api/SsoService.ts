@@ -496,12 +496,11 @@ export class SsoService {
 	}
 
 	@bindThis
-	public async getStatus(userId: string): Promise<{ links: { provider: string; providerUserId: string; createdAt: string }[] }> {
+	public async getStatus(userId: string): Promise<{ links: { provider: string; createdAt: string }[] }> {
 		const links = await this.userSsoLinkRepository.findBy({ userId });
 		return {
 			links: links.map(l => ({
 				provider: l.provider,
-				providerUserId: l.providerUserId,
 				createdAt: l.createdAt.toISOString(),
 			})),
 		};

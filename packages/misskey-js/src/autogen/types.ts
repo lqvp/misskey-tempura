@@ -4068,7 +4068,8 @@ export type paths = {
          * sso/status
          * @description No description provided.
          *
-         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         *     **Internal Endpoint**: This endpoint is an API for the misskey mainframe and is not intended for use by third parties.
+         *     **Credential required**: *Yes*
          */
         post: operations['sso___status'];
     };
@@ -39023,7 +39024,6 @@ export interface operations {
                     'application/json': {
                         links: {
                             provider: string;
-                            providerUserId: string;
                             /** Format: date-time */
                             createdAt: string;
                         }[];
