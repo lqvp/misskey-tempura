@@ -62,7 +62,9 @@ onMounted(async () => {
 	try {
 		const res = await misskeyApi('sso/exchange-code', { code });
 		if (res.finished) {
-			await login(res.i);
+			// login() はページをリロードする。code が URL に残ったままだと
+			// リロード後に同じコードを再交換して失敗画面になるため、トップへ遷移させる
+			await login(res.i, '/');
 			return;
 		}
 		// SSOログインでは finished:false (captcha/2FA等) は発生しない想定
