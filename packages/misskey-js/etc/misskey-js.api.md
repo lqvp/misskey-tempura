@@ -1671,6 +1671,8 @@ export type Endpoints = Overwrite<Endpoints_2, {
     'sso/exchange-code': {
         req: {
             code: string;
+            token?: string;
+            credential?: AuthenticationResponseJSON;
         };
         res: SigninFlowResponse;
     };
