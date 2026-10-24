@@ -33,11 +33,12 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 	const otp = (secret: string) => OTPAuth.TOTP.generate({ secret: OTPAuth.Secret.fromBase32(secret), digits: 6 });
 	const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
 
-	async function linkUser(userId: string, subject: string) {
+	async function linkUser(userId: string, subject: string, issuer = 'oidc:https://idp.invalid') {
 		await db.getRepository(MiUserSsoLink).insert({
 			id: crypto.randomBytes(8).toString('hex'),
 			userId,
 			provider: providerKey,
+			providerIssuer: issuer,
 			providerUserId: subject,
 			createdAt: new Date(),
 		});
@@ -125,6 +126,15 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		assert.strictEqual(res.body.finished, true);
 		assert.ok(res.setCookie?.includes('Max-Age=0'), `Cookie を削除するべき: ${res.setCookie}`);
 		assert.strictEqual(await codeExists(code), false);
+	});
+
+	test('連携を作った発行者と現在の発行者が違う連携ではログインコードを受け付けない', async () => {
+		const stale = await signup({ username: 'ssoex_stale' });
+		await linkUser(stale.id, 'sub-stale', 'oidc:https://old-idp.invalid');
+		const code = await issueLoginCode(stale.id, 'sub-stale', 'binding-stale');
+		const res = await exchange({ code }, 'binding-stale');
+		assert.strictEqual(res.status, 400);
+		assert.strictEqual(res.body.error?.code ?? res.body.code, 'INVALID_CODE');
 	});
 
 	test('追加認証の失敗では Cookie を削除せず、失敗を記録して再試行できる', async () => {

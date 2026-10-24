@@ -29,6 +29,12 @@ export class MiUserSsoLink {
 	})
 	public provider: string;
 
+	// 連携を作成したときの発行者の識別子 (`<type>:<issuerUrl>`)。発行者が変わった連携ではログインさせない
+	@Column('varchar', {
+		length: 1100,
+	})
+	public providerIssuer: string;
+
 	// IdP側の安定識別子 (OIDC: sub / GitHub: user.id / Discord: user.id)
 	@Column('varchar', {
 		length: 1024,

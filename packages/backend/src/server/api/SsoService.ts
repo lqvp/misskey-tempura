@@ -109,6 +109,11 @@ export class SsoService {
 		this.logger = this.loggerService.getLogger('sso');
 	}
 
+	/** 連携が作られた発行者の識別子。OIDC の sub は発行者ごとにしか一意でないため、連携と一緒に保存して照合する */
+	private issuerOf(provider: SsoProviderConfig): string {
+		return `${provider.type}:${provider.type === 'oidc' ? (provider.issuerUrl ?? '').trim() : ''}`;
+	}
+
 	/** 有効なプロバイダー設定を取得。無効・未設定なら SsoError */
 	@bindThis
 	public async getProviderConfig(providerKey: string): Promise<SsoProviderConfig> {
@@ -263,6 +268,9 @@ export class SsoService {
 				id: this.idService.gen(),
 				userId: stateData.userId,
 				provider: provider.key,
+				// subject を取得した発行者を連携に残す。連携の作成と発行者の変更が競合しても、
+				// 別の発行者が同じ sub を返してログインできてしまうことを防ぐ
+				providerIssuer: this.issuerOf(provider),
 				providerUserId: subject,
 				createdAt: new Date(),
 			});
@@ -273,6 +281,7 @@ export class SsoService {
 
 		const link = await this.userSsoLinkRepository.findOneBy({
 			provider: provider.key,
+			providerIssuer: this.issuerOf(provider),
 			providerUserId: subject,
 		});
 		if (!link) {
@@ -333,6 +342,7 @@ export class SsoService {
 		}
 		const link = await this.userSsoLinkRepository.findOneBy({
 			provider: pending.provider,
+			providerIssuer: this.issuerOf(provider),
 			providerUserId: pending.subject,
 		});
 		if (!link || link.userId !== pending.userId) {
