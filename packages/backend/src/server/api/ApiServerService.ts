@@ -9,7 +9,8 @@ import multipart from '@fastify/multipart';
 import { ModuleRef } from '@nestjs/core';
 import type { AuthenticationResponseJSON } from '@simplewebauthn/server';
 import type { Config } from '@/config.js';
-import type { InstancesRepository, AccessTokensRepository } from '@/models/_.js';
+import { IsNull } from 'typeorm';
+import type { InstancesRepository, AccessTokensRepository, UsersRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { bindThis } from '@/decorators.js';
@@ -18,10 +19,17 @@ import { ApiCallService } from './ApiCallService.js';
 import { SignupApiService } from './SignupApiService.js';
 import { SigninApiService } from './SigninApiService.js';
 import { SigninWithPasskeyApiService } from './SigninWithPasskeyApiService.js';
+import { SigninService } from './SigninService.js';
+import { SsoService, SsoError } from './SsoService.js';
+import type { MiLocalUser } from '@/models/User.js';
+import { LoggerService } from '@/core/LoggerService.js';
+import type Logger from '@/logger.js';
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify';
 
 @Injectable()
 export class ApiServerService {
+	private logger: Logger;
+
 	constructor(
 		private moduleRef: ModuleRef,
 
@@ -34,12 +42,19 @@ export class ApiServerService {
 		@Inject(DI.accessTokensRepository)
 		private accessTokensRepository: AccessTokensRepository,
 
+		@Inject(DI.usersRepository)
+		private usersRepository: UsersRepository,
+
 		private userEntityService: UserEntityService,
 		private apiCallService: ApiCallService,
 		private signupApiService: SignupApiService,
 		private signinApiService: SigninApiService,
 		private signinWithPasskeyApiService: SigninWithPasskeyApiService,
+		private signinService: SigninService,
+		private ssoService: SsoService,
+		loggerService: LoggerService,
 	) {
+		this.logger = loggerService.getLogger('sso');
 		//this.createServer = this.createServer.bind(this);
 	}
 
@@ -141,6 +156,85 @@ export class ApiServerService {
 				context?: string;
 			};
 		}>('/signin-with-passkey', (request, reply) => this.signinWithPasskeyApiService.signin(request, reply));
+
+		// SSO (OIDC / OAuth2) ログイン
+		fastify.get<{
+			Querystring: { provider?: string; };
+		}>('/sso/initiate', async (request, reply) => {
+			const providerKey = request.query.provider;
+			if (!providerKey) {
+				reply.code(400).send({ error: { message: 'Missing provider parameter', code: 'MISSING_PROVIDER', id: '3f6a1c2e-7b8d-4e5f-9a0b-1c2d3e4f5a6b' } });
+				return;
+			}
+			try {
+				const authorizationUrl = await this.ssoService.initiate('login', providerKey);
+				reply.redirect(authorizationUrl);
+			} catch (err) {
+				if (err instanceof SsoError) {
+					reply.code(400).send({ error: { message: err.message, code: err.code, id: '4a7b2d3f-8c9e-4f6a-0b1c-2d3e4f5a6b7c' } });
+					return;
+				}
+				throw err;
+			}
+		});
+
+		fastify.get<{
+			Params: { provider: string; };
+			Querystring: { code?: string; state?: string; error?: string; };
+		}>('/sso/callback/:provider', async (request, reply) => {
+			const providerKey = request.params.provider;
+			const { code, state } = request.query;
+			const webCallbackUrl = `${this.config.url}/sso/callback`;
+
+			if (request.query.error) {
+				reply.redirect(`${webCallbackUrl}?sso_error=PROVIDER_ERROR`);
+				return;
+			}
+			if (!code || !state) {
+				reply.code(400).send({ error: { message: 'Missing code or state parameter', code: 'INVALID_REQUEST', id: '5b8c3e4a-9d0f-4a7b-1c2d-3e4f5a6b7c8d' } });
+				return;
+			}
+			try {
+				const result = await this.ssoService.handleCallback(providerKey, code, state);
+				if (result.type === 'login') {
+					reply.redirect(`${webCallbackUrl}?code=${encodeURIComponent(result.loginCode)}`);
+				} else {
+					reply.redirect(`${this.config.url}/settings/security?sso_linked=${encodeURIComponent(providerKey)}`);
+				}
+			} catch (err) {
+				if (err instanceof SsoError) {
+					this.logger.warn(`SSO callback failed (provider=${providerKey}): ${err.message}`);
+					reply.redirect(`${webCallbackUrl}?sso_error=${encodeURIComponent(err.code)}`);
+					return;
+				}
+				this.logger.error(`SSO callback error (provider=${providerKey}): ${err}`);
+				reply.redirect(`${webCallbackUrl}?sso_error=INTERNAL`);
+			}
+		});
+
+		fastify.post<{
+			Body: { code?: string; };
+		}>('/sso/exchange-code', async (request, reply) => {
+			const code = request.body?.code;
+			if (typeof code !== 'string' || code.length === 0) {
+				reply.code(400).send({ error: { message: 'Missing code', code: 'INVALID_REQUEST', id: '6c9d4f5b-0e1a-4b8c-2d3e-4f5a6b7c8d9e' } });
+				return;
+			}
+
+			const userId = await this.ssoService.consumeLoginCode(code);
+			if (!userId) {
+				reply.code(400).send({ error: { message: 'Invalid or expired code', code: 'INVALID_CODE', id: '7d0e5a6c-1f2b-4c9d-3e4f-5a6b7c8d9e0f' } });
+				return;
+			}
+
+			const user = await this.usersRepository.findOneBy({ id: userId, host: IsNull() }) as MiLocalUser | null;
+			if (!user || user.isSuspended) {
+				reply.code(403).send({ error: { message: 'User not found or suspended', code: 'USER_NOT_FOUND', id: '8e1f6b7d-2a3c-4d0e-4f5a-6b7c8d9e0f1a' } });
+				return;
+			}
+
+			return await this.signinService.signin(request, reply, user);
+		});
 
 		fastify.post<{ Body: { code: string; } }>('/signup-pending', (request, reply) => this.signupApiService.signupPending(request, reply));
 

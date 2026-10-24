@@ -8,6 +8,7 @@ import { DI } from '@/di-symbols.js';
 import type { MiMeta } from '@/models/Meta.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
+import type { SsoProviderConfig } from '@/models/Meta.js';
 import { MetaService } from '@/core/MetaService.js';
 import { QueueService } from '@/core/QueueService.js';
 import { ApiLoggerService } from '../../ApiLoggerService.js';
@@ -364,6 +365,23 @@ export const paramDef = {
 					isDefault: { type: 'boolean' },
 				},
 				required: ['key', 'text', 'enabled', 'order', 'isDefault'],
+			},
+		},
+		ssoProviders: {
+			type: 'array',
+			items: {
+				type: 'object',
+				properties: {
+					key: { type: 'string', minLength: 1, maxLength: 128 },
+					type: { type: 'string', enum: ['github', 'discord', 'google', 'oidc'] },
+					clientId: { type: 'string', maxLength: 1024 },
+					// 空文字を送ると既存の値を保持する (管理画面が secret を参照できないため)
+					clientSecret: { type: 'string', maxLength: 1024 },
+					issuerUrl: { type: 'string', nullable: true, maxLength: 1024 },
+					buttonLabel: { type: 'string', nullable: true, maxLength: 128 },
+					enabled: { type: 'boolean' },
+				},
+				required: ['key', 'type', 'enabled'],
 			},
 		},
 	},
@@ -1335,6 +1353,41 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				}
 
 				set.contactFormCategories = ps.contactFormCategories;
+			}
+
+			if (ps.ssoProviders !== undefined) {
+				// key の重複は禁止 (リンクの紐付けキーになるため)
+				const providerKeys = ps.ssoProviders.map(p => p.key);
+				if (new Set(providerKeys).size !== providerKeys.length) {
+					throw new Error('Duplicate provider keys are not allowed');
+				}
+				for (const provider of ps.ssoProviders) {
+					if (!/^[a-z0-9][a-z0-9_-]*$/.test(provider.key)) {
+						throw new Error('Provider key must be lowercase alphanumeric (with - or _)');
+					}
+					if (provider.type === 'oidc' && (provider.issuerUrl == null || provider.issuerUrl.trim() === '')) {
+						throw new Error('issuerUrl is required for oidc providers');
+					}
+				}
+
+				// clientSecret が空文字なら既存の値を保持する
+				const currentMeta = await this.metaService.fetch(true);
+				const currentByKey = new Map(currentMeta.ssoProviders.map(p => [p.key, p]));
+				set.ssoProviders = ps.ssoProviders.map(p => {
+					let clientSecret = p.clientSecret ?? '';
+					if (clientSecret === '') {
+						clientSecret = currentByKey.get(p.key)?.clientSecret ?? '';
+					}
+					return {
+						key: p.key,
+						type: p.type as SsoProviderConfig['type'],
+						clientId: p.clientId ?? '',
+						clientSecret,
+						issuerUrl: p.issuerUrl?.trim() || null,
+						buttonLabel: p.buttonLabel?.trim() || null,
+						enabled: p.enabled,
+					};
+				});
 			}
 
 			const before = await this.metaService.fetch(true);

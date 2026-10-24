@@ -1248,6 +1248,25 @@ export class MiMeta {
 		default: [],
 	})
 	public contactFormCategories: ContactFormCategory[];
+
+	@Column('jsonb', {
+		default: [],
+	})
+	public ssoProviders: SsoProviderConfig[];
+}
+
+export interface SsoProviderConfig {
+	/** プロバイダー識別子 (例: 'github', 'discord', 'google', 'my-idp')。リンクの紐付けに使うので一度決めたら変更しない */
+	key: string;
+	/** 'github' / 'discord' は OAuth2、'google' / 'oidc' は OpenID Connect (discovery) */
+	type: 'github' | 'discord' | 'google' | 'oidc';
+	clientId: string;
+	clientSecret: string;
+	/** type が 'oidc' の場合の Issuer URL。'google' の場合は省略可 (https://accounts.google.com) */
+	issuerUrl?: string | null;
+	/** ログインボタンの表示ラベル。未設定時はデフォルトラベル */
+	buttonLabel?: string | null;
+	enabled: boolean;
 }
 
 export interface ContactFormCategory {
