@@ -66,6 +66,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		super(meta, paramDef, async (ps, me) => {
 			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: me.id });
 
+			// パスワード不一致のまま 2FA の確認 (バックアップコードの消費を含む) に進まないよう、パスワードを先に確認する
+			const passwordMatched = profile.password != null && await bcrypt.compare(ps.password, profile.password);
+			if (!passwordMatched) {
+				throw new Error('incorrect password');
+			}
+
 			if (profile.twoFactorEnabled) {
 				if (ps.token == null) {
 					throw new Error('authentication failed');
@@ -76,11 +82,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				} catch (_) {
 					throw new Error('authentication failed');
 				}
-			}
-
-			const passwordMatched = profile.password != null && await bcrypt.compare(ps.password, profile.password);
-			if (!passwordMatched) {
-				throw new Error('incorrect password');
 			}
 
 			try {
