@@ -382,7 +382,7 @@ export const paramDef = {
 					buttonLabel: { type: 'string', nullable: true, maxLength: 128 },
 					enabled: { type: 'boolean' },
 					// IdP 側の MFA を信頼してローカル 2FA の追加認証をスキップするか (未指定時は false)
-					trustUpstreamMfa: { type: 'boolean', optional: true },
+					trustUpstreamMfa: { type: 'boolean' },
 				},
 				required: ['key', 'type', 'enabled'],
 			},
