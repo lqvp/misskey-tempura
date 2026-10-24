@@ -17,7 +17,7 @@ import {
 	type Configuration,
 } from 'openid-client';
 import { DI } from '@/di-symbols.js';
-import type { UserSsoLinkRepository, UserProfilesRepository } from '@/models/_.js';
+import type { UserSsoLinkRepository, UserProfilesRepository, UserSecurityKeysRepository, MiUserProfile } from '@/models/_.js';
 import { UserAuthService } from '@/core/UserAuthService.js';
 import type { Config } from '@/config.js';
 import type { SsoProviderConfig } from '@/models/Meta.js';
@@ -53,6 +53,23 @@ export class SsoError extends Error {
 	}
 }
 
+/**
+ * 交換時点の最新状態から、SSO での追加認証の要否を決定する (純粋関数)。
+ * ローカルのサインインポリシーと揃える: TOTP が有効なら TOTP、そうでなくセキュリティキーが
+ * 登録されていればパスキーによる追加認証を必須とする。プロバイダーが IdP 側 MFA を信頼する
+ * 設定 (trustUpstreamMfa) の場合のみ省略する。
+ */
+export function resolveSsoAdditionalAuthRequirement(
+	profile: { twoFactorEnabled: boolean } | null,
+	securityKeysAvailable: boolean,
+	trustUpstreamMfa: boolean,
+): 'none' | 'totp' | 'passkey' {
+	if (trustUpstreamMfa) return 'none';
+	if (profile?.twoFactorEnabled === true) return 'totp';
+	if (securityKeysAvailable) return 'passkey';
+	return 'none';
+}
+
 @Injectable()
 export class SsoService {
 	private logger: Logger;
@@ -70,6 +87,9 @@ export class SsoService {
 
 		@Inject(DI.userProfilesRepository)
 		private userProfilesRepository: UserProfilesRepository,
+
+		@Inject(DI.userSecurityKeysRepository)
+		private userSecurityKeysRepository: UserSecurityKeysRepository,
 
 		private userAuthService: UserAuthService,
 
@@ -247,30 +267,60 @@ export class SsoService {
 			throw new SsoError('NOT_LINKED', 'No account linked to this external identity');
 		}
 
-		// ローカル 2FA が有効で、プロバイダーが IdP 側 MFA を信頼しない設定なら追加認証を要求する
-		const profile = await this.userProfilesRepository.findOneBy({ userId: link.userId });
-		const requireTotp = profile?.twoFactorEnabled === true && provider.trustUpstreamMfa !== true;
-
-		// ワンタイムのログインコードを発行する (userId のみ保存し、トークンは置かない)
+		// ワンタイムのログインコードを発行する (トークンは置かない)。
+		// 追加認証の要否・連携の存続・プロバイダーの有効性は発行時ではなく交換時に必ず再検証するため、
+		// ここでは連携を一意に特定する情報だけを保存する
 		const loginCode = randomState();
-		await this.redisClient.set(`sso:loginCode:${loginCode}`, JSON.stringify({ userId: link.userId, requireTotp }), 'EX', LOGIN_CODE_TTL_SEC);
+		await this.redisClient.set(`sso:loginCode:${loginCode}`, JSON.stringify({ userId: link.userId, provider: provider.key, subject }), 'EX', LOGIN_CODE_TTL_SEC);
 
 		return { type: 'login', loginCode };
 	}
 
 	/** ログインコードを消費せずに読み出す (追加認証の確認前に照合するため) */
 	@bindThis
-	public async peekLoginCode(loginCode: string): Promise<{ userId: string; requireTotp: boolean } | null> {
+	public async peekLoginCode(loginCode: string): Promise<{ userId: string; provider: string; subject: string } | null> {
 		const raw = await this.redisClient.get(`sso:loginCode:${loginCode}`);
 		if (!raw) {
 			return null;
 		}
 		try {
-			const parsed = JSON.parse(raw) as { userId: string; requireTotp?: boolean };
-			return { userId: parsed.userId, requireTotp: parsed.requireTotp === true };
+			const parsed = JSON.parse(raw) as { userId?: string; provider?: string; subject?: string };
+			if (typeof parsed.userId !== 'string' || typeof parsed.provider !== 'string' || typeof parsed.subject !== 'string') {
+				return null;
+			}
+			return { userId: parsed.userId, provider: parsed.provider, subject: parsed.subject };
 		} catch {
 			return null;
 		}
+	}
+
+	/**
+	 * 交換時の再検証: 発行後に連携が解除されていないか、プロバイダーが無効化・変更されていないか、
+	 * 最新のプロフィール (ローカル 2FA / セキュリティキー) を取得する。
+	 * いずれかが失効していれば null を返し、ログインコードは受け付けない。
+	 */
+	@bindThis
+	public async revalidateLoginCode(pending: { userId: string; provider: string; subject: string }): Promise<{
+		provider: SsoProviderConfig;
+		profile: MiUserProfile | null;
+		securityKeysAvailable: boolean;
+	} | null> {
+		let provider: SsoProviderConfig;
+		try {
+			provider = await this.getProviderConfig(pending.provider);
+		} catch {
+			return null;
+		}
+		const link = await this.userSsoLinkRepository.findOneBy({
+			provider: pending.provider,
+			providerUserId: pending.subject,
+		});
+		if (!link || link.userId !== pending.userId) {
+			return null;
+		}
+		const profile = await this.userProfilesRepository.findOneBy({ userId: pending.userId });
+		const securityKeysAvailable = await this.userSecurityKeysRepository.countBy({ userId: pending.userId }).then(result => result >= 1);
+		return { provider, profile, securityKeysAvailable };
 	}
 
 	/** ログインコードを原子的に消費する。既に消費済み (同時リクエストの敗北側) なら false */

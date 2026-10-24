@@ -20,7 +20,8 @@ import { SignupApiService } from './SignupApiService.js';
 import { SigninApiService } from './SigninApiService.js';
 import { SigninWithPasskeyApiService } from './SigninWithPasskeyApiService.js';
 import { SigninService } from './SigninService.js';
-import { SsoService, SsoError } from './SsoService.js';
+import { SsoService, SsoError, resolveSsoAdditionalAuthRequirement } from './SsoService.js';
+import { WebAuthnService } from '@/core/WebAuthnService.js';
 import { RateLimiterService } from './RateLimiterService.js';
 import { getIpHash } from '@/misc/get-ip-hash.js';
 import type { MiLocalUser } from '@/models/User.js';
@@ -54,6 +55,7 @@ export class ApiServerService {
 		private signinWithPasskeyApiService: SigninWithPasskeyApiService,
 		private signinService: SigninService,
 		private ssoService: SsoService,
+		private webAuthnService: WebAuthnService,
 		private rateLimiterService: RateLimiterService,
 		loggerService: LoggerService,
 	) {
@@ -257,7 +259,7 @@ export class ApiServerService {
 		});
 
 		fastify.post<{
-			Body: { code?: string; token?: string; };
+			Body: { code?: string; token?: string; credential?: AuthenticationResponseJSON; };
 		}>('/sso/exchange-code', async (request, reply) => {
 			if (!await this.limitSsoRequest(request, reply, 'sso-exchange-code')) return;
 
@@ -280,14 +282,33 @@ export class ApiServerService {
 				return;
 			}
 
-			// ローカル 2FA が有効で IdP 側 MFA を信頼しないプロバイダーの場合、TOTP / バックアップコードを要求する
-			if (pending.requireTotp) {
+			// 発行後の状態変化を必ず再検証する: 連携が解除されていないか、プロバイダーが無効化されていないか。
+			// 追加認証の要否も発行時の値ではなく、最新のプロフィール・プロバイダー設定から決定する
+			const revalidation = await this.ssoService.revalidateLoginCode(pending);
+			if (revalidation == null) {
+				reply.code(400).send({ error: { message: 'Invalid or expired code', code: 'INVALID_CODE', id: '7d0e5a6c-1f2b-4c9d-3e4f-5a6b7c8d9e0f' } });
+				return;
+			}
+
+			// ローカルのサインインポリシーと揃え、IdP 側 MFA を信頼しないプロバイダーでは
+			// TOTP / バックアップコード、またはセキュリティキー (パスキー) による追加認証を要求する
+			const additionalAuth = resolveSsoAdditionalAuthRequirement(revalidation.profile, revalidation.securityKeysAvailable, revalidation.provider.trustUpstreamMfa === true);
+			if (additionalAuth === 'totp') {
 				const token = request.body?.token;
 				if (typeof token !== 'string' || token.length === 0) {
 					return { finished: false, next: 'totp' };
 				}
 				if (!await this.ssoService.verifyAdditionalAuth(user.id, token)) {
 					reply.code(403).send({ error: { message: 'Two-factor authentication failed', code: 'TWO_FACTOR_AUTH_FAILED', id: '9f2a7c8e-3b4d-5e1f-6a7b-8c9d0e1f2a3b' } });
+					return;
+				}
+			} else if (additionalAuth === 'passkey') {
+				const credential = request.body?.credential;
+				if (credential == null) {
+					return { finished: false, next: 'passkey', authRequest: await this.webAuthnService.initiateAuthentication(user.id) };
+				}
+				if (!await this.webAuthnService.verifyAuthentication(user.id, credential)) {
+					reply.code(403).send({ error: { message: 'Two-factor authentication failed', code: 'TWO_FACTOR_AUTH_FAILED', id: '6b3a9d1e-4f5c-4a2b-8c7d-9e0f1a2b3c4d' } });
 					return;
 				}
 			}
