@@ -6,7 +6,7 @@
 process.env.NODE_ENV = 'test';
 
 import * as assert from 'assert';
-import { afterEach, beforeAll, describe, test } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, test } from 'vitest';
 import { MiUser, MiUserProfile } from '@/models/_.js';
 import { api, castAsError, initTestDb, post, signup } from '../utils.js';
 import type * as misskey from 'misskey-js';
@@ -82,6 +82,11 @@ describe('visitor content access floor (pages/clips/channels/user search)', () =
 	}, 1000 * 60 * 2);
 
 	describe("'all' では従来どおり匿名でも取得できる", () => {
+		// 他ファイルの後始末や並び順に依存しないよう、このブロックでも明示的に 'all' にする
+		beforeEach(async () => {
+			await api('admin/update-meta', { ugcVisibilityForVisitor: 'all' }, admin);
+		});
+
 		test('pages/show・pages/featured', async () => {
 			const res = await api('pages/show', { pageId });
 			assert.strictEqual(res.status, 200);
