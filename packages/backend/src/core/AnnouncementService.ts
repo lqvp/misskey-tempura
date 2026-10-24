@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { Inject, Injectable } from '@nestjs/common';
-import { Brackets, EntityNotFoundError } from 'typeorm';
+import { Inject, Injectable, type OnModuleInit } from '@nestjs/common';
+import { Brackets, EntityNotFoundError, IsNull, Not } from 'typeorm';
 import { DI } from '@/di-symbols.js';
 import type { MiUser } from '@/models/User.js';
 import type { MiRole } from '@/models/Role.js';
@@ -16,9 +16,10 @@ import { AnnouncementEntityService } from '@/core/entities/AnnouncementEntitySer
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { RoleService } from '@/core/RoleService.js';
+import { QueueService } from '@/core/QueueService.js';
 
 @Injectable()
-export class AnnouncementService {
+export class AnnouncementService implements OnModuleInit {
 	constructor(
 		@Inject(DI.announcementsRepository)
 		private announcementsRepository: AnnouncementsRepository,
@@ -37,7 +38,21 @@ export class AnnouncementService {
 		private moderationLogService: ModerationLogService,
 		private announcementEntityService: AnnouncementEntityService,
 		private roleService: RoleService,
+		private queueService: QueueService,
 	) {
+	}
+
+	@bindThis
+	public async onModuleInit(): Promise<void> {
+		// Redisのデータ消失・再構築などでジョブが失われた場合にも予約を復元する
+		const announcements = await this.announcementsRepository.findBy({
+			isActive: true,
+			autoArchiveAt: Not(IsNull()),
+		});
+
+		await Promise.all(announcements.map(announcement =>
+			this.queueService.scheduleAnnouncementArchive(announcement.id, announcement.autoArchiveAt!),
+		));
 	}
 
 	@bindThis
@@ -49,6 +64,7 @@ export class AnnouncementService {
 
 	@bindThis
 	public async getUnreadAnnouncements(user: MiUser): Promise<MiAnnouncement[]> {
+		const now = new Date();
 		const readsQuery = this.announcementReadsRepository.createQueryBuilder('read')
 			.select('read.announcementId')
 			.where('read.userId = :userId', { userId: user.id });
@@ -61,6 +77,10 @@ export class AnnouncementService {
 
 		const q = this.announcementsRepository.createQueryBuilder('announcement')
 			.where('announcement.isActive = true')
+			.andWhere(new Brackets(qb => {
+				qb.where('announcement.autoArchiveAt IS NULL');
+				qb.orWhere('announcement.autoArchiveAt > :now', { now });
+			}))
 			.andWhere('announcement.silence = false')
 			.andWhere(new Brackets(qb => {
 				qb.orWhere(new Brackets(qb2 => {
@@ -108,14 +128,23 @@ export class AnnouncementService {
 			needConfirmationToRead: values.needConfirmationToRead,
 			userId: values.userId,
 			isRoleSpecified: values.isRoleSpecified ?? false,
+			autoArchiveAt: values.autoArchiveAt ?? null,
+			isActive: values.isActive ?? (values.autoArchiveAt == null || values.autoArchiveAt > new Date()),
 		});
 
 		const packed = await this.announcementEntityService.pack(announcement);
 
+		if (announcement.isActive && announcement.autoArchiveAt != null) {
+			await this.queueService.scheduleAnnouncementArchive(announcement.id, announcement.autoArchiveAt);
+		}
+
+		// 作成処理中にautoArchiveAtを過ぎる可能性があるため、insert完了時点で非アクティブなお知らせはイベント配信しない
 		if (values.userId) {
-			this.globalEventService.publishMainStream(values.userId, 'announcementCreated', {
-				announcement: packed,
-			});
+			if (announcement.isActive) {
+				this.globalEventService.publishMainStream(values.userId, 'announcementCreated', {
+					announcement: packed,
+				});
+			}
 
 			if (moderator) {
 				const user = await this.usersRepository.findOneByOrFail({ id: values.userId });
@@ -138,12 +167,14 @@ export class AnnouncementService {
 				roleId: roleId,
 			})).flat());
 
-			const users = new Set(...(await Promise.all(roleIds.map(async (roleId) => await this.roleService.getRoleUsers(roleId)).flat())));
-			users.forEach(async (user) => {
-				this.globalEventService.publishMainStream(user.id, 'announcementCreated', {
-					announcement: packed,
+			if (announcement.isActive) {
+				const users = new Set(...(await Promise.all(roleIds.map(async (roleId) => await this.roleService.getRoleUsers(roleId)).flat())));
+				users.forEach(async (user) => {
+					this.globalEventService.publishMainStream(user.id, 'announcementCreated', {
+						announcement: packed,
+					});
 				});
-			});
+			}
 
 			if (moderator) {
 				const roles = (await this.roleService.getRoles()).filter(role => roleIds.includes(role.id));
@@ -155,9 +186,11 @@ export class AnnouncementService {
 				});
 			}
 		} else {
-			this.globalEventService.publishBroadcastStream('announcementCreated', {
-				announcement: packed,
-			});
+			if (announcement.isActive) {
+				this.globalEventService.publishBroadcastStream('announcementCreated', {
+					announcement: packed,
+				});
+			}
 
 			if (moderator) {
 				this.moderationLogService.log(moderator, 'createGlobalAnnouncement', {
@@ -175,22 +208,41 @@ export class AnnouncementService {
 
 	@bindThis
 	public async update(announcement: MiAnnouncement, values: Partial<MiAnnouncement & { roleIds: MiRole['id'][] }>, moderator?: MiUser): Promise<void> {
-		await this.announcementsRepository.update(announcement.id, {
-			updatedAt: new Date(),
-			title: values.title,
-			text: values.text,
-			/* eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- 空の文字列の場合、nullを渡すようにするため */
-			imageUrl: values.imageUrl || null,
-			display: values.display,
-			icon: values.icon,
-			forExistingUsers: values.forExistingUsers,
-			silence: values.silence,
-			needConfirmationToRead: values.needConfirmationToRead,
-			isActive: values.isActive,
-			isRoleSpecified: values.isRoleSpecified,
-		});
+		// レプリカから古い値を読まないよう、更新後の値はRETURNINGで取得する
+		const after: MiAnnouncement | undefined = await this.announcementsRepository.createQueryBuilder().update()
+			.set({
+				updatedAt: new Date(),
+				title: values.title,
+				text: values.text,
+				/* eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing -- 空の文字列の場合、nullを渡すようにするため */
+				imageUrl: values.imageUrl || null,
+				display: values.display,
+				icon: values.icon,
+				forExistingUsers: values.forExistingUsers,
+				silence: values.silence,
+				needConfirmationToRead: values.needConfirmationToRead,
+				isActive: values.isActive,
+				autoArchiveAt: values.autoArchiveAt,
+				isRoleSpecified: values.isRoleSpecified,
+			})
+			.where('id = :id', { id: announcement.id })
+			.returning('*')
+			.execute()
+			.then((response) => response.raw[0]);
 
-		const after = await this.announcementsRepository.findOneByOrFail({ id: announcement.id });
+		if (after == null) {
+			throw new EntityNotFoundError(this.announcementsRepository.metadata.target, { id: announcement.id });
+		}
+
+		if (announcement.autoArchiveAt?.getTime() !== after.autoArchiveAt?.getTime() || announcement.isActive !== after.isActive) {
+			if (announcement.autoArchiveAt != null) {
+				await this.queueService.clearAnnouncementArchive(announcement.id, announcement.autoArchiveAt);
+			}
+
+			if (after.isActive && after.autoArchiveAt != null) {
+				await this.queueService.scheduleAnnouncementArchive(after.id, after.autoArchiveAt);
+			}
+		}
 
 		if (values.isRoleSpecified === true) {
 			const roleIds = values.roleIds ?? [];
@@ -249,9 +301,33 @@ export class AnnouncementService {
 	}
 
 	@bindThis
+	public async archiveAnnouncement(announcementId: MiAnnouncement['id'], autoArchiveAt: Date): Promise<boolean> {
+		const now = new Date();
+
+		// 日時も照合し、日時変更前に予約された古いジョブがお知らせをアーカイブしないようにする
+		const result = await this.announcementsRepository.createQueryBuilder()
+			.update()
+			.set({
+				isActive: false,
+				updatedAt: now,
+			})
+			.where('id = :announcementId', { announcementId })
+			.andWhere('isActive = true')
+			.andWhere('autoArchiveAt = :autoArchiveAt', { autoArchiveAt })
+			.andWhere('autoArchiveAt <= :now', { now })
+			.execute();
+
+		return (result.affected ?? 0) > 0;
+	}
+
+	@bindThis
 	public async delete(announcement: MiAnnouncement, moderator?: MiUser): Promise<void> {
 		const announcementRoles = await this.announcementRolesRepository.findBy({ announcementId: announcement.id });
 		await this.announcementsRepository.delete(announcement.id);
+
+		if (announcement.autoArchiveAt != null) {
+			await this.queueService.clearAnnouncementArchive(announcement.id, announcement.autoArchiveAt);
+		}
 
 		if (moderator) {
 			if (announcement.userId) {

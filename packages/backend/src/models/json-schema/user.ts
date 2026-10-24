@@ -590,6 +590,14 @@ export const packedMeDetailedOnlySchema = {
 			nullable: false, optional: false,
 			enum: ['all', 'following', 'nobody'],
 		},
+		followApprovalLocalSeconds: {
+			type: 'number',
+			nullable: true, optional: false,
+		},
+		followApprovalRemoteSeconds: {
+			type: 'number',
+			nullable: true, optional: false,
+		},
 		noCrawle: {
 			type: 'boolean',
 			nullable: false, optional: false,
