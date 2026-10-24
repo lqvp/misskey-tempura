@@ -311,7 +311,15 @@ export class ApiServerService {
 						return;
 					}
 				} else if (credential != null && additionalAuth === 'passkey') {
-					if (!await this.webAuthnService.verifyAuthentication(user.id, credential)) {
+					// verifyAuthentication はチャレンジ失効・未登録キー等で例外を投げるため、
+					// 例外も検証失敗として失敗回数にカウントする
+					let verified = false;
+					try {
+						verified = await this.webAuthnService.verifyAuthentication(user.id, credential);
+					} catch {
+						verified = false;
+					}
+					if (!verified) {
 						await this.ssoService.recordAdditionalAuthFailure(code);
 						reply.code(403).send({ error: { message: 'Two-factor authentication failed', code: 'TWO_FACTOR_AUTH_FAILED', id: '6b3a9d1e-4f5c-4a2b-8c7d-9e0f1a2b3c4d' } });
 						return;
