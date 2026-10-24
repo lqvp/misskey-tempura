@@ -66,6 +66,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 								<template #label>{{ i18n.ts.enable }}</template>
 							</MkSwitch>
 
+							<MkSwitch v-model="provider.trustUpstreamMfa">
+								<template #label>{{ i18n.ts._sso.trustUpstreamMfa }}</template>
+								<template #caption>{{ i18n.ts._sso.trustUpstreamMfaDescription }}</template>
+							</MkSwitch>
+
 							<MkInfo v-if="provider.key">
 								{{ i18n.ts._sso.redirectUri }}: <code>{{ redirectUri(provider.key) }}</code>
 							</MkInfo>

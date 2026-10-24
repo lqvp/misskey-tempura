@@ -4667,3 +4667,5 @@ _sso:
   missingClientConfig: "有効なプロバイダーには Client ID と Client Secret が必要です"
   missingIssuerUrl: "OIDCプロバイダーには Issuer URL が必要です"
   duplicateProviderKey: "プロバイダーキーが重複しています"
+  trustUpstreamMfa: "IdPのMFAを信頼する"
+  trustUpstreamMfaDescription: "有効にすると、このプロバイダーでのSSOログイン時にMisskey側の追加認証 (TOTP / パスキー) をスキップします。IdP側でMFAが強制されている場合のみ有効にしてください。"
