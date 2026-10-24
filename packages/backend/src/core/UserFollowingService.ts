@@ -5,7 +5,7 @@
 
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
-import { Brackets, In, IsNull } from 'typeorm';
+import { Brackets, EntityNotFoundError, In, IsNull } from 'typeorm';
 import type { MiLocalUser, MiPartialLocalUser, MiPartialRemoteUser, MiRemoteUser, MiUser } from '@/models/User.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { QueueService } from '@/core/QueueService.js';
@@ -769,14 +769,26 @@ export class UserFollowingService implements OnModuleInit {
 		});
 
 		for (const request of requests) {
-			const follower = await this.usersRepository.findOneByOrFail({ id: request.followerId });
-			// userをLocal型として扱うため、必要なプロパティのみを抽出
-			const localUser = {
-				id: user.id,
-				host: user.host,
-				uri: user.uri,
-			} as Local;
-			this.rejectFollowRequest(localUser, follower as Both);
+			try {
+				const follower = await this.usersRepository.findOneByOrFail({ id: request.followerId });
+				// userをLocal型として扱うため、必要なプロパティのみを抽出
+				const localUser = {
+					id: user.id,
+					host: user.host,
+					uri: user.uri,
+				} as Local;
+				await this.rejectFollowRequest(localUser, follower as Both);
+			} catch (err) {
+				// 処理中に取り消されたリクエストや削除されたフォロワーはスキップする。
+				// (鍵解除の i/update を失敗させないため。acceptAllFollowRequests と同じ方針)
+				if (err instanceof IdentifiableError && err.id === '8884c2dd-5795-4ac9-b27e-6a01d38190f9') {
+					continue;
+				}
+				if (err instanceof EntityNotFoundError) {
+					continue;
+				}
+				throw err;
+			}
 		}
 	}
 
