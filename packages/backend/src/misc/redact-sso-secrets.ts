@@ -10,12 +10,10 @@ import type { MiMeta } from '@/models/_.js';
  * 値は管理者 API (admin/show-moderation-logs) から読めてしまうため残さず、設定の有無だけ hasClientSecret で残す。
  * 保存する設定そのものは変更しない(元のオブジェクトは書き換えない)
  */
-export function redactMetaForModerationLog<T extends Pick<MiMeta, 'ssoProviders'>>(meta: T): Record<string, unknown> & { ssoProviders: Record<string, unknown>[] } {
-	return {
-		...meta,
-		ssoProviders: (meta.ssoProviders ?? []).map(provider => {
-			const { clientSecret, ...rest } = provider;
-			return { ...rest, hasClientSecret: clientSecret != null && clientSecret !== '' };
-		}),
-	};
+export function redactMetaForModerationLog(meta: Pick<MiMeta, 'ssoProviders'>): Record<string, unknown> & { ssoProviders: Record<string, unknown>[] } {
+	const ssoProviders: Record<string, unknown>[] = (meta.ssoProviders ?? []).map(provider => {
+		const { clientSecret, ...rest } = provider;
+		return { ...rest, hasClientSecret: clientSecret != null && clientSecret !== '' };
+	});
+	return { ...meta, ssoProviders };
 }
