@@ -225,6 +225,10 @@ export class ApiServerService {
 			const { code, state } = request.query;
 			const webCallbackUrl = `${this.config.url}/sso/callback`;
 
+			// 成否にかかわらず束縛Cookieは必ず削除する
+			const binding = this.getSsoBindingCookie(request);
+			this.clearSsoBindingCookie(reply);
+
 			if (request.query.error) {
 				reply.redirect(`${webCallbackUrl}?sso_error=PROVIDER_ERROR`);
 				return;
@@ -234,8 +238,6 @@ export class ApiServerService {
 				return;
 			}
 			if (!await this.limitSsoRequest(request, reply, 'sso-callback')) return;
-			const binding = this.getSsoBindingCookie(request);
-			this.clearSsoBindingCookie(reply);
 			try {
 				const result = await this.ssoService.handleCallback(providerKey, code, state, binding);
 				if (result.type === 'login') {

@@ -38959,6 +38959,7 @@ export interface operations {
                 content: {
                     'application/json': {
                         authorizationUrl: string;
+                        binding: string;
                     };
                 };
             };

@@ -31,6 +31,10 @@ export const meta = {
 				type: 'string',
 				optional: false, nullable: false,
 			},
+			binding: {
+				type: 'string',
+				optional: false, nullable: false,
+			},
 		},
 	},
 } as const;
@@ -50,8 +54,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			try {
-				const authorizationUrl = await this.ssoService.linkAccount(me.id, ps.provider);
-				return { authorizationUrl };
+				return await this.ssoService.linkAccount(me.id, ps.provider);
 			} catch (err) {
 				if (err instanceof SsoError) {
 					throw new ApiError(meta.errors.providerNotFound);

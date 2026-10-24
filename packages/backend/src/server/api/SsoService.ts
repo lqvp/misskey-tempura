@@ -118,21 +118,18 @@ export class SsoService {
 
 	/**
 	 * 認可URLを生成し、検証用の状態を Redis に保存する。
-	 * login の場合はブラウザ束縛用のランダム値も返す (呼び出し側がHttpOnly Cookieに設定する)。
+	 * ブラウザ束縛用のランダム値も返す (login: 呼び出し側がHttpOnly Cookieに設定、link: フロントエンドがCookieに設定)。
 	 */
 	@bindThis
-	public async initiate(type: 'login' | 'link', providerKey: string, userId?: string): Promise<{ authorizationUrl: string; binding: string | null }> {
+	public async initiate(type: 'login' | 'link', providerKey: string, userId?: string): Promise<{ authorizationUrl: string; binding: string }> {
 		const provider = await this.getProviderConfig(providerKey);
 		const redirectUri = this.getRedirectUri(provider.key);
 		const state = randomState();
 		const ssoState: SsoState = { provider: provider.key, type, userId, createdAt: Date.now() };
 
-		// ログインCSRF対策: 開始したブラウザだけが持つ値のハッシュを state に紐付ける
-		let binding: string | null = null;
-		if (type === 'login') {
-			binding = randomState();
-			ssoState.bindingHash = createHash('sha256').update(binding).digest('hex');
-		}
+		// CSRF対策: 開始したブラウザだけが持つ値のハッシュを state に紐付ける (login/link 共通)
+		const binding = randomState();
+		ssoState.bindingHash = createHash('sha256').update(binding).digest('hex');
 
 		let authorizationUrl: string;
 
@@ -348,11 +345,10 @@ export class SsoService {
 		return sub;
 	}
 
-	/** 連携用の認可URLを発行する (要ログイン) */
+	/** 連携用の認可URLを発行する (要ログイン)。binding はフロントエンドがブラウザのCookieに設定する */
 	@bindThis
-	public async linkAccount(userId: string, providerKey: string): Promise<string> {
-		const { authorizationUrl } = await this.initiate('link', providerKey, userId);
-		return authorizationUrl;
+	public async linkAccount(userId: string, providerKey: string): Promise<{ authorizationUrl: string; binding: string }> {
+		return this.initiate('link', providerKey, userId);
 	}
 
 	@bindThis
