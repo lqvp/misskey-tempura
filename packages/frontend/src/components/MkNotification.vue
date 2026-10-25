@@ -155,7 +155,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<Mfm :text="i18n.tsx._notification.createTokenDescription({ text: i18n.ts.manageAccessTokens })"/>
 			</MkA>
 			<MkA v-else-if="notification.type === 'cleanupDanglingFollowsCompleted'" :class="$style.text" to="/settings/other">
-				<Mfm :text="i18n.tsx._notification.cleanupDanglingFollowsCompletedDescription({ count: notification.count })"/>
+				<Mfm v-if="notification.count > 0" :text="i18n.tsx._notification.cleanupDanglingFollowsCompletedDescription({ count: notification.count })"/>
+				<span v-else>{{ i18n.ts._notification.cleanupDanglingFollowsCompletedDescriptionEmpty }}</span>
 			</MkA>
 			<div v-else-if="notification.type === 'llmModerationQueue'" :class="[$style.text, $style.textWithLink]">
 				<span>{{ i18n.ts._notification.llmModerationQueueDescription }}</span>

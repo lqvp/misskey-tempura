@@ -294,7 +294,9 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 
 				case 'cleanupDanglingFollowsCompleted':
 					return [i18n.ts._notification.cleanupDanglingFollowsCompleted, {
-						body: i18n.tsx._notification.cleanupDanglingFollowsCompletedDescription({ count: data.body.count }),
+						body: data.body.count > 0
+							? i18n.tsx._notification.cleanupDanglingFollowsCompletedDescription({ count: data.body.count })
+							: i18n.ts._notification.cleanupDanglingFollowsCompletedDescriptionEmpty,
 						badge: iconUrl('bell'),
 						data,
 					}];

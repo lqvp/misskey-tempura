@@ -12003,6 +12003,11 @@ export interface Locale extends ILocale {
          * これにより、フォロー数やフォロワー数が変わるかもしれません。
          */
         "cleanupDanglingFollowsCompletedDescription": ParameterizedString<"count">;
+        /**
+         * 削除済みアカウントとのフォロー関係はありませんでした。
+         * フォロー数やフォロワー数に変化はありません。
+         */
+        "cleanupDanglingFollowsCompletedDescriptionEmpty": string;
         "_types": {
             /**
              * すべて
