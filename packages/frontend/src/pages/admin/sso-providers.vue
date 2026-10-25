@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</div>
 
 				<div class="_gaps_s">
-					<MkFolder v-for="(provider, index) in providers" :key="index">
+					<MkFolder v-for="(provider, index) in providers" :key="provider.uid">
 						<template #icon><i class="ti" :class="providerIcon(provider.type)"></i></template>
 						<template #label>{{ provider.buttonLabel || provider.key || '(new)' }}</template>
 						<template v-if="provider.enabled" #suffix>Enabled</template>
@@ -102,6 +102,8 @@ import { instance, fetchInstance } from '@/instance.js';
 import { definePage } from '@/page.js';
 
 interface SsoProviderEdit {
+	/** 画面内だけの行の識別子 (key は編集できるため v-for の :key に使えない。サーバーには送らない) */
+	uid: number;
 	key: string;
 	type: 'github' | 'discord' | 'google' | 'oidc';
 	clientId: string;
@@ -114,6 +116,7 @@ interface SsoProviderEdit {
 	trustUpstreamMfa: boolean;
 }
 
+let uidSeq = 0;
 const providers = ref<SsoProviderEdit[]>([]);
 const originalProviders = ref<SsoProviderEdit[]>([]);
 // 読み込みに失敗した空の一覧を保存して、既存のプロバイダー設定を消さないための印
@@ -145,6 +148,7 @@ async function loadProviders() {
 	try {
 		const meta = await misskeyApi('admin/meta');
 		providers.value = (meta.ssoProviders ?? []).map(p => ({
+			uid: ++uidSeq,
 			key: p.key,
 			type: p.type as SsoProviderEdit['type'],
 			clientId: p.clientId,
@@ -235,6 +239,7 @@ async function saveProviders(confirmedClientIdUnlink = false) {
 
 function addProvider() {
 	providers.value.push({
+		uid: ++uidSeq,
 		key: '',
 		type: 'oidc',
 		clientId: '',
