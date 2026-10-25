@@ -257,6 +257,27 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		assert.strictEqual((await row())[0].clientSecret, 'secret-new');
 	});
 
+	test('コールバックの失敗時は、ログイン用 (HttpOnly) と連携用の束縛 Cookie をどちらも属性つきで削除する', async () => {
+		await sleep(1100);
+		const res = await fetch(`http://127.0.0.1:${port}/api/sso/callback/${providerKey}?code=x&state=unknown-state`, {
+			redirect: 'manual',
+			headers: { cookie: 'sso_binding=stale-login; sso_link_binding=stale-link' },
+		});
+		assert.ok(res.status >= 300 && res.status < 400, `リダイレクトされるべき: ${res.status}`);
+		assert.ok(res.headers.get('location')?.includes('sso_error=INVALID_STATE'));
+
+		const cookies = res.headers.getSetCookie();
+		const login = cookies.find(c => c.startsWith('sso_binding='));
+		const link = cookies.find(c => c.startsWith('sso_link_binding='));
+		assert.ok(login != null && link != null, `両方の Cookie を削除するべき: ${JSON.stringify(cookies)}`);
+		for (const c of [login, link]) {
+			assert.ok(c.includes('Max-Age=0') && c.includes('Path=/api/sso') && c.includes('SameSite=Lax'), c);
+		}
+		// ログイン用はスクリプトから読み書きできない HttpOnly、連携用はフロントエンドが設定するので HttpOnly ではない
+		assert.ok(login.includes('HttpOnly'), login);
+		assert.ok(!link.includes('HttpOnly'), link);
+	});
+
 	test('連携の開始には再認証が必要で、パスワード不一致・2FAトークンなしは拒否する', async () => {
 		const noPassword = await api('sso/link', { provider: providerKey } as any, plain);
 		assert.strictEqual(noPassword.status, 400);
