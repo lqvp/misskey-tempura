@@ -504,7 +504,6 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		const key = 'e2eunlink';
 		const victim = await signup({ username: 'ssoex_unlink' });
 		const bystander = await signup({ username: 'ssoex_unlink_other' });
-		await db.getRepository(MiUserSsoLink).insert({ id: crypto.randomBytes(8).toString('hex'), userId: victim.id, provider: key, providerIssuer: 'oidc:https://idp.invalid', providerUserId: 'sub-unlink', createdAt: new Date() });
 		const getRevision = async () => (await api('admin/meta', {}, admin)).body.ssoProvidersRevision as string;
 		const entry = (over: Record<string, unknown>) => ({ key, type: 'oidc', clientId: 'cid-a', clientSecret: 'secret-a', issuerUrl: 'https://idp.invalid', enabled: true, trustUpstreamMfa: false, ...over } as any);
 		const save = async (providers: any[]) => await api('admin/update-meta', { ssoProvidersRevision: await getRevision(), ssoProviders: providers }, admin);
@@ -512,7 +511,9 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		const notified = async (user: { id: string }, token: misskey.entities.SignupResponse) => ((await api('i/notifications', {}, token)).body as any[]).filter(n => n.type === 'app' && String(n.body).includes(key));
 
 		// 最初の登録: 連携はあるが、clientId を変えるわけではないので通る
+		// (連携のないプロバイダーを先に登録し、そのあとで連携を作る。連携の残る key の新規登録は別の規則で拒否される)
 		assert.strictEqual((await save([entry({})])).status, 204);
+		await db.getRepository(MiUserSsoLink).insert({ id: crypto.randomBytes(8).toString('hex'), userId: victim.id, provider: key, providerIssuer: 'oidc:https://idp.invalid', providerUserId: 'sub-unlink', createdAt: new Date() });
 		assert.strictEqual(await links(), 1);
 
 		// clientId を変えるが確認のフラグがない: 409、連携は残り、clientId も変わらず、通知も来ない

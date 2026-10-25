@@ -36,6 +36,7 @@ interface LinkRow { id: string; userId: string; provider: string; providerIssuer
 
 class MemoryLinks {
 	public rows: LinkRow[] = [];
+	public manager: any;
 	public async findOneBy(where: Partial<LinkRow>) {
 		return this.rows.find(r => Object.entries(where).every(([k, v]) => (r as any)[k] === v)) ?? null;
 	}
@@ -110,6 +111,8 @@ describe('SsoService コールバック全体 (実 openid-client + ローカル 
 		const redis = new MemoryRedis();
 		let seq = 0;
 		const provider = { key: 'idp', type: 'oidc' as const, clientId: 'cid', clientSecret: 'csecret', issuerUrl: issuer, enabled: true, trustUpstreamMfa: false };
+		// 連携の作成は、メタ行を共有ロックして設定を確認するトランザクション内で行われる。ここでは同じ設定を返し、insert を行に積む
+		links.manager = { transaction: async (fn: (m: any) => Promise<void>) => await fn({ find: async () => [{ ssoProviders: [provider] }], insert: async (_entity: unknown, row: LinkRow) => { links.rows.push(row); } }) };
 		const service = new SsoService(
 			{ url: 'https://misskey.test', userAgent: 'test-agent' } as any,
 			links as any,

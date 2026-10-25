@@ -210,7 +210,7 @@ describe('SsoService 連携の作成と clientId 変更の競合', () => {
 		const manager = { find: vi.fn(async () => [{ ssoProviders: latestProviders }]), insert };
 		const repo = { findOneBy: vi.fn(async () => null), manager: { transaction: async (fn: (m: any) => Promise<void>) => await fn(manager) } };
 		const metaService = { fetch: vi.fn(async () => ({ ssoProviders: [provider] })) };
-		const service = new SsoService({} as any, repo as any, redis as any, {} as any, {} as any, {} as any, { gen: () => 'id1' } as any, metaService as any, {} as any, mockDeep<LoggerService>());
+		const service = new SsoService({} as any, repo as any, redis as any, {} as any, {} as any, {} as any, { gen: () => 'id1' } as any, metaService as any, {} as any, { getLogger: () => ({ info: () => {}, warn: () => {}, error: () => {}, debug: () => {} }) } as unknown as LoggerService);
 		vi.spyOn(service as any, 'fetchSubject').mockResolvedValue('sub-1');
 		return { redis, service, insert };
 	}
