@@ -648,7 +648,13 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		}
 		assert.strictEqual(mine.length, 1);
 		assert.ok(String(mine[0].body).includes('forcea') && !String(mine[0].body).includes('forceb'));
-		assert.strictEqual((await notified(other)).length, 0);
+		// other に届くのは、権限ありのトークンで解除した分 (1通) だけで、victim の解除では増えない
+		let others: any[] = [];
+		for (let i = 0; i < 20 && others.length === 0; i++) {
+			others = await notified(other);
+			if (others.length === 0) await sleep(500);
+		}
+		assert.strictEqual(others.length, 1);
 		assert.strictEqual((await notified(outsider)).length, 0);
 
 		// モデレーションログに、対象とプロバイダーが残る
