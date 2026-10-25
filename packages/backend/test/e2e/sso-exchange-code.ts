@@ -12,7 +12,7 @@ import { Redis } from 'ioredis';
 import * as OTPAuth from 'otpauth';
 import { afterAll, beforeAll, describe, test } from 'vitest';
 import { loadConfig } from '@/config.js';
-import { MiUserSsoLink, MiSignin, MiUser, MiUserProfile, MiUserLoginContext } from '@/models/_.js';
+import { MiUserSsoLink, MiSignin, MiUser, MiUserProfile, MiUserLoginContext, MiUserSecurityKey } from '@/models/_.js';
 import { api, createAppToken, initTestDb, port, sendEnvUpdateRequest, signup } from '../utils.js';
 import type { DataSource } from 'typeorm';
 import type * as misskey from 'misskey-js';
@@ -421,6 +421,43 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 			await sink.close();
 		}
 	}, 1000 * 60);
+
+	test('セキュリティキーを登録した 2FA 有効なアカウントはパスキー確認を求められ、不正な応答は失敗として数えて Cookie を残す', async () => {
+		const user = await signup({ username: 'ssoex_passkey' });
+		await linkUser(user.id, 'sub-passkey');
+		const reg = await api('i/2fa/register', { password: 'test' }, user);
+		assert.strictEqual(reg.status, 200);
+		assert.strictEqual((await api('i/2fa/done', { token: otp(reg.body.secret) }, user)).status, 200);
+		// 本物の認証器の応答は作れないので、登録済みのキーだけを DB に用意する (検証に成功する経路はここでは扱わない)
+		await db.getRepository(MiUserSecurityKey).insert({ id: 'ssoex-passkey-credential', userId: user.id, name: 'e2e', publicKey: 'AAAA', counter: 0, lastUsed: new Date(), credentialDeviceType: 'singleDevice', credentialBackedUp: false, transports: [] });
+
+		const binding = 'binding-passkey';
+		const code = await issueLoginCode(user.id, 'sub-passkey', binding);
+
+		// TOTP ではなくパスキー確認を求め、チャレンジを返す。ログインコードは残り、Cookie は延長される
+		const first = await exchange({ code }, binding);
+		assert.strictEqual(first.status, 200);
+		assert.strictEqual(first.body.finished, false);
+		assert.strictEqual(first.body.next, 'passkey');
+		assert.strictEqual(typeof first.body.authRequest?.challenge, 'string');
+		assert.ok(first.setCookie?.includes('Max-Age=600'), `Cookie は延長されるべき: ${first.setCookie}`);
+		assert.strictEqual(await codeExists(code), true);
+
+		// 登録されていないキーの応答: 403、失敗が数えられサインイン履歴に残り、Cookie は削除されず、コードも残る
+		const bogus = { id: 'unknown-credential', rawId: 'unknown-credential', type: 'public-key', clientExtensionResults: {}, response: { clientDataJSON: 'e30', authenticatorData: 'AAAA', signature: 'AAAA' } };
+		const wrong = await exchange({ code, credential: bogus }, binding);
+		assert.strictEqual(wrong.status, 403);
+		assert.strictEqual(wrong.body.error.code, 'TWO_FACTOR_AUTH_FAILED');
+		assert.ok(wrong.setCookie?.includes('Max-Age=600') && !wrong.setCookie.includes('Max-Age=0'), `失敗でも Cookie は削除されない: ${wrong.setCookie}`);
+		assert.strictEqual(await codeExists(code), true);
+		assert.strictEqual(await redis.get(`sso:loginCodeAttempts:${code}`), '1');
+		assert.ok(await db.getRepository(MiSignin).countBy({ userId: user.id, success: false }) >= 1, '失敗がサインイン履歴に残るべき');
+
+		// パスキー確認を出さずにログインコードだけで完了させることはできない
+		const again = await exchange({ code }, binding);
+		assert.strictEqual(again.body.finished, false);
+		assert.strictEqual(again.body.next, 'passkey');
+	});
 
 	test('連携済みのプロバイダーは、発行者・種類の変更と、削除後の同じ key での再登録を 409 で拒否する', async () => {
 		const getRevision = async () => (await api('admin/meta', {}, admin)).body.ssoProvidersRevision as string;

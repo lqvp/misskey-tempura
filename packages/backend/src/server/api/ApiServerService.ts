@@ -87,7 +87,7 @@ export class ApiServerService {
 	}
 
 	/** SSO の生ルートは endpoint-meta のレート制限を通らないため、明示的に制限する */
-	private async limitSsoRequest(request: FastifyRequest, reply: FastifyReply, key: string, opts?: { skipMinInterval?: boolean }): Promise<boolean> {
+	private async limitSsoRequest(request: FastifyRequest, reply: FastifyReply, key: string, opts?: { skipMinInterval?: boolean; beforeReject?: () => void }): Promise<boolean> {
 		if (!this.config.enableIpRateLimit) return true;
 		// 追加認証の送信 (TOTP/パスキー) は直前のチャレンジ取得に即座に続くため minInterval を適用しない。
 		// 長期上限 (30回/10分/IP) は引き続き全リクエストに適用され、ブルートフォース耐性は維持される。
@@ -96,6 +96,8 @@ export class ApiServerService {
 			getIpHash(request.ip),
 		);
 		if (rateLimit != null) {
+			// 送信した後に付けたヘッダーは応答に乗らないので、拒否する側で先に付ける
+			opts?.beforeReject?.();
 			reply.code(429).send({ error: { message: 'Rate limit exceeded. Try again later.', code: 'RATE_LIMIT_EXCEEDED', id: '7d0e1f2a-3b4c-4d5e-8f9a-0b1c2d3e4f5a' } });
 			return false;
 		}
@@ -252,8 +254,7 @@ export class ApiServerService {
 				reply.code(400).send({ error: { message: 'Missing code or state parameter', code: 'INVALID_REQUEST', id: '5b8c3e4a-9d0f-4a7b-1c2d-3e4f5a6b7c8d' } });
 				return;
 			}
-			if (!await this.limitSsoRequest(request, reply, 'sso-callback')) {
-				this.clearSsoBindingCookie(reply);
+			if (!await this.limitSsoRequest(request, reply, 'sso-callback', { beforeReject: () => this.clearSsoBindingCookie(reply) })) {
 				return;
 			}
 			try {
