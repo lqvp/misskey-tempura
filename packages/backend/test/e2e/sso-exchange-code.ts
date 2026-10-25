@@ -603,6 +603,13 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		assert.strictEqual((await api('admin/sso-user-links', { userId: victim.id }, outsider)).status, 403);
 		assert.strictEqual(await count(victim.id, 'forcea'), 1);
 
+		// 専用の権限を持たない管理者のトークンは拒否され、権限があるトークンだけが通る (権限の境界)
+		const wrongScope = await createAppToken(admin, ['write:admin:suspend-user']);
+		assert.strictEqual((await api('admin/sso-unlink-user', { userId: victim.id, providers: ['forcea'] }, { token: wrongScope } as any)).status, 403);
+		const wrongScopeList = await createAppToken(admin, ['write:admin:sso-unlink-user']);
+		assert.strictEqual((await api('admin/sso-user-links', { userId: victim.id }, { token: wrongScopeList } as any)).status, 403);
+		assert.strictEqual(await count(victim.id, 'forcea'), 1);
+
 		// 一覧には連携したプロバイダーだけが出る (外部アカウントの識別子は含まない)
 		const list = await api('admin/sso-user-links', { userId: victim.id }, admin);
 		assert.strictEqual(list.status, 200);
@@ -616,6 +623,14 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		assert.strictEqual((none.body as any).unlinked, 0);
 		assert.strictEqual(await count(victim.id, 'forcea'), 1);
 		assert.strictEqual(await count(victim.id, 'forceb'), 1);
+
+		// 解除の専用権限を持つ管理者のトークンなら、選んだ連携を解除できる (別のユーザーの連携で確認する)
+		const scoped = await createAppToken(admin, ['write:admin:sso-unlink-user']);
+		const viaToken = await api('admin/sso-unlink-user', { userId: other.id, providers: ['forcea'] }, { token: scoped } as any);
+		assert.strictEqual(viaToken.status, 200);
+		assert.strictEqual((viaToken.body as any).unlinked, 1);
+		assert.strictEqual(await count(other.id, 'forcea'), 0);
+		await link(other.id, 'forcea');
 
 		// 選んだ forcea だけを解除。同じプロバイダーでも他のユーザーの連携と、別のプロバイダーの連携は残る
 		const res = await api('admin/sso-unlink-user', { userId: victim.id, providers: ['forcea'] }, admin);
