@@ -5,6 +5,7 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import type { EntityManager } from 'typeorm';
 import * as Redis from 'ioredis';
 import { DI } from '@/di-symbols.js';
 import { MiMeta } from '@/models/Meta.js';
@@ -104,9 +105,10 @@ export class MetaService implements OnApplicationShutdown {
 		options?: {
 			/**
 			 * 指定すると、メタの行をロックした状態で現在の ssoProviders を読み、返した値を保存する (読み取りから書き込みまでが他の保存と交差しない)。
+			 * 第 2 引数は同じトランザクションのマネージャーで、連携の件数確認や解除をメタの保存と一緒に行える。
 			 * 投げた例外は保存を中止し、そのまま呼び出し元へ伝わる。
 			 */
-			resolveSsoProviders?: (current: MiMeta['ssoProviders']) => Promise<MiMeta['ssoProviders']>;
+			resolveSsoProviders?: (current: MiMeta['ssoProviders'], manager: EntityManager) => Promise<MiMeta['ssoProviders']>;
 		},
 	): Promise<MiMeta> {
 		let before: MiMeta | undefined;
@@ -122,7 +124,7 @@ export class MetaService implements OnApplicationShutdown {
 			before = metas[0];
 
 			const writeData = options?.resolveSsoProviders
-				? { ...data, ssoProviders: await options.resolveSsoProviders(before?.ssoProviders ?? []) }
+				? { ...data, ssoProviders: await options.resolveSsoProviders(before?.ssoProviders ?? [], transactionalEntityManager) }
 				: data;
 
 			if (before) {

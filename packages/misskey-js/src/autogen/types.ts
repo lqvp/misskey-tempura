@@ -15517,6 +15517,7 @@ export interface operations {
                         buttonLabel?: string | null;
                         enabled: boolean;
                         trustUpstreamMfa?: boolean;
+                        unlinkExistingOnClientIdChange?: boolean;
                     }[];
                 };
             };

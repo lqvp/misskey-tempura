@@ -499,4 +499,47 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		assert.strictEqual((reuse.body as any).error.code, 'SSO_PROVIDER_LINKED');
 		assert.deepStrictEqual(await getList(), []);
 	});
+
+	test('clientId を変えると、確認なしでは 409 で止まり、確認すると連携が解除されて対象ユーザーに通知される', async () => {
+		const key = 'e2eunlink';
+		const victim = await signup({ username: 'ssoex_unlink' });
+		const bystander = await signup({ username: 'ssoex_unlink_other' });
+		await db.getRepository(MiUserSsoLink).insert({ id: crypto.randomBytes(8).toString('hex'), userId: victim.id, provider: key, providerIssuer: 'oidc:https://idp.invalid', providerUserId: 'sub-unlink', createdAt: new Date() });
+		const getRevision = async () => (await api('admin/meta', {}, admin)).body.ssoProvidersRevision as string;
+		const entry = (over: Record<string, unknown>) => ({ key, type: 'oidc', clientId: 'cid-a', clientSecret: 'secret-a', issuerUrl: 'https://idp.invalid', enabled: true, trustUpstreamMfa: false, ...over } as any);
+		const save = async (providers: any[]) => await api('admin/update-meta', { ssoProvidersRevision: await getRevision(), ssoProviders: providers }, admin);
+		const links = async () => await db.getRepository(MiUserSsoLink).countBy({ provider: key });
+		const notified = async (user: { id: string }, token: misskey.entities.SignupResponse) => ((await api('i/notifications', {}, token)).body as any[]).filter(n => n.type === 'app' && String(n.body).includes(key));
+
+		// 最初の登録: 連携はあるが、clientId を変えるわけではないので通る
+		assert.strictEqual((await save([entry({})])).status, 204);
+		assert.strictEqual(await links(), 1);
+
+		// clientId を変えるが確認のフラグがない: 409、連携は残り、clientId も変わらず、通知も来ない
+		const refused = await save([entry({ clientId: 'cid-b', clientSecret: '' })]);
+		assert.strictEqual(refused.status, 409);
+		assert.strictEqual((refused.body as any).error.code, 'SSO_CLIENT_ID_CHANGE_NEEDS_UNLINK');
+		assert.strictEqual(await links(), 1);
+		assert.strictEqual(((await api('admin/meta', {}, admin)).body.ssoProviders as any[]).find(p => p.key === key).clientId, 'cid-a');
+		assert.strictEqual((await notified(victim, victim)).length, 0);
+
+		// clientId を変えない保存にはフラグがあっても何も起きない
+		assert.strictEqual((await save([entry({ clientSecret: '', unlinkExistingOnClientIdChange: true })])).status, 204);
+		assert.strictEqual(await links(), 1);
+
+		// 確認のフラグつき: 保存と解除が一緒に行われ、解除された本人にだけ通知が届く
+		const ok = await save([entry({ clientId: 'cid-b', clientSecret: '', unlinkExistingOnClientIdChange: true })]);
+		assert.strictEqual(ok.status, 204);
+		assert.strictEqual(await links(), 0);
+		assert.strictEqual(((await api('admin/meta', {}, admin)).body.ssoProviders as any[]).find(p => p.key === key).clientId, 'cid-b');
+		let mine: any[] = [];
+		for (let i = 0; i < 20 && mine.length === 0; i++) {
+			mine = await notified(victim, victim);
+			if (mine.length === 0) await sleep(500);
+		}
+		assert.strictEqual(mine.length, 1);
+		assert.strictEqual((await notified(bystander, bystander)).length, 0);
+		// 通知に clientId や secret は含まれない
+		assert.ok(!/cid-|secret-/.test(String(mine[0].body)));
+	});
 });

@@ -12,9 +12,14 @@ import { assertValidOidcIssuerUrl } from '@/misc/sso-issuer-url.js';
 import { assignProviderRevisions, computeSsoProvidersRevision } from '@/misc/sso-providers-revision.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { SsoProviderConfig } from '@/models/Meta.js';
-import type { UserSsoLinkRepository } from '@/models/_.js';
+import { MiUserSsoLink } from '@/models/_.js';
+import type { EntityManager } from 'typeorm';
 import { MetaService } from '@/core/MetaService.js';
 import { QueueService } from '@/core/QueueService.js';
+import { NotificationService } from '@/core/NotificationService.js';
+import { EmailService } from '@/core/EmailService.js';
+import { notifySsoLinksRemoved } from '@/misc/sso-unlink-notify.js';
+import type { UserProfilesRepository } from '@/models/_.js';
 import { ApiLoggerService } from '../../ApiLoggerService.js';
 import { ApiError } from '../../error.js';
 
@@ -46,6 +51,12 @@ export const meta = {
 			message: 'Cannot change or reuse an SSO provider while users are linked to it.',
 			code: 'SSO_PROVIDER_LINKED',
 			id: '00a7dadb-21a8-4972-9dea-da3d0a3dccb8',
+			httpStatusCode: 409,
+		},
+		ssoClientIdChangeNeedsUnlink: {
+			message: 'Changing the client ID of an SSO provider with linked users removes those links. Confirm to continue.',
+			code: 'SSO_CLIENT_ID_CHANGE_NEEDS_UNLINK',
+			id: 'cf9d3038-aef7-4f38-8fc4-3a6ca743c56e',
 			httpStatusCode: 409,
 		},
 		ssoProvidersConflict: {
@@ -407,6 +418,8 @@ export const paramDef = {
 					enabled: { type: 'boolean' },
 					// IdP 側の MFA を信頼してローカル 2FA の追加認証をスキップするか (未指定時は false)
 					trustUpstreamMfa: { type: 'boolean' },
+					// 連携済みのユーザーがいるプロバイダーの clientId を変えるとき、その連携をすべて解除することへの明示的な確認 (保存はされない)
+					unlinkExistingOnClientIdChange: { type: 'boolean' },
 				},
 				required: ['key', 'type', 'enabled'],
 			},
@@ -421,8 +434,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		@Inject(DI.meta)
 		private serverSettings: MiMeta,
 
-		@Inject(DI.userSsoLinkRepository)
-		private userSsoLinkRepository: UserSsoLinkRepository,
+		@Inject(DI.userProfilesRepository)
+		private userProfilesRepository: UserProfilesRepository,
+
+		private notificationService: NotificationService,
+		private emailService: EmailService,
 
 		private metaService: MetaService,
 		private moderationLogService: ModerationLogService,
@@ -1385,7 +1401,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.contactFormCategories = ps.contactFormCategories;
 			}
 
-			let resolveSsoProviders: ((current: SsoProviderConfig[]) => Promise<SsoProviderConfig[]>) | undefined;
+			// 確認のうえ連携を解除したプロバイダーと、そのユーザー (保存の成功後に通知する)
+			const removedSsoLinks: { label: string; userIds: string[] }[] = [];
+			let resolveSsoProviders: ((current: SsoProviderConfig[], manager: EntityManager) => Promise<SsoProviderConfig[]>) | undefined;
 			if (ps.ssoProviders !== undefined) {
 				// key の重複は禁止 (リンクの紐付けキーになるため)
 				const providerKeys = ps.ssoProviders.map(p => p.key);
@@ -1411,7 +1429,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 				// ロックした行から読んだ現在の一覧に対して、版の照合・検証・保存内容の決定を行う (MetaService.update が同じトランザクションで保存する)
 				const requestedProviders = ps.ssoProviders;
-				resolveSsoProviders = async (currentProviders: SsoProviderConfig[]): Promise<SsoProviderConfig[]> => {
+				resolveSsoProviders = async (currentProviders: SsoProviderConfig[], manager: EntityManager): Promise<SsoProviderConfig[]> => {
 					// clientSecret が空文字なら既存の値を保持する
 					if (ps.ssoProvidersRevision !== computeSsoProvidersRevision(currentProviders)) {
 						throw new ApiError(meta.errors.ssoProvidersConflict);
@@ -1425,7 +1443,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						if (current == null) {
 							// 削除済みプロバイダーのキー再利用も拒否する。連携レコードは削除後も残るため、
 							// 別の発行者が同じ key で登録されると同じ sub で既存連携に一致してログインできてしまう
-							const linkCount = await this.userSsoLinkRepository.countBy({ provider: provider.key });
+							const linkCount = await manager.countBy(MiUserSsoLink, { provider: provider.key });
 							if (linkCount > 0) {
 								throw new ApiError(meta.errors.ssoProviderLinked);
 							}
@@ -1433,9 +1451,23 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						}
 						const nextIssuerUrl = provider.issuerUrl?.trim() || null;
 						if ((current.issuerUrl ?? null) !== nextIssuerUrl || current.type !== provider.type) {
-							const linkCount = await this.userSsoLinkRepository.countBy({ provider: provider.key });
+							const linkCount = await manager.countBy(MiUserSsoLink, { provider: provider.key });
 							if (linkCount > 0) {
 								throw new ApiError(meta.errors.ssoProviderLinked);
+							}
+						}
+						// clientId を変えると、IdP によっては同じ利用者でも別の sub が返り、既存の連携が使えなくなる。
+						// 連携済みのユーザーがいるときは、連携の解除への明示的な確認がない限り保存しない。
+						// 確認があれば、メタの保存と同じトランザクションで、そのプロバイダーの連携を解除する
+						if (current.clientId !== (provider.clientId ?? '').trim()) {
+							const linkCount = await manager.countBy(MiUserSsoLink, { provider: provider.key });
+							if (linkCount > 0) {
+								if (provider.unlinkExistingOnClientIdChange !== true) {
+									throw new ApiError(meta.errors.ssoClientIdChangeNeedsUnlink);
+								}
+								const links = await manager.find(MiUserSsoLink, { where: { provider: provider.key }, select: { userId: true } });
+								await manager.delete(MiUserSsoLink, { provider: provider.key });
+								removedSsoLinks.push({ label: provider.buttonLabel?.trim() || provider.key, userIds: links.map(l => l.userId) });
 							}
 						}
 					}
@@ -1472,6 +1504,16 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			await this.metaService.update(set, resolveSsoProviders ? { resolveSsoProviders } : undefined);
 
 			const after = await this.metaService.fetch(true);
+
+			// 連携を解除したユーザーへ通知する。保存が成功したあとに行い、通知の失敗で保存の成功を覆さない
+			for (const removed of removedSsoLinks) {
+				notifySsoLinksRemoved({
+					notificationService: this.notificationService,
+					emailService: this.emailService,
+					userProfilesRepository: this.userProfilesRepository,
+					onError: (userId, err) => this.apiLoggerService.logger.warn(`failed to notify SSO link removal to ${userId}: ${err}`),
+				}, removed.userIds, removed.label).catch(err => this.apiLoggerService.logger.warn(`failed to notify SSO link removal: ${err}`));
+			}
 
 			// clientSecret は監査ログに残さない(ログは別の管理者 API から読めるため)
 			this.moderationLogService.log(me, 'updateServerSettings', {

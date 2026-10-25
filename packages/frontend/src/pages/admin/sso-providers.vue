@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkButton primary :disabled="!loaded" @click="addProvider">
 						<i class="ti ti-plus"></i> {{ i18n.ts.add }}
 					</MkButton>
-					<MkButton :disabled="!loaded || !hasChanges" @click="saveProviders">
+					<MkButton :disabled="!loaded || !hasChanges" @click="saveProviders()">
 						<i class="ti ti-device-floppy"></i> {{ i18n.ts.save }}
 					</MkButton>
 					<MkButton @click="resetProviders">
@@ -164,7 +164,12 @@ async function loadProviders() {
 	}
 }
 
-async function saveProviders() {
+function clientIdChanged(p: SsoProviderEdit): boolean {
+	const original = originalProviders.value.find(o => o.key === p.key);
+	return original != null && original.clientId !== p.clientId.trim();
+}
+
+async function saveProviders(confirmedClientIdUnlink = false) {
 	if (!loaded.value) return;
 	for (const p of providers.value) {
 		if (!p.key || !/^[a-z0-9][a-z0-9_-]*$/.test(p.key)) {
@@ -198,6 +203,8 @@ async function saveProviders() {
 				buttonLabel: p.buttonLabel || null,
 				enabled: p.enabled,
 				trustUpstreamMfa: p.trustUpstreamMfa ?? false,
+				// 確認済みのときだけ、clientId を変えたプロバイダーの既存の連携の解除を許可する
+				...(confirmedClientIdUnlink && clientIdChanged(p) ? { unlinkExistingOnClientIdChange: true } : {}),
 			})),
 		});
 
@@ -210,6 +217,12 @@ async function saveProviders() {
 			// 他の管理者が先に変更した。保存は止まっている。未保存の編集は、ユーザーが選ぶまで捨てない
 			const { canceled } = await os.confirm({ type: 'warning', text: i18n.ts._sso.providersConflict });
 			if (!canceled) await loadProviders();
+			return;
+		}
+		if ((error as { code?: string } | null)?.code === 'SSO_CLIENT_ID_CHANGE_NEEDS_UNLINK' && !confirmedClientIdUnlink) {
+			// 連携済みのユーザーがいる。自動では解除せず、影響を説明して明示的に確認してから、同じ内容でもう一度保存する
+			const { canceled } = await os.confirm({ type: 'warning', text: i18n.ts._sso.clientIdChangeUnlinkConfirm });
+			if (!canceled) await saveProviders(true);
 			return;
 		}
 		if ((error as { code?: string } | null)?.code === 'SSO_PROVIDER_LINKED') {

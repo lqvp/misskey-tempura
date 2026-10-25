@@ -17316,5 +17316,9 @@ export interface Locale extends ILocale {
          * 有効にすると、このプロバイダーでのSSOログイン時にMisskey側の追加認証 (TOTP / パスキー) をスキップします。IdP側でMFAが強制されている場合のみ有効にしてください。
          */
         "trustUpstreamMfaDescription": string;
+        /**
+         * このプロバイダーの Client ID を変更すると、連携済みのユーザーのSSO連携がすべて解除されます。IdP によっては、Client ID を変えると同じ利用者でも別の識別子が返り、既存の連携が使えなくなるためです。解除されたユーザーには通知が届き、設定のセキュリティから連携し直す必要があります (パスワードなど他のログイン方法は使えます)。解除は保存と同時に行われ、元に戻せません。続けますか？
+         */
+        "clientIdChangeUnlinkConfirm": string;
     };
 }
