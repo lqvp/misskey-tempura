@@ -167,7 +167,7 @@ async function linkSso(providerKey: string) {
 		window.location.href = res.authorizationUrl;
 	} catch (err) {
 		ssoBusy.value = false;
-		os.alert({ type: 'error', text: i18n.ts.somethingHappened });
+		os.alert({ type: 'error', text: (err as { code?: string } | null)?.code === 'INCORRECT_PASSWORD' ? i18n.ts.incorrectPassword : i18n.ts.somethingHappened });
 	}
 }
 
@@ -194,7 +194,7 @@ async function unlinkSso(providerKey: string) {
 		await reloadSsoStatus();
 		os.success();
 	} catch (err) {
-		os.alert({ type: 'error', text: i18n.ts.somethingHappened });
+		os.alert({ type: 'error', text: (err as { code?: string } | null)?.code === 'INCORRECT_PASSWORD' ? i18n.ts.incorrectPassword : i18n.ts.somethingHappened });
 	} finally {
 		ssoBusy.value = false;
 	}

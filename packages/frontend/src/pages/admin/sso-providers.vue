@@ -225,7 +225,7 @@ async function saveProviders(confirmedClientIdUnlink = false) {
 		}
 		if ((error as { code?: string } | null)?.code === 'SSO_CLIENT_ID_CHANGE_NEEDS_UNLINK' && !confirmedClientIdUnlink) {
 			// 連携済みのユーザーがいる。自動では解除せず、影響を説明して明示的に確認してから、同じ内容でもう一度保存する
-			const { canceled } = await os.confirm({ type: 'warning', text: i18n.ts._sso.clientIdChangeUnlinkConfirm });
+			const { canceled } = await os.confirm({ type: 'warning', text: `${i18n.ts._sso.clientIdChangeUnlinkConfirm}\n\n${providers.value.filter(clientIdChanged).map(p => `・${p.key}`).join('\n')}` });
 			if (!canceled) await saveProviders(true);
 			return;
 		}
