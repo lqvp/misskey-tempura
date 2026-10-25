@@ -17,6 +17,7 @@ import { bindThis } from '@/decorators.js';
 import { SearchService } from '@/core/SearchService.js';
 import { PageService } from '@/core/PageService.js';
 import { UserFollowingService } from '@/core/UserFollowingService.js';
+import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import type * as Bull from 'bullmq';
 import type { DbUserDeleteJobData } from '../types.js';
@@ -90,15 +91,25 @@ export class DeleteAccountProcessorService {
 				const followees = await this.usersRepository.findBy({ id: In(followeeIds) });
 				const followeesMap = new Map(followees.map(u => [u.id, u]));
 
+				const infraErrors: unknown[] = [];
 				await Promise.all(relations.map(f => {
 					const followee = followeesMap.get(f.followeeId);
 					if (followee) {
 						return this.userFollowingService.unfollow(user, followee, true).catch(error => {
-							this.logger.warn(`Failed to unfollow ${f.followeeId}: ${error}`);
+							// ポリシー等の業務エラーはスキップして継続し、インフラ起因の失敗はジョブを失敗させてリトライで再処理する
+							if (error instanceof IdentifiableError) {
+								this.logger.warn(`Skipped unfollowing ${f.followeeId}: ${error.id} ${error.message}`);
+							} else {
+								this.logger.warn(`Failed to unfollow ${f.followeeId}: ${error}`);
+								infraErrors.push(error);
+							}
 						});
 					}
 					return Promise.resolve();
 				}));
+				if (infraErrors.length > 0) {
+					throw new Error(`Failed to unfollow ${infraErrors.length} relation(s); failing the job so it will be retried.`);
+				}
 			}
 			this.logger.succ('All of following deleted');
 		}
@@ -130,15 +141,25 @@ export class DeleteAccountProcessorService {
 				const followers = await this.usersRepository.findBy({ id: In(followerIds) });
 				const followersMap = new Map(followers.map(u => [u.id, u]));
 
+				const infraErrors: unknown[] = [];
 				await Promise.all(relations.map(f => {
 					const follower = followersMap.get(f.followerId);
 					if (follower) {
 						return this.userFollowingService.unfollow(follower, user, true).catch(error => {
-							this.logger.warn(`Failed to remove follower ${f.followerId}: ${error}`);
+							// ポリシー等の業務エラーはスキップして継続し、インフラ起因の失敗はジョブを失敗させてリトライで再処理する
+							if (error instanceof IdentifiableError) {
+								this.logger.warn(`Skipped removing follower ${f.followerId}: ${error.id} ${error.message}`);
+							} else {
+								this.logger.warn(`Failed to remove follower ${f.followerId}: ${error}`);
+								infraErrors.push(error);
+							}
 						});
 					}
 					return Promise.resolve();
 				}));
+				if (infraErrors.length > 0) {
+					throw new Error(`Failed to remove ${infraErrors.length} follower(s); failing the job so it will be retried.`);
+				}
 			}
 			this.logger.succ('All of followers deleted');
 		}
