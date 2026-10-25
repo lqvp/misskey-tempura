@@ -634,7 +634,9 @@ export class QueueService {
 			user: { id: user.id },
 			soft: opts.soft,
 		}, {
-			// unfollow等の一時的なインフラ障害で失敗した場合にリトライさせる (processorは冪等)
+			// 一時的なインフラ障害で失敗した場合にリトライさせる。processorの各フェーズは冪等
+			// (削除済みの行はスキップ) で、unindex→行削除の順序と完了メールの最終送付により
+			// リトライしても重複送信や索引の残骸が発生しない
 			attempts: 3,
 			backoff: {
 				type: 'exponential',
@@ -672,6 +674,8 @@ export class QueueService {
 		return this.dbQueue.add('cleanupDanglingFollows', {
 			user: { id: user.id },
 		}, {
+			// 同一ユーザーに対するcleanupジョブの重複投入を10分間隔で抑止する
+			jobId: `cleanup-danglingFollows:${user.id}:${Math.floor(Date.now() / 600000)}`,
 			// 一時的なDB障害で失敗した場合にリトライさせる (processorは冪等)
 			attempts: 3,
 			backoff: {
