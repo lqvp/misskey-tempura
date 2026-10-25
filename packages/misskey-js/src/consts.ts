@@ -42,6 +42,7 @@ export const notificationTypes = [
 	'login',
 	'createToken',
 	'llmModerationQueue',
+	'cleanupDanglingFollowsCompleted',
 ] as const;
 
 export const noteVisibilities = ['public', 'public_non_ltl', 'home', 'followers', 'specified'] as const;

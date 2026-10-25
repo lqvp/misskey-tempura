@@ -662,6 +662,22 @@ export class QueueService {
 	}
 
 	@bindThis
+	public createCleanupDanglingFollowsJob(user: ThinUser) {
+		return this.dbQueue.add('cleanupDanglingFollows', {
+			user: { id: user.id },
+		}, {
+			removeOnComplete: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 30,
+			},
+			removeOnFail: {
+				age: 3600 * 24 * 7, // keep up to 7 days
+				count: 100,
+			},
+		});
+	}
+
+	@bindThis
 	public createMakePrivateManyJob(user: ThinUser, sinceDate: number, untilDate: number) {
 		return this.dbQueue.add('makePrivateMany', {
 			user: { id: user.id },

@@ -140,9 +140,10 @@ export type MiNotification = {
 	id: string;
 	createdAt: string;
 } | {
-	type: 'createToken';
+	type: 'cleanupDanglingFollowsCompleted';
 	id: string;
 	createdAt: string;
+	count: number;
 } | {
 	type: 'app';
 	id: string;

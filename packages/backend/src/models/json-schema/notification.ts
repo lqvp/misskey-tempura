@@ -503,7 +503,11 @@ export const packedNotificationSchema = {
 			type: {
 				type: 'string',
 				optional: false, nullable: false,
-				enum: ['createToken'],
+				enum: ['cleanupDanglingFollowsCompleted'],
+			},
+			count: {
+				type: 'number',
+				optional: false, nullable: false,
 			},
 		},
 	}, {

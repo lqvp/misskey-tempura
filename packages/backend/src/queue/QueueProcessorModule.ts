@@ -50,6 +50,7 @@ import { CleanExpiredRemoteFilesProcessorService } from './processors/CleanExpir
 import { ReDownloadRemoteFileProcessorService } from './processors/ReDownloadRemoteFileProcessorService.js';
 import { ScheduledNoteDeleteProcessorService } from './processors/ScheduledNoteDeleteProcessorService.js';
 import { CleanExpiredMultipartUploadsProcessorService } from './processors/CleanExpiredMultipartUploadsProcessorService.js';
+import { CleanupDanglingFollowsProcessorService } from './processors/CleanupDanglingFollowsProcessorService.js';
 import { UpdateIpIntelligenceProcessorService } from './processors/UpdateIpIntelligenceProcessorService.js';
 
 @Module({
