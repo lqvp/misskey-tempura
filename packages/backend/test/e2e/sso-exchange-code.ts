@@ -573,6 +573,16 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		assert.strictEqual(noToken.status, 403);
 		assert.strictEqual((noToken.body as any).error.code, 'AUTHENTICATION_FAILED');
 		assert.strictEqual(await count(u2.id), 1);
+		// テスト環境の TOTP 検証は既定で常に成功するため、誤ったコードは実際に検証させて確認する
+		await sendEnvUpdateRequest({ key: 'MISSKEY_TEST_CHECK_DUPLICATED_TOTP', value: '1' });
+		try {
+			const badToken = await api('sso/unlink', { provider: key, password: 'test', token: '000000' }, u2);
+			assert.strictEqual(badToken.status, 403);
+			assert.strictEqual((badToken.body as any).error.code, 'AUTHENTICATION_FAILED');
+			assert.strictEqual(await count(u2.id), 1);
+		} finally {
+			await sendEnvUpdateRequest({ key: 'MISSKEY_TEST_CHECK_DUPLICATED_TOTP', value: '' });
+		}
 		assert.strictEqual((await api('sso/unlink', { provider: key, password: 'test', token: otp(reg.body.secret) }, u2)).status, 200);
 		assert.strictEqual(await count(u2.id), 0);
 	});
