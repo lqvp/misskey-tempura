@@ -47,3 +47,51 @@ describe('NotificationService (createNotification return value)', () => {
 		await expect(service.createNotification('user1', 'test', {})).resolves.toBeNull();
 	});
 });
+
+describe('NotificationService (deferred unread-notification task)', () => {
+	// NOTE: NotificationServiceは import 時点で node:timers/promises の setTimeout を束縛するため
+	// fake timers では差し替えられない。実時間で interval(2000ms) 経過を待つ。
+
+	function createFullService(usersRepository: any) {
+		return new NotificationService(
+			{ perUserNotificationsMaxCount: 1000 } as any, // config
+			{ xadd: vi.fn(async () => '1-1'), get: vi.fn(async () => null) } as any, // redis
+			usersRepository, // usersRepository
+			{ pack: vi.fn(async () => ({ id: 'packed1' })) } as any, // notificationEntityService
+			{ gen: vi.fn(() => 'notif1'), parse: vi.fn(() => ({ date: new Date(0) })), parseFull: vi.fn(() => ({ date: new Date(0), additional: 0n })) } as any, // idService
+			{ publishMainStream: vi.fn() } as any, // globalEventService
+			{ pushNotification: vi.fn() } as any, // pushNotificationService
+			{
+				userProfileCache: { fetch: vi.fn(async () => ({ notificationRecieveConfig: {} })) },
+				userMutingsCache: { fetch: vi.fn(async () => new Set()) },
+			} as any, // cacheService
+			{} as any, // userListService
+		);
+	}
+
+	test('2秒後の遅延処理でnotifierが削除済みでもrejectせず、未読イベントは発行する', async () => {
+		// アカウント削除でnotifier行が消えた後に遅延タスクが走る経路の回帰テスト
+		const usersRepository = { findOneBy: vi.fn(async () => null) };
+		const service = createFullService(usersRepository);
+		const emailSpy = vi.spyOn(service as any, 'emailNotificationUnFollow').mockImplementation(async () => {});
+
+		await service.createNotification('user1', 'unfollow', {}, 'deleted-user');
+		await new Promise(resolve => setTimeout(resolve, 2100));
+
+		const globalEventService = (service as any).globalEventService;
+		expect(usersRepository.findOneBy).toHaveBeenCalledWith({ id: 'deleted-user' });
+		expect(emailSpy).not.toHaveBeenCalled();
+		expect(globalEventService.publishMainStream).toHaveBeenCalledWith('user1', 'unreadNotification', { id: 'packed1' });
+	});
+
+	test('2秒後の遅延処理でnotifierが存在すればメール送信に進む', async () => {
+		const usersRepository = { findOneBy: vi.fn(async () => ({ id: 'notifier1' })) };
+		const service = createFullService(usersRepository);
+		const emailSpy = vi.spyOn(service as any, 'emailNotificationUnFollow').mockImplementation(async () => {});
+
+		await service.createNotification('user1', 'unfollow', {}, 'notifier1');
+		await new Promise(resolve => setTimeout(resolve, 2100));
+
+		expect(emailSpy).toHaveBeenCalledWith('user1', { id: 'notifier1' });
+	});
+});

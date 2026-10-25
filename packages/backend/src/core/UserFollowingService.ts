@@ -293,7 +293,9 @@ export class UserFollowingService implements OnModuleInit {
 			}
 		});
 
-		this.cacheService.userFollowingsCache.refresh(follower.id);
+		// バルク実行(アカウント削除等)で大量に並列呼出されるため、失敗を未処理のrejectにしない
+		void this.cacheService.userFollowingsCache.refresh(follower.id)
+		.catch(err => logger.warn(`Failed to refresh followings cache for ${follower.id}: ${err}`));
 
 		const requestExist = await this.followRequestsRepository.exists({
 			where: {
@@ -445,7 +447,9 @@ export class UserFollowingService implements OnModuleInit {
 
 		await this.followingsRepository.delete(following.id);
 
-		this.cacheService.userFollowingsCache.refresh(follower.id);
+		// バルク実行(アカウント削除等)で大量に並列呼出されるため、失敗を未処理のrejectにしない
+		void this.cacheService.userFollowingsCache.refresh(follower.id)
+		.catch(err => logger.warn(`Failed to refresh followings cache for ${follower.id}: ${err}`));
 
 		this.decrementFollowing(following.follower, following.followee);
 
@@ -473,7 +477,9 @@ export class UserFollowingService implements OnModuleInit {
 		}
 
 		// UnFollow
-		if (this.userEntityService.isLocalUser(followee) && policies.canUseUnFollowNotification) {
+		// silent指定時(アカウント削除・suspend・ブロックインポート等の一括処理)は、
+		// 相手への通知・stream・webhookも発行しない (一括処理で大量通知のspamになるため)
+		if (!silent && this.userEntityService.isLocalUser(followee) && policies.canUseUnFollowNotification) {
 			this.userEntityService.pack(followee.id, follower, {
 				schema: 'UserDetailedNotMe',
 			}).then(async packed => {
