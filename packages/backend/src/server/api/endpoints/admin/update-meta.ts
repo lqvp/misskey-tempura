@@ -9,7 +9,7 @@ import type { MiMeta } from '@/models/Meta.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { redactMetaForModerationLog } from '@/misc/redact-sso-secrets.js';
 import { assertValidOidcIssuerUrl } from '@/misc/sso-issuer-url.js';
-import { computeSsoProvidersRevision } from '@/misc/sso-providers-revision.js';
+import { assignProviderRevisions, computeSsoProvidersRevision } from '@/misc/sso-providers-revision.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { SsoProviderConfig } from '@/models/Meta.js';
 import type { UserSsoLinkRepository } from '@/models/_.js';
@@ -37,7 +37,7 @@ export const meta = {
 			id: '0b4b9a0e-6f0d-4c8e-9d3a-5f2f7a1c8e41',
 		},
 		ssoProvidersConflict: {
-			message: 'The SSO provider list was changed by someone else after it was loaded. Reload and try again.',
+			message: 'The SSO provider list is out of date (changed by someone else) or its revision is missing. Reload and try again.',
 			code: 'SSO_PROVIDERS_CONFLICT',
 			id: '39ab1dcf-5c2a-4ccd-9f73-9cd9d0502640',
 			httpStatusCode: 409,
@@ -377,8 +377,8 @@ export const paramDef = {
 				required: ['key', 'text', 'enabled', 'order', 'isDefault'],
 			},
 		},
-		// 管理画面が読み込んだ時点の一覧の版 (admin/meta の ssoProvidersRevision)。指定された場合、保存時点の一覧と違えば保存しない。
-		// 省略した場合は従来どおり照合しない (既存クライアントとの互換)
+		// 管理画面が読み込んだ時点の一覧の版 (admin/meta の ssoProvidersRevision)。ssoProviders を保存するときは必須で、
+		// 保存時点の一覧と違えば保存しない (古い画面からの上書きで他の管理者の変更を消さないため)
 		ssoProvidersRevision: { type: 'string', maxLength: 128 },
 		ssoProviders: {
 			type: 'array',
@@ -1373,6 +1373,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.contactFormCategories = ps.contactFormCategories;
 			}
 
+			let resolveSsoProviders: ((current: SsoProviderConfig[]) => Promise<SsoProviderConfig[]>) | undefined;
 			if (ps.ssoProviders !== undefined) {
 				// key の重複は禁止 (リンクの紐付けキーになるため)
 				const providerKeys = ps.ssoProviders.map(p => p.key);
@@ -1392,62 +1393,66 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					}
 				}
 
-				// clientSecret が空文字なら既存の値を保持する
-				const currentMeta = await this.metaService.fetch(true);
-				if (ps.ssoProvidersRevision !== undefined && ps.ssoProvidersRevision !== computeSsoProvidersRevision(currentMeta.ssoProviders)) {
-					throw new ApiError(meta.errors.ssoProvidersConflict);
-				}
-				const currentByKey = new Map(currentMeta.ssoProviders.map(p => [p.key, p]));
+				// ロックした行から読んだ現在の一覧に対して、版の照合・検証・保存内容の決定を行う (MetaService.update が同じトランザクションで保存する)
+				resolveSsoProviders = async (currentProviders: SsoProviderConfig[]): Promise<SsoProviderConfig[]> => {
+					// clientSecret が空文字なら既存の値を保持する
+					if (ps.ssoProvidersRevision !== computeSsoProvidersRevision(currentProviders)) {
+						throw new ApiError(meta.errors.ssoProvidersConflict);
+					}
+					const currentByKey = new Map(currentProviders.map(p => [p.key, p]));
 
-				// OIDC の sub は発行者ごとにしか一意でないため、既存の連携があるプロバイダーの issuerUrl 変更は拒否する
-				// (変更後の発行者が同じ sub を返すと、別人が既存ユーザーの連携に一致してログインできてしまう)
-				for (const provider of ps.ssoProviders) {
-					const current = currentByKey.get(provider.key);
-					if (current == null) {
-						// 削除済みプロバイダーのキー再利用も拒否する。連携レコードは削除後も残るため、
-						// 別の発行者が同じ key で登録されると同じ sub で既存連携に一致してログインできてしまう
-						const linkCount = await this.userSsoLinkRepository.countBy({ provider: provider.key });
-						if (linkCount > 0) {
-							throw new Error(`Cannot reuse provider key "${provider.key}" while users are still linked to it`);
+					// OIDC の sub は発行者ごとにしか一意でないため、既存の連携があるプロバイダーの issuerUrl 変更は拒否する
+					// (変更後の発行者が同じ sub を返すと、別人が既存ユーザーの連携に一致してログインできてしまう)
+					for (const provider of ps.ssoProviders) {
+						const current = currentByKey.get(provider.key);
+						if (current == null) {
+							// 削除済みプロバイダーのキー再利用も拒否する。連携レコードは削除後も残るため、
+							// 別の発行者が同じ key で登録されると同じ sub で既存連携に一致してログインできてしまう
+							const linkCount = await this.userSsoLinkRepository.countBy({ provider: provider.key });
+							if (linkCount > 0) {
+								throw new Error(`Cannot reuse provider key "${provider.key}" while users are still linked to it`);
+							}
+							continue;
 						}
-						continue;
-					}
-					const nextIssuerUrl = provider.issuerUrl?.trim() || null;
-					if ((current.issuerUrl ?? null) !== nextIssuerUrl || current.type !== provider.type) {
-						const linkCount = await this.userSsoLinkRepository.countBy({ provider: provider.key });
-						if (linkCount > 0) {
-							throw new Error(`Cannot change issuerUrl or type of provider "${provider.key}" while users are linked to it`);
+						const nextIssuerUrl = provider.issuerUrl?.trim() || null;
+						if ((current.issuerUrl ?? null) !== nextIssuerUrl || current.type !== provider.type) {
+							const linkCount = await this.userSsoLinkRepository.countBy({ provider: provider.key });
+							if (linkCount > 0) {
+								throw new Error(`Cannot change issuerUrl or type of provider "${provider.key}" while users are linked to it`);
+							}
 						}
 					}
-				}
-				set.ssoProviders = ps.ssoProviders.map(p => {
-					let clientSecret = p.clientSecret ?? '';
-					if (clientSecret === '') {
-						clientSecret = currentByKey.get(p.key)?.clientSecret ?? '';
-					}
-					return {
-						key: p.key,
-						type: p.type as SsoProviderConfig['type'],
-						clientId: p.clientId ?? '',
-						clientSecret,
-						issuerUrl: p.issuerUrl?.trim() || null,
-						buttonLabel: p.buttonLabel?.trim() || null,
-						enabled: p.enabled,
-						trustUpstreamMfa: p.trustUpstreamMfa ?? false,
-					};
-				});
+					const next = ps.ssoProviders.map(p => {
+						let clientSecret = p.clientSecret ?? '';
+						if (clientSecret === '') {
+							clientSecret = currentByKey.get(p.key)?.clientSecret ?? '';
+						}
+						return {
+							key: p.key,
+							type: p.type as SsoProviderConfig['type'],
+							clientId: p.clientId ?? '',
+							clientSecret,
+							issuerUrl: p.issuerUrl?.trim() || null,
+							buttonLabel: p.buttonLabel?.trim() || null,
+							enabled: p.enabled,
+							trustUpstreamMfa: p.trustUpstreamMfa ?? false,
+						};
+					});
 
-				// 有効なプロバイダーは認証情報の必須チェック (既存シークレット引き継ぎ後の実効値で判定)
-				for (const provider of set.ssoProviders) {
-					if (provider.enabled && (provider.clientId.trim() === '' || provider.clientSecret === '')) {
-						throw new Error(`Provider "${provider.key}" is enabled but missing clientId/clientSecret`);
+					// 有効なプロバイダーは認証情報の必須チェック (既存シークレット引き継ぎ後の実効値で判定)
+					for (const provider of next) {
+						if (provider.enabled && (provider.clientId.trim() === '' || provider.clientSecret === '')) {
+							throw new Error(`Provider "${provider.key}" is enabled but missing clientId/clientSecret`);
+						}
 					}
-				}
+
+					return assignProviderRevisions(currentProviders, next);
+				};
 			}
 
 			const before = await this.metaService.fetch(true);
 
-			await this.metaService.update(set);
+			await this.metaService.update(set, resolveSsoProviders ? { resolveSsoProviders } : undefined);
 
 			const after = await this.metaService.fetch(true);
 

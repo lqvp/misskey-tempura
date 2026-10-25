@@ -207,8 +207,10 @@ async function saveProviders() {
 	} catch (error) {
 		console.error('Failed to save SSO providers:', error);
 		if ((error as { code?: string } | null)?.code === 'SSO_PROVIDERS_CONFLICT') {
-			// 他の管理者が先に変更した。最新の一覧を読み直して、編集内容は反映せずに止める
-			await loadProviders();
+			// 他の管理者が先に変更した。保存は止まっている。未保存の編集は、ユーザーが選ぶまで捨てない
+			const { canceled } = await os.confirm({ type: 'warning', text: i18n.ts._sso.providersConflict });
+			if (!canceled) await loadProviders();
+			return;
 		}
 		os.alert({ type: 'error', text: i18n.ts.somethingHappened });
 	}

@@ -74,7 +74,9 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		plain = await signup({ username: 'ssoex_plain' });
 		totpUser = await signup({ username: 'ssoex_totp' });
 
+		const initialRevision = (await api('admin/meta', {}, admin)).body.ssoProvidersRevision;
 		const meta = await api('admin/update-meta', {
+			ssoProvidersRevision: initialRevision,
 			ssoProviders: [{ key: providerKey, type: 'oidc', clientId: 'cid', clientSecret: 'csecret', issuerUrl: 'https://idp.invalid', enabled: true, trustUpstreamMfa: false }],
 		}, admin);
 		assert.strictEqual(meta.status, 204, 'SSO プロバイダーの用意に失敗');
@@ -92,7 +94,8 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 	afterAll(async () => {
 		await sendEnvUpdateRequest({ key: 'MISSKEY_TEST_CHECK_DUPLICATED_TOTP', value: '' });
 		await db.getRepository(MiUserSsoLink).delete({ provider: providerKey });
-		await api('admin/update-meta', { ssoProviders: [] }, admin);
+		const finalRevision = (await api('admin/meta', {}, admin)).body.ssoProvidersRevision;
+		await api('admin/update-meta', { ssoProvidersRevision: finalRevision, ssoProviders: [] }, admin);
 		await db.destroy();
 		redis.disconnect();
 	});
@@ -195,6 +198,47 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		const appToken = await createAppToken(plain, ['read:account']);
 		const viaApp = await api('sso/status', {}, { token: appToken } as any);
 		assert.notStrictEqual(viaApp.status, 200);
+	});
+
+	test('古い一覧からの保存は 409 で止まり、並列の保存でも片方の変更だけが残り、秘密も上書きされない', async () => {
+		const getRevision = async () => (await api('admin/meta', {}, admin)).body.ssoProvidersRevision as string;
+		const getList = async () => (await api('admin/meta', {}, admin)).body.ssoProviders as any[];
+		const row = async () => (await db.query('SELECT "ssoProviders" FROM "meta" ORDER BY "id" DESC LIMIT 1'))[0].ssoProviders as any[];
+		const entry = (over: Record<string, unknown>) => ({ key: providerKey, type: 'oidc', clientId: 'cid', clientSecret: '', issuerUrl: 'https://idp.invalid', enabled: true, trustUpstreamMfa: false, ...over });
+
+		// 同じ版から同時に 2 件保存する: 片方だけ成功し、もう片方は 409 で、成功した方の変更が残る
+		const r0 = await getRevision();
+		const [a, b] = await Promise.all([
+			api('admin/update-meta', { ssoProvidersRevision: r0, ssoProviders: [entry({ buttonLabel: 'A' })] }, admin),
+			api('admin/update-meta', { ssoProvidersRevision: r0, ssoProviders: [entry({ buttonLabel: 'B' })] }, admin),
+		]);
+		assert.deepStrictEqual([a.status, b.status].sort(), [204, 409]);
+		const loser = a.status === 204 ? b : a;
+		assert.strictEqual(loser.body.error.code, 'SSO_PROVIDERS_CONFLICT');
+		assert.strictEqual((await getList())[0].buttonLabel, a.status === 204 ? 'A' : 'B');
+
+		// 古い版での保存は変更を加えずに 409
+		const stale = await api('admin/update-meta', { ssoProvidersRevision: r0, ssoProviders: [entry({ buttonLabel: 'C' })] }, admin);
+		assert.strictEqual(stale.status, 409);
+		assert.strictEqual((await getList())[0].buttonLabel, a.status === 204 ? 'A' : 'B');
+
+		// 版を付けない保存も受け付けない
+		const noRevision = await api('admin/update-meta', { ssoProviders: [entry({ buttonLabel: 'D' })] } as any, admin);
+		assert.strictEqual(noRevision.status, 409);
+
+		// 別の管理者が秘密を更新した後に、古い版で別の秘密を送っても上書きされない
+		const r1 = await getRevision();
+		const rotated = await api('admin/update-meta', { ssoProvidersRevision: r1, ssoProviders: [entry({ clientSecret: 'secret-new' })] }, admin);
+		assert.strictEqual(rotated.status, 204);
+		const overwrite = await api('admin/update-meta', { ssoProvidersRevision: r1, ssoProviders: [entry({ clientSecret: 'secret-stale' })] }, admin);
+		assert.strictEqual(overwrite.status, 409);
+		assert.strictEqual((await row())[0].clientSecret, 'secret-new');
+		assert.notStrictEqual(await getRevision(), r1, '秘密を変えたら版も変わる');
+
+		// 版が最新で秘密を空欄にすれば保持される (既存の挙動)
+		const keep = await api('admin/update-meta', { ssoProvidersRevision: await getRevision(), ssoProviders: [entry({ clientSecret: '' })] }, admin);
+		assert.strictEqual(keep.status, 204);
+		assert.strictEqual((await row())[0].clientSecret, 'secret-new');
 	});
 
 	test('連携の開始には再認証が必要で、パスワード不一致・2FAトークンなしは拒否する', async () => {

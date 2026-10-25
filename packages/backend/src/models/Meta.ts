@@ -1269,6 +1269,8 @@ export interface SsoProviderConfig {
 	enabled: boolean;
 	/** IdP 側の MFA を信頼し、Misskey 側のローカル 2FA 追加認証をスキップするか (既定: false)。IdP で MFA を強制している場合のみ有効にすること */
 	trustUpstreamMfa?: boolean;
+	/** 設定内容 (clientSecret を含む) が変わるたびにサーバーが振り直す乱数。一覧の版の材料で、秘密とは無関係 */
+	rev?: string;
 }
 
 export interface ContactFormCategory {
