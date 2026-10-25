@@ -22,10 +22,7 @@ import type { Config } from '@/config.js';
 import { UserListService } from '@/core/UserListService.js';
 import { FilterUnionByProperty, groupedNotificationTypes, obsoleteNotificationTypes } from '@/types.js';
 import { trackPromise } from '@/misc/promise-tracker.js';
-import Logger from '@/logger.js';
 // import { escapeHtml } from '@/misc/escape-html.js';
-
-const logger = new Logger('notification');
 
 @Injectable()
 export class NotificationService implements OnApplicationShutdown {
@@ -85,12 +82,10 @@ export class NotificationService implements OnApplicationShutdown {
 		type: T,
 		data: Omit<FilterUnionByProperty<MiNotification, 'type', T>, 'type' | 'id' | 'createdAt' | 'notifierId'>,
 		notifierId?: MiUser['id'] | null,
-	): Promise<MiNotification | null> {
-		// 呼び出し側が作成の完了(や失敗)を待ちたい場合に備えてPromiseも返す。
-		// 戻り値を使わない既存の呼び出し元の挙動は変わらない (trackPromiseに渡すのも同じPromise)。
-		const promise = this.#createNotificationInternal(notifieeId, type, data, notifierId);
-		trackPromise(promise);
-		return promise;
+	) {
+		trackPromise(
+			this.#createNotificationInternal(notifieeId, type, data, notifierId),
+		);
 	}
 
 	async #createNotificationInternal<T extends MiNotification['type']>(
@@ -200,22 +195,12 @@ export class NotificationService implements OnApplicationShutdown {
 			this.globalEventService.publishMainStream(notifieeId, 'unreadNotification', packed);
 			this.pushNotificationService.pushNotification(notifieeId, 'notification', packed);
 
-			// 遅延実行の間にnotifierが削除されている場合がある (アカウント削除でunfollow通知が
-			// 大量作成される経路など)。見つからなければメール送信のみスキップする
-			if (type === 'follow' || type === 'unfollow' || type === 'receiveFollowRequest' || type === 'blocked' || type === 'unblocked') {
-				const notifier = notifierId != null ? await this.usersRepository.findOneBy({ id: notifierId }) : null;
-				if (notifier != null) {
-					if (type === 'follow') this.emailNotificationFollow(notifieeId, notifier);
-					if (type === 'unfollow') this.emailNotificationUnFollow(notifieeId, notifier);
-					if (type === 'receiveFollowRequest') this.emailNotificationReceiveFollowRequest(notifieeId, notifier);
-					if (type === 'blocked') this.emailNotificationBlocked(notifieeId, notifier);
-					if (type === 'unblocked') this.emailNotificationUnBlocked(notifieeId, notifier);
-				}
-			}
-		}, () => { /* aborted, ignore it */ }).catch(err => {
-			// 遅延タスク本体の予期せぬ失敗を未処理rejectにしない (best-effortの補助通知なのでwarnに留める)
-			logger.warn(`Unread notification deferred task failed: ${err}`);
-		});
+			if (type === 'follow') this.emailNotificationFollow(notifieeId, await this.usersRepository.findOneByOrFail({ id: notifierId! }));
+			if (type === 'unfollow') this.emailNotificationUnFollow(notifieeId, await this.usersRepository.findOneByOrFail({ id: notifierId! }));
+			if (type === 'receiveFollowRequest') this.emailNotificationReceiveFollowRequest(notifieeId, await this.usersRepository.findOneByOrFail({ id: notifierId! }));
+			if (type === 'blocked') this.emailNotificationBlocked(notifieeId, await this.usersRepository.findOneByOrFail({ id: notifierId! }));
+			if (type === 'unblocked') this.emailNotificationUnBlocked(notifieeId, await this.usersRepository.findOneByOrFail({ id: notifierId! }));
+		}, () => { /* aborted, ignore it */ });
 
 		return notification;
 	}

@@ -5373,6 +5373,13 @@ export type components = {
             /** Format: date-time */
             createdAt: string;
             /** @enum {string} */
+            type: 'createToken';
+        } | {
+            /** Format: id */
+            id: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** @enum {string} */
             type: 'cleanupDanglingFollowsCompleted';
             count: number;
         } | {

@@ -12,10 +12,7 @@ import { DI } from '@/di-symbols.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { bindThis } from '@/decorators.js';
 import type { GlobalEvents } from '@/core/GlobalEventService.js';
-import Logger from '@/logger.js';
 import type { OnApplicationShutdown } from '@nestjs/common';
-
-const logger = new Logger('cache');
 
 @Injectable()
 export class CacheService implements OnApplicationShutdown {
@@ -31,12 +28,6 @@ export class CacheService implements OnApplicationShutdown {
 	public quoteMutingsCache: RedisKVCache<Set<string>>;
 	public avatarDecorationMutingsCache: RedisKVCache<Set<string>>;
 	public userFollowingsCache: RedisKVCache<Record<string, Pick<MiFollowing, 'withReplies'> | undefined>>;
-
-	// 同一ユーザーのキャッシュ更新系internalイベントを受信順(= 発行順)に直列化するためのチェーン。
-	// onMessageのhandlerはasyncで、DB読みのawait中に後続イベントのhandlerが先に完了しうるため、
-	// 直列化しないと「古いイベントのcache SETが、新しいイベント(例: アカウント物理削除後の
-	// キャッシュ無効化)によるdeleteを後から上書きする」逆転が起こり得る。
-	private userCacheEventChains = new Map<MiUser['id'], Promise<void>>();
 
 	constructor(
 		@Inject(DI.redis)
@@ -179,16 +170,27 @@ export class CacheService implements OnApplicationShutdown {
 				case 'userChangeDeletedState':
 				case 'remoteUserUpdated':
 				case 'localUserUpdated': {
-					// 同一ユーザーの適用は受信順に直列化する (上記 userCacheEventChains のコメント参照)
-					const prev = this.userCacheEventChains.get(body.id) ?? Promise.resolve();
-					const next = prev.then(() => this.applyUserCacheEvent(body.id)).catch((err) => {
-						// チェーンを維持しつつ失敗を記録する (cache不整合を検知可能にするため握りつぶさない)
-						logger.error(`Failed to apply user cache event for ${body.id}: ${err}`);
-					});
-					this.userCacheEventChains.set(body.id, next);
-					void next.finally(() => {
-						if (this.userCacheEventChains.get(body.id) === next) this.userCacheEventChains.delete(body.id);
-					});
+					const user = await this.usersRepository.findOneBy({ id: body.id });
+					if (user == null) {
+						this.userByIdCache.delete(body.id);
+						this.localUserByIdCache.delete(body.id);
+						for (const [k, v] of this.uriPersonCache.entries) {
+							if (v.value?.id === body.id) {
+								this.uriPersonCache.delete(k);
+							}
+						}
+					} else {
+						this.userByIdCache.set(user.id, user);
+						for (const [k, v] of this.uriPersonCache.entries) {
+							if (v.value?.id === user.id) {
+								this.uriPersonCache.set(k, user);
+							}
+						}
+						if (this.userEntityService.isLocalUser(user)) {
+							this.localUserByNativeTokenCache.set(user.token!, user);
+							this.localUserByIdCache.set(user.id, user);
+						}
+					}
 					break;
 				}
 				case 'userTokenRegenerated': {
@@ -207,48 +209,6 @@ export class CacheService implements OnApplicationShutdown {
 				}
 				default:
 					break;
-			}
-		}
-	}
-
-	private async applyUserCacheEvent(userId: MiUser['id']): Promise<void> {
-		let user: MiUser | null;
-		try {
-			user = await this.usersRepository.findOneBy({ id: userId });
-		} catch (err) {
-			// DB読み取りに失敗した場合、古いキャッシュを残すより無効化して次のアクセス時の
-			// 再取得に委ねる方が安全 (一時的な障害なら再取得で復旧する)
-			logger.warn(`Failed to load user ${userId} for cache event; invalidating caches. err: ${err}`);
-			this.evictUserCaches(userId);
-			return;
-		}
-		if (user == null) {
-			this.evictUserCaches(userId);
-		} else {
-			this.userByIdCache.set(user.id, user);
-			for (const [k, v] of this.uriPersonCache.entries) {
-				if (v.value?.id === user.id) {
-					this.uriPersonCache.set(k, user);
-				}
-			}
-			if (this.userEntityService.isLocalUser(user)) {
-				this.localUserByNativeTokenCache.set(user.token!, user);
-				this.localUserByIdCache.set(user.id, user);
-			}
-		}
-	}
-
-	private evictUserCaches(userId: MiUser['id']): void {
-		this.userByIdCache.delete(userId);
-		this.localUserByIdCache.delete(userId);
-		for (const [k, v] of this.localUserByNativeTokenCache.entries) {
-			if (v.value?.id === userId) {
-				this.localUserByNativeTokenCache.delete(k);
-			}
-		}
-		for (const [k, v] of this.uriPersonCache.entries) {
-			if (v.value?.id === userId) {
-				this.uriPersonCache.delete(k);
 			}
 		}
 	}
