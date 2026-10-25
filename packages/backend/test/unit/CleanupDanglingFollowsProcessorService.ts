@@ -18,6 +18,7 @@ function createService(options: {
 	users?: Array<{ id: string; isDeleted?: boolean }>;
 	transactionError?: Error;
 	notificationError?: Error;
+	userLookupError?: (call: number) => Error | undefined;
 } = {}) {
 	const state = {
 		followings: [...(options.followings ?? [])] as FollowingRow[],
@@ -51,12 +52,16 @@ function createService(options: {
 	};
 
 	const followingsRepository = {
-		find: vi.fn(async (opts: { where: Array<Record<string, any>> }) => {
+		find: vi.fn(async (opts: { where: Array<Record<string, any>>; take?: number }) => {
 			const wheres = Array.isArray(opts.where) ? opts.where : [opts.where];
-			return state.followings
-				.filter(row => wheres.some(w =>
-					(w.followerId === undefined || row.followerId === w.followerId) &&
-					(w.followeeId === undefined || row.followeeId === w.followeeId)))
+			// TypeORMのキーセットページネーション (id > cursor, id ASC, take) をエミュレートする
+			const cursor = wheres[0]?.id != null ? unwrap(wheres[0].id) : undefined;
+			let rows = state.followings.filter(row => wheres.some(w =>
+				(w.followerId === undefined || row.followerId === w.followerId) &&
+				(w.followeeId === undefined || row.followeeId === w.followeeId)));
+			if (cursor != null) rows = rows.filter(row => row.id > cursor);
+			rows = rows.sort((a, b) => a.id.localeCompare(b.id));
+			return rows.slice(0, opts.take ?? rows.length)
 				.map(row => ({ id: row.id, followerId: row.followerId, followeeId: row.followeeId }));
 		}),
 		manager: {
@@ -67,8 +72,11 @@ function createService(options: {
 		},
 	};
 
+	let userLookupCalls = 0;
 	const usersRepository = {
 		find: vi.fn(async (opts: { where: { id: any } }) => {
+			const err = options.userLookupError?.(userLookupCalls++);
+			if (err) throw err;
 			const ids: string[] = unwrap(opts.where.id);
 			return ids
 				.filter(id => state.users.has(id))
@@ -200,6 +208,74 @@ describe('CleanupDanglingFollowsProcessorService', () => {
 		expect(manager.delete).toHaveBeenCalledTimes(1);
 		expect(message2).toContain('No dangling relationships');
 		expect(notificationService.createNotification).toHaveBeenLastCalledWith('user1', 'cleanupDanglingFollowsCompleted', { count: 0 });
+	});
+
+	test('paginates the relation scan across pages without missing rows or duplicating the counter update', async () => {
+		// 1200件の関係 (うち50件が削除済みアカウント宛) で 500+500+200 の3ページ走査になる
+		const followings: FollowingRow[] = [];
+		const users = [{ id: 'user1' }];
+		for (let i = 0; i < 1200; i++) {
+			const uid = `u${String(i).padStart(4, '0')}`;
+			followings.push({ id: `f${String(i).padStart(4, '0')}`, followerId: 'user1', followeeId: uid });
+			users.push(i < 50 ? { id: uid, isDeleted: true } : { id: uid });
+		}
+		const { service, state, manager, followingsRepository, usersRepository, notificationService, cacheService } = createService({ followings, users });
+
+		const message = await service.process(job('user1'));
+
+		// 3ページで走査が終わる (無限ループしない)
+		expect(followingsRepository.find).toHaveBeenCalledTimes(3);
+		// ユーザー存在確認はページごとに100件バッチ (5+5+2)
+		expect(usersRepository.find).toHaveBeenCalledTimes(12);
+		// DELETEは500件チャンクで1回、カウンタ更新はちょうど1回
+		expect(manager.delete).toHaveBeenCalledTimes(1);
+		expect(manager.update).toHaveBeenCalledTimes(1);
+		expect(manager.update).toHaveBeenCalledWith(expect.anything(), 'user1', { followingCount: 1150, followersCount: 0 });
+		expect(state.followings).toHaveLength(1150);
+		expect(notificationService.createNotification).toHaveBeenCalledWith('user1', 'cleanupDanglingFollowsCompleted', { count: 50 });
+		expect(cacheService.userFollowingsCache.refresh).toHaveBeenCalledTimes(1);
+		expect(message).toContain('50 deleted users');
+	});
+
+	test('handles a scan page of exactly SCAN_BATCH rows by fetching one more (empty) page and terminating', async () => {
+		const followings: FollowingRow[] = [];
+		const users = [{ id: 'user1' }];
+		for (let i = 0; i < 500; i++) {
+			const uid = `u${String(i).padStart(4, '0')}`;
+			followings.push({ id: `f${String(i).padStart(4, '0')}`, followerId: 'user1', followeeId: uid });
+			users.push({ id: uid });
+		}
+		const { service, followingsRepository } = createService({ followings, users });
+
+		await service.process(job('user1'));
+
+		// 500件ちょうどのページのあと空ページを1回取得して終了 (2回で打ち止め)
+		expect(followingsRepository.find).toHaveBeenCalledTimes(2);
+	});
+
+	test('a failure during the scan phase writes nothing, and a retry completes the cleanup', async () => {
+		let failFirstLookup = true;
+		const ctx = createService({
+			followings: [
+				{ id: 'f0001', followerId: 'user1', followeeId: 'deleted1' },
+				{ id: 'f0002', followerId: 'user1', followeeId: 'live1' },
+			],
+			users: [{ id: 'user1' }, { id: 'live1' }, { id: 'deleted1', isDeleted: true }],
+			userLookupError: () => failFirstLookup ? new Error('connection reset') : undefined,
+		});
+
+		// 走査途中の失敗はジョブを失敗させるが、書き込み (tx) 前なので状態は無変更
+		await expect(ctx.service.process(job('user1'))).rejects.toThrow('connection reset');
+		expect(ctx.state.followings).toHaveLength(2);
+		expect(ctx.manager.delete).not.toHaveBeenCalled();
+		expect(ctx.notificationService.createNotification).not.toHaveBeenCalled();
+
+		// リトライで完走する
+		failFirstLookup = false;
+		const message = await ctx.service.process(job('user1'));
+		expect(ctx.state.followings.map(f => f.id)).toStrictEqual(['f0002']);
+		expect(ctx.manager.update).toHaveBeenCalledTimes(1);
+		expect(message).toContain('1 deleted users');
 	});
 
 	test('treats relations to users whose rows are already gone (post-deletion) as dangling', async () => {
