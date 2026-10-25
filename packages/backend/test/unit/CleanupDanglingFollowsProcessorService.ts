@@ -176,7 +176,7 @@ describe('CleanupDanglingFollowsProcessorService', () => {
 		for (let i = 0; i < 150; i++) {
 			followings.push({ id: `f${i}`, followerId: 'user1', followeeId: `u${i}` });
 		}
-		const users = [{ id: 'user1' }];
+		const users: Array<{ id: string; isDeleted?: boolean }> = [{ id: 'user1' }];
 		for (let i = 0; i < 150; i++) users.push({ id: `u${i}` });
 		const { service, usersRepository } = createService({ followings, users });
 
@@ -224,7 +224,7 @@ describe('CleanupDanglingFollowsProcessorService', () => {
 	test('paginates the relation scan across pages without missing rows or duplicating the counter update', async () => {
 		// 1200件の関係 (うち50件が削除済みアカウント宛) で 500+500+200 の3ページ走査になる
 		const followings: FollowingRow[] = [];
-		const users = [{ id: 'user1' }];
+		const users: Array<{ id: string; isDeleted?: boolean }> = [{ id: 'user1' }];
 		for (let i = 0; i < 1200; i++) {
 			const uid = `u${String(i).padStart(4, '0')}`;
 			followings.push({ id: `f${String(i).padStart(4, '0')}`, followerId: 'user1', followeeId: uid });
@@ -250,7 +250,7 @@ describe('CleanupDanglingFollowsProcessorService', () => {
 
 	test('handles a scan page of exactly SCAN_BATCH rows by fetching one more (empty) page and terminating', async () => {
 		const followings: FollowingRow[] = [];
-		const users = [{ id: 'user1' }];
+		const users: Array<{ id: string; isDeleted?: boolean }> = [{ id: 'user1' }];
 		for (let i = 0; i < 500; i++) {
 			const uid = `u${String(i).padStart(4, '0')}`;
 			followings.push({ id: `f${String(i).padStart(4, '0')}`, followerId: 'user1', followeeId: uid });
@@ -292,7 +292,7 @@ describe('CleanupDanglingFollowsProcessorService', () => {
 	test('splits deletions into chunks when deleted relations exceed DELETE_CHUNK, updating the counter once', async () => {
 		// 1200件すべて削除済みアカウント宛 → DELETEは500+500+200の3チャンク
 		const followings: FollowingRow[] = [];
-		const users = [{ id: 'user1' }];
+		const users: Array<{ id: string; isDeleted?: boolean }> = [{ id: 'user1' }];
 		for (let i = 0; i < 1200; i++) {
 			const uid = `u${String(i).padStart(4, '0')}`;
 			followings.push({ id: `f${String(i).padStart(4, '0')}`, followerId: 'user1', followeeId: uid });
@@ -314,7 +314,7 @@ describe('CleanupDanglingFollowsProcessorService', () => {
 	test('rolls back the whole transaction when a later delete chunk fails, and a retry completes', async () => {
 		let failSecondChunk = true;
 		const followings: FollowingRow[] = [];
-		const users = [{ id: 'user1' }];
+		const users: Array<{ id: string; isDeleted?: boolean }> = [{ id: 'user1' }];
 		for (let i = 0; i < 1200; i++) {
 			const uid = `u${String(i).padStart(4, '0')}`;
 			followings.push({ id: `f${String(i).padStart(4, '0')}`, followerId: 'user1', followeeId: uid });
