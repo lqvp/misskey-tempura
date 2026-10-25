@@ -22,4 +22,8 @@ export function assertValidOidcIssuerUrl(issuerUrl: string): void {
 	if (url.username !== '' || url.password !== '') {
 		throw new Error('issuerUrl must not contain credentials');
 	}
+	// OIDC Discovery 1.0: issuer identifier に query と fragment は含められない (空の ? や # も含めて拒否)
+	if (url.search !== '' || url.hash !== '' || issuerUrl.includes('?') || issuerUrl.includes('#')) {
+		throw new Error('issuerUrl must not contain a query or fragment');
+	}
 }

@@ -33,6 +33,15 @@ describe('assertValidOidcIssuerUrl', () => {
 		expect(() => assertValidOidcIssuerUrl(url)).toThrow('https');
 	});
 
+	test.each([
+		'https://idp.example.com?x=1',
+		'https://idp.example.com#x',
+		'https://idp.example.com/realms/main?',
+		'https://idp.example.com/realms/main#',
+	])('rejects query or fragment %s', url => {
+		expect(() => assertValidOidcIssuerUrl(url)).toThrow('query or fragment');
+	});
+
 	test('rejects embedded credentials', () => {
 		expect(() => assertValidOidcIssuerUrl('https://user:pass@idp.example.com')).toThrow('credentials');
 	});
