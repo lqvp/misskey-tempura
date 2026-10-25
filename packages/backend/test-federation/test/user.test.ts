@@ -430,8 +430,8 @@ describe('User', () => {
 
 				await bAdmin.client.request('admin/delete-account', { userId: aliceInB.id });
 
-				// 削除時にdanglingなフォロー関係が解消される
-				await waitForFollowing(bob, 0, WAIT_FOR_SLOW_FEDERATION);
+				// 削除時にdanglingなフォロー関係が解消される (Undo FollowがAにも配送されるため両側で消えるのを待つ)
+				await waitForFollowRelation(bob, alice, 0, WAIT_FOR_SLOW_FEDERATION);
 
 				/**
 				 * FIXME: remote account is not deleted!
@@ -442,7 +442,7 @@ describe('User', () => {
 
 				// フォロー関係が解消されているので、再度フォローできる
 				await bob.client.request('following/create', { userId: aliceInB.id });
-				await waitForFollowRelation(bob, alice, 1);
+				await waitForFollowRelation(bob, alice, 1, WAIT_FOR_SLOW_FEDERATION);
 			});
 
 			test('Alice tries to follow Bob, but it is not processed', async () => {
@@ -526,6 +526,19 @@ describe('User', () => {
 			 * instead of simple unsuspension, let's tell existence by following from Alice
 			 */
 			test('Alice can follow Bob', async () => {
+				// BではDeleteアクティビティの処理で古いaliceInB行がisDeleted=trueにされ、deleteAccountジョブの完了で物理削除される。
+				// 行が残っている間は再解決がupdatePersonの条件付き更新(isDeleted行は対象外)に失敗し、
+				// AliceからのFollowが「failed to resolve user」としてリトライなしで捨てられてしまうため、行の削除を待ってからフォローする。
+				await vi.waitFor(async () => {
+					await rejects(
+						async () => await bob.client.request('users/show', { userId: aliceInB.id }),
+						(err: any) => {
+							strictEqual(err.code, 'NO_SUCH_USER');
+							return true;
+						},
+					);
+				}, WAIT_FOR_SLOW_FEDERATION);
+
 				await alice.client.request('following/create', { userId: bobInA.id });
 				await waitForFollowers(bob, 1, WAIT_FOR_SLOW_FEDERATION); // followed by Alice
 
