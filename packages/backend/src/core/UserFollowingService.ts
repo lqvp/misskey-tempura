@@ -453,8 +453,6 @@ export class UserFollowingService implements OnModuleInit {
 
 		this.decrementFollowing(following.follower, following.followee);
 
-		const policies = await this.roleService.getUserPolicies(follower.id);
-
 		if (!silent && this.userEntityService.isLocalUser(follower)) {
 			// Publish unfollow event
 			this.userEntityService.pack(followee.id, follower, {
@@ -478,24 +476,28 @@ export class UserFollowingService implements OnModuleInit {
 
 		// UnFollow
 		// silent指定時(アカウント削除・suspend・ブロックインポート等の一括処理)は、
-		// 相手への通知・stream・webhookも発行しない (一括処理で大量通知のspamになるため)
-		if (!silent && this.userEntityService.isLocalUser(followee) && policies.canUseUnFollowNotification) {
-			this.userEntityService.pack(followee.id, follower, {
-				schema: 'UserDetailedNotMe',
-			}).then(async packed => {
-				this.globalEventService.publishMainStream(followee.id, 'unfollow', packed);
+		// 相手への通知・stream・webhookも発行しない (一括処理で大量通知のspamになるため)。
+		// ポリシー照会(DB参照含む)はこの分岐でしか使わないため、silent時は取得自体をスキップする
+		if (!silent && this.userEntityService.isLocalUser(followee)) {
+			const policies = await this.roleService.getUserPolicies(follower.id);
+			if (policies.canUseUnFollowNotification) {
+				this.userEntityService.pack(followee.id, follower, {
+					schema: 'UserDetailedNotMe',
+				}).then(async packed => {
+					this.globalEventService.publishMainStream(followee.id, 'unfollow', packed);
 
-				const webhooks = (await this.webhookService.getActiveWebhooks()).filter(x => x.userId === followee.id && x.on.includes('unfollow'));
-				for (const webhook of webhooks) {
-					this.queueService.userWebhookDeliver(webhook, 'unfollow', {
-						user: packed,
-					});
-				}
-			});
+					const webhooks = (await this.webhookService.getActiveWebhooks()).filter(x => x.userId === followee.id && x.on.includes('unfollow'));
+					for (const webhook of webhooks) {
+						this.queueService.userWebhookDeliver(webhook, 'unfollow', {
+							user: packed,
+						});
+					}
+				});
 
-			// 通知を作成
-			this.notificationService.createNotification(followee.id, 'unfollow', {
-			}, follower.id);
+				// 通知を作成
+				this.notificationService.createNotification(followee.id, 'unfollow', {
+				}, follower.id);
+			}
 		}
 
 		await this.historyService.addUnfollowHistory(following.follower, following.followee);

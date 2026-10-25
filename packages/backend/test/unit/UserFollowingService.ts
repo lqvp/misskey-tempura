@@ -153,4 +153,20 @@ describe('unfollow の silent 指定', () => {
 
 		expect(notificationService.createNotification).toHaveBeenCalledWith('local-user', 'unfollow', {}, 'deleted-remote');
 	});
+
+	test('silent=true ではロールポリシー照会自体をスキップする (一括処理のDB負荷を避ける)', async () => {
+		await service.unfollow(follower as any, followee as any, true, true);
+
+		expect(roleService.getUserPolicies).not.toHaveBeenCalled();
+	});
+
+	test('ポリシー不許可でも通知を作らないだけで unfollow 履歴は記録する', async () => {
+		roleService.getUserPolicies.mockResolvedValue({ canUseUnFollowNotification: false } as any);
+		const historyService = (service as any).historyService;
+
+		await service.unfollow(follower as any, followee as any, false, true);
+
+		expect(notificationService.createNotification).not.toHaveBeenCalled();
+		expect(historyService.addUnfollowHistory).toHaveBeenCalledWith(follower, followee);
+	});
 });

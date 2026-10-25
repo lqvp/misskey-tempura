@@ -108,7 +108,7 @@ describe('CacheService (user cache events)', () => {
 
 		ctx.usersRepository.findOneBy
 			.mockRejectedValueOnce(new Error('db down')) // 1回目のイベントの適用は失敗
-			.mockResolvedValueOnce(user);                // 2回目は成功
+			.mockResolvedValueOnce(user); // 2回目は成功
 
 		ctx.emit('remoteUserUpdated', { id: 'u3' });
 		// 失敗時はstaleなキャッシュを残さず安全に無効化する
@@ -161,7 +161,7 @@ describe('CacheService (user cache events)', () => {
 		const aCall = new Promise(r => { resolveA = r; });
 		ctx.usersRepository.findOneBy
 			.mockImplementationOnce(() => aCall) // user A: 遅延
-			.mockResolvedValueOnce(null);        // user B: 即座
+			.mockResolvedValueOnce(null); // user B: 即座
 
 		ctx.emit('remoteUserUpdated', { id: 'a' });
 		ctx.emit('userChangeDeletedState', { id: 'b', isDeleted: true });
