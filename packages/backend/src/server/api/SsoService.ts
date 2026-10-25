@@ -18,6 +18,7 @@ import {
 	type Configuration,
 } from 'openid-client';
 import { DI } from '@/di-symbols.js';
+import { MiMeta, MiUserSsoLink } from '@/models/_.js';
 import type { UserSsoLinkRepository, UserProfilesRepository, UserSecurityKeysRepository, MiUserProfile } from '@/models/_.js';
 import { UserAuthService } from '@/core/UserAuthService.js';
 import type { Config } from '@/config.js';
@@ -275,15 +276,25 @@ export class SsoService {
 				throw new SsoError('ALREADY_LINKED', 'This user is already linked to this provider');
 			}
 
-			await this.userSsoLinkRepository.insert({
-				id: this.idService.gen(),
-				userId: stateData.userId,
-				provider: provider.key,
-				// subject を取得した発行者を連携に残す。連携の作成と発行者の変更が競合しても、
-				// 別の発行者が同じ sub を返してログインできてしまうことを防ぐ
-				providerIssuer: this.issuerOf(provider),
-				providerUserId: subject,
-				createdAt: new Date(),
+			// subject は、いまのプロバイダー設定 (clientId・発行者) で取得したもの。連携の作成と clientId の変更 (連携の解除を伴う) が
+			// 競合しても、古い clientId で得た sub の連携が新しい clientId の下に残らないよう、メタの行を共有ロックして
+			// 設定がそのままであることを確認してから同じトランザクションで連携を作る (clientId を変える保存は同じ行を排他ロックする)
+			await this.userSsoLinkRepository.manager.transaction(async manager => {
+				const metas = await manager.find(MiMeta, { order: { id: 'DESC' }, lock: { mode: 'pessimistic_read' } });
+				const latest = metas[0]?.ssoProviders.find(p => p.key === provider.key);
+				if (latest == null || !latest.enabled || latest.clientId !== provider.clientId || this.issuerOf(latest) !== this.issuerOf(provider)) {
+					throw new SsoError('INVALID_STATE', 'The provider configuration changed during linking');
+				}
+				await manager.insert(MiUserSsoLink, {
+					id: this.idService.gen(),
+					userId: stateData.userId!,
+					provider: provider.key,
+					// subject を取得した発行者を連携に残す。連携の作成と発行者の変更が競合しても、
+					// 別の発行者が同じ sub を返してログインできてしまうことを防ぐ
+					providerIssuer: this.issuerOf(provider),
+					providerUserId: subject,
+					createdAt: new Date(),
+				});
 			});
 
 			this.logger.info(`Linked SSO account (provider=${provider.key}) to user ${stateData.userId}`);

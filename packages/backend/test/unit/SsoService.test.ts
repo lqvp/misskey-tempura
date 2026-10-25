@@ -4,7 +4,7 @@
  */
 
 import { createHash } from 'node:crypto';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 import { mockDeep } from 'vitest-mock-extended';
 import { SsoService, resolveSsoAdditionalAuthRequirement } from '@/server/api/SsoService.js';
 import type { LoggerService } from '@/core/LoggerService.js';
@@ -200,3 +200,33 @@ describe('SsoService ログインコードのブラウザ束縛', () => {
 	});
 });
 
+
+describe('SsoService 連携の作成と clientId 変更の競合', () => {
+	const provider = { key: 'p', type: 'oidc', clientId: 'cid-old', clientSecret: 's', issuerUrl: 'https://idp.invalid', buttonLabel: null, enabled: true, trustUpstreamMfa: false } as any;
+
+	function create(latestProviders: any[]) {
+		const redis = new FakeRedis();
+		const insert = vi.fn(async () => undefined);
+		const manager = { find: vi.fn(async () => [{ ssoProviders: latestProviders }]), insert };
+		const repo = { findOneBy: vi.fn(async () => null), manager: { transaction: async (fn: (m: any) => Promise<void>) => await fn(manager) } };
+		const metaService = { fetch: vi.fn(async () => ({ ssoProviders: [provider] })) };
+		const service = new SsoService({} as any, repo as any, redis as any, {} as any, {} as any, {} as any, { gen: () => 'id1' } as any, metaService as any, {} as any, mockDeep<LoggerService>());
+		vi.spyOn(service as any, 'fetchSubject').mockResolvedValue('sub-1');
+		return { redis, service, insert };
+	}
+	const state = JSON.stringify({ provider: 'p', type: 'link', userId: 'u1' });
+
+	test('設定が変わっていなければ連携を作る', async () => {
+		const { redis, service, insert } = create([provider]);
+		await redis.set('sso:state:st', state, 'EX', 60);
+		expect(await service.handleCallback('p', 'code', 'st')).toEqual({ type: 'link', userId: 'u1' });
+		expect(insert).toHaveBeenCalledTimes(1);
+	});
+
+	test('取得後に clientId が変わっていたら連携を作らない', async () => {
+		const { redis, service, insert } = create([{ ...provider, clientId: 'cid-new' }]);
+		await redis.set('sso:state:st', state, 'EX', 60);
+		await expect(service.handleCallback('p', 'code', 'st')).rejects.toMatchObject({ code: 'INVALID_STATE' });
+		expect(insert).not.toHaveBeenCalled();
+	});
+});
