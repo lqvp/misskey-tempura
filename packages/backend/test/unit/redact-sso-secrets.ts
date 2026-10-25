@@ -19,6 +19,12 @@ const provider = (over: Record<string, unknown> = {}) => ({
 });
 
 describe('redactMetaForModerationLog', () => {
+	it('rev (版の材料の乱数) を持つ設定でも clientSecret は残らない', () => {
+		const out = redactMetaForModerationLog({ ssoProviders: [provider({ rev: 'random-rev' })] } as any);
+		expect(out.ssoProviders[0]).toMatchObject({ rev: 'random-rev', hasClientSecret: true });
+		expect(JSON.stringify(out)).not.toContain('synthetic-secret-value');
+	});
+
 	it('clientSecret を除き、有無だけ hasClientSecret で残す', () => {
 		const out = redactMetaForModerationLog({ name: 'x', ssoProviders: [provider(), provider({ key: 'empty', clientSecret: '' })] } as any);
 		expect(JSON.stringify(out)).not.toContain('synthetic-secret-value');

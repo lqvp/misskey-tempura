@@ -235,6 +235,22 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		assert.strictEqual((await row())[0].clientSecret, 'secret-new');
 		assert.notStrictEqual(await getRevision(), r1, '秘密を変えたら版も変わる');
 
+		// rev を持たない旧状態の設定 (版の導入前に保存されたもの) からでも、現在の版で初回の保存ができ、以後は rev が付く
+		await db.query('UPDATE "meta" SET "ssoProviders" = (SELECT jsonb_agg(elem - \'rev\') FROM jsonb_array_elements("ssoProviders") elem)');
+		assert.strictEqual((await row())[0].rev, undefined);
+		const legacyRevision = await getRevision();
+		const first = await api('admin/update-meta', { ssoProvidersRevision: legacyRevision, ssoProviders: [entry({ clientSecret: '' })] }, admin);
+		assert.strictEqual(first.status, 204);
+		assert.strictEqual((await row())[0].clientSecret, 'secret-new');
+		assert.strictEqual(typeof (await row())[0].rev, 'string');
+		assert.notStrictEqual(await getRevision(), legacyRevision);
+
+		// 監査ログには clientSecret も rev 由来の秘密も残らない
+		const logs = await api('admin/show-moderation-logs', { limit: 20 }, admin);
+		assert.strictEqual(logs.status, 200);
+		assert.ok(!JSON.stringify(logs.body).includes('secret-new'));
+		assert.ok(!JSON.stringify(logs.body).includes('secret-stale'));
+
 		// 版が最新で秘密を空欄にすれば保持される (既存の挙動)
 		const keep = await api('admin/update-meta', { ssoProvidersRevision: await getRevision(), ssoProviders: [entry({ clientSecret: '' })] }, admin);
 		assert.strictEqual(keep.status, 204);
