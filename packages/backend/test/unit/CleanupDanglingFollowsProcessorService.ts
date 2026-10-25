@@ -108,6 +108,8 @@ function createService(options: {
 
 	const cacheService = {
 		userFollowingsCache: { refresh: vi.fn() },
+		userByIdCache: { delete: vi.fn() },
+		localUserByIdCache: { delete: vi.fn() },
 	};
 
 	const service = new CleanupDanglingFollowsProcessorService(
@@ -354,6 +356,20 @@ describe('CleanupDanglingFollowsProcessorService', () => {
 		expect(state.followings.map(f => f.id)).toStrictEqual(['f2']);
 		expect(notificationService.createNotification).toHaveBeenCalledWith('user1', 'cleanupDanglingFollowsCompleted', { count: 1 });
 		expect(message).toContain('1 deleted users');
+	});
+
+	test('invalidates the user entity caches after recalculating counters', async () => {
+		const { service, cacheService } = createService({
+			followings: [
+				{ id: 'f1', followerId: 'user1', followeeId: 'deleted1' },
+			],
+			users: [{ id: 'user1' }, { id: 'deleted1', isDeleted: true }],
+		});
+
+		await service.process(job('user1'));
+
+		expect(cacheService.userByIdCache.delete).toHaveBeenCalledWith('user1');
+		expect(cacheService.localUserByIdCache.delete).toHaveBeenCalledWith('user1');
 	});
 
 	test('a cache refresh failure does not fail the job', async () => {

@@ -99,6 +99,11 @@ export class CleanupDanglingFollowsProcessorService {
 			await manager.update(MiUser, user.id, { followingCount, followersCount });
 		});
 
+		// カウンタを直接UPDATEしたため、ユーザー実体キャッシュ上のfollowingCount/followersCountは
+		// 古いままになる。次回アクセス時に再取得されるよう無効化する (自分の$i表示に直結するため)
+		this.cacheService.userByIdCache.delete(user.id);
+		this.cacheService.localUserByIdCache.delete(user.id);
+
 		// 関係を直接DELETEしたためキャッシュ更新イベントは発火しない。明示的にリフレッシュする。
 		// refreshはasyncで、失敗時に未処理のrejectを浮かせないよう必ず捕捉する。
 		// 失敗してもクリーンアップ本体(DB)は完了済みで、キャッシュはTTLで自然回復するためジョブは失敗させない。
