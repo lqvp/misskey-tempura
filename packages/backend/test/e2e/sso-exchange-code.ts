@@ -303,7 +303,10 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 	// 確認コードのメールを受け取るだけの最小の SMTP サーバー。本文から 6 桁のコードを取り出す
 	async function startMailSink() {
 		const mails: string[] = [];
+		const sockets = new Set<net.Socket>();
 		const server = net.createServer(socket => {
+			sockets.add(socket);
+			socket.on('close', () => sockets.delete(socket));
 			let inData = false;
 			let buf = '';
 			let data = '';
@@ -312,11 +315,14 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 				buf += chunk.toString('latin1');
 				for (;;) {
 					if (inData) {
-						const end = buf.indexOf('\r\n.\r\n');
-						if (end < 0) { data += buf; buf = ''; break; }
-						mails.push(data + buf.slice(0, end));
+						// 終端 (CRLF.CRLF) がチャンクの境目で分かれても見つけられるよう、溜めた全体から探す
+						data += buf;
+						buf = '';
+						const end = data.indexOf('\r\n.\r\n');
+						if (end < 0) break;
+						mails.push(data.slice(0, end));
+						buf = data.slice(end + 5);
 						data = '';
-						buf = buf.slice(end + 5);
 						inData = false;
 						socket.write('250 OK\r\n');
 						continue;
@@ -360,7 +366,8 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 				}
 				throw new Error('確認コードのメールが届かなかった');
 			},
-			close: () => new Promise<void>(resolve => server.close(() => resolve())),
+			// 接続が残っていると close が終わらないので、残りは切る
+			close: () => new Promise<void>(resolve => { server.close(() => resolve()); for (const sock of sockets) sock.destroy(); }),
 		};
 	}
 

@@ -49,7 +49,7 @@ describe('limitSsoRequest (429 とヘッダー)', () => {
 	test('追加認証の送信 (skipMinInterval) には minInterval を課さず、通常のリクエストには課す', async () => {
 		const normal = create(null);
 		await normal.run();
-		expect(normal.limit.mock.calls[0]).toMatchObject([{ key: 'sso-callback', max: 30, minInterval: 1000 }]);
+		expect((normal.limit.mock.calls[0] as unknown[])[0]).toMatchObject({ key: 'sso-callback', max: 30, minInterval: 1000 });
 
 		const additional = create(null);
 		await additional.run({ skipMinInterval: true });
