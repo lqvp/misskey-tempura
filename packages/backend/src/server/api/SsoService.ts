@@ -372,7 +372,8 @@ export class SsoService {
 	public async recordAdditionalAuthFailure(loginCode: string): Promise<void> {
 		const key = `sso:loginCodeAttempts:${loginCode}`;
 		const attempts = await this.redisClient.incr(key);
-		if (attempts === 1) {
+		// 初回、または寿命が付いていない (最初の失敗の直後にプロセスが止まった) ときに寿命を付ける。寿命なしのカウンタを残さない
+		if (attempts === 1 || await this.redisClient.ttl(key) < 0) {
 			// 確認コード待ちでログインコードが延長されても、失敗回数の上限が先に消えないようにする
 			await this.redisClient.expire(key, LOGIN_CODE_EMAIL_CHALLENGE_TTL_SEC);
 		}

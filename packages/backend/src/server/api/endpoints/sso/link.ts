@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import ms from 'ms';
 import bcrypt from 'bcryptjs';
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
@@ -18,6 +19,12 @@ export const meta = {
 	requireCredential: true,
 
 	secure: true,
+
+	// 乗っ取られたセッションからのパスワード総当たり (再認証の突破) を抑える。i/update-email と同じ形式の上限
+	limit: {
+		duration: ms('1hour'),
+		max: 10,
+	},
 
 	errors: {
 		providerNotFound: {

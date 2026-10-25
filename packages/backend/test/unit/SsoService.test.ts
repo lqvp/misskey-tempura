@@ -152,6 +152,16 @@ describe('SsoService ログインコードの寿命と失敗回数 (メール確
 		expect(await service.peekLoginCode('c')).toBeNull();
 	});
 
+	test('寿命が付いていない失敗カウンタ (最初の失敗の直後に止まった場合) は、次の失敗で寿命が付く', async () => {
+		const { redis, service } = create();
+		await redis.set('sso:loginCode:c', pending, 'EX', 120);
+		// 寿命なしのカウンタが残っている状態を作る
+		await redis.set('sso:loginCodeAttempts:c', '1');
+		expect(await redis.ttl('sso:loginCodeAttempts:c')).toBe(-1);
+		await service.recordAdditionalAuthFailure('c');
+		expect(await redis.ttl('sso:loginCodeAttempts:c')).toBeGreaterThan(0);
+	});
+
 	test('同じログインコードの並行消費は片方だけ成功する', async () => {
 		const { redis, service } = create();
 		await redis.set('sso:loginCode:c', pending, 'EX', 120);
