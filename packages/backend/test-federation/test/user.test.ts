@@ -429,7 +429,9 @@ describe('User', () => {
 				await waitForFollowRelation(bob, alice, 1); // followed by Bob
 
 				await bAdmin.client.request('admin/delete-account', { userId: aliceInB.id });
-				await sleep();
+
+				// 削除時にdanglingなフォロー関係が解消される
+				await waitForFollowing(bob, 0, WAIT_FOR_SLOW_FEDERATION);
 
 				/**
 				 * FIXME: remote account is not deleted!
@@ -438,16 +440,9 @@ describe('User', () => {
 				const deletedAlice = await bob.client.request('users/show', { userId: aliceInB.id });
 				assert(deletedAlice.id, aliceInB.id);
 
-				// TODO: why still following relation?
-				const following = await bob.client.request('users/following', { userId: bob.id });
-				strictEqual(following.length, 1);
-				await rejects(
-					async () => await bob.client.request('following/create', { userId: aliceInB.id }),
-					(err: any) => {
-						strictEqual(err.code, 'ALREADY_FOLLOWING');
-						return true;
-					},
-				);
+				// フォロー関係が解消されているので、再度フォローできる
+				await bob.client.request('following/create', { userId: aliceInB.id });
+				await waitForFollowRelation(bob, alice, 1);
 			});
 
 			test('Alice tries to follow Bob, but it is not processed', async () => {
@@ -500,8 +495,9 @@ describe('User', () => {
 				await aAdmin.client.request('admin/unsuspend-user', { userId: alice.id });
 				await sleep();
 
+				// Bサーバー側でフォロー関係が解消され、Undo Followが配送されるためA側の関係も消える
 				const followers = await alice.client.request('users/followers', { userId: alice.id });
-				strictEqual(followers.length, 1); // FIXME: followers are not deleted??
+				strictEqual(followers.length, 0);
 
 				/**
 				 * FIXME: still rejected!
@@ -531,7 +527,7 @@ describe('User', () => {
 			 */
 			test('Alice can follow Bob', async () => {
 				await alice.client.request('following/create', { userId: bobInA.id });
-				await waitForFollowers(bob, 1); // followed by Alice
+				await waitForFollowers(bob, 1, WAIT_FOR_SLOW_FEDERATION); // followed by Alice
 
 				const bobFollowers = await bob.client.request('users/followers', { userId: bob.id });
 				assert(bobFollowers[0].follower != null);
@@ -545,7 +541,7 @@ describe('User', () => {
 
 				// Bob tries to follow Alice
 				await bob.client.request('following/create', { userId: renewedaliceInB.id });
-				await waitForFollowers(alice, 1);
+				await waitForFollowers(alice, 1, WAIT_FOR_SLOW_FEDERATION);
 
 				// FIXME: but resolving still fails ...
 				await rejects(
