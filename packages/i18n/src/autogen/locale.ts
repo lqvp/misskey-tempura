@@ -17300,5 +17300,21 @@ export interface Locale extends ILocale {
          * プロバイダーキーが重複しています
          */
         "duplicateProviderKey": string;
+        /**
+         * このプロバイダーには連携済みのユーザーがいるため、種類や Issuer URL を変更したり、同じキーで作り直したりできません。
+         */
+        "providerLinked": string;
+        /**
+         * 他の管理者が先に SSO プロバイダー設定を変更したため、保存しませんでした。最新の設定を読み込みますか？ 読み込むと、この画面の未保存の編集は破棄されます。「キャンセル」を選ぶと編集内容はそのまま残ります。
+         */
+        "providersConflict": string;
+        /**
+         * IdPのMFAを信頼する
+         */
+        "trustUpstreamMfa": string;
+        /**
+         * 有効にすると、このプロバイダーでのSSOログイン時にMisskey側の追加認証 (TOTP / パスキー) をスキップします。IdP側でMFAが強制されている場合のみ有効にしてください。
+         */
+        "trustUpstreamMfaDescription": string;
     };
 }

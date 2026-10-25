@@ -218,11 +218,14 @@ export class ApiServerService {
 				}
 				reply.redirect(authorizationUrl);
 			} catch (err) {
+				// ブラウザの画面遷移で開かれるので、JSON を見せずに callback と同じエラー画面へ戻す
+				const webCallbackUrl = `${this.config.url}/sso/callback`;
 				if (err instanceof SsoError) {
-					reply.code(400).send({ error: { message: err.message, code: err.code, id: '4a7b2d3f-8c9e-4f6a-0b1c-2d3e4f5a6b7c' } });
+					reply.redirect(`${webCallbackUrl}?sso_error=${encodeURIComponent(err.code)}`);
 					return;
 				}
-				throw err;
+				this.logger.error(`SSO initiate error (provider=${providerKey}): ${err}`);
+				reply.redirect(`${webCallbackUrl}?sso_error=INTERNAL`);
 			}
 		});
 
