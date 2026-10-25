@@ -19,6 +19,7 @@ function createService(options: {
 	transactionError?: Error;
 	notificationError?: Error;
 	userLookupError?: (call: number) => Error | undefined;
+	deleteError?: (call: number) => Error | undefined;
 } = {}) {
 	const state = {
 		followings: [...(options.followings ?? [])] as FollowingRow[],
@@ -28,8 +29,11 @@ function createService(options: {
 
 	const userUpdates: Array<{ id: string; patch: any }> = [];
 
+	let deleteCalls = 0;
 	const manager = {
 		delete: vi.fn(async (_entity: any, criteria: Array<Record<string, any>> | Record<string, any>) => {
+			const err = options.deleteError?.(deleteCalls++);
+			if (err) throw err;
 			const list = Array.isArray(criteria) ? criteria : [criteria];
 			state.followings = state.followings.filter(row =>
 				!list.some(c => {
@@ -65,9 +69,16 @@ function createService(options: {
 				.map(row => ({ id: row.id, followerId: row.followerId, followeeId: row.followeeId }));
 		}),
 		manager: {
+			// 実際のトランザクションのように、途中失敗時は関係テーブルの変更をロールバックする
 			transaction: vi.fn(async (cb: (m: typeof manager) => Promise<void>) => {
 				if (options.transactionError) throw options.transactionError;
-				await cb(manager);
+				const snapshot = [...state.followings];
+				try {
+					await cb(manager);
+				} catch (e) {
+					state.followings = snapshot;
+					throw e;
+				}
 			}),
 		},
 	};
@@ -276,6 +287,57 @@ describe('CleanupDanglingFollowsProcessorService', () => {
 		expect(ctx.state.followings.map(f => f.id)).toStrictEqual(['f0002']);
 		expect(ctx.manager.update).toHaveBeenCalledTimes(1);
 		expect(message).toContain('1 deleted users');
+	});
+
+	test('splits deletions into chunks when deleted relations exceed DELETE_CHUNK, updating the counter once', async () => {
+		// 1200件すべて削除済みアカウント宛 → DELETEは500+500+200の3チャンク
+		const followings: FollowingRow[] = [];
+		const users = [{ id: 'user1' }];
+		for (let i = 0; i < 1200; i++) {
+			const uid = `u${String(i).padStart(4, '0')}`;
+			followings.push({ id: `f${String(i).padStart(4, '0')}`, followerId: 'user1', followeeId: uid });
+			users.push({ id: uid, isDeleted: true });
+		}
+		const { service, state, manager, notificationService } = createService({ followings, users });
+
+		await service.process(job('user1'));
+
+		expect(manager.delete).toHaveBeenCalledTimes(3);
+		// チャンク合計の取りこぼしなし: 全1200件が消える
+		expect(state.followings).toHaveLength(0);
+		// カウンタ更新はトランザクション内でちょうど1回
+		expect(manager.update).toHaveBeenCalledTimes(1);
+		expect(manager.update).toHaveBeenCalledWith(expect.anything(), 'user1', { followingCount: 0, followersCount: 0 });
+		expect(notificationService.createNotification).toHaveBeenCalledWith('user1', 'cleanupDanglingFollowsCompleted', { count: 1200 });
+	});
+
+	test('rolls back the whole transaction when a later delete chunk fails, and a retry completes', async () => {
+		let failSecondChunk = true;
+		const followings: FollowingRow[] = [];
+		const users = [{ id: 'user1' }];
+		for (let i = 0; i < 1200; i++) {
+			const uid = `u${String(i).padStart(4, '0')}`;
+			followings.push({ id: `f${String(i).padStart(4, '0')}`, followerId: 'user1', followeeId: uid });
+			users.push({ id: uid, isDeleted: true });
+		}
+		const ctx = createService({
+			followings,
+			users,
+			deleteError: call => (failSecondChunk && call === 1) ? new Error('deadlock detected') : undefined,
+		});
+
+		// 2チャンク目の失敗でトランザクションごとロールバックされる (1チャンク目の削除も残る)
+		await expect(ctx.service.process(job('user1'))).rejects.toThrow('deadlock detected');
+		expect(ctx.state.followings).toHaveLength(1200);
+		expect(ctx.manager.update).not.toHaveBeenCalled();
+		expect(ctx.notificationService.createNotification).not.toHaveBeenCalled();
+
+		// リトライで全チャンクが通り完走する
+		failSecondChunk = false;
+		const message = await ctx.service.process(job('user1'));
+		expect(ctx.state.followings).toHaveLength(0);
+		expect(ctx.manager.update).toHaveBeenCalledTimes(1);
+		expect(message).toContain('1200 deleted users');
 	});
 
 	test('treats relations to users whose rows are already gone (post-deletion) as dangling', async () => {
