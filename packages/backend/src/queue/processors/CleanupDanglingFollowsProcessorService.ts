@@ -99,8 +99,14 @@ export class CleanupDanglingFollowsProcessorService {
 			await manager.update(MiUser, user.id, { followingCount, followersCount });
 		});
 
-		// 関係を直接DELETEしたためキャッシュ更新イベントは発火しない。明示的にリフレッシュする
-		this.cacheService.userFollowingsCache.refresh(user.id);
+		// 関係を直接DELETEしたためキャッシュ更新イベントは発火しない。明示的にリフレッシュする。
+		// refreshはasyncで、失敗時に未処理のrejectを浮かせないよう必ず捕捉する。
+		// 失敗してもクリーンアップ本体(DB)は完了済みで、キャッシュはTTLで自然回復するためジョブは失敗させない。
+		try {
+			await this.cacheService.userFollowingsCache.refresh(user.id);
+		} catch (error) {
+			this.logger.warn(`Failed to refresh followings cache for user ${user.id}:`, { error: String(error) });
+		}
 
 		const message = deletedUserIds.size > 0
 			? `Cleaned up relationships with ${deletedUserIds.size} deleted users for user ${user.id}.`

@@ -356,6 +356,22 @@ describe('CleanupDanglingFollowsProcessorService', () => {
 		expect(message).toContain('1 deleted users');
 	});
 
+	test('a cache refresh failure does not fail the job', async () => {
+		const { service, state, cacheService, logger } = createService({
+			followings: [
+				{ id: 'f1', followerId: 'user1', followeeId: 'deleted1' },
+			],
+			users: [{ id: 'user1' }, { id: 'deleted1', isDeleted: true }],
+		});
+		cacheService.userFollowingsCache.refresh.mockRejectedValue(new Error('redis down'));
+
+		const message = await service.process(job('user1'));
+
+		expect(state.followings).toHaveLength(0);
+		expect(logger.warn).toHaveBeenCalled();
+		expect(message).toContain('1 deleted users');
+	});
+
 	test('a notification failure does not fail the job', async () => {
 		const { service, state, logger } = createService({
 			followings: [
