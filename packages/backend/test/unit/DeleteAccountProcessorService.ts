@@ -63,23 +63,25 @@ function createService(options: {
 	const globalEventService = { publishInternalEvent: vi.fn() };
 
 	const emptyRepo = { find: vi.fn(async () => []) };
+	const userProfilesRepository = { findOneBy: vi.fn(async () => ({ email: 'user@example.com', emailVerified: true })) };
+	const emailService = { sendEmail: vi.fn() };
 	const service = new DeleteAccountProcessorService(
 		usersRepository as any,
-		{ findOneByOrFail: vi.fn(async () => ({ email: 'user@example.com' })) } as any,
+		userProfilesRepository as any,
 		emptyRepo as any, // notes
 		emptyRepo as any, // driveFiles
 		emptyRepo as any, // pages
 		followingsRepository as any,
 		{ deleteFileSync: vi.fn() } as any, // driveService
 		{ delete: vi.fn() } as any, // pageService
-		{ sendEmail: vi.fn() } as any, // emailService
+		emailService as any,
 		queueLoggerService as any,
 		{ unindexNote: vi.fn() } as any, // searchService
 		userFollowingService as any,
 		globalEventService as any,
 	);
 
-	return { service, state, usersRepository, followingsRepository, userFollowingService, logger, globalEventService };
+	return { service, state, usersRepository, followingsRepository, userFollowingService, logger, globalEventService, userProfilesRepository, emailService };
 }
 
 function job(userId: string, soft?: boolean) {
@@ -230,5 +232,19 @@ describe('DeleteAccountProcessorService (unfollow severing)', () => {
 
 		expect(usersRepository.delete).not.toHaveBeenCalled();
 		expect(globalEventService.publishInternalEvent).not.toHaveBeenCalled();
+	});
+
+	test('fetches the profile before physically deleting the user row (profile is CASCADE-deleted with the user)', async () => {
+		const { service, usersRepository, userProfilesRepository, emailService } = createService({
+			user: localUser('user1'),
+		});
+
+		await service.process(job('user1'));
+
+		// 物理削除後に取得するとCASCADEで行が無く EntityNotFoundError になるため、順序を固定する
+		expect(userProfilesRepository.findOneBy.mock.invocationCallOrder[0])
+			.toBeLessThan(usersRepository.delete.mock.invocationCallOrder[0]);
+		// 取得済みプロフィールでメール送信判定が行われる
+		expect(emailService.sendEmail).toHaveBeenCalledWith('user@example.com', 'Account deleted', 'Your account has been deleted.', 'Your account has been deleted.');
 	});
 });

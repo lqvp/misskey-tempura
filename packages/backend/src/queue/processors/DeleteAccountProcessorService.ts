@@ -270,6 +270,9 @@ export class DeleteAccountProcessorService {
 			}
 		}
 
+		// メール送信判定に使うプロフィールはユーザー行の物理削除でCASCADE削除されるため、削除前に取得する
+		const profile = await this.userProfilesRepository.findOneBy({ userId: user.id });
+
 		// soft指定されている場合は物理削除しない
 		if (job.data.soft) {
 		// nop
@@ -289,8 +292,7 @@ export class DeleteAccountProcessorService {
 
 		{ // Send email notification
 		// 全ての破壊処理の後に送る (リトライ時の重複送信を防ぐため。この後に失敗し得る処理はない)
-			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });
-			if (profile.email && profile.emailVerified) {
+			if (profile?.email && profile.emailVerified) {
 				this.emailService.sendEmail(profile.email, 'Account deleted',
 					'Your account has been deleted.',
 					'Your account has been deleted.');
