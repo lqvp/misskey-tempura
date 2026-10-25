@@ -29,6 +29,12 @@ export class CacheService implements OnApplicationShutdown {
 	public avatarDecorationMutingsCache: RedisKVCache<Set<string>>;
 	public userFollowingsCache: RedisKVCache<Record<string, Pick<MiFollowing, 'withReplies'> | undefined>>;
 
+	// 同一ユーザーのキャッシュ更新系internalイベントを受信順(= 発行順)に直列化するためのチェーン。
+	// onMessageのhandlerはasyncで、DB読みのawait中に後続イベントのhandlerが先に完了しうるため、
+	// 直列化しないと「古いイベントのcache SETが、新しいイベント(例: アカウント物理削除後の
+	// キャッシュ無効化)によるdeleteを後から上書きする」逆転が起こり得る。
+	private userCacheEventChains = new Map<MiUser['id'], Promise<void>>();
+
 	constructor(
 		@Inject(DI.redis)
 		private redisClient: Redis.Redis,
@@ -170,27 +176,13 @@ export class CacheService implements OnApplicationShutdown {
 				case 'userChangeDeletedState':
 				case 'remoteUserUpdated':
 				case 'localUserUpdated': {
-					const user = await this.usersRepository.findOneBy({ id: body.id });
-					if (user == null) {
-						this.userByIdCache.delete(body.id);
-						this.localUserByIdCache.delete(body.id);
-						for (const [k, v] of this.uriPersonCache.entries) {
-							if (v.value?.id === body.id) {
-								this.uriPersonCache.delete(k);
-							}
-						}
-					} else {
-						this.userByIdCache.set(user.id, user);
-						for (const [k, v] of this.uriPersonCache.entries) {
-							if (v.value?.id === user.id) {
-								this.uriPersonCache.set(k, user);
-							}
-						}
-						if (this.userEntityService.isLocalUser(user)) {
-							this.localUserByNativeTokenCache.set(user.token!, user);
-							this.localUserByIdCache.set(user.id, user);
-						}
-					}
+					// 同一ユーザーの適用は受信順に直列化する (上記 userCacheEventChains のコメント参照)
+					const prev = this.userCacheEventChains.get(body.id) ?? Promise.resolve();
+					const next = prev.then(() => this.applyUserCacheEvent(body.id)).catch(() => {});
+					this.userCacheEventChains.set(body.id, next);
+					void next.finally(() => {
+						if (this.userCacheEventChains.get(body.id) === next) this.userCacheEventChains.delete(body.id);
+					});
 					break;
 				}
 				case 'userTokenRegenerated': {
@@ -209,6 +201,30 @@ export class CacheService implements OnApplicationShutdown {
 				}
 				default:
 					break;
+			}
+		}
+	}
+
+	private async applyUserCacheEvent(userId: MiUser['id']): Promise<void> {
+		const user = await this.usersRepository.findOneBy({ id: userId });
+		if (user == null) {
+			this.userByIdCache.delete(userId);
+			this.localUserByIdCache.delete(userId);
+			for (const [k, v] of this.uriPersonCache.entries) {
+				if (v.value?.id === userId) {
+					this.uriPersonCache.delete(k);
+				}
+			}
+		} else {
+			this.userByIdCache.set(user.id, user);
+			for (const [k, v] of this.uriPersonCache.entries) {
+				if (v.value?.id === user.id) {
+					this.uriPersonCache.set(k, user);
+				}
+			}
+			if (this.userEntityService.isLocalUser(user)) {
+				this.localUserByNativeTokenCache.set(user.token!, user);
+				this.localUserByIdCache.set(user.id, user);
 			}
 		}
 	}
