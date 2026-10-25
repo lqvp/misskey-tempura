@@ -392,6 +392,12 @@ export class SsoService {
 		const ttl = await this.redisClient.ttl(key);
 		if (ttl > 0 && ttl < LOGIN_CODE_EMAIL_CHALLENGE_TTL_SEC) {
 			await this.redisClient.expire(key, LOGIN_CODE_EMAIL_CHALLENGE_TTL_SEC);
+			// TOTP の失敗で先に付いた失敗回数の寿命も、延ばしたログインコードより先に切れないようにする
+			const attemptsKey = `sso:loginCodeAttempts:${loginCode}`;
+			const attemptsTtl = await this.redisClient.ttl(attemptsKey);
+			if (attemptsTtl > 0 && attemptsTtl < LOGIN_CODE_EMAIL_CHALLENGE_TTL_SEC) {
+				await this.redisClient.expire(attemptsKey, LOGIN_CODE_EMAIL_CHALLENGE_TTL_SEC);
+			}
 		}
 	}
 

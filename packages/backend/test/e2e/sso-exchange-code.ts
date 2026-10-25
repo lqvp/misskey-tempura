@@ -421,4 +421,34 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 			await sink.close();
 		}
 	}, 1000 * 60);
+
+	test('連携済みのプロバイダーは、発行者・種類の変更と、削除後の同じ key での再登録を 409 で拒否する', async () => {
+		const getRevision = async () => (await api('admin/meta', {}, admin)).body.ssoProvidersRevision as string;
+		const getList = async () => (await api('admin/meta', {}, admin)).body.ssoProviders as any[];
+		const entry = (over: Record<string, unknown>) => ({ key: providerKey, type: 'oidc', clientId: 'cid', clientSecret: '', issuerUrl: 'https://idp.invalid', enabled: true, trustUpstreamMfa: false, ...over } as any);
+		const save = async (providers: any[]) => await api('admin/update-meta', { ssoProvidersRevision: await getRevision(), ssoProviders: providers }, admin);
+		assert.ok(await db.getRepository(MiUserSsoLink).countBy({ provider: providerKey }) > 0, '連携が残っているはず');
+
+		// 発行者の変更
+		const issuer = await save([entry({ issuerUrl: 'https://other-idp.invalid' })]);
+		assert.strictEqual(issuer.status, 409);
+		assert.strictEqual((issuer.body as any).error.code, 'SSO_PROVIDER_LINKED');
+		assert.strictEqual((await getList())[0].issuerUrl, 'https://idp.invalid');
+
+		// 種類の変更
+		const type = await save([entry({ type: 'github', issuerUrl: null })]);
+		assert.strictEqual(type.status, 409);
+		assert.strictEqual((type.body as any).error.code, 'SSO_PROVIDER_LINKED');
+		assert.strictEqual((await getList())[0].type, 'oidc');
+
+		// 連携が残っていても、発行者を変えない通常の保存は通る
+		assert.strictEqual((await save([entry({ buttonLabel: 'ok' })])).status, 204);
+
+		// 削除はできるが、連携が残っている間は同じ key で別の発行者を登録できない
+		assert.strictEqual((await save([])).status, 204);
+		const reuse = await save([entry({ issuerUrl: 'https://other-idp.invalid' })]);
+		assert.strictEqual(reuse.status, 409);
+		assert.strictEqual((reuse.body as any).error.code, 'SSO_PROVIDER_LINKED');
+		assert.deepStrictEqual(await getList(), []);
+	});
 });

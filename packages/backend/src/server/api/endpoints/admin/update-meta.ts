@@ -1447,7 +1447,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						return {
 							key: p.key,
 							type: p.type as SsoProviderConfig['type'],
-							clientId: p.clientId ?? '',
+							clientId: (p.clientId ?? '').trim(),
 							clientSecret,
 							issuerUrl: p.issuerUrl?.trim() || null,
 							buttonLabel: p.buttonLabel?.trim() || null,

@@ -7,7 +7,7 @@ import fetch, { Headers as NodeFetchHeaders } from 'node-fetch';
 import type * as http from 'node:http';
 import type * as https from 'node:https';
 
-const NULL_BODY_STATUSES: number[] = [101, 204, 205, 304];
+const NULL_BODY_STATUSES: number[] = [204, 205, 304];
 
 /**
  * openid-client の customFetch に渡す fetch 関数を作る。

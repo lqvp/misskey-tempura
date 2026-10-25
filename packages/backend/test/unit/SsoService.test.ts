@@ -152,6 +152,17 @@ describe('SsoService ログインコードの寿命と失敗回数 (メール確
 		expect(await service.peekLoginCode('c')).toBeNull();
 	});
 
+	test('ログインコードを延長するとき、先に付いた失敗回数の寿命も同じ長さまで延ばす', async () => {
+		const { redis, service } = create();
+		await redis.set('sso:loginCode:c', pending, 'EX', 120);
+		// 延長の前 (TOTP の失敗など) に付いた失敗回数は、ログインコードと同じ 120 秒の寿命
+		await service.recordAdditionalAuthFailure('c');
+		await redis.expire('sso:loginCodeAttempts:c', 100);
+		await service.extendLoginCodeForEmailChallenge('c');
+		expect(await redis.ttl('sso:loginCode:c')).toBe(600);
+		expect(await redis.ttl('sso:loginCodeAttempts:c')).toBe(600);
+	});
+
 	test('寿命が付いていない失敗カウンタ (最初の失敗の直後に止まった場合) は、次の失敗で寿命が付く', async () => {
 		const { redis, service } = create();
 		await redis.set('sso:loginCode:c', pending, 'EX', 120);
