@@ -22,7 +22,7 @@ import { SigninWithPasskeyApiService } from './SigninWithPasskeyApiService.js';
 import { SsoService, SsoError, resolveSsoAdditionalAuthRequirement } from './SsoService.js';
 import { WebAuthnService } from '@/core/WebAuthnService.js';
 import { RateLimiterService } from './RateLimiterService.js';
-import { getIpHash } from '@/misc/get-ip-hash.js';
+import { limitSsoRequest, verifyPasskeyForSso } from './sso-route-helpers.js';
 import type { MiLocalUser } from '@/models/User.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import type Logger from '@/logger.js';
@@ -88,20 +88,7 @@ export class ApiServerService {
 
 	/** SSO の生ルートは endpoint-meta のレート制限を通らないため、明示的に制限する */
 	private async limitSsoRequest(request: FastifyRequest, reply: FastifyReply, key: string, opts?: { skipMinInterval?: boolean; beforeReject?: () => void }): Promise<boolean> {
-		if (!this.config.enableIpRateLimit) return true;
-		// 追加認証の送信 (TOTP/パスキー) は直前のチャレンジ取得に即座に続くため minInterval を適用しない。
-		// 長期上限 (30回/10分/IP) は引き続き全リクエストに適用され、ブルートフォース耐性は維持される。
-		const rateLimit = await this.rateLimiterService.limit(
-			opts?.skipMinInterval ? { key, duration: 10 * 60 * 1000, max: 30 } : { key, duration: 10 * 60 * 1000, max: 30, minInterval: 1000 },
-			getIpHash(request.ip),
-		);
-		if (rateLimit != null) {
-			// 送信した後に付けたヘッダーは応答に乗らないので、拒否する側で先に付ける
-			opts?.beforeReject?.();
-			reply.code(429).send({ error: { message: 'Rate limit exceeded. Try again later.', code: 'RATE_LIMIT_EXCEEDED', id: '7d0e1f2a-3b4c-4d5e-8f9a-0b1c2d3e4f5a' } });
-			return false;
-		}
-		return true;
+		return await limitSsoRequest({ enableIpRateLimit: this.config.enableIpRateLimit, rateLimiterService: this.rateLimiterService }, request, reply, key, opts);
 	}
 
 	@bindThis
@@ -348,12 +335,7 @@ export class ApiServerService {
 				} else if (credential != null && additionalAuth === 'passkey') {
 					// verifyAuthentication はチャレンジ失効・未登録キー等で例外を投げるため、
 					// 例外も検証失敗として失敗回数にカウントする
-					let verified = false;
-					try {
-						verified = await this.webAuthnService.verifyAuthentication(user.id, credential);
-					} catch {
-						verified = false;
-					}
+					const verified = await verifyPasskeyForSso(this.webAuthnService, user.id, credential);
 					if (!verified) {
 						await this.ssoService.recordAdditionalAuthFailure(code);
 						await this.signinApiService.recordSecondFactorFailure(request, user);
