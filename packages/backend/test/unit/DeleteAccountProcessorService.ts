@@ -140,25 +140,38 @@ describe('DeleteAccountProcessorService (unfollow severing)', () => {
 		// 2 回目の実行では残っていた u3 との関係だけが処理される
 		expect(ctx.userFollowingService.unfollow).toHaveBeenCalledTimes(3);
 		expect(ctx.userFollowingService.unfollow).toHaveBeenLastCalledWith(
-			expect.objectContaining({ id: 'user1' }), expect.objectContaining({ id: 'u3' }), true,
+			expect.objectContaining({ id: 'user1' }), expect.objectContaining({ id: 'u3' }), true, true,
 		);
 	});
 
-	test('a business (policy) error is skipped and does not fail the job', async () => {
-		const { service, logger } = createService({
+	test('passes force=true so the forced-follow policy cannot leave relations behind (rows would be CASCADE-deleted anyway)', async () => {
+		const { service, userFollowingService } = createService({
 			user: localUser('user1'),
 			followings: [
 				{ id: 'f1', followerId: 'user1', followeeId: 'u2' },
-				{ id: 'f2', followerId: 'user1', followeeId: 'u3' },
+				{ id: 'f2', followerId: 'u3', followeeId: 'user1' },
 			],
-			unfollowError: f => f.followeeId === 'u3'
-				? new IdentifiableError('19f25f61-0141-4683-99dc-217a88d633cb', 'You cannot unfollow that user due to server policy.')
-				: undefined,
 		});
 
-		const result = await service.process(job('user1'));
+		await service.process(job('user1'));
 
-		expect(result).toBe('Account deleted');
-		expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Skipped unfollowing u3'));
+		expect(userFollowingService.unfollow).toHaveBeenCalledWith(
+			expect.objectContaining({ id: 'user1' }), expect.objectContaining({ id: 'u2' }), true, true,
+		);
+		expect(userFollowingService.unfollow).toHaveBeenCalledWith(
+			expect.objectContaining({ id: 'u3' }), expect.objectContaining({ id: 'user1' }), true, true,
+		);
+	});
+
+	test('any unfollow error fails the job (no error type is silently skipped)', async () => {
+		const { service } = createService({
+			user: localUser('user1'),
+			followings: [
+				{ id: 'f1', followerId: 'user1', followeeId: 'u2' },
+			],
+			unfollowError: () => new IdentifiableError('some-id', 'some business error'),
+		});
+
+		await expect(service.process(job('user1'))).rejects.toThrow('failing the job so it will be retried');
 	});
 });

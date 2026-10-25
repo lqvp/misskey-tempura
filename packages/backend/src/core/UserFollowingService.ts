@@ -415,9 +415,11 @@ export class UserFollowingService implements OnModuleInit {
 			id: MiUser['id']; host: MiUser['host']; uri: MiUser['host']; inbox: MiUser['inbox']; sharedInbox: MiUser['sharedInbox'];
 		},
 		silent = false,
+		force = false,
 	): Promise<void> {
-		// フォロー解除できないユーザーの場合
+		// フォロー解除できないユーザーの場合 (アカウント削除に伴う強制解除時は除く。関係行はユーザー行削除時にCASCADEで消えるため、残す選択肢は存在しない)
 		if (
+			!force &&
 			follower.host == null &&
 			this.meta.forciblyFollowedUsers.includes(followee.id) &&
 			!await this.roleService.isModerator(follower)

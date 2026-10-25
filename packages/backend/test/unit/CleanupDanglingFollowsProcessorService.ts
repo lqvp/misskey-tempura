@@ -15,13 +15,14 @@ function unwrap(value: any): any {
 
 function createService(options: {
 	followings?: FollowingRow[];
-	deletedUserIds?: string[];
+	users?: Array<{ id: string; isDeleted?: boolean }>;
 	transactionError?: Error;
 	notificationError?: Error;
 } = {}) {
 	const state = {
 		followings: [...(options.followings ?? [])] as FollowingRow[],
-		deletedUserIds: new Set(options.deletedUserIds ?? []),
+		// 行が存在するユーザーのみ。削除完了で行ごと消えたユーザーは含めない
+		users: new Map((options.users ?? []).map(u => [u.id, u])),
 	};
 
 	const userUpdates: Array<{ id: string; patch: any }> = [];
@@ -67,9 +68,11 @@ function createService(options: {
 	};
 
 	const usersRepository = {
-		find: vi.fn(async (opts: { where: { id: any; isDeleted: boolean } }) => {
+		find: vi.fn(async (opts: { where: { id: any } }) => {
 			const ids: string[] = unwrap(opts.where.id);
-			return ids.filter(id => state.deletedUserIds.has(id)).map(id => ({ id }));
+			return ids
+				.filter(id => state.users.has(id))
+				.map(id => ({ id, isDeleted: state.users.get(id)!.isDeleted ?? false }));
 		}),
 	};
 
@@ -109,7 +112,10 @@ describe('CleanupDanglingFollowsProcessorService', () => {
 				// 自分自身と無関係の関係は触らない
 				{ id: 'f5', followerId: 'live1', followeeId: 'deleted1' },
 			],
-			deletedUserIds: ['deleted1', 'deleted2'],
+			users: [
+				{ id: 'user1' }, { id: 'live1' }, { id: 'live2' },
+				{ id: 'deleted1', isDeleted: true }, { id: 'deleted2', isDeleted: true },
+			],
 		});
 
 		const message = await service.process(job('user1'));
@@ -127,7 +133,7 @@ describe('CleanupDanglingFollowsProcessorService', () => {
 			followings: [
 				{ id: 'f1', followerId: 'user1', followeeId: 'live1' },
 			],
-			deletedUserIds: [],
+			users: [{ id: 'user1' }, { id: 'live1' }],
 		});
 
 		const message = await service.process(job('user1'));
@@ -144,7 +150,9 @@ describe('CleanupDanglingFollowsProcessorService', () => {
 		for (let i = 0; i < 150; i++) {
 			followings.push({ id: `f${i}`, followerId: 'user1', followeeId: `u${i}` });
 		}
-		const { service, usersRepository } = createService({ followings });
+		const users = [{ id: 'user1' }];
+		for (let i = 0; i < 150; i++) users.push({ id: `u${i}` });
+		const { service, usersRepository } = createService({ followings, users });
 
 		await service.process(job('user1'));
 
@@ -157,7 +165,7 @@ describe('CleanupDanglingFollowsProcessorService', () => {
 			followings: [
 				{ id: 'f1', followerId: 'user1', followeeId: 'deleted1' },
 			],
-			deletedUserIds: ['deleted1'],
+			users: [{ id: 'user1' }, { id: 'deleted1', isDeleted: true }],
 			transactionError: new Error('deadlock detected'),
 		});
 
@@ -174,7 +182,7 @@ describe('CleanupDanglingFollowsProcessorService', () => {
 				{ id: 'f1', followerId: 'user1', followeeId: 'deleted1' },
 				{ id: 'f2', followerId: 'user1', followeeId: 'live1' },
 			],
-			deletedUserIds: ['deleted1'],
+			users: [{ id: 'user1' }, { id: 'live1' }, { id: 'deleted1', isDeleted: true }],
 		});
 
 		await service.process(job('user1'));
@@ -187,12 +195,28 @@ describe('CleanupDanglingFollowsProcessorService', () => {
 		expect(notificationService.createNotification).toHaveBeenLastCalledWith('user1', 'cleanupDanglingFollowsCompleted', { count: 0 });
 	});
 
+	test('treats relations to users whose rows are already gone (post-deletion) as dangling', async () => {
+		const { service, state, notificationService } = createService({
+			followings: [
+				{ id: 'f1', followerId: 'user1', followeeId: 'ghost1' }, // 行が既に存在しない
+				{ id: 'f2', followerId: 'user1', followeeId: 'live1' },
+			],
+			users: [{ id: 'user1' }, { id: 'live1' }],
+		});
+
+		const message = await service.process(job('user1'));
+
+		expect(state.followings.map(f => f.id)).toStrictEqual(['f2']);
+		expect(notificationService.createNotification).toHaveBeenCalledWith('user1', 'cleanupDanglingFollowsCompleted', { count: 1 });
+		expect(message).toContain('1 deleted users');
+	});
+
 	test('a notification failure does not fail the job', async () => {
 		const { service, state, logger } = createService({
 			followings: [
 				{ id: 'f1', followerId: 'user1', followeeId: 'deleted1' },
 			],
-			deletedUserIds: ['deleted1'],
+			users: [{ id: 'user1' }, { id: 'deleted1', isDeleted: true }],
 			notificationError: new Error('notification backend down'),
 		});
 

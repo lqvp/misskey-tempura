@@ -50,17 +50,21 @@ export class CleanupDanglingFollowsProcessorService {
 		const relatedUserIds = [...new Set(relationships.flatMap(r => [r.followerId, r.followeeId]))]
 			.filter(id => id !== user.id);
 
-		// 関連アカウントのうち削除済みのものを特定
+		// 関連アカウントのうち、行が既に存在しないもの(削除処理完了済み)と削除済みフラグのもの(削除処理中)を特定
 		const deletedUserIds = new Set<string>();
 		const BATCH_SIZE = 100;
 		for (let i = 0; i < relatedUserIds.length; i += BATCH_SIZE) {
 			const batch = relatedUserIds.slice(i, i + BATCH_SIZE);
-			const deleted = await this.usersRepository.find({
-				where: { id: In(batch), isDeleted: true },
-				select: { id: true },
+			const existing = await this.usersRepository.find({
+				where: { id: In(batch) },
+				select: { id: true, isDeleted: true },
 			});
-			for (const u of deleted) {
-				deletedUserIds.add(u.id);
+			const existingIds = new Set(existing.map(u => u.id));
+			for (const u of existing) {
+				if (u.isDeleted) deletedUserIds.add(u.id);
+			}
+			for (const id of batch) {
+				if (!existingIds.has(id)) deletedUserIds.add(id);
 			}
 		}
 
