@@ -292,6 +292,15 @@ async function composeNotification(data: PushNotificationDataMap[keyof PushNotif
 					}];
 				}
 
+				case 'cleanupDanglingFollowsCompleted':
+					return [i18n.ts._notification.cleanupDanglingFollowsCompleted, {
+						body: data.body.count > 0
+							? i18n.tsx._notification.cleanupDanglingFollowsCompletedDescription({ count: data.body.count })
+							: i18n.ts._notification.cleanupDanglingFollowsCompletedDescriptionEmpty,
+						badge: iconUrl('bell'),
+						data,
+					}];
+
 				case 'pollEnded':
 					return [i18n.ts._notification.pollEnded, {
 						body: data.body.note.text ?? '',

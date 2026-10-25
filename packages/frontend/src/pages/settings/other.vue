@@ -69,6 +69,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkFolder>
 			</SearchMarker>
 
+			<SearchMarker :keywords="['account', 'follow', 'follower', 'cleanup']">
+				<MkFolder>
+					<template #icon><SearchIcon><i class="ti ti-user-off"></i></SearchIcon></template>
+					<template #label><SearchLabel>{{ i18n.ts._relationCleanup.title }}</SearchLabel></template>
+
+					<div class="_gaps_m">
+						<FormInfo>{{ i18n.ts._relationCleanup.description }}</FormInfo>
+						<MkButton :disabled="cleanupProcessing" @click="cleanupDanglingFollows"><SearchText>{{ i18n.ts._relationCleanup.cleanup }}</SearchText></MkButton>
+					</div>
+				</MkFolder>
+			</SearchMarker>
+
 			<SearchMarker :keywords="['account', 'close', 'delete']">
 				<MkFolder>
 					<template #icon><SearchIcon><i class="ti ti-alert-triangle"></i></SearchIcon></template>
@@ -83,17 +95,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkFolder>
 			</SearchMarker>
 
-				<SearchMarker :keywords="['account', 'truncate']">
-					<MkFolder v-if="$i.policies.canUseTruncate">
-						<template #icon><i class="ti ti-recycle"></i></template>
-						<template #label><SearchLabel>{{ i18n.ts._accountTruncate.truncateAccount }}</SearchLabel><span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-						<div class="_gaps_m">
-							<FormInfo warn>{{ i18n.ts._accountTruncate.mayTakeTime }}</FormInfo>
-							<MkButton v-if="!$i.isDeleted" danger @click="truncateAccount">{{ i18n.ts._accountTruncate.requestAccountTruncate }}</MkButton>
-							<MkButton v-else disabled>{{ i18n.ts._accountTruncate.inProgress }}</MkButton>
-						</div>
-					</MkFolder>
-				</SearchMarker>
+			<SearchMarker :keywords="['account', 'truncate']">
+				<MkFolder v-if="$i.policies.canUseTruncate">
+					<template #icon><i class="ti ti-recycle"></i></template>
+					<template #label><SearchLabel>{{ i18n.ts._accountTruncate.truncateAccount }}</SearchLabel><span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+					<div class="_gaps_m">
+						<FormInfo warn>{{ i18n.ts._accountTruncate.mayTakeTime }}</FormInfo>
+						<MkButton v-if="!$i.isDeleted" danger @click="truncateAccount">{{ i18n.ts._accountTruncate.requestAccountTruncate }}</MkButton>
+						<MkButton v-else disabled>{{ i18n.ts._accountTruncate.inProgress }}</MkButton>
+					</div>
+				</MkFolder>
+			</SearchMarker>
 
 			<SearchMarker :keywords="['experimental', 'feature', 'flags']">
 				<MkFolder>
@@ -159,7 +171,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import XMigration from './migration.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import FormLink from '@/components/form/link.vue';
@@ -238,6 +250,25 @@ function readAllChatMessages() {
 async function forceCloudBackup() {
 	await cloudBackup();
 	os.success();
+}
+
+const cleanupProcessing = ref(false);
+
+async function cleanupDanglingFollows() {
+	const { canceled } = await os.confirm({
+		type: 'warning',
+		text: i18n.ts._relationCleanup.cleanupConfirm,
+	});
+	if (canceled) return;
+
+	// API応答待ちの間の再クリックでジョブが重複登録されるのを防ぐ
+	cleanupProcessing.value = true;
+	try {
+		await os.apiWithDialog('i/cleanup-dangling-follows', {});
+		os.toast(i18n.ts._relationCleanup.cleanupStarted);
+	} finally {
+		cleanupProcessing.value = false;
+	}
 }
 
 async function truncateAccount() {

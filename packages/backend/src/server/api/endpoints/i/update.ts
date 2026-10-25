@@ -268,6 +268,7 @@ export const paramDef = {
 				achievementEarned: notificationRecieveConfig,
 				app: notificationRecieveConfig,
 				test: notificationRecieveConfig,
+				cleanupDanglingFollowsCompleted: notificationRecieveConfig,
 			},
 		},
 		emailNotificationTypes: { type: 'array', items: {

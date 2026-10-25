@@ -3160,6 +3160,9 @@ _notification:
   loginFailedDescription: "{ip}からのログインに失敗しました。\n心当たりがない場合はパスワードの変更を行ってください。"
   createToken: "アクセストークンが作成されました"
   createTokenDescription: "心当たりがない場合は「{text}」を通じてアクセストークンを削除してください。"
+  cleanupDanglingFollowsCompleted: "フォロー関係を整理しました。"
+  cleanupDanglingFollowsCompletedDescription: "削除済みアカウント{count}件とのフォロー関係を削除しました。\nこれにより、フォロー数やフォロワー数が変わるかもしれません。"
+  cleanupDanglingFollowsCompletedDescriptionEmpty: "削除済みアカウントとのフォロー関係はありませんでした。\nフォロー数やフォロワー数に変化はありません。"
 
   _types:
     all: "すべて"
@@ -3186,6 +3189,7 @@ _notification:
     login: "ログイン"
     loginFailed: "ログインに失敗"
     createToken: "アクセストークンの作成"
+    cleanupDanglingFollowsCompleted: "フォロー関係の整理が完了した"
     test: "通知のテスト"
     llmModerationQueue: "LLMモデレーションキュー"
     app: "連携アプリからの通知"
@@ -4635,3 +4639,10 @@ _loginRisk:
     dormant: "長期間ログインなし"
     learning: "学習期間中"
     untrustedIp: "接続元IPを判定できない"
+
+_relationCleanup:
+  title: "フォロー関係の整理"
+  description: "フォローまたはフォロワーの中から、現在削除されているアカウントとの関係を削除し、フォロー・フォロワー数を再計算します。"
+  cleanup: "クリーンアップを実行"
+  cleanupConfirm: "削除済みアカウントとのフォロー関係を整理しますか？"
+  cleanupStarted: "フォロー関係のクリーンアップ処理を開始しました。"
