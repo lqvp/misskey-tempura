@@ -83,6 +83,7 @@ describe('WebAuthnService.verifyAuthentication (検証ライブラリは差し�
 		const service = new WebAuthnService({ url: 'https://example.test', hostname: 'example.test', host: 'example.test' } as never, { name: null, iconUrl: null } as never, redis as never, repo as never);
 		return { service, update, verifyAuthenticationResponse };
 	}
+
 	const response = { id: 'k1' } as never;
 
 	test('成功したら true を返してカウンタを更新し、同じチャレンジの再利用は例外で拒否する', async () => {

@@ -98,6 +98,7 @@ describe('SsoService ログインコードの寿命と失敗回数 (メール確
 		const service = new SsoService({} as any, {} as any, redis as any, {} as any, {} as any, {} as any, {} as any, {} as any, {} as any, loggerService);
 		return { redis, service };
 	}
+
 	const pending = JSON.stringify({ userId: 'u', provider: 'p', subject: 's' });
 
 	test('120秒のログインコードを600秒まで延ばす', async () => {
@@ -200,7 +201,6 @@ describe('SsoService ログインコードのブラウザ束縛', () => {
 	});
 });
 
-
 describe('SsoService 連携の作成と clientId 変更の競合', () => {
 	const provider = { key: 'p', type: 'oidc', clientId: 'cid-old', clientSecret: 's', issuerUrl: 'https://idp.invalid', buttonLabel: null, enabled: true, trustUpstreamMfa: false } as any;
 
@@ -214,6 +214,7 @@ describe('SsoService 連携の作成と clientId 変更の競合', () => {
 		vi.spyOn(service as any, 'fetchSubject').mockResolvedValue('sub-1');
 		return { redis, service, insert };
 	}
+
 	const state = JSON.stringify({ provider: 'p', type: 'link', userId: 'u1' });
 
 	test('設定が変わっていなければ連携を作る', async () => {

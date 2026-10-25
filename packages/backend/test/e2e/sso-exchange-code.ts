@@ -332,9 +332,7 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 					const line = buf.slice(0, nl);
 					buf = buf.slice(nl + 2);
 					const cmd = line.slice(0, 4).toUpperCase();
-					if (cmd === 'DATA') { inData = true; socket.write('354 go ahead\r\n'); }
-					else if (cmd === 'QUIT') { socket.write('221 bye\r\n'); socket.end(); }
-					else socket.write('250 OK\r\n');
+					if (cmd === 'DATA') { inData = true; socket.write('354 go ahead\r\n'); } else if (cmd === 'QUIT') { socket.write('221 bye\r\n'); socket.end(); } else socket.write('250 OK\r\n');
 				}
 			});
 			socket.on('error', () => {});
