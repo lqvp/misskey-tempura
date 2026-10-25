@@ -552,7 +552,7 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		// 2FA なし: パスワードなしは 400、誤りは 403、正しければ解除
 		const u1 = await signup({ username: 'ssoex_self1' });
 		await insertLink(u1.id);
-		assert.strictEqual((await api('sso/unlink', { provider: key }, u1)).status, 400);
+		assert.strictEqual((await api('sso/unlink', { provider: key } as any, u1)).status, 400);
 		const wrong = await api('sso/unlink', { provider: key, password: 'wrong' }, u1);
 		assert.strictEqual(wrong.status, 403);
 		assert.strictEqual((wrong.body as any).error.code, 'INCORRECT_PASSWORD');
