@@ -358,12 +358,17 @@ export class ApiServerService {
 				// メール確認コードの照合は追加認証が不要な(または通過済みの)場合だけ到達する。
 				// 通過済みの場合は確認コードを要求していないので、そのまま通常のリスク判定に進む
 				if (!passedSecondFactor) {
-					return await this.signinApiService.finishWithEmailCode(request, reply, user, {
+					const emailResult = await this.signinApiService.finishWithEmailCode(request, reply, user, {
 						challengeId: request.body.challengeId,
 						emailCode: request.body.emailCode,
 						beforeSignin: consume,
 						onCountedFailure: async () => await this.ssoService.recordAdditionalAuthFailure(code),
 					});
+					// ログインが確定したら束縛Cookieを削除する (失敗では残して、同じブラウザで再試行できるようにする)
+					if (typeof emailResult === 'object' && emailResult != null && 'finished' in emailResult && emailResult.finished === true) {
+						this.clearSsoBindingCookie(reply);
+					}
+					return emailResult;
 				}
 			}
 			const result = await this.signinApiService.finishWithRisk(request, reply, user, { email: revalidation.profile?.email ?? null, emailVerified: revalidation.profile?.emailVerified === true }, {
