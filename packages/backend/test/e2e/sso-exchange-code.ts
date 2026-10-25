@@ -204,7 +204,7 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		const getRevision = async () => (await api('admin/meta', {}, admin)).body.ssoProvidersRevision as string;
 		const getList = async () => (await api('admin/meta', {}, admin)).body.ssoProviders as any[];
 		const row = async () => (await db.query('SELECT "ssoProviders" FROM "meta" ORDER BY "id" DESC LIMIT 1'))[0].ssoProviders as any[];
-		const entry = (over: Record<string, unknown>) => ({ key: providerKey, type: 'oidc', clientId: 'cid', clientSecret: '', issuerUrl: 'https://idp.invalid', enabled: true, trustUpstreamMfa: false, ...over });
+		const entry = (over: Record<string, unknown>) => ({ key: providerKey, type: 'oidc', clientId: 'cid', clientSecret: '', issuerUrl: 'https://idp.invalid', enabled: true, trustUpstreamMfa: false, ...over } as any);
 
 		// 同じ版から同時に 2 件保存する: 片方だけ成功し、もう片方は 409 で、成功した方の変更が残る
 		const r0 = await getRevision();
@@ -214,7 +214,7 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		]);
 		assert.deepStrictEqual([a.status, b.status].sort(), [204, 409]);
 		const loser = a.status === 204 ? b : a;
-		assert.strictEqual(loser.body.error.code, 'SSO_PROVIDERS_CONFLICT');
+		assert.strictEqual((loser.body as any).error.code, 'SSO_PROVIDERS_CONFLICT');
 		assert.strictEqual((await getList())[0].buttonLabel, a.status === 204 ? 'A' : 'B');
 
 		// 古い版での保存は変更を加えずに 409
