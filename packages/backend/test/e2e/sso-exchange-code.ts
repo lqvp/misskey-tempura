@@ -257,6 +257,13 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		assert.strictEqual((await row())[0].clientSecret, 'secret-new');
 	});
 
+	test('ログイン開始に失敗したら、JSON を見せずにエラー画面へリダイレクトする', async () => {
+		await sleep(1100);
+		const res = await fetch(`http://127.0.0.1:${port}/api/sso/initiate?provider=no-such-provider`, { redirect: 'manual' });
+		assert.ok(res.status >= 300 && res.status < 400, `リダイレクトされるべき: ${res.status}`);
+		assert.ok(res.headers.get('location')?.includes('/sso/callback?sso_error='), String(res.headers.get('location')));
+	});
+
 	test('コールバックの失敗時は、ログイン用 (HttpOnly) と連携用の束縛 Cookie をどちらも属性つきで削除する', async () => {
 		await sleep(1100);
 		const res = await fetch(`http://127.0.0.1:${port}/api/sso/callback/${providerKey}?code=x&state=unknown-state`, {
