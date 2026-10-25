@@ -269,6 +269,7 @@ export * as 'i/apps' from './endpoints/i/apps.js';
 export * as 'i/authorized-apps' from './endpoints/i/authorized-apps.js';
 export * as 'i/change-password' from './endpoints/i/change-password.js';
 export * as 'i/claim-achievement' from './endpoints/i/claim-achievement.js';
+export * as 'i/cleanup-dangling-follows' from './endpoints/i/cleanup-dangling-follows.js';
 export * as 'i/delete-account' from './endpoints/i/delete-account.js';
 export * as 'i/export-antennas' from './endpoints/i/export-antennas.js';
 export * as 'i/export-blocking' from './endpoints/i/export-blocking.js';
@@ -491,7 +492,6 @@ export * as 'quote-mute/list' from './endpoints/quote-mute/list.js';
 export * as 'avatar-decoration-muting/create' from './endpoints/avatar-decoration-muting/create.js';
 export * as 'avatar-decoration-muting/delete' from './endpoints/avatar-decoration-muting/delete.js';
 export * as 'avatar-decoration-muting/list' from './endpoints/avatar-decoration-muting/list.js';
-export * as 'i/cleanup-dangling-follows' from './endpoints/i/cleanup-dangling-follows.js';
 
 // region ContactForm
 export * as 'admin/contact-form/list' from './endpoints/admin/contact-form/list.js';

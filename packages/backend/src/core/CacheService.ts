@@ -13,9 +13,9 @@ import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { bindThis } from '@/decorators.js';
 import type { GlobalEvents } from '@/core/GlobalEventService.js';
 import Logger from '@/logger.js';
+import type { OnApplicationShutdown } from '@nestjs/common';
 
 const logger = new Logger('cache');
-import type { OnApplicationShutdown } from '@nestjs/common';
 
 @Injectable()
 export class CacheService implements OnApplicationShutdown {

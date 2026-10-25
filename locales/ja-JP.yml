@@ -3161,7 +3161,7 @@ _notification:
   createToken: "アクセストークンが作成されました"
   createTokenDescription: "心当たりがない場合は「{text}」を通じてアクセストークンを削除してください。"
   cleanupDanglingFollowsCompleted: "フォロー関係を整理しました。"
-  cleanupDanglingFollowsCompletedDescription: "{count}件のゾンビ関係を削除しました。\nこれにより、フォロー数やフォロワー数が変わるかもしれません。"
+  cleanupDanglingFollowsCompletedDescription: "削除済みアカウント{count}件とのフォロー関係を削除しました。\nこれにより、フォロー数やフォロワー数が変わるかもしれません。"
 
   _types:
     all: "すべて"

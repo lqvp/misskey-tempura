@@ -11999,7 +11999,7 @@ export interface Locale extends ILocale {
          */
         "cleanupDanglingFollowsCompleted": string;
         /**
-         * {count}件のゾンビ関係を削除しました。
+         * 削除済みアカウント{count}件とのフォロー関係を削除しました。
          * これにより、フォロー数やフォロワー数が変わるかもしれません。
          */
         "cleanupDanglingFollowsCompletedDescription": ParameterizedString<"count">;
