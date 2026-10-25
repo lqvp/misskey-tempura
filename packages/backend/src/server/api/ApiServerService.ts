@@ -62,6 +62,8 @@ export class ApiServerService {
 	}
 
 	private ssoBindingCookieName = 'sso_binding';
+	// 連携用はフロントエンドが document.cookie で設定する (HttpOnly でない) ので、ログイン用とは別の名前にする
+	private ssoLinkBindingCookieName = 'sso_link_binding';
 
 	private setSsoBindingCookie(reply: FastifyReply, value: string, maxAge: number): void {
 		const secure = this.config.url.startsWith('https://') ? '; Secure' : '';
@@ -70,14 +72,16 @@ export class ApiServerService {
 
 	private clearSsoBindingCookie(reply: FastifyReply): void {
 		this.setSsoBindingCookie(reply, '', 0);
+		const secure = this.config.url.startsWith('https://') ? '; Secure' : '';
+		reply.header('set-cookie', `${this.ssoLinkBindingCookieName}=; Path=/api/sso; SameSite=Lax; Max-Age=0${secure}`);
 	}
 
-	private getSsoBindingCookie(request: FastifyRequest): string | undefined {
+	private getSsoBindingCookie(request: FastifyRequest, cookieName = this.ssoBindingCookieName): string | undefined {
 		const header = request.headers.cookie;
 		if (header == null) return undefined;
 		for (const part of header.split(';')) {
 			const [name, ...rest] = part.trim().split('=');
-			if (name === this.ssoBindingCookieName) return rest.join('=');
+			if (name === cookieName) return rest.join('=');
 		}
 		return undefined;
 	}
@@ -233,6 +237,7 @@ export class ApiServerService {
 			// ログイン成功時だけ、ログインコードの交換まで束縛Cookieを残す (交換時に同じブラウザかを確認する)。
 			// それ以外 (失敗・連携) は必ず削除する
 			const binding = this.getSsoBindingCookie(request);
+			const linkBinding = this.getSsoBindingCookie(request, this.ssoLinkBindingCookieName);
 
 			if (request.query.error) {
 				this.clearSsoBindingCookie(reply);
@@ -249,7 +254,7 @@ export class ApiServerService {
 				return;
 			}
 			try {
-				const result = await this.ssoService.handleCallback(providerKey, code, state, binding, iss);
+				const result = await this.ssoService.handleCallback(providerKey, code, state, binding, iss, linkBinding);
 				if (result.type === 'login') {
 					// 束縛Cookieはログインコードの交換まで残す。有効期間は認可開始時から数えて切れないよう、ここで 600 秒に延ばし直す
 					if (binding != null) this.setSsoBindingCookie(reply, binding, 600);

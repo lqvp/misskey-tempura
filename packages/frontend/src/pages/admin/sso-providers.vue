@@ -212,6 +212,10 @@ async function saveProviders() {
 			if (!canceled) await loadProviders();
 			return;
 		}
+		if ((error as { code?: string } | null)?.code === 'SSO_PROVIDER_LINKED') {
+			os.alert({ type: 'error', text: i18n.ts._sso.providerLinked });
+			return;
+		}
 		os.alert({ type: 'error', text: i18n.ts.somethingHappened });
 	}
 }

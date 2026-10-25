@@ -138,7 +138,7 @@ describe('SsoService コールバック全体 (実 openid-client + ローカル 
 		const { authorizationUrl, binding } = await service.initiate('link', 'idp', 'user-1');
 		const state = prepare(authorizationUrl, 'sub-A');
 
-		const result = await service.handleCallback('idp', 'code', state, binding);
+		const result = await service.handleCallback('idp', 'code', state, undefined, undefined, binding);
 		expect(result).toEqual({ type: 'link', userId: 'user-1' });
 		expect(links.rows).toHaveLength(1);
 		expect(links.rows[0]).toMatchObject({ userId: 'user-1', provider: 'idp', providerUserId: 'sub-A', providerIssuer: `oidc:${issuer}` });
@@ -156,6 +156,23 @@ describe('SsoService コールバック全体 (実 openid-client + ローカル 
 		expect(pending).toMatchObject({ userId: 'user-1', provider: 'idp', subject: 'sub-A' });
 		expect(service.isLoginCodeBoundTo(pending!, binding)).toBe(true);
 		expect(service.isLoginCodeBoundTo(pending!, 'other-browser')).toBe(false);
+	});
+
+	test('連携の束縛は連携用の値だけで照合し、残っていたログイン用の値では通らない', async () => {
+		const { service, links } = create();
+		const { authorizationUrl, binding } = await service.initiate('link', 'idp', 'user-1');
+		const state = prepare(authorizationUrl, 'sub-A');
+
+		// ログイン用 Cookie だけが届いた (連携用の値がない / 違う) 場合は拒否する
+		await expect(service.handleCallback('idp', 'code', state, 'stale-login-binding', undefined, undefined)).rejects.toMatchObject({ code: 'INVALID_STATE' });
+		expect(links.rows).toHaveLength(0);
+
+		// 連携用の値が正しければ、ログイン用の古い値が一緒に届いても通る
+		const second = await service.initiate('link', 'idp', 'user-1');
+		const state2 = prepare(second.authorizationUrl, 'sub-A');
+		const result = await service.handleCallback('idp', 'code', state2, 'stale-login-binding', undefined, second.binding);
+		expect(result).toEqual({ type: 'link', userId: 'user-1' });
+		expect(binding).not.toBe(second.binding);
 	});
 
 	test('連携していない外部アカウントはログインできず、アカウントも作られない (既存アカウントへの連携のみ)', async () => {
@@ -193,7 +210,7 @@ describe('SsoService コールバック全体 (実 openid-client + ローカル 
 		const state = prepare(authorizationUrl, 'sub-A');
 		next.nonce = 'forged-nonce';
 
-		await expect(service.handleCallback('idp', 'code', state, binding)).rejects.toThrow();
+		await expect(service.handleCallback('idp', 'code', state, undefined, undefined, binding)).rejects.toThrow();
 		expect(links.rows).toHaveLength(0);
 	});
 });

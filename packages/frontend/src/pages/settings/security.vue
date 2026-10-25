@@ -163,7 +163,7 @@ async function linkSso(providerKey: string) {
 		const res = await misskeyApi('sso/link', { provider: providerKey, password: auth.result.password, token: auth.result.token });
 		// CSRF対策のブラウザ束縛値をCookieに保存してからIdPへ遷移する (callbackで照合される)
 		const secure = window.location.protocol === 'https:' ? '; Secure' : '';
-		window.document.cookie = `sso_binding=${res.binding}; Path=/api/sso; SameSite=Lax; Max-Age=600${secure}`;
+		window.document.cookie = `sso_link_binding=${res.binding}; Path=/api/sso; SameSite=Lax; Max-Age=600${secure}`;
 		window.location.href = res.authorizationUrl;
 	} catch (err) {
 		ssoBusy.value = false;

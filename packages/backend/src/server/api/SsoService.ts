@@ -232,6 +232,8 @@ export class SsoService {
 		state: string,
 		binding?: string,
 		iss?: string,
+		/** 連携 (type: 'link') の束縛値。ログイン用の HttpOnly Cookie と名前が違う (残ったログイン用 Cookie を、ブラウザのスクリプトが上書きできないため) */
+		linkBinding?: string,
 	): Promise<{ type: 'login'; loginCode: string } | { type: 'link'; userId: string }> {
 		const raw = await this.redisClient.getdel(`sso:state:${state}`);
 		if (!raw) {
@@ -242,7 +244,8 @@ export class SsoService {
 			throw new SsoError('INVALID_STATE', 'State does not match the provider');
 		}
 		if (stateData.bindingHash != null) {
-			const actual = binding != null ? createHash('sha256').update(binding).digest('hex') : null;
+			const presented = stateData.type === 'link' ? linkBinding : binding;
+			const actual = presented != null ? createHash('sha256').update(presented).digest('hex') : null;
 			if (actual !== stateData.bindingHash) {
 				throw new SsoError('INVALID_STATE', 'Browser binding does not match');
 			}

@@ -36,6 +36,18 @@ export const meta = {
 			code: 'INVALID_LOGIN_RISK_THRESHOLDS',
 			id: '0b4b9a0e-6f0d-4c8e-9d3a-5f2f7a1c8e41',
 		},
+		invalidSsoProvider: {
+			message: 'The SSO provider settings are invalid.',
+			code: 'INVALID_SSO_PROVIDER',
+			id: '9cd404d4-e46b-4aea-82fe-feadc0c6d39f',
+			httpStatusCode: 400,
+		},
+		ssoProviderLinked: {
+			message: 'Cannot change or reuse an SSO provider while users are linked to it.',
+			code: 'SSO_PROVIDER_LINKED',
+			id: '00a7dadb-21a8-4972-9dea-da3d0a3dccb8',
+			httpStatusCode: 409,
+		},
 		ssoProvidersConflict: {
 			message: 'The SSO provider list is out of date (changed by someone else) or its revision is missing. Reload and try again.',
 			code: 'SSO_PROVIDERS_CONFLICT',
@@ -1378,18 +1390,22 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				// key の重複は禁止 (リンクの紐付けキーになるため)
 				const providerKeys = ps.ssoProviders.map(p => p.key);
 				if (new Set(providerKeys).size !== providerKeys.length) {
-					throw new Error('Duplicate provider keys are not allowed');
+					throw new ApiError(meta.errors.invalidSsoProvider);
 				}
 				for (const provider of ps.ssoProviders) {
 					if (!/^[a-z0-9][a-z0-9_-]*$/.test(provider.key)) {
-						throw new Error('Provider key must be lowercase alphanumeric (with - or _)');
+						throw new ApiError(meta.errors.invalidSsoProvider);
 					}
 					if (provider.type === 'oidc' && (provider.issuerUrl == null || provider.issuerUrl.trim() === '')) {
-						throw new Error('issuerUrl is required for oidc providers');
+						throw new ApiError(meta.errors.invalidSsoProvider);
 					}
 					if (provider.type === 'oidc') {
 						// 保存後にログインボタンだけが出て、ログイン時に失敗するのを防ぐ
-						assertValidOidcIssuerUrl(provider.issuerUrl!);
+						try {
+							assertValidOidcIssuerUrl(provider.issuerUrl!);
+						} catch {
+							throw new ApiError(meta.errors.invalidSsoProvider);
+						}
 					}
 				}
 
@@ -1411,7 +1427,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 							// 別の発行者が同じ key で登録されると同じ sub で既存連携に一致してログインできてしまう
 							const linkCount = await this.userSsoLinkRepository.countBy({ provider: provider.key });
 							if (linkCount > 0) {
-								throw new Error(`Cannot reuse provider key "${provider.key}" while users are still linked to it`);
+								throw new ApiError(meta.errors.ssoProviderLinked);
 							}
 							continue;
 						}
@@ -1419,7 +1435,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						if ((current.issuerUrl ?? null) !== nextIssuerUrl || current.type !== provider.type) {
 							const linkCount = await this.userSsoLinkRepository.countBy({ provider: provider.key });
 							if (linkCount > 0) {
-								throw new Error(`Cannot change issuerUrl or type of provider "${provider.key}" while users are linked to it`);
+								throw new ApiError(meta.errors.ssoProviderLinked);
 							}
 						}
 					}
@@ -1443,7 +1459,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					// 有効なプロバイダーは認証情報の必須チェック (既存シークレット引き継ぎ後の実効値で判定)
 					for (const provider of next) {
 						if (provider.enabled && (provider.clientId.trim() === '' || provider.clientSecret === '')) {
-							throw new Error(`Provider "${provider.key}" is enabled but missing clientId/clientSecret`);
+							throw new ApiError(meta.errors.invalidSsoProvider);
 						}
 					}
 
