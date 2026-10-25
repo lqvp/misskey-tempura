@@ -112,6 +112,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<div v-if="user.host == null" inline style="margin-right: 8px;" class="_buttons">
 							<MkButton @click="resetPassword"><i class="ti ti-key"></i> {{ i18n.ts.resetPassword }}</MkButton>
 							<MkButton v-if="user.host == null" inline @click="unsetMfa"><i class="ti ti-shield"></i> {{ i18n.ts.unsetMfa }}</MkButton>
+							<MkButton v-if="user.host == null" inline @click="unlinkSso"><i class="ti ti-plug-connected-x"></i> {{ i18n.ts.unlinkUserSso }}</MkButton>
 							<MkButton danger @click="regenerateLoginToken"><i class="ti ti-refresh"></i> {{ i18n.ts.regenerateLoginToken }}</MkButton>
 							<MkButton danger @click="sendNotification"><i class="ti ti-bell"></i> {{ i18n.ts.sendNotification }}</MkButton>
 							<MkButton inline danger @click="updateUserName"><i class="ti ti-user-edit"></i> {{ i18n.ts.rename }}</MkButton>
@@ -414,6 +415,33 @@ async function unsetMfa() {
 			userId: user.value.id,
 		});
 	}
+}
+
+async function unlinkSso() {
+	const { links } = await os.apiWithDialog('admin/sso-user-links', { userId: user.value.id });
+	if (links.length === 0) {
+		os.alert({ type: 'info', text: i18n.ts.unlinkUserSsoNone });
+		return;
+	}
+
+	// 複数の連携があるときは、解除するものを個別に選べる
+	const fields: Record<string, { type: 'boolean'; label: string; default: boolean }> = {};
+	for (const l of links) {
+		fields[l.provider] = { type: 'boolean', label: l.label, default: false };
+	}
+	const form = await os.form(i18n.ts.unlinkUserSso, fields);
+	if (form.canceled) return;
+	const providers = links.map(l => l.provider).filter(key => form.result[key] === true);
+	if (providers.length === 0) return;
+
+	const confirm = await os.confirm({
+		type: 'warning',
+		text: i18n.ts.unlinkUserSsoConfirm,
+	});
+	if (confirm.canceled) return;
+
+	const { unlinked } = await os.apiWithDialog('admin/sso-unlink-user', { userId: user.value.id, providers });
+	os.alert({ type: 'success', text: i18n.tsx.unlinkUserSsoDone({ n: unlinked }) });
 }
 
 async function regenerateLoginToken() {

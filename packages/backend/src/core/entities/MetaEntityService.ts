@@ -174,6 +174,9 @@ export class MetaEntityService {
 			contactFormLimit: instance.contactFormLimit,
 			contactFormRequireAuth: instance.contactFormRequireAuth,
 			contactFormCategories: instance.contactFormCategories,
+			ssoProviders: instance.ssoProviders
+				.filter(p => p.enabled)
+				.map(p => ({ key: p.key, type: p.type, buttonLabel: p.buttonLabel ?? null })),
 		};
 
 		return packed;

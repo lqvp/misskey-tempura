@@ -7,9 +7,19 @@ import { Injectable, Inject } from '@nestjs/common';
 import { DI } from '@/di-symbols.js';
 import type { MiMeta } from '@/models/Meta.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
+import { redactMetaForModerationLog } from '@/misc/redact-sso-secrets.js';
+import { assertValidOidcIssuerUrl } from '@/misc/sso-issuer-url.js';
+import { assignProviderRevisions, computeSsoProvidersRevision } from '@/misc/sso-providers-revision.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
+import type { SsoProviderConfig } from '@/models/Meta.js';
+import { MiUserSsoLink } from '@/models/_.js';
+import type { EntityManager } from 'typeorm';
 import { MetaService } from '@/core/MetaService.js';
 import { QueueService } from '@/core/QueueService.js';
+import { NotificationService } from '@/core/NotificationService.js';
+import { EmailService } from '@/core/EmailService.js';
+import { notifySsoLinksRemoved } from '@/misc/sso-unlink-notify.js';
+import type { UserProfilesRepository } from '@/models/_.js';
 import { ApiLoggerService } from '../../ApiLoggerService.js';
 import { ApiError } from '../../error.js';
 
@@ -30,6 +40,30 @@ export const meta = {
 			message: 'loginRiskNotifyThreshold must be less than loginRiskStepUpThreshold.',
 			code: 'INVALID_LOGIN_RISK_THRESHOLDS',
 			id: '0b4b9a0e-6f0d-4c8e-9d3a-5f2f7a1c8e41',
+		},
+		invalidSsoProvider: {
+			message: 'The SSO provider settings are invalid.',
+			code: 'INVALID_SSO_PROVIDER',
+			id: '9cd404d4-e46b-4aea-82fe-feadc0c6d39f',
+			httpStatusCode: 400,
+		},
+		ssoProviderLinked: {
+			message: 'Cannot change or reuse an SSO provider while users are linked to it.',
+			code: 'SSO_PROVIDER_LINKED',
+			id: '00a7dadb-21a8-4972-9dea-da3d0a3dccb8',
+			httpStatusCode: 409,
+		},
+		ssoClientIdChangeNeedsUnlink: {
+			message: 'Changing the client ID of an SSO provider with linked users removes those links. Confirm to continue.',
+			code: 'SSO_CLIENT_ID_CHANGE_NEEDS_UNLINK',
+			id: 'cf9d3038-aef7-4f38-8fc4-3a6ca743c56e',
+			httpStatusCode: 409,
+		},
+		ssoProvidersConflict: {
+			message: 'The SSO provider list is out of date (changed by someone else) or its revision is missing. Reload and try again.',
+			code: 'SSO_PROVIDERS_CONFLICT',
+			id: '39ab1dcf-5c2a-4ccd-9f73-9cd9d0502640',
+			httpStatusCode: 409,
 		},
 	},
 } as const;
@@ -366,6 +400,30 @@ export const paramDef = {
 				required: ['key', 'text', 'enabled', 'order', 'isDefault'],
 			},
 		},
+		// 管理画面が読み込んだ時点の一覧の版 (admin/meta の ssoProvidersRevision)。ssoProviders を保存するときは必須で、
+		// 保存時点の一覧と違えば保存しない (古い画面からの上書きで他の管理者の変更を消さないため)
+		ssoProvidersRevision: { type: 'string', maxLength: 128 },
+		ssoProviders: {
+			type: 'array',
+			items: {
+				type: 'object',
+				properties: {
+					key: { type: 'string', minLength: 1, maxLength: 128 },
+					type: { type: 'string', enum: ['github', 'discord', 'google', 'oidc'] },
+					clientId: { type: 'string', maxLength: 1024 },
+					// 空文字を送ると既存の値を保持する (管理画面が secret を参照できないため)
+					clientSecret: { type: 'string', maxLength: 1024 },
+					issuerUrl: { type: 'string', nullable: true, maxLength: 1024 },
+					buttonLabel: { type: 'string', nullable: true, maxLength: 128 },
+					enabled: { type: 'boolean' },
+					// IdP 側の MFA を信頼してローカル 2FA の追加認証をスキップするか (未指定時は false)
+					trustUpstreamMfa: { type: 'boolean' },
+					// 連携済みのユーザーがいるプロバイダーの clientId を変えるとき、その連携をすべて解除することへの明示的な確認 (保存はされない)
+					unlinkExistingOnClientIdChange: { type: 'boolean' },
+				},
+				required: ['key', 'type', 'enabled'],
+			},
+		},
 	},
 	required: [],
 } as const;
@@ -375,6 +433,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	constructor(
 		@Inject(DI.meta)
 		private serverSettings: MiMeta,
+
+		@Inject(DI.userProfilesRepository)
+		private userProfilesRepository: UserProfilesRepository,
+
+		private notificationService: NotificationService,
+		private emailService: EmailService,
 
 		private metaService: MetaService,
 		private moderationLogService: ModerationLogService,
@@ -1337,15 +1401,124 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.contactFormCategories = ps.contactFormCategories;
 			}
 
+			// 確認のうえ連携を解除したプロバイダーと、そのユーザー (保存の成功後に通知する)
+			const removedSsoLinks: { label: string; userIds: string[] }[] = [];
+			let resolveSsoProviders: ((current: SsoProviderConfig[], manager: EntityManager) => Promise<SsoProviderConfig[]>) | undefined;
+			if (ps.ssoProviders !== undefined) {
+				// key の重複は禁止 (リンクの紐付けキーになるため)
+				const providerKeys = ps.ssoProviders.map(p => p.key);
+				if (new Set(providerKeys).size !== providerKeys.length) {
+					throw new ApiError(meta.errors.invalidSsoProvider);
+				}
+				for (const provider of ps.ssoProviders) {
+					if (!/^[a-z0-9][a-z0-9_-]*$/.test(provider.key)) {
+						throw new ApiError(meta.errors.invalidSsoProvider);
+					}
+					if (provider.type === 'oidc' && (provider.issuerUrl == null || provider.issuerUrl.trim() === '')) {
+						throw new ApiError(meta.errors.invalidSsoProvider);
+					}
+					if (provider.type === 'oidc') {
+						// 保存後にログインボタンだけが出て、ログイン時に失敗するのを防ぐ
+						try {
+							assertValidOidcIssuerUrl(provider.issuerUrl!);
+						} catch {
+							throw new ApiError(meta.errors.invalidSsoProvider);
+						}
+					}
+				}
+
+				// ロックした行から読んだ現在の一覧に対して、版の照合・検証・保存内容の決定を行う (MetaService.update が同じトランザクションで保存する)
+				const requestedProviders = ps.ssoProviders;
+				resolveSsoProviders = async (currentProviders: SsoProviderConfig[], manager: EntityManager): Promise<SsoProviderConfig[]> => {
+					// clientSecret が空文字なら既存の値を保持する
+					if (ps.ssoProvidersRevision !== computeSsoProvidersRevision(currentProviders)) {
+						throw new ApiError(meta.errors.ssoProvidersConflict);
+					}
+					const currentByKey = new Map(currentProviders.map(p => [p.key, p]));
+
+					// OIDC の sub は発行者ごとにしか一意でないため、既存の連携があるプロバイダーの issuerUrl 変更は拒否する
+					// (変更後の発行者が同じ sub を返すと、別人が既存ユーザーの連携に一致してログインできてしまう)
+					for (const provider of requestedProviders) {
+						const current = currentByKey.get(provider.key);
+						if (current == null) {
+							// 削除済みプロバイダーのキー再利用も拒否する。連携レコードは削除後も残るため、
+							// 別の発行者が同じ key で登録されると同じ sub で既存連携に一致してログインできてしまう
+							const linkCount = await manager.countBy(MiUserSsoLink, { provider: provider.key });
+							if (linkCount > 0) {
+								throw new ApiError(meta.errors.ssoProviderLinked);
+							}
+							continue;
+						}
+						const nextIssuerUrl = provider.issuerUrl?.trim() || null;
+						if ((current.issuerUrl ?? null) !== nextIssuerUrl || current.type !== provider.type) {
+							const linkCount = await manager.countBy(MiUserSsoLink, { provider: provider.key });
+							if (linkCount > 0) {
+								throw new ApiError(meta.errors.ssoProviderLinked);
+							}
+						}
+						// clientId を変えると、IdP によっては同じ利用者でも別の sub が返り、既存の連携が使えなくなる。
+						// 連携済みのユーザーがいるときは、連携の解除への明示的な確認がない限り保存しない。
+						// 確認があれば、メタの保存と同じトランザクションで、そのプロバイダーの連携を解除する
+						if (current.clientId !== (provider.clientId ?? '').trim()) {
+							const linkCount = await manager.countBy(MiUserSsoLink, { provider: provider.key });
+							if (linkCount > 0) {
+								if (provider.unlinkExistingOnClientIdChange !== true) {
+									throw new ApiError(meta.errors.ssoClientIdChangeNeedsUnlink);
+								}
+								const links = await manager.find(MiUserSsoLink, { where: { provider: provider.key }, select: { userId: true } });
+								await manager.delete(MiUserSsoLink, { provider: provider.key });
+								removedSsoLinks.push({ label: provider.buttonLabel?.trim() || provider.key, userIds: links.map(l => l.userId) });
+							}
+						}
+					}
+					const next = requestedProviders.map(p => {
+						let clientSecret = p.clientSecret ?? '';
+						if (clientSecret === '') {
+							clientSecret = currentByKey.get(p.key)?.clientSecret ?? '';
+						}
+						return {
+							key: p.key,
+							type: p.type as SsoProviderConfig['type'],
+							clientId: (p.clientId ?? '').trim(),
+							clientSecret,
+							issuerUrl: p.issuerUrl?.trim() || null,
+							buttonLabel: p.buttonLabel?.trim() || null,
+							enabled: p.enabled,
+							trustUpstreamMfa: p.trustUpstreamMfa ?? false,
+						};
+					});
+
+					// 有効なプロバイダーは認証情報の必須チェック (既存シークレット引き継ぎ後の実効値で判定)
+					for (const provider of next) {
+						if (provider.enabled && (provider.clientId.trim() === '' || provider.clientSecret === '')) {
+							throw new ApiError(meta.errors.invalidSsoProvider);
+						}
+					}
+
+					return assignProviderRevisions(currentProviders, next);
+				};
+			}
+
 			const before = await this.metaService.fetch(true);
 
-			await this.metaService.update(set);
+			await this.metaService.update(set, resolveSsoProviders ? { resolveSsoProviders } : undefined);
 
 			const after = await this.metaService.fetch(true);
 
+			// 連携を解除したユーザーへ通知する。保存が成功したあとに行い、通知の失敗で保存の成功を覆さない
+			for (const removed of removedSsoLinks) {
+				notifySsoLinksRemoved({
+					notificationService: this.notificationService,
+					emailService: this.emailService,
+					userProfilesRepository: this.userProfilesRepository,
+					onError: (userId, err) => this.apiLoggerService.logger.warn(`failed to notify SSO link removal to ${userId}: ${err}`),
+				}, removed.userIds, removed.label).catch(err => this.apiLoggerService.logger.warn(`failed to notify SSO link removal: ${err}`));
+			}
+
+			// clientSecret は監査ログに残さない(ログは別の管理者 API から読めるため)
 			this.moderationLogService.log(me, 'updateServerSettings', {
-				before,
-				after,
+				before: redactMetaForModerationLog(before),
+				after: redactMetaForModerationLog(after),
 			});
 
 			// 無効から有効に切り替えたら、03:30 を待たずにデータを取得する。失敗しても設定の更新は成功させる

@@ -503,6 +503,28 @@ export const packedMetaLiteSchema = {
 			type: 'array',
 			optional: false, nullable: false,
 		},
+		ssoProviders: {
+			type: 'array',
+			optional: false, nullable: false,
+			items: {
+				type: 'object',
+				optional: false, nullable: false,
+				properties: {
+					key: {
+						type: 'string',
+						optional: false, nullable: false,
+					},
+					type: {
+						type: 'string',
+						optional: false, nullable: false,
+					},
+					buttonLabel: {
+						type: 'string',
+						optional: false, nullable: true,
+					},
+				},
+			},
+		},
 	},
 } as const;
 

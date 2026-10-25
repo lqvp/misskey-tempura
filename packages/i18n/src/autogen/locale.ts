@@ -2669,6 +2669,22 @@ export interface Locale extends ILocale {
      */
     "unsetMfaConfirm": string;
     /**
+     * ユーザーのSSO連携を解除
+     */
+    "unlinkUserSso": string;
+    /**
+     * このユーザーにはSSO連携がありません
+     */
+    "unlinkUserSsoNone": string;
+    /**
+     * 選んだSSO連携を解除しますか？ 解除されたユーザーには通知が届き、SSOでログインするには連携し直す必要があります。パスワードなど他のログイン方法は使えます。
+     */
+    "unlinkUserSsoConfirm": string;
+    /**
+     * {n}件のSSO連携を解除しました
+     */
+    "unlinkUserSsoDone": ParameterizedString<"n">;
+    /**
      * アイコンを解除
      */
     "unsetUserAvatar": string;
@@ -10459,6 +10475,10 @@ export interface Locale extends ILocale {
          */
         "write:admin:unset-mfa": string;
         /**
+         * ユーザーのSSO連携を強制解除する
+         */
+        "write:admin:sso-unlink-user": string;
+        /**
          * ユーザーのアバターを削除する
          */
         "write:admin:unset-user-avatar": string;
@@ -12646,6 +12666,10 @@ export interface Locale extends ILocale {
          * ユーザーの二要素認証を解除
          */
         "unsetMfa": string;
+        /**
+         * ユーザーのSSO連携を強制解除
+         */
+        "unlinkUserSso": string;
         /**
          * ユーザーのアイコンを解除
          */
@@ -17178,5 +17202,147 @@ export interface Locale extends ILocale {
              */
             "untrustedIp": string;
         };
+    };
+    /**
+     * SSOでログイン
+     */
+    "signinWithSso": string;
+    /**
+     * 外部アカウント連携 (SSO)
+     */
+    "ssoExternalAuth": string;
+    /**
+     * 連携済み
+     */
+    "ssoLinked": string;
+    /**
+     * 連携する
+     */
+    "ssoLinkAccount": string;
+    /**
+     * 解除
+     */
+    "ssoUnlinkAccount": string;
+    /**
+     * この外部アカウントとの連携を解除しますか？
+     */
+    "ssoUnlinkConfirm": string;
+    /**
+     * 外部アカウントを連携しました
+     */
+    "ssoLinkSucceeded": string;
+    /**
+     * SSO認証に失敗しました
+     */
+    "ssoErrorGeneric": string;
+    /**
+     * この外部アカウントはどのアカウントにも連携されていません。先にログインして設定画面から連携してください。
+     */
+    "ssoErrorNotLinked": string;
+    /**
+     * このアカウントは既にこのプロバイダーと連携しています
+     */
+    "ssoErrorAlreadyLinked": string;
+    /**
+     * この外部アカウントは既に別のアカウントに連携されています
+     */
+    "ssoErrorAlreadyLinkedToOther": string;
+    /**
+     * 認証の有効期限が切れました。もう一度やり直してください
+     */
+    "ssoErrorInvalidState": string;
+    /**
+     * 認証プロバイダー側でエラーが発生しました
+     */
+    "ssoErrorProviderError": string;
+    "_sso": {
+        /**
+         * SSOプロバイダー
+         */
+        "providers": string;
+        /**
+         * OpenID Connect / OAuth2 によるSSOログインのプロバイダーを設定します。authentik、Keycloak、Google、GitHub、Discord 等に対応しています。
+         */
+        "providersDescription": string;
+        /**
+         * プロバイダーキー
+         */
+        "providerKey": string;
+        /**
+         * プロバイダーの識別子 (例: authentik, github)。連携の紐付けに使われるため、一度設定したら変更しないでください。
+         */
+        "providerKeyDescription": string;
+        /**
+         * プロバイダー種別
+         */
+        "providerType": string;
+        /**
+         * Issuer URL
+         */
+        "issuerUrl": string;
+        /**
+         * Client ID
+         */
+        "clientId": string;
+        /**
+         * Client Secret
+         */
+        "clientSecret": string;
+        /**
+         * (設定済み)
+         */
+        "clientSecretKeepPlaceholder": string;
+        /**
+         * 変更する場合のみ入力してください。空欄のまま保存すると既存の値が保持されます。
+         */
+        "clientSecretKeepDescription": string;
+        /**
+         * ボタンのラベル
+         */
+        "buttonLabel": string;
+        /**
+         * ログイン画面に表示するボタンのテキスト。未設定の場合は「SSOでログイン」が使用されます。
+         */
+        "buttonLabelDescription": string;
+        /**
+         * プロバイダーに登録するリダイレクトURI
+         */
+        "redirectUri": string;
+        /**
+         * プロバイダーキーは小文字の英数字で始まり、- または _ を含めることができます
+         */
+        "invalidProviderKey": string;
+        /**
+         * 有効なプロバイダーには Client ID と Client Secret が必要です
+         */
+        "missingClientConfig": string;
+        /**
+         * OIDCプロバイダーには Issuer URL が必要です
+         */
+        "missingIssuerUrl": string;
+        /**
+         * プロバイダーキーが重複しています
+         */
+        "duplicateProviderKey": string;
+        /**
+         * このプロバイダーには連携済みのユーザーがいるため、種類や Issuer URL を変更したり、同じキーで作り直したりできません。
+         */
+        "providerLinked": string;
+        /**
+         * 他の管理者が先に SSO プロバイダー設定を変更したため、保存しませんでした。最新の設定を読み込みますか？ 読み込むと、この画面の未保存の編集は破棄されます。「キャンセル」を選ぶと編集内容はそのまま残ります。
+         */
+        "providersConflict": string;
+        /**
+         * IdPのMFAを信頼する
+         */
+        "trustUpstreamMfa": string;
+        /**
+         * 有効にすると、このプロバイダーでのSSOログイン時にMisskey側の追加認証 (TOTP / パスキー) をスキップします。IdP側でMFAが強制されている場合のみ有効にしてください。
+         */
+        "trustUpstreamMfaDescription": string;
+        /**
+         * このプロバイダーの Client ID を変更すると、連携済みのユーザーのSSO連携がすべて解除されます。IdP によっては、Client ID を変えると同じ利用者でも別の識別子が返り、既存の連携が使えなくなるためです。解除されたユーザーには通知が届き、設定のセキュリティから連携し直す必要があります (パスワードなど他のログイン方法は使えます)。解除は保存と同時に行われ、元に戻せません。続けますか？
+         */
+        "clientIdChangeUnlinkConfirm": string;
     };
 }

@@ -110,6 +110,7 @@ export const permissions = [
 	'read:admin:show-user',
 	'write:admin:suspend-user',
 	'write:admin:unset-mfa',
+	'write:admin:sso-unlink-user',
 	'write:admin:unset-user-avatar',
 	'write:admin:unset-user-banner',
 	'write:admin:unsuspend-user',
@@ -209,6 +210,7 @@ export const moderationLogTypes = [
 	'updateAvatarDecoration',
 	'deleteAvatarDecoration',
 	'unsetMfa',
+	'unlinkUserSso',
 	'unsetUserAvatar',
 	'unsetUserBanner',
 	'createSystemWebhook',
@@ -580,6 +582,12 @@ export type ModerationLogPayloads = {
 		userId: string;
 		userUsername: string;
 		userHost: string | null;
+	};
+	unlinkUserSso: {
+		userId: string;
+		userUsername: string;
+		userHost: string | null;
+		providers: string[];
 	};
 	unsetUserAvatar: {
 		userId: string;

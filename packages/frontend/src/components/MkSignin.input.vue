@@ -48,6 +48,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<i class="ti ti-device-usb" style="font-size: medium;"></i>{{ i18n.ts.signinWithPasskey }}
 			</MkButton>
 		</div>
+
+		<!-- SSO ログイン -->
+		<div v-for="provider in instance.ssoProviders ?? []" :key="provider.key">
+			<MkButton type="button" style="margin: auto auto;" large rounded @click="ssoLogin(provider.key)">
+				<i class="ti" :class="ssoProviderIcon(provider.type)" style="font-size: medium;"></i>{{ provider.buttonLabel || i18n.ts.signinWithSso }}
+			</MkButton>
+		</div>
 	</div>
 </div>
 </template>
@@ -60,6 +67,7 @@ import { query, extractDomain } from '@@/js/url.js';
 import { host as configHost } from '@@/js/config.js';
 import type { OpenOnRemoteOptions } from '@/utility/please-login.js';
 import { i18n } from '@/i18n.js';
+import { instance } from '@/instance.js';
 import * as os from '@/os.js';
 
 import MkButton from '@/components/MkButton.vue';
@@ -84,6 +92,19 @@ const emit = defineEmits<{
 const host = toUnicode(configHost);
 
 const username = ref(props.initialUsername ?? '');
+
+function ssoLogin(providerKey: string): void {
+	window.location.href = `/api/sso/initiate?provider=${encodeURIComponent(providerKey)}`;
+}
+
+function ssoProviderIcon(type: string): string {
+	switch (type) {
+		case 'github': return 'ti-brand-github';
+		case 'discord': return 'ti-brand-discord';
+		case 'google': return 'ti-brand-google';
+		default: return 'ti-key';
+	}
+}
 
 //#region Open on remote
 function openRemote(options: OpenOnRemoteOptions, targetHost?: string): void {

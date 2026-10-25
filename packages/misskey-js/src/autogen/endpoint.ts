@@ -145,6 +145,10 @@ import type {
 	AdminShowUserResponse,
 	AdminShowUsersRequest,
 	AdminShowUsersResponse,
+	AdminSsoUnlinkUserRequest,
+	AdminSsoUnlinkUserResponse,
+	AdminSsoUserLinksRequest,
+	AdminSsoUserLinksResponse,
 	AdminSuspendUserRequest,
 	AdminSystemWebhookCreateRequest,
 	AdminSystemWebhookCreateResponse,
@@ -661,6 +665,11 @@ import type {
 	SearchAvatarDecorationsRequest,
 	SearchAvatarDecorationsResponse,
 	ServerInfoResponse,
+	SsoLinkRequest,
+	SsoLinkResponse,
+	SsoStatusResponse,
+	SsoUnlinkRequest,
+	SsoUnlinkResponse,
 	StatsResponse,
 	SwRegisterRequest,
 	SwRegisterResponse,
@@ -840,6 +849,8 @@ export type Endpoints = {
 	'admin/show-moderation-logs': { req: AdminShowModerationLogsRequest; res: AdminShowModerationLogsResponse };
 	'admin/show-user': { req: AdminShowUserRequest; res: AdminShowUserResponse };
 	'admin/show-users': { req: AdminShowUsersRequest; res: AdminShowUsersResponse };
+	'admin/sso-unlink-user': { req: AdminSsoUnlinkUserRequest; res: AdminSsoUnlinkUserResponse };
+	'admin/sso-user-links': { req: AdminSsoUserLinksRequest; res: AdminSsoUserLinksResponse };
 	'admin/suspend-user': { req: AdminSuspendUserRequest; res: EmptyResponse };
 	'admin/system-webhook/create': { req: AdminSystemWebhookCreateRequest; res: AdminSystemWebhookCreateResponse };
 	'admin/system-webhook/delete': { req: AdminSystemWebhookDeleteRequest; res: EmptyResponse };
@@ -1178,6 +1189,9 @@ export type Endpoints = {
 	'roles/users': { req: RolesUsersRequest; res: RolesUsersResponse };
 	'search-avatar-decorations': { req: SearchAvatarDecorationsRequest; res: SearchAvatarDecorationsResponse };
 	'server-info': { req: EmptyRequest; res: ServerInfoResponse };
+	'sso/link': { req: SsoLinkRequest; res: SsoLinkResponse };
+	'sso/status': { req: EmptyRequest; res: SsoStatusResponse };
+	'sso/unlink': { req: SsoUnlinkRequest; res: SsoUnlinkResponse };
 	'stats': { req: EmptyRequest; res: StatsResponse };
 	'sw/register': { req: SwRegisterRequest; res: SwRegisterResponse };
 	'sw/show-registration': { req: SwShowRegistrationRequest; res: SwShowRegistrationResponse };

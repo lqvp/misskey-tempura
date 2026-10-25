@@ -1248,6 +1248,29 @@ export class MiMeta {
 		default: [],
 	})
 	public contactFormCategories: ContactFormCategory[];
+
+	@Column('jsonb', {
+		default: [],
+	})
+	public ssoProviders: SsoProviderConfig[];
+}
+
+export interface SsoProviderConfig {
+	/** プロバイダー識別子 (例: 'github', 'discord', 'google', 'my-idp')。リンクの紐付けに使うので一度決めたら変更しない */
+	key: string;
+	/** 'github' / 'discord' は OAuth2、'google' / 'oidc' は OpenID Connect (discovery) */
+	type: 'github' | 'discord' | 'google' | 'oidc';
+	clientId: string;
+	clientSecret: string;
+	/** type が 'oidc' の場合の Issuer URL。'google' の場合は省略可 (https://accounts.google.com) */
+	issuerUrl?: string | null;
+	/** ログインボタンの表示ラベル。未設定時はデフォルトラベル */
+	buttonLabel?: string | null;
+	enabled: boolean;
+	/** IdP 側の MFA を信頼し、Misskey 側のローカル 2FA 追加認証をスキップするか (既定: false)。IdP で MFA を強制している場合のみ有効にすること */
+	trustUpstreamMfa?: boolean;
+	/** 設定内容 (clientSecret を含む) が変わるたびにサーバーが振り直す乱数。一覧の版の材料で、秘密とは無関係 */
+	rev?: string;
 }
 
 export interface ContactFormCategory {
