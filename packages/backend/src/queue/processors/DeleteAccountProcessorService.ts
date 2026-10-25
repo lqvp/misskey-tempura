@@ -22,6 +22,27 @@ import { QueueLoggerService } from '../QueueLoggerService.js';
 import type * as Bull from 'bullmq';
 import type { DbUserDeleteJobData } from '../types.js';
 
+/**
+ * unfollowの同時実行数。unfollowは同一ユーザーのカウンタ行をUPDATEするため、
+ * 無制限の並列実行は行ロックの競合を引き起こす
+ */
+const UNFOLLOW_CONCURRENCY = 8;
+
+/**
+ * 上限付きの同時実行で各要素を処理するワーカープール
+ */
+async function mapWithConcurrency<T>(items: readonly T[], limit: number, fn: (item: T) => Promise<void>): Promise<void> {
+	let cursor = 0;
+	const worker = async (): Promise<void> => {
+		while (true) {
+			const i = cursor++;
+			if (i >= items.length) return;
+			await fn(items[i]);
+		}
+	};
+	await Promise.all(Array.from({ length: Math.min(limit, items.length) }, () => worker()));
+}
+
 @Injectable()
 export class DeleteAccountProcessorService {
 	private logger: Logger;
@@ -95,21 +116,23 @@ export class DeleteAccountProcessorService {
 
 				const followeeIds = relations.map(f => f.followeeId);
 				if (followeeIds.length === 0) continue;
-				const followees = await this.usersRepository.findBy({ id: In(followeeIds) });
+				const followees = await this.usersRepository.find({
+					where: { id: In(followeeIds) },
+					// unfollowに必要な列のみ取得する (プロフィール画像などの大きい列を避ける)
+					select: { id: true, username: true, host: true, uri: true, inbox: true, sharedInbox: true, isDeleted: true, isSuspended: true },
+				});
 				const followeesMap = new Map(followees.map(u => [u.id, u]));
 
 				const unfollowErrors: unknown[] = [];
-				await Promise.all(relations.map(f => {
+				await mapWithConcurrency(relations, UNFOLLOW_CONCURRENCY, async f => {
 					const followee = followeesMap.get(f.followeeId);
-					if (followee) {
-						// force: 削除されるアカウントに強制フォローポリシーは適用しない (関係行はユーザー行削除時にCASCADEで消えるため)
-						return this.userFollowingService.unfollow(user, followee, true, true).catch(error => {
-							this.logger.warn(`Failed to unfollow ${f.followeeId}: ${error}`);
-							unfollowErrors.push(error);
-						});
-					}
-					return Promise.resolve();
-				}));
+					if (!followee) return;
+					// force: 削除されるアカウントに強制フォローポリシーは適用しない (関係行はユーザー行削除時にCASCADEで消えるため)
+					await this.userFollowingService.unfollow(user, followee, true, true).catch(error => {
+						this.logger.warn(`Failed to unfollow ${f.followeeId}: ${error}`);
+						unfollowErrors.push(error);
+					});
+				});
 				if (unfollowErrors.length > 0) {
 					throw new Error(`Failed to unfollow ${unfollowErrors.length} relation(s); failing the job so it will be retried.`);
 				}
@@ -141,20 +164,21 @@ export class DeleteAccountProcessorService {
 
 				const followerIds = relations.map(f => f.followerId);
 				if (followerIds.length === 0) continue;
-				const followers = await this.usersRepository.findBy({ id: In(followerIds) });
+				const followers = await this.usersRepository.find({
+					where: { id: In(followerIds) },
+					select: { id: true, username: true, host: true, uri: true, inbox: true, sharedInbox: true, isDeleted: true, isSuspended: true },
+				});
 				const followersMap = new Map(followers.map(u => [u.id, u]));
 
 				const unfollowErrors: unknown[] = [];
-				await Promise.all(relations.map(f => {
+				await mapWithConcurrency(relations, UNFOLLOW_CONCURRENCY, async f => {
 					const follower = followersMap.get(f.followerId);
-					if (follower) {
-						return this.userFollowingService.unfollow(follower, user, true, true).catch(error => {
-							this.logger.warn(`Failed to remove follower ${f.followerId}: ${error}`);
-							unfollowErrors.push(error);
-						});
-					}
-					return Promise.resolve();
-				}));
+					if (!follower) return;
+					await this.userFollowingService.unfollow(follower, user, true, true).catch(error => {
+						this.logger.warn(`Failed to remove follower ${f.followerId}: ${error}`);
+						unfollowErrors.push(error);
+					});
+				});
 				if (unfollowErrors.length > 0) {
 					throw new Error(`Failed to remove ${unfollowErrors.length} follower(s); failing the job so it will be retried.`);
 				}
@@ -183,11 +207,13 @@ export class DeleteAccountProcessorService {
 
 				cursor = notes.at(-1)?.id ?? null;
 
-				await this.notesRepository.delete(notes.map(note => note.id));
-
+				// unindexを行削除より先に行う (削除後に失敗するとリトライ時にnoteが見つからず
+				// インデックスに残骸が残るため。unindexは冪等なので先行実行で安全)
 				for (const note of notes) {
 					await this.searchService.unindexNote(note);
 				}
+
+				await this.notesRepository.delete(notes.map(note => note.id));
 			}
 
 			this.logger.succ('All of notes deleted');
@@ -244,15 +270,6 @@ export class DeleteAccountProcessorService {
 			}
 		}
 
-		{ // Send email notification
-			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });
-			if (profile.email && profile.emailVerified) {
-				this.emailService.sendEmail(profile.email, 'Account deleted',
-					'Your account has been deleted.',
-					'Your account has been deleted.');
-			}
-		}
-
 		// soft指定されている場合は物理削除しない
 		if (job.data.soft) {
 		// nop
@@ -268,6 +285,16 @@ export class DeleteAccountProcessorService {
 			// 購読側(CacheService)は行が見つからない場合に該当ユーザーのキャッシュエントリを削除する。
 			// 発行を物理削除「後」に行うことで、ジョブの完了速度に依存せず確実にキャッシュが無効化される。
 			this.globalEventService.publishInternalEvent('userChangeDeletedState', { id: user.id, isDeleted: true });
+		}
+
+		{ // Send email notification
+		// 全ての破壊処理の後に送る (リトライ時の重複送信を防ぐため。この後に失敗し得る処理はない)
+			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });
+			if (profile.email && profile.emailVerified) {
+				this.emailService.sendEmail(profile.email, 'Account deleted',
+					'Your account has been deleted.',
+					'Your account has been deleted.');
+			}
 		}
 
 		return 'Account deleted';

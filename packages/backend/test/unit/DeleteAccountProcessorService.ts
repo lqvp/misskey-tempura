@@ -31,8 +31,8 @@ function createService(options: {
 
 	const usersRepository = {
 		findOneBy: vi.fn(async ({ id }: { id: string }) => users.get(id) ?? null),
-		findBy: vi.fn(async ({ id }: { id: any }) => {
-			const ids: string[] = unwrap(id);
+		find: vi.fn(async (opts: { where: { id: any } }) => {
+			const ids: string[] = unwrap(opts.where.id);
 			return ids.map(i => users.get(i)).filter(u => u != null);
 		}),
 		delete: vi.fn(async () => {}),
