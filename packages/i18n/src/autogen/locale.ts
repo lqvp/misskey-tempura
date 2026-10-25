@@ -17210,7 +17210,7 @@ export interface Locale extends ILocale {
          */
         "cleanupConfirm": string;
         /**
-         * フォロー関係のクリーンアップ処理を開始しました。完了すると通知が届きます。
+         * フォロー関係のクリーンアップ処理を開始しました。
          */
         "cleanupStarted": string;
     };

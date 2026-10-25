@@ -57,7 +57,7 @@ function createService(options: {
 				.filter(row => wheres.some(w =>
 					(w.followerId === undefined || row.followerId === w.followerId) &&
 					(w.followeeId === undefined || row.followeeId === w.followeeId)))
-				.map(row => ({ followerId: row.followerId, followeeId: row.followeeId }));
+				.map(row => ({ id: row.id, followerId: row.followerId, followeeId: row.followeeId }));
 		}),
 		manager: {
 			transaction: vi.fn(async (cb: (m: typeof manager) => Promise<void>) => {
@@ -87,14 +87,19 @@ function createService(options: {
 		}),
 	};
 
+	const cacheService = {
+		userFollowingsCache: { refresh: vi.fn() },
+	};
+
 	const service = new CleanupDanglingFollowsProcessorService(
 		usersRepository as any,
 		followingsRepository as any,
 		queueLoggerService as any,
 		notificationService as any,
+		cacheService as any,
 	);
 
-	return { service, state, manager, followingsRepository, usersRepository, notificationService, logger };
+	return { service, state, manager, followingsRepository, usersRepository, notificationService, cacheService, logger };
 }
 
 function job(userId: string) {
@@ -103,7 +108,7 @@ function job(userId: string) {
 
 describe('CleanupDanglingFollowsProcessorService', () => {
 	test('removes relations with deleted users only, recalculates counters, and notifies with the cleaned count', async () => {
-		const { service, state, manager, notificationService } = createService({
+		const { service, state, manager, notificationService, cacheService } = createService({
 			followings: [
 				{ id: 'f1', followerId: 'user1', followeeId: 'live1' },
 				{ id: 'f2', followerId: 'user1', followeeId: 'deleted1' },
@@ -125,6 +130,8 @@ describe('CleanupDanglingFollowsProcessorService', () => {
 		// カウンターが実測値で更新される (following: f1 のみ / followers: f3 のみ)
 		expect(manager.update).toHaveBeenCalledWith(expect.anything(), 'user1', { followingCount: 1, followersCount: 1 });
 		expect(notificationService.createNotification).toHaveBeenCalledWith('user1', 'cleanupDanglingFollowsCompleted', { count: 2 });
+		// 直接DELETEのためキャッシュイベントは発火しないので、フォローキャッシュを明示リフレッシュする
+		expect(cacheService.userFollowingsCache.refresh).toHaveBeenCalledWith('user1');
 		expect(message).toContain('2 deleted users');
 	});
 

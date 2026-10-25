@@ -241,6 +241,11 @@ export class CacheService implements OnApplicationShutdown {
 	private evictUserCaches(userId: MiUser['id']): void {
 		this.userByIdCache.delete(userId);
 		this.localUserByIdCache.delete(userId);
+		for (const [k, v] of this.localUserByNativeTokenCache.entries) {
+			if (v.value?.id === userId) {
+				this.localUserByNativeTokenCache.delete(k);
+			}
+		}
 		for (const [k, v] of this.uriPersonCache.entries) {
 			if (v.value?.id === userId) {
 				this.uriPersonCache.delete(k);

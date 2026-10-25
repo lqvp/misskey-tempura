@@ -4,7 +4,7 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import { In } from 'typeorm';
+import { In, MoreThan } from 'typeorm';
 import { DI } from '@/di-symbols.js';
 import type { FollowingsRepository, UsersRepository } from '@/models/_.js';
 import { MiFollowing } from '@/models/Following.js';
@@ -12,6 +12,7 @@ import { MiUser } from '@/models/User.js';
 import type Logger from '@/logger.js';
 import { bindThis } from '@/decorators.js';
 import { NotificationService } from '@/core/NotificationService.js';
+import { CacheService } from '@/core/CacheService.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import type * as Bull from 'bullmq';
 import type { DbCleanupDanglingFollowsJobData } from '../types.js';
@@ -29,6 +30,7 @@ export class CleanupDanglingFollowsProcessorService {
 
 		private queueLoggerService: QueueLoggerService,
 		private notificationService: NotificationService,
+		private cacheService: CacheService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('cleanup-dangling-follows');
 	}
@@ -38,42 +40,57 @@ export class CleanupDanglingFollowsProcessorService {
 		const { user } = job.data;
 		this.logger.info(`Cleaning up dangling follow relationships for user ${user.id} ...`);
 
-		// 自分がフォローしている/されている関係の相手をすべて取得
-		const relationships = await this.followingsRepository.find({
-			where: [
-				{ followerId: user.id },
-				{ followeeId: user.id },
-			],
-			select: { followerId: true, followeeId: true },
-		});
-
-		const relatedUserIds = [...new Set(relationships.flatMap(r => [r.followerId, r.followeeId]))]
-			.filter(id => id !== user.id);
-
-		// 関連アカウントのうち、行が既に存在しないもの(削除処理完了済み)と削除済みフラグのもの(削除処理中)を特定
+		// 自分がフォローしている/されている関係をキーセットページネーションで走査する
+		// (関係が多いユーザーで全件を一度にメモリへ読み込まないため)
+		const SCAN_BATCH = 500;
 		const deletedUserIds = new Set<string>();
-		const BATCH_SIZE = 100;
-		for (let i = 0; i < relatedUserIds.length; i += BATCH_SIZE) {
-			const batch = relatedUserIds.slice(i, i + BATCH_SIZE);
-			const existing = await this.usersRepository.find({
-				where: { id: In(batch) },
-				select: { id: true, isDeleted: true },
+		let cursor: MiFollowing['id'] | null = null;
+		while (true) {
+			const relationships = await this.followingsRepository.find({
+				where: [
+					{ followerId: user.id, ...(cursor ? { id: MoreThan(cursor) } : {}) },
+					{ followeeId: user.id, ...(cursor ? { id: MoreThan(cursor) } : {}) },
+				],
+				select: { id: true, followerId: true, followeeId: true },
+				take: SCAN_BATCH,
+				order: { id: 'ASC' },
 			});
-			const existingIds = new Set(existing.map(u => u.id));
-			for (const u of existing) {
-				if (u.isDeleted) deletedUserIds.add(u.id);
+
+			const relatedUserIds = [...new Set(relationships.flatMap(r => [r.followerId, r.followeeId]))]
+				.filter(id => id !== user.id);
+
+			// 関連アカウントのうち、行が既に存在しないもの(削除処理完了済み)と削除済みフラグのもの(削除処理中)を特定
+			const BATCH_SIZE = 100;
+			for (let i = 0; i < relatedUserIds.length; i += BATCH_SIZE) {
+				const batch = relatedUserIds.slice(i, i + BATCH_SIZE);
+				const existing = await this.usersRepository.find({
+					where: { id: In(batch) },
+					select: { id: true, isDeleted: true },
+				});
+				const existingIds = new Set(existing.map(u => u.id));
+				for (const u of existing) {
+					if (u.isDeleted) deletedUserIds.add(u.id);
+				}
+				for (const id of batch) {
+					if (!existingIds.has(id)) deletedUserIds.add(id);
+				}
 			}
-			for (const id of batch) {
-				if (!existingIds.has(id)) deletedUserIds.add(id);
-			}
+
+			if (relationships.length < SCAN_BATCH) break;
+			cursor = relationships.at(-1)?.id ?? null;
+			if (cursor == null) break;
 		}
 
 		// 関係の削除とカウンターの再計算を同一トランザクションで行う
+		// (DELETE文も分割し、1文あたりのbind数とロック範囲を抑える)
+		const DELETE_CHUNK = 500;
+		const deletedUserIdList = [...deletedUserIds];
 		await this.followingsRepository.manager.transaction(async manager => {
-			if (deletedUserIds.size > 0) {
+			for (let i = 0; i < deletedUserIdList.length; i += DELETE_CHUNK) {
+				const chunk = deletedUserIdList.slice(i, i + DELETE_CHUNK);
 				await manager.delete(MiFollowing, [
-					{ followerId: user.id, followeeId: In([...deletedUserIds]) },
-					{ followeeId: user.id, followerId: In([...deletedUserIds]) },
+					{ followerId: user.id, followeeId: In(chunk) },
+					{ followeeId: user.id, followerId: In(chunk) },
 				]);
 			}
 
@@ -81,6 +98,9 @@ export class CleanupDanglingFollowsProcessorService {
 			const followersCount = await manager.count(MiFollowing, { where: { followeeId: user.id } });
 			await manager.update(MiUser, user.id, { followingCount, followersCount });
 		});
+
+		// 関係を直接DELETEしたためキャッシュ更新イベントは発火しない。明示的にリフレッシュする
+		this.cacheService.userFollowingsCache.refresh(user.id);
 
 		const message = deletedUserIds.size > 0
 			? `Cleaned up relationships with ${deletedUserIds.size} deleted users for user ${user.id}.`

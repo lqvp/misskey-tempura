@@ -76,7 +76,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 					<div class="_gaps_m">
 						<FormInfo>{{ i18n.ts._relationCleanup.description }}</FormInfo>
-						<MkButton @click="cleanupDanglingFollows"><SearchText>{{ i18n.ts._relationCleanup.cleanup }}</SearchText></MkButton>
+						<MkButton :disabled="cleanupProcessing" @click="cleanupDanglingFollows"><SearchText>{{ i18n.ts._relationCleanup.cleanup }}</SearchText></MkButton>
 					</div>
 				</MkFolder>
 			</SearchMarker>
@@ -171,7 +171,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import XMigration from './migration.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import FormLink from '@/components/form/link.vue';
@@ -252,6 +252,8 @@ async function forceCloudBackup() {
 	os.success();
 }
 
+const cleanupProcessing = ref(false);
+
 async function cleanupDanglingFollows() {
 	const { canceled } = await os.confirm({
 		type: 'warning',
@@ -259,9 +261,14 @@ async function cleanupDanglingFollows() {
 	});
 	if (canceled) return;
 
-	await os.apiWithDialog('i/cleanup-dangling-follows', {});
-
-	os.toast(i18n.ts._relationCleanup.cleanupStarted);
+	// API応答待ちの間の再クリックでジョブが重複登録されるのを防ぐ
+	cleanupProcessing.value = true;
+	try {
+		await os.apiWithDialog('i/cleanup-dangling-follows', {});
+		os.toast(i18n.ts._relationCleanup.cleanupStarted);
+	} finally {
+		cleanupProcessing.value = false;
+	}
 }
 
 async function truncateAccount() {

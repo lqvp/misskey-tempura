@@ -82,10 +82,12 @@ export class NotificationService implements OnApplicationShutdown {
 		type: T,
 		data: Omit<FilterUnionByProperty<MiNotification, 'type', T>, 'type' | 'id' | 'createdAt' | 'notifierId'>,
 		notifierId?: MiUser['id'] | null,
-	) {
-		trackPromise(
-			this.#createNotificationInternal(notifieeId, type, data, notifierId),
-		);
+	): Promise<MiNotification | null> {
+		// 呼び出し側が作成の完了(や失敗)を待ちたい場合に備えてPromiseも返す。
+		// 戻り値を使わない既存の呼び出し元の挙動は変わらない (trackPromiseに渡すのも同じPromise)。
+		const promise = this.#createNotificationInternal(notifieeId, type, data, notifierId);
+		trackPromise(promise);
+		return promise;
 	}
 
 	async #createNotificationInternal<T extends MiNotification['type']>(

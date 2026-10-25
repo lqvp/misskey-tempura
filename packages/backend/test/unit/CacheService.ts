@@ -124,6 +124,22 @@ describe('CacheService (user cache events)', () => {
 		});
 	});
 
+	test('a delete event also evicts the native token cache entries for the user', async () => {
+		const ctx = createService();
+		service = ctx.service;
+		const local = { id: 'u7', host: null, token: 'tok7' };
+		service.localUserByNativeTokenCache.set('tok7', local as any);
+		service.localUserByIdCache.set('u7', local as any);
+
+		ctx.usersRepository.findOneBy.mockResolvedValueOnce(null);
+		ctx.emit('userChangeDeletedState', { id: 'u7', isDeleted: true });
+
+		await vi.waitFor(() => {
+			expect(service.localUserByNativeTokenCache.get('tok7')).toBeUndefined();
+			expect(service.localUserByIdCache.get('u7')).toBeUndefined();
+		});
+	});
+
 	test('the serialization chain map is cleaned up after the chain drains', async () => {
 		const ctx = createService();
 		service = ctx.service;

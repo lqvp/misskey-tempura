@@ -634,6 +634,12 @@ export class QueueService {
 			user: { id: user.id },
 			soft: opts.soft,
 		}, {
+			// unfollow等の一時的なインフラ障害で失敗した場合にリトライさせる (processorは冪等)
+			attempts: 3,
+			backoff: {
+				type: 'exponential',
+				delay: 1000,
+			},
 			removeOnComplete: {
 				age: 3600 * 24 * 7, // keep up to 7 days
 				count: 30,
@@ -666,6 +672,12 @@ export class QueueService {
 		return this.dbQueue.add('cleanupDanglingFollows', {
 			user: { id: user.id },
 		}, {
+			// 一時的なDB障害で失敗した場合にリトライさせる (processorは冪等)
+			attempts: 3,
+			backoff: {
+				type: 'exponential',
+				delay: 1000,
+			},
 			removeOnComplete: {
 				age: 3600 * 24 * 7, // keep up to 7 days
 				count: 30,
