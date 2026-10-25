@@ -98,6 +98,45 @@ describe('CacheService (user cache events)', () => {
 		});
 	});
 
+	test('a failing event invalidates the stale cache instead of leaving it, and the next event still applies', async () => {
+		const ctx = createService();
+		service = ctx.service;
+		const uri = 'https://remote.test/users/u3';
+		const staleUser = { id: 'u3', host: 'remote.test', uri, name: 'stale' };
+		const user = { id: 'u3', host: 'remote.test', uri, name: 'n' };
+		service.userByIdCache.set('u3', staleUser as any);
+
+		ctx.usersRepository.findOneBy
+			.mockRejectedValueOnce(new Error('db down')) // 1回目のイベントの適用は失敗
+			.mockResolvedValueOnce(user);                // 2回目は成功
+
+		ctx.emit('remoteUserUpdated', { id: 'u3' });
+		// 失敗時はstaleなキャッシュを残さず安全に無効化する
+		await vi.waitFor(() => {
+			expect(ctx.usersRepository.findOneBy).toHaveBeenCalledTimes(1);
+			expect(service.userByIdCache.get('u3')).toBeUndefined();
+		});
+
+		// 失敗してもチェーンは壊れず、次のイベントが適用される
+		ctx.emit('remoteUserUpdated', { id: 'u3' });
+		await vi.waitFor(() => {
+			expect(service.userByIdCache.get('u3')?.name).toBe('n');
+		});
+	});
+
+	test('the serialization chain map is cleaned up after the chain drains', async () => {
+		const ctx = createService();
+		service = ctx.service;
+		ctx.usersRepository.findOneBy.mockResolvedValue(null);
+
+		ctx.emit('userChangeDeletedState', { id: 'u9', isDeleted: true });
+
+		await vi.waitFor(() => {
+			expect(ctx.usersRepository.findOneBy).toHaveBeenCalledTimes(1);
+			expect((service as any).userCacheEventChains.size).toBe(0);
+		});
+	});
+
 	test('events for different users are not serialized against each other', async () => {
 		const ctx = createService();
 		service = ctx.service;

@@ -12,6 +12,9 @@ import { DI } from '@/di-symbols.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { bindThis } from '@/decorators.js';
 import type { GlobalEvents } from '@/core/GlobalEventService.js';
+import Logger from '@/logger.js';
+
+const logger = new Logger('cache');
 import type { OnApplicationShutdown } from '@nestjs/common';
 
 @Injectable()
@@ -178,7 +181,10 @@ export class CacheService implements OnApplicationShutdown {
 				case 'localUserUpdated': {
 					// 同一ユーザーの適用は受信順に直列化する (上記 userCacheEventChains のコメント参照)
 					const prev = this.userCacheEventChains.get(body.id) ?? Promise.resolve();
-					const next = prev.then(() => this.applyUserCacheEvent(body.id)).catch(() => {});
+					const next = prev.then(() => this.applyUserCacheEvent(body.id)).catch((err) => {
+						// チェーンを維持しつつ失敗を記録する (cache不整合を検知可能にするため握りつぶさない)
+						logger.error(`Failed to apply user cache event for ${body.id}: ${err}`);
+					});
 					this.userCacheEventChains.set(body.id, next);
 					void next.finally(() => {
 						if (this.userCacheEventChains.get(body.id) === next) this.userCacheEventChains.delete(body.id);
@@ -206,15 +212,18 @@ export class CacheService implements OnApplicationShutdown {
 	}
 
 	private async applyUserCacheEvent(userId: MiUser['id']): Promise<void> {
-		const user = await this.usersRepository.findOneBy({ id: userId });
+		let user: MiUser | null;
+		try {
+			user = await this.usersRepository.findOneBy({ id: userId });
+		} catch (err) {
+			// DB読み取りに失敗した場合、古いキャッシュを残すより無効化して次のアクセス時の
+			// 再取得に委ねる方が安全 (一時的な障害なら再取得で復旧する)
+			logger.warn(`Failed to load user ${userId} for cache event; invalidating caches. err: ${err}`);
+			this.evictUserCaches(userId);
+			return;
+		}
 		if (user == null) {
-			this.userByIdCache.delete(userId);
-			this.localUserByIdCache.delete(userId);
-			for (const [k, v] of this.uriPersonCache.entries) {
-				if (v.value?.id === userId) {
-					this.uriPersonCache.delete(k);
-				}
-			}
+			this.evictUserCaches(userId);
 		} else {
 			this.userByIdCache.set(user.id, user);
 			for (const [k, v] of this.uriPersonCache.entries) {
@@ -225,6 +234,16 @@ export class CacheService implements OnApplicationShutdown {
 			if (this.userEntityService.isLocalUser(user)) {
 				this.localUserByNativeTokenCache.set(user.token!, user);
 				this.localUserByIdCache.set(user.id, user);
+			}
+		}
+	}
+
+	private evictUserCaches(userId: MiUser['id']): void {
+		this.userByIdCache.delete(userId);
+		this.localUserByIdCache.delete(userId);
+		for (const [k, v] of this.uriPersonCache.entries) {
+			if (v.value?.id === userId) {
+				this.uriPersonCache.delete(k);
 			}
 		}
 	}
