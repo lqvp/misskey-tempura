@@ -60,6 +60,7 @@ function createService(options: {
 	};
 	const logger = { info: vi.fn(), succ: vi.fn(), warn: vi.fn() };
 	const queueLoggerService = { logger: { createSubLogger: vi.fn(() => logger) } };
+	const globalEventService = { publishInternalEvent: vi.fn() };
 
 	const emptyRepo = { find: vi.fn(async () => []) };
 	const service = new DeleteAccountProcessorService(
@@ -75,9 +76,10 @@ function createService(options: {
 		queueLoggerService as any,
 		{ unindexNote: vi.fn() } as any, // searchService
 		userFollowingService as any,
+		globalEventService as any,
 	);
 
-	return { service, state, usersRepository, followingsRepository, userFollowingService, logger };
+	return { service, state, usersRepository, followingsRepository, userFollowingService, logger, globalEventService };
 }
 
 function job(userId: string, soft?: boolean) {
@@ -205,5 +207,27 @@ describe('DeleteAccountProcessorService (unfollow severing)', () => {
 		expect(userFollowingService.unfollow).toHaveBeenCalledTimes(1);
 		expect(state.followings).toHaveLength(0);
 		expect(usersRepository.delete).not.toHaveBeenCalled();
+	});
+
+	test('publishes a cache-invalidation event after physical deletion (stale isDeleted entries must not linger)', async () => {
+		const { service, usersRepository, globalEventService } = createService({
+			user: localUser('user1'),
+		});
+
+		await service.process(job('user1'));
+
+		expect(usersRepository.delete).toHaveBeenCalledWith('user1');
+		expect(globalEventService.publishInternalEvent).toHaveBeenCalledWith('userChangeDeletedState', { id: 'user1', isDeleted: true });
+	});
+
+	test('does not publish the cache-invalidation event on soft deletion (the row remains; the caller already published it)', async () => {
+		const { service, usersRepository, globalEventService } = createService({
+			user: remoteUser('remote1'),
+		});
+
+		await service.process(job('remote1', true));
+
+		expect(usersRepository.delete).not.toHaveBeenCalled();
+		expect(globalEventService.publishInternalEvent).not.toHaveBeenCalled();
 	});
 });

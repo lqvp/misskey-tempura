@@ -13,6 +13,7 @@ import type { MiDriveFile } from '@/models/DriveFile.js';
 import type { MiNote } from '@/models/Note.js';
 import type { MiFollowing } from '@/models/Following.js';
 import { EmailService } from '@/core/EmailService.js';
+import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { bindThis } from '@/decorators.js';
 import { SearchService } from '@/core/SearchService.js';
 import { PageService } from '@/core/PageService.js';
@@ -50,6 +51,7 @@ export class DeleteAccountProcessorService {
 		private queueLoggerService: QueueLoggerService,
 		private searchService: SearchService,
 		private userFollowingService: UserFollowingService,
+		private globalEventService: GlobalEventService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('delete-account');
 	}
@@ -257,6 +259,16 @@ export class DeleteAccountProcessorService {
 		// nop
 		} else {
 			await this.usersRepository.delete(job.data.user.id);
+
+			// 行の物理削除後に、キャッシュ無効化のためのイベントを発行する。
+			// これがないと、削除処理中にdeleteActor受信時のremoteUserUpdated等で各プロセスの
+			// uriPersonCacheへ削除済み(isDeleted=true)のユーザーがキャッシュされたまま残り、
+			// 後続アクティビティの再解決(resolvePerson)がその古い行を返してしまい、
+			// re-createが行われず「failed to resolve user」としてアクティビティが破棄される
+			// (キャッシュのTTLが切れるまで最大5分間、連合が破綻する)。
+			// 購読側(CacheService)は行が見つからない場合に該当ユーザーのキャッシュエントリを削除する。
+			// 発行を物理削除「後」に行うことで、ジョブの完了速度に依存せず確実にキャッシュが無効化される。
+			this.globalEventService.publishInternalEvent('userChangeDeletedState', { id: user.id, isDeleted: true });
 		}
 
 		return 'Account deleted';
