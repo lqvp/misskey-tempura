@@ -389,8 +389,10 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 
 			// 新しい端末なので確認コードが要る。ログインコードは確定まで消費されず、Cookie は延長される
 			const first = await exchange({ code }, binding, clientIp);
-			assert.strictEqual(first.status, 200);
-			assert.strictEqual(first.body.finished, false);
+			// 失敗したときに、判定がどうなったかが分かるよう、記録されたサインインを添える
+			const diag = JSON.stringify((await db.getRepository(MiSignin).find({ where: { userId: user.id }, order: { id: 'DESC' }, take: 3 })).map(r => ({ ip: r.ip, success: r.success, score: r.riskScore, reasons: r.riskReasons, challenge: r.challenge })));
+			assert.strictEqual(first.status, 200, diag);
+			assert.strictEqual(first.body.finished, false, `リスク判定でコードが要求されなかった: ${diag}`);
 			assert.strictEqual(first.body.next, 'emailCode');
 			assert.ok(typeof first.body.challengeId === 'string');
 			assert.ok(first.setCookie?.includes('Max-Age=') && !first.setCookie.includes('Max-Age=0'), `Cookie は削除されないべき: ${first.setCookie}`);
