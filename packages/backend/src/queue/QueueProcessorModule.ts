@@ -104,6 +104,7 @@ import { UpdateIpIntelligenceProcessorService } from './processors/UpdateIpIntel
 		ReDownloadRemoteFileProcessorService,
 		ScheduledNoteDeleteProcessorService,
 		CleanExpiredMultipartUploadsProcessorService,
+		CleanupDanglingFollowsProcessorService,
 		UpdateIpIntelligenceProcessorService,
 	],
 	exports: [
