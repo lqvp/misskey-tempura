@@ -512,14 +512,12 @@ describe('User', () => {
 					},
 				);
 
-				// FIXME: resolving also fails
-				await rejects(
-					async () => await resolveRemoteUser('a.test', alice.id, bob),
-					(err: any) => {
-						strictEqual(err.code, 'INTERNAL_ERROR');
-						return true;
-					},
-				);
+				// キャッシュ無効化の修正により、物理削除の完了後はリモート解決が成功するようになった
+				// (完了前はisDeleted行への条件付き更新に失敗するため、成功するまで待機する)
+				await vi.waitFor(async () => {
+					const resolved = await resolveRemoteUser('a.test', alice.id, bob);
+					strictEqual(resolved.username, alice.username);
+				}, WAIT_FOR_SLOW_FEDERATION);
 			});
 
 			/**
@@ -556,14 +554,9 @@ describe('User', () => {
 				await bob.client.request('following/create', { userId: renewedaliceInB.id });
 				await waitForFollowers(alice, 1, WAIT_FOR_SLOW_FEDERATION);
 
-				// FIXME: but resolving still fails ...
-				await rejects(
-					async () => await resolveRemoteUser('a.test', alice.id, bob),
-					(err: any) => {
-						strictEqual(err.code, 'INTERNAL_ERROR');
-						return true;
-					},
-				);
+				// 再作成されたユーザーのリモート解決は成功する
+				const resolved = await resolveRemoteUser('a.test', alice.id, bob);
+				strictEqual(resolved.username, alice.username);
 			});
 		});
 	});

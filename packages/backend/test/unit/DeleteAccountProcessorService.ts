@@ -178,8 +178,8 @@ describe('DeleteAccountProcessorService (unfollow severing)', () => {
 		await expect(service.process(job('user1'))).rejects.toThrow('failing the job so it will be retried');
 	});
 
-	test('federation-driven physical deletion of a remote user skips unfollow (rows are CASCADE-deleted; Undo to the deleting origin is unnecessary)', async () => {
-		const { service, usersRepository, userFollowingService } = createService({
+	test('federation-driven physical deletion of a remote user also severs relations (the Delete may originate from a suspend, which keeps the origin-side relation until Undo Follow arrives)', async () => {
+		const { service, state, usersRepository, userFollowingService } = createService({
 			user: remoteUser('remote1'),
 			followings: [
 				{ id: 'f1', followerId: 'u2', followeeId: 'remote1' },
@@ -189,7 +189,8 @@ describe('DeleteAccountProcessorService (unfollow severing)', () => {
 		const result = await service.process(job('remote1'));
 
 		expect(result).toBe('Account deleted');
-		expect(userFollowingService.unfollow).not.toHaveBeenCalled();
+		expect(userFollowingService.unfollow).toHaveBeenCalledTimes(1);
+		expect(state.followings).toHaveLength(0);
 		expect(usersRepository.delete).toHaveBeenCalledWith('remote1');
 	});
 
