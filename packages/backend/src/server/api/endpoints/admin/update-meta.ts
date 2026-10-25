@@ -1394,6 +1394,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				}
 
 				// ロックした行から読んだ現在の一覧に対して、版の照合・検証・保存内容の決定を行う (MetaService.update が同じトランザクションで保存する)
+				const requestedProviders = ps.ssoProviders;
 				resolveSsoProviders = async (currentProviders: SsoProviderConfig[]): Promise<SsoProviderConfig[]> => {
 					// clientSecret が空文字なら既存の値を保持する
 					if (ps.ssoProvidersRevision !== computeSsoProvidersRevision(currentProviders)) {
@@ -1403,7 +1404,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 					// OIDC の sub は発行者ごとにしか一意でないため、既存の連携があるプロバイダーの issuerUrl 変更は拒否する
 					// (変更後の発行者が同じ sub を返すと、別人が既存ユーザーの連携に一致してログインできてしまう)
-					for (const provider of ps.ssoProviders) {
+					for (const provider of requestedProviders) {
 						const current = currentByKey.get(provider.key);
 						if (current == null) {
 							// 削除済みプロバイダーのキー再利用も拒否する。連携レコードは削除後も残るため、
@@ -1422,7 +1423,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 							}
 						}
 					}
-					const next = ps.ssoProviders.map(p => {
+					const next = requestedProviders.map(p => {
 						let clientSecret = p.clientSecret ?? '';
 						if (clientSecret === '') {
 							clientSecret = currentByKey.get(p.key)?.clientSecret ?? '';
