@@ -9,6 +9,7 @@ import type { MiMeta } from '@/models/Meta.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { redactMetaForModerationLog } from '@/misc/redact-sso-secrets.js';
 import { assertValidOidcIssuerUrl } from '@/misc/sso-issuer-url.js';
+import { computeSsoProvidersRevision } from '@/misc/sso-providers-revision.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { SsoProviderConfig } from '@/models/Meta.js';
 import type { UserSsoLinkRepository } from '@/models/_.js';
@@ -34,6 +35,12 @@ export const meta = {
 			message: 'loginRiskNotifyThreshold must be less than loginRiskStepUpThreshold.',
 			code: 'INVALID_LOGIN_RISK_THRESHOLDS',
 			id: '0b4b9a0e-6f0d-4c8e-9d3a-5f2f7a1c8e41',
+		},
+		ssoProvidersConflict: {
+			message: 'The SSO provider list was changed by someone else after it was loaded. Reload and try again.',
+			code: 'SSO_PROVIDERS_CONFLICT',
+			id: '39ab1dcf-5c2a-4ccd-9f73-9cd9d0502640',
+			httpStatusCode: 409,
 		},
 	},
 } as const;
@@ -370,6 +377,9 @@ export const paramDef = {
 				required: ['key', 'text', 'enabled', 'order', 'isDefault'],
 			},
 		},
+		// 管理画面が読み込んだ時点の一覧の版 (admin/meta の ssoProvidersRevision)。指定された場合、保存時点の一覧と違えば保存しない。
+		// 省略した場合は従来どおり照合しない (既存クライアントとの互換)
+		ssoProvidersRevision: { type: 'string', maxLength: 128 },
 		ssoProviders: {
 			type: 'array',
 			items: {
@@ -1384,6 +1394,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 				// clientSecret が空文字なら既存の値を保持する
 				const currentMeta = await this.metaService.fetch(true);
+				if (ps.ssoProvidersRevision !== undefined && ps.ssoProvidersRevision !== computeSsoProvidersRevision(currentMeta.ssoProviders)) {
+					throw new ApiError(meta.errors.ssoProvidersConflict);
+				}
 				const currentByKey = new Map(currentMeta.ssoProviders.map(p => [p.key, p]));
 
 				// OIDC の sub は発行者ごとにしか一意でないため、既存の連携があるプロバイダーの issuerUrl 変更は拒否する

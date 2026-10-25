@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import { computeSsoProvidersRevision } from '@/misc/sso-providers-revision.js';
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { MetaService } from '@/core/MetaService.js';
@@ -948,6 +949,10 @@ export const meta = {
 					},
 				},
 			},
+			ssoProvidersRevision: {
+				type: 'string',
+				optional: false, nullable: false,
+			},
 			ssoProviders: {
 				type: 'array',
 				optional: false, nullable: false,
@@ -1342,6 +1347,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				contactFormRequireAuth: instance.contactFormRequireAuth,
 				contactFormCategories: instance.contactFormCategories,
 				// clientSecret は返さず、設定済みかどうかだけ返す
+				ssoProvidersRevision: computeSsoProvidersRevision(instance.ssoProviders),
 				ssoProviders: instance.ssoProviders.map(p => ({
 					key: p.key,
 					type: p.type,

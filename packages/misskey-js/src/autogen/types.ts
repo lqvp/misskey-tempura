@@ -11675,6 +11675,7 @@ export interface operations {
                             order: number;
                             isDefault: boolean;
                         }[];
+                        ssoProvidersRevision: string;
                         ssoProviders: {
                             key: string;
                             type: string;
@@ -15505,6 +15506,7 @@ export interface operations {
                         order: number;
                         isDefault: boolean;
                     }[];
+                    ssoProvidersRevision?: string;
                     ssoProviders?: {
                         key: string;
                         /** @enum {string} */

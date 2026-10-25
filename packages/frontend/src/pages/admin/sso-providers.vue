@@ -118,6 +118,8 @@ const providers = ref<SsoProviderEdit[]>([]);
 const originalProviders = ref<SsoProviderEdit[]>([]);
 // 読み込みに失敗した空の一覧を保存して、既存のプロバイダー設定を消さないための印
 const loaded = ref(false);
+// 読み込んだ時点の一覧の版。保存時に送り、他の管理者が先に変更していたらサーバーが保存を止める
+const revision = ref('');
 
 const hasChanges = computed(() => {
 	return JSON.stringify(providers.value) !== JSON.stringify(originalProviders.value);
@@ -154,6 +156,7 @@ async function loadProviders() {
 			trustUpstreamMfa: p.trustUpstreamMfa ?? false,
 		}));
 		originalProviders.value = JSON.parse(JSON.stringify(providers.value));
+		revision.value = meta.ssoProvidersRevision;
 		loaded.value = true;
 	} catch (error) {
 		console.error('Failed to load SSO providers:', error);
@@ -185,6 +188,7 @@ async function saveProviders() {
 
 	try {
 		await misskeyApi('admin/update-meta', {
+			ssoProvidersRevision: revision.value,
 			ssoProviders: providers.value.map(p => ({
 				key: p.key,
 				type: p.type,
@@ -202,6 +206,10 @@ async function saveProviders() {
 		os.success();
 	} catch (error) {
 		console.error('Failed to save SSO providers:', error);
+		if ((error as { code?: string } | null)?.code === 'SSO_PROVIDERS_CONFLICT') {
+			// 他の管理者が先に変更した。最新の一覧を読み直して、編集内容は反映せずに止める
+			await loadProviders();
+		}
 		os.alert({ type: 'error', text: i18n.ts.somethingHappened });
 	}
 }
