@@ -202,12 +202,12 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		assert.strictEqual(noPassword.status, 400);
 
 		const wrongPassword = await api('sso/link', { provider: providerKey, password: 'wrong-password' }, plain);
-		assert.notStrictEqual(wrongPassword.status, 200);
+		assert.strictEqual(wrongPassword.status, 403);
 
 		// 2FA有効なアカウントは、パスワードが正しくてもトークンがなければ拒否する
 		const noToken = await api('sso/link', { provider: providerKey, password: 'test' }, totpUser);
-		assert.notStrictEqual(noToken.status, 200);
+		assert.strictEqual(noToken.status, 403);
 		const badToken = await api('sso/link', { provider: providerKey, password: 'test', token: '000000' }, totpUser);
-		assert.notStrictEqual(badToken.status, 200);
+		assert.strictEqual(badToken.status, 403);
 	});
 });

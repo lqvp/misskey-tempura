@@ -25,6 +25,18 @@ export const meta = {
 			code: 'PROVIDER_NOT_FOUND',
 			id: '9f2a7c1e-3b4d-4e5f-8a9b-0c1d2e3f4a5b',
 		},
+		incorrectPassword: {
+			message: 'Incorrect password.',
+			code: 'INCORRECT_PASSWORD',
+			id: '05a72dc0-b228-4d11-b2f0-e87251a43f74',
+			httpStatusCode: 403,
+		},
+		authenticationFailed: {
+			message: 'Two-factor authentication failed.',
+			code: 'AUTHENTICATION_FAILED',
+			id: '354ea019-fcea-47f0-82b1-35c0b87dcdd4',
+			httpStatusCode: 403,
+		},
 	},
 
 	res: {
@@ -69,18 +81,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			// パスワード不一致のまま 2FA の確認 (バックアップコードの消費を含む) に進まないよう、パスワードを先に確認する
 			const passwordMatched = profile.password != null && await bcrypt.compare(ps.password, profile.password);
 			if (!passwordMatched) {
-				throw new Error('incorrect password');
+				throw new ApiError(meta.errors.incorrectPassword);
 			}
 
 			if (profile.twoFactorEnabled) {
 				if (ps.token == null) {
-					throw new Error('authentication failed');
+					throw new ApiError(meta.errors.authenticationFailed);
 				}
 
 				try {
 					await this.userAuthService.twoFactorAuthenticate(profile, ps.token);
 				} catch (_) {
-					throw new Error('authentication failed');
+					throw new ApiError(meta.errors.authenticationFailed);
 				}
 			}
 
