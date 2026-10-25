@@ -4,7 +4,6 @@
  */
 
 import ms from 'ms';
-import bcrypt from 'bcryptjs';
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { UserProfilesRepository } from '@/models/_.js';
@@ -12,6 +11,7 @@ import { DI } from '@/di-symbols.js';
 import { UserAuthService } from '@/core/UserAuthService.js';
 import { SsoService, SsoError } from '../../SsoService.js';
 import { ApiError } from '../../error.js';
+import { checkSsoReauth } from '../../sso-reauth.js';
 
 export const meta = {
 	tags: ['account'],
@@ -86,22 +86,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: me.id });
 
 			// パスワード不一致のまま 2FA の確認 (バックアップコードの消費を含む) に進まないよう、パスワードを先に確認する
-			const passwordMatched = profile.password != null && await bcrypt.compare(ps.password, profile.password);
-			if (!passwordMatched) {
-				throw new ApiError(meta.errors.incorrectPassword);
-			}
-
-			if (profile.twoFactorEnabled) {
-				if (ps.token == null) {
-					throw new ApiError(meta.errors.authenticationFailed);
-				}
-
-				try {
-					await this.userAuthService.twoFactorAuthenticate(profile, ps.token);
-				} catch (_) {
-					throw new ApiError(meta.errors.authenticationFailed);
-				}
-			}
+			const reauth = await checkSsoReauth({ userAuthService: this.userAuthService }, profile, ps);
+			if (reauth === 'password') throw new ApiError(meta.errors.incorrectPassword);
+			if (reauth === 'twoFactor') throw new ApiError(meta.errors.authenticationFailed);
 
 			try {
 				return await this.ssoService.linkAccount(me.id, ps.provider);

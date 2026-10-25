@@ -182,7 +182,11 @@ async function unlinkSso(providerKey: string) {
 		});
 		if (canceled) return;
 
-		await misskeyApi('sso/unlink', { provider: providerKey });
+		// 連携のときと同じく、パスワード (と 2FA) で再認証する
+		const auth = await os.authenticateDialog();
+		if (auth.canceled) return;
+
+		await misskeyApi('sso/unlink', { provider: providerKey, password: auth.result.password, token: auth.result.token });
 		// 解除は成功したので、状態の再取得に失敗しても表示から先に外す
 		const next = new Set(ssoLinkedProviders.value);
 		next.delete(providerKey);

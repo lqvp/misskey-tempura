@@ -543,4 +543,92 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		// 通知に clientId や secret は含まれない
 		assert.ok(!/cid-|secret-/.test(String(mine[0].body)));
 	});
+
+	test('自分で連携を解除するにはパスワード (2FA があればコードも) の再認証が必要で、満たさなければ連携は残る', async () => {
+		const key = 'e2eself';
+		const insertLink = async (userId: string) => await db.getRepository(MiUserSsoLink).insert({ id: crypto.randomBytes(8).toString('hex'), userId, provider: key, providerIssuer: 'oidc:https://idp.invalid', providerUserId: `sub-${userId}`, createdAt: new Date() });
+		const count = async (userId: string) => await db.getRepository(MiUserSsoLink).countBy({ userId, provider: key });
+
+		// 2FA なし: パスワードなしは 400、誤りは 403、正しければ解除
+		const u1 = await signup({ username: 'ssoex_self1' });
+		await insertLink(u1.id);
+		assert.strictEqual((await api('sso/unlink', { provider: key }, u1)).status, 400);
+		const wrong = await api('sso/unlink', { provider: key, password: 'wrong' }, u1);
+		assert.strictEqual(wrong.status, 403);
+		assert.strictEqual((wrong.body as any).error.code, 'INCORRECT_PASSWORD');
+		assert.strictEqual(await count(u1.id), 1);
+		const ok = await api('sso/unlink', { provider: key, password: 'test' }, u1);
+		assert.strictEqual(ok.status, 200);
+		assert.strictEqual(await count(u1.id), 0);
+		// 連携がなければ NOT_LINKED
+		const gone = await api('sso/unlink', { provider: key, password: 'test' }, u1);
+		assert.strictEqual((gone.body as any).error.code, 'NOT_LINKED');
+
+		// 2FA あり: パスワードだけでは解除できず、コードを添えれば解除できる
+		const u2 = await signup({ username: 'ssoex_self2' });
+		const reg = await api('i/2fa/register', { password: 'test' }, u2);
+		assert.strictEqual((await api('i/2fa/done', { token: otp(reg.body.secret) }, u2)).status, 200);
+		await insertLink(u2.id);
+		const noToken = await api('sso/unlink', { provider: key, password: 'test' }, u2);
+		assert.strictEqual(noToken.status, 403);
+		assert.strictEqual((noToken.body as any).error.code, 'AUTHENTICATION_FAILED');
+		assert.strictEqual(await count(u2.id), 1);
+		assert.strictEqual((await api('sso/unlink', { provider: key, password: 'test', token: otp(reg.body.secret) }, u2)).status, 200);
+		assert.strictEqual(await count(u2.id), 0);
+	});
+
+	test('管理者の強制解除は、選んだプロバイダーの連携だけを解除し、本人にだけ通知し、モデレーションログに残す', async () => {
+		const victim = await signup({ username: 'ssoex_force' });
+		const other = await signup({ username: 'ssoex_force_other' });
+		const outsider = await signup({ username: 'ssoex_force_outsider' });
+		const link = async (userId: string, provider: string) => await db.getRepository(MiUserSsoLink).insert({ id: crypto.randomBytes(8).toString('hex'), userId, provider, providerIssuer: 'oidc:https://idp.invalid', providerUserId: `sub-${provider}-${userId}`, createdAt: new Date() });
+		await link(victim.id, 'forcea');
+		await link(victim.id, 'forceb');
+		await link(other.id, 'forcea');
+		const count = async (userId: string, provider: string) => await db.getRepository(MiUserSsoLink).countBy({ userId, provider });
+		const notified = async (token: misskey.entities.SignupResponse) => ((await api('i/notifications', {}, token)).body as any[]).filter(n => n.type === 'app' && /force[ab]/.test(String(n.body)));
+
+		// 管理者でないと使えない
+		assert.strictEqual((await api('admin/sso-unlink-user', { userId: victim.id, providers: ['forcea'] }, outsider)).status, 403);
+		assert.strictEqual((await api('admin/sso-user-links', { userId: victim.id }, outsider)).status, 403);
+		assert.strictEqual(await count(victim.id, 'forcea'), 1);
+
+		// 一覧には連携したプロバイダーだけが出る (外部アカウントの識別子は含まない)
+		const list = await api('admin/sso-user-links', { userId: victim.id }, admin);
+		assert.strictEqual(list.status, 200);
+		assert.deepStrictEqual((list.body as any).links.map((l: any) => l.provider).sort(), ['forcea', 'forceb']);
+		assert.ok(!JSON.stringify(list.body).includes('sub-force'));
+
+		// 選ばれていない・何も選ばない・連携のないプロバイダーは何も解除しない
+		assert.strictEqual((await api('admin/sso-unlink-user', { userId: victim.id, providers: [] }, admin)).status, 400);
+		const none = await api('admin/sso-unlink-user', { userId: victim.id, providers: ['unknown'] }, admin);
+		assert.strictEqual(none.status, 200);
+		assert.strictEqual((none.body as any).unlinked, 0);
+		assert.strictEqual(await count(victim.id, 'forcea'), 1);
+		assert.strictEqual(await count(victim.id, 'forceb'), 1);
+
+		// 選んだ forcea だけを解除。同じプロバイダーでも他のユーザーの連携と、別のプロバイダーの連携は残る
+		const res = await api('admin/sso-unlink-user', { userId: victim.id, providers: ['forcea'] }, admin);
+		assert.strictEqual(res.status, 200);
+		assert.strictEqual((res.body as any).unlinked, 1);
+		assert.strictEqual(await count(victim.id, 'forcea'), 0);
+		assert.strictEqual(await count(victim.id, 'forceb'), 1);
+		assert.strictEqual(await count(other.id, 'forcea'), 1);
+
+		// 通知は解除された本人にだけ、解除したプロバイダーの分だけ届く
+		let mine: any[] = [];
+		for (let i = 0; i < 20 && mine.length === 0; i++) {
+			mine = await notified(victim);
+			if (mine.length === 0) await sleep(500);
+		}
+		assert.strictEqual(mine.length, 1);
+		assert.ok(String(mine[0].body).includes('forcea') && !String(mine[0].body).includes('forceb'));
+		assert.strictEqual((await notified(other)).length, 0);
+		assert.strictEqual((await notified(outsider)).length, 0);
+
+		// モデレーションログに、対象とプロバイダーが残る
+		const logs = await api('admin/show-moderation-logs', { limit: 20 }, admin);
+		const entry = (logs.body as any[]).find(l => l.type === 'unlinkUserSso' && l.info.userId === victim.id);
+		assert.deepStrictEqual(entry?.info.providers, ['forcea']);
+	});
 });

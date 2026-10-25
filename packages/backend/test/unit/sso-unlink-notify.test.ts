@@ -46,3 +46,13 @@ describe('notifySsoLinksRemoved', () => {
 		expect(onError).toHaveBeenCalledTimes(1);
 	});
 });
+
+describe('notifySsoLinksRemoved (理由)', () => {
+	test('管理者の操作による解除は、通知文にそのことが書かれる', async () => {
+		const { deps, createNotification } = makeDeps({});
+		await notifySsoLinksRemoved(deps, ['a'], 'x', 'admin');
+		const data = (createNotification.mock.calls[0] as unknown) as [string, string, { customBody: string }];
+		expect(data[2].customBody).toContain('管理者の操作');
+		expect(data[2].customBody).toContain('administrator');
+	});
+});

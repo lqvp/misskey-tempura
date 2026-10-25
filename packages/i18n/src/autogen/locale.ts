@@ -2669,6 +2669,22 @@ export interface Locale extends ILocale {
      */
     "unsetMfaConfirm": string;
     /**
+     * ユーザーのSSO連携を解除
+     */
+    "unlinkUserSso": string;
+    /**
+     * このユーザーにはSSO連携がありません
+     */
+    "unlinkUserSsoNone": string;
+    /**
+     * 選んだSSO連携を解除しますか？ 解除されたユーザーには通知が届き、SSOでログインするには連携し直す必要があります。パスワードなど他のログイン方法は使えます。
+     */
+    "unlinkUserSsoConfirm": string;
+    /**
+     * {n}件のSSO連携を解除しました
+     */
+    "unlinkUserSsoDone": ParameterizedString<"n">;
+    /**
      * アイコンを解除
      */
     "unsetUserAvatar": string;
@@ -10459,6 +10475,10 @@ export interface Locale extends ILocale {
          */
         "write:admin:unset-mfa": string;
         /**
+         * ユーザーのSSO連携を強制解除する
+         */
+        "write:admin:sso-unlink-user": string;
+        /**
          * ユーザーのアバターを削除する
          */
         "write:admin:unset-user-avatar": string;
@@ -12646,6 +12666,10 @@ export interface Locale extends ILocale {
          * ユーザーの二要素認証を解除
          */
         "unsetMfa": string;
+        /**
+         * ユーザーのSSO連携を強制解除
+         */
+        "unlinkUserSso": string;
         /**
          * ユーザーのアイコンを解除
          */

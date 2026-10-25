@@ -23,10 +23,12 @@ export type SsoUnlinkNotifyDeps = {
  * アプリ内通知と、確認済みのメールアドレスがあればメールを送る。1人の失敗で他の人への通知を止めない。
  * providerLabel は管理者が付けたプロバイダーの表示名 (または key) で、clientId などの設定値は含めない
  */
-export async function notifySsoLinksRemoved(deps: SsoUnlinkNotifyDeps, userIds: string[], providerLabel: string): Promise<void> {
+export async function notifySsoLinksRemoved(deps: SsoUnlinkNotifyDeps, userIds: string[], providerLabel: string, reason: 'settings' | 'admin' = 'settings'): Promise<void> {
 	const header = 'SSO連携が解除されました / SSO link removed';
-	const body = `「${providerLabel}」のSSO連携が、サーバーの設定変更により解除されました。SSOでログインするには、設定のセキュリティから連携し直してください。パスワードなどの他のログイン方法は、そのまま使えます。心当たりがない場合は、サーバーの管理者に確認してください。\n` +
-		`The SSO link for "${providerLabel}" was removed because the server settings changed. To sign in with SSO again, link it from Settings > Security. Your other sign-in methods are not affected. If you did not expect this, contact the server administrator.`;
+	const causeJa = reason === 'admin' ? 'サーバーの管理者の操作' : 'サーバーの設定変更';
+	const causeEn = reason === 'admin' ? 'an action by the server administrator' : 'the server settings changed';
+	const body = `「${providerLabel}」のSSO連携が、${causeJa}により解除されました。SSOでログインするには、設定のセキュリティから連携し直してください。パスワードなどの他のログイン方法は、そのまま使えます。心当たりがない場合は、サーバーの管理者に確認してください。\n` +
+		`The SSO link for "${providerLabel}" was removed because ${causeEn}. To sign in with SSO again, link it from Settings > Security. Your other sign-in methods are not affected. If you did not expect this, contact the server administrator.`;
 
 	for (const userId of userIds) {
 		try {
