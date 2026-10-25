@@ -63,7 +63,14 @@ export class DeleteAccountProcessorService {
 			return;
 		}
 
-		{ // Unfollow all
+		// 連合Deleteによるリモートユーザーの物理削除では、関係行はユーザー行削除時のCASCADEで消えるためunfollow処理を行わない。
+		// Undo Followを削除元サーバーへ返す必要もなく(相手側は削除処理の中で自側の関係を既に整理している)、
+		// ここで配送のために時間をかけると行の物理削除が遅れ、Undo Delete受信時の再解決(re-create)が失敗して連合が破綻する。
+		// なおローカルユーザーの削除時はフォロワー側サーバーへのUndo Follow配送が必要なため、またローカル管理者による
+		// リモートユーザーの削除(soft)時は行が残るため関係を能動的に解消する必要があるため、それぞれunfollow処理を行う。
+		const shouldUnfollow = user.host == null || job.data.soft === true;
+
+		if (shouldUnfollow) { // Unfollow all
 			let cursor: MiFollowing['id'] | null = null;
 			const BATCH_SIZE = 50;
 
@@ -109,7 +116,7 @@ export class DeleteAccountProcessorService {
 			this.logger.succ('All of following deleted');
 		}
 
-		{ // Unfollowed by all
+		if (shouldUnfollow) { // Unfollowed by all
 			let cursor: MiFollowing['id'] | null = null;
 			const BATCH_SIZE = 50;
 

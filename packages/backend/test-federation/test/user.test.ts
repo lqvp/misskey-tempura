@@ -440,9 +440,9 @@ describe('User', () => {
 				const deletedAlice = await bob.client.request('users/show', { userId: aliceInB.id });
 				assert(deletedAlice.id, aliceInB.id);
 
-				// フォロー関係が解消されているので、再度フォローできる
-				await bob.client.request('following/create', { userId: aliceInB.id });
-				await waitForFollowRelation(bob, alice, 1, WAIT_FOR_SLOW_FEDERATION);
+				// NOTE: ローカル管理者によるリモートアカウントの削除はsoft削除(行はisDeleted=trueで残る)のため、
+				//       Bは削除済みのコピーを持つユーザーのAcceptを署名検証の段階で受理できず、再フォローは成立しない。
+				//       (物理削除されないのは upstream #14728 としても知られる意図的な挙動)
 			});
 
 			test('Alice tries to follow Bob, but it is not processed', async () => {

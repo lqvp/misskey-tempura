@@ -80,11 +80,12 @@ function createService(options: {
 	return { service, state, usersRepository, followingsRepository, userFollowingService, logger };
 }
 
-function job(userId: string) {
-	return { data: { user: { id: userId } } } as any;
+function job(userId: string, soft?: boolean) {
+	return { data: { user: { id: userId }, soft } } as any;
 }
 
 const localUser = (id: string) => ({ id, host: null, uri: null, inbox: null, sharedInbox: null });
+const remoteUser = (id: string) => ({ id, host: 'remote.test', uri: `https://remote.test/users/${id}`, inbox: `https://remote.test/users/${id}/inbox`, sharedInbox: null });
 
 describe('DeleteAccountProcessorService (unfollow severing)', () => {
 	test('severs outgoing and incoming follow relations during account deletion', async () => {
@@ -173,5 +174,36 @@ describe('DeleteAccountProcessorService (unfollow severing)', () => {
 		});
 
 		await expect(service.process(job('user1'))).rejects.toThrow('failing the job so it will be retried');
+	});
+
+	test('federation-driven physical deletion of a remote user skips unfollow (rows are CASCADE-deleted; Undo to the deleting origin is unnecessary)', async () => {
+		const { service, usersRepository, userFollowingService } = createService({
+			user: remoteUser('remote1'),
+			followings: [
+				{ id: 'f1', followerId: 'u2', followeeId: 'remote1' },
+			],
+		});
+
+		const result = await service.process(job('remote1'));
+
+		expect(result).toBe('Account deleted');
+		expect(userFollowingService.unfollow).not.toHaveBeenCalled();
+		expect(usersRepository.delete).toHaveBeenCalledWith('remote1');
+	});
+
+	test('local admin deletion of a remote user (soft) still severs relations and keeps the row', async () => {
+		const { service, state, usersRepository, userFollowingService } = createService({
+			user: remoteUser('remote1'),
+			followings: [
+				{ id: 'f1', followerId: 'u2', followeeId: 'remote1' },
+			],
+		});
+
+		const result = await service.process(job('remote1', true));
+
+		expect(result).toBe('Account deleted');
+		expect(userFollowingService.unfollow).toHaveBeenCalledTimes(1);
+		expect(state.followings).toHaveLength(0);
+		expect(usersRepository.delete).not.toHaveBeenCalled();
 	});
 });
