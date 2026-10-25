@@ -7,11 +7,12 @@ process.env.NODE_ENV = 'test';
 
 import * as assert from 'assert';
 import * as crypto from 'node:crypto';
+import * as net from 'node:net';
 import { Redis } from 'ioredis';
 import * as OTPAuth from 'otpauth';
 import { afterAll, beforeAll, describe, test } from 'vitest';
 import { loadConfig } from '@/config.js';
-import { MiUserSsoLink, MiSignin, MiUser } from '@/models/_.js';
+import { MiUserSsoLink, MiSignin, MiUser, MiUserProfile, MiUserLoginContext } from '@/models/_.js';
 import { api, createAppToken, initTestDb, port, sendEnvUpdateRequest, signup } from '../utils.js';
 import type { DataSource } from 'typeorm';
 import type * as misskey from 'misskey-js';
@@ -52,11 +53,11 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 	}
 
 	// 交換は 1 秒の最小間隔制限があるため、連続呼び出しの間隔を空ける
-	async function exchange(body: Record<string, unknown>, cookie?: string) {
+	async function exchange(body: Record<string, unknown>, cookie?: string, clientIp?: string) {
 		await sleep(1100);
 		const res = await fetch(`http://127.0.0.1:${port}/api/sso/exchange-code`, {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json', ...(cookie != null ? { cookie: `sso_binding=${cookie}` } : {}) },
+			headers: { 'Content-Type': 'application/json', ...(clientIp != null ? { 'x-forwarded-for': clientIp } : {}), ...(cookie != null ? { cookie: `sso_binding=${cookie}` } : {}) },
 			body: JSON.stringify(body),
 		});
 		// 同じ Cookie の延長と削除が両方付くことがあるので、ブラウザが最終的に採用する最後の指定を見る
@@ -298,4 +299,126 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		const badToken = await api('sso/link', { provider: providerKey, password: 'test', token: '000000' }, totpUser);
 		assert.strictEqual(badToken.status, 403);
 	});
+
+	// 確認コードのメールを受け取るだけの最小の SMTP サーバー。本文から 6 桁のコードを取り出す
+	async function startMailSink() {
+		const mails: string[] = [];
+		const server = net.createServer(socket => {
+			let inData = false;
+			let buf = '';
+			let data = '';
+			socket.write('220 localhost ESMTP\r\n');
+			socket.on('data', chunk => {
+				buf += chunk.toString('latin1');
+				for (;;) {
+					if (inData) {
+						const end = buf.indexOf('\r\n.\r\n');
+						if (end < 0) { data += buf; buf = ''; break; }
+						mails.push(data + buf.slice(0, end));
+						data = '';
+						buf = buf.slice(end + 5);
+						inData = false;
+						socket.write('250 OK\r\n');
+						continue;
+					}
+					const nl = buf.indexOf('\r\n');
+					if (nl < 0) break;
+					const line = buf.slice(0, nl);
+					buf = buf.slice(nl + 2);
+					const cmd = line.slice(0, 4).toUpperCase();
+					if (cmd === 'DATA') { inData = true; socket.write('354 go ahead\r\n'); }
+					else if (cmd === 'QUIT') { socket.write('221 bye\r\n'); socket.end(); }
+					else socket.write('250 OK\r\n');
+				}
+			});
+			socket.on('error', () => {});
+		});
+		await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+		const decode = (raw: string) => {
+			// Content-Transfer-Encoding ごとに本文を戻して、コードの行を探す
+			const parts = raw.split(/\r\n\r\n/);
+			const texts = [raw];
+			for (let i = 1; i < parts.length; i++) {
+				const head = parts[i - 1].toLowerCase();
+				if (head.includes('content-transfer-encoding: base64')) texts.push(Buffer.from(parts[i].replace(/[^A-Za-z0-9+/=]/g, ''), 'base64').toString('utf8'));
+				else if (head.includes('content-transfer-encoding: quoted-printable')) texts.push(parts[i].replace(/=\r\n/g, '').replace(/=([0-9A-F]{2})/g, (_, h) => String.fromCharCode(parseInt(h, 16))));
+			}
+			return texts;
+		};
+		return {
+			port: (server.address() as net.AddressInfo).port,
+			mails,
+			async waitForCode(): Promise<string> {
+				for (let i = 0; i < 50; i++) {
+					for (const raw of mails) {
+						for (const t of decode(raw)) {
+							const m = t.match(/code: (?:<b>)?(\d{6})/);
+							if (m) return m[1];
+						}
+					}
+					await sleep(100);
+				}
+				throw new Error('確認コードのメールが届かなかった');
+			},
+			close: () => new Promise<void>(resolve => server.close(() => resolve())),
+		};
+	}
+
+	test('リスクが高い SSO ログインはメールの確認コードを要求し、誤りでは Cookie を残し、正しいコードで確定する', async () => {
+		const user = await signup({ username: 'ssoex_email' });
+		await linkUser(user.id, 'sub-email');
+		await db.getRepository(MiUserProfile).update({ userId: user.id }, { email: 'ssoex_email@example.com', emailVerified: true });
+		// 学習期間 (3 回) を過ぎた状態にする。公開 IP のログインは必ず prefix を記録する
+		await db.getRepository(MiUserLoginContext).insert({ id: crypto.randomBytes(8).toString('hex'), userId: user.id, kind: 'prefix', value: 'seed', firstSeenAt: new Date(), lastSeenAt: new Date(), hits: 3 });
+
+		const sink = await startMailSink();
+		const clientIp = '93.184.216.34';
+		try {
+			const on = await api('admin/update-meta', { enableEmail: true, smtpHost: '127.0.0.1', smtpPort: sink.port, smtpSecure: false, smtpUser: '', enableLoginRiskDetection: true, loginRiskNotifyThreshold: 1, loginRiskStepUpThreshold: 20 }, admin);
+			assert.strictEqual(on.status, 204);
+
+			const binding = 'binding-email';
+			const code = await issueLoginCode(user.id, 'sub-email', binding);
+
+			// 新しい端末なので確認コードが要る。ログインコードは確定まで消費されず、Cookie は延長される
+			const first = await exchange({ code }, binding, clientIp);
+			assert.strictEqual(first.status, 200);
+			assert.strictEqual(first.body.finished, false);
+			assert.strictEqual(first.body.next, 'emailCode');
+			assert.ok(typeof first.body.challengeId === 'string');
+			assert.ok(first.setCookie?.includes('Max-Age=') && !first.setCookie.includes('Max-Age=0'), `Cookie は削除されないべき: ${first.setCookie}`);
+			assert.strictEqual(await codeExists(code), true);
+
+			const emailCode = await sink.waitForCode();
+			const wrongCode = emailCode === '000000' ? '111111' : '000000';
+
+			// 誤ったコード: 403、Cookie は削除されず、ログインコードは残り、失敗が数えられる
+			const wrong = await exchange({ code, challengeId: first.body.challengeId, emailCode: wrongCode }, binding, clientIp);
+			assert.strictEqual(wrong.status, 403);
+			assert.ok(!wrong.setCookie?.includes('Max-Age=0'), `失敗で Cookie を削除しない: ${wrong.setCookie}`);
+			assert.strictEqual(await codeExists(code), true);
+			assert.strictEqual(await redis.get(`sso:loginCodeAttempts:${code}`), '1');
+
+			// 別のブラウザ (束縛 Cookie が違う) からは、正しいコードでも確定できない
+			const otherBrowser = await exchange({ code, challengeId: first.body.challengeId, emailCode }, 'binding-other', clientIp);
+			assert.strictEqual(otherBrowser.status, 400);
+			assert.strictEqual(await codeExists(code), true);
+
+			// 同じコード・同じ Cookie・同じネットワークで正しい確認コードを送ればログインできる
+			const ok = await exchange({ code, challengeId: first.body.challengeId, emailCode }, binding, clientIp);
+			assert.strictEqual(ok.status, 200);
+			assert.strictEqual(ok.body.finished, true);
+			assert.ok(ok.setCookie?.includes('Max-Age=0'), `確定したら Cookie を削除するべき: ${ok.setCookie}`);
+			assert.strictEqual(await codeExists(code), false);
+
+			// 使い終わった確認コードは再利用できない
+			const code2 = await issueLoginCode(user.id, 'sub-email', binding);
+			const reuse = await exchange({ code: code2, challengeId: first.body.challengeId, emailCode }, binding, clientIp);
+			assert.strictEqual(reuse.status, 403);
+			assert.strictEqual(await codeExists(code2), true);
+		} finally {
+			await api('admin/update-meta', { enableEmail: false, enableLoginRiskDetection: false, loginRiskNotifyThreshold: 30, loginRiskStepUpThreshold: 60 }, admin);
+			await sink.close();
+		}
+	}, 1000 * 60);
 });
