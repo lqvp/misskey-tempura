@@ -377,6 +377,8 @@ describe('SSO ログインコードの交換 (束縛 Cookie)', () => {
 		await db.getRepository(MiUserProfile).update({ userId: user.id }, { email: 'ssoex_email@example.com', emailVerified: true });
 		// 学習期間 (3 回) を過ぎた状態にする。公開 IP のログインは必ず prefix を記録する
 		await db.getRepository(MiUserLoginContext).insert({ id: crypto.randomBytes(8).toString('hex'), userId: user.id, kind: 'prefix', value: 'seed', firstSeenAt: new Date(), lastSeenAt: new Date(), hits: 3 });
+		// 端末が 1 件も記録されていないユーザーには newDevice を付けない仕様なので、別の既知の端末を 1 件用意する (今回の端末は未知になる)
+		await db.getRepository(MiUserLoginContext).insert({ id: crypto.randomBytes(8).toString('hex'), userId: user.id, kind: 'device', value: 'seed-device', firstSeenAt: new Date(), lastSeenAt: new Date(), hits: 1 });
 
 		const sink = await startMailSink();
 		const clientIp = '93.184.216.34';
