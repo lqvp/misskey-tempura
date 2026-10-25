@@ -84,7 +84,7 @@ export class CleanupDanglingFollowsProcessorService {
 		this.logger.succ(message);
 
 		try {
-			this.notificationService.createNotification(user.id, 'cleanupDanglingFollowsCompleted', {
+			await this.notificationService.createNotification(user.id, 'cleanupDanglingFollowsCompleted', {
 				count: deletedUserIds.size,
 			});
 		} catch (error) {
