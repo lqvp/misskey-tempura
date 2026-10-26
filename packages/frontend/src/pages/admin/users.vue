@@ -36,9 +36,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div :class="$style.users">
 					<MkA v-for="user in items" :key="user.id" v-tooltip.mfm="`Last posted: ${user.updatedAt ? dateString(user.updatedAt) : 'Unknown'}`" :class="$style.user" :to="`/admin/user/${user.id}`">
 						<MkUserCardMini :user="user"/>
-						<span v-if="relations.get(user.id)?.subAccountRole != null" :class="[$style.relationBadge, relations.get(user.id)?.subAccountRole === 'main' ? $style.relationMain : $style.relationSub]">
-							{{ relations.get(user.id)?.subAccountRole === 'main' ? i18n.ts.mainAccountShort : i18n.ts.subAccountShort }}<template v-if="relations.get(user.id)?.mainAccount != null"> @{{ relations.get(user.id)?.mainAccount?.username }}</template>
-						</span>
+						<span v-if="relations.get(user.id)?.subAccountRole != null" :class="[$style.relationBadge, relations.get(user.id)?.subAccountRole === 'main' ? $style.relationMain : $style.relationSub]">{{ relations.get(user.id)?.subAccountRole === 'main' ? i18n.ts.mainAccountShort : i18n.ts.subAccountShort }}</span>
 					</MkA>
 				</div>
 			</MkPagination>
@@ -226,13 +224,16 @@ definePage(() => ({
 }
 
 .relationBadge {
-	display: inline-block;
-	margin-top: 4px;
+	position: absolute;
+	top: 50%;
+	left: 55%;
+	transform: translateY(-50%);
 	padding: 0 8px;
 	border-radius: 999px;
 	font-size: 0.8em;
 	background: var(--MI_THEME-panel);
 	border: solid 1px var(--MI_THEME-divider);
+	pointer-events: none;
 }
 
 .relationMain {
@@ -247,6 +248,10 @@ definePage(() => ({
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
 	grid-gap: 12px;
+
+	> .user {
+		position: relative;
+	}
 
 	> .user:hover {
 		text-decoration: none;
