@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-export class SubAccounts1792800000000 {
-    name = 'SubAccounts1792800000000'
+export class SubAccounts1793019751573 {
+    name = 'SubAccounts1793019751573'
 
     async up(queryRunner) {
         await queryRunner.query(`ALTER TABLE "user" ADD "suspendedSelf" boolean NOT NULL DEFAULT false`);
