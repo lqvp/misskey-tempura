@@ -9,6 +9,7 @@ import type { RolesRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '@/server/api/error.js';
 import { RoleEntityService } from '@/core/entities/RoleEntityService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin', 'role'],
@@ -30,6 +31,8 @@ export const meta = {
 		optional: false, nullable: false,
 		ref: 'Role',
 	},
+
+	familyGuard: familyGuard.notApplicable('read-only role listing'),
 } as const;
 
 export const paramDef = {

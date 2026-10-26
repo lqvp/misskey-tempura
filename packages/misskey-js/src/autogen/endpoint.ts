@@ -507,6 +507,19 @@ import type {
 	IRevokeTokenRequest,
 	ISigninHistoryRequest,
 	ISigninHistoryResponse,
+	ISubAccountsCreateRequest,
+	ISubAccountsCreateResponse,
+	ISubAccountsCreatePreviewResponse,
+	ISubAccountsDeleteRequest,
+	ISubAccountsListResponse,
+	ISubAccountsProbeReferencesRequest,
+	ISubAccountsProbeReferencesResponse,
+	ISubAccountsRegenerateTokenRequest,
+	ISubAccountsSaveInitialSettingsRequest,
+	ISubAccountsSaveInitialSettingsResponse,
+	ISubAccountsSwitchRequest,
+	ISubAccountsSwitchResponse,
+	ISubAccountsUpdateDisplayRequest,
 	ITruncateAccountRequest,
 	IUnpinRequest,
 	IUnpinResponse,
@@ -1073,6 +1086,15 @@ export type Endpoints = {
 	'i/registry/set': { req: IRegistrySetRequest; res: EmptyResponse };
 	'i/revoke-token': { req: IRevokeTokenRequest; res: EmptyResponse };
 	'i/signin-history': { req: ISigninHistoryRequest; res: ISigninHistoryResponse };
+	'i/sub-accounts/create': { req: ISubAccountsCreateRequest; res: ISubAccountsCreateResponse };
+	'i/sub-accounts/create-preview': { req: EmptyRequest; res: ISubAccountsCreatePreviewResponse };
+	'i/sub-accounts/delete': { req: ISubAccountsDeleteRequest; res: EmptyResponse };
+	'i/sub-accounts/list': { req: EmptyRequest; res: ISubAccountsListResponse };
+	'i/sub-accounts/probe-references': { req: ISubAccountsProbeReferencesRequest; res: ISubAccountsProbeReferencesResponse };
+	'i/sub-accounts/regenerate-token': { req: ISubAccountsRegenerateTokenRequest; res: EmptyResponse };
+	'i/sub-accounts/save-initial-settings': { req: ISubAccountsSaveInitialSettingsRequest; res: ISubAccountsSaveInitialSettingsResponse };
+	'i/sub-accounts/switch': { req: ISubAccountsSwitchRequest; res: ISubAccountsSwitchResponse };
+	'i/sub-accounts/update-display': { req: ISubAccountsUpdateDisplayRequest; res: EmptyResponse };
 	'i/truncate-account': { req: ITruncateAccountRequest; res: EmptyResponse };
 	'i/unpin': { req: IUnpinRequest; res: IUnpinResponse };
 	'i/update': { req: IUpdateRequest; res: IUpdateResponse };

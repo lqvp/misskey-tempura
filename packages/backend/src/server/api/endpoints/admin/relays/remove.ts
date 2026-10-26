@@ -6,6 +6,7 @@
 import { Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { RelayService } from '@/core/RelayService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -13,6 +14,8 @@ export const meta = {
 	requireCredential: true,
 	requireAdmin: true,
 	kind: 'write:admin:relays',
+
+	familyGuard: familyGuard.subDenied,
 } as const;
 
 export const paramDef = {

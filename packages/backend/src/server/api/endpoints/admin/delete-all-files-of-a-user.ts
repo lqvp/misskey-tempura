@@ -8,6 +8,7 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { DriveFilesRepository } from '@/models/_.js';
 import { DriveService } from '@/core/DriveService.js';
 import { DI } from '@/di-symbols.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -15,6 +16,8 @@ export const meta = {
 	requireCredential: true,
 	requireAdmin: true,
 	kind: 'write:admin:delete-all-files-of-a-user',
+
+	familyGuard: familyGuard.targets({ param: 'userId' }),
 } as const;
 
 export const paramDef = {

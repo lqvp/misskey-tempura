@@ -9,6 +9,7 @@ import { DataSource } from 'typeorm';
 import * as Redis from 'ioredis';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	requireCredential: true,
@@ -92,6 +93,8 @@ export const meta = {
 			},
 		},
 	},
+
+	familyGuard: familyGuard.notApplicable('no user target and no effect on sign-in or access of other accounts'),
 } as const;
 
 export const paramDef = {

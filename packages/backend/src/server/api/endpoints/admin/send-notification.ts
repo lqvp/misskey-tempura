@@ -9,6 +9,7 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -16,6 +17,8 @@ export const meta = {
 	requireCredential: true,
 	requireModerator: true,
 	kind: 'write:admin:send-notification',
+
+	familyGuard: familyGuard.targets({ param: 'userId' }),
 } as const;
 
 export const paramDef = {

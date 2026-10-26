@@ -10,6 +10,7 @@ import { DI } from '@/di-symbols.js';
 import { RoleService } from '@/core/RoleService.js';
 import { DriveService } from '@/core/DriveService.js';
 import { ApiError } from '../../../error.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['drive'],
@@ -56,6 +57,9 @@ export const meta = {
 		optional: false, nullable: false,
 		ref: 'DriveFile',
 	},
+
+	// moderators may act on others' content; a sub-account moderator must not touch its parent/sibling content
+	familyGuard: familyGuard.targets({ param: 'fileId', resolve: 'file' }),
 } as const;
 
 export const paramDef = {

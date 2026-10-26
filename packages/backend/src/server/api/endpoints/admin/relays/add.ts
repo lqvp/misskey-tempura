@@ -8,6 +8,7 @@ import { Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { RelayService } from '@/core/RelayService.js';
 import { ApiError } from '../../../error.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -50,6 +51,8 @@ export const meta = {
 			},
 		},
 	},
+
+	familyGuard: familyGuard.subDenied,
 } as const;
 
 export const paramDef = {

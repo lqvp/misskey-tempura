@@ -9,6 +9,7 @@ import type { PromoNotesRepository } from '@/models/_.js';
 import { GetterService } from '@/server/api/GetterService.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '../../../error.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -30,6 +31,8 @@ export const meta = {
 			id: 'ae427aa2-7a41-484f-a18c-2c1104051604',
 		},
 	},
+
+	familyGuard: familyGuard.notApplicable('userId only selects a recipient or a read filter; no change to account state or access'),
 } as const;
 
 export const paramDef = {

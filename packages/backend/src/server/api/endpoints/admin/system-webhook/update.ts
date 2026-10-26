@@ -8,6 +8,7 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import { SystemWebhookEntityService } from '@/core/entities/SystemWebhookEntityService.js';
 import { systemWebhookEventTypes } from '@/models/SystemWebhook.js';
 import { SystemWebhookService } from '@/core/SystemWebhookService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin', 'system-webhook'],
@@ -21,6 +22,8 @@ export const meta = {
 		type: 'object',
 		ref: 'SystemWebhook',
 	},
+
+	familyGuard: familyGuard.subDenied,
 } as const;
 
 export const paramDef = {

@@ -4,6 +4,7 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
+import { familyGuard } from '@/server/api/family-guard.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { DriveFilesRepository, ChannelsRepository } from '@/models/_.js';
 import { ChannelEntityService } from '@/core/entities/ChannelEntityService.js';
@@ -43,6 +44,8 @@ export const meta = {
 			id: 'e86c14a4-0da2-4032-8df3-e737a04c7f3b',
 		},
 	},
+
+	familyGuard: familyGuard.targets({ param: 'channelId', resolve: 'channel' }),
 } as const;
 
 export const paramDef = {

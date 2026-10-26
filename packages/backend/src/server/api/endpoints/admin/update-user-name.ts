@@ -17,6 +17,7 @@ import { LoggerService } from '@/core/LoggerService.js';
 import { collectProfileEmojis } from '@/misc/collect-profile-emojis.js';
 import type Logger from '@/logger.js';
 import { ApiError } from '../../error.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -37,6 +38,8 @@ export const meta = {
 			id: 'f817d1db-b4fe-493f-bf1c-2e6b177fa7ca',
 		},
 	},
+
+	familyGuard: familyGuard.targets({ param: 'userId' }),
 } as const;
 
 export const paramDef = {

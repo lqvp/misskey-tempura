@@ -12,6 +12,7 @@ import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '@/server/api/error.js';
 import { UserAuthService } from '@/core/UserAuthService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	requireCredential: true,
@@ -25,6 +26,9 @@ export const meta = {
 			id: '7add0395-9901-4098-82f9-4f67af65f775',
 		},
 	},
+
+	// sub-accounts have no password, email, 2FA or independent credentials; refuse before the handler runs
+	familyGuard: familyGuard.subDenied,
 } as const;
 
 export const paramDef = {

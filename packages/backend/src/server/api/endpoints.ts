@@ -5,6 +5,7 @@
 
 import { permissions } from 'misskey-js';
 import type { KeyOf, Schema } from '@/misc/json-schema.js';
+import type { FamilyGuard } from './family-guard.js';
 
 import * as endpointsObject from './endpoint-list.js';
 
@@ -89,6 +90,12 @@ interface IEndpointMetaBase {
 	readonly secure?: boolean;
 
 	/**
+	 * サブアカウントが親/兄弟アカウントに対して管理操作をできないようにするための宣言。
+	 * secure(ネイティブtoken限定)とは別の意味です。requireAdmin/requireModerator のendpointは宣言必須です。
+	 */
+	readonly familyGuard?: FamilyGuard;
+
+	/**
 	 * エンドポイントの種類
 	 * パーミッションの実現に利用されます。
 	 */
@@ -117,17 +124,27 @@ export type IEndpointMeta = (Omit<IEndpointMetaBase, 'requireCrential' | 'requir
 	requireCredential?: false,
 	requireAdmin?: false,
 	requireModerator?: false,
-}) | (Omit<IEndpointMetaBase, 'secure'> & {
+}) | (Omit<IEndpointMetaBase, 'secure' | 'familyGuard'> & {
 	secure: true,
-}) | (Omit<IEndpointMetaBase, 'requireCredential' | 'kind'> & {
+} & ({
+	requireAdmin?: false,
+	requireModerator?: false,
+	familyGuard?: FamilyGuard,
+} | {
+	familyGuard: FamilyGuard,
+})) | (Omit<IEndpointMetaBase, 'requireCredential' | 'kind' | 'requireAdmin' | 'requireModerator'> & {
 	requireCredential: true,
 	kind: (typeof permissions)[number],
-}) | (Omit<IEndpointMetaBase, 'requireModerator' | 'kind'> & {
+	requireAdmin?: false,
+	requireModerator?: false,
+}) | (Omit<IEndpointMetaBase, 'requireModerator' | 'kind' | 'familyGuard'> & {
 	requireModerator: true,
 	kind: (typeof permissions)[number],
-}) | (Omit<IEndpointMetaBase, 'requireAdmin' | 'kind'> & {
+	familyGuard: FamilyGuard,
+}) | (Omit<IEndpointMetaBase, 'requireAdmin' | 'kind' | 'familyGuard'> & {
 	requireAdmin: true,
 	kind: (typeof permissions)[number],
+	familyGuard: FamilyGuard,
 });
 
 export interface IEndpoint {

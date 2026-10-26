@@ -9,6 +9,7 @@ import type { AnnouncementsRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { AnnouncementService } from '@/core/AnnouncementService.js';
 import { ApiError } from '../../../error.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -29,6 +30,8 @@ export const meta = {
 			id: '01b83d7b-2fd5-4d7c-86c4-d03144d16355',
 		},
 	},
+
+	familyGuard: familyGuard.notApplicable('no user target and no effect on sign-in or access of other accounts'),
 } as const;
 
 export const paramDef = {

@@ -7,6 +7,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { LlmModerationQueueService } from '@/core/LlmModerationQueueService.js';
 import { noSuchLlmModerationQueueError } from '@/core/errors/llm-moderation-queue.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -18,6 +19,8 @@ export const meta = {
 	errors: {
 		noSuchLlmModerationQueue: noSuchLlmModerationQueueError,
 	},
+
+	familyGuard: familyGuard.notApplicable('no user target and no effect on sign-in or access of other accounts'),
 } as const;
 
 export const paramDef = {

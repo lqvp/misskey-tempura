@@ -12,6 +12,7 @@ import { DI } from '@/di-symbols.js';
 import { GetterService } from '@/server/api/GetterService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { ApiError } from '../../error.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['notes'],
@@ -40,6 +41,9 @@ export const meta = {
 			id: 'fe8d7103-0ea8-4ec3-814d-f8b401dc69e9',
 		},
 	},
+
+	// moderators may act on others' content; a sub-account moderator must not touch its parent/sibling content
+	familyGuard: familyGuard.targets({ param: 'noteId', resolve: 'note' }),
 } as const;
 
 export const paramDef = {

@@ -9,6 +9,7 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import { WebhookTestService } from '@/core/WebhookTestService.js';
 import { ApiError } from '@/server/api/error.js';
 import { systemWebhookEventTypes } from '@/models/SystemWebhook.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['webhooks'],
@@ -30,6 +31,8 @@ export const meta = {
 			id: '0c52149c-e913-18f8-5dc7-74870bfe0cf9',
 		},
 	},
+
+	familyGuard: familyGuard.subDenied,
 } as const;
 
 export const paramDef = {

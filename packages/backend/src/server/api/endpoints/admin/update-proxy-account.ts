@@ -11,6 +11,7 @@ import {
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { SystemAccountService } from '@/core/SystemAccountService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -24,6 +25,8 @@ export const meta = {
 		nullable: false, optional: false,
 		ref: 'UserDetailed',
 	},
+
+	familyGuard: familyGuard.subDenied,
 } as const;
 
 export const paramDef = {

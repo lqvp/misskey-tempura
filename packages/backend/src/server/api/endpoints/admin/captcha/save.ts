@@ -7,6 +7,7 @@ import { Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { captchaErrorCodes, CaptchaService, supportedCaptchaProviders } from '@/core/CaptchaService.js';
 import { ApiError } from '@/server/api/error.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin', 'captcha'],
@@ -55,6 +56,8 @@ export const meta = {
 			httpStatusCode: 500,
 		},
 	},
+
+	familyGuard: familyGuard.subDenied,
 } as const;
 
 export const paramDef = {

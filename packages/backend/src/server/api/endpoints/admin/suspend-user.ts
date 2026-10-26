@@ -9,6 +9,7 @@ import type { UsersRepository } from '@/models/_.js';
 import { UserSuspendService } from '@/core/UserSuspendService.js';
 import { DI } from '@/di-symbols.js';
 import { RoleService } from '@/core/RoleService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -16,6 +17,8 @@ export const meta = {
 	requireCredential: true,
 	requireAdmin: true,
 	kind: 'write:admin:suspend-user',
+
+	familyGuard: familyGuard.targets({ param: 'userId' }),
 } as const;
 
 export const paramDef = {

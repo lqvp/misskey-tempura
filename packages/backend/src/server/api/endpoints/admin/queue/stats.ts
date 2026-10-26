@@ -6,6 +6,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { DbQueue, DeliverQueue, EndedPollNotificationQueue, PostScheduledNoteQueue, InboxQueue, ObjectStorageQueue, SystemQueue, UserWebhookDeliverQueue, SystemWebhookDeliverQueue, ScheduledNoteDeleteQueue } from '@/core/QueueModule.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -36,6 +37,8 @@ export const meta = {
 			},
 		},
 	},
+
+	familyGuard: familyGuard.notApplicable('job queue operation, no user target'),
 } as const;
 
 export const paramDef = {

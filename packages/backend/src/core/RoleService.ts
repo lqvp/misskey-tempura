@@ -71,6 +71,8 @@ export type RolePolicies = {
 	canImportFollowing: boolean;
 	canImportMuting: boolean;
 	canImportUserLists: boolean;
+	canCreateSubAccount: boolean;
+	subAccountLimit: number;
 	chatAvailability: 'available' | 'readonly' | 'unavailable';
 	uploadableFileTypes: string[];
 	noteDraftLimit: number;
@@ -130,6 +132,8 @@ export const DEFAULT_POLICIES: RolePolicies = {
 	canImportFollowing: false,
 	canImportMuting: false,
 	canImportUserLists: false,
+	canCreateSubAccount: false,
+	subAccountLimit: 0,
 	chatAvailability: 'available',
 	uploadableFileTypes: [
 		'text/*',
@@ -536,6 +540,8 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			canImportFollowing: calc('canImportFollowing', vs => vs.some(v => v === true)),
 			canImportMuting: calc('canImportMuting', vs => vs.some(v => v === true)),
 			canImportUserLists: calc('canImportUserLists', vs => vs.some(v => v === true)),
+			canCreateSubAccount: calc('canCreateSubAccount', vs => vs.some(v => v === true)),
+			subAccountLimit: calc('subAccountLimit', vs => Math.max(...vs)),
 			chatAvailability: calc('chatAvailability', aggregateChatAvailability),
 			uploadableFileTypes: calc('uploadableFileTypes', vs => {
 				const set = new Set<string>();

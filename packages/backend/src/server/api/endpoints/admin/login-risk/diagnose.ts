@@ -7,6 +7,7 @@ import { Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { IpIntelligenceService } from '@/core/IpIntelligenceService.js';
 import { isPrivateOrLoopbackIp } from '@/misc/ip-prefix.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -54,6 +55,8 @@ export const meta = {
 			},
 		},
 	},
+
+	familyGuard: familyGuard.notApplicable('no user target and no effect on sign-in or access of other accounts'),
 } as const;
 
 export const paramDef = {

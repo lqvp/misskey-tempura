@@ -12,6 +12,7 @@ import { SigninEntityService } from '@/core/entities/SigninEntityService.js';
 import { LoginRiskService } from '@/core/LoginRiskService.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '../../../error.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -45,6 +46,8 @@ export const meta = {
 			id: '6ec4524f-779e-46ae-bf67-4828c16b46bb',
 		},
 	},
+
+	familyGuard: familyGuard.notApplicable('read-only'),
 } as const;
 
 export const paramDef = {

@@ -21,6 +21,7 @@ import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import * as Acct from '@/misc/acct.js';
 import { DI } from '@/di-symbols.js';
 import { MiMeta } from '@/models/_.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['users'],
@@ -70,6 +71,9 @@ export const meta = {
 	res: {
 		type: 'object',
 	},
+
+	// sub-accounts have no password, email, 2FA or independent credentials; refuse before the handler runs
+	familyGuard: familyGuard.subDenied,
 } as const;
 
 export const paramDef = {

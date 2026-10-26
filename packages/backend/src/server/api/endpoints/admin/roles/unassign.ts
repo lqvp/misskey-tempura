@@ -9,6 +9,7 @@ import type { RolesRepository, UsersRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '@/server/api/error.js';
 import { RoleService } from '@/core/RoleService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin', 'role'],
@@ -42,6 +43,8 @@ export const meta = {
 			id: '24636eee-e8c1-493e-94b2-e16ad401e262',
 		},
 	},
+
+	familyGuard: familyGuard.targets({ param: 'userId' }),
 } as const;
 
 export const paramDef = {

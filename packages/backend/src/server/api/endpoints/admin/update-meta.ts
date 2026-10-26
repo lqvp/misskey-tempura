@@ -12,6 +12,7 @@ import { MetaService } from '@/core/MetaService.js';
 import { QueueService } from '@/core/QueueService.js';
 import { ApiLoggerService } from '../../ApiLoggerService.js';
 import { ApiError } from '../../error.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -32,12 +33,15 @@ export const meta = {
 			id: '0b4b9a0e-6f0d-4c8e-9d3a-5f2f7a1c8e41',
 		},
 	},
+
+	familyGuard: familyGuard.rule('server-settings'),
 } as const;
 
 export const paramDef = {
 	type: 'object',
 	properties: {
 		disableRegistration: { type: 'boolean', nullable: true },
+		subAccountCreationMode: { type: 'string', enum: ['followRegistration', 'independent'] },
 		pinnedUsers: {
 			type: 'array', nullable: true, items: {
 				type: 'string',
@@ -386,6 +390,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (typeof ps.disableRegistration === 'boolean') {
 				set.disableRegistration = ps.disableRegistration;
+			}
+
+			if (ps.subAccountCreationMode !== undefined) {
+				set.subAccountCreationMode = ps.subAccountCreationMode;
 			}
 
 			if (Array.isArray(ps.pinnedUsers)) {

@@ -8,6 +8,7 @@ import type { UserIpsRepository } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 import { IdService } from '@/core/IdService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -34,6 +35,8 @@ export const meta = {
 			},
 		},
 	},
+
+	familyGuard: familyGuard.notApplicable('read-only'),
 } as const;
 
 export const paramDef = {

@@ -10,6 +10,7 @@ import { QueueService } from '@/core/QueueService.js';
 import { DI } from '@/di-symbols.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { DeleteAccountService } from '@/core/DeleteAccountService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -17,6 +18,8 @@ export const meta = {
 	requireCredential: true,
 	requireAdmin: true,
 	kind: 'write:admin:account',
+
+	familyGuard: familyGuard.targets({ param: 'userId', denySelf: true }),
 } as const;
 
 export const paramDef = {

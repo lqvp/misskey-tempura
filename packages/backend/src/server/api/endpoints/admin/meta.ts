@@ -10,6 +10,7 @@ import type { Config } from '@/config.js';
 import { DI } from '@/di-symbols.js';
 import { DEFAULT_POLICIES } from '@/core/RoleService.js';
 import { SystemAccountService } from '@/core/SystemAccountService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 const DEFAULT_OPEN_LLM_MODERATION_VISIBILITIES = [
 	'public',
@@ -461,6 +462,11 @@ export const meta = {
 			disableRegistration: {
 				type: 'boolean',
 				optional: false, nullable: false,
+			},
+			subAccountCreationMode: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['followRegistration', 'independent'],
 			},
 			impressumUrl: {
 				type: 'string',
@@ -1030,6 +1036,8 @@ export const meta = {
 			},
 		},
 	},
+
+	familyGuard: familyGuard.notApplicable('read-only'),
 } as const;
 
 export const paramDef = {
@@ -1085,6 +1093,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				privacyPolicyUrl: instance.privacyPolicyUrl,
 				inquiryUrl: instance.inquiryUrl,
 				disableRegistration: instance.disableRegistration,
+				subAccountCreationMode: instance.subAccountCreationMode,
 				emailRequiredForSignup: instance.emailRequiredForSignup,
 				enableHcaptcha: instance.enableHcaptcha,
 				hcaptchaSiteKey: instance.hcaptchaSiteKey,

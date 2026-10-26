@@ -9,6 +9,7 @@ import type { AbuseUserReportsRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '@/server/api/error.js';
 import { AbuseReportService } from '@/core/AbuseReportService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -26,6 +27,8 @@ export const meta = {
 			httpStatusCode: 404,
 		},
 	},
+
+	familyGuard: familyGuard.notApplicable('report handling only, no account state change'),
 } as const;
 
 export const paramDef = {

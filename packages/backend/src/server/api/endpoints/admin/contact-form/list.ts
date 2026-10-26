@@ -9,6 +9,7 @@ import type { ContactFormsRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { ContactFormEntityService } from '@/core/entities/ContactFormEntityService.js';
 import { ContactFormService } from '@/core/ContactFormService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -42,6 +43,8 @@ export const meta = {
 			},
 		},
 	},
+
+	familyGuard: familyGuard.notApplicable('no user target and no effect on sign-in or access of other accounts'),
 } as const;
 
 export const paramDef = {

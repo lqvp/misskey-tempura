@@ -10,11 +10,15 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import { TruncateAccountService } from '@/core/TruncateAccountService.js';
 import { DI } from '@/di-symbols.js';
 import { UserAuthService } from '@/core/UserAuthService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	requireCredential: true,
 	secure: true,
 	requiredRolePolicy: 'canUseTruncate',
+
+	// sub-accounts have no password, email, 2FA or independent credentials; refuse before the handler runs
+	familyGuard: familyGuard.subDenied,
 } as const;
 
 export const paramDef = {

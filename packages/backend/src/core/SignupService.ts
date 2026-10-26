@@ -63,6 +63,8 @@ export class SignupService {
 		ignorePreservedUsernames?: boolean;
 		reason?: string | null;
 		approved?: boolean;
+		/** Create the account as a sub-account of `parentId`. The limit is checked inside the transaction, serialized per parent. */
+		subAccount?: { parentId: MiUser['id']; limit: number };
 	}) {
 		const { username, password, passwordHash, host } = opts;
 		let hash = passwordHash;
@@ -152,6 +154,19 @@ export class SignupService {
 
 			if (exist) throw new Error(' the username is already used');
 
+			if (opts.subAccount != null) {
+				// Serialize per parent: the count check and the insert must not interleave with another creation or the parent's deletion.
+				await transactionalEntityManager.query(
+					'SELECT pg_advisory_xact_lock(hashtext($1))',
+					[`subaccount:parent:${opts.subAccount.parentId}`],
+				);
+				const parent = await transactionalEntityManager.findOneBy(MiUser, { id: opts.subAccount.parentId });
+				if (parent == null || parent.isDeleted || parent.parentUserId != null || parent.host != null) throw new Error('SUB_ACCOUNT_PARENT_INVALID');
+				// pending (unapproved) sub-accounts count toward the limit
+				const count = await transactionalEntityManager.countBy(MiUser, { parentUserId: parent.id });
+				if (count >= opts.subAccount.limit) throw new Error('SUB_ACCOUNT_LIMIT');
+			}
+
 			account = await transactionalEntityManager.save(new MiUser({
 				id: this.idService.gen(),
 				username: username,
@@ -159,6 +174,8 @@ export class SignupService {
 				host: this.utilityService.toPunyNullable(host),
 				token: secret,
 				signupReason: opts.reason,
+				parentUserId: opts.subAccount?.parentId ?? null,
+				initialSettingsOpenUntil: opts.subAccount != null ? new Date(Date.now() + 30 * 60 * 1000) : null,
 				approved: isTheFirstUser || (opts.approved ?? !this.meta.approvalRequiredForSignup),
 			}));
 

@@ -9,6 +9,7 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import { QueryService } from '@/core/QueryService.js';
 import { DI } from '@/di-symbols.js';
 import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -27,6 +28,8 @@ export const meta = {
 			ref: 'DriveFile',
 		},
 	},
+
+	familyGuard: familyGuard.notApplicable('read-only'),
 } as const;
 
 export const paramDef = {

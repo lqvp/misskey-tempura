@@ -2207,6 +2207,19 @@ declare namespace entities {
         IRevokeTokenRequest,
         ISigninHistoryRequest,
         ISigninHistoryResponse,
+        ISubAccountsCreateRequest,
+        ISubAccountsCreateResponse,
+        ISubAccountsCreatePreviewResponse,
+        ISubAccountsDeleteRequest,
+        ISubAccountsListResponse,
+        ISubAccountsProbeReferencesRequest,
+        ISubAccountsProbeReferencesResponse,
+        ISubAccountsRegenerateTokenRequest,
+        ISubAccountsSaveInitialSettingsRequest,
+        ISubAccountsSaveInitialSettingsResponse,
+        ISubAccountsSwitchRequest,
+        ISubAccountsSwitchResponse,
+        ISubAccountsUpdateDisplayRequest,
         ITruncateAccountRequest,
         IUnpinRequest,
         IUnpinResponse,
@@ -3070,6 +3083,45 @@ export interface IStream extends EventEmitter<StreamEvents> {
 }
 
 // @public (undocumented)
+type ISubAccountsCreatePreviewResponse = operations['i___sub-accounts___create-preview']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type ISubAccountsCreateRequest = operations['i___sub-accounts___create']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type ISubAccountsCreateResponse = operations['i___sub-accounts___create']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type ISubAccountsDeleteRequest = operations['i___sub-accounts___delete']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type ISubAccountsListResponse = operations['i___sub-accounts___list']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type ISubAccountsProbeReferencesRequest = operations['i___sub-accounts___probe-references']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type ISubAccountsProbeReferencesResponse = operations['i___sub-accounts___probe-references']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type ISubAccountsRegenerateTokenRequest = operations['i___sub-accounts___regenerate-token']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type ISubAccountsSaveInitialSettingsRequest = operations['i___sub-accounts___save-initial-settings']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type ISubAccountsSaveInitialSettingsResponse = operations['i___sub-accounts___save-initial-settings']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type ISubAccountsSwitchRequest = operations['i___sub-accounts___switch']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type ISubAccountsSwitchResponse = operations['i___sub-accounts___switch']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type ISubAccountsUpdateDisplayRequest = operations['i___sub-accounts___update-display']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
 type ITruncateAccountRequest = operations['i___truncate-account']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -3679,7 +3731,7 @@ type RoleLite = components['schemas']['RoleLite'];
 type RolePolicies = components['schemas']['RolePolicies'];
 
 // @public (undocumented)
-export const rolePolicies: readonly ["gtlAvailable", "ltlAvailable", "canPublicNote", "canHomeNote", "mentionLimit", "canInvite", "inviteLimit", "inviteLimitCycle", "inviteExpirationTime", "canManageCustomEmojis", "canEmojiDeletion", "canManageAvatarDecorations", "canUseRemoteIconDecorations", "canSearchNotes", "canSearchUsers", "canUseTranslator", "canHideAds", "canCreateChannel", "driveCapacityMb", "maxFileSizeMb", "alwaysMarkNsfw", "canUpdateBioMedia", "pinLimit", "antennaLimit", "wordMuteLimit", "webhookLimit", "clipLimit", "noteEachClipsLimit", "userListLimit", "userEachUserListsLimit", "rateLimitFactor", "avatarDecorationLimit", "canImportAntennas", "canImportBlocking", "canImportFollowing", "canImportMuting", "canImportUserLists", "chatAvailability", "uploadableFileTypes", "noteDraftLimit", "scheduledNoteLimit", "watermarkAvailable", "canAddRoles", "canCreateRole", "canUseUnFollowNotification", "canUseBlockedNotification", "canUseUnBlockedNotification", "canPublicNonLtlNote", "canReadFollowHistory", "canAutoFollowBack", "canUseTruncate", "canUseMakePrivate", "canUpdateCounters", "canUseGeminiLLMAPI", "canSkipInviteEmailAuth", "canSkipInviteApproval"];
+export const rolePolicies: readonly ["gtlAvailable", "ltlAvailable", "canPublicNote", "canHomeNote", "mentionLimit", "canInvite", "inviteLimit", "inviteLimitCycle", "inviteExpirationTime", "canManageCustomEmojis", "canEmojiDeletion", "canManageAvatarDecorations", "canUseRemoteIconDecorations", "canSearchNotes", "canSearchUsers", "canUseTranslator", "canHideAds", "canCreateChannel", "driveCapacityMb", "maxFileSizeMb", "alwaysMarkNsfw", "canUpdateBioMedia", "pinLimit", "antennaLimit", "wordMuteLimit", "webhookLimit", "clipLimit", "noteEachClipsLimit", "userListLimit", "userEachUserListsLimit", "rateLimitFactor", "avatarDecorationLimit", "canImportAntennas", "canImportBlocking", "canImportFollowing", "canImportMuting", "canImportUserLists", "canCreateSubAccount", "subAccountLimit", "chatAvailability", "uploadableFileTypes", "noteDraftLimit", "scheduledNoteLimit", "watermarkAvailable", "canAddRoles", "canCreateRole", "canUseUnFollowNotification", "canUseBlockedNotification", "canUseUnBlockedNotification", "canPublicNonLtlNote", "canReadFollowHistory", "canAutoFollowBack", "canUseTruncate", "canUseMakePrivate", "canUpdateCounters", "canUseGeminiLLMAPI", "canSkipInviteEmailAuth", "canSkipInviteApproval"];
 
 // @public (undocumented)
 type RolesAddRequest = operations['roles___add']['requestBody']['content']['application/json'];

@@ -4,6 +4,7 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
+import { familyGuard } from '@/server/api/family-guard.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { RegistrationTicketsRepository } from '@/models/_.js';
 import { RoleService } from '@/core/RoleService.js';
@@ -36,6 +37,8 @@ export const meta = {
 			id: '5eb8d909-2540-4970-90b8-dd6f86088121',
 		},
 	},
+
+	familyGuard: familyGuard.targets({ param: 'inviteId', resolve: 'invite' }),
 } as const;
 
 export const paramDef = {

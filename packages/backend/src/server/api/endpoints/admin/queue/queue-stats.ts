@@ -6,6 +6,7 @@
 import { Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { QUEUE_TYPES, QueueService } from '@/core/QueueService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -125,6 +126,8 @@ export const meta = {
 			}
 		},
 	},
+
+	familyGuard: familyGuard.notApplicable('job queue operation, no user target'),
 } as const;
 
 export const paramDef = {

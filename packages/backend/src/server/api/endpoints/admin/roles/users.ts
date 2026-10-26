@@ -12,6 +12,7 @@ import { DI } from '@/di-symbols.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { IdService } from '@/core/IdService.js';
 import { ApiError } from '../../../error.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin', 'role', 'users'],
@@ -41,6 +42,8 @@ export const meta = {
 			required: ['id', 'createdAt', 'user'],
 		},
 	},
+
+	familyGuard: familyGuard.notApplicable('read-only role listing'),
 } as const;
 
 export const paramDef = {

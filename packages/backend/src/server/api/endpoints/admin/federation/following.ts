@@ -10,6 +10,7 @@ import { QueryService } from '@/core/QueryService.js';
 import { FollowingEntityService } from '@/core/entities/FollowingEntityService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { DI } from '@/di-symbols.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['federation'],
@@ -28,6 +29,8 @@ export const meta = {
 			ref: 'Following',
 		},
 	},
+
+	familyGuard: familyGuard.notApplicable('targets remote instances only'),
 } as const;
 
 export const paramDef = {

@@ -9,6 +9,7 @@ import {
 	AbuseReportNotificationRecipientEntityService,
 } from '@/core/entities/AbuseReportNotificationRecipientEntityService.js';
 import { AbuseReportNotificationService } from '@/core/AbuseReportNotificationService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin', 'abuse-report', 'notification-recipient'],
@@ -25,6 +26,8 @@ export const meta = {
 			ref: 'AbuseReportNotificationRecipient',
 		},
 	},
+
+	familyGuard: familyGuard.notApplicable('report handling only, no account state change'),
 } as const;
 
 export const paramDef = {

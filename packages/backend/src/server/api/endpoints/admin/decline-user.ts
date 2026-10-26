@@ -10,6 +10,7 @@ import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { DI } from '@/di-symbols.js';
 import { EmailService } from '@/core/EmailService.js';
 import { DeleteAccountService } from '@/core/DeleteAccountService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -18,6 +19,8 @@ export const meta = {
 	requireModerator: true,
 	kind: 'write:admin:decline-account',
 	secure: true,
+
+	familyGuard: familyGuard.targets({ param: 'userId' }),
 } as const;
 
 export const paramDef = {

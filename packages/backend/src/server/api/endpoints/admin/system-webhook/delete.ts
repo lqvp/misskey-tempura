@@ -6,6 +6,7 @@
 import { Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { SystemWebhookService } from '@/core/SystemWebhookService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin', 'system-webhook'],
@@ -14,6 +15,8 @@ export const meta = {
 	requireAdmin: true,
 	secure: true,
 	kind: 'write:admin:system-webhook',
+
+	familyGuard: familyGuard.subDenied,
 } as const;
 
 export const paramDef = {

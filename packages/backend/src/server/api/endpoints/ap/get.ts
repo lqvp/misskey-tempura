@@ -7,6 +7,7 @@ import { Injectable } from '@nestjs/common';
 import ms from 'ms';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { ApResolverService } from '@/core/activitypub/ApResolverService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['federation'],
@@ -27,6 +28,8 @@ export const meta = {
 		type: 'object',
 		optional: false, nullable: false,
 	},
+
+	familyGuard: familyGuard.notApplicable('no user target and no effect on sign-in or access of other accounts'),
 } as const;
 
 export const paramDef = {

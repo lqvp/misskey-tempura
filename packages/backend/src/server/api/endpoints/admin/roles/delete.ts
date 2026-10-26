@@ -9,6 +9,7 @@ import type { RolesRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '@/server/api/error.js';
 import { RoleService } from '@/core/RoleService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin', 'role'],
@@ -24,6 +25,8 @@ export const meta = {
 			id: 'de0d6ecd-8e0a-4253-88ff-74bc89ae3d45',
 		},
 	},
+
+	familyGuard: familyGuard.rule('role-definition'),
 } as const;
 
 export const paramDef = {

@@ -10,6 +10,7 @@ import { DI } from '@/di-symbols.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { ApiError } from '../../../error.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['gallery'],
@@ -31,6 +32,9 @@ export const meta = {
 			id: 'c86e09de-1c48-43ac-a435-1c7e42ed4496',
 		},
 	},
+
+	// moderators may act on others' content; a sub-account moderator must not touch its parent/sibling content
+	familyGuard: familyGuard.targets({ param: 'postId', resolve: 'galleryPost' }),
 } as const;
 
 export const paramDef = {

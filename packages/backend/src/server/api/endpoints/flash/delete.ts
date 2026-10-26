@@ -10,6 +10,7 @@ import { DI } from '@/di-symbols.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { ApiError } from '../../error.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['flashs'],
@@ -31,6 +32,9 @@ export const meta = {
 			id: '1036ad7b-9f92-4fff-89c3-0e50dc941704',
 		},
 	},
+
+	// moderators may act on others' content; a sub-account moderator must not touch its parent/sibling content
+	familyGuard: familyGuard.targets({ param: 'flashId', resolve: 'flash' }),
 } as const;
 
 export const paramDef = {

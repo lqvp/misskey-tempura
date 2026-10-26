@@ -12,6 +12,7 @@ import { DI } from '@/di-symbols.js';
 import { generateInviteCode } from '@/misc/generate-invite-code.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { ApiError } from '../../../error.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -37,6 +38,8 @@ export const meta = {
 			ref: 'InviteCode',
 		},
 	},
+
+	familyGuard: familyGuard.notApplicable('creates an invite code, grants no control over existing accounts'),
 } as const;
 
 export const paramDef = {

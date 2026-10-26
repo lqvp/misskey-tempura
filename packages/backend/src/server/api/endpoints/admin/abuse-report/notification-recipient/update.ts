@@ -12,6 +12,7 @@ import {
 import { AbuseReportNotificationService } from '@/core/AbuseReportNotificationService.js';
 import { DI } from '@/di-symbols.js';
 import type { UserProfilesRepository } from '@/models/_.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin', 'abuse-report', 'notification-recipient'],
@@ -46,6 +47,8 @@ export const meta = {
 			httpStatusCode: 400,
 		},
 	},
+
+	familyGuard: familyGuard.notApplicable('userId only selects an abuse report notification recipient; no change to account state or access'),
 } as const;
 
 export const paramDef = {

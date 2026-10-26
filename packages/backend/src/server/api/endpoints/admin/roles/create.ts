@@ -7,6 +7,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { RoleEntityService } from '@/core/entities/RoleEntityService.js';
 import { RoleService } from '@/core/RoleService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin', 'role'],
@@ -20,6 +21,8 @@ export const meta = {
 		optional: false, nullable: false,
 		ref: 'Role',
 	},
+
+	familyGuard: familyGuard.rule('role-definition'),
 } as const;
 
 export const paramDef = {

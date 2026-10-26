@@ -9,6 +9,7 @@ import type { LlmModerationQueueRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '@/server/api/error.js';
 import { LlmModerationQueueService } from '@/core/LlmModerationQueueService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -26,6 +27,8 @@ export const meta = {
 			httpStatusCode: 404,
 		},
 	},
+
+	familyGuard: familyGuard.notApplicable('no user target and no effect on sign-in or access of other accounts'),
 } as const;
 
 export const paramDef = {

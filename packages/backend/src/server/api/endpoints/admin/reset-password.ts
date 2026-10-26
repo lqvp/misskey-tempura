@@ -12,6 +12,7 @@ import { DI } from '@/di-symbols.js';
 import { secureRndstr } from '@/misc/secure-rndstr.js';
 import { RoleService } from '@/core/RoleService.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -45,6 +46,8 @@ export const meta = {
 			},
 		},
 	},
+
+	familyGuard: familyGuard.targets({ param: 'userId', denySelf: true }),
 } as const;
 
 export const paramDef = {
@@ -75,6 +78,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (user == null) {
 				throw new ApiError(meta.errors.noSuchUser);
+			}
+
+			// A password would give a sub-account credentials independent of its main account
+			if (user.parentUserId != null) {
+				throw new ApiError(meta.errors.accessDenied);
 			}
 
 			if (await this.roleService.isAdministrator(user) && me.id !== user.id) {

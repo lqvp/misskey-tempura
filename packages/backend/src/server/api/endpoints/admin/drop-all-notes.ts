@@ -11,6 +11,7 @@ import type { NotesRepository } from '@/models/_.js';
 import { GetterService } from '@/server/api/GetterService.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { ApiError } from '../../error.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -27,6 +28,8 @@ export const meta = {
 			id: '1595559f-efd2-4e52-81c9-5ef9bcd28ce3',
 		},
 	},
+
+	familyGuard: familyGuard.targets({ param: 'userId' }),
 } as const;
 
 export const paramDef = {

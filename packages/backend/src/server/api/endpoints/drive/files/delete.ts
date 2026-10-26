@@ -11,6 +11,7 @@ import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { DI } from '@/di-symbols.js';
 import { RoleService } from '@/core/RoleService.js';
 import { ApiError } from '../../../error.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['drive'],
@@ -34,6 +35,9 @@ export const meta = {
 			id: '5eb8d909-2540-4970-90b8-dd6f86088121',
 		},
 	},
+
+	// moderators may act on others' content; a sub-account moderator must not touch its parent/sibling content
+	familyGuard: familyGuard.targets({ param: 'fileId', resolve: 'file' }),
 } as const;
 
 export const paramDef = {

@@ -6,6 +6,7 @@
 import { Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { AbuseReportNotificationService } from '@/core/AbuseReportNotificationService.js';
+import { familyGuard } from '@/server/api/family-guard.js';
 
 export const meta = {
 	tags: ['admin', 'abuse-report', 'notification-recipient'],
@@ -14,6 +15,8 @@ export const meta = {
 	requireModerator: true,
 	secure: true,
 	kind: 'write:admin:abuse-report:notification-recipient',
+
+	familyGuard: familyGuard.notApplicable('report handling only, no account state change'),
 } as const;
 
 export const paramDef = {
