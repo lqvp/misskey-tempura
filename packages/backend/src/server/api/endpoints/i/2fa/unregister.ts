@@ -25,6 +25,8 @@ export const meta = {
 			id: '7add0395-9901-4098-82f9-4f67af65f775',
 		},
 	},
+
+	denyForSubAccount: true,
 } as const;
 
 export const paramDef = {

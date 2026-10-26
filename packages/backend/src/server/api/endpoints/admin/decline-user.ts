@@ -18,6 +18,7 @@ export const meta = {
 	requireModerator: true,
 	kind: 'write:admin:decline-account',
 	secure: true,
+
 } as const;
 
 export const paramDef = {

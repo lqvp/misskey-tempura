@@ -148,6 +148,15 @@ export class DeleteAccountProcessorService {
 			}
 		}
 
+		// A main account removes its sub-accounts first (parentUserId is ON DELETE RESTRICT).
+		// Re-running after a partial failure continues with the remaining sub-accounts.
+		if (!job.data.soft) {
+			const subs = await this.usersRepository.findBy({ parentUserId: user.id });
+			for (const sub of subs) {
+				await this.process({ ...job, data: { ...job.data, user: { id: sub.id } } } as Bull.Job<DbUserDeleteJobData>);
+			}
+		}
+
 		// soft指定されている場合は物理削除しない
 		if (job.data.soft) {
 		// nop

@@ -16,6 +16,7 @@ export const meta = {
 		duration: ms('1hour'),
 		max: 1,
 	},
+
 } as const;
 
 export const paramDef = {

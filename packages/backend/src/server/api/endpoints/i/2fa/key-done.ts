@@ -42,6 +42,8 @@ export const meta = {
 			name: { type: 'string' },
 		},
 	},
+
+	denyForSubAccount: true,
 } as const;
 
 export const paramDef = {

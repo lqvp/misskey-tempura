@@ -586,6 +586,10 @@ export class ReversiService implements OnApplicationShutdown, OnModuleInit {
 				user1: parsed.user1 != null ? {
 					...parsed.user1,
 					avatar: null,
+					parentUser: null,
+					initialSettingsOpenUntil: null,
+					showParentOnProfile: false,
+					showSubOnProfile: false,
 					banner: null,
 					updatedAt: parsed.user1.updatedAt != null ? new Date(parsed.user1.updatedAt) : null,
 					lastActiveDate: parsed.user1.lastActiveDate != null ? new Date(parsed.user1.lastActiveDate) : null,
@@ -596,6 +600,10 @@ export class ReversiService implements OnApplicationShutdown, OnModuleInit {
 				user2: parsed.user2 != null ? {
 					...parsed.user2,
 					avatar: null,
+					parentUser: null,
+					initialSettingsOpenUntil: null,
+					showParentOnProfile: false,
+					showSubOnProfile: false,
 					banner: null,
 					updatedAt: parsed.user2.updatedAt != null ? new Date(parsed.user2.updatedAt) : null,
 					lastActiveDate: parsed.user2.lastActiveDate != null ? new Date(parsed.user2.lastActiveDate) : null,

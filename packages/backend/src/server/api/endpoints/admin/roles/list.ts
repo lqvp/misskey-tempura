@@ -25,6 +25,7 @@ export const meta = {
 			ref: 'Role',
 		},
 	},
+
 } as const;
 
 export const paramDef = {

@@ -51,6 +51,8 @@ export const meta = {
 		type: 'object',
 		ref: 'MeDetailed',
 	},
+
+	denyForSubAccount: true,
 } as const;
 
 export const paramDef = {

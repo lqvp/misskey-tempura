@@ -15,6 +15,8 @@ export const meta = {
 	requireCredential: true,
 	requireAdmin: true,
 	kind: 'write:admin:delete-account',
+
+	protectFamily: [{ param: 'userId', denySelf: true }],
 } as const;
 
 export const paramDef = {

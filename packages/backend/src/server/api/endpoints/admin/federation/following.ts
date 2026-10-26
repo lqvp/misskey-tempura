@@ -28,6 +28,7 @@ export const meta = {
 			ref: 'Following',
 		},
 	},
+
 } as const;
 
 export const paramDef = {

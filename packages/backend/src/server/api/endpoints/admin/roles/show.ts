@@ -30,6 +30,7 @@ export const meta = {
 		optional: false, nullable: false,
 		ref: 'Role',
 	},
+
 } as const;
 
 export const paramDef = {

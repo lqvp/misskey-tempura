@@ -22,6 +22,7 @@ export const meta = {
 			ref: 'QueueJob',
 		},
 	},
+
 } as const;
 
 export const paramDef = {

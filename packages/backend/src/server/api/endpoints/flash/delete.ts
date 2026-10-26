@@ -31,6 +31,7 @@ export const meta = {
 			id: '1036ad7b-9f92-4fff-89c3-0e50dc941704',
 		},
 	},
+
 } as const;
 
 export const paramDef = {

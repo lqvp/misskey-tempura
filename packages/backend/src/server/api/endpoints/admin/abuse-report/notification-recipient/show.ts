@@ -33,6 +33,7 @@ export const meta = {
 			httpStatusCode: 404,
 		},
 	},
+
 } as const;
 
 export const paramDef = {

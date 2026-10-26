@@ -22,6 +22,7 @@ export const meta = {
 		nullable: false,
 		ref: 'Ad',
 	},
+
 } as const;
 
 export const paramDef = {

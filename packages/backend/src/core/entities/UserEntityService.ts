@@ -576,6 +576,14 @@ export class UserEntityService implements OnModuleInit {
 			) : undefined,
 
 			...(isDetailed ? {
+				// The parent/sub relation is public only when the sub-account has chosen to show it (both default to hidden).
+				parentAccount: user.host == null && user.parentUserId != null && user.showParentOnProfile
+					? this.usersRepository.findOneBy({ id: user.parentUserId, isDeleted: false }).then(p => p ? this.pack(p, me, { schema: 'UserLite' }) : undefined)
+					: undefined,
+				subAccounts: user.host == null && user.parentUserId == null
+					? this.usersRepository.find({ where: { parentUserId: user.id, showSubOnProfile: true, isDeleted: false }, order: { id: 'ASC' } })
+						.then(subs => subs.length === 0 ? undefined : Promise.all(subs.map(x => this.pack(x, me, { schema: 'UserLite' }))))
+					: undefined,
 				url: profile!.url,
 				uri: user.uri,
 				movedTo: user.movedToUri ? this.apPersonService.resolvePerson(user.movedToUri).then(user => user.id).catch(() => null) : null,
@@ -651,6 +659,9 @@ export class UserEntityService implements OnModuleInit {
 			} : {}),
 
 			...(isDetailed && isMe ? {
+				isSubAccount: user.parentUserId != null,
+				showParentOnProfile: user.showParentOnProfile,
+				showSubOnProfile: user.showSubOnProfile,
 				avatarId: user.avatarId,
 				bannerId: user.bannerId,
 				followedMessage: profile!.followedMessage,

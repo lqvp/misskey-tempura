@@ -3929,6 +3929,94 @@ export interface Locale extends ILocale {
      */
     "manageAccounts": string;
     /**
+     * サブアカウント
+     */
+    "subAccounts": string;
+    /**
+     * サブアカウントを作成
+     */
+    "createSubAccount": string;
+    /**
+     * サブアカウントを作成しました
+     */
+    "subAccountCreated": string;
+    /**
+     * サブアカウントを作成できません。ロールの許可または受付設定を確認してください。
+     */
+    "subAccountCannotCreate": string;
+    /**
+     * 作成できる上限（{limit}件）に達しています。
+     */
+    "subAccountLimitReached": ParameterizedString<"limit">;
+    /**
+     * あと{remaining}件作成できます。ユーザー名を入力してください。
+     */
+    "subAccountRemaining": ParameterizedString<"remaining">;
+    /**
+     * このサーバーでは承認制のため、作成したサブアカウントは管理者の承認までログインできません。作成しますか？
+     */
+    "subAccountPendingApprovalConfirm": string;
+    /**
+     * 管理者の承認待ちです。承認されると切り替えできるようになります。
+     */
+    "subAccountPendingApproval": string;
+    /**
+     * {n}件の設定を引き継ぎました。
+     */
+    "subAccountCarriedOver": ParameterizedString<"n">;
+    /**
+     * 利用できない参照を含むため空にした設定: {names}
+     */
+    "subAccountEmptied": ParameterizedString<"names">;
+    /**
+     * 認証情報や個人メモなど{n}件の項目は引き継いでいません。
+     */
+    "subAccountNotCarried": ParameterizedString<"n">;
+    /**
+     * 作成はできましたが、設定の引き継ぎに失敗しました（{message}）。サブアカウントは初期設定のままです。あとから引き継ぎ直す操作はできません（必要な設定はサブアカウントで直接設定してください）。
+     */
+    "subAccountCarryFailed": ParameterizedString<"message">;
+    /**
+     * このサブアカウントを削除しますか？ノートなどのデータも削除され、元に戻せません。
+     */
+    "subAccountDeleteConfirm": string;
+    /**
+     * サブアカウントのトークンを再生成
+     */
+    "subAccountRegenerateToken": string;
+    /**
+     * このサブアカウントでログイン中の全端末が切断されます。続けますか？
+     */
+    "subAccountRegenerateTokenConfirm": string;
+    /**
+     * 停止中
+     */
+    "subAccountSuspended": string;
+    /**
+     * 承認待ち
+     */
+    "subAccountPending": string;
+    /**
+     * プロフィールにメインアカウントを表示
+     */
+    "showParentOnProfile": string;
+    /**
+     * プロフィールにサブアカウントを表示
+     */
+    "showSubOnProfile": string;
+    /**
+     * メインアカウント
+     */
+    "parentAccount": string;
+    /**
+     * メイン
+     */
+    "mainAccountShort": string;
+    /**
+     * サブ
+     */
+    "subAccountShort": string;
+    /**
      * リアクション一覧を公開する
      */
     "makeReactionsPublic": string;
@@ -7330,6 +7418,24 @@ export interface Locale extends ILocale {
     };
     "_serverSettings": {
         /**
+         * サブアカウント作成の受付
+         */
+        "subAccountCreationMode": string;
+        /**
+         * 「新規登録の設定に従う」では、新規登録が閉じているときサブアカウントも作成できません。「新規登録とは独立」では、登録が閉じていてもロールで許可されたユーザーが作成できます。
+         */
+        "subAccountCreationMode_description": string;
+        "_subAccountCreationMode": {
+            /**
+             * 新規登録の設定に従う
+             */
+            "followRegistration": string;
+            /**
+             * 新規登録とは独立
+             */
+            "independent": string;
+        };
+        /**
          * アイコン画像のURL
          */
         "iconUrl": string;
@@ -8938,6 +9044,14 @@ export interface Locale extends ILocale {
              * リストのインポートを許可
              */
             "canImportUserLists": string;
+            /**
+             * サブアカウントの作成を許可
+             */
+            "canCreateSubAccount": string;
+            /**
+             * サブアカウントの作成可能数
+             */
+            "subAccountLimit": string;
             /**
              * ダイレクトメッセージを許可
              */

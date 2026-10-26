@@ -18,6 +18,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkSwitch>
 				</SearchMarker>
 
+				<SearchMarker :keywords="['sub', 'account', 'registration']">
+					<MkSelect v-model="subAccountCreationMode" :items="subAccountCreationModeDef" @update:modelValue="onChange_subAccountCreationMode">
+						<template #label><SearchLabel>{{ i18n.ts._serverSettings.subAccountCreationMode }}</SearchLabel></template>
+						<template #caption><SearchText>{{ i18n.ts._serverSettings.subAccountCreationMode_description }}</SearchText></template>
+					</MkSelect>
+				</SearchMarker>
+
 				<SearchMarker :keywords="['email', 'required', 'signup']">
 					<MkSwitch v-model="emailRequiredForSignup" @change="onChange_emailRequiredForSignup">
 						<template #label><SearchLabel>{{ i18n.ts.emailRequiredForSignup }}</SearchLabel> ({{ i18n.ts.recommended }})</template>
@@ -183,6 +190,16 @@ const {
 	],
 	initialValue: meta.ugcVisibilityForVisitor,
 });
+const {
+	model: subAccountCreationMode,
+	def: subAccountCreationModeDef,
+} = useMkSelect({
+	items: [
+		{ label: i18n.ts._serverSettings._subAccountCreationMode.followRegistration, value: 'followRegistration' },
+		{ label: i18n.ts._serverSettings._subAccountCreationMode.independent, value: 'independent' },
+	],
+	initialValue: meta.subAccountCreationMode,
+});
 const sensitiveWords = ref(meta.sensitiveWords.join('\n'));
 const prohibitedWords = ref(meta.prohibitedWords.join('\n'));
 const prohibitedWordsForNameOfUser = ref(meta.prohibitedWordsForNameOfUser.join('\n'));
@@ -205,6 +222,14 @@ async function onChange_enableRegistration(value: boolean) {
 
 	os.apiWithDialog('admin/update-meta', {
 		disableRegistration: !value,
+	}).then(() => {
+		fetchInstance(true);
+	});
+}
+
+function onChange_subAccountCreationMode(value: 'followRegistration' | 'independent') {
+	os.apiWithDialog('admin/update-meta', {
+		subAccountCreationMode: value,
 	}).then(() => {
 		fetchInstance(true);
 	});

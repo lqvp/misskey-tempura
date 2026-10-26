@@ -30,6 +30,7 @@ export const meta = {
 			id: 'ae427aa2-7a41-484f-a18c-2c1104051604',
 		},
 	},
+
 } as const;
 
 export const paramDef = {

@@ -18,6 +18,7 @@ export const meta = {
 		optional: false, nullable: false,
 		ref: 'QueueJob',
 	},
+
 } as const;
 
 export const paramDef = {

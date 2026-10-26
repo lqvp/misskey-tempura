@@ -18,6 +18,7 @@ export const meta = {
 	errors: {
 		noSuchLlmModerationQueue: noSuchLlmModerationQueueError,
 	},
+
 } as const;
 
 export const paramDef = {

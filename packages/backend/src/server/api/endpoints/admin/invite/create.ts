@@ -37,6 +37,7 @@ export const meta = {
 			ref: 'InviteCode',
 		},
 	},
+
 } as const;
 
 export const paramDef = {

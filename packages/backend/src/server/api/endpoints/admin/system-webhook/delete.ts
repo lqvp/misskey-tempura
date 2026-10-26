@@ -14,6 +14,7 @@ export const meta = {
 	requireAdmin: true,
 	secure: true,
 	kind: 'write:admin:system-webhook',
+
 } as const;
 
 export const paramDef = {

@@ -10,6 +10,7 @@ import { generateNativeUserToken } from '@/misc/token.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { DI } from '@/di-symbols.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
+import { SubAccountService } from '@/core/SubAccountService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { ApiError } from '../../error.js';
 
@@ -32,6 +33,8 @@ export const meta = {
 			id: 'fde42a50-8370-4f76-a06b-431f49b0e892',
 		},
 	},
+
+	protectFamily: [{ param: 'userId', denySelf: true }],
 } as const;
 
 export const paramDef = {
@@ -52,6 +55,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 		private globalEventService: GlobalEventService,
 		private moderationLogService: ModerationLogService,
 		private roleService: RoleService,
+		private subAccountService: SubAccountService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const user = await this.usersRepository.findOneBy({ id: ps.userId });
@@ -68,14 +72,21 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 			const oldToken = user.token;
 			if (oldToken == null) return;
 
-			const newToken = generateNativeUserToken();
-			await this.usersRepository.update(user.id, {
-				token: newToken,
-			});
+			if (user.parentUserId != null) {
+				// A sub-account: also delete its API keys and disconnect its Streaming sessions
+				await this.subAccountService.regenerateToken(user);
+			} else {
+				// A main account's sub-accounts are bound to its token: revoke them first, so a failure leaves the main token unchanged and the call can be retried
+				await this.subAccountService.invalidateSubAccountTokens(user.id);
 
-			// Publish event
-			this.globalEventService.publishInternalEvent('userTokenRegenerated', { id: user.id, oldToken, newToken });
-			this.globalEventService.publishMainStream(user.id, 'myTokenRegenerated');
+				const newToken = generateNativeUserToken();
+				await this.usersRepository.update(user.id, {
+					token: newToken,
+				});
+
+				this.globalEventService.publishInternalEvent('userTokenRegenerated', { id: user.id, oldToken, newToken });
+				this.globalEventService.publishMainStream(user.id, 'myTokenRegenerated');
+			}
 
 			this.moderationLogService.log(me, 'regenerateUserToken', {
 				userId: user.id,
