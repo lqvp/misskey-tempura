@@ -29,7 +29,6 @@ export const meta = {
 		optional: false, nullable: false,
 		ref: 'UserDetailedNotMe',
 	},
-
 } as const;
 
 export const paramDef = {

@@ -26,7 +26,6 @@ export const meta = {
 			ref: 'LlmModerationQueue',
 		},
 	},
-
 } as const;
 
 export const paramDef = {

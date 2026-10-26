@@ -25,7 +25,6 @@ export const meta = {
 			ref: 'AbuseReportNotificationRecipient',
 		},
 	},
-
 } as const;
 
 export const paramDef = {

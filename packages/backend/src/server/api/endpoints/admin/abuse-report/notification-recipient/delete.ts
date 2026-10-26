@@ -14,7 +14,6 @@ export const meta = {
 	requireModerator: true,
 	secure: true,
 	kind: 'write:admin:abuse-report:notification-recipient',
-
 } as const;
 
 export const paramDef = {

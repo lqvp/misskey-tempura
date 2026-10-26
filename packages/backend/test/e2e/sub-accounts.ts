@@ -156,6 +156,33 @@ describe('sub-accounts', () => {
 		const unassign = await call('admin/roles/unassign', { userId: gina.id, roleId: adminRole.body.id }, sub);
 		assert.strictEqual(code(unassign), 'DENIED_FOR_SUB_ACCOUNT_FAMILY');
 
+		// role definitions and server settings that affect everyone are refused over HTTP too
+		const pubRole = await call('admin/roles/create', {
+			name: 'moddypublic', description: '', color: null, iconUrl: null, displayOrder: 0,
+			target: 'manual', condFormula: {}, permissionGroup: 'Normal', isPublic: true, isExplorable: false, asBadge: false,
+			canEditMembersByModerator: false, policies: {},
+		}, sub);
+		assert.strictEqual(pubRole.status, 403);
+		assert.strictEqual(code(pubRole), 'DENIED_FOR_SUB_ACCOUNT');
+		const defPolicies = await call('admin/roles/update-default-policies', { policies: {} }, sub);
+		assert.strictEqual(defPolicies.status, 403);
+		await call('admin/roles/assign', { userId: gina.id, roleId: adminRole.body.id }, root);
+		const editHeld = await call('admin/roles/update', {
+			roleId: adminRole.body.id, name: 'renamed', description: '', color: null, iconUrl: null, displayOrder: 0,
+			target: 'manual', condFormula: {}, permissionGroup: 'Admin', isPublic: false, isExplorable: false, asBadge: false,
+			canEditMembersByModerator: false, policies: {},
+		}, sub);
+		assert.strictEqual(code(editHeld), 'DENIED_FOR_SUB_ACCOUNT_FAMILY');
+		const regMeta = await call('admin/update-meta', { approvalRequiredForSignup: true }, sub);
+		assert.strictEqual(regMeta.status, 403);
+		assert.strictEqual(code(regMeta), 'DENIED_FOR_SUB_ACCOUNT');
+		const unsetMfa = await call('admin/unset-mfa', { userId: gina.id }, sub);
+		assert.strictEqual(code(unsetMfa), 'DENIED_FOR_SUB_ACCOUNT_FAMILY');
+		const delFiles = await call('admin/delete-all-files-of-a-user', { userId: gina.id }, sub);
+		assert.strictEqual(code(delFiles), 'DENIED_FOR_SUB_ACCOUNT_FAMILY');
+		// its own files stay manageable
+		assert.strictEqual((await call('admin/delete-all-files-of-a-user', { userId: subId }, sub)).status, 204);
+
 		// display flags are off by default, so the public API shows no relation ...
 		const pubSub = await call('users/show', { userId: subId }, bob);
 		assert.strictEqual(pubSub.body.parentAccount, undefined);

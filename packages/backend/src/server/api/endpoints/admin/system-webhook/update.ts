@@ -21,7 +21,6 @@ export const meta = {
 		type: 'object',
 		ref: 'SystemWebhook',
 	},
-
 } as const;
 
 export const paramDef = {

@@ -14,7 +14,6 @@ export const meta = {
 	requireCredential: true,
 	requireAdmin: true,
 	kind: 'write:admin:queue',
-
 } as const;
 
 export const paramDef = {

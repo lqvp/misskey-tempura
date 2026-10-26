@@ -16,7 +16,6 @@ export const meta = {
 	requireCredential: true,
 	requireModerator: true,
 	kind: 'write:admin:send-notification',
-
 } as const;
 
 export const paramDef = {

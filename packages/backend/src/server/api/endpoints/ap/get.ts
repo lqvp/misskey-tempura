@@ -27,7 +27,6 @@ export const meta = {
 		type: 'object',
 		optional: false, nullable: false,
 	},
-
 } as const;
 
 export const paramDef = {

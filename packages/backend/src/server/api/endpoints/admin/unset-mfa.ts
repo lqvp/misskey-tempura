@@ -34,6 +34,8 @@ export const meta = {
 		},
 	},
 
+	// removes all passkeys and passwordless sign-in: a sub-account must not do this to its main/sibling accounts
+	protectFamily: [{ param: 'userId' }],
 } as const;
 
 export const paramDef = {

@@ -46,7 +46,6 @@ export const meta = {
 			httpStatusCode: 400,
 		},
 	},
-
 } as const;
 
 export const paramDef = {

@@ -41,7 +41,6 @@ export const meta = {
 			required: ['id', 'createdAt', 'user'],
 		},
 	},
-
 } as const;
 
 export const paramDef = {

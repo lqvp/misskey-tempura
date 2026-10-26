@@ -19,6 +19,8 @@ export const meta = {
 	kind: 'write:admin:decline-account',
 	secure: true,
 
+	// declining deletes the (unapproved) account, so a sub-account must not do it to its main/sibling accounts
+	protectFamily: [{ param: 'userId' }],
 } as const;
 
 export const paramDef = {

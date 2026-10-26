@@ -24,7 +24,6 @@ export const meta = {
 		nullable: false, optional: false,
 		ref: 'UserDetailed',
 	},
-
 } as const;
 
 export const paramDef = {

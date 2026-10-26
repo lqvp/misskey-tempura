@@ -54,7 +54,6 @@ export const meta = {
 			},
 		},
 	},
-
 } as const;
 
 export const paramDef = {} as const;

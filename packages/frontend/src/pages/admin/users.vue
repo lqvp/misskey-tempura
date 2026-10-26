@@ -138,13 +138,13 @@ const paginator = markRaw(new Paginator('admin/show-users', {
 
 // main/sub relation for moderators: always shown, independent of the users' own show/hide settings
 const relations = ref(new Map<string, Misskey.entities.AdminSubAccountsRelationsResponse[number]>());
-watch(() => paginator.items.value, async (items) => {
+watch(paginator.items, async (items) => {
 	const ids = items.filter(u => u.host == null && !relations.value.has(u.id)).map(u => u.id);
 	for (let i = 0; i < ids.length; i += 100) {
 		const res = await misskeyApi('admin/sub-accounts/relations', { userIds: ids.slice(i, i + 100) }).catch(() => []);
 		for (const r of res) relations.value.set(r.userId, r);
 	}
-}, { immediate: true });
+}, { immediate: true, deep: true });
 
 function searchUser() {
 	os.selectUser({ includeSelf: true }).then(user => {

@@ -22,7 +22,6 @@ export const meta = {
 			type: 'string',
 		},
 	},
-
 } as const;
 
 export const paramDef = {

@@ -16,6 +16,8 @@ export const meta = {
 	requireAdmin: true,
 	kind: 'write:admin:delete-all-files-of-a-user',
 
+	// irreversibly deletes every file of the target: a sub-account must not do this to its main/sibling accounts
+	protectFamily: [{ param: 'userId' }],
 } as const;
 
 export const paramDef = {

@@ -48,7 +48,6 @@ export const meta = {
 			assignedNickname: { type: 'string', nullable: true },
 		},
 	},
-
 } as const;
 
 export const paramDef = {
