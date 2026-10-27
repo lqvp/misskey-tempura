@@ -141,6 +141,7 @@ export async function summarizeUserProfile(userId: string, notesLimit?: number, 
 			'投稿:\n' + notesTexts.join('\n');
 
 		const summaryResult = await generateGeminiSummary({
+			purpose: 'profile-summary',
 			userContent,
 			systemInstruction,
 		});

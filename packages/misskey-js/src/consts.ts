@@ -100,6 +100,7 @@ export const permissions = [
 	'read:admin:table-stats',
 	'read:admin:user-ips',
 	'read:admin:meta',
+	'read:admin:llm-usage',
 	'write:admin:reset-password',
 	'write:admin:regenerate-user-token',
 	'write:admin:resolve-abuse-user-report',

@@ -11,6 +11,7 @@ import type Logger from '@/logger.js';
 import { bindThis } from '@/decorators.js';
 import { IdService } from '@/core/IdService.js';
 import type { Config } from '@/config.js';
+import { LlmUsageService } from '@/core/LlmUsageService.js';
 import { ReversiService } from '@/core/ReversiService.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import type * as Bull from 'bullmq';
@@ -38,6 +39,7 @@ export class CleanProcessorService {
 		private queueLoggerService: QueueLoggerService,
 		private reversiService: ReversiService,
 		private idService: IdService,
+		private llmUsageService: LlmUsageService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('clean');
 	}
@@ -45,6 +47,7 @@ export class CleanProcessorService {
 	@bindThis
 	public async process(): Promise<void> {
 		this.logger.info('Cleaning...');
+		await this.llmUsageService.cleanup(new Date()).catch(() => this.logger.warn('LLM usage cleanup incomplete'));
 
 		this.userIpsRepository.delete({
 			createdAt: LessThan(new Date(Date.now() - (1000 * 60 * 60 * 24 * 90))),

@@ -93,6 +93,10 @@ import type {
 	AdminLlmModerationQueueResponse,
 	AdminLlmModerationQueueResolveRequest,
 	AdminLlmModerationQueueUpdateRequest,
+	AdminLlmUsageOverviewRequest,
+	AdminLlmUsageOverviewResponse,
+	AdminLlmUsageUsersRequest,
+	AdminLlmUsageUsersResponse,
 	AdminLoginRiskDiagnoseResponse,
 	AdminLoginRiskUserFootprintsRequest,
 	AdminLoginRiskUserFootprintsResponse,
@@ -801,6 +805,8 @@ export type Endpoints = {
 	'admin/llm-moderation/queue': { req: AdminLlmModerationQueueRequest; res: AdminLlmModerationQueueResponse };
 	'admin/llm-moderation/queue/resolve': { req: AdminLlmModerationQueueResolveRequest; res: EmptyResponse };
 	'admin/llm-moderation/queue/update': { req: AdminLlmModerationQueueUpdateRequest; res: EmptyResponse };
+	'admin/llm-usage/overview': { req: AdminLlmUsageOverviewRequest; res: AdminLlmUsageOverviewResponse };
+	'admin/llm-usage/users': { req: AdminLlmUsageUsersRequest; res: AdminLlmUsageUsersResponse };
 	'admin/login-risk/diagnose': { req: EmptyRequest; res: AdminLoginRiskDiagnoseResponse };
 	'admin/login-risk/user-footprints': { req: AdminLoginRiskUserFootprintsRequest; res: AdminLoginRiskUserFootprintsResponse };
 	'admin/meta': { req: EmptyRequest; res: AdminMetaResponse };

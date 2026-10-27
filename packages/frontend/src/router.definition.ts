@@ -505,6 +505,10 @@ export const ROUTE_DEF = [{
 		name: 'abuses',
 		component: page(() => import('@/pages/admin/abuses.vue')),
 	}, {
+		path: '/llm-usage',
+		name: 'llm-usage',
+		component: page(() => import('@/pages/admin/llm-usage.vue')),
+	}, {
 		path: '/llm-moderation',
 		name: 'llmModeration',
 		component: page(() => import('@/pages/admin/llm-moderation.vue')),
