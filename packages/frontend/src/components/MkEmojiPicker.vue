@@ -21,43 +21,56 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<!-- FirefoxのTabフォーカスが想定外の挙動となるためtabindex="-1"を追加 https://github.com/misskey-dev/misskey/issues/10744 -->
 	<div ref="emojisEl" class="emojis" tabindex="-1">
 		<section class="result">
-			<div v-if="searchResultCustom.length > 0" class="body">
-				<button
-					v-for="emoji in searchResultCustom"
-					:key="emoji.name"
-					class="_button item"
-					:disabled="!canReact(emoji)"
-					:title="emoji.name"
-					tabindex="0"
-					@click="chosen(emoji, $event)"
-				>
-					<MkCustomEmoji class="emoji" :name="emoji.name" :fallbackToImage="true"/>
-				</button>
-			</div>
-			<div v-if="searchResultRemote.length > 0" class="body">
-				<button
-					v-for="emoji in searchResultRemote"
-					:key="`${emoji.name}@${emoji.host}`"
-					class="_button item"
-					:title="`:${emoji.name}@${emoji.host}:`"
-					tabindex="0"
-					@click="chosenRemote(emoji, $event)"
-				>
-					<MkCustomEmoji class="emoji" :name="emoji.name" :host="emoji.host" :fallbackToImage="true"/>
-				</button>
-			</div>
-			<div v-if="searchResultUnicode.length > 0" class="body">
-				<button
-					v-for="emoji in searchResultUnicode"
-					:key="emoji.name"
-					class="_button item"
-					:title="emoji.name"
-					tabindex="0"
-					@click="chosen(emoji, $event)"
-				>
-					<MkEmoji class="emoji" :emoji="emoji.char"/>
-				</button>
-			</div>
+			<template v-if="searchResultCustom.length > 0">
+				<header class="_acrylic resultHeader"><i class="ti ti-mood-happy ti-fw"></i> {{ i18n.ts.customEmojis }}</header>
+				<div class="body">
+					<button
+						v-for="emoji in searchResultCustom"
+						:key="emoji.name"
+						class="_button item"
+						:disabled="!canReact(emoji)"
+						:title="emoji.name"
+						tabindex="0"
+						@click="chosen(emoji, $event)"
+					>
+						<MkCustomEmoji class="emoji" :name="emoji.name" :fallbackToImage="true"/>
+					</button>
+				</div>
+			</template>
+			<template v-if="searchResultRemote.length > 0">
+				<header class="_acrylic resultHeader"><i class="ti ti-server ti-fw"></i> {{ i18n.ts.remote }}</header>
+				<div class="body remoteList">
+					<button
+						v-for="emoji in searchResultRemote"
+						:key="`${emoji.name}@${emoji.host}`"
+						class="_button remoteRow"
+						:title="`:${emoji.name}@${emoji.host}:`"
+						tabindex="0"
+						@click="chosenRemote(emoji, $event)"
+					>
+						<MkCustomEmoji class="emoji" :name="emoji.name" :host="emoji.host" :url="emoji.url" :fallbackToImage="true"/>
+						<div class="remoteInfo">
+							<div class="remoteName">{{ emoji.name }}</div>
+							<div class="remoteHost">{{ emoji.host }}</div>
+						</div>
+					</button>
+				</div>
+			</template>
+			<template v-if="searchResultUnicode.length > 0">
+				<header class="_acrylic resultHeader"><i class="ti ti-leaf ti-fw"></i> {{ i18n.ts.emoji }}</header>
+				<div class="body">
+					<button
+						v-for="emoji in searchResultUnicode"
+						:key="emoji.name"
+						class="_button item"
+						:title="emoji.name"
+						tabindex="0"
+						@click="chosen(emoji, $event)"
+					>
+						<MkEmoji class="emoji" :emoji="emoji.char"/>
+					</button>
+				</div>
+			</template>
 		</section>
 
 		<div v-if="tab === 'index'" class="group index">
@@ -889,6 +902,69 @@ defineExpose({
 
 				&:empty {
 					display: none;
+				}
+
+				> .resultHeader {
+					cursor: default;
+
+					&:hover {
+						color: inherit;
+					}
+				}
+
+				> .body {
+					&.remoteList {
+						display: flex;
+						flex-direction: column;
+						gap: 2px;
+						padding: 4px;
+					}
+
+					> .remoteRow {
+						display: flex;
+						align-items: center;
+						gap: 10px;
+						width: 100%;
+						padding: 6px 8px;
+						border-radius: 4px;
+						text-align: left;
+
+						&:hover {
+							background: rgba(0, 0, 0, 0.05);
+						}
+
+						&:active {
+							background: var(--MI_THEME-accent);
+							box-shadow: inset 0 0.15em 0.3em rgba(27, 31, 35, 0.15);
+						}
+
+						> .emoji {
+							width: 28px;
+							height: 28px;
+							object-fit: contain;
+							flex-shrink: 0;
+							pointer-events: none;
+						}
+
+						> .remoteInfo {
+							min-width: 0;
+							flex: 1;
+							line-height: 1.3;
+							pointer-events: none;
+
+							> .remoteName {
+								font-size: 13px;
+								overflow-wrap: anywhere;
+								color: var(--MI_THEME-fg);
+							}
+
+							> .remoteHost {
+								font-size: 12px;
+								opacity: 0.75;
+								word-break: break-all;
+							}
+						}
+					}
 				}
 			}
 		}
