@@ -89,6 +89,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			const queryBuilder = this.emojisRepository.createQueryBuilder('emoji')
 				.where('emoji.host IS NOT NULL')
+				.andWhere('emoji.localOnly = false')
 				.andWhere('(emoji.name ILIKE :query OR :exact = ANY(emoji.aliases))', {
 					query: `%${ps.query.replaceAll('\\', '\\\\').replaceAll('%', '\\%').replaceAll('_', '\\_')}%`,
 					exact: ps.query,

@@ -44,6 +44,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						v-for="emoji in searchResultRemote"
 						:key="`${emoji.name}@${emoji.host}`"
 						class="_button remoteRow"
+						:disabled="!canReact(`:${emoji.name}@${emoji.host}:`)"
 						:title="`:${emoji.name}@${emoji.host}:`"
 						tabindex="0"
 						@click="chosenRemote(emoji, $event)"
@@ -439,8 +440,11 @@ async function searchRemote(): Promise<void> {
 		} : {
 			query,
 		});
+		// 応答時点でクエリが変わっていたら古い結果を捨てる (race 対策)
+		if (q.value.replace(/:/g, '').trim() !== query) return;
 		searchResultRemote.value = res.emojis;
 	} catch {
+		if (q.value.replace(/:/g, '').trim() !== query) return;
 		searchResultRemote.value = [];
 	}
 }

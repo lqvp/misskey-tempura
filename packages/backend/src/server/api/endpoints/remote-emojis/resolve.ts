@@ -4,7 +4,7 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { MiMeta } from '@/models/_.js';
+import type { EmojisRepository, MiMeta } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { ApiError } from '@/server/api/error.js';
 import { NoteEmojiAliasService } from '@/core/NoteEmojiAliasService.js';
@@ -92,6 +92,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		@Inject(DI.meta)
 		private serverSettings: MiMeta,
 
+		@Inject(DI.emojisRepository)
+		private emojisRepository: EmojisRepository,
+
 		private noteEmojiAliasService: NoteEmojiAliasService,
 		private utilityService: UtilityService,
 	) {
@@ -109,11 +112,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			const resolved = await this.noteEmojiAliasService.resolve(ps.name, host);
 
 			if (resolved == null) {
+				// localOnly の絵文字はサービス側で参照発行を拒否されるため、エラーを区別したい場合は絵文字自体の存在を確認する
+				const emoji = await this.emojisRepository.findOneBy({ name: ps.name, host });
+				if (emoji != null && emoji.localOnly) {
+					throw new ApiError(meta.errors.localOnlyEmoji);
+				}
 				throw new ApiError(meta.errors.noSuchEmoji);
-			}
-
-			if (resolved.emoji.localOnly) {
-				throw new ApiError(meta.errors.localOnlyEmoji);
 			}
 
 			return {

@@ -184,8 +184,8 @@ export class ReactionService {
 				// tempura: ノート用リモート絵文字参照 (エイリアス) のリアクション。
 				// ローカル絵文字が常に優先され、alias 名がローカル絵文字と衝突する場合はローカル絵文字として扱う。
 				let noteEmojiAlias: MiNoteEmojiAlias | null = null;
-				// 明示的なリモートホスト指定 (:name@host:) ではエイリアスを引かない
-				if (emoji == null && !reacterHost && (resolvedDeclaratedHost === undefined || resolvedDeclaratedHost === null)) {
+				// ホスト指定 (:name@host:) やローカル明示 (:name@.:) ではエイリアスを引かない
+				if (emoji == null && !reacterHost && resolvedDeclaratedHost === undefined) {
 					noteEmojiAlias = await this.noteEmojiAliasService.findByAlias(name);
 				}
 

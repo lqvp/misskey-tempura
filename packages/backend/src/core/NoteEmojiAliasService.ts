@@ -80,6 +80,9 @@ export class NoteEmojiAliasService {
 		const emoji = await this.emojisRepository.findOneBy({ name, host: normalizedHost });
 		if (emoji == null) return null;
 
+		// localOnly の絵文字は参照を発行しない (発行済み行が残っている場合も使わせない)
+		if (emoji.localOnly) return null;
+
 		const existing = await this.noteEmojiAliasesRepository.findOneBy({ name, host: normalizedHost });
 		if (existing != null) {
 			this.aliasCache.set(existing.alias, existing);
