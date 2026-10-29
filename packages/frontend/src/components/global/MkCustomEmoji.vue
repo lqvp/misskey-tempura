@@ -38,7 +38,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { computed, defineAsyncComponent, inject, ref } from 'vue';
-import { normalizeCustomEmojiName, isLocalCustomEmojiName, getCustomEmojiImagePath } from '@@/js/emoji-name.js';
+import { normalizeCustomEmojiName, isLocalCustomEmojiName, getCustomEmojiImagePath, isNoteEmojiAliasName } from '@@/js/emoji-name.js';
 import type { MenuItem } from '@/types/menu.js';
 import { getProxiedImageUrl, getStaticImageUrl } from '@/utility/media-proxy.js';
 import { customEmojisMap, noteEmojiAliasesMap } from '@/custom-emojis.js';
@@ -79,8 +79,10 @@ const rawUrl = computed(() => {
 		return props.url;
 	}
 	if (isLocal.value) {
-		// tempura: ノート用リモート絵文字参照 (エイリアス) はセッション内キャッシュから解決する
-		return customEmojisMap.get(customEmojiName.value)?.url ?? noteEmojiAliasesMap.get(customEmojiName.value)?.url ?? null;
+		// tempura: ノート用リモート絵文字参照 (エイリアス) はセッション内キャッシュから解決する。
+		// キャッシュに無い場合 (ピッカーの最近使用などリロード後の経路) は /emoji/ ルートにフォールバックする。
+		return customEmojisMap.get(customEmojiName.value)?.url ?? noteEmojiAliasesMap.get(customEmojiName.value)?.url
+			?? (isNoteEmojiAliasName(customEmojiName.value) ? `/emoji/${customEmojiName.value}.webp?fallback=1` : null);
 	}
 	return getCustomEmojiImagePath(customEmojiName.value, props.host);
 });

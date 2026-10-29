@@ -13,7 +13,7 @@ import fastifyRawBody from 'fastify-raw-body';
 import { IsNull } from 'typeorm';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import type { Config } from '@/config.js';
-import type { EmojisRepository, MiMeta, UserProfilesRepository, UsersRepository } from '@/models/_.js';
+import type { EmojisRepository, MiMeta, NoteEmojiAliasesRepository, UserProfilesRepository, UsersRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import type Logger from '@/logger.js';
 import * as Acct from '@/misc/acct.js';
@@ -27,6 +27,7 @@ import { NodeinfoServerService } from './NodeinfoServerService.js';
 import { ApiServerService } from './api/ApiServerService.js';
 import { StreamingApiServerService } from './api/StreamingApiServerService.js';
 import { WellKnownServerService } from './WellKnownServerService.js';
+import { NOTE_EMOJI_ALIAS_REGEXP } from '@/core/NoteEmojiAliasService.js';
 import { FileServerService } from './FileServerService.js';
 import { HealthServerService } from './HealthServerService.js';
 import { ClientServerService } from './web/ClientServerService.js';
@@ -56,6 +57,9 @@ export class ServerService implements OnApplicationShutdown {
 
 		@Inject(DI.emojisRepository)
 		private emojisRepository: EmojisRepository,
+
+		@Inject(DI.noteEmojiAliasesRepository)
+		private noteEmojiAliasesRepository: NoteEmojiAliasesRepository,
 
 		private userEntityService: UserEntityService,
 		private apiServerService: ApiServerService,
@@ -191,7 +195,20 @@ export class ServerService implements OnApplicationShutdown {
 
 			reply.header('Content-Security-Policy', 'default-src \'none\'; style-src \'unsafe-inline\'');
 
-			if (emoji == null) {
+			// tempura: ノート用リモート絵文字参照 (エイリアス) も /emoji/ ルートで解決する。
+			// ピッカーの最近使用など、セッション内キャッシュを持たない描画経路からの参照用。
+			let aliasImageUrl: string | null = null;
+			if (emoji == null && name != null && NOTE_EMOJI_ALIAS_REGEXP.test(name)) {
+				const noteEmojiAlias = await this.noteEmojiAliasesRepository.findOneBy({ alias: name });
+				if (noteEmojiAlias != null) {
+					// || originalUrl してるのは emoji と同じ後方互換のため
+					aliasImageUrl = noteEmojiAlias.publicUrl || noteEmojiAlias.originalUrl;
+				}
+			}
+
+			const imageUrl = emoji != null ? (emoji.publicUrl || emoji.originalUrl) : aliasImageUrl;
+
+			if (imageUrl == null) {
 				if ('fallback' in request.query) {
 					return await reply.redirect('/static-assets/emoji-unknown.png');
 				} else {
@@ -203,13 +220,11 @@ export class ServerService implements OnApplicationShutdown {
 			let url: URL;
 			if ('badge' in request.query) {
 				url = new URL(`${this.config.mediaProxy}/emoji.png`);
-				// || emoji.originalUrl してるのは後方互換性のため（publicUrlはstringなので??はだめ）
-				url.searchParams.set('url', emoji.publicUrl || emoji.originalUrl);
+				url.searchParams.set('url', imageUrl);
 				url.searchParams.set('badge', '1');
 			} else {
 				url = new URL(`${this.config.mediaProxy}/emoji.webp`);
-				// || emoji.originalUrl してるのは後方互換性のため（publicUrlはstringなので??はだめ）
-				url.searchParams.set('url', emoji.publicUrl || emoji.originalUrl);
+				url.searchParams.set('url', imageUrl);
 				url.searchParams.set('emoji', '1');
 				if ('static' in request.query) url.searchParams.set('static', '1');
 			}

@@ -46,3 +46,12 @@ export function isLocalCustomEmojiReaction(reaction: string): boolean {
 export function getCustomEmojiImagePath(name: string, host: string | null | undefined): string {
 	return host ? `/emoji/${name}@${host}.webp` : `/emoji/${name}.webp`;
 }
+
+/**
+ * tempura: ノート用リモート絵文字参照 (エイリアス) 名かどうかを判定する
+ * (バックエンドの NoteEmojiAliasService が生成する `re_` + safeName + digest 形式)
+ */
+const noteEmojiAliasNameRegexp = /^re_[A-Za-z0-9_]+_[0-9a-f]{8,32}$/;
+export function isNoteEmojiAliasName(name: string): boolean {
+	return noteEmojiAliasNameRegexp.test(name);
+}
