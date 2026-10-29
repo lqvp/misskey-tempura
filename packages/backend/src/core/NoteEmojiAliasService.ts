@@ -15,13 +15,13 @@ import { CustomEmojiService } from '@/core/CustomEmojiService.js';
 import { UtilityService } from '@/core/UtilityService.js';
 import { MemoryKVCache } from '@/misc/cache.js';
 import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js';
+import { NOTE_EMOJI_ALIAS_REGEXP } from '@/misc/note-emoji-alias.js';
 import { bindThis } from '@/decorators.js';
 import type { Config } from '@/config.js';
 
 const ALIAS_PREFIX = 're_';
 const ALIAS_MAX_LENGTH = 100;
 
-import { NOTE_EMOJI_ALIAS_REGEXP } from '@/misc/note-emoji-alias.js';
 export { NOTE_EMOJI_ALIAS_REGEXP } from '@/misc/note-emoji-alias.js';
 
 @Injectable()
