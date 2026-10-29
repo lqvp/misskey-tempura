@@ -107,7 +107,7 @@ export class CustomEmojiService implements OnApplicationShutdown {
 	 * @returns バリデーション結果
 	 */
 	@bindThis
-	private validateEmojiName(emojiName: string): boolean {
+	private validateEmojiName(emojiName: string, allowReservedAliasName = false): boolean {
 		// 絵文字名の基本的なバリデーション
 		if (!emojiName || typeof emojiName !== 'string') {
 			return false;
@@ -115,7 +115,9 @@ export class CustomEmojiService implements OnApplicationShutdown {
 
 		// tempura: ノート用リモート絵文字参照 (エイリアス) 形式の名前は予約済み。
 		// 既発行エイリアスの参照が後発のローカル絵文字で上書き (shadow) されるのを防ぐ。
-		if (NOTE_EMOJI_ALIAS_REGEXP.test(emojiName)) {
+		// allowReservedAliasName: 既存絵文字のシステム再アップロード時など、
+		// 新規命名でない経路では予約名の既存データを壊さないように true を渡す。
+		if (!allowReservedAliasName && NOTE_EMOJI_ALIAS_REGEXP.test(emojiName)) {
 			return false;
 		}
 
@@ -202,8 +204,9 @@ export class CustomEmojiService implements OnApplicationShutdown {
 	 */
 	@bindThis
 	private async systemReupload(originalUrl: string, emojiName: string): Promise<MiDriveFile> {
-		// 絵文字名のバリデーション
-		if (!this.validateEmojiName(emojiName)) {
+		// 絵文字名のバリデーション (tempura: 既存絵文字の再アップロードなのでエイリアス予約名は許容する。
+		// 新規命名の拒否は add()/update() 側で行われる)
+		if (!this.validateEmojiName(emojiName, true)) {
 			throw new Error(`Invalid emoji name for system reupload: ${emojiName}`);
 		}
 
