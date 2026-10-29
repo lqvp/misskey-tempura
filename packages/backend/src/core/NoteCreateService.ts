@@ -59,6 +59,7 @@ import { LoggerService } from '@/core/LoggerService.js';
 import { OpenLlmModerationService } from '@/core/OpenLlmModerationService.js';
 import type Logger from '@/logger.js';
 import { CacheService } from '@/core/CacheService.js';
+import { NoteEmojiAliasService } from '@/core/NoteEmojiAliasService.js';
 import { isQuote, isRenote } from '@/misc/is-renote.js';
 import { extractUrlsForKeyWordCheck } from '@/misc/extract-urls-for-keyword-check.js';
 
@@ -309,6 +310,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 		private activeUsersChart: ActiveUsersChart,
 		private instanceChart: InstanceChart,
 		private utilityService: UtilityService,
+		private noteEmojiAliasService: NoteEmojiAliasService,
 		private userBlockingService: UserBlockingService,
 		private loggerService: LoggerService,
 		private openLlmModerationService: OpenLlmModerationService,
@@ -674,6 +676,12 @@ export class NoteCreateService implements OnApplicationShutdown {
 
 		// if the host is media-silenced, custom emojis are not allowed
 		if (this.utilityService.isMediaSilencedHost(this.meta.mediaSilencedHosts, user.host)) emojis = [];
+
+		// tempura: 現行状態で利用不可 (元絵文字の localOnly 化・元ホストの media silence) な
+		// ノート用リモート絵文字参照 (エイリアス) は新規ノートの emojis に保存しない。
+		// 保存されなければ連合 tag も pack の URL 辞書も出ず、本文の :re_x: はテキストとして残る。
+		// 既存ノートは保存済み emojis で従来どおり表示される。
+		emojis = await this.noteEmojiAliasService.filterUnusableAliases(emojis);
 
 		const willCauseNotification = mentionedUsers.some(u => u.host === null)
 			|| (data.visibility === 'specified' && data.visibleUsers?.some(u => u.host === null))

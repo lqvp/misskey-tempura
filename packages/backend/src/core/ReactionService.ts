@@ -186,7 +186,12 @@ export class ReactionService {
 				let noteEmojiAlias: MiNoteEmojiAlias | null = null;
 				// ホスト指定 (:name@host:) やローカル明示 (:name@.:) ではエイリアスを引かない
 				if (emoji == null && !reacterHost && resolvedDeclaratedHost === undefined) {
-					noteEmojiAlias = await this.noteEmojiAliasService.findByAlias(name);
+					const found = await this.noteEmojiAliasService.findByAlias(name);
+					// 発行後に元絵文字が localOnly 化・元ホストが media-silence された参照は新規リアクションに使えない
+					// (既存リアクションの表示は populateAliases 経由で維持される)
+					if (found != null && !(await this.noteEmojiAliasService.isCurrentlyUnusable(found))) {
+						noteEmojiAlias = found;
+					}
 				}
 
 				if (noteEmojiAlias) {

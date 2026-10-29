@@ -21,6 +21,7 @@ import type { Config } from '@/config.js';
 const ALIAS_PREFIX = 're_';
 const ALIAS_MAX_LENGTH = 100;
 
+import { NOTE_EMOJI_ALIAS_REGEXP } from '@/misc/note-emoji-alias.js';
 export { NOTE_EMOJI_ALIAS_REGEXP } from '@/misc/note-emoji-alias.js';
 
 @Injectable()
@@ -133,6 +134,37 @@ export class NoteEmojiAliasService {
 		}
 
 		return null;
+	}
+
+	/**
+	 * 現行のキャッシュ状態でこの参照が新規利用に耐えるかを返す。
+	 * 元絵文字が localOnly 化している、または元ホストが media-silence されている場合は true (利用不可)。
+	 * 既存ノート・リアクションの表示経路では呼ばないこと (表示履歴を壊さないため)。
+	 */
+	@bindThis
+	public async isCurrentlyUnusable(alias: MiNoteEmojiAlias): Promise<boolean> {
+		const origin = await this.emojisRepository.findOneBy({ name: alias.name, host: alias.host });
+		if (origin != null && origin.localOnly) return true;
+		return this.utilityService.isMediaSilencedHost(this.meta.mediaSilencedHosts, alias.host);
+	}
+
+	/**
+	 * 新規ノートの emojis から、現行状態で利用不可な参照 (エイリアス) 名を取り除く。
+	 * 参照行が存在しない名前はそのまま残す (従来どおり描画されないだけ)。
+	 */
+	@bindThis
+	public async filterUnusableAliases(names: string[]): Promise<string[]> {
+		const aliasNames = names.filter(n => NOTE_EMOJI_ALIAS_REGEXP.test(n));
+		if (aliasNames.length === 0) return names;
+		const blocked = new Set<string>();
+		for (const aliasName of aliasNames) {
+			const row = await this.findByAlias(aliasName);
+			if (row != null && await this.isCurrentlyUnusable(row)) {
+				blocked.add(aliasName);
+			}
+		}
+		if (blocked.size === 0) return names;
+		return names.filter(n => !blocked.has(n));
 	}
 
 	/**

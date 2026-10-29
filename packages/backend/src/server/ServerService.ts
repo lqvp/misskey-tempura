@@ -28,6 +28,7 @@ import { ApiServerService } from './api/ApiServerService.js';
 import { StreamingApiServerService } from './api/StreamingApiServerService.js';
 import { WellKnownServerService } from './WellKnownServerService.js';
 import { NOTE_EMOJI_ALIAS_REGEXP } from '@/misc/note-emoji-alias.js';
+import { NoteEmojiAliasService } from '@/core/NoteEmojiAliasService.js';
 import { FileServerService } from './FileServerService.js';
 import { HealthServerService } from './HealthServerService.js';
 import { ClientServerService } from './web/ClientServerService.js';
@@ -60,6 +61,8 @@ export class ServerService implements OnApplicationShutdown {
 
 		@Inject(DI.noteEmojiAliasesRepository)
 		private noteEmojiAliasesRepository: NoteEmojiAliasesRepository,
+
+		private noteEmojiAliasService: NoteEmojiAliasService,
 
 		private userEntityService: UserEntityService,
 		private apiServerService: ApiServerService,
@@ -200,7 +203,9 @@ export class ServerService implements OnApplicationShutdown {
 			let aliasImageUrl: string | null = null;
 			if (emoji == null && name != null && NOTE_EMOJI_ALIAS_REGEXP.test(name)) {
 				const noteEmojiAlias = await this.noteEmojiAliasesRepository.findOneBy({ alias: name });
-				if (noteEmojiAlias != null) {
+				// 現行状態で利用不可 (localOnly 化・media silence) な参照は新規描画経路でも解決しない。
+				// 既存ノート・リアクションの表示は populateAliases が返す保存済み URL を使うため影響しない。
+				if (noteEmojiAlias != null && !(await this.noteEmojiAliasService.isCurrentlyUnusable(noteEmojiAlias))) {
 					// || originalUrl してるのは emoji と同じ後方互換のため
 					aliasImageUrl = noteEmojiAlias.publicUrl || noteEmojiAlias.originalUrl;
 				}
