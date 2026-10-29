@@ -136,8 +136,12 @@ function onClick(ev: PointerEvent) {
 			});
 		}
 
+		// tempura: リモートの絵文字は `:name@host:` 形式でパレットに保存しないと描画・再利用できない (resolve: #323 のフォロー)
+		const pickerEmojiCode = (isLocal.value || props.host == null || customEmojiName.value.includes('@'))
+			? `:${customEmojiName.value}:`
+			: `:${customEmojiName.value}@${props.host}:`;
 		const reactionEmojiPalette = prefer.s.emojiPaletteForReaction == null ? prefer.s.emojiPalettes[0] : prefer.s.emojiPalettes.find(palette => palette.id === prefer.s.emojiPaletteForReaction);
-		if (reactionEmojiPalette != null && !reactionEmojiPalette.emojis.includes(`:${props.name}:`)) {
+		if (reactionEmojiPalette != null && !reactionEmojiPalette.emojis.includes(pickerEmojiCode)) {
 			menuItems.push({
 				text: i18n.ts.addToEmojiPicker,
 				icon: 'ti ti-plus',
@@ -146,7 +150,7 @@ function onClick(ev: PointerEvent) {
 						if (palette.id !== reactionEmojiPalette.id) return palette;
 						return {
 							...palette,
-							emojis: [...palette.emojis, `:${props.name}:`],
+							emojis: [...palette.emojis, pickerEmojiCode],
 						};
 					}));
 				},
