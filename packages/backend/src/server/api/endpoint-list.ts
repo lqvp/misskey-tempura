@@ -207,6 +207,8 @@ export * as 'drive/stream' from './endpoints/drive/stream.js';
 export * as 'email-address/available' from './endpoints/email-address/available.js';
 export * as 'emoji' from './endpoints/emoji.js';
 export * as 'emojis' from './endpoints/emojis.js';
+export * as 'remote-emojis/search' from './endpoints/remote-emojis/search.js';
+export * as 'remote-emojis/resolve' from './endpoints/remote-emojis/resolve.js';
 export * as 'endpoint' from './endpoints/endpoint.js';
 export * as 'endpoints' from './endpoints/endpoints.js';
 export * as 'export-custom-emojis' from './endpoints/export-custom-emojis.js';

@@ -28,6 +28,7 @@ import { CaptchaService } from './CaptchaService.js';
 import { IpIntelligenceService } from './IpIntelligenceService.js';
 import { LoginRiskService } from './LoginRiskService.js';
 import { CustomEmojiService } from './CustomEmojiService.js';
+import { NoteEmojiAliasService } from './NoteEmojiAliasService.js';
 import { DeleteAccountService } from './DeleteAccountService.js';
 import { TruncateAccountService } from './TruncateAccountService.js';
 import { DownloadService } from './DownloadService.js';
@@ -189,6 +190,7 @@ const $CaptchaService: Provider = { provide: 'CaptchaService', useExisting: Capt
 const $IpIntelligenceService: Provider = { provide: 'IpIntelligenceService', useExisting: IpIntelligenceService };
 const $LoginRiskService: Provider = { provide: 'LoginRiskService', useExisting: LoginRiskService };
 const $CustomEmojiService: Provider = { provide: 'CustomEmojiService', useExisting: CustomEmojiService };
+const $NoteEmojiAliasService: Provider = { provide: 'NoteEmojiAliasService', useExisting: NoteEmojiAliasService };
 const $DeleteAccountService: Provider = { provide: 'DeleteAccountService', useExisting: DeleteAccountService };
 const $TruncateAccountService: Provider = { provide: 'TruncateAccountService', useExisting: TruncateAccountService };
 const $DownloadService: Provider = { provide: 'DownloadService', useExisting: DownloadService };
@@ -357,6 +359,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		IpIntelligenceService,
 		LoginRiskService,
 		CustomEmojiService,
+		NoteEmojiAliasService,
 		DeleteAccountService,
 		TruncateAccountService,
 		DownloadService,
@@ -523,6 +526,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$IpIntelligenceService,
 		$LoginRiskService,
 		$CustomEmojiService,
+		$NoteEmojiAliasService,
 		$DeleteAccountService,
 		$TruncateAccountService,
 		$DownloadService,
@@ -689,6 +693,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		IpIntelligenceService,
 		LoginRiskService,
 		CustomEmojiService,
+		NoteEmojiAliasService,
 		DeleteAccountService,
 		TruncateAccountService,
 		DownloadService,
@@ -854,6 +859,7 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$IpIntelligenceService,
 		$LoginRiskService,
 		$CustomEmojiService,
+		$NoteEmojiAliasService,
 		$DeleteAccountService,
 		$TruncateAccountService,
 		$DownloadService,

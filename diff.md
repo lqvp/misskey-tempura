@@ -180,6 +180,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * reactionChecksMuting でリアクションもミュートを尊重します (トラフィック増)
 * addToEmojiPicker でカスタム絵文字をピッカーに追加できます
 * reaction-stats でリアクション統計 (合計/ユニーク/最多) を見られます
+* 絵文字ピッカーからリモートサーバーの絵文字を検索・ノート本文に挿入できます (name@host 指定も可)。同名のローカル絵文字がある場合はローカルが優先されます
 
 ## ミュートとブロック
 

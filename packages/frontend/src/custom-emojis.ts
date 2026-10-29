@@ -21,6 +21,13 @@ export const customEmojiCategories = computed<[ ...string[], null ]>(() => {
 });
 
 export const customEmojisMap = new Map<string, Misskey.entities.EmojiSimple>();
+
+/**
+ * ノート用リモート絵文字参照 (エイリアス) のセッション内キャッシュ。
+ * キーは alias (コロンなし)。remote-emojis/resolve の応答で登録され、
+ * プレビュー等で即座に画像表示するために使う (永続化はしない)。
+ */
+export const noteEmojiAliasesMap = new Map<string, { url: string; name: string; host: string; }>();
 watch(customEmojis, emojis => {
 	customEmojisMap.clear();
 	for (const emoji of emojis) {

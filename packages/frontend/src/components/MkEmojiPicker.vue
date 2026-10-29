@@ -34,6 +34,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkCustomEmoji class="emoji" :name="emoji.name" :fallbackToImage="true"/>
 				</button>
 			</div>
+			<div v-if="searchResultRemote.length > 0" class="body">
+				<button
+					v-for="emoji in searchResultRemote"
+					:key="`${emoji.name}@${emoji.host}`"
+					class="_button item"
+					:title="`:${emoji.name}@${emoji.host}:`"
+					tabindex="0"
+					@click="chosenRemote(emoji, $event)"
+				>
+					<MkCustomEmoji class="emoji" :name="emoji.name" :host="emoji.host" :fallbackToImage="true"/>
+				</button>
+			</div>
 			<div v-if="searchResultUnicode.length > 0" class="body">
 				<button
 					v-for="emoji in searchResultUnicode"
@@ -136,7 +148,8 @@ import { isTouchUsing } from '@/utility/touch.js';
 import { deviceKind } from '@/utility/device-kind.js';
 import { i18n } from '@/i18n.js';
 import { store } from '@/store.js';
-import { customEmojiCategories, customEmojis, customEmojisMap } from '@/custom-emojis.js';
+import { customEmojiCategories, customEmojis, customEmojisMap, noteEmojiAliasesMap } from '@/custom-emojis.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 import { $i } from '@/i.js';
 import { checkReactionPermissions } from '@/utility/check-reaction-permissions.js';
 import { prefer } from '@/preferences.js';
@@ -186,6 +199,8 @@ const width = computed(() => emojiPickerWidth.value);
 const height = computed(() => emojiPickerHeight.value);
 const q = ref<string>('');
 const searchResultCustom = ref<Misskey.entities.EmojiSimple[]>([]);
+// tempura: リモート絵文字検索結果 (ノート用リモート絵文字参照)
+const searchResultRemote = ref<Misskey.entities.Endpoints['remote-emojis/search']['res']['emojis']>([]);
 const searchResultUnicode = ref<UnicodeEmojiDef[]>([]);
 const tab = ref<'index' | 'custom' | 'unicode' | 'tags'>('index');
 
@@ -374,7 +389,74 @@ watch(q, () => {
 
 	searchResultCustom.value = Array.from(searchCustom());
 	searchResultUnicode.value = Array.from(searchUnicode());
+
+	// tempura: リモート絵文字検索 (debounce 付き)
+	if (q.value === '') {
+		searchResultRemote.value = [];
+	} else {
+		scheduleRemoteSearch();
+	}
 });
+
+// tempura: リモート絵文字検索。`name@host` 形式でホストを絞り込める。
+// 同名だがホストが異なる絵文字は別エントリとして返り、title で区別できる。
+let remoteSearchTimer: ReturnType<typeof window.setTimeout> | null = null;
+
+function scheduleRemoteSearch(): void {
+	if (remoteSearchTimer != null) window.clearTimeout(remoteSearchTimer);
+	remoteSearchTimer = window.setTimeout(() => {
+		void searchRemote();
+	}, 300);
+}
+
+async function searchRemote(): Promise<void> {
+	const query = q.value.replace(/:/g, '').trim();
+	if (query === '') {
+		searchResultRemote.value = [];
+		return;
+	}
+
+	const hostMatch = query.match(/^([^@\s]+)@([\w.-]+)$/);
+
+	try {
+		const res = await misskeyApi('remote-emojis/search', hostMatch != null ? {
+			query: hostMatch[1],
+			host: hostMatch[2],
+		} : {
+			query,
+		});
+		searchResultRemote.value = res.emojis;
+	} catch {
+		searchResultRemote.value = [];
+	}
+}
+
+/**
+ * tempura: リモート絵文字を選択したときの処理。
+ * リアクション用途では従来どおり `:name@host:` を返し、
+ * ノート本文用途では参照 (エイリアス) を発行して `:alias:` を返す。
+ */
+async function resolveAndChooseRemote(name: string, host: string, ev?: PointerEvent): Promise<void> {
+	try {
+		const resolved = await misskeyApi('remote-emojis/resolve', { name, host });
+		noteEmojiAliasesMap.set(resolved.alias, { url: resolved.url, name: resolved.name, host: resolved.host });
+		chosen(`:${resolved.alias}:`, ev);
+	} catch (err) {
+		os.alert({
+			type: 'error',
+			title: i18n.ts.error,
+			text: `${name}@${host}`,
+		});
+	}
+}
+
+function chosenRemote(emoji: { name: string; host: string; }, ev?: PointerEvent): void {
+	if (props.asReactionPicker) {
+		chosen(`:${emoji.name}@${emoji.host}:`, ev);
+	} else {
+		void resolveAndChooseRemote(emoji.name, emoji.host, ev);
+	}
+}
 
 function canReact(emoji: Misskey.entities.EmojiSimple | UnicodeEmojiDef | string): boolean {
 	return !props.targetNote || checkReactionPermissions($i!, props.targetNote, emoji);
@@ -431,6 +513,16 @@ function chosen(emoji: string | Misskey.entities.EmojiSimple | UnicodeEmojiDef, 
 	}
 
 	const key = getKey(emoji);
+
+	// tempura: ノート本文用途で `:name@host:` が選択された場合は参照 (エイリアス) に変換してから挿入する
+	if (!props.asReactionPicker && key.startsWith(':') && key.includes('@') && !key.includes('@.')) {
+		const remoteMatch = key.match(/^:([\w+-]+)@([\w.-]+):$/);
+		if (remoteMatch != null) {
+			void resolveAndChooseRemote(remoteMatch[1], remoteMatch[2], ev);
+			return;
+		}
+	}
+
 	emit('chosen', key);
 
 	haptic();

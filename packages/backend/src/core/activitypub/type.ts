@@ -252,6 +252,12 @@ export interface IApEmoji extends IObject {
 	_misskey_license?: {
 		freeText: string | null;
 	};
+	// tempura拡張。ノート用リモート絵文字参照 (エイリアス) の来歴。後方互換性のためにoptional。
+	_tempura_emoji_origin?: {
+		name: string;
+		host: string;
+		uri: string | null;
+	};
 }
 
 export const isEmoji = (object: IObject): object is IApEmoji =>

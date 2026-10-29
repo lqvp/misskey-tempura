@@ -32,6 +32,8 @@ import { ReactionsBufferingService } from '@/core/ReactionsBufferingService.js';
 import { PER_NOTE_REACTION_USER_PAIR_CACHE_MAX } from '@/const.js';
 import type { Config } from '@/config.js';
 import type { MiEmoji } from '@/models/Emoji.js';
+import type { MiNoteEmojiAlias } from '@/models/NoteEmojiAlias.js';
+import { NoteEmojiAliasService } from '@/core/NoteEmojiAliasService.js';
 
 const FALLBACK = '\u2764';
 
@@ -92,6 +94,7 @@ export class ReactionService {
 
 		private utilityService: UtilityService,
 		private customEmojiService: CustomEmojiService,
+		private noteEmojiAliasService: NoteEmojiAliasService,
 		private roleService: RoleService,
 		private userEntityService: UserEntityService,
 		private noteEntityService: NoteEntityService,
@@ -178,7 +181,22 @@ export class ReactionService {
 					if (emoji) break;
 				}
 
-				if (emoji) {
+				// tempura: ノート用リモート絵文字参照 (エイリアス) のリアクション。
+				// ローカル絵文字が常に優先され、alias 名がローカル絵文字と衝突する場合はローカル絵文字として扱う。
+				let noteEmojiAlias: MiNoteEmojiAlias | null = null;
+				// 明示的なリモートホスト指定 (:name@host:) ではエイリアスを引かない
+				if (emoji == null && !reacterHost && (resolvedDeclaratedHost === undefined || resolvedDeclaratedHost === null)) {
+					noteEmojiAlias = await this.noteEmojiAliasService.findByAlias(name);
+				}
+
+				if (noteEmojiAlias) {
+					reaction = `:${noteEmojiAlias.alias}:`;
+
+					// センシティブ
+					if ((note.reactionAcceptance === 'nonSensitiveOnly' || note.reactionAcceptance === 'nonSensitiveOnlyForLocalLikeOnlyForRemote') && noteEmojiAlias.isSensitive) {
+						reaction = FALLBACK;
+					}
+				} else if (emoji) {
 					const canUseLocalOnlyEmoji = note.userHost === reacterHost && (note.renoteUserHost == null || note.renoteUserHost === reacterHost);
 
 					if ((!emoji.localOnly || canUseLocalOnlyEmoji) && (emoji.roleIdsThatCanBeUsedThisEmojiAsReaction.length === 0 || (await this.roleService.getUserRoles(user.id)).some(r => emoji.roleIdsThatCanBeUsedThisEmojiAsReaction.includes(r.id)))) {

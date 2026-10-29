@@ -41,7 +41,7 @@ import { computed, defineAsyncComponent, inject, ref } from 'vue';
 import { normalizeCustomEmojiName, isLocalCustomEmojiName, getCustomEmojiImagePath } from '@@/js/emoji-name.js';
 import type { MenuItem } from '@/types/menu.js';
 import { getProxiedImageUrl, getStaticImageUrl } from '@/utility/media-proxy.js';
-import { customEmojisMap } from '@/custom-emojis.js';
+import { customEmojisMap, noteEmojiAliasesMap } from '@/custom-emojis.js';
 import * as os from '@/os.js';
 import { misskeyApi, misskeyApiGet } from '@/utility/misskey-api.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
@@ -79,7 +79,8 @@ const rawUrl = computed(() => {
 		return props.url;
 	}
 	if (isLocal.value) {
-		return customEmojisMap.get(customEmojiName.value)?.url ?? null;
+		// tempura: ノート用リモート絵文字参照 (エイリアス) はセッション内キャッシュから解決する
+		return customEmojisMap.get(customEmojiName.value)?.url ?? noteEmojiAliasesMap.get(customEmojiName.value)?.url ?? null;
 	}
 	return getCustomEmojiImagePath(customEmojiName.value, props.host);
 });

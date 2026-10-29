@@ -477,11 +477,15 @@ export function createMfmRenderer<P extends MfmBaseProps = MfmBaseProps>(config:
 
 				case 'emojiCode': {
 					if (props.author?.host == null) {
+						// tempura: ノート用リモート絵文字参照 (エイリアス) はノートの emojiUrls 辞書から解決する
+						// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+						const aliasUrl = props.emojiUrls ? props.emojiUrls[token.props.name] : undefined;
 						return [h(CustomEmoji, {
 							key: Math.random(),
 							name: token.props.name,
 							normal: props.plain,
 							host: null,
+							url: aliasUrl,
 							useOriginalSize: scale >= 2.5,
 							...emojiMenuProps,
 							fallbackToImage: false,
