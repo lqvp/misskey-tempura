@@ -130,6 +130,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { ref, useTemplateRef, computed, watch, onMounted } from 'vue';
 import * as Misskey from 'misskey-js';
+import type { Endpoints } from 'misskey-js';
 import {
 	emojilist,
 	emojiCharByCategory,
@@ -200,7 +201,7 @@ const height = computed(() => emojiPickerHeight.value);
 const q = ref<string>('');
 const searchResultCustom = ref<Misskey.entities.EmojiSimple[]>([]);
 // tempura: リモート絵文字検索結果 (ノート用リモート絵文字参照)
-const searchResultRemote = ref<Misskey.entities.Endpoints['remote-emojis/search']['res']['emojis']>([]);
+const searchResultRemote = ref<Endpoints['remote-emojis/search']['res']['emojis']>([]);
 const searchResultUnicode = ref<UnicodeEmojiDef[]>([]);
 const tab = ref<'index' | 'custom' | 'unicode' | 'tags'>('index');
 
@@ -400,7 +401,7 @@ watch(q, () => {
 
 // tempura: リモート絵文字検索。`name@host` 形式でホストを絞り込める。
 // 同名だがホストが異なる絵文字は別エントリとして返り、title で区別できる。
-let remoteSearchTimer: ReturnType<typeof window.setTimeout> | null = null;
+let remoteSearchTimer: number | null = null;
 
 function scheduleRemoteSearch(): void {
 	if (remoteSearchTimer != null) window.clearTimeout(remoteSearchTimer);
