@@ -27,7 +27,7 @@ import { NodeinfoServerService } from './NodeinfoServerService.js';
 import { ApiServerService } from './api/ApiServerService.js';
 import { StreamingApiServerService } from './api/StreamingApiServerService.js';
 import { WellKnownServerService } from './WellKnownServerService.js';
-import { NOTE_EMOJI_ALIAS_REGEXP } from '@/core/NoteEmojiAliasService.js';
+import { NOTE_EMOJI_ALIAS_REGEXP } from '@/misc/note-emoji-alias.js';
 import { FileServerService } from './FileServerService.js';
 import { HealthServerService } from './HealthServerService.js';
 import { ClientServerService } from './web/ClientServerService.js';

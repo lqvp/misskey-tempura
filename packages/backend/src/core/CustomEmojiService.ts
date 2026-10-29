@@ -13,6 +13,7 @@ import { UtilityService } from '@/core/UtilityService.js';
 import { bindThis } from '@/decorators.js';
 import { DI } from '@/di-symbols.js';
 import { MemoryKVCache, RedisSingleCache } from '@/misc/cache.js';
+import { NOTE_EMOJI_ALIAS_REGEXP } from '@/misc/note-emoji-alias.js';
 import { sqlLikeEscape } from '@/misc/sql-like-escape.js';
 import type { DriveFilesRepository, EmojisRepository, MiRole, MiUser } from '@/models/_.js';
 import type { MiEmoji } from '@/models/Emoji.js';
@@ -109,6 +110,12 @@ export class CustomEmojiService implements OnApplicationShutdown {
 	private validateEmojiName(emojiName: string): boolean {
 		// 絵文字名の基本的なバリデーション
 		if (!emojiName || typeof emojiName !== 'string') {
+			return false;
+		}
+
+		// tempura: ノート用リモート絵文字参照 (エイリアス) 形式の名前は予約済み。
+		// 既発行エイリアスの参照が後発のローカル絵文字で上書き (shadow) されるのを防ぐ。
+		if (NOTE_EMOJI_ALIAS_REGEXP.test(emojiName)) {
 			return false;
 		}
 

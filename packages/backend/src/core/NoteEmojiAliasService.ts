@@ -21,11 +21,7 @@ import type { Config } from '@/config.js';
 const ALIAS_PREFIX = 're_';
 const ALIAS_MAX_LENGTH = 100;
 
-/**
- * alias 名の形式 (`re_` + safeName + `_` + 8..32桁の16進ダイジェスト)。
- * /emoji/ ルートやフロントエンドで alias 名を識別するために使う。
- */
-export const NOTE_EMOJI_ALIAS_REGEXP = /^re_[A-Za-z0-9_]+_[0-9a-f]{8,32}$/;
+export { NOTE_EMOJI_ALIAS_REGEXP } from '@/misc/note-emoji-alias.js';
 
 @Injectable()
 export class NoteEmojiAliasService {
