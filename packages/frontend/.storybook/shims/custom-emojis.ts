@@ -29,6 +29,10 @@ export const customEmojiCategories = computed<[ ...string[], null ]>(() => {
 });
 
 export const customEmojisMap = new Map<string, Misskey.entities.EmojiSimple>();
+
+// See src/custom-emojis.ts: ノート用リモート絵文字参照 (エイリアス) のセッション内キャッシュ。
+// Storybook では空のままでよい (resolve 応答で登録される)。
+export const noteEmojiAliasesMap = new Map<string, { url: string; name: string; host: string; }>();
 watch(customEmojis, emojis => {
 	customEmojisMap.clear();
 	for (const emoji of emojis) {

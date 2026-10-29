@@ -24,6 +24,7 @@ import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { AvatarDecorationService } from '@/core/AvatarDecorationService.js';
 import { ApPersonService } from '@/core/activitypub/models/ApPersonService.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
+import { NoteEmojiAliasService } from '@/core/NoteEmojiAliasService.js';
 import { PageEntityService } from '@/core/entities/PageEntityService.js';
 import { CustomEmojiService } from '@/core/CustomEmojiService.js';
 import { AnnouncementService } from '@/core/AnnouncementService.js';
@@ -148,6 +149,7 @@ describe('UserEntityService', () => {
 				NoteEntityService,
 				PageEntityService,
 				CustomEmojiService,
+				NoteEmojiAliasService,
 				AnnouncementService,
 				RoleService,
 				FederatedInstanceService,

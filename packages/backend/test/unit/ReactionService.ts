@@ -171,6 +171,7 @@ describe('ReactionService', () => {
 						}]])),
 					},
 				} as never,
+				{ findByAlias: vi.fn().mockResolvedValue(null), isCurrentlyUnusable: vi.fn().mockResolvedValue(false) } as never,
 				{ getUserRoles: vi.fn() } as never,
 				{ isLocalUser: (user: { host: string | null }) => user.host == null } as never,
 				{ isVisibleForMe: vi.fn().mockResolvedValue(true) } as never,
