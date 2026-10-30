@@ -175,7 +175,9 @@ export class FileServerProxyHandler {
 
 		const probeRange = /^bytes 0-(\d+)\/(\d+)$/.exec(probe.contentRange);
 		const total = probeRange != null ? parseInt(probeRange[2], 10) : NaN;
-		if (!(total > 0)) {
+		const probeEnd = probeRange != null ? parseInt(probeRange[1], 10) : NaN;
+		// probe の Content-Range 宣言 (終端・総量) と実際に取得したバイト数の整合も確認する
+		if (!(total > 0) || !(probeEnd < total) || probe.size !== probeEnd + 1) {
 			probe.cleanup();
 			return { kind: 'fallback' };
 		}
