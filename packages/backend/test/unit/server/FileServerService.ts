@@ -70,6 +70,59 @@ async function createRemoteFileServer() {
 		return reply.send(flatPngBuffer);
 	});
 
+	// Range に正しく応答する upstream (転送量と回数を計測できるようにする)
+	const rangeHits = { count: 0, bytesServed: 0 };
+	server.get('/dummy-range.webm', async (request, reply) => {
+		rangeHits.count++;
+		const m = /^bytes=(\d+)-(\d*)$/.exec(request.headers.range ?? '');
+		if (m) {
+			const start = parseInt(m[1], 10);
+			if (start >= webmBuffer.length) {
+				rangeHits.bytesServed += 0;
+				reply.code(416);
+				reply.header('Content-Range', `bytes */${webmBuffer.length}`);
+				return reply.send(Buffer.alloc(0));
+			}
+			const end = m[2] ? Math.min(parseInt(m[2], 10), webmBuffer.length - 1) : webmBuffer.length - 1;
+			const body = webmBuffer.subarray(start, end + 1);
+			rangeHits.bytesServed += body.length;
+			reply.code(206);
+			reply.header('Content-Type', 'video/webm');
+			reply.header('Content-Range', `bytes ${start}-${end}/${webmBuffer.length}`);
+			reply.header('Content-Length', String(body.length));
+			return reply.send(body);
+		}
+		rangeHits.bytesServed += webmBuffer.length;
+		reply.header('Content-Type', 'video/webm');
+		reply.header('Content-Length', String(webmBuffer.length));
+		return reply.send(webmBuffer);
+	});
+
+	// probe には正しく応答するが、それ以外の Range には不一致の Content-Range を返す upstream
+	const badRangeHits = { count: 0 };
+	server.get('/dummy-badrange.webm', async (request, reply) => {
+		badRangeHits.count++;
+		const range = request.headers.range;
+		if (range === 'bytes=0-4099') {
+			const body = webmBuffer.subarray(0, 4100);
+			reply.code(206);
+			reply.header('Content-Type', 'video/webm');
+			reply.header('Content-Range', `bytes 0-4099/${webmBuffer.length}`);
+			reply.header('Content-Length', String(body.length));
+			return reply.send(body);
+		}
+		if (range) {
+			reply.code(206);
+			reply.header('Content-Type', 'video/webm');
+			reply.header('Content-Range', `bytes 0-1/${webmBuffer.length}`);
+			reply.header('Content-Length', '2');
+			return reply.send(webmBuffer.subarray(0, 2));
+		}
+		reply.header('Content-Type', 'video/webm');
+		reply.header('Content-Length', String(webmBuffer.length));
+		return reply.send(webmBuffer);
+	});
+
 	const baseUrl = await server.listen({ port: 0, host: '127.0.0.1' });
 
 	return {
@@ -79,6 +132,10 @@ async function createRemoteFileServer() {
 		textUrl: `${baseUrl}/dummy.txt`,
 		flatPngUrl: `${baseUrl}/flat.png`,
 		webmUrl: `${baseUrl}/dummy.webm`,
+		rangeWebmUrl: `${baseUrl}/dummy-range.webm`,
+		badRangeWebmUrl: `${baseUrl}/dummy-badrange.webm`,
+		rangeHits,
+		badRangeHits,
 	};
 }
 
@@ -99,6 +156,10 @@ describe('FileServerService', () => {
 	let remoteTextUrl: string;
 	let remoteFlatPngUrl: string;
 	let remoteWebmUrl: string;
+	let remoteRangeWebmUrl: string;
+	let remoteBadRangeWebmUrl: string;
+	let remoteRangeHits: { count: number; bytesServed: number };
+	let remoteBadRangeHits: { count: number };
 	const storedPaths: string[] = [];
 	let createdFallbackAssets = false;
 	let fallbackAssetsDir = '';
@@ -221,6 +282,10 @@ describe('FileServerService', () => {
 		remoteTextUrl = remoteServerInfo.textUrl;
 		remoteFlatPngUrl = remoteServerInfo.flatPngUrl;
 		remoteWebmUrl = remoteServerInfo.webmUrl;
+		remoteRangeWebmUrl = remoteServerInfo.rangeWebmUrl;
+		remoteBadRangeWebmUrl = remoteServerInfo.badRangeWebmUrl;
+		remoteRangeHits = remoteServerInfo.rangeHits;
+		remoteBadRangeHits = remoteServerInfo.badRangeHits;
 
 		fallbackAssetsDir = path.resolve('src/server/file/assets');
 		if (!fs.existsSync(fallbackAssetsDir)) {
@@ -961,6 +1026,79 @@ describe('FileServerService', () => {
 			expect(res.statusCode).toBe(200);
 			expect(res.headers['content-type']).toBe('image/png');
 			expect(res.headers['content-range']).toBeUndefined();
+		});
+
+		test('GET /proxy/:url* Range対応のupstreamには部分取得で応答し全量取得しない', async () => {
+			const beforeCount = remoteRangeHits.count;
+			const beforeBytes = remoteRangeHits.bytesServed;
+			const res = await fastify.inject({
+				method: 'GET',
+				url: `/proxy/any?url=${encodeURIComponent(remoteRangeWebmUrl)}`,
+				headers: {
+					'user-agent': 'Mozilla/5.0',
+					range: 'bytes=0-99',
+				},
+			});
+
+			expect(res.statusCode).toBe(206);
+			expect(res.headers['content-range']).toBe(`bytes 0-99/${webmSize}`);
+			expect(res.headers['content-length']).toBe('100');
+			expect(res.headers['accept-ranges']).toBe('bytes');
+			expect(res.headers['content-type']).toMatch(/^(video|audio)\/webm$/);
+			expect(res.rawPayload.equals(webmBuffer.subarray(0, 100))).toBe(true);
+			// probe + 部分取得の2リクエストのみで、全量取得は発生しない
+			expect(remoteRangeHits.count - beforeCount).toBe(2);
+			expect(remoteRangeHits.bytesServed - beforeBytes).toBeLessThan(webmSize);
+		});
+
+		test('GET /proxy/:url* Range対応のupstreamへの範囲外Rangeは再取得せず416を返す', async () => {
+			const beforeCount = remoteRangeHits.count;
+			const res = await fastify.inject({
+				method: 'GET',
+				url: `/proxy/any?url=${encodeURIComponent(remoteRangeWebmUrl)}`,
+				headers: {
+					'user-agent': 'Mozilla/5.0',
+					range: `bytes=${webmSize + 1000}-`,
+				},
+			});
+
+			expect(res.statusCode).toBe(416);
+			expect(res.headers['content-range']).toBe(`bytes */${webmSize}`);
+			// probe のみで、範囲外と判明した時点で upstream を再取得しない
+			expect(remoteRangeHits.count - beforeCount).toBe(1);
+		});
+
+		test('GET /proxy/:url* Range対応のupstreamへサフィックスRangeを部分取得する', async () => {
+			const res = await fastify.inject({
+				method: 'GET',
+				url: `/proxy/any?url=${encodeURIComponent(remoteRangeWebmUrl)}`,
+				headers: {
+					'user-agent': 'Mozilla/5.0',
+					range: 'bytes=-100',
+				},
+			});
+
+			expect(res.statusCode).toBe(206);
+			expect(res.headers['content-range']).toBe(`bytes ${webmSize - 100}-${webmSize - 1}/${webmSize}`);
+			expect(res.rawPayload.equals(webmBuffer.subarray(webmSize - 100))).toBe(true);
+		});
+
+		test('GET /proxy/:url* upstreamのContent-Rangeが一致しなければ全量取得にフォールバックする', async () => {
+			const beforeCount = remoteBadRangeHits.count;
+			const res = await fastify.inject({
+				method: 'GET',
+				url: `/proxy/any?url=${encodeURIComponent(remoteBadRangeWebmUrl)}`,
+				headers: {
+					'user-agent': 'Mozilla/5.0',
+					range: 'bytes=0-3',
+				},
+			});
+
+			expect(res.statusCode).toBe(206);
+			expect(res.headers['content-range']).toBe(`bytes 0-3/${webmSize}`);
+			expect(res.rawPayload.equals(webmBuffer.subarray(0, 4))).toBe(true);
+			// probe + 不一致の部分取得 + 全量取得の3リクエスト
+			expect(remoteBadRangeHits.count - beforeCount).toBe(3);
 		});
 
 		test('HEAD /proxy/:url* 音声/動画メディアのヘッダを検証する', async () => {

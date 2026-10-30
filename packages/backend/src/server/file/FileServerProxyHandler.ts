@@ -55,8 +55,30 @@ export class FileServerProxyHandler {
 
 		this.validateUserAgent(request);
 
+		// Range 要求 (画像変換を伴わないもの) は upstream への Range 転送を試みる。
+		// 対応しない upstream や判定できない場合は従来どおり全量取得して応答する
+		const rangeHeader = request.headers.range;
+		if (typeof rangeHeader === 'string' && !this.hasImageConversionQuery(request.query)) {
+			const partialOutcome = await this.tryServeUpstreamRange(url, rangeHeader, request, reply);
+			if (partialOutcome === 'handled') return;
+			if (partialOutcome !== undefined) {
+				return await this.respondWithFile(partialOutcome, request, reply);
+			}
+		}
+
 		// Create temp file
 		const file = await this.getStreamAndTypeFromUrl(url);
+		return await this.respondWithFile(file, request, reply);
+	}
+
+	/**
+	 * 解決済みのファイルを応答として返す
+	 */
+	private async respondWithFile(
+		file: ProxySource,
+		request: FastifyRequest<{ Params: { url: string }; Querystring: ProxyQuery }>,
+		reply: FastifyReply,
+	) {
 		if (file.kind === 'not-found') {
 			reply.code(404);
 			reply.header('Cache-Control', 'max-age=86400');
@@ -89,6 +111,128 @@ export class FileServerProxyHandler {
 			if (needsCleanup(file)) file.cleanup();
 			throw e;
 		}
+	}
+
+	/** file-type の検出に必要な先頭バイト数 (4100) を取得するための probe Range */
+	private static readonly RANGE_PROBE_HEADER = 'bytes=0-4099';
+
+	/**
+	 * 画像変換系のクエリが含まれるかどうかを返す
+	 */
+	private hasImageConversionQuery(query: ProxyQuery): boolean {
+		return 'emoji' in query || 'avatar' in query || 'static' in query || 'preview' in query || 'badge' in query || 'origin' in query;
+	}
+
+	/**
+	 * Range 要求を upstream へ転送し、部分取得で応答できるか試みる。
+	 * シークのたびに全量を再取得するのを防ぐための経路。
+	 *
+	 * 戻り値:
+	 * - 'handled': 部分応答を返し終えた
+	 * - DownloadedFileResult: upstream が Range を無視し全体を取得済みのため、そのファイルで通常処理を続行する
+	 * - undefined: 部分取得できないため、通常の全量取得フローに回す
+	 *
+	 * 安全上の前提:
+	 * - mime は常にサーバ側で先頭の実バイトから検出し、upstream の Content-Type は信用しない
+	 * - 部分応答の Content-Range は要求した範囲との厳密一致を検証し、合わなければ破棄する
+	 * - サイズ上限・タイムアウト・SSRF/リダイレクト対策は DownloadService の既存のものをそのまま使う
+	 * - 範囲外・不正な Range は 416 を投げる (errorHandler が fallback を処理する)
+	 */
+	private async tryServeUpstreamRange(
+		url: string,
+		rangeHeader: string,
+		request: FastifyRequest<{ Params: { url: string }; Querystring: ProxyQuery }>,
+		reply: FastifyReply,
+	): Promise<'handled' | DownloadedFileResult | undefined> {
+		// 単一の bytes レンジのみ扱う。解釈できない指定は全量取得フロー (ローカルで 416 判定) に回す
+		const rangeMatch = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader.trim());
+		if (rangeMatch == null || (rangeMatch[1] === '' && rangeMatch[2] === '')) return undefined;
+
+		// 先頭部分を取得し、種別判定と総量の把握を行う
+		let probe: DownloadedFileResult;
+		try {
+			probe = await this.fileResolver.downloadAndDetectTypeFromUrl(url, { range: FileServerProxyHandler.RANGE_PROBE_HEADER });
+		} catch {
+			// 取得失敗時は通常フローが同じエラーを処理する
+			return undefined;
+		}
+
+		// upstream が Range を無視した場合、probe は全量取得済みのファイルになる
+		if (probe.statusCode !== 206 || probe.contentRange == null) {
+			if (probe.statusCode === 200) return probe;
+			probe.cleanup();
+			return undefined;
+		}
+
+		const probeRange = /^bytes 0-(\d+)\/(\d+)$/.exec(probe.contentRange);
+		const total = probeRange != null ? parseInt(probeRange[2], 10) : NaN;
+		if (!(total > 0)) {
+			probe.cleanup();
+			return undefined;
+		}
+
+		// 動画・音声のみ部分配信の対象にする (それ以外は全量取得フローで画像変換等を行う)
+		const probeMime = probe.mime;
+		const probeExt = probe.ext;
+		probe.cleanup(); // 種別判定が済んだので probe は破棄する
+		const isPassthroughMedia = probeMime.startsWith('video/') || probeMime.startsWith('audio/');
+		if (!isPassthroughMedia || !FILE_TYPE_BROWSERSAFE.includes(probeMime)) {
+			return undefined;
+		}
+
+		const rejectRange = (): never => {
+			if (!('fallback' in (request.query ?? {}))) {
+				reply.header('Content-Range', `bytes */${total}`);
+			}
+			throw new StatusError('Requested Range Not Satisfiable', 416);
+		};
+
+		// 総量が分かったので、要求範囲をローカルで検証・解釈する (この時点では upstream を再取得しない)
+		let start: number;
+		let end: number;
+		if (rangeMatch[1] === '') {
+			// サフィックス Range (bytes=-N): 末尾 N バイト
+			const suffixLength = parseInt(rangeMatch[2], 10);
+			if (Number.isNaN(suffixLength) || suffixLength <= 0) rejectRange();
+			start = Math.max(0, total - suffixLength);
+			end = total - 1;
+		} else {
+			start = parseInt(rangeMatch[1], 10);
+			end = rangeMatch[2] !== '' ? parseInt(rangeMatch[2], 10) : total - 1;
+			if (Number.isNaN(start) || start < 0 || start >= total) rejectRange();
+			if (Number.isNaN(end) || end >= total) end = total - 1;
+			if (end < start) rejectRange();
+		}
+
+		const expectedContentRange = `bytes ${start}-${end}/${total}`;
+		const partial = await this.fileResolver.downloadAndDetectTypeFromUrl(url, { range: `bytes=${start}-${end}` });
+
+		// upstream が Range を無視した場合は全量取得済みなので、そのファイルで通常処理に回す
+		if (partial.statusCode === 200) return partial;
+
+		// 応答が要求どおりの範囲であることを厳密に検証する。合わなければ破棄して全量取得フローに回す
+		if (partial.statusCode !== 206 || partial.contentRange !== expectedContentRange) {
+			partial.cleanup();
+			return undefined;
+		}
+
+		const stream = fs.createReadStream(partial.path);
+		attachStreamCleanup(stream, partial.cleanup);
+
+		reply.code(206);
+		reply.header('Content-Range', expectedContentRange);
+		reply.header('Accept-Ranges', 'bytes');
+		reply.header('Content-Length', end - start + 1);
+		reply.header('Content-Type', probeMime);
+		reply.header('Cache-Control', 'max-age=31536000, immutable');
+		reply.header('Content-Disposition',
+			contentDisposition(
+				'inline',
+				correctFilename(partial.filename, probeExt),
+			),
+		);
+		reply.send(stream);
+		return 'handled';
 	}
 
 	/**

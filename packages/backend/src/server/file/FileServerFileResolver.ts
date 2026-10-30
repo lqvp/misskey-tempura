@@ -18,6 +18,10 @@ export type DownloadedFileResult = {
 	cleanup: () => void;
 	filename: string;
 	size: number;
+	/** upstream の応答ステータス (Range 転送時の判定に使用する) */
+	statusCode: number;
+	/** upstream が返した Content-Range (Range 転送時のみ存在する) */
+	contentRange?: string;
 };
 
 export type FileResolveResult =
@@ -52,10 +56,10 @@ export class FileServerFileResolver {
 		private internalStorageService: InternalStorageService,
 	) {}
 
-	public async downloadAndDetectTypeFromUrl(url: string): Promise<DownloadedFileResult> {
+	public async downloadAndDetectTypeFromUrl(url: string, opts?: { range?: string }): Promise<DownloadedFileResult> {
 		const [path, cleanup] = await createTemp();
 		try {
-			const { filename } = await this.downloadService.downloadUrl(url, path);
+			const { filename, statusCode, contentRange } = await this.downloadService.downloadUrl(url, path, opts);
 
 			const { mime, ext } = await this.fileInfoService.detectType(path);
 
@@ -65,6 +69,8 @@ export class FileServerFileResolver {
 				path, cleanup,
 				filename,
 				size: (await fs.promises.stat(path)).size,
+				statusCode,
+				contentRange,
 			};
 		} catch (e) {
 			cleanup();

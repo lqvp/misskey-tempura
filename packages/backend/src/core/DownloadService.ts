@@ -34,8 +34,10 @@ export class DownloadService {
 	}
 
 	@bindThis
-	public async downloadUrl(url: string, path: string): Promise<{
+	public async downloadUrl(url: string, path: string, opts?: { range?: string }): Promise<{
 		filename: string;
+		statusCode: number;
+		contentRange?: string;
 	}> {
 		this.logger.info(`Downloading ${chalk.cyan(url)} to ${chalk.cyanBright(path)} ...`);
 
@@ -46,9 +48,13 @@ export class DownloadService {
 		const urlObj = new URL(url);
 		let filename = urlObj.pathname.split('/').pop() ?? 'untitled';
 
+		let statusCode = 200;
+		let contentRange: string | undefined;
+
 		const req = got.stream(url, {
 			headers: {
 				'User-Agent': this.config.userAgent,
+				...(opts?.range ? { Range: opts.range } : {}),
 			},
 			timeout: {
 				lookup: timeout,
@@ -83,6 +89,9 @@ export class DownloadService {
 			},
 			enableUnixSockets: false,
 		}).on('response', (res: Got.Response) => {
+			statusCode = res.statusCode;
+			const upstreamContentRange = res.headers['content-range'];
+			contentRange = typeof upstreamContentRange === 'string' ? upstreamContentRange : undefined;
 			const contentLength = res.headers['content-length'];
 			if (contentLength != null) {
 				const size = Number(contentLength);
@@ -124,6 +133,8 @@ export class DownloadService {
 
 		return {
 			filename,
+			statusCode,
+			contentRange,
 		};
 	}
 
