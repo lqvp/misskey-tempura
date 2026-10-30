@@ -203,3 +203,52 @@ describe('MkMediaVideo referrerpolicy', () => {
 		});
 	});
 });
+
+describe('MkMediaList referrerpolicy (実コンポーネント結合)', () => {
+	const renderMediaList = async (props: Record<string, unknown>): Promise<RenderResult> => {
+		// このファイルではMkTwitterEmbed検証用にMkMediaListをモックしているため、実体を取り出す
+		const { default: RealMkMediaList } = await vi.importActual<typeof import('@/components/MkMediaList.vue')>('@/components/MkMediaList.vue');
+		return render(RealMkMediaList, {
+			props: {
+				mediaList: [{
+					id: 'xxxxxxxx',
+					createdAt: (new Date()).toJSON(),
+					isSensitive: false,
+					name: 'example.png',
+					thumbnailUrl: 'https://pbs.twimg.com/media/AAAA.jpg',
+					url: 'https://pbs.twimg.com/media/AAAA.jpg',
+					type: 'image/jpeg',
+					size: 1,
+					md5: '15eca7fba0480996e2245f5185bf39f2',
+					blurhash: null,
+					comment: null,
+					properties: {},
+				} as Misskey.entities.DriveFile],
+				...props,
+			},
+			global: { directives, components },
+		});
+	};
+
+	afterEach(() => {
+		cleanup();
+	});
+
+	test('referrerpolicy 指定がimg要素まで届く', async () => {
+		const result = await renderMediaList({ referrerpolicy: 'no-referrer' });
+		await waitFor(() => {
+			const img = result.container.querySelector('img');
+			expect(img).not.toBeNull();
+			expect(img!.getAttribute('referrerpolicy')).toBe('no-referrer');
+		});
+	});
+
+	test('referrerpolicy 未指定時はimg要素に属性が出ない', async () => {
+		const result = await renderMediaList({});
+		await waitFor(() => {
+			const img = result.container.querySelector('img');
+			expect(img).not.toBeNull();
+			expect(img!.getAttribute('referrerpolicy')).toBeNull();
+		});
+	});
+});
