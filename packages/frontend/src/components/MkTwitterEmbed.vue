@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <div v-else-if="tweetData" :class="$style.tweetContainer">
 	<a :href="`https://twitter.com/${tweetData.author.screen_name}`" target="_blank" rel="noopener noreferrer" :class="$style.headerLink">
 		<header :class="$style.header">
-			<img :src="tweetData.author.avatar_url" :alt="`${tweetData.author.name}'s avatar`" :class="$style.avatar"/>
+			<img :src="tweetData.author.avatar_url" referrerpolicy="no-referrer" :alt="`${tweetData.author.name}'s avatar`" :class="$style.avatar"/>
 			<div :class="$style.authorInfo">
 				<span :class="$style.authorName">{{ tweetData.author.name }}</span>
 				<span :class="$style.authorScreenName">@{{ tweetData.author.screen_name }}</span>
@@ -26,13 +26,13 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</a>
 	<Mfm v-if="tweetData.text && mfmTweetText" :text="mfmTweetText" :class="$style.body"/>
 
-	<MkMediaList v-if="driveFiles.length > 0" :mediaList="driveFiles" :class="$style.mediaContainer"/>
+	<MkMediaList v-if="driveFiles.length > 0" :mediaList="driveFiles" referrerpolicy="no-referrer" :class="$style.mediaContainer"/>
 
 	<!-- Quoted Tweet Section -->
 	<div v-if="tweetData.quote" :class="$style.quoteContainer">
 		<a :href="`https://twitter.com/${tweetData.quote.author.screen_name}`" target="_blank" rel="noopener noreferrer" :class="$style.headerLink">
 			<header :class="$style.quoteHeader">
-				<img :src="tweetData.quote.author.avatar_url" :alt="`${tweetData.quote.author.name}'s avatar`" :class="$style.quoteAvatar"/>
+				<img :src="tweetData.quote.author.avatar_url" referrerpolicy="no-referrer" :alt="`${tweetData.quote.author.name}'s avatar`" :class="$style.quoteAvatar"/>
 				<div :class="$style.quoteAuthorInfo">
 					<span :class="$style.quoteAuthorName">{{ tweetData.quote.author.name }}</span>
 					<span :class="$style.quoteAuthorScreenName">@{{ tweetData.quote.author.screen_name }}</span>
@@ -43,7 +43,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</header>
 		</a>
 		<Mfm v-if="tweetData.quote?.text && mfmQuoteText" :text="mfmQuoteText" :class="$style.quoteBody"/>
-		<MkMediaList v-if="quoteDriveFiles.length > 0" :mediaList="quoteDriveFiles" :class="$style.mediaContainer"/>
+		<MkMediaList v-if="quoteDriveFiles.length > 0" :mediaList="quoteDriveFiles" referrerpolicy="no-referrer" :class="$style.mediaContainer"/>
 		<div v-if="tweetData.quote.community_note" :class="$style.communityNote">
 			<div :class="$style.communityNoteHeader">
 				<i class="ti ti-users-group"></i>

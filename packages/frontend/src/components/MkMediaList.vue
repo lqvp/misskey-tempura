@@ -33,6 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					:ref="(comp) => { mediaComponents.set(media.id, comp as InstanceType<typeof XVideo> | null); }"
 					:class="$style.media"
 					:video="media"
+					:referrerpolicy="referrerpolicy"
 					@mediaClick="onMediaClick(media)"
 				/>
 				<XImage
@@ -44,6 +45,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					:class="$style.media"
 					:image="media"
 					:raw="raw"
+					:referrerpolicy="referrerpolicy"
 					@mediaClick="onMediaClick(media)"
 				/>
 			</template>
@@ -70,6 +72,8 @@ const props = defineProps<{
 	mediaList: Misskey.entities.DriveFile[];
 	user?: Misskey.entities.User | null; // DriveFileのuserはnullになることがある。その場合に使用する所有者情報
 	raw?: boolean;
+	// 第三者のRefererを拒否する外部CDNのメディアを直接読み込む場合に指定する
+	referrerpolicy?: 'no-referrer';
 }>();
 
 const gallery = useTemplateRef('gallery');
@@ -161,6 +165,7 @@ async function openGallery(id?: string) {
 		type: getType(media.type),
 		url: media.url,
 		thumbnailUrl: media.thumbnailUrl,
+		referrerPolicy: props.referrerpolicy,
 		width: media.properties.width,
 		height: media.properties.height,
 		filename: media.name,

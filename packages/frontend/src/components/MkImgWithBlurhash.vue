@@ -31,6 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			:width="imgWidth ?? undefined"
 			:class="$style.img"
 			:src="src ?? undefined"
+			:referrerpolicy="referrerpolicy ?? undefined"
 			:title="title ?? undefined"
 			:alt="alt ?? undefined"
 			:data-marker="marker ?? undefined"
@@ -50,6 +51,7 @@ import { prefer } from '@/preferences.js';
 import MkBlurhash from '@/components/MkBlurhash.vue';
 
 const props = withDefaults(defineProps<{
+	referrerpolicy?: 'no-referrer';
 	transition?: {
 		duration?: number | { enter: number; leave: number; };
 		enterActiveClass?: string;
