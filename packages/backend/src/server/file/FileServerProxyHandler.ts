@@ -185,12 +185,15 @@ export class FileServerProxyHandler {
 		const probeExt = probe.ext;
 		// probe と本体は別リクエストなので、同一リソースであることを If-Range で拘束する。
 		// strong validator のみ使う。weak ETag は If-Range の条件として無効。
-		// Last-Modified は暗黙に weak (RFC 9110 §8.8.2.2) のため、応答の Date が
-		// Last-Modified より 1 秒以上新しい場合に限り採用する
+		// Last-Modified は暗黙に weak (RFC 9110 §8.8.2.2)。client が If-Range に使うには
+		// 「Date が Last-Modified より 1 秒以上新しい」ことに加えて、「同一 clock 由来と
+		// 信じる理由がある」か「clock ずれを問題にしなくてよいほど差がある」ことが必要。
+		// 任意の origin に同一 clock の根拠はないため、旧仕様が要求していた 60 秒
+		// (httpwg/http-core#510 参照) を「十分な差」として採用する
 		const strongEtag = probe.etag != null && !probe.etag.startsWith('W/') ? probe.etag : undefined;
 		const probeDateMs = probe.date != null ? Date.parse(probe.date) : NaN;
 		const probeLastModifiedMs = probe.lastModified != null ? Date.parse(probe.lastModified) : NaN;
-		const validLastModified = !Number.isNaN(probeDateMs) && !Number.isNaN(probeLastModifiedMs) && probeDateMs - probeLastModifiedMs >= 1000
+		const validLastModified = !Number.isNaN(probeDateMs) && !Number.isNaN(probeLastModifiedMs) && probeDateMs - probeLastModifiedMs >= 60_000
 			? probe.lastModified
 			: undefined;
 		const ifRange = strongEtag ?? validLastModified;

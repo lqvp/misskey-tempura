@@ -191,11 +191,32 @@ async function createRemoteFileServer() {
 		return reply.send(webmBuffer);
 	});
 
-	// Last-Modified のみを返す Range 対応 upstream (Date との差が 1 秒以上あり strong 条件を満たす)
+	// Last-Modified のみを返す Range 対応 upstream (Date との差が 60 秒以上あり strong 条件を満たす)
 	const lastModifiedHits = { count: 0 };
 	server.get('/dummy-lastmodified.webm', async (request, reply) => {
 		lastModifiedHits.count++;
 		reply.header('Last-Modified', 'Mon, 26 Oct 2026 20:27:11 GMT');
+		const m = /^bytes=(\d+)-(\d*)$/.exec(request.headers.range ?? '');
+		if (m) {
+			const start = parseInt(m[1], 10);
+			const end = m[2] ? Math.min(parseInt(m[2], 10), webmBuffer.length - 1) : webmBuffer.length - 1;
+			const body = webmBuffer.subarray(start, end + 1);
+			reply.code(206);
+			reply.header('Content-Type', 'video/webm');
+			reply.header('Content-Range', `bytes ${start}-${end}/${webmBuffer.length}`);
+			reply.header('Content-Length', String(body.length));
+			return reply.send(body);
+		}
+		reply.header('Content-Type', 'video/webm');
+		reply.header('Content-Length', String(webmBuffer.length));
+		return reply.send(webmBuffer);
+	});
+
+	// Last-Modified は返すが新しすぎる (Date との差が 60 秒未満で strong 条件を満たさない) upstream
+	const freshLastModifiedHits = { count: 0 };
+	server.get('/dummy-freshlastmodified.webm', async (request, reply) => {
+		freshLastModifiedHits.count++;
+		reply.header('Last-Modified', new Date(Date.now() - 5_000).toUTCString());
 		const m = /^bytes=(\d+)-(\d*)$/.exec(request.headers.range ?? '');
 		if (m) {
 			const start = parseInt(m[1], 10);
@@ -262,6 +283,7 @@ async function createRemoteFileServer() {
 		changingWebmUrl: `${baseUrl}/dummy-changing.webm`,
 		weakEtagWebmUrl: `${baseUrl}/dummy-weaketag.webm`,
 		lastModifiedWebmUrl: `${baseUrl}/dummy-lastmodified.webm`,
+		freshLastModifiedWebmUrl: `${baseUrl}/dummy-freshlastmodified.webm`,
 		lyingWebmUrl: `${baseUrl}/dummy-lying.webm`,
 		rangeHits,
 		badRangeHits,
@@ -269,6 +291,7 @@ async function createRemoteFileServer() {
 		changingHits,
 		weakEtagHits,
 		lastModifiedHits,
+		freshLastModifiedHits,
 		lyingHits,
 	};
 }
@@ -304,6 +327,8 @@ describe('FileServerService', () => {
 	let remoteLyingWebmUrl: string;
 	let remoteLastModifiedHits: { count: number };
 	let remoteLyingHits: { count: number };
+	let remoteFreshLastModifiedWebmUrl: string;
+	let remoteFreshLastModifiedHits: { count: number };
 	const storedPaths: string[] = [];
 	let createdFallbackAssets = false;
 	let fallbackAssetsDir = '';
@@ -440,6 +465,8 @@ describe('FileServerService', () => {
 		remoteLyingWebmUrl = remoteServerInfo.lyingWebmUrl;
 		remoteLastModifiedHits = remoteServerInfo.lastModifiedHits;
 		remoteLyingHits = remoteServerInfo.lyingHits;
+		remoteFreshLastModifiedWebmUrl = remoteServerInfo.freshLastModifiedWebmUrl;
+		remoteFreshLastModifiedHits = remoteServerInfo.freshLastModifiedHits;
 
 		fallbackAssetsDir = path.resolve('src/server/file/assets');
 		if (!fs.existsSync(fallbackAssetsDir)) {
@@ -1327,6 +1354,24 @@ describe('FileServerService', () => {
 			expect(res.rawPayload.equals(webmBuffer.subarray(0, 4))).toBe(true);
 			// probe + 部分取得の2リクエスト
 			expect(remoteLastModifiedHits.count - beforeCount).toBe(2);
+		});
+
+		test('GET /proxy/:url* Last-Modified が新しすぎる upstream では部分配信せず全量取得にフォールバックする', async () => {
+			const beforeCount = remoteFreshLastModifiedHits.count;
+			const res = await fastify.inject({
+				method: 'GET',
+				url: `/proxy/any?url=${encodeURIComponent(remoteFreshLastModifiedWebmUrl)}`,
+				headers: {
+					'user-agent': 'Mozilla/5.0',
+					range: 'bytes=0-3',
+				},
+			});
+
+			expect(res.statusCode).toBe(206);
+			expect(res.headers['content-range']).toBe(`bytes 0-3/${webmSize}`);
+			expect(res.rawPayload.equals(webmBuffer.subarray(0, 4))).toBe(true);
+			// Date との差が 60 秒未満の Last-Modified は strong 条件を満たさないため probe + 全量取得の2リクエスト
+			expect(remoteFreshLastModifiedHits.count - beforeCount).toBe(2);
 		});
 
 		test('GET /proxy/:url* 本体応答の validator が probe と異なれば全量取得にフォールバックする', async () => {
