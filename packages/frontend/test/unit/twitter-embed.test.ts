@@ -23,6 +23,8 @@ const fixture = {
 		text: 'sample text',
 		created_at: 'Fri Oct 30 12:00:00 +0000 2026',
 		created_timestamp: 1761825600,
+		replying_to: 'replyuser',
+		replying_to_status: '999999999999999999',
 		author: {
 			name: 'Sample User',
 			screen_name: 'sampleuser',
@@ -35,6 +37,7 @@ const fixture = {
 					url: 'https://pbs.twimg.com/media/AAAA.jpg',
 					width: 800,
 					height: 600,
+					altText: 'sample alt text',
 				},
 				{
 					type: 'video',
@@ -107,6 +110,19 @@ describe('MkTwitterEmbed', () => {
 		expect(mediaList[0].thumbnailUrl).toBe('https://pbs.twimg.com/media/AAAA.jpg');
 		expect(mediaList[1].url).toBe('https://video.twimg.com/amplify_video/1/vid/640x360/BBBB.mp4?tag=1');
 		expect(mediaList[1].thumbnailUrl).toBe('https://pbs.twimg.com/amplify_video_thumb/1/img/CCCC.jpg');
+	});
+
+	test('メディアのaltTextはDriveFileのcommentとして渡る (ALT表示に使われる)', async () => {
+		await renderEmbed();
+		const mediaList = mediaListPropsList[0].mediaList as Misskey.entities.DriveFile[];
+		expect(mediaList[0].comment).toBe('sample alt text');
+	});
+
+	test('返信ツイートでは返信先へのリンクが表示される', async () => {
+		const result = await renderEmbed();
+		const link = result.container.querySelector<HTMLAnchorElement>('a[href="https://twitter.com/replyuser/status/999999999999999999"]');
+		expect(link).not.toBeNull();
+		expect(link!.textContent).toContain('@replyuser');
 	});
 });
 

@@ -24,6 +24,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</a>
 		</header>
 	</a>
+	<a v-if="tweetData.replying_to" :href="tweetData.replying_to_status ? `https://twitter.com/${tweetData.replying_to}/status/${tweetData.replying_to_status}` : `https://twitter.com/${tweetData.replying_to}`" target="_blank" rel="noopener noreferrer" :class="$style.replyingTo">
+		<i class="ti ti-arrow-back-up"></i> @{{ tweetData.replying_to }}
+	</a>
 	<Mfm v-if="tweetData.text && mfmTweetText" :text="mfmTweetText" :class="$style.body"/>
 
 	<MkMediaList v-if="driveFiles.length > 0" :mediaList="driveFiles" referrerpolicy="no-referrer" :class="$style.mediaContainer"/>
@@ -136,6 +139,7 @@ interface FxTweetMediaVideo {
 	height: number;
 	format?: string;
 	duration_millis?: number;
+	altText?: string;
 }
 
 interface FxCommunityNoteEntityRef {
@@ -173,6 +177,8 @@ interface FxTweet {
 	possibly_sensitive?: boolean;
 	is_note_tweet: boolean;
 	community_note: FxCommunityNote | null;
+	replying_to?: string | null;
+	replying_to_status?: string | null;
 	id_str?: string;
 	replies?: number;
 	retweets?: number;
@@ -305,7 +311,7 @@ function mapToDriveFile(media: FxTweetMedia, tweet: FxTweet | null): Misskey.ent
 		},
 		url: media.url,
 		thumbnailUrl: isVideo ? (media as FxTweetMediaVideo).thumbnail_url : media.url,
-		comment: null,
+		comment: media.altText ?? null,
 		folderId: null,
 		userId: null,
 		user: null,
@@ -335,6 +341,18 @@ function mapToDriveFile(media: FxTweetMedia, tweet: FxTweet | null): Misskey.ent
 	text-decoration: none;
 	color: inherit;
 	display: block;
+}
+
+.replyingTo {
+	display: inline-block;
+	font-size: 0.85em;
+	color: var(--MI_THEME-fgSub);
+	text-decoration: none;
+	margin-bottom: 4px;
+
+	&:hover {
+		text-decoration: underline;
+	}
 }
 
 .header {
