@@ -22,6 +22,10 @@ export type DownloadedFileResult = {
 	statusCode: number;
 	/** upstream が返した Content-Range (Range 転送時のみ存在する) */
 	contentRange?: string;
+	/** upstream が返した ETag (If-Range による同一性の拘束に使用する) */
+	etag?: string;
+	/** upstream が返した Last-Modified (If-Range による同一性の拘束に使用する) */
+	lastModified?: string;
 };
 
 export type FileResolveResult =
@@ -56,10 +60,10 @@ export class FileServerFileResolver {
 		private internalStorageService: InternalStorageService,
 	) {}
 
-	public async downloadAndDetectTypeFromUrl(url: string, opts?: { range?: string }): Promise<DownloadedFileResult> {
+	public async downloadAndDetectTypeFromUrl(url: string, opts?: { range?: string; ifRange?: string }): Promise<DownloadedFileResult> {
 		const [path, cleanup] = await createTemp();
 		try {
-			const { filename, statusCode, contentRange } = await this.downloadService.downloadUrl(url, path, opts);
+			const { filename, statusCode, contentRange, etag, lastModified } = await this.downloadService.downloadUrl(url, path, opts);
 
 			const { mime, ext } = await this.fileInfoService.detectType(path);
 
@@ -71,6 +75,8 @@ export class FileServerFileResolver {
 				size: (await fs.promises.stat(path)).size,
 				statusCode,
 				contentRange,
+				etag,
+				lastModified,
 			};
 		} catch (e) {
 			cleanup();

@@ -135,7 +135,10 @@ export class FileServerProxyHandler {
 	 *
 	 * 安全上の前提:
 	 * - mime は常にサーバ側で先頭の実バイトから検出し、upstream の Content-Type は信用しない
-	 * - 部分応答の Content-Range は要求した範囲との厳密一致を検証し、合わなければ破棄する
+	 * - probe と本体は別リクエストのため、ETag/Last-Modified を If-Range として送り同一リソースであることを拘束する
+	 *   (validator を提供しない upstream では部分配信を行わず全量取得フローに回す)
+	 * - 部分応答の Content-Range と実バイト数は要求した範囲との厳密一致を検証し、合わなければ破棄する
+	 * - 部分応答には X-Content-Type-Options: nosniff を付け、判定済み mime からのすり替えを無効化する
 	 * - サイズ上限・タイムアウト・SSRF/リダイレクト対策は DownloadService の既存のものをそのまま使う
 	 * - 範囲外・不正な Range は 416 を投げる (errorHandler が fallback を処理する)
 	 */
@@ -175,9 +178,12 @@ export class FileServerProxyHandler {
 		// 動画・音声のみ部分配信の対象にする (それ以外は全量取得フローで画像変換等を行う)
 		const probeMime = probe.mime;
 		const probeExt = probe.ext;
+		// probe と本体は別リクエストなので、同一リソースであることを If-Range で拘束する。
+		// validator を提供しない upstream では同一性を確認できないため部分配信を諦める
+		const ifRange = probe.etag ?? probe.lastModified;
 		probe.cleanup(); // 種別判定が済んだので probe は破棄する
 		const isPassthroughMedia = probeMime.startsWith('video/') || probeMime.startsWith('audio/');
-		if (!isPassthroughMedia || !FILE_TYPE_BROWSERSAFE.includes(probeMime)) {
+		if (!isPassthroughMedia || !FILE_TYPE_BROWSERSAFE.includes(probeMime) || ifRange == null) {
 			return undefined;
 		}
 
@@ -206,7 +212,7 @@ export class FileServerProxyHandler {
 		}
 
 		const expectedContentRange = `bytes ${start}-${end}/${total}`;
-		const partial = await this.fileResolver.downloadAndDetectTypeFromUrl(url, { range: `bytes=${start}-${end}` });
+		const partial = await this.fileResolver.downloadAndDetectTypeFromUrl(url, { range: `bytes=${start}-${end}`, ifRange });
 
 		// upstream が Range を無視した場合は全量取得済みなので、そのファイルで通常処理に回す
 		if (partial.statusCode === 200) return partial;
@@ -226,6 +232,8 @@ export class FileServerProxyHandler {
 		reply.header('Accept-Ranges', 'bytes');
 		reply.header('Content-Length', end - start + 1);
 		reply.header('Content-Type', probeMime);
+		// 判定済みの mime 以外として解釈されることを防ぐ (probe とは別応答のバイトを配信するため)
+		reply.header('X-Content-Type-Options', 'nosniff');
 		reply.header('Cache-Control', 'max-age=31536000, immutable');
 		reply.header('Content-Disposition',
 			contentDisposition(

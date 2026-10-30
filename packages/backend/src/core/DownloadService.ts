@@ -34,10 +34,12 @@ export class DownloadService {
 	}
 
 	@bindThis
-	public async downloadUrl(url: string, path: string, opts?: { range?: string }): Promise<{
+	public async downloadUrl(url: string, path: string, opts?: { range?: string; ifRange?: string }): Promise<{
 		filename: string;
 		statusCode: number;
 		contentRange?: string;
+		etag?: string;
+		lastModified?: string;
 	}> {
 		this.logger.info(`Downloading ${chalk.cyan(url)} to ${chalk.cyanBright(path)} ...`);
 
@@ -50,11 +52,14 @@ export class DownloadService {
 
 		let statusCode = 200;
 		let contentRange: string | undefined;
+		let etag: string | undefined;
+		let lastModified: string | undefined;
 
 		const req = got.stream(url, {
 			headers: {
 				'User-Agent': this.config.userAgent,
 				...(opts?.range ? { Range: opts.range } : {}),
+				...(opts?.ifRange ? { 'If-Range': opts.ifRange } : {}),
 			},
 			timeout: {
 				lookup: timeout,
@@ -92,6 +97,10 @@ export class DownloadService {
 			statusCode = res.statusCode;
 			const upstreamContentRange = res.headers['content-range'];
 			contentRange = typeof upstreamContentRange === 'string' ? upstreamContentRange : undefined;
+			const upstreamEtag = res.headers['etag'];
+			etag = typeof upstreamEtag === 'string' ? upstreamEtag : undefined;
+			const upstreamLastModified = res.headers['last-modified'];
+			lastModified = typeof upstreamLastModified === 'string' ? upstreamLastModified : undefined;
 			const contentLength = res.headers['content-length'];
 			if (contentLength != null) {
 				const size = Number(contentLength);
@@ -135,6 +144,8 @@ export class DownloadService {
 			filename,
 			statusCode,
 			contentRange,
+			etag,
+			lastModified,
 		};
 	}
 
