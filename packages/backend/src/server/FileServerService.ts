@@ -118,7 +118,8 @@ export class FileServerService {
 		reply.header('Cache-Control', 'max-age=300');
 
 		if (request.query && 'fallback' in request.query) {
-			return reply.sendFile('/dummy.png', this.assets);
+			// ダミー画像は元リクエストの Range を引き継がない (@fastify/static が Range を処理して 416/206 になるのを防ぐ)
+			return reply.sendFile('/dummy.png', this.assets, { acceptRanges: false });
 		}
 
 		if (err instanceof StatusError && (err.statusCode === 302 || err.isClientError)) {

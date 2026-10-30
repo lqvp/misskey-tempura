@@ -60,10 +60,10 @@ export class FileServerProxyHandler {
 		const rangeHeader = request.headers.range;
 		const isInternalFileUrl = url.startsWith(`${this.config.url}/files/`);
 		if (typeof rangeHeader === 'string' && !isInternalFileUrl && !this.hasImageConversionQuery(request.query)) {
-			const partialOutcome = await this.tryServeUpstreamRange(url, rangeHeader, request, reply);
-			if (partialOutcome === 'handled') return;
-			if (partialOutcome !== undefined) {
-				return await this.respondWithFile(partialOutcome, request, reply);
+			const outcome = await this.tryServeUpstreamRange(url, rangeHeader, request, reply);
+			if (outcome.kind === 'partial') return outcome.stream;
+			if (outcome.kind === 'reuse') {
+				return await this.respondWithFile(outcome.file, request, reply);
 			}
 		}
 
@@ -83,7 +83,8 @@ export class FileServerProxyHandler {
 		if (file.kind === 'not-found') {
 			reply.code(404);
 			reply.header('Cache-Control', 'max-age=86400');
-			return reply.sendFile('/dummy.png', this.assetsPath);
+			// ダミー画像は元リクエストの Range を引き継がない (@fastify/static が Range を処理して 416/206 になるのを防ぐ)
+			return reply.sendFile('/dummy.png', this.assetsPath, { acceptRanges: false });
 		}
 
 		if (file.kind === 'unavailable') {
@@ -129,9 +130,9 @@ export class FileServerProxyHandler {
 	 * シークのたびに全量を再取得するのを防ぐための経路。
 	 *
 	 * 戻り値:
-	 * - 'handled': 部分応答を返し終えた
-	 * - DownloadedFileResult: upstream が Range を無視し全体を取得済みのため、そのファイルで通常処理を続行する
-	 * - undefined: 部分取得できないため、通常の全量取得フローに回す
+	 * - kind 'partial': 部分応答のストリーム (ヘッダー・ステータスは設定済み。ハンドラの戻り値として返すこと)
+	 * - kind 'reuse': upstream が Range を無視し全体を取得済みのため、そのファイルで通常処理を続行する
+	 * - kind 'fallback': 部分取得できないため、通常の全量取得フローに回す
 	 *
 	 * 安全上の前提:
 	 * - mime は常にサーバ側で先頭の実バイトから検出し、upstream の Content-Type は信用しない
@@ -147,10 +148,14 @@ export class FileServerProxyHandler {
 		rangeHeader: string,
 		request: FastifyRequest<{ Params: { url: string }; Querystring: ProxyQuery }>,
 		reply: FastifyReply,
-	): Promise<'handled' | DownloadedFileResult | undefined> {
+	): Promise<
+		| { kind: 'partial'; stream: fs.ReadStream }
+		| { kind: 'reuse'; file: DownloadedFileResult }
+		| { kind: 'fallback' }
+	> {
 		// 単一の bytes レンジのみ扱う。解釈できない指定は全量取得フロー (ローカルで 416 判定) に回す
 		const rangeMatch = /^bytes=(\d*)-(\d*)$/.exec(rangeHeader.trim());
-		if (rangeMatch == null || (rangeMatch[1] === '' && rangeMatch[2] === '')) return undefined;
+		if (rangeMatch == null || (rangeMatch[1] === '' && rangeMatch[2] === '')) return { kind: 'fallback' };
 
 		// 先頭部分を取得し、種別判定と総量の把握を行う
 		let probe: DownloadedFileResult;
@@ -158,21 +163,21 @@ export class FileServerProxyHandler {
 			probe = await this.fileResolver.downloadAndDetectTypeFromUrl(url, { range: FileServerProxyHandler.RANGE_PROBE_HEADER });
 		} catch {
 			// 取得失敗時は通常フローが同じエラーを処理する
-			return undefined;
+			return { kind: 'fallback' };
 		}
 
 		// upstream が Range を無視した場合、probe は全量取得済みのファイルになる
 		if (probe.statusCode !== 206 || probe.contentRange == null) {
-			if (probe.statusCode === 200) return probe;
+			if (probe.statusCode === 200) return { kind: 'reuse', file: probe };
 			probe.cleanup();
-			return undefined;
+			return { kind: 'fallback' };
 		}
 
 		const probeRange = /^bytes 0-(\d+)\/(\d+)$/.exec(probe.contentRange);
 		const total = probeRange != null ? parseInt(probeRange[2], 10) : NaN;
 		if (!(total > 0)) {
 			probe.cleanup();
-			return undefined;
+			return { kind: 'fallback' };
 		}
 
 		// 動画・音声のみ部分配信の対象にする (それ以外は全量取得フローで画像変換等を行う)
@@ -193,7 +198,7 @@ export class FileServerProxyHandler {
 		probe.cleanup(); // 種別判定が済んだので probe は破棄する
 		const isPassthroughMedia = probeMime.startsWith('video/') || probeMime.startsWith('audio/');
 		if (!isPassthroughMedia || !FILE_TYPE_BROWSERSAFE.includes(probeMime) || ifRange == null) {
-			return undefined;
+			return { kind: 'fallback' };
 		}
 
 		const rejectRange = (): never => {
@@ -224,7 +229,7 @@ export class FileServerProxyHandler {
 		const partial = await this.fileResolver.downloadAndDetectTypeFromUrl(url, { range: `bytes=${start}-${end}`, ifRange });
 
 		// upstream が Range を無視した場合は全量取得済みなので、そのファイルで通常処理に回す
-		if (partial.statusCode === 200) return partial;
+		if (partial.statusCode === 200) return { kind: 'reuse', file: partial };
 
 		// 応答が要求どおりの範囲であることを厳密に検証する。合わなければ破棄して全量取得フローに回す
 		// (Content-Range の宣言と実際に取得できたバイト数に加え、リダイレクト解決後の最終URLが
@@ -242,7 +247,7 @@ export class FileServerProxyHandler {
 			!receivedValidatorMatches
 		) {
 			partial.cleanup();
-			return undefined;
+			return { kind: 'fallback' };
 		}
 
 		const stream = fs.createReadStream(partial.path);
@@ -262,8 +267,9 @@ export class FileServerProxyHandler {
 				correctFilename(partial.filename, probeExt),
 			),
 		);
-		reply.send(stream);
-		return 'handled';
+		// fastify は reply.send(stream) かつ Content-Length 指定で空応答を返すことがあるため、
+		// ストリームはハンドラの戻り値として返す
+		return { kind: 'partial', stream };
 	}
 
 	/**
