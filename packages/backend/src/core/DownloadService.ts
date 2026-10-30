@@ -40,6 +40,8 @@ export class DownloadService {
 		contentRange?: string;
 		etag?: string;
 		lastModified?: string;
+		/** リダイレクト解決後の最終URL (リクエスト間の同一性確認に使用する) */
+		finalUrl?: string;
 	}> {
 		this.logger.info(`Downloading ${chalk.cyan(url)} to ${chalk.cyanBright(path)} ...`);
 
@@ -54,6 +56,7 @@ export class DownloadService {
 		let contentRange: string | undefined;
 		let etag: string | undefined;
 		let lastModified: string | undefined;
+		let finalUrl: string | undefined;
 
 		const req = got.stream(url, {
 			headers: {
@@ -101,6 +104,7 @@ export class DownloadService {
 			etag = typeof upstreamEtag === 'string' ? upstreamEtag : undefined;
 			const upstreamLastModified = res.headers['last-modified'];
 			lastModified = typeof upstreamLastModified === 'string' ? upstreamLastModified : undefined;
+			finalUrl = res.url;
 			const contentLength = res.headers['content-length'];
 			if (contentLength != null) {
 				const size = Number(contentLength);
@@ -146,6 +150,7 @@ export class DownloadService {
 			contentRange,
 			etag,
 			lastModified,
+			finalUrl,
 		};
 	}
 

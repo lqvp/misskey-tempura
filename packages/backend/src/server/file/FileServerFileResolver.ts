@@ -26,6 +26,8 @@ export type DownloadedFileResult = {
 	etag?: string;
 	/** upstream が返した Last-Modified (If-Range による同一性の拘束に使用する) */
 	lastModified?: string;
+	/** リダイレクト解決後の最終URL */
+	finalUrl?: string;
 };
 
 export type FileResolveResult =
@@ -63,7 +65,7 @@ export class FileServerFileResolver {
 	public async downloadAndDetectTypeFromUrl(url: string, opts?: { range?: string; ifRange?: string }): Promise<DownloadedFileResult> {
 		const [path, cleanup] = await createTemp();
 		try {
-			const { filename, statusCode, contentRange, etag, lastModified } = await this.downloadService.downloadUrl(url, path, opts);
+			const { filename, statusCode, contentRange, etag, lastModified, finalUrl } = await this.downloadService.downloadUrl(url, path, opts);
 
 			const { mime, ext } = await this.fileInfoService.detectType(path);
 
@@ -77,6 +79,7 @@ export class FileServerFileResolver {
 				contentRange,
 				etag,
 				lastModified,
+				finalUrl,
 			};
 		} catch (e) {
 			cleanup();

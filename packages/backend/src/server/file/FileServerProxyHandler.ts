@@ -179,8 +179,12 @@ export class FileServerProxyHandler {
 		const probeMime = probe.mime;
 		const probeExt = probe.ext;
 		// probe と本体は別リクエストなので、同一リソースであることを If-Range で拘束する。
-		// validator を提供しない upstream では同一性を確認できないため部分配信を諦める
-		const ifRange = probe.etag ?? probe.lastModified;
+		// strong validator のみ使う (weak ETag は If-Range の条件として無効、Last-Modified は
+		// 解釈できる日付のみ採用する)。利用可能な validator がない upstream では部分配信を諦める
+		const strongEtag = probe.etag != null && !probe.etag.startsWith('W/') ? probe.etag : undefined;
+		const validLastModified = probe.lastModified != null && !Number.isNaN(Date.parse(probe.lastModified)) ? probe.lastModified : undefined;
+		const ifRange = strongEtag ?? validLastModified;
+		const probeFinalUrl = probe.finalUrl;
 		probe.cleanup(); // 種別判定が済んだので probe は破棄する
 		const isPassthroughMedia = probeMime.startsWith('video/') || probeMime.startsWith('audio/');
 		if (!isPassthroughMedia || !FILE_TYPE_BROWSERSAFE.includes(probeMime) || ifRange == null) {
@@ -218,8 +222,14 @@ export class FileServerProxyHandler {
 		if (partial.statusCode === 200) return partial;
 
 		// 応答が要求どおりの範囲であることを厳密に検証する。合わなければ破棄して全量取得フローに回す
-		// (Content-Range の宣言だけでなく実際に取得できたバイト数も一致を確認する)
-		if (partial.statusCode !== 206 || partial.contentRange !== expectedContentRange || partial.size !== end - start + 1) {
+		// (Content-Range の宣言と実際に取得できたバイト数に加え、リダイレクト解決後の最終URLが
+		//  probe と一致することも確認する。動的なredirect先へのすり替えを受け付けない)
+		if (
+			partial.statusCode !== 206 ||
+			partial.contentRange !== expectedContentRange ||
+			partial.size !== end - start + 1 ||
+			(probeFinalUrl != null && partial.finalUrl != null && partial.finalUrl !== probeFinalUrl)
+		) {
 			partial.cleanup();
 			return undefined;
 		}

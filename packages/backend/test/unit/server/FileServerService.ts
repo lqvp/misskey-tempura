@@ -170,6 +170,27 @@ async function createRemoteFileServer() {
 		return reply.send(webmBuffer);
 	});
 
+	// weak ETag のみを返す Range 対応 upstream (If-Range の strong 条件を満たさない)
+	const weakEtagHits = { count: 0 };
+	server.get('/dummy-weaketag.webm', async (request, reply) => {
+		weakEtagHits.count++;
+		reply.header('ETag', 'W/"dummy-weak-v1"');
+		const m = /^bytes=(\d+)-(\d*)$/.exec(request.headers.range ?? '');
+		if (m) {
+			const start = parseInt(m[1], 10);
+			const end = m[2] ? Math.min(parseInt(m[2], 10), webmBuffer.length - 1) : webmBuffer.length - 1;
+			const body = webmBuffer.subarray(start, end + 1);
+			reply.code(206);
+			reply.header('Content-Type', 'video/webm');
+			reply.header('Content-Range', `bytes ${start}-${end}/${webmBuffer.length}`);
+			reply.header('Content-Length', String(body.length));
+			return reply.send(body);
+		}
+		reply.header('Content-Type', 'video/webm');
+		reply.header('Content-Length', String(webmBuffer.length));
+		return reply.send(webmBuffer);
+	});
+
 	const baseUrl = await server.listen({ port: 0, host: '127.0.0.1' });
 
 	return {
@@ -183,10 +204,12 @@ async function createRemoteFileServer() {
 		badRangeWebmUrl: `${baseUrl}/dummy-badrange.webm`,
 		noValidatorWebmUrl: `${baseUrl}/dummy-novalidator.webm`,
 		changingWebmUrl: `${baseUrl}/dummy-changing.webm`,
+		weakEtagWebmUrl: `${baseUrl}/dummy-weaketag.webm`,
 		rangeHits,
 		badRangeHits,
 		noValidatorHits,
 		changingHits,
+		weakEtagHits,
 	};
 }
 
@@ -215,6 +238,8 @@ describe('FileServerService', () => {
 	let remoteChangingWebmUrl: string;
 	let remoteNoValidatorHits: { count: number };
 	let remoteChangingHits: { count: number };
+	let remoteWeakEtagWebmUrl: string;
+	let remoteWeakEtagHits: { count: number };
 	const storedPaths: string[] = [];
 	let createdFallbackAssets = false;
 	let fallbackAssetsDir = '';
@@ -345,6 +370,8 @@ describe('FileServerService', () => {
 		remoteChangingWebmUrl = remoteServerInfo.changingWebmUrl;
 		remoteNoValidatorHits = remoteServerInfo.noValidatorHits;
 		remoteChangingHits = remoteServerInfo.changingHits;
+		remoteWeakEtagWebmUrl = remoteServerInfo.weakEtagWebmUrl;
+		remoteWeakEtagHits = remoteServerInfo.weakEtagHits;
 
 		fallbackAssetsDir = path.resolve('src/server/file/assets');
 		if (!fs.existsSync(fallbackAssetsDir)) {
@@ -1195,6 +1222,24 @@ describe('FileServerService', () => {
 			expect(res.rawPayload.equals(webmBuffer.subarray(0, 4))).toBe(true);
 			// probe + If-Range 不整合による 200 全量取得の2リクエスト
 			expect(remoteChangingHits.count - beforeCount).toBe(2);
+		});
+
+		test('GET /proxy/:url* weak ETag のみの upstream では部分配信せず全量取得にフォールバックする', async () => {
+			const beforeCount = remoteWeakEtagHits.count;
+			const res = await fastify.inject({
+				method: 'GET',
+				url: `/proxy/any?url=${encodeURIComponent(remoteWeakEtagWebmUrl)}`,
+				headers: {
+					'user-agent': 'Mozilla/5.0',
+					range: 'bytes=0-3',
+				},
+			});
+
+			expect(res.statusCode).toBe(206);
+			expect(res.headers['content-range']).toBe(`bytes 0-3/${webmSize}`);
+			expect(res.rawPayload.equals(webmBuffer.subarray(0, 4))).toBe(true);
+			// weak ETag は If-Range の条件として使えないため probe + 全量取得の2リクエスト
+			expect(remoteWeakEtagHits.count - beforeCount).toBe(2);
 		});
 
 		test('HEAD /proxy/:url* 音声/動画メディアのヘッダを検証する', async () => {
