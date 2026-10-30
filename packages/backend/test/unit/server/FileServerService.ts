@@ -191,6 +191,62 @@ async function createRemoteFileServer() {
 		return reply.send(webmBuffer);
 	});
 
+	// Last-Modified のみを返す Range 対応 upstream (Date との差が 1 秒以上あり strong 条件を満たす)
+	const lastModifiedHits = { count: 0 };
+	server.get('/dummy-lastmodified.webm', async (request, reply) => {
+		lastModifiedHits.count++;
+		reply.header('Last-Modified', 'Mon, 26 Oct 2026 20:27:11 GMT');
+		const m = /^bytes=(\d+)-(\d*)$/.exec(request.headers.range ?? '');
+		if (m) {
+			const start = parseInt(m[1], 10);
+			const end = m[2] ? Math.min(parseInt(m[2], 10), webmBuffer.length - 1) : webmBuffer.length - 1;
+			const body = webmBuffer.subarray(start, end + 1);
+			reply.code(206);
+			reply.header('Content-Type', 'video/webm');
+			reply.header('Content-Range', `bytes ${start}-${end}/${webmBuffer.length}`);
+			reply.header('Content-Length', String(body.length));
+			return reply.send(body);
+		}
+		reply.header('Content-Type', 'video/webm');
+		reply.header('Content-Length', String(webmBuffer.length));
+		return reply.send(webmBuffer);
+	});
+
+	// If-Range を無視して、probe とは異なる ETag の 206 を返す upstream
+	const lyingHits = { count: 0 };
+	server.get('/dummy-lying.webm', async (request, reply) => {
+		lyingHits.count++;
+		const range = request.headers.range;
+		if (range === 'bytes=0-4099') {
+			const body = webmBuffer.subarray(0, 4100);
+			reply.code(206);
+			reply.header('Content-Type', 'video/webm');
+			reply.header('ETag', '"dummy-lying-v1"');
+			reply.header('Content-Range', `bytes 0-4099/${webmBuffer.length}`);
+			reply.header('Content-Length', String(body.length));
+			return reply.send(body);
+		}
+		if (range) {
+			const m = /^bytes=(\d+)-(\d+)$/.exec(range);
+			if (m) {
+				const start = parseInt(m[1], 10);
+				const end = Math.min(parseInt(m[2], 10), webmBuffer.length - 1);
+				const body = webmBuffer.subarray(start, end + 1);
+				reply.code(206);
+				reply.header('Content-Type', 'video/webm');
+				// probe とは異なる validator を返す (If-Range を無視する)
+				reply.header('ETag', '"dummy-lying-v2"');
+				reply.header('Content-Range', `bytes ${start}-${end}/${webmBuffer.length}`);
+				reply.header('Content-Length', String(body.length));
+				return reply.send(body);
+			}
+		}
+		reply.header('Content-Type', 'video/webm');
+		reply.header('ETag', '"dummy-lying-v1"');
+		reply.header('Content-Length', String(webmBuffer.length));
+		return reply.send(webmBuffer);
+	});
+
 	const baseUrl = await server.listen({ port: 0, host: '127.0.0.1' });
 
 	return {
@@ -205,11 +261,15 @@ async function createRemoteFileServer() {
 		noValidatorWebmUrl: `${baseUrl}/dummy-novalidator.webm`,
 		changingWebmUrl: `${baseUrl}/dummy-changing.webm`,
 		weakEtagWebmUrl: `${baseUrl}/dummy-weaketag.webm`,
+		lastModifiedWebmUrl: `${baseUrl}/dummy-lastmodified.webm`,
+		lyingWebmUrl: `${baseUrl}/dummy-lying.webm`,
 		rangeHits,
 		badRangeHits,
 		noValidatorHits,
 		changingHits,
 		weakEtagHits,
+		lastModifiedHits,
+		lyingHits,
 	};
 }
 
@@ -240,6 +300,10 @@ describe('FileServerService', () => {
 	let remoteChangingHits: { count: number };
 	let remoteWeakEtagWebmUrl: string;
 	let remoteWeakEtagHits: { count: number };
+	let remoteLastModifiedWebmUrl: string;
+	let remoteLyingWebmUrl: string;
+	let remoteLastModifiedHits: { count: number };
+	let remoteLyingHits: { count: number };
 	const storedPaths: string[] = [];
 	let createdFallbackAssets = false;
 	let fallbackAssetsDir = '';
@@ -372,6 +436,10 @@ describe('FileServerService', () => {
 		remoteChangingHits = remoteServerInfo.changingHits;
 		remoteWeakEtagWebmUrl = remoteServerInfo.weakEtagWebmUrl;
 		remoteWeakEtagHits = remoteServerInfo.weakEtagHits;
+		remoteLastModifiedWebmUrl = remoteServerInfo.lastModifiedWebmUrl;
+		remoteLyingWebmUrl = remoteServerInfo.lyingWebmUrl;
+		remoteLastModifiedHits = remoteServerInfo.lastModifiedHits;
+		remoteLyingHits = remoteServerInfo.lyingHits;
 
 		fallbackAssetsDir = path.resolve('src/server/file/assets');
 		if (!fs.existsSync(fallbackAssetsDir)) {
@@ -1240,6 +1308,43 @@ describe('FileServerService', () => {
 			expect(res.rawPayload.equals(webmBuffer.subarray(0, 4))).toBe(true);
 			// weak ETag は If-Range の条件として使えないため probe + 全量取得の2リクエスト
 			expect(remoteWeakEtagHits.count - beforeCount).toBe(2);
+		});
+
+		test('GET /proxy/:url* Last-Modified が strong 条件を満たす upstream には部分取得で応答する', async () => {
+			const beforeCount = remoteLastModifiedHits.count;
+			const res = await fastify.inject({
+				method: 'GET',
+				url: `/proxy/any?url=${encodeURIComponent(remoteLastModifiedWebmUrl)}`,
+				headers: {
+					'user-agent': 'Mozilla/5.0',
+					range: 'bytes=0-3',
+				},
+			});
+
+			expect(res.statusCode).toBe(206);
+			expect(res.headers['content-range']).toBe(`bytes 0-3/${webmSize}`);
+			expect(res.headers['x-content-type-options']).toBe('nosniff');
+			expect(res.rawPayload.equals(webmBuffer.subarray(0, 4))).toBe(true);
+			// probe + 部分取得の2リクエスト
+			expect(remoteLastModifiedHits.count - beforeCount).toBe(2);
+		});
+
+		test('GET /proxy/:url* 本体応答の validator が probe と異なれば全量取得にフォールバックする', async () => {
+			const beforeCount = remoteLyingHits.count;
+			const res = await fastify.inject({
+				method: 'GET',
+				url: `/proxy/any?url=${encodeURIComponent(remoteLyingWebmUrl)}`,
+				headers: {
+					'user-agent': 'Mozilla/5.0',
+					range: 'bytes=0-3',
+				},
+			});
+
+			expect(res.statusCode).toBe(206);
+			expect(res.headers['content-range']).toBe(`bytes 0-3/${webmSize}`);
+			expect(res.rawPayload.equals(webmBuffer.subarray(0, 4))).toBe(true);
+			// probe + validator 不一致の部分取得 + 全量取得の3リクエスト
+			expect(remoteLyingHits.count - beforeCount).toBe(3);
 		});
 
 		test('HEAD /proxy/:url* 音声/動画メディアのヘッダを検証する', async () => {

@@ -179,10 +179,15 @@ export class FileServerProxyHandler {
 		const probeMime = probe.mime;
 		const probeExt = probe.ext;
 		// probe と本体は別リクエストなので、同一リソースであることを If-Range で拘束する。
-		// strong validator のみ使う (weak ETag は If-Range の条件として無効、Last-Modified は
-		// 解釈できる日付のみ採用する)。利用可能な validator がない upstream では部分配信を諦める
+		// strong validator のみ使う。weak ETag は If-Range の条件として無効。
+		// Last-Modified は暗黙に weak (RFC 9110 §8.8.2.2) のため、応答の Date が
+		// Last-Modified より 1 秒以上新しい場合に限り採用する
 		const strongEtag = probe.etag != null && !probe.etag.startsWith('W/') ? probe.etag : undefined;
-		const validLastModified = probe.lastModified != null && !Number.isNaN(Date.parse(probe.lastModified)) ? probe.lastModified : undefined;
+		const probeDateMs = probe.date != null ? Date.parse(probe.date) : NaN;
+		const probeLastModifiedMs = probe.lastModified != null ? Date.parse(probe.lastModified) : NaN;
+		const validLastModified = !Number.isNaN(probeDateMs) && !Number.isNaN(probeLastModifiedMs) && probeDateMs - probeLastModifiedMs >= 1000
+			? probe.lastModified
+			: undefined;
 		const ifRange = strongEtag ?? validLastModified;
 		const probeFinalUrl = probe.finalUrl;
 		probe.cleanup(); // 種別判定が済んだので probe は破棄する
@@ -224,11 +229,17 @@ export class FileServerProxyHandler {
 		// 応答が要求どおりの範囲であることを厳密に検証する。合わなければ破棄して全量取得フローに回す
 		// (Content-Range の宣言と実際に取得できたバイト数に加え、リダイレクト解決後の最終URLが
 		//  probe と一致することも確認する。動的なredirect先へのすり替えを受け付けない)
+		// 受信した validator も照合する。If-Range を無視して変化後のリソースを 206 で返す
+		// upstream を受け付けない (ETag 利用時は ETag、Last-Modified 利用時は Last-Modified が一致すること)
+		const receivedValidatorMatches = strongEtag != null
+			? partial.etag === strongEtag
+			: partial.lastModified != null && partial.lastModified === probe.lastModified;
 		if (
 			partial.statusCode !== 206 ||
 			partial.contentRange !== expectedContentRange ||
 			partial.size !== end - start + 1 ||
-			(probeFinalUrl != null && partial.finalUrl != null && partial.finalUrl !== probeFinalUrl)
+			(probeFinalUrl != null && partial.finalUrl != null && partial.finalUrl !== probeFinalUrl) ||
+			!receivedValidatorMatches
 		) {
 			partial.cleanup();
 			return undefined;

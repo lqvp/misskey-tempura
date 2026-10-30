@@ -28,6 +28,8 @@ export type DownloadedFileResult = {
 	lastModified?: string;
 	/** リダイレクト解決後の最終URL */
 	finalUrl?: string;
+	/** upstream の Date ヘッダ */
+	date?: string;
 };
 
 export type FileResolveResult =
@@ -65,7 +67,7 @@ export class FileServerFileResolver {
 	public async downloadAndDetectTypeFromUrl(url: string, opts?: { range?: string; ifRange?: string }): Promise<DownloadedFileResult> {
 		const [path, cleanup] = await createTemp();
 		try {
-			const { filename, statusCode, contentRange, etag, lastModified, finalUrl } = await this.downloadService.downloadUrl(url, path, opts);
+			const { filename, statusCode, contentRange, etag, lastModified, finalUrl, date } = await this.downloadService.downloadUrl(url, path, opts);
 
 			const { mime, ext } = await this.fileInfoService.detectType(path);
 
@@ -80,6 +82,7 @@ export class FileServerFileResolver {
 				etag,
 				lastModified,
 				finalUrl,
+				date,
 			};
 		} catch (e) {
 			cleanup();

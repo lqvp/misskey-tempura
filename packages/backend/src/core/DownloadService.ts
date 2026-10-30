@@ -42,6 +42,8 @@ export class DownloadService {
 		lastModified?: string;
 		/** リダイレクト解決後の最終URL (リクエスト間の同一性確認に使用する) */
 		finalUrl?: string;
+		/** upstream の Date ヘッダ (Last-Modified の strong 条件の判定に使用する) */
+		date?: string;
 	}> {
 		this.logger.info(`Downloading ${chalk.cyan(url)} to ${chalk.cyanBright(path)} ...`);
 
@@ -57,6 +59,7 @@ export class DownloadService {
 		let etag: string | undefined;
 		let lastModified: string | undefined;
 		let finalUrl: string | undefined;
+		let date: string | undefined;
 
 		const req = got.stream(url, {
 			headers: {
@@ -105,6 +108,8 @@ export class DownloadService {
 			const upstreamLastModified = res.headers['last-modified'];
 			lastModified = typeof upstreamLastModified === 'string' ? upstreamLastModified : undefined;
 			finalUrl = res.url;
+			const upstreamDate = res.headers['date'];
+			date = typeof upstreamDate === 'string' ? upstreamDate : undefined;
 			const contentLength = res.headers['content-length'];
 			if (contentLength != null) {
 				const size = Number(contentLength);
@@ -151,6 +156,7 @@ export class DownloadService {
 			etag,
 			lastModified,
 			finalUrl,
+			date,
 		};
 	}
 
