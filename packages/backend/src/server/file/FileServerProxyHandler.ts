@@ -13,7 +13,7 @@ import { contentDisposition } from '@/misc/content-disposition.js';
 import { correctFilename } from '@/misc/correct-filename.js';
 import { isMimeImage } from '@/misc/is-mime-image.js';
 import { IImageStreamable, ImageProcessingService, webpDefault } from '@/core/ImageProcessingService.js';
-import { createRangeStream, attachStreamCleanup, needsCleanup } from './FileServerUtils.js';
+import { attachStreamCleanup, needsCleanup } from './FileServerUtils.js';
 import type { DownloadedFileResult, FileResolveResult, FileServerFileResolver } from './FileServerFileResolver.js';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
@@ -157,7 +157,10 @@ export class FileServerProxyHandler {
 			return this.imageProcessingService.convertToWebpStream(file.path, 2048, 2048);
 		}
 
-		if (!file.mime.startsWith('image/') || !FILE_TYPE_BROWSERSAFE.includes(file.mime)) {
+		// 動画・音声は変換できないためそのまま配信する
+		// (Referer を拒否する外部 CDN のメディアを再生する経路としても使われる)
+		const isPassthroughMedia = file.mime.startsWith('video/') || file.mime.startsWith('audio/');
+		if ((!file.mime.startsWith('image/') && !isPassthroughMedia) || !FILE_TYPE_BROWSERSAFE.includes(file.mime)) {
 			throw new StatusError('Rejected type', 403, 'Rejected type');
 		}
 
@@ -237,10 +240,47 @@ export class FileServerProxyHandler {
 		request: FastifyRequest,
 		reply: FastifyReply,
 	): IImageStreamable {
-		if (request.headers.range && 'file' in file && file.file.size > 0) {
-			const { stream, start, end, chunksize } = createRangeStream(request.headers.range as string, file.file.size, file.path);
+		// プロキシで取得した一時ファイル (downloaded) は size を直接保持する
+		const size = 'file' in file ? file.file.size : file.size;
+		if (request.headers.range && size > 0) {
+			// 範囲指定を検証する。範囲外・不正な指定は 416 を返す
+			// (createRangeStream は共通利用のため既存の挙動を変えず、プロキシ側で検証・解釈する)
+			// 416 には現在の表現長を示す Content-Range を付ける (RFC 9110 §14.2)
+			// fallback 指定時はダミー画像の応答に持ち越さないようヘッダーを付けない
+			const rejectRange = (): never => {
+				if (!('fallback' in ((request.query ?? {}) as Record<string, unknown>))) {
+					reply.header('Content-Range', `bytes */${size}`);
+				}
+				throw new StatusError('Requested Range Not Satisfiable', 416);
+			};
+			const rangeParts = (request.headers.range as string).replace(/^bytes=/, '').split('-');
+			let start: number;
+			let end: number;
+			if (rangeParts[0] === '') {
+				// サフィックス Range (bytes=-N): 末尾 N バイト
+				const suffixLength = parseInt(rangeParts[1], 10);
+				if (Number.isNaN(suffixLength) || suffixLength <= 0) {
+					rejectRange();
+				}
+				start = Math.max(0, size - suffixLength);
+				end = size - 1;
+			} else {
+				start = parseInt(rangeParts[0], 10);
+				end = rangeParts[1] ? parseInt(rangeParts[1], 10) : size - 1;
+				if (Number.isNaN(start) || start < 0 || start >= size) {
+					rejectRange();
+				}
+				if (Number.isNaN(end) || end >= size) {
+					end = size - 1;
+				}
+				if (end < start) {
+					rejectRange();
+				}
+			}
+			const chunksize = end - start + 1;
+			const stream = fs.createReadStream(file.path, { start, end });
 
-			reply.header('Content-Range', `bytes ${start}-${end}/${file.file.size}`);
+			reply.header('Content-Range', `bytes ${start}-${end}/${size}`);
 			reply.header('Accept-Ranges', 'bytes');
 			reply.header('Content-Length', chunksize);
 			reply.code(206);

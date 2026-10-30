@@ -17,6 +17,7 @@ export type DownloadedFileResult = {
 	path: string;
 	cleanup: () => void;
 	filename: string;
+	size: number;
 };
 
 export type FileResolveResult =
@@ -63,6 +64,7 @@ export class FileServerFileResolver {
 				mime, ext,
 				path, cleanup,
 				filename,
+				size: (await fs.promises.stat(path)).size,
 			};
 		} catch (e) {
 			cleanup();

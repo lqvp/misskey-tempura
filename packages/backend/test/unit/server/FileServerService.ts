@@ -28,6 +28,9 @@ import { FileServerFileResolver } from '@/server/file/FileServerFileResolver.js'
 const dummyPath = path.resolve('test/resources/dummy-for-file-server-service.png');
 const dummySize = fs.statSync(dummyPath).size;
 const dummyBuffer = fs.readFileSync(dummyPath);
+const webmPath = path.resolve('test/resources/kick_gaba7.webm');
+const webmSize = fs.statSync(webmPath).size;
+const webmBuffer = fs.readFileSync(webmPath);
 const svgBuffer = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"></svg>', 'utf8');
 const textBuffer = Buffer.from('dummy text', 'utf8');
 
@@ -55,6 +58,12 @@ async function createRemoteFileServer() {
 		return reply.send(textBuffer);
 	});
 
+	server.get('/dummy.webm', async (_request, reply) => {
+		reply.header('Content-Type', 'video/webm');
+		reply.header('Content-Length', String(webmBuffer.length));
+		return reply.send(webmBuffer);
+	});
+
 	server.get('/flat.png', async (_request, reply) => {
 		reply.header('Content-Type', 'image/png');
 		reply.header('Content-Length', String(flatPngBuffer.length));
@@ -69,6 +78,7 @@ async function createRemoteFileServer() {
 		svgUrl: `${baseUrl}/dummy.svg`,
 		textUrl: `${baseUrl}/dummy.txt`,
 		flatPngUrl: `${baseUrl}/flat.png`,
+		webmUrl: `${baseUrl}/dummy.webm`,
 	};
 }
 
@@ -88,6 +98,7 @@ describe('FileServerService', () => {
 	let remoteSvgUrl: string;
 	let remoteTextUrl: string;
 	let remoteFlatPngUrl: string;
+	let remoteWebmUrl: string;
 	const storedPaths: string[] = [];
 	let createdFallbackAssets = false;
 	let fallbackAssetsDir = '';
@@ -209,6 +220,7 @@ describe('FileServerService', () => {
 		remoteSvgUrl = remoteServerInfo.svgUrl;
 		remoteTextUrl = remoteServerInfo.textUrl;
 		remoteFlatPngUrl = remoteServerInfo.flatPngUrl;
+		remoteWebmUrl = remoteServerInfo.webmUrl;
 
 		fallbackAssetsDir = path.resolve('src/server/file/assets');
 		if (!fs.existsSync(fallbackAssetsDir)) {
@@ -797,6 +809,172 @@ describe('FileServerService', () => {
 			expect(res.headers['content-type']).toBe('image/png');
 			expect(res.headers['cache-control']).toBe('max-age=31536000, immutable');
 			expect(res.headers['content-disposition'] ?? '').toContain('dummy.png');
+		});
+
+		test('GET /proxy/:url* 音声/動画メディアをパススルー配信する', async () => {
+			const res = await fastify.inject({
+				method: 'GET',
+				url: `/proxy/any?url=${encodeURIComponent(remoteWebmUrl)}`,
+				headers: {
+					'user-agent': 'Mozilla/5.0',
+				},
+			});
+
+			expect(res.statusCode).toBe(200);
+			expect(res.headers['content-type']).toBe('audio/webm');
+			expect(res.headers['cache-control']).toBe('max-age=31536000, immutable');
+			expect(res.headers['content-disposition'] ?? '').toContain('dummy.webm');
+		});
+
+		test('GET /proxy/:url* 画像の Range で部分配信する', async () => {
+			const res = await fastify.inject({
+				method: 'GET',
+				url: `/proxy/any?url=${encodeURIComponent(remotePngUrl)}`,
+				headers: {
+					'user-agent': 'Mozilla/5.0',
+					range: 'bytes=0-3',
+				},
+			});
+
+			expect(res.statusCode).toBe(206);
+			expect(res.headers['content-range']).toBe(`bytes 0-3/${dummySize}`);
+			expect(res.headers['content-length']).toBe('4');
+			expect(res.headers['accept-ranges']).toBe('bytes');
+			expect(res.rawPayload.length).toBe(4);
+		});
+
+		test('GET /proxy/:url* 音声/動画メディアの Range で部分配信する', async () => {
+			const res = await fastify.inject({
+				method: 'GET',
+				url: `/proxy/any?url=${encodeURIComponent(remoteWebmUrl)}`,
+				headers: {
+					'user-agent': 'Mozilla/5.0',
+					range: 'bytes=0-99',
+				},
+			});
+
+			expect(res.statusCode).toBe(206);
+			expect(res.headers['content-type']).toBe('audio/webm');
+			expect(res.headers['content-range']).toBe(`bytes 0-99/${webmSize}`);
+			expect(res.headers['content-length']).toBe('100');
+			expect(res.headers['accept-ranges']).toBe('bytes');
+			expect(res.rawPayload.length).toBe(100);
+		});
+
+		test('GET /proxy/:url* Range の終端を補正する', async () => {
+			const res = await fastify.inject({
+				method: 'GET',
+				url: `/proxy/any?url=${encodeURIComponent(remoteWebmUrl)}`,
+				headers: {
+					'user-agent': 'Mozilla/5.0',
+					range: 'bytes=0-99999999',
+				},
+			});
+
+			expect(res.statusCode).toBe(206);
+			expect(res.headers['content-range']).toBe(`bytes 0-${webmSize - 1}/${webmSize}`);
+			expect(res.rawPayload.length).toBe(webmSize);
+		});
+
+		test('GET /proxy/:url* 範囲外の Range は 416 を返す', async () => {
+			const res = await fastify.inject({
+				method: 'GET',
+				url: `/proxy/any?url=${encodeURIComponent(remoteWebmUrl)}`,
+				headers: {
+					'user-agent': 'Mozilla/5.0',
+					range: `bytes=${webmSize + 1000}-`,
+				},
+			});
+
+			expect(res.statusCode).toBe(416);
+			expect(res.headers['content-range']).toBe(`bytes */${webmSize}`);
+		});
+
+		test('GET /proxy/:url* 不正な Range は 416 を返す', async () => {
+			const res = await fastify.inject({
+				method: 'GET',
+				url: `/proxy/any?url=${encodeURIComponent(remoteWebmUrl)}`,
+				headers: {
+					'user-agent': 'Mozilla/5.0',
+					range: 'bytes=abc-def',
+				},
+			});
+
+			expect(res.statusCode).toBe(416);
+			expect(res.headers['content-range']).toBe(`bytes */${webmSize}`);
+		});
+
+		test('GET /proxy/:url* サフィックス Range で末尾を部分配信する', async () => {
+			const res = await fastify.inject({
+				method: 'GET',
+				url: `/proxy/any?url=${encodeURIComponent(remoteWebmUrl)}`,
+				headers: {
+					'user-agent': 'Mozilla/5.0',
+					range: 'bytes=-100',
+				},
+			});
+
+			expect(res.statusCode).toBe(206);
+			expect(res.headers['content-range']).toBe(`bytes ${webmSize - 100}-${webmSize - 1}/${webmSize}`);
+			expect(res.headers['content-length']).toBe('100');
+			expect(res.rawPayload.length).toBe(100);
+		});
+
+		test('GET /proxy/:url* 開始が終端より大きい Range は 416 を返す', async () => {
+			const res = await fastify.inject({
+				method: 'GET',
+				url: `/proxy/any?url=${encodeURIComponent(remoteWebmUrl)}`,
+				headers: {
+					'user-agent': 'Mozilla/5.0',
+					range: 'bytes=10-5',
+				},
+			});
+
+			expect(res.statusCode).toBe(416);
+			expect(res.headers['content-range']).toBe(`bytes */${webmSize}`);
+		});
+
+		test('GET /proxy/:url* 長さ0のサフィックス Range は 416 を返す', async () => {
+			const res = await fastify.inject({
+				method: 'GET',
+				url: `/proxy/any?url=${encodeURIComponent(remoteWebmUrl)}`,
+				headers: {
+					'user-agent': 'Mozilla/5.0',
+					range: 'bytes=-0',
+				},
+			});
+
+			expect(res.statusCode).toBe(416);
+			expect(res.headers['content-range']).toBe(`bytes */${webmSize}`);
+		});
+
+		test('GET /proxy/:url* fallback 指定時の範囲外 Range はダミー画像を返し Content-Range を持ち越さない', async () => {
+			const res = await fastify.inject({
+				method: 'GET',
+				url: `/proxy/any?url=${encodeURIComponent(remotePngUrl)}&fallback=1`,
+				headers: {
+					'user-agent': 'Mozilla/5.0',
+					range: 'bytes=999999999-',
+				},
+			});
+
+			expect(res.statusCode).toBe(200);
+			expect(res.headers['content-type']).toBe('image/png');
+			expect(res.headers['content-range']).toBeUndefined();
+		});
+
+		test('HEAD /proxy/:url* 音声/動画メディアのヘッダを検証する', async () => {
+			const res = await fastify.inject({
+				method: 'HEAD',
+				url: `/proxy/any?url=${encodeURIComponent(remoteWebmUrl)}`,
+				headers: {
+					'user-agent': 'Mozilla/5.0',
+				},
+			});
+
+			expect(res.statusCode).toBe(200);
+			expect(res.headers['content-type']).toBe('audio/webm');
+			expect(res.rawPayload.length).toBe(0);
 		});
 	});
 });

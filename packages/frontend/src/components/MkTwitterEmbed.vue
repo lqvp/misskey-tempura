@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <div v-else-if="tweetData" :class="$style.tweetContainer">
 	<a :href="`https://twitter.com/${tweetData.author.screen_name}`" target="_blank" rel="noopener noreferrer" :class="$style.headerLink">
 		<header :class="$style.header">
-			<img :src="tweetData.author.avatar_url" :alt="`${tweetData.author.name}'s avatar`" :class="$style.avatar"/>
+			<img :src="proxiedAvatarUrl(tweetData.author.avatar_url)" :alt="`${tweetData.author.name}'s avatar`" :class="$style.avatar"/>
 			<div :class="$style.authorInfo">
 				<span :class="$style.authorName">{{ tweetData.author.name }}</span>
 				<span :class="$style.authorScreenName">@{{ tweetData.author.screen_name }}</span>
@@ -24,6 +24,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</a>
 		</header>
 	</a>
+	<a v-if="tweetData.replying_to" :href="tweetData.replying_to_status ? `https://twitter.com/${tweetData.replying_to}/status/${tweetData.replying_to_status}` : `https://twitter.com/${tweetData.replying_to}`" target="_blank" rel="noopener noreferrer" :class="$style.replyingTo">
+		<i class="ti ti-arrow-back-up"></i> @{{ tweetData.replying_to }}
+	</a>
 	<Mfm v-if="tweetData.text && mfmTweetText" :text="mfmTweetText" :class="$style.body"/>
 
 	<MkMediaList v-if="driveFiles.length > 0" :mediaList="driveFiles" :class="$style.mediaContainer"/>
@@ -32,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div v-if="tweetData.quote" :class="$style.quoteContainer">
 		<a :href="`https://twitter.com/${tweetData.quote.author.screen_name}`" target="_blank" rel="noopener noreferrer" :class="$style.headerLink">
 			<header :class="$style.quoteHeader">
-				<img :src="tweetData.quote.author.avatar_url" :alt="`${tweetData.quote.author.name}'s avatar`" :class="$style.quoteAvatar"/>
+				<img :src="proxiedAvatarUrl(tweetData.quote.author.avatar_url)" :alt="`${tweetData.quote.author.name}'s avatar`" :class="$style.quoteAvatar"/>
 				<div :class="$style.quoteAuthorInfo">
 					<span :class="$style.quoteAuthorName">{{ tweetData.quote.author.name }}</span>
 					<span :class="$style.quoteAuthorScreenName">@{{ tweetData.quote.author.screen_name }}</span>
@@ -111,6 +114,8 @@ import { ref, onMounted, computed } from 'vue';
 import * as Misskey from 'misskey-js';
 import { i18n } from '@/i18n.js';
 import { prefer } from '@/preferences.js';
+import { getProxiedImageUrl } from '@/utility/media-proxy.js';
+import { url as instanceUrl } from '@@/js/config.js';
 import MkMediaList from '@/components/MkMediaList.vue';
 
 interface FxTweetAuthor {
@@ -136,6 +141,7 @@ interface FxTweetMediaVideo {
 	height: number;
 	format?: string;
 	duration_millis?: number;
+	altText?: string;
 }
 
 interface FxCommunityNoteEntityRef {
@@ -180,6 +186,8 @@ interface FxTweet {
 	bookmarks?: number;
 	views?: number;
 	quote?: FxTweet;
+	replying_to?: string | null;
+	replying_to_status?: string | null;
 }
 
 interface FxTwitterApiResponse {
@@ -286,9 +294,18 @@ const quoteDriveFiles = computed((): Misskey.entities.DriveFile[] => {
 	return quoteMediaItems.value.map(media => mapToDriveFile(media, tweetData.value?.quote || null));
 });
 
+// X の CDN (twimg) は第三者サイトからの Referer 付きリクエストを拒否するため、
+// アバター・画像・動画はすべてインスタンスのメディアプロキシ経由で配信する
+// (動画はサーバー側のプロキシが変換せずそのまま転送する)。
+function proxiedAvatarUrl(avatarUrl: string): string {
+	return getProxiedImageUrl(avatarUrl, 'avatar');
+}
+
 function mapToDriveFile(media: FxTweetMedia, tweet: FxTweet | null): Misskey.entities.DriveFile {
 	const isVideo = media.type === 'video' || media.type === 'gif';
 	const name = media.url.substring(media.url.lastIndexOf('/') + 1) || `media_${media.type}`;
+	const thumbnailUrl = isVideo ? (media as FxTweetMediaVideo).thumbnail_url : media.url;
+	const altText = media.altText ?? null;
 
 	return {
 		id: tweet?.id_str || props.tweetId + '_' + name,
@@ -303,9 +320,11 @@ function mapToDriveFile(media: FxTweetMedia, tweet: FxTweet | null): Misskey.ent
 			width: media.width,
 			height: media.height,
 		},
-		url: media.url,
-		thumbnailUrl: isVideo ? (media as FxTweetMediaVideo).thumbnail_url : media.url,
-		comment: null,
+		// 動画は画像変換できないため、変換なしの生プロキシ経路を使う
+		url: isVideo ? `${instanceUrl}/proxy/?url=${encodeURIComponent(media.url)}` : getProxiedImageUrl(media.url),
+		// サムネイルが無い動画ではプロキシURLを生成せず、video要素のフォールバックに任せる
+		thumbnailUrl: thumbnailUrl ? getProxiedImageUrl(thumbnailUrl, 'preview') : null,
+		comment: altText,
 		folderId: null,
 		userId: null,
 		user: null,
@@ -329,6 +348,18 @@ function mapToDriveFile(media: FxTweetMedia, tweet: FxTweet | null): Misskey.ent
 	padding: 16px;
 	text-align: center;
 	color: var(--MI_THEME-fg);
+}
+
+.replyingTo {
+	display: inline-block;
+	font-size: 0.85em;
+	color: var(--MI_THEME-fgSub);
+	text-decoration: none;
+	margin-bottom: 4px;
+
+	&:hover {
+		text-decoration: underline;
+	}
 }
 
 .headerLink {
