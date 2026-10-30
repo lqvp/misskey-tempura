@@ -58,7 +58,8 @@ export class FileServerProxyHandler {
 		// Range 要求 (画像変換を伴わないもの) は upstream への Range 転送を試みる。
 		// 対応しない upstream や判定できない場合は従来どおり全量取得して応答する
 		const rangeHeader = request.headers.range;
-		if (typeof rangeHeader === 'string' && !this.hasImageConversionQuery(request.query)) {
+		const isInternalFileUrl = url.startsWith(`${this.config.url}/files/`);
+		if (typeof rangeHeader === 'string' && !isInternalFileUrl && !this.hasImageConversionQuery(request.query)) {
 			const partialOutcome = await this.tryServeUpstreamRange(url, rangeHeader, request, reply);
 			if (partialOutcome === 'handled') return;
 			if (partialOutcome !== undefined) {
@@ -211,7 +212,8 @@ export class FileServerProxyHandler {
 		if (partial.statusCode === 200) return partial;
 
 		// 応答が要求どおりの範囲であることを厳密に検証する。合わなければ破棄して全量取得フローに回す
-		if (partial.statusCode !== 206 || partial.contentRange !== expectedContentRange) {
+		// (Content-Range の宣言だけでなく実際に取得できたバイト数も一致を確認する)
+		if (partial.statusCode !== 206 || partial.contentRange !== expectedContentRange || partial.size !== end - start + 1) {
 			partial.cleanup();
 			return undefined;
 		}
