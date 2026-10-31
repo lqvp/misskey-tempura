@@ -38,10 +38,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { computed, defineAsyncComponent, inject, ref } from 'vue';
-import { normalizeCustomEmojiName, isLocalCustomEmojiName, getCustomEmojiImagePath } from '@@/js/emoji-name.js';
+import { normalizeCustomEmojiName, isLocalCustomEmojiName, getCustomEmojiImagePath, isNoteEmojiAliasName } from '@@/js/emoji-name.js';
 import type { MenuItem } from '@/types/menu.js';
 import { getProxiedImageUrl, getStaticImageUrl } from '@/utility/media-proxy.js';
-import { customEmojisMap } from '@/custom-emojis.js';
+import { customEmojisMap, noteEmojiAliasesMap } from '@/custom-emojis.js';
 import * as os from '@/os.js';
 import { misskeyApi, misskeyApiGet } from '@/utility/misskey-api.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
@@ -79,7 +79,10 @@ const rawUrl = computed(() => {
 		return props.url;
 	}
 	if (isLocal.value) {
-		return customEmojisMap.get(customEmojiName.value)?.url ?? null;
+		// tempura: ノート用リモート絵文字参照 (エイリアス) はセッション内キャッシュから解決する。
+		// キャッシュに無い場合 (ピッカーの最近使用などリロード後の経路) は /emoji/ ルートにフォールバックする。
+		return customEmojisMap.get(customEmojiName.value)?.url ?? noteEmojiAliasesMap.get(customEmojiName.value)?.url
+			?? (isNoteEmojiAliasName(customEmojiName.value) ? `/emoji/${customEmojiName.value}.webp?fallback=1` : null);
 	}
 	return getCustomEmojiImagePath(customEmojiName.value, props.host);
 });
@@ -133,8 +136,12 @@ function onClick(ev: PointerEvent) {
 			});
 		}
 
+		// tempura: リモートの絵文字は `:name@host:` 形式でパレットに保存しないと描画・再利用できない (resolve: #323 のフォロー)
+		const pickerEmojiCode = (isLocal.value || props.host == null || customEmojiName.value.includes('@'))
+			? `:${customEmojiName.value}:`
+			: `:${customEmojiName.value}@${props.host}:`;
 		const reactionEmojiPalette = prefer.s.emojiPaletteForReaction == null ? prefer.s.emojiPalettes[0] : prefer.s.emojiPalettes.find(palette => palette.id === prefer.s.emojiPaletteForReaction);
-		if (reactionEmojiPalette != null && !reactionEmojiPalette.emojis.includes(`:${props.name}:`)) {
+		if (reactionEmojiPalette != null && !reactionEmojiPalette.emojis.includes(pickerEmojiCode)) {
 			menuItems.push({
 				text: i18n.ts.addToEmojiPicker,
 				icon: 'ti ti-plus',
@@ -143,7 +150,7 @@ function onClick(ev: PointerEvent) {
 						if (palette.id !== reactionEmojiPalette.id) return palette;
 						return {
 							...palette,
-							emojis: [...palette.emojis, `:${props.name}:`],
+							emojis: [...palette.emojis, pickerEmojiCode],
 						};
 					}));
 				},

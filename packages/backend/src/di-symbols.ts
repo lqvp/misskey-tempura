@@ -45,6 +45,7 @@ export const DI = {
 	followHistoryRepository: Symbol('followHistoryRepository'),
 	instancesRepository: Symbol('instancesRepository'),
 	emojisRepository: Symbol('emojisRepository'),
+	noteEmojiAliasesRepository: Symbol('noteEmojiAliasesRepository'),
 	driveFilesRepository: Symbol('driveFilesRepository'),
 	driveFoldersRepository: Symbol('driveFoldersRepository'),
 	metasRepository: Symbol('metasRepository'),

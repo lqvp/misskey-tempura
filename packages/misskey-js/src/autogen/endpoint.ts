@@ -628,6 +628,10 @@ import type {
 	QuoteMuteListResponse,
 	ReactionStatsRequest,
 	ReactionStatsResponse,
+	RemoteEmojisResolveRequest,
+	RemoteEmojisResolveResponse,
+	RemoteEmojisSearchRequest,
+	RemoteEmojisSearchResponse,
 	RenoteMuteCreateRequest,
 	RenoteMuteDeleteRequest,
 	RenoteMuteListRequest,
@@ -1154,6 +1158,8 @@ export type Endpoints = {
 	'quote-mute/delete': { req: QuoteMuteDeleteRequest; res: EmptyResponse };
 	'quote-mute/list': { req: QuoteMuteListRequest; res: QuoteMuteListResponse };
 	'reaction-stats': { req: ReactionStatsRequest; res: ReactionStatsResponse };
+	'remote-emojis/resolve': { req: RemoteEmojisResolveRequest; res: RemoteEmojisResolveResponse };
+	'remote-emojis/search': { req: RemoteEmojisSearchRequest; res: RemoteEmojisSearchResponse };
 	'renote-mute/create': { req: RenoteMuteCreateRequest; res: EmptyResponse };
 	'renote-mute/delete': { req: RenoteMuteDeleteRequest; res: EmptyResponse };
 	'renote-mute/list': { req: RenoteMuteListRequest; res: RenoteMuteListResponse };

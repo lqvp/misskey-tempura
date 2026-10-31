@@ -30,6 +30,7 @@ import {
 	MiDriveFile,
 	MiDriveFolder,
 	MiEmoji,
+	MiNoteEmojiAlias,
 	MiFlash,
 	MiFlashLike,
 	MiFollowing,
@@ -280,6 +281,12 @@ const $instancesRepository: Provider = {
 const $emojisRepository: Provider = {
 	provide: DI.emojisRepository,
 	useFactory: (db: DataSource) => db.getRepository(MiEmoji).extend(miRepository as MiRepository<MiEmoji>),
+	inject: [DI.db],
+};
+
+const $noteEmojiAliasesRepository: Provider = {
+	provide: DI.noteEmojiAliasesRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiNoteEmojiAlias).extend(miRepository as MiRepository<MiNoteEmojiAlias>),
 	inject: [DI.db],
 };
 
@@ -641,6 +648,7 @@ const $contactFormsRepository: Provider = {
 		$followHistoryRepository,
 		$instancesRepository,
 		$emojisRepository,
+		$noteEmojiAliasesRepository,
 		$driveFilesRepository,
 		$driveFoldersRepository,
 		$metasRepository,
@@ -728,6 +736,7 @@ const $contactFormsRepository: Provider = {
 		$followHistoryRepository,
 		$instancesRepository,
 		$emojisRepository,
+		$noteEmojiAliasesRepository,
 		$driveFilesRepository,
 		$driveFoldersRepository,
 		$metasRepository,

@@ -2328,6 +2328,10 @@ declare namespace entities {
         QuoteMuteListResponse,
         ReactionStatsRequest,
         ReactionStatsResponse,
+        RemoteEmojisResolveRequest,
+        RemoteEmojisResolveResponse,
+        RemoteEmojisSearchRequest,
+        RemoteEmojisSearchResponse,
         RenoteMuteCreateRequest,
         RenoteMuteDeleteRequest,
         RenoteMuteListRequest,
@@ -3578,6 +3582,18 @@ type ReactionStatsRequest = operations['reaction-stats']['requestBody']['content
 
 // @public (undocumented)
 type ReactionStatsResponse = operations['reaction-stats']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type RemoteEmojisResolveRequest = operations['remote-emojis___resolve']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type RemoteEmojisResolveResponse = operations['remote-emojis___resolve']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type RemoteEmojisSearchRequest = operations['remote-emojis___search']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type RemoteEmojisSearchResponse = operations['remote-emojis___search']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type RenoteMuteCreateRequest = operations['renote-mute___create']['requestBody']['content']['application/json'];
