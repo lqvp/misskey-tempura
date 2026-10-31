@@ -16,6 +16,8 @@ export const meta = {
 	requireCredential: true,
 	requireAdmin: true,
 	kind: 'write:admin:suspend-user',
+
+	protectFamily: [{ param: 'userId' }],
 } as const;
 
 export const paramDef = {

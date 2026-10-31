@@ -36,6 +36,8 @@ export const meta = {
 			id: '25b5bc31-dc79-4ebd-9bd2-c84978fd052c',
 		},
 	},
+
+	protectFamily: [{ param: 'userId' }],
 } as const;
 
 export const paramDef = {

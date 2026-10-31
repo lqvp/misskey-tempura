@@ -5,6 +5,7 @@
 
 import { permissions } from 'misskey-js';
 import type { KeyOf, Schema } from '@/misc/json-schema.js';
+import type { FamilyTargetSpec, FamilyRule } from './family-guard.js';
 
 import * as endpointsObject from './endpoint-list.js';
 
@@ -87,6 +88,23 @@ interface IEndpointMetaBase {
 	 * 省略した場合は false として解釈されます。
 	 */
 	readonly secure?: boolean;
+
+	/**
+	 * サブアカウントはこのendpointを使えない(自前のパスワード/メール/2FA等を持たないため)。
+	 * 省略した場合は false として解釈されます。
+	 */
+	readonly denyForSubAccount?: boolean;
+
+	/**
+	 * 指定したパラメータが親/兄弟アカウントを指す場合、サブアカウントは操作できない。
+	 * 親(メイン)アカウントがロックアウト/デッドロックし得る操作にだけ付けます。
+	 */
+	readonly protectFamily?: readonly FamilyTargetSpec[];
+
+	/**
+	 * protectFamily では表せないendpoint固有のサブアカウント制限。
+	 */
+	readonly protectFamilyRule?: FamilyRule;
 
 	/**
 	 * エンドポイントの種類

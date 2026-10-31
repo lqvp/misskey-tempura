@@ -19,11 +19,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<span v-if="silenced" class="silenced">Silenced</span>
 						<span v-if="administrator " class="suspended">Administrator</span>
 						<span v-if="moderator" class="moderator">Moderator</span>
+						<span v-if="info.subAccountRole === 'main'" class="moderator">{{ i18n.ts.mainAccountShort }}</span>
+						<span v-if="info.subAccountRole === 'sub'" class="silenced">{{ i18n.ts.subAccountShort }}</span>
 					</span>
 				</div>
 			</div>
 
 			<MkInfo v-if="isSystem">{{ i18n.ts.isSystemAccount }}</MkInfo>
+
+			<!-- always shown to moderators, regardless of the user's own show/hide settings for the main/sub relation -->
+			<MkInfo v-if="info.mainAccount != null || info.subAccounts.length > 0">
+				<div class="_gaps_s">
+					<div v-if="info.mainAccount != null">
+						{{ i18n.ts.parentAccount }}:
+						<MkA class="_link" :to="`/admin/user/${info.mainAccount.id}`"><MkUserName :user="info.mainAccount"/> <span class="_monospace">@{{ acct(info.mainAccount) }}</span></MkA>
+					</div>
+					<div v-if="info.subAccounts.length > 0">
+						{{ i18n.ts.subAccounts }}:
+						<MkA v-for="sub in info.subAccounts" :key="sub.id" class="_link" :to="`/admin/user/${sub.id}`" style="margin-right: 8px;"><MkUserName :user="sub"/> <span class="_monospace">@{{ acct(sub) }}</span></MkA>
+					</div>
+				</div>
+			</MkInfo>
 
 			<MkInfo v-if="info.suspiciousLoginDetectedAt != null" warn>
 				<div class="_gaps_s">

@@ -98,7 +98,8 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 		text: i18n.ts.notifications,
 		to: '/settings/notifications',
 		active: currentPage.value?.route.name === 'notifications',
-	}, {
+	}, ...($i?.isSubAccount ? [] : [{
+		// sub-accounts have no email, password or 2FA of their own
 		icon: 'ti ti-mail',
 		text: i18n.ts.email,
 		to: '/settings/email',
@@ -108,7 +109,7 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 		text: i18n.ts.security,
 		to: '/settings/security',
 		active: currentPage.value?.route.name === 'security',
-	}, {
+	}]), {
 		icon: 'ti ti-git-fork',
 		text: i18n.ts.originalFeature,
 		to: '/settings/tempura-settings',
@@ -232,7 +233,7 @@ watch(router.currentRef, (to) => {
 	}
 });
 
-const emailNotConfigured = computed(() => $i && instance.enableEmail && ($i.email == null || !$i.emailVerified));
+const emailNotConfigured = computed(() => $i && !$i.isSubAccount && instance.enableEmail && ($i.email == null || !$i.emailVerified));
 
 provideMetadataReceiver((metadataGetter) => {
 	const info = metadataGetter();

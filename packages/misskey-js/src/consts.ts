@@ -270,6 +270,8 @@ export const rolePolicies = [
 	'canImportFollowing',
 	'canImportMuting',
 	'canImportUserLists',
+	'canCreateSubAccount',
+	'subAccountLimit',
 	'chatAvailability',
 	'uploadableFileTypes',
 	'noteDraftLimit',

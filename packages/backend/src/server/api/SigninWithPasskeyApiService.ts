@@ -159,6 +159,13 @@ export class SigninWithPasskeyApiService {
 			});
 		}
 
+		// Sub-accounts have no password or passkey of their own; they are entered from the main account only
+		if (user.parentUserId != null) {
+			return error(403, {
+				id: '3f6f9a0e-6d44-4a8b-9c51-2b0d7e5a1c77',
+			});
+		}
+
 		if (user.isSuspended) {
 			return error(403, {
 				id: 'e03a5f46-d309-4865-9b69-56282d94e1eb',

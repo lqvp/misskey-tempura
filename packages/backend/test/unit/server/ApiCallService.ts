@@ -39,6 +39,7 @@ function createService() {
 		authenticateService as never,
 		{} as never,
 		{} as never,
+		{} as never,
 		apiLoggerService as never,
 		telemetryService as never,
 		{} as never,

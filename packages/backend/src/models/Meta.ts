@@ -787,6 +787,12 @@ export class MiMeta {
 	})
 	public approvalRequiredForSignup: boolean;
 
+	@Column('varchar', {
+		length: 32,
+		default: 'followRegistration',
+	})
+	public subAccountCreationMode: 'followRegistration' | 'independent';
+
 	@Column('boolean', {
 		default: false,
 	})
