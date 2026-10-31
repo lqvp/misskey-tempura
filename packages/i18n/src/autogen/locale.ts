@@ -10231,6 +10231,10 @@ export interface Locale extends ILocale {
     };
     "_permissions": {
         /**
+         * サーバーLLM使用統計を見る
+         */
+        "read:admin:llm-usage": string;
+        /**
          * アカウントの情報を見る
          */
         "read:account": string;
@@ -17178,5 +17182,167 @@ export interface Locale extends ILocale {
              */
             "untrustedIp": string;
         };
+    };
+    "_llmUsage": {
+        /**
+         * サーバーAPIキーの生成を集計する参考統計です。記録の欠落があり、欠落件数は未計測です。請求額ではありません。
+         */
+        "brief": string;
+        /**
+         * アカウント一覧と概要は別の時点の読み取りです。
+         */
+        "snapshotNotice": string;
+        /**
+         * トークンの内訳と取得状況
+         */
+        "tokenDetails": string;
+        /**
+         * 集計の範囲と保持期間
+         */
+        "about": string;
+        /**
+         * 無期限
+         */
+        "unlimited": string;
+        /**
+         * 日別
+         */
+        "daily": string;
+        /**
+         * ノート要約
+         */
+        "noteSummary": string;
+        /**
+         * プロフィール要約
+         */
+        "profileSummary": string;
+        /**
+         * テキスト変換
+         */
+        "textTransform": string;
+        /**
+         * サーバーLLM利用統計
+         */
+        "title": string;
+        /**
+         * サーバーAPIキーを使った生成のみ集計します。個人キー利用、導入前の履歴、会話内容、プロンプト、出力本文は含みません。金額や請求額ではありません。記録失敗・待機上限で欠落する場合があり、その欠落件数は計測していません。アカウント一覧と概要は別の時点の読み取りです。
+         */
+        "description": string;
+        /**
+         * 統計の保持月数
+         */
+        "retention": string;
+        /**
+         * 既定12か月。当月を含むUTC暦月で数えます。0は無期限です。
+         */
+        "retentionDescription": string;
+        /**
+         * 保持期間を短縮すると、次回以降の定期クリーンアップで {date} 00:00 UTC より前（前月以前）の統計を段階的に削除します。完了まで複数回かかる場合があります。進行中の削除処理があれば保存はその完了を待ちます。削除は取り消せず、保持期間を延長しても復元できません。続けますか？
+         */
+        "shorten": ParameterizedString<"date">;
+        /**
+         * サーバーの日時を確認できませんでした。保持期間は保存していません。時間をおいて、もう一度保存してください。
+         */
+        "serverDateUnavailable": string;
+        /**
+         * サーバーの日付が変わり、削除の境界日が変わりました。保持期間は保存していません。もう一度保存して、新しい境界日を確認してください。
+         */
+        "boundaryChanged": string;
+        /**
+         * 別の管理者が保持期間を変更しました。最新の値を読み直しました。変更内容を確認して、もう一度保存してください。
+         */
+        "conflict": string;
+        /**
+         * 対象月 (UTC)
+         */
+        "month": string;
+        /**
+         * リクエスト数
+         */
+        "requests": string;
+        /**
+         * 成功
+         */
+        "successes": string;
+        /**
+         * 失敗
+         */
+        "failures": string;
+        /**
+         * 期間内の利用アカウント数
+         */
+        "uniqueUsers": string;
+        /**
+         * 入力トークン
+         */
+        "input": string;
+        /**
+         * 出力トークン
+         */
+        "output": string;
+        /**
+         * 思考トークン
+         */
+        "thinking": string;
+        /**
+         * キャッシュトークン
+         */
+        "cached": string;
+        /**
+         * 合計トークン
+         */
+        "total": string;
+        /**
+         * 既知件数 / 成功数
+         */
+        "samples": string;
+        /**
+         * 一部のみ取得
+         */
+        "partial": string;
+        /**
+         * — は不明です。0とは区別します。値は取得できたメタデータの合計です。既知件数が少ない項目は部分集計です。
+         */
+        "unknown": string;
+        /**
+         * 集計開始 (UTC): {date}
+         */
+        "startedAt": ParameterizedString<"date">;
+        /**
+         * この月の記録はありません。未利用または記録の欠落の可能性があります。
+         */
+        "noData": string;
+        /**
+         * 集計開始前の月です。導入前の履歴は集計しません。
+         */
+        "beforeStarted": string;
+        /**
+         * 保持期間外の月です。古い統計は削除済み、または定期清掃で順次削除されます。
+         */
+        "outsideRetention": string;
+        /**
+         * 目的別
+         */
+        "byPurpose": string;
+        /**
+         * モデル別
+         */
+        "byModel": string;
+        /**
+         * 利用アカウント別
+         */
+        "users": string;
+        /**
+         * 削除済み・不明なアカウント
+         */
+        "missingUser": string;
+        /**
+         * 日別推移 (UTC)
+         */
+        "chart": string;
+        /**
+         * 記録がない日、未知のトークン、グラフで正確に扱えない大きな値は線をつなぎません。正確な数値は表で確認できます。
+         */
+        "chartNotice": string;
     };
 }

@@ -8,7 +8,7 @@ import { DI } from '@/di-symbols.js';
 import type { MiMeta } from '@/models/Meta.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
-import { MetaService } from '@/core/MetaService.js';
+import { MetaService, RetainedSettingsChangedError, RetentionBoundaryChangedError } from '@/core/MetaService.js';
 import { QueueService } from '@/core/QueueService.js';
 import { ApiLoggerService } from '../../ApiLoggerService.js';
 import { ApiError } from '../../error.js';
@@ -21,6 +21,8 @@ export const meta = {
 	kind: 'write:admin:meta',
 
 	errors: {
+		retentionBoundaryChanged: { message: 'Retention boundary changed. Confirm the server date again.', code: 'RETENTION_BOUNDARY_CHANGED', id: '44670c6f-a32d-49d0-a5ba-93df7c3f25ea' },
+		retainedSettingsChanged: { message: 'Retention settings changed. Reload and confirm again.', code: 'RETAINED_SETTINGS_CHANGED', id: '88be203a-5191-4bb8-91c4-173770d32fbd' },
 		followedUserDuplicated: {
 			message: 'Some items in "defaultFollowedUsers" and "forciblyFollowedUsers" are duplicated.',
 			code: 'FOLLOWED_USER_DUPLICATED',
@@ -209,7 +211,7 @@ export const paramDef = {
 			type: 'array', nullable: true,
 			items: {
 				type: 'string',
-			}
+			},
 		},
 		federation: {
 			type: 'string',
@@ -340,6 +342,9 @@ export const paramDef = {
 		entranceMarginRight: { type: 'integer' },
 		entranceMarginTop: { type: 'integer' },
 		entranceMarginBottom: { type: 'integer' },
+		llmUsageRetentionMonths: { type: 'integer', minimum: 0, maximum: 2147483647 },
+		expectedLlmUsageRetentionBoundary: { type: 'string', pattern: '^\\d{4}-\\d{2}-01$' },
+		expectedLlmUsageRetentionMonths: { type: 'integer', minimum: 0, maximum: 2147483647 },
 		serverGeminiEnabled: { type: 'boolean' },
 		serverGeminiApiKey: { type: 'string', nullable: true },
 		serverGeminiModels: { type: 'string', nullable: false },
@@ -1339,7 +1344,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			const before = await this.metaService.fetch(true);
 
-			await this.metaService.update(set);
+			if (ps.llmUsageRetentionMonths !== undefined) set.llmUsageRetentionMonths = ps.llmUsageRetentionMonths;
+			try { await this.metaService.update(set, ps.expectedLlmUsageRetentionMonths, ps.expectedLlmUsageRetentionBoundary); } catch (error) {
+				if (error instanceof RetentionBoundaryChangedError) throw new ApiError(meta.errors.retentionBoundaryChanged);
+				if (error instanceof RetainedSettingsChangedError) throw new ApiError(meta.errors.retainedSettingsChanged);
+				throw error;
+			}
 
 			const after = await this.metaService.fetch(true);
 

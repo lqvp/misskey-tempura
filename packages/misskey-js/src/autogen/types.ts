@@ -611,6 +611,24 @@ export type paths = {
          */
         post: operations['admin___llm-moderation___queue___update'];
     };
+    '/admin/llm-usage/overview': {
+        /**
+         * admin/llm-usage/overview
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:llm-usage*
+         */
+        post: operations['admin___llm-usage___overview'];
+    };
+    '/admin/llm-usage/users': {
+        /**
+         * admin/llm-usage/users
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:admin:llm-usage*
+         */
+        post: operations['admin___llm-usage___users'];
+    };
     '/admin/login-risk/diagnose': {
         /**
          * admin/login-risk/diagnose
@@ -11254,6 +11272,323 @@ export interface operations {
             };
         };
     };
+    'admin___llm-usage___overview': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    year: number;
+                    month: number;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        year: number;
+                        month: number;
+                        /** @enum {string} */
+                        timezone: 'UTC';
+                        /** Format: date-time */
+                        startedAt: string;
+                        retentionMonths: number;
+                        summary: {
+                            requests: string;
+                            successes: string;
+                            failures: string;
+                            tokens: {
+                                input: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                                output: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                                thinking: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                                cached: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                                total: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                            };
+                        };
+                        uniqueUsers: string;
+                        daily: {
+                            date: string;
+                            requests: string;
+                            successes: string;
+                            failures: string;
+                            tokens: {
+                                input: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                                output: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                                thinking: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                                cached: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                                total: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                            };
+                        }[];
+                        byPurpose: {
+                            purpose: string;
+                            requests: string;
+                            successes: string;
+                            failures: string;
+                            tokens: {
+                                input: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                                output: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                                thinking: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                                cached: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                                total: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                            };
+                        }[];
+                        byModel: {
+                            model: string;
+                            requests: string;
+                            successes: string;
+                            failures: string;
+                            tokens: {
+                                input: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                                output: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                                thinking: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                                cached: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                                total: {
+                                    value: string | null;
+                                    samples: string;
+                                };
+                            };
+                        }[];
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'admin___llm-usage___users': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    year: number;
+                    month: number;
+                    /**
+                     * @default totalTokens
+                     * @enum {string}
+                     */
+                    sort?: 'requests' | 'totalTokens';
+                    /** @default 0 */
+                    offset?: number;
+                    /** @default 30 */
+                    limit?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        hasMore: boolean;
+                        items: {
+                            userId: string;
+                            counters: {
+                                requests: string;
+                                successes: string;
+                                failures: string;
+                                tokens: {
+                                    input: {
+                                        value: string | null;
+                                        samples: string;
+                                    };
+                                    output: {
+                                        value: string | null;
+                                        samples: string;
+                                    };
+                                    thinking: {
+                                        value: string | null;
+                                        samples: string;
+                                    };
+                                    cached: {
+                                        value: string | null;
+                                        samples: string;
+                                    };
+                                    total: {
+                                        value: string | null;
+                                        samples: string;
+                                    };
+                                };
+                            };
+                            user: {
+                                username: string;
+                                name: string | null;
+                                host: string | null;
+                                avatarUrl: string | null;
+                            } | null;
+                        }[];
+                    };
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     'admin___login-risk___diagnose': {
         responses: {
             /** @description OK (with results) */
@@ -11622,6 +11957,9 @@ export interface operations {
                         entranceMarginRight: number;
                         entranceMarginTop: number;
                         entranceMarginBottom: number;
+                        llmUsageRetentionMonths: number;
+                        /** Format: date-time */
+                        llmUsageStartedAt: string;
                         serverGeminiEnabled: boolean;
                         serverGeminiApiKey: string | null;
                         serverGeminiModels: string;
@@ -15442,6 +15780,9 @@ export interface operations {
                     entranceMarginRight?: number;
                     entranceMarginTop?: number;
                     entranceMarginBottom?: number;
+                    llmUsageRetentionMonths?: number;
+                    expectedLlmUsageRetentionBoundary?: string;
+                    expectedLlmUsageRetentionMonths?: number;
                     serverGeminiEnabled?: boolean;
                     serverGeminiApiKey?: string | null;
                     serverGeminiModels?: string;
@@ -34102,6 +34443,11 @@ export interface operations {
         requestBody: {
             content: {
                 'application/json': {
+                    /**
+                     * @default other
+                     * @enum {string}
+                     */
+                    purpose?: 'note-summary' | 'profile-summary' | 'text-transform' | 'other';
                     text: string;
                     prompt: string;
                     fileUris?: {

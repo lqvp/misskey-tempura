@@ -11,8 +11,12 @@ import { MiMeta } from '@/models/Meta.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { bindThis } from '@/decorators.js';
 import type { GlobalEvents } from '@/core/GlobalEventService.js';
+import { retentionCutoff } from '@/core/llm-usage/utils.js';
 import { FeaturedService } from '@/core/FeaturedService.js';
 import type { OnApplicationShutdown } from '@nestjs/common';
+
+export class RetainedSettingsChangedError extends Error {}
+export class RetentionBoundaryChangedError extends Error {}
 
 @Injectable()
 export class MetaService implements OnApplicationShutdown {
@@ -53,6 +57,7 @@ export class MetaService implements OnApplicationShutdown {
 				case 'metaUpdated': {
 					this.cache = { // TODO: このあたりのデシリアライズ処理は各modelファイル内に関数としてexportしたい
 						...(body.after),
+						llmUsageStartedAt: new Date(body.after.llmUsageStartedAt),
 						rootUser: null, // joinなカラムは通常取ってこないので
 					};
 					break;
@@ -99,7 +104,7 @@ export class MetaService implements OnApplicationShutdown {
 	}
 
 	@bindThis
-	public async update(data: Partial<MiMeta>): Promise<MiMeta> {
+	public async update(data: Partial<MiMeta>, expectedLlmUsageRetentionMonths?: number, expectedLlmUsageRetentionBoundary?: string): Promise<MiMeta> {
 		let before: MiMeta | undefined;
 
 		const updated = await this.db.transaction(async transactionalEntityManager => {
@@ -110,6 +115,15 @@ export class MetaService implements OnApplicationShutdown {
 			});
 
 			before = metas[0];
+
+			if (data.llmUsageRetentionMonths !== undefined) {
+				before = await transactionalEntityManager.createQueryBuilder(MiMeta, 'meta').orderBy('meta.id', 'DESC').setLock('pessimistic_write').getOne() ?? undefined;
+				if (expectedLlmUsageRetentionMonths === undefined || (before?.llmUsageRetentionMonths ?? 12) !== expectedLlmUsageRetentionMonths) throw new RetainedSettingsChangedError();
+				const previousMonths = before?.llmUsageRetentionMonths ?? 12;
+				if (data.llmUsageRetentionMonths !== 0 && (previousMonths === 0 || data.llmUsageRetentionMonths < previousMonths)) {
+					if (expectedLlmUsageRetentionBoundary !== retentionCutoff(new Date(), data.llmUsageRetentionMonths)) throw new RetentionBoundaryChangedError();
+				}
+			}
 
 			if (before) {
 				await transactionalEntityManager.update(MiMeta, before.id, data);

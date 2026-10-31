@@ -874,6 +874,8 @@ export const meta = {
 				type: 'number',
 				optional: false, nullable: false,
 			},
+			llmUsageRetentionMonths: { type: 'integer', optional: false, nullable: false },
+			llmUsageStartedAt: { type: 'string', format: 'date-time', optional: false, nullable: false },
 			serverGeminiEnabled: {
 				type: 'boolean',
 				optional: false, nullable: false,
@@ -1287,6 +1289,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				entranceMarginRight: instance.entranceMarginRight,
 				entranceMarginTop: instance.entranceMarginTop,
 				entranceMarginBottom: instance.entranceMarginBottom,
+				llmUsageRetentionMonths: instance.llmUsageRetentionMonths,
+				llmUsageStartedAt: instance.llmUsageStartedAt.toISOString(),
 				serverGeminiEnabled: instance.serverGeminiEnabled,
 				serverGeminiApiKey: instance.serverGeminiApiKey,
 				serverGeminiModels: instance.serverGeminiModels,
