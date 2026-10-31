@@ -26,6 +26,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			v-if="video.thumbnailUrl"
 			:class="$style.video"
 			:src="video.thumbnailUrl"
+			:referrerpolicy="referrerpolicy"
 			:alt="video.comment ?? undefined"
 		/>
 		<video
@@ -60,6 +61,7 @@ import { shouldHideFileByDefault, canRevealFile } from '@/utility/sensitive-file
 
 const props = defineProps<{
 	video: Misskey.entities.DriveFile;
+	referrerpolicy?: 'no-referrer';
 }>();
 
 const emit = defineEmits<{
