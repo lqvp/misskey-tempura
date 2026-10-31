@@ -4,7 +4,7 @@
  */
 
 import { afterEach, describe, expect, test, vi } from 'vitest';
-import { cleanup, render, waitFor, type RenderResult } from '@testing-library/vue';
+import { cleanup, fireEvent, render, waitFor, type RenderResult } from '@testing-library/vue';
 import * as Misskey from 'misskey-js';
 import { components } from '@/components/index.js';
 import { directives } from '@/directives/index.js';
@@ -248,6 +248,8 @@ describe('MkMediaList referrerpolicy (実コンポーネント結合)', () => {
 
 	afterEach(() => {
 		cleanup();
+		delete preferState.imageNewTab;
+		vi.restoreAllMocks();
 	});
 
 	test('referrerpolicy 指定がimg要素まで届く', async () => {
@@ -266,5 +268,21 @@ describe('MkMediaList referrerpolicy (実コンポーネント結合)', () => {
 			expect(img).not.toBeNull();
 			expect(img!.getAttribute('referrerpolicy')).toBeNull();
 		});
+	});
+
+	test.each([
+		{ referrerpolicy: 'no-referrer', features: ['noreferrer'] },
+		{ referrerpolicy: undefined, features: [] },
+	])('新規タブを開く際に referrerpolicy=$referrerpolicy を反映する', async ({ referrerpolicy, features }) => {
+		preferState.imageNewTab = true;
+		const open = vi.spyOn(window, 'open').mockImplementation(() => null);
+		const result = await renderMediaList({ referrerpolicy });
+		const img = await waitFor(() => {
+			const element = result.container.querySelector('img');
+			expect(element).not.toBeNull();
+			return element!;
+		});
+		await fireEvent.click(img);
+		expect(open).toHaveBeenCalledExactlyOnceWith('https://pbs.twimg.com/media/AAAA.jpg', '_blank', ...features);
 	});
 });

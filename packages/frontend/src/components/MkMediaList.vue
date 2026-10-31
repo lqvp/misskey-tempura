@@ -140,7 +140,11 @@ onUnmounted(() => {
 
 function onMediaClick(file: Misskey.entities.DriveFile) {
 	if (prefer.s.imageNewTab) {
-		window.open(file.url, '_blank');
+		if (props.referrerpolicy === 'no-referrer') {
+			window.open(file.url, '_blank', 'noreferrer');
+		} else {
+			window.open(file.url, '_blank');
+		}
 		return;
 	}
 	openGallery(file.id);
