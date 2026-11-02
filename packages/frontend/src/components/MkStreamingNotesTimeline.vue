@@ -36,15 +36,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<span style="height: 1em; width: 1px; background: var(--MI_THEME-divider);"></span>
 						<span>{{ getSeparatorInfo(paginator.items.value[i -1].createdAt, note.createdAt)?.nextText }} <i class="ti ti-chevron-down"></i></span>
 					</div>
+					<MkAntennaMatchReason v-if="props.src === 'antenna' && antennaMatchInfo[note.id]" v-bind="antennaMatchInfo[note.id]"/>
 					<MkNote :class="$style.note" :note="note" :withHardMute="true"/>
 				</div>
 				<div v-else-if="note._shouldInsertAd_" :data-scroll-anchor="note.id">
+					<MkAntennaMatchReason v-if="props.src === 'antenna' && antennaMatchInfo[note.id]" v-bind="antennaMatchInfo[note.id]"/>
 					<MkNote :class="$style.note" :note="note" :withHardMute="true"/>
 					<div :class="$style.ad">
 						<MkAd :preferForms="['horizontal', 'horizontal-big']"/>
 					</div>
 				</div>
-				<MkNote v-else :class="$style.note" :note="note" :withHardMute="true" :data-scroll-anchor="note.id"/>
+				<div v-else :data-scroll-anchor="note.id">
+					<MkAntennaMatchReason v-if="props.src === 'antenna' && antennaMatchInfo[note.id]" v-bind="antennaMatchInfo[note.id]"/>
+					<MkNote :class="$style.note" :note="note" :withHardMute="true"/>
+				</div>
 			</template>
 		</component>
 		<button v-show="paginator.canFetchOlder.value" key="_more_" v-appear="prefer.s.enableInfiniteScroll ? paginator.fetchOlder : null" :disabled="paginator.fetchingOlder.value" class="_button" :class="$style.more" @click="paginator.fetchOlder">
@@ -72,6 +77,8 @@ import { instance } from '@/instance.js';
 import { prefer } from '@/preferences.js';
 import { store } from '@/store.js';
 import MkNote from '@/components/MkNote.vue';
+import MkAntennaMatchReason from '@/components/MkAntennaMatchReason.vue';
+import { misskeyApi } from '@/utility/misskey-api.js';
 import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
 import { DI } from '@/di.js';
@@ -304,6 +311,27 @@ function prepend(note: Misskey.entities.Note & MisskeyEntity) {
 	}
 }
 
+type AntennaMatchInfo = { matchedKeywords: string[][]; matchedExcludeKeywords: string[][] };
+const antennaMatchInfo = shallowRef<Record<string, AntennaMatchInfo>>({});
+
+if (props.src === 'antenna') {
+	// 表示中のノートのマッチ理由を現在の条件で再計算して取得する(受信当時の理由の復元ではない)
+	watch(() => paginator.items.value.map(note => note.id), async (ids) => {
+		const missing = ids.filter(id => !(id in antennaMatchInfo.value));
+		if (missing.length === 0 || props.antenna == null) return;
+		try {
+			const res = await misskeyApi('antennas/match-info', { antennaId: props.antenna, noteIds: missing });
+			const next = { ...antennaMatchInfo.value };
+			for (const x of res) {
+				next[x.noteId] = { matchedKeywords: x.matchedKeywords, matchedExcludeKeywords: x.matchedExcludeKeywords };
+			}
+			antennaMatchInfo.value = next;
+		} catch {
+			// マッチ理由の取得に失敗してもTL表示自体は継続する
+		}
+	}, { immediate: true });
+}
+
 const stream = store.s.realtimeMode ? useStream() : null;
 
 const connections = {
@@ -326,6 +354,9 @@ function connectChannel() {
 			antennaId: props.antenna,
 		});
 		connections.antenna.on('note', prepend);
+		connections.antenna.on('noteMatched', (payload) => {
+			antennaMatchInfo.value = { ...antennaMatchInfo.value, [payload.noteId]: { matchedKeywords: payload.matchedKeywords, matchedExcludeKeywords: payload.matchedExcludeKeywords } };
+		});
 	} else if (props.src === 'home') {
 		connections.homeTimeline = stream.useChannel('homeTimeline', {
 			withRenotes: props.withRenotes,

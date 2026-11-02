@@ -23,27 +23,43 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkSwitch v-model="excludeBots">{{ i18n.ts.antennaExcludeBots }}</MkSwitch>
 			<MkSwitch v-model="withReplies">{{ i18n.ts.withReplies }}</MkSwitch>
 			<MkSwitch v-model="isScoringMode">{{ i18n.ts._tempuraFutureAntenna.scoringMode }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
-			<MkTextarea v-model="keywords">
-				<template #label>{{ i18n.ts.antennaKeywords }}</template>
-				<template #caption>{{ i18n.ts.antennaKeywordsDescription }}</template>
-			</MkTextarea>
-			<MkTextarea v-model="excludeKeywords">
-				<template #label>{{ i18n.ts.antennaExcludeKeywords }}</template>
-				<template #caption>{{ isScoringMode ? i18n.ts._tempuraFutureAntenna.scoringModeDescription : i18n.ts.antennaKeywordsDescription }}</template>
-			</MkTextarea>
-			<MkTextarea v-if="isScoringMode" v-model="mustExcludeKeywords">
-				<template #label>{{ i18n.ts._tempuraFutureAntenna.mustExcludeKeywords }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-				<template #caption>{{ i18n.ts._tempuraFutureAntenna.mustExcludeKeywordsDescription }}</template>
-			</MkTextarea>
+			<div :class="$style.field">
+				<div :class="$style.label">{{ i18n.ts.antennaKeywords }}</div>
+				<MkKeywordGroupsInput v-model="keywords"/>
+				<div :class="$style.caption">{{ i18n.ts.antennaKeywordsDescription }}</div>
+			</div>
+			<div :class="$style.field">
+				<div :class="$style.label">{{ i18n.ts.antennaExcludeKeywords }}</div>
+				<MkKeywordGroupsInput v-model="excludeKeywords"/>
+				<div :class="$style.caption">{{ isScoringMode ? i18n.ts._tempuraFutureAntenna.scoringModeDescription : i18n.ts.antennaKeywordsDescription }}</div>
+			</div>
+			<div v-if="isScoringMode" :class="$style.field">
+				<div :class="$style.label">{{ i18n.ts._tempuraFutureAntenna.mustExcludeKeywords }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></div>
+				<MkKeywordGroupsInput v-model="mustExcludeKeywords"/>
+				<div :class="$style.caption">{{ i18n.ts._tempuraFutureAntenna.mustExcludeKeywordsDescription }}</div>
+			</div>
 			<MkSwitch v-model="localOnly">{{ i18n.ts.localOnly }}</MkSwitch>
 			<MkSwitch v-model="caseSensitive">{{ i18n.ts.caseSensitive }}</MkSwitch>
 			<MkSwitch v-model="withFile">{{ i18n.ts.withFileAntenna }}</MkSwitch>
 			<MkSwitch v-model="excludeNotesInSensitiveChannel">{{ i18n.ts.excludeNotesInSensitiveChannel }}</MkSwitch>
 			<MkSwitch v-model="onlyFollowers">{{ i18n.ts.onlyFollowers }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
+			<div :class="$style.tryConditions">
+				<MkButton inline :disabled="tryRunning" @click="tryConditions()"><i class="ti ti-antenna"></i> {{ i18n.ts._tempuraFutureAntenna.tryConditions }}</MkButton>
+				<div :class="$style.caption">{{ i18n.ts._tempuraFutureAntenna.tryConditionsDescription }}</div>
+				<MkLoading v-if="tryRunning" :inline="true"/>
+				<div v-else-if="tryResults != null" :class="$style.tryResults">
+					<div :class="$style.label">{{ i18n.ts._tempuraFutureAntenna.tryConditionsResult }}</div>
+					<MkResult v-if="tryResults.length === 0" type="empty" :text="i18n.ts._tempuraFutureAntenna.tryConditionsNoMatch"/>
+					<template v-else>
+						<MkNote v-for="note in tryResults" :key="note.id" :class="$style.tryNote" :note="note"/>
+					</template>
+				</div>
+			</div>
 		</div>
 		<div :class="$style.actions">
 			<div class="_buttons">
 				<MkButton inline primary @click="saveAntenna()"><i class="ti ti-device-floppy"></i> {{ i18n.ts.save }}</MkButton>
+				<MkButton v-if="initialAntenna.id != null" inline @click="resetAntenna()"><i class="ti ti-restore"></i> {{ i18n.ts.reset }}</MkButton>
 				<MkButton v-if="initialAntenna.id != null" inline danger @click="deleteAntenna()"><i class="ti ti-trash"></i> {{ i18n.ts.delete }}</MkButton>
 			</div>
 		</div>
@@ -60,6 +76,8 @@ import MkInput from '@/components/MkInput.vue';
 import MkTextarea from '@/components/MkTextarea.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
+import MkNote from '@/components/MkNote.vue';
+import MkKeywordGroupsInput from '@/components/MkKeywordGroupsInput.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
@@ -133,9 +151,9 @@ const {
 
 const name = ref<string>(initialAntenna.name);
 const users = ref<string>(initialAntenna.users.join('\n'));
-const keywords = ref<string>(initialAntenna.keywords.map(x => x.join(' ')).join('\n'));
-const excludeKeywords = ref<string>(initialAntenna.excludeKeywords.map(x => x.join(' ')).join('\n'));
-const mustExcludeKeywords = ref<string>(initialAntenna.mustExcludeKeywords ? initialAntenna.mustExcludeKeywords.map(x => x.join(' ')).join('\n') : '');
+const keywords = ref<string[][]>(initialAntenna.keywords.map(x => [...x]));
+const excludeKeywords = ref<string[][]>(initialAntenna.excludeKeywords.map(x => [...x]));
+const mustExcludeKeywords = ref<string[][]>(initialAntenna.mustExcludeKeywords ? initialAntenna.mustExcludeKeywords.map(x => [...x]) : []);
 const caseSensitive = ref<boolean>(initialAntenna.caseSensitive);
 const localOnly = ref<boolean>(initialAntenna.localOnly);
 const excludeBots = ref<boolean>(initialAntenna.excludeBots);
@@ -145,6 +163,8 @@ const excludeNotesInSensitiveChannel = ref<boolean>(initialAntenna.excludeNotesI
 const onlyFollowers = ref<boolean>(initialAntenna.onlyFollowers);
 const userLists = ref<Misskey.entities.UserList[] | null>(null);
 const isScoringMode = ref<boolean>(initialAntenna.expression === 'SCORE');
+const tryResults = ref<Misskey.entities.Note[] | null>(null);
+const tryRunning = ref<boolean>(false);
 
 watch(() => src.value, async () => {
 	if (src.value === 'list' && userLists.value === null) {
@@ -152,8 +172,8 @@ watch(() => src.value, async () => {
 	}
 });
 
-async function saveAntenna() {
-	const antennaData = {
+function buildAntennaData() {
+	return {
 		name: name.value,
 		src: src.value,
 		userListId: userListId.value,
@@ -164,12 +184,16 @@ async function saveAntenna() {
 		caseSensitive: caseSensitive.value,
 		localOnly: localOnly.value,
 		users: users.value.trim().split('\n').map(x => x.trim()),
-		keywords: keywords.value.trim().split('\n').map(x => x.trim().split(' ')),
-		excludeKeywords: excludeKeywords.value.trim().split('\n').map(x => x.trim().split(' ')),
-		mustExcludeKeywords: mustExcludeKeywords.value.trim().split('\n').map(x => x.trim().split(' ')),
+		keywords: keywords.value.map(x => x.filter(k => k !== '')).filter(x => x.length > 0),
+		excludeKeywords: excludeKeywords.value.map(x => x.filter(k => k !== '')).filter(x => x.length > 0),
+		mustExcludeKeywords: mustExcludeKeywords.value.map(x => x.filter(k => k !== '')).filter(x => x.length > 0),
 		onlyFollowers: onlyFollowers.value,
 		expression: isScoringMode.value ? 'SCORE' : null,
 	};
+}
+
+async function saveAntenna() {
+	const antennaData = buildAntennaData();
 
 	if (initialAntenna.id == null) {
 		const res = await os.apiWithDialog('antennas/create', antennaData);
@@ -177,6 +201,49 @@ async function saveAntenna() {
 	} else {
 		const res = await os.apiWithDialog('antennas/update', { ...antennaData, antennaId: initialAntenna.id });
 		emit('updated', res);
+	}
+}
+
+// 未保存の編集を破棄して、保存済みの値に戻す
+async function resetAntenna() {
+	if (initialAntenna.id == null) return;
+
+	const { canceled } = await os.confirm({
+		type: 'warning',
+		text: i18n.ts.resetAreYouSure,
+	});
+	if (canceled) return;
+
+	name.value = initialAntenna.name;
+	src.value = initialAntenna.src;
+	userListId.value = initialAntenna.userListId;
+	users.value = initialAntenna.users.join('\n');
+	keywords.value = initialAntenna.keywords.map(x => [...x]);
+	excludeKeywords.value = initialAntenna.excludeKeywords.map(x => [...x]);
+	mustExcludeKeywords.value = initialAntenna.mustExcludeKeywords ? initialAntenna.mustExcludeKeywords.map(x => [...x]) : [];
+	caseSensitive.value = initialAntenna.caseSensitive;
+	localOnly.value = initialAntenna.localOnly;
+	excludeBots.value = initialAntenna.excludeBots;
+	withReplies.value = initialAntenna.withReplies;
+	withFile.value = initialAntenna.withFile;
+	excludeNotesInSensitiveChannel.value = initialAntenna.excludeNotesInSensitiveChannel;
+	onlyFollowers.value = initialAntenna.onlyFollowers;
+	isScoringMode.value = initialAntenna.expression === 'SCORE';
+	tryResults.value = null;
+}
+
+async function tryConditions() {
+	tryRunning.value = true;
+	tryResults.value = null;
+	try {
+		tryResults.value = await misskeyApi('antennas/test', buildAntennaData());
+	} catch (err) {
+		os.alert({
+			type: 'error',
+			text: err instanceof Error ? err.message : String(err),
+		});
+	} finally {
+		tryRunning.value = false;
 	}
 }
 
@@ -211,5 +278,41 @@ function addUser() {
 	margin-top: 16px;
 	padding: 24px 0;
 	border-top: solid 0.5px var(--MI_THEME-divider);
+}
+
+.field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.label {
+	font-size: 0.85em;
+	font-weight: bold;
+}
+
+.caption {
+	font-size: 0.8em;
+	opacity: 0.7;
+}
+
+.tryConditions {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+.tryResults {
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.tryNote {
+	border: solid 1px var(--MI_THEME-divider);
+	border-radius: var(--MI-radius);
+	overflow: clip;
 }
 </style>
