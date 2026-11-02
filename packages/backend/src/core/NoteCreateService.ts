@@ -956,9 +956,10 @@ export class NoteCreateService implements OnApplicationShutdown {
 
 			this.roleService.addNoteToRoleTimeline(noteObj);
 
-			matchedAntennas.then(antennas => {
-				for (const antenna of antennas) {
+			matchedAntennas.then(results => {
+				for (const { antenna, match } of results) {
 					this.globalEventService.publishAntennaStream(antenna.id, 'note', noteObj);
+					this.globalEventService.publishAntennaStream(antenna.id, 'noteMatched', { noteId: noteObj.id, ...match });
 				}
 			});
 

@@ -159,6 +159,7 @@ describe('アンテナ', () => {
 			excludeNotesInSensitiveChannel: false,
 			hasUnreadNote: false,
 			isActive: true,
+			lastUsedAt: new Date(response.lastUsedAt).toISOString(),
 			keywords: [['keyword']],
 			name: 'test',
 			src: 'all',

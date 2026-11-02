@@ -24,6 +24,7 @@ import type { MiSystemWebhook } from '@/models/SystemWebhook.js';
 import type { MiMeta } from '@/models/Meta.js';
 import { MiAvatarDecoration, MiChatMessage, MiChatRoom, MiReversiGame, MiRole, MiRoleAssignment } from '@/models/_.js';
 import type { Packed } from '@/misc/json-schema.js';
+import type { AntennaMatchInfo } from '@/misc/antenna-match.js';
 import { DI } from '@/di-symbols.js';
 import type { Config } from '@/config.js';
 import { bindThis } from '@/decorators.js';
@@ -155,6 +156,7 @@ export interface ClipEventTypes {
 
 export interface AntennaEventTypes {
 	note: Packed<'Note'>;
+	noteMatched: { noteId: MiNote['id'] } & AntennaMatchInfo;
 }
 
 export interface RoleTimelineEventTypes {
