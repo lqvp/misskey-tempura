@@ -4584,6 +4584,7 @@ _tempuraFutureAntenna:
   removeGroup: "このグループを削除"
   tryConditions: "保存前に試す"
   tryConditionsDescription: "直近の見えるノート(最大200件)に現在の条件を試します。フォロワー限定やダイレクトなど、見えないノートは対象外です。"
+  keywordGroupsDescription: "同じグループの中はAND(かつ)、グループ同士はOR(または)でマッチします"
   tryConditionsResult: "マッチしたノート"
   tryConditionsNoMatch: "マッチするノートが見つかりませんでした"
   matchReason: "マッチした条件"

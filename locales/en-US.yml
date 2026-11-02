@@ -3539,6 +3539,7 @@ _tempuraFutureAntenna:
   removeGroup: "Remove this group"
   tryConditions: "Test before saving"
   tryConditionsDescription: "Tests the current conditions against recent notes visible to you (up to 200). Notes you cannot see, such as followers-only or direct notes, are excluded."
+  keywordGroupsDescription: "Keywords in the same group are ANDed; groups are ORed"
   tryConditionsResult: "Matched notes"
   tryConditionsNoMatch: "No matching notes found"
   matchReason: "Matched conditions"

@@ -26,12 +26,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div :class="$style.field">
 				<div :class="$style.label">{{ i18n.ts.antennaKeywords }}</div>
 				<MkKeywordGroupsInput v-model="keywords"/>
-				<div :class="$style.caption">{{ i18n.ts.antennaKeywordsDescription }}</div>
+				<div :class="$style.caption">{{ i18n.ts._tempuraFutureAntenna.keywordGroupsDescription }}</div>
 			</div>
 			<div :class="$style.field">
 				<div :class="$style.label">{{ i18n.ts.antennaExcludeKeywords }}</div>
 				<MkKeywordGroupsInput v-model="excludeKeywords"/>
-				<div :class="$style.caption">{{ isScoringMode ? i18n.ts._tempuraFutureAntenna.scoringModeDescription : i18n.ts.antennaKeywordsDescription }}</div>
+				<div :class="$style.caption">{{ isScoringMode ? i18n.ts._tempuraFutureAntenna.scoringModeDescription : i18n.ts._tempuraFutureAntenna.keywordGroupsDescription }}</div>
 			</div>
 			<div v-if="isScoringMode" :class="$style.field">
 				<div :class="$style.label">{{ i18n.ts._tempuraFutureAntenna.mustExcludeKeywords }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></div>
