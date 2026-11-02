@@ -60,7 +60,7 @@ function duplicateAntenna(antenna: Misskey.entities.Antenna) {
 		id: undefined,
 		createdAt: undefined,
 		name: `${antenna.name} - ${i18n.ts.copy}`,
-	} as Misskey.entities.Antenna;
+	};
 	const { dispose } = os.popup(MkAntennaEditorDialog, { antenna: copy }, {
 		created: () => {
 			antennasCache.delete();

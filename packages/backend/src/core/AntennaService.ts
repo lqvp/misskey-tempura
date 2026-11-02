@@ -264,7 +264,7 @@ export class AntennaService implements OnApplicationShutdown {
 			if (accts.includes(this.utilityService.getFullApAccount(noteUser.username, noteUser.host).toLowerCase())) return false;
 		}
 
-			const keywordResult = this.evaluateKeywordMatch(antenna, note);
+		const keywordResult = this.evaluateKeywordMatch(antenna, note);
 		if (!keywordResult.hit) return false;
 
 		// 表示側(取得API・ストリーム)と同じく、ミュートしているユーザーと自分をブロックしているユーザーが関わるノートを受信時にも除外する
@@ -277,7 +277,7 @@ export class AntennaService implements OnApplicationShutdown {
 			if (relatedUserIds.some(id => mutingUserIds.has(id) || blockingUserIds.has(id))) return false;
 		}
 
-	if (antenna.withFile) {
+		if (antenna.withFile) {
 			if (note.fileIds && note.fileIds.length === 0) return false;
 		}
 

@@ -16983,6 +16983,10 @@ export interface Locale extends ILocale {
          */
         "tryConditionsDescription": string;
         /**
+         * 同じグループの中はAND(かつ)、グループ同士はOR(または)でマッチします
+         */
+        "keywordGroupsDescription": string;
+        /**
          * マッチしたノート
          */
         "tryConditionsResult": string;

@@ -57,7 +57,7 @@ const searchQuery = ref<string>('');
 const searching = computed(() => searchQuery.value.trim() !== '');
 const searchResults = ref<Misskey.entities.Note[]>([]);
 const searchFetching = ref<boolean>(false);
-let searchTimer: ReturnType<typeof setTimeout> | null = null;
+let searchTimer: number | null = null;
 
 watch([searchQuery, () => props.antennaId], () => {
 	if (searchTimer != null) window.clearTimeout(searchTimer);

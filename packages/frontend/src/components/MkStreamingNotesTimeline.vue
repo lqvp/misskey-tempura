@@ -317,7 +317,7 @@ const antennaMatchInfo = shallowRef<Record<string, AntennaMatchInfo>>({});
 if (props.src === 'antenna') {
 	// 表示中のノートのマッチ理由を現在の条件で再計算して取得する(受信当時の理由の復元ではない)
 	watch(() => paginator.items.value.map(note => note.id), async (ids) => {
-		const missing = ids.filter(id => !(id in antennaMatchInfo.value));
+		const missing = ids.filter(id => !(id in antennaMatchInfo.value)).slice(0, 100); // antennas/match-info の noteIds 上限
 		if (missing.length === 0 || props.antenna == null) return;
 		try {
 			const res = await misskeyApi('antennas/match-info', { antennaId: props.antenna, noteIds: missing });

@@ -84,10 +84,11 @@ import { i18n } from '@/i18n.js';
 import { deepMerge } from '@/utility/merge.js';
 import { useMkSelect } from '@/composables/use-mkselect.js';
 
-type PartialAllowedAntenna = Omit<Misskey.entities.Antenna, 'id' | 'createdAt' | 'updatedAt'> & {
+type PartialAllowedAntenna = Omit<Misskey.entities.Antenna, 'id' | 'createdAt' | 'updatedAt' | 'lastUsedAt'> & {
 	id?: string;
 	createdAt?: string;
 	updatedAt?: string;
+	lastUsedAt?: string;
 };
 
 const props = defineProps<{
@@ -192,6 +193,9 @@ function buildAntennaData() {
 	};
 }
 
+// 最後に保存が成功した値。リセットはページ表示時点ではなくこの値に戻す
+let savedAntenna = initialAntenna;
+
 async function saveAntenna() {
 	const antennaData = buildAntennaData();
 
@@ -200,6 +204,7 @@ async function saveAntenna() {
 		emit('created', res);
 	} else {
 		const res = await os.apiWithDialog('antennas/update', { ...antennaData, antennaId: initialAntenna.id });
+		savedAntenna = { ...savedAntenna, ...antennaData };
 		emit('updated', res);
 	}
 }
@@ -214,21 +219,21 @@ async function resetAntenna() {
 	});
 	if (canceled) return;
 
-	name.value = initialAntenna.name;
-	src.value = initialAntenna.src;
-	userListId.value = initialAntenna.userListId;
-	users.value = initialAntenna.users.join('\n');
-	keywords.value = initialAntenna.keywords.map(x => [...x]);
-	excludeKeywords.value = initialAntenna.excludeKeywords.map(x => [...x]);
-	mustExcludeKeywords.value = initialAntenna.mustExcludeKeywords ? initialAntenna.mustExcludeKeywords.map(x => [...x]) : [];
-	caseSensitive.value = initialAntenna.caseSensitive;
-	localOnly.value = initialAntenna.localOnly;
-	excludeBots.value = initialAntenna.excludeBots;
-	withReplies.value = initialAntenna.withReplies;
-	withFile.value = initialAntenna.withFile;
-	excludeNotesInSensitiveChannel.value = initialAntenna.excludeNotesInSensitiveChannel;
-	onlyFollowers.value = initialAntenna.onlyFollowers;
-	isScoringMode.value = initialAntenna.expression === 'SCORE';
+	name.value = savedAntenna.name;
+	src.value = savedAntenna.src;
+	userListId.value = savedAntenna.userListId;
+	users.value = savedAntenna.users.join('\n');
+	keywords.value = savedAntenna.keywords.map(x => [...x]);
+	excludeKeywords.value = savedAntenna.excludeKeywords.map(x => [...x]);
+	mustExcludeKeywords.value = savedAntenna.mustExcludeKeywords ? savedAntenna.mustExcludeKeywords.map(x => [...x]) : [];
+	caseSensitive.value = savedAntenna.caseSensitive;
+	localOnly.value = savedAntenna.localOnly;
+	excludeBots.value = savedAntenna.excludeBots;
+	withReplies.value = savedAntenna.withReplies;
+	withFile.value = savedAntenna.withFile;
+	excludeNotesInSensitiveChannel.value = savedAntenna.excludeNotesInSensitiveChannel;
+	onlyFollowers.value = savedAntenna.onlyFollowers;
+	isScoringMode.value = savedAntenna.expression === 'SCORE';
 	tryResults.value = null;
 }
 
