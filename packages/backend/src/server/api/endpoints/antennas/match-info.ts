@@ -97,7 +97,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			// 見えないノートのマッチ情報は返さない(取得側と同じフィルタを通す)
 			const query = this.notesRepository.createQueryBuilder('note')
 				.where('note.id IN (:...noteIds)', { noteIds: ps.noteIds })
-				.innerJoinAndSelect('note.user', 'user');
+				.innerJoinAndSelect('note.user', 'user')
+				.leftJoinAndSelect('note.reply', 'reply')
+				.leftJoinAndSelect('note.renote', 'renote')
+				.leftJoinAndSelect('reply.user', 'replyUser')
+				.leftJoinAndSelect('renote.user', 'renoteUser');
 
 			this.queryService.generateVisibilityQuery(query, me);
 			this.queryService.generateBaseNoteFilteringQuery(query, me);

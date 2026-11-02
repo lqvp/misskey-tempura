@@ -143,6 +143,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			// 公開範囲とミュート/ブロックのフィルタを必ず通すので、フォロワー限定やダイレクトなど見えないはずのノートは返らない。
 			const query = this.notesRepository.createQueryBuilder('note')
 				.innerJoinAndSelect('note.user', 'user')
+				.leftJoinAndSelect('note.reply', 'reply')
+				.leftJoinAndSelect('note.renote', 'renote')
+				.leftJoinAndSelect('reply.user', 'replyUser')
+				.leftJoinAndSelect('renote.user', 'renoteUser')
 				.orderBy('note.id', 'DESC')
 				.take(200);
 
