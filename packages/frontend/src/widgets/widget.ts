@@ -54,7 +54,7 @@ export const useWidgetPropsManager = <F extends FormWithDefault>(
 	watch(() => props.widget?.data, (to) => {
 		if (to != null) {
 			for (const key of Object.keys(propsDef)) {
-				(widgetProps as any)[key] = to[key];
+				(widgetProps as any)[key] = Object.hasOwn(to, key) ? to[key] : propsDef[key].default;
 			}
 		}
 	}, { deep: true });
