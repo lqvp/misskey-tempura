@@ -20,5 +20,5 @@ export function updateNestedWidget<T extends NestedWidget>(widgets: T[], id: str
 }
 
 export function getNestedWidgetRotationDelay(seconds: number): number | null {
-	return Number.isFinite(seconds) && seconds > 0 ? Math.min(seconds * 1000, 2147483647) : null;
+	return Number.isFinite(seconds) && seconds > 0 ? Math.min(Math.max(seconds * 1000, 500), 2147483647) : null;
 }

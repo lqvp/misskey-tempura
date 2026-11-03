@@ -19,7 +19,7 @@ describe('nested widget editing', () => {
 		expect(updateNestedWidget(children(), 'removed', {})).toEqual(children());
 		expect(moveNestedWidget(children(), 'a', -1)).toEqual(children());
 	});
-	test.each([[0, null], [-1, null], [NaN, null], [Infinity, null], [0.5, 500], [10, 10000]])('schedules only finite positive intervals: %s', (seconds, expected) => {
+	test.each([[0, null], [-1, null], [NaN, null], [Infinity, null], [0.001, 500], [0.5, 500], [10, 10000], [1e10, 2147483647]])('schedules only finite positive intervals: %s', (seconds, expected) => {
 		expect(getNestedWidgetRotationDelay(seconds)).toBe(expected);
 	});
 });

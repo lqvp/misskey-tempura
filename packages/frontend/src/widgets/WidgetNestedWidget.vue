@@ -23,7 +23,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</button>
 	</template>
 
-	<div :class="$style.container">
+	<div ref="containerEl" :class="$style.container">
 		<div v-if="!hasWidgets" :class="$style.intro">
 			<MkResult type="empty" :text="i18n.ts.nothing"/>
 			<MkButton @click="configure"><i class="ti ti-settings"></i> {{ i18n.ts.settings }}</MkButton>
@@ -44,7 +44,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch, inject, onMounted, onBeforeUnmount, onActivated, onDeactivated } from 'vue';
+import { ref, useTemplateRef, computed, watch, inject, onMounted, onBeforeUnmount, onActivated, onDeactivated } from 'vue';
 import { createVisibilityAwareInterval } from '@@/js/interval.js';
 import { widgetPreviewContext } from './widget-preview.js';
 import { getNestedWidgetRotationDelay, updateNestedWidget } from './nested-widget.js';
@@ -100,12 +100,15 @@ const hasWidgets = computed(() => widgetProps.widgets.length > 0);
 
 let stopInterval: (() => void) | undefined;
 let mounted = false;
+const containerEl = useTemplateRef('containerEl');
+let visible = typeof IntersectionObserver === 'undefined';
+let visibilityObserver: IntersectionObserver | undefined;
 
 function resetInterval() {
 	stopInterval?.();
 	stopInterval = undefined;
 	const delay = getNestedWidgetRotationDelay(widgetProps.interval);
-	if (!mounted || preview || delay === null || widgetProps.widgets.length < 2) return;
+	if (!mounted || !visible || preview || delay === null || widgetProps.widgets.length < 2) return;
 	stopInterval = createVisibilityAwareInterval(() => {
 		currentIndex.value = (currentIndex.value + 1) % widgetProps.widgets.length;
 	}, delay);
@@ -130,8 +133,22 @@ function childUpdater(id: string) {
 	};
 }
 
-onMounted(() => { mounted = true; resetInterval(); });
-onBeforeUnmount(() => stopInterval?.());
+onMounted(() => {
+	mounted = true;
+	if (!preview && containerEl.value && typeof IntersectionObserver !== 'undefined') {
+		visibilityObserver = new IntersectionObserver(([entry]) => {
+			visible = entry.isIntersecting;
+			resetInterval();
+		});
+		visibilityObserver.observe(containerEl.value);
+	}
+	resetInterval();
+});
+onBeforeUnmount(() => {
+	mounted = false;
+	visibilityObserver?.disconnect();
+	stopInterval?.();
+});
 onActivated(() => { mounted = true; resetInterval(); });
 onDeactivated(() => { mounted = false; stopInterval?.(); });
 watch(() => [widgetProps.interval, widgetProps.widgets], () => {

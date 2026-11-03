@@ -28,9 +28,9 @@ let app: App;
 let root: HTMLElement;
 afterEach(() => { app?.unmount(); root?.remove(); });
 const initial = () => ({ interval: 10, widgets: [{ id: 'a', name: 'clock', data: { size: 'small' } }] });
-async function mount() {
+const initialWithGrandchild = () => ({ interval: 20, customTitle: 'parent', widgets: [{ id: 'nest', name: 'nestedWidget', data: { interval: 15, customTitle: 'child', widgets: [{ id: 'clock', name: 'clock', data: { size: 'small' } }] } }] });
+async function mount(source: Record<string, any> = initial()) {
 	updateI18n(locales['ja-JP']);
-	const source = initial();
 	const saved = vi.fn();
 	app = createApp(Dialog, { widgetName: 'nestedWidget', form: { interval: { type: 'number', default: 10 } }, currentSettings: source, onSaved: saved });
 	app.component('MkResult', MkResult);
@@ -52,6 +52,20 @@ async function mount() {
 }
 
 describe('nested widget settings draft', () => {
+	test('edits a grandchild while preserving both ancestors and the original settings', async () => {
+		const original = initialWithGrandchild();
+		const { source, saved } = await mount(original);
+		[...root.querySelectorAll('button')].find(el => el.textContent?.includes('ネスト'))!.click(); await nextTick(); await nextTick();
+		[...root.querySelectorAll('button')].find(el => el.textContent?.includes('時計'))!.click(); await nextTick(); await nextTick();
+		const input = root.querySelector('input[type="text"]') as HTMLInputElement;
+		expect(input.value).toBe('small');
+		input.value = 'large'; input.dispatchEvent(new Event('input', { bubbles: true })); await nextTick();
+		(root.querySelector('#save') as HTMLButtonElement).click();
+		const expected = initialWithGrandchild();
+		expected.widgets[0].data.widgets[0].data.size = 'large';
+		expect(saved.mock.calls[0][0]).toEqual(expected);
+		expect(source).toEqual(initialWithGrandchild());
+	});
 	test('edits a child with its existing form and discards all changes on cancel', async () => {
 		const { source, saved } = await mount();
 		const button = [...root.querySelectorAll('button')].find(el => el.textContent?.includes('時計'))!;
