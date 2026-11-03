@@ -12,7 +12,7 @@ import { BroadcastChannel } from 'broadcast-channel';
 import type { Ref } from 'vue';
 import { $i } from '@/i.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
-import { get, set } from '@/utility/idb-proxy.js';
+import { get, set, update } from '@/utility/idb-proxy.js';
 import { store } from '@/store.js';
 import { deepClone } from '@/utility/clone.js';
 import { deepMerge } from '@/utility/merge.js';
@@ -66,6 +66,9 @@ export class Pizzax<T extends StateDef> {
 			return job();
 		});
 		this.currentIdbJob = promise;
+		// Callers may intentionally fire-and-forget a setting update. Keep the
+		// rejection observable to awaiters without an unhandled rejection.
+		void promise.catch(err => console.error('Pizzax failed to save data to idb!', err));
 		return promise;
 	}
 
@@ -90,6 +93,8 @@ export class Pizzax<T extends StateDef> {
 
 		this.ready = this.init();
 		this.loaded = this.ready.then(() => this.load());
+		// Keep the public promise rejected for awaiters without a global unhandled error.
+		void this.loaded.catch(() => {});
 	}
 
 	private isPureObject(value: unknown): value is Record<string | number | symbol, unknown> {
@@ -128,9 +133,8 @@ export class Pizzax<T extends StateDef> {
 		}
 
 		this.pizzaxChannel.addEventListener('message', ({ where, key, value, userId }) => {
-			// アカウント変更すればunisonReloadが効くため、このreturnが発火することは
-			// まずないと思うけど一応弾いておく
-			if (where === 'deviceAccount' && !($i && userId !== $i.id)) return;
+			// タブごとにアカウントが違うことがあるので、deviceAccount の値は同じアカウントのタブからだけ受け取る
+			if (where === 'deviceAccount' && !($i && userId === $i.id)) return;
 			this.r[key].value = this.s[key] = value;
 		});
 	}
@@ -140,7 +144,7 @@ export class Pizzax<T extends StateDef> {
 			if ($i) {
 				// api関数と循環参照なので一応setTimeoutしておく
 				window.setTimeout(async () => {
-					await store.ready;
+					try { await store.ready; } catch (error) { reject(error); return; }
 
 					misskeyApi('i/registry/get-all', { scope: ['client', this.key] })
 						.then(kvs => {
@@ -159,7 +163,7 @@ export class Pizzax<T extends StateDef> {
 
 							return set(this.registryCacheKeyName, cache);
 						})
-						.then(() => resolve());
+						.then(() => resolve(), reject);
 				}, 1);
 			} else {
 				resolve();
@@ -177,34 +181,28 @@ export class Pizzax<T extends StateDef> {
 		return this.addIdbSetJob(async () => {
 			switch (this.def[key].where) {
 				case 'device': {
+					await update<Record<string, unknown>>(this.deviceStateKeyName, previous => ({ ...previous, [key]: rawValue }));
 					this.pizzaxChannel.postMessage({
 						where: 'device',
 						key,
 						value: rawValue,
 					});
-					const deviceState = await get(this.deviceStateKeyName) || {};
-					deviceState[key] = rawValue;
-					await set(this.deviceStateKeyName, deviceState);
 					break;
 				}
 				case 'deviceAccount': {
 					if ($i == null) break;
+					await update<Record<string, unknown>>(this.deviceAccountStateKeyName, previous => ({ ...previous, [key]: rawValue }));
 					this.pizzaxChannel.postMessage({
 						where: 'deviceAccount',
 						key,
 						value: rawValue,
 						userId: $i.id,
 					});
-					const deviceAccountState = await get(this.deviceAccountStateKeyName) || {};
-					deviceAccountState[key] = rawValue;
-					await set(this.deviceAccountStateKeyName, deviceAccountState);
 					break;
 				}
 				case 'account': {
 					if ($i == null) break;
-					const cache = await get(this.registryCacheKeyName) || {};
-					cache[key] = rawValue;
-					await set(this.registryCacheKeyName, cache);
+					await update<Record<string, unknown>>(this.registryCacheKeyName, previous => ({ ...previous, [key]: rawValue }));
 					await misskeyApi('i/registry/set', {
 						scope: ['client', this.key],
 						key: key.toString(),
@@ -213,6 +211,21 @@ export class Pizzax<T extends StateDef> {
 					break;
 				}
 			}
+		});
+	}
+
+	/** Update a shared device value from its latest persisted value, in one IDB transaction. */
+	public updateDevice<K extends keyof T>(key: K, updater: (previous: T[K]['default']) => T[K]['default']): Promise<void> {
+		if (this.def[key].where !== 'device') throw new Error('updateDevice requires device scope');
+		return this.addIdbSetJob(async () => {
+			let value: T[K]['default'];
+			await update<Record<string, unknown>>(this.deviceStateKeyName, previous => {
+				const state = previous ?? {};
+				value = deepClone(updater((state[key as string] ?? this.def[key].default) as T[K]['default']));
+				return { ...state, [key]: value };
+			});
+			this.r[key].value = this.s[key] = value!;
+			this.pizzaxChannel.postMessage({ where: 'device', key, value: value! });
 		});
 	}
 

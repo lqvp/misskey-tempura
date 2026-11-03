@@ -16,20 +16,22 @@ import components from '@/components/index.js';
 import { themeManager } from '@/theme.js';
 import { isDeviceDarkmode } from '@/utility/is-device-darkmode.js';
 import { i18n } from '@/i18n.js';
-import { refreshCurrentAccount, login } from '@/accounts.js';
+import { refreshCurrentAccount } from '@/accounts.js';
 import { store } from '@/store.js';
 import { fetchInstance, instance } from '@/instance.js';
 import { updateDeviceKind } from '@/utility/device-kind.js';
 import { reloadChannel } from '@/utility/unison-reload.js';
-import { getUrlWithoutLoginId } from '@/utility/login-id.js';
-import { getAccountFromId } from '@/utility/get-account-from-id.js';
+import { isRemovalOf, onAccountEvent } from '@/utility/account-events.js';
 import { deckStore } from '@/ui/deck/deck-store.js';
 import { analytics, initAnalytics } from '@/analytics.js';
 import { miLocalStorage } from '@/local-storage.js';
+import { withAccount } from '@/utility/pinned-account.js';
+import { migrateDraftItems } from '@/utility/draft-storage.js';
+import { setMultipleAccounts } from '@/utility/tab-title.js';
 import { fetchCustomEmojis } from '@/custom-emojis.js';
 import { prefer } from '@/preferences.js';
 import { applyFont } from '@/utility/font.js';
-import { $i } from '@/i.js';
+import { $i, bootAccount } from '@/i.js';
 import { launchPlugins } from '@/plugin.js';
 import { initTelemetry } from '@/telemetry.js';
 
@@ -149,8 +151,17 @@ export async function common(createVue: () => Promise<App<Element>>) {
 
 	// 一斉リロード
 	reloadChannel.addEventListener('message', path => {
-		if (path !== null) window.location.href = path;
+		if (path === '/?logout=1') {
+			window.location.href = '/';
+			return;
+		}
+		if (typeof path === 'string') window.location.href = withAccount(path, $i?.id ?? null);
 		else window.location.reload();
+	});
+
+	// このタブのアカウントが端末から外されたら、別のアカウントにせず止める(再読み込みすると止まる画面になる)
+	onAccountEvent(msg => {
+		if (isRemovalOf(msg, $i?.id)) window.location.reload();
 	});
 
 	//#region Set lang attr
@@ -158,32 +169,29 @@ export async function common(createVue: () => Promise<App<Element>>) {
 	html.setAttribute('lang', lang);
 	//#endregion
 
-	await store.ready;
-	await deckStore.ready;
+	try {
+		await Promise.all([store.ready, deckStore.ready]);
+	} catch {
+		// Logout may invalidate a migration that was still initializing.
+		bootAccount.error = 'storage-failed';
+	}
+
+	{
+		const accountIds = prefer.s.accounts.map(([, u]) => u.id);
+		setMultipleAccounts(accountIds.length > 1);
+		if (bootAccount.error !== 'unsafe-storage') {
+			try { await migrateDraftItems(accountIds); } catch (err) {
+				console.error('Failed to migrate draft storage', err);
+				bootAccount.error = 'storage-failed';
+			}
+		}
+	}
 
 	const fetchInstanceMetaPromise = fetchInstance();
 
 	fetchInstanceMetaPromise.then(() => {
 		miLocalStorage.setItem('v', instance.version);
 	});
-
-	//#region loginId
-	const params = new URLSearchParams(window.location.search);
-	const loginId = params.get('loginId');
-
-	if (loginId) {
-		const target = getUrlWithoutLoginId(window.location.href);
-
-		if (!$i || $i.id !== loginId) {
-			const account = await getAccountFromId(loginId);
-			if (account) {
-				await login(account.token, target);
-			}
-		}
-
-		window.history.replaceState({ misskey: 'loginId' }, '', target);
-	}
-	//#endregion
 
 	//#region Sync dark mode
 	if (prefer.s.syncDeviceDarkMode) {
@@ -294,7 +302,7 @@ export async function common(createVue: () => Promise<App<Element>>) {
 			);
 		}
 
-		refreshCurrentAccount();
+		void refreshCurrentAccount().catch(err => console.error('Failed to refresh account', err));
 	}
 	//#endregion
 

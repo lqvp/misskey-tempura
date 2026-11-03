@@ -15,9 +15,21 @@ import { $i } from '@/i.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { normalizePostFormActions } from '@/utility/post-form.js';
 import { TAB_ID } from '@/tab-id.js';
+import { PreferenceWriteQueue } from '@/preferences/write.js';
+import { withPreferenceLock } from '@/preferences/lock.js';
+import type { PreferencesProfile } from '@/preferences/manager.js';
 
 // クラウド同期用グループ名
 const syncGroup = 'default';
+
+const writes = new PreferenceWriteQueue<PreferencesProfile>({
+	lock: withPreferenceLock,
+	read: () => {
+		const raw = miLocalStorage.getItem('preferences');
+		return raw ? JSON.parse(raw) : null;
+	},
+	write: profile => miLocalStorage.setItem('preferences', JSON.stringify(profile)),
+});
 
 const io: StorageProvider = {
 	load: () => {
@@ -29,9 +41,7 @@ const io: StorageProvider = {
 		}
 	},
 
-	save: (ctx) => {
-		miLocalStorage.setItem('preferences', JSON.stringify(ctx.profile));
-	},
+	save: ctx => writes.save(ctx.before, ctx.profile),
 
 	cloudGet: async (ctx) => {
 		// TODO: この取得方法だとアカウントが変わると保存場所も変わってしまうので改修する
@@ -134,7 +144,8 @@ const preferencesChannel = new BroadcastChannel<{
 	timestamp: number;
 }>('preferences');
 
-prefer.on('committed', () => {
+prefer.on('committed', async () => {
+	try { await prefer.flush(); } catch { return; }
 	latestPreferencesUpdate = {
 		tabId: TAB_ID,
 		timestamp: Date.now(),
@@ -146,12 +157,13 @@ prefer.on('committed', () => {
 	});
 });
 
-preferencesChannel.addEventListener('message', (msg) => {
+preferencesChannel.addEventListener('message', async (msg) => {
 	if (msg.type === 'preferencesUpdate') {
 		if (msg.tabId === TAB_ID) return;
 		if (latestPreferencesUpdate != null) {
 			if (msg.timestamp <= latestPreferencesUpdate.timestamp) return;
 		}
+		try { await prefer.flush(); } catch { return; }
 		prefer.reloadProfile();
 		sanitizePostFormActions();
 		if (_DEV_) console.log('prefer:received update from other tab');

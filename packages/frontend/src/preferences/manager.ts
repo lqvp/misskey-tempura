@@ -71,6 +71,7 @@ export function isSameScope(a: Scope, b: Scope): boolean {
 }
 
 export type PreferencesProfile = {
+	storageRevision?: string;
 	id: string;
 	version: string;
 	type: 'main';
@@ -87,7 +88,7 @@ export type PossiblyNonNormalizedPreferencesProfile = Omit<PreferencesProfile, '
 
 export type StorageProvider = {
 	load: () => PossiblyNonNormalizedPreferencesProfile | null;
-	save: (ctx: { profile: PreferencesProfile; }) => void;
+	save: (ctx: { profile: PreferencesProfile; before: PreferencesProfile | null; }) => void | Promise<void>;
 	cloudGetBulk: <K extends keyof PREF>(ctx: { needs: { key: K; scope: Scope; }[] }) => Promise<Partial<Record<K, ValueOf<K>>>>;
 	cloudGet: <K extends keyof PREF>(ctx: { key: K; scope: Scope; }) => Promise<{ value: ValueOf<K>; } | null>;
 	cloudSet: <K extends keyof PREF>(ctx: { key: K; scope: Scope; value: ValueOf<K>; }) => Promise<void>;
@@ -196,6 +197,9 @@ export class PreferencesManager extends EventEmitter<PreferencesManagerEvents> {
 	private currentAccount: { id: string } | null;
 	public profile: PreferencesProfile;
 	public cloudReady: Promise<void>;
+	private previousSave: PreferencesProfile | null = null;
+	private persistence: Promise<void> = Promise.resolve();
+	private saveErrorShown = false;
 
 	/**
 	 * static / state の略 (static が予約語のため)
@@ -217,7 +221,8 @@ export class PreferencesManager extends EventEmitter<PreferencesManagerEvents> {
 		this.io = io;
 		this.currentAccount = currentAccount;
 
-		const loadedProfile = this.io.load() ?? createEmptyProfile();
+		const persistedProfile = this.io.load();
+		const loadedProfile = persistedProfile ?? createEmptyProfile();
 		this.profile = {
 			...loadedProfile,
 			preferences: normalizePreferences(loadedProfile.preferences, currentAccount),
@@ -231,12 +236,15 @@ export class PreferencesManager extends EventEmitter<PreferencesManagerEvents> {
 			(this.r[key as keyof PREF] as Ref<any>) = ref(this.s[key as keyof PREF]);
 		}
 
+		this.previousSave = persistedProfile ? deepClone(loadedProfile) as PreferencesProfile : null;
+
 		// normalizeの結果変わっていたら保存
 		if (!deepEqual(loadedProfile, this.profile)) {
 			this.save();
 		}
 
 		this.cloudReady = this.fetchCloudValues();
+		void this.cloudReady.catch(err => console.error('Failed to load preference values', err));
 
 		// TODO: 定期的にクラウドの値をフェッチ
 	}
@@ -362,11 +370,16 @@ export class PreferencesManager extends EventEmitter<PreferencesManagerEvents> {
 			}
 		}
 
+		const fetchingProfile = this.profile;
+		const beforeFetch = deepClone(this.profile.preferences);
 		const cloudValues = await this.io.cloudGetBulk({ needs });
+		if (this.profile !== fetchingProfile) return;
 
 		for (const _key in PREF_DEF) {
 			const key = _key as keyof PREF;
 			const record = this.getMatchedRecordOf(key);
+			// A slow cloud response must not overwrite a local edit made while it was in flight.
+			if (!deepEqual(beforeFetch[key], this.profile.preferences[key])) continue;
 			if (record[2].sync && Object.hasOwn(cloudValues, key) && cloudValues[key] !== undefined) {
 				const cloudValue = cloudValues[key];
 				if (!deepEqual(cloudValue, record[1])) {
@@ -378,13 +391,28 @@ export class PreferencesManager extends EventEmitter<PreferencesManagerEvents> {
 		}
 
 		this.save();
+		await this.flush();
 		if (_DEV_) console.log('cloud fetch completed');
 	}
 
 	public save() {
 		this.profile.modifiedAt = Date.now();
 		this.profile.version = version;
-		this.io.save({ profile: this.profile });
+		const before = this.previousSave;
+		const profile = deepClone(this.profile);
+		this.previousSave = deepClone(profile);
+		this.persistence = Promise.resolve(this.io.save({ profile, before }));
+		// Keep the rejection observable through flush(), without an unhandled rejection.
+		void this.persistence.catch(err => {
+			console.error('Failed to save preferences', err);
+			if (this.saveErrorShown) return;
+			this.saveErrorShown = true;
+			void os.alert({ type: 'error', text: i18n.ts._accountError.preferenceSaveFailed });
+		});
+	}
+
+	public flush(): Promise<void> {
+		return this.persistence;
 	}
 
 	public getMatchedRecordOf<K extends keyof PREF>(key: K): PrefRecord<K> {
@@ -561,13 +589,14 @@ export class PreferencesManager extends EventEmitter<PreferencesManagerEvents> {
 			...newProfile,
 			preferences: normalizePreferences(newProfile.preferences, this.currentAccount),
 		};
+		this.previousSave = deepClone(this.profile);
 		const states = this.genStates();
 		for (const _key in states) {
 			const key = _key as keyof PREF;
 			this.rewriteRawState(key, states[key]);
 		}
 
-		this.fetchCloudValues();
+		void this.fetchCloudValues().catch(err => console.error('Failed to reload preference values', err));
 	}
 
 	public getPerPrefMenu<K extends keyof PREF>(key: K): MenuItem[] {

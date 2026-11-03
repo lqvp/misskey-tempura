@@ -15,6 +15,7 @@ import { store } from '@/store.js';
 import { $i } from '@/i.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { unisonReload } from '@/utility/unison-reload.js';
+import { withPreferenceLock } from '@/preferences/lock.js';
 
 function canAutoBackup() {
 	return prefer.profile.name != null && prefer.profile.name.trim() !== '';
@@ -130,7 +131,8 @@ function importProfile() {
 		const txt = await file.text();
 		const profile = JSON.parse(txt) as PreferencesProfile;
 
-		miLocalStorage.setItem('preferences', JSON.stringify(profile));
+		await prefer.flush();
+		await withPreferenceLock(() => miLocalStorage.setItem('preferences', JSON.stringify({ ...profile, storageRevision: crypto.randomUUID() })));
 		miLocalStorage.setItem('hidePreferencesRestoreSuggestion', 'true');
 		shouldSuggestRestoreBackup.value = false;
 		unisonReload();
@@ -202,7 +204,8 @@ export async function restoreFromCloudBackup() {
 
 	if (_DEV_) console.log(profile);
 
-	miLocalStorage.setItem('preferences', JSON.stringify(profile));
+	await prefer.flush();
+	await withPreferenceLock(() => miLocalStorage.setItem('preferences', JSON.stringify({ ...profile, storageRevision: crypto.randomUUID() })));
 	miLocalStorage.setItem('hidePreferencesRestoreSuggestion', 'true');
 	store.set('enablePreferencesAutoCloudBackup', true);
 	shouldSuggestRestoreBackup.value = false;

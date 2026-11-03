@@ -22,9 +22,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
+import { $i } from '@/i.js';
+import { withAccount } from '@/utility/pinned-account.js';
 import { computed, provide, ref } from 'vue';
 import { instanceName, ui } from '@@/js/config.js';
 import XCommon from './_common_/common.vue';
+import { tabTitle } from '@/utility/tab-title.js';
 import type { PageMetadata } from '@/page.js';
 import { provideMetadataReceiver, provideReactiveMetadata } from '@/page.js';
 import { i18n } from '@/i18n.js';
@@ -43,16 +46,16 @@ provideMetadataReceiver((metadataGetter) => {
 	pageMetadata.value = info;
 	if (pageMetadata.value) {
 		if (isRoot.value && pageMetadata.value.title === instanceName) {
-			window.document.title = pageMetadata.value.title;
+			window.document.title = tabTitle(pageMetadata.value.title);
 		} else {
-			window.document.title = `${pageMetadata.value.title} | ${instanceName}`;
+			window.document.title = tabTitle(`${pageMetadata.value.title} | ${instanceName}`);
 		}
 	}
 });
 provideReactiveMetadata(pageMetadata);
 
 function goToDeck() {
-	window.location.href = '/';
+	window.location.href = withAccount('/', $i?.id ?? null);
 }
 </script>
 

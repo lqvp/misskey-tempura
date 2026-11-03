@@ -28,6 +28,8 @@ export type Keys = (
 	'themeCachedVersion' |
 	'customCss' |
 	'chatMessageDrafts' |
+	'draftItemsMigrated' |
+	`draft-item:${string}` |
 	'scratchpad' |
 	'debug' |
 	'preferences' |

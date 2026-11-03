@@ -89,12 +89,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</div>
 			</a>
 
-			<button
+			<component
+				:is="item.href ? 'a' : 'button'"
 				v-else-if="item.type === 'user'"
 				role="menuitem"
 				tabindex="0"
 				:class="['_button', $style.item, { [$style.active]: item.active }]"
-				@click.prevent="item.active ? close(false) : clicked(item.action, $event)"
+				:href="item.href"
+				@click="onUserItemClick(item, $event)"
 				@mouseenter.passive="onItemMouseEnter"
 				@mouseleave.passive="onItemMouseLeave"
 			>
@@ -102,7 +104,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div v-if="item.indicate" :class="$style.item_content">
 					<span :class="$style.indicator" class="_blink"><i class="_indicatorCircle"></i></span>
 				</div>
-			</button>
+			</component>
 
 			<button
 				v-else-if="item.type === 'switch'"
@@ -234,7 +236,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts">
 import { computed, defineAsyncComponent, inject, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, unref, watch, shallowRef, reactive, isRef } from 'vue';
-import type { MenuItem, InnerMenuItem, MenuPending, MenuAction, MenuSwitch, MenuRadio, MenuRadioOption, MenuParent } from '@/types/menu.js';
+import type { MenuItem, InnerMenuItem, MenuPending, MenuAction, MenuSwitch, MenuRadio, MenuRadioOption, MenuParent, MenuUser } from '@/types/menu.js';
 import type { Keymap } from '@/utility/hotkey.js';
 import MkSwitchButton from '@/components/MkSwitch.button.vue';
 import * as os from '@/os.js';
@@ -410,6 +412,17 @@ function clicked(fn: MenuAction, ev: PointerEvent, doClose = true) {
 
 	if (!doClose) return;
 	close(true);
+}
+
+function onUserItemClick(item: MenuUser, ev: MouseEvent) {
+	// 修飾キー付きのクリックはブラウザに任せる(?as= 付きのリンクが新しいタブで開く)
+	if (item.href && (ev.ctrlKey || ev.metaKey || ev.shiftKey || ev.altKey || ev.button !== 0)) return;
+	ev.preventDefault();
+	if (item.active) {
+		close(false);
+	} else {
+		clicked(item.action, ev as PointerEvent);
+	}
 }
 
 function close(actioned = false) {

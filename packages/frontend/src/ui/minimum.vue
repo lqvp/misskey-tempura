@@ -14,6 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { computed, provide, ref } from 'vue';
 import { instanceName } from '@@/js/config.js';
+import { tabTitle } from '@/utility/tab-title.js';
 import XCommon from './_common_/common.vue';
 import type { PageMetadata } from '@/page.js';
 import { provideMetadataReceiver, provideReactiveMetadata } from '@/page.js';
@@ -30,9 +31,9 @@ provideMetadataReceiver((metadataGetter) => {
 	pageMetadata.value = info;
 	if (pageMetadata.value) {
 		if (isRoot.value && pageMetadata.value.title === instanceName) {
-			window.document.title = pageMetadata.value.title;
+			window.document.title = tabTitle(pageMetadata.value.title);
 		} else {
-			window.document.title = `${pageMetadata.value.title} | ${instanceName}`;
+			window.document.title = tabTitle(`${pageMetadata.value.title} | ${instanceName}`);
 		}
 	}
 });

@@ -5,11 +5,13 @@
 
 import { inject } from 'vue';
 import { page } from '@/router.definition.js';
-import { $i } from '@/i.js';
+import { $i, bootAccount } from '@/i.js';
 import { Nirax } from '@/lib/nirax.js';
 import { ROUTE_DEF } from '@/router.definition.js';
 import { analytics } from '@/analytics.js';
 import { DI } from '@/di.js';
+import { prefer } from '@/preferences.js';
+import { withAccount } from '@/utility/pinned-account.js';
 
 export type Router = Nirax<typeof ROUTE_DEF>;
 
@@ -17,26 +19,37 @@ export function createRouter(fullPath: string): Router {
 	return new Nirax(ROUTE_DEF, fullPath, !!$i, page(() => import('@/pages/not-found.vue')));
 }
 
-export const mainRouter = createRouter(window.location.pathname + window.location.search + window.location.hash);
+// ?as= はルーターの経路には含めず、ブラウザのURLを書くときだけ付ける
+function currentPath() {
+	return withAccount(window.location.pathname + window.location.search + window.location.hash, null);
+}
+
+function toBrowserUrl(fullPath: string) {
+	return withAccount(fullPath, $i?.id ?? bootAccount.id ?? null);
+}
+
+export const mainRouter = createRouter(currentPath());
 
 window.addEventListener('popstate', (event) => {
-	mainRouter.replaceByPath(window.location.pathname + window.location.search + window.location.hash);
+	mainRouter.replaceByPath(currentPath());
 });
 
 mainRouter.addListener('push', ctx => {
-	window.history.pushState({ }, '', ctx.fullPath);
+	window.history.pushState({ }, '', toBrowserUrl(ctx.fullPath));
 });
 
 mainRouter.addListener('replace', ctx => {
-	window.history.replaceState({ }, '', ctx.fullPath);
+	window.history.replaceState({ }, '', toBrowserUrl(ctx.fullPath));
 });
 
-mainRouter.addListener('forceReplace', ctx => {
-	window.location.replace(ctx.fullPath);
+mainRouter.addListener('forceReplace', async ctx => {
+	try { await prefer.flush(); } catch { return; }
+	window.location.replace(toBrowserUrl(ctx.fullPath));
 });
 
-mainRouter.addListener('forcePush', ctx => {
-	window.location.href = ctx.fullPath;
+mainRouter.addListener('forcePush', async ctx => {
+	try { await prefer.flush(); } catch { return; }
+	window.location.href = toBrowserUrl(ctx.fullPath);
 });
 
 mainRouter.addListener('change', ctx => {

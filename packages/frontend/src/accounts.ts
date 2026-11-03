@@ -9,13 +9,13 @@ import { apiUrl, host } from '@@/js/config.js';
 import type { MenuItem } from '@/types/menu.js';
 import { showSuspendedDialog } from '@/utility/show-suspended-dialog.js';
 import { i18n } from '@/i18n.js';
-import { miLocalStorage } from '@/local-storage.js';
 import { waiting, popup, popupMenu, success, alert } from '@/os.js';
-import { unisonReload, reloadChannel } from '@/utility/unison-reload.js';
+import { postAccountRemoved } from '@/utility/account-events.js';
+import { changeAccountRecord } from '@/utility/account-records.js';
+import { withAccount } from '@/utility/pinned-account.js';
 import { prefer } from '@/preferences.js';
 import { store } from '@/store.js';
 import { $i } from '@/i.js';
-import { signout } from '@/signout.js';
 
 type AccountWithToken = Misskey.entities.MeDetailed & { token: string };
 
@@ -39,22 +39,38 @@ export async function getAccounts(): Promise<{
 }
 
 async function addAccount(host: string, user: Misskey.entities.MeDetailed, token: AccountWithToken['token']) {
-	if (!prefer.s.accounts.some(x => x[0] === host && x[1].id === user.id)) {
-		store.set('accountTokens', { ...store.s.accountTokens, [host + '/' + user.id]: token });
-		store.set('accountInfos', { ...store.s.accountInfos, [host + '/' + user.id]: user });
-		prefer.commit('accounts', [...prefer.s.accounts, [host, { id: user.id, username: user.username }]]);
+	const key = host + '/' + user.id;
+	const oldToken = store.s.accountTokens[key] ?? null;
+	const oldInfo = store.s.accountInfos[key] ?? null;
+	const isNew = !prefer.s.accounts.some(x => x[0] === host && x[1].id === user.id);
+	try {
+		await store.updateDevice('accountTokens', previous => changeAccountRecord(previous, key, token));
+		await store.updateDevice('accountInfos', previous => changeAccountRecord(previous, key, user));
+		if (isNew) {
+			prefer.commit('accounts', [...prefer.s.accounts, [host, { id: user.id, username: user.username }]]);
+			await prefer.flush();
+		}
+	} catch (err) {
+		// Do not leave a newly added usable credential after a failed list save.
+		await store.updateDevice('accountTokens', previous => previous[key] === token ? changeAccountRecord(previous, key, oldToken) : previous);
+		await store.updateDevice('accountInfos', previous => changeAccountRecord(previous, key, oldInfo));
+		if (isNew) prefer.commit('accounts', prefer.s.accounts.filter(x => x[0] !== host || x[1].id !== user.id));
+		throw err;
 	}
 }
 
 export async function removeAccount(host: string, id: AccountWithToken['id']) {
-	const tokens = JSON.parse(JSON.stringify(store.s.accountTokens));
-	delete tokens[host + '/' + id];
-	store.set('accountTokens', tokens);
-	const accountInfos = JSON.parse(JSON.stringify(store.s.accountInfos));
-	delete accountInfos[host + '/' + id];
-	store.set('accountInfos', accountInfos);
+	await store.updateDevice('accountTokens', previous => changeAccountRecord(previous, host + '/' + id, null));
+	await store.updateDevice('accountInfos', previous => changeAccountRecord(previous, host + '/' + id, null));
 
 	prefer.commit('accounts', prefer.s.accounts.filter(x => x[0] !== host || x[1].id !== id));
+
+	// このアカウントを使っている他のタブを止める(再読み込みの信号とは別)
+	// Tokens have already been removed. Stop affected tabs even if the
+	// preference list could not be persisted; never leave a live session.
+	await prefer.flush().catch(err => console.error('Account list removal failed', err));
+	postAccountRemoved(id);
+	if ($i?.id === id) window.location.reload();
 }
 
 const isAccountDeleted = Symbol('isAccountDeleted');
@@ -124,42 +140,52 @@ function fetchAccount(token: string, id?: string, forceShowDialog?: boolean): Pr
 
 export function replaceCurrentAccountData(accountData: Misskey.entities.MeDetailed) {
 	if (!$i) return;
-	const token = $i.token;
+	const me = $i;
+	const token = me.token;
 	for (const key of Object.keys($i)) {
 		delete $i[key as keyof typeof $i];
 	}
 	for (const [key, value] of Object.entries(accountData)) {
 		($i[key as keyof typeof accountData] as any) = value;
 	}
-	store.set('accountInfos', { ...store.s.accountInfos, [host + '/' + $i.id]: $i });
-	$i.token = token;
-	miLocalStorage.setItem('account', JSON.stringify($i));
+	me.token = token;
+	const info = { ...me };
+	delete (info as Partial<AccountWithToken>).token;
+	void store.updateDevice('accountInfos', previous => (host + '/' + me.id in previous) ? changeAccountRecord(previous, host + '/' + me.id, info) : previous);
 }
 
 export function updateCurrentAccount(accountData: Partial<Misskey.entities.MeDetailed>) {
 	if (!$i) return;
+	const me = $i;
 	for (const [key, value] of Object.entries(accountData)) {
 		($i[key as keyof typeof accountData] as any) = value;
 	}
 
-	store.set('accountInfos', { ...store.s.accountInfos, [host + '/' + $i.id]: $i });
-
-	miLocalStorage.setItem('account', JSON.stringify($i));
+	const info = { ...me };
+	delete (info as Partial<AccountWithToken>).token;
+	void store.updateDevice('accountInfos', previous => (host + '/' + me.id in previous) ? changeAccountRecord(previous, host + '/' + me.id, info) : previous);
 }
 
 export async function refreshCurrentAccount() {
 	if (!$i) return;
 	const me = $i;
-	return fetchAccount($i.token, $i.id).then(replaceCurrentAccountData).catch(reason => {
+	return fetchAccount($i.token, $i.id).then(replaceCurrentAccountData).catch(async reason => {
 		if (reason === isAccountDeleted) {
-			removeAccount(host, me.id);
-			if (Object.keys(store.s.accountTokens).length > 0) {
-				login(Object.values(store.s.accountTokens)[0]);
-			} else {
-				signout();
-			}
+			await removeAccount(host, me.id);
+			// An expired account is not a request to log out the entire device.
+			window.location.reload();
 		}
 	});
+}
+
+/**
+ * このタブだけをそのアカウントに切り替える。端末の既定や他のタブには何も書かない(切り替えはURLの ?as= で決まる)。
+ */
+export async function openAccountInThisTab(id: string, redirect?: string) {
+	try { await prefer.flush(); } catch { return false; }
+	const target = redirect ?? (window.location.pathname + window.location.search + window.location.hash);
+	window.location.href = withAccount(target, id);
+	return true;
 }
 
 export async function login(token: AccountWithToken['token'], redirect?: string) {
@@ -176,33 +202,22 @@ export async function login(token: AccountWithToken['token'], redirect?: string)
 		throw reason;
 	});
 
-	miLocalStorage.setItem('account', JSON.stringify({
-		...me,
-		token,
-	}));
-
-	await addAccount(host, me, token);
-
-	if (redirect) {
-		// 他のタブは再読み込みするだけ
-		reloadChannel.postMessage(null);
-		// このページはredirectで指定された先に移動
-		window.location.href = redirect;
-		return;
+	try {
+		await addAccount(host, me, token);
+		await openAccountInThisTab(me.id, redirect);
+	} finally {
+		showing.value = false;
 	}
-
-	unisonReload();
 }
 
 export async function switchAccount(host: string, id: string) {
 	const token = store.s.accountTokens[host + '/' + id];
 	if (token) {
-		login(token);
+		openAccountInThisTab(id);
 	} else {
 		const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkSigninDialog.vue')), {}, {
 			done: async (res: Misskey.entities.SigninFlowResponse & { finished: true }) => {
-				store.set('accountTokens', { ...store.s.accountTokens, [host + '/' + res.id]: res.i });
-				login(res.i);
+				await login(res.i);
 			},
 			closed: () => {
 				dispose();
@@ -227,6 +242,8 @@ export async function getAccountMenu(opts: {
 			return {
 				type: 'user' as const,
 				user: account,
+				// 右クリック→「新しいタブで開く」で、そのアカウントのタブを開ける。通常のクリックは action がこのタブを切り替える
+				href: callback ? undefined : withAccount(window.location.pathname + window.location.search + window.location.hash, id),
 				active: opts.active != null ? opts.active === id : false,
 				action: async () => {
 					if (callback) {
@@ -261,14 +278,12 @@ export async function getAccountMenu(opts: {
 						initialUsername: username,
 					}, {
 						done: async (res: Misskey.entities.SigninFlowResponse & { finished: true }) => {
-							store.set('accountTokens', { ...store.s.accountTokens, [host + '/' + res.id]: res.i });
-
 							if (callback) {
-								fetchAccount(res.i, id).then(account => {
-									callback(account);
-								});
+								const account = await fetchAccount(res.i, res.id);
+								await addAccount(host, account, res.i);
+								callback(account);
 							} else {
-								switchAccount(host, id);
+								await login(res.i);
 							}
 						},
 						closed: () => {

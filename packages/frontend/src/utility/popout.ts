@@ -5,9 +5,12 @@
 
 import { appendQuery } from '@@/js/url.js';
 import * as config from '@@/js/config.js';
+import { $i } from '@/i.js';
+import { withAccount } from '@/utility/pinned-account.js';
 
 export function popout(path: string, w?: HTMLElement) {
 	let url = path.startsWith('http://') || path.startsWith('https://') ? path : config.url + path;
+	if (new URL(url).origin === window.location.origin) url = withAccount(url, $i?.id ?? null);
 	url = appendQuery(url, 'zen');
 	if (w) {
 		const position = w.getBoundingClientRect();

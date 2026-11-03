@@ -14,7 +14,7 @@ import { i18n } from '@/i18n.js';
 import { alert, confirm, popup, post, toast } from '@/os.js';
 import { useStream } from '@/stream.js';
 import * as sound from '@/utility/sound.js';
-import { $i, iAmModerator } from '@/i.js';
+import { $i, iAmModerator, bootAccount } from '@/i.js';
 import { instance } from '@/instance.js';
 import { store } from '@/store.js';
 import { reactionPicker } from '@/utility/reaction-picker.js';
@@ -42,8 +42,13 @@ export async function mainBoot() {
 
 		if (searchParams.has('ui')) uiStyle = searchParams.get('ui');
 
+		if (bootAccount.error) uiStyle = 'account-error';
+
 		let rootComponent: Component;
 		switch (uiStyle) {
+			case 'account-error':
+				rootComponent = await import('@/ui/account-error.vue').then(x => x.default);
+				break;
 			case 'zen':
 				rootComponent = await import('@/ui/zen.vue').then(x => x.default);
 				break;
@@ -99,14 +104,14 @@ export async function mainBoot() {
 		console.error('Failed to initialise the seasonal screen effect canvas context:', error);
 	}
 
-	if ($i) {
+	if ($i && !bootAccount.error) {
 		store.loaded.then(async () => {
 			if (store.s.accountSetupWizard !== -1) {
 				const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkUserSetupDialog.vue')), {}, {
 					closed: () => dispose(),
 				});
 			}
-		});
+		}).catch(error => console.error('Account setup initialization failed', error));
 
 		for (const announcement of ($i.unreadAnnouncements ?? []).filter(x => x.display === 'dialog')) {
 			const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkAnnouncementDialog.vue')), {

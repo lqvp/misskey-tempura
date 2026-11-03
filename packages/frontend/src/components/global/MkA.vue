@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<a ref="el" :href="to" :class="active ? activeClass : null" @click="nav" @contextmenu.prevent.stop="onContextmenu">
+<a ref="el" :href="browserHref" :class="active ? activeClass : null" @click="nav" @contextmenu.prevent.stop="onContextmenu">
 	<slot></slot>
 </a>
 </template>
@@ -20,6 +20,8 @@ import * as os from '@/os.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 import { i18n } from '@/i18n.js';
 import { useRouter } from '@/router.js';
+import { $i } from '@/i.js';
+import { withAccount } from '@/utility/pinned-account.js';
 
 const props = withDefaults(defineProps<{
 	to: string;
@@ -38,6 +40,7 @@ const el = useTemplateRef('el');
 defineExpose({ $el: el });
 
 const router = useRouter();
+const browserHref = computed(() => withAccount(props.to, $i?.id ?? null));
 
 const active = computed(() => {
 	if (props.activeClass == null) return false;
@@ -71,7 +74,7 @@ function onContextmenu(ev: PointerEvent) {
 		icon: 'ti ti-external-link',
 		text: i18n.ts.openInNewTab,
 		action: () => {
-			window.open(props.to, '_blank', 'noopener');
+			window.open(browserHref.value, '_blank', 'noopener');
 		},
 	}, {
 		icon: 'ti ti-link',
@@ -94,9 +97,9 @@ function nav(ev: PointerEvent) {
 
 	if (behavior === 'browser') {
 		if (isWindow) {
-			window.open(props.to, '_blank', 'noopener');
+			window.open(browserHref.value, '_blank', 'noopener');
 		} else {
-			window.location.href = props.to;
+			window.location.href = browserHref.value;
 		}
 		return;
 	}

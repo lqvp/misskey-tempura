@@ -30,6 +30,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { computed, onMounted, onUnmounted, provide, ref, useTemplateRef, nextTick } from 'vue';
 import { url } from '@@/js/config.js';
+import { $i } from '@/i.js';
+import { withAccount } from '@/utility/pinned-account.js';
 import type { PageMetadata } from '@/page.js';
 import RouterView from '@/components/global/RouterView.vue';
 import MkWindow from '@/components/MkWindow.vue';
@@ -99,7 +101,7 @@ windowRouter.addListener('replace', ctx => {
 });
 
 windowRouter.addListener('forcePush', ctx => {
-	window.open(url + ctx.fullPath, '_blank', 'noopener');
+	window.open(withAccount(url + ctx.fullPath, $i?.id ?? null), '_blank', 'noopener');
 	if (ctx.onInit) {
 		nextTick(() => {
 			windowEl.value?.close();
@@ -108,7 +110,7 @@ windowRouter.addListener('forcePush', ctx => {
 });
 
 windowRouter.addListener('forceReplace', ctx => {
-	window.open(url + ctx.fullPath, '_blank', 'noopener');
+	window.open(withAccount(url + ctx.fullPath, $i?.id ?? null), '_blank', 'noopener');
 	if (ctx.onInit) {
 		nextTick(() => {
 			windowEl.value?.close();
@@ -149,7 +151,7 @@ const contextmenu = computed(() => ([{
 	icon: 'ti ti-external-link',
 	text: i18n.ts.openInNewTab,
 	action: () => {
-		window.open(url + windowRouter.getCurrentFullPath(), '_blank', 'noopener');
+		window.open(withAccount(url + windowRouter.getCurrentFullPath(), $i?.id ?? null), '_blank', 'noopener');
 		windowEl.value?.close();
 	},
 }, {

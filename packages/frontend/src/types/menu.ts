@@ -64,6 +64,8 @@ export interface MenuA extends TextMenuBase {
 export interface MenuUser extends MenuBase {
 	type: 'user';
 	user: Misskey.entities.User;
+	/** 指定すると <a> で描画され、右クリックから新しいタブで開ける */
+	href?: string;
 	active?: boolean;
 	indicate?: boolean;
 	action: MenuAction;

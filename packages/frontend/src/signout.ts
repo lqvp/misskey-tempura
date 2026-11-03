@@ -7,7 +7,9 @@ import { apiUrl } from '@@/js/config.js';
 import { cloudBackup } from '@/preferences/utility.js';
 import { store } from '@/store.js';
 import { waiting } from '@/os.js';
-import { unisonReload } from '@/utility/unison-reload.js';
+import { unisonLogout } from '@/utility/unison-reload.js';
+import { prefer } from '@/preferences.js';
+import { withPreferenceLock } from '@/preferences/lock.js';
 import { clear } from '@/utility/idb-proxy.js';
 import { $i } from '@/i.js';
 import { encodePushSubscriptionKey } from '@/utility/encode-push-subscription-key.js';
@@ -18,10 +20,15 @@ export async function signout() {
 	waiting();
 
 	if (store.s.enablePreferencesAutoCloudBackup) {
-		await cloudBackup();
+		await cloudBackup().catch(err => console.error('Backup failed during logout', err));
 	}
 
-	localStorage.clear();
+	// A failed settings save must never prevent clearing credentials.
+	await prefer.flush().catch(err => console.error('Discarding unsaved preferences during logout', err));
+	try { await withPreferenceLock(() => localStorage.clear()); } catch (err) {
+		console.error('Preference lock failed during logout; clearing credentials anyway', err);
+		localStorage.clear();
+	}
 
 	const idbAbortController = new AbortController();
 	const timeout = window.setTimeout(() => idbAbortController.abort(), 5000);
@@ -78,5 +85,5 @@ export async function signout() {
 	}
 	//#endregion
 
-	unisonReload('/');
+	unisonLogout();
 }

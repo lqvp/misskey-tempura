@@ -149,6 +149,8 @@ import MkInfo from '@/components/MkInfo.vue';
 import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
 import { ensureSignin, notesCount, incNotesCount } from '@/i.js';
+import { scopedDraftKey } from '@/utility/draft-keys.js';
+import { saveDraftItem, readDraftItem, deleteDraftItem } from '@/utility/draft-storage.js';
 import { getAccounts, getAccountMenu } from '@/accounts.js';
 import { deepClone } from '@/utility/clone.js';
 import MkRippleEffect from '@/components/MkRippleEffect.vue';
@@ -273,7 +275,7 @@ const draftKey = computed((): string => {
 		key += `note:${$i.id}`;
 	}
 
-	return key;
+	return scopedDraftKey($i.id, key);
 });
 
 const placeholder = computed((): string => {
@@ -1015,9 +1017,7 @@ type StoredDrafts = {
 function saveDraft() {
 	if (props.instant || props.mock) return;
 
-	const draftsData = JSON.parse(miLocalStorage.getItem('drafts') ?? '{}') as StoredDrafts;
-
-	draftsData[draftKey.value] = {
+	saveDraftItem('drafts', draftKey.value, {
 		updatedAt: new Date().toISOString(),
 		data: {
 			text: text.value,
@@ -1033,17 +1033,11 @@ function saveDraft() {
 			reactionAcceptance: reactionAcceptance.value,
 			scheduledAt: scheduledAt.value,
 		},
-	};
-
-	miLocalStorage.setItem('drafts', JSON.stringify(draftsData));
+	});
 }
 
 function deleteDraft() {
-	const draftsData = JSON.parse(miLocalStorage.getItem('drafts') ?? '{}') as StoredDrafts;
-
-	delete draftsData[draftKey.value];
-
-	miLocalStorage.setItem('drafts', JSON.stringify(draftsData));
+	deleteDraftItem('drafts', draftKey.value);
 }
 
 async function saveServerDraft(options: {
@@ -1578,7 +1572,7 @@ onMounted(() => {
 	nextTick(() => {
 		// 書きかけの投稿を復元
 		if (!props.instant && !props.mention && !props.specified && !props.mock) {
-			const draft = JSON.parse(miLocalStorage.getItem('drafts') ?? '{}')[draftKey.value] as StoredDrafts[string] | undefined;
+			const draft = readDraftItem<StoredDrafts[string]>('drafts', draftKey.value);
 			if (draft != null) {
 				text.value = draft.data.text;
 				useCw.value = draft.data.useCw;

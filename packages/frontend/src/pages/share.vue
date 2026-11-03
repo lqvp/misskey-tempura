@@ -29,6 +29,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
+import { $i } from '@/i.js';
+import { withAccount } from '@/utility/pinned-account.js';
 // SPECIFICATION: https://misskey-hub.net/docs/for-users/features/share-form/
 
 import { ref, computed } from 'vue';
@@ -190,12 +192,12 @@ function close(): void {
 
 	// 閉じなければ100ms後タイムラインに
 	window.setTimeout(() => {
-		window.location.href = '/';
+		window.location.href = withAccount('/', $i?.id ?? null);
 	}, 100);
 }
 
 function goToMisskey(): void {
-	window.location.href = '/';
+	window.location.href = withAccount('/', $i?.id ?? null);
 }
 
 function onPosted(): void {

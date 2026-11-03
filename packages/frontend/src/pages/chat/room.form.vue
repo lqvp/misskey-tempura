@@ -41,9 +41,11 @@ import { formatTimeString } from '@/utility/format-time-string.js';
 import { selectFile } from '@/utility/drive.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
-import { miLocalStorage } from '@/local-storage.js';
+import { saveDraftItem, readDraftItem, deleteDraftItem } from '@/utility/draft-storage.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { prefer } from '@/preferences.js';
+import { ensureSignin } from '@/i.js';
+import { scopedDraftKey } from '@/utility/draft-keys.js';
 import { Autocomplete } from '@/utility/autocomplete.js';
 import { emojiPicker } from '@/utility/emoji-picker.js';
 import { checkDragDataType, getDragData } from '@/drag-and-drop.js';
@@ -65,7 +67,7 @@ let autocompleteInstance: Autocomplete | null = null;
 const canSend = computed(() => (text.value != null && text.value !== '') || file.value != null);
 
 function getDraftKey() {
-	return props.user ? 'user:' + props.user.id : 'room:' + props.room?.id;
+	return scopedDraftKey(ensureSignin().id, props.user ? 'user:' + props.user.id : 'room:' + props.room?.id);
 }
 
 watch([text, file], saveDraft);
@@ -227,25 +229,17 @@ function clear() {
 }
 
 function saveDraft() {
-	const drafts = JSON.parse(miLocalStorage.getItem('chatMessageDrafts') || '{}');
-
-	drafts[getDraftKey()] = {
+	saveDraftItem('chatMessageDrafts', getDraftKey(), {
 		updatedAt: new Date(),
 		data: {
 			text: text.value,
 			file: file.value,
 		},
-	};
-
-	miLocalStorage.setItem('chatMessageDrafts', JSON.stringify(drafts));
+	});
 }
 
 function deleteDraft() {
-	const drafts = JSON.parse(miLocalStorage.getItem('chatMessageDrafts') || '{}');
-
-	delete drafts[getDraftKey()];
-
-	miLocalStorage.setItem('chatMessageDrafts', JSON.stringify(drafts));
+	deleteDraftItem('chatMessageDrafts', getDraftKey());
 }
 
 async function insertEmoji(ev: MouseEvent) {
@@ -283,7 +277,7 @@ onMounted(() => {
 	}
 
 	// 書きかけの投稿を復元
-	const draft = JSON.parse(miLocalStorage.getItem('chatMessageDrafts') || '{}')[getDraftKey()];
+	const draft = readDraftItem<{ data: { text: string; file: Misskey.entities.DriveFile | null } }>('chatMessageDrafts', getDraftKey());
 	if (draft) {
 		text.value = draft.data.text;
 		file.value = draft.data.file;
