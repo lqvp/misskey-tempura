@@ -12,7 +12,7 @@ vi.mock('@/os.js', () => ({ popup: vi.fn() }));
 
 const definitions = {
 	showHeader: { type: 'boolean' as const, default: true },
-	label: { type: 'string' as const, default: 'default' as string | null },
+	label: { type: 'string' as const, default: 'default' as string | null, required: false as const },
 	widgets: { type: 'array' as const, default: [] as { id: string }[], hidden: true },
 };
 
@@ -67,5 +67,33 @@ describe('widget settings synchronization', () => {
 		} finally {
 			scope.stop();
 		}
+	});
+});
+
+describe('widget editor previews', () => {
+	test('provides the real form and default values without persisting preview changes', async () => {
+		const { createApp, defineComponent, h, provide } = await import('vue');
+		const { widgetPreviewContext } = await import('@/widgets/widget-preview.js');
+		let registration: any;
+		const persisted = vi.fn();
+		const child = defineComponent({ setup() {
+			const manager = useWidgetPropsManager('nestedWidget', definitions, { widget: { id: 'preview-child', data: {} } }, persisted);
+			manager.widgetProps.showHeader = false;
+			manager.save();
+			return () => h('div');
+		} });
+		const app = createApp(defineComponent({ setup() {
+			provide(widgetPreviewContext, { register: value => { registration = value; } });
+			return () => h(child);
+		} }));
+		const root = document.createElement('div');
+		try {
+			app.mount(root);
+			await nextTick();
+			expect(registration.id).toBe('preview-child');
+			expect(registration.form.widgets.hidden).toBe(true);
+			expect(registration.values.widgets).toEqual([]);
+			expect(persisted).not.toHaveBeenCalled();
+		} finally { app.unmount(); }
 	});
 });
