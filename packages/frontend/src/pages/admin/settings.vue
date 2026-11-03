@@ -527,7 +527,7 @@ const proxyAccountForm = useForm({
 	description: proxyAccount.description,
 	followMode: meta.proxyAccountFollowMode,
 }, async (state) => {
-	await misskeyApi('admin/update-proxy-account', {
+	await os.apiWithDialog('admin/update-proxy-account', {
 		description: state.description,
 	});
 	await os.apiWithDialog('admin/update-meta', {
