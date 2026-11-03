@@ -370,6 +370,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<template #caption>{{ i18n.ts._profile.youCanIncludeHashtags }}</template>
 								</MkTextarea>
 							</SearchMarker>
+
+							<SearchMarker :keywords="['follow', 'mode']">
+								<MkRadios
+									v-model="proxyAccountForm.state.followMode"
+									:options="[
+										{ value: 'always', label: i18n.ts._proxyAccountFollowMode.always },
+										{ value: 'skipIfFollowed', label: i18n.ts._proxyAccountFollowMode.skipIfFollowed },
+										{ value: 'disabled', label: i18n.ts._proxyAccountFollowMode.disabled },
+									]"
+								>
+									<template #label><SearchLabel>{{ i18n.ts.proxyAccountFollowMode }}</SearchLabel><span v-if="proxyAccountForm.modifiedStates.followMode" class="_modified">{{ i18n.ts.modified }}</span></template>
+									<template #caption><SearchText>{{ i18n.ts.proxyAccountFollowMode_description }}</SearchText></template>
+								</MkRadios>
+							</SearchMarker>
 						</div>
 					</MkFolder>
 				</SearchMarker>
@@ -511,9 +525,13 @@ const federationForm = useForm({
 
 const proxyAccountForm = useForm({
 	description: proxyAccount.description,
+	followMode: meta.proxyAccountFollowMode,
 }, async (state) => {
-	await os.apiWithDialog('admin/update-proxy-account', {
+	await misskeyApi('admin/update-proxy-account', {
 		description: state.description,
+	});
+	await os.apiWithDialog('admin/update-meta', {
+		proxyAccountFollowMode: state.followMode,
 	});
 	fetchInstance(true);
 });

@@ -282,6 +282,7 @@ export const paramDef = {
 		hanaModeBackground: { type: 'string', nullable: true },
 		requireSignedApFetch: { type: 'boolean' },
 		allowUnregisteredApSignerVerification: { type: 'boolean' },
+		proxyAccountFollowMode: { type: 'string', enum: ['always', 'skipIfFollowed', 'disabled'] },
 		allowAnonymousStats: { type: 'boolean' },
 		allowAnonymousOnlineUsersCount: { type: 'boolean' },
 		allowAnonymousChartActiveUsers: { type: 'boolean' },
@@ -1030,6 +1031,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.allowUnregisteredApSignerVerification !== undefined) {
 				set.allowUnregisteredApSignerVerification = ps.allowUnregisteredApSignerVerification;
+			}
+
+			if (ps.proxyAccountFollowMode !== undefined) {
+				set.proxyAccountFollowMode = ps.proxyAccountFollowMode;
 			}
 
 			if (ps.allowAnonymousStats !== undefined) {

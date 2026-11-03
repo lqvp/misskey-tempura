@@ -10,7 +10,7 @@ import { DataSource, IsNull } from 'typeorm';
 import * as Redis from 'ioredis';
 import bcrypt from 'bcryptjs';
 import { MiLocalUser, MiUser } from '@/models/User.js';
-import { MiSystemAccount, MiUsedUsername, MiUserKeypair, MiUserProfile, type UsersRepository, type SystemAccountsRepository } from '@/models/_.js';
+import { MiSystemAccount, MiUsedUsername, MiUserKeypair, MiUserProfile, type FollowingsRepository, type UsersRepository, type SystemAccountsRepository } from '@/models/_.js';
 import type { MiMeta, UserProfilesRepository } from '@/models/_.js';
 import type { GlobalEvents } from '@/core/GlobalEventService.js';
 import { MemoryKVCache } from '@/misc/cache.js';
@@ -41,6 +41,9 @@ export class SystemAccountService implements OnApplicationShutdown {
 
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
+
+		@Inject(DI.followingsRepository)
+		private followingsRepository: FollowingsRepository,
 
 		@Inject(DI.userProfilesRepository)
 		private userProfilesRepository: UserProfilesRepository,
@@ -103,6 +106,23 @@ export class SystemAccountService implements OnApplicationShutdown {
 			this.cache.set(type, created);
 			return created;
 		}
+	}
+
+	/**
+	 * プロキシアカウントが対象のリモートユーザーを新たにフォローすべきかどうかを返す。
+	 * 対象がリモートユーザーかどうかの判定は呼び出し側で行うこと。
+	 */
+	@bindThis
+	public async shouldProxyFollow(target: MiUser): Promise<boolean> {
+		if (this.meta.proxyAccountFollowMode === 'always') return true;
+		if (this.meta.proxyAccountFollowMode === 'disabled') return false;
+
+		// skipIfFollowed: このインスタンス内にフォロワーがいる場合はフォローしない
+		const hasFollow = await this.followingsRepository.createQueryBuilder('f')
+			.where('f.followeeId = :userId', { userId: target.id })
+			.andWhere('f.followerHost IS NULL')
+			.getExists();
+		return !hasFollow;
 	}
 
 	@bindThis
