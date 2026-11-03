@@ -894,6 +894,18 @@ export class MiMeta {
 	})
 	public allowUnregisteredApSignerVerification: boolean;
 
+	/**
+	 * プロキシアカウントがリモートユーザーを新たにフォローする条件。
+	 * always: 常にフォローする (本家と同じ動作)
+	 * skipIfFollowed: ローカルのフォロワーがいない場合のみフォローする
+	 * disabled: 新たにはフォローしない (既存のフォローは解除されない)
+	 */
+	@Column('varchar', {
+		length: 32,
+		default: 'skipIfFollowed',
+	})
+	public proxyAccountFollowMode: 'always' | 'skipIfFollowed' | 'disabled';
+
 	@Column('boolean', {
 		default: false,
 	})

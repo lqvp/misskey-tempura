@@ -210,6 +210,13 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * carefulBot: Bot フォローに承認要求
 * autoRejectFollowRequest: フォロー済み以外を自動拒否
 
+### プロキシアカウントのフォロー条件
+
+* リストに追加されたリモートユーザーやアカウント移行先をプロキシアカウントがフォローする条件を、サーバー設定の proxyAccountFollowMode で切り替えられます (管理画面 → 設定 → プロキシアカウント)
+  * always: 常にフォローする (本家と同じ動作)
+  * skipIfFollowed: このインスタンス内にフォロワーがいない場合のみフォローする (初期値。リストへの追加は従来の tempura の動作。アカウント移行では従来は常にフォローしていたため、ローカルフォロワーがいる移行先への新規フォローは作成されなくなります)
+  * disabled: 新たにはフォローしない。既存のフォローは解除されず、購読中の投稿は届き続けます
+
 ### フォロー通知
 
 * youGotUnFollower / followRequestRejected / youGotBlocked / youGotUnblocked 通知

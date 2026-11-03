@@ -11642,6 +11642,8 @@ export interface operations {
                         }[];
                         requireSignedApFetch: boolean;
                         allowUnregisteredApSignerVerification: boolean;
+                        /** @enum {string} */
+                        proxyAccountFollowMode: 'always' | 'skipIfFollowed' | 'disabled';
                         allowAnonymousStats: boolean;
                         allowAnonymousOnlineUsersCount: boolean;
                         allowAnonymousChartActiveUsers: boolean;
@@ -15396,6 +15398,8 @@ export interface operations {
                     hanaModeBackground?: string | null;
                     requireSignedApFetch?: boolean;
                     allowUnregisteredApSignerVerification?: boolean;
+                    /** @enum {string} */
+                    proxyAccountFollowMode?: 'always' | 'skipIfFollowed' | 'disabled';
                     allowAnonymousStats?: boolean;
                     allowAnonymousOnlineUsersCount?: boolean;
                     allowAnonymousChartActiveUsers?: boolean;

@@ -295,8 +295,8 @@ export class AccountMoveService {
 		const arrayToInsert = Array.from(newMemberships.entries()).map(entry => ({ ...entry[1], id: entry[0] }));
 		await this.userListMembershipsRepository.insert(arrayToInsert);
 
-		// Have the proxy account follow the new account in the same way as UserListService.push
-		if (this.userEntityService.isRemoteUser(dst)) {
+		// Have the proxy account follow the new account in the same way as UserListService.addMember
+		if (this.userEntityService.isRemoteUser(dst) && await this.systemAccountService.shouldProxyFollow(dst)) {
 			const proxy = await this.systemAccountService.fetch('proxy');
 			this.queueService.createFollowJob([{ from: { id: proxy.id }, to: { id: dst.id } }]);
 		}

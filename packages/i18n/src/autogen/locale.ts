@@ -897,6 +897,28 @@ export interface Locale extends ILocale {
      */
     "proxyAccountDescription": string;
     /**
+     * フォロー条件
+     */
+    "proxyAccountFollowMode": string;
+    /**
+     * プロキシアカウントがリモートユーザーを新たにフォローする条件を選択します。「使わない」にしても、すでにプロキシアカウントがフォローしている相手は解除されず、購読中の投稿は届き続けます。
+     */
+    "proxyAccountFollowMode_description": string;
+    "_proxyAccountFollowMode": {
+        /**
+         * 使う (常にフォローする)
+         */
+        "always": string;
+        /**
+         * すでにフォローされている場合はフォローしない
+         */
+        "skipIfFollowed": string;
+        /**
+         * 使わない (新たにはフォローしない)
+         */
+        "disabled": string;
+    };
+    /**
      * ホスト
      */
     "host": string;
