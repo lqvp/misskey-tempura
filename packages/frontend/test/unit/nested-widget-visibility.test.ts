@@ -36,6 +36,11 @@ test('stops CSS-hidden rotation, resumes only when visible, and disconnects on u
 	visibilityChanged!([{ isIntersecting: true }]);
 	expect(start).toHaveBeenCalledTimes(1);
 	expect(start.mock.calls[0][1]).toBe(1000);
+	expect(root.querySelector('widget-clock')).not.toBeNull();
+	start.mock.calls[0][0]();
+	await nextTick();
+	expect(root.querySelector('widget-calendar')).not.toBeNull();
+	expect(root.querySelector('widget-clock')).toBeNull();
 	visibilityChanged!([{ isIntersecting: false }]);
 	expect(stop).toHaveBeenCalledTimes(1);
 	expect(start).toHaveBeenCalledTimes(1);
