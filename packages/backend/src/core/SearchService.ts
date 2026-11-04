@@ -449,7 +449,6 @@ export class SearchService {
 		}
 
 		this.queryService.generateVisibilityQuery(query, me);
-		if (me == null) this.queryService.generateUgcVisibilityQueryForVisitor(query);
 		this.queryService.generateBaseNoteFilteringQuery(query, me);
 
 		return query.limit(pagination.limit).getMany();
