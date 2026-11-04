@@ -2876,6 +2876,16 @@ _widgets:
   federationJobQueue: "連合ジョブキュー"
 
 _widgetOptions:
+  _nestedWidget:
+    children: "中のウィジェット"
+    general: "ネスト全体"
+    interval: "切り替え間隔（秒）"
+    intervalDescription: "0で自動切り替えを無効にします。"
+    maxHeight: "最大の高さ（px）"
+    maxHeightDescription: "0の場合は制限しません。"
+    moveUp: "上に移動"
+    moveDown: "下に移動"
+    back: "親の設定に戻る"
   showHeader: "ヘッダーを表示"
   transparent: "背景を透明にする"
   height: "高さ"

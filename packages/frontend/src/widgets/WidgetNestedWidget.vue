@@ -12,62 +12,30 @@ SPDX-License-Identifier: AGPL-3.0-only
 		{{ widgetProps.customTitle || i18n.ts._widgets.nestedWidget }}
 	</template>
 	<template #func="{ buttonStyleClass }">
-		<button v-if="hasWidgets" class="_button" :class="buttonStyleClass" @click="prev">
+		<button v-if="hasWidgets" class="_button" :class="buttonStyleClass" :aria-label="i18n.ts.goBack" @click="prev">
 			<i class="ti ti-chevron-left"></i>
 		</button>
-		<button v-if="hasWidgets" class="_button" :class="buttonStyleClass" @click="next">
+		<button v-if="hasWidgets" class="_button" :class="buttonStyleClass" :aria-label="i18n.ts.next" @click="next">
 			<i class="ti ti-chevron-right"></i>
 		</button>
-		<button class="_button" :class="buttonStyleClass" @click="addWidget">
-			<i class="ti ti-plus"></i>
-		</button>
-		<button v-if="hasWidgets" class="_button" :class="buttonStyleClass" @click="removeWidget(currentIndex)">
-			<i class="ti ti-trash"></i>
-		</button>
-		<button class="_button" :class="buttonStyleClass" @click="toggleEditMode">
-			<i class="ti ti-pencil"></i>
+		<button class="_button" :class="buttonStyleClass" :aria-label="i18n.ts.settings" @click="configure">
+			<i class="ti ti-settings"></i>
 		</button>
 	</template>
 
-	<div :class="$style.container">
+	<div ref="containerEl" :class="$style.container">
 		<div v-if="!hasWidgets" :class="$style.intro">
 			<MkResult type="empty" :text="i18n.ts.nothing"/>
+			<MkButton @click="configure"><i class="ti ti-settings"></i> {{ i18n.ts.settings }}</MkButton>
 		</div>
 		<div v-else>
-			<div v-if="editMode" :class="$style.editModeContainer">
-				<MkDraggable
-					v-model="widgetProps.widgets"
-					direction="vertical"
-					manualDragStart
-					:class="$style.sortableList"
-					@update:modelValue="save"
-				>
-					<template #default="{ item, index, dragStart }">
-						<div :class="$style.sortableItem">
-							<span :class="$style.itemHandle" :draggable="true" @dragstart.stop="dragStart">
-								<i class="ti ti-grip-vertical"></i>
-							</span>
-							<span :class="$style.itemTitle">{{ i18n.ts._widgets[item.name as keyof typeof i18n.ts._widgets] || item.name }}</span>
-							<button :class="[$style.actionButton, $style.deleteButton]" @click.stop="removeWidget(index)">
-								<i class="ti ti-trash"></i>
-							</button>
-						</div>
-					</template>
-				</MkDraggable>
-				<div :class="$style.editModeFooter">
-					<button :class="$style.doneButton" @click="toggleEditMode">
-						<i class="ti ti-check"></i>
-						{{ i18n.ts.close }}
-					</button>
-				</div>
-			</div>
-			<div v-else :class="$style.wrapper" :style="wrapperStyle">
+			<div :class="$style.wrapper" :style="wrapperStyle">
 				<component
 					:is="`widget-${currentWidget?.name}`"
 					v-if="currentWidget?.name"
 					:key="currentWidget.id"
 					:widget="currentWidget"
-					@updateProps="updateChildProps"
+					:onUpdateProps="childUpdater(currentWidget.id)"
 				/>
 			</div>
 		</div>
@@ -76,26 +44,26 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, watch } from 'vue';
-import { useInterval } from '@@/js/use-interval.js';
+import { ref, useTemplateRef, computed, watch, inject, onMounted, onBeforeUnmount, onActivated, onDeactivated } from 'vue';
+import { createVisibilityAwareInterval } from '@@/js/interval.js';
+import { widgetPreviewContext } from './widget-preview.js';
+import { getNestedWidgetRotationDelay, updateNestedWidget } from './nested-widget.js';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { GetFormResultType } from '@/utility/form.js';
-import MkContainer from '@/components/MkContainer.vue';
-import MkResult from '@/components/global/MkResult.vue';
-import MkDraggable from '@/components/MkDraggable.vue';
-import { i18n } from '@/i18n.js';
-import * as os from '@/os.js';
-import { widgets as widgetDefs } from '@/widgets/index.js';
 import type { WidgetName } from '@/widgets/index.js';
+import MkContainer from '@/components/MkContainer.vue';
+import MkButton from '@/components/MkButton.vue';
+import MkResult from '@/components/global/MkResult.vue';
+import { i18n } from '@/i18n.js';
 
 const name = 'nestedWidget' as const;
 
 const widgetPropsDef = {
-	showHeader: { type: 'boolean' as const, default: true },
-	customTitle: { type: 'string' as const, default: '' },
-	interval: { type: 'number' as const, default: 10 },
-	maxHeight: { type: 'number' as const, default: 0, description: '0 の場合は無制限' },
+	showHeader: { type: 'boolean' as const, label: i18n.ts._widgetOptions.showHeader, default: true },
+	customTitle: { type: 'string' as const, label: i18n.ts.title, default: '' },
+	interval: { type: 'number' as const, label: i18n.ts._widgetOptions._nestedWidget.interval, description: i18n.ts._widgetOptions._nestedWidget.intervalDescription, step: 0.5, default: 10 },
+	maxHeight: { type: 'number' as const, label: i18n.ts._widgetOptions._nestedWidget.maxHeight, default: 0, description: i18n.ts._widgetOptions._nestedWidget.maxHeightDescription },
 	widgets: {
 		type: 'array' as const,
 		default: [] as Array<{ id: string; name: WidgetName; data: Record<string, any> }>,
@@ -122,9 +90,7 @@ const wrapperStyle = computed(() => {
 });
 
 const currentIndex = ref(0);
-const autoRotate = ref(true);
-const editMode = ref(false);
-
+const preview = inject(widgetPreviewContext, undefined);
 const currentWidget = computed(() => {
 	const widget = widgetProps.widgets[currentIndex.value];
 	return widget as { id: string; name: WidgetName; data: Record<string, any> } | null;
@@ -132,115 +98,62 @@ const currentWidget = computed(() => {
 
 const hasWidgets = computed(() => widgetProps.widgets.length > 0);
 
-const delay = computed(() => {
-	return widgetProps.interval === 0 ? 1000 : widgetProps.interval * 1000;
-});
+let stopInterval: (() => void) | undefined;
+let mounted = false;
+const containerEl = useTemplateRef('containerEl');
+let visible = typeof IntersectionObserver === 'undefined';
+let visibilityObserver: IntersectionObserver | undefined;
 
-// インターバル管理
-let stopInterval: (() => void) | null | undefined = null;
+function resetInterval() {
+	stopInterval?.();
+	stopInterval = undefined;
+	const delay = getNestedWidgetRotationDelay(widgetProps.interval);
+	if (!mounted || !visible || preview || delay === null || widgetProps.widgets.length < 2) return;
+	stopInterval = createVisibilityAwareInterval(() => {
+		currentIndex.value = (currentIndex.value + 1) % widgetProps.widgets.length;
+	}, delay);
+}
 
-const resetInterval = () => {
-	if (stopInterval) stopInterval();
-	if (widgetProps.interval === 0 || editMode.value) return;
-
-	stopInterval = useInterval(() => {
-		if (autoRotate.value && hasWidgets.value) {
-			next();
-		}
-	}, delay.value, {
-		immediate: false,
-		afterMounted: true,
-	});
-};
-
-const next = () => {
+function next() {
 	if (!hasWidgets.value) return;
-	const length = widgetProps.widgets.length;
-	currentIndex.value = (currentIndex.value + 1) % length;
-	resetInterval(); // タイマーをリセット
-};
+	currentIndex.value = (currentIndex.value + 1) % widgetProps.widgets.length;
+	resetInterval();
+}
 
-const prev = () => {
+function prev() {
 	if (!hasWidgets.value) return;
-	const length = widgetProps.widgets.length;
-	currentIndex.value = (currentIndex.value - 1 + length) % length;
-	resetInterval(); // タイマーをリセット
-};
+	currentIndex.value = (currentIndex.value - 1 + widgetProps.widgets.length) % widgetProps.widgets.length;
+	resetInterval();
+}
 
-const addWidget = async () => {
-	try {
-	const { canceled, result: widgetName } = await os.select({
-		title: i18n.ts.selectWidget,
-		items: widgetDefs.map(w => ({
-			value: w,
-			text: i18n.ts._widgets[w],
-			label: i18n.ts._widgets[w],
-		})),
-	});
-	if (canceled || !widgetName) return;
-
-	const newWidget = {
-		id: crypto.randomUUID(),
-		name: widgetName as WidgetName,
-		data: {},
-	};
-
-		widgetProps.widgets = [...widgetProps.widgets, newWidget];
-		currentIndex.value = widgetProps.widgets.length - 1;
+function childUpdater(id: string) {
+	return (data: Record<string, any>) => {
+		widgetProps.widgets = updateNestedWidget(widgetProps.widgets, id, data);
 		save();
-	} catch (error) {
-		os.alert({
-			type: 'error',
-			text: `Widget の選択中にエラーが発生しました: ${error}`,
+	};
+}
+
+onMounted(() => {
+	mounted = true;
+	if (!preview && containerEl.value && typeof IntersectionObserver !== 'undefined') {
+		visibilityObserver = new IntersectionObserver(([entry]) => {
+			visible = entry.isIntersecting;
+			resetInterval();
 		});
+		visibilityObserver.observe(containerEl.value);
 	}
-};
-
-const removeWidget = (index: number) => {
-	if (widgetProps.widgets.length === 0) return;
-
-	widgetProps.widgets = widgetProps.widgets.filter((_, i) => i !== index);
-	currentIndex.value = Math.min(currentIndex.value, widgetProps.widgets.length - 1);
-	save();
-};
-
-const updateChildProps = (data: Record<string, any>) => {
-	const widget = widgetProps.widgets[currentIndex.value];
-	if (!widget) return;
-
-	const updatedWidget = { ...widget, data };
-	widgetProps.widgets.splice(currentIndex.value, 1, updatedWidget);
-	save();
-};
-
-const toggleEditMode = () => {
-	editMode.value = !editMode.value;
-	if (editMode.value) {
-		// 編集モードに入る時はインターバルを停止
-		if (stopInterval) stopInterval();
-	} else {
-		// 編集モードから出る時はインターバルを再開
-		resetInterval();
-	}
-};
-
-// 初期化とwatch
-resetInterval();
-
-watch(delay, () => {
 	resetInterval();
 });
-
-watch(editMode, () => {
-	if (editMode.value) {
-		if (stopInterval) stopInterval();
-	} else {
-		resetInterval();
-	}
+onBeforeUnmount(() => {
+	mounted = false;
+	visibilityObserver?.disconnect();
+	stopInterval?.();
 });
-
-watch(() => widgetProps.widgets, () => {
-	currentIndex.value = Math.min(currentIndex.value, widgetProps.widgets.length - 1);
+onActivated(() => { mounted = true; resetInterval(); });
+onDeactivated(() => { mounted = false; stopInterval?.(); });
+watch(() => [widgetProps.interval, widgetProps.widgets], () => {
+	currentIndex.value = Math.max(0, Math.min(currentIndex.value, widgetProps.widgets.length - 1));
+	resetInterval();
 });
 
 defineExpose<WidgetComponentExpose>({
@@ -269,153 +182,4 @@ defineExpose<WidgetComponentExpose>({
 	color: var(--MI_THEME-fgTransparentWeak);
 }
 
-/* 編集モード */
-.editModeContainer {
-	background: var(--MI_THEME-panel);
-	border-radius: 6px;
-	overflow: hidden;
-	border: 1px solid var(--MI_THEME-divider);
-	margin: var(--MI-margin) 0;
-}
-
-.editModeFooter {
-	padding: 12px;
-	border-top: 1px solid var(--MI_THEME-divider);
-	background: var(--MI_THEME-panelHeaderBg);
-	text-align: center;
-}
-
-/* ソート可能リスト */
-.sortableList {
-	min-height: 100px;
-	max-height: 400px;
-	overflow-y: auto;
-	background: var(--MI_THEME-bg);
-	padding: 8px;
-}
-
-.sortableItem {
-	background: var(--MI_THEME-panel);
-	margin-bottom: 8px;
-	display: flex;
-	align-items: center;
-	padding: 12px;
-	border-radius: 4px;
-	transition: background 0.1s ease;
-	border: 1px solid var(--MI_THEME-divider);
-	position: relative;
-
-	&:hover {
-		background: var(--MI_THEME-buttonHoverBg);
-	}
-
-	&:last-child {
-		margin-bottom: 0;
-	}
-}
-
-/* ドラッグハンドル */
-.itemHandle {
-	cursor: grab;
-	margin-right: 12px;
-	padding: 8px;
-	border-radius: 4px;
-	color: var(--MI_THEME-fgTransparentWeak);
-	transition: all 0.1s ease;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	background: var(--MI_THEME-buttonBg);
-	border: 1px solid var(--MI_THEME-divider);
-
-	&:hover {
-		background: var(--MI_THEME-buttonHoverBg);
-		color: var(--MI_THEME-accent);
-		border-color: var(--MI_THEME-accent);
-	}
-
-	&:active {
-		cursor: grabbing;
-		background: var(--MI_THEME-buttonHoverBg);
-	}
-}
-
-/* アイテムタイトル */
-.itemTitle {
-	flex: 1;
-	font-size: 0.9em;
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-	color: var(--MI_THEME-fg);
-}
-
-/* アクションボタン */
-.actionButton {
-	position: absolute;
-	top: 50%;
-	right: 8px;
-	transform: translateY(-50%);
-	width: 32px;
-	height: 32px;
-	color: var(--MI_THEME-fgOnAccent);
-	background: color-mix(in srgb, var(--MI_THEME-fg) 70%, transparent);
-	border-radius: 4px;
-	border: none !important;
-	outline: none !important;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	transition: all 0.1s ease;
-
-	&:hover {
-		background: color-mix(in srgb, var(--MI_THEME-fg) 80%, transparent);
-	}
-
-		&.deleteButton {
-		background: color-mix(in srgb, var(--MI_THEME-error) 70%, transparent);
-		color: var(--MI_THEME-fgOnAccent);
-
-		&:hover {
-			background: color-mix(in srgb, var(--MI_THEME-error) 80%, transparent);
-		}
-	}
-}
-
-/* ボタンスタイル */
-.doneButton {
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	padding: 7px 14px;
-	border-radius: 5px;
-	background: var(--MI_THEME-accent);
-	color: var(--MI_THEME-fgOnAccent);
-	font-weight: normal;
-	font-size: 95%;
-	transition: background 0.1s ease;
-	min-width: 100px;
-	border: none !important;
-	outline: none !important;
-
-	&:hover {
-		background: hsl(from var(--MI_THEME-accent) h s calc(l + 5));
-	}
-
-	&:active {
-		background: hsl(from var(--MI_THEME-accent) h s calc(l + 5));
-	}
-
-	i {
-		margin-right: 6px;
-	}
-}
-
-/* ヘッダータイトル */
-.headerTitle {
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-	max-width: calc(100% - 210px);
-}
 </style>

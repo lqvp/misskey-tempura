@@ -10956,6 +10956,44 @@ export interface Locale extends ILocale {
         "federationJobQueue": string;
     };
     "_widgetOptions": {
+        "_nestedWidget": {
+            /**
+             * 中のウィジェット
+             */
+            "children": string;
+            /**
+             * ネスト全体
+             */
+            "general": string;
+            /**
+             * 切り替え間隔（秒）
+             */
+            "interval": string;
+            /**
+             * 0で自動切り替えを無効にします。
+             */
+            "intervalDescription": string;
+            /**
+             * 最大の高さ（px）
+             */
+            "maxHeight": string;
+            /**
+             * 0の場合は制限しません。
+             */
+            "maxHeightDescription": string;
+            /**
+             * 上に移動
+             */
+            "moveUp": string;
+            /**
+             * 下に移動
+             */
+            "moveDown": string;
+            /**
+             * 親の設定に戻る
+             */
+            "back": string;
+        };
         /**
          * ヘッダーを表示
          */
