@@ -580,6 +580,8 @@ function toggleScheduledNoteDelete() {
 	}
 }
 
+let disposeDeliveryTargetsDialog: (() => void) | null = null;
+
 function openDeliveryTargetsDialog() {
 	const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkDeliveryTargetEditorDialog.vue')), {
 		modelValue: deliveryTargets.value ?? {
@@ -593,8 +595,12 @@ function openDeliveryTargetsDialog() {
 		destroyed: () => {
 			deliveryTargets.value = null;
 		},
-		closed: () => dispose(),
+		closed: () => {
+			dispose();
+			if (disposeDeliveryTargetsDialog === dispose) disposeDeliveryTargetsDialog = null;
+		},
 	});
+	disposeDeliveryTargetsDialog = dispose;
 }
 
 const deliverySummary = computed<{ mode: 'include' | 'exclude'; base: string; host: string; suffix: string } | null>(() => {
@@ -1660,6 +1666,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
 	uploader.abortAll();
+	disposeDeliveryTargetsDialog?.();
 	if (textAutocomplete) {
 		textAutocomplete.detach();
 	}

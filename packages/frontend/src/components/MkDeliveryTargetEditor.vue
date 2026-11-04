@@ -46,7 +46,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						:class="$style.serverItem"
 					>
 						<div :class="$style.serverRow">
-							<img v-if="serverIconUrl(server) != null" :class="$style.serverIcon" :src="serverIconUrl(server)!" alt="" @error="onIconError(server.host)"/>
+							<img v-if="serverIconUrl(server) != null" :class="$style.serverIcon" :src="serverIconUrl(server)!" alt="" @error="onIconError(server)"/>
 							<i v-else :class="['ti', 'ti-server-2', $style.serverIconFallback]"></i>
 							<div :class="$style.serverInfo">
 								<div :class="$style.serverName">{{ server.name || server.host }}</div>
@@ -109,15 +109,23 @@ type FollowerServer = {
 };
 
 const servers = ref<FollowerServer[]>([]);
-const failedIconHosts = ref<Set<string>>(new Set());
+const failedIconUrls = ref<Set<string>>(new Set());
 
-function serverIconUrl(server: FollowerServer): string | null {
-	if (failedIconHosts.value.has(server.host)) return null;
-	return getProxiedImageUrlNullable(server.faviconUrl ?? server.iconUrl ?? null, 'preview');
+function currentIconCandidate(server: FollowerServer): string | null {
+	for (const url of [server.faviconUrl, server.iconUrl]) {
+		if (url != null && url !== '' && !failedIconUrls.value.has(url)) return url;
+	}
+	return null;
 }
 
-function onIconError(host: string) {
-	failedIconHosts.value = new Set([...failedIconHosts.value, host]);
+function serverIconUrl(server: FollowerServer): string | null {
+	return getProxiedImageUrlNullable(currentIconCandidate(server), 'preview');
+}
+
+function onIconError(server: FollowerServer) {
+	const url = currentIconCandidate(server);
+	if (url == null) return;
+	failedIconUrls.value = new Set([...failedIconUrls.value, url]);
 }
 
 const serversLoading = ref(true);
