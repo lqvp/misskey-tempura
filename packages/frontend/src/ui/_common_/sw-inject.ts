@@ -3,13 +3,12 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import { accountUrl } from '@/utility/tab-account.js';
 import { post } from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { $i } from '@/i.js';
-import { getAccountFromId } from '@/utility/get-account-from-id.js';
 import { deepClone } from '@/utility/clone.js';
 import { mainRouter } from '@/router.js';
-import { login } from '@/accounts.js';
 
 export function swInject() {
 	navigator.serviceWorker.addEventListener('message', async ev => {
@@ -20,10 +19,8 @@ export function swInject() {
 		if (ev.data.type !== 'order') return;
 
 		if (ev.data.loginId && ev.data.loginId !== $i?.id) {
-			return getAccountFromId(ev.data.loginId).then(account => {
-				if (!account) return;
-				return login(account.token, ev.data.url);
-			});
+			window.open(accountUrl(ev.data.url, ev.data.loginId), '_blank', 'noopener');
+			return;
 		}
 
 		switch (ev.data.order) {

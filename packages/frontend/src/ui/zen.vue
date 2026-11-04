@@ -22,6 +22,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
+import { accountUrl } from '@/utility/tab-account.js';
+import { $i } from '@/i.js';
 import { computed, provide, ref } from 'vue';
 import { instanceName, ui } from '@@/js/config.js';
 import XCommon from './_common_/common.vue';
@@ -52,7 +54,7 @@ provideMetadataReceiver((metadataGetter) => {
 provideReactiveMetadata(pageMetadata);
 
 function goToDeck() {
-	window.location.href = '/';
+	window.location.href = accountUrl('/', $i?.id ?? null);
 }
 </script>
 

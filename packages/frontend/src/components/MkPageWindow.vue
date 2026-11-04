@@ -28,6 +28,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
+import { accountUrl, sharedUrl } from '@/utility/tab-account.js';
+import { $i } from '@/i.js';
 import { computed, onMounted, onUnmounted, provide, ref, useTemplateRef, nextTick } from 'vue';
 import { url } from '@@/js/config.js';
 import type { PageMetadata } from '@/page.js';
@@ -99,7 +101,7 @@ windowRouter.addListener('replace', ctx => {
 });
 
 windowRouter.addListener('forcePush', ctx => {
-	window.open(url + ctx.fullPath, '_blank', 'noopener');
+	window.open(accountUrl(url + ctx.fullPath, $i?.id ?? null), '_blank', 'noopener');
 	if (ctx.onInit) {
 		nextTick(() => {
 			windowEl.value?.close();
@@ -108,7 +110,7 @@ windowRouter.addListener('forcePush', ctx => {
 });
 
 windowRouter.addListener('forceReplace', ctx => {
-	window.open(url + ctx.fullPath, '_blank', 'noopener');
+	window.open(accountUrl(url + ctx.fullPath, $i?.id ?? null), '_blank', 'noopener');
 	if (ctx.onInit) {
 		nextTick(() => {
 			windowEl.value?.close();
@@ -149,14 +151,14 @@ const contextmenu = computed(() => ([{
 	icon: 'ti ti-external-link',
 	text: i18n.ts.openInNewTab,
 	action: () => {
-		window.open(url + windowRouter.getCurrentFullPath(), '_blank', 'noopener');
+		window.open(accountUrl(url + windowRouter.getCurrentFullPath(), $i?.id ?? null), '_blank', 'noopener');
 		windowEl.value?.close();
 	},
 }, {
 	icon: 'ti ti-link',
 	text: i18n.ts.copyLink,
 	action: () => {
-		copyToClipboard(url + windowRouter.getCurrentFullPath());
+		copyToClipboard(sharedUrl(url + windowRouter.getCurrentFullPath()));
 	},
 }]));
 

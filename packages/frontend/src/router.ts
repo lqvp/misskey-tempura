@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import { accountUrl } from '@/utility/tab-account.js';
 import { inject } from 'vue';
 import { page } from '@/router.definition.js';
 import { $i } from '@/i.js';
@@ -20,23 +21,27 @@ export function createRouter(fullPath: string): Router {
 export const mainRouter = createRouter(window.location.pathname + window.location.search + window.location.hash);
 
 window.addEventListener('popstate', (event) => {
+	if (new URLSearchParams(window.location.search).get('as') !== ($i?.id ?? null)) {
+		window.location.reload();
+		return;
+	}
 	mainRouter.replaceByPath(window.location.pathname + window.location.search + window.location.hash);
 });
 
 mainRouter.addListener('push', ctx => {
-	window.history.pushState({ }, '', ctx.fullPath);
+	window.history.pushState({ }, '', accountUrl(ctx.fullPath, $i?.id ?? null));
 });
 
 mainRouter.addListener('replace', ctx => {
-	window.history.replaceState({ }, '', ctx.fullPath);
+	window.history.replaceState({ }, '', accountUrl(ctx.fullPath, $i?.id ?? null));
 });
 
 mainRouter.addListener('forceReplace', ctx => {
-	window.location.replace(ctx.fullPath);
+	window.location.replace(accountUrl(ctx.fullPath, $i?.id ?? null));
 });
 
 mainRouter.addListener('forcePush', ctx => {
-	window.location.href = ctx.fullPath;
+	window.location.href = accountUrl(ctx.fullPath, $i?.id ?? null);
 });
 
 mainRouter.addListener('change', ctx => {

@@ -15,7 +15,7 @@ import { unisonReload, reloadChannel } from '@/utility/unison-reload.js';
 import { prefer } from '@/preferences.js';
 import { store } from '@/store.js';
 import { $i } from '@/i.js';
-import { signout } from '@/signout.js';
+import { accountUrl } from '@/utility/tab-account.js';
 
 type AccountWithToken = Misskey.entities.MeDetailed & { token: string };
 
@@ -39,9 +39,9 @@ export async function getAccounts(): Promise<{
 }
 
 async function addAccount(host: string, user: Misskey.entities.MeDetailed, token: AccountWithToken['token']) {
+	await store.set('accountTokens', { ...store.s.accountTokens, [host + '/' + user.id]: token });
+	await store.set('accountInfos', { ...store.s.accountInfos, [host + '/' + user.id]: user });
 	if (!prefer.s.accounts.some(x => x[0] === host && x[1].id === user.id)) {
-		store.set('accountTokens', { ...store.s.accountTokens, [host + '/' + user.id]: token });
-		store.set('accountInfos', { ...store.s.accountInfos, [host + '/' + user.id]: user });
 		prefer.commit('accounts', [...prefer.s.accounts, [host, { id: user.id, username: user.username }]]);
 	}
 }
@@ -49,12 +49,13 @@ async function addAccount(host: string, user: Misskey.entities.MeDetailed, token
 export async function removeAccount(host: string, id: AccountWithToken['id']) {
 	const tokens = JSON.parse(JSON.stringify(store.s.accountTokens));
 	delete tokens[host + '/' + id];
-	store.set('accountTokens', tokens);
+	await store.set('accountTokens', tokens);
 	const accountInfos = JSON.parse(JSON.stringify(store.s.accountInfos));
 	delete accountInfos[host + '/' + id];
-	store.set('accountInfos', accountInfos);
+	await store.set('accountInfos', accountInfos);
 
 	prefer.commit('accounts', prefer.s.accounts.filter(x => x[0] !== host || x[1].id !== id));
+	unisonReload();
 }
 
 const isAccountDeleted = Symbol('isAccountDeleted');
@@ -114,6 +115,8 @@ function fetchAccount(token: string, id?: string, forceShowDialog?: boolean): Pr
 					}
 
 					fail(isAccountDeleted);
+				} else if (id != null && res.id !== id) {
+					fail(isAccountDeleted);
 				} else {
 					done(res);
 				}
@@ -150,14 +153,14 @@ export function updateCurrentAccount(accountData: Partial<Misskey.entities.MeDet
 export async function refreshCurrentAccount() {
 	if (!$i) return;
 	const me = $i;
-	return fetchAccount($i.token, $i.id).then(replaceCurrentAccountData).catch(reason => {
+	return fetchAccount(me.token, me.id).then(replaceCurrentAccountData).catch(async reason => {
 		if (reason === isAccountDeleted) {
-			removeAccount(host, me.id);
-			if (Object.keys(store.s.accountTokens).length > 0) {
-				login(Object.values(store.s.accountTokens)[0]);
-			} else {
-				signout();
-			}
+			// Drop only the rejected credential, then bootstrap the same ID into the stop screen.
+			// Do not remove the saved account or choose another tab's identity.
+			const tokens = { ...store.s.accountTokens };
+			delete tokens[host + '/' + me.id];
+			await store.set('accountTokens', tokens);
+			window.location.reload();
 		}
 	});
 }
@@ -187,21 +190,28 @@ export async function login(token: AccountWithToken['token'], redirect?: string)
 		// 他のタブは再読み込みするだけ
 		reloadChannel.postMessage(null);
 		// このページはredirectで指定された先に移動
-		window.location.href = redirect;
+		const target = new URL(redirect, window.location.href);
+		target.searchParams.delete('as');
+		target.searchParams.delete('loginId');
+		window.location.href = accountUrl(target.href, me.id);
 		return;
 	}
 
-	unisonReload();
+	reloadChannel.postMessage(null);
+	const target = new URL(window.location.href);
+	target.searchParams.delete('as');
+	target.searchParams.delete('loginId');
+	window.location.href = accountUrl(target.href, me.id);
 }
 
 export async function switchAccount(host: string, id: string) {
 	const token = store.s.accountTokens[host + '/' + id];
 	if (token) {
-		login(token);
+		window.location.href = accountUrl('/', id);
 	} else {
 		const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkSigninDialog.vue')), {}, {
 			done: async (res: Misskey.entities.SigninFlowResponse & { finished: true }) => {
-				store.set('accountTokens', { ...store.s.accountTokens, [host + '/' + res.id]: res.i });
+				await store.set('accountTokens', { ...store.s.accountTokens, [host + '/' + res.id]: res.i });
 				login(res.i);
 			},
 			closed: () => {
@@ -223,6 +233,9 @@ export async function getAccountMenu(opts: {
 	const callback = opts.onChoose;
 
 	function createItem(host: string, id: Misskey.entities.User['id'], username: Misskey.entities.User['username'], account: Misskey.entities.MeDetailed | null | undefined, token: string | null): MenuItem {
+		if (!callback && token && host === new URL(window.location.href).host) {
+			return { type: 'a', text: account?.name ? `${account.name} (@${username})` : `@${username}`, href: accountUrl('/', id) };
+		}
 		if (account) {
 			return {
 				type: 'user' as const,
@@ -261,7 +274,7 @@ export async function getAccountMenu(opts: {
 						initialUsername: username,
 					}, {
 						done: async (res: Misskey.entities.SigninFlowResponse & { finished: true }) => {
-							store.set('accountTokens', { ...store.s.accountTokens, [host + '/' + res.id]: res.i });
+							await store.set('accountTokens', { ...store.s.accountTokens, [host + '/' + res.id]: res.i });
 
 							if (callback) {
 								fetchAccount(res.i, id).then(account => {
@@ -347,6 +360,7 @@ export function getAccountWithSigninDialog(): Promise<{ id: string, token: strin
 			done: async (res: Misskey.entities.SigninFlowResponse & { finished: true }) => {
 				const user = await fetchAccount(res.i, res.id, true);
 				await addAccount(host, user, res.i);
+				reloadChannel.postMessage(null);
 				resolve({ id: res.id, token: res.i });
 			},
 			cancelled: () => {
@@ -366,6 +380,7 @@ export function getAccountWithSignupDialog(): Promise<{ id: string, token: strin
 				const user = JSON.parse(JSON.stringify(res));
 				delete user.token;
 				await addAccount(host, user, res.token);
+				reloadChannel.postMessage(null);
 				resolve({ id: res.id, token: res.token });
 			},
 			cancelled: () => {

@@ -4,7 +4,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<a ref="el" :href="to" :class="active ? activeClass : null" @click="nav" @contextmenu.prevent.stop="onContextmenu">
+<a ref="el" :href="accountUrl(to, $i?.id ?? null)" :class="active ? activeClass : null" @click="nav" @contextmenu.prevent.stop="onContextmenu">
 	<slot></slot>
 </a>
 </template>
@@ -14,8 +14,9 @@ export type MkABehavior = 'window' | 'browser' | null;
 </script>
 
 <script lang="ts" setup>
+import { accountUrl, sharedUrl } from '@/utility/tab-account.js';
+import { $i } from '@/i.js';
 import { computed, inject, useTemplateRef } from 'vue';
-import { url } from '@@/js/config.js';
 import * as os from '@/os.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 import { i18n } from '@/i18n.js';
@@ -71,13 +72,13 @@ function onContextmenu(ev: PointerEvent) {
 		icon: 'ti ti-external-link',
 		text: i18n.ts.openInNewTab,
 		action: () => {
-			window.open(props.to, '_blank', 'noopener');
+			window.open(accountUrl(props.to, $i?.id ?? null), '_blank', 'noopener');
 		},
 	}, {
 		icon: 'ti ti-link',
 		text: i18n.ts.copyLink,
 		action: () => {
-			copyToClipboard(`${url}${props.to}`);
+			copyToClipboard(sharedUrl(props.to));
 		},
 	}], ev);
 }
@@ -87,6 +88,8 @@ function openWindow() {
 }
 
 function nav(ev: PointerEvent) {
+	const target = new URL(accountUrl(props.to, $i?.id ?? null));
+	if (target.origin === window.location.origin && target.searchParams.get('as') !== ($i?.id ?? null)) return;
 	// 制御キーとの組み合わせは無視（shiftを除く）
 	if (ev.metaKey || ev.altKey || ev.ctrlKey) return;
 
@@ -94,9 +97,9 @@ function nav(ev: PointerEvent) {
 
 	if (behavior === 'browser') {
 		if (isWindow) {
-			window.open(props.to, '_blank', 'noopener');
+			window.open(accountUrl(props.to, $i?.id ?? null), '_blank', 'noopener');
 		} else {
-			window.location.href = props.to;
+			window.location.href = accountUrl(props.to, $i?.id ?? null);
 		}
 		return;
 	}

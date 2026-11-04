@@ -18,6 +18,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
+import { accountUrl } from '@/utility/tab-account.js';
+import { $i } from '@/i.js';
 import { computed, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import * as os from '@/os.js';
@@ -85,12 +87,12 @@ function close(): void {
 
 	// 閉じなければ100ms後タイムラインに
 	window.setTimeout(() => {
-		window.location.href = '/';
+		window.location.href = accountUrl('/', $i?.id ?? null);
 	}, 100);
 }
 
 function goToMisskey(): void {
-	window.location.href = '/';
+	window.location.href = accountUrl('/', $i?.id ?? null);
 }
 
 _fetch_();

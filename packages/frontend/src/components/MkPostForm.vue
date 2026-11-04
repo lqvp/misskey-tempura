@@ -1015,7 +1015,7 @@ type StoredDrafts = {
 function saveDraft() {
 	if (props.instant || props.mock) return;
 
-	const draftsData = JSON.parse(miLocalStorage.getItem('drafts') ?? '{}') as StoredDrafts;
+	const draftsData = JSON.parse(miLocalStorage.getItem(`drafts:${$i.id}`) ?? '{}') as StoredDrafts;
 
 	draftsData[draftKey.value] = {
 		updatedAt: new Date().toISOString(),
@@ -1035,15 +1035,15 @@ function saveDraft() {
 		},
 	};
 
-	miLocalStorage.setItem('drafts', JSON.stringify(draftsData));
+	miLocalStorage.setItem(`drafts:${$i.id}`, JSON.stringify(draftsData));
 }
 
 function deleteDraft() {
-	const draftsData = JSON.parse(miLocalStorage.getItem('drafts') ?? '{}') as StoredDrafts;
+	const draftsData = JSON.parse(miLocalStorage.getItem(`drafts:${$i.id}`) ?? '{}') as StoredDrafts;
 
 	delete draftsData[draftKey.value];
 
-	miLocalStorage.setItem('drafts', JSON.stringify(draftsData));
+	miLocalStorage.setItem(`drafts:${$i.id}`, JSON.stringify(draftsData));
 }
 
 async function saveServerDraft(options: {
@@ -1578,7 +1578,7 @@ onMounted(() => {
 	nextTick(() => {
 		// 書きかけの投稿を復元
 		if (!props.instant && !props.mention && !props.specified && !props.mock) {
-			const draft = JSON.parse(miLocalStorage.getItem('drafts') ?? '{}')[draftKey.value] as StoredDrafts[string] | undefined;
+			const draft = JSON.parse(miLocalStorage.getItem(`drafts:${$i.id}`) ?? '{}')[draftKey.value] as StoredDrafts[string] | undefined;
 			if (draft != null) {
 				text.value = draft.data.text;
 				useCw.value = draft.data.useCw;
