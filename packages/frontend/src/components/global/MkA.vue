@@ -60,12 +60,13 @@ function onContextmenu(ev: PointerEvent) {
 		icon: 'ti ti-app-window',
 		text: i18n.ts.openInWindow,
 		action: () => {
-			os.pageWindow(props.to);
+			openWindow();
 		},
 	}, {
 		icon: 'ti ti-player-eject',
 		text: i18n.ts.showInPage,
 		action: () => {
+			if (openOtherAccount()) return;
 			router.pushByPath(props.to, 'forcePage');
 		},
 	}, { type: 'divider' }, {
@@ -83,7 +84,17 @@ function onContextmenu(ev: PointerEvent) {
 	}], ev);
 }
 
+function openOtherAccount(): boolean {
+	const target = new URL(accountUrl(props.to, $i?.id ?? null));
+	if (target.origin === window.location.origin && target.searchParams.get('as') !== ($i?.id ?? null)) {
+		window.open(target.href, '_blank', 'noopener');
+		return true;
+	}
+	return false;
+}
+
 function openWindow() {
+	if (openOtherAccount()) return;
 	os.pageWindow(props.to);
 }
 

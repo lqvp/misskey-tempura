@@ -112,6 +112,8 @@ function fetchAccount(token: string, id?: string, forceShowDialog?: boolean): Pr
 							title: i18n.ts.failedToFetchAccountInformation,
 							text: JSON.stringify(res.error),
 						});
+						fail(res.error);
+						return;
 					}
 
 					fail(isAccountDeleted);

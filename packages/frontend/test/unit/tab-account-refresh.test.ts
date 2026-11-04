@@ -35,3 +35,11 @@ it('rejects a successful response identifying a different user instead of mutati
 	expect(state.me.id).toBe('alice');
 	expect(state.reload).toHaveBeenCalledOnce();
 });
+
+it('keeps saved credentials and identity on unrelated API errors', async () => {
+	vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ status: 429, json: async () => ({ error: { id: 'rate-limit', code: 'RATE_LIMIT_EXCEEDED' } }) }));
+	await refreshCurrentAccount();
+	expect(state.s.accountTokens).toEqual({ 'localhost:3000/alice': 'alice-token', 'localhost:3000/bob': 'bob-token' });
+	expect(state.me.id).toBe('alice');
+	expect(state.reload).not.toHaveBeenCalled();
+});
