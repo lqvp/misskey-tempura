@@ -580,6 +580,21 @@ describe('SearchService', () => {
 						meta.ugcVisibilityForVisitor = original;
 					}
 				});
+
+				test('ログイン済みの検索は local ポリシーでもリモートのノートを除外しない', async () => {
+					const ctx = getCtx();
+					const { localNote, remoteNote } = await createVisitorNotes(ctx);
+					const me = await createUser(ctx, { username: 'me', usernameLower: 'me', host: null });
+					const meta = ctx.app.get(DI.meta) as MiMeta;
+					const original = meta.ugcVisibilityForVisitor;
+					meta.ugcVisibilityForVisitor = 'local';
+					try {
+						const result = await ctx.service.searchNote('hello visitor', me, {}, { limit: 10 });
+						expect(result.map(note => note.id).sort()).toEqual([localNote.id, remoteNote.id].sort());
+					} finally {
+						meta.ugcVisibilityForVisitor = original;
+					}
+				});
 			});
 		});
 	}
