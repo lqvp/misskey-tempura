@@ -17201,4 +17201,28 @@ export interface Locale extends ILocale {
             "untrustedIp": string;
         };
     };
+    "_tabAccount": {
+        /**
+         * このタブでは
+         * アカウントを開けません
+         */
+        "unavailable": string;
+        /**
+         * アカウントを確認できません。
+         * 自動では切り替えていません。
+         */
+        "unavailableDescription": string;
+        /**
+         * 先頭のアカウントで開く
+         */
+        "openFirst": string;
+        /**
+         * ホームに戻る
+         */
+        "goHome": string;
+        /**
+         * 先頭のアカウントでホームを開きます。
+         */
+        "openFirstDescription": string;
+    };
 }

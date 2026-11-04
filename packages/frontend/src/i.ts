@@ -4,6 +4,7 @@
  */
 
 import { reactive } from 'vue';
+import '@/style/tab-account-error.scss';
 import * as Misskey from 'misskey-js';
 import { host } from '@@/js/config.js';
 import { i18n } from '@/i18n.js';
@@ -30,18 +31,29 @@ reloadChannel.addEventListener('message', path => {
 function stopTabAccount() {
 	// Stop before any account-dependent modules boot. The loader's error screen may be disabled.
 	const panel = window.document.createElement('main');
+	panel.className = 'tabAccountError';
+	const card = window.document.createElement('section');
+	card.className = '_panel tabAccountErrorCard';
+	card.setAttribute('aria-labelledby', 'tab-account-error-title');
 	const title = window.document.createElement('h1');
+	title.id = 'tab-account-error-title';
 	title.textContent = i18n.ts._tabAccount.unavailable;
 	const description = window.document.createElement('p');
 	description.textContent = i18n.ts._tabAccount.unavailableDescription;
-	const retry = window.document.createElement('a');
-	retry.href = window.location.href;
+	const home = window.document.createElement('a');
+	home.className = '_button tabAccountErrorButton tabAccountErrorPrimary';
+	home.href = '/';
+	home.textContent = i18n.ts._tabAccount.goHome;
+	const homeDescription = window.document.createElement('p');
+	homeDescription.className = 'tabAccountErrorHint';
+	homeDescription.textContent = i18n.ts._tabAccount.openFirstDescription;
+	const retry = window.document.createElement('button');
+	retry.type = 'button';
+	retry.className = '_button tabAccountErrorRetry';
 	retry.textContent = i18n.ts.reload;
-	const firstAccount = window.document.createElement('a');
-	firstAccount.href = '/';
-	firstAccount.textContent = i18n.ts._tabAccount.openFirst;
-	panel.append(title, description, retry, window.document.createElement('br'), firstAccount);
-	panel.style.cssText = 'padding:24px;max-width:640px;margin:40px auto;font:16px sans-serif;line-height:1.7';
+	retry.addEventListener('click', () => window.location.reload());
+	card.append(title, description, home, homeDescription, retry);
+	panel.append(card);
 	window.document.body.replaceChildren(panel);
 }
 

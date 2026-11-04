@@ -4643,6 +4643,8 @@ _loginRisk:
     untrustedIp: "接続元IPを判定できない"
 
 _tabAccount:
-  unavailable: "このタブのアカウントを開けません"
-  unavailableDescription: "URLで選ばれたアカウントを確認できませんでした。別のアカウントには切り替えていません。通信状態を確認するか、別のタブで再ログインしてから読み込み直してください。"
+  unavailable: "このタブでは\nアカウントを開けません"
+  unavailableDescription: "アカウントを確認できません。\n自動では切り替えていません。"
   openFirst: "先頭のアカウントで開く"
+  goHome: "ホームに戻る"
+  openFirstDescription: "先頭のアカウントでホームを開きます。"
