@@ -7,12 +7,13 @@ import { afterEach, describe, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render, waitFor } from '@testing-library/vue';
 import { directives } from '@/directives/index.js';
 import { components } from '@/components/index.js';
-import { i18n } from '@/i18n.js';
+import locales from 'i18n';
+import { updateI18n } from '@/i18n.js';
 import MkSignin from '@/components/MkSignin.vue';
 
 const { apiMock } = vi.hoisted(() => {
 	return {
-		apiMock: vi.fn((_endpoint: string, _payload?: unknown) => Promise.resolve({})),
+		apiMock: vi.fn((_endpoint: string, _payload?: Record<string, unknown>) => Promise.resolve({})),
 	};
 });
 
@@ -44,11 +45,12 @@ describe('MkSignin (ugcVisibilityForVisitor=none, anonymous users/show 404)', ()
 	});
 
 	test('users/show が 404 でもパスワード画面に進み、入力したユーザー名でログインできる', async () => {
+		updateI18n(locales['ja-JP']);
 		mockSigninApis();
 		const loginHandler = vi.fn();
 		const r = render(MkSignin, {
 			props: { onLogin: loginHandler },
-			global: { components, directives, plugins: [i18n] },
+			global: { components, directives },
 		});
 
 		// 1. ユーザー名入力 → 送信
