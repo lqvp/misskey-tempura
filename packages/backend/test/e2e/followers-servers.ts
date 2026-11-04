@@ -29,7 +29,7 @@ describe('i/followers-servers', () => {
 			host: NAMED_HOST,
 			name: 'Named Server',
 			faviconUrl: `https://${NAMED_HOST}/favicon.ico`,
-			iconUrl: null,
+			iconUrl: `https://${NAMED_HOST}/icon.png`,
 		});
 
 		// BARE_HOST はインスタンス情報を持たない(未取得)
@@ -65,7 +65,7 @@ describe('i/followers-servers', () => {
 			host: NAMED_HOST,
 			followersCount: 2,
 			name: 'Named Server',
-			iconUrl: null,
+			iconUrl: `https://${NAMED_HOST}/icon.png`,
 			faviconUrl: `https://${NAMED_HOST}/favicon.ico`,
 		});
 	});
