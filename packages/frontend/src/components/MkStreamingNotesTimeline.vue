@@ -316,11 +316,18 @@ const antennaMatchInfo = shallowRef<Record<string, AntennaMatchInfo>>({});
 
 if (props.src === 'antenna') {
 	// 表示中のノートのマッチ理由を現在の条件で再計算して取得する(受信当時の理由の復元ではない)
+	// デッキのカラムではインスタンスが再利用されるため、アンテナが変わったらキャッシュを破棄する
+	watch(() => props.antenna, () => {
+		antennaMatchInfo.value = {};
+	});
+
 	watch(() => paginator.items.value.map(note => note.id), async (ids) => {
+		const antennaId = props.antenna;
 		const missing = ids.filter(id => !(id in antennaMatchInfo.value)).slice(0, 100); // antennas/match-info の noteIds 上限
-		if (missing.length === 0 || props.antenna == null) return;
+		if (missing.length === 0 || antennaId == null) return;
 		try {
-			const res = await misskeyApi('antennas/match-info', { antennaId: props.antenna, noteIds: missing });
+			const res = await misskeyApi('antennas/match-info', { antennaId, noteIds: missing });
+			if (antennaId !== props.antenna) return; // アンテナ切り替え後に届いた古い応答は捨てる
 			const next = { ...antennaMatchInfo.value };
 			for (const x of res) {
 				next[x.noteId] = { matchedKeywords: x.matchedKeywords, matchedExcludeKeywords: x.matchedExcludeKeywords };

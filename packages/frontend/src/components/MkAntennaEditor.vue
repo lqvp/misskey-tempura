@@ -166,6 +166,15 @@ const userLists = ref<Misskey.entities.UserList[] | null>(null);
 const isScoringMode = ref<boolean>(initialAntenna.expression === 'SCORE');
 const tryResults = ref<Misskey.entities.Note[] | null>(null);
 const tryRunning = ref<boolean>(false);
+// 試し打ちの応答が条件変更やリセットと前後しても、古い応答で結果を上書きしないようにする
+let trySeq = 0;
+
+// 条件が変わったら試し打ちの結果を無効化する(別の条件で得た結果を表示し続けない)
+watch([() => src.value, () => userListId.value, users, keywords, excludeKeywords, mustExcludeKeywords, caseSensitive, localOnly, excludeBots, withReplies, withFile, excludeNotesInSensitiveChannel, onlyFollowers, isScoringMode], () => {
+	trySeq++;
+	tryRunning.value = false;
+	tryResults.value = null;
+}, { deep: true });
 
 watch(() => src.value, async () => {
 	if (src.value === 'list' && userLists.value === null) {
@@ -238,17 +247,22 @@ async function resetAntenna() {
 }
 
 async function tryConditions() {
+	const seq = ++trySeq;
 	tryRunning.value = true;
 	tryResults.value = null;
 	try {
-		tryResults.value = await misskeyApi('antennas/test', buildAntennaData());
+		const res = await misskeyApi('antennas/test', buildAntennaData());
+		if (seq !== trySeq) return;
+		tryResults.value = res;
 	} catch (err) {
+		if (seq !== trySeq) return;
 		os.alert({
 			type: 'error',
-			text: err instanceof Error ? err.message : String(err),
+			// misskeyApiはAPIエラーをErrorではなく{ message, code }のオブジェクトでrejectする
+			text: (err != null && typeof err === 'object' && 'message' in err) ? String((err as { message?: unknown }).message) : String(err),
 		});
 	} finally {
-		tryRunning.value = false;
+		if (seq === trySeq) tryRunning.value = false;
 	}
 }
 

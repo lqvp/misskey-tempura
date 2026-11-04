@@ -18,6 +18,8 @@ import type { AntennasRepository, UserListMembershipsRepository } from '@/models
 import type { MiAntenna } from '@/models/Antenna.js';
 import type { MiNote } from '@/models/Note.js';
 import type { MiUser } from '@/models/User.js';
+import { LoggerService } from '@/core/LoggerService.js';
+import type Logger from '@/logger.js';
 import { CacheService } from './CacheService.js';
 import type { OnApplicationShutdown } from '@nestjs/common';
 
@@ -31,6 +33,7 @@ export interface Match {
 
 @Injectable()
 export class AntennaService implements OnApplicationShutdown {
+	private logger: Logger;
 	private antennasFetched: boolean;
 	private antennas: MiAntenna[];
 
@@ -129,11 +132,13 @@ export class AntennaService implements OnApplicationShutdown {
 		@Inject(DI.userListMembershipsRepository)
 		private userListMembershipsRepository: UserListMembershipsRepository,
 
+		private loggerService: LoggerService,
 		private cacheService: CacheService,
 		private utilityService: UtilityService,
 		private globalEventService: GlobalEventService,
 		private fanoutTimelineService: FanoutTimelineService,
 	) {
+		this.logger = this.loggerService.getLogger('antenna');
 		this.antennasFetched = false;
 		this.antennas = [];
 
@@ -188,9 +193,15 @@ export class AntennaService implements OnApplicationShutdown {
 	public async addNoteToAntennas(note: MiNote, noteUser: { id: MiUser['id']; username: string; host: string | null; isBot: boolean; }): Promise<{ antenna: MiAntenna; match: AntennaMatchInfo }[]> {
 		const antennas = await this.getAntennas();
 		const results = await Promise.all(antennas.map(async (antenna) => {
-			const hit = await this.checkHitAntenna(antenna, note, noteUser);
-			if (!hit) return null;
-			return { antenna, match: this.getAntennaMatchInfo(antenna, note) };
+			try {
+				const hit = await this.checkHitAntenna(antenna, note, noteUser);
+				if (!hit) return null;
+				return { antenna, match: this.getAntennaMatchInfo(antenna, note) };
+			} catch (err) {
+				// 判定に失敗したアンテナは不一致扱い(除外側)にして、他のアンテナへの配信とノート作成全体を止めない
+				this.logger.warn(`Failed to check antenna hit (antenna: ${antenna.id}, note: ${note.id})`, { err });
+				return null;
+			}
 		}));
 		const matchedAntennas = results.filter((x): x is NonNullable<typeof x> => x != null);
 

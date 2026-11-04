@@ -9,6 +9,8 @@ import type { NotesRepository, AntennasRepository } from '@/models/_.js';
 import { QueryService } from '@/core/QueryService.js';
 import { AntennaService } from '@/core/AntennaService.js';
 import { DI } from '@/di-symbols.js';
+import type { MiNote } from '@/models/Note.js';
+import type { AntennaMatchInfo } from '@/misc/antenna-match.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -100,6 +102,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				.innerJoinAndSelect('note.user', 'user')
 				.leftJoinAndSelect('note.reply', 'reply')
 				.leftJoinAndSelect('note.renote', 'renote')
+				.leftJoinAndSelect('note.channel', 'channel')
 				.leftJoinAndSelect('reply.user', 'replyUser')
 				.leftJoinAndSelect('renote.user', 'renoteUser');
 
@@ -109,10 +112,19 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			const notes = await query.getMany();
 
 			// 現在の条件で再計算する。受信当時の理由の復元ではないことに注意
-			return notes.map(note => ({
-				noteId: note.id,
-				...this.antennaService.getAntennaMatchInfo(antenna, note),
-			}));
+			// キーワード以外の条件(srcやチャンネル除外など)も含めて現在の条件を満たさないノートには理由を返さない
+			const result: ({ noteId: MiNote['id'] } & AntennaMatchInfo)[] = [];
+			for (const note of notes) {
+				if (note.user == null) continue;
+				const hit = await this.antennaService.checkHitAntenna(antenna, note, note.user);
+				result.push({
+					noteId: note.id,
+					...(hit
+						? this.antennaService.getAntennaMatchInfo(antenna, note)
+						: { matchedKeywords: [], matchedExcludeKeywords: [] }),
+				});
+			}
+			return result;
 		});
 	}
 }

@@ -55,11 +55,13 @@ _fetch_();
 
 // 条件をコピーして少し変えた別アンテナをすぐ作れるようにする
 function duplicateAntenna(antenna: Misskey.entities.Antenna) {
+	// 作成APIのname上限(100文字)を接尾辞込みで超えないように切り詰める
+	const suffix = ` - ${i18n.ts.copy}`;
 	const copy = {
 		...antenna,
 		id: undefined,
 		createdAt: undefined,
-		name: `${antenna.name} - ${i18n.ts.copy}`,
+		name: `${antenna.name.slice(0, 100 - suffix.length)}${suffix}`,
 	};
 	const { dispose } = os.popup(MkAntennaEditorDialog, { antenna: copy }, {
 		created: () => {

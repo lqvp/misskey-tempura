@@ -22,6 +22,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					type="text"
 					:placeholder="i18n.ts._tempuraFutureAntenna.addKeyword"
 					@keydown.enter.prevent="addKeyword(gi)"
+					@blur="addKeyword(gi)"
 				>
 				<MkButton inline small :disabled="inputs[gi].trim() === ''" @click="addKeyword(gi)"><i class="ti ti-plus"></i></MkButton>
 			</div>
@@ -68,6 +69,7 @@ function removeKeyword(gi: number, ki: number) {
 	next[gi].splice(ki, 1);
 	if (next[gi].length === 0 && next.length > 1) {
 		next.splice(gi, 1);
+		inputs.value.splice(gi, 1);
 	}
 	model.value = next;
 }
@@ -79,6 +81,7 @@ function addGroup() {
 function removeGroup(gi: number) {
 	const next = model.value.map(g => [...g]);
 	next.splice(gi, 1);
+	inputs.value.splice(gi, 1);
 	model.value = next.length > 0 ? next : [[]];
 }
 </script>

@@ -961,6 +961,8 @@ export class NoteCreateService implements OnApplicationShutdown {
 					this.globalEventService.publishAntennaStream(antenna.id, 'note', noteObj);
 					this.globalEventService.publishAntennaStream(antenna.id, 'noteMatched', { noteId: noteObj.id, ...match });
 				}
+			}).catch(err => {
+				this.logger.error('Failed to deliver note to antennas', { noteId: noteObj.id, err });
 			});
 
 			this.webhookService.enqueueUserWebhook(user.id, 'note', { note: noteObj });

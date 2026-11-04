@@ -5,6 +5,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AntennaService } from '../../src/core/AntennaService.js';
+import { LoggerService } from '@/core/LoggerService.js';
 import { DI } from '../../src/di-symbols.js';
 import { GlobalEventService } from '../../src/core/GlobalEventService.js';
 import { UtilityService } from '../../src/core/UtilityService.js';
@@ -36,6 +37,7 @@ describe('AntennaService', () => {
 				{ provide: DI.redisForSub, useValue: mockRedisForSub },
 				{ provide: DI.antennasRepository, useValue: mockAntennasRepository },
 				{ provide: DI.userListMembershipsRepository, useValue: mockUserListMembershipsRepository },
+				{ provide: LoggerService, useValue: { getLogger: () => ({ info: vi.fn(), debug: vi.fn(), warn: vi.fn(), error: vi.fn() }) } },
 				{ provide: CacheService, useValue: mockCacheService },
 				{ provide: UtilityService, useValue: mockUtilityService },
 				{ provide: GlobalEventService, useValue: mockGlobalEventService },

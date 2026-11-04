@@ -57,24 +57,24 @@ export const paramDef = {
 	properties: {
 		src: { type: 'string', enum: ['home', 'all', 'users', 'list', 'users_blacklist'] },
 		userListId: { type: 'string', format: 'misskey:id', nullable: true },
-		keywords: { type: 'array', items: {
-			type: 'array', items: {
-				type: 'string',
+		keywords: { type: 'array', maxItems: 32, items: {
+			type: 'array', maxItems: 32, items: {
+				type: 'string', maxLength: 128,
 			},
 		} },
-		excludeKeywords: { type: 'array', items: {
-			type: 'array', items: {
-				type: 'string',
+		excludeKeywords: { type: 'array', maxItems: 32, items: {
+			type: 'array', maxItems: 32, items: {
+				type: 'string', maxLength: 128,
 			},
 		} },
-		mustExcludeKeywords: { type: 'array', items: {
-			type: 'array', items: {
-				type: 'string',
+		mustExcludeKeywords: { type: 'array', maxItems: 32, items: {
+			type: 'array', maxItems: 32, items: {
+				type: 'string', maxLength: 128,
 			},
 		} },
 		expression: { type: 'string', nullable: true, maxLength: 2048 },
-		users: { type: 'array', items: {
-			type: 'string',
+		users: { type: 'array', maxItems: 100, items: {
+			type: 'string', maxLength: 300,
 		} },
 		caseSensitive: { type: 'boolean' },
 		localOnly: { type: 'boolean' },
@@ -145,6 +145,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				.innerJoinAndSelect('note.user', 'user')
 				.leftJoinAndSelect('note.reply', 'reply')
 				.leftJoinAndSelect('note.renote', 'renote')
+				.leftJoinAndSelect('note.channel', 'channel')
 				.leftJoinAndSelect('reply.user', 'replyUser')
 				.leftJoinAndSelect('renote.user', 'renoteUser')
 				.orderBy('note.id', 'DESC')

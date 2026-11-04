@@ -17035,7 +17035,7 @@ export interface Locale extends ILocale {
          */
         "mustExcludeKeywords": string;
         /**
-         * これらのキーワードのいずれかが一致した場合、スコアに関係なく除外されます。
+         * 同じグループ内のすべてのキーワードが一致した場合、スコアに関係なく除外されます。
          */
         "mustExcludeKeywordsDescription": string;
     };
