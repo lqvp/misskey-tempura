@@ -10,7 +10,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div :class="$style.body">
 		<MkRadios
 			v-model="deliveryMode"
-			:vertical="true"
 			:options="[
 				{ value: 'include', label: i18n.ts._deliveryTargetControl.deliveryTargetInclude },
 				{ value: 'exclude', label: i18n.ts._deliveryTargetControl.deliveryTargetExclude },
@@ -227,6 +226,7 @@ onMounted(() => {
 
 .serverItem {
 	width: 100%;
+	box-sizing: border-box;
 }
 
 .serverInfo {

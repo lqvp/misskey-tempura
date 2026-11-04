@@ -16474,6 +16474,22 @@ export interface Locale extends ILocale {
          * 一部のサーバーに非公開
          */
         "deliveryTargetsExclude": string;
+        /**
+         * {count}サーバーのみに配送
+         */
+        "deliverySummaryInclude": ParameterizedString<"count">;
+        /**
+         * {count}サーバーを除外して配送
+         */
+        "deliverySummaryExclude": ParameterizedString<"count">;
+        /**
+         * ほか{count}
+         */
+        "andMore": ParameterizedString<"count">;
+        /**
+         * 解除する
+         */
+        "clearDeliveryTargets": string;
     };
     "_contactForm": {
         "_settings": {

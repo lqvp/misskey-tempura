@@ -4441,6 +4441,10 @@ _deliveryTargetControl:
   searchResults: "{count}件見つかりました（全{total}件中）"
   deliveryTargetsInclude: "一部のサーバーにのみ公開"
   deliveryTargetsExclude: "一部のサーバーに非公開"
+  deliverySummaryInclude: "{count}サーバーのみに配送"
+  deliverySummaryExclude: "{count}サーバーを除外して配送"
+  andMore: "ほか{count}"
+  clearDeliveryTargets: "解除する"
 
 _contactForm:
   _settings:
