@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { accountUrl } from '@/utility/tab-account.js';
 import { post } from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { $i } from '@/i.js';
@@ -18,10 +17,8 @@ export function swInject() {
 
 		if (ev.data.type !== 'order') return;
 
-		if (ev.data.loginId && ev.data.loginId !== $i?.id) {
-			window.open(accountUrl(ev.data.url, ev.data.loginId), '_blank', 'noopener');
-			return;
-		}
+		// The service worker routes account-specific orders only to matching tabs.
+		if (ev.data.loginId && ev.data.loginId !== $i?.id) return;
 
 		switch (ev.data.order) {
 			case 'post': {

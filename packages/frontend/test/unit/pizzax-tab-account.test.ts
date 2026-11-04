@@ -2,7 +2,7 @@
  * SPDX-FileCopyrightText: lqvp
  * SPDX-License-Identifier: AGPL-3.0-only
  */
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { Pizzax } from '@/lib/pizzax.js';
 const handlers = vi.hoisted(() => new Map<string, (message: unknown) => void>());
 vi.mock('broadcast-channel', () => ({ BroadcastChannel: class {
@@ -10,11 +10,20 @@ vi.mock('broadcast-channel', () => ({ BroadcastChannel: class {
 	addEventListener(_: string, handler: (message: unknown) => void) { handlers.set(this.name, handler); }
 	postMessage() {}
 } }));
-vi.mock('@/i.js', () => ({ $i: { id: 'alice', token: 'a' } }));
+const account = vi.hoisted(() => ({ $i: { id: 'alice', token: 'a' } as { id: string; token: string } | null }));
+vi.mock('@/i.js', () => ({ get $i() { return account.$i; } }));
 vi.mock('@/store.js', () => ({ store: { s: {} } }));
 vi.mock('@/utility/misskey-api.js', () => ({ misskeyApi: async () => ({}) }));
 vi.mock('@/utility/idb-proxy.js', () => ({ get: async () => null, set: async () => {} }));
 describe('Pizzax tab account boundary', () => {
+	afterEach(() => { account.$i = { id: 'alice', token: 'a' }; });
+	it('ignores account messages while signed out', async () => {
+		account.$i = null;
+		const state = new Pizzax('signed-out', { value: { where: 'deviceAccount', default: 'initial' } });
+		await state.ready;
+		handlers.get('pizzax::signed-out')!({ where: 'deviceAccount', key: 'value', value: 'wrong', userId: 'alice' });
+		expect(state.s.value).toBe('initial');
+	});
 	it('ignores another account message, receives same account and device messages', async () => {
 		const state = new Pizzax('tab-test', { value: { where: 'deviceAccount', default: 'initial' }, shared: { where: 'device', default: 'initial' } });
 		await state.ready;

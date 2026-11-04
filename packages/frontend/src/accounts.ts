@@ -207,6 +207,15 @@ export async function login(token: AccountWithToken['token'], redirect?: string)
 export async function switchAccount(host: string, id: string) {
 	const token = store.s.accountTokens[host + '/' + id];
 	if (token) {
+		if (store.s.accountInfos[host + '/' + id]?.id !== id) {
+			try {
+				const account = await fetchAccount(token, id);
+				await addAccount(host, account, token);
+			} catch {
+				await alert({ type: 'error', title: i18n.ts.failedToFetchAccountInformation });
+				return;
+			}
+		}
 		window.location.href = accountUrl('/', id);
 	} else {
 		const { dispose } = popup(defineAsyncComponent(() => import('@/components/MkSigninDialog.vue')), {}, {
@@ -233,7 +242,7 @@ export async function getAccountMenu(opts: {
 	const callback = opts.onChoose;
 
 	function createItem(host: string, id: Misskey.entities.User['id'], username: Misskey.entities.User['username'], account: Misskey.entities.MeDetailed | null | undefined, token: string | null): MenuItem {
-		if (!callback && token && host === new URL(window.location.href).host) {
+		if (!callback && token && account?.id === id && host === new URL(window.location.href).host) {
 			return { type: 'a', text: account?.name ? `${account.name} (@${username})` : `@${username}`, href: accountUrl('/', id) };
 		}
 		if (account) {
