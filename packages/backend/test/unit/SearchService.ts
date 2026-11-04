@@ -22,6 +22,7 @@ import {
 	type UserProfilesRepository,
 	type UsersRepository,
 	type MiChannel,
+	type MiMeta,
 	type MiNote,
 	type MiUser,
 } from '@/models/_.js';
@@ -516,6 +517,68 @@ describe('SearchService', () => {
 					const result = await ctx.service.searchNote('hello', me, {}, { limit: 10, sinceId: note1.id, untilId: note4.id });
 
 					expect(result.map(note => note.id)).toEqual([note3.id, note2.id]);
+				});
+			});
+			describe('anonymous visitor policy (ugcVisibilityForVisitor)', () => {
+				async function createVisitorNotes(ctx: TestContext) {
+					const local = await createUser(ctx, { username: 'local', usernameLower: 'local', host: null });
+					const remote = await createUser(ctx, { username: 'remote', usernameLower: 'remote', host: 'remote.example' });
+					const localNote = await createNote(ctx, local, { text: 'hello visitor local', visibility: 'public' });
+					const remoteNote = await createNote(ctx, remote, { text: 'hello visitor remote', visibility: 'public' });
+					return { localNote, remoteNote };
+				}
+
+				async function searchAsVisitor(ctx: TestContext, policy: MiMeta['ugcVisibilityForVisitor']) {
+					const meta = ctx.app.get(DI.meta) as MiMeta;
+					const original = meta.ugcVisibilityForVisitor;
+					meta.ugcVisibilityForVisitor = policy;
+					try {
+						return await ctx.service.searchNote('hello visitor', null, {}, { limit: 10 });
+					} finally {
+						meta.ugcVisibilityForVisitor = original;
+					}
+				}
+
+				test('local のとき匿名検索はリモートのノートを返さない', async () => {
+					const ctx = getCtx();
+					const { localNote } = await createVisitorNotes(ctx);
+
+					const result = await searchAsVisitor(ctx, 'local');
+
+					expect(result.map(note => note.id)).toEqual([localNote.id]);
+				});
+
+				test('none のとき匿名検索はノートを返さない', async () => {
+					const ctx = getCtx();
+					await createVisitorNotes(ctx);
+
+					const result = await searchAsVisitor(ctx, 'none');
+
+					expect(result).toEqual([]);
+				});
+
+				test('all のとき匿名検索はリモートのノートも返す', async () => {
+					const ctx = getCtx();
+					const { localNote, remoteNote } = await createVisitorNotes(ctx);
+
+					const result = await searchAsVisitor(ctx, 'all');
+
+					expect(result.map(note => note.id).sort()).toEqual([localNote.id, remoteNote.id].sort());
+				});
+
+				test('ログイン済みの検索は ugcVisibilityForVisitor の影響を受けない', async () => {
+					const ctx = getCtx();
+					const { localNote, remoteNote } = await createVisitorNotes(ctx);
+					const me = await createUser(ctx, { username: 'me', usernameLower: 'me', host: null });
+					const meta = ctx.app.get(DI.meta) as MiMeta;
+					const original = meta.ugcVisibilityForVisitor;
+					meta.ugcVisibilityForVisitor = 'none';
+					try {
+						const result = await ctx.service.searchNote('hello visitor', me, {}, { limit: 10 });
+						expect(result.map(note => note.id).sort()).toEqual([localNote.id, remoteNote.id].sort());
+					} finally {
+						meta.ugcVisibilityForVisitor = original;
+					}
 				});
 			});
 		});
