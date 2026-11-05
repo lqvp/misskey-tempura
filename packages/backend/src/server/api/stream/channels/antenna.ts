@@ -22,6 +22,9 @@ export class AntennaChannel extends Channel {
 	public static kind = 'read:account';
 	private antennaId: string;
 	private deliverableNoteIds = new Set<string>();
+	// 同一アンテナのイベントを受信順に直列処理する。EventEmitterはasync listenerの完了を待たないため、
+	// noteのフィルタ完了前にnoteMatchedが来ると、対応するnoteが送信済みかを誤判定する
+	private eventQueue: Promise<void> = Promise.resolve();
 
 	constructor(
 		@Inject(REQUEST)
@@ -60,7 +63,14 @@ export class AntennaChannel extends Channel {
 	}
 
 	@bindThis
-	private async onEvent(data: GlobalEvents['antenna']['payload']) {
+	private onEvent(data: GlobalEvents['antenna']['payload']) {
+		this.eventQueue = this.eventQueue.then(() => this.handleEvent(data)).catch(() => {
+			// 個別イベントの処理失敗で以後の配信を止めない。
+			// noteの処理に失敗した場合、対応するnoteMatchedは送信済みでないため落ちる(漏洩防止側の動作)
+		});
+	}
+
+	private async handleEvent(data: GlobalEvents['antenna']['payload']) {
 		if (data.type === 'note') {
 			let note = data.body;
 

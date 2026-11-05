@@ -98,6 +98,8 @@ watch([searchQuery, () => props.antennaId], () => {
 async function loadMoreSearch() {
 	const last = searchResults.value[searchResults.value.length - 1];
 	if (last == null) return;
+	// 応答待ちの間に検索語やアンテナが変わった場合は、古い条件の結果を現在の表示に混ぜない
+	const seq = searchSeq;
 	searchLoadingMore.value = true;
 	try {
 		const res = await misskeyApi('antennas/notes', {
@@ -106,6 +108,7 @@ async function loadMoreSearch() {
 			limit: 30,
 			untilId: last.id,
 		});
+		if (seq !== searchSeq) return;
 		searchResults.value = [...searchResults.value, ...res];
 	} catch {
 		// 追加読み込みに失敗しても表示済みの結果は残す
