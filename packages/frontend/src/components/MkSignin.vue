@@ -32,7 +32,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 			key="password"
 			ref="passwordPageEl"
 
-			:user="userInfo!"
+			:user="userInfo"
+			:username="typedUsername"
 			:needCaptcha="needCaptcha"
 
 			@passwordSubmitted="onPasswordSubmitted"
@@ -115,6 +116,9 @@ const passwordPageEl = useTemplateRef('passwordPageEl');
 const needCaptcha = ref(false);
 
 const userInfo = ref<null | Misskey.entities.UserDetailed>(null);
+// 入力されたユーザー名。ugcVisibilityForVisitor が none で users/show が 404 でも
+// サインイン画面が動作し続けるよう、userInfo とは独立に保持する
+const typedUsername = ref('');
 const password = ref('');
 const emailCodeChallengeId = ref<string | null>(null);
 
@@ -156,9 +160,9 @@ function onPasskeyDone(credential: AuthenticationResponseJSON): void {
 			emit('login', signed.signinResponse);
 			onLoginSucceeded(signed.signinResponse);
 		}).catch(onSigninApiError);
-	} else if (userInfo.value != null) {
+	} else if (typedUsername.value !== '') {
 		tryLogin({
-			username: userInfo.value.username,
+			username: typedUsername.value,
 			password: password.value,
 			credential: credential,
 		});
@@ -173,6 +177,8 @@ function onUseTotp(): void {
 async function onUsernameSubmitted(username: string) {
 	waiting.value = true;
 
+	typedUsername.value = username;
+	// 表示用情報の取得であり、失敗(匿名では 404 になりうる)してもサインイン自体は継続する
 	userInfo.value = await misskeyApi('users/show', {
 		username,
 	}).catch(() => null);
@@ -186,51 +192,31 @@ async function onPasswordSubmitted(pw: PwResponse) {
 	waiting.value = true;
 	password.value = pw.password;
 
-	if (userInfo.value == null) {
-		await os.alert({
-			type: 'error',
-			title: i18n.ts.noSuchUser,
-			text: i18n.ts.signinFailed,
-		});
-		waiting.value = false;
-		return;
-	} else {
-		await tryLogin({
-			username: userInfo.value.username,
-			password: pw.password,
-			'hcaptcha-response': pw.captcha.hCaptchaResponse,
-			'm-captcha-response': pw.captcha.mCaptchaResponse,
-			'g-recaptcha-response': pw.captcha.reCaptchaResponse,
-			'turnstile-response': pw.captcha.turnstileResponse,
-			'testcaptcha-response': pw.captcha.testcaptchaResponse,
-		});
-	}
+	await tryLogin({
+		username: typedUsername.value,
+		password: pw.password,
+		'hcaptcha-response': pw.captcha.hCaptchaResponse,
+		'm-captcha-response': pw.captcha.mCaptchaResponse,
+		'g-recaptcha-response': pw.captcha.reCaptchaResponse,
+		'turnstile-response': pw.captcha.turnstileResponse,
+		'testcaptcha-response': pw.captcha.testcaptchaResponse,
+	});
 }
 
 async function onTotpSubmitted(token: string) {
 	waiting.value = true;
 
-	if (userInfo.value == null) {
-		await os.alert({
-			type: 'error',
-			title: i18n.ts.noSuchUser,
-			text: i18n.ts.signinFailed,
-		});
-		waiting.value = false;
-		return;
-	} else {
-		await tryLogin({
-			username: userInfo.value.username,
-			password: password.value,
-			token,
-		});
-	}
+	await tryLogin({
+		username: typedUsername.value,
+		password: password.value,
+		token,
+	});
 }
 
 async function onEmailCodeSubmitted(code: string) {
 	waiting.value = true;
 
-	if (userInfo.value == null || emailCodeChallengeId.value == null) {
+	if (emailCodeChallengeId.value == null) {
 		await os.alert({
 			type: 'error',
 			title: i18n.ts.noSuchUser,
@@ -238,18 +224,17 @@ async function onEmailCodeSubmitted(code: string) {
 		});
 		waiting.value = false;
 		return;
-	} else {
-		await tryLogin({
-			username: userInfo.value.username,
-			challengeId: emailCodeChallengeId.value,
-			emailCode: code,
-		});
 	}
+	await tryLogin({
+		username: typedUsername.value,
+		challengeId: emailCodeChallengeId.value,
+		emailCode: code,
+	});
 }
 
 async function tryLogin(req: Partial<Misskey.entities.SigninFlowRequest>): Promise<Misskey.entities.SigninFlowResponse> {
 	const _req = {
-		username: req.username ?? userInfo.value?.username,
+		username: req.username ?? typedUsername.value,
 		deviceToken: getLoginDeviceToken(),
 		...req,
 	};
@@ -474,6 +459,7 @@ function onSigninApiError(err?: any): void {
 function resetEmailCodeChallenge(): void {
 	emailCodeChallengeId.value = null;
 	password.value = '';
+	typedUsername.value = '';
 	page.value = 'input';
 }
 
@@ -482,6 +468,7 @@ onBeforeUnmount(() => {
 	emailCodeChallengeId.value = null;
 	needCaptcha.value = false;
 	userInfo.value = null;
+	typedUsername.value = '';
 });
 </script>
 

@@ -16027,7 +16027,7 @@ export interface Locale extends ILocale {
      */
     "hideActivity": string;
     /**
-     * 自分のプロフィールのアクティビティ (概要/アクティビティタブ) を他人が見れないようにします。このオプションを有効にしても、自分であればプロフィールのアクティビティタブから引き続き閲覧できます。
+     * 自分のプロフィールのアクティビティ (概要/アクティビティタブ) を他人が見れないようにします。このオプションを有効にしても、自分であればプロフィールのアクティビティタブから引き続き閲覧できます。なお、アクティビティタブは管理者とモデレーターもこの設定に関わらず閲覧できます。
      */
     "hideActivityDescription": string;
     /**
@@ -16346,7 +16346,7 @@ export interface Locale extends ILocale {
          */
         "description": string;
         /**
-         * 公開 (Public) の投稿を連合する
+         * 公開 (Public) の投稿をoutboxに含める
          */
         "publicVisibility": string;
         /**
@@ -16354,7 +16354,7 @@ export interface Locale extends ILocale {
          */
         "publicVisibilityDescription": string;
         /**
-         * セミパブリック (Public Non-LTL) の投稿を連合する
+         * セミパブリック (Public Non-LTL) の投稿をoutboxに含める
          */
         "publicNonLtlVisibility": string;
         /**
@@ -16362,7 +16362,7 @@ export interface Locale extends ILocale {
          */
         "publicNonLtlVisibilityDescription": string;
         /**
-         * ホーム (Home) の投稿を連合する
+         * ホーム (Home) の投稿をoutboxに含める
          */
         "homeVisibility": string;
         /**

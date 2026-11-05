@@ -9,14 +9,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div :class="$style.avatar" :style="{ backgroundImage: user ? `url('${user.avatarUrl}')` : undefined }"></div>
 		<div :class="$style.welcomeBackMessage">
 			<I18n :src="i18n.ts.welcomeBackWithName" tag="span">
-				<template #name><Mfm :text="user.name ?? user.username" :plain="true"/></template>
+				<template #name><Mfm :text="user?.name ?? user?.username ?? username" :plain="true"/></template>
 			</I18n>
 		</div>
 
 		<!-- password入力 -->
 		<form class="_gaps_s" @submit.prevent="onSubmit">
 			<!-- ブラウザ オートコンプリート用 -->
-			<input type="hidden" name="username" autocomplete="username" :value="user.username">
+			<input type="hidden" name="username" autocomplete="username" :value="user?.username ?? username">
 
 			<MkInput v-model="password" :placeholder="i18n.ts.password" type="password" autocomplete="current-password webauthn" :withPasswordToggle="true" required autofocus data-testid="signin-password">
 				<template #prefix><i class="ti ti-lock"></i></template>
@@ -63,7 +63,10 @@ import MkInput from '@/components/MkInput.vue';
 import MkCaptcha from '@/components/MkCaptcha.vue';
 
 const props = defineProps<{
-	user: Misskey.entities.UserDetailed;
+	// ugcVisibilityForVisitor が none の場合、匿名の users/show は 404 となるため null になりうる
+	user: Misskey.entities.UserDetailed | null;
+	// user が null の場合のフォールバック用に、入力されたユーザー名を保持する
+	username: string;
 	needCaptcha: boolean;
 }>();
 
