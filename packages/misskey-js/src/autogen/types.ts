@@ -29170,6 +29170,9 @@ export interface operations {
                         servers: {
                             host: string;
                             followersCount: number;
+                            name: string | null;
+                            iconUrl: string | null;
+                            faviconUrl: string | null;
                         }[];
                     };
                 };
