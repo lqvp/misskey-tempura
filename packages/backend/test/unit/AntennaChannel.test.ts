@@ -15,6 +15,7 @@ type SentEvent = { type: string; body: any };
 
 function createChannel(opts: {
 	filter: (note: any) => Promise<any>;
+	withMyRenoteReaction?: (note: any) => Promise<any>;
 }) {
 	const sent: SentEvent[] = [];
 	const connection = {
@@ -33,7 +34,7 @@ function createChannel(opts: {
 	const channel = new AntennaChannel(
 		{ id: 'ch1', connection: connection as any },
 		{} as any, // antennasRepository (initでは使わない)
-		{ withMyRenoteReaction: vi.fn(async (note: any) => note) } as any,
+		{ withMyRenoteReaction: vi.fn(opts.withMyRenoteReaction ?? (async (note: any) => note)) } as any,
 		{ filter: opts.filter } as any,
 	);
 	return { channel, sent };
@@ -76,6 +77,19 @@ describe('AntennaChannel', () => {
 
 	it('noteがフィルタで除外された場合、noteMatchedは送信しない(漏洩防止)', async () => {
 		const { channel, sent } = createChannel({ filter: async () => null });
+
+		(channel as any).onEvent({ type: 'note', body: note });
+		(channel as any).onEvent({ type: 'noteMatched', body: matchPayload });
+		await drain();
+
+		expect(sent).toEqual([]);
+	});
+
+	it('withMyRenoteReactionが失敗した場合、noteは送信されず対応するnoteMatchedも送信しない', async () => {
+		const { channel, sent } = createChannel({
+			filter: async (n: any) => n,
+			withMyRenoteReaction: async () => { throw new Error('pack failure'); },
+		});
 
 		(channel as any).onEvent({ type: 'note', body: note });
 		(channel as any).onEvent({ type: 'noteMatched', body: matchPayload });

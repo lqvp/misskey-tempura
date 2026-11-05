@@ -81,14 +81,15 @@ export class AntennaChannel extends Channel {
 			if (!filtered) return;
 			note = filtered;
 
-			// noteMatchedと同じフィルタを通すため、送信したノートを記録しておく
+			this.send('note', await this.noteEntityService.withMyRenoteReaction(note, this.user?.id ?? null));
+
+			// noteMatchedと同じフィルタを通すため、送信したノートを記録しておく。
+			// withMyRenoteReactionが失敗した場合はnote自体が送信されないため、送信後に登録する
 			this.deliverableNoteIds.add(note.id);
 			if (this.deliverableNoteIds.size > 200) {
 				const oldest = this.deliverableNoteIds.values().next().value!;
 				this.deliverableNoteIds.delete(oldest);
 			}
-
-			this.send('note', await this.noteEntityService.withMyRenoteReaction(note, this.user?.id ?? null));
 		} else if (data.type === 'noteMatched') {
 			// チャンネルミュート等でnoteが送信されなかったノートのマッチ情報は漏らさない
 			// (noteMatchedは対応するnoteの直後に配信される)
