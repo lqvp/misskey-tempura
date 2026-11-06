@@ -24,6 +24,8 @@ import { RoleService } from '@/core/RoleService.js';
 import type { OnModuleInit } from '@nestjs/common';
 import type { CustomEmojiService } from '../CustomEmojiService.js';
 import type { ReactionService } from '../ReactionService.js';
+import type { NoteEmojiAliasService } from '../NoteEmojiAliasService.js';
+import { NOTE_EMOJI_ALIAS_REGEXP } from '@/misc/note-emoji-alias.js';
 import type { UserEntityService } from './UserEntityService.js';
 import type { DriveFileEntityService } from './DriveFileEntityService.js';
 
@@ -68,6 +70,7 @@ export class NoteEntityService implements OnModuleInit {
 	private driveFileEntityService: DriveFileEntityService;
 	private customEmojiService: CustomEmojiService;
 	private reactionService: ReactionService;
+	private noteEmojiAliasService: NoteEmojiAliasService;
 	private reactionsBufferingService: ReactionsBufferingService;
 	private idService: IdService;
 	private cacheService: CacheService;
@@ -120,9 +123,39 @@ export class NoteEntityService implements OnModuleInit {
 		this.driveFileEntityService = this.moduleRef.get('DriveFileEntityService');
 		this.customEmojiService = this.moduleRef.get('CustomEmojiService');
 		this.reactionService = this.moduleRef.get('ReactionService');
+		this.noteEmojiAliasService = this.moduleRef.get('NoteEmojiAliasService');
 		this.reactionsBufferingService = this.moduleRef.get('ReactionsBufferingService');
 		this.idService = this.moduleRef.get('IdService');
 		this.cacheService = this.moduleRef.get('CacheService');
+	}
+
+	/**
+	 * ローカルノートの emojis について、リモート絵文字参照 (エイリアス) のURL辞書を返す。
+	 * エイリアスを含まない場合は従来どおり undefined。
+	 */
+	@bindThis
+	private async populateLocalNoteEmojis(emojiNames: string[]): Promise<Record<string, string> | undefined> {
+		const aliases = await this.noteEmojiAliasService.populateAliases(emojiNames);
+		return Object.keys(aliases).length > 0 ? aliases : undefined;
+	}
+
+	/**
+	 * reactionEmojis を解決する。ローカルノートでは host なしのリアクションについて
+	 * リモート絵文字参照 (エイリアス) も解決する。
+	 */
+	@bindThis
+	private async populateReactionEmojis(reactionEmojiNames: string[], host: string | null, reactionStrings: string[]): Promise<Record<string, string>> {
+		const populated = await this.customEmojiService.populateEmojis(reactionEmojiNames, host);
+		if (host == null) {
+			// tempura: 参照 (エイリアス) のリアクションは convertLegacyReactions で `:re_x@.:` に正規化
+			// されるため、ローカル形式のキーからエイリアス名を復元して解決する。
+			// ローカル絵文字のリアクションはフロントの customEmojisMap で解決されるためここでは扱わない。
+			const aliasReactionNames = reactionStrings
+				.map(x => x.replaceAll(':', '').replace(/@\.$/, ''))
+				.filter(n => NOTE_EMOJI_ALIAS_REGEXP.test(n));
+			Object.assign(populated, await this.noteEmojiAliasService.populateAliases(aliasReactionNames));
+		}
+		return populated;
 	}
 
 	@bindThis
@@ -480,9 +513,9 @@ export class NoteEntityService implements OnModuleInit {
 			repliesCount: note.repliesCount,
 			reactionCount: Object.values(reactions).reduce((a, b) => a + b, 0),
 			reactions: reactions,
-			reactionEmojis: this.customEmojiService.populateEmojis(reactionEmojiNames, host),
+			reactionEmojis: this.populateReactionEmojis(reactionEmojiNames, host, Object.keys(reactions)),
 			reactionAndUserPairCache: opts.withReactionAndUserPairCache ? reactionAndUserPairCache : undefined,
-			emojis: host != null ? this.customEmojiService.populateEmojis(note.emojis, host) : undefined,
+			emojis: host != null ? this.customEmojiService.populateEmojis(note.emojis, host) : this.populateLocalNoteEmojis(note.emojis),
 			tags: note.tags.length > 0 ? note.tags : undefined,
 			fileIds: note.fileIds,
 			files: packedFiles != null ? this.packAttachedFiles(note.fileIds, packedFiles) : this.driveFileEntityService.packManyByIds(note.fileIds),
@@ -756,11 +789,20 @@ export class NoteEntityService implements OnModuleInit {
 				.filter(x => x.startsWith(':') && x.includes('@') && !x.includes('@.')) // リモートカスタム絵文字のみ
 				.map(x => this.reactionService.decodeReaction(x).reaction.replaceAll(':', ''));
 
-			return this.customEmojiService.populateEmojis(reactionEmojiNames, note.userHost).then(reactionEmojis => ({
-				id: note.id,
-				reactions,
-				reactionEmojis,
-			}));
+			return this.customEmojiService.populateEmojis(reactionEmojiNames, note.userHost).then(async reactionEmojis => {
+				if (note.userHost == null) {
+					// tempura: 参照 (エイリアス) のリアクションも解決する (正規化後のキー `:re_x@.:` から復元)
+					const aliasReactionNames = Object.keys(reactions)
+						.map(x => x.replaceAll(':', '').replace(/@\.$/, ''))
+						.filter(n => NOTE_EMOJI_ALIAS_REGEXP.test(n));
+					Object.assign(reactionEmojis, await this.noteEmojiAliasService.populateAliases(aliasReactionNames));
+				}
+				return {
+					id: note.id,
+					reactions,
+					reactionEmojis,
+				};
+			});
 		});
 
 		return await Promise.all(packings);

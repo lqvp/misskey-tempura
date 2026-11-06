@@ -16,6 +16,8 @@ import type { MiRelay } from '@/models/Relay.js';
 import type { MiDriveFile } from '@/models/DriveFile.js';
 import type { MiNoteReaction } from '@/models/NoteReaction.js';
 import type { MiEmoji } from '@/models/Emoji.js';
+import type { MiNoteEmojiAlias } from '@/models/NoteEmojiAlias.js';
+import { NoteEmojiAliasService } from '@/core/NoteEmojiAliasService.js';
 import type { MiPoll } from '@/models/Poll.js';
 import type { MiPollVote } from '@/models/PollVote.js';
 import { UserKeypairService } from '@/core/UserKeypairService.js';
@@ -62,6 +64,7 @@ export class ApRendererService {
 		private emojisRepository: EmojisRepository,
 
 		private customEmojiService: CustomEmojiService,
+		private noteEmojiAliasService: NoteEmojiAliasService,
 		private userEntityService: UserEntityService,
 		private driveFileEntityService: DriveFileEntityService,
 		private jsonLdService: JsonLdService,
@@ -202,6 +205,36 @@ export class ApRendererService {
 		};
 	}
 
+	/**
+	 * ノート用リモート絵文字参照 (エイリアス) を Emoji tag としてレンダリングする。
+	 * id は送信側 (自サーバー) 所有の安定URIで、元のURIは来歴 (_tempura_emoji_origin) として保持する。
+	 */
+	@bindThis
+	public renderNoteEmojiAlias(alias: MiNoteEmojiAlias): IApEmoji {
+		return {
+			id: `${this.config.url}/note-emoji-aliases/${alias.alias}`,
+			type: 'Emoji',
+			name: `:${alias.alias}:`,
+			host: this.config.host,
+			keywords: [],
+			updated: (alias.updatedAt ?? alias.createdAt).toISOString(),
+			icon: {
+				type: 'Image',
+				mediaType: alias.type ?? 'image/png',
+				// || alias.originalUrl してるのは後方互換性のため（publicUrlはstringなので??はだめ）
+				url: alias.publicUrl || alias.originalUrl,
+			},
+			_misskey_license: {
+				freeText: alias.license,
+			},
+			_tempura_emoji_origin: {
+				name: alias.name,
+				host: alias.host,
+				uri: alias.uri,
+			},
+		};
+	}
+
 	// to anonymise reporters, the reporting actor must be a system user
 	@bindThis
 	public renderFlag(user: MiLocalUser, object: IObject | string, content: string): IFlag {
@@ -337,7 +370,13 @@ export class ApRendererService {
 					name,
 				});
 
-			if (emoji && !emoji.localOnly) object.tag = [this.renderEmoji(emoji)];
+			if (emoji && !emoji.localOnly) {
+				object.tag = [this.renderEmoji(emoji)];
+			} else if (emoji == null && host == null) {
+				// tempura: ノート用リモート絵文字参照 (エイリアス) のリアクション
+				const alias = await this.noteEmojiAliasService.findByAlias(name);
+				if (alias != null) object.tag = [this.renderNoteEmojiAlias(alias)];
+			}
 		}
 
 		return object;
@@ -460,8 +499,7 @@ export class ApRendererService {
 
 		const { content, noMisskeyContent } = this.apMfmService.getNoteHtml(note, extraHtml);
 
-		const emojis = await this.getEmojis(note.emojis);
-		const apemojis = emojis.filter(emoji => !emoji.localOnly).map(emoji => this.renderEmoji(emoji));
+		const apemojis = await this.getNoteEmojis(note.emojis);
 
 		const tag = [
 			...hashtagTags,
@@ -773,5 +811,32 @@ export class ApRendererService {
 		const emojis = names.map(name => allEmojis.get(name)).filter(x => x != null);
 
 		return emojis;
+	}
+
+	/**
+	 * ノートの emojis から Emoji tag を生成する。
+	 * ローカル絵文字が常に優先され、同名の参照 (エイリアス) はローカル絵文字が存在しない場合のみ使われる。
+	 */
+	@bindThis
+	private async getNoteEmojis(names: string[]): Promise<IApEmoji[]> {
+		if (names.length === 0) return [];
+
+		const allEmojis = await this.customEmojiService.localEmojisCache.fetch();
+		const apemojis: IApEmoji[] = [];
+
+		for (const name of names) {
+			const local = allEmojis.get(name);
+			if (local != null) {
+				if (!local.localOnly) apemojis.push(this.renderEmoji(local));
+				continue;
+			}
+
+			const alias = await this.noteEmojiAliasService.findByAlias(name);
+			if (alias != null) {
+				apemojis.push(this.renderNoteEmojiAlias(alias));
+			}
+		}
+
+		return apemojis;
 	}
 }

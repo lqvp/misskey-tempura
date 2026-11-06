@@ -21,31 +21,57 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<!-- FirefoxのTabフォーカスが想定外の挙動となるためtabindex="-1"を追加 https://github.com/misskey-dev/misskey/issues/10744 -->
 	<div ref="emojisEl" class="emojis" tabindex="-1">
 		<section class="result">
-			<div v-if="searchResultCustom.length > 0" class="body">
-				<button
-					v-for="emoji in searchResultCustom"
-					:key="emoji.name"
-					class="_button item"
-					:disabled="!canReact(emoji)"
-					:title="emoji.name"
-					tabindex="0"
-					@click="chosen(emoji, $event)"
-				>
-					<MkCustomEmoji class="emoji" :name="emoji.name" :fallbackToImage="true"/>
-				</button>
-			</div>
-			<div v-if="searchResultUnicode.length > 0" class="body">
-				<button
-					v-for="emoji in searchResultUnicode"
-					:key="emoji.name"
-					class="_button item"
-					:title="emoji.name"
-					tabindex="0"
-					@click="chosen(emoji, $event)"
-				>
-					<MkEmoji class="emoji" :emoji="emoji.char"/>
-				</button>
-			</div>
+			<template v-if="searchResultCustom.length > 0">
+				<header class="_acrylic resultHeader"><i class="ti ti-mood-happy ti-fw"></i> {{ i18n.ts.customEmojis }}</header>
+				<div class="body">
+					<button
+						v-for="emoji in searchResultCustom"
+						:key="emoji.name"
+						class="_button item"
+						:disabled="!canReact(emoji)"
+						:title="emoji.name"
+						tabindex="0"
+						@click="chosen(emoji, $event)"
+					>
+						<MkCustomEmoji class="emoji" :name="emoji.name" :fallbackToImage="true"/>
+					</button>
+				</div>
+			</template>
+			<template v-if="searchResultRemote.length > 0">
+				<header class="_acrylic resultHeader"><i class="ti ti-server ti-fw"></i> {{ i18n.ts.remote }}</header>
+				<div class="body remoteList">
+					<button
+						v-for="emoji in searchResultRemote"
+						:key="`${emoji.name}@${emoji.host}`"
+						class="_button remoteRow"
+						:disabled="!canReact(`:${emoji.name}@${emoji.host}:`)"
+						:title="`:${emoji.name}@${emoji.host}:`"
+						tabindex="0"
+						@click="chosenRemote(emoji, $event)"
+					>
+						<MkCustomEmoji class="emoji" :name="emoji.name" :host="emoji.host" :url="emoji.url" :fallbackToImage="true"/>
+						<div class="remoteInfo">
+							<div class="remoteName">{{ emoji.name }}</div>
+							<div class="remoteHost">{{ emoji.host }}</div>
+						</div>
+					</button>
+				</div>
+			</template>
+			<template v-if="searchResultUnicode.length > 0">
+				<header class="_acrylic resultHeader"><i class="ti ti-leaf ti-fw"></i> {{ i18n.ts.emoji }}</header>
+				<div class="body">
+					<button
+						v-for="emoji in searchResultUnicode"
+						:key="emoji.name"
+						class="_button item"
+						:title="emoji.name"
+						tabindex="0"
+						@click="chosen(emoji, $event)"
+					>
+						<MkEmoji class="emoji" :emoji="emoji.char"/>
+					</button>
+				</div>
+			</template>
 		</section>
 
 		<div v-if="tab === 'index'" class="group index">
@@ -118,6 +144,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { ref, useTemplateRef, computed, watch, onMounted } from 'vue';
 import * as Misskey from 'misskey-js';
+import type { Endpoints } from 'misskey-js';
 import {
 	emojilist,
 	emojiCharByCategory,
@@ -136,7 +163,8 @@ import { isTouchUsing } from '@/utility/touch.js';
 import { deviceKind } from '@/utility/device-kind.js';
 import { i18n } from '@/i18n.js';
 import { store } from '@/store.js';
-import { customEmojiCategories, customEmojis, customEmojisMap } from '@/custom-emojis.js';
+import { customEmojiCategories, customEmojis, customEmojisMap, noteEmojiAliasesMap } from '@/custom-emojis.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 import { $i } from '@/i.js';
 import { checkReactionPermissions } from '@/utility/check-reaction-permissions.js';
 import { prefer } from '@/preferences.js';
@@ -186,6 +214,8 @@ const width = computed(() => emojiPickerWidth.value);
 const height = computed(() => emojiPickerHeight.value);
 const q = ref<string>('');
 const searchResultCustom = ref<Misskey.entities.EmojiSimple[]>([]);
+// tempura: リモート絵文字検索結果 (ノート用リモート絵文字参照)
+const searchResultRemote = ref<Endpoints['remote-emojis/search']['res']['emojis']>([]);
 const searchResultUnicode = ref<UnicodeEmojiDef[]>([]);
 const tab = ref<'index' | 'custom' | 'unicode' | 'tags'>('index');
 
@@ -374,7 +404,77 @@ watch(q, () => {
 
 	searchResultCustom.value = Array.from(searchCustom());
 	searchResultUnicode.value = Array.from(searchUnicode());
+
+	// tempura: リモート絵文字検索 (debounce 付き)
+	if (q.value === '') {
+		searchResultRemote.value = [];
+	} else {
+		scheduleRemoteSearch();
+	}
 });
+
+// tempura: リモート絵文字検索。`name@host` 形式でホストを絞り込める。
+// 同名だがホストが異なる絵文字は別エントリとして返り、title で区別できる。
+let remoteSearchTimer: number | null = null;
+
+function scheduleRemoteSearch(): void {
+	if (remoteSearchTimer != null) window.clearTimeout(remoteSearchTimer);
+	remoteSearchTimer = window.setTimeout(() => {
+		void searchRemote();
+	}, 300);
+}
+
+async function searchRemote(): Promise<void> {
+	const query = q.value.replace(/:/g, '').trim();
+	if (query === '') {
+		searchResultRemote.value = [];
+		return;
+	}
+
+	const hostMatch = query.match(/^([^@\s]+)@([\w.-]+)$/);
+
+	try {
+		const res = await misskeyApi('remote-emojis/search', hostMatch != null ? {
+			query: hostMatch[1],
+			host: hostMatch[2],
+		} : {
+			query,
+		});
+		// 応答時点でクエリが変わっていたら古い結果を捨てる (race 対策)
+		if (q.value.replace(/:/g, '').trim() !== query) return;
+		searchResultRemote.value = res.emojis;
+	} catch {
+		if (q.value.replace(/:/g, '').trim() !== query) return;
+		searchResultRemote.value = [];
+	}
+}
+
+/**
+ * tempura: リモート絵文字を選択したときの処理。
+ * リアクション用途では従来どおり `:name@host:` を返し、
+ * ノート本文用途では参照 (エイリアス) を発行して `:alias:` を返す。
+ */
+async function resolveAndChooseRemote(name: string, host: string, ev?: PointerEvent): Promise<void> {
+	try {
+		const resolved = await misskeyApi('remote-emojis/resolve', { name, host });
+		noteEmojiAliasesMap.set(resolved.alias, { url: resolved.url, name: resolved.name, host: resolved.host });
+		chosen(`:${resolved.alias}:`, ev);
+	} catch (err) {
+		os.alert({
+			type: 'error',
+			title: i18n.ts.error,
+			text: `${name}@${host}`,
+		});
+	}
+}
+
+function chosenRemote(emoji: { name: string; host: string; }, ev?: PointerEvent): void {
+	if (props.asReactionPicker) {
+		chosen(`:${emoji.name}@${emoji.host}:`, ev);
+	} else {
+		void resolveAndChooseRemote(emoji.name, emoji.host, ev);
+	}
+}
 
 function canReact(emoji: Misskey.entities.EmojiSimple | UnicodeEmojiDef | string): boolean {
 	return !props.targetNote || checkReactionPermissions($i!, props.targetNote, emoji);
@@ -431,6 +531,16 @@ function chosen(emoji: string | Misskey.entities.EmojiSimple | UnicodeEmojiDef, 
 	}
 
 	const key = getKey(emoji);
+
+	// tempura: ノート本文用途で `:name@host:` が選択された場合は参照 (エイリアス) に変換してから挿入する
+	if (!props.asReactionPicker && key.startsWith(':') && key.includes('@') && !key.includes('@.')) {
+		const remoteMatch = key.match(/^:([\w+-]+)@([\w.-]+):$/);
+		if (remoteMatch != null) {
+			void resolveAndChooseRemote(remoteMatch[1], remoteMatch[2], ev);
+			return;
+		}
+	}
+
 	emit('chosen', key);
 
 	haptic();
@@ -796,6 +906,69 @@ defineExpose({
 
 				&:empty {
 					display: none;
+				}
+
+				> .resultHeader {
+					cursor: default;
+
+					&:hover {
+						color: inherit;
+					}
+				}
+
+				> .body {
+					&.remoteList {
+						display: flex;
+						flex-direction: column;
+						gap: 2px;
+						padding: 4px;
+					}
+
+					> .remoteRow {
+						display: flex;
+						align-items: center;
+						gap: 10px;
+						width: 100%;
+						padding: 6px 8px;
+						border-radius: 4px;
+						text-align: left;
+
+						&:hover {
+							background: rgba(0, 0, 0, 0.05);
+						}
+
+						&:active {
+							background: var(--MI_THEME-accent);
+							box-shadow: inset 0 0.15em 0.3em rgba(27, 31, 35, 0.15);
+						}
+
+						> .emoji {
+							width: 28px;
+							height: 28px;
+							object-fit: contain;
+							flex-shrink: 0;
+							pointer-events: none;
+						}
+
+						> .remoteInfo {
+							min-width: 0;
+							flex: 1;
+							line-height: 1.3;
+							pointer-events: none;
+
+							> .remoteName {
+								font-size: 13px;
+								overflow-wrap: anywhere;
+								color: var(--MI_THEME-fg);
+							}
+
+							> .remoteHost {
+								font-size: 12px;
+								opacity: 0.75;
+								word-break: break-all;
+							}
+						}
+					}
 				}
 			}
 		}

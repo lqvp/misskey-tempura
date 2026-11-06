@@ -13,7 +13,7 @@ import accepts from 'accepts';
 import vary from 'vary';
 import secureJson from 'secure-json-parse';
 import { DI } from '@/di-symbols.js';
-import type { FollowingsRepository, NotesRepository, EmojisRepository, NoteReactionsRepository, UserProfilesRepository, UserNotePiningsRepository, UsersRepository, FollowRequestsRepository, MiMeta } from '@/models/_.js';
+import type { FollowingsRepository, NotesRepository, EmojisRepository, NoteEmojiAliasesRepository, NoteReactionsRepository, UserProfilesRepository, UserNotePiningsRepository, UsersRepository, FollowRequestsRepository, MiMeta } from '@/models/_.js';
 import * as url from '@/misc/prelude/url.js';
 import type { Config } from '@/config.js';
 import { ApRendererService } from '@/core/activitypub/ApRendererService.js';
@@ -63,6 +63,9 @@ export class ActivityPubServerService {
 
 		@Inject(DI.emojisRepository)
 		private emojisRepository: EmojisRepository,
+
+		@Inject(DI.noteEmojiAliasesRepository)
+		private noteEmojiAliasesRepository: NoteEmojiAliasesRepository,
 
 		@Inject(DI.userNotePiningsRepository)
 		private userNotePiningsRepository: UserNotePiningsRepository,
@@ -971,6 +974,31 @@ export class ActivityPubServerService {
 			reply.header('Cache-Control', 'public, max-age=180');
 			this.setResponseType(request, reply);
 			return (this.apRendererService.addContext(await this.apRendererService.renderEmoji(emoji)));
+		});
+
+		// tempura: ノート用リモート絵文字参照 (エイリアス) のEmoji object
+		fastify.get<{ Params: { alias: string; } }>('/note-emoji-aliases/:alias', async (request, reply) => {
+			if (this.meta.federation === 'none') {
+				reply.code(403);
+				return;
+			}
+
+			if (await this.activityPubAccessControlService.applyAccessControl(request, reply, true)) {
+				return;
+			}
+
+			const alias = await this.noteEmojiAliasesRepository.findOneBy({
+				alias: request.params.alias,
+			});
+
+			if (alias == null) {
+				reply.code(404);
+				return;
+			}
+
+			reply.header('Cache-Control', 'public, max-age=180');
+			this.setResponseType(request, reply);
+			return (this.apRendererService.addContext(await this.apRendererService.renderNoteEmojiAlias(alias)));
 		});
 
 		// like
