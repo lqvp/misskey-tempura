@@ -21,6 +21,8 @@ import { ContextIdFactory, ModuleRef } from '@nestjs/core';
 export class StreamingApiServerService {
 	#wss: WebSocket.WebSocketServer;
 	#connections = new Map<WebSocket.WebSocket, number>();
+	// sub-account connections only: used to disconnect them when their credentials are revoked or they are suspended/deleted
+	#subAccountConnections = new Map<WebSocket.WebSocket, MiLocalUser['id']>();
 	#cleanConnectionsIntervalId: NodeJS.Timeout | null = null;
 	#activeUsers = new Map<MiLocalUser['id'], { connections: number; intervalId: NodeJS.Timeout; }>();
 
@@ -107,6 +109,19 @@ export class StreamingApiServerService {
 		this.redisForSub.on('message', (_: string, data: string) => {
 			const parsed = JSON.parse(data);
 			globalEv.emit('message', parsed);
+
+			if (parsed.channel === 'internal') {
+				const { type, body } = parsed.message ?? {};
+				const revokedIds: string[] =
+					type === 'subAccountSessionsRevoked' ? (body?.subIds ?? []) :
+					(type === 'userChangeSuspendedState' && body?.isSuspended) ? [body.id] :
+					(type === 'userChangeDeletedState' && body?.isDeleted) ? [body.id] : [];
+				if (revokedIds.length > 0) {
+					for (const [connection, userId] of this.#subAccountConnections) {
+						if (revokedIds.includes(userId)) connection.terminate();
+					}
+				}
+			}
 		});
 
 		this.#wss.on('connection', async (connection: WebSocket.WebSocket, request: http.IncomingMessage, ctx: {
@@ -128,6 +143,7 @@ export class StreamingApiServerService {
 			await stream.listen(ev, connection);
 
 			this.#connections.set(connection, Date.now());
+			if (user?.parentUserId != null) this.#subAccountConnections.set(connection, user.id);
 
 			if (user) this.onUserConnected(user);
 
@@ -136,6 +152,7 @@ export class StreamingApiServerService {
 				stream.dispose();
 				globalEv.off('message', onRedisMessage);
 				this.#connections.delete(connection);
+				this.#subAccountConnections.delete(connection);
 				if (user) this.onUserDisconnected(user);
 			});
 

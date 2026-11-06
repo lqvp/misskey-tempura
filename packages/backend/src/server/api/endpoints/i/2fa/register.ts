@@ -39,6 +39,8 @@ export const meta = {
 			issuer: { type: 'string' },
 		},
 	},
+
+	denyForSubAccount: true,
 } as const;
 
 export const paramDef = {

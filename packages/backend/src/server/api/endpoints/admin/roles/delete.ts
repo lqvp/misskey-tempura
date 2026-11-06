@@ -24,6 +24,8 @@ export const meta = {
 			id: 'de0d6ecd-8e0a-4253-88ff-74bc89ae3d45',
 		},
 	},
+
+	protectFamilyRule: 'role-definition',
 } as const;
 
 export const paramDef = {

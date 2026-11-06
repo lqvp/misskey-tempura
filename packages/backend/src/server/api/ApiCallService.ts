@@ -16,6 +16,7 @@ import type { MiMeta, UserIpsRepository } from '@/models/_.js';
 import { createTemp } from '@/misc/create-temp.js';
 import { bindThis } from '@/decorators.js';
 import { RoleService } from '@/core/RoleService.js';
+import { FamilyGuardService } from '@/core/FamilyGuardService.js';
 import { TelemetryService } from '@/core/telemetry/TelemetryService.js';
 import { MetaService } from '@/core/MetaService.js';
 import type { Config } from '@/config.js';
@@ -96,6 +97,7 @@ export class ApiCallService implements OnApplicationShutdown {
 		private authenticateService: AuthenticateService,
 		private rateLimiterService: RateLimiterService,
 		private roleService: RoleService,
+		private familyGuardService: FamilyGuardService,
 		private apiLoggerService: ApiLoggerService,
 		private telemetryService: TelemetryService,
 		private metaService: MetaService,
@@ -553,6 +555,11 @@ export class ApiCallService implements OnApplicationShutdown {
 					}
 				}
 			}
+		}
+
+		// Sub-accounts must not operate on their parent/sibling accounts (runs after authentication, also for API keys)
+		if (user != null && user.parentUserId != null) {
+			await this.familyGuardService.assertAllowed(ep.name, ep.meta, user, data);
 		}
 
 		// The API span starts in handleRequest/handleMultipartRequest so it also covers

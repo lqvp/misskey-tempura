@@ -45,6 +45,8 @@ export const meta = {
 			},
 		},
 	},
+
+	protectFamily: [{ param: 'userId', denySelf: true }],
 } as const;
 
 export const paramDef = {
@@ -75,6 +77,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (user == null) {
 				throw new ApiError(meta.errors.noSuchUser);
+			}
+
+			// A password would give a sub-account credentials independent of its main account
+			if (user.parentUserId != null) {
+				throw new ApiError(meta.errors.accessDenied);
 			}
 
 			if (await this.roleService.isAdministrator(user) && me.id !== user.id) {

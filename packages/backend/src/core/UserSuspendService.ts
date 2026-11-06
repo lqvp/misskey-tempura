@@ -36,10 +36,15 @@ export class UserSuspendService {
 	) {
 	}
 
+	/**
+	 * Suspend by moderation. For a main account this also suspends its sub-accounts (suspendedByParent).
+	 * isSuspended is the effective value: suspendedSelf OR suspendedByParent.
+	 */
 	@bindThis
 	public async suspend(user: MiUser, moderator: MiUser): Promise<void> {
 		await this.usersRepository.update(user.id, {
 			isSuspended: true,
+			suspendedSelf: true,
 		});
 
 		this.moderationLogService.log(moderator, 'suspend', {
@@ -52,12 +57,17 @@ export class UserSuspendService {
 			await this.postSuspend(user).catch(_ => {});
 			await this.unFollowAll(user).catch(_ => {});
 		})();
+
+		await this.suspendSubAccounts(user);
 	}
 
 	@bindThis
 	public async unsuspend(user: MiUser, moderator: MiUser): Promise<void> {
+		const current = await this.usersRepository.findOneBy({ id: user.id });
+		const stillSuspended = current?.suspendedByParent === true;
 		await this.usersRepository.update(user.id, {
-			isSuspended: false,
+			suspendedSelf: false,
+			isSuspended: stillSuspended,
 		});
 
 		this.moderationLogService.log(moderator, 'unsuspend', {
@@ -66,9 +76,49 @@ export class UserSuspendService {
 			userHost: user.host,
 		});
 
-		(async () => {
-			await this.postUnsuspend(user).catch(_ => {});
-		})();
+		if (!stillSuspended) {
+			(async () => {
+				await this.postUnsuspend(user).catch(_ => {});
+			})();
+		}
+
+		await this.unsuspendSubAccounts(user);
+	}
+
+	@bindThis
+	private async suspendSubAccounts(parent: MiUser): Promise<void> {
+		if (parent.parentUserId != null) return;
+		const subs = await this.usersRepository.findBy({ parentUserId: parent.id });
+		for (const sub of subs) {
+			const wasSuspended = sub.isSuspended;
+			await this.usersRepository.update(sub.id, { suspendedByParent: true, isSuspended: true });
+			// Always publish the effective state so the sub's Streaming sessions and auth caches drop at once
+			this.globalEventService.publishInternalEvent('userChangeSuspendedState', { id: sub.id, isSuspended: true });
+			if (!wasSuspended) {
+				(async () => {
+					await this.postSuspend(sub).catch(_ => {});
+					await this.unFollowAll(sub).catch(_ => {});
+				})();
+			}
+		}
+	}
+
+	/** Clears only the parent-caused suspension; subs suspended on their own stay suspended. */
+	@bindThis
+	private async unsuspendSubAccounts(parent: MiUser): Promise<void> {
+		if (parent.parentUserId != null) return;
+		const current = await this.usersRepository.findOneBy({ id: parent.id });
+		if (current?.isSuspended) return; // parent still suspended
+		const subs = await this.usersRepository.findBy({ parentUserId: parent.id, suspendedByParent: true });
+		for (const sub of subs) {
+			await this.usersRepository.update(sub.id, { suspendedByParent: false, isSuspended: sub.suspendedSelf });
+			this.globalEventService.publishInternalEvent('userChangeSuspendedState', { id: sub.id, isSuspended: sub.suspendedSelf });
+			if (!sub.suspendedSelf) {
+				(async () => {
+					await this.postUnsuspend(sub).catch(_ => {});
+				})();
+			}
+		}
 	}
 
 	@bindThis

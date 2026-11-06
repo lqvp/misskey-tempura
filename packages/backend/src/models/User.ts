@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { Entity, Column, Index, OneToOne, JoinColumn, PrimaryColumn } from 'typeorm';
+import { Entity, Column, Index, OneToOne, ManyToOne, JoinColumn, PrimaryColumn } from 'typeorm';
 import { id } from './util/id.js';
 import { MiDriveFile } from './DriveFile.js';
 
@@ -176,6 +176,50 @@ export class MiUser {
 		comment: 'Whether the User is suspended.',
 	})
 	public isSuspended: boolean;
+
+	@Column('boolean', {
+		default: false,
+		comment: 'Whether the User suspended itself (effective isSuspended is suspendedSelf OR suspendedByParent).',
+	})
+	public suspendedSelf: boolean;
+
+	@Column('boolean', {
+		default: false,
+		comment: 'Whether the sub-account is suspended by its parent account.',
+	})
+	public suspendedByParent: boolean;
+
+	@Index()
+	@Column({
+		...id(),
+		nullable: true,
+		comment: 'The parent (main) account of this sub-account. Null for ordinary accounts.',
+	})
+	public parentUserId: MiUser['id'] | null;
+
+	@ManyToOne(() => MiUser, {
+		onDelete: 'RESTRICT',
+	})
+	@JoinColumn({ name: 'parentUserId' })
+	public parentUser: MiUser | null;
+
+	@Column('timestamp with time zone', {
+		nullable: true,
+		comment: 'Until when the main account may save the one-time initial settings of this sub-account. Null once used, expired or never opened.',
+	})
+	public initialSettingsOpenUntil: Date | null;
+
+	@Column('boolean', {
+		default: false,
+		comment: 'Whether the profile of this sub-account shows its parent account.',
+	})
+	public showParentOnProfile: boolean;
+
+	@Column('boolean', {
+		default: false,
+		comment: 'Whether the profile of the parent account lists this sub-account.',
+	})
+	public showSubOnProfile: boolean;
 
 	@Column('boolean', {
 		default: false,

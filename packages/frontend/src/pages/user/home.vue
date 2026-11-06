@@ -182,6 +182,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkNote v-for="note in user.pinnedNotes" :key="note.id" class="note _panel" :note="note" :pinned="true"/>
 						</div>
 						<MkInfo v-else-if="$i && $i.id === user.id">{{ i18n.ts.userPagePinTip }}</MkInfo>
+						<MkContainer v-if="narrow && !user.isBlocked && relationAccounts.length > 0" :foldable="false">
+							<template #icon><i class="ti ti-users"></i></template>
+							<template #header>{{ user.parentAccount != null ? i18n.ts.parentAccount : i18n.ts.subAccounts }}</template>
+							<div :class="$style.relationBody">
+								<MkA v-for="a in relationAccounts" :key="a.id" :to="userPage(a)" :class="$style.relationChip">
+									<MkAvatar :user="a" :class="$style.relationAvatar"/>
+									<MkUserName :user="a" :nowrap="true"/>
+								</MkA>
+							</div>
+						</MkContainer>
 						<div>
 							<template v-if="narrow && !user.isBlocked">
 								<MkLazy>
@@ -215,6 +225,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 			<template v-if="$i || !user.requireSigninToViewContents">
 				<div v-if="!narrow && !user.isBlocked" class="sub _gaps" style="container-type: inline-size;">
+					<MkContainer v-if="relationAccounts.length > 0" :foldable="false">
+						<template #icon><i class="ti ti-users"></i></template>
+						<template #header>{{ user.parentAccount != null ? i18n.ts.parentAccount : i18n.ts.subAccounts }}</template>
+						<div :class="$style.relationBody">
+							<MkA v-for="a in relationAccounts" :key="a.id" :to="userPage(a)" :class="$style.relationChip">
+								<MkAvatar :user="a" :class="$style.relationAvatar"/>
+								<MkUserName :user="a" :nowrap="true"/>
+							</MkA>
+						</div>
+					</MkContainer>
 					<XFiles :key="user.id" :user="user" @showMore="emit('showMoreFiles')"/>
 					<XActivity v-if="!user.hideActivity" :key="user.id" :user="user"/>
 					<XListenBrainz v-if="user.ListenBrainz && listenbrainzdata" :key="user.id" :user="user"/>
@@ -240,6 +260,7 @@ import MkOmit from '@/components/MkOmit.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import MkButton from '@/components/MkButton.vue';
 import MkFoldableSection from '@/components/MkFoldableSection.vue';
+import MkContainer from '@/components/MkContainer.vue';
 import { getUserMenu } from '@/utility/get-user-menu.js';
 import number from '@/filters/number.js';
 import { userPage } from '@@/js/user.js';
@@ -299,6 +320,7 @@ const router = useRouter();
 const user = ref({ ...props.user, communityRoles: props.user.communityRoles ?? [] });
 const communityRoles = computed(() => user.value.communityRoles ?? []);
 const narrow = ref<null | boolean>(null);
+const relationAccounts = computed(() => user.value.parentAccount != null ? [user.value.parentAccount] : (user.value.subAccounts ?? []));
 const rootEl = useTemplateRef('rootEl');
 const bannerEl = useTemplateRef('bannerEl');
 const memoTextareaEl = useTemplateRef('memoTextareaEl');
@@ -991,6 +1013,40 @@ onDeactivated(disposeBannerParallaxResizeObserver);
 .verifiedLink {
 	margin-left: 4px;
 	color: var(--MI_THEME-success);
+}
+
+.relationBody {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 8px;
+	padding: 14px 12px;
+}
+
+.relationChip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	min-width: 0;
+	max-width: 100%;
+	padding: 3px 12px 3px 4px;
+	border-radius: 999px;
+	background: var(--MI_THEME-buttonBg);
+	color: var(--MI_THEME-fg);
+	font-size: 0.9em;
+	text-decoration: none;
+	overflow: hidden;
+
+	&:hover {
+		background: var(--MI_THEME-buttonHoverBg);
+		text-decoration: none;
+	}
+}
+
+.relationAvatar {
+	width: 22px;
+	height: 22px;
+	flex-shrink: 0;
 }
 
 .loginButton {
