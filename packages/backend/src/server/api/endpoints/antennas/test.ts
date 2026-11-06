@@ -10,6 +10,7 @@ import type { NotesRepository, UserListsRepository } from '@/models/_.js';
 import { QueryService } from '@/core/QueryService.js';
 import { AntennaService } from '@/core/AntennaService.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
+import { validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
 import { DI } from '@/di-symbols.js';
 import type { MiAntenna } from '@/models/Antenna.js';
 import type { MiNote } from '@/models/Note.js';
@@ -38,6 +39,12 @@ export const meta = {
 			message: 'Either keywords or excludeKeywords is required.',
 			code: 'EMPTY_KEYWORD',
 			id: 'b3f9a1c2-4d5e-4f6a-8b7c-9d0e1f2a3b4c',
+		},
+
+		invalidRegex: {
+			message: 'Invalid regular expression.',
+			code: 'INVALID_REGEX',
+			id: '0718cd93-e139-48f9-8107-2f5b24ad3669',
 		},
 	},
 
@@ -73,6 +80,7 @@ export const paramDef = {
 			},
 		} },
 		expression: { type: 'string', nullable: true, maxLength: 2048 },
+		keywordMode: { type: 'string', enum: ['literal', 'regex'] },
 		users: { type: 'array', maxItems: 100, items: {
 			type: 'string', maxLength: 300,
 		} },
@@ -106,6 +114,13 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw new ApiError(meta.errors.emptyKeyword);
 			}
 
+			if ((ps.keywordMode ?? 'literal') === 'regex') {
+				const regexError = validateAntennaRegexKeywords([ps.keywords, ps.excludeKeywords, ps.mustExcludeKeywords ?? []]);
+				if (regexError != null) {
+					throw new ApiError(meta.errors.invalidRegex, { reason: regexError.reason, pattern: regexError.pattern, detail: regexError.message });
+				}
+			}
+
 			if (ps.src === 'list' && ps.userListId) {
 				const userList = await this.userListsRepository.findOneBy({
 					id: ps.userListId,
@@ -127,6 +142,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				excludeKeywords: ps.excludeKeywords,
 				mustExcludeKeywords: ps.mustExcludeKeywords ?? [],
 				expression: ps.expression ?? null,
+				keywordMode: ps.keywordMode ?? 'literal',
 				users: ps.users,
 				caseSensitive: ps.caseSensitive,
 				localOnly: ps.localOnly,

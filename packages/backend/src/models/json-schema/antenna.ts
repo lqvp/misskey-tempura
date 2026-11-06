@@ -60,6 +60,12 @@ export const packedAntennaSchema = {
 			type: 'string',
 			optional: false, nullable: true,
 		},
+		keywordMode: {
+			type: 'string',
+			optional: false, nullable: false,
+			enum: ['literal', 'regex'],
+			default: 'literal',
+		},
 		src: {
 			type: 'string',
 			optional: false, nullable: false,

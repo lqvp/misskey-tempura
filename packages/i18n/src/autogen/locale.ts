@@ -17114,6 +17114,30 @@ export interface Locale extends ILocale {
          * 同じグループ内のすべてのキーワードが一致した場合、スコアに関係なく除外されます。
          */
         "mustExcludeKeywordsDescription": string;
+        /**
+         * キーワードの解釈
+         */
+        "keywordMode": string;
+        /**
+         * 通常 (文字列)
+         */
+        "keywordModeLiteral": string;
+        /**
+         * 正規表現
+         */
+        "keywordModeRegex": string;
+        /**
+         * 正規表現モードでは、登録した各項目がそのまま1つの正規表現(RE2構文)として評価されます。空白や「|」では分割されません。
+         */
+        "regexModeDescription": string;
+        /**
+         * 解釈を切り替えると、同じ内容でもマッチするノートが変わることがあります。入力内容は自動では変換されず、保存した時点から新しい解釈が適用されます。
+         */
+        "regexModeWarning": string;
+        /**
+         * 正規表現を追加
+         */
+        "addRegexPattern": string;
     };
     "_loginRisk": {
         /**

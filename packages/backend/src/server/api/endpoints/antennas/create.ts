@@ -11,6 +11,7 @@ import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { AntennaEntityService } from '@/core/entities/AntennaEntityService.js';
 import { DI } from '@/di-symbols.js';
 import { RoleService } from '@/core/RoleService.js';
+import { validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -39,6 +40,12 @@ export const meta = {
 			message: 'Either keywords or excludeKeywords is required.',
 			code: 'EMPTY_KEYWORD',
 			id: '53ee222e-1ddd-4f9a-92e5-9fb82ddb463a',
+		},
+
+		invalidRegex: {
+			message: 'Invalid regular expression.',
+			code: 'INVALID_REGEX',
+			id: '03534a02-f779-456a-bcf2-d4e490401bfa',
 		},
 	},
 
@@ -71,6 +78,7 @@ export const paramDef = {
 			},
 		} },
 		expression: { type: 'string', nullable: true, maxLength: 2048 },
+		keywordMode: { type: 'string', enum: ['literal', 'regex'] },
 		users: { type: 'array', items: {
 			type: 'string',
 		} },
@@ -102,6 +110,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		super(meta, paramDef, async (ps, me) => {
 			if (ps.keywords.flat().every(x => x === '') && ps.excludeKeywords.flat().every(x => x === '')) {
 				throw new ApiError(meta.errors.emptyKeyword);
+			}
+
+			const keywordMode = ps.keywordMode ?? 'literal';
+			if (keywordMode === 'regex') {
+				const regexError = validateAntennaRegexKeywords([ps.keywords, ps.excludeKeywords, ps.mustExcludeKeywords ?? []]);
+				if (regexError != null) {
+					throw new ApiError(meta.errors.invalidRegex, { reason: regexError.reason, pattern: regexError.pattern, detail: regexError.message });
+				}
 			}
 
 			const currentAntennasCount = await this.antennasRepository.countBy({
@@ -137,6 +153,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				excludeKeywords: ps.excludeKeywords,
 				mustExcludeKeywords: ps.mustExcludeKeywords ?? [],
 				expression: ps.expression,
+				keywordMode,
 				users: ps.users,
 				caseSensitive: ps.caseSensitive,
 				localOnly: ps.localOnly,

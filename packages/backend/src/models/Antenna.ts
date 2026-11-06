@@ -77,6 +77,13 @@ export class MiAntenna {
 	})
 	public caseSensitive: boolean;
 
+	@Column('enum', {
+		enum: ['literal', 'regex'],
+		default: 'literal',
+		comment: 'How keywords are interpreted. literal: plain substring match (default, backward compatible). regex: each item is evaluated as one whole regular expression (RE2 syntax).',
+	})
+	public keywordMode: 'literal' | 'regex';
+
 	@Column('boolean', {
 		default: false,
 	})

@@ -171,6 +171,7 @@ describe('アンテナ', () => {
 			localOnly: false,
 			notify: false,
 			onlyFollowers: false,
+			keywordMode: 'literal',
 		};
 		assert.deepStrictEqual(response, expected);
 	});
@@ -441,6 +442,107 @@ describe('アンテナ', () => {
 				status: 400,
 				code: 'EMPTY_KEYWORD',
 				id: 'b3f9a1c2-4d5e-4f6a-8b7c-9d0e1f2a3b4c',
+			});
+		});
+	});
+
+	describe('の正規表現モード(keywordMode)', () => {
+		test('regexモードで作成できること。', async () => {
+			const response = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywordMode: 'regex', keywords: [['りんご|みかん']] },
+				user: alice,
+			});
+			assert.deepStrictEqual(response.keywordMode, 'regex');
+			assert.deepStrictEqual(response.keywords, [['りんご|みかん']]);
+		});
+
+		test('keywordMode未指定ならliteralになること。', async () => {
+			const response = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: defaultParam,
+				user: alice,
+			});
+			assert.deepStrictEqual(response.keywordMode, 'literal');
+		});
+
+		test('regexモードで不正な正規表現だと作成がエラーになること。', async () => {
+			await failedApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywordMode: 'regex', keywords: [['(unclosed']] },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'INVALID_REGEX',
+				id: '03534a02-f779-456a-bcf2-d4e490401bfa',
+			});
+		});
+
+		test('literalモードでは正規表現として不正な文字列も作成できること。', async () => {
+			const response = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywordMode: 'literal', keywords: [['(unclosed']] },
+				user: alice,
+			});
+			assert.deepStrictEqual(response.keywordMode, 'literal');
+		});
+
+		test('regexモードへの変更と不正な正規表現への変更がエラーになること。', async () => {
+			const antenna = await successfulApiCall({ endpoint: 'antennas/create', parameters: defaultParam, user: alice });
+			const updated = await successfulApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: antenna.id, keywordMode: 'regex', keywords: [['^りんご$']] },
+				user: alice,
+			});
+			assert.deepStrictEqual(updated.keywordMode, 'regex');
+
+			await failedApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: antenna.id, keywordMode: 'regex', keywords: [['*bad']] },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'INVALID_REGEX',
+				id: '68573d35-69af-48dc-bd62-e2a059907cf5',
+			});
+
+			// 既存がregexモードのまま不正なパターンへキーワードだけ変える場合もエラーになる
+			await failedApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: antenna.id, keywordMode: 'regex', keywords: [['[bad']] },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'INVALID_REGEX',
+				id: '68573d35-69af-48dc-bd62-e2a059907cf5',
+			});
+		});
+
+		test('試し打ち(antennas/test)がregexでマッチし、不正な正規表現はエラーになること。', async () => {
+			await post(bob, { text: 'りんご100円' });
+			const response = await successfulApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywordMode: 'regex', keywords: [['りんご[0-9]+円']] },
+				user: alice,
+			});
+			assert.ok(response.some((x: Note) => x.text === 'りんご100円'));
+
+			// regexモードでは | は分割されず1つのパターンとして扱われる
+			const either = await successfulApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywordMode: 'regex', keywords: [['バナナ|りんご[0-9]+円']] },
+				user: alice,
+			});
+			assert.ok(either.some((x: Note) => x.text === 'りんご100円'));
+
+			await failedApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywordMode: 'regex', keywords: [['(unclosed']] },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'INVALID_REGEX',
+				id: '0718cd93-e139-48f9-8107-2f5b24ad3669',
 			});
 		});
 	});

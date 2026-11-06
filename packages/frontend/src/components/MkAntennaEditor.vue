@@ -23,19 +23,24 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkSwitch v-model="excludeBots">{{ i18n.ts.antennaExcludeBots }}</MkSwitch>
 			<MkSwitch v-model="withReplies">{{ i18n.ts.withReplies }}</MkSwitch>
 			<MkSwitch v-model="isScoringMode">{{ i18n.ts._tempuraFutureAntenna.scoringMode }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
+			<MkSelect v-model="keywordMode" :items="keywordModeSelectDef">
+				<template #label>{{ i18n.ts._tempuraFutureAntenna.keywordMode }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
+				<template #caption>{{ keywordMode === 'regex' ? i18n.ts._tempuraFutureAntenna.regexModeDescription : i18n.ts._tempuraFutureAntenna.keywordGroupsDescription }}</template>
+			</MkSelect>
+			<MkInfo v-if="keywordMode === 'regex' && keywordMode !== savedAntenna.keywordMode" warn>{{ i18n.ts._tempuraFutureAntenna.regexModeWarning }}</MkInfo>
 			<div :class="$style.field">
 				<div :class="$style.label">{{ i18n.ts.antennaKeywords }}</div>
-				<MkKeywordGroupsInput v-model="keywords"/>
+				<MkKeywordGroupsInput v-model="keywords" :regexMode="keywordMode === 'regex'"/>
 				<div :class="$style.caption">{{ i18n.ts._tempuraFutureAntenna.keywordGroupsDescription }}</div>
 			</div>
 			<div :class="$style.field">
 				<div :class="$style.label">{{ i18n.ts.antennaExcludeKeywords }}</div>
-				<MkKeywordGroupsInput v-model="excludeKeywords"/>
+				<MkKeywordGroupsInput v-model="excludeKeywords" :regexMode="keywordMode === 'regex'"/>
 				<div :class="$style.caption">{{ isScoringMode ? i18n.ts._tempuraFutureAntenna.scoringModeDescription : i18n.ts._tempuraFutureAntenna.keywordGroupsDescription }}</div>
 			</div>
 			<div v-if="isScoringMode" :class="$style.field">
 				<div :class="$style.label">{{ i18n.ts._tempuraFutureAntenna.mustExcludeKeywords }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></div>
-				<MkKeywordGroupsInput v-model="mustExcludeKeywords"/>
+				<MkKeywordGroupsInput v-model="mustExcludeKeywords" :regexMode="keywordMode === 'regex'"/>
 				<div :class="$style.caption">{{ i18n.ts._tempuraFutureAntenna.mustExcludeKeywordsDescription }}</div>
 			</div>
 			<MkSwitch v-model="localOnly">{{ i18n.ts.localOnly }}</MkSwitch>
@@ -78,6 +83,7 @@ import MkSelect from '@/components/MkSelect.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkNote from '@/components/MkNote.vue';
 import MkKeywordGroupsInput from '@/components/MkKeywordGroupsInput.vue';
+import MkInfo from '@/components/MkInfo.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
@@ -114,6 +120,7 @@ const initialAntenna = deepMerge<PartialAllowedAntenna>(props.antenna ?? {}, {
 	notify: false,
 	onlyFollowers: false,
 	expression: null,
+	keywordMode: 'literal',
 });
 
 const emit = defineEmits<{
@@ -150,6 +157,17 @@ const {
 	initialValue: initialAntenna.userListId,
 });
 
+const {
+	model: keywordMode,
+	def: keywordModeSelectDef,
+} = useMkSelect({
+	items: [
+		{ value: 'literal', label: i18n.ts._tempuraFutureAntenna.keywordModeLiteral },
+		{ value: 'regex', label: i18n.ts._tempuraFutureAntenna.keywordModeRegex },
+	],
+	initialValue: initialAntenna.keywordMode,
+});
+
 const name = ref<string>(initialAntenna.name);
 const users = ref<string>(initialAntenna.users.join('\n'));
 const keywords = ref<string[][]>(initialAntenna.keywords.map(x => [...x]));
@@ -170,7 +188,7 @@ const tryRunning = ref<boolean>(false);
 let trySeq = 0;
 
 // 条件が変わったら試し打ちの結果を無効化する(別の条件で得た結果を表示し続けない)
-watch([() => src.value, () => userListId.value, users, keywords, excludeKeywords, mustExcludeKeywords, caseSensitive, localOnly, excludeBots, withReplies, withFile, excludeNotesInSensitiveChannel, onlyFollowers, isScoringMode], () => {
+watch([() => src.value, () => userListId.value, () => keywordMode.value, users, keywords, excludeKeywords, mustExcludeKeywords, caseSensitive, localOnly, excludeBots, withReplies, withFile, excludeNotesInSensitiveChannel, onlyFollowers, isScoringMode], () => {
 	trySeq++;
 	tryRunning.value = false;
 	tryResults.value = null;
@@ -199,6 +217,7 @@ function buildAntennaData() {
 		mustExcludeKeywords: mustExcludeKeywords.value.map(x => x.filter(k => k !== '')).filter(x => x.length > 0),
 		onlyFollowers: onlyFollowers.value,
 		expression: isScoringMode.value ? 'SCORE' : null,
+		keywordMode: keywordMode.value,
 	};
 }
 
@@ -243,6 +262,7 @@ async function resetAntenna() {
 	excludeNotesInSensitiveChannel.value = savedAntenna.excludeNotesInSensitiveChannel;
 	onlyFollowers.value = savedAntenna.onlyFollowers;
 	isScoringMode.value = savedAntenna.expression === 'SCORE';
+	keywordMode.value = savedAntenna.keywordMode;
 	tryResults.value = null;
 }
 

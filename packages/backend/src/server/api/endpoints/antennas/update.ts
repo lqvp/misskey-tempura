@@ -9,6 +9,7 @@ import type { AntennasRepository, UserListsRepository } from '@/models/_.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { AntennaEntityService } from '@/core/entities/AntennaEntityService.js';
 import { DI } from '@/di-symbols.js';
+import { validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -37,6 +38,12 @@ export const meta = {
 			message: 'Either keywords or excludeKeywords is required.',
 			code: 'EMPTY_KEYWORD',
 			id: '721aaff6-4e1b-4d88-8de6-877fae9f68c4',
+		},
+
+		invalidRegex: {
+			message: 'Invalid regular expression.',
+			code: 'INVALID_REGEX',
+			id: '68573d35-69af-48dc-bd62-e2a059907cf5',
 		},
 	},
 
@@ -70,6 +77,7 @@ export const paramDef = {
 			},
 		} },
 		expression: { type: 'string', nullable: true, maxLength: 2048 },
+		keywordMode: { type: 'string', enum: ['literal', 'regex'] },
 		users: { type: 'array', items: {
 			type: 'string',
 		} },
@@ -112,6 +120,19 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw new ApiError(meta.errors.noSuchAntenna);
 			}
 
+			// 切替後のmodeで、切替後に有効になるキーワード群全体を検証する (未指定の項目は保存済みの値)
+			const keywordMode = ps.keywordMode ?? antenna.keywordMode;
+			if (keywordMode === 'regex') {
+				const regexError = validateAntennaRegexKeywords([
+					ps.keywords ?? antenna.keywords,
+					ps.excludeKeywords ?? antenna.excludeKeywords,
+					ps.mustExcludeKeywords ?? antenna.mustExcludeKeywords,
+				]);
+				if (regexError != null) {
+					throw new ApiError(meta.errors.invalidRegex, { reason: regexError.reason, pattern: regexError.pattern, detail: regexError.message });
+				}
+			}
+
 			let userList;
 
 			if ((ps.src === 'list' || antenna.src === 'list') && ps.userListId) {
@@ -133,6 +154,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				excludeKeywords: ps.excludeKeywords,
 				mustExcludeKeywords: ps.mustExcludeKeywords,
 				expression: ps.expression,
+				keywordMode: ps.keywordMode,
 				users: ps.users,
 				caseSensitive: ps.caseSensitive,
 				localOnly: ps.localOnly,

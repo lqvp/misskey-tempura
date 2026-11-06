@@ -12,6 +12,7 @@ import type { AntennasRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { bindThis } from '@/decorators.js';
 import { Schema, SchemaType } from '@/misc/json-schema.js';
+import { validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import { DBAntennaImportJobData } from '../types.js';
 import type * as Bull from 'bullmq';
@@ -46,6 +47,7 @@ const exportedAntennaSchema = {
 			},
 		} },
 		expression: { type: 'string', nullable: true },
+		keywordMode: { type: 'string', enum: ['literal', 'regex'], nullable: true },
 		users: { type: 'array', items: {
 			type: 'string',
 		} },
@@ -89,6 +91,11 @@ export class ImportAntennasProcessorService {
 					this.logger.warn('Validation Failed');
 					continue;
 				}
+				const keywordMode = antenna.keywordMode ?? 'literal';
+				if (keywordMode === 'regex' && validateAntennaRegexKeywords([antenna.keywords, antenna.excludeKeywords, antenna.mustExcludeKeywords ?? []]) != null) {
+					this.logger.warn('Skipped antenna with invalid regex: ' + antenna.name);
+					continue;
+				}
 				const result = await this.antennasRepository.insertOne({
 					id: this.idService.gen(now.getTime()),
 					lastUsedAt: now,
@@ -100,6 +107,7 @@ export class ImportAntennasProcessorService {
 					excludeKeywords: antenna.excludeKeywords,
 					mustExcludeKeywords: antenna.mustExcludeKeywords ?? [],
 					expression: antenna.expression ?? null,
+					keywordMode,
 					users: (antenna.src === 'list' && antenna.userListAccts !== null ? antenna.userListAccts : antenna.users).filter(Boolean),
 					caseSensitive: antenna.caseSensitive,
 					localOnly: antenna.localOnly,

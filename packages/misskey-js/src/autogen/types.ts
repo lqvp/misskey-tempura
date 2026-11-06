@@ -5739,6 +5739,11 @@ export type components = {
             excludeKeywords: string[][];
             mustExcludeKeywords: string[][];
             expression: string | null;
+            /**
+             * @default literal
+             * @enum {string}
+             */
+            keywordMode: 'literal' | 'regex';
             /** @enum {string} */
             src: 'home' | 'all' | 'users' | 'list' | 'users_blacklist';
             /** Format: id */
@@ -15887,6 +15892,8 @@ export interface operations {
                     excludeKeywords: string[][];
                     mustExcludeKeywords?: string[][];
                     expression?: string | null;
+                    /** @enum {string} */
+                    keywordMode?: 'literal' | 'regex';
                     users: string[];
                     caseSensitive: boolean;
                     localOnly?: boolean;
@@ -16366,6 +16373,8 @@ export interface operations {
                     excludeKeywords: string[][];
                     mustExcludeKeywords?: string[][];
                     expression?: string | null;
+                    /** @enum {string} */
+                    keywordMode?: 'literal' | 'regex';
                     users: string[];
                     caseSensitive: boolean;
                     localOnly?: boolean;
@@ -16460,6 +16469,8 @@ export interface operations {
                     excludeKeywords?: string[][];
                     mustExcludeKeywords?: string[][];
                     expression?: string | null;
+                    /** @enum {string} */
+                    keywordMode?: 'literal' | 'regex';
                     users?: string[];
                     caseSensitive?: boolean;
                     localOnly?: boolean;

@@ -13,6 +13,7 @@ import { bindThis } from '@/decorators.js';
 import { DI } from '@/di-symbols.js';
 import * as Acct from '@/misc/acct.js';
 import type { AntennaMatchInfo } from '@/misc/antenna-match.js';
+import { findAntennaRegexMatches, testAntennaRegex, type AntennaKeywordMode } from '@/misc/antenna-regex.js';
 import type { Packed } from '@/misc/json-schema.js';
 import type { AntennasRepository, UserListMembershipsRepository } from '@/models/_.js';
 import type { MiAntenna } from '@/models/Antenna.js';
@@ -72,12 +73,17 @@ export class AntennaService implements OnApplicationShutdown {
 	}
 
 	@bindThis
-	public findAllMatches(text: string, keywords: string[], caseSensitive: boolean): Match[] {
+	public findAllMatches(text: string, keywords: string[], caseSensitive: boolean, keywordMode: AntennaKeywordMode = 'literal'): Match[] {
 		if (!text) return [];
 		const matches: Match[] = [];
 
 		for (const keyword of keywords) {
 			if (!keyword) continue;
+			if (keywordMode === 'regex') {
+				// regexモードでは1項目全体を1つの式として評価する (空白などでは分割しない)
+				matches.push(...findAntennaRegexMatches(keyword, text, caseSensitive));
+				continue;
+			}
 			const regex = this.getKeywordRegExp(keyword, caseSensitive);
 
 			for (const match of text.matchAll(regex)) {
@@ -317,7 +323,7 @@ export class AntennaService implements OnApplicationShutdown {
 					const _text = this.getCombinedNoteText(note);
 
 					const matched = mustExcludeKeywords.some(and =>
-						and.every(keyword => this.includesKeyword(_text, keyword, antenna.caseSensitive)));
+						and.every(keyword => this.includesKeyword(_text, keyword, antenna.caseSensitive, antenna.keywordMode)));
 
 					if (matched) return noMatch;
 				}
@@ -344,7 +350,7 @@ export class AntennaService implements OnApplicationShutdown {
 					const _text = this.getCombinedNoteText(note);
 					const collectMatches = (keywordGroups: string[][], type: 'include' | 'exclude'): Match[] => {
 						return keywordGroups.flatMap((and, groupIdx) =>
-							this.findAllMatches(_text, and, antenna.caseSensitive).map(match => ({
+							this.findAllMatches(_text, and, antenna.caseSensitive, antenna.keywordMode).map(match => ({
 								...match,
 								groupIndex: groupIdx,
 								type: type,
@@ -403,7 +409,7 @@ export class AntennaService implements OnApplicationShutdown {
 				const _text = this.getCombinedNoteText(note);
 
 				for (const and of keywords) {
-					if (and.every(keyword => this.includesKeyword(_text, keyword, antenna.caseSensitive))) {
+					if (and.every(keyword => this.includesKeyword(_text, keyword, antenna.caseSensitive, antenna.keywordMode))) {
 						matchedKeywords.push(and);
 					}
 				}
@@ -416,7 +422,7 @@ export class AntennaService implements OnApplicationShutdown {
 					const _text = this.getCombinedNoteText(note);
 
 					const matched = excludeKeywords.some(and =>
-						and.every(keyword => this.includesKeyword(_text, keyword, antenna.caseSensitive)));
+						and.every(keyword => this.includesKeyword(_text, keyword, antenna.caseSensitive, antenna.keywordMode)));
 
 					if (matched) return noMatch;
 				}
@@ -446,7 +452,10 @@ export class AntennaService implements OnApplicationShutdown {
 		return [...ids];
 	}
 
-	private includesKeyword(text: string, keyword: string, caseSensitive: boolean): boolean {
+	private includesKeyword(text: string, keyword: string, caseSensitive: boolean, keywordMode: AntennaKeywordMode = 'literal'): boolean {
+		if (keywordMode === 'regex') {
+			return testAntennaRegex(keyword, text, caseSensitive);
+		}
 		return caseSensitive
 			? text.includes(keyword)
 			: text.toLowerCase().includes(keyword.toLowerCase());

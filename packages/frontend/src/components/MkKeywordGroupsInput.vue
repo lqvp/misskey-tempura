@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div :class="$style.keywords">
 				<template v-for="(keyword, ki) in group" :key="ki">
 					<span v-if="ki > 0" :class="$style.and">{{ i18n.ts._tempuraFutureAntenna.keywordAnd }}</span>
-					<span :class="$style.chip">
+					<span :class="[$style.chip, { [$style.regexChip]: props.regexMode }]">
 						{{ keyword }}
 						<button class="_button" :class="$style.chipRemove" :aria-label="i18n.ts.delete" @click="removeKeyword(gi, ki)"><i class="ti ti-x"></i></button>
 					</span>
@@ -20,7 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					v-model="inputs[gi]"
 					:class="$style.input"
 					type="text"
-					:placeholder="i18n.ts._tempuraFutureAntenna.addKeyword"
+					:placeholder="props.regexMode ? i18n.ts._tempuraFutureAntenna.addRegexPattern : i18n.ts._tempuraFutureAntenna.addKeyword"
 					@keydown.enter.prevent="addKeyword(gi)"
 					@blur="addKeyword(gi)"
 				>
@@ -41,6 +41,13 @@ import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
 
 // グループ=OR、グループ内=AND。テキストの書き方を覚えなくても追加・削除で条件を組めるようにする。
+// regexModeのときは入力を空白で分割せず、1項目全体を1つの正規表現として扱う。
+const props = withDefaults(defineProps<{
+	regexMode?: boolean;
+}>(), {
+	regexMode: false,
+});
+
 const model = defineModel<string[][]>({ required: true });
 
 const inputs = ref<string[]>(model.value.map(() => ''));
@@ -51,15 +58,20 @@ watch(model, (newValue) => {
 });
 
 function normalize(keyword: string): string {
-	return keyword.trim().replace(/\s+/g, ' ');
+	// regexモードでは空白も式の一部なので、前後の空白を除く以外は触らない
+	return props.regexMode ? keyword.trim() : keyword.trim().replace(/\s+/g, ' ');
 }
 
 function addKeyword(gi: number) {
 	const keyword = normalize(inputs.value[gi] ?? '');
 	if (keyword === '') return;
 	const next = model.value.map(g => [...g]);
-	// 空白を含む入力は従来のスペース区切りと同じくANDとして分割する
-	next[gi].push(...keyword.split(' ').filter(x => x !== ''));
+	if (props.regexMode) {
+		next[gi].push(keyword);
+	} else {
+		// 空白を含む入力は従来のスペース区切りと同じくANDとして分割する
+		next[gi].push(...keyword.split(' ').filter(x => x !== ''));
+	}
 	model.value = next;
 	inputs.value[gi] = '';
 }
@@ -123,6 +135,10 @@ function removeGroup(gi: number) {
 	background: var(--MI_THEME-buttonBg);
 	border-radius: 6px;
 	font-size: 0.9em;
+}
+
+.regexChip {
+	font-family: monospace;
 }
 
 .chipRemove {
