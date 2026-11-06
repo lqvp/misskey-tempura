@@ -56,6 +56,7 @@ import { CleanExpiredRemoteFilesProcessorService } from './processors/CleanExpir
 import { ReDownloadRemoteFileProcessorService } from './processors/ReDownloadRemoteFileProcessorService.js';
 import { ScheduledNoteDeleteProcessorService } from './processors/ScheduledNoteDeleteProcessorService.js';
 import { CleanExpiredMultipartUploadsProcessorService } from './processors/CleanExpiredMultipartUploadsProcessorService.js';
+import { CleanupDanglingFollowsProcessorService } from './processors/CleanupDanglingFollowsProcessorService.js';
 import { UpdateIpIntelligenceProcessorService } from './processors/UpdateIpIntelligenceProcessorService.js';
 
 // ref. https://github.com/misskey-dev/misskey/pull/7635#issue-971097019
@@ -147,6 +148,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 		private reDownloadRemoteFileProcessorService: ReDownloadRemoteFileProcessorService,
 		private scheduledNoteDeleteProcessorService: ScheduledNoteDeleteProcessorService,
 		private cleanExpiredMultipartUploadsProcessorService: CleanExpiredMultipartUploadsProcessorService,
+		private cleanupDanglingFollowsProcessorService: CleanupDanglingFollowsProcessorService,
 		private updateIpIntelligenceProcessorService: UpdateIpIntelligenceProcessorService,
 	) {
 		this.logger = this.queueLoggerService.logger;
@@ -250,6 +252,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					case 'importAntennas': return this.importAntennasProcessorService.process(job);
 					case 'deleteAccount': return this.deleteAccountProcessorService.process(job);
 					case 'truncateAccount': return this.truncateAccountProcessorService.process(job);
+					case 'cleanupDanglingFollows': return this.cleanupDanglingFollowsProcessorService.process(job);
 					case 'makePrivateMany': return this.makePrivateManyProcessorService.process(job);
 					default: throw new Error(`unrecognized job type ${job.name} for db`);
 				}

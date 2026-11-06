@@ -28,6 +28,7 @@
  * loginFailed - ログインに失敗
  * createToken - トークン作成
  * llmModerationQueue - LLMモデレーションキューの通知
+ * cleanupDanglingFollowsCompleted - フォロー関係の整理が完了
  * app - アプリ通知
  * test - テスト通知（サーバー側）
  */
@@ -56,6 +57,7 @@ export const notificationTypes = [
 	'loginFailed',
 	'createToken',
 	'llmModerationQueue',
+	'cleanupDanglingFollowsCompleted',
 	'app',
 	'test',
 ] as const;

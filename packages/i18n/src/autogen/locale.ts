@@ -12054,6 +12054,20 @@ export interface Locale extends ILocale {
          * 心当たりがない場合は「{text}」を通じてアクセストークンを削除してください。
          */
         "createTokenDescription": ParameterizedString<"text">;
+        /**
+         * フォロー関係を整理しました。
+         */
+        "cleanupDanglingFollowsCompleted": string;
+        /**
+         * 削除済みアカウント{count}件とのフォロー関係を削除しました。
+         * これにより、フォロー数やフォロワー数が変わるかもしれません。
+         */
+        "cleanupDanglingFollowsCompletedDescription": ParameterizedString<"count">;
+        /**
+         * 削除済みアカウントとのフォロー関係はありませんでした。
+         * フォロー数やフォロワー数に変化はありません。
+         */
+        "cleanupDanglingFollowsCompletedDescriptionEmpty": string;
         "_types": {
             /**
              * すべて
@@ -12151,6 +12165,10 @@ export interface Locale extends ILocale {
              * アクセストークンの作成
              */
             "createToken": string;
+            /**
+             * フォロー関係の整理が完了した
+             */
+            "cleanupDanglingFollowsCompleted": string;
             /**
              * 通知のテスト
              */
@@ -17326,5 +17344,27 @@ export interface Locale extends ILocale {
              */
             "untrustedIp": string;
         };
+    };
+    "_relationCleanup": {
+        /**
+         * フォロー関係の整理
+         */
+        "title": string;
+        /**
+         * フォローまたはフォロワーの中から、現在削除されているアカウントとの関係を削除し、フォロー・フォロワー数を再計算します。
+         */
+        "description": string;
+        /**
+         * クリーンアップを実行
+         */
+        "cleanup": string;
+        /**
+         * 削除済みアカウントとのフォロー関係を整理しますか？
+         */
+        "cleanupConfirm": string;
+        /**
+         * フォロー関係のクリーンアップ処理を開始しました。
+         */
+        "cleanupStarted": string;
     };
 }

@@ -429,7 +429,9 @@ describe('User', () => {
 				await waitForFollowRelation(bob, alice, 1); // followed by Bob
 
 				await bAdmin.client.request('admin/delete-account', { userId: aliceInB.id });
-				await sleep();
+
+				// 削除時にdanglingなフォロー関係が解消される (Undo FollowがAにも配送されるため両側で消えるのを待つ)
+				await waitForFollowRelation(bob, alice, 0, WAIT_FOR_SLOW_FEDERATION);
 
 				/**
 				 * FIXME: remote account is not deleted!
@@ -438,16 +440,9 @@ describe('User', () => {
 				const deletedAlice = await bob.client.request('users/show', { userId: aliceInB.id });
 				assert(deletedAlice.id, aliceInB.id);
 
-				// TODO: why still following relation?
-				const following = await bob.client.request('users/following', { userId: bob.id });
-				strictEqual(following.length, 1);
-				await rejects(
-					async () => await bob.client.request('following/create', { userId: aliceInB.id }),
-					(err: any) => {
-						strictEqual(err.code, 'ALREADY_FOLLOWING');
-						return true;
-					},
-				);
+				// NOTE: ローカル管理者によるリモートアカウントの削除はsoft削除(行はisDeleted=trueで残る)のため、
+				//       Bは削除済みのコピーを持つユーザーのAcceptを署名検証の段階で受理できず、再フォローは成立しない。
+				//       (物理削除されないのは upstream #14728 としても知られる意図的な挙動)
 			});
 
 			test('Alice tries to follow Bob, but it is not processed', async () => {
@@ -500,8 +495,9 @@ describe('User', () => {
 				await aAdmin.client.request('admin/unsuspend-user', { userId: alice.id });
 				await sleep();
 
+				// Bサーバー側でフォロー関係が解消され、Undo Followが配送されるためA側の関係も消える
 				const followers = await alice.client.request('users/followers', { userId: alice.id });
-				strictEqual(followers.length, 1); // FIXME: followers are not deleted??
+				strictEqual(followers.length, 0);
 
 				/**
 				 * FIXME: still rejected!
@@ -516,22 +512,33 @@ describe('User', () => {
 					},
 				);
 
-				// FIXME: resolving also fails
-				await rejects(
-					async () => await resolveRemoteUser('a.test', alice.id, bob),
-					(err: any) => {
-						strictEqual(err.code, 'INTERNAL_ERROR');
-						return true;
-					},
-				);
+				// キャッシュ無効化の修正により、物理削除の完了後はリモート解決が成功するようになった
+				// (完了前はisDeleted行への条件付き更新に失敗するため、成功するまで待機する)
+				await vi.waitFor(async () => {
+					const resolved = await resolveRemoteUser('a.test', alice.id, bob);
+					strictEqual(resolved.username, alice.username);
+				}, WAIT_FOR_SLOW_FEDERATION);
 			});
 
 			/**
 			 * instead of simple unsuspension, let's tell existence by following from Alice
 			 */
 			test('Alice can follow Bob', async () => {
+				// BではDeleteアクティビティの処理で古いaliceInB行がisDeleted=trueにされ、deleteAccountジョブの完了で物理削除される。
+				// 行が残っている間は再解決がupdatePersonの条件付き更新(isDeleted行は対象外)に失敗し、
+				// AliceからのFollowが「failed to resolve user」としてリトライなしで捨てられてしまうため、行の削除を待ってからフォローする。
+				await vi.waitFor(async () => {
+					await rejects(
+						async () => await bob.client.request('users/show', { userId: aliceInB.id }),
+						(err: any) => {
+							strictEqual(err.code, 'NO_SUCH_USER');
+							return true;
+						},
+					);
+				}, WAIT_FOR_SLOW_FEDERATION);
+
 				await alice.client.request('following/create', { userId: bobInA.id });
-				await waitForFollowers(bob, 1); // followed by Alice
+				await waitForFollowers(bob, 1, WAIT_FOR_SLOW_FEDERATION); // followed by Alice
 
 				const bobFollowers = await bob.client.request('users/followers', { userId: bob.id });
 				assert(bobFollowers[0].follower != null);
@@ -545,16 +552,11 @@ describe('User', () => {
 
 				// Bob tries to follow Alice
 				await bob.client.request('following/create', { userId: renewedaliceInB.id });
-				await waitForFollowers(alice, 1);
+				await waitForFollowers(alice, 1, WAIT_FOR_SLOW_FEDERATION);
 
-				// FIXME: but resolving still fails ...
-				await rejects(
-					async () => await resolveRemoteUser('a.test', alice.id, bob),
-					(err: any) => {
-						strictEqual(err.code, 'INTERNAL_ERROR');
-						return true;
-					},
-				);
+				// 再作成されたユーザーのリモート解決は成功する
+				const resolved = await resolveRemoteUser('a.test', alice.id, bob);
+				strictEqual(resolved.username, alice.username);
 			});
 		});
 	});

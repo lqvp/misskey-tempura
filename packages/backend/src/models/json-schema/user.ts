@@ -728,6 +728,7 @@ export const packedMeDetailedOnlySchema = {
 				login: { optional: true, ...notificationRecieveConfig },
 				createToken: { optional: true, ...notificationRecieveConfig },
 				llmModerationQueue: { optional: true, ...notificationRecieveConfig },
+				cleanupDanglingFollowsCompleted: { optional: true, ...notificationRecieveConfig },
 				exportCompleted: { optional: true, ...notificationRecieveConfig },
 			},
 		},
