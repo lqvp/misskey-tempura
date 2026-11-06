@@ -24,7 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					@keydown.enter.prevent="addKeyword(gi)"
 					@blur="addKeyword(gi)"
 				>
-				<MkButton inline small :disabled="inputs[gi].trim() === ''" @click="addKeyword(gi)"><i class="ti ti-plus"></i></MkButton>
+				<MkButton inline small :disabled="props.regexMode ? inputs[gi] === '' : inputs[gi].trim() === ''" @click="addKeyword(gi)"><i class="ti ti-plus"></i></MkButton>
 			</div>
 			<button v-if="model.length > 1" class="_button" :class="$style.groupRemove" :title="i18n.ts._tempuraFutureAntenna.removeGroup" :aria-label="i18n.ts._tempuraFutureAntenna.removeGroup" @click="removeGroup(gi)"><i class="ti ti-trash"></i></button>
 		</div>
@@ -58,8 +58,8 @@ watch(model, (newValue) => {
 });
 
 function normalize(keyword: string): string {
-	// regexモードでは空白も式の一部なので、前後の空白を除く以外は触らない
-	return props.regexMode ? keyword.trim() : keyword.trim().replace(/\s+/g, ' ');
+	// regexモードでは前後の空白も式の一部として意味を持つため、一切加工しない
+	return props.regexMode ? keyword : keyword.trim().replace(/\s+/g, ' ');
 }
 
 function addKeyword(gi: number) {

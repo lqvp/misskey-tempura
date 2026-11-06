@@ -44,7 +44,7 @@ export function validateAntennaRegexKeywords(keywordGroups: string[][][]): Anten
 					return { reason: 'patternTooLong', pattern };
 				}
 				try {
-					// 実際の評価と同じフラグでコンパイルして構文を確認する
+					// 構文の妥当性は u/i/g フラグに依存しないので、ここでは u のみでコンパイルして確認する
 					void new RE2(pattern, 'u');
 				} catch (err) {
 					return { reason: 'invalidPattern', pattern, message: err instanceof Error ? err.message : String(err) };
@@ -117,7 +117,9 @@ export function findAntennaRegexMatches(pattern: string, text: string, caseSensi
 			end: match.index + match[0].length,
 		});
 		if (match[0].length === 0) {
-			regex.lastIndex++;
+			// サロゲートペアの途中に止まらないよう、コードポイント単位で1文字進める
+			const cp = text.codePointAt(regex.lastIndex);
+			regex.lastIndex += cp !== undefined && cp > 0xFFFF ? 2 : 1;
 		}
 	}
 	return matches;

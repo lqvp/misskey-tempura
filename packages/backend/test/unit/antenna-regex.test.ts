@@ -63,3 +63,32 @@ describe('findAntennaRegexMatches', () => {
 		expect(matches).toEqual([{ keyword: 'a*', start: 0, end: 0 }, { keyword: 'a*', start: 1, end: 1 }]);
 	});
 });
+
+describe('whitespace preservation (regex mode)', () => {
+	it('前後の空白を含む式をそのまま検証・評価する', () => {
+		// 前後空白つきの式も構文検証を通る (trim しない)
+		expect(validateAntennaRegexKeywords([[[' foo ', 'bar\t']]])).toBeNull();
+		// 空白は式の一部として意味を持つ
+		expect(testAntennaRegex(' foo', 'x foo y', true)).toBe(true);
+		expect(testAntennaRegex(' foo', 'xfoo', true)).toBe(false);
+		expect(testAntennaRegex('bar ', 'bar baz', true)).toBe(true);
+		expect(testAntennaRegex('bar ', 'barbaz', true)).toBe(false);
+	});
+
+	it('改行を含む式をそのまま評価する', () => {
+		expect(validateAntennaRegexKeywords([[['foo\nbar']]])).toBeNull();
+		expect(testAntennaRegex('foo\nbar', 'see foo\nbar end', true)).toBe(true);
+		expect(testAntennaRegex('foo\nbar', 'foo bar', true)).toBe(false);
+	});
+});
+
+describe('zero-length matches near surrogate pairs', () => {
+	it('ゼロ幅マッチの繰り上げがサロゲートペアを分割しない', () => {
+		// '🍎b' はコードユニット [🍎(2), b(1)] = 長さ3。コードポイント境界は 0, 2, 3
+		expect(findAntennaRegexMatches('a*', '🍎b', true)).toEqual([
+			{ keyword: 'a*', start: 0, end: 0 },
+			{ keyword: 'a*', start: 2, end: 2 },
+			{ keyword: 'a*', start: 3, end: 3 },
+		]);
+	});
+});
