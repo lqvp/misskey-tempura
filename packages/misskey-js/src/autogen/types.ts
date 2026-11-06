@@ -11662,6 +11662,8 @@ export interface operations {
                         }[];
                         requireSignedApFetch: boolean;
                         allowUnregisteredApSignerVerification: boolean;
+                        /** @enum {string} */
+                        proxyAccountFollowMode: 'always' | 'skipIfFollowed' | 'disabled';
                         allowAnonymousStats: boolean;
                         allowAnonymousOnlineUsersCount: boolean;
                         allowAnonymousChartActiveUsers: boolean;
@@ -15416,6 +15418,8 @@ export interface operations {
                     hanaModeBackground?: string | null;
                     requireSignedApFetch?: boolean;
                     allowUnregisteredApSignerVerification?: boolean;
+                    /** @enum {string} */
+                    proxyAccountFollowMode?: 'always' | 'skipIfFollowed' | 'disabled';
                     allowAnonymousStats?: boolean;
                     allowAnonymousOnlineUsersCount?: boolean;
                     allowAnonymousChartActiveUsers?: boolean;
@@ -29350,6 +29354,9 @@ export interface operations {
                         servers: {
                             host: string;
                             followersCount: number;
+                            name: string | null;
+                            iconUrl: string | null;
+                            faviconUrl: string | null;
                         }[];
                     };
                 };

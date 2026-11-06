@@ -26,6 +26,9 @@ export const meta = {
 					properties: {
 						host: { type: 'string' },
 						followersCount: { type: 'number' },
+						name: { type: 'string', optional: false, nullable: true },
+						iconUrl: { type: 'string', optional: false, nullable: true },
+						faviconUrl: { type: 'string', optional: false, nullable: true },
 					},
 				},
 			},
@@ -49,9 +52,16 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				.createQueryBuilder('following')
 				.select('following.followerHost', 'host')
 				.addSelect('COUNT(*)', 'followers_count')
+				.addSelect('instance.name', 'name')
+				.addSelect('instance.iconUrl', 'icon_url')
+				.addSelect('instance.faviconUrl', 'favicon_url')
+				.leftJoin('instance', 'instance', 'instance.host = following.followerHost')
 				.where('following.followeeId = :userId', { userId: me.id })
 				.andWhere('following.followerHost IS NOT NULL')
 				.groupBy('following.followerHost')
+				.addGroupBy('instance.name')
+				.addGroupBy('instance.iconUrl')
+				.addGroupBy('instance.faviconUrl')
 				.orderBy('followers_count', 'DESC')
 				.getRawMany();
 
@@ -59,6 +69,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				servers: serverStats.map(s => ({
 					host: s.host,
 					followersCount: Number(s.followers_count),
+					name: s.name ?? null,
+					iconUrl: s.icon_url ?? null,
+					faviconUrl: s.favicon_url ?? null,
 				})),
 			};
 		});

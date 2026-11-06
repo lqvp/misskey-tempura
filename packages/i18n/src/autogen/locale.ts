@@ -897,6 +897,28 @@ export interface Locale extends ILocale {
      */
     "proxyAccountDescription": string;
     /**
+     * フォロー条件
+     */
+    "proxyAccountFollowMode": string;
+    /**
+     * プロキシアカウントがリモートユーザーを新たにフォローする条件を選択します。「使わない」にしても、すでにプロキシアカウントがフォローしている相手は解除されず、購読中の投稿は届き続けます。
+     */
+    "proxyAccountFollowMode_description": string;
+    "_proxyAccountFollowMode": {
+        /**
+         * 使う (常にフォローする)
+         */
+        "always": string;
+        /**
+         * すでにフォローされている場合はフォローしない
+         */
+        "skipIfFollowed": string;
+        /**
+         * 使わない (新たにはフォローしない)
+         */
+        "disabled": string;
+    };
+    /**
      * ホスト
      */
     "host": string;
@@ -10934,6 +10956,44 @@ export interface Locale extends ILocale {
         "federationJobQueue": string;
     };
     "_widgetOptions": {
+        "_nestedWidget": {
+            /**
+             * 中のウィジェット
+             */
+            "children": string;
+            /**
+             * ネスト全体
+             */
+            "general": string;
+            /**
+             * 切り替え間隔（秒）
+             */
+            "interval": string;
+            /**
+             * 0で自動切り替えを無効にします。
+             */
+            "intervalDescription": string;
+            /**
+             * 最大の高さ（px）
+             */
+            "maxHeight": string;
+            /**
+             * 0の場合は制限しません。
+             */
+            "maxHeightDescription": string;
+            /**
+             * 上に移動
+             */
+            "moveUp": string;
+            /**
+             * 下に移動
+             */
+            "moveDown": string;
+            /**
+             * 親の設定に戻る
+             */
+            "back": string;
+        };
         /**
          * ヘッダーを表示
          */
@@ -15967,7 +16027,7 @@ export interface Locale extends ILocale {
      */
     "hideActivity": string;
     /**
-     * 自分のプロフィールのアクティビティ (概要/アクティビティタブ) を他人が見れないようにします。このオプションを有効にしても、自分であればプロフィールのアクティビティタブから引き続き閲覧できます。
+     * 自分のプロフィールのアクティビティ (概要/アクティビティタブ) を他人が見れないようにします。このオプションを有効にしても、自分であればプロフィールのアクティビティタブから引き続き閲覧できます。なお、アクティビティタブは管理者とモデレーターもこの設定に関わらず閲覧できます。
      */
     "hideActivityDescription": string;
     /**
@@ -16286,7 +16346,7 @@ export interface Locale extends ILocale {
          */
         "description": string;
         /**
-         * 公開 (Public) の投稿を連合する
+         * 公開 (Public) の投稿をoutboxに含める
          */
         "publicVisibility": string;
         /**
@@ -16294,7 +16354,7 @@ export interface Locale extends ILocale {
          */
         "publicVisibilityDescription": string;
         /**
-         * セミパブリック (Public Non-LTL) の投稿を連合する
+         * セミパブリック (Public Non-LTL) の投稿をoutboxに含める
          */
         "publicNonLtlVisibility": string;
         /**
@@ -16302,7 +16362,7 @@ export interface Locale extends ILocale {
          */
         "publicNonLtlVisibilityDescription": string;
         /**
-         * ホーム (Home) の投稿を連合する
+         * ホーム (Home) の投稿をoutboxに含める
          */
         "homeVisibility": string;
         /**
@@ -16414,6 +16474,22 @@ export interface Locale extends ILocale {
          * 一部のサーバーに非公開
          */
         "deliveryTargetsExclude": string;
+        /**
+         * {count}サーバーのみに配送
+         */
+        "deliverySummaryInclude": ParameterizedString<"count">;
+        /**
+         * {count}サーバーを除外して配送
+         */
+        "deliverySummaryExclude": ParameterizedString<"count">;
+        /**
+         * ほか{count}
+         */
+        "andMore": ParameterizedString<"count">;
+        /**
+         * 解除する
+         */
+        "clearDeliveryTargets": string;
     };
     "_contactForm": {
         "_settings": {

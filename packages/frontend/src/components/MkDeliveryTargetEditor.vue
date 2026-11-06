@@ -10,7 +10,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<div :class="$style.body">
 		<MkRadios
 			v-model="deliveryMode"
-			:vertical="true"
 			:options="[
 				{ value: 'include', label: i18n.ts._deliveryTargetControl.deliveryTargetInclude },
 				{ value: 'exclude', label: i18n.ts._deliveryTargetControl.deliveryTargetExclude },
@@ -46,10 +45,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 						:value="server.host"
 						:class="$style.serverItem"
 					>
-						<div :class="$style.serverInfo">
-							<div :class="$style.serverHost">{{ server.host }}</div>
-							<div :class="$style.serverCount">
-								{{ i18n.tsx._deliveryTargetControl.followersCount({ count: server.followersCount }) }}
+						<div :class="$style.serverRow">
+							<img v-if="serverIconUrl(server) != null" :class="$style.serverIcon" :src="serverIconUrl(server)!" alt="" @error="onIconError(server)"/>
+							<i v-else :class="['ti', 'ti-server-2', $style.serverIconFallback]"></i>
+							<div :class="$style.serverInfo">
+								<div :class="$style.serverName">{{ server.name || server.host }}</div>
+								<div v-if="server.name && server.name !== server.host" :class="$style.serverHost">{{ server.host }}</div>
+								<div :class="$style.serverCount">
+									{{ i18n.tsx._deliveryTargetControl.followersCount({ count: server.followersCount }) }}
+								</div>
 							</div>
 						</div>
 					</MkCheckbox>
@@ -75,6 +79,7 @@ import MkLoading from '@/components/global/MkLoading.vue';
 import MkInput from '@/components/MkInput.vue';
 import MkCheckbox from '@/components/MkCheckbox.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
+import { getProxiedImageUrlNullable } from '@/utility/media-proxy.js';
 import { i18n } from '@/i18n.js';
 
 export type DeliveryTargetEditorModelValue = {
@@ -95,7 +100,34 @@ const emit = defineEmits<{
 
 const deliveryMode = ref<'include' | 'exclude'>(props.modelValue.mode);
 const selectedHosts = ref<string[]>([...props.modelValue.hosts]);
-const servers = ref<{ host: string; followersCount: number }[]>([]);
+type FollowerServer = {
+	host: string;
+	followersCount: number;
+	name?: string | null;
+	iconUrl?: string | null;
+	faviconUrl?: string | null;
+};
+
+const servers = ref<FollowerServer[]>([]);
+const failedIconUrls = ref<Set<string>>(new Set());
+
+function currentIconCandidate(server: FollowerServer): string | null {
+	for (const url of [server.faviconUrl, server.iconUrl]) {
+		if (url != null && url !== '' && !failedIconUrls.value.has(url)) return url;
+	}
+	return null;
+}
+
+function serverIconUrl(server: FollowerServer): string | null {
+	return getProxiedImageUrlNullable(currentIconCandidate(server), 'preview');
+}
+
+function onIconError(server: FollowerServer) {
+	const url = currentIconCandidate(server);
+	if (url == null) return;
+	failedIconUrls.value = new Set([...failedIconUrls.value, url]);
+}
+
 const serversLoading = ref(true);
 const loadError = ref(false);
 const searchQuery = ref('');
@@ -111,7 +143,7 @@ const filteredServers = computed(() => {
 
 	const query = searchQuery.value.toLowerCase().trim();
 	return servers.value.filter(server =>
-		server.host.toLowerCase().includes(query),
+		server.host.toLowerCase().includes(query) || (server.name ?? '').toLowerCase().includes(query),
 	);
 });
 
@@ -227,6 +259,34 @@ onMounted(() => {
 
 .serverItem {
 	width: 100%;
+	box-sizing: border-box;
+}
+
+.serverRow {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+
+.serverIcon,
+.serverIconFallback {
+	flex-shrink: 0;
+	width: 20px;
+	height: 20px;
+	border-radius: 4px;
+}
+
+.serverIcon {
+	object-fit: contain;
+}
+
+.serverIconFallback {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 16px;
+	color: var(--MI_THEME-fgTransparentWeak);
 }
 
 .serverInfo {
@@ -234,11 +294,18 @@ onMounted(() => {
 	min-width: 0;
 }
 
-.serverHost {
+.serverName {
 	font-weight: 500;
 	color: var(--MI_THEME-fg);
 	word-break: break-all;
 	line-height: 1.3;
+}
+
+.serverHost {
+	font-size: 0.8em;
+	color: var(--MI_THEME-fgTransparentWeak);
+	word-break: break-all;
+	line-height: 1.2;
 }
 
 .serverCount {

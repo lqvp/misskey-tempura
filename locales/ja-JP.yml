@@ -221,6 +221,12 @@ youHaveNoLists: "リストがありません"
 followConfirm: "{name}をフォローしますか？"
 proxyAccount: "プロキシアカウント"
 proxyAccountDescription: "プロキシアカウントは、特定の条件下でユーザーのリモートフォローを代行するアカウントです。例えば、ユーザーがリモートユーザーをリストに入れたとき、リストに入れられたユーザーを誰もフォローしていないとアクティビティがサーバーに配達されないため、代わりにプロキシアカウントがフォローするようにします。"
+proxyAccountFollowMode: "フォロー条件"
+proxyAccountFollowMode_description: "プロキシアカウントがリモートユーザーを新たにフォローする条件を選択します。「使わない」にしても、すでにプロキシアカウントがフォローしている相手は解除されず、購読中の投稿は届き続けます。"
+_proxyAccountFollowMode:
+  always: "使う (常にフォローする)"
+  skipIfFollowed: "すでにフォローされている場合はフォローしない"
+  disabled: "使わない (新たにはフォローしない)"
 host: "ホスト"
 selectSelf: "自分を選択"
 selectUser: "ユーザーを選択"
@@ -2870,6 +2876,16 @@ _widgets:
   federationJobQueue: "連合ジョブキュー"
 
 _widgetOptions:
+  _nestedWidget:
+    children: "中のウィジェット"
+    general: "ネスト全体"
+    interval: "切り替え間隔（秒）"
+    intervalDescription: "0で自動切り替えを無効にします。"
+    maxHeight: "最大の高さ（px）"
+    maxHeightDescription: "0の場合は制限しません。"
+    moveUp: "上に移動"
+    moveDown: "下に移動"
+    back: "親の設定に戻る"
   showHeader: "ヘッダーを表示"
   transparent: "背景を透明にする"
   height: "高さ"
@@ -4272,7 +4288,7 @@ hideReactionCount: "リアクション数の非表示"
 addToEmojiPicker: "絵文字ピッカーに追加"
 
 hideActivity: "アクティビティを非公開にする"
-hideActivityDescription: "自分のプロフィールのアクティビティ (概要/アクティビティタブ) を他人が見れないようにします。このオプションを有効にしても、自分であればプロフィールのアクティビティタブから引き続き閲覧できます。"
+hideActivityDescription: "自分のプロフィールのアクティビティ (概要/アクティビティタブ) を他人が見れないようにします。このオプションを有効にしても、自分であればプロフィールのアクティビティタブから引き続き閲覧できます。なお、アクティビティタブは管理者とモデレーターもこの設定に関わらず閲覧できます。"
 
 hideNoteFromOverview: "概要からノートを非表示にする"
 hideNoteFromOverviewDescription: "プロフィールの概要にノートを表示されないようにします。このオプションを有効にしても、ノートのURLを知っていれば閲覧できます。"
@@ -4384,11 +4400,11 @@ _scheduledNote:
 _outboxFilter:
   title: "outboxに含める投稿の公開範囲"
   description: "outboxから投稿を拾えなくなります。Activityを送信することには影響ありません。"
-  publicVisibility: "公開 (Public) の投稿を連合する"
+  publicVisibility: "公開 (Public) の投稿をoutboxに含める"
   publicVisibilityDescription: "チェックを外すと、outboxから公開設定の投稿が拾えなくなります。"
-  publicNonLtlVisibility: "セミパブリック (Public Non-LTL) の投稿を連合する"
+  publicNonLtlVisibility: "セミパブリック (Public Non-LTL) の投稿をoutboxに含める"
   publicNonLtlVisibilityDescription: "チェックを外すと、outboxからセミパブリック設定の投稿が拾えなくなります。"
-  homeVisibility: "ホーム (Home) の投稿を連合する"
+  homeVisibility: "ホーム (Home) の投稿をoutboxに含める"
   homeVisibilityDescription: "チェックを外すと、outboxからホーム設定の投稿が拾えなくなります。"
 
 noteVisibilityColoring: "ノートの公開範囲に応じた色分け"
@@ -4425,6 +4441,10 @@ _deliveryTargetControl:
   searchResults: "{count}件見つかりました（全{total}件中）"
   deliveryTargetsInclude: "一部のサーバーにのみ公開"
   deliveryTargetsExclude: "一部のサーバーに非公開"
+  deliverySummaryInclude: "{count}サーバーのみに配送"
+  deliverySummaryExclude: "{count}サーバーを除外して配送"
+  andMore: "ほか{count}"
+  clearDeliveryTargets: "解除する"
 
 _contactForm:
   _settings:
