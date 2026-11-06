@@ -273,6 +273,11 @@ const menuDef = computed<SuperMenuDef[]>(() => [{
 		to: '/admin/performance',
 		active: currentPage.value?.route.name === 'performance',
 	}, {
+		icon: 'ti ti-chart-line',
+		text: i18n.ts._llmUsage.title,
+		to: '/admin/llm-usage',
+		active: currentPage.value?.route.name === 'llm-usage',
+	}, {
 		icon: 'ti ti-git-fork',
 		text: i18n.ts.originalFeature,
 		to: '/admin/tempura-admin',

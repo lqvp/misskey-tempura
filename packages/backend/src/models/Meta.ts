@@ -9,6 +9,12 @@ import { MiUser } from './User.js';
 
 @Entity('meta')
 export class MiMeta {
+	@Column('integer', { default: 12 })
+	public llmUsageRetentionMonths: number;
+
+	@Column('timestamp with time zone', { default: () => 'CURRENT_TIMESTAMP' })
+	public llmUsageStartedAt: Date;
+
 	@PrimaryColumn({
 		type: 'varchar',
 		length: 32,

@@ -747,6 +747,28 @@ declare module '../api.js' {
     /**
      * No description provided.
      * 
+     * **Credential required**: *Yes* / **Permission**: *read:admin:llm-usage*
+     */
+    request<E extends 'admin/llm-usage/overview', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * No description provided.
+     * 
+     * **Credential required**: *Yes* / **Permission**: *read:admin:llm-usage*
+     */
+    request<E extends 'admin/llm-usage/users', P extends Endpoints[E]['req']>(
+      endpoint: E,
+      params: P,
+      credential?: string | null,
+    ): Promise<SwitchCaseResponseType<E, P>>;
+
+    /**
+     * No description provided.
+     * 
      * **Credential required**: *Yes* / **Permission**: *read:admin:meta*
      */
     request<E extends 'admin/login-risk/diagnose', P extends Endpoints[E]['req']>(

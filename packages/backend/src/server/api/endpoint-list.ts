@@ -68,6 +68,8 @@ export * as 'admin/invite/create' from './endpoints/admin/invite/create.js';
 export * as 'admin/invite/list' from './endpoints/admin/invite/list.js';
 export * as 'admin/login-risk/diagnose' from './endpoints/admin/login-risk/diagnose.js';
 export * as 'admin/login-risk/user-footprints' from './endpoints/admin/login-risk/user-footprints.js';
+export * as 'admin/llm-usage/overview' from './endpoints/admin/llm-usage/overview.js';
+export * as 'admin/llm-usage/users' from './endpoints/admin/llm-usage/users.js';
 export * as 'admin/meta' from './endpoints/admin/meta.js';
 export * as 'admin/promo/create' from './endpoints/admin/promo/create.js';
 export * as 'admin/queue/clear' from './endpoints/admin/queue/clear.js';

@@ -13,6 +13,8 @@ import { bindThis } from '@/decorators.js';
 
 import { MiAbuseUserReport } from '@/models/AbuseUserReport.js';
 import { MiAbuseReportNotificationRecipient } from '@/models/AbuseReportNotificationRecipient.js';
+import { MiLlmUsageDaily } from '@/models/LlmUsageDaily.js';
+import { MiLlmUsageDailyTotal } from '@/models/LlmUsageDailyTotal.js';
 import { MiLlmModerationQueue } from '@/models/LlmModerationQueue.js';
 import { MiAccessToken } from '@/models/AccessToken.js';
 import { MiAd } from '@/models/Ad.js';
@@ -234,6 +236,8 @@ export const entities = [
 	MiSystemAccount,
 	MiAbuseUserReport,
 	MiAbuseReportNotificationRecipient,
+	MiLlmUsageDaily,
+	MiLlmUsageDailyTotal,
 	MiLlmModerationQueue,
 	MiRegistrationTicket,
 	MiSignin,

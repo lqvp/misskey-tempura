@@ -5,6 +5,7 @@
 
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
+import type { GeminiGenerateContentResponse, GeminiPart } from '@/utility/tempura-script/llm-response.js';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
@@ -13,7 +14,6 @@ import { displayLlmError } from '@/utils/errorHandler.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { extractCandidateText } from '@/utility/tempura-script/llm-response.js';
-import type { GeminiGenerateContentResponse, GeminiPart } from '@/utility/tempura-script/llm-response.js';
 
 export { extractCandidateText };
 export type { GeminiGenerateContentResponse };
@@ -100,10 +100,12 @@ export async function generateGeminiSummary({
 	note,
 	userContent,
 	systemInstruction,
+	purpose = 'other',
 }: {
 	note?: Misskey.entities.Note;
 	userContent?: string;
 	systemInstruction?: string;
+	purpose?: 'note-summary' | 'profile-summary' | 'text-transform' | 'other';
 }): Promise<GeminiGenerateContentResponse> {
 	const { geminiToken, geminiModel, geminiThinkingBudget, useGeminiLLMAPI, useGeminiWithMedia = true } = prefer.s;
 
@@ -175,6 +177,7 @@ export async function generateGeminiSummary({
 
 				// サーバーAPIを呼び出し
 				return await misskeyApi('notes/llm-gen', {
+					purpose,
 					text: text,
 					prompt: systemInstruction ?? '',
 					fileUris: fileUris.length > 0 ? fileUris : undefined,
