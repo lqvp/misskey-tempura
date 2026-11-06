@@ -165,4 +165,54 @@ describe('アンテナregexモードの空白・改行保持(往復)', () => {
 		assert.deepStrictEqual(imported.mustExcludeKeywords, mustExcludeKeywords);
 		assert.strictEqual(imported.keywordMode, 'regex');
 	});
+
+	test('keywordMode未指定(旧形式)・null明示のexport JSONがimportでき、literalとして復元されること。', async () => {
+		const legacyExport = [{
+			name: 'legacy-no-mode-import',
+			keywords: [[' レガシー 空白 ']],
+			excludeKeywords: [[]],
+			mustExcludeKeywords: [[]],
+			caseSensitive: false,
+			src: 'all',
+			userListId: null,
+			users: [''],
+			withFile: false,
+			withReplies: false,
+			excludeBots: false,
+			// keywordMode を含まない(= schema上 null/未指定)
+		}, {
+			name: 'legacy-null-mode-import',
+			keywords: [[' 明示null ']],
+			excludeKeywords: [[]],
+			mustExcludeKeywords: [[]],
+			caseSensitive: false,
+			src: 'all',
+			userListId: null,
+			users: [''],
+			withFile: false,
+			withReplies: false,
+			excludeBots: false,
+			keywordMode: null,
+		}];
+
+		const processor = jq.get(ImportAntennasProcessorService);
+		await processor.process({ data: { user: { id: alice.id }, antenna: legacyExport } } as any);
+		let imported: any;
+		await vi.waitFor(async () => {
+			const res = await successfulApiCall({ endpoint: 'antennas/list', parameters: {}, user: alice });
+			imported = res.find((x: any) => x.name === 'legacy-no-mode-import');
+			assert.ok(imported, 'importされたアンテナがまだない');
+		}, { timeout: 60000, interval: 500 });
+		assert.deepStrictEqual(imported.keywords, [[' レガシー 空白 ']]);
+		assert.strictEqual(imported.keywordMode, 'literal');
+
+		let importedNull: any;
+		await vi.waitFor(async () => {
+			const res = await successfulApiCall({ endpoint: 'antennas/list', parameters: {}, user: alice });
+			importedNull = res.find((x: any) => x.name === 'legacy-null-mode-import');
+			assert.ok(importedNull, 'null明示でimportされたアンテナがまだない');
+		}, { timeout: 60000, interval: 500 });
+		assert.deepStrictEqual(importedNull.keywords, [[' 明示null ']]);
+		assert.strictEqual(importedNull.keywordMode, 'literal');
+	});
 });
