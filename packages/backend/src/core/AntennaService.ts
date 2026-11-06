@@ -12,11 +12,14 @@ import { UtilityService } from '@/core/UtilityService.js';
 import { bindThis } from '@/decorators.js';
 import { DI } from '@/di-symbols.js';
 import * as Acct from '@/misc/acct.js';
+import type { AntennaMatchInfo } from '@/misc/antenna-match.js';
 import type { Packed } from '@/misc/json-schema.js';
 import type { AntennasRepository, UserListMembershipsRepository } from '@/models/_.js';
 import type { MiAntenna } from '@/models/Antenna.js';
 import type { MiNote } from '@/models/Note.js';
 import type { MiUser } from '@/models/User.js';
+import { LoggerService } from '@/core/LoggerService.js';
+import type Logger from '@/logger.js';
 import { CacheService } from './CacheService.js';
 import type { OnApplicationShutdown } from '@nestjs/common';
 
@@ -30,6 +33,7 @@ export interface Match {
 
 @Injectable()
 export class AntennaService implements OnApplicationShutdown {
+	private logger: Logger;
 	private antennasFetched: boolean;
 	private antennas: MiAntenna[];
 
@@ -128,11 +132,13 @@ export class AntennaService implements OnApplicationShutdown {
 		@Inject(DI.userListMembershipsRepository)
 		private userListMembershipsRepository: UserListMembershipsRepository,
 
+		private loggerService: LoggerService,
 		private cacheService: CacheService,
 		private utilityService: UtilityService,
 		private globalEventService: GlobalEventService,
 		private fanoutTimelineService: FanoutTimelineService,
 	) {
+		this.logger = this.loggerService.getLogger('antenna');
 		this.antennasFetched = false;
 		this.antennas = [];
 
@@ -184,14 +190,24 @@ export class AntennaService implements OnApplicationShutdown {
 	}
 
 	@bindThis
-	public async addNoteToAntennas(note: MiNote, noteUser: { id: MiUser['id']; username: string; host: string | null; isBot: boolean; }): Promise<MiAntenna[]> {
+	public async addNoteToAntennas(note: MiNote, noteUser: { id: MiUser['id']; username: string; host: string | null; isBot: boolean; }): Promise<{ antenna: MiAntenna; match: AntennaMatchInfo }[]> {
 		const antennas = await this.getAntennas();
-		const antennasWithMatchResult = await Promise.all(antennas.map(antenna => this.checkHitAntenna(antenna, note, noteUser).then(hit => [antenna, hit] as const)));
-		const matchedAntennas = antennasWithMatchResult.filter(([, hit]) => hit).map(([antenna]) => antenna);
+		const results = await Promise.all(antennas.map(async (antenna) => {
+			try {
+				const hit = await this.checkHitAntenna(antenna, note, noteUser);
+				if (!hit) return null;
+				return { antenna, match: this.getAntennaMatchInfo(antenna, note) };
+			} catch (err) {
+				// 判定に失敗したアンテナは不一致扱い(除外側)にして、他のアンテナへの配信とノート作成全体を止めない
+				this.logger.warn(`Failed to check antenna hit (antenna: ${antenna.id}, note: ${note.id})`, { err });
+				return null;
+			}
+		}));
+		const matchedAntennas = results.filter((x): x is NonNullable<typeof x> => x != null);
 
 		const redisPipeline = this.redisForTimelines.pipeline();
 
-		for (const antenna of matchedAntennas) {
+		for (const { antenna } of matchedAntennas) {
 			this.fanoutTimelineService.push(`antennaTimeline:${antenna.id}`, note.id, 200, redisPipeline);
 		}
 
@@ -259,6 +275,36 @@ export class AntennaService implements OnApplicationShutdown {
 			if (accts.includes(this.utilityService.getFullApAccount(noteUser.username, noteUser.host).toLowerCase())) return false;
 		}
 
+		const keywordResult = this.evaluateKeywordMatch(antenna, note);
+		if (!keywordResult.hit) return false;
+
+		// 表示側(取得API・ストリーム)と同じく、ミュートしているユーザーと自分をブロックしているユーザーが関わるノートを受信時にも除外する
+		const relatedUserIds = this.getNoteRelatedUserIds(note).filter(id => id !== antenna.userId);
+		if (relatedUserIds.length > 0) {
+			const [mutingUserIds, blockingUserIds] = await Promise.all([
+				this.cacheService.userMutingsCache.fetch(antenna.userId),
+				this.cacheService.userBlockedCache.fetch(antenna.userId),
+			]);
+			if (relatedUserIds.some(id => mutingUserIds.has(id) || blockingUserIds.has(id))) return false;
+		}
+
+		if (antenna.withFile) {
+			if (note.fileIds && note.fileIds.length === 0) return false;
+		}
+
+		// TODO: eval expression
+
+		return true;
+	}
+
+	/**
+	 * キーワード条件の評価。ヒットするかどうかに加えて、マッチしたグループ(マッチ理由)を返す。
+	 * mustExcludeKeywords・SCOREモード・通常モードの意味は従来どおり。
+	 */
+	@bindThis
+	public evaluateKeywordMatch(antenna: MiAntenna, note: (MiNote | Packed<'Note'>)): { hit: boolean } & AntennaMatchInfo {
+		const noMatch: { hit: boolean } & AntennaMatchInfo = { hit: false, matchedKeywords: [], matchedExcludeKeywords: [] };
+
 		// 強制除外ワードは、スコアリングモード利用時のみ有効とする
 		if (antenna.expression === 'SCORE') {
 			const mustExcludeKeywords = antenna.mustExcludeKeywords
@@ -271,13 +317,9 @@ export class AntennaService implements OnApplicationShutdown {
 					const _text = this.getCombinedNoteText(note);
 
 					const matched = mustExcludeKeywords.some(and =>
-						and.every(keyword =>
-							antenna.caseSensitive
-								? _text.includes(keyword)
-								: _text.toLowerCase().includes(keyword.toLowerCase()),
-						));
+						and.every(keyword => this.includesKeyword(_text, keyword, antenna.caseSensitive)));
 
-					if (matched) return false;
+					if (matched) return noMatch;
 				}
 			}
 		}
@@ -294,6 +336,8 @@ export class AntennaService implements OnApplicationShutdown {
 
 		if (antenna.expression === 'SCORE') {
 			let score = 0;
+			const metIncludeGroups: string[][] = [];
+			const metExcludeGroups: string[][] = [];
 
 			if (keywords.length > 0 || excludeKeywords.length > 0) {
 				if (note.text != null || note.cw != null) {
@@ -331,40 +375,40 @@ export class AntennaService implements OnApplicationShutdown {
 						validMatchesMap.set(key, this.deduplicateOverlappingMatches(matches));
 					}
 
-					// スコア計算
-					const countMetGroups = (keywordGroups: string[][], type: 'include' | 'exclude'): number => {
-						return keywordGroups.reduce((count, and, i) => {
-							const key = `${type}:${i}`;
-							const groupMatches = validMatchesMap.get(key) || [];
+					// スコア計算とマッチしたグループの収集
+					const collectMetGroups = (keywordGroups: string[][], type: 'include' | 'exclude'): string[][] => {
+						return keywordGroups.filter((and, i) => {
+							const groupMatches = validMatchesMap.get(`${type}:${i}`) || [];
 							// このグループ内のすべてのキーワードについて、少なくとも1つの有効なものが存在するか確認
-							if (and.every(kw => groupMatches.some(m => m.keyword === kw))) {
-								return count + 1;
-							}
-							return count;
-						}, 0);
+							return and.every(kw => groupMatches.some(m => m.keyword === kw));
+						});
 					};
 
-					score += countMetGroups(keywords, 'include');
-					score -= countMetGroups(excludeKeywords, 'exclude');
+					metIncludeGroups.push(...collectMetGroups(keywords, 'include'));
+					metExcludeGroups.push(...collectMetGroups(excludeKeywords, 'exclude'));
+					score = metIncludeGroups.length - metExcludeGroups.length;
 				}
 			}
 
-			if (keywords.length > 0 && score <= 0) return false;
-			if (keywords.length === 0 && excludeKeywords.length > 0 && score < 0) return false;
+			if (keywords.length > 0 && score <= 0) return noMatch;
+			if (keywords.length === 0 && excludeKeywords.length > 0 && score < 0) return noMatch;
+
+			return { hit: true, matchedKeywords: metIncludeGroups, matchedExcludeKeywords: metExcludeGroups };
 		} else {
+			const matchedKeywords: string[][] = [];
+
 			if (keywords.length > 0) {
-				if (note.text == null && note.cw == null) return false;
+				if (note.text == null && note.cw == null) return noMatch;
 
 				const _text = this.getCombinedNoteText(note);
 
-				const matched = keywords.some(and =>
-					and.every(keyword =>
-						antenna.caseSensitive
-							? _text.includes(keyword)
-							: _text.toLowerCase().includes(keyword.toLowerCase()),
-					));
+				for (const and of keywords) {
+					if (and.every(keyword => this.includesKeyword(_text, keyword, antenna.caseSensitive))) {
+						matchedKeywords.push(and);
+					}
+				}
 
-				if (!matched) return false;
+				if (matchedKeywords.length === 0) return noMatch;
 			}
 
 			if (excludeKeywords.length > 0) {
@@ -372,24 +416,40 @@ export class AntennaService implements OnApplicationShutdown {
 					const _text = this.getCombinedNoteText(note);
 
 					const matched = excludeKeywords.some(and =>
-						and.every(keyword =>
-							antenna.caseSensitive
-								? _text.includes(keyword)
-								: _text.toLowerCase().includes(keyword.toLowerCase()),
-						));
+						and.every(keyword => this.includesKeyword(_text, keyword, antenna.caseSensitive)));
 
-					if (matched) return false;
+					if (matched) return noMatch;
 				}
 			}
+
+			return { hit: true, matchedKeywords, matchedExcludeKeywords: [] };
 		}
+	}
 
-		if (antenna.withFile) {
-			if (note.fileIds && note.fileIds.length === 0) return false;
-		}
+	// 表示用: 現在の条件でどのキーワードグループにマッチするかを再計算する(受信当時の理由の復元ではない)
+	@bindThis
+	public getAntennaMatchInfo(antenna: MiAntenna, note: (MiNote | Packed<'Note'>)): AntennaMatchInfo {
+		const result = this.evaluateKeywordMatch(antenna, note);
+		return {
+			matchedKeywords: result.matchedKeywords,
+			matchedExcludeKeywords: result.matchedExcludeKeywords,
+		};
+	}
 
-		// TODO: eval expression
+	// ノートの作者・返信先の作者・リノート元の作者のIDを集める(MiNoteとPacked<'Note'>の両方に対応)
+	private getNoteRelatedUserIds(note: MiNote | Packed<'Note'>): MiUser['id'][] {
+		const ids = new Set<MiUser['id']>([note.userId]);
+		const replyUserId = 'replyUserId' in note ? note.replyUserId : note.reply?.userId ?? null;
+		const renoteUserId = 'renoteUserId' in note ? note.renoteUserId : note.renote?.userId ?? null;
+		if (replyUserId != null) ids.add(replyUserId);
+		if (renoteUserId != null) ids.add(renoteUserId);
+		return [...ids];
+	}
 
-		return true;
+	private includesKeyword(text: string, keyword: string, caseSensitive: boolean): boolean {
+		return caseSensitive
+			? text.includes(keyword)
+			: text.toLowerCase().includes(keyword.toLowerCase());
 	}
 
 	@bindThis

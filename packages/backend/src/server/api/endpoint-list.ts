@@ -125,6 +125,8 @@ export * as 'antennas/create' from './endpoints/antennas/create.js';
 export * as 'antennas/delete' from './endpoints/antennas/delete.js';
 export * as 'antennas/list' from './endpoints/antennas/list.js';
 export * as 'antennas/notes' from './endpoints/antennas/notes.js';
+export * as 'antennas/match-info' from './endpoints/antennas/match-info.js';
+export * as 'antennas/test' from './endpoints/antennas/test.js';
 export * as 'antennas/remove-note' from './endpoints/antennas/remove-note.js';
 export * as 'antennas/show' from './endpoints/antennas/show.js';
 export * as 'antennas/update' from './endpoints/antennas/update.js';

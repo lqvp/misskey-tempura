@@ -46,6 +46,7 @@ export class AntennaEntityService {
 			excludeNotesInSensitiveChannel: antenna.excludeNotesInSensitiveChannel,
 			onlyFollowers: antenna.onlyFollowers,
 			isActive: antenna.isActive,
+			lastUsedAt: antenna.lastUsedAt.toISOString(),
 			hasUnreadNote: false, // TODO
 			notify: false, // 後方互換性のため
 		};

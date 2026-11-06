@@ -17027,6 +17027,78 @@ export interface Locale extends ILocale {
     };
     "_tempuraFutureAntenna": {
         /**
+         * 変更をリセット
+         */
+        "resetAntenna": string;
+        /**
+         * かつ
+         */
+        "keywordAnd": string;
+        /**
+         * または
+         */
+        "keywordOr": string;
+        /**
+         * キーワードを追加
+         */
+        "addKeyword": string;
+        /**
+         * グループを追加
+         */
+        "addGroup": string;
+        /**
+         * このグループを削除
+         */
+        "removeGroup": string;
+        /**
+         * 保存前に試す
+         */
+        "tryConditions": string;
+        /**
+         * 直近の見えるノート(最大200件)に現在の条件を試します。フォロワー限定やダイレクトなど、見えないノートは対象外です。
+         */
+        "tryConditionsDescription": string;
+        /**
+         * 同じグループの中はAND(かつ)、グループ同士はOR(または)でマッチします
+         */
+        "keywordGroupsDescription": string;
+        /**
+         * マッチしたノート
+         */
+        "tryConditionsResult": string;
+        /**
+         * マッチするノートが見つかりませんでした
+         */
+        "tryConditionsNoMatch": string;
+        /**
+         * マッチした条件
+         */
+        "matchReason": string;
+        /**
+         * 減点された条件
+         */
+        "matchReasonExclude": string;
+        /**
+         * 受信中
+         */
+        "receiving": string;
+        /**
+         * 停止中
+         */
+        "stopped": string;
+        /**
+         * 最後に開いた日時
+         */
+        "lastUsedAt": string;
+        /**
+         * このアンテナを複製
+         */
+        "duplicateAntenna": string;
+        /**
+         * このアンテナ内を検索
+         */
+        "searchThisAntenna": string;
+        /**
          * 高度なスコアリング
          */
         "scoringMode": string;
@@ -17039,7 +17111,7 @@ export interface Locale extends ILocale {
          */
         "mustExcludeKeywords": string;
         /**
-         * これらのキーワードのいずれかが一致した場合、スコアに関係なく除外されます。
+         * 同じグループ内のすべてのキーワードが一致した場合、スコアに関係なく除外されます。
          */
         "mustExcludeKeywordsDescription": string;
     };

@@ -174,11 +174,15 @@ import type {
 	AntennasCreateResponse,
 	AntennasDeleteRequest,
 	AntennasListResponse,
+	AntennasMatchInfoRequest,
+	AntennasMatchInfoResponse,
 	AntennasNotesRequest,
 	AntennasNotesResponse,
 	AntennasRemoveNoteRequest,
 	AntennasShowRequest,
 	AntennasShowResponse,
+	AntennasTestRequest,
+	AntennasTestResponse,
 	AntennasUpdateRequest,
 	AntennasUpdateResponse,
 	ApGetRequest,
@@ -861,9 +865,11 @@ export type Endpoints = {
 	'antennas/create': { req: AntennasCreateRequest; res: AntennasCreateResponse };
 	'antennas/delete': { req: AntennasDeleteRequest; res: EmptyResponse };
 	'antennas/list': { req: EmptyRequest; res: AntennasListResponse };
+	'antennas/match-info': { req: AntennasMatchInfoRequest; res: AntennasMatchInfoResponse };
 	'antennas/notes': { req: AntennasNotesRequest; res: AntennasNotesResponse };
 	'antennas/remove-note': { req: AntennasRemoveNoteRequest; res: EmptyResponse };
 	'antennas/show': { req: AntennasShowRequest; res: AntennasShowResponse };
+	'antennas/test': { req: AntennasTestRequest; res: AntennasTestResponse };
 	'antennas/update': { req: AntennasUpdateRequest; res: AntennasUpdateResponse };
 	'ap/get': { req: ApGetRequest; res: ApGetResponse };
 	'ap/show': { req: ApShowRequest; res: ApShowResponse };

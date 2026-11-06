@@ -53,6 +53,8 @@ export const paramDef = {
 		untilId: { type: 'string', format: 'misskey:id' },
 		sinceDate: { type: 'integer' },
 		untilDate: { type: 'integer' },
+		// アンテナのTL内検索(直近最大200件が対象)
+		query: { type: 'string', nullable: true, maxLength: 100 },
 	},
 	required: ['antennaId'],
 } as const;
@@ -97,8 +99,13 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				this.globalEventService.publishInternalEvent('antennaUpdated', antenna);
 			}
 
+			const searchQuery = ps.query != null && ps.query.trim() !== '' ? ps.query.trim().toLowerCase() : null;
+
 			let noteIds = await this.fanoutTimelineService.get(`antennaTimeline:${antenna.id}`, untilId, sinceId);
-			noteIds = noteIds.slice(0, ps.limit);
+			// 検索時は絞り込み前に切り詰めるとヒット件数が変わるため、検索時は保持分(最大200件)をすべて取得する
+			if (searchQuery == null) {
+				noteIds = noteIds.slice(0, ps.limit);
+			}
 			if (noteIds.length === 0) {
 				return [];
 			}
@@ -132,11 +139,20 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			this.queryService.generateVisibilityQuery(query, me);
 			this.queryService.generateBaseNoteFilteringQuery(query, me);
 
-			const notes = await query.getMany();
+			let notes = await query.getMany();
+			if (searchQuery != null) {
+				notes = notes.filter(note => {
+					const text = [note.text, note.cw].filter((t): t is string => t != null && t !== '').join('\n').toLowerCase();
+					return text.includes(searchQuery);
+				});
+			}
 			if (sinceId != null && untilId == null) {
 				notes.sort((a, b) => a.id < b.id ? -1 : 1);
 			} else {
 				notes.sort((a, b) => a.id > b.id ? -1 : 1);
+			}
+			if (searchQuery != null) {
+				notes = notes.slice(0, ps.limit);
 			}
 
 			return await this.noteEntityService.packMany(notes, me);

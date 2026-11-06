@@ -21,6 +21,10 @@ export class AntennaChannel extends Channel {
 	public static requireCredential = true as const;
 	public static kind = 'read:account';
 	private antennaId: string;
+	private deliverableNoteIds = new Set<string>();
+	// 同一アンテナのイベントを受信順に直列処理する。EventEmitterはasync listenerの完了を待たないため、
+	// noteのフィルタ完了前にnoteMatchedが来ると、対応するnoteが送信済みかを誤判定する
+	private eventQueue: Promise<void> = Promise.resolve();
 
 	constructor(
 		@Inject(REQUEST)
@@ -59,7 +63,14 @@ export class AntennaChannel extends Channel {
 	}
 
 	@bindThis
-	private async onEvent(data: GlobalEvents['antenna']['payload']) {
+	private onEvent(data: GlobalEvents['antenna']['payload']) {
+		this.eventQueue = this.eventQueue.then(() => this.handleEvent(data)).catch(() => {
+			// 個別イベントの処理失敗で以後の配信を止めない。
+			// noteの処理に失敗した場合、対応するnoteMatchedは送信済みでないため落ちる(漏洩防止側の動作)
+		});
+	}
+
+	private async handleEvent(data: GlobalEvents['antenna']['payload']) {
 		if (data.type === 'note') {
 			let note = data.body;
 
@@ -71,8 +82,20 @@ export class AntennaChannel extends Channel {
 			note = filtered;
 
 			this.send('note', await this.noteEntityService.withMyRenoteReaction(note, this.user?.id ?? null));
-		} else {
-			this.send(data.type, data.body);
+
+			// noteMatchedと同じフィルタを通すため、送信したノートを記録しておく。
+			// withMyRenoteReactionが失敗した場合はnote自体が送信されないため、送信後に登録する
+			this.deliverableNoteIds.add(note.id);
+			if (this.deliverableNoteIds.size > 200) {
+				const oldest = this.deliverableNoteIds.values().next().value!;
+				this.deliverableNoteIds.delete(oldest);
+			}
+		} else if (data.type === 'noteMatched') {
+			// チャンネルミュート等でnoteが送信されなかったノートのマッチ情報は漏らさない
+			// (noteMatchedは対応するnoteの直後に配信される)
+			if (this.deliverableNoteIds.delete(data.body.noteId)) {
+				this.send('noteMatched', data.body);
+			}
 		}
 	}
 

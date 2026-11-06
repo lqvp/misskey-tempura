@@ -159,6 +159,7 @@ describe('アンテナ', () => {
 			excludeNotesInSensitiveChannel: false,
 			hasUnreadNote: false,
 			isActive: true,
+			lastUsedAt: new Date(response.lastUsedAt).toISOString(),
 			keywords: [['keyword']],
 			name: 'test',
 			src: 'all',
@@ -342,6 +343,107 @@ describe('アンテナ', () => {
 	test.todo('は他人のものを削除できない');
 
 	//#endregion
+
+	describe('のTL内検索', () => {
+		test('queryでアンテナのTL内を検索できること。', async () => {
+			const keyword = 'キーワード';
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+			const hit = await post(bob, { text: `${keyword} りんご` });
+			await post(bob, { text: `${keyword} みかん` });
+
+			const response = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id, query: 'りんご' },
+				user: alice,
+			});
+			assert.deepStrictEqual(response.map((x: Note) => x.id), [hit.id]);
+		});
+
+		test('queryが他人のアンテナでは使えないこと。', async () => {
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [['キーワード']] },
+				user: alice,
+			});
+			await failedApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id, query: 'test' },
+				user: bob,
+			}, {
+				status: 400,
+				code: 'NO_SUCH_ANTENNA',
+				id: '850926e0-fd3b-49b6-b69a-b28a5dbd82fe',
+			});
+		});
+	});
+
+	describe('のマッチ理由(antennas/match-info)', () => {
+		test('マッチしたキーワードグループを返すこと。', async () => {
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [['りんご', 'みかん']] },
+				user: alice,
+			});
+			const note = await post(bob, { text: 'りんごとみかん' });
+
+			const response = await successfulApiCall({
+				endpoint: 'antennas/match-info',
+				parameters: { antennaId: antenna.id, noteIds: [note.id] },
+				user: alice,
+			});
+			assert.deepStrictEqual(response, [{
+				noteId: note.id,
+				matchedKeywords: [['りんご', 'みかん']],
+				matchedExcludeKeywords: [],
+			}]);
+		});
+
+		test('他人のアンテナでは取得できないこと。', async () => {
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [['りんご']] },
+				user: alice,
+			});
+			const note = await post(bob, { text: 'りんご' });
+			await failedApiCall({
+				endpoint: 'antennas/match-info',
+				parameters: { antennaId: antenna.id, noteIds: [note.id] },
+				user: bob,
+			}, {
+				status: 400,
+				code: 'NO_SUCH_ANTENNA',
+				id: '5d7f2c8e-3f6a-4b1e-9a2c-7e4d8f1a3b5c',
+			});
+		});
+	});
+
+	describe('の試し打ち(antennas/test)', () => {
+		test('保存前の条件にマッチする直近のノートを返すこと。', async () => {
+			await post(bob, { text: 'りんごのノート' });
+			const response = await successfulApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywords: [['りんご']] },
+				user: alice,
+			});
+			assert.ok(response.some((x: Note) => x.text === 'りんごのノート'));
+		});
+
+		test('キーワードと除外キーワードが両方空ならエラーになること。', async () => {
+			await failedApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywords: [[]], excludeKeywords: [[]] },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'EMPTY_KEYWORD',
+				id: 'b3f9a1c2-4d5e-4f6a-8b7c-9d0e1f2a3b4c',
+			});
+		});
+	});
 
 	describe('のノート', () => {
 		//#region アンテナのノート取得(antennas/notes)

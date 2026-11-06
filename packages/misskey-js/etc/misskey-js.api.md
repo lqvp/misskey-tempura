@@ -588,6 +588,12 @@ type AntennasDeleteRequest = operations['antennas___delete']['requestBody']['con
 type AntennasListResponse = operations['antennas___list']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
+type AntennasMatchInfoRequest = operations['antennas___match-info']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AntennasMatchInfoResponse = operations['antennas___match-info']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
 type AntennasNotesRequest = operations['antennas___notes']['requestBody']['content']['application/json'];
 
 // @public (undocumented)
@@ -601,6 +607,12 @@ type AntennasShowRequest = operations['antennas___show']['requestBody']['content
 
 // @public (undocumented)
 type AntennasShowResponse = operations['antennas___show']['responses']['200']['content']['application/json'];
+
+// @public (undocumented)
+type AntennasTestRequest = operations['antennas___test']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type AntennasTestResponse = operations['antennas___test']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type AntennasUpdateRequest = operations['antennas___update']['requestBody']['content']['application/json'];
@@ -877,6 +889,11 @@ export type Channels = {
         };
         events: {
             note: (payload: Note) => void;
+            noteMatched: (payload: {
+                noteId: Note['id'];
+                matchedKeywords: string[][];
+                matchedExcludeKeywords: string[][];
+            }) => void;
         };
         receives: null;
     };
@@ -1876,11 +1893,15 @@ declare namespace entities {
         AntennasCreateResponse,
         AntennasDeleteRequest,
         AntennasListResponse,
+        AntennasMatchInfoRequest,
+        AntennasMatchInfoResponse,
         AntennasNotesRequest,
         AntennasNotesResponse,
         AntennasRemoveNoteRequest,
         AntennasShowRequest,
         AntennasShowResponse,
+        AntennasTestRequest,
+        AntennasTestResponse,
         AntennasUpdateRequest,
         AntennasUpdateResponse,
         ApGetRequest,
@@ -4126,8 +4147,8 @@ type VerifyEmailRequest = operations['verify-email']['requestBody']['content']['
 // Warnings were encountered during analysis:
 //
 // src/streaming.ts:57:3 - (ae-forgotten-export) The symbol "ReconnectingWebSocket" needs to be exported by the entry point index.d.ts
-// src/streaming.types.ts:242:4 - (ae-forgotten-export) The symbol "ReversiUpdateKey" needs to be exported by the entry point index.d.ts
-// src/streaming.types.ts:257:4 - (ae-forgotten-export) The symbol "ReversiUpdateSettings" needs to be exported by the entry point index.d.ts
+// src/streaming.types.ts:243:4 - (ae-forgotten-export) The symbol "ReversiUpdateKey" needs to be exported by the entry point index.d.ts
+// src/streaming.types.ts:258:4 - (ae-forgotten-export) The symbol "ReversiUpdateSettings" needs to be exported by the entry point index.d.ts
 
 // (No @packageDocumentation comment for this package)
 

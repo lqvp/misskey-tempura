@@ -106,6 +106,11 @@ export const packedAntennaSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
+		lastUsedAt: {
+			type: 'string',
+			optional: false, nullable: false,
+			format: 'date-time',
+		},
 		hasUnreadNote: {
 			type: 'boolean',
 			optional: false, nullable: false,
