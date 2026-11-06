@@ -5,6 +5,7 @@
 
 import { Module } from '@nestjs/common';
 import { EndpointsModule } from '@/server/api/EndpointsModule.js';
+import { SsoModule } from '@/server/api/SsoModule.js';
 import { CoreModule } from '@/core/CoreModule.js';
 import { ApiCallService } from './api/ApiCallService.js';
 import { FileServerService } from './FileServerService.js';
@@ -58,6 +59,7 @@ import { SigninWithPasskeyApiService } from './api/SigninWithPasskeyApiService.j
 	imports: [
 		EndpointsModule,
 		CoreModule,
+		SsoModule,
 	],
 	providers: [
 		ClientServerService,

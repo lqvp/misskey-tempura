@@ -6,6 +6,7 @@
 import { Module } from '@nestjs/common';
 
 import { CoreModule } from '@/core/CoreModule.js';
+import { SsoModule } from './SsoModule.js';
 import * as endpointsObject from './endpoint-list.js';
 import { GetterService } from './GetterService.js';
 import { ApiLoggerService } from './ApiLoggerService.js';
@@ -17,6 +18,7 @@ const endpointProviders = endpoints.map(([path, endpoint]): Provider => ({ provi
 @Module({
 	imports: [
 		CoreModule,
+		SsoModule,
 	],
 	providers: [
 		GetterService,

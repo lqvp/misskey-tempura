@@ -34,6 +34,7 @@ import { LoginRiskService } from '@/core/LoginRiskService.js';
 import type { LoginRiskEvaluation } from '@/core/LoginRiskService.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { RateLimiterService } from './RateLimiterService.js';
+import type { SigninOptions } from './SigninService.js';
 import { SigninService, describeLoginLocation, formatSigninHeaders, sanitizeSigninHeaders } from './SigninService.js';
 import { LoginChallengeService } from './LoginChallengeService.js';
 import type { AuthenticationResponseJSON } from '@simplewebauthn/server';
@@ -43,6 +44,7 @@ export const LOGIN_CHALLENGE_INVALID = 'b3fddf43-a0d3-41f3-9ca9-8de701a6f418';
 export const LOGIN_CHALLENGE_EXPIRED = '9939b972-0830-4a48-a1b4-f6fe9d259a89';
 export const LOGIN_CHALLENGE_TOO_MANY_ATTEMPTS = '7606fbea-f065-4c3f-9040-4fb2c884e1b6';
 export const LOGIN_CHALLENGE_RATE_LIMITED = '20345fd1-1f7c-4d48-b4e8-cd169c500f2c';
+export const SSO_LOGIN_CODE_INVALID = '7d0e5a6c-1f2b-4c9d-3e4f-5a6b7c8d9e0f';
 export const LOGIN_CHALLENGE_SEND_FAILED = '23ce18ed-2f0a-4d17-83df-88b4e28275f5';
 
 @Injectable()
@@ -170,22 +172,7 @@ export class SigninApiService {
 
 		// 確認コードの入力(2回目のリクエスト)。パスワードと captcha は再要求しない
 		if (body.challengeId != null && body.emailCode != null) {
-			const result = await this.loginChallengeService.verify({ userId: user.id, challengeId: body.challengeId, code: body.emailCode, ip: request.ip });
-			if (result.ok) {
-				return await this.signinService.signin(request, reply, user, { ev: result.ev, learn: true, challenge: 'passed' });
-			}
-
-			// challenge が無い・他人のものなら、パスワードを知らなくても送れるので失敗として数えない。
-			// 発行時と別のネットワーク(回線の切り替えなど)なら、ログインからやり直してもらう
-			if (result.reason === 'noChallenge' || result.reason === 'otherUser' || result.reason === 'prefixMismatch') {
-				return error(403, { id: LOGIN_CHALLENGE_EXPIRED });
-			}
-
-			await this.signinService.recordSignin(request, user.id, { success: false, challenge: 'failed' });
-			await this.loginRiskService.recordFailure(user.id, request.ip);
-			return error(403, {
-				id: result.reason === 'tooManyAttempts' ? LOGIN_CHALLENGE_TOO_MANY_ATTEMPTS : LOGIN_CHALLENGE_INVALID,
-			});
+			return await this.finishWithEmailCode(request, reply, user, { challengeId: body.challengeId, emailCode: body.emailCode });
 		}
 
 		const securityKeysAvailable = await this.userSecurityKeysRepository.countBy({ userId: user.id }).then(result => result >= 1);
@@ -257,65 +244,7 @@ export class SigninApiService {
 			return error(status ?? 500, failure ?? { id: '4e30e80c-e338-45a0-8c8f-44455efa3b76' });
 		};
 
-		const finishSignin = async (passedSecondFactor: boolean) => {
-			// 今回のログインを記録する前に判定する(記録すると前回のログインからの日数が変わる)
-			const ev = await this.loginRiskService.evaluate({ user, ip: request.ip, headers: request.headers, deviceToken: body.deviceToken });
-
-			// TOTP / パスキーを通過済みなら stepUp でも通知だけにする
-			if (ev.level !== 'stepUp' || passedSecondFactor) {
-				// 学習期間中で notify に抑えた stepUp 相当のログインは、本人と確かめられていないので学習しない
-				const learn = passedSecondFactor || ev.uncappedLevel !== 'stepUp';
-				return await this.signinService.signin(request, reply, user, { ev, learn });
-			}
-
-			if (this.meta.enableEmail && profile.email && profile.emailVerified) {
-				const issued = await this.loginChallengeService.issue({ user, email: profile.email, ev, ip: request.ip });
-				if ('challengeId' in issued) {
-					await this.signinService.recordSignin(request, user.id, { success: false, ev, challenge: 'emailCode' });
-					reply.code(200);
-					return {
-						finished: false,
-						next: 'emailCode',
-						challengeId: issued.challengeId,
-					} satisfies Misskey.entities.SigninFlowResponse;
-				}
-
-				if (issued.error === 'rateLimited') {
-					// 止めないと、パスワードを知る攻撃者が発行回数を使い切るだけで素通りできてしまう
-					await this.signinService.recordSignin(request, user.id, { success: false, ev, challenge: 'emailCode' });
-					await this.notifyBlockedLogin(request, user, profile.email, ev);
-					return error(403, { id: LOGIN_CHALLENGE_RATE_LIMITED });
-				}
-
-				if (issued.error === 'sendFailed') {
-					// 確認コードを届けられないので、追加認証を省かずにログインを止める。メールは届かないのでアプリ内通知だけ出す
-					await this.signinService.recordSignin(request, user.id, { success: false, ev, challenge: 'emailCode' });
-					await this.notificationService.createNotification(user.id, 'loginFailed', {
-						userIp: request.ip,
-					});
-					return error(503, { id: LOGIN_CHALLENGE_SEND_FAILED });
-				}
-
-				// Redis に保存できなければ、通知したうえで通す(学習はしない)。
-				// 本人を締め出さないことを優先した、意図した fail-open(仕様で決めた扱い)。
-				// メールを送れないとき(sendFailed)は止めるのと扱いが違うが、Redis はサインインのレート制限などにも使っていて、
-				// Redis が止まっている状態は外から作りにくいため
-				// 注: 攻撃者が Redis を止められる環境では、この経路で追加認証を省けてしまう
-				return await this.signinService.signin(request, reply, user, { ev, learn: false });
-			}
-
-			// 確認手段がないので、通知したうえで通す(学習はしない)
-			if (this.meta.loginRiskFlagUnverifiedUsers) {
-				// 失敗してもログインは止めない
-				try {
-					await this.usersRepository.update(user.id, { suspiciousLoginDetectedAt: new Date() });
-					this.globalEventService.publishInternalEvent('localUserUpdated', { id: user.id });
-				} catch (err) {
-					this.logger.error(`failed to set suspiciousLoginDetectedAt of ${user.id}`, { error: err });
-				}
-			}
-			return await this.signinService.signin(request, reply, user, { ev, learn: false });
-		};
+		const finishSignin = (passedSecondFactor: boolean) => this.finishWithRisk(request, reply, user, profile, { passedSecondFactor, deviceToken: body.deviceToken });
 
 		if (!profile.twoFactorEnabled) {
 			if (process.env.NODE_ENV !== 'test') {
@@ -424,6 +353,141 @@ export class SigninApiService {
 			}
 		}
 		// never get here
+	}
+
+	/**
+	 * SSO などパスワード以外の経路で追加認証(TOTP/パスキー)に失敗したときの記録。
+	 * パスワードログインの失敗と同じく、サインイン履歴・ログインリスクの失敗記録・本人への通知を行う
+	 */
+	@bindThis
+	public async recordSecondFactorFailure(request: FastifyRequest, user: MiLocalUser): Promise<void> {
+		await this.signinService.recordSignin(request, user.id, { success: false });
+		await this.loginRiskService.recordFailure(user.id, request.ip);
+		await this.notificationService.createNotification(user.id, 'loginFailed', {
+			userIp: request.ip,
+		});
+	}
+
+	/**
+	 * メールの確認コードを照合してログインを確定する。パスワードログインと SSO ログインで共通。
+	 * beforeSignin は照合に成功した後、ログインを確定する直前に呼ばれる(false ならログインしない)。
+	 * onCountedFailure は誤コードとして数えた失敗ごとに呼ばれる
+	 */
+	@bindThis
+	public async finishWithEmailCode(
+		request: FastifyRequest,
+		reply: FastifyReply,
+		user: MiLocalUser,
+		p: { challengeId: unknown; emailCode: unknown; beforeSignin?: () => Promise<boolean>; onCountedFailure?: () => Promise<void> },
+	) {
+		const error = (status: number, error: { id: string }) => {
+			reply.code(status);
+			return { error };
+		};
+		const result = await this.loginChallengeService.verify({ userId: user.id, challengeId: p.challengeId, code: p.emailCode, ip: request.ip });
+		if (result.ok) {
+			if (p.beforeSignin != null && !await p.beforeSignin()) {
+				return error(400, { id: SSO_LOGIN_CODE_INVALID });
+			}
+			return await this.signinService.signin(request, reply, user, { ev: result.ev, learn: true, challenge: 'passed' });
+		}
+
+		// challenge が無い・他人のものなら、パスワードを知らなくても送れるので失敗として数えない。
+		// 発行時と別のネットワーク(回線の切り替えなど)なら、ログインからやり直してもらう
+		if (result.reason === 'noChallenge' || result.reason === 'otherUser' || result.reason === 'prefixMismatch') {
+			return error(403, { id: LOGIN_CHALLENGE_EXPIRED });
+		}
+
+		await this.signinService.recordSignin(request, user.id, { success: false, challenge: 'failed' });
+		await this.loginRiskService.recordFailure(user.id, request.ip);
+		await p.onCountedFailure?.();
+		return error(403, {
+			id: result.reason === 'tooManyAttempts' ? LOGIN_CHALLENGE_TOO_MANY_ATTEMPTS : LOGIN_CHALLENGE_INVALID,
+		});
+	}
+
+	/**
+	 * パスワード/パスキー認証後と SSO ログイン後で共通の、ログインリスク判定と追加認証(メール確認コード)。
+	 * beforeSignin はログインを確定する直前に呼ばれ、false を返すとログインしない(SSO のログインコード消費に使う)。
+	 * 確認コードを発行して返す場合は呼ばれない
+	 */
+	@bindThis
+	public async finishWithRisk(
+		request: FastifyRequest,
+		reply: FastifyReply,
+		user: MiLocalUser,
+		profile: { email: string | null; emailVerified: boolean },
+		p: { passedSecondFactor: boolean; deviceToken: unknown; beforeSignin?: () => Promise<boolean> },
+	) {
+		const passedSecondFactor = p.passedSecondFactor;
+		const error = (status: number, error: { id: string }) => {
+			reply.code(status);
+			return { error };
+		};
+		const doSignin = async (opts: SigninOptions) => {
+			if (p.beforeSignin != null && !await p.beforeSignin()) {
+				return error(400, { id: SSO_LOGIN_CODE_INVALID });
+			}
+			return await this.signinService.signin(request, reply, user, opts);
+		};
+
+		// 今回のログインを記録する前に判定する(記録すると前回のログインからの日数が変わる)
+		const ev = await this.loginRiskService.evaluate({ user, ip: request.ip, headers: request.headers, deviceToken: p.deviceToken });
+
+		// TOTP / パスキーを通過済みなら stepUp でも通知だけにする
+		if (ev.level !== 'stepUp' || passedSecondFactor) {
+			// 学習期間中で notify に抑えた stepUp 相当のログインは、本人と確かめられていないので学習しない
+			const learn = passedSecondFactor || ev.uncappedLevel !== 'stepUp';
+			return await doSignin({ ev, learn });
+		}
+
+		if (this.meta.enableEmail && profile.email && profile.emailVerified) {
+			const issued = await this.loginChallengeService.issue({ user, email: profile.email, ev, ip: request.ip });
+			if ('challengeId' in issued) {
+				await this.signinService.recordSignin(request, user.id, { success: false, ev, challenge: 'emailCode' });
+				reply.code(200);
+				return {
+					finished: false,
+					next: 'emailCode',
+					challengeId: issued.challengeId,
+				} satisfies Misskey.entities.SigninFlowResponse;
+			}
+
+			if (issued.error === 'rateLimited') {
+				// 止めないと、パスワードを知る攻撃者が発行回数を使い切るだけで素通りできてしまう
+				await this.signinService.recordSignin(request, user.id, { success: false, ev, challenge: 'emailCode' });
+				await this.notifyBlockedLogin(request, user, profile.email, ev);
+				return error(403, { id: LOGIN_CHALLENGE_RATE_LIMITED });
+			}
+
+			if (issued.error === 'sendFailed') {
+				// 確認コードを届けられないので、追加認証を省かずにログインを止める。メールは届かないのでアプリ内通知だけ出す
+				await this.signinService.recordSignin(request, user.id, { success: false, ev, challenge: 'emailCode' });
+				await this.notificationService.createNotification(user.id, 'loginFailed', {
+					userIp: request.ip,
+				});
+				return error(503, { id: LOGIN_CHALLENGE_SEND_FAILED });
+			}
+
+			// Redis に保存できなければ、通知したうえで通す(学習はしない)。
+			// 本人を締め出さないことを優先した、意図した fail-open(仕様で決めた扱い)。
+			// メールを送れないとき(sendFailed)は止めるのと扱いが違うが、Redis はサインインのレート制限などにも使っていて、
+			// Redis が止まっている状態は外から作りにくいため
+			// 注: 攻撃者が Redis を止められる環境では、この経路で追加認証を省けてしまう
+			return await doSignin({ ev, learn: false });
+		}
+
+		// 確認手段がないので、通知したうえで通す(学習はしない)
+		if (this.meta.loginRiskFlagUnverifiedUsers) {
+			// 失敗してもログインは止めない
+			try {
+				await this.usersRepository.update(user.id, { suspiciousLoginDetectedAt: new Date() });
+				this.globalEventService.publishInternalEvent('localUserUpdated', { id: user.id });
+			} catch (err) {
+				this.logger.error(`failed to set suspiciousLoginDetectedAt of ${user.id}`, { error: err });
+			}
+		}
+		return await doSignin({ ev, learn: false });
 	}
 
 	/** 確認コードを出せずにログインを止めたことを本人に知らせる */

@@ -5,6 +5,7 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import type { EntityManager } from 'typeorm';
 import * as Redis from 'ioredis';
 import { DI } from '@/di-symbols.js';
 import { MiMeta } from '@/models/Meta.js';
@@ -99,7 +100,17 @@ export class MetaService implements OnApplicationShutdown {
 	}
 
 	@bindThis
-	public async update(data: Partial<MiMeta>): Promise<MiMeta> {
+	public async update(
+		data: Partial<MiMeta>,
+		options?: {
+			/**
+			 * 指定すると、メタの行をロックした状態で現在の ssoProviders を読み、返した値を保存する (読み取りから書き込みまでが他の保存と交差しない)。
+			 * 第 2 引数は同じトランザクションのマネージャーで、連携の件数確認や解除をメタの保存と一緒に行える。
+			 * 投げた例外は保存を中止し、そのまま呼び出し元へ伝わる。
+			 */
+			resolveSsoProviders?: (current: MiMeta['ssoProviders'], manager: EntityManager) => Promise<MiMeta['ssoProviders']>;
+		},
+	): Promise<MiMeta> {
 		let before: MiMeta | undefined;
 
 		const updated = await this.db.transaction(async transactionalEntityManager => {
@@ -107,15 +118,20 @@ export class MetaService implements OnApplicationShutdown {
 				order: {
 					id: 'DESC',
 				},
+				...(options?.resolveSsoProviders ? { lock: { mode: 'pessimistic_write' as const } } : {}),
 			});
 
 			before = metas[0];
 
+			const writeData = options?.resolveSsoProviders
+				? { ...data, ssoProviders: await options.resolveSsoProviders(before?.ssoProviders ?? [], transactionalEntityManager) }
+				: data;
+
 			if (before) {
-				await transactionalEntityManager.update(MiMeta, before.id, data);
+				await transactionalEntityManager.update(MiMeta, before.id, writeData);
 			} else {
 				await transactionalEntityManager.save(MiMeta, {
-					...data,
+					...writeData,
 					id: 'x',
 				});
 			}

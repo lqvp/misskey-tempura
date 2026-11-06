@@ -671,4 +671,144 @@ describe('SigninApiService', () => {
 		expect(row.headers).not.toHaveProperty('authorization');
 		expect(row.headers['user-agent']).toBe('<img>');
 	});
+
+	describe('SSO ログイン(finishWithRisk / finishWithEmailCode)', () => {
+		const SSO_LOGIN_CODE_INVALID = '7d0e5a6c-1f2b-4c9d-3e4f-5a6b7c8d9e0f';
+
+		async function finish(user: MiLocalUser, ip: string, p: { passedSecondFactor?: boolean; deviceToken?: unknown; beforeSignin?: () => Promise<boolean> } = {}) {
+			const req = new DummyFastifyRequest({}, ip) as unknown as FastifyRequest;
+			const reply = new DummyFastifyReply();
+			const profile = await userProfilesRepository.findOneByOrFail({ userId: user.id });
+			const res = await signinApiService.finishWithRisk(req, reply as unknown as FastifyReply, user, profile, {
+				passedSecondFactor: p.passedSecondFactor ?? false,
+				deviceToken: p.deviceToken,
+				beforeSignin: p.beforeSignin,
+			}) as any;
+			return { status: reply.statusCode, res };
+		}
+
+		async function finishCode(user: MiLocalUser, ip: string, p: { challengeId: unknown; emailCode: unknown; beforeSignin?: () => Promise<boolean>; onCountedFailure?: () => Promise<void> }) {
+			const req = new DummyFastifyRequest({}, ip) as unknown as FastifyRequest;
+			const reply = new DummyFastifyReply();
+			const res = await signinApiService.finishWithEmailCode(req, reply as unknown as FastifyReply, user, p) as any;
+			return { status: reply.statusCode, res };
+		}
+
+		it('追加認証(TOTP/パスキー)の失敗を履歴・通知に記録する', async () => {
+			const user = await createUser();
+			const createNotification = vi.spyOn(notificationService, 'createNotification');
+			const req = new DummyFastifyRequest({}, JP_IP) as unknown as FastifyRequest;
+			await signinApiService.recordSecondFactorFailure(req, user);
+			expect(await signinsRepository.countBy({ userId: user.id, success: false })).toBe(1);
+			expect(createNotification).toHaveBeenCalledWith(user.id, 'loginFailed', expect.anything());
+		});
+
+		it('既知環境: そのままログインでき、ログインコードを消費し、端末トークンを使い続ける', async () => {
+			const user = await createUser();
+			const token = await seedKnownEnvironment(user);
+			const beforeSignin = vi.fn(async () => true);
+			const { res } = await finish(user, JP_IP, { deviceToken: token, beforeSignin });
+			expect(res.finished).toBe(true);
+			expect(res.deviceToken).toBeUndefined();
+			expect(beforeSignin).toHaveBeenCalledTimes(1);
+		});
+
+		it('新しい国+新端末+メールあり: 確認コードを要求し、ログインコードはまだ消費しない', async () => {
+			const user = await createUser();
+			await seedKnownEnvironment(user);
+			const beforeSignin = vi.fn(async () => true);
+			const { status, res } = await finish(user, US_IP, { beforeSignin });
+			expect(status).toBe(200);
+			expect(res).toEqual({ finished: false, next: 'emailCode', challengeId: expect.any(String) });
+			expect(beforeSignin).not.toHaveBeenCalled();
+			expect(fakeEmail.last.subject).toBe('Login verification code / ログイン確認コード');
+			const rows = await signinsRepository.findBy({ userId: user.id, challenge: 'emailCode' });
+			expect(rows).toHaveLength(1);
+		});
+
+		it('正しい確認コードでログインコードを消費してログインし、端末を学習する', async () => {
+			const user = await createUser();
+			await seedKnownEnvironment(user);
+			const { res: issued } = await finish(user, US_IP);
+			const beforeSignin = vi.fn(async () => true);
+			const { res } = await finishCode(user, US_IP, { challengeId: issued.challengeId, emailCode: lastCode(), beforeSignin });
+			expect(res.finished).toBe(true);
+			expect(res.i).toBe(user.token);
+			expect(typeof res.deviceToken).toBe('string');
+			expect(beforeSignin).toHaveBeenCalledTimes(1);
+			const rows = await signinsRepository.findBy({ userId: user.id, challenge: 'passed' });
+			await vi.waitFor(async () => expect(await signinsRepository.countBy({ userId: user.id, challenge: 'passed' })).toBe(1));
+			expect(rows).toBeDefined();
+		});
+
+		it('誤った確認コードは失敗として数え、ログインコードは消費しない', async () => {
+			const user = await createUser();
+			await seedKnownEnvironment(user);
+			const { res: issued } = await finish(user, US_IP);
+			const beforeSignin = vi.fn(async () => true);
+			const onCountedFailure = vi.fn(async () => {});
+			const { status, res } = await finishCode(user, US_IP, { challengeId: issued.challengeId, emailCode: '000000', beforeSignin, onCountedFailure });
+			expect(status).toBe(403);
+			expect(res.error.id).toBe(LOGIN_CHALLENGE_INVALID);
+			expect(beforeSignin).not.toHaveBeenCalled();
+			expect(onCountedFailure).toHaveBeenCalledTimes(1);
+			expect(await redis.get(`loginRisk:fail:user:${user.id}`)).not.toBeNull();
+		});
+
+		it('別ユーザーの challenge や存在しない challenge は失敗に数えず expired', async () => {
+			const user = await createUser();
+			const other = await createUser();
+			await seedKnownEnvironment(other);
+			const { res: issued } = await finish(other, US_IP);
+			const onCountedFailure = vi.fn(async () => {});
+			const a = await finishCode(user, US_IP, { challengeId: issued.challengeId, emailCode: lastCode(), onCountedFailure });
+			expect(a.res.error.id).toBe(LOGIN_CHALLENGE_EXPIRED);
+			const b = await finishCode(user, US_IP, { challengeId: 'not-a-uuid', emailCode: '123456', onCountedFailure });
+			expect(b.res.error.id).toBe(LOGIN_CHALLENGE_EXPIRED);
+			expect(onCountedFailure).not.toHaveBeenCalled();
+		});
+
+		it('ローカル2FAを通過済みなら stepUp でも確認コードを求めない(IdP 側 MFA の信頼とは別)', async () => {
+			const user = await createUser({ twoFactorEnabled: true });
+			await seedKnownEnvironment(user);
+			const { res } = await finish(user, US_IP, { passedSecondFactor: true });
+			expect(res.finished).toBe(true);
+			expect(fakeEmail.sent.some(e => e.subject.startsWith('Login verification code'))).toBe(false);
+		});
+
+		it('2FAを通過していなければ(IdP MFA を信頼する設定でも)stepUp は確認コードを求める', async () => {
+			const user = await createUser({ twoFactorEnabled: true });
+			await seedKnownEnvironment(user);
+			const { res } = await finish(user, US_IP, { passedSecondFactor: false });
+			expect(res.next).toBe('emailCode');
+		});
+
+		it('ログインコードの消費に負けたら(beforeSignin が false)ログインしない', async () => {
+			const user = await createUser();
+			const token = await seedKnownEnvironment(user);
+			const { status, res } = await finish(user, JP_IP, { deviceToken: token, beforeSignin: async () => false });
+			expect(status).toBe(400);
+			expect(res.error.id).toBe(SSO_LOGIN_CODE_INVALID);
+			expect(res.finished).toBeUndefined();
+		});
+
+		it('確認コードの照合後にログインコードの消費に負けたらログインしない', async () => {
+			const user = await createUser();
+			await seedKnownEnvironment(user);
+			const { res: issued } = await finish(user, US_IP);
+			const { status, res } = await finishCode(user, US_IP, { challengeId: issued.challengeId, emailCode: lastCode(), beforeSignin: async () => false });
+			expect(status).toBe(400);
+			expect(res.error.id).toBe(SSO_LOGIN_CODE_INVALID);
+		});
+
+		it('確認手段(メール)がなければ通知して通す(学習しない)', async () => {
+			const user = await createUser({ email: null });
+			await seedKnownEnvironment(user);
+			const beforeSignin = vi.fn(async () => true);
+			const { res } = await finish(user, US_IP, { beforeSignin });
+			expect(res.finished).toBe(true);
+			expect(res.deviceToken).toBeUndefined();
+			expect(beforeSignin).toHaveBeenCalledTimes(1);
+		});
+	});
 });

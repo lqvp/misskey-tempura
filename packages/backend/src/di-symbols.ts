@@ -100,5 +100,6 @@ export const DI = {
 	noteDraftsRepository: Symbol('noteDraftsRepository'),
 	multipartUploadsRepository: Symbol('multipartUploadsRepository'),
 	contactFormsRepository: Symbol('contactFormsRepository'),
+	userSsoLinkRepository: Symbol('userSsoLinkRepository'),
 	//#endregion
 };

@@ -93,6 +93,7 @@ import {
 	MiChatRoomInvitation,
 	MiChatApproval,
 	MiContactForm,
+	MiUserSsoLink,
 } from './_.js';
 import type { Provider } from '@nestjs/common';
 import type { DataSource } from 'typeorm';
@@ -607,6 +608,12 @@ const $contactFormsRepository: Provider = {
 	inject: [DI.db],
 };
 
+const $userSsoLinkRepository: Provider = {
+	provide: DI.userSsoLinkRepository,
+	useFactory: (db: DataSource) => db.getRepository(MiUserSsoLink).extend(miRepository as MiRepository<MiUserSsoLink>),
+	inject: [DI.db],
+};
+
 @Module({
 	imports: [],
 	providers: [
@@ -695,6 +702,7 @@ const $contactFormsRepository: Provider = {
 		$reversiGamesRepository,
 		$multipartUploadsRepository,
 		$contactFormsRepository,
+		$userSsoLinkRepository,
 	],
 	exports: [
 		$usersRepository,
@@ -782,6 +790,7 @@ const $contactFormsRepository: Provider = {
 		$reversiGamesRepository,
 		$multipartUploadsRepository,
 		$contactFormsRepository,
+		$userSsoLinkRepository,
 	],
 })
 export class RepositoryModule {

@@ -1,3 +1,4 @@
+import type { AuthenticationResponseJSON } from '@simplewebauthn/browser';
 import { Endpoints as Gen } from './autogen/endpoint.js';
 import { UserDetailed } from './autogen/models.js';
 import {
@@ -145,5 +146,16 @@ export type Endpoints = Overwrite<
 			req: EmptyRequest;
 			res: EmptyResponse;
 		},
+	'sso/exchange-code': {
+		req: {
+			code: string;
+			token?: string;
+			credential?: AuthenticationResponseJSON;
+			deviceToken?: string;
+			challengeId?: string;
+			emailCode?: string;
+		};
+		res: SigninFlowResponse;
+	};
 	}
 >;
