@@ -47,7 +47,7 @@ const exportedAntennaSchema = {
 			},
 		} },
 		expression: { type: 'string', nullable: true },
-		keywordMode: { type: 'string', enum: ['literal', 'regex'], nullable: true },
+		keywordMode: { type: 'string', enum: ['literal', 'regex', null], nullable: true },
 		users: { type: 'array', items: {
 			type: 'string',
 		} },

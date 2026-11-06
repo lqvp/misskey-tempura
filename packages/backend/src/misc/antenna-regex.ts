@@ -98,8 +98,9 @@ export type AntennaRegexMatch = {
 /**
  * regex mode の1項目について、テキスト中の全マッチ位置を返す (SCOREモードのマッチ理由用)。
  * 長さ0のマッチは start === end の要素として記録しつつ、無限ループを避けるため1文字進める。
+ * limit を指定するとその件数で打ち切る (グループ判定のように有無だけ必要な経路で全件収集を避けるため)。
  */
-export function findAntennaRegexMatches(pattern: string, text: string, caseSensitive: boolean): AntennaRegexMatch[] {
+export function findAntennaRegexMatches(pattern: string, text: string, caseSensitive: boolean, limit?: number): AntennaRegexMatch[] {
 	const matches: AntennaRegexMatch[] = [];
 	let regex: RE2;
 	try {
@@ -116,6 +117,7 @@ export function findAntennaRegexMatches(pattern: string, text: string, caseSensi
 			start: match.index,
 			end: match.index + match[0].length,
 		});
+		if (limit !== undefined && matches.length >= limit) break;
 		if (match[0].length === 0) {
 			// サロゲートペアの途中に止まらないよう、コードポイント単位で1文字進める
 			const cp = text.codePointAt(regex.lastIndex);

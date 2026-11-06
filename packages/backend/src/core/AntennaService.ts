@@ -73,15 +73,18 @@ export class AntennaService implements OnApplicationShutdown {
 	}
 
 	@bindThis
-	public findAllMatches(text: string, keywords: string[], caseSensitive: boolean, keywordMode: AntennaKeywordMode = 'literal'): Match[] {
-		if (!text) return [];
+	public findAllMatches(text: string, keywords: string[], caseSensitive: boolean, keywordMode: AntennaKeywordMode = 'literal', firstMatchOnly = false): Match[] {
+		// literalでは空テキストに非空キーワードはマッチし得ないので早期リターンできるが、
+		// regexでは '^$' や 'a*' のように空文字列にマッチする式があるため除外しない
+		if (!text && keywordMode !== 'regex') return [];
 		const matches: Match[] = [];
 
 		for (const keyword of keywords) {
 			if (!keyword) continue;
 			if (keywordMode === 'regex') {
 				// regexモードでは1項目全体を1つの式として評価する (空白などでは分割しない)
-				matches.push(...findAntennaRegexMatches(keyword, text, caseSensitive));
+				// SCOREのグループ判定では有無だけ分かればよいので firstMatchOnly で全件収集を避ける
+				matches.push(...findAntennaRegexMatches(keyword, text, caseSensitive, firstMatchOnly ? 1 : undefined));
 				continue;
 			}
 			const regex = this.getKeywordRegExp(keyword, caseSensitive);
@@ -350,7 +353,7 @@ export class AntennaService implements OnApplicationShutdown {
 					const _text = this.getCombinedNoteText(note);
 					const collectMatches = (keywordGroups: string[][], type: 'include' | 'exclude'): Match[] => {
 						return keywordGroups.flatMap((and, groupIdx) =>
-							this.findAllMatches(_text, and, antenna.caseSensitive, antenna.keywordMode).map(match => ({
+							this.findAllMatches(_text, and, antenna.caseSensitive, antenna.keywordMode, antenna.keywordMode === 'regex').map(match => ({
 								...match,
 								groupIndex: groupIdx,
 								type: type,

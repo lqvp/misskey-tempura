@@ -16,11 +16,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<button class="_button" :class="$style.chipRemove" :aria-label="i18n.ts.delete" @click="removeKeyword(gi, ki)"><i class="ti ti-x"></i></button>
 					</span>
 				</template>
+				<textarea
+					v-if="props.regexMode"
+					v-model="inputs[gi]"
+					:class="$style.input"
+					rows="1"
+					:placeholder="i18n.ts._tempuraFutureAntenna.addRegexPattern"
+					@blur="addKeyword(gi)"
+				></textarea>
 				<input
+					v-else
 					v-model="inputs[gi]"
 					:class="$style.input"
 					type="text"
-					:placeholder="props.regexMode ? i18n.ts._tempuraFutureAntenna.addRegexPattern : i18n.ts._tempuraFutureAntenna.addKeyword"
+					:placeholder="i18n.ts._tempuraFutureAntenna.addKeyword"
 					@keydown.enter.prevent="addKeyword(gi)"
 					@blur="addKeyword(gi)"
 				>
@@ -160,6 +169,8 @@ function removeGroup(gi: number) {
 	border: none;
 	border-bottom: solid 1px var(--MI_THEME-divider);
 	outline: none;
+	resize: none;
+	field-sizing: content;
 
 	&:focus {
 		border-bottom-color: var(--MI_THEME-accent);

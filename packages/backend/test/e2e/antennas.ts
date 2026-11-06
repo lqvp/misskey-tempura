@@ -518,6 +518,45 @@ describe('アンテナ', () => {
 			});
 		});
 
+		test('モード切替とキーワード更新が並行しても不正な正規表現が保存されないこと。', async () => {
+			// 片方はregexへの切替、もう片方は不正な式への更新。行ロックで直列化されるため、
+			// 最終状態は「literal + 不正な文字列 (許容)」か「regex + 有効な式」のどちらかになる
+			const antenna = await successfulApiCall({ endpoint: 'antennas/create', parameters: defaultParam, user: alice });
+
+			const [switchMode, updateKeywords] = await Promise.all([
+				api('antennas/update', { ...defaultParam, antennaId: antenna.id, keywordMode: 'regex', keywords: [['^りんご$']] }, alice),
+				api('antennas/update', { ...defaultParam, antennaId: antenna.id, keywords: [['(unclosed']] }, alice),
+			]);
+
+			const final = await successfulApiCall({
+				endpoint: 'antennas/show',
+				parameters: { antennaId: antenna.id },
+				user: alice,
+			});
+			if (final.keywordMode === 'regex') {
+				// regexモードなら保存されている式は必ず有効 (不正な式が残っていない)
+				assert.ok(!final.keywords.flat().includes('(unclosed'));
+				assert.strictEqual(switchMode.status, 200);
+				assert.strictEqual(updateKeywords.status, 400);
+			} else {
+				// literalのままなら不正な文字列の保存自体は許容されるが、regex切替は失敗しているはず
+				assert.strictEqual(updateKeywords.status, 200);
+				assert.strictEqual(switchMode.status, 400);
+			}
+		});
+
+		test('試し打ち(antennas/test)でも128文字を超える有効な正規表現を受け付けること。', async () => {
+			// 保存 (create) は512文字まで許可するので、プレビューでも同じ上限まで受け付ける
+			await post(bob, { text: 'a' });
+			const longPattern = 'a|'.repeat(100) + 'a'; // 201文字
+			const response = await successfulApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywordMode: 'regex', keywords: [[longPattern]] },
+				user: alice,
+			});
+			assert.ok(response.some((x: Note) => x.text === 'a'));
+		});
+
 		test('試し打ち(antennas/test)がregexでマッチし、不正な正規表現はエラーになること。', async () => {
 			await post(bob, { text: 'りんご100円' });
 			const response = await successfulApiCall({

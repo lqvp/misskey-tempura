@@ -563,6 +563,16 @@ describe('AntennaService', () => {
 			expect(result).toBe(false);
 		});
 
+		it('matches an empty-matching pattern (e.g. ^$) against an empty note text in SCORE mode too', async () => {
+			// 本文・CWともに空のノートでも、空文字列にマッチする式は通常評価と同じくSCOREでもマッチする
+			const emptyNote = { ...mockNote, text: '', cw: null };
+			const scoreAntenna = { ...regexAntenna, keywords: [['^$']], expression: 'SCORE' };
+			expect(await antennaService.checkHitAntenna(scoreAntenna, emptyNote, mockUser)).toBe(true);
+			// 通常評価でもマッチする (両経路で一致)
+			const normalAntenna = { ...regexAntenna, keywords: [['^$']] };
+			expect(await antennaService.checkHitAntenna(normalAntenna, emptyNote, mockUser)).toBe(true);
+		});
+
 		it('keeps AND within a group and OR between groups in regex mode', async () => {
 			// 同一グループ: 両方の式にマッチする必要がある
 			const andAntenna = { ...regexAntenna, keywords: [['app.+', 'ora.+']] };

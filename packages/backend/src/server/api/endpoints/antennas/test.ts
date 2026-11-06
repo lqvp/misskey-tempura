@@ -10,7 +10,7 @@ import type { NotesRepository, UserListsRepository } from '@/models/_.js';
 import { QueryService } from '@/core/QueryService.js';
 import { AntennaService } from '@/core/AntennaService.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
-import { validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
+import { REGEX_PATTERN_MAX_LENGTH, validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
 import { DI } from '@/di-symbols.js';
 import type { MiAntenna } from '@/models/Antenna.js';
 import type { MiNote } from '@/models/Note.js';
@@ -66,17 +66,17 @@ export const paramDef = {
 		userListId: { type: 'string', format: 'misskey:id', nullable: true },
 		keywords: { type: 'array', maxItems: 32, items: {
 			type: 'array', maxItems: 32, items: {
-				type: 'string', maxLength: 128,
+				type: 'string', maxLength: REGEX_PATTERN_MAX_LENGTH,
 			},
 		} },
 		excludeKeywords: { type: 'array', maxItems: 32, items: {
 			type: 'array', maxItems: 32, items: {
-				type: 'string', maxLength: 128,
+				type: 'string', maxLength: REGEX_PATTERN_MAX_LENGTH,
 			},
 		} },
 		mustExcludeKeywords: { type: 'array', maxItems: 32, items: {
 			type: 'array', maxItems: 32, items: {
-				type: 'string', maxLength: 128,
+				type: 'string', maxLength: REGEX_PATTERN_MAX_LENGTH,
 			},
 		} },
 		expression: { type: 'string', nullable: true, maxLength: 2048 },

@@ -27,7 +27,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<template #label>{{ i18n.ts._tempuraFutureAntenna.keywordMode }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 				<template #caption>{{ keywordMode === 'regex' ? i18n.ts._tempuraFutureAntenna.regexModeDescription : i18n.ts._tempuraFutureAntenna.keywordGroupsDescription }}</template>
 			</MkSelect>
-			<MkInfo v-if="keywordMode === 'regex' && keywordMode !== savedAntenna.keywordMode" warn>{{ i18n.ts._tempuraFutureAntenna.regexModeWarning }}</MkInfo>
+			<MkInfo v-if="keywordMode !== savedAntenna.keywordMode" warn>{{ i18n.ts._tempuraFutureAntenna.regexModeWarning }}</MkInfo>
 			<div :class="$style.field">
 				<div :class="$style.label">{{ i18n.ts.antennaKeywords }}</div>
 				<MkKeywordGroupsInput v-model="keywords" :regexMode="keywordMode === 'regex'"/>
@@ -221,8 +221,9 @@ function buildAntennaData() {
 	};
 }
 
-// 最後に保存が成功した値。リセットはページ表示時点ではなくこの値に戻す
-let savedAntenna = initialAntenna;
+// 最後に保存が成功した値。リセットはページ表示時点ではなくこの値に戻す。
+// 保存後にモード切替の警告を再評価できるよう ref で保持する
+const savedAntenna = ref(initialAntenna);
 
 async function saveAntenna() {
 	const antennaData = buildAntennaData();
@@ -232,7 +233,7 @@ async function saveAntenna() {
 		emit('created', res);
 	} else {
 		const res = await os.apiWithDialog('antennas/update', { ...antennaData, antennaId: initialAntenna.id });
-		savedAntenna = { ...savedAntenna, ...antennaData };
+		savedAntenna.value = { ...savedAntenna.value, ...antennaData };
 		emit('updated', res);
 	}
 }
@@ -247,22 +248,22 @@ async function resetAntenna() {
 	});
 	if (canceled) return;
 
-	name.value = savedAntenna.name;
-	src.value = savedAntenna.src;
-	userListId.value = savedAntenna.userListId;
-	users.value = savedAntenna.users.join('\n');
-	keywords.value = savedAntenna.keywords.map(x => [...x]);
-	excludeKeywords.value = savedAntenna.excludeKeywords.map(x => [...x]);
-	mustExcludeKeywords.value = savedAntenna.mustExcludeKeywords ? savedAntenna.mustExcludeKeywords.map(x => [...x]) : [];
-	caseSensitive.value = savedAntenna.caseSensitive;
-	localOnly.value = savedAntenna.localOnly;
-	excludeBots.value = savedAntenna.excludeBots;
-	withReplies.value = savedAntenna.withReplies;
-	withFile.value = savedAntenna.withFile;
-	excludeNotesInSensitiveChannel.value = savedAntenna.excludeNotesInSensitiveChannel;
-	onlyFollowers.value = savedAntenna.onlyFollowers;
-	isScoringMode.value = savedAntenna.expression === 'SCORE';
-	keywordMode.value = savedAntenna.keywordMode;
+	name.value = savedAntenna.value.name;
+	src.value = savedAntenna.value.src;
+	userListId.value = savedAntenna.value.userListId;
+	users.value = savedAntenna.value.users.join('\n');
+	keywords.value = savedAntenna.value.keywords.map(x => [...x]);
+	excludeKeywords.value = savedAntenna.value.excludeKeywords.map(x => [...x]);
+	mustExcludeKeywords.value = savedAntenna.value.mustExcludeKeywords ? savedAntenna.value.mustExcludeKeywords.map(x => [...x]) : [];
+	caseSensitive.value = savedAntenna.value.caseSensitive;
+	localOnly.value = savedAntenna.value.localOnly;
+	excludeBots.value = savedAntenna.value.excludeBots;
+	withReplies.value = savedAntenna.value.withReplies;
+	withFile.value = savedAntenna.value.withFile;
+	excludeNotesInSensitiveChannel.value = savedAntenna.value.excludeNotesInSensitiveChannel;
+	onlyFollowers.value = savedAntenna.value.onlyFollowers;
+	isScoringMode.value = savedAntenna.value.expression === 'SCORE';
+	keywordMode.value = savedAntenna.value.keywordMode;
 	tryResults.value = null;
 }
 

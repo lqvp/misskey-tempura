@@ -82,6 +82,14 @@ describe('whitespace preservation (regex mode)', () => {
 	});
 });
 
+describe('findAntennaRegexMatches limit', () => {
+	it('limitを指定するとその件数で打ち切る', () => {
+		expect(findAntennaRegexMatches('.', 'abc', true, 1)).toEqual([{ keyword: '.', start: 0, end: 1 }]);
+		expect(findAntennaRegexMatches('.', 'abc', true, 2)).toHaveLength(2);
+		expect(findAntennaRegexMatches('.', 'abc', true)).toHaveLength(3);
+	});
+});
+
 describe('zero-length matches near surrogate pairs', () => {
 	it('ゼロ幅マッチの繰り上げがサロゲートペアを分割しない', () => {
 		// '🍎b' はコードユニット [🍎(2), b(1)] = 長さ3。コードポイント境界は 0, 2, 3

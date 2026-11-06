@@ -21,7 +21,7 @@ function mount(regexMode: boolean) {
 		},
 		global: { directives, components },
 	});
-	const input = page.container.querySelector('input')!;
+	const input = page.container.querySelector('textarea, input')!;
 	return { page, input, getCaptured: () => captured };
 }
 
@@ -35,8 +35,17 @@ describe('MkKeywordGroupsInput', () => {
 
 	test('regex モードでは空白・| を含む入力を1項目として保持する (trim も分割もしない)', async () => {
 		const { input, getCaptured } = mount(true);
+		expect(input.tagName).toBe('TEXTAREA');
 		await fireEvent.update(input, ' foo | bar ');
-		await fireEvent.keyDown(input, { key: 'Enter' });
+		await fireEvent.blur(input);
 		expect(getCaptured()).toEqual([[' foo | bar ']]);
+	});
+
+	test('regex モードでは改行を含む式を入力・保持できる (Enter が改行になる)', async () => {
+		const { input, getCaptured } = mount(true);
+		expect(input.tagName).toBe('TEXTAREA');
+		await fireEvent.update(input, '円\n次');
+		await fireEvent.blur(input);
+		expect(getCaptured()).toEqual([['円\n次']]);
 	});
 });
