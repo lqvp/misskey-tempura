@@ -16,13 +16,10 @@ import components from '@/components/index.js';
 import { themeManager } from '@/theme.js';
 import { isDeviceDarkmode } from '@/utility/is-device-darkmode.js';
 import { i18n } from '@/i18n.js';
-import { refreshCurrentAccount, login } from '@/accounts.js';
+import { refreshCurrentAccount } from '@/accounts.js';
 import { store } from '@/store.js';
 import { fetchInstance, instance } from '@/instance.js';
 import { updateDeviceKind } from '@/utility/device-kind.js';
-import { reloadChannel } from '@/utility/unison-reload.js';
-import { getUrlWithoutLoginId } from '@/utility/login-id.js';
-import { getAccountFromId } from '@/utility/get-account-from-id.js';
 import { deckStore } from '@/ui/deck/deck-store.js';
 import { analytics, initAnalytics } from '@/analytics.js';
 import { miLocalStorage } from '@/local-storage.js';
@@ -147,12 +144,6 @@ export async function common(createVue: () => Promise<App<Element>>) {
 		window.history.replaceState(null, '', window.location.href.replace('#pswp', ''));
 	}
 
-	// 一斉リロード
-	reloadChannel.addEventListener('message', path => {
-		if (path !== null) window.location.href = path;
-		else window.location.reload();
-	});
-
 	//#region Set lang attr
 	const html = window.document.documentElement;
 	html.setAttribute('lang', lang);
@@ -166,24 +157,6 @@ export async function common(createVue: () => Promise<App<Element>>) {
 	fetchInstanceMetaPromise.then(() => {
 		miLocalStorage.setItem('v', instance.version);
 	});
-
-	//#region loginId
-	const params = new URLSearchParams(window.location.search);
-	const loginId = params.get('loginId');
-
-	if (loginId) {
-		const target = getUrlWithoutLoginId(window.location.href);
-
-		if (!$i || $i.id !== loginId) {
-			const account = await getAccountFromId(loginId);
-			if (account) {
-				await login(account.token, target);
-			}
-		}
-
-		window.history.replaceState({ misskey: 'loginId' }, '', target);
-	}
-	//#endregion
 
 	//#region Sync dark mode
 	if (prefer.s.syncDeviceDarkMode) {

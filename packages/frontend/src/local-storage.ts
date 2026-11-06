@@ -16,6 +16,8 @@ export type Keys = (
 	'lastUsed' |
 	'lang' |
 	'drafts' |
+	`drafts:${string}` |
+	`chatMessageDrafts:${string}` |
 	'hashtags' |
 	'colorScheme' |
 	'useSystemFont' |

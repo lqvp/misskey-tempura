@@ -4673,3 +4673,10 @@ _loginRisk:
     dormant: "長期間ログインなし"
     learning: "学習期間中"
     untrustedIp: "接続元IPを判定できない"
+
+_tabAccount:
+  unavailable: "このタブでは\nアカウントを開けません"
+  unavailableDescription: "アカウントを確認できません。\n自動では切り替えていません。"
+  openFirst: "先頭のアカウントで開く"
+  goHome: "ホームに戻る"
+  openFirstDescription: "先頭のアカウントでホームを開きます。"

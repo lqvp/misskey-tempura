@@ -7,7 +7,7 @@ import { createRequire } from 'node:module';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { StorybookConfig } from '@storybook/vue3-vite';
-import { type Plugin, type PluginOption, mergeConfig } from 'vite';
+import { type Plugin, type PluginOption, mergeConfig, normalizePath } from 'vite';
 import turbosnap from 'vite-plugin-turbosnap';
 
 const require = createRequire(import.meta.url);
@@ -57,8 +57,11 @@ const config = {
 					enforce: 'pre',
 					resolveId(source: string, importer: string | undefined) {
 						if (process.env['SB_DISABLE_TLA_SHIMS']) return null;
-						const m = /(?:^|\/)(custom-emojis|idb-proxy|locale|use-note-capture)(?:\.js|\.ts)?$/.exec(source);
+						const m = /(?:^|\/)(custom-emojis|idb-proxy|locale|use-note-capture|i)(?:\.js|\.ts)?$/.exec(source);
 						if (!m) return null;
+						// Only the app account module uses this shim, never a dependency's i module.
+						if (m[1] === 'i' && !/^@\/i(?:\.js|\.ts)?$/.test(source) &&
+							![resolve(_dirname, '../src/i'), resolve(_dirname, '../src/i.js'), resolve(_dirname, '../src/i.ts')].map(normalizePath).includes(normalizePath(source))) return null;
 						// shims/locale.ts が import する生成済み ../locale.ts だけは shim に戻さない
 						if (m[1] === 'locale' && importer && importer.includes('/.storybook/shims/')) return null;
 						return resolve(_dirname, `shims/${m[1]}.ts`);

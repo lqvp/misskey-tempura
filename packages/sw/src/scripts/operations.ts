@@ -81,7 +81,7 @@ export async function openPost(options: { initialText?: string; reply?: Misskey.
 }
 
 export async function openClient(order: SwMessageOrderType, url: string, loginId?: string, query: Record<string, SwMessage[string]> = {}): Promise<WindowClient | null> {
-	const client = await findClient();
+	const client = await findClient(loginId);
 
 	if (client) {
 		client.postMessage({ type: 'order', ...query, order, loginId, url } satisfies SwMessage);
@@ -91,9 +91,13 @@ export async function openClient(order: SwMessageOrderType, url: string, loginId
 	return globalThis.clients.openWindow(loginId ? getUrlWithLoginId(url, loginId) : url);
 }
 
-export async function findClient(): Promise<WindowClient | null> {
+export async function findClient(loginId?: string): Promise<WindowClient | null> {
 	const clients = await globalThis.clients.matchAll({
 		type: 'window',
 	});
-	return clients.find(c => !(new URL(c.url)).searchParams.has('zen')) ?? null;
+	return clients.find(c => {
+		const params = new URL(c.url).searchParams;
+		if (params.has('zen')) return false;
+		return !loginId || (params.get('as') ?? params.get('loginId')) === loginId;
+	}) ?? null;
 }

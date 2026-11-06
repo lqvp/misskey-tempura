@@ -31,6 +31,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 // SPECIFICATION: https://misskey-hub.net/docs/for-users/features/share-form/
 
+import { accountUrl } from '@/utility/tab-account.js';
+import { $i } from '@/i.js';
 import { ref, computed } from 'vue';
 import * as Misskey from 'misskey-js';
 import MkButton from '@/components/MkButton.vue';
@@ -190,12 +192,12 @@ function close(): void {
 
 	// 閉じなければ100ms後タイムラインに
 	window.setTimeout(() => {
-		window.location.href = '/';
+		window.location.href = accountUrl('/', $i?.id ?? null);
 	}, 100);
 }
 
 function goToMisskey(): void {
-	window.location.href = '/';
+	window.location.href = accountUrl('/', $i?.id ?? null);
 }
 
 function onPosted(): void {

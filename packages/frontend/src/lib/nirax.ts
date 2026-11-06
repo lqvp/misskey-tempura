@@ -9,6 +9,7 @@ import { onBeforeUnmount, onMounted, shallowRef } from 'vue';
 import { EventEmitter } from 'eventemitter3';
 import { safeURIDecode } from '@@/js/url.js';
 import type { Component, ShallowRef } from 'vue';
+import { accountUrl } from '@/utility/tab-account.js';
 
 interface RouteDefBase {
 	path: string;
@@ -458,6 +459,12 @@ export class Nirax<DEF extends RouteDef[]> extends EventEmitter<RouterEvents> {
 
 	/** どうしても必要な場合に使用（パスが確定している場合は `Nirax.push` を使用すること） */
 	public pushByPath(fullPath: string, flag?: RouterFlag | null) {
+		const target = new URL(accountUrl(fullPath, new URLSearchParams(window.location.search).get('as')));
+		if (target.origin === window.location.origin && target.searchParams.get('as') !== new URLSearchParams(window.location.search).get('as')) {
+			window.location.href = target.href;
+			return;
+		}
+
 		const beforeFullPath = this.currentFullPath;
 		if (fullPath === beforeFullPath) {
 			this.emit('same');
@@ -486,6 +493,12 @@ export class Nirax<DEF extends RouteDef[]> extends EventEmitter<RouterEvents> {
 
 	/** どうしても必要な場合に使用（パスが確定している場合は `Nirax.replace` を使用すること） */
 	public replaceByPath(fullPath: string) {
+		const target = new URL(accountUrl(fullPath, new URLSearchParams(window.location.search).get('as')));
+		if (target.origin === window.location.origin && target.searchParams.get('as') !== new URLSearchParams(window.location.search).get('as')) {
+			window.location.href = target.href;
+			return;
+		}
+
 		const res = this.resolveForNavigation(fullPath);
 		if (res.route.path === '/:(*)') {
 			this.emit('forceReplace', {

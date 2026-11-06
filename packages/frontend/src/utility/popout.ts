@@ -3,12 +3,14 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import { accountUrl } from '@/utility/tab-account.js';
+import { $i } from '@/i.js';
 import { appendQuery } from '@@/js/url.js';
 import * as config from '@@/js/config.js';
 
 export function popout(path: string, w?: HTMLElement) {
 	let url = path.startsWith('http://') || path.startsWith('https://') ? path : config.url + path;
-	url = appendQuery(url, 'zen');
+	url = accountUrl(appendQuery(url, 'zen'), $i?.id ?? null);
 	if (w) {
 		const position = w.getBoundingClientRect();
 		const computedStyle = getComputedStyle(w, '');
