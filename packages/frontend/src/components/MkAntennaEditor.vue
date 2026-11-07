@@ -25,9 +25,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<MkSwitch v-model="isScoringMode">{{ i18n.ts._tempuraFutureAntenna.scoringMode }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></MkSwitch>
 			<MkSelect v-model="keywordMode" :items="keywordModeSelectDef">
 				<template #label>{{ i18n.ts._tempuraFutureAntenna.keywordMode }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-				<template #caption>{{ keywordMode === 'regex' ? i18n.ts._tempuraFutureAntenna.regexModeDescription : i18n.ts._tempuraFutureAntenna.keywordGroupsDescription }}</template>
+				<template #caption>{{ keywordMode === 'regex' ? i18n.ts._tempuraFutureAntenna.regexModeDescription : undefined }}</template>
 			</MkSelect>
-			<MkInfo v-if="keywordMode !== savedAntenna.keywordMode" warn>{{ i18n.ts._tempuraFutureAntenna.regexModeWarning }}</MkInfo>
+			<MkInfo v-if="keywordModeWarning != null" warn>{{ keywordModeWarning }}</MkInfo>
 			<div :class="$style.field">
 				<div :class="$style.label">{{ i18n.ts.antennaKeywords }}</div>
 				<MkKeywordGroupsInput v-model="keywords" :regexMode="keywordMode === 'regex'"/>
@@ -225,16 +225,76 @@ function buildAntennaData() {
 // 保存後にモード切替の警告を再評価できるよう ref で保持する
 const savedAntenna = ref(initialAntenna);
 
+// 保存済みのモードと違うときだけ、切り替え方向に応じた警告を出す
+const keywordModeWarning = computed(() => {
+	if (keywordMode.value === savedAntenna.value.keywordMode) return null;
+	return keywordMode.value === 'regex'
+		? i18n.ts._tempuraFutureAntenna.regexModeWarningToRegex
+		: i18n.ts._tempuraFutureAntenna.regexModeWarningToLiteral;
+});
+
+// backend の antenna-regex.ts と同じ上限。ここを変えるときは両方そろえる
+const REGEX_GROUP_LIMIT = 32;
+const REGEX_KEYWORDS_PER_GROUP_LIMIT = 32;
+const REGEX_PATTERN_MAX_LENGTH = 512;
+
+// INVALID_REGEX の info から、どの項目がどう駄目だったかをユーザー向けの文にする
+function describeInvalidRegex(info: unknown): string {
+	const data = (info ?? {}) as { reason?: string; pattern?: string; location?: { keywordType?: string; groupIndex?: number; keywordIndex?: number } };
+	const reasons: Record<string, string> = {
+		invalidPattern: i18n.ts._tempuraFutureAntenna.invalidRegex,
+		patternTooLong: i18n.tsx._tempuraFutureAntenna.invalidRegexTooLong({ max: REGEX_PATTERN_MAX_LENGTH }),
+		tooManyGroups: i18n.tsx._tempuraFutureAntenna.invalidRegexTooManyGroups({ max: REGEX_GROUP_LIMIT }),
+		tooManyKeywords: i18n.tsx._tempuraFutureAntenna.invalidRegexTooManyKeywords({ max: REGEX_KEYWORDS_PER_GROUP_LIMIT }),
+	};
+	const lines = [reasons[data.reason ?? 'invalidPattern'] ?? i18n.ts._tempuraFutureAntenna.invalidRegex];
+	if (data.pattern != null) {
+		lines.push(i18n.tsx._tempuraFutureAntenna.invalidRegexPattern({ pattern: data.pattern }));
+	}
+	const keywordTypeLabels: Record<string, string> = {
+		keywords: i18n.ts.antennaKeywords,
+		excludeKeywords: i18n.ts.antennaExcludeKeywords,
+		mustExcludeKeywords: i18n.ts._tempuraFutureAntenna.mustExcludeKeywords,
+	};
+	const location = data.location;
+	if (location?.keywordType != null) {
+		const label = keywordTypeLabels[location.keywordType] ?? location.keywordType;
+		const position = location.groupIndex != null && location.keywordIndex != null
+			? `${location.groupIndex + 1}-${location.keywordIndex + 1}`
+			: '';
+		lines.push(`${label}${position !== '' ? ` (${position})` : ''}`);
+	}
+	return lines.join('\n');
+}
+
+// os.apiWithDialog の汎用表示だと英語のメッセージとIDしか出ないため、
+// 保存は自前で呼び、エラーはモードに応じた文言で出し分ける
 async function saveAntenna() {
 	const antennaData = buildAntennaData();
+	const closeWaiting = os.waiting();
 
-	if (initialAntenna.id == null) {
-		const res = await os.apiWithDialog('antennas/create', antennaData);
-		emit('created', res);
-	} else {
-		const res = await os.apiWithDialog('antennas/update', { ...antennaData, antennaId: initialAntenna.id });
-		savedAntenna.value = { ...savedAntenna.value, ...antennaData };
-		emit('updated', res);
+	try {
+		if (initialAntenna.id == null) {
+			const res = await misskeyApi('antennas/create', antennaData);
+			// ページ版の作成画面はダイアログと違ってコンポーネントが残るので、保存済みの値も更新する
+			savedAntenna.value = { ...savedAntenna.value, ...antennaData };
+			emit('created', res);
+		} else {
+			const res = await misskeyApi('antennas/update', { ...antennaData, antennaId: initialAntenna.id });
+			savedAntenna.value = { ...savedAntenna.value, ...antennaData };
+			emit('updated', res);
+		}
+	} catch (err) {
+		const isInvalidRegex = err != null && typeof err === 'object' && (err as { code?: unknown }).code === 'INVALID_REGEX';
+		await os.alert({
+			type: 'error',
+			title: i18n.ts.error,
+			text: isInvalidRegex
+				? describeInvalidRegex((err as { info?: unknown }).info)
+				: (err != null && typeof err === 'object' && 'message' in err) ? String((err as { message?: unknown }).message) : String(err),
+		});
+	} finally {
+		closeWaiting();
 	}
 }
 
@@ -277,10 +337,13 @@ async function tryConditions() {
 		tryResults.value = res;
 	} catch (err) {
 		if (seq !== trySeq) return;
+		const isInvalidRegex = err != null && typeof err === 'object' && (err as { code?: unknown }).code === 'INVALID_REGEX';
 		os.alert({
 			type: 'error',
 			// misskeyApiはAPIエラーをErrorではなく{ message, code }のオブジェクトでrejectする
-			text: (err != null && typeof err === 'object' && 'message' in err) ? String((err as { message?: unknown }).message) : String(err),
+			text: isInvalidRegex
+				? describeInvalidRegex((err as { info?: unknown }).info)
+				: (err != null && typeof err === 'object' && 'message' in err) ? String((err as { message?: unknown }).message) : String(err),
 		});
 	} finally {
 		if (seq === trySeq) tryRunning.value = false;

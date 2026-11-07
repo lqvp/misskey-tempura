@@ -11,8 +11,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div :class="$style.keywords">
 				<template v-for="(keyword, ki) in group" :key="ki">
 					<span v-if="ki > 0" :class="$style.and">{{ i18n.ts._tempuraFutureAntenna.keywordAnd }}</span>
-					<span :class="[$style.chip, { [$style.regexChip]: props.regexMode }]">
-						{{ keyword }}
+					<span :class="[$style.chip, { [$style.regexChip]: props.regexMode }]" :title="props.regexMode ? keyword : undefined">
+						<span :class="$style.chipText">{{ keyword }}</span>
 						<button class="_button" :class="$style.chipRemove" :aria-label="i18n.ts.delete" @click="removeKeyword(gi, ki)"><i class="ti ti-x"></i></button>
 					</span>
 				</template>
@@ -21,8 +21,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 					v-model="inputs[gi]"
 					:class="$style.input"
 					rows="1"
+					:maxlength="REGEX_PATTERN_MAX_LENGTH"
 					:placeholder="i18n.ts._tempuraFutureAntenna.addRegexPattern"
-					@blur="addKeyword(gi)"
+					@blur="onInputBlur(gi)"
 				></textarea>
 				<input
 					v-else
@@ -31,9 +32,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 					type="text"
 					:placeholder="i18n.ts._tempuraFutureAntenna.addKeyword"
 					@keydown.enter.prevent="addKeyword(gi)"
-					@blur="addKeyword(gi)"
+					@blur="onInputBlur(gi)"
 				>
-				<MkButton inline small :disabled="props.regexMode ? inputs[gi] === '' : inputs[gi].trim() === ''" @click="addKeyword(gi)"><i class="ti ti-plus"></i></MkButton>
+				<!-- blurで入力欄が空になるとdisabledになり、クリックが取り消されるため、blur直後のクリックも拾えるようにする -->
+				<MkButton inline small :disabled="inputs[gi] === ''" @click="onAddClick(gi)"><i class="ti ti-plus"></i></MkButton>
 			</div>
 			<button v-if="model.length > 1" class="_button" :class="$style.groupRemove" :title="i18n.ts._tempuraFutureAntenna.removeGroup" :aria-label="i18n.ts._tempuraFutureAntenna.removeGroup" @click="removeGroup(gi)"><i class="ti ti-trash"></i></button>
 		</div>
@@ -59,6 +61,9 @@ const props = withDefaults(defineProps<{
 
 const model = defineModel<string[][]>({ required: true });
 
+// backend の REGEX_PATTERN_MAX_LENGTH と同じ上限。ここを変えるときは両方そろえる
+const REGEX_PATTERN_MAX_LENGTH = 512;
+
 const inputs = ref<string[]>(model.value.map(() => ''));
 
 watch(model, (newValue) => {
@@ -83,6 +88,17 @@ function addKeyword(gi: number) {
 	}
 	model.value = next;
 	inputs.value[gi] = '';
+}
+
+// 入力欄からフォーカスが外れたら確定する
+function onInputBlur(gi: number) {
+	addKeyword(gi);
+}
+
+// 入力欄が空になった直後 (= blur で確定済み) の + ボタンクリックで、同じ項目を二重に追加しない
+function onAddClick(gi: number) {
+	if (inputs.value[gi] === '') return;
+	addKeyword(gi);
 }
 
 function removeKeyword(gi: number, ki: number) {
@@ -148,6 +164,12 @@ function removeGroup(gi: number) {
 
 .regexChip {
 	font-family: monospace;
+}
+
+// 正規表現では改行や前後の空白も式の一部なので、保存値をそのまま見せる
+.chipText {
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
 }
 
 .chipRemove {

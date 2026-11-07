@@ -17115,11 +17115,11 @@ export interface Locale extends ILocale {
          */
         "mustExcludeKeywordsDescription": string;
         /**
-         * キーワードの解釈
+         * マッチ方式
          */
         "keywordMode": string;
         /**
-         * 通常 (文字列)
+         * 通常 (文字列として一致)
          */
         "keywordModeLiteral": string;
         /**
@@ -17127,17 +17127,53 @@ export interface Locale extends ILocale {
          */
         "keywordModeRegex": string;
         /**
-         * 正規表現モードでは、登録した各項目がそのまま1つの正規表現(RE2構文)として評価されます。空白や「|」では分割されません。
+         * 正規表現モードでは、登録した各項目がそのまま1つの正規表現(RE2構文)として評価されます。改行・空白・「|」では分割されません。後読みなどの一部の構文は使えません。
          */
         "regexModeDescription": string;
         /**
-         * 解釈を切り替えると、同じ内容でもマッチするノートが変わることがあります。入力内容は自動では変換されず、保存した時点から新しい解釈が適用されます。
+         * マッチ方式を切り替えると、同じ内容でもマッチするノートが変わることがあります。入力内容は自動では変換されず、保存した時点から新しい解釈が適用されます。
          */
         "regexModeWarning": string;
         /**
-         * 正規表現を追加
+         * 正規表現として解釈されるようになります。「\d+」のような記号は特別な意味を持つため、通常モードのつもりの語句が別の条件になる場合があります。入力内容は自動では変換されません。
+         */
+        "regexModeWarningToRegex": string;
+        /**
+         * 通常モードに戻すと、登録した式はただの文字列として扱われます。「\d+」や「(abc|def)」のような式はその文字列を含むノートにしか一致しなくなるため、意図しない結果になりやすいです。入力内容は自動では変換されません。
+         */
+        "regexModeWarningToLiteral": string;
+        /**
+         * 正規表現を追加 (例: りんご|みかん)
          */
         "addRegexPattern": string;
+        /**
+         * 正規表現を解釈できませんでした。
+         */
+        "invalidRegex": string;
+        /**
+         * 問題のある式: {pattern}
+         */
+        "invalidRegexPattern": ParameterizedString<"pattern">;
+        /**
+         * 正規表現が長すぎます (1項目 {max} 文字まで)。
+         */
+        "invalidRegexTooLong": ParameterizedString<"max">;
+        /**
+         * グループが多すぎます (最大 {max} グループまで)。
+         */
+        "invalidRegexTooManyGroups": ParameterizedString<"max">;
+        /**
+         * 1グループの項目が多すぎます (最大 {max} 件まで)。
+         */
+        "invalidRegexTooManyKeywords": ParameterizedString<"max">;
+        /**
+         * 1項目 {max} 文字までです。
+         */
+        "regexPatternTooLong": ParameterizedString<"max">;
+        /**
+         * 正規表現として解釈できないアンテナは、インポート時にスキップされます。
+         */
+        "importSkippedInvalidRegex": string;
     };
     "_loginRisk": {
         /**

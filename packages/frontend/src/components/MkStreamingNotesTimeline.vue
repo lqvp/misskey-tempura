@@ -36,18 +36,18 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<span style="height: 1em; width: 1px; background: var(--MI_THEME-divider);"></span>
 						<span>{{ getSeparatorInfo(paginator.items.value[i -1].createdAt, note.createdAt)?.nextText }} <i class="ti ti-chevron-down"></i></span>
 					</div>
-					<MkAntennaMatchReason v-if="props.src === 'antenna' && antennaMatchInfo[note.id]" v-bind="antennaMatchInfo[note.id]"/>
+					<MkAntennaMatchReason v-if="props.src === 'antenna' && antennaMatchInfo[note.id]" v-bind="antennaMatchInfo[note.id]" :regexMode="antennaKeywordMode === 'regex'"/>
 					<MkNote :class="$style.note" :note="note" :withHardMute="true"/>
 				</div>
 				<div v-else-if="note._shouldInsertAd_" :data-scroll-anchor="note.id">
-					<MkAntennaMatchReason v-if="props.src === 'antenna' && antennaMatchInfo[note.id]" v-bind="antennaMatchInfo[note.id]"/>
+					<MkAntennaMatchReason v-if="props.src === 'antenna' && antennaMatchInfo[note.id]" v-bind="antennaMatchInfo[note.id]" :regexMode="antennaKeywordMode === 'regex'"/>
 					<MkNote :class="$style.note" :note="note" :withHardMute="true"/>
 					<div :class="$style.ad">
 						<MkAd :preferForms="['horizontal', 'horizontal-big']"/>
 					</div>
 				</div>
 				<div v-else :data-scroll-anchor="note.id">
-					<MkAntennaMatchReason v-if="props.src === 'antenna' && antennaMatchInfo[note.id]" v-bind="antennaMatchInfo[note.id]"/>
+					<MkAntennaMatchReason v-if="props.src === 'antenna' && antennaMatchInfo[note.id]" v-bind="antennaMatchInfo[note.id]" :regexMode="antennaKeywordMode === 'regex'"/>
 					<MkNote :class="$style.note" :note="note" :withHardMute="true"/>
 				</div>
 			</template>
@@ -313,6 +313,23 @@ function prepend(note: Misskey.entities.Note & MisskeyEntity) {
 
 type AntennaMatchInfo = { matchedKeywords: string[][]; matchedExcludeKeywords: string[][] };
 const antennaMatchInfo = shallowRef<Record<string, AntennaMatchInfo>>({});
+
+// マッチ理由の表示をモードに合わせるため、アンテナのマッチ方式だけ別に持つ
+const antennaKeywordMode = ref<'literal' | 'regex'>('literal');
+if (props.src === 'antenna') {
+	// デッキのカラムではインスタンスが再利用されるので、アンテナが変わったら取り直す
+	watch(() => props.antenna, (antennaId) => {
+		antennaKeywordMode.value = 'literal';
+		if (antennaId == null) return;
+		misskeyApi('antennas/show', { antennaId }).then(antenna => {
+			// 取得中にアンテナが切り替わっていたら捨てる
+			if (antennaId !== props.antenna) return;
+			antennaKeywordMode.value = antenna.keywordMode;
+		}).catch(() => {
+			// 取得できなくてもTL表示は継続する (既定のliteral表示のまま)
+		});
+	}, { immediate: true });
+}
 
 if (props.src === 'antenna') {
 	// 表示中のノートのマッチ理由を現在の条件で再計算して取得する(受信当時の理由の復元ではない)
