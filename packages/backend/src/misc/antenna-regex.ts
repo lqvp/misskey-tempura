@@ -112,27 +112,28 @@ export function validateAntennaRegexKeywords(keywordGroups: string[][][]): Anten
 }
 
 // ノートごと・アンテナごとに同じ式をコンパイルし直さないよう使い回す (AntennaServiceのliteralキャッシュと同じLRU)。
-// ただし exec() は lastIndex を進めるので、共有インスタンスを走査に使うと
-// 別の呼び出しと状態が混ざる (test() が lastIndex を書き換えると exec ループの位置がずれる)。
-// そのためキャッシュするのは「式の元データ」だけにして、走査のたびに複製を渡す。
-const regexCache = new Map<string, RE2>();
+// exec() は lastIndex を進めるため、走査用のインスタンスは共有すると別の呼び出しと状態が混ざる
+// (test() が lastIndex を書き換えると exec ループの位置がずれる)。
+// そこで「判定用 (非グローバル)」と「走査用 (グローバル)」を別のキャッシュに分け、
+// 走査用は同期ループの中で毎回 lastIndex をリセットして使う。
+const testRegexCache = new Map<string, RE2>();
+const scanRegexCache = new Map<string, RE2>();
 const REGEX_CACHE_MAX = 10000;
 
-function getAntennaRegex(pattern: string, flags: string): RE2 {
-	const cacheKey = `${flags}:${pattern}`;
-	let regex = regexCache.get(cacheKey);
+function getCached(cache: Map<string, RE2>, cacheKey: string, pattern: string, flags: string): RE2 {
+	let regex = cache.get(cacheKey);
 	if (regex != null) {
-		regexCache.delete(cacheKey);
+		// Map は挿入順を保つので、使ったものを末尾に移して LRU にする
+		cache.delete(cacheKey);
 	} else {
 		regex = new RE2(pattern, flags);
-		if (regexCache.size >= REGEX_CACHE_MAX) {
-			const oldest = regexCache.keys().next().value;
-			if (oldest != null) regexCache.delete(oldest);
+		if (cache.size >= REGEX_CACHE_MAX) {
+			const oldest = cache.keys().next().value;
+			if (oldest != null) cache.delete(oldest);
 		}
 	}
-	regexCache.set(cacheKey, regex);
-	// 呼び出し元が lastIndex を触っても共有インスタンスに影響しないよう複製して返す
-	return new RE2(regex.source, regex.flags);
+	cache.set(cacheKey, regex);
+	return regex;
 }
 
 /**
@@ -141,7 +142,9 @@ function getAntennaRegex(pattern: string, flags: string): RE2 {
  */
 export function testAntennaRegex(pattern: string, text: string, caseSensitive: boolean): boolean {
 	try {
-		const regex = getAntennaRegex(pattern, caseSensitive ? 'u' : 'iu');
+		// 非グローバルの test() は lastIndex を使わないので、共有インスタンスで安全に使い回せる
+		const flags = caseSensitive ? 'u' : 'iu';
+		const regex = getCached(testRegexCache, `${flags}:${pattern}`, pattern, flags);
 		return regex.test(text);
 	} catch {
 		return false;
@@ -163,7 +166,9 @@ export function findAntennaRegexMatches(pattern: string, text: string, caseSensi
 	const matches: AntennaRegexMatch[] = [];
 	let regex: RE2;
 	try {
-		regex = getAntennaRegex(pattern, caseSensitive ? 'gu' : 'giu');
+		const flags = caseSensitive ? 'gu' : 'giu';
+		// 走査用はグローバルなので、この同期ループの中だけで使い、開始時に lastIndex を戻す
+		regex = getCached(scanRegexCache, `${flags}:${pattern}`, pattern, flags);
 	} catch {
 		return [];
 	}

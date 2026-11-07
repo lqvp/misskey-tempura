@@ -12,6 +12,8 @@ export class AntennaKeywordMode1793957099447 {
         await queryRunner.query(`COMMENT ON COLUMN "antenna"."keywordMode" IS 'How keywords are interpreted. literal: plain substring match (default, backward compatible). regex: each item is evaluated as one whole regular expression (RE2 syntax).'`);
     }
 
+    // 注意: down() は keywordMode 列を削除するため、各アンテナの「通常/正規表現」の選択が失われる。
+    // ロールバックが必要な場合は、コードだけを戻してこの列を残すこと (旧コードはこの列を参照しないので共存できる)。
     async down(queryRunner) {
         await queryRunner.query(`ALTER TABLE "antenna" DROP COLUMN "keywordMode"`);
         await queryRunner.query(`DROP TYPE "public"."antenna_keywordmode_enum"`);

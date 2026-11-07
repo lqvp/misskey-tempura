@@ -4,16 +4,15 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { DataSource } from 'typeorm';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { MiAntenna } from '@/models/Antenna.js';
 import { MiUserList } from '@/models/UserList.js';
-import type { AntennasRepository } from '@/models/_.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { AntennaEntityService } from '@/core/entities/AntennaEntityService.js';
 import { DI } from '@/di-symbols.js';
 import { findAntennaKeywordLimitViolation, isAntennaKeywordLimitExcessIncreased, validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
 import { ApiError } from '../../error.js';
+import type { DataSource } from 'typeorm';
 
 export const meta = {
 	tags: ['antennas'],
