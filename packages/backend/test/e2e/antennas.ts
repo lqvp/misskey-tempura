@@ -524,7 +524,7 @@ describe('アンテナ', () => {
 			const antenna = await successfulApiCall({ endpoint: 'antennas/create', parameters: defaultParam, user: alice });
 
 			const [switchMode, updateKeywords] = await Promise.all([
-				api('antennas/update', { ...defaultParam, antennaId: antenna.id, keywordMode: 'regex', keywords: [['^りんご$']] }, alice),
+				api('antennas/update', { antennaId: antenna.id, keywordMode: 'regex' }, alice),
 				api('antennas/update', { ...defaultParam, antennaId: antenna.id, keywords: [['(unclosed']] }, alice),
 			]);
 
