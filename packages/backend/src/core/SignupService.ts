@@ -132,6 +132,11 @@ export class SignupService {
 				err ? rej(err) : res([publicKey, privateKey]),
 			));
 
+		// 管理者が既定値を変更した直後でも取りこぼさないよう、登録時点の最新値を DB から取得する。
+		// DI.meta は Redis pub/sub の metaUpdated イベントで更新されるため、購読接続が
+		// イベントを取りこぼすとプロセスが再起動するまで古い値のままになる。
+		const latestMeta = await this.metaService.fetch(true);
+
 		let account!: MiUser;
 
 		// Start transaction
@@ -161,7 +166,7 @@ export class SignupService {
 				signupReason: opts.reason,
 				approved: isTheFirstUser || (opts.approved ?? !this.meta.approvalRequiredForSignup),
 				// 新規アカウントの既定値。管理者がインスタンス設定で変更できる
-				requireSigninToViewContents: this.meta.defaultRequireSigninToViewContents,
+				requireSigninToViewContents: latestMeta.defaultRequireSigninToViewContents,
 			}));
 
 			await transactionalEntityManager.save(new MiUserKeypair({
