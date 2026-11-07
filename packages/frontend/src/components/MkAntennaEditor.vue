@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<template #caption>{{ keywordMode === 'regex' ? i18n.ts._tempuraFutureAntenna.regexModeDescription : undefined }}</template>
 			</MkSelect>
 			<MkInfo v-if="keywordModeWarning != null" warn>{{ keywordModeWarning }}</MkInfo>
-			<MkInfo v-if="currentLimitViolation != null" warn>{{ describeKeywordError(currentLimitViolation, true) }}</MkInfo>
+			<MkInfo v-if="limitStatus != null" warn>{{ describeKeywordError(limitStatus.violation, true, !limitStatus.blocksSave) }}</MkInfo>
 			<div :class="$style.field">
 				<div :class="$style.label">{{ i18n.ts.antennaKeywords }}</div>
 				<MkKeywordGroupsInput v-model="keywords" :regexMode="keywordMode === 'regex'"/>
@@ -242,7 +242,7 @@ const REGEX_PATTERN_MAX_LENGTH = 512;
 type KeywordLimitInfo = { reason?: string; pattern?: string; location?: { keywordType?: string; groupIndex?: number; keywordIndex?: number } };
 
 // INVALID_REGEX / KEYWORD_LIMIT_EXCEEDED の info から、どの項目がどう駄目だったかをユーザー向けの文にする
-function describeKeywordError(info: unknown, isLimit: boolean): string {
+function describeKeywordError(info: unknown, isLimit: boolean, savable = false): string {
 	const data = (info ?? {}) as KeywordLimitInfo;
 	const reasons: Record<string, string> = isLimit
 		? {
@@ -258,6 +258,10 @@ function describeKeywordError(info: unknown, isLimit: boolean): string {
 		};
 	const fallback = isLimit ? i18n.ts._tempuraFutureAntenna.keywordLimitExceeded : i18n.ts._tempuraFutureAntenna.invalidRegex;
 	const lines = [reasons[data.reason ?? ''] ?? fallback];
+	if (savable) {
+		// 既存の超過分はそのまま保存できるので、保存が止まるわけではないと伝える
+		lines.push(i18n.ts._tempuraFutureAntenna.keywordLimitGrandfathered);
+	}
 	if (data.pattern != null) {
 		lines.push(i18n.tsx._tempuraFutureAntenna.invalidRegexPattern({ pattern: data.pattern }));
 	}
@@ -269,31 +273,82 @@ function describeKeywordError(info: unknown, isLimit: boolean): string {
 	const location = data.location;
 	if (location?.keywordType != null) {
 		const label = keywordTypeLabels[location.keywordType] ?? location.keywordType;
-		const position = location.groupIndex != null && location.keywordIndex != null
-			? `${location.groupIndex + 1}-${location.keywordIndex + 1}`
-			: '';
-		lines.push(`${label}${position !== '' ? ` (${position})` : ''}`);
+		if (location.groupIndex != null && location.keywordIndex != null) {
+			lines.push(i18n.tsx._tempuraFutureAntenna.keywordErrorPosition({
+				keywordType: label,
+				group: location.groupIndex + 1,
+				index: location.keywordIndex + 1,
+			}));
+		} else {
+			lines.push(label);
+		}
 	}
-	return lines.join('\n');
+	// MkDialog は改行を保持しないので、1行に収まる形で返す
+	return lines.join(' / ');
 }
 
-// 既存アンテナが上限を超えている場合、保存はできる (超過を増やさなければよい) が、
-// そのままだと受信時の走査コストが高いので、編集画面で修正を促す
-const currentLimitViolation = computed(() => {
-	const groups = [
-		keywords.value.map(x => x.filter(k => k !== '')).filter(x => x.length > 0),
-		excludeKeywords.value.map(x => x.filter(k => k !== '')).filter(x => x.length > 0),
-		mustExcludeKeywords.value.map(x => x.filter(k => k !== '')).filter(x => x.length > 0),
+// 保存時に送る形にそろえる (空項目を落とし、空グループを除く)
+function normalizeKeywordGroups(groups: string[][]): string[][] {
+	return groups.map(x => x.filter(k => k !== '')).filter(x => x.length > 0);
+}
+
+// キーワード群ごとの上限超過量。バックエンドの measureAntennaKeywordLimitExcess と同じ計算
+function measureExcess(groups: string[][]): number {
+	let excess = Math.max(0, groups.length - REGEX_GROUP_LIMIT);
+	for (const group of groups) {
+		excess += Math.max(0, group.length - REGEX_KEYWORDS_PER_GROUP_LIMIT);
+		for (const pattern of group) excess += Math.max(0, pattern.length - REGEX_PATTERN_MAX_LENGTH);
+	}
+	return excess;
+}
+
+// 強制除外キーワードは SCORE モードでしか使われないので、そのときだけ対象にする
+const keywordFields = computed(() => {
+	const fields: { keywordType: string; groups: string[][] }[] = [
+		{ keywordType: 'keywords', groups: normalizeKeywordGroups(keywords.value) },
+		{ keywordType: 'excludeKeywords', groups: normalizeKeywordGroups(excludeKeywords.value) },
 	];
-	for (const [typeIndex, list] of groups.entries()) {
-		const keywordType = ['keywords', 'excludeKeywords', 'mustExcludeKeywords'][typeIndex];
-		if (list.length > REGEX_GROUP_LIMIT) return { reason: 'tooManyGroups', location: { keywordType, groupIndex: 0, keywordIndex: 0 } };
-		for (const [groupIndex, group] of list.entries()) {
-			if (group.length > REGEX_KEYWORDS_PER_GROUP_LIMIT) return { reason: 'tooManyKeywords', location: { keywordType, groupIndex, keywordIndex: 0 } };
-			for (const [keywordIndex, pattern] of group.entries()) {
-				if (pattern.length > REGEX_PATTERN_MAX_LENGTH) return { reason: 'patternTooLong', pattern, location: { keywordType, groupIndex, keywordIndex } };
+	if (isScoringMode.value) {
+		fields.push({ keywordType: 'mustExcludeKeywords', groups: normalizeKeywordGroups(mustExcludeKeywords.value) });
+	}
+	return fields;
+});
+
+// 上限を超えている項目と、保存済みの状態から超過が増えたかどうか。
+// 既存アンテナは「超過が増えない限り」保存できる (バックエンドの判定に合わせる) ので、
+// 超過が増えたときだけ保存が失敗する旨を出す
+const limitStatus = computed(() => {
+	const savedFields = keywordFields.value.map(f => f.keywordType === 'keywords' ? normalizeKeywordGroups(initialAntenna.keywords)
+		: f.keywordType === 'excludeKeywords' ? normalizeKeywordGroups(initialAntenna.excludeKeywords)
+			: normalizeKeywordGroups(initialAntenna.mustExcludeKeywords ?? []));
+
+	for (const [typeIndex, field] of keywordFields.value.entries()) {
+		const groups = field.groups;
+		const location = { keywordType: field.keywordType, groupIndex: 0, keywordIndex: 0 };
+		let violation: { reason: string; pattern?: string; location: typeof location } | null = null;
+		if (groups.length > REGEX_GROUP_LIMIT) {
+			violation = { reason: 'tooManyGroups', location };
+		} else {
+			outer: for (const [groupIndex, group] of groups.entries()) {
+				if (group.length > REGEX_KEYWORDS_PER_GROUP_LIMIT) {
+					violation = { reason: 'tooManyKeywords', location: { ...location, groupIndex, keywordIndex: 0 } };
+					break;
+				}
+				for (const [keywordIndex, pattern] of group.entries()) {
+					if (pattern.length > REGEX_PATTERN_MAX_LENGTH) {
+						violation = { reason: 'patternTooLong', pattern, location: { ...location, groupIndex, keywordIndex } };
+						break outer;
+					}
+				}
 			}
 		}
+		if (violation == null) continue;
+		return {
+			violation,
+			increased: measureExcess(groups) > measureExcess(savedFields[typeIndex] ?? []),
+			// 新規作成では超過そのものが保存を止める
+			blocksSave: initialAntenna.id == null || measureExcess(groups) > measureExcess(savedFields[typeIndex] ?? []),
+		};
 	}
 	return null;
 });

@@ -23,6 +23,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 					rows="1"
 					:maxlength="REGEX_PATTERN_MAX_LENGTH"
 					:placeholder="i18n.ts._tempuraFutureAntenna.addRegexPattern"
+					@compositionstart="composing = true"
+					@compositionend="composing = false"
 					@blur="onInputBlur(gi)"
 				></textarea>
 				<input
@@ -31,7 +33,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 					:class="$style.input"
 					type="text"
 					:placeholder="i18n.ts._tempuraFutureAntenna.addKeyword"
-					@keydown.enter.prevent="addKeyword(gi)"
+					@compositionstart="composing = true"
+					@compositionend="composing = false"
+					@keydown.enter.prevent="onEnter(gi)"
 					@blur="onInputBlur(gi)"
 				>
 				<!-- blurで入力欄が空になるとdisabledになり、クリックが取り消されるため、blur直後のクリックも拾えるようにする -->
@@ -71,16 +75,18 @@ watch(model, (newValue) => {
 	inputs.value.length = newValue.length;
 });
 
-function normalize(keyword: string): string {
+function normalize(keyword: string, regexMode: boolean): string {
 	// regexモードでは前後の空白も式の一部として意味を持つため、一切加工しない
-	return props.regexMode ? keyword : keyword.trim().replace(/\s+/g, ' ');
+	return regexMode ? keyword : keyword.trim().replace(/\s+/g, ' ');
 }
 
-function addKeyword(gi: number) {
-	const keyword = normalize(inputs.value[gi] ?? '');
+// regexMode を引数で受けるのは、モード切替で入力欄が作り直されたときの blur が
+// 「入力していたときのモード」ではなく「切替後のモード」で確定してしまうのを防ぐため
+function addKeyword(gi: number, regexMode = props.regexMode) {
+	const keyword = normalize(inputs.value[gi] ?? '', regexMode);
 	if (keyword === '') return;
 	const next = model.value.map(g => [...g]);
-	if (props.regexMode) {
+	if (regexMode) {
 		next[gi].push(keyword);
 	} else {
 		// 空白を含む入力は従来のスペース区切りと同じくANDとして分割する
@@ -90,8 +96,25 @@ function addKeyword(gi: number) {
 	inputs.value[gi] = '';
 }
 
+// モード切替で入力欄が作り直される前に、入力中の内容を「切替前のモード」で確定しておく
+watch(() => props.regexMode, (_newMode, oldMode) => {
+	for (let gi = 0; gi < inputs.value.length; gi++) {
+		if (inputs.value[gi] !== '') addKeyword(gi, oldMode);
+	}
+}, { flush: 'pre' });
+
+// IME 変換中は確定させない (変換途中の文字列がキーワードとして登録されるのを防ぐ)
+const composing = ref(false);
+
 // 入力欄からフォーカスが外れたら確定する
 function onInputBlur(gi: number) {
+	if (composing.value) return;
+	addKeyword(gi);
+}
+
+// IME 変換中の Enter は変換確定なので、キーワード追加には使わない
+function onEnter(gi: number) {
+	if (composing.value) return;
 	addKeyword(gi);
 }
 

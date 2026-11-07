@@ -67,6 +67,9 @@ const props = withDefaults(defineProps<{
 
 .monospace {
 	font-family: monospace;
+	// 正規表現には改行や連続空白が含まれうるので、保存値どおりに表示する
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
 }
 
 .chip {

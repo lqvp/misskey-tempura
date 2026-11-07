@@ -80,6 +80,25 @@ describe('MkKeywordGroupsInput', () => {
 		expect(captured).toEqual([['foo']]);
 	});
 
+	test('モードを切り替えると、入力中の内容は切替前のモードで確定される', async () => {
+		// regexモードで "foo bar" を入力中に literal へ切り替えると、
+		// 切替後のモードで分割されてしまうとユーザーの意図と違う条件になる
+		let captured: string[][] | null = null;
+		const page = render(MkKeywordGroupsInput, {
+			props: {
+				modelValue: [[]],
+				regexMode: true,
+				'onUpdate:modelValue': (v: string[][]) => { captured = v; },
+			},
+			global: { directives, components },
+		});
+		const ta = page.container.querySelector('textarea')!;
+		await fireEvent.update(ta, 'foo bar');
+		// 切替前のモード (regex) で1項目として確定される
+		await page.rerender({ modelValue: captured ?? [[]], regexMode: false, 'onUpdate:modelValue': (v: string[][]) => { captured = v; } });
+		expect(captured).toEqual([['foo bar']]);
+	});
+
 	test('regex モードのチップは改行を空白に畳まずに表示する', async () => {
 		const page = render(MkKeywordGroupsInput, {
 			props: {

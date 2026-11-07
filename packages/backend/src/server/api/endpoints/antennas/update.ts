@@ -12,7 +12,7 @@ import type { AntennasRepository } from '@/models/_.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { AntennaEntityService } from '@/core/entities/AntennaEntityService.js';
 import { DI } from '@/di-symbols.js';
-import { REGEX_GROUP_LIMIT, REGEX_KEYWORDS_PER_GROUP_LIMIT, REGEX_PATTERN_MAX_LENGTH, findAntennaKeywordLimitViolation, measureAntennaKeywordLimitExcess, validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
+import { findAntennaKeywordLimitViolation, isAntennaKeywordLimitExcessIncreased, validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -132,18 +132,21 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 				// 切替後のmodeで、切替後に有効になるキーワード群全体を検証する (未指定の項目は保存済みの値)
 				const keywordMode = ps.keywordMode ?? locked.keywordMode;
-				const nextKeywords = [
-					ps.keywords ?? locked.keywords,
-					ps.excludeKeywords ?? locked.excludeKeywords,
-					ps.mustExcludeKeywords ?? locked.mustExcludeKeywords,
-				];
+				const expression = ps.expression !== undefined ? ps.expression : locked.expression;
+				// 強制除外キーワードは SCORE モードでしか使われないので、使われないときは検証しない
+				// (SCORE を切った状態で壊れた式が残っていても、保存をブロックしない)
+				const nextKeywords = expression === 'SCORE'
+					? [ps.keywords ?? locked.keywords, ps.excludeKeywords ?? locked.excludeKeywords, ps.mustExcludeKeywords ?? locked.mustExcludeKeywords]
+					: [ps.keywords ?? locked.keywords, ps.excludeKeywords ?? locked.excludeKeywords];
 
 				// 上限は新規に作る分にだけ課す。従来のAPIでは上限を超えるアンテナを保存できていたため、
 				// 既に超過しているアンテナは「超過が増えない限り」保存できるようにする (名前だけの変更も通す)
 				const limitViolation = findAntennaKeywordLimitViolation(nextKeywords);
 				if (limitViolation != null) {
-					const currentExcess = measureAntennaKeywordLimitExcess([locked.keywords, locked.excludeKeywords, locked.mustExcludeKeywords]);
-					if (measureAntennaKeywordLimitExcess(nextKeywords) > currentExcess) {
+					const currentKeywords = expression === 'SCORE'
+						? [locked.keywords, locked.excludeKeywords, locked.mustExcludeKeywords]
+						: [locked.keywords, locked.excludeKeywords];
+					if (isAntennaKeywordLimitExcessIncreased(nextKeywords, currentKeywords)) {
 						throw new ApiError(meta.errors.keywordLimitExceeded, { reason: limitViolation.reason, pattern: limitViolation.pattern, location: limitViolation.location });
 					}
 				}

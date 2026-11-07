@@ -568,8 +568,8 @@ describe('アンテナ', () => {
 				user: alice,
 			}, {
 				status: 400,
-				code: 'INVALID_PARAM',
-				id: '3d81ceae-475f-4600-b2a8-2bc116157532',
+				code: 'KEYWORD_LIMIT_EXCEEDED',
+				id: '4b8e2f61-7d3a-49c5-a0e8-1f6c9b2d7e43',
 			});
 		});
 
@@ -611,6 +611,78 @@ describe('アンテナ', () => {
 				user: alice,
 			});
 			assert.deepStrictEqual(fixed.keywords, [['a', 'b']]);
+		});
+
+		test('試し打ち(antennas/test)も保存と同じ上限を課すこと。', async () => {
+			// 試し打ちだけ通って保存で失敗すると、結果を信じて保存したユーザーが混乱する
+			await failedApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywordMode: 'literal', keywords: [Array.from({ length: 33 }, () => 'a')] },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'KEYWORD_LIMIT_EXCEEDED',
+				id: '2e7a5c94-8f13-4d6b-b0a2-7c4e1d9f3b58',
+			});
+		});
+
+		test('上限超過のキーワードは create で KEYWORD_LIMIT_EXCEEDED を返すこと。', async () => {
+			// paramDef で弾くと汎用の INVALID_PARAM になり、どの項目が超過しているか返せない
+			await failedApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywordMode: 'literal', keywords: [Array.from({ length: 33 }, () => 'a')] },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'KEYWORD_LIMIT_EXCEEDED',
+				id: '4b8e2f61-7d3a-49c5-a0e8-1f6c9b2d7e43',
+			});
+		});
+
+		test('SCOREモードでないときは強制除外キーワードを検証しないこと。', async () => {
+			// mustExcludeKeywords は SCORE モードでしか使われないので、壊れた式が残っていても
+			// regex への切替や保存をブロックしない
+			const antenna = await successfulApiCall({ endpoint: 'antennas/create', parameters: defaultParam, user: alice });
+			const res = await successfulApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: antenna.id, keywordMode: 'regex', keywords: [['ok']], mustExcludeKeywords: [['(unclosed']] },
+				user: alice,
+			});
+			assert.strictEqual(res.keywordMode, 'regex');
+
+			// SCORE モードにすると同じ式が検証対象になる
+			await failedApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: antenna.id, keywordMode: 'regex', expression: 'SCORE', keywords: [['ok']], mustExcludeKeywords: [['(unclosed']] },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'INVALID_REGEX',
+				id: '68573d35-69af-48dc-bd62-e2a059907cf5',
+			});
+		});
+
+		test('パターンは本文全体への部分一致で、CW があると ^$ は行単位にならないこと。', async () => {
+			// アンカーの意味を固定しておく (ドキュメントの記述と一致させる)
+			const withCw = await post(bob, { text: 'りんご', cw: 'ネタバレ' });
+			const plain = await post(bob, { text: 'りんご' });
+
+			const anchored = await successfulApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywordMode: 'regex', keywords: [['^りんご$']] },
+				user: alice,
+			});
+			// CW 付きは本文が "りんご\nネタバレ" になるので一致しない
+			assert.ok(!anchored.some((x: Note) => x.id === withCw.id));
+			assert.ok(anchored.some((x: Note) => x.id === plain.id));
+
+			// (?m) を使えば行単位で一致する
+			const multiline = await successfulApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywordMode: 'regex', keywords: [['(?m)^りんご$']] },
+				user: alice,
+			});
+			assert.ok(multiline.some((x: Note) => x.id === withCw.id));
 		});
 
 		test('INVALID_REGEX はどの項目が不正かを info で返すこと。', async () => {

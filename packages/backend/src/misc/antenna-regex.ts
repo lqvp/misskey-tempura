@@ -57,21 +57,32 @@ export function findAntennaKeywordLimitViolation(keywordGroups: string[][][]): A
 }
 
 /**
- * 上限超過の度合いを数値化する (大きいほど超過している)。上限内なら 0。
+ * キーワード群ごとの上限超過の度合いを数値化する (大きいほど超過している)。上限内なら 0。
  * 既存の超過アンテナを保存してよいか (超過が増えていないか) の比較に使う。
+ * 合計ではなくキーワード群ごとに返すのは、ある群を減らして別の群を超過させる
+ * 「超過の付け替え」を許さないため。
  */
-export function measureAntennaKeywordLimitExcess(keywordGroups: string[][][]): number {
-	let excess = 0;
-	for (const groups of keywordGroups) {
-		excess += Math.max(0, groups.length - REGEX_GROUP_LIMIT);
+export function measureAntennaKeywordLimitExcess(keywordGroups: string[][][]): number[] {
+	return keywordGroups.map(groups => {
+		let excess = Math.max(0, groups.length - REGEX_GROUP_LIMIT);
 		for (const group of groups) {
 			excess += Math.max(0, group.length - REGEX_KEYWORDS_PER_GROUP_LIMIT);
 			for (const pattern of group) {
 				excess += Math.max(0, pattern.length - REGEX_PATTERN_MAX_LENGTH);
 			}
 		}
-	}
-	return excess;
+		return excess;
+	});
+}
+
+/**
+ * 上限超過の度合いが、保存前より増えているキーワード群があるか。
+ * 既存の超過アンテナは「超過が増えない限り」保存できる (名前だけの変更も通す) という判定に使う。
+ */
+export function isAntennaKeywordLimitExcessIncreased(next: string[][][], current: string[][][]): boolean {
+	const nextExcess = measureAntennaKeywordLimitExcess(next);
+	const currentExcess = measureAntennaKeywordLimitExcess(current);
+	return nextExcess.some((excess, i) => excess > (currentExcess[i] ?? 0));
 }
 
 /**
@@ -101,7 +112,9 @@ export function validateAntennaRegexKeywords(keywordGroups: string[][][]): Anten
 }
 
 // ノートごと・アンテナごとに同じ式をコンパイルし直さないよう使い回す (AntennaServiceのliteralキャッシュと同じLRU)。
-// RE2もRegExp同様、exec/matchAllでは内部状態が進むため、共有するのはフラグ違いで別エントリにする。
+// ただし exec() は lastIndex を進めるので、共有インスタンスを走査に使うと
+// 別の呼び出しと状態が混ざる (test() が lastIndex を書き換えると exec ループの位置がずれる)。
+// そのためキャッシュするのは「式の元データ」だけにして、走査のたびに複製を渡す。
 const regexCache = new Map<string, RE2>();
 const REGEX_CACHE_MAX = 10000;
 
@@ -118,7 +131,8 @@ function getAntennaRegex(pattern: string, flags: string): RE2 {
 		}
 	}
 	regexCache.set(cacheKey, regex);
-	return regex;
+	// 呼び出し元が lastIndex を触っても共有インスタンスに影響しないよう複製して返す
+	return new RE2(regex.source, regex.flags);
 }
 
 /**

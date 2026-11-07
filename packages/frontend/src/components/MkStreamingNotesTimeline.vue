@@ -61,7 +61,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, watch, onUnmounted, provide, useTemplateRef, TransitionGroup, onMounted, shallowRef, ref, markRaw } from 'vue';
+import { computed, watch, onUnmounted, provide, inject, useTemplateRef, TransitionGroup, onMounted, shallowRef, ref, markRaw } from 'vue';
+import type { Ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { useInterval } from '@@/js/use-interval.js';
 import { useDocumentVisibility } from '@@/js/use-document-visibility.js';
@@ -314,13 +315,22 @@ function prepend(note: Misskey.entities.Note & MisskeyEntity) {
 type AntennaMatchInfo = { matchedKeywords: string[][]; matchedExcludeKeywords: string[][] };
 const antennaMatchInfo = shallowRef<Record<string, AntennaMatchInfo>>({});
 
-// マッチ理由の表示をモードに合わせるため、アンテナのマッチ方式だけ別に持つ
+// マッチ理由の表示をモードに合わせるため、アンテナのマッチ方式だけ別に持つ。
+// アンテナページ/デッキのカラムは取得済みのアンテナを provide しているので、それを優先して余計なリクエストを避ける
+const currentAntenna = inject<Ref<Misskey.entities.Antenna | null> | null>('currentAntenna', null);
 const antennaKeywordMode = ref<'literal' | 'regex'>('literal');
 if (props.src === 'antenna') {
 	// デッキのカラムではインスタンスが再利用されるので、アンテナが変わったら取り直す
 	watch(() => props.antenna, (antennaId) => {
 		antennaKeywordMode.value = 'literal';
 		if (antennaId == null) return;
+		if (currentAntenna != null) {
+			// provide されたアンテナが切り替わったら、その値をそのまま使う
+			watch(currentAntenna, (antenna) => {
+				antennaKeywordMode.value = antenna != null && antenna.id === props.antenna ? antenna.keywordMode : 'literal';
+			}, { immediate: true });
+			return;
+		}
 		misskeyApi('antennas/show', { antennaId }).then(antenna => {
 			// 取得中にアンテナが切り替わっていたら捨てる
 			if (antennaId !== props.antenna) return;

@@ -8,6 +8,7 @@ import {
 	validateAntennaRegexKeywords,
 	findAntennaKeywordLimitViolation,
 	measureAntennaKeywordLimitExcess,
+	isAntennaKeywordLimitExcessIncreased,
 	testAntennaRegex,
 	findAntennaRegexMatches,
 	REGEX_GROUP_LIMIT,
@@ -78,22 +79,57 @@ describe('findAntennaKeywordLimitViolation', () => {
 });
 
 describe('measureAntennaKeywordLimitExcess', () => {
-	it('returns 0 within the limits', () => {
-		expect(measureAntennaKeywordLimitExcess([[['a']], [['b']], []])).toBe(0);
+	it('returns 0 for each keyword field within the limits', () => {
+		expect(measureAntennaKeywordLimitExcess([[['a']], [['b']], []])).toEqual([0, 0, 0]);
 	});
 
 	it('counts how far each limit is exceeded', () => {
-		expect(measureAntennaKeywordLimitExcess([Array(REGEX_GROUP_LIMIT + 2).fill(['a'])])).toBe(2);
-		expect(measureAntennaKeywordLimitExcess([[Array(REGEX_KEYWORDS_PER_GROUP_LIMIT + 3).fill('a')]])).toBe(3);
-		expect(measureAntennaKeywordLimitExcess([[['a'.repeat(REGEX_PATTERN_MAX_LENGTH + 5)]]])).toBe(5);
+		expect(measureAntennaKeywordLimitExcess([Array(REGEX_GROUP_LIMIT + 2).fill(['a'])])).toEqual([2]);
+		expect(measureAntennaKeywordLimitExcess([[Array(REGEX_KEYWORDS_PER_GROUP_LIMIT + 3).fill('a')]])).toEqual([3]);
+		expect(measureAntennaKeywordLimitExcess([[['a'.repeat(REGEX_PATTERN_MAX_LENGTH + 5)]]])).toEqual([5]);
+	});
+
+	it('reports the excess per keyword field, not as a single total', () => {
+		const overKeywords = Array.from({ length: 33 }, () => ['a']);
+		expect(measureAntennaKeywordLimitExcess([overKeywords, [], []])).toEqual([1, 0, 0]);
+		expect(measureAntennaKeywordLimitExcess([[], overKeywords, []])).toEqual([0, 1, 0]);
 	});
 
 	it('distinguishes a larger excess from the same excess', () => {
 		const over33 = [[Array.from({ length: 33 }, () => 'a')]];
 		const over40 = [[Array.from({ length: 40 }, () => 'a')]];
-		expect(measureAntennaKeywordLimitExcess(over33)).toBe(1);
-		expect(measureAntennaKeywordLimitExcess(over40)).toBe(8);
-		expect(measureAntennaKeywordLimitExcess(over40)).toBeGreaterThan(measureAntennaKeywordLimitExcess(over33));
+		expect(measureAntennaKeywordLimitExcess(over33)).toEqual([1]);
+		expect(measureAntennaKeywordLimitExcess(over40)).toEqual([8]);
+	});
+});
+
+describe('isAntennaKeywordLimitExcessIncreased', () => {
+	it('is false when nothing is over the limit', () => {
+		expect(isAntennaKeywordLimitExcessIncreased([[['a']], [['b']]], [[['a']], [['b']]])).toBe(false);
+	});
+
+	it('is false when the existing excess is kept as-is', () => {
+		const over = [Array.from({ length: 33 }, () => 'a')];
+		expect(isAntennaKeywordLimitExcessIncreased([over, []], [over, []])).toBe(false);
+	});
+
+	it('is false when the excess is reduced', () => {
+		const over = [Array.from({ length: 40 }, () => 'a')];
+		const less = [Array.from({ length: 33 }, () => 'a')];
+		expect(isAntennaKeywordLimitExcessIncreased([less, []], [over, []])).toBe(false);
+	});
+
+	it('is true when the excess grows', () => {
+		const over = [Array.from({ length: 33 }, () => 'a')];
+		const more = [Array.from({ length: 40 }, () => 'a')];
+		expect(isAntennaKeywordLimitExcessIncreased([more, []], [over, []])).toBe(true);
+	});
+
+	it('is true when excess is moved to another keyword field', () => {
+		// keywords を減らして excludeKeywords を超過させる「付け替え」は許可しない
+		const overKeywords = [Array.from({ length: 33 }, () => 'a')];
+		const overExclude = [Array.from({ length: 33 }, () => 'a')];
+		expect(isAntennaKeywordLimitExcessIncreased([[['a']], overExclude], [overKeywords, []])).toBe(true);
 	});
 });
 
@@ -137,6 +173,29 @@ describe('whitespace preservation (regex mode)', () => {
 		expect(validateAntennaRegexKeywords([[['foo\nbar']]])).toBeNull();
 		expect(testAntennaRegex('foo\nbar', 'see foo\nbar end', true)).toBe(true);
 		expect(testAntennaRegex('foo\nbar', 'foo bar', true)).toBe(false);
+	});
+});
+
+describe('shared cache isolation', () => {
+	it('does not let test() disturb an in-progress exec() scan of the same pattern', () => {
+		// キャッシュを共有していても、走査中の lastIndex が別呼び出しの test() に書き換えられないこと
+		const text = 'xaxaxaxaxa';
+		const first = findAntennaRegexMatches('a', text, true);
+		expect(first.map(m => m.start)).toEqual([1, 3, 5, 7, 9]);
+
+		// 同じ式で test() を挟んでも、続く走査結果は変わらない
+		expect(testAntennaRegex('a', 'zzz', true)).toBe(false);
+		const second = findAntennaRegexMatches('a', text, true);
+		expect(second.map(m => m.start)).toEqual([1, 3, 5, 7, 9]);
+	});
+
+	it('keeps case-insensitivity after repeated cached calls', () => {
+		for (let i = 0; i < 3; i++) {
+			expect(testAntennaRegex('Apple', 'xxapple', false)).toBe(true);
+			expect(testAntennaRegex('Apple', 'xxapple', true)).toBe(false);
+			expect(findAntennaRegexMatches('apple', 'APPLE', false)).toHaveLength(1);
+			expect(findAntennaRegexMatches('apple', 'APPLE', true)).toHaveLength(0);
+		}
 	});
 });
 

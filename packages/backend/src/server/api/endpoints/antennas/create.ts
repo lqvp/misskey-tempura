@@ -11,7 +11,7 @@ import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { AntennaEntityService } from '@/core/entities/AntennaEntityService.js';
 import { DI } from '@/di-symbols.js';
 import { RoleService } from '@/core/RoleService.js';
-import { REGEX_GROUP_LIMIT, REGEX_KEYWORDS_PER_GROUP_LIMIT, REGEX_PATTERN_MAX_LENGTH, findAntennaKeywordLimitViolation, validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
+import { findAntennaKeywordLimitViolation, validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -68,20 +68,21 @@ export const paramDef = {
 		name: { type: 'string', minLength: 1, maxLength: 100 },
 		src: { type: 'string', enum: ['home', 'all', 'users', 'list', 'users_blacklist'] },
 		userListId: { type: 'string', format: 'misskey:id', nullable: true },
-		// 受信経路はノートごとに全キーワードを走査するため、モードに関係なく上限を揃える
-		keywords: { type: 'array', maxItems: REGEX_GROUP_LIMIT, items: {
-			type: 'array', maxItems: REGEX_KEYWORDS_PER_GROUP_LIMIT, items: {
-				type: 'string', maxLength: REGEX_PATTERN_MAX_LENGTH,
+		// 上限は paramDef ではなくハンドラで判定する。paramDef で弾くと汎用の INVALID_PARAM になり、
+		// どのキーワード群の何番目が超過しているかをクライアントに返せないため
+		keywords: { type: 'array', items: {
+			type: 'array', items: {
+				type: 'string',
 			},
 		} },
-		excludeKeywords: { type: 'array', maxItems: REGEX_GROUP_LIMIT, items: {
-			type: 'array', maxItems: REGEX_KEYWORDS_PER_GROUP_LIMIT, items: {
-				type: 'string', maxLength: REGEX_PATTERN_MAX_LENGTH,
+		excludeKeywords: { type: 'array', items: {
+			type: 'array', items: {
+				type: 'string',
 			},
 		} },
-		mustExcludeKeywords: { type: 'array', maxItems: REGEX_GROUP_LIMIT, items: {
-			type: 'array', maxItems: REGEX_KEYWORDS_PER_GROUP_LIMIT, items: {
-				type: 'string', maxLength: REGEX_PATTERN_MAX_LENGTH,
+		mustExcludeKeywords: { type: 'array', items: {
+			type: 'array', items: {
+				type: 'string',
 			},
 		} },
 		expression: { type: 'string', nullable: true, maxLength: 2048 },
@@ -119,9 +120,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw new ApiError(meta.errors.emptyKeyword);
 			}
 
-			// 上限はモードに関係なく課す (受信経路はノートごとに全キーワードを走査するため)。
-			// ただし paramDef 側でも同じ上限を課しているので、通常はここに来る前に INVALID_PARAM になる
-			const keywordGroups = [ps.keywords, ps.excludeKeywords, ps.mustExcludeKeywords ?? []];
+			// 強制除外キーワードは SCORE モードでしか使われないので、使われないときは検証しない
+			// (SCORE を切った状態で壊れた式が残っていても、保存をブロックしない)
+			const keywordGroups = ps.expression === 'SCORE'
+				? [ps.keywords, ps.excludeKeywords, ps.mustExcludeKeywords ?? []]
+				: [ps.keywords, ps.excludeKeywords];
 			const limitViolation = findAntennaKeywordLimitViolation(keywordGroups);
 			if (limitViolation != null) {
 				throw new ApiError(meta.errors.keywordLimitExceeded, { reason: limitViolation.reason, pattern: limitViolation.pattern, location: limitViolation.location });

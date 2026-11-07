@@ -17131,10 +17131,6 @@ export interface Locale extends ILocale {
          */
         "regexModeDescription": string;
         /**
-         * マッチ方式を切り替えると、同じ内容でもマッチするノートが変わることがあります。入力内容は自動では変換されず、保存した時点から新しい解釈が適用されます。
-         */
-        "regexModeWarning": string;
-        /**
          * 正規表現として解釈されるようになります。「\d+」のような記号は特別な意味を持つため、通常モードのつもりの語句が別の条件になる場合があります。入力内容は自動では変換されません。
          */
         "regexModeWarningToRegex": string;
@@ -17163,6 +17159,14 @@ export interface Locale extends ILocale {
          */
         "keywordLimitExceeded": string;
         /**
+         * 既存の超過分はそのまま保存できますが、増やすことはできません。
+         */
+        "keywordLimitGrandfathered": string;
+        /**
+         * {keywordType} の グループ{group}・{index}番目
+         */
+        "keywordErrorPosition": ParameterizedString<"keywordType" | "group" | "index">;
+        /**
          * 1項目 {max} 文字までです。長い項目を短くしてください。
          */
         "keywordLimitTooLong": ParameterizedString<"max">;
@@ -17182,14 +17186,6 @@ export interface Locale extends ILocale {
          * 1グループの項目が多すぎます (最大 {max} 件まで)。
          */
         "invalidRegexTooManyKeywords": ParameterizedString<"max">;
-        /**
-         * 1項目 {max} 文字までです。
-         */
-        "regexPatternTooLong": ParameterizedString<"max">;
-        /**
-         * 正規表現として解釈できないアンテナは、インポート時にスキップされます。
-         */
-        "importSkippedInvalidRegex": string;
     };
     "_loginRisk": {
         /**

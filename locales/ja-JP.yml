@@ -4622,7 +4622,6 @@ _tempuraFutureAntenna:
   keywordModeLiteral: "通常 (文字列として一致)"
   keywordModeRegex: "正規表現"
   regexModeDescription: "正規表現モードでは、登録した各項目がそのまま1つの正規表現(RE2構文)として評価されます。改行・空白・「|」では分割されません。後読みなどの一部の構文は使えません。"
-  regexModeWarning: "マッチ方式を切り替えると、同じ内容でもマッチするノートが変わることがあります。入力内容は自動では変換されず、保存した時点から新しい解釈が適用されます。"
   regexModeWarningToRegex: "正規表現として解釈されるようになります。「\\d+」のような記号は特別な意味を持つため、通常モードのつもりの語句が別の条件になる場合があります。入力内容は自動では変換されません。"
   regexModeWarningToLiteral: "通常モードに戻すと、登録した式はただの文字列として扱われます。「\\d+」や「(abc|def)」のような式はその文字列を含むノートにしか一致しなくなるため、意図しない結果になりやすいです。入力内容は自動では変換されません。"
   addRegexPattern: "正規表現を追加 (例: りんご|みかん)"
@@ -4630,13 +4629,13 @@ _tempuraFutureAntenna:
   invalidRegexPattern: "問題のある式: {pattern}"
   invalidRegexTooLong: "正規表現が長すぎます (1項目 {max} 文字まで)。"
   keywordLimitExceeded: "キーワードが多すぎます。超過分を削除すると保存できます。"
+  keywordLimitGrandfathered: "既存の超過分はそのまま保存できますが、増やすことはできません。"
+  keywordErrorPosition: "{keywordType} の グループ{group}・{index}番目"
   keywordLimitTooLong: "1項目 {max} 文字までです。長い項目を短くしてください。"
   keywordLimitTooManyGroups: "グループが多すぎます (最大 {max} グループまで)。グループを減らしてください。"
   keywordLimitTooManyKeywords: "1グループの項目が多すぎます (最大 {max} 件まで)。項目を減らしてください。"
   invalidRegexTooManyGroups: "グループが多すぎます (最大 {max} グループまで)。"
   invalidRegexTooManyKeywords: "1グループの項目が多すぎます (最大 {max} 件まで)。"
-  regexPatternTooLong: "1項目 {max} 文字までです。"
-  importSkippedInvalidRegex: "正規表現として解釈できないアンテナは、インポート時にスキップされます。"
 
 _loginRisk:
   title: "不審なログインの検知"

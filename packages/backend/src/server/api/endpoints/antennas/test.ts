@@ -10,7 +10,7 @@ import type { NotesRepository, UserListsRepository } from '@/models/_.js';
 import { QueryService } from '@/core/QueryService.js';
 import { AntennaService } from '@/core/AntennaService.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
-import { REGEX_GROUP_LIMIT, REGEX_KEYWORDS_PER_GROUP_LIMIT, REGEX_PATTERN_MAX_LENGTH, validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
+import { findAntennaKeywordLimitViolation, validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
 import { DI } from '@/di-symbols.js';
 import type { MiAntenna } from '@/models/Antenna.js';
 import type { MiNote } from '@/models/Note.js';
@@ -46,6 +46,12 @@ export const meta = {
 			code: 'INVALID_REGEX',
 			id: '0718cd93-e139-48f9-8107-2f5b24ad3669',
 		},
+
+		keywordLimitExceeded: {
+			message: 'Too many keywords.',
+			code: 'KEYWORD_LIMIT_EXCEEDED',
+			id: '2e7a5c94-8f13-4d6b-b0a2-7c4e1d9f3b58',
+		},
 	},
 
 	res: {
@@ -64,19 +70,20 @@ export const paramDef = {
 	properties: {
 		src: { type: 'string', enum: ['home', 'all', 'users', 'list', 'users_blacklist'] },
 		userListId: { type: 'string', format: 'misskey:id', nullable: true },
-		keywords: { type: 'array', maxItems: REGEX_GROUP_LIMIT, items: {
-			type: 'array', maxItems: REGEX_KEYWORDS_PER_GROUP_LIMIT, items: {
-				type: 'string', maxLength: REGEX_PATTERN_MAX_LENGTH,
+		// 上限は paramDef ではなくハンドラで判定する (create と同じ理由: どの項目が超過しているかを返すため)
+		keywords: { type: 'array', items: {
+			type: 'array', items: {
+				type: 'string',
 			},
 		} },
-		excludeKeywords: { type: 'array', maxItems: REGEX_GROUP_LIMIT, items: {
-			type: 'array', maxItems: REGEX_KEYWORDS_PER_GROUP_LIMIT, items: {
-				type: 'string', maxLength: REGEX_PATTERN_MAX_LENGTH,
+		excludeKeywords: { type: 'array', items: {
+			type: 'array', items: {
+				type: 'string',
 			},
 		} },
-		mustExcludeKeywords: { type: 'array', maxItems: REGEX_GROUP_LIMIT, items: {
-			type: 'array', maxItems: REGEX_KEYWORDS_PER_GROUP_LIMIT, items: {
-				type: 'string', maxLength: REGEX_PATTERN_MAX_LENGTH,
+		mustExcludeKeywords: { type: 'array', items: {
+			type: 'array', items: {
+				type: 'string',
 			},
 		} },
 		expression: { type: 'string', nullable: true, maxLength: 2048 },
@@ -114,8 +121,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw new ApiError(meta.errors.emptyKeyword);
 			}
 
+			// 保存 (create) と同じ検証を通す。試し打ちだけ通って保存で失敗すると、結果を信じて保存したユーザーが混乱するため
+			// 強制除外キーワードは SCORE モードでしか使われないので、使われないときは検証しない
+			const keywordGroups = ps.expression === 'SCORE'
+				? [ps.keywords, ps.excludeKeywords, ps.mustExcludeKeywords ?? []]
+				: [ps.keywords, ps.excludeKeywords];
+			const limitViolation = findAntennaKeywordLimitViolation(keywordGroups);
+			if (limitViolation != null) {
+				throw new ApiError(meta.errors.keywordLimitExceeded, { reason: limitViolation.reason, pattern: limitViolation.pattern, location: limitViolation.location });
+			}
+
 			if ((ps.keywordMode ?? 'literal') === 'regex') {
-				const regexError = validateAntennaRegexKeywords([ps.keywords, ps.excludeKeywords, ps.mustExcludeKeywords ?? []]);
+				const regexError = validateAntennaRegexKeywords(keywordGroups);
 				if (regexError != null) {
 					throw new ApiError(meta.errors.invalidRegex, { reason: regexError.reason, pattern: regexError.pattern, detail: regexError.message, location: regexError.location });
 				}
