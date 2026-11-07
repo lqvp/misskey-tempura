@@ -29,11 +29,14 @@ export type AntennaRegexValidationError = {
 
 const keywordTypeNames = ['keywords', 'excludeKeywords', 'mustExcludeKeywords'] as const;
 
+export type AntennaKeywordType = typeof keywordTypeNames[number];
+
 /**
- * regex mode で使われるキーワード群 (include / exclude / mustExclude の全グループ) を検証する。
- * 作成・更新・試し打ち・インポートで共通して使い、不正な式を受信経路に入れない。
+ * キーワード群が上限 (グループ数 / グループあたりの項目数 / 1項目の長さ) を超えているかだけを見る。
+ * 構文の妥当性は見ないので、literal モードの保存可否判定にも使える。
+ * 上限を超えたアンテナは受信経路の走査コストが増えるため、新規作成では拒否する。
  */
-export function validateAntennaRegexKeywords(keywordGroups: string[][][]): AntennaRegexValidationError | null {
+export function findAntennaKeywordLimitViolation(keywordGroups: string[][][]): AntennaRegexValidationError | null {
 	for (const [keywordTypeIndex, groups] of keywordGroups.entries()) {
 		const keywordType = keywordTypeNames[keywordTypeIndex] ?? 'keywords';
 		if (groups.length > REGEX_GROUP_LIMIT) {
@@ -44,11 +47,47 @@ export function validateAntennaRegexKeywords(keywordGroups: string[][][]): Anten
 				return { reason: 'tooManyKeywords', location: { keywordType, groupIndex, keywordIndex: 0 } };
 			}
 			for (const [keywordIndex, pattern] of group.entries()) {
+				if (pattern.length > REGEX_PATTERN_MAX_LENGTH) {
+					return { reason: 'patternTooLong', pattern, location: { keywordType, groupIndex, keywordIndex } };
+				}
+			}
+		}
+	}
+	return null;
+}
+
+/**
+ * 上限超過の度合いを数値化する (大きいほど超過している)。上限内なら 0。
+ * 既存の超過アンテナを保存してよいか (超過が増えていないか) の比較に使う。
+ */
+export function measureAntennaKeywordLimitExcess(keywordGroups: string[][][]): number {
+	let excess = 0;
+	for (const groups of keywordGroups) {
+		excess += Math.max(0, groups.length - REGEX_GROUP_LIMIT);
+		for (const group of groups) {
+			excess += Math.max(0, group.length - REGEX_KEYWORDS_PER_GROUP_LIMIT);
+			for (const pattern of group) {
+				excess += Math.max(0, pattern.length - REGEX_PATTERN_MAX_LENGTH);
+			}
+		}
+	}
+	return excess;
+}
+
+/**
+ * regex mode で使われるキーワード群 (include / exclude / mustExclude の全グループ) を検証する。
+ * 作成・更新・試し打ち・インポートで共通して使い、不正な式を受信経路に入れない。
+ */
+export function validateAntennaRegexKeywords(keywordGroups: string[][][]): AntennaRegexValidationError | null {
+	const limitViolation = findAntennaKeywordLimitViolation(keywordGroups);
+	if (limitViolation != null) return limitViolation;
+
+	for (const [keywordTypeIndex, groups] of keywordGroups.entries()) {
+		const keywordType = keywordTypeNames[keywordTypeIndex] ?? 'keywords';
+		for (const [groupIndex, group] of groups.entries()) {
+			for (const [keywordIndex, pattern] of group.entries()) {
 				if (pattern === '') continue;
 				const location = { keywordType, groupIndex, keywordIndex };
-				if (pattern.length > REGEX_PATTERN_MAX_LENGTH) {
-					return { reason: 'patternTooLong', pattern, location };
-				}
 				try {
 					// 構文の妥当性は u/i/g フラグに依存しないので、ここでは u のみでコンパイルして確認する
 					void new RE2(pattern, 'u');

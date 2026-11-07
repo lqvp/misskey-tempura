@@ -28,6 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<template #caption>{{ keywordMode === 'regex' ? i18n.ts._tempuraFutureAntenna.regexModeDescription : undefined }}</template>
 			</MkSelect>
 			<MkInfo v-if="keywordModeWarning != null" warn>{{ keywordModeWarning }}</MkInfo>
+			<MkInfo v-if="currentLimitViolation != null" warn>{{ describeKeywordError(currentLimitViolation, true) }}</MkInfo>
 			<div :class="$style.field">
 				<div :class="$style.label">{{ i18n.ts.antennaKeywords }}</div>
 				<MkKeywordGroupsInput v-model="keywords" :regexMode="keywordMode === 'regex'"/>
@@ -238,16 +239,25 @@ const REGEX_GROUP_LIMIT = 32;
 const REGEX_KEYWORDS_PER_GROUP_LIMIT = 32;
 const REGEX_PATTERN_MAX_LENGTH = 512;
 
-// INVALID_REGEX の info から、どの項目がどう駄目だったかをユーザー向けの文にする
-function describeInvalidRegex(info: unknown): string {
-	const data = (info ?? {}) as { reason?: string; pattern?: string; location?: { keywordType?: string; groupIndex?: number; keywordIndex?: number } };
-	const reasons: Record<string, string> = {
-		invalidPattern: i18n.ts._tempuraFutureAntenna.invalidRegex,
-		patternTooLong: i18n.tsx._tempuraFutureAntenna.invalidRegexTooLong({ max: REGEX_PATTERN_MAX_LENGTH }),
-		tooManyGroups: i18n.tsx._tempuraFutureAntenna.invalidRegexTooManyGroups({ max: REGEX_GROUP_LIMIT }),
-		tooManyKeywords: i18n.tsx._tempuraFutureAntenna.invalidRegexTooManyKeywords({ max: REGEX_KEYWORDS_PER_GROUP_LIMIT }),
-	};
-	const lines = [reasons[data.reason ?? 'invalidPattern'] ?? i18n.ts._tempuraFutureAntenna.invalidRegex];
+type KeywordLimitInfo = { reason?: string; pattern?: string; location?: { keywordType?: string; groupIndex?: number; keywordIndex?: number } };
+
+// INVALID_REGEX / KEYWORD_LIMIT_EXCEEDED の info から、どの項目がどう駄目だったかをユーザー向けの文にする
+function describeKeywordError(info: unknown, isLimit: boolean): string {
+	const data = (info ?? {}) as KeywordLimitInfo;
+	const reasons: Record<string, string> = isLimit
+		? {
+			patternTooLong: i18n.tsx._tempuraFutureAntenna.keywordLimitTooLong({ max: REGEX_PATTERN_MAX_LENGTH }),
+			tooManyGroups: i18n.tsx._tempuraFutureAntenna.keywordLimitTooManyGroups({ max: REGEX_GROUP_LIMIT }),
+			tooManyKeywords: i18n.tsx._tempuraFutureAntenna.keywordLimitTooManyKeywords({ max: REGEX_KEYWORDS_PER_GROUP_LIMIT }),
+		}
+		: {
+			invalidPattern: i18n.ts._tempuraFutureAntenna.invalidRegex,
+			patternTooLong: i18n.tsx._tempuraFutureAntenna.invalidRegexTooLong({ max: REGEX_PATTERN_MAX_LENGTH }),
+			tooManyGroups: i18n.tsx._tempuraFutureAntenna.invalidRegexTooManyGroups({ max: REGEX_GROUP_LIMIT }),
+			tooManyKeywords: i18n.tsx._tempuraFutureAntenna.invalidRegexTooManyKeywords({ max: REGEX_KEYWORDS_PER_GROUP_LIMIT }),
+		};
+	const fallback = isLimit ? i18n.ts._tempuraFutureAntenna.keywordLimitExceeded : i18n.ts._tempuraFutureAntenna.invalidRegex;
+	const lines = [reasons[data.reason ?? ''] ?? fallback];
 	if (data.pattern != null) {
 		lines.push(i18n.tsx._tempuraFutureAntenna.invalidRegexPattern({ pattern: data.pattern }));
 	}
@@ -267,6 +277,27 @@ function describeInvalidRegex(info: unknown): string {
 	return lines.join('\n');
 }
 
+// 既存アンテナが上限を超えている場合、保存はできる (超過を増やさなければよい) が、
+// そのままだと受信時の走査コストが高いので、編集画面で修正を促す
+const currentLimitViolation = computed(() => {
+	const groups = [
+		keywords.value.map(x => x.filter(k => k !== '')).filter(x => x.length > 0),
+		excludeKeywords.value.map(x => x.filter(k => k !== '')).filter(x => x.length > 0),
+		mustExcludeKeywords.value.map(x => x.filter(k => k !== '')).filter(x => x.length > 0),
+	];
+	for (const [typeIndex, list] of groups.entries()) {
+		const keywordType = ['keywords', 'excludeKeywords', 'mustExcludeKeywords'][typeIndex];
+		if (list.length > REGEX_GROUP_LIMIT) return { reason: 'tooManyGroups', location: { keywordType, groupIndex: 0, keywordIndex: 0 } };
+		for (const [groupIndex, group] of list.entries()) {
+			if (group.length > REGEX_KEYWORDS_PER_GROUP_LIMIT) return { reason: 'tooManyKeywords', location: { keywordType, groupIndex, keywordIndex: 0 } };
+			for (const [keywordIndex, pattern] of group.entries()) {
+				if (pattern.length > REGEX_PATTERN_MAX_LENGTH) return { reason: 'patternTooLong', pattern, location: { keywordType, groupIndex, keywordIndex } };
+			}
+		}
+	}
+	return null;
+});
+
 // os.apiWithDialog の汎用表示だと英語のメッセージとIDしか出ないため、
 // 保存は自前で呼び、エラーはモードに応じた文言で出し分ける
 async function saveAntenna() {
@@ -285,13 +316,14 @@ async function saveAntenna() {
 			emit('updated', res);
 		}
 	} catch (err) {
-		const isInvalidRegex = err != null && typeof err === 'object' && (err as { code?: unknown }).code === 'INVALID_REGEX';
+		const code = err != null && typeof err === 'object' ? (err as { code?: unknown }).code : undefined;
+		const info = (err as { info?: unknown } | null)?.info;
 		await os.alert({
 			type: 'error',
 			title: i18n.ts.error,
-			text: isInvalidRegex
-				? describeInvalidRegex((err as { info?: unknown }).info)
-				: (err != null && typeof err === 'object' && 'message' in err) ? String((err as { message?: unknown }).message) : String(err),
+			text: code === 'INVALID_REGEX' ? describeKeywordError(info, false)
+				: code === 'KEYWORD_LIMIT_EXCEEDED' ? describeKeywordError(info, true)
+					: (err != null && typeof err === 'object' && 'message' in err) ? String((err as { message?: unknown }).message) : String(err),
 		});
 	} finally {
 		closeWaiting();
@@ -342,7 +374,7 @@ async function tryConditions() {
 			type: 'error',
 			// misskeyApiはAPIエラーをErrorではなく{ message, code }のオブジェクトでrejectする
 			text: isInvalidRegex
-				? describeInvalidRegex((err as { info?: unknown }).info)
+				? describeKeywordError((err as { info?: unknown }).info, false)
 				: (err != null && typeof err === 'object' && 'message' in err) ? String((err as { message?: unknown }).message) : String(err),
 		});
 	} finally {

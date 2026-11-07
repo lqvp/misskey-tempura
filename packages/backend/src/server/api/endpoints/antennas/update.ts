@@ -12,7 +12,7 @@ import type { AntennasRepository } from '@/models/_.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { AntennaEntityService } from '@/core/entities/AntennaEntityService.js';
 import { DI } from '@/di-symbols.js';
-import { REGEX_GROUP_LIMIT, REGEX_KEYWORDS_PER_GROUP_LIMIT, REGEX_PATTERN_MAX_LENGTH, validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
+import { REGEX_GROUP_LIMIT, REGEX_KEYWORDS_PER_GROUP_LIMIT, REGEX_PATTERN_MAX_LENGTH, findAntennaKeywordLimitViolation, measureAntennaKeywordLimitExcess, validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -48,6 +48,12 @@ export const meta = {
 			code: 'INVALID_REGEX',
 			id: '68573d35-69af-48dc-bd62-e2a059907cf5',
 		},
+
+		keywordLimitExceeded: {
+			message: 'Too many keywords.',
+			code: 'KEYWORD_LIMIT_EXCEEDED',
+			id: '9c1f0d27-5b6e-4a83-9f21-6d3b8e4c1a70',
+		},
 	},
 
 	res: {
@@ -64,20 +70,21 @@ export const paramDef = {
 		name: { type: 'string', minLength: 1, maxLength: 100 },
 		src: { type: 'string', enum: ['home', 'all', 'users', 'list', 'users_blacklist'] },
 		userListId: { type: 'string', format: 'misskey:id', nullable: true },
-		// 受信経路はノートごとに全キーワードを走査するため、モードに関係なく上限を揃える
-		keywords: { type: 'array', maxItems: REGEX_GROUP_LIMIT, items: {
-			type: 'array', maxItems: REGEX_KEYWORDS_PER_GROUP_LIMIT, items: {
-				type: 'string', maxLength: REGEX_PATTERN_MAX_LENGTH,
+		// ここでは maxItems/maxLength を課さない。上限を超えたアンテナは従来のAPIで保存できているため、
+		// paramDef で弾くと名前だけの変更も通らなくなる。上限はハンドラで「既存の超過分は維持可」として判定する
+		keywords: { type: 'array', items: {
+			type: 'array', items: {
+				type: 'string',
 			},
 		} },
-		excludeKeywords: { type: 'array', maxItems: REGEX_GROUP_LIMIT, items: {
-			type: 'array', maxItems: REGEX_KEYWORDS_PER_GROUP_LIMIT, items: {
-				type: 'string', maxLength: REGEX_PATTERN_MAX_LENGTH,
+		excludeKeywords: { type: 'array', items: {
+			type: 'array', items: {
+				type: 'string',
 			},
 		} },
-		mustExcludeKeywords: { type: 'array', maxItems: REGEX_GROUP_LIMIT, items: {
-			type: 'array', maxItems: REGEX_KEYWORDS_PER_GROUP_LIMIT, items: {
-				type: 'string', maxLength: REGEX_PATTERN_MAX_LENGTH,
+		mustExcludeKeywords: { type: 'array', items: {
+			type: 'array', items: {
+				type: 'string',
 			},
 		} },
 		expression: { type: 'string', nullable: true, maxLength: 2048 },
@@ -125,12 +132,24 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 				// 切替後のmodeで、切替後に有効になるキーワード群全体を検証する (未指定の項目は保存済みの値)
 				const keywordMode = ps.keywordMode ?? locked.keywordMode;
+				const nextKeywords = [
+					ps.keywords ?? locked.keywords,
+					ps.excludeKeywords ?? locked.excludeKeywords,
+					ps.mustExcludeKeywords ?? locked.mustExcludeKeywords,
+				];
+
+				// 上限は新規に作る分にだけ課す。従来のAPIでは上限を超えるアンテナを保存できていたため、
+				// 既に超過しているアンテナは「超過が増えない限り」保存できるようにする (名前だけの変更も通す)
+				const limitViolation = findAntennaKeywordLimitViolation(nextKeywords);
+				if (limitViolation != null) {
+					const currentExcess = measureAntennaKeywordLimitExcess([locked.keywords, locked.excludeKeywords, locked.mustExcludeKeywords]);
+					if (measureAntennaKeywordLimitExcess(nextKeywords) > currentExcess) {
+						throw new ApiError(meta.errors.keywordLimitExceeded, { reason: limitViolation.reason, pattern: limitViolation.pattern, location: limitViolation.location });
+					}
+				}
+
 				if (keywordMode === 'regex') {
-					const regexError = validateAntennaRegexKeywords([
-						ps.keywords ?? locked.keywords,
-						ps.excludeKeywords ?? locked.excludeKeywords,
-						ps.mustExcludeKeywords ?? locked.mustExcludeKeywords,
-					]);
+					const regexError = validateAntennaRegexKeywords(nextKeywords);
 					if (regexError != null) {
 						throw new ApiError(meta.errors.invalidRegex, { reason: regexError.reason, pattern: regexError.pattern, detail: regexError.message, location: regexError.location });
 					}

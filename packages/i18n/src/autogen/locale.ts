@@ -17159,6 +17159,22 @@ export interface Locale extends ILocale {
          */
         "invalidRegexTooLong": ParameterizedString<"max">;
         /**
+         * キーワードが多すぎます。超過分を削除すると保存できます。
+         */
+        "keywordLimitExceeded": string;
+        /**
+         * 1項目 {max} 文字までです。長い項目を短くしてください。
+         */
+        "keywordLimitTooLong": ParameterizedString<"max">;
+        /**
+         * グループが多すぎます (最大 {max} グループまで)。グループを減らしてください。
+         */
+        "keywordLimitTooManyGroups": ParameterizedString<"max">;
+        /**
+         * 1グループの項目が多すぎます (最大 {max} 件まで)。項目を減らしてください。
+         */
+        "keywordLimitTooManyKeywords": ParameterizedString<"max">;
+        /**
          * グループが多すぎます (最大 {max} グループまで)。
          */
         "invalidRegexTooManyGroups": ParameterizedString<"max">;

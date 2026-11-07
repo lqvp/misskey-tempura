@@ -11,7 +11,7 @@ import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { AntennaEntityService } from '@/core/entities/AntennaEntityService.js';
 import { DI } from '@/di-symbols.js';
 import { RoleService } from '@/core/RoleService.js';
-import { REGEX_GROUP_LIMIT, REGEX_KEYWORDS_PER_GROUP_LIMIT, REGEX_PATTERN_MAX_LENGTH, validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
+import { REGEX_GROUP_LIMIT, REGEX_KEYWORDS_PER_GROUP_LIMIT, REGEX_PATTERN_MAX_LENGTH, findAntennaKeywordLimitViolation, validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -46,6 +46,12 @@ export const meta = {
 			message: 'Invalid regular expression.',
 			code: 'INVALID_REGEX',
 			id: '03534a02-f779-456a-bcf2-d4e490401bfa',
+		},
+
+		keywordLimitExceeded: {
+			message: 'Too many keywords.',
+			code: 'KEYWORD_LIMIT_EXCEEDED',
+			id: '4b8e2f61-7d3a-49c5-a0e8-1f6c9b2d7e43',
 		},
 	},
 
@@ -113,9 +119,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw new ApiError(meta.errors.emptyKeyword);
 			}
 
+			// 上限はモードに関係なく課す (受信経路はノートごとに全キーワードを走査するため)。
+			// ただし paramDef 側でも同じ上限を課しているので、通常はここに来る前に INVALID_PARAM になる
+			const keywordGroups = [ps.keywords, ps.excludeKeywords, ps.mustExcludeKeywords ?? []];
+			const limitViolation = findAntennaKeywordLimitViolation(keywordGroups);
+			if (limitViolation != null) {
+				throw new ApiError(meta.errors.keywordLimitExceeded, { reason: limitViolation.reason, pattern: limitViolation.pattern, location: limitViolation.location });
+			}
+
 			const keywordMode = ps.keywordMode ?? 'literal';
 			if (keywordMode === 'regex') {
-				const regexError = validateAntennaRegexKeywords([ps.keywords, ps.excludeKeywords, ps.mustExcludeKeywords ?? []]);
+				const regexError = validateAntennaRegexKeywords(keywordGroups);
 				if (regexError != null) {
 					throw new ApiError(meta.errors.invalidRegex, { reason: regexError.reason, pattern: regexError.pattern, detail: regexError.message, location: regexError.location });
 				}

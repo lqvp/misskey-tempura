@@ -17,8 +17,10 @@ import {
 	testPaginationConsistency,
 	uploadFile,
 	userList,
+	initTestDb,
 } from '../utils.js';
 import type * as misskey from 'misskey-js';
+import type { DataSource } from 'typeorm';
 import { DEFAULT_POLICIES } from '@/core/RoleService.js';
 
 const compareBy = <T extends { id: string }>(selector: (s: T) => string = (s: T): string => s.id) => (a: T, b: T): number => {
@@ -26,6 +28,8 @@ const compareBy = <T extends { id: string }>(selector: (s: T) => string = (s: T)
 };
 
 describe('アンテナ', () => {
+	let db: DataSource;
+
 	// エンティティとしてのアンテナを主眼においたテストを記述する
 	// (Antennaを返すエンドポイント、Antennaエンティティを書き換えるエンドポイント、Antennaからノートを取得するエンドポイントをテストする)
 
@@ -74,6 +78,10 @@ describe('アンテナ', () => {
 	let testMutedChannel: misskey.entities.Channel;
 
 	beforeAll(async () => {
+		// 上限超過の既存データを作るためにDBへ直接書き込む。
+		// jobQueue() はワーカーまで起動してしまい、このファイルが意図的に残している
+		// アカウント削除ジョブが走ってしまうため、接続だけ借りる initTestDb(true) を使う
+		db = await initTestDb(true);
 		root = await signup({ username: 'root' });
 		alice = await signup({ username: 'alice' });
 		alicePost = await post(alice, { text: 'test' });
@@ -551,7 +559,7 @@ describe('アンテナ', () => {
 			}
 		});
 
-		test('キーワード配列の上限はモードに関係なく適用されること。', async () => {
+		test('キーワード配列の上限はモードに関係なく新規作成に適用されること。', async () => {
 			// 受信経路はモードに関係なく全キーワードを走査するので、literalでも上限を超えられない
 			const tooManyGroups = Array.from({ length: 33 }, () => ['a']);
 			await failedApiCall({
@@ -563,16 +571,46 @@ describe('アンテナ', () => {
 				code: 'INVALID_PARAM',
 				id: '3d81ceae-475f-4600-b2a8-2bc116157532',
 			});
-			const tooManyKeywordsInGroup = [Array.from({ length: 33 }, () => 'a')];
+		});
+
+		test('上限を超えた既存アンテナは、超過が増えない限り保存できること。', async () => {
+			// 従来のAPIでは上限を超えるアンテナを保存できていた。paramDef で弾くと
+			// 編集画面がキーワード配列を再送するため、名前だけの変更も通らなくなる
+			const antenna = await successfulApiCall({ endpoint: 'antennas/create', parameters: defaultParam, user: alice });
+			// 上限超過の既存データを直接作る (API では作れない)
+			await db.query('UPDATE "antenna" SET "keywords" = $1 WHERE "id" = $2', [
+				JSON.stringify([Array.from({ length: 33 }, () => 'a')]),
+				antenna.id,
+			]);
+
+			// 名前だけの変更 (編集画面は保存済みの超過分をそのまま再送する) は通る
+			const overLimitKeywords = [Array.from({ length: 33 }, () => 'a')];
+			const renamed = await successfulApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: antenna.id, name: 'renamed-over-limit', keywords: overLimitKeywords },
+				user: alice,
+			});
+			assert.strictEqual(renamed.name, 'renamed-over-limit');
+			assert.strictEqual(renamed.keywords[0].length, 33);
+
+			// 超過を増やす変更は拒否する
 			await failedApiCall({
 				endpoint: 'antennas/update',
-				parameters: { ...defaultParam, antennaId: (await successfulApiCall({ endpoint: 'antennas/create', parameters: defaultParam, user: alice })).id, keywords: tooManyKeywordsInGroup },
+				parameters: { ...defaultParam, antennaId: antenna.id, keywords: [Array.from({ length: 40 }, () => 'a')] },
 				user: alice,
 			}, {
 				status: 400,
-				code: 'INVALID_PARAM',
-				id: '3d81ceae-475f-4600-b2a8-2bc116157532',
+				code: 'KEYWORD_LIMIT_EXCEEDED',
+				id: '9c1f0d27-5b6e-4a83-9f21-6d3b8e4c1a70',
 			});
+
+			// 超過を解消する変更も通る
+			const fixed = await successfulApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: antenna.id, keywords: [['a', 'b']] },
+				user: alice,
+			});
+			assert.deepStrictEqual(fixed.keywords, [['a', 'b']]);
 		});
 
 		test('INVALID_REGEX はどの項目が不正かを info で返すこと。', async () => {
