@@ -84,7 +84,12 @@ function normalize(keyword: string, regexMode: boolean): string {
 // 「入力していたときのモード」ではなく「切替後のモード」で確定してしまうのを防ぐため
 function addKeyword(gi: number, regexMode = props.regexMode) {
 	const keyword = normalize(inputs.value[gi] ?? '', regexMode);
-	if (keyword === '') return;
+	// 空白・改行だけの式は「ほぼ全一致」の条件になってしまうため登録しない
+	// (前後の空白を式の一部として保持するのは、中身がある式のときだけ)
+	if (keyword.trim() === '') {
+		inputs.value[gi] = '';
+		return;
+	}
 	const next = model.value.map(g => [...g]);
 	if (regexMode) {
 		next[gi].push(keyword);

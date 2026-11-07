@@ -99,6 +99,24 @@ describe('MkKeywordGroupsInput', () => {
 		expect(captured).toEqual([['foo bar']]);
 	});
 
+	test('regex モードでも空白・改行だけの入力は登録しない', async () => {
+		// textarea では Enter が改行になるので、空のまま Enter→blur すると "\n" が登録されうる。
+		// それは複数行ノートのほぼ全てに一致する条件になるため弾く
+		for (const input of ['\n', '   ', ' \n \n ']) {
+			const { input: el, getCaptured } = mount(true);
+			await fireEvent.update(el, input);
+			await fireEvent.blur(el);
+			expect(getCaptured()).toBeNull();
+		}
+	});
+
+	test('前後の空白を含む「中身のある」式はそのまま保持する', async () => {
+		const { input, getCaptured } = mount(true);
+		await fireEvent.update(input, '  foo bar  ');
+		await fireEvent.blur(input);
+		expect(getCaptured()).toEqual([['  foo bar  ']]);
+	});
+
 	test('regex モードのチップは改行を空白に畳まずに表示する', async () => {
 		const page = render(MkKeywordGroupsInput, {
 			props: {

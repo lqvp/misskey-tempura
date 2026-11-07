@@ -318,9 +318,12 @@ const keywordFields = computed(() => {
 // 既存アンテナは「超過が増えない限り」保存できる (バックエンドの判定に合わせる) ので、
 // 超過が増えたときだけ保存が失敗する旨を出す
 const limitStatus = computed(() => {
-	const savedFields = keywordFields.value.map(f => f.keywordType === 'keywords' ? normalizeKeywordGroups(initialAntenna.keywords)
-		: f.keywordType === 'excludeKeywords' ? normalizeKeywordGroups(initialAntenna.excludeKeywords)
-			: normalizeKeywordGroups(initialAntenna.mustExcludeKeywords ?? []));
+	// 比較の基準は「最後に保存が成功した値」。バックエンドも保存済みの現在値と比べるので、
+	// initialAntenna (ページ表示時点) を基準にすると保存後に画面とサーバーの判定が食い違う
+	const saved = savedAntenna.value;
+	const savedFields = keywordFields.value.map(f => f.keywordType === 'keywords' ? normalizeKeywordGroups(saved.keywords)
+		: f.keywordType === 'excludeKeywords' ? normalizeKeywordGroups(saved.excludeKeywords)
+			: normalizeKeywordGroups(saved.mustExcludeKeywords ?? []));
 
 	for (const [typeIndex, field] of keywordFields.value.entries()) {
 		const groups = field.groups;
