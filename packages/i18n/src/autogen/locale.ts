@@ -17114,6 +17114,78 @@ export interface Locale extends ILocale {
          * 同じグループ内のすべてのキーワードが一致した場合、スコアに関係なく除外されます。
          */
         "mustExcludeKeywordsDescription": string;
+        /**
+         * マッチ方式
+         */
+        "keywordMode": string;
+        /**
+         * 通常 (文字列として一致)
+         */
+        "keywordModeLiteral": string;
+        /**
+         * 正規表現
+         */
+        "keywordModeRegex": string;
+        /**
+         * 正規表現モードでは、登録した各項目がそのまま1つの正規表現(RE2構文)として評価されます。改行・空白・「|」では分割されません。後読みなどの一部の構文は使えません。
+         */
+        "regexModeDescription": string;
+        /**
+         * 正規表現として解釈されるようになります。「\d+」のような記号は特別な意味を持つため、通常モードのつもりの語句が別の条件になる場合があります。入力内容は自動では変換されません。
+         */
+        "regexModeWarningToRegex": string;
+        /**
+         * 通常モードに戻すと、登録した式はただの文字列として扱われます。「\d+」や「(abc|def)」のような式はその文字列を含むノートにしか一致しなくなるため、意図しない結果になりやすいです。入力内容は自動では変換されません。
+         */
+        "regexModeWarningToLiteral": string;
+        /**
+         * 正規表現を追加 (例: りんご|みかん)
+         */
+        "addRegexPattern": string;
+        /**
+         * 正規表現を解釈できませんでした。
+         */
+        "invalidRegex": string;
+        /**
+         * 問題のある式: {pattern}
+         */
+        "invalidRegexPattern": ParameterizedString<"pattern">;
+        /**
+         * 正規表現が長すぎます (1項目 {max} 文字まで)。
+         */
+        "invalidRegexTooLong": ParameterizedString<"max">;
+        /**
+         * キーワードが多すぎます。超過分を削除すると保存できます。
+         */
+        "keywordLimitExceeded": string;
+        /**
+         * 既存の超過分はそのまま保存できますが、増やすことはできません。
+         */
+        "keywordLimitGrandfathered": string;
+        /**
+         * {keywordType} の グループ{group}・{index}番目
+         */
+        "keywordErrorPosition": ParameterizedString<"keywordType" | "group" | "index">;
+        /**
+         * 1項目 {max} 文字までです。長い項目を短くしてください。
+         */
+        "keywordLimitTooLong": ParameterizedString<"max">;
+        /**
+         * グループが多すぎます (最大 {max} グループまで)。グループを減らしてください。
+         */
+        "keywordLimitTooManyGroups": ParameterizedString<"max">;
+        /**
+         * 1グループの項目が多すぎます (最大 {max} 件まで)。項目を減らしてください。
+         */
+        "keywordLimitTooManyKeywords": ParameterizedString<"max">;
+        /**
+         * グループが多すぎます (最大 {max} グループまで)。
+         */
+        "invalidRegexTooManyGroups": ParameterizedString<"max">;
+        /**
+         * 1グループの項目が多すぎます (最大 {max} 件まで)。
+         */
+        "invalidRegexTooManyKeywords": ParameterizedString<"max">;
     };
     "_loginRisk": {
         /**

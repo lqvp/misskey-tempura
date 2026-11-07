@@ -11,20 +11,35 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div :class="$style.keywords">
 				<template v-for="(keyword, ki) in group" :key="ki">
 					<span v-if="ki > 0" :class="$style.and">{{ i18n.ts._tempuraFutureAntenna.keywordAnd }}</span>
-					<span :class="$style.chip">
-						{{ keyword }}
+					<span :class="[$style.chip, { [$style.regexChip]: props.regexMode }]" :title="props.regexMode ? keyword : undefined">
+						<span :class="$style.chipText">{{ keyword }}</span>
 						<button class="_button" :class="$style.chipRemove" :aria-label="i18n.ts.delete" @click="removeKeyword(gi, ki)"><i class="ti ti-x"></i></button>
 					</span>
 				</template>
+				<textarea
+					v-if="props.regexMode"
+					v-model="inputs[gi]"
+					:class="$style.input"
+					rows="1"
+					:maxlength="REGEX_PATTERN_MAX_LENGTH"
+					:placeholder="i18n.ts._tempuraFutureAntenna.addRegexPattern"
+					@compositionstart="composing = true"
+					@compositionend="composing = false"
+					@blur="onInputBlur(gi)"
+				></textarea>
 				<input
+					v-else
 					v-model="inputs[gi]"
 					:class="$style.input"
 					type="text"
 					:placeholder="i18n.ts._tempuraFutureAntenna.addKeyword"
-					@keydown.enter.prevent="addKeyword(gi)"
-					@blur="addKeyword(gi)"
+					@compositionstart="composing = true"
+					@compositionend="composing = false"
+					@keydown.enter.prevent="onEnter(gi)"
+					@blur="onInputBlur(gi)"
 				>
-				<MkButton inline small :disabled="inputs[gi].trim() === ''" @click="addKeyword(gi)"><i class="ti ti-plus"></i></MkButton>
+				<!-- blurで入力欄が空になるとdisabledになり、クリックが取り消されるため、blur直後のクリックも拾えるようにする -->
+				<MkButton inline small :disabled="inputs[gi] === ''" @click="onAddClick(gi)"><i class="ti ti-plus"></i></MkButton>
 			</div>
 			<button v-if="model.length > 1" class="_button" :class="$style.groupRemove" :title="i18n.ts._tempuraFutureAntenna.removeGroup" :aria-label="i18n.ts._tempuraFutureAntenna.removeGroup" @click="removeGroup(gi)"><i class="ti ti-trash"></i></button>
 		</div>
@@ -41,7 +56,17 @@ import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
 
 // グループ=OR、グループ内=AND。テキストの書き方を覚えなくても追加・削除で条件を組めるようにする。
+// regexModeのときは入力を空白で分割せず、1項目全体を1つの正規表現として扱う。
+const props = withDefaults(defineProps<{
+	regexMode?: boolean;
+}>(), {
+	regexMode: false,
+});
+
 const model = defineModel<string[][]>({ required: true });
+
+// backend の REGEX_PATTERN_MAX_LENGTH と同じ上限。ここを変えるときは両方そろえる
+const REGEX_PATTERN_MAX_LENGTH = 512;
 
 const inputs = ref<string[]>(model.value.map(() => ''));
 
@@ -50,18 +75,58 @@ watch(model, (newValue) => {
 	inputs.value.length = newValue.length;
 });
 
-function normalize(keyword: string): string {
-	return keyword.trim().replace(/\s+/g, ' ');
+function normalize(keyword: string, regexMode: boolean): string {
+	// regexモードでは前後の空白も式の一部として意味を持つため、一切加工しない
+	return regexMode ? keyword : keyword.trim().replace(/\s+/g, ' ');
 }
 
-function addKeyword(gi: number) {
-	const keyword = normalize(inputs.value[gi] ?? '');
-	if (keyword === '') return;
+// regexMode を引数で受けるのは、モード切替で入力欄が作り直されたときの blur が
+// 「入力していたときのモード」ではなく「切替後のモード」で確定してしまうのを防ぐため
+function addKeyword(gi: number, regexMode = props.regexMode) {
+	const keyword = normalize(inputs.value[gi] ?? '', regexMode);
+	// 空白・改行だけの式は「ほぼ全一致」の条件になってしまうため登録しない
+	// (前後の空白を式の一部として保持するのは、中身がある式のときだけ)
+	if (keyword.trim() === '') {
+		inputs.value[gi] = '';
+		return;
+	}
 	const next = model.value.map(g => [...g]);
-	// 空白を含む入力は従来のスペース区切りと同じくANDとして分割する
-	next[gi].push(...keyword.split(' ').filter(x => x !== ''));
+	if (regexMode) {
+		next[gi].push(keyword);
+	} else {
+		// 空白を含む入力は従来のスペース区切りと同じくANDとして分割する
+		next[gi].push(...keyword.split(' ').filter(x => x !== ''));
+	}
 	model.value = next;
 	inputs.value[gi] = '';
+}
+
+// モード切替で入力欄が作り直される前に、入力中の内容を「切替前のモード」で確定しておく
+watch(() => props.regexMode, (_newMode, oldMode) => {
+	for (let gi = 0; gi < inputs.value.length; gi++) {
+		if (inputs.value[gi] !== '') addKeyword(gi, oldMode);
+	}
+}, { flush: 'pre' });
+
+// IME 変換中は確定させない (変換途中の文字列がキーワードとして登録されるのを防ぐ)
+const composing = ref(false);
+
+// 入力欄からフォーカスが外れたら確定する
+function onInputBlur(gi: number) {
+	if (composing.value) return;
+	addKeyword(gi);
+}
+
+// IME 変換中の Enter は変換確定なので、キーワード追加には使わない
+function onEnter(gi: number) {
+	if (composing.value) return;
+	addKeyword(gi);
+}
+
+// 入力欄が空になった直後 (= blur で確定済み) の + ボタンクリックで、同じ項目を二重に追加しない
+function onAddClick(gi: number) {
+	if (inputs.value[gi] === '') return;
+	addKeyword(gi);
 }
 
 function removeKeyword(gi: number, ki: number) {
@@ -125,6 +190,16 @@ function removeGroup(gi: number) {
 	font-size: 0.9em;
 }
 
+.regexChip {
+	font-family: monospace;
+}
+
+// 正規表現では改行や前後の空白も式の一部なので、保存値をそのまま見せる
+.chipText {
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+
 .chipRemove {
 	display: inline-flex;
 	opacity: 0.7;
@@ -144,6 +219,8 @@ function removeGroup(gi: number) {
 	border: none;
 	border-bottom: solid 1px var(--MI_THEME-divider);
 	outline: none;
+	resize: none;
+	field-sizing: content;
 
 	&:focus {
 		border-bottom-color: var(--MI_THEME-accent);

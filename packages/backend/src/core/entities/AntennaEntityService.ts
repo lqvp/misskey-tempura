@@ -35,6 +35,7 @@ export class AntennaEntityService {
 			excludeKeywords: antenna.excludeKeywords,
 			mustExcludeKeywords: antenna.mustExcludeKeywords,
 			expression: antenna.expression,
+			keywordMode: antenna.keywordMode,
 			src: antenna.src,
 			userListId: antenna.userListId,
 			users: antenna.users,
