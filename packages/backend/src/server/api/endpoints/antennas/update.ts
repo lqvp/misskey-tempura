@@ -12,7 +12,7 @@ import type { AntennasRepository } from '@/models/_.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { AntennaEntityService } from '@/core/entities/AntennaEntityService.js';
 import { DI } from '@/di-symbols.js';
-import { validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
+import { REGEX_GROUP_LIMIT, REGEX_KEYWORDS_PER_GROUP_LIMIT, REGEX_PATTERN_MAX_LENGTH, validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -64,19 +64,20 @@ export const paramDef = {
 		name: { type: 'string', minLength: 1, maxLength: 100 },
 		src: { type: 'string', enum: ['home', 'all', 'users', 'list', 'users_blacklist'] },
 		userListId: { type: 'string', format: 'misskey:id', nullable: true },
-		keywords: { type: 'array', items: {
-			type: 'array', items: {
-				type: 'string',
+		// 受信経路はノートごとに全キーワードを走査するため、モードに関係なく上限を揃える
+		keywords: { type: 'array', maxItems: REGEX_GROUP_LIMIT, items: {
+			type: 'array', maxItems: REGEX_KEYWORDS_PER_GROUP_LIMIT, items: {
+				type: 'string', maxLength: REGEX_PATTERN_MAX_LENGTH,
 			},
 		} },
-		excludeKeywords: { type: 'array', items: {
-			type: 'array', items: {
-				type: 'string',
+		excludeKeywords: { type: 'array', maxItems: REGEX_GROUP_LIMIT, items: {
+			type: 'array', maxItems: REGEX_KEYWORDS_PER_GROUP_LIMIT, items: {
+				type: 'string', maxLength: REGEX_PATTERN_MAX_LENGTH,
 			},
 		} },
-		mustExcludeKeywords: { type: 'array', items: {
-			type: 'array', items: {
-				type: 'string',
+		mustExcludeKeywords: { type: 'array', maxItems: REGEX_GROUP_LIMIT, items: {
+			type: 'array', maxItems: REGEX_KEYWORDS_PER_GROUP_LIMIT, items: {
+				type: 'string', maxLength: REGEX_PATTERN_MAX_LENGTH,
 			},
 		} },
 		expression: { type: 'string', nullable: true, maxLength: 2048 },
@@ -131,7 +132,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						ps.mustExcludeKeywords ?? locked.mustExcludeKeywords,
 					]);
 					if (regexError != null) {
-						throw new ApiError(meta.errors.invalidRegex, { reason: regexError.reason, pattern: regexError.pattern, detail: regexError.message });
+						throw new ApiError(meta.errors.invalidRegex, { reason: regexError.reason, pattern: regexError.pattern, detail: regexError.message, location: regexError.location });
 					}
 				}
 

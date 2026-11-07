@@ -10,7 +10,7 @@ import type { NotesRepository, UserListsRepository } from '@/models/_.js';
 import { QueryService } from '@/core/QueryService.js';
 import { AntennaService } from '@/core/AntennaService.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
-import { REGEX_PATTERN_MAX_LENGTH, validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
+import { REGEX_GROUP_LIMIT, REGEX_KEYWORDS_PER_GROUP_LIMIT, REGEX_PATTERN_MAX_LENGTH, validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
 import { DI } from '@/di-symbols.js';
 import type { MiAntenna } from '@/models/Antenna.js';
 import type { MiNote } from '@/models/Note.js';
@@ -64,18 +64,18 @@ export const paramDef = {
 	properties: {
 		src: { type: 'string', enum: ['home', 'all', 'users', 'list', 'users_blacklist'] },
 		userListId: { type: 'string', format: 'misskey:id', nullable: true },
-		keywords: { type: 'array', maxItems: 32, items: {
-			type: 'array', maxItems: 32, items: {
+		keywords: { type: 'array', maxItems: REGEX_GROUP_LIMIT, items: {
+			type: 'array', maxItems: REGEX_KEYWORDS_PER_GROUP_LIMIT, items: {
 				type: 'string', maxLength: REGEX_PATTERN_MAX_LENGTH,
 			},
 		} },
-		excludeKeywords: { type: 'array', maxItems: 32, items: {
-			type: 'array', maxItems: 32, items: {
+		excludeKeywords: { type: 'array', maxItems: REGEX_GROUP_LIMIT, items: {
+			type: 'array', maxItems: REGEX_KEYWORDS_PER_GROUP_LIMIT, items: {
 				type: 'string', maxLength: REGEX_PATTERN_MAX_LENGTH,
 			},
 		} },
-		mustExcludeKeywords: { type: 'array', maxItems: 32, items: {
-			type: 'array', maxItems: 32, items: {
+		mustExcludeKeywords: { type: 'array', maxItems: REGEX_GROUP_LIMIT, items: {
+			type: 'array', maxItems: REGEX_KEYWORDS_PER_GROUP_LIMIT, items: {
 				type: 'string', maxLength: REGEX_PATTERN_MAX_LENGTH,
 			},
 		} },
@@ -117,7 +117,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			if ((ps.keywordMode ?? 'literal') === 'regex') {
 				const regexError = validateAntennaRegexKeywords([ps.keywords, ps.excludeKeywords, ps.mustExcludeKeywords ?? []]);
 				if (regexError != null) {
-					throw new ApiError(meta.errors.invalidRegex, { reason: regexError.reason, pattern: regexError.pattern, detail: regexError.message });
+					throw new ApiError(meta.errors.invalidRegex, { reason: regexError.reason, pattern: regexError.pattern, detail: regexError.message, location: regexError.location });
 				}
 			}
 

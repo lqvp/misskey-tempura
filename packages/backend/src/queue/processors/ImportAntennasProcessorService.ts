@@ -84,16 +84,28 @@ export class ImportAntennasProcessorService {
 	@bindThis
 	public async process(job: Bull.Job<DBAntennaImportJobData>): Promise<void> {
 		const now = new Date();
+		// スキップしたアンテナはユーザーから見えなくなるため、件数と理由を最後にまとめてログへ残す
+		const skipped: { name: string; reason: 'emptyKeywords' | 'invalidShape' | 'invalidRegex' }[] = [];
 		try {
 			for (const antenna of job.data.antenna) {
-				if (antenna.keywords.length === 0 || antenna.keywords[0].every(x => x === '')) continue;
+				// 形が壊れた項目は名前すら取れないことがあるので、スキップ記録は形状検証の後に作る
 				if (!validate(antenna)) {
 					this.logger.warn('Validation Failed');
+					const rawName: unknown = (antenna as { name?: unknown }).name;
+					skipped.push({ name: typeof rawName === 'string' ? rawName : '(unknown)', reason: 'invalidShape' });
+					continue;
+				}
+				if (antenna.keywords.length === 0 || antenna.keywords[0].every(x => x === '')) {
+					skipped.push({ name: antenna.name, reason: 'emptyKeywords' });
 					continue;
 				}
 				const keywordMode = antenna.keywordMode ?? 'literal';
-				if (keywordMode === 'regex' && validateAntennaRegexKeywords([antenna.keywords, antenna.excludeKeywords, antenna.mustExcludeKeywords ?? []]) != null) {
-					this.logger.warn('Skipped antenna with invalid regex: ' + antenna.name);
+				const regexError = keywordMode === 'regex'
+					? validateAntennaRegexKeywords([antenna.keywords, antenna.excludeKeywords, antenna.mustExcludeKeywords ?? []])
+					: null;
+				if (regexError != null) {
+					this.logger.warn(`Skipped antenna with invalid regex: ${antenna.name} (${regexError.reason}${regexError.pattern != null ? ': ' + regexError.pattern : ''})`);
+					skipped.push({ name: antenna.name, reason: 'invalidRegex' });
 					continue;
 				}
 				const result = await this.antennasRepository.insertOne({
@@ -120,6 +132,10 @@ export class ImportAntennasProcessorService {
 				this.logger.succ('Antenna created: ' + result.id);
 				this.globalEventService.publishInternalEvent('antennaCreated', result);
 			}
+			if (skipped.length > 0) {
+				this.logger.warn(`Skipped ${skipped.length} antenna(s) of ${job.data.antenna.length}: ${skipped.map(x => `${x.name} (${x.reason})`).join(', ')}`);
+			}
+			this.logger.succ(`Antenna import finished: imported ${job.data.antenna.length - skipped.length}, skipped ${skipped.length}`);
 		} catch (err: any) {
 			this.logger.error(err);
 		}

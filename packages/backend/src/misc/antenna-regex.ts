@@ -23,31 +23,37 @@ export type AntennaRegexValidationError = {
 	reason: 'tooManyGroups' | 'tooManyKeywords' | 'patternTooLong' | 'invalidPattern';
 	pattern?: string;
 	message?: string;
+	/** 不正だった項目の位置 (どのキーワード群の何番目のグループの何番目か)。クライアント側で該当項目を指せるようにする */
+	location?: { keywordType: 'keywords' | 'excludeKeywords' | 'mustExcludeKeywords'; groupIndex: number; keywordIndex: number };
 };
+
+const keywordTypeNames = ['keywords', 'excludeKeywords', 'mustExcludeKeywords'] as const;
 
 /**
  * regex mode で使われるキーワード群 (include / exclude / mustExclude の全グループ) を検証する。
  * 作成・更新・試し打ち・インポートで共通して使い、不正な式を受信経路に入れない。
  */
 export function validateAntennaRegexKeywords(keywordGroups: string[][][]): AntennaRegexValidationError | null {
-	for (const groups of keywordGroups) {
+	for (const [keywordTypeIndex, groups] of keywordGroups.entries()) {
+		const keywordType = keywordTypeNames[keywordTypeIndex] ?? 'keywords';
 		if (groups.length > REGEX_GROUP_LIMIT) {
-			return { reason: 'tooManyGroups' };
+			return { reason: 'tooManyGroups', location: { keywordType, groupIndex: 0, keywordIndex: 0 } };
 		}
-		for (const group of groups) {
+		for (const [groupIndex, group] of groups.entries()) {
 			if (group.length > REGEX_KEYWORDS_PER_GROUP_LIMIT) {
-				return { reason: 'tooManyKeywords' };
+				return { reason: 'tooManyKeywords', location: { keywordType, groupIndex, keywordIndex: 0 } };
 			}
-			for (const pattern of group) {
+			for (const [keywordIndex, pattern] of group.entries()) {
 				if (pattern === '') continue;
+				const location = { keywordType, groupIndex, keywordIndex };
 				if (pattern.length > REGEX_PATTERN_MAX_LENGTH) {
-					return { reason: 'patternTooLong', pattern };
+					return { reason: 'patternTooLong', pattern, location };
 				}
 				try {
 					// 構文の妥当性は u/i/g フラグに依存しないので、ここでは u のみでコンパイルして確認する
 					void new RE2(pattern, 'u');
 				} catch (err) {
-					return { reason: 'invalidPattern', pattern, message: err instanceof Error ? err.message : String(err) };
+					return { reason: 'invalidPattern', pattern, message: err instanceof Error ? err.message : String(err), location };
 				}
 			}
 		}
@@ -119,9 +125,12 @@ export function findAntennaRegexMatches(pattern: string, text: string, caseSensi
 		});
 		if (limit !== undefined && matches.length >= limit) break;
 		if (match[0].length === 0) {
-			// サロゲートペアの途中に止まらないよう、コードポイント単位で1文字進める
-			const cp = text.codePointAt(regex.lastIndex);
-			regex.lastIndex += cp !== undefined && cp > 0xFFFF ? 2 : 1;
+			// ゼロ幅マッチの後に進める位置は「マッチ開始位置から1コードポイント」。
+			// lastIndexの現在値に依存させると、実装がゼロ幅マッチでlastIndexを自動前進させた場合に
+			// 1文字飛ばしてしまうため、開始位置から明示的に計算する。
+			// サロゲートペアの途中に止まらないよう、コードポイント単位で進める。
+			const cp = text.codePointAt(match.index);
+			regex.lastIndex = match.index + (cp !== undefined && cp > 0xFFFF ? 2 : 1);
 		}
 	}
 	return matches;
