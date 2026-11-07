@@ -320,25 +320,29 @@ const antennaMatchInfo = shallowRef<Record<string, AntennaMatchInfo>>({});
 const currentAntenna = inject<Ref<Misskey.entities.Antenna | null> | null>('currentAntenna', null);
 const antennaKeywordMode = ref<'literal' | 'regex'>('literal');
 if (props.src === 'antenna') {
-	// デッキのカラムではインスタンスが再利用されるので、アンテナが変わったら取り直す
-	watch(() => props.antenna, (antennaId) => {
-		antennaKeywordMode.value = 'literal';
-		if (antennaId == null) return;
-		if (currentAntenna != null) {
-			// provide されたアンテナが切り替わったら、その値をそのまま使う
-			watch(currentAntenna, (antenna) => {
-				antennaKeywordMode.value = antenna != null && antenna.id === props.antenna ? antenna.keywordMode : 'literal';
-			}, { immediate: true });
-			return;
-		}
-		misskeyApi('antennas/show', { antennaId }).then(antenna => {
-			// 取得中にアンテナが切り替わっていたら捨てる
-			if (antennaId !== props.antenna) return;
-			antennaKeywordMode.value = antenna.keywordMode;
-		}).catch(() => {
-			// 取得できなくてもTL表示は継続する (既定のliteral表示のまま)
-		});
-	}, { immediate: true });
+	// デッキのカラムではインスタンスが再利用されるので、アンテナが変わったら取り直す。
+	// watch の中で watch を作ると、setup 外で実行された分がコンポーネントのスコープに
+	// 紐づかず停止されないため、監視対象を1つの watch にまとめる
+	watch(
+		[() => props.antenna, () => currentAntenna?.value ?? null],
+		([antennaId, provided]) => {
+			if (currentAntenna != null) {
+				// provide されたアンテナが切り替わったら、その値をそのまま使う
+				antennaKeywordMode.value = provided != null && provided.id === antennaId ? provided.keywordMode : 'literal';
+				return;
+			}
+			antennaKeywordMode.value = 'literal';
+			if (antennaId == null) return;
+			misskeyApi('antennas/show', { antennaId }).then(antenna => {
+				// 取得中にアンテナが切り替わっていたら捨てる
+				if (antennaId !== props.antenna) return;
+				antennaKeywordMode.value = antenna.keywordMode;
+			}).catch(() => {
+				// 取得できなくてもTL表示は継続する (既定のliteral表示のまま)
+			});
+		},
+		{ immediate: true },
+	);
 }
 
 if (props.src === 'antenna') {
