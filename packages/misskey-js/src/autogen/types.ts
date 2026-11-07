@@ -11591,6 +11591,7 @@ export interface operations {
                         remoteNotesCleaningMaxProcessingDurationInMinutes: number;
                         showRoleBadgesOfRemoteUsers: boolean;
                         approvalRequiredForSignup: boolean;
+                        defaultRequireSigninToViewContents: boolean;
                         youBlockedImageUrl: string | null;
                         enableLongIconUrl: boolean;
                         longIconUrl: string | null;
@@ -15397,6 +15398,7 @@ export interface operations {
                     longIconUrl?: string | null;
                     backgroundImageUrls?: unknown[] | null;
                     approvalRequiredForSignup?: boolean;
+                    defaultRequireSigninToViewContents?: boolean;
                     openLlmModerationEnabled?: boolean;
                     openLlmModerationApiKey?: string | null;
                     openLlmModerationIncludeRemote?: boolean;

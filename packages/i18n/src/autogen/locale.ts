@@ -3931,6 +3931,14 @@ export interface Locale extends ILocale {
      */
     "approvalRequiredForSignup": string;
     /**
+     * 新規アカウントのコンテンツ表示にログインを必須にする
+     */
+    "defaultRequireSigninToViewContents": string;
+    /**
+     * 新しく作成されるアカウントで「コンテンツの表示にログインを必須にする」を既定で有効にします。既存のアカウントの設定は変更されません。
+     */
+    "defaultRequireSigninToViewContentsDescription": string;
+    /**
      * アカウント登録の承認
      */
     "signupPendingApprovals": string;
