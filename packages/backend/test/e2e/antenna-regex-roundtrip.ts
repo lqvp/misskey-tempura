@@ -215,4 +215,64 @@ describe('アンテナregexモードの空白・改行保持(往復)', () => {
 		assert.deepStrictEqual(importedNull.keywords, [[' 明示null ']]);
 		assert.strictEqual(importedNull.keywordMode, 'literal');
 	});
+
+	test('正規表現として不正なアンテナはimport時にスキップされ、有効なものだけが入ること。', async () => {
+		const mixedExport = [{
+			name: 'import-valid-regex',
+			keywords: [['りんご[0-9]+円']],
+			excludeKeywords: [[]],
+			mustExcludeKeywords: [[]],
+			caseSensitive: false,
+			src: 'all',
+			userListId: null,
+			users: [''],
+			withFile: false,
+			withReplies: false,
+			excludeBots: false,
+			keywordMode: 'regex',
+		}, {
+			name: 'import-invalid-regex',
+			keywords: [['(unclosed']],
+			excludeKeywords: [[]],
+			mustExcludeKeywords: [[]],
+			caseSensitive: false,
+			src: 'all',
+			userListId: null,
+			users: [''],
+			withFile: false,
+			withReplies: false,
+			excludeBots: false,
+			keywordMode: 'regex',
+		}, {
+			name: 'import-invalid-exclude-regex',
+			keywords: [['有効']],
+			excludeKeywords: [['[bad']],
+			mustExcludeKeywords: [[]],
+			caseSensitive: false,
+			src: 'all',
+			userListId: null,
+			users: [''],
+			withFile: false,
+			withReplies: false,
+			excludeBots: false,
+			keywordMode: 'regex',
+		}];
+
+		const processor = jq.get(ImportAntennasProcessorService);
+		await processor.process({ data: { user: { id: alice.id }, antenna: mixedExport } } as any);
+
+		let imported: any;
+		await vi.waitFor(async () => {
+			const res = await successfulApiCall({ endpoint: 'antennas/list', parameters: {}, user: alice });
+			imported = res.find((x: any) => x.name === 'import-valid-regex');
+			assert.ok(imported, '有効なアンテナがまだimportされていない');
+		}, { timeout: 60000, interval: 500 });
+		assert.deepStrictEqual(imported.keywords, [['りんご[0-9]+円']]);
+		assert.strictEqual(imported.keywordMode, 'regex');
+
+		// 不正な式を含むアンテナは作られない (受信経路に不正な式を入れない)
+		const res = await successfulApiCall({ endpoint: 'antennas/list', parameters: {}, user: alice });
+		assert.strictEqual(res.find((x: any) => x.name === 'import-invalid-regex'), undefined);
+		assert.strictEqual(res.find((x: any) => x.name === 'import-invalid-exclude-regex'), undefined);
+	});
 });

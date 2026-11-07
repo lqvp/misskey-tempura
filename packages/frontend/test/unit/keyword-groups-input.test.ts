@@ -48,4 +48,50 @@ describe('MkKeywordGroupsInput', () => {
 		await fireEvent.blur(input);
 		expect(getCaptured()).toEqual([['円\n次']]);
 	});
+
+	test('literal モードの入力欄は input のまま', () => {
+		const { input } = mount(false);
+		expect(input.tagName).toBe('INPUT');
+	});
+
+	test('regex モードの入力欄は 512 文字までに制限される', () => {
+		const { input } = mount(true);
+		expect(input.getAttribute('maxlength')).toBe('512');
+	});
+
+	test('blur で確定した後に + ボタンを押しても二重に追加されない', async () => {
+		let captured: string[][] | null = null;
+		const page = render(MkKeywordGroupsInput, {
+			props: {
+				modelValue: [[]],
+				regexMode: true,
+				'onUpdate:modelValue': (v: string[][]) => { captured = v; },
+			},
+			global: { directives, components },
+		});
+		const input = page.container.querySelector('textarea')!;
+		await fireEvent.update(input, 'foo');
+		await fireEvent.blur(input);
+		expect(captured).toEqual([['foo']]);
+
+		// blur の後は入力欄が空なので、+ を押しても追加されない
+		const plus = page.container.querySelector('button[class*="button"]')!;
+		await fireEvent.click(plus);
+		expect(captured).toEqual([['foo']]);
+	});
+
+	test('regex モードのチップは改行を空白に畳まずに表示する', async () => {
+		const page = render(MkKeywordGroupsInput, {
+			props: {
+				modelValue: [['円\n次']],
+				regexMode: true,
+				'onUpdate:modelValue': () => {},
+			},
+			global: { directives, components },
+		});
+		const chipText = page.container.querySelector('[class*="chipText"]')!;
+		expect(chipText.textContent).toBe('円\n次');
+		// 生の値は title でも確認できる
+		expect(chipText.closest('[title]')?.getAttribute('title')).toBe('円\n次');
+	});
 });

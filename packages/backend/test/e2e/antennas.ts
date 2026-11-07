@@ -518,9 +518,13 @@ describe('アンテナ', () => {
 			});
 		});
 
-		test('モード切替とキーワード更新が並行しても不正な正規表現が保存されないこと。', async () => {
-			// 片方はregexへの切替、もう片方は不正な式への更新。行ロックで直列化されるため、
-			// 最終状態は「literal + 不正な文字列 (許容)」か「regex + 有効な式」のどちらかになる
+		test('モード切替とキーワード更新を同時に投げても、最終状態が矛盾しないこと。', async () => {
+			// 片方はregexへの切替 (キーワードは保存済みのものを検証)、もう片方は不正な式への更新。
+			// 行ロックで直列化されるため、到達順に関係なく最終状態は次のどちらかになる:
+			//   - 切替が先: 不正な式の更新が regex として検証され 400、最終状態は regex + 保存済みの有効な式
+			//   - 更新が先: literal のまま不正な文字列が入り 200、切替は保存済みの不正な式を検証して 400
+			// どちらの順序でも、最終状態が「regex + 不正な式」になることはない。
+			// (HTTPを並行に投げても到達順は保証されないので、ここでは最終状態の不変条件だけを検証する)
 			const antenna = await successfulApiCall({ endpoint: 'antennas/create', parameters: defaultParam, user: alice });
 
 			const [switchMode, updateKeywords] = await Promise.all([
@@ -533,28 +537,70 @@ describe('アンテナ', () => {
 				parameters: { antennaId: antenna.id },
 				user: alice,
 			});
+
+			// どちらか一方は必ず失敗している (両方成功すると regex + 不正な式が保存されうる)
+			assert.notStrictEqual(switchMode.status, updateKeywords.status);
 			if (final.keywordMode === 'regex') {
-				// regexモードなら保存されている式は必ず有効 (不正な式が残っていない)
-				assert.ok(!final.keywords.flat().includes('(unclosed'));
 				assert.strictEqual(switchMode.status, 200);
 				assert.strictEqual(updateKeywords.status, 400);
+				assert.ok(!final.keywords.flat().includes('(unclosed'));
 			} else {
-				// literalのままなら不正な文字列の保存自体は許容されるが、regex切替は失敗しているはず
 				assert.strictEqual(updateKeywords.status, 200);
 				assert.strictEqual(switchMode.status, 400);
+				assert.deepStrictEqual(final.keywords, [['(unclosed']]);
 			}
+		});
+
+		test('キーワード配列の上限はモードに関係なく適用されること。', async () => {
+			// 受信経路はモードに関係なく全キーワードを走査するので、literalでも上限を超えられない
+			const tooManyGroups = Array.from({ length: 33 }, () => ['a']);
+			await failedApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywordMode: 'literal', keywords: tooManyGroups },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'INVALID_PARAM',
+				id: '3d81ceae-475f-4600-b2a8-2bc116157532',
+			});
+			const tooManyKeywordsInGroup = [Array.from({ length: 33 }, () => 'a')];
+			await failedApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: (await successfulApiCall({ endpoint: 'antennas/create', parameters: defaultParam, user: alice })).id, keywords: tooManyKeywordsInGroup },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'INVALID_PARAM',
+				id: '3d81ceae-475f-4600-b2a8-2bc116157532',
+			});
+		});
+
+		test('INVALID_REGEX はどの項目が不正かを info で返すこと。', async () => {
+			const res = await api('antennas/create', {
+				...defaultParam,
+				keywordMode: 'regex',
+				keywords: [['ok']],
+				excludeKeywords: [['fine', '(bad']],
+			}, alice);
+			assert.strictEqual(res.status, 400);
+			const body = res.body as unknown as { error: { code: string; info: { reason: string; pattern: string; location: { keywordType: string; groupIndex: number; keywordIndex: number } } } };
+			assert.strictEqual(body.error.code, 'INVALID_REGEX');
+			assert.strictEqual(body.error.info.reason, 'invalidPattern');
+			assert.strictEqual(body.error.info.pattern, '(bad');
+			assert.deepStrictEqual(body.error.info.location, { keywordType: 'excludeKeywords', groupIndex: 0, keywordIndex: 1 });
 		});
 
 		test('試し打ち(antennas/test)でも128文字を超える有効な正規表現を受け付けること。', async () => {
 			// 保存 (create) は512文字まで許可するので、プレビューでも同じ上限まで受け付ける
-			await post(bob, { text: 'a' });
-			const longPattern = 'a|'.repeat(100) + 'a'; // 201文字
+			const unique = 'longpattern-' + Math.random().toString(36).slice(2);
+			await post(bob, { text: unique });
+			const longPattern = 'a|'.repeat(100) + unique; // 201文字超
 			const response = await successfulApiCall({
 				endpoint: 'antennas/test',
 				parameters: { ...defaultParam, keywordMode: 'regex', keywords: [[longPattern]] },
 				user: alice,
 			});
-			assert.ok(response.some((x: Note) => x.text === 'a'));
+			assert.ok(response.some((x: Note) => x.text === unique));
 		});
 
 		test('試し打ち(antennas/test)がregexでマッチし、不正な正規表現はエラーになること。', async () => {
@@ -573,6 +619,14 @@ describe('アンテナ', () => {
 				user: alice,
 			});
 			assert.ok(either.some((x: Note) => x.text === 'りんご100円'));
+
+			// 対照: literalモードでは同じ文字列は「そのままの文字列」でしか一致しない
+			const literal = await successfulApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywordMode: 'literal', keywords: [['バナナ|りんご[0-9]+円']] },
+				user: alice,
+			});
+			assert.ok(!literal.some((x: Note) => x.text === 'りんご100円'));
 
 			await failedApiCall({
 				endpoint: 'antennas/test',

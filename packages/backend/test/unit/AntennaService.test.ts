@@ -617,10 +617,47 @@ describe('AntennaService', () => {
 		});
 
 		it('literal mode still treats regex metacharacters as plain text', async () => {
-			const antenna = { ...regexAntenna, keywordMode: 'literal', keywords: [['app.+']] };
-			const note = { ...mockNote, text: 'this has app.+ literally' };
-			expect(await antennaService.checkHitAntenna(antenna, mockNote, mockUser)).toBe(false);
-			expect(await antennaService.checkHitAntenna(antenna, note, mockUser)).toBe(true);
+			// 同じ式でもモードで結果が変わることを、literal と regex の両方で対照させる
+			const literal = { ...regexAntenna, keywordMode: 'literal', keywords: [['app.+']] };
+			const regex = { ...regexAntenna, keywordMode: 'regex', keywords: [['app.+']] };
+			const literalNote = { ...mockNote, text: 'this has app.+ literally' };
+			expect(await antennaService.checkHitAntenna(literal, literalNote, mockUser)).toBe(true);
+			expect(await antennaService.checkHitAntenna(literal, mockNote, mockUser)).toBe(false);
+			expect(await antennaService.checkHitAntenna(regex, literalNote, mockUser)).toBe(true);
+			expect(await antennaService.checkHitAntenna(regex, mockNote, mockUser)).toBe(true);
+		});
+
+		it('firstMatchOnly (SCORE) keeps the same hit result as collecting all matches', async () => {
+			// SCORE評価は全マッチを集めずに1件で打ち切るが、グループの成否は変わらないこと
+			const note = { ...mockNote, text: 'apple apple orange' };
+			const antenna = { ...regexAntenna, expression: 'SCORE', keywords: [['app.+'], ['ora.+']], excludeKeywords: [['ban.+']] };
+			const info = antennaService.getAntennaMatchInfo(antenna, note);
+			expect(info.matchedKeywords).toEqual([['app.+'], ['ora.+']]);
+			expect(info.matchedExcludeKeywords).toEqual([]);
+		});
+
+		it('reports exclude keyword groups in SCORE mode with regex', async () => {
+			// スコアが正のままなら減点されたグループがマッチ理由として残る
+			const antenna = { ...regexAntenna, expression: 'SCORE', keywords: [['app.+'], ['ora.+']], excludeKeywords: [['ban.+']] };
+			const info = antennaService.getAntennaMatchInfo(antenna, mockNote);
+			expect(info.matchedKeywords).toEqual([['app.+'], ['ora.+']]);
+			expect(info.matchedExcludeKeywords).toEqual([['ban.+']]);
+		});
+
+		it('does not apply mustExcludeKeywords outside SCORE mode even in regex mode', async () => {
+			const antenna = { ...regexAntenna, keywords: [['app.+']], mustExcludeKeywords: [['ban.+']] };
+			expect(await antennaService.checkHitAntenna(antenna, mockNote, mockUser)).toBe(true);
+		});
+
+		it('matches zero-width patterns against empty text in both modes', async () => {
+			const emptyNote = { ...mockNote, text: '', cw: null };
+			for (const expression of [null, 'SCORE']) {
+				const antenna = { ...regexAntenna, expression, keywords: [['^$']] };
+				expect(await antennaService.checkHitAntenna(antenna, emptyNote, mockUser)).toBe(true);
+			}
+			// literal では空文字列に一致し得ないので、同じ式でもマッチしない
+			const literal = { ...regexAntenna, keywordMode: 'literal', keywords: [['^$']] };
+			expect(await antennaService.checkHitAntenna(literal, emptyNote, mockUser)).toBe(false);
 		});
 	});
 
@@ -640,6 +677,19 @@ describe('AntennaService', () => {
 
 		it('returns empty for invalid patterns', () => {
 			expect(antennaService.findAllMatches('text', ['(bad'], true, 'regex')).toEqual([]);
+		});
+
+		it('collects only the first match per pattern when firstMatchOnly is set', () => {
+			const all = antennaService.findAllMatches('a1 a2 a3', ['a.'], true, 'regex');
+			const first = antennaService.findAllMatches('a1 a2 a3', ['a.'], true, 'regex', true);
+			expect(all).toHaveLength(3);
+			expect(first).toHaveLength(1);
+			expect(first[0]).toEqual({ keyword: 'a.', start: 0, end: 2 });
+		});
+
+		it('keeps one match per pattern even when a pattern overlaps itself', () => {
+			const result = antennaService.findAllMatches('aaaa', ['aa'], true, 'regex', true);
+			expect(result).toHaveLength(1);
 		});
 	});
 });

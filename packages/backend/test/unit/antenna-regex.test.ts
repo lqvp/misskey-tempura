@@ -37,6 +37,23 @@ describe('validateAntennaRegexKeywords', () => {
 	it('ignores empty items', () => {
 		expect(validateAntennaRegexKeywords([[['']]])).toBeNull();
 	});
+
+	it('reports which item was invalid so clients can point at it', () => {
+		const err = validateAntennaRegexKeywords([
+			[['ok']],
+			[['fine', '(bad']],
+		]);
+		expect(err?.reason).toBe('invalidPattern');
+		expect(err?.pattern).toBe('(bad');
+		expect(err?.location).toEqual({ keywordType: 'excludeKeywords', groupIndex: 0, keywordIndex: 1 });
+	});
+
+	it('reports the location for limit violations', () => {
+		expect(validateAntennaRegexKeywords([[], [], [['a'.repeat(REGEX_PATTERN_MAX_LENGTH + 1)]]])?.location)
+			.toEqual({ keywordType: 'mustExcludeKeywords', groupIndex: 0, keywordIndex: 0 });
+		expect(validateAntennaRegexKeywords([Array(REGEX_GROUP_LIMIT + 1).fill(['a'])])?.location)
+			.toEqual({ keywordType: 'keywords', groupIndex: 0, keywordIndex: 0 });
+	});
 });
 
 describe('testAntennaRegex', () => {
@@ -91,6 +108,16 @@ describe('findAntennaRegexMatches limit', () => {
 });
 
 describe('zero-length matches near surrogate pairs', () => {
+	it('advances from the match start regardless of the exec implementation', () => {
+		// 実装がゼロ幅マッチで lastIndex を自動前進させても、1文字飛ばさないこと
+		const matches = findAntennaRegexMatches('a*', 'ab', true);
+		expect(matches).toEqual([
+			{ keyword: 'a*', start: 0, end: 1 },
+			{ keyword: 'a*', start: 1, end: 1 },
+			{ keyword: 'a*', start: 2, end: 2 },
+		]);
+	});
+
 	it('ゼロ幅マッチの繰り上げがサロゲートペアを分割しない', () => {
 		// '🍎b' はコードユニット [🍎(2), b(1)] = 長さ3。コードポイント境界は 0, 2, 3
 		expect(findAntennaRegexMatches('a*', '🍎b', true)).toEqual([
