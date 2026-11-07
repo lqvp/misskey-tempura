@@ -1157,6 +1157,15 @@ export type paths = {
          */
         post: operations['antennas___list'];
     };
+    '/antennas/match-info': {
+        /**
+         * antennas/match-info
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['antennas___match-info'];
+    };
     '/antennas/notes': {
         /**
          * antennas/notes
@@ -1183,6 +1192,15 @@ export type paths = {
          *     **Credential required**: *Yes* / **Permission**: *read:account*
          */
         post: operations['antennas___show'];
+    };
+    '/antennas/test': {
+        /**
+         * antennas/test
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:account*
+         */
+        post: operations['antennas___test'];
     };
     '/antennas/update': {
         /**
@@ -5721,6 +5739,11 @@ export type components = {
             excludeKeywords: string[][];
             mustExcludeKeywords: string[][];
             expression: string | null;
+            /**
+             * @default literal
+             * @enum {string}
+             */
+            keywordMode: 'literal' | 'regex';
             /** @enum {string} */
             src: 'home' | 'all' | 'users' | 'list' | 'users_blacklist';
             /** Format: id */
@@ -5736,6 +5759,8 @@ export type components = {
             withReplies: boolean;
             withFile: boolean;
             isActive: boolean;
+            /** Format: date-time */
+            lastUsedAt: string;
             /** @default false */
             hasUnreadNote: boolean;
             /** @default false */
@@ -11642,6 +11667,8 @@ export interface operations {
                         }[];
                         requireSignedApFetch: boolean;
                         allowUnregisteredApSignerVerification: boolean;
+                        /** @enum {string} */
+                        proxyAccountFollowMode: 'always' | 'skipIfFollowed' | 'disabled';
                         allowAnonymousStats: boolean;
                         allowAnonymousOnlineUsersCount: boolean;
                         allowAnonymousChartActiveUsers: boolean;
@@ -15396,6 +15423,8 @@ export interface operations {
                     hanaModeBackground?: string | null;
                     requireSignedApFetch?: boolean;
                     allowUnregisteredApSignerVerification?: boolean;
+                    /** @enum {string} */
+                    proxyAccountFollowMode?: 'always' | 'skipIfFollowed' | 'disabled';
                     allowAnonymousStats?: boolean;
                     allowAnonymousOnlineUsersCount?: boolean;
                     allowAnonymousChartActiveUsers?: boolean;
@@ -15863,6 +15892,8 @@ export interface operations {
                     excludeKeywords: string[][];
                     mustExcludeKeywords?: string[][];
                     expression?: string | null;
+                    /** @enum {string} */
+                    keywordMode?: 'literal' | 'regex';
                     users: string[];
                     caseSensitive: boolean;
                     localOnly?: boolean;
@@ -16052,6 +16083,78 @@ export interface operations {
             };
         };
     };
+    'antennas___match-info': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** Format: misskey:id */
+                    antennaId: string;
+                    noteIds: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        /** Format: misskey:id */
+                        noteId: string;
+                        matchedKeywords: string[][];
+                        matchedExcludeKeywords: string[][];
+                    }[];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     antennas___notes: {
         requestBody: {
             content: {
@@ -16066,6 +16169,7 @@ export interface operations {
                     untilId?: string;
                     sinceDate?: number;
                     untilDate?: number;
+                    query?: string | null;
                 };
             };
         };
@@ -16257,6 +16361,99 @@ export interface operations {
             };
         };
     };
+    antennas___test: {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /** @enum {string} */
+                    src: 'home' | 'all' | 'users' | 'list' | 'users_blacklist';
+                    /** Format: misskey:id */
+                    userListId?: string | null;
+                    keywords: string[][];
+                    excludeKeywords: string[][];
+                    mustExcludeKeywords?: string[][];
+                    expression?: string | null;
+                    /** @enum {string} */
+                    keywordMode?: 'literal' | 'regex';
+                    users: string[];
+                    caseSensitive: boolean;
+                    localOnly?: boolean;
+                    excludeBots?: boolean;
+                    withReplies: boolean;
+                    withFile: boolean;
+                    excludeNotesInSensitiveChannel?: boolean;
+                    onlyFollowers?: boolean;
+                    /** @default 10 */
+                    limit?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Note'][];
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
     antennas___update: {
         requestBody: {
             content: {
@@ -16272,6 +16469,8 @@ export interface operations {
                     excludeKeywords?: string[][];
                     mustExcludeKeywords?: string[][];
                     expression?: string | null;
+                    /** @enum {string} */
+                    keywordMode?: 'literal' | 'regex';
                     users?: string[];
                     caseSensitive?: boolean;
                     localOnly?: boolean;
@@ -29166,6 +29365,9 @@ export interface operations {
                         servers: {
                             host: string;
                             followersCount: number;
+                            name: string | null;
+                            iconUrl: string | null;
+                            faviconUrl: string | null;
                         }[];
                     };
                 };

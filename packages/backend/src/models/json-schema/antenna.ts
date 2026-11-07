@@ -60,6 +60,12 @@ export const packedAntennaSchema = {
 			type: 'string',
 			optional: false, nullable: true,
 		},
+		keywordMode: {
+			type: 'string',
+			optional: false, nullable: false,
+			enum: ['literal', 'regex'],
+			default: 'literal',
+		},
 		src: {
 			type: 'string',
 			optional: false, nullable: false,
@@ -105,6 +111,11 @@ export const packedAntennaSchema = {
 		isActive: {
 			type: 'boolean',
 			optional: false, nullable: false,
+		},
+		lastUsedAt: {
+			type: 'string',
+			optional: false, nullable: false,
+			format: 'date-time',
 		},
 		hasUnreadNote: {
 			type: 'boolean',

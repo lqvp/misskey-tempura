@@ -208,7 +208,7 @@ export class MiUser {
 	public isHibernated: boolean;
 
 	@Column('boolean', {
-		default: true,
+		default: false,
 	})
 	public requireSigninToViewContents: boolean;
 

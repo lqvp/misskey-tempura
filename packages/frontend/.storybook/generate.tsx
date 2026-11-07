@@ -411,6 +411,8 @@ function toStories(component: string): Promise<string> {
 		globSync('src/components/MkAutocomplete.vue'),
 		globSync('src/components/MkAvatars.vue'),
 		globSync('src/components/Mk[B-E]*.vue'),
+		globSync('src/components/MkNestedWidgetEditor.vue'),
+		globSync('src/components/MkWidgetSettingsDialog.vue'),
 		globSync('src/components/MkFlashPreview.vue'),
 		globSync('src/components/MkGalleryPostPreview.vue'),
 		globSync('src/components/MkSignupServerRules.vue'),

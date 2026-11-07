@@ -35,6 +35,7 @@ export class AntennaEntityService {
 			excludeKeywords: antenna.excludeKeywords,
 			mustExcludeKeywords: antenna.mustExcludeKeywords,
 			expression: antenna.expression,
+			keywordMode: antenna.keywordMode,
 			src: antenna.src,
 			userListId: antenna.userListId,
 			users: antenna.users,
@@ -46,6 +47,7 @@ export class AntennaEntityService {
 			excludeNotesInSensitiveChannel: antenna.excludeNotesInSensitiveChannel,
 			onlyFollowers: antenna.onlyFollowers,
 			isActive: antenna.isActive,
+			lastUsedAt: antenna.lastUsedAt.toISOString(),
 			hasUnreadNote: false, // TODO
 			notify: false, // 後方互換性のため
 		};

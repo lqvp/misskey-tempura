@@ -956,6 +956,11 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			proxyAccountFollowMode: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['always', 'skipIfFollowed', 'disabled'],
+			},
 			allowAnonymousStats: {
 				type: 'boolean',
 				optional: false, nullable: false,
@@ -1230,6 +1235,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				requireSignedApFetch: instance.requireSignedApFetch,
 				allowUnregisteredApSignerVerification:
 					instance.allowUnregisteredApSignerVerification,
+				proxyAccountFollowMode: instance.proxyAccountFollowMode,
 				allowAnonymousStats: instance.allowAnonymousStats,
 				allowAnonymousOnlineUsersCount: instance.allowAnonymousOnlineUsersCount,
 				allowAnonymousChartActiveUsers: instance.allowAnonymousChartActiveUsers,

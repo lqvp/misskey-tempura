@@ -17,8 +17,10 @@ import {
 	testPaginationConsistency,
 	uploadFile,
 	userList,
+	initTestDb,
 } from '../utils.js';
 import type * as misskey from 'misskey-js';
+import type { DataSource } from 'typeorm';
 import { DEFAULT_POLICIES } from '@/core/RoleService.js';
 
 const compareBy = <T extends { id: string }>(selector: (s: T) => string = (s: T): string => s.id) => (a: T, b: T): number => {
@@ -26,6 +28,8 @@ const compareBy = <T extends { id: string }>(selector: (s: T) => string = (s: T)
 };
 
 describe('アンテナ', () => {
+	let db: DataSource;
+
 	// エンティティとしてのアンテナを主眼においたテストを記述する
 	// (Antennaを返すエンドポイント、Antennaエンティティを書き換えるエンドポイント、Antennaからノートを取得するエンドポイントをテストする)
 
@@ -74,6 +78,10 @@ describe('アンテナ', () => {
 	let testMutedChannel: misskey.entities.Channel;
 
 	beforeAll(async () => {
+		// 上限超過の既存データを作るためにDBへ直接書き込む。
+		// jobQueue() はワーカーまで起動してしまい、このファイルが意図的に残している
+		// アカウント削除ジョブが走ってしまうため、接続だけ借りる initTestDb(true) を使う
+		db = await initTestDb(true);
 		root = await signup({ username: 'root' });
 		alice = await signup({ username: 'alice' });
 		alicePost = await post(alice, { text: 'test' });
@@ -159,6 +167,7 @@ describe('アンテナ', () => {
 			excludeNotesInSensitiveChannel: false,
 			hasUnreadNote: false,
 			isActive: true,
+			lastUsedAt: new Date(response.lastUsedAt).toISOString(),
 			keywords: [['keyword']],
 			name: 'test',
 			src: 'all',
@@ -170,6 +179,7 @@ describe('アンテナ', () => {
 			localOnly: false,
 			notify: false,
 			onlyFollowers: false,
+			keywordMode: 'literal',
 		};
 		assert.deepStrictEqual(response, expected);
 	});
@@ -342,6 +352,403 @@ describe('アンテナ', () => {
 	test.todo('は他人のものを削除できない');
 
 	//#endregion
+
+	describe('のTL内検索', () => {
+		test('queryでアンテナのTL内を検索できること。', async () => {
+			const keyword = 'キーワード';
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+			const hit = await post(bob, { text: `${keyword} りんご` });
+			await post(bob, { text: `${keyword} みかん` });
+
+			const response = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id, query: 'りんご' },
+				user: alice,
+			});
+			assert.deepStrictEqual(response.map((x: Note) => x.id), [hit.id]);
+		});
+
+		test('queryが他人のアンテナでは使えないこと。', async () => {
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [['キーワード']] },
+				user: alice,
+			});
+			await failedApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id, query: 'test' },
+				user: bob,
+			}, {
+				status: 400,
+				code: 'NO_SUCH_ANTENNA',
+				id: '850926e0-fd3b-49b6-b69a-b28a5dbd82fe',
+			});
+		});
+	});
+
+	describe('のマッチ理由(antennas/match-info)', () => {
+		test('マッチしたキーワードグループを返すこと。', async () => {
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [['りんご', 'みかん']] },
+				user: alice,
+			});
+			const note = await post(bob, { text: 'りんごとみかん' });
+
+			const response = await successfulApiCall({
+				endpoint: 'antennas/match-info',
+				parameters: { antennaId: antenna.id, noteIds: [note.id] },
+				user: alice,
+			});
+			assert.deepStrictEqual(response, [{
+				noteId: note.id,
+				matchedKeywords: [['りんご', 'みかん']],
+				matchedExcludeKeywords: [],
+			}]);
+		});
+
+		test('他人のアンテナでは取得できないこと。', async () => {
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [['りんご']] },
+				user: alice,
+			});
+			const note = await post(bob, { text: 'りんご' });
+			await failedApiCall({
+				endpoint: 'antennas/match-info',
+				parameters: { antennaId: antenna.id, noteIds: [note.id] },
+				user: bob,
+			}, {
+				status: 400,
+				code: 'NO_SUCH_ANTENNA',
+				id: '5d7f2c8e-3f6a-4b1e-9a2c-7e4d8f1a3b5c',
+			});
+		});
+	});
+
+	describe('の試し打ち(antennas/test)', () => {
+		test('保存前の条件にマッチする直近のノートを返すこと。', async () => {
+			await post(bob, { text: 'りんごのノート' });
+			const response = await successfulApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywords: [['りんご']] },
+				user: alice,
+			});
+			assert.ok(response.some((x: Note) => x.text === 'りんごのノート'));
+		});
+
+		test('キーワードと除外キーワードが両方空ならエラーになること。', async () => {
+			await failedApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywords: [[]], excludeKeywords: [[]] },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'EMPTY_KEYWORD',
+				id: 'b3f9a1c2-4d5e-4f6a-8b7c-9d0e1f2a3b4c',
+			});
+		});
+	});
+
+	describe('の正規表現モード(keywordMode)', () => {
+		test('regexモードで作成できること。', async () => {
+			const response = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywordMode: 'regex', keywords: [['りんご|みかん']] },
+				user: alice,
+			});
+			assert.deepStrictEqual(response.keywordMode, 'regex');
+			assert.deepStrictEqual(response.keywords, [['りんご|みかん']]);
+		});
+
+		test('keywordMode未指定ならliteralになること。', async () => {
+			const response = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: defaultParam,
+				user: alice,
+			});
+			assert.deepStrictEqual(response.keywordMode, 'literal');
+		});
+
+		test('regexモードで不正な正規表現だと作成がエラーになること。', async () => {
+			await failedApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywordMode: 'regex', keywords: [['(unclosed']] },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'INVALID_REGEX',
+				id: '03534a02-f779-456a-bcf2-d4e490401bfa',
+			});
+		});
+
+		test('literalモードでは正規表現として不正な文字列も作成できること。', async () => {
+			const response = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywordMode: 'literal', keywords: [['(unclosed']] },
+				user: alice,
+			});
+			assert.deepStrictEqual(response.keywordMode, 'literal');
+		});
+
+		test('regexモードへの変更と不正な正規表現への変更がエラーになること。', async () => {
+			const antenna = await successfulApiCall({ endpoint: 'antennas/create', parameters: defaultParam, user: alice });
+			const updated = await successfulApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: antenna.id, keywordMode: 'regex', keywords: [['^りんご$']] },
+				user: alice,
+			});
+			assert.deepStrictEqual(updated.keywordMode, 'regex');
+
+			await failedApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: antenna.id, keywordMode: 'regex', keywords: [['*bad']] },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'INVALID_REGEX',
+				id: '68573d35-69af-48dc-bd62-e2a059907cf5',
+			});
+
+			// 既存がregexモードのまま不正なパターンへキーワードだけ変える場合もエラーになる
+			await failedApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: antenna.id, keywordMode: 'regex', keywords: [['[bad']] },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'INVALID_REGEX',
+				id: '68573d35-69af-48dc-bd62-e2a059907cf5',
+			});
+		});
+
+		test('モード切替とキーワード更新を同時に投げても、最終状態が矛盾しないこと。', async () => {
+			// 片方はregexへの切替 (キーワードは保存済みのものを検証)、もう片方は不正な式への更新。
+			// 行ロックで直列化されるため、到達順に関係なく最終状態は次のどちらかになる:
+			//   - 切替が先: 不正な式の更新が regex として検証され 400、最終状態は regex + 保存済みの有効な式
+			//   - 更新が先: literal のまま不正な文字列が入り 200、切替は保存済みの不正な式を検証して 400
+			// どちらの順序でも、最終状態が「regex + 不正な式」になることはない。
+			// (HTTPを並行に投げても到達順は保証されないので、ここでは最終状態の不変条件だけを検証する)
+			const antenna = await successfulApiCall({ endpoint: 'antennas/create', parameters: defaultParam, user: alice });
+
+			const [switchMode, updateKeywords] = await Promise.all([
+				api('antennas/update', { antennaId: antenna.id, keywordMode: 'regex' }, alice),
+				api('antennas/update', { ...defaultParam, antennaId: antenna.id, keywords: [['(unclosed']] }, alice),
+			]);
+
+			const final = await successfulApiCall({
+				endpoint: 'antennas/show',
+				parameters: { antennaId: antenna.id },
+				user: alice,
+			});
+
+			// どちらか一方は必ず失敗している (両方成功すると regex + 不正な式が保存されうる)
+			assert.notStrictEqual(switchMode.status, updateKeywords.status);
+			if (final.keywordMode === 'regex') {
+				assert.strictEqual(switchMode.status, 200);
+				assert.strictEqual(updateKeywords.status, 400);
+				assert.ok(!final.keywords.flat().includes('(unclosed'));
+			} else {
+				assert.strictEqual(updateKeywords.status, 200);
+				assert.strictEqual(switchMode.status, 400);
+				assert.deepStrictEqual(final.keywords, [['(unclosed']]);
+			}
+		});
+
+		test('キーワード配列の上限はモードに関係なく新規作成に適用されること。', async () => {
+			// 受信経路はモードに関係なく全キーワードを走査するので、literalでも上限を超えられない
+			const tooManyGroups = Array.from({ length: 33 }, () => ['a']);
+			await failedApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywordMode: 'literal', keywords: tooManyGroups },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'KEYWORD_LIMIT_EXCEEDED',
+				id: '4b8e2f61-7d3a-49c5-a0e8-1f6c9b2d7e43',
+			});
+		});
+
+		test('上限を超えた既存アンテナは、超過が増えない限り保存できること。', async () => {
+			// 従来のAPIでは上限を超えるアンテナを保存できていた。paramDef で弾くと
+			// 編集画面がキーワード配列を再送するため、名前だけの変更も通らなくなる
+			const antenna = await successfulApiCall({ endpoint: 'antennas/create', parameters: defaultParam, user: alice });
+			// 上限超過の既存データを直接作る (API では作れない)
+			await db.query('UPDATE "antenna" SET "keywords" = $1 WHERE "id" = $2', [
+				JSON.stringify([Array.from({ length: 33 }, () => 'a')]),
+				antenna.id,
+			]);
+
+			// 名前だけの変更 (編集画面は保存済みの超過分をそのまま再送する) は通る
+			const overLimitKeywords = [Array.from({ length: 33 }, () => 'a')];
+			const renamed = await successfulApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: antenna.id, name: 'renamed-over-limit', keywords: overLimitKeywords },
+				user: alice,
+			});
+			assert.strictEqual(renamed.name, 'renamed-over-limit');
+			assert.strictEqual(renamed.keywords[0].length, 33);
+
+			// 超過を増やす変更は拒否する
+			await failedApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: antenna.id, keywords: [Array.from({ length: 40 }, () => 'a')] },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'KEYWORD_LIMIT_EXCEEDED',
+				id: '9c1f0d27-5b6e-4a83-9f21-6d3b8e4c1a70',
+			});
+
+			// 超過を解消する変更も通る
+			const fixed = await successfulApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: antenna.id, keywords: [['a', 'b']] },
+				user: alice,
+			});
+			assert.deepStrictEqual(fixed.keywords, [['a', 'b']]);
+		});
+
+		test('試し打ち(antennas/test)も保存と同じ上限を課すこと。', async () => {
+			// 試し打ちだけ通って保存で失敗すると、結果を信じて保存したユーザーが混乱する
+			await failedApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywordMode: 'literal', keywords: [Array.from({ length: 33 }, () => 'a')] },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'KEYWORD_LIMIT_EXCEEDED',
+				id: '2e7a5c94-8f13-4d6b-b0a2-7c4e1d9f3b58',
+			});
+		});
+
+		test('上限超過のキーワードは create で KEYWORD_LIMIT_EXCEEDED を返すこと。', async () => {
+			// paramDef で弾くと汎用の INVALID_PARAM になり、どの項目が超過しているか返せない
+			await failedApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywordMode: 'literal', keywords: [Array.from({ length: 33 }, () => 'a')] },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'KEYWORD_LIMIT_EXCEEDED',
+				id: '4b8e2f61-7d3a-49c5-a0e8-1f6c9b2d7e43',
+			});
+		});
+
+		test('SCOREモードでないときは強制除外キーワードを検証しないこと。', async () => {
+			// mustExcludeKeywords は SCORE モードでしか使われないので、壊れた式が残っていても
+			// regex への切替や保存をブロックしない
+			const antenna = await successfulApiCall({ endpoint: 'antennas/create', parameters: defaultParam, user: alice });
+			const res = await successfulApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: antenna.id, keywordMode: 'regex', keywords: [['ok']], mustExcludeKeywords: [['(unclosed']] },
+				user: alice,
+			});
+			assert.strictEqual(res.keywordMode, 'regex');
+
+			// SCORE モードにすると同じ式が検証対象になる
+			await failedApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: antenna.id, keywordMode: 'regex', expression: 'SCORE', keywords: [['ok']], mustExcludeKeywords: [['(unclosed']] },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'INVALID_REGEX',
+				id: '68573d35-69af-48dc-bd62-e2a059907cf5',
+			});
+		});
+
+		test('パターンは本文全体への部分一致で、CW があると ^$ は行単位にならないこと。', async () => {
+			// アンカーの意味を固定しておく (ドキュメントの記述と一致させる)
+			const withCw = await post(bob, { text: 'りんご', cw: 'ネタバレ' });
+			const plain = await post(bob, { text: 'りんご' });
+
+			const anchored = await successfulApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywordMode: 'regex', keywords: [['^りんご$']] },
+				user: alice,
+			});
+			// CW 付きは本文が "りんご\nネタバレ" になるので一致しない
+			assert.ok(!anchored.some((x: Note) => x.id === withCw.id));
+			assert.ok(anchored.some((x: Note) => x.id === plain.id));
+
+			// (?m) を使えば行単位で一致する
+			const multiline = await successfulApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywordMode: 'regex', keywords: [['(?m)^りんご$']] },
+				user: alice,
+			});
+			assert.ok(multiline.some((x: Note) => x.id === withCw.id));
+		});
+
+		test('INVALID_REGEX はどの項目が不正かを info で返すこと。', async () => {
+			const res = await api('antennas/create', {
+				...defaultParam,
+				keywordMode: 'regex',
+				keywords: [['ok']],
+				excludeKeywords: [['fine', '(bad']],
+			}, alice);
+			assert.strictEqual(res.status, 400);
+			const body = res.body as unknown as { error: { code: string; info: { reason: string; pattern: string; location: { keywordType: string; groupIndex: number; keywordIndex: number } } } };
+			assert.strictEqual(body.error.code, 'INVALID_REGEX');
+			assert.strictEqual(body.error.info.reason, 'invalidPattern');
+			assert.strictEqual(body.error.info.pattern, '(bad');
+			assert.deepStrictEqual(body.error.info.location, { keywordType: 'excludeKeywords', groupIndex: 0, keywordIndex: 1 });
+		});
+
+		test('試し打ち(antennas/test)でも128文字を超える有効な正規表現を受け付けること。', async () => {
+			// 保存 (create) は512文字まで許可するので、プレビューでも同じ上限まで受け付ける
+			const unique = 'longpattern-' + Math.random().toString(36).slice(2);
+			await post(bob, { text: unique });
+			const longPattern = 'a|'.repeat(100) + unique; // 201文字超
+			const response = await successfulApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywordMode: 'regex', keywords: [[longPattern]] },
+				user: alice,
+			});
+			assert.ok(response.some((x: Note) => x.text === unique));
+		});
+
+		test('試し打ち(antennas/test)がregexでマッチし、不正な正規表現はエラーになること。', async () => {
+			await post(bob, { text: 'りんご100円' });
+			const response = await successfulApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywordMode: 'regex', keywords: [['りんご[0-9]+円']] },
+				user: alice,
+			});
+			assert.ok(response.some((x: Note) => x.text === 'りんご100円'));
+
+			// regexモードでは | は分割されず1つのパターンとして扱われる
+			const either = await successfulApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywordMode: 'regex', keywords: [['バナナ|りんご[0-9]+円']] },
+				user: alice,
+			});
+			assert.ok(either.some((x: Note) => x.text === 'りんご100円'));
+
+			// 対照: literalモードでは同じ文字列は「そのままの文字列」でしか一致しない
+			const literal = await successfulApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywordMode: 'literal', keywords: [['バナナ|りんご[0-9]+円']] },
+				user: alice,
+			});
+			assert.ok(!literal.some((x: Note) => x.text === 'りんご100円'));
+
+			await failedApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywordMode: 'regex', keywords: [['(unclosed']] },
+				user: alice,
+			}, {
+				status: 400,
+				code: 'INVALID_REGEX',
+				id: '0718cd93-e139-48f9-8107-2f5b24ad3669',
+			});
+		});
+	});
 
 	describe('のノート', () => {
 		//#region アンテナのノート取得(antennas/notes)

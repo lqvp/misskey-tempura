@@ -94,7 +94,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</div>
 	<MkPollEditor v-if="poll" v-model="poll" @destroyed="poll = null"/>
 	<MkDeleteScheduleEditor v-if="scheduledNoteDelete" v-model="scheduledNoteDelete" @destroyed="scheduledNoteDelete = null"/>
-	<MkDeliveryTargetEditor v-if="deliveryTargets" v-model="deliveryTargets" @destroyed="deliveryTargets = null"/>
+	<button v-if="deliverySummary != null" class="_button" :class="$style.deliverySummary" @click="openDeliveryTargetsDialog">
+		<i class="ti" style="flex-shrink: 0;" :class="deliverySummary.mode === 'include' ? 'ti-list-check' : 'ti-list-details'"></i>
+		<span :class="$style.deliverySummaryText"><span :class="$style.deliverySummaryFixed">{{ deliverySummary.base }}</span><span v-if="deliverySummary.host" :class="$style.deliverySummaryHost">{{ deliverySummary.host }}</span><span :class="$style.deliverySummaryFixed">{{ deliverySummary.suffix }}</span></span>
+		<i class="ti ti-chevron-right" style="margin-left: auto; flex-shrink: 0;"></i>
+	</button>
 	<MkNotePreview v-if="showPreview" :class="$style.preview" :text="text" :files="files" :poll="poll ?? undefined" :useCw="useCw" :cw="cw" :user="postAccount ?? $i"/>
 	<!-- <div v-if="showingOptions" style="padding: 8px 16px;">
 	</div> -->
@@ -157,7 +161,6 @@ import { claimAchievement } from '@/utility/achievements.js';
 import { emojiPicker } from '@/utility/emoji-picker.js';
 import { mfmFunctionPicker } from '@/utility/mfm-function-picker.js';
 import { bottomItemDef, normalizePostFormActions } from '@/utility/post-form.js';
-import MkDeliveryTargetEditor from '@/components/MkDeliveryTargetEditor.vue';
 import { transformTextWithGemini } from '@/utility/tempura-script/text-transformations.js';
 import { prefer } from '@/preferences.js';
 import { getPluginHandlers } from '@/plugin.js';
@@ -404,7 +407,7 @@ const bottomItemActionDef: Record<keyof typeof bottomItemDef, {
 	},
 	deliveryTargets: {
 		active: deliveryTargets,
-		action: toggleDeliveryTargets,
+		action: openDeliveryTargetsDialog,
 	},
 });
 
@@ -577,16 +580,44 @@ function toggleScheduledNoteDelete() {
 	}
 }
 
-function toggleDeliveryTargets() {
-	if (deliveryTargets.value) {
-		deliveryTargets.value = null;
-	} else {
-		deliveryTargets.value = {
+let disposeDeliveryTargetsDialog: (() => void) | null = null;
+
+function openDeliveryTargetsDialog() {
+	const { dispose } = os.popup(defineAsyncComponent(() => import('@/components/MkDeliveryTargetEditorDialog.vue')), {
+		modelValue: deliveryTargets.value ?? {
 			mode: 'include',
 			hosts: [],
-		};
-	}
+		},
+	}, {
+		'update:modelValue': v => {
+			deliveryTargets.value = v;
+		},
+		destroyed: () => {
+			deliveryTargets.value = null;
+		},
+		closed: () => {
+			dispose();
+			if (disposeDeliveryTargetsDialog === dispose) disposeDeliveryTargetsDialog = null;
+		},
+	});
+	disposeDeliveryTargetsDialog = dispose;
 }
+
+const deliverySummary = computed<{ mode: 'include' | 'exclude'; base: string; host: string; suffix: string } | null>(() => {
+	const dt = deliveryTargets.value;
+	if (dt == null) return null;
+	const count = dt.hosts.length;
+	const base = dt.mode === 'include'
+		? i18n.tsx._deliveryTargetControl.deliverySummaryInclude({ count })
+		: i18n.tsx._deliveryTargetControl.deliverySummaryExclude({ count });
+	if (count === 0) return { mode: dt.mode, base, host: '', suffix: '' };
+	return {
+		mode: dt.mode,
+		base: `${base}（`,
+		host: dt.hosts[0],
+		suffix: count === 1 ? '）' : ` ${i18n.tsx._deliveryTargetControl.andMore({ count: count - 1 })}）`,
+	};
+});
 
 function addTag(tag: string) {
 	if (textareaEl.value == null) return;
@@ -1635,6 +1666,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
 	uploader.abortAll();
+	disposeDeliveryTargetsDialog?.();
 	if (textAutocomplete) {
 		textAutocomplete.detach();
 	}
@@ -1994,6 +2026,35 @@ html[data-color-scheme=light] .preview {
 	grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
 	grid-auto-rows: 40px;
 	direction: rtl;
+}
+
+.deliverySummary {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 0 16px 8px;
+	padding: 7px 10px;
+	border-radius: 8px;
+	font-size: 0.85em;
+	color: var(--MI_THEME-accent);
+	background: var(--MI_THEME-accentedBg);
+	text-align: left;
+}
+
+.deliverySummaryText {
+	display: flex;
+	min-width: 0;
+	white-space: nowrap;
+}
+
+.deliverySummaryFixed {
+	flex-shrink: 0;
+}
+
+.deliverySummaryHost {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	min-width: 0;
 }
 
 .footerButton {

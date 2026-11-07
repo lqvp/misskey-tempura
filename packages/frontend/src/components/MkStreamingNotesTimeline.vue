@@ -36,15 +36,20 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<span style="height: 1em; width: 1px; background: var(--MI_THEME-divider);"></span>
 						<span>{{ getSeparatorInfo(paginator.items.value[i -1].createdAt, note.createdAt)?.nextText }} <i class="ti ti-chevron-down"></i></span>
 					</div>
+					<MkAntennaMatchReason v-if="props.src === 'antenna' && antennaMatchInfo[note.id]" v-bind="antennaMatchInfo[note.id]" :regexMode="antennaKeywordMode === 'regex'"/>
 					<MkNote :class="$style.note" :note="note" :withHardMute="true"/>
 				</div>
 				<div v-else-if="note._shouldInsertAd_" :data-scroll-anchor="note.id">
+					<MkAntennaMatchReason v-if="props.src === 'antenna' && antennaMatchInfo[note.id]" v-bind="antennaMatchInfo[note.id]" :regexMode="antennaKeywordMode === 'regex'"/>
 					<MkNote :class="$style.note" :note="note" :withHardMute="true"/>
 					<div :class="$style.ad">
 						<MkAd :preferForms="['horizontal', 'horizontal-big']"/>
 					</div>
 				</div>
-				<MkNote v-else :class="$style.note" :note="note" :withHardMute="true" :data-scroll-anchor="note.id"/>
+				<div v-else :data-scroll-anchor="note.id">
+					<MkAntennaMatchReason v-if="props.src === 'antenna' && antennaMatchInfo[note.id]" v-bind="antennaMatchInfo[note.id]" :regexMode="antennaKeywordMode === 'regex'"/>
+					<MkNote :class="$style.note" :note="note" :withHardMute="true"/>
+				</div>
 			</template>
 		</component>
 		<button v-show="paginator.canFetchOlder.value" key="_more_" v-appear="prefer.s.enableInfiniteScroll ? paginator.fetchOlder : null" :disabled="paginator.fetchingOlder.value" class="_button" :class="$style.more" @click="paginator.fetchOlder">
@@ -56,7 +61,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, watch, onUnmounted, provide, useTemplateRef, TransitionGroup, onMounted, shallowRef, ref, markRaw } from 'vue';
+import { computed, watch, onUnmounted, provide, inject, useTemplateRef, TransitionGroup, onMounted, shallowRef, ref, markRaw } from 'vue';
+import type { Ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { useInterval } from '@@/js/use-interval.js';
 import { useDocumentVisibility } from '@@/js/use-document-visibility.js';
@@ -72,6 +78,8 @@ import { instance } from '@/instance.js';
 import { prefer } from '@/preferences.js';
 import { store } from '@/store.js';
 import MkNote from '@/components/MkNote.vue';
+import MkAntennaMatchReason from '@/components/MkAntennaMatchReason.vue';
+import { misskeyApi } from '@/utility/misskey-api.js';
 import MkButton from '@/components/MkButton.vue';
 import { i18n } from '@/i18n.js';
 import { DI } from '@/di.js';
@@ -304,6 +312,64 @@ function prepend(note: Misskey.entities.Note & MisskeyEntity) {
 	}
 }
 
+type AntennaMatchInfo = { matchedKeywords: string[][]; matchedExcludeKeywords: string[][] };
+const antennaMatchInfo = shallowRef<Record<string, AntennaMatchInfo>>({});
+
+// マッチ理由の表示をモードに合わせるため、アンテナのマッチ方式だけ別に持つ。
+// アンテナページ/デッキのカラムは取得済みのアンテナを provide しているので、それを優先して余計なリクエストを避ける
+const currentAntenna = inject<Ref<Misskey.entities.Antenna | null> | null>('currentAntenna', null);
+const antennaKeywordMode = ref<'literal' | 'regex'>('literal');
+if (props.src === 'antenna') {
+	// デッキのカラムではインスタンスが再利用されるので、アンテナが変わったら取り直す。
+	// watch の中で watch を作ると、setup 外で実行された分がコンポーネントのスコープに
+	// 紐づかず停止されないため、監視対象を1つの watch にまとめる
+	watch(
+		[() => props.antenna, () => currentAntenna?.value ?? null],
+		([antennaId, provided]) => {
+			if (currentAntenna != null) {
+				// provide されたアンテナが切り替わったら、その値をそのまま使う
+				antennaKeywordMode.value = provided != null && provided.id === antennaId ? provided.keywordMode : 'literal';
+				return;
+			}
+			antennaKeywordMode.value = 'literal';
+			if (antennaId == null) return;
+			misskeyApi('antennas/show', { antennaId }).then(antenna => {
+				// 取得中にアンテナが切り替わっていたら捨てる
+				if (antennaId !== props.antenna) return;
+				antennaKeywordMode.value = antenna.keywordMode;
+			}).catch(() => {
+				// 取得できなくてもTL表示は継続する (既定のliteral表示のまま)
+			});
+		},
+		{ immediate: true },
+	);
+}
+
+if (props.src === 'antenna') {
+	// 表示中のノートのマッチ理由を現在の条件で再計算して取得する(受信当時の理由の復元ではない)
+	// デッキのカラムではインスタンスが再利用されるため、アンテナが変わったらキャッシュを破棄する
+	watch(() => props.antenna, () => {
+		antennaMatchInfo.value = {};
+	});
+
+	watch(() => paginator.items.value.map(note => note.id), async (ids) => {
+		const antennaId = props.antenna;
+		const missing = ids.filter(id => !(id in antennaMatchInfo.value)).slice(0, 100); // antennas/match-info の noteIds 上限
+		if (missing.length === 0 || antennaId == null) return;
+		try {
+			const res = await misskeyApi('antennas/match-info', { antennaId, noteIds: missing });
+			if (antennaId !== props.antenna) return; // アンテナ切り替え後に届いた古い応答は捨てる
+			const next = { ...antennaMatchInfo.value };
+			for (const x of res) {
+				next[x.noteId] = { matchedKeywords: x.matchedKeywords, matchedExcludeKeywords: x.matchedExcludeKeywords };
+			}
+			antennaMatchInfo.value = next;
+		} catch {
+			// マッチ理由の取得に失敗してもTL表示自体は継続する
+		}
+	}, { immediate: true });
+}
+
 const stream = store.s.realtimeMode ? useStream() : null;
 
 const connections = {
@@ -326,6 +392,9 @@ function connectChannel() {
 			antennaId: props.antenna,
 		});
 		connections.antenna.on('note', prepend);
+		connections.antenna.on('noteMatched', (payload) => {
+			antennaMatchInfo.value = { ...antennaMatchInfo.value, [payload.noteId]: { matchedKeywords: payload.matchedKeywords, matchedExcludeKeywords: payload.matchedExcludeKeywords } };
+		});
 	} else if (props.src === 'home') {
 		connections.homeTimeline = stream.useChannel('homeTimeline', {
 			withRenotes: props.withRenotes,

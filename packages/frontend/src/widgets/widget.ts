@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { defineAsyncComponent, reactive, watch } from 'vue';
+import { defineAsyncComponent, reactive, watch, inject, hasInjectionContext } from 'vue';
 import { throttle } from 'throttle-debounce';
 import type { Reactive } from 'vue';
 import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
@@ -11,6 +11,7 @@ import { getDefaultFormValues } from '@/utility/form.js';
 import * as os from '@/os.js';
 import { deepClone } from '@/utility/clone.js';
 import type { WidgetName } from './index.js';
+import { widgetPreviewContext } from './widget-preview.js';
 
 export type Widget<P extends Record<string, unknown>> = {
 	id: string;
@@ -54,12 +55,16 @@ export const useWidgetPropsManager = <F extends FormWithDefault>(
 	watch(() => props.widget?.data, (to) => {
 		if (to != null) {
 			for (const key of Object.keys(propsDef)) {
-				(widgetProps as any)[key] = to[key];
+				(widgetProps as any)[key] = Object.hasOwn(to, key) ? to[key] : propsDef[key].default;
 			}
 		}
 	}, { deep: true });
 
+	const preview = hasInjectionContext() ? inject(widgetPreviewContext, undefined) : undefined;
+	preview?.register({ id: props.widget?.id ?? null, name, form: propsDef, values: widgetProps });
+
 	const save = throttle(3000, () => {
+		if (preview) return;
 		emit('updateProps', widgetProps as GetFormResultType<F>);
 	});
 

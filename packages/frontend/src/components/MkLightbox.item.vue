@@ -49,6 +49,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<img
 							v-else-if="content.type === 'video' && content.thumbnailUrl != null"
 							:src="content.thumbnailUrl"
+							:referrerpolicy="content.referrerPolicy"
 							:class="$style.hiddenThumbnail"
 						/>
 						<div v-else :class="$style.hiddenPlaceholder"></div>
@@ -66,6 +67,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						v-if="(!originalContentLoaded || !thumbnailContentLoaded) && (content.thumbnailUrl != null)"
 						:class="[$style.content, $style.thumbnail]"
 						:src="content.thumbnailUrl"
+						:referrerpolicy="content.referrerPolicy"
 						draggable="false"
 						@load="thumbnailContentLoaded = true"
 					>
@@ -75,6 +77,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							v-if="content.type === 'image'"
 							:class="[$style.content, { [$style.pixelatedZoom]: pixelatedZoom }]"
 							:src="content.url"
+							:referrerpolicy="content.referrerPolicy"
 							:alt="content.file?.comment ?? undefined"
 							draggable="false"
 							@load="originalContentLoaded = true"
@@ -168,6 +171,8 @@ export type Content = {
 	filename?: string | null;
 	file?: Misskey.entities.DriveFile;
 	sourceElement?: HTMLElement | null;
+	// 第三者のRefererを拒否する外部CDNのメディアを直接読み込む場合に指定する
+	referrerPolicy?: 'no-referrer';
 };
 
 export function calculateSourceTransform({

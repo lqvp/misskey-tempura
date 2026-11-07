@@ -30,6 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			:style="hide ? 'filter: brightness(0.7);' : null"
 			:class="$style.image"
 			:marker="marker"
+			:referrerpolicy="referrerpolicy"
 		/>
 		<div
 			v-else-if="prefer.s.dataSaver.media || hide"
@@ -40,6 +41,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<img
 			v-else
 			:src="url"
+			:referrerpolicy="referrerpolicy"
 			:alt="image.comment || image.name"
 			:title="image.comment || image.name"
 			:class="$style.image"
@@ -87,6 +89,7 @@ const props = withDefaults(defineProps<{
 	disableImageLink?: boolean;
 	controls?: boolean;
 	marker?: string;
+	referrerpolicy?: 'no-referrer';
 }>(), {
 	cover: false,
 	disableImageLink: false,

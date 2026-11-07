@@ -6,7 +6,7 @@
 import { Inject, Injectable, OnApplicationShutdown, OnModuleInit } from '@nestjs/common';
 import * as Redis from 'ioredis';
 import { ModuleRef } from '@nestjs/core';
-import type { FollowingsRepository, UserListMembershipsRepository } from '@/models/_.js';
+import type { UserListMembershipsRepository } from '@/models/_.js';
 import type { MiUser } from '@/models/User.js';
 import type { MiUserList } from '@/models/UserList.js';
 import type { MiUserListMembership } from '@/models/UserListMembership.js';
@@ -36,9 +36,6 @@ export class UserListService implements OnApplicationShutdown, OnModuleInit {
 
 		@Inject(DI.redisForSub)
 		private redisForSub: Redis.Redis,
-
-		@Inject(DI.followingsRepository)
-		private followingsRepository: FollowingsRepository,
 
 		@Inject(DI.userListMembershipsRepository)
 		private userListMembershipsRepository: UserListMembershipsRepository,
@@ -117,13 +114,9 @@ export class UserListService implements OnApplicationShutdown, OnModuleInit {
 		this.globalEventService.publishUserListStream(list.id, 'userAdded', await this.userEntityService.pack(target));
 
 		// このインスタンス内にこのリモートユーザーをフォローしているユーザーがいなくても投稿を受け取るためにダミーのユーザーがフォローしたということにする
-		if (this.userEntityService.isRemoteUser(target)) {
+		if (this.userEntityService.isRemoteUser(target) && await this.systemAccountService.shouldProxyFollow(target)) {
 			const proxy = await this.systemAccountService.fetch('proxy');
-			const hasFollow = await this.followingsRepository.createQueryBuilder('f')
-				.where('f.followeeId = :userId', { userId: target.id })
-				.andWhere('f.followerHost IS NULL')
-				.getExists();
-		if (!hasFollow) this.queueService.createFollowJob([{ from: { id: proxy.id }, to: { id: target.id } }]);
+			this.queueService.createFollowJob([{ from: { id: proxy.id }, to: { id: target.id } }]);
 		}
 	}
 

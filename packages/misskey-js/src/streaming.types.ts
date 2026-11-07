@@ -144,6 +144,7 @@ export type Channels = {
 		};
 		events: {
 			note: (payload: Note) => void;
+			noteMatched: (payload: { noteId: Note['id']; matchedKeywords: string[][]; matchedExcludeKeywords: string[][] }) => void;
 		};
 		receives: null;
 	};

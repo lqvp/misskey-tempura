@@ -897,6 +897,28 @@ export interface Locale extends ILocale {
      */
     "proxyAccountDescription": string;
     /**
+     * フォロー条件
+     */
+    "proxyAccountFollowMode": string;
+    /**
+     * プロキシアカウントがリモートユーザーを新たにフォローする条件を選択します。「使わない」にしても、すでにプロキシアカウントがフォローしている相手は解除されず、購読中の投稿は届き続けます。
+     */
+    "proxyAccountFollowMode_description": string;
+    "_proxyAccountFollowMode": {
+        /**
+         * 使う (常にフォローする)
+         */
+        "always": string;
+        /**
+         * すでにフォローされている場合はフォローしない
+         */
+        "skipIfFollowed": string;
+        /**
+         * 使わない (新たにはフォローしない)
+         */
+        "disabled": string;
+    };
+    /**
      * ホスト
      */
     "host": string;
@@ -10934,6 +10956,44 @@ export interface Locale extends ILocale {
         "federationJobQueue": string;
     };
     "_widgetOptions": {
+        "_nestedWidget": {
+            /**
+             * 中のウィジェット
+             */
+            "children": string;
+            /**
+             * ネスト全体
+             */
+            "general": string;
+            /**
+             * 切り替え間隔（秒）
+             */
+            "interval": string;
+            /**
+             * 0で自動切り替えを無効にします。
+             */
+            "intervalDescription": string;
+            /**
+             * 最大の高さ（px）
+             */
+            "maxHeight": string;
+            /**
+             * 0の場合は制限しません。
+             */
+            "maxHeightDescription": string;
+            /**
+             * 上に移動
+             */
+            "moveUp": string;
+            /**
+             * 下に移動
+             */
+            "moveDown": string;
+            /**
+             * 親の設定に戻る
+             */
+            "back": string;
+        };
         /**
          * ヘッダーを表示
          */
@@ -15967,7 +16027,7 @@ export interface Locale extends ILocale {
      */
     "hideActivity": string;
     /**
-     * 自分のプロフィールのアクティビティ (概要/アクティビティタブ) を他人が見れないようにします。このオプションを有効にしても、自分であればプロフィールのアクティビティタブから引き続き閲覧できます。
+     * 自分のプロフィールのアクティビティ (概要/アクティビティタブ) を他人が見れないようにします。このオプションを有効にしても、自分であればプロフィールのアクティビティタブから引き続き閲覧できます。なお、アクティビティタブは管理者とモデレーターもこの設定に関わらず閲覧できます。
      */
     "hideActivityDescription": string;
     /**
@@ -16286,7 +16346,7 @@ export interface Locale extends ILocale {
          */
         "description": string;
         /**
-         * 公開 (Public) の投稿を連合する
+         * 公開 (Public) の投稿をoutboxに含める
          */
         "publicVisibility": string;
         /**
@@ -16294,7 +16354,7 @@ export interface Locale extends ILocale {
          */
         "publicVisibilityDescription": string;
         /**
-         * セミパブリック (Public Non-LTL) の投稿を連合する
+         * セミパブリック (Public Non-LTL) の投稿をoutboxに含める
          */
         "publicNonLtlVisibility": string;
         /**
@@ -16302,7 +16362,7 @@ export interface Locale extends ILocale {
          */
         "publicNonLtlVisibilityDescription": string;
         /**
-         * ホーム (Home) の投稿を連合する
+         * ホーム (Home) の投稿をoutboxに含める
          */
         "homeVisibility": string;
         /**
@@ -16414,6 +16474,22 @@ export interface Locale extends ILocale {
          * 一部のサーバーに非公開
          */
         "deliveryTargetsExclude": string;
+        /**
+         * {count}サーバーのみに配送
+         */
+        "deliverySummaryInclude": ParameterizedString<"count">;
+        /**
+         * {count}サーバーを除外して配送
+         */
+        "deliverySummaryExclude": ParameterizedString<"count">;
+        /**
+         * ほか{count}
+         */
+        "andMore": ParameterizedString<"count">;
+        /**
+         * 解除する
+         */
+        "clearDeliveryTargets": string;
     };
     "_contactForm": {
         "_settings": {
@@ -16951,6 +17027,78 @@ export interface Locale extends ILocale {
     };
     "_tempuraFutureAntenna": {
         /**
+         * 変更をリセット
+         */
+        "resetAntenna": string;
+        /**
+         * かつ
+         */
+        "keywordAnd": string;
+        /**
+         * または
+         */
+        "keywordOr": string;
+        /**
+         * キーワードを追加
+         */
+        "addKeyword": string;
+        /**
+         * グループを追加
+         */
+        "addGroup": string;
+        /**
+         * このグループを削除
+         */
+        "removeGroup": string;
+        /**
+         * 保存前に試す
+         */
+        "tryConditions": string;
+        /**
+         * 直近の見えるノート(最大200件)に現在の条件を試します。フォロワー限定やダイレクトなど、見えないノートは対象外です。
+         */
+        "tryConditionsDescription": string;
+        /**
+         * 同じグループの中はAND(かつ)、グループ同士はOR(または)でマッチします
+         */
+        "keywordGroupsDescription": string;
+        /**
+         * マッチしたノート
+         */
+        "tryConditionsResult": string;
+        /**
+         * マッチするノートが見つかりませんでした
+         */
+        "tryConditionsNoMatch": string;
+        /**
+         * マッチした条件
+         */
+        "matchReason": string;
+        /**
+         * 減点された条件
+         */
+        "matchReasonExclude": string;
+        /**
+         * 受信中
+         */
+        "receiving": string;
+        /**
+         * 停止中
+         */
+        "stopped": string;
+        /**
+         * 最後に開いた日時
+         */
+        "lastUsedAt": string;
+        /**
+         * このアンテナを複製
+         */
+        "duplicateAntenna": string;
+        /**
+         * このアンテナ内を検索
+         */
+        "searchThisAntenna": string;
+        /**
          * 高度なスコアリング
          */
         "scoringMode": string;
@@ -16963,9 +17111,81 @@ export interface Locale extends ILocale {
          */
         "mustExcludeKeywords": string;
         /**
-         * これらのキーワードのいずれかが一致した場合、スコアに関係なく除外されます。
+         * 同じグループ内のすべてのキーワードが一致した場合、スコアに関係なく除外されます。
          */
         "mustExcludeKeywordsDescription": string;
+        /**
+         * マッチ方式
+         */
+        "keywordMode": string;
+        /**
+         * 通常 (文字列として一致)
+         */
+        "keywordModeLiteral": string;
+        /**
+         * 正規表現
+         */
+        "keywordModeRegex": string;
+        /**
+         * 正規表現モードでは、登録した各項目がそのまま1つの正規表現(RE2構文)として評価されます。改行・空白・「|」では分割されません。後読みなどの一部の構文は使えません。
+         */
+        "regexModeDescription": string;
+        /**
+         * 正規表現として解釈されるようになります。「\d+」のような記号は特別な意味を持つため、通常モードのつもりの語句が別の条件になる場合があります。入力内容は自動では変換されません。
+         */
+        "regexModeWarningToRegex": string;
+        /**
+         * 通常モードに戻すと、登録した式はただの文字列として扱われます。「\d+」や「(abc|def)」のような式はその文字列を含むノートにしか一致しなくなるため、意図しない結果になりやすいです。入力内容は自動では変換されません。
+         */
+        "regexModeWarningToLiteral": string;
+        /**
+         * 正規表現を追加 (例: りんご|みかん)
+         */
+        "addRegexPattern": string;
+        /**
+         * 正規表現を解釈できませんでした。
+         */
+        "invalidRegex": string;
+        /**
+         * 問題のある式: {pattern}
+         */
+        "invalidRegexPattern": ParameterizedString<"pattern">;
+        /**
+         * 正規表現が長すぎます (1項目 {max} 文字まで)。
+         */
+        "invalidRegexTooLong": ParameterizedString<"max">;
+        /**
+         * キーワードが多すぎます。超過分を削除すると保存できます。
+         */
+        "keywordLimitExceeded": string;
+        /**
+         * 既存の超過分はそのまま保存できますが、増やすことはできません。
+         */
+        "keywordLimitGrandfathered": string;
+        /**
+         * {keywordType} の グループ{group}・{index}番目
+         */
+        "keywordErrorPosition": ParameterizedString<"keywordType" | "group" | "index">;
+        /**
+         * 1項目 {max} 文字までです。長い項目を短くしてください。
+         */
+        "keywordLimitTooLong": ParameterizedString<"max">;
+        /**
+         * グループが多すぎます (最大 {max} グループまで)。グループを減らしてください。
+         */
+        "keywordLimitTooManyGroups": ParameterizedString<"max">;
+        /**
+         * 1グループの項目が多すぎます (最大 {max} 件まで)。項目を減らしてください。
+         */
+        "keywordLimitTooManyKeywords": ParameterizedString<"max">;
+        /**
+         * グループが多すぎます (最大 {max} グループまで)。
+         */
+        "invalidRegexTooManyGroups": ParameterizedString<"max">;
+        /**
+         * 1グループの項目が多すぎます (最大 {max} 件まで)。
+         */
+        "invalidRegexTooManyKeywords": ParameterizedString<"max">;
     };
     "_loginRisk": {
         /**

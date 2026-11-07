@@ -5,6 +5,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AntennaService } from '../../src/core/AntennaService.js';
+import { LoggerService } from '@/core/LoggerService.js';
 import { DI } from '../../src/di-symbols.js';
 import { GlobalEventService } from '../../src/core/GlobalEventService.js';
 import { UtilityService } from '../../src/core/UtilityService.js';
@@ -19,7 +20,11 @@ describe('AntennaService', () => {
 	const mockRedisForSub = { on: vi.fn(), off: vi.fn() };
 	const mockAntennasRepository = {};
 	const mockUserListMembershipsRepository = {};
-	const mockCacheService = { userFollowingsCache: { fetch: vi.fn() } };
+	const mockCacheService = {
+		userFollowingsCache: { fetch: vi.fn() },
+		userMutingsCache: { fetch: vi.fn(async () => new Set<string>()) },
+		userBlockedCache: { fetch: vi.fn(async () => new Set<string>()) },
+	};
 	const mockUtilityService = { getFullApAccount: vi.fn() };
 	const mockGlobalEventService = { publishAntennaStream: vi.fn() };
 	const mockFanoutTimelineService = { push: vi.fn() };
@@ -32,6 +37,7 @@ describe('AntennaService', () => {
 				{ provide: DI.redisForSub, useValue: mockRedisForSub },
 				{ provide: DI.antennasRepository, useValue: mockAntennasRepository },
 				{ provide: DI.userListMembershipsRepository, useValue: mockUserListMembershipsRepository },
+				{ provide: LoggerService, useValue: { getLogger: () => ({ info: vi.fn(), debug: vi.fn(), warn: vi.fn(), error: vi.fn() }) } },
 				{ provide: CacheService, useValue: mockCacheService },
 				{ provide: UtilityService, useValue: mockUtilityService },
 				{ provide: GlobalEventService, useValue: mockGlobalEventService },
@@ -368,6 +374,322 @@ describe('AntennaService', () => {
 			};
 			const result = await antennaService.checkHitAntenna(antenna, mockNote, mockUser);
 			expect(result).toBe(false);
+		});
+	});
+
+	describe('受信時のミュート/被ブロック除外', () => {
+		const baseAntenna = {
+			id: 'a1',
+			userId: 'me',
+			src: 'all',
+			users: [],
+			keywords: [['apple']],
+			excludeKeywords: [],
+			mustExcludeKeywords: [],
+			caseSensitive: false,
+			withReplies: false,
+			withFile: false,
+			excludeBots: false,
+			localOnly: false,
+			excludeNotesInSensitiveChannel: false,
+			expression: null,
+			isActive: true,
+		} as any;
+		const mockUser = { id: 'u1', username: 'user', host: null, isBot: false };
+
+		beforeEach(() => {
+			mockCacheService.userMutingsCache.fetch.mockResolvedValue(new Set<string>());
+			mockCacheService.userBlockedCache.fetch.mockResolvedValue(new Set<string>());
+		});
+
+		it('ミュートしているユーザーのノートを除外する', async () => {
+			mockCacheService.userMutingsCache.fetch.mockResolvedValue(new Set(['u1']));
+			const note = { id: 'note1', text: 'apple', cw: null, userId: 'u1' } as any;
+			const result = await antennaService.checkHitAntenna({ ...baseAntenna }, note, mockUser);
+			expect(result).toBe(false);
+		});
+
+		it('自分をブロックしているユーザーのノートを除外する', async () => {
+			mockCacheService.userBlockedCache.fetch.mockResolvedValue(new Set(['u1']));
+			const note = { id: 'note1', text: 'apple', cw: null, userId: 'u1' } as any;
+			const result = await antennaService.checkHitAntenna({ ...baseAntenna }, note, mockUser);
+			expect(result).toBe(false);
+		});
+
+		it('返信先の作者をミュートしているノートを除外する', async () => {
+			mockCacheService.userMutingsCache.fetch.mockResolvedValue(new Set(['u2']));
+			const note = { id: 'note1', text: 'apple', cw: null, userId: 'u1', replyId: 'r1', replyUserId: 'u2' } as any;
+			const result = await antennaService.checkHitAntenna({ ...baseAntenna, withReplies: true }, note, mockUser);
+			expect(result).toBe(false);
+		});
+
+		it('リノート元の作者にブロックされているノートを除外する', async () => {
+			mockCacheService.userBlockedCache.fetch.mockResolvedValue(new Set(['u3']));
+			const note = { id: 'note1', text: 'apple', cw: null, userId: 'u1', renoteId: 'rn1', renoteUserId: 'u3' } as any;
+			const result = await antennaService.checkHitAntenna({ ...baseAntenna }, note, mockUser);
+			expect(result).toBe(false);
+		});
+
+		it('ミュートもブロックもされていなければ従来どおりヒットする', async () => {
+			const note = { id: 'note1', text: 'apple', cw: null, userId: 'u1' } as any;
+			const result = await antennaService.checkHitAntenna({ ...baseAntenna }, note, mockUser);
+			expect(result).toBe(true);
+		});
+
+		it('自分自身のノートは除外しない', async () => {
+			// 万が一キャッシュに自分が含まれていても自分のノートは対象外にしない
+			mockCacheService.userMutingsCache.fetch.mockResolvedValue(new Set(['me']));
+			const note = { id: 'note1', text: 'apple', cw: null, userId: 'me' } as any;
+			const result = await antennaService.checkHitAntenna({ ...baseAntenna }, note, { ...mockUser, id: 'me' });
+			expect(result).toBe(true);
+		});
+	});
+
+	describe('getAntennaMatchInfo', () => {
+		const baseAntenna = {
+			id: 'a1',
+			userId: 'me',
+			src: 'all',
+			users: [],
+			keywords: [['apple', 'orange'], ['banana']],
+			excludeKeywords: [],
+			mustExcludeKeywords: [],
+			caseSensitive: false,
+			withReplies: false,
+			withFile: false,
+			excludeBots: false,
+			localOnly: false,
+			excludeNotesInSensitiveChannel: false,
+			expression: null,
+			isActive: true,
+		} as any;
+
+		it('マッチしたグループ(OR行)を返す', () => {
+			const note = { id: 'note1', text: 'apple orange', cw: null, userId: 'u1' } as any;
+			const info = antennaService.getAntennaMatchInfo({ ...baseAntenna }, note);
+			expect(info.matchedKeywords).toEqual([['apple', 'orange']]);
+			expect(info.matchedExcludeKeywords).toEqual([]);
+		});
+
+		it('複数グループにマッチした場合は両方返す', () => {
+			const note = { id: 'note1', text: 'apple orange banana', cw: null, userId: 'u1' } as any;
+			const info = antennaService.getAntennaMatchInfo({ ...baseAntenna }, note);
+			expect(info.matchedKeywords).toEqual([['apple', 'orange'], ['banana']]);
+		});
+
+		it('SCOREモードでは加算/減算されたグループを返す', () => {
+			const antenna = { ...baseAntenna, expression: 'SCORE', keywords: [['apple'], ['orange']], excludeKeywords: [['banana']] };
+			const note = { id: 'note1', text: 'apple orange banana', cw: null, userId: 'u1' } as any;
+			const info = antennaService.getAntennaMatchInfo(antenna, note);
+			expect(info.matchedKeywords).toEqual([['apple'], ['orange']]);
+			expect(info.matchedExcludeKeywords).toEqual([['banana']]);
+		});
+
+		it('SCOREモードでスコアが0以下(ヒットしない)場合は空を返す', () => {
+			const antenna = { ...baseAntenna, expression: 'SCORE', keywords: [['apple']], excludeKeywords: [['banana']] };
+			const note = { id: 'note1', text: 'apple banana', cw: null, userId: 'u1' } as any;
+			const info = antennaService.getAntennaMatchInfo(antenna, note);
+			expect(info.matchedKeywords).toEqual([]);
+			expect(info.matchedExcludeKeywords).toEqual([]);
+		});
+
+		it('マッチしない場合は空を返す', () => {
+			const note = { id: 'note1', text: 'grape', cw: null, userId: 'u1' } as any;
+			const info = antennaService.getAntennaMatchInfo({ ...baseAntenna }, note);
+			expect(info.matchedKeywords).toEqual([]);
+		});
+	});
+
+	describe('regex keywordMode', () => {
+		const mockNote = { id: 'note1', text: 'apple orange banana', cw: null, userId: 'u1' } as any;
+		const mockUser = { id: 'u1', username: 'user', host: null, isBot: false };
+		const regexAntenna = {
+			id: 'a1',
+			userId: 'me',
+			src: 'all',
+			users: [],
+			keywords: [],
+			excludeKeywords: [],
+			mustExcludeKeywords: [],
+			caseSensitive: false,
+			withReplies: false,
+			withFile: false,
+			excludeBots: false,
+			localOnly: false,
+			excludeNotesInSensitiveChannel: false,
+			expression: null,
+			isActive: true,
+			keywordMode: 'regex',
+		} as any;
+
+		it('matches a regex pattern as one whole expression', async () => {
+			const antenna = { ...regexAntenna, keywords: [['ap+le']] };
+			const result = await antennaService.checkHitAntenna(antenna, mockNote, mockUser);
+			expect(result).toBe(true);
+		});
+
+		it('does not split an item on whitespace or | (item is a single pattern)', async () => {
+			// 'apple orange' は1つの式。文字列そのままなら空白を含む連続一致が必要
+			const antenna = { ...regexAntenna, keywords: [['apple orange']] };
+			expect(await antennaService.checkHitAntenna(antenna, mockNote, mockUser)).toBe(true);
+
+			// 'apple|grape' も1つの式 (alternationとして評価される)
+			const alt = { ...regexAntenna, keywords: [['grape|apple']] };
+			expect(await antennaService.checkHitAntenna(alt, mockNote, mockUser)).toBe(true);
+
+			// 空白分割されないので、離れた語へのAND的な解釈にはならない
+			const noSplit = { ...regexAntenna, keywords: [['apple banana']] };
+			expect(await antennaService.checkHitAntenna(noSplit, mockNote, mockUser)).toBe(false);
+		});
+
+		it('applies regex to exclude keywords (same mode for include/exclude)', async () => {
+			const antenna = { ...regexAntenna, keywords: [['apple']], excludeKeywords: [['b(an)+a']] };
+			const result = await antennaService.checkHitAntenna(antenna, mockNote, mockUser);
+			expect(result).toBe(false);
+		});
+
+		it('honours case sensitivity in regex mode', async () => {
+			const note = { ...mockNote, text: 'Apple' };
+			const insensitive = { ...regexAntenna, keywords: [['apple']], caseSensitive: false };
+			expect(await antennaService.checkHitAntenna(insensitive, note, mockUser)).toBe(true);
+			const sensitive = { ...regexAntenna, keywords: [['apple']], caseSensitive: true };
+			expect(await antennaService.checkHitAntenna(sensitive, note, mockUser)).toBe(false);
+		});
+
+		it('treats an invalid pattern as no-match instead of throwing', async () => {
+			// APIでは弾かれるが、キャッシュ済みエンティティ等に残った場合でも受信全体を止めない
+			const antenna = { ...regexAntenna, keywords: [['(unclosed']] };
+			const result = await antennaService.checkHitAntenna(antenna, mockNote, mockUser);
+			expect(result).toBe(false);
+		});
+
+		it('matches an empty-matching pattern (e.g. ^$) against an empty note text in SCORE mode too', async () => {
+			// 本文・CWともに空のノートでも、空文字列にマッチする式は通常評価と同じくSCOREでもマッチする
+			const emptyNote = { ...mockNote, text: '', cw: null };
+			const scoreAntenna = { ...regexAntenna, keywords: [['^$']], expression: 'SCORE' };
+			expect(await antennaService.checkHitAntenna(scoreAntenna, emptyNote, mockUser)).toBe(true);
+			// 通常評価でもマッチする (両経路で一致)
+			const normalAntenna = { ...regexAntenna, keywords: [['^$']] };
+			expect(await antennaService.checkHitAntenna(normalAntenna, emptyNote, mockUser)).toBe(true);
+		});
+
+		it('keeps AND within a group and OR between groups in regex mode', async () => {
+			// 同一グループ: 両方の式にマッチする必要がある
+			const andAntenna = { ...regexAntenna, keywords: [['app.+', 'ora.+']] };
+			expect(await antennaService.checkHitAntenna(andAntenna, mockNote, mockUser)).toBe(true);
+			const andMiss = { ...regexAntenna, keywords: [['app.+', 'grape']] };
+			expect(await antennaService.checkHitAntenna(andMiss, mockNote, mockUser)).toBe(false);
+			// 別グループ: どちらかにマッチすればよい
+			const orAntenna = { ...regexAntenna, keywords: [['grape'], ['ora.+']] };
+			expect(await antennaService.checkHitAntenna(orAntenna, mockNote, mockUser)).toBe(true);
+		});
+
+		it('scores regex groups in SCORE mode and applies mustExclude', async () => {
+			const scored = {
+				...regexAntenna,
+				expression: 'SCORE',
+				keywords: [['app.+'], ['ora.+']],
+				excludeKeywords: [['ban.+']],
+			};
+			// +1 +1 -1 = 1 > 0
+			expect(await antennaService.checkHitAntenna(scored, mockNote, mockUser)).toBe(true);
+			const cancelled = {
+				...regexAntenna,
+				expression: 'SCORE',
+				keywords: [['app.+']],
+				excludeKeywords: [['ora.+']],
+			};
+			// +1 -1 = 0
+			expect(await antennaService.checkHitAntenna(cancelled, mockNote, mockUser)).toBe(false);
+			const mustExcluded = {
+				...regexAntenna,
+				expression: 'SCORE',
+				keywords: [['app.+']],
+				mustExcludeKeywords: [['ban.+']],
+			};
+			expect(await antennaService.checkHitAntenna(mustExcluded, mockNote, mockUser)).toBe(false);
+		});
+
+		it('returns matched pattern groups as match reason', async () => {
+			const antenna = { ...regexAntenna, keywords: [['app.+'], ['ora.+']] };
+			const info = antennaService.getAntennaMatchInfo(antenna, mockNote);
+			expect(info.matchedKeywords).toEqual([['app.+'], ['ora.+']]);
+		});
+
+		it('literal mode still treats regex metacharacters as plain text', async () => {
+			// 同じ式でもモードで結果が変わることを、literal と regex の両方で対照させる
+			const literal = { ...regexAntenna, keywordMode: 'literal', keywords: [['app.+']] };
+			const regex = { ...regexAntenna, keywordMode: 'regex', keywords: [['app.+']] };
+			const literalNote = { ...mockNote, text: 'this has app.+ literally' };
+			expect(await antennaService.checkHitAntenna(literal, literalNote, mockUser)).toBe(true);
+			expect(await antennaService.checkHitAntenna(literal, mockNote, mockUser)).toBe(false);
+			expect(await antennaService.checkHitAntenna(regex, literalNote, mockUser)).toBe(true);
+			expect(await antennaService.checkHitAntenna(regex, mockNote, mockUser)).toBe(true);
+		});
+
+		it('firstMatchOnly (SCORE) keeps the same hit result as collecting all matches', async () => {
+			// SCORE評価は全マッチを集めずに1件で打ち切るが、グループの成否は変わらないこと
+			const note = { ...mockNote, text: 'apple apple orange' };
+			const antenna = { ...regexAntenna, expression: 'SCORE', keywords: [['app.+'], ['ora.+']], excludeKeywords: [['ban.+']] };
+			const info = antennaService.getAntennaMatchInfo(antenna, note);
+			expect(info.matchedKeywords).toEqual([['app.+'], ['ora.+']]);
+			expect(info.matchedExcludeKeywords).toEqual([]);
+		});
+
+		it('reports exclude keyword groups in SCORE mode with regex', async () => {
+			// スコアが正のままなら減点されたグループがマッチ理由として残る
+			const antenna = { ...regexAntenna, expression: 'SCORE', keywords: [['app.+'], ['ora.+']], excludeKeywords: [['ban.+']] };
+			const info = antennaService.getAntennaMatchInfo(antenna, mockNote);
+			expect(info.matchedKeywords).toEqual([['app.+'], ['ora.+']]);
+			expect(info.matchedExcludeKeywords).toEqual([['ban.+']]);
+		});
+
+		it('does not apply mustExcludeKeywords outside SCORE mode even in regex mode', async () => {
+			const antenna = { ...regexAntenna, keywords: [['app.+']], mustExcludeKeywords: [['ban.+']] };
+			expect(await antennaService.checkHitAntenna(antenna, mockNote, mockUser)).toBe(true);
+		});
+
+		it('matches zero-width patterns against empty text in both modes', async () => {
+			const emptyNote = { ...mockNote, text: '', cw: null };
+			for (const expression of [null, 'SCORE']) {
+				const antenna = { ...regexAntenna, expression, keywords: [['^$']] };
+				expect(await antennaService.checkHitAntenna(antenna, emptyNote, mockUser)).toBe(true);
+			}
+			// literal では空文字列に一致し得ないので、同じ式でもマッチしない
+			const literal = { ...regexAntenna, keywordMode: 'literal', keywords: [['^$']] };
+			expect(await antennaService.checkHitAntenna(literal, emptyNote, mockUser)).toBe(false);
+		});
+	});
+
+	describe('findAllMatches (regex mode)', () => {
+		it('finds all regex match positions', () => {
+			const result = antennaService.findAllMatches('a1 a2 a3', ['a.'], true, 'regex');
+			expect(result).toHaveLength(3);
+			expect(result[0]).toEqual({ keyword: 'a.', start: 0, end: 2 });
+			expect(result[2]).toEqual({ keyword: 'a.', start: 6, end: 8 });
+		});
+
+		it('does not loop forever on zero-length matches', () => {
+			const result = antennaService.findAllMatches('aa b', ['a*'], true, 'regex');
+			expect(result.length).toBeGreaterThan(0);
+			expect(result[0]).toEqual({ keyword: 'a*', start: 0, end: 2 });
+		});
+
+		it('returns empty for invalid patterns', () => {
+			expect(antennaService.findAllMatches('text', ['(bad'], true, 'regex')).toEqual([]);
+		});
+
+		it('collects only the first match per pattern when firstMatchOnly is set', () => {
+			const all = antennaService.findAllMatches('a1 a2 a3', ['a.'], true, 'regex');
+			const first = antennaService.findAllMatches('a1 a2 a3', ['a.'], true, 'regex', true);
+			expect(all).toHaveLength(3);
+			expect(first).toHaveLength(1);
+			expect(first[0]).toEqual({ keyword: 'a.', start: 0, end: 2 });
+		});
+
+		it('keeps one match per pattern even when a pattern overlaps itself', () => {
+			const result = antennaService.findAllMatches('aaaa', ['aa'], true, 'regex', true);
+			expect(result).toHaveLength(1);
 		});
 	});
 });
