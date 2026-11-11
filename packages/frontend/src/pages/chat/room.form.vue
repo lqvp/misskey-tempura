@@ -34,6 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
+import { ensureSignin } from '@/i.js';
 import { onMounted, watch, ref, shallowRef, computed, nextTick, readonly, onBeforeUnmount } from 'vue';
 import * as Misskey from 'misskey-js';
 //import insertTextAtCursor from 'insert-text-at-cursor';
@@ -227,7 +228,7 @@ function clear() {
 }
 
 function saveDraft() {
-	const drafts = JSON.parse(miLocalStorage.getItem('chatMessageDrafts') || '{}');
+	const drafts = JSON.parse(miLocalStorage.getItem(`chatMessageDrafts:${ensureSignin().id}`) || '{}');
 
 	drafts[getDraftKey()] = {
 		updatedAt: new Date(),
@@ -237,15 +238,15 @@ function saveDraft() {
 		},
 	};
 
-	miLocalStorage.setItem('chatMessageDrafts', JSON.stringify(drafts));
+	miLocalStorage.setItem(`chatMessageDrafts:${ensureSignin().id}`, JSON.stringify(drafts));
 }
 
 function deleteDraft() {
-	const drafts = JSON.parse(miLocalStorage.getItem('chatMessageDrafts') || '{}');
+	const drafts = JSON.parse(miLocalStorage.getItem(`chatMessageDrafts:${ensureSignin().id}`) || '{}');
 
 	delete drafts[getDraftKey()];
 
-	miLocalStorage.setItem('chatMessageDrafts', JSON.stringify(drafts));
+	miLocalStorage.setItem(`chatMessageDrafts:${ensureSignin().id}`, JSON.stringify(drafts));
 }
 
 async function insertEmoji(ev: MouseEvent) {
@@ -283,7 +284,7 @@ onMounted(() => {
 	}
 
 	// 書きかけの投稿を復元
-	const draft = JSON.parse(miLocalStorage.getItem('chatMessageDrafts') || '{}')[getDraftKey()];
+	const draft = JSON.parse(miLocalStorage.getItem(`chatMessageDrafts:${ensureSignin().id}`) || '{}')[getDraftKey()];
 	if (draft) {
 		text.value = draft.data.text;
 		file.value = draft.data.file;

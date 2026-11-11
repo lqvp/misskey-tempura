@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { test } from './fixtures.js';
+import { test, expect } from './fixtures.js';
 import {
 	// const
 	BASE_URL,
@@ -31,8 +31,12 @@ test.describe('Router transition', () => {
 
 	test.describe('Redirect', () => {
 		test('redirect to user profile', async ({ page }) => {
+			const accountId = new URL(page.url()).searchParams.get('as');
+			expect(accountId).toBeTruthy();
+
 			await page.goto(`${BASE_URL}/redirect-test`);
-			await page.waitForURL('**/@alice');
+			await page.waitForURL((url) => url.pathname === '/@alice');
+			expect(new URL(page.url()).searchParams.get('as')).toBe(accountId);
 		});
 	});
 });
