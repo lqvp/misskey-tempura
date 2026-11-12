@@ -15,6 +15,8 @@ export const meta = {
 	requireCredential: true,
 
 	secure: true,
+
+	denyForSubAccount: true,
 } as const;
 
 export const paramDef = {

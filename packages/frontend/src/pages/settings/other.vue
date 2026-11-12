@@ -60,7 +60,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkFolder>
 			</SearchMarker>
 
-			<SearchMarker :keywords="['account', 'move', 'migration']">
+			<SearchMarker v-if="!$i.isSubAccount" :keywords="['account', 'move', 'migration']">
 				<MkFolder>
 					<template #icon><SearchIcon><i class="ti ti-plane"></i></SearchIcon></template>
 					<template #label><SearchLabel>{{ i18n.ts.accountMigration }}</SearchLabel></template>
@@ -69,7 +69,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkFolder>
 			</SearchMarker>
 
-			<SearchMarker :keywords="['account', 'close', 'delete']">
+			<SearchMarker v-if="!$i.isSubAccount" :keywords="['account', 'close', 'delete']">
 				<MkFolder>
 					<template #icon><SearchIcon><i class="ti ti-alert-triangle"></i></SearchIcon></template>
 					<template #label><SearchLabel>{{ i18n.ts.closeAccount }}</SearchLabel></template>
@@ -83,7 +83,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				</MkFolder>
 			</SearchMarker>
 
-				<SearchMarker :keywords="['account', 'truncate']">
+				<SearchMarker v-if="!$i.isSubAccount" :keywords="['account', 'truncate']">
 					<MkFolder v-if="$i.policies.canUseTruncate">
 						<template #icon><i class="ti ti-recycle"></i></template>
 						<template #label><SearchLabel>{{ i18n.ts._accountTruncate.truncateAccount }}</SearchLabel><span class="_beta">{{ i18n.ts.originalFeature }}</span></template>

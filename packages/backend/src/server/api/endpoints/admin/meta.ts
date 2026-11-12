@@ -462,6 +462,11 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			subAccountCreationMode: {
+				type: 'string',
+				optional: false, nullable: false,
+				enum: ['followRegistration', 'independent'],
+			},
 			impressumUrl: {
 				type: 'string',
 				optional: false, nullable: true,
@@ -1035,6 +1040,7 @@ export const meta = {
 			},
 		},
 	},
+
 } as const;
 
 export const paramDef = {
@@ -1090,6 +1096,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				privacyPolicyUrl: instance.privacyPolicyUrl,
 				inquiryUrl: instance.inquiryUrl,
 				disableRegistration: instance.disableRegistration,
+				subAccountCreationMode: instance.subAccountCreationMode,
 				emailRequiredForSignup: instance.emailRequiredForSignup,
 				enableHcaptcha: instance.enableHcaptcha,
 				hcaptchaSiteKey: instance.hcaptchaSiteKey,

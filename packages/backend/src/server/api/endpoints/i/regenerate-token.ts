@@ -8,6 +8,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { UsersRepository, UserProfilesRepository } from '@/models/_.js';
 import { generateNativeUserToken } from '@/misc/token.js';
+import { SubAccountService } from '@/core/SubAccountService.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { DI } from '@/di-symbols.js';
 
@@ -15,6 +16,8 @@ export const meta = {
 	requireCredential: true,
 
 	secure: true,
+
+	denyForSubAccount: true,
 } as const;
 
 export const paramDef = {
@@ -35,6 +38,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private userProfilesRepository: UserProfilesRepository,
 
 		private globalEventService: GlobalEventService,
+		private subAccountService: SubAccountService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const freshUser = await this.usersRepository.findOneByOrFail({ id: me.id });
@@ -48,6 +52,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			if (!same) {
 				throw new Error('incorrect password');
 			}
+
+			// A main account's sub-accounts are bound to its token: revoke them first,
+			// so a failure leaves the main token unchanged and the call can be retried.
+			await this.subAccountService.invalidateSubAccountTokens(me.id);
 
 			const newToken = generateNativeUserToken();
 

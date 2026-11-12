@@ -210,6 +210,20 @@ export const packedUserLiteSchema = {
 export const packedUserDetailedNotMeOnlySchema = {
 	type: 'object',
 	properties: {
+		parentAccount: {
+			type: 'object',
+			nullable: false, optional: true,
+			ref: 'UserLite',
+		},
+		subAccounts: {
+			type: 'array',
+			nullable: false, optional: true,
+			items: {
+				type: 'object',
+				nullable: false, optional: false,
+				ref: 'UserLite',
+			},
+		},
 		url: {
 			type: 'string',
 			format: 'url',
@@ -500,6 +514,18 @@ export const packedUserDetailedNotMeOnlySchema = {
 export const packedMeDetailedOnlySchema = {
 	type: 'object',
 	properties: {
+		isSubAccount: {
+			type: 'boolean',
+			nullable: false, optional: false,
+		},
+		showParentOnProfile: {
+			type: 'boolean',
+			nullable: false, optional: false,
+		},
+		showSubOnProfile: {
+			type: 'boolean',
+			nullable: false, optional: false,
+		},
 		avatarId: {
 			type: 'string',
 			nullable: true, optional: false,

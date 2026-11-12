@@ -380,6 +380,25 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</template>
 		</XFolder>
 
+		<XFolder v-if="matchQuery([i18n.ts._role._options.canCreateSubAccount, 'canCreateSubAccount'])" v-model:policyMeta="policyMetaModel.canCreateSubAccount" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.canCreateSubAccount }}</template>
+			<template #valueText>{{ valuesModel.canCreateSubAccount ? i18n.ts.yes : i18n.ts.no }}</template>
+			<template #default="{ disabled }">
+				<MkSwitch v-model="valuesModel.canCreateSubAccount" :disabled="disabled">
+					<template #label>{{ i18n.ts.enable }}</template>
+				</MkSwitch>
+			</template>
+		</XFolder>
+
+		<XFolder v-if="matchQuery([i18n.ts._role._options.subAccountLimit, 'subAccountLimit'])" v-model:policyMeta="policyMetaModel.subAccountLimit" :isBaseRole="isBaseRole" :readonly="readonly">
+			<template #label>{{ i18n.ts._role._options.subAccountLimit }}</template>
+			<template #valueText>{{ valuesModel.subAccountLimit }}</template>
+			<template #default="{ disabled }">
+				<MkInput v-model="valuesModel.subAccountLimit" type="number" :min="0" :disabled="disabled">
+				</MkInput>
+			</template>
+		</XFolder>
+
 		<XFolder v-if="matchQuery([i18n.ts._role._options.noteDraftLimit, 'noteDraftLimit'])" v-model:policyMeta="policyMetaModel.noteDraftLimit" :isBaseRole="isBaseRole" :readonly="readonly">
 			<template #label>{{ i18n.ts._role._options.noteDraftLimit }}</template>
 			<template #valueText>{{ valuesModel.noteDraftLimit }}</template>

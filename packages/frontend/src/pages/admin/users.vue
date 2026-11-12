@@ -36,6 +36,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div :class="$style.users">
 					<MkA v-for="user in items" :key="user.id" v-tooltip.mfm="`Last posted: ${user.updatedAt ? dateString(user.updatedAt) : 'Unknown'}`" :class="$style.user" :to="`/admin/user/${user.id}`">
 						<MkUserCardMini :user="user"/>
+						<span v-if="relations.get(user.id)?.subAccountRole != null" :class="[$style.relationBadge, relations.get(user.id)?.subAccountRole === 'main' ? $style.relationMain : $style.relationSub]">{{ relations.get(user.id)?.subAccountRole === 'main' ? i18n.ts.mainAccountShort : i18n.ts.subAccountShort }}</span>
 					</MkA>
 				</div>
 			</MkPagination>
@@ -45,7 +46,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, markRaw, ref, watchEffect } from 'vue';
+import { computed, markRaw, ref, watch, watchEffect } from 'vue';
 import * as Misskey from 'misskey-js';
 import type { MkSelectItem } from '@/components/MkSelect.vue';
 import { defaultMemoryStorage } from '@/memory-storage';
@@ -61,6 +62,7 @@ import { useMkSelect } from '@/composables/use-mkselect.js';
 import MkUserCardMini from '@/components/MkUserCardMini.vue';
 import { dateString } from '@/filters/date.js';
 import { Paginator } from '@/utility/paginator.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 
 type SearchQuery = {
 	sort?: '-createdAt' | '+createdAt' | '-updatedAt' | '+updatedAt';
@@ -131,6 +133,16 @@ const paginator = markRaw(new Paginator('admin/show-users', {
 	})),
 	offsetMode: true,
 }));
+
+// main/sub relation for moderators: always shown, independent of the users' own show/hide settings
+const relations = ref(new Map<string, Misskey.entities.AdminSubAccountsRelationsResponse[number]>());
+watch(paginator.items, async (items) => {
+	const ids = items.filter(u => u.host == null && !relations.value.has(u.id)).map(u => u.id);
+	for (let i = 0; i < ids.length; i += 100) {
+		const res = await misskeyApi('admin/sub-accounts/relations', { userIds: ids.slice(i, i + 100) }).catch(() => []);
+		for (const r of res) relations.value.set(r.userId, r);
+	}
+}, { immediate: true, deep: true });
 
 function searchUser() {
 	os.selectUser({ includeSelf: true }).then(user => {
@@ -211,10 +223,35 @@ definePage(() => ({
 	flex-wrap: wrap;
 }
 
+.relationBadge {
+	position: absolute;
+	top: 50%;
+	left: 55%;
+	transform: translateY(-50%);
+	padding: 0 8px;
+	border-radius: 999px;
+	font-size: 0.8em;
+	background: var(--MI_THEME-panel);
+	border: solid 1px var(--MI_THEME-divider);
+	pointer-events: none;
+}
+
+.relationMain {
+	color: var(--MI_THEME-accent);
+}
+
+.relationSub {
+	color: var(--MI_THEME-warn);
+}
+
 .users {
 	display: grid;
 	grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
 	grid-gap: 12px;
+
+	> .user {
+		position: relative;
+	}
 
 	> .user:hover {
 		text-decoration: none;
