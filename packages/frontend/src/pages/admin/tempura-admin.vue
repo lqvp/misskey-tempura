@@ -9,6 +9,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkSuspense :p="init">
 			<div v-if="meta" class="_gaps_m">
 				<ApprovalRequired :meta="meta"/>
+				<DefaultRequireSigninToViewContents :meta="meta"/>
 				<BlockMentions :meta="meta"/>
 				<LongIconUrl :meta="meta"/>
 				<UsernameMinLength :meta="meta"/>
@@ -40,6 +41,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import * as Misskey from 'misskey-js';
 import { ref } from 'vue';
 import ApprovalRequired from './tempura/sections/ApprovalRequired.vue';
+import DefaultRequireSigninToViewContents from './tempura/sections/DefaultRequireSigninToViewContents.vue';
 import BlockMentions from './tempura/sections/BlockMentions.vue';
 import LongIconUrl from './tempura/sections/LongIconUrl.vue';
 import UsernameMinLength from './tempura/sections/UsernameMinLength.vue';

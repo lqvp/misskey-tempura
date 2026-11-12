@@ -250,6 +250,7 @@ export const paramDef = {
 		longIconUrl: { type: 'string', nullable: true },
 		backgroundImageUrls: { type: 'array', nullable: true },
 		approvalRequiredForSignup: { type: 'boolean' },
+		defaultRequireSigninToViewContents: { type: 'boolean' },
 		openLlmModerationEnabled: { type: 'boolean' },
 		openLlmModerationApiKey: { type: 'string', nullable: true },
 		openLlmModerationIncludeRemote: { type: 'boolean' },
@@ -953,6 +954,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.approvalRequiredForSignup !== undefined) {
 				set.approvalRequiredForSignup = ps.approvalRequiredForSignup;
+			}
+
+			if (ps.defaultRequireSigninToViewContents !== undefined) {
+				set.defaultRequireSigninToViewContents = ps.defaultRequireSigninToViewContents;
 			}
 
 			if (ps.openLlmModerationEnabled !== undefined) {
