@@ -330,7 +330,7 @@ const untilDate = ref<string | null>(convertTimestampToDatetimeLocal(toRef(props
 const rangeStartAt = ref<string | null>(convertTimestampToDatetimeLocal(toRef(props, 'rangeStartAt').value));
 const rangeEndAt = ref<string | null>(convertTimestampToDatetimeLocal(toRef(props, 'rangeEndAt').value));
 
-const user = shallowRef<Misskey.entities.UserDetailed | null>(null);
+const user = shallowRef<Misskey.entities.UserLite | null>(null);
 
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
 const noteSearchableScope = instance.noteSearchableScope ?? 'local';

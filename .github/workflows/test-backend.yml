@@ -49,7 +49,7 @@ jobs:
         ports:
           - 56312:6379
       meilisearch:
-        image: getmeili/meilisearch:v1.53.1
+        image: getmeili/meilisearch:v1.56.1
         ports:
           - 57712:7700
         env:
@@ -61,7 +61,7 @@ jobs:
       with:
         submodules: true
     - name: Setup pnpm
-      uses: pnpm/action-setup@v6.0.10
+      uses: pnpm/action-setup@v6.1.1
     - name: Setup FFmpeg cache
       id: ffmpeg-cache
       uses: actions/cache@v6.1.0
@@ -87,7 +87,7 @@ jobs:
         ffmpeg -version | head -n 1
         ffprobe -version | head -n 1
     - name: Use Node.js
-      uses: actions/setup-node@v7.0.0
+      uses: actions/setup-node@v7.1.0
       with:
         node-version-file: ${{ matrix.node-version-file }}
         cache: 'pnpm'
@@ -139,9 +139,9 @@ jobs:
         with:
           submodules: true
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6.0.10
+        uses: pnpm/action-setup@v6.1.1
       - name: Use Node.js
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@v7.1.0
         with:
           node-version-file: ${{ matrix.node-version-file }}
           cache: 'pnpm'
@@ -184,12 +184,12 @@ jobs:
         with:
           submodules: true
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6.0.10
+        uses: pnpm/action-setup@v6.1.1
       - name: Get current date
         id: current-date
         run: echo "today=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
       - name: Use Node.js
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@v7.1.0
         with:
           node-version-file: ${{ matrix.node-version-file }}
           cache: 'pnpm'
