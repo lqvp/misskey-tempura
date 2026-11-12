@@ -34,7 +34,10 @@ function createChannel(opts: {
 	const channel = new AntennaChannel(
 		{ id: 'ch1', connection: connection as any },
 		{} as any, // antennasRepository (initでは使わない)
-		{ withMyRenoteReaction: vi.fn(opts.withMyRenoteReaction ?? (async (note: any) => note)) } as any,
+		{
+			withMyPollVotes: vi.fn(async (note: any) => note),
+			withMyRenoteReaction: vi.fn(opts.withMyRenoteReaction ?? (async (note: any) => note)),
+		} as any,
 		{ filter: opts.filter } as any,
 	);
 	return { channel, sent };

@@ -1,6 +1,6 @@
 # syntax = docker/dockerfile:1.27
 
-ARG NODE_VERSION=26.12.1-trixie
+ARG NODE_VERSION=26.13.1-trixie
 
 # build assets & compile TypeScript
 
@@ -111,4 +111,4 @@ ENV NODE_ENV=production
 ENV NODE_COMPILE_CACHE=/misskey/.node_compile_cache
 HEALTHCHECK --interval=5s --retries=20 CMD ["/bin/bash", "/misskey/healthcheck.sh"]
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["pnpm", "run", "migrateandstart"]
+CMD ["node", "scripts/start.mjs", "--migrate"]
