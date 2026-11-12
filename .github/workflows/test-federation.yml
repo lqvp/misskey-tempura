@@ -32,7 +32,7 @@ jobs:
         with:
           submodules: true
       - name: Setup pnpm
-        uses: pnpm/action-setup@v6.0.10
+        uses: pnpm/action-setup@v6.1.1
       - name: Setup FFmpeg cache
         id: ffmpeg-cache
         uses: actions/cache@v6.1.0
@@ -58,7 +58,7 @@ jobs:
           ffmpeg -version | head -n 1
           ffprobe -version | head -n 1
       - name: Use Node.js
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@v7.1.0
         with:
           node-version-file: ${{ matrix.node-version-file }}
           cache: 'pnpm'
@@ -78,7 +78,6 @@ jobs:
         # https://github.com/docker/compose/issues/1294#issuecomment-374847206
         run: |
           cd packages/backend/test-federation
-          touch ../../../built/._config_.json
           docker compose up -d --scale tester=0
       - name: Print start_servers error
         if: ${{ steps.start_servers.outcome == 'failure' }}
