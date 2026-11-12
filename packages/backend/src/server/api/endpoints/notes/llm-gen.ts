@@ -9,6 +9,9 @@ import type { MiMeta } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { RoleService } from '@/core/RoleService.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
+import { LlmUsageService } from '@/core/LlmUsageService.js';
+import { normalizeUsageMetadata } from '@/core/llm-usage/utils.js';
+import { usagePurposes } from '@/core/llm-usage/types.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '../../error.js';
 
@@ -62,6 +65,7 @@ export const meta = {
 export const paramDef = {
 	type: 'object',
 	properties: {
+		purpose: { type: 'string', enum: usagePurposes, default: 'other' },
 		text: { type: 'string' },
 		prompt: { type: 'string' },
 		fileUris: {
@@ -88,6 +92,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 
 		private httpRequestService: HttpRequestService,
 		private roleService: RoleService,
+		private llmUsageService: LlmUsageService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const policies = await this.roleService.getUserPolicies(me.id);
@@ -142,7 +147,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				}],
 			});
 
-			// Gemini APIへのリクエスト
+			// Capture only aggregate metadata, never request or response contents.
+			let success = false;
+			let usage = normalizeUsageMetadata(null);
 			try {
 				// API キーは URL に入れるとエラーやログに出るので、ヘッダーで送る
 				const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(serverGeminiModels)}:generateContent`;
@@ -162,6 +169,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 
 				// JSONレスポンスを返す
 				const responseData = await response.json();
+				success = true;
+				usage = normalizeUsageMetadata(responseData !== null && typeof responseData === 'object' ? (responseData as Record<string, unknown>).usageMetadata : null);
 				return responseData;
 			} catch (error) {
 				// 念のため、メッセージにキーが含まれていたら隠してから記録・返却する
@@ -171,6 +180,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 					: rawErrorMessage;
 				console.error('LLM API error:', errorMessage);
 				throw new ApiError(meta.errors.llmApiError, errorMessage);
+			} finally {
+				await this.llmUsageService.record({ userId: me.id, purpose: ps.purpose ?? 'other', model: serverGeminiModels, completedAt: new Date(), success, usage }).catch(() => {
+					// Defensive boundary: statistics must not change the generation outcome.
+				});
 			}
 		});
 	}

@@ -25,6 +25,7 @@ export async function callGeminiSummarize(note: Misskey.entities.Note): Promise<
 	].join('\n');
 
 	const data = await generateGeminiSummary({
+		purpose: 'note-summary',
 		note: note,
 		systemInstruction,
 	});

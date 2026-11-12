@@ -48,6 +48,7 @@ export async function transformTextWithGemini(noteText: string, onApplied: (newT
 		let result: any;
 		try {
 			const data = await generateGeminiSummary({
+				purpose: 'text-transform',
 				userContent: noteText,
 				systemInstruction: stylePrompt,
 			});
