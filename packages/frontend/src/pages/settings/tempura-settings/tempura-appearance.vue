@@ -9,39 +9,49 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<template #icon><i class="ti ti-letter-case"></i></template>
 		<template #label><SearchLabel>{{ i18n.ts.appearance }}</SearchLabel></template>
 		<div class="_gaps_m">
-			<SearchMarker :keywords="['font']">
-				<MkPreferenceContainer k="customFont">
-					<MkSelect v-model="customFont" :items="customFontItems">
-						<template #label><SearchLabel>{{ i18n.ts.customFont }}</SearchLabel></template>
-					</MkSelect>
-				</MkPreferenceContainer>
-			</SearchMarker>
+			<FormSection first>
+				<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.appearanceTypography }}</SearchLabel></template>
+				<div class="_gaps_m">
+					<SearchMarker :keywords="['font']">
+						<MkPreferenceContainer k="customFont">
+							<MkSelect v-model="customFont" :items="customFontItems">
+								<template #label><SearchLabel>{{ i18n.ts.customFont }}</SearchLabel></template>
+							</MkSelect>
+						</MkPreferenceContainer>
+					</SearchMarker>
 
-			<SearchMarker :keywords="['widget', 'drawer', 'direction', 'mobile']">
-				<MkPreferenceContainer k="widgetDrawerDirection">
-					<MkRadios
-						v-model="widgetDrawerDirection"
-						:options="[
-							{ value: 'left', label: i18n.ts._widgetDrawerDirection.left, icon: 'ti ti-arrow-left' },
-							{ value: 'right', label: i18n.ts._widgetDrawerDirection.right, icon: 'ti ti-arrow-right' },
-						]"
-					>
-						<template #label><SearchLabel>{{ i18n.ts.widgetDrawerDirection }}</SearchLabel></template>
-						<template #caption>{{ i18n.ts.widgetDrawerDirectionDescription }}</template>
-					</MkRadios>
-				</MkPreferenceContainer>
-			</SearchMarker>
+					<SearchMarker :keywords="['widget', 'drawer', 'direction', 'mobile']">
+						<MkPreferenceContainer k="widgetDrawerDirection">
+							<MkRadios
+								v-model="widgetDrawerDirection"
+								:options="[
+								{ value: 'left', label: i18n.ts._widgetDrawerDirection.left, icon: 'ti ti-arrow-left' },
+								{ value: 'right', label: i18n.ts._widgetDrawerDirection.right, icon: 'ti ti-arrow-right' },
+								]"
+								>
+								<template #label><SearchLabel>{{ i18n.ts.widgetDrawerDirection }}</SearchLabel></template>
+								<template #caption>{{ i18n.ts.widgetDrawerDirectionDescription }}</template>
+							</MkRadios>
+						</MkPreferenceContainer>
+					</SearchMarker>
+				</div>
+			</FormSection>
 
-			<SearchMarker :keywords="['twitter', 'embed', 'provider']">
-				<MkPreferenceContainer k="defaultFxTwitterEmbedProvider">
-					<MkSelect v-model="twitterEmbedMode" :items="twitterEmbedModeItems">
-						<template #label><SearchLabel>{{ i18n.ts.defaultFxTwitterEmbedProvider }}</SearchLabel></template>
-					</MkSelect>
-					<MkInput v-if="twitterEmbedMode === 'custom'" v-model="defaultFxTwitterEmbedProvider">
-						<template #label><SearchLabel>{{ i18n.ts.customFxTwitterEmbedProvider }}</SearchLabel></template>
-					</MkInput>
-				</MkPreferenceContainer>
-			</SearchMarker>
+			<FormSection>
+				<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.appearanceEmbed }}</SearchLabel></template>
+				<div class="_gaps_m">
+					<SearchMarker :keywords="['twitter', 'embed', 'provider']">
+						<MkPreferenceContainer k="defaultFxTwitterEmbedProvider">
+							<MkSelect v-model="twitterEmbedMode" :items="twitterEmbedModeItems">
+								<template #label><SearchLabel>{{ i18n.ts.defaultFxTwitterEmbedProvider }}</SearchLabel></template>
+							</MkSelect>
+							<MkInput v-if="twitterEmbedMode === 'custom'" v-model="defaultFxTwitterEmbedProvider">
+								<template #label><SearchLabel>{{ i18n.ts.customFxTwitterEmbedProvider }}</SearchLabel></template>
+							</MkInput>
+						</MkPreferenceContainer>
+					</SearchMarker>
+				</div>
+			</FormSection>
 
 			<SearchMarker :keywords="['note', 'visibility', 'coloring']">
 				<MkFolder :defaultOpen="useNoteVisibilityColoring">
@@ -108,6 +118,7 @@ import * as Misskey from 'misskey-js';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkFolder from '@/components/MkFolder.vue';
+import FormSection from '@/components/form/section.vue';
 import MkInput from '@/components/MkInput.vue';
 import { prefer } from '@/preferences.js';
 import { PREF_DEF } from '@/preferences/def.js';
@@ -209,11 +220,3 @@ function resetToDefault() {
 	colorInputKey.value++;
 }
 </script>
-
-<style lang="scss" module>
-.label {
-    font-size: 0.85em;
-    padding: 0 0 8px 0;
-    user-select: none;
-}
-</style>

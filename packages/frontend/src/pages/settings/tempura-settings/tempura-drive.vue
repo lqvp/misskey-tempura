@@ -24,11 +24,3 @@ import { i18n } from '@/i18n.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 
 </script>
-
-<style lang="scss" module>
-.label {
-    font-size: 0.85em;
-    padding: 0 0 8px 0;
-    user-select: none;
-}
-</style>

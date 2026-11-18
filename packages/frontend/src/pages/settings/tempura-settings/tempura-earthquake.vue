@@ -14,9 +14,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkMfm :text="i18n.ts._earthquakeWarning.license"/>
 				</div>
 			</MkInfo>
-			<MkFolder :defaultOpen="true">
-				<template #icon><i class="ti ti-power"></i></template>
-				<template #label><SearchLabel>{{ i18n.ts.general }}</SearchLabel></template>
+			<FormSection first>
+				<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.earthquakeNotification }}</SearchLabel></template>
 
 				<SearchMarker :keywords="['earthquake', 'warning', 'enable']">
 					<MkPreferenceContainer k="enableEarthquakeWarning">
@@ -54,6 +53,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</MkInput>
 						</MkPreferenceContainer>
 					</SearchMarker>
+
+					<SearchLabel>{{ i18n.ts._tempuraSettings.earthquakeSound }}</SearchLabel>
 
 					<SearchMarker :keywords="['earthquake', 'sound', 'enable']">
 						<MkPreferenceContainer k="earthquakeWarningSound">
@@ -99,61 +100,61 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</SearchMarker>
 
 					<!-- 地域フィルタリング設定 -->
-					<fieldset>
-						<legend><SearchLabel>{{ i18n.ts._earthquakeWarning.regionFilter }}</SearchLabel></legend>
-						<div class="_gaps_s">
-							<SearchMarker :keywords="['earthquake', 'region', 'filter', 'enable']">
-								<MkPreferenceContainer k="enableEarthquakeWarningRegionFilter">
-									<MkSwitch v-model="enableEarthquakeWarningRegionFilter">
-										<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.regionFilterEnable }}</SearchLabel></template>
-										<template #caption>{{ i18n.ts._earthquakeWarning.regionFilterCaption }}</template>
+					<div class="_gaps_s">
+						<SearchLabel>{{ i18n.ts._tempuraSettings.earthquakeRegion }}</SearchLabel>
+						<SearchMarker :keywords="['earthquake', 'region', 'filter', 'enable']">
+							<MkPreferenceContainer k="enableEarthquakeWarningRegionFilter">
+								<MkSwitch v-model="enableEarthquakeWarningRegionFilter">
+									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.regionFilterEnable }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._earthquakeWarning.regionFilterCaption }}</template>
+								</MkSwitch>
+							</MkPreferenceContainer>
+						</SearchMarker>
+						<div v-if="enableEarthquakeWarningRegionFilter">
+							<!-- TODO: Consider extracting the following region filter switches into a separate, reusable component -->
+							<MkFolder :defaultOpen="false">
+								<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.regionFilterAreaLabel }}</SearchLabel></template>
+								<div class="_gaps_s region-switches">
+									<MkSwitch v-model="regionFilters.hokkaido" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.hokkaido">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.hokkaido }}
 									</MkSwitch>
-								</MkPreferenceContainer>
-							</SearchMarker>
-							<div v-if="enableEarthquakeWarningRegionFilter">
-								<!-- TODO: Consider extracting the following region filter switches into a separate, reusable component -->
-								<MkFolder :defaultOpen="false">
-									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.regionFilterAreaLabel }}</SearchLabel></template>
-									<div class="_gaps_s region-switches">
-										<MkSwitch v-model="regionFilters.hokkaido" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.hokkaido">
-											{{ i18n.ts._earthquakeWarning.regionFilterAreas.hokkaido }}
-										</MkSwitch>
 
-										<MkSwitch v-model="regionFilters.tohoku" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.tohoku">
-											{{ i18n.ts._earthquakeWarning.regionFilterAreas.tohoku }}
-										</MkSwitch>
+									<MkSwitch v-model="regionFilters.tohoku" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.tohoku">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.tohoku }}
+									</MkSwitch>
 
-										<MkSwitch v-model="regionFilters.kanto" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.kanto">
-											{{ i18n.ts._earthquakeWarning.regionFilterAreas.kanto }}
-										</MkSwitch>
+									<MkSwitch v-model="regionFilters.kanto" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.kanto">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.kanto }}
+									</MkSwitch>
 
-										<MkSwitch v-model="regionFilters.chubu" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.chubu">
-											{{ i18n.ts._earthquakeWarning.regionFilterAreas.chubu }}
-										</MkSwitch>
+									<MkSwitch v-model="regionFilters.chubu" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.chubu">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.chubu }}
+									</MkSwitch>
 
-										<MkSwitch v-model="regionFilters.kinki" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.kinki">
-											{{ i18n.ts._earthquakeWarning.regionFilterAreas.kinki }}
-										</MkSwitch>
+									<MkSwitch v-model="regionFilters.kinki" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.kinki">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.kinki }}
+									</MkSwitch>
 
-										<MkSwitch v-model="regionFilters.chugoku" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.chugoku">
-											{{ i18n.ts._earthquakeWarning.regionFilterAreas.chugoku }}
-										</MkSwitch>
+									<MkSwitch v-model="regionFilters.chugoku" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.chugoku">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.chugoku }}
+									</MkSwitch>
 
-										<MkSwitch v-model="regionFilters.shikoku" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.shikoku">
-											{{ i18n.ts._earthquakeWarning.regionFilterAreas.shikoku }}
-										</MkSwitch>
+									<MkSwitch v-model="regionFilters.shikoku" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.shikoku">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.shikoku }}
+									</MkSwitch>
 
-										<MkSwitch v-model="regionFilters.kyushu" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.kyushu">
-											{{ i18n.ts._earthquakeWarning.regionFilterAreas.kyushu }}
-										</MkSwitch>
-									</div>
-									<p class="_caption">{{ i18n.ts._earthquakeWarning.regionFilterAreaCaption }}</p>
-								</MkFolder>
-							</div>
+									<MkSwitch v-model="regionFilters.kyushu" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.kyushu">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.kyushu }}
+									</MkSwitch>
+								</div>
+								<p class="_caption">{{ i18n.ts._earthquakeWarning.regionFilterAreaCaption }}</p>
+							</MkFolder>
 						</div>
-					</fieldset>
+					</div>
 
 					<!-- 通知抑制設定 -->
+					<SearchLabel>{{ i18n.ts._tempuraSettings.earthquakeReport }}</SearchLabel>
+
 					<SearchMarker :keywords="['earthquake', 'notification', 'throttle', 'time']">
 						<MkPreferenceContainer k="earthquakeWarningThrottleTime">
 							<MkInput v-model="earthquakeWarningThrottleTime" type="number" step="10" :min="0">
@@ -203,18 +204,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkButton
 						primary
 						@click="testEarthquakeAlert"
-					>
+						>
 						<template #icon><i class="ti ti-bell-ringing"></i></template>
 						<SearchLabel>{{ i18n.ts._earthquakeWarning.testNotification }}</SearchLabel>
 					</MkButton>
 					<div class="test-caption">{{ i18n.ts._earthquakeWarning.testNotificationCaption }}</div>
 				</div>
-			</MkFolder>
+			</FormSection>
 
 			<!-- Connection & Logging Settings -->
-			<MkFolder :defaultOpen="true">
-				<template #icon><i class="ti ti-plug-connected"></i></template>
-				<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.connection }}</SearchLabel></template>
+			<FormSection>
+				<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.earthquakeConnection }}</SearchLabel></template>
 
 				<div class="_gaps_s">
 					<SearchMarker :keywords="['earthquake', 'connection', 'notify']">
@@ -252,14 +252,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</MkButton>
 					</div>
 				</div>
-			</MkFolder>
-
-			<div class="_buttons">
-				<MkButton primary @click="save">
-					<template #icon><i class="ti ti-device-floppy"></i></template>
-					{{ i18n.ts.save }}
-				</MkButton>
-			</div>
+			</FormSection>
 		</div>
 	</MkFolder>
 </SearchMarker>
@@ -272,6 +265,7 @@ import MkSelect from '@/components/MkSelect.vue';
 import MkInput from '@/components/MkInput.vue';
 import MkButton from '@/components/MkButton.vue';
 import MkFolder from '@/components/MkFolder.vue';
+import FormSection from '@/components/form/section.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import MkMfm from '@/components/global/MkMfm.js';
 import { suggestReload } from '@/utility/reload-suggest.js';
@@ -558,9 +552,10 @@ function clearLogs() {
 /**
  * 設定を保存してページをリロードし、WebSocketの接続を更新します
  */
-async function save() {
-	await suggestReload();
-}
+// 地震速報の設定はクライアント起動時に読まれるため、変更後はリロードを促す
+watch(earthquakeWarningNotificationStyle, () => {
+	suggestReload();
+});
 </script>
 
 <style lang="scss" scoped>
