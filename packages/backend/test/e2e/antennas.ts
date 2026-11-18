@@ -29,6 +29,22 @@ const compareBy = <T extends { id: string }>(selector: (s: T) => string = (s: T)
 	return selector(a).localeCompare(selector(b));
 };
 
+// アンテナの fanout にノートが載るまで待つ。
+// post() は fanout への書き込みを待たないので、固定時間の待機だけだと前提が崩れる
+async function waitForFanout(antennaId: string, noteId: string): Promise<void> {
+	const redis = new Redis(loadConfig().redisForTimelines);
+	try {
+		const listKey = `list:antennaTimeline:${antennaId}`;
+		for (let i = 0; i < 100; i++) {
+			if ((await redis.lrange(listKey, 0, -1)).includes(noteId)) return;
+			await new Promise(r => setTimeout(r, 50));
+		}
+		assert.fail(`前提が壊れている: ノート ${noteId} が fanout に載らなかった`);
+	} finally {
+		redis.disconnect();
+	}
+}
+
 describe('アンテナ', () => {
 	let db: DataSource;
 
@@ -496,10 +512,13 @@ describe('アンテナ', () => {
 				parameters: { ...defaultParam, keywords: [[keyword]] },
 				user: alice,
 			});
-			await post(bob, { text: `${keyword} A` });
-			await new Promise(r => setTimeout(r, 300));
+			const older = await post(bob, { text: `${keyword} A` });
 			const newer = await post(bob, { text: `${keyword} B` });
-			await new Promise(r => setTimeout(r, 300));
+
+			// 比較対象の古いノートも受信済みであることを確認する。
+			// これが無いと、結果が補完だけで期待値に一致していてもテストが通ってしまう
+			await waitForFanout(antenna.id, older.id);
+			await waitForFanout(antenna.id, newer.id);
 
 			// B (新しい方) を fanout からだけ落として、補完でしか拾えない状態にする
 			const redis = new Redis(loadConfig().redisForTimelines);
@@ -530,16 +549,19 @@ describe('アンテナ', () => {
 				parameters: { ...defaultParam, keywords: [['変更前']] },
 				user: alice,
 			});
-			await post(bob, { text: '変更前 のノート' });
-			await new Promise(r => setTimeout(r, 300));
+			const oldNote = await post(bob, { text: '変更前 のノート' });
+			// 旧条件のノートも受信済みにする
+			await waitForFanout(antenna.id, oldNote.id);
 
 			await successfulApiCall({
 				endpoint: 'antennas/update',
 				parameters: { ...defaultParam, antennaId: antenna.id, keywords: [['変更後']] },
 				user: alice,
 			});
+			// 条件変更は Redis 経由で非同期に反映されるため、
+			// 投稿時点で新しい条件が配信側に届いているかを、ノートが fanout に載るかで確認する
 			const matching = await post(bob, { text: '変更後 のノート' });
-			await new Promise(r => setTimeout(r, 300));
+			await waitForFanout(antenna.id, matching.id);
 
 			// 新しい方を fanout から落として、補完でしか拾えない状態にする
 			const redis = new Redis(loadConfig().redisForTimelines);
@@ -627,23 +649,51 @@ describe('アンテナ', () => {
 				await post(bob, { text: `${keyword} ちがう ${i}` });
 			}
 
+			// 期待値: 検索語に一致するノートを新しい順(= id 降順)に並べたもの。
+			// 件数だけでなく中身を比較しないと、検索語が無視されていても通ってしまう
+			const expected = hits.map(x => x.id).sort((a, b) => a > b ? -1 : 1);
+
 			const first = await successfulApiCall({
 				endpoint: 'antennas/notes',
 				parameters: { antennaId: antenna.id, query: 'さがす', limit: 5 },
 				user: alice,
 			});
-			assert.strictEqual(first.length, 5);
+			assert.deepStrictEqual(first.map((x: Note) => x.id), expected.slice(0, 5));
 
 			const second = await successfulApiCall({
 				endpoint: 'antennas/notes',
 				parameters: { antennaId: antenna.id, query: 'さがす', limit: 5, untilId: first[first.length - 1].id },
 				user: alice,
 			});
-			assert.strictEqual(second.length, 5);
+			assert.deepStrictEqual(second.map((x: Note) => x.id), expected.slice(5, 10));
+		});
 
-			// 1ページ目と2ページ目が重複しないこと
-			const firstIds = new Set(first.map((x: Note) => x.id));
-			assert.ok(second.every((x: Note) => !firstIds.has(x.id)));
+		test('検索語に一致するノートが走査窓より古くても検索できること。', async () => {
+			// 補完は条件一致で打ち切る件数を数えるため、検索語に一致するノートが
+			// 1 バッチ(200件)より奥にあると、条件だけ合うノートで打ち切られて空になる
+			const keyword = '深い検索キーワード';
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+			// 最も古い位置に検索語一致のノート。
+			// 後続のノートで fanout の保持件数から押し出されるので、補完でしか拾えない状態になる
+			const target = await post(bob, { text: `${keyword} needleword` });
+			// それより新しい、条件には合うが検索語に合わないノートを 250 件
+			for (let i = 0; i < 450; i++) {
+				await post(bob, { text: `${keyword} filler ${i}` });
+			}
+			// いちばん新しいノートは受信済みになっているはず (fanout が動いていることの確認)
+			const newest = await post(bob, { text: `${keyword} filler newest` });
+			await waitForFanout(antenna.id, newest.id);
+
+			const response = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id, query: 'needleword', limit: 5 },
+				user: alice,
+			});
+			assert.deepStrictEqual(response.map((x: Note) => x.id), [target.id]);
 		});
 
 		test('sinceIdで新しいノートを古い順に取得できること。', async () => {
