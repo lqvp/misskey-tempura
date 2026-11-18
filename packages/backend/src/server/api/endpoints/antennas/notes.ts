@@ -126,15 +126,26 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			// 「試し打ちでは当たるのに保存しても TL に出ない」という食い違いが起きていた。
 			// 補完は fanout に保存されないので、カーソル付きの取得でも同じ範囲を引き直さないと
 			// 2ページ目以降で補完分が抜け落ちる。カーソルの範囲 (untilId/sinceId) に限定して補完する
-			const backfilledNoteIds = await this.getBackfillNoteIds(antenna, noteIds, me, mutingChannelIds, ps.limit, untilId, sinceId);
+			const backfilledNoteIds = await this.getBackfillNoteIds(antenna, noteIds, me, mutingChannelIds, ps.limit, untilId, sinceId, searchQuery);
 
 			if (noteIds.length === 0 && backfilledNoteIds.length === 0) {
 				return [];
 			}
 
+			// 受信済み側にも「外した」記録を適用する。
+			// ノートの保存と fanout の間に remove-note が走ると、リストに残ったままになることがあるため
+			const removedNoteIds = await this.fanoutTimelineService.getRemovedIds(`antennaTimeline:${antenna.id}`);
+			const visibleNoteIds = removedNoteIds.size === 0
+				? noteIds
+				: noteIds.filter(id => !removedNoteIds.has(id));
+
 			// 受信済みも補完分も「新しい順」に並べてから使う。
 			// fanout の履歴を先に連結して件数制限すると、補完で拾ったより新しいノートが捨てられてしまう
-			const candidateNoteIds = this.mergeNoteIds(noteIds, backfilledNoteIds);
+			const candidateNoteIds = this.mergeNoteIds(visibleNoteIds, backfilledNoteIds);
+			// すべて外されていた場合、空の IN () は SQL エラーになるので先に返す
+			if (candidateNoteIds.length === 0) {
+				return [];
+			}
 
 			const query = this.notesRepository.createQueryBuilder('note')
 				.where('note.id IN (:...candidateNoteIds)', { candidateNoteIds })
@@ -215,7 +226,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	 * 補完の下限も作成時刻にはしない。作成前のノートも現在の条件に合えば TL に並ぶ。
 	 * 走査範囲は応答に必要な件数と受信経路の保持件数で打ち切る (無制限に遡らない)。
 	 */
-	private async getBackfillNoteIds(antenna: MiAntenna, alreadyReceivedNoteIds: MiNote['id'][], me: MiUser, mutingChannelIds: MiChannel['id'][], need: number, untilId: string | null, sinceId: string | null): Promise<MiNote['id'][]> {
+	private async getBackfillNoteIds(antenna: MiAntenna, alreadyReceivedNoteIds: MiNote['id'][], me: MiUser, mutingChannelIds: MiChannel['id'][], need: number, untilId: string | null, sinceId: string | null, searchQuery: string | null): Promise<MiNote['id'][]> {
 		const received = new Set(alreadyReceivedNoteIds);
 		// ユーザーが明示的に外したノートは補完で戻さない
 		const removed = await this.fanoutTimelineService.getRemovedIds(`antennaTimeline:${antenna.id}`);
@@ -285,7 +296,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					this.apiLoggerService.logger.warn(`Failed to evaluate antenna hit for backfill (antenna: ${antenna.id}, note: ${note.id})`, { err });
 					return false;
 				});
-				return hit ? note.id : null;
+				if (!hit) return null;
+				// 検索中は、検索語にも一致するものだけを数える。
+				// 条件だけで数えると、検索語に一致するノートが窓の外にある場合に空で打ち切ってしまう
+				if (searchQuery != null) {
+					const text = [note.text, note.cw].filter((t): t is string => t != null && t !== '').join('\n').toLowerCase();
+					if (!text.includes(searchQuery)) return null;
+				}
+				return note.id;
 			}));
 			for (const id of evaluated) {
 				if (id != null) result.push(id);
