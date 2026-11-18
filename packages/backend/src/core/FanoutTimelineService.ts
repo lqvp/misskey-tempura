@@ -39,6 +39,30 @@ export type FanoutTimelineName = (
 	| `roleTimeline:${string}` // any notes are included
 );
 
+// 明示的に外したノートの記録を保持する期間。
+// antennas/notes の補完もこの期間より新しいノートしか走査しないため、
+// 記録が消える頃には補完の対象からも外れている。両者はこの値で揃える
+const REMOVED_IDS_TTL_MS = 1000 * 60 * 60 * 24 * 30;
+export const ANTENNA_REMOVED_IDS_TTL_MS = REMOVED_IDS_TTL_MS;
+// 1 つの TL で保持する「外したノート」の記録件数の上限
+const REMOVED_IDS_MAX = 1000;
+
+// アンテナTLからの除去と「外した」記録を 1 回の呼び出しで行う。
+// 分けて実行すると、その間の読み取りが「リストにも記録にも無い」状態を見て補完がノートを復活させる。
+// KEYS[1]=list キー / KEYS[2]=removed キー
+// ARGV[1]=ノートid / ARGV[2]=スコア / ARGV[3]=上限件数 / ARGV[4]=TTL(ms)
+const REMOVE_NOTE_FROM_ANTENNA_SCRIPT = `
+redis.call('LREM', KEYS[1], 1, ARGV[1])
+redis.call('ZADD', KEYS[2], ARGV[2], ARGV[1])
+local count = redis.call('ZCARD', KEYS[2])
+local max = tonumber(ARGV[3])
+if count > max then
+	redis.call('ZREMRANGEBYRANK', KEYS[2], 0, count - max - 1)
+end
+redis.call('PEXPIRE', KEYS[2], ARGV[4])
+return count
+`;
+
 @Injectable()
 export class FanoutTimelineService {
 	constructor(
@@ -116,5 +140,45 @@ export class FanoutTimelineService {
 	@bindThis
 	public remove(name: FanoutTimelineName, id: string) {
 		return this.redisForTimelines.lrem('list:' + name, 1, id);
+	}
+
+	/**
+	 * アンテナの TL からノートを外し、「外した」記録も残す。
+	 * リストから消すだけだと、次に TL を読んだときに補完でノートが復活する。
+	 * 除去と記録は 1 つの Lua スクリプトで原子的に行い、途中の状態を取得側に見せない。
+	 */
+	@bindThis
+	public async removeNoteFromAntenna(name: FanoutTimelineName, id: string) {
+		const result = await this.redisForTimelines.eval(
+			REMOVE_NOTE_FROM_ANTENNA_SCRIPT,
+			2,
+			'list:' + name,
+			'removed:' + name,
+			id,
+			String(Date.now()),
+			String(REMOVED_IDS_MAX),
+			String(REMOVED_IDS_TTL_MS),
+		);
+		if (result == null) throw new Error('Failed to remove note from antenna timeline');
+	}
+
+	/**
+	 * 明示的に外されたノートの一覧を返す。
+	 */
+	@bindThis
+	public async getRemovedIds(name: FanoutTimelineName): Promise<Set<string>> {
+		const key = 'removed:' + name;
+		// 多くのアンテナでは記録が無いので、空のときは一覧を取らない
+		if (await this.redisForTimelines.exists(key) === 0) return new Set();
+		const ids = await this.redisForTimelines.zrange(key, 0, -1);
+		return new Set(ids);
+	}
+
+	/**
+	 * 明示的に外したノートの記録を破棄する (アンテナ削除時など)。
+	 */
+	@bindThis
+	public purgeRemoved(name: FanoutTimelineName) {
+		return this.redisForTimelines.del('removed:' + name);
 	}
 }
