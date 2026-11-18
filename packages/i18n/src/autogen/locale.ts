@@ -15480,6 +15480,100 @@ export interface Locale extends ILocale {
             "without": string;
         };
     };
+    "_tempuraSettings": {
+        /**
+         * Misskey Tempura が独自に追加した機能の設定を行えます。
+         */
+        "banner": string;
+        /**
+         * 見た目とタイムライン
+         */
+        "groupAppearance": string;
+        /**
+         * 投稿とノート
+         */
+        "groupNotes": string;
+        /**
+         * プライバシーとプロフィール
+         */
+        "groupPrivacy": string;
+        /**
+         * AIと通知
+         */
+        "groupIntegration": string;
+        /**
+         * フォロー承認
+         */
+        "privacyFollow": string;
+        /**
+         * 外部に公開する範囲
+         */
+        "privacyOutbound": string;
+        /**
+         * プロフィールでの非表示
+         */
+        "privacyHideOnProfile": string;
+        /**
+         * ダイレクトメッセージ
+         */
+        "privacyDirectMessage": string;
+        /**
+         * 文字とレイアウト
+         */
+        "appearanceTypography": string;
+        /**
+         * 埋め込み
+         */
+        "appearanceEmbed": string;
+        /**
+         * 確認ダイアログ
+         */
+        "notesConfirm": string;
+        /**
+         * インスタンス情報
+         */
+        "notesTicker": string;
+        /**
+         * リアクションといいね
+         */
+        "notesReaction": string;
+        /**
+         * タイムラインとタブの非表示
+         */
+        "timelineHide": string;
+        /**
+         * 閲覧履歴
+         */
+        "timelineRecord": string;
+        /**
+         * 通知の基本
+         */
+        "earthquakeNotification": string;
+        /**
+         * 通知音と読み上げ
+         */
+        "earthquakeSound": string;
+        /**
+         * 地域フィルタリング
+         */
+        "earthquakeRegion": string;
+        /**
+         * 報告のフィルタリング
+         */
+        "earthquakeReport": string;
+        /**
+         * 接続
+         */
+        "earthquakeConnection": string;
+        /**
+         * 接続設定
+         */
+        "llmConnection": string;
+        /**
+         * プロンプト
+         */
+        "llmPrompt": string;
+    };
     "_earthquakeWarning": {
         /**
          * 地震速報
