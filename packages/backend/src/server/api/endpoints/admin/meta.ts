@@ -634,6 +634,10 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			defaultRequireSigninToViewContents: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
 			youBlockedImageUrl: {
 				type: 'string',
 				optional: false, nullable: true,
@@ -1213,6 +1217,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 				// tempura: フォーク独自の設定
 				approvalRequiredForSignup: instance.approvalRequiredForSignup,
+				defaultRequireSigninToViewContents: instance.defaultRequireSigninToViewContents,
 				youBlockedImageUrl: instance.youBlockedImageUrl,
 				enableLongIconUrl: instance.enableLongIconUrl,
 				longIconUrl: instance.longIconUrl,
