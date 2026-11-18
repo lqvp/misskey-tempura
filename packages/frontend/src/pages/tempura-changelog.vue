@@ -126,6 +126,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 ### 招待と承認
 
 * approvalRequiredForSignup でサインアップ承認制を有効化できます
+* defaultRequireSigninToViewContents で新規アカウントの「コンテンツの表示にログインを必須にする」既定値を設定できます
 * 承認待ちユーザー一覧 (/admin/approvals) で承認/拒否できます
 * 承認拒否時には通知が送られます
 * 招待コード (invite) でメール認証や承認をスキップできます (ロール権限 canSkipInviteEmailAuth / canSkipInviteApproval が必要)
@@ -430,7 +431,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 ### テンプラ管理画面
 
 * /admin/tempura-admin に集約
-* ApprovalRequired / BlockMentions / LongIconUrl / UsernameMinLength / SecondsPerSignup / CustomSplashText / EmailDomainSettings / LlmModerationSettings / HanaEntranceSettings / EntranceSettings / DefaultFollowedUsers / ProxyAccountFollowModeSettings / BackgroundImages / CustomCursor / GeminiSettings / ContactFormSettings / LoginRiskSettings / ServerStatsSettings / SignedApFetchSettings / DeeplFreeModeSettings / ObjectStorageRemoteSettings / BlockedUserImageSettings
+* ApprovalRequired / DefaultRequireSigninToViewContents / BlockMentions / LongIconUrl / UsernameMinLength / SecondsPerSignup / CustomSplashText / EmailDomainSettings / LlmModerationSettings / HanaEntranceSettings / EntranceSettings / DefaultFollowedUsers / ProxyAccountFollowModeSettings / BackgroundImages / CustomCursor / GeminiSettings / ContactFormSettings / LoginRiskSettings / ServerStatsSettings / SignedApFetchSettings / DeeplFreeModeSettings / ObjectStorageRemoteSettings / BlockedUserImageSettings
 
 ### インスタンス情報
 

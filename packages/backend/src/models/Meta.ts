@@ -790,6 +790,11 @@ export class MiMeta {
 	@Column('boolean', {
 		default: false,
 	})
+	public defaultRequireSigninToViewContents: boolean;
+
+	@Column('boolean', {
+		default: false,
+	})
 	public openLlmModerationEnabled: boolean;
 
 	@Column('varchar', {
