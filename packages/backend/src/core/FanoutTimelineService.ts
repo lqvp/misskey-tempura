@@ -40,12 +40,14 @@ export type FanoutTimelineName = (
 );
 
 // 明示的に外したノートの記録を保持する期間。
-// 補完が走るのはアンテナ作成時点以降の直近ノートだけなので、それより十分長く取れば足りる
+// 補完は「この期間より新しいノート」しか走査しない (AntennaService 側の BACKFILL_MAX_AGE_MS) ため、
+// 記録が消える頃には補完の対象からも外れている。両者は同じ値を使う
 const REMOVED_IDS_TTL_MS = 1000 * 60 * 60 * 24 * 30;
+export const ANTENNA_REMOVED_IDS_TTL_MS = REMOVED_IDS_TTL_MS;
 // 1 つの TL で保持する「外したノート」の記録件数の上限
 const REMOVED_IDS_MAX = 1000;
 
-// 「外した」記録を追加し、上限を超えた古い記録を落とす。追加と削除を 1 回の呼び出しで原子的に行う
+// 「外した」記録を追加し、上限を超えた古い記録を落とす。追加と削除を 1 回の呼び出しで原子的に行う。
 // KEYS[1]=removed キー / ARGV[1]=スコア(現在時刻) / ARGV[2]=上限件数 / ARGV[3]=TTL(ms) / ARGV[4..]=id
 const ADD_REMOVED_IDS_SCRIPT = `
 for i = 4, #ARGV do
@@ -57,6 +59,22 @@ if count > max then
 	redis.call('ZREMRANGEBYRANK', KEYS[1], 0, count - max - 1)
 end
 redis.call('PEXPIRE', KEYS[1], ARGV[3])
+return count
+`;
+
+// アンテナTLからの除去と「外した」記録を 1 回の呼び出しで行う。
+// 分けて実行すると、その間の読み取りが「リストにも記録にも無い」状態を見て補完がノートを復活させる。
+// KEYS[1]=list キー / KEYS[2]=removed キー
+// ARGV[1]=ノートid / ARGV[2]=スコア / ARGV[3]=上限件数 / ARGV[4]=TTL(ms)
+const REMOVE_NOTE_FROM_ANTENNA_SCRIPT = `
+redis.call('LREM', KEYS[1], 1, ARGV[1])
+redis.call('ZADD', KEYS[2], ARGV[2], ARGV[1])
+local count = redis.call('ZCARD', KEYS[2])
+local max = tonumber(ARGV[3])
+if count > max then
+	redis.call('ZREMRANGEBYRANK', KEYS[2], 0, count - max - 1)
+end
+redis.call('PEXPIRE', KEYS[2], ARGV[4])
 return count
 `;
 
@@ -164,13 +182,21 @@ export class FanoutTimelineService {
 	/**
 	 * アンテナの TL からノートを外し、「外した」記録も残す。
 	 * リストから消すだけだと、次に TL を読んだときに補完でノートが復活する。
-	 * 記録の書き込みに失敗しても気づけるよう、失敗は呼び出し元まで伝える。
+	 * 除去と記録は 1 つの Lua スクリプトで原子的に行い、途中の状態を取得側に見せない。
 	 */
 	@bindThis
 	public async removeNoteFromAntenna(name: FanoutTimelineName, id: string) {
-		// リストから消した直後に落ちても記録が残るよう、記録の書き込み失敗は呼び出し元に伝える
-		await this.redisForTimelines.lrem('list:' + name, 1, id);
-		await this.addRemovedIds(name, [id]);
+		const result = await this.redisForTimelines.eval(
+			REMOVE_NOTE_FROM_ANTENNA_SCRIPT,
+			2,
+			'list:' + name,
+			'removed:' + name,
+			id,
+			String(Date.now()),
+			String(REMOVED_IDS_MAX),
+			String(REMOVED_IDS_TTL_MS),
+		);
+		if (result == null) throw new Error('Failed to remove note from antenna timeline');
 	}
 
 	/**

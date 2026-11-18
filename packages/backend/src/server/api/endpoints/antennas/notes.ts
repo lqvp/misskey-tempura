@@ -12,7 +12,7 @@ import { QueryService } from '@/core/QueryService.js';
 import { DI } from '@/di-symbols.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { IdService } from '@/core/IdService.js';
-import { FanoutTimelineService } from '@/core/FanoutTimelineService.js';
+import { FanoutTimelineService, ANTENNA_REMOVED_IDS_TTL_MS } from '@/core/FanoutTimelineService.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { AntennaService } from '@/core/AntennaService.js';
 import { trackPromise } from '@/misc/promise-tracker.js';
@@ -124,11 +124,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			// antennaTimeline は受信時の fanout なので、アンテナを作る前から存在したノートは入らない。
 			// 一方で試し打ち(antennas/test)は既存ノートを走査するため、
 			// 「試し打ちでは当たるのに保存しても TL に出ない」という食い違いが起きていた。
-			// TL の先頭を読むときに限り、アンテナ作成時点以降のノートを現在の条件で拾って補う。
-			// (作成より前のノートは対象外にして、既存のアンテナの履歴が遡って増えないようにする)
-			const backfilledNoteIds = (untilId == null && sinceId == null)
-				? await this.getBackfillNoteIds(antenna, noteIds, me, mutingChannelIds, ps.limit)
-				: [];
+			// 補完は fanout に保存されないので、カーソル付きの取得でも同じ範囲を引き直さないと
+			// 2ページ目以降で補完分が抜け落ちる。カーソルの範囲 (untilId/sinceId) に限定して補完する
+			const backfilledNoteIds = await this.getBackfillNoteIds(antenna, noteIds, me, mutingChannelIds, ps.limit, untilId, sinceId);
 
 			if (noteIds.length === 0 && backfilledNoteIds.length === 0) {
 				return [];
@@ -217,14 +215,19 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	 * 補完の下限も作成時刻にはしない。作成前のノートも現在の条件に合えば TL に並ぶ。
 	 * 走査範囲は応答に必要な件数と受信経路の保持件数で打ち切る (無制限に遡らない)。
 	 */
-	private async getBackfillNoteIds(antenna: MiAntenna, alreadyReceivedNoteIds: MiNote['id'][], me: MiUser, mutingChannelIds: MiChannel['id'][], need: number): Promise<MiNote['id'][]> {
+	private async getBackfillNoteIds(antenna: MiAntenna, alreadyReceivedNoteIds: MiNote['id'][], me: MiUser, mutingChannelIds: MiChannel['id'][], need: number, untilId: string | null, sinceId: string | null): Promise<MiNote['id'][]> {
 		const received = new Set(alreadyReceivedNoteIds);
 		// ユーザーが明示的に外したノートは補完で戻さない
 		const removed = await this.fanoutTimelineService.getRemovedIds(`antennaTimeline:${antenna.id}`);
 
+		// 「外した」記録が消える頃には補完の対象からも外れているよう、走査範囲を時間でも区切る。
+		// これを外すと、記録が期限切れになった古いノートが補完で復活しうる
+		const oldestScannableId = this.idService.genMinimum(Date.now() - ANTENNA_REMOVED_IDS_TTL_MS);
+
 		// 取得側のクエリと同じ join を揃える。
 		// generateBaseNoteFilteringQuery は replyUser / renoteUser の別名を参照するため、join し忘れるとエラーになる
 		const query = this.notesRepository.createQueryBuilder('note')
+			.where('note.id >= :oldestScannableId', { oldestScannableId })
 			.innerJoinAndSelect('note.user', 'user')
 			.leftJoinAndSelect('note.reply', 'reply')
 			.leftJoinAndSelect('note.renote', 'renote')
@@ -232,6 +235,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			.leftJoinAndSelect('reply.user', 'replyUser')
 			.leftJoinAndSelect('renote.user', 'renoteUser')
 			.orderBy('note.id', 'DESC');
+
+		// カーソル付きの取得では、そのページの範囲に限定して補完する (ページをまたいだ重複を避ける)
+		if (untilId != null) query.andWhere('note.id < :backfillUntilId', { backfillUntilId: untilId });
+		if (sinceId != null) query.andWhere('note.id > :backfillSinceId', { backfillSinceId: sinceId });
 
 		// ミュートしたチャンネルのノートは応答側で落とすので、補完の走査枠も消費させない。
 		// 走査枠を先に埋められると、表示できる一致ノートがあっても判定されず TL が空になる
