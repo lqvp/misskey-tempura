@@ -41,9 +41,24 @@ export type FanoutTimelineName = (
 
 // 明示的に外したノートの記録を保持する期間。
 // 補完が走るのはアンテナ作成時点以降の直近ノートだけなので、それより十分長く取れば足りる
-const REMOVED_IDS_TTL_SECONDS = 60 * 60 * 24 * 30;
+const REMOVED_IDS_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 // 1 つの TL で保持する「外したノート」の記録件数の上限
 const REMOVED_IDS_MAX = 1000;
+
+// 「外した」記録を追加し、上限を超えた古い記録を落とす。追加と削除を 1 回の呼び出しで原子的に行う
+// KEYS[1]=removed キー / ARGV[1]=スコア(現在時刻) / ARGV[2]=上限件数 / ARGV[3]=TTL(ms) / ARGV[4..]=id
+const ADD_REMOVED_IDS_SCRIPT = `
+for i = 4, #ARGV do
+	redis.call('ZADD', KEYS[1], ARGV[1], ARGV[i])
+end
+local count = redis.call('ZCARD', KEYS[1])
+local max = tonumber(ARGV[2])
+if count > max then
+	redis.call('ZREMRANGEBYRANK', KEYS[1], 0, count - max - 1)
+end
+redis.call('PEXPIRE', KEYS[1], ARGV[3])
+return count
+`;
 
 @Injectable()
 export class FanoutTimelineService {
@@ -131,14 +146,41 @@ export class FanoutTimelineService {
 	 */
 	@bindThis
 	public async markRemoved(name: FanoutTimelineName, id: string) {
+		await this.addRemovedIds(name, [id]);
+	}
+
+	/**
+	 * 「外した」記録を追加し、上限を超えた分を古い順に落とす。
+	 * SCARD を先に読んで不足分を消すと、並行追加で上限を超えるため、
+	 * 追加後の件数で削除範囲を決める処理を Lua でまとめて原子的に実行する。
+	 */
+	@bindThis
+	private async addRemovedIds(name: FanoutTimelineName, ids: string[]): Promise<void> {
+		if (ids.length === 0) return;
 		const key = 'removed:' + name;
-		const pipeline = this.redisForTimelines.pipeline();
-		pipeline.sadd(key, id);
-		// Set の TTL はメンバー単位ではなくキー単位なので、追加のたびに延命されるだけでは肥大化を防げない。
-		// 補完の対象は直近のノートだけなので、古い記録はまとめて落とせるよう SPOP で件数上限をかける
-		pipeline.spop(key, Math.max(0, (await this.redisForTimelines.scard(key)) - REMOVED_IDS_MAX));
-		pipeline.expire(key, REMOVED_IDS_TTL_SECONDS);
-		await pipeline.exec();
+		const now = Date.now();
+		const result = await this.redisForTimelines.eval(
+			ADD_REMOVED_IDS_SCRIPT,
+			1,
+			key,
+			String(now),
+			String(REMOVED_IDS_MAX),
+			String(REMOVED_IDS_TTL_MS),
+			...ids,
+		);
+		if (result == null) throw new Error('Failed to mark notes as removed');
+	}
+
+	/**
+	 * アンテナの TL からノートを外し、同じトランザクションで「外した」記録を残す。
+	 * LREM と SADD を分けて実行すると、その間の読み取りが
+	 * 「リストにも記録にも無い」状態を見てしまい、補完でノートが復活する。
+	 */
+	@bindThis
+	public async removeNoteFromAntenna(name: FanoutTimelineName, id: string) {
+		// リストから消した直後に落ちても記録が残るよう、記録の書き込み失敗は呼び出し元に伝える
+		await this.redisForTimelines.lrem('list:' + name, 1, id);
+		await this.addRemovedIds(name, [id]);
 	}
 
 	/**
@@ -147,9 +189,9 @@ export class FanoutTimelineService {
 	@bindThis
 	public async getRemovedIds(name: FanoutTimelineName): Promise<Set<string>> {
 		const key = 'removed:' + name;
-		// 多くのアンテナでは記録が無いので、空 Set のときは smembers を投げない
+		// 多くのアンテナでは記録が無いので、空のときは一覧を取らない
 		if (await this.redisForTimelines.exists(key) === 0) return new Set();
-		const ids = await this.redisForTimelines.smembers(key);
+		const ids = await this.redisForTimelines.zrange(key, 0, -1);
 		return new Set(ids);
 	}
 

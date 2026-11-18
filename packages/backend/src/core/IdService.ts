@@ -58,6 +58,52 @@ export class IdService {
 		}
 	}
 
+	/**
+	 * 指定時刻の「最小のID」を返す。
+	 * gen() は同一ミリ秒でもカウンタ/乱数で値が前後するため、`gen(t)` を時刻の下限として使うと
+	 * 同じミリ秒に採番されたIDを取りこぼす。ここでは時刻部分だけを最小値で埋め、
+	 * それ以外を最小文字で埋めた「これ以上なら必ずその時刻以降」というIDを作る。
+	 * @param time 日時
+	 */
+	@bindThis
+	public genMinimum(time: number): string {
+		switch (this.method) {
+			case 'aid': {
+				const t = Math.max(0, time - 946684800000);
+				return t.toString(36).padStart(8, '0').slice(-8) + '00';
+			}
+			case 'aidx': {
+				const t = Math.max(0, time - 946684800000);
+				return t.toString(36).padStart(8, '0').slice(-8) + '00000000';
+			}
+			case 'meid': {
+				const t = (time + 0x800000000000).toString(16);
+				return t.padStart(12, '0') + '000000000000';
+			}
+			case 'meidg': {
+				// meidg は先頭1文字がプレフィックス、続く11文字が時刻
+				const t = time.toString(16);
+				return 'g' + t.padStart(11, '0') + '000000000000';
+			}
+			case 'ulid': {
+				const CHARS = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+				let t = time;
+				let out = '';
+				for (let i = 0; i < 10; i++) {
+					out = CHARS[t % 32] + out;
+					t = Math.floor(t / 32);
+				}
+				return out + CHARS[0].repeat(16);
+			}
+			case 'objectid': {
+				// objectid は秒精度なので、その秒の最小値
+				const t = Math.floor(time / 1000).toString(16);
+				return t.padStart(8, '0') + '0000000000000000';
+			}
+			default: throw new Error('unrecognized id generation method');
+		}
+	}
+
 	@bindThis
 	public parse(id: string): { date: Date; } {
 		switch (this.method) {

@@ -379,18 +379,28 @@ describe('アンテナ', () => {
 			// 「取りこぼし」を再現できず、テストが常に通ってしまう
 			const redis = new Redis(loadConfig().redisForTimelines);
 			try {
-				await redis.lrem(`list:antennaTimeline:${antenna.id}`, 1, note.id);
+				const listKey = `list:antennaTimeline:${antenna.id}`;
+				// post() はアンテナへの fanout 書き込みを待たないので、載るまで待ってから消す。
+				// 待たずに消すと 0 件削除になり「取りこぼし」を作れないままテストが通ってしまう
+				let appeared = false;
+				for (let i = 0; i < 100; i++) {
+					const ids = await redis.lrange(listKey, 0, -1);
+					if (ids.includes(note.id)) {
+						appeared = true;
+						break;
+					}
+					await new Promise(r => setTimeout(r, 50));
+				}
+				assert.ok(appeared, 'テストの前提が壊れている: ノートが fanout に載らなかった');
+
+				// 実際に 1 件消せたことを確認する (0 件だと取りこぼしを再現できていない)
+				const removedCount = await redis.lrem(listKey, 1, note.id);
+				assert.strictEqual(removedCount, 1, 'テストの前提が壊れている: fanout から削除できなかった');
+
+				const remaining = await redis.lrange(listKey, 0, -1);
+				assert.ok(!remaining.includes(note.id), 'テストの前提が壊れている: fanout に残っている');
 			} finally {
 				redis.disconnect();
-			}
-
-			// 前提の確認: fanout から実際に消えていること (消えていなければこのテストは無意味)
-			const redisCheck = new Redis(loadConfig().redisForTimelines);
-			try {
-				const remaining = await redisCheck.lrange(`list:antennaTimeline:${antenna.id}`, 0, -1);
-				assert.ok(!remaining.includes(note.id), 'テストの前提が壊れている: fanout から消えていない');
-			} finally {
-				redisCheck.disconnect();
 			}
 
 			const response = await successfulApiCall({
@@ -465,6 +475,81 @@ describe('アンテナ', () => {
 				user: alice,
 			});
 			assert.deepStrictEqual(after, []);
+		});
+
+		test('補完したノートが受信済みより新しくても、件数制限で捨てられないこと。', async () => {
+			// fanout の履歴を先に連結して件数制限すると、補完で拾ったより新しいノートが落ちる。
+			// limit=1 で「最も新しい一致ノート」が返ることを確認する
+			const keyword = '補完順序';
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+			await post(bob, { text: `${keyword} A` });
+			await new Promise(r => setTimeout(r, 300));
+			const newer = await post(bob, { text: `${keyword} B` });
+			await new Promise(r => setTimeout(r, 300));
+
+			// B (新しい方) を fanout からだけ落として、補完でしか拾えない状態にする
+			const redis = new Redis(loadConfig().redisForTimelines);
+			try {
+				const listKey = `list:antennaTimeline:${antenna.id}`;
+				for (let i = 0; i < 100; i++) {
+					if ((await redis.lrange(listKey, 0, -1)).includes(newer.id)) break;
+					await new Promise(r => setTimeout(r, 50));
+				}
+				assert.strictEqual(await redis.lrem(listKey, 1, newer.id), 1);
+			} finally {
+				redis.disconnect();
+			}
+
+			const response = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id, limit: 1 },
+				user: alice,
+			});
+			assert.deepStrictEqual(response.map((x: Note) => x.id), [newer.id]);
+		});
+
+		test('条件で絞り込んだ後も、一致するノートがあればページが空にならないこと。', async () => {
+			// 古い条件でだけ一致するノートが件数枠を食い、条件的には一致するノートが
+			// 次のページに押し出されると、一致ノートがあるのに空のページが返る
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [['変更前']] },
+				user: alice,
+			});
+			await post(bob, { text: '変更前 のノート' });
+			await new Promise(r => setTimeout(r, 300));
+
+			await successfulApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: antenna.id, keywords: [['変更後']] },
+				user: alice,
+			});
+			const matching = await post(bob, { text: '変更後 のノート' });
+			await new Promise(r => setTimeout(r, 300));
+
+			// 新しい方を fanout から落として、補完でしか拾えない状態にする
+			const redis = new Redis(loadConfig().redisForTimelines);
+			try {
+				const listKey = `list:antennaTimeline:${antenna.id}`;
+				for (let i = 0; i < 100; i++) {
+					if ((await redis.lrange(listKey, 0, -1)).includes(matching.id)) break;
+					await new Promise(r => setTimeout(r, 50));
+				}
+				assert.strictEqual(await redis.lrem(listKey, 1, matching.id), 1);
+			} finally {
+				redis.disconnect();
+			}
+
+			const response = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id, limit: 1 },
+				user: alice,
+			});
+			assert.deepStrictEqual(response.map((x: Note) => x.id), [matching.id]);
 		});
 
 		test('条件を変更すると、現在の条件に合わないノートがTLから消えること。', async () => {
