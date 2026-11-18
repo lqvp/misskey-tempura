@@ -21,6 +21,8 @@ import {
 } from '../utils.js';
 import type * as misskey from 'misskey-js';
 import type { DataSource } from 'typeorm';
+import { Redis } from 'ioredis';
+import { loadConfig } from '@/config.js';
 import { DEFAULT_POLICIES } from '@/core/RoleService.js';
 
 const compareBy = <T extends { id: string }>(selector: (s: T) => string = (s: T): string => s.id) => (a: T, b: T): number => {
@@ -352,6 +354,150 @@ describe('アンテナ', () => {
 	test.todo('は他人のものを削除できない');
 
 	//#endregion
+
+	describe('のTLへの補完(既存ノート)', () => {
+		// アンテナの TL は受信時の fanout だけを並べるため、作成直後は空になりやすい。
+		// 一方で試し打ち(antennas/test)は既存ノートを走査するので、
+		// 「試し打ちでは当たるのに保存しても TL に出ない」という食い違いが起きていた。
+		// 作成時点以降のノートは TL の先頭読み込み時に補完して、この食い違いを無くしている。
+		test('fanoutから取りこぼした作成後のノートも、現在の条件に合えばTLに出ること。', async () => {
+			// fanout は受信時に積まれるだけなので、取りこぼすと TL から永久に欠ける。
+			// 作成時点以降のノートは TL の先頭読み込み時に現在の条件で補完する。
+			// ここでは fanout から直接消して「取りこぼし」を作る (Redis はテスト用のもの)
+			const keyword = '取りこぼしキーワード';
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+			const note = await post(bob, { text: `${keyword} 1` });
+
+			// fanout のリストからだけ消す。ノート自体は残っている。
+			// (remove-note は「明示的な削除」も記録してしまうため、ここでは Redis を直接操作する)
+			// アプリ本体が使う接続設定をそのまま使う。
+			// keyPrefix はここで付与されるので、付け忘れると別キーを操作してしまい
+			// 「取りこぼし」を再現できず、テストが常に通ってしまう
+			const redis = new Redis(loadConfig().redisForTimelines);
+			try {
+				await redis.lrem(`list:antennaTimeline:${antenna.id}`, 1, note.id);
+			} finally {
+				redis.disconnect();
+			}
+
+			// 前提の確認: fanout から実際に消えていること (消えていなければこのテストは無意味)
+			const redisCheck = new Redis(loadConfig().redisForTimelines);
+			try {
+				const remaining = await redisCheck.lrange(`list:antennaTimeline:${antenna.id}`, 0, -1);
+				assert.ok(!remaining.includes(note.id), 'テストの前提が壊れている: fanout から消えていない');
+			} finally {
+				redisCheck.disconnect();
+			}
+
+			const response = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id },
+				user: alice,
+			});
+			assert.ok(response.some((x: Note) => x.id === note.id));
+		});
+
+		test('試し打ち(antennas/test)で当たったノートが、保存後のTLにも出ること。', async () => {
+			const keyword = '試し打ち一致';
+			await post(bob, { text: `${keyword} preview` });
+
+			const preview = await successfulApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+			assert.ok(preview.length > 0);
+
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+			// 作成より前のノートは補完対象外(既存アンテナの履歴が遡って増えない)
+			const response = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id },
+				user: alice,
+			});
+			assert.deepStrictEqual(response, []);
+
+			// 作成後に投稿したノートは、試し打ちの結果と同じ条件で TL に出る
+			const afterNote = await post(bob, { text: `${keyword} after` });
+			const after = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id },
+				user: alice,
+			});
+			assert.deepStrictEqual(after.map((x: Note) => x.id), [afterNote.id]);
+		});
+
+		test('明示的に外したノートがTLの再読み込みで戻らないこと。', async () => {
+			const keyword = '補完と削除';
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+			const note = await post(bob, { text: `${keyword} 1` });
+
+			// まずは TL に出る
+			const before = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id },
+				user: alice,
+			});
+			assert.ok(before.some((x: Note) => x.id === note.id));
+
+			await successfulApiCall({
+				endpoint: 'antennas/remove-note',
+				parameters: { antennaId: antenna.id, noteId: note.id },
+				user: alice,
+			});
+
+			// 補完で拾い直されない (リストから消すだけだと再読み込みで戻ってしまう)
+			const after = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id },
+				user: alice,
+			});
+			assert.deepStrictEqual(after, []);
+		});
+
+		test('条件を変更すると、現在の条件に合わないノートがTLから消えること。', async () => {
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [['変更前キーワード']] },
+				user: alice,
+			});
+			await post(bob, { text: '変更前キーワード 1' });
+
+			const before = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id },
+				user: alice,
+			});
+			assert.strictEqual(before.length, 1);
+
+			await successfulApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: antenna.id, keywords: [['変更後キーワード']] },
+				user: alice,
+			});
+			const newNote = await post(bob, { text: '変更後キーワード 2' });
+
+			// 受信済みでも現在の条件に合わないものは並べない(マッチ理由も付かなくなるため)
+			const after = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id },
+				user: alice,
+			});
+			assert.deepStrictEqual(after.map((x: Note) => x.id), [newNote.id]);
+		});
+	});
 
 	describe('のTL内検索', () => {
 		test('queryでアンテナのTL内を検索できること。', async () => {

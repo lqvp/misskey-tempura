@@ -55,7 +55,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw new ApiError(meta.errors.noSuchAntenna);
 			}
 
-			await this.fanoutTimelineService.remove(`antennaTimeline:${antenna.id}`, ps.noteId);
+			// リストから外すだけだと、後から TL を読み直したときに補完で戻ってきてしまうため、外したことを記録しておく
+			await Promise.all([
+				this.fanoutTimelineService.remove(`antennaTimeline:${antenna.id}`, ps.noteId),
+				this.fanoutTimelineService.markRemoved(`antennaTimeline:${antenna.id}`, ps.noteId),
+			]);
 		});
 	}
 }

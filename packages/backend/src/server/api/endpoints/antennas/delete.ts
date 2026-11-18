@@ -7,6 +7,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { AntennasRepository } from '@/models/_.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
+import { FanoutTimelineService } from '@/core/FanoutTimelineService.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '../../error.js';
 
@@ -41,6 +42,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private antennasRepository: AntennasRepository,
 
 		private globalEventService: GlobalEventService,
+		private fanoutTimelineService: FanoutTimelineService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const antenna = await this.antennasRepository.findOneBy({
@@ -53,6 +55,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			await this.antennasRepository.delete(antenna.id);
+
+			// アンテナに紐づく Redis の状態を片付ける。
+			// 残すとメモリがアンテナ数だけ増え続け、ID が再利用された場合に古い記録を引きずる
+			const timelineName = `antennaTimeline:${antenna.id}` as const;
+			await Promise.all([
+				this.fanoutTimelineService.purge(timelineName),
+				this.fanoutTimelineService.purgeRemoved(timelineName),
+			]);
 
 			this.globalEventService.publishInternalEvent('antennaDeleted', antenna);
 		});

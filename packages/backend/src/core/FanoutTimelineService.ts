@@ -39,6 +39,12 @@ export type FanoutTimelineName = (
 	| `roleTimeline:${string}` // any notes are included
 );
 
+// 明示的に外したノートの記録を保持する期間。
+// 補完が走るのはアンテナ作成時点以降の直近ノートだけなので、それより十分長く取れば足りる
+const REMOVED_IDS_TTL_SECONDS = 60 * 60 * 24 * 30;
+// 1 つの TL で保持する「外したノート」の記録件数の上限
+const REMOVED_IDS_MAX = 1000;
+
 @Injectable()
 export class FanoutTimelineService {
 	constructor(
@@ -116,5 +122,42 @@ export class FanoutTimelineService {
 	@bindThis
 	public remove(name: FanoutTimelineName, id: string) {
 		return this.redisForTimelines.lrem('list:' + name, 1, id);
+	}
+
+	/**
+	 * ユーザーが明示的に外したノートを記録する。
+	 * リストから消すだけでは「もともと受信していない」のか「外した」のか区別できないため、
+	 * 後から補完(バックフィル)で拾い直さないように印を残す。
+	 */
+	@bindThis
+	public async markRemoved(name: FanoutTimelineName, id: string) {
+		const key = 'removed:' + name;
+		const pipeline = this.redisForTimelines.pipeline();
+		pipeline.sadd(key, id);
+		// Set の TTL はメンバー単位ではなくキー単位なので、追加のたびに延命されるだけでは肥大化を防げない。
+		// 補完の対象は直近のノートだけなので、古い記録はまとめて落とせるよう SPOP で件数上限をかける
+		pipeline.spop(key, Math.max(0, (await this.redisForTimelines.scard(key)) - REMOVED_IDS_MAX));
+		pipeline.expire(key, REMOVED_IDS_TTL_SECONDS);
+		await pipeline.exec();
+	}
+
+	/**
+	 * 明示的に外されたノートの一覧を返す。
+	 */
+	@bindThis
+	public async getRemovedIds(name: FanoutTimelineName): Promise<Set<string>> {
+		const key = 'removed:' + name;
+		// 多くのアンテナでは記録が無いので、空 Set のときは smembers を投げない
+		if (await this.redisForTimelines.exists(key) === 0) return new Set();
+		const ids = await this.redisForTimelines.smembers(key);
+		return new Set(ids);
+	}
+
+	/**
+	 * 明示的に外したノートの記録を破棄する (アンテナ削除時など)。
+	 */
+	@bindThis
+	public purgeRemoved(name: FanoutTimelineName) {
+		return this.redisForTimelines.del('removed:' + name);
 	}
 }
