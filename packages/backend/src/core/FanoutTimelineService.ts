@@ -40,27 +40,12 @@ export type FanoutTimelineName = (
 );
 
 // 明示的に外したノートの記録を保持する期間。
-// 補完は「この期間より新しいノート」しか走査しない (AntennaService 側の BACKFILL_MAX_AGE_MS) ため、
-// 記録が消える頃には補完の対象からも外れている。両者は同じ値を使う
+// antennas/notes の補完もこの期間より新しいノートしか走査しないため、
+// 記録が消える頃には補完の対象からも外れている。両者はこの値で揃える
 const REMOVED_IDS_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 export const ANTENNA_REMOVED_IDS_TTL_MS = REMOVED_IDS_TTL_MS;
 // 1 つの TL で保持する「外したノート」の記録件数の上限
 const REMOVED_IDS_MAX = 1000;
-
-// 「外した」記録を追加し、上限を超えた古い記録を落とす。追加と削除を 1 回の呼び出しで原子的に行う。
-// KEYS[1]=removed キー / ARGV[1]=スコア(現在時刻) / ARGV[2]=上限件数 / ARGV[3]=TTL(ms) / ARGV[4..]=id
-const ADD_REMOVED_IDS_SCRIPT = `
-for i = 4, #ARGV do
-	redis.call('ZADD', KEYS[1], ARGV[1], ARGV[i])
-end
-local count = redis.call('ZCARD', KEYS[1])
-local max = tonumber(ARGV[2])
-if count > max then
-	redis.call('ZREMRANGEBYRANK', KEYS[1], 0, count - max - 1)
-end
-redis.call('PEXPIRE', KEYS[1], ARGV[3])
-return count
-`;
 
 // アンテナTLからの除去と「外した」記録を 1 回の呼び出しで行う。
 // 分けて実行すると、その間の読み取りが「リストにも記録にも無い」状態を見て補完がノートを復活させる。
@@ -155,28 +140,6 @@ export class FanoutTimelineService {
 	@bindThis
 	public remove(name: FanoutTimelineName, id: string) {
 		return this.redisForTimelines.lrem('list:' + name, 1, id);
-	}
-
-	/**
-	 * 「外した」記録を追加し、上限を超えた分を古い順に落とす。
-	 * SCARD を先に読んで不足分を消すと、並行追加で上限を超えるため、
-	 * 追加後の件数で削除範囲を決める処理を Lua でまとめて原子的に実行する。
-	 */
-	@bindThis
-	private async addRemovedIds(name: FanoutTimelineName, ids: string[]): Promise<void> {
-		if (ids.length === 0) return;
-		const key = 'removed:' + name;
-		const now = Date.now();
-		const result = await this.redisForTimelines.eval(
-			ADD_REMOVED_IDS_SCRIPT,
-			1,
-			key,
-			String(now),
-			String(REMOVED_IDS_MAX),
-			String(REMOVED_IDS_TTL_MS),
-			...ids,
-		);
-		if (result == null) throw new Error('Failed to mark notes as removed');
 	}
 
 	/**
