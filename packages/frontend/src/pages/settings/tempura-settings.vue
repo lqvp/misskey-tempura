@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</MkFeatureBanner>
 
 		<FormSection first>
-			<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.groupPrivacy }}</SearchLabel></template>
+			<template #label>{{ i18n.ts._tempuraSettings.groupPrivacy }}</template>
 			<div class="_gaps_s">
 				<ProfileSettings/>
 				<PrivacySettings/>
@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</FormSection>
 
 		<FormSection>
-			<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.groupAppearance }}</SearchLabel></template>
+			<template #label>{{ i18n.ts._tempuraSettings.groupAppearance }}</template>
 			<div class="_gaps_s">
 				<AppearanceSettings/>
 				<TimelineSettings/>
@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</FormSection>
 
 		<FormSection>
-			<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.groupNotes }}</SearchLabel></template>
+			<template #label>{{ i18n.ts._tempuraSettings.groupNotes }}</template>
 			<div class="_gaps_s">
 				<PostFormSettings/>
 				<NotesSettings/>
@@ -36,7 +36,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</FormSection>
 
 		<FormSection>
-			<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.groupIntegration }}</SearchLabel></template>
+			<template #label>{{ i18n.ts._tempuraSettings.groupIntegration }}</template>
 			<div class="_gaps_s">
 				<LLMSettings/>
 				<EarthquakeSettings/>

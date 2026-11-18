@@ -7,20 +7,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 <MkFolder>
 	<template #icon><i class="ti ti-cloud"></i></template>
 	<template #label><SearchLabel>{{ i18n.ts.drive }}</SearchLabel></template>
-	<SearchMarker markerId="tempura-settings-drive" :inlining="['tempura-settings-root']" path="/settings/tempura-settings" :keywords="['drive']">
-		<div class="_gaps_m">
-		</div>
-	</SearchMarker>
+	<!-- 設定項目が無いため、このコンポーネントは現在 tempura-settings.vue から描画していない。
+	     描画していないページへの検索結果を作らないよう、SearchMarker も登録しない。 -->
+	<div class="_gaps_m">
+	</div>
 </MkFolder>
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
-import * as Misskey from 'misskey-js';
-import MkSelect from '@/components/MkSelect.vue';
 import MkFolder from '@/components/MkFolder.vue';
-import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
-import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
-
 </script>

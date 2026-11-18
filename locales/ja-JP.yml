@@ -4139,7 +4139,7 @@ _noteSearch:
       without: "含まない"
 
 _tempuraSettings:
-  banner: "Misskey Tempura が独自に追加した機能の設定を行えます。本家 Misskey の設定とは別に管理されています。"
+  banner: "Misskey Tempura が独自に追加した機能の設定を行えます。"
   groupAppearance: "見た目とタイムライン"
   groupNotes: "投稿とノート"
   groupPrivacy: "プライバシーとプロフィール"

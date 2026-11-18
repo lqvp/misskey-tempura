@@ -15474,7 +15474,7 @@ export interface Locale extends ILocale {
     };
     "_tempuraSettings": {
         /**
-         * Misskey Tempura が独自に追加した機能の設定を行えます。本家 Misskey の設定とは別に管理されています。
+         * Misskey Tempura が独自に追加した機能の設定を行えます。
          */
         "banner": string;
         /**
