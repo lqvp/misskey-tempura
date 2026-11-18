@@ -25,10 +25,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<MkRadios
 								v-model="widgetDrawerDirection"
 								:options="[
-								{ value: 'left', label: i18n.ts._widgetDrawerDirection.left, icon: 'ti ti-arrow-left' },
-								{ value: 'right', label: i18n.ts._widgetDrawerDirection.right, icon: 'ti ti-arrow-right' },
+									{ value: 'left', label: i18n.ts._widgetDrawerDirection.left, icon: 'ti ti-arrow-left' },
+									{ value: 'right', label: i18n.ts._widgetDrawerDirection.right, icon: 'ti ti-arrow-right' },
 								]"
-								>
+							>
 								<template #label><SearchLabel>{{ i18n.ts.widgetDrawerDirection }}</SearchLabel></template>
 								<template #caption>{{ i18n.ts.widgetDrawerDirectionDescription }}</template>
 							</MkRadios>
@@ -114,7 +114,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { computed, reactive, ref } from 'vue';
-import * as Misskey from 'misskey-js';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkFolder from '@/components/MkFolder.vue';
@@ -190,13 +189,13 @@ const isChanged = computed(() => {
 // Items for customFont MkSelect
 const customFontItems = computed(() => [
 	{ value: null, label: i18n.ts.default },
-	...Object.entries(fontList).map(([name, font]: [string, { name: string; fontFamily: string; importUrl: string }]) => ({ value: name, label: font.name }))
+	...Object.entries(fontList).map(([name, font]: [string, { name: string; fontFamily: string; importUrl: string }]) => ({ value: name, label: font.name })),
 ]);
 
 // Items for twitterEmbedMode MkSelect
 const twitterEmbedModeItems = computed(() => [
 	{ value: 'fxtwitter', label: i18n.ts.defaultFxTwitterEmbedProviderOptions.fxtwitter },
-	{ value: 'custom', label: i18n.ts.defaultFxTwitterEmbedProviderOptions.custom }
+	{ value: 'custom', label: i18n.ts.defaultFxTwitterEmbedProviderOptions.custom },
 ]);
 
 function saveColors() {

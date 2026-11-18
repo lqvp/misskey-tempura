@@ -15,28 +15,28 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div class="_gaps_m">
 					<SearchMarker :keywords="['follow', 'reject', 'auto']">
 						<MkSwitch v-model="autoRejectFollowRequest" @update:modelValue="save_privacy()">
-							<SearchLabel>{{ i18n.ts.autoRejectFollowRequest }}</SearchLabel>
+							<SearchLabel>{{ i18n.ts.autoRejectFollowRequest }}</SearchLabel><span class="_beta">{{ i18n.ts.originalFeature }}</span>
 							<template #caption>{{ i18n.ts.autoRejectFollowRequestDescription }}</template>
 						</MkSwitch>
 					</SearchMarker>
 
 					<SearchMarker :keywords="['bot', 'careful']">
 						<MkSwitch v-model="carefulBot" @update:modelValue="save_privacy()">
-							<SearchLabel>{{ i18n.ts.carefulBot }}</SearchLabel>
+							<SearchLabel>{{ i18n.ts.carefulBot }}</SearchLabel><span class="_beta">{{ i18n.ts.originalFeature }}</span>
 							<template #caption>{{ i18n.ts.carefulBotDescription }}</template>
 						</MkSwitch>
 					</SearchMarker>
 
 					<SearchMarker :keywords="['follow', 'back', 'auto']">
 						<MkSwitch v-if="me.policies.canAutoFollowBack" v-model="autoFollowBack" @update:modelValue="save_privacy()">
-							<SearchLabel>{{ i18n.ts.autoFollowBack }}</SearchLabel>
+							<SearchLabel>{{ i18n.ts.autoFollowBack }}</SearchLabel><span class="_beta">{{ i18n.ts.originalFeature }}</span>
 							<template #caption>{{ i18n.ts.autoFollowBackDescription }}</template>
 						</MkSwitch>
 					</SearchMarker>
 
 					<SearchMarker :keywords="['follow', 'move', 'auto']">
 						<MkSwitch v-model="autoFollowOnMove" @update:modelValue="save_privacy()">
-							<SearchLabel>{{ i18n.ts.autoFollowOnMove }}</SearchLabel>
+							<SearchLabel>{{ i18n.ts.autoFollowOnMove }}</SearchLabel><span class="_beta">{{ i18n.ts.originalFeature }}</span>
 							<template #caption>{{ i18n.ts.autoFollowOnMoveDescription }}</template>
 						</MkSwitch>
 					</SearchMarker>
@@ -47,7 +47,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.privacyOutbound }}</SearchLabel></template>
 				<div class="_gaps_m">
 					<MkFolder>
-						<template #label>{{ i18n.ts._outboxFilter.title }}</template>
+						<template #label>{{ i18n.ts._outboxFilter.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 						<template #caption>{{ i18n.ts._outboxFilter.description }}</template>
 						<div class="_gaps_m">
 							<SearchMarker :keywords="['outbox', 'filter', 'public']">
@@ -74,7 +74,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</MkFolder>
 
 					<MkFolder>
-						<template #label>{{ i18n.ts._webFeedFilter.title }}</template>
+						<template #label>{{ i18n.ts._webFeedFilter.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
 						<template #caption>{{ i18n.ts._webFeedFilter.description }}</template>
 						<div class="_gaps_m">
 							<SearchMarker :keywords="['web', 'feed', 'filter', 'rss']">
@@ -104,35 +104,35 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div class="_gaps_m">
 					<SearchMarker :keywords="['activity', 'hide']">
 						<MkSwitch v-model="hideActivity" @update:modelValue="save_privacy()">
-							<SearchLabel>{{ i18n.ts.hideActivity }}</SearchLabel>
+							<SearchLabel>{{ i18n.ts.hideActivity }}</SearchLabel><span class="_beta">{{ i18n.ts.originalFeature }}</span>
 							<template #caption>{{ i18n.ts.hideActivityDescription }}</template>
 						</MkSwitch>
 					</SearchMarker>
 
 					<SearchMarker :keywords="['note', 'overview', 'hide']">
 						<MkSwitch v-model="hideNoteFromOverview" @update:modelValue="save_privacy()">
-							<SearchLabel>{{ i18n.ts.hideNoteFromOverview }}</SearchLabel>
+							<SearchLabel>{{ i18n.ts.hideNoteFromOverview }}</SearchLabel><span class="_beta">{{ i18n.ts.originalFeature }}</span>
 							<template #caption>{{ i18n.ts.hideNoteFromOverviewDescription }}</template>
 						</MkSwitch>
 					</SearchMarker>
 
 					<SearchMarker :keywords="['note', 'public', 'hide']">
 						<MkSwitch v-model="hidePublicNotes" @update:modelValue="save_privacy()">
-							<SearchLabel>{{ i18n.ts.hidePublicNotes }}</SearchLabel>
+							<SearchLabel>{{ i18n.ts.hidePublicNotes }}</SearchLabel><span class="_beta">{{ i18n.ts.originalFeature }}</span>
 							<template #caption>{{ i18n.ts.hidePublicNotesDescription }}</template>
 						</MkSwitch>
 					</SearchMarker>
 
 					<SearchMarker :keywords="['note', 'home', 'hide']">
 						<MkSwitch v-model="hideHomeNotes" @update:modelValue="save_privacy()">
-							<SearchLabel>{{ i18n.ts.hideHomeNotes }}</SearchLabel>
+							<SearchLabel>{{ i18n.ts.hideHomeNotes }}</SearchLabel><span class="_beta">{{ i18n.ts.originalFeature }}</span>
 							<template #caption>{{ i18n.ts.hideHomeNotesDescription }}</template>
 						</MkSwitch>
 					</SearchMarker>
 
 					<SearchMarker :keywords="['note', 'local', 'hide']">
 						<MkSwitch v-model="hideLocalOnlyNotes" @update:modelValue="save_privacy()">
-							<SearchLabel>{{ i18n.ts.hideLocalOnlyNotes }}</SearchLabel>
+							<SearchLabel>{{ i18n.ts.hideLocalOnlyNotes }}</SearchLabel><span class="_beta">{{ i18n.ts.originalFeature }}</span>
 							<template #caption>{{ i18n.ts.hideLocalOnlyNotesDescription }}</template>
 						</MkSwitch>
 					</SearchMarker>

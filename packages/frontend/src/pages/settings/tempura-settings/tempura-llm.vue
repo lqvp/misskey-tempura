@@ -158,7 +158,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import MkInput from '@/components/MkInput.vue';
 import MkSelect from '@/components/MkSelect.vue';
@@ -166,7 +166,6 @@ import MkSwitch from '@/components/MkSwitch.vue';
 import FormSection from '@/components/form/section.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import { prefer } from '@/preferences.js';
-import { suggestReload } from '@/utility/reload-suggest.js';
 import { $i } from '@/i.js';
 import { i18n } from '@/i18n.js';
 import { fetchInstance } from '@/instance.js';
@@ -195,25 +194,4 @@ const geminiNoteCatText = prefer.model('geminiNoteCatText');
 const geminiNoteCustomText = prefer.model('geminiNoteCustomText');
 const geminiThinkingBudget = prefer.model('geminiThinkingBudget');
 const geminiModelItems = computed(() => geminiModels.map((model) => ({ value: model, label: model })));
-
-// これらの値はクライアント起動時に読まれるため、変更後はリロードを促す
-watch([
-	useGeminiLLMAPI,
-	useGeminiWithMedia,
-	geminiToken,
-	geminiModel,
-	geminiSystemPrompt,
-	geminiPromptNote,
-	geminiPromptProfile,
-	geminiNoteLongText,
-	geminiNoteShortText,
-	geminiNoteSimpleText,
-	geminiNoteCasualText,
-	geminiNoteProfessionalText,
-	geminiNoteCatText,
-	geminiNoteCustomText,
-	geminiThinkingBudget,
-], () => {
-	suggestReload();
-}, { deep: true });
 </script>
