@@ -11,6 +11,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</MkFeatureBanner>
 
 		<FormSection first>
+			<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.groupPrivacy }}</SearchLabel></template>
+			<div class="_gaps_s">
+				<ProfileSettings/>
+				<PrivacySettings/>
+			</div>
+		</FormSection>
+
+		<FormSection>
 			<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.groupAppearance }}</SearchLabel></template>
 			<div class="_gaps_s">
 				<AppearanceSettings/>
@@ -24,14 +32,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div class="_gaps_s">
 				<PostFormSettings/>
 				<NotesSettings/>
-			</div>
-		</FormSection>
-
-		<FormSection>
-			<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.groupPrivacy }}</SearchLabel></template>
-			<div class="_gaps_s">
-				<PrivacySettings/>
-				<ProfileSettings/>
 			</div>
 		</FormSection>
 
