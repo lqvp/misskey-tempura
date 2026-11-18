@@ -228,7 +228,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 
 ### プロキシアカウントのフォロー条件
 
-* リストに追加されたリモートユーザーやアカウント移行先をプロキシアカウントがフォローする条件を、サーバー設定の proxyAccountFollowMode で切り替えられます (管理画面 → 設定 → プロキシアカウント)
+* リストに追加されたリモートユーザーやアカウント移行先をプロキシアカウントがフォローする条件を、サーバー設定の proxyAccountFollowMode で切り替えられます (管理画面 → テンプラ管理 → フォロー条件)
   * always: 常にフォローする (本家と同じ動作)
   * skipIfFollowed: このインスタンス内にフォロワーがいない場合のみフォローする (初期値。リストへの追加は従来の tempura の動作。アカウント移行では従来は常にフォローしていたため、ローカルフォロワーがいる移行先への新規フォローは作成されなくなります)
   * disabled: 新たにはフォローしない。既存のフォローは解除されず、購読中の投稿は届き続けます
@@ -411,7 +411,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 ### テンプラ管理画面
 
 * /admin/tempura-admin に集約
-* ApprovalRequired / BlockMentions / LongIconUrl / UsernameMinLength / SecondsPerSignup / CustomSplashText / EmailDomainSettings / LlmModerationSettings / HanaEntranceSettings / EntranceSettings / DefaultFollowedUsers / BackgroundImages / CustomCursor / GeminiSettings / ContactFormSettings / LoginRiskSettings / ServerStatsSettings / SignedApFetchSettings / DeeplFreeModeSettings / ObjectStorageRemoteSettings / BlockedUserImageSettings
+* ApprovalRequired / BlockMentions / LongIconUrl / UsernameMinLength / SecondsPerSignup / CustomSplashText / EmailDomainSettings / LlmModerationSettings / HanaEntranceSettings / EntranceSettings / DefaultFollowedUsers / ProxyAccountFollowModeSettings / BackgroundImages / CustomCursor / GeminiSettings / ContactFormSettings / LoginRiskSettings / ServerStatsSettings / SignedApFetchSettings / DeeplFreeModeSettings / ObjectStorageRemoteSettings / BlockedUserImageSettings
 
 ### インスタンス情報
 
