@@ -19,6 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<HanaEntranceSettings :meta="meta"/>
 				<EntranceSettings :meta="meta"/>
 				<DefaultFollowedUsers :meta="meta"/>
+				<ProxyAccountFollowModeSettings :meta="meta"/>
 				<BackgroundImages :meta="meta"/>
 				<CustomCursor :meta="meta"/>
 				<GeminiSettings :meta="meta"/>
@@ -50,6 +51,7 @@ import LlmModerationSettings from './tempura/sections/LlmModerationSettings.vue'
 import HanaEntranceSettings from './tempura/sections/HanaEntranceSettings.vue';
 import EntranceSettings from './tempura/sections/EntranceSettings.vue';
 import DefaultFollowedUsers from './tempura/sections/DefaultFollowedUsers.vue';
+import ProxyAccountFollowModeSettings from './tempura/sections/ProxyAccountFollowModeSettings.vue';
 import BackgroundImages from './tempura/sections/BackgroundImages.vue';
 import CustomCursor from './tempura/sections/CustomCursor.vue';
 import GeminiSettings from './tempura/sections/GeminiSettings.vue';
