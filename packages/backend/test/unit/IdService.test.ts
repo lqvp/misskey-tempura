@@ -56,6 +56,22 @@ describe('IdService.genMinimum', () => {
 		});
 	}
 
+	it('小数・負値・非数の時刻でも妥当なIDを返す', () => {
+		// 境界の計算に不正な値が入っても、id として解釈できない文字を混ぜない
+		const expectedLength: Record<string, number> = {
+			aid: 10, aidx: 16, meid: 24, meidg: 24, ulid: 26, objectid: 24,
+		};
+		for (const format of formats) {
+			const idService = makeIdService(format.name);
+			for (const time of [1700000000123.456, -1, Number.NaN, Number.POSITIVE_INFINITY]) {
+				const id = idService.genMinimum(time);
+				expect(id).toHaveLength(expectedLength[format.name]);
+				// id として parse できること (形式に合わない文字が混ざっていない)
+				expect(Number.isNaN(idService.parse(id).date.getTime())).toBe(false);
+			}
+		}
+	});
+
 	it('未知の形式では例外を投げる', () => {
 		const idService = makeIdService('unknown');
 		expect(() => idService.genMinimum(Date.now())).toThrow();

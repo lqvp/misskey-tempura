@@ -24,8 +24,10 @@ import type { MiUser } from '@/models/User.js';
 import { ApiLoggerService } from '../../ApiLoggerService.js';
 import { ApiError } from '../../error.js';
 
-// 補完で走査するノートの上限。受信経路が fanout で保持する件数(200)に揃える
-const BACKFILL_SCAN_LIMIT = 200;
+// 補完で一度に読むノート数。一致ノートが足りなければこの単位で古い方へ進む
+const BACKFILL_BATCH_SIZE = 200;
+// 補完で走査する総ノート数の上限。アンテナ作成前まで遡れる一方、無制限にはしない
+const BACKFILL_SCAN_LIMIT = 2000;
 
 export const meta = {
 	tags: ['antennas', 'account', 'notes'],
@@ -125,7 +127,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			// TL の先頭を読むときに限り、アンテナ作成時点以降のノートを現在の条件で拾って補う。
 			// (作成より前のノートは対象外にして、既存のアンテナの履歴が遡って増えないようにする)
 			const backfilledNoteIds = (untilId == null && sinceId == null)
-				? await this.getBackfillNoteIds(antenna, noteIds, me, mutingChannelIds)
+				? await this.getBackfillNoteIds(antenna, noteIds, me, mutingChannelIds, ps.limit)
 				: [];
 
 			if (noteIds.length === 0 && backfilledNoteIds.length === 0) {
@@ -210,22 +212,19 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	 *
 	 * これがないと、アンテナを作った直後の TL が空になり、
 	 * 直前の試し打ちが「当たる」と表示したノートと食い違う (fanout は作成後の受信分しか持たないため)。
-	 * 作成より前のノートは対象外にするので、既存アンテナの履歴が遡って増えることはない。
+	 *
+	 * 試し打ち(antennas/test)はアンテナ作成より前のノートも対象にするので、
+	 * 補完の下限も作成時刻にはしない。作成前のノートも現在の条件に合えば TL に並ぶ。
+	 * 走査範囲は応答に必要な件数と受信経路の保持件数で打ち切る (無制限に遡らない)。
 	 */
-	private async getBackfillNoteIds(antenna: MiAntenna, alreadyReceivedNoteIds: MiNote['id'][], me: MiUser, mutingChannelIds: MiChannel['id'][]): Promise<MiNote['id'][]> {
+	private async getBackfillNoteIds(antenna: MiAntenna, alreadyReceivedNoteIds: MiNote['id'][], me: MiUser, mutingChannelIds: MiChannel['id'][], need: number): Promise<MiNote['id'][]> {
 		const received = new Set(alreadyReceivedNoteIds);
 		// ユーザーが明示的に外したノートは補完で戻さない
 		const removed = await this.fanoutTimelineService.getRemovedIds(`antennaTimeline:${antenna.id}`);
-		// アンテナの id は作成時刻から生成されるので、その時刻を境界にして「作成以降」に絞る。
-		// これにより「アンテナ作成より前のノート」を遡って拾うことはない。
-		// 境界には gen() ではなく genMinimum() を使う。gen() は同一ミリ秒でもカウンタ/乱数で
-		// 値が前後するため、それを下限にすると同じミリ秒に採番されたノートを取りこぼす
-		const createdId = this.idService.genMinimum(this.idService.parse(antenna.id).date.getTime());
 
 		// 取得側のクエリと同じ join を揃える。
 		// generateBaseNoteFilteringQuery は replyUser / renoteUser の別名を参照するため、join し忘れるとエラーになる
 		const query = this.notesRepository.createQueryBuilder('note')
-			.where('note.id >= :createdId', { createdId })
 			.innerJoinAndSelect('note.user', 'user')
 			.leftJoinAndSelect('note.reply', 'reply')
 			.leftJoinAndSelect('note.renote', 'renote')
@@ -250,22 +249,43 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		this.queryService.generateVisibilityQuery(query, me);
 		this.queryService.generateBaseNoteFilteringQuery(query, me);
 
-		// フィルタを適用したうえで走査件数を制限する
-		const candidates = await query.take(BACKFILL_SCAN_LIMIT).getMany();
+		// フィルタを適用したうえで、一致ノートが need 件集まるまで新しい順に走査する。
+		// 走査件数に固定の上限を置くと、ミュートしていない一致ノートが窓の外にあるだけで
+		// 「試し打ちでは当たるのに TL は空」に戻ってしまうため、上限は総走査数で掛ける
+		const result: MiNote['id'][] = [];
+		if (need <= 0) return [];
+		let cursor: string | null = null;
+		let scanned = 0;
 
-		// 判定はノートごとに独立なので並列に回す (直列だと最大 BACKFILL_SCAN_LIMIT 回の待ち合わせになる)
-		const evaluated = await Promise.all(candidates.map(async note => {
-			if (note.user == null) return null;
-			if (received.has(note.id)) return null;
-			if (removed.has(note.id)) return null;
-			// 判定に失敗したノートは補完対象から外し、TL 全体を止めない(受信経路と同じ扱い)
-			const hit = await this.antennaService.checkHitAntenna(antenna, note, note.user).catch(err => {
-				this.apiLoggerService.logger.warn(`Failed to evaluate antenna hit for backfill (antenna: ${antenna.id}, note: ${note.id})`, { err });
-				return false;
-			});
-			return hit ? note.id : null;
-		}));
-		return evaluated.filter((id): id is MiNote['id'] => id != null);
+		while (result.length < need && scanned < BACKFILL_SCAN_LIMIT) {
+			const batch = query.clone()
+				.orderBy('note.id', 'DESC')
+				.take(Math.min(BACKFILL_BATCH_SIZE, BACKFILL_SCAN_LIMIT - scanned));
+			if (cursor != null) batch.andWhere('note.id < :cursor', { cursor });
+
+			const candidates = await batch.getMany();
+			if (candidates.length === 0) break;
+			scanned += candidates.length;
+			cursor = candidates[candidates.length - 1].id;
+
+			// 判定はノートごとに独立なので並列に回す
+			const evaluated = await Promise.all(candidates.map(async note => {
+				if (note.user == null) return null;
+				if (received.has(note.id)) return null;
+				if (removed.has(note.id)) return null;
+				// 判定に失敗したノートは補完対象から外し、TL 全体を止めない(受信経路と同じ扱い)
+				const hit = await this.antennaService.checkHitAntenna(antenna, note, note.user).catch(err => {
+					this.apiLoggerService.logger.warn(`Failed to evaluate antenna hit for backfill (antenna: ${antenna.id}, note: ${note.id})`, { err });
+					return false;
+				});
+				return hit ? note.id : null;
+			}));
+			for (const id of evaluated) {
+				if (id != null) result.push(id);
+			}
+		}
+
+		return result;
 	}
 
 	/**

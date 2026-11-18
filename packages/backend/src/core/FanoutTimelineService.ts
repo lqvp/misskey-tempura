@@ -140,16 +140,6 @@ export class FanoutTimelineService {
 	}
 
 	/**
-	 * ユーザーが明示的に外したノートを記録する。
-	 * リストから消すだけでは「もともと受信していない」のか「外した」のか区別できないため、
-	 * 後から補完(バックフィル)で拾い直さないように印を残す。
-	 */
-	@bindThis
-	public async markRemoved(name: FanoutTimelineName, id: string) {
-		await this.addRemovedIds(name, [id]);
-	}
-
-	/**
 	 * 「外した」記録を追加し、上限を超えた分を古い順に落とす。
 	 * SCARD を先に読んで不足分を消すと、並行追加で上限を超えるため、
 	 * 追加後の件数で削除範囲を決める処理を Lua でまとめて原子的に実行する。
@@ -172,9 +162,9 @@ export class FanoutTimelineService {
 	}
 
 	/**
-	 * アンテナの TL からノートを外し、同じトランザクションで「外した」記録を残す。
-	 * LREM と SADD を分けて実行すると、その間の読み取りが
-	 * 「リストにも記録にも無い」状態を見てしまい、補完でノートが復活する。
+	 * アンテナの TL からノートを外し、「外した」記録も残す。
+	 * リストから消すだけだと、次に TL を読んだときに補完でノートが復活する。
+	 * 記録の書き込みに失敗しても気づけるよう、失敗は呼び出し元まで伝える。
 	 */
 	@bindThis
 	public async removeNoteFromAntenna(name: FanoutTimelineName, id: string) {

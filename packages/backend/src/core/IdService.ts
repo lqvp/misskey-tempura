@@ -67,6 +67,9 @@ export class IdService {
 	 */
 	@bindThis
 	public genMinimum(time: number): string {
+		// 小数や負値が来ても不正な文字が混ざらないよう、整数に丸めて 0 以上にそろえる
+		time = Number.isFinite(time) ? Math.max(0, Math.round(time)) : 0;
+
 		switch (this.method) {
 			case 'aid': {
 				const t = Math.max(0, time - 946684800000);

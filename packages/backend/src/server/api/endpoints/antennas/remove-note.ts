@@ -55,8 +55,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw new ApiError(meta.errors.noSuchAntenna);
 			}
 
-			// リストから外すだけだと、後から TL を読み直したときに補完で戻ってきてしまうため、外したことを記録しておく。
-			// 「リストから消えたが記録がまだ無い」中間状態を取得側に見せないよう、1 つのトランザクションで実行する
+			// リストから外すだけだと、後から TL を読み直したときに補完で戻ってきてしまうため、外したことを記録しておく
 			await this.fanoutTimelineService.removeNoteFromAntenna(`antennaTimeline:${antenna.id}`, ps.noteId);
 		});
 	}
