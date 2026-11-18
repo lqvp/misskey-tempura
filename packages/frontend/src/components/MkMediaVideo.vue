@@ -33,9 +33,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 			v-else
 			:class="$style.video"
 			:alt="video.comment"
+			:referrerpolicy="referrerpolicy"
 			preload="metadata"
 		>
-			<source :src="video.url">
+			<source :src="video.url" :referrerpolicy="referrerpolicy">
 		</video>
 		<div :class="$style.playIconWrapper">
 			<div :class="$style.playIcon">

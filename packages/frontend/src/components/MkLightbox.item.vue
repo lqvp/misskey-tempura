@@ -89,6 +89,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							:class="[$style.video, { [$style.videoSized]: videoAspectRatio != null }]"
 							:src="content.url"
 							:alt="content.file?.comment ?? undefined"
+							:referrerpolicy="content.referrerPolicy"
 							draggable="false"
 							:controls="prefer.s.useNativeUiForVideoAudioPlayer"
 							playsinline

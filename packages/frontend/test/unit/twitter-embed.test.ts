@@ -174,6 +174,22 @@ describe('MkMediaImage referrerpolicy', () => {
 });
 
 describe('MkMediaVideo referrerpolicy', () => {
+	// サムネイルがあると <video> は描画されないため、再生本体の検証用に差し替える
+	const withoutThumbnail: Misskey.entities.DriveFile = {
+		id: 'xxxxxxxx',
+		createdAt: (new Date()).toJSON(),
+		isSensitive: false,
+		name: 'example.mp4',
+		thumbnailUrl: null,
+		url: 'https://video.twimg.com/amplify_video/1/vid/640x360/BBBB.mp4?tag=1',
+		type: 'video/mp4',
+		size: 1,
+		md5: '15eca7fba0480996e2245f5185bf39f2',
+		blurhash: null,
+		comment: null,
+		properties: {},
+	} as Misskey.entities.DriveFile;
+
 	const renderMediaVideo = (props: Record<string, unknown>): RenderResult => {
 		return render(MkMediaVideo, {
 			props: {
@@ -217,6 +233,22 @@ describe('MkMediaVideo referrerpolicy', () => {
 			expect(img).not.toBeNull();
 			expect(img!.getAttribute('referrerpolicy')).toBeNull();
 		});
+	});
+
+	// サムネイルが無い動画は <video><source> が再生本体になるため、
+	// ここにも no-referrer が伝播しないと twimg から再生できない
+	test.each([
+		{ referrerpolicy: 'no-referrer', expected: 'no-referrer' },
+		{ referrerpolicy: undefined, expected: null },
+	])('referrerpolicy=$referrerpolicy は再生本体の video/source 要素に伝播する', async ({ referrerpolicy, expected }) => {
+		const result = renderMediaVideo({ video: withoutThumbnail, referrerpolicy });
+		await waitFor(() => {
+			expect(result.container.querySelector('video')).not.toBeNull();
+		});
+		const video = result.container.querySelector('video')!;
+		const source = result.container.querySelector('source')!;
+		expect(video.getAttribute('referrerpolicy')).toBe(expected);
+		expect(source.getAttribute('referrerpolicy')).toBe(expected);
 	});
 });
 
