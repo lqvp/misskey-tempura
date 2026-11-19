@@ -15386,7 +15386,7 @@ export interface Locale extends ILocale {
          */
         "useGeminiLLMAPI": string;
         /**
-         * サーバーが提供するGemini APIを使用して、LLMを実行します。
+         * サーバーが提供するOpenAI互換APIを使用して、LLMを実行します。
          */
         "useGeminiLLMAPIDescription": string;
         /**
@@ -15394,7 +15394,7 @@ export interface Locale extends ILocale {
          */
         "useGeminiWithMedia": string;
         /**
-         * ノートにファイルがあれば、Gemini APIにメディアを含めてLLMを実行します。
+         * ノートにファイルがあれば、メディアを含めてLLMを実行します。
          */
         "useGeminiWithMediaDescription": string;
         /**
@@ -15529,6 +15529,22 @@ export interface Locale extends ILocale {
          * 使用するモデル名を設定します。空の場合は gpt-4o-mini を使用します。
          */
         "openaiModelCaption": string;
+        /**
+         * モデル一覧を取得
+         */
+        "fetchModels": string;
+        /**
+         * モデル一覧の取得に失敗しました。APIトークンとベースURLを確認してください。
+         */
+        "fetchModelsError": string;
+        /**
+         * このモデルは画像入力に対応していると判定されました。
+         */
+        "modelImageSupported": string;
+        /**
+         * このモデルの画像入力対応は不明です。
+         */
+        "modelImageUnknown": string;
     };
     "_noteSearch": {
         /**

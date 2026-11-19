@@ -136,11 +136,22 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 					const model = this.serverSettings.serverOpenAIModels || 'gpt-4o-mini';
 					const url = `${baseURL}/chat/completions`;
 
+					// ユーザーコンテンツ (テキスト + 画像URL)
+					const content: any[] = [{ type: 'text', text: ps.text }];
+					if (ps.fileUris && ps.fileUris.length > 0) {
+						for (const fileInfo of ps.fileUris) {
+							content.push({
+								type: 'image_url',
+								image_url: { url: fileInfo.fileUri },
+							});
+						}
+					}
+
 					const requestBody = JSON.stringify({
 						model,
 						messages: [
 							{ role: 'system', content: ps.prompt },
-							{ role: 'user', content: ps.text },
+							{ role: 'user', content },
 						],
 					});
 

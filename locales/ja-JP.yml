@@ -4113,9 +4113,9 @@ _llm:
     noteSummaryFetch: "要約の取得に失敗しました。"
   title: "LLM設定"
   useGeminiLLMAPI: "サーバーのLLM APIを使用"
-  useGeminiLLMAPIDescription: "サーバーが提供するGemini APIを使用して、LLMを実行します。"
+  useGeminiLLMAPIDescription: "サーバーが提供するOpenAI互換APIを使用して、LLMを実行します。"
   useGeminiWithMedia: "メディアを含めてLLMを実行"
-  useGeminiWithMediaDescription: "ノートにファイルがあれば、Gemini APIにメディアを含めてLLMを実行します。"
+  useGeminiWithMediaDescription: "ノートにファイルがあれば、メディアを含めてLLMを実行します。"
   geminiTokenLabel: "Geminiトークン"
   geminiTokenCaption: "Gemini API の認証に使用するトークンを設定します。"
   geminiModelLabel: "Geminiモデル"
@@ -4149,6 +4149,10 @@ _llm:
   openaiBaseUrlCaption: "OpenAI互換APIのベースURLを設定します（例: https://api.openai.com/v1 ）。未設定の場合は公式APIを使用します。"
   openaiModelLabel: "OpenAI互換APIモデル"
   openaiModelCaption: "使用するモデル名を設定します。空の場合は gpt-4o-mini を使用します。"
+  fetchModels: "モデル一覧を取得"
+  fetchModelsError: "モデル一覧の取得に失敗しました。APIトークンとベースURLを確認してください。"
+  modelImageSupported: "このモデルは画像入力に対応していると判定されました。"
+  modelImageUnknown: "このモデルの画像入力対応は不明です。"
 
 _noteSearch:
   enhanceSearch: "検索強化"

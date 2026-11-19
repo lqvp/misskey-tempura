@@ -679,7 +679,7 @@ export const PREF_DEF = definePreferences({
 		default: -1 as number,
 	},
 	llmProvider: {
-		default: 'gemini' as 'gemini' | 'openai',
+		default: 'openai' as 'gemini' | 'openai',
 	},
 	openaiToken: {
 		default: null as string | null,

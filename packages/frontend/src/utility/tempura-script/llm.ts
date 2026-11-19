@@ -105,21 +105,68 @@ async function uploadFileToGemini(file: Misskey.entities.DriveFile, apiKey: stri
 }
 
 /**
+ * モデルの入力モダリティ情報つきモデル一覧
+ */
+export interface LLMModelInfo {
+	id: string;
+	/** 画像入力 (ビジョン) に対応していると判定できた場合 true */
+	imageInput?: boolean;
+}
+
+/**
+ * モデルが画像入力に対応しているかを判定する (ベストエフォート)
+ *
+ * OpenAI 互換 API の GET /models は多くの場合 id しか返さないため、
+ * 以下の順で判定する:
+ * 1. エンドポイントが返すモダリティ情報 (input_modalities / modalities / capabilities 等)
+ * 2. モデル名のパターン (既知のビジョン対応モデルの命名)
+ */
+export function detectImageInputSupport(model: { id: string; [key: string]: unknown }): boolean {
+	// 1. モダリティ情報があればそれを使う
+	for (const key of ['input_modalities', 'inputModalities', 'modalities', 'supported_input_modalities']) {
+		const value = model[key];
+		if (Array.isArray(value)) {
+			return value.some(v => typeof v === 'string' && (v.includes('image') || v === 'multimodal'));
+		}
+	}
+	const caps = model['capabilities'];
+	if (caps != null && typeof caps === 'object') {
+		const vision = (caps as Record<string, unknown>)['vision'] ?? (caps as Record<string, unknown>)['image_input'];
+		if (typeof vision === 'boolean') return vision;
+	}
+
+	// 2. モデル名による推測
+	const id = model.id.toLowerCase();
+	return (
+		id.includes('vision') || id.includes('vl') || id.includes('llava') || id.includes('pixtral') ||
+		id.includes('internvl') || id.includes('gpt-4o') || id.includes('gpt-4.1') || id.includes('gpt-5') ||
+		id.includes('claude') || id.includes('gemini') || id.includes('qwen-vl') || id.includes('minicpm')
+	);
+}
+
+function toModelInfos(data: { id?: string }[] | undefined): LLMModelInfo[] {
+	return (data ?? [])
+		.filter((m): m is { id: string; [key: string]: unknown } => typeof m?.id === 'string')
+		.map(m => ({ id: m.id, imageInput: detectImageInputSupport(m) }));
+}
+
+/**
  * 現在の設定で利用可能なモデル一覧を取得する
  *
  * - サーバー提供モード: notes/llm-models エンドポイント経由で取得
  * - ユーザー直指定モード: 各プロバイダの models API を直接呼び出す
  *
- * @returns モデル ID のリスト (取得に失敗した場合は空配列)
+ * @returns モデル情報のリスト (取得に失敗した場合は空配列)
  */
-export async function fetchAvailableModels(): Promise<string[]> {
+export async function fetchAvailableModels(): Promise<LLMModelInfo[]> {
 	const { llmProvider, useGeminiLLMAPI, geminiToken, openaiToken, openaiBaseUrl } = prefer.s;
 	const provider = (llmProvider ?? 'gemini') as LLMProvider;
 
 	if (useGeminiLLMAPI) {
 		try {
 			const res = await misskeyApi('notes/llm-models', { provider });
-			return res.models;
+			return (res.models ?? [])
+				.map((id: string) => ({ id, imageInput: detectImageInputSupport({ id }) }));
 		} catch {
 			return [];
 		}
@@ -137,7 +184,7 @@ export async function fetchAvailableModels(): Promise<string[]> {
 			});
 			if (!response.ok) return [];
 			const data = await response.json() as { data?: { id?: string }[] };
-			return (data.data ?? []).map(m => m.id).filter((id): id is string => typeof id === 'string');
+			return toModelInfos(data.data);
 		}
 
 		if (!geminiToken) return [];
@@ -151,7 +198,7 @@ export async function fetchAvailableModels(): Promise<string[]> {
 		const data = await response.json() as { models?: { name?: string }[] };
 		return (data.models ?? [])
 			.filter(m => m.name != null && m.name.startsWith('models/'))
-			.map(m => (m as { name: string }).name.replace(/^models\//, ''));
+			.map(m => ({ id: (m as { name: string }).name.replace(/^models\//, ''), imageInput: detectImageInputSupport({ id: (m as { name: string }).name }) }));
 	} catch {
 		return [];
 	}
@@ -174,8 +221,21 @@ async function generateViaServer(provider: LLMProvider, { note, userContent, sys
 
 	const fileUris: { mimeType: string; fileUri: string }[] = [];
 
-	// メディアファイルの処理（画像のみサポート、Gemini のみ）
-	if (provider === 'gemini' && hasMedia && geminiToken) { // クライアント側のアップロードにもAPIキーが必要
+	if (provider === 'openai') {
+		// OpenAI 互換: ドライブファイルの URL をそのまま image_url として渡す
+		if (hasMedia) {
+			const mediaFiles = files.filter(file =>
+				file.type.startsWith('image/') && !file.type.includes('gif'),
+			);
+			for (const file of mediaFiles.slice(0, 4)) {
+				fileUris.push({
+					mimeType: file.type,
+					fileUri: file.url,
+				});
+			}
+		}
+	} else if (hasMedia && geminiToken) { // クライアント側のアップロードにもAPIキーが必要
+		// メディアファイルの処理（画像のみサポート、Gemini のみ）
 		try {
 			const mediaFiles = files.filter(file =>
 				file.type.startsWith('image/') && !file.type.includes('gif'),
@@ -217,7 +277,7 @@ async function generateViaServer(provider: LLMProvider, { note, userContent, sys
  * OpenAI 互換 API (Chat Completions) をユーザーのキーで直接呼び出す
  */
 async function generateOpenAIDirect({ note, userContent, systemInstruction }: GenerateLLMOptions): Promise<LLMResponse> {
-	const { openaiToken, openaiBaseUrl, openaiModel } = prefer.s;
+	const { openaiToken, openaiBaseUrl, openaiModel, useGeminiWithMedia = true } = prefer.s;
 
 	if (!openaiToken) {
 		throw new Error(i18n.ts._llm._error.tokenMissing);
@@ -228,11 +288,24 @@ async function generateOpenAIDirect({ note, userContent, systemInstruction }: Ge
 	// モデルを空にしている場合は既定のモデルを使う
 	const model = openaiModel?.trim() || 'gpt-4o-mini';
 
+	// ユーザーコンテンツ (テキスト + 画像URL)
+	const content: ({ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } })[] = [
+		{ type: 'text', text },
+	];
+	if (note?.files && useGeminiWithMedia) {
+		const mediaFiles = (note.files ?? [])
+			.filter(file => file.type.startsWith('image/') && !file.type.includes('gif'))
+			.slice(0, 4);
+		for (const file of mediaFiles) {
+			content.push({ type: 'image_url', image_url: { url: file.url } });
+		}
+	}
+
 	const requestBody = {
 		model,
 		messages: [
 			{ role: 'system', content: systemInstruction ?? '' },
-			{ role: 'user', content: text },
+			{ role: 'user', content },
 		],
 	};
 
