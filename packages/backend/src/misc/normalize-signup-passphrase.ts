@@ -26,7 +26,9 @@ export function normalizeSignupPassphrase(input: string): string {
  * どちらかが空文字・null/undefined の場合は一致しない。
  */
 export function isSignupPassphraseMatch(input: string | null | undefined, expected: string | null | undefined): boolean {
-	if (input == null || expected == null) return false;
+	// /signup は Fastify のスキーマ検証を通らない生ルートのため、
+	// 実行時に文字列以外が渡ってくることを考慮する
+	if (typeof input !== 'string' || typeof expected !== 'string') return false;
 	const a = normalizeSignupPassphrase(input);
 	const b = normalizeSignupPassphrase(expected);
 	if (a.length === 0 || b.length === 0) return false;

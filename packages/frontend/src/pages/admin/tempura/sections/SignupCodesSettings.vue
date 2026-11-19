@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <MkFolder>
 	<template #icon><i class="ti ti-key"></i></template>
 	<template #label>{{ i18n.ts.fixedInviteCode }}・{{ i18n.ts.signupPassphrase }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-	<template v-if="form.savedState.fixedInviteCode || form.savedState.signupPassphrase" #suffix>{{ i18n.ts.enabled }}</template>
+	<template v-if="form.savedState.fixedInviteCode || form.savedState.signupPassphrase?.trim()" #suffix>{{ i18n.ts.enabled }}</template>
 	<template v-else #suffix>{{ i18n.ts.disabled }}</template>
 	<template v-if="form.modified.value" #footer>
 		<MkFormFooter :form="form"/>

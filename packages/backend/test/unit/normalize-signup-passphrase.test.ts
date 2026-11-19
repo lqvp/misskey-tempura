@@ -48,4 +48,10 @@ describe('isSignupPassphraseMatch', () => {
 		expect(isSignupPassphraseMatch(null, 'correct')).toBe(false);
 		expect(isSignupPassphraseMatch(undefined, 'correct')).toBe(false);
 	});
+
+	test('rejects non-string runtime values', () => {
+		// /signup は生ルートのため文字列以外が渡ってくる可能性がある
+		expect(isSignupPassphraseMatch({} as unknown as string, 'correct')).toBe(false);
+		expect(isSignupPassphraseMatch('correct', [] as unknown as string)).toBe(false);
+	});
 });

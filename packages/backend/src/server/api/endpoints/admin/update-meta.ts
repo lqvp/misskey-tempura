@@ -12,6 +12,7 @@ import { MetaService } from '@/core/MetaService.js';
 import { QueueService } from '@/core/QueueService.js';
 import { ApiLoggerService } from '../../ApiLoggerService.js';
 import { ApiError } from '../../error.js';
+import { normalizeSignupPassphrase } from '@/misc/normalize-signup-passphrase.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -1229,7 +1230,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			if (ps.signupPassphrase !== undefined) {
-				set.signupPassphrase = ps.signupPassphrase === '' ? null : ps.signupPassphrase;
+				// 正規化して空になる合言葉 (空白のみ等) は無効扱いにする
+				set.signupPassphrase = normalizeSignupPassphrase(ps.signupPassphrase) === '' ? null : ps.signupPassphrase;
 			}
 
 			if (ps.entranceShowTimeLine !== undefined) {
