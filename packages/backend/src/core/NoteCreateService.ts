@@ -538,8 +538,11 @@ export class NoteCreateService implements OnApplicationShutdown {
 		}
 
 		if (['public_non_ltl'].includes(data.visibility) && data.channel == null) {
-			if ((await this.roleService.getUserPolicies(user.id)).canPublicNonLtlNote === false) {
-				data.visibility = 'home';
+			const policies = await this.roleService.getUserPolicies(user.id);
+			if (policies.canPublicNonLtlNote === false) {
+				// public_non_ltl を許可されていない場合は home に降格するが、
+				// home 投稿も許可されていない場合は followers まで落とす
+				data.visibility = policies.canHomeNote ? 'home' : 'followers';
 			}
 		}
 

@@ -10,6 +10,7 @@ import { MAX_NOTE_TEXT_LENGTH } from '@/const.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { NoteCreateService } from '@/core/NoteCreateService.js';
+import { RoleService } from '@/core/RoleService.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { ApiError } from '../../error.js';
 
@@ -92,6 +93,12 @@ export const meta = {
 			message: 'Scheduled delete time is earlier than now.',
 			code: 'CANNOT_SCHEDULE_DELETE_EARLIER_THAN_NOW',
 			id: '9576c3c8-d8f3-11ee-ac15-00155d19d35d',
+		},
+
+		cannotUseMakePrivate: {
+			message: 'You are not allowed to make notes private.',
+			code: 'CANNOT_USE_MAKE_PRIVATE',
+			id: 'c3f0c7a1-5b2e-4f8a-9d61-7a4e2b8c0f13',
 		},
 
 		cannotScheduleDeleteLaterThanOneYear: {
@@ -252,6 +259,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	constructor(
 		private noteEntityService: NoteEntityService,
 		private noteCreateService: NoteCreateService,
+		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			try {
@@ -260,6 +268,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					: ps.scheduledDelete?.deleteAfter
 						? new Date(Date.now() + ps.scheduledDelete.deleteAfter)
 						: null;
+
+				const isScheduledForPrivate = ps.scheduledDelete?.isScheduledForPrivate ?? false;
+
+				// isScheduledForPrivate は make-private 系エンドポイントと同じく canUseMakePrivate で制限する
+				// (requiredRolePolicy と同様に root / Admin は許可する)
+				if (scheduledDeleteAt != null && isScheduledForPrivate) {
+					const policies = await this.roleService.getUserPolicies(me.id);
+					if (!policies.canUseMakePrivate && !(await this.roleService.isAdministrator(me))) {
+						throw new ApiError(meta.errors.cannotUseMakePrivate);
+					}
+				}
 
 				const note = await this.noteCreateService.fetchAndCreate(me, {
 					createdAt: new Date(),
@@ -282,7 +301,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					apHashtags: ps.noExtractHashtags ? [] : undefined,
 					apEmojis: ps.noExtractEmojis ? [] : undefined,
 					deleteAt: scheduledDeleteAt,
-					isScheduledForPrivate: ps.scheduledDelete?.isScheduledForPrivate ?? false,
+					isScheduledForPrivate,
 					deliveryTargets: ps.deliveryTargets ?? undefined,
 				});
 
