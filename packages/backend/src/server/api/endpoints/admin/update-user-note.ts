@@ -13,7 +13,7 @@ export const meta = {
 	tags: ['admin'],
 
 	requireCredential: true,
-	requireSubModerator: true,
+	requireModerator: true,
 	kind: 'write:admin:user-note',
 } as const;
 

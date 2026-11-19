@@ -1967,10 +1967,6 @@ export interface Locale extends ILocale {
      */
     "moderator": string;
     /**
-     * サブモデレーター
-     */
-    "subModerator": string;
-    /**
      * モデレーション
      */
     "moderation": string;

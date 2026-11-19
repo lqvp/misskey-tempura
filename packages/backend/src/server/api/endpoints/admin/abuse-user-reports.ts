@@ -14,7 +14,7 @@ export const meta = {
 	tags: ['admin'],
 
 	requireCredential: true,
-	requireSubModerator: true,
+	requireModerator: true,
 	kind: 'read:admin:abuse-user-reports',
 
 	res: {
