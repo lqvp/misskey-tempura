@@ -6009,7 +6009,7 @@ export type components = {
             /** @example false */
             isPublic: boolean;
             /** @enum {string} */
-            permissionGroup: 'Admin' | 'MainModerator' | 'Moderator' | 'Normal' | 'Community';
+            permissionGroup: 'Admin' | 'MainModerator' | 'Normal' | 'Community';
             /** @example false */
             isExplorable: boolean;
             /** @example false */
@@ -13221,7 +13221,7 @@ export interface operations {
                     condFormula: Record<string, never>;
                     isPublic: boolean;
                     /** @enum {string} */
-                    permissionGroup: 'Admin' | 'MainModerator' | 'Moderator' | 'Normal' | 'Community';
+                    permissionGroup: 'Admin' | 'MainModerator' | 'Normal' | 'Community';
                     /** @default false */
                     isExplorable?: boolean;
                     /** @default false */
@@ -13558,7 +13558,7 @@ export interface operations {
                     condFormula?: Record<string, never>;
                     isPublic?: boolean;
                     /** @enum {string} */
-                    permissionGroup?: 'Admin' | 'MainModerator' | 'Moderator' | 'Normal' | 'Community';
+                    permissionGroup?: 'Admin' | 'MainModerator' | 'Normal' | 'Community';
                     isExplorable?: boolean;
                     isRainbow?: boolean;
                     asBadge?: boolean;

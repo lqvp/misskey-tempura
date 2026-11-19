@@ -291,7 +291,6 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 
 ### ロール
 
-* permissionGroup: Moderator (サブモデレーター) 階級を追加。ロール編集画面の「ロールの権限」で選択できる。通報処理 (abuse-user-reports / update-abuse-user-report / resolve-abuse-user-report / forward-abuse-user-report) とユーザー情報参照 (show-user / show-users)、モデレーションノート (update-user-note) はサブモデレーターでも利用可能。管理操作 (requireModerator / requireAdmin のエンドポイント) は引き続き MainModerator / Admin ロールが必要
 * community role: ユーザーが作成できるロール
 * isRainbow: レインボーロール
 * canHomeNote / canEmojiDeletion / canUseRemoteIconDecorations / canAddRoles / canCreateRole
