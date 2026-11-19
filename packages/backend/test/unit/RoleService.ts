@@ -653,6 +653,51 @@ describe('RoleService', () => {
 			});
 			expect(result).toEqual([adminUser1.id, modeUser1.id, rootUser.id]);
 		});
+
+		test('Moderator (サブモデレーター) 階級のロールもモデレーターとして扱われる', async () => {
+			const [subModUser1, normalUser1] = await Promise.all([
+				createUser(), createUser(),
+			]);
+
+			const roleSubMod = await createRole({ name: 'subModerator', isModerator: true, permissionGroup: 'Moderator' as const });
+			const roleNormal = await createRole({ name: 'normal' });
+
+			await Promise.all([
+				assignRole({ userId: subModUser1.id, roleId: roleSubMod.id }),
+				assignRole({ userId: normalUser1.id, roleId: roleNormal.id }),
+			]);
+
+			const result = await roleService.getModeratorIds({
+				includeAdmins: false,
+				includeRoot: false,
+				excludeExpire: false,
+			});
+			expect(result).toEqual([subModUser1.id]);
+
+			// isModerator も true になる
+			expect(await roleService.isModerator(subModUser1)).toBe(true);
+			expect(await roleService.isModerator(normalUser1)).toBe(false);
+
+			// Moderator 階級は管理者権限を持たない
+			expect(await roleService.isAdministrator(subModUser1)).toBe(false);
+		});
+
+		test('permissionGroup 変更時に後方互換フラグが再導出される', async () => {
+			const user = await createUser();
+			// Normal ロールを作成して Moderator へ更新
+			const roleNormal = await createRole({ name: 'toModerator', permissionGroup: 'Normal' as const });
+			expect(roleNormal.isModerator).toBe(false);
+
+			await roleService.update(roleNormal, { permissionGroup: 'Moderator' } as Partial<MiRole>);
+
+			const updated = await rolesRepository.findOneByOrFail({ id: roleNormal.id });
+			expect(updated.permissionGroup).toBe('Moderator');
+			expect(updated.isModerator).toBe(true);
+			expect(updated.isAdministrator).toBe(false);
+
+			await assignRole({ userId: user.id, roleId: roleNormal.id });
+			expect(await roleService.isModerator(user)).toBe(true);
+		});
 	});
 
 	describe('getAdministratorIds', () => {
