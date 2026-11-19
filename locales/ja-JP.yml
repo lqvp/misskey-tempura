@@ -4136,6 +4136,7 @@ _llm:
   fetchModelsError: "モデル一覧の取得に失敗しました。APIトークンとベースURLを確認してください。"
   modelImageSupported: "このモデルは画像入力に対応していると判定されました。"
   modelImageUnknown: "このモデルの画像入力対応は不明です。"
+  modelImageUnsupported: "このモデルは画像入力に非対応です。メディア付きノートではテキストのみが送られます。"
 
 _noteSearch:
   enhanceSearch: "検索強化"

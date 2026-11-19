@@ -25,47 +25,106 @@ fetchInstance(true).then((res) => {
  */
 export interface LLMModelInfo {
 	id: string;
-	/** 画像入力 (ビジョン) に対応していると判定できた場合 true */
-	imageInput?: boolean;
+	/**
+	 * 画像入力 (ビジョン) 対応の判定結果。
+	 * - 'supported': 画像入力に対応していると判定できた
+	 * - 'unsupported': 画像非対応と判定できた
+	 * - 'unknown': 判定に必要な情報が無い
+	 */
+	imageInput: 'supported' | 'unsupported' | 'unknown';
+	/** 判定根拠 ('field' = モダリティ情報、'name' = モデル名推測) */
+	detectedBy?: 'field' | 'name';
 }
 
 /**
- * モデルが画像入力に対応しているかを判定する (ベストエフォート)
+ * 画像入力対応の判定パイプライン (三値)
  *
- * OpenAI 互換 API の GET /models は多くの場合 id しか返さないため、
- * 以下の順で判定する:
- * 1. エンドポイントが返すモダリティ情報 (input_modalities / modalities / capabilities 等)
- * 2. モデル名のパターン (既知のビジョン対応モデルの命名)
+ * OpenAI 互換 /models に能力情報を載せる標準は無く、プロバイダごとに
+ * フィールドが異なるため、以下の順で判定する:
+ *
+ * 1. `architecture.input_modalities` (OpenRouter) / `input_modalities` (DeepSeek) の配列
+ * 2. `modality` 文字列 ("text+image->text" 形式、OpenRouter)
+ * 3. `capabilities`:
+ *    - 配列の場合は "vision" を含むか (Ollama /api/tags 相当)
+ *    - オブジェクトの場合は `capabilities.vision` の boolean (Mistral, LM Studio v1)
+ * 4. `type === "vlm"` (LM Studio v0)
+ * 5. モデル名のパターン (最後の砦。誤検知を前提とした推測)
+ * 6. いずれも情報が無ければ 'unknown'
  */
-export function detectImageInputSupport(model: { id: string; [key: string]: unknown }): boolean {
-	// 1. モダリティ情報があればそれを使う (画像を含む配列が1つでもあれば対応と判定)
-	for (const key of ['input_modalities', 'inputModalities', 'modalities', 'supported_input_modalities']) {
-		const value = model[key];
+export function detectImageInputSupport(model: { id?: string; [key: string]: unknown }): 'supported' | 'unsupported' | 'unknown' {
+	if (typeof model?.id !== 'string') return 'unknown';
+
+	const record = model as Record<string, unknown>;
+	const architecture = record['architecture'];
+	const arch = (architecture != null && typeof architecture === 'object') ? architecture as Record<string, unknown> : null;
+
+	// 1. input_modalities 系の配列 (OpenRouter / DeepSeek)
+	const modalityArrays = [
+		arch?.['input_modalities'],
+		record['input_modalities'],
+		record['inputModalities'],
+		record['supported_input_modalities'],
+	];
+	for (const value of modalityArrays) {
 		if (Array.isArray(value)) {
-			if (value.some(v => typeof v === 'string' && (v.includes('image') || v === 'multimodal'))) {
-				return true;
-			}
+			return value.some(v => typeof v === 'string' && v.includes('image')) ? 'supported' : 'unsupported';
 		}
 	}
-	const caps = model['capabilities'];
-	if (caps != null && typeof caps === 'object') {
-		const vision = (caps as Record<string, unknown>)['vision'] ?? (caps as Record<string, unknown>)['image_input'];
-		if (typeof vision === 'boolean') return vision;
+
+	// 2. modality 文字列 ("text+image->text" 形式)
+	const modalityStr = arch?.['modality'] ?? record['modality'];
+	if (typeof modalityStr === 'string') {
+		const inputs = modalityStr.split('->')[0] ?? '';
+		return inputs.includes('image') ? 'supported' : 'unsupported';
 	}
 
-	// 2. モデル名による推測
+	// 3. capabilities (配列=Ollama系、オブジェクト=Mistral/LM Studio v1系)
+	const caps = record['capabilities'];
+	if (Array.isArray(caps)) {
+		return caps.includes('vision') ? 'supported' : 'unsupported';
+	}
+	if (caps != null && typeof caps === 'object') {
+		const vision = (caps as Record<string, unknown>)['vision'];
+		if (typeof vision === 'boolean') return vision ? 'supported' : 'unsupported';
+	}
+
+	// 4. type === 'vlm' (LM Studio v0)
+	if (record['type'] === 'vlm') return 'supported';
+
+	// 5. モデル名による推測 (誤検知を前提とした最後の砦)
 	const id = model.id.toLowerCase();
-	return (
+	// テキスト専用系の命名は非対応と断定しない (unknown のまま)
+	if (/^(whisper|-embed|-rerank|-guard)/.test(id) || id.includes('embedding') || id.includes('rerank') || id.includes('guard') || id.startsWith('whisper')) {
+		return 'unknown';
+	}
+	if (
 		id.includes('vision') || id.includes('vl') || id.includes('llava') || id.includes('pixtral') ||
 		id.includes('internvl') || id.includes('gpt-4o') || id.includes('gpt-4.1') || id.includes('gpt-5') ||
-		id.includes('claude') || id.includes('gemini') || id.includes('qwen-vl') || id.includes('minicpm')
-	);
+		id.includes('claude') || id.includes('gemini') || id.includes('qwen-vl') || id.includes('minicpm') ||
+		id.includes('gemma-3') || id.includes('gemma-4')
+	) {
+		return 'supported';
+	}
+
+	// 6. 情報なし
+	return 'unknown';
 }
 
-function toModelInfos(data: { id?: string }[] | undefined): LLMModelInfo[] {
+export function toModelInfos(data: unknown[] | undefined): LLMModelInfo[] {
 	return (data ?? [])
-		.filter((m): m is { id: string; [key: string]: unknown } => typeof m?.id === 'string')
-		.map(m => ({ id: m.id, imageInput: detectImageInputSupport(m) }));
+		.filter((m): m is { id?: string; [key: string]: unknown } => m != null && typeof m === 'object' && typeof (m as Record<string, unknown>)['id'] === 'string')
+		.map((m) => {
+			const result = detectImageInputSupport(m);
+			return { id: m.id as string, imageInput: result, detectedBy: includesVisionHint(m) ? 'field' : 'name' };
+		});
+}
+
+/**
+ * モデルレコードに明示的なモダリティ情報 (フィールド由来の判定根拠) が含まれるか
+ */
+function includesVisionHint(model: Record<string, unknown>): boolean {
+	const keys = ['input_modalities', 'inputModalities', 'supported_input_modalities', 'modality', 'capabilities', 'type', 'architecture'];
+	return keys.some(k => k in model);
 }
 
 /**
@@ -82,8 +141,7 @@ export async function fetchAvailableModels(): Promise<LLMModelInfo[]> {
 	if (useGeminiLLMAPI) {
 		try {
 			const res = await misskeyApi('notes/llm-models', {});
-			return (res.models ?? [])
-				.map((id: string) => ({ id, imageInput: detectImageInputSupport({ id }) }));
+			return toModelInfos(res.models);
 		} catch {
 			return [];
 		}
@@ -115,8 +173,12 @@ export interface GenerateLLMOptions {
 
 /**
  * ノートの画像を image_url コンテンツとして組み立てる
+ *
+ * 選択中のモデルが画像非対応と判定できている場合は空配列を返す
  */
 function buildImageParts(note: Misskey.entities.Note): { type: 'image_url'; image_url: { url: string } }[] {
+	// 画像非対応と判定済みのモデルには画像を送らない
+	if (detectImageInputSupport({ id: prefer.s.openaiModel ?? '' }) === 'unsupported') return [];
 	return (note.files ?? [])
 		.filter(file => file.type.startsWith('image/') && !file.type.includes('gif'))
 		.slice(0, 4)

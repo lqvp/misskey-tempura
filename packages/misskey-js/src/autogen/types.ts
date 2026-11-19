@@ -34403,7 +34403,15 @@ export interface operations {
                 };
                 content: {
                     'application/json': {
-                        models: string[];
+                        models: {
+                            id: string;
+                            input_modalities?: unknown;
+                            inputModalities?: unknown;
+                            modality?: unknown;
+                            type?: unknown;
+                            architecture?: unknown;
+                            capabilities?: unknown;
+                        }[];
                     };
                 };
             };

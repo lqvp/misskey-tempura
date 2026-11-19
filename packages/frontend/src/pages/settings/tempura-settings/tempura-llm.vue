@@ -47,7 +47,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 									<MkSelect v-if="modelItems.length > 0" v-model="openaiModel" :items="modelItems" :disabled="useGeminiLLMAPI">
 										<template #label><SearchLabel>{{ i18n.ts._llm.openaiModelLabel }}</SearchLabel></template>
 										<template #caption>
-											<span v-if="selectedModelInfo?.imageInput">{{ i18n.ts._llm.modelImageSupported }}</span>
+											<span v-if="selectedModelInfo?.imageInput === 'supported'">{{ i18n.ts._llm.modelImageSupported }}</span>
+											<span v-else-if="selectedModelInfo?.imageInput === 'unsupported'">{{ i18n.ts._llm.modelImageUnsupported }}</span>
 											<span v-else>{{ i18n.ts._llm.modelImageUnknown }}</span>
 										</template>
 									</MkSelect>
@@ -189,7 +190,7 @@ import { $i } from '@/i.js';
 import { i18n } from '@/i18n.js';
 import { fetchInstance } from '@/instance.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
-import { fetchAvailableModels } from '@/utility/tempura-script/llm.js';
+import { fetchAvailableModels, detectImageInputSupport } from '@/utility/tempura-script/llm.js';
 import type { LLMModelInfo } from '@/utility/tempura-script/llm.js';
 import { openaiModels } from '@/utility/tempura-script/models.js';
 
@@ -223,7 +224,7 @@ const modelItems = computed(() => models.value.map((m) => ({ value: m.id, label:
 const selectedModelInfo = computed(() => models.value.find((m) => m.id === openaiModel.value));
 
 function fallbackModels(): LLMModelInfo[] {
-	return openaiModels.map((id) => ({ id }));
+	return openaiModels.map((id) => ({ id, imageInput: detectImageInputSupport({ id }) }));
 }
 
 async function refreshModels(): Promise<void> {

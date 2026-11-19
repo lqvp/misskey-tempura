@@ -15477,6 +15477,10 @@ export interface Locale extends ILocale {
          * このモデルの画像入力対応は不明です。
          */
         "modelImageUnknown": string;
+        /**
+         * このモデルは画像入力に非対応です。メディア付きノートではテキストのみが送られます。
+         */
+        "modelImageUnsupported": string;
     };
     "_noteSearch": {
         /**
