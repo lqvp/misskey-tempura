@@ -114,9 +114,13 @@ ${contactUrl ? `<a href="${contactUrl}" style="color:#b4e900;font-size:14px;marg
 	// The attempt counter is also kept in memory so that auto retry stops
 	// after MAX_ATTEMPTS even when sessionStorage is unavailable.
 	var attemptsInMemory = 0;
+	// Set when writing to sessionStorage failed but reading may still return
+	// a stale stored value; in that case the memory counter is authoritative.
+	var attemptsStorageStale = false;
 
 	function getAttempts() {
 		try {
+			if (attemptsStorageStale) return attemptsInMemory;
 			var value = sessionStorage.getItem("misskey:offline-page:retry-attempts");
 			return value === null ? 0 : parseInt(value, 10) || 0;
 		} catch (error) {
@@ -128,8 +132,10 @@ ${contactUrl ? `<a href="${contactUrl}" style="color:#b4e900;font-size:14px;marg
 		attemptsInMemory = attempts;
 		try {
 			sessionStorage.setItem("misskey:offline-page:retry-attempts", String(attempts));
+			attemptsStorageStale = false;
 		} catch (error) {
-			// sessionStorage may be unavailable (e.g. private mode); keep the memory counter
+			// sessionStorage may be unavailable or full; keep the memory counter
+			attemptsStorageStale = true;
 		}
 	}
 
