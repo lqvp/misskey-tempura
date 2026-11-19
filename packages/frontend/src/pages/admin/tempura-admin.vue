@@ -14,6 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<LongIconUrl :meta="meta"/>
 				<UsernameMinLength :meta="meta"/>
 				<SecondsPerSignup :meta="meta"/>
+				<SignupCodesSettings :meta="meta"/>
 				<CustomSplashText :meta="meta"/>
 				<EmailDomainSettings :meta="meta"/>
 				<LlmModerationSettings :meta="meta"/>
@@ -47,6 +48,7 @@ import BlockMentions from './tempura/sections/BlockMentions.vue';
 import LongIconUrl from './tempura/sections/LongIconUrl.vue';
 import UsernameMinLength from './tempura/sections/UsernameMinLength.vue';
 import SecondsPerSignup from './tempura/sections/SecondsPerSignup.vue';
+import SignupCodesSettings from './tempura/sections/SignupCodesSettings.vue';
 import CustomSplashText from './tempura/sections/CustomSplashText.vue';
 import EmailDomainSettings from './tempura/sections/EmailDomainSettings.vue';
 import LlmModerationSettings from './tempura/sections/LlmModerationSettings.vue';

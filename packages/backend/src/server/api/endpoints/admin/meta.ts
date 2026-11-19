@@ -819,6 +819,14 @@ export const meta = {
 				type: 'number',
 				optional: false, nullable: false,
 			},
+			fixedInviteCode: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
+			signupPassphrase: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
 			entranceShowTimeLine: {
 				type: 'boolean',
 				optional: false, nullable: false,
@@ -1289,6 +1297,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				enableFsTotal: instance.enableFsTotal,
 				customFsTotal: instance.customFsTotal,
 				secondsPerSignup: instance.secondsPerSignup,
+				fixedInviteCode: instance.fixedInviteCode,
+				signupPassphrase: instance.signupPassphrase,
 				entranceShowTimeLine: instance.entranceShowTimeLine,
 				entranceShowFeatured: instance.entranceShowFeatured,
 				entranceShowEmojis: instance.entranceShowEmojis,

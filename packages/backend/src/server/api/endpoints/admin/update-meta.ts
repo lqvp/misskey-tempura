@@ -12,6 +12,7 @@ import { MetaService } from '@/core/MetaService.js';
 import { QueueService } from '@/core/QueueService.js';
 import { ApiLoggerService } from '../../ApiLoggerService.js';
 import { ApiError } from '../../error.js';
+import { normalizeSignupPassphrase } from '@/misc/normalize-signup-passphrase.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -329,6 +330,8 @@ export const paramDef = {
 		enableFsTotal: { type: 'boolean' },
 		customFsTotal: { type: 'integer', nullable: true },
 		secondsPerSignup: { type: 'integer' },
+		fixedInviteCode: { type: 'string', nullable: true, maxLength: 128 },
+		signupPassphrase: { type: 'string', nullable: true, maxLength: 256 },
 		entranceShowTimeLine: { type: 'boolean' },
 		entranceShowFeatured: { type: 'boolean' },
 		entranceShowEmojis: { type: 'boolean' },
@@ -1225,6 +1228,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.secondsPerSignup !== undefined) {
 				set.secondsPerSignup = ps.secondsPerSignup;
+			}
+
+			if (ps.fixedInviteCode !== undefined) {
+				set.fixedInviteCode = ps.fixedInviteCode === '' ? null : ps.fixedInviteCode;
+			}
+
+			if (ps.signupPassphrase !== undefined) {
+				// 正規化して空になる合言葉 (空白のみ等) は無効扱いにする
+				set.signupPassphrase = (ps.signupPassphrase != null && normalizeSignupPassphrase(ps.signupPassphrase) === '')
+					? null
+					: ps.signupPassphrase;
 			}
 
 			if (ps.entranceShowTimeLine !== undefined) {
