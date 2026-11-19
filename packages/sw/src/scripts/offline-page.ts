@@ -157,6 +157,25 @@ ${contactUrl ? `<a href="${contactUrl}" style="color:#b4e900;font-size:14px;marg
 		location.reload();
 	}
 
+	function setRecoveryReload() {
+		try {
+			sessionStorage.setItem("misskey:offline-page:recovery-reload", "1");
+		} catch (error) {
+			// sessionStorage may be unavailable; the worst case is that a
+			// false-positive recovery keeps retrying until the user intervenes
+		}
+	}
+
+	function consumeRecoveryReload() {
+		try {
+			if (sessionStorage.getItem("misskey:offline-page:recovery-reload") === null) return false;
+			sessionStorage.removeItem("misskey:offline-page:recovery-reload");
+			return true;
+		} catch (error) {
+			return false;
+		}
+	}
+
 	function scheduleRetry() {
 		var attempts = getAttempts();
 		if (attempts >= MAX_ATTEMPTS) {
@@ -168,7 +187,11 @@ ${contactUrl ? `<a href="${contactUrl}" style="color:#b4e900;font-size:14px;marg
 		setTimeout(function() {
 			checkServer().then(function(recovered) {
 				if (recovered) {
-					setAttempts(0);
+					// The HEAD probe may succeed (e.g. a proxy answers 405) while
+					// the actual navigation still fails. Mark the reload so that
+					// landing on this page again counts as a failed attempt
+					// instead of resetting the counter (avoids a reload loop).
+					setRecoveryReload();
 					location.reload();
 				} else {
 					setAttempts(attempts + 1);
@@ -179,6 +202,11 @@ ${contactUrl ? `<a href="${contactUrl}" style="color:#b4e900;font-size:14px;marg
 	}
 
 	window.reloadPage = reloadPage;
+	if (consumeRecoveryReload()) {
+		// We reloaded after a "recovery" but landed on the offline page again:
+		// the recovery was a false positive, so it counts as a failed attempt.
+		setAttempts(getAttempts() + 1);
+	}
 	scheduleRetry();
 })();
 </script>

@@ -13,7 +13,13 @@ import * as swos from '@/scripts/operations.js';
 import { renderOfflinePage, type OfflinePageConfig, type OfflineReason } from '@/scripts/offline-page.js';
 
 async function getOfflinePageConfig(): Promise<OfflinePageConfig | undefined> {
-	const raw = await get<string>('offlinePageConfig');
+	let raw: string | null | undefined;
+	try {
+		raw = await get<string>('offlinePageConfig');
+	} catch {
+		// IndexedDB may be unavailable; fall back to the default offline page
+		return undefined;
+	}
 	if (raw == null) return undefined;
 	try {
 		const parsed = JSON.parse(raw) as OfflinePageConfig;
