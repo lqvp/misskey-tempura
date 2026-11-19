@@ -346,9 +346,10 @@ export const paramDef = {
 		entranceMarginRight: { type: 'integer' },
 		entranceMarginTop: { type: 'integer' },
 		entranceMarginBottom: { type: 'integer' },
-		serverGeminiEnabled: { type: 'boolean' },
-		serverGeminiApiKey: { type: 'string', nullable: true },
-		serverGeminiModels: { type: 'string', nullable: false },
+		serverOpenAIEnabled: { type: 'boolean' },
+		serverOpenAIApiKey: { type: 'string', nullable: true, maxLength: 1024 },
+		serverOpenAIBaseURL: { type: 'string', nullable: true, maxLength: 512 },
+		serverOpenAIModels: { type: 'string', nullable: false, maxLength: 512 },
 		customCursorUrl: { type: 'string', nullable: true },
 		customCursorPointerUrl: { type: 'string', nullable: true },
 		customCursorTextUrl: { type: 'string', nullable: true },
@@ -1297,16 +1298,20 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.entranceMarginBottom = ps.entranceMarginBottom;
 			}
 
-			if (ps.serverGeminiEnabled !== undefined) {
-				set.serverGeminiEnabled = ps.serverGeminiEnabled;
+			if (ps.serverOpenAIEnabled !== undefined) {
+				set.serverOpenAIEnabled = ps.serverOpenAIEnabled;
 			}
 
-			if ( ps.serverGeminiApiKey !== undefined) {
-				set.serverGeminiApiKey = ps.serverGeminiApiKey;
+			if (ps.serverOpenAIApiKey !== undefined) {
+				set.serverOpenAIApiKey = ps.serverOpenAIApiKey;
 			}
 
-			if ( ps.serverGeminiModels !== undefined) {
-				set.serverGeminiModels = ps.serverGeminiModels;
+			if (ps.serverOpenAIBaseURL !== undefined) {
+				set.serverOpenAIBaseURL = ps.serverOpenAIBaseURL;
+			}
+
+			if (ps.serverOpenAIModels !== undefined) {
+				set.serverOpenAIModels = ps.serverOpenAIModels;
 			}
 
 			if (ps.customCursorUrl !== undefined) {

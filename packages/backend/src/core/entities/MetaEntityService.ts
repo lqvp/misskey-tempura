@@ -164,7 +164,7 @@ export class MetaEntityService {
 			entranceMarginRight: instance.entranceMarginRight,
 			entranceMarginTop: instance.entranceMarginTop,
 			entranceMarginBottom: instance.entranceMarginBottom,
-			serverGeminiEnabled: instance.serverGeminiEnabled,
+			serverOpenAIEnabled: instance.serverOpenAIEnabled,
 			customCursorUrl: instance.customCursorUrl,
 			customCursorPointerUrl: instance.customCursorPointerUrl,
 			customCursorTextUrl: instance.customCursorTextUrl,

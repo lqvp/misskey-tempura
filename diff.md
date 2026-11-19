@@ -17,7 +17,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * 配送先制御 (delivery targets)
 * アカウント整理 (truncate)
 * ノートの非公開化 (make private)
-* LLM モデレーションと Gemini 連携
+* LLM モデレーションと LLM 連携 (OpenAI 互換)
 * 問い合わせフォーム
 * 地震情報
 * Hana entrance
@@ -310,16 +310,31 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 
 ## LLM 連携
 
-### サーバー Gemini
+### サーバー OpenAI 互換
 
-* serverGeminiEnabled / apiKey / models
-* useGeminiLLMAPI でユーザーが利用
-* useGeminiWithMedia でメディア付き
-* geminiToken / geminiModel
+* serverOpenAIEnabled / apiKey / baseURL / models
+* OpenAI 互換 API (Chat Completions) をサーバー経由で利用可能
+* useGeminiLLMAPI でユーザーがサーバー提供LLMを利用
+* useGeminiWithMedia でメディア付き (image_url)
 * system prompt と note/profile summarize prompts
 * ノート変換 (long/short/simple/casual/professional/cat/custom)
-* thinking budget (-1 で無制限)
 * notesLimitPrompt / includeFollowersNotesPrompt
+* ユーザー直指定モード: openaiToken / openaiBaseUrl / openaiModel
+* モデル一覧を API から動的取得 (notes/llm-models、GET /models)
+* モデルの画像入力対応をプロバイダのモダリティ情報から判定 (OpenRouter / Mistral / DeepSeek 等、情報が無い場合はモデル名推測)
+* ユーザーのUI言語での応答を促すヒントをシステムプロンプトに付与
+* 画像入力対応とみなす設定 (openaiForceImageInput) を追加
+* 旧ユーザー設定 geminiModel / geminiThinkingBudget は廃止 (geminiToken と合わせて再設定が必要)
+* プロンプトインジェクション対策 (user_content デリミタとガード指示)
+* 返信文脈を参考データとして要約に付与
+* temperature 設定 (ユーザー直指定モード)
+
+**注意:** このバージョンでサーバー Gemini 設定 (serverGemini*) は廃止されました。
+マイグレーションが既存の Gemini API キーを OpenAI 互換設定へ引き継ぎます
+(baseURL は Gemini の OpenAI 互換エンドポイント)。Gemini を利用していなかった
+サーバーは、管理画面 (独自機能 → LLM設定) で OpenAI 互換 API キーとベースURLを
+再設定してください。旧 Gemini 用ユーザートークン (geminiToken) も削除されたため、
+各自で openaiToken を設定し直す必要があります。
 
 ### LLM モデレーション
 

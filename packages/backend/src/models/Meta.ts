@@ -1227,20 +1227,26 @@ export class MiMeta {
 	@Column('boolean', {
 		default: false,
 	})
-	public serverGeminiEnabled: boolean;
+	public serverOpenAIEnabled: boolean;
 
 	@Column('varchar', {
-		length: 50,
+		length: 1024,
 		nullable: true,
 	})
-	public serverGeminiApiKey: string | null;
+	public serverOpenAIApiKey: string | null;
 
 	@Column('varchar', {
-		length: 50,
-		default: 'gemini-2.0-flash',
+		length: 512,
 		nullable: true,
 	})
-	public serverGeminiModels: string;
+	public serverOpenAIBaseURL: string | null;
+
+	@Column('varchar', {
+		length: 512,
+		default: 'gpt-4o-mini',
+		nullable: false,
+	})
+	public serverOpenAIModels: string;
 
 	@Column('varchar', {
 		length: 1024,

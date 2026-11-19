@@ -15235,53 +15235,49 @@ export interface Locale extends ILocale {
     "_llm": {
         "_server": {
             /**
-             * Gemini APIを有効にする
+             * OpenAI互換APIを有効にする
              */
-            "serverGeminiEnabled": string;
+            "serverOpenAIEnabled": string;
             /**
-             * 有効にすることで、サーバーが提供するGemini APIを使用して、LLMを実行できます。
+             * 有効にすることで、サーバーが提供するOpenAI互換APIを使用して、LLMを実行できます。
              */
-            "serverGeminiEnabledDescription": string;
+            "serverOpenAIEnabledDescription": string;
             /**
-             * Gemini APIキー
+             * OpenAI互換APIキー
              */
-            "serverGeminiApiKey": string;
+            "serverOpenAIApiKey": string;
             /**
-             * サーバーが提供するGemini APIのAPIキーを入力します。
+             * サーバーが提供するOpenAI互換APIのAPIキーを入力します。
              */
-            "serverGeminiApiKeyDescription": string;
+            "serverOpenAIApiKeyDescription": string;
             /**
-             * サーバーで提供するGemini APIで使用するモデルを選択します。
+             * OpenAI互換APIベースURL
              */
-            "serverGeminiModelsDescription": string;
+            "serverOpenAIBaseURL": string;
+            /**
+             * OpenAI互換APIのベースURLを入力します（例: https://api.openai.com/v1 ）。空の場合は公式APIを使用します。
+             */
+            "serverOpenAIBaseURLDescription": string;
+            /**
+             * OpenAI互換APIモデル
+             */
+            "serverOpenAIModels": string;
+            /**
+             * サーバーで提供するOpenAI互換APIで使用するモデル名を設定します。
+             */
+            "serverOpenAIModelsDescription": string;
+            /**
+             * モデル一覧の取得に失敗しました。APIキーとベースURLを保存してから再度取得してください。
+             */
+            "serverFetchModelsError": string;
         };
         "_error": {
-            /**
-             * ファイルのダウンロードに失敗しました
-             */
-            "fileDownload": string;
-            /**
-             * ファイルアップロードの初期化に失敗しました
-             */
-            "uploadInit": string;
-            /**
-             * アップロードURLが取得できませんでした
-             */
-            "uploadUrlNotFound": string;
-            /**
-             * ファイルのアップロードに失敗しました
-             */
-            "upload": string;
-            /**
-             * アップロードしたファイルのURIが取得できませんでした
-             */
-            "uploadedFileUri": string;
             /**
              * 操作がキャンセルされました。
              */
             "cancel": string;
             /**
-             * Gemini APIの利用を無効にしました。
+             * LLM APIの利用を無効にしました。
              */
             "disable": string;
             /**
@@ -15297,11 +15293,15 @@ export interface Locale extends ILocale {
              */
             "serverLLMApi": string;
             /**
-             * Gemini API tokenがありません。
+             * OpenAI互換APIトークンがありません。
              */
             "tokenMissing": string;
             /**
-             * Gemini API エラー:
+             * ブラウザから直接APIにアクセスできませんでした (CORS)。プロバイダがCORSを許可しているか、ベースURLが正しいか確認してください。
+             */
+            "cors": string;
+            /**
+             * LLM API エラー:
              */
             "api": string;
             /**
@@ -15317,7 +15317,7 @@ export interface Locale extends ILocale {
              */
             "profileNotFound": string;
             /**
-             * Gemini API のレスポンスフォーマットが不正です。
+             * LLM API のレスポンスフォーマットが不正です。
              */
             "responseFormat": string;
             /**
@@ -15333,7 +15333,7 @@ export interface Locale extends ILocale {
              */
             "noteMissing": string;
             /**
-             * Gemini API応答の解析に失敗しました。
+             * LLM API応答の解析に失敗しました。
              */
             "responseParse": string;
             /**
@@ -15354,7 +15354,7 @@ export interface Locale extends ILocale {
          */
         "useGeminiLLMAPI": string;
         /**
-         * サーバーが提供するGemini APIを使用して、LLMを実行します。
+         * サーバーが提供するOpenAI互換APIを使用して、LLMを実行します。
          */
         "useGeminiLLMAPIDescription": string;
         /**
@@ -15362,23 +15362,11 @@ export interface Locale extends ILocale {
          */
         "useGeminiWithMedia": string;
         /**
-         * ノートにファイルがあれば、Gemini APIにメディアを含めてLLMを実行します。
+         * ノートにファイルがあれば、メディアを含めてLLMを実行します。
          */
         "useGeminiWithMediaDescription": string;
         /**
-         * Geminiトークン
-         */
-        "geminiTokenLabel": string;
-        /**
-         * Gemini API の認証に使用するトークンを設定します。
-         */
-        "geminiTokenCaption": string;
-        /**
-         * Geminiモデル
-         */
-        "geminiModelLabel": string;
-        /**
-         * Geminiシステムプロンプト
+         * LLMシステムプロンプト
          */
         "geminiSystemPromptLabel": string;
         /**
@@ -15386,7 +15374,7 @@ export interface Locale extends ILocale {
          */
         "geminiSystemPromptCaption": string;
         /**
-         * Gemini要約プロンプト
+         * ノート要約プロンプト
          */
         "geminiSummarizePromptLabel": string;
         /**
@@ -15458,13 +15446,83 @@ export interface Locale extends ILocale {
          */
         "geminiNoteCustomText": string;
         /**
-         * 思考トークン数
+         * OpenAI互換APIトークン
          */
-        "geminiThinkingBudgetLabel": string;
+        "openaiTokenLabel": string;
         /**
-         * 思考トークン数を設定します。`-1`を設定することで無制限となります。Proなどは無効にすることは出来ません。より詳細な説明は https://ai.google.dev/gemini-api/docs/thinking をご覧ください。
+         * OpenAI互換APIの認証に使用するトークンを設定します。
          */
-        "geminiThinkingBudgetCaption": string;
+        "openaiTokenCaption": string;
+        /**
+         * OpenAI互換APIベースURL
+         */
+        "openaiBaseUrlLabel": string;
+        /**
+         * OpenAI互換APIのベースURLを設定します（例: https://api.openai.com/v1 ）。未設定の場合は公式APIを使用します。
+         */
+        "openaiBaseUrlCaption": string;
+        /**
+         * OpenAI互換APIモデル
+         */
+        "openaiModelLabel": string;
+        /**
+         * 使用するモデル名を設定します。空の場合は gpt-4o-mini を使用します。
+         */
+        "openaiModelCaption": string;
+        /**
+         * モデル一覧を取得
+         */
+        "fetchModels": string;
+        "_fallback": {
+            /**
+             * LLM API利用方法の選択
+             */
+            "title": string;
+            /**
+             * サーバー提供のLLM APIが有効になっていません。ユーザー指定のAPI tokenを使って生成を継続しますか？ または、LLM API の利用を無効にしますか？
+             */
+            "text": string;
+            /**
+             * ユーザーのAPI tokenを使用する
+             */
+            "useUserToken": string;
+            /**
+             * LLM APIの利用を無効にする
+             */
+            "disable": string;
+        };
+        /**
+         * モデル一覧の取得に失敗しました。APIトークンとベースURLを確認してください。ブラウザからの直接取得がCORSでブロックされている可能性もあります。
+         */
+        "fetchModelsError": string;
+        /**
+         * このモデルは画像入力に対応していると判定されました。
+         */
+        "modelImageSupported": string;
+        /**
+         * このモデルの画像入力対応は不明です。
+         */
+        "modelImageUnknown": string;
+        /**
+         * 画像入力に対応しているものとして扱う
+         */
+        "openaiForceImageInputLabel": string;
+        /**
+         * モデル一覧の自動判定で「不明」になる場合に、画像入力に対応しているものとして扱います。画像対応モデルのはずなのに判定されないときに有効にしてください。
+         */
+        "openaiForceImageInputCaption": string;
+        /**
+         * Temperature
+         */
+        "openaiTemperatureLabel": string;
+        /**
+         * 生成のランダム性 (0.0〜2.0)。要約には低め (0〜0.3) が向きます。空欄の場合はプロバイダの既定値を使います。サーバー提供モードでは無効です。
+         */
+        "openaiTemperatureCaption": string;
+        /**
+         * このモデルは画像入力に非対応です。メディア付きノートではテキストのみが送られます。
+         */
+        "modelImageUnsupported": string;
     };
     "_noteSearch": {
         /**

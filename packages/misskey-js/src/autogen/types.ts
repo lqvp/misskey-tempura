@@ -3463,6 +3463,15 @@ export type paths = {
          */
         post: operations['notes___llm-gen'];
     };
+    '/notes/llm-models': {
+        /**
+         * notes/llm-models
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:notes*
+         */
+        post: operations['notes___llm-models'];
+    };
     '/notes/local-timeline': {
         /**
          * notes/local-timeline
@@ -6318,7 +6327,7 @@ export type components = {
             entranceMarginTop: number;
             /** @default 0 */
             entranceMarginBottom: number;
-            serverGeminiEnabled: boolean;
+            serverOpenAIEnabled: boolean;
             customCursorUrl: string | null;
             customCursorPointerUrl: string | null;
             customCursorTextUrl: string | null;
@@ -11650,9 +11659,10 @@ export interface operations {
                         entranceMarginRight: number;
                         entranceMarginTop: number;
                         entranceMarginBottom: number;
-                        serverGeminiEnabled: boolean;
-                        serverGeminiApiKey: string | null;
-                        serverGeminiModels: string;
+                        serverOpenAIEnabled: boolean;
+                        serverOpenAIApiKey: string | null;
+                        serverOpenAIBaseURL: string | null;
+                        serverOpenAIModels: string;
                         customCursorUrl: string | null;
                         customCursorPointerUrl: string | null;
                         customCursorTextUrl: string | null;
@@ -15479,9 +15489,10 @@ export interface operations {
                     entranceMarginRight?: number;
                     entranceMarginTop?: number;
                     entranceMarginBottom?: number;
-                    serverGeminiEnabled?: boolean;
-                    serverGeminiApiKey?: string | null;
-                    serverGeminiModels?: string;
+                    serverOpenAIEnabled?: boolean;
+                    serverOpenAIApiKey?: string | null;
+                    serverOpenAIBaseURL?: string | null;
+                    serverOpenAIModels?: string;
                     customCursorUrl?: string | null;
                     customCursorPointerUrl?: string | null;
                     customCursorTextUrl?: string | null;
@@ -34313,10 +34324,10 @@ export interface operations {
                 'application/json': {
                     text: string;
                     prompt: string;
-                    fileUris?: {
-                        mimeType: string;
-                        fileUri: string;
-                    }[] | null;
+                    baseUrl?: string | null;
+                    apiKey?: string | null;
+                    model?: string | null;
+                    fileUris?: string[] | null;
                 };
             };
         };
@@ -34325,6 +34336,91 @@ export interface operations {
             204: {
                 headers: {
                     [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'notes___llm-models': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    baseUrl?: string | null;
+                    apiKey?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        models: {
+                            id: string;
+                            input_modalities?: unknown;
+                            inputModalities?: unknown;
+                            modality?: unknown;
+                            type?: unknown;
+                            architecture?: unknown;
+                            capabilities?: unknown;
+                        }[];
+                    };
                 };
             };
             /** @description Client error */

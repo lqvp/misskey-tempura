@@ -886,15 +886,19 @@ export const meta = {
 				type: 'number',
 				optional: false, nullable: false,
 			},
-			serverGeminiEnabled: {
+			serverOpenAIEnabled: {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
-			serverGeminiApiKey: {
+			serverOpenAIApiKey: {
 				type: 'string',
 				optional: false, nullable: true,
 			},
-			serverGeminiModels: {
+			serverOpenAIBaseURL: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
+			serverOpenAIModels: {
 				type: 'string',
 				optional: false, nullable: false,
 			},
@@ -1313,9 +1317,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				entranceMarginRight: instance.entranceMarginRight,
 				entranceMarginTop: instance.entranceMarginTop,
 				entranceMarginBottom: instance.entranceMarginBottom,
-				serverGeminiEnabled: instance.serverGeminiEnabled,
-				serverGeminiApiKey: instance.serverGeminiApiKey,
-				serverGeminiModels: instance.serverGeminiModels,
+				serverOpenAIEnabled: instance.serverOpenAIEnabled,
+				serverOpenAIApiKey: instance.serverOpenAIApiKey,
+				serverOpenAIBaseURL: instance.serverOpenAIBaseURL,
+				serverOpenAIModels: instance.serverOpenAIModels,
 				customCursorUrl: instance.customCursorUrl,
 				customCursorPointerUrl: instance.customCursorPointerUrl,
 				customCursorTextUrl: instance.customCursorTextUrl,
