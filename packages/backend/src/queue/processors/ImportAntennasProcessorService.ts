@@ -138,7 +138,9 @@ export class ImportAntennasProcessorService {
 					mustExcludeKeywords: antenna.mustExcludeKeywords ?? [],
 					expression: antenna.expression ?? null,
 					keywordMode,
-					users: (antenna.src === 'list' && antenna.userListAccts !== null ? antenna.userListAccts : antenna.users).filter(Boolean),
+					// userListAcctsはスキーマ上省略可能(undefined)なので、nullと同じ扱いにする。
+					// !== null だと undefined.filter で例外になり、ループ全体が止まる
+					users: (antenna.src === 'list' && antenna.userListAccts != null ? antenna.userListAccts : antenna.users).filter(Boolean),
 					caseSensitive: antenna.caseSensitive,
 					localOnly: antenna.localOnly,
 					excludeBots: antenna.excludeBots,

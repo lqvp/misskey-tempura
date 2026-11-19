@@ -7,6 +7,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { In, LessThan } from 'typeorm';
 import { DI } from '@/di-symbols.js';
 import type { AntennasRepository, RoleAssignmentsRepository, UserIpsRepository, UserLoginContextsRepository } from '@/models/_.js';
+import type { MiAntenna } from '@/models/Antenna.js';
 import type Logger from '@/logger.js';
 import { bindThis } from '@/decorators.js';
 import { IdService } from '@/core/IdService.js';
@@ -59,23 +60,21 @@ export class CleanProcessorService {
 
 		// 使われてないアンテナを停止
 		if (this.config.deactivateAntennaThreshold > 0) {
-			const deactivateThreshold = new Date(Date.now() - this.config.deactivateAntennaThreshold);
 			// 停止したアンテナをイベントで通知する。
 			// 通知しないと DB は isActive=false なのにプロセス内キャッシュは配信を続け、
 			// 再起動した途端に突然止まる (DBとキャッシュの不整合) ため
-			const deactivated = await this.antennasRepository.findBy({
-				isActive: true,
-				lastUsedAt: LessThan(deactivateThreshold),
-			});
-			if (deactivated.length > 0) {
-				await this.antennasRepository.update({
-					lastUsedAt: LessThan(deactivateThreshold),
-				}, {
-					isActive: false,
-				});
-				for (const antenna of deactivated) {
-					this.globalEventService.publishInternalEvent('antennaUpdated', { ...antenna, isActive: false });
-				}
+			// 選択と更新を1文で行い、実際に無効化された行だけを通知する
+			// (先に読んでから更新すると、読み込みと更新の間に lastUsedAt が更新された
+			// アンテナに対して誤って無効化を通知してしまう)
+			const deactivatedAntennas = await this.antennasRepository.createQueryBuilder('antenna')
+				.update()
+				.set({ isActive: false })
+				.where('"isActive" = :active AND "lastUsedAt" < :threshold', { active: true, threshold: new Date(Date.now() - this.config.deactivateAntennaThreshold) })
+				.returning('*')
+				.execute()
+				.then((response) => response.raw as MiAntenna[]);
+			for (const antenna of deactivatedAntennas) {
+				this.globalEventService.publishInternalEvent('antennaUpdated', { ...antenna, isActive: false });
 			}
 		}
 

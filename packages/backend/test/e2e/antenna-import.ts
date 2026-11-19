@@ -92,4 +92,24 @@ describe('アンテナのimport(createとの整合)', () => {
 		}], 'import-broken-must-exclude');
 		assert.strictEqual(found.length, 1, 'SCOREでないのにmustExcludeKeywordsの壊れた式でimportが落ちた');
 	});
+
+	test('src=listでuserListAcctsを省略しても、以降の項目がインポートされること。', async () => {
+		// userListAcctsは省略可能(undefined)。undefinedで例外が出ると、
+		// 後続の項目まで巻き込んでインポートが止まる
+		const found = await importAndFind([{
+			...baseExport,
+			name: 'import-list-no-accts',
+			src: 'list',
+			keywords: [['tempura']],
+			excludeKeywords: [[]],
+			userListAccts: undefined,
+			users: ['@alice@example.com'],
+		}, {
+			...baseExport,
+			name: 'import-after-list-no-accts',
+			keywords: [['soba']],
+			excludeKeywords: [[]],
+		}], 'import-after-list-no-accts');
+		assert.strictEqual(found.length, 1, 'src=listでuserListAccts省略時に後続項目がimportされなかった');
+	});
 });
