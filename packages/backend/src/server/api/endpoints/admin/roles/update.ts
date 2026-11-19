@@ -37,7 +37,7 @@ export const paramDef = {
 		target: { type: 'string', enum: ['manual', 'conditional'] },
 		condFormula: { type: 'object' },
 		isPublic: { type: 'boolean' },
-		permissionGroup: { type: 'string', enum: ['Admin', 'MainModerator', 'Normal', 'Community'] },
+		permissionGroup: { type: 'string', enum: ['Admin', 'MainModerator', 'Moderator', 'Normal', 'Community'] },
 		isExplorable: { type: 'boolean' },
 		isRainbow: { type: 'boolean' },
 		asBadge: { type: 'boolean' },

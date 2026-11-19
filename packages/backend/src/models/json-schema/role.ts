@@ -490,7 +490,7 @@ export const packedRoleSchema = {
 				permissionGroup: {
 					type: 'string',
 					optional: false, nullable: false,
-					enum: ['Admin', 'MainModerator', 'Normal', 'Community'],
+					enum: ['Admin', 'MainModerator', 'Moderator', 'Normal', 'Community'],
 				},
 				isExplorable: {
 					type: 'boolean',
