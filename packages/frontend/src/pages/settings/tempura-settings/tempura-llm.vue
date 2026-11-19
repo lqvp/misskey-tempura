@@ -44,14 +44,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<SearchMarker :keywords="['llm', 'openai', 'model', 'version', 'fetch', 'list']">
 							<MkPreferenceContainer k="openaiModel">
 								<div class="_gaps_s">
-									<MkSelect v-if="modelItems.length > 0" v-model="openaiModel" :items="modelItems">
+									<MkSelect v-if="modelItems.length > 0" v-model="openaiModel" :items="modelItems" :disabled="useGeminiLLMAPI">
 										<template #label><SearchLabel>{{ i18n.ts._llm.openaiModelLabel }}</SearchLabel></template>
 										<template #caption>
 											<span v-if="selectedModelInfo?.imageInput">{{ i18n.ts._llm.modelImageSupported }}</span>
 											<span v-else>{{ i18n.ts._llm.modelImageUnknown }}</span>
 										</template>
 									</MkSelect>
-									<MkInput v-else v-model="openaiModel" type="text">
+									<MkInput v-else v-model="openaiModel" type="text" :disabled="useGeminiLLMAPI">
 										<template #label><SearchLabel>{{ i18n.ts._llm.openaiModelLabel }}</SearchLabel></template>
 										<template #caption>{{ i18n.ts._llm.openaiModelCaption }}</template>
 									</MkInput>
@@ -177,7 +177,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import MkInput from '@/components/MkInput.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
@@ -191,6 +191,7 @@ import { fetchInstance } from '@/instance.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 import { fetchAvailableModels } from '@/utility/tempura-script/llm.js';
 import type { LLMModelInfo } from '@/utility/tempura-script/llm.js';
+import { openaiModels } from '@/utility/tempura-script/models.js';
 
 const instance = ref< Awaited<ReturnType<typeof fetchInstance>> | null>(null);
 
@@ -214,23 +215,36 @@ const geminiNoteProfessionalText = prefer.model('geminiNoteProfessionalText');
 const geminiNoteCatText = prefer.model('geminiNoteCatText');
 const geminiNoteCustomText = prefer.model('geminiNoteCustomText');
 
-// モデル一覧 (API から動的取得)
+// モデル一覧 (API から動的取得、失敗時はフォールバックリスト)
 const models = ref<LLMModelInfo[]>([]);
 const fetchingModels = ref(false);
 const fetchError = ref(false);
 const modelItems = computed(() => models.value.map((m) => ({ value: m.id, label: m.id })));
 const selectedModelInfo = computed(() => models.value.find((m) => m.id === openaiModel.value));
 
+function fallbackModels(): LLMModelInfo[] {
+	return openaiModels.map((id) => ({ id }));
+}
+
 async function refreshModels(): Promise<void> {
+	// 未設定なら取得しない (初期状態でエラーを表示しない)
+	if (!useGeminiLLMAPI.value && !openaiToken.value) {
+		models.value = fallbackModels();
+		return;
+	}
 	fetchingModels.value = true;
 	fetchError.value = false;
 	try {
 		const result = await fetchAvailableModels();
 		if (result.length === 0) {
+			// 取得に失敗した場合はフォールバックリストを表示する
+			models.value = fallbackModels();
 			fetchError.value = true;
+		} else {
+			models.value = result;
 		}
-		models.value = result;
 	} catch {
+		models.value = fallbackModels();
 		fetchError.value = true;
 	} finally {
 		fetchingModels.value = false;
@@ -238,4 +252,7 @@ async function refreshModels(): Promise<void> {
 }
 
 onMounted(refreshModels);
+
+// 設定変更時にモデル一覧を再取得する
+watch([useGeminiLLMAPI, openaiToken, openaiBaseUrl], refreshModels);
 </script>

@@ -15235,26 +15235,6 @@ export interface Locale extends ILocale {
     "_llm": {
         "_server": {
             /**
-             * Gemini APIを有効にする
-             */
-            "serverGeminiEnabled": string;
-            /**
-             * 有効にすることで、サーバーが提供するGemini APIを使用して、LLMを実行できます。
-             */
-            "serverGeminiEnabledDescription": string;
-            /**
-             * Gemini APIキー
-             */
-            "serverGeminiApiKey": string;
-            /**
-             * サーバーが提供するGemini APIのAPIキーを入力します。
-             */
-            "serverGeminiApiKeyDescription": string;
-            /**
-             * サーバーで提供するGemini APIで使用するモデルを選択します。
-             */
-            "serverGeminiModelsDescription": string;
-            /**
              * OpenAI互換APIを有効にする
              */
             "serverOpenAIEnabled": string;
@@ -15289,31 +15269,11 @@ export interface Locale extends ILocale {
         };
         "_error": {
             /**
-             * ファイルのダウンロードに失敗しました
-             */
-            "fileDownload": string;
-            /**
-             * ファイルアップロードの初期化に失敗しました
-             */
-            "uploadInit": string;
-            /**
-             * アップロードURLが取得できませんでした
-             */
-            "uploadUrlNotFound": string;
-            /**
-             * ファイルのアップロードに失敗しました
-             */
-            "upload": string;
-            /**
-             * アップロードしたファイルのURIが取得できませんでした
-             */
-            "uploadedFileUri": string;
-            /**
              * 操作がキャンセルされました。
              */
             "cancel": string;
             /**
-             * Gemini APIの利用を無効にしました。
+             * LLM APIの利用を無効にしました。
              */
             "disable": string;
             /**
@@ -15329,11 +15289,11 @@ export interface Locale extends ILocale {
              */
             "serverLLMApi": string;
             /**
-             * Gemini API tokenがありません。
+             * OpenAI互換APIトークンがありません。
              */
             "tokenMissing": string;
             /**
-             * Gemini API エラー:
+             * LLM API エラー:
              */
             "api": string;
             /**
@@ -15349,7 +15309,7 @@ export interface Locale extends ILocale {
              */
             "profileNotFound": string;
             /**
-             * Gemini API のレスポンスフォーマットが不正です。
+             * LLM API のレスポンスフォーマットが不正です。
              */
             "responseFormat": string;
             /**
@@ -15365,7 +15325,7 @@ export interface Locale extends ILocale {
              */
             "noteMissing": string;
             /**
-             * Gemini API応答の解析に失敗しました。
+             * LLM API応答の解析に失敗しました。
              */
             "responseParse": string;
             /**
@@ -15397,18 +15357,6 @@ export interface Locale extends ILocale {
          * ノートにファイルがあれば、メディアを含めてLLMを実行します。
          */
         "useGeminiWithMediaDescription": string;
-        /**
-         * Geminiトークン
-         */
-        "geminiTokenLabel": string;
-        /**
-         * Gemini API の認証に使用するトークンを設定します。
-         */
-        "geminiTokenCaption": string;
-        /**
-         * Geminiモデル
-         */
-        "geminiModelLabel": string;
         /**
          * Geminiシステムプロンプト
          */
@@ -15489,22 +15437,6 @@ export interface Locale extends ILocale {
          * カスタム
          */
         "geminiNoteCustomText": string;
-        /**
-         * 思考トークン数
-         */
-        "geminiThinkingBudgetLabel": string;
-        /**
-         * 思考トークン数を設定します。`-1`を設定することで無制限となります。Proなどは無効にすることは出来ません。より詳細な説明は https://ai.google.dev/gemini-api/docs/thinking をご覧ください。
-         */
-        "geminiThinkingBudgetCaption": string;
-        /**
-         * LLMプロバイダ
-         */
-        "llmProviderLabel": string;
-        /**
-         * 使用するLLMプロバイダを選択します。OpenAI互換を選ぶと、OpenAI互換API（ベースURL指定可）を使えます。
-         */
-        "llmProviderCaption": string;
         /**
          * OpenAI互換APIトークン
          */

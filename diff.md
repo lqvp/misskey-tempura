@@ -17,7 +17,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * 配送先制御 (delivery targets)
 * アカウント整理 (truncate)
 * ノートの非公開化 (make private)
-* LLM モデレーションと LLM 連携 (Gemini / OpenAI 互換)
+* LLM モデレーションと LLM 連携 (OpenAI 互換)
 * 問い合わせフォーム
 * 地震情報
 * Hana entrance
@@ -316,8 +316,18 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * OpenAI 互換 API (Chat Completions) をサーバー経由で利用可能
 * useGeminiLLMAPI でユーザーがサーバー提供LLMを利用
 * useGeminiWithMedia でメディア付き (image_url)
+* system prompt と note/profile summarize prompts
+* ノート変換 (long/short/simple/casual/professional/cat/custom)
+* notesLimitPrompt / includeFollowersNotesPrompt
 * ユーザー直指定モード: openaiToken / openaiBaseUrl / openaiModel
 * モデル一覧を API から動的取得 (notes/llm-models、GET /models)
+
+**注意:** このバージョンでサーバー Gemini 設定 (serverGemini*) は廃止されました。
+マイグレーションが既存の Gemini API キーを OpenAI 互換設定へ引き継ぎます
+(baseURL は Gemini の OpenAI 互換エンドポイント)。Gemini を利用していなかった
+サーバーは、管理画面 (独自機能 → LLM設定) で OpenAI 互換 API キーとベースURLを
+再設定してください。旧 Gemini 用ユーザートークン (geminiToken) も削除されたため、
+各自で openaiToken を設定し直す必要があります。
 
 ### LLM モデレーション
 

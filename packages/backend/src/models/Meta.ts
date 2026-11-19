@@ -1244,7 +1244,7 @@ export class MiMeta {
 	@Column('varchar', {
 		length: 512,
 		default: 'gpt-4o-mini',
-		nullable: true,
+		nullable: false,
 	})
 	public serverOpenAIModels: string;
 

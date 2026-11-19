@@ -7,7 +7,6 @@ import ms from 'ms';
 import { Inject, Injectable } from '@nestjs/common';
 import type { MiMeta } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
-import { RoleService } from '@/core/RoleService.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '../../error.js';
@@ -39,11 +38,6 @@ export const meta = {
 			id: '9a3c1f0e-6f8e-4b4f-9d1f-5f5d3c7b1a11',
 		},
 
-		accessDenied: {
-			message: 'Access denied. Requires canUseGeminiLLMAPI role.',
-			code: 'ACCESS_DENIED',
-			id: '9a3c1f0e-6f8e-4b4f-9d1f-5f5d3c7b1a12',
-		},
 	},
 
 	res: {
@@ -74,15 +68,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 		private serverSettings: MiMeta,
 
 		private httpRequestService: HttpRequestService,
-		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			const policies = await this.roleService.getUserPolicies(me.id);
-
-			if (!policies.canUseGeminiLLMAPI) {
-				throw new ApiError(meta.errors.accessDenied);
-			}
-
+			// 権限チェックは requiredRolePolicy (canUseGeminiLLMAPI) で行われる
 			if (!this.serverSettings.serverOpenAIEnabled) {
 				throw new ApiError(meta.errors.llmNotEnabled);
 			}

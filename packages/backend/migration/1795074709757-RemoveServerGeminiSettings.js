@@ -21,6 +21,15 @@ export class RemoveServerGeminiSettings1795074709757 {
      * @param {QueryRunner} queryRunner
      */
     async up(queryRunner) {
+        // Gemini 運用サーバー向けに、既存の Gemini 設定を OpenAI 互換設定へ引き継ぐ。
+        // Gemini は OpenAI 互換エンドポイント (https://generativelanguage.googleapis.com/v1beta/openai/)
+        // を持つため、API キーはそのまま再利用できる。
+        await queryRunner.query(`UPDATE "meta" SET
+            "serverOpenAIApiKey" = "serverGeminiApiKey",
+            "serverOpenAIEnabled" = "serverGeminiEnabled",
+            "serverOpenAIBaseURL" = 'https://generativelanguage.googleapis.com/v1beta/openai',
+            "serverOpenAIModels" = COALESCE("serverGeminiModels", 'gemini-2.0-flash')
+            WHERE "serverGeminiApiKey" IS NOT NULL`);
         await queryRunner.query('ALTER TABLE "meta" DROP COLUMN IF EXISTS "serverGeminiModels"');
         await queryRunner.query('ALTER TABLE "meta" DROP COLUMN IF EXISTS "serverGeminiApiKey"');
         await queryRunner.query('ALTER TABLE "meta" DROP COLUMN IF EXISTS "serverGeminiEnabled"');

@@ -38,11 +38,13 @@ export interface LLMModelInfo {
  * 2. モデル名のパターン (既知のビジョン対応モデルの命名)
  */
 export function detectImageInputSupport(model: { id: string; [key: string]: unknown }): boolean {
-	// 1. モダリティ情報があればそれを使う
+	// 1. モダリティ情報があればそれを使う (画像を含む配列が1つでもあれば対応と判定)
 	for (const key of ['input_modalities', 'inputModalities', 'modalities', 'supported_input_modalities']) {
 		const value = model[key];
 		if (Array.isArray(value)) {
-			return value.some(v => typeof v === 'string' && (v.includes('image') || v === 'multimodal'));
+			if (value.some(v => typeof v === 'string' && (v.includes('image') || v === 'multimodal'))) {
+				return true;
+			}
 		}
 	}
 	const caps = model['capabilities'];

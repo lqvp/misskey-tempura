@@ -7,7 +7,6 @@ import ms from 'ms';
 import { Inject, Injectable } from '@nestjs/common';
 import type { MiMeta } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
-import { RoleService } from '@/core/RoleService.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '../../error.js';
@@ -51,11 +50,6 @@ export const meta = {
 			id: '58f1cb83-fb0b-47be-9dc8-0cf39ecf44e2',
 		},
 
-		accessDenied: {
-			message: 'Access denied. Requires canUseGeminiLLMAPI role.',
-			code: 'ACCESS_DENIED',
-			id: '5eb8d909-2540-4970-90b8-dd6f86088121',
-		},
 	},
 } as const;
 
@@ -87,15 +81,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 		private serverSettings: MiMeta,
 
 		private httpRequestService: HttpRequestService,
-		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			const policies = await this.roleService.getUserPolicies(me.id);
-
-			if (!policies.canUseGeminiLLMAPI) {
-				throw new ApiError(meta.errors.accessDenied);
-			}
-
+			// 権限チェックは requiredRolePolicy (canUseGeminiLLMAPI) で行われる
 			if (ps.text == null || ps.text === '') {
 				throw new ApiError(meta.errors.emptyText);
 			}
@@ -121,8 +109,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 
 			// ユーザーコンテンツ (テキスト + 画像URL)
 			const content: any[] = [{ type: 'text', text: ps.text }];
+			// 画像は最大4件まで (API 直叩きに対するサーバー側の上限)
 			if (ps.fileUris && ps.fileUris.length > 0) {
-				for (const fileInfo of ps.fileUris) {
+				for (const fileInfo of ps.fileUris.slice(0, 4)) {
 					content.push({
 						type: 'image_url',
 						image_url: { url: fileInfo.fileUri },

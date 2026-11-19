@@ -6,7 +6,7 @@
 /**
  * モデル一覧の静的フォールバック。
  * 実際の一覧は fetchAvailableModels() (llm.ts) で各 API から動的取得するため、
- * ここは API に到達できない場合の最終手段としてのみ使われる。
+ * モデル一覧 API に到達できない場合のフォールバックとして使われる。
  */
 export const openaiModels = [
 	'gpt-4o-mini',
