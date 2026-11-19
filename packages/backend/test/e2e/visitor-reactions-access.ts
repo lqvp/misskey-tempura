@@ -10,7 +10,7 @@ import { beforeAll, describe, test } from 'vitest';
 import { api, post, signup } from '../utils.js';
 import type * as misskey from 'misskey-js';
 
-// notes/replies, notes/renotes, notes/quotes の匿名アクセスは
+// notes/replies, notes/renotes, notes/quotes, notes/reactions の匿名アクセスは
 // サーバー設定の個別フラグ(既定 off)で制御されること。
 // off の間は従来通り空配列、on にすると匿名でも実データを返す。
 describe('visitor reactions access switches', () => {
@@ -26,6 +26,7 @@ describe('visitor reactions access switches', () => {
 		await post(bob, { text: 'a reply', replyId: note.id });
 		await post(bob, { renoteId: note.id });
 		await post(bob, { text: 'a quote', renoteId: note.id });
+		await api('notes/reactions/create', { noteId: note.id, reaction: '👍' }, bob);
 	}, 1000 * 60 * 2);
 
 	test('匿名は notes/replies のフラグが off の間空の応答', async () => {
@@ -71,6 +72,22 @@ describe('visitor reactions access switches', () => {
 		assert.strictEqual(res.status, 200);
 		assert.ok(Array.isArray(res.body) && res.body.length === 1);
 		await api('admin/update-meta', { allowAnonymousQuotes: false }, admin);
+	});
+
+	test('匿名は notes/reactions のフラグが off の間空の応答', async () => {
+		const res = await api('notes/reactions', { noteId: note.id });
+		assert.strictEqual(res.status, 200);
+		assert.deepStrictEqual(res.body, []);
+	});
+
+	test('フラグを on にすると匿名でも notes/reactions を返す', async () => {
+		await api('admin/update-meta', { allowAnonymousReactions: true }, admin);
+		const res = await api('notes/reactions', { noteId: note.id });
+		assert.strictEqual(res.status, 200);
+		assert.ok(Array.isArray(res.body) && res.body.length === 1);
+		await api('admin/update-meta', { allowAnonymousReactions: false }, admin);
+		const res2 = await api('notes/reactions', { noteId: note.id });
+		assert.deepStrictEqual(res2.body, []);
 	});
 
 	test('フラグは独立(replies を on にしても quotes は遮断のまま)', async () => {

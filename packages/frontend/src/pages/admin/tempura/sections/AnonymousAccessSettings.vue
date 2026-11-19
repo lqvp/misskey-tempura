@@ -54,7 +54,8 @@ type FlagKey =
 	| 'allowAnonymousRenotes'
 	| 'allowAnonymousQuotes'
 	| 'allowAnonymousFeatured'
-	| 'allowAnonymousLocalTimeline';
+	| 'allowAnonymousLocalTimeline'
+	| 'allowAnonymousReactions';
 
 type FlagDef = { key: FlagKey; label: string; caption: string };
 
@@ -95,6 +96,7 @@ const groups: { key: string; label: string; flags: FlagDef[] }[] = [
 			{ key: 'allowAnonymousQuotes', label: S.allowAnonymousQuotes, caption: S.allowAnonymousQuotes_description },
 			{ key: 'allowAnonymousFeatured', label: S.allowAnonymousFeatured, caption: S.allowAnonymousFeatured_description },
 			{ key: 'allowAnonymousLocalTimeline', label: S.allowAnonymousLocalTimeline, caption: S.allowAnonymousLocalTimeline_description },
+			{ key: 'allowAnonymousReactions', label: S.allowAnonymousReactions, caption: S.allowAnonymousReactions_description },
 		],
 	},
 ];
@@ -118,6 +120,7 @@ const flagValues = reactive<Record<FlagKey, boolean>>({
 	allowAnonymousQuotes: props.meta.allowAnonymousQuotes ?? false,
 	allowAnonymousFeatured: props.meta.allowAnonymousFeatured ?? false,
 	allowAnonymousLocalTimeline: props.meta.allowAnonymousLocalTimeline ?? false,
+	allowAnonymousReactions: props.meta.allowAnonymousReactions ?? false,
 });
 
 type GroupState = 'allOn' | 'allOff' | 'custom';

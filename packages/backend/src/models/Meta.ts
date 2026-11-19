@@ -991,6 +991,10 @@ export class MiMeta {
 		default: false,
 	})
 	public allowAnonymousLocalTimeline: boolean;
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousReactions: boolean;
 
 	@Column('varchar', {
 		length: 1024,

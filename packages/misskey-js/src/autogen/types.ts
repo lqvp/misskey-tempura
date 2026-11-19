@@ -11688,6 +11688,7 @@ export interface operations {
                         allowAnonymousFederationInstances: boolean;
                         allowAnonymousFeatured: boolean;
                         allowAnonymousLocalTimeline: boolean;
+                        allowAnonymousReactions: boolean;
                     };
                 };
             };
@@ -15445,6 +15446,7 @@ export interface operations {
                     allowAnonymousFederationInstances?: boolean;
                     allowAnonymousFeatured?: boolean;
                     allowAnonymousLocalTimeline?: boolean;
+                    allowAnonymousReactions?: boolean;
                     customSplashText?: string[] | null;
                     defaultFollowedUsers?: string[] | null;
                     forciblyFollowedUsers?: string[] | null;
