@@ -106,6 +106,7 @@ export class MetaEntityService {
 			notFoundImageUrl: instance.notFoundImageUrl,
 			youBlockedImageUrl: instance.youBlockedImageUrl,
 			customSplashText: instance.customSplashText,
+			offlinePageConfig: instance.offlinePageConfig,
 			iconUrl: instance.iconUrl,
 			enableLongIconUrl: instance.enableLongIconUrl,
 			longIconUrl: instance.longIconUrl,

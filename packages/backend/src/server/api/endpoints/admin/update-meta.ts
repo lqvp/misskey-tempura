@@ -307,6 +307,7 @@ export const paramDef = {
 		customSplashText: { type: 'array', nullable: true, items: {
 			type: 'string',
 		} },
+		offlinePageConfig: { type: 'string', nullable: true },
 		defaultFollowedUsers: {
 			type: 'array', nullable: true, items: {
 				type: 'string',
@@ -1124,6 +1125,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (Array.isArray(ps.customSplashText)) {
 				set.customSplashText = ps.customSplashText.filter(Boolean);
+			}
+
+			if (ps.offlinePageConfig !== undefined) {
+				set.offlinePageConfig = ps.offlinePageConfig;
 			}
 
 			if (ps.blockMentionsFromUnfamiliarRemoteUsers !== undefined) {

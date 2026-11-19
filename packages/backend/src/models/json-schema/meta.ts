@@ -166,6 +166,10 @@ export const packedMetaLiteSchema = {
 				type: 'string',
 			},
 		},
+		offlinePageConfig: {
+			type: 'string',
+			optional: false, nullable: true,
+		},
 		iconUrl: {
 			type: 'string',
 			optional: false, nullable: true,
