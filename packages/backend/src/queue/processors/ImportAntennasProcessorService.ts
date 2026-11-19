@@ -85,7 +85,7 @@ export class ImportAntennasProcessorService {
 	public async process(job: Bull.Job<DBAntennaImportJobData>): Promise<void> {
 		const now = new Date();
 		// スキップしたアンテナはユーザーから見えなくなるため、件数と理由を最後にまとめてログへ残す
-		const skipped: { name: string; reason: 'emptyKeywords' | 'invalidShape' | 'invalidRegex' }[] = [];
+		const skipped: { name: string; reason: 'emptyKeywords' | 'invalidShape' | 'invalidRegex' | 'keywordLimitExceeded' }[] = [];
 		try {
 			for (const antenna of job.data.antenna) {
 				// 形が壊れた項目は名前すら取れないことがあるので、スキップ記録は形状検証の後に作る
@@ -113,7 +113,7 @@ export class ImportAntennasProcessorService {
 				// 上限は create と同じく常に検査する (リテラルモードでも超過したまま保存されないように)
 				if (findAntennaKeywordLimitViolation(keywordGroups) != null) {
 					this.logger.warn(`Skipped antenna over keyword limit: ${antenna.name}`);
-					skipped.push({ name: antenna.name, reason: 'invalidShape' });
+					skipped.push({ name: antenna.name, reason: 'keywordLimitExceeded' });
 					continue;
 				}
 
@@ -131,7 +131,10 @@ export class ImportAntennasProcessorService {
 					lastUsedAt: now,
 					userId: job.data.user.id,
 					name: antenna.name,
-					src: antenna.src === 'list' && antenna.userListAccts ? 'users' : antenna.src,
+					// イポートしたアンテナの userListId は必ず null になるので、
+					// src=list のままでは「何も受信しない」アンテナになる。
+					// リストの中身は users (acct列) に復元されるため、src は users に寄せる
+					src: antenna.src === 'list' ? 'users' : antenna.src,
 					userListId: null,
 					keywords: antenna.keywords,
 					excludeKeywords: antenna.excludeKeywords,

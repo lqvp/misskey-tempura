@@ -752,5 +752,19 @@ describe('AntennaService', () => {
 			expect(service.antennas).toHaveLength(1);
 			expect(service.antennas[0].name).toBe('renamed');
 		});
+
+		it('adds an active antenna missing from the cache (reactivation path)', () => {
+			// antennas/notes で再有効化されたアンテナは、キャッシュに載っていない状態から
+			// antennaUpdated(active) で追加される。この経路が壊れると配信が始まらない
+			const service = antennaService as any;
+			service.antennasFetched = true;
+			service.antennas = [];
+			service.onRedisMessage('', JSON.stringify({
+				channel: 'internal',
+				message: { type: 'antennaUpdated', body: antennaBody('a1', true) },
+			}));
+			expect(service.antennas).toHaveLength(1);
+			expect(service.antennas[0].id).toBe('a1');
+		});
 	});
 });

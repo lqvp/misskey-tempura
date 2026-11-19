@@ -8,7 +8,7 @@ process.env.NODE_ENV = 'test';
 
 import type { INestApplicationContext } from '@nestjs/common';
 import * as assert from 'assert';
-import { afterAll, beforeAll, describe, test, vi } from 'vitest';
+import { afterAll, beforeAll, describe, test } from 'vitest';
 import { loadConfig } from '@/config.js';
 import { jobQueue } from '@/boot/common.js';
 import { ImportAntennasProcessorService } from '@/queue/processors/ImportAntennasProcessorService.js';
@@ -111,5 +111,22 @@ describe('アンテナのimport(createとの整合)', () => {
 			excludeKeywords: [[]],
 		}], 'import-after-list-no-accts');
 		assert.strictEqual(found.length, 1, 'src=listでuserListAccts省略時に後続項目がimportされなかった');
+	});
+
+	test('src=listのアンテナは、インポート時にsrcがusersに変換されること。', async () => {
+		// イポートしたアンテナの userListId は常に null になるため、
+		// src=list のままだと何も受信しないアンテナになる
+		const found = await importAndFind([{
+			...baseExport,
+			name: 'import-list-to-users',
+			src: 'list',
+			keywords: [['tempura']],
+			excludeKeywords: [[]],
+			userListAccts: null,
+			users: ['@alice@example.com'],
+		}], 'import-list-to-users');
+		assert.strictEqual(found.length, 1);
+		assert.strictEqual(found[0].src, 'users', 'src=listのままimportされた');
+		assert.deepStrictEqual(found[0].users, ['@alice@example.com']);
 	});
 });

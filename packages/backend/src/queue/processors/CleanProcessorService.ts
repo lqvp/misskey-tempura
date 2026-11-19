@@ -72,7 +72,7 @@ export class CleanProcessorService {
 				.where('"isActive" = :active AND "lastUsedAt" < :threshold', { active: true, threshold: new Date(Date.now() - this.config.deactivateAntennaThreshold) })
 				.returning('*')
 				.execute()
-				.then((response) => response.raw as MiAntenna[]);
+				.then((response) => (response.raw ?? []) as MiAntenna[]);
 			for (const antenna of deactivatedAntennas) {
 				this.globalEventService.publishInternalEvent('antennaUpdated', { ...antenna, isActive: false });
 			}
