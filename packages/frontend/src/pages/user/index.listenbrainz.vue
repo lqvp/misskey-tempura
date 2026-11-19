@@ -21,7 +21,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<p class="text-xs font-medium">{{ listenbrainz.artist }}</p>
 				</div>
 			</a>
-			<a :href="listenbrainz.listenbrainzurl">
+			<a :href="listenbrainz.listenbrainzurl" :aria-label="listenbrainz.title">
 				<div class="playicon">
 					<i class="ti ti-player-play-filled"></i>
 				</div>
@@ -39,7 +39,7 @@ import MkContainer from '@/components/MkContainer.vue';
 
 const props = withDefaults(
 	defineProps<{
-		user: misskey.entities.User & { listenbrainz?: string };
+		user: misskey.entities.User & { listenbrainz?: string | null; ListenBrainz?: string | null };
 	}>(),
 	{},
 );
@@ -49,11 +49,11 @@ const listenbrainz = reactive({
 	artist: '',
 	lastlisten: '',
 	img: '',
-	musicbrainzurl: '',
-	listenbrainzurl: '',
+	musicbrainzurl: '#',
+	listenbrainzurl: '#',
 });
 
-const listenbrainzUsername = props.user.listenbrainz;
+const listenbrainzUsername = props.user.listenbrainz ?? props.user.ListenBrainz ?? null;
 
 if (listenbrainzUsername) {
 	(async () => {
@@ -99,7 +99,7 @@ if (listenbrainzUsername) {
 			},
 		);
 		const playingNow = await response.json();
-		if (playingNow.payload.listens && playingNow.payload.listens.length !== 0) {
+		if (playingNow.payload?.listens && playingNow.payload.listens.length !== 0) {
 			const playing = playingNow.payload.listens[0];
 			const title: string = playing.track_metadata.track_name;
 			const artist: string = playing.track_metadata.artist_name;
@@ -124,7 +124,9 @@ if (listenbrainzUsername) {
 				}
 			});
 		}
-	})();
+	})().catch((err) => {
+		console.error('Failed to fetch ListenBrainz playing-now:', err);
+	});
 }
 </script>
 

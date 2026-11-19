@@ -31,6 +31,26 @@ describe('safeHttpUrl', () => {
 		expect(safeHttpUrl('data:text/html,<script>alert(1)</script>')).toBeNull();
 	});
 
+	test('rejects mixed-case, whitespace-padded, or line-broken javascript: URLs', () => {
+		expect(safeHttpUrl('JaVaScRiPt:alert(1)')).toBeNull();
+		expect(safeHttpUrl(' javascript:alert(1)')).toBeNull();
+		expect(safeHttpUrl('java\nscript:alert(1)')).toBeNull();
+	});
+
+	test('rejects other schemes', () => {
+		expect(safeHttpUrl('blob:https://example.com/id')).toBeNull();
+		expect(safeHttpUrl('file:///etc/passwd')).toBeNull();
+		expect(safeHttpUrl('vbscript:msgbox(1)')).toBeNull();
+	});
+
+	test('normalizes the scheme and host', () => {
+		expect(safeHttpUrl('HTTPS://EXAMPLE.COM')).toBe('https://example.com/');
+	});
+
+	test('rejects protocol-relative URLs', () => {
+		expect(safeHttpUrl('//example.com/path')).toBeNull();
+	});
+
 	test('returns null for invalid, relative, or empty values', () => {
 		expect(safeHttpUrl('not a url')).toBeNull();
 		expect(safeHttpUrl('/relative/path')).toBeNull();

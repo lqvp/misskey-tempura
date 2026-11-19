@@ -3,8 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { afterEach, assert, describe, test } from 'vitest';
-import { cleanup, render, type RenderResult } from '@testing-library/vue';
+import { afterEach, assert, describe, test, vi } from 'vitest';
+import { cleanup, render, waitFor, type RenderResult } from '@testing-library/vue';
 import * as Misskey from 'misskey-js';
 import { directives } from '@/directives/index.js';
 import { components } from '@/components/index.js';
@@ -61,5 +61,49 @@ describe('XHome', () => {
 		const anchor = home.container.querySelector<HTMLAnchorElement>('a[href^="https://example.com/"]');
 		assert.exists(anchor, 'anchor to the remote exists');
 		assert.strictEqual(anchor?.href, 'https://example.com/@user');
+	});
+
+	const listenbrainzUser = {
+		id: 'listenbrainz-user',
+		name: 'listenbrainz-user',
+		username: 'listenbrainz-user',
+		host: null,
+		uri: 'https://example.com/@listenbrainz-user',
+		url: null,
+		roles: [],
+		createdAt: '1970-01-01T00:00:00.000Z',
+		fields: [],
+		pinnedNotes: [],
+		avatarUrl: 'https://example.com',
+		avatarDecorations: [],
+	};
+
+	const mockPlayingNowFetch = () => vi.spyOn(window, 'fetch').mockImplementation(async () => new Response(JSON.stringify({ payload: { listens: [] } }), {
+		status: 200,
+		headers: { 'Content-Type': 'application/json' },
+	}));
+
+	test('Should fetch playing-now when listenbrainz (lowercase) is present', async () => {
+		const fetchSpy = mockPlayingNowFetch();
+
+		renderHome({ ...listenbrainzUser, listenbrainz: 'lbuser' } as any);
+
+		await waitFor(() => {
+			assert.ok(fetchSpy.mock.calls.some(([url]) => String(url).includes('/user/lbuser/playing-now')));
+		});
+
+		fetchSpy.mockRestore();
+	});
+
+	test('Should fetch playing-now when ListenBrainz (capital) is present', async () => {
+		const fetchSpy = mockPlayingNowFetch();
+
+		renderHome({ ...listenbrainzUser, ListenBrainz: 'lbuser' });
+
+		await waitFor(() => {
+			assert.ok(fetchSpy.mock.calls.some(([url]) => String(url).includes('/user/lbuser/playing-now')));
+		});
+
+		fetchSpy.mockRestore();
 	});
 });

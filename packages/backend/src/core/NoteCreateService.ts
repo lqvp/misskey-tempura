@@ -524,7 +524,8 @@ export class NoteCreateService implements OnApplicationShutdown {
 			const sensitiveWords = this.meta.sensitiveWords;
 			const sensitiveWordsTarget = data.cw ?? data.text ?? '';
 			if (sensitiveWords.length > 0 && this.utilityService.isKeyWordIncluded([sensitiveWordsTarget, ...extractUrlsForKeyWordCheck(sensitiveWordsTarget)].join('\n'), sensitiveWords)) {
-				data.visibility = 'home';
+				const policies = await this.roleService.getUserPolicies(user.id);
+				data.visibility = policies.canHomeNote ? 'home' : 'followers';
 			} else {
 				const policies = await this.roleService.getUserPolicies(user.id);
 				if (data.visibility === 'public' && policies.canPublicNote === false) {
@@ -639,6 +640,15 @@ export class NoteCreateService implements OnApplicationShutdown {
 			// ローカルのみにリプライしたらローカルのみにする
 			if (data.reply.localOnly && data.channel == null) {
 				data.localOnly = true;
+			}
+		}
+
+		// home 投稿が許可されていない場合は followers に落とす
+		// (sensitiveWords / silenced instance / renote / reply による再昇格も含む)
+		if (data.visibility === 'home' && data.channel == null) {
+			const policies = await this.roleService.getUserPolicies(user.id);
+			if (policies.canHomeNote === false) {
+				data.visibility = 'followers';
 			}
 		}
 

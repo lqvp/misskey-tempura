@@ -321,25 +321,24 @@ const listenbrainzUsername = computed(() => {
 });
 
 const listenbrainzdata = ref(false);
-const listenbrainzUsernameForFetch = listenbrainzUsername.value;
-if (listenbrainzUsernameForFetch) {
-	(async function() {
-		try {
-			const response = await window.fetch(`https://api.listenbrainz.org/1/user/${encodeURIComponent(listenbrainzUsernameForFetch)}/playing-now`, {
-				method: 'GET',
-				headers: {
-					'Content-Type': 'application/json',
-				},
-			});
-			const data = await response.json();
-			if (data.payload.listens && data.payload.listens.length !== 0) {
-				listenbrainzdata.value = true;
-			}
-		} catch (err) {
-			listenbrainzdata.value = false;
-		}
-	})();
-}
+
+watch(listenbrainzUsername, async (username) => {
+	listenbrainzdata.value = false;
+	if (!username) return;
+
+	try {
+		const response = await window.fetch(`https://api.listenbrainz.org/1/user/${encodeURIComponent(username)}/playing-now`, {
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		});
+		const data = await response.json();
+		listenbrainzdata.value = Array.isArray(data.payload?.listens) && data.payload.listens.length !== 0;
+	} catch {
+		listenbrainzdata.value = false;
+	}
+}, { immediate: true });
 
 watch(moderationNote, async (newValue) => {
 	// 再取得した値を同期しただけの場合は保存しない

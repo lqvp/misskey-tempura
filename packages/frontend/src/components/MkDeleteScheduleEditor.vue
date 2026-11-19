@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</section>
 		</div>
 	</section>
-	<MkSwitch v-if="afterOnly || showDetail" v-model="isScheduledForPrivate">{{ i18n.ts._scheduledNote.makePrivateInsteadOfDelete }}</MkSwitch>
+	<MkSwitch v-if="(afterOnly || showDetail) && canUseMakePrivate" v-model="isScheduledForPrivate">{{ i18n.ts._scheduledNote.makePrivateInsteadOfDelete }}</MkSwitch>
 </div>
 </template>
 
@@ -42,6 +42,7 @@ import { formatDateTimeString } from '@/utility/format-time-string.js';
 import { addTime } from '@/utility/time.js';
 import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
+import { $i } from '@/i.js';
 
 export type DeleteScheduleEditorModelValue = {
 	deleteAt: number | null;
@@ -63,7 +64,9 @@ const atDate = ref(formatDateTimeString(addTime(new Date(), 1, 'day'), 'yyyy-MM-
 const atTime = ref('00:00');
 const after = ref(0);
 const unit = ref<'second' | 'minute' | 'hour' | 'day'>('second');
-const isScheduledForPrivate = ref(props.modelValue.isScheduledForPrivate ?? false);
+// make-private はロールポリシーで制限される（root / Admin は backend 側で許可される）
+const canUseMakePrivate = ($i?.policies.canUseMakePrivate ?? false) || ($i?.isAdmin ?? false);
+const isScheduledForPrivate = ref(canUseMakePrivate ? (props.modelValue.isScheduledForPrivate ?? false) : false);
 const isValid = ref(true);
 
 const expirationItems = computed(() => [

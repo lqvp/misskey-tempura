@@ -273,10 +273,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 				// isScheduledForPrivate は make-private 系エンドポイントと同じく canUseMakePrivate で制限する
 				// (requiredRolePolicy と同様に root / Admin は許可する)
-				if (scheduledDeleteAt != null && isScheduledForPrivate) {
+				if (isScheduledForPrivate) {
 					const policies = await this.roleService.getUserPolicies(me.id);
 					if (!policies.canUseMakePrivate && !(await this.roleService.isAdministrator(me))) {
-						throw new ApiError(meta.errors.cannotUseMakePrivate);
+						throw new ApiError({ ...meta.errors.cannotUseMakePrivate, kind: 'permission' });
 					}
 				}
 
