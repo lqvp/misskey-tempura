@@ -247,28 +247,37 @@ function fallbackModels(): LLMModelInfo[] {
 	return openaiModels.map((id) => ({ id, imageInput: detectImageInputSupport({ id }) }));
 }
 
+let refreshGeneration = 0;
+
 async function refreshModels(): Promise<void> {
 	// 未設定なら取得しない (初期状態でエラーを表示しない)
 	if (!useGeminiLLMAPI.value && !openaiToken.value) {
 		models.value = fallbackModels();
 		return;
 	}
+	// 取得要求ごとに世代番号を付け、古い応答で最新の一覧を上書きしない
+	const generation = ++refreshGeneration;
 	fetchingModels.value = true;
 	fetchError.value = false;
 	try {
 		const result = await fetchAvailableModels();
+		if (generation !== refreshGeneration) return;
 		if (result.length === 0) {
-			// 取得に失敗した場合はフォールバックリストを表示する
-			models.value = fallbackModels();
+			// 取得に失敗した場合は自由入力 (フォールバックリストなし) に戻す
+			models.value = [];
 			fetchError.value = true;
 		} else {
 			models.value = result;
 		}
 	} catch {
-		models.value = fallbackModels();
-		fetchError.value = true;
+		if (generation === refreshGeneration) {
+			models.value = [];
+			fetchError.value = true;
+		}
 	} finally {
-		fetchingModels.value = false;
+		if (generation === refreshGeneration) {
+			fetchingModels.value = false;
+		}
 	}
 }
 

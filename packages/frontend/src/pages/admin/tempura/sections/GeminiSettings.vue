@@ -98,11 +98,14 @@ async function fetchModels(): Promise<void> {
 	try {
 		const res = await misskeyApi('notes/llm-models', {});
 		if ((res.models ?? []).length === 0) {
+			// 古い接続先の取得結果が残らないようにクリアする
+			models.value = [];
 			fetchError.value = true;
 		} else {
 			models.value = toModelInfos(res.models);
 		}
 	} catch {
+		models.value = [];
 		fetchError.value = true;
 	} finally {
 		fetchingModels.value = false;

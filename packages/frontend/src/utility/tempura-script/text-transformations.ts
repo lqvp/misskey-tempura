@@ -64,6 +64,11 @@ export async function transformTextWithGemini(noteText: string, onApplied: (newT
 		} catch (error: any) {
 			displayLlmError(error, i18n.ts._llm._error.transformResult);
 		}
+		// 空の変換結果で投稿本文を消さないようにする
+		if (!transformedText) {
+			displayLlmError(new Error(i18n.ts._llm._error.transformResult), i18n.ts._llm._error.transformResult);
+			break;
+		}
 
 		// 結果の確認ダイアログを表示（MkDialog.vue を利用）
 		const dialogResult: string = await new Promise((resolve) => {

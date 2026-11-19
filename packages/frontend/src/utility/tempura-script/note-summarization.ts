@@ -29,8 +29,10 @@ async function fetchAncestorContext(note: Misskey.entities.Note): Promise<string
 	for (let i = 0; i < 5 && cursor != null; i++) {
 		try {
 			const parent = await misskeyApi('notes/show', { noteId: cursor });
-			if (parent.text == null || parent.text === '') break;
-			ancestors.unshift(parent.text);
+			// 本文がないノート (画像のみ等) は追加しないが、探索は続行する
+			if (parent.text != null && parent.text !== '') {
+				ancestors.unshift(parent.text);
+			}
 			cursor = parent.replyId ?? null;
 		} catch {
 			break;

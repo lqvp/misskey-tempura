@@ -42,7 +42,9 @@ export class RemoveServerGeminiSettings1795074709757 {
         await queryRunner.query('ALTER TABLE "meta" ADD "serverGeminiEnabled" boolean NOT NULL DEFAULT false');
         await queryRunner.query('ALTER TABLE "meta" ADD "serverGeminiApiKey" character varying(50)');
         await queryRunner.query('ALTER TABLE "meta" ADD "serverGeminiModels" character varying(50) DEFAULT \'gemini-2.0-flash\'');
-        // OpenAI 側の設定を Gemini カラムへ書き戻す (baseURL が Gemini の OpenAI 互換エンドポイントならそのまま動作する)
-        await queryRunner.query('UPDATE "meta" SET "serverGeminiEnabled" = "serverOpenAIEnabled", "serverGeminiApiKey" = "serverOpenAIApiKey", "serverGeminiModels" = "serverOpenAIModels" WHERE "serverOpenAIApiKey" IS NOT NULL');
+        // OpenAI 側の設定を Gemini カラムへ書き戻す。
+        // ただし Gemini カラムは varchar(50) のため、長さが収まる値のみ復元する
+        // (収まらない場合は既定値のまま＝無効状態でロールバックし、ロールバック自体の失敗を防ぐ)
+        await queryRunner.query('UPDATE "meta" SET "serverGeminiEnabled" = "serverOpenAIEnabled", "serverGeminiApiKey" = "serverOpenAIApiKey", "serverGeminiModels" = "serverOpenAIModels" WHERE "serverOpenAIApiKey" IS NOT NULL AND LENGTH("serverOpenAIApiKey") <= 50 AND LENGTH("serverOpenAIModels") <= 50');
     }
 }
