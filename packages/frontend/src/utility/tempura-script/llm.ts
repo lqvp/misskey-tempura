@@ -149,8 +149,7 @@ export async function fetchAvailableModels(): Promise<LLMModelInfo[]> {
 
 	if (!openaiToken) return [];
 
-	// ユーザー直指定モード: まずブラウザから直接取得し、
-	// CORS 等で失敗した場合のみサーバー経由 (notes/llm-models) にフォールバックする
+	// ユーザー直指定モード: ブラウザから直接取得する (サーバーは経由しない)
 	try {
 		const baseURL = (openaiBaseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
 		const response = await window.fetch(`${baseURL}/models`, {
@@ -163,15 +162,8 @@ export async function fetchAvailableModels(): Promise<LLMModelInfo[]> {
 		const data = await response.json() as { data?: { id?: string }[] };
 		return toModelInfos(data.data);
 	} catch {
-		try {
-			const res = await misskeyApi('notes/llm-models', {
-				baseUrl: openaiBaseUrl || undefined,
-				apiKey: openaiToken,
-			});
-			return toModelInfos(res.models);
-		} catch {
-			return [];
-		}
+		// CORS 等でブラウザから直接取得できない場合
+		return [];
 	}
 }
 
@@ -288,7 +280,7 @@ async function generateOpenAIDirect({ note, userContent, systemInstruction }: Ge
 
 	let response: Response;
 	try {
-		// まずブラウザから直接 API を呼ぶ
+		// ブラウザから直接 API を呼ぶ (サーバーは経由しない)
 		response = await window.fetch(`${baseURL}/chat/completions`, {
 			method: 'POST',
 			headers: {
@@ -298,15 +290,8 @@ async function generateOpenAIDirect({ note, userContent, systemInstruction }: Ge
 			body: JSON.stringify(requestBody),
 		});
 	} catch {
-		// CORS 等でブラウザ直接呼び出しに失敗した場合のみサーバー経由にフォールバックする
-		return await misskeyApi('notes/llm-gen', {
-			text,
-			prompt: systemInstruction ?? '',
-			baseUrl: openaiBaseUrl || undefined,
-			apiKey: openaiToken,
-			model,
-			fileUris: (note && useGeminiWithMedia && effectiveImageInputSupport(model) !== 'unsupported') ? fileUrisFromNote(note) : undefined,
-		}) as LLMResponse;
+		// CORS 等でブラウザから直接呼び出せない場合
+		throw new Error(i18n.ts._llm._error.cors);
 	}
 
 	if (!response.ok) {

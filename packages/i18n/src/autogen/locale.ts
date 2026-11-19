@@ -15297,6 +15297,10 @@ export interface Locale extends ILocale {
              */
             "tokenMissing": string;
             /**
+             * ブラウザから直接APIにアクセスできませんでした (CORS)。プロバイダがCORSを許可しているか、ベースURLが正しいか確認してください。
+             */
+            "cors": string;
+            /**
              * LLM API エラー:
              */
             "api": string;
@@ -15470,7 +15474,7 @@ export interface Locale extends ILocale {
          */
         "fetchModels": string;
         /**
-         * モデル一覧の取得に失敗しました。APIトークンとベースURLを確認してください。
+         * モデル一覧の取得に失敗しました。APIトークンとベースURLを確認してください。ブラウザからの直接取得がCORSでブロックされている可能性もあります。
          */
         "fetchModelsError": string;
         /**
