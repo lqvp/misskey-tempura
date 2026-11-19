@@ -22,8 +22,16 @@ async function getOfflinePageConfig(): Promise<OfflinePageConfig | undefined> {
 	}
 	if (raw == null) return undefined;
 	try {
-		const parsed = JSON.parse(raw) as OfflinePageConfig;
-		return parsed.version === 1 ? parsed : undefined;
+		const parsed = JSON.parse(raw) as Partial<OfflinePageConfig>;
+		if (parsed.version !== 1) return undefined;
+		// The admin may have stored a JSON string whose fields are not strings
+		// (e.g. {"version":1,"message":42}); validate the runtime types so the
+		// page renderer never receives a non-string value.
+		return {
+			version: 1,
+			message: typeof parsed.message === 'string' ? parsed.message : undefined,
+			contactUrl: typeof parsed.contactUrl === 'string' ? parsed.contactUrl : undefined,
+		};
 	} catch {
 		return undefined;
 	}

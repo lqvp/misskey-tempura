@@ -111,20 +111,25 @@ ${contactUrl ? `<a href="${contactUrl}" style="color:#b4e900;font-size:14px;marg
 	var INITIAL_BACKOFF_MS = 5000;
 	var MAX_BACKOFF_MS = 20000;
 
+	// The attempt counter is also kept in memory so that auto retry stops
+	// after MAX_ATTEMPTS even when sessionStorage is unavailable.
+	var attemptsInMemory = 0;
+
 	function getAttempts() {
 		try {
 			var value = sessionStorage.getItem("misskey:offline-page:retry-attempts");
 			return value === null ? 0 : parseInt(value, 10) || 0;
 		} catch (error) {
-			return 0;
+			return attemptsInMemory;
 		}
 	}
 
 	function setAttempts(attempts) {
+		attemptsInMemory = attempts;
 		try {
 			sessionStorage.setItem("misskey:offline-page:retry-attempts", String(attempts));
 		} catch (error) {
-			// sessionStorage may be unavailable (e.g. private mode); give up persisting
+			// sessionStorage may be unavailable (e.g. private mode); keep the memory counter
 		}
 	}
 
@@ -138,7 +143,14 @@ ${contactUrl ? `<a href="${contactUrl}" style="color:#b4e900;font-size:14px;marg
 		// URLs ending with "/") does not intercept this HEAD request and feed us
 		// the offline page itself (false-positive recovery -> reload loop).
 		var url = location.pathname + "?sw-offline-check=" + Date.now();
-		return fetch(url, { method: "HEAD", cache: "no-store" }).then(function(response) {
+		// A server may accept the connection but never respond; abort the
+		// probe so the retry loop is not stalled forever.
+		var controller = new AbortController();
+		var timer = setTimeout(function() {
+			controller.abort();
+		}, 10000);
+		return fetch(url, { method: "HEAD", cache: "no-store", signal: controller.signal }).then(function(response) {
+			clearTimeout(timer);
 			if (KIND === "network") {
 				// Any HTTP response (even 4xx/405 from a proxy that rejects HEAD)
 				// means the server is alive again.
@@ -147,6 +159,7 @@ ${contactUrl ? `<a href="${contactUrl}" style="color:#b4e900;font-size:14px;marg
 			// For server errors, only statuses below 500 count as recovery.
 			return response.status < 500;
 		}).catch(function() {
+			clearTimeout(timer);
 			return false;
 		});
 	}
