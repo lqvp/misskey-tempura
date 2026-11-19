@@ -7644,6 +7644,14 @@ export interface Locale extends ILocale {
          */
         "allowAnonymousLocalTimeline_description": string;
         /**
+         * リアクション一覧の匿名公開
+         */
+        "allowAnonymousReactions": string;
+        /**
+         * 有効にすると、ログインしていない人もノートのリアクション一覧(/api/notes/reactions)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousReactions_description": string;
+        /**
          * 匿名アクセスの公開設定
          */
         "anonymousVisitorAccess": string;

@@ -80,6 +80,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * 署名が無い・検証できない取得は匿名に分類します。署名者の鍵をまだ知らない場合は、インスタンス登録済みのホストに限りアカウントを取りに行って検証します (署名必須モードと同じ方針)。未登録ホストの署名者は匿名に分類します
 * 署名を検証できたリモートサーバーからの取得と、配送済みのコピーは対象外です
 * API でも Pages (pages/show, pages/featured)・Clips (clips/show, clips/notes)・Channels (channels/show, channels/featured)・ユーザー検索 (users/search) に同じポリシーを適用します。ugcVisibilityForVisitor が 'none' の間は匿名には返さず、'local' の間は匿名のユーザー検索をローカルユーザーに限定します (users/show と同じ扱い)
+* 統計・チャート・連合・ノート一覧系のエンドポイント (replies / renotes / quotes / reactions / featured / local-timeline など) は未ログインユーザーに既定で空の応答を返します。管理画面の「匿名アクセスの公開設定」(独自機能) でエンドポイントごとに公開できます (リアクション一覧 /api/notes/reactions を含む)
 
 ### 招待と承認
 
