@@ -312,6 +312,13 @@ async function generateOpenAIDirect({ note, userContent, systemInstruction }: Ge
 export async function generateLLMResponse(options: GenerateLLMOptions): Promise<LLMResponse> {
 	const { useGeminiLLMAPI } = prefer.s;
 
+	// ユーザーのUI言語ヒント: LLM がユーザーの言語で応答するよう促す
+	// (指示側で言語を明示している場合はそちらを優先する)
+	if (i18n.locale != null) {
+		const localeHint = `The user is using the interface in ${i18n.locale}. Unless the instructions explicitly specify otherwise, write your response in the user's language.`;
+		options.systemInstruction = `${options.systemInstruction ?? ''}\n\n${localeHint}`.trim();
+	}
+
 	if (useGeminiLLMAPI) {
 		// サーバーで OpenAI 互換 API が有効になっているかチェック
 		if (instance.value?.serverOpenAIEnabled === true) {
