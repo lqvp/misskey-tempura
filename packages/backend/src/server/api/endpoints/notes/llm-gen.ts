@@ -56,22 +56,16 @@ export const meta = {
 export const paramDef = {
 	type: 'object',
 	properties: {
-		text: { type: 'string' },
-		prompt: { type: 'string' },
+		text: { type: 'string', maxLength: 131072 },
+		prompt: { type: 'string', maxLength: 131072 },
 		baseUrl: { type: 'string', nullable: true },
 		apiKey: { type: 'string', nullable: true },
 		model: { type: 'string', nullable: true },
 		fileUris: {
 			type: 'array',
 			nullable: true,
-			items: {
-				type: 'object',
-				properties: {
-					mimeType: { type: 'string' },
-					fileUri: { type: 'string' },
-				},
-				required: ['mimeType', 'fileUri'],
-			},
+			items: { type: 'string' },
+			maxItems: 4,
 		},
 	},
 	required: ['text', 'prompt'],
@@ -102,23 +96,26 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				throw new ApiError(meta.errors.llmNotEnabled);
 			}
 
-			const apiKey = ps.apiKey ?? this.serverSettings.serverOpenAIApiKey;
+			// ユーザーが baseUrl を指定した場合、サーバーAPIキーを外部ホストへ送出しない
+			const apiKey = ps.apiKey != null ? ps.apiKey
+				: ps.baseUrl != null ? null
+				: this.serverSettings.serverOpenAIApiKey;
 			if (!apiKey) {
 				throw new ApiError(meta.errors.llmApiError, 'OpenAI-compatible API key is not configured on server');
 			}
 
-			const baseURL = (ps.baseUrl ?? this.serverSettings.serverOpenAIBaseURL ?? 'https://api.openai.com/v1').replace(/\/+$/, '');
-			const model = ps.model ?? this.serverSettings.serverOpenAIModels ?? 'gpt-4o-mini';
+			const baseURL = (ps.baseUrl || this.serverSettings.serverOpenAIBaseURL || 'https://api.openai.com/v1').replace(/\/+$/, '');
+			const model = ps.model || this.serverSettings.serverOpenAIModels || 'gpt-4o-mini';
 			const url = `${baseURL}/chat/completions`;
 
 			// ユーザーコンテンツ (テキスト + 画像URL)
 			const content: any[] = [{ type: 'text', text: ps.text }];
 			// 画像は最大4件まで (API 直叩きに対するサーバー側の上限)
 			if (ps.fileUris && ps.fileUris.length > 0) {
-				for (const fileInfo of ps.fileUris.slice(0, 4)) {
+				for (const fileUri of ps.fileUris.slice(0, 4)) {
 					content.push({
 						type: 'image_url',
-						image_url: { url: fileInfo.fileUri },
+						image_url: { url: fileUri },
 					});
 				}
 			}

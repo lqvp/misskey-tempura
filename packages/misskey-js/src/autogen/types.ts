@@ -34327,10 +34327,7 @@ export interface operations {
                     baseUrl?: string | null;
                     apiKey?: string | null;
                     model?: string | null;
-                    fileUris?: {
-                        mimeType: string;
-                        fileUri: string;
-                    }[] | null;
+                    fileUris?: string[] | null;
                 };
             };
         };

@@ -45,9 +45,12 @@ export async function callLLMSummarize(note: Misskey.entities.Note): Promise<str
 		prefer.s.geminiSystemPrompt ?? '',
 	].join('\n');
 
-	// 返信文脈があれば参考データとして先頭に付与する
+	// 返信文脈があれば参考データとして先頭に付与する (要約対象は最後の投稿)
 	const ancestorContext = note.replyId != null ? await fetchAncestorContext(note) : '';
-	const userContent = [ancestorContext, note.text ?? ''].filter((x) => x !== '').join('\n\n');
+	const userContent = [
+		ancestorContext !== '' ? `会話の文脈 (参考データ。要約対象ではない):\n${ancestorContext}` : '',
+		`要約対象の投稿:\n${note.text ?? ''}`,
+	].filter((x) => x !== '').join('\n\n');
 
 	const data = await generateLLMResponse({
 		note: note,

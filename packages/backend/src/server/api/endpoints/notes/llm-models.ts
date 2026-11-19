@@ -139,14 +139,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				throw new ApiError(meta.errors.llmNotEnabled);
 			}
 
-			const apiKey = ps.apiKey ?? this.serverSettings.serverOpenAIApiKey;
+			// ユーザーが baseUrl を指定した場合、サーバーAPIキーを外部ホストへ送出しない
+			const apiKey = ps.apiKey != null ? ps.apiKey
+				: ps.baseUrl != null ? null
+				: this.serverSettings.serverOpenAIApiKey;
 			if (!apiKey) {
 				throw new ApiError(meta.errors.llmApiError, 'OpenAI-compatible API key is not configured on server');
 			}
 
 			try {
 				// OpenAI 互換 API: GET {baseURL}/models
-				const baseURL = (ps.baseUrl ?? this.serverSettings.serverOpenAIBaseURL ?? 'https://api.openai.com/v1').replace(/\/+$/, '');
+				const baseURL = (ps.baseUrl || this.serverSettings.serverOpenAIBaseURL || 'https://api.openai.com/v1').replace(/\/+$/, '');
 				const response = await this.httpRequestService.send(`${baseURL}/models`, {
 					method: 'GET',
 					headers: {

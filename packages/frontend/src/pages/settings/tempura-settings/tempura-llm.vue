@@ -66,7 +66,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 						<SearchMarker :keywords="['llm', 'openai', 'temperature', 'sampling']">
 							<MkPreferenceContainer k="openaiTemperature">
-								<MkInput v-model="openaiTemperature" type="number" style="margin: 0;">
+								<MkInput v-model="openaiTemperature" type="number" style="margin: 0;" :disabled="useGeminiLLMAPI">
 									<template #label><SearchLabel>{{ i18n.ts._llm.openaiTemperatureLabel }}</SearchLabel></template>
 									<template #caption>{{ i18n.ts._llm.openaiTemperatureCaption }}</template>
 								</MkInput>
@@ -84,7 +84,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 						<SearchMarker :keywords="['llm', 'openai', 'image', 'vision', 'force']">
 							<MkPreferenceContainer k="openaiForceImageInput">
-								<MkSwitch v-model="openaiForceImageInput">
+								<MkSwitch v-model="openaiForceImageInput" :disabled="useGeminiLLMAPI">
 									<SearchLabel>{{ i18n.ts._llm.openaiForceImageInputLabel }}</SearchLabel>
 									<template #caption>{{ i18n.ts._llm.openaiForceImageInputCaption }}</template>
 								</MkSwitch>
@@ -275,5 +275,13 @@ async function refreshModels(): Promise<void> {
 onMounted(refreshModels);
 
 // 設定変更時にモデル一覧を再取得する
-watch([useGeminiLLMAPI, openaiToken, openaiBaseUrl], refreshModels);
+let refreshModelsTimer: number | null = null;
+watch([useGeminiLLMAPI, openaiToken, openaiBaseUrl], () => {
+	// 連続入力で毎回APIを叩かないようデバウンスする
+	if (refreshModelsTimer != null) window.clearTimeout(refreshModelsTimer);
+	refreshModelsTimer = window.setTimeout(() => {
+		refreshModelsTimer = null;
+		refreshModels();
+	}, 500);
+});
 </script>

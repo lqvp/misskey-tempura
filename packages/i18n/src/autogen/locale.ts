@@ -15473,6 +15473,24 @@ export interface Locale extends ILocale {
          * モデル一覧を取得
          */
         "fetchModels": string;
+        "_fallback": {
+            /**
+             * LLM API利用方法の選択
+             */
+            "title": string;
+            /**
+             * サーバー提供のLLM APIが有効になっていません。ユーザー指定のAPI tokenを使って生成を継続しますか？ または、LLM API の利用を無効にしますか？
+             */
+            "text": string;
+            /**
+             * ユーザーのAPI tokenを使用する
+             */
+            "useUserToken": string;
+            /**
+             * LLM APIの利用を無効にする
+             */
+            "disable": string;
+        };
         /**
          * モデル一覧の取得に失敗しました。APIトークンとベースURLを確認してください。ブラウザからの直接取得がCORSでブロックされている可能性もあります。
          */

@@ -35,6 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #caption>
 						<span v-if="selectedModel?.imageInput === 'supported'">{{ i18n.ts._llm.modelImageSupported }}</span>
 						<span v-else-if="selectedModel?.imageInput === 'unsupported'">{{ i18n.ts._llm.modelImageUnsupported }}</span>
+						<span v-else-if="selectedModel?.imageInput === 'unknown'">{{ i18n.ts._llm.modelImageUnknown }}</span>
 					</template>
 				</MkSelect>
 				<MkInput v-else v-model="form.state.serverOpenAIModels" type="text">

@@ -4135,6 +4135,11 @@ _llm:
   openaiModelLabel: "OpenAI互換APIモデル"
   openaiModelCaption: "使用するモデル名を設定します。空の場合は gpt-4o-mini を使用します。"
   fetchModels: "モデル一覧を取得"
+  _fallback:
+    title: "LLM API利用方法の選択"
+    text: "サーバー提供のLLM APIが有効になっていません。ユーザー指定のAPI tokenを使って生成を継続しますか？ または、LLM API の利用を無効にしますか？"
+    useUserToken: "ユーザーのAPI tokenを使用する"
+    disable: "LLM APIの利用を無効にする"
   fetchModelsError: "モデル一覧の取得に失敗しました。APIトークンとベースURLを確認してください。ブラウザからの直接取得がCORSでブロックされている可能性もあります。"
   modelImageSupported: "このモデルは画像入力に対応していると判定されました。"
   modelImageUnknown: "このモデルの画像入力対応は不明です。"
