@@ -7,11 +7,13 @@ import { Inject, Injectable } from '@nestjs/common';
 import { In, LessThan } from 'typeorm';
 import { DI } from '@/di-symbols.js';
 import type { AntennasRepository, RoleAssignmentsRepository, UserIpsRepository, UserLoginContextsRepository } from '@/models/_.js';
+import type { MiAntenna } from '@/models/Antenna.js';
 import type Logger from '@/logger.js';
 import { bindThis } from '@/decorators.js';
 import { IdService } from '@/core/IdService.js';
 import type { Config } from '@/config.js';
 import { ReversiService } from '@/core/ReversiService.js';
+import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import type * as Bull from 'bullmq';
 
@@ -37,6 +39,7 @@ export class CleanProcessorService {
 
 		private queueLoggerService: QueueLoggerService,
 		private reversiService: ReversiService,
+		private globalEventService: GlobalEventService,
 		private idService: IdService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('clean');
@@ -57,11 +60,22 @@ export class CleanProcessorService {
 
 		// 使われてないアンテナを停止
 		if (this.config.deactivateAntennaThreshold > 0) {
-			this.antennasRepository.update({
-				lastUsedAt: LessThan(new Date(Date.now() - this.config.deactivateAntennaThreshold)),
-			}, {
-				isActive: false,
-			});
+			// 停止したアンテナをイベントで通知する。
+			// 通知しないと DB は isActive=false なのにプロセス内キャッシュは配信を続け、
+			// 再起動した途端に突然止まる (DBとキャッシュの不整合) ため
+			// 選択と更新を1文で行い、実際に無効化された行だけを通知する
+			// (先に読んでから更新すると、読み込みと更新の間に lastUsedAt が更新された
+			// アンテナに対して誤って無効化を通知してしまう)
+			const deactivatedAntennas = await this.antennasRepository.createQueryBuilder('antenna')
+				.update()
+				.set({ isActive: false })
+				.where('"isActive" = :active AND "lastUsedAt" < :threshold', { active: true, threshold: new Date(Date.now() - this.config.deactivateAntennaThreshold) })
+				.returning('*')
+				.execute()
+				.then((response) => (response.raw ?? []) as MiAntenna[]);
+			for (const antenna of deactivatedAntennas) {
+				this.globalEventService.publishInternalEvent('antennaUpdated', { ...antenna, isActive: false });
+			}
 		}
 
 		const expiredRoleAssignments = await this.roleAssignmentsRepository.createQueryBuilder('assign')

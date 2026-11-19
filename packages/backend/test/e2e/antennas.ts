@@ -246,7 +246,7 @@ describe('アンテナ', () => {
 		{ parameters: () => ({ src: 'home' as const }) },
 		{ parameters: () => ({ src: 'all' as const }) },
 		{ parameters: () => ({ src: 'users' as const }) },
-		{ parameters: () => ({ src: 'list' as const }) },
+		{ parameters: () => ({ src: 'list' as const, userListId: aliceList.id }) },
 		{ parameters: () => ({ userListId: null }) },
 		{ parameters: () => ({ src: 'list' as const, userListId: aliceList.id }) },
 		{ parameters: () => ({ keywords: [['x']] }) },
@@ -286,6 +286,18 @@ describe('アンテナ', () => {
 			id: '53ee222e-1ddd-4f9a-92e5-9fb82ddb463a',
 		});
 	});
+
+	test('を作成する時srcがlistなのにuserListIdが無ければエラーになる', async () => {
+		await failedApiCall({
+			endpoint: 'antennas/create',
+			parameters: { ...defaultParam, src: 'list', userListId: null },
+			user: alice,
+		}, {
+			status: 400,
+			code: 'NO_SUCH_USER_LIST',
+			id: '95063e93-a283-4b8b-9aa5-bcdb8df69a7f',
+		});
+	});
 	//#endregion
 	//#region 更新(antennas/update)
 
@@ -323,6 +335,19 @@ describe('アンテナ', () => {
 			status: 400,
 			code: 'EMPTY_KEYWORD',
 			id: '721aaff6-4e1b-4d88-8de6-877fae9f68c4',
+		});
+	});
+
+	test('を変更する時srcをlistにするのにuserListIdが無ければエラーになる', async () => {
+		const antenna = await successfulApiCall({ endpoint: 'antennas/create', parameters: defaultParam, user: alice });
+		await failedApiCall({
+			endpoint: 'antennas/update',
+			parameters: { antennaId: antenna.id, src: 'list', userListId: null },
+			user: alice,
+		}, {
+			status: 400,
+			code: 'NO_SUCH_USER_LIST',
+			id: '1c6b35c9-943e-48c2-81e4-2844989407f7',
 		});
 	});
 
