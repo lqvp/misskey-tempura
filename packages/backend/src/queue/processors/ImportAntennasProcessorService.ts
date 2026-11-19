@@ -12,7 +12,7 @@ import type { AntennasRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { bindThis } from '@/decorators.js';
 import { Schema, SchemaType } from '@/misc/json-schema.js';
-import { validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
+import { findAntennaKeywordLimitViolation, validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import { DBAntennaImportJobData } from '../types.js';
 import type * as Bull from 'bullmq';
@@ -95,13 +95,31 @@ export class ImportAntennasProcessorService {
 					skipped.push({ name: typeof rawName === 'string' ? rawName : '(unknown)', reason: 'invalidShape' });
 					continue;
 				}
-				if (antenna.keywords.length === 0 || antenna.keywords[0].every(x => x === '')) {
+				// create と同じ条件: keywords か excludeKeywords のどちらかが非空ならインポート可能。
+				// keywords のみを見ると、exclude のみで構成された正規のアンテナが黙って落ちる
+				const hasKeywords = antenna.keywords.some(xs => xs.some(x => x !== ''));
+				const hasExcludeKeywords = antenna.excludeKeywords.some(xs => xs.some(x => x !== ''));
+				if (!hasKeywords && !hasExcludeKeywords) {
 					skipped.push({ name: antenna.name, reason: 'emptyKeywords' });
 					continue;
 				}
+
+				// 強制除外キーワードは SCORE モードでしか使われないので、使われないときは検証しない
+				// (SCORE を切った状態で壊れた式が残っていても、インポートをブロックしない)
+				const keywordGroups = antenna.expression === 'SCORE'
+					? [antenna.keywords, antenna.excludeKeywords, antenna.mustExcludeKeywords ?? []]
+					: [antenna.keywords, antenna.excludeKeywords];
+
+				// 上限は create と同じく常に検査する (リテラルモードでも超過したまま保存されないように)
+				if (findAntennaKeywordLimitViolation(keywordGroups) != null) {
+					this.logger.warn(`Skipped antenna over keyword limit: ${antenna.name}`);
+					skipped.push({ name: antenna.name, reason: 'invalidShape' });
+					continue;
+				}
+
 				const keywordMode = antenna.keywordMode ?? 'literal';
 				const regexError = keywordMode === 'regex'
-					? validateAntennaRegexKeywords([antenna.keywords, antenna.excludeKeywords, antenna.mustExcludeKeywords ?? []])
+					? validateAntennaRegexKeywords(keywordGroups)
 					: null;
 				if (regexError != null) {
 					this.logger.warn(`Skipped antenna with invalid regex: ${antenna.name} (${regexError.reason}${regexError.pattern != null ? ': ' + regexError.pattern : ''})`);

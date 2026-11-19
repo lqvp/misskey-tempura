@@ -126,15 +126,16 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			// 「試し打ちでは当たるのに保存しても TL に出ない」という食い違いが起きていた。
 			// 補完は fanout に保存されないので、カーソル付きの取得でも同じ範囲を引き直さないと
 			// 2ページ目以降で補完分が抜け落ちる。カーソルの範囲 (untilId/sinceId) に限定して補完する
-			const backfilledNoteIds = await this.getBackfillNoteIds(antenna, noteIds, me, mutingChannelIds, ps.limit, untilId, sinceId, searchQuery);
+			// 受信済み側にも「外した」記録を適用する。
+			// ノートの保存と fanout の間に remove-note が走ると、リストに残ったままになることがあるため
+			const removedNoteIds = await this.fanoutTimelineService.getRemovedIds(`antennaTimeline:${antenna.id}`);
+
+			const backfilledNoteIds = await this.getBackfillNoteIds(antenna, noteIds, me, mutingChannelIds, ps.limit, untilId, sinceId, searchQuery, removedNoteIds);
 
 			if (noteIds.length === 0 && backfilledNoteIds.length === 0) {
 				return [];
 			}
 
-			// 受信済み側にも「外した」記録を適用する。
-			// ノートの保存と fanout の間に remove-note が走ると、リストに残ったままになることがあるため
-			const removedNoteIds = await this.fanoutTimelineService.getRemovedIds(`antennaTimeline:${antenna.id}`);
 			const visibleNoteIds = removedNoteIds.size === 0
 				? noteIds
 				: noteIds.filter(id => !removedNoteIds.has(id));
@@ -226,10 +227,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	 * 補完の下限も作成時刻にはしない。作成前のノートも現在の条件に合えば TL に並ぶ。
 	 * 走査範囲は応答に必要な件数と受信経路の保持件数で打ち切る (無制限に遡らない)。
 	 */
-	private async getBackfillNoteIds(antenna: MiAntenna, alreadyReceivedNoteIds: MiNote['id'][], me: MiUser, mutingChannelIds: MiChannel['id'][], need: number, untilId: string | null, sinceId: string | null, searchQuery: string | null): Promise<MiNote['id'][]> {
+	private async getBackfillNoteIds(antenna: MiAntenna, alreadyReceivedNoteIds: MiNote['id'][], me: MiUser, mutingChannelIds: MiChannel['id'][], need: number, untilId: string | null, sinceId: string | null, searchQuery: string | null, removedNoteIds: Set<string>): Promise<MiNote['id'][]> {
 		const received = new Set(alreadyReceivedNoteIds);
-		// ユーザーが明示的に外したノートは補完で戻さない
-		const removed = await this.fanoutTimelineService.getRemovedIds(`antennaTimeline:${antenna.id}`);
 
 		// 「外した」記録が消える頃には補完の対象からも外れているよう、走査範囲を時間でも区切る。
 		// これを外すと、記録が期限切れになった古いノートが補完で復活しうる
@@ -290,7 +289,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			const evaluated = await Promise.all(candidates.map(async note => {
 				if (note.user == null) return null;
 				if (received.has(note.id)) return null;
-				if (removed.has(note.id)) return null;
+				if (removedNoteIds.has(note.id)) return null;
 				// 判定に失敗したノートは補完対象から外し、TL 全体を止めない(受信経路と同じ扱い)
 				const hit = await this.antennaService.checkHitAntenna(antenna, note, note.user).catch(err => {
 					this.apiLoggerService.logger.warn(`Failed to evaluate antenna hit for backfill (antenna: ${antenna.id}, note: ${note.id})`, { err });

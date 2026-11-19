@@ -12,6 +12,7 @@ import { bindThis } from '@/decorators.js';
 import { IdService } from '@/core/IdService.js';
 import type { Config } from '@/config.js';
 import { ReversiService } from '@/core/ReversiService.js';
+import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import type * as Bull from 'bullmq';
 
@@ -37,6 +38,7 @@ export class CleanProcessorService {
 
 		private queueLoggerService: QueueLoggerService,
 		private reversiService: ReversiService,
+		private globalEventService: GlobalEventService,
 		private idService: IdService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('clean');
@@ -57,11 +59,24 @@ export class CleanProcessorService {
 
 		// 使われてないアンテナを停止
 		if (this.config.deactivateAntennaThreshold > 0) {
-			this.antennasRepository.update({
-				lastUsedAt: LessThan(new Date(Date.now() - this.config.deactivateAntennaThreshold)),
-			}, {
-				isActive: false,
+			const deactivateThreshold = new Date(Date.now() - this.config.deactivateAntennaThreshold);
+			// 停止したアンテナをイベントで通知する。
+			// 通知しないと DB は isActive=false なのにプロセス内キャッシュは配信を続け、
+			// 再起動した途端に突然止まる (DBとキャッシュの不整合) ため
+			const deactivated = await this.antennasRepository.findBy({
+				isActive: true,
+				lastUsedAt: LessThan(deactivateThreshold),
 			});
+			if (deactivated.length > 0) {
+				await this.antennasRepository.update({
+					lastUsedAt: LessThan(deactivateThreshold),
+				}, {
+					isActive: false,
+				});
+				for (const antenna of deactivated) {
+					this.globalEventService.publishInternalEvent('antennaUpdated', { ...antenna, isActive: false });
+				}
+			}
 		}
 
 		const expiredRoleAssignments = await this.roleAssignmentsRepository.createQueryBuilder('assign')

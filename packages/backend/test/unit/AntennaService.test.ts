@@ -692,4 +692,65 @@ describe('AntennaService', () => {
 			expect(result).toHaveLength(1);
 		});
 	});
+
+	describe('antennaUpdated event (cache sync)', () => {
+		const antennaBody = (id: string, isActive: boolean) => ({
+			id,
+			userId: 'me',
+			name: `antenna-${id}`,
+			src: 'all',
+			users: [],
+			keywords: [['kw']],
+			excludeKeywords: [],
+			mustExcludeKeywords: [],
+			expression: null,
+			keywordMode: 'literal',
+			caseSensitive: false,
+			localOnly: false,
+			excludeBots: false,
+			withReplies: false,
+			withFile: false,
+			excludeNotesInSensitiveChannel: false,
+			onlyFollowers: false,
+			isActive,
+			lastUsedAt: new Date(),
+		});
+
+		it('removes a deactivated antenna from the cache', () => {
+			// DB は isActive=false なのにキャッシュが配信を続けると、
+			// プロセス再起動で突然配信が止まる (DBとキャッシュの不整合)
+			const service = antennaService as any;
+			service.antennasFetched = true;
+			service.antennas = [antennaBody('a1', true), antennaBody('a2', true)];
+			service.onRedisMessage('', JSON.stringify({
+				channel: 'internal',
+				message: { type: 'antennaUpdated', body: antennaBody('a1', false) },
+			}));
+			expect(service.antennas.map((a: any) => a.id)).toEqual(['a2']);
+		});
+
+		it('does not add a deactivated antenna to the cache', () => {
+			const service = antennaService as any;
+			service.antennasFetched = true;
+			service.antennas = [];
+			service.onRedisMessage('', JSON.stringify({
+				channel: 'internal',
+				message: { type: 'antennaUpdated', body: antennaBody('a1', false) },
+			}));
+			expect(service.antennas).toEqual([]);
+		});
+
+		it('keeps an active antenna updated in the cache', () => {
+			const service = antennaService as any;
+			service.antennasFetched = true;
+			service.antennas = [antennaBody('a1', true)];
+			const updated = { ...antennaBody('a1', true), name: 'renamed' };
+			service.onRedisMessage('', JSON.stringify({
+				channel: 'internal',
+				message: { type: 'antennaUpdated', body: updated },
+			}));
+			expect(service.antennas).toHaveLength(1);
+			expect(service.antennas[0].name).toBe('renamed');
+		});
+	});
 });

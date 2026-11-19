@@ -145,6 +145,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw new ApiError(meta.errors.tooManyAntennas);
 			}
 
+			// src=list のときは userListId が必須。null のままだと判定系が常に false を返し、
+			// 「保存はできるが永遠に何も流れない」アンテナになるため、作成時に弾く
+			if (ps.src === 'list' && ps.userListId == null) {
+				throw new ApiError(meta.errors.noSuchUserList);
+			}
+
 			let userList;
 
 			if (ps.src === 'list' && ps.userListId) {
