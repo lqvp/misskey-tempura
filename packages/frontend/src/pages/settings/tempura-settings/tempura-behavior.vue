@@ -34,8 +34,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
-import * as Misskey from 'misskey-js';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import { prefer } from '@/preferences.js';
@@ -46,11 +44,3 @@ const reactionChecksMuting = prefer.model('reactionChecksMuting');
 const anonymizeMutedUsers = prefer.model('anonymizeMutedUsers');
 
 </script>
-
-<style lang="scss" module>
-.label {
-    font-size: 0.85em;
-    padding: 0 0 8px 0;
-    user-select: none;
-}
-</style>

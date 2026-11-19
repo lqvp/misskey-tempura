@@ -11,115 +11,130 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div class="_gaps_m">
 			<MkNote :note="noteMock" :mock="true"/>
 			<div class="_gaps_m">
-				<SearchMarker :keywords="['direct', 'renote']">
-					<MkPreferenceContainer k="directRenote">
-						<MkSwitch v-model="directRenote">
-							<template #label>
-								<SearchLabel>{{ i18n.ts.directRenote }}</SearchLabel>
-							</template>
-							<template #caption>{{ i18n.ts.directRenoteDescription }}</template>
-						</MkSwitch>
-					</MkPreferenceContainer>
-				</SearchMarker>
-
-				<SearchMarker :keywords="['reaction', 'users', 'hide']">
-					<MkPreferenceContainer k="hideReactionUsers">
-						<MkSwitch v-model="hideReactionUsers">
-							<template #label>
-								<SearchLabel>{{ i18n.ts.hideReactionUsers }}</SearchLabel>
-							</template>
-							<template #caption>{{ i18n.ts.hideReactionUsersDescription }}</template>
-						</MkSwitch>
-					</MkPreferenceContainer>
-				</SearchMarker>
-
-				<SearchMarker :keywords="['reaction', 'confirm']">
-					<MkPreferenceContainer k="enableReactionConfirm">
-						<MkSwitch v-model="enableReactionConfirm">
-							<template #label>
-								<SearchLabel>{{ i18n.ts.enableReactionConfirm }}</SearchLabel>
-							</template>
-							<template #caption>{{ i18n.ts.enableReactionConfirmDescription }}</template>
-						</MkSwitch>
-					</MkPreferenceContainer>
-				</SearchMarker>
-
-				<SearchMarker :keywords="['like', 'confirm']">
-					<MkPreferenceContainer k="enableLikeConfirm">
-						<MkSwitch v-model="enableLikeConfirm">
-							<template #label>
-								<SearchLabel>{{ i18n.ts.enableLikeConfirm }}</SearchLabel>
-							</template>
-							<template #caption>{{ i18n.ts.enableLikeConfirmDescription }}</template>
-						</MkSwitch>
-					</MkPreferenceContainer>
-				</SearchMarker>
-
-				<SearchMarker :keywords="['instance', 'ticker', 'software', 'name']">
-					<MkPreferenceContainer k="showInstanceTickerSoftwareName">
-						<MkSwitch v-model="showInstanceTickerSoftwareName">
-							<template #label>
-								<SearchLabel>{{ i18n.ts.showInstanceTickerSoftwareName }}</SearchLabel>
-							</template>
-							<template #caption>{{ i18n.ts.showInstanceTickerSoftwareNameDescription }}</template>
-						</MkSwitch>
-					</MkPreferenceContainer>
-				</SearchMarker>
-
-				<SearchMarker :keywords="['instance', 'ticker', 'version']">
-					<MkPreferenceContainer k="showInstanceTickerVersion">
-						<MkSwitch v-model="showInstanceTickerVersion">
-							<template #label>
-								<SearchLabel>{{ i18n.ts.showInstanceTickerVersion }}</SearchLabel>
-							</template>
-							<template #caption>{{ i18n.ts.showInstanceTickerVersionDescription }}</template>
-						</MkSwitch>
-					</MkPreferenceContainer>
-				</SearchMarker>
-
-				<SearchMarker :keywords="['note', 'nyaize', 'disable']">
-					<MkPreferenceContainer k="disableNoteNyaize">
-						<MkSwitch v-model="disableNoteNyaize">
-							<template #label>
-								<SearchLabel>{{ i18n.ts.disableNoteNyaize }}</SearchLabel>
-							</template>
-						</MkSwitch>
-					</MkPreferenceContainer>
-				</SearchMarker>
-
-				<SearchMarker :keywords="['reaction', 'count', 'hide']">
-					<MkPreferenceContainer k="hideReactionCount">
-						<MkSelect v-model="hideReactionCount" :items="hideReactionCountItems">
-							<template #label><SearchLabel>{{ i18n.ts.hideReactionCount }}</SearchLabel></template>
-						</MkSelect>
-					</MkPreferenceContainer>
-				</SearchMarker>
-
-				<MkFolder>
-					<template #label><SearchLabel>{{ i18n.ts.like }}</SearchLabel></template>
+				<FormSection first>
+					<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.notesConfirm }}</SearchLabel></template>
 					<div class="_gaps_m">
-						<SearchMarker :keywords="['like', 'button', 'show']">
-							<MkPreferenceContainer k="showLikeButton">
-								<MkSwitch v-model="showLikeButton"><SearchLabel>{{ i18n.ts.showLikeButton }}</SearchLabel></MkSwitch>
+						<SearchMarker :keywords="['direct', 'renote']">
+							<MkPreferenceContainer k="directRenote">
+								<MkSwitch v-model="directRenote">
+									<template #label>
+										<SearchLabel>{{ i18n.ts.directRenote }}</SearchLabel>
+									</template>
+									<template #caption>{{ i18n.ts.directRenoteDescription }}</template>
+								</MkSwitch>
 							</MkPreferenceContainer>
 						</SearchMarker>
 
-						<SearchMarker :keywords="['reaction', 'select']">
-							<MkPreferenceContainer k="selectReaction">
-								<FromSlot v-model="selectReaction">
-									<template #label><SearchLabel>{{ i18n.ts.selectReaction }}</SearchLabel></template>
-									<MkCustomEmoji v-if="selectReaction && selectReaction.startsWith(':')" style="max-height: 3em; font-size: 1.1em;" :useOriginalSize="false" :name="selectReaction" :normal="true" :noStyle="true"/>
-									<MkEmoji v-else-if="selectReaction && !selectReaction.startsWith(':')" :emoji="selectReaction" style="max-height: 3em; font-size: 1.1em;" :normal="true" :noStyle="true"/>
-									<span v-else>{{ i18n.ts.notSet }}</span>
-									<div class="_buttons" style="padding-top: 8px;">
-										<MkButton rounded :small="true" inline @click="chooseNewReaction"><i class="ti ti-mood-happy"></i> Change</MkButton>
-										<MkButton rounded :small="true" inline @click="resetReaction"><i class="ti ti-reload"></i> Reset</MkButton>
-									</div>
-								</FromSlot>
+						<SearchMarker :keywords="['reaction', 'users', 'hide']">
+							<MkPreferenceContainer k="hideReactionUsers">
+								<MkSwitch v-model="hideReactionUsers">
+									<template #label>
+										<SearchLabel>{{ i18n.ts.hideReactionUsers }}</SearchLabel>
+									</template>
+									<template #caption>{{ i18n.ts.hideReactionUsersDescription }}</template>
+								</MkSwitch>
+							</MkPreferenceContainer>
+						</SearchMarker>
+
+						<SearchMarker :keywords="['reaction', 'confirm']">
+							<MkPreferenceContainer k="enableReactionConfirm">
+								<MkSwitch v-model="enableReactionConfirm">
+									<template #label>
+										<SearchLabel>{{ i18n.ts.enableReactionConfirm }}</SearchLabel>
+									</template>
+									<template #caption>{{ i18n.ts.enableReactionConfirmDescription }}</template>
+								</MkSwitch>
+							</MkPreferenceContainer>
+						</SearchMarker>
+
+						<SearchMarker :keywords="['like', 'confirm']">
+							<MkPreferenceContainer k="enableLikeConfirm">
+								<MkSwitch v-model="enableLikeConfirm">
+									<template #label>
+										<SearchLabel>{{ i18n.ts.enableLikeConfirm }}</SearchLabel>
+									</template>
+									<template #caption>{{ i18n.ts.enableLikeConfirmDescription }}</template>
+								</MkSwitch>
 							</MkPreferenceContainer>
 						</SearchMarker>
 					</div>
-				</MkFolder>
+				</FormSection>
+
+				<FormSection>
+					<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.notesTicker }}</SearchLabel></template>
+					<div class="_gaps_m">
+						<SearchMarker :keywords="['instance', 'ticker', 'software', 'name']">
+							<MkPreferenceContainer k="showInstanceTickerSoftwareName">
+								<MkSwitch v-model="showInstanceTickerSoftwareName">
+									<template #label>
+										<SearchLabel>{{ i18n.ts.showInstanceTickerSoftwareName }}</SearchLabel>
+									</template>
+									<template #caption>{{ i18n.ts.showInstanceTickerSoftwareNameDescription }}</template>
+								</MkSwitch>
+							</MkPreferenceContainer>
+						</SearchMarker>
+
+						<SearchMarker :keywords="['instance', 'ticker', 'version']">
+							<MkPreferenceContainer k="showInstanceTickerVersion">
+								<MkSwitch v-model="showInstanceTickerVersion">
+									<template #label>
+										<SearchLabel>{{ i18n.ts.showInstanceTickerVersion }}</SearchLabel>
+									</template>
+									<template #caption>{{ i18n.ts.showInstanceTickerVersionDescription }}</template>
+								</MkSwitch>
+							</MkPreferenceContainer>
+						</SearchMarker>
+					</div>
+				</FormSection>
+
+				<FormSection>
+					<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.notesReaction }}</SearchLabel></template>
+					<div class="_gaps_m">
+						<SearchMarker :keywords="['note', 'nyaize', 'disable']">
+							<MkPreferenceContainer k="disableNoteNyaize">
+								<MkSwitch v-model="disableNoteNyaize">
+									<template #label>
+										<SearchLabel>{{ i18n.ts.disableNoteNyaize }}</SearchLabel>
+									</template>
+								</MkSwitch>
+							</MkPreferenceContainer>
+						</SearchMarker>
+
+						<SearchMarker :keywords="['reaction', 'count', 'hide']">
+							<MkPreferenceContainer k="hideReactionCount">
+								<MkSelect v-model="hideReactionCount" :items="hideReactionCountItems">
+									<template #label><SearchLabel>{{ i18n.ts.hideReactionCount }}</SearchLabel></template>
+								</MkSelect>
+							</MkPreferenceContainer>
+						</SearchMarker>
+
+						<MkFolder>
+							<template #label><SearchLabel>{{ i18n.ts.like }}</SearchLabel></template>
+							<div class="_gaps_m">
+								<SearchMarker :keywords="['like', 'button', 'show']">
+									<MkPreferenceContainer k="showLikeButton">
+										<MkSwitch v-model="showLikeButton"><SearchLabel>{{ i18n.ts.showLikeButton }}</SearchLabel></MkSwitch>
+									</MkPreferenceContainer>
+								</SearchMarker>
+
+								<SearchMarker :keywords="['reaction', 'select']">
+									<MkPreferenceContainer k="selectReaction">
+										<FromSlot v-model="selectReaction">
+											<template #label><SearchLabel>{{ i18n.ts.selectReaction }}</SearchLabel></template>
+											<MkCustomEmoji v-if="selectReaction && selectReaction.startsWith(':')" style="max-height: 3em; font-size: 1.1em;" :useOriginalSize="false" :name="selectReaction" :normal="true" :noStyle="true"/>
+											<MkEmoji v-else-if="selectReaction && !selectReaction.startsWith(':')" :emoji="selectReaction" style="max-height: 3em; font-size: 1.1em;" :normal="true" :noStyle="true"/>
+											<span v-else>{{ i18n.ts.notSet }}</span>
+											<div class="_buttons" style="padding-top: 8px;">
+												<MkButton rounded :small="true" inline @click="chooseNewReaction"><i class="ti ti-mood-happy"></i> {{ i18n.ts.chooseEmoji }}</MkButton>
+												<MkButton rounded :small="true" inline @click="resetReaction"><i class="ti ti-reload"></i> {{ i18n.ts.reset }}</MkButton>
+											</div>
+										</FromSlot>
+									</MkPreferenceContainer>
+								</SearchMarker>
+							</div>
+						</MkFolder>
+					</div>
+				</FormSection>
 			</div>
 		</div>
 	</MkFolder>
@@ -133,6 +148,7 @@ import MkSwitch from '@/components/MkSwitch.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import MkButton from '@/components/MkButton.vue';
+import FormSection from '@/components/form/section.vue';
 import FromSlot from '@/components/form/slot.vue';
 import MkCustomEmoji from '@/components/global/MkCustomEmoji.vue';
 import MkEmoji from '@/components/global/MkEmoji.vue';
@@ -223,11 +239,3 @@ const noteMock: Misskey.entities.Note = {
 	deliveryTargets: undefined,
 };
 </script>
-
-<style lang="scss" module>
-.label {
-    font-size: 0.85em;
-    padding: 0 0 8px 0;
-    user-select: none;
-}
-</style>

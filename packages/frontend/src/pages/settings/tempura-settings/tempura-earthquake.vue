@@ -14,267 +14,271 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<MkMfm :text="i18n.ts._earthquakeWarning.license"/>
 				</div>
 			</MkInfo>
-			<MkFolder :defaultOpen="true">
-				<template #icon><i class="ti ti-power"></i></template>
-				<template #label><SearchLabel>{{ i18n.ts.general }}</SearchLabel></template>
-
-				<SearchMarker :keywords="['earthquake', 'warning', 'enable']">
-					<MkPreferenceContainer k="enableEarthquakeWarning">
-						<MkSwitch v-model="enableEarthquakeWarning">
-							<SearchLabel>{{ i18n.ts._earthquakeWarning.enable }}</SearchLabel>
-							<template #caption>{{ i18n.ts._earthquakeWarning.enableCaption }}</template>
-						</MkSwitch>
-					</MkPreferenceContainer>
-				</SearchMarker>
-
-				<div class="_gaps_s">
-					<SearchMarker :keywords="['earthquake', 'intensity', 'threshold']">
-						<MkPreferenceContainer k="earthquakeWarningIntensity">
-							<MkSelect v-model="earthquakeWarningIntensity" :items="earthquakeWarningIntensityItems">
-								<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.intensityThreshold }}</SearchLabel></template>
-								<template #caption>{{ i18n.ts._earthquakeWarning.intensityDescription }}</template>
-							</MkSelect>
-						</MkPreferenceContainer>
-					</SearchMarker>
-
-					<SearchMarker :keywords="['earthquake', 'notification', 'display', 'style']">
-						<MkPreferenceContainer k="earthquakeWarningNotificationStyle">
-							<MkSelect v-model="earthquakeWarningNotificationStyle" :items="earthquakeWarningNotificationStyleItems">
-								<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.notificationStyle }}</SearchLabel></template>
-								<template #caption>{{ i18n.ts._earthquakeWarning.notificationStyleCaption }}</template>
-							</MkSelect>
-						</MkPreferenceContainer>
-					</SearchMarker>
-
-					<SearchMarker :keywords="['earthquake', 'notification', 'duration', 'time']">
-						<MkPreferenceContainer k="earthquakeWarningToastDuration">
-							<MkInput v-model="earthquakeWarningToastDuration" type="number" step="1000" :min="5000">
-								<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.toastDuration }}</SearchLabel></template>
-								<template #caption>{{ i18n.ts._earthquakeWarning.toastDurationCaption }}</template>
-							</MkInput>
-						</MkPreferenceContainer>
-					</SearchMarker>
-
-					<SearchMarker :keywords="['earthquake', 'sound', 'enable']">
-						<MkPreferenceContainer k="earthquakeWarningSound">
-							<MkSwitch v-model="earthquakeWarningSound">
-								<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.soundEnable }}</SearchLabel></template>
-								<template #caption>{{ i18n.ts._earthquakeWarning.soundEnableCaption }}</template>
+			<SearchMarker markerId="tempura-settings-earthquake-notification" :inlining="['tempura-settings-earthquake']" :keywords="['earthquake', 'notification', 'enable', 'intensity', 'style']">
+				<FormSection first>
+					<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.earthquakeNotification }}</SearchLabel></template>
+					<SearchMarker :keywords="['earthquake', 'warning', 'enable']">
+						<MkPreferenceContainer k="enableEarthquakeWarning">
+							<MkSwitch v-model="enableEarthquakeWarning">
+								<SearchLabel>{{ i18n.ts._earthquakeWarning.enable }}</SearchLabel>
+								<template #caption>{{ i18n.ts._earthquakeWarning.enableCaption }}</template>
 							</MkSwitch>
 						</MkPreferenceContainer>
 					</SearchMarker>
 
-					<SearchMarker :keywords="['earthquake', 'sound', 'type']">
-						<MkPreferenceContainer k="earthquakeWarningSoundType">
-							<MkSelect v-if="earthquakeWarningSound" v-model="earthquakeWarningSoundType" :items="earthquakeWarningSoundTypeItems">
-								<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.soundType }}</SearchLabel></template>
-								<template #caption>{{ i18n.ts._earthquakeWarning.soundTypeCaption }}</template>
-							</MkSelect>
-						</MkPreferenceContainer>
-					</SearchMarker>
+					<MkInfo v-if="needsReloadForEarthquakeWarning">
+						{{ i18n.ts.reloadRequiredToApplySettings }}
+						<div class="_buttons" style="margin-top: 8px;">
+							<MkButton inline @click="reload"><i class="ti ti-refresh"></i> {{ i18n.ts.reload }}</MkButton>
+						</div>
+					</MkInfo>
 
-					<SearchMarker :keywords="['earthquake', 'tts', 'voice', 'speed', 'rate']">
-						<MkPreferenceContainer k="enableEarthquakeWarningTts">
-							<MkSwitch v-model="enableEarthquakeWarningTts">
-								<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.enableTts }}</SearchLabel></template>
-								<template #caption>{{ i18n.ts._earthquakeWarning.enableTtsCaption }}</template>
-							</MkSwitch>
-						</MkPreferenceContainer>
-
-						<div v-if="enableEarthquakeWarningTts" class="_gaps_m">
-							<MkPreferenceContainer k="earthquakeWarningTtsVoice">
-								<MkSelect v-model="earthquakeWarningTtsVoice" :items="earthquakeWarningTtsVoiceItems">
-									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.ttsVoice }}</SearchLabel></template>
-									<template #caption>{{ i18n.ts._earthquakeWarning.ttsVoiceCaption }}</template>
+					<div class="_gaps_s">
+						<SearchMarker :keywords="['earthquake', 'intensity', 'threshold']">
+							<MkPreferenceContainer k="earthquakeWarningIntensity">
+								<MkSelect v-model="earthquakeWarningIntensity" :items="earthquakeWarningIntensityItems">
+									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.intensityThreshold }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._earthquakeWarning.intensityDescription }}</template>
 								</MkSelect>
 							</MkPreferenceContainer>
+						</SearchMarker>
 
-							<MkPreferenceContainer k="earthquakeWarningTtsRate">
-								<MkInput v-model="earthquakeWarningTtsRate" type="number" step="0.1" :min="0.1" :max="10">
-									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.ttsRate }}</SearchLabel></template>
-									<template #caption>{{ i18n.ts._earthquakeWarning.ttsRateCaption }}</template>
+						<SearchMarker :keywords="['earthquake', 'notification', 'display', 'style']">
+							<MkPreferenceContainer k="earthquakeWarningNotificationStyle">
+								<MkSelect v-model="earthquakeWarningNotificationStyle" :items="earthquakeWarningNotificationStyleItems">
+									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.notificationStyle }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._earthquakeWarning.notificationStyleCaption }}</template>
+								</MkSelect>
+							</MkPreferenceContainer>
+						</SearchMarker>
+
+						<SearchMarker :keywords="['earthquake', 'notification', 'duration', 'time']">
+							<MkPreferenceContainer k="earthquakeWarningToastDuration">
+								<MkInput v-model="earthquakeWarningToastDuration" type="number" step="1000" :min="5000">
+									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.toastDuration }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._earthquakeWarning.toastDurationCaption }}</template>
 								</MkInput>
 							</MkPreferenceContainer>
-						</div>
-					</SearchMarker>
+						</SearchMarker>
+					</div>
+				</FormSection>
+			</SearchMarker>
 
-					<!-- 地域フィルタリング設定 -->
-					<fieldset>
-						<legend><SearchLabel>{{ i18n.ts._earthquakeWarning.regionFilter }}</SearchLabel></legend>
-						<div class="_gaps_s">
-							<SearchMarker :keywords="['earthquake', 'region', 'filter', 'enable']">
-								<MkPreferenceContainer k="enableEarthquakeWarningRegionFilter">
-									<MkSwitch v-model="enableEarthquakeWarningRegionFilter">
-										<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.regionFilterEnable }}</SearchLabel></template>
-										<template #caption>{{ i18n.ts._earthquakeWarning.regionFilterCaption }}</template>
-									</MkSwitch>
+			<SearchMarker markerId="tempura-settings-earthquake-sound" :inlining="['tempura-settings-earthquake']" :keywords="['earthquake', 'sound', 'tts', 'voice']">
+				<FormSection>
+					<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.earthquakeSound }}</SearchLabel></template>
+					<div class="_gaps_s">
+						<SearchMarker :keywords="['earthquake', 'sound', 'enable']">
+							<MkPreferenceContainer k="earthquakeWarningSound">
+								<MkSwitch v-model="earthquakeWarningSound">
+									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.soundEnable }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._earthquakeWarning.soundEnableCaption }}</template>
+								</MkSwitch>
+							</MkPreferenceContainer>
+						</SearchMarker>
+
+						<SearchMarker :keywords="['earthquake', 'sound', 'type']">
+							<MkPreferenceContainer k="earthquakeWarningSoundType">
+								<MkSelect v-if="earthquakeWarningSound" v-model="earthquakeWarningSoundType" :items="earthquakeWarningSoundTypeItems">
+									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.soundType }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._earthquakeWarning.soundTypeCaption }}</template>
+								</MkSelect>
+							</MkPreferenceContainer>
+						</SearchMarker>
+
+						<SearchMarker :keywords="['earthquake', 'tts', 'voice', 'speed', 'rate']">
+							<MkPreferenceContainer k="enableEarthquakeWarningTts">
+								<MkSwitch v-model="enableEarthquakeWarningTts">
+									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.enableTts }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._earthquakeWarning.enableTtsCaption }}</template>
+								</MkSwitch>
+							</MkPreferenceContainer>
+
+							<div v-if="enableEarthquakeWarningTts" class="_gaps_m">
+								<MkPreferenceContainer k="earthquakeWarningTtsVoice">
+									<MkSelect v-model="earthquakeWarningTtsVoice" :items="earthquakeWarningTtsVoiceItems">
+										<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.ttsVoice }}</SearchLabel></template>
+										<template #caption>{{ i18n.ts._earthquakeWarning.ttsVoiceCaption }}</template>
+									</MkSelect>
 								</MkPreferenceContainer>
-							</SearchMarker>
-							<div v-if="enableEarthquakeWarningRegionFilter">
-								<!-- TODO: Consider extracting the following region filter switches into a separate, reusable component -->
-								<MkFolder :defaultOpen="false">
-									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.regionFilterAreaLabel }}</SearchLabel></template>
-									<div class="_gaps_s region-switches">
-										<MkSwitch v-model="regionFilters.hokkaido" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.hokkaido">
-											{{ i18n.ts._earthquakeWarning.regionFilterAreas.hokkaido }}
-										</MkSwitch>
 
-										<MkSwitch v-model="regionFilters.tohoku" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.tohoku">
-											{{ i18n.ts._earthquakeWarning.regionFilterAreas.tohoku }}
-										</MkSwitch>
-
-										<MkSwitch v-model="regionFilters.kanto" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.kanto">
-											{{ i18n.ts._earthquakeWarning.regionFilterAreas.kanto }}
-										</MkSwitch>
-
-										<MkSwitch v-model="regionFilters.chubu" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.chubu">
-											{{ i18n.ts._earthquakeWarning.regionFilterAreas.chubu }}
-										</MkSwitch>
-
-										<MkSwitch v-model="regionFilters.kinki" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.kinki">
-											{{ i18n.ts._earthquakeWarning.regionFilterAreas.kinki }}
-										</MkSwitch>
-
-										<MkSwitch v-model="regionFilters.chugoku" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.chugoku">
-											{{ i18n.ts._earthquakeWarning.regionFilterAreas.chugoku }}
-										</MkSwitch>
-
-										<MkSwitch v-model="regionFilters.shikoku" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.shikoku">
-											{{ i18n.ts._earthquakeWarning.regionFilterAreas.shikoku }}
-										</MkSwitch>
-
-										<MkSwitch v-model="regionFilters.kyushu" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.kyushu">
-											{{ i18n.ts._earthquakeWarning.regionFilterAreas.kyushu }}
-										</MkSwitch>
-									</div>
-									<p class="_caption">{{ i18n.ts._earthquakeWarning.regionFilterAreaCaption }}</p>
-								</MkFolder>
+								<MkPreferenceContainer k="earthquakeWarningTtsRate">
+									<MkInput v-model="earthquakeWarningTtsRate" type="number" step="0.1" :min="0.1" :max="10">
+										<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.ttsRate }}</SearchLabel></template>
+										<template #caption>{{ i18n.ts._earthquakeWarning.ttsRateCaption }}</template>
+									</MkInput>
+								</MkPreferenceContainer>
 							</div>
+						</SearchMarker>
+					</div>
+				</FormSection>
+			</SearchMarker>
+
+			<!-- 地域フィルタリング設定 -->
+			<SearchMarker markerId="tempura-settings-earthquake-region" :inlining="['tempura-settings-earthquake']" :keywords="['earthquake', 'region', 'filter']">
+				<FormSection>
+					<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.earthquakeRegion }}</SearchLabel></template>
+					<div class="_gaps_s">
+						<SearchMarker :keywords="['earthquake', 'region', 'filter', 'enable']">
+							<MkPreferenceContainer k="enableEarthquakeWarningRegionFilter">
+								<MkSwitch v-model="enableEarthquakeWarningRegionFilter">
+									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.regionFilterEnable }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._earthquakeWarning.regionFilterCaption }}</template>
+								</MkSwitch>
+							</MkPreferenceContainer>
+						</SearchMarker>
+						<div v-if="enableEarthquakeWarningRegionFilter">
+							<!-- TODO: Consider extracting the following region filter switches into a separate, reusable component -->
+							<MkFolder :defaultOpen="false">
+								<template #label><span :id="regionSwitchesLabelId"><SearchLabel>{{ i18n.ts._earthquakeWarning.regionFilterAreaLabel }}</SearchLabel></span></template>
+								<div class="_gaps_s region-switches" role="group" :aria-labelledby="regionSwitchesLabelId">
+									<MkSwitch v-model="regionFilters.hokkaido" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.hokkaido">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.hokkaido }}
+									</MkSwitch>
+
+									<MkSwitch v-model="regionFilters.tohoku" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.tohoku">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.tohoku }}
+									</MkSwitch>
+
+									<MkSwitch v-model="regionFilters.kanto" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.kanto">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.kanto }}
+									</MkSwitch>
+
+									<MkSwitch v-model="regionFilters.chubu" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.chubu">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.chubu }}
+									</MkSwitch>
+
+									<MkSwitch v-model="regionFilters.kinki" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.kinki">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.kinki }}
+									</MkSwitch>
+
+									<MkSwitch v-model="regionFilters.chugoku" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.chugoku">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.chugoku }}
+									</MkSwitch>
+
+									<MkSwitch v-model="regionFilters.shikoku" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.shikoku">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.shikoku }}
+									</MkSwitch>
+
+									<MkSwitch v-model="regionFilters.kyushu" :aria-label="i18n.ts._earthquakeWarning.regionFilterAreas.kyushu">
+										{{ i18n.ts._earthquakeWarning.regionFilterAreas.kyushu }}
+									</MkSwitch>
+								</div>
+								<p class="_caption">{{ i18n.ts._earthquakeWarning.regionFilterAreaCaption }}</p>
+							</MkFolder>
 						</div>
-					</fieldset>
+					</div>
+				</FormSection>
+			</SearchMarker>
 
-					<!-- 通知抑制設定 -->
-					<SearchMarker :keywords="['earthquake', 'notification', 'throttle', 'time']">
-						<MkPreferenceContainer k="earthquakeWarningThrottleTime">
-							<MkInput v-model="earthquakeWarningThrottleTime" type="number" step="10" :min="0">
-								<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.throttleTime }}</SearchLabel></template>
-								<template #caption>{{ i18n.ts._earthquakeWarning.throttleTimeCaption }}</template>
-							</MkInput>
-						</MkPreferenceContainer>
-					</SearchMarker>
+			<!-- 通知抑制設定 -->
+			<SearchMarker markerId="tempura-settings-earthquake-report" :inlining="['tempura-settings-earthquake']" :keywords="['earthquake', 'report', 'throttle', 'training']">
+				<FormSection>
+					<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.earthquakeReport }}</SearchLabel></template>
+					<div class="_gaps_s">
+						<SearchMarker :keywords="['earthquake', 'notification', 'throttle', 'time']">
+							<MkPreferenceContainer k="earthquakeWarningThrottleTime">
+								<MkInput v-model="earthquakeWarningThrottleTime" type="number" step="10" :min="0">
+									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.throttleTime }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._earthquakeWarning.throttleTimeCaption }}</template>
+								</MkInput>
+							</MkPreferenceContainer>
+						</SearchMarker>
 
-					<!-- 訓練報スキップ設定 -->
-					<SearchMarker :keywords="['earthquake', 'ignore', 'training', 'test']">
-						<MkPreferenceContainer k="earthquakeWarningIgnoreTraining">
-							<MkSwitch v-model="earthquakeWarningIgnoreTraining">
-								<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.ignoreTraining }}</SearchLabel></template>
-								<template #caption>{{ i18n.ts._earthquakeWarning.ignoreTrainingCaption }}</template>
-							</MkSwitch>
-						</MkPreferenceContainer>
-					</SearchMarker>
+						<!-- 訓練報スキップ設定 -->
+						<SearchMarker :keywords="['earthquake', 'ignore', 'training', 'test']">
+							<MkPreferenceContainer k="earthquakeWarningIgnoreTraining">
+								<MkSwitch v-model="earthquakeWarningIgnoreTraining">
+									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.ignoreTraining }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._earthquakeWarning.ignoreTrainingCaption }}</template>
+								</MkSwitch>
+							</MkPreferenceContainer>
+						</SearchMarker>
 
-					<SearchMarker :keywords="['earthquake', 'report', 'filter', 'mode']">
-						<MkPreferenceContainer k="earthquakeWarningReportFilterMode">
-							<MkSelect v-model="earthquakeWarningReportFilterMode" :items="earthquakeWarningReportFilterModeItems">
-								<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.reportFilterMode }}</SearchLabel></template>
-								<template #caption>{{ i18n.ts._earthquakeWarning.reportFilterModeCaption }}</template>
-							</MkSelect>
-						</MkPreferenceContainer>
-					</SearchMarker>
+						<SearchMarker :keywords="['earthquake', 'report', 'filter', 'mode']">
+							<MkPreferenceContainer k="earthquakeWarningReportFilterMode">
+								<MkSelect v-model="earthquakeWarningReportFilterMode" :items="earthquakeWarningReportFilterModeItems">
+									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.reportFilterMode }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._earthquakeWarning.reportFilterModeCaption }}</template>
+								</MkSelect>
+							</MkPreferenceContainer>
+						</SearchMarker>
 
-					<SearchMarker :keywords="['earthquake', 'report', 'nth', 'number']">
-						<MkPreferenceContainer k="earthquakeWarningReportNumber">
-							<MkInput v-model="earthquakeWarningReportNumber" type="number" :min="1" :disabled="!['nth','both'].includes(earthquakeWarningReportFilterMode)">
-								<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.reportNumber }}</SearchLabel></template>
-								<template #caption>{{ i18n.ts._earthquakeWarning.reportNumberCaption }}</template>
-							</MkInput>
-						</MkPreferenceContainer>
-					</SearchMarker>
+						<SearchMarker :keywords="['earthquake', 'report', 'nth', 'number']">
+							<MkPreferenceContainer k="earthquakeWarningReportNumber">
+								<MkInput v-model="earthquakeWarningReportNumber" type="number" :min="1" :disabled="!['nth','both'].includes(earthquakeWarningReportFilterMode)">
+									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.reportNumber }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._earthquakeWarning.reportNumberCaption }}</template>
+								</MkInput>
+							</MkPreferenceContainer>
+						</SearchMarker>
 
-					<SearchMarker :keywords="['earthquake', 'report', 'final', 'only']">
-						<MkPreferenceContainer k="earthquakeWarningFinalOnly">
-							<MkSwitch v-model="earthquakeWarningFinalOnly" :disabled="!['final','both'].includes(earthquakeWarningReportFilterMode)">
-								<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.finalOnly }}</SearchLabel></template>
-								<template #caption>{{ i18n.ts._earthquakeWarning.finalOnlyCaption }}</template>
-							</MkSwitch>
-						</MkPreferenceContainer>
-					</SearchMarker>
+						<SearchMarker :keywords="['earthquake', 'report', 'final', 'only']">
+							<MkPreferenceContainer k="earthquakeWarningFinalOnly">
+								<MkSwitch v-model="earthquakeWarningFinalOnly" :disabled="!['final','both'].includes(earthquakeWarningReportFilterMode)">
+									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.finalOnly }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._earthquakeWarning.finalOnlyCaption }}</template>
+								</MkSwitch>
+							</MkPreferenceContainer>
+						</SearchMarker>
 
-					<MkButton
-						primary
-						@click="testEarthquakeAlert"
-					>
-						<template #icon><i class="ti ti-bell-ringing"></i></template>
-						<SearchLabel>{{ i18n.ts._earthquakeWarning.testNotification }}</SearchLabel>
-					</MkButton>
-					<div class="test-caption">{{ i18n.ts._earthquakeWarning.testNotificationCaption }}</div>
-				</div>
-			</MkFolder>
+						<MkButton primary @click="testEarthquakeAlert"><i class="ti ti-bell-ringing"></i> {{ i18n.ts._earthquakeWarning.testNotification }}</MkButton>
+						<div class="test-caption">{{ i18n.ts._earthquakeWarning.testNotificationCaption }}</div>
+					</div>
+				</FormSection>
+			</SearchMarker>
 
 			<!-- Connection & Logging Settings -->
-			<MkFolder :defaultOpen="true">
-				<template #icon><i class="ti ti-plug-connected"></i></template>
-				<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.connection }}</SearchLabel></template>
+			<SearchMarker markerId="tempura-settings-earthquake-connection" :inlining="['tempura-settings-earthquake']" :keywords="['earthquake', 'connection', 'log']">
+				<FormSection>
+					<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.earthquakeConnection }}</SearchLabel></template>
 
-				<div class="_gaps_s">
-					<SearchMarker :keywords="['earthquake', 'connection', 'notify']">
-						<MkPreferenceContainer k="earthquakeWarningConnectionNotify">
-							<MkSwitch v-model="earthquakeWarningConnectionNotify">
-								<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.connectionNotify }}</SearchLabel></template>
-								<template #caption>{{ i18n.ts._earthquakeWarning.connectionNotifyCaption }}</template>
-							</MkSwitch>
-						</MkPreferenceContainer>
-					</SearchMarker>
+					<div class="_gaps_s">
+						<SearchMarker :keywords="['earthquake', 'connection', 'notify']">
+							<MkPreferenceContainer k="earthquakeWarningConnectionNotify">
+								<MkSwitch v-model="earthquakeWarningConnectionNotify">
+									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.connectionNotify }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._earthquakeWarning.connectionNotifyCaption }}</template>
+								</MkSwitch>
+							</MkPreferenceContainer>
+						</SearchMarker>
 
-					<SearchMarker :keywords="['earthquake', 'log', 'level']">
-						<MkPreferenceContainer k="earthquakeWarningLogLevel">
-							<MkSelect v-model="earthquakeWarningLogLevel" :items="earthquakeWarningLogLevelItems">
-								<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.loggingLevel }}</SearchLabel></template>
-								<template #caption>{{ i18n.ts._earthquakeWarning.loggingLevelCaption }}</template>
-							</MkSelect>
-						</MkPreferenceContainer>
-					</SearchMarker>
+						<SearchMarker :keywords="['earthquake', 'log', 'level']">
+							<MkPreferenceContainer k="earthquakeWarningLogLevel">
+								<MkSelect v-model="earthquakeWarningLogLevel" :items="earthquakeWarningLogLevelItems">
+									<template #label><SearchLabel>{{ i18n.ts._earthquakeWarning.loggingLevel }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._earthquakeWarning.loggingLevelCaption }}</template>
+								</MkSelect>
+							</MkPreferenceContainer>
+						</SearchMarker>
 
-					<div v-if="earthquakeWarningLogLevel !== 'none'" class="log-actions">
-						<MkButton class="log-button" @click="viewLogs('connection')">
-							<template #icon><i class="ti ti-history"></i></template>
-							<SearchLabel>{{ i18n.ts._earthquakeWarning.connectionLogs }}</SearchLabel>
-						</MkButton>
+						<div v-if="earthquakeWarningLogLevel !== 'none'" class="log-actions">
+							<MkButton class="log-button" @click="viewLogs('connection')"><i class="ti ti-history"></i> {{ i18n.ts._earthquakeWarning.connectionLogs }}</MkButton>
 
-						<MkButton v-if="earthquakeWarningLogLevel === 'detailed'" class="log-button" @click="viewLogs('data')">
-							<template #icon><i class="ti ti-database"></i></template>
-							<SearchLabel>{{ i18n.ts._earthquakeWarning.dataLogs }}</SearchLabel>
-						</MkButton>
+							<MkButton v-if="earthquakeWarningLogLevel === 'detailed'" class="log-button" @click="viewLogs('data')"><i class="ti ti-database"></i> {{ i18n.ts._earthquakeWarning.dataLogs }}</MkButton>
 
-						<MkButton class="log-button" danger @click="clearLogs">
-							<template #icon><i class="ti ti-eraser"></i></template>
-							<SearchLabel>{{ i18n.ts._earthquakeWarning.clearLogs }}</SearchLabel>
-						</MkButton>
+							<MkButton class="log-button" danger @click="clearLogs"><i class="ti ti-eraser"></i> {{ i18n.ts._earthquakeWarning.clearLogs }}</MkButton>
+						</div>
 					</div>
-				</div>
-			</MkFolder>
-
-			<div class="_buttons">
-				<MkButton primary @click="save">
-					<template #icon><i class="ti ti-device-floppy"></i></template>
-					{{ i18n.ts.save }}
-				</MkButton>
-			</div>
+				</FormSection>
+			</SearchMarker>
 		</div>
 	</MkFolder>
 </SearchMarker>
 </template>
 
 <script lang="ts" setup>
-import { computed, reactive, watch, onMounted, ref, onBeforeUnmount } from 'vue';
+import { computed, reactive, watch, onMounted, ref, onBeforeUnmount, useId } from 'vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkInput from '@/components/MkInput.vue';
 import MkButton from '@/components/MkButton.vue';
 import MkFolder from '@/components/MkFolder.vue';
+import FormSection from '@/components/form/section.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import MkMfm from '@/components/global/MkMfm.js';
 import { suggestReload } from '@/utility/reload-suggest.js';
+import { unisonReload } from '@/utility/unison-reload.js';
 import { testEarthquakeAlert, getConnectionLogs, getDataLogs, clearAllLogs } from '@/utility/tempura-script/earthquake-warning.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
@@ -282,6 +286,8 @@ import { prefer } from '@/preferences.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 
 // State
+const regionSwitchesLabelId = useId();
+
 const enableEarthquakeWarning = computed({
 	get: () => prefer.r.enableEarthquakeWarning.value,
 	set: (value) => {
@@ -555,12 +561,21 @@ function clearLogs() {
 	});
 }
 
-/**
- * 設定を保存してページをリロードし、WebSocketの接続を更新します
- */
-async function save() {
-	await suggestReload();
+// 地震速報の有効化は起動時にしか評価されない（main-boot がモジュールを遅延ロードするかどうかの判定と、
+// WebSocket 接続の確立に使われる）。そのため起動時の値と現在値が食い違っている間だけ再読み込みを案内する。
+// それ以外の設定は通知処理のたびに prefer から読み直されるので即時反映され、リロードは不要。
+const startupEnableEarthquakeWarning = prefer.s.enableEarthquakeWarning;
+const needsReloadForEarthquakeWarning = computed(() => enableEarthquakeWarning.value !== startupEnableEarthquakeWarning);
+
+function reload() {
+	unisonReload();
 }
+
+watch(needsReloadForEarthquakeWarning, (needsReload) => {
+	// 「スキップ」で案内を閉じたあとでも、設定値を切り替え直さずに案内を戻せるよう自前のボタンを出す。
+	// 共有フラグ (shouldSuggestReload) は他機能と共用なので、起動時の値に戻ったときは触らない。
+	if (needsReload) suggestReload();
+});
 </script>
 
 <style lang="scss" scoped>

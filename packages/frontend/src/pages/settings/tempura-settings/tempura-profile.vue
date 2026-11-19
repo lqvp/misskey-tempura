@@ -57,7 +57,6 @@ import MkButton from '@/components/MkButton.vue';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { $i } from '@/i.js';
-import { globalEvents } from '@/events.js';
 import { clearCache } from '@/utility/clear-cache.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import SearchLabel from '@/components/global/SearchLabel.vue';
@@ -113,11 +112,3 @@ async function saveCounts() {
 	}
 }
 </script>
-
-<style lang="scss" module>
-.label {
-    font-size: 0.85em;
-    padding: 0 0 8px 0;
-    user-select: none;
-}
-</style>

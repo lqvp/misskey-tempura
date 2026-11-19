@@ -4,10 +4,12 @@
  */
 
 import ms from 'ms';
+import { Brackets } from 'typeorm';
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { NotesRepository, UserListsRepository } from '@/models/_.js';
 import { QueryService } from '@/core/QueryService.js';
+import { ChannelMutingService } from '@/core/ChannelMutingService.js';
 import { AntennaService } from '@/core/AntennaService.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { findAntennaKeywordLimitViolation, validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
@@ -115,6 +117,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private antennaService: AntennaService,
 		private noteEntityService: NoteEntityService,
 		private queryService: QueryService,
+		private channelMutingService: ChannelMutingService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			if (ps.keywords.flat().every(x => x === '') && ps.excludeKeywords.flat().every(x => x === '')) {
@@ -183,6 +186,23 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				.leftJoinAndSelect('renote.user', 'renoteUser')
 				.orderBy('note.id', 'DESC')
 				.take(200);
+
+			// アンテナのタイムラインと同じ条件で絞る。
+			// ミュートしたチャンネルのノートはタイムラインに出ないので、試し打ちでも対象から外す
+			// (ここがずれると「試し打ちでは当たるのに保存しても出ない」になる)
+			const mutingChannelIds = await this.channelMutingService
+				.list({ requestUserId: me.id }, { idOnly: true })
+				.then(x => x.map(x => x.id));
+			if (mutingChannelIds.length > 0) {
+				query.andWhere(new Brackets(qb => {
+					qb.orWhere('note.channelId IS NULL');
+					qb.orWhere('note.channelId NOT IN (:...mutingChannelIds)', { mutingChannelIds });
+				}));
+				query.andWhere(new Brackets(qb => {
+					qb.orWhere('note.renoteChannelId IS NULL');
+					qb.orWhere('note.renoteChannelId NOT IN (:...mutingChannelIds)', { mutingChannelIds });
+				}));
+			}
 
 			this.queryService.generateVisibilityQuery(query, me);
 			this.queryService.generateBaseNoteFilteringQuery(query, me);

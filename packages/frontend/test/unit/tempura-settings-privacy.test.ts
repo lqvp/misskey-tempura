@@ -46,9 +46,10 @@ vi.mock('@/theme.js', async (importOriginal) => {
 	};
 });
 
+// tempura-drive は中身が空のため設定ページに描画していない
 const SECTION_MODULES = [
-	'tempura-profile', 'tempura-privacy', 'tempura-notes', 'tempura-appearance',
-	'tempura-behavior', 'tempura-drive', 'tempura-postform', 'tempura-timeline',
+	'tempura-profile', 'tempura-privacy', 'tempura-appearance', 'tempura-timeline',
+	'tempura-behavior', 'tempura-postform', 'tempura-notes',
 	'tempura-llm', 'tempura-earthquake',
 ] as const;
 
@@ -75,7 +76,7 @@ describe('Tempura設定 > プライバシーセクション', () => {
 			vi.doMock(`@/pages/settings/tempura-settings/${name}.vue`, () => stubModule(name));
 		}
 		const page = render(XTempuraSettings, { global: { directives, components } });
-		// 10個のスタブが全て描画されるのを待つ
+		// 全セクションのスタブが描画されるのを待つ
 		await page.findAllByText(() => true, { selector: '[data-stub-section]' }).catch(() => []);
 		await vi.waitFor(() => {
 			const stubs = page.container.querySelectorAll('[data-stub-section]');
