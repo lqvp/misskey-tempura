@@ -7,8 +7,8 @@ export class SignupPassphraseAndFixedInviteCode1795120000000 {
 	name = 'SignupPassphraseAndFixedInviteCode1795120000000'
 
 	async up(queryRunner) {
-		await queryRunner.query(`ALTER TABLE "meta" ADD "fixedInviteCode" varchar(128) DEFAULT NULL`);
-		await queryRunner.query(`ALTER TABLE "meta" ADD "signupPassphrase" varchar(256) DEFAULT NULL`);
+		await queryRunner.query(`ALTER TABLE "meta" ADD "fixedInviteCode" varchar(128)`);
+		await queryRunner.query(`ALTER TABLE "meta" ADD "signupPassphrase" varchar(256)`);
 	}
 
 	async down(queryRunner) {
