@@ -63,7 +63,7 @@ export const paramDef = {
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
 		@Inject(DI.meta)
-		private meta: MiMeta,
+		private serverSettings: MiMeta,
 
 		@Inject(DI.registrationTicketsRepository)
 		private registrationTicketsRepository: RegistrationTicketsRepository,
@@ -74,7 +74,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			// 固定招待コード・合言葉 (Meta 設定)。
 			// 通常の招待コードと異なり消費されないため、常に有効扱い。
 			// スキップ特権 (skipEmailAuth / skipApproval) は持たない。
-			if (this.meta.fixedInviteCode != null && code === this.meta.fixedInviteCode) {
+			if (this.serverSettings.fixedInviteCode != null && code === this.serverSettings.fixedInviteCode) {
 				return {
 					isValid: true,
 					expiresAt: null,
@@ -83,7 +83,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				};
 			}
 
-			if (isSignupPassphraseMatch(code, this.meta.signupPassphrase)) {
+			if (isSignupPassphraseMatch(code, this.serverSettings.signupPassphrase)) {
 				return {
 					isValid: true,
 					expiresAt: null,
