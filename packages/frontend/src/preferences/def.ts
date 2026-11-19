@@ -643,7 +643,7 @@ export const PREF_DEF = definePreferences({
 		default: 'リスト記法は対応しておらず、パーサーが壊れるため使用禁止です。列挙する場合は「・」を使ってください。' as string | null,
 	},
 	geminiPromptNote: {
-		default: '以下のSNSの投稿をわかりやすく簡潔にユーザーに要約せよ。' as string | null,
+		default: 'あなたはSNS投稿の要約アシスタントです。投稿の要点を3文以内でまとめてください。専門用語や固有名詞はそのまま使います。前置きや説明を出力せず、要約本文のみを出力してください。' as string | null,
 	},
 	geminiPromptProfile: {
 		default: 'プロフィール情報と投稿からこのユーザーの特徴を簡潔に教えて。' as string | null,
@@ -680,6 +680,9 @@ export const PREF_DEF = definePreferences({
 	},
 	openaiForceImageInput: {
 		default: false,
+	},
+	openaiTemperature: {
+		default: null as number | null,
 	},
 	enableEarthquakeWarning: {
 		default: false,

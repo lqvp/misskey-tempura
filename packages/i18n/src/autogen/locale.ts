@@ -15366,7 +15366,7 @@ export interface Locale extends ILocale {
          */
         "useGeminiWithMediaDescription": string;
         /**
-         * Geminiシステムプロンプト
+         * LLMシステムプロンプト
          */
         "geminiSystemPromptLabel": string;
         /**
@@ -15374,7 +15374,7 @@ export interface Locale extends ILocale {
          */
         "geminiSystemPromptCaption": string;
         /**
-         * Gemini要約プロンプト
+         * ノート要約プロンプト
          */
         "geminiSummarizePromptLabel": string;
         /**
@@ -15493,6 +15493,14 @@ export interface Locale extends ILocale {
          * モデル一覧の自動判定で「不明」になる場合に、画像入力に対応しているものとして扱います。画像対応モデルのはずなのに判定されないときに有効にしてください。
          */
         "openaiForceImageInputCaption": string;
+        /**
+         * Temperature
+         */
+        "openaiTemperatureLabel": string;
+        /**
+         * 生成のランダム性 (0.0〜2.0)。要約には低め (0〜0.3) が向きます。空欄の場合はプロバイダの既定値を使います。サーバー提供モードでは無効です。
+         */
+        "openaiTemperatureCaption": string;
         /**
          * このモデルは画像入力に非対応です。メディア付きノートではテキストのみが送られます。
          */

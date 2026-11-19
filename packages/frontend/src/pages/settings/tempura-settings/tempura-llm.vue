@@ -64,6 +64,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</MkPreferenceContainer>
 						</SearchMarker>
 
+						<SearchMarker :keywords="['llm', 'openai', 'temperature', 'sampling']">
+							<MkPreferenceContainer k="openaiTemperature">
+								<MkInput v-model="openaiTemperature" type="number" style="margin: 0;">
+									<template #label><SearchLabel>{{ i18n.ts._llm.openaiTemperatureLabel }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._llm.openaiTemperatureCaption }}</template>
+								</MkInput>
+							</MkPreferenceContainer>
+						</SearchMarker>
+
 						<SearchMarker :keywords="['llm', 'openai', 'media', 'images', 'photos']">
 							<MkPreferenceContainer k="useGeminiWithMedia">
 								<MkSwitch v-model="useGeminiWithMedia">
@@ -212,6 +221,7 @@ fetchInstance(true).then((res) => {
 const useGeminiLLMAPI = prefer.model('useGeminiLLMAPI');
 const useGeminiWithMedia = prefer.model('useGeminiWithMedia');
 const openaiForceImageInput = prefer.model('openaiForceImageInput');
+const openaiTemperature = prefer.model('openaiTemperature');
 const openaiToken = prefer.model('openaiToken');
 const openaiBaseUrl = prefer.model('openaiBaseUrl');
 const openaiModel = prefer.model('openaiModel');

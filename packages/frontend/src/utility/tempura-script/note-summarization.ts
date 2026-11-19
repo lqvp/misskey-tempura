@@ -6,6 +6,7 @@
 import { defineAsyncComponent, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { generateLLMResponse } from '@/utility/tempura-script/llm.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
 import { extractLLMText } from '@/utility/tempura-script/llm-response.js';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
@@ -19,14 +20,38 @@ import { displayLlmError } from '@/utils/errorHandler.js';
  * @param note 要約対象のノート
  * @returns 要約されたテキスト
  */
+/**
+ * 返信元ノートの文脈を遡って取得する (最大5件、参考データとして付与する)
+ */
+async function fetchAncestorContext(note: Misskey.entities.Note): Promise<string> {
+	const ancestors: string[] = [];
+	let cursor: string | null | undefined = note.replyId;
+	for (let i = 0; i < 5 && cursor != null; i++) {
+		try {
+			const parent = await misskeyApi('notes/show', { noteId: cursor });
+			if (parent.text == null || parent.text === '') break;
+			ancestors.unshift(parent.text);
+			cursor = parent.replyId ?? null;
+		} catch {
+			break;
+		}
+	}
+	return ancestors.join('\n\n');
+}
+
 export async function callLLMSummarize(note: Misskey.entities.Note): Promise<string> {
 	const systemInstruction = [
 		prefer.s.geminiPromptNote ?? '',
 		prefer.s.geminiSystemPrompt ?? '',
 	].join('\n');
 
+	// 返信文脈があれば参考データとして先頭に付与する
+	const ancestorContext = note.replyId != null ? await fetchAncestorContext(note) : '';
+	const userContent = [ancestorContext, note.text ?? ''].filter((x) => x !== '').join('\n\n');
+
 	const data = await generateLLMResponse({
 		note: note,
+		userContent,
 		systemInstruction,
 	});
 	try {
