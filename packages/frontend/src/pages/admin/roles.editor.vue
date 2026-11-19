@@ -156,6 +156,7 @@ function updateAvatarDecorationLimit(value: string | number) {
 // Use API enum values so validation passes
 const rolePermissionDef: MkSelectItem[] = [
 	{ label: i18n.ts.normalUser, value: 'Normal' },
+	{ label: i18n.ts.subModerator, value: 'Moderator' },
 	{ label: i18n.ts.moderator, value: 'MainModerator' },
 	{ label: i18n.ts.administrator, value: 'Admin' },
 	{ label: i18n.ts.community, value: 'Community' },
@@ -165,10 +166,10 @@ const rolePermission = computed<GetMkSelectValueTypesFromDef<typeof rolePermissi
 	get: () => role.value.permissionGroup,
 	set: (val) => {
 		if (val == null) return;
-		if (val === 'Admin' || val === 'MainModerator' || val === 'Normal' || val === 'Community') {
+		if (val === 'Admin' || val === 'MainModerator' || val === 'Moderator' || val === 'Normal' || val === 'Community') {
 			role.value.permissionGroup = val;
 			role.value.isAdministrator = val === 'Admin';
-			role.value.isModerator = val === 'Admin' || val === 'MainModerator';
+			role.value.isModerator = val === 'Admin' || val === 'MainModerator' || val === 'Moderator';
 		}
 	},
 });

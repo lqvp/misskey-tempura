@@ -570,7 +570,8 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 	@bindThis
 	public async isModerator(user: { id: MiUser['id'] } | null): Promise<boolean> {
 		if (user == null) return false;
-		return (this.meta.rootUserId === user.id) || (await this.getUserRoles(user.id)).some(r => r.permissionGroup === 'MainModerator' || r.permissionGroup === 'Admin');
+		// Moderator (サブモデレーター) もモデレーターとして扱う
+		return (this.meta.rootUserId === user.id) || (await this.getUserRoles(user.id)).some(r => r.permissionGroup === 'Moderator' || r.permissionGroup === 'MainModerator' || r.permissionGroup === 'Admin');
 	}
 
 	@bindThis
@@ -606,8 +607,8 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 
 		const roles = await this.rolesCache.fetch(() => this.rolesRepository.findBy({}));
 		const moderatorRoles = includeAdmins
-			? roles.filter(r => r.permissionGroup === 'MainModerator' || r.permissionGroup === 'Admin')
-			: roles.filter(r => r.permissionGroup === 'MainModerator');
+			? roles.filter(r => r.permissionGroup === 'Moderator' || r.permissionGroup === 'MainModerator' || r.permissionGroup === 'Admin')
+			: roles.filter(r => r.permissionGroup === 'Moderator' || r.permissionGroup === 'MainModerator');
 
 		const assigns = moderatorRoles.length > 0
 			? await this.roleAssignmentsRepository.findBy({ roleId: In(moderatorRoles.map(r => r.id)) })
@@ -791,6 +792,9 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 			condFormula: values.condFormula,
 			isPublic: values.isPublic,
 			permissionGroup: values.permissionGroup,
+			// 後方互換フラグは permissionGroup から導出して同期させる
+			isAdministrator: values.permissionGroup === 'Admin',
+			isModerator: values.permissionGroup === 'Admin' || values.permissionGroup === 'MainModerator' || values.permissionGroup === 'Moderator',
 			isExplorable: values.isExplorable,
 			isRainbow: values.isRainbow,
 			asBadge: values.asBadge,

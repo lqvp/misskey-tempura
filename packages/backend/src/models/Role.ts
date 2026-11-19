@@ -203,7 +203,7 @@ export type RoleCondFormulaValue = { id: string } & (
 	CondFormulaValueActivedLessThan
 );
 
-export type RolePermissionGroupValue = 'Admin' | 'MainModerator' | 'Normal' | 'Community';
+export type RolePermissionGroupValue = 'Admin' | 'MainModerator' | 'Moderator' | 'Normal' | 'Community';
 
 @Entity('role')
 export class MiRole {
@@ -273,7 +273,7 @@ export class MiRole {
 	public isAdministrator: boolean; // 後方互換
 
 	@Column('enum', {
-		enum: ['Admin', 'MainModerator', 'Normal', 'Community'],
+		enum: ['Admin', 'MainModerator', 'Moderator', 'Normal', 'Community'],
 		default: 'Normal',
 	})
 	public permissionGroup: RolePermissionGroupValue;
