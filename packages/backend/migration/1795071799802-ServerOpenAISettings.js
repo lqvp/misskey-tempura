@@ -22,7 +22,7 @@ export class ServerOpenAISettings1795071799802 {
         await queryRunner.query('ALTER TABLE "meta" ADD "serverOpenAIEnabled" boolean NOT NULL DEFAULT false');
         await queryRunner.query('ALTER TABLE "meta" ADD "serverOpenAIApiKey" character varying(1024)');
         await queryRunner.query('ALTER TABLE "meta" ADD "serverOpenAIBaseURL" character varying(512)');
-        await queryRunner.query('ALTER TABLE "meta" ADD "serverOpenAIModels" character varying(512) DEFAULT \'gpt-4o-mini\'');
+        await queryRunner.query('ALTER TABLE "meta" ADD "serverOpenAIModels" character varying(512) NOT NULL DEFAULT \'gpt-4o-mini\'');
     }
 
     /**
