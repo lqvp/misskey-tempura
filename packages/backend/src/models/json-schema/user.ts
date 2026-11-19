@@ -285,7 +285,7 @@ export const packedUserDetailedNotMeOnlySchema = {
 			nullable: true, optional: false,
 			example: '2018-03-12',
 		},
-		ListenBrainz: {
+		listenbrainz: {
 			type: "string",
 			nullable: true,
 			optional: false,

@@ -75,7 +75,7 @@ export const apiWithDialog = (<E extends keyof Misskey.Endpoints>(
 		} else if (err.code === 'INVALID_PARAM') {
 			title = i18n.ts.invalidParamError;
 			text = i18n.ts.invalidParamErrorDescription;
-		} else if (err.code === 'ROLE_PERMISSION_DENIED') {
+		} else if (err.code === 'ROLE_PERMISSION_DENIED' || err.code === 'CANNOT_USE_MAKE_PRIVATE') {
 			title = i18n.ts.permissionDeniedError;
 			text = i18n.ts.permissionDeniedErrorDescription;
 		} else if (err.code.startsWith('TOO_MANY')) {

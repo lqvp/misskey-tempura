@@ -100,6 +100,7 @@ describe('ActivityPub', () => {
 	let rendererService: ApRendererService;
 	let jsonLdService: JsonLdService;
 	let resolver: MockResolver;
+	let federatedInstanceService: FederatedInstanceService;
 
 	const metaInitial = {
 		cacheRemoteFiles: true,
@@ -154,13 +155,13 @@ describe('ActivityPub', () => {
 		jsonLdService = app.get<JsonLdService>(JsonLdService);
 		resolver = new MockResolver(await app.resolve<LoggerService>(LoggerService));
 
-		// Prevent ApPersonService from fetching instance, as it causes Jest import-after-test error
-		const federatedInstanceService = app.get<FederatedInstanceService>(FederatedInstanceService);
-		vi.spyOn(federatedInstanceService, 'fetch').mockImplementation(() => new Promise(() => { }));
+		federatedInstanceService = app.get<FederatedInstanceService>(FederatedInstanceService);
 	});
 
 	beforeEach(() => {
 		resolver.clear();
+		// restoreMocks がテストごとに spy を戻すため、都度張り直す
+		vi.spyOn(federatedInstanceService, 'fetch').mockResolvedValue(null);
 	});
 
 	describe('Parse minimum object', () => {
@@ -267,6 +268,52 @@ describe('ActivityPub', () => {
 
 			const updatedUser = await personService.fetchPerson(actor.id);
 			assert.deepStrictEqual(updatedUser?.alsoKnownAs, [updatedActor.alsoKnownAs]);
+		});
+	});
+
+	describe('person.url', () => {
+		test('同一ホストの url は更新できる', async () => {
+			const actor = createRandomActor();
+			resolver.register(actor.id, actor);
+			const user = await personService.createPerson(actor.id, resolver);
+
+			const updated = { ...actor, url: `${host}/@someone` };
+			resolver.register(actor.id, updated);
+
+			await assert.doesNotReject(() => personService.updatePerson(actor.id, resolver, updated));
+
+			const profile = await userProfilesRepository.findOneByOrFail({ userId: user.id });
+			assert.strictEqual(profile.url, updated.url);
+		});
+
+		test('別ホストの url でも更新を止めず、装飾の取得先は actor のホストを使う', async () => {
+			const actor = createRandomActor();
+			resolver.register(actor.id, actor);
+			const user = await personService.createPerson(actor.id, resolver);
+
+			vi.mocked(federatedInstanceService.fetch).mockClear();
+
+			const updated = { ...actor, url: 'https://profile.example/@someone' };
+			resolver.register(actor.id, updated);
+
+			await assert.doesNotReject(() => personService.updatePerson(actor.id, resolver, updated));
+
+			const profile = await userProfilesRepository.findOneByOrFail({ userId: user.id });
+			assert.strictEqual(profile.url, updated.url);
+			// 装飾取り込みの fetch 先は person.url ではなく actor のホスト
+			assert.ok(vi.mocked(federatedInstanceService.fetch).mock.calls.some(([h]) => h === 'host1.test'));
+			assert.ok(!vi.mocked(federatedInstanceService.fetch).mock.calls.some(([h]) => h === 'profile.example'));
+		});
+
+		test('https でない url は拒否する', async () => {
+			const actor = createRandomActor();
+			resolver.register(actor.id, actor);
+			await personService.createPerson(actor.id, resolver);
+
+			const updated = { ...actor, url: 'ftp://host1.test/@someone' };
+			resolver.register(actor.id, updated);
+
+			await assert.rejects(() => personService.updatePerson(actor.id, resolver, updated), /unexpected schema of person url/);
 		});
 	});
 

@@ -497,6 +497,15 @@ export class NoteCreateService implements OnApplicationShutdown {
 		isBot: MiUser['isBot'];
 		isCat: MiUser['isCat'];
 	}, data: Option, silent = false): Promise<MiNote> {
+		// isScheduledForPrivate は make-private 系エンドポイントと同じく canUseMakePrivate で制限する
+		// (requiredRolePolicy と同様に root / Admin は許可する)
+		if (data.isScheduledForPrivate) {
+			const policies = await this.roleService.getUserPolicies(user.id);
+			if (!policies.canUseMakePrivate && !(await this.roleService.isAdministrator(user))) {
+				throw new IdentifiableError('7b1e4c9a-3f6d-4a2b-8c5e-9d0f1a2b3c4d', 'You are not allowed to make notes private.');
+			}
+		}
+
 		// チャンネル外にリプライしたら対象のスコープに合わせる
 		// (クライアントサイドでやっても良い処理だと思うけどとりあえずサーバーサイドで)
 		if (data.reply && data.channel && data.reply.channelId !== data.channel.id) {
@@ -524,7 +533,8 @@ export class NoteCreateService implements OnApplicationShutdown {
 			const sensitiveWords = this.meta.sensitiveWords;
 			const sensitiveWordsTarget = data.cw ?? data.text ?? '';
 			if (sensitiveWords.length > 0 && this.utilityService.isKeyWordIncluded([sensitiveWordsTarget, ...extractUrlsForKeyWordCheck(sensitiveWordsTarget)].join('\n'), sensitiveWords)) {
-				data.visibility = 'home';
+				const policies = await this.roleService.getUserPolicies(user.id);
+				data.visibility = policies.canHomeNote ? 'home' : 'followers';
 			} else {
 				const policies = await this.roleService.getUserPolicies(user.id);
 				if (data.visibility === 'public' && policies.canPublicNote === false) {
@@ -538,8 +548,11 @@ export class NoteCreateService implements OnApplicationShutdown {
 		}
 
 		if (['public_non_ltl'].includes(data.visibility) && data.channel == null) {
-			if ((await this.roleService.getUserPolicies(user.id)).canPublicNonLtlNote === false) {
-				data.visibility = 'home';
+			const policies = await this.roleService.getUserPolicies(user.id);
+			if (policies.canPublicNonLtlNote === false) {
+				// public_non_ltl を許可されていない場合は home に降格するが、
+				// home 投稿も許可されていない場合は followers まで落とす
+				data.visibility = policies.canHomeNote ? 'home' : 'followers';
 			}
 		}
 
@@ -636,6 +649,15 @@ export class NoteCreateService implements OnApplicationShutdown {
 			// ローカルのみにリプライしたらローカルのみにする
 			if (data.reply.localOnly && data.channel == null) {
 				data.localOnly = true;
+			}
+		}
+
+		// home 投稿が許可されていない場合は followers に落とす
+		// (sensitiveWords / silenced instance / renote / reply による再昇格も含む)
+		if (data.visibility === 'home' && data.channel == null) {
+			const policies = await this.roleService.getUserPolicies(user.id);
+			if (policies.canHomeNote === false) {
+				data.visibility = 'followers';
 			}
 		}
 

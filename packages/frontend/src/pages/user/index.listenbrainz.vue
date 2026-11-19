@@ -4,12 +4,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkContainer :foldable="true">
+<MkContainer v-if="hasData" :foldable="true">
 	<template #header>
 		<i
 			class="ti ti-headphones"
 			style="margin-right: 0.5em"
-		></i>Music
+		></i>{{ i18n.ts._widgets._listenBrainz.profileTitle }}
 	</template>
 
 	<div style="padding: 8px">
@@ -17,11 +17,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<a :href="listenbrainz.musicbrainzurl">
 				<img class="image" :src="listenbrainz.img" :alt="listenbrainz.title"/>
 				<div class="flex flex-col items-start">
-					<p class="text-sm font-bold">Now Playing: {{ listenbrainz.title }}</p>
+					<p class="text-sm font-bold">{{ i18n.ts._widgets._listenBrainz.nowPlaying }}: {{ listenbrainz.title }}</p>
 					<p class="text-xs font-medium">{{ listenbrainz.artist }}</p>
 				</div>
 			</a>
-			<a :href="listenbrainz.listenbrainzurl">
+			<a :href="listenbrainz.listenbrainzurl" :aria-label="listenbrainz.title">
 				<div class="playicon">
 					<i class="ti ti-player-play-filled"></i>
 				</div>
@@ -32,13 +32,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
+import { i18n } from '@/i18n.js';
 import * as misskey from 'misskey-js';
+import { safeHttpUrl } from '@@/js/url.js';
 import MkContainer from '@/components/MkContainer.vue';
 
 const props = withDefaults(
 	defineProps<{
-		user: misskey.entities.User & { listenbrainz?: string };
+		user: misskey.entities.User & { listenbrainz?: string | null };
 	}>(),
 	{},
 );
@@ -48,15 +50,21 @@ const listenbrainz = reactive({
 	artist: '',
 	lastlisten: '',
 	img: '',
-	musicbrainzurl: '',
-	listenbrainzurl: '',
+	musicbrainzurl: '#',
+	listenbrainzurl: '#',
 });
 
-if (props.user.listenbrainz) {
+const listenbrainzUsername = props.user.listenbrainz ?? null;
+const hasData = ref(false);
+
+if (listenbrainzUsername) {
 	(async () => {
 		const getLMData = async (title: string, artist: string) => {
+			const lookupUrl = new URL('https://api.listenbrainz.org/1/metadata/lookup/');
+			lookupUrl.searchParams.set('artist_name', artist);
+			lookupUrl.searchParams.set('recording_name', title);
 			const response = await window.fetch(
-				`https://api.listenbrainz.org/1/metadata/lookup/?artist_name=${artist}&recording_name=${title}`,
+				lookupUrl.toString(),
 				{
 					method: 'GET',
 					headers: {
@@ -73,7 +81,7 @@ if (props.user.listenbrainz) {
 			const img: string = data.release_mbid
 				? `https://coverartarchive.org/release/${data.release_mbid}/front-250`
 				: 'https://coverartarchive.org/img/big_logo.svg';
-			const fallbackUrl = data.additional_info?.origin_url || '#';
+			const fallbackUrl = safeHttpUrl(data.additional_info?.origin_url) ?? '#';
 			const musicbrainzurl: string = data.recording_mbid
 				? `https://musicbrainz.org/recording/${data.recording_mbid}`
 				: fallbackUrl;
@@ -84,7 +92,7 @@ if (props.user.listenbrainz) {
 		};
 
 		const response = await window.fetch(
-			`https://api.listenbrainz.org/1/user/${props.user.listenbrainz}/playing-now`,
+			`https://api.listenbrainz.org/1/user/${encodeURIComponent(listenbrainzUsername)}/playing-now`,
 			{
 				method: 'GET',
 				headers: {
@@ -93,7 +101,7 @@ if (props.user.listenbrainz) {
 			},
 		);
 		const playingNow = await response.json();
-		if (playingNow.payload.listens && playingNow.payload.listens.length !== 0) {
+		if (playingNow.payload?.listens && playingNow.payload.listens.length !== 0) {
 			const playing = playingNow.payload.listens[0];
 			const title: string = playing.track_metadata.track_name;
 			const artist: string = playing.track_metadata.artist_name;
@@ -101,13 +109,14 @@ if (props.user.listenbrainz) {
 			const img = 'https://coverartarchive.org/img/big_logo.svg';
 			await getLMData(title, artist).then((lmData) => {
 				if (!lmData) {
-					const additionalOrigin = playing.track_metadata.additional_info?.origin_url || '#';
+					const additionalOrigin = safeHttpUrl(playing.track_metadata.additional_info?.origin_url) ?? '#';
 					listenbrainz.title = title;
 					listenbrainz.img = img;
 					listenbrainz.artist = artist;
 					listenbrainz.lastlisten = lastlisten;
 					listenbrainz.musicbrainzurl = additionalOrigin;
 					listenbrainz.listenbrainzurl = additionalOrigin;
+					hasData.value = true;
 				} else {
 					listenbrainz.title = lmData[0];
 					listenbrainz.img = lmData[2];
@@ -115,10 +124,13 @@ if (props.user.listenbrainz) {
 					listenbrainz.lastlisten = lastlisten;
 					listenbrainz.musicbrainzurl = lmData[3];
 					listenbrainz.listenbrainzurl = lmData[4];
+					hasData.value = true;
 				}
 			});
 		}
-	})();
+	})().catch((err) => {
+		console.error('Failed to fetch ListenBrainz playing-now:', err);
+	});
 }
 </script>
 

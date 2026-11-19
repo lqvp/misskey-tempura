@@ -112,6 +112,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 
 * public_non_ltl: LTL には出さない public ノート
 * visibility coloring で公開範囲を色分け表示できます
+* canPublicNonLtlNote が無効な場合、canHomeNote が有効なら home、無効なら followers に降格します
 
 ### 受信指定ノート
 
@@ -134,6 +135,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * defaultScheduledNoteDelete / defaultScheduledNoteDeleteTime でデフォルトを設定できます
 * 1 年以上先には設定できません
 * 削除の代わりに非公開化する選択 (makePrivateInsteadOfDelete) があります
+* 非公開化 (makePrivateInsteadOfDelete) にはロールポリシー canUseMakePrivate が必要です
 
 ### ノートの非公開化 (make private)
 
@@ -393,6 +395,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 
 * WidgetListenBrainz (userId)
 * user/index.listenbrainz ページ
+* 外部 API の origin_url は http(s) のみリンク化します
 
 ## 太鼓
 

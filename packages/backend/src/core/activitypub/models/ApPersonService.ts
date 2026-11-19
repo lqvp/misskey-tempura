@@ -641,20 +641,22 @@ export class ApPersonService implements OnModuleInit {
 
 		const url = getOneApHrefNullable(person.url);
 
-		let host = null;
+		if (person.id == null) {
+			throw new Error('Refusing to update person without id');
+		}
 
-		if (url && !checkHttps(url)) {
+		if (url != null && !checkHttps(url)) {
 			throw new Error('unexpected schema of person url: ' + url);
 		}
+
+		// person.url は表示用のプロフィールリンクであり、actor と別ホストを指すことがある。
+		// avatarDecorations 取り込みの fetch 先には、署名検証済みの actor URI のホストを使う。
+		const host = this.utilityService.punyHost(uri);
 
 		// 件数は公開範囲の判定と同じ取得結果から読む。取得は resolver を通すので、signToActivityPubGet が有効なら署名付きになる
 		const followersCount = this.totalItemsOf(collections.followers);
 		const followingCount = this.totalItemsOf(collections.following);
 		const notesCount = this.totalItemsOf(collections.outbox);
-
-		if (url) {
-			host = new URL(url).host;
-		}
 
 		const updates = {
 			lastFetchedAt: new Date(),

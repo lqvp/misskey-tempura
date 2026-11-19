@@ -237,7 +237,7 @@ const profile = reactive({
 	followedMessage: $i.followedMessage,
 	location: $i.location,
 	birthday: $i.birthday,
-	listenbrainz: ($i as any).ListenBrainz ?? ($i as any).listenbrainz ?? null,
+	listenbrainz: ($i as any).listenbrainz ?? null,
 	lang: assertVaildLang($i.lang) ? $i.lang : null,
 	isBot: $i.isBot ?? false,
 	isCat: $i.isCat ?? false,
@@ -287,7 +287,7 @@ function save() {
 		location: profile.location || null,
 		// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
 		birthday: profile.birthday || null,
-		listenbrainz: (profile as any).listenbrainz ?? (profile as any).ListenBrainz ?? null,
+		listenbrainz: (profile as any).listenbrainz ?? null,
 		// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
 		lang: profile.lang || null,
 		isBot: !!profile.isBot,
