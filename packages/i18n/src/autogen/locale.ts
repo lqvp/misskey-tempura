@@ -15266,6 +15266,10 @@ export interface Locale extends ILocale {
              * サーバーで提供するOpenAI互換APIで使用するモデル名を設定します。
              */
             "serverOpenAIModelsDescription": string;
+            /**
+             * モデル一覧の取得に失敗しました。APIキーとベースURLを保存してから再度取得してください。
+             */
+            "serverFetchModelsError": string;
         };
         "_error": {
             /**

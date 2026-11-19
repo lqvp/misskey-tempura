@@ -4083,6 +4083,7 @@ _llm:
     serverOpenAIBaseURLDescription: "OpenAI互換APIのベースURLを入力します（例: https://api.openai.com/v1 ）。空の場合は公式APIを使用します。"
     serverOpenAIModels: "OpenAI互換APIモデル"
     serverOpenAIModelsDescription: "サーバーで提供するOpenAI互換APIで使用するモデル名を設定します。"
+    serverFetchModelsError: "モデル一覧の取得に失敗しました。APIキーとベースURLを保存してから再度取得してください。"
   _error:
     cancel: "操作がキャンセルされました。"
     disable: "LLM APIの利用を無効にしました。"
