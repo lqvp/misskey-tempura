@@ -641,11 +641,24 @@ export class ApPersonService implements OnModuleInit {
 
 		const url = getOneApHrefNullable(person.url);
 
-		let host = null;
-
-		if (url && !checkHttps(url)) {
-			throw new Error('unexpected schema of person url: ' + url);
+		if (person.id == null) {
+			throw new Error('Refusing to update person without id');
 		}
+
+		if (url != null) {
+			if (!checkHttps(url)) {
+				throw new Error('unexpected schema of person url: ' + url);
+			}
+
+			// person.url は actor (person.id) と同一ホストでなければならない。
+			// ここで得た host は avatarDecorations 取り込み時の fetch 先になるため、
+			// リモートが任意のホストを指定できないようにする。
+			if (this.utilityService.punyHost(url) !== this.utilityService.punyHost(person.id)) {
+				throw new Error(`person url <> uri host mismatch: ${url} <> ${person.id}`);
+			}
+		}
+
+		let host = null;
 
 		// 件数は公開範囲の判定と同じ取得結果から読む。取得は resolver を通すので、signToActivityPubGet が有効なら署名付きになる
 		const followersCount = this.totalItemsOf(collections.followers);
