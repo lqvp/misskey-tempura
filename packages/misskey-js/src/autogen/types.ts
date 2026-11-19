@@ -34324,6 +34324,9 @@ export interface operations {
                 'application/json': {
                     text: string;
                     prompt: string;
+                    baseUrl?: string | null;
+                    apiKey?: string | null;
+                    model?: string | null;
                     fileUris?: {
                         mimeType: string;
                         fileUri: string;

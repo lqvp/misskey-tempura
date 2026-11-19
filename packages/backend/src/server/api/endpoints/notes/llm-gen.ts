@@ -58,6 +58,9 @@ export const paramDef = {
 	properties: {
 		text: { type: 'string' },
 		prompt: { type: 'string' },
+		baseUrl: { type: 'string', nullable: true },
+		apiKey: { type: 'string', nullable: true },
+		model: { type: 'string', nullable: true },
 		fileUris: {
 			type: 'array',
 			nullable: true,
@@ -92,19 +95,20 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				throw new ApiError(meta.errors.emptyPrompt);
 			}
 
-			// OpenAI 互換 API のサーバー設定
-			const apiKey = this.serverSettings.serverOpenAIApiKey;
+			// ユーザー指定パラメータ (ユーザー直指定モード) の場合はサーバー設定の有効状態を参照しない
+			const userSpecified = ps.baseUrl != null || ps.apiKey != null;
 
-			if (!this.serverSettings.serverOpenAIEnabled) {
+			if (!userSpecified && !this.serverSettings.serverOpenAIEnabled) {
 				throw new ApiError(meta.errors.llmNotEnabled);
 			}
 
+			const apiKey = ps.apiKey ?? this.serverSettings.serverOpenAIApiKey;
 			if (!apiKey) {
 				throw new ApiError(meta.errors.llmApiError, 'OpenAI-compatible API key is not configured on server');
 			}
 
-			const baseURL = (this.serverSettings.serverOpenAIBaseURL || 'https://api.openai.com/v1').replace(/\/+$/, '');
-			const model = this.serverSettings.serverOpenAIModels || 'gpt-4o-mini';
+			const baseURL = (ps.baseUrl ?? this.serverSettings.serverOpenAIBaseURL ?? 'https://api.openai.com/v1').replace(/\/+$/, '');
+			const model = ps.model ?? this.serverSettings.serverOpenAIModels ?? 'gpt-4o-mini';
 			const url = `${baseURL}/chat/completions`;
 
 			// ユーザーコンテンツ (テキスト + 画像URL)

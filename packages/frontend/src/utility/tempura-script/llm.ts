@@ -149,26 +149,26 @@ export async function fetchAvailableModels(): Promise<LLMModelInfo[]> {
 
 	if (!openaiToken) return [];
 
-	// ユーザー直指定モード: CORS の問題を避けるためサーバー経由で取得する
+	// ユーザー直指定モード: まずブラウザから直接取得し、
+	// CORS 等で失敗した場合のみサーバー経由 (notes/llm-models) にフォールバックする
 	try {
-		const res = await misskeyApi('notes/llm-models', {
-			baseUrl: openaiBaseUrl || undefined,
-			apiKey: openaiToken,
+		const baseURL = (openaiBaseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
+		const response = await window.fetch(`${baseURL}/models`, {
+			method: 'GET',
+			headers: {
+				Authorization: `Bearer ${openaiToken}`,
+			},
 		});
-		return toModelInfos(res.models);
+		if (!response.ok) throw new Error('fetch failed');
+		const data = await response.json() as { data?: { id?: string }[] };
+		return toModelInfos(data.data);
 	} catch {
-		// サーバー経由に失敗した場合 (権限なし等) はブラウザ直接取得を試す
 		try {
-			const baseURL = (openaiBaseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
-			const response = await window.fetch(`${baseURL}/models`, {
-				method: 'GET',
-				headers: {
-					Authorization: `Bearer ${openaiToken}`,
-				},
+			const res = await misskeyApi('notes/llm-models', {
+				baseUrl: openaiBaseUrl || undefined,
+				apiKey: openaiToken,
 			});
-			if (!response.ok) return [];
-			const data = await response.json() as { data?: { id?: string }[] };
-			return toModelInfos(data.data);
+			return toModelInfos(res.models);
 		} catch {
 			return [];
 		}
@@ -179,6 +179,16 @@ export interface GenerateLLMOptions {
 	note?: Misskey.entities.Note;
 	userContent?: string;
 	systemInstruction?: string;
+}
+
+/**
+ * ノートの画像ファイルの URI リスト (サーバー経由フォールバック用)
+ */
+function fileUrisFromNote(note: Misskey.entities.Note): { mimeType: string; fileUri: string }[] {
+	return (note.files ?? [])
+		.filter(file => file.type.startsWith('image/') && !file.type.includes('gif'))
+		.slice(0, 4)
+		.map(file => ({ mimeType: file.type, fileUri: file.url }));
 }
 
 /**
@@ -249,14 +259,28 @@ async function generateOpenAIDirect({ note, userContent, systemInstruction }: Ge
 		],
 	};
 
-	const response = await window.fetch(`${baseURL}/chat/completions`, {
-		method: 'POST',
-		headers: {
-			Authorization: `Bearer ${openaiToken}`,
-			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify(requestBody),
-	});
+	let response: Response;
+	try {
+		// まずブラウザから直接 API を呼ぶ
+		response = await window.fetch(`${baseURL}/chat/completions`, {
+			method: 'POST',
+			headers: {
+				Authorization: `Bearer ${openaiToken}`,
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(requestBody),
+		});
+	} catch {
+		// CORS 等でブラウザ直接呼び出しに失敗した場合のみサーバー経由にフォールバックする
+		return await misskeyApi('notes/llm-gen', {
+			text,
+			prompt: systemInstruction ?? '',
+			baseUrl: openaiBaseUrl || undefined,
+			apiKey: openaiToken,
+			model,
+			fileUris: (note && useGeminiWithMedia && detectImageInputSupport({ id: model }) !== 'unsupported') ? fileUrisFromNote(note) : undefined,
+		}) as LLMResponse;
+	}
 
 	if (!response.ok) {
 		throw new Error(i18n.ts._llm._error.api + `${response.status} ${response.statusText}`);
