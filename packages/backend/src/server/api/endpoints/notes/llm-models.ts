@@ -96,7 +96,10 @@ export const meta = {
 
 export const paramDef = {
 	type: 'object',
-	properties: {},
+	properties: {
+		baseUrl: { type: 'string', nullable: true },
+		apiKey: { type: 'string', nullable: true },
+	},
 	required: [],
 } as const;
 
@@ -129,18 +132,21 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			// 権限チェックは requiredRolePolicy (canUseGeminiLLMAPI) で行われる
-			if (!this.serverSettings.serverOpenAIEnabled) {
+			// ユーザー指定パラメータ (ユーザー直指定モード) の場合はサーバー設定の有効状態を参照しない
+			const userSpecified = ps.baseUrl != null || ps.apiKey != null;
+
+			if (!userSpecified && !this.serverSettings.serverOpenAIEnabled) {
 				throw new ApiError(meta.errors.llmNotEnabled);
 			}
 
-			const apiKey = this.serverSettings.serverOpenAIApiKey;
+			const apiKey = ps.apiKey ?? this.serverSettings.serverOpenAIApiKey;
 			if (!apiKey) {
 				throw new ApiError(meta.errors.llmApiError, 'OpenAI-compatible API key is not configured on server');
 			}
 
 			try {
 				// OpenAI 互換 API: GET {baseURL}/models
-				const baseURL = (this.serverSettings.serverOpenAIBaseURL || 'https://api.openai.com/v1').replace(/\/+$/, '');
+				const baseURL = (ps.baseUrl ?? this.serverSettings.serverOpenAIBaseURL ?? 'https://api.openai.com/v1').replace(/\/+$/, '');
 				const response = await this.httpRequestService.send(`${baseURL}/models`, {
 					method: 'GET',
 					headers: {

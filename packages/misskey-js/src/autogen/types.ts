@@ -34395,6 +34395,14 @@ export interface operations {
         };
     };
     'notes___llm-models': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    baseUrl?: string | null;
+                    apiKey?: string | null;
+                };
+            };
+        };
         responses: {
             /** @description OK (with results) */
             200: {

@@ -149,19 +149,29 @@ export async function fetchAvailableModels(): Promise<LLMModelInfo[]> {
 
 	if (!openaiToken) return [];
 
+	// ユーザー直指定モード: CORS の問題を避けるためサーバー経由で取得する
 	try {
-		const baseURL = (openaiBaseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
-		const response = await window.fetch(`${baseURL}/models`, {
-			method: 'GET',
-			headers: {
-				Authorization: `Bearer ${openaiToken}`,
-			},
+		const res = await misskeyApi('notes/llm-models', {
+			baseUrl: openaiBaseUrl || undefined,
+			apiKey: openaiToken,
 		});
-		if (!response.ok) return [];
-		const data = await response.json() as { data?: { id?: string }[] };
-		return toModelInfos(data.data);
+		return toModelInfos(res.models);
 	} catch {
-		return [];
+		// サーバー経由に失敗した場合 (権限なし等) はブラウザ直接取得を試す
+		try {
+			const baseURL = (openaiBaseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
+			const response = await window.fetch(`${baseURL}/models`, {
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${openaiToken}`,
+				},
+			});
+			if (!response.ok) return [];
+			const data = await response.json() as { data?: { id?: string }[] };
+			return toModelInfos(data.data);
+		} catch {
+			return [];
+		}
 	}
 }
 
