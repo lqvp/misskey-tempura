@@ -681,6 +681,23 @@ describe('RoleService', () => {
 			// Moderator 階級は管理者権限を持たない
 			expect(await roleService.isAdministrator(subModUser1)).toBe(false);
 		});
+
+		test('permissionGroup 変更時に後方互換フラグが再導出される', async () => {
+			const user = await createUser();
+			// Normal ロールを作成して Moderator へ更新
+			const roleNormal = await createRole({ name: 'toModerator', permissionGroup: 'Normal' as const });
+			expect(roleNormal.isModerator).toBe(false);
+
+			await roleService.update(roleNormal, { permissionGroup: 'Moderator' } as Partial<MiRole>);
+
+			const updated = await rolesRepository.findOneByOrFail({ id: roleNormal.id });
+			expect(updated.permissionGroup).toBe('Moderator');
+			expect(updated.isModerator).toBe(true);
+			expect(updated.isAdministrator).toBe(false);
+
+			await assignRole({ userId: user.id, roleId: roleNormal.id });
+			expect(await roleService.isModerator(user)).toBe(true);
+		});
 	});
 
 	describe('getAdministratorIds', () => {

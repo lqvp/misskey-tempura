@@ -819,6 +819,14 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 	@bindThis
 	public async update(role: MiRole, params: Partial<MiRole>, moderator?: MiUser): Promise<void> {
 		const date = new Date();
+		// permissionGroup を変更した場合は後方互換フラグも再導出して同期させる
+		if (params.permissionGroup != null) {
+			params = {
+				...params,
+				isAdministrator: params.permissionGroup === 'Admin',
+				isModerator: params.permissionGroup === 'Admin' || params.permissionGroup === 'MainModerator' || params.permissionGroup === 'Moderator',
+			};
+		}
 		await this.rolesRepository.update(role.id, {
 			updatedAt: date,
 			...params,
