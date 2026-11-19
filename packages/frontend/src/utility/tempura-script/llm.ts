@@ -182,6 +182,37 @@ export interface GenerateLLMOptions {
 }
 
 /**
+ * 選択中のモデルの実効的な画像入力対応
+ *
+ * ユーザーが「画像対応とみなす」設定 (openaiForceImageInput) を有効にしている場合は
+ * 判定結果に関わらず supported として扱う
+ */
+function effectiveImageInputSupport(modelId: string): 'supported' | 'unsupported' | 'unknown' {
+	if (prefer.s.openaiForceImageInput) return 'supported';
+	return detectImageInputSupport({ id: modelId });
+}
+
+/**
+ * 画像ファイルを data URL (base64) に変換する
+ *
+ * 多くの OpenAI 互換 API は image_url.url に http(s) URL と data URL の両方を受け付けるが、
+ * リモート URL を取得できないプロバイダ (ローカル LLM 等) があるため、
+ * ブラウザ直接呼び出しでは data URL を使う
+ */
+async function fileToDataUrl(url: string): Promise<string> {
+	const blob = await window.fetch(url).then(res => {
+		if (!res.ok) throw new Error('fetch failed');
+		return res.blob();
+	});
+	return await new Promise((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => resolve(reader.result as string);
+		reader.onerror = () => reject(new Error('read failed'));
+		reader.readAsDataURL(blob);
+	});
+}
+
+/**
  * ノートの画像ファイルの URI リスト (サーバー経由フォールバック用)
  */
 function fileUrisFromNote(note: Misskey.entities.Note): { mimeType: string; fileUri: string }[] {
@@ -189,20 +220,6 @@ function fileUrisFromNote(note: Misskey.entities.Note): { mimeType: string; file
 		.filter(file => file.type.startsWith('image/') && !file.type.includes('gif'))
 		.slice(0, 4)
 		.map(file => ({ mimeType: file.type, fileUri: file.url }));
-}
-
-/**
- * ノートの画像を image_url コンテンツとして組み立てる
- *
- * 選択中のモデルが画像非対応と判定できている場合は空配列を返す
- */
-function buildImageParts(note: Misskey.entities.Note): { type: 'image_url'; image_url: { url: string } }[] {
-	// 画像非対応と判定済みのモデルには画像を送らない
-	if (detectImageInputSupport({ id: prefer.s.openaiModel ?? '' }) === 'unsupported') return [];
-	return (note.files ?? [])
-		.filter(file => file.type.startsWith('image/') && !file.type.includes('gif'))
-		.slice(0, 4)
-		.map(file => ({ type: 'image_url' as const, image_url: { url: file.url } }));
 }
 
 /**
@@ -243,12 +260,22 @@ async function generateOpenAIDirect({ note, userContent, systemInstruction }: Ge
 	// モデルを空にしている場合は既定のモデルを使う
 	const model = openaiModel?.trim() || 'gpt-4o-mini';
 
-	// ユーザーコンテンツ (テキスト + 画像URL)
+	// ユーザーコンテンツ (テキスト + 画像)
 	const content: ({ type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } })[] = [
 		{ type: 'text', text },
 	];
-	if (note && useGeminiWithMedia) {
-		content.push(...buildImageParts(note));
+	if (note && useGeminiWithMedia && effectiveImageInputSupport(model) !== 'unsupported') {
+		const mediaFiles = (note.files ?? [])
+			.filter(file => file.type.startsWith('image/') && !file.type.includes('gif'))
+			.slice(0, 4);
+		for (const file of mediaFiles) {
+			try {
+				// リモート URL を取得できないプロバイダ向けに data URL で埋め込む
+				content.push({ type: 'image_url', image_url: { url: await fileToDataUrl(file.url) } });
+			} catch {
+				// 取得に失敗した画像はスキップする
+			}
+		}
 	}
 
 	const requestBody = {
@@ -278,7 +305,7 @@ async function generateOpenAIDirect({ note, userContent, systemInstruction }: Ge
 			baseUrl: openaiBaseUrl || undefined,
 			apiKey: openaiToken,
 			model,
-			fileUris: (note && useGeminiWithMedia && detectImageInputSupport({ id: model }) !== 'unsupported') ? fileUrisFromNote(note) : undefined,
+			fileUris: (note && useGeminiWithMedia && effectiveImageInputSupport(model) !== 'unsupported') ? fileUrisFromNote(note) : undefined,
 		}) as LLMResponse;
 	}
 

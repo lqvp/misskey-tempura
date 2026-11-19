@@ -72,6 +72,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 								</MkSwitch>
 							</MkPreferenceContainer>
 						</SearchMarker>
+
+						<SearchMarker :keywords="['llm', 'openai', 'image', 'vision', 'force']">
+							<MkPreferenceContainer k="openaiForceImageInput">
+								<MkSwitch v-model="openaiForceImageInput">
+									<SearchLabel>{{ i18n.ts._llm.openaiForceImageInputLabel }}</SearchLabel>
+									<template #caption>{{ i18n.ts._llm.openaiForceImageInputCaption }}</template>
+								</MkSwitch>
+							</MkPreferenceContainer>
+						</SearchMarker>
 					</div>
 				</FormSection>
 			</SearchMarker>
@@ -202,6 +211,7 @@ fetchInstance(true).then((res) => {
 
 const useGeminiLLMAPI = prefer.model('useGeminiLLMAPI');
 const useGeminiWithMedia = prefer.model('useGeminiWithMedia');
+const openaiForceImageInput = prefer.model('openaiForceImageInput');
 const openaiToken = prefer.model('openaiToken');
 const openaiBaseUrl = prefer.model('openaiBaseUrl');
 const openaiModel = prefer.model('openaiModel');

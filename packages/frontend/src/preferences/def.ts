@@ -678,6 +678,9 @@ export const PREF_DEF = definePreferences({
 	openaiModel: {
 		default: null as string | null,
 	},
+	openaiForceImageInput: {
+		default: false,
+	},
 	enableEarthquakeWarning: {
 		default: false,
 	},

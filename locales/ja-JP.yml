@@ -4137,6 +4137,8 @@ _llm:
   fetchModelsError: "モデル一覧の取得に失敗しました。APIトークンとベースURLを確認してください。"
   modelImageSupported: "このモデルは画像入力に対応していると判定されました。"
   modelImageUnknown: "このモデルの画像入力対応は不明です。"
+  openaiForceImageInputLabel: "画像入力に対応しているものとして扱う"
+  openaiForceImageInputCaption: "モデル一覧の自動判定で「不明」になる場合に、画像入力に対応しているものとして扱います。画像対応モデルのはずなのに判定されないときに有効にしてください。"
   modelImageUnsupported: "このモデルは画像入力に非対応です。メディア付きノートではテキストのみが送られます。"
 
 _noteSearch:
