@@ -60,16 +60,4 @@ describe('XListenBrainz', () => {
 		}
 	});
 
-	test('reads the capital ListenBrainz field as well', async () => {
-		const fetchSpy = vi.spyOn(window, 'fetch').mockImplementation(async () => jsonResponse({ payload: { listens: [] } }));
-
-		render(XListenBrainz, {
-			props: { user: { id: 'x', ListenBrainz: 'lbuser' } as any },
-			global: { components, directives },
-		});
-
-		await waitFor(() => {
-			assert.ok(fetchSpy.mock.calls.some(([url]) => String(url).includes('/user/lbuser/playing-now')));
-		});
-	});
 });

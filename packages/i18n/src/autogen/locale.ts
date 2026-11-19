@@ -10935,6 +10935,14 @@ export interface Locale extends ILocale {
              * ListenBrainzのユーザーIDを設定してください。
              */
             "userIdDescription": string;
+            /**
+             * Music
+             */
+            "profileTitle": string;
+            /**
+             * Now Playing
+             */
+            "nowPlaying": string;
         };
         /**
          * 天気予報

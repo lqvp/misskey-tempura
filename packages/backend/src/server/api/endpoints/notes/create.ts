@@ -10,7 +10,6 @@ import { MAX_NOTE_TEXT_LENGTH } from '@/const.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { NoteCreateService } from '@/core/NoteCreateService.js';
-import { RoleService } from '@/core/RoleService.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { ApiError } from '../../error.js';
 
@@ -259,7 +258,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 	constructor(
 		private noteEntityService: NoteEntityService,
 		private noteCreateService: NoteCreateService,
-		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			try {
@@ -270,15 +268,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						: null;
 
 				const isScheduledForPrivate = ps.scheduledDelete?.isScheduledForPrivate ?? false;
-
-				// isScheduledForPrivate は make-private 系エンドポイントと同じく canUseMakePrivate で制限する
-				// (requiredRolePolicy と同様に root / Admin は許可する)
-				if (isScheduledForPrivate) {
-					const policies = await this.roleService.getUserPolicies(me.id);
-					if (!policies.canUseMakePrivate && !(await this.roleService.isAdministrator(me))) {
-						throw new ApiError({ ...meta.errors.cannotUseMakePrivate, kind: 'permission' });
-					}
-				}
 
 				const note = await this.noteCreateService.fetchAndCreate(me, {
 					createdAt: new Date(),
@@ -343,6 +332,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						throw new ApiError(meta.errors.youHaveBeenBlocked);
 					} else if (err.id === '0c11c11e-0c8d-48e7-822c-76ccef660068') {
 						throw new ApiError(meta.errors.cannotCreateAlreadyExpiredPoll);
+					} else if (err.id === '7b1e4c9a-3f6d-4a2b-8c5e-9d0f1a2b3c4d') {
+						throw new ApiError({ ...meta.errors.cannotUseMakePrivate, kind: 'permission' });
 					} else if (err.id === 'bfa3905b-25f5-4894-b430-da331a490e4b') {
 						throw new ApiError(meta.errors.noSuchChannel);
 					}

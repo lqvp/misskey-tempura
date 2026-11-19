@@ -497,6 +497,15 @@ export class NoteCreateService implements OnApplicationShutdown {
 		isBot: MiUser['isBot'];
 		isCat: MiUser['isCat'];
 	}, data: Option, silent = false): Promise<MiNote> {
+		// isScheduledForPrivate は make-private 系エンドポイントと同じく canUseMakePrivate で制限する
+		// (requiredRolePolicy と同様に root / Admin は許可する)
+		if (data.isScheduledForPrivate) {
+			const policies = await this.roleService.getUserPolicies(user.id);
+			if (!policies.canUseMakePrivate && !(await this.roleService.isAdministrator(user))) {
+				throw new IdentifiableError('7b1e4c9a-3f6d-4a2b-8c5e-9d0f1a2b3c4d', 'You are not allowed to make notes private.');
+			}
+		}
+
 		// チャンネル外にリプライしたら対象のスコープに合わせる
 		// (クライアントサイドでやっても良い処理だと思うけどとりあえずサーバーサイドで)
 		if (data.reply && data.channel && data.reply.channelId !== data.channel.id) {

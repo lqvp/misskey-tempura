@@ -4,12 +4,12 @@ SPDX-License-Identifier: AGPL-3.0-only
 -->
 
 <template>
-<MkContainer :foldable="true">
+<MkContainer v-if="hasData" :foldable="true">
 	<template #header>
 		<i
 			class="ti ti-headphones"
 			style="margin-right: 0.5em"
-		></i>Music
+		></i>{{ i18n.ts._widgets._listenBrainz.profileTitle }}
 	</template>
 
 	<div style="padding: 8px">
@@ -17,7 +17,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<a :href="listenbrainz.musicbrainzurl">
 				<img class="image" :src="listenbrainz.img" :alt="listenbrainz.title"/>
 				<div class="flex flex-col items-start">
-					<p class="text-sm font-bold">Now Playing: {{ listenbrainz.title }}</p>
+					<p class="text-sm font-bold">{{ i18n.ts._widgets._listenBrainz.nowPlaying }}: {{ listenbrainz.title }}</p>
 					<p class="text-xs font-medium">{{ listenbrainz.artist }}</p>
 				</div>
 			</a>
@@ -32,14 +32,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
+import { i18n } from '@/i18n.js';
 import * as misskey from 'misskey-js';
 import { safeHttpUrl } from '@@/js/url.js';
 import MkContainer from '@/components/MkContainer.vue';
 
 const props = withDefaults(
 	defineProps<{
-		user: misskey.entities.User & { listenbrainz?: string | null; ListenBrainz?: string | null };
+		user: misskey.entities.User & { listenbrainz?: string | null };
 	}>(),
 	{},
 );
@@ -53,7 +54,8 @@ const listenbrainz = reactive({
 	listenbrainzurl: '#',
 });
 
-const listenbrainzUsername = props.user.listenbrainz ?? props.user.ListenBrainz ?? null;
+const listenbrainzUsername = props.user.listenbrainz ?? null;
+const hasData = ref(false);
 
 if (listenbrainzUsername) {
 	(async () => {
@@ -114,6 +116,7 @@ if (listenbrainzUsername) {
 					listenbrainz.lastlisten = lastlisten;
 					listenbrainz.musicbrainzurl = additionalOrigin;
 					listenbrainz.listenbrainzurl = additionalOrigin;
+					hasData.value = true;
 				} else {
 					listenbrainz.title = lmData[0];
 					listenbrainz.img = lmData[2];
@@ -121,6 +124,7 @@ if (listenbrainzUsername) {
 					listenbrainz.lastlisten = lastlisten;
 					listenbrainz.musicbrainzurl = lmData[3];
 					listenbrainz.listenbrainzurl = lmData[4];
+					hasData.value = true;
 				}
 			});
 		}

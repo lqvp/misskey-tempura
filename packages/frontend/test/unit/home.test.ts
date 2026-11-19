@@ -95,15 +95,4 @@ describe('XHome', () => {
 		fetchSpy.mockRestore();
 	});
 
-	test('Should fetch playing-now when ListenBrainz (capital) is present', async () => {
-		const fetchSpy = mockPlayingNowFetch();
-
-		renderHome({ ...listenbrainzUser, ListenBrainz: 'lbuser' });
-
-		await waitFor(() => {
-			assert.ok(fetchSpy.mock.calls.some(([url]) => String(url).includes('/user/lbuser/playing-now')));
-		});
-
-		fetchSpy.mockRestore();
-	});
 });

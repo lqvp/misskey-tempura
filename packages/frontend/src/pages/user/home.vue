@@ -197,7 +197,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</template>
 						</div>
 						<template v-if="narrow && !user.isBlocked">
-							<MkLazy v-if="listenbrainzUsername && listenbrainzdata">
+							<MkLazy v-if="listenbrainzUsername">
 								<XListenBrainz :key="user.id" :user="user" :collapsed="true"/>
 							</MkLazy>
 						</template>
@@ -217,7 +217,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div v-if="!narrow && !user.isBlocked" class="sub _gaps" style="container-type: inline-size;">
 					<XFiles :key="user.id" :user="user" @showMore="emit('showMoreFiles')"/>
 					<XActivity v-if="!user.hideActivity" :key="user.id" :user="user"/>
-					<XListenBrainz v-if="listenbrainzUsername && listenbrainzdata" :key="user.id" :user="user"/>
+					<XListenBrainz v-if="listenbrainzUsername" :key="user.id" :user="user"/>
 				</div>
 			</template>
 		</div>
@@ -313,32 +313,7 @@ const translating = ref(false);
 // TODO: Enable translation detection once the service is implemented; keep false to avoid exposing unfinished UI.
 const isForeignLanguage = computed(() => false);
 
-// API は小文字の `listenbrainz` を返すが、型定義は `ListenBrainz` (大文字) になっている。
-// どちらの表記でもウィジェットを表示できるようにする。
-const listenbrainzUsername = computed(() => {
-	const u = props.user as Misskey.entities.UserDetailed & { listenbrainz?: string | null };
-	return u.listenbrainz ?? u.ListenBrainz ?? null;
-});
-
-const listenbrainzdata = ref(false);
-
-watch(listenbrainzUsername, async (username) => {
-	listenbrainzdata.value = false;
-	if (!username) return;
-
-	try {
-		const response = await window.fetch(`https://api.listenbrainz.org/1/user/${encodeURIComponent(username)}/playing-now`, {
-			method: 'GET',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-		});
-		const data = await response.json();
-		listenbrainzdata.value = Array.isArray(data.payload?.listens) && data.payload.listens.length !== 0;
-	} catch {
-		listenbrainzdata.value = false;
-	}
-}, { immediate: true });
+const listenbrainzUsername = computed(() => props.user.listenbrainz ?? null);
 
 watch(moderationNote, async (newValue) => {
 	// 再取得した値を同期しただけの場合は保存しない

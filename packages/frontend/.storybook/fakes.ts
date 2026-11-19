@@ -289,7 +289,7 @@ export function userDetailed(id = 'someuserid', username = 'miskist', host: enti
 		birthday: '2014-06-20',
 		createdAt: '2016-12-28T22:49:51.000Z',
 		description: 'I am a cool user!',
-		ListenBrainz: null,
+		listenbrainz: null,
 		followingVisibility: 'public',
 		followersVisibility: 'public',
 		roles: [],

@@ -47,6 +47,11 @@ describe('safeHttpUrl', () => {
 		expect(safeHttpUrl('HTTPS://EXAMPLE.COM')).toBe('https://example.com/');
 	});
 
+	test('rejects URLs with userinfo', () => {
+		expect(safeHttpUrl('https://user:pass@example.com/path')).toBeNull();
+		expect(safeHttpUrl('https://user@example.com/path')).toBeNull();
+	});
+
 	test('rejects protocol-relative URLs', () => {
 		expect(safeHttpUrl('//example.com/path')).toBeNull();
 	});

@@ -2869,6 +2869,8 @@ _widgets:
   listenBrainz: "ListenBrainz"
   _listenBrainz:
     userIdDescription: "ListenBrainzのユーザーIDを設定してください。"
+    profileTitle: "Music"
+    nowPlaying: "Now Playing"
   weather: "天気予報"
   nestedWidget: "ネスト"
   earthQuake: "地震履歴"

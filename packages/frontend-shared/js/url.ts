@@ -46,8 +46,11 @@ export function safeHttpUrl(url: string | null | undefined): string | null {
 
 	const parsed = tryParseUrl(url);
 	if (parsed == null) return null;
+	if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+	// userinfo 付きの URL は外部リンクとして紛らわしいので許可しない
+	if (parsed.username !== '' || parsed.password !== '') return null;
 
-	return ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : null;
+	return parsed.href;
 }
 
 export function maybeMakeRelative(urlStr: string, baseStr: string): string {
