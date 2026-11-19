@@ -6216,6 +6216,7 @@ export type components = {
             notFoundImageUrl: string | null;
             youBlockedImageUrl: string | null;
             customSplashText: string[] | null;
+            offlinePageConfig: string | null;
             iconUrl: string | null;
             enableLongIconUrl: boolean;
             longIconUrl: string | null;
@@ -11620,6 +11621,7 @@ export interface operations {
                         loginRiskShowDetailsToUser: boolean;
                         backgroundImageUrls: unknown[] | null;
                         customSplashText: string[];
+                        offlinePageConfig: string | null;
                         blockMentionsFromUnfamiliarRemoteUsers: boolean;
                         validateMinimumUsernameLength: number;
                         useHanaEntrance: boolean;
@@ -15460,6 +15462,7 @@ export interface operations {
                     allowAnonymousLocalTimeline?: boolean;
                     allowAnonymousReactions?: boolean;
                     customSplashText?: string[] | null;
+                    offlinePageConfig?: string | null;
                     defaultFollowedUsers?: string[] | null;
                     forciblyFollowedUsers?: string[] | null;
                     deeplFreeMode?: boolean;

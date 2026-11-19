@@ -453,7 +453,12 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 ### テンプラ管理画面
 
 * /admin/tempura-admin に集約
-* ApprovalRequired / DefaultRequireSigninToViewContents / BlockMentions / LongIconUrl / UsernameMinLength / SecondsPerSignup / CustomSplashText / EmailDomainSettings / LlmModerationSettings / HanaEntranceSettings / EntranceSettings / DefaultFollowedUsers / ProxyAccountFollowModeSettings / BackgroundImages / CustomCursor / GeminiSettings / ContactFormSettings / LoginRiskSettings / ServerStatsSettings / SignedApFetchSettings / DeeplFreeModeSettings / ObjectStorageRemoteSettings / BlockedUserImageSettings
+* ApprovalRequired / DefaultRequireSigninToViewContents / BlockMentions / LongIconUrl / UsernameMinLength / SecondsPerSignup / CustomSplashText / EmailDomainSettings / LlmModerationSettings / HanaEntranceSettings / EntranceSettings / DefaultFollowedUsers / ProxyAccountFollowModeSettings / BackgroundImages / CustomCursor / GeminiSettings / ContactFormSettings / LoginRiskSettings / ServerStatsSettings / SignedApFetchSettings / DeeplFreeModeSettings / ObjectStorageRemoteSettings / BlockedUserImageSettings / OfflinePageSettings
+
+### オフラインページ
+
+* サーバーに接続できないとき Service Worker がエラー種別 (オフラインかサーバーエラーか) を表示するページを返す。自動再試行つき
+* offlinePageConfig: オフラインページのカスタムメッセージ・問い合わせ先 URL (テンプラ管理画面で設定)
 
 ### インスタンス情報
 

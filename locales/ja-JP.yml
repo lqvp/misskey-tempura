@@ -3509,6 +3509,18 @@ _reversi:
 _offlineScreen:
   title: "オフライン - サーバーに接続できません"
   header: "サーバーに接続できません"
+  descriptionNetwork: "インターネット接続がないか、サーバーが応答していません。"
+  descriptionServer: "サーバーがエラーを返しています。"
+  retry: "再試行"
+  autoRetrying: "自動再試行中…"
+  autoRetryStopped: "自動再試行を停止しました。手動で再試行してください。"
+
+_offlinePageSetting:
+  title: "オフラインページの設定"
+  message: "カスタムメッセージ"
+  messageDescription: "サーバーに接続できないときにオフラインページへ表示するメッセージです。空欄の場合は表示されません。"
+  contactUrl: "問い合わせ先URL"
+  contactUrlDescription: "オフラインページに問い合わせ先へのリンクを表示します。空欄の場合は表示されません。"
 
 _urlPreviewSetting:
   title: "URLプレビューの設定"

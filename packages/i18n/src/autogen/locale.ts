@@ -13238,6 +13238,48 @@ export interface Locale extends ILocale {
          * サーバーに接続できません
          */
         "header": string;
+        /**
+         * インターネット接続がないか、サーバーが応答していません。
+         */
+        "descriptionNetwork": string;
+        /**
+         * サーバーがエラーを返しています。
+         */
+        "descriptionServer": string;
+        /**
+         * 再試行
+         */
+        "retry": string;
+        /**
+         * 自動再試行中…
+         */
+        "autoRetrying": string;
+        /**
+         * 自動再試行を停止しました。手動で再試行してください。
+         */
+        "autoRetryStopped": string;
+    };
+    "_offlinePageSetting": {
+        /**
+         * オフラインページの設定
+         */
+        "title": string;
+        /**
+         * カスタムメッセージ
+         */
+        "message": string;
+        /**
+         * サーバーに接続できないときにオフラインページへ表示するメッセージです。空欄の場合は表示されません。
+         */
+        "messageDescription": string;
+        /**
+         * 問い合わせ先URL
+         */
+        "contactUrl": string;
+        /**
+         * オフラインページに問い合わせ先へのリンクを表示します。空欄の場合は表示されません。
+         */
+        "contactUrlDescription": string;
     };
     "_urlPreviewSetting": {
         /**

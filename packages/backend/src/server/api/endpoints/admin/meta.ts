@@ -721,6 +721,10 @@ export const meta = {
 					type: 'string',
 				},
 			},
+			offlinePageConfig: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
 			blockMentionsFromUnfamiliarRemoteUsers: {
 				type: 'boolean',
 				optional: false, nullable: false,
@@ -1277,6 +1281,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				allowAnonymousLocalTimeline: instance.allowAnonymousLocalTimeline,
 				allowAnonymousReactions: instance.allowAnonymousReactions,
 				customSplashText: instance.customSplashText,
+				offlinePageConfig: instance.offlinePageConfig,
 				blockMentionsFromUnfamiliarRemoteUsers:
 					instance.blockMentionsFromUnfamiliarRemoteUsers,
 				validateMinimumUsernameLength: instance.validateMinimumUsernameLength,

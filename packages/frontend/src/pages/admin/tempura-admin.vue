@@ -33,6 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<DeeplFreeModeSettings :meta="meta"/>
 				<ObjectStorageRemoteSettings :meta="meta"/>
 				<BlockedUserImageSettings :meta="meta"/>
+				<OfflinePageSettings :meta="meta"/>
 			</div>
 		</MkSuspense>
 	</div>
@@ -67,6 +68,7 @@ import AnonymousAccessSettings from './tempura/sections/AnonymousAccessSettings.
 import DeeplFreeModeSettings from './tempura/sections/DeeplFreeModeSettings.vue';
 import ObjectStorageRemoteSettings from './tempura/sections/ObjectStorageRemoteSettings.vue';
 import BlockedUserImageSettings from './tempura/sections/BlockedUserImageSettings.vue';
+import OfflinePageSettings from './tempura/sections/OfflinePageSettings.vue';
 import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';
 import { misskeyApi } from '@/utility/misskey-api.js';

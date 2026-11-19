@@ -1003,6 +1003,11 @@ export class MiMeta {
 	})
 	public customSplashText: string[];
 
+	@Column('text', {
+		nullable: true,
+	})
+	public offlinePageConfig: string | null;
+
 	@Column('boolean', {
 		default: true,
 	})
