@@ -144,7 +144,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				: ps.baseUrl != null ? null
 				: this.serverSettings.serverOpenAIApiKey;
 			if (!apiKey) {
-				throw new ApiError(meta.errors.llmApiError, 'OpenAI-compatible API key is not configured on server');
+				// baseUrl 指定時はユーザー指定モード扱いのため apiKey が必須、
+				// それ以外はサーバー設定のキーが必要
+				throw new ApiError(meta.errors.llmApiError, ps.baseUrl != null
+					? 'apiKey is required when baseUrl is specified'
+					: 'OpenAI-compatible API key is not configured on server');
 			}
 
 			try {

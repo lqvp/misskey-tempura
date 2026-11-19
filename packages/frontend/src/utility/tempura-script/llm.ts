@@ -95,7 +95,7 @@ export function detectImageInputSupport(model: { id?: string; [key: string]: unk
 	// 5. モデル名による推測 (誤検知を前提とした最後の砦)
 	const id = model.id.toLowerCase();
 	// テキスト専用系の命名は非対応と断定しない (unknown のまま)
-	if (/^(whisper|-embed|-rerank|-guard)/.test(id) || id.includes('embedding') || id.includes('rerank') || id.includes('guard') || id.startsWith('whisper')) {
+	if (id.startsWith('whisper') || id.includes('embedding') || id.includes('rerank') || id.includes('guard')) {
 		return 'unknown';
 	}
 	if (
@@ -140,11 +140,12 @@ export async function fetchAvailableModels(): Promise<LLMModelInfo[]> {
 	const { useGeminiLLMAPI, openaiToken, openaiBaseUrl } = prefer.s;
 
 	if (useGeminiLLMAPI) {
+		cachedModelInfos = []; // 古い判定が残らないようにクリアする
 		try {
 			const res = await misskeyApi('notes/llm-models', {});
 			const infos = toModelInfos(res.models);
-		cachedModelInfos = infos;
-		return infos;
+			cachedModelInfos = infos;
+			return infos;
 		} catch {
 			return [];
 		}

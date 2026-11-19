@@ -323,6 +323,8 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * モデル一覧を API から動的取得 (notes/llm-models、GET /models)
 * モデルの画像入力対応をプロバイダのモダリティ情報から判定 (OpenRouter / Mistral / DeepSeek 等、情報が無い場合はモデル名推測)
 * ユーザーのUI言語での応答を促すヒントをシステムプロンプトに付与
+* 画像入力対応とみなす設定 (openaiForceImageInput) を追加
+* 旧ユーザー設定 geminiModel / geminiThinkingBudget は廃止 (geminiToken と合わせて再設定が必要)
 * プロンプトインジェクション対策 (user_content デリミタとガード指示)
 * 返信文脈を参考データとして要約に付与
 * temperature 設定 (ユーザー直指定モード)

@@ -15,12 +15,6 @@ import { i18n } from '@/i18n.js';
 import { displayLlmError } from '@/utils/errorHandler.js';
 
 /**
- * Gemini を用いてノートの要約を生成します。
- *
- * @param note 要約対象のノート
- * @returns 要約されたテキスト
- */
-/**
  * 返信元ノートの文脈を遡って取得する (最大5件、参考データとして付与する)
  */
 async function fetchAncestorContext(note: Misskey.entities.Note): Promise<string> {
@@ -41,6 +35,9 @@ async function fetchAncestorContext(note: Misskey.entities.Note): Promise<string
 	return ancestors.join('\n\n');
 }
 
+/**
+ * LLM を用いてノートの要約を生成します。
+ */
 export async function callLLMSummarize(note: Misskey.entities.Note): Promise<string> {
 	const systemInstruction = [
 		prefer.s.geminiPromptNote ?? '',
