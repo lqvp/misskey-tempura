@@ -1231,7 +1231,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.signupPassphrase !== undefined) {
 				// 正規化して空になる合言葉 (空白のみ等) は無効扱いにする
-				set.signupPassphrase = normalizeSignupPassphrase(ps.signupPassphrase) === '' ? null : ps.signupPassphrase;
+				set.signupPassphrase = (ps.signupPassphrase != null && normalizeSignupPassphrase(ps.signupPassphrase) === '')
+					? null
+					: ps.signupPassphrase;
 			}
 
 			if (ps.entranceShowTimeLine !== undefined) {
