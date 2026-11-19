@@ -7,7 +7,7 @@ process.env.NODE_ENV = 'test';
 
 import * as assert from 'assert';
 import { beforeAll, describe, test } from 'vitest';
-import { api, role, signup } from '../utils.js';
+import { api, failedApiCall, role, signup } from '../utils.js';
 import type * as misskey from 'misskey-js';
 
 describe('Moderator permission group (サブモデレーター階級)', () => {
@@ -34,15 +34,27 @@ describe('Moderator permission group (サブモデレーター階級)', () => {
 	});
 
 	test('サブモデレーターは requireModerator エンドポイント (admin/announcements/list) を利用できない', async () => {
-		const res = await api('admin/announcements/list', { limit: 10 }, subModerator);
-		assert.strictEqual(res.status, 403);
-		assert.strictEqual(res.body.error?.id, 'd33d5333-db36-423d-a8f9-1a2b9549da41');
+		await failedApiCall({
+			endpoint: 'admin/announcements/list',
+			parameters: { limit: 10 },
+			user: subModerator,
+		}, {
+			status: 403,
+			code: 'ROLE_PERMISSION_DENIED',
+			id: 'd33d5333-db36-423d-a8f9-1a2b9549da41',
+		});
 	});
 
 	test('サブモデレーターは requireAdmin エンドポイント (admin/update-meta) を利用できない', async () => {
-		const res = await api('admin/update-meta', {}, subModerator);
-		assert.strictEqual(res.status, 403);
-		assert.strictEqual(res.body.error?.id, 'c3d38592-54c0-429d-be96-5636b0431a61');
+		await failedApiCall({
+			endpoint: 'admin/update-meta',
+			parameters: {},
+			user: subModerator,
+		}, {
+			status: 403,
+			code: 'ROLE_PERMISSION_DENIED',
+			id: 'c3d38592-54c0-429d-be96-5636b0431a61',
+		});
 	});
 
 	test('サブモデレーターは isModerator として扱われる (admin/emoji/list は canManageCustomEmojis ポリシーで判定)', async () => {
