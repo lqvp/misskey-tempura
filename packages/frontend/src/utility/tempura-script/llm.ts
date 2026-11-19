@@ -10,6 +10,7 @@ import { misskeyApi } from '@/utility/misskey-api.js';
 import { fetchInstance } from '@/instance.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
+import { lang } from '@@/js/config.js';
 import type { LLMResponse } from '@/utility/tempura-script/llm-response.js';
 
 export type { LLMResponse };
@@ -330,8 +331,9 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 
 	// ユーザーのUI言語ヒント: LLM がユーザーの言語で応答するよう促す
 	// (指示側で言語を明示している場合はそちらを優先する)
-	if (i18n.locale != null) {
-		const localeHint = `The user is using the interface in ${i18n.locale}. Unless the instructions explicitly specify otherwise, write your response in the user's language.`;
+	// NOTE: i18n オブジェクトの直接参照は locale-inliner がエラー扱いにするため @@/js/config の lang を使う
+	if (lang != null && lang !== '') {
+		const localeHint = `The user is using the interface in ${lang}. Unless the instructions explicitly specify otherwise, write your response in the user's language.`;
 		options.systemInstruction = `${options.systemInstruction ?? ''}\n\n${localeHint}`.trim();
 	}
 
