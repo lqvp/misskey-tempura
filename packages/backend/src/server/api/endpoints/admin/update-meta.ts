@@ -328,6 +328,8 @@ export const paramDef = {
 		enableFsTotal: { type: 'boolean' },
 		customFsTotal: { type: 'integer', nullable: true },
 		secondsPerSignup: { type: 'integer' },
+		fixedInviteCode: { type: 'string', nullable: true },
+		signupPassphrase: { type: 'string', nullable: true },
 		entranceShowTimeLine: { type: 'boolean' },
 		entranceShowFeatured: { type: 'boolean' },
 		entranceShowEmojis: { type: 'boolean' },
@@ -1220,6 +1222,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.secondsPerSignup !== undefined) {
 				set.secondsPerSignup = ps.secondsPerSignup;
+			}
+
+			if (ps.fixedInviteCode !== undefined) {
+				set.fixedInviteCode = ps.fixedInviteCode === '' ? null : ps.fixedInviteCode;
+			}
+
+			if (ps.signupPassphrase !== undefined) {
+				set.signupPassphrase = ps.signupPassphrase === '' ? null : ps.signupPassphrase;
 			}
 
 			if (ps.entranceShowTimeLine !== undefined) {

@@ -16365,6 +16365,22 @@ export interface Locale extends ILocale {
      */
     "secondsPerSignupDescription": string;
     /**
+     * 固定招待コード
+     */
+    "fixedInviteCode": string;
+    /**
+     * 回数制限なく使い放題の招待コードです。設定した文字列は、登録画面の招待コード入力欄に入力されます。通常の招待コードと異なり消費されません。空にすると無効になります。
+     */
+    "fixedInviteCodeDescription": string;
+    /**
+     * 登録用の合言葉
+     */
+    "signupPassphrase": string;
+    /**
+     * 利用規約などを読んだ人に伝えるための合言葉です。設定すると、登録画面の招待コード入力欄に入力することで登録できます。比較は全角半角・大文字小文字・空白の違いを無視します。空にすると無効になります。
+     */
+    "signupPassphraseDescription": string;
+    /**
      * 登録が制限されています
      */
     "signupRateLimited": string;

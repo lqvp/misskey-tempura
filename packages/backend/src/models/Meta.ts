@@ -1126,6 +1126,28 @@ export class MiMeta {
 	})
 	public secondsPerSignup: number;
 
+	/**
+	 * 固定招待コード。任意の文字列で、発行・消費される通常の招待コード
+	 * (registration_tickets) とは異なり回数無制限で使い放題。
+	 * NULL のときは無効。比較は厳密一致。
+	 */
+	@Column('varchar', {
+		length: 128,
+		nullable: true,
+	})
+	public fixedInviteCode: string | null;
+
+	/**
+	 * 登録用の合言葉。利用規約等を読んだかどうかを確認する用途の
+	 * 固定パスフレーズ。NULL のときは無効。
+	 * 比較は normalizeSignupPassphrase() による正規化付き。
+	 */
+	@Column('varchar', {
+		length: 256,
+		nullable: true,
+	})
+	public signupPassphrase: string | null;
+
 	@Column('boolean', {
 		default: false,
 	})

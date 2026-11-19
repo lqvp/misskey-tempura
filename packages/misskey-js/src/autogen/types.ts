@@ -11634,6 +11634,8 @@ export interface operations {
                         enableFsTotal: boolean;
                         customFsTotal: number | null;
                         secondsPerSignup: number;
+                        fixedInviteCode: string | null;
+                        signupPassphrase: string | null;
                         entranceShowTimeLine: boolean;
                         entranceShowFeatured: boolean;
                         entranceShowEmojis: boolean;
@@ -15459,6 +15461,8 @@ export interface operations {
                     enableFsTotal?: boolean;
                     customFsTotal?: number | null;
                     secondsPerSignup?: number;
+                    fixedInviteCode?: string | null;
+                    signupPassphrase?: string | null;
                     entranceShowTimeLine?: boolean;
                     entranceShowFeatured?: boolean;
                     entranceShowEmojis?: boolean;
