@@ -464,7 +464,7 @@ export function getNoteMenu(props: {
 			});
 		}
 
-		if ($i.policies.canUseGeminiLLMAPI || prefer.s.geminiToken) {
+		if ($i.policies.canUseGeminiLLMAPI || prefer.s.geminiToken || prefer.s.openaiToken) {
 			menuItems.push({
 				icon: 'ti ti-file-text',
 				text: i18n.ts._llm.summarizeNote,

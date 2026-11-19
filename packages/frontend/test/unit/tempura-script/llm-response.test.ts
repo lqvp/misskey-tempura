@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, test } from 'vitest';
-import { extractCandidateText } from '@/utility/tempura-script/llm-response.js';
+import { extractCandidateText, extractOpenAIChatText, extractLLMText } from '@/utility/tempura-script/llm-response.js';
 
 describe('extractCandidateText', () => {
 	test('候補のテキストを取り出す', () => {
@@ -52,5 +52,53 @@ describe('extractCandidateText', () => {
 		});
 
 		expect(result).toBe('');
+	});
+});
+
+describe('extractOpenAIChatText', () => {
+	test('アシスタントメッセージのテキストを取り出す', () => {
+		const result = extractOpenAIChatText({
+			choices: [{ message: { role: 'assistant', content: 'こんにちは' } }],
+		});
+
+		expect(result).toBe('こんにちは');
+	});
+
+	test('choices が無い場合はエラー', () => {
+		expect(() => extractOpenAIChatText({})).toThrow(/choices または message/);
+	});
+
+	test('choices が空配列の場合はエラー', () => {
+		expect(() => extractOpenAIChatText({ choices: [] })).toThrow(/choices または message/);
+	});
+
+	test('message が無い場合はエラー', () => {
+		expect(() => extractOpenAIChatText({ choices: [{}] })).toThrow(/choices または message/);
+	});
+
+	test('content が null の場合は空文字を返す', () => {
+		const result = extractOpenAIChatText({
+			choices: [{ message: { role: 'assistant', content: null } }],
+		});
+
+		expect(result).toBe('');
+	});
+});
+
+describe('extractLLMText', () => {
+	test('Gemini 形式のレスポンスを判別して取り出す', () => {
+		const result = extractLLMText({
+			candidates: [{ content: { parts: [{ text: 'こんにちは' }] } }],
+		});
+
+		expect(result).toBe('こんにちは');
+	});
+
+	test('OpenAI 互換形式のレスポンスを判別して取り出す', () => {
+		const result = extractLLMText({
+			choices: [{ message: { role: 'assistant', content: 'こんにちは' } }],
+		});
+
+		expect(result).toBe('こんにちは');
 	});
 });

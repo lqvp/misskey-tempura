@@ -5,7 +5,7 @@
 
 import { defineAsyncComponent, ref } from 'vue';
 import * as os from '@/os.js';
-import { generateGeminiSummary, extractCandidateText } from '@/utility/tempura-script/llm.js';
+import { generateLLMResponse, extractLLMText } from '@/utility/tempura-script/llm.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
@@ -140,13 +140,13 @@ export async function summarizeUserProfile(userId: string, notesLimit?: number, 
 			`自己紹介: ${description}\n\n` +
 			'投稿:\n' + notesTexts.join('\n');
 
-		const summaryResult = await generateGeminiSummary({
+		const summaryResult = await generateLLMResponse({
 			userContent,
 			systemInstruction,
 		});
 		let summarizedText: string;
 		try {
-			summarizedText = extractCandidateText(summaryResult);
+			summarizedText = extractLLMText(summaryResult);
 		} catch (error: unknown) {
 			displayLlmError(error as Error, i18n.ts._llm._error.responseFormat);
 		}

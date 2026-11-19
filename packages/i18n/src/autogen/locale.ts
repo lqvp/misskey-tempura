@@ -15254,6 +15254,38 @@ export interface Locale extends ILocale {
              * サーバーで提供するGemini APIで使用するモデルを選択します。
              */
             "serverGeminiModelsDescription": string;
+            /**
+             * OpenAI互換APIを有効にする
+             */
+            "serverOpenAIEnabled": string;
+            /**
+             * 有効にすることで、サーバーが提供するOpenAI互換APIを使用して、LLMを実行できます。
+             */
+            "serverOpenAIEnabledDescription": string;
+            /**
+             * OpenAI互換APIキー
+             */
+            "serverOpenAIApiKey": string;
+            /**
+             * サーバーが提供するOpenAI互換APIのAPIキーを入力します。
+             */
+            "serverOpenAIApiKeyDescription": string;
+            /**
+             * OpenAI互換APIベースURL
+             */
+            "serverOpenAIBaseURL": string;
+            /**
+             * OpenAI互換APIのベースURLを入力します（例: https://api.openai.com/v1 ）。空の場合は公式APIを使用します。
+             */
+            "serverOpenAIBaseURLDescription": string;
+            /**
+             * OpenAI互換APIモデル
+             */
+            "serverOpenAIModels": string;
+            /**
+             * サーバーで提供するOpenAI互換APIで使用するモデル名を設定します。
+             */
+            "serverOpenAIModelsDescription": string;
         };
         "_error": {
             /**
@@ -15465,6 +15497,38 @@ export interface Locale extends ILocale {
          * 思考トークン数を設定します。`-1`を設定することで無制限となります。Proなどは無効にすることは出来ません。より詳細な説明は https://ai.google.dev/gemini-api/docs/thinking をご覧ください。
          */
         "geminiThinkingBudgetCaption": string;
+        /**
+         * LLMプロバイダ
+         */
+        "llmProviderLabel": string;
+        /**
+         * 使用するLLMプロバイダを選択します。OpenAI互換を選ぶと、OpenAI互換API（ベースURL指定可）を使えます。
+         */
+        "llmProviderCaption": string;
+        /**
+         * OpenAI互換APIトークン
+         */
+        "openaiTokenLabel": string;
+        /**
+         * OpenAI互換APIの認証に使用するトークンを設定します。
+         */
+        "openaiTokenCaption": string;
+        /**
+         * OpenAI互換APIベースURL
+         */
+        "openaiBaseUrlLabel": string;
+        /**
+         * OpenAI互換APIのベースURLを設定します（例: https://api.openai.com/v1 ）。未設定の場合は公式APIを使用します。
+         */
+        "openaiBaseUrlCaption": string;
+        /**
+         * OpenAI互換APIモデル
+         */
+        "openaiModelLabel": string;
+        /**
+         * 使用するモデル名を設定します。空の場合は gpt-4o-mini を使用します。
+         */
+        "openaiModelCaption": string;
     };
     "_noteSearch": {
         /**

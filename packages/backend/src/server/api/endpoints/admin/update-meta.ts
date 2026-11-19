@@ -349,6 +349,10 @@ export const paramDef = {
 		serverGeminiEnabled: { type: 'boolean' },
 		serverGeminiApiKey: { type: 'string', nullable: true },
 		serverGeminiModels: { type: 'string', nullable: false },
+		serverOpenAIEnabled: { type: 'boolean' },
+		serverOpenAIApiKey: { type: 'string', nullable: true },
+		serverOpenAIBaseURL: { type: 'string', nullable: true },
+		serverOpenAIModels: { type: 'string', nullable: false },
 		customCursorUrl: { type: 'string', nullable: true },
 		customCursorPointerUrl: { type: 'string', nullable: true },
 		customCursorTextUrl: { type: 'string', nullable: true },
@@ -1307,6 +1311,22 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if ( ps.serverGeminiModels !== undefined) {
 				set.serverGeminiModels = ps.serverGeminiModels;
+			}
+
+			if (ps.serverOpenAIEnabled !== undefined) {
+				set.serverOpenAIEnabled = ps.serverOpenAIEnabled;
+			}
+
+			if (ps.serverOpenAIApiKey !== undefined) {
+				set.serverOpenAIApiKey = ps.serverOpenAIApiKey;
+			}
+
+			if (ps.serverOpenAIBaseURL !== undefined) {
+				set.serverOpenAIBaseURL = ps.serverOpenAIBaseURL;
+			}
+
+			if (ps.serverOpenAIModels !== undefined) {
+				set.serverOpenAIModels = ps.serverOpenAIModels;
 			}
 
 			if (ps.customCursorUrl !== undefined) {

@@ -355,6 +355,7 @@ const canSaveAsServerDraft = computed((): boolean => {
 const withHashtags = store.model('postFormWithHashtags');
 const hashtags = store.model('postFormHashtags');
 const geminiToken = store.model('geminiToken');
+const openaiToken = prefer.model('openaiToken');
 
 const bottomItemActionDef: Record<keyof typeof bottomItemDef, {
 	hide?: boolean;
@@ -398,7 +399,7 @@ const bottomItemActionDef: Record<keyof typeof bottomItemDef, {
 		action: clear,
 	},
 	notesTransformation: {
-		hide: computed(() => !($i.policies.canUseGeminiLLMAPI || geminiToken.value)),
+		hide: computed(() => !($i.policies.canUseGeminiLLMAPI || geminiToken.value || openaiToken.value)),
 		action: () => {
 			transformTextWithGemini(text.value, (newText: string) => {
 				text.value = newText;

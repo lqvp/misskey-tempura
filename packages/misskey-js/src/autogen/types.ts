@@ -3463,6 +3463,15 @@ export type paths = {
          */
         post: operations['notes___llm-gen'];
     };
+    '/notes/llm-models': {
+        /**
+         * notes/llm-models
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:notes*
+         */
+        post: operations['notes___llm-models'];
+    };
     '/notes/local-timeline': {
         /**
          * notes/local-timeline
@@ -6319,6 +6328,7 @@ export type components = {
             /** @default 0 */
             entranceMarginBottom: number;
             serverGeminiEnabled: boolean;
+            serverOpenAIEnabled: boolean;
             customCursorUrl: string | null;
             customCursorPointerUrl: string | null;
             customCursorTextUrl: string | null;
@@ -11653,6 +11663,10 @@ export interface operations {
                         serverGeminiEnabled: boolean;
                         serverGeminiApiKey: string | null;
                         serverGeminiModels: string;
+                        serverOpenAIEnabled: boolean;
+                        serverOpenAIApiKey: string | null;
+                        serverOpenAIBaseURL: string | null;
+                        serverOpenAIModels: string;
                         customCursorUrl: string | null;
                         customCursorPointerUrl: string | null;
                         customCursorTextUrl: string | null;
@@ -15482,6 +15496,10 @@ export interface operations {
                     serverGeminiEnabled?: boolean;
                     serverGeminiApiKey?: string | null;
                     serverGeminiModels?: string;
+                    serverOpenAIEnabled?: boolean;
+                    serverOpenAIApiKey?: string | null;
+                    serverOpenAIBaseURL?: string | null;
+                    serverOpenAIModels?: string;
                     customCursorUrl?: string | null;
                     customCursorPointerUrl?: string | null;
                     customCursorTextUrl?: string | null;
@@ -34313,6 +34331,11 @@ export interface operations {
                 'application/json': {
                     text: string;
                     prompt: string;
+                    /**
+                     * @default gemini
+                     * @enum {string}
+                     */
+                    provider?: 'gemini' | 'openai';
                     fileUris?: {
                         mimeType: string;
                         fileUri: string;
@@ -34325,6 +34348,86 @@ export interface operations {
             204: {
                 headers: {
                     [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'notes___llm-models': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    /**
+                     * @default gemini
+                     * @enum {string}
+                     */
+                    provider?: 'gemini' | 'openai';
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        models: string[];
+                    };
                 };
             };
             /** @description Client error */

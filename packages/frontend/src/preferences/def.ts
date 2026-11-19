@@ -678,6 +678,18 @@ export const PREF_DEF = definePreferences({
 	geminiThinkingBudget: {
 		default: -1 as number,
 	},
+	llmProvider: {
+		default: 'gemini' as 'gemini' | 'openai',
+	},
+	openaiToken: {
+		default: null as string | null,
+	},
+	openaiBaseUrl: {
+		default: 'https://api.openai.com/v1' as string | null,
+	},
+	openaiModel: {
+		default: null as string | null,
+	},
 	enableEarthquakeWarning: {
 		default: false,
 	},

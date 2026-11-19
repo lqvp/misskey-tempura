@@ -7,7 +7,7 @@ import { defineAsyncComponent } from 'vue';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 import * as os from '@/os.js';
-import { generateGeminiSummary, extractCandidateText } from '@/utility/tempura-script/llm.js';
+import { generateLLMResponse, extractLLMText } from '@/utility/tempura-script/llm.js';
 import { displayLlmError } from '@/utils/errorHandler.js';
 import { i18n } from '@/i18n.js';
 
@@ -47,7 +47,7 @@ export async function transformTextWithGemini(noteText: string, onApplied: (newT
 
 		let result: any;
 		try {
-			const data = await generateGeminiSummary({
+			const data = await generateLLMResponse({
 				userContent: noteText,
 				systemInstruction: stylePrompt,
 			});
@@ -59,7 +59,7 @@ export async function transformTextWithGemini(noteText: string, onApplied: (newT
 
 		let transformedText: string;
 		try {
-			transformedText = extractCandidateText(result);
+			transformedText = extractLLMText(result);
 		} catch (error: any) {
 			displayLlmError(error, i18n.ts._llm._error.transformResult);
 		}

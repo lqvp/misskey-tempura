@@ -10,12 +10,21 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<template #label><SearchLabel>{{ i18n.ts._llm.title }}</SearchLabel></template>
 
 		<div class="_gaps_m">
-			<SearchMarker markerId="tempura-settings-llm-connection" :inlining="['tempura-settings-llm']" :keywords="['llm', 'gemini', 'api', 'token', 'model']">
+			<SearchMarker markerId="tempura-settings-llm-connection" :inlining="['tempura-settings-llm']" :keywords="['llm', 'gemini', 'openai', 'api', 'token', 'model']">
 				<FormSection first>
 					<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.llmConnection }}</SearchLabel></template>
 					<div class="_gaps_m">
+						<SearchMarker :keywords="['llm', 'provider', 'gemini', 'openai']">
+							<MkPreferenceContainer k="llmProvider">
+								<MkSelect v-model="llmProvider" :items="providerItems">
+									<template #label><SearchLabel>{{ i18n.ts._llm.llmProviderLabel }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._llm.llmProviderCaption }}</template>
+								</MkSelect>
+							</MkPreferenceContainer>
+						</SearchMarker>
+
 						<SearchMarker :keywords="['llm', 'gemini', 'api', 'server']">
-							<MkPreferenceContainer v-if="instance?.serverGeminiEnabled && $i?.policies.canUseGeminiLLMAPI" k="useGeminiLLMAPI">
+							<MkPreferenceContainer v-if="serverLlmEnabled && $i?.policies.canUseGeminiLLMAPI" k="useGeminiLLMAPI">
 								<MkSwitch v-model="useGeminiLLMAPI">
 									<SearchLabel>{{ i18n.ts._llm.useGeminiLLMAPI }}</SearchLabel>
 									<template #caption>{{ i18n.ts._llm.useGeminiLLMAPIDescription }}</template>
@@ -23,6 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</MkPreferenceContainer>
 						</SearchMarker>
 
+						<template v-if="llmProvider === 'gemini'">
 						<SearchMarker :keywords="['llm', 'gemini', 'media', 'images', 'photos']">
 							<MkPreferenceContainer k="useGeminiWithMedia">
 								<MkSwitch v-model="useGeminiWithMedia">
@@ -48,6 +58,36 @@ SPDX-License-Identifier: AGPL-3.0-only
 								</MkSelect>
 							</MkPreferenceContainer>
 						</SearchMarker>
+						</template>
+
+						<template v-else>
+							<SearchMarker :keywords="['llm', 'openai', 'token', 'api key']">
+								<MkPreferenceContainer k="openaiToken">
+									<MkInput v-model="openaiToken" type="text" :disabled="useGeminiLLMAPI">
+										<template #label><SearchLabel>{{ i18n.ts._llm.openaiTokenLabel }}</SearchLabel></template>
+										<template #caption>{{ i18n.ts._llm.openaiTokenCaption }}</template>
+									</MkInput>
+								</MkPreferenceContainer>
+							</SearchMarker>
+
+							<SearchMarker :keywords="['llm', 'openai', 'base', 'url', 'endpoint']">
+								<MkPreferenceContainer k="openaiBaseUrl">
+									<MkInput v-model="openaiBaseUrl" type="text" :disabled="useGeminiLLMAPI">
+										<template #label><SearchLabel>{{ i18n.ts._llm.openaiBaseUrlLabel }}</SearchLabel></template>
+										<template #caption>{{ i18n.ts._llm.openaiBaseUrlCaption }}</template>
+									</MkInput>
+								</MkPreferenceContainer>
+							</SearchMarker>
+
+							<SearchMarker :keywords="['llm', 'openai', 'model', 'version']">
+								<MkPreferenceContainer k="openaiModel">
+									<MkInput v-model="openaiModel" type="text" :disabled="useGeminiLLMAPI">
+										<template #label><SearchLabel>{{ i18n.ts._llm.openaiModelLabel }}</SearchLabel></template>
+										<template #caption>{{ i18n.ts._llm.openaiModelCaption }}</template>
+									</MkInput>
+								</MkPreferenceContainer>
+							</SearchMarker>
+						</template>
 					</div>
 				</FormSection>
 			</SearchMarker>
@@ -183,6 +223,12 @@ fetchInstance(true).then((res) => {
 	instance.value = res;
 });
 
+const llmProvider = prefer.model('llmProvider');
+const openaiToken = prefer.model('openaiToken');
+const openaiBaseUrl = prefer.model('openaiBaseUrl');
+const openaiModel = prefer.model('openaiModel');
+const providerItems = [{ value: 'gemini', label: 'Gemini' }, { value: 'openai', label: 'OpenAI' }];
+const serverLlmEnabled = computed(() => llmProvider.value === 'openai' ? instance.value?.serverOpenAIEnabled === true : instance.value?.serverGeminiEnabled === true);
 const useGeminiLLMAPI = prefer.model('useGeminiLLMAPI');
 const useGeminiWithMedia = prefer.model('useGeminiWithMedia');
 const geminiToken = prefer.model('geminiToken');

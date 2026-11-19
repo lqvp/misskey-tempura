@@ -484,6 +484,7 @@ export * as 'reaction-stats' from './endpoints/reaction-stats.js';
 export * as 'i/profile-counts-control' from './endpoints/i/profile-counts-control.js';
 export * as 'admin/drop-all-notes' from './endpoints/admin/drop-all-notes.js';
 export * as 'notes/llm-gen' from './endpoints/notes/llm-gen.js';
+export * as 'notes/llm-models' from './endpoints/notes/llm-models.js';
 export * as 'search-avatar-decorations' from './endpoints/search-avatar-decorations.js';
 export * as 'invite/check' from './endpoints/invite/check.js';
 export * as 'i/followers-servers' from './endpoints/i/followers-servers.js';

@@ -5,7 +5,7 @@
 
 import { defineAsyncComponent, ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import { generateGeminiSummary, extractCandidateText } from '@/utility/tempura-script/llm.js';
+import { generateLLMResponse, extractLLMText } from '@/utility/tempura-script/llm.js';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 import * as os from '@/os.js';
@@ -18,18 +18,18 @@ import { displayLlmError } from '@/utils/errorHandler.js';
  * @param note 要約対象のノート
  * @returns 要約されたテキスト
  */
-export async function callGeminiSummarize(note: Misskey.entities.Note): Promise<string> {
+export async function callLLMSummarize(note: Misskey.entities.Note): Promise<string> {
 	const systemInstruction = [
 		prefer.s.geminiPromptNote ?? '',
 		prefer.s.geminiSystemPrompt ?? '',
 	].join('\n');
 
-	const data = await generateGeminiSummary({
+	const data = await generateLLMResponse({
 		note: note,
 		systemInstruction,
 	});
 	try {
-		return extractCandidateText(data);
+		return extractLLMText(data);
 	} catch (error: any) {
 		displayLlmError(error, i18n.ts._llm._error.responseParse);
 	}
@@ -37,7 +37,7 @@ export async function callGeminiSummarize(note: Misskey.entities.Note): Promise<
 
 export async function summarizeNote(note: Misskey.entities.Note): Promise<string> {
 	try {
-		const summary = await callGeminiSummarize(note);
+		const summary = await callLLMSummarize(note);
 		return summary;
 	} catch (error: any) {
 		console.error('Summarization error:', error);

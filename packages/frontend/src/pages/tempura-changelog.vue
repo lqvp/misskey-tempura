@@ -66,7 +66,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * 配送先制御 (delivery targets)
 * アカウント整理 (truncate)
 * ノートの非公開化 (make private)
-* LLM モデレーションと Gemini 連携
+* LLM モデレーションと LLM 連携 (Gemini / OpenAI 互換)
 * 問い合わせフォーム
 * 地震情報
 * Hana entrance
@@ -319,6 +319,14 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * ノート変換 (long/short/simple/casual/professional/cat/custom)
 * thinking budget (-1 で無制限)
 * notesLimitPrompt / includeFollowersNotesPrompt
+
+### サーバー OpenAI 互換
+
+* serverOpenAIEnabled / apiKey / baseURL / models
+* OpenAI 互換 API (Chat Completions) をサーバー経由で利用可能
+* ユーザーは llmProvider (gemini / openai) でプロバイダを選択
+* ユーザー直指定モード: openaiToken / openaiBaseUrl / openaiModel
+* モデル一覧を API から動的取得 (notes/llm-models、GET /models)
 
 ### LLM モデレーション
 

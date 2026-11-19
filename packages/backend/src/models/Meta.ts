@@ -1242,6 +1242,30 @@ export class MiMeta {
 	})
 	public serverGeminiModels: string;
 
+	@Column('boolean', {
+		default: false,
+	})
+	public serverOpenAIEnabled: boolean;
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public serverOpenAIApiKey: string | null;
+
+	@Column('varchar', {
+		length: 512,
+		nullable: true,
+	})
+	public serverOpenAIBaseURL: string | null;
+
+	@Column('varchar', {
+		length: 512,
+		default: 'gpt-4o-mini',
+		nullable: true,
+	})
+	public serverOpenAIModels: string;
+
 	@Column('varchar', {
 		length: 1024,
 		nullable: true,
