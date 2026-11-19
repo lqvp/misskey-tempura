@@ -34,6 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { reactive } from 'vue';
 import * as misskey from 'misskey-js';
+import { safeHttpUrl } from '@@/js/url.js';
 import MkContainer from '@/components/MkContainer.vue';
 
 const props = withDefaults(
@@ -52,11 +53,16 @@ const listenbrainz = reactive({
 	listenbrainzurl: '',
 });
 
-if (props.user.listenbrainz) {
+const listenbrainzUsername = props.user.listenbrainz;
+
+if (listenbrainzUsername) {
 	(async () => {
 		const getLMData = async (title: string, artist: string) => {
+			const lookupUrl = new URL('https://api.listenbrainz.org/1/metadata/lookup/');
+			lookupUrl.searchParams.set('artist_name', artist);
+			lookupUrl.searchParams.set('recording_name', title);
 			const response = await window.fetch(
-				`https://api.listenbrainz.org/1/metadata/lookup/?artist_name=${artist}&recording_name=${title}`,
+				lookupUrl.toString(),
 				{
 					method: 'GET',
 					headers: {
@@ -73,7 +79,7 @@ if (props.user.listenbrainz) {
 			const img: string = data.release_mbid
 				? `https://coverartarchive.org/release/${data.release_mbid}/front-250`
 				: 'https://coverartarchive.org/img/big_logo.svg';
-			const fallbackUrl = data.additional_info?.origin_url || '#';
+			const fallbackUrl = safeHttpUrl(data.additional_info?.origin_url) ?? '#';
 			const musicbrainzurl: string = data.recording_mbid
 				? `https://musicbrainz.org/recording/${data.recording_mbid}`
 				: fallbackUrl;
@@ -84,7 +90,7 @@ if (props.user.listenbrainz) {
 		};
 
 		const response = await window.fetch(
-			`https://api.listenbrainz.org/1/user/${props.user.listenbrainz}/playing-now`,
+			`https://api.listenbrainz.org/1/user/${encodeURIComponent(listenbrainzUsername)}/playing-now`,
 			{
 				method: 'GET',
 				headers: {
@@ -101,7 +107,7 @@ if (props.user.listenbrainz) {
 			const img = 'https://coverartarchive.org/img/big_logo.svg';
 			await getLMData(title, artist).then((lmData) => {
 				if (!lmData) {
-					const additionalOrigin = playing.track_metadata.additional_info?.origin_url || '#';
+					const additionalOrigin = safeHttpUrl(playing.track_metadata.additional_info?.origin_url) ?? '#';
 					listenbrainz.title = title;
 					listenbrainz.img = img;
 					listenbrainz.artist = artist;

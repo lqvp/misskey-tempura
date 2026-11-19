@@ -37,6 +37,19 @@ export function tryParseUrl(url: string | URL, base?: string | URL): URL | null 
 	}
 }
 
+/**
+ * http(s) スキームの絶対URLのみを返す。それ以外（javascript:, data: など）は null を返す。
+ * 外部サービスから取得したURLをそのまま href にバインドする前の検証に使う。
+ */
+export function safeHttpUrl(url: string | null | undefined): string | null {
+	if (url == null) return null;
+
+	const parsed = tryParseUrl(url);
+	if (parsed == null) return null;
+
+	return ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : null;
+}
+
 export function maybeMakeRelative(urlStr: string, baseStr: string): string {
 	try {
 		const baseObj = new URL(baseStr);

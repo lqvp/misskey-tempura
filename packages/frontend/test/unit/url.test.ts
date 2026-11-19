@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, test } from 'vitest';
-import { tryParseUrl } from '@@/js/url.js';
+import { safeHttpUrl, tryParseUrl } from '@@/js/url.js';
 
 describe('tryParseUrl', () => {
 	test('parses an absolute URL', () => {
@@ -17,5 +17,24 @@ describe('tryParseUrl', () => {
 
 	test('returns null for an invalid URL', () => {
 		expect(tryParseUrl('https://[invalid')).toBeNull();
+	});
+});
+
+describe('safeHttpUrl', () => {
+	test('accepts http and https URLs', () => {
+		expect(safeHttpUrl('https://example.com/path')).toBe('https://example.com/path');
+		expect(safeHttpUrl('http://example.com/')).toBe('http://example.com/');
+	});
+
+	test('rejects javascript: and data: URLs', () => {
+		expect(safeHttpUrl('javascript:alert(1)')).toBeNull();
+		expect(safeHttpUrl('data:text/html,<script>alert(1)</script>')).toBeNull();
+	});
+
+	test('returns null for invalid, relative, or empty values', () => {
+		expect(safeHttpUrl('not a url')).toBeNull();
+		expect(safeHttpUrl('/relative/path')).toBeNull();
+		expect(safeHttpUrl(null)).toBeNull();
+		expect(safeHttpUrl(undefined)).toBeNull();
 	});
 });
