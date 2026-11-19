@@ -639,12 +639,6 @@ export const PREF_DEF = definePreferences({
 	useGeminiWithMedia: {
 		default: true,
 	},
-	geminiToken: {
-		default: null as string | null,
-	},
-	geminiModel: {
-		default: 'gemini-2.5-flash' as string | null,
-	},
 	geminiSystemPrompt: {
 		default: 'リスト記法は対応しておらず、パーサーが壊れるため使用禁止です。列挙する場合は「・」を使ってください。' as string | null,
 	},
@@ -674,12 +668,6 @@ export const PREF_DEF = definePreferences({
 	},
 	geminiNoteCustomText: {
 		default: null as string | null,
-	},
-	geminiThinkingBudget: {
-		default: -1 as number,
-	},
-	llmProvider: {
-		default: 'openai' as 'gemini' | 'openai',
 	},
 	openaiToken: {
 		default: null as string | null,

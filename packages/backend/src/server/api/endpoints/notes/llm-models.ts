@@ -63,13 +63,7 @@ export const meta = {
 
 export const paramDef = {
 	type: 'object',
-	properties: {
-		provider: {
-			type: 'string',
-			enum: ['gemini', 'openai'],
-			default: 'gemini',
-		},
-	},
+	properties: {},
 	required: [],
 } as const;
 
@@ -89,51 +83,22 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				throw new ApiError(meta.errors.accessDenied);
 			}
 
-			const provider = ps.provider ?? 'gemini';
-
-			const apiKey = provider === 'openai'
-				? this.serverSettings.serverOpenAIApiKey
-				: this.serverSettings.serverGeminiApiKey;
-			const enabled = provider === 'openai'
-				? this.serverSettings.serverOpenAIEnabled
-				: this.serverSettings.serverGeminiEnabled;
-
-			if (!enabled) {
+			if (!this.serverSettings.serverOpenAIEnabled) {
 				throw new ApiError(meta.errors.llmNotEnabled);
 			}
 
+			const apiKey = this.serverSettings.serverOpenAIApiKey;
 			if (!apiKey) {
-				throw new ApiError(meta.errors.llmApiError, `LLM API key is not configured on server (${provider})`);
+				throw new ApiError(meta.errors.llmApiError, 'OpenAI-compatible API key is not configured on server');
 			}
 
 			try {
-				if (provider === 'openai') {
-					// OpenAI 互換 API: GET {baseURL}/models
-					const baseURL = (this.serverSettings.serverOpenAIBaseURL || 'https://api.openai.com/v1').replace(/\/+$/, '');
-					const response = await this.httpRequestService.send(`${baseURL}/models`, {
-						method: 'GET',
-						headers: {
-							Authorization: `Bearer ${apiKey}`,
-						},
-						timeout: 30000,
-						isLocalAddressAllowed: false,
-					}, {
-						throwErrorWhenResponseNotOk: true,
-					});
-
-					const data = await response.json() as { data?: { id?: string }[] };
-					const models = (data.data ?? [])
-						.map(m => m.id)
-						.filter((id): id is string => typeof id === 'string');
-					return { models };
-				}
-
-				// Gemini: GET /v1beta/models
-				const response = await this.httpRequestService.send('https://generativelanguage.googleapis.com/v1beta/models', {
+				// OpenAI 互換 API: GET {baseURL}/models
+				const baseURL = (this.serverSettings.serverOpenAIBaseURL || 'https://api.openai.com/v1').replace(/\/+$/, '');
+				const response = await this.httpRequestService.send(`${baseURL}/models`, {
 					method: 'GET',
 					headers: {
-						// API キーは URL に入れるとエラーやログに出るので、ヘッダーで送る
-						'x-goog-api-key': apiKey,
+						Authorization: `Bearer ${apiKey}`,
 					},
 					timeout: 30000,
 					isLocalAddressAllowed: false,
@@ -141,11 +106,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 					throwErrorWhenResponseNotOk: true,
 				});
 
-				const data = await response.json() as { models?: { name?: string }[] };
-				const models = (data.models ?? [])
-					// generateContent をサポートするモデルのみを返す
-					.filter(m => m.name != null && m.name.startsWith('models/'))
-					.map(m => (m as { name: string }).name.replace(/^models\//, ''));
+				const data = await response.json() as { data?: { id?: string }[] };
+				const models = (data.data ?? [])
+					.map(m => m.id)
+					.filter((id): id is string => typeof id === 'string');
 				return { models };
 			} catch (error) {
 				const rawErrorMessage = error instanceof Error ? error.message : 'Unknown error occurred';

@@ -310,22 +310,12 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 
 ## LLM 連携
 
-### サーバー Gemini
-
-* serverGeminiEnabled / apiKey / models
-* useGeminiLLMAPI でユーザーが利用
-* useGeminiWithMedia でメディア付き
-* geminiToken / geminiModel
-* system prompt と note/profile summarize prompts
-* ノート変換 (long/short/simple/casual/professional/cat/custom)
-* thinking budget (-1 で無制限)
-* notesLimitPrompt / includeFollowersNotesPrompt
-
 ### サーバー OpenAI 互換
 
 * serverOpenAIEnabled / apiKey / baseURL / models
 * OpenAI 互換 API (Chat Completions) をサーバー経由で利用可能
-* ユーザーは llmProvider (gemini / openai) でプロバイダを選択
+* useGeminiLLMAPI でユーザーがサーバー提供LLMを利用
+* useGeminiWithMedia でメディア付き (image_url)
 * ユーザー直指定モード: openaiToken / openaiBaseUrl / openaiModel
 * モデル一覧を API から動的取得 (notes/llm-models、GET /models)
 

@@ -189,7 +189,8 @@ import { $i } from '@/i.js';
 import { i18n } from '@/i18n.js';
 import { fetchInstance } from '@/instance.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
-import { fetchAvailableModels, type LLMModelInfo } from '@/utility/tempura-script/llm.js';
+import { fetchAvailableModels } from '@/utility/tempura-script/llm.js';
+import type { LLMModelInfo } from '@/utility/tempura-script/llm.js';
 
 const instance = ref< Awaited<ReturnType<typeof fetchInstance>> | null>(null);
 

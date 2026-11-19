@@ -1227,24 +1227,6 @@ export class MiMeta {
 	@Column('boolean', {
 		default: false,
 	})
-	public serverGeminiEnabled: boolean;
-
-	@Column('varchar', {
-		length: 50,
-		nullable: true,
-	})
-	public serverGeminiApiKey: string | null;
-
-	@Column('varchar', {
-		length: 50,
-		default: 'gemini-2.0-flash',
-		nullable: true,
-	})
-	public serverGeminiModels: string;
-
-	@Column('boolean', {
-		default: false,
-	})
 	public serverOpenAIEnabled: boolean;
 
 	@Column('varchar', {

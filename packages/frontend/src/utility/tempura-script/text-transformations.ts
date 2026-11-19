@@ -7,7 +7,8 @@ import { defineAsyncComponent } from 'vue';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 import * as os from '@/os.js';
-import { generateLLMResponse, extractLLMText } from '@/utility/tempura-script/llm.js';
+import { generateLLMResponse } from '@/utility/tempura-script/llm.js';
+import { extractLLMText } from '@/utility/tempura-script/llm-response.js';
 import { displayLlmError } from '@/utils/errorHandler.js';
 import { i18n } from '@/i18n.js';
 

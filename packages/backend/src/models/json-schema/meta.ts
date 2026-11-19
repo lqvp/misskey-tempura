@@ -463,10 +463,6 @@ export const packedMetaLiteSchema = {
 			optional: false, nullable: false,
 			default: 0,
 		},
-		serverGeminiEnabled: {
-			type: 'boolean',
-			optional: false, nullable: false,
-		},
 		serverOpenAIEnabled: {
 			type: 'boolean',
 			optional: false, nullable: false,

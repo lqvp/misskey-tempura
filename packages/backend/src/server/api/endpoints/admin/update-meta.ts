@@ -346,9 +346,6 @@ export const paramDef = {
 		entranceMarginRight: { type: 'integer' },
 		entranceMarginTop: { type: 'integer' },
 		entranceMarginBottom: { type: 'integer' },
-		serverGeminiEnabled: { type: 'boolean' },
-		serverGeminiApiKey: { type: 'string', nullable: true },
-		serverGeminiModels: { type: 'string', nullable: false },
 		serverOpenAIEnabled: { type: 'boolean' },
 		serverOpenAIApiKey: { type: 'string', nullable: true },
 		serverOpenAIBaseURL: { type: 'string', nullable: true },
@@ -1299,18 +1296,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.entranceMarginBottom !== undefined) {
 				set.entranceMarginBottom = ps.entranceMarginBottom;
-			}
-
-			if (ps.serverGeminiEnabled !== undefined) {
-				set.serverGeminiEnabled = ps.serverGeminiEnabled;
-			}
-
-			if ( ps.serverGeminiApiKey !== undefined) {
-				set.serverGeminiApiKey = ps.serverGeminiApiKey;
-			}
-
-			if ( ps.serverGeminiModels !== undefined) {
-				set.serverGeminiModels = ps.serverGeminiModels;
 			}
 
 			if (ps.serverOpenAIEnabled !== undefined) {

@@ -5,7 +5,8 @@
 
 import { defineAsyncComponent, ref } from 'vue';
 import * as os from '@/os.js';
-import { generateLLMResponse, extractLLMText } from '@/utility/tempura-script/llm.js';
+import { generateLLMResponse } from '@/utility/tempura-script/llm.js';
+import { extractLLMText } from '@/utility/tempura-script/llm-response.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';

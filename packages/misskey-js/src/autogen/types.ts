@@ -6327,7 +6327,6 @@ export type components = {
             entranceMarginTop: number;
             /** @default 0 */
             entranceMarginBottom: number;
-            serverGeminiEnabled: boolean;
             serverOpenAIEnabled: boolean;
             customCursorUrl: string | null;
             customCursorPointerUrl: string | null;
@@ -11660,9 +11659,6 @@ export interface operations {
                         entranceMarginRight: number;
                         entranceMarginTop: number;
                         entranceMarginBottom: number;
-                        serverGeminiEnabled: boolean;
-                        serverGeminiApiKey: string | null;
-                        serverGeminiModels: string;
                         serverOpenAIEnabled: boolean;
                         serverOpenAIApiKey: string | null;
                         serverOpenAIBaseURL: string | null;
@@ -15493,9 +15489,6 @@ export interface operations {
                     entranceMarginRight?: number;
                     entranceMarginTop?: number;
                     entranceMarginBottom?: number;
-                    serverGeminiEnabled?: boolean;
-                    serverGeminiApiKey?: string | null;
-                    serverGeminiModels?: string;
                     serverOpenAIEnabled?: boolean;
                     serverOpenAIApiKey?: string | null;
                     serverOpenAIBaseURL?: string | null;
@@ -34331,11 +34324,6 @@ export interface operations {
                 'application/json': {
                     text: string;
                     prompt: string;
-                    /**
-                     * @default gemini
-                     * @enum {string}
-                     */
-                    provider?: 'gemini' | 'openai';
                     fileUris?: {
                         mimeType: string;
                         fileUri: string;
@@ -34407,17 +34395,6 @@ export interface operations {
         };
     };
     'notes___llm-models': {
-        requestBody: {
-            content: {
-                'application/json': {
-                    /**
-                     * @default gemini
-                     * @enum {string}
-                     */
-                    provider?: 'gemini' | 'openai';
-                };
-            };
-        };
         responses: {
             /** @description OK (with results) */
             200: {

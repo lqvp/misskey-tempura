@@ -413,7 +413,7 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 	if ($i) {
 		const items: MenuItem[] = [{ type: 'divider' }];
 
-		if ($i.policies.canUseGeminiLLMAPI || prefer.s.geminiToken || prefer.s.openaiToken) {
+		if ($i.policies.canUseGeminiLLMAPI || prefer.s.openaiToken) {
 			items.push({
 				icon: 'ti ti-file-text',
 				text: i18n.ts._llm.summarizeProfile,

@@ -575,7 +575,6 @@ export type NotesGlobalTimelineResponse = operations['notes___global-timeline'][
 export type NotesHybridTimelineRequest = operations['notes___hybrid-timeline']['requestBody']['content']['application/json'];
 export type NotesHybridTimelineResponse = operations['notes___hybrid-timeline']['responses']['200']['content']['application/json'];
 export type NotesLlmGenRequest = operations['notes___llm-gen']['requestBody']['content']['application/json'];
-export type NotesLlmModelsRequest = operations['notes___llm-models']['requestBody']['content']['application/json'];
 export type NotesLlmModelsResponse = operations['notes___llm-models']['responses']['200']['content']['application/json'];
 export type NotesLocalTimelineRequest = operations['notes___local-timeline']['requestBody']['content']['application/json'];
 export type NotesLocalTimelineResponse = operations['notes___local-timeline']['responses']['200']['content']['application/json'];
