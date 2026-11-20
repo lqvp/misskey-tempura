@@ -568,6 +568,15 @@ async function search() {
 		params.excludeWords = excludeWords.value.split(/[,\s]+/).filter(word => word !== '');
 	}
 
+	// 投稿日の範囲をリクエストに含める
+	const range = searchRange();
+	if (range.rangeStartAt != null) {
+		params.rangeStartAt = range.rangeStartAt;
+	}
+	if (range.rangeEndAt != null) {
+		params.rangeEndAt = range.rangeEndAt;
+	}
+
 	//#region AP lookup
 	if (searchParams.value && searchParams.value.query) {
 		if (searchParams.value.query.startsWith('https://') && !searchParams.value.query.includes(' ')) {
