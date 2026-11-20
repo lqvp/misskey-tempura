@@ -71,8 +71,8 @@ export class CleanExpiredMultipartUploadsProcessorService {
 				// 一時ファイルをクリーンアップ（新旧どちらのスティージングディレクトリも削除する）
 				let cleanedAny = false;
 				for (const partDir of [getMultipartStagingDir(this.config.multipartTempDir, upload.id), getLegacyMultipartStagingDir(upload.id)]) {
-					if (fs.existsSync(partDir)) {
-						fs.rmSync(partDir, { recursive: true, force: true });
+					if (await pathExists(partDir)) {
+						await fs.promises.rm(partDir, { recursive: true, force: true });
 						cleanedAny = true;
 					}
 				}
@@ -92,12 +92,12 @@ export class CleanExpiredMultipartUploadsProcessorService {
 		// ため安全に削除できる
 		const orphanCutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
 		let orphanCount = 0;
-		for (const [dir, uploadId] of this.listStagingUploadDirs()) {
+		for (const [dir, uploadId] of await this.listStagingUploadDirs()) {
 			try {
-				const mtime = fs.statSync(dir).mtime;
+				const mtime = (await fs.promises.stat(dir)).mtime;
 				if (mtime >= orphanCutoff) continue;
 				if (await this.multipartUploadsRepository.exists({ where: { id: uploadId } })) continue;
-				fs.rmSync(dir, { recursive: true, force: true });
+				await fs.promises.rm(dir, { recursive: true, force: true });
 				orphanCount++;
 				this.logger.info(`Reaped orphaned multipart staging dir: ${dir}`);
 			} catch (err) {
@@ -117,7 +117,7 @@ export class CleanExpiredMultipartUploadsProcessorService {
 	 * (ディレクトリパス, アップロードID) の組で列挙する
 	 */
 	@bindThis
-	private listStagingUploadDirs(): [string, string][] {
+	private async listStagingUploadDirs(): Promise<[string, string][]> {
 		const out: [string, string][] = [];
 		const roots: [string, string | null][] = [
 			[getMultipartStagingRoot(this.config.multipartTempDir), null],
@@ -126,7 +126,7 @@ export class CleanExpiredMultipartUploadsProcessorService {
 		for (const [root, prefix] of roots) {
 			let names: string[];
 			try {
-				names = fs.readdirSync(root);
+				names = await fs.promises.readdir(root);
 			} catch {
 				continue;
 			}
@@ -140,7 +140,7 @@ export class CleanExpiredMultipartUploadsProcessorService {
 					uploadId = name;
 				}
 				try {
-					if (!fs.statSync(dir).isDirectory()) continue;
+					if (!(await fs.promises.stat(dir)).isDirectory()) continue;
 				} catch {
 					continue;
 				}
@@ -148,5 +148,15 @@ export class CleanExpiredMultipartUploadsProcessorService {
 			}
 		}
 		return out;
+	}
+}
+
+// リクエスト処理中のイベントループのブロッキングを避けるため、fs の同期 API は使わない
+async function pathExists(path: string): Promise<boolean> {
+	try {
+		await fs.promises.access(path);
+		return true;
+	} catch {
+		return false;
 	}
 }
