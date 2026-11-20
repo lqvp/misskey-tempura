@@ -180,6 +180,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * 1 年以上先には設定できません
 * 削除の代わりに非公開化する選択 (makePrivateInsteadOfDelete) があります
 * 非公開化 (makePrivateInsteadOfDelete) にはロールポリシー canUseMakePrivate が必要です
+* 削除時に他のノートから参照されている添付ファイルは、そのノートのために残ります
 
 ### ノートの非公開化 (make private)
 
@@ -242,11 +243,13 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * follow / unFollow / wasFollow / wasUnFollow / blocked / unBlocked / wasBlocked / wasUnBlocked を記録します
 * フィルタと全削除ができます
 * canReadFollowHistory 権限が必要です
+* 365 日より古い記録は日次のクリーンアップジョブ (毎日 4:30) で自動削除されます
 
 ### フォローリクエスト履歴
 
 * sent / received / approved / rejected / wasApproved / wasRejected / wasBlocked / wasUnBlocked を記録します
 * フィルタと全削除ができます
+* 365 日より古い記録は日次のクリーンアップジョブ (毎日 4:30) で自動削除されます
 
 ### フォロー制御
 
