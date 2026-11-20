@@ -434,6 +434,8 @@ export class DriveService {
 			.catch(
 				err => {
 					this.registerLogger.error(`Upload Failed: key = ${key}, filename = ${filename}`, err);
+					// エラーを握りつぶすと DB に実体の無いレコードが登録されるため、上位へ伝播させる
+					throw err;
 				},
 			);
 	}

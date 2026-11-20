@@ -34,6 +34,8 @@ export class S3Service {
 			requestTimeout: 300_000, // 5 分 (大きなパートの転送を考慮)
 			throwOnRequestTimeout: true, // 期限内に応答しなければ要求を破棄してエラーにする
 			connectionTimeout: 10_000, // 10 秒
+			socketTimeout: 120_000, // 2 分 (応答ボディの停滞防止)
+			// requestTimeout はヘッダ到着までの一括上限、socketTimeout はボディ読み出し中のソケット停滞上限
 		};
 		if (meta.objectStorageUseSSL) {
 			handlerOption.httpsAgent = agent as https.Agent;
