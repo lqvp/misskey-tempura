@@ -10,3 +10,11 @@ export const noSuchLlmModerationQueueError = {
 	kind: 'server',
 	httpStatusCode: 404,
 } as const;
+
+export const alreadyResolvedError = {
+	message: 'That LLM moderation queue item has already been resolved.',
+	code: 'ALREADY_RESOLVED_LLM_MODERATION_QUEUE',
+	id: '3f9b1e64-2b46-4f8a-9e27-01c0e5a1b2f3',
+	kind: 'server',
+	httpStatusCode: 409,
+} as const;

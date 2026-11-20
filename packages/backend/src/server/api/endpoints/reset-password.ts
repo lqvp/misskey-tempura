@@ -53,7 +53,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			// Generate hash of password
-			const salt = await bcrypt.genSalt(8);
+			const salt = await bcrypt.genSalt(10);
 			const hash = await bcrypt.hash(ps.password, salt);
 
 			await this.userProfilesRepository.update(req.userId, {

@@ -912,18 +912,37 @@ export class NoteCreateService implements OnApplicationShutdown {
 					const isPureRenote = this.isRenote(data) && !this.isQuote(data);
 					const isQuote = this.isRenote(data) && this.isQuote(data);
 
+					// フォロワーごとの直列 await は N+1 になるため、
+					// ミュート集合はループ前に一括取得しておく。
+					// キャッシュミス時に 1 投稿で大量の DB/Redis クエリが
+					// 一気に走らないよう、ある程度のバッチサイズに区切る
+					const MUTE_PREFETCH_BATCH_SIZE = 100;
+					const renoteMutingSets = new Map<string, Set<string>>();
+					const quoteMutingSets = new Map<string, Set<string>>();
+					if (isPureRenote || isQuote) {
+						for (let i = 0; i < followings.length; i += MUTE_PREFETCH_BATCH_SIZE) {
+							const batch = followings.slice(i, i + MUTE_PREFETCH_BATCH_SIZE);
+							await Promise.all(batch.map(async following => {
+								if (isPureRenote) {
+									renoteMutingSets.set(following.followerId, await this.cacheService.renoteMutingsCache.fetch(following.followerId));
+								}
+								if (isQuote) {
+									quoteMutingSets.set(following.followerId, await this.cacheService.quoteMutingsCache.fetch(following.followerId));
+								}
+							}));
+						}
+					}
+
 					for (const following of followings) {
 						// TODO: ワードミュート考慮
 						let isRenoteMuted = false;
 						if (isPureRenote) {
-							const userIdsWhoMeMutingRenotes = await this.cacheService.renoteMutingsCache.fetch(following.followerId);
-							isRenoteMuted = userIdsWhoMeMutingRenotes.has(user.id);
+							isRenoteMuted = renoteMutingSets.get(following.followerId)!.has(user.id);
 						}
 
 						let isQuoteMuted = false;
 						if (isQuote) {
-							const userIdsWhoMeMutingQuotes = await this.cacheService.quoteMutingsCache.fetch(following.followerId);
-							isQuoteMuted = userIdsWhoMeMutingQuotes.has(user.id);
+							isQuoteMuted = quoteMutingSets.get(following.followerId)!.has(user.id);
 						}
 
 						if (!isRenoteMuted && !isQuoteMuted) {
@@ -966,6 +985,13 @@ export class NoteCreateService implements OnApplicationShutdown {
 			}, {
 				delay,
 				removeOnComplete: true,
+				removeOnFail: {
+					age: 3600 * 24 * 7, // keep up to 7 days
+					count: 100,
+				},
+			}).catch(err => {
+				// Redis 障害等でジョブ投入に失敗した場合でも unhandled rejection にせずログに残す
+				this.logger.error(`Failed to enqueue scheduled note deletion for ${note.id}`, { error: err });
 			});
 		}
 		if (!silent) {
@@ -1192,7 +1218,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 					}
 
 					if (['public', 'public_non_ltl'].includes(note.visibility)) {
-						this.relayService.deliverToRelays(user, noteActivity);
+						this.relayService.deliverToRelays(user, noteActivity, data.deliveryTargets ?? undefined);
 					}
 
 					if (data.renote && data.renote.userHost === null && ['followers'].includes(data.renote.visibility)) {

@@ -121,6 +121,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					: fsStats[0]?.size
 				: 0;
 
+			// used は total を超えないようにクランプする。
+			// 偽装値 (customFsTotal) が実使用量より小さい場合に used > total という
+			// 論理矛盾した統計が公開され、偽装していることが露見するのを防ぐ。
+			const fsUsedRaw = this.serverSettings.enableFsTotal ? fsStats[0]?.used : 0;
+			const fsUsed = Math.min(fsUsedRaw, fsTotal);
+
 			return {
 				machine: os.hostname(),
 				cpu: {
@@ -132,7 +138,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				},
 				fs: {
 					total: fsTotal,
-					used: this.serverSettings.enableFsTotal ? fsStats[0]?.used : 0,
+					used: fsUsed,
 				},
 			};
 		});

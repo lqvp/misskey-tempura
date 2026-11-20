@@ -42,9 +42,13 @@ class FakeQueueRepository {
 		return row;
 	}
 
-	async update(id: string, data: Partial<MiLlmModerationQueue>): Promise<void> {
-		const row = this.rows.find(r => r.id === id);
-		if (row) Object.assign(row, data);
+	async update(criteria: { id?: string; resolved?: boolean } | string, data: Partial<MiLlmModerationQueue>): Promise<{ affected: number }> {
+		const id = typeof criteria === 'string' ? criteria : criteria.id;
+		const row = this.rows.find(r => r.id === id
+			&& (typeof criteria !== 'object' || criteria.resolved === undefined || r.resolved === criteria.resolved));
+		if (!row) return { affected: 0 };
+		Object.assign(row, data);
+		return { affected: 1 };
 	}
 
 	async findBy(where: { id: { _type: 'in'; value: string[] } }): Promise<MiLlmModerationQueue[]> {
@@ -208,6 +212,23 @@ describe('LlmModerationQueueService', () => {
 			const svc = makeService(repo);
 
 			await expect(svc.resolve('unknown', moderator)).rejects.toThrow();
+		});
+
+		test('異常: 解決済みのキューは二重解決を拒否する', async () => {
+			const repo = new FakeQueueRepository();
+			const svc = makeService(repo);
+
+			await svc.enqueue({
+				note: makeNote(),
+				provider: 'openai',
+				model: 'm',
+				flaggedCategories: [],
+				categoryScores: {},
+				rawResult: null,
+			});
+
+			await svc.resolve('queue1', moderator);
+			await expect(svc.resolve('queue1', moderator)).rejects.toThrow('already been resolved');
 		});
 	});
 

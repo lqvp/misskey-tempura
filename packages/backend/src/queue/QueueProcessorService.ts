@@ -56,6 +56,7 @@ import { CleanExpiredRemoteFilesProcessorService } from './processors/CleanExpir
 import { ReDownloadRemoteFileProcessorService } from './processors/ReDownloadRemoteFileProcessorService.js';
 import { ScheduledNoteDeleteProcessorService } from './processors/ScheduledNoteDeleteProcessorService.js';
 import { CleanExpiredMultipartUploadsProcessorService } from './processors/CleanExpiredMultipartUploadsProcessorService.js';
+import { CleanFollowHistoryProcessorService } from './processors/CleanFollowHistoryProcessorService.js';
 import { UpdateIpIntelligenceProcessorService } from './processors/UpdateIpIntelligenceProcessorService.js';
 
 // ref. https://github.com/misskey-dev/misskey/pull/7635#issue-971097019
@@ -148,6 +149,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 		private scheduledNoteDeleteProcessorService: ScheduledNoteDeleteProcessorService,
 		private cleanExpiredMultipartUploadsProcessorService: CleanExpiredMultipartUploadsProcessorService,
 		private updateIpIntelligenceProcessorService: UpdateIpIntelligenceProcessorService,
+		private cleanFollowHistoryProcessorService: CleanFollowHistoryProcessorService,
 	) {
 		this.logger = this.queueLoggerService.logger;
 
@@ -195,6 +197,7 @@ export class QueueProcessorService implements OnApplicationShutdown {
 					case 'CleanExpiredRemoteFiles': return this.cleanExpiredRemoteFilesProcessorService.process();
 					case 'cleanExpiredMultipartUploads': return this.cleanExpiredMultipartUploadsProcessorService.process();
 					case 'updateIpIntelligence': return this.updateIpIntelligenceProcessorService.process();
+					case 'cleanFollowHistory': return this.cleanFollowHistoryProcessorService.process();
 					default: throw new Error(`unrecognized job type ${job.name} for system`);
 				}
 			};

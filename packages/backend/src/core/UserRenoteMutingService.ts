@@ -47,6 +47,7 @@ export class UserRenoteMutingService {
 			id: this.idService.gen(),
 			muterId: user.id,
 			muteeId: target.id,
+			expiresAt: expiresAt,
 		});
 
 		await this.cacheService.renoteMutingsCache.refresh(user.id);

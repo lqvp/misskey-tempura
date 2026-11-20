@@ -63,11 +63,23 @@ export class ScheduledNoteDeleteProcessorService {
 					userId: user.id,
 				});
 
+				let deletedCount = 0;
 				for (const file of files) {
+					// 他のノートから参照されているファイル(投稿後に別ノートへ再添付されたものなど)は
+					// 削除するとそのノートから失われるためスキップする
+					// @> 述語は GIN インデックス (array_ops) で利用できる形式にする
+					const referencedCount = await this.notesRepository.createQueryBuilder('note')
+						.where('note.fileIds @> ARRAY[:fileId]::character varying[]', { fileId: file.id })
+						.getCount();
+					if (referencedCount > 0) {
+						this.logger.info(`Skipped deleting file ${file.id}: referenced by ${referencedCount} other note(s)`);
+						continue;
+					}
 					await this.driveService.deleteFileImmediately(file, false, user);
+					deletedCount++;
 				}
 
-				this.logger.info(`Deleted ${files.length} attached files: ${files.map(f => f.id).join(', ')}`);
+				this.logger.info(`Deleted ${deletedCount} attached files: ${files.map(f => f.id).join(', ')}`);
 			}
 		}
 	}
