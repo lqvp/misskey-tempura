@@ -71,7 +71,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			// この操作を行うのが投稿者とは限らない(例えばモデレーター)ため
-			await this.noteDeleteService.makePrivate(await this.usersRepository.findOneByOrFail({ id: note.userId }), note, false, me);
+			// 投稿者行が欠けている場合は 500 ではなく 404 を返す
+			const author = await this.usersRepository.findOneBy({ id: note.userId });
+			if (author == null) {
+				throw new ApiError(meta.errors.noSuchNote);
+			}
+			await this.noteDeleteService.makePrivate(author, note, false, me);
 		});
 	}
 }

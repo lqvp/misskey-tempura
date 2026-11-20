@@ -40,6 +40,12 @@ export const meta = {
 	},
 
 	errors: {
+		invalidScheduledDelete: {
+			message: 'Invalid scheduled delete date.',
+			code: 'INVALID_SCHEDULED_DELETE_DATE',
+			id: 'dc7e45a1-8f21-4b7c-9d3a-5e6f2a9b0c8d',
+		},
+
 		noSuchRenoteTarget: {
 			message: 'No such renote target.',
 			code: 'NO_SUCH_RENOTE_TARGET',
@@ -204,7 +210,7 @@ export const paramDef = {
 			type: 'object',
 			nullable: true,
 			properties: {
-				deleteAt: { type: 'integer', nullable: true },
+				deleteAt: { type: 'integer', nullable: true, minimum: 0, maximum: 8640000000000000 },
 				deleteAfter: { type: 'integer', nullable: true, minimum: 1 },
 				isScheduledForPrivate: { type: 'boolean', nullable: true },
 			},
@@ -266,6 +272,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					: ps.scheduledDelete?.deleteAfter
 						? new Date(Date.now() + ps.scheduledDelete.deleteAfter)
 						: null;
+
+				// 過去の時刻や範囲外の値で Invalid Date になる場合を弾く
+				if (scheduledDeleteAt != null && (!Number.isFinite(scheduledDeleteAt.getTime()) || scheduledDeleteAt.getTime() < Date.now() - 5 * 60 * 1000)) {
+					throw new ApiError(meta.errors.invalidScheduledDelete);
+				}
 
 				const isScheduledForPrivate = ps.scheduledDelete?.isScheduledForPrivate ?? false;
 
