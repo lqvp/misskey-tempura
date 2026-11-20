@@ -4603,8 +4603,6 @@ _advancedSearch:
     or: "OR（いずれかの語を含む）"
   addSearchTerm: "検索語を追加"
   addExcludeWord: "除外語を追加"
-  sinceDate: "開始日時"
-  untilDate: "終了日時"
   usageTitle: "検索の使い方:"
   usageExample1: "ねこ いぬ"
   usageExplanation1: "ねこ いぬ → AND検索（両方の語を含む）"

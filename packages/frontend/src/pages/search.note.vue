@@ -80,23 +80,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 				>
 					<template #label>{{ i18n.ts._noteSearch._type.poll }}</template>
 				</MkRadios>
-
-				<div class="_gaps_s">
-					<MkInput
-						v-model="sinceDate"
-						type="datetime-local"
-						:placeholder="i18n.ts._advancedSearch.sinceDate"
-					>
-						<template #label>{{ i18n.ts._advancedSearch.sinceDate }}</template>
-					</MkInput>
-					<MkInput
-						v-model="untilDate"
-						type="datetime-local"
-						:placeholder="i18n.ts._advancedSearch.untilDate"
-					>
-						<template #label>{{ i18n.ts._advancedSearch.untilDate }}</template>
-					</MkInput>
-				</div>
 			</div>
 		</MkFolder>
 
@@ -263,8 +246,6 @@ const props = withDefaults(defineProps<{
 	userId?: string;
 	username?: string;
 	host?: string | null;
-	sinceDate?: string;
-	untilDate?: string;
 	visibility?: string;
 	hasFiles?: string;
 	hasCw?: string;
@@ -280,8 +261,6 @@ const props = withDefaults(defineProps<{
 	userId: undefined,
 	username: undefined,
 	host: '',
-	sinceDate: undefined,
-	untilDate: undefined,
 	visibility: 'all',
 	hasFiles: 'all',
 	hasCw: 'all',
@@ -314,7 +293,7 @@ const excludeWords = ref<string>(toRef(props, 'excludeWords').value);
 // URLパラメータは文字列で届くため 'true' の場合のみ有効化する
 const advancedSyntax = ref<boolean>(toRef(props, 'advancedSyntax').value === 'true');
 
-// URLパラメータからsinceDate/untilDateを適切に変換
+// URLパラメータからrangeStartAt/rangeEndAtを適切に変換
 const convertTimestampToDatetimeLocal = (timestamp: string | undefined): string | null => {
 	if (!timestamp) return null;
 	const parsedTimestamp = parseInt(timestamp);
@@ -325,8 +304,6 @@ const convertTimestampToDatetimeLocal = (timestamp: string | undefined): string 
 	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
-const sinceDate = ref<string | null>(convertTimestampToDatetimeLocal(toRef(props, 'sinceDate').value));
-const untilDate = ref<string | null>(convertTimestampToDatetimeLocal(toRef(props, 'untilDate').value));
 const rangeStartAt = ref<string | null>(convertTimestampToDatetimeLocal(toRef(props, 'rangeStartAt').value));
 const rangeEndAt = ref<string | null>(convertTimestampToDatetimeLocal(toRef(props, 'rangeEndAt').value));
 
@@ -405,8 +382,6 @@ const hasValidFilters = computed(() => {
 		hasCw.value !== 'all' ||
 		hasReply.value !== 'all' ||
 		hasPoll.value !== 'all' ||
-		sinceDate.value !== null ||
-		untilDate.value !== null ||
 		searchQuery.value.trim() !== '' ||
 		excludeWords.value.trim() !== '' ||
 		user.value !== null;
@@ -537,12 +512,6 @@ async function copySearchUrl() {
 		params.set('excludeWords', excludeWords.value);
 	}
 
-	if (sinceDate.value) {
-		params.set('sinceDate', new Date(sinceDate.value).getTime().toString());
-	}
-	if (untilDate.value) {
-		params.set('untilDate', new Date(untilDate.value).getTime().toString());
-	}
 	if (rangeStartAt.value) {
 		params.set('rangeStartAt', new Date(rangeStartAt.value).getTime().toString());
 	}
@@ -592,13 +561,6 @@ async function search() {
 	const trimmedQuery = searchQuery.value.trim();
 	if (trimmedQuery !== '') {
 		params.query = trimmedQuery;
-	}
-
-	if (sinceDate.value) {
-		params.sinceDate = new Date(sinceDate.value).getTime();
-	}
-	if (untilDate.value) {
-		params.untilDate = new Date(untilDate.value).getTime();
 	}
 
 	// 除外語を処理 (カンマ以外に空白・改行でも区切る)

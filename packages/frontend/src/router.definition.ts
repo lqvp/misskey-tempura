@@ -293,6 +293,11 @@ export const ROUTE_DEF = [{
 		hasCw: 'hasCw',
 		hasReply: 'hasReply',
 		hasPoll: 'hasPoll',
+		searchOperator: 'searchOperator',
+		excludeWords: 'excludeWords',
+		rangeStartAt: 'rangeStartAt',
+		rangeEndAt: 'rangeEndAt',
+		advancedSyntax: 'advancedSyntax',
 	},
 }, {
 	// Legacy Compatibility
