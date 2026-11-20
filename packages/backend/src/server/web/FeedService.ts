@@ -10,6 +10,7 @@ import { DI } from '@/di-symbols.js';
 import type { DriveFilesRepository, NotesRepository, UserProfilesRepository } from '@/models/_.js';
 import type { Config } from '@/config.js';
 import type { MiUser } from '@/models/User.js';
+import type { IMentionedRemoteUsers } from '@/models/Note.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.js';
 import { bindThis } from '@/decorators.js';
@@ -99,11 +100,23 @@ export class FeedService {
 				link: `${this.config.url}/notes/${note.id}`,
 				date: this.idService.parse(note.id).date,
 				description: note.cw ?? undefined,
-				content: text ? this.mfmService.toHtml(mfmParse(text), JSON.parse(note.mentionedRemoteUsers)) ?? undefined : undefined,
+				content: text ? this.mfmService.toHtml(mfmParse(text), this.safeParseMentionedRemoteUsers(note.mentionedRemoteUsers)) ?? undefined : undefined,
 				image: file ? this.driveFileEntityService.getPublicUrl(file) : undefined,
 			});
 		}
 
 		return feed;
+	}
+
+	// mentionedRemoteUsers は通常 JSON.stringify の出力だが、
+	// インポート・復元された異常データではパースに失敗しうるためフォールバックする
+	@bindThis
+	private safeParseMentionedRemoteUsers(value: string): IMentionedRemoteUsers {
+		try {
+			const parsed = JSON.parse(value);
+			return Array.isArray(parsed) ? parsed as IMentionedRemoteUsers : [];
+		} catch {
+			return [];
+		}
 	}
 }
