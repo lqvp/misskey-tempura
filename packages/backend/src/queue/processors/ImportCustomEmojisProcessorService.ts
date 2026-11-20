@@ -16,6 +16,7 @@ import { DriveService } from '@/core/DriveService.js';
 import { DownloadService } from '@/core/DownloadService.js';
 import { bindThis } from '@/decorators.js';
 import { NotificationService } from '@/core/NotificationService.js';
+import { MetaService } from '@/core/MetaService.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import type * as Bull from 'bullmq';
 import type { DbUserImportJobData } from '../types.js';
@@ -73,6 +74,7 @@ export class ImportCustomEmojisProcessorService {
 		private downloadService: DownloadService,
 		private queueLoggerService: QueueLoggerService,
 		private notificationService: NotificationService,
+		private metaService: MetaService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('import-custom-emojis');
 	}
@@ -207,7 +209,7 @@ export class ImportCustomEmojisProcessorService {
 					appAccessTokenId: null,
 					customBody: `${emojiInfo.name} はショートコードが重複しているためスキップされました。`,
 					customHeader: '[システム] 絵文字インポート',
-					customIcon: null,
+					customIcon: (await this.metaService.fetch()).iconUrl,
 				});
 				this.logger.info(`[SKIP IMPORT] ${emojiInfo.name} is duplicate.`);
 				return;

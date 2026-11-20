@@ -212,7 +212,7 @@ export class SignupService {
 				appAccessTokenId: null,
 				customBody: `新しいユーザー @${account.username} が作成されました。`,
 				customHeader: '[システム] 通知',
-				customIcon: null,
+				customIcon: (await this.metaService.fetch()).iconUrl,
 			});
 		}));
 

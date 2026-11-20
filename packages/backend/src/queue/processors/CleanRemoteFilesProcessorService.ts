@@ -107,7 +107,7 @@ export class CleanRemoteFilesProcessorService {
 				appAccessTokenId: null,
 				customBody: `リモートファイルのクリーンアップが完了しました。\n削除されたファイル数: ${deletedCount}\n解放された容量: ${humanReadableSize}`,
 				customHeader: '[システム] ストレージクリーンアップ',
-				customIcon: null,
+				customIcon: (await this.metaService.fetch()).iconUrl,
 			});
 		}));
 
