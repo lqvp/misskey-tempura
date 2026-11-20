@@ -204,8 +204,15 @@ export class IpIntelligenceService implements OnModuleInit, OnApplicationShutdow
 			}
 
 			if (this.config.loginRisk.trustCloudflareHeaders) {
+				// cf-ipcountry はクライアントから自由に偽装できるヘッダーのため、
+				// Cloudflare が実際に付与する他のヘッダー (cf-ray / cf-connecting-ip) が
+				// 同時に存在するときだけ採用する (ヘッダー単独の詐称を難しくする)
+				const cfRay = headers['cf-ray'];
+				const cfConnectingIp = headers['cf-connecting-ip'];
+				const looksLikeCloudflare = (typeof cfRay === 'string' && cfRay.length > 0)
+					|| (typeof cfConnectingIp === 'string' && cfConnectingIp.length > 0);
 				const cf = headers['cf-ipcountry'];
-				if (typeof cf === 'string' && COUNTRY_HEADER_RE.test(cf) && cf !== 'XX' && cf !== 'T1') {
+				if (looksLikeCloudflare && typeof cf === 'string' && COUNTRY_HEADER_RE.test(cf) && cf !== 'XX' && cf !== 'T1') {
 					intel.country = cf;
 				}
 			}

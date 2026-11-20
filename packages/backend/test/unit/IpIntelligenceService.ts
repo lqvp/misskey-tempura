@@ -125,10 +125,13 @@ describe('IpIntelligenceService', () => {
 		});
 
 		test('uses cf-ipcountry when trusted', () => {
-			expect(svc.lookup('203.0.113.1', { 'cf-ipcountry': 'JP' }).country).toBe('JP');
-			expect(svc.lookup('203.0.113.1', { 'cf-ipcountry': 'XX' }).country).toBeNull();
-			expect(svc.lookup('203.0.113.1', { 'cf-ipcountry': 'T1' }).country).toBeNull();
-			expect(svc.lookup('203.0.113.1', { 'cf-ipcountry': 'jp' }).country).toBeNull();
+			// cf-ray 等の Cloudflare 由来ヘッダーがあるときだけ cf-ipcountry を採用する
+			expect(svc.lookup('203.0.113.1', { 'cf-ipcountry': 'JP', 'cf-ray': 'abc123' }).country).toBe('JP');
+			expect(svc.lookup('203.0.113.1', { 'cf-ipcountry': 'XX', 'cf-ray': 'abc123' }).country).toBeNull();
+			expect(svc.lookup('203.0.113.1', { 'cf-ipcountry': 'T1', 'cf-ray': 'abc123' }).country).toBeNull();
+			expect(svc.lookup('203.0.113.1', { 'cf-ipcountry': 'jp', 'cf-ray': 'abc123' }).country).toBeNull();
+			// cf-ipcountry 単独(他の CF ヘッダーなし)は詐称の余地があるため採用しない
+			expect(svc.lookup('203.0.113.1', { 'cf-ipcountry': 'JP' }).country).toBeNull();
 		});
 	});
 

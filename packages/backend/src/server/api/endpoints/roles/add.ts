@@ -4,6 +4,7 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
+import ms from 'ms';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { RolesRepository } from '@/models/_.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
@@ -19,6 +20,14 @@ export const meta = {
 	requireCredential: true,
 	kind: 'write:community-role',
 	secure: true,
+
+	// canCreateRole が既定で全ユーザーに true のため、レート制限なしでは
+	// roles テーブルの無制限 INSERT (DB肥大化・DoS) が可能になる
+	limit: {
+		duration: ms('1day'),
+		max: 10,
+		minInterval: ms('1hour'),
+	},
 
 	errors: {
 		notAllowed: {

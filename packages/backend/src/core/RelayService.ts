@@ -111,7 +111,7 @@ export class RelayService {
 	}
 
 	@bindThis
-	public async deliverToRelays(user: { id: MiUser['id']; host: null; }, activity: any): Promise<void> {
+	public async deliverToRelays(user: { id: MiUser['id']; host: null; }, activity: any, deliveryTargets?: { mode: 'include' | 'exclude'; hosts: string[] } | null): Promise<void> {
 		if (activity == null) return;
 
 		const relays = await this.getAcceptedRelays();
@@ -123,6 +123,24 @@ export class RelayService {
 		const signed = await this.apRendererService.attachLdSignature(copy, user);
 
 		for (const relay of relays) {
+			// 配送先制御 (deliveryTargets) が指定されている場合、リレーにも適用する。
+			// リレーは受け取ったアクティビティを再配送するため、include モードでは
+			// 指定ホストのリレーのみ、exclude モードでは指定ホストのリレーを除外する。
+			// これを適用しないと、配送先制限付きノートがリレー経由で全サーバーに露出する。
+			if (deliveryTargets) {
+				let relayHost: string | null = null;
+				try {
+					relayHost = new URL(relay.inbox).host;
+				} catch {
+					relayHost = null;
+				}
+				if (deliveryTargets.mode === 'include') {
+					// include リストが空 = 誰にも配送しない
+					if (relayHost === null || !deliveryTargets.hosts.includes(relayHost)) continue;
+				} else if (deliveryTargets.mode === 'exclude') {
+					if (relayHost !== null && deliveryTargets.hosts.includes(relayHost)) continue;
+				}
+			}
 			this.queueService.deliver(user, signed, relay.inbox, false);
 		}
 	}

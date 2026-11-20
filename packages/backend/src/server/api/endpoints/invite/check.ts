@@ -9,7 +9,7 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { RegistrationTicketsRepository, MiMeta } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { ApiError } from '../../error.js';
-import { isSignupPassphraseMatch } from '@/misc/normalize-signup-passphrase.js';
+import { isSignupPassphraseMatch, timingSafeStringEqual } from '@/misc/normalize-signup-passphrase.js';
 
 export const meta = {
 	tags: ['invite'],
@@ -74,7 +74,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			// 固定招待コード・合言葉 (Meta 設定)。
 			// 通常の招待コードと異なり消費されないため、常に有効扱い。
 			// スキップ特権 (skipEmailAuth / skipApproval) は持たない。
-			if (this.serverSettings.fixedInviteCode != null && code === this.serverSettings.fixedInviteCode) {
+			if (this.serverSettings.fixedInviteCode != null && timingSafeStringEqual(code, this.serverSettings.fixedInviteCode)) {
 				return {
 					isValid: true,
 					expiresAt: null,

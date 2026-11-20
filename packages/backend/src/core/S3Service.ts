@@ -29,7 +29,11 @@ export class S3Service {
 			: `${meta.objectStorageUseSSL ? 'https' : 'http'}://example.net`; // dummy url to select http(s) agent
 
 		const agent = this.httpRequestService.getAgentByUrl(new URL(u), !meta.objectStorageUseProxy, true);
-		const handlerOption: NodeHttpHandlerOptions = {};
+		const handlerOption: NodeHttpHandlerOptions = {
+			// オブジェクトストレージが不応答の場合にアップロード/削除/一覧が無期限に待機しないようにタイムアウトを設定する
+			requestTimeout: 300_000, // 5 分 (大きなパートの転送を考慮)
+			connectionTimeout: 10_000, // 10 秒
+		};
 		if (meta.objectStorageUseSSL) {
 			handlerOption.httpsAgent = agent as https.Agent;
 		} else {

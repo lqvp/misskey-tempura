@@ -222,8 +222,18 @@ async function connectDb(): Promise<void> {
 
 async function spawnWorkers(limit = 1) {
 	// clusterOverClockがtrueの場合は上限チェックをスキップ
+	// ただし clusterLimit に検証がないため、極端に大きな値での
+	// CPU/メモリ枯渇 (DoS) を避けるため 256 ワーカーを上限とする
 	const config: Config = loadConfigBoot();
-	const workers = config.clusterOverClock ? limit : Math.min(limit, os.cpus().length * 2);
+	let workers = config.clusterOverClock ? limit : Math.min(limit, os.cpus().length * 2);
+	if (!Number.isInteger(workers) || workers < 1) {
+		bootLogger.warn(`Invalid clusterLimit (${workers}). Falling back to 1 worker.`);
+		workers = 1;
+	}
+	if (workers > 256) {
+		bootLogger.warn(`clusterLimit ${workers} is too large. Capping at 256 workers.`);
+		workers = 256;
+	}
 	bootLogger.info(`Starting ${workers} worker${workers === 1 ? '' : 's'}...`);
 	await Promise.all([...Array(workers)].map(spawnWorker));
 	bootLogger.succ('All workers started');

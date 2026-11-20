@@ -21,7 +21,7 @@ import { escapeHtml } from '@/misc/escape-html.js';
 import { bindThis } from '@/decorators.js';
 import { L_CHARS, secureRndstr } from '@/misc/secure-rndstr.js';
 import { getIpHash } from '@/misc/get-ip-hash.js';
-import { isSignupPassphraseMatch } from '@/misc/normalize-signup-passphrase.js';
+import { isSignupPassphraseMatch, timingSafeStringEqual } from '@/misc/normalize-signup-passphrase.js';
 import { RoleService } from '@/core/RoleService.js';
 import { SigninService } from './SigninService.js';
 import { RateLimiterService } from './RateLimiterService.js';
@@ -149,7 +149,7 @@ export class SignupApiService {
 		// invite/check のレートリミット (1時間あたり3回/IP) が担う。
 		const fixedInviteCodeOk = typeof invitationCode === 'string'
 			&& this.meta.fixedInviteCode != null
-			&& invitationCode === this.meta.fixedInviteCode;
+			&& timingSafeStringEqual(invitationCode, this.meta.fixedInviteCode);
 		const passphraseOk = isSignupPassphraseMatch(invitationCode, this.meta.signupPassphrase);
 		const hasStaticSignupCode = fixedInviteCodeOk || passphraseOk;
 		const reason = body['reason'];

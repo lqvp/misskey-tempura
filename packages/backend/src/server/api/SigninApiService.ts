@@ -301,6 +301,14 @@ export class SigninApiService {
 				// メールを送れないとき(sendFailed)は止めるのと扱いが違うが、Redis はサインインのレート制限などにも使っていて、
 				// Redis が止まっている状態は外から作りにくいため
 				// 注: 攻撃者が Redis を止められる環境では、この経路で追加認証を省けてしまう
+				// 追加認証を省いた旨を本人に通知しておく (ステップアップ認証が黙って省かれないように)
+				try {
+					await this.notificationService.createNotification(user.id, 'loginFailed', {
+						userIp: request.ip,
+					});
+				} catch (err) {
+					this.logger.warn(`failed to notify login of ${user.id} (redis store failed path)`, { error: err });
+				}
 				return await this.signinService.signin(request, reply, user, { ev, learn: false });
 			}
 

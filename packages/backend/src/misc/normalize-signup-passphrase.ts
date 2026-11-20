@@ -3,6 +3,8 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import { createHash, timingSafeEqual } from 'node:crypto';
+
 /**
  * 登録用の合言葉を比較のために正規化する。
  *
@@ -22,6 +24,19 @@ export function normalizeSignupPassphrase(input: string): string {
 }
 
 /**
+ * 2 つの文字列の秘密比較をタイミング非依存 (timing-safe) に行う。
+ *
+ * JavaScript の === は先頭から不一致文字で短絡するため、秘密の共有先頭長に
+ * 応じた処理時間差が生じる。SHA-256 ダイジェスト同士を timingSafeEqual で
+ * 比較することで、比較時間を入力の内容に依存させない。
+ */
+export function timingSafeStringEqual(a: string, b: string): boolean {
+	const da = createHash('sha256').update(a, 'utf8').digest();
+	const db = createHash('sha256').update(b, 'utf8').digest();
+	return timingSafeEqual(da, db);
+}
+
+/**
  * 入力が設定された合言葉と一致するかを判定する。
  * どちらかが空文字・null/undefined の場合は一致しない。
  */
@@ -32,5 +47,5 @@ export function isSignupPassphraseMatch(input: string | null | undefined, expect
 	const a = normalizeSignupPassphrase(input);
 	const b = normalizeSignupPassphrase(expected);
 	if (a.length === 0 || b.length === 0) return false;
-	return a === b;
+	return timingSafeStringEqual(a, b);
 }
