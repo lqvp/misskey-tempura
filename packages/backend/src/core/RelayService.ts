@@ -130,15 +130,18 @@ export class RelayService {
 			if (deliveryTargets) {
 				let relayHost: string | null = null;
 				try {
-					relayHost = new URL(relay.inbox).host;
+					relayHost = new URL(relay.inbox).host.toLowerCase();
 				} catch {
 					relayHost = null;
 				}
+				// 指定側のホストも同じ規則で正規化して比較する
+				// (大文字小文字の違いで include/exclude の判定が狂わないように)
+				const targetHosts = new Set(deliveryTargets.hosts.map(h => h.toLowerCase()));
 				if (deliveryTargets.mode === 'include') {
 					// include リストが空 = 誰にも配送しない
-					if (relayHost === null || !deliveryTargets.hosts.includes(relayHost)) continue;
+					if (relayHost === null || !targetHosts.has(relayHost)) continue;
 				} else if (deliveryTargets.mode === 'exclude') {
-					if (relayHost !== null && deliveryTargets.hosts.includes(relayHost)) continue;
+					if (relayHost !== null && targetHosts.has(relayHost)) continue;
 				}
 			}
 			this.queueService.deliver(user, signed, relay.inbox, false);

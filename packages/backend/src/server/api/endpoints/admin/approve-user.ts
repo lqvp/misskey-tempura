@@ -52,6 +52,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		super(meta, paramDef, async (ps, me) => {
 			// decline-user との競合(TOCTOU)を防ぐため、ユーザー単位の分散ロックで直列化する
 			const unlock = await acquireDistributedLock(this.redisClient, `account-approval:${ps.userId}`, 30 * 1000, 100, 100);
+			let email: string | null = null;
+			let userId: string | null = null;
 			try {
 				const user = await this.usersRepository.findOneBy({ id: ps.userId });
 
@@ -68,18 +70,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					throw new Error('user is already approved or deleted');
 				}
 
+				userId = user.id;
 				const profile = await this.userProfilesRepository.findOneBy({ userId: ps.userId });
-
-				if (profile?.email) {
-					// 承認自体はメール送信に依存させない(失敗時はログに残す)
-					try {
-						await this.emailService.sendEmail(profile.email, 'Account Approved',
-							'Your Account has been approved!<br>Have fun socializing!',
-							'Your Account has been approved! Have fun socializing!');
-					} catch (err) {
-						this.logger.warn(`Failed to send approval email for ${user.id}`, { error: err });
-					}
-				}
+				// メール送信はロック保持時間を短くするためロックの外で行う
+				email = profile?.email ?? null;
 
 				this.moderationLogService.log(me, 'approve', {
 					userId: user.id,
@@ -87,6 +81,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				});
 			} finally {
 				await unlock();
+			}
+
+			// 承認自体はメール送信に依存させない(失敗時はログに残す)
+			if (email) {
+				try {
+					await this.emailService.sendEmail(email, 'Account Approved',
+						'Your Account has been approved!<br>Have fun socializing!',
+						'Your Account has been approved! Have fun socializing!');
+				} catch (err) {
+					this.logger.warn(`Failed to send approval email for ${userId}`, { error: err });
+				}
 			}
 		});
 		this.logger = this.loggerService.getLogger('admin-approve-user');

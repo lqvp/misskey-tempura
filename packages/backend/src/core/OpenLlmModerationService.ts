@@ -46,8 +46,9 @@ export class OpenLlmModerationService {
 
 	@bindThis
 	public async moderateNote(note: MiNote, input: ModerationInput): Promise<void> {
-		if (!this.meta.openLlmModerationEnabled) return;
-		if (!this.meta.openLlmModerationApiKey) return;
+		// 対象外のノートで待機枠を消費しないよう、
+		// 並行数上限のチェック前に安い対象判定を済ませておく
+		if (!this.isEligible(note, input)) return;
 
 		// 並行数・待機数の上限でバックプレッシャーをかける
 		if (this.activeRequests >= MAX_CONCURRENT_MODERATION_REQUESTS) {
@@ -70,6 +71,21 @@ export class OpenLlmModerationService {
 		} finally {
 			this.activeRequests--;
 		}
+	}
+
+	/** モデレーション対象かどうかの安い判定(設定変更を拾えるよう performModeration 内でも再確認する) */
+	private isEligible(note: MiNote, input: ModerationInput): boolean {
+		if (!this.meta.openLlmModerationEnabled) return false;
+		if (!this.meta.openLlmModerationApiKey) return false;
+
+		const isRemote = note.userHost != null;
+		if (isRemote && !this.meta.openLlmModerationIncludeRemote) return false;
+
+		const visibilities = this.meta.openLlmModerationVisibilities ?? [];
+		if (!visibilities.includes(note.visibility)) return false;
+
+		if (!this.buildInputText(input)) return false;
+		return true;
 	}
 
 	private async performModeration(note: MiNote, input: ModerationInput): Promise<void> {

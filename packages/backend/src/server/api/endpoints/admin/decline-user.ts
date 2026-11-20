@@ -57,6 +57,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		super(meta, paramDef, async (ps, me) => {
 			// approve-user との競合(TOCTOU)を防ぐため、ユーザー単位の分散ロックで直列化する
 			const unlock = await acquireDistributedLock(this.redisClient, `account-approval:${ps.userId}`, 30 * 1000, 100, 100);
+			let email: string | null = null;
+			let reason: string | undefined;
+			let userId: string | null = null;
 			try {
 			const user = await this.usersRepository.findOneBy({ id: ps.userId });
 
@@ -74,24 +77,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			const profile = await this.userProfilesRepository.findOneBy({ userId: ps.userId });
 
-			const reason = ps.reason?.trim();
-
-			if (profile?.email) {
-				// 削除自体はメール送信に依存させない(失敗時はログに残す)
-				try {
-					if (!reason) {
-						await this.emailService.sendEmail(profile.email, 'Account declined',
-							'Your Account has been declined!',
-							'Your Account has been declined!');
-					} else {
-						await this.emailService.sendEmail(profile.email, 'Account declined',
-							`Your account has been declined due to: ${reason}`,
-							`Your account has been declined due to: ${reason}`);
-					}
-				} catch (err) {
-					this.logger.warn(`Failed to send decline email for ${user.id}`, { error: err });
-				}
-			}
+			reason = ps.reason?.trim();
+			userId = user.id;
+			// メール送信はロック保持時間を短くするためロックの外で行う
+			// (メール送信の待ち時間が長引くと 30 秒のロック期限を超え、
+			//  approve-user との直列化が崩れるため)
+			email = profile?.email ?? null;
 
 			const log_reason = reason ? reason : 'Reason not provided';
 
@@ -106,6 +97,23 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			});
 			} finally {
 				await unlock();
+			}
+
+			// 削除自体はメール送信に依存させない(失敗時はログに残す)
+			if (email) {
+				try {
+					if (!reason) {
+						await this.emailService.sendEmail(email, 'Account declined',
+							'Your Account has been declined!',
+							'Your Account has been declined!');
+					} else {
+						await this.emailService.sendEmail(email, 'Account declined',
+							`Your account has been declined due to: ${reason}`,
+							`Your account has been declined due to: ${reason}`);
+					}
+				} catch (err) {
+					this.logger.warn(`Failed to send decline email for ${userId}`, { error: err });
+				}
 			}
 		});
 		this.logger = this.loggerService.getLogger('admin-decline-user');

@@ -32,6 +32,7 @@ export class S3Service {
 		const handlerOption: NodeHttpHandlerOptions = {
 			// オブジェクトストレージが不応答の場合にアップロード/削除/一覧が無期限に待機しないようにタイムアウトを設定する
 			requestTimeout: 300_000, // 5 分 (大きなパートの転送を考慮)
+			throwOnRequestTimeout: true, // 期限内に応答しなければ要求を破棄してエラーにする
 			connectionTimeout: 10_000, // 10 秒
 		};
 		if (meta.objectStorageUseSSL) {

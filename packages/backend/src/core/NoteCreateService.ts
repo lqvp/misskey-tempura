@@ -913,18 +913,24 @@ export class NoteCreateService implements OnApplicationShutdown {
 					const isQuote = this.isRenote(data) && this.isQuote(data);
 
 					// フォロワーごとの直列 await は N+1 になるため、
-					// ミュート集合はループ前に並列で一括取得しておく
+					// ミュート集合はループ前に一括取得しておく。
+					// キャッシュミス時に 1 投稿で大量の DB/Redis クエリが
+					// 一気に走らないよう、ある程度のバッチサイズに区切る
+					const MUTE_PREFETCH_BATCH_SIZE = 100;
 					const renoteMutingSets = new Map<string, Set<string>>();
 					const quoteMutingSets = new Map<string, Set<string>>();
 					if (isPureRenote || isQuote) {
-						await Promise.all(followings.map(async following => {
-							if (isPureRenote) {
-								renoteMutingSets.set(following.followerId, await this.cacheService.renoteMutingsCache.fetch(following.followerId));
-							}
-							if (isQuote) {
-								quoteMutingSets.set(following.followerId, await this.cacheService.quoteMutingsCache.fetch(following.followerId));
-							}
-						}));
+						for (let i = 0; i < followings.length; i += MUTE_PREFETCH_BATCH_SIZE) {
+							const batch = followings.slice(i, i + MUTE_PREFETCH_BATCH_SIZE);
+							await Promise.all(batch.map(async following => {
+								if (isPureRenote) {
+									renoteMutingSets.set(following.followerId, await this.cacheService.renoteMutingsCache.fetch(following.followerId));
+								}
+								if (isQuote) {
+									quoteMutingSets.set(following.followerId, await this.cacheService.quoteMutingsCache.fetch(following.followerId));
+								}
+							}));
+						}
 					}
 
 					for (const following of followings) {

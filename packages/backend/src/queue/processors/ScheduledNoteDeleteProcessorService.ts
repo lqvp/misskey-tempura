@@ -67,8 +67,9 @@ export class ScheduledNoteDeleteProcessorService {
 				for (const file of files) {
 					// 他のノートから参照されているファイル(投稿後に別ノートへ再添付されたものなど)は
 					// 削除するとそのノートから失われるためスキップする
+					// @> 述語は GIN インデックス (array_ops) で利用できる形式にする
 					const referencedCount = await this.notesRepository.createQueryBuilder('note')
-						.where(':fileId = ANY(note.fileIds)', { fileId: file.id })
+						.where('note.fileIds @> ARRAY[:fileId]::character varying[]', { fileId: file.id })
 						.getCount();
 					if (referencedCount > 0) {
 						this.logger.info(`Skipped deleting file ${file.id}: referenced by ${referencedCount} other note(s)`);
