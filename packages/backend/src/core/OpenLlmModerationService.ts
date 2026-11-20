@@ -20,9 +20,18 @@ type ModerationInput = {
 const DEFAULT_OPEN_LLM_MODERATION_API_URL = 'https://api.openai.com/v1/moderations';
 const DEFAULT_OPEN_LLM_MODERATION_MODEL = 'omni-moderation-latest';
 
+// モデレーション API の並列数上限。API のレイテンシが高いときに
+// リクエストとメモリが際限なく積まれるのを防ぐ(fire-and-forget 呼び出しのため)
+const MAX_CONCURRENT_MODERATION_REQUESTS = 16;
+// 待機中のリクエスト数上限。超過分はスキップしてログに残す
+const MAX_QUEUED_MODERATION_REQUESTS = 100;
+
 @Injectable()
 export class OpenLlmModerationService {
 	private logger;
+
+	private activeRequests = 0;
+	private queuedRequests = 0;
 
 	constructor(
 		@Inject(DI.meta)
@@ -37,6 +46,33 @@ export class OpenLlmModerationService {
 
 	@bindThis
 	public async moderateNote(note: MiNote, input: ModerationInput): Promise<void> {
+		if (!this.meta.openLlmModerationEnabled) return;
+		if (!this.meta.openLlmModerationApiKey) return;
+
+		// 並行数・待機数の上限でバックプレッシャーをかける
+		if (this.activeRequests >= MAX_CONCURRENT_MODERATION_REQUESTS) {
+			if (this.queuedRequests >= MAX_QUEUED_MODERATION_REQUESTS) {
+				this.logger.warn(`Skipping LLM moderation for note ${note.id}: too many pending moderation requests`);
+				return;
+			}
+			this.queuedRequests++;
+			try {
+				while (this.activeRequests >= MAX_CONCURRENT_MODERATION_REQUESTS) {
+					await new Promise(resolve => setTimeout(resolve, 250));
+				}
+			} finally {
+				this.queuedRequests--;
+			}
+		}
+		this.activeRequests++;
+		try {
+			await this.performModeration(note, input);
+		} finally {
+			this.activeRequests--;
+		}
+	}
+
+	private async performModeration(note: MiNote, input: ModerationInput): Promise<void> {
 		if (!this.meta.openLlmModerationEnabled) return;
 		if (!this.meta.openLlmModerationApiKey) return;
 
