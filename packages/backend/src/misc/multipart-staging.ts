@@ -73,7 +73,7 @@ export async function resolveMultipartStagingDirAsync(dataDir: string, uploadId:
 	return dir;
 }
 
-async function pathExists(path: string): Promise<boolean> {
+export async function pathExists(path: string): Promise<boolean> {
 	try {
 		await fs.promises.access(path);
 		return true;

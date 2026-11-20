@@ -17,17 +17,7 @@ import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.j
 import { DriveService } from '@/core/DriveService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { ApiError } from '../../../error.js';
-import { getLegacyMultipartStagingDir, getMultipartStagingDir, resolveMultipartStagingDirAsync } from '@/misc/multipart-staging.js';
-
-// リクエスト処理中のイベントループのブロッキングを避けるため、fs の同期 API は使わない
-async function pathExists(path: string): Promise<boolean> {
-	try {
-		await fs.promises.access(path);
-		return true;
-	} catch {
-		return false;
-	}
-}
+import { getLegacyMultipartStagingDir, getMultipartStagingDir, resolveMultipartStagingDirAsync, pathExists } from '@/misc/multipart-staging.js';
 
 export const meta = {
 	tags: ['drive'],

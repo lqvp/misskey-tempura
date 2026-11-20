@@ -12,6 +12,7 @@ import type { Config } from '@/config.js';
 import Logger from '@/logger.js';
 import type { MultipartUploadsRepository } from '@/models/_.js';
 import {
+	pathExists,
 	getLegacyMultipartStagingDir,
 	getMultipartStagingDir,
 	getMultipartStagingRoot,
@@ -148,15 +149,5 @@ export class CleanExpiredMultipartUploadsProcessorService {
 			}
 		}
 		return out;
-	}
-}
-
-// リクエスト処理中のイベントループのブロッキングを避けるため、fs の同期 API は使わない
-async function pathExists(path: string): Promise<boolean> {
-	try {
-		await fs.promises.access(path);
-		return true;
-	} catch {
-		return false;
 	}
 }
