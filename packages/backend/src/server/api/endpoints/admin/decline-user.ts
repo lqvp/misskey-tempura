@@ -4,12 +4,16 @@
  */
 
 import { Inject, Injectable } from "@nestjs/common";
+import * as Redis from 'ioredis';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import type { UsedUsernamesRepository, UserProfilesRepository, UsersRepository } from '@/models/_.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { DI } from '@/di-symbols.js';
 import { EmailService } from '@/core/EmailService.js';
 import { DeleteAccountService } from '@/core/DeleteAccountService.js';
+import { LoggerService } from '@/core/LoggerService.js';
+import type Logger from '@/logger.js';
+import { acquireDistributedLock } from '@/misc/distributed-lock.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -31,7 +35,11 @@ export const paramDef = {
 
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
+	private logger: Logger;
 	constructor(
+		@Inject(DI.redis)
+		private redisClient: Redis.Redis,
+
 		@Inject(DI.usersRepository)
 		private usersRepository: UsersRepository,
 
@@ -44,8 +52,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private moderationLogService: ModerationLogService,
 		private emailService: EmailService,
 		private deleteAccountService: DeleteAccountService,
+		private loggerService: LoggerService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
+			// approve-user との競合(TOCTOU)を防ぐため、ユーザー単位の分散ロックで直列化する
+			const unlock = await acquireDistributedLock(this.redisClient, `account-approval:${ps.userId}`, 30 * 1000, 100, 100);
+			try {
 			const user = await this.usersRepository.findOneBy({ id: ps.userId });
 
 			if (user == null || user.isDeleted) {
@@ -65,14 +77,19 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			const reason = ps.reason?.trim();
 
 			if (profile?.email) {
-				if (!reason) {
-					await this.emailService.sendEmail(profile.email, 'Account declined',
-						'Your Account has been declined!',
-						'Your Account has been declined!');
-				} else {
-					await this.emailService.sendEmail(profile.email, 'Account declined',
-						`Your account has been declined due to: ${reason}`,
-						`Your account has been declined due to: ${reason}`);
+				// 削除自体はメール送信に依存させない(失敗時はログに残す)
+				try {
+					if (!reason) {
+						await this.emailService.sendEmail(profile.email, 'Account declined',
+							'Your Account has been declined!',
+							'Your Account has been declined!');
+					} else {
+						await this.emailService.sendEmail(profile.email, 'Account declined',
+							`Your account has been declined due to: ${reason}`,
+							`Your account has been declined due to: ${reason}`);
+					}
+				} catch (err) {
+					this.logger.warn(`Failed to send decline email for ${user.id}`, { error: err });
 				}
 			}
 
@@ -87,6 +104,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				// userHost: user.host,
 				reason: log_reason,
 			});
+			} finally {
+				await unlock();
+			}
 		});
+		this.logger = this.loggerService.getLogger('admin-decline-user');
 	}
 }
