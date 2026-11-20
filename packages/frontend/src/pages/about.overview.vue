@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 	<MkKeyValue>
 		<template #key>{{ i18n.ts.description }}</template>
-		<template #value><div v-html="sanitizeInstanceHtml(instance.description)"></div></template>
+		<template #value><div v-html="instance.description"></div></template>
 	</MkKeyValue>
 
 	<FormSection>
@@ -25,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<template #key>Misskey</template>
 				<template #value>{{ version }}</template>
 			</MkKeyValue>
-			<div v-html="sanitizeInstanceHtml(i18n.tsx.poweredBytempForkDescription({ name: instance.name ?? host }))">
+			<div v-html="i18n.tsx.poweredBytempForkDescription({ name: instance.name ?? host })">
 			</div>
 			<FormLink to="/about-misskey">
 				<template #icon><i class="ti ti-info-circle"></i></template>
@@ -80,7 +80,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #label>{{ i18n.ts.serverRules }}</template>
 					<ol class="_gaps_s" :class="$style.rules">
 						<li v-for="item in instance.serverRules" :key="item" :class="$style.rule">
-							<div :class="$style.ruleText" v-html="sanitizeInstanceHtml(item)"></div>
+							<div :class="$style.ruleText" v-html="item"></div>
 						</li>
 					</ol>
 				</MkFolder>
@@ -135,7 +135,6 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { host, version } from '@@/js/config.js';
 import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
-import { sanitizeInstanceHtml } from '@/utility/sanitize-instance-html.js';
 import number from '@/filters/number.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { $i } from '@/i.js';
