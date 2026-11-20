@@ -17073,14 +17073,6 @@ export interface Locale extends ILocale {
          */
         "addExcludeWord": string;
         /**
-         * 開始日時
-         */
-        "sinceDate": string;
-        /**
-         * 終了日時
-         */
-        "untilDate": string;
-        /**
          * 検索の使い方:
          */
         "usageTitle": string;
