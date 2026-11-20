@@ -97,7 +97,7 @@ export class DownloadService {
 				try {
 					const parsed = parse(contentDisposition);
 					if (parsed.parameters.filename) {
-						filename = parsed.parameters.filename;
+						filename = this.sanitizeFilename(parsed.parameters.filename);
 					}
 				} catch (e) {
 					this.logger.warn(`Failed to parse content-disposition: ${contentDisposition}`, { stack: e });
@@ -144,5 +144,13 @@ export class DownloadService {
 		} finally {
 			cleanup();
 		}
+	}
+
+	// リモートの Content-Disposition 由来のファイル名からパス区切りや制御文字を除く
+	@bindThis
+	private sanitizeFilename(name: string): string {
+		const sanitized = name.replace(/[\\/\0\r\n]/g, '').trim();
+		if (sanitized === '' || sanitized === '.' || sanitized === '..') return 'untitled';
+		return sanitized.slice(0, 255);
 	}
 }

@@ -44,7 +44,7 @@ class HttpRequestServiceAgent extends http.Agent {
 		}
 
 		socket.on('connect', () => {
-			if (socket instanceof net.Socket && process.env.NODE_ENV === 'production') {
+			if (socket instanceof net.Socket) {
 				const address = socket.remoteAddress;
 				if (address && ipaddr.isValid(address)) {
 					if (this.isPrivateIp(address)) {
@@ -89,7 +89,7 @@ class HttpsRequestServiceAgent extends https.Agent {
 		}
 
 		socket.on('connect', () => {
-			if (socket instanceof net.Socket && process.env.NODE_ENV === 'production') {
+			if (socket instanceof net.Socket) {
 				const address = socket.remoteAddress;
 				if (address && ipaddr.isValid(address)) {
 					if (this.isPrivateIp(address)) {
