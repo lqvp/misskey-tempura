@@ -151,8 +151,7 @@ export async function masterMain() {
 		} else if (envOption.onlyQueue) {
 			await jobQueue();
 		} else {
-			await server();
-			await jobQueue();
+			await server({ withQueue: true });
 		}
 	}
 

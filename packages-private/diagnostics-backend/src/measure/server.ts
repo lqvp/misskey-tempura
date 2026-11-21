@@ -5,6 +5,7 @@
 
 import { fork, type ChildProcess } from 'node:child_process';
 import { join } from 'node:path';
+import { readBooleanEnv } from 'diagnostics-shared/env';
 import { bytesToKiB } from './proc';
 
 type GcMessage = 'gc ok' | 'gc unavailable';
@@ -87,6 +88,7 @@ export function waitForMessage<T>(serverProcess: ChildProcess, predicate: (messa
 
 /**
  * ビルド済みバックエンドを子プロセスとして起動する。
+ * MK_MEMORY_INCLUDE_QUEUE=1 の場合は同一プロセスでキューも起動する。
  * execArgv は親から引き継がず `--expose-gc` のみを渡す: 親は tsx 経由で動くため、
  * 引き継ぐと計測対象プロセスにTSローダーが載ってしまいメモリ量が歪む。
  */
@@ -97,7 +99,8 @@ export function forkBackendServer(backendDir: string) {
 			...process.env,
 			NODE_ENV: 'production',
 			MK_DISABLE_CLUSTERING: '1',
-			MK_ONLY_SERVER: '1',
+			MK_ONLY_SERVER: readBooleanEnv('MK_MEMORY_INCLUDE_QUEUE', false) ? undefined : '1',
+			MK_ONLY_QUEUE: undefined,
 			MK_NO_DAEMONS: '1',
 		},
 		stdio: ['pipe', 'pipe', 'pipe', 'ipc'],

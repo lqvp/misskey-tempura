@@ -21,16 +21,24 @@ export function initExtraThreadPool(config: Config) {
 	slaccInitialized = true;
 }
 
-export async function server() {
+export async function server({ withQueue = false } = {}) {
 	const { MainModule } = await import('../MainModule.js');
 	const { ServerService } = await import('../server/ServerService.js');
+	const rootModule = withQueue
+		? { module: MainModule, imports: [(await import('../queue/QueueProcessorModule.js')).QueueProcessorModule] }
+		: MainModule;
 
-	const app = await NestFactory.createApplicationContext(MainModule, {
+	const app = await NestFactory.createApplicationContext(rootModule, {
 		logger: new NestLogger(),
 	});
 
 	const serverService = app.get(ServerService);
 	await serverService.launch();
+
+	if (withQueue) {
+		const { QueueProcessorService } = await import('../queue/QueueProcessorService.js');
+		void app.get(QueueProcessorService).start();
+	}
 
 	if (process.env.NODE_ENV !== 'test' && !envOption.noDaemons) {
 		const { ChartManagementService } = await import('../core/chart/ChartManagementService.js');

@@ -375,6 +375,9 @@ id: 'aidx'
 # Number of worker processes
 #clusterLimit: 1
 #clusterOverClock: false
+# For a small instance, set MK_DISABLE_CLUSTERING=1 in the process environment
+# to run the API server and queue workers in one process and share caches and
+# connection pools. Queue work then shares the API's event loop.
 
 # Number of threads of extra thread pool for CPU-intensive tasks (per worker)
 #threadPoolSize: 1
