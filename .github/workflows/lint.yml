@@ -136,5 +136,5 @@ jobs:
         node-version-file: '.node-version'
         cache: 'pnpm'
     - run: pnpm i --frozen-lockfile
-    - run: node --test scripts/check-dts.test.mjs
+    - run: node --test scripts/check-dts.test.mjs scripts/lib/node-options.test.mjs
     - run: pnpm check-dts

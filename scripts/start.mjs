@@ -13,6 +13,7 @@ import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { isAbsolute, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { withDefaultSemiSpaceSize } from '../packages/backend/lib/startup/node-options.ts';
 
 const originalCwd = process.cwd();
 const backendDir = resolve(import.meta.dirname, '../packages/backend');
@@ -123,6 +124,11 @@ function resolveNodeOptions(nodeOptions) {
 if (process.env.NODE_OPTIONS) {
 	process.env.NODE_OPTIONS = resolveNodeOptions(process.env.NODE_OPTIONS);
 }
+
+// 利用者が明示していないときだけ、若い世代のサイズに上限を付ける。
+// このスクリプト自身はすでに既定のサイズで起動しているので、起動引数に後から足しても間に合わない。
+// 本体プロセスの V8 がこの上限で開始するよう NODE_OPTIONS に足す (上の解決処理を通した後の文字列に継ぎ足す)
+process.env.NODE_OPTIONS = withDefaultSemiSpaceSize(process.env.NODE_OPTIONS ?? '', process.execArgv);
 
 /**
  * 停止シグナルを子プロセスへ転送する
