@@ -5,7 +5,7 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import { IsNull, MoreThan, Not } from 'typeorm';
-import { ListObjectsCommandInput } from '@aws-sdk/client-s3';
+import type { ListObjectsCommandInput } from '@aws-sdk/client-s3';
 import { DI } from '@/di-symbols.js';
 import type { MiDriveFile, DriveFilesRepository, UsersRepository } from '@/models/_.js';
 import type Logger from '@/logger.js';
