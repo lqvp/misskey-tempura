@@ -13,7 +13,7 @@ import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { isAbsolute, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { withDefaultSemiSpaceSize } from './lib/node-options.mjs';
+import { withDefaultSemiSpaceSize } from '../packages/backend/lib/startup/node-options.ts';
 
 const originalCwd = process.cwd();
 const backendDir = resolve(import.meta.dirname, '../packages/backend');

@@ -4,7 +4,7 @@
  */
 
 /**
- * 起動スクリプト (scripts/start.mjs) が本体プロセスに渡す Node.js オプションを組み立てる処理
+ * 起動スクリプトが本体プロセスに渡す Node.js オプションを組み立てる処理
  */
 
 /**
@@ -19,11 +19,11 @@ export const defaultSemiSpaceSizeMiB = 4;
 // --min-semi-space-size は NODE_OPTIONS では受け付けられず、起動引数でしか渡せません。
 const semiSpaceOptions = ['--max-semi-space-size', '--min-semi-space-size'];
 
-function normalizeFlagSpelling(flag) {
+function normalizeFlagSpelling(flag: string): string {
 	return flag.replaceAll('_', '-');
 }
 
-function containsSemiSpaceOption(flags) {
+function containsSemiSpaceOption(flags: string[]): boolean {
 	return flags
 		.map(normalizeFlagSpelling)
 		.some((flag) => semiSpaceOptions.some((name) => flag === name || flag.startsWith(`${name}=`)));
@@ -31,20 +31,20 @@ function containsSemiSpaceOption(flags) {
 
 /**
  * NODE_OPTIONS か起動引数で semi-space が指定されているかを調べます
- * @param {string} nodeOptions
- * @param {string[]} argv
+ * @param nodeOptions 元の NODE_OPTIONS
+ * @param argv 起動引数
  */
-export function hasUserSemiSpaceSetting(nodeOptions, argv) {
+export function hasUserSemiSpaceSetting(nodeOptions: string, argv: string[]): boolean {
 	return containsSemiSpaceOption(nodeOptions.split(/\s+/)) || containsSemiSpaceOption(argv);
 }
 
 /**
  * 利用者が明示していないときだけ、上限を足した NODE_OPTIONS を返します
- * @param {string} nodeOptions 元の NODE_OPTIONS
- * @param {string[]} argv 起動引数
- * @param {number} semiSpaceSizeMiB
+ * @param nodeOptions 元の NODE_OPTIONS
+ * @param argv 起動引数
+ * @param semiSpaceSizeMiB 上限とする半区画サイズ
  */
-export function withDefaultSemiSpaceSize(nodeOptions, argv, semiSpaceSizeMiB = defaultSemiSpaceSizeMiB) {
+export function withDefaultSemiSpaceSize(nodeOptions: string, argv: string[], semiSpaceSizeMiB = defaultSemiSpaceSizeMiB): string {
 	if (hasUserSemiSpaceSetting(nodeOptions, argv)) return nodeOptions;
 
 	const semiSpaceOption = `--max-semi-space-size=${semiSpaceSizeMiB}`;
