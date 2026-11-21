@@ -13,7 +13,7 @@
  * リクエストを受けると、負荷時の Pss がこれだけで 200 MiB 以上増えました。ここで上限を付けても
  * ピーク時のレイテンシは悪化しなかったため、上限だけを絞ります。
  */
-export const defaultSemiSpaceSizeMiB = 1;
+export const defaultSemiSpaceSizeMiB = 4;
 
 // V8 のフラグはハイフン区切りとアンダースコア区切りのどちらでも書けるため、表記を揃えてから探します。
 // --min-semi-space-size は NODE_OPTIONS では受け付けられず、起動引数でしか渡せません。
