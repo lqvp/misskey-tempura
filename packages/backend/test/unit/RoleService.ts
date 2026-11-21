@@ -237,6 +237,34 @@ describe('RoleService', () => {
 			expect(result.canManageCustomEmojis).toBe(false);
 		});
 
+		test('sub-account policies default to disabled', async () => {
+			const user = await createUser();
+			meta.policies = {};
+
+			const result = await roleService.getUserPolicies(user.id);
+
+			expect(result.canCreateSubAccount).toBe(false);
+			expect(result.subAccountLimit).toBe(0);
+		});
+
+		test('sub-account policies can be granted by role', async () => {
+			const user = await createUser();
+			const role = await createRole({
+				name: 'sub',
+				policies: {
+					canCreateSubAccount: { useDefault: false, priority: 0, value: true },
+					subAccountLimit: { useDefault: false, priority: 0, value: 3 },
+				},
+			});
+			await roleService.assign(user.id, role.id);
+			meta.policies = {};
+
+			const result = await roleService.getUserPolicies(user.id);
+
+			expect(result.canCreateSubAccount).toBe(true);
+			expect(result.subAccountLimit).toBe(3);
+		});
+
 		test('instance default policies 2', async () => {
 			const user = await createUser();
 			meta.policies = {

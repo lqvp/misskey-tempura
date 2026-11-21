@@ -29,6 +29,8 @@ export const meta = {
 			},
 		},
 	},
+
+	denyForSubAccount: true,
 } as const;
 
 export const paramDef = {

@@ -5,11 +5,13 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import { Not, IsNull } from 'typeorm';
-import type { FollowingsRepository, MiMeta, MiUser, UsersRepository } from '@/models/_.js';
+import { MiUser } from '@/models/_.js';
+import type { FollowingsRepository, MiMeta, UsersRepository } from '@/models/_.js';
 import { QueueService } from '@/core/QueueService.js';
 import { DI } from '@/di-symbols.js';
 import { bindThis } from '@/decorators.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
+import { SubAccountService } from '@/core/SubAccountService.js';
 import { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { ApRendererService } from '@/core/activitypub/ApRendererService.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
@@ -33,6 +35,7 @@ export class DeleteAccountService {
 		private globalEventService: GlobalEventService,
 		private moderationLogService: ModerationLogService,
 		private systemAccountService: SystemAccountService,
+		private subAccountService: SubAccountService,
 	) {
 	}
 
@@ -40,10 +43,31 @@ export class DeleteAccountService {
 	public async deleteAccount(user: {
 		id: string;
 		host: string | null;
-	}, moderator?: MiUser): Promise<void> {
+	}, moderator?: MiUser, opts: { viaParent?: boolean } = {}): Promise<void> {
 		if (this.meta.rootUserId === user.id) throw new Error('cannot delete a root account');
 
 		const _user = await this.usersRepository.findOneByOrFail({ id: user.id });
+
+		// A main account takes its sub-accounts with it. The main account is marked first (blocks new sub-accounts),
+		// then every sub-account is revoked and marked; the main account's delete job removes the sub-accounts
+		// before its own row (the FK is ON DELETE RESTRICT).
+		if (_user.parentUserId == null && opts.viaParent !== true) {
+			// Mark the main account under the same per-parent lock sub-account creation takes, even with zero sub-accounts,
+			// so a creation racing with this deletion either finishes before the list below or is refused.
+			const subs = await this.usersRepository.manager.transaction(async em => {
+				await em.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`subaccount:parent:${_user.id}`]);
+				const found = await em.findBy(MiUser, { parentUserId: _user.id });
+				if (user.host === null && !_user.username.includes('.')) await em.update(MiUser, { id: _user.id }, { isDeleted: true });
+				return found;
+			});
+			if (subs.length > 0) {
+				this.globalEventService.publishInternalEvent('userChangeDeletedState', { id: _user.id, isDeleted: true });
+				await this.subAccountService.invalidateSubAccountTokens(_user.id);
+				for (const sub of subs) {
+					await this.deleteAccount({ id: sub.id, host: sub.host }, moderator, { viaParent: true });
+				}
+			}
+		}
 
 		if (user.host === null && _user.username.includes('.')) {
 			throw new Error('cannot delete a system account');
@@ -74,9 +98,11 @@ export class DeleteAccountService {
 				this.queueService.deliver(user, content, inbox, true);
 			}
 
-			this.queueService.createDeleteAccountJob(user, {
-				soft: false,
-			});
+			if (opts.viaParent !== true) {
+				this.queueService.createDeleteAccountJob(user, {
+					soft: false,
+				});
+			}
 		} else {
 			// リモートユーザーの削除は、完全にDBから物理削除してしまうと再度連合してきてアカウントが復活する可能性があるため、soft指定する
 			this.queueService.createDeleteAccountJob(user, {

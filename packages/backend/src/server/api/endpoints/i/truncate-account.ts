@@ -15,6 +15,8 @@ export const meta = {
 	requireCredential: true,
 	secure: true,
 	requiredRolePolicy: 'canUseTruncate',
+
+	denyForSubAccount: true,
 } as const;
 
 export const paramDef = {

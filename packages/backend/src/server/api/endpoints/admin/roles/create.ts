@@ -20,6 +20,8 @@ export const meta = {
 		optional: false, nullable: false,
 		ref: 'Role',
 	},
+
+	protectFamilyRule: 'role-definition',
 } as const;
 
 export const paramDef = {

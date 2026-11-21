@@ -70,6 +70,8 @@ export const meta = {
 	res: {
 		type: 'object',
 	},
+
+	denyForSubAccount: true,
 } as const;
 
 export const paramDef = {

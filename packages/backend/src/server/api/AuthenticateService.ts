@@ -54,6 +54,11 @@ export class AuthenticateService implements OnApplicationShutdown {
 				throw new AuthenticationError('user not found');
 			}
 
+			// a sub-account that is being deleted must not be usable (ordinary accounts keep their current behavior)
+			if (user.parentUserId != null && user.isDeleted) {
+				throw new AuthenticationError('user not found');
+			}
+
 			return [user, null];
 		} else {
 			const accessToken = await this.accessTokensRepository.findOne({
@@ -76,6 +81,10 @@ export class AuthenticateService implements OnApplicationShutdown {
 				() => this.usersRepository.findOneBy({
 					id: accessToken.userId,
 				}) as Promise<MiLocalUser>);
+
+			if (user?.parentUserId != null && user.isDeleted) {
+				throw new AuthenticationError('user not found');
+			}
 
 			if (accessToken.appId) {
 				const app = await this.appCache.fetch(accessToken.appId,

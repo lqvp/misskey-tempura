@@ -55,6 +55,8 @@ export const meta = {
 			httpStatusCode: 500,
 		},
 	},
+
+	denyForSubAccount: true,
 } as const;
 
 export const paramDef = {

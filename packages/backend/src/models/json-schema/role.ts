@@ -326,6 +326,14 @@ export const packedRolePoliciesSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
+		canCreateSubAccount: {
+			type: 'boolean',
+			optional: false, nullable: false,
+		},
+		subAccountLimit: {
+			type: 'integer',
+			optional: false, nullable: false,
+		},
 		chatAvailability: {
 			type: 'string',
 			optional: false, nullable: false,

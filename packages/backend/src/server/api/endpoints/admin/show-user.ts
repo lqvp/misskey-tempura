@@ -11,6 +11,7 @@ import { RoleService } from '@/core/RoleService.js';
 import { RoleEntityService } from '@/core/entities/RoleEntityService.js';
 import { IdService } from '@/core/IdService.js';
 import { notificationRecieveConfig } from '@/models/json-schema/user.js';
+import { UserEntityService } from '@/core/entities/UserEntityService.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -231,8 +232,29 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			// admin-only: shown regardless of the user's own show/hide settings for the main/sub relation
+			subAccountRole: {
+				type: 'string',
+				enum: ['main', 'sub'],
+				optional: false, nullable: true,
+			},
+			mainAccount: {
+				type: 'object',
+				optional: false, nullable: true,
+				ref: 'UserLite',
+			},
+			subAccounts: {
+				type: 'array',
+				optional: false, nullable: false,
+				items: {
+					type: 'object',
+					optional: false, nullable: false,
+					ref: 'UserLite',
+				},
+			},
 		},
 	},
+
 } as const;
 
 export const paramDef = {
@@ -258,6 +280,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private roleService: RoleService,
 		private roleEntityService: RoleEntityService,
 		private idService: IdService,
+		private userEntityService: UserEntityService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const [user, profile] = await Promise.all([
@@ -283,7 +306,17 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			const roleAssigns = await this.roleService.getUserAssigns(user.id);
 			const roles = await this.roleService.getUserRoles(user.id);
 
+			const parent = user.host == null && user.parentUserId != null
+				? await this.usersRepository.findOneBy({ id: user.parentUserId, isDeleted: false })
+				: null;
+			const subs = user.host == null && user.parentUserId == null
+				? await this.usersRepository.find({ where: { parentUserId: user.id, isDeleted: false }, order: { id: 'ASC' } })
+				: [];
+
 			return {
+				subAccountRole: user.host != null ? null : user.parentUserId != null ? 'sub' as const : subs.length > 0 ? 'main' as const : null,
+				mainAccount: parent ? await this.userEntityService.pack(parent, me, { schema: 'UserLite' }) : null,
+				subAccounts: await this.userEntityService.packMany(subs, me, { schema: 'UserLite' }),
 				email: profile.email,
 				emailVerified: profile.emailVerified,
 				followedMessage: profile.followedMessage,

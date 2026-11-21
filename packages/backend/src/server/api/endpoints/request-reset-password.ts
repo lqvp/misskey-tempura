@@ -69,6 +69,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				return;
 			}
 
+			// sub-accounts have no email or password of their own
+			if (user.parentUserId != null) {
+				return;
+			}
+
 			const profile = await this.userProfilesRepository.findOneByOrFail({ userId: user.id });
 
 			// 合致するメアドが登録されていなかったら無視

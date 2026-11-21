@@ -6,11 +6,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { DI } from '@/di-symbols.js';
 import type { MiRegistryItem, RegistryItemsRepository } from '@/models/_.js';
+import { MiRegistryItem as MiRegistryItemEntity } from '@/models/RegistryItem.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import type { MiUser } from '@/models/User.js';
 import { IdService } from '@/core/IdService.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { bindThis } from '@/decorators.js';
+import type { EntityManager, Repository } from 'typeorm';
 
 @Injectable()
 export class RegistryApiService {
@@ -23,11 +25,67 @@ export class RegistryApiService {
 	) {
 	}
 
+	/**
+	 * Write several items of one user in a single transaction. `beforeWrite` runs first inside the same transaction,
+	 * so a failure anywhere (including a process stop) leaves nothing behind. Events are published only after commit.
+	 */
 	@bindThis
-	public async set(userId: MiUser['id'], domain: string | null, scope: string[], key: string, value: any) {
+	public async setManyAtomically(userId: MiUser['id'], items: { scope: string[]; key: string; value: any }[], beforeWrite?: (em: EntityManager) => Promise<void>) {
+		const written: { scope: string[]; key: string; value: any }[] = [];
+		await this.registryItemsRepository.manager.transaction(async em => {
+			await this.lockSubRegistry(em, userId);
+			if (beforeWrite) await beforeWrite(em);
+			const repo = em.getRepository(MiRegistryItemEntity);
+			for (const item of items) {
+				const existing = await repo.createQueryBuilder('item')
+					.where('item.domain IS NULL AND item.userId = :userId AND item.key = :key AND item.scope = :scope', { userId, key: item.key, scope: item.scope })
+					.getOne();
+				// An existing row is the account's own (newer) value: the initial copy never overwrites it
+				if (existing) continue;
+				await repo.insert({ id: this.idService.gen(), updatedAt: new Date(), userId, domain: null, scope: item.scope, key: item.key, value: item.value });
+				written.push(item);
+			}
+		});
+		for (const item of written) {
+			this.globalEventService.publishMainStream(userId, 'registryUpdated', { scope: item.scope, key: item.key, value: item.value });
+		}
+	}
+
+	/**
+	 * Sub-accounts only: serialize every registry write of one sub-account (the initial copy and its own set; remove only deletes rows, so it needs no lock)
+	 * with a transaction-level advisory lock, so the same key cannot be inserted twice by racing writers.
+	 */
+	@bindThis
+	private async lockSubRegistry(em: EntityManager, userId: MiUser['id']): Promise<void> {
+		await em.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`subaccount:registry:${userId}`]);
+	}
+
+	@bindThis
+	public async set(userId: MiUser['id'], domain: string | null, scope: string[], key: string, value: any, serializeSubAccountWrites = false) {
+		if (serializeSubAccountWrites) {
+			await this.registryItemsRepository.manager.transaction(async em => {
+				await this.lockSubRegistry(em, userId);
+				await this.setWith(em.getRepository(MiRegistryItemEntity), userId, domain, scope, key, value);
+			});
+		} else {
+			await this.setWith(this.registryItemsRepository, userId, domain, scope, key, value);
+		}
+
+		if (domain == null) {
+			// TODO: サードパーティアプリが傍受出来てしまうのでどうにかする
+			this.globalEventService.publishMainStream(userId, 'registryUpdated', {
+				scope: scope,
+				key: key,
+				value: value,
+			});
+		}
+	}
+
+	@bindThis
+	private async setWith(repo: Repository<MiRegistryItemEntity>, userId: MiUser['id'], domain: string | null, scope: string[], key: string, value: any) {
 		// TODO: 作成できるキーの数を制限する
 
-		const query = this.registryItemsRepository.createQueryBuilder('item');
+		const query = repo.createQueryBuilder('item');
 		if (domain) {
 			query.where('item.domain = :domain', { domain: domain });
 		} else {
@@ -40,25 +98,16 @@ export class RegistryApiService {
 		const existingItem = await query.getOne();
 
 		if (existingItem) {
-			await this.registryItemsRepository.update(existingItem.id, {
+			await repo.update(existingItem.id, {
 				updatedAt: new Date(),
 				value: value,
 			});
 		} else {
-			await this.registryItemsRepository.insert({
+			await repo.insert({
 				id: this.idService.gen(),
 				updatedAt: new Date(),
 				userId: userId,
 				domain: domain,
-				scope: scope,
-				key: key,
-				value: value,
-			});
-		}
-
-		if (domain == null) {
-			// TODO: サードパーティアプリが傍受出来てしまうのでどうにかする
-			this.globalEventService.publishMainStream(userId, 'registryUpdated', {
 				scope: scope,
 				key: key,
 				value: value,

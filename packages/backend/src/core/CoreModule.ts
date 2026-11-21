@@ -59,6 +59,8 @@ import { ReactionStatsCacheService } from './ReactionStatsCacheService.js';
 import { ReactionsBufferingService } from './ReactionsBufferingService.js';
 import { RelayService } from './RelayService.js';
 import { RoleService } from './RoleService.js';
+import { FamilyGuardService } from './FamilyGuardService.js';
+import { SubAccountService } from './SubAccountService.js';
 import { S3Service } from './S3Service.js';
 import { SignupService } from './SignupService.js';
 import { WebAuthnService } from './WebAuthnService.js';
@@ -220,6 +222,8 @@ const $ReactionStatsCacheService: Provider = { provide: 'ReactionStatsCacheServi
 const $ReactionsBufferingService: Provider = { provide: 'ReactionsBufferingService', useExisting: ReactionsBufferingService };
 const $RelayService: Provider = { provide: 'RelayService', useExisting: RelayService };
 const $RoleService: Provider = { provide: 'RoleService', useExisting: RoleService };
+const $FamilyGuardService: Provider = { provide: 'FamilyGuardService', useExisting: FamilyGuardService };
+const $SubAccountService: Provider = { provide: 'SubAccountService', useExisting: SubAccountService };
 const $S3Service: Provider = { provide: 'S3Service', useExisting: S3Service };
 const $SignupService: Provider = { provide: 'SignupService', useExisting: SignupService };
 const $WebAuthnService: Provider = { provide: 'WebAuthnService', useExisting: WebAuthnService };
@@ -388,6 +392,8 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		ReactionsBufferingService,
 		RelayService,
 		RoleService,
+		FamilyGuardService,
+		SubAccountService,
 		S3Service,
 		SignupService,
 		WebAuthnService,
@@ -554,6 +560,8 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$ReactionsBufferingService,
 		$RelayService,
 		$RoleService,
+		$FamilyGuardService,
+		$SubAccountService,
 		$S3Service,
 		$SignupService,
 		$WebAuthnService,
@@ -720,6 +728,8 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		ReactionsBufferingService,
 		RelayService,
 		RoleService,
+		FamilyGuardService,
+		SubAccountService,
 		S3Service,
 		SignupService,
 		WebAuthnService,
@@ -885,6 +895,8 @@ const $ApQuestionService: Provider = { provide: 'ApQuestionService', useExisting
 		$ReactionsBufferingService,
 		$RelayService,
 		$RoleService,
+		$FamilyGuardService,
+		$SubAccountService,
 		$S3Service,
 		$SignupService,
 		$WebAuthnService,
