@@ -173,8 +173,8 @@ describe('ReactionService', () => {
 				expect(enqueueUserWebhook).toHaveBeenCalledExactlyOnceWith(author, 'reaction', {
 					note: packedNote, user: packedUser, reaction: '👍',
 				});
-				expect(packNote).toHaveBeenCalledWith('note', author, { detail: true });
-				expect(packUser).toHaveBeenCalledWith('reactor', author);
+				expect(packNote).toHaveBeenCalledWith('note', { id: author }, { detail: true });
+				expect(packUser).toHaveBeenCalledWith('reactor', { id: author });
 			} else {
 				expect(enqueueUserWebhook).not.toHaveBeenCalled();
 				expect(packNote).not.toHaveBeenCalled();

@@ -310,8 +310,8 @@ export class ReactionService {
 
 			if (note.userId !== user.id) {
 				this.webhookService.enqueueUserWebhook(note.userId, 'reaction', {
-					note: await this.noteEntityService.pack(note.id, note.userId, { detail: true }),
-					user: await this.userEntityService.pack(user.id, note.userId),
+					note: await this.noteEntityService.pack(note.id, { id: note.userId }, { detail: true }),
+					user: await this.userEntityService.pack(user.id, { id: note.userId }),
 					reaction,
 				});
 			}
