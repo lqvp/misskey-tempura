@@ -5,6 +5,7 @@
 
 import * as fs from 'node:fs';
 import _Ajv from 'ajv';
+import type { ValidateFunction } from 'ajv';
 import type { Schema, SchemaType } from '@/misc/json-schema.js';
 import type { MiLocalUser } from '@/models/User.js';
 import type { MiAccessToken } from '@/models/AccessToken.js';
@@ -18,6 +19,8 @@ const ajv = new Ajv({
 });
 
 ajv.addFormat('misskey:id', /^[a-zA-Z0-9]+$/);
+// Warm up Ajv's shared meta-schema so the first API request only compiles its own schema.
+ajv.validateSchema({});
 
 export type Response = Record<string, any> | void;
 
@@ -35,7 +38,7 @@ export abstract class Endpoint<T extends IEndpointMeta, Ps extends Schema> {
 	public exec: (params: any, user: T['requireCredential'] extends true ? MiLocalUser : MiLocalUser | null, token: MiAccessToken | null, file?: File, ip?: string | null, headers?: Record<string, string> | null) => Promise<any>;
 
 	constructor(meta: T, paramDef: Ps, cb: Executor<T, Ps>) {
-		const validate = ajv.compile(paramDef);
+		let validate: ValidateFunction | undefined;
 
 		this.exec = (params: any, user: T['requireCredential'] extends true ? MiLocalUser : MiLocalUser | null, token: MiAccessToken | null, file?: File, ip?: string | null, headers?: Record<string, string> | null) => {
 			let cleanup: undefined | (() => void) = undefined;
@@ -52,11 +55,12 @@ export abstract class Endpoint<T extends IEndpointMeta, Ps extends Schema> {
 				}));
 			}
 
-			const valid = validate(params);
+			const validator = validate ??= ajv.compile(paramDef);
+			const valid = validator(params);
 			if (!valid) {
 				if (file) cleanup!();
 
-				const errors = validate.errors!;
+				const errors = validator.errors!;
 				const err = new ApiError({
 					message: 'Invalid param.',
 					code: 'INVALID_PARAM',
