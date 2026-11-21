@@ -247,9 +247,14 @@ export class WebhookTestService {
 				send('unfollow', { user: await this.toPackedUserDetailedNotMe(dummyUser3) });
 				break;
 			}
-			// まだ実装されていない (#9485)
-			case 'reaction':
-				return;
+			case 'reaction': {
+				send('reaction', {
+					note: await this.toPackedNote(dummyNote1),
+					user: await this.toPackedUserLite(dummyUser2),
+					reaction: '❤',
+				});
+				break;
+			}
 			default: {
 				const _exhaustiveAssertion: never = params.type;
 				return;

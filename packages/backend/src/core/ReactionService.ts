@@ -14,6 +14,7 @@ import type { MiNoteReaction } from '@/models/NoteReaction.js';
 import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { NotificationService } from '@/core/NotificationService.js';
+import { UserWebhookService } from '@/core/UserWebhookService.js';
 import PerUserReactionsChart from '@/core/chart/charts/per-user-reactions.js';
 import { emojiRegex } from '@/misc/emoji-regex.js';
 import { ApDeliverManagerService } from '@/core/activitypub/ApDeliverManagerService.js';
@@ -104,6 +105,7 @@ export class ReactionService {
 		private apDeliverManagerService: ApDeliverManagerService,
 		private notificationService: NotificationService,
 		private perUserReactionsChart: PerUserReactionsChart,
+		private webhookService: UserWebhookService,
 	) {
 	}
 
@@ -305,6 +307,14 @@ export class ReactionService {
 				noteId: note.id,
 				reaction: reaction,
 			}, user.id);
+
+			if (note.userId !== user.id) {
+				this.webhookService.enqueueUserWebhook(note.userId, 'reaction', {
+					note: await this.noteEntityService.pack(note.id, note.userId, { detail: true }),
+					user: await this.userEntityService.pack(user.id, note.userId),
+					reaction,
+				});
+			}
 		}
 
 		//#region 配信

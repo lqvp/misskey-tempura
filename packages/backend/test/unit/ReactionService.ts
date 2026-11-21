@@ -4,7 +4,7 @@
  */
 
 import * as assert from 'assert';
-import { beforeAll, describe, test, vi } from 'vitest';
+import { beforeAll, describe, expect, test, vi } from 'vitest';
 import { Test } from '@nestjs/testing';
 
 import { CoreModule } from '@/core/CoreModule.js';
@@ -134,6 +134,53 @@ describe('ReactionService', () => {
 	});
 
 	describe('create', () => {
+		test.each([
+			{ host: null, author: 'author', blocked: false, visible: true, insertError: false, sends: true },
+			{ host: 'remote.example', author: 'author', blocked: false, visible: true, insertError: false, sends: false },
+			{ host: null, author: 'reactor', blocked: false, visible: true, insertError: false, sends: false },
+			{ host: null, author: 'author', blocked: true, visible: true, insertError: false, sends: false },
+			{ host: null, author: 'author', blocked: false, visible: false, insertError: false, sends: false },
+			{ host: null, author: 'author', blocked: false, visible: true, insertError: true, sends: false },
+		])('reaction webhook: %j', async ({ host, author, blocked, visible, insertError, sends }) => {
+			const note = { id: 'note', userId: author, userHost: host, localOnly: true, renoteId: null };
+			const packedNote = { id: 'note' };
+			const packedUser = { id: 'reactor' };
+			const enqueueUserWebhook = vi.fn();
+			const packNote = vi.fn().mockResolvedValue(packedNote);
+			const packUser = vi.fn().mockResolvedValue(packedUser);
+			const service = Object.assign(Object.create(ReactionService.prototype), {
+				meta: { enableReactionsBuffering: true },
+				userBlockingService: { checkBlocked: vi.fn().mockResolvedValue(blocked) },
+				noteEntityService: { isVisibleForMe: vi.fn().mockResolvedValue(visible), pack: packNote },
+				userEntityService: { isLocalUser: () => false, pack: packUser },
+				noteReactionsRepository: { insert: insertError ? vi.fn().mockRejectedValue(new Error('insert failed')) : vi.fn() },
+				reactionsBufferingService: { create: vi.fn() },
+				idService: { gen: () => 'reaction', parse: () => ({ date: new Date(0) }) },
+				perUserReactionsChart: { update: vi.fn() },
+				globalEventService: { publishNoteStream: vi.fn() },
+				notificationService: { createNotification: vi.fn() },
+				webhookService: { enqueueUserWebhook },
+			}) as ReactionService;
+
+			const result = service.create({ id: 'reactor', host: null, isBot: false }, note as never, 'like');
+			if (blocked || !visible || insertError) {
+				await expect(result).rejects.toThrow();
+			} else {
+				await result;
+			}
+
+			if (sends) {
+				expect(enqueueUserWebhook).toHaveBeenCalledExactlyOnceWith(author, 'reaction', {
+					note: packedNote, user: packedUser, reaction: '👍',
+				});
+				expect(packNote).toHaveBeenCalledWith('note', author, { detail: true });
+				expect(packUser).toHaveBeenCalledWith('reactor', author);
+			} else {
+				expect(enqueueUserWebhook).not.toHaveBeenCalled();
+				expect(packNote).not.toHaveBeenCalled();
+			}
+		});
+
 		test('ローカル限定カスタム絵文字はリモートノートへのリアクションではハートにフォールバックする', async () => {
 			const inserted: Array<{ reaction: string }> = [];
 			const service = new ReactionService(
@@ -192,6 +239,7 @@ describe('ReactionService', () => {
 				} as never,
 				{ createNotification: vi.fn() } as never,
 				{ update: vi.fn() } as never,
+				{ enqueueUserWebhook: vi.fn() } as never,
 			);
 
 			await service.create(

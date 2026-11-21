@@ -123,6 +123,21 @@ describe('WebhookTestService', () => {
 	// --------------------------------------------------------------------------------------
 
 	describe('testUserWebhook', () => {
+		test('reaction', async () => {
+			await service.testUserWebhook({ webhookId: 'dummy-webhook', type: 'reaction' }, alice);
+
+			expect(queueService.userWebhookDeliver).toHaveBeenCalledExactlyOnceWith(
+				expect.objectContaining({ id: 'dummy-webhook' }),
+				'reaction',
+				{
+					note: expect.objectContaining({ id: 'dummy-note-1' }),
+					user: expect.objectContaining({ id: 'dummy-user-2' }),
+					reaction: '❤',
+				},
+				{ attempts: 1 },
+			);
+		});
+
 		test('note', async () => {
 			await service.testUserWebhook({ webhookId: 'dummy-webhook', type: 'note' }, alice);
 
