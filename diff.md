@@ -477,6 +477,11 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * 高度な検索 (AND/OR/除外/日付範囲)
 * copySearchUrl
 
+## サーバー運用
+
+* 起動時に V8 の若い世代 (new space) の半区画サイズを 4 MiB に制限します。既定値では起動直後に 16 MiB を確保したままになり、負荷時の Pss が大きく増えます。
+* `NODE_OPTIONS` または起動引数で `--max-semi-space-size` / `--min-semi-space-size` を明示した場合は、その値が優先されます。
+
 ## 互換性と注意
 
 * HackMD 置き換え時の in-app changelog 問題

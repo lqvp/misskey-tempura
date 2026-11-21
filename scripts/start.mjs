@@ -21,6 +21,34 @@ const require = createRequire(resolve(backendDir, 'package.json'));
 const forwardedSignals = ['SIGTERM', 'SIGHUP'];
 let stopRequested = false;
 
+/**
+ * 若い世代 (new space) の半区画サイズ。既定値は V8 がヒープ上限から決めた値で、
+ * 実測では起動直後に 16 MiB を確保したままリクエストを受けると、負荷時の Pss がこれだけで 200 MiB 以上増える。
+ * ここで上限を付けてもピーク時のレイテンシは悪化しなかったため、既定で絞る。
+ * 環境変数で明示されたときはそちらを優先する。
+ */
+const defaultSemiSpaceSizeMiB = 4;
+const semiSpaceOptions = ['--max-semi-space-size', '--min-semi-space-size'];
+
+/**
+ * NODE_OPTIONS か起動引数で semi-space が指定されていれば、既定値で上書きしない
+ * @param {string} nodeOptions
+ * @param {string[]} argv
+ */
+function hasUserSemiSpaceSetting(nodeOptions, argv) {
+	return semiSpaceOptions.some((name) => nodeOptions.includes(name) || argv.some((arg) => arg === name || arg.startsWith(`${name}=`)));
+}
+
+// 利用者が明示していないときだけ、若い世代のサイズに上限を付ける。
+// 起動フラグを後から足しても、このスクリプト自身がすでに既定サイズで起動しているため間に合わない。
+// 本体プロセスの V8 がこの上限で開始するよう NODE_OPTIONS に足し、後段の解決処理に通す
+if (!hasUserSemiSpaceSetting(process.env.NODE_OPTIONS ?? '', process.execArgv)) {
+	const semiSpaceOption = `--max-semi-space-size=${defaultSemiSpaceSizeMiB}`;
+	process.env.NODE_OPTIONS = process.env.NODE_OPTIONS
+		? `${process.env.NODE_OPTIONS} ${semiSpaceOption}`
+		: semiSpaceOption;
+}
+
 // 端末からの SIGINT は子プロセスにも直接届くので、このプロセスが先に終了しないよう既定の動作は無効にしておく
 process.on('SIGINT', () => {
 	stopRequested = true;
