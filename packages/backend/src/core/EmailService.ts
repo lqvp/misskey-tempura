@@ -15,18 +15,18 @@ import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { escapeHtml } from '@/misc/escape-html.js';
 import { normalizeEmailForComparison, normalizedEmailSql } from '@/misc/normalize-email.js';
 
-let emailDependencies: Promise<[
-	typeof import('nodemailer'),
-	typeof import('juice'),
-	typeof import('sanitize-html'),
-]> | undefined;
+let emailDependencies: ReturnType<typeof importEmailDependencies> | undefined;
 
-function loadEmailDependencies() {
-	return emailDependencies ??= Promise.all([
+function importEmailDependencies() {
+	return Promise.all([
 		import('nodemailer'),
 		import('juice'),
 		import('sanitize-html'),
 	]);
+}
+
+function loadEmailDependencies() {
+	return emailDependencies ??= importEmailDependencies();
 }
 
 @Injectable()
