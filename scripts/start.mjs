@@ -13,6 +13,7 @@ import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
 import { isAbsolute, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { withDefaultSemiSpaceSize } from './lib/node-options.mjs';
 
 const originalCwd = process.cwd();
 const backendDir = resolve(import.meta.dirname, '../packages/backend');
@@ -20,46 +21,6 @@ const require = createRequire(resolve(backendDir, 'package.json'));
 
 const forwardedSignals = ['SIGTERM', 'SIGHUP'];
 let stopRequested = false;
-
-/**
- * 若い世代 (new space) の半区画サイズの上限。V8 はこの値をヒープ上限から決めるため、環境によって変わります。
- * 計測した環境 (8 GiB のコンテナ、Node.js v24.21.0) では既定値が 16 MiB になり、起動直後にその分を確保したまま
- * リクエストを受けると、負荷時の Pss がこれだけで 200 MiB 以上増えました。ここで上限を付けても
- * ピーク時のレイテンシは悪化しなかったため、上限だけを絞ります。
- * 利用者が明示したときはそちらを優先します。
- */
-const defaultSemiSpaceSizeMiB = 4;
-
-// V8 のフラグはハイフン区切りとアンダースコア区切りのどちらでも書けるため、表記を揃えてから探す
-const semiSpaceOptions = ['--max-semi-space-size', '--min-semi-space-size'];
-
-function normalizeFlagSpelling(flag) {
-	return flag.replaceAll('_', '-');
-}
-
-/**
- * NODE_OPTIONS か起動引数で semi-space が指定されていれば、既定値で上書きしない
- * @param {string} nodeOptions
- * @param {string[]} argv
- */
-function hasUserSemiSpaceSetting(nodeOptions, argv) {
-	const nodeOptionsFlags = nodeOptions.split(/\s+/).map(normalizeFlagSpelling);
-	const argvFlags = argv.map(normalizeFlagSpelling);
-	return semiSpaceOptions.some((name) =>
-		nodeOptionsFlags.some((flag) => flag === name || flag.startsWith(`${name}=`)) ||
-		argvFlags.some((flag) => flag === name || flag.startsWith(`${name}=`)),
-	);
-}
-
-// 利用者が明示していないときだけ、若い世代のサイズに上限を付ける。
-// 起動フラグを後から足しても、このスクリプト自身がすでに既定サイズで起動しているため間に合わない。
-// 本体プロセスの V8 がこの上限で開始するよう NODE_OPTIONS に足し、後段の解決処理に通す
-if (!hasUserSemiSpaceSetting(process.env.NODE_OPTIONS ?? '', process.execArgv)) {
-	const semiSpaceOption = `--max-semi-space-size=${defaultSemiSpaceSizeMiB}`;
-	process.env.NODE_OPTIONS = process.env.NODE_OPTIONS
-		? `${process.env.NODE_OPTIONS} ${semiSpaceOption}`
-		: semiSpaceOption;
-}
 
 // 端末からの SIGINT は子プロセスにも直接届くので、このプロセスが先に終了しないよう既定の動作は無効にしておく
 process.on('SIGINT', () => {
@@ -163,6 +124,11 @@ function resolveNodeOptions(nodeOptions) {
 if (process.env.NODE_OPTIONS) {
 	process.env.NODE_OPTIONS = resolveNodeOptions(process.env.NODE_OPTIONS);
 }
+
+// 利用者が明示していないときだけ、若い世代のサイズに上限を付ける。
+// このスクリプト自身はすでに既定のサイズで起動しているので、起動引数に後から足しても間に合わない。
+// 本体プロセスの V8 がこの上限で開始するよう NODE_OPTIONS に足す (上の解決処理を通した後の文字列に継ぎ足す)
+process.env.NODE_OPTIONS = withDefaultSemiSpaceSize(process.env.NODE_OPTIONS ?? '', process.execArgv);
 
 /**
  * 停止シグナルを子プロセスへ転送する
