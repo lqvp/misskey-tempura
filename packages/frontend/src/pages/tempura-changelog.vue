@@ -478,8 +478,9 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 
 ## サーバー運用
 
-* 起動時に V8 の若い世代 (new space) の半区画サイズを 4 MiB に制限します。既定値では起動直後に 16 MiB を確保したままになり、負荷時の Pss が大きく増えます。
-* NODE_OPTIONS または起動引数で --max-semi-space-size / --min-semi-space-size を明示した場合は、その値が優先されます。
+* 起動時に V8 の若い世代 (new space) の半区画サイズの上限を 4 MiB にします。V8 の既定値はヒープ上限に依存しますが、8 GiB のコンテナで計測した環境では 16 MiB で、負荷時の Pss が大きく増える要因でした。
+* 上限だけを絞るため、NODE_OPTIONS と起動引数のどちらで --max-semi-space-size を指定しても、その値が優先されます。アンダースコア区切りの表記も同じものとして扱います。
+* --min-semi-space-size は NODE_OPTIONS では指定できません。この項目は本体プロセスの V8 が既定サイズで起動してしまうため、起動引数で指定した場合のみ優先されます。
 
 ## 互換性と注意
 

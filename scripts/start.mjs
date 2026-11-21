@@ -22,13 +22,20 @@ const forwardedSignals = ['SIGTERM', 'SIGHUP'];
 let stopRequested = false;
 
 /**
- * 若い世代 (new space) の半区画サイズ。既定値は V8 がヒープ上限から決めた値で、
- * 実測では起動直後に 16 MiB を確保したままリクエストを受けると、負荷時の Pss がこれだけで 200 MiB 以上増える。
- * ここで上限を付けてもピーク時のレイテンシは悪化しなかったため、既定で絞る。
- * 環境変数で明示されたときはそちらを優先する。
+ * 若い世代 (new space) の半区画サイズの上限。V8 はこの値をヒープ上限から決めるため、環境によって変わります。
+ * 計測した環境 (8 GiB のコンテナ、Node.js v24.21.0) では既定値が 16 MiB になり、起動直後にその分を確保したまま
+ * リクエストを受けると、負荷時の Pss がこれだけで 200 MiB 以上増えました。ここで上限を付けても
+ * ピーク時のレイテンシは悪化しなかったため、上限だけを絞ります。
+ * 利用者が明示したときはそちらを優先します。
  */
 const defaultSemiSpaceSizeMiB = 4;
+
+// V8 のフラグはハイフン区切りとアンダースコア区切りのどちらでも書けるため、表記を揃えてから探す
 const semiSpaceOptions = ['--max-semi-space-size', '--min-semi-space-size'];
+
+function normalizeFlagSpelling(flag) {
+	return flag.replaceAll('_', '-');
+}
 
 /**
  * NODE_OPTIONS か起動引数で semi-space が指定されていれば、既定値で上書きしない
@@ -36,7 +43,12 @@ const semiSpaceOptions = ['--max-semi-space-size', '--min-semi-space-size'];
  * @param {string[]} argv
  */
 function hasUserSemiSpaceSetting(nodeOptions, argv) {
-	return semiSpaceOptions.some((name) => nodeOptions.includes(name) || argv.some((arg) => arg === name || arg.startsWith(`${name}=`)));
+	const nodeOptionsFlags = nodeOptions.split(/\s+/).map(normalizeFlagSpelling);
+	const argvFlags = argv.map(normalizeFlagSpelling);
+	return semiSpaceOptions.some((name) =>
+		nodeOptionsFlags.some((flag) => flag === name || flag.startsWith(`${name}=`)) ||
+		argvFlags.some((flag) => flag === name || flag.startsWith(`${name}=`)),
+	);
 }
 
 // 利用者が明示していないときだけ、若い世代のサイズに上限を付ける。
