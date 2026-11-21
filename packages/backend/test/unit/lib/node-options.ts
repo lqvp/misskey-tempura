@@ -7,8 +7,8 @@ import { expect, test } from 'vitest';
 import { hasUserSemiSpaceSetting, withDefaultSemiSpaceSize } from '../../../lib/startup/node-options.js';
 
 test('adds the upper bound when the user did not set semi-space', () => {
-	expect(withDefaultSemiSpaceSize('', [])).toBe('--max-semi-space-size=4');
-	expect(withDefaultSemiSpaceSize('--enable-source-maps', [])).toBe('--enable-source-maps --max-semi-space-size=4');
+	expect(withDefaultSemiSpaceSize('', [])).toBe('--max-semi-space-size=1');
+	expect(withDefaultSemiSpaceSize('--enable-source-maps', [])).toBe('--enable-source-maps --max-semi-space-size=1');
 });
 
 test('keeps the value the user set through NODE_OPTIONS', () => {
