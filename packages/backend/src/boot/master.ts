@@ -18,6 +18,7 @@ import { envOption } from '@/env.js';
 import { initTelemetry, shutdownTelemetry } from '@/core/telemetry/telemetry-registry.js';
 import { initExtraThreadPool, jobQueue, server } from './common.js';
 import { installShutdownSignalHandlers } from './shutdown-handler.js';
+import { resolveProcessMode } from './process-mode.js';
 
 const logger = new Logger('core', 'cyan');
 const bootLogger = logger.createSubLogger('boot', 'magenta');
@@ -124,11 +125,12 @@ export async function masterMain() {
 		onRegistered: message => bootLogger.info(message),
 	});
 
+	const processMode = resolveProcessMode(config.clusterLimit, envOption.disableClustering);
 	bootLogger.info(
-		`mode: [disableClustering: ${envOption.disableClustering}, onlyServer: ${envOption.onlyServer}, onlyQueue: ${envOption.onlyQueue}]`,
+		`mode: [disableClustering: ${envOption.disableClustering}, singleProcess: ${processMode.singleProcess}, onlyServer: ${envOption.onlyServer}, onlyQueue: ${envOption.onlyQueue}]`,
 	);
 
-	if (!envOption.disableClustering) {
+	if (!processMode.singleProcess) {
 		// clusterモジュール有効時
 
 		if (envOption.onlyServer) {
@@ -142,7 +144,10 @@ export async function masterMain() {
 			await server();
 		}
 
-		await spawnWorkers(config.clusterLimit);
+		if (processMode.invalidClusterLimit) {
+			bootLogger.warn(`Invalid clusterLimit (${config.clusterLimit}). Falling back to 1 worker.`);
+		}
+		await spawnWorkers(processMode.workerCount);
 	} else {
 		// clusterモジュール無効時
 
@@ -226,10 +231,6 @@ async function spawnWorkers(limit = 1) {
 	// CPU/メモリ枯渇 (DoS) を避けるため 256 ワーカーを上限とする
 	const config: Config = loadConfigBoot();
 	let workers = config.clusterOverClock ? limit : Math.min(limit, os.cpus().length * 2);
-	if (!Number.isInteger(workers) || workers < 1) {
-		bootLogger.warn(`Invalid clusterLimit (${workers}). Falling back to 1 worker.`);
-		workers = 1;
-	}
 	if (workers > 256) {
 		bootLogger.warn(`clusterLimit ${workers} is too large. Capping at 256 workers.`);
 		workers = 256;

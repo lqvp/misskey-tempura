@@ -373,6 +373,8 @@ id: 'aidx'
 #enableIpRateLimit: true
 
 # Number of worker processes
+# 0 runs server and queue in one process, saving ~100 MiB on small instances,
+# at the cost of no isolation between HTTP and queue work.
 #clusterLimit: 1
 #clusterOverClock: false
 
