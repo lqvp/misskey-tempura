@@ -143,7 +143,7 @@ const query = ref('');
 const searching = computed(() => query.value.trim().length > 0);
 // Search needs a distinct value so selecting all categories still emits a model update.
 const categoryOptions = computed(() => [
-	...(searching.value ? [{ label: i18n.tsx._misskeyTempura._changelog.results({ query: query.value.trim() }), value: null }] : []),
+	...(searching.value ? [{ label: i18n.ts.searchResult, value: null }] : []),
 	{ label: i18n.ts._misskeyTempura._changelog.allCategories, value: '' },
 	...sections.value.map(section => ({ label: section.title, value: section.id })),
 ]);
