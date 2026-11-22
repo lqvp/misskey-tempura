@@ -15,6 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { onMounted, onUnmounted, nextTick, watch, useTemplateRef, ref } from 'vue';
 import { Chart } from 'chart.js';
+import { MatrixController, MatrixElement } from 'chartjs-chart-matrix';
 import * as Misskey from 'misskey-js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { store } from '@/store.js';
@@ -23,6 +24,7 @@ import { alpha } from '@/utility/color.js';
 import { initChart } from '@/utility/init-chart.js';
 
 initChart();
+Chart.register(MatrixController, MatrixElement);
 
 export type HeatmapSource = 'active-users' | 'notes' | 'ap-requests-inbox-received' | 'ap-requests-deliver-succeeded' | 'ap-requests-deliver-failed';
 
