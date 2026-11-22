@@ -141,13 +141,17 @@ const totalItems = computed(() => sections.value.reduce((count, section) => coun
 const selectedId = ref<string | null>(null);
 const query = ref('');
 const searching = computed(() => query.value.trim().length > 0);
+// Search needs a distinct value so selecting all categories still emits a model update.
 const categoryOptions = computed(() => [
+	...(searching.value ? [{ label: i18n.tsx._misskeyTempura._changelog.results({ query: query.value.trim() }), value: null }] : []),
 	{ label: i18n.ts._misskeyTempura._changelog.allCategories, value: '' },
 	...sections.value.map(section => ({ label: section.title, value: section.id })),
 ]);
 const category = computed({
-	get: () => searching.value ? '' : selectedId.value ?? '',
-	set: (value: string) => { void selectCategory(value || null); },
+	get: () => searching.value ? null : selectedId.value ?? '',
+	set: (value: string | null) => {
+		if (value !== null) void selectCategory(value || null);
+	},
 });
 const visibleSections = computed(() => searching.value
 	? searchFeatureCatalog(sections.value, query.value)
