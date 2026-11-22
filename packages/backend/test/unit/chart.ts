@@ -26,7 +26,7 @@ describe('Chart', () => {
 	const config = loadConfig();
 
 	let db: DataSource | undefined;
-	let redisClient = {
+	const redisClient = {
 		set: () => Promise.resolve('OK'),
 		get: () => Promise.resolve(null),
 	} as unknown as Mocked<Redis.Redis>;
@@ -416,6 +416,18 @@ describe('Chart', () => {
 	});
 
 	describe('Grouped', () => {
+		test('Combines repeated increments without mixing groups', async () => {
+			await testGroupedChart.increment('alice');
+			await testGroupedChart.increment('bob');
+			await testGroupedChart.increment('alice');
+			await testGroupedChart.save();
+
+			const alice = await testGroupedChart.getChart('hour', 1, null, 'alice');
+			const bob = await testGroupedChart.getChart('hour', 1, null, 'bob');
+			assert.deepStrictEqual(alice.foo.inc, [2]);
+			assert.deepStrictEqual(bob.foo.inc, [1]);
+		});
+
 		test('Can updates', async () => {
 			await testGroupedChart.increment('alice');
 			await testGroupedChart.save();
@@ -476,6 +488,21 @@ describe('Chart', () => {
 			assert.deepStrictEqual(chartDays, {
 				foo: [2, 0, 0],
 			});
+		});
+
+		test('Stores each unique value only once per period', async () => {
+			await testUniqueChart.uniqueIncrement('alice');
+			await testUniqueChart.uniqueIncrement('alice');
+			await testUniqueChart.save();
+			await testUniqueChart.uniqueIncrement('alice');
+			await testUniqueChart.uniqueIncrement('bob');
+			await testUniqueChart.uniqueIncrement('bob');
+			await testUniqueChart.save();
+
+			for (const tableName of ['__chart__test_unique', '__chart_day__test_unique']) {
+				const rows = await db!.query(`SELECT "___foo" AS count, "unique_temp___foo" AS items FROM "${tableName}"`);
+				assert.deepStrictEqual(rows, [{ count: 2, items: ['alice', 'bob'] }]);
+			}
 		});
 
 		describe('Intersection', () => {
