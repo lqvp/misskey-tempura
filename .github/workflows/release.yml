@@ -108,12 +108,19 @@ jobs:
 
           The workflow waits for CI on the head commit and leaves this PR open. Merge it manually once CI is green; the push to master then publishes the release."
 
-          EXISTING_PR=$(gh pr list \
+          # ブランチ名だけでは同名ブランチを持つforkのPRを拾いうるため、
+          # head側のリポジトリ(owner/name)も一致するPRだけを再利用の対象にする
+          OPEN_PRS=$(gh pr list \
             --state open \
             --base master \
             --head develop \
-            --json number \
-            --jq '.[0].number // ""')
+            --limit 100 \
+            --json number,headRefName,headRepository,headRepositoryOwner)
+          EXISTING_PR=$(jq -r \
+            --arg owner "$GITHUB_REPOSITORY_OWNER" \
+            --arg repo "${GITHUB_REPOSITORY#*/}" \
+            '[.[] | select(.headRefName == "develop" and .headRepositoryOwner.login == $owner and .headRepository.name == $repo)][0].number // ""' \
+            <<<"$OPEN_PRS")
 
           if [ -n "$EXISTING_PR" ]; then
             echo "::notice::Reusing open release PR #$EXISTING_PR"
@@ -148,6 +155,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD_SHA: ${{ steps.release_pr.outputs.head_sha }}
+          PR_NUMBER: ${{ steps.release_pr.outputs.number }}
           PR_URL: ${{ steps.release_pr.outputs.url }}
           SELF_CHECK_NAME: ${{ github.job }}
         run: |
@@ -176,7 +184,7 @@ jobs:
               ["failure", "cancelled", "timed_out", "action_required", "startup_failure", "stale"] as $bad
               | ($runs | map(select(.name != $self))
                   | group_by(.name) | map(sort_by(.id) | last)) as $r
-              | ($statuses | group_by(.context) | map(sort_by(.created_at) | last)) as $s
+              | ($statuses | group_by(.context) | map(sort_by([.created_at, .id]) | last)) as $s
               | ([$r[] | select(.status == "completed" and (.conclusion as $c | ($bad | index($c)) != null)) | .name]
                   + [$s[] | select(.state == "error" or .state == "failure") | .context]) as $failed
               | ([$r[] | select(.status != "completed") | .name]
@@ -216,8 +224,18 @@ jobs:
                   fi
                   last_fingerprint="$fingerprint"
                   if [ "$stable" -ge "$STABLE_REQUIRED" ]; then
-                    echo "::notice::CI passed on release PR head ${HEAD_SHA}. Merge the PR manually to publish: ${PR_URL}"
-                    exit 0
+                    # 成功を宣言する直前にPRのheadを読み直し、待機中にdevelopが進んでいたら成功扱いにしない
+                    if ! CURRENT_HEAD=$(gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid) || [ -z "$CURRENT_HEAD" ]; then
+                      echo "::warning::Failed to re-read the head of release PR #${PR_NUMBER}; retrying"
+                      stable=0
+                      last_fingerprint=""
+                    elif [ "$CURRENT_HEAD" != "$HEAD_SHA" ]; then
+                      echo "::error::Release PR #${PR_NUMBER} head moved from ${HEAD_SHA} to ${CURRENT_HEAD} while waiting for CI; not marking it ready. Re-run the workflow to check the new head: ${PR_URL}"
+                      exit 1
+                    else
+                      echo "::notice::CI passed on release PR head ${HEAD_SHA}. Merge the PR manually to publish: ${PR_URL}"
+                      exit 0
+                    fi
                   fi
                   ;;
                 *)
@@ -292,7 +310,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.parse_version.outputs.tag_name }}
-          target_commitish: ${{ github.sha }}
+          # stableは公開対象のmasterコミットを明示。betaは従来どおり未指定(リポジトリのデフォルトブランチ)
+          target_commitish: ${{ steps.parse_version.outputs.is_stable == 'true' && github.sha || '' }}
           name: ${{ steps.parse_version.outputs.release_name }}
           body: ${{ steps.generate_stable_notes.outputs.notes || 'This is a beta (development) release.' }}
           prerelease: ${{ steps.parse_version.outputs.is_stable == 'false' }}
