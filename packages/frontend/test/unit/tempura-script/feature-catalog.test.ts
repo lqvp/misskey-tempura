@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { describe, expect, test } from 'vitest';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import markdown from '../../../../../diff.md?raw';
-import { countFeatureItems, parseFeatureCatalog, searchFeatureCatalog } from '@/utility/tempura-script/feature-catalog.js';
+import { countFeatureItems, fetchFeatureCatalog, parseFeatureCatalog, searchFeatureCatalog } from '@/utility/tempura-script/feature-catalog.js';
 
 describe('feature catalog', () => {
 	const source = [
@@ -69,5 +69,42 @@ describe('feature catalog', () => {
 
 	test('handles an empty document', () => {
 		expect(parseFeatureCatalog('')).toEqual({ introduction: '', notes: [], sections: [] });
+	});
+
+	test('excludes multiline, inline and unfinished maintainer comments from display and search', () => {
+		const catalog = parseFeatureCatalog(`<!-- private instructions\n## Hidden\n* secret\n-->\n${source}\n<!-- unfinished secret`);
+		expect(catalog).toEqual(parseFeatureCatalog(source));
+		expect(searchFeatureCatalog(catalog.sections, 'secret')).toEqual([]);
+		expect(parseFeatureCatalog('## Visible\n* Before <!-- secret -->after').sections[0].groups[0].items[0].text).toBe('Before after');
+	});
+});
+
+describe('fetchFeatureCatalog', () => {
+	afterEach(() => vi.unstubAllGlobals());
+
+	test('fetches and parses a standalone asset', async () => {
+		const request = vi.fn().mockResolvedValue(new Response(markdown));
+		vi.stubGlobal('fetch', request);
+		const catalog = await fetchFeatureCatalog('/vite/assets/catalog.md', new AbortController().signal);
+		expect(catalog).toEqual(parseFeatureCatalog(markdown));
+		expect(request).toHaveBeenCalledWith('/vite/assets/catalog.md', { signal: expect.any(AbortSignal) });
+	});
+
+	test('rejects HTTP errors and successful HTML fallback responses', async () => {
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('Not found', { status: 404 })));
+		await expect(fetchFeatureCatalog('/missing.md', new AbortController().signal)).rejects.toThrow('404');
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<html>Fallback</html>')));
+		await expect(fetchFeatureCatalog('/missing.md', new AbortController().signal)).rejects.toThrow('no categories');
+	});
+
+	test('propagates network failures and cancellation so the page can retry or unmount', async () => {
+		vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('Offline')));
+		await expect(fetchFeatureCatalog('/catalog.md', new AbortController().signal)).rejects.toThrow('Offline');
+		vi.stubGlobal('fetch', vi.fn().mockImplementation((_url, { signal }) => {
+			signal.throwIfAborted();
+		}));
+		const controller = new AbortController();
+		controller.abort();
+		await expect(fetchFeatureCatalog('/catalog.md', controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
 	});
 });

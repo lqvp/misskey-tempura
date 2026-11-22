@@ -18,7 +18,8 @@ export function parseFeatureCatalog(markdown: string): { introduction: string; n
 	let inNotes = false;
 	let paragraphContinues = false;
 
-	for (const raw of markdown.split(/\r?\n/)) {
+	// Maintainer instructions are not part of the visible or searchable catalog.
+	for (const raw of markdown.replace(/<!--[\s\S]*?(?:-->|$)/g, '').split(/\r?\n/)) {
 		const line = raw.trim();
 		if (!line || line.startsWith('# ')) {
 			paragraphContinues = false;
@@ -75,6 +76,16 @@ export function parseFeatureCatalog(markdown: string): { introduction: string; n
 	}
 
 	return { introduction: introduction.join(' '), notes, sections };
+}
+
+/** The URL points to a content-hashed static asset emitted with this client. */
+export async function fetchFeatureCatalog(url: string, signal: AbortSignal): Promise<ReturnType<typeof parseFeatureCatalog>> {
+	const response = await window.fetch(url, { signal: AbortSignal.any([signal, AbortSignal.timeout(10_000)]) });
+	if (!response.ok) throw new Error(`Feature catalog request failed: ${response.status}`);
+	const catalog = parseFeatureCatalog(await response.text());
+	// A proxy's HTML fallback or a missing asset must not look like an empty guide.
+	if (!catalog.sections.length) throw new Error('Feature catalog has no categories');
+	return catalog;
 }
 
 function normalize(text: string): string {

@@ -10,14 +10,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<header :class="$style.hero" class="_panel">
 				<div :class="$style.eyebrow"><i class="ti ti-sparkles" aria-hidden="true"></i> {{ i18n.ts._misskeyTempura._changelog.guide }}</div>
 				<h1 :class="$style.title">{{ i18n.ts._misskeyTempura._changelog.title }}</h1>
-				<p :class="$style.introduction">{{ catalog.introduction }}</p>
-				<div :class="$style.heroFooter">
+				<p v-if="catalog" :class="$style.introduction">{{ catalog.introduction }}</p>
+				<div v-if="catalog" :class="$style.heroFooter">
 					<span>{{ i18n.ts._misskeyTempura._changelog.categories }} <b>{{ sections.length }}</b></span>
 					<span>{{ i18n.tsx._misskeyTempura._changelog.items({ count: totalItems }) }}</span>
 				</div>
 			</header>
 
-			<div :class="$style.layout">
+			<MkLoading v-if="loading"/>
+			<MkError v-else-if="error" @retry="loadCatalog"/>
+			<div v-else-if="catalog" :class="$style.layout">
 				<aside :class="$style.sidebar">
 					<nav class="_panel" :class="$style.navigation" :aria-label="i18n.ts._misskeyTempura._changelog.categories">
 						<h2 :class="$style.navTitle">{{ i18n.ts._misskeyTempura._changelog.categories }}</h2>
@@ -115,23 +117,46 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, ref } from 'vue';
-import markdown from '../../../../diff.md?raw';
+import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue';
+import catalogUrl from '../../../../diff.md?url&no-inline';
 import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';
-import { countFeatureItems, parseFeatureCatalog, searchFeatureCatalog } from '@/utility/tempura-script/feature-catalog.js';
+import { countFeatureItems, fetchFeatureCatalog, searchFeatureCatalog } from '@/utility/tempura-script/feature-catalog.js';
 
-const catalog = parseFeatureCatalog(markdown);
-const sections = catalog.sections;
-const totalItems = sections.reduce((count, section) => count + countFeatureItems(section), 0);
-const selectedId = ref<string | null>(sections[0]?.id ?? null);
+const catalog = shallowRef<Awaited<ReturnType<typeof fetchFeatureCatalog>> | null>(null);
+const loading = ref(true);
+const error = ref(false);
+const controller = new AbortController();
+const sections = computed(() => catalog.value?.sections ?? []);
+const totalItems = computed(() => sections.value.reduce((count, section) => count + countFeatureItems(section), 0));
+const selectedId = ref<string | null>(null);
 const query = ref('');
 const searching = computed(() => query.value.trim().length > 0);
 const visibleSections = computed(() => searching.value
-	? searchFeatureCatalog(sections, query.value)
-	: sections.filter(section => selectedId.value === null || section.id === selectedId.value));
-const activeTitle = computed(() => sections.find(section => section.id === selectedId.value)?.title ?? i18n.ts._misskeyTempura._changelog.allCategories);
+	? searchFeatureCatalog(sections.value, query.value)
+	: sections.value.filter(section => selectedId.value === null || section.id === selectedId.value));
+const activeTitle = computed(() => sections.value.find(section => section.id === selectedId.value)?.title ?? i18n.ts._misskeyTempura._changelog.allCategories);
 const resultCount = computed(() => visibleSections.value.reduce((count, section) => count + countFeatureItems(section), 0));
+
+async function loadCatalog(): Promise<void> {
+	loading.value = true;
+	error.value = false;
+	try {
+		const loaded = await fetchFeatureCatalog(catalogUrl, controller.signal);
+		if (controller.signal.aborted) return;
+		catalog.value = loaded;
+		selectedId.value = loaded.sections[0]?.id ?? null;
+	} catch (err) {
+		if (controller.signal.aborted) return;
+		console.error('Failed to load the Tempura feature catalog', err);
+		error.value = true;
+	} finally {
+		loading.value = false;
+	}
+}
+
+onMounted(loadCatalog);
+onUnmounted(() => controller.abort());
 
 function selectCategory(id: string | null): void {
 	selectedId.value = id;
