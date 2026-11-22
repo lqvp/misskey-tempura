@@ -408,6 +408,8 @@ definePage(() => ({
 }
 
 .sectionNumber {
+	flex-shrink: 0;
+	white-space: nowrap;
 	color: var(--MI_THEME-accent);
 	font-size: 0.8em;
 	font-weight: 700;
