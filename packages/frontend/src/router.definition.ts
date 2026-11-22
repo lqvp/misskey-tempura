@@ -9,17 +9,13 @@ import type { RouteDef } from '@/lib/nirax.js';
 import { $i, iAmModerator } from '@/i.js';
 import MkLoading from '@/pages/_loading_.vue';
 import MkError from '@/pages/_error_.vue';
+import PageTimeline from '@/pages/timeline.vue';
 
 export const page = (loader: AsyncComponentLoader) => defineAsyncComponent({
 	loader: loader,
 	loadingComponent: MkLoading,
 	errorComponent: MkError,
 });
-
-const loadTimeline = () => import('@/pages/timeline.vue');
-const PageTimeline = page(loadTimeline);
-
-if ($i) void loadTimeline().catch(() => {});
 
 function chatPage(...args: Parameters<typeof page>) {
 	return $i?.policies.chatAvailability !== 'unavailable' ? page(...args) : page(() => import('@/pages/not-found.vue'));
