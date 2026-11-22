@@ -15,7 +15,7 @@ import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
-import { $i, iAmModerator } from '@/i.js';
+import { $i, iAmModerator, iAmSubModerator } from '@/i.js';
 import { notesSearchAvailable, canSearchNonLocalNotes } from '@/utility/check-permissions.js';
 import { antennasCache, rolesCache, userListsCache } from '@/cache.js';
 import { mainRouter } from '@/router.js';
@@ -318,7 +318,8 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 
 	const menuItems: MenuItem[] = [];
 
-	if (iAmModerator) {
+	// ユーザー管理画面はサブモデレーターも開ける (通報対象の確認に使う)
+	if (iAmSubModerator) {
 		menuItems.push({
 			icon: 'ti ti-user-exclamation',
 			text: i18n.ts.moderation,
