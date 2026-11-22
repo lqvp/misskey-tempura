@@ -9586,6 +9586,44 @@ export interface Locale extends ILocale {
          * tempuraの更新履歴
          */
         "diff": string;
+        "_changelog": {
+            /**
+             * 機能ガイド
+             */
+            "guide": string;
+            /**
+             * Misskey-Tempura の独自機能
+             */
+            "title": string;
+            /**
+             * カテゴリ
+             */
+            "categories": string;
+            /**
+             * すべてのカテゴリ
+             */
+            "allCategories": string;
+            /**
+             * すべての機能から検索
+             */
+            "search": string;
+            /**
+             * 機能名やキーワードで探せます
+             */
+            "searchHint": string;
+            /**
+             * {count} 項目
+             */
+            "items": ParameterizedString<"count">;
+            /**
+             * 「{query}」の検索結果
+             */
+            "results": ParameterizedString<"query">;
+            /**
+             * ご利用の前に
+             */
+            "notes": string;
+        };
         "servers": {
             /**
              * Misskey-tempura サーバー

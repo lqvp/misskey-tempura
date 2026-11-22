@@ -2500,6 +2500,16 @@ _misskeyTempura:
   contributors: "優秀なコントリビューター(?)"
   aboutTempura: "Misskey-tempuraについて"
   diff: "tempuraの更新履歴"
+  _changelog:
+    guide: "機能ガイド"
+    title: "Misskey-Tempura の独自機能"
+    categories: "カテゴリ"
+    allCategories: "すべてのカテゴリ"
+    search: "すべての機能から検索"
+    searchHint: "機能名やキーワードで探せます"
+    items: "{count} 項目"
+    results: "「{query}」の検索結果"
+    notes: "ご利用の前に"
   servers:
     title: "Misskey-tempura サーバー"
     official: "公式サーバー"
