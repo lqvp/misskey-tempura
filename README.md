@@ -12,7 +12,9 @@
 **Misskey-Tempuraは隠居向け・お一人様向け変なフォークです。**
 
 [詳細な更新情報](https://hackmd.io/@il2/misskey-tempura)
-[情報が古いフォーク差分](./diff.md)
+[独自機能とフォーク差分](./diff.md)
+
+アプリ内の `/tempura-changelog` では、同じ内容をカテゴリ別に閲覧・検索できます。表示内容は `diff.md` からビルド時に読み込むため、更新時は再ビルドしてください。
 
 ---
 

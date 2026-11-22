@@ -5,553 +5,138 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <PageWithHeader>
-	<div class="_spacer" style="--MI_SPACER-w: 900px;">
-		<div :class="$style.intro" class="_gaps_s">
-			<p>Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey にはない、または異なる動作をする機能をまとめます。本家に既にある機能 (予約投稿など) はここでは扱いません。</p>
-		</div>
-
-		<div :class="$style.changelogContainer" class="_gaps_s">
-			<MkFolder
-				v-for="(section, si) in sections"
-				:key="si"
-				:defaultOpen="si === 0"
-			>
-				<template #label>
-					<span :class="$style.versionLabel">{{ section.title }}</span>
-				</template>
-
-				<div :class="$style.content">
-					<template v-for="(block, bi) in section.blocks" :key="bi">
-						<h4 v-if="block.type === 'h3'" :class="$style.categoryTitle">{{ block.text }}</h4>
-						<p v-else-if="block.type === 'p'" :class="$style.paragraph">{{ block.text }}</p>
-						<ul v-else-if="block.type === 'ul'" :class="$style.changeList">
-							<li v-for="(item, i) in block.items" :key="i" :class="$style.changeItem">
-								<Mfm :text="item" :isNote="false"/>
-							</li>
-						</ul>
-					</template>
+	<div class="_spacer" style="--MI_SPACER-w: 1150px;">
+		<div :class="$style.root" class="_selectable">
+			<header :class="$style.hero" class="_panel">
+				<div :class="$style.eyebrow"><i class="ti ti-sparkles" aria-hidden="true"></i> {{ i18n.ts._misskeyTempura._changelog.guide }}</div>
+				<h1 :class="$style.title">{{ i18n.ts._misskeyTempura._changelog.title }}</h1>
+				<p :class="$style.introduction">{{ catalog.introduction }}</p>
+				<div :class="$style.heroFooter">
+					<span>{{ i18n.ts._misskeyTempura._changelog.categories }} <b>{{ sections.length }}</b></span>
+					<span>{{ i18n.tsx._misskeyTempura._changelog.items({ count: totalItems }) }}</span>
 				</div>
-			</MkFolder>
+			</header>
+
+			<div :class="$style.layout">
+				<aside :class="$style.sidebar">
+					<nav class="_panel" :class="$style.navigation" :aria-label="i18n.ts._misskeyTempura._changelog.categories">
+						<h2 :class="$style.navTitle">{{ i18n.ts._misskeyTempura._changelog.categories }}</h2>
+						<div :class="$style.categoryList">
+							<button
+								type="button"
+								class="_button"
+								:class="[$style.category, { [$style.active]: !selectedId && !searching }]"
+								:aria-pressed="!selectedId && !searching"
+								@click="selectCategory(null)"
+							>
+								<span>{{ i18n.ts._misskeyTempura._changelog.allCategories }}</span>
+								<span :class="$style.count">{{ totalItems }}</span>
+							</button>
+							<button
+								v-for="section in sections"
+								:key="section.id"
+								type="button"
+								class="_button"
+								:class="[$style.category, { [$style.active]: selectedId === section.id && !searching }]"
+								:aria-pressed="selectedId === section.id && !searching"
+								@click="selectCategory(section.id)"
+							>
+								<span>{{ section.title }}</span>
+								<span :class="$style.count">{{ countFeatureItems(section) }}</span>
+							</button>
+						</div>
+					</nav>
+				</aside>
+
+				<div :class="$style.main">
+					<div class="_panel" :class="$style.searchPanel">
+						<label :class="$style.searchBox">
+							<i class="ti ti-search" aria-hidden="true"></i>
+							<input
+								v-model="query"
+								type="search"
+								:class="$style.searchInput"
+								:aria-label="i18n.ts._misskeyTempura._changelog.search"
+								:placeholder="i18n.ts._misskeyTempura._changelog.search"
+							>
+						</label>
+						<p :class="$style.searchHint">{{ i18n.ts._misskeyTempura._changelog.searchHint }}</p>
+					</div>
+
+					<div :class="$style.resultsHeading" role="status" aria-live="polite">
+						<span>{{ searching ? i18n.tsx._misskeyTempura._changelog.results({ query: query.trim() }) : activeTitle }}</span>
+						<span :class="$style.resultCount">{{ i18n.tsx._misskeyTempura._changelog.items({ count: resultCount }) }}</span>
+					</div>
+
+					<div v-if="!visibleSections.length" class="_panel" :class="$style.empty">
+						<i class="ti ti-search-off" aria-hidden="true"></i>
+						<p>{{ i18n.ts.noResults }}</p>
+						<button type="button" class="_textButton" @click="query = ''">{{ i18n.ts.reset }}</button>
+					</div>
+
+					<section
+						v-for="section in visibleSections"
+						:key="section.id"
+						class="_panel"
+						:class="$style.section"
+						:aria-labelledby="section.id"
+					>
+						<header :class="$style.sectionHeader">
+							<span :class="$style.sectionNumber" aria-hidden="true">{{ String(sections.findIndex(s => s.id === section.id) + 1).padStart(2, '0') }}</span>
+							<h2 :id="section.id" :class="$style.sectionTitle">{{ section.title }}</h2>
+						</header>
+						<div :class="$style.sectionBody">
+							<div v-for="(group, gi) in section.groups" :key="gi" :class="$style.group">
+								<h3 v-if="group.title" :class="$style.groupTitle">{{ group.title }}</h3>
+								<p v-for="(paragraph, pi) in group.paragraphs" :key="pi" :class="$style.paragraph">{{ paragraph }}</p>
+								<ul v-if="group.items.length" :class="$style.items">
+									<li v-for="(item, ii) in group.items" :key="ii" :class="$style.item">
+										<Mfm :text="item.text" :isNote="false"/>
+										<ul v-if="item.children.length" :class="$style.children">
+											<li v-for="(child, ci) in item.children" :key="ci"><Mfm :text="child" :isNote="false"/></li>
+										</ul>
+									</li>
+								</ul>
+							</div>
+						</div>
+					</section>
+
+					<details v-if="catalog.notes.length" class="_panel" :class="$style.notes">
+						<summary><i class="ti ti-info-circle" aria-hidden="true"></i> {{ i18n.ts._misskeyTempura._changelog.notes }}</summary>
+						<ul :class="$style.items">
+							<li v-for="(note, ni) in catalog.notes" :key="ni">{{ note }}</li>
+						</ul>
+					</details>
+				</div>
+			</div>
 		</div>
 	</div>
 </PageWithHeader>
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import markdown from '../../../../diff.md?raw';
 import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';
-import MkFolder from '@/components/MkFolder.vue';
-import MkMfm from '@/components/global/MkMfm.js';
-
-type Block = { type: 'h3'; text: string } | { type: 'p'; text: string } | { type: 'ul'; items: string[] };
-type Section = { title: string; blocks: Block[] };
-
-const markdown = `# Misskey-Tempura フォーク機能一覧
-
-Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey にはない、または異なる動作をする機能をまとめます。本家に既にある機能 (予約投稿など) はここでは扱いません。
-
-注意事項
-
-* 本ページは HackMD のバージョン差分ページを置き換える用途を想定しています。アプリ内の /tempura-changelog は HackMD を取得してバージョン見出しを解析するため、置き換えると表示が空になる可能性があります。必要なら取得先や解析処理の変更を検討してください。
-* 一部の機能はロール権限やサーバー設定で有効化が必要です。
-* 記載内容は 2026.10.0-tempura-2.0.21-dev 時点のコードに基づきます。
-
-## 本家との大きな違い
-
-* ログインリスク判定と確認コード
-* フォロー履歴とフォローリクエスト履歴
-* 引用ミュートとアバター装飾ミュート
-* セミパブリック (public_non_ltl) と受信指定ノート
-* 配送先制御 (delivery targets)
-* アカウント整理 (truncate)
-* ノートの非公開化 (make private)
-* LLM モデレーションと LLM 連携 (OpenAI 互換)
-* 問い合わせフォーム
-* 地震情報
-* Hana entrance
-* カスタムスプラッシュ/背景画像/カーソル/長いアイコン
-* サーバー統計の偽装
-* DeepLX 無料モード
-* 署名必須の ActivityPub 取得
-* 検疫 (quarantine)
-* マルチパートアップロード
-* IP インテリジェンス
-* 天気ウィジェット (Open-Meteo)
-* ListenBrainz ウィジェット
-* 太鼓ゲームページ
-* ネストウィジェット
-* 連合ジョブキュー
-* fxtwitter 経由の X 埋め込み
-* ニックネーム (クライアント側)
-* 季節エフェクト (雪/桜)
-* テーマ night-pink と pink-candy
-* カスタムフォント
-
-## セキュリティとプライバシー
-
-### ログインリスク判定
-
-* IP インテリジェンス (国/ASN/プレフィックス/Tor/VPN/データセンター/Spamhaus DROP) を用いてログインのリスク点数を計算します
-* 閾値 (notify/stepUp) で allow / notify / stepUp を判定します
-* 新しい端末/国/ASN/プレフィックス、直近の他国ログイン、休眠アカウント、失敗回数、IP スプレーなどを加点します
-* learning 期間中は stepUp を notify に抑えます
-* 不審と判定した場合は確認コード (email code) を要求します
-* 管理者は login-risk/diagnose と user-footprints で診断できます
-* 不審ログインの記録は本人に見せるかどうかを設定できます
-* ログイン失敗時には通知 (loginFailed) が送られます
-
-### IP インテリジェンス
-
-* sapics の MMDB を日次で取得し Redis に版管理します
-* 国/ASN の判定に使います
-* 管理画面で状態を確認できます
-
-### 署名必須の ActivityPub 取得
-
-* requireSignedApFetch が有効なとき、HTTP Signature を検証できない AP 取得を拒否します
-* アカウント/公開鍵取得は例外 (鍵交換のため)
-
-### 検疫
-
-* インスタンスを quarantineLimited にすると、そのサーバーへの配送は公開コンテンツのみになります
-* 隔離中のサーバーからのアクセス制御も行われます
-* 管理者は quarantineRemoteInstance / unquarantine で切り替えます
-
-### ActivityPub アクセス制御
-
-* ブロック/停止/検疫に応じて AP 取得を制御します
-* 配送先 include/exclude リストに従ってノートアクセスを制御します
-
-### 招待と承認
-
-* approvalRequiredForSignup でサインアップ承認制を有効化できます
-* defaultRequireSigninToViewContents で新規アカウントの「コンテンツの表示にログインを必須にする」既定値を設定できます
-* 承認待ちユーザー一覧 (/admin/approvals) で承認/拒否できます
-* 承認拒否時には通知が送られます
-* 招待コード (invite) でメール認証や承認をスキップできます (ロール権限 canSkipInviteEmailAuth / canSkipInviteApproval が必要)
-* 招待コードの有効期限を設定できます
-* 固定招待コード (fixedInviteCode) を設定できます。回数制限なく使い放題で消費もされない、任意の文字列の招待コードです (独自機能設定画面)
-* 合言葉 (signupPassphrase) を設定できます。登録画面の招待コード入力欄に入力すると登録できます。全角半角・大文字小文字・空白の違いは無視されます (独自機能設定画面)
-
-### メールドメインホワイトリスト
-
-* emailWhitelist が有効なとき、指定ドメインのみ登録できます
-
-### 登録制限
-
-* secondsPerSignup で登録間隔を制限できます (0 で無効、招待コードはバイパス)
-* validateMinimumUsernameLength でユーザー名の最低文字数を設定できます (デフォルト 5)
-* blockMentionsFromUnfamiliarRemoteUsers で、ローカルフォロワーがいないリモートユーザーからのメンション付きノートをブロックできます (デフォルト true)
-* carefulBot で Bot のフォローに承認を要求できます
-* autoRejectFollowRequest で、フォロー済みユーザー以外からのフォローリクエストを自動拒否できます
-
-### Bot フォロー承認
-
-* Bot のフォローには管理者の承認が必要になります
-
-## ノートと公開範囲
-
-### セミパブリック
-
-* public_non_ltl: LTL には出さない public ノート
-* visibility coloring で公開範囲を色分け表示できます
-* canPublicNonLtlNote が無効な場合、canHomeNote が有効なら home、無効なら followers に降格します
-
-### 受信指定ノート
-
-* receiveSpecifiedNotesFrom で、DM 的なノートを誰から受信するか (all / following / nobody) を選べます
-* 返信相手と管理者/モデレーターは常に受信できます
-
-### アウトボックスと Web フィード
-
-* outboxFilter でアウトボックスに含める公開範囲 (public / public_non_ltl / home) を選びます
-* webFeedFilter で RSS/Atom/JSON フィードを無効化できます
-
-### 配送先制御
-
-* ノート投稿時に配送先サーバーを include / exclude で指定できます
-* フォロワー一覧のサーバーから選択します
-
-### すぐ消す (scheduledNoteDelete)
-
-* ノート投稿時に自動削除時刻を設定できます
-* defaultScheduledNoteDelete / defaultScheduledNoteDeleteTime でデフォルトを設定できます
-* 1 年以上先には設定できません
-* 削除の代わりに非公開化する選択 (makePrivateInsteadOfDelete) があります
-* 非公開化 (makePrivateInsteadOfDelete) にはロールポリシー canUseMakePrivate が必要です
-* 削除時に他のノートから参照されている添付ファイルは、そのノートのために残ります
-
-### ノートの非公開化 (make private)
-
-* 既存ノートを一括で非公開 (specified) にできます
-* make-private / make-private-many / make-private-many-count エンドポイントがあります
-* 1 時間に 1 回まで (irreversible 警告あり)
-* ノートと添付ファイルを削除する deleteWithFiles オプションがあります
-
-### 引用とリノート
-
-* directRenote でメニューを出さずに直接リノートできます
-* 引用は肉球メニューに移動します
-* 引用ミュートで、特定ユーザーの引用通知を抑制できます
-
-### ノート検索
-
-* withFiles / cw / reply / poll フィルタ
-* AND / OR 検索、除外語、日付範囲
-* pgroonga の高度な構文をサポートします
-
-### ノートの最大文字数
-
-* MAX_NOTE_TEXT_LENGTH は 8192 です
-
-### 見たリノートの記録
-
-* enableViewedRenotes で見たリノートを記録し、折りたたみ表示できます
-
-### ノートの匿名化/色分け
-
-* noteVisibilityColoring で公開範囲ごとに色を付けます
-* ミュートしたユーザーの名前とアイコンをサーバー情報に置き換える anonymizeMutedUsers があります
-
-### 非表示設定
-
-* hidePublicNotes / hideHomeNotes / hideLocalOnlyNotes / hideNoteFromOverview でログアウトユーザーに非表示にできます (ログインユーザーには表示)
-* hideActivity でアクティビティを非表示にできます
-
-## リアクション
-
-* selectReaction でデフォルトリアクションを変更できます (デフォルト 🩷)
-* showLikeButton でいいねボタンを表示できます
-* hideReactionUsers / hideReactionCount でリアクションユーザー/件数を隠せます
-* enableReactionConfirm / enableLikeConfirm で確認ダイアログを出せます
-* reactionChecksMuting でリアクションもミュートを尊重します (トラフィック増)
-* addToEmojiPicker でカスタム絵文字をピッカーに追加できます
-* reaction-stats でリアクション統計 (合計/ユニーク/最多) を見られます
-
-## ミュートとブロック
-
-* 引用ミュート (quote mute): 特定ユーザーの引用をミュート (期限付き)
-* アバター装飾ミュート: 特定ユーザーのアバター装飾を非表示 (期限付き)
-* ミュートしたユーザーの匿名化
-* ミュート期間の設定 (MkMuteDialog)
-
-## フォローと履歴
-
-### フォロー履歴
-
-* follow / unFollow / wasFollow / wasUnFollow / blocked / unBlocked / wasBlocked / wasUnBlocked を記録します
-* フィルタと全削除ができます
-* canReadFollowHistory 権限が必要です
-* 365 日より古い記録は日次のクリーンアップジョブ (毎日 4:30) で自動削除されます
-
-### フォローリクエスト履歴
-
-* sent / received / approved / rejected / wasApproved / wasRejected / wasBlocked / wasUnBlocked を記録します
-* フィルタと全削除ができます
-* 365 日より古い記録は日次のクリーンアップジョブ (毎日 4:30) で自動削除されます
-
-### フォロー制御
-
-* autoFollowBack: フォロー返しを自動化 (ロール権限 canAutoFollowBack)
-* autoFollowOnMove: 移動時の自動フォロー
-* defaultFollowedUsers: 新規ユーザーが自動フォローするユーザー
-* forciblyFollowedUsers: 解除/ミュート/ブロックできない強制フォロー
-* carefulBot: Bot フォローに承認要求
-* autoRejectFollowRequest: フォロー済み以外を自動拒否
-
-### フォロー通知
-
-* youGotUnFollower / followRequestRejected / youGotBlocked / youGotUnblocked 通知
-* unfollow 通知は canUseUnFollowNotification で制御
-* blocked/unblocked 通知は canUseBlockedNotification / canUseUnBlockedNotification で制御
-
-## モデレーション
-
-### LLM モデレーション
-
-* OpenAI 互換の moderations API を使い、投稿をモデレーター確認待ちにします
-* 設定: 有効化/API キー/API URL/モデル/リモート含む/公開範囲
-* キュー (/admin/llm-moderation) で warnUser / deleteNote / suspendUser / resolve
-* モデレーターに通知が送られます
-
-### 管理者操作
-
-* approve-user / decline-user: 承認制サインアップの承認/拒否
-* drop-all-notes: ユーザーの全ノート削除
-* regenerate-user-token: トークン再生成
-* send-notification: 通知送信
-* update-user-name: ユーザー名変更
-* clear-suspicious-login-flag: 不審ログインフラグ解除
-* unsetUserMutualLink: 相互フォロー解除
-* accountTruncate: 公開ノートとドライブファイルを削除 (DM とピン留めは保持)
-
-### 検疫と配信制御
-
-* quarantineRemoteInstance / unquarantine
-* delivery targets による配信先制御
-
-### ロール
-
-* permissionGroup: Moderator (サブモデレーター) 階級を追加。ロール編集画面の「ロールの権限」で選択できる。通報処理 (abuse-user-reports / update-abuse-user-report / resolve-abuse-user-report / forward-abuse-user-report) とユーザー情報参照 (show-user / show-users)、モデレーションノート (update-user-note) はサブモデレーターでも利用可能。管理操作 (requireModerator / requireAdmin のエンドポイント) は引き続き MainModerator / Admin ロールが必要
-* community role: ユーザーが作成できるロール
-* isRainbow: レインボーロール
-* canHomeNote / canEmojiDeletion / canUseRemoteIconDecorations / canAddRoles / canCreateRole
-* canUseUnFollowNotification / canUseBlockedNotification / canUseUnBlockedNotification
-* canPublicNonLtlNote / canReadFollowHistory / canAutoFollowBack
-* canUseTruncate / canUseMakePrivate / canUpdateCounters
-* canUseGeminiLLMAPI / canSkipInviteEmailAuth / canSkipInviteApproval
-* role conditions: isSuspiciousLoginDetected / activatedMoreThan / activatedLessThan
-* announcement target roles (AnnouncementRole)
-
-### コンタクトフォーム
-
-* 有効化/IP あたりの時間制限/認証必須
-* カテゴリ/件名/本文 (20 文字以上)/名前/返信方法 (email or Misskey)
-* 管理画面で pending/inProgress/resolved/closed を管理
-
-## LLM 連携
-
-### サーバー OpenAI 互換
-
-* serverOpenAIEnabled / apiKey / baseURL / models
-* OpenAI 互換 API (Chat Completions) をサーバー経由で利用可能
-* useGeminiLLMAPI でユーザーがサーバー提供LLMを利用
-* useGeminiWithMedia でメディア付き (image_url)
-* system prompt と note/profile summarize prompts
-* ノート変換 (long/short/simple/casual/professional/cat/custom)
-* notesLimitPrompt / includeFollowersNotesPrompt
-* ユーザー直指定モード: openaiToken / openaiBaseUrl / openaiModel
-* モデル一覧を API から動的取得 (notes/llm-models、GET /models)
-* モデルの画像入力対応をプロバイダのモダリティ情報から判定 (OpenRouter / Mistral / DeepSeek 等、情報が無い場合はモデル名推測)
-* ユーザーのUI言語での応答を促すヒントをシステムプロンプトに付与
-* 画像入力対応とみなす設定 (openaiForceImageInput) を追加
-* 旧ユーザー設定 geminiModel / geminiThinkingBudget は廃止 (geminiToken と合わせて再設定が必要)
-* プロンプトインジェクション対策 (user_content デリミタとガード指示)
-* 返信文脈を参考データとして要約に付与
-* temperature 設定 (ユーザー直指定モード)
-
-**注意:** このバージョンでサーバー Gemini 設定 (serverGemini*) は廃止されました。
-マイグレーションが既存の Gemini API キーを OpenAI 互換設定へ引き継ぎます
-(baseURL は Gemini の OpenAI 互換エンドポイント)。Gemini を利用していなかった
-サーバーは、管理画面 (独自機能 → LLM設定) で OpenAI 互換 API キーとベースURLを
-再設定してください。旧 Gemini 用ユーザートークン (geminiToken) も削除されたため、
-各自で openaiToken を設定し直す必要があります。
-
-### LLM モデレーション
-
-* 上記参照
-
-## 通知
-
-* unfollow / followRequestRejected / blocked / unblocked / loginFailed / llmModerationQueue / receivedContactForm / roleAssigned
-* newNotes / notedBySomeUsers / renoteedBySomeUsers (grouped)
-* メール通知 (unfollow/blocked/unblocked)
-* loginDescription に IP を含む
-
-## プロフィールと表示
-
-### カスタム表示
-
-* customSplashText: 複数行のスプラッシュ
-* backgroundImageUrls: 背景画像
-* enableLongIconUrl / longIconUrl: 長いアイコン URL
-* customCursor: 5 種類の URL
-* customFont: カスタムフォント
-* nicknameEnabled / nicknameMap: クライアント側ニックネーム
-* isAdmin ラベル
-
-### Hana entrance
-
-* useHanaEntrance で花の入り口 UI に切り替え
-* hanaThemeColor / hanaThemeAltColor / hanaThemeWeakOpacity
-* hanaModeIcon / hanaModeIconSize / hanaModeIconRadius / hanaModeBackground
-* entranceShow* で表示要素を制御
-* entranceMarginLeft でマージン調整
-
-### サーバー統計の偽装
-
-* enableCpuModel / customCpuModel
-* enableCpuCore / customCpuCore
-* enableMemTotal / customMemTotal
-* enableFsTotal / customFsTotal
-
-### DeepLX 無料モード
-
-* deeplFreeMode / deeplFreeInstance (DeepLX-JS, 認証キー不要)
-
-### ロール表示
-
-* communityRole / community
-* manageRole / assignedRole / assignableRole
-* isRainbow
-
-## タイムラインと UI
-
-* hideLocalTimeLine / hideSocialTimeLine / hideGlobalTimeLine / hideLists / hideAntennas / hideChannel
-* widgetDrawerDirection (left/right)
-* textAreaAutoResize
-* showInstanceTickerSoftwareName / showInstanceTickerVersion
-* chooseFileFrom (OS ダイアログ vs Misskey ダイアログ)
-* directRenote
-* anonymizeMutedUsers
-* noteVisibilityColoring
-* reactionChecksMuting
-* enableReactionConfirm / enableLikeConfirm
-
-### 投稿フォーム
-
-* postFormActions で下部アクションを並び替え
-* defaultScheduledNoteDelete / defaultScheduledNoteDeleteTime
-
-### 季節エフェクト
-
-* enableSeasonalScreenEffect / hemisphere
-
-## ウィジェット
-
-* WidgetWeather (Open-Meteo)
-* WidgetEarthQuake
-* WidgetListenBrainz (userId)
-* WidgetNestedWidget
-* WidgetFederationJobQueue
-* ネストウィジェット
-
-## 地震情報
-
-* Wolfx WebSocket API
-* 有効化/強度閾値/TTS/通知スタイル/音/地域フィルタ/スロットル/ログ
-* テスト通知
-
-## ListenBrainz
-
-* WidgetListenBrainz (userId)
-* user/index.listenbrainz ページ
-* 外部 API の origin_url は http(s) のみリンク化します
-
-## 太鼓
-
-* taiko ページ (iframe で cjdgrevival.com を埋め込み)
-* games ページに bubble-game / reversi / taiko
-
-## ドライブとアップロード
-
-* マルチパートアップロード (create/upload-part/complete/abort)
-* CleanExpiredMultipartUploads / CleanExpiredRemoteFiles / ReDownloadRemoteFile
-* showOnlySensitiveFiles
-* deleteWithFiles
-
-## 連合と ActivityPub
-
-* signed AP fetch
-* access control
-* quarantine
-* delivery targets
-* split remote cache / object storage remote prefix
-* requireSignedApFetch
-
-## サーバー管理
-
-### テンプラ管理画面
-
-* /admin/tempura-admin に集約
-* ApprovalRequired / DefaultRequireSigninToViewContents / BlockMentions / LongIconUrl / UsernameMinLength / SecondsPerSignup / CustomSplashText / EmailDomainSettings / LlmModerationSettings / HanaEntranceSettings / EntranceSettings / DefaultFollowedUsers / ProxyAccountFollowModeSettings / BackgroundImages / CustomCursor / GeminiSettings / ContactFormSettings / LoginRiskSettings / ServerStatsSettings / SignedApFetchSettings / DeeplFreeModeSettings / ObjectStorageRemoteSettings / BlockedUserImageSettings / OfflinePageSettings
-
-### オフラインページ
-
-* サーバーに接続できないとき Service Worker がエラー種別 (オフラインかサーバーエラーか) を表示するページを返す。自動再試行つき
-* offlinePageConfig: オフラインページのカスタムメッセージ・問い合わせ先 URL (テンプラ管理画面で設定)
-
-### インスタンス情報
-
-* about-misskey-tempura ページ
-* logo-tempura.svg / version / contributors / official & partner servers
-
-### チェンジログ
-
-* /tempura-changelog はこのページです
-
-## 検索
-
-* 高度な検索 (AND/OR/除外/日付範囲)
-* copySearchUrl
-
-## 互換性と注意
-
-* HackMD 置き換え時の in-app changelog 問題は解消済みです
-* 予約投稿は本家に導入済みのため除外
-* ニックネームはクライアント側のみ
-
-## バージョン
-
-* 2026.10.0-tempura-2.0.21-dev
-`;
-
-function parseMarkdown(md: string): Section[] {
-	const lines = md.split('\n');
-	const sections: Section[] = [];
-	let currentSection: Section | null = null;
-	let currentBlock: Block | null = null;
-
-	const pushBlock = (block: Block) => {
-		if (!currentSection) {
-			currentSection = { title: '概要', blocks: [] };
-			sections.push(currentSection);
-		}
-		currentSection.blocks.push(block);
-	};
-
-	for (const raw of lines) {
-		const line = raw.trimEnd();
-		if (line.startsWith('# ')) {
-			continue;
-		}
-		if (line.startsWith('## ')) {
-			currentSection = { title: line.slice(3).trim(), blocks: [] };
-			sections.push(currentSection);
-			currentBlock = null;
-			continue;
-		}
-		if (line.startsWith('### ')) {
-			currentBlock = { type: 'h3', text: line.slice(4).trim() };
-			pushBlock(currentBlock);
-			currentBlock = null;
-			continue;
-		}
-		if (line.startsWith('* ')) {
-			const item = line.slice(2).trim();
-			if (currentBlock && currentBlock.type === 'ul') {
-				currentBlock.items.push(item);
-			} else {
-				currentBlock = { type: 'ul', items: [item] };
-				pushBlock(currentBlock);
-			}
-			continue;
-		}
-		if (line.trim() === '') {
-			currentBlock = null;
-			continue;
-		}
-		// skip the leading title/intro paragraphs already shown; keep others as paragraphs
-		if (!currentSection) {
-			continue;
-		}
-		if (currentBlock && currentBlock.type === 'p') {
-			currentBlock.text += ' ' + line.trim();
-		} else {
-			currentBlock = { type: 'p', text: line.trim() };
-			pushBlock(currentBlock);
-		}
-	}
-
-	// remove empty sections
-	return sections.filter(s => s.blocks.length > 0);
+import { countFeatureItems, parseFeatureCatalog, searchFeatureCatalog } from '@/utility/tempura-script/feature-catalog.js';
+
+const catalog = parseFeatureCatalog(markdown);
+const sections = catalog.sections;
+const totalItems = sections.reduce((count, section) => count + countFeatureItems(section), 0);
+const selectedId = ref<string | null>(sections[0]?.id ?? null);
+const query = ref('');
+const searching = computed(() => query.value.trim().length > 0);
+const visibleSections = computed(() => searching.value
+	? searchFeatureCatalog(sections, query.value)
+	: sections.filter(section => selectedId.value === null || section.id === selectedId.value));
+const activeTitle = computed(() => sections.find(section => section.id === selectedId.value)?.title ?? i18n.ts._misskeyTempura._changelog.allCategories);
+const resultCount = computed(() => visibleSections.value.reduce((count, section) => count + countFeatureItems(section), 0));
+
+function selectCategory(id: string | null): void {
+	selectedId.value = id;
+	query.value = '';
 }
-
-const sections = computed(() => parseMarkdown(markdown));
-
-const headerActions = computed(() => []);
-const headerTabs = computed(() => []);
 
 definePage(() => ({
 	title: i18n.ts._misskeyTempura.diff,
@@ -560,52 +145,328 @@ definePage(() => ({
 </script>
 
 <style lang="scss" module>
-.changelogContainer {
+.root {
+	container-type: inline-size;
+	display: flex;
+	flex-direction: column;
+	gap: 24px;
+}
+
+.hero {
+	padding: clamp(24px, 5cqi, 48px);
+	border-top: 3px solid var(--MI_THEME-accent);
+}
+
+.eyebrow {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--MI_THEME-accent);
+	font-size: 0.85em;
+	font-weight: 700;
+}
+
+.title {
+	margin: 14px 0;
+	font-size: clamp(1.5em, 4cqi, 2em);
+	line-height: 1.4;
+	letter-spacing: -0.025em;
+}
+
+.introduction {
+	max-width: 65em;
+	margin: 0;
+	color: var(--MI_THEME-fg);
+	line-height: 1.9;
+}
+
+.heroFooter {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 20px;
+	margin-top: 24px;
+	padding-top: 18px;
+	border-top: 1px solid var(--MI_THEME-divider);
+	color: var(--MI_THEME-fg);
+	font-size: 0.85em;
+
+	b {
+		margin-left: 8px;
+		color: var(--MI_THEME-accent);
+	}
+}
+
+.layout {
+	display: grid;
+	grid-template-columns: 230px minmax(0, 1fr);
+	align-items: start;
+	gap: 24px;
+}
+
+.sidebar {
+	position: sticky;
+	top: calc(var(--MI-stickyTop, 0px) + 12px);
+	min-width: 0;
+}
+
+.navigation {
+	padding: 16px 8px;
+}
+
+.navTitle {
+	margin: 0;
+	padding: 0 12px 12px;
+	color: var(--MI_THEME-fg);
+	font-size: 0.8em;
+}
+
+.categoryList {
+	max-height: 65vh;
+	overflow-y: auto;
+	scrollbar-width: thin;
+}
+
+.category {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	box-sizing: border-box;
+	width: 100%;
+	padding: 11px 12px;
+	border-radius: var(--MI-radius);
+	text-align: left;
+	font-size: 0.85em;
+	line-height: 1.5;
+
+	&:hover {
+		background: var(--MI_THEME-buttonHoverBg);
+	}
+
+	&.active {
+		color: var(--MI_THEME-accent);
+		background: var(--MI_THEME-accentedBg);
+		font-weight: 700;
+	}
+
+	&:focus-visible {
+		outline: 2px solid var(--MI_THEME-accent);
+		outline-offset: -2px;
+	}
+}
+
+.count {
+	flex-shrink: 0;
+	font-size: 0.85em;
+	font-variant-numeric: tabular-nums;
+}
+
+.main {
 	display: flex;
 	flex-direction: column;
 	gap: 16px;
+	min-width: 0;
 }
 
-.intro {
-	color: var(--MI_THEME-fg);
-	opacity: 0.8;
+.searchPanel {
+	padding: 18px 20px;
 }
 
-.errorMessage {
-	color: var(--MI_THEME-error);
-	background-color: var(--MI_THEME-infoWarnBg);
-	border: 1px solid var(--MI_THEME-error);
-	padding: 12px;
-	border-radius: 8px;
-	text-align: center;
-}
-
-.versionLabel {
-	font-weight: bold;
-}
-
-.content {
+.searchBox {
 	display: flex;
-	flex-direction: column;
-	gap: 8px;
+	align-items: center;
+	gap: 12px;
+	border: 1px solid var(--MI_THEME-inputBorder);
+	border-radius: var(--MI-radius);
+	padding: 0 14px;
+
+	&:focus-within {
+		border-color: var(--MI_THEME-accent);
+		outline: 2px solid var(--MI_THEME-accentedBg);
+	}
+
+	> i {
+		color: var(--MI_THEME-accent);
+	}
 }
 
-.categoryTitle {
-	margin: 8px 0 4px;
+.searchInput {
+	width: 100%;
+	min-width: 0;
+	padding: 14px 0;
+	border: 0;
+	outline: 0;
+	background: transparent;
+	color: var(--MI_THEME-fg);
+	font: inherit;
+	font-size: 0.9em;
+}
+
+.searchHint {
+	margin: 10px 0 0;
+	color: var(--MI_THEME-fg);
+	font-size: 0.75em;
+}
+
+.resultsHeading {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 12px;
+	padding: 4px;
+	font-size: 0.85em;
+	overflow-wrap: anywhere;
+}
+
+.resultCount {
+	flex-shrink: 0;
+	color: var(--MI_THEME-accent);
+	font-variant-numeric: tabular-nums;
+}
+
+.section {
+	overflow-wrap: anywhere;
+}
+
+.sectionHeader {
+	display: flex;
+	align-items: baseline;
+	gap: 14px;
+	padding: 24px;
+	border-bottom: 1px solid var(--MI_THEME-divider);
+}
+
+.sectionNumber {
+	color: var(--MI_THEME-accent);
+	font-size: 0.8em;
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+.sectionTitle {
+	margin: 0;
+	font-size: 1.2em;
+	line-height: 1.5;
+}
+
+.sectionBody {
+	padding: 0 24px;
+}
+
+.group {
+	padding: 24px 0;
+
+	& + & {
+		border-top: 1px solid var(--MI_THEME-divider);
+	}
+}
+
+.groupTitle {
+	margin: 0 0 16px;
 	font-size: 1em;
-	font-weight: bold;
+	color: var(--MI_THEME-accent);
 }
 
 .paragraph {
-	margin: 4px 0;
+	margin: 0 0 12px;
+	line-height: 1.9;
 }
 
-.changeList {
+.items {
 	margin: 0;
-	padding-left: 20px;
+	padding-left: 1.3em;
+	line-height: 1.9;
+
+	> li + li {
+		margin-top: 12px;
+	}
+
+	> li::marker {
+		color: var(--MI_THEME-accent);
+	}
 }
 
-.changeItem {
-	margin: 2px 0;
+.item {
+	padding-left: 4px;
+}
+
+.children {
+	margin-top: 10px;
+	padding-left: 1.3em;
+	font-size: 0.95em;
+
+	> li + li {
+		margin-top: 8px;
+	}
+}
+
+.empty {
+	padding: 40px 24px;
+	text-align: center;
+
+	> i {
+		font-size: 2em;
+		color: var(--MI_THEME-accent);
+	}
+}
+
+.notes {
+	padding: 18px 24px;
+	color: var(--MI_THEME-fg);
+	font-size: 0.85em;
+	overflow-wrap: anywhere;
+
+	> summary {
+		cursor: pointer;
+		font-weight: 700;
+		line-height: 1.8;
+	}
+
+	> ul {
+		margin-top: 16px;
+	}
+}
+
+@container (max-width: 750px) {
+	.layout {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 16px;
+	}
+
+	.sidebar {
+		position: static;
+	}
+
+	.navigation {
+		padding: 14px;
+	}
+
+	.navTitle {
+		padding-left: 0;
+	}
+
+	.categoryList {
+		display: flex;
+		gap: 8px;
+		overflow-x: auto;
+		max-height: none;
+		padding-bottom: 4px;
+	}
+
+	.category {
+		flex-shrink: 0;
+		width: auto;
+		max-width: 85cqi;
+		border: 1px solid var(--MI_THEME-divider);
+		padding: 10px 12px;
+	}
+
+	.sectionHeader {
+		padding: 20px;
+	}
+
+	.sectionBody {
+		padding: 0 20px;
+	}
 }
 </style>
