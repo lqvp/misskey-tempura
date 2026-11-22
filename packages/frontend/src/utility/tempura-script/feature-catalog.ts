@@ -19,7 +19,8 @@ export function parseFeatureCatalog(markdown: string): { introduction: string; n
 	let paragraphContinues = false;
 
 	// Maintainer instructions are not part of the visible or searchable catalog.
-	for (const raw of markdown.replace(/<!--[\s\S]*?(?:-->|$)/g, '').split(/\r?\n/)) {
+	const visible = markdown.replace(/(`+)[\s\S]*?\1|<!--[\s\S]*?(?:-->|$)/g, match => match.startsWith('<!--') ? '' : match);
+	for (const raw of visible.split(/\r?\n/)) {
 		const line = raw.trim();
 		if (!line || line.startsWith('# ')) {
 			paragraphContinues = false;
@@ -103,9 +104,10 @@ export function searchFeatureCatalog(sections: FeatureSection[], query: string):
 
 	return sections.flatMap(section => {
 		const groups = section.groups.flatMap(group => {
-			if (matches(section.title, group.title, ...group.paragraphs)) return [group];
+			if (matches(section.title, group.title)) return [group];
+			const paragraphs = group.paragraphs.filter(paragraph => matches(section.title, group.title, paragraph));
 			const items = group.items.filter(item => matches(section.title, group.title, item.text, ...item.children));
-			return items.length ? [{ ...group, items }] : [];
+			return items.length || paragraphs.length ? [{ ...group, paragraphs: items.length ? group.paragraphs : paragraphs, items }] : [];
 		});
 		return groups.length ? [{ ...section, groups }] : [];
 	});

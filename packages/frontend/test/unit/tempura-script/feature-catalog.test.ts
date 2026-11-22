@@ -15,13 +15,14 @@ describe('feature catalog', () => {
 		'* Requires a role',
 		'## Antennas',
 		'### Keyword matching',
+		'A paragraph',
+		'continued here',
+		'',
 		'* RE2 patterns',
 		'  * No lookbehind',
 		'    supported here',
 		'* Plain text',
 		'',
-		'A paragraph',
-		'continued here',
 		'## Uploads',
 		'* Image processing',
 	].join('\r\n');
@@ -56,15 +57,24 @@ describe('feature catalog', () => {
 	});
 
 	test('includes every category and list item from the real single source', () => {
-		const document = parseFeatureCatalog(markdown);
+		const visible = markdown.replace(/<!--[\s\S]*?(?:-->|$)/g, '');
+		const document = parseFeatureCatalog(`<!--\n## Hidden\n* hidden item\n  * hidden child\n-->\n${markdown}`);
 		expect(document.sections.map(section => section.title)).toEqual(
-			[...markdown.matchAll(/^## (.+)$/gm)].map(match => match[1]),
+			[...visible.matchAll(/^## (.+)$/gm)].map(match => match[1]),
 		);
 		const items = document.sections.flatMap(section => section.groups.flatMap(group => group.items));
-		expect(items.length + document.notes.length).toBe([...markdown.matchAll(/^\* /gm)].length);
-		expect(items.flatMap(item => item.children)).toHaveLength([...markdown.matchAll(/^ +\* /gm)].length);
-		expect(searchFeatureCatalog(document.sections, '2026-11-22')[0].title).toBe('2026-11-22 の変更');
-		expect(searchFeatureCatalog(document.sections, 'keywordMode')).toHaveLength(1);
+		expect(items.length + document.notes.length).toBe([...visible.matchAll(/^\* /gm)].length);
+		expect(items.flatMap(item => item.children)).toHaveLength([...visible.matchAll(/^ +\* /gm)].length);
+	});
+
+	test('shows matching explanations without counting unrelated features', () => {
+		const { sections } = parseFeatureCatalog(source);
+		const [result] = searchFeatureCatalog(sections, 'antennas paragraph');
+		expect(result.groups[0].paragraphs).toEqual(['A paragraph continued here']);
+		expect(result.groups[0].items).toEqual([]);
+		expect(countFeatureItems(result)).toBe(0);
+		expect(searchFeatureCatalog(sections, 'keyword')[0].groups[0].items).toHaveLength(2);
+		expect(sections[0].groups[0].items).toHaveLength(2);
 	});
 
 	test('handles an empty document', () => {
@@ -76,6 +86,12 @@ describe('feature catalog', () => {
 		expect(catalog).toEqual(parseFeatureCatalog(source));
 		expect(searchFeatureCatalog(catalog.sections, 'secret')).toEqual([]);
 		expect(parseFeatureCatalog('## Visible\n* Before <!-- secret -->after').sections[0].groups[0].items[0].text).toBe('Before after');
+	});
+
+	test('does not hide literal comment openers in inline code or later categories', () => {
+		const catalog = parseFeatureCatalog('## A\n* HTML `<!--` example\n* Two backticks ``<!--``\n## B\n* later');
+		expect(catalog.sections.map(section => section.title)).toEqual(['A', 'B']);
+		expect(catalog.sections[0].groups[0].items.map(item => item.text)).toEqual(['HTML `<!--` example', 'Two backticks ``<!--``']);
 	});
 });
 

@@ -24,6 +24,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<aside :class="$style.sidebar">
 					<nav class="_panel" :class="$style.navigation" :aria-label="i18n.ts._misskeyTempura._changelog.categories">
 						<h2 :class="$style.navTitle">{{ i18n.ts._misskeyTempura._changelog.categories }}</h2>
+						<select
+							:class="$style.categorySelect"
+							:aria-label="i18n.ts._misskeyTempura._changelog.categories"
+							:value="searching ? '' : selectedId ?? ''"
+							@change="selectCategory(($event.target as HTMLSelectElement).value || null)"
+						>
+							<option value="">{{ i18n.ts._misskeyTempura._changelog.allCategories }}</option>
+							<option v-for="section in sections" :key="section.id" :value="section.id">{{ section.title }}</option>
+						</select>
 						<div :class="$style.categoryList">
 							<button
 								type="button"
@@ -66,7 +75,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<p :class="$style.searchHint">{{ i18n.ts._misskeyTempura._changelog.searchHint }}</p>
 					</div>
 
-					<div :class="$style.resultsHeading" role="status" aria-live="polite">
+					<div ref="resultsHeading" :class="$style.resultsHeading" role="status" aria-live="polite">
 						<span>{{ searching ? i18n.tsx._misskeyTempura._changelog.results({ query: query.trim() }) : activeTitle }}</span>
 						<span :class="$style.resultCount">{{ i18n.tsx._misskeyTempura._changelog.items({ count: resultCount }) }}</span>
 					</div>
@@ -118,7 +127,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue';
+import { computed, nextTick, onActivated, onDeactivated, onMounted, onUnmounted, ref, shallowRef, useTemplateRef } from 'vue';
 import catalogUrl from '../../../../diff.md?url&no-inline';
 import { version } from '@@/js/config.js';
 import { definePage } from '@/page.js';
@@ -128,7 +137,8 @@ import { countFeatureItems, fetchFeatureCatalog, searchFeatureCatalog } from '@/
 const catalog = shallowRef<Awaited<ReturnType<typeof fetchFeatureCatalog>> | null>(null);
 const loading = ref(true);
 const error = ref(false);
-const controller = new AbortController();
+let controller: AbortController | null = null;
+const resultsHeading = useTemplateRef<HTMLElement>('resultsHeading');
 const sections = computed(() => catalog.value?.sections ?? []);
 const totalItems = computed(() => sections.value.reduce((count, section) => count + countFeatureItems(section), 0));
 const selectedId = ref<string | null>(null);
@@ -141,28 +151,52 @@ const activeTitle = computed(() => sections.value.find(section => section.id ===
 const resultCount = computed(() => visibleSections.value.reduce((count, section) => count + countFeatureItems(section), 0));
 
 async function loadCatalog(): Promise<void> {
+	controller?.abort();
+	const request = new AbortController();
+	controller = request;
 	loading.value = true;
 	error.value = false;
 	try {
-		const loaded = await fetchFeatureCatalog(catalogUrl, controller.signal);
-		if (controller.signal.aborted) return;
+		const loaded = await fetchFeatureCatalog(catalogUrl, request.signal);
+		if (request.signal.aborted || controller !== request) return;
 		catalog.value = loaded;
 		selectedId.value = loaded.sections[0]?.id ?? null;
 	} catch (err) {
-		if (controller.signal.aborted) return;
+		if (request.signal.aborted || controller !== request) return;
 		console.error('Failed to load the Tempura feature catalog', err);
 		error.value = true;
 	} finally {
-		loading.value = false;
+		if (controller === request) {
+			controller = null;
+			loading.value = false;
+		}
 	}
 }
 
-onMounted(loadCatalog);
-onUnmounted(() => controller.abort());
+function ensureCatalog(): void {
+	if (!catalog.value && !controller) void loadCatalog();
+}
 
-function selectCategory(id: string | null): void {
+function cancelLoading(): void {
+	controller?.abort();
+	controller = null;
+	loading.value = false;
+}
+
+// RouterView caches pages; leaving it deactivates rather than unmounts them.
+onMounted(ensureCatalog);
+onActivated(ensureCatalog);
+onDeactivated(cancelLoading);
+onUnmounted(cancelLoading);
+
+async function selectCategory(id: string | null): Promise<void> {
 	selectedId.value = id;
 	query.value = '';
+	await nextTick();
+	const heading = resultsHeading.value;
+	if (!heading) return;
+	const margin = parseFloat(window.getComputedStyle(heading).scrollMarginTop) || 0;
+	if (heading.getBoundingClientRect().top < margin) heading.scrollIntoView({ block: 'start' });
 }
 
 definePage(() => ({
@@ -245,6 +279,17 @@ definePage(() => ({
 	padding: 0 12px 12px;
 	color: var(--MI_THEME-fg);
 	font-size: 0.8em;
+}
+
+.categorySelect {
+	display: none;
+	width: 100%;
+	padding: 10px;
+	border: 1px solid var(--MI_THEME-divider);
+	border-radius: var(--MI-radius);
+	background: var(--MI_THEME-panel);
+	color: var(--MI_THEME-fg);
+	font: inherit;
 }
 
 .categoryList {
@@ -336,6 +381,7 @@ definePage(() => ({
 }
 
 .resultsHeading {
+	scroll-margin-top: calc(var(--MI-stickyTop, 0px) + 12px);
 	display: flex;
 	justify-content: space-between;
 	align-items: baseline;
@@ -473,19 +519,11 @@ definePage(() => ({
 	}
 
 	.categoryList {
-		display: flex;
-		gap: 8px;
-		overflow-x: auto;
-		max-height: none;
-		padding-bottom: 4px;
+		display: none;
 	}
 
-	.category {
-		flex-shrink: 0;
-		width: auto;
-		max-width: 85cqi;
-		border: 1px solid var(--MI_THEME-divider);
-		padding: 10px 12px;
+	.categorySelect {
+		display: block;
 	}
 
 	.sectionHeader {
