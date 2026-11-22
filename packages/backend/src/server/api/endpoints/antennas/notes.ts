@@ -286,13 +286,13 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		const result: MiNote['id'][] = [];
 		if (need <= 0) return [];
 
-		const scan = async (scanAscending: boolean, lowerBoundId: string | null): Promise<string | null> => {
+		const scan = async (scanAscending: boolean, lowerBoundId: string | null, scanLimit: number): Promise<string | null> => {
 			let cursor: string | null = null;
 			let scanned = 0;
-			while (result.length < need && scanned < BACKFILL_SCAN_LIMIT) {
+			while (result.length < need && scanned < scanLimit) {
 				const batch = query.clone()
 					.orderBy('note.id', scanAscending ? 'ASC' : 'DESC')
-					.take(Math.min(BACKFILL_BATCH_SIZE, BACKFILL_SCAN_LIMIT - scanned));
+					.take(Math.min(BACKFILL_BATCH_SIZE, scanLimit - scanned));
 				if (cursor != null) batch.andWhere(scanAscending ? 'note.id > :cursor' : 'note.id < :cursor', { cursor });
 				if (lowerBoundId != null) batch.andWhere('note.id > :scanLowerBoundId', { scanLowerBoundId: lowerBoundId });
 
@@ -328,14 +328,16 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			return result.length < need ? cursor : null;
 		};
 
-		const stoppedAt = await scan(ascending, null);
+		// 新しい側からの走査に回す分を残し、1 リクエストで調べる総数は BACKFILL_SCAN_LIMIT に収める
+		const firstScanLimit = ascending ? Math.floor(BACKFILL_SCAN_LIMIT / 2) : BACKFILL_SCAN_LIMIT;
+		const stoppedAt = await scan(ascending, null, firstScanLimit);
 
 		// 古い順の走査が上限に達しても足りないときは、新しい側からも走査する。
 		// 応答は空でもカーソルを返せないため、sinceId 直後に不一致が上限件数以上並ぶと、
 		// 新着取得が毎回同じ範囲を調べて空を返し続け、先に進めなくなる。
 		// 新しい側の一致を返せばクライアントのカーソルが進む (間に挟まった一致は新着取得では飛ばされる)
 		if (ascending && stoppedAt != null) {
-			await scan(false, stoppedAt);
+			await scan(false, stoppedAt, BACKFILL_SCAN_LIMIT - firstScanLimit);
 		}
 
 		return result;
