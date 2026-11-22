@@ -12,6 +12,7 @@ const brotliCompress = promisify(zlib.brotliCompress);
 
 const compressibleExtensions = new Set(['.js', '.mjs', '.css', '.json', '.svg']);
 const minSize = 1024;
+const concurrency = 8;
 
 /**
  * outputDir 配下の圧縮可能なファイルを brotli で事前圧縮し、隣に `.br` を置く。
@@ -23,16 +24,23 @@ export async function precompressDir(outputDir: string, quality = zlib.constants
 		.filter(entry => entry.isFile() && compressibleExtensions.has(path.extname(entry.name)))
 		.map(entry => path.join(entry.parentPath, entry.name));
 
-	await Promise.all(files.map(async file => {
-		const source = await fs.readFile(file);
-		if (source.length < minSize) return;
-		const compressed = await brotliCompress(source, {
-			params: {
-				[zlib.constants.BROTLI_PARAM_QUALITY]: quality,
-				[zlib.constants.BROTLI_PARAM_SIZE_HINT]: source.length,
-			},
-		});
-		if (compressed.length >= source.length) return;
-		await fs.writeFile(`${file}.br`, compressed);
-	}));
+	// 同時に開くファイル数とメモリ上のバッファ数を抑えるため、固定数のワーカーで順に処理する。
+	let next = 0;
+	const worker = async () => {
+		while (next < files.length) {
+			const file = files[next++];
+			const { size } = await fs.stat(file);
+			if (size < minSize) continue;
+			const source = await fs.readFile(file);
+			const compressed = await brotliCompress(source, {
+				params: {
+					[zlib.constants.BROTLI_PARAM_QUALITY]: quality,
+					[zlib.constants.BROTLI_PARAM_SIZE_HINT]: source.length,
+				},
+			});
+			if (compressed.length >= source.length) continue;
+			await fs.writeFile(`${file}.br`, compressed);
+		}
+	};
+	await Promise.all(Array.from({ length: Math.min(concurrency, files.length) }, worker));
 }
