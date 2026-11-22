@@ -7,10 +7,10 @@ import * as fs from 'node:fs';
 import * as stream from 'node:stream/promises';
 import { Inject, Injectable } from '@nestjs/common';
 import chalk from 'chalk';
-import got, { HTTPError } from 'got';
 import type { Progress, Response } from 'got';
 import { parse } from 'content-disposition';
 import { DI } from '@/di-symbols.js';
+import { loadGot } from '@/misc/heavy-dependencies.js';
 import type { Config } from '@/config.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { createTemp } from '@/misc/create-temp.js';
@@ -47,6 +47,7 @@ export class DownloadService {
 		const urlObj = new URL(url);
 		let filename = urlObj.pathname.split('/').pop() ?? 'untitled';
 
+		const { default: got, HTTPError } = await loadGot();
 		const req = got.stream(url, {
 			headers: {
 				'User-Agent': this.config.userAgent,

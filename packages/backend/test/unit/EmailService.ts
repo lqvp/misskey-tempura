@@ -15,11 +15,13 @@ import type Logger from '@/logger.js';
 
 const transport = vi.hoisted(() => ({
 	juiceLoaded: false,
+	nodemailerLoaded: false,
 	sendMail: vi.fn(),
 	createTransport: vi.fn(),
 }));
 
 vi.mock('nodemailer', () => {
+	transport.nodemailerLoaded = true;
 	transport.createTransport.mockReturnValue({ sendMail: transport.sendMail });
 	return { createTransport: transport.createTransport };
 });
@@ -63,6 +65,7 @@ describe('EmailService lazy send dependencies', () => {
 		meta.enableEmail = false;
 		await service.sendEmail('recipient@example.com', '', '', '');
 		expect(transport.juiceLoaded).toBe(false);
+		expect(transport.nodemailerLoaded).toBe(false);
 		expect(transport.createTransport).not.toHaveBeenCalled();
 	});
 
@@ -70,6 +73,7 @@ describe('EmailService lazy send dependencies', () => {
 		meta.enableEmail = true;
 		await service.sendEmail('recipient@example.com', 'Subject', '<p>Hello</p><script>bad()</script>', 'Hello');
 		expect(transport.juiceLoaded).toBe(true);
+		expect(transport.nodemailerLoaded).toBe(true);
 		const mail = transport.sendMail.mock.calls[0][0];
 		expect(mail).toMatchObject({ to: 'recipient@example.com', subject: 'Subject', text: 'Hello' });
 		expect(mail.html).toContain('<p>Hello</p>');

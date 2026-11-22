@@ -8,10 +8,10 @@ import * as http from 'node:http';
 import * as https from 'node:https';
 import { Injectable } from '@nestjs/common';
 import { DeleteObjectCommand, ListObjectsCommand, S3Client } from '@aws-sdk/client-s3';
-import { Upload } from '@aws-sdk/lib-storage';
 import { NodeHttpHandler, NodeHttpHandlerOptions } from '@smithy/node-http-handler';
 import type { MiMeta } from '@/models/Meta.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
+import { loadLibStorage } from '@/misc/heavy-dependencies.js';
 import { bindThis } from '@/decorators.js';
 import type { DeleteObjectCommandInput, ListObjectsCommandInput, PutObjectCommandInput } from '@aws-sdk/client-s3';
 
@@ -61,6 +61,7 @@ export class S3Service {
 	@bindThis
 	public async upload(meta: MiMeta, input: PutObjectCommandInput) {
 		const client = this.getS3Client(meta);
+		const { Upload } = await loadLibStorage();
 		return new Upload({
 			client,
 			params: input,

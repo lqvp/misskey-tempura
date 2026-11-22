@@ -4,8 +4,6 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import { createTransport } from 'nodemailer';
-import sanitizeHtml from 'sanitize-html';
 import { UtilityService } from '@/core/UtilityService.js';
 import { DI } from '@/di-symbols.js';
 import type { Config } from '@/config.js';
@@ -16,7 +14,7 @@ import { bindThis } from '@/decorators.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { escapeHtml } from '@/misc/escape-html.js';
 import { normalizeEmailForComparison, normalizedEmailSql } from '@/misc/normalize-email.js';
-import { loadJuice } from '@/misc/heavy-dependencies.js';
+import { loadJuice, loadNodemailer, loadSanitizeHtml } from '@/misc/heavy-dependencies.js';
 
 @Injectable()
 export class EmailService {
@@ -43,7 +41,11 @@ export class EmailService {
 	public async sendEmail(to: string, subject: string, html: string, text: string) {
 		if (!this.meta.enableEmail) return;
 
-		const { default: juice } = await loadJuice();
+		const [{ createTransport }, { default: juice }, { default: sanitizeHtml }] = await Promise.all([
+			loadNodemailer(),
+			loadJuice(),
+			loadSanitizeHtml(),
+		]);
 
 		const iconUrl = `${this.config.url}/static-assets/mi-white.png`;
 		const emailSettingUrl = `${this.config.url}/settings/email`;
