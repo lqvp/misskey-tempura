@@ -277,7 +277,17 @@ const props = withDefaults(defineProps<{
 	initialTab: 'overview',
 });
 
-const result = await _fetch_();
+const result = await _fetch_().catch(err => {
+	// 管理者ロールを公開していない管理者は、メニューから開けても管理情報の取得で拒否される
+	if (err?.code === 'ACCESS_DENIED') {
+		os.alert({
+			type: 'error',
+			title: i18n.ts.permissionDeniedError,
+			text: i18n.ts.permissionDeniedErrorDescription,
+		});
+	}
+	throw err;
+});
 
 const tab = ref(props.initialTab);
 const {
