@@ -22,11 +22,9 @@ import {
 	Filler,
 } from 'chart.js';
 import gradient from 'chartjs-plugin-gradient';
-import zoomPlugin from 'chartjs-plugin-zoom';
-import { MatrixController, MatrixElement } from 'chartjs-chart-matrix';
 import { themeManager } from '@/theme.js';
 import { store } from '@/store.js';
-import 'chartjs-adapter-date-fns';
+import '@/utility/chart-date-adapter.js';
 
 export function initChart() {
 	Chart.register(
@@ -45,8 +43,6 @@ export function initChart() {
 		Tooltip,
 		SubTitle,
 		Filler,
-		MatrixController, MatrixElement,
-		zoomPlugin,
 		gradient,
 	);
 

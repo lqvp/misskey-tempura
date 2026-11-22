@@ -48,6 +48,7 @@ export type ChartSrc =
 
 import { onMounted, onUnmounted, ref, useTemplateRef, watch } from 'vue';
 import { Chart } from 'chart.js';
+import zoomPlugin from 'chartjs-plugin-zoom';
 import * as Misskey from 'misskey-js';
 import { misskeyApiGet } from '@/utility/misskey-api.js';
 import { store } from '@/store.js';
@@ -61,6 +62,7 @@ import { chartLegend } from '@/utility/chart-legend.js';
 import MkChartLegend from '@/components/MkChartLegend.vue';
 
 initChart();
+Chart.register(zoomPlugin);
 
 const props = withDefaults(defineProps<{
 	src: ChartSrc;

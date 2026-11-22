@@ -831,9 +831,6 @@ importers:
       chart.js:
         specifier: 4.6.1
         version: 4.6.1
-      chartjs-adapter-date-fns:
-        specifier: 3.0.0
-        version: 3.0.0(chart.js@4.6.1)(date-fns@4.4.0)
       chartjs-chart-matrix:
         specifier: 3.1.0
         version: 3.1.0(chart.js@4.6.1)
@@ -4627,12 +4624,6 @@ packages:
   chart.js@4.6.1:
     resolution: {integrity: sha512-hJyniucsFmq//EvXYvJ6c6mahPoI3kaxdjVH8awTaJ/fDNWeSqqqArixMJWkWNN6fcYvPU3HneSANFNYtRi61g==}
     engines: {pnpm: '>=8'}
-
-  chartjs-adapter-date-fns@3.0.0:
-    resolution: {integrity: sha512-Rs3iEB3Q5pJ973J93OBTpnP7qoGwvq3nUnoMdtxO+9aoJof7UFcRbWcIDteXuYd1fgAvct/32T9qaLyLuZVwCg==}
-    peerDependencies:
-      chart.js: '>=2.8.0'
-      date-fns: '>=2.0.0'
 
   chartjs-chart-matrix@3.1.0:
     resolution: {integrity: sha512-pdo8DnhFXOisjbLDgfkzZH1w0xmjGqiaAMgkQSHCEMzxQENsXTgkXImIyweDiO7SqlE5PuzjhklyBCiorQhRmw==}
@@ -11912,11 +11903,6 @@ snapshots:
   chart.js@4.6.1:
     dependencies:
       '@kurkle/color': 0.3.4
-
-  chartjs-adapter-date-fns@3.0.0(chart.js@4.6.1)(date-fns@4.4.0):
-    dependencies:
-      chart.js: 4.6.1
-      date-fns: 4.4.0
 
   chartjs-chart-matrix@3.1.0(chart.js@4.6.1):
     dependencies:
