@@ -106,7 +106,9 @@ jobs:
           PR_TITLE="Release: ${TAG_NAME}"
           PR_BODY="Release PR for ${TAG_NAME}, created by the Auto Release workflow (${RUN_URL}).
 
-          The workflow waits for CI on the head commit and leaves this PR open. Merge it manually once CI is green; the push to master then publishes the release."
+          The workflow waits for CI on the head commit and leaves this PR open. Merge it manually once CI is green; the push to master then publishes the release.
+
+          Note: the workflow waits for every commit status, so Chromatic UI Tests may keep it waiting (pending) until the Chromatic build is reviewed and approved by a human."
 
           # ブランチ名だけでは同名ブランチを持つforkのPRを拾いうるため、
           # head側のリポジトリ(owner/name)も一致するPRだけを再利用の対象にする
@@ -166,19 +168,26 @@ jobs:
           TIMEOUT_SECONDS=3600
           STABLE_REQUIRED=2
 
+          # APIの応答は数百件・数百KBになりうる。コマンドライン引数(MAX_ARG_STRLEN)で渡すと
+          # "Argument list too long" になるため、必要なフィールドだけに絞って一時ファイル経由でjqへ渡す
+          WORK_DIR=$(mktemp -d) || { echo "::error::Failed to create a temporary directory"; exit 1; }
+          trap 'rm -rf -- "${WORK_DIR:?}"' EXIT
+
           # 1回分のスナップショットを評価し、state/failed/pending/missing_required/fingerprintをJSONで返す
+          # 戻り値: 0=成功, 1=API読み取りの失敗(一時的な可能性があるので再試行), 2=ローカルの評価失敗(jq等)
           evaluate() {
-            local runs statuses
-            runs=$(gh api --paginate \
+            gh api --paginate \
               "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs?per_page=100" \
-              --jq '.check_runs[]' | jq -s '.') || return 1
-            statuses=$(gh api --paginate \
+              --jq '.check_runs[] | {id, name, status, conclusion}' \
+              > "$WORK_DIR/runs.jsonl" 2> "$WORK_DIR/gh.err" || { head -c 300 "$WORK_DIR/gh.err" >&2; return 1; }
+            gh api --paginate \
               "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/statuses?per_page=100" \
-              --jq '.[]' | jq -s '.') || return 1
+              --jq '.[] | {id, context, state, created_at}' \
+              > "$WORK_DIR/statuses.jsonl" 2> "$WORK_DIR/gh.err" || { head -c 300 "$WORK_DIR/gh.err" >&2; return 1; }
 
             jq -n \
-              --argjson runs "$runs" \
-              --argjson statuses "$statuses" \
+              --slurpfile runs "$WORK_DIR/runs.jsonl" \
+              --slurpfile statuses "$WORK_DIR/statuses.jsonl" \
               --argjson required "$REQUIRED_JSON" \
               --arg self "$SELF_CHECK_NAME" '
               ["failure", "cancelled", "timed_out", "action_required", "startup_failure", "stale"] as $bad
@@ -200,13 +209,17 @@ jobs:
                   missing_required: $missing,
                   fingerprint: ([$r[] | "check:\(.name):\(.status):\(.conclusion)"]
                                  + [$s[] | "status:\(.context):\(.state)"] | sort | join("|"))
-                }'
+                }' 2> "$WORK_DIR/jq.err" || { head -c 300 "$WORK_DIR/jq.err" >&2; return 2; }
           }
 
           stable=0
           last_fingerprint=""
+          local_errors=0
           while true; do
-            if result=$(evaluate); then
+            eval_rc=0
+            result=$(evaluate) || eval_rc=$?
+            if [ "$eval_rc" -eq 0 ]; then
+              local_errors=0
               state=$(jq -r .state <<<"$result")
               fingerprint=$(jq -r .fingerprint <<<"$result")
               echo "[${SECONDS}s] state=${state} failed=$(jq -c .failed <<<"$result") pending=$(jq -c .pending <<<"$result") missing_required=$(jq -c .missing_required <<<"$result")"
@@ -243,11 +256,21 @@ jobs:
                   last_fingerprint=""
                   ;;
               esac
-            else
+            elif [ "$eval_rc" -eq 1 ]; then
               # 一時的なAPI失敗は成功扱いにせず、安定カウントを戻して再試行する
               echo "::warning::Failed to read checks for ${HEAD_SHA}; retrying"
               stable=0
               last_fingerprint=""
+            else
+              # ローカルの評価失敗(jq等)は決定的な不具合の可能性が高いので、少数回の再試行で明確に失敗させる
+              local_errors=$((local_errors + 1))
+              echo "::warning::Check evaluation failed locally for ${HEAD_SHA} (${local_errors}/3)"
+              stable=0
+              last_fingerprint=""
+              if [ "$local_errors" -ge 3 ]; then
+                echo "::error::Check evaluation failed 3 times in a row on release PR head ${HEAD_SHA}; this is not an API read error. The PR stays open: ${PR_URL}"
+                exit 1
+              fi
             fi
 
             if [ "$SECONDS" -ge "$TIMEOUT_SECONDS" ]; then
