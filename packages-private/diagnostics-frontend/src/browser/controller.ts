@@ -178,6 +178,23 @@ export class HeadlessChromeController {
 		};
 	}
 
+	public async collectLongSessionMetrics() {
+		await this.cdp.send('HeapProfiler.collectGarbage');
+		const { usedSize: jsHeapBytes } = await this.cdp.send('Runtime.getHeapUsage');
+		const { result: { objectId } } = await this.cdp.send('Runtime.evaluate', { expression: 'window' });
+		if (objectId == null) throw new Error('Could not inspect window event listeners');
+		try {
+			const { listeners } = await this.cdp.send('DOMDebugger.getEventListeners', { objectId });
+			const mouseListeners = { mousemove: 0, mouseup: 0, mouseleave: 0 };
+			for (const { type } of listeners) {
+				if (type === 'mousemove' || type === 'mouseup' || type === 'mouseleave') mouseListeners[type]++;
+			}
+			return { jsHeapBytes, mouseListeners };
+		} finally {
+			await this.cdp.send('Runtime.releaseObject', { objectId });
+		}
+	}
+
 	public async takeHeapSnapshot(savePath?: string) {
 		const chunks: string[] = [];
 		const onChunk = (params: { chunk: string }) => {
