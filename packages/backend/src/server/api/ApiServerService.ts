@@ -77,6 +77,7 @@ export class ApiServerService {
 					Querystring: Record<string, unknown>,
 				}>({
 					method: ['GET', 'POST'],
+					exposeHeadRoute: false,
 					url: '/' + endpoint.name,
 					handler: async (request, reply) => {
 						if (request.method === 'GET' && !endpoint.meta.allowGet) {
@@ -97,6 +98,7 @@ export class ApiServerService {
 					Querystring: Record<string, unknown>,
 				}>({
 					method: ['GET', 'POST'],
+					exposeHeadRoute: false,
 					url: '/' + endpoint.name,
 					bodyLimit: 1024 * 1024,
 					handler: async (request, reply) => {
@@ -188,16 +190,12 @@ export class ApiServerService {
 
 		fastify.route({
 			method: ['GET', 'POST'],
+			exposeHeadRoute: false,
 			url: '/clear-browser-cache',
 			handler: (request, reply) => {
-				if (['GET', 'POST'].includes(request.method)) {
-					reply.header('Clear-Site-Data', '"cache", "prefetchCache", "prerenderCache", "executionContexts"');
-					reply.code(204);
-					reply.send();
-				} else {
-					reply.code(405);
-					reply.send();
-				}
+				reply.header('Clear-Site-Data', '"cache", "prefetchCache", "prerenderCache", "executionContexts"');
+				reply.code(204);
+				reply.send();
 			},
 		});
 
