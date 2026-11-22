@@ -5,6 +5,7 @@ import { execa } from 'execa';
 import locales from 'i18n';
 import { LocaleInliner } from '../frontend-builder/locale-inliner.js';
 import { createLogger } from '../frontend-builder/logger';
+import { precompressDir } from '../frontend-builder/precompress.js';
 
 // requires node 21 or later
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -46,6 +47,7 @@ async function build() {
 	await fs.rm(outputDir, { recursive: true, force: true });
 	await viteBuild();
 	await buildAllLocale();
+	await precompressDir(outputDir);
 }
 
 await build();

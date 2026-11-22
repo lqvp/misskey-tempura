@@ -225,6 +225,7 @@ export class ClientServerService {
 					prefix: '/vite/',
 					maxAge: ms('30 days'),
 					immutable: true,
+					preCompressed: true,
 					decorateReply: false,
 				});
 				fastify.register(fastifyStatic, {
@@ -232,6 +233,7 @@ export class ClientServerService {
 					prefix: '/embed_vite/',
 					maxAge: ms('30 days'),
 					immutable: true,
+					preCompressed: true,
 					decorateReply: false,
 				});
 				fastify.addHook('onRequest', handleRequestRedirectToOmitSearch);
@@ -295,11 +297,11 @@ export class ClientServerService {
 		});
 
 		fastify.get('/favicon.ico', async (request, reply) => {
-			return reply.sendFile('/favicon.ico', this.staticAssets);
+			return reply.sendFile('/favicon.ico', this.staticAssets, { maxAge: ms('7 days') });
 		});
 
 		fastify.get('/apple-touch-icon.png', async (request, reply) => {
-			return reply.sendFile('/apple-touch-icon.png', this.staticAssets);
+			return reply.sendFile('/apple-touch-icon.png', this.staticAssets, { maxAge: ms('7 days') });
 		});
 
 		fastify.get<{ Params: { path: string } }>('/fluent-emoji/:path(.*)', async (request, reply) => {
