@@ -46,6 +46,7 @@ import { IdService } from '@/core/IdService.js';
 import { FeedService } from './FeedService.js';
 import { UrlPreviewService } from './UrlPreviewService.js';
 import { ClientLoggerService } from './ClientLoggerService.js';
+import { registerPrecompressedAssets } from './register-precompressed-assets.js';
 import { HtmlTemplateService } from './HtmlTemplateService.js';
 
 import { BasePage } from './views/base.js';
@@ -219,25 +220,12 @@ export class ClientServerService {
 		//#region vite assets
 		if (this.config.frontendEmbedManifestExists) {
 			this.clientLoggerService.logger.info(`[ClientServerService] Using built frontend vite assets. ${this.frontendViteOut}`);
-			fastify.register((fastify, options, done) => {
-				fastify.register(fastifyStatic, {
-					root: this.frontendViteOut,
-					prefix: '/vite/',
-					maxAge: ms('30 days'),
-					immutable: true,
-					preCompressed: true,
-					decorateReply: false,
-				});
-				fastify.register(fastifyStatic, {
-					root: this.frontendEmbedViteOut,
-					prefix: '/embed_vite/',
-					maxAge: ms('30 days'),
-					immutable: true,
-					preCompressed: true,
-					decorateReply: false,
-				});
+			fastify.register(async (fastify) => {
+				await registerPrecompressedAssets(fastify, [
+					{ root: this.frontendViteOut, prefix: '/vite/' },
+					{ root: this.frontendEmbedViteOut, prefix: '/embed_vite/' },
+				]);
 				fastify.addHook('onRequest', handleRequestRedirectToOmitSearch);
-				done();
 			});
 		} else {
 			this.clientLoggerService.logger.info('[ClientServerService] Proxying to Vite dev server.');
