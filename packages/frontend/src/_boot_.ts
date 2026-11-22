@@ -3,9 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-// https://vitejs.dev/config/build-options.html#build-modulepreload
-import 'vite/modulepreload-polyfill';
-
 if (import.meta.env.DEV) {
 	await import('@tabler/icons-webfont/dist/tabler-icons.scss');
 } else {
