@@ -43,7 +43,7 @@ describe('LoginRiskService', () => {
 	let user: MiLocalUser;
 	const createdUserIds: string[] = [];
 	const fakeIntel: { lookup: (ip: string) => IpIntel } = { lookup: fakeLookup };
-	const fakeRole = { isModerator: async () => false };
+	const fakeRole = { isSubModeratorOrAbove: async () => false };
 
 	async function createUser(): Promise<MiLocalUser> {
 		const un = secureRndstr(16);
@@ -87,7 +87,7 @@ describe('LoginRiskService', () => {
 		meta.loginRiskNotifyThreshold = 30;
 		meta.loginRiskStepUpThreshold = 60;
 		fakeIntel.lookup = fakeLookup;
-		fakeRole.isModerator = async () => false;
+		fakeRole.isSubModeratorOrAbove = async () => false;
 		user = await createUser();
 	});
 
@@ -236,7 +236,7 @@ describe('LoginRiskService', () => {
 
 	test('モデレーターは点数が1.5倍になる', async () => {
 		const normal = await svc.evaluate(p('198.51.100.5'));
-		fakeRole.isModerator = async () => true;
+		fakeRole.isSubModeratorOrAbove = async () => true;
 		const privileged = await svc.evaluate(p('198.51.100.5'));
 		expect(privileged.score).toBe(Math.round(normal.score * 1.5));
 	});
