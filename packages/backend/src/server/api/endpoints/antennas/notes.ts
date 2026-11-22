@@ -285,42 +285,57 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		// 「試し打ちでは当たるのに TL は空」に戻ってしまうため、上限は総走査数で掛ける
 		const result: MiNote['id'][] = [];
 		if (need <= 0) return [];
-		let cursor: string | null = null;
-		let scanned = 0;
 
-		while (result.length < need && scanned < BACKFILL_SCAN_LIMIT) {
-			const batch = query.clone()
-				.orderBy('note.id', ascending ? 'ASC' : 'DESC')
-				.take(Math.min(BACKFILL_BATCH_SIZE, BACKFILL_SCAN_LIMIT - scanned));
-			if (cursor != null) batch.andWhere(ascending ? 'note.id > :cursor' : 'note.id < :cursor', { cursor });
+		const scan = async (scanAscending: boolean, lowerBoundId: string | null): Promise<string | null> => {
+			let cursor: string | null = null;
+			let scanned = 0;
+			while (result.length < need && scanned < BACKFILL_SCAN_LIMIT) {
+				const batch = query.clone()
+					.orderBy('note.id', scanAscending ? 'ASC' : 'DESC')
+					.take(Math.min(BACKFILL_BATCH_SIZE, BACKFILL_SCAN_LIMIT - scanned));
+				if (cursor != null) batch.andWhere(scanAscending ? 'note.id > :cursor' : 'note.id < :cursor', { cursor });
+				if (lowerBoundId != null) batch.andWhere('note.id > :scanLowerBoundId', { scanLowerBoundId: lowerBoundId });
 
-			const candidates = await batch.getMany();
-			if (candidates.length === 0) break;
-			scanned += candidates.length;
-			cursor = candidates[candidates.length - 1].id;
+				const candidates = await batch.getMany();
+				if (candidates.length === 0) return null;
+				scanned += candidates.length;
+				cursor = candidates[candidates.length - 1].id;
 
-			// 判定はノートごとに独立なので並列に回す
-			const evaluated = await Promise.all(candidates.map(async note => {
-				if (note.user == null) return null;
-				if (received.has(note.id)) return null;
-				if (removed.has(note.id)) return null;
-				// 判定に失敗したノートは補完対象から外し、TL 全体を止めない(受信経路と同じ扱い)
-				const hit = await this.antennaService.checkHitAntenna(antenna, note, note.user).catch(err => {
-					this.apiLoggerService.logger.warn(`Failed to evaluate antenna hit for backfill (antenna: ${antenna.id}, note: ${note.id})`, { err });
-					return false;
-				});
-				if (!hit) return null;
-				// 検索中は、検索語にも一致するものだけを数える。
-				// 条件だけで数えると、検索語に一致するノートが窓の外にある場合に空で打ち切ってしまう
-				if (searchQuery != null) {
-					const text = [note.text, note.cw].filter((t): t is string => t != null && t !== '').join('\n').toLowerCase();
-					if (!text.includes(searchQuery)) return null;
+				// 判定はノートごとに独立なので並列に回す
+				const evaluated = await Promise.all(candidates.map(async note => {
+					if (note.user == null) return null;
+					if (received.has(note.id)) return null;
+					if (removed.has(note.id)) return null;
+					// 判定に失敗したノートは補完対象から外し、TL 全体を止めない(受信経路と同じ扱い)
+					const hit = await this.antennaService.checkHitAntenna(antenna, note, note.user).catch(err => {
+						this.apiLoggerService.logger.warn(`Failed to evaluate antenna hit for backfill (antenna: ${antenna.id}, note: ${note.id})`, { err });
+						return false;
+					});
+					if (!hit) return null;
+					// 検索中は、検索語にも一致するものだけを数える。
+					// 条件だけで数えると、検索語に一致するノートが窓の外にある場合に空で打ち切ってしまう
+					if (searchQuery != null) {
+						const text = [note.text, note.cw].filter((t): t is string => t != null && t !== '').join('\n').toLowerCase();
+						if (!text.includes(searchQuery)) return null;
+					}
+					return note.id;
+				}));
+				for (const id of evaluated) {
+					if (id != null) result.push(id);
 				}
-				return note.id;
-			}));
-			for (const id of evaluated) {
-				if (id != null) result.push(id);
 			}
+			// 走査上限で打ち切ったときは、最後に調べた位置を返す
+			return result.length < need ? cursor : null;
+		};
+
+		const stoppedAt = await scan(ascending, null);
+
+		// 古い順の走査が上限に達しても足りないときは、新しい側からも走査する。
+		// 応答は空でもカーソルを返せないため、sinceId 直後に不一致が上限件数以上並ぶと、
+		// 新着取得が毎回同じ範囲を調べて空を返し続け、先に進めなくなる。
+		// 新しい側の一致を返せばクライアントのカーソルが進む (間に挟まった一致は新着取得では飛ばされる)
+		if (ascending && stoppedAt != null) {
+			await scan(false, stoppedAt);
 		}
 
 		return result;

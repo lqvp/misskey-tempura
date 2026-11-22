@@ -132,7 +132,8 @@ export class LoginRiskService {
 				this.countLearnedLogins(userId),
 				this.hasRecentOtherCountry(userId, intel.country),
 				this.getDaysSinceLastSuccess(userId),
-				this.roleService.isModerator(p.user),
+				// 通報処理を任されたサブモデレーターも権限者として扱い、乗っ取り時の被害に備えて判定を厳しくする
+				this.roleService.isSubModeratorOrAbove(p.user),
 				this.redisClient.get(this.userFailureKey(userId)).then(v => Number(v ?? 0)),
 				this.redisClient.scard(this.ipFailureKey(ip)),
 			]);
