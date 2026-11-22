@@ -333,8 +333,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.parse_version.outputs.tag_name }}
-          # stableは公開対象のmasterコミットを明示。betaは従来どおり未指定(リポジトリのデフォルトブランチ)
-          target_commitish: ${{ steps.parse_version.outputs.is_stable == 'true' && github.sha || '' }}
+          # 公開対象のコミットを明示する。未指定だとデフォルトブランチ(develop)の先端に付くため、
+          # 実行中に後続のpushがあるとbetaタグがバージョン更新コミット以外を指してしまう
+          target_commitish: ${{ github.sha }}
           name: ${{ steps.parse_version.outputs.release_name }}
           body: ${{ steps.generate_stable_notes.outputs.notes || 'This is a beta (development) release.' }}
           prerelease: ${{ steps.parse_version.outputs.is_stable == 'false' }}
