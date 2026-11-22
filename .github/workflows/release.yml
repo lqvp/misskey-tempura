@@ -138,6 +138,7 @@ jobs:
 
       # リリースPRのheadコミットに付いた既存のpush CIを待つ。PRは成功・失敗どちらでも開いたままにする。
       # - このジョブ自身(github.job)のcheck runは、過去の実行分も含めて待機対象から除外する
+      # - 同名のcheck runが複数ある(再実行)場合は、idが最大の最新のrunだけを評価し、古い失敗では落とさない
       # - 必須チェックは「存在して成功」であること。未登録のうちは待ち続ける
       # - それ以外の登録済みcheck/statusは完了を待ち、skipped/neutralは許容し、失敗系は即失敗にする
       # - 完了済みで同一内容のスナップショットが連続して得られたら成功とする
@@ -173,7 +174,8 @@ jobs:
               --argjson required "$REQUIRED_JSON" \
               --arg self "$SELF_CHECK_NAME" '
               ["failure", "cancelled", "timed_out", "action_required", "startup_failure", "stale"] as $bad
-              | ($runs | map(select(.name != $self))) as $r
+              | ($runs | map(select(.name != $self))
+                  | group_by(.name) | map(sort_by(.id) | last)) as $r
               | ($statuses | group_by(.context) | map(sort_by(.created_at) | last)) as $s
               | ([$r[] | select(.status == "completed" and (.conclusion as $c | ($bad | index($c)) != null)) | .name]
                   + [$s[] | select(.state == "error" or .state == "failure") | .context]) as $failed
