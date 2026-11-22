@@ -774,6 +774,34 @@ describe('アンテナ', () => {
 			assert.deepStrictEqual(second.map((x: Note) => x.id), matched.slice(2, 4).map(x => x.id));
 		});
 
+		test('sinceIdでの補完は、新しい側に1バッチ分以上ノートがあっても古い一致から返すこと。', async () => {
+			const keyword = '補完多数昇順キーワード';
+			// 投稿のレート制限に掛からないよう、専用のユーザーで投稿する
+			const poster = await signup({ username: 'backfillposter' });
+			const base = await post(poster, { text: `${keyword} 基準` });
+			await new Promise(r => setTimeout(r, 5));
+			const oldestMatch = await post(poster, { text: `${keyword} 最古` });
+			await new Promise(r => setTimeout(r, 5));
+			// 補完の1バッチ (200件) を新しい側の無関係なノートで埋める
+			for (let i = 0; i < 10; i++) {
+				await Promise.all(Array.from({ length: 20 }, (_, j) => post(poster, { text: `無関係 ${i}-${j}` })));
+			}
+			await new Promise(r => setTimeout(r, 5));
+			await post(poster, { text: `${keyword} 最新` });
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+
+			const response = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id, sinceId: base.id, limit: 1 },
+				user: alice,
+			});
+			assert.deepStrictEqual(response.map((x: Note) => x.id), [oldestMatch.id]);
+		}, 1000 * 60);
+
 		test('queryが他人のアンテナでは使えないこと。', async () => {
 			const antenna = await successfulApiCall({
 				endpoint: 'antennas/create',
