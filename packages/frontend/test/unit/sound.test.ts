@@ -22,9 +22,12 @@ test('custom decoded audio uses a byte budget while built-in sounds stay cached'
 	vi.stubGlobal('fetch', vi.fn(async (url: string) => ({
 		arrayBuffer: async () => Uint8Array.of(url === '/large' ? 17 : 8).buffer,
 	})));
-	const { loadAudio } = await import('@/utility/sound.js');
+	const { earthquakeSoundTypes, loadAudio } = await import('@/utility/sound.js');
 
 	const builtin = await loadAudio('/client-assets/sounds/syuilo/n-aec.mp3');
+	const earthquake = await loadAudio(earthquakeSoundTypes.EEW2);
+	const dropAndFusion = await loadAudio('/client-assets/drop-and-fusion/bgm_1.mp3');
+	const reversi = await loadAudio('/client-assets/reversi/put.mp3');
 	const a = await loadAudio('/a');
 	const b = await loadAudio('/b');
 	expect(await loadAudio('/a')).toBe(a);
@@ -32,8 +35,11 @@ test('custom decoded audio uses a byte budget while built-in sounds stay cached'
 	expect(await loadAudio('/a')).toBe(a);
 	expect(await loadAudio('/b')).not.toBe(b);
 	expect(await loadAudio('/client-assets/sounds/syuilo/n-aec.mp3')).toBe(builtin);
+	expect(await loadAudio(earthquakeSoundTypes.EEW2)).toBe(earthquake);
+	expect(await loadAudio('/client-assets/drop-and-fusion/bgm_1.mp3')).toBe(dropAndFusion);
+	expect(await loadAudio('/client-assets/reversi/put.mp3')).toBe(reversi);
 
 	const large = await loadAudio('/large');
 	expect(await loadAudio('/large')).not.toBe(large);
-	expect(decodeAudioData).toHaveBeenCalledTimes(7);
+	expect(decodeAudioData).toHaveBeenCalledTimes(10);
 });

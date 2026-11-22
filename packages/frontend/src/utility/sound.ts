@@ -76,10 +76,6 @@ export const soundsTypes = [
 	'noizenecio/kick_gaba7',
 ] as const;
 
-const builtinUrls = new Set(soundsTypes
-	.filter(type => type != null && type !== '_driveFile_')
-	.map(type => `/client-assets/sounds/${type}.mp3`));
-
 export const operationTypes = [
 	'noteMy',
 	'note',
@@ -131,7 +127,7 @@ export async function loadAudio(url: string, options?: { useCache?: boolean; }) 
 		});
 	}
 	const useCache = options?.useCache ?? true;
-	const isBuiltin = builtinUrls.has(url);
+	const isBuiltin = url.startsWith('/client-assets/');
 	if (useCache) {
 		const buffer = (isBuiltin ? builtinCache : customCache).get(url);
 		if (buffer) {
