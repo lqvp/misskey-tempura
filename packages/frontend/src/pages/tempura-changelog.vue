@@ -14,6 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div v-if="catalog" :class="$style.heroFooter">
 					<span>{{ i18n.ts._misskeyTempura._changelog.categories }} <b>{{ sections.length }}</b></span>
 					<span>{{ i18n.tsx._misskeyTempura._changelog.items({ count: totalItems }) }}</span>
+					<span>{{ i18n.ts.version }} <b>{{ version }}</b></span>
 				</div>
 			</header>
 
@@ -119,6 +120,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue';
 import catalogUrl from '../../../../diff.md?url&no-inline';
+import { version } from '@@/js/config.js';
 import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';
 import { countFeatureItems, fetchFeatureCatalog, searchFeatureCatalog } from '@/utility/tempura-script/feature-catalog.js';
