@@ -120,8 +120,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				image_url: { url: fileUri },
 			}));
 
-			const send = async (content: unknown[]) => {
-				const response = await this.httpRequestService.send(url, {
+			const send = async (content: string | unknown[]) => {
+				return await this.httpRequestService.send(url, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
@@ -137,22 +137,27 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 					timeout: 30000,
 					isLocalAddressAllowed: false,
 				}, {
-					throwErrorWhenResponseNotOk: true,
+					throwErrorWhenResponseNotOk: false,
 				});
-				return await response.json();
 			};
+			const toStatusError = (response: Awaited<ReturnType<typeof send>>) => new StatusError(`${response.status} ${response.statusText}`, response.status, response.statusText);
 
 			try {
-				try {
-					return await send([textContent, ...imageContents]);
-				} catch (error) {
-					// クライアントは使われるモデルが画像に対応しているか分からずに画像を付けてくるため、
-					// 画像を付けたリクエストが入力内容の不備として拒否されたときはテキストだけで送り直す
-					if (imageContents.length > 0 && error instanceof StatusError && (error.statusCode === 400 || error.statusCode === 422)) {
-						return await send([textContent]);
+				const response = await send(imageContents.length > 0 ? [textContent, ...imageContents] : ps.text);
+				if (response.ok) return await response.json();
+
+				// クライアントは使われるモデルが画像に対応しているか分からずに画像を付けてくるため、
+				// 画像が原因で拒否されたときだけテキストで送り直す。
+				// 画像と関係ない入力エラーまで送り直すと、画像を黙って捨てた結果を画像込みの結果に見せてしまう
+				if (imageContents.length > 0 && (response.status === 400 || response.status === 422)) {
+					const body = await response.text().catch(() => '');
+					if (/image|vision|multimodal|modalit/i.test(body)) {
+						const retried = await send(ps.text);
+						if (retried.ok) return await retried.json();
+						throw toStatusError(retried);
 					}
-					throw error;
 				}
+				throw toStatusError(response);
 			} catch (error) {
 				// 念のため、メッセージにキーが含まれていたら隠してから記録・返却する
 				const rawErrorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
