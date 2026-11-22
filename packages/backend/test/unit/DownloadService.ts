@@ -15,7 +15,7 @@ import type { HttpRequestService } from '@/core/HttpRequestService.js';
 import type { LoggerService } from '@/core/LoggerService.js';
 import type Logger from '@/logger.js';
 
-describe('DownloadService lazy got', () => {
+describe('DownloadService', () => {
 	let server: Server;
 	let baseUrl: string;
 	const loggerService = mockDeep<LoggerService>();

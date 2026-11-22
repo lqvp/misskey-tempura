@@ -7,6 +7,7 @@ import { Inject, Injectable, type OnApplicationShutdown } from '@nestjs/common';
 import { Brackets, In, IsNull, Not } from 'typeorm';
 import * as Redis from 'ioredis';
 import { DI } from '@/di-symbols.js';
+import { loadSanitizeHtml } from '@/misc/heavy-dependencies.js';
 import { bindThis } from '@/decorators.js';
 import { GlobalEvents, GlobalEventService } from '@/core/GlobalEventService.js';
 import type {
@@ -109,7 +110,7 @@ export class AbuseReportNotificationService implements OnApplicationShutdown {
 			return;
 		}
 
-		const { default: sanitizeHtml } = await import('sanitize-html');
+		const { default: sanitizeHtml } = await loadSanitizeHtml();
 
 		for (const mailAddress of recipientEMailAddresses) {
 			await Promise.all(

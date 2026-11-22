@@ -14,20 +14,7 @@ import { bindThis } from '@/decorators.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { escapeHtml } from '@/misc/escape-html.js';
 import { normalizeEmailForComparison, normalizedEmailSql } from '@/misc/normalize-email.js';
-
-let emailDependencies: ReturnType<typeof importEmailDependencies> | undefined;
-
-function importEmailDependencies() {
-	return Promise.all([
-		import('nodemailer'),
-		import('juice'),
-		import('sanitize-html'),
-	]);
-}
-
-function loadEmailDependencies() {
-	return emailDependencies ??= importEmailDependencies();
-}
+import { loadJuice, loadNodemailer, loadSanitizeHtml } from '@/misc/heavy-dependencies.js';
 
 @Injectable()
 export class EmailService {
@@ -54,7 +41,11 @@ export class EmailService {
 	public async sendEmail(to: string, subject: string, html: string, text: string) {
 		if (!this.meta.enableEmail) return;
 
-		const [{ createTransport }, { default: juice }, { default: sanitizeHtml }] = await loadEmailDependencies();
+		const [{ createTransport }, { default: juice }, { default: sanitizeHtml }] = await Promise.all([
+			loadNodemailer(),
+			loadJuice(),
+			loadSanitizeHtml(),
+		]);
 
 		const iconUrl = `${this.config.url}/static-assets/mi-white.png`;
 		const emailSettingUrl = `${this.config.url}/settings/email`;
