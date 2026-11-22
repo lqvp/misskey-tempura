@@ -14,15 +14,19 @@ import type { HttpRequestService } from '@/core/HttpRequestService.js';
 import type Logger from '@/logger.js';
 
 const transport = vi.hoisted(() => ({
-	loaded: false,
+	juiceLoaded: false,
 	sendMail: vi.fn(),
 	createTransport: vi.fn(),
 }));
 
 vi.mock('nodemailer', () => {
-	transport.loaded = true;
 	transport.createTransport.mockReturnValue({ sendMail: transport.sendMail });
 	return { createTransport: transport.createTransport };
+});
+
+vi.mock('juice', async importOriginal => {
+	transport.juiceLoaded = true;
+	return importOriginal();
 });
 
 describe('EmailService lazy send dependencies', () => {
@@ -55,17 +59,17 @@ describe('EmailService lazy send dependencies', () => {
 		transport.createTransport.mockClear();
 	});
 
-	test('disabled email does not import the transport', async () => {
+	test('disabled email does not import CSS processing', async () => {
 		meta.enableEmail = false;
 		await service.sendEmail('recipient@example.com', '', '', '');
-		expect(transport.loaded).toBe(false);
+		expect(transport.juiceLoaded).toBe(false);
 		expect(transport.createTransport).not.toHaveBeenCalled();
 	});
 
 	test('sends sanitized HTML with inlined CSS after enabling email', async () => {
 		meta.enableEmail = true;
 		await service.sendEmail('recipient@example.com', 'Subject', '<p>Hello</p><script>bad()</script>', 'Hello');
-		expect(transport.loaded).toBe(true);
+		expect(transport.juiceLoaded).toBe(true);
 		const mail = transport.sendMail.mock.calls[0][0];
 		expect(mail).toMatchObject({ to: 'recipient@example.com', subject: 'Subject', text: 'Hello' });
 		expect(mail.html).toContain('<p>Hello</p>');

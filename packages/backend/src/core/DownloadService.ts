@@ -7,6 +7,7 @@ import * as fs from 'node:fs';
 import * as stream from 'node:stream/promises';
 import { Inject, Injectable } from '@nestjs/common';
 import chalk from 'chalk';
+import got, { HTTPError } from 'got';
 import type { Progress, Response } from 'got';
 import { parse } from 'content-disposition';
 import { DI } from '@/di-symbols.js';
@@ -46,8 +47,7 @@ export class DownloadService {
 		const urlObj = new URL(url);
 		let filename = urlObj.pathname.split('/').pop() ?? 'untitled';
 
-		const Got = await import('got');
-		const req = Got.default.stream(url, {
+		const req = got.stream(url, {
 			headers: {
 				'User-Agent': this.config.userAgent,
 			},
@@ -114,7 +114,7 @@ export class DownloadService {
 		try {
 			await stream.pipeline(req, fs.createWriteStream(path));
 		} catch (e) {
-			if (e instanceof Got.HTTPError) {
+			if (e instanceof HTTPError) {
 				throw new StatusError(`${e.response.statusCode} ${e.response.statusMessage}`, e.response.statusCode, e.response.statusMessage);
 			} else {
 				throw e;
