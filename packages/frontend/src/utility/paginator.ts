@@ -59,6 +59,7 @@ export interface IPaginator<T = unknown, _T = T & MisskeyEntity> {
 	reload(): Promise<void>;
 	fetchOlder(): Promise<void>;
 	fetchNewer(options?: { toQueue?: boolean }): Promise<void>;
+	getRetainedIds(): Set<MisskeyEntity['id']>;
 	trim(trigger?: boolean): void;
 	unshiftItems(newItems: (_T)[]): void;
 	pushItems(oldItems: (_T)[]): void;
@@ -189,6 +190,12 @@ export class Paginator<
 	private getOldestId(): string | null | undefined {
 		// 様々な要因により並び順は保証されないのでソートが必要
 		return this.items.value.map(x => x.id).sort().at(0);
+	}
+
+	public getRetainedIds(): Set<MisskeyEntity['id']> {
+		const ids = new Set(this.items.value.map(item => item.id));
+		for (const item of this.aheadQueue) ids.add(item.id);
+		return ids;
 	}
 
 	public async init(): Promise<void> {

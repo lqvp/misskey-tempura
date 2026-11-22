@@ -9,7 +9,10 @@ import { PREF_DEF } from '@/preferences/def.js';
 import { getInitialPrefValue } from '@/preferences/manager.js';
 
 let ctx: AudioContext;
-const cache = new Map<string, AudioBuffer>();
+const builtinCache = new Map<string, AudioBuffer>();
+const customCache = new Map<string, AudioBuffer>();
+const CUSTOM_CACHE_MAX_BYTES = 16 * 1024 * 1024;
+let customCacheBytes = 0;
 let canPlay = true;
 
 export const soundsTypes = [
@@ -87,6 +90,28 @@ export type SoundType = typeof soundsTypes[number];
 /** スプライトの種類 */
 export type OperationType = typeof operationTypes[number];
 
+function decodedBytes(buffer: AudioBuffer): number {
+	return buffer.length * buffer.numberOfChannels * Float32Array.BYTES_PER_ELEMENT;
+}
+
+function cacheCustomAudio(url: string, buffer: AudioBuffer): void {
+	const bytes = decodedBytes(buffer);
+	if (bytes > CUSTOM_CACHE_MAX_BYTES) return;
+
+	const previous = customCache.get(url);
+	if (previous) {
+		customCacheBytes -= decodedBytes(previous);
+		customCache.delete(url);
+	}
+	for (const [oldUrl, oldBuffer] of customCache) {
+		if (customCacheBytes + bytes <= CUSTOM_CACHE_MAX_BYTES) break;
+		customCache.delete(oldUrl);
+		customCacheBytes -= decodedBytes(oldBuffer);
+	}
+	customCache.set(url, buffer);
+	customCacheBytes += bytes;
+}
+
 /**
  * 音声を読み込む
  * @param url url
@@ -101,9 +126,16 @@ export async function loadAudio(url: string, options?: { useCache?: boolean; }) 
 			ctx.close();
 		});
 	}
-	if (options?.useCache ?? true) {
-		if (cache.has(url)) {
-			return cache.get(url) as AudioBuffer;
+	const useCache = options?.useCache ?? true;
+	const isBuiltin = url.startsWith('/client-assets/');
+	if (useCache) {
+		const buffer = (isBuiltin ? builtinCache : customCache).get(url);
+		if (buffer) {
+			if (!isBuiltin) {
+				customCache.delete(url);
+				customCache.set(url, buffer);
+			}
+			return buffer;
 		}
 	}
 
@@ -118,8 +150,12 @@ export async function loadAudio(url: string, options?: { useCache?: boolean; }) 
 	const arrayBuffer = await response.arrayBuffer();
 	const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
 
-	if (options?.useCache ?? true) {
-		cache.set(url, audioBuffer);
+	if (useCache) {
+		if (isBuiltin) {
+			builtinCache.set(url, audioBuffer);
+		} else {
+			cacheCustomAudio(url, audioBuffer);
+		}
 	}
 
 	return audioBuffer;

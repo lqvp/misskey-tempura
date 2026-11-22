@@ -5,7 +5,7 @@
 
 import { copyFile, mkdir, rm, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { readIntegerEnv, readOptionalEnv } from 'diagnostics-shared/env';
+import { readBooleanEnv, readIntegerEnv, readOptionalEnv } from 'diagnostics-shared/env';
 import { analyzeHeapSnapshot, defaultHeapSnapshotBreakdownTopN } from 'diagnostics-shared/heap-snapshot';
 import { HeadlessChromeController } from './browser/controller';
 import { summarizeNetwork } from './browser/network';
@@ -20,6 +20,7 @@ const labels = ['base', 'head'] as const satisfies readonly Label[];
 
 const baseUrl = process.env.FRONTEND_BROWSER_METRICS_URL ?? 'http://127.0.0.1:61812';
 const sampleCount = readIntegerEnv('FRONTEND_BROWSER_METRICS_SAMPLE_COUNT', 5, 1);
+const measureLongSession = readBooleanEnv('FRONTEND_BROWSER_LONG_SESSION', false);
 const heapSnapshotBreakdownTopN = readIntegerEnv('FRONTEND_BROWSER_HEAP_SNAPSHOT_BREAKDOWN_TOP_N', defaultHeapSnapshotBreakdownTopN, 1);
 
 // 成果物 (artifact) としてアップロードされるファイルの出力先。CIではworkspace直下を指す
@@ -55,7 +56,7 @@ async function measureSample(label: Label, round: number, heapSnapshotSavePath: 
 		const performance = await chrome.collectPerformance();
 		const heapSnapshotRaw = await chrome.takeHeapSnapshot(heapSnapshotSavePath);
 
-		return {
+		const sample: BrowserMeasurementSample = {
 			label,
 			round,
 			timestamp: new Date().toISOString(),
@@ -64,10 +65,15 @@ async function measureSample(label: Label, round: number, heapSnapshotSavePath: 
 			diagnostics: chrome.collectDiagnostics(),
 			durationMs,
 			network: summarizeNetwork(chrome.networkRequests, baseUrl, chrome.webSocketConnections),
-			networkRequests: chrome.networkRequests,
+			networkRequests: chrome.networkRequests.slice(),
 			performance,
 			heapSnapshot: analyzeHeapSnapshot(heapSnapshotRaw, { breakdownTopN: heapSnapshotBreakdownTopN }),
 		};
+		if (measureLongSession) {
+			const { runLongSessionScenario } = await import('./browser/long-session');
+			sample.longSession = await runLongSessionScenario(chrome, baseUrl);
+		}
+		return sample;
 	});
 }
 

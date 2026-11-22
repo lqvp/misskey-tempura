@@ -301,6 +301,7 @@ function prepend(note: Misskey.entities.Note & MisskeyEntity) {
 		paginator.prepend(note);
 	} else {
 		paginator.enqueue(note);
+		if (props.src === 'antenna') pruneAntennaMatchInfo();
 	}
 
 	if (props.sound) {
@@ -314,6 +315,15 @@ function prepend(note: Misskey.entities.Note & MisskeyEntity) {
 
 type AntennaMatchInfo = { matchedKeywords: string[][]; matchedExcludeKeywords: string[][] };
 const antennaMatchInfo = shallowRef<Record<string, AntennaMatchInfo>>({});
+
+function pruneAntennaMatchInfo() {
+	const retainedIds = paginator.getRetainedIds();
+	const expired = Object.keys(antennaMatchInfo.value).filter(id => !retainedIds.has(id));
+	if (expired.length === 0) return;
+	const next = { ...antennaMatchInfo.value };
+	for (const id of expired) delete next[id];
+	antennaMatchInfo.value = next;
+}
 
 // マッチ理由の表示をモードに合わせるため、アンテナのマッチ方式だけ別に持つ。
 // アンテナページ/デッキのカラムは取得済みのアンテナを provide しているので、それを優先して余計なリクエストを避ける
@@ -353,14 +363,17 @@ if (props.src === 'antenna') {
 	});
 
 	watch(() => paginator.items.value.map(note => note.id), async (ids) => {
+		pruneAntennaMatchInfo();
 		const antennaId = props.antenna;
 		const missing = ids.filter(id => !(id in antennaMatchInfo.value)).slice(0, 100); // antennas/match-info の noteIds 上限
 		if (missing.length === 0 || antennaId == null) return;
 		try {
 			const res = await misskeyApi('antennas/match-info', { antennaId, noteIds: missing });
 			if (antennaId !== props.antenna) return; // アンテナ切り替え後に届いた古い応答は捨てる
+			const retainedIds = paginator.getRetainedIds();
 			const next = { ...antennaMatchInfo.value };
 			for (const x of res) {
+				if (!retainedIds.has(x.noteId) || x.noteId in next) continue;
 				next[x.noteId] = { matchedKeywords: x.matchedKeywords, matchedExcludeKeywords: x.matchedExcludeKeywords };
 			}
 			antennaMatchInfo.value = next;
@@ -393,6 +406,7 @@ function connectChannel() {
 		});
 		connections.antenna.on('note', prepend);
 		connections.antenna.on('noteMatched', (payload) => {
+			if (!paginator.getRetainedIds().has(payload.noteId)) return;
 			antennaMatchInfo.value = { ...antennaMatchInfo.value, [payload.noteId]: { matchedKeywords: payload.matchedKeywords, matchedExcludeKeywords: payload.matchedExcludeKeywords } };
 		});
 	} else if (props.src === 'home') {
