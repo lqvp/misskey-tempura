@@ -146,16 +146,13 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				const response = await send(imageContents.length > 0 ? [textContent, ...imageContents] : ps.text);
 				if (response.ok) return await response.json();
 
-				// クライアントは使われるモデルが画像に対応しているか分からずに画像を付けてくるため、
-				// 画像が原因で拒否されたときだけテキストで送り直す。
-				// 画像と関係ない入力エラーまで送り直すと、画像を黙って捨てた結果を画像込みの結果に見せてしまう
+				// クライアントは使われるモデルが画像に対応しているか分からずに画像を付けてくる。
+				// 画像非対応を示すエラーの形式はプロバイダーごとに異なり判別できないため、
+				// 入力エラーで拒否されたら本文だけで送り直す (画像と無関係な入力エラーなら再送も失敗する)
 				if (imageContents.length > 0 && (response.status === 400 || response.status === 422)) {
-					const body = await response.text().catch(() => '');
-					if (/image|vision|multimodal|modalit/i.test(body)) {
-						const retried = await send(ps.text);
-						if (retried.ok) return await retried.json();
-						throw toStatusError(retried);
-					}
+					const retried = await send(ps.text);
+					if (retried.ok) return await retried.json();
+					throw toStatusError(retried);
 				}
 				throw toStatusError(response);
 			} catch (error) {
