@@ -57,12 +57,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</div>
 </Transition>
 
-<component
-	:is="popup.component"
+<XPopup
 	v-for="popup in popups"
 	:key="popup.id"
-	v-bind="popup.props"
-	v-on="popup.events"
+	:popup="popup"
 />
 
 <component
@@ -106,6 +104,7 @@ import { defineAsyncComponent, ref, TransitionGroup } from 'vue';
 import * as Misskey from 'misskey-js';
 import { swInject } from './sw-inject.js';
 import XNotification from './notification.vue';
+import XPopup from './popup.vue';
 import { isSafeMode } from '@@/js/config.js';
 import { popups } from '@/os.js';
 import { unisonReload } from '@/utility/unison-reload.js';

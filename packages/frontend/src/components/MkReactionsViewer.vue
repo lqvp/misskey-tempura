@@ -41,6 +41,8 @@ import { prefer } from '@/preferences.js';
 import { customEmojisMap } from '@/custom-emojis.js';
 import { DI } from '@/di.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
+import { ReactionVisibilityCache } from '@/utility/reaction-visibility.js';
+import { useGlobalEvent } from '@/events.js';
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
@@ -64,6 +66,11 @@ const initialReactions = ref(new Set<string>());
 const _reactions = ref<[string, number][]>([]);
 const hasMoreReactions = ref(false);
 const visibleReactions = ref<Set<string> | null>(null);
+const visibilityCache = new ReactionVisibilityCache(async type => {
+	const users = await misskeyApi('notes/reactions', { noteId: props.noteId, type, limit: 1 });
+	return users.length > 0;
+});
+let visibilityRevision = 0;
 
 const filteredReactions = computed(() => {
 	if (visibleReactions.value == null) {
@@ -74,37 +81,31 @@ const filteredReactions = computed(() => {
 });
 
 async function updateVisibility() {
+	const revision = ++visibilityRevision;
 	if (!prefer.s.reactionChecksMuting) {
 		visibleReactions.value = new Set(Object.keys(props.reactions));
 		return;
 	}
 
 	try {
-		const reactionTypes = Object.keys(props.reactions);
-		const promises = reactionTypes.map(type =>
-			misskeyApi('notes/reactions', {
-				noteId: props.noteId,
-				type: type,
-				limit: 1,
-			}),
-		);
-
-		const results = await Promise.all(promises);
-
-		const visible = new Set<string>();
-		for (let i = 0; i < results.length; i++) {
-			const users = results[i];
-			if (users.length > 0) {
-				visible.add(reactionTypes[i]);
-			}
-		}
-		visibleReactions.value = visible;
+		const visible = await visibilityCache.getVisible(props.reactions);
+		if (revision === visibilityRevision) visibleReactions.value = visible;
 	} catch (error) {
 		console.error(error);
 		// フォールバックとして全て表示
-		visibleReactions.value = new Set(Object.keys(props.reactions));
+		if (revision === visibilityRevision) visibleReactions.value = new Set(Object.keys(props.reactions));
 	}
 }
+
+watch([() => props.noteId, () => prefer.s.reactionChecksMuting], () => {
+	visibilityCache.clear();
+	updateVisibility();
+});
+
+useGlobalEvent('userRelationsChanged', () => {
+	visibilityCache.clear();
+	updateVisibility();
+});
 
 function onMockToggleReaction(emoji: string, count: number) {
 	if (!mock) return;
@@ -130,11 +131,7 @@ watch(() => props.reactions, (newSource) => {
 		initialReactions.value = new Set(Object.keys(newSource));
 		isInitialReactionSet = true;
 	}
-	if (Object.keys(newSource).length > 0) {
-		updateVisibility();
-	} else {
-		visibleReactions.value = new Set();
-	}
+	updateVisibility();
 
 	let newReactions: [string, number][] = [];
 	hasMoreReactions.value = Object.keys(newSource).length > props.maxNumber;
