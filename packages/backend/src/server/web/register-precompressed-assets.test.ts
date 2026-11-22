@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import fs from 'node:fs';
 import { mkdtemp, mkdir, readdir, rm, writeFile, unlink, symlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -91,6 +92,41 @@ describe('precompressed asset routing', () => {
 					}
 				}
 			}
+		}
+	});
+
+	test('does not probe compressed siblings for assets without sidecars', async () => {
+		const baseline = await createApp(false);
+		const optimized = await createApp();
+		// send uses callback-based fs.stat. Spy on the real calls, without
+		// replacing filesystem results or bypassing the static plugin.
+		const stat = vi.spyOn(fs, 'stat');
+		for (const [prefix, root] of [['/vite/', 'main'], ['/embed_vite/', 'embed']]) {
+			for (const file of ['small.js', 'image.png']) {
+				const original = join(directory, root, file);
+				const siblings = ['.br', '.gz', '.deflate'].map(extension => original + extension);
+				for (const method of ['GET', 'HEAD'] as const) {
+					const request = { method, url: prefix + file + '?version=1', headers: { 'accept-encoding': 'br, gzip, deflate' } };
+					stat.mockClear();
+					const expected = await baseline.inject(request);
+					expect(expected.statusCode).toBe(200);
+					const baselinePaths = stat.mock.calls.map(([path]) => String(path));
+					// Positive control: this observer must see all three missing
+					// candidate probes when the original static handler is used.
+					for (const sibling of siblings) expect(baselinePaths).toContain(sibling);
+					stat.mockClear();
+					const actual = await optimized.inject(request);
+					expect(actual.statusCode).toBe(200);
+					expect(actual.rawPayload).toEqual(expected.rawPayload);
+					const optimizedPaths = stat.mock.calls.map(([path]) => String(path));
+					expect(optimizedPaths).toContain(original);
+					for (const sibling of siblings) expect(optimizedPaths).not.toContain(sibling);
+				}
+			}
+			stat.mockClear();
+			const response = await optimized.inject({ url: prefix + 'large.js', headers: { 'accept-encoding': 'br' } });
+			expect(response.headers['content-encoding']).toBe('br');
+			expect(stat.mock.calls.map(([path]) => String(path))).toContain(join(directory, root, 'large.js.br'));
 		}
 	});
 
