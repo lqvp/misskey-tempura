@@ -15,6 +15,7 @@ export function applyWithLocale(
 	localeName: string,
 	localeJson: Locale,
 	fileLogger: Logger,
+	runtimeLocale: ILocale = localeJson,
 ) {
 	for (const modification of modifications) {
 		switch (modification.type) {
@@ -83,7 +84,7 @@ export function applyWithLocale(
 				// locale-json is inlined to place where initialize module-level variable which is executed only once.
 				// In such case we can use JSON.parse to speed up the parsing script.
 				// https://v8.dev/blog/cost-of-javascript-2019#json
-				sourceCode.update(modification.begin, modification.end, `JSON.parse(${JSON.stringify(JSON.stringify(localeJson))})`);
+				sourceCode.update(modification.begin, modification.end, `JSON.parse(${JSON.stringify(JSON.stringify(runtimeLocale))})`);
 				break;
 			}
 			default: {

@@ -10,6 +10,7 @@ import { collectModifications } from './locale-inliner/collect-modifications.js'
 import { applyWithLocale } from './locale-inliner/apply-with-locale.js';
 import { blankLogger } from './logger.js';
 import { detectI18nFacadeChunk } from './locale-inliner/facade-chunk-detection.js';
+import { collectRuntimeLocalePaths, pruneRuntimeLocale } from './locale-inliner/runtime-locale.js';
 import type { Logger } from './logger.js';
 import type { Locale } from 'i18n';
 import type { Manifest as ViteManifest } from 'vite';
@@ -22,6 +23,7 @@ export class LocaleInliner {
 	i18nSymbol: string;
 	logger: Logger;
 	chunks: ScriptChunk[];
+	runtimeLocalePaths: string[][] = [[]];
 
 	static async create(options: {
 		outputDir: string,
@@ -78,6 +80,7 @@ export class LocaleInliner {
 		if (!this.chunks.flatMap(x => x.modifications ?? []).some(x => x.type === 'localized')) {
 			throw new Error('No localizations are inlined! this should mean locale inliner is not working well!');
 		}
+		this.runtimeLocalePaths = collectRuntimeLocalePaths(this.chunks, this.i18nFileName, this.i18nSymbol);
 	}
 
 	#detectI18nFacadeChunk() {
@@ -108,6 +111,7 @@ export class LocaleInliner {
 	}
 
 	async saveLocale(localeName: string, localeJson: Locale) {
+		const runtimeLocale = pruneRuntimeLocale(localeJson, this.runtimeLocalePaths);
 		// create directory
 		await fs.mkdir(path.join(this.outputDir, localeName), { recursive: true });
 		const localeLogger = localeName === 'ja-JP' ? this.logger : blankLogger; // we want to log for single locale only
@@ -117,7 +121,7 @@ export class LocaleInliner {
 			}
 			const fileLogger = localeLogger.prefixed(`${chunk.fileName} (${chunk.chunkName}): `);
 			const magicString = new MagicString(chunk.sourceCode);
-			applyWithLocale(magicString, chunk.modifications, localeName, localeJson, fileLogger);
+			applyWithLocale(magicString, chunk.modifications, localeName, localeJson, fileLogger, runtimeLocale);
 
 			await fs.writeFile(path.join(this.outputDir, localeName, chunk.fileName), magicString.toString());
 		}
