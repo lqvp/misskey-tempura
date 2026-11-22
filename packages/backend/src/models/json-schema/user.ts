@@ -518,6 +518,10 @@ export const packedMeDetailedOnlySchema = {
 			type: 'boolean',
 			nullable: false, optional: false,
 		},
+		isSubModerator: {
+			type: 'boolean',
+			nullable: false, optional: false,
+		},
 		isAdmin: {
 			type: 'boolean',
 			nullable: false, optional: false,

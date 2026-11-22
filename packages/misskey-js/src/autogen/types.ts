@@ -4613,6 +4613,7 @@ export type components = {
             bannerId: string | null;
             followedMessage: string | null;
             isModerator: boolean;
+            isSubModerator: boolean;
             isAdmin: boolean;
             injectFeaturedNote: boolean;
             receiveAnnouncementEmail: boolean;
