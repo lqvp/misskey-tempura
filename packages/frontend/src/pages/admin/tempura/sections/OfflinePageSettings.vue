@@ -36,6 +36,7 @@ import MkFolder from '@/components/MkFolder.vue';
 import MkFormFooter from '@/components/MkFormFooter.vue';
 import * as os from '@/os.js';
 import { fetchInstance } from '@/instance.js';
+import { updateSwOfflinePageConfig } from '@/utility/initialize-sw.js';
 import { i18n } from '@/i18n.js';
 
 const props = defineProps<{ meta: Misskey.Endpoints['admin/meta']['res'] }>();
@@ -69,5 +70,6 @@ const form = useForm({
 		offlinePageConfig: config,
 	});
 	fetchInstance(true);
+	updateSwOfflinePageConfig(config);
 });
 </script>

@@ -264,10 +264,23 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}));
 		}
 
+		// リストアンテナは、リストのメンバー以外のノートを SQL 側で落とす。
+		// checkHitAntenna はキーワード判定より先にノートごとに所属を照会するため、
+		// ここで絞らないと一致が少ないときに走査件数ぶん照会が走る
+		if (antenna.src === 'list') {
+			if (antenna.userListId == null) return [];
+			query.andWhere('note.userId IN (SELECT "userId" FROM "user_list_membership" WHERE "userListId" = :backfillUserListId)', { backfillUserListId: antenna.userListId });
+		}
+
 		this.queryService.generateVisibilityQuery(query, me);
 		this.queryService.generateBaseNoteFilteringQuery(query, me);
 
-		// フィルタを適用したうえで、一致ノートが need 件集まるまで新しい順に走査する。
+		// 新着取得 (sinceId のみ指定) は応答を古い順に返し、クライアントは受け取った最新の id を次のカーソルにする。
+		// 新しい側から走査して need 件で打ち切ると、その間にある古い一致が以降の新着取得から漏れるため、
+		// この場合は sinceId から古い順に走査する
+		const ascending = sinceId != null && untilId == null;
+
+		// フィルタを適用したうえで、一致ノートが need 件集まるまで走査する。
 		// 走査件数に固定の上限を置くと、ミュートしていない一致ノートが窓の外にあるだけで
 		// 「試し打ちでは当たるのに TL は空」に戻ってしまうため、上限は総走査数で掛ける
 		const result: MiNote['id'][] = [];
@@ -277,9 +290,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 		while (result.length < need && scanned < BACKFILL_SCAN_LIMIT) {
 			const batch = query.clone()
-				.orderBy('note.id', 'DESC')
+				.orderBy('note.id', ascending ? 'ASC' : 'DESC')
 				.take(Math.min(BACKFILL_BATCH_SIZE, BACKFILL_SCAN_LIMIT - scanned));
-			if (cursor != null) batch.andWhere('note.id < :cursor', { cursor });
+			if (cursor != null) batch.andWhere(ascending ? 'note.id > :cursor' : 'note.id < :cursor', { cursor });
 
 			const candidates = await batch.getMany();
 			if (candidates.length === 0) break;

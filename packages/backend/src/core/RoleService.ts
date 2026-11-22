@@ -570,7 +570,19 @@ export class RoleService implements OnApplicationShutdown, OnModuleInit {
 	@bindThis
 	public async isModerator(user: { id: MiUser['id'] } | null): Promise<boolean> {
 		if (user == null) return false;
-		// Moderator (サブモデレーター) もモデレーターとして扱う
+		// Moderator (サブモデレーター) は含めない。
+		// isModerator は私信の閲覧や他人のノート・ファイル削除などの権限判定に使われるため、
+		// 通報処理だけを委任するサブモデレーターに広げてはいけない
+		return (this.meta.rootUserId === user.id) || (await this.getUserRoles(user.id)).some(r => r.permissionGroup === 'MainModerator' || r.permissionGroup === 'Admin');
+	}
+
+	/**
+	 * サブモデレーター (Moderator) 以上の階級か。
+	 * 権限判定ではなく、モデレーション UI を出すかどうかの判定に使う
+	 */
+	@bindThis
+	public async isSubModeratorOrAbove(user: { id: MiUser['id'] } | null): Promise<boolean> {
+		if (user == null) return false;
 		return (this.meta.rootUserId === user.id) || (await this.getUserRoles(user.id)).some(r => r.permissionGroup === 'Moderator' || r.permissionGroup === 'MainModerator' || r.permissionGroup === 'Admin');
 	}
 

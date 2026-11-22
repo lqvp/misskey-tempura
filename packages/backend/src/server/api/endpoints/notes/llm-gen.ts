@@ -9,6 +9,7 @@ import type { MiMeta } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { DI } from '@/di-symbols.js';
+import { StatusError } from '@/misc/status-error.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -112,42 +113,46 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 			const model = ps.model || this.serverSettings.serverOpenAIModels || 'gpt-4o-mini';
 			const url = `${baseURL}/chat/completions`;
 
-			// ユーザーコンテンツ (テキスト + 画像URL)
-			const content: any[] = [{ type: 'text', text: ps.text }];
+			const textContent = { type: 'text', text: ps.text };
 			// 画像は最大4件まで (API 直叩きに対するサーバー側の上限)
-			if (ps.fileUris && ps.fileUris.length > 0) {
-				for (const fileUri of ps.fileUris.slice(0, 4)) {
-					content.push({
-						type: 'image_url',
-						image_url: { url: fileUri },
-					});
-				}
-			}
+			const imageContents = (ps.fileUris ?? []).slice(0, 4).map(fileUri => ({
+				type: 'image_url',
+				image_url: { url: fileUri },
+			}));
 
-			const requestBody = JSON.stringify({
-				model,
-				messages: [
-					{ role: 'system', content: ps.prompt },
-					{ role: 'user', content },
-				],
-			});
-
-			try {
+			const send = async (content: unknown[]) => {
 				const response = await this.httpRequestService.send(url, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
 						Authorization: `Bearer ${apiKey}`,
 					},
-					body: requestBody,
+					body: JSON.stringify({
+						model,
+						messages: [
+							{ role: 'system', content: ps.prompt },
+							{ role: 'user', content },
+						],
+					}),
 					timeout: 30000,
 					isLocalAddressAllowed: false,
 				}, {
 					throwErrorWhenResponseNotOk: true,
 				});
+				return await response.json();
+			};
 
-				const responseData = await response.json();
-				return responseData;
+			try {
+				try {
+					return await send([textContent, ...imageContents]);
+				} catch (error) {
+					// クライアントは使われるモデルが画像に対応しているか分からずに画像を付けてくるため、
+					// 画像を付けたリクエストが入力内容の不備として拒否されたときはテキストだけで送り直す
+					if (imageContents.length > 0 && error instanceof StatusError && (error.statusCode === 400 || error.statusCode === 422)) {
+						return await send([textContent]);
+					}
+					throw error;
+				}
 			} catch (error) {
 				// 念のため、メッセージにキーが含まれていたら隠してから記録・返却する
 				const rawErrorMessage = error instanceof Error ? error.message : 'Unknown error occurred';

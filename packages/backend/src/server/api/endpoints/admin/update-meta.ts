@@ -1237,7 +1237,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			if (ps.fixedInviteCode !== undefined) {
-				set.fixedInviteCode = ps.fixedInviteCode === '' ? null : ps.fixedInviteCode;
+				// 招待コードの入力欄は前後の空白を除いて照合するため、保存時にも除いておく
+				const fixedInviteCode = ps.fixedInviteCode?.trim() ?? null;
+				set.fixedInviteCode = fixedInviteCode === '' ? null : fixedInviteCode;
 			}
 
 			if (ps.signupPassphrase !== undefined) {

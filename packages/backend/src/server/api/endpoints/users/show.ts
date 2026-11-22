@@ -130,7 +130,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			let user;
 
-			const isModerator = await this.roleService.isModerator(me);
+			// 通報処理では凍結済みユーザーの確認も要るため、サブモデレーターにも凍結済みユーザーを見せる
+			const canSeeSuspended = await this.roleService.isSubModeratorOrAbove(me);
 			if ('username' in ps) {
 				ps.username = ps.username.trim();
 			}
@@ -140,7 +141,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					return [];
 				}
 
-				const users = await this.usersRepository.findBy(isModerator ? {
+				const users = await this.usersRepository.findBy(canSeeSuspended ? {
 					id: In(ps.userIds),
 				} : {
 					id: In(ps.userIds),
@@ -187,7 +188,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					throw new ApiError(meta.errors.noSuchUser);
 				}
 
-				if (!isModerator) {
+				if (!canSeeSuspended) {
 					if (user.isDeleted && user.isSuspended) {
 						throw new ApiError(meta.errors.noSuchUser);
 					}

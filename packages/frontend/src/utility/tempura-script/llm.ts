@@ -243,7 +243,8 @@ async function generateViaServer({ note, userContent, systemInstruction }: Gener
 
 	const fileUris: string[] = [];
 	// NOTE: サーバー設定のモデル名はクライアントから取得できないため、
-	// サーバーモードでは画像対応判定によらずメディアトグルのみで判断する
+	// サーバーモードでは画像対応判定によらずメディアトグルのみで判断する。
+	// モデルが画像に対応せず拒否された場合は、サーバー側がテキストだけで送り直す
 	if (note && useGeminiWithMedia) {
 		for (const file of (note.files ?? [])) {
 			if (file.type.startsWith('image/') && !file.type.includes('gif')) {

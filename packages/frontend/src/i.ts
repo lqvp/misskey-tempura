@@ -17,6 +17,8 @@ const accountData = miLocalStorage.getItem('account');
 export const $i = accountData ? reactive(JSON.parse(accountData) as AccountWithToken) : null;
 
 export const iAmModerator = $i != null && ($i.isAdmin === true || $i.isModerator === true);
+// サブモデレーター (通報処理など一部のモデレーションだけを任されたロール) 以上か
+export const iAmSubModerator = $i != null && (iAmModerator || $i.isSubModerator === true);
 export const iAmAdmin = $i != null && $i.isAdmin;
 
 export function ensureSignin() {

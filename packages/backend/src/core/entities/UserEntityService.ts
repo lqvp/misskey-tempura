@@ -517,6 +517,9 @@ export class UserEntityService implements OnModuleInit {
 			null;
 
 		const isModerator = isMe && isDetailed ? this.roleService.isModerator(user) : undefined;
+		// サブモデレーターにもコントロールパネル (通報処理など) を出すための値。
+		// isModerator に含めると、他人のノート削除などサブモデレーターに許されない操作まで表示されてしまう
+		const isSubModerator = isMe && isDetailed ? this.roleService.isSubModeratorOrAbove(user) : undefined;
 		const isAdmin = isMe && isDetailed ? this.roleService.isAdministrator(user) : undefined;
 		const unreadAnnouncements = isMe && isDetailed ?
 			(await this.announcementService.getUnreadAnnouncements(user)).map((announcement) => ({
@@ -655,6 +658,7 @@ export class UserEntityService implements OnModuleInit {
 				bannerId: user.bannerId,
 				followedMessage: profile!.followedMessage,
 				isModerator: isModerator,
+				isSubModerator: isSubModerator,
 				isAdmin: isAdmin,
 				injectFeaturedNote: profile!.injectFeaturedNote,
 				receiveAnnouncementEmail: profile!.receiveAnnouncementEmail,

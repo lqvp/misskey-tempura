@@ -31,9 +31,25 @@ export async function initializeSw() {
 	} catch {
 		// sessionStorage may be unavailable; nothing to clean up
 	}
+	postInitializeMessage(registration, instance.offlinePageConfig ?? null);
+}
+
+function postInitializeMessage(registration: ServiceWorkerRegistration, offlinePageConfig: string | null) {
 	registration.active?.postMessage({
 		msg: 'initialize',
 		lang,
-		offlinePageConfig: instance.offlinePageConfig ?? null,
+		offlinePageConfig,
 	});
+}
+
+/**
+ * オフラインページ設定を SW に渡し直す。
+ * SW は起動時の initializeSw でしか設定を受け取らないため、管理画面で保存した直後に障害が起きると
+ * 再読み込みするまで古い案内が表示されてしまう
+ */
+export async function updateSwOfflinePageConfig(offlinePageConfig: string | null) {
+	if (!('serviceWorker' in navigator)) return;
+	const registration = await navigator.serviceWorker.getRegistration('/');
+	if (registration == null) return;
+	postInitializeMessage(registration, offlinePageConfig);
 }

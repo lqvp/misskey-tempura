@@ -674,9 +674,12 @@ describe('RoleService', () => {
 			});
 			expect(result).toEqual([subModUser1.id]);
 
-			// isModerator も true になる
-			expect(await roleService.isModerator(subModUser1)).toBe(true);
-			expect(await roleService.isModerator(normalUser1)).toBe(false);
+			// UI 向けの判定ではサブモデレーター以上として扱われる
+			expect(await roleService.isSubModeratorOrAbove(subModUser1)).toBe(true);
+			expect(await roleService.isSubModeratorOrAbove(normalUser1)).toBe(false);
+
+			// 私信閲覧や他人のデータ削除に使う isModerator は付与しない
+			expect(await roleService.isModerator(subModUser1)).toBe(false);
 
 			// Moderator 階級は管理者権限を持たない
 			expect(await roleService.isAdministrator(subModUser1)).toBe(false);
@@ -696,7 +699,8 @@ describe('RoleService', () => {
 			expect(updated.isAdministrator).toBe(false);
 
 			await assignRole({ userId: user.id, roleId: roleNormal.id });
-			expect(await roleService.isModerator(user)).toBe(true);
+			expect(await roleService.isSubModeratorOrAbove(user)).toBe(true);
+			expect(await roleService.isModerator(user)).toBe(false);
 		});
 	});
 
