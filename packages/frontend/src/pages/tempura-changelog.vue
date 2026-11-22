@@ -24,15 +24,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<aside :class="$style.sidebar">
 					<nav class="_panel" :class="$style.navigation" :aria-label="i18n.ts._misskeyTempura._changelog.categories">
 						<h2 :class="$style.navTitle">{{ i18n.ts._misskeyTempura._changelog.categories }}</h2>
-						<select
-							:class="$style.categorySelect"
-							:aria-label="i18n.ts._misskeyTempura._changelog.categories"
-							:value="searching ? '' : selectedId ?? ''"
-							@change="selectCategory(($event.target as HTMLSelectElement).value || null)"
-						>
-							<option value="">{{ i18n.ts._misskeyTempura._changelog.allCategories }}</option>
-							<option v-for="section in sections" :key="section.id" :value="section.id">{{ section.title }}</option>
-						</select>
+						<div :class="$style.categorySelect">
+							<MkSelect v-model="category" :items="categoryOptions">
+								<template #label>{{ i18n.ts._misskeyTempura._changelog.categories }}</template>
+							</MkSelect>
+						</div>
 						<div :class="$style.categoryList">
 							<button
 								type="button"
@@ -130,6 +126,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { computed, nextTick, onActivated, onDeactivated, onMounted, onUnmounted, ref, shallowRef, useTemplateRef } from 'vue';
 import catalogUrl from '../../../../diff.md?url&no-inline';
 import { version } from '@@/js/config.js';
+import MkSelect from '@/components/MkSelect.vue';
 import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';
 import { countFeatureItems, fetchFeatureCatalog, searchFeatureCatalog } from '@/utility/tempura-script/feature-catalog.js';
@@ -144,6 +141,14 @@ const totalItems = computed(() => sections.value.reduce((count, section) => coun
 const selectedId = ref<string | null>(null);
 const query = ref('');
 const searching = computed(() => query.value.trim().length > 0);
+const categoryOptions = computed(() => [
+	{ label: i18n.ts._misskeyTempura._changelog.allCategories, value: '' },
+	...sections.value.map(section => ({ label: section.title, value: section.id })),
+]);
+const category = computed({
+	get: () => searching.value ? '' : selectedId.value ?? '',
+	set: (value: string) => { void selectCategory(value || null); },
+});
 const visibleSections = computed(() => searching.value
 	? searchFeatureCatalog(sections.value, query.value)
 	: sections.value.filter(section => selectedId.value === null || section.id === selectedId.value));
@@ -283,13 +288,6 @@ definePage(() => ({
 
 .categorySelect {
 	display: none;
-	width: 100%;
-	padding: 10px;
-	border: 1px solid var(--MI_THEME-divider);
-	border-radius: var(--MI-radius);
-	background: var(--MI_THEME-panel);
-	color: var(--MI_THEME-fg);
-	font: inherit;
 }
 
 .categoryList {
@@ -515,7 +513,7 @@ definePage(() => ({
 	}
 
 	.navTitle {
-		padding-left: 0;
+		display: none;
 	}
 
 	.categoryList {
