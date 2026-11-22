@@ -24,6 +24,7 @@ import type { DataSource } from 'typeorm';
 import { Redis } from 'ioredis';
 import { loadConfig } from '@/config.js';
 import { DEFAULT_POLICIES } from '@/core/RoleService.js';
+import { genAid } from '@/misc/id/aid.js';
 
 const compareBy = <T extends { id: string }>(selector: (s: T) => string = (s: T): string => s.id) => (a: T, b: T): number => {
 	return selector(a).localeCompare(selector(b));
@@ -800,6 +801,34 @@ describe('アンテナ', () => {
 				user: alice,
 			});
 			assert.deepStrictEqual(response.map((x: Note) => x.id), [oldestMatch.id]);
+		}, 1000 * 60);
+
+		test('sinceIdの直後に走査上限を超える不一致ノートがあっても、新しい側の一致を返して先に進めること。', async () => {
+			const keyword = '補完上限超えキーワード';
+			const poster = await signup({ username: 'backfillscanlimit' });
+			const base = await post(poster, { text: `${keyword} 基準` });
+			// 補完の走査上限 (2,000件) をちょうど埋める不一致ノートを、API のレート制限を避けて直接入れる
+			const startedAt = Date.now();
+			const fillerIds = Array.from({ length: 2000 }, (_, i) => genAid(startedAt + 1 + i));
+			await db.query(
+				'INSERT INTO "note" ("id", "userId", "text", "visibility") SELECT unnest($1::varchar[]), $2, \'無関係\', \'public\'',
+				[fillerIds, poster.id],
+			);
+			// 不一致ノートより後の時刻で投稿する
+			await new Promise(r => setTimeout(r, 2000 + 50));
+			const newest = await post(poster, { text: `${keyword} 最新` });
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+
+			const response = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id, sinceId: base.id, limit: 1 },
+				user: alice,
+			});
+			assert.deepStrictEqual(response.map((x: Note) => x.id), [newest.id]);
 		}, 1000 * 60);
 
 		test('queryが他人のアンテナでは使えないこと。', async () => {
