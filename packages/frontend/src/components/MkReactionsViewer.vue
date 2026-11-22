@@ -42,6 +42,7 @@ import { customEmojisMap } from '@/custom-emojis.js';
 import { DI } from '@/di.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { ReactionVisibilityCache } from '@/utility/reaction-visibility.js';
+import { useGlobalEvent } from '@/events.js';
 
 const props = withDefaults(defineProps<{
 	note: Misskey.entities.Note;
@@ -97,6 +98,11 @@ async function updateVisibility() {
 }
 
 watch([() => props.noteId, () => prefer.s.reactionChecksMuting], () => {
+	visibilityCache.clear();
+	updateVisibility();
+});
+
+useGlobalEvent('userRelationsChanged', () => {
 	visibilityCache.clear();
 	updateVisibility();
 });
