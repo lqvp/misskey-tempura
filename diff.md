@@ -1,12 +1,41 @@
+<!--
+執筆・更新規則: docs/contributing/feature-catalog.md
+このコメントはアプリ内の表示・検索から除外されます。
+-->
+
 # Misskey-Tempura フォーク機能一覧
 
 Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey にはない、または異なる動作をする機能をまとめます。本家に既にある機能 (予約投稿など) はここでは扱いません。
 
 注意事項
 
-* 本ページは HackMD のバージョン差分ページを置き換える用途を想定しています。アプリ内の /tempura-changelog は HackMD を取得してバージョン見出しを解析するため、置き換えると表示が空になる可能性があります。必要なら取得先や解析処理の変更を検討してください。
+* アプリ内の /tempura-changelog は、稼働版に同梱したこのファイルを、ページを開いたときに取得して表示します。
 * 一部の機能はロール権限やサーバー設定で有効化が必要です。
-* 記載内容は 2026.10.1-tempura-2.0.21-dev 時点のコードに基づきます。
+* 記載内容は、このファイルと同じコミットのコードに基づきます。アプリでは表示中のビルドのバージョンを自動表示します。
+
+## 2026-11-22 の変更
+
+### フロントエンドの軽量化と修正
+
+* 長時間の利用でメモリが増え続けないよう、タイムラインから外れたノートのアンテナ一致情報を解放し、アクティビティウィジェットのチャートを破棄する処理を修正しました。
+* カスタム通知音のデコード済みキャッシュを最大 16 MiB に制限しました。同梱の通知音は別に保持するため、この上限の影響を受けません。
+* リアクション数だけが増えた場合は表示可否の判定を再利用し、ミュート・ブロックの変更時には判定を更新します。
+* ポップアップを項目ごとに描画する構成にし、ほかのポップアップの更新による再描画を抑えました。
+* アップロード時の画像・動画処理を必要になった時点で読み込みます。タイムラインの遅延読み込みは起動時のリクエスト増加を避けるため取り消しました。
+* チャートの日付処理を軽量化し、ズーム・行列チャート用プラグインを必要なチャートだけで読み込むようにしました。
+* 独自機能一覧にカテゴリ別ナビゲーションと全文検索を追加しました。表示内容を diff.md に一本化し、JavaScript へ本文を埋め込まず、同梱の静的ファイルとして読み込みます。
+
+### バックエンドの起動処理
+
+* API の入力検証器は、各エンドポイントが初めて呼ばれた時点でコンパイルし、以降は再利用します。
+* API ルートの登録を GET / POST に限定し、暗黙の HEAD ルートも無効にしました。
+* メール送信・WebAuthn・ダウンロード・S3 操作などの依存ライブラリを、各処理が必要になった時点で読み込むようにしました。
+
+### リリースと CI
+
+* master へ取り込む前にリリース PR を作成し、CI の完了を待つようにしました。
+* リリース PR の再利用時とマージ前に先端コミットを再確認し、ベータタグの参照先を修正しました。
+* CI 待機では各チェックの最新実行だけを判定し、チェック情報はコマンド引数ではなくファイル経由で渡します。
 
 ## 本家との大きな違い
 
@@ -17,7 +46,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * 配送先制御 (delivery targets)
 * アカウント整理 (truncate)
 * ノートの非公開化 (make private)
-* LLM モデレーションと Gemini 連携
+* LLM モデレーションと LLM 連携 (OpenAI 互換)
 * 問い合わせフォーム
 * 地震情報
 * Hana entrance
@@ -80,14 +109,18 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * 署名が無い・検証できない取得は匿名に分類します。署名者の鍵をまだ知らない場合は、インスタンス登録済みのホストに限りアカウントを取りに行って検証します (署名必須モードと同じ方針)。未登録ホストの署名者は匿名に分類します
 * 署名を検証できたリモートサーバーからの取得と、配送済みのコピーは対象外です
 * API でも Pages (pages/show, pages/featured)・Clips (clips/show, clips/notes)・Channels (channels/show, channels/featured)・ユーザー検索 (users/search) に同じポリシーを適用します。ugcVisibilityForVisitor が 'none' の間は匿名には返さず、'local' の間は匿名のユーザー検索をローカルユーザーに限定します (users/show と同じ扱い)
+* 統計・チャート・連合・ノート一覧系のエンドポイント (replies / renotes / quotes / reactions / featured / local-timeline など) は未ログインユーザーに既定で空の応答を返します。管理画面の「匿名アクセスの公開設定」(独自機能) でエンドポイントごとに公開できます (リアクション一覧 /api/notes/reactions を含む)
 
 ### 招待と承認
 
 * approvalRequiredForSignup でサインアップ承認制を有効化できます
+* defaultRequireSigninToViewContents で新規アカウントの「コンテンツの表示にログインを必須にする」既定値を設定できます
 * 承認待ちユーザー一覧 (/admin/approvals) で承認/拒否できます
 * 承認拒否時には通知が送られます
 * 招待コード (invite) でメール認証や承認をスキップできます (ロール権限 canSkipInviteEmailAuth / canSkipInviteApproval が必要)
 * 招待コードの有効期限を設定できます
+* 固定招待コード (fixedInviteCode) を設定できます。回数制限なく使い放題で消費もされない、任意の文字列の招待コードです (独自機能設定画面)
+* 合言葉 (signupPassphrase) を設定できます。登録画面の招待コード入力欄に入力すると登録できます。全角半角・大文字小文字・空白の違いは無視されます (独自機能設定画面)
 
 ### メールドメインホワイトリスト
 
@@ -111,6 +144,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 
 * public_non_ltl: LTL には出さない public ノート
 * visibility coloring で公開範囲を色分け表示できます
+* canPublicNonLtlNote が無効な場合、canHomeNote が有効なら home、無効なら followers に降格します
 
 ### 受信指定ノート
 
@@ -133,6 +167,8 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * defaultScheduledNoteDelete / defaultScheduledNoteDeleteTime でデフォルトを設定できます
 * 1 年以上先には設定できません
 * 削除の代わりに非公開化する選択 (makePrivateInsteadOfDelete) があります
+* 非公開化 (makePrivateInsteadOfDelete) にはロールポリシー canUseMakePrivate が必要です
+* 削除時に他のノートから参照されている添付ファイルは、そのノートのために残ります
 
 ### ノートの非公開化 (make private)
 
@@ -204,6 +240,25 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * マッチ方式を切り替えても既存キーワードは自動変換・自動保存されません。エディタは未保存の切り替えに警告を表示します。
 * エクスポート/インポートでもモードが保持されます。旧形式のエクスポート (モードなし) は通常モードとして復元されます。正規表現として解釈できないアンテナはインポート時にスキップされ、件数がサーバーログに記録されます (ユーザーへの通知はありません)。
 
+### タイムラインの範囲
+
+* アンテナのタイムラインは「アンテナが受信したノートの履歴」ではなく「現在の条件に一致するノート」を返します。そのため、アンテナを作る前や条件を変更する前のノートでも、現在の条件に合えば並びます。補完するのは直近 30 日以内のノートで、1 回の読み込みで走査するのは最大 2000 件です。
+* 保存前の試し打ち (antennas/test) とアンテナのタイムラインは同じ条件で判定するため、条件の解釈は一致します。ただし試し打ちは直近 200 件を走査して最大 30 件を返すのに対し、タイムラインの方が広い範囲を対象にします。そのため試し打ちに出ないノートがタイムラインに出ることはあります。逆に、タイムラインで外したノート (antennas/remove-note) は試し打ちには残ります。
+* アンテナのタイムラインからノートを外すと (antennas/remove-note)、そのノートは再表示されません。外した記録は 30 日間保持され、1 アンテナあたり 1000 件を超えると古い記録から消えます (その場合、外したノートが再表示されうる)。
+* この変更より前のバージョンでノートを外した場合、外した記録が残っていないため、条件に合っていればタイムラインに再表示されます。必要なら外し直してください。
+* 条件を変更すると、以前の条件で受信したノートも現在の条件で再判定されます。ソーシャルグラフ (フォロワー限定など) を条件にしている場合、フォロー関係が変わると過去のノートが表示されなくなることがあります。
+
+### 保存・インポートの検証
+
+* 受信元が「リスト」のアンテナは、リストを指定しないと作成・保存できません (NO_SUCH_USER_LIST)。以前はリストなしで保存できましたが、その場合は何も受信しないアンテナになっていました。
+* 更新時は、受信元が「リスト」でないアンテナでも、指定されたリストが自分のものでなければ同じエラーになります (以前はリスト指定が無視されて保存できました)。
+* この変更より前に作られた「リストなしのリスト アンテナ」は自動では直りません。アンテナの設定を開いて受信元を「全て」などに変えて保存し直すか、リストを選び直してください。名前だけの変更でも保存時にエラーになるため、まず受信元を直してください。
+* インポートでは、作成と同じ条件で検証します。
+  * キーワードか除外キーワードのどちらかが入っていればインポートできます (キーワードなし・除外キーワードのみのアンテナも対象)。
+  * キーワードの上限 (32 グループ・グループあたり 32 項目・1 項目 512 文字) は、マッチ方式が「通常」のアンテナにも適用されます。超過したアンテナはインポートされず、サーバーログに記録されます。
+  * 強制除外キーワードはスコアリング (SCORE) 有効時のみ検証されます。
+  * 受信元が「リスト」のアンテナは、インポート時に「ユーザー指定」として復元されます (リストの中身はユーザー一覧に変換されます)。
+
 ## フォローと履歴
 
 ### フォロー履歴
@@ -211,11 +266,13 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * follow / unFollow / wasFollow / wasUnFollow / blocked / unBlocked / wasBlocked / wasUnBlocked を記録します
 * フィルタと全削除ができます
 * canReadFollowHistory 権限が必要です
+* 365 日より古い記録は日次のクリーンアップジョブ (毎日 4:30) で自動削除されます
 
 ### フォローリクエスト履歴
 
 * sent / received / approved / rejected / wasApproved / wasRejected / wasBlocked / wasUnBlocked を記録します
 * フィルタと全削除ができます
+* 365 日より古い記録は日次のクリーンアップジョブ (毎日 4:30) で自動削除されます
 
 ### フォロー制御
 
@@ -228,7 +285,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 
 ### プロキシアカウントのフォロー条件
 
-* リストに追加されたリモートユーザーやアカウント移行先をプロキシアカウントがフォローする条件を、サーバー設定の proxyAccountFollowMode で切り替えられます (管理画面 → 設定 → プロキシアカウント)
+* リストに追加されたリモートユーザーやアカウント移行先をプロキシアカウントがフォローする条件を、サーバー設定の proxyAccountFollowMode で切り替えられます (管理画面 → 独自機能 → フォロー条件)
   * always: 常にフォローする (本家と同じ動作)
   * skipIfFollowed: このインスタンス内にフォロワーがいない場合のみフォローする (初期値。リストへの追加は従来の tempura の動作。アカウント移行では従来は常にフォローしていたため、ローカルフォロワーがいる移行先への新規フォローは作成されなくなります)
   * disabled: 新たにはフォローしない。既存のフォローは解除されず、購読中の投稿は届き続けます
@@ -266,6 +323,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 
 ### ロール
 
+* permissionGroup: Moderator (サブモデレーター) 階級を追加。ロール編集画面の「ロールの権限」で選択できる。通報処理 (abuse-user-reports / update-abuse-user-report / resolve-abuse-user-report / forward-abuse-user-report) とユーザー情報参照 (show-user / show-users)、モデレーションノート (update-user-note) はサブモデレーターでも利用可能。管理操作 (requireModerator / requireAdmin のエンドポイント) は引き続き MainModerator / Admin ロールが必要
 * community role: ユーザーが作成できるロール
 * isRainbow: レインボーロール
 * canHomeNote / canEmojiDeletion / canUseRemoteIconDecorations / canAddRoles / canCreateRole
@@ -284,16 +342,31 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 
 ## LLM 連携
 
-### サーバー Gemini
+### サーバー OpenAI 互換
 
-* serverGeminiEnabled / apiKey / models
-* useGeminiLLMAPI でユーザーが利用
-* useGeminiWithMedia でメディア付き
-* geminiToken / geminiModel
+注意: このバージョンでサーバー Gemini 設定 (serverGemini*) は廃止されました。
+マイグレーションが既存の Gemini API キーを OpenAI 互換設定へ引き継ぎます
+(baseURL は Gemini の OpenAI 互換エンドポイント)。Gemini を利用していなかった
+サーバーは、管理画面 (独自機能 → LLM設定) で OpenAI 互換 API キーとベースURLを
+再設定してください。旧 Gemini 用ユーザートークン (geminiToken) も削除されたため、
+各自で openaiToken を設定し直す必要があります。
+
+* serverOpenAIEnabled / apiKey / baseURL / models
+* OpenAI 互換 API (Chat Completions) をサーバー経由で利用可能
+* useGeminiLLMAPI でユーザーがサーバー提供LLMを利用
+* useGeminiWithMedia でメディア付き (image_url)
 * system prompt と note/profile summarize prompts
 * ノート変換 (long/short/simple/casual/professional/cat/custom)
-* thinking budget (-1 で無制限)
 * notesLimitPrompt / includeFollowersNotesPrompt
+* ユーザー直指定モード: openaiToken / openaiBaseUrl / openaiModel
+* モデル一覧を API から動的取得 (notes/llm-models、GET /models)
+* モデルの画像入力対応をプロバイダのモダリティ情報から判定 (OpenRouter / Mistral / DeepSeek 等、情報が無い場合はモデル名推測)
+* ユーザーのUI言語での応答を促すヒントをシステムプロンプトに付与
+* 画像入力対応とみなす設定 (openaiForceImageInput) を追加
+* 旧ユーザー設定 geminiModel / geminiThinkingBudget は廃止 (geminiToken と合わせて再設定が必要)
+* プロンプトインジェクション対策 (user_content デリミタとガード指示)
+* 返信文脈を参考データとして要約に付与
+* temperature 設定 (ユーザー直指定モード)
 
 ### LLM モデレーション
 
@@ -384,6 +457,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 
 * WidgetListenBrainz (userId)
 * user/index.listenbrainz ページ
+* 外部 API の origin_url は http(s) のみリンク化します
 
 ## 太鼓
 
@@ -411,7 +485,12 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 ### テンプラ管理画面
 
 * /admin/tempura-admin に集約
-* ApprovalRequired / BlockMentions / LongIconUrl / UsernameMinLength / SecondsPerSignup / CustomSplashText / EmailDomainSettings / LlmModerationSettings / HanaEntranceSettings / EntranceSettings / DefaultFollowedUsers / BackgroundImages / CustomCursor / GeminiSettings / ContactFormSettings / LoginRiskSettings / ServerStatsSettings / SignedApFetchSettings / DeeplFreeModeSettings / ObjectStorageRemoteSettings / BlockedUserImageSettings
+* ApprovalRequired / DefaultRequireSigninToViewContents / BlockMentions / LongIconUrl / UsernameMinLength / SecondsPerSignup / CustomSplashText / EmailDomainSettings / LlmModerationSettings / HanaEntranceSettings / EntranceSettings / DefaultFollowedUsers / ProxyAccountFollowModeSettings / BackgroundImages / CustomCursor / GeminiSettings / ContactFormSettings / LoginRiskSettings / ServerStatsSettings / SignedApFetchSettings / DeeplFreeModeSettings / ObjectStorageRemoteSettings / BlockedUserImageSettings / OfflinePageSettings
+
+### オフラインページ
+
+* サーバーに接続できないとき Service Worker がエラー種別 (オフラインかサーバーエラーか) を表示するページを返す。自動再試行つき
+* offlinePageConfig: オフラインページのカスタムメッセージ・問い合わせ先 URL (テンプラ管理画面で設定)
 
 ### インスタンス情報
 
@@ -420,7 +499,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 
 ### チェンジログ
 
-* /tempura-changelog は HackMD を取得して解析
+* /tempura-changelog でカテゴリ別に独自機能を閲覧・検索できます
 
 ## 検索
 
@@ -429,13 +508,9 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 
 ## 互換性と注意
 
-* HackMD 置き換え時の in-app changelog 問題
+* 独自機能一覧は稼働版に同梱した diff.md を取得します。GitHub 上の最新版は参照しません。変更の反映にはフロントエンドの再ビルド・配信が必要です
 * 予約投稿は本家に導入済みのため除外
 * ニックネームはクライアント側のみ
-
-## バージョン
-
-* 2026.10.0-tempura-2.0.21-dev
 
 ## 開発用 Storybook / Chromatic
 

@@ -34,7 +34,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 const props = defineProps<{
 	activity: {
 		total: number;
@@ -53,17 +53,23 @@ const pointsReply = ref<string>();
 const pointsRenote = ref<string>();
 const pointsTotal = ref<string>();
 
-function dragListen(fn: (ev: MouseEvent | TouchEvent) => void) {
-	window.addEventListener('mousemove', fn);
-	window.addEventListener('mouseleave', dragClear.bind(null, fn));
-	window.addEventListener('mouseup', dragClear.bind(null, fn));
+let drag: AbortController | undefined;
+
+function dragClear() {
+	drag?.abort();
+	drag = undefined;
 }
 
-function dragClear(fn: (ev: MouseEvent | TouchEvent) => void) {
-	window.removeEventListener('mousemove', fn);
-	window.removeEventListener('mouseleave', dragClear as any);
-	window.removeEventListener('mouseup', dragClear as any);
+function dragListen(fn: (ev: MouseEvent | TouchEvent) => void) {
+	dragClear();
+	drag = new AbortController();
+	const { signal } = drag;
+	window.addEventListener('mousemove', fn, { signal });
+	window.addEventListener('mouseleave', dragClear, { signal });
+	window.addEventListener('mouseup', dragClear, { signal });
 }
+
+onUnmounted(dragClear);
 
 function getPositionX(event: MouseEvent | TouchEvent) {
 	return 'touches' in event && event.touches.length > 0 ? event.touches[0].clientX : 'clientX' in event ? event.clientX : 0;

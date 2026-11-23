@@ -21,11 +21,30 @@ import {
 } from '../utils.js';
 import type * as misskey from 'misskey-js';
 import type { DataSource } from 'typeorm';
+import { Redis } from 'ioredis';
+import { loadConfig } from '@/config.js';
 import { DEFAULT_POLICIES } from '@/core/RoleService.js';
+import { genAid } from '@/misc/id/aid.js';
 
 const compareBy = <T extends { id: string }>(selector: (s: T) => string = (s: T): string => s.id) => (a: T, b: T): number => {
 	return selector(a).localeCompare(selector(b));
 };
+
+// アンテナの fanout にノートが載るまで待つ。
+// post() は fanout への書き込みを待たないので、固定時間の待機だけだと前提が崩れる
+async function waitForFanout(antennaId: string, noteId: string): Promise<void> {
+	const redis = new Redis(loadConfig().redisForTimelines);
+	try {
+		const listKey = `list:antennaTimeline:${antennaId}`;
+		for (let i = 0; i < 100; i++) {
+			if ((await redis.lrange(listKey, 0, -1)).includes(noteId)) return;
+			await new Promise(r => setTimeout(r, 50));
+		}
+		assert.fail(`前提が壊れている: ノート ${noteId} が fanout に載らなかった`);
+	} finally {
+		redis.disconnect();
+	}
+}
 
 describe('アンテナ', () => {
 	let db: DataSource;
@@ -142,6 +161,9 @@ describe('アンテナ', () => {
 		// テスト間で影響し合わないように毎回全部消す。
 		for (const user of [alice, bob]) {
 			const list = await api('antennas/list', {}, user);
+			// 失敗時は body がエラーオブジェクトになるので、配列でなければ何もしない
+			// (ここで落とすとこのファイルの全テストが連鎖的に失敗する)
+			if (!Array.isArray(list.body)) continue;
 			for (const antenna of list.body) {
 				await api('antennas/delete', { antennaId: antenna.id }, user);
 			}
@@ -225,7 +247,7 @@ describe('アンテナ', () => {
 		{ parameters: () => ({ src: 'home' as const }) },
 		{ parameters: () => ({ src: 'all' as const }) },
 		{ parameters: () => ({ src: 'users' as const }) },
-		{ parameters: () => ({ src: 'list' as const }) },
+		{ parameters: () => ({ src: 'list' as const, userListId: aliceList.id }) },
 		{ parameters: () => ({ userListId: null }) },
 		{ parameters: () => ({ src: 'list' as const, userListId: aliceList.id }) },
 		{ parameters: () => ({ keywords: [['x']] }) },
@@ -265,6 +287,18 @@ describe('アンテナ', () => {
 			id: '53ee222e-1ddd-4f9a-92e5-9fb82ddb463a',
 		});
 	});
+
+	test('を作成する時srcがlistなのにuserListIdが無ければエラーになる', async () => {
+		await failedApiCall({
+			endpoint: 'antennas/create',
+			parameters: { ...defaultParam, src: 'list', userListId: null },
+			user: alice,
+		}, {
+			status: 400,
+			code: 'NO_SUCH_USER_LIST',
+			id: '95063e93-a283-4b8b-9aa5-bcdb8df69a7f',
+		});
+	});
 	//#endregion
 	//#region 更新(antennas/update)
 
@@ -302,6 +336,19 @@ describe('アンテナ', () => {
 			status: 400,
 			code: 'EMPTY_KEYWORD',
 			id: '721aaff6-4e1b-4d88-8de6-877fae9f68c4',
+		});
+	});
+
+	test('を変更する時srcをlistにするのにuserListIdが無ければエラーになる', async () => {
+		const antenna = await successfulApiCall({ endpoint: 'antennas/create', parameters: defaultParam, user: alice });
+		await failedApiCall({
+			endpoint: 'antennas/update',
+			parameters: { antennaId: antenna.id, src: 'list', userListId: null },
+			user: alice,
+		}, {
+			status: 400,
+			code: 'NO_SUCH_USER_LIST',
+			id: '1c6b35c9-943e-48c2-81e4-2844989407f7',
 		});
 	});
 
@@ -353,9 +400,251 @@ describe('アンテナ', () => {
 
 	//#endregion
 
+	describe('のTLへの補完(既存ノート)', () => {
+		// アンテナの TL は受信時の fanout だけを並べるため、作成直後は空になりやすい。
+		// 一方で試し打ち(antennas/test)は既存ノートを走査するので、
+		// 「試し打ちでは当たるのに保存しても TL に出ない」という食い違いが起きていた。
+		// 作成時点以降のノートは TL の先頭読み込み時に補完して、この食い違いを無くしている。
+		test('fanoutから取りこぼした作成後のノートも、現在の条件に合えばTLに出ること。', async () => {
+			// fanout は受信時に積まれるだけなので、取りこぼすと TL から永久に欠ける。
+			// 作成時点以降のノートは TL の先頭読み込み時に現在の条件で補完する。
+			// ここでは fanout から直接消して「取りこぼし」を作る (Redis はテスト用のもの)
+			const keyword = '取りこぼしキーワード';
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+			const note = await post(bob, { text: `${keyword} 1` });
+
+			// fanout のリストからだけ消す。ノート自体は残っている。
+			// (remove-note は「明示的な削除」も記録してしまうため、ここでは Redis を直接操作する)
+			// アプリ本体が使う接続設定をそのまま使う。
+			// keyPrefix はここで付与されるので、付け忘れると別キーを操作してしまい
+			// 「取りこぼし」を再現できず、テストが常に通ってしまう
+			const redis = new Redis(loadConfig().redisForTimelines);
+			try {
+				const listKey = `list:antennaTimeline:${antenna.id}`;
+				// post() はアンテナへの fanout 書き込みを待たないので、載るまで待ってから消す。
+				// 待たずに消すと 0 件削除になり「取りこぼし」を作れないままテストが通ってしまう
+				let appeared = false;
+				for (let i = 0; i < 100; i++) {
+					const ids = await redis.lrange(listKey, 0, -1);
+					if (ids.includes(note.id)) {
+						appeared = true;
+						break;
+					}
+					await new Promise(r => setTimeout(r, 50));
+				}
+				assert.ok(appeared, 'テストの前提が壊れている: ノートが fanout に載らなかった');
+
+				// 実際に 1 件消せたことを確認する (0 件だと取りこぼしを再現できていない)
+				const removedCount = await redis.lrem(listKey, 1, note.id);
+				assert.strictEqual(removedCount, 1, 'テストの前提が壊れている: fanout から削除できなかった');
+
+				const remaining = await redis.lrange(listKey, 0, -1);
+				assert.ok(!remaining.includes(note.id), 'テストの前提が壊れている: fanout に残っている');
+			} finally {
+				redis.disconnect();
+			}
+
+			const response = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id },
+				user: alice,
+			});
+			assert.ok(response.some((x: Note) => x.id === note.id));
+		});
+
+		test('試し打ち(antennas/test)で当たったノートが、保存後のTLにも出ること。', async () => {
+			const keyword = '試し打ち一致';
+			await post(bob, { text: `${keyword} preview` });
+
+			const preview = await successfulApiCall({
+				endpoint: 'antennas/test',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+			assert.ok(preview.length > 0);
+
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+			// 試し打ちが「当たる」と表示したノートは、保存後の TL にも出る。
+			// (作成前のノートも現在の条件に合えば補完される)
+			const response = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id },
+				user: alice,
+			});
+			// 並び順は経路で変わりうるので集合で比較する (何が「当たるか」が一致していることが本題)
+			assert.deepStrictEqual(
+				response.map((x: Note) => x.id).sort(),
+				preview.map((x: Note) => x.id).sort(),
+			);
+
+			// 作成後に投稿したノートも TL に加わる
+			const afterNote = await post(bob, { text: `${keyword} after` });
+			const after = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id },
+				user: alice,
+			});
+			assert.ok(after.some((x: Note) => x.id === afterNote.id));
+			// 既に出ていたノートは残っている
+			assert.ok(after.length > preview.length);
+		});
+
+		test('明示的に外したノートがTLの再読み込みで戻らないこと。', async () => {
+			const keyword = '補完と削除';
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+			const note = await post(bob, { text: `${keyword} 1` });
+
+			// まずは TL に出る
+			const before = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id },
+				user: alice,
+			});
+			assert.ok(before.some((x: Note) => x.id === note.id));
+
+			await successfulApiCall({
+				endpoint: 'antennas/remove-note',
+				parameters: { antennaId: antenna.id, noteId: note.id },
+				user: alice,
+			});
+
+			// 補完で拾い直されない (リストから消すだけだと再読み込みで戻ってしまう)
+			const after = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id },
+				user: alice,
+			});
+			assert.deepStrictEqual(after, []);
+		});
+
+		test('補完したノートが受信済みより新しくても、件数制限で捨てられないこと。', async () => {
+			// fanout の履歴を先に連結して件数制限すると、補完で拾ったより新しいノートが落ちる。
+			// limit=1 で「最も新しい一致ノート」が返ることを確認する
+			const keyword = '補完順序';
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+			const older = await post(bob, { text: `${keyword} A` });
+			const newer = await post(bob, { text: `${keyword} B` });
+
+			// 比較対象の古いノートも受信済みであることを確認する。
+			// これが無いと、結果が補完だけで期待値に一致していてもテストが通ってしまう
+			await waitForFanout(antenna.id, older.id);
+			await waitForFanout(antenna.id, newer.id);
+
+			// B (新しい方) を fanout からだけ落として、補完でしか拾えない状態にする
+			const redis = new Redis(loadConfig().redisForTimelines);
+			try {
+				const listKey = `list:antennaTimeline:${antenna.id}`;
+				for (let i = 0; i < 100; i++) {
+					if ((await redis.lrange(listKey, 0, -1)).includes(newer.id)) break;
+					await new Promise(r => setTimeout(r, 50));
+				}
+				assert.strictEqual(await redis.lrem(listKey, 1, newer.id), 1);
+			} finally {
+				redis.disconnect();
+			}
+
+			const response = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id, limit: 1 },
+				user: alice,
+			});
+			assert.deepStrictEqual(response.map((x: Note) => x.id), [newer.id]);
+		});
+
+		test('条件で絞り込んだ後も、一致するノートがあればページが空にならないこと。', async () => {
+			// 古い条件でだけ一致するノートが件数枠を食い、条件的には一致するノートが
+			// 次のページに押し出されると、一致ノートがあるのに空のページが返る
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [['変更前']] },
+				user: alice,
+			});
+			const oldNote = await post(bob, { text: '変更前 のノート' });
+			// 旧条件のノートも受信済みにする
+			await waitForFanout(antenna.id, oldNote.id);
+
+			await successfulApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: antenna.id, keywords: [['変更後']] },
+				user: alice,
+			});
+			// 条件変更は Redis 経由で非同期に反映されるため、
+			// 投稿時点で新しい条件が配信側に届いているかを、ノートが fanout に載るかで確認する
+			const matching = await post(bob, { text: '変更後 のノート' });
+			await waitForFanout(antenna.id, matching.id);
+
+			// 新しい方を fanout から落として、補完でしか拾えない状態にする
+			const redis = new Redis(loadConfig().redisForTimelines);
+			try {
+				const listKey = `list:antennaTimeline:${antenna.id}`;
+				for (let i = 0; i < 100; i++) {
+					if ((await redis.lrange(listKey, 0, -1)).includes(matching.id)) break;
+					await new Promise(r => setTimeout(r, 50));
+				}
+				assert.strictEqual(await redis.lrem(listKey, 1, matching.id), 1);
+			} finally {
+				redis.disconnect();
+			}
+
+			const response = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id, limit: 1 },
+				user: alice,
+			});
+			assert.deepStrictEqual(response.map((x: Note) => x.id), [matching.id]);
+		});
+
+		test('条件を変更すると、現在の条件に合わないノートがTLから消えること。', async () => {
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [['変更前キーワード']] },
+				user: alice,
+			});
+			await post(bob, { text: '変更前キーワード 1' });
+
+			const before = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id },
+				user: alice,
+			});
+			assert.strictEqual(before.length, 1);
+
+			await successfulApiCall({
+				endpoint: 'antennas/update',
+				parameters: { ...defaultParam, antennaId: antenna.id, keywords: [['変更後キーワード']] },
+				user: alice,
+			});
+			const newNote = await post(bob, { text: '変更後キーワード 2' });
+
+			// 受信済みでも現在の条件に合わないものは並べない(マッチ理由も付かなくなるため)
+			const after = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id },
+				user: alice,
+			});
+			assert.deepStrictEqual(after.map((x: Note) => x.id), [newNote.id]);
+		});
+	});
+
 	describe('のTL内検索', () => {
 		test('queryでアンテナのTL内を検索できること。', async () => {
-			const keyword = 'キーワード';
+			const keyword = '検索キーワード';
 			const antenna = await successfulApiCall({
 				endpoint: 'antennas/create',
 				parameters: { ...defaultParam, keywords: [[keyword]] },
@@ -372,10 +661,180 @@ describe('アンテナ', () => {
 			assert.deepStrictEqual(response.map((x: Note) => x.id), [hit.id]);
 		});
 
+		test('queryとuntilIdで検索結果をページングできること。', async () => {
+			const keyword = 'ページングキーワード';
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+			const hits: Note[] = [];
+			for (let i = 0; i < 12; i++) {
+				hits.push(await post(bob, { text: `${keyword} さがす ${i}` }));
+				// 条件には当たるがクエリには一致しないノートを混ぜる
+				await post(bob, { text: `${keyword} ちがう ${i}` });
+			}
+
+			// 期待値: 検索語に一致するノートを新しい順(= id 降順)に並べたもの。
+			// 件数だけでなく中身を比較しないと、検索語が無視されていても通ってしまう
+			const expected = hits.map(x => x.id).sort((a, b) => a > b ? -1 : 1);
+
+			const first = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id, query: 'さがす', limit: 5 },
+				user: alice,
+			});
+			assert.deepStrictEqual(first.map((x: Note) => x.id), expected.slice(0, 5));
+
+			const second = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id, query: 'さがす', limit: 5, untilId: first[first.length - 1].id },
+				user: alice,
+			});
+			assert.deepStrictEqual(second.map((x: Note) => x.id), expected.slice(5, 10));
+		});
+
+		test('検索語に一致するノートが走査窓より古くても検索できること。', async () => {
+			// 補完は条件一致で打ち切る件数を数えるため、検索語に一致するノートが
+			// 1 バッチ(200件)より奥にあると、条件だけ合うノートで打ち切られて空になる
+			const keyword = '深い検索キーワード';
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+			// 最も古い位置に検索語一致のノート。
+			// 後続のノートで fanout の保持件数から押し出されるので、補完でしか拾えない状態になる
+			const target = await post(bob, { text: `${keyword} needleword` });
+			// それより新しい、条件には合うが検索語に合わないノートを 250 件
+			for (let i = 0; i < 450; i++) {
+				await post(bob, { text: `${keyword} filler ${i}` });
+			}
+			// いちばん新しいノートは受信済みになっているはず (fanout が動いていることの確認)
+			const newest = await post(bob, { text: `${keyword} filler newest` });
+			await waitForFanout(antenna.id, newest.id);
+
+			const response = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id, query: 'needleword', limit: 5 },
+				user: alice,
+			});
+			assert.deepStrictEqual(response.map((x: Note) => x.id), [target.id]);
+		});
+
+		test('sinceIdで新しいノートを古い順に取得できること。', async () => {
+			const keyword = '昇順キーワード';
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+			const older = await post(bob, { text: `${keyword} ふるい` });
+			await new Promise(r => setTimeout(r, 5));
+			const newer: Note[] = [];
+			for (let i = 0; i < 3; i++) {
+				newer.push(await post(bob, { text: `${keyword} あたらしい ${i}` }));
+			}
+
+			const response = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id, sinceId: older.id },
+				user: alice,
+			});
+			// sinceId 指定時は古い順に返る
+			assert.deepStrictEqual(response.map((x: Note) => x.id), newer.map(x => x.id));
+		});
+
+		test('アンテナ作成前のノートもsinceIdで古い順に取りこぼさず取得できること。', async () => {
+			const keyword = '補完昇順キーワード';
+			const base = await post(bob, { text: `${keyword} 基準` });
+			const matched: Note[] = [];
+			for (let i = 0; i < 4; i++) {
+				await new Promise(r => setTimeout(r, 5));
+				matched.push(await post(bob, { text: `${keyword} ${i}` }));
+			}
+			// アンテナ作成前の投稿は配信されないため、バックフィルで補われる
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+
+			const first = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id, sinceId: base.id, limit: 2 },
+				user: alice,
+			});
+			assert.deepStrictEqual(first.map((x: Note) => x.id), matched.slice(0, 2).map(x => x.id));
+
+			const second = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id, sinceId: first[first.length - 1].id, limit: 2 },
+				user: alice,
+			});
+			assert.deepStrictEqual(second.map((x: Note) => x.id), matched.slice(2, 4).map(x => x.id));
+		});
+
+		test('sinceIdでの補完は、新しい側に1バッチ分以上ノートがあっても古い一致から返すこと。', async () => {
+			const keyword = '補完多数昇順キーワード';
+			// 投稿のレート制限に掛からないよう、専用のユーザーで投稿する
+			const poster = await signup({ username: 'backfillposter' });
+			const base = await post(poster, { text: `${keyword} 基準` });
+			await new Promise(r => setTimeout(r, 5));
+			const oldestMatch = await post(poster, { text: `${keyword} 最古` });
+			await new Promise(r => setTimeout(r, 5));
+			// 補完の1バッチ (200件) を新しい側の無関係なノートで埋める
+			for (let i = 0; i < 10; i++) {
+				await Promise.all(Array.from({ length: 20 }, (_, j) => post(poster, { text: `無関係 ${i}-${j}` })));
+			}
+			await new Promise(r => setTimeout(r, 5));
+			await post(poster, { text: `${keyword} 最新` });
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+
+			const response = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id, sinceId: base.id, limit: 1 },
+				user: alice,
+			});
+			assert.deepStrictEqual(response.map((x: Note) => x.id), [oldestMatch.id]);
+		}, 1000 * 60);
+
+		test('sinceIdの直後に走査上限を超える不一致ノートがあっても、新しい側の一致を返して先に進めること。', async () => {
+			const keyword = '補完上限超えキーワード';
+			const poster = await signup({ username: 'backfillscanlimit' });
+			const base = await post(poster, { text: `${keyword} 基準` });
+			// 補完の走査上限 (2,000件) をちょうど埋める不一致ノートを、API のレート制限を避けて直接入れる
+			const startedAt = Date.now();
+			const fillerIds = Array.from({ length: 2000 }, (_, i) => genAid(startedAt + 1 + i));
+			await db.query(
+				'INSERT INTO "note" ("id", "userId", "text", "visibility") SELECT unnest($1::varchar[]), $2, \'無関係\', \'public\'',
+				[fillerIds, poster.id],
+			);
+			// 不一致ノートより後の時刻で投稿する
+			await new Promise(r => setTimeout(r, 2000 + 50));
+			const newest = await post(poster, { text: `${keyword} 最新` });
+			const antenna = await successfulApiCall({
+				endpoint: 'antennas/create',
+				parameters: { ...defaultParam, keywords: [[keyword]] },
+				user: alice,
+			});
+
+			const response = await successfulApiCall({
+				endpoint: 'antennas/notes',
+				parameters: { antennaId: antenna.id, sinceId: base.id, limit: 1 },
+				user: alice,
+			});
+			assert.deepStrictEqual(response.map((x: Note) => x.id), [newest.id]);
+		}, 1000 * 60);
+
 		test('queryが他人のアンテナでは使えないこと。', async () => {
 			const antenna = await successfulApiCall({
 				endpoint: 'antennas/create',
-				parameters: { ...defaultParam, keywords: [['キーワード']] },
+				parameters: { ...defaultParam, keywords: [['他人確認キーワード']] },
 				user: alice,
 			});
 			await failedApiCall({
@@ -754,8 +1213,9 @@ describe('アンテナ', () => {
 		//#region アンテナのノート取得(antennas/notes)
 
 		test('を取得できること。', async () => {
-			const keyword = 'キーワード';
-			await post(bob, { text: `test ${keyword} beforehand` });
+			const keyword = '取得キーワード';
+			// アンテナ作成より前のノートも、現在の条件に合えば TL に出る (試し打ちと一致させるため)
+			const beforeNote = await post(bob, { text: `test ${keyword} beforehand` });
 			const antenna = await successfulApiCall({
 				endpoint: 'antennas/create',
 				parameters: { ...defaultParam, keywords: [[keyword]] },
@@ -767,12 +1227,12 @@ describe('アンテナ', () => {
 				parameters: { antennaId: antenna.id },
 				user: alice,
 			});
-			const expected = [note];
+			const expected = [note, beforeNote];
 			assert.deepStrictEqual(response, expected);
 		});
 
 		test('から指定したノートだけ削除でき、ノート本体や他人のアンテナには影響しないこと。', async () => {
-			const keyword = 'キーワード';
+			const keyword = '削除キーワード';
 			const antenna = await successfulApiCall({
 				endpoint: 'antennas/create',
 				parameters: { ...defaultParam, keywords: [[keyword]] },
@@ -846,16 +1306,18 @@ describe('アンテナ', () => {
 			});
 		});
 
-		const keyword = 'キーワード';
+		// 各ケースが固有のキーワードを使う。
+		// TL はアンテナ作成前のノートも補完するので、同じキーワードを共有すると
+		// 前のケースが投稿したノートまで拾ってしまう
 		test.each([
 			{
 				label: '全体から',
 				parameters: () => ({ src: 'all' }),
 				posts: [
-					{ note: (): Promise<Note> => post(alice, { text: `${keyword}` }), included: true },
-					{ note: (): Promise<Note> => post(userFollowedByAlice, { text: `${keyword}` }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword}` }), included: true },
-					{ note: (): Promise<Note> => post(carol, { text: `test ${keyword}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(alice, { text: `${kw}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(userFollowedByAlice, { text: `${kw}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(carol, { text: `test ${kw}` }), included: true },
 				],
 			},
 			{
@@ -863,288 +1325,292 @@ describe('アンテナ', () => {
 				label: 'ホーム指定はallと同じ',
 				parameters: () => ({ src: 'home' }),
 				posts: [
-					{ note: (): Promise<Note> => post(alice, { text: `${keyword}` }), included: true },
-					{ note: (): Promise<Note> => post(userFollowedByAlice, { text: `${keyword}` }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword}` }), included: true },
-					{ note: (): Promise<Note> => post(carol, { text: `test ${keyword}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(alice, { text: `${kw}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(userFollowedByAlice, { text: `${kw}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(carol, { text: `test ${kw}` }), included: true },
 				],
 			},
 			{
 				label: 'フォロワー限定投稿とDM投稿を含む',
 				parameters: () => ({}),
 				posts: [
-					{ note: (): Promise<Note> => post(userFollowedByAlice, { text: `${keyword}`, visibility: 'public' }), included: true },
-					{ note: (): Promise<Note> => post(userFollowedByAlice, { text: `${keyword}`, visibility: 'home' }), included: true },
-					{ note: (): Promise<Note> => post(userFollowedByAlice, { text: `${keyword}`, visibility: 'followers' }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword}`, visibility: 'specified', visibleUserIds: [alice.id] }), included: true },
+					{ note: (kw: string): Promise<Note> => post(userFollowedByAlice, { text: `${kw}`, visibility: 'public' }), included: true },
+					{ note: (kw: string): Promise<Note> => post(userFollowedByAlice, { text: `${kw}`, visibility: 'home' }), included: true },
+					{ note: (kw: string): Promise<Note> => post(userFollowedByAlice, { text: `${kw}`, visibility: 'followers' }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw}`, visibility: 'specified', visibleUserIds: [alice.id] }), included: true },
 				],
 			},
 			{
 				label: 'フォロワー限定投稿とDM投稿を含まない',
 				parameters: () => ({}),
 				posts: [
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword}`, visibility: 'public' }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword}`, visibility: 'home' }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword}`, visibility: 'followers' }) },
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword}`, visibility: 'specified', visibleUserIds: [carol.id] }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw}`, visibility: 'public' }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw}`, visibility: 'home' }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw}`, visibility: 'followers' }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw}`, visibility: 'specified', visibleUserIds: [carol.id] }) },
 				],
 			},
 			{
 				label: 'ブロックしているユーザーのノートは含む',
 				parameters: () => ({}),
 				posts: [
-					{ note: (): Promise<Note> => post(userBlockedByAlice, { text: `${keyword}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(userBlockedByAlice, { text: `${kw}` }), included: true },
 				],
 			},
 			{
 				label: 'ブロックされているユーザーのノートは含まない',
 				parameters: () => ({}),
 				posts: [
-					{ note: (): Promise<Note> => post(userBlockingAlice, { text: `${keyword}` }) },
+					{ note: (kw: string): Promise<Note> => post(userBlockingAlice, { text: `${kw}` }) },
 				],
 			},
 			{
 				label: 'ミュートしているユーザーのノートは含まない',
 				parameters: () => ({}),
 				posts: [
-					{ note: (): Promise<Note> => post(userMutedByAlice, { text: `${keyword}` }) },
+					{ note: (kw: string): Promise<Note> => post(userMutedByAlice, { text: `${kw}` }) },
 				],
 			},
 			{
 				label: 'ミュートされているユーザーのノートは含む',
 				parameters: () => ({}),
 				posts: [
-					{ note: (): Promise<Note> => post(userMutingAlice, { text: `${keyword}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(userMutingAlice, { text: `${kw}` }), included: true },
 				],
 			},
 			{
 				label: '「見つけやすくする」がOFFのユーザーのノートも含まれる',
 				parameters: () => ({}),
 				posts: [
-					{ note: (): Promise<Note> => post(userNotExplorable, { text: `${keyword}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(userNotExplorable, { text: `${kw}` }), included: true },
 				],
 			},
 			{
 				label: '鍵付きユーザーのノートも含まれる',
 				parameters: () => ({}),
 				posts: [
-					{ note: (): Promise<Note> => post(userLocking, { text: `${keyword}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(userLocking, { text: `${kw}` }), included: true },
 				],
 			},
 			{
 				label: 'サイレンスのノートも含まれる',
 				parameters: () => ({}),
 				posts: [
-					{ note: (): Promise<Note> => post(userSilenced, { text: `${keyword}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(userSilenced, { text: `${kw}` }), included: true },
 				],
 			},
 			{
 				label: '削除ユーザーのノートも含まれる',
 				parameters: () => ({}),
 				posts: [
-					{ note: (): Promise<Note> => post(userDeletedBySelf, { text: `${keyword}` }), included: true },
-					{ note: (): Promise<Note> => post(userDeletedByAdmin, { text: `${keyword}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(userDeletedBySelf, { text: `${kw}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(userDeletedByAdmin, { text: `${kw}` }), included: true },
 				],
 			},
 			{
 				label: 'ユーザー指定で',
 				parameters: () => ({ src: 'users', users: [`@${bob.username}`, `@${carol.username}`] }),
 				posts: [
-					{ note: (): Promise<Note> => post(alice, { text: `test ${keyword}` }) },
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword}` }), included: true },
-					{ note: (): Promise<Note> => post(carol, { text: `test ${keyword}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(alice, { text: `test ${kw}` }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(carol, { text: `test ${kw}` }), included: true },
 				],
 			},
 			{
 				label: 'リスト指定で',
 				parameters: () => ({ src: 'list', userListId: aliceList.id }),
 				posts: [
-					{ note: (): Promise<Note> => post(alice, { text: `test ${keyword}` }) },
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword}` }), included: true },
-					{ note: (): Promise<Note> => post(carol, { text: `test ${keyword}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(alice, { text: `test ${kw}` }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(carol, { text: `test ${kw}` }), included: true },
 				],
 			},
 			{
 				label: 'CWにもマッチする',
-				parameters: () => ({ keywords: [[keyword]] }),
+				parameters: (kw: string) => ({ keywords: [[kw]] }),
 				posts: [
-					{ note: (): Promise<Note> => post(bob, { text: 'test', cw: `cw ${keyword}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: 'test', cw: `cw ${kw}` }), included: true },
 				],
 			},
 			{
 				label: 'キーワード1つ',
-				parameters: () => ({ keywords: [[keyword]] }),
+				parameters: (kw: string) => ({ keywords: [[kw]] }),
 				posts: [
-					{ note: (): Promise<Note> => post(alice, { text: 'test' }) },
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword}` }), included: true },
-					{ note: (): Promise<Note> => post(carol, { text: 'test' }) },
+					{ note: (kw: string): Promise<Note> => post(alice, { text: 'test' }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(carol, { text: 'test' }) },
 				],
 			},
 			{
 				label: 'キーワード3つ(AND)',
-				parameters: () => ({ keywords: [['A', 'B', 'C']] }),
+				parameters: () => ({ keywords: [['alpha', 'bravo', 'charlie']] }),
 				posts: [
-					{ note: (): Promise<Note> => post(bob, { text: 'test A' }) },
-					{ note: (): Promise<Note> => post(bob, { text: 'test A B' }) },
-					{ note: (): Promise<Note> => post(bob, { text: 'test B C' }) },
-					{ note: (): Promise<Note> => post(bob, { text: 'test A B C' }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: 'test C B A A B C' }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: 'test alpha' }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: 'test alpha bravo' }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: 'test bravo charlie' }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: 'test alpha bravo charlie' }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: 'test charlie bravo alpha alpha bravo charlie' }), included: true },
 				],
 			},
 			{
 				label: 'キーワード3つ(OR)',
-				parameters: () => ({ keywords: [['A'], ['B'], ['C']] }),
+				parameters: () => ({ keywords: [['àlpha'], ['bràvo'], ['chàrlie']] }),
 				posts: [
-					{ note: (): Promise<Note> => post(bob, { text: 'test' }) },
-					{ note: (): Promise<Note> => post(bob, { text: 'test A' }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: 'test A B' }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: 'test B C' }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: 'test B C A' }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: 'test C B' }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: 'test C' }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: 'test' }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: 'test àlpha' }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: 'test àlpha bràvo' }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: 'test bràvo chàrlie' }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: 'test bràvo chàrlie àlpha' }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: 'test chàrlie bràvo' }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: 'test chàrlie' }), included: true },
 				],
 			},
 			{
 				label: '除外ワード3つ(AND)',
-				parameters: () => ({ excludeKeywords: [['A', 'B', 'C']] }),
+				parameters: () => ({ excludeKeywords: [['alpha', 'bravo', 'charlie']] }),
 				posts: [
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword}` }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword} A` }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword} A B` }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword} B C` }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword} B C A` }) },
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword} C B` }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword} C` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw} alpha` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw} alpha bravo` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw} bravo charlie` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw} bravo charlie alpha` }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw} charlie bravo` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw} charlie` }), included: true },
 				],
 			},
 			{
 				label: '除外ワード3つ(OR)',
-				parameters: () => ({ excludeKeywords: [['A'], ['B'], ['C']] }),
+				parameters: () => ({ excludeKeywords: [['xàlpha'], ['xbràvo'], ['xchàrlie']] }),
 				posts: [
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword}` }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword} A` }) },
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword} A B` }) },
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword} B C` }) },
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword} B C A` }) },
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword} C B` }) },
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword} C` }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw} xàlpha` }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw} xàlpha xbràvo` }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw} xbràvo xchàrlie` }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw} xbràvo xchàrlie xàlpha` }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw} xchàrlie xbràvo` }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw} xchàrlie` }) },
 				],
 			},
 			{
 				label: 'キーワード1つ(大文字小文字区別する)',
-				parameters: () => ({ keywords: [['KEYWORD']], caseSensitive: true }),
+				parameters: () => ({ keywords: [['CasedOne']], caseSensitive: true }),
 				posts: [
-					{ note: (): Promise<Note> => post(bob, { text: 'keyword' }) },
-					{ note: (): Promise<Note> => post(bob, { text: 'kEyWoRd' }) },
-					{ note: (): Promise<Note> => post(bob, { text: 'KEYWORD' }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: 'casedone' }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: 'cAsEdOnE' }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: 'CasedOne' }), included: true },
 				],
 			},
 			{
 				label: 'キーワード1つ(大文字小文字区別しない)',
-				parameters: () => ({ keywords: [['KEYWORD']], caseSensitive: false }),
+				parameters: () => ({ keywords: [['CasedTwo']], caseSensitive: false }),
 				posts: [
-					{ note: (): Promise<Note> => post(bob, { text: 'keyword' }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: 'kEyWoRd' }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: 'KEYWORD' }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: 'casedtwo' }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: 'cAsEdTwO' }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: 'CasedTwo' }), included: true },
 				],
 			},
 			{
 				label: '除外ワード1つ(大文字小文字区別する)',
-				parameters: () => ({ excludeKeywords: [['KEYWORD']], caseSensitive: true }),
+				parameters: () => ({ excludeKeywords: [['ExcludedOne']], caseSensitive: true }),
 				posts: [
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword}` }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword} keyword` }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword} kEyWoRd` }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword} KEYWORD` }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw} excludedone` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw} eXcLuDeDoNe` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw} ExcludedOne` }) },
 				],
 			},
 			{
 				label: '除外ワード1つ(大文字小文字区別しない)',
-				parameters: () => ({ excludeKeywords: [['KEYWORD']], caseSensitive: false }),
+				parameters: () => ({ excludeKeywords: [['ExcludedTwo']], caseSensitive: false }),
 				posts: [
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword}` }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword} keyword` }) },
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword} kEyWoRd` }) },
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword} KEYWORD` }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw} excludedtwo` }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw} eXcLuDeDtWo` }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw} ExcludedTwo` }) },
 				],
 			},
 			{
 				label: '添付ファイルを問わない',
 				parameters: () => ({ withFile: false }),
 				posts: [
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword}`, fileIds: [bobFile.id] }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw}`, fileIds: [bobFile.id] }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw}` }), included: true },
 				],
 			},
 			{
 				label: '添付ファイル付きのみ',
 				parameters: () => ({ withFile: true }),
 				posts: [
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword}`, fileIds: [bobFile.id] }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword}` }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw}`, fileIds: [bobFile.id] }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw}` }) },
 				],
 			},
 			{
 				label: 'リプライ以外',
 				parameters: () => ({ withReplies: false }),
 				posts: [
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword}`, replyId: alicePost.id }) },
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw}`, replyId: alicePost.id }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw}` }), included: true },
 				],
 			},
 			{
 				label: 'リプライも含む',
 				parameters: () => ({ withReplies: true }),
 				posts: [
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword}`, replyId: alicePost.id }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw}`, replyId: alicePost.id }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw}` }), included: true },
 				],
 			},
 			{
 				label: 'チャンネルノートも含む',
 				parameters: () => ({ src: 'all' }),
 				posts: [
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword}`, channelId: testChannel.id }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw}`, channelId: testChannel.id }), included: true },
 				],
 			},
 			{
 				label: 'ミュートしてるチャンネルは含まない',
 				parameters: () => ({ src: 'all' }),
 				posts: [
-					{ note: (): Promise<Note> => post(bob, { text: `test ${keyword}`, channelId: testMutedChannel.id }) },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `test ${kw}`, channelId: testMutedChannel.id }) },
 				],
 			},
 			{
 				label: 'フォロワーのみの投稿を取得',
 				parameters: () => ({ onlyFollowers: true }),
 				posts: [
-					{ note: (): Promise<Note> => post(alice, { text: `${keyword}` }), included: true }, // 自分の投稿
-					{ note: (): Promise<Note> => post(userFollowingAlice, { text: `${keyword}` }), included: true }, // フォロワーの投稿
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword}` }) }, // 非フォロワーの投稿は除外
-					{ note: (): Promise<Note> => post(userFollowedByAlice, { text: `${keyword}` }) }, // フォロー先の投稿は除外
+					{ note: (kw: string): Promise<Note> => post(alice, { text: `${kw}` }), included: true }, // 自分の投稿
+					{ note: (kw: string): Promise<Note> => post(userFollowingAlice, { text: `${kw}` }), included: true }, // フォロワーの投稿
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw}` }) }, // 非フォロワーの投稿は除外
+					{ note: (kw: string): Promise<Note> => post(userFollowedByAlice, { text: `${kw}` }) }, // フォロー先の投稿は除外
 				],
 			},
 			{
 				label: 'フォロワー制限なしの投稿を取得',
 				parameters: () => ({ onlyFollowers: false }),
 				posts: [
-					{ note: (): Promise<Note> => post(alice, { text: `${keyword}` }), included: true },
-					{ note: (): Promise<Note> => post(userFollowingAlice, { text: `${keyword}` }), included: true },
-					{ note: (): Promise<Note> => post(bob, { text: `${keyword}` }), included: true },
-					{ note: (): Promise<Note> => post(userFollowedByAlice, { text: `${keyword}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(alice, { text: `${kw}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(userFollowingAlice, { text: `${kw}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(bob, { text: `${kw}` }), included: true },
+					{ note: (kw: string): Promise<Note> => post(userFollowedByAlice, { text: `${kw}` }), included: true },
 				],
 			},
-		])('が取得できること（$label）', async ({ parameters, posts }) => {
+		])('が取得できること（$label）', async ({ label, parameters, posts }) => {
+			// ケースごとに固有のキーワードを使い、他のケースの投稿を拾わないようにする
+			const keyword = `条件-${label}`;
 			const antenna = await successfulApiCall({
 				endpoint: 'antennas/create',
-				parameters: { ...defaultParam, keywords: [[keyword]], ...parameters() },
+				// parameters() が keywords を指定しないケース(withFile など)でも
+				// そのケース固有のキーワードで判定するよう、既定値をあとから上書きする
+				parameters: { ...defaultParam, keywords: [[keyword]] as string[][], ...parameters(keyword) },
 				user: alice,
 			});
 
 			const notes = await posts.reduce(async (prev, current) => {
 				// includedに関わらずnote()は評価して投稿する。
 				const p = await prev;
-				const n = await current.note();
+				const n = await current.note(keyword);
 				if (current.included) return p.concat(n);
 				return p;
 			}, Promise.resolve([] as Note[]));
@@ -1168,7 +1634,7 @@ describe('アンテナ', () => {
 		});
 
 		test('が取得できること（センシティブチャンネルのノートを除く）', async () => {
-			const keyword = 'キーワード';
+			const keyword = 'センシティブキーワード';
 			const antenna = await successfulApiCall({
 				endpoint: 'antennas/create',
 				parameters: { ...defaultParam, keywords: [[keyword]], excludeNotesInSensitiveChannel: true },
@@ -1209,6 +1675,7 @@ describe('アンテナ', () => {
 			// BUG sinceDate, untilDateはsinceIdや他のエンドポイントとは異なり、その時刻に一致するレコードを含んでしまう。
 			// { label: '日付指定', offsetBy: 'createdAt' },
 		] as const)('が取得でき、$labelのPaginationに一貫性があること', async ({ offsetBy }) => {
+			const keyword = 'ページング一貫キーワード';
 			const antenna = await successfulApiCall({
 				endpoint: 'antennas/create',
 				parameters: { ...defaultParam, keywords: [[keyword]] },

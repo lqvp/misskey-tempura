@@ -172,13 +172,19 @@ export class AntennaService implements OnApplicationShutdown {
 				case 'antennaUpdated': {
 					const idx = this.antennas.findIndex(a => a.id === body.id);
 					if (idx >= 0) {
-						this.antennas[idx] = { // TODO: このあたりのデシリアライズ処理は各modelファイル内に関数としてexportしたい
-							...body,
-							lastUsedAt: new Date(body.lastUsedAt),
-							user: null, // joinなカラムは通常取ってこないので
-							userList: null, // joinなカラムは通常取ってこないので
-						};
-					} else {
+						// 無効化されたアンテナはキャッシュから外す。
+						// 放っておくと isActive=false になったアンテナの配信が続き、再起動で突然止まる
+						if (body.isActive === false) {
+							this.antennas.splice(idx, 1);
+						} else {
+							this.antennas[idx] = { // TODO: このあたりのデシリアライズ処理は各modelファイル内に関数としてexportしたい
+								...body,
+								lastUsedAt: new Date(body.lastUsedAt),
+								user: null, // joinなカラムは通常取ってこないので
+								userList: null, // joinなカラムは通常取ってこないので
+							};
+						}
+					} else if (body.isActive !== false) {
 						// サーバ起動時にactiveじゃなかった場合、リストに持っていないので追加する必要あり
 						this.antennas.push({ // TODO: このあたりのデシリアライズ処理は各modelファイル内に関数としてexportしたい
 							...body,

@@ -11,18 +11,28 @@ on:
 
 permissions:
   contents: write
-  pull-requests: read
+  # リリースPRの作成・更新に必要
+  pull-requests: write
+  # リリースPRのheadコミットに付いたCIの結果を読むために必要
+  checks: read
+  statuses: read
   actions: write
 
 jobs:
   release:
     runs-on: ubuntu-latest
+    # CI待ちの上限(60分)に、PR作成などの前後処理の余裕を加えた値
+    timeout-minutes: 90
+    # 同じブランチの実行を直列化する。待機中の実行は打ち切らない
+    concurrency:
+      group: release-${{ github.ref }}
+      cancel-in-progress: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v4.3.0
         with:
           fetch-depth: 0
-          # masterブランチにマージする際に必要
+          # developブランチへのバージョン更新のpushに必要
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Parse version from package.json
@@ -77,53 +87,211 @@ jobs:
             echo "tag_exists=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # developブランチからstableリリースの場合、masterにマージ
-      - name: Merge to Master
+      # developブランチからstableリリースの場合、masterへ直接マージせずリリースPRを作る。
+      # 既に開いているdevelop→master PRがあれば再利用する。
+      # created=true は「リリースPRが開いていて、この実行ではまだ公開しない」ことを表す
+      # (新規作成か再利用かは問わない)。後続の公開系ステップはこの値で抑止する。
+      - name: Create or reuse release PR
         if: |
           steps.parse_version.outputs.skip_release != 'true' &&
           steps.check_tag.outputs.tag_exists != 'true' &&
           steps.parse_version.outputs.is_stable == 'true' &&
           steps.parse_version.outputs.current_branch == 'develop'
-        id: merge_to_master
+        id: release_pr
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ steps.parse_version.outputs.tag_name }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          # Git設定
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          PR_TITLE="Release: ${TAG_NAME}"
+          PR_BODY="Release PR for ${TAG_NAME}, created by the Auto Release workflow (${RUN_URL}).
 
-          # masterブランチに切り替え
-          git fetch origin master
-          git checkout master
+          The workflow waits for CI on the head commit and leaves this PR open. Merge it manually once CI is green; the push to master then publishes the release.
 
-          # developブランチの内容をマージ
-          git merge origin/develop --no-ff -m "Release: Merge develop to master for ${{ steps.parse_version.outputs.tag_name }}"
+          Note: the workflow waits for every commit status, so Chromatic UI Tests may keep it waiting (pending) until the Chromatic build is reviewed and approved by a human."
 
-          # masterにプッシュ
-          git push origin master
+          # ブランチ名だけでは同名ブランチを持つforkのPRを拾いうるため、
+          # head側のリポジトリ(owner/name)も一致するPRだけを再利用の対象にする
+          OPEN_PRS=$(gh pr list \
+            --state open \
+            --base master \
+            --head develop \
+            --limit 100 \
+            --json number,headRefName,headRepository,headRepositoryOwner)
+          EXISTING_PR=$(jq -r \
+            --arg owner "$GITHUB_REPOSITORY_OWNER" \
+            --arg repo "${GITHUB_REPOSITORY#*/}" \
+            '[.[] | select(.headRefName == "develop" and .headRepositoryOwner.login == $owner and .headRepository.name == $repo)][0].number // ""' \
+            <<<"$OPEN_PRS")
 
-          echo "::notice::Successfully merged develop to master"
-          echo "merged_to_master=true" >> "$GITHUB_OUTPUT"
+          if [ -n "$EXISTING_PR" ]; then
+            echo "::notice::Reusing open release PR #$EXISTING_PR"
+            gh pr edit "$EXISTING_PR" --title "$PR_TITLE" --body "$PR_BODY"
+            PR_REF="$EXISTING_PR"
+          else
+            PR_REF=$(gh pr create \
+              --base master \
+              --head develop \
+              --title "$PR_TITLE" \
+              --body "$PR_BODY")
+            echo "::notice::Created release PR $PR_REF"
+          fi
 
-      # masterブランチに切り替えてリリースを作成（developからマージした場合）
-      - name: Switch to Master for Release
-        if: |
-          steps.parse_version.outputs.skip_release != 'true' &&
-          steps.check_tag.outputs.tag_exists != 'true' &&
-          steps.parse_version.outputs.is_stable == 'true' &&
-          steps.parse_version.outputs.current_branch == 'develop' &&
-          steps.merge_to_master.outputs.merged_to_master == 'true'
+          PR_JSON=$(gh pr view "$PR_REF" --json number,url,headRefOid)
+          {
+            echo "created=true"
+            echo "number=$(jq -r .number <<<"$PR_JSON")"
+            echo "url=$(jq -r .url <<<"$PR_JSON")"
+            echo "head_sha=$(jq -r .headRefOid <<<"$PR_JSON")"
+          } >> "$GITHUB_OUTPUT"
+
+      # リリースPRのheadコミットに付いた既存のpush CIを待つ。PRは成功・失敗どちらでも開いたままにする。
+      # - このジョブ自身(github.job)のcheck runは、過去の実行分も含めて待機対象から除外する
+      # - 同名のcheck runが複数ある(再実行)場合は、idが最大の最新のrunだけを評価し、古い失敗では落とさない
+      # - 必須チェックは「存在して成功」であること。未登録のうちは待ち続ける
+      # - それ以外の登録済みcheck/statusは完了を待ち、skipped/neutralは許容し、失敗系は即失敗にする
+      # - 完了済みで同一内容のスナップショットが連続して得られたら成功とする
+      - name: Wait for release PR CI
+        if: steps.release_pr.outputs.created == 'true'
+        id: wait_release_ci
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ steps.release_pr.outputs.head_sha }}
+          PR_NUMBER: ${{ steps.release_pr.outputs.number }}
+          PR_URL: ${{ steps.release_pr.outputs.url }}
+          SELF_CHECK_NAME: ${{ github.job }}
         run: |
-          git checkout master
-          git pull origin master
+          set -uo pipefail
+
+          REQUIRED_JSON='["Production build","check-spdx-license-id"]'
+          POLL_INTERVAL=30
+          TIMEOUT_SECONDS=3600
+          STABLE_REQUIRED=2
+
+          # APIの応答は数百件・数百KBになりうる。コマンドライン引数(MAX_ARG_STRLEN)で渡すと
+          # "Argument list too long" になるため、必要なフィールドだけに絞って一時ファイル経由でjqへ渡す
+          WORK_DIR=$(mktemp -d) || { echo "::error::Failed to create a temporary directory"; exit 1; }
+          trap 'rm -rf -- "${WORK_DIR:?}"' EXIT
+
+          # 1回分のスナップショットを評価し、state/failed/pending/missing_required/fingerprintをJSONで返す
+          # 戻り値: 0=成功, 1=API読み取りの失敗(一時的な可能性があるので再試行), 2=ローカルの評価失敗(jq等)
+          evaluate() {
+            gh api --paginate \
+              "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs?per_page=100" \
+              --jq '.check_runs[] | {id, name, status, conclusion}' \
+              > "$WORK_DIR/runs.jsonl" 2> "$WORK_DIR/gh.err" || { head -c 300 "$WORK_DIR/gh.err" >&2; return 1; }
+            gh api --paginate \
+              "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/statuses?per_page=100" \
+              --jq '.[] | {id, context, state, created_at}' \
+              > "$WORK_DIR/statuses.jsonl" 2> "$WORK_DIR/gh.err" || { head -c 300 "$WORK_DIR/gh.err" >&2; return 1; }
+
+            jq -n \
+              --slurpfile runs "$WORK_DIR/runs.jsonl" \
+              --slurpfile statuses "$WORK_DIR/statuses.jsonl" \
+              --argjson required "$REQUIRED_JSON" \
+              --arg self "$SELF_CHECK_NAME" '
+              ["failure", "cancelled", "timed_out", "action_required", "startup_failure", "stale"] as $bad
+              | ($runs | map(select(.name != $self))
+                  | group_by(.name) | map(sort_by(.id) | last)) as $r
+              | ($statuses | group_by(.context) | map(sort_by([.created_at, .id]) | last)) as $s
+              | ([$r[] | select(.status == "completed" and (.conclusion as $c | ($bad | index($c)) != null)) | .name]
+                  + [$s[] | select(.state == "error" or .state == "failure") | .context]) as $failed
+              | ([$r[] | select(.status != "completed") | .name]
+                  + [$s[] | select(.state == "pending") | .context]) as $pending
+              | ([$required[] | . as $n
+                  | select(([$r[] | select(.name == $n and .status == "completed" and .conclusion == "success")] | length) == 0)]) as $missing
+              | {
+                  state: (if ($failed | length) > 0 then "failed"
+                          elif ($pending | length) > 0 or ($missing | length) > 0 then "pending"
+                          else "success" end),
+                  failed: $failed,
+                  pending: $pending,
+                  missing_required: $missing,
+                  fingerprint: ([$r[] | "check:\(.name):\(.status):\(.conclusion)"]
+                                 + [$s[] | "status:\(.context):\(.state)"] | sort | join("|"))
+                }' 2> "$WORK_DIR/jq.err" || { head -c 300 "$WORK_DIR/jq.err" >&2; return 2; }
+          }
+
+          stable=0
+          last_fingerprint=""
+          local_errors=0
+          while true; do
+            eval_rc=0
+            result=$(evaluate) || eval_rc=$?
+            if [ "$eval_rc" -eq 0 ]; then
+              local_errors=0
+              state=$(jq -r .state <<<"$result")
+              fingerprint=$(jq -r .fingerprint <<<"$result")
+              echo "[${SECONDS}s] state=${state} failed=$(jq -c .failed <<<"$result") pending=$(jq -c .pending <<<"$result") missing_required=$(jq -c .missing_required <<<"$result")"
+
+              case "$state" in
+                failed)
+                  echo "::error::CI failed on release PR head ${HEAD_SHA}: $(jq -c .failed <<<"$result"). The PR stays open: ${PR_URL}"
+                  exit 1
+                  ;;
+                success)
+                  if [ "$fingerprint" = "$last_fingerprint" ]; then
+                    stable=$((stable + 1))
+                  else
+                    stable=1
+                  fi
+                  last_fingerprint="$fingerprint"
+                  if [ "$stable" -ge "$STABLE_REQUIRED" ]; then
+                    # 成功を宣言する直前にPRのheadを読み直し、待機中にdevelopが進んでいたら成功扱いにしない
+                    if ! CURRENT_HEAD=$(gh pr view "$PR_NUMBER" --json headRefOid --jq .headRefOid) || [ -z "$CURRENT_HEAD" ]; then
+                      echo "::warning::Failed to re-read the head of release PR #${PR_NUMBER}; retrying"
+                      stable=0
+                      last_fingerprint=""
+                    elif [ "$CURRENT_HEAD" != "$HEAD_SHA" ]; then
+                      echo "::error::Release PR #${PR_NUMBER} head moved from ${HEAD_SHA} to ${CURRENT_HEAD} while waiting for CI; not marking it ready. Re-run the workflow to check the new head: ${PR_URL}"
+                      exit 1
+                    else
+                      echo "::notice::CI passed on release PR head ${HEAD_SHA}. Merge the PR manually to publish: ${PR_URL}"
+                      exit 0
+                    fi
+                  fi
+                  ;;
+                *)
+                  stable=0
+                  last_fingerprint=""
+                  ;;
+              esac
+            elif [ "$eval_rc" -eq 1 ]; then
+              # 一時的なAPI失敗は成功扱いにせず、安定カウントを戻して再試行する
+              echo "::warning::Failed to read checks for ${HEAD_SHA}; retrying"
+              stable=0
+              last_fingerprint=""
+            else
+              # ローカルの評価失敗(jq等)は決定的な不具合の可能性が高いので、少数回の再試行で明確に失敗させる
+              local_errors=$((local_errors + 1))
+              echo "::warning::Check evaluation failed locally for ${HEAD_SHA} (${local_errors}/3)"
+              stable=0
+              last_fingerprint=""
+              if [ "$local_errors" -ge 3 ]; then
+                echo "::error::Check evaluation failed 3 times in a row on release PR head ${HEAD_SHA}; this is not an API read error. The PR stays open: ${PR_URL}"
+                exit 1
+              fi
+            fi
+
+            if [ "$SECONDS" -ge "$TIMEOUT_SECONDS" ]; then
+              echo "::error::Timed out after ${TIMEOUT_SECONDS}s waiting for CI on release PR head ${HEAD_SHA}. The PR stays open: ${PR_URL}"
+              exit 1
+            fi
+            sleep "$POLL_INTERVAL"
+          done
 
       - name: Generate Release Notes for Stable Release
         if: |
           steps.parse_version.outputs.skip_release != 'true' &&
           steps.check_tag.outputs.tag_exists != 'true' &&
-          steps.parse_version.outputs.is_stable == 'true'
+          steps.parse_version.outputs.is_stable == 'true' &&
+          steps.release_pr.outputs.created != 'true'
         id: generate_stable_notes
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEW_TAG: ${{ steps.parse_version.outputs.tag_name }}
+          # タグが指すコミット(マージ済みのmaster)を明示する
+          TARGET_COMMITISH: ${{ github.sha }}
         run: |
           # プレリリースではない、最新のリリースのタグ名を取得
           PREVIOUS_STABLE_TAG=$(gh release list \
@@ -139,12 +307,14 @@ jobs:
           if [ -n "$PREVIOUS_STABLE_TAG" ]; then
             GENERATED_NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes \
               -f tag_name="$NEW_TAG" \
+              -f target_commitish="$TARGET_COMMITISH" \
               -f previous_tag_name="$PREVIOUS_STABLE_TAG" \
               --jq '.body')
           else
             # 初回リリースの場合
             GENERATED_NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes \
               -f tag_name="$NEW_TAG" \
+              -f target_commitish="$TARGET_COMMITISH" \
               --jq '.body')
           fi
 
@@ -158,10 +328,14 @@ jobs:
       - name: Create GitHub Release
         if: |
           steps.parse_version.outputs.skip_release != 'true' &&
-          steps.check_tag.outputs.tag_exists != 'true'
+          steps.check_tag.outputs.tag_exists != 'true' &&
+          steps.release_pr.outputs.created != 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.parse_version.outputs.tag_name }}
+          # 公開対象のコミットを明示する。未指定だとデフォルトブランチ(develop)の先端に付くため、
+          # 実行中に後続のpushがあるとbetaタグがバージョン更新コミット以外を指してしまう
+          target_commitish: ${{ github.sha }}
           name: ${{ steps.parse_version.outputs.release_name }}
           body: ${{ steps.generate_stable_notes.outputs.notes || 'This is a beta (development) release.' }}
           prerelease: ${{ steps.parse_version.outputs.is_stable == 'false' }}
@@ -172,7 +346,8 @@ jobs:
         if: |
           steps.parse_version.outputs.skip_release != 'true' &&
           steps.check_tag.outputs.tag_exists != 'true' &&
-          steps.parse_version.outputs.is_stable == 'true'
+          steps.parse_version.outputs.is_stable == 'true' &&
+          steps.release_pr.outputs.created != 'true'
         id: update_version
         run: |
           # Git設定
@@ -232,6 +407,7 @@ jobs:
           steps.parse_version.outputs.skip_release != 'true' &&
           steps.check_tag.outputs.tag_exists != 'true' &&
           steps.parse_version.outputs.is_stable == 'true' &&
+          steps.release_pr.outputs.created != 'true' &&
           !(github.event_name == 'push' && github.ref_name == 'master')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -242,16 +418,14 @@ jobs:
       - name: Output release result
         if: steps.parse_version.outputs.skip_release != 'true'
         run: |
-          if [ "${{ steps.check_tag.outputs.tag_exists }}" == "true" ]; then
+          if [ "${{ steps.release_pr.outputs.created }}" == "true" ]; then
+            echo "::notice::Release PR #${{ steps.release_pr.outputs.number }} is ready for manual merge: ${{ steps.release_pr.outputs.url }}"
+            echo "::notice::The release will be published when the PR is merged to master"
+          elif [ "${{ steps.check_tag.outputs.tag_exists }}" == "true" ]; then
             echo "::notice::Release was skipped because tag ${{ steps.parse_version.outputs.tag_name }} already exists"
           else
             echo "::notice::Successfully created release ${{ steps.parse_version.outputs.release_name }}"
             echo "::notice::Release URL: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.parse_version.outputs.tag_name }}"
-
-            # マージ結果も出力
-            if [ "${{ steps.merge_to_master.outputs.merged_to_master }}" == "true" ]; then
-              echo "::notice::Successfully merged develop to master for stable release"
-            fi
 
             # バージョン更新結果も出力
             if [ "${{ steps.parse_version.outputs.is_stable }}" == "true" ]; then

@@ -7,6 +7,7 @@ import * as Misskey from 'misskey-js';
 import { ref } from 'vue';
 import { apiUrl } from '@@/js/config.js';
 import { $i } from '@/i.js';
+import { globalEvents } from '@/events.js';
 export const pendingApiRequestsCount = ref(0);
 
 // Implements Misskey.api.ApiClient.request
@@ -46,6 +47,12 @@ export function misskeyApi<
 			signal,
 		}).then(async (res) => {
 			const body = res.status === 204 ? null : await res.json();
+			if ((res.status === 200 || res.status === 204) && $i && payload.i === $i.token && (
+				endpoint === 'mute/create' || endpoint === 'mute/delete' ||
+				endpoint === 'blocking/create' || endpoint === 'blocking/delete'
+			)) {
+				globalEvents.emit('userRelationsChanged');
+			}
 
 			if (res.status === 200) {
 				resolve(body as R);

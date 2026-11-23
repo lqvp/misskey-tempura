@@ -15,6 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <script lang="ts" setup>
 import { onMounted, onUnmounted, nextTick, useTemplateRef, ref } from 'vue';
 import { Chart } from 'chart.js';
+import { MatrixController, MatrixElement } from 'chartjs-chart-matrix';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { store } from '@/store.js';
 import { useChartTooltip } from '@/composables/use-chart-tooltip.js';
@@ -22,6 +23,7 @@ import { alpha } from '@/utility/color.js';
 import { initChart } from '@/utility/init-chart.js';
 
 initChart();
+Chart.register(MatrixController, MatrixElement);
 
 const rootEl = useTemplateRef('rootEl');
 const chartEl = useTemplateRef('chartEl');

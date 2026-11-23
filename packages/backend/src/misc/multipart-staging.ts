@@ -59,6 +59,30 @@ export function resolveMultipartStagingDir(dataDir: string, uploadId: string): s
 }
 
 /**
+ * resolveMultipartStagingDir の非同期版。リクエスト処理中のイベントループの
+ * ブロッキングを避けるため、API エンドポイントからはこちらを使う。
+ */
+export async function resolveMultipartStagingDirAsync(dataDir: string, uploadId: string): Promise<string> {
+	const dir = getMultipartStagingDir(dataDir, uploadId);
+	if (!await pathExists(dir)) {
+		const legacy = getLegacyMultipartStagingDir(uploadId);
+		if (await pathExists(legacy)) {
+			return legacy;
+		}
+	}
+	return dir;
+}
+
+export async function pathExists(path: string): Promise<boolean> {
+	try {
+		await fs.promises.access(path);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+/**
  * 新旧どちらのスティージングディレクトリに退避済みのバイト数の合計。
  * クォータ判定など、場所に依存しない集計に使う。
  */

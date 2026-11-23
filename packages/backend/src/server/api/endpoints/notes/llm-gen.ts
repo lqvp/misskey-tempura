@@ -7,9 +7,9 @@ import ms from 'ms';
 import { Inject, Injectable } from '@nestjs/common';
 import type { MiMeta } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
-import { RoleService } from '@/core/RoleService.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { DI } from '@/di-symbols.js';
+import { StatusError } from '@/misc/status-error.js';
 import { ApiError } from '../../error.js';
 
 export const meta = {
@@ -51,30 +51,22 @@ export const meta = {
 			id: '58f1cb83-fb0b-47be-9dc8-0cf39ecf44e2',
 		},
 
-		accessDenied: {
-			message: 'Access denied. Requires canUseGeminiLLMAPI role.',
-			code: 'ACCESS_DENIED',
-			id: '5eb8d909-2540-4970-90b8-dd6f86088121',
-		},
 	},
 } as const;
 
 export const paramDef = {
 	type: 'object',
 	properties: {
-		text: { type: 'string' },
-		prompt: { type: 'string' },
+		text: { type: 'string', maxLength: 131072 },
+		prompt: { type: 'string', maxLength: 131072 },
+		baseUrl: { type: 'string', nullable: true },
+		apiKey: { type: 'string', nullable: true },
+		model: { type: 'string', nullable: true },
 		fileUris: {
 			type: 'array',
 			nullable: true,
-			items: {
-				type: 'object',
-				properties: {
-					mimeType: { type: 'string' },
-					fileUri: { type: 'string' },
-				},
-				required: ['mimeType', 'fileUri'],
-			},
+			items: { type: 'string' },
+			maxItems: 4,
 		},
 	},
 	required: ['text', 'prompt'],
@@ -87,15 +79,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 		private serverSettings: MiMeta,
 
 		private httpRequestService: HttpRequestService,
-		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			const policies = await this.roleService.getUserPolicies(me.id);
-
-			if (!policies.canUseGeminiLLMAPI) {
-				throw new ApiError(meta.errors.accessDenied);
-			}
-
+			// 権限チェックは requiredRolePolicy (canUseGeminiLLMAPI) で行われる
 			if (ps.text == null || ps.text === '') {
 				throw new ApiError(meta.errors.emptyText);
 			}
@@ -104,70 +90,76 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				throw new ApiError(meta.errors.emptyPrompt);
 			}
 
-			// metaからサーバー設定を取得
-			const serverGeminiEnabled = this.serverSettings.serverGeminiEnabled;
-			const serverGeminiApiKey = this.serverSettings.serverGeminiApiKey;
-			const serverGeminiModels = this.serverSettings.serverGeminiModels;
+			// ユーザー指定パラメータ (ユーザー直指定モード) の場合はサーバー設定の有効状態を参照しない
+			const userSpecified = ps.baseUrl != null || ps.apiKey != null;
 
-			if (!serverGeminiEnabled) {
+			if (!userSpecified && !this.serverSettings.serverOpenAIEnabled) {
 				throw new ApiError(meta.errors.llmNotEnabled);
 			}
 
-			if (!serverGeminiApiKey) {
-				throw new ApiError(meta.errors.llmApiError, 'Gemini API key is not configured on server');
+			// ユーザーが baseUrl を指定した場合、サーバーAPIキーを外部ホストへ送出しない
+			const apiKey = ps.apiKey != null ? ps.apiKey
+				: ps.baseUrl != null ? null
+				: this.serverSettings.serverOpenAIApiKey;
+			if (!apiKey) {
+				// baseUrl 指定時はユーザー指定モード扱いのため apiKey が必須、
+				// それ以外はサーバー設定のキーが必要
+				throw new ApiError(meta.errors.llmApiError, ps.baseUrl != null
+					? 'apiKey is required when baseUrl is specified'
+					: 'OpenAI-compatible API key is not configured on server');
 			}
 
-			// リクエストボディのコンテンツ部分を作成
-			const parts: any[] = [{ text: ps.text }];
+			const baseURL = (ps.baseUrl || this.serverSettings.serverOpenAIBaseURL || 'https://api.openai.com/v1').replace(/\/+$/, '');
+			const model = ps.model || this.serverSettings.serverOpenAIModels || 'gpt-4o-mini';
+			const url = `${baseURL}/chat/completions`;
 
-			// ファイルURIがある場合は追加
-			if (ps.fileUris && ps.fileUris.length > 0) {
-				for (const fileInfo of ps.fileUris) {
-					parts.push({
-						file_data: {
-							mime_type: fileInfo.mimeType,
-							file_uri: fileInfo.fileUri,
-						},
-					});
-				}
-			}
+			const textContent = { type: 'text', text: ps.text };
+			// 画像は最大4件まで (API 直叩きに対するサーバー側の上限)
+			const imageContents = (ps.fileUris ?? []).slice(0, 4).map(fileUri => ({
+				type: 'image_url',
+				image_url: { url: fileUri },
+			}));
 
-			// リクエストボディの作成
-			const requestBody = JSON.stringify({
-				system_instruction: {
-					parts: [{ text: ps.prompt }],
-				},
-				contents: [{
-					parts: parts,
-				}],
-			});
-
-			// Gemini APIへのリクエスト
-			try {
-				// API キーは URL に入れるとエラーやログに出るので、ヘッダーで送る
-				const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(serverGeminiModels)}:generateContent`;
-
-				const response = await this.httpRequestService.send(url, {
+			const send = async (content: string | unknown[]) => {
+				return await this.httpRequestService.send(url, {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
-						'x-goog-api-key': serverGeminiApiKey,
+						Authorization: `Bearer ${apiKey}`,
 					},
-					body: requestBody,
-					timeout: 30000, // 30秒タイムアウト
+					body: JSON.stringify({
+						model,
+						messages: [
+							{ role: 'system', content: ps.prompt },
+							{ role: 'user', content },
+						],
+					}),
+					timeout: 30000,
 					isLocalAddressAllowed: false,
 				}, {
-					throwErrorWhenResponseNotOk: true,
+					throwErrorWhenResponseNotOk: false,
 				});
+			};
+			const toStatusError = (response: Awaited<ReturnType<typeof send>>) => new StatusError(`${response.status} ${response.statusText}`, response.status, response.statusText);
 
-				// JSONレスポンスを返す
-				const responseData = await response.json();
-				return responseData;
+			try {
+				const response = await send(imageContents.length > 0 ? [textContent, ...imageContents] : ps.text);
+				if (response.ok) return await response.json();
+
+				// クライアントは使われるモデルが画像に対応しているか分からずに画像を付けてくる。
+				// 画像非対応を示すエラーの形式はプロバイダーごとに異なり判別できないため、
+				// 入力エラーで拒否されたら本文だけで送り直す (画像と無関係な入力エラーなら再送も失敗する)
+				if (imageContents.length > 0 && (response.status === 400 || response.status === 422)) {
+					const retried = await send(ps.text);
+					if (retried.ok) return await retried.json();
+					throw toStatusError(retried);
+				}
+				throw toStatusError(response);
 			} catch (error) {
 				// 念のため、メッセージにキーが含まれていたら隠してから記録・返却する
 				const rawErrorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-				const errorMessage = serverGeminiApiKey
-					? rawErrorMessage.split(serverGeminiApiKey).join('[REDACTED]')
+				const errorMessage = apiKey
+					? rawErrorMessage.split(apiKey).join('[REDACTED]')
 					: rawErrorMessage;
 				console.error('LLM API error:', errorMessage);
 				throw new ApiError(meta.errors.llmApiError, errorMessage);

@@ -13,7 +13,7 @@ import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { isDuplicateKeyValueError } from '@/misc/is-duplicate-key-value-error.js';
 import { ApiError } from '@/server/api/error.js';
-import { noSuchLlmModerationQueueError } from '@/core/errors/llm-moderation-queue.js';
+import { noSuchLlmModerationQueueError, alreadyResolvedError } from '@/core/errors/llm-moderation-queue.js';
 import Logger from '@/logger.js';
 
 const logger = new Logger('llm-moderation-queue');
@@ -94,11 +94,16 @@ export class LlmModerationQueueService {
 		}
 		const nextNote = params?.moderationNote ?? queue.moderationNote;
 
-		await this.llmModerationQueueRepository.update(queue.id, {
+		// resolved: false を条件に付けて原子的に更新し、二重解決・同時解決の
+		// 後勝ち上書きを防ぐ(冪等性の確保)
+		const result = await this.llmModerationQueueRepository.update({ id: queue.id, resolved: false }, {
 			resolved: true,
 			assigneeId: moderator.id,
 			moderationNote: nextNote,
 		});
+		if (result.affected === 0) {
+			throw new ApiError(alreadyResolvedError);
+		}
 	}
 
 	public async update(

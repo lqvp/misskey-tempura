@@ -87,6 +87,8 @@ const username = ref(props.initialUsername ?? '');
 
 //#region Open on remote
 function openRemote(options: OpenOnRemoteOptions, targetHost?: string): void {
+	// ホスト文字列にパス区切りなどが混ざっていても https URL が組み立てられるよう正規化する
+	const safeHost = targetHost?.replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, '').replace(/[/?#@\s]/g, '');
 	switch (options.type) {
 		case 'web':
 		case 'lookup': {
@@ -100,8 +102,8 @@ function openRemote(options: OpenOnRemoteOptions, targetHost?: string): void {
 				_path = options.path;
 			}
 
-			if (targetHost) {
-				window.open(`https://${targetHost}${_path}`, '_blank', 'noopener');
+			if (safeHost) {
+				window.open(`https://${safeHost}${_path}`, '_blank', 'noopener');
 			} else {
 				window.open(`https://misskey-hub.net/mi-web/?path=${encodeURIComponent(_path)}`, '_blank', 'noopener');
 			}
@@ -109,8 +111,8 @@ function openRemote(options: OpenOnRemoteOptions, targetHost?: string): void {
 		}
 		case 'share': {
 			const params = query(options.params);
-			if (targetHost) {
-				window.open(`https://${targetHost}/share?${params}`, '_blank', 'noopener');
+			if (safeHost) {
+				window.open(`https://${safeHost}/share?${params}`, '_blank', 'noopener');
 			} else {
 				window.open(`https://misskey-hub.net/share/?${params}`, '_blank', 'noopener');
 			}

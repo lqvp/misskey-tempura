@@ -12,11 +12,22 @@ import { QueryService } from '@/core/QueryService.js';
 import { DI } from '@/di-symbols.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
 import { IdService } from '@/core/IdService.js';
-import { FanoutTimelineService } from '@/core/FanoutTimelineService.js';
+import { FanoutTimelineService, ANTENNA_REMOVED_IDS_TTL_MS } from '@/core/FanoutTimelineService.js';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
+import { AntennaService } from '@/core/AntennaService.js';
 import { trackPromise } from '@/misc/promise-tracker.js';
 import { ChannelMutingService } from '@/core/ChannelMutingService.js';
+import type { MiAntenna } from '@/models/Antenna.js';
+import type { MiChannel } from '@/models/Channel.js';
+import type { MiNote } from '@/models/Note.js';
+import type { MiUser } from '@/models/User.js';
+import { ApiLoggerService } from '../../ApiLoggerService.js';
 import { ApiError } from '../../error.js';
+
+// 補完で一度に読むノート数。一致ノートが足りなければこの単位で古い方へ進む
+const BACKFILL_BATCH_SIZE = 200;
+// 補完で走査する総ノート数の上限。アンテナ作成前まで遡れる一方、無制限にはしない
+const BACKFILL_SCAN_LIMIT = 2000;
 
 export const meta = {
 	tags: ['antennas', 'account', 'notes'],
@@ -74,6 +85,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private fanoutTimelineService: FanoutTimelineService,
 		private globalEventService: GlobalEventService,
 		private channelMutingService: ChannelMutingService,
+		private antennaService: AntennaService,
+		private apiLoggerService: ApiLoggerService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const untilId = ps.untilId ?? (ps.untilDate ? this.idService.gen(ps.untilDate!) : null);
@@ -101,27 +114,50 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			const searchQuery = ps.query != null && ps.query.trim() !== '' ? ps.query.trim().toLowerCase() : null;
 
-			let noteIds = await this.fanoutTimelineService.get(`antennaTimeline:${antenna.id}`, untilId, sinceId);
-			// 検索時は絞り込み前に切り詰めるとヒット件数が変わるため、検索時は保持分(最大200件)をすべて取得する
-			if (searchQuery == null) {
-				noteIds = noteIds.slice(0, ps.limit);
+			// -- ミュートされたチャンネル対策。補完の走査でも同じ条件を使うので先に求める
+			const mutingChannelIds = await this.channelMutingService
+				.list({ requestUserId: me.id }, { idOnly: true })
+				.then(x => x.map(x => x.id));
+
+			const noteIds = await this.fanoutTimelineService.get(`antennaTimeline:${antenna.id}`, untilId, sinceId);
+
+			// antennaTimeline は受信時の fanout なので、アンテナを作る前から存在したノートは入らない。
+			// 一方で試し打ち(antennas/test)は既存ノートを走査するため、
+			// 「試し打ちでは当たるのに保存しても TL に出ない」という食い違いが起きていた。
+			// 補完は fanout に保存されないので、カーソル付きの取得でも同じ範囲を引き直さないと
+			// 2ページ目以降で補完分が抜け落ちる。カーソルの範囲 (untilId/sinceId) に限定して補完する
+			const backfilledNoteIds = await this.getBackfillNoteIds(antenna, noteIds, me, mutingChannelIds, ps.limit, untilId, sinceId, searchQuery);
+
+			if (noteIds.length === 0 && backfilledNoteIds.length === 0) {
+				return [];
 			}
-			if (noteIds.length === 0) {
+
+			// 受信済み側にも「外した」記録を適用する。
+			// ノートの保存と fanout の間に remove-note が走ると、リストに残ったままになることがあるため
+			const removedNoteIds = await this.fanoutTimelineService.getRemovedIds(`antennaTimeline:${antenna.id}`);
+			const visibleNoteIds = removedNoteIds.size === 0
+				? noteIds
+				: noteIds.filter(id => !removedNoteIds.has(id));
+
+			// 受信済みも補完分も「新しい順」に並べてから使う。
+			// fanout の履歴を先に連結して件数制限すると、補完で拾ったより新しいノートが捨てられてしまう
+			const candidateNoteIds = this.mergeNoteIds(visibleNoteIds, backfilledNoteIds);
+			// すべて外されていた場合、空の IN () は SQL エラーになるので先に返す
+			if (candidateNoteIds.length === 0) {
 				return [];
 			}
 
 			const query = this.notesRepository.createQueryBuilder('note')
-				.where('note.id IN (:...noteIds)', { noteIds: noteIds })
+				.where('note.id IN (:...candidateNoteIds)', { candidateNoteIds })
 				.innerJoinAndSelect('note.user', 'user')
 				.leftJoinAndSelect('note.reply', 'reply')
 				.leftJoinAndSelect('note.renote', 'renote')
+				// checkHitAntenna は note.channel?.isSensitive を見るので、条件の再判定に備えて読み込む。
+				// 読み込まないと「センシティブチャンネルのノートを除外」が効かない
+				.leftJoinAndSelect('note.channel', 'channel')
 				.leftJoinAndSelect('reply.user', 'replyUser')
 				.leftJoinAndSelect('renote.user', 'renoteUser');
 
-			// -- ミュートされたチャンネル対策
-			const mutingChannelIds = await this.channelMutingService
-				.list({ requestUserId: me.id }, { idOnly: true })
-				.then(x => x.map(x => x.id));
 			if (mutingChannelIds.length > 0) {
 				query.andWhere(new Brackets(qb => {
 					qb.orWhere('note.channelId IS NULL');
@@ -140,22 +176,188 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			this.queryService.generateBaseNoteFilteringQuery(query, me);
 
 			let notes = await query.getMany();
+
+			// 受信済みのノートでも「いまの条件」を満たさないものは TL から外す。
+			// 条件を変更しても fanout 済みのノートは残り続けるため、そのまま返すと
+			// 「キーワードを変えたのに古いノートが出続け、マッチ理由も付かない」状態になる。
+			// 試し打ち・受信経路と同じ判定を使い、TL に並ぶ条件をアンテナの現在の条件に揃える。
+			notes = await this.filterByCurrentConditions(antenna, notes);
+
 			if (searchQuery != null) {
 				notes = notes.filter(note => {
 					const text = [note.text, note.cw].filter((t): t is string => t != null && t !== '').join('\n').toLowerCase();
 					return text.includes(searchQuery);
 				});
 			}
+
 			if (sinceId != null && untilId == null) {
 				notes.sort((a, b) => a.id < b.id ? -1 : 1);
 			} else {
 				notes.sort((a, b) => a.id > b.id ? -1 : 1);
 			}
-			if (searchQuery != null) {
-				notes = notes.slice(0, ps.limit);
-			}
+
+			// 件数制限は「条件で絞ったあと」に行う。
+			// 先に limit すると、古い条件でだけ一致するノートが枠を食い、条件的には一致するノートが
+			// 次のページに押し出される (最悪、一致ノートがあるのに空のページが返る)
+			notes = notes.slice(0, ps.limit);
 
 			return await this.noteEntityService.packMany(notes, me);
 		});
+	}
+
+	/**
+	 * 受信済みの id と補完した id を 1 つにまとめ、重複を除いて新しい順に並べる。
+	 * fanout の履歴を先に連結して件数制限すると、補完で拾ったより新しいノートが捨てられてしまうため、
+	 * 制限をかける前にここで順序を揃える。
+	 */
+	private mergeNoteIds(receivedNoteIds: MiNote['id'][], backfilledNoteIds: MiNote['id'][]): MiNote['id'][] {
+		const unique = [...new Set([...receivedNoteIds, ...backfilledNoteIds])];
+		// note id はソート可能な形式なので、降順に並べれば新しい順になる
+		return unique.sort((a, b) => a > b ? -1 : 1);
+	}
+
+	/**
+	 * アンテナ作成時点以降のノートを現在の条件で走査し、antennaTimeline に足りないものを返す。
+	 *
+	 * これがないと、アンテナを作った直後の TL が空になり、
+	 * 直前の試し打ちが「当たる」と表示したノートと食い違う (fanout は作成後の受信分しか持たないため)。
+	 *
+	 * 試し打ち(antennas/test)はアンテナ作成より前のノートも対象にするので、
+	 * 補完の下限も作成時刻にはしない。作成前のノートも現在の条件に合えば TL に並ぶ。
+	 * 走査範囲は応答に必要な件数と受信経路の保持件数で打ち切る (無制限に遡らない)。
+	 */
+	private async getBackfillNoteIds(antenna: MiAntenna, alreadyReceivedNoteIds: MiNote['id'][], me: MiUser, mutingChannelIds: MiChannel['id'][], need: number, untilId: string | null, sinceId: string | null, searchQuery: string | null): Promise<MiNote['id'][]> {
+		const received = new Set(alreadyReceivedNoteIds);
+		// ユーザーが明示的に外したノートは補完で戻さない
+		const removed = await this.fanoutTimelineService.getRemovedIds(`antennaTimeline:${antenna.id}`);
+
+		// 「外した」記録が消える頃には補完の対象からも外れているよう、走査範囲を時間でも区切る。
+		// これを外すと、記録が期限切れになった古いノートが補完で復活しうる
+		const oldestScannableId = this.idService.genMinimum(Date.now() - ANTENNA_REMOVED_IDS_TTL_MS);
+
+		// 取得側のクエリと同じ join を揃える。
+		// generateBaseNoteFilteringQuery は replyUser / renoteUser の別名を参照するため、join し忘れるとエラーになる
+		const query = this.notesRepository.createQueryBuilder('note')
+			.where('note.id >= :oldestScannableId', { oldestScannableId })
+			.innerJoinAndSelect('note.user', 'user')
+			.leftJoinAndSelect('note.reply', 'reply')
+			.leftJoinAndSelect('note.renote', 'renote')
+			.leftJoinAndSelect('note.channel', 'channel')
+			.leftJoinAndSelect('reply.user', 'replyUser')
+			.leftJoinAndSelect('renote.user', 'renoteUser')
+			.orderBy('note.id', 'DESC');
+
+		// カーソル付きの取得では、そのページの範囲に限定して補完する (ページをまたいだ重複を避ける)
+		if (untilId != null) query.andWhere('note.id < :backfillUntilId', { backfillUntilId: untilId });
+		if (sinceId != null) query.andWhere('note.id > :backfillSinceId', { backfillSinceId: sinceId });
+
+		// ミュートしたチャンネルのノートは応答側で落とすので、補完の走査枠も消費させない。
+		// 走査枠を先に埋められると、表示できる一致ノートがあっても判定されず TL が空になる
+		if (mutingChannelIds.length > 0) {
+			query.andWhere(new Brackets(qb => {
+				qb.orWhere('note.channelId IS NULL');
+				qb.orWhere('note.channelId NOT IN (:...mutingChannelIds)', { mutingChannelIds });
+			}));
+			query.andWhere(new Brackets(qb => {
+				qb.orWhere('note.renoteChannelId IS NULL');
+				qb.orWhere('note.renoteChannelId NOT IN (:...mutingChannelIds)', { mutingChannelIds });
+			}));
+		}
+
+		// リストアンテナは、リストのメンバー以外のノートを SQL 側で落とす。
+		// checkHitAntenna はキーワード判定より先にノートごとに所属を照会するため、
+		// ここで絞らないと一致が少ないときに走査件数ぶん照会が走る
+		if (antenna.src === 'list') {
+			if (antenna.userListId == null) return [];
+			query.andWhere('note.userId IN (SELECT "userId" FROM "user_list_membership" WHERE "userListId" = :backfillUserListId)', { backfillUserListId: antenna.userListId });
+		}
+
+		this.queryService.generateVisibilityQuery(query, me);
+		this.queryService.generateBaseNoteFilteringQuery(query, me);
+
+		// 新着取得 (sinceId のみ指定) は応答を古い順に返し、クライアントは受け取った最新の id を次のカーソルにする。
+		// 新しい側から走査して need 件で打ち切ると、その間にある古い一致が以降の新着取得から漏れるため、
+		// この場合は sinceId から古い順に走査する
+		const ascending = sinceId != null && untilId == null;
+
+		// フィルタを適用したうえで、一致ノートが need 件集まるまで走査する。
+		// 走査件数に固定の上限を置くと、ミュートしていない一致ノートが窓の外にあるだけで
+		// 「試し打ちでは当たるのに TL は空」に戻ってしまうため、上限は総走査数で掛ける
+		const result: MiNote['id'][] = [];
+		if (need <= 0) return [];
+
+		const scan = async (scanAscending: boolean, lowerBoundId: string | null, scanLimit: number): Promise<string | null> => {
+			let cursor: string | null = null;
+			let scanned = 0;
+			while (result.length < need && scanned < scanLimit) {
+				const batch = query.clone()
+					.orderBy('note.id', scanAscending ? 'ASC' : 'DESC')
+					.take(Math.min(BACKFILL_BATCH_SIZE, scanLimit - scanned));
+				if (cursor != null) batch.andWhere(scanAscending ? 'note.id > :cursor' : 'note.id < :cursor', { cursor });
+				if (lowerBoundId != null) batch.andWhere('note.id > :scanLowerBoundId', { scanLowerBoundId: lowerBoundId });
+
+				const candidates = await batch.getMany();
+				if (candidates.length === 0) return null;
+				scanned += candidates.length;
+				cursor = candidates[candidates.length - 1].id;
+
+				// 判定はノートごとに独立なので並列に回す
+				const evaluated = await Promise.all(candidates.map(async note => {
+					if (note.user == null) return null;
+					if (received.has(note.id)) return null;
+					if (removed.has(note.id)) return null;
+					// 判定に失敗したノートは補完対象から外し、TL 全体を止めない(受信経路と同じ扱い)
+					const hit = await this.antennaService.checkHitAntenna(antenna, note, note.user).catch(err => {
+						this.apiLoggerService.logger.warn(`Failed to evaluate antenna hit for backfill (antenna: ${antenna.id}, note: ${note.id})`, { err });
+						return false;
+					});
+					if (!hit) return null;
+					// 検索中は、検索語にも一致するものだけを数える。
+					// 条件だけで数えると、検索語に一致するノートが窓の外にある場合に空で打ち切ってしまう
+					if (searchQuery != null) {
+						const text = [note.text, note.cw].filter((t): t is string => t != null && t !== '').join('\n').toLowerCase();
+						if (!text.includes(searchQuery)) return null;
+					}
+					return note.id;
+				}));
+				for (const id of evaluated) {
+					if (id != null) result.push(id);
+				}
+			}
+			// 走査上限で打ち切ったときは、最後に調べた位置を返す
+			return result.length < need ? cursor : null;
+		};
+
+		// 新しい側からの走査に回す分を残し、1 リクエストで調べる総数は BACKFILL_SCAN_LIMIT に収める
+		const firstScanLimit = ascending ? Math.floor(BACKFILL_SCAN_LIMIT / 2) : BACKFILL_SCAN_LIMIT;
+		const stoppedAt = await scan(ascending, null, firstScanLimit);
+
+		// 古い順の走査が上限に達しても足りないときは、新しい側からも走査する。
+		// 応答は空でもカーソルを返せないため、sinceId 直後に不一致が上限件数以上並ぶと、
+		// 新着取得が毎回同じ範囲を調べて空を返し続け、先に進めなくなる。
+		// 新しい側の一致を返せばクライアントのカーソルが進む (間に挟まった一致は新着取得では飛ばされる)
+		if (ascending && stoppedAt != null) {
+			await scan(false, stoppedAt, BACKFILL_SCAN_LIMIT - firstScanLimit);
+		}
+
+		return result;
+	}
+
+	/**
+	 * TL に並べる前に、いまの条件を満たすノートだけに絞る。
+	 * antennaTimeline は受信時の条件で積まれた履歴なので、条件変更後には合わないノートが残る。
+	 */
+	private async filterByCurrentConditions(antenna: MiAntenna, notes: MiNote[]): Promise<MiNote[]> {
+		if (notes.length === 0) return notes;
+		const hits = await Promise.all(notes.map(note => {
+			if (note.user == null) return Promise.resolve(false);
+			// 判定に失敗したノートは非表示側に倒す(条件に合うと言えないものを出さない)。
+			// 黙って消すと「ノートが減った」ことに気づけないため、ログは残す
+			return this.antennaService.checkHitAntenna(antenna, note, note.user).catch(err => {
+				this.apiLoggerService.logger.warn(`Failed to evaluate antenna condition (antenna: ${antenna.id}, note: ${note.id})`, { err });
+				return false;
+			});
+		}));
+		return notes.filter((_, i) => hits[i]);
 	}
 }

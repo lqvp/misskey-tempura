@@ -160,6 +160,8 @@ export class SignupService {
 				token: secret,
 				signupReason: opts.reason,
 				approved: isTheFirstUser || (opts.approved ?? !this.meta.approvalRequiredForSignup),
+				// 新規アカウントの既定値。管理者がインスタンス設定で変更できる
+				requireSigninToViewContents: this.meta.defaultRequireSigninToViewContents,
 			}));
 
 			await transactionalEntityManager.save(new MiUserKeypair({
@@ -210,7 +212,7 @@ export class SignupService {
 				appAccessTokenId: null,
 				customBody: `新しいユーザー @${account.username} が作成されました。`,
 				customHeader: '[システム] 通知',
-				customIcon: null,
+				customIcon: (await this.metaService.fetch()).iconUrl,
 			});
 		}));
 

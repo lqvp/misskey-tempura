@@ -1967,6 +1967,10 @@ export interface Locale extends ILocale {
      */
     "moderator": string;
     /**
+     * サブモデレーター
+     */
+    "subModerator": string;
+    /**
      * モデレーション
      */
     "moderation": string;
@@ -3930,6 +3934,14 @@ export interface Locale extends ILocale {
      * アカウント登録を承認制にする
      */
     "approvalRequiredForSignup": string;
+    /**
+     * 新規アカウントのコンテンツ表示にログインを必須にする
+     */
+    "defaultRequireSigninToViewContents": string;
+    /**
+     * 新しく作成されるアカウントで「コンテンツの表示にログインを必須にする」を既定で有効にします。既存のアカウントの設定は変更されません。
+     */
+    "defaultRequireSigninToViewContentsDescription": string;
     /**
      * アカウント登録の承認
      */
@@ -7636,6 +7648,14 @@ export interface Locale extends ILocale {
          */
         "allowAnonymousLocalTimeline_description": string;
         /**
+         * リアクション一覧の匿名公開
+         */
+        "allowAnonymousReactions": string;
+        /**
+         * 有効にすると、ログインしていない人もノートのリアクション一覧(/api/notes/reactions)を取得できます。初期値は無効です。
+         */
+        "allowAnonymousReactions_description": string;
+        /**
          * 匿名アクセスの公開設定
          */
         "anonymousVisitorAccess": string;
@@ -9566,6 +9586,44 @@ export interface Locale extends ILocale {
          * tempuraの更新履歴
          */
         "diff": string;
+        "_changelog": {
+            /**
+             * 機能ガイド
+             */
+            "guide": string;
+            /**
+             * Misskey-Tempura の独自機能
+             */
+            "title": string;
+            /**
+             * カテゴリ
+             */
+            "categories": string;
+            /**
+             * すべてのカテゴリ
+             */
+            "allCategories": string;
+            /**
+             * すべての機能から検索
+             */
+            "search": string;
+            /**
+             * 機能名やキーワードで探せます
+             */
+            "searchHint": string;
+            /**
+             * {count} 項目
+             */
+            "items": ParameterizedString<"count">;
+            /**
+             * 「{query}」の検索結果
+             */
+            "results": ParameterizedString<"query">;
+            /**
+             * ご利用の前に
+             */
+            "notes": string;
+        };
         "servers": {
             /**
              * Misskey-tempura サーバー
@@ -10927,6 +10985,14 @@ export interface Locale extends ILocale {
              * ListenBrainzのユーザーIDを設定してください。
              */
             "userIdDescription": string;
+            /**
+             * Music
+             */
+            "profileTitle": string;
+            /**
+             * Now Playing
+             */
+            "nowPlaying": string;
         };
         /**
          * 天気予報
@@ -13210,6 +13276,48 @@ export interface Locale extends ILocale {
          * サーバーに接続できません
          */
         "header": string;
+        /**
+         * インターネット接続がないか、サーバーが応答していません。
+         */
+        "descriptionNetwork": string;
+        /**
+         * サーバーがエラーを返しています。
+         */
+        "descriptionServer": string;
+        /**
+         * 再試行
+         */
+        "retry": string;
+        /**
+         * 自動再試行中…
+         */
+        "autoRetrying": string;
+        /**
+         * 自動再試行を停止しました。手動で再試行してください。
+         */
+        "autoRetryStopped": string;
+    };
+    "_offlinePageSetting": {
+        /**
+         * オフラインページの設定
+         */
+        "title": string;
+        /**
+         * カスタムメッセージ
+         */
+        "message": string;
+        /**
+         * サーバーに接続できないときにオフラインページへ表示するメッセージです。空欄の場合は表示されません。
+         */
+        "messageDescription": string;
+        /**
+         * 問い合わせ先URL
+         */
+        "contactUrl": string;
+        /**
+         * オフラインページに問い合わせ先へのリンクを表示します。空欄の場合は表示されません。
+         */
+        "contactUrlDescription": string;
     };
     "_urlPreviewSetting": {
         /**
@@ -15207,53 +15315,49 @@ export interface Locale extends ILocale {
     "_llm": {
         "_server": {
             /**
-             * Gemini APIを有効にする
+             * OpenAI互換APIを有効にする
              */
-            "serverGeminiEnabled": string;
+            "serverOpenAIEnabled": string;
             /**
-             * 有効にすることで、サーバーが提供するGemini APIを使用して、LLMを実行できます。
+             * 有効にすることで、サーバーが提供するOpenAI互換APIを使用して、LLMを実行できます。
              */
-            "serverGeminiEnabledDescription": string;
+            "serverOpenAIEnabledDescription": string;
             /**
-             * Gemini APIキー
+             * OpenAI互換APIキー
              */
-            "serverGeminiApiKey": string;
+            "serverOpenAIApiKey": string;
             /**
-             * サーバーが提供するGemini APIのAPIキーを入力します。
+             * サーバーが提供するOpenAI互換APIのAPIキーを入力します。
              */
-            "serverGeminiApiKeyDescription": string;
+            "serverOpenAIApiKeyDescription": string;
             /**
-             * サーバーで提供するGemini APIで使用するモデルを選択します。
+             * OpenAI互換APIベースURL
              */
-            "serverGeminiModelsDescription": string;
+            "serverOpenAIBaseURL": string;
+            /**
+             * OpenAI互換APIのベースURLを入力します（例: https://api.openai.com/v1 ）。空の場合は公式APIを使用します。
+             */
+            "serverOpenAIBaseURLDescription": string;
+            /**
+             * OpenAI互換APIモデル
+             */
+            "serverOpenAIModels": string;
+            /**
+             * サーバーで提供するOpenAI互換APIで使用するモデル名を設定します。
+             */
+            "serverOpenAIModelsDescription": string;
+            /**
+             * モデル一覧の取得に失敗しました。APIキーとベースURLを保存してから再度取得してください。
+             */
+            "serverFetchModelsError": string;
         };
         "_error": {
-            /**
-             * ファイルのダウンロードに失敗しました
-             */
-            "fileDownload": string;
-            /**
-             * ファイルアップロードの初期化に失敗しました
-             */
-            "uploadInit": string;
-            /**
-             * アップロードURLが取得できませんでした
-             */
-            "uploadUrlNotFound": string;
-            /**
-             * ファイルのアップロードに失敗しました
-             */
-            "upload": string;
-            /**
-             * アップロードしたファイルのURIが取得できませんでした
-             */
-            "uploadedFileUri": string;
             /**
              * 操作がキャンセルされました。
              */
             "cancel": string;
             /**
-             * Gemini APIの利用を無効にしました。
+             * LLM APIの利用を無効にしました。
              */
             "disable": string;
             /**
@@ -15269,11 +15373,15 @@ export interface Locale extends ILocale {
              */
             "serverLLMApi": string;
             /**
-             * Gemini API tokenがありません。
+             * OpenAI互換APIトークンがありません。
              */
             "tokenMissing": string;
             /**
-             * Gemini API エラー:
+             * ブラウザから直接APIにアクセスできませんでした (CORS)。プロバイダがCORSを許可しているか、ベースURLが正しいか確認してください。
+             */
+            "cors": string;
+            /**
+             * LLM API エラー:
              */
             "api": string;
             /**
@@ -15289,7 +15397,7 @@ export interface Locale extends ILocale {
              */
             "profileNotFound": string;
             /**
-             * Gemini API のレスポンスフォーマットが不正です。
+             * LLM API のレスポンスフォーマットが不正です。
              */
             "responseFormat": string;
             /**
@@ -15305,7 +15413,7 @@ export interface Locale extends ILocale {
              */
             "noteMissing": string;
             /**
-             * Gemini API応答の解析に失敗しました。
+             * LLM API応答の解析に失敗しました。
              */
             "responseParse": string;
             /**
@@ -15326,7 +15434,7 @@ export interface Locale extends ILocale {
          */
         "useGeminiLLMAPI": string;
         /**
-         * サーバーが提供するGemini APIを使用して、LLMを実行します。
+         * サーバーが提供するOpenAI互換APIを使用して、LLMを実行します。
          */
         "useGeminiLLMAPIDescription": string;
         /**
@@ -15334,23 +15442,11 @@ export interface Locale extends ILocale {
          */
         "useGeminiWithMedia": string;
         /**
-         * ノートにファイルがあれば、Gemini APIにメディアを含めてLLMを実行します。
+         * ノートにファイルがあれば、メディアを含めてLLMを実行します。
          */
         "useGeminiWithMediaDescription": string;
         /**
-         * Geminiトークン
-         */
-        "geminiTokenLabel": string;
-        /**
-         * Gemini API の認証に使用するトークンを設定します。
-         */
-        "geminiTokenCaption": string;
-        /**
-         * Geminiモデル
-         */
-        "geminiModelLabel": string;
-        /**
-         * Geminiシステムプロンプト
+         * LLMシステムプロンプト
          */
         "geminiSystemPromptLabel": string;
         /**
@@ -15358,7 +15454,7 @@ export interface Locale extends ILocale {
          */
         "geminiSystemPromptCaption": string;
         /**
-         * Gemini要約プロンプト
+         * ノート要約プロンプト
          */
         "geminiSummarizePromptLabel": string;
         /**
@@ -15430,13 +15526,83 @@ export interface Locale extends ILocale {
          */
         "geminiNoteCustomText": string;
         /**
-         * 思考トークン数
+         * OpenAI互換APIトークン
          */
-        "geminiThinkingBudgetLabel": string;
+        "openaiTokenLabel": string;
         /**
-         * 思考トークン数を設定します。`-1`を設定することで無制限となります。Proなどは無効にすることは出来ません。より詳細な説明は https://ai.google.dev/gemini-api/docs/thinking をご覧ください。
+         * OpenAI互換APIの認証に使用するトークンを設定します。
          */
-        "geminiThinkingBudgetCaption": string;
+        "openaiTokenCaption": string;
+        /**
+         * OpenAI互換APIベースURL
+         */
+        "openaiBaseUrlLabel": string;
+        /**
+         * OpenAI互換APIのベースURLを設定します（例: https://api.openai.com/v1 ）。未設定の場合は公式APIを使用します。
+         */
+        "openaiBaseUrlCaption": string;
+        /**
+         * OpenAI互換APIモデル
+         */
+        "openaiModelLabel": string;
+        /**
+         * 使用するモデル名を設定します。空の場合は gpt-4o-mini を使用します。
+         */
+        "openaiModelCaption": string;
+        /**
+         * モデル一覧を取得
+         */
+        "fetchModels": string;
+        "_fallback": {
+            /**
+             * LLM API利用方法の選択
+             */
+            "title": string;
+            /**
+             * サーバー提供のLLM APIが有効になっていません。ユーザー指定のAPI tokenを使って生成を継続しますか？ または、LLM API の利用を無効にしますか？
+             */
+            "text": string;
+            /**
+             * ユーザーのAPI tokenを使用する
+             */
+            "useUserToken": string;
+            /**
+             * LLM APIの利用を無効にする
+             */
+            "disable": string;
+        };
+        /**
+         * モデル一覧の取得に失敗しました。APIトークンとベースURLを確認してください。ブラウザからの直接取得がCORSでブロックされている可能性もあります。
+         */
+        "fetchModelsError": string;
+        /**
+         * このモデルは画像入力に対応していると判定されました。
+         */
+        "modelImageSupported": string;
+        /**
+         * このモデルの画像入力対応は不明です。
+         */
+        "modelImageUnknown": string;
+        /**
+         * 画像入力に対応しているものとして扱う
+         */
+        "openaiForceImageInputLabel": string;
+        /**
+         * モデル一覧の自動判定で「不明」になる場合に、画像入力に対応しているものとして扱います。画像対応モデルのはずなのに判定されないときに有効にしてください。
+         */
+        "openaiForceImageInputCaption": string;
+        /**
+         * Temperature
+         */
+        "openaiTemperatureLabel": string;
+        /**
+         * 生成のランダム性 (0.0〜2.0)。要約には低め (0〜0.3) が向きます。空欄の場合はプロバイダの既定値を使います。サーバー提供モードでは無効です。
+         */
+        "openaiTemperatureCaption": string;
+        /**
+         * このモデルは画像入力に非対応です。メディア付きノートではテキストのみが送られます。
+         */
+        "modelImageUnsupported": string;
     };
     "_noteSearch": {
         /**
@@ -15471,6 +15637,100 @@ export interface Locale extends ILocale {
              */
             "without": string;
         };
+    };
+    "_tempuraSettings": {
+        /**
+         * Misskey Tempura が独自に追加した機能の設定を行えます。
+         */
+        "banner": string;
+        /**
+         * 見た目とタイムライン
+         */
+        "groupAppearance": string;
+        /**
+         * 投稿とノート
+         */
+        "groupNotes": string;
+        /**
+         * プライバシーとプロフィール
+         */
+        "groupPrivacy": string;
+        /**
+         * AIと通知
+         */
+        "groupIntegration": string;
+        /**
+         * フォロー承認
+         */
+        "privacyFollow": string;
+        /**
+         * 外部に公開する範囲
+         */
+        "privacyOutbound": string;
+        /**
+         * プロフィールでの非表示
+         */
+        "privacyHideOnProfile": string;
+        /**
+         * ダイレクトメッセージ
+         */
+        "privacyDirectMessage": string;
+        /**
+         * 文字とレイアウト
+         */
+        "appearanceTypography": string;
+        /**
+         * 埋め込み
+         */
+        "appearanceEmbed": string;
+        /**
+         * 確認ダイアログ
+         */
+        "notesConfirm": string;
+        /**
+         * インスタンス情報
+         */
+        "notesTicker": string;
+        /**
+         * リアクションといいね
+         */
+        "notesReaction": string;
+        /**
+         * タイムラインとタブの非表示
+         */
+        "timelineHide": string;
+        /**
+         * 閲覧履歴
+         */
+        "timelineRecord": string;
+        /**
+         * 通知の基本
+         */
+        "earthquakeNotification": string;
+        /**
+         * 通知音と読み上げ
+         */
+        "earthquakeSound": string;
+        /**
+         * 地域フィルタリング
+         */
+        "earthquakeRegion": string;
+        /**
+         * 報告のフィルタリング
+         */
+        "earthquakeReport": string;
+        /**
+         * 接続
+         */
+        "earthquakeConnection": string;
+        /**
+         * 接続設定
+         */
+        "llmConnection": string;
+        /**
+         * プロンプト
+         */
+        "llmPrompt": string;
     };
     "_earthquakeWarning": {
         /**
@@ -16255,6 +16515,22 @@ export interface Locale extends ILocale {
      */
     "secondsPerSignupDescription": string;
     /**
+     * 固定招待コード
+     */
+    "fixedInviteCode": string;
+    /**
+     * 回数制限なく使い放題の招待コードです。設定した文字列は、登録画面の招待コード入力欄に入力されます。通常の招待コードと異なり消費されません。空にすると無効になります。
+     */
+    "fixedInviteCodeDescription": string;
+    /**
+     * 登録用の合言葉
+     */
+    "signupPassphrase": string;
+    /**
+     * 利用規約などを読んだ人に伝えるための合言葉です。設定すると、登録画面の招待コード入力欄に入力することで登録できます。比較は全角半角・大文字小文字の違いを無視し、前後の空白を除き、連続する空白は1つのスペースにまとめて行われます。空にすると無効になります。
+     */
+    "signupPassphraseDescription": string;
+    /**
      * 登録が制限されています
      */
     "signupRateLimited": string;
@@ -16834,14 +17110,6 @@ export interface Locale extends ILocale {
          * 除外語を追加
          */
         "addExcludeWord": string;
-        /**
-         * 開始日時
-         */
-        "sinceDate": string;
-        /**
-         * 終了日時
-         */
-        "untilDate": string;
         /**
          * 検索の使い方:
          */

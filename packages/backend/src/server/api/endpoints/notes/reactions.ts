@@ -4,7 +4,7 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import type { NoteReactionsRepository } from '@/models/_.js';
+import type { MiMeta, NoteReactionsRepository, UserProfilesRepository } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { NoteReactionEntityService } from '@/core/entities/NoteReactionEntityService.js';
 import { NoteEntityService } from '@/core/entities/NoteEntityService.js';
@@ -14,6 +14,7 @@ import { CacheService } from '@/core/CacheService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { IdService } from '@/core/IdService.js';
 import { shouldHideNoteByTime } from '@/misc/should-hide-note-by-time.js';
+import { isNoteVisibleToAnonymousVisitor } from '@/misc/visitor-note-visibility.js';
 import { GetterService } from '@/server/api/GetterService.js';
 import { ApiError } from '../../error.js';
 
@@ -58,8 +59,12 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
+		@Inject(DI.meta)
+		private serverSettings: MiMeta,
 		@Inject(DI.noteReactionsRepository)
 		private noteReactionsRepository: NoteReactionsRepository,
+		@Inject(DI.userProfilesRepository)
+		private userProfilesRepository: UserProfilesRepository,
 
 		private noteReactionEntityService: NoteReactionEntityService,
 		private noteEntityService: NoteEntityService,
@@ -70,7 +75,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private getterService: GetterService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			if (!me) {
+			if (!me && !this.serverSettings.allowAnonymousReactions) {
 				return [];
 			};
 			const note = await this.getterService.getNote(ps.noteId).catch(err => {
@@ -82,26 +87,43 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				throw new ApiError(meta.errors.noSuchNote);
 			}
 
-			// User-level privacy gates (same checks as shouldHideNote; the
-			// author themselves and admins are exempt, mirroring shouldHideNote).
-			// Anonymous callers already return [] above, and the remaining
-			// shouldHideNote checks are anonymous-only, so the checks below
-			// are exactly the ones reachable for authenticated callers.
-			if (!await this.roleService.isAdministrator(me) && me.id !== note.userId) {
-				const createdAt = this.idService.parse(note.id).date.toISOString();
+			if (me == null) {
+				// 匿名向けプライバシーゲート (REST他経路と同じ visitor-note-visibility の判定)
 				const author = await this.cacheService.findUserById(note.userId);
-				if (shouldHideNoteByTime(author.makeNotesHiddenBefore, createdAt)) {
+				const profile = await this.userProfilesRepository.findOneBy({ userId: note.userId });
+				// 判定に必要な情報が取れない場合も isNoteVisibleToAnonymousVisitor 内で非公開扱いになる
+				if (!isNoteVisibleToAnonymousVisitor({
+					note: {
+						visibility: note.visibility,
+						localOnly: note.localOnly,
+						createdAt: this.idService.parse(note.id).date,
+					},
+					author,
+					profile,
+					ugcVisibilityForVisitor: this.serverSettings.ugcVisibilityForVisitor,
+				})) {
 					throw new ApiError(meta.errors.noSuchNote);
 				}
-				if ((note.visibility === 'public' || note.visibility === 'home') &&
-					shouldHideNoteByTime(author.makeNotesFollowersOnlyBefore, createdAt) &&
-					!await this.noteEntityService.isVisibleForMe({ ...note, visibility: 'followers' as const }, me.id)) {
-					// public/home note demoted to followers-only and caller is not eligible
-					throw new ApiError(meta.errors.noSuchNote);
+			} else {
+				// User-level privacy gates (same checks as shouldHideNote; the
+				// author themselves and admins are exempt, mirroring shouldHideNote).
+				// Anonymous callers are handled by isNoteVisibleToAnonymousVisitor above.
+				if (!await this.roleService.isAdministrator(me) && me.id !== note.userId) {
+					const createdAt = this.idService.parse(note.id).date.toISOString();
+					const author = await this.cacheService.findUserById(note.userId);
+					if (shouldHideNoteByTime(author.makeNotesHiddenBefore, createdAt)) {
+						throw new ApiError(meta.errors.noSuchNote);
+					}
+					if ((note.visibility === 'public' || note.visibility === 'home') &&
+						shouldHideNoteByTime(author.makeNotesFollowersOnlyBefore, createdAt) &&
+						!await this.noteEntityService.isVisibleForMe({ ...note, visibility: 'followers' as const }, me.id)) {
+						// public/home note demoted to followers-only and caller is not eligible
+						throw new ApiError(meta.errors.noSuchNote);
+					}
+					// note: requireSigninToViewContents / hidePublicNotes / hideHomeNotes /
+					// hideLocalOnlyNotes apply to anonymous callers only, and anonymous
+					// callers are covered by isNoteVisibleToAnonymousVisitor above.
 				}
-				// note: requireSigninToViewContents / hidePublicNotes / hideHomeNotes /
-				// hideLocalOnlyNotes apply to anonymous callers only, and anonymous
-				// callers already returned [] above — no checks needed here.
 			}
 
 			const query = this.queryService.makePaginationQuery(this.noteReactionsRepository.createQueryBuilder('reaction'), ps.sinceId, ps.untilId, ps.sinceDate, ps.untilDate)

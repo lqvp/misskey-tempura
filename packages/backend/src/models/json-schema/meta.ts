@@ -166,6 +166,10 @@ export const packedMetaLiteSchema = {
 				type: 'string',
 			},
 		},
+		offlinePageConfig: {
+			type: 'string',
+			optional: false, nullable: true,
+		},
 		iconUrl: {
 			type: 'string',
 			optional: false, nullable: true,
@@ -463,7 +467,7 @@ export const packedMetaLiteSchema = {
 			optional: false, nullable: false,
 			default: 0,
 		},
-		serverGeminiEnabled: {
+		serverOpenAIEnabled: {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},

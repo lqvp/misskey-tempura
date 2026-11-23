@@ -513,7 +513,7 @@ export class WebhookTestService {
 			hidePublicNotes: false,
 			hideHomeNotes: false,
 			hideLocalOnlyNotes: false,
-			ListenBrainz: null,
+			listenbrainz: null,
 			...override,
 		};
 	}

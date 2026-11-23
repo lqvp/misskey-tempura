@@ -3463,6 +3463,15 @@ export type paths = {
          */
         post: operations['notes___llm-gen'];
     };
+    '/notes/llm-models': {
+        /**
+         * notes/llm-models
+         * @description No description provided.
+         *
+         *     **Credential required**: *Yes* / **Permission**: *read:notes*
+         */
+        post: operations['notes___llm-models'];
+    };
     '/notes/local-timeline': {
         /**
          * notes/local-timeline
@@ -4547,7 +4556,7 @@ export type components = {
             /** @example 2018-03-12 */
             birthday: string | null;
             /** @example Steve */
-            ListenBrainz: string | null;
+            listenbrainz: string | null;
             /** @example ja-JP */
             lang: string | null;
             fields: {
@@ -4604,6 +4613,7 @@ export type components = {
             bannerId: string | null;
             followedMessage: string | null;
             isModerator: boolean;
+            isSubModerator: boolean;
             isAdmin: boolean;
             injectFeaturedNote: boolean;
             receiveAnnouncementEmail: boolean;
@@ -6009,7 +6019,7 @@ export type components = {
             /** @example false */
             isPublic: boolean;
             /** @enum {string} */
-            permissionGroup: 'Admin' | 'MainModerator' | 'Normal' | 'Community';
+            permissionGroup: 'Admin' | 'MainModerator' | 'Moderator' | 'Normal' | 'Community';
             /** @example false */
             isExplorable: boolean;
             /** @example false */
@@ -6207,6 +6217,7 @@ export type components = {
             notFoundImageUrl: string | null;
             youBlockedImageUrl: string | null;
             customSplashText: string[] | null;
+            offlinePageConfig: string | null;
             iconUrl: string | null;
             enableLongIconUrl: boolean;
             longIconUrl: string | null;
@@ -6318,7 +6329,7 @@ export type components = {
             entranceMarginTop: number;
             /** @default 0 */
             entranceMarginBottom: number;
-            serverGeminiEnabled: boolean;
+            serverOpenAIEnabled: boolean;
             customCursorUrl: string | null;
             customCursorPointerUrl: string | null;
             customCursorTextUrl: string | null;
@@ -11591,6 +11602,7 @@ export interface operations {
                         remoteNotesCleaningMaxProcessingDurationInMinutes: number;
                         showRoleBadgesOfRemoteUsers: boolean;
                         approvalRequiredForSignup: boolean;
+                        defaultRequireSigninToViewContents: boolean;
                         youBlockedImageUrl: string | null;
                         enableLongIconUrl: boolean;
                         longIconUrl: string | null;
@@ -11610,6 +11622,7 @@ export interface operations {
                         loginRiskShowDetailsToUser: boolean;
                         backgroundImageUrls: unknown[] | null;
                         customSplashText: string[];
+                        offlinePageConfig: string | null;
                         blockMentionsFromUnfamiliarRemoteUsers: boolean;
                         validateMinimumUsernameLength: number;
                         useHanaEntrance: boolean;
@@ -11633,6 +11646,8 @@ export interface operations {
                         enableFsTotal: boolean;
                         customFsTotal: number | null;
                         secondsPerSignup: number;
+                        fixedInviteCode: string | null;
+                        signupPassphrase: string | null;
                         entranceShowTimeLine: boolean;
                         entranceShowFeatured: boolean;
                         entranceShowEmojis: boolean;
@@ -11647,9 +11662,10 @@ export interface operations {
                         entranceMarginRight: number;
                         entranceMarginTop: number;
                         entranceMarginBottom: number;
-                        serverGeminiEnabled: boolean;
-                        serverGeminiApiKey: string | null;
-                        serverGeminiModels: string;
+                        serverOpenAIEnabled: boolean;
+                        serverOpenAIApiKey: string | null;
+                        serverOpenAIBaseURL: string | null;
+                        serverOpenAIModels: string;
                         customCursorUrl: string | null;
                         customCursorPointerUrl: string | null;
                         customCursorTextUrl: string | null;
@@ -11687,6 +11703,7 @@ export interface operations {
                         allowAnonymousFederationInstances: boolean;
                         allowAnonymousFeatured: boolean;
                         allowAnonymousLocalTimeline: boolean;
+                        allowAnonymousReactions: boolean;
                     };
                 };
             };
@@ -13217,7 +13234,7 @@ export interface operations {
                     condFormula: Record<string, never>;
                     isPublic: boolean;
                     /** @enum {string} */
-                    permissionGroup: 'Admin' | 'MainModerator' | 'Normal' | 'Community';
+                    permissionGroup: 'Admin' | 'MainModerator' | 'Moderator' | 'Normal' | 'Community';
                     /** @default false */
                     isExplorable?: boolean;
                     /** @default false */
@@ -13554,7 +13571,7 @@ export interface operations {
                     condFormula?: Record<string, never>;
                     isPublic?: boolean;
                     /** @enum {string} */
-                    permissionGroup?: 'Admin' | 'MainModerator' | 'Normal' | 'Community';
+                    permissionGroup?: 'Admin' | 'MainModerator' | 'Moderator' | 'Normal' | 'Community';
                     isExplorable?: boolean;
                     isRainbow?: boolean;
                     asBadge?: boolean;
@@ -15397,6 +15414,7 @@ export interface operations {
                     longIconUrl?: string | null;
                     backgroundImageUrls?: unknown[] | null;
                     approvalRequiredForSignup?: boolean;
+                    defaultRequireSigninToViewContents?: boolean;
                     openLlmModerationEnabled?: boolean;
                     openLlmModerationApiKey?: string | null;
                     openLlmModerationIncludeRemote?: boolean;
@@ -15443,7 +15461,9 @@ export interface operations {
                     allowAnonymousFederationInstances?: boolean;
                     allowAnonymousFeatured?: boolean;
                     allowAnonymousLocalTimeline?: boolean;
+                    allowAnonymousReactions?: boolean;
                     customSplashText?: string[] | null;
+                    offlinePageConfig?: string | null;
                     defaultFollowedUsers?: string[] | null;
                     forciblyFollowedUsers?: string[] | null;
                     deeplFreeMode?: boolean;
@@ -15457,6 +15477,8 @@ export interface operations {
                     enableFsTotal?: boolean;
                     customFsTotal?: number | null;
                     secondsPerSignup?: number;
+                    fixedInviteCode?: string | null;
+                    signupPassphrase?: string | null;
                     entranceShowTimeLine?: boolean;
                     entranceShowFeatured?: boolean;
                     entranceShowEmojis?: boolean;
@@ -15471,9 +15493,10 @@ export interface operations {
                     entranceMarginRight?: number;
                     entranceMarginTop?: number;
                     entranceMarginBottom?: number;
-                    serverGeminiEnabled?: boolean;
-                    serverGeminiApiKey?: string | null;
-                    serverGeminiModels?: string;
+                    serverOpenAIEnabled?: boolean;
+                    serverOpenAIApiKey?: string | null;
+                    serverOpenAIBaseURL?: string | null;
+                    serverOpenAIModels?: string;
                     customCursorUrl?: string | null;
                     customCursorPointerUrl?: string | null;
                     customCursorTextUrl?: string | null;
@@ -34305,10 +34328,10 @@ export interface operations {
                 'application/json': {
                     text: string;
                     prompt: string;
-                    fileUris?: {
-                        mimeType: string;
-                        fileUri: string;
-                    }[] | null;
+                    baseUrl?: string | null;
+                    apiKey?: string | null;
+                    model?: string | null;
+                    fileUris?: string[] | null;
                 };
             };
         };
@@ -34317,6 +34340,91 @@ export interface operations {
             204: {
                 headers: {
                     [name: string]: unknown;
+                };
+            };
+            /** @description Client error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Authentication error */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Forbidden error */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description I'm Ai */
+            418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+        };
+    };
+    'notes___llm-models': {
+        requestBody: {
+            content: {
+                'application/json': {
+                    baseUrl?: string | null;
+                    apiKey?: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description OK (with results) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': {
+                        models: {
+                            id: string;
+                            input_modalities?: unknown;
+                            inputModalities?: unknown;
+                            modality?: unknown;
+                            type?: unknown;
+                            architecture?: unknown;
+                            capabilities?: unknown;
+                        }[];
+                    };
                 };
             };
             /** @description Client error */
@@ -38439,6 +38547,15 @@ export interface operations {
             };
             /** @description I'm Ai */
             418: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    'application/json': components['schemas']['Error'];
+                };
+            };
+            /** @description Too many requests */
+            429: {
                 headers: {
                     [name: string]: unknown;
                 };

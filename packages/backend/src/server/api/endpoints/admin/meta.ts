@@ -634,6 +634,10 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			defaultRequireSigninToViewContents: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
 			youBlockedImageUrl: {
 				type: 'string',
 				optional: false, nullable: true,
@@ -716,6 +720,10 @@ export const meta = {
 				items: {
 					type: 'string',
 				},
+			},
+			offlinePageConfig: {
+				type: 'string',
+				optional: false, nullable: true,
 			},
 			blockMentionsFromUnfamiliarRemoteUsers: {
 				type: 'boolean',
@@ -815,6 +823,14 @@ export const meta = {
 				type: 'number',
 				optional: false, nullable: false,
 			},
+			fixedInviteCode: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
+			signupPassphrase: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
 			entranceShowTimeLine: {
 				type: 'boolean',
 				optional: false, nullable: false,
@@ -874,15 +890,19 @@ export const meta = {
 				type: 'number',
 				optional: false, nullable: false,
 			},
-			serverGeminiEnabled: {
+			serverOpenAIEnabled: {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
-			serverGeminiApiKey: {
+			serverOpenAIApiKey: {
 				type: 'string',
 				optional: false, nullable: true,
 			},
-			serverGeminiModels: {
+			serverOpenAIBaseURL: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
+			serverOpenAIModels: {
 				type: 'string',
 				optional: false, nullable: false,
 			},
@@ -1030,6 +1050,10 @@ export const meta = {
 				optional: false, nullable: false,
 			},
 			allowAnonymousLocalTimeline: {
+				type: 'boolean',
+				optional: false, nullable: false,
+			},
+			allowAnonymousReactions: {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
@@ -1213,6 +1237,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 				// tempura: フォーク独自の設定
 				approvalRequiredForSignup: instance.approvalRequiredForSignup,
+				defaultRequireSigninToViewContents: instance.defaultRequireSigninToViewContents,
 				youBlockedImageUrl: instance.youBlockedImageUrl,
 				enableLongIconUrl: instance.enableLongIconUrl,
 				longIconUrl: instance.longIconUrl,
@@ -1254,7 +1279,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				allowAnonymousFederationInstances: instance.allowAnonymousFederationInstances,
 				allowAnonymousFeatured: instance.allowAnonymousFeatured,
 				allowAnonymousLocalTimeline: instance.allowAnonymousLocalTimeline,
+				allowAnonymousReactions: instance.allowAnonymousReactions,
 				customSplashText: instance.customSplashText,
+				offlinePageConfig: instance.offlinePageConfig,
 				blockMentionsFromUnfamiliarRemoteUsers:
 					instance.blockMentionsFromUnfamiliarRemoteUsers,
 				validateMinimumUsernameLength: instance.validateMinimumUsernameLength,
@@ -1279,6 +1306,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				enableFsTotal: instance.enableFsTotal,
 				customFsTotal: instance.customFsTotal,
 				secondsPerSignup: instance.secondsPerSignup,
+				fixedInviteCode: instance.fixedInviteCode,
+				signupPassphrase: instance.signupPassphrase,
 				entranceShowTimeLine: instance.entranceShowTimeLine,
 				entranceShowFeatured: instance.entranceShowFeatured,
 				entranceShowEmojis: instance.entranceShowEmojis,
@@ -1293,9 +1322,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				entranceMarginRight: instance.entranceMarginRight,
 				entranceMarginTop: instance.entranceMarginTop,
 				entranceMarginBottom: instance.entranceMarginBottom,
-				serverGeminiEnabled: instance.serverGeminiEnabled,
-				serverGeminiApiKey: instance.serverGeminiApiKey,
-				serverGeminiModels: instance.serverGeminiModels,
+				serverOpenAIEnabled: instance.serverOpenAIEnabled,
+				serverOpenAIApiKey: instance.serverOpenAIApiKey,
+				serverOpenAIBaseURL: instance.serverOpenAIBaseURL,
+				serverOpenAIModels: instance.serverOpenAIModels,
 				customCursorUrl: instance.customCursorUrl,
 				customCursorPointerUrl: instance.customCursorPointerUrl,
 				customCursorTextUrl: instance.customCursorTextUrl,

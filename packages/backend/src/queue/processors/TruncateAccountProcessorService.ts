@@ -15,6 +15,7 @@ import type { MiUser } from '@/models/User.js';
 import { bindThis } from '@/decorators.js';
 import { NoteDeleteService } from '@/core/NoteDeleteService.js';
 import { NotificationService } from '@/core/NotificationService.js';
+import { MetaService } from '@/core/MetaService.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import type * as Bull from 'bullmq';
 import type { DbUserTruncateJobData } from '../types.js';
@@ -45,6 +46,7 @@ export class TruncateAccountProcessorService {
 		private queueLoggerService: QueueLoggerService,
 		private noteDeleteService: NoteDeleteService,
 		private notificationService: NotificationService,
+		private metaService: MetaService,
 	) {
 		this.logger = this.queueLoggerService.logger.createSubLogger('truncate-account');
 	}
@@ -279,7 +281,7 @@ export class TruncateAccountProcessorService {
 			appAccessTokenId: null,
 			customBody: notificationBody,
 			customHeader: '[システム通知] アカウントの整理完了',
-			customIcon: null,
+			customIcon: (await this.metaService.fetch()).iconUrl,
 		});
 
 		this.logger.succ(`Successfully truncated account for user ${userId}`);

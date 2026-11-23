@@ -102,10 +102,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 
 			// Create mute
-			await this.userQuoteMutingService.mute(muter, mutee, ps.expiresAt ? new Date(ps.expiresAt) : null).catch((err) => {
+			await this.userQuoteMutingService.mute(muter, mutee, ps.expiresAt ? new Date(ps.expiresAt) : null).catch((err: unknown) => {
 				if (err instanceof IdentifiableError && err.id === meta.errors.cannotMuteDueToServerPolicy.id) {
 					throw new ApiError(meta.errors.cannotMuteDueToServerPolicy);
 				}
+				throw err;
 			});
 		});
 	}

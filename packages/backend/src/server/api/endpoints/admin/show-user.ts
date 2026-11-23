@@ -11,13 +11,22 @@ import { RoleService } from '@/core/RoleService.js';
 import { RoleEntityService } from '@/core/entities/RoleEntityService.js';
 import { IdService } from '@/core/IdService.js';
 import { notificationRecieveConfig } from '@/models/json-schema/user.js';
+import { ApiError } from '../../error.js';
 
 export const meta = {
 	tags: ['admin'],
 
 	requireCredential: true,
-	requireModerator: true,
+	requireSubModerator: true,
 	kind: 'read:admin:show-user',
+
+	errors: {
+		accessDenied: {
+			message: 'Only administrators can see info of administrators.',
+			code: 'ACCESS_DENIED',
+			id: 'd5098464-0e64-4331-ad35-61c1731d83bb',
+		},
+	},
 
 	res: {
 		type: 'object',
@@ -275,7 +284,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			const _me = await this.usersRepository.findOneByOrFail({ id: me.id });
 			if (!await this.roleService.isAdministrator(_me) && await this.roleService.isAdministrator(user)) {
-				throw new Error('cannot show info of admin');
+				throw new ApiError(meta.errors.accessDenied);
 			}
 
 			const signins = await this.signinsRepository.findBy({ userId: user.id });

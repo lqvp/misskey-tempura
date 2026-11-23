@@ -173,8 +173,6 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				hasPoll: ps.hasPoll,
 				searchOperator: ps.searchOperator,
 				excludeWords: ps.excludeWords,
-				sinceDate: ps.sinceDate,
-				untilDate: ps.untilDate,
 				rangeStartAt: ps.rangeStartAt,
 				rangeEndAt: ps.rangeEndAt,
 				advancedSyntax: ps.advancedSyntax,

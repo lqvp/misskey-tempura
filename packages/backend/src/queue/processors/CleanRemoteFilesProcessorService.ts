@@ -5,7 +5,7 @@
 
 import { Inject, Injectable } from '@nestjs/common';
 import { IsNull, MoreThan, Not } from 'typeorm';
-import { ListObjectsCommandInput } from '@aws-sdk/client-s3';
+import type { ListObjectsCommandInput } from '@aws-sdk/client-s3';
 import { DI } from '@/di-symbols.js';
 import type { MiDriveFile, DriveFilesRepository, UsersRepository } from '@/models/_.js';
 import type Logger from '@/logger.js';
@@ -107,7 +107,7 @@ export class CleanRemoteFilesProcessorService {
 				appAccessTokenId: null,
 				customBody: `リモートファイルのクリーンアップが完了しました。\n削除されたファイル数: ${deletedCount}\n解放された容量: ${humanReadableSize}`,
 				customHeader: '[システム] ストレージクリーンアップ',
-				customIcon: null,
+				customIcon: (await this.metaService.fetch()).iconUrl,
 			});
 		}));
 
@@ -141,9 +141,10 @@ export class CleanRemoteFilesProcessorService {
 			}
 			object_cursor = objects.Contents.at(-1)?.Key ?? null;
 			const files = objects.Contents;
-			files.forEach(async (v) => {
+			// 並行で多数の delete を投げると接続を圧迫するため、逐次削除する
+			for (const v of files) {
 				if (!v.Key) {
-					return;
+					continue;
 				}
 				const isInDb = await this.driveFilesRepository.exists(
 					{ where: [
@@ -154,13 +155,18 @@ export class CleanRemoteFilesProcessorService {
 				);
 				if (!isInDb) {
 					this.logger.debug(`Delete ${v.Key}`);
-					delete_counter++;
-					await this.s3Service.delete(meta, {
-						Key: v.Key,
-						Bucket: meta.objectStorageBucket ?? undefined,
-					});
+					try {
+						await this.s3Service.delete(meta, {
+							Key: v.Key,
+							Bucket: meta.objectStorageBucket ?? undefined,
+						});
+						delete_counter++;
+					} catch (err) {
+						// 個別ファイルの削除失敗で全体を中断しない
+						this.logger.warn(`Failed to delete ${v.Key}`, err as Error | undefined);
+					}
 				}
-			});
+			}
 
 			if (!objects.IsTruncated) {
 				break;

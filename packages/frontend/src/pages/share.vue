@@ -94,7 +94,12 @@ async function init() {
 			//   this normalization doesn't make the visible URL ugly.
 			//   (see MkUrl.vue)
 
-			noteText += new URL(url).href;
+			const parsedUrl = new URL(url);
+			// http/https 以外のスキームは MFM の url ノードとして扱えないため除外する
+			if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+				throw new Error('invalid scheme');
+			}
+			noteText += parsedUrl.href;
 		} catch {
 			// fallback to original URL if the URL is invalid.
 			// note that this is extremely rare since the `url` parameter is designed to share a URL and

@@ -414,7 +414,7 @@ export class ApiCallService implements OnApplicationShutdown {
 			}
 		}
 
-		if (ep.meta.requireCredential || ep.meta.requireModerator || ep.meta.requireAdmin) {
+		if (ep.meta.requireCredential || ep.meta.requireModerator || ep.meta.requireAdmin || ep.meta.requireSubModerator) {
 			if (user == null) {
 				throw new ApiError({
 					message: 'Credential required.',
@@ -473,7 +473,7 @@ export class ApiCallService implements OnApplicationShutdown {
 		}
 
 		if (token && ((ep.meta.kind && !token.permission.some(p => p === ep.meta.kind))
-			|| (!ep.meta.kind && (ep.meta.requireCredential || ep.meta.requireModerator || ep.meta.requireAdmin)))) {
+			|| (!ep.meta.kind && (ep.meta.requireCredential || ep.meta.requireModerator || ep.meta.requireAdmin || ep.meta.requireSubModerator)))) {
 			throw new ApiError({
 				message: 'Your app does not have the necessary permissions to use this endpoint.',
 				code: 'PERMISSION_DENIED',
@@ -482,14 +482,18 @@ export class ApiCallService implements OnApplicationShutdown {
 			});
 		}
 
-		if ((ep.meta.requireModerator || ep.meta.requireAdmin ) && (this.meta.rootUserId !== user!.id)) {
+		if ((ep.meta.requireModerator || ep.meta.requireAdmin || ep.meta.requireSubModerator) && (this.meta.rootUserId !== user!.id)) {
 			const myRoles = await this.roleService.getUserRoles(user!.id);
-			if (ep.meta.requireModerator && !myRoles.some(r => r.permissionGroup === 'MainModerator' || r.permissionGroup === 'Admin')) {
+			// 階級: Admin > MainModerator > Moderator
+			// - requireSubModerator: Moderator / MainModerator / Admin ロールいずれかが必要
+			// - requireModerator:    MainModerator / Admin ロールいずれかが必要
+			// - requireAdmin:        Admin ロールが必要
+			if (ep.meta.requireSubModerator && !myRoles.some(r => r.permissionGroup === 'Moderator' || r.permissionGroup === 'MainModerator' || r.permissionGroup === 'Admin')) {
 				throw new ApiError({
-					message: 'You are not assigned to a emoji moderator role.',
+					message: 'You are not assigned to a moderator role.',
 					code: 'ROLE_PERMISSION_DENIED',
 					kind: 'permission',
-					id: '',
+					id: 'a1c2f4b8-6e5d-4a3b-9c8d-7e6f5a4b3c2d',
 				});
 			}
 			if (ep.meta.requireModerator && !myRoles.some(r => r.permissionGroup === 'MainModerator' || r.permissionGroup === 'Admin')) {
@@ -525,7 +529,7 @@ export class ApiCallService implements OnApplicationShutdown {
 		}
 
 		if (token && ((ep.meta.kind && !token.permission.some(p => p === ep.meta.kind))
-			|| (!ep.meta.kind && (ep.meta.requireCredential || ep.meta.requireModerator || ep.meta.requireAdmin)))) {
+			|| (!ep.meta.kind && (ep.meta.requireCredential || ep.meta.requireModerator || ep.meta.requireAdmin || ep.meta.requireSubModerator)))) {
 			throw new ApiError({
 				message: 'Your app does not have the necessary permissions to use this endpoint.',
 				code: 'PERMISSION_DENIED',

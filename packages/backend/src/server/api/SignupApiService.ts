@@ -21,6 +21,7 @@ import { escapeHtml } from '@/misc/escape-html.js';
 import { bindThis } from '@/decorators.js';
 import { L_CHARS, secureRndstr } from '@/misc/secure-rndstr.js';
 import { getIpHash } from '@/misc/get-ip-hash.js';
+import { isSignupPassphraseMatch, timingSafeStringEqual } from '@/misc/normalize-signup-passphrase.js';
 import { RoleService } from '@/core/RoleService.js';
 import { SigninService } from './SigninService.js';
 import { RateLimiterService } from './RateLimiterService.js';
@@ -138,6 +139,19 @@ export class SignupApiService {
 		const password = body['password'];
 		const host: string | null = process.env.NODE_ENV === 'test' ? (body['host'] ?? null) : null;
 		const invitationCode = body['invitationCode'];
+
+		// 固定招待コード・合言葉 (Meta 設定)。
+		// 発行・消費される通常の招待コード (registration_tickets) とは異なり、
+		// 回数制限なく使い放題で、チケットの消費も発生しない。
+		// 固定招待コードはコードとして厳密一致、合言葉は正規化付きで比較する。
+		// いずれも招待コード入力欄に入力される想定。
+		// 試行の総当たり対策は /signup のレートリミット (1時間あたり10回/IP) と
+		// invite/check のレートリミット (1時間あたり3回/IP) が担う。
+		const fixedInviteCodeOk = typeof invitationCode === 'string'
+			&& this.meta.fixedInviteCode != null
+			&& timingSafeStringEqual(invitationCode, this.meta.fixedInviteCode);
+		const passphraseOk = isSignupPassphraseMatch(invitationCode, this.meta.signupPassphrase);
+		const hasStaticSignupCode = fixedInviteCodeOk || passphraseOk;
 		const reason = body['reason'];
 		const emailAddress = body['emailAddress'];
 
@@ -148,7 +162,8 @@ export class SignupApiService {
 		let signupSlotToken: string | null = null;
 
 		// ticket の取得を emailRequiredForSignup のチェック前に移動
-		if (invitationCode && typeof invitationCode === 'string') {
+		// (固定招待コード・合言葉の場合は DB チケットを参照しない)
+		if (!hasStaticSignupCode && invitationCode && typeof invitationCode === 'string') {
 			ticket = await this.registrationTicketsRepository.findOneBy({ code: invitationCode });
 		}
 
@@ -182,7 +197,9 @@ export class SignupApiService {
 			}
 		}
 
-		if (invitationCode && typeof invitationCode === 'string') {
+		// 固定招待コード・合言葉に一致する場合は DB 上のチケットを参照しない
+		// (同じ文字列の発行済みチケットがあっても、静的コードを優先する)
+		if (!hasStaticSignupCode && invitationCode && typeof invitationCode === 'string') {
 			ticket = await this.registrationTicketsRepository.findOneBy({ code: invitationCode });
 
 			if (ticket != null) {
@@ -199,49 +216,52 @@ export class SignupApiService {
 
 		// テスト時はこの機構は障害となるため無効にする
 		if (process.env.NODE_ENV !== 'test' && this.meta.disableRegistration) {
-			if (invitationCode == null || typeof invitationCode !== 'string') {
-				reply.code(400);
-				return;
-			}
-
-			// ここでの検証はあくまで早期リジェクトのための事前チェックで、
-			// 実際の使用可否は消費直前の claimRegistrationTicket() が担保する
-			ticket = await this.registrationTicketsRepository.findOneBy({
-				code: invitationCode,
-			});
-
-			if (ticket == null || ticket.usedById != null) {
-				reply.code(400);
-				return;
-			}
-
-			if (ticket.expiresAt && ticket.expiresAt < new Date()) {
-				reply.code(400);
-				return;
-			}
-
-			// メアド認証が有効の場合
-			if (this.meta.emailRequiredForSignup ) {
-				// メアド認証済みならエラー
-				if (ticket.usedBy) {
+			// 固定招待コード・合言葉は登録停止をバイパスできる
+			if (!hasStaticSignupCode) {
+				if (invitationCode == null || typeof invitationCode !== 'string') {
 					reply.code(400);
 					return;
 				}
 
-				// 認証しておらず、メール送信から30分以内ならエラー
-				if (ticket.usedAt && ticket.usedAt.getTime() + invitationCodeMailTimeoutMs > Date.now()) {
+				// ここでの検証はあくまで早期リジェクトのための事前チェックで、
+				// 実際の使用可否は消費直前の claimRegistrationTicket() が担保する
+				ticket = await this.registrationTicketsRepository.findOneBy({
+					code: invitationCode,
+				});
+
+				if (ticket == null || ticket.usedById != null) {
 					reply.code(400);
 					return;
 				}
-			} else if (ticket.usedAt) {
-				reply.code(400);
-				return;
+
+				if (ticket.expiresAt && ticket.expiresAt < new Date()) {
+					reply.code(400);
+					return;
+				}
+
+				// メアド認証が有効の場合
+				if (this.meta.emailRequiredForSignup ) {
+					// メアド認証済みならエラー
+					if (ticket.usedBy) {
+						reply.code(400);
+						return;
+					}
+
+					// 認証しておらず、メール送信から30分以内ならエラー
+					if (ticket.usedAt && ticket.usedAt.getTime() + invitationCodeMailTimeoutMs > Date.now()) {
+						reply.code(400);
+						return;
+					}
+				} else if (ticket.usedAt) {
+					reply.code(400);
+					return;
+				}
 			}
 			// 登録停止と登録インターバル制限の両方が有効の場合は、登録停止のほうを優先する
 		} else if (this.meta.secondsPerSignup > 0) {
-			let usingInvitationCode = false;
+			let usingInvitationCode = hasStaticSignupCode;
 
-			if (invitationCode && typeof invitationCode === 'string') {
+			if (!usingInvitationCode && invitationCode && typeof invitationCode === 'string') {
 				ticket = await this.registrationTicketsRepository.findOneBy({
 					code: invitationCode,
 				});

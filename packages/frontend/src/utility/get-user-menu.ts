@@ -15,7 +15,7 @@ import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
-import { $i, iAmModerator } from '@/i.js';
+import { $i, iAmAdmin, iAmModerator, iAmSubModerator } from '@/i.js';
 import { notesSearchAvailable, canSearchNonLocalNotes } from '@/utility/check-permissions.js';
 import { antennasCache, rolesCache, userListsCache } from '@/cache.js';
 import { mainRouter } from '@/router.js';
@@ -318,7 +318,9 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 
 	const menuItems: MenuItem[] = [];
 
-	if (iAmModerator) {
+	// ユーザー管理画面はサブモデレーターも開ける (通報対象の確認に使う)。
+	// 管理者の管理情報は管理者にしか見せないため、管理者ロールが見えている相手には出さない
+	if (iAmSubModerator && (iAmAdmin || !user.roles.some(role => role.isAdministrator))) {
 		menuItems.push({
 			icon: 'ti ti-user-exclamation',
 			text: i18n.ts.moderation,
@@ -413,7 +415,7 @@ export function getUserMenu(user: Misskey.entities.UserDetailed, router: Router 
 	if ($i) {
 		const items: MenuItem[] = [{ type: 'divider' }];
 
-		if ($i.policies.canUseGeminiLLMAPI || prefer.s.geminiToken) {
+		if ($i.policies.canUseGeminiLLMAPI || prefer.s.openaiToken) {
 			items.push({
 				icon: 'ti ti-file-text',
 				text: i18n.ts._llm.summarizeProfile,

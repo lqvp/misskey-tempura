@@ -5,7 +5,9 @@
 
 import { defineAsyncComponent, ref } from 'vue';
 import * as Misskey from 'misskey-js';
-import { generateGeminiSummary, extractCandidateText } from '@/utility/tempura-script/llm.js';
+import { generateLLMResponse } from '@/utility/tempura-script/llm.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
+import { extractLLMText } from '@/utility/tempura-script/llm-response.js';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 import * as os from '@/os.js';
@@ -13,23 +15,49 @@ import { i18n } from '@/i18n.js';
 import { displayLlmError } from '@/utils/errorHandler.js';
 
 /**
- * Gemini を用いてノートの要約を生成します。
- *
- * @param note 要約対象のノート
- * @returns 要約されたテキスト
+ * 返信元ノートの文脈を遡って取得する (最大5件、参考データとして付与する)
  */
-export async function callGeminiSummarize(note: Misskey.entities.Note): Promise<string> {
+async function fetchAncestorContext(note: Misskey.entities.Note): Promise<string> {
+	const ancestors: string[] = [];
+	let cursor: string | null | undefined = note.replyId;
+	for (let i = 0; i < 5 && cursor != null; i++) {
+		try {
+			const parent = await misskeyApi('notes/show', { noteId: cursor });
+			// 本文がないノート (画像のみ等) は追加しないが、探索は続行する
+			if (parent.text != null && parent.text !== '') {
+				ancestors.unshift(parent.text);
+			}
+			cursor = parent.replyId ?? null;
+		} catch {
+			break;
+		}
+	}
+	return ancestors.join('\n\n');
+}
+
+/**
+ * LLM を用いてノートの要約を生成します。
+ */
+export async function callLLMSummarize(note: Misskey.entities.Note): Promise<string> {
 	const systemInstruction = [
 		prefer.s.geminiPromptNote ?? '',
 		prefer.s.geminiSystemPrompt ?? '',
 	].join('\n');
 
-	const data = await generateGeminiSummary({
+	// 返信文脈があれば参考データとして先頭に付与する (要約対象は最後の投稿)
+	const ancestorContext = note.replyId != null ? await fetchAncestorContext(note) : '';
+	const userContent = [
+		ancestorContext !== '' ? `会話の文脈 (参考データ。要約対象ではない):\n${ancestorContext}` : '',
+		`要約対象の投稿:\n${note.text ?? ''}`,
+	].filter((x) => x !== '').join('\n\n');
+
+	const data = await generateLLMResponse({
 		note: note,
+		userContent,
 		systemInstruction,
 	});
 	try {
-		return extractCandidateText(data);
+		return extractLLMText(data);
 	} catch (error: any) {
 		displayLlmError(error, i18n.ts._llm._error.responseParse);
 	}
@@ -37,7 +65,7 @@ export async function callGeminiSummarize(note: Misskey.entities.Note): Promise<
 
 export async function summarizeNote(note: Misskey.entities.Note): Promise<string> {
 	try {
-		const summary = await callGeminiSummarize(note);
+		const summary = await callLLMSummarize(note);
 		return summary;
 	} catch (error: any) {
 		console.error('Summarization error:', error);

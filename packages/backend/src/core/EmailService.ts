@@ -3,9 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { createTransport } from 'nodemailer';
-import juice from 'juice';
-import sanitizeHtml from 'sanitize-html';
 import { Inject, Injectable } from '@nestjs/common';
 import { UtilityService } from '@/core/UtilityService.js';
 import { DI } from '@/di-symbols.js';
@@ -17,6 +14,7 @@ import { bindThis } from '@/decorators.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { escapeHtml } from '@/misc/escape-html.js';
 import { normalizeEmailForComparison, normalizedEmailSql } from '@/misc/normalize-email.js';
+import { loadJuice, loadNodemailer, loadSanitizeHtml } from '@/misc/heavy-dependencies.js';
 
 @Injectable()
 export class EmailService {
@@ -42,6 +40,12 @@ export class EmailService {
 	@bindThis
 	public async sendEmail(to: string, subject: string, html: string, text: string) {
 		if (!this.meta.enableEmail) return;
+
+		const [{ createTransport }, { default: juice }, { default: sanitizeHtml }] = await Promise.all([
+			loadNodemailer(),
+			loadJuice(),
+			loadSanitizeHtml(),
+		]);
 
 		const iconUrl = `${this.config.url}/static-assets/mi-white.png`;
 		const emailSettingUrl = `${this.config.url}/settings/email`;

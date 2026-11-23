@@ -7,9 +7,10 @@ import * as fs from 'node:fs';
 import * as stream from 'node:stream/promises';
 import { Inject, Injectable } from '@nestjs/common';
 import chalk from 'chalk';
-import got, * as Got from 'got';
+import type { Progress, Response } from 'got';
 import { parse } from 'content-disposition';
 import { DI } from '@/di-symbols.js';
+import { loadGot } from '@/misc/heavy-dependencies.js';
 import type { Config } from '@/config.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { createTemp } from '@/misc/create-temp.js';
@@ -46,6 +47,7 @@ export class DownloadService {
 		const urlObj = new URL(url);
 		let filename = urlObj.pathname.split('/').pop() ?? 'untitled';
 
+		const { default: got, HTTPError } = await loadGot();
 		const req = got.stream(url, {
 			headers: {
 				'User-Agent': this.config.userAgent,
@@ -82,7 +84,7 @@ export class DownloadService {
 				limit: 0,
 			},
 			enableUnixSockets: false,
-		}).on('response', (res: Got.Response) => {
+		}).on('response', (res: Response) => {
 			const contentLength = res.headers['content-length'];
 			if (contentLength != null) {
 				const size = Number(contentLength);
@@ -97,13 +99,13 @@ export class DownloadService {
 				try {
 					const parsed = parse(contentDisposition);
 					if (parsed.parameters.filename) {
-						filename = parsed.parameters.filename;
+						filename = this.sanitizeFilename(parsed.parameters.filename);
 					}
 				} catch (e) {
 					this.logger.warn(`Failed to parse content-disposition: ${contentDisposition}`, { stack: e });
 				}
 			}
-		}).on('downloadProgress', (progress: Got.Progress) => {
+		}).on('downloadProgress', (progress: Progress) => {
 			if (progress.transferred > maxSize) {
 				this.logger.warn(`maxSize exceeded (${progress.transferred} > ${maxSize}) on downloadProgress`);
 				req.destroy();
@@ -113,7 +115,7 @@ export class DownloadService {
 		try {
 			await stream.pipeline(req, fs.createWriteStream(path));
 		} catch (e) {
-			if (e instanceof Got.HTTPError) {
+			if (e instanceof HTTPError) {
 				throw new StatusError(`${e.response.statusCode} ${e.response.statusMessage}`, e.response.statusCode, e.response.statusMessage);
 			} else {
 				throw e;
@@ -144,5 +146,13 @@ export class DownloadService {
 		} finally {
 			cleanup();
 		}
+	}
+
+	// リモートの Content-Disposition 由来のファイル名からパス区切りや制御文字を除く
+	@bindThis
+	private sanitizeFilename(name: string): string {
+		const sanitized = name.replace(/[\\/\0\r\n]/g, '').trim();
+		if (sanitized === '' || sanitized === '.' || sanitized === '..') return 'untitled';
+		return sanitized.slice(0, 255);
 	}
 }

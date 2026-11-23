@@ -9,6 +9,7 @@ import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
+import { MetaService } from '@/core/MetaService.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -35,6 +36,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 
         private notificationService: NotificationService,
         private moderationLogService: ModerationLogService,
+        private metaService: MetaService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
 			const user = await this.usersRepository.findOneBy({ id: ps.userId });
@@ -47,7 +49,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				appAccessTokenId: null,
 				customBody: ps.text,
 				customHeader: '[モデレーション] 通知',
-				customIcon: null,
+				customIcon: (await this.metaService.fetch()).iconUrl,
 			});
 
 			this.moderationLogService.log(me, 'sendNotification', {

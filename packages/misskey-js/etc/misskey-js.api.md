@@ -2289,6 +2289,8 @@ declare namespace entities {
         NotesHybridTimelineRequest,
         NotesHybridTimelineResponse,
         NotesLlmGenRequest,
+        NotesLlmModelsRequest,
+        NotesLlmModelsResponse,
         NotesLocalTimelineRequest,
         NotesLocalTimelineResponse,
         NotesMakePrivateRequest,
@@ -3327,6 +3329,12 @@ type NotesHybridTimelineResponse = operations['notes___hybrid-timeline']['respon
 
 // @public (undocumented)
 type NotesLlmGenRequest = operations['notes___llm-gen']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type NotesLlmModelsRequest = operations['notes___llm-models']['requestBody']['content']['application/json'];
+
+// @public (undocumented)
+type NotesLlmModelsResponse = operations['notes___llm-models']['responses']['200']['content']['application/json'];
 
 // @public (undocumented)
 type NotesLocalTimelineRequest = operations['notes___local-timeline']['requestBody']['content']['application/json'];

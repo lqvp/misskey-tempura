@@ -35,6 +35,12 @@ interface IEndpointMetaBase {
 	readonly requireModerator?: boolean;
 
 	/**
+	 * サブモデレーター (Moderator / MainModerator / Admin ロール) が利用できるか
+	 * requireModerator より緩い階級で許可したいエンドポイントに指定する
+	 */
+	readonly requireSubModerator?: boolean;
+
+	/**
 	 * Administrator権限を必要とするか
 	 */
 	readonly requireAdmin?: boolean;
@@ -113,10 +119,11 @@ interface IEndpointMetaBase {
 	readonly noStoreWhenAnonymous?: boolean;
 }
 
-export type IEndpointMeta = (Omit<IEndpointMetaBase, 'requireCrential' | 'requireModerator' | 'requireAdmin'> & {
+export type IEndpointMeta = (Omit<IEndpointMetaBase, 'requireCrential' | 'requireModerator' | 'requireAdmin' | 'requireSubModerator'> & {
 	requireCredential?: false,
 	requireAdmin?: false,
 	requireModerator?: false,
+	requireSubModerator?: false,
 }) | (Omit<IEndpointMetaBase, 'secure'> & {
 	secure: true,
 }) | (Omit<IEndpointMetaBase, 'requireCredential' | 'kind'> & {

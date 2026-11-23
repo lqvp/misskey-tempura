@@ -639,17 +639,11 @@ export const PREF_DEF = definePreferences({
 	useGeminiWithMedia: {
 		default: true,
 	},
-	geminiToken: {
-		default: null as string | null,
-	},
-	geminiModel: {
-		default: 'gemini-2.5-flash' as string | null,
-	},
 	geminiSystemPrompt: {
 		default: 'リスト記法は対応しておらず、パーサーが壊れるため使用禁止です。列挙する場合は「・」を使ってください。' as string | null,
 	},
 	geminiPromptNote: {
-		default: '以下のSNSの投稿をわかりやすく簡潔にユーザーに要約せよ。' as string | null,
+		default: 'あなたはSNS投稿の要約アシスタントです。投稿の要点を3文以内でまとめてください。専門用語や固有名詞はそのまま使います。前置きや説明を出力せず、要約本文のみを出力してください。' as string | null,
 	},
 	geminiPromptProfile: {
 		default: 'プロフィール情報と投稿からこのユーザーの特徴を簡潔に教えて。' as string | null,
@@ -675,8 +669,20 @@ export const PREF_DEF = definePreferences({
 	geminiNoteCustomText: {
 		default: null as string | null,
 	},
-	geminiThinkingBudget: {
-		default: -1 as number,
+	openaiToken: {
+		default: null as string | null,
+	},
+	openaiBaseUrl: {
+		default: 'https://api.openai.com/v1' as string | null,
+	},
+	openaiModel: {
+		default: null as string | null,
+	},
+	openaiForceImageInput: {
+		default: false,
+	},
+	openaiTemperature: {
+		default: null as number | null,
 	},
 	enableEarthquakeWarning: {
 		default: false,

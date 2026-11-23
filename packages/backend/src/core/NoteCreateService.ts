@@ -497,6 +497,15 @@ export class NoteCreateService implements OnApplicationShutdown {
 		isBot: MiUser['isBot'];
 		isCat: MiUser['isCat'];
 	}, data: Option, silent = false): Promise<MiNote> {
+		// isScheduledForPrivate は make-private 系エンドポイントと同じく canUseMakePrivate で制限する
+		// (requiredRolePolicy と同様に root / Admin は許可する)
+		if (data.isScheduledForPrivate) {
+			const policies = await this.roleService.getUserPolicies(user.id);
+			if (!policies.canUseMakePrivate && !(await this.roleService.isAdministrator(user))) {
+				throw new IdentifiableError('7b1e4c9a-3f6d-4a2b-8c5e-9d0f1a2b3c4d', 'You are not allowed to make notes private.');
+			}
+		}
+
 		// チャンネル外にリプライしたら対象のスコープに合わせる
 		// (クライアントサイドでやっても良い処理だと思うけどとりあえずサーバーサイドで)
 		if (data.reply && data.channel && data.reply.channelId !== data.channel.id) {
@@ -524,7 +533,8 @@ export class NoteCreateService implements OnApplicationShutdown {
 			const sensitiveWords = this.meta.sensitiveWords;
 			const sensitiveWordsTarget = data.cw ?? data.text ?? '';
 			if (sensitiveWords.length > 0 && this.utilityService.isKeyWordIncluded([sensitiveWordsTarget, ...extractUrlsForKeyWordCheck(sensitiveWordsTarget)].join('\n'), sensitiveWords)) {
-				data.visibility = 'home';
+				const policies = await this.roleService.getUserPolicies(user.id);
+				data.visibility = policies.canHomeNote ? 'home' : 'followers';
 			} else {
 				const policies = await this.roleService.getUserPolicies(user.id);
 				if (data.visibility === 'public' && policies.canPublicNote === false) {
@@ -538,8 +548,11 @@ export class NoteCreateService implements OnApplicationShutdown {
 		}
 
 		if (['public_non_ltl'].includes(data.visibility) && data.channel == null) {
-			if ((await this.roleService.getUserPolicies(user.id)).canPublicNonLtlNote === false) {
-				data.visibility = 'home';
+			const policies = await this.roleService.getUserPolicies(user.id);
+			if (policies.canPublicNonLtlNote === false) {
+				// public_non_ltl を許可されていない場合は home に降格するが、
+				// home 投稿も許可されていない場合は followers まで落とす
+				data.visibility = policies.canHomeNote ? 'home' : 'followers';
 			}
 		}
 
@@ -636,6 +649,15 @@ export class NoteCreateService implements OnApplicationShutdown {
 			// ローカルのみにリプライしたらローカルのみにする
 			if (data.reply.localOnly && data.channel == null) {
 				data.localOnly = true;
+			}
+		}
+
+		// home 投稿が許可されていない場合は followers に落とす
+		// (sensitiveWords / silenced instance / renote / reply による再昇格も含む)
+		if (data.visibility === 'home' && data.channel == null) {
+			const policies = await this.roleService.getUserPolicies(user.id);
+			if (policies.canHomeNote === false) {
+				data.visibility = 'followers';
 			}
 		}
 
@@ -890,18 +912,37 @@ export class NoteCreateService implements OnApplicationShutdown {
 					const isPureRenote = this.isRenote(data) && !this.isQuote(data);
 					const isQuote = this.isRenote(data) && this.isQuote(data);
 
+					// フォロワーごとの直列 await は N+1 になるため、
+					// ミュート集合はループ前に一括取得しておく。
+					// キャッシュミス時に 1 投稿で大量の DB/Redis クエリが
+					// 一気に走らないよう、ある程度のバッチサイズに区切る
+					const MUTE_PREFETCH_BATCH_SIZE = 100;
+					const renoteMutingSets = new Map<string, Set<string>>();
+					const quoteMutingSets = new Map<string, Set<string>>();
+					if (isPureRenote || isQuote) {
+						for (let i = 0; i < followings.length; i += MUTE_PREFETCH_BATCH_SIZE) {
+							const batch = followings.slice(i, i + MUTE_PREFETCH_BATCH_SIZE);
+							await Promise.all(batch.map(async following => {
+								if (isPureRenote) {
+									renoteMutingSets.set(following.followerId, await this.cacheService.renoteMutingsCache.fetch(following.followerId));
+								}
+								if (isQuote) {
+									quoteMutingSets.set(following.followerId, await this.cacheService.quoteMutingsCache.fetch(following.followerId));
+								}
+							}));
+						}
+					}
+
 					for (const following of followings) {
 						// TODO: ワードミュート考慮
 						let isRenoteMuted = false;
 						if (isPureRenote) {
-							const userIdsWhoMeMutingRenotes = await this.cacheService.renoteMutingsCache.fetch(following.followerId);
-							isRenoteMuted = userIdsWhoMeMutingRenotes.has(user.id);
+							isRenoteMuted = renoteMutingSets.get(following.followerId)!.has(user.id);
 						}
 
 						let isQuoteMuted = false;
 						if (isQuote) {
-							const userIdsWhoMeMutingQuotes = await this.cacheService.quoteMutingsCache.fetch(following.followerId);
-							isQuoteMuted = userIdsWhoMeMutingQuotes.has(user.id);
+							isQuoteMuted = quoteMutingSets.get(following.followerId)!.has(user.id);
 						}
 
 						if (!isRenoteMuted && !isQuoteMuted) {
@@ -944,6 +985,13 @@ export class NoteCreateService implements OnApplicationShutdown {
 			}, {
 				delay,
 				removeOnComplete: true,
+				removeOnFail: {
+					age: 3600 * 24 * 7, // keep up to 7 days
+					count: 100,
+				},
+			}).catch(err => {
+				// Redis 障害等でジョブ投入に失敗した場合でも unhandled rejection にせずログに残す
+				this.logger.error(`Failed to enqueue scheduled note deletion for ${note.id}`, { error: err });
 			});
 		}
 		if (!silent) {
@@ -1170,7 +1218,7 @@ export class NoteCreateService implements OnApplicationShutdown {
 					}
 
 					if (['public', 'public_non_ltl'].includes(note.visibility)) {
-						this.relayService.deliverToRelays(user, noteActivity);
+						this.relayService.deliverToRelays(user, noteActivity, data.deliveryTargets ?? undefined);
 					}
 
 					if (data.renote && data.renote.userHost === null && ['followers'].includes(data.renote.visibility)) {

@@ -790,6 +790,11 @@ export class MiMeta {
 	@Column('boolean', {
 		default: false,
 	})
+	public defaultRequireSigninToViewContents: boolean;
+
+	@Column('boolean', {
+		default: false,
+	})
 	public openLlmModerationEnabled: boolean;
 
 	@Column('varchar', {
@@ -986,6 +991,10 @@ export class MiMeta {
 		default: false,
 	})
 	public allowAnonymousLocalTimeline: boolean;
+	@Column('boolean', {
+		default: false,
+	})
+	public allowAnonymousReactions: boolean;
 
 	@Column('varchar', {
 		length: 1024,
@@ -993,6 +1002,11 @@ export class MiMeta {
 		default: '{}',
 	})
 	public customSplashText: string[];
+
+	@Column('text', {
+		nullable: true,
+	})
+	public offlinePageConfig: string | null;
 
 	@Column('boolean', {
 		default: true,
@@ -1121,6 +1135,28 @@ export class MiMeta {
 	})
 	public secondsPerSignup: number;
 
+	/**
+	 * 固定招待コード。任意の文字列で、発行・消費される通常の招待コード
+	 * (registration_tickets) とは異なり回数無制限で使い放題。
+	 * NULL のときは無効。比較は厳密一致。
+	 */
+	@Column('varchar', {
+		length: 128,
+		nullable: true,
+	})
+	public fixedInviteCode: string | null;
+
+	/**
+	 * 登録用の合言葉。利用規約等を読んだかどうかを確認する用途の
+	 * 固定パスフレーズ。NULL のときは無効。
+	 * 比較は normalizeSignupPassphrase() による正規化付き。
+	 */
+	@Column('varchar', {
+		length: 256,
+		nullable: true,
+	})
+	public signupPassphrase: string | null;
+
 	@Column('boolean', {
 		default: false,
 	})
@@ -1196,20 +1232,26 @@ export class MiMeta {
 	@Column('boolean', {
 		default: false,
 	})
-	public serverGeminiEnabled: boolean;
+	public serverOpenAIEnabled: boolean;
 
 	@Column('varchar', {
-		length: 50,
+		length: 1024,
 		nullable: true,
 	})
-	public serverGeminiApiKey: string | null;
+	public serverOpenAIApiKey: string | null;
 
 	@Column('varchar', {
-		length: 50,
-		default: 'gemini-2.0-flash',
+		length: 512,
 		nullable: true,
 	})
-	public serverGeminiModels: string;
+	public serverOpenAIBaseURL: string | null;
+
+	@Column('varchar', {
+		length: 512,
+		default: 'gpt-4o-mini',
+		nullable: false,
+	})
+	public serverOpenAIModels: string;
 
 	@Column('varchar', {
 		length: 1024,

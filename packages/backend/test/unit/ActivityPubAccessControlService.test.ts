@@ -251,9 +251,12 @@ describe('ActivityPubAccessControlService', () => {
 	describe('取得と検証の安全策', () => {
 		const includeNote = () => note({ mode: 'include', hosts: ['allowed.example.com'] });
 
-		test('include リストに無いホストを名乗る相手のアカウントは取りに行かない', async () => {
-			await service.checkNoteAccess(includeNote(), signedRequest('https://attacker.example.com/actor#main-key'));
-			expect(mockApDbResolverService.getAuthUserFromApId).not.toHaveBeenCalled();
+		test('include リストに無いホストを名乗る相手のアカウントは拒否される', async () => {
+			// 署名の検証は keyId の取得を伴うため取得自体は行われるが、
+			// 検証で確定したホストが include リストに無ければ拒否される
+			mockInstancesRepository.existsBy.mockResolvedValueOnce(true);
+			vi.mocked(httpSignature.verifySignature).mockReturnValue(true);
+			expect(await service.checkNoteAccess(includeNote(), signedRequest('https://attacker.example.com/actor#main-key'))).toBe(false);
 		});
 
 		test('取得に失敗した keyId は一定時間取りに行かない', async () => {

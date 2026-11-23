@@ -177,10 +177,6 @@ export const store = markRaw(
 			where: 'account',
 			default: [] as string[],
 		},
-		geminiToken: {
-			where: 'account',
-			default: null as string | null,
-		},
 	}),
 );
 

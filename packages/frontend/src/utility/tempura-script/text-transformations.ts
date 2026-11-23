@@ -7,7 +7,8 @@ import { defineAsyncComponent } from 'vue';
 import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 import * as os from '@/os.js';
-import { generateGeminiSummary, extractCandidateText } from '@/utility/tempura-script/llm.js';
+import { generateLLMResponse } from '@/utility/tempura-script/llm.js';
+import { extractLLMText } from '@/utility/tempura-script/llm-response.js';
 import { displayLlmError } from '@/utils/errorHandler.js';
 import { i18n } from '@/i18n.js';
 
@@ -47,7 +48,7 @@ export async function transformTextWithGemini(noteText: string, onApplied: (newT
 
 		let result: any;
 		try {
-			const data = await generateGeminiSummary({
+			const data = await generateLLMResponse({
 				userContent: noteText,
 				systemInstruction: stylePrompt,
 			});
@@ -59,9 +60,14 @@ export async function transformTextWithGemini(noteText: string, onApplied: (newT
 
 		let transformedText: string;
 		try {
-			transformedText = extractCandidateText(result);
+			transformedText = extractLLMText(result);
 		} catch (error: any) {
 			displayLlmError(error, i18n.ts._llm._error.transformResult);
+		}
+		// 空の変換結果で投稿本文を消さないようにする
+		if (!transformedText) {
+			displayLlmError(new Error(i18n.ts._llm._error.transformResult), i18n.ts._llm._error.transformResult);
+			return;
 		}
 
 		// 結果の確認ダイアログを表示（MkDialog.vue を利用）

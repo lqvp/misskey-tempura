@@ -40,6 +40,12 @@ export const meta = {
 	},
 
 	errors: {
+		invalidScheduledDelete: {
+			message: 'Invalid scheduled delete date.',
+			code: 'INVALID_SCHEDULED_DELETE_DATE',
+			id: 'dc7e45a1-8f21-4b7c-9d3a-5e6f2a9b0c8d',
+		},
+
 		noSuchRenoteTarget: {
 			message: 'No such renote target.',
 			code: 'NO_SUCH_RENOTE_TARGET',
@@ -92,6 +98,12 @@ export const meta = {
 			message: 'Scheduled delete time is earlier than now.',
 			code: 'CANNOT_SCHEDULE_DELETE_EARLIER_THAN_NOW',
 			id: '9576c3c8-d8f3-11ee-ac15-00155d19d35d',
+		},
+
+		cannotUseMakePrivate: {
+			message: 'You are not allowed to make notes private.',
+			code: 'CANNOT_USE_MAKE_PRIVATE',
+			id: 'c3f0c7a1-5b2e-4f8a-9d61-7a4e2b8c0f13',
 		},
 
 		cannotScheduleDeleteLaterThanOneYear: {
@@ -198,7 +210,7 @@ export const paramDef = {
 			type: 'object',
 			nullable: true,
 			properties: {
-				deleteAt: { type: 'integer', nullable: true },
+				deleteAt: { type: 'integer', nullable: true, minimum: 0, maximum: 8640000000000000 },
 				deleteAfter: { type: 'integer', nullable: true, minimum: 1 },
 				isScheduledForPrivate: { type: 'boolean', nullable: true },
 			},
@@ -261,6 +273,13 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						? new Date(Date.now() + ps.scheduledDelete.deleteAfter)
 						: null;
 
+				// 過去の時刻や範囲外の値で Invalid Date になる場合を弾く
+				if (scheduledDeleteAt != null && (!Number.isFinite(scheduledDeleteAt.getTime()) || scheduledDeleteAt.getTime() < Date.now() - 5 * 60 * 1000)) {
+					throw new ApiError(meta.errors.invalidScheduledDelete);
+				}
+
+				const isScheduledForPrivate = ps.scheduledDelete?.isScheduledForPrivate ?? false;
+
 				const note = await this.noteCreateService.fetchAndCreate(me, {
 					createdAt: new Date(),
 					fileIds: ps.fileIds ?? ps.mediaIds ?? [],
@@ -282,7 +301,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					apHashtags: ps.noExtractHashtags ? [] : undefined,
 					apEmojis: ps.noExtractEmojis ? [] : undefined,
 					deleteAt: scheduledDeleteAt,
-					isScheduledForPrivate: ps.scheduledDelete?.isScheduledForPrivate ?? false,
+					isScheduledForPrivate,
 					deliveryTargets: ps.deliveryTargets ?? undefined,
 				});
 
@@ -324,6 +343,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						throw new ApiError(meta.errors.youHaveBeenBlocked);
 					} else if (err.id === '0c11c11e-0c8d-48e7-822c-76ccef660068') {
 						throw new ApiError(meta.errors.cannotCreateAlreadyExpiredPoll);
+					} else if (err.id === '7b1e4c9a-3f6d-4a2b-8c5e-9d0f1a2b3c4d') {
+						throw new ApiError({ ...meta.errors.cannotUseMakePrivate, kind: 'permission' });
 					} else if (err.id === 'bfa3905b-25f5-4894-b430-da331a490e4b') {
 						throw new ApiError(meta.errors.noSuchChannel);
 					}

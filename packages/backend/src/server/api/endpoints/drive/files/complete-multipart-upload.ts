@@ -5,17 +5,19 @@
 
 import * as fs from 'node:fs';
 import ms from 'ms';
+import * as Redis from 'ioredis';
 import { Inject, Injectable } from '@nestjs/common';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { DI } from '@/di-symbols.js';
 import { createTemp } from '@/misc/create-temp.js';
+import { acquireDistributedLock } from '@/misc/distributed-lock.js';
 import type { MultipartUploadsRepository } from '@/models/_.js';
 import type { Config } from '@/config.js';
 import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.js';
 import { DriveService } from '@/core/DriveService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { ApiError } from '../../../error.js';
-import { getLegacyMultipartStagingDir, getMultipartStagingDir, resolveMultipartStagingDir } from '@/misc/multipart-staging.js';
+import { getLegacyMultipartStagingDir, getMultipartStagingDir, resolveMultipartStagingDirAsync, pathExists } from '@/misc/multipart-staging.js';
 
 export const meta = {
 	tags: ['drive'],
@@ -84,11 +86,20 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 		@Inject(DI.config)
 		private config: Config,
+
+		@Inject(DI.redis)
+		private redisClient: Redis.Redis,
+
 		private driveFileEntityService: DriveFileEntityService,
 		private driveService: DriveService,
 		private roleService: RoleService,
 	) {
 		super(meta, paramDef, async (ps, me, _1, _2, _3, ip, headers) => {
+			// create / upload-part / abort と同じユーザー単位のロックで直列化する。
+			// ロックなしだと complete を並行リクエストしたときに容量チェックをすり抜けて
+			// addFile が二重実行され、ドライブ容量を超過した登録ができる。
+			const unlock = await acquireDistributedLock(this.redisClient, `multipart-quota:${me.id}`, 30 * 1000, 300, 100);
+			try {
 			// Find the multipart upload
 			const multipartUpload = await this.multipartUploadsRepository.findOneBy({
 				id: ps.id,
@@ -115,18 +126,18 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			// Verify that all parts have been uploaded regardless of completedParts counter
 			// （旧スティージングパスにデータがある場合はそちらを使う）
-			const partDir = resolveMultipartStagingDir(this.config.multipartTempDir, multipartUpload.id);
+			const partDir = await resolveMultipartStagingDirAsync(this.config.multipartTempDir, multipartUpload.id);
 			let allPartsExist = true;
 			const missingParts = [];
 
 			// Make sure the parts directory exists
-			if (!fs.existsSync(partDir)) {
+			if (!await pathExists(partDir)) {
 				allPartsExist = false;
 			} else {
 				// Check each part
 				for (let i = 1; i <= multipartUpload.totalParts; i++) {
 					const partPath = `${partDir}/part_${i}`;
-					if (!fs.existsSync(partPath)) {
+					if (!await pathExists(partPath)) {
 						allPartsExist = false;
 						missingParts.push(i);
 					}
@@ -207,8 +218,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				// Clean up temp files（新旧どちらのスティージングディレクトリも削除する）
 				for (const dir of [getMultipartStagingDir(this.config.multipartTempDir, multipartUpload.id), getLegacyMultipartStagingDir(multipartUpload.id)]) {
 					try {
-						if (fs.existsSync(dir)) {
-							fs.rmSync(dir, { recursive: true, force: true });
+						if (await pathExists(dir)) {
+							await fs.promises.rm(dir, { recursive: true, force: true });
 						}
 					} catch (e) {
 						console.error(`Failed to clean up multipart upload parts in ${dir}`, e);
@@ -232,6 +243,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				} catch (e) {
 					console.error('Failed to clean up temporary file', e);
 				}
+			}
+			} finally {
+				// ユーザー単位のロックを解除する
+				await unlock();
 			}
 		});
 	}

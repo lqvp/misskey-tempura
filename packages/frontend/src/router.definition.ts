@@ -6,7 +6,7 @@
 import { defineAsyncComponent } from 'vue';
 import type { AsyncComponentLoader } from 'vue';
 import type { RouteDef } from '@/lib/nirax.js';
-import { $i, iAmModerator } from '@/i.js';
+import { $i, iAmModerator, iAmSubModerator } from '@/i.js';
 import MkLoading from '@/pages/_loading_.vue';
 import MkError from '@/pages/_error_.vue';
 import PageTimeline from '@/pages/timeline.vue';
@@ -293,6 +293,11 @@ export const ROUTE_DEF = [{
 		hasCw: 'hasCw',
 		hasReply: 'hasReply',
 		hasPoll: 'hasPoll',
+		searchOperator: 'searchOperator',
+		excludeWords: 'excludeWords',
+		rangeStartAt: 'rangeStartAt',
+		rangeEndAt: 'rangeEndAt',
+		advancedSyntax: 'advancedSyntax',
 	},
 }, {
 	// Legacy Compatibility
@@ -429,13 +434,13 @@ export const ROUTE_DEF = [{
 	loginRequired: true,
 }, {
 	path: '/admin/user/:userId',
-	component: iAmModerator ? page(() => import('@/pages/admin-user.vue')) : page(() => import('@/pages/not-found.vue')),
+	component: iAmSubModerator ? page(() => import('@/pages/admin-user.vue')) : page(() => import('@/pages/not-found.vue')),
 }, {
 	path: '/admin/file/:fileId',
 	component: iAmModerator ? page(() => import('@/pages/admin-file.vue')) : page(() => import('@/pages/not-found.vue')),
 }, {
 	path: '/admin',
-	component: iAmModerator ? page(() => import('@/pages/admin/index.vue')) : page(() => import('@/pages/not-found.vue')),
+	component: iAmSubModerator ? page(() => import('@/pages/admin/index.vue')) : page(() => import('@/pages/not-found.vue')),
 	children: [{
 		path: '/overview',
 		name: 'overview',

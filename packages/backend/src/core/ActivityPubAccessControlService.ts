@@ -98,8 +98,41 @@ export class ActivityPubAccessControlService {
 		const hasDeliveryTargets = deliveryTargets != null && Array.isArray(deliveryTargets.hosts);
 		const targetHosts = hasDeliveryTargets ? deliveryTargets.hosts.map(h => this.normalizeHost(h)) : [];
 
+		const requester = this.getRequester(request);
+
+		// 配送先制御 (include / exclude) が付いたノートへの署名付きリクエストは、
+		// HTTP Signature を検証できなければ拒否する。
+		// そうしないと、除外対象サーバーが keyId や User-Agent を偽って (あるいは検証不能な署名を添えて)
+		// exclude リストをバイパスできてしまう。
+		if (hasDeliveryTargets && requester.signature != null) {
+			const canFetchSigner = requester.claimedHost != null && (
+				this.meta.allowUnregisteredApSignerVerification
+				|| (deliveryTargets.mode === 'include' && targetHosts.includes(requester.claimedHost))
+				|| await this.instancesRepository.existsBy({ host: requester.claimedHost })
+			);
+			const verifiedHost = await this.getVerifiedHost(request, canFetchSigner);
+			if (verifiedHost == null) {
+				this.logger.info(`Access to note ${note.id} denied for unverifiable signature (delivery targets restricted)`);
+				return false;
+			}
+			const restrictions = await this.checkInstanceRestrictions(verifiedHost);
+			if (restrictions.isBlocked || restrictions.isSuspended) {
+				this.logger.info(`Access to note ${note.id} denied for ${verifiedHost}: ${restrictions.reason}`);
+				return false;
+			}
+			if (deliveryTargets.mode === 'include' && !targetHosts.includes(verifiedHost)) {
+				this.logger.info(`Access to note ${note.id} denied for ${verifiedHost} (not in include list)`);
+				return false;
+			}
+			if (deliveryTargets.mode === 'exclude' && targetHosts.includes(verifiedHost)) {
+				this.logger.info(`Access to note ${note.id} denied for ${verifiedHost} (in exclude list)`);
+				return false;
+			}
+			return true;
+		}
+
 		// 安い判定 (自己申告のホストでの拒否) を先にする
-		const remoteHost = this.getRequester(request).claimedHost;
+		const remoteHost = requester.claimedHost;
 		if (remoteHost != null) {
 			const restrictions = await this.checkInstanceRestrictions(remoteHost);
 			if (restrictions.isBlocked || restrictions.isSuspended) {

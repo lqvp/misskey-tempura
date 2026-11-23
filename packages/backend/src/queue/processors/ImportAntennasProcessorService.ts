@@ -12,7 +12,7 @@ import type { AntennasRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { bindThis } from '@/decorators.js';
 import { Schema, SchemaType } from '@/misc/json-schema.js';
-import { validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
+import { findAntennaKeywordLimitViolation, validateAntennaRegexKeywords } from '@/misc/antenna-regex.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 import { DBAntennaImportJobData } from '../types.js';
 import type * as Bull from 'bullmq';
@@ -85,7 +85,7 @@ export class ImportAntennasProcessorService {
 	public async process(job: Bull.Job<DBAntennaImportJobData>): Promise<void> {
 		const now = new Date();
 		// スキップしたアンテナはユーザーから見えなくなるため、件数と理由を最後にまとめてログへ残す
-		const skipped: { name: string; reason: 'emptyKeywords' | 'invalidShape' | 'invalidRegex' }[] = [];
+		const skipped: { name: string; reason: 'emptyKeywords' | 'invalidShape' | 'invalidRegex' | 'keywordLimitExceeded' }[] = [];
 		try {
 			for (const antenna of job.data.antenna) {
 				// 形が壊れた項目は名前すら取れないことがあるので、スキップ記録は形状検証の後に作る
@@ -95,13 +95,31 @@ export class ImportAntennasProcessorService {
 					skipped.push({ name: typeof rawName === 'string' ? rawName : '(unknown)', reason: 'invalidShape' });
 					continue;
 				}
-				if (antenna.keywords.length === 0 || antenna.keywords[0].every(x => x === '')) {
+				// create と同じ条件: keywords か excludeKeywords のどちらかが非空ならインポート可能。
+				// keywords のみを見ると、exclude のみで構成された正規のアンテナが黙って落ちる
+				const hasKeywords = antenna.keywords.some(xs => xs.some(x => x !== ''));
+				const hasExcludeKeywords = antenna.excludeKeywords.some(xs => xs.some(x => x !== ''));
+				if (!hasKeywords && !hasExcludeKeywords) {
 					skipped.push({ name: antenna.name, reason: 'emptyKeywords' });
 					continue;
 				}
+
+				// 強制除外キーワードは SCORE モードでしか使われないので、使われないときは検証しない
+				// (SCORE を切った状態で壊れた式が残っていても、インポートをブロックしない)
+				const keywordGroups = antenna.expression === 'SCORE'
+					? [antenna.keywords, antenna.excludeKeywords, antenna.mustExcludeKeywords ?? []]
+					: [antenna.keywords, antenna.excludeKeywords];
+
+				// 上限は create と同じく常に検査する (リテラルモードでも超過したまま保存されないように)
+				if (findAntennaKeywordLimitViolation(keywordGroups) != null) {
+					this.logger.warn(`Skipped antenna over keyword limit: ${antenna.name}`);
+					skipped.push({ name: antenna.name, reason: 'keywordLimitExceeded' });
+					continue;
+				}
+
 				const keywordMode = antenna.keywordMode ?? 'literal';
 				const regexError = keywordMode === 'regex'
-					? validateAntennaRegexKeywords([antenna.keywords, antenna.excludeKeywords, antenna.mustExcludeKeywords ?? []])
+					? validateAntennaRegexKeywords(keywordGroups)
 					: null;
 				if (regexError != null) {
 					this.logger.warn(`Skipped antenna with invalid regex: ${antenna.name} (${regexError.reason}${regexError.pattern != null ? ': ' + regexError.pattern : ''})`);
@@ -113,14 +131,19 @@ export class ImportAntennasProcessorService {
 					lastUsedAt: now,
 					userId: job.data.user.id,
 					name: antenna.name,
-					src: antenna.src === 'list' && antenna.userListAccts ? 'users' : antenna.src,
+					// イポートしたアンテナの userListId は必ず null になるので、
+					// src=list のままでは「何も受信しない」アンテナになる。
+					// リストの中身は users (acct列) に復元されるため、src は users に寄せる
+					src: antenna.src === 'list' ? 'users' : antenna.src,
 					userListId: null,
 					keywords: antenna.keywords,
 					excludeKeywords: antenna.excludeKeywords,
 					mustExcludeKeywords: antenna.mustExcludeKeywords ?? [],
 					expression: antenna.expression ?? null,
 					keywordMode,
-					users: (antenna.src === 'list' && antenna.userListAccts !== null ? antenna.userListAccts : antenna.users).filter(Boolean),
+					// userListAcctsはスキーマ上省略可能(undefined)なので、nullと同じ扱いにする。
+					// !== null だと undefined.filter で例外になり、ループ全体が止まる
+					users: (antenna.src === 'list' && antenna.userListAccts != null ? antenna.userListAccts : antenna.users).filter(Boolean),
 					caseSensitive: antenna.caseSensitive,
 					localOnly: antenna.localOnly,
 					excludeBots: antenna.excludeBots,

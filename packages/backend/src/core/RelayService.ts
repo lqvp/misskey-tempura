@@ -10,6 +10,7 @@ import { IdService } from '@/core/IdService.js';
 import { MemorySingleCache } from '@/misc/cache.js';
 import type { MiRelay } from '@/models/Relay.js';
 import { QueueService } from '@/core/QueueService.js';
+import { UtilityService } from '@/core/UtilityService.js';
 import { ApRendererService } from '@/core/activitypub/ApRendererService.js';
 import { DI } from '@/di-symbols.js';
 import { deepClone } from '@/misc/clone.js';
@@ -28,6 +29,8 @@ export class RelayService {
 		private queueService: QueueService,
 		private systemAccountService: SystemAccountService,
 		private apRendererService: ApRendererService,
+
+		private utilityService: UtilityService,
 	) {
 		this.relaysCache = new MemorySingleCache<MiRelay[]>(1000 * 60 * 10); // 10m
 	}
@@ -111,7 +114,7 @@ export class RelayService {
 	}
 
 	@bindThis
-	public async deliverToRelays(user: { id: MiUser['id']; host: null; }, activity: any): Promise<void> {
+	public async deliverToRelays(user: { id: MiUser['id']; host: null; }, activity: any, deliveryTargets?: { mode: 'include' | 'exclude'; hosts: string[] } | null): Promise<void> {
 		if (activity == null) return;
 
 		const relays = await this.getAcceptedRelays();
@@ -123,6 +126,29 @@ export class RelayService {
 		const signed = await this.apRendererService.attachLdSignature(copy, user);
 
 		for (const relay of relays) {
+			// 配送先制御 (deliveryTargets) が指定されている場合、リレーにも適用する。
+			// リレーは受け取ったアクティビティを再配送するため、include モードでは
+			// 指定ホストのリレーのみ、exclude モードでは指定ホストのリレーを除外する。
+			// これを適用しないと、配送先制限付きノートがリレー経由で全サーバーに露出する。
+			if (deliveryTargets) {
+				let relayHost: string | null = null;
+				try {
+					// ActivityPubAccessControlService.normalizeHost と同じ規則で正規化する
+					// (hostname でポートを除く、toPuny で IDN を ASCII 化)
+					relayHost = this.utilityService.toPuny(new URL(relay.inbox).hostname);
+				} catch {
+					relayHost = null;
+				}
+				// 指定側のホストも同じ規則で正規化して比較する
+				// (大文字小文字・IDN 表記の違いで判定が狂わないように)
+				const targetHosts = new Set(deliveryTargets.hosts.map(h => this.utilityService.toPuny(h.trim().toLowerCase())));
+				if (deliveryTargets.mode === 'include') {
+					// include リストが空 = 誰にも配送しない
+					if (relayHost === null || !targetHosts.has(relayHost)) continue;
+				} else if (deliveryTargets.mode === 'exclude') {
+					if (relayHost !== null && targetHosts.has(relayHost)) continue;
+				}
+			}
 			this.queueService.deliver(user, signed, relay.inbox, false);
 		}
 	}

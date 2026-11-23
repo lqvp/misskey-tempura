@@ -15,7 +15,7 @@ import type { Config } from '@/config.js';
 import { ApiError } from '../../../error.js';
 import {
 	getUploadStagedBytes,
-	resolveMultipartStagingDir,
+	resolveMultipartStagingDirAsync,
 	MULTIPART_STAGING_QUOTA_BYTES,
 } from '@/misc/multipart-staging.js';
 import { acquireDistributedLock } from '@/misc/distributed-lock.js';
@@ -147,7 +147,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					}
 
 					// パート读写先は旧スティージングパスとの互換を保って解決する
-					const partDir = resolveMultipartStagingDir(this.config.multipartTempDir, multipartUpload.id);
+					const partDir = await resolveMultipartStagingDirAsync(this.config.multipartTempDir, multipartUpload.id);
 					const partPath = `${partDir}/part_${ps.partNumber}`;
 
 					// Check if this part was already uploaded

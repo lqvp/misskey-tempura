@@ -9,16 +9,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<MkSuspense :p="init">
 			<div v-if="meta" class="_gaps_m">
 				<ApprovalRequired :meta="meta"/>
+				<DefaultRequireSigninToViewContents :meta="meta"/>
 				<BlockMentions :meta="meta"/>
 				<LongIconUrl :meta="meta"/>
 				<UsernameMinLength :meta="meta"/>
 				<SecondsPerSignup :meta="meta"/>
+				<SignupCodesSettings :meta="meta"/>
 				<CustomSplashText :meta="meta"/>
 				<EmailDomainSettings :meta="meta"/>
 				<LlmModerationSettings :meta="meta"/>
 				<HanaEntranceSettings :meta="meta"/>
 				<EntranceSettings :meta="meta"/>
 				<DefaultFollowedUsers :meta="meta"/>
+				<ProxyAccountFollowModeSettings :meta="meta"/>
 				<BackgroundImages :meta="meta"/>
 				<CustomCursor :meta="meta"/>
 				<GeminiSettings :meta="meta"/>
@@ -30,6 +33,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<DeeplFreeModeSettings :meta="meta"/>
 				<ObjectStorageRemoteSettings :meta="meta"/>
 				<BlockedUserImageSettings :meta="meta"/>
+				<OfflinePageSettings :meta="meta"/>
 			</div>
 		</MkSuspense>
 	</div>
@@ -40,16 +44,19 @@ SPDX-License-Identifier: AGPL-3.0-only
 import * as Misskey from 'misskey-js';
 import { ref } from 'vue';
 import ApprovalRequired from './tempura/sections/ApprovalRequired.vue';
+import DefaultRequireSigninToViewContents from './tempura/sections/DefaultRequireSigninToViewContents.vue';
 import BlockMentions from './tempura/sections/BlockMentions.vue';
 import LongIconUrl from './tempura/sections/LongIconUrl.vue';
 import UsernameMinLength from './tempura/sections/UsernameMinLength.vue';
 import SecondsPerSignup from './tempura/sections/SecondsPerSignup.vue';
+import SignupCodesSettings from './tempura/sections/SignupCodesSettings.vue';
 import CustomSplashText from './tempura/sections/CustomSplashText.vue';
 import EmailDomainSettings from './tempura/sections/EmailDomainSettings.vue';
 import LlmModerationSettings from './tempura/sections/LlmModerationSettings.vue';
 import HanaEntranceSettings from './tempura/sections/HanaEntranceSettings.vue';
 import EntranceSettings from './tempura/sections/EntranceSettings.vue';
 import DefaultFollowedUsers from './tempura/sections/DefaultFollowedUsers.vue';
+import ProxyAccountFollowModeSettings from './tempura/sections/ProxyAccountFollowModeSettings.vue';
 import BackgroundImages from './tempura/sections/BackgroundImages.vue';
 import CustomCursor from './tempura/sections/CustomCursor.vue';
 import GeminiSettings from './tempura/sections/GeminiSettings.vue';
@@ -61,6 +68,7 @@ import AnonymousAccessSettings from './tempura/sections/AnonymousAccessSettings.
 import DeeplFreeModeSettings from './tempura/sections/DeeplFreeModeSettings.vue';
 import ObjectStorageRemoteSettings from './tempura/sections/ObjectStorageRemoteSettings.vue';
 import BlockedUserImageSettings from './tempura/sections/BlockedUserImageSettings.vue';
+import OfflinePageSettings from './tempura/sections/OfflinePageSettings.vue';
 import { definePage } from '@/page.js';
 import { i18n } from '@/i18n.js';
 import { misskeyApi } from '@/utility/misskey-api.js';

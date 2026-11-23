@@ -159,7 +159,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 				let userList;
 
-				if ((ps.src === 'list' || locked.src === 'list') && ps.userListId) {
+				if (ps.userListId != null) {
 					userList = await tx.findOne(MiUserList, {
 						where: { id: ps.userListId, userId: me.id },
 					});
@@ -167,6 +167,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					if (userList == null) {
 						throw new ApiError(meta.errors.noSuchUserList);
 					}
+				}
+
+				// 更新後のsrcがlistなら、更新後のuserListIdが必須。null のままだと判定系が常に false を返し、
+				// 「保存はできるが永遠に何も流れない」アンテナになるため、更新時に弾く
+				const nextSrc = ps.src ?? locked.src;
+				const nextUserListId = ps.userListId !== undefined ? userList?.id ?? null : locked.userListId;
+				if (nextSrc === 'list' && nextUserListId == null) {
+					throw new ApiError(meta.errors.noSuchUserList);
 				}
 
 				await tx.update(MiAntenna, locked.id, {

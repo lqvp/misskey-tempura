@@ -12,6 +12,7 @@ import { MetaService } from '@/core/MetaService.js';
 import { QueueService } from '@/core/QueueService.js';
 import { ApiLoggerService } from '../../ApiLoggerService.js';
 import { ApiError } from '../../error.js';
+import { normalizeSignupPassphrase } from '@/misc/normalize-signup-passphrase.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -250,6 +251,7 @@ export const paramDef = {
 		longIconUrl: { type: 'string', nullable: true },
 		backgroundImageUrls: { type: 'array', nullable: true },
 		approvalRequiredForSignup: { type: 'boolean' },
+		defaultRequireSigninToViewContents: { type: 'boolean' },
 		openLlmModerationEnabled: { type: 'boolean' },
 		openLlmModerationApiKey: { type: 'string', nullable: true },
 		openLlmModerationIncludeRemote: { type: 'boolean' },
@@ -301,9 +303,11 @@ export const paramDef = {
 		allowAnonymousFederationInstances: { type: 'boolean' },
 		allowAnonymousFeatured: { type: 'boolean' },
 		allowAnonymousLocalTimeline: { type: 'boolean' },
+		allowAnonymousReactions: { type: 'boolean' },
 		customSplashText: { type: 'array', nullable: true, items: {
 			type: 'string',
 		} },
+		offlinePageConfig: { type: 'string', nullable: true },
 		defaultFollowedUsers: {
 			type: 'array', nullable: true, items: {
 				type: 'string',
@@ -327,6 +331,8 @@ export const paramDef = {
 		enableFsTotal: { type: 'boolean' },
 		customFsTotal: { type: 'integer', nullable: true },
 		secondsPerSignup: { type: 'integer' },
+		fixedInviteCode: { type: 'string', nullable: true, maxLength: 128 },
+		signupPassphrase: { type: 'string', nullable: true, maxLength: 256 },
 		entranceShowTimeLine: { type: 'boolean' },
 		entranceShowFeatured: { type: 'boolean' },
 		entranceShowEmojis: { type: 'boolean' },
@@ -341,9 +347,10 @@ export const paramDef = {
 		entranceMarginRight: { type: 'integer' },
 		entranceMarginTop: { type: 'integer' },
 		entranceMarginBottom: { type: 'integer' },
-		serverGeminiEnabled: { type: 'boolean' },
-		serverGeminiApiKey: { type: 'string', nullable: true },
-		serverGeminiModels: { type: 'string', nullable: false },
+		serverOpenAIEnabled: { type: 'boolean' },
+		serverOpenAIApiKey: { type: 'string', nullable: true, maxLength: 1024 },
+		serverOpenAIBaseURL: { type: 'string', nullable: true, maxLength: 512 },
+		serverOpenAIModels: { type: 'string', nullable: false, maxLength: 512 },
 		customCursorUrl: { type: 'string', nullable: true },
 		customCursorPointerUrl: { type: 'string', nullable: true },
 		customCursorTextUrl: { type: 'string', nullable: true },
@@ -955,6 +962,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.approvalRequiredForSignup = ps.approvalRequiredForSignup;
 			}
 
+			if (ps.defaultRequireSigninToViewContents !== undefined) {
+				set.defaultRequireSigninToViewContents = ps.defaultRequireSigninToViewContents;
+			}
+
 			if (ps.openLlmModerationEnabled !== undefined) {
 				set.openLlmModerationEnabled = ps.openLlmModerationEnabled;
 			}
@@ -1109,8 +1120,16 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.allowAnonymousLocalTimeline = ps.allowAnonymousLocalTimeline;
 			}
 
+			if (ps.allowAnonymousReactions !== undefined) {
+				set.allowAnonymousReactions = ps.allowAnonymousReactions;
+			}
+
 			if (Array.isArray(ps.customSplashText)) {
 				set.customSplashText = ps.customSplashText.filter(Boolean);
+			}
+
+			if (ps.offlinePageConfig !== undefined) {
+				set.offlinePageConfig = ps.offlinePageConfig;
 			}
 
 			if (ps.blockMentionsFromUnfamiliarRemoteUsers !== undefined) {
@@ -1217,6 +1236,19 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.secondsPerSignup = ps.secondsPerSignup;
 			}
 
+			if (ps.fixedInviteCode !== undefined) {
+				// 招待コードの入力欄は前後の空白を除いて照合するため、保存時にも除いておく
+				const fixedInviteCode = ps.fixedInviteCode?.trim() ?? null;
+				set.fixedInviteCode = fixedInviteCode === '' ? null : fixedInviteCode;
+			}
+
+			if (ps.signupPassphrase !== undefined) {
+				// 正規化して空になる合言葉 (空白のみ等) は無効扱いにする
+				set.signupPassphrase = (ps.signupPassphrase != null && normalizeSignupPassphrase(ps.signupPassphrase) === '')
+					? null
+					: ps.signupPassphrase;
+			}
+
 			if (ps.entranceShowTimeLine !== undefined) {
 				set.entranceShowTimeLine = ps.entranceShowTimeLine;
 			}
@@ -1273,16 +1305,20 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				set.entranceMarginBottom = ps.entranceMarginBottom;
 			}
 
-			if (ps.serverGeminiEnabled !== undefined) {
-				set.serverGeminiEnabled = ps.serverGeminiEnabled;
+			if (ps.serverOpenAIEnabled !== undefined) {
+				set.serverOpenAIEnabled = ps.serverOpenAIEnabled;
 			}
 
-			if ( ps.serverGeminiApiKey !== undefined) {
-				set.serverGeminiApiKey = ps.serverGeminiApiKey;
+			if (ps.serverOpenAIApiKey !== undefined) {
+				set.serverOpenAIApiKey = ps.serverOpenAIApiKey;
 			}
 
-			if ( ps.serverGeminiModels !== undefined) {
-				set.serverGeminiModels = ps.serverGeminiModels;
+			if (ps.serverOpenAIBaseURL !== undefined) {
+				set.serverOpenAIBaseURL = ps.serverOpenAIBaseURL;
+			}
+
+			if (ps.serverOpenAIModels !== undefined) {
+				set.serverOpenAIModels = ps.serverOpenAIModels;
 			}
 
 			if (ps.customCursorUrl !== undefined) {

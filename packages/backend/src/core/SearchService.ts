@@ -46,8 +46,6 @@ export type SearchOpts = {
 	searchOperator?: 'and' | 'or';
 	excludeWords?: string[];
 	advancedSyntax?: boolean;
-	sinceDate?: number;
-	untilDate?: number;
 	rangeStartAt?: number | null;
 	rangeEndAt?: number | null;
 };
@@ -220,7 +218,7 @@ export class SearchService {
 		opts: SearchOpts,
 		pagination: SearchPagination,
 	): Promise<MiNote[]> {
-		const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), pagination.sinceId, pagination.untilId, opts.sinceDate, opts.untilDate);
+		const query = this.queryService.makePaginationQuery(this.notesRepository.createQueryBuilder('note'), pagination.sinceId, pagination.untilId);
 
 		if (opts.userId) {
 			query.andWhere('note.userId = :userId', { userId: opts.userId });

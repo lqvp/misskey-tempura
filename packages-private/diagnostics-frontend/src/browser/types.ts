@@ -130,6 +130,15 @@ export type BrowserMeasurementSample = BrowserMeasurement & {
 	round: number;
 	/** ラウンド単位のリクエスト差分HTMLを描くために生ログを丸ごと保持する */
 	networkRequests: NetworkRequest[];
+	longSession?: LongSessionCheckpoint[];
+};
+
+export type LongSessionCheckpoint = {
+	stage: string;
+	jsHeapBytes: number;
+	mouseListeners: { mousemove: number; mouseup: number; mouseleave: number; };
+	retainedMatchReasons: number;
+	renderedNotes: number;
 };
 
 export type BrowserMetricsReport = {
