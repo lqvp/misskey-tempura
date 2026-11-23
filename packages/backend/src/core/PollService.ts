@@ -4,8 +4,10 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
+import { In, IsNull, Not } from 'typeorm';
 import { DI } from '@/di-symbols.js';
 import type { NotesRepository, UsersRepository, PollsRepository, PollVotesRepository, MiUser } from '@/models/_.js';
+import type { MiRemoteUser } from '@/models/User.js';
 import type { MiNote } from '@/models/Note.js';
 import { RelayService } from '@/core/RelayService.js';
 import { IdService } from '@/core/IdService.js';
@@ -99,10 +101,34 @@ export class PollService {
 		const user = await this.usersRepository.findOneBy({ id: note.userId });
 		if (user == null) throw new Error('note not found');
 
-		if (this.userEntityService.isLocalUser(user)) {
-			const content = this.apRendererService.addContext(this.apRendererService.renderUpdate(await this.apRendererService.renderNote(note, false), user));
-			this.apDeliverManagerService.deliverToFollowers(user, content);
-			this.relayService.deliverToRelays(user, content);
+		if (!this.userEntityService.isLocalUser(user)) return;
+
+		const content = this.apRendererService.addContext(this.apRendererService.renderUpdate(await this.apRendererService.renderNote(note, false), user));
+		const dm = this.apDeliverManagerService.createDeliverManager(user, content);
+
+		// ノート作成時 (NoteCreateService) と同じ配送先に絞り、公開範囲外へ Update を送らない
+		if (note.mentions.length > 0) {
+			const mentionedRemoteUsers = await this.usersRepository.findBy({
+				id: In(note.mentions),
+				host: Not(IsNull()),
+			}) as MiRemoteUser[];
+			for (const u of mentionedRemoteUsers) {
+				dm.addDirectRecipe(u);
+			}
 		}
+
+		if (['public', 'public_non_ltl', 'home', 'followers'].includes(note.visibility)) {
+			if (note.deliveryTargets) {
+				dm.addSelectiveFollowersRecipe(note.deliveryTargets);
+			} else {
+				dm.addFollowersRecipe();
+			}
+		}
+
+		if (['public', 'public_non_ltl'].includes(note.visibility)) {
+			this.relayService.deliverToRelays(user, content, note.deliveryTargets);
+		}
+
+		await dm.execute();
 	}
 }
