@@ -6,7 +6,7 @@
 import * as Misskey from 'misskey-js';
 import { query, tryParseUrl } from './url.js';
 
-export const MEDIA_PROXY_URL_MAX_LENGTH = 1024;
+export const MEDIA_PROXY_URL_MAX_LENGTH = 256;
 
 export function normalizeMediaProxyUrl(url: string | null | undefined): string | null {
 	if (url == null) return null;
@@ -74,20 +74,25 @@ export class MediaProxy {
 	public getProxiedImageUrl(imageUrl: string, type?: 'preview' | 'emoji' | 'avatar', mustOrigin = false, noFallback = false): string {
 		const localProxy = `${this.url}/proxy`;
 		let _imageUrl = imageUrl;
+		let _mustOrigin = mustOrigin;
 
 		if (this.matchProxyPrefix(imageUrl) != null) {
-			// もう既にproxyっぽそうだったらurlを取り出す
-			_imageUrl = tryParseUrl(imageUrl, this.url)?.searchParams.get('url') ?? imageUrl;
+			// もう既にproxyっぽそうだったらurlを取り出す（origin=1 は維持する）
+			const parsed = tryParseUrl(imageUrl, this.url);
+			_imageUrl = parsed?.searchParams.get('url') ?? imageUrl;
+			if (parsed?.searchParams.has('origin')) {
+				_mustOrigin = true;
+			}
 		}
 
-		return `${mustOrigin ? localProxy : this.effectiveMediaProxy}/${
+		return `${_mustOrigin ? localProxy : this.effectiveMediaProxy}/${
 			type === 'preview' ? 'preview.webp'
 			: 'image.webp'
 		}?${query({
 			url: _imageUrl,
 			...(!noFallback ? { 'fallback': '1' } : {}),
 			...(type ? { [type]: '1' } : {}),
-			...(mustOrigin ? { origin: '1' } : {}),
+			...(_mustOrigin ? { origin: '1' } : {}),
 		})}`;
 	}
 

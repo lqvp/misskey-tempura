@@ -28,7 +28,8 @@ describe('normalizeMediaProxyUrl', () => {
 		expect(normalizeMediaProxyUrl('https://proxy.example/x),url(https://evil.example/y)')).toBeNull();
 		expect(normalizeMediaProxyUrl("https://proxy.example/x'y")).toBeNull();
 		expect(normalizeMediaProxyUrl('https://proxy.example/x"y')).toBeNull();
-		expect(normalizeMediaProxyUrl('https://proxy.example/' + 'あ'.repeat(120))).toBeNull();
+		expect(normalizeMediaProxyUrl('https://proxy.example/' + 'a'.repeat(250))).toBeNull();
+		expect(normalizeMediaProxyUrl('https://proxy.example/' + 'あ'.repeat(30))).toBeNull();
 	});
 });
 

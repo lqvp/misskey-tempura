@@ -5,8 +5,9 @@
 
 import { Injectable, Inject } from '@nestjs/common';
 import { DI } from '@/di-symbols.js';
-import { normalizeMediaProxyUrl, type Config } from '@/config.js';
+import { normalizeMediaProxyUrl, resolveMediaProxy, type Config } from '@/config.js';
 import type { MiMeta } from '@/models/Meta.js';
+import type { UsersRepository } from '@/models/_.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { MetaService } from '@/core/MetaService.js';
@@ -314,7 +315,7 @@ export const paramDef = {
 			type: 'string',
 		} },
 		offlinePageConfig: { type: 'string', nullable: true },
-		mediaProxy: { type: 'string', nullable: true, maxLength: 1024 },
+		mediaProxy: { type: 'string', nullable: true, maxLength: 256 },
 		defaultFollowedUsers: {
 			type: 'array', nullable: true, items: {
 				type: 'string',
@@ -393,6 +394,9 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 		@Inject(DI.meta)
 		private serverSettings: MiMeta,
+
+		@Inject(DI.usersRepository)
+		private usersRepository: UsersRepository,
 
 		private metaService: MetaService,
 		private moderationLogService: ModerationLogService,
@@ -1424,6 +1428,41 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					this.apiLoggerService.logger.warn(`failed to enqueue the IP intelligence update: ${err}`);
 				}
 			}
+			// メディアプロキシURLが変わったら、DBに保存済みの avatarUrl / bannerUrl のプロキシ接頭辞も新URLへ差し替える
+			const beforeMediaProxy = resolveMediaProxy(this.config, before).mediaProxy;
+			const afterMediaProxy = resolveMediaProxy(this.config, after).mediaProxy;
+			if (beforeMediaProxy !== afterMediaProxy) {
+				void this.rewriteStoredUserMediaProxyUrls(beforeMediaProxy, afterMediaProxy);
+			}
 		});
+	}
+
+	private async rewriteStoredUserMediaProxyUrls(oldMediaProxy: string, newMediaProxy: string): Promise<void> {
+		const oldPrefix = `${oldMediaProxy}/`;
+		const newPrefix = `${newMediaProxy}/`;
+		try {
+			await this.usersRepository.query(
+				`UPDATE "user"
+				SET "avatarUrl" = $2 || substring("avatarUrl" FROM char_length($1) + 1)
+				WHERE "avatarUrl" IS NOT NULL
+					AND left("avatarUrl", char_length($1)) = $1
+					AND (strpos("avatarUrl", '?url=') > 0 OR strpos("avatarUrl", '&url=') > 0)
+					AND strpos("avatarUrl", 'origin=') = 0
+					AND char_length($2) + char_length("avatarUrl") - char_length($1) <= 1024`,
+				[oldPrefix, newPrefix],
+			);
+			await this.usersRepository.query(
+				`UPDATE "user"
+				SET "bannerUrl" = $2 || substring("bannerUrl" FROM char_length($1) + 1)
+				WHERE "bannerUrl" IS NOT NULL
+					AND left("bannerUrl", char_length($1)) = $1
+					AND (strpos("bannerUrl", '?url=') > 0 OR strpos("bannerUrl", '&url=') > 0)
+					AND strpos("bannerUrl", 'origin=') = 0
+					AND char_length($2) + char_length("bannerUrl") - char_length($1) <= 512`,
+				[oldPrefix, newPrefix],
+			);
+		} catch (err) {
+			this.apiLoggerService.logger.warn(`failed to rewrite stored user mediaProxy URLs: ${err}`);
+		}
 	}
 }

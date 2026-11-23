@@ -32,7 +32,8 @@ describe('normalizeMediaProxyUrl', () => {
 		expect(normalizeMediaProxyUrl('https://proxy.example/proxy#frag')).toBeNull();
 		expect(normalizeMediaProxyUrl('https://proxy.example/x),url(https://evil.example/y)')).toBeNull();
 		expect(normalizeMediaProxyUrl("https://proxy.example/x'y")).toBeNull();
-		expect(normalizeMediaProxyUrl('https://proxy.example/' + 'あ'.repeat(120))).toBeNull();
+		expect(normalizeMediaProxyUrl('https://proxy.example/' + 'a'.repeat(250))).toBeNull();
+		expect(normalizeMediaProxyUrl('https://proxy.example/' + 'あ'.repeat(30))).toBeNull();
 	});
 });
 
@@ -103,10 +104,12 @@ describe('MediaProxy', () => {
 			.toBe('https://server-proxy.example/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png&fallback=1');
 	});
 
-	test('keeps localProxy when mustOrigin is true even if client custom proxy is set', () => {
+	test('keeps localProxy when mustOrigin is true or input URL has origin=1 even if client custom proxy is set', () => {
 		const proxy = new MediaProxy(createMeta('https://server-proxy.example/proxy'), instanceUrl, () => 'https://client-proxy.example/proxy');
 
 		expect(proxy.getProxiedImageUrl('https://remote.example/a.png', undefined, true))
+			.toBe('https://server.example/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png&fallback=1&origin=1');
+		expect(proxy.getProxiedImageUrl('https://server.example/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png&origin=1'))
 			.toBe('https://server.example/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png&fallback=1&origin=1');
 	});
 

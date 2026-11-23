@@ -64,10 +64,16 @@ export class CleanExpiredRemoteFilesProcessorService {
 					const userBannerFile = user.bannerId != null ? await entityManager.findOneBy(MiDriveFile, { id: user.bannerId }) : null;
 					const update: Partial<MiUser> = {};
 					if (userAvatarFile?.isLink) {
-						update.avatarUrl = userAvatarFile.uri != null ? this.getProxiedUrl(userAvatarFile.uri, mediaProxy, 'avatar') : null;
+						const proxiedAvatarUrl = userAvatarFile.uri != null ? this.getProxiedUrl(userAvatarFile.uri, mediaProxy, 'avatar') : null;
+						if (proxiedAvatarUrl == null || proxiedAvatarUrl.length <= 1024) {
+							update.avatarUrl = proxiedAvatarUrl;
+						}
 					}
 					if (userBannerFile?.isLink) {
-						update.bannerUrl = userBannerFile.uri != null ? this.getProxiedUrl(userBannerFile.uri, mediaProxy) : null;
+						const proxiedBannerUrl = userBannerFile.uri != null ? this.getProxiedUrl(userBannerFile.uri, mediaProxy) : null;
+						if (proxiedBannerUrl == null || proxiedBannerUrl.length <= 512) {
+							update.bannerUrl = proxiedBannerUrl;
+						}
 					}
 					
 					const shouldUpdate =

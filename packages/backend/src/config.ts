@@ -253,7 +253,7 @@ export type Config = {
 
 export type FulltextSearchProvider = 'sqlLike' | 'sqlPgroonga' | 'meilisearch';
 
-export const MEDIA_PROXY_URL_MAX_LENGTH = 1024;
+export const MEDIA_PROXY_URL_MAX_LENGTH = 256;
 
 export function normalizeMediaProxyUrl(url?: string | null): string | null {
 	if (url == null) return null;

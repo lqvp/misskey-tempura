@@ -15,7 +15,7 @@ function ensureMediaProxy(): MediaProxy {
 		_mediaProxy = new MediaProxy(
 			instance,
 			url,
-			() => prefer.r.mediaProxy.value,
+			() => prefer.r?.mediaProxy?.value ?? prefer.s?.mediaProxy,
 		);
 	}
 

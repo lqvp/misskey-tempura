@@ -301,15 +301,24 @@ export class ApPersonService implements OnModuleInit {
 			actually removed the images: in that case, the block above
 			returns the special {id:null}&c value, and we return those
 		*/
+		const rawAvatarUrl = avatar?.url ? this.driveFileEntityService.getPublicUrl(avatar, 'avatar') : null;
+		const safeAvatarUrl = rawAvatarUrl != null && rawAvatarUrl.length <= 1024
+			? rawAvatarUrl
+			: (avatar?.url != null && avatar.url.length <= 1024 ? avatar.url : null);
+		const rawBannerUrl = banner?.url ? this.driveFileEntityService.getPublicUrl(banner) : null;
+		const safeBannerUrl = rawBannerUrl != null && rawBannerUrl.length <= 512
+			? rawBannerUrl
+			: (banner?.url != null && banner.url.length <= 512 ? banner.url : null);
+
 		const returnData: any = {
 			...( avatar ? {
 				avatarId: avatar.id,
-				avatarUrl: avatar.url ? this.driveFileEntityService.getPublicUrl(avatar, 'avatar') : null,
+				avatarUrl: safeAvatarUrl,
 				avatarBlurhash: avatar.blurhash,
 			} : {}),
 			...( banner ? {
 				bannerId: banner.id,
-				bannerUrl: banner.url ? this.driveFileEntityService.getPublicUrl(banner) : null,
+				bannerUrl: safeBannerUrl,
 				bannerBlurhash: banner.blurhash,
 			} : {}),
 		};

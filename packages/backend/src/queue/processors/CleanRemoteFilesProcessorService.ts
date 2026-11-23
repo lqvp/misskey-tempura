@@ -221,7 +221,7 @@ export class CleanRemoteFilesProcessorService {
 			const avatarFile = await this.driveFilesRepository.findOneBy({ id: user.avatarId });
 			if (avatarFile?.isLink && avatarFile.uri) {
 				const avatarUrl = this.getProxiedUrl(avatarFile.uri, mediaProxy, 'avatar');
-				if (avatarUrl !== user.avatarUrl) {
+				if (avatarUrl.length <= 1024 && avatarUrl !== user.avatarUrl) {
 					update.avatarUrl = avatarUrl;
 				}
 			}
@@ -230,7 +230,7 @@ export class CleanRemoteFilesProcessorService {
 			const bannerFile = await this.driveFilesRepository.findOneBy({ id: user.bannerId });
 			if (bannerFile?.isLink && bannerFile.uri) {
 				const bannerUrl = this.getProxiedUrl(bannerFile.uri, mediaProxy);
-				if (bannerUrl !== user.bannerUrl) {
+				if (bannerUrl.length <= 512 && bannerUrl !== user.bannerUrl) {
 					update.bannerUrl = bannerUrl;
 				}
 			}

@@ -659,6 +659,59 @@ describe('FileServerService', () => {
 			expect(res.headers['content-security-policy']).toBe('default-src \'none\'; img-src \'self\'; media-src \'self\'; style-src \'unsafe-inline\'');
 		});
 
+		test('GET /proxy/:url* 稼働中に meta.mediaProxy を切り替えるとリダイレクト先が即時に切り替わる', async () => {
+			const dynamicMeta: { mediaProxy: string | null } = { mediaProxy: null };
+			const dynamicService = new FileServerService(
+				config,
+				driveFilesRepository as any,
+				fileInfoService,
+				downloadService,
+				imageProcessingService,
+				videoProcessingService,
+				internalStorageService,
+				loggerService,
+				dynamicMeta as any,
+			);
+			const dynamicFastify = Fastify();
+			await dynamicFastify.register(fastifyStatic, {
+				root: path.resolve('src/server/assets'),
+				serve: false,
+			});
+			dynamicService.createServer(dynamicFastify, {}, () => {});
+			await dynamicFastify.ready();
+
+			try {
+				dynamicMeta.mediaProxy = 'https://meta-proxy-a.test/proxy/';
+				const resA = await dynamicFastify.inject({
+					method: 'GET',
+					url: '/proxy/image.webp?url=https%3A%2F%2Fexample.com%2Fimg.png&static=1',
+				});
+				expect(resA.statusCode).toBe(301);
+				expect(resA.headers.location).toContain('https://meta-proxy-a.test/proxy/image.webp');
+
+				dynamicMeta.mediaProxy = 'https://meta-proxy-b.test/proxy';
+				const resB = await dynamicFastify.inject({
+					method: 'GET',
+					url: '/proxy/image.webp?url=https%3A%2F%2Fexample.com%2Fimg.png&static=1',
+				});
+				expect(resB.statusCode).toBe(301);
+				expect(resB.headers.location).toContain('https://meta-proxy-b.test/proxy/image.webp');
+
+				dynamicMeta.mediaProxy = null;
+				const resLocal = await dynamicFastify.inject({
+					method: 'GET',
+					url: '/proxy/image.webp?url=https%3A%2F%2Fexample.com%2Fimg.png',
+					headers: {
+						'user-agent': 'misskey/1.0',
+					},
+				});
+				// 内蔵プロキシに戻り、外部リダイレクトせず User-Agent 検証へ到達する
+				expect(resLocal.statusCode).toBe(403);
+			} finally {
+				await dynamicFastify.close();
+			}
+		});
+
 		test('GET /proxy/:url* misskey User-Agent を拒否する', async () => {
 			const res = await fastify.inject({
 				method: 'GET',
