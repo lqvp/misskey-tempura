@@ -106,13 +106,15 @@ export class PollService {
 		const content = this.apRendererService.addContext(this.apRendererService.renderUpdate(await this.apRendererService.renderNote(note, false), user));
 		const dm = this.apDeliverManagerService.createDeliverManager(user, content);
 
-		// ノート作成時 (NoteCreateService) と同じ配送先に絞り、公開範囲外へ Update を送らない
-		if (note.mentions.length > 0) {
-			const mentionedRemoteUsers = await this.usersRepository.findBy({
-				id: In(note.mentions),
+		// ノート作成時 (NoteCreateService) と同じ配送先に絞り、公開範囲外へ Update を送らない。
+		// specified は閲覧を許可されたユーザーだけに送る (非公開化したノートには以前のメンションが残るため)
+		const directRecipientIds = note.visibility === 'specified' ? note.visibleUserIds : note.mentions;
+		if (directRecipientIds.length > 0) {
+			const remoteRecipients = await this.usersRepository.findBy({
+				id: In(directRecipientIds),
 				host: Not(IsNull()),
 			}) as MiRemoteUser[];
-			for (const u of mentionedRemoteUsers) {
+			for (const u of remoteRecipients) {
 				dm.addDirectRecipe(u);
 			}
 		}

@@ -6,7 +6,7 @@
 import { Test } from '@nestjs/testing';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { mockDeep, mockReset } from 'vitest-mock-extended';
-import { In, IsNull, Not } from 'typeorm';
+import { FindOperator, In, IsNull, Not } from 'typeorm';
 import type { FollowingsRepository, NotesRepository, UsersRepository } from '@/models/_.js';
 import type { MiNote } from '@/models/Note.js';
 import type { MiUser } from '@/models/User.js';
@@ -34,6 +34,7 @@ describe('PollService.deliverQuestionUpdate', () => {
 	const mentionedInbox = 'https://mentioned.example.com/users/mentioned/inbox';
 	const mentioned = { id: 'mentioned', host: 'mentioned.example.com', inbox: mentionedInbox, sharedInbox: null } as MiUser;
 	const activity = { type: 'Update' };
+	const remoteUsers = [mentioned];
 
 	const baseNote = {
 		id: 'note',
@@ -42,6 +43,7 @@ describe('PollService.deliverQuestionUpdate', () => {
 		visibility: 'public',
 		localOnly: false,
 		mentions: [] as string[],
+		visibleUserIds: [] as string[],
 		deliveryTargets: null,
 	} as unknown as MiNote;
 
@@ -74,7 +76,7 @@ describe('PollService.deliverQuestionUpdate', () => {
 		service = module.get(PollService);
 
 		users.findOneBy.mockResolvedValue(author);
-		users.findBy.mockResolvedValue([mentioned]);
+		users.findBy.mockImplementation((async (where: { id: FindOperator<string[]> }) => remoteUsers.filter(u => where.id.value.includes(u.id))) as never);
 		followings.find.mockResolvedValue([
 			{ followerSharedInbox: null, followerInbox },
 		] as Awaited<ReturnType<FollowingsRepository['find']>>);
@@ -110,6 +112,15 @@ describe('PollService.deliverQuestionUpdate', () => {
 		expect(users.findBy).toHaveBeenCalledWith({ id: In([mentioned.id]), host: Not(IsNull()) });
 		expect(followings.find).not.toHaveBeenCalled();
 		expect(deliveredInboxes()).toEqual([mentionedInbox]);
+		expect(relay.deliverToRelays).not.toHaveBeenCalled();
+	});
+
+	test('非公開化した specified のノートは、閲覧を許可されていない以前のメンション先に配送しない', async () => {
+		givenNote({ visibility: 'specified', mentions: [mentioned.id], visibleUserIds: [] });
+
+		await service.deliverQuestionUpdate('note');
+
+		expect(deliveredInboxes()).toEqual([]);
 		expect(relay.deliverToRelays).not.toHaveBeenCalled();
 	});
 
