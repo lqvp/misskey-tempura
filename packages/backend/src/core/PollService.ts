@@ -108,7 +108,9 @@ export class PollService {
 
 		// ノート作成時 (NoteCreateService) と同じ配送先に絞り、公開範囲外へ Update を送らない。
 		// specified は閲覧を許可されたユーザーだけに送る (非公開化したノートには以前のメンションが残るため)
-		const directRecipientIds = note.visibility === 'specified' ? note.visibleUserIds : note.mentions;
+		const directRecipientIds = note.visibility === 'specified'
+			? note.visibleUserIds
+			: [...note.mentions, note.replyUserId, note.renoteUserId].filter((id): id is MiUser['id'] => id != null);
 		if (directRecipientIds.length > 0) {
 			const remoteRecipients = await this.usersRepository.findBy({
 				id: In(directRecipientIds),

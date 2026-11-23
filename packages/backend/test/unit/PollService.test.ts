@@ -34,7 +34,11 @@ describe('PollService.deliverQuestionUpdate', () => {
 	const mentionedInbox = 'https://mentioned.example.com/users/mentioned/inbox';
 	const mentioned = { id: 'mentioned', host: 'mentioned.example.com', inbox: mentionedInbox, sharedInbox: null } as MiUser;
 	const activity = { type: 'Update' };
-	const remoteUsers = [mentioned];
+	const quotedInbox = 'https://quoted.example.com/users/quoted/inbox';
+	const quoted = { id: 'quoted', host: 'quoted.example.com', inbox: quotedInbox, sharedInbox: null } as MiUser;
+	const repliedInbox = 'https://replied.example.com/users/replied/inbox';
+	const replied = { id: 'replied', host: 'replied.example.com', inbox: repliedInbox, sharedInbox: null } as MiUser;
+	const remoteUsers = [mentioned, quoted, replied];
 
 	const baseNote = {
 		id: 'note',
@@ -43,6 +47,8 @@ describe('PollService.deliverQuestionUpdate', () => {
 		visibility: 'public',
 		localOnly: false,
 		mentions: [] as string[],
+		replyUserId: null,
+		renoteUserId: null,
 		visibleUserIds: [] as string[],
 		deliveryTargets: null,
 	} as unknown as MiNote;
@@ -130,6 +136,14 @@ describe('PollService.deliverQuestionUpdate', () => {
 		await service.deliverQuestionUpdate('note');
 
 		expect(deliveredInboxes()).toEqual([followerInbox, mentionedInbox]);
+	});
+
+	test('リプライ先・引用元のリモートユーザーにもフォロワーでなくても配送する', async () => {
+		givenNote({ visibility: 'home', replyUserId: replied.id, renoteUserId: quoted.id });
+
+		await service.deliverQuestionUpdate('note');
+
+		expect(deliveredInboxes()).toEqual([followerInbox, quotedInbox, repliedInbox]);
 	});
 
 	test('配送先制御 (deliveryTargets) をフォロワーとリレーの両方に適用する', async () => {
