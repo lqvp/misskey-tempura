@@ -499,10 +499,14 @@ describe('Chart', () => {
 			await testUniqueChart.uniqueIncrement('bob');
 			await testUniqueChart.save();
 
-			for (const tableName of ['__chart__test_unique', '__chart_day__test_unique']) {
-				const rows = await db!.query(`SELECT "___foo" AS count, "unique_temp___foo" AS items FROM "${tableName}"`);
-				assert.deepStrictEqual(rows, [{ count: 2, items: ['alice', 'bob'] }]);
-			}
+			clock.tick('01:00:00');
+			await testUniqueChart.uniqueIncrement('alice');
+			await testUniqueChart.save();
+
+			const hours = await db!.query('SELECT "___foo" AS count, "unique_temp___foo" AS items FROM "__chart__test_unique" ORDER BY "date"');
+			const days = await db!.query('SELECT "___foo" AS count, "unique_temp___foo" AS items FROM "__chart_day__test_unique"');
+			assert.deepStrictEqual(hours, [{ count: 2, items: ['alice', 'bob'] }, { count: 1, items: ['alice'] }]);
+			assert.deepStrictEqual(days, [{ count: 2, items: ['alice', 'bob'] }]);
 		});
 
 		describe('Intersection', () => {
