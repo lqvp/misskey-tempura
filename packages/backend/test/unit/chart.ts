@@ -26,7 +26,7 @@ describe('Chart', () => {
 	const config = loadConfig();
 
 	let db: DataSource | undefined;
-	let redisClient = {
+	const redisClient = {
 		set: () => Promise.resolve('OK'),
 		get: () => Promise.resolve(null),
 	} as unknown as Mocked<Redis.Redis>;
@@ -416,6 +416,18 @@ describe('Chart', () => {
 	});
 
 	describe('Grouped', () => {
+		test('Combines repeated increments without mixing groups', async () => {
+			await testGroupedChart.increment('alice');
+			await testGroupedChart.increment('bob');
+			await testGroupedChart.increment('alice');
+			await testGroupedChart.save();
+
+			const alice = await testGroupedChart.getChart('hour', 1, null, 'alice');
+			const bob = await testGroupedChart.getChart('hour', 1, null, 'bob');
+			assert.deepStrictEqual(alice.foo.inc, [2]);
+			assert.deepStrictEqual(bob.foo.inc, [1]);
+		});
+
 		test('Can updates', async () => {
 			await testGroupedChart.increment('alice');
 			await testGroupedChart.save();
@@ -476,6 +488,25 @@ describe('Chart', () => {
 			assert.deepStrictEqual(chartDays, {
 				foo: [2, 0, 0],
 			});
+		});
+
+		test('Stores each unique value only once per period', async () => {
+			await testUniqueChart.uniqueIncrement('alice');
+			await testUniqueChart.uniqueIncrement('alice');
+			await testUniqueChart.save();
+			await testUniqueChart.uniqueIncrement('alice');
+			await testUniqueChart.uniqueIncrement('bob');
+			await testUniqueChart.uniqueIncrement('bob');
+			await testUniqueChart.save();
+
+			clock.tick('01:00:00');
+			await testUniqueChart.uniqueIncrement('alice');
+			await testUniqueChart.save();
+
+			const hours = await db!.query('SELECT "___foo" AS count, "unique_temp___foo" AS items FROM "__chart__test_unique" ORDER BY "date"');
+			const days = await db!.query('SELECT "___foo" AS count, "unique_temp___foo" AS items FROM "__chart_day__test_unique"');
+			assert.deepStrictEqual(hours, [{ count: 2, items: ['alice', 'bob'] }, { count: 1, items: ['alice'] }]);
+			assert.deepStrictEqual(days, [{ count: 2, items: ['alice', 'bob'] }]);
 		});
 
 		describe('Intersection', () => {

@@ -63,8 +63,6 @@ const camelToSnake = (str: string): string => {
 	return str.replace(/([A-Z])/g, s => '_' + s.charAt(0).toLowerCase());
 };
 
-const removeDuplicates = (array: any[]) => Array.from(new Set(array));
-
 const COLUMN_RANGE_LIMITS = {
 	small: { min: -32768, max: 32767 }, // smallint
 	medium: { min: -2147483648, max: 2147483647 }, // integer
@@ -104,6 +102,19 @@ const buildIncrementExpression = (columnName: string, value: number, range?: Val
 type Commit<S extends Schema> = {
 	[K in keyof S]?: S[K]['uniqueIncrement'] extends true ? string[] : number;
 };
+
+type ChartDiff = Record<string, number | Set<string>>;
+
+function mergeDiff(target: ChartDiff, key: string, value: number | Iterable<string>): void {
+	const previous = target[key];
+	if (typeof value === 'number') {
+		target[key] = (typeof previous === 'number' ? previous : 0) + value;
+	} else {
+		const items = previous instanceof Set ? previous : new Set<string>();
+		for (const item of value) items.add(item);
+		target[key] = items;
+	}
+}
 
 export type KVs<S extends Schema> = {
 	[K in keyof S]: number;
@@ -180,10 +191,7 @@ export default abstract class Chart<T extends Schema> {
 	public schema: T;
 
 	private name: string;
-	private buffer: {
-		diff: Commit<T>;
-		group: string | null;
-	}[] = [];
+	private buffer = new Map<string | null, ChartDiff>();
 	// ↓にしたいけどfindOneとかで型エラーになる
 	//private repositoryForHour: Repository<RawRecord<T>> & MiRepository<RawRecord<T>>;
 	//private repositoryForDay: Repository<RawRecord<T>> & MiRepository<RawRecord<T>>;
@@ -446,17 +454,18 @@ export default abstract class Chart<T extends Schema> {
 	}
 
 	protected commit(diff: Commit<T>, group: string | null = null): void {
+		let pending = this.buffer.get(group);
+		if (pending == null) this.buffer.set(group, pending = {});
+
 		for (const [k, v] of Object.entries(diff)) {
-			if (v == null || v === 0 || (Array.isArray(v) && v.length === 0)) delete diff[k];
+			if (v == null || v === 0 || (Array.isArray(v) && v.length === 0)) continue;
+			mergeDiff(pending, k, v);
 		}
-		this.buffer.push({
-			diff, group,
-		});
 	}
 
 	@bindThis
 	public async save(): Promise<void> {
-		if (this.buffer.length === 0) {
+		if (this.buffer.size === 0) {
 			this.logger.info(`${this.name}: Write skipped`);
 			return;
 		}
@@ -466,7 +475,7 @@ export default abstract class Chart<T extends Schema> {
 		// バッファに残し続けると失敗し続けた場合に際限なく積み上がり、メモリリークになるため。
 		// (この処理が始まった後に追加された分は次回の書き込み対象になる)
 		const buffer = this.buffer;
-		this.buffer = [];
+		this.buffer = new Map();
 
 		// TODO: 前の時間のログがbufferにあった場合のハンドリング
 		// 例えば、save が20分ごとに行われるとして、前回行われたのは 01:50 だったとする。
@@ -475,19 +484,14 @@ export default abstract class Chart<T extends Schema> {
 		// これを回避するための実装は複雑になりそうなため、一旦保留。
 
 		const update = async (logHour: RawRecord<T>, logDay: RawRecord<T>): Promise<void> => {
-			const finalDiffs = {} as Record<string, number | string[]>;
-
-			for (const diff of buffer.filter(q => q.group == null || (q.group === logHour.group)).map(q => q.diff)) {
-				for (const [k, v] of Object.entries(diff)) {
-					if (finalDiffs[k] == null) {
-						finalDiffs[k] = v;
-					} else {
-						if (typeof finalDiffs[k] === 'number') {
-							(finalDiffs[k] as number) += v as number;
-						} else {
-							(finalDiffs[k] as string[]) = (finalDiffs[k] as string[]).concat(v);
-						}
-					}
+			const sharedDiff = buffer.get(null);
+			const groupDiff = logHour.group != null ? buffer.get(logHour.group) : undefined;
+			let finalDiffs = groupDiff ?? sharedDiff ?? {};
+			if (sharedDiff != null && groupDiff != null) {
+				// Ungrouped updates also apply to the groups saved in this batch.
+				finalDiffs = {};
+				for (const diff of [sharedDiff, groupDiff]) {
+					for (const [k, v] of Object.entries(diff)) mergeDiff(finalDiffs, k, v);
 				}
 			}
 
@@ -501,24 +505,21 @@ export default abstract class Chart<T extends Schema> {
 						queryForHour[name] = () => exp;
 						queryForDay[name] = () => exp;
 					}
-				} else if (Array.isArray(v) && v.length > 0) { // ユニークインクリメント
+				} else { // ユニークインクリメント
+					const name = COLUMN_PREFIX + k.replaceAll('.', COLUMN_DELIMITER) as keyof Columns<T>;
 					const tempColumnName = UNIQUE_TEMP_COLUMN_PREFIX + k.replaceAll('.', COLUMN_DELIMITER) as string & keyof TempColumnsForUnique<T>;
-					const itemsForHour = v.filter(item => !(logHour[tempColumnName] as unknown as string[]).includes(item)).map(item => sqlStringEscape(item));
-					const itemsForDay = v.filter(item => !(logDay[tempColumnName] as unknown as string[]).includes(item)).map(item => sqlStringEscape(item));
+					const existingHour = new Set(logHour[tempColumnName] as unknown as string[]);
+					const existingDay = new Set(logDay[tempColumnName] as unknown as string[]);
+					const itemsForHour: string[] = [];
+					const itemsForDay: string[] = [];
+					for (const item of v) {
+						if (!existingHour.has(item)) itemsForHour.push(sqlStringEscape(item));
+						if (!existingDay.has(item)) itemsForDay.push(sqlStringEscape(item));
+					}
 					if (itemsForHour.length > 0) queryForHour[tempColumnName] = () => `array_cat("${tempColumnName}", ARRAY[${itemsForHour.join(',')}]::varchar[])`;
 					if (itemsForDay.length > 0) queryForDay[tempColumnName] = () => `array_cat("${tempColumnName}", ARRAY[${itemsForDay.join(',')}]::varchar[])`;
-				}
-			}
-
-			// bake cardinality
-			for (const [k, v] of Object.entries(finalDiffs)) {
-				if (this.schema[k].uniqueIncrement) {
-					const name = COLUMN_PREFIX + k.replaceAll('.', COLUMN_DELIMITER) as keyof Columns<T>;
-					const tempColumnName = UNIQUE_TEMP_COLUMN_PREFIX + k.replaceAll('.', COLUMN_DELIMITER) as keyof TempColumnsForUnique<T>;
-					const cardinalityOfHour = new Set([...(v as string[]), ...(logHour[tempColumnName] as unknown as string[])]).size;
-					const cardinalityOfDay = new Set([...(v as string[]), ...(logDay[tempColumnName] as unknown as string[])]).size;
-					queryForHour[name] = clampToColumnRange(cardinalityOfHour, this.schema[k].range);
-					queryForDay[name] = clampToColumnRange(cardinalityOfDay, this.schema[k].range);
+					queryForHour[name] = clampToColumnRange(existingHour.size + itemsForHour.length, this.schema[k].range);
+					queryForDay[name] = clampToColumnRange(existingDay.size + itemsForDay.length, this.schema[k].range);
 				}
 			}
 
@@ -530,13 +531,13 @@ export default abstract class Chart<T extends Schema> {
 					const name = COLUMN_PREFIX + k.replaceAll('.', COLUMN_DELIMITER) as keyof Columns<T>;
 					const firstKey = intersection[0];
 					const firstTempColumnName = UNIQUE_TEMP_COLUMN_PREFIX + firstKey.replaceAll('.', COLUMN_DELIMITER) as keyof TempColumnsForUnique<T>;
-					const firstValues = finalDiffs[firstKey] as string[] | undefined;
+					const firstValues = finalDiffs[firstKey] as Set<string> | undefined;
 					const currentValuesForHour = new Set([...(firstValues ?? []), ...(logHour[firstTempColumnName] as unknown as string[])]);
 					const currentValuesForDay = new Set([...(firstValues ?? []), ...(logDay[firstTempColumnName] as unknown as string[])]);
 					for (let i = 1; i < intersection.length; i++) {
 						const targetKey = intersection[i];
 						const targetTempColumnName = UNIQUE_TEMP_COLUMN_PREFIX + targetKey.replaceAll('.', COLUMN_DELIMITER) as keyof TempColumnsForUnique<T>;
-						const targetValues = finalDiffs[targetKey] as string[] | undefined;
+						const targetValues = finalDiffs[targetKey] as Set<string> | undefined;
 						const targetValuesForHour = new Set([...(targetValues ?? []), ...(logHour[targetTempColumnName] as unknown as string[])]);
 						const targetValuesForDay = new Set([...(targetValues ?? []), ...(logDay[targetTempColumnName] as unknown as string[])]);
 						currentValuesForHour.forEach(v => {
@@ -568,10 +569,8 @@ export default abstract class Chart<T extends Schema> {
 			this.logger.info(`${this.name + (logHour.group ? `:${logHour.group}` : '')}: Updated`);
 		};
 
-		const groups = removeDuplicates(buffer.map(log => log.group));
-
 		await Promise.all(
-			groups.map(group =>
+			Array.from(buffer.keys(), group =>
 				Promise.all([
 					this.claimCurrentLog(group, 'hour'),
 					this.claimCurrentLog(group, 'day'),
