@@ -130,6 +130,14 @@ describe('PollService.deliverQuestionUpdate', () => {
 		expect(relay.deliverToRelays).not.toHaveBeenCalled();
 	});
 
+	test('specified は閲覧を許可されたメンション先にだけ配送し、許可されていないメンション先には配送しない', async () => {
+		givenNote({ visibility: 'specified', mentions: [mentioned.id, quoted.id], visibleUserIds: [mentioned.id] });
+
+		await service.deliverQuestionUpdate('note');
+
+		expect(deliveredInboxes()).toEqual([mentionedInbox]);
+	});
+
 	test('メンションされたリモートユーザーにはフォロワーでなくても配送する', async () => {
 		givenNote({ visibility: 'followers', mentions: [mentioned.id] });
 
