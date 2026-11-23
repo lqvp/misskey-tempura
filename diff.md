@@ -367,6 +367,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * プロンプトインジェクション対策 (user_content デリミタとガード指示)
 * 返信文脈を参考データとして要約に付与
 * temperature 設定 (ユーザー直指定モード)
+* WidgetTlDigest: 不在中のホームタイムラインをトピック抽出型で要約するウィジェット (公開範囲オプトイン・CW保護・ワードミュート除外・純リノート集約)
 
 ### LLM モデレーション
 
@@ -445,6 +446,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * WidgetListenBrainz (userId)
 * WidgetNestedWidget
 * WidgetFederationJobQueue
+* WidgetTlDigest (HTLダイジェスト)
 * ネストウィジェット
 
 ## 地震情報

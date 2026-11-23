@@ -190,6 +190,51 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</div>
 				</FormSection>
 			</SearchMarker>
+
+			<SearchMarker markerId="tempura-settings-llm-tldigest" :inlining="['tempura-settings-llm']" :keywords="['llm', 'timeline', 'digest', 'summary', 'visibility', 'cw']">
+				<FormSection>
+					<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.llmTlDigest }}</SearchLabel></template>
+					<div class="_gaps_m">
+						<SearchMarker :keywords="['llm', 'timeline', 'digest', 'visibility', 'followers', 'privacy']">
+							<MkPreferenceContainer k="tlDigestVisibilities">
+								<div class="_gaps_s">
+									<div><SearchLabel>{{ i18n.ts._tlDigest.visibilitiesLabel }}</SearchLabel></div>
+									<div style="display: flex; flex-wrap: wrap; gap: 8px;">
+										<MkCheckbox
+											v-for="vis in tlDigestVisibilityOptions"
+											:key="vis.value"
+											:modelValue="tlDigestVisibilities"
+											:value="vis.value"
+											@update:modelValue="onUpdateTlDigestVisibilities"
+										>
+											{{ vis.label }}
+										</MkCheckbox>
+									</div>
+									<div class="_formCaption">{{ i18n.ts._tlDigest.visibilitiesCaption }}</div>
+								</div>
+							</MkPreferenceContainer>
+						</SearchMarker>
+
+						<SearchMarker :keywords="['llm', 'timeline', 'digest', 'cw', 'content warning']">
+							<MkPreferenceContainer k="tlDigestCwMode">
+								<MkSelect v-model="tlDigestCwMode" :items="tlDigestCwModeItems">
+									<template #label><SearchLabel>{{ i18n.ts._tlDigest.cwModeLabel }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._tlDigest.cwModeCaption }}</template>
+								</MkSelect>
+							</MkPreferenceContainer>
+						</SearchMarker>
+
+						<SearchMarker :keywords="['llm', 'timeline', 'digest', 'prompt', 'instruction']">
+							<MkPreferenceContainer k="tlDigestPrompt">
+								<MkInput v-model="tlDigestPrompt" type="text">
+									<template #label><SearchLabel>{{ i18n.ts._tlDigest.promptLabel }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._tlDigest.promptCaption }}</template>
+								</MkInput>
+							</MkPreferenceContainer>
+						</SearchMarker>
+					</div>
+				</FormSection>
+			</SearchMarker>
 		</div>
 	</MkFolder>
 </SearchMarker>
@@ -201,8 +246,10 @@ import MkInput from '@/components/MkInput.vue';
 import MkSelect from '@/components/MkSelect.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkButton from '@/components/MkButton.vue';
+import MkCheckbox from '@/components/MkCheckbox.vue';
 import FormSection from '@/components/form/section.vue';
 import MkFolder from '@/components/MkFolder.vue';
+import * as os from '@/os.js';
 import { prefer } from '@/preferences.js';
 import { $i } from '@/i.js';
 import { i18n } from '@/i18n.js';
@@ -211,6 +258,11 @@ import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 import { fetchAvailableModels, detectImageInputSupport } from '@/utility/tempura-script/llm.js';
 import type { LLMModelInfo } from '@/utility/tempura-script/llm.js';
 import { openaiModels } from '@/utility/tempura-script/models.js';
+import {
+	SELECTABLE_TL_DIGEST_VISIBILITIES,
+	normalizeTlDigestVisibilities,
+} from '@/utility/tempura-script/tl-digest/core.js';
+import type { TlDigestVisibility } from '@/utility/tempura-script/tl-digest/core.js';
 
 const instance = ref< Awaited<ReturnType<typeof fetchInstance>> | null>(null);
 
@@ -235,6 +287,55 @@ const geminiNoteCasualText = prefer.model('geminiNoteCasualText');
 const geminiNoteProfessionalText = prefer.model('geminiNoteProfessionalText');
 const geminiNoteCatText = prefer.model('geminiNoteCatText');
 const geminiNoteCustomText = prefer.model('geminiNoteCustomText');
+const tlDigestVisibilities = prefer.model('tlDigestVisibilities');
+const tlDigestCwMode = prefer.model('tlDigestCwMode');
+const tlDigestPrompt = prefer.model('tlDigestPrompt');
+
+const visibilityLabels = i18n.ts._visibility as Record<string, string>;
+const tlDigestVisibilityOptions = SELECTABLE_TL_DIGEST_VISIBILITIES.map((value) => ({
+	value,
+	label: visibilityLabels[value] ?? value,
+}));
+
+const tlDigestCwModeItems = computed(() => [
+	{ value: 'cwOnly' as const, label: i18n.ts._tlDigest.cwModeCwOnly },
+	{ value: 'exclude' as const, label: i18n.ts._tlDigest.cwModeExclude },
+	{ value: 'include' as const, label: i18n.ts._tlDigest.cwModeInclude },
+]);
+
+function resolveLlmDestinationText(): string {
+	if (useGeminiLLMAPI.value) {
+		return i18n.ts._tlDigest.destinationServer;
+	}
+	const rawUrl = (openaiBaseUrl.value || 'https://api.openai.com/v1').trim();
+	try {
+		const host = new URL(rawUrl).host;
+		return i18n.tsx._tlDigest.destinationDirect({ host });
+	} catch {
+		return i18n.tsx._tlDigest.destinationDirect({ host: rawUrl });
+	}
+}
+
+async function onUpdateTlDigestVisibilities(next: TlDigestVisibility[]): Promise<void> {
+	const normalized = normalizeTlDigestVisibilities(next);
+	const hadFollowers = tlDigestVisibilities.value.includes('followers');
+	const wantsFollowers = normalized.includes('followers');
+
+	if (!hadFollowers && wantsFollowers) {
+		const { canceled } = await os.confirm({
+			type: 'warning',
+			title: i18n.ts._tlDigest.followersConfirmTitle,
+			text: i18n.tsx._tlDigest.followersConfirmText({
+				destination: resolveLlmDestinationText(),
+			}),
+		});
+		if (canceled) {
+			return;
+		}
+	}
+
+	tlDigestVisibilities.value = normalized;
+}
 
 // モデル一覧 (API から動的取得、失敗時はフォールバックリスト)
 const models = ref<LLMModelInfo[]>([]);

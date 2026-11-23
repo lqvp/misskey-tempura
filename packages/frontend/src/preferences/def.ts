@@ -684,6 +684,15 @@ export const PREF_DEF = definePreferences({
 	openaiTemperature: {
 		default: null as number | null,
 	},
+	tlDigestVisibilities: {
+		default: ['public', 'home'] as ('public' | 'home' | 'public_non_ltl' | 'followers')[],
+	},
+	tlDigestCwMode: {
+		default: 'cwOnly' as 'cwOnly' | 'exclude' | 'include',
+	},
+	tlDigestPrompt: {
+		default: null as string | null,
+	},
 	enableEarthquakeWarning: {
 		default: false,
 	},

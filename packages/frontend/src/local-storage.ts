@@ -42,6 +42,7 @@ export type Keys = (
 	'lastEmojisFetchedAt' | // DEPRECATED, stored in indexeddb (13.9.0~)
 	'emojis' | // DEPRECATED, stored in indexeddb (13.9.0~);
 	`channelLastReadedAt:${string}` |
+	`tlDigestState:${string}` |
 	`idbfallback::${string}`
 );
 
