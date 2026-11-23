@@ -255,7 +255,7 @@ async function createTextureFromUrl(imageUrl: string | null) {
 		const img = new Image();
 		img.onload = () => resolve(img);
 		img.onerror = reject;
-		img.src = getProxiedImageUrl(imageUrl); // CORS対策
+		img.src = getProxiedImageUrl(imageUrl, undefined, true); // CORS対策
 	}).catch(() => null);
 
 	if (image == null) return null;

@@ -5,6 +5,7 @@
 
 import { Injectable, Inject } from '@nestjs/common';
 import { DI } from '@/di-symbols.js';
+import { normalizeMediaProxyUrl, type Config } from '@/config.js';
 import type { MiMeta } from '@/models/Meta.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
@@ -31,6 +32,11 @@ export const meta = {
 			message: 'loginRiskNotifyThreshold must be less than loginRiskStepUpThreshold.',
 			code: 'INVALID_LOGIN_RISK_THRESHOLDS',
 			id: '0b4b9a0e-6f0d-4c8e-9d3a-5f2f7a1c8e41',
+		},
+		invalidMediaProxyUrl: {
+			message: 'mediaProxy must be a valid http(s) URL without credentials, query, or hash.',
+			code: 'INVALID_MEDIA_PROXY_URL',
+			id: '9529a736-ac90-4d8f-a85c-e9bd75de96f2',
 		},
 	},
 } as const;
@@ -308,6 +314,7 @@ export const paramDef = {
 			type: 'string',
 		} },
 		offlinePageConfig: { type: 'string', nullable: true },
+		mediaProxy: { type: 'string', nullable: true, maxLength: 1024 },
 		defaultFollowedUsers: {
 			type: 'array', nullable: true, items: {
 				type: 'string',
@@ -381,6 +388,9 @@ export const paramDef = {
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
 	constructor(
+		@Inject(DI.config)
+		private config: Config,
+
 		@Inject(DI.meta)
 		private serverSettings: MiMeta,
 
@@ -1130,6 +1140,19 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			if (ps.offlinePageConfig !== undefined) {
 				set.offlinePageConfig = ps.offlinePageConfig;
+			}
+
+			if (ps.mediaProxy !== undefined) {
+				if (ps.mediaProxy == null || ps.mediaProxy.trim() === '') {
+					set.mediaProxy = null;
+				} else {
+					const normalized = normalizeMediaProxyUrl(ps.mediaProxy);
+					const internalMediaProxy = `${this.config.url.replace(/\/+$/, '')}/proxy`;
+					if (normalized == null || normalized.startsWith(`${internalMediaProxy}/`)) {
+						throw new ApiError(meta.errors.invalidMediaProxyUrl);
+					}
+					set.mediaProxy = normalized;
+				}
 			}
 
 			if (ps.blockMentionsFromUnfamiliarRemoteUsers !== undefined) {

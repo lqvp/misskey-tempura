@@ -11704,6 +11704,7 @@ export interface operations {
                         allowAnonymousFeatured: boolean;
                         allowAnonymousLocalTimeline: boolean;
                         allowAnonymousReactions: boolean;
+                        mediaProxy: string | null;
                     };
                 };
             };
@@ -15464,6 +15465,7 @@ export interface operations {
                     allowAnonymousReactions?: boolean;
                     customSplashText?: string[] | null;
                     offlinePageConfig?: string | null;
+                    mediaProxy?: string | null;
                     defaultFollowedUsers?: string[] | null;
                     forciblyFollowedUsers?: string[] | null;
                     deeplFreeMode?: boolean;

@@ -6,7 +6,7 @@
 import { Inject, Injectable, OnApplicationShutdown } from '@nestjs/common';
 import type { SummalyResult } from '@misskey-dev/summaly';
 import { DI } from '@/di-symbols.js';
-import type { Config } from '@/config.js';
+import { resolveMediaProxy, type Config } from '@/config.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import type Logger from '@/logger.js';
 import { deepClone } from '@/misc/clone.js';
@@ -43,8 +43,9 @@ export class UrlPreviewService implements OnApplicationShutdown {
 
 	@bindThis
 	private wrap(url?: string | null): string | null {
+		const { mediaProxy } = resolveMediaProxy(this.config, this.meta);
 		return url != null
-			? `${this.config.mediaProxy}/preview.webp?${query({
+			? `${mediaProxy}/preview.webp?${query({
 				url,
 				preview: '1',
 			})}`

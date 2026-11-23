@@ -5,9 +5,9 @@
 
 import * as fs from 'node:fs';
 import { resolve } from 'node:path';
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import type { Config } from '@/config.js';
-import type { DriveFilesRepository } from '@/models/_.js';
+import type { DriveFilesRepository, MiMeta } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import { StatusError } from '@/misc/status-error.js';
 import type Logger from '@/logger.js';
@@ -46,6 +46,10 @@ export class FileServerService {
 		private videoProcessingService: VideoProcessingService,
 		private internalStorageService: InternalStorageService,
 		private loggerService: LoggerService,
+
+		@Optional()
+		@Inject(DI.meta)
+		private meta?: MiMeta,
 	) {
 		this.logger = this.loggerService.getLogger('server', 'gray');
 		this.assets = resolve(this.config.rootDir, 'packages/backend/src/server/file/assets');
@@ -60,12 +64,14 @@ export class FileServerService {
 			this.fileResolver,
 			this.assets,
 			this.videoProcessingService,
+			this.meta,
 		);
 		this.proxyHandler = new FileServerProxyHandler(
 			this.config,
 			this.fileResolver,
 			this.assets,
 			this.imageProcessingService,
+			this.meta,
 		);
 
 		//this.createServer = this.createServer.bind(this);

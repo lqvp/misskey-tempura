@@ -20,7 +20,7 @@ import { InternalStorageService } from '@/core/InternalStorageService.js';
 import { IdService } from '@/core/IdService.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import { VideoProcessingService } from '@/core/VideoProcessingService.js';
-import { loadConfig, type Config } from '@/config.js';
+import { loadConfig, resolveMediaProxy, type Config } from '@/config.js';
 import { MiDriveFile } from '@/models/DriveFile.js';
 import { FileServerService } from '@/server/FileServerService.js';
 import { FileServerFileResolver } from '@/server/file/FileServerFileResolver.js';
@@ -238,6 +238,31 @@ describe('FileServerService', () => {
 		if (createdFallbackAssets) {
 			fs.rmSync(fallbackAssetsDir, { recursive: true, force: true });
 		}
+	});
+
+	describe('resolveMediaProxy', () => {
+		test('meta.mediaProxy が設定されている場合は config.mediaProxy より優先する', () => {
+			const baseConfig = {
+				url: 'https://server.test',
+				mediaProxy: 'https://server.test/proxy',
+				externalMediaProxyEnabled: false,
+			};
+
+			expect(resolveMediaProxy(baseConfig, { mediaProxy: 'https://meta-proxy.test/proxy/' })).toEqual({
+				mediaProxy: 'https://meta-proxy.test/proxy',
+				externalMediaProxyEnabled: true,
+			});
+
+			expect(resolveMediaProxy(baseConfig, { mediaProxy: null })).toEqual({
+				mediaProxy: 'https://server.test/proxy',
+				externalMediaProxyEnabled: false,
+			});
+
+			expect(resolveMediaProxy(baseConfig, { mediaProxy: 'https://server.test/proxy/' })).toEqual({
+				mediaProxy: 'https://server.test/proxy',
+				externalMediaProxyEnabled: false,
+			});
+		});
 	});
 
 	describe('GET /files/app-default.jpg', () => {

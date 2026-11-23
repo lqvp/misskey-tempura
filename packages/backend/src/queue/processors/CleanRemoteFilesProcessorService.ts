@@ -15,7 +15,7 @@ import { S3Service } from '@/core/S3Service.js';
 import { MetaService } from '@/core/MetaService.js';
 import type { MiRemoteUser, MiUser } from '@/models/User.js';
 import { appendQuery, query } from '@/misc/prelude/url.js';
-import type { Config } from '@/config.js';
+import { resolveMediaProxy, type Config } from '@/config.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
@@ -179,6 +179,9 @@ export class CleanRemoteFilesProcessorService {
 	private async fixAvatars(): Promise<void> {
 		this.logger.info('Start Update remote users avatar URLs...');
 
+		const meta = await this.metaService.fetch();
+		const { mediaProxy } = resolveMediaProxy(this.config, meta);
+
 		let cursor: MiRemoteUser['id'] | null = null;
 		let count = 0;
 		while (true) {
@@ -202,7 +205,7 @@ export class CleanRemoteFilesProcessorService {
 				break;
 			}
 			cursor = users.at(-1)?.id ?? null;
-			const results = await Promise.all(users.map(user => this.fixAvatar(user)));
+			const results = await Promise.all(users.map(user => this.fixAvatar(user, mediaProxy)));
 			count += results.filter(res => res).length;
 		}
 
@@ -211,13 +214,13 @@ export class CleanRemoteFilesProcessorService {
 
 	/** return true when updated */
 	@bindThis
-	private async fixAvatar(user: MiUser | null): Promise<boolean> {
+	private async fixAvatar(user: MiUser | null, mediaProxy: string): Promise<boolean> {
 		const update: Partial<MiUser> = {};
 		if (!user) return false;
 		if (user.avatarId) {
 			const avatarFile = await this.driveFilesRepository.findOneBy({ id: user.avatarId });
 			if (avatarFile?.isLink && avatarFile.uri) {
-				const avatarUrl = this.getProxiedUrl(avatarFile.uri, 'avatar');
+				const avatarUrl = this.getProxiedUrl(avatarFile.uri, mediaProxy, 'avatar');
 				if (avatarUrl !== user.avatarUrl) {
 					update.avatarUrl = avatarUrl;
 				}
@@ -226,7 +229,7 @@ export class CleanRemoteFilesProcessorService {
 		if (user.bannerId) {
 			const bannerFile = await this.driveFilesRepository.findOneBy({ id: user.bannerId });
 			if (bannerFile?.isLink && bannerFile.uri) {
-				const bannerUrl = this.getProxiedUrl(bannerFile.uri);
+				const bannerUrl = this.getProxiedUrl(bannerFile.uri, mediaProxy);
 				if (bannerUrl !== user.bannerUrl) {
 					update.bannerUrl = bannerUrl;
 				}
@@ -246,9 +249,9 @@ export class CleanRemoteFilesProcessorService {
 	}
 
 	@bindThis
-	private getProxiedUrl(url: string, mode?: 'static' | 'avatar'): string {
+	private getProxiedUrl(url: string, mediaProxy: string, mode?: 'static' | 'avatar'): string {
 		return appendQuery(
-			`${this.config.mediaProxy}/${mode ?? 'image'}.webp`,
+			`${mediaProxy}/${mode ?? 'image'}.webp`,
 			query({
 				url,
 				...(mode ? { [mode]: '1' } : {}),

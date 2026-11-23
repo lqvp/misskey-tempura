@@ -771,4 +771,7 @@ export const PREF_DEF = definePreferences({
 	viewedRenotes: {
 		default: [] as string[],
 	},
+	mediaProxy: {
+		default: null as string | null,
+	},
 });

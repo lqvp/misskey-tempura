@@ -1057,6 +1057,10 @@ export const meta = {
 				type: 'boolean',
 				optional: false, nullable: false,
 			},
+			mediaProxy: {
+				type: 'string',
+				optional: false, nullable: true,
+			},
 		},
 	},
 } as const;
@@ -1336,6 +1340,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				contactFormRequireAuth: instance.contactFormRequireAuth,
 				contactFormCategories: instance.contactFormCategories,
 				openLlmModerationVisibilities,
+				mediaProxy: instance.mediaProxy,
 			};
 		});
 	}

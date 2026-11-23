@@ -6,7 +6,7 @@
 import * as fs from 'node:fs';
 import sharp from 'sharp';
 import { sharpBmp } from '@misskey-dev/sharp-read-bmp';
-import type { Config } from '@/config.js';
+import { resolveMediaProxy, type Config } from '@/config.js';
 import { FILE_TYPE_BROWSERSAFE } from '@/const.js';
 import { StatusError } from '@/misc/status-error.js';
 import { contentDisposition } from '@/misc/content-disposition.js';
@@ -36,6 +36,7 @@ export class FileServerProxyHandler {
 		private fileResolver: FileServerFileResolver,
 		private assetsPath: string,
 		private imageProcessingService: ImageProcessingService,
+		private meta?: { mediaProxy?: string | null } | null,
 	) {}
 
 	public async handle(request: FastifyRequest<{ Params: { url: string }; Querystring: ProxyQuery }>, reply: FastifyReply) {
@@ -48,9 +49,10 @@ export class FileServerProxyHandler {
 
 		// アバタークロップなど、どうしてもオリジンである必要がある場合
 		const mustOrigin = 'origin' in request.query;
+		const { mediaProxy, externalMediaProxyEnabled } = resolveMediaProxy(this.config, this.meta);
 
-		if (this.config.externalMediaProxyEnabled && !mustOrigin) {
-			return await this.redirectToExternalProxy(request, reply);
+		if (externalMediaProxyEnabled && !mustOrigin) {
+			return await this.redirectToExternalProxy(request, reply, mediaProxy);
 		}
 
 		this.validateUserAgent(request);
@@ -97,10 +99,11 @@ export class FileServerProxyHandler {
 	private async redirectToExternalProxy(
 		request: FastifyRequest<{ Params: { url: string }; Querystring: ProxyQuery }>,
 		reply: FastifyReply,
+		mediaProxy: string,
 	) {
 		reply.header('Cache-Control', 'public, max-age=259200'); // 3 days
 
-		const url = new URL(`${this.config.mediaProxy}/${request.params.url || ''}`);
+		const url = new URL(`${mediaProxy}/${request.params.url || ''}`);
 
 		for (const [key, value] of Object.entries(request.query)) {
 			url.searchParams.append(key, value);

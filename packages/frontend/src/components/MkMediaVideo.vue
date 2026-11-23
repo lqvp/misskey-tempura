@@ -25,7 +25,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<img
 			v-if="video.thumbnailUrl"
 			:class="$style.video"
-			:src="video.thumbnailUrl"
+			:src="rewriteProxiedImageUrl(video.thumbnailUrl)"
 			:referrerpolicy="referrerpolicy"
 			:alt="video.comment ?? undefined"
 		/>
@@ -58,6 +58,7 @@ import { i18n } from '@/i18n.js';
 import { prefer } from '@/preferences.js';
 import * as os from '@/os.js';
 import { getFileMenu } from '@/utility/get-file-menu.js';
+import { rewriteProxiedImageUrl } from '@/utility/media-proxy.js';
 import { shouldHideFileByDefault, canRevealFile } from '@/utility/sensitive-file.js';
 
 const props = defineProps<{

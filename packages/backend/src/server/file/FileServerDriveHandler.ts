@@ -5,7 +5,7 @@
 
 import * as fs from 'node:fs';
 import rename from 'rename';
-import type { Config } from '@/config.js';
+import { resolveMediaProxy, type Config } from '@/config.js';
 import type { IImageStreamable } from '@/core/ImageProcessingService.js';
 import { contentDisposition } from '@/misc/content-disposition.js';
 import { correctFilename } from '@/misc/correct-filename.js';
@@ -21,6 +21,7 @@ export class FileServerDriveHandler {
 		private fileResolver: FileServerFileResolver,
 		private assetsPath: string,
 		private videoProcessingService: VideoProcessingService,
+		private meta?: { mediaProxy?: string | null } | null,
 	) {}
 
 	public async handle(request: FastifyRequest<{ Params: { key: string } }>, reply: FastifyReply) {
@@ -41,13 +42,14 @@ export class FileServerDriveHandler {
 
 		try {
 			if (file.kind === 'remote') {
+				const { mediaProxy } = resolveMediaProxy(this.config, this.meta);
 				let image: IImageStreamable | null = null;
 
 				if (file.fileRole === 'thumbnail') {
 					if (isMimeImage(file.mime, 'sharp-convertible-image-with-bmp')) {
 						reply.header('Cache-Control', 'max-age=31536000, immutable');
 
-						const url = new URL(`${this.config.mediaProxy}/static.webp`);
+						const url = new URL(`${mediaProxy}/static.webp`);
 						url.searchParams.set('url', file.url);
 						url.searchParams.set('static', '1');
 
@@ -68,7 +70,7 @@ export class FileServerDriveHandler {
 					if (['image/svg+xml'].includes(file.mime)) {
 						reply.header('Cache-Control', 'max-age=31536000, immutable');
 
-						const url = new URL(`${this.config.mediaProxy}/svg.webp`);
+						const url = new URL(`${mediaProxy}/svg.webp`);
 						url.searchParams.set('url', file.url);
 
 						file.cleanup();

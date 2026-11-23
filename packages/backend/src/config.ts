@@ -253,6 +253,54 @@ export type Config = {
 
 export type FulltextSearchProvider = 'sqlLike' | 'sqlPgroonga' | 'meilisearch';
 
+export const MEDIA_PROXY_URL_MAX_LENGTH = 1024;
+
+export function normalizeMediaProxyUrl(url?: string | null): string | null {
+	if (url == null) return null;
+	const trimmed = url.trim();
+	if (trimmed === '') return null;
+	// CSS url(...) インジェクションや制御文字混入を防ぐ
+	if (/[\s'"()\\\x00-\x1f\x7f]/.test(trimmed)) return null;
+	try {
+		const parsed = new URL(trimmed);
+		if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+		if (parsed.username !== '' || parsed.password !== '') return null;
+		if (parsed.search !== '' || parsed.hash !== '') return null;
+		const normalized = `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, '');
+		if (normalized.length > MEDIA_PROXY_URL_MAX_LENGTH) return null;
+		return normalized;
+	} catch {
+		return null;
+	}
+}
+
+export function resolveMediaProxy(
+	config: Pick<Config, 'url' | 'mediaProxy' | 'externalMediaProxyEnabled'>,
+	meta?: { mediaProxy?: string | null } | null,
+): {
+	mediaProxy: string;
+	externalMediaProxyEnabled: boolean;
+} {
+	const metaMediaProxy = normalizeMediaProxyUrl(meta?.mediaProxy);
+	if (metaMediaProxy != null) {
+		const internalMediaProxy = `${config.url.replace(/\/+$/, '')}/proxy`;
+		if (metaMediaProxy === internalMediaProxy || metaMediaProxy.startsWith(`${internalMediaProxy}/`)) {
+			return {
+				mediaProxy: internalMediaProxy,
+				externalMediaProxyEnabled: false,
+			};
+		}
+		return {
+			mediaProxy: metaMediaProxy,
+			externalMediaProxyEnabled: true,
+		};
+	}
+	return {
+		mediaProxy: config.mediaProxy,
+		externalMediaProxyEnabled: config.externalMediaProxyEnabled,
+	};
+}
+
 const _filename = fileURLToPath(import.meta.url);
 const _dirname = dirname(_filename);
 

@@ -13319,6 +13319,28 @@ export interface Locale extends ILocale {
          */
         "contactUrlDescription": string;
     };
+    "_mediaProxySetting": {
+        /**
+         * メディアプロキシ
+         */
+        "title": string;
+        /**
+         * メディアプロキシのURL
+         */
+        "url": string;
+        /**
+         * 外部のメディアプロキシ（misskey-dev/media-proxy 互換）のベースURLを指定します（例: https://proxy.example.com/proxy）。空欄の場合は設定ファイル（default.yml）または内蔵プロキシ（/proxy）を使用します。
+         */
+        "serverDescription": string;
+        /**
+         * このクライアントでの画像表示に使用するメディアプロキシのベースURLを指定します（例: https://proxy.example.com/proxy）。空欄の場合はサーバーのメディアプロキシ設定を使用します。
+         */
+        "clientDescription": string;
+        /**
+         * 有効な http(s):// のベースURLを入力してください（ユーザー情報・クエリ・フラグメント・括弧や引用符は使用できません）。
+         */
+        "invalidUrl": string;
+    };
     "_urlPreviewSetting": {
         /**
          * URLプレビューの設定

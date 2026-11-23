@@ -65,6 +65,7 @@ import XImage from '@/components/MkMediaImage.vue';
 import XVideo from '@/components/MkMediaVideo.vue';
 import * as os from '@/os.js';
 import { prefer } from '@/preferences.js';
+import { rewriteProxiedImageUrl, rewriteProxiedImageUrlNullable } from '@/utility/media-proxy.js';
 import { isPreviewable, getType } from '@/utility/lightbox.js';
 import { genId } from '@/utility/id.js';
 
@@ -140,10 +141,11 @@ onUnmounted(() => {
 
 function onMediaClick(file: Misskey.entities.DriveFile) {
 	if (prefer.s.imageNewTab) {
+		const targetUrl = rewriteProxiedImageUrl(file.url);
 		if (props.referrerpolicy === 'no-referrer') {
-			window.open(file.url, '_blank', 'noreferrer');
+			window.open(targetUrl, '_blank', 'noreferrer');
 		} else {
-			window.open(file.url, '_blank');
+			window.open(targetUrl, '_blank');
 		}
 		return;
 	}
@@ -167,8 +169,8 @@ async function openGallery(id?: string) {
 	const contents = medias.value.previewable.map<Content>(media => ({
 		id: media.id,
 		type: getType(media.type),
-		url: media.url,
-		thumbnailUrl: media.thumbnailUrl,
+		url: rewriteProxiedImageUrl(media.url),
+		thumbnailUrl: rewriteProxiedImageUrlNullable(media.thumbnailUrl),
 		referrerPolicy: props.referrerpolicy,
 		width: media.properties.width,
 		height: media.properties.height,

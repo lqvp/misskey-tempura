@@ -12,7 +12,7 @@ import fastifyStatic from '@fastify/static';
 import fastifyRawBody from 'fastify-raw-body';
 import { IsNull } from 'typeorm';
 import { GlobalEventService } from '@/core/GlobalEventService.js';
-import type { Config } from '@/config.js';
+import { resolveMediaProxy, type Config } from '@/config.js';
 import type { EmojisRepository, MiMeta, UserProfilesRepository, UsersRepository } from '@/models/_.js';
 import { DI } from '@/di-symbols.js';
 import type Logger from '@/logger.js';
@@ -200,14 +200,15 @@ export class ServerService implements OnApplicationShutdown {
 				}
 			}
 
+			const { mediaProxy } = resolveMediaProxy(this.config, this.meta);
 			let url: URL;
 			if ('badge' in request.query) {
-				url = new URL(`${this.config.mediaProxy}/emoji.png`);
+				url = new URL(`${mediaProxy}/emoji.png`);
 				// || emoji.originalUrl してるのは後方互換性のため（publicUrlはstringなので??はだめ）
 				url.searchParams.set('url', emoji.publicUrl || emoji.originalUrl);
 				url.searchParams.set('badge', '1');
 			} else {
-				url = new URL(`${this.config.mediaProxy}/emoji.webp`);
+				url = new URL(`${mediaProxy}/emoji.webp`);
 				// || emoji.originalUrl してるのは後方互換性のため（publicUrlはstringなので??はだめ）
 				url.searchParams.set('url', emoji.publicUrl || emoji.originalUrl);
 				url.searchParams.set('emoji', '1');

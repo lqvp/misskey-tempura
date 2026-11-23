@@ -428,6 +428,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * noteVisibilityColoring
 * reactionChecksMuting
 * enableReactionConfirm / enableLikeConfirm
+* mediaProxy: 設定 → テンプラ設定 → 動作 (`/settings/tempura-settings`) からクライアント側で独自のメディアプロキシ URL を指定可能 (サーバー生成済みのプロキシ URL も差し替え)
 
 ### 投稿フォーム
 
@@ -485,7 +486,8 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 ### テンプラ管理画面
 
 * /admin/tempura-admin に集約
-* ApprovalRequired / DefaultRequireSigninToViewContents / BlockMentions / LongIconUrl / UsernameMinLength / SecondsPerSignup / CustomSplashText / EmailDomainSettings / LlmModerationSettings / HanaEntranceSettings / EntranceSettings / DefaultFollowedUsers / ProxyAccountFollowModeSettings / BackgroundImages / CustomCursor / GeminiSettings / ContactFormSettings / LoginRiskSettings / ServerStatsSettings / SignedApFetchSettings / DeeplFreeModeSettings / ObjectStorageRemoteSettings / BlockedUserImageSettings / OfflinePageSettings
+* ApprovalRequired / DefaultRequireSigninToViewContents / BlockMentions / LongIconUrl / UsernameMinLength / SecondsPerSignup / CustomSplashText / EmailDomainSettings / LlmModerationSettings / HanaEntranceSettings / EntranceSettings / DefaultFollowedUsers / ProxyAccountFollowModeSettings / BackgroundImages / CustomCursor / GeminiSettings / ContactFormSettings / LoginRiskSettings / ServerStatsSettings / SignedApFetchSettings / DeeplFreeModeSettings / ObjectStorageRemoteSettings / MediaProxySettings / BlockedUserImageSettings / OfflinePageSettings
+* mediaProxy: 外部メディアプロキシのベース URL を DB (meta) で管理し、管理画面から即時変更可能 (未設定時は default.yml または内蔵 /proxy にフォールバック)
 
 ### オフラインページ
 

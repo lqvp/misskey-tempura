@@ -27,6 +27,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</MkSwitch>
 					</SearchMarker>
 				</MkPreferenceContainer>
+
+				<MkPreferenceContainer k="mediaProxy">
+					<SearchMarker :keywords="['media', 'proxy', 'image', 'url']">
+						<MkInput :modelValue="mediaProxyDraft" type="url" manualSave @update:modelValue="onSaveMediaProxy">
+							<template #prefix><i class="ti ti-link"></i></template>
+							<template #label><SearchLabel>{{ i18n.ts._mediaProxySetting.url }}</SearchLabel></template>
+							<template #caption>{{ i18n.ts._mediaProxySetting.clientDescription }}</template>
+						</MkInput>
+					</SearchMarker>
+				</MkPreferenceContainer>
 			</div>
 		</div>
 	</MkFolder>
@@ -34,13 +44,43 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
+import { ref, watch } from 'vue';
+import { normalizeMediaProxyUrl } from '@@/js/media-proxy.js';
 import MkSwitch from '@/components/MkSwitch.vue';
+import MkInput from '@/components/MkInput.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
+import * as os from '@/os.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 
 const reactionChecksMuting = prefer.model('reactionChecksMuting');
 const anonymizeMutedUsers = prefer.model('anonymizeMutedUsers');
+const mediaProxyDraft = ref(prefer.s.mediaProxy ?? '');
+
+watch(prefer.r.mediaProxy, (value) => {
+	mediaProxyDraft.value = value ?? '';
+});
+
+function onSaveMediaProxy(value: string) {
+	const trimmed = value.trim();
+	if (trimmed === '') {
+		prefer.commit('mediaProxy', null);
+		mediaProxyDraft.value = '';
+		return;
+	}
+
+	const normalized = normalizeMediaProxyUrl(trimmed);
+	if (normalized == null) {
+		void os.alert({
+			type: 'error',
+			text: i18n.ts._mediaProxySetting.invalidUrl,
+		});
+		return;
+	}
+
+	prefer.commit('mediaProxy', normalized);
+	mediaProxyDraft.value = normalized;
+}
 
 </script>

@@ -1302,6 +1302,12 @@ export class MiMeta {
 		default: [],
 	})
 	public contactFormCategories: ContactFormCategory[];
+
+	@Column('varchar', {
+		length: 1024,
+		nullable: true,
+	})
+	public mediaProxy: string | null;
 }
 
 export interface ContactFormCategory {

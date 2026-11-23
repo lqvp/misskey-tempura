@@ -13,7 +13,7 @@ import { DriveService } from '@/core/DriveService.js';
 import { bindThis } from '@/decorators.js';
 import { MetaService } from '@/core/MetaService.js';
 import { appendQuery, query } from '@/misc/prelude/url.js';
-import type { Config } from '@/config.js';
+import { resolveMediaProxy, type Config } from '@/config.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 
 @Injectable()
@@ -41,9 +41,9 @@ export class CleanExpiredRemoteFilesProcessorService {
 	}
 
 	@bindThis
-	private getProxiedUrl(url: string, mode?: 'static' | 'avatar'): string {
+	private getProxiedUrl(url: string, mediaProxy: string, mode?: 'static' | 'avatar'): string {
 		return appendQuery(
-			`${this.config.mediaProxy}/${mode ?? 'image'}.webp`,
+			`${mediaProxy}/${mode ?? 'image'}.webp`,
 			query({
 				url,
 				...(mode ? { [mode]: '1' } : {}),
@@ -52,7 +52,7 @@ export class CleanExpiredRemoteFilesProcessorService {
 	}
 	
 	@bindThis
-	private async updateAvatarUrl(userIds: Set<MiUser['id']>) {
+	private async updateAvatarUrl(userIds: Set<MiUser['id']>, mediaProxy: string) {
 		let counter = 0;
 
 		for (const uid of userIds) {
@@ -64,10 +64,10 @@ export class CleanExpiredRemoteFilesProcessorService {
 					const userBannerFile = user.bannerId != null ? await entityManager.findOneBy(MiDriveFile, { id: user.bannerId }) : null;
 					const update: Partial<MiUser> = {};
 					if (userAvatarFile?.isLink) {
-						update.avatarUrl = userAvatarFile.uri != null ? this.getProxiedUrl(userAvatarFile.uri, 'avatar') : null;
+						update.avatarUrl = userAvatarFile.uri != null ? this.getProxiedUrl(userAvatarFile.uri, mediaProxy, 'avatar') : null;
 					}
 					if (userBannerFile?.isLink) {
-						update.bannerUrl = userBannerFile.uri != null ? this.getProxiedUrl(userBannerFile.uri) : null;
+						update.bannerUrl = userBannerFile.uri != null ? this.getProxiedUrl(userBannerFile.uri, mediaProxy) : null;
 					}
 					
 					const shouldUpdate =
@@ -134,7 +134,8 @@ export class CleanExpiredRemoteFilesProcessorService {
 
 			deletedCount += files.length;
 		}
-		await this.updateAvatarUrl(userIds);
+		const { mediaProxy } = resolveMediaProxy(this.config, meta);
+		await this.updateAvatarUrl(userIds, mediaProxy);
 		this.logger.succ(`${deletedCount} cached remote files has been deleted.`);
 	}
 }

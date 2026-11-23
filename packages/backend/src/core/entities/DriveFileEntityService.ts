@@ -7,7 +7,7 @@ import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { In } from 'typeorm';
 import { DI } from '@/di-symbols.js';
 import type { DriveFilesRepository, MiMeta } from '@/models/_.js';
-import type { Config } from '@/config.js';
+import { resolveMediaProxy, type Config } from '@/config.js';
 import type { Packed } from '@/misc/json-schema.js';
 import { awaitAll } from '@/misc/prelude/await-all.js';
 import type { MiUser } from '@/models/User.js';
@@ -80,9 +80,9 @@ export class DriveFileEntityService {
 	}
 
 	@bindThis
-	private getProxiedUrl(url: string, mode?: 'static' | 'avatar'): string {
+	private getProxiedUrl(url: string, mediaProxy: string, mode?: 'static' | 'avatar'): string {
 		return appendQuery(
-			`${this.config.mediaProxy}/${mode ?? 'image'}.webp`,
+			`${mediaProxy}/${mode ?? 'image'}.webp`,
 			query({
 				url,
 				...(mode ? { [mode]: '1' } : {}),
@@ -92,13 +92,14 @@ export class DriveFileEntityService {
 
 	@bindThis
 	public getThumbnailUrl(file: MiDriveFile): string | null {
+		const { mediaProxy, externalMediaProxyEnabled } = resolveMediaProxy(this.config, this.meta);
 		if (file.type.startsWith('video')) {
 			if (file.thumbnailUrl) return file.thumbnailUrl;
 
 			return this.videoProcessingService.getExternalVideoThumbnailUrl(file.webpublicUrl ?? file.url);
-		} else if (file.uri != null && file.userHost != null && this.config.externalMediaProxyEnabled) {
+		} else if (file.uri != null && file.userHost != null && externalMediaProxyEnabled) {
 			// 動画ではなくリモートかつメディアプロキシ
-			return this.getProxiedUrl(file.uri, 'static');
+			return this.getProxiedUrl(file.uri, mediaProxy, 'static');
 		}
 
 		if (file.uri != null && file.isLink && this.meta.proxyRemoteFiles) {
@@ -107,7 +108,7 @@ export class DriveFileEntityService {
 			// リモートかつ期限切れはローカルプロキシを試みる
 			// 従来は/files/${thumbnailAccessKey}にアクセスしていたが、
 			// /filesはメディアプロキシにリダイレクトするようにしたため直接メディアプロキシを指定する
-			return this.getProxiedUrl(file.uri, 'static');
+			return this.getProxiedUrl(file.uri, mediaProxy, 'static');
 		}
 
 		const url = file.webpublicUrl ?? file.url;
@@ -117,9 +118,10 @@ export class DriveFileEntityService {
 
 	@bindThis
 	public getPublicUrl(file: MiDriveFile, mode?: 'avatar'): string { // static = thumbnail
+		const { mediaProxy, externalMediaProxyEnabled } = resolveMediaProxy(this.config, this.meta);
 		// リモートかつメディアプロキシ
-		if (file.uri != null && file.userHost != null && this.config.externalMediaProxyEnabled) {
-			return this.getProxiedUrl(file.uri, mode);
+		if (file.uri != null && file.userHost != null && externalMediaProxyEnabled) {
+			return this.getProxiedUrl(file.uri, mediaProxy, mode);
 		}
 
 		// リモートかつ期限切れはローカルプロキシを試みる
@@ -129,15 +131,15 @@ export class DriveFileEntityService {
 			const key = file.webpublicAccessKey;
 
 			if (key && !key.match('/')) {	// 古いものはここにオブジェクトストレージキーが入ってるので除外
-				if (mode === 'avatar') return this.getProxiedUrl(file.uri, 'avatar');
-				else return this.getProxiedUrl(file.uri);
+				if (mode === 'avatar') return this.getProxiedUrl(file.uri, mediaProxy, 'avatar');
+				else return this.getProxiedUrl(file.uri, mediaProxy);
 			}
 		}
 
 		const url = file.webpublicUrl ?? file.url;
 
 		if (mode === 'avatar') {
-			return this.getProxiedUrl(url, 'avatar');
+			return this.getProxiedUrl(url, mediaProxy, 'avatar');
 		}
 		return url;
 	}

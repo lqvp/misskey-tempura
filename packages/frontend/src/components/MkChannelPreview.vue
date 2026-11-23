@@ -55,6 +55,7 @@ import * as Misskey from 'misskey-js';
 import { $i } from '@/i.js';
 import { i18n } from '@/i18n.js';
 import { miLocalStorage } from '@/local-storage.js';
+import { rewriteProxiedImageUrl } from '@/utility/media-proxy.js';
 
 const props = defineProps<{
 	channel: Misskey.entities.Channel;
@@ -76,7 +77,7 @@ const updateLastReadedAt = () => {
 
 const bannerStyle = computed(() => {
 	if (props.channel.bannerUrl) {
-		return { backgroundImage: `url(${props.channel.bannerUrl})` };
+		return { backgroundImage: `url(${JSON.stringify(rewriteProxiedImageUrl(props.channel.bannerUrl))})` };
 	} else {
 		return { backgroundColor: '#4c5e6d' };
 	}

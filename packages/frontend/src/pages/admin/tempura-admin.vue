@@ -32,6 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<AnonymousAccessSettings :meta="meta"/>
 				<DeeplFreeModeSettings :meta="meta"/>
 				<ObjectStorageRemoteSettings :meta="meta"/>
+				<MediaProxySettings :meta="meta"/>
 				<BlockedUserImageSettings :meta="meta"/>
 				<OfflinePageSettings :meta="meta"/>
 			</div>
@@ -67,6 +68,7 @@ import SignedApFetchSettings from './tempura/sections/SignedApFetchSettings.vue'
 import AnonymousAccessSettings from './tempura/sections/AnonymousAccessSettings.vue';
 import DeeplFreeModeSettings from './tempura/sections/DeeplFreeModeSettings.vue';
 import ObjectStorageRemoteSettings from './tempura/sections/ObjectStorageRemoteSettings.vue';
+import MediaProxySettings from './tempura/sections/MediaProxySettings.vue';
 import BlockedUserImageSettings from './tempura/sections/BlockedUserImageSettings.vue';
 import OfflinePageSettings from './tempura/sections/OfflinePageSettings.vue';
 import { definePage } from '@/page.js';

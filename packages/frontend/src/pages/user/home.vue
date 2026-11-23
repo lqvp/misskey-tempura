@@ -251,7 +251,7 @@ import { confetti } from '@/utility/confetti.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { isFollowingVisibleForMe, isFollowersVisibleForMe } from '@/utility/isFfVisibleForMe.js';
 import { useRouter } from '@/router.js';
-import { getStaticImageUrl } from '@/utility/media-proxy.js';
+import { getStaticImageUrl, rewriteProxiedImageUrl } from '@/utility/media-proxy.js';
 import { editNickname } from '@/utility/edit-nickname';
 import MkSparkle from '@/components/MkSparkle.vue';
 import { prefer } from '@/preferences.js';
@@ -326,11 +326,11 @@ const style = computed(() => {
 	if (props.user.bannerUrl == null) return {};
 	if (prefer.s.disableShowingAnimatedImages) {
 		return {
-			backgroundImage: `url(${ getStaticImageUrl(props.user.bannerUrl) })`,
+			backgroundImage: `url(${JSON.stringify(getStaticImageUrl(props.user.bannerUrl))})`,
 		};
 	} else {
 		return {
-			backgroundImage: `url(${ props.user.bannerUrl })`,
+			backgroundImage: `url(${JSON.stringify(rewriteProxiedImageUrl(props.user.bannerUrl))})`,
 		};
 	};
 });
