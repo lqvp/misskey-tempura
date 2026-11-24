@@ -184,6 +184,37 @@ describe('reconcileUserMediaProxyUrls', () => {
 		expect(otherAfter.bannerUrl).toBe(other.bannerUrl);
 	});
 
+	test('スコープ付き実行で残った別プロキシの行を remainingForeignProxy として数える', async () => {
+		const scoped = await insertUser({
+			avatarUrl: 'https://old-a.example/proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png&avatar=1',
+		});
+		const leftover = await insertUser({
+			avatarUrl: 'https://stale.example/proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Fb.png&avatar=1',
+		});
+
+		const result = await reconcileUserMediaProxyUrls(usersRepository, NEXT, { fromMediaProxy: 'https://old-a.example/proxy' });
+
+		expect(result.rewritten).toBe(1);
+		expect(result.remainingForeignProxy).toBe(1);
+		const leftoverAfter = await usersRepository.findOneByOrFail({ id: leftover.id });
+		expect(leftoverAfter.avatarUrl).toBe(leftover.avatarUrl);
+		const scopedAfter = await usersRepository.findOneByOrFail({ id: scoped.id });
+		expect(scopedAfter.avatarUrl!.startsWith(`${NEXT}/`)).toBe(true);
+	});
+
+	test('スコープなし再同期は他のプロキシ接頭辞も対象に含める (明示的な復旧操作)', async () => {
+		const leftover = await insertUser({
+			avatarUrl: 'https://stale.example/proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Fb.png&avatar=1',
+		});
+
+		const result = await reconcileUserMediaProxyUrls(usersRepository, NEXT);
+
+		expect(result.rewritten).toBe(1);
+		expect(result.remainingForeignProxy).toBe(0);
+		const after = await usersRepository.findOneByOrFail({ id: leftover.id });
+		expect(after.avatarUrl!.startsWith(`${NEXT}/`)).toBe(true);
+	});
+
 	test('SQL インジェクション耐性: 接頭辞はパラメータバインドされる', async () => {
 		const user = await insertUser({
 			avatarUrl: 'https://old-proxy.example/proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png',

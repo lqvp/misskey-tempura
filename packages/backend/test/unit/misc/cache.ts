@@ -22,6 +22,34 @@ describe('misc:MemoryKVCache', () => {
 		cache.dispose();
 	});
 
+	test('clear() removes all entries and invalidates in-flight fetches', async () => {
+		const cache = new MemoryKVCache<string>(60_000);
+
+		cache.set('a', 'old');
+		cache.clear();
+		expect(cache.get('a')).toBeUndefined();
+
+		// 取得中に clear() された結果は再登録しない
+		let resolveFetch!: (value: string) => void;
+		const pending = cache.fetch('b', () => new Promise<string>(resolve => {
+			resolveFetch = resolve;
+		}));
+		cache.clear();
+		resolveFetch('stale');
+		await expect(pending).resolves.toBe('stale');
+		expect(cache.get('b')).toBeUndefined();
+
+		cache.dispose();
+	});
+
+	test('clear() does not invalidate fetches started after it', async () => {
+		const cache = new MemoryKVCache<string>(60_000);
+		cache.clear();
+		await expect(cache.fetch('c', async () => 'fresh')).resolves.toBe('fresh');
+		expect(cache.get('c')).toBe('fresh');
+		cache.dispose();
+	});
+
 	test('get returns undefined after lifetime expires', () => {
 		const cache = new MemoryKVCache<string>(1000);
 		cache.set('key', 'value');

@@ -41,6 +41,15 @@ export class ServerService implements OnApplicationShutdown {
 	private logger: Logger;
 	#fastify: FastifyInstance;
 
+	/**
+	 * メディアプロキシへリダイレクトする経路の Cache-Control。
+	 * 管理画面 (DB) 由来の設定は切り替えられるため、旧プロキシへ誘導し続けないよう短くする。
+	 */
+	private get mediaProxyRedirectCacheControl(): string {
+		const fromMeta = this.meta.mediaProxy != null && this.meta.mediaProxy.trim() !== '';
+		return fromMeta ? 'public, max-age=300' : 'public, max-age=86400';
+	}
+
 	constructor(
 		@Inject(DI.config)
 		private config: Config,
@@ -165,7 +174,7 @@ export class ServerService implements OnApplicationShutdown {
 		fastify.get<{ Params: { path: string }; Querystring: { static?: any; badge?: any; }; }>('/emoji/:path(.*)', async (request, reply) => {
 			const path = request.params.path;
 
-			reply.header('Cache-Control', 'public, max-age=86400');
+			reply.header('Cache-Control', this.mediaProxyRedirectCacheControl);
 
 			if (!path.match(/^[a-zA-Z0-9\-_@\.]+?\.webp$/)) {
 				reply.code(404);
@@ -231,7 +240,7 @@ export class ServerService implements OnApplicationShutdown {
 				},
 			});
 
-			reply.header('Cache-Control', 'public, max-age=86400');
+			reply.header('Cache-Control', this.mediaProxyRedirectCacheControl);
 
 			if (user) {
 				reply.redirect((user.avatarId == null ? null : user.avatarUrl) ?? this.userEntityService.getIdenticonUrl(user));

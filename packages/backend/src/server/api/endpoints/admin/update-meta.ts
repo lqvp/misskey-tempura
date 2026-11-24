@@ -37,7 +37,7 @@ export const meta = {
 			id: '0b4b9a0e-6f0d-4c8e-9d3a-5f2f7a1c8e41',
 		},
 		invalidMediaProxyUrl: {
-			message: 'mediaProxy must be a valid http(s) URL without credentials, query, or hash.',
+			message: 'mediaProxy must be a valid http(s) URL without credentials, query, or hash, and must not point to this server\'s own /proxy or origin root.',
 			code: 'INVALID_MEDIA_PROXY_URL',
 			id: '9529a736-ac90-4d8f-a85c-e9bd75de96f2',
 		},
@@ -1435,39 +1435,50 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			}
 			// メディアプロキシの実効値が変わったら、DB に保存済みの avatarUrl / bannerUrl を新しい実効値へ収束させる。
 			// 同じ値で明示的に保存された場合も再実行する (失敗や取り残しを管理画面から復旧できるようにするため)。
-			const afterMediaProxy = resolveMediaProxy(this.config, after).mediaProxy;
-			const beforeMediaProxy = resolveMediaProxy(this.config, before).mediaProxy;
 			if (ps.mediaProxy !== undefined) {
-				const requestedMediaProxy = afterMediaProxy;
+				const requestedMediaProxy = resolveMediaProxy(this.config, after).mediaProxy;
+				const beforeMediaProxy = resolveMediaProxy(this.config, before).mediaProxy;
 				// 設定値が実際に変わった場合は旧接頭辞の行だけを対象にし、無関係な配信元 URL を巻き込まない。
 				// 同じ値の再保存は「再同期」とみなし、プロキシ形式の URL すべてを現在値へ寄せる。
-				const fromMediaProxy = beforeMediaProxy !== afterMediaProxy ? beforeMediaProxy : null;
-				// 直列化して実行する。実行時点で実効値が変わっていたら (別の変更が後勝ちしたら) 古い要求は捨てる。
-				// 収束処理は冪等なので、順序が入れ替わっても最終状態は最新の実効値に一致する。
-				this.rewriteChain = this.rewriteChain
-					.then(async () => {
-						const latest = await this.metaService.fetch(true);
-						const latestMediaProxy = resolveMediaProxy(this.config, latest).mediaProxy;
-						if (latestMediaProxy !== requestedMediaProxy) return;
-
-						const result = await reconcileUserMediaProxyUrls(this.usersRepository, latestMediaProxy, { fromMediaProxy });
-						if (result.rewritten > 0) {
-							// 全プロセスのユーザーキャッシュを一括で無効化する (per-user イベントは DB 負荷が行数×プロセス数になるため避ける)
-							this.globalEventService.publishInternalEvent('userMediaProxyRewritten', {
-								newMediaProxy: latestMediaProxy,
-							});
-						}
-						if (result.skippedByOrigin > 0 || result.skippedByLength > 0) {
-							this.apiLoggerService.logger.warn(
-								`mediaProxy URL reconcile: rewritten=${result.rewritten}, skippedByOrigin=${result.skippedByOrigin}, skippedByLength=${result.skippedByLength}. ` +
-								'skippedByLength の行は短いプロキシURLに変更するまで対象外、skippedByOrigin の行はオリジン配信が必要なため常に対象外です。',
-							);
-						}
-					})
-					.catch((err) => {
-						this.apiLoggerService.logger.warn(`failed to reconcile stored user mediaProxy URLs: ${err}`);
-					});
+				const fromMediaProxy = beforeMediaProxy !== requestedMediaProxy ? beforeMediaProxy : null;
+				this.enqueueMediaProxyReconcile(requestedMediaProxy, fromMediaProxy, 0);
 			}
 		});
+	}
+
+	/** プロセス内で直列化しつつ、保存済みの画像URLを実効プロキシへ収束させる */
+	private enqueueMediaProxyReconcile(target: string, fromMediaProxy: string | null, depth: number): void {
+		this.rewriteChain = this.rewriteChain
+			.then(async () => {
+				const latest = await this.metaService.fetch(true);
+				const latestMediaProxy = resolveMediaProxy(this.config, latest).mediaProxy;
+				// 実行時点で実効値が変わっていたら、その要求は古いので何もしない (後勝ちを上書きしない)
+				if (latestMediaProxy !== target) return;
+
+				const result = await reconcileUserMediaProxyUrls(this.usersRepository, latestMediaProxy, { fromMediaProxy });
+				if (result.rewritten > 0) {
+					// 全プロセスのユーザーキャッシュを一括で無効化する (per-user イベントは DB 負荷が行数×プロセス数になるため避ける)
+					this.globalEventService.publishInternalEvent('userMediaProxyRewritten', { newMediaProxy: latestMediaProxy });
+				}
+				if (result.skippedByOrigin > 0 || result.skippedByLength > 0 || result.remainingForeignProxy > 0) {
+					this.apiLoggerService.logger.warn(
+						`mediaProxy URL reconcile: rewritten=${result.rewritten}, skippedByOrigin=${result.skippedByOrigin}, skippedByLength=${result.skippedByLength}, remainingForeignProxy=${result.remainingForeignProxy}. ` +
+						'skippedByLength の行は短いプロキシURLに変更するまで対象外、skippedByOrigin の行はオリジン配信が必要なため常に対象外、' +
+						'remainingForeignProxy の行は別のプロキシ接頭辞のまま残っているため「保存済みの画像URLを再同期」で回収できます。',
+					);
+				}
+
+				// 直列化はプロセス内のみなので、別プロセスが後から値を変えていたら追いかけてもう一度収束させる
+				if (depth < 3) {
+					const now = await this.metaService.fetch(true);
+					const nowMediaProxy = resolveMediaProxy(this.config, now).mediaProxy;
+					if (nowMediaProxy !== latestMediaProxy) {
+						this.enqueueMediaProxyReconcile(nowMediaProxy, null, depth + 1);
+					}
+				}
+			})
+			.catch((err) => {
+				this.apiLoggerService.logger.warn(`failed to reconcile stored user mediaProxy URLs: ${err}`);
+			});
 	}
 }

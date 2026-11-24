@@ -309,6 +309,10 @@ export class ApPersonService implements OnModuleInit {
 		const avatarUrlFits = rawAvatarUrl != null && rawAvatarUrl.length <= USER_AVATAR_URL_MAX_LENGTH;
 		const rawBannerUrl = banner?.url ? this.driveFileEntityService.getPublicUrl(banner) : null;
 		const bannerUrlFits = rawBannerUrl != null && rawBannerUrl.length <= USER_BANNER_URL_MAX_LENGTH;
+		if ((rawAvatarUrl != null && !avatarUrlFits) || (rawBannerUrl != null && !bannerUrlFits)) {
+			// 列長超過で URL を更新しないと avatarId (新) と avatarUrl (旧) がずれるため、検知できるようログに残す
+			this.logger.warn(`avatar/banner proxy URL exceeds column length for ${user.id}; keeping the stored URL`);
+		}
 
 		const returnData: any = {
 			...( avatar ? {

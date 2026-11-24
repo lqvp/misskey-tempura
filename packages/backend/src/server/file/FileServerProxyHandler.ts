@@ -48,7 +48,7 @@ export class FileServerProxyHandler {
 		}
 
 		// アバタークロップなど、どうしてもオリジンである必要がある場合
-		const mustOrigin = 'origin' in request.query;
+		const mustOrigin = request.query.origin === '1';
 		const { mediaProxy, externalMediaProxyEnabled } = resolveMediaProxy(this.config, this.meta);
 
 		if (externalMediaProxyEnabled && !mustOrigin) {

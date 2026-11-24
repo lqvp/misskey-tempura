@@ -342,7 +342,15 @@ export function resolveMediaProxy(
 			externalMediaProxyEnabled: true,
 		};
 	}
-	// invalid / self-root は設定として成立しないので設定ファイルの値へフォールバックする
+	// invalid / self-root は設定として成立しないので設定ファイルの値へフォールバックする。
+	// 設定ファイル側が自サーバーの /proxy を指している場合も、外部扱いにするとループするため内蔵として扱う。
+	const fallback = classifyMediaProxyUrl(config.mediaProxy, config.url);
+	if (fallback.kind === 'self-proxy') {
+		return {
+			mediaProxy: `${normalizeMediaProxyUrl(config.url) ?? config.url.replace(/\/+$/, '')}/proxy`,
+			externalMediaProxyEnabled: false,
+		};
+	}
 	return {
 		mediaProxy: config.mediaProxy,
 		externalMediaProxyEnabled: config.externalMediaProxyEnabled,

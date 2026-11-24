@@ -25,6 +25,8 @@ export interface ReconcileMediaProxyResult {
 	skippedByOrigin: number;
 	/** 列長上限を超えるためスキップした行数 */
 	skippedByLength: number;
+	/** 対象外のプロキシ接頭辞のまま残っている行数 (fromMediaProxy 指定時のみ意味を持つ) */
+	remainingForeignProxy: number;
 }
 
 export interface ReconcileMediaProxyOptions {
@@ -42,19 +44,30 @@ function sourceFilterSql(column: 'avatarUrl' | 'bannerUrl', hasFromPrefix: boole
 }
 
 function countSql(column: 'avatarUrl' | 'bannerUrl', maxLength: number, hasFromPrefix: boolean): string {
+	// スコープ判定は FILTER 側に置く (WHERE に置くと「スコープ外の残存」を数えられなくなる)
+	const scoped = hasFromPrefix ? `AND left("${column}", char_length($3)) = $3` : '';
+	const unsettled = `AND left("${column}", char_length($3)) <> $3`;
 	return `
 		SELECT
-			count(*) FILTER (WHERE strpos("${column}", 'origin=') > 0)::int AS blocked_origin,
+			${hasFromPrefix ? `count(*) FILTER (
+				WHERE substring("${column}" FROM $2) IS NOT NULL
+					AND substring("${column}" FROM $2) <> $1
+					${unsettled}
+			)::int` : '0::int'} AS remaining_foreign,
+			count(*) FILTER (
+				WHERE strpos("${column}", 'origin=') > 0
+					${scoped}
+			)::int AS blocked_origin,
 			count(*) FILTER (
 				WHERE strpos("${column}", 'origin=') = 0
 					AND char_length($1) + char_length("${column}") - char_length(substring("${column}" FROM $2)) > ${maxLength}
+					${scoped}
 			)::int AS blocked_length
 		FROM "user"
 		WHERE "${column}" IS NOT NULL
 			AND (strpos("${column}", '?url=') > 0 OR strpos("${column}", '&url=') > 0)
 			AND substring("${column}" FROM $2) IS NOT NULL
-			AND substring("${column}" FROM $2) <> $1
-			${sourceFilterSql(column, hasFromPrefix)}`;
+			AND substring("${column}" FROM $2) <> $1`;
 }
 
 function updateSql(column: 'avatarUrl' | 'bannerUrl', maxLength: number, hasFromPrefix: boolean): string {
@@ -101,11 +114,11 @@ export async function reconcileUserMediaProxyUrls(
 		const avatarCounts = await entityManager.query(
 			countSql('avatarUrl', USER_AVATAR_URL_MAX_LENGTH, hasFromPrefix),
 			params,
-		) as { blocked_origin: number; blocked_length: number; }[];
+		) as { blocked_origin: number; blocked_length: number; remaining_foreign: number; }[];
 		const bannerCounts = await entityManager.query(
 			countSql('bannerUrl', USER_BANNER_URL_MAX_LENGTH, hasFromPrefix),
 			params,
-		) as { blocked_origin: number; blocked_length: number; }[];
+		) as { blocked_origin: number; blocked_length: number; remaining_foreign: number; }[];
 
 		const [, avatarRewritten] = await entityManager.query(
 			updateSql('avatarUrl', USER_AVATAR_URL_MAX_LENGTH, hasFromPrefix),
@@ -120,6 +133,7 @@ export async function reconcileUserMediaProxyUrls(
 			rewritten: avatarRewritten + bannerRewritten,
 			skippedByOrigin: (avatarCounts[0]?.blocked_origin ?? 0) + (bannerCounts[0]?.blocked_origin ?? 0),
 			skippedByLength: (avatarCounts[0]?.blocked_length ?? 0) + (bannerCounts[0]?.blocked_length ?? 0),
+			remainingForeignProxy: (avatarCounts[0]?.remaining_foreign ?? 0) + (bannerCounts[0]?.remaining_foreign ?? 0),
 		};
 	});
 }

@@ -16,6 +16,15 @@ import type { FileServerFileResolver } from './FileServerFileResolver.js';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 export class FileServerDriveHandler {
+	/**
+	 * プロキシへリダイレクトする経路の Cache-Control。
+	 * 管理画面 (DB) 由来の設定は切り替えられるため、immutable で固定しない。
+	 */
+	private get mediaProxyRedirectCacheControl(): string {
+		const fromMeta = this.meta?.mediaProxy != null && this.meta.mediaProxy.trim() !== '';
+		return fromMeta ? 'public, max-age=300' : 'max-age=31536000, immutable';
+	}
+
 	constructor(
 		private config: Config,
 		private fileResolver: FileServerFileResolver,
@@ -47,7 +56,7 @@ export class FileServerDriveHandler {
 
 				if (file.fileRole === 'thumbnail') {
 					if (isMimeImage(file.mime, 'sharp-convertible-image-with-bmp')) {
-						reply.header('Cache-Control', 'max-age=31536000, immutable');
+						reply.header('Cache-Control', this.mediaProxyRedirectCacheControl);
 
 						const url = new URL(`${mediaProxy}/static.webp`);
 						url.searchParams.set('url', file.url);
@@ -68,7 +77,7 @@ export class FileServerDriveHandler {
 
 				if (file.fileRole === 'webpublic') {
 					if (['image/svg+xml'].includes(file.mime)) {
-						reply.header('Cache-Control', 'max-age=31536000, immutable');
+						reply.header('Cache-Control', this.mediaProxyRedirectCacheControl);
 
 						const url = new URL(`${mediaProxy}/svg.webp`);
 						url.searchParams.set('url', file.url);
@@ -87,6 +96,7 @@ export class FileServerDriveHandler {
 				attachStreamCleanup(image.data, file.cleanup);
 
 				reply.header('Content-Type', getSafeContentType(image.type));
+				// 変換済みバイト列を直接返す経路はプロキシURLに依存しないので長くキャッシュしてよい
 				reply.header('Cache-Control', 'max-age=31536000, immutable');
 				reply.header('Content-Disposition',
 					contentDisposition(
