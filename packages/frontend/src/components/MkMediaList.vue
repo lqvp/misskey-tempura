@@ -65,6 +65,7 @@ import XImage from '@/components/MkMediaImage.vue';
 import XVideo from '@/components/MkMediaVideo.vue';
 import * as os from '@/os.js';
 import { prefer } from '@/preferences.js';
+import { rewriteProxiedImageUrl, rewriteProxiedImageUrlNullable } from '@/utility/media-proxy.js';
 import { isPreviewable, getType } from '@/utility/lightbox.js';
 import { genId } from '@/utility/id.js';
 
@@ -140,10 +141,13 @@ onUnmounted(() => {
 
 function onMediaClick(file: Misskey.entities.DriveFile) {
 	if (prefer.s.imageNewTab) {
+		// メディアプロキシは画像専用なので、動画・音声の URL は差し替えない
+		const targetUrl = file.type.startsWith('image') ? rewriteProxiedImageUrl(file.url) : file.url;
 		if (props.referrerpolicy === 'no-referrer') {
-			window.open(file.url, '_blank', 'noreferrer');
+			window.open(targetUrl, '_blank', 'noreferrer');
 		} else {
-			window.open(file.url, '_blank');
+			// 外部プロキシが画像の代わりにページを返しても、元のタブを操作されないようにする
+			window.open(targetUrl, '_blank', 'noopener');
 		}
 		return;
 	}
@@ -167,8 +171,9 @@ async function openGallery(id?: string) {
 	const contents = medias.value.previewable.map<Content>(media => ({
 		id: media.id,
 		type: getType(media.type),
-		url: media.url,
-		thumbnailUrl: media.thumbnailUrl,
+		// メディアプロキシは画像専用なので、動画・音声の URL は差し替えない (インライン再生と向き先を揃える)
+		url: media.type.startsWith('image') ? rewriteProxiedImageUrl(media.url) : media.url,
+		thumbnailUrl: rewriteProxiedImageUrlNullable(media.thumbnailUrl),
 		referrerPolicy: props.referrerpolicy,
 		width: media.properties.width,
 		height: media.properties.height,

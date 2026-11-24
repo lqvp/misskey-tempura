@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div class="_panel">
-	<div :class="$style.container" :style="{ backgroundImage: $i.bannerUrl ? `url(${ $i.bannerUrl })` : undefined }">
+	<div :class="$style.container" :style="{ backgroundImage: $i.bannerUrl ? `url(${JSON.stringify(rewriteProxiedImageUrl($i.bannerUrl))})` : undefined }">
 		<div :class="$style.avatarContainer">
 			<MkAvatar :class="$style.avatar" :user="$i"/>
 		</div>
@@ -27,6 +27,7 @@ import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps 
 import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
 import { ensureSignin } from '@/i.js';
 import { userPage } from '@@/js/user.js';
+import { rewriteProxiedImageUrl } from '@/utility/media-proxy.js';
 
 const $i = ensureSignin();
 

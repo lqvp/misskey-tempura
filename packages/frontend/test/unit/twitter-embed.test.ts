@@ -304,7 +304,8 @@ describe('MkMediaList referrerpolicy (実コンポーネント結合)', () => {
 
 	test.each([
 		{ referrerpolicy: 'no-referrer', features: ['noreferrer'] },
-		{ referrerpolicy: undefined, features: [] },
+		// 外部メディアプロキシが画像の代わりにページを返しても元のタブを操作されないように noopener を付ける
+		{ referrerpolicy: undefined, features: ['noopener'] },
 	])('新規タブを開く際に referrerpolicy=$referrerpolicy を反映する', async ({ referrerpolicy, features }) => {
 		preferState.imageNewTab = true;
 		const open = vi.spyOn(window, 'open').mockImplementation(() => null);

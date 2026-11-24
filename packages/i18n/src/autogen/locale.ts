@@ -13319,6 +13319,28 @@ export interface Locale extends ILocale {
          */
         "contactUrlDescription": string;
     };
+    "_mediaProxySetting": {
+        /**
+         * メディアプロキシのURL
+         */
+        "url": string;
+        /**
+         * このブラウザでの画像表示に使う、Misskey 互換のメディアプロキシのベースURLを指定します（例: https://proxy.example.com/proxy）。空欄の場合はサーバーの設定を使用します。指定したプロキシには、表示する画像のURL（フォロワー限定ノートやダイレクトメッセージの添付を含む）が送信されます。到達できないプロキシを指定すると画像が表示されなくなります。
+         */
+        "clientDescription": string;
+        /**
+         * 有効な http(s):// のベースURL（256文字以内）を入力してください（ユーザー情報・クエリ・フラグメント・括弧や引用符は使用できません）。
+         */
+        "invalidUrl": string;
+        /**
+         * このサーバー自身のメディアプロキシ（ルート、または /proxy 配下）は指定できません。別ホストか、同じホストでも別パスのベースURLを指定してください。
+         */
+        "selfUrl": string;
+        /**
+         * https のページからは http のメディアプロキシを使用できません。https のURLを指定してください。
+         */
+        "insecureUrl": string;
+    };
     "_urlPreviewSetting": {
         /**
          * URLプレビューの設定

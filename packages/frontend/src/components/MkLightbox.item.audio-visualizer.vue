@@ -39,6 +39,7 @@ import type { Content } from '@/components/MkLightbox.item.vue';
 import { i18n } from '@/i18n.js';
 import { themeManager } from '@/theme.js';
 import { prefer } from '@/preferences.js';
+import { rewriteProxiedImageUrlNullable } from '@/utility/media-proxy.js';
 
 // クリック等のフォールスルーはキャンバスに渡す (ルートは全面を覆うので、その外側は背景として扱わせる)
 defineOptions({
@@ -678,7 +679,7 @@ watch(() => fileUser.value?.avatarUrl, (avatarUrl) => {
 		avatarImage.value = img;
 		redrawIfStopped();
 	}, { once: true });
-	img.src = avatarUrl ?? '/static-assets/avatar.png';
+	img.src = rewriteProxiedImageUrlNullable(avatarUrl) ?? '/static-assets/avatar.png';
 }, { immediate: true });
 
 watch(audioEl, () => {

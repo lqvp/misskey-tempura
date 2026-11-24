@@ -16,7 +16,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div :class="[$style.headerLeft, {[$style.headerFixedBasis]: fixed}]">
 			<button v-if="!fixed" :class="$style.cancel" class="_button" @click="cancel"><i class="ti ti-x"></i></button>
 			<button ref="accountMenuEl" v-click-anime v-tooltip="i18n.ts.account" class="_button" @click="openAccountMenu">
-				<img :class="$style.avatar" :src="(postAccount ?? $i).avatarUrl" style="border-radius: 100%;"/>
+				<img :class="$style.avatar" :src="rewriteProxiedImageUrl((postAccount ?? $i).avatarUrl)" style="border-radius: 100%;"/>
 			</button>
 		</div>
 		<div :class="$style.headerRight">
@@ -142,6 +142,7 @@ import MkPollEditor from '@/components/MkPollEditor.vue';
 import MkNoteSimple from '@/components/MkNoteSimple.vue';
 import MkDeleteScheduleEditor from '@/components/MkDeleteScheduleEditor.vue';
 import { erase, unique } from '@/utility/array.js';
+import { rewriteProxiedImageUrl } from '@/utility/media-proxy.js';
 import { extractMentions } from '@/utility/extract-mentions.js';
 import { formatTimeString } from '@/utility/format-time-string.js';
 import { Autocomplete } from '@/utility/autocomplete.js';

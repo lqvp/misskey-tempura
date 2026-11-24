@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					leaveActiveClass: $style.transition_toggle_leaveActive,
 					leaveToClass: $style.transition_toggle_leaveTo,
 				}"
-				:src="post.files?.[0]?.thumbnailUrl"
+				:src="rewriteProxiedImageUrlNullable(post.files?.[0]?.thumbnailUrl)"
 				:hash="post.files?.[0]?.blurhash"
 				:forceBlurhash="!show"
 			/>
@@ -36,6 +36,7 @@ import * as Misskey from 'misskey-js';
 import { computed, ref } from 'vue';
 import MkImgWithBlurhash from '@/components/MkImgWithBlurhash.vue';
 import { prefer } from '@/preferences.js';
+import { rewriteProxiedImageUrlNullable } from '@/utility/media-proxy.js';
 
 const props = defineProps<{
 	post: Misskey.entities.GalleryPost;

@@ -771,4 +771,8 @@ export const PREF_DEF = definePreferences({
 	viewedRenotes: {
 		default: [] as string[],
 	},
+	mediaProxy: {
+		// 到達性がブラウザ・ネットワークに依存するため、アカウント別にはせずこのブラウザ共通で保存する
+		default: null as string | null,
+	},
 });

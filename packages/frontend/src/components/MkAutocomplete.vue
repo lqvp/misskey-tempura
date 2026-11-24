@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <div ref="rootEl" :class="$style.root" class="_popup _shadow" :style="{ zIndex }" @contextmenu.prevent="() => {}">
 	<ol v-if="type === 'user'" ref="suggests" :class="$style.list">
 		<li v-for="user in users" tabindex="-1" :class="$style.item" @click="complete(type, user)" @keydown="onKeydown">
-			<img :class="$style.avatar" :src="user.avatarUrl"/>
+			<img :class="$style.avatar" :src="rewriteProxiedImageUrl(user.avatarUrl)"/>
 			<span :class="$style.userName">
 				<MkUserName :key="user.id" :user="user"/>
 			</span>
@@ -61,6 +61,7 @@ import { miLocalStorage } from '@/local-storage.js';
 import { customEmojis } from '@/custom-emojis.js';
 import { searchEmoji, searchEmojiExact } from '@/utility/search-emoji.js';
 import { prefer } from '@/preferences.js';
+import { rewriteProxiedImageUrl } from '@/utility/media-proxy.js';
 
 export type CompleteInfo = {
 	user: {
