@@ -15766,6 +15766,14 @@ export interface Locale extends ILocale {
          */
         "destinationDirect": ParameterizedString<"host">;
         /**
+         * LLMの送信先が変わったため、フォロワー限定の投稿は再確認するまで送信されません。
+         */
+        "followersConsentStale": string;
+        /**
+         * 送信先を確認して有効にする
+         */
+        "followersReconfirm": string;
+        /**
          * CW付き投稿の扱い
          */
         "cwModeLabel": string;
@@ -15806,6 +15814,18 @@ export interface Locale extends ILocale {
          */
         "pendingSummary": ParameterizedString<"duration" | "count">;
         /**
+         * {duration}ぶり・新着 {count}件以上
+         */
+        "pendingSummaryTruncated": ParameterizedString<"duration" | "count">;
+        /**
+         * {duration}ぶりの新着を確認中…
+         */
+        "pendingCounting": ParameterizedString<"duration">;
+        /**
+         * {duration}ぶり・新着件数を確認できませんでした
+         */
+        "pendingCountFailed": ParameterizedString<"duration">;
+        /**
          * まとめる
          */
         "summarizeAction": string;
@@ -15821,6 +15841,10 @@ export interface Locale extends ILocale {
          * 要約対象のノートがありませんでした。
          */
         "noNotesToSummarize": string;
+        /**
+         * LLMから有効な応答が得られませんでした。再試行してください。
+         */
+        "invalidResponse": string;
         /**
          * {count}件から生成・{time}・AI生成のため不正確な場合があります
          */
@@ -15867,7 +15891,7 @@ export interface Locale extends ILocale {
              */
             "threshold6h": string;
             /**
-             * 最大取得件数
+             * 要約に使う最大件数
              */
             "maxNotes": string;
             /**

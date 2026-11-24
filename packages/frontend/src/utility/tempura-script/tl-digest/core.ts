@@ -22,6 +22,8 @@ export const DEFAULT_TL_DIGEST_VISIBILITIES: readonly TlDigestVisibility[] = [
 
 export type TlDigestCwMode = 'cwOnly' | 'exclude' | 'include';
 
+const TL_DIGEST_CW_MODES: readonly TlDigestCwMode[] = ['cwOnly', 'exclude', 'include'];
+
 export interface TlDigestFilterOptions {
 	meId?: string | null;
 	allowedVisibilities?: readonly string[];
@@ -74,6 +76,47 @@ export function normalizeTlDigestVisibilities(value: unknown): TlDigestVisibilit
 }
 
 /**
+ * CW の扱いを正規化する。未知の値は本文を送らない安全側 (cwOnly) に倒す。
+ */
+export function normalizeTlDigestCwMode(value: unknown): TlDigestCwMode {
+	return typeof value === 'string' && (TL_DIGEST_CW_MODES as readonly string[]).includes(value)
+		? value as TlDigestCwMode
+		: 'cwOnly';
+}
+
+/**
+ * フォロワー限定投稿の送信同意を適用する。
+ *
+ * 同意は「同意したときの送信先」と結び付けて保存しておき、現在の送信先と一致しない場合
+ * (別アカウント・送信先の変更・LLM 未設定) は followers を除外する。
+ */
+export function applyFollowersConsent(
+	visibilities: readonly TlDigestVisibility[],
+	consentDestination: string | null | undefined,
+	currentDestination: string | null | undefined,
+): TlDigestVisibility[] {
+	if (!visibilities.includes('followers')) return [...visibilities];
+	if (currentDestination != null && consentDestination === currentDestination) return [...visibilities];
+	return visibilities.filter((v) => v !== 'followers');
+}
+
+/**
+ * API が返すノートの実効的な公開範囲を返す。
+ * Tempura の NoteEntityService は public_non_ltl を
+ * `{ visibility: 'public', dontShowOnLtl: true }` として返すため両方に対応する。
+ */
+export function getEffectiveNoteVisibility(note: Misskey.entities.Note): string {
+	const rawVisibility = note.visibility as string;
+	if (rawVisibility === 'public_non_ltl') {
+		return 'public_non_ltl';
+	}
+	if (rawVisibility === 'public' && (note as { dontShowOnLtl?: boolean }).dontShowOnLtl === true) {
+		return 'public_non_ltl';
+	}
+	return rawVisibility;
+}
+
+/**
  * 純リノート (本文・CW・添付・投票を持たない RN) かどうかを判定する
  */
 export function isPureRenoteNote(note: Misskey.entities.Note): boolean {
@@ -100,12 +143,15 @@ function truncateText(text: string, maxChars: number): string {
 	return chars.slice(0, maxChars).join('') + '…';
 }
 
-function formatTimeHm(isoDate: string): string {
+// 期間が日付をまたぐ (最大24時間) ため、LLM が順序を取り違えないよう日付も含める
+function formatDateTime(isoDate: string): string {
 	const d = new Date(isoDate);
-	if (Number.isNaN(d.getTime())) return '--:--';
+	if (Number.isNaN(d.getTime())) return '--/-- --:--';
+	const month = String(d.getMonth() + 1).padStart(2, '0');
+	const day = String(d.getDate()).padStart(2, '0');
 	const hours = String(d.getHours()).padStart(2, '0');
 	const minutes = String(d.getMinutes()).padStart(2, '0');
-	return `${hours}:${minutes}`;
+	return `${month}/${day} ${hours}:${minutes}`;
 }
 
 function formatUsername(user: Misskey.entities.UserLite): string {
@@ -121,15 +167,15 @@ function matchesSingleNoteWordMute(
 	if (Array.isArray(checkWordMute(note, meUser, words))) {
 		return true;
 	}
-	// 画像キャプション (comment) 内のミュートワードも検査する
-	const fileComments = (note.files ?? [])
-		.map((f) => f.comment?.trim() ?? '')
-		.filter((c) => c !== '')
-		.join('\n');
-	if (fileComments !== '') {
+	// 画像キャプション (comment) と投票選択肢のミュートワードも検査する
+	const extraTexts = [
+		...(note.files ?? []).map((f) => f.comment?.trim() ?? ''),
+		...(note.poll?.choices ?? []).map((c) => c.text?.trim() ?? ''),
+	].filter((c) => c !== '').join('\n');
+	if (extraTexts !== '') {
 		const syntheticNote = {
 			...note,
-			text: fileComments,
+			text: extraTexts,
 			cw: null,
 		} as Misskey.entities.Note;
 		if (Array.isArray(checkWordMute(syntheticNote, meUser, words))) {
@@ -162,7 +208,6 @@ export function isNoteWordMuted(
 interface AggregatedEntry {
 	targetNote: Misskey.entities.Note;
 	content: string;
-	isPureRenote: boolean;
 	renoteCount: number;
 }
 
@@ -179,7 +224,7 @@ export function prepareNotesForDigest(
 } {
 	const allowedVisibilities = normalizeTlDigestVisibilities(options.allowedVisibilities);
 	const allowedSet = new Set<string>(allowedVisibilities);
-	const cwMode: TlDigestCwMode = options.cwMode ?? 'cwOnly';
+	const cwMode = normalizeTlDigestCwMode(options.cwMode);
 	const includeRenotes = options.includeRenotes ?? true;
 	const mutedWords = options.mutedWords ?? [];
 	const hardMutedWords = options.hardMutedWords ?? [];
@@ -187,14 +232,16 @@ export function prepareNotesForDigest(
 	const maxPreparedNotes = options.maxPreparedNotes ?? 100;
 	const meId = options.meId ?? null;
 
-	// 時系列順 (古い→新しい) に並べて会話の流れを自然にする
-	const sortedNotes = [...notes].sort(
-		(a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
-	);
+	// 上限件数で打ち切るときに最新のノートを残すため、新しい順に処理する。
+	// (同時刻のノートは入力順で後ろにあるものを新しいとみなす)
+	const newestFirst = notes
+		.map((note, index) => ({ note, index, time: new Date(note.createdAt).getTime() }))
+		.sort((a, b) => (b.time - a.time) || (b.index - a.index))
+		.map((x) => x.note);
 
 	const aggregatedByNoteId = new Map<string, AggregatedEntry>();
 
-	for (const rawNote of sortedNotes) {
+	for (const rawNote of newestFirst) {
 		// 自分の投稿・自分のリノートは除外
 		if (meId != null && rawNote.userId === meId) {
 			continue;
@@ -213,12 +260,14 @@ export function prepareNotesForDigest(
 		}
 
 		// specified (ダイレクト) は無条件で除外
-		if (rawNote.visibility === 'specified' || targetNote.visibility === 'specified') {
+		const rawVisibility = getEffectiveNoteVisibility(rawNote);
+		const targetVisibility = getEffectiveNoteVisibility(targetNote);
+		if (rawVisibility === 'specified' || targetVisibility === 'specified') {
 			continue;
 		}
 
 		// 公開範囲チェック (純RNの場合はRN自体と元ノートの両方が許可範囲内であること)
-		if (!allowedSet.has(rawNote.visibility) || !allowedSet.has(targetNote.visibility)) {
+		if (!allowedSet.has(rawVisibility) || !allowedSet.has(targetVisibility)) {
 			continue;
 		}
 
@@ -230,10 +279,11 @@ export function prepareNotesForDigest(
 			continue;
 		}
 
-		// 既に同じ元ノートが集約済みなら RN カウントだけ増やす
+		// 既に同じ元ノートが集約済みなら、純リノートのときだけ RN カウントを増やす
+		// (元ノート自体が流れてきた場合は RN として数えない)
 		const existing = aggregatedByNoteId.get(targetNote.id);
 		if (existing != null) {
-			existing.renoteCount += 1;
+			if (pureRenote) existing.renoteCount += 1;
 			continue;
 		}
 
@@ -241,19 +291,21 @@ export function prepareNotesForDigest(
 			continue;
 		}
 
-		// CW の扱い
-		const hasCw = targetNote.cw != null && targetNote.cw.trim() !== '';
+		// CW の扱い (Misskey では cw === '' の無言 CW も本文を隠すため null 判定にする)
+		const hasCw = targetNote.cw != null;
 		if (hasCw && cwMode === 'exclude') {
 			continue;
 		}
 
+		const cwText = hasCw ? sanitizeInlineText(targetNote.cw!) : '';
 		let bodyText = '';
 		if (hasCw && cwMode === 'cwOnly') {
-			bodyText = `[CW: ${sanitizeInlineText(targetNote.cw ?? '')}]`;
+			// 無言 CW は送れる注記が無いため、本文を送らずスキップ (空文字 -> 下の content === '' で除外)
+			bodyText = cwText !== '' ? `[CW: ${cwText}]` : '';
 		} else {
 			const parts: string[] = [];
-			if (hasCw && cwMode === 'include') {
-				parts.push(`[CW: ${sanitizeInlineText(targetNote.cw ?? '')}]`);
+			if (hasCw && cwMode === 'include' && cwText !== '') {
+				parts.push(`[CW: ${cwText}]`);
 			}
 			if (targetNote.text != null && targetNote.text.trim() !== '') {
 				parts.push(sanitizeInlineText(targetNote.text));
@@ -285,25 +337,27 @@ export function prepareNotesForDigest(
 		aggregatedByNoteId.set(targetNote.id, {
 			targetNote,
 			content,
-			isPureRenote: pureRenote,
-			renoteCount: 1,
+			renoteCount: pureRenote ? 1 : 0,
 		});
 	}
 
 	const prepared: PreparedDigestNote[] = [];
 	const refMap = new Map<string, PreparedDigestNote>();
 
+	// 会話の流れが自然になるよう、選んだノートを時系列順 (古い→新しい) に戻して連番を振る
+	const chronological = [...aggregatedByNoteId.values()].reverse();
+
 	let index = 0;
-	for (const entry of aggregatedByNoteId.values()) {
+	for (const entry of chronological) {
 		index += 1;
 		const seqId = `n${index}`;
 		const username = formatUsername(entry.targetNote.user);
-		const time = formatTimeHm(entry.targetNote.createdAt);
+		const time = formatDateTime(entry.targetNote.createdAt);
 
 		const markers: string[] = [];
 		if (entry.renoteCount > 1) {
 			markers.push(`[RN×${entry.renoteCount}]`);
-		} else if (entry.isPureRenote) {
+		} else if (entry.renoteCount === 1) {
 			markers.push('[RN]');
 		}
 		if (entry.targetNote.replyId != null) {
@@ -383,8 +437,14 @@ function extractJsonCandidate(raw: string): string {
 	if (fenceMatch && fenceMatch[1]) {
 		return fenceMatch[1].trim();
 	}
+	const firstBracket = trimmed.indexOf('[');
+	const lastBracket = trimmed.lastIndexOf(']');
 	const firstBrace = trimmed.indexOf('{');
 	const lastBrace = trimmed.lastIndexOf('}');
+	// トップレベルが配列 ([{...}]) の場合は外側の [] を落とさない
+	if (firstBracket !== -1 && lastBracket > firstBracket && (firstBrace === -1 || firstBracket < firstBrace)) {
+		return trimmed.slice(firstBracket, lastBracket + 1);
+	}
 	if (firstBrace !== -1 && lastBrace > firstBrace) {
 		return trimmed.slice(firstBrace, lastBrace + 1);
 	}
@@ -394,14 +454,17 @@ function extractJsonCandidate(raw: string): string {
 /**
  * LLM の応答テキストを解析し、実在するノートへの参照のみを解決する。
  * JSON が壊れている場合はプレーンテキスト表示へ安全にフォールバックする。
+ *
+ * @returns 解析結果。空応答や、トピックを含むはずの配列に有効な要素が 1 件も無い場合は
+ *          正当な「話題なし」 (`{"topics":[]}`) と区別するため null を返す
  */
 export function parseTlDigestResponse(
 	rawText: string,
 	refMap: ReadonlyMap<string, PreparedDigestNote | string>,
-): ParsedTlDigest {
+): ParsedTlDigest | null {
 	const trimmed = rawText.trim();
 	if (trimmed === '') {
-		return { topics: [], fallbackText: null };
+		return null;
 	}
 
 	const candidate = extractJsonCandidate(trimmed);
@@ -448,6 +511,11 @@ export function parseTlDigestResponse(
 				});
 			}
 
+			// スキーマ不正な要素しか無い応答は「話題なし」ではなく不正な応答として扱う
+			if (topics.length === 0 && rawTopics.length > 0) {
+				return null;
+			}
+
 			return {
 				topics,
 				fallbackText: null,
@@ -464,8 +532,9 @@ export function parseTlDigestResponse(
 			.replace(/\s*```$/, '')
 			.trim(),
 	);
+	if (cleanedFallback === '') return null;
 	return {
 		topics: [],
-		fallbackText: cleanedFallback || null,
+		fallbackText: cleanedFallback,
 	};
 }

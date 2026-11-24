@@ -686,6 +686,13 @@ export const PREF_DEF = definePreferences({
 	},
 	tlDigestVisibilities: {
 		default: ['public', 'home'] as ('public' | 'home' | 'public_non_ltl' | 'followers')[],
+		// フォロワー限定の送信可否はアカウントごとに判断させる
+		accountDependent: true,
+	},
+	// フォロワー限定投稿の送信に同意したときの LLM 送信先 (送信先が変わったら再確認させる)
+	tlDigestFollowersConsent: {
+		default: null as string | null,
+		accountDependent: true,
 	},
 	tlDigestCwMode: {
 		default: 'cwOnly' as 'cwOnly' | 'exclude' | 'include',

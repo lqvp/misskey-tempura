@@ -112,10 +112,11 @@ export function evaluateTlDigestActivity(userId: string, now = Date.now()): TlDi
  */
 export function touchTlDigestLastSeen(userId: string, now = Date.now()): void {
 	const existing = loadTlDigestStoredState(userId);
+	// 別タブで pending が消化されて null になった状態を復活させないよう、existing の有無で判定する
 	const next: TlDigestStoredState = {
 		lastSeenAt: now,
-		pendingSince: existing?.pendingSince ?? pendingSinceRef.value,
-		pendingUntil: existing?.pendingUntil ?? pendingUntilRef.value,
+		pendingSince: existing != null ? existing.pendingSince : pendingSinceRef.value,
+		pendingUntil: existing != null ? existing.pendingUntil : pendingUntilRef.value,
 	};
 	saveTlDigestStoredState(userId, next);
 }
@@ -168,7 +169,17 @@ export function initTlDigestActivity(userId: string): void {
 
 	window.addEventListener('pagehide', () => {
 		if (activeUserId == null) return;
+		// 非表示のまま閉じた場合は、非表示になった時点の lastSeenAt を保持する
+		// (ここで上書きすると、見ていなかった時間が閲覧済み扱いになる)
+		if (window.document.visibilityState !== 'visible') return;
 		touchTlDigestLastSeen(activeUserId);
+	});
+
+	window.addEventListener('storage', (ev) => {
+		if (activeUserId == null || ev.key !== storageKey(activeUserId)) return;
+		const synced = loadTlDigestStoredState(activeUserId);
+		pendingSinceRef.value = synced?.pendingSince ?? null;
+		pendingUntilRef.value = synced?.pendingUntil ?? null;
 	});
 
 	heartbeatTimer = window.setInterval(() => {

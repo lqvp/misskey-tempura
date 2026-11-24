@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { detectImageInputSupport, toModelInfos, wrapUserData } from '@/utility/tempura-script/llm.js';
+import { computeLLMDestination, detectImageInputSupport, toModelInfos, wrapUserData } from '@/utility/tempura-script/llm.js';
 
 /**
  * 実プロバイダの /models レスポンス形式に基づくフィクスチャ。
@@ -137,5 +137,49 @@ describe('wrapUserData', () => {
 	it('終了タグを含まない本文はそのまま', () => {
 		const result = wrapUserData('普通のノート本文');
 		expect(result).toBe(`<user_content>\n普通のノート本文\n</user_content>`);
+	});
+});
+
+describe('computeLLMDestination', () => {
+	it('サーバー提供モードかつサーバー有効時は server を返す', () => {
+		expect(computeLLMDestination({
+			useServerApi: true,
+			serverEnabled: true,
+			token: 'sk-test',
+			baseUrl: 'https://api.openai.com/v1',
+		})).toBe('server');
+	});
+
+	it('サーバー提供モードでもサーバー無効ならトークンがあれば直指定の origin を返す', () => {
+		expect(computeLLMDestination({
+			useServerApi: true,
+			serverEnabled: false,
+			token: 'sk-test',
+			baseUrl: 'http://localhost:11434/v1',
+		})).toBe('direct:http://localhost:11434');
+	});
+
+	it('トークン未設定かつサーバー無効なら null を返す', () => {
+		expect(computeLLMDestination({
+			useServerApi: false,
+			serverEnabled: true,
+			token: '   ',
+			baseUrl: 'https://api.openai.com/v1',
+		})).toBeNull();
+	});
+
+	it('baseUrl 未指定や空白のみの場合は既定の OpenAI origin を返す', () => {
+		expect(computeLLMDestination({
+			useServerApi: false,
+			serverEnabled: false,
+			token: 'sk-test',
+			baseUrl: null,
+		})).toBe('direct:https://api.openai.com');
+		expect(computeLLMDestination({
+			useServerApi: false,
+			serverEnabled: false,
+			token: 'sk-test',
+			baseUrl: '   ',
+		})).toBe('direct:https://api.openai.com');
 	});
 });

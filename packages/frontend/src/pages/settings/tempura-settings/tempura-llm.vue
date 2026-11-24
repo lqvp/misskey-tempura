@@ -196,23 +196,27 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<template #label><SearchLabel>{{ i18n.ts._tempuraSettings.llmTlDigest }}</SearchLabel></template>
 					<div class="_gaps_m">
 						<SearchMarker :keywords="['llm', 'timeline', 'digest', 'visibility', 'followers', 'privacy']">
-							<MkPreferenceContainer k="tlDigestVisibilities">
-								<div class="_gaps_s">
-									<div><SearchLabel>{{ i18n.ts._tlDigest.visibilitiesLabel }}</SearchLabel></div>
-									<div style="display: flex; flex-wrap: wrap; gap: 8px;">
-										<MkCheckbox
-											v-for="vis in tlDigestVisibilityOptions"
-											:key="vis.value"
-											:modelValue="tlDigestVisibilities"
-											:value="vis.value"
-											@update:modelValue="onUpdateTlDigestVisibilities"
-										>
-											{{ vis.label }}
-										</MkCheckbox>
-									</div>
-									<div class="_formCaption">{{ i18n.ts._tlDigest.visibilitiesCaption }}</div>
+							<div class="_gaps_s">
+								<div><SearchLabel>{{ i18n.ts._tlDigest.visibilitiesLabel }}</SearchLabel></div>
+								<div style="display: flex; flex-wrap: wrap; gap: 8px;">
+									<MkCheckbox
+										v-for="vis in tlDigestVisibilityOptions"
+										:key="vis.value"
+										:modelValue="tlDigestVisibilities"
+										:value="vis.value"
+										@update:modelValue="onUpdateTlDigestVisibilities"
+									>
+										{{ vis.label }}
+									</MkCheckbox>
 								</div>
-							</MkPreferenceContainer>
+								<div class="_formCaption">{{ i18n.ts._tlDigest.visibilitiesCaption }}</div>
+								<div v-if="isFollowersConsentStale" class="_gaps_s">
+									<div class="_formCaption" style="color: var(--MI_THEME-warn);">{{ i18n.ts._tlDigest.followersConsentStale }}</div>
+									<div class="_buttons">
+										<MkButton @click="reconfirmFollowersConsent">{{ i18n.ts._tlDigest.followersReconfirm }}</MkButton>
+									</div>
+								</div>
+							</div>
 						</SearchMarker>
 
 						<SearchMarker :keywords="['llm', 'timeline', 'digest', 'cw', 'content warning']">
@@ -255,8 +259,8 @@ import { $i } from '@/i.js';
 import { i18n } from '@/i18n.js';
 import { fetchInstance } from '@/instance.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
-import { fetchAvailableModels, detectImageInputSupport } from '@/utility/tempura-script/llm.js';
-import type { LLMModelInfo } from '@/utility/tempura-script/llm.js';
+import { computeLLMDestination, fetchAvailableModels, detectImageInputSupport, resolveLLMDestination } from '@/utility/tempura-script/llm.js';
+import type { LLMDestination, LLMModelInfo } from '@/utility/tempura-script/llm.js';
 import { openaiModels } from '@/utility/tempura-script/models.js';
 import {
 	SELECTABLE_TL_DIGEST_VISIBILITIES,
@@ -288,6 +292,7 @@ const geminiNoteProfessionalText = prefer.model('geminiNoteProfessionalText');
 const geminiNoteCatText = prefer.model('geminiNoteCatText');
 const geminiNoteCustomText = prefer.model('geminiNoteCustomText');
 const tlDigestVisibilities = prefer.model('tlDigestVisibilities');
+const tlDigestFollowersConsent = prefer.model('tlDigestFollowersConsent');
 const tlDigestCwMode = prefer.model('tlDigestCwMode');
 const tlDigestPrompt = prefer.model('tlDigestPrompt');
 
@@ -303,7 +308,32 @@ const tlDigestCwModeItems = computed(() => [
 	{ value: 'include' as const, label: i18n.ts._tlDigest.cwModeInclude },
 ]);
 
-function resolveLlmDestinationText(): string {
+const currentLlmDestination = computed<LLMDestination | null>(() => computeLLMDestination({
+	useServerApi: useGeminiLLMAPI.value,
+	serverEnabled: instance.value?.serverOpenAIEnabled === true,
+	token: openaiToken.value,
+	baseUrl: openaiBaseUrl.value,
+}));
+
+const isFollowersConsentStale = computed(() => {
+	if (!tlDigestVisibilities.value.includes('followers')) return false;
+	if (useGeminiLLMAPI.value && instance.value == null) return false;
+	if (currentLlmDestination.value == null) return false;
+	return tlDigestFollowersConsent.value !== currentLlmDestination.value;
+});
+
+function formatLlmDestinationText(destination: LLMDestination | null): string {
+	if (destination === 'server') {
+		return i18n.ts._tlDigest.destinationServer;
+	}
+	if (destination != null && destination.startsWith('direct:')) {
+		const rawOrigin = destination.slice('direct:'.length);
+		try {
+			return i18n.tsx._tlDigest.destinationDirect({ host: new URL(rawOrigin).host });
+		} catch {
+			return i18n.tsx._tlDigest.destinationDirect({ host: rawOrigin });
+		}
+	}
 	if (useGeminiLLMAPI.value) {
 		return i18n.ts._tlDigest.destinationServer;
 	}
@@ -316,25 +346,49 @@ function resolveLlmDestinationText(): string {
 	}
 }
 
+async function confirmFollowersConsent(destination: LLMDestination | null): Promise<boolean> {
+	const { canceled } = await os.confirm({
+		type: 'warning',
+		title: i18n.ts._tlDigest.followersConfirmTitle,
+		text: i18n.tsx._tlDigest.followersConfirmText({
+			destination: formatLlmDestinationText(destination),
+		}),
+	});
+	return !canceled;
+}
+
 async function onUpdateTlDigestVisibilities(next: TlDigestVisibility[]): Promise<void> {
 	const normalized = normalizeTlDigestVisibilities(next);
 	const hadFollowers = tlDigestVisibilities.value.includes('followers');
 	const wantsFollowers = normalized.includes('followers');
 
 	if (!hadFollowers && wantsFollowers) {
-		const { canceled } = await os.confirm({
-			type: 'warning',
-			title: i18n.ts._tlDigest.followersConfirmTitle,
-			text: i18n.tsx._tlDigest.followersConfirmText({
-				destination: resolveLlmDestinationText(),
-			}),
-		});
-		if (canceled) {
+		const destination = await resolveLLMDestination();
+		if (destination == null) {
+			await os.alert({
+				type: 'warning',
+				text: useGeminiLLMAPI.value ? i18n.ts._llm._error.serverDisabled : i18n.ts._llm._error.tokenMissing,
+			});
 			return;
 		}
+		if (!await confirmFollowersConsent(destination)) {
+			return;
+		}
+		tlDigestFollowersConsent.value = destination;
+	} else if (hadFollowers && !wantsFollowers) {
+		tlDigestFollowersConsent.value = null;
 	}
 
 	tlDigestVisibilities.value = normalized;
+}
+
+async function reconfirmFollowersConsent(): Promise<void> {
+	const destination = await resolveLLMDestination();
+	if (destination == null) return;
+	if (!await confirmFollowersConsent(destination)) {
+		return;
+	}
+	tlDigestFollowersConsent.value = destination;
 }
 
 // モデル一覧 (API から動的取得、失敗時はフォールバックリスト)

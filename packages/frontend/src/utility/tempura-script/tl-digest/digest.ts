@@ -5,19 +5,24 @@
 
 import { ref } from 'vue';
 import * as Misskey from 'misskey-js';
+import type { InjectionKey, Ref } from 'vue';
+import type { GenerateLLMOptions, LLMDestination } from '@/utility/tempura-script/llm.js';
+import type { LLMResponse } from '@/utility/tempura-script/llm-response.js';
+import type { TlDigestTopic, TlDigestVisibility, TlDigestCwMode } from '@/utility/tempura-script/tl-digest/core.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { prefer } from '@/preferences.js';
 import { $i } from '@/i.js';
 import { i18n } from '@/i18n.js';
-import { fetchInstance } from '@/instance.js';
-import { generateLLMResponse } from '@/utility/tempura-script/llm.js';
+import { generateLLMResponse, resolveLLMDestination } from '@/utility/tempura-script/llm.js';
 import { extractLLMText } from '@/utility/tempura-script/llm-response.js';
 import {
+	applyFollowersConsent,
 	buildTlDigestSystemInstruction,
+	normalizeTlDigestCwMode,
+	normalizeTlDigestVisibilities,
 	parseTlDigestResponse,
 	prepareNotesForDigest,
 } from '@/utility/tempura-script/tl-digest/core.js';
-import type { TlDigestTopic } from '@/utility/tempura-script/tl-digest/core.js';
 import {
 	dismissTlDigestPending,
 	MAX_ABSENCE_WINDOW_MS,
@@ -39,293 +44,442 @@ export interface RunTlDigestOptions {
 	includeRenotes: boolean;
 }
 
+export interface TlDigestWindow {
+	since: number;
+	until: number;
+}
+
+/**
+ * 不在期間の対象件数の確認状態
+ * - counting: 確認中
+ * - ready: 確認済み (truncated は走査上限に達して全期間を確認できなかったことを表す)
+ * - error: 確認に失敗した (pending は保持したまま再試行できる)
+ */
+export type TlDigestPendingCount =
+	| { status: 'idle' }
+	| { status: 'counting' }
+	| { status: 'ready'; count: number; truncated: boolean }
+	| { status: 'error' };
+
+export interface TlDigestError {
+	message: string;
+	isConfigError: boolean;
+}
+
+export interface TlDigestTimelineParams {
+	limit: number;
+	untilId?: string;
+	untilDate?: number;
+	withRenotes: boolean;
+}
+
+/**
+ * 外部依存 (API・設定・LLM) を差し替え可能にしてテストできるようにする
+ */
+export interface TlDigestDeps {
+	fetchTimeline: (params: TlDigestTimelineParams, signal: AbortSignal) => Promise<Misskey.entities.Note[]>;
+	generate: (options: GenerateLLMOptions) => Promise<LLMResponse>;
+	resolveDestination: () => Promise<LLMDestination | null>;
+	getSettings: () => {
+		visibilities: unknown;
+		cwMode: unknown;
+		followersConsent: string | null;
+		prompt: string | null;
+		systemPrompt: string | null;
+		useServerApi: boolean;
+	};
+	getMe: () => { id: string; mutedWords: Array<string | string[]>; hardMutedWords: Array<string | string[]> } | null;
+	dismissPending: (userId: string | null) => void;
+	now: () => number;
+}
+
+export interface TlDigestController {
+	result: Ref<TlDigestResult | null>;
+	generating: Ref<boolean>;
+	error: Ref<TlDigestError | null>;
+	pendingCount: Ref<TlDigestPendingCount>;
+	/** Storybook などから不在期間をローカル注入する場合のみ設定する */
+	pendingWindow?: Ref<TlDigestWindow | null>;
+	/**
+	 * 不在期間の対象件数を確認する (外部 LLM への送信は行わない)
+	 * @returns 確認結果。より新しい確認要求に置き換えられた場合は null
+	 */
+	refreshPendingCount: (win: TlDigestWindow, includeRenotes: boolean) => Promise<TlDigestPendingCount | null>;
+	resetPendingCount: () => void;
+	run: (options: RunTlDigestOptions) => Promise<void>;
+	runRecent: (maxNotes: number, includeRenotes: boolean) => Promise<void>;
+	/** 直前の期間を、現在のウィジェット設定 (件数・RN) で再生成する */
+	retry: (maxNotes: number, includeRenotes: boolean) => Promise<void>;
+	cancel: () => void;
+	clear: () => void;
+	dispose: () => void;
+}
+
+/** Storybook などから状態を差し込むための注入キー */
+export const TL_DIGEST_CONTROLLER_KEY: InjectionKey<TlDigestController> = Symbol('tlDigestController');
+
 const API_PAGE_LIMIT = 100;
+/** 1 回の確認・生成で遡るノート数の上限 (API 呼び出し回数を抑える) */
+export const MAX_SCAN_NOTES = 500;
+/** 件数表示の上限 (これ以上は「N件+」と表示する) */
+export const PENDING_COUNT_CAP = 200;
+const PREVIEW_CACHE_SIZE = 4;
 
-/**
- * モジュールレベルのリアクティブ状態。
- * SPA 内のページ遷移では保持され、リロードで破棄される（永続化しない）。
- */
-export const latestDigestResult = ref<TlDigestResult | null>(null);
-export const digestGenerating = ref(false);
-export const digestError = ref<{ message: string; isConfigError: boolean } | null>(null);
-export const pendingNoteCountRef = ref<number | null>(null);
-export const pendingCountingRef = ref(false);
-
-let currentGenerationId = 0;
-let lastOptions: RunTlDigestOptions | null = null;
-let previewCache: {
-	key: string;
+interface ScanResult {
 	notes: Misskey.entities.Note[];
-	preparedCount: number;
-} | null = null;
-
-function buildPreviewKey(since: number, until: number, includeRenotes: boolean): string {
-	const vis = (prefer.s.tlDigestVisibilities ?? []).join(',');
-	const cw = prefer.s.tlDigestCwMode ?? 'cwOnly';
-	return `${since}:${until}:${includeRenotes}:${vis}:${cw}`;
+	/** 期間の先頭まで (または TL の末尾まで) 走査し終えたか */
+	complete: boolean;
 }
 
-export async function isLlmConfigured(): Promise<boolean> {
-	if (prefer.s.useGeminiLLMAPI) {
+function isAbortError(error: unknown, signal: AbortSignal): boolean {
+	return (
+		signal.aborted ||
+		(error instanceof Error && error.name === 'AbortError') ||
+		(typeof DOMException !== 'undefined' && error instanceof DOMException && error.name === 'AbortError')
+	);
+}
+
+const defaultDeps: TlDigestDeps = {
+	fetchTimeline: (params, signal) => misskeyApi('notes/timeline', {
+		...params,
+		includeMyRenotes: false,
+		includeRenotedMyNotes: false,
+	}, undefined, signal),
+	generate: (options) => generateLLMResponse(options),
+	resolveDestination: () => resolveLLMDestination(),
+	getSettings: () => ({
+		visibilities: prefer.s.tlDigestVisibilities,
+		cwMode: prefer.s.tlDigestCwMode,
+		followersConsent: prefer.s.tlDigestFollowersConsent,
+		prompt: prefer.s.tlDigestPrompt,
+		systemPrompt: prefer.s.geminiSystemPrompt,
+		useServerApi: prefer.s.useGeminiLLMAPI,
+	}),
+	getMe: () => $i == null ? null : {
+		id: $i.id,
+		mutedWords: $i.mutedWords ?? [],
+		hardMutedWords: $i.hardMutedWords ?? [],
+	},
+	dismissPending: (userId) => dismissTlDigestPending(userId),
+	now: () => Date.now(),
+};
+
+export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}): TlDigestController {
+	const deps: TlDigestDeps = { ...defaultDeps, ...overrides };
+
+	const result = ref<TlDigestResult | null>(null);
+	const generating = ref(false);
+	const error = ref<TlDigestError | null>(null);
+	const pendingCount = ref<TlDigestPendingCount>({ status: 'idle' });
+
+	let generationId = 0;
+	let generationAbort: AbortController | null = null;
+	let countId = 0;
+	let countAbort: AbortController | null = null;
+	let lastWindow: TlDigestWindow | null = null;
+
+	// 件数確認で取得したノートを生成時に再利用する (インスタンスごと・メモリのみ・永続化しない)
+	const previewCache = new Map<string, ScanResult>();
+
+	function putPreviewCache(key: string, value: ScanResult): void {
+		previewCache.delete(key);
+		previewCache.set(key, value);
+		while (previewCache.size > PREVIEW_CACHE_SIZE) {
+			const oldest = previewCache.keys().next().value;
+			if (oldest == null) break;
+			previewCache.delete(oldest);
+		}
+	}
+
+	/**
+	 * 送信対象の条件を確定する。
+	 * followers は「同意したときの送信先」と現在の送信先が一致する場合だけ含める。
+	 */
+	async function resolveFilter(includeRenotes: boolean, needDestination = false) {
+		const settings = deps.getSettings();
+		const me = deps.getMe();
+		let visibilities: TlDigestVisibility[] = normalizeTlDigestVisibilities(settings.visibilities);
+		let destination: LLMDestination | null = null;
+		if (needDestination || visibilities.includes('followers')) {
+			destination = await deps.resolveDestination();
+			if (visibilities.includes('followers')) {
+				visibilities = applyFollowersConsent(visibilities, settings.followersConsent, destination);
+			}
+		}
+		const cwMode: TlDigestCwMode = normalizeTlDigestCwMode(settings.cwMode);
+		return {
+			settings,
+			me,
+			destination,
+			filter: {
+				meId: me?.id ?? null,
+				allowedVisibilities: visibilities,
+				cwMode,
+				includeRenotes,
+				mutedWords: me?.mutedWords ?? [],
+				hardMutedWords: me?.hardMutedWords ?? [],
+			},
+			cacheKey: (win: TlDigestWindow) => [
+				me?.id ?? '',
+				win.since,
+				win.until,
+				includeRenotes,
+				visibilities.join(','),
+				cwMode,
+			].join(':'),
+		};
+	}
+
+	/**
+	 * 指定期間の HTL ノートを新しい順から遡って取得する。
+	 * `isEnough` が真になるか、期間の先頭・TL の末尾・走査上限に達したら止める。
+	 */
+	async function scanWindow(
+		win: TlDigestWindow,
+		includeRenotes: boolean,
+		signal: AbortSignal,
+		isEnough: (notes: Misskey.entities.Note[]) => boolean,
+	): Promise<ScanResult> {
+		const collected: Misskey.entities.Note[] = [];
+		let untilId: string | undefined;
+		let scanned = 0;
+
+		while (scanned < MAX_SCAN_NOTES) {
+			const limit = Math.min(API_PAGE_LIMIT, MAX_SCAN_NOTES - scanned);
+			// untilDate は ID の時刻未満で絞り込むため、同一ミリ秒・同一秒 (objectid) のノートを
+			// 取りこぼさないよう現在付近は指定せず、過去の上界は 1 秒進めてクライアント側で厳密に絞る
+			const pageBoundary = untilId != null
+				? { untilId }
+				: (win.until < deps.now() - 1000 ? { untilDate: win.until + 1000 } : {});
+			const batch = await deps.fetchTimeline({
+				limit,
+				...pageBoundary,
+				withRenotes: includeRenotes,
+			}, signal);
+
+			if (!Array.isArray(batch) || batch.length === 0) {
+				return { notes: collected, complete: true };
+			}
+			scanned += batch.length;
+
+			for (const note of batch) {
+				const createdMs = new Date(note.createdAt).getTime();
+				if (createdMs > win.until) continue;
+				if (createdMs < win.since) {
+					return { notes: collected, complete: true };
+				}
+				collected.push(note);
+			}
+
+			if (isEnough(collected)) {
+				return { notes: collected, complete: false };
+			}
+
+			const nextUntilId = batch[batch.length - 1]?.id;
+			if (nextUntilId == null || nextUntilId === untilId) {
+				return { notes: collected, complete: true };
+			}
+			untilId = nextUntilId;
+		}
+
+		return { notes: collected, complete: false };
+	}
+
+	async function refreshPendingCount(win: TlDigestWindow, includeRenotes: boolean): Promise<TlDigestPendingCount | null> {
+		countAbort?.abort();
+		const myId = ++countId;
+		const abort = new AbortController();
+		countAbort = abort;
+
+		const isCurrent = () => myId === countId;
+
+		pendingCount.value = { status: 'counting' };
 		try {
-			const meta = await fetchInstance();
-			return Boolean(meta?.serverOpenAIEnabled) || Boolean(prefer.s.openaiToken?.trim());
-		} catch {
-			return true;
-		}
-	}
-	return Boolean(prefer.s.openaiToken && prefer.s.openaiToken.trim() !== '');
-}
+			const { filter, cacheKey } = await resolveFilter(includeRenotes);
+			if (!isCurrent()) return null;
 
-/**
- * 指定期間の HTL ノートを新しい順から遡って取得する
- */
-async function fetchHtlNotesInWindow(
-	since: number,
-	until: number,
-	maxFetchNotes: number,
-	includeRenotes: boolean,
-): Promise<Misskey.entities.Note[]> {
-	const collected: Misskey.entities.Note[] = [];
-	let untilId: string | undefined;
-	const targetFetchCount = Math.min(Math.max(maxFetchNotes, API_PAGE_LIMIT), 200);
+			const countPrepared = (notes: Misskey.entities.Note[]) =>
+				prepareNotesForDigest(notes, { ...filter, maxPreparedNotes: PENDING_COUNT_CAP }).prepared.length;
 
-	while (collected.length < targetFetchCount) {
-		const remaining = targetFetchCount - collected.length;
-		const limit = Math.min(remaining, API_PAGE_LIMIT);
-
-		const batch = await misskeyApi('notes/timeline', {
-			limit,
-			...(untilId != null ? { untilId } : { untilDate: until }),
-			includeMyRenotes: false,
-			includeRenotedMyNotes: false,
-			withRenotes: includeRenotes,
-		});
-
-		if (!Array.isArray(batch) || batch.length === 0) {
-			break;
-		}
-
-		let reachedBeforeSince = false;
-		for (const note of batch) {
-			const createdMs = new Date(note.createdAt).getTime();
-			if (createdMs > until) {
-				continue;
+			const key = cacheKey(win);
+			let scan = previewCache.get(key);
+			if (scan == null || (!scan.complete && countPrepared(scan.notes) < PENDING_COUNT_CAP)) {
+				scan = await scanWindow(win, includeRenotes, abort.signal, (notes) => countPrepared(notes) >= PENDING_COUNT_CAP);
+				if (!isCurrent()) return null;
+				putPreviewCache(key, scan);
 			}
-			if (createdMs < since) {
-				reachedBeforeSince = true;
-				break;
+
+			const count = countPrepared(scan.notes);
+			const state: TlDigestPendingCount = {
+				status: 'ready',
+				count,
+				truncated: !scan.complete || count >= PENDING_COUNT_CAP,
+			};
+			pendingCount.value = state;
+			return state;
+		} catch (err) {
+			if (!isCurrent() || isAbortError(err, abort.signal)) return null;
+			// 失敗を「0件」と区別して、pending を保持したまま再試行できるようにする
+			const state: TlDigestPendingCount = { status: 'error' };
+			pendingCount.value = state;
+			return state;
+		} finally {
+			if (isCurrent()) countAbort = null;
+		}
+	}
+
+	function resetPendingCount(): void {
+		countAbort?.abort();
+		countAbort = null;
+		countId += 1;
+		pendingCount.value = { status: 'idle' };
+	}
+
+	function configErrorMessage(useServerApi: boolean): string {
+		return useServerApi ? i18n.ts._llm._error.serverDisabled : i18n.ts._llm._error.tokenMissing;
+	}
+
+	async function run(options: RunTlDigestOptions): Promise<void> {
+		// 進行中の生成は明示的に置き換える (通信も中断する)
+		generationAbort?.abort();
+		const myId = ++generationId;
+		const abort = new AbortController();
+		generationAbort = abort;
+		const isCurrent = () => myId === generationId;
+
+		// 最初の await より前に状態を確定させ、二重起動やキャンセルのすり抜けを防ぐ
+		lastWindow = { since: options.since, until: options.until };
+		generating.value = true;
+		error.value = null;
+
+		try {
+			const { settings, me, destination, filter, cacheKey } = await resolveFilter(options.includeRenotes, true);
+			if (!isCurrent()) return;
+
+			if (destination == null) {
+				error.value = { message: configErrorMessage(settings.useServerApi), isConfigError: true };
+				return;
 			}
-			collected.push(note);
-		}
 
-		if (reachedBeforeSince || batch.length < limit) {
-			break;
-		}
+			const maxNotes = Math.max(1, Math.min(options.maxNotes, PENDING_COUNT_CAP));
+			const prepare = (notes: Misskey.entities.Note[]) =>
+				prepareNotesForDigest(notes, { ...filter, maxPreparedNotes: maxNotes });
+			const isEnough = (notes: Misskey.entities.Note[]) => prepare(notes).prepared.length >= maxNotes;
 
-		untilId = batch[batch.length - 1]?.id;
-		if (untilId == null) {
-			break;
-		}
-	}
+			const win = { since: options.since, until: options.until };
+			const cached = previewCache.get(cacheKey(win));
+			let notes: Misskey.entities.Note[];
+			if (cached != null && (cached.complete || isEnough(cached.notes))) {
+				notes = cached.notes;
+			} else {
+				const scan = await scanWindow(win, options.includeRenotes, abort.signal, isEnough);
+				if (!isCurrent()) return;
+				notes = scan.notes;
+			}
 
-	return collected;
-}
+			const { prepared, promptInput, refMap } = prepare(notes);
 
-/**
- * 不在期間の新着対象ノート件数を事前確認する（外部 LLM 送信は一切行わない）。
- * 対象ノートが 0 件だった場合は pending を自動で消化済みにする。
- */
-export async function peekPendingDigestCount(
-	since: number,
-	until: number,
-	includeRenotes: boolean,
-): Promise<number> {
-	const key = buildPreviewKey(since, until, includeRenotes);
-	if (previewCache?.key === key) {
-		pendingNoteCountRef.value = previewCache.preparedCount;
-		return previewCache.preparedCount;
-	}
+			if (prepared.length === 0) {
+				result.value = {
+					topics: [],
+					fallbackText: null,
+					noteCount: 0,
+					generatedAt: deps.now(),
+					since: options.since,
+					until: options.until,
+				};
+				deps.dismissPending(me?.id ?? null);
+				return;
+			}
 
-	pendingCountingRef.value = true;
-	try {
-		const notes = await fetchHtlNotesInWindow(since, until, API_PAGE_LIMIT, includeRenotes);
-		const { prepared } = prepareNotesForDigest(notes, {
-			meId: $i?.id ?? null,
-			allowedVisibilities: prefer.s.tlDigestVisibilities,
-			cwMode: prefer.s.tlDigestCwMode,
-			includeRenotes,
-			mutedWords: $i?.mutedWords ?? [],
-			hardMutedWords: $i?.hardMutedWords ?? [],
-			maxPreparedNotes: API_PAGE_LIMIT,
-		});
+			const response = await deps.generate({
+				userContent: promptInput,
+				systemInstruction: buildTlDigestSystemInstruction(settings.prompt, settings.systemPrompt),
+				signal: abort.signal,
+			});
+			if (!isCurrent()) return;
 
-		previewCache = {
-			key,
-			notes,
-			preparedCount: prepared.length,
-		};
-		pendingNoteCountRef.value = prepared.length;
+			const parsed = parseTlDigestResponse(extractLLMText(response), refMap);
+			if (parsed == null) {
+				// 空応答・スキーマ不正は「話題なし」と区別してエラーにし、pending も残す
+				throw new Error(i18n.ts._tlDigest.invalidResponse);
+			}
 
-		if (prepared.length === 0) {
-			dismissTlDigestPending($i?.id ?? null);
-		}
-
-		return prepared.length;
-	} catch {
-		pendingNoteCountRef.value = null;
-		return 0;
-	} finally {
-		pendingCountingRef.value = false;
-	}
-}
-
-/**
- * 指定期間の HTL ダイジェストを生成する
- */
-export async function runTlDigest(options: RunTlDigestOptions): Promise<void> {
-	lastOptions = options;
-	digestError.value = null;
-
-	const configured = await isLlmConfigured();
-	if (!configured) {
-		digestError.value = {
-			message: i18n.ts._llm._error.tokenMissing,
-			isConfigError: true,
-		};
-		return;
-	}
-
-	const genId = ++currentGenerationId;
-	digestGenerating.value = true;
-
-	try {
-		const key = buildPreviewKey(options.since, options.until, options.includeRenotes);
-		let rawNotes: Misskey.entities.Note[];
-		if (previewCache?.key === key && options.maxNotes <= API_PAGE_LIMIT) {
-			rawNotes = previewCache.notes;
-		} else {
-			rawNotes = await fetchHtlNotesInWindow(
-				options.since,
-				options.until,
-				options.maxNotes,
-				options.includeRenotes,
-			);
-		}
-
-		if (genId !== currentGenerationId) return;
-
-		const { prepared, promptInput, refMap } = prepareNotesForDigest(rawNotes, {
-			meId: $i?.id ?? null,
-			allowedVisibilities: prefer.s.tlDigestVisibilities,
-			cwMode: prefer.s.tlDigestCwMode,
-			includeRenotes: options.includeRenotes,
-			mutedWords: $i?.mutedWords ?? [],
-			hardMutedWords: $i?.hardMutedWords ?? [],
-			maxPreparedNotes: options.maxNotes,
-		});
-
-		if (prepared.length === 0) {
-			latestDigestResult.value = {
-				topics: [],
-				fallbackText: null,
-				noteCount: 0,
-				generatedAt: Date.now(),
+			result.value = {
+				topics: parsed.topics,
+				fallbackText: parsed.fallbackText,
+				noteCount: prepared.length,
+				generatedAt: deps.now(),
 				since: options.since,
 				until: options.until,
 			};
-			dismissTlDigestPending($i?.id ?? null);
-			previewCache = null;
-			pendingNoteCountRef.value = null;
+			deps.dismissPending(me?.id ?? null);
+		} catch (err: unknown) {
+			if (!isCurrent() || isAbortError(err, abort.signal)) return;
+			const message = err instanceof Error ? err.message : String(err);
+			// フォールバック確認ダイアログ等でのユーザーキャンセルはエラー表示にしない
+			if (message === i18n.ts._llm._error.cancel) return;
+			const isConfigError =
+				message.includes(i18n.ts._llm._error.tokenMissing) ||
+				message.includes(i18n.ts._llm._error.serverDisabled);
+			error.value = { message, isConfigError };
+		} finally {
+			if (isCurrent()) {
+				generating.value = false;
+				generationAbort = null;
+			}
+		}
+	}
+
+	async function runRecent(maxNotes: number, includeRenotes: boolean): Promise<void> {
+		const now = deps.now();
+		await run({
+			since: now - MAX_ABSENCE_WINDOW_MS,
+			until: now,
+			maxNotes,
+			includeRenotes,
+		});
+	}
+
+	async function retry(maxNotes: number, includeRenotes: boolean): Promise<void> {
+		const win = lastWindow ?? (result.value != null ? { since: result.value.since, until: result.value.until } : null);
+		if (win == null) {
+			await runRecent(maxNotes, includeRenotes);
 			return;
 		}
-
-		const systemInstruction = buildTlDigestSystemInstruction(
-			prefer.s.tlDigestPrompt,
-			prefer.s.geminiSystemPrompt,
-		);
-
-		const response = await generateLLMResponse({
-			userContent: promptInput,
-			systemInstruction,
-		});
-
-		if (genId !== currentGenerationId) return;
-
-		const rawText = extractLLMText(response);
-		const parsed = parseTlDigestResponse(rawText, refMap);
-
-		latestDigestResult.value = {
-			topics: parsed.topics,
-			fallbackText: parsed.fallbackText,
-			noteCount: prepared.length,
-			generatedAt: Date.now(),
-			since: options.since,
-			until: options.until,
-		};
-		dismissTlDigestPending($i?.id ?? null);
-		previewCache = null;
-		pendingNoteCountRef.value = null;
-	} catch (error: unknown) {
-		if (genId !== currentGenerationId) return;
-		const message = error instanceof Error ? error.message : String(error);
-		const isConfigError =
-			message.includes(i18n.ts._llm._error.tokenMissing) ||
-			message.includes(i18n.ts._llm._error.serverDisabled);
-		digestError.value = {
-			message,
-			isConfigError,
-		};
-	} finally {
-		if (genId === currentGenerationId) {
-			digestGenerating.value = false;
-		}
+		await run({ ...win, maxNotes, includeRenotes });
 	}
-}
 
-/**
- * 直近（最大24時間以内）の HTL を手動で要約する
- */
-export async function runRecentTlDigest(maxNotes: number, includeRenotes: boolean): Promise<void> {
-	const now = Date.now();
-	await runTlDigest({
-		since: now - MAX_ABSENCE_WINDOW_MS,
-		until: now,
-		maxNotes,
-		includeRenotes,
-	});
-}
-
-/**
- * 直前の条件で再試行・再生成する
- */
-export async function retryLastTlDigest(fallbackMaxNotes: number, fallbackIncludeRenotes: boolean): Promise<void> {
-	if (lastOptions != null) {
-		await runTlDigest(lastOptions);
-	} else if (latestDigestResult.value != null) {
-		await runTlDigest({
-			since: latestDigestResult.value.since,
-			until: latestDigestResult.value.until,
-			maxNotes: fallbackMaxNotes,
-			includeRenotes: fallbackIncludeRenotes,
-		});
-	} else {
-		await runRecentTlDigest(fallbackMaxNotes, fallbackIncludeRenotes);
+	function cancel(): void {
+		generationId += 1;
+		generationAbort?.abort();
+		generationAbort = null;
+		generating.value = false;
 	}
-}
 
-/**
- * 進行中の要約生成をキャンセルする
- */
-export function cancelTlDigest(): void {
-	currentGenerationId += 1;
-	digestGenerating.value = false;
-}
+	function clear(): void {
+		result.value = null;
+		error.value = null;
+	}
 
-/**
- * 表示中の要約結果・エラーを閉じる
- */
-export function clearTlDigestResult(): void {
-	latestDigestResult.value = null;
-	digestError.value = null;
+	function dispose(): void {
+		cancel();
+		resetPendingCount();
+		previewCache.clear();
+	}
+
+	return {
+		result,
+		generating,
+		error,
+		pendingCount,
+		refreshPendingCount,
+		resetPendingCount,
+		run,
+		runRecent,
+		retry,
+		cancel,
+		clear,
+		dispose,
+	};
 }

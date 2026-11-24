@@ -17,9 +17,58 @@ export type { LLMResponse };
 
 const instance = ref<Misskey.entities.MetaDetailed | null>(null);
 
-fetchInstance(true).then((res) => {
+// サーバー提供モードの判定前に初回取得の完了を待てるよう Promise を保持する
+const instanceReady: Promise<void> = fetchInstance(true).then((res) => {
 	instance.value = res;
+}, () => {
+	// 取得に失敗した場合はサーバー提供モードを無効として扱う
 });
+
+/**
+ * LLM の実際の送信先を表す識別子
+ * - 'server': サーバー提供の LLM API (notes/llm-gen)
+ * - 'direct:<origin>': ブラウザから直接呼び出す OpenAI 互換 API
+ */
+export type LLMDestination = 'server' | `direct:${string}`;
+
+/**
+ * 設定値から LLM の送信先を算出する (純粋関数)
+ *
+ * サーバー提供モードでもサーバー側が無効な場合はユーザー直指定へフォールバックするため、
+ * 実際の送信先はサーバー側の有効状態にも依存する。
+ *
+ * @returns 送信先 (LLM が未設定で送信できない場合は null)
+ */
+export function computeLLMDestination(params: {
+	useServerApi: boolean;
+	serverEnabled: boolean;
+	token: string | null | undefined;
+	baseUrl: string | null | undefined;
+}): LLMDestination | null {
+	if (params.useServerApi && params.serverEnabled) return 'server';
+	if (params.token == null || params.token.trim() === '') return null;
+	const rawUrl = params.baseUrl?.trim() || 'https://api.openai.com/v1';
+	try {
+		return `direct:${new URL(rawUrl).origin}`;
+	} catch {
+		return `direct:${rawUrl}`;
+	}
+}
+
+/**
+ * 現在の設定で LLM の送信先を解決する
+ */
+export async function resolveLLMDestination(): Promise<LLMDestination | null> {
+	if (prefer.s.useGeminiLLMAPI && instance.value == null) {
+		await instanceReady;
+	}
+	return computeLLMDestination({
+		useServerApi: prefer.s.useGeminiLLMAPI,
+		serverEnabled: instance.value?.serverOpenAIEnabled === true,
+		token: prefer.s.openaiToken,
+		baseUrl: prefer.s.openaiBaseUrl,
+	});
+}
 
 /**
  * モデルの入力モダリティ情報つきモデル一覧
@@ -156,7 +205,7 @@ export async function fetchAvailableModels(): Promise<LLMModelInfo[]> {
 	// ユーザー直指定モード: ブラウザから直接取得する (サーバーは経由しない)
 	cachedModelInfos = []; // 接続先変更後の古い判定が残らないようにクリアする
 	try {
-		const baseURL = (openaiBaseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
+		const baseURL = (openaiBaseUrl?.trim() || 'https://api.openai.com/v1').replace(/\/+$/, '');
 		const response = await window.fetch(`${baseURL}/models`, {
 			method: 'GET',
 			headers: {
@@ -195,6 +244,8 @@ export interface GenerateLLMOptions {
 	note?: Misskey.entities.Note;
 	userContent?: string;
 	systemInstruction?: string;
+	/** 中止用シグナル (キャンセル時に HTTP 要求そのものを中断する) */
+	signal?: AbortSignal;
 }
 
 // 直近のモデル一覧取得結果 (画像対応判定のキャッシュとして使う)
@@ -237,7 +288,7 @@ async function fileToDataUrl(url: string): Promise<string> {
 /**
  * サーバー提供の LLM API (notes/llm-gen) を呼び出す
  */
-async function generateViaServer({ note, userContent, systemInstruction }: GenerateLLMOptions): Promise<LLMResponse> {
+async function generateViaServer({ note, userContent, systemInstruction, signal }: GenerateLLMOptions): Promise<LLMResponse> {
 	const text = wrapUserData(userContent ?? note?.text ?? '');
 	const { useGeminiWithMedia = true } = prefer.s;
 
@@ -257,13 +308,13 @@ async function generateViaServer({ note, userContent, systemInstruction }: Gener
 		text: text,
 		prompt: systemInstruction ?? '',
 		fileUris: fileUris.length > 0 ? fileUris.slice(0, 4) : undefined,
-	}) as LLMResponse;
+	}, undefined, signal) as LLMResponse;
 }
 
 /**
  * OpenAI 互換 API (Chat Completions) をユーザーのキーで直接呼び出す
  */
-async function generateOpenAIDirect({ note, userContent, systemInstruction }: GenerateLLMOptions): Promise<LLMResponse> {
+async function generateOpenAIDirect({ note, userContent, systemInstruction, signal }: GenerateLLMOptions): Promise<LLMResponse> {
 	const { openaiToken, openaiBaseUrl, openaiModel, useGeminiWithMedia = true } = prefer.s;
 
 	if (!openaiToken) {
@@ -271,7 +322,7 @@ async function generateOpenAIDirect({ note, userContent, systemInstruction }: Ge
 	}
 
 	const text = wrapUserData(userContent ?? note?.text ?? '');
-	const baseURL = (openaiBaseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
+	const baseURL = (openaiBaseUrl?.trim() || 'https://api.openai.com/v1').replace(/\/+$/, '');
 	// モデルを空にしている場合は既定のモデルを使う
 	const model = openaiModel?.trim() || 'gpt-4o-mini';
 
@@ -313,9 +364,11 @@ async function generateOpenAIDirect({ note, userContent, systemInstruction }: Ge
 				'Content-Type': 'application/json',
 			},
 			body: JSON.stringify(requestBody),
-			signal: AbortSignal.timeout(120_000),
+			signal: signal != null ? AbortSignal.any([signal, AbortSignal.timeout(120_000)]) : AbortSignal.timeout(120_000),
 		});
-	} catch {
+	} catch (error) {
+		// 呼び出し元による中止は CORS エラーと区別してそのまま伝える
+		if (signal?.aborted) throw error;
 		// CORS 等でブラウザから直接呼び出せない場合
 		throw new Error(i18n.ts._llm._error.cors);
 	}
@@ -350,11 +403,15 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 	options.systemInstruction = `${options.systemInstruction ?? ''}\n\n${GUARD_INSTRUCTION}`.trim();
 
 	if (useGeminiLLMAPI) {
+		// 起動直後でサーバー情報が未取得の場合は、誤って「サーバー無効」と判定しないよう取得を待つ
+		if (instance.value == null) await instanceReady;
+		if (options.signal?.aborted) throw options.signal.reason ?? new DOMException('Aborted', 'AbortError');
 		// サーバーで OpenAI 互換 API が有効になっているかチェック
 		if (instance.value?.serverOpenAIEnabled === true) {
 			try {
 				return await generateViaServer(options);
 			} catch (error: unknown) {
+				if (options.signal?.aborted) throw error;
 				const err = error as { code?: string; message?: string };
 				if (err?.code === 'ROLE_PERMISSION_DENIED') {
 					throw new Error(i18n.ts._llm._error.serverPermission);
@@ -374,6 +431,7 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 					{ value: 'disable', text: i18n.ts._llm._fallback.disable, danger: true },
 				],
 			});
+			if (options.signal?.aborted) throw options.signal.reason ?? new DOMException('Aborted', 'AbortError');
 			if (canceled) {
 				// ユーザーによるキャンセルなのでエラー扱いにしない
 				throw new Error(i18n.ts._llm._error.cancel);

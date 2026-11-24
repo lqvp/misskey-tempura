@@ -12,7 +12,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 >
 	<template #icon>
 		<span :class="$style.iconWrap">
-			<i class="ti ti-sparkles"></i>
+			<i class="ti ti-sparkles" aria-hidden="true"></i>
 			<span v-if="showPendingState" :class="$style.pendingDot" aria-hidden="true"></span>
 		</span>
 	</template>
@@ -26,25 +26,28 @@ SPDX-License-Identifier: AGPL-3.0-only
 			:title="i18n.ts.settings"
 			@click="configure()"
 		>
-			<i class="ti ti-settings"></i>
+			<i class="ti ti-settings" aria-hidden="true"></i>
 		</button>
 	</template>
 
 	<div :class="$style.root" class="_selectable">
+		<!-- 状態の変化だけを短く読み上げる (トピック全文は読み上げない) -->
+		<div role="status" aria-live="polite" :class="$style.srOnly">{{ liveMessage }}</div>
+
 		<!-- 1. generating -->
 		<div v-if="digestGenerating" :class="$style.statusRow">
 			<div :class="$style.generatingInfo">
-				<MkLoading :inline="true" :colored="true"/>
+				<MkLoading :em="true" :colored="true"/>
 				<span>{{ i18n.ts._tlDigest.generating }}</span>
 			</div>
-			<button type="button" class="_button" :class="$style.subAction" @click="cancelTlDigest()">
+			<button type="button" class="_button" :class="$style.subAction" @click="controller.cancel()">
 				{{ i18n.ts.cancel }}
 			</button>
 		</div>
 
 		<!-- 2. error -->
 		<div v-else-if="digestError != null" :class="$style.errorBox">
-			<div :class="$style.errorText">
+			<div :class="$style.errorText" role="alert">
 				<i class="ti ti-alert-triangle" aria-hidden="true"></i>
 				<span>{{ digestError.message }}</span>
 			</div>
@@ -61,9 +64,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 					:class="$style.iconAction"
 					:aria-label="i18n.ts.close"
 					:title="i18n.ts.close"
-					@click="clearTlDigestResult()"
+					@click="controller.clear()"
 				>
-					<i class="ti ti-x"></i>
+					<i class="ti ti-x" aria-hidden="true"></i>
 				</button>
 			</div>
 		</div>
@@ -98,7 +101,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			</div>
 
 			<div :class="$style.resultFooter">
-				<div :class="$style.footerMeta">
+				<div v-if="latestDigestResult.noteCount > 0" :class="$style.footerMeta">
 					{{ i18n.tsx._tlDigest.resultFooter({
 						count: latestDigestResult.noteCount,
 						time: formatTime(latestDigestResult.generatedAt),
@@ -109,21 +112,37 @@ SPDX-License-Identifier: AGPL-3.0-only
 						<i class="ti ti-refresh" aria-hidden="true"></i>
 						<span>{{ i18n.ts._tlDigest.regenerate }}</span>
 					</button>
-					<button type="button" class="_button" :class="$style.subAction" @click="clearTlDigestResult()">
+					<button type="button" class="_button" :class="$style.subAction" @click="controller.clear()">
 						{{ i18n.ts.close }}
 					</button>
 				</div>
 			</div>
 		</div>
 
-		<!-- 4. pending -->
-		<div v-else-if="showPendingState && activePending != null" :class="$style.statusRow">
+		<!-- 4. pending (counting / count failed / ready) -->
+		<div v-else-if="pendingView != null" :class="$style.statusRow">
 			<div :class="$style.pendingText">
-				<span v-if="!widgetProps.showHeader" :class="$style.inlineDot" aria-hidden="true"></span>
-				<span>{{ pendingSummaryText }}</span>
+				<MkLoading v-if="pendingView === 'counting'" :em="true" :colored="false"/>
+				<span v-else-if="!widgetProps.showHeader" :class="$style.inlineDot" aria-hidden="true"></span>
+				<span :class="pendingView === 'counting' ? $style.countingText : undefined">{{ pendingSummaryText }}</span>
 			</div>
 			<div :class="$style.actionRow">
-				<button type="button" class="_button _buttonPrimary" :class="$style.primaryBtn" @click="onSummarizePending()">
+				<button
+					v-if="pendingView === 'error'"
+					type="button"
+					class="_button"
+					:class="$style.subAction"
+					@click="refreshPending()"
+				>
+					{{ i18n.ts.retry }}
+				</button>
+				<button
+					v-if="pendingView !== 'counting'"
+					type="button"
+					class="_button _buttonPrimary"
+					:class="$style.primaryBtn"
+					@click="onSummarizePending()"
+				>
 					{{ i18n.ts._tlDigest.summarizeAction }}
 				</button>
 				<button
@@ -134,7 +153,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					:title="i18n.ts.close"
 					@click="onDismissPending()"
 				>
-					<i class="ti ti-x"></i>
+					<i class="ti ti-x" aria-hidden="true"></i>
 				</button>
 			</div>
 		</div>
@@ -151,14 +170,16 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, watch } from 'vue';
+import { computed, inject, onBeforeUnmount, watch } from 'vue';
 import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
+import type { TlDigestPendingCount, TlDigestWindow } from '@/utility/tempura-script/tl-digest/digest.js';
 import MkContainer from '@/components/MkContainer.vue';
 import MkLoading from '@/components/global/MkLoading.vue';
 import { i18n } from '@/i18n.js';
 import { $i } from '@/i.js';
+import { prefer } from '@/preferences.js';
 import {
 	dismissTlDigestPending,
 	getActivePendingWindow,
@@ -166,17 +187,8 @@ import {
 	pendingUntilRef,
 } from '@/utility/tempura-script/tl-digest/activity.js';
 import {
-	cancelTlDigest,
-	clearTlDigestResult,
-	digestError,
-	digestGenerating,
-	latestDigestResult,
-	peekPendingDigestCount,
-	pendingCountingRef,
-	pendingNoteCountRef,
-	retryLastTlDigest,
-	runRecentTlDigest,
-	runTlDigest,
+	createTlDigestController,
+	TL_DIGEST_CONTROLLER_KEY,
 } from '@/utility/tempura-script/tl-digest/digest.js';
 
 const name = 'tlDigest';
@@ -233,20 +245,47 @@ const emit = defineEmits<WidgetComponentEmits<WidgetProps>>();
 
 const { widgetProps, configure } = useWidgetPropsManager(name, widgetPropsDef, props, emit);
 
+// 生成結果・件数・エラーはウィジェットごとに持つ (複数設置しても干渉しない)。
+// Storybook などから状態を差し込む場合だけ inject を使う
+const injectedController = inject(TL_DIGEST_CONTROLLER_KEY, null);
+const controller = injectedController ?? createTlDigestController();
+const {
+	result: latestDigestResult,
+	generating: digestGenerating,
+	error: digestError,
+	pendingCount,
+} = controller;
+
+let disposed = false;
+onBeforeUnmount(() => {
+	disposed = true;
+	if (injectedController == null) controller.dispose();
+});
+
 const thresholdMinutes = computed(() => Number(widgetProps.absenceThreshold) || 60);
 const maxNotesCount = computed(() => Number(widgetProps.maxNotes) || 100);
 
 const activePending = computed(() => {
+	if (controller.pendingWindow != null) {
+		return controller.pendingWindow.value;
+	}
 	void pendingSinceRef.value;
 	void pendingUntilRef.value;
 	return getActivePendingWindow(thresholdMinutes.value);
 });
 
-const showPendingState = computed(() => {
-	if (activePending.value == null) return false;
-	if (pendingCountingRef.value) return false;
-	return pendingNoteCountRef.value != null && pendingNoteCountRef.value > 0;
+/** pending 行の表示モード (表示しない場合は null) */
+const pendingView = computed<'counting' | 'error' | 'ready' | null>(() => {
+	if (activePending.value == null) return null;
+	const state = pendingCount.value;
+	if (state.status === 'counting') return 'counting';
+	if (state.status === 'error') return 'error';
+	if (state.status === 'ready' && state.count > 0) return 'ready';
+	return null;
 });
+
+// ヘッダーのドットは「操作できるお知らせ」があるときだけ出す
+const showPendingState = computed(() => pendingView.value === 'ready' || pendingView.value === 'error');
 
 function formatDuration(ms: number): string {
 	const totalMinutes = Math.max(1, Math.round(ms / 60_000));
@@ -272,36 +311,103 @@ const pendingSummaryText = computed(() => {
 	const win = activePending.value;
 	if (win == null) return '';
 	const duration = formatDuration(win.until - win.since);
-	const count = pendingNoteCountRef.value ?? 0;
+	const state = pendingCount.value;
+	if (state.status === 'counting') return i18n.tsx._tlDigest.pendingCounting({ duration });
+	if (state.status === 'error') return i18n.tsx._tlDigest.pendingCountFailed({ duration });
+	if (state.status === 'ready' && state.truncated) {
+		return i18n.tsx._tlDigest.pendingSummaryTruncated({ duration, count: state.count });
+	}
+	const count = state.status === 'ready' ? state.count : 0;
 	return i18n.tsx._tlDigest.pendingSummary({ duration, count });
 });
 
-watch(
-	[activePending, () => widgetProps.includeRenotes],
-	async ([win, includeRenotes]) => {
-		if (win == null || !$i) return;
-		const count = await peekPendingDigestCount(win.since, win.until, includeRenotes);
-		if (
-			count > 0 &&
-			widgetProps.autoGenerate &&
-			!digestGenerating.value &&
-			latestDigestResult.value == null
-		) {
-			void runTlDigest({
-				since: win.since,
-				until: win.until,
-				maxNotes: maxNotesCount.value,
-				includeRenotes,
-			});
+const liveMessage = computed(() => {
+	if (digestGenerating.value) return i18n.ts._tlDigest.generating;
+	if (digestError.value != null) return '';
+	if (latestDigestResult.value != null) {
+		if (latestDigestResult.value.noteCount === 0) {
+			return i18n.ts._tlDigest.noNotesToSummarize;
 		}
+		return i18n.tsx._tlDigest.resultFooter({
+			count: latestDigestResult.value.noteCount,
+			time: formatTime(latestDigestResult.value.generatedAt),
+		});
+	}
+	if (pendingView.value === 'ready' || pendingView.value === 'error') return pendingSummaryText.value;
+	return '';
+});
+
+// 自動生成は同じ不在期間につき 1 回だけ (失敗後に設定変更のたび再送しない)
+const autoGeneratedWindows = new Set<string>();
+
+function isSameWindow(a: TlDigestWindow | null, b: TlDigestWindow): boolean {
+	return a != null && a.since === b.since && a.until === b.until;
+}
+
+function maybeAutoGenerate(win: TlDigestWindow, includeRenotes: boolean, state: TlDigestPendingCount): void {
+	// 件数確認の await 中に条件が変わっていたら、古い条件では送信しない
+	if (disposed || !isSameWindow(activePending.value, win)) return;
+	if (widgetProps.includeRenotes !== includeRenotes || !widgetProps.autoGenerate) return;
+	if (state.status !== 'ready' || state.count === 0) return;
+	if (digestGenerating.value || latestDigestResult.value != null) return;
+	const key = `${win.since}:${win.until}`;
+	if (autoGeneratedWindows.has(key)) return;
+	autoGeneratedWindows.add(key);
+	void controller.run({
+		since: win.since,
+		until: win.until,
+		maxNotes: maxNotesCount.value,
+		includeRenotes,
+	});
+}
+
+async function refreshPending(): Promise<void> {
+	const win = activePending.value;
+	const includeRenotes = widgetProps.includeRenotes;
+	if (win == null || !$i) {
+		controller.resetPendingCount();
+		return;
+	}
+	const state = await controller.refreshPendingCount(win, includeRenotes);
+	if (state == null) return; // より新しい確認に置き換えられた
+	maybeAutoGenerate(win, includeRenotes, state);
+}
+
+// followers が有効な場合、LLM の送信先設定変更でも対象件数を再計算する
+const followersDestinationTrigger = computed(() => {
+	if (!prefer.r.tlDigestVisibilities.value.includes('followers')) return '';
+	return `${prefer.r.useGeminiLLMAPI.value}:${prefer.r.openaiBaseUrl.value ?? ''}:${prefer.r.openaiToken.value ? '1' : '0'}`;
+});
+
+// 対象件数に影響する設定 (公開範囲・CW・followers 同意/送信先) が変わったときも数え直す
+watch(
+	[
+		activePending,
+		() => widgetProps.includeRenotes,
+		prefer.r.tlDigestVisibilities,
+		prefer.r.tlDigestCwMode,
+		prefer.r.tlDigestFollowersConsent,
+		followersDestinationTrigger,
+	],
+	() => {
+		void refreshPending();
 	},
 	{ immediate: true },
+);
+
+// 既に件数確認済みの pending がある状態で自動生成を ON にしたときも発火させる
+watch(
+	() => widgetProps.autoGenerate,
+	(enabled) => {
+		if (!enabled || activePending.value == null) return;
+		maybeAutoGenerate(activePending.value, widgetProps.includeRenotes, pendingCount.value);
+	},
 );
 
 function onSummarizePending(): void {
 	const win = activePending.value;
 	if (win == null) return;
-	void runTlDigest({
+	void controller.run({
 		since: win.since,
 		until: win.until,
 		maxNotes: maxNotesCount.value,
@@ -314,11 +420,12 @@ function onDismissPending(): void {
 }
 
 function onSummarizeRecent(): void {
-	void runRecentTlDigest(maxNotesCount.value, widgetProps.includeRenotes);
+	void controller.runRecent(maxNotesCount.value, widgetProps.includeRenotes);
 }
 
 function onRetry(): void {
-	void retryLastTlDigest(maxNotesCount.value, widgetProps.includeRenotes);
+	// 期間だけ引き継ぎ、件数・RN は現在のウィジェット設定を使う
+	void controller.retry(maxNotesCount.value, widgetProps.includeRenotes);
 }
 
 defineExpose<WidgetComponentExpose>({
@@ -330,8 +437,21 @@ defineExpose<WidgetComponentExpose>({
 
 <style lang="scss" module>
 .root {
+	position: relative;
 	padding: 10px 12px;
 	font-size: 0.9em;
+}
+
+.srOnly {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
 }
 
 .iconWrap {
@@ -362,9 +482,10 @@ defineExpose<WidgetComponentExpose>({
 
 .statusRow {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
 	justify-content: space-between;
-	gap: 8px;
+	gap: 6px 8px;
 	min-height: 26px;
 }
 
@@ -391,6 +512,12 @@ defineExpose<WidgetComponentExpose>({
 	color: var(--MI_THEME-fg);
 	font-size: 0.92em;
 	min-width: 0;
+}
+
+.countingText {
+	margin-left: 6px;
+	font-weight: normal;
+	color: color(from var(--MI_THEME-fg) srgb r g b / 0.7);
 }
 
 .actionRow {

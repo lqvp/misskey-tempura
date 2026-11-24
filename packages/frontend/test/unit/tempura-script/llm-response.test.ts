@@ -53,6 +53,22 @@ describe('extractCandidateText', () => {
 
 		expect(result).toBe('');
 	});
+
+	test('複数 part に分割されたテキストを順序どおり連結し thought part を除外する', () => {
+		const result = extractCandidateText({
+			candidates: [{
+				content: {
+					parts: [
+						{ text: 'internal reasoning', thought: true },
+						{ text: '{"topics":' },
+						{ text: '[]}' },
+					],
+				},
+			}],
+		});
+
+		expect(result).toBe('{"topics":[]}');
+	});
 });
 
 describe('extractOpenAIChatText', () => {
