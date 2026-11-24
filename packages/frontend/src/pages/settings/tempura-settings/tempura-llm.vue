@@ -240,9 +240,11 @@ SPDX-License-Identifier: AGPL-3.0-only
 										{{ i18n.ts._tlDigest.userFilterUsersEmpty }}
 									</div>
 									<div v-else :class="$style.userList">
-										<div v-for="user in tlDigestUserFilterUsers" :key="user.id" :class="$style.userListItem">
-											<MkA :to="`/@${user.username}`" :class="$style.userName">@{{ user.username }}</MkA>
-											<MkButton small rounded @click="removeTlDigestFilterUser(user.id)">
+										<div v-for="item in tlDigestUserFilterUsers" :key="item.id" :class="$style.userListItem">
+											<!-- 取得できなかったユーザーはリンクを張らない (プロフィールが存在しないため遷移先が 404 になる) -->
+											<MkA v-if="item.user != null" :to="userProfilePath(item.user)" :class="$style.userName">{{ formatTlDigestFilterUser(item.user) }}</MkA>
+											<span v-else :class="$style.userName" :title="item.id">{{ item.id }}</span>
+											<MkButton small rounded @click="removeTlDigestFilterUser(item.id)">
 												{{ i18n.ts._tlDigest.userFilterUsersRemove }}
 											</MkButton>
 										</div>
@@ -347,19 +349,43 @@ const tlDigestUserFilterModeItems = computed(() => [
 // ユーザー ID だけでは設定画面に名前を出せないため、表示用に Lite 情報をキャッシュする
 const tlDigestFilterUsers = ref<Misskey.entities.UserLite[]>([]);
 
-const tlDigestUserFilterUsers = computed(() => {
-	const ids = new Set(normalizeTlDigestFilterUserIds(tlDigestUserFilterUserIds.value));
-	return tlDigestFilterUsers.value.filter((user) => ids.has(user.id));
+/**
+ * 保存済み ID の一覧を表示用の行に変換する。
+ * users/show は凍結・削除済みのユーザーを返さないため、取得できなかった ID も
+ * 行として残す (名前が分からないだけで、削除操作は常にできるようにする)。
+ */
+const tlDigestUserFilterUsers = computed<{ id: string; user: Misskey.entities.UserLite | null }[]>(() => {
+	const known = new Map(tlDigestFilterUsers.value.map((user) => [user.id, user]));
+	return normalizeTlDigestFilterUserIds(tlDigestUserFilterUserIds.value).map((id) => ({
+		id,
+		user: known.get(id) ?? null,
+	}));
 });
 
 function syncTlDigestFilterUsers(ids: string[]): void {
 	tlDigestFilterUsers.value = tlDigestFilterUsers.value.filter((user) => ids.includes(user.id));
-	if (ids.length === 0) return;
-	misskeyApi('users/show', { userIds: ids }).then((users) => {
-		tlDigestFilterUsers.value = users;
+	// 取得済みの ID は問い合わせ直さない (行の表示内容が変わらないため)
+	const missing = ids.filter((id) => !tlDigestFilterUsers.value.some((user) => user.id === id));
+	if (missing.length === 0) return;
+	misskeyApi('users/show', { userIds: missing }).then((users) => {
+		// 同じユーザーを重複させない (取得済みと追加分の和集合)
+		const merged = new Map(tlDigestFilterUsers.value.map((user) => [user.id, user]));
+		for (const user of users) merged.set(user.id, user);
+		// 取得中に削除された ID は表示しない
+		tlDigestFilterUsers.value = [...merged.values()].filter((user) => ids.includes(user.id));
 	}).catch(() => {
 		// 表示用の取得に失敗してもフィルタ自体は ID ベースで動くため、致命的ではない
 	});
+}
+
+/** ユーザー設定ページのパス (リモートユーザーは /@username@host) */
+function userProfilePath(user: Misskey.entities.UserLite): string {
+	return user.host == null ? `/@${user.username}` : `/@${user.username}@${user.host}`;
+}
+
+/** 一覧に表示する名前 (リモートユーザーはホストを添える) */
+function formatTlDigestFilterUser(user: Misskey.entities.UserLite): string {
+	return user.host == null ? `@${user.username}` : `@${user.username}@${user.host}`;
 }
 
 async function addTlDigestFilterUser(): Promise<void> {

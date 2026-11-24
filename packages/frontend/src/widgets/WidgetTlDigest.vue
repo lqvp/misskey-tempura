@@ -404,7 +404,7 @@ const followersDestinationTrigger = computed(() => {
 	return `${prefer.r.useGeminiLLMAPI.value}:${prefer.r.openaiBaseUrl.value ?? ''}:${prefer.r.openaiToken.value?.trim() ? '1' : '0'}`;
 });
 
-// 対象件数に影響する設定 (公開範囲・CW・followers 同意/送信先) が変わったときも数え直す
+// 対象件数に影響する設定 (公開範囲・CW・followers 同意/送信先・ユーザーフィルタ) が変わったときも数え直す
 watch(
 	[
 		activePending,
@@ -412,6 +412,10 @@ watch(
 		prefer.r.tlDigestVisibilities,
 		prefer.r.tlDigestCwMode,
 		prefer.r.tlDigestFollowersConsent,
+		// フィルタを緩めると 0 件だった期間にノートが現れるため、変更時は必ず数え直す
+		// (件数確認のキャッシュキーは digest.ts の resolveFilter がフィルタを含むので古い結果は再利用されない)
+		prefer.r.tlDigestUserFilterMode,
+		prefer.r.tlDigestUserFilterUserIds,
 		followersDestinationTrigger,
 	],
 	() => {

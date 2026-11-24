@@ -703,6 +703,9 @@ export const PREF_DEF = definePreferences({
 	// ユーザー単位のフィルタ (off: 制限なし / block: 指定ユーザーを除外 / allow: 指定ユーザーだけを対象)
 	tlDigestUserFilterMode: {
 		default: 'off' as 'off' | 'block' | 'allow',
+		// モードが共有されると、別アカウントでの block<->allow の切替が
+		// このアカウントのユーザー一覧の意味を反転させてしまうためアカウントごとに持つ
+		accountDependent: true,
 	},
 	tlDigestUserFilterUserIds: {
 		default: [] as string[],

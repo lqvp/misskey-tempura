@@ -4,7 +4,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { computeLLMDestination, computeLLMRetryDelay, detectImageInputSupport, fetchAvailableModels, generateLLMResponse, shouldRetryLLMStatus, toModelInfos, wrapUserData } from '@/utility/tempura-script/llm.js';
+import { classifyFetchResponse, computeLLMDestination, computeLLMRetryDelay, detectImageInputSupport, fetchAvailableModels, generateLLMResponse, parseRetryAfterMs, shouldRetryLLMStatus, toModelInfos, wrapUserData } from '@/utility/tempura-script/llm.js';
 import { extractLLMText } from '@/utility/tempura-script/llm-response.js';
 import { i18n } from '@/i18n.js';
 import { preferState } from '../../setup.unit.js';
@@ -256,6 +256,46 @@ describe('computeLLMRetryDelay', () => {
 	});
 });
 
+describe('parseRetryAfterMs', () => {
+	// HTTP-date 形式の検算に使う固定時刻 (2026-10-21T07:27:30Z)
+	const now = Date.parse('Wed, 21 Oct 2026 07:27:30 GMT');
+
+	it('RFC 9110 delay-seconds 形式 (整数秒) をミリ秒にする', () => {
+		expect(parseRetryAfterMs('30')).toBe(30_000);
+		expect(parseRetryAfterMs('0')).toBe(0);
+		expect(parseRetryAfterMs(' 5 ')).toBe(5_000);
+	});
+
+	it('RFC 9110 HTTP-date 形式を「現在時刻からの差分」にする', () => {
+		// now から 30 秒後
+		expect(parseRetryAfterMs('Wed, 21 Oct 2026 07:28:00 GMT', now)).toBe(30_000);
+		// 過ぎた日時は待機時間として解釈できないので指定なしと同じ
+		expect(parseRetryAfterMs('Wed, 21 Oct 2026 07:27:00 GMT', now)).toBeNull();
+		// ちょうど現在時刻は 0 秒待ち
+		expect(parseRetryAfterMs('Wed, 21 Oct 2026 07:27:30 GMT', now)).toBe(0);
+	});
+
+	it('解釈できない値は null (指定なし) にする', () => {
+		for (const garbage of ['', '   ', 'soon', '1.5', '0x10', '1e3', '-1', 'abc def', 'Wed, 99 Foo 9999']) {
+			expect(parseRetryAfterMs(garbage, now), JSON.stringify(garbage)).toBeNull();
+		}
+		expect(parseRetryAfterMs(null, now)).toBeNull();
+		expect(parseRetryAfterMs(undefined, now)).toBeNull();
+	});
+
+	it('負の値は null として扱う', () => {
+		expect(parseRetryAfterMs('-30', now)).toBeNull();
+		// 負の経過時間 (過去の日時) も同じ扱い
+		expect(parseRetryAfterMs('Wed, 21 Oct 2026 07:00:00 GMT', now)).toBeNull();
+	});
+
+	it('サーバーの指定値は上限 (8s) で頭打ちにしない', () => {
+		// 8s を超える指定も丸めずにそのまま返す (呼び出し元が全体予算と比較する)
+		expect(parseRetryAfterMs('30')).toBeGreaterThan(8_000);
+		expect(parseRetryAfterMs('600')).toBe(600_000);
+	});
+});
+
 /** 従来どおり CORS 扱いで返すべきエラーメッセージ */
 const i18nCorsMessage = i18n.ts._llm._error.cors;
 
@@ -294,6 +334,32 @@ async function flushMicrotasks(rounds = 8): Promise<void> {
 	for (let i = 0; i < rounds; i++) {
 		await Promise.resolve();
 	}
+}
+
+/**
+ * 自前バックオフのジッターを決定的にする
+ *
+ * computeLLMRetryDelay は full jitter (0〜上限の一様乱数) なので、Math.random が
+ * 小さい値を返すと待機時間が 0ms になり得る。乱数に頼ったままだと「タイマーを進めると
+ * リトライが起きる」という前提のテストが不安定になるため、乱数を固定する。
+ *
+ * @param ratio 0 以上 1 未満。0.5 なら待機時間は試行ごとの上限の半分になる
+ */
+function stubRetryJitter(ratio = 0.5): void {
+	vi.spyOn(Math, 'random').mockReturnValue(ratio);
+}
+
+/** リトライ前の待機時間 (stubRetryJitter(0.5) 時の 1 回目のリトライ) */
+const FIRST_RETRY_DELAY_MS = 250;
+
+/**
+ * タイマーを進めずにマイクロタスクだけを流し、再送されていないことを確かめる
+ *
+ * リトライは待機タイマーが満了するまで起きないので、0ms でも進めなければ観測されない。
+ */
+async function expectNoRetryYet(callsBefore: number): Promise<void> {
+	await flushMicrotasks(16);
+	expect(fetchCalls()).toHaveLength(callsBefore);
 }
 
 async function advanceUntil(predicate: () => boolean, maxMs = 60_000): Promise<void> {
@@ -335,6 +401,8 @@ function startGeneration(options: { userContent?: string; signal?: AbortSignal }
 describe('generateLLMResponse のリトライ', () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
+		// ジッターを固定しないと待機時間が 0ms になり得て、テストが時間依存になる
+		stubRetryJitter();
 		fetchMock.enableMocks();
 		fetchMock.resetMocks();
 		setupDirectMode();
@@ -343,6 +411,7 @@ describe('generateLLMResponse のリトライ', () => {
 	afterEach(() => {
 		fetchMock.resetMocks();
 		vi.useRealTimers();
+		vi.restoreAllMocks();
 	});
 
 	it('503 のあと成功したら、呼び出し元には通常どおりレスポンスを返す', async () => {
@@ -350,6 +419,8 @@ describe('generateLLMResponse のリトライ', () => {
 		fetchMock.mockResponseOnce(() => ({ status: 503, body: 'unavailable' }));
 
 		const tracked = startGeneration();
+		// バックオフ待機 (250ms) を経過するまでは再送しない
+		await expectNoRetryYet(1);
 		await advanceUntil(() => tracked.settled());
 
 		expect(tracked.error).toBeUndefined();
@@ -392,15 +463,15 @@ describe('generateLLMResponse のリトライ', () => {
 
 		const controller = new AbortController();
 		const tracked = startGeneration({ signal: controller.signal });
-		// 1 回目の 503 を観測して、バックオフ待機に入ったところで中断する。
-		// ここでタイマーを 1 秒進めるとバックオフ (500ms) が明けて 2 回目が飛んでしまうため、
+		// 1 回目の 503 を観測して、バックオフ待機 (250ms) に入ったところで中断する。
+		// ここでタイマーを 1 秒進めるとバックオフが明けて 2 回目が飛んでしまうため、
 		// マイクロタスクだけを流して「1 回目を観測した直後」で止める。
 		await flushMicrotasks(16);
 		expect(fetchCalls()).toHaveLength(1);
 		expect(tracked.settled()).toBe(false);
 		controller.abort(new Error('user canceled'));
 		// 中断はバックオフ待機を打ち切るので、タイマーを進めなくても決着する
-		// (待機を打ち切らない実装なら 500ms 経過後にしか決着しない)
+		// (待機を打ち切らない実装なら 250ms 経過後にしか決着しない)
 		await vi.advanceTimersByTimeAsync(0);
 		// abort 伝播と then/finally はマイクロタスクを数段渡るので流しきる
 		await flushMicrotasks();
@@ -410,6 +481,66 @@ describe('generateLLMResponse のリトライ', () => {
 		// 中断後はタイマーをいくら進めても再送しない
 		await vi.advanceTimersByTimeAsync(60_000);
 		expect(fetchCalls()).toHaveLength(1);
+	});
+
+	it('Retry-After: 30 は全体予算 (120 秒) 内なので、8 秒で頭打ちにせず 30 秒待って再送する', async () => {
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		fetchMock.mockResponseOnce(() => ({ status: 429, body: 'slow down', headers: { 'Retry-After': '30' } }));
+
+		const tracked = startGeneration();
+		// サーバーの指定より前に再送しない (自前バックオフの 250ms でも再送しない)
+		await vi.advanceTimersByTimeAsync(FIRST_RETRY_DELAY_MS);
+		await flushMicrotasks(16);
+		expect(fetchCalls()).toHaveLength(1);
+		// 旧実装の 8 秒上限を過ぎても、まだ再送しない
+		await vi.advanceTimersByTimeAsync(8_000 - FIRST_RETRY_DELAY_MS);
+		await flushMicrotasks(16);
+		expect(fetchCalls()).toHaveLength(1);
+		// 30 秒ちょうどで再送する
+		await vi.advanceTimersByTimeAsync(30_000 - 8_000 - 1);
+		await flushMicrotasks(16);
+		expect(fetchCalls()).toHaveLength(1);
+		await vi.advanceTimersByTimeAsync(1);
+		await flushMicrotasks(16);
+		expect(fetchCalls()).toHaveLength(2);
+
+		await advanceUntil(() => tracked.settled());
+		expect(tracked.error).toBeUndefined();
+		expect(extractLLMText(tracked.generated!)).toBe('まとめました');
+	});
+
+	it('Retry-After が残り予算を超えるなら、切り詰めて再送せず即座に失敗する', async () => {
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		// 120 秒の予算に対して 600 秒待てと言われた場合
+		fetchMock.mockResponseOnce(() => ({ status: 429, body: 'slow down', headers: { 'Retry-After': '600' } }));
+
+		const tracked = startGeneration();
+		// タイマーを進めなくても決着する (実装が待機を打ち切って再送するなら 2 回目が飛ぶ)
+		await flushMicrotasks(16);
+		expect(tracked.settled()).toBe(true);
+		expect((tracked.error as Error).message).toContain('429');
+		expect(fetchCalls()).toHaveLength(1);
+		// 進めても再送しない
+		await vi.advanceTimersByTimeAsync(60_000);
+		expect(fetchCalls()).toHaveLength(1);
+	});
+
+	it('Retry-After が HTTP-date 形式でもその時刻まで待って再送する', async () => {
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		// 現在時刻 (フェイクタイマー開始時) から 20 秒後を指定する
+		const retryAt = new Date(Date.now() + 20_000).toUTCString();
+		fetchMock.mockResponseOnce(() => ({ status: 429, body: 'slow down', headers: { 'Retry-After': retryAt } }));
+
+		const tracked = startGeneration();
+		await vi.advanceTimersByTimeAsync(19_000);
+		await flushMicrotasks(16);
+		expect(fetchCalls()).toHaveLength(1);
+		await vi.advanceTimersByTimeAsync(1_000);
+		await flushMicrotasks(16);
+		expect(fetchCalls()).toHaveLength(2);
+
+		await advanceUntil(() => tracked.settled());
+		expect(tracked.error).toBeUndefined();
 	});
 
 	it('全体予算を使い切る前に失敗したら、予算内ならリトライし、超過ならリトライしない', async () => {
@@ -469,6 +600,8 @@ describe('generateLLMResponse のリトライ', () => {
 describe('fetchAvailableModels のリトライ', () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
+		// ジッターを固定しないと待機時間が 0ms になり得て、テストが時間依存になる
+		stubRetryJitter();
 		fetchMock.enableMocks();
 		fetchMock.resetMocks();
 		preferState.useGeminiLLMAPI = false;
@@ -479,6 +612,7 @@ describe('fetchAvailableModels のリトライ', () => {
 	afterEach(() => {
 		fetchMock.resetMocks();
 		vi.useRealTimers();
+		vi.restoreAllMocks();
 	});
 
 	const modelsBody = JSON.stringify({ data: [{ id: 'gpt-4o-mini' }] });
@@ -492,6 +626,8 @@ describe('fetchAvailableModels のリトライ', () => {
 			tracked.models = models;
 			tracked.settled = true;
 		});
+		// バックオフ待機 (250ms) を経過するまでは再送しない
+		await expectNoRetryYet(1);
 		await advanceUntil(() => tracked.settled);
 		await promise;
 
@@ -499,11 +635,260 @@ describe('fetchAvailableModels のリトライ', () => {
 		expect(fetchCalls()).toHaveLength(2);
 	});
 
+	it('Retry-After がモデル一覧の予算 (30 秒) を超えるなら、切り詰めず即座に空配列へ落とす', async () => {
+		mockDirectAPI(() => ({ status: 200, body: modelsBody }));
+		fetchMock.mockResponseOnce(() => ({ status: 429, body: 'slow down', headers: { 'Retry-After': '60' } }));
+
+		const models = await fetchAvailableModels();
+
+		expect(models).toEqual([]);
+		expect(fetchCalls()).toHaveLength(1);
+	});
+
 	it('401 はリトライせず、空配列に落とす', async () => {
 		mockDirectAPI(() => ({ status: 200, body: modelsBody }));
 		fetchMock.mockResponseOnce(() => ({ status: 401, body: 'unauthorized' }));
 
 		const models = await fetchAvailableModels();
+
+		expect(models).toEqual([]);
+		expect(fetchCalls()).toHaveLength(1);
+	});
+});
+
+/**
+ * 応答本文の読み取りを試行の中に含める (本文の待ち固まりと、本文途中の切断)
+ *
+ * ブラウザの fetch は応答ヘッダの到着で解決し、本文は後からストリームとして読む。
+ * 本文の読み取りを試行の外に置くと、締切シグナルもリトライ判定も届かず、
+ * 「ヘッダだけ返して本文を送らないプロバイダ」で永久に待ってしまう。
+ */
+describe('応答本文の読み取り', () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+		stubRetryJitter();
+		fetchMock.enableMocks();
+		fetchMock.resetMocks();
+		setupDirectMode();
+	});
+
+	afterEach(() => {
+		fetchMock.resetMocks();
+		vi.useRealTimers();
+		vi.restoreAllMocks();
+	});
+
+	/**
+	 * 本文を読み出した途端の失敗を疑似的に作る
+	 *
+	 * fetch 自体は成功し (ヘッダは届く)、本文は読み出した瞬間に接続が切れる状況。
+	 * 本物のネットワーク切断ではたいてい TypeError (理由付き) だが、
+	 * エラー種別に依存しないことも確かめられるよう、任意の例外を渡せるようにする。
+	 */
+	function respondWithBodyFailure(error: unknown): Response {
+		return new Response(new ReadableStream({
+			pull(controller) {
+				controller.error(error);
+			},
+		}), { status: 200 });
+	}
+
+	it('本文が届かないまま試行の締切に達したら、待ち続けず既存の CORS エラーで決着する', async () => {
+		// ヘッダだけ返して本文を送らないプロバイダ
+		fetchMock.mockIf((req) => req.url.startsWith('https://api.example.com/v1/'), () => {
+			return new Response(new ReadableStream({ start() { /* 本文は永遠に来ない */ } }), { status: 200 });
+		});
+
+		const tracked = startGeneration();
+
+		// 全体予算 (120 秒) より手前では、まだ固まったままである
+		await vi.advanceTimersByTimeAsync(60_000);
+		expect(tracked.settled()).toBe(false);
+
+		// 予算を使い切ったら、本文を待ち続けずに失敗として決着する
+		await advanceUntil(() => tracked.settled());
+		expect(tracked.settled()).toBe(true);
+		expect(tracked.error).toBeInstanceOf(Error);
+		expect((tracked.error as Error).message).toBe(i18nCorsMessage);
+	});
+
+	it('本文の読み取り中のネットワーク断はリトライ対象になり、2 回目で成功する', async () => {
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		fetchMock.mockResponseOnce(() => respondWithBodyFailure(new TypeError('network error')));
+		stubRetryJitter(0.999999);
+
+		const tracked = startGeneration();
+
+		// 1 回目は本文の途中で切れる。再送は待機タイマーの満了後なので、
+		// タイマーを進める前は 1 回しか要求が飛んでいない
+		await flushMicrotasks(16);
+		expect(fetchCalls()).toHaveLength(1);
+
+		await advanceUntil(() => tracked.settled());
+
+		expect(tracked.error).toBeUndefined();
+		expect(extractLLMText(tracked.generated!)).toBe('まとめました');
+		// 再送は fetch ごとやり直すので、読み終えた Response を使い回さない
+		expect(fetchCalls()).toHaveLength(2);
+	});
+
+	it('本文の読み取り中の切断が続いたら 3 回で打ち切り、従来どおり CORS エラーにする', async () => {
+		fetchMock.mockIf((req) => req.url.startsWith('https://api.example.com/v1/'), () => {
+			return respondWithBodyFailure(new TypeError('network error'));
+		});
+
+		const tracked = startGeneration();
+		await advanceUntil(() => tracked.settled());
+
+		expect((tracked.error as Error).message).toBe(i18nCorsMessage);
+		expect(fetchCalls()).toHaveLength(3);
+	});
+
+	it('本文のストリームが EncodingError (DOMException) で切れた場合もリトライ対象にする', async () => {
+		// 本文の読み取り失敗は環境によって TypeError (undici) にも
+		// EncodingError (DOMException) にもなる。どちらも一過性として扱う
+		fetchMock.mockIf((req) => req.url.startsWith('https://api.example.com/v1/'), () => {
+			return respondWithBodyFailure(new DOMException('Failed to read response body.', 'EncodingError'));
+		});
+
+		const tracked = startGeneration();
+		await advanceUntil(() => tracked.settled());
+
+		expect((tracked.error as Error).message).toBe(i18nCorsMessage);
+		// 単発の失敗として諦めず、最大試行回数まで再送する
+		expect(fetchCalls()).toHaveLength(3);
+	});
+
+	it('本文の読み取りが JSON 構文エラーなら再送しない (読めた本文は再送しても同じ)', async () => {
+		fetchMock.mockIf((req) => req.url.startsWith('https://api.example.com/v1/'), () => {
+			return new Response('{"x":', { status: 200 });
+		});
+
+		const tracked = startGeneration();
+		await advanceUntil(() => tracked.settled());
+
+		expect(tracked.error).toBeInstanceOf(SyntaxError);
+		expect(fetchCalls()).toHaveLength(1);
+	});
+
+	it('本文の読み取り中に呼び出し元が中断したら、リトライせず中断を伝える', async () => {
+		let receivedSignal: AbortSignal | undefined;
+		fetchMock.mockIf((req) => req.url.startsWith('https://api.example.com/v1/'), (request) => {
+			receivedSignal = request.signal ?? undefined;
+			// ヘッダだけ返し、本文は来ない (中断を待つ)
+			return new Response(new ReadableStream({ start() { /* 本文は来ない */ } }), { status: 200 });
+		});
+
+		const controller = new AbortController();
+		const tracked = startGeneration({ signal: controller.signal });
+		await flushMicrotasks(16);
+		expect(fetchCalls()).toHaveLength(1);
+		expect(receivedSignal?.aborted).toBe(false);
+
+		// 本文の読み取り中に呼び出し元が中断する
+		controller.abort(new Error('user canceled'));
+		await vi.advanceTimersByTimeAsync(0);
+		await flushMicrotasks();
+
+		// 中止がリトライより優先される
+		expect(tracked.settled()).toBe(true);
+		expect(tracked.error).toBe(controller.signal.reason);
+
+		await vi.advanceTimersByTimeAsync(60_000);
+		expect(fetchCalls()).toHaveLength(1);
+	});
+
+	it('本文の読み取り中の失敗は、要求が送信済みと分かる形 (duringBody) で分類される', async () => {
+		const controller = new AbortController();
+
+		const outcome = await classifyFetchResponse(
+			() => Promise.resolve(respondWithBodyFailure(new TypeError('network error'))),
+			undefined,
+			controller.signal,
+		);
+
+		// 応答ステータスは成功系だが本文は得られていない、という区別がつく
+		expect(outcome).toEqual({ kind: 'retryable', status: 200, statusText: '', retryAfterMs: null, duringBody: true });
+	});
+
+	it('応答ヘッダの時点での失敗は duringBody を持たない (POST の再送方針を切り分けられる)', async () => {
+		const controller = new AbortController();
+
+		const outcome = await classifyFetchResponse(
+			() => Promise.resolve(new Response('unavailable', { status: 503, statusText: 'Service Unavailable' })),
+			undefined,
+			controller.signal,
+		);
+
+		expect(outcome).toEqual({ kind: 'retryable', status: 503, statusText: 'Service Unavailable', retryAfterMs: null });
+	});
+
+	it('成功した本文は、Response ではなく解釈済みの JSON として返る', async () => {
+		const controller = new AbortController();
+
+		const outcome = await classifyFetchResponse(
+			() => Promise.resolve(new Response(okBody, { status: 200 })),
+			undefined,
+			controller.signal,
+		);
+
+		expect(outcome.kind).toBe('success');
+		expect(outcome.kind === 'success' && outcome.body).toEqual(JSON.parse(okBody));
+	});
+
+	it('本文が JSON として解釈できない場合はリトライせず、その場で失敗する', async () => {
+		fetchMock.mockIf((req) => req.url.startsWith('https://api.example.com/v1/'), () => {
+			// ステータスは成功だが本文が壊れている (再送しても直らない)
+			return new Response('{ "choices": [', { status: 200 });
+		});
+
+		const tracked = startGeneration();
+		await advanceUntil(() => tracked.settled());
+
+		expect(tracked.settled()).toBe(true);
+		expect(tracked.generated).toBeUndefined();
+		expect(tracked.error).toBeInstanceOf(SyntaxError);
+		// 壊れた本文は再送しても直らないので、1 回で打ち切る
+		expect(fetchCalls()).toHaveLength(1);
+	});
+
+	it('本文の読み取り中に失敗しても、モデル一覧は空配列に落とさず取得を続ける', async () => {
+		const modelsBody = JSON.stringify({ data: [{ id: 'gpt-4o-mini' }] });
+		mockDirectAPI(() => ({ status: 200, body: modelsBody }));
+		fetchMock.mockResponseOnce(() => respondWithBodyFailure(new TypeError('network error')));
+		stubRetryJitter(0.999999);
+
+		const tracked = { models: undefined as unknown, settled: false };
+		const promise = fetchAvailableModels().then((models) => {
+			tracked.models = models;
+			tracked.settled = true;
+		});
+
+		// 1 回目は本文の途中で切れる。再送は待機タイマーの満了後
+		await flushMicrotasks(16);
+		expect(fetchCalls()).toHaveLength(1);
+		await advanceUntil(() => tracked.settled);
+		await promise;
+
+		expect(tracked.models).toEqual([{ id: 'gpt-4o-mini', imageInput: 'supported', detectedBy: 'name' }]);
+		expect(fetchCalls()).toHaveLength(2);
+	});
+
+	it('本文が届かないまま締切に達したモデル一覧は、待ち続けずに空配列へ落とす', async () => {
+		fetchMock.mockIf((req) => req.url.startsWith('https://api.example.com/v1/'), () => {
+			return new Response(new ReadableStream({ start() { /* 本文は永遠に来ない */ } }), { status: 200 });
+		});
+
+		let models: unknown = undefined;
+		let settled = false;
+		const promise = fetchAvailableModels().then((result) => {
+			models = result;
+			settled = true;
+		});
+
+		// 一覧取得の予算は 30 秒
+		await advanceUntil(() => settled);
+		await promise;
 
 		expect(models).toEqual([]);
 		expect(fetchCalls()).toHaveLength(1);

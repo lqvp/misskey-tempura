@@ -54,7 +54,12 @@ export const LLM_MAX_ATTEMPTS = 3;
 /** バックオフの基準遅延 (1 回目のリトライ) */
 const LLM_RETRY_BASE_DELAY_MS = 500;
 
-/** バックオフ遅延の上限 (プロバイダ側の Retry-After もこの値で頭打ちにする) */
+/**
+ * 自前で計算するバックオフ遅延の上限
+ *
+ * サーバーが Retry-After で指定した待機時間には適用しない (サーバーの指示を
+ * 短縮すると、待てと言われた時間より早く再送してレート制限を悪化させるため)。
+ */
 const LLM_RETRY_MAX_DELAY_MS = 8_000;
 
 /** 直指定 API 呼び出し全体 (全試行とバックオフ待機の合計) のタイムアウト予算 */
@@ -88,11 +93,27 @@ export function computeLLMRetryDelay(attempt: number, random: () => number = Mat
 
 /**
  * リトライを判断するための、1 回の試行結果
+ *
+ * 応答本文の読み取り (response.json()) も 1 回分の試行に含める。ブラウザの fetch は
+ * 応答ヘッダの到着で解決し、本文は後からストリームとして読むため、本文の読み取りを
+ * 試行の外へ出すと、締切シグナルもリトライ判定も届かないまま固まり得る。
+ * そのため成功時は Response そのものではなく、読み取り済みの本文を返す。
  */
-type LLMAttemptOutcome =
-	| { kind: 'success'; response: Response }
-	/** 再送すれば回復し得る失敗 (retryAfterMs はサーバー指定の待機時間) */
-	| { kind: 'retryable'; status: number; statusText: string; retryAfterMs: number | null }
+export type LLMAttemptOutcome =
+	/** 応答本文まで読み終えた成功 (body は JSON として解釈済み) */
+	| { kind: 'success'; body: unknown }
+	/**
+	 * 再送すれば回復し得る失敗
+	 *
+	 * - status: HTTP のステータス。本文の読み取り中に途切れた場合は応答ステータスが
+	 *   得られないため 0 になる (従来のネットワーク層の失敗と同じ扱い)。
+	 * - retryAfterMs: サーバー指定の待機時間 (Retry-After が無ければ null)
+	 * - duringBody: 本文の読み取り中に失敗したか。false / 省略は応答ヘッダの時点での失敗。
+	 *   課金される POST を「サーバーが処理した可能性のある失敗」として別扱いしたい
+	 *   呼び出し元が、リトライ方針を切り分けられるようにするために持たせている
+	 *   (現状のリトライ判定はどちらも同じ扱い)。
+	 */
+	| { kind: 'retryable'; status: number; statusText: string; retryAfterMs: number | null; duringBody?: boolean }
 	/** 再送しても成功し得ない失敗。status があれば HTTP の失敗、無ければ例外そのもの */
 	| { kind: 'fatal'; status?: number; statusText?: string; error?: unknown };
 
@@ -116,53 +137,132 @@ function isTransientNetworkError(error: unknown): boolean {
 }
 
 /**
- * fetch の応答/例外を、リトライ可否の観点で分類する
+ * 応答本文の読み取り (response.json()) の失敗が、一過性の失敗か
+ *
+ * 本文のストリームが途中で切れたことを表す例外の型は環境で揺れる:
+ * - ヘッダ受信後に接続が切れる (Chrome は net::ERR_CONTENT_LENGTH_MISMATCH を投げる)
+ * - Chromium 系は TypeError、仕様上の EncodingError は DOMException
+ * - Node の undici は TypeError をそのまま伝える
+ *
+ * どれも「本文が得られなかった」という点は同じで、再送すれば回復し得る。
+ * 一方、本文が揃った上での JSON 構文エラー (SyntaxError) は再送しても直らないため
+ * ここには含めない (呼び出し元の致命エラーとして扱う)。
+ */
+function isTransientBodyError(error: unknown): boolean {
+	// fetch 自体の失敗と同じく TypeError は一過性
+	if (isTransientNetworkError(error)) return true;
+	// 本文のストリームの失敗は EncodingError (DOMException) として届く
+	return error instanceof DOMException && error.name === 'EncodingError';
+}
+
+/**
+ * fetch から応答本文までを取得し、リトライ可否の観点で分類する
+ *
+ * 本文の読み取りまでを 1 回分の試行に含めるのが要点:
+ * - 応答ヘッダが届いただけでは終わらせず、本文の JSON 解釈まで待つ
+ * - その間も deadlineSignal が効くので、本文を送り切らないプロバイダでも固まらない
+ * - 本文の読み取り中の接続断も、ヘッダ時点の失敗と同じくリトライ対象にする
+ *
+ * Response の本文は 1 回しか読めないが、リトライ時は fetch ごとやり直すため
+ * 常に新しい Response になる (読み終えた Response を保持して再読することは無い)。
  *
  * 副作用 (エラーメッセージの組み立て) は呼び出し元ごとに異なるため持たせない。
  *
- * @param request fetch を実行する関数
- * @param signal 中止シグナル (中止済みならリトライ対象にしない)
+ * 戻り値の形 (特に retryable.duringBody) はリトライ方針の入力になる契約なので、
+ * 振る舞いを直接固定できるようテストから呼べるようにしている。
+ *
+ * @param request fetch を実行する関数 (deadlineSignal を渡すこと)
+ * @param callerSignal 呼び出し元の中止シグナル。中止済みならリトライ対象にしない
+ * @param deadlineSignal 試行の締切シグナル。本文の読み取り中止の原因を切り分けるのに使う
  */
-async function classifyFetchResponse(
+export async function classifyFetchResponse(
 	request: () => Promise<Response>,
-	signal: AbortSignal | undefined,
+	callerSignal: AbortSignal | undefined,
+	deadlineSignal: AbortSignal,
 ): Promise<LLMAttemptOutcome> {
+	let response: Response;
 	try {
-		const response = await request();
-		if (response.ok) return { kind: 'success', response };
+		response = await request();
+	} catch (error) {
+		// 中止はリトライせずそのまま伝える (fetch は中止時に TypeError ではなく DOMException を返す)
+		if (callerSignal?.aborted) return { kind: 'fatal', error: toAbortError(callerSignal) };
+		if (isTransientNetworkError(error)) {
+			return { kind: 'retryable', status: 0, statusText: '', retryAfterMs: null };
+		}
+		return { kind: 'fatal', error };
+	}
+
+	// 成功しない応答は本文を読まない (必要になるのは Retry-After ヘッダだけ)
+	if (!response.ok) {
 		if (!shouldRetryLLMStatus(response.status)) {
 			// 呼び出し元が中断していれば、エラー種別より中断を優先する
-			if (signal?.aborted) return { kind: 'fatal', error: toAbortError(signal) };
+			if (callerSignal?.aborted) return { kind: 'fatal', error: toAbortError(callerSignal) };
 			return { kind: 'fatal', status: response.status, statusText: response.statusText };
 		}
 		return {
 			kind: 'retryable',
 			status: response.status,
 			statusText: response.statusText,
-			retryAfterMs: parseRetryAfterMs(response),
+			retryAfterMs: parseRetryAfterMs(response.headers?.get('Retry-After')),
 		};
+	}
+
+	const { status, statusText } = response;
+	try {
+		// 本文の読み取りも同じ試行 (同じ締切シグナル) の中で行う
+		return { kind: 'success', body: await response.json() };
 	} catch (error) {
-		// 中止はリトライせずそのまま伝える (fetch は中止時に TypeError ではなく DOMException を返す)
-		if (signal?.aborted) return { kind: 'fatal', error: toAbortError(signal) };
-		if (isTransientNetworkError(error)) {
-			return { kind: 'retryable', status: 0, statusText: '', retryAfterMs: null };
+		// 本文の読み取り中に呼び出し元が中断していれば、リトライせず中断を伝える
+		if (callerSignal?.aborted) return { kind: 'fatal', error: toAbortError(callerSignal) };
+		// 締切による中止は、「本文が来ないまま時間切れ」と「本文の途中で途切れた」の
+		// どちらも一過性の失敗として扱う (リトライ可否は requestWithRetry が判断する)
+		if (deadlineSignal.aborted || isTransientBodyError(error)) {
+			return retryableDuringBody(status, statusText);
 		}
 		return { kind: 'fatal', error };
 	}
 }
 
 /**
- * Retry-After ヘッダをミリ秒に変換する (秒数形式のみ対応)
+ * 本文の読み取り中に失敗したことを表す retryable
  *
- * HTTP-date 形式も仕様上は許されるが、LLM プロバイダで使われることはほぼ無いので
- * 解釈に失敗したら無視して指数バックオフに任せる。
+ * 応答ステータスは成功系 (2xx) だが本文が得られていないため、Retry-After も無い。
+ * duringBody は「サーバーが要求を処理した可能性がある」ことを示す。
  */
-function parseRetryAfterMs(response: Response): number | null {
-	const header = response.headers?.get('Retry-After')?.trim();
-	if (header == null || header === '') return null;
-	const seconds = Number(header);
-	if (!Number.isFinite(seconds) || seconds < 0) return null;
-	return seconds * 1000;
+function retryableDuringBody(status: number, statusText: string): LLMAttemptOutcome {
+	return { kind: 'retryable', status, statusText, retryAfterMs: null, duringBody: true };
+}
+
+/**
+ * Retry-After ヘッダをミリ秒に変換する
+ *
+ * RFC 9110 の 2 形式をどちらも解釈する:
+ * - delay-seconds (`Retry-After: 30`)
+ * - HTTP-date (`Retry-After: Wed, 21 Oct 2026 07:28:00 GMT`)
+ *
+ * 解釈できない値・負の値は「指定なし」(null) として扱い、指数バックオフに任せる。
+ * 返す値はサーバーの指示そのままで、上限では頭打ちにしない (呼び出し元が予算と比較する)。
+ *
+ * @param header ヘッダ値 (前後の空白は無視する)
+ * @param now 現在時刻 (HTTP-date 形式の経過時間を測る基準。テストで固定できるようにする)
+ * @returns 待機時間 (ミリ秒)。指定が無い/解釈できない/負の値なら null
+ */
+export function parseRetryAfterMs(header: string | null | undefined, now: number = Date.now()): number | null {
+	const value = header?.trim();
+	if (value == null || value === '') return null;
+
+	// delay-seconds は数字だけの形式に限定する (Number() は '0x10' や '1e3' も通してしまう)
+	if (/^\d+$/.test(value)) {
+		const seconds = Number(value);
+		return Number.isFinite(seconds) ? seconds * 1000 : null;
+	}
+
+	// HTTP-date (IMF-fixdate など RFC 9110 が許す日付形式)
+	const date = Date.parse(value);
+	if (!Number.isFinite(date)) return null;
+	const deltaMs = date - now;
+	if (deltaMs < 0) return null;
+	return deltaMs;
 }
 
 /**
@@ -224,14 +324,14 @@ function startRequestDeadline(remainingMs: number): { signal: AbortSignal; dispo
  * ループの進み方は横断的な関心事 (試行回数・待機中の中止・全体予算) なので、
  * 呼び出し元ごとの HTTP の手順は 1 試行分のコールバックとして受け取る。
  *
- * @param attemptRequest 1 回分の試行 (中止シグナルを受け取り、結果を分類して返す)
- * @param delayFor リトライ前の待機時間を決める (試行番号は 0 始まり)
+ * @param attemptRequest 1 回分の試行 (締切シグナルを受け取り、応答本文まで読み切って結果を分類して返す)
+ * @param delayFor サーバーが Retry-After を返さないときの待機時間を決める (試行番号は 0 始まり)
  * @param signal 呼び出し元の中止シグナル
  * @param deadline 全体予算の期限 (performance.now() と同じ時間軸のミリ秒)
  * @param handleBudgetExhausted 全体予算を使い切ったときに投げる例外を作る
  * @param handleAttemptTimeout 1 回の試行が上限に達したときに投げる例外を作る
  * @param handleNetworkFailure ネットワーク層の失敗でリトライを使い切ったときに投げる例外を作る
- * @returns 成功した試行の応答 (リトライ後ならその最後の応答)
+ * @returns 成功した試行の応答本文 (リトライ後ならその最後の応答)
  * @throws 中止された場合は中止理由、リトライ不能・試行回数超過・予算超過の場合はその例外
  */
 async function requestWithRetry(
@@ -242,7 +342,7 @@ async function requestWithRetry(
 	handleBudgetExhausted: () => unknown,
 	handleAttemptTimeout: () => unknown,
 	handleNetworkFailure: () => unknown,
-): Promise<Response> {
+): Promise<unknown> {
 	for (let attempt = 0; ; attempt++) {
 		if (signal?.aborted) throw toAbortError(signal);
 
@@ -267,7 +367,7 @@ async function requestWithRetry(
 
 		switch (outcome.kind) {
 			case 'success':
-				return outcome.response;
+				return outcome.body;
 			case 'fatal':
 				// 呼び出し元が中断した場合は、分類に関わらず中断を優先して伝える
 				if (signal?.aborted) throw toAbortError(signal);
@@ -276,17 +376,21 @@ async function requestWithRetry(
 			case 'retryable': {
 				// ネットワーク層の失敗でシグナル付きの reject が来た場合は既に中止済み
 				if (signal?.aborted) throw toAbortError(signal);
+				// 本文が得られなかった失敗は、ステータスが成功系でもネットワーク層の失敗として扱う
+				// (従来のメッセージ (CORS) をそのまま保つ)
+				const exhausted = (): unknown => outcome.status === 0 || outcome.duringBody === true ? handleNetworkFailure() : toLLMHttpError(outcome.status, outcome.statusText);
 				// 試行回数を使い切ったら、最後の失敗をそのまま返す
 				// (ネットワーク層の失敗は status 0 なので、呼び出し元ごとのネットワークエラーに変換する)
-				if (attempt >= LLM_MAX_ATTEMPTS - 1) throw outcome.status === 0 ? handleNetworkFailure() : toLLMHttpError(outcome.status, outcome.statusText);
+				if (attempt >= LLM_MAX_ATTEMPTS - 1) throw exhausted();
 
-				// サーバーが待機時間を指定していれば尊重しつつ、自前の遅延と打ち切り上限で抑える
-				const backoff = delayFor(attempt);
-				const delay = Math.min(Math.max(backoff, outcome.retryAfterMs ?? 0), LLM_RETRY_MAX_DELAY_MS);
+				// サーバーが待機時間を指定した場合はその値をそのまま守る (自前の上限では頭打ちにしない)。
+				// 指定が無いときだけ、自前の指数バックオフ (+ full jitter) と上限を使う。
+				const delay = outcome.retryAfterMs ?? delayFor(attempt);
 
-				// 待つと全体予算を超過するなら、無駄に待たず即座に失敗させる
+				// 待つと全体予算を超過するなら、切り詰めて早く再送せず即座に失敗させる
+				// (サーバーの指示より早く再送すると、レート制限をかえって悪化させる)
 				if (delay <= 0 || deadline - performance.now() <= delay) {
-					throw outcome.status === 0 ? handleNetworkFailure() : toLLMHttpError(outcome.status, outcome.statusText);
+					throw exhausted();
 				}
 
 				await waitForRetry(delay, signal);
@@ -514,14 +618,15 @@ export async function fetchAvailableModels(): Promise<LLMModelInfo[]> {
 	try {
 		const baseURL = (openaiBaseUrl?.trim() || 'https://api.openai.com/v1').replace(/\/+$/, '');
 		// 一覧取得も一時的な失敗 (429 / 5xx 等) で空配列に落とさないようリトライする
-		const response = await requestWithRetry(
+		// 本文 (JSON) の読み取りも試行の中なので、本文が届かないまま固まることはない
+		const data = await requestWithRetry(
 			(attemptSignal) => classifyFetchResponse(() => window.fetch(`${baseURL}/models`, {
 				method: 'GET',
 				headers: {
 					Authorization: `Bearer ${openaiToken}`,
 				},
 				signal: attemptSignal,
-			}), attemptSignal),
+			}), undefined, attemptSignal),
 			(attempt) => computeLLMRetryDelay(attempt),
 			undefined,
 			performance.now() + MODEL_LIST_TIMEOUT_MS,
@@ -529,9 +634,8 @@ export async function fetchAvailableModels(): Promise<LLMModelInfo[]> {
 			() => new Error('fetch failed'),
 			() => new Error('fetch failed'),
 			() => new Error('fetch failed'),
-		);
-		const data = await response.json() as { data?: { id?: string }[] };
-		const infos = toModelInfos(data.data);
+		) as { data?: { id?: string }[] } | null;
+		const infos = toModelInfos(data?.data);
 		cachedModelInfos = infos;
 		return infos;
 	} catch {
@@ -684,7 +788,9 @@ async function generateOpenAIDirect({ note, userContent, systemInstruction, sign
 	const body = JSON.stringify(requestBody);
 	// ブラウザから直接 API を呼ぶ (サーバーは経由しない)
 	// 一時的な失敗 (429 / 5xx / ネットワーク断) はリトライし、失敗は既存のエラーメッセージのまま返す
-	const response = await requestWithRetry(
+	// 応答本文の読み取りも試行の中なので、ヘッダだけ返して本文を送らないプロバイダでも
+	// 全体予算 (120 秒) で打ち切られ、本文の途中で途切れた場合もリトライ対象になる
+	const data = await requestWithRetry(
 		(attemptSignal) => classifyFetchResponse(() => window.fetch(`${baseURL}/chat/completions`, {
 			method: 'POST',
 			headers: {
@@ -693,7 +799,7 @@ async function generateOpenAIDirect({ note, userContent, systemInstruction, sign
 			},
 			body,
 			signal: attemptSignal,
-		}), attemptSignal),
+		}), signal, attemptSignal),
 		(attempt) => computeLLMRetryDelay(attempt),
 		signal,
 		// 120 秒は 1 回の試行ではなく全試行 + バックオフ待機の合計予算として使う
@@ -706,7 +812,7 @@ async function generateOpenAIDirect({ note, userContent, systemInstruction, sign
 		() => new Error(i18n.ts._llm._error.cors),
 	);
 
-	return response.json() as Promise<LLMResponse>;
+	return data as LLMResponse;
 }
 
 /**

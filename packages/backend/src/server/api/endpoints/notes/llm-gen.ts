@@ -54,6 +54,30 @@ export const meta = {
 	},
 } as const;
 
+/**
+ * 上流の OpenAI 互換 API への 1 回の送信あたりのタイムアウト
+ *
+ * クライアント直指定モードの予算 (LLM_REQUEST_TIMEOUT_MS = 120 秒) より短くしない。
+ * HttpRequestService はこの値を AbortController の abort に使うため、生成が終わる前に
+ * 打ち切るとプロバイダには生成・課金をさせたまま利用者にはエラーを返すことになる。
+ * 長いタイムラインの TL ダイジェスト要約は低速なモデルでは 30 秒を超えるため、
+ * 旧値 (30 秒) は直指定モードより不利なだけだった。
+ * サーバーモードはクライアント側にタイムアウトが無い (中止は利用者のキャンセルのみ)。
+ *
+ * 画像フォールバックで最大 2 回送信しうるため、合計は最大 240 秒になる。
+ * 現在のところ両モードとも 240 秒を超えた時点でクライアントが打ち切る経路は無い。
+ */
+const LLM_UPSTREAM_TIMEOUT_MS = 120_000;
+
+/**
+ * 画像付きの送信が入力エラーで拒否されたときに本文だけで送り直すまでの猶予
+ *
+ * 400/422 は推論前の拒否なので通常は二重課金にならないが、全く同じ結果になる
+ * 再送 (コンテキスト長超過・モデレーション・不正なリクエスト等) に最大 120 秒
+ * 費やさないよう、再送は短いタイムアウトで諦める。
+ */
+const LLM_UPSTREAM_RETRY_TIMEOUT_MS = 60_000;
+
 export const paramDef = {
 	type: 'object',
 	properties: {
@@ -120,7 +144,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				image_url: { url: fileUri },
 			}));
 
-			const send = async (content: string | unknown[]) => {
+			// タイムアウトは呼び出しごとに独立させる (再送に前回の残り時間を引き継がない)
+			const send = async (content: string | unknown[], timeout: number = LLM_UPSTREAM_TIMEOUT_MS) => {
 				return await this.httpRequestService.send(url, {
 					method: 'POST',
 					headers: {
@@ -134,7 +159,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 							{ role: 'user', content },
 						],
 					}),
-					timeout: 30000,
+					timeout,
 					isLocalAddressAllowed: false,
 				}, {
 					throwErrorWhenResponseNotOk: false,
@@ -149,8 +174,14 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				// クライアントは使われるモデルが画像に対応しているか分からずに画像を付けてくる。
 				// 画像非対応を示すエラーの形式はプロバイダーごとに異なり判別できないため、
 				// 入力エラーで拒否されたら本文だけで送り直す (画像と無関係な入力エラーなら再送も失敗する)
+				//
+				// 課金について: 400/422 は入力の検証で拒否された応答であり、プロバイダが推論を
+				// 実行する前の段階で返るため、再送しても生成分の二重課金にはならない
+				// (推論後に課金される 5xx では再送しない)。ただし画像と無関係な入力エラー
+				// (コンテキスト長超過・モデレーション等) でも必ず 1 回は再送するので、
+				// その経路で余計に待たせないよう再送は短いタイムアウトで打ち切る。
 				if (imageContents.length > 0 && (response.status === 400 || response.status === 422)) {
-					const retried = await send(ps.text);
+					const retried = await send(ps.text, LLM_UPSTREAM_RETRY_TIMEOUT_MS);
 					if (retried.ok) return await retried.json();
 					throw toStatusError(retried);
 				}

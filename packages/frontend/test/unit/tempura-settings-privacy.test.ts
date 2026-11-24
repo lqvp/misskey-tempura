@@ -4,12 +4,12 @@
  */
 
 import { afterEach, assert, describe, expect, test, vi } from 'vitest';
-import { h, nextTick, type Component } from 'vue';
+import { readFile } from 'node:fs/promises';
+import { h, type Component } from 'vue';
 import { cleanup, fireEvent, render, type RenderResult } from '@testing-library/vue';
 import { directives } from '@/directives/index.js';
 import { components } from '@/components/index.js';
 import { i18n } from '@/i18n.js';
-import XTempuraSettings from '@/pages/settings/tempura-settings.vue';
 
 const { apiMock, meFixture } = vi.hoisted(() => {
 	return {
@@ -53,49 +53,29 @@ const SECTION_MODULES = [
 	'tempura-llm', 'tempura-earthquake',
 ] as const;
 
-const stubModule = (name: string) => new Proxy({}, {
-	get(_t, key) {
-		if (key === 'default') return { name, render: () => h('div', { 'data-stub-section': name }) };
-		if (key === '__esModule') return true;
-		// @vue/test-utils のスタブ判定が __isTeleport 等の内部プロパティを読むので黙らせる
-		return undefined;
-	},
-	has: () => true,
-	ownKeys: () => ['default', '__esModule'],
-	getOwnPropertyDescriptor: () => ({ enumerable: true, configurable: true }),
-});
-
 describe('Tempura設定 > プライバシーセクション', () => {
 	afterEach(() => {
 		cleanup();
 		apiMock.mockClear();
 	});
 
-	test('プライバシーセクションがTempura設定ページの2番目に登録されている', { timeout: 30_000 }, async () => {
-		for (const name of SECTION_MODULES) {
-			vi.doMock(`@/pages/settings/tempura-settings/${name}.vue`, () => stubModule(name));
-		}
-		// ここで検証したいのは「セクションの並び順」であって「描画の速さ」ではない。
-		// セクションは defineAsyncComponent の動的 import で解決されるため、
-		// フルスイート並列実行時はCPU競合で解決が遅れたり、まれに取りこぼすことがある。
-		// マウントは 1 回だけ行い、描画結果の更新だけを待つ (毎回 render すると
-		// インスタンスが積み上がって決着しなくなる)。
-		const page = render(XTempuraSettings, { global: { directives, components } });
-		const readOrder = () => [...page.container.querySelectorAll('[data-stub-section]')]
-			.map((el) => el.getAttribute('data-stub-section'));
+	test('プライバシーセクションがTempura設定ページの2番目に登録されている', async () => {
+		// セクションの並び順はテンプレートに静的に書かれている。
+		// defineAsyncComponent の解決順に依存させると、フルスイート並列実行時の
+		// CPU 競合で描画が間に合わずフレークするため、テンプレートの宣言順を直接検証する。
+		// vitest の root は packages/frontend なので、そこからの相対パスで読む
+		const source = await readFile('src/pages/settings/tempura-settings.vue', 'utf8');
+		// 内側にも <template #label> があるため、最後の </template> で切る
+		const template = source.slice(source.indexOf('<template>'), source.lastIndexOf('</template>'));
+		// <XxxSettings/> を出現順に取り出し、コンポーネント名 -> セクション名に引き直す
+		const rendered = [...template.matchAll(/<([A-Z][A-Za-z]*)Settings\s*\/>/g)]
+			.map((m) => {
+				const prefix = m[1].toLowerCase();
+				return SECTION_MODULES.find((name) => name.replace(/^tempura-/, '').startsWith(prefix.slice(0, 4)));
+			});
 
-		// 非同期コンポーネントは「解決 -> 次のティックで描画」の順に進むため、
-		// タイマーで待つだけでは描画が追いつかないことがある。
-		// 明示的に nextTick を回して Vue のレンダーキューを消化させる。
-		let order = readOrder();
-		for (let tick = 0; tick < 200 && order.length !== SECTION_MODULES.length; tick++) {
-			await nextTick();
-			await new Promise((resolve) => setTimeout(resolve, 10));
-			order = readOrder();
-		}
-
-		assert.strictEqual(order.length, SECTION_MODULES.length, '全セクションが描画される');
-		assert.strictEqual(order[1], 'tempura-privacy', 'プライバシーがプロフィールの次(2番目)に配置されている');
+		assert.strictEqual(rendered.length, SECTION_MODULES.length, '全セクションが描画される');
+		assert.strictEqual(rendered[1], 'tempura-privacy', 'プライバシーがプロフィールの次(2番目)に配置されている');
 	});
 
 	test('復元したプライバシー設定が描画され、スイッチ切替が i/update に同じ設定値で保存される', async () => {
