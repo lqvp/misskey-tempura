@@ -40,7 +40,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<MkLoading :em="true" :colored="true"/>
 				<span>{{ i18n.ts._tlDigest.generating }}</span>
 			</div>
-			<button type="button" class="_button" :class="$style.subAction" @click="controller.cancel()">
+			<button type="button" class="_button" :class="$style.subAction" @click="onCancel()">
 				{{ i18n.ts.cancel }}
 			</button>
 		</div>
@@ -376,6 +376,18 @@ const liveMessage = computed(() => {
 
 function isSameWindow(a: TlDigestWindow | null, b: TlDigestWindow): boolean {
 	return a != null && a.since === b.since && a.until === b.until;
+}
+
+/**
+ * 生成をキャンセルする。
+ * キャンセルしてもウィジェットがアンマウントされるとは限らない (ドロワーを開いたまま、
+ * 状態を保持するコントローラストア経由で動かしている場合など) ので、
+ * 送信前の自動生成の確保はここで明示的に解放する。
+ * 送信済みなら onSending で null になっているため、消費した期間が復活することはない。
+ */
+function onCancel(): void {
+	releaseUnsentAutoGenerateClaim();
+	controller.cancel();
 }
 
 function maybeAutoGenerate(win: TlDigestWindow, includeRenotes: boolean, state: TlDigestPendingCount): void {

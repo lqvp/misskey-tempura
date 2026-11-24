@@ -27,7 +27,7 @@ vi.mock('@/i.js', async (importOriginal) => ({
 }));
 
 const { default: XTlDigestWidget } = await import('@/widgets/WidgetTlDigest.vue');
-const { TL_DIGEST_CONTROLLER_KEY } = await import('@/utility/tempura-script/tl-digest/digest.js');
+const { TL_DIGEST_CONTROLLER_KEY, claimTlDigestAutoGenerate } = await import('@/utility/tempura-script/tl-digest/digest.js');
 
 const WINDOW: TlDigestWindow = { since: 1_000, until: 2_000_000 };
 
@@ -50,12 +50,24 @@ type Recount = { win: TlDigestWindow; filter: { mode: string; ids: string[] } };
  * 返す件数はその時点のフィルタ設定から決めるため、フィルタを緩めたときに
  * 件数が増えて「まとめる」が現れるかどうかを描画で確かめられる。
  */
-function createCountingController(prefer: PreferencesManager): { controller: TlDigestController; recount: Recount[] } {
+function createCountingController(prefer: PreferencesManager): {
+	controller: TlDigestController;
+	recount: Recount[];
+	/** 生成中 (generating) を外部から作るためのハンドル */
+	generatingRef: ReturnType<typeof ref<boolean>>;
+	/** run に渡されたオプション (onSending の到達性を確かめる) */
+	runs: Array<Record<string, unknown>>;
+	/** 進行中の run を完了させる (送信済み/未送信のタイミングを再現する) */
+	finishRun: () => void;
+} {
 	const recount: Recount[] = [];
+	const runs: Array<Record<string, unknown>> = [];
 	const pendingCount = ref<TlDigestController['pendingCount']['value']>({ status: 'idle' });
+	const generatingRef = ref(false);
+	const runResolvers: Array<() => void> = [];
 	const controller = {
 		result: ref(null),
-		generating: ref(false),
+		generating: generatingRef,
 		error: ref(null),
 		pendingCount,
 		pendingWindow: ref<TlDigestWindow | null>(WINDOW),
@@ -72,14 +84,25 @@ function createCountingController(prefer: PreferencesManager): { controller: TlD
 			return Promise.resolve(pendingCount.value);
 		},
 		resetPendingCount: vi.fn(),
-		run: () => Promise.resolve(),
+		run: (opts: Record<string, unknown> = {}) => {
+			runs.push(opts);
+			// 実際の生成は await で戻るまで確保が残る。ここでは「まだ生成中」を再現するため、
+			// 明示的に finishRun するまで resolve しない
+			return new Promise<void>((resolve) => { runResolvers.push(resolve); });
+		},
 		runRecent: () => Promise.resolve(),
 		retry: () => Promise.resolve(),
 		cancel: vi.fn(),
 		clear: vi.fn(),
 		dispose: vi.fn(),
 	} as unknown as TlDigestController;
-	return { controller, recount };
+	return {
+		controller,
+		recount,
+		generatingRef,
+		runs,
+		finishRun: () => { for (const r of runResolvers.splice(0)) r(); },
+	};
 }
 
 const settle = async (): Promise<void> => {
@@ -107,10 +130,10 @@ describe('TLダイジェストウィジェットのユーザーフィルタ再�
 		vi.restoreAllMocks();
 	});
 
-	const mountWidget = (): RenderResult => render({
+	const mountWidget = (data: Record<string, unknown> = {}): RenderResult => render({
 		setup() {
 			provide(TL_DIGEST_CONTROLLER_KEY, counting.controller);
-			return () => h(XTlDigestWidget, { widget: { id: 'w1', data: {} } });
+			return () => h(XTlDigestWidget, { widget: { id: 'w1', data } });
 		},
 	});
 
@@ -173,5 +196,87 @@ describe('TLダイジェストウィジェットのユーザーフィルタ再�
 		prefer.commit('tlDigestPrompt', 'keep it short');
 		await settle();
 		expect(counting.recount).toHaveLength(before);
+	});
+});
+
+describe('TLダイジェストウィジェットの自動生成の確保とキャンセル', () => {
+	let page: RenderResult | null = null;
+
+	beforeEach(async () => {
+		const prefer = createPreferences();
+		const preferencesModule = await import('@/preferences.js');
+		vi.spyOn(preferencesModule, 'prefer', 'get').mockReturnValue(prefer);
+	});
+
+	afterEach(() => {
+		page?.unmount();
+		page = null;
+		vi.restoreAllMocks();
+	});
+
+	/**
+	 * generating 行のキャンセルボタンを押す。
+	 * 文言はテスト環境のロケール (en-US) に依存するため、テキストではなく
+	 * 生成中行にある唯一のボタンであることを手がかりにする
+	 */
+	async function clickCancel(): Promise<void> {
+		const buttons = page!.container.querySelectorAll('button');
+		// ヘッダーの設定ボタンの次に来る、生成中行の「キャンセル」が対象
+		const cancel = Array.from(buttons).find((b) => b.textContent?.trim() === 'Cancel' || b.textContent?.trim() === 'キャンセル');
+		expect(cancel).toBeTruthy();
+		cancel!.click();
+		await settle();
+	}
+
+	/** 自動生成の対象になる不在期間を控える */
+	const windowOf = (run: Record<string, unknown>) => ({ since: run.since as number, until: run.until as number });
+
+	/** 自動生成を 1 回走らせ、進行中の (未送信の) 状態で返す */
+	async function startAutoGeneration(): Promise<ReturnType<typeof createCountingController>> {
+		const prefer = createPreferences();
+		const counting = createCountingController(prefer);
+		page = render({
+			setup() {
+				provide(TL_DIGEST_CONTROLLER_KEY, counting.controller);
+				return () => h(XTlDigestWidget, { widget: { id: 'w2', data: { autoGenerate: true } } });
+			},
+		});
+		await settle();
+		expect(counting.runs).toHaveLength(1);
+		return counting;
+	}
+
+	test('送信前のキャンセルは自動生成の確保を解放し、同じ不在期間を再度確保できる', async () => {
+		const counting = await startAutoGeneration();
+		const win = windowOf(counting.runs[0]);
+		// 生成中なので確保はまだ保持されている (キャンセルで解放される対象)
+		expect(claimTlDigestAutoGenerate('test-user', win)).toBeNull();
+
+		counting.generatingRef.value = true;
+		await settle();
+		await clickCancel();
+		await settle();
+
+		expect(counting.controller.cancel).toHaveBeenCalledTimes(1);
+		// 送信前に中断したので、開き直したとき同じ期間の自動生成を再試行できる
+		const again = claimTlDigestAutoGenerate('test-user', win);
+		expect(again).not.toBeNull();
+		again!();
+	});
+
+	test('送信後 (onSending 到達) にキャンセルしても確保は消費されたまま復活しない', async () => {
+		const counting = await startAutoGeneration();
+		const win = windowOf(counting.runs[0]);
+		// run 側で「実際に送信した」ことが起きた状態を再現する
+		(counting.runs[0].onSending as () => void)();
+
+		counting.generatingRef.value = true;
+		await settle();
+		await clickCancel();
+		await settle();
+
+		expect(counting.controller.cancel).toHaveBeenCalledTimes(1);
+		// 送信済みの期間はキャンセルでは復活しない
+		expect(claimTlDigestAutoGenerate('test-user', win)).toBeNull();
 	});
 });

@@ -550,7 +550,9 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 				systemInstruction: buildTlDigestSystemInstruction(active.settings.prompt, active.settings.systemPrompt),
 				signal: abort.signal,
 				expectedDestination: active.destination!,
-				// 確認ダイアログ中などに別タブで公開範囲・同意・CW 設定が変わっていたら送信しない
+				// 確認ダイアログ中などに別タブで公開範囲・同意・CW・ユーザー単位フィルタが変わっていたら送信しない。
+				// ユーザー単位フィルタはプロンプトの中身そのものを決めるため、ここで再確認しないと
+				// 「送信直前にブロックした相手のノートが入ったまま送信される」ことになる
 				beforeSend: (destination, sending) => {
 					const latest = deps.getSettings();
 					let visibilities = normalizeTlDigestVisibilities(latest.visibilities);
@@ -559,7 +561,11 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 					}
 					if (
 						visibilities.join(',') !== active.filter.allowedVisibilities.join(',') ||
-						normalizeTlDigestCwMode(latest.cwMode) !== active.filter.cwMode
+						normalizeTlDigestCwMode(latest.cwMode) !== active.filter.cwMode ||
+						normalizeTlDigestUserFilterMode(latest.userFilterMode) !== active.filter.userFilterMode ||
+						// 配列の順序は意味を持たないので、並べ替えてから比較する
+						normalizeTlDigestFilterUserIds(latest.userFilterUserIds).sort().join(',') !==
+							[...active.filter.userFilterUserIds].sort().join(',')
 					) {
 						throw new Error(i18n.ts._tlDigest.settingsChanged);
 					}

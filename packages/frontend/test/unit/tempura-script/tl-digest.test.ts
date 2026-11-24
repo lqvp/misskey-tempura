@@ -657,7 +657,7 @@ describe('parseTlDigestResponse', () => {
 		expect(parsed!.fallbackText).toBe('・TypeScriptの話題\n・カレーの話題 [URL]');
 	});
 
-	it('空配列 JSON の外側に十分な説明文がある場合は、空 topics ではなく全文をフォールバック表示する', () => {
+	it('空配列 JSON の外側に説明文がある場合は、空 topics ではなく全文をフォールバック表示する', () => {
 		// 地の文で要約しつつ空配列を引用した応答。[] だけを拾うと書かれた要約が消えてしまう
 		const raw = 'こちらがダイジェストです。本日はTypeScriptの最新版に関する話題と、夕食のカレーについての雑談が中心でした。 [] 以上です。';
 		const parsed = parseTlDigestResponse(raw, refMap);
@@ -665,10 +665,20 @@ describe('parseTlDigestResponse', () => {
 		expect(parsed!.topics).toHaveLength(0);
 		expect(parsed!.fallbackText).toBe(raw);
 
-		// コードフェンス内の空 topics でも、外側の説明文が十分長ければ同じ扱い
-		const fenced = 'まとめると次のとおりです。TypeScript の新バージョンと週末の料理の話題で盛り上がっていました。\n```json\n{"topics":[]}\n```';
-		const parsedFenced = parseTlDigestResponse(fenced, refMap);
-		expect(parsedFenced!.fallbackText).toContain('週末の料理の話題');
+		// コードフェンス内の空配列でも、外側に地の文があれば同じ扱い
+		const fencedArray = 'まとめると次のとおりです。TypeScript の新バージョンと週末の料理の話題で盛り上がっていました。\n```json\n[]\n```';
+		const parsedFencedArray = parseTlDigestResponse(fencedArray, refMap);
+		expect(parsedFencedArray!.fallbackText).toContain('週末の料理の話題');
+	});
+
+	it('空配列が地の文の中に紛れているだけなら、書かれた本文をフォールバック表示する (Finding B)', () => {
+		// `[]` を空 topics として拾うと、本文が消えたうえで未読の pending まで破棄されてしまう
+		const raw = '設定例 [] が共有されました。';
+		expect(parseTlDigestResponse(raw, refMap)).toEqual({ topics: [], fallbackText: raw });
+
+		// 説明文が短くても (12 文字) 同じ: 長さしきい値では区別できない
+		const short = '例 [] です。';
+		expect(parseTlDigestResponse(short, refMap)).toEqual({ topics: [], fallbackText: short });
 	});
 
 	it('外側の説明文が短い空 topics 応答は、正当な「話題なし」として topics: [] を返す', () => {
@@ -680,18 +690,35 @@ describe('parseTlDigestResponse', () => {
 		expect(parseTlDigestResponse('\n  {"topics": []}  \n', refMap)).toEqual({ topics: [], fallbackText: null });
 	});
 
-	it('JSON プリミティブはダイジェストの封筒として採用せず、全文をプレーンテキストで返す', () => {
-		// 裸の JSON 文字列はデコードした本文をフォールバック表示する (引用符を見せない)
-		expect(parseTlDigestResponse('"要約です"', refMap)).toEqual({ topics: [], fallbackText: '要約です' });
-		// 数値・真偽値は生の表記がそのまま人間に読める形なので、そのまま返す
-		expect(parseTlDigestResponse('42', refMap)).toEqual({ topics: [], fallbackText: '42' });
-		expect(parseTlDigestResponse('true', refMap)).toEqual({ topics: [], fallbackText: 'true' });
-		// null はスキーマ不正な応答として扱う (プリミティブかつ表示する中身が無い)
+	it('応答全体が空配列・空 topics なら、コードフェンス付きでも「話題なし」として受け入れる', () => {
+		expect(parseTlDigestResponse('[]', refMap)).toEqual({ topics: [], fallbackText: null });
+		expect(parseTlDigestResponse('```json\n[]\n```', refMap)).toEqual({ topics: [], fallbackText: null });
+		expect(parseTlDigestResponse('{"topics":[]}', refMap)).toEqual({ topics: [], fallbackText: null });
+		expect(parseTlDigestResponse('```json\n{"topics":[]}\n```', refMap)).toEqual({ topics: [], fallbackText: null });
+	});
+
+	it('JSON の文字列値にコードフェンスがあっても、空 topics は生の JSON ではなく「話題なし」になる (Finding C)', () => {
+		// summary にコード例を含む正当な JSON。外側の説明文を測ると JSON の残りを地の文と誤認してしまう
+		const withField = JSON.stringify({
+			note: '例:\n```ts\nconst x = 1;\n```',
+			topics: [],
+		});
+		expect(parseTlDigestResponse(withField, refMap)).toEqual({ topics: [], fallbackText: null });
+
+		// コードフェンスで囲んだ全体版 (中身にもコードフェンスがある)
+		const fenced = '```json\n{"summary":"例\\n```ts\\nx\\n```","topics":[]}\n```';
+		expect(parseTlDigestResponse(fenced, refMap)).toEqual({ topics: [], fallbackText: null });
+	});
+
+	it('応答全体が JSON プリミティブなら不正な応答として null を返す (Finding A)', () => {
+		// null / true / 数値 / 文字列のいずれも要約ではない。pending を残すためエラー側に倒す
 		expect(parseTlDigestResponse('null', refMap)).toBeNull();
-		// どの経路でも topics がプリミティブ由来になることは無い
-		for (const raw of ['"要約です"', '42', 'true']) {
-			expect(parseTlDigestResponse(raw, refMap)!.topics).toEqual([]);
-		}
+		expect(parseTlDigestResponse('true', refMap)).toBeNull();
+		expect(parseTlDigestResponse('false', refMap)).toBeNull();
+		expect(parseTlDigestResponse('42', refMap)).toBeNull();
+		expect(parseTlDigestResponse('-1.5', refMap)).toBeNull();
+		expect(parseTlDigestResponse('"要約です"', refMap)).toBeNull();
+		expect(parseTlDigestResponse('"null"', refMap)).toBeNull();
 	});
 });
 
@@ -1340,6 +1367,124 @@ describe('createTlDigestController', () => {
 		expect(sent).not.toHaveBeenCalled();
 		expect(controller.error.value).not.toBeNull();
 		expect(dismissPending).not.toHaveBeenCalled();
+	});
+
+	it('送信直前にフォロワーのユーザー単位フィルタが追加された場合は送信せず pending を消化しない', async () => {
+		const win = { since: Date.UTC(2026, 10, 24, 10, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
+		let userFilterMode = 'off' as string;
+		let userFilterUserIds: string[] = [];
+		const dismissPending = vi.fn();
+		const sent = vi.fn();
+		const sentInputs: string[] = [];
+		const controller = createTlDigestController(makeDeps({
+			getSettings: () => ({
+				visibilities: ['public', 'home'],
+				cwMode: 'cwOnly',
+				followersConsent: null,
+				userFilterMode,
+				userFilterUserIds,
+				prompt: null,
+				systemPrompt: null,
+				useServerApi: true,
+			}),
+			fetchTimeline: async () => [
+				makeNote({ id: 'n-a', userId: 'user-a', createdAt: '2026-11-24T10:30:00.000Z', text: 'A のノート' }),
+				makeNote({ id: 'n-b', userId: 'user-b', createdAt: '2026-11-24T10:31:00.000Z', text: 'B のノート' }),
+				makeNote({ id: 'n-old', createdAt: '2026-11-24T09:00:00.000Z', text: '期間外' }),
+			],
+			// 確認ダイアログを開いている間に、別タブで作者 A をブロック対象に追加した
+			generate: async (opts) => {
+				sentInputs.push(opts.userContent ?? '');
+				userFilterMode = 'block';
+				userFilterUserIds = ['user-a'];
+				opts.beforeSend?.('server:x', true);
+				sent();
+				return { choices: [{ message: { content: '{"topics":[]}' } }] };
+			},
+			dismissPending,
+		}));
+
+		await controller.run({ ...win, maxNotes: 50, includeRenotes: true });
+
+		// プロンプトにはブロック前の A が入っているが、送信直前の再確認で止まる
+		expect(sentInputs[0]).toContain('A のノート');
+		expect(sent).not.toHaveBeenCalled();
+		// settingsChanged の文言は送信中止が実際に起きたことの代理指標。内容そのものはここでは検証しない
+		expect(typeof controller.error.value?.message).toBe('string');
+		expect(controller.error.value?.message.length).toBeGreaterThan(0);
+		expect(controller.result.value).toBeNull();
+		expect(dismissPending).not.toHaveBeenCalled();
+	});
+
+	it('送信直前に allow から作者が外れた場合も settingsChanged で送信を中止する', async () => {
+		const win = { since: Date.UTC(2026, 10, 24, 10, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
+		let userFilterUserIds: string[] = ['user-a', 'user-b'];
+		const sent = vi.fn();
+		const controller = createTlDigestController(makeDeps({
+			getSettings: () => ({
+				visibilities: ['public', 'home'],
+				cwMode: 'cwOnly',
+				followersConsent: null,
+				userFilterMode: 'allow',
+				userFilterUserIds,
+				prompt: null,
+				systemPrompt: null,
+				useServerApi: true,
+			}),
+			fetchTimeline: async () => [
+				makeNote({ id: 'n-a', userId: 'user-a', createdAt: '2026-11-24T10:30:00.000Z', text: 'A のノート' }),
+				makeNote({ id: 'n-b', userId: 'user-b', createdAt: '2026-11-24T10:31:00.000Z', text: 'B のノート' }),
+				makeNote({ id: 'n-old', createdAt: '2026-11-24T09:00:00.000Z', text: '期間外' }),
+			],
+			generate: async (opts) => {
+				userFilterUserIds = ['user-b'];
+				opts.beforeSend?.('server:x', true);
+				sent();
+				return { choices: [{ message: { content: '{"topics":[]}' } }] };
+			},
+		}));
+
+		await controller.run({ ...win, maxNotes: 50, includeRenotes: true });
+		expect(sent).not.toHaveBeenCalled();
+		// settingsChanged の文言は送信中止が実際に起きたことの代理指標。内容そのものはここでは検証しない
+		expect(typeof controller.error.value?.message).toBe('string');
+		expect(controller.error.value?.message.length).toBeGreaterThan(0);
+	});
+
+	it('送信直前のユーザー単位フィルタ確認は ID の並び順だけの違いで中止しない', async () => {
+		const win = { since: Date.UTC(2026, 10, 24, 10, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
+		let userFilterUserIds: string[] = ['user-a', 'user-b'];
+		const sentInputs: string[] = [];
+		const controller = createTlDigestController(makeDeps({
+			getSettings: () => ({
+				visibilities: ['public', 'home'],
+				cwMode: 'cwOnly',
+				followersConsent: null,
+				userFilterMode: 'block',
+				userFilterUserIds,
+				prompt: null,
+				systemPrompt: null,
+				useServerApi: true,
+			}),
+			fetchTimeline: async () => [
+				makeNote({ id: 'n-a', userId: 'user-a', createdAt: '2026-11-24T10:30:00.000Z', text: 'A のノート' }),
+				makeNote({ id: 'n-c', userId: 'user-c', createdAt: '2026-11-24T10:31:00.000Z', text: 'C のノート' }),
+				makeNote({ id: 'n-old', createdAt: '2026-11-24T09:00:00.000Z', text: '期間外' }),
+			],
+			generate: async (opts) => {
+				// 並び順だけが変わった (設定の意味は同じ)
+				userFilterUserIds = ['user-b', 'user-a'];
+				opts.beforeSend?.('server:x', true);
+				sentInputs.push(opts.userContent ?? '');
+				return { choices: [{ message: { content: '{"topics":[]}' } }] };
+			},
+		}));
+
+		await controller.run({ ...win, maxNotes: 50, includeRenotes: true });
+		expect(sentInputs).toHaveLength(1);
+		expect(sentInputs[0]).not.toContain('A のノート');
+		expect(sentInputs[0]).toContain('C のノート');
+		expect(controller.error.value).toBeNull();
 	});
 
 	it('途中で打ち切られた previewCache でも、ワードミュート追加後に再走査して対象件数を再計算する', async () => {

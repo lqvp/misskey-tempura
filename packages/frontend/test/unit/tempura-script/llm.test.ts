@@ -283,6 +283,27 @@ describe('parseRetryAfterMs', () => {
 		expect(parseRetryAfterMs(undefined, now)).toBeNull();
 	});
 
+	it('HTTP-date 以外の日付形式は null にする (Date.parse の寛容さに頼らない)', () => {
+		// ISO 8601 は Retry-After の形式ではない。Date.parse は解釈できてしまうが、
+		// そのまま通すと「遠い将来まで待て」と誤解釈して即座に失敗してしまう。
+		for (const nonHttpDate of [
+			'2027-01-01',
+			'2027-01-01T00:00:00Z',
+			'2026-10-21T07:28:00.000Z',
+			'2026-10-21 07:28:00',
+			// IMF-fixdate に似ているが形が違うもの
+			'Wed, 21 Oct 2026 07:28:00 UTC',
+			'Wed, 21 Oct 2026 07:28:00',
+			'2026-10-21T07:28:00+00:00',
+			'Wed, 1 Oct 2026 07:28:00 GMT',
+			'Www, 21 Oct 2026 07:28:00 GMT',
+			'Wednesday, 21-Oct-26 07:28:00 GMT',
+			'Wed Oct 21 07:28:00 2026',
+		]) {
+			expect(parseRetryAfterMs(nonHttpDate, now), JSON.stringify(nonHttpDate)).toBeNull();
+		}
+	});
+
 	it('負の値は null として扱う', () => {
 		expect(parseRetryAfterMs('-30', now)).toBeNull();
 		// 負の経過時間 (過去の日時) も同じ扱い
@@ -930,6 +951,124 @@ describe('fetchAvailableModels のリトライ', () => {
 
 		const cdnCalls = fetchCalls().filter(([url]) => String(url).startsWith('https://cdn.example.com/'));
 		expect(cdnCalls).toHaveLength(1);
+	});
+
+	it('接続先を戻したら、その接続先の判定を再利用する (取り直さなくても効く)', async () => {
+		const modelId = 'shared-model';
+		fetchMock.mockIf(() => true, (req) => {
+			const url = new URL(req.url);
+			if (url.host === 'cdn.example.com') return { status: 500, body: 'nope' };
+			if (url.pathname.endsWith('/models')) {
+				// A は明示的にテキスト専用、B は明示的に画像対応
+				return {
+					status: 200,
+					body: JSON.stringify({ data: [{
+						id: modelId,
+						...url.host === 'api.example.com'
+							? { architecture: { input_modalities: ['text'] } }
+							: { architecture: { input_modalities: ['text', 'image'] } },
+					}] }),
+				};
+			}
+			return { status: 200, body: okBody };
+		});
+
+		const note = {
+			id: 'note1',
+			text: 'ノート本文',
+			files: [{ type: 'image/png', url: 'https://cdn.example.com/a.png' }],
+		} as unknown as Parameters<typeof generateLLMResponse>[0]['note'];
+
+		preferState.useGeminiLLMAPI = false;
+		preferState.openaiModel = modelId;
+		preferState.useGeminiWithMedia = true;
+		preferState.openaiForceImageInput = false;
+
+		// A で一覧を取得 → 「非対応」が A の判定としてキャッシュされる
+		preferState.openaiBaseUrl = 'https://api.example.com/v1';
+		expect(await fetchAvailableModels()).toEqual([{ id: modelId, imageInput: 'unsupported', detectedBy: 'field' }]);
+
+		// B で一覧を取得 → 「対応」が B の判定としてキャッシュされる
+		preferState.openaiBaseUrl = 'https://other.example.com/v1';
+		expect(await fetchAvailableModels()).toEqual([{ id: modelId, imageInput: 'supported', detectedBy: 'field' }]);
+
+		// A に戻す。ここから先は fetchAvailableModels を呼ばない (取り直しに頼らず、
+		// A のキャッシュが使われることを確かめるため)
+		preferState.openaiBaseUrl = 'https://api.example.com/v1';
+		await generateLLMResponse({ note });
+
+		// A の判定 (非対応) で画像を送らない。B の判定 (対応) を引きずっていないこと
+		const cdnCalls = fetchCalls().filter(([url]) => String(url).startsWith('https://cdn.example.com/'));
+		expect(cdnCalls).toHaveLength(0);
+		const chatCalls = fetchCalls().filter(([url]) => String(url).includes('/chat/completions'));
+		expect(chatCalls).toHaveLength(1);
+		expect(String(chatCalls[0][0])).toContain('https://api.example.com/v1/');
+		expect(String(chatCalls[0][1]?.body)).not.toContain('image_url');
+
+		// モデル一覧の取得は A・B の 2 回だけ (戻した後に取り直していない)
+		const modelListCalls = fetchCalls().filter(([url]) => String(url).endsWith('/models'));
+		expect(modelListCalls).toHaveLength(2);
+	});
+
+	it('接続先を戻して取り直さない場合も、A の「画像対応」判定で画像を送る', async () => {
+		const modelId = 'shared-model';
+		fetchMock.mockIf(() => true, (req) => {
+			const url = new URL(req.url);
+			// 画像の取得は成功させ、「画像を添えたか」を観測できるようにする
+			// (1x1 PNG。本文は data URL 化されるだけなので中身は問わない)
+			if (url.host === 'cdn.example.com') {
+				return {
+					status: 200,
+					body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64').toString('binary'),
+				};
+			}
+			if (url.pathname.endsWith('/models')) {
+				// A は明示的に画像対応、B は明示的にテキスト専用 (逆向きにして、A と B を取り違えていないことも見る)
+				return {
+					status: 200,
+					body: JSON.stringify({ data: [{
+						id: modelId,
+						...url.host === 'api.example.com'
+							? { architecture: { input_modalities: ['text', 'image'] } }
+							: { architecture: { input_modalities: ['text'] } },
+					}] }),
+				};
+			}
+			return { status: 200, body: okBody };
+		});
+
+		const note = {
+			id: 'note1',
+			text: 'ノート本文',
+			files: [{ type: 'image/png', url: 'https://cdn.example.com/b.png' }],
+		} as unknown as Parameters<typeof generateLLMResponse>[0]['note'];
+
+		preferState.useGeminiLLMAPI = false;
+		preferState.openaiModel = modelId;
+		preferState.useGeminiWithMedia = true;
+		preferState.openaiForceImageInput = false;
+
+		// A で一覧を取得 → 「対応」が A の判定としてキャッシュされる
+		preferState.openaiBaseUrl = 'https://api.example.com/v1';
+		expect(await fetchAvailableModels()).toEqual([{ id: modelId, imageInput: 'supported', detectedBy: 'field' }]);
+
+		// B で一覧を取得 → 「非対応」が B の判定としてキャッシュされる
+		preferState.openaiBaseUrl = 'https://other.example.com/v1';
+		expect(await fetchAvailableModels()).toEqual([{ id: modelId, imageInput: 'unsupported', detectedBy: 'field' }]);
+
+		// A に戻して、取り直さずに生成する
+		preferState.openaiBaseUrl = 'https://api.example.com/v1';
+		await generateLLMResponse({ note });
+
+		// A の判定 (対応) で画像を添える。B の判定 (非対応) を引きずっていないこと
+		const chatCalls = fetchCalls().filter(([url]) => String(url).includes('/chat/completions'));
+		expect(chatCalls).toHaveLength(1);
+		expect(String(chatCalls[0][0])).toContain('https://api.example.com/v1/');
+		expect(String(chatCalls[0][1]?.body)).toContain('image_url');
+
+		// モデル一覧の取得は A・B の 2 回だけ (戻した後に取り直していない)
+		const modelListCalls = fetchCalls().filter(([url]) => String(url).endsWith('/models'));
+		expect(modelListCalls).toHaveLength(2);
 	});
 });
 

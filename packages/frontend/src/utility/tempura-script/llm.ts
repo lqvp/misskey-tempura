@@ -69,6 +69,17 @@ const LLM_REQUEST_TIMEOUT_MS = 120_000;
 const MODEL_LIST_TIMEOUT_MS = 30_000;
 
 /**
+ * Retry-After の HTTP-date として受け付ける形 (IMF-fixdate)
+ *
+ * RFC 9110 §10.2.3 の Retry-After は「delay-seconds か HTTP-date」で、HTTP-date の
+ * 推奨形は IMF-fixdate。Date.parse は ISO 8601 なども解釈してしまうため、
+ * 解釈の前にこの形を要求して「Retry-After ではない日付」を弾く。
+ * 廃止形 (RFC 850 / asctime) も仕様上は許されるが実際にはほぼ現れないため、
+ * 誤解釈を避けることを優先して受け付けない (解釈できなければ通常のバックオフに任せる)。
+ */
+const HTTP_DATE_PATTERN = /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d{2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} \d{2}:\d{2}:\d{2} GMT$/;
+
+/**
  * 再送しても成功し得る HTTP ステータスか
  */
 export function shouldRetryLLMStatus(status: number): boolean {
@@ -259,6 +270,9 @@ function retryableDuringBody(status: number, statusText: string): LLMAttemptOutc
  * - delay-seconds (`Retry-After: 30`)
  * - HTTP-date (`Retry-After: Wed, 21 Oct 2026 07:28:00 GMT`)
  *
+ * HTTP-date は IMF-fixdate の形に限定する (`Date.parse` は ISO 8601 も通してしまい、
+ * 形式違いの日付を「遠い将来の待機」と誤解釈するため)。
+ *
  * 解釈できない値・負の値は「指定なし」(null) として扱い、指数バックオフに任せる。
  * 返す値はサーバーの指示そのままで、上限では頭打ちにしない (呼び出し元が予算と比較する)。
  *
@@ -276,7 +290,11 @@ export function parseRetryAfterMs(header: string | null | undefined, now: number
 		return Number.isFinite(seconds) ? seconds * 1000 : null;
 	}
 
-	// HTTP-date (IMF-fixdate など RFC 9110 が許す日付形式)
+	// HTTP-date は IMF-fixdate の形だけを受け付ける。
+	// Date.parse は ISO 8601 ("2027-01-01" や "2027-01-01T00:00:00Z") も通してしまうが、
+	// これは Retry-After の正しい形式ではない。素通しすると誤った日付が「遠い将来」として
+	// 解釈され、通常のバックオフなら回復できるはずの要求が予算超過で即失敗してしまう。
+	if (!HTTP_DATE_PATTERN.test(value)) return null;
 	const date = Date.parse(value);
 	if (!Number.isFinite(date)) return null;
 	const deltaMs = date - now;

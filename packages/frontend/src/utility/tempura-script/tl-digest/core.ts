@@ -534,16 +534,13 @@ function stripUrls(text: string): string {
 }
 
 /**
- * 応答本文から JSON 断片を切り出す。切り出せなかった場合は全文を返す。
- * 空配列しか無い応答でも「JSON の外側に書かれた説明文」を測れるよう、範囲も返す
- * (start/end は trimmed 上の半開区間。全文を返した場合は null)
+ * 応答本文から JSON の断片を切り出す。切り出せなかった場合は全文を返す。
+ * 自由文の中に JSON が引用されている場合 (`以下が要約です: {"topics":[...]}`) に、その引用を拾うためのもの。
  */
-function locateJsonCandidate(raw: string): { text: string; start: number | null; end: number | null } {
-	const trimmed = raw.trim();
+function locateJsonCandidate(trimmed: string): string {
 	const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-	if (fenceMatch && fenceMatch[1] != null && fenceMatch.index != null) {
-		const bodyStart = fenceMatch.index + fenceMatch[0].indexOf(fenceMatch[1], 3);
-		return { text: fenceMatch[1].trim(), start: bodyStart, end: bodyStart + fenceMatch[1].length };
+	if (fenceMatch && fenceMatch[1] != null) {
+		return fenceMatch[1].trim();
 	}
 	const firstBracket = trimmed.indexOf('[');
 	const lastBracket = trimmed.lastIndexOf(']');
@@ -551,41 +548,57 @@ function locateJsonCandidate(raw: string): { text: string; start: number | null;
 	const lastBrace = trimmed.lastIndexOf('}');
 	// トップレベルが配列 ([{...}]) の場合は外側の [] を落とさない
 	if (firstBracket !== -1 && lastBracket > firstBracket && (firstBrace === -1 || firstBracket < firstBrace)) {
-		return { text: trimmed.slice(firstBracket, lastBracket + 1), start: firstBracket, end: lastBracket + 1 };
+		return trimmed.slice(firstBracket, lastBracket + 1);
 	}
 	if (firstBrace !== -1 && lastBrace > firstBrace) {
-		return { text: trimmed.slice(firstBrace, lastBrace + 1), start: firstBrace, end: lastBrace + 1 };
+		return trimmed.slice(firstBrace, lastBrace + 1);
 	}
-	return { text: trimmed, start: null, end: null };
-}
-
-function extractJsonCandidate(raw: string): string {
-	return locateJsonCandidate(raw).text;
+	return trimmed;
 }
 
 /**
- * JSON 断片の外側に残った自由文から、コードフェンス記号だけを取り除いた文字列を返す。
- * (この長さが「JSON とは別に書かれた説明文」の量として扱われる)
- */
-function getSurroundingProse(trimmed: string, start: number, end: number): string {
-	return (trimmed.slice(0, start) + '\n' + trimmed.slice(end))
-		.replace(/```(?:json)?/gi, '')
-		.trim();
-}
-
-/**
- * 「JSON とは別に説明文が書かれている」と判断するしきい値 (JSON 断片の外側の非空白文字数)。
+ * 断片が自由文の「引用」なのか、応答の「本文」なのかを、外側の文で判定する。
  *
- * 40 文字にした理由:
- * - LLM がプロンプトの厳守指示を無視して要約を地の文で書いた場合、その説明はふつう 1 文以上
- *   (日本語なら 40 文字前後) になる。「結果は次のとおりです:」のような前置き (10〜15 文字) だけでは
- *   しきい値に届かないので、JSON を素直に返した応答を誤ってプレーンテキスト扱いしない。
- * - 逆に "Here is the JSON:" のような短い前置きだけなら、JSON の `{"topics":[]}` を信じる
- *   (正当な「話題なし」を壊さない)。
- * - 40 文字を超える説明文が付いているなら、それを捨てて空のダイジェストを出すより
- *   全文をプレーンテキストで表示したほうがユーザーの情報損失が小さい。
+ * - 「結果は次のとおりです: []」のように、空配列の前に置かれた導入句 (コロンなどで終わる) だけなら
+ *   JSON が本文であり、空配列はモデルの「話題なし」の表明とみなす。
+ * - 「設定例 [] が共有されました。」のように、空配列の**後ろ**に地の文が続く場合は、
+ *   その `[]` は文中の引用で、書かれた本文こそが要約になる (Finding B)。
  */
-const SURROUNDING_PROSE_THRESHOLD = 40;
+function isQuotedFragment(trimmed: string, fragment: string): boolean {
+	const index = trimmed.indexOf(fragment);
+	if (index < 0) return false;
+	const after = trimmed.slice(index + fragment.length).replace(/```/g, '').trim();
+	// 後ろに地の文が続くなら引用
+	if (after !== '') return true;
+	// 前に置かれたのが導入句だけなら本文とみなす
+	const before = trimmed.slice(0, index).replace(/```(?:json)?/gi, '').trim();
+	return before !== '' && !/[:：]$/u.test(before);
+}
+
+/**
+ * 応答全体がコードフェンス 1 つだけで構成されているか。
+ * その中身は「応答そのもの」であり、外側に書かれた説明文ではない。
+ *
+ * summary にコード例 (` ```ts ... ``` `) を書いた正当な JSON は珍しくないため、
+ * 「最初のフェンスが応答の先頭で開き、最後のフェンスが応答の末尾で閉じている」ことだけを見る。
+ */
+function isWholeFence(trimmed: string): boolean {
+	if (!trimmed.startsWith('```')) return false;
+	if (!trimmed.endsWith('```')) return false;
+	// 先頭のフェンスを除いた位置以降に、末尾のフェンスが閉じていること
+	return trimmed.indexOf('```', 3) <= trimmed.length - 3;
+}
+
+/**
+ * 応答全体がコードフェンス 1 つだけのとき、そのフェンスの中身を返す (そうでなければ null)。
+ * `locateJsonCandidate` のような非貪欲な正規表現では、中身の ``` で切れてしまうため使わない。
+ */
+function unwrapWholeFence(trimmed: string): string | null {
+	if (!isWholeFence(trimmed)) return null;
+	const openEnd = trimmed.indexOf('\n');
+	if (openEnd < 0) return null;
+	return trimmed.slice(openEnd + 1, trimmed.length - 3).trim();
+}
 
 /**
  * JSON として解釈できた値のうち「ダイジェストの封筒」として扱える形かどうか。
@@ -598,10 +611,10 @@ function isParsedStructure(value: unknown): value is Record<string, unknown> | u
 /**
  * プレーンテキスト表示用に、応答全体からコードフェンス記号だけを取り除く。
  *
- * 裸の JSON プリミティブ (`"要約です"` / `42` / `true`) は、生の文字列をそのまま出すと
- * 引用符やリテラルがそのまま見えて読みにくい。文字列だけは JSON デコードした値を、
- * それ以外は生の文字列を返す (数値・真偽値の生表記は人間が読める形と一致する)。
- * 表示する中身が無いテキスト (JSON の `null` だけなど) は空文字を返し、呼び出し側で null 扱いにする。
+ * 応答全体が JSON プリミティブだった場合 (`"要約です"` / `42` / `true` / `null`) は封筒ではないため
+ * `parseTlDigestResponse` が null を返し、この関数に届くのは JSON として解析できなかった自由文だけになる。
+ * それでも JSON の `null` だけは「何も書かれていない」に最も近いので、そのまま "null" と
+ * 表示しないよう空文字に倒す (呼び出し側で null 扱いになる)。
  */
 function cleanedWholeText(text: string): string {
 	const trimmed = text.trim();
@@ -610,33 +623,88 @@ function cleanedWholeText(text: string): string {
 		.replace(/\s*```$/, '')
 		.trim();
 	const body = fenceStripped !== trimmed ? fenceStripped : trimmed;
-	const inner = parseBareJsonString(body);
-	if (inner != null) return inner;
-	// JSON の null は「何も書かれていない」に最も近いので、そのまま "null" と表示しない
 	if (body === 'null') return '';
 	return body;
 }
 
-function parseBareJsonString(text: string): string | null {
-	if (!text.startsWith('"')) return null;
+/**
+ * 応答全体が JSON のプリミティブ (`null` / `true` / `42` / `"要約"` / `false`) かどうか。
+ *
+ * プリミティブの表記をそのまま要約として表示しても意味が無い (`null` や `42` がダイジェストになる) ため、
+ * 応答全体がプリミティブなら不正な応答として扱う。呼び出し側はエラー表示にし、未読の pending を残す。
+ */
+function isWholeBodyPrimitive(trimmed: string): boolean {
+	if (!/^(?:null|true|false|-?\d|")/.test(trimmed)) return false;
 	try {
-		const value = JSON.parse(text) as unknown;
-		if (typeof value !== 'string') return null;
-		const decoded = value.trim();
-		return decoded === '' ? null : decoded;
+		return !isParsedStructure(JSON.parse(trimmed) as unknown);
 	} catch {
-		return null;
+		// プリミティブの形で始まるが JSON として壊れている。自由文として扱う
+		return false;
 	}
+}
+
+/**
+ * 応答全体を JSON として解析した結果。
+ * `value` は解析できた場合のみ入り、`fromProse` は「自由文の中の引用から取り出した」ことを表す。
+ */
+interface ParsedBody {
+	value: unknown;
+	/** 自由文の中から取り出した断片か (応答全体が JSON として成立しているわけではない) */
+	fromProse: boolean;
+	/** 応答全体が JSON として成立しているか (フェンスの中身も「成立」に含める) */
+	wholeBody: boolean;
+	/** 解析に使った文字列 (自由文中の引用かどうかの判定に使う) */
+	text: string;
+}
+
+/**
+ * 応答全体を JSON として解析する。
+ *
+ * 1. 応答全体をそのまま解析する (summary にコードフェンスを含む正当な JSON を壊さない)
+ * 2. 応答全体がコードフェンス 1 つなら、その中身を解析する
+ * 3. それでも駄目なら、コードフェンスの中身や前後の説明文を落とした断片を解析する (自由文の中の引用)
+ */
+function parseResponseBody(trimmed: string): ParsedBody | null {
+	const attempts: Array<{ text: string; fromProse: boolean; wholeBody: boolean }> = [
+		{ text: trimmed, fromProse: false, wholeBody: true },
+	];
+	const fenceInner = unwrapWholeFence(trimmed);
+	if (fenceInner != null) {
+		attempts.push({ text: fenceInner, fromProse: false, wholeBody: true });
+	}
+	const extracted = locateJsonCandidate(trimmed);
+	if (extracted !== trimmed && extracted !== fenceInner) {
+		attempts.push({ text: extracted, fromProse: fenceInner == null, wholeBody: false });
+	}
+
+	for (const attempt of attempts) {
+		try {
+			const value = JSON.parse(attempt.text) as unknown;
+			if (!isParsedStructure(value)) continue;
+			return { value, fromProse: attempt.fromProse, wholeBody: attempt.wholeBody, text: attempt.text };
+		} catch {
+			// 次の候補を試す
+		}
+	}
+	return null;
 }
 
 /**
  * LLM の応答テキストを解析し、実在するノートへの参照のみを解決する。
  * JSON が壊れている場合はプレーンテキスト表示へ安全にフォールバックする。
  *
- * @returns 解析結果。空応答や、トピックを含むはずの配列に有効な要素が 1 件も無い場合は
- *          正当な「話題なし」 (`{"topics":[]}`) と区別するため null を返す。
- *          JSON プリミティブ (裸の文字列・数値・真偽値) はダイジェストの封筒ではないため、
- *          構造化された topics としては絶対に採用せず、全文をプレーンテキストとして返す
+ * @returns 解析結果。次の場合は「不正な応答」として null を返す (呼び出し側がエラー表示にし、
+ *          未読ダイジェストの pending を残す)。
+ *          - 空応答
+ *          - 応答全体が JSON のプリミティブ (`null` / `true` / `42` / `"要約"`)。封筒ではないので、
+ *            プリミティブの表記をそのまま要約として表示しない
+ *          - 応答全体が JSON だがスキーマと異なる場合
+ *          - トピックを含むはずの配列に有効な要素が 1 件も無い場合
+ *
+ * トピックを含む配列が空 (`[]`) のときは「話題なし」として受け入れるが、**自由文の中に紛れた
+ * 空配列は採用しない** (「設定例 [] が共有されました。」の `[]` を拾うと、書かれた本文が消えたうえで
+ * 未読の pending まで破棄されてしまう)。受け入れるのは、応答全体が空配列 / `{"topics":[]}` のときと、
+ * 自由文中の断片でも `topics` キーを明示して空配列になっているときだけ。
  */
 export function parseTlDigestResponse(
 	rawText: string,
@@ -647,40 +715,16 @@ export function parseTlDigestResponse(
 		return null;
 	}
 
-	// まず応答全体をそのまま JSON として解析する (summary 内の三連バッククォート誤抽出を防ぐ)。
-	// 失敗した場合にのみコードフェンスや前後の説明文を取り除いて再解析する
-	// fragment: 自由文の中から取り出した断片 (自由文中の JSON 引用の可能性がある)
-	const extracted = locateJsonCandidate(trimmed);
-	const jsonCandidates = [{ text: trimmed, fragment: false }];
-	if (extracted.text !== trimmed) {
-		const wholeFence = /^```(?:json)?\s*[\s\S]*?```$/i.test(trimmed) && trimmed.indexOf('```', 3) === trimmed.length - 3;
-		jsonCandidates.push({ text: extracted.text, fragment: !wholeFence });
-	}
+	// 応答全体がプリミティブなら封筒ではない (null / true / 42 / "要約" を要約として表示しない)
+	if (isWholeBodyPrimitive(trimmed)) return null;
 
-	let parsed: unknown;
-	let parsedOk = false;
-	let parsedFragment = false;
-	for (const candidate of jsonCandidates) {
-		try {
-			const value = JSON.parse(candidate.text) as unknown;
-			// プリミティブ (文字列・数値・真偽値・null) は JSON.parse に成功してもダイジェストの封筒ではない。
-			// ここで採用してしまうと topics の無い値として後段の判定に流れ込み、
-			// 「JSON として解釈できた」ことを理由に誤った結果を返してしまうため、解析できなかったものとして扱う
-			if (!isParsedStructure(value)) break;
-			parsed = value;
-			parsedOk = true;
-			parsedFragment = candidate.fragment;
-			break;
-		} catch {
-			// 次の候補を試す
-		}
-	}
-
-	if (parsedOk) {
-		const hasTopicsKey = parsed != null && typeof parsed === 'object' && !Array.isArray(parsed) && 'topics' in parsed;
+	const body = parseResponseBody(trimmed);
+	if (body != null) {
+		const parsed = body.value;
+		const hasTopicsKey = !Array.isArray(parsed) && 'topics' in (parsed as Record<string, unknown>);
 		const rawTopics = Array.isArray(parsed)
 			? parsed
-			: (parsed != null && typeof parsed === 'object' && Array.isArray((parsed as Record<string, unknown>)['topics']))
+			: Array.isArray((parsed as Record<string, unknown>)['topics'])
 				? (parsed as { topics: unknown[] }).topics
 				: null;
 
@@ -720,21 +764,13 @@ export function parseTlDigestResponse(
 			}
 
 			// スキーマ不正な要素しか無い応答は「話題なし」ではなく不正な応答として扱う
-			// (topics キーの無い自由文中の配列は、JSON の引用とみなして全文のフォールバックへ進む)
 			if (topics.length > 0 || rawTopics.length === 0) {
-				// 空の topics でも、JSON の外側に十分な量の説明文が書かれている場合はそちらを優先する。
-				// 例: "結果は次のとおりです: [] 以上です" のような、モデルが要約を地の文で書いた応答で
-				// [] だけを拾うと「目立った話題は見つかりませんでした」となり、書かれた要約が消えてしまう。
-				// 前置きが短い (SURROUNDING_PROSE_THRESHOLD 未満) 場合は正当な「話題なし」とみなす
-				// (しきい値を実測で下回る前置きだけの応答は、生の JSON をそのまま出さずに
-				//   `{"topics":[]}` を信じる。noTopics の表示はこの経路に依存している)
-				if (topics.length === 0 && extracted.start != null && extracted.end != null) {
-					const prose = getSurroundingProse(trimmed, extracted.start, extracted.end);
-					if (Array.from(prose).length >= SURROUNDING_PROSE_THRESHOLD) {
-						const fallbackText = stripUrls(cleanedWholeText(trimmed));
-						if (fallbackText !== '') {
-							return { topics: [], fallbackText };
-						}
+				// 空の topics のうち、自由文の中に紛れた `[]` は採用せずプレーンテキスト表示へ回す。
+				// ただし `topics` キーを明示した断片はモデルの意思表示とみなして受け入れる
+				if (topics.length === 0 && body.fromProse && !hasTopicsKey && isQuotedFragment(trimmed, body.text)) {
+					const fallbackText = stripUrls(cleanedWholeText(trimmed));
+					if (fallbackText !== '') {
+						return { topics: [], fallbackText };
 					}
 				}
 				return {
@@ -742,8 +778,9 @@ export function parseTlDigestResponse(
 					fallbackText: null,
 				};
 			}
-			if (!parsedFragment || hasTopicsKey) return null;
-		} else if ((!parsedFragment || hasTopicsKey) && parsed != null && typeof parsed === 'object') {
+			// 有効なトピックが 1 件も無い: 応答全体の JSON ならスキーマ不正、自由文の中の引用なら引用として扱う
+			if (!body.fromProse || hasTopicsKey) return null;
+		} else if (body.wholeBody || hasTopicsKey) {
 			// 応答全体が JSON なのにスキーマと異なる場合や、topics が配列でない要約形式の断片は、
 			// 自由文の救済ではなく不正な応答として扱う
 			return null;
