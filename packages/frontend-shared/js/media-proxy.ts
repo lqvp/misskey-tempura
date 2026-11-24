@@ -41,9 +41,21 @@ export class MediaProxy {
 		this.customMediaProxyGetter = customMediaProxyGetter;
 	}
 
+	private get customMediaProxy(): string | null {
+		return normalizeMediaProxyUrl(this.customMediaProxyGetter?.());
+	}
+
+	/** サーバーが実際に使っている表記 (検証済み)。末尾ドット付きホスト等もそのまま保持する */
+	private get serverMediaProxy(): string | null {
+		const raw = typeof this.serverMetadata.mediaProxy === 'string' ? this.serverMetadata.mediaProxy.trim() : '';
+		if (raw === '') return null;
+		if (normalizeMediaProxyUrl(raw) == null) return null;
+		return raw.replace(/\/+$/, '');
+	}
+
 	private get effectiveMediaProxy(): string {
-		return normalizeMediaProxyUrl(this.customMediaProxyGetter?.())
-			?? normalizeMediaProxyUrl(this.serverMetadata.mediaProxy)
+		return this.customMediaProxy
+			?? this.serverMediaProxy
 			?? `${this.url}/proxy`;
 	}
 
@@ -51,15 +63,13 @@ export class MediaProxy {
 		const localProxy = `${this.url}/proxy`;
 		const serverProxy = normalizeMediaProxyUrl(this.serverMetadata.mediaProxy);
 		// default.yml 由来の末尾ドット付きホスト等で保存済みURLがそのまま残る場合も照合できるよう、元表記も候補に含める
-		const rawServerProxy = serverProxy != null && typeof this.serverMetadata.mediaProxy === 'string'
-			? this.serverMetadata.mediaProxy.trim().replace(/\/+$/, '')
-			: null;
-		const customProxy = normalizeMediaProxyUrl(this.customMediaProxyGetter?.());
+		const rawServerProxy = this.serverMediaProxy;
+		const customProxy = this.customMediaProxy;
 
 		const prefixes = Array.from(new Set([
 			...(customProxy != null ? [customProxy] : []),
 			...(serverProxy != null ? [serverProxy] : []),
-			...(rawServerProxy != null && rawServerProxy !== '' ? [rawServerProxy] : []),
+			...(rawServerProxy != null ? [rawServerProxy] : []),
 			localProxy,
 			'/proxy',
 		])).sort((a, b) => b.length - a.length);
@@ -82,8 +92,9 @@ export class MediaProxy {
 		const localProxy = `${this.url}/proxy`;
 		let _imageUrl = imageUrl;
 		let _mustOrigin = mustOrigin;
+		const matchedPrefix = this.matchProxyPrefix(imageUrl);
 
-		if (this.matchProxyPrefix(imageUrl) != null) {
+		if (matchedPrefix != null) {
 			// もう既にproxyっぽそうだったらurlを取り出す（origin=1 は維持する）
 			const parsed = tryParseUrl(imageUrl, this.url);
 			_imageUrl = parsed?.searchParams.get('url') ?? imageUrl;
@@ -92,7 +103,14 @@ export class MediaProxy {
 			}
 		}
 
-		return `${_mustOrigin ? localProxy : this.effectiveMediaProxy}/${
+		// 個別設定が無く、元の接続先が実際に使われているプロキシと同一なら、そのオリジンを維持する
+		const base = _mustOrigin
+			? localProxy
+			: matchedPrefix != null && this.customMediaProxy == null && matchedPrefix === this.serverMediaProxy
+				? matchedPrefix
+				: this.effectiveMediaProxy;
+
+		return `${base}/${
 			type === 'preview' ? 'preview.webp'
 			: 'image.webp'
 		}?${query({
@@ -138,6 +156,9 @@ export class MediaProxy {
 		if (parsed?.searchParams.has('origin')) {
 			return `${this.url}/proxy${imageUrl.slice(prefix.length)}`;
 		}
+
+		// 個別設定が無く、元の接続先が実際に使われているプロキシと同一なら、オリジンを変えずにそのまま返す
+		if (this.customMediaProxy == null && prefix === this.serverMediaProxy) return imageUrl;
 
 		return `${this.effectiveMediaProxy}${imageUrl.slice(prefix.length)}`;
 	}

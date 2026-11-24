@@ -180,4 +180,16 @@ describe('MediaProxy', () => {
 		expect(proxy.rewriteProxiedImageUrl('https://server-proxy.example./proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Favatar.png&avatar=1'))
 			.toBe('https://client-proxy.example/proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Favatar.png&avatar=1');
 	});
+
+	test('keeps trailing-dot origin when no client proxy is configured', () => {
+		const proxy = new MediaProxy(createMeta('https://server-proxy.example./proxy'), instanceUrl, () => null);
+
+		// 既にサーバーのプロキシURLなら、オリジンを変えずそのまま返す
+		expect(proxy.rewriteProxiedImageUrl('https://server-proxy.example./proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Favatar.png&avatar=1'))
+			.toBe('https://server-proxy.example./proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Favatar.png&avatar=1');
+
+		// 生成する URL もサーバーが実際に使っている表記を引き継ぐ
+		expect(proxy.getStaticImageUrl('https://remote.example/a.gif'))
+			.toBe('https://server-proxy.example./proxy/static.webp?url=https%3A%2F%2Fremote.example%2Fa.gif&static=1');
+	});
 });
