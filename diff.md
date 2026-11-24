@@ -436,7 +436,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * enableReactionConfirm / enableLikeConfirm
 * mediaProxy: 設定 → 独自機能 → 動作 (`/settings/tempura-settings`) から、このブラウザで画像表示に使うメディアプロキシ URL を指定できます (misskey-dev/media-proxy 互換)
   * サーバーが返すプロキシ済み URL (アバター・URLプレビュー・リモートメディアなど) を差し替えます
-  * もともとプロキシされていない自サーバーの URL (ローカルの `/files/` など) は通常表示ではそのままです。データセーバー・静止画表示では設定したプロキシを経由するため、メンションの `/avatar/@user@host` はサーバーの 302 をたどれるプロキシが必要です
+  * もともとプロキシされていない自サーバーの URL (ローカルの `/files/` など) は通常表示ではそのままです。アバターのデータセーバー表示と、アニメーション画像の静止画表示では設定したプロキシを経由するため、メンションの `/avatar/@user@host` はサーバーの 302 をたどれるプロキシが必要です
   * 自サーバーのルート URL と `/proxy` 配下、https ページでの http プロキシ指定は入力時に拒否します
 
 ### 投稿フォーム

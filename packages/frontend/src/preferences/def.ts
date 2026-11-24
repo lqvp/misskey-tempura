@@ -772,7 +772,7 @@ export const PREF_DEF = definePreferences({
 		default: [] as string[],
 	},
 	mediaProxy: {
-		// 到達性が端末・ネットワークに依存するため、アカウント間で共有しない (ブラウザローカル)
+		// 到達性がブラウザ・ネットワークに依存するため、アカウント別にはせずこのブラウザ共通で保存する
 		default: null as string | null,
 	},
 });
