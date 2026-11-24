@@ -759,6 +759,99 @@ describe('parseTlDigestResponse', () => {
 			fallbackText: '要約です。今日はGPUの話でもりあがりました。\n\n(参考)',
 		});
 	});
+
+	it('開きフェンスと同じ行にある JSON を info string として捨てない', () => {
+		// 開き行を「行全体が info string」と解釈すると JSON が消え、正当な要約が失われる
+		const raw = '```json {"topics":[{"title":"T","summary":"S","refs":["n1"]}]}\n```';
+		const parsed = parseTlDigestResponse(raw, refMap);
+		expect(parsed).not.toBeNull();
+		expect(parsed!.fallbackText).toBeNull();
+		expect(parsed!.topics).toHaveLength(1);
+		expect(parsed!.topics[0].title).toBe('T');
+		expect(parsed!.topics[0].summary).toBe('S');
+		expect(parsed!.topics[0].noteIds).toEqual(['real-id-1']);
+
+		// language 指定が無い開き行でも同じ
+		expect(parseTlDigestResponse('``` {"topics":[{"title":"T","summary":"S","refs":[]}]}\n```', refMap)?.topics)
+			.toHaveLength(1);
+		// 開き行が info string だけのフェンス (```json + 改行 + ```) も従来どおり扱う
+		expect(parseTlDigestResponse('```json {"topics":[]}\n```', refMap)).toEqual({ topics: [], fallbackText: null });
+	});
+
+	it('info string は英数字トークン 1 つだけを剥がし、その後の文字は中身として扱う', () => {
+		// `markdown` のような長い info string でも中身を捨てない
+		expect(parseTlDigestResponse('```markdown {"topics":[]}\n```', refMap)).toEqual({ topics: [], fallbackText: null });
+		// info string と中身の間に空白が無くても中身になる
+		expect(parseTlDigestResponse('```json{"topics":[]}\n```', refMap)).toEqual({ topics: [], fallbackText: null });
+	});
+
+	it('JSON として解析できない括弧書きは地の文として残す', () => {
+		// `[GPU]` は JSON の配列ではない。断片として削除すると要約の語が欠ける
+		expect(parseTlDigestResponse('[GPU] が主な話題でした。', refMap)).toEqual({
+			topics: [],
+			fallbackText: '[GPU] が主な話題でした。',
+		});
+		// 本文の途中に現れる非 JSON の括弧も同様
+		expect(parseTlDigestResponse('今日は [GPU] とカレーの話でした。', refMap)).toEqual({
+			topics: [],
+			fallbackText: '今日は [GPU] とカレーの話でした。',
+		});
+		// JSON として解析できる断片は従来どおり取り除く (対比)
+		expect(parseTlDigestResponse('[1, 2] が話題でした。', refMap)).toEqual({
+			topics: [],
+			fallbackText: 'が話題でした。',
+		});
+	});
+
+	it('フェンスに包まれていても、フェンスの中の地の文を捨てない', () => {
+		// フェンスを剥がした結果「外側」が空になるという理由で本文を落とすと要約が消える
+		expect(parseTlDigestResponse('```\n今日はGPUの話題でした。\n[]\n```', refMap)).toEqual({
+			topics: [],
+			fallbackText: '今日はGPUの話題でした。',
+		});
+		// JSON 断片が同じフェンス内の地の文の後ろにある場合も同じ
+		expect(parseTlDigestResponse('```json\n今日はGPUの話題でした。\n{"topics":[]}\n```', refMap)).toEqual({
+			topics: [],
+			fallbackText: '今日はGPUの話題でした。',
+		});
+		// フェンスの中身が JSON だけなら、従来どおり「話題なし」
+		expect(parseTlDigestResponse('```json\n[]\n```', refMap)).toEqual({ topics: [], fallbackText: null });
+	});
+
+	it('壊れた JSON の後ろの地の文も、JSON を削除して残す (回帰)', () => {
+		// 末尾カンマで解析できない JSON と地の文。解析できない断片は削除せず、そのまま本文に残す
+		const raw = '以下が要約です\n{"topics":[{"title":"A","summary":"B","refs":["n1"]},]}\n補足: 今日はGPUの話でした。';
+		expect(parseTlDigestResponse(raw, refMap)).toEqual({
+			topics: [],
+			fallbackText: '以下が要約です\n{"topics":[{"title":"A","summary":"B","refs":["n1"]},]}\n補足: 今日はGPUの話でした。',
+		});
+	});
+
+	it('閉じフェンス行の後ろに地の文が続いても、その地の文を捨てない (回帰)', () => {
+		const prose = '今日はGPUの話題でした。';
+		expect(parseTlDigestResponse(`\`\`\`json\n{"topics":[]}\n\`\`\` ${prose}`, refMap)).toEqual({
+			topics: [],
+			fallbackText: prose,
+		});
+		// JSON が封筒として成立していても同じ。話題と地の文の両方を返す
+		const withTopics = `\`\`\`json\n{"topics":[{"title":"A","summary":"B","refs":["n1"]}]}\n\`\`\` ${prose}`;
+		const parsed = parseTlDigestResponse(withTopics, refMap);
+		expect(parsed!.topics).toHaveLength(1);
+		expect(parsed!.fallbackText).toBe(prose);
+	});
+
+	it('対応しない括弧が大量にあっても、有限時間で「話題なし」に落ちる', () => {
+		// 開き括弧ごとに末尾まで走査し直す実装では 2 乗の時間になる。
+		// ここでは入力の上限と試行回数の上限で打ち切る (結果の形は通常サイズと同じ)
+		const raw = '['.repeat(60000) + ' 今日はGPUの話題でした。';
+		const startedAt = performance.now();
+		const parsed = parseTlDigestResponse(raw, refMap);
+		const elapsed = performance.now() - startedAt;
+		expect(parsed!.topics).toEqual([]);
+		expect(parsed!.fallbackText).toContain('今日はGPUの話題でした。');
+		// 2 乗の実装では 1 秒を超える。上限打ち切りで数百ミリ秒に収まることを確認する
+		expect(elapsed).toBeLessThan(500);
+	});
 });
 
 describe('buildTlDigestSystemInstruction', () => {

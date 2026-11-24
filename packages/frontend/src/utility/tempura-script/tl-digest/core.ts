@@ -534,15 +534,39 @@ function stripUrls(text: string): string {
 }
 
 /**
- * コードフェンスの「開き行」(行頭の ``` と info string) に一致する。
+ * コードフェンス行 (` ```` ` で始まる行) から、フェンス記号と info string を剥がす。
  *
- * 4 文字目がバッククォートのときは一致しない。閉じフェンスに隣接して書かれた
- * ` ```json {...}``` ` を開き行と取り違えないため、4 文字目を見る。
+ * フェンスの info string は CommonMark では「開き行の残り全体」だが、モデルの実際の逸脱には
+ * 開き行に中身を続けて書くものがある (` ```json {"topics":[]} `)。
+ * 行全体を info string とみなすと、この中身が丸ごと捨てられて要約が失われるため、
+ * ここでは info string を「英数字だけの 1 トークン」(json / ts / markdown など) に限り、
+ * その後に続くものを中身として返す。
+ *
+ * @returns フェンス記号と info string を除いた残り。フェンス行でなければ null。
  */
-const FENCE_OPEN = /^[ \t]*```[^`\n]*$/u;
+function stripFenceMarker(line: string): string | null {
+	const trimmed = line.trim();
+	if (!trimmed.startsWith('```')) return null;
+	// 4 文字目 (`) はフェンス記号の一部とみなす。``` の後の空白区切りだけを info string の境界にする
+	const rest = trimmed.slice(3);
+	const infoMatch = rest.match(/^[ \t]*[A-Za-z][\w+#.-]*/u);
+	if (infoMatch == null) return rest.trim();
+	// info string の直後が行末なら「フェンス行だけ」で中身は空
+	return rest.slice(infoMatch[0].length).trim();
+}
 
+/** フェンス行 (` ```` ` で始まる行) か。閉じフェンスの判定に使う */
 function isFenceLine(line: string): boolean {
 	return line.trim().startsWith('```');
+}
+
+/** 応答の先頭行がフェンスの開き行として妥当か (閉じフェンス ` ```` ` だけの行は開き行にしない) */
+function isFenceOpenLine(line: string): boolean {
+	const trimmed = line.trim();
+	if (!trimmed.startsWith('```')) return false;
+	// 4 文字目がバッククォートのときは閉じフェンス (````) の一部なので開き行ではない
+	if (trimmed.startsWith('````')) return false;
+	return true;
 }
 
 /**
@@ -562,37 +586,102 @@ function isFenceLine(line: string): boolean {
  * これを 1 つのフェンスとみなすと要約の地の文が中身として捨てられるため、開き行より後で最初に現れる
  * フェンス行が応答の最終行であることを求める。
  *
+ * 中身は開き行から info string だけを剥がした残り。開き行に中身が続いていれば (` ```json {"topics":[]}`)、
+ * それも中身の一部として返す。
+ *
  * @returns フェンスの中身。1 つのフェンスでなければ null。
  */
-function unwrapWholeFence(trimmed: string): string | null {
+function unwrapWholeFence(trimmed: string): { inner: string; closedByFence: boolean; trailingText: string } | null {
 	const lines = trimmed.split('\n');
 
 	if (lines.length === 1) {
 		// 折り返しの無いフェンス (```json []```)。閉じフェンスは末尾 3 文字とみなし、
 		// その手前は中身として扱う (中身と info string の境界は行内では決められない。
 		// `json` が残っても、中身が JSON なら名前が付いた値として解析できる)
-		if (!trimmed.startsWith('```')) return null;
+		if (!isFenceOpenLine(trimmed)) return null;
 		if (!trimmed.endsWith('```') || trimmed.length < 6) return null;
-		return trimmed.slice(3, -3).trim();
+		const inner = trimmed.slice(3, -3);
+		const head = stripFenceMarker(`\`\`\`${inner}`) ?? inner.trim();
+		return { inner: head, closedByFence: true, trailingText: '' };
 	}
 
 	if (lines.length === 2) {
 		// 開き行 + 閉じ行だけ (中身が空) のフェンス (```json\n```)
-		if (!FENCE_OPEN.test(lines[0] ?? '')) return null;
+		if (!isFenceOpenLine(lines[0] ?? '')) return null;
 		const second = (lines[1] ?? '').trim();
-		if (second === '```') return '';
+		if (second === '```') return { inner: stripFenceMarker(lines[0] ?? '') ?? '', closedByFence: true, trailingText: '' };
 		// 閉じフェンスが内容の同じ行にある (```json\n{"topics":[]}```)。閉じフェンスは行末の 3 文字
 		if (!second.endsWith('```')) return null;
-		return second.slice(0, -3).trim();
+		// 開き行の info string の後ろに中身が続く場合は、その中身から始まる
+		const head = stripFenceMarker(lines[0] ?? '') ?? '';
+		const tail = second.slice(0, -3).trim();
+		return { inner: head === '' ? tail : `${head}\n${tail}`, closedByFence: true, trailingText: '' };
 	}
 
-	if (!FENCE_OPEN.test(lines[0] ?? '')) return null;
+	if (!isFenceOpenLine(lines[0] ?? '')) return null;
 	if (!isFenceLine(lines[lines.length - 1] ?? '')) return null;
 	// 開き行の次以降で最初に現れるフェンス行が最終行でなければ「フェンス 1 つ」ではない
 	for (let i = 1; i < lines.length - 1; i++) {
 		if (isFenceLine(lines[i] ?? '')) return null;
 	}
-	return lines.slice(1, -1).join('\n').trim();
+	// 開き行からフェンス記号と info string だけを剥がし、同じ行に続く中身は残す
+	const firstLine = stripFenceMarker(lines[0] ?? '') ?? '';
+	const restLines = lines.slice(1, -1);
+	const innerLines = firstLine === '' ? restLines : [firstLine, ...restLines];
+	const lastLine = lines[lines.length - 1] ?? '';
+	// 閉じ行の後ろに文言が付いた (` ``` 要約です。`) なら、フェンスはそこで閉じていない
+	const closedByFence = lastLine.trim() === '```';
+	return {
+		inner: innerLines.join('\n').trim(),
+		closedByFence,
+		trailingText: closedByFence ? '' : stripFenceMarker(lastLine) ?? '',
+	};
+}
+
+/** ダイジェスト応答として扱う本文の上限文字数。超える部分は JSON 断片の探索に使わない */
+const MAX_CANDIDATE_SCAN_LENGTH = 100_000;
+
+/** JSON 断片の探索で試す開き括弧の上限。上限に達したら以降の開き括弧は捨てて打ち切る */
+const MAX_CANDIDATE_SCAN_STARTS = 1_000;
+
+/**
+ * 本文を前から 1 回なめて、各位置の開き括弧に対応する閉じ括弧の位置を求める。
+ *
+ * 位置ごとの再走査は、対応しない `[` が大量にある本文で 2 乗の時間になる
+ * (16,000 個の `[` で 300ms 超)。ここでは文字列リテラルの外側の括弧だけを 1 パスで
+ * スタックに積み、対応する閉じ括弧が決まった時点で開き側の位置に記録する。
+ *
+ * @returns 開き括弧の位置 -> 対応する閉じ括弧の位置
+ */
+function buildBracketMatchMap(body: string): Map<number, number> {
+	const matches = new Map<number, number>();
+	const openPositions: number[] = [];
+	let inString = false;
+	let escaped = false;
+
+	for (let i = 0; i < body.length; i++) {
+		const char = body[i]!;
+		if (inString) {
+			if (escaped) {
+				escaped = false;
+			} else if (char === '\\') {
+				escaped = true;
+			} else if (char === '"') {
+				inString = false;
+			}
+			continue;
+		}
+		if (char === '"') {
+			inString = true;
+		} else if (char === '{' || char === '[') {
+			openPositions.push(i);
+		} else if (char === '}' || char === ']') {
+			// 対応する開き括弧が無い閉じ括弧は捨てる
+			const open = openPositions.pop();
+			if (open != null) matches.set(open, i);
+		}
+	}
+	return matches;
 }
 
 /**
@@ -601,40 +690,44 @@ function unwrapWholeFence(trimmed: string): string | null {
  * 文字列リテラルの外側にある括弧だけを数えるので、値の中の ``` や括弧に惑わされない。
  * 対応する閉じ括弧が見つからない開始位置は捨てて次を探す。
  *
+ * 本文長と開き括弧の試行回数には上限を設ける (ダイジェスト応答は数千文字で、超大入力は
+ * モデルの暴走か別の用途を疑うべきもの)。打ち切っても通常サイズの応答の結果は変わらない。
+ *
  * @returns 断片と、その本文内での範囲 [start, end)。見つからなければ null。
  */
 function locateJsonCandidate(body: string): { text: string; start: number; end: number } | null {
-	for (let start = 0; start < body.length; start++) {
+	const limit = Math.min(body.length, MAX_CANDIDATE_SCAN_LENGTH);
+	const matches = buildBracketMatchMap(body.slice(0, limit));
+	let starts = 0;
+
+	for (let start = 0; start < limit; start++) {
 		const first = body[start];
 		if (first !== '{' && first !== '[') continue;
-		let depth = 0;
-		let inString = false;
-		let escaped = false;
-		for (let i = start; i < body.length; i++) {
-			const char = body[i]!;
-			if (inString) {
-				if (escaped) {
-					escaped = false;
-				} else if (char === '\\') {
-					escaped = true;
-				} else if (char === '"') {
-					inString = false;
-				}
-				continue;
-			}
-			if (char === '"') {
-				inString = true;
-			} else if (char === '{' || char === '[') {
-				depth++;
-			} else if (char === '}' || char === ']') {
-				depth--;
-				if (depth === 0) return { text: body.slice(start, i + 1), start, end: i + 1 };
-				// 括弧が対応していない。この開始位置は捨てて次を探す
-				if (depth < 0) break;
-			}
-		}
+		if (starts++ >= MAX_CANDIDATE_SCAN_STARTS) break;
+		const end = matches.get(start);
+		if (end == null) continue;
+		return {
+			text: body.slice(start, end + 1),
+			start,
+			end: end + 1,
+		};
 	}
 	return null;
+}
+
+/**
+ * 断片が実際に JSON として解析できるか。
+ *
+ * 解析できない断片は「たまたま括弧で囲まれた地の文」(`[GPU]` など) なので、
+ * 本文から取り除いてはいけない。
+ */
+function isParsableJson(text: string): boolean {
+	try {
+		JSON.parse(text);
+		return true;
+	} catch {
+		return false;
+	}
 }
 
 /**
@@ -784,6 +877,13 @@ function parseEnvelope(
  * 4. **プレーンテキスト**: 断片 (と、断片を囲むフェンス・インラインコードの記号) を除いた残りを
  *    `fallbackText` にする。残りの文言が空なら「話題なし」(`fallbackText: null`)。
  *
+ * **1 でフェンスを剥がした場合も、2〜4 は剥がした中身に対して行う。**
+ * フェンスの中身を「フェンスの外側は空」とみなすと、フェンスの中に書かれた地の文が消えるため、
+ * 剥がした中身をそのまま本文として扱う。
+ *
+ * **JSON として解析できた断片だけを取り除く。** 解析できない括弧は地の文 (`[GPU] が話題でした。`) なので、
+ * 取り除かずそのまま本文に残す。
+ *
  * **断片の外側に文言が残っている場合は、3 の封筒より 4 を優先する。**
  * 外側の文言が導入句 (`結果:`) か地の文かを長さや記号で推測する判定は、何度直しても取りこぼしが出た
  * (「ラーメンとGPUの話 / []」で要約が消える、「結果: `[]`」でバッククォートが漏れる)。
@@ -802,15 +902,27 @@ export function parseTlDigestResponse(
 	const trimmed = rawText.trim();
 	if (trimmed === '') return null;
 
-	// 1. 全体を包む 1 つのフェンスだけを剥がす
-	const fenceInner = unwrapWholeFence(trimmed);
-	if (fenceInner === '') return null;
-	const body = fenceInner ?? trimmed;
+	// 1. 全体を包む 1 つのフェンスだけを剥がす。以降は剥がした中身を本文として扱う
+	const fence = unwrapWholeFence(trimmed);
+	if (fence?.inner === '') return null;
+	const body = fence?.inner ?? trimmed;
+
+	// 1'. 閉じ行の後ろに文言が付いた (` ``` 要約です。`) 場合、フェンスは 1 つに閉じていない。
+	//     中身から決めた結論に閉じ行の後ろの文言を添えて返す
+	const withTrailing = (parsed: ParsedTlDigest): ParsedTlDigest => {
+		if (fence == null || fence.closedByFence || fence.trailingText === '') return parsed;
+		const trailing = stripUrls(cleanPlainText(fence.trailingText));
+		if (trailing === '') return parsed;
+		return {
+			topics: parsed.topics,
+			fallbackText: parsed.fallbackText == null ? trailing : `${parsed.fallbackText}\n${trailing}`,
+		};
+	};
 
 	// 2. 全体を JSON として解析する。プリミティブの表記をそのまま要約として表示はしない
 	if (isJsonPrimitive(body)) return null;
 	const whole = parseEnvelope(body, refMap);
-	if (whole?.kind === 'envelope') return { topics: whole.topics, fallbackText: null };
+	if (whole?.kind === 'envelope') return withTrailing({ topics: whole.topics, fallbackText: null });
 	if (whole?.kind === 'invalid') return null;
 
 	// 3. 本文中の JSON 断片を探す
@@ -818,19 +930,18 @@ export function parseTlDigestResponse(
 	const extracted = candidate == null ? null : parseEnvelope(candidate.text, refMap);
 	if (extracted?.kind === 'invalid') return null;
 
-	// 4. 断片を除いた残りを本文とする。全体がフェンスに包まれていたなら、断片より外側は無い
+	// 4. 実際に JSON として解析できた断片だけを本文から除き、残りをプレーンテキストとする。
+	//    解析できない断片 (`[GPU]` など) は地の文なので取り除かない
 	let outside = body;
-	if (candidate != null) {
+	if (candidate != null && isParsableJson(candidate.text)) {
 		const removal = fragmentRemoval(body, candidate.start, candidate.end);
-		outside = fenceInner == null
-			? `${body.slice(0, removal.start)}${removal.separator}${body.slice(removal.end)}`
-			: '';
+		outside = `${body.slice(0, removal.start)}${removal.separator}${body.slice(removal.end)}`;
 	}
 	const fallbackText = stripUrls(cleanPlainText(outside));
-	if (fallbackText !== '') return { topics: [], fallbackText };
+	if (fallbackText !== '') return withTrailing({ topics: [], fallbackText });
 
 	// 断片の外側に文言が残っていない: 封筒が成立していれば採用、成立していなければ「話題なし」
-	return extracted?.kind === 'envelope'
+	return withTrailing(extracted?.kind === 'envelope'
 		? { topics: extracted.topics, fallbackText: null }
-		: { topics: [], fallbackText: null };
+		: { topics: [], fallbackText: null });
 }

@@ -189,6 +189,27 @@ interface ScanResult {
 	complete: boolean;
 }
 
+/**
+ * ワードミュートの設定が同一かどうか。
+ *
+ * 文字列と文字列配列 (AND 条件) が混在するため、順序に依存しない形へ直列化して比べる。
+ * 待機中にミュート語が増えた場合は、プロンプトに該当投稿が含まれている可能性があるため
+ * 送信を中止する必要がある。
+ */
+function isSameMuteWords(
+	a: { mutedWords: Array<string | string[]>; hardMutedWords: Array<string | string[]> } | null,
+	b: { mutedWords: Array<string | string[]>; hardMutedWords: Array<string | string[]> } | null,
+): boolean {
+	const normalize = (value: { mutedWords: Array<string | string[]>; hardMutedWords: Array<string | string[]> } | null): string => {
+		if (value == null) return '';
+		const parts = [...value.mutedWords, '', ...value.hardMutedWords]
+			.map((entry) => Array.isArray(entry) ? [...entry].sort().join('\u0000') : entry)
+			.sort();
+		return parts.join('\u0001');
+	};
+	return normalize(a) === normalize(b);
+}
+
 function isAbortError(error: unknown, signal: AbortSignal): boolean {
 	return (
 		signal.aborted ||
@@ -545,6 +566,9 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 				return;
 			}
 
+			// 送信直前の比較用に、プロンプト作成時点のミュート語を控えておく
+			const muteAtPrepare = deps.getMe();
+
 			const response = await measureTlDigestAsync('generate', () => deps.generate({
 				userContent: promptInput,
 				systemInstruction: buildTlDigestSystemInstruction(active.settings.prompt, active.settings.systemPrompt),
@@ -563,9 +587,13 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 						visibilities.join(',') !== active.filter.allowedVisibilities.join(',') ||
 						normalizeTlDigestCwMode(latest.cwMode) !== active.filter.cwMode ||
 						normalizeTlDigestUserFilterMode(latest.userFilterMode) !== active.filter.userFilterMode ||
-						// 配列の順序は意味を持たないので、並べ替えてから比較する
-						normalizeTlDigestFilterUserIds(latest.userFilterUserIds).sort().join(',') !==
-							[...active.filter.userFilterUserIds].sort().join(',')
+						// モードが off のときは ID 一覧が対象に影響しないため、ID の増減では中止しない
+						(normalizeTlDigestUserFilterMode(latest.userFilterMode) !== 'off' &&
+							// 配列の順序は意味を持たないので、並べ替えてから比較する
+							normalizeTlDigestFilterUserIds(latest.userFilterUserIds).sort().join(',') !==
+								[...active.filter.userFilterUserIds].sort().join(',')) ||
+						// 待機中にワードミュートを追加すると、該当投稿を含む作成済みプロンプトが送られてしまう
+						!isSameMuteWords(muteAtPrepare, deps.getMe())
 					) {
 						throw new Error(i18n.ts._tlDigest.settingsChanged);
 					}
