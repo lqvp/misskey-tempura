@@ -130,7 +130,18 @@ export class ApInboxService {
 					this.logger.warn(`failed to resolve collection item: ${err instanceof Error ? err.message : err}`);
 					continue;
 				}
-				if (act.id == null || this.utilityService.extractDbHost(act.id) !== this.utilityService.extractDbHost(actor.uri)) {
+				if (act == null || typeof act !== 'object' || Array.isArray(act) || typeof act.id !== 'string') {
+					this.logger.debug('skipping activity: activity id is null or mismatching');
+					continue;
+				}
+				let actHost: string;
+				try {
+					actHost = this.utilityService.extractDbHost(act.id);
+				} catch {
+					this.logger.debug('skipping activity: invalid activity id');
+					continue;
+				}
+				if (actHost !== this.utilityService.extractDbHost(actor.uri)) {
 					this.logger.debug('skipping activity: activity id is null or mismatching');
 					continue;
 				}

@@ -9,6 +9,7 @@ import { StatusError } from '@/misc/status-error.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { ApInboxService } from './ApInboxService.js';
 import { Resolver } from './ApResolverService.js';
+import type { ICollection } from './type.js';
 import type { MiRemoteUser } from '@/models/User.js';
 
 function createService() {
@@ -116,12 +117,62 @@ describe('ApInboxService.performActivity (Collection)', () => {
 			{ getLogger: () => logger } as any,
 		);
 
-		await expect(service.performActivity(actor, {
+		const collection: ICollection = {
+			id: 'https://remote.example/collections/1',
 			type: 'Collection',
+			totalItems: 1,
 			items: ['https://remote.example/activities/1'],
-		}, resolver)).rejects.toMatchObject({ cause: failure });
+		};
+
+		await expect(service.performActivity(actor, collection, resolver)).rejects.toMatchObject({ cause: failure });
 		expect(signedGet).not.toHaveBeenCalled();
 		expect(logger.warn).not.toHaveBeenCalled();
+	});
+
+	test('不正な埋め込み項目（null や不正な URL の id）はスキップして後続アイテムを処理する', async () => {
+		const { service, logger } = createService();
+		const performOneSpy = vi.spyOn(service, 'performOneActivity').mockResolvedValue('ok');
+		const validAct = {
+			id: 'https://remote.example/activities/2',
+			type: 'Create',
+		};
+		const resolver = new Resolver(
+			{} as any, // config
+			{ signToActivityPubGet: false } as any, // meta
+			{} as any, // usersRepository
+			{} as any, // notesRepository
+			{} as any, // pollsRepository
+			{} as any, // noteReactionsRepository
+			{} as any, // followRequestsRepository
+			{
+				extractDbHost: (uri: string) => new URL(uri).hostname.toLowerCase(),
+				isSelfHost: () => false,
+				isFederationAllowedHost: () => true,
+			} as any,
+			{} as any, // systemAccountService
+			{} as any, // apRequestService
+			{} as any, // httpRequestService
+			{} as any, // apRendererService
+			{} as any, // apDbResolverService
+			{ getLogger: () => logger } as any,
+		);
+
+		const collection: ICollection = {
+			id: 'https://remote.example/collections/1',
+			type: 'Collection',
+			totalItems: 5,
+			items: [
+				null as any,
+				{ type: 'Create' },
+				{ id: 123 as any, type: 'Create' },
+				{ id: 'not-a-valid-url', type: 'Create' },
+				validAct,
+			],
+		};
+
+		await expect(service.performActivity(actor, collection, resolver)).resolves.toBeUndefined();
+		expect(performOneSpy).toHaveBeenCalledTimes(1);
+		expect(performOneSpy).toHaveBeenCalledWith(actor, validAct, resolver);
 	});
 
 	test.each([
