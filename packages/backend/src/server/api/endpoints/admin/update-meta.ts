@@ -11,10 +11,12 @@ import type { UsersRepository } from '@/models/_.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { MetaService } from '@/core/MetaService.js';
+import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { QueueService } from '@/core/QueueService.js';
 import { ApiLoggerService } from '../../ApiLoggerService.js';
 import { ApiError } from '../../error.js';
 import { normalizeSignupPassphrase } from '@/misc/normalize-signup-passphrase.js';
+import { rewriteUserMediaProxyUrls } from '@/misc/rewrite-user-media-proxy-urls.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -388,6 +390,8 @@ export const paramDef = {
 
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-disable-line import/no-default-export
+	private rewriteChain: Promise<void> = Promise.resolve();
+
 	constructor(
 		@Inject(DI.config)
 		private config: Config,
@@ -400,6 +404,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 		private metaService: MetaService,
 		private moderationLogService: ModerationLogService,
+		private globalEventService: GlobalEventService,
 		private queueService: QueueService,
 		private apiLoggerService: ApiLoggerService,
 	) {
@@ -1151,8 +1156,10 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					set.mediaProxy = null;
 				} else {
 					const normalized = normalizeMediaProxyUrl(ps.mediaProxy);
-					const internalMediaProxy = `${this.config.url.replace(/\/+$/, '')}/proxy`;
-					if (normalized == null || normalized.startsWith(`${internalMediaProxy}/`)) {
+					const selfOrigin = normalizeMediaProxyUrl(this.config.url);
+					const internalMediaProxy = `${selfOrigin ?? this.config.url.replace(/\/+$/, '')}/proxy`;
+					// 自サーバーの /proxy 配下 (ループ) とルートオリジン (プロキシルートが無く 404) は拒否する
+					if (normalized == null || normalized.startsWith(`${internalMediaProxy}/`) || (selfOrigin != null && normalized === selfOrigin)) {
 						throw new ApiError(meta.errors.invalidMediaProxyUrl);
 					}
 					set.mediaProxy = normalized;
@@ -1432,37 +1439,23 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			const beforeMediaProxy = resolveMediaProxy(this.config, before).mediaProxy;
 			const afterMediaProxy = resolveMediaProxy(this.config, after).mediaProxy;
 			if (beforeMediaProxy !== afterMediaProxy) {
-				void this.rewriteStoredUserMediaProxyUrls(beforeMediaProxy, afterMediaProxy);
+				// 連続変更で書き換えが交錯しないようプロセス内で直列化する。
+				// プロセス間の競合や失敗で取り残された行は夜次の cleanRemoteFiles (fixAvatars) が現行プロキシへ収束させる。
+				this.rewriteChain = this.rewriteChain
+					.then(() => rewriteUserMediaProxyUrls(this.usersRepository, beforeMediaProxy, afterMediaProxy))
+					.then((count) => {
+						if (count > 0) {
+							// 全プロセスのユーザーキャッシュを一括で無効化する (per-user イベントは DB 負荷が行数×プロセス数になるため避ける)
+							this.globalEventService.publishInternalEvent('userMediaProxyRewritten', {
+								oldMediaProxy: beforeMediaProxy,
+								newMediaProxy: afterMediaProxy,
+							});
+						}
+					})
+					.catch((err) => {
+						this.apiLoggerService.logger.warn(`failed to rewrite stored user mediaProxy URLs: ${err}`);
+					});
 			}
 		});
-	}
-
-	private async rewriteStoredUserMediaProxyUrls(oldMediaProxy: string, newMediaProxy: string): Promise<void> {
-		const oldPrefix = `${oldMediaProxy}/`;
-		const newPrefix = `${newMediaProxy}/`;
-		try {
-			await this.usersRepository.query(
-				`UPDATE "user"
-				SET "avatarUrl" = $2 || substring("avatarUrl" FROM char_length($1) + 1)
-				WHERE "avatarUrl" IS NOT NULL
-					AND left("avatarUrl", char_length($1)) = $1
-					AND (strpos("avatarUrl", '?url=') > 0 OR strpos("avatarUrl", '&url=') > 0)
-					AND strpos("avatarUrl", 'origin=') = 0
-					AND char_length($2) + char_length("avatarUrl") - char_length($1) <= 1024`,
-				[oldPrefix, newPrefix],
-			);
-			await this.usersRepository.query(
-				`UPDATE "user"
-				SET "bannerUrl" = $2 || substring("bannerUrl" FROM char_length($1) + 1)
-				WHERE "bannerUrl" IS NOT NULL
-					AND left("bannerUrl", char_length($1)) = $1
-					AND (strpos("bannerUrl", '?url=') > 0 OR strpos("bannerUrl", '&url=') > 0)
-					AND strpos("bannerUrl", 'origin=') = 0
-					AND char_length($2) + char_length("bannerUrl") - char_length($1) <= 512`,
-				[oldPrefix, newPrefix],
-			);
-		} catch (err) {
-			this.apiLoggerService.logger.warn(`failed to rewrite stored user mediaProxy URLs: ${err}`);
-		}
 	}
 }

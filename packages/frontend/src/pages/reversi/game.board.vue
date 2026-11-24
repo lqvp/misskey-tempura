@@ -66,8 +66,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 								mode="default"
 							>
 								<template v-if="useAvatarAsStone">
-									<img v-if="stone === true" :class="$style.boardCellStone" :src="blackUser.avatarUrl ?? undefined"/>
-									<img v-else-if="stone === false" :class="$style.boardCellStone" :src="whiteUser.avatarUrl ?? undefined"/>
+									<img v-if="stone === true" :class="$style.boardCellStone" :src="rewriteProxiedImageUrlNullable(blackUser.avatarUrl) ?? undefined"/>
+									<img v-else-if="stone === false" :class="$style.boardCellStone" :src="rewriteProxiedImageUrlNullable(whiteUser.avatarUrl) ?? undefined"/>
 								</template>
 								<template v-else>
 									<img v-if="stone === true" :class="$style.boardCellStone" src="/client-assets/reversi/stone_b.png"/>
@@ -154,6 +154,7 @@ import { deepClone } from '@/utility/clone.js';
 import { $i } from '@/i.js';
 import { i18n } from '@/i18n.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
+import { rewriteProxiedImageUrlNullable } from '@/utility/media-proxy.js';
 import { userPage } from '@@/js/user.js';
 import * as sound from '@/utility/sound.js';
 import * as os from '@/os.js';

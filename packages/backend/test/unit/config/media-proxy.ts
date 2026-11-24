@@ -31,6 +31,11 @@ describe('normalizeMediaProxyUrl', () => {
 		expect(normalizeMediaProxyUrl('https://proxy.example/' + 'a'.repeat(250))).toBeNull();
 		expect(normalizeMediaProxyUrl('https://proxy.example/' + 'あ'.repeat(30))).toBeNull();
 	});
+
+	test('strips trailing dots from hostname (FQDN notation)', () => {
+		expect(normalizeMediaProxyUrl('https://proxy.example./proxy')).toBe('https://proxy.example/proxy');
+		expect(normalizeMediaProxyUrl('https://proxy.example../proxy/')).toBe('https://proxy.example/proxy');
+	});
 });
 
 describe('resolveMediaProxy', () => {
@@ -74,6 +79,17 @@ describe('resolveMediaProxy', () => {
 		expect(resolveMediaProxy(baseConfig, null)).toEqual({
 			mediaProxy: 'https://config-proxy.test/proxy',
 			externalMediaProxyEnabled: true,
+		});
+	});
+
+	test('treats trailing-dot self host as internal (no redirect loop)', () => {
+		expect(resolveMediaProxy(baseConfig, { mediaProxy: 'https://misskey.test./proxy' })).toEqual({
+			mediaProxy: 'https://misskey.test/proxy',
+			externalMediaProxyEnabled: false,
+		});
+		expect(resolveMediaProxy({ ...baseConfig, url: 'https://misskey.test./' }, { mediaProxy: 'https://misskey.test/proxy' })).toEqual({
+			mediaProxy: 'https://misskey.test/proxy',
+			externalMediaProxyEnabled: false,
 		});
 	});
 });

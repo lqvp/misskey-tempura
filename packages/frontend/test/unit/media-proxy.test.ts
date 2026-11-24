@@ -138,4 +138,40 @@ describe('MediaProxy', () => {
 
 		expect(proxy.rewriteProxiedImageUrlNullable(null)).toBeNull();
 	});
+
+	test('rewrite is idempotent for URLs already on the custom proxy', () => {
+		const proxy = new MediaProxy(createMeta('https://server-proxy.example/proxy'), instanceUrl, () => 'https://client-proxy.example/proxy');
+		const once = proxy.rewriteProxiedImageUrl('https://server-proxy.example/proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png&avatar=1');
+		expect(proxy.rewriteProxiedImageUrl(once)).toBe(once);
+	});
+
+	test('rewrites external proxy URL with origin=1 to the local proxy', () => {
+		const proxy = new MediaProxy(createMeta('https://server-proxy.example/proxy'), instanceUrl, () => 'https://client-proxy.example/proxy');
+		expect(proxy.rewriteProxiedImageUrl('https://server-proxy.example/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png&origin=1'))
+			.toBe('https://server.example/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png&origin=1');
+	});
+
+	test('normalizes uppercase scheme/host and trailing-dot host', () => {
+		expect(normalizeMediaProxyUrl('HTTPS://PROXY.EXAMPLE/proxy/')).toBe('https://proxy.example/proxy');
+		expect(normalizeMediaProxyUrl('https://proxy.example./proxy')).toBe('https://proxy.example/proxy');
+	});
+
+	test('getStaticImageUrl passes through invalid URLs', () => {
+		const proxy = new MediaProxy(createMeta('https://server-proxy.example/proxy'), instanceUrl, () => null);
+		expect(proxy.getStaticImageUrl('http://')).toBe('http://');
+	});
+
+	test('getProxiedImageUrlNullable handles null and values', () => {
+		const proxy = new MediaProxy(createMeta('https://server-proxy.example/proxy'), instanceUrl, () => null);
+		expect(proxy.getProxiedImageUrlNullable(null)).toBeNull();
+		expect(proxy.getProxiedImageUrlNullable(undefined)).toBeNull();
+		expect(proxy.getProxiedImageUrlNullable('https://remote.example/a.png', 'preview'))
+			.toBe('https://server-proxy.example/proxy/preview.webp?url=https%3A%2F%2Fremote.example%2Fa.png&fallback=1&preview=1');
+	});
+
+	test('url extraction is independent of query parameter order', () => {
+		const proxy = new MediaProxy(createMeta('https://server-proxy.example/proxy'), instanceUrl, () => 'https://client-proxy.example/proxy');
+		expect(proxy.getProxiedImageUrl('https://server-proxy.example/proxy/image.webp?static=1&url=https%3A%2F%2Fremote.example%2Fa.png&fallback=1', 'emoji', false, true))
+			.toBe('https://client-proxy.example/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png&emoji=1');
+	});
 });

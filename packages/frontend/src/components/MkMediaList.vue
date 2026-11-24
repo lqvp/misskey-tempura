@@ -141,7 +141,8 @@ onUnmounted(() => {
 
 function onMediaClick(file: Misskey.entities.DriveFile) {
 	if (prefer.s.imageNewTab) {
-		const targetUrl = rewriteProxiedImageUrl(file.url);
+		// メディアプロキシは画像専用なので、動画・音声の URL は差し替えない
+		const targetUrl = file.type.startsWith('image') ? rewriteProxiedImageUrl(file.url) : file.url;
 		if (props.referrerpolicy === 'no-referrer') {
 			window.open(targetUrl, '_blank', 'noreferrer');
 		} else {
@@ -169,7 +170,8 @@ async function openGallery(id?: string) {
 	const contents = medias.value.previewable.map<Content>(media => ({
 		id: media.id,
 		type: getType(media.type),
-		url: rewriteProxiedImageUrl(media.url),
+		// メディアプロキシは画像専用なので、動画・音声の URL は差し替えない (インライン再生と向き先を揃える)
+		url: media.type.startsWith('image') ? rewriteProxiedImageUrl(media.url) : media.url,
 		thumbnailUrl: rewriteProxiedImageUrlNullable(media.thumbnailUrl),
 		referrerPolicy: props.referrerpolicy,
 		width: media.properties.width,

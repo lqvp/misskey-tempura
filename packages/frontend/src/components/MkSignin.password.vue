@@ -6,7 +6,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template>
 <div :class="$style.wrapper" data-testid="signin-page-password">
 	<div class="_gaps" :class="$style.root">
-		<div :class="$style.avatar" :style="{ backgroundImage: user ? `url('${user.avatarUrl}')` : undefined }"></div>
+		<div :class="$style.avatar" :style="{ backgroundImage: user ? `url(${JSON.stringify(rewriteProxiedImageUrl(user.avatarUrl))})` : undefined }"></div>
 		<div :class="$style.welcomeBackMessage">
 			<I18n :src="i18n.ts.welcomeBackWithName" tag="span">
 				<template #name><Mfm :text="user?.name ?? user?.username ?? username" :plain="true"/></template>
@@ -57,6 +57,7 @@ import * as Misskey from 'misskey-js';
 import { instance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
 import * as os from '@/os.js';
+import { rewriteProxiedImageUrl } from '@/utility/media-proxy.js';
 
 import MkButton from '@/components/MkButton.vue';
 import MkInput from '@/components/MkInput.vue';

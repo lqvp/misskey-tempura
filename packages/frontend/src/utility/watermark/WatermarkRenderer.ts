@@ -298,7 +298,8 @@ async function createTextureFromQr(options: { data: string | null }, resolution 
 
 	let avatarDataUri: string | undefined;
 	try {
-		avatarDataUri = await fetchAsDataUri($i.avatarUrl);
+		// CORS 対策としてローカルプロキシ経由で取得する (画像本体の読み込みと同じ方針)
+		avatarDataUri = await fetchAsDataUri(getProxiedImageUrl($i.avatarUrl, undefined, true));
 	} catch (err) {
 		console.warn('Failed to load avatar for QR code', err);
 	}

@@ -15,7 +15,8 @@ function ensureMediaProxy(): MediaProxy {
 		_mediaProxy = new MediaProxy(
 			instance,
 			url,
-			() => prefer.r?.mediaProxy?.value ?? prefer.s?.mediaProxy,
+			// 実環境では r.mediaProxy は常に存在する。部分モックの単体テストでのみ null にフォールバックする
+			() => prefer.r?.mediaProxy?.value ?? null,
 		);
 	}
 

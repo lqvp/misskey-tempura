@@ -40,13 +40,18 @@ import { i18n } from '@/i18n.js';
 
 const props = defineProps<{ meta: Misskey.Endpoints['admin/meta']['res'] }>();
 
-const internalMediaProxy = `${url.replace(/\/+$/, '')}/proxy`;
+const internalMediaProxy = `${normalizeMediaProxyUrl(url) ?? url.replace(/\/+$/, '')}/proxy`;
 
 function validateAndNormalize(raw: string): string | null | undefined {
 	const trimmed = raw.trim();
 	if (trimmed === '') return null;
 	const normalized = normalizeMediaProxyUrl(trimmed);
 	if (normalized == null || normalized.startsWith(`${internalMediaProxy}/`)) {
+		return undefined;
+	}
+	// 自インスタンスのルートオリジンはメディアプロキシのルートを持たず 404 になるため拒否する
+	const selfOrigin = normalizeMediaProxyUrl(url);
+	if (selfOrigin != null && normalized === selfOrigin) {
 		return undefined;
 	}
 	return normalized;

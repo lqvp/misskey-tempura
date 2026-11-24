@@ -266,6 +266,8 @@ export function normalizeMediaProxyUrl(url?: string | null): string | null {
 		if (!['http:', 'https:'].includes(parsed.protocol)) return null;
 		if (parsed.username !== '' || parsed.password !== '') return null;
 		if (parsed.search !== '' || parsed.hash !== '') return null;
+		// 末尾ドット付きホスト (FQDN 表記) は自サーバー判定をすり抜けてリダイレクトループになるため除去する
+		parsed.hostname = parsed.hostname.replace(/\.+$/, '');
 		const normalized = `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, '');
 		if (normalized.length > MEDIA_PROXY_URL_MAX_LENGTH) return null;
 		return normalized;
@@ -283,7 +285,7 @@ export function resolveMediaProxy(
 } {
 	const metaMediaProxy = normalizeMediaProxyUrl(meta?.mediaProxy);
 	if (metaMediaProxy != null) {
-		const internalMediaProxy = `${config.url.replace(/\/+$/, '')}/proxy`;
+		const internalMediaProxy = `${normalizeMediaProxyUrl(config.url) ?? config.url.replace(/\/+$/, '')}/proxy`;
 		if (metaMediaProxy === internalMediaProxy || metaMediaProxy.startsWith(`${internalMediaProxy}/`)) {
 			return {
 				mediaProxy: internalMediaProxy,

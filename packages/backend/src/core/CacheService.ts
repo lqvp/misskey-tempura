@@ -199,6 +199,15 @@ export class CacheService implements OnApplicationShutdown {
 					this.localUserByNativeTokenCache.set(body.newToken, user);
 					break;
 				}
+				case 'userMediaProxyRewritten': {
+					// メディアプロキシ切替で保存済み avatarUrl / bannerUrl が一括書き換えされたため、
+					// per-user イベントの嵐を避けてユーザーキャッシュを丸ごと無効化する (低頻度の管理操作)
+					this.userByIdCache.clear();
+					this.localUserByIdCache.clear();
+					this.localUserByNativeTokenCache.clear();
+					this.uriPersonCache.clear();
+					break;
+				}
 				case 'follow': {
 					const follower = this.userByIdCache.get(body.followerId);
 					if (follower) follower.followingCount++;

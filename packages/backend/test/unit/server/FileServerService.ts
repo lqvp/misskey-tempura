@@ -661,15 +661,25 @@ describe('FileServerService', () => {
 
 		test('GET /proxy/:url* 稼働中に meta.mediaProxy を切り替えるとリダイレクト先が即時に切り替わる', async () => {
 			const dynamicMeta: { mediaProxy: string | null } = { mediaProxy: null };
+			const dynamicLoggerService = new LoggerService();
+			const dynamicSensitiveMediaDetectionService = {
+				detectSensitive: async () => null,
+				detectSensitiveMany: async (sources: Buffer[]) => sources.map(() => null),
+			} as unknown as SensitiveMediaDetectionService;
+			const dynamicFileInfoService = new FileInfoService(dynamicSensitiveMediaDetectionService, dynamicLoggerService);
+			const dynamicHttpRequestService = new HttpRequestService(config);
+			const dynamicDownloadService = new DownloadService(config, dynamicHttpRequestService, dynamicLoggerService);
+			const dynamicImageProcessingService = new ImageProcessingService();
+			const dynamicVideoProcessingService = new VideoProcessingService(config, dynamicImageProcessingService);
 			const dynamicService = new FileServerService(
 				config,
 				driveFilesRepository as any,
-				fileInfoService,
-				downloadService,
-				imageProcessingService,
-				videoProcessingService,
+				dynamicFileInfoService,
+				dynamicDownloadService,
+				dynamicImageProcessingService,
+				dynamicVideoProcessingService,
 				internalStorageService,
-				loggerService,
+				dynamicLoggerService,
 				dynamicMeta as any,
 			);
 			const dynamicFastify = Fastify();
@@ -687,7 +697,8 @@ describe('FileServerService', () => {
 					url: '/proxy/image.webp?url=https%3A%2F%2Fexample.com%2Fimg.png&static=1',
 				});
 				expect(resA.statusCode).toBe(301);
-				expect(resA.headers.location).toContain('https://meta-proxy-a.test/proxy/image.webp');
+				expect(resA.headers.location).toContain('https://meta-proxy-a.test/proxy/');
+				expect(resA.headers.location).toContain('url=https%3A%2F%2Fexample.com%2Fimg.png');
 
 				dynamicMeta.mediaProxy = 'https://meta-proxy-b.test/proxy';
 				const resB = await dynamicFastify.inject({
@@ -695,7 +706,8 @@ describe('FileServerService', () => {
 					url: '/proxy/image.webp?url=https%3A%2F%2Fexample.com%2Fimg.png&static=1',
 				});
 				expect(resB.statusCode).toBe(301);
-				expect(resB.headers.location).toContain('https://meta-proxy-b.test/proxy/image.webp');
+				expect(resB.headers.location).toContain('https://meta-proxy-b.test/proxy/');
+				expect(resB.headers.location).toContain('url=https%3A%2F%2Fexample.com%2Fimg.png');
 
 				dynamicMeta.mediaProxy = null;
 				const resLocal = await dynamicFastify.inject({

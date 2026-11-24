@@ -35,6 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<template #label><SearchLabel>{{ i18n.ts._mediaProxySetting.url }}</SearchLabel></template>
 							<template #caption>{{ i18n.ts._mediaProxySetting.clientDescription }}</template>
 						</MkInput>
+						<MkInfo v-if="mediaProxyInvalid" warn>{{ i18n.ts._mediaProxySetting.invalidUrl }}</MkInfo>
 					</SearchMarker>
 				</MkPreferenceContainer>
 			</div>
@@ -48,6 +49,7 @@ import { ref, watch } from 'vue';
 import { normalizeMediaProxyUrl } from '@@/js/media-proxy.js';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkInput from '@/components/MkInput.vue';
+import MkInfo from '@/components/MkInfo.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
@@ -57,9 +59,11 @@ import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 const reactionChecksMuting = prefer.model('reactionChecksMuting');
 const anonymizeMutedUsers = prefer.model('anonymizeMutedUsers');
 const mediaProxyDraft = ref(prefer.s.mediaProxy ?? '');
+const mediaProxyInvalid = ref(false);
 
 watch(prefer.r.mediaProxy, (value) => {
 	mediaProxyDraft.value = value ?? '';
+	mediaProxyInvalid.value = false;
 });
 
 function onSaveMediaProxy(value: string) {
@@ -67,11 +71,13 @@ function onSaveMediaProxy(value: string) {
 	if (trimmed === '') {
 		prefer.commit('mediaProxy', null);
 		mediaProxyDraft.value = '';
+		mediaProxyInvalid.value = false;
 		return;
 	}
 
 	const normalized = normalizeMediaProxyUrl(trimmed);
 	if (normalized == null) {
+		mediaProxyInvalid.value = true;
 		void os.alert({
 			type: 'error',
 			text: i18n.ts._mediaProxySetting.invalidUrl,
@@ -81,6 +87,7 @@ function onSaveMediaProxy(value: string) {
 
 	prefer.commit('mediaProxy', normalized);
 	mediaProxyDraft.value = normalized;
+	mediaProxyInvalid.value = false;
 }
 
 </script>

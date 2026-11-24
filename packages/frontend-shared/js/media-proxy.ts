@@ -19,6 +19,8 @@ export function normalizeMediaProxyUrl(url: string | null | undefined): string |
 	if (!['http:', 'https:'].includes(parsed.protocol)) return null;
 	if (parsed.username !== '' || parsed.password !== '') return null;
 	if (parsed.search !== '' || parsed.hash !== '') return null;
+	// 末尾ドット付きホスト (FQDN 表記) は自サーバー判定をすり抜けるため除去する
+	parsed.hostname = parsed.hostname.replace(/\.+$/, '');
 	const normalized = `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, '');
 	if (normalized.length > MEDIA_PROXY_URL_MAX_LENGTH) return null;
 	return normalized;
