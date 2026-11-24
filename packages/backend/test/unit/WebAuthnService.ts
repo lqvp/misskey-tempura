@@ -77,11 +77,12 @@ describe('WebAuthnService lazy dependencies', () => {
 			type: 'public-key',
 		};
 		await expect(service.verifyRegistration('user', registration)).resolves.toMatchObject({ credentialID: 'key', fmt: 'none', transports: ['internal'] });
-		expect(redis.del).toHaveBeenCalledWith('webauthn:registrationChallenge:user');
+		expect(redis.getdel).toHaveBeenCalledWith('webauthn:registrationChallenge:user');
+		expect(redis.del).not.toHaveBeenCalled();
 	});
 
 	test('rejects registration without a challenge', async () => {
-		redis.get.mockResolvedValueOnce(null);
+		redis.getdel.mockResolvedValueOnce(null);
 		await expect(service.verifyRegistration('user', mockDeep<RegistrationResponseJSON>())).rejects.toThrow('challenge not found');
 		expect(library.verifyRegistrationResponse).not.toHaveBeenCalled();
 	});
