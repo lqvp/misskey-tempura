@@ -13325,7 +13325,7 @@ export interface Locale extends ILocale {
          */
         "url": string;
         /**
-         * このブラウザでの画像表示に使う、Misskey 互換のメディアプロキシのベースURLを指定します（例: https://proxy.example.com/proxy）。空欄の場合はサーバーの設定を使用します。指定したプロキシには、表示する画像のURL（フォロワー限定ノートやダイレクトメッセージの添付を含む）が送信されます。
+         * このブラウザでの画像表示に使う、Misskey 互換のメディアプロキシのベースURLを指定します（例: https://proxy.example.com/proxy）。空欄の場合はサーバーの設定を使用します。指定したプロキシには、表示する画像のURL（フォロワー限定ノートやダイレクトメッセージの添付を含む）が送信されます。到達できないプロキシを指定すると画像が表示されなくなります。
          */
         "clientDescription": string;
         /**
