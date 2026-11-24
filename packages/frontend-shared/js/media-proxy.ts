@@ -50,11 +50,16 @@ export class MediaProxy {
 	private matchProxyPrefix(imageUrl: string): string | null {
 		const localProxy = `${this.url}/proxy`;
 		const serverProxy = normalizeMediaProxyUrl(this.serverMetadata.mediaProxy);
+		// default.yml 由来の末尾ドット付きホスト等で保存済みURLがそのまま残る場合も照合できるよう、元表記も候補に含める
+		const rawServerProxy = serverProxy != null && typeof this.serverMetadata.mediaProxy === 'string'
+			? this.serverMetadata.mediaProxy.trim().replace(/\/+$/, '')
+			: null;
 		const customProxy = normalizeMediaProxyUrl(this.customMediaProxyGetter?.());
 
 		const prefixes = Array.from(new Set([
 			...(customProxy != null ? [customProxy] : []),
 			...(serverProxy != null ? [serverProxy] : []),
+			...(rawServerProxy != null && rawServerProxy !== '' ? [rawServerProxy] : []),
 			localProxy,
 			'/proxy',
 		])).sort((a, b) => b.length - a.length);

@@ -174,4 +174,10 @@ describe('MediaProxy', () => {
 		expect(proxy.getProxiedImageUrl('https://server-proxy.example/proxy/image.webp?static=1&url=https%3A%2F%2Fremote.example%2Fa.png&fallback=1', 'emoji', false, true))
 			.toBe('https://client-proxy.example/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png&emoji=1');
 	});
+
+	test('matches raw serverMetadata.mediaProxy with trailing-dot hostname when rewriting to client proxy', () => {
+		const proxy = new MediaProxy(createMeta('https://server-proxy.example./proxy'), instanceUrl, () => 'https://client-proxy.example/proxy');
+		expect(proxy.rewriteProxiedImageUrl('https://server-proxy.example./proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Favatar.png&avatar=1'))
+			.toBe('https://client-proxy.example/proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Favatar.png&avatar=1');
+	});
 });

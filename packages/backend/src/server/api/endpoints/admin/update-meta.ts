@@ -1440,7 +1440,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			const afterMediaProxy = resolveMediaProxy(this.config, after).mediaProxy;
 			if (beforeMediaProxy !== afterMediaProxy) {
 				// 連続変更で書き換えが交錯しないようプロセス内で直列化する。
-				// プロセス間の競合や失敗で取り残された行は夜次の cleanRemoteFiles (fixAvatars) が現行プロキシへ収束させる。
+				// プロセス間の競合や失敗で取り残された行は、管理画面のキャッシュクリーンアップ (cleanRemoteFiles) または再保存で再同期できる。
 				this.rewriteChain = this.rewriteChain
 					.then(() => rewriteUserMediaProxyUrls(this.usersRepository, beforeMediaProxy, afterMediaProxy))
 					.then((count) => {

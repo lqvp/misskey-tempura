@@ -4,6 +4,7 @@
  */
 
 import { url, host } from '@@/js/config.js';
+import { tryParseUrl } from '@@/js/url.js';
 import { getProxiedImageUrl } from '../media-proxy.js';
 import { fn as fn_watermark } from './watermark.js';
 import { fn as fn_stripe } from '@/utility/image-compositor-functions/stripe.js';
@@ -298,8 +299,15 @@ async function createTextureFromQr(options: { data: string | null }, resolution 
 
 	let avatarDataUri: string | undefined;
 	try {
-		// CORS 対策としてローカルプロキシ経由で取得する (画像本体の読み込みと同じ方針)
-		avatarDataUri = await fetchAsDataUri(getProxiedImageUrl($i.avatarUrl, undefined, true));
+		// 同一オリジンの /identicon/ 等は直接取得する (プライベートIP稼働時に /proxy 経由だと SSRF 判定で失敗するため)。
+		// クロスオリジンや外部プロキシへ転送され得る /proxy/ 配下は origin=1 のローカルプロキシ経由で取得する。
+		const parsedAvatar = tryParseUrl($i.avatarUrl, url);
+		const parsedInstance = tryParseUrl(url);
+		const isDirectSameOrigin = parsedAvatar != null
+			&& parsedInstance != null
+			&& parsedAvatar.origin === parsedInstance.origin
+			&& !parsedAvatar.pathname.startsWith('/proxy/');
+		avatarDataUri = await fetchAsDataUri(isDirectSameOrigin ? $i.avatarUrl : getProxiedImageUrl($i.avatarUrl, undefined, true));
 	} catch (err) {
 		console.warn('Failed to load avatar for QR code', err);
 	}
