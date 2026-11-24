@@ -141,22 +141,35 @@ describe('wrapUserData', () => {
 });
 
 describe('computeLLMDestination', () => {
-	it('サーバー提供モードかつサーバー有効時は server を返す', () => {
+	it('サーバー提供モードかつサーバー有効時はサーバーの接続先 ID つきの server を返す', () => {
 		expect(computeLLMDestination({
 			useServerApi: true,
 			serverEnabled: true,
+			serverDestinationId: 'abc123',
 			token: 'sk-test',
 			baseUrl: 'https://api.openai.com/v1',
-		})).toBe('server');
+		})).toBe('server:abc123');
 	});
 
-	it('サーバー提供モードでもサーバー無効ならトークンがあれば直指定の origin を返す', () => {
+	it('サーバー側の接続先が変わると別の送信先として扱う', () => {
+		const params = { useServerApi: true, serverEnabled: true, token: null, baseUrl: null };
+		expect(computeLLMDestination({ ...params, serverDestinationId: 'aaa' }))
+			.not.toBe(computeLLMDestination({ ...params, serverDestinationId: 'bbb' }));
+	});
+
+	it('同一オリジンでもパスが異なる直指定の API は区別する', () => {
+		const params = { useServerApi: false, serverEnabled: false, token: 'sk-test' };
+		expect(computeLLMDestination({ ...params, baseUrl: 'https://proxy.example.com/a/v1/' })).toBe('direct:https://proxy.example.com/a/v1');
+		expect(computeLLMDestination({ ...params, baseUrl: 'https://proxy.example.com/b/v1' })).toBe('direct:https://proxy.example.com/b/v1');
+	});
+
+	it('サーバー提供モードでもサーバー無効ならトークンがあれば直指定の API を返す', () => {
 		expect(computeLLMDestination({
 			useServerApi: true,
 			serverEnabled: false,
 			token: 'sk-test',
 			baseUrl: 'http://localhost:11434/v1',
-		})).toBe('direct:http://localhost:11434');
+		})).toBe('direct:http://localhost:11434/v1');
 	});
 
 	it('トークン未設定かつサーバー無効なら null を返す', () => {
@@ -168,18 +181,18 @@ describe('computeLLMDestination', () => {
 		})).toBeNull();
 	});
 
-	it('baseUrl 未指定や空白のみの場合は既定の OpenAI origin を返す', () => {
+	it('baseUrl 未指定や空白のみの場合は既定の OpenAI API を返す', () => {
 		expect(computeLLMDestination({
 			useServerApi: false,
 			serverEnabled: false,
 			token: 'sk-test',
 			baseUrl: null,
-		})).toBe('direct:https://api.openai.com');
+		})).toBe('direct:https://api.openai.com/v1');
 		expect(computeLLMDestination({
 			useServerApi: false,
 			serverEnabled: false,
 			token: 'sk-test',
 			baseUrl: '   ',
-		})).toBe('direct:https://api.openai.com');
+		})).toBe('direct:https://api.openai.com/v1');
 	});
 });

@@ -545,6 +545,11 @@ export function parseTlDigestResponse(
 				fallbackText: null,
 			};
 		}
+
+		// JSON として解析できたのにスキーマと異なる応答は、自由文の救済ではなく不正な応答として扱う
+		if (parsed != null && typeof parsed === 'object') {
+			return null;
+		}
 	}
 
 	// コードフェンス記号を取り除いてプレーンテキストとして返す

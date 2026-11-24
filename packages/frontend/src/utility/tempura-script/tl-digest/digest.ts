@@ -81,7 +81,8 @@ export interface TlDigestTimelineParams {
 export interface TlDigestDeps {
 	fetchTimeline: (params: TlDigestTimelineParams, signal: AbortSignal) => Promise<Misskey.entities.Note[]>;
 	generate: (options: GenerateLLMOptions) => Promise<LLMResponse>;
-	resolveDestination: () => Promise<LLMDestination | null>;
+	/** @param refresh サーバー側の接続先変更を反映するためサーバー情報を取得し直す */
+	resolveDestination: (refresh?: boolean) => Promise<LLMDestination | null>;
 	getSettings: () => {
 		visibilities: unknown;
 		cwMode: unknown;
@@ -120,6 +121,45 @@ export interface TlDigestController {
 /** Storybook などから状態を差し込むための注入キー */
 export const TL_DIGEST_CONTROLLER_KEY: InjectionKey<TlDigestController> = Symbol('tlDigestController');
 
+export type TlDigestControllerStore = {
+	get: (widgetId: string) => TlDigestController;
+	/** 存在しなくなったウィジェットの状態を破棄する */
+	prune: (widgetIds: string[]) => void;
+	dispose: () => void;
+};
+
+/**
+ * ウィジェット ID ごとに状態を保持するストア。
+ * ネストウィジェットの切り替えで一時的にアンマウントされても生成結果や生成中の処理を失わないために使う
+ */
+export const TL_DIGEST_CONTROLLER_STORE_KEY: InjectionKey<TlDigestControllerStore> = Symbol('tlDigestControllerStore');
+
+export function createTlDigestControllerStore(): TlDigestControllerStore {
+	const controllers = new Map<string, TlDigestController>();
+	return {
+		get(widgetId) {
+			let controller = controllers.get(widgetId);
+			if (controller == null) {
+				controller = createTlDigestController();
+				controllers.set(widgetId, controller);
+			}
+			return controller;
+		},
+		prune(widgetIds) {
+			const alive = new Set(widgetIds);
+			for (const [id, controller] of controllers) {
+				if (alive.has(id)) continue;
+				controller.dispose();
+				controllers.delete(id);
+			}
+		},
+		dispose() {
+			for (const controller of controllers.values()) controller.dispose();
+			controllers.clear();
+		},
+	};
+}
+
 const API_PAGE_LIMIT = 100;
 /** 1 回の確認・生成で遡るノート数の上限 (API 呼び出し回数を抑える) */
 export const MAX_SCAN_NOTES = 500;
@@ -148,7 +188,7 @@ const defaultDeps: TlDigestDeps = {
 		includeRenotedMyNotes: false,
 	}, undefined, signal),
 	generate: (options) => generateLLMResponse(options),
-	resolveDestination: () => resolveLLMDestination(),
+	resolveDestination: (refresh) => resolveLLMDestination(refresh),
 	getSettings: () => ({
 		visibilities: prefer.s.tlDigestVisibilities,
 		cwMode: prefer.s.tlDigestCwMode,
@@ -165,6 +205,20 @@ const defaultDeps: TlDigestDeps = {
 	dismissPending: (userId, expectedWindow) => dismissTlDigestPending(userId, expectedWindow),
 	now: () => Date.now(),
 };
+
+// 自動生成済みの不在期間 (同じ期間を複数のウィジェットが重複して送信しないようページ全体で共有する)
+const autoGenerateClaims = new Set<string>();
+
+/**
+ * 不在期間の自動生成を 1 回だけ実行できるよう確保する
+ * @returns 確保できた場合 true (既に他のウィジェットが確保済みなら false)
+ */
+export function claimTlDigestAutoGenerate(userId: string | null, win: TlDigestWindow): boolean {
+	const key = `${userId ?? ''}:${win.since}:${win.until}`;
+	if (autoGenerateClaims.has(key)) return false;
+	autoGenerateClaims.add(key);
+	return true;
+}
 
 export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}): TlDigestController {
 	const deps: TlDigestDeps = { ...defaultDeps, ...overrides };
@@ -197,13 +251,13 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 	 * 送信対象の条件を確定する。
 	 * followers は「同意したときの送信先」と現在の送信先が一致する場合だけ含める。
 	 */
-	async function resolveFilter(includeRenotes: boolean, needDestination = false) {
+	async function resolveFilter(includeRenotes: boolean, needDestination = false, refreshDestination = false) {
 		let settings = deps.getSettings();
 		let me = deps.getMe();
 		let visibilities: TlDigestVisibility[] = normalizeTlDigestVisibilities(settings.visibilities);
 		let destination: LLMDestination | null = null;
 		if (needDestination || visibilities.includes('followers')) {
-			destination = await deps.resolveDestination();
+			destination = await deps.resolveDestination(refreshDestination);
 			// resolveDestination の待機中に設定・ミュート・同意が変わった場合に備え最新値を読み直す
 			settings = deps.getSettings();
 			me = deps.getMe();
@@ -359,7 +413,7 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 		error.value = null;
 
 		try {
-			const initial = await resolveFilter(options.includeRenotes, true);
+			const initial = await resolveFilter(options.includeRenotes, true, true);
 			if (!isCurrent()) return;
 
 			if (initial.destination == null) {
@@ -374,7 +428,10 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 				prepareWith(filter, notes).prepared.length >= maxNotes;
 
 			const win = { since: options.since, until: options.until };
-			const cached = previewCache.get(initial.cacheKey(win));
+			// followers を含む場合は、件数確認後に削除・公開範囲変更された投稿を送らないよう必ず取得し直す
+			const cached = initial.filter.allowedVisibilities.includes('followers')
+				? undefined
+				: previewCache.get(initial.cacheKey(win));
 			let notes: Misskey.entities.Note[];
 			let scanComplete: boolean;
 			let usedNetwork = false;
@@ -448,6 +505,20 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 				systemInstruction: buildTlDigestSystemInstruction(active.settings.prompt, active.settings.systemPrompt),
 				signal: abort.signal,
 				expectedDestination: active.destination!,
+				// 確認ダイアログ中などに別タブで公開範囲・同意・CW 設定が変わっていたら送信しない
+				beforeSend: (destination) => {
+					const latest = deps.getSettings();
+					let visibilities = normalizeTlDigestVisibilities(latest.visibilities);
+					if (visibilities.includes('followers')) {
+						visibilities = applyFollowersConsent(visibilities, latest.followersConsent, destination);
+					}
+					if (
+						visibilities.join(',') !== active.filter.allowedVisibilities.join(',') ||
+						normalizeTlDigestCwMode(latest.cwMode) !== active.filter.cwMode
+					) {
+						throw new Error(i18n.ts._tlDigest.settingsChanged);
+					}
+				},
 			});
 			if (!isCurrent()) return;
 

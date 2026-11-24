@@ -26,10 +26,10 @@ const instanceReady: Promise<void> = fetchInstance(true).then((res) => {
 
 /**
  * LLM の実際の送信先を表す識別子
- * - 'server': サーバー提供の LLM API (notes/llm-gen)
- * - 'direct:<origin>': ブラウザから直接呼び出す OpenAI 互換 API
+ * - 'server:<id>': サーバー提供の LLM API (notes/llm-gen)。id はサーバー側の接続先ごとに変わる
+ * - 'direct:<baseUrl>': ブラウザから直接呼び出す OpenAI 互換 API
  */
-export type LLMDestination = 'server' | `direct:${string}`;
+export type LLMDestination = `server:${string}` | `direct:${string}`;
 
 /**
  * 設定値から LLM の送信先を算出する (純粋関数)
@@ -42,32 +42,49 @@ export type LLMDestination = 'server' | `direct:${string}`;
 export function computeLLMDestination(params: {
 	useServerApi: boolean;
 	serverEnabled: boolean;
+	serverDestinationId?: string | null;
 	token: string | null | undefined;
 	baseUrl: string | null | undefined;
 }): LLMDestination | null {
-	if (params.useServerApi && params.serverEnabled) return 'server';
+	if (params.useServerApi && params.serverEnabled) return `server:${params.serverDestinationId ?? ''}`;
 	if (params.token == null || params.token.trim() === '') return null;
-	const rawUrl = params.baseUrl?.trim() || 'https://api.openai.com/v1';
+	// 同一オリジン上の別 API も区別できるよう、origin ではなく正規化した baseUrl 全体を使う
+	const rawUrl = (params.baseUrl?.trim() || 'https://api.openai.com/v1').replace(/\/+$/, '');
 	try {
-		return `direct:${new URL(rawUrl).origin}`;
+		const url = new URL(rawUrl);
+		return `direct:${url.origin}${url.pathname.replace(/\/+$/, '')}`;
 	} catch {
 		return `direct:${rawUrl}`;
 	}
 }
 
-/**
- * 現在の設定で LLM の送信先を解決する
- */
-export async function resolveLLMDestination(): Promise<LLMDestination | null> {
-	if (prefer.s.useGeminiLLMAPI && instance.value == null) {
-		await instanceReady;
-	}
+function computeCurrentLLMDestination(useServerApi = prefer.s.useGeminiLLMAPI): LLMDestination | null {
 	return computeLLMDestination({
-		useServerApi: prefer.s.useGeminiLLMAPI,
+		useServerApi,
 		serverEnabled: instance.value?.serverOpenAIEnabled === true,
+		serverDestinationId: instance.value?.serverOpenAIDestinationId,
 		token: prefer.s.openaiToken,
 		baseUrl: prefer.s.openaiBaseUrl,
 	});
+}
+
+/**
+ * 現在の設定で LLM の送信先を解決する
+ * @param refresh サーバー提供モードの場合、サーバー側の接続先変更を反映するためサーバー情報を取得し直す
+ */
+export async function resolveLLMDestination(refresh = false): Promise<LLMDestination | null> {
+	if (prefer.s.useGeminiLLMAPI) {
+		if (refresh) {
+			try {
+				instance.value = await fetchInstance(true);
+			} catch {
+				// 取得に失敗した場合は既存のサーバー情報で判定する
+			}
+		} else if (instance.value == null) {
+			await instanceReady;
+		}
+	}
+	return computeCurrentLLMDestination();
 }
 
 /**
@@ -251,6 +268,11 @@ export interface GenerateLLMOptions {
 	 * followers 同意など送信先に紐づく処理が、送信中の設定変更で別先へ送るのを防ぐ
 	 */
 	expectedDestination?: LLMDestination;
+	/**
+	 * 実際に送信する直前 (確認ダイアログの後を含む) に同期的に呼ばれる。
+	 * 送信内容の前提 (公開範囲の同意など) が崩れていれば例外を投げて送信を中止する
+	 */
+	beforeSend?: (destination: LLMDestination) => void;
 }
 
 // 直近のモデル一覧取得結果 (画像対応判定のキャッシュとして使う)
@@ -413,17 +435,20 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 
 	// instanceReady 待機中に設定が変わった場合も判定と送信先分岐が食い違わないよう再取得する
 	const currentUseServerApi = prefer.s.useGeminiLLMAPI;
-	if (options.expectedDestination != null) {
-		const actualDestination = computeLLMDestination({
-			useServerApi: currentUseServerApi,
-			serverEnabled: instance.value?.serverOpenAIEnabled === true,
-			token: prefer.s.openaiToken,
-			baseUrl: prefer.s.openaiBaseUrl,
-		});
-		if (actualDestination !== options.expectedDestination) {
+	const verifyBeforeSend = (useServerApi: boolean): void => {
+		if (options.expectedDestination == null && options.beforeSend == null) return;
+		const actualDestination = computeCurrentLLMDestination(useServerApi);
+		if (actualDestination == null) {
 			throw new Error(i18n.ts._tlDigest.settingsChanged);
 		}
-	}
+		if (options.expectedDestination != null && actualDestination !== options.expectedDestination) {
+			throw new Error(i18n.ts._tlDigest.settingsChanged);
+		}
+		options.beforeSend?.(actualDestination);
+	};
+
+	// 確認ダイアログを出す前にも一度確認し、前提が崩れていれば何も表示せず中止する
+	verifyBeforeSend(currentUseServerApi);
 
 	if (currentUseServerApi) {
 		// サーバーで OpenAI 互換 API が有効になっているかチェック
@@ -460,22 +485,13 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 				prefer.s.useGeminiLLMAPI = false;
 				throw new Error(i18n.ts._llm._error.disable);
 			}
-			// 'fallback' の場合はユーザー直指定で生成処理へフォールバック (送信先が同意時と一致するか再確認)
-			if (options.expectedDestination != null) {
-				const fallbackDestination = computeLLMDestination({
-					useServerApi: false,
-					serverEnabled: false,
-					token: prefer.s.openaiToken,
-					baseUrl: prefer.s.openaiBaseUrl,
-				});
-				if (fallbackDestination !== options.expectedDestination) {
-					throw new Error(i18n.ts._tlDigest.settingsChanged);
-				}
-			}
+			// 'fallback' の場合はユーザー直指定で生成処理へフォールバック
 		} else {
 			throw new Error(i18n.ts._llm._error.serverDisabled);
 		}
 	}
 
+	// 確認ダイアログ中の設定変更も反映するため、送信直前に送信先と送信内容の前提を再確認する
+	verifyBeforeSend(false);
 	return await generateOpenAIDirect(options);
 }

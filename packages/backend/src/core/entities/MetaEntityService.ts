@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import { createHash } from 'node:crypto';
 import { Brackets } from 'typeorm';
 import { Inject, Injectable } from '@nestjs/common';
 import JSON5 from 'json5';
@@ -166,6 +167,7 @@ export class MetaEntityService {
 			entranceMarginTop: instance.entranceMarginTop,
 			entranceMarginBottom: instance.entranceMarginBottom,
 			serverOpenAIEnabled: instance.serverOpenAIEnabled,
+			serverOpenAIDestinationId: this.computeServerOpenAIDestinationId(instance),
 			customCursorUrl: instance.customCursorUrl,
 			customCursorPointerUrl: instance.customCursorPointerUrl,
 			customCursorTextUrl: instance.customCursorTextUrl,
@@ -178,6 +180,16 @@ export class MetaEntityService {
 		};
 
 		return packed;
+	}
+
+	/**
+	 * サーバー提供 LLM の接続先を識別する値 (接続先 URL 自体は公開しない)。
+	 * クライアントは接続先が変わったことを検知して、送信同意を再確認するために使う
+	 */
+	private computeServerOpenAIDestinationId(instance: MiMeta): string | null {
+		if (!instance.serverOpenAIEnabled) return null;
+		const baseURL = (instance.serverOpenAIBaseURL?.trim() || 'https://api.openai.com/v1').replace(/\/+$/, '');
+		return createHash('sha256').update(baseURL).digest('hex').slice(0, 16);
 	}
 
 	@bindThis

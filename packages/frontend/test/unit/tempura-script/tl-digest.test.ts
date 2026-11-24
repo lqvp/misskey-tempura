@@ -26,7 +26,9 @@ import {
 	touchTlDigestLastSeen,
 } from '@/utility/tempura-script/tl-digest/activity.js';
 import {
+	claimTlDigestAutoGenerate,
 	createTlDigestController,
+	createTlDigestControllerStore,
 	MAX_SCAN_NOTES,
 } from '@/utility/tempura-script/tl-digest/digest.js';
 import type { TlDigestDeps, TlDigestTimelineParams } from '@/utility/tempura-script/tl-digest/digest.js';
@@ -108,10 +110,10 @@ describe('normalizeTlDigestVisibilities / normalizeTlDigestCwMode / applyFollowe
 	});
 
 	it('followers 同意は送信先が一致するときのみ維持し、不一致や未設定時は除外する', () => {
-		expect(applyFollowersConsent(['public', 'followers'], 'server', 'server')).toEqual(['public', 'followers']);
+		expect(applyFollowersConsent(['public', 'followers'], 'server:x', 'server:x')).toEqual(['public', 'followers']);
 		expect(applyFollowersConsent(['public', 'followers'], 'direct:http://localhost:11434', 'direct:https://api.openai.com')).toEqual(['public']);
-		expect(applyFollowersConsent(['public', 'followers'], null, 'server')).toEqual(['public']);
-		expect(applyFollowersConsent(['public', 'followers'], 'server', null)).toEqual(['public']);
+		expect(applyFollowersConsent(['public', 'followers'], null, 'server:x')).toEqual(['public']);
+		expect(applyFollowersConsent(['public', 'followers'], 'server:x', null)).toEqual(['public']);
 	});
 });
 
@@ -428,6 +430,11 @@ describe('parseTlDigestResponse', () => {
 		expect(parseTlDigestResponse('{"topics":[{}]}', refMap)).toBeNull();
 	});
 
+	it('JSON として解析できるがスキーマと異なる応答は null を返す', () => {
+		expect(parseTlDigestResponse('{"summary":"話題の要約"}', refMap)).toBeNull();
+		expect(parseTlDigestResponse('```json\n{"items":[]}\n```', refMap)).toBeNull();
+	});
+
 	it('JSON が壊れている場合はプレーンテキストにフォールバックし URL を無害化する', () => {
 		const raw = '・TypeScriptの話題\n・カレーの話題 https://malicious.example/click';
 		const parsed = parseTlDigestResponse(raw, refMap);
@@ -556,7 +563,7 @@ describe('createTlDigestController', () => {
 					},
 				}],
 			})),
-			resolveDestination: vi.fn(async () => 'server' as const),
+			resolveDestination: vi.fn(async () => 'server:x' as const),
 			getSettings: () => ({
 				visibilities: ['public', 'home'],
 				cwMode: 'cwOnly',
@@ -725,7 +732,7 @@ describe('createTlDigestController', () => {
 
 	it('キャンセル時に AbortSignal を中断し、遅延した設定確認や LLM 応答を無視する', async () => {
 		const win = { since: Date.UTC(2026, 10, 24, 10, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
-		const destDeferred = createDeferred<'server'>();
+		const destDeferred = createDeferred<'server:x'>();
 		const llmDeferred = createDeferred<{ choices: { message: { content: string } }[] }>();
 		let capturedSignal: AbortSignal | undefined;
 
@@ -743,7 +750,7 @@ describe('createTlDigestController', () => {
 		expect(c1.generating.value).toBe(true);
 		c1.cancel();
 		expect(c1.generating.value).toBe(false);
-		destDeferred.resolve('server');
+		destDeferred.resolve('server:x');
 		await runPromise1;
 		expect(fetchTimeline1).not.toHaveBeenCalled();
 		expect(generate1).not.toHaveBeenCalled();
@@ -876,13 +883,13 @@ describe('createTlDigestController', () => {
 		expect(sentInputs).toHaveLength(1);
 		expect(sentInputs[0]).toContain('[CW: ネタバレ注意]');
 		expect(sentInputs[0]).not.toContain('絶対に送ってはいけない本文');
-		expect(sentDestinations).toEqual(['server']);
+		expect(sentDestinations).toEqual(['server:x']);
 	});
 
 	it('resolveDestination 待機中に CW 設定が厳しくなった場合も previewCache ヒット時に古い設定で送信しない', async () => {
 		const win = { since: Date.UTC(2026, 10, 24, 10, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
 		let cwMode: 'include' | 'cwOnly' = 'include';
-		const destDeferred = createDeferred<'server'>();
+		const destDeferred = createDeferred<'server:x'>();
 		const sentInputs: string[] = [];
 
 		const controller = createTlDigestController(makeDeps({
@@ -915,7 +922,7 @@ describe('createTlDigestController', () => {
 		// run() の resolveDestination 待機中に cwMode を cwOnly へ厳格化
 		const runPromise = controller.run({ ...win, maxNotes: 50, includeRenotes: true });
 		cwMode = 'cwOnly';
-		destDeferred.resolve('server');
+		destDeferred.resolve('server:x');
 		await runPromise;
 
 		expect(sentInputs).toHaveLength(1);
@@ -1001,6 +1008,73 @@ describe('createTlDigestController', () => {
 		expect(sentInputs).toHaveLength(1);
 		expect(sentInputs[0]).toContain('公開本文');
 		expect(sentInputs[0]).not.toContain('フォロワー限定秘密本文');
+	});
+
+	it('followers を含む場合は件数確認時のキャッシュを使わず、生成時に取得し直して削除済みの投稿を送らない', async () => {
+		const win = { since: Date.UTC(2026, 10, 24, 10, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
+		const settings = {
+			visibilities: ['public', 'followers'] as const,
+			cwMode: 'cwOnly' as const,
+			followersConsent: 'server:x',
+			prompt: null,
+			systemPrompt: null,
+			useServerApi: true,
+		};
+		let deleted = false;
+		const sentInputs: string[] = [];
+		const controller = createTlDigestController(makeDeps({
+			getSettings: () => ({ ...settings, visibilities: [...settings.visibilities] }),
+			fetchTimeline: async () => [
+				makeNote({ id: 'n-pub', visibility: 'public', createdAt: '2026-11-24T10:30:00.000Z', text: '公開本文' }),
+				...(deleted ? [] : [makeNote({ id: 'n-fol', visibility: 'followers', createdAt: '2026-11-24T10:31:00.000Z', text: '削除されるフォロワー限定本文' })]),
+				makeNote({ id: 'n-old', visibility: 'public', createdAt: '2026-11-24T09:00:00.000Z', text: '古い投稿' }),
+			],
+			generate: async (opts) => {
+				sentInputs.push(opts.userContent ?? '');
+				return { choices: [{ message: { content: '{"topics":[]}' } }] };
+			},
+		}));
+
+		await controller.refreshPendingCount(win, true);
+		deleted = true;
+		await controller.run({ ...win, maxNotes: 50, includeRenotes: true });
+		expect(sentInputs).toHaveLength(1);
+		expect(sentInputs[0]).toContain('公開本文');
+		expect(sentInputs[0]).not.toContain('削除されるフォロワー限定本文');
+	});
+
+	it('送信直前に followers 同意が取り消された場合は送信せず pending を消化しない', async () => {
+		const win = { since: Date.UTC(2026, 10, 24, 10, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
+		let consent: string | null = 'server:x';
+		const dismissPending = vi.fn();
+		const sent = vi.fn();
+		const controller = createTlDigestController(makeDeps({
+			getSettings: () => ({
+				visibilities: ['public', 'followers'],
+				cwMode: 'cwOnly',
+				followersConsent: consent,
+				prompt: null,
+				systemPrompt: null,
+				useServerApi: true,
+			}),
+			fetchTimeline: async () => [
+				makeNote({ id: 'n-fol', visibility: 'followers', createdAt: '2026-11-24T10:31:00.000Z', text: 'フォロワー限定本文' }),
+				makeNote({ id: 'n-old', visibility: 'public', createdAt: '2026-11-24T09:00:00.000Z', text: '古い投稿' }),
+			],
+			// 実際の generateLLMResponse と同様に、確認ダイアログ後の送信直前で beforeSend を呼ぶ
+			generate: async (opts) => {
+				consent = null;
+				opts.beforeSend?.('server:x');
+				sent();
+				return { choices: [{ message: { content: '{"topics":[]}' } }] };
+			},
+			dismissPending,
+		}));
+
+		await controller.run({ ...win, maxNotes: 50, includeRenotes: true });
+		expect(sent).not.toHaveBeenCalled();
+		expect(controller.error.value).not.toBeNull();
+		expect(dismissPending).not.toHaveBeenCalled();
 	});
 
 	it('途中で打ち切られた previewCache でも、ワードミュート追加後に再走査して対象件数を再計算する', async () => {
@@ -1110,5 +1184,31 @@ describe('createTlDigestController', () => {
 		const state = await controller.refreshPendingCount(win, true);
 		expect(seenParams[0].untilDate).toBe(win.until + 1000);
 		expect(state).toEqual({ status: 'ready', count: 2, truncated: false });
+	});
+});
+
+describe('claimTlDigestAutoGenerate', () => {
+	it('同じアカウント・不在期間の自動生成は 1 回だけ確保できる', () => {
+		const win = { since: 1000, until: 2000 };
+		expect(claimTlDigestAutoGenerate('claim-user', win)).toBe(true);
+		expect(claimTlDigestAutoGenerate('claim-user', { ...win })).toBe(false);
+		expect(claimTlDigestAutoGenerate('claim-user', { since: 1000, until: 3000 })).toBe(true);
+		expect(claimTlDigestAutoGenerate('claim-other', win)).toBe(true);
+	});
+});
+
+describe('createTlDigestControllerStore', () => {
+	it('同じウィジェット ID には同じコントローラを返し、存在しなくなった ID だけ破棄する', () => {
+		const store = createTlDigestControllerStore();
+		const a = store.get('a');
+		const b = store.get('b');
+		expect(store.get('a')).toBe(a);
+		a.result.value = { topics: [], fallbackText: null, notes: [], since: 0, until: 0 } as never;
+
+		store.prune(['a']);
+		expect(store.get('a')).toBe(a);
+		expect(store.get('a').result.value).not.toBeNull();
+		expect(store.get('b')).not.toBe(b);
+		store.dispose();
 	});
 });

@@ -311,6 +311,7 @@ const tlDigestCwModeItems = computed(() => [
 const currentLlmDestination = computed<LLMDestination | null>(() => computeLLMDestination({
 	useServerApi: useGeminiLLMAPI.value,
 	serverEnabled: instance.value?.serverOpenAIEnabled === true,
+	serverDestinationId: instance.value?.serverOpenAIDestinationId,
 	token: openaiToken.value,
 	baseUrl: openaiBaseUrl.value,
 }));
@@ -323,7 +324,7 @@ const isFollowersConsentStale = computed(() => {
 });
 
 function formatLlmDestinationText(destination: LLMDestination | null): string {
-	if (destination === 'server') {
+	if (destination != null && destination.startsWith('server:')) {
 		return i18n.ts._tlDigest.destinationServer;
 	}
 	if (destination != null && destination.startsWith('direct:')) {
