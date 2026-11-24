@@ -147,6 +147,10 @@ export function dismissTlDigestPending(
 		const storedSince = existing != null ? existing.pendingSince : pendingSinceRef.value;
 		const storedUntil = existing != null ? existing.pendingUntil : pendingUntilRef.value;
 		if (storedSince !== expectedWindow.since || storedUntil !== expectedWindow.until) {
+			if (existing != null) {
+				pendingSinceRef.value = existing.pendingSince;
+				pendingUntilRef.value = existing.pendingUntil;
+			}
 			return;
 		}
 	}

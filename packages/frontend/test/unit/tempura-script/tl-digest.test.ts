@@ -526,6 +526,12 @@ describe('tl-digest activity tracking', () => {
 			const state = evaluateTlDigestActivity(userId, t2);
 			expect(state.pendingSince).toBe(t0);
 			expect(state.pendingUntil).toBe(t2);
+
+			// 別タブでの localStorage.clear() (StorageEvent key === null) で pending ref もクリアされる
+			window.localStorage.clear();
+			window.dispatchEvent(new StorageEvent('storage', { key: null }));
+			expect(pendingSinceRef.value).toBeNull();
+			expect(pendingUntilRef.value).toBeNull();
 		} finally {
 			if (originalDescriptor) {
 				Object.defineProperty(window.document, 'visibilityState', originalDescriptor);
@@ -871,6 +877,98 @@ describe('createTlDigestController', () => {
 		expect(sentInputs[0]).toContain('[CW: ネタバレ注意]');
 		expect(sentInputs[0]).not.toContain('絶対に送ってはいけない本文');
 		expect(sentDestinations).toEqual(['server']);
+	});
+
+	it('resolveDestination 待機中に CW 設定が厳しくなった場合も previewCache ヒット時に古い設定で送信しない', async () => {
+		const win = { since: Date.UTC(2026, 10, 24, 10, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
+		let cwMode: 'include' | 'cwOnly' = 'include';
+		const destDeferred = createDeferred<'server'>();
+		const sentInputs: string[] = [];
+
+		const controller = createTlDigestController(makeDeps({
+			resolveDestination: () => destDeferred.promise,
+			getSettings: () => ({
+				visibilities: ['public', 'home'],
+				cwMode,
+				followersConsent: null,
+				prompt: null,
+				systemPrompt: null,
+				useServerApi: true,
+			}),
+			fetchTimeline: async (params) => params.untilId ? [] : [
+				makeNote({
+					id: 'n-cw-cache',
+					cw: '閲覧注意',
+					text: '隠すべき本文',
+					createdAt: '2026-11-24T10:30:00.000Z',
+				}),
+			],
+			generate: async (opts) => {
+				sentInputs.push(opts.userContent ?? '');
+				return { choices: [{ message: { content: '{"topics":[]}' } }] };
+			},
+		}));
+
+		// 先に cwMode: include で previewCache を作成
+		await controller.refreshPendingCount(win, true);
+
+		// run() の resolveDestination 待機中に cwMode を cwOnly へ厳格化
+		const runPromise = controller.run({ ...win, maxNotes: 50, includeRenotes: true });
+		cwMode = 'cwOnly';
+		destDeferred.resolve('server');
+		await runPromise;
+
+		expect(sentInputs).toHaveLength(1);
+		expect(sentInputs[0]).toContain('[CW: 閲覧注意]');
+		expect(sentInputs[0]).not.toContain('隠すべき本文');
+	});
+
+	it('未完了走査中に CW 設定が変わり件数が不足した場合は最新設定で再走査する', async () => {
+		const win = { since: Date.UTC(2026, 10, 24, 9, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
+		let cwMode: 'include' | 'exclude' = 'include';
+		const page1 = [
+			makeNote({ id: 'cw-1', cw: 'CW1', text: 'CW本文1', createdAt: '2026-11-24T10:50:00.000Z' }),
+			makeNote({ id: 'cw-2', cw: 'CW2', text: 'CW本文2', createdAt: '2026-11-24T10:40:00.000Z' }),
+		];
+		const page2 = [
+			makeNote({ id: 'plain-1', text: '通常投稿1', createdAt: '2026-11-24T10:20:00.000Z' }),
+			makeNote({ id: 'stop-1', text: '期間外', createdAt: '2026-11-24T08:00:00.000Z' }),
+		];
+
+		let scanCount = 0;
+		const fetchTimeline = vi.fn(async (params: TlDigestTimelineParams) => {
+			if (params.untilId == null) {
+				scanCount += 1;
+				// 1回目の走査中に CW を exclude へ変更
+				if (scanCount === 1) cwMode = 'exclude';
+				return page1;
+			}
+			return page2;
+		});
+		const sentInputs: string[] = [];
+
+		const controller = createTlDigestController(makeDeps({
+			getSettings: () => ({
+				visibilities: ['public', 'home'],
+				cwMode,
+				followersConsent: null,
+				prompt: null,
+				systemPrompt: null,
+				useServerApi: true,
+			}),
+			fetchTimeline,
+			generate: async (opts) => {
+				sentInputs.push(opts.userContent ?? '');
+				return { choices: [{ message: { content: '{"topics":[]}' } }] };
+			},
+		}));
+
+		// maxNotes = 2 なので 1 回目は page1 だけで isEnough (complete: false) -> exclude へ変更されたため再走査して page2 を取得
+		await controller.run({ ...win, maxNotes: 2, includeRenotes: true });
+		expect(scanCount).toBe(2);
+		expect(sentInputs).toHaveLength(1);
+		expect(sentInputs[0]).toContain('通常投稿1');
+		expect(sentInputs[0]).not.toContain('CW本文');
 	});
 
 	it('followers 同意の送信先が現在と異なる場合は followers ノートを送信しない', async () => {

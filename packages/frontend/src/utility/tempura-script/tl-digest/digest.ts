@@ -198,12 +198,16 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 	 * followers は「同意したときの送信先」と現在の送信先が一致する場合だけ含める。
 	 */
 	async function resolveFilter(includeRenotes: boolean, needDestination = false) {
-		const settings = deps.getSettings();
-		const me = deps.getMe();
+		let settings = deps.getSettings();
+		let me = deps.getMe();
 		let visibilities: TlDigestVisibility[] = normalizeTlDigestVisibilities(settings.visibilities);
 		let destination: LLMDestination | null = null;
 		if (needDestination || visibilities.includes('followers')) {
 			destination = await deps.resolveDestination();
+			// resolveDestination の待機中に設定・ミュート・同意が変わった場合に備え最新値を読み直す
+			settings = deps.getSettings();
+			me = deps.getMe();
+			visibilities = normalizeTlDigestVisibilities(settings.visibilities);
 			if (visibilities.includes('followers')) {
 				visibilities = applyFollowersConsent(visibilities, settings.followersConsent, destination);
 			}

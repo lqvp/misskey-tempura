@@ -394,8 +394,6 @@ async function generateOpenAIDirect({ note, userContent, systemInstruction, sign
  * @returns LLM API のレスポンス (extractLLMText でテキストを取り出す)
  */
 export async function generateLLMResponse(options: GenerateLLMOptions): Promise<LLMResponse> {
-	const { useGeminiLLMAPI } = prefer.s;
-
 	// ユーザーのUI言語ヒント: LLM がユーザーの言語で応答するよう促す
 	// (指示側で言語を明示している場合はそちらを優先する)
 	// NOTE: i18n オブジェクトの直接参照は locale-inliner がエラー扱いにするため @@/js/config の lang を使う
@@ -407,15 +405,17 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 	// プロンプトインジェクション対策: ユーザーコンテンツはデータとして扱う
 	options.systemInstruction = `${options.systemInstruction ?? ''}\n\n${GUARD_INSTRUCTION}`.trim();
 
-	if (useGeminiLLMAPI && instance.value == null) {
+	if (prefer.s.useGeminiLLMAPI && instance.value == null) {
 		// 起動直後でサーバー情報が未取得の場合は、誤って「サーバー無効」と判定しないよう取得を待つ
 		await instanceReady;
 		if (options.signal?.aborted) throw options.signal.reason ?? new DOMException('Aborted', 'AbortError');
 	}
 
+	// instanceReady 待機中に設定が変わった場合も判定と送信先分岐が食い違わないよう再取得する
+	const currentUseServerApi = prefer.s.useGeminiLLMAPI;
 	if (options.expectedDestination != null) {
 		const actualDestination = computeLLMDestination({
-			useServerApi: prefer.s.useGeminiLLMAPI,
+			useServerApi: currentUseServerApi,
 			serverEnabled: instance.value?.serverOpenAIEnabled === true,
 			token: prefer.s.openaiToken,
 			baseUrl: prefer.s.openaiBaseUrl,
@@ -425,7 +425,7 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 		}
 	}
 
-	if (useGeminiLLMAPI) {
+	if (currentUseServerApi) {
 		// サーバーで OpenAI 互換 API が有効になっているかチェック
 		if (instance.value?.serverOpenAIEnabled === true) {
 			try {
@@ -452,6 +452,15 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 				],
 			});
 			if (options.signal?.aborted) throw options.signal.reason ?? new DOMException('Aborted', 'AbortError');
+			if (canceled) {
+				// ユーザーによるキャンセルなのでエラー扱いにしない
+				throw new Error(i18n.ts._llm._error.cancel);
+			}
+			if (result === 'disable') {
+				prefer.s.useGeminiLLMAPI = false;
+				throw new Error(i18n.ts._llm._error.disable);
+			}
+			// 'fallback' の場合はユーザー直指定で生成処理へフォールバック (送信先が同意時と一致するか再確認)
 			if (options.expectedDestination != null) {
 				const fallbackDestination = computeLLMDestination({
 					useServerApi: false,
@@ -463,15 +472,6 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 					throw new Error(i18n.ts._tlDigest.settingsChanged);
 				}
 			}
-			if (canceled) {
-				// ユーザーによるキャンセルなのでエラー扱いにしない
-				throw new Error(i18n.ts._llm._error.cancel);
-			}
-			if (result === 'disable') {
-				prefer.s.useGeminiLLMAPI = false;
-				throw new Error(i18n.ts._llm._error.disable);
-			}
-			// 'fallback' の場合はユーザー直指定で生成処理へフォールバック
 		} else {
 			throw new Error(i18n.ts._llm._error.serverDisabled);
 		}
