@@ -49,7 +49,7 @@ import * as Misskey from 'misskey-js';
 import { extractAvgColorFromBlurhash } from '@@/js/extract-avg-color-from-blurhash.js';
 import MkImgWithBlurhash from '../MkImgWithBlurhash.vue';
 import MkA from './MkA.vue';
-import { getStaticImageUrl } from '@/utility/media-proxy.js';
+import { getStaticImageUrl, rewriteProxiedImageUrl } from '@/utility/media-proxy.js';
 import { acct, userPage } from '@@/js/user.js';
 import MkUserOnlineIndicator from '@/components/MkUserOnlineIndicator.vue';
 import { prefer } from '@/preferences.js';
@@ -92,7 +92,7 @@ const bound = computed(() => props.link
 
 const url = computed(() => {
 	if (prefer.s.disableShowingAnimatedImages || prefer.s.dataSaver.avatar) return getStaticImageUrl(props.user.avatarUrl);
-	return props.user.avatarUrl;
+	return rewriteProxiedImageUrl(props.user.avatarUrl);
 });
 
 function onClick(ev: PointerEvent): void {
@@ -102,7 +102,7 @@ function onClick(ev: PointerEvent): void {
 
 function getDecorationUrl(decoration: Decoration | DecorationEditorDecoration) {
 	if (prefer.s.disableShowingAnimatedImages || prefer.s.dataSaver.avatar) return getStaticImageUrl(decoration.url);
-	return decoration.url;
+	return rewriteProxiedImageUrl(decoration.url);
 }
 
 function getDecorationAngle(decoration: Decoration | DecorationEditorDecoration) {

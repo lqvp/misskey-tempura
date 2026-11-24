@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <SearchMarker path="/settings/profile" :label="i18n.ts.profile" :keywords="['profile']" icon="ti ti-user">
 	<div class="_gaps_m">
 		<div class="_panel">
-			<div :class="$style.banner" :style="{ backgroundImage: $i.bannerUrl ? `url(${ $i.bannerUrl })` : '' }">
+			<div :class="$style.banner" :style="{ backgroundImage: $i.bannerUrl ? `url(${JSON.stringify(rewriteProxiedImageUrl($i.bannerUrl))})` : '' }">
 				<div :class="$style.bannerEdit">
 					<SearchMarker :keywords="['banner', 'change']">
 						<MkButton primary rounded @click="changeBanner"><SearchLabel>{{ i18n.ts._profile.changeBanner }}</SearchLabel></MkButton>
@@ -222,6 +222,7 @@ import MkTextarea from '@/components/MkTextarea.vue';
 import { genId } from '@/utility/id.js';
 import SearchMarker from '@/components/global/SearchMarker.vue';
 import { replaceCurrentAccountData, updateCurrentAccount } from '@/accounts.js';
+import { rewriteProxiedImageUrl } from '@/utility/media-proxy.js';
 
 const $i = ensureSignin();
 

@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<div v-if="post" class="rkxwuolj">
 					<div class="files">
 						<div v-for="file in post.files" :key="file.id" class="file">
-							<img :src="file.url"/>
+							<img :src="rewriteProxiedImageUrl(file.url)"/>
 						</div>
 					</div>
 					<div class="body">
@@ -78,6 +78,7 @@ import { definePage } from '@/page.js';
 import { prefer } from '@/preferences.js';
 import { $i } from '@/i.js';
 import { isSupportShare } from '@/utility/navigator.js';
+import { rewriteProxiedImageUrl } from '@/utility/media-proxy.js';
 import { copyToClipboard } from '@/utility/copy-to-clipboard.js';
 import { useRouter } from '@/router.js';
 import { Paginator } from '@/utility/paginator.js';

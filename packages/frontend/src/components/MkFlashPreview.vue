@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<Mfm class="summaryMfm" :text="flash.summary" :plain="true" :nowrap="true"/>
 		</p>
 		<footer>
-			<img class="icon" :src="flash.user.avatarUrl"/>
+			<img class="icon" :src="rewriteProxiedImageUrl(flash.user.avatarUrl)"/>
 			<p>{{ userName(flash.user) }}</p>
 		</footer>
 	</article>
@@ -24,6 +24,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { } from 'vue';
 import * as Misskey from 'misskey-js';
 import { userName } from '@/filters/user.js';
+import { rewriteProxiedImageUrl } from '@/utility/media-proxy.js';
 
 const props = defineProps<{
 	flash: Misskey.entities.Flash;
