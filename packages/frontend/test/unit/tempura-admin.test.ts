@@ -13,16 +13,25 @@ import { directives } from '@/directives/index.js';
 import { components } from '@/components/index.js';
 import { DI } from '@/di.js';
 import { i18n } from '@/i18n.js';
-import { genSearchIndexes } from '@/utility/inapp-search.js';
+import { updateDeviceKind } from '@/utility/device-kind.js';
+import { excludeSearchIndexByPath, genSearchIndexes } from '@/utility/inapp-search.js';
+import { preferState } from '../setup.unit.js';
 
 const frontendRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const sectionsDir = path.join(frontendRoot, 'src/pages/admin/tempura/sections');
 
-const { apiMock, definePageMock, receivedMetaBySection, metaFixture } = vi.hoisted(() => ({
+const { apiMock, definePageMock, receivedMetaBySection, mountCountBySection, savedPayloadMock, metaFixture } = vi.hoisted(() => ({
 	apiMock: vi.fn((_endpoint: string) => Promise.resolve({})),
 	definePageMock: vi.fn(),
 	receivedMetaBySection: new Map<string, unknown>(),
-	metaFixture: { name: 'TempuraTestInstance', version: '2026.11.0-tempura' },
+	mountCountBySection: new Map<string, number>(),
+	savedPayloadMock: vi.fn(),
+	metaFixture: {
+		name: 'TempuraTestInstance',
+		version: '2026.11.0-tempura',
+		enableContactForm: false,
+		contactFormLimit: 5,
+	},
 }));
 
 vi.mock('@/utility/misskey-api.js', async (importOriginal) => ({
@@ -113,9 +122,30 @@ const stubSectionModule = (name: string) => new Proxy({}, {
 			return {
 				name,
 				props: ['meta'],
-				render(this: { meta: unknown }) {
-					receivedMetaBySection.set(name, this.meta);
-					return h('div', { 'data-stub-section': name });
+				setup(props: { meta: { enableContactForm?: boolean; contactFormLimit?: number } }) {
+					mountCountBySection.set(name, (mountCountBySection.get(name) ?? 0) + 1);
+					const enabled = ref(Boolean(props.meta?.enableContactForm));
+					const limit = ref(props.meta?.contactFormLimit ?? 5);
+					return () => {
+						receivedMetaBySection.set(name, props.meta);
+						return h('div', { 'data-stub-section': name }, [
+							h('button', {
+								type: 'button',
+								'data-action': `toggle-${name}`,
+								onClick: () => { enabled.value = !enabled.value; },
+							}, 'toggle'),
+							h('button', {
+								type: 'button',
+								'data-action': `bump-${name}`,
+								onClick: () => { limit.value += 1; },
+							}, 'bump'),
+							h('button', {
+								type: 'button',
+								'data-action': `save-${name}`,
+								onClick: () => { savedPayloadMock(name, { enabled: enabled.value, limit: limit.value }); },
+							}, 'save'),
+						]);
+					};
 				},
 			};
 		}
@@ -152,7 +182,11 @@ describe('テンプラ管理画面 (/admin/tempura-admin) カテゴリ構成と�
 		cleanup();
 		apiMock.mockReset();
 		definePageMock.mockReset();
+		savedPayloadMock.mockReset();
 		receivedMetaBySection.clear();
+		mountCountBySection.clear();
+		updateDeviceKind(null);
+		preferState['experimental.enableFolderPageView'] = false;
 		vi.restoreAllMocks();
 	});
 
@@ -254,6 +288,108 @@ describe('テンプラ管理画面 (/admin/tempura-admin) カテゴリ構成と�
 
 		const targetEl = page.container.querySelector(`[data-in-app-search-marker-id="${childSectionMarker!.id}"]`);
 		assert.exists(targetEl, '子セクションに data-in-app-search-marker-id が自動付与されている');
+	});
+
+	test('検索ターゲットがカテゴリ名自身のときも該当カテゴリのMkFolderが初期状態で開く', async () => {
+		apiMock.mockResolvedValue(metaFixture);
+		const XTempuraAdmin = await loadTempuraAdminWithStubbedSections();
+
+		const page = render(XTempuraAdmin, {
+			global: {
+				directives,
+				components,
+				stubs: {
+					PageWithHeader: { template: '<div><slot/></div>' },
+				},
+				provide: {
+					[DI.inAppSearchMarkerId as symbol]: ref('tempuraAdminRegistration'),
+				},
+			},
+		});
+
+		await vi.waitFor(() => {
+			const folderRoots = [...page.container.querySelectorAll<HTMLElement>('[role="group"]')];
+			assert.strictEqual(folderRoots.length, EXPECTED_CATEGORIES.length);
+			expect(folderRoots[0].getAttribute('aria-expanded')).toBe('true');
+			expect(folderRoots[1].getAttribute('aria-expanded')).toBe('false');
+			expect(folderRoots[2].getAttribute('aria-expanded')).toBe('false');
+			expect(folderRoots[3].getAttribute('aria-expanded')).toBe('false');
+			expect(folderRoots[4].getAttribute('aria-expanded')).toBe('false');
+		});
+	});
+
+	test('スマートフォンでフォルダーのページ表示が有効でも、カテゴリを閉じて開き直した際にフォーム状態が保持される', async () => {
+		updateDeviceKind('smartphone');
+		preferState['experimental.enableFolderPageView'] = true;
+		apiMock.mockResolvedValue(metaFixture);
+		const XTempuraAdmin = await loadTempuraAdminWithStubbedSections();
+
+		const page = render(XTempuraAdmin, {
+			global: {
+				directives,
+				components,
+				stubs: {
+					PageWithHeader: { template: '<div><slot/></div>' },
+				},
+			},
+		});
+
+		await vi.waitFor(() => {
+			const headers = page.container.querySelectorAll('[data-testid="folder-header"]');
+			assert.strictEqual(headers.length, EXPECTED_CATEGORIES.length);
+		});
+
+		const folderRoots = [...page.container.querySelectorAll<HTMLElement>('[role="group"]')];
+
+		// 全5カテゴリで開閉してもアンマウントされず、保存済み変更が古い meta で上書きされないこと
+		for (const [index, category] of EXPECTED_CATEGORIES.entries()) {
+			const folderRoot = folderRoots[index];
+			const header = folderRoot.querySelector<HTMLElement>('[data-testid="folder-header"]')!;
+			const sampleSection = category.sections[category.sections.length - 1];
+
+			// 1回目オープン → 1つ目の項目を変更して保存
+			await fireEvent.click(header);
+			await vi.waitFor(() => expect(folderRoot.getAttribute('aria-expanded')).toBe('true'));
+
+			await fireEvent.click(folderRoot.querySelector<HTMLElement>(`[data-action="toggle-${sampleSection}"]`)!);
+			await fireEvent.click(folderRoot.querySelector<HTMLElement>(`[data-action="save-${sampleSection}"]`)!);
+			expect(savedPayloadMock).toHaveBeenLastCalledWith(sampleSection, { enabled: true, limit: 5 });
+
+			// カテゴリを閉じて開き直す
+			await fireEvent.click(header);
+			await vi.waitFor(() => expect(folderRoot.getAttribute('aria-expanded')).toBe('false'));
+			await fireEvent.click(header);
+			await vi.waitFor(() => expect(folderRoot.getAttribute('aria-expanded')).toBe('true'));
+
+			// 再マウントされていないこと＆別項目変更後の保存でも先の変更が維持されること
+			expect(mountCountBySection.get(sampleSection)).toBe(1);
+			await fireEvent.click(folderRoot.querySelector<HTMLElement>(`[data-action="bump-${sampleSection}"]`)!);
+			await fireEvent.click(folderRoot.querySelector<HTMLElement>(`[data-action="save-${sampleSection}"]`)!);
+			expect(savedPayloadMock).toHaveBeenLastCalledWith(sampleSection, { enabled: true, limit: 6 });
+		}
+	});
+
+	test('非管理者向けフィルタで /admin/tempura-admin のルートと全子孫が除外され他ページは残る', async () => {
+		const { searchIndexes: rawIndexes } = await import('search-index:admin');
+		const indexed = genSearchIndexes(structuredClone(rawIndexes));
+		const filtered = excludeSearchIndexByPath(indexed, ['/admin/tempura-admin']);
+
+		expect(indexed.length - filtered.length).toBe(1 + EXPECTED_CATEGORIES.length + 26);
+
+		const filteredIds = new Set(filtered.map((item) => item.id));
+		for (const category of EXPECTED_CATEGORIES) {
+			expect(filteredIds.has(category.markerId)).toBe(false);
+		}
+		expect(filtered.some((item) => item.path === '/admin/tempura-admin')).toBe(false);
+		expect(filtered.some((item) => item.parentId != null && EXPECTED_CATEGORIES.some((c) => c.markerId === item.parentId))).toBe(false);
+		expect(filtered.length).toBeGreaterThan(0);
+
+		// 親参照に循環がある場合でも無限ループせず処理できること
+		const cyclic = [
+			{ id: 'a', parentId: 'b', label: 'A', keywords: [], texts: [] },
+			{ id: 'b', parentId: 'a', label: 'B', keywords: [], texts: [] },
+		];
+		expect(excludeSearchIndexByPath(cyclic, ['/admin/tempura-admin'])).toHaveLength(2);
 	});
 
 	test('search-index:admin が全32項目(ルート1+カテゴリ5+セクション26)を非循環・解決済みラベルで含む', async () => {
