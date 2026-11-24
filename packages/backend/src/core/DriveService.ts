@@ -852,10 +852,14 @@ export class DriveService {
 
 	@bindThis
 	public async moveFiles(fileIds: MiDriveFile['id'][], folderId: MiDriveFolder['id'] | null, userId: MiUser['id']) {
-		const folder = folderId ? await this.driveFoldersRepository.findOneByOrFail({
+		const folder = folderId ? await this.driveFoldersRepository.findOneBy({
 			id: folderId,
 			userId: userId,
 		}) : null;
+
+		if (folderId && folder === null) {
+			throw new DriveService.NoSuchFolderError();
+		}
 
 		await this.driveFilesRepository.update({
 			id: In(fileIds),

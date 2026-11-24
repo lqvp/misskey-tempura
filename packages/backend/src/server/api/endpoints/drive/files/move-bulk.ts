@@ -17,6 +17,11 @@ export const meta = {
 	kind: 'write:drive',
 
 	errors: {
+		noSuchFolder: {
+			message: 'No such folder.',
+			code: 'NO_SUCH_FOLDER',
+			id: 'ea8fb7a5-af77-4a08-b608-c0218176cd73',
+		},
 	},
 } as const;
 
@@ -35,7 +40,15 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 		private driveService: DriveService,
 	) {
 		super(meta, paramDef, async (ps, me) => {
-			await this.driveService.moveFiles(ps.fileIds, ps.folderId ?? null, me.id);
+			try {
+				await this.driveService.moveFiles(ps.fileIds, ps.folderId ?? null, me.id);
+			} catch (e) {
+				if (e instanceof DriveService.NoSuchFolderError) {
+					throw new ApiError(meta.errors.noSuchFolder);
+				} else {
+					throw e;
+				}
+			}
 		});
 	}
 }

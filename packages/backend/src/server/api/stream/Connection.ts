@@ -184,7 +184,9 @@ export default class Connection {
 
 	@bindThis
 	private onReadNotification(payload: JsonValue | undefined) {
-		this.notificationService.readAllNotification(this.user!.id);
+		// 未認証（ゲスト）接続では通知の既読処理は行えない
+		if (this.user == null) return;
+		this.notificationService.readAllNotification(this.user.id);
 	}
 
 	/**
@@ -342,7 +344,13 @@ export default class Connection {
 			return;
 		}
 
-		const channelConstructor = this.getChannelConstructor(channel);
+		// 不明なチャンネル名で例外が投げられるため、ここで捕捉して接続を維持する
+		let channelConstructor: ChannelConstructor<boolean>;
+		try {
+			channelConstructor = this.getChannelConstructor(channel);
+		} catch {
+			return;
+		}
 
 		if (channelConstructor.requireCredential && this.user == null) {
 			return;

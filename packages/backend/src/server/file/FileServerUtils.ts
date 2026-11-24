@@ -4,6 +4,7 @@
  */
 
 import * as fs from 'node:fs';
+import * as Stream from 'node:stream';
 import { FILE_TYPE_BROWSERSAFE } from '@/const.js';
 import { contentDisposition } from '@/misc/content-disposition.js';
 import type { IImageStreamable } from '@/core/ImageProcessingService.js';
@@ -19,13 +20,35 @@ export type RangeStream = {
 /**
  * Range リクエストに対応したストリームを作成する
  */
-export function createRangeStream(rangeHeader: string, size: number, path: string): RangeStream {
-	const parts = rangeHeader.replace(/bytes=/, '').split('-');
-	const start = parseInt(parts[0], 10);
-	let end = parts[1] ? parseInt(parts[1], 10) : size - 1;
-	if (end > size) {
+export function createRangeStream(rangeHeader: string, size: number, path: string): RangeStream | null {
+	// 複数範囲には対応しないため、最初の範囲のみを使用する
+	const range = rangeHeader.replace(/^bytes=/, '').split(',')[0]?.trim();
+	if (range === undefined) return null;
+
+	const match = range.match(/^(\d*)-(\d*)$/);
+	if (match === null || (match[1] === '' && match[2] === '')) return null;
+
+	let start: number;
+	let end: number;
+	if (match[1] === '') {
+		// suffix 形式 bytes=-N (末尾Nバイト)
+		const suffixLength = Number(match[2]);
+		if (suffixLength === 0) return null;
+		start = Math.max(0, size - suffixLength);
 		end = size - 1;
+	} else {
+		start = Number(match[1]);
+		end = match[2] === '' ? size - 1 : Number(match[2]);
+		// ファイルサイズを超える終端は size-1 に丸める
+		if (end > size - 1) {
+			end = size - 1;
+		}
 	}
+
+	// 検証: 有限な数値であり、有効な範囲であること
+	if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
+	if (start < 0 || start >= size || end < start) return null;
+
 	const chunksize = end - start + 1;
 
 	return {
@@ -66,10 +89,17 @@ export function handleRangeRequest(
 	rangeHeader: string | undefined,
 	size: number,
 	path: string,
-): fs.ReadStream {
+): Stream.Readable {
 	reply.header('Accept-Ranges', 'bytes');
 	if (rangeHeader && size > 0) {
-		const { stream, start, end, chunksize } = createRangeStream(rangeHeader, size, path);
+		const rangeStream = createRangeStream(rangeHeader, size, path);
+		// 不正な Range ヘッダーの場合は 416 を返す
+		if (rangeStream === null) {
+			reply.header('Content-Range', `bytes */${size}`);
+			reply.code(416);
+			return Stream.Readable.from([]);
+		}
+		const { stream, start, end, chunksize } = rangeStream;
 		reply.header('Content-Range', `bytes ${start}-${end}/${size}`);
 		reply.header('Content-Length', chunksize);
 		reply.code(206);
