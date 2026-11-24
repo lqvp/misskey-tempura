@@ -24,6 +24,36 @@ export type TlDigestCwMode = 'cwOnly' | 'exclude' | 'include';
 
 const TL_DIGEST_CW_MODES: readonly TlDigestCwMode[] = ['cwOnly', 'exclude', 'include'];
 
+/** ユーザー単位フィルタの種類。off: 制限なし / block: 指定ユーザーを除外 / allow: 指定ユーザーのみ対象 */
+export type TlDigestUserFilterMode = 'off' | 'block' | 'allow';
+
+const TL_DIGEST_USER_FILTER_MODES: readonly TlDigestUserFilterMode[] = ['off', 'block', 'allow'];
+
+/** ユーザー単位フィルタで扱うユーザー数の上限 (設定 UI と保存サイズの暴走を防ぐ) */
+export const MAX_TL_DIGEST_FILTER_USERS = 100;
+
+export function normalizeTlDigestUserFilterMode(value: unknown): TlDigestUserFilterMode {
+	return TL_DIGEST_USER_FILTER_MODES.includes(value as TlDigestUserFilterMode)
+		? value as TlDigestUserFilterMode
+		: 'off';
+}
+
+/** 保存されたユーザー ID 配列を、重複と不正値を除いた文字列配列に正規化する */
+export function normalizeTlDigestFilterUserIds(value: unknown): string[] {
+	if (!Array.isArray(value)) return [];
+	const seen = new Set<string>();
+	const result: string[] = [];
+	for (const item of value) {
+		if (typeof item !== 'string') continue;
+		const id = item.trim();
+		if (id === '' || seen.has(id)) continue;
+		seen.add(id);
+		result.push(id);
+		if (result.length >= MAX_TL_DIGEST_FILTER_USERS) break;
+	}
+	return result;
+}
+
 export interface TlDigestFilterOptions {
 	meId?: string | null;
 	allowedVisibilities?: readonly string[];
@@ -31,6 +61,10 @@ export interface TlDigestFilterOptions {
 	includeRenotes?: boolean;
 	mutedWords?: Array<string | string[]>;
 	hardMutedWords?: Array<string | string[]>;
+	/** ユーザー単位フィルタの種類 */
+	userFilterMode?: TlDigestUserFilterMode;
+	/** block: 除外するユーザー / allow: このユーザーだけを対象にする */
+	userFilterUserIds?: readonly string[];
 	maxNoteChars?: number;
 	maxPreparedNotes?: number;
 }
@@ -213,6 +247,25 @@ interface AggregatedEntry {
 }
 
 /**
+ * ユーザー単位フィルタの判定。
+ * 純リノートは「リノートした人」と「元ノートの作者」の両方が条件を満たす必要がある
+ * (許可リストに居ない人がRNした他人の投稿が混ざらないようにするため)。
+ */
+function isUserFilterAllowed(
+	rawUserId: string,
+	targetUserId: string,
+	mode: Exclude<TlDigestUserFilterMode, 'off'>,
+	userIds: ReadonlySet<string>,
+): boolean {
+	if (mode === 'block') {
+		return !userIds.has(rawUserId) && !userIds.has(targetUserId);
+	}
+	return rawUserId === targetUserId
+		? userIds.has(targetUserId)
+		: userIds.has(rawUserId) && userIds.has(targetUserId);
+}
+
+/**
  * HTL のノート群をフィルタリング・集約し、LLM 入力用の行リストと連番マップを生成する
  */
 export function prepareNotesForDigest(
@@ -232,6 +285,13 @@ export function prepareNotesForDigest(
 	const maxNoteChars = options.maxNoteChars ?? 200;
 	const maxPreparedNotes = options.maxPreparedNotes ?? 100;
 	const meId = options.meId ?? null;
+	const userFilterMode = normalizeTlDigestUserFilterMode(options.userFilterMode);
+	const userFilterIds = normalizeTlDigestFilterUserIds(options.userFilterUserIds);
+	const userFilterSet = new Set(userFilterIds);
+	// 許可リストが空のまま allow になっている状態は「全件除外」と区別しづらいため、
+	// 既定 (制限なし) にフォールバックしてダイジェストが黙って空にならないようにする
+	const effectiveUserFilterMode: TlDigestUserFilterMode =
+		userFilterMode === 'off' || userFilterSet.size === 0 ? 'off' : userFilterMode;
 
 	// 上限件数で打ち切るときに最新のノートを残すため、新しい順に処理する。
 	// (同時刻のノートは入力順で後ろにあるものを新しいとみなす)
@@ -277,6 +337,12 @@ export function prepareNotesForDigest(
 			isNoteWordMuted(rawNote, meId, mutedWords, hardMutedWords) ||
 			(targetNote !== rawNote && isNoteWordMuted(targetNote, meId, mutedWords, hardMutedWords))
 		) {
+			continue;
+		}
+
+		// ユーザー単位フィルタ (block: 除外 / allow: この作者だけを対象)
+		// 純RNは「RNした人」と「元ノートの作者」の両方で判定する
+		if (effectiveUserFilterMode !== 'off' && !isUserFilterAllowed(rawNote.userId, targetNote.userId, effectiveUserFilterMode, userFilterSet)) {
 			continue;
 		}
 

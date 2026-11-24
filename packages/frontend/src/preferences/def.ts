@@ -700,6 +700,15 @@ export const PREF_DEF = definePreferences({
 	tlDigestPrompt: {
 		default: null as string | null,
 	},
+	// ユーザー単位のフィルタ (off: 制限なし / block: 指定ユーザーを除外 / allow: 指定ユーザーだけを対象)
+	tlDigestUserFilterMode: {
+		default: 'off' as 'off' | 'block' | 'allow',
+	},
+	tlDigestUserFilterUserIds: {
+		default: [] as string[],
+		// 対象にしたい相手はアカウントごとに異なる
+		accountDependent: true,
+	},
 	enableEarthquakeWarning: {
 		default: false,
 	},

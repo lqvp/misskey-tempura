@@ -15802,6 +15802,50 @@ export interface Locale extends ILocale {
          */
         "promptCaption": string;
         /**
+         * ユーザー単位の絞り込み
+         */
+        "userFilterModeLabel": string;
+        /**
+         * 特定ユーザーの投稿だけを対象にするか、特定ユーザーを除外します。純リノートはリノートした人と元投稿の作者の両方で判定します。
+         */
+        "userFilterModeCaption": string;
+        /**
+         * 絞り込まない
+         */
+        "userFilterModeOff": string;
+        /**
+         * 指定したユーザーを除外する
+         */
+        "userFilterModeBlock": string;
+        /**
+         * 指定したユーザーだけを対象にする
+         */
+        "userFilterModeAllow": string;
+        /**
+         * 対象ユーザー
+         */
+        "userFilterUsersLabel": string;
+        /**
+         * 絞り込みに使うユーザーを選択します（最大{max}人）。
+         */
+        "userFilterUsersCaption": ParameterizedString<"max">;
+        /**
+         * ユーザーを追加
+         */
+        "userFilterUsersAdd": string;
+        /**
+         * まだユーザーが選択されていません。
+         */
+        "userFilterUsersEmpty": string;
+        /**
+         * 削除
+         */
+        "userFilterUsersRemove": string;
+        /**
+         * ユーザーが選択されていないため、絞り込みは適用されません。
+         */
+        "userFilterUsersIgnored": string;
+        /**
          * 不在中のお知らせはありません
          */
         "idleMessage": string;

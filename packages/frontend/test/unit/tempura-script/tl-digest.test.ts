@@ -8,7 +8,10 @@ import * as Misskey from 'misskey-js';
 import {
 	applyFollowersConsent,
 	buildTlDigestSystemInstruction,
+	MAX_TL_DIGEST_FILTER_USERS,
 	normalizeTlDigestCwMode,
+	normalizeTlDigestFilterUserIds,
+	normalizeTlDigestUserFilterMode,
 	normalizeTlDigestVisibilities,
 	parseTlDigestResponse,
 	prepareNotesForDigest,
@@ -258,6 +261,132 @@ describe('prepareNotesForDigest', () => {
 			hardMutedWords: [['NGワード']],
 		});
 		expect(prepared.map((p) => p.noteId)).toEqual(['n-clean']);
+	});
+
+	it('ユーザー単位ブロックリスト: 指定ユーザーの投稿を除外する', () => {
+		const notes = [
+			makeNote({ id: 'keep', userId: 'u-keep', text: '残す投稿' }),
+			makeNote({ id: 'blocked', userId: 'u-spam', text: 'ブロック対象の投稿' }),
+		];
+
+		const { prepared } = prepareNotesForDigest(notes, {
+			userFilterMode: 'block',
+			userFilterUserIds: ['u-spam'],
+		});
+
+		expect(prepared.map((p) => p.noteId)).toEqual(['keep']);
+	});
+
+	it('ユーザー単位ブロックリスト: ブロック対象ユーザーが他人の投稿をRNした場合も除外する', () => {
+		const original = makeNote({ id: 'orig', userId: 'u-friend', text: '友人の投稿' });
+		const rn = makeNote({
+			id: 'rn',
+			userId: 'u-spam',
+			text: null,
+			renoteId: 'orig',
+			renote: original,
+		});
+
+		const { prepared } = prepareNotesForDigest([rn], {
+			userFilterMode: 'block',
+			userFilterUserIds: ['u-spam'],
+		});
+
+		expect(prepared).toEqual([]);
+	});
+
+	it('ユーザー単位許可リスト: 指定ユーザーの投稿だけを含める', () => {
+		const notes = [
+			makeNote({ id: 'allowed', userId: 'u-friend', text: '対象ユーザーの投稿' }),
+			makeNote({ id: 'other', userId: 'u-stranger', text: '対象外の投稿' }),
+		];
+
+		const { prepared } = prepareNotesForDigest(notes, {
+			userFilterMode: 'allow',
+			userFilterUserIds: ['u-friend'],
+		});
+
+		expect(prepared.map((p) => p.noteId)).toEqual(['allowed']);
+	});
+
+	it('ユーザー単位許可リスト: 許可ユーザー以外がRNした投稿は含めない', () => {
+		const original = makeNote({ id: 'orig', userId: 'u-friend', text: '対象ユーザーの投稿' });
+		const rnByStranger = makeNote({
+			id: 'rn',
+			userId: 'u-stranger',
+			text: null,
+			renoteId: 'orig',
+			renote: original,
+		});
+
+		const { prepared } = prepareNotesForDigest([rnByStranger], {
+			userFilterMode: 'allow',
+			userFilterUserIds: ['u-friend'],
+		});
+
+		expect(prepared).toEqual([]);
+	});
+
+	it('ユーザー単位許可リスト: 許可ユーザー同士のRNは含める', () => {
+		const original = makeNote({ id: 'orig', userId: 'u-friend', text: '対象ユーザーの投稿' });
+		const rn = makeNote({
+			id: 'rn',
+			userId: 'u-also-allowed',
+			text: null,
+			renoteId: 'orig',
+			renote: original,
+		});
+
+		const { prepared } = prepareNotesForDigest([rn], {
+			userFilterMode: 'allow',
+			userFilterUserIds: ['u-friend', 'u-also-allowed'],
+		});
+
+		expect(prepared.map((p) => p.noteId)).toEqual(['orig']);
+	});
+
+	it('ユーザー単位フィルタ: allow でも対象ユーザーが空なら制限なしとして扱う', () => {
+		const notes = [
+			makeNote({ id: 'a', userId: 'u-a', text: 'Aの投稿' }),
+			makeNote({ id: 'b', userId: 'u-b', text: 'Bの投稿' }),
+		];
+
+		const { prepared } = prepareNotesForDigest(notes, {
+			userFilterMode: 'allow',
+			userFilterUserIds: [],
+		});
+
+		expect(prepared.map((p) => p.noteId)).toEqual(['a', 'b']);
+	});
+
+	it('ユーザー単位フィルタ: off のときは対象ユーザーが指定されていても制限しない', () => {
+		const notes = [
+			makeNote({ id: 'a', userId: 'u-a', text: 'Aの投稿' }),
+			makeNote({ id: 'b', userId: 'u-b', text: 'Bの投稿' }),
+		];
+
+		const { prepared } = prepareNotesForDigest(notes, {
+			userFilterMode: 'off',
+			userFilterUserIds: ['u-a'],
+		});
+
+		expect(prepared.map((p) => p.noteId)).toEqual(['a', 'b']);
+	});
+
+	it('normalizeTlDigestFilterUserIds: 重複・空文字・非文字列を除去し上限で打ち切る', () => {
+		expect(normalizeTlDigestFilterUserIds(['u-1', 'u-1', ' u-2 ', '', null, 3, 'u-3']))
+			.toEqual(['u-1', 'u-2', 'u-3']);
+		expect(normalizeTlDigestFilterUserIds('not-array')).toEqual([]);
+
+		const many = Array.from({ length: MAX_TL_DIGEST_FILTER_USERS + 20 }, (_, i) => `u-${i}`);
+		expect(normalizeTlDigestFilterUserIds(many)).toHaveLength(MAX_TL_DIGEST_FILTER_USERS);
+	});
+
+	it('normalizeTlDigestUserFilterMode: 未知の値は off にフォールバックする', () => {
+		expect(normalizeTlDigestUserFilterMode('block')).toBe('block');
+		expect(normalizeTlDigestUserFilterMode('allow')).toBe('allow');
+		expect(normalizeTlDigestUserFilterMode('bogus')).toBe('off');
+		expect(normalizeTlDigestUserFilterMode(undefined)).toBe('off');
 	});
 
 	it('純リノートを含む場合でもプロンプト出力は表示時刻 (元投稿時刻) の昇順に並ぶ', () => {
@@ -591,6 +720,8 @@ describe('createTlDigestController', () => {
 				visibilities: ['public', 'home'],
 				cwMode: 'cwOnly',
 				followersConsent: null,
+				userFilterMode: 'off',
+				userFilterUserIds: [],
 				prompt: null,
 				systemPrompt: null,
 				useServerApi: true,
@@ -878,6 +1009,8 @@ describe('createTlDigestController', () => {
 				visibilities: ['public', 'home'],
 				cwMode,
 				followersConsent: null,
+				userFilterMode: 'off',
+				userFilterUserIds: [],
 				prompt: null,
 				systemPrompt: null,
 				useServerApi: true,
@@ -921,6 +1054,8 @@ describe('createTlDigestController', () => {
 				visibilities: ['public', 'home'],
 				cwMode,
 				followersConsent: null,
+				userFilterMode: 'off',
+				userFilterUserIds: [],
 				prompt: null,
 				systemPrompt: null,
 				useServerApi: true,
@@ -982,6 +1117,8 @@ describe('createTlDigestController', () => {
 				visibilities: ['public', 'home'],
 				cwMode,
 				followersConsent: null,
+				userFilterMode: 'off',
+				userFilterUserIds: [],
 				prompt: null,
 				systemPrompt: null,
 				useServerApi: true,
@@ -1012,6 +1149,8 @@ describe('createTlDigestController', () => {
 				cwMode: 'cwOnly',
 				// ローカル LLM に対してのみ同意済み -> 現在の送信先と不一致
 				followersConsent: 'direct:http://localhost:11434',
+				userFilterMode: 'off',
+				userFilterUserIds: [],
 				prompt: null,
 				systemPrompt: null,
 				useServerApi: false,
@@ -1039,6 +1178,8 @@ describe('createTlDigestController', () => {
 			visibilities: ['public', 'followers'] as const,
 			cwMode: 'cwOnly' as const,
 			followersConsent: 'server:x',
+			userFilterMode: 'off',
+			userFilterUserIds: [],
 			prompt: null,
 			systemPrompt: null,
 			useServerApi: true,
@@ -1076,6 +1217,8 @@ describe('createTlDigestController', () => {
 				visibilities: ['public', 'followers'],
 				cwMode: 'cwOnly',
 				followersConsent: consent,
+				userFilterMode: 'off',
+				userFilterUserIds: [],
 				prompt: null,
 				systemPrompt: null,
 				useServerApi: true,

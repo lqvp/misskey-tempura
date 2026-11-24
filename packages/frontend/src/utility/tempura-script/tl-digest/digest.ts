@@ -19,6 +19,8 @@ import {
 	applyFollowersConsent,
 	buildTlDigestSystemInstruction,
 	normalizeTlDigestCwMode,
+	normalizeTlDigestFilterUserIds,
+	normalizeTlDigestUserFilterMode,
 	normalizeTlDigestVisibilities,
 	parseTlDigestResponse,
 	prepareNotesForDigest,
@@ -89,6 +91,8 @@ export interface TlDigestDeps {
 		visibilities: unknown;
 		cwMode: unknown;
 		followersConsent: string | null;
+		userFilterMode: unknown;
+		userFilterUserIds: unknown;
 		prompt: string | null;
 		systemPrompt: string | null;
 		useServerApi: boolean;
@@ -195,6 +199,8 @@ const defaultDeps: TlDigestDeps = {
 		visibilities: prefer.s.tlDigestVisibilities,
 		cwMode: prefer.s.tlDigestCwMode,
 		followersConsent: prefer.s.tlDigestFollowersConsent,
+		userFilterMode: prefer.s.tlDigestUserFilterMode,
+		userFilterUserIds: prefer.s.tlDigestUserFilterUserIds,
 		prompt: prefer.s.tlDigestPrompt,
 		systemPrompt: prefer.s.geminiSystemPrompt,
 		useServerApi: prefer.s.useGeminiLLMAPI,
@@ -271,6 +277,9 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 			}
 		}
 		const cwMode: TlDigestCwMode = normalizeTlDigestCwMode(settings.cwMode);
+		// ユーザー単位フィルタは設定変更直後でも取りこぼさないよう、ここで都度正規化する
+		const userFilterMode = normalizeTlDigestUserFilterMode(settings.userFilterMode);
+		const userFilterUserIds = normalizeTlDigestFilterUserIds(settings.userFilterUserIds);
 		return {
 			settings,
 			me,
@@ -282,6 +291,8 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 				includeRenotes,
 				mutedWords: me?.mutedWords ?? [],
 				hardMutedWords: me?.hardMutedWords ?? [],
+				userFilterMode,
+				userFilterUserIds,
 			},
 			cacheKey: (win: TlDigestWindow) => [
 				me?.id ?? '',
@@ -290,6 +301,8 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 				includeRenotes,
 				visibilities.join(','),
 				cwMode,
+				userFilterMode,
+				userFilterUserIds.join(','),
 			].join(':'),
 		};
 	}

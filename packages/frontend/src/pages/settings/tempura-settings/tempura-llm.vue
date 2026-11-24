@@ -228,6 +228,36 @@ SPDX-License-Identifier: AGPL-3.0-only
 							</MkPreferenceContainer>
 						</SearchMarker>
 
+						<SearchMarker :keywords="['llm', 'timeline', 'digest', 'user', 'block', 'allow', 'filter']">
+							<div class="_gaps_s">
+								<MkSelect v-model="tlDigestUserFilterMode" :items="tlDigestUserFilterModeItems">
+									<template #label><SearchLabel>{{ i18n.ts._tlDigest.userFilterModeLabel }}</SearchLabel></template>
+									<template #caption>{{ i18n.ts._tlDigest.userFilterModeCaption }}</template>
+								</MkSelect>
+								<template v-if="tlDigestUserFilterMode !== 'off'">
+									<div><SearchLabel>{{ i18n.ts._tlDigest.userFilterUsersLabel }}</SearchLabel></div>
+									<div v-if="tlDigestUserFilterUsers.length === 0" class="_formCaption">
+										{{ i18n.ts._tlDigest.userFilterUsersEmpty }}
+									</div>
+									<div v-else :class="$style.userList">
+										<div v-for="user in tlDigestUserFilterUsers" :key="user.id" :class="$style.userListItem">
+											<MkA :to="`/@${user.username}`" :class="$style.userName">@{{ user.username }}</MkA>
+											<MkButton small rounded @click="removeTlDigestFilterUser(user.id)">
+												{{ i18n.ts._tlDigest.userFilterUsersRemove }}
+											</MkButton>
+										</div>
+									</div>
+									<div class="_formCaption">{{ i18n.tsx._tlDigest.userFilterUsersCaption({ max: MAX_TL_DIGEST_FILTER_USERS }) }}</div>
+									<div v-if="tlDigestUserFilterMode === 'allow' && tlDigestUserFilterUsers.length === 0" class="_formCaption" style="color: var(--MI_THEME-warn);">
+										{{ i18n.ts._tlDigest.userFilterUsersIgnored }}
+									</div>
+									<div class="_buttons">
+										<MkButton @click="addTlDigestFilterUser">{{ i18n.ts._tlDigest.userFilterUsersAdd }}</MkButton>
+									</div>
+								</template>
+							</div>
+						</SearchMarker>
+
 						<SearchMarker :keywords="['llm', 'timeline', 'digest', 'prompt', 'instruction']">
 							<MkPreferenceContainer k="tlDigestPrompt">
 								<MkInput v-model="tlDigestPrompt" type="text">
@@ -256,6 +286,8 @@ import MkFolder from '@/components/MkFolder.vue';
 import * as os from '@/os.js';
 import { prefer } from '@/preferences.js';
 import { $i } from '@/i.js';
+import { misskeyApi } from '@/utility/misskey-api.js';
+import type * as Misskey from 'misskey-js';
 import { i18n } from '@/i18n.js';
 import { fetchInstance } from '@/instance.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
@@ -263,7 +295,9 @@ import { computeLLMDestination, fetchAvailableModels, detectImageInputSupport, r
 import type { LLMDestination, LLMModelInfo } from '@/utility/tempura-script/llm.js';
 import { openaiModels } from '@/utility/tempura-script/models.js';
 import {
+	MAX_TL_DIGEST_FILTER_USERS,
 	SELECTABLE_TL_DIGEST_VISIBILITIES,
+	normalizeTlDigestFilterUserIds,
 	normalizeTlDigestVisibilities,
 } from '@/utility/tempura-script/tl-digest/core.js';
 import type { TlDigestVisibility } from '@/utility/tempura-script/tl-digest/core.js';
@@ -295,12 +329,57 @@ const tlDigestVisibilities = prefer.model('tlDigestVisibilities');
 const tlDigestFollowersConsent = prefer.model('tlDigestFollowersConsent');
 const tlDigestCwMode = prefer.model('tlDigestCwMode');
 const tlDigestPrompt = prefer.model('tlDigestPrompt');
+const tlDigestUserFilterMode = prefer.model('tlDigestUserFilterMode');
+const tlDigestUserFilterUserIds = prefer.model('tlDigestUserFilterUserIds');
 
 const visibilityLabels = i18n.ts._visibility as Record<string, string>;
 const tlDigestVisibilityOptions = SELECTABLE_TL_DIGEST_VISIBILITIES.map((value) => ({
 	value,
 	label: visibilityLabels[value] ?? value,
 }));
+
+const tlDigestUserFilterModeItems = computed(() => [
+	{ value: 'off' as const, label: i18n.ts._tlDigest.userFilterModeOff },
+	{ value: 'block' as const, label: i18n.ts._tlDigest.userFilterModeBlock },
+	{ value: 'allow' as const, label: i18n.ts._tlDigest.userFilterModeAllow },
+]);
+
+// ユーザー ID だけでは設定画面に名前を出せないため、表示用に Lite 情報をキャッシュする
+const tlDigestFilterUsers = ref<Misskey.entities.UserLite[]>([]);
+
+const tlDigestUserFilterUsers = computed(() => {
+	const ids = new Set(normalizeTlDigestFilterUserIds(tlDigestUserFilterUserIds.value));
+	return tlDigestFilterUsers.value.filter((user) => ids.has(user.id));
+});
+
+function syncTlDigestFilterUsers(ids: string[]): void {
+	tlDigestFilterUsers.value = tlDigestFilterUsers.value.filter((user) => ids.includes(user.id));
+	if (ids.length === 0) return;
+	misskeyApi('users/show', { userIds: ids }).then((users) => {
+		tlDigestFilterUsers.value = users;
+	}).catch(() => {
+		// 表示用の取得に失敗してもフィルタ自体は ID ベースで動くため、致命的ではない
+	});
+}
+
+async function addTlDigestFilterUser(): Promise<void> {
+	const current = normalizeTlDigestFilterUserIds(tlDigestUserFilterUserIds.value);
+	if (current.length >= MAX_TL_DIGEST_FILTER_USERS) return;
+	const user = await os.selectUser({ includeSelf: false });
+	if (user == null) return;
+	if (current.includes(user.id)) return;
+	const next = [...current, user.id];
+	if (!tlDigestFilterUsers.value.some((u) => u.id === user.id)) {
+		tlDigestFilterUsers.value = [...tlDigestFilterUsers.value, user];
+	}
+	tlDigestUserFilterUserIds.value = next;
+}
+
+function removeTlDigestFilterUser(userId: string): void {
+	tlDigestUserFilterUserIds.value = normalizeTlDigestFilterUserIds(tlDigestUserFilterUserIds.value)
+		.filter((id) => id !== userId);
+	syncTlDigestFilterUsers(tlDigestUserFilterUserIds.value);
+}
 
 const tlDigestCwModeItems = computed(() => [
 	{ value: 'cwOnly' as const, label: i18n.ts._tlDigest.cwModeCwOnly },
@@ -439,6 +518,11 @@ async function refreshModels(): Promise<void> {
 
 onMounted(refreshModels);
 
+// 保存済みのユーザー ID から表示用のユーザー情報を復元する
+onMounted(() => {
+	syncTlDigestFilterUsers(normalizeTlDigestFilterUserIds(tlDigestUserFilterUserIds.value));
+});
+
 // 設定変更時にモデル一覧を再取得する
 let refreshModelsTimer: number | null = null;
 watch([useGeminiLLMAPI, openaiToken, openaiBaseUrl], () => {
@@ -450,3 +534,24 @@ watch([useGeminiLLMAPI, openaiToken, openaiBaseUrl], () => {
 	}, 500);
 });
 </script>
+
+<style lang="scss" module>
+.userList {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.userListItem {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.userName {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+</style>
