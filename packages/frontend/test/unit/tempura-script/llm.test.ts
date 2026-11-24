@@ -4,7 +4,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { classifyFetchResponse, computeLLMDestination, computeLLMRetryDelay, detectImageInputSupport, fetchAvailableModels, generateLLMResponse, parseRetryAfterMs, shouldRetryLLMStatus, toModelInfos, wrapUserData } from '@/utility/tempura-script/llm.js';
+import { classifyFetchResponse, computeLLMDestination, computeLLMRetryDelay, detectImageInputSupport, fetchAvailableModels, generateLLMResponse, parseRetryAfterMs, resolveLLMDestination, shouldRetryLLMStatus, toModelInfos, wrapUserData } from '@/utility/tempura-script/llm.js';
 import { extractLLMText } from '@/utility/tempura-script/llm-response.js';
 import { i18n } from '@/i18n.js';
 import { preferState } from '../../setup.unit.js';
@@ -28,6 +28,51 @@ vi.mock('@/instance.js', async (importOriginal) => {
 	};
 });
 
+/**
+ * サーバー無効時に出る確認ダイアログ (os.actions) の応答
+ *
+ * 既定は未設定で、呼ばれたら失敗させる (スタブし忘れたテストが、ユーザー操作を
+ * 待つダイアログを暗黙に開いたままにしないようにする)。
+ */
+const llmFallbackDialog = vi.hoisted(() => ({
+	respond: null as null | ((options: unknown) => Promise<{ canceled: boolean; result?: string }>),
+}));
+
+vi.mock('@/os.js', async (importOriginal) => {
+	const original = await importOriginal() as Record<string, unknown>;
+	return {
+		...original,
+		actions: (options: unknown) => {
+			if (llmFallbackDialog.respond == null) {
+				throw new Error('os.actions is not stubbed for this test');
+			}
+			return llmFallbackDialog.respond(options);
+		},
+	};
+});
+
+/**
+ * サーバー経由のモデル一覧 (notes/llm-models) の応答
+ *
+ * このエンドポイントはサーバー提供モードでしか呼ばれない。既定はスタブ無しで、
+ * 呼ばれたら失敗させる (テストが暗黙にサーバーへ問い合わせないようにする)。
+ */
+const llmModelsEndpoint = vi.hoisted(() => ({
+	respond: null as null | (() => Promise<{ models?: unknown[] }>),
+}));
+
+vi.mock('@/utility/misskey-api.js', async (importOriginal) => {
+	const original = await importOriginal() as Record<string, unknown>;
+	return {
+		...original,
+		misskeyApi: (endpoint: string) => {
+			if (endpoint !== 'notes/llm-models' || llmModelsEndpoint.respond == null) {
+				throw new Error(`unexpected misskeyApi call: ${endpoint}`);
+			}
+			return llmModelsEndpoint.respond();
+		},
+	};
+});
 
 /**
  * 実プロバイダの /models レスポンス形式に基づくフィクスチャ。
@@ -797,6 +842,82 @@ describe('generateLLMResponse のリトライ', () => {
 	});
 });
 
+/**
+ * サーバー提供モードがサーバー側で無効なときの、ユーザーキーへのフォールバック
+ *
+ * この経路は設定 (useGeminiLLMAPI) を true のまま直指定へ進む。送信前の再確認が
+ * 「この呼び出しが決めた輸送手段」ではなく「設定値そのものとの一致」を要求すると、
+ * ユーザーが明示的に選んだ直指定が設定変更と誤判定され、要約が一切送られなくなる。
+ */
+describe('サーバー無効時のユーザーキーへのフォールバック', () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+		stubRetryJitter();
+		fetchMock.enableMocks();
+		fetchMock.resetMocks();
+		// サーバー提供モードだが、サーバー側の LLM API は無効 (instance の既定)
+		preferState.useGeminiLLMAPI = true;
+		preferState.openaiToken = 'sk-test';
+		preferState.openaiBaseUrl = 'https://api.example.com/v1';
+		preferState.openaiModel = 'gpt-4o-mini';
+		instanceMeta.current = { serverOpenAIEnabled: false };
+	});
+
+	afterEach(() => {
+		fetchMock.resetMocks();
+		instanceMeta.current = {};
+		llmFallbackDialog.respond = null;
+		vi.useRealTimers();
+		vi.restoreAllMocks();
+	});
+
+	it('「自分のキーを使う」を選んだら、設定変更エラーにせず直指定で送信する', async () => {
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		llmFallbackDialog.respond = () => Promise.resolve({ canceled: false, result: 'fallback' });
+		const beforeSend = vi.fn();
+
+		const tracked = startGeneration({
+			// ダイジェストの送信前と同じ条件 (送信先は送信直前にも照合される)
+			expectedDestination: 'direct:https://api.example.com/v1',
+			beforeSend,
+		});
+		await advanceUntil(() => tracked.settled());
+
+		expect(tracked.error).toBeUndefined();
+		expect(extractLLMText(tracked.generated!)).toBe('まとめました');
+		// 実際にユーザーのキーで直指定 API へ送っている
+		expect(fetchCalls()).toHaveLength(1);
+		expect(String(fetchCalls()[0][0])).toBe('https://api.example.com/v1/chat/completions');
+		// ダイアログ前の事前確認 (sending: false) のあと、実際の送信前にもう一度呼ばれる
+		expect(beforeSend.mock.calls).toEqual([
+			['direct:https://api.example.com/v1', false],
+			['direct:https://api.example.com/v1', true],
+		]);
+		// ユーザーの明示的な選択なので送信先の設定は書き換えない
+		expect(preferState.useGeminiLLMAPI).toBe(true);
+	});
+
+	it('フォールバックした直指定のリトライも、設定が変わっていなければ送信する', async () => {
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		fetchMock.mockResponseOnce(() => ({ status: 429, body: 'slow down' }));
+		llmFallbackDialog.respond = () => Promise.resolve({ canceled: false, result: 'fallback' });
+		const beforeSend = vi.fn();
+
+		const tracked = startGeneration({
+			expectedDestination: 'direct:https://api.example.com/v1',
+			beforeSend,
+		});
+		await advanceUntil(() => tracked.settled());
+
+		expect(tracked.error).toBeUndefined();
+		expect(extractLLMText(tracked.generated!)).toBe('まとめました');
+		// 初回 + リトライ 1 回。待機中に設定は変わっていないのでどちらも直指定へ送る
+		expect(fetchCalls()).toHaveLength(2);
+		// ダイアログ前の事前確認 + 試行ごとの再確認。どちらの試行も打ち切られていない
+		expect(beforeSend.mock.calls.map(([, sending]) => sending)).toEqual([false, true, true]);
+	});
+});
+
 describe('fetchAvailableModels のリトライ', () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
@@ -811,6 +932,7 @@ describe('fetchAvailableModels のリトライ', () => {
 
 	afterEach(() => {
 		fetchMock.resetMocks();
+		llmModelsEndpoint.respond = null;
 		vi.useRealTimers();
 		vi.restoreAllMocks();
 	});
@@ -1050,6 +1172,132 @@ describe('fetchAvailableModels のリトライ', () => {
 		await generateLLMResponse({ note });
 		const cdnCalls = fetchCalls().filter(([url]) => String(url).startsWith('https://cdn.example.com/'));
 		expect(cdnCalls).toHaveLength(1);
+	});
+
+	/**
+	 * 失敗した取得が一覧を消しても、世代が巻き戻らないこと
+	 *
+	 * 世代を一覧のエントリの中に持つと、失敗でエントリを消した時点で採番が 1 に戻る。
+	 * その状態で新しい取得が 1 を名乗ると、まだ飛んでいる古い取得 (これも 1) が
+	 * 後から失敗したときに、新しい一覧を「自分のもの」と誤認して消してしまう。
+	 */
+	it('失敗した取得が一覧を消しても、後から届いた古い失敗で新しい一覧を消さない', async () => {
+		const modelId = 'gen-reset-model';
+		// 1 回目 (A) は応答を保留し、2 回目 (B) は失敗、3 回目 (C) は成功する
+		let releaseFirst: (() => void) | null = null;
+		let modelsRequestCount = 0;
+		fetchMock.mockIf(() => true, async (req) => {
+			const url = new URL(req.url);
+			if (url.host === 'cdn.example.com') return { status: 500, body: 'nope' };
+			if (url.pathname.endsWith('/models')) {
+				modelsRequestCount += 1;
+				if (modelsRequestCount === 1) {
+					await new Promise<void>((resolve) => { releaseFirst = resolve; });
+					return { status: 401, body: 'unauthorized' };
+				}
+				if (modelsRequestCount === 2) return { status: 401, body: 'unauthorized' };
+				return { status: 200, body: JSON.stringify({ data: [{ id: modelId, architecture: { input_modalities: ['text'] } }] }) };
+			}
+			return { status: 200, body: okBody };
+		});
+
+		preferState.useGeminiLLMAPI = false;
+		// このテストだけの接続先を使う。前のテストが同じ接続先の一覧を残していると、
+		// 失敗でエントリを消した後に採番が 1 へ戻るという再現条件が崩れる
+		preferState.openaiBaseUrl = 'https://gen-race.example.com/v1';
+		preferState.openaiModel = modelId;
+		preferState.useGeminiWithMedia = true;
+		preferState.openaiForceImageInput = false;
+
+		// A を保留させる (エントリが無い状態から始めるので、この取得が世代 1 になる)
+		const stale = fetchAvailableModels();
+		await flushMicrotasks(16);
+		expect(modelsRequestCount).toBe(1);
+
+		// B は失敗する。ここで一覧のエントリは消えるが、世代は巻き戻らない
+		expect(await fetchAvailableModels()).toEqual([]);
+
+		// C が成功して一覧を格納する
+		expect(await fetchAvailableModels()).toEqual([{ id: modelId, imageInput: 'unsupported', detectedBy: 'field' }]);
+
+		// そのあとに A が失敗する。C の一覧を消してはいけない
+		releaseFirst!();
+		expect(await stale).toEqual([]);
+		expect(modelsRequestCount).toBe(3);
+
+		// 取り直さずに生成すると、C の一覧の「非対応」判定で画像を落とす
+		// (消えていれば判定材料が無く、名前の推測 (unknown) に戻って画像を試みる)
+		const note = {
+			id: 'note1',
+			text: 'ノート本文',
+			files: [{ type: 'image/png', url: 'https://cdn.example.com/race.png' }],
+		} as unknown as Parameters<typeof generateLLMResponse>[0]['note'];
+		await generateLLMResponse({ note });
+		const cdnCalls = fetchCalls().filter(([url]) => String(url).startsWith('https://cdn.example.com/'));
+		expect(cdnCalls).toHaveLength(0);
+	});
+
+	/**
+	 * サーバー提供モードの一覧は、取得中にサーバー情報が届いてもサーバーの接続先に紐づけること
+	 *
+	 * サーバー情報が未取得のまま取得を始めると、開始時点の設定から作った鍵は
+	 * 実際に問い合わせた先 (サーバー) ではない (直指定の鍵になる / 決まらない)。
+	 * そのまま格納すると、直指定に切り替えた後の画像対応判定がサーバー側の一覧で
+	 * 誤ったままになる。鍵は応答が返った時点のサーバー情報から確定させる。
+	 */
+	it('サーバー情報が取得中に届いたら、一覧はサーバーの接続先に紐づける', async () => {
+		let release: (() => void) | null = null;
+		llmModelsEndpoint.respond = () => new Promise((resolve) => {
+			release = () => resolve({
+				models: [{ id: 'srv-model', architecture: { input_modalities: ['text'] } }],
+			});
+		});
+		fetchMock.mockIf(() => true, (req) => {
+			// 画像の取得だけ失敗させ「画像を試みたか」を観測できるようにする
+			if (new URL(req.url).host === 'cdn.example.com') return { status: 500, body: 'nope' };
+			return { status: 200, body: okBody };
+		});
+
+		preferState.useGeminiLLMAPI = true;
+		preferState.openaiToken = 'sk-test';
+		preferState.openaiBaseUrl = 'https://api.example.com/v1';
+		preferState.openaiModel = 'srv-model';
+		preferState.useGeminiWithMedia = true;
+		preferState.openaiForceImageInput = false;
+
+		// 取得開始時点ではサーバー情報が無い (直指定トークンがあるため、開始時の鍵は直指定になる)
+		instanceMeta.current = {};
+		await resolveLLMDestination(true);
+
+		const modelsPromise = fetchAvailableModels();
+		await flushMicrotasks(16);
+		// サーバー経由なのでブラウザからは取得しない (応答はスタブが保留している)
+		expect(fetchCalls()).toHaveLength(0);
+
+		// 応答を待つ間にサーバー情報が届く (サーバー側は有効だった)
+		instanceMeta.current = { serverOpenAIEnabled: true, serverOpenAIDestinationId: 'srv-1' };
+		await resolveLLMDestination(true);
+		release!();
+		expect(await modelsPromise).toEqual([{ id: 'srv-model', imageInput: 'unsupported', detectedBy: 'field' }]);
+
+		// 直指定に切り替えて生成する。一覧はサーバーの接続先に紐づいているので、
+		// 直指定の接続先の判定としては使われない (名前の推測に戻り、画像を試みる)
+		preferState.useGeminiLLMAPI = false;
+		const note = {
+			id: 'note1',
+			text: 'ノート本文',
+			files: [{ type: 'image/png', url: 'https://cdn.example.com/srv.png' }],
+		} as unknown as Parameters<typeof generateLLMResponse>[0]['note'];
+		await generateLLMResponse({ note });
+
+		expect(String(fetchCalls().find(([url]) => String(url).includes('/chat/completions'))?.[0])).toContain('https://api.example.com/v1/');
+		const cdnCalls = fetchCalls().filter(([url]) => String(url).startsWith('https://cdn.example.com/'));
+		expect(cdnCalls).toHaveLength(1);
+
+		// 後続のテストにサーバー有効の状態を残さない
+		preferState.useGeminiLLMAPI = true;
+		instanceMeta.current = {};
+		await resolveLLMDestination(true);
 	});
 
 	/**

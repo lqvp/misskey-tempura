@@ -693,18 +693,22 @@ export async function fetchAvailableModels(): Promise<LLMModelInfo[]> {
 	const { useGeminiLLMAPI, openaiToken, openaiBaseUrl } = prefer.s;
 
 	if (useGeminiLLMAPI) {
-		// キャッシュの鍵は「実際に取得した先」から決める。取得前に prefer.s から算出すると、
-		// サーバー情報が未取得 (null) や直指定トークン残存でもサーバーへ問い合わせているのに
-		// 別の鍵 (null / direct:) に結果を入れてしまう。
-		// 応答が返った時点で未取得なら、どの接続先の一覧か決められないのでキャッシュしない
-		const key = fetchGenerationKey(() => currentModelListEndpoint());
+		// 世代は取得を始めた時点で採番する (先に始めた取得ほど古い = 小さい)。
+		// キャッシュの鍵はサーバーの接続先で、応答が返ってから確定させる:
+		// 取得前に prefer.s から算出すると、この呼び出しはサーバーへ問い合わせているのに、
+		// サーバー情報が未取得 (null) や直指定トークン残存の時点の鍵 (null / direct:) に
+		// 結果を入れてしまい、取得中にサーバー情報が届いても反映されない。
+		// 「今の設定が指す先」(currentModelListEndpoint) ではなく「実際に問い合わせた先」を
+		// 使うのは、取得中に輸送手段が切り替わっても一覧の出所は変わらないため。
+		// 応答時点でサーバーが有効と分からなければキャッシュしない
+		const generation = nextModelInfoGeneration();
 		try {
 			const res = await misskeyApi('notes/llm-models', {});
 			const infos = toModelInfos(res.models);
-			storeModelInfos(key, infos);
+			storeModelInfos({ generation, key: serverModelListEndpoint() }, infos);
 			return infos;
 		} catch {
-			dropModelInfos(key);
+			dropModelInfos({ generation, key: serverModelListEndpoint() });
 			return [];
 		}
 	}
@@ -715,7 +719,7 @@ export async function fetchAvailableModels(): Promise<LLMModelInfo[]> {
 	// 鍵はこの呼び出しが実際に使う baseURL から作る (設定を読み直さない。取得中に
 	// 接続先が変わっても、結果は送った先に紐づける)
 	const baseURL = (openaiBaseUrl?.trim() || 'https://api.openai.com/v1').replace(/\/+$/, '');
-	const key = fetchGenerationKey(() => directModelListEndpoint(baseURL));
+	const modelListFetch: ModelInfosFetch = { generation: nextModelInfoGeneration(), key: directModelListEndpoint(baseURL) };
 	try {
 		// 一覧取得も一時的な失敗 (429 / 5xx 等) で空配列に落とさないようリトライする
 		// 本文 (JSON) の読み取りも試行の中なので、本文が届かないまま固まることはない
@@ -738,11 +742,11 @@ export async function fetchAvailableModels(): Promise<LLMModelInfo[]> {
 			LLM_RETRY_POLICY_IDEMPOTENT,
 		) as { data?: { id?: string }[] } | null;
 		const infos = toModelInfos(data?.data);
-		storeModelInfos(key, infos);
+		storeModelInfos(modelListFetch, infos);
 		return infos;
 	} catch {
 		// CORS 等でブラウザから直接取得できない場合
-		dropModelInfos(key);
+		dropModelInfos(modelListFetch);
 		return [];
 	}
 }
@@ -830,6 +834,21 @@ function directModelListEndpoint(baseURL: string): LLMDestination {
 }
 
 /**
+ * サーバー提供モードでモデル一覧を取得する先の鍵
+ *
+ * 実際に問い合わせた先 (サーバー) を表す。現在の設定から算出する
+ * currentModelListEndpoint() と違い、取得中に輸送手段や接続先が変わっても
+ * 一覧の出所は変わらないため、応答が返った時点でもこの鍵で格納する。
+ * サーバーが有効と分からない (サーバー情報が未取得・無効) 場合は、
+ * どの接続先の一覧か決められないので null (キャッシュしない)。
+ */
+function serverModelListEndpoint(): LLMDestination | null {
+	const meta = instance.value;
+	if (meta?.serverOpenAIEnabled !== true) return null;
+	return `server:${meta.serverOpenAIDestinationId ?? ''}`;
+}
+
+/**
  * 現在の接続先が指すキャッシュだけを返す
  *
  * 接続先 (base URL / サーバー提供か直指定か / サーバー側の接続先 ID) が変わると
@@ -838,83 +857,84 @@ function directModelListEndpoint(baseURL: string): LLMDestination {
  */
 function cachedModelInfosForCurrentEndpoint(): LLMModelInfo[] {
 	const key = currentModelListEndpoint();
-	return key == null ? [] : (modelInfoCache.get(key)?.infos ?? []);
-}
-
-/**
- * 鍵ごとの取得世代
- *
- * 並行する取得 (接続先を戻した直後の取り直しなど) の順序を判定するために使う。
- * 取得の開始 (鍵が確定した時点) で採番し、書き込み・削除をしてもよいのは
- * 自分の世代がまだ鍵の最新であるときだけ。
- */
-interface ModelInfoCacheEntry {
-	/** この一覧を書き込んだ取得の世代 */
-	generation: number;
-	infos: LLMModelInfo[];
-	/** 次に採番する世代 */
-	sequence: number;
+	return key == null ? [] : (modelInfoCache.get(key) ?? []);
 }
 
 /** 接続先の鍵ごとに直近のモデル一覧を覚えておく (再接続時に取り直さずに済む) */
-const modelInfoCache = new Map<LLMDestination, ModelInfoCacheEntry>();
+const modelInfoCache = new Map<LLMDestination, LLMModelInfo[]>();
 
-/** 取得を開始した時点の世代を返す関数 (鍵の確定は呼び出し側に任せる) */
-interface ModelInfosGeneration {
-	key(): LLMDestination | null;
-	generation: number;
+/**
+ * 接続先の鍵ごとに、最後に結果を記録した取得の世代
+ *
+ * 一覧のエントリとは別に持ち、エントリを消しても減らさない (削除もしない)。
+ * 世代をエントリの中に置くと、失敗でエントリを消した時点で採番が 1 に戻り、
+ * 同じ鍵の新しい取得と古い取得が同じ世代を名乗れてしまう。例えば
+ * 「A が取得中 → B が失敗してエントリを削除 → C が成功して格納 → A が失敗」の順では、
+ * A が C の一覧を自分のものと誤認して消す。世代を独立に保てば、
+ * 古い世代 (A) は新しい世代 (C) の結果に触れない。
+ */
+const modelInfoSequences = new Map<LLMDestination, number>();
+
+/**
+ * 取得の世代を通し番号で採番する
+ *
+ * サーバー提供モードは応答が返るまで鍵を決められないため、鍵ごとではなく
+ * 全取得で共有する通し番号にしている。採番は「取得を始めた順」なので、
+ * 先に始めた古い取得ほど小さい値になり、遅れて完了しても新しい一覧を上書きしない。
+ */
+let modelInfoGeneration = 0;
+
+function nextModelInfoGeneration(): number {
+	modelInfoGeneration += 1;
+	return modelInfoGeneration;
 }
 
 /**
- * 取得の世代を採番する
+ * 1 回の取得の識別情報
  *
- * @param resolveKey 実際に取得する先の鍵。呼ぶたびに現在の状態から算出する
- *   (サーバー提供モードは応答が返った時点で確定する)
+ * generation は取得を始めた順序、key は結果を書き込む先の接続先。
+ * サーバー提供モードは取得を始めた時点で鍵を決められないため、応答が返ってから埋める。
  */
-function fetchGenerationKey(resolveKey: () => LLMDestination | null): ModelInfosGeneration {
-	const key = resolveKey();
-	let generation = 0;
-	if (key != null) {
-		const entry = modelInfoCache.get(key);
-		if (entry != null) {
-			entry.sequence += 1;
-			generation = entry.sequence;
-		} else {
-			modelInfoCache.set(key, { generation: 0, infos: [], sequence: 1 });
-			generation = 1;
-		}
-	}
-	// 解決は 1 回だけ (呼び出し側の記述と実際の鍵が食い違わないようにする)
-	return { key: () => key, generation };
+interface ModelInfosFetch {
+	generation: number;
+	key: LLMDestination | null;
+}
+
+/**
+ * この世代が、その鍵で最後に記録された世代より新しいか
+ *
+ * 同じ鍵に対する世代は単調に増えるため、false ならより新しい取得が既に
+ * 結果 (一覧または失敗) を記録している。古い応答でそれを上書き・削除してはいけない。
+ */
+function isNewerModelInfosGeneration(key: LLMDestination, generation: number): boolean {
+	const latest = modelInfoSequences.get(key);
+	return latest == null || generation > latest;
 }
 
 /**
  * 取得結果をキャッシュする
  *
- * より新しい取得が始まっていれば書き込まない (古い応答で新しい一覧を上書きしない)
+ * より新しい取得が既に結果を残していれば書き込まない (古い応答で新しい一覧を上書きしない)
  */
-function storeModelInfos(fetch: ModelInfosGeneration, infos: LLMModelInfo[]): void {
-	const key = fetch.key();
-	if (key == null) return;
-	const entry = modelInfoCache.get(key);
-	if (entry == null || entry.sequence !== fetch.generation) return;
-	entry.generation = fetch.generation;
-	entry.infos = infos;
+function storeModelInfos(fetch: ModelInfosFetch, infos: LLMModelInfo[]): void {
+	if (fetch.key == null) return;
+	if (!isNewerModelInfosGeneration(fetch.key, fetch.generation)) return;
+	modelInfoSequences.set(fetch.key, fetch.generation);
+	modelInfoCache.set(fetch.key, infos);
 }
 
 /**
  * この取得の結果を信頼できないものとして、同じ接続先の判定を捨てる
  *
- * ただし、より新しい取得が始まっていれば触らない (古い取得の失敗で、
- * 既に成功した新しい一覧を消さない)。取得を始めた時点でエントリが
- * 無かった場合も何もしない (一覧を持っていないため)。
+ * ただし、より新しい取得が既に結果を残していれば触らない (古い取得の失敗で、
+ * 既に成功した新しい一覧を消さない)。鍵が確定していない場合も何もしない
+ * (どの接続先の一覧か決められないため)。
  */
-function dropModelInfos(fetch: ModelInfosGeneration): void {
-	const key = fetch.key();
-	if (key == null) return;
-	const entry = modelInfoCache.get(key);
-	if (entry == null || entry.sequence !== fetch.generation) return;
-	modelInfoCache.delete(key);
+function dropModelInfos(fetch: ModelInfosFetch): void {
+	if (fetch.key == null) return;
+	if (!isNewerModelInfosGeneration(fetch.key, fetch.generation)) return;
+	modelInfoSequences.set(fetch.key, fetch.generation);
+	modelInfoCache.delete(fetch.key);
 }
 
 /**
@@ -980,6 +1000,38 @@ async function generateViaServer({ note, userContent, systemInstruction, signal 
 }
 
 /**
+ * 送信を確定した時点の輸送手段の記録
+ *
+ * 送信先 (expectedDestination) の比較だけでは、輸送手段そのものの切り替えを
+ * 検出できない。例えば直指定の 1 回目が 429 で待機している間にサーバー提供モードへ
+ * 切り替わると、直指定の送信先を再確認して通ってしまい、フォロワー限定の本文を
+ * 切り替え後の送信先へ送ることになる。
+ *
+ * そこで「この後どちらで送るか」と「決定した瞬間の設定値」を組で控える。
+ * サーバー側が無効なときにユーザーのキーへフォールバックする経路では、設定が
+ * true (サーバー提供) のまま直指定で送るため、輸送手段と設定値は一致しない。
+ * 変化の判定を輸送手段ではなく設定値との比較で行うことで、「ユーザーがこの送信の
+ * ために選んだ直指定」を設定変更と誤判定しない。
+ */
+interface LLMTransport {
+	/** この後実際に使う輸送手段 (true = サーバー提供, false = 直指定) */
+	useServerApi: boolean;
+	/** 決定した瞬間の prefer.s.useGeminiLLMAPI */
+	preferenceAtDispatch: boolean;
+}
+
+/**
+ * いま送ると決めた輸送手段を記録する
+ *
+ * 分岐が確定した直後 (確認ダイアログの後を含む) に 1 回だけ呼ぶこと。
+ * 試行のたびに記録し直すと、待機中に変わった設定を「決定時点の値」として
+ * 取り込んでしまい、変更を検出できなくなる。
+ */
+function captureTransport(useServerApi: boolean): LLMTransport {
+	return { useServerApi, preferenceAtDispatch: prefer.s.useGeminiLLMAPI };
+}
+
+/**
  * 送信直前に、送信先と送信内容の前提 (公開範囲の同意など) を確認する
  *
  * 生成処理の入口だけでなく、リトライのたびに呼ぶ。待機中 (429 のバックオフ等) に
@@ -987,26 +1039,25 @@ async function generateViaServer({ note, userContent, systemInstruction, signal 
  * 古い前提のまま本文を送ってしまわないようにするため。
  *
  * @param options 呼び出し元が指定した期待送信先と検証フック
- * @param useServerApi この呼び出しが使う輸送手段 (直指定 / サーバー提供) の判定値。
- *   輸送手段は呼び出しの最初に決まり、途中で切り替えると本文の送信先が変わるため、
- *   現在の設定がこれと食い違っていたら送信せずに打ち切る
+ * @param transport この呼び出しが送ると決めた輸送手段 (captureTransport で記録したもの)。
+ *   決定した瞬間の設定値と現在値が食い違っていれば、送信せずに打ち切る
  * @param sending true なら、この直後に実際に送信する (false は確認ダイアログを出す前の事前確認)
  * @throws 前提が崩れている場合は i18n.ts._tlDigest.settingsChanged
  */
 function verifyBeforeSend(
 	options: Pick<GenerateLLMOptions, 'expectedDestination' | 'beforeSend'>,
-	useServerApi: boolean,
+	transport: LLMTransport,
 	sending: boolean,
 ): void {
 	if (options.expectedDestination == null && options.beforeSend == null) return;
-	// 輸送手段そのものが変わっていたら、送信先の比較では検出できない。
-	// 例えば直指定の 1 回目が 429 で待機している間にサーバー提供モードへ切り替わると、
-	// 直指定の送信先を再確認して通ってしまい、フォロワー限定の本文を別の
-	// (切り替え後の) 送信先へ送ることになる。ここで必ず打ち切る。
-	if (prefer.s.useGeminiLLMAPI !== useServerApi) {
+	// 送信を決めた後に輸送手段が変わっていたら、送信先の比較では検出できない。
+	// 比較するのは「決定した瞬間の設定値」: フォールバックでは設定が true のまま
+	// 直指定へ進むため、輸送手段 (false) と設定値の一致を要求してはいけない。
+	if (prefer.s.useGeminiLLMAPI !== transport.preferenceAtDispatch) {
 		throw new Error(i18n.ts._tlDigest.settingsChanged);
 	}
-	const actualDestination = computeCurrentLLMDestination(useServerApi);
+	// 送信先はこの呼び出しが実際に使う輸送手段で算出する (設定値から読み直さない)
+	const actualDestination = computeCurrentLLMDestination(transport.useServerApi);
 	if (actualDestination == null) {
 		throw new Error(i18n.ts._tlDigest.settingsChanged);
 	}
@@ -1136,7 +1187,8 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 	if (currentUseServerApi) {
 		// サーバーで OpenAI 互換 API が有効になっているかチェック
 		if (instance.value?.serverOpenAIEnabled === true) {
-			verifyBeforeSend(options, true, true);
+			// サーバー提供で送ると確定した時点の輸送手段を控える
+			verifyBeforeSend(options, captureTransport(true), true);
 			try {
 				return await generateViaServer(options);
 			} catch (error: unknown) {
@@ -1152,7 +1204,7 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 		// サーバー側が無効な場合、ユーザー直指定にフォールバックするか確認
 		if (prefer.s.openaiToken) {
 			// 確認ダイアログを出す前にも確認し、前提が崩れていれば何も表示せず中止する
-			verifyBeforeSend(options, true, false);
+			verifyBeforeSend(options, captureTransport(true), false);
 			const { canceled, result } = await os.actions({
 				type: 'question',
 				title: i18n.ts._llm._fallback.title,
@@ -1177,7 +1229,11 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 		}
 	}
 
+	// 直指定経路 (サーバー無効時のフォールバックを含む)。輸送手段は確認ダイアログが
+	// 閉じた後のここで確定する。フォールバックでは設定が true (サーバー提供) のまま
+	// 直指定で送るため、決定時点の設定値を控えておき、待機中に設定が変わった場合だけ打ち切る。
+	const transport = captureTransport(false);
 	// 確認ダイアログ中の設定変更も反映するため、送信直前に送信先と送信内容の前提を再確認する。
 	// リトライの各試行でも同じ検証をやり直す (generateOpenAIDirect の verifyBeforeAttempt)
-	return await generateOpenAIDirect(options, () => verifyBeforeSend(options, false, true));
+	return await generateOpenAIDirect(options, () => verifyBeforeSend(options, transport, true));
 }
