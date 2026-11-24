@@ -146,7 +146,8 @@ function onMediaClick(file: Misskey.entities.DriveFile) {
 		if (props.referrerpolicy === 'no-referrer') {
 			window.open(targetUrl, '_blank', 'noreferrer');
 		} else {
-			window.open(targetUrl, '_blank');
+			// 外部プロキシが画像の代わりにページを返しても、元のタブを操作されないようにする
+			window.open(targetUrl, '_blank', 'noopener');
 		}
 		return;
 	}
