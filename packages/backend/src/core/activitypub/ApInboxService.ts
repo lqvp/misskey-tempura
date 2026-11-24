@@ -42,8 +42,32 @@ import { ApQuestionService } from './models/ApQuestionService.js';
 import type { Resolver } from './ApResolverService.js';
 import type { IAccept, IAdd, IAnnounce, IBlock, ICreate, IDelete, IFlag, IFollow, ILike, IObject, IReject, IRemove, IUndo, IUpdate, IMove, IPost } from './type.js';
 
-function isRetryableResolveError(err: unknown): boolean {
+/**
+ * 何度リトライしても解決できないことが分かっている IdentifiableError の ID。
+ * ここに無いもの (DB 障害など想定外の例外) は一時的な失敗としてリトライさせる。
+ */
+const PERMANENT_RESOLVE_ERROR_IDS = new Set([
+	'f100eccf-f347-43fb-9b45-96a0831fb635', // unrecognized collection type
+	'b94fd5b1-0e3b-4678-9df2-dad4cd515ab2', // fragment 付き URL は解決できない
+	'0dc86cf6-7cd6-4e56-b1e6-5903d62d7ea5', // 既に解決済み (循環参照)
+	'd592da9f-822f-4d91-83d7-4ceefabcf3d2', // 再帰上限
+	'09d79f9e-64f1-4316-9cfa-e75c4d091574', // 連合ブロック
+	'72180409-793c-4973-868e-5a118eb5519b', // レスポンス不正
+	'02b40cd0-fa92-4b0c-acc9-fb2ada952ab8', // resolveLocal: ローカルでない
+	'a9d946e5-d276-47f8-95fb-f04230289bb0', // resolveLocal: 不正な follow request ID
+	'06ae3170-1796-4d93-a697-2611ea6d83b6', // resolveLocal: follower/followee が存在しない
+	'7a5d2fc0-94bc-4db6-b8b8-1bf24a2e23d0', // resolveLocal: 未対応の type
+]);
+
+/**
+ * 解決失敗がジョブのリトライ対象かどうかを判定する。
+ * 恒久的な失敗 (URL 不正・連合ブロック・レスポンス不正など) は false、それ以外は true。
+ */
+export function isRetryableResolveError(err: unknown): boolean {
 	if (err instanceof ResolverSystemAccountError) return true;
+	if (err instanceof IdentifiableError) {
+		return !PERMANENT_RESOLVE_ERROR_IDS.has(err.id);
+	}
 	if (err instanceof StatusError) {
 		return err.isRetryable;
 	}
@@ -54,7 +78,8 @@ function isRetryableResolveError(err: unknown): boolean {
 		if (err.message.includes('Blocked address:')) return false;
 		return err.type === 'system' || !err.type;
 	}
-	return false;
+	// 想定外のエラー (DB 障害・未知の例外) は恒久的な失敗と決めつけず、ジョブのリトライに委ねる
+	return true;
 }
 
 @Injectable()
