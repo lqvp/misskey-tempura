@@ -17,6 +17,20 @@ import type { Config } from '@/config.js';
 import { DI } from '@/di-symbols.js';
 import { DEFAULT_POLICIES } from '@/core/RoleService.js';
 
+/**
+ * サーバー提供 LLM の接続先を識別する値 (接続先 URL 自体は公開しない)。
+ * クライアントは接続先が変わったことを検知して、送信同意を再確認するために使う。
+ * 公開値から既知の接続先 URL を照合されないよう、サーバー固有の非公開の鍵を使った HMAC にする
+ * (API キーの更新だけでは変わらない)
+ */
+export function computeServerOpenAIDestinationId(
+	instance: Pick<MiMeta, 'serverOpenAIEnabled' | 'serverOpenAIBaseURL' | 'serverOpenAIDestinationKey'>,
+): string | null {
+	if (!instance.serverOpenAIEnabled || instance.serverOpenAIDestinationKey == null) return null;
+	const baseURL = (instance.serverOpenAIBaseURL?.trim() || 'https://api.openai.com/v1').replace(/\/+$/, '');
+	return createHmac('sha256', instance.serverOpenAIDestinationKey).update(baseURL).digest('hex').slice(0, 16);
+}
+
 @Injectable()
 export class MetaEntityService {
 	constructor(
@@ -167,7 +181,7 @@ export class MetaEntityService {
 			entranceMarginTop: instance.entranceMarginTop,
 			entranceMarginBottom: instance.entranceMarginBottom,
 			serverOpenAIEnabled: instance.serverOpenAIEnabled,
-			serverOpenAIDestinationId: this.computeServerOpenAIDestinationId(instance),
+			serverOpenAIDestinationId: computeServerOpenAIDestinationId(instance),
 			customCursorUrl: instance.customCursorUrl,
 			customCursorPointerUrl: instance.customCursorPointerUrl,
 			customCursorTextUrl: instance.customCursorTextUrl,
@@ -180,17 +194,6 @@ export class MetaEntityService {
 		};
 
 		return packed;
-	}
-
-	/**
-	 * サーバー提供 LLM の接続先を識別する値 (接続先 URL 自体は公開しない)。
-	 * クライアントは接続先が変わったことを検知して、送信同意を再確認するために使う。
-	 * 公開値から既知の接続先 URL を照合されないよう、非公開の API キーを鍵にした HMAC にする
-	 */
-	private computeServerOpenAIDestinationId(instance: MiMeta): string | null {
-		if (!instance.serverOpenAIEnabled) return null;
-		const baseURL = (instance.serverOpenAIBaseURL?.trim() || 'https://api.openai.com/v1').replace(/\/+$/, '');
-		return createHmac('sha256', instance.serverOpenAIApiKey ?? '').update(baseURL).digest('hex').slice(0, 16);
 	}
 
 	@bindThis

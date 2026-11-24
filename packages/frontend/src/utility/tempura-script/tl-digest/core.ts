@@ -498,6 +498,7 @@ export function parseTlDigestResponse(
 	}
 
 	if (parsedOk) {
+		const hasTopicsKey = parsed != null && typeof parsed === 'object' && !Array.isArray(parsed) && 'topics' in parsed;
 		const rawTopics = Array.isArray(parsed)
 			? parsed
 			: (parsed != null && typeof parsed === 'object' && Array.isArray((parsed as Record<string, unknown>)['topics']))
@@ -540,14 +541,14 @@ export function parseTlDigestResponse(
 			}
 
 			// スキーマ不正な要素しか無い応答は「話題なし」ではなく不正な応答として扱う
-			// (自由文中の断片なら、JSON の引用とみなして全文のフォールバックへ進む)
+			// (topics キーの無い自由文中の配列は、JSON の引用とみなして全文のフォールバックへ進む)
 			if (topics.length > 0 || rawTopics.length === 0) {
 				return {
 					topics,
 					fallbackText: null,
 				};
 			}
-			if (!parsedFragment) return null;
+			if (!parsedFragment || hasTopicsKey) return null;
 		} else if (!parsedFragment && parsed != null && typeof parsed === 'object') {
 			// 応答全体が JSON なのにスキーマと異なる場合は、自由文の救済ではなく不正な応答として扱う
 			return null;

@@ -442,6 +442,9 @@ describe('parseTlDigestResponse', () => {
 		const rawArray = '数値の例 [1, 2, 3] が話題になりました。';
 		expect(parseTlDigestResponse(rawArray, refMap)).toEqual({ topics: [], fallbackText: rawArray });
 
+		// topics を持つ要約形式の断片が不正な場合は、前置きがあっても不正な応答として扱う
+		expect(parseTlDigestResponse('以下が要約です: {"topics":[{}]}', refMap)).toBeNull();
+
 		// 自由文中でも有効なダイジェスト JSON なら従来どおり採用する
 		const withPreface = '以下が要約です: {"topics":[{"title":"話題A","summary":"要約A","refs":["n1"]}]}';
 		const parsed = parseTlDigestResponse(withPreface, refMap);
