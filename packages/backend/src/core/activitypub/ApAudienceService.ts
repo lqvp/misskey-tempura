@@ -35,7 +35,9 @@ export class ApAudienceService {
 		const toGroups = this.groupingAudience(getApIds(to), actor);
 		const ccGroups = this.groupingAudience(getApIds(cc), actor);
 
-		const others = unique(concat([toGroups.other, ccGroups.other]));
+		// リモートが to/cc に大量のURLを詰めてきた場合の連鎖フェッチを防ぐため、解決対象の人数を制限する
+		const MAX_AUDIENCE_USERS = 100;
+		const others = unique(concat([toGroups.other, ccGroups.other])).slice(0, MAX_AUDIENCE_USERS);
 
 		const limit = promiseLimit<MiUser | null>(2);
 		const mentionedUsers = (await Promise.all(
