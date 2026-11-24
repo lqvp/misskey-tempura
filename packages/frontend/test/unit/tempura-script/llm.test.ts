@@ -322,6 +322,13 @@ function mockDirectAPI(base: () => { status: number; body: string }): void {
 	fetchMock.mockIf((req) => req.url.startsWith('https://api.example.com/v1/'), base);
 }
 
+/**
+ * 任意のホスト宛の直指定 API をモックする (接続先を切り替えるテスト用)
+ */
+function mockDirectAPIForHost(host: string, base: () => { status: number; body: string }): void {
+	fetchMock.mockIf((req) => req.url.startsWith(`https://${host}/v1/`), base);
+}
+
 function fetchCalls(): FetchCall[] {
 	return fetchMock.mock.calls as unknown as FetchCall[];
 }
@@ -380,14 +387,26 @@ async function advanceUntil(predicate: () => boolean, maxMs = 60_000): Promise<v
 /**
  * 生成を開始し、Promise の決着を追跡する
  */
-function startGeneration(options: { userContent?: string; signal?: AbortSignal } = {}) {
+function startGeneration(options: {
+	userContent?: string;
+	signal?: AbortSignal;
+	retryOnBodyFailure?: boolean;
+	beforeSend?: (destination: string, sending: boolean) => void;
+	expectedDestination?: string;
+} = {}) {
 	const settled = { done: false };
 	const tracked = {
 		generated: undefined as LLMResponse | undefined,
 		error: undefined as unknown,
 		settled: () => settled.done,
 	};
-	const promise = generateLLMResponse({ userContent: options.userContent ?? 'ノート本文', signal: options.signal })
+	const promise = generateLLMResponse({
+		userContent: options.userContent ?? 'ノート本文',
+		signal: options.signal,
+		...(options.retryOnBodyFailure == null ? {} : { retryOnBodyFailure: options.retryOnBodyFailure }),
+		...(options.beforeSend == null ? {} : { beforeSend: options.beforeSend }),
+		...(options.expectedDestination == null ? {} : { expectedDestination: options.expectedDestination }),
+	} as Parameters<typeof generateLLMResponse>[0])
 		.then(
 			(value) => { tracked.generated = value; tracked.error = undefined; },
 			(error: unknown) => { tracked.error = error; },
@@ -595,6 +614,124 @@ describe('generateLLMResponse のリトライ', () => {
 		expect((tracked.error as Error).message).toBe(i18nCorsMessage);
 		expect(fetchCalls()).toHaveLength(3);
 	});
+
+	it('バックオフ待機中に同意が取り消されたら、2 回目を送らずに設定変更エラーで打ち切る', async () => {
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		fetchMock.mockResponseOnce(() => ({ status: 429, body: 'slow down' }));
+
+		// 1 回目は同意あり、2 回目の検証 (リトライ直前) で同意が取り消されている状況を再現する
+		let consent = true;
+		const beforeSend = vi.fn((_destination: string, _sending: boolean) => {
+			if (!consent) throw new Error(i18n.ts._tlDigest.settingsChanged);
+		});
+
+		const tracked = startGeneration({ beforeSend });
+		// 1 回目は送信済み。バックオフ待機 (250ms) に入ったところで同意を取り消す
+		await flushMicrotasks(16);
+		expect(fetchCalls()).toHaveLength(1);
+		expect(beforeSend).toHaveBeenCalledTimes(1);
+		consent = false;
+
+		await advanceUntil(() => tracked.settled());
+
+		// 再送の直前に検証し直し、前提が崩れていれば本文を一切送らない
+		expect((tracked.error as Error).message).toBe(i18n.ts._tlDigest.settingsChanged);
+		expect(fetchCalls()).toHaveLength(1);
+		expect(beforeSend).toHaveBeenCalledTimes(2);
+
+		// 以降タイマーを進めても再送しない
+		await vi.advanceTimersByTimeAsync(60_000);
+		expect(fetchCalls()).toHaveLength(1);
+	});
+
+	it('バックオフ待機中に送信先が変わったら、2 回目を送らずに設定変更エラーで打ち切る', async () => {
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		fetchMock.mockResponseOnce(() => ({ status: 503, body: 'unavailable' }));
+
+		const tracked = startGeneration({ expectedDestination: 'direct:https://api.example.com/v1' });
+		await flushMicrotasks(16);
+		expect(fetchCalls()).toHaveLength(1);
+
+		// 待機中に管理者が接続先を変えた (送信先の識別子が変わる) 状況
+		preferState.openaiBaseUrl = 'https://other.example.com/v1';
+
+		await advanceUntil(() => tracked.settled());
+
+		expect((tracked.error as Error).message).toBe(i18n.ts._tlDigest.settingsChanged);
+		expect(fetchCalls()).toHaveLength(1);
+		// 本文 (フォロワー限定のノート本文を含み得る) を新しい送信先へ送っていない
+		expect(fetchCalls().every(([url]) => String(url).startsWith('https://api.example.com/v1/'))).toBe(true);
+	});
+
+	it('設定変更が無ければ、リトライのたびに検証しても通常どおり再送して成功する', async () => {
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		fetchMock.mockResponseOnce(() => ({ status: 429, body: 'slow down' }));
+
+		const beforeSend = vi.fn();
+		const tracked = startGeneration({ beforeSend });
+
+		await advanceUntil(() => tracked.settled());
+
+		expect(tracked.error).toBeUndefined();
+		expect(extractLLMText(tracked.generated!)).toBe('まとめました');
+		expect(fetchCalls()).toHaveLength(2);
+		// 送信する試行ごとに sending: true で呼ばれる
+		expect(beforeSend).toHaveBeenCalledTimes(2);
+		expect(beforeSend).toHaveBeenNthCalledWith(1, 'direct:https://api.example.com/v1', true);
+		expect(beforeSend).toHaveBeenNthCalledWith(2, 'direct:https://api.example.com/v1', true);
+	});
+
+	it('Retry-After: 0 は待たずに再送する (待つ必要が無いのに諦めない)', async () => {
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		fetchMock.mockResponseOnce(() => ({ status: 429, body: 'slow down', headers: { 'Retry-After': '0' } }));
+
+		const tracked = startGeneration();
+		// 待機時間が 0 なので、タイマーを進めなくても再送が観測できる
+		// (実装が 0 を「予算超過」と誤判定すると、ここで再送されず失敗してしまう)
+		await flushMicrotasks(16);
+		expect(fetchCalls()).toHaveLength(2);
+
+		await advanceUntil(() => tracked.settled());
+		expect(tracked.error).toBeUndefined();
+		expect(extractLLMText(tracked.generated!)).toBe('まとめました');
+	});
+
+	it('待機時間が 0 になる失敗が続いても、試行回数の上限で必ず打ち切る (無限ループにしない)', async () => {
+		// Retry-After: 0 を返し続けるサーバー (待機 0 で即再送を繰り返し得る状況)
+		mockDirectAPI(() => ({ status: 429, statusText: 'Too Many Requests', body: 'slow down', headers: { 'Retry-After': '0' } }));
+
+		const tracked = startGeneration();
+		await advanceUntil(() => tracked.settled());
+
+		expect(tracked.settled()).toBe(true);
+		expect((tracked.error as Error).message).toContain('429');
+		// 初回 + リトライ 2 回で打ち切る (試行回数の上限は待機時間に依存しない)
+		expect(fetchCalls()).toHaveLength(3);
+	});
+
+	it('全体予算を既に使い切っていたら、待機せずに即座に失敗する', async () => {
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		// 1 試行目が全体予算 (120 秒) を使い切った直後に失敗する。
+		// ただし試行そのものの締切 (= 残り予算) は発火させない: 発火させると
+		// 「本文が来ないまま時間切れ」の扱いになり、予算切れの経路を確かめられない。
+		// 実処理中に時間が経過した状況を、締切タイマーの満了前に再現する。
+		fetchMock.mockResponseOnce(() => {
+			vi.advanceTimersByTime(119_999);
+			return { status: 503, body: 'unavailable' };
+		});
+
+		const tracked = startGeneration();
+		// 再送は待機タイマーの満了後にしか起きないので、進めずに決着すれば
+		// 「待たずに諦めた」ことが言える
+		await flushMicrotasks(16);
+		expect(tracked.settled()).toBe(true);
+		expect(tracked.error).toBeInstanceOf(Error);
+		expect(fetchCalls()).toHaveLength(1);
+
+		// 進めても再送しない
+		await vi.advanceTimersByTimeAsync(60_000);
+		expect(fetchCalls()).toHaveLength(1);
+	});
 });
 
 describe('fetchAvailableModels のリトライ', () => {
@@ -654,6 +791,146 @@ describe('fetchAvailableModels のリトライ', () => {
 		expect(models).toEqual([]);
 		expect(fetchCalls()).toHaveLength(1);
 	});
+
+	/**
+	 * 接続先ごとに違うモデル一覧を返すモック
+	 *
+	 * キャッシュが接続先に紐づいているかを確かめるため、URL から引く先を変える。
+	 */
+	function mockModelsPerHost(bodies: Record<string, string>): void {
+		fetchMock.mockIf((req) => req.url.endsWith('/models'), (req) => {
+			const body = bodies[new URL(req.url).host];
+			return body == null
+				? { status: 404, body: 'not found' }
+				: { status: 200, body };
+		});
+	}
+
+	const hostAModels = JSON.stringify({ data: [{ id: 'model-a-text' }] });
+	const hostBModels = JSON.stringify({ data: [{ id: 'model-b-vision' }] });
+
+	it('接続先を変えたら、前の接続先で判定した画像対応を引きずらない', async () => {
+		// A には vision 非対応モデルがあるが、B の同名モデルは vision 対応とする
+		// (同名でも接続先が違えば別物。キャッシュが接続先に紐づいているかを見る)
+		const sharedId = 'shared-model';
+		fetchMock.mockIf((req) => req.url.endsWith('/models'), (req) => {
+			const host = new URL(req.url).host;
+			return {
+				status: 200,
+				body: JSON.stringify({ data: [{
+					id: sharedId,
+					// A は明示的にテキスト専用、B は明示的に画像対応
+					...host === 'api.example.com'
+						? { architecture: { input_modalities: ['text'] } }
+						: { architecture: { input_modalities: ['text', 'image'] } },
+				}] }),
+			};
+		});
+
+		preferState.openaiBaseUrl = 'https://api.example.com/v1';
+		const first = await fetchAvailableModels();
+		expect(first).toEqual([{ id: sharedId, imageInput: 'unsupported', detectedBy: 'field' }]);
+
+		// 接続先を変える (A で判定した「非対応」が残っていれば、B の判定が誤る)
+		preferState.openaiBaseUrl = 'https://other.example.com/v1';
+		const second = await fetchAvailableModels();
+
+		expect(second).toEqual([{ id: sharedId, imageInput: 'supported', detectedBy: 'field' }]);
+		expect(fetchCalls()).toHaveLength(2);
+	});
+
+	it('接続先を戻したら、その接続先の判定を使う (別接続先の判定が混ざらない)', async () => {
+		mockModelsPerHost({ 'api.example.com': hostAModels, 'other.example.com': hostBModels });
+
+		preferState.openaiBaseUrl = 'https://api.example.com/v1';
+		await fetchAvailableModels();
+		preferState.openaiBaseUrl = 'https://other.example.com/v1';
+		await fetchAvailableModels();
+		// A に戻して取り直す。B の一覧 (model-b-vision) が混ざっていないこと
+		preferState.openaiBaseUrl = 'https://api.example.com/v1';
+		const back = await fetchAvailableModels();
+
+		expect(back).toEqual([{ id: 'model-a-text', imageInput: 'unknown', detectedBy: 'name' }]);
+		expect(fetchCalls()).toHaveLength(3);
+	});
+
+	it('取得に失敗したら、その接続先の古い判定を残さない', async () => {
+		// 前のテストの影響を受けないよう、この接続先を一度成功させてから失敗させる
+		preferState.openaiBaseUrl = 'https://api.example.com/v1';
+		let failing = false;
+		// 失敗はリトライ対象外の 401 を使う (5xx だと再送の待機タイマーが要る)
+		fetchMock.mockIf((req) => req.url.endsWith('/models'), () => failing
+			? { status: 401, body: 'unauthorized' }
+			: { status: 200, body: JSON.stringify({ data: [{ id: 'stale-vision', architecture: { input_modalities: ['image'] } }] }) });
+
+		const ok = await fetchAvailableModels();
+		expect(ok).toEqual([{ id: 'stale-vision', imageInput: 'supported', detectedBy: 'field' }]);
+
+		// 取得が失敗すると空配列に落ちる。古い「対応」判定が残らないこと
+		failing = true;
+		const failed = await fetchAvailableModels();
+		expect(failed).toEqual([]);
+		expect(fetchCalls()).toHaveLength(2);
+	});
+
+	/**
+	 * モデル一覧のキャッシュが、実際の送信内容 (画像を添えるか) に効いていることを確かめる
+	 *
+	 * `cachedModelInfos` は generateOpenAIDirect の画像同梱判定にしか使われないため、
+	 * キャッシュの持ち方の誤りは「別の接続先の判定で画像を落とす」形で現れる。
+	 * ここでは /models の一覧だけを差し替え、送信された requestBody を見る。
+	 */
+	it('接続先を変えた後は、前の接続先の「画像非対応」判定で画像を落とさない', async () => {
+		const modelId = 'shared-model';
+		// 1 本の matcher ですべての URL を裁く (mockIf は後から登録したものほど優先されるため、
+		// 分けて登録すると片方が他方を覆ってしまう)
+		fetchMock.mockIf(() => true, (req) => {
+			const url = new URL(req.url);
+			// 画像の取得は失敗させ、「画像を試みたか」だけを観測する
+			// (取得できなかった画像はスキップされるため、成功可否は送信内容に出ない)。
+			if (url.host === 'cdn.example.com') return { status: 500, body: 'nope' };
+			if (url.pathname.endsWith('/models')) {
+				// A は明示的にテキスト専用、B は明示的に画像対応 (同名モデルでも接続先で違う)
+				return {
+					status: 200,
+					body: JSON.stringify({ data: [{
+						id: modelId,
+						...url.host === 'api.example.com'
+							? { architecture: { input_modalities: ['text'] } }
+							: { architecture: { input_modalities: ['text', 'image'] } },
+					}] }),
+				};
+			}
+			// chat/completions
+			return { status: 200, body: okBody };
+		});
+
+		// 画像つきノート
+		const note = {
+			id: 'note1',
+			text: 'ノート本文',
+			files: [{ type: 'image/png', url: 'https://cdn.example.com/a.png' }],
+		} as unknown as Parameters<typeof generateLLMResponse>[0]['note'];
+
+		preferState.useGeminiLLMAPI = false;
+		preferState.openaiModel = modelId;
+		preferState.useGeminiWithMedia = true;
+		preferState.openaiForceImageInput = false;
+
+		// A で一覧を取得 → 「非対応」がその接続先の判定としてキャッシュされる
+		preferState.openaiBaseUrl = 'https://api.example.com/v1';
+		expect(await fetchAvailableModels()).toEqual([{ id: modelId, imageInput: 'unsupported', detectedBy: 'field' }]);
+
+		// 接続先だけを B に変えて送信する (一覧は取り直さない)。
+		// キャッシュが接続先に紐づいていなければ、A の「非対応」で画像が落ちる。
+		// B のモデル一覧は取得していないので、判定はモデル名の推測 (vision 非対応) に戻り、
+		// 画像の取得を試みるのが正しい振る舞いになる。
+		preferState.openaiBaseUrl = 'https://other.example.com/v1';
+		await generateLLMResponse({ note });
+
+		const cdnCalls = fetchCalls().filter(([url]) => String(url).startsWith('https://cdn.example.com/'));
+		expect(cdnCalls).toHaveLength(1);
+	});
 });
 
 /**
@@ -712,15 +989,31 @@ describe('応答本文の読み取り', () => {
 		expect((tracked.error as Error).message).toBe(i18nCorsMessage);
 	});
 
-	it('本文の読み取り中のネットワーク断はリトライ対象になり、2 回目で成功する', async () => {
+	it('課金される POST は本文の読み取り中のネットワーク断を再送しない (二重課金の防止)', async () => {
+		fetchMock.mockIf((req) => req.url.startsWith('https://api.example.com/v1/'), () => {
+			return respondWithBodyFailure(new TypeError('network error'));
+		});
+
+		const tracked = startGeneration();
+		await advanceUntil(() => tracked.settled());
+
+		// 2xx が返っている以上プロバイダは生成を完了している (課金済みの可能性が高い) ので、
+		// 従来の CORS エラーで即座に失敗し、2 回目の完了要求は送らない
+		expect((tracked.error as Error).message).toBe(i18nCorsMessage);
+		expect(fetchCalls()).toHaveLength(1);
+		// タイマーをいくら進めても再送しない
+		await vi.advanceTimersByTimeAsync(60_000);
+		expect(fetchCalls()).toHaveLength(1);
+	});
+
+	it('POST でも呼び出し元が retryOnBodyFailure を明示すれば、本文の切断を再送する', async () => {
 		mockDirectAPI(() => ({ status: 200, body: okBody }));
 		fetchMock.mockResponseOnce(() => respondWithBodyFailure(new TypeError('network error')));
 		stubRetryJitter(0.999999);
 
-		const tracked = startGeneration();
+		const tracked = startGeneration({ retryOnBodyFailure: true });
 
-		// 1 回目は本文の途中で切れる。再送は待機タイマーの満了後なので、
-		// タイマーを進める前は 1 回しか要求が飛んでいない
+		// 1 回目は本文の途中で切れる。再送は待機タイマーの満了後
 		await flushMicrotasks(16);
 		expect(fetchCalls()).toHaveLength(1);
 
@@ -732,21 +1025,9 @@ describe('応答本文の読み取り', () => {
 		expect(fetchCalls()).toHaveLength(2);
 	});
 
-	it('本文の読み取り中の切断が続いたら 3 回で打ち切り、従来どおり CORS エラーにする', async () => {
-		fetchMock.mockIf((req) => req.url.startsWith('https://api.example.com/v1/'), () => {
-			return respondWithBodyFailure(new TypeError('network error'));
-		});
-
-		const tracked = startGeneration();
-		await advanceUntil(() => tracked.settled());
-
-		expect((tracked.error as Error).message).toBe(i18nCorsMessage);
-		expect(fetchCalls()).toHaveLength(3);
-	});
-
-	it('本文のストリームが EncodingError (DOMException) で切れた場合もリトライ対象にする', async () => {
+	it('本文のストリームが EncodingError (DOMException) で切れた場合も、POST では再送しない', async () => {
 		// 本文の読み取り失敗は環境によって TypeError (undici) にも
-		// EncodingError (DOMException) にもなる。どちらも一過性として扱う
+		// EncodingError (DOMException) にもなる。どちらも「2xx の後の本文欠落」として同じ扱いにする
 		fetchMock.mockIf((req) => req.url.startsWith('https://api.example.com/v1/'), () => {
 			return respondWithBodyFailure(new DOMException('Failed to read response body.', 'EncodingError'));
 		});
@@ -755,8 +1036,7 @@ describe('応答本文の読み取り', () => {
 		await advanceUntil(() => tracked.settled());
 
 		expect((tracked.error as Error).message).toBe(i18nCorsMessage);
-		// 単発の失敗として諦めず、最大試行回数まで再送する
-		expect(fetchCalls()).toHaveLength(3);
+		expect(fetchCalls()).toHaveLength(1);
 	});
 
 	it('本文の読み取りが JSON 構文エラーなら再送しない (読めた本文は再送しても同じ)', async () => {
@@ -823,6 +1103,50 @@ describe('応答本文の読み取り', () => {
 		expect(outcome).toEqual({ kind: 'retryable', status: 503, statusText: 'Service Unavailable', retryAfterMs: null });
 	});
 
+	/**
+	 * 本文を持ったまま cancel されたかを観測できる応答を作る
+	 *
+	 * 成功しない応答はヘッダだけ使って本文を読まないが、破棄しないまま捨てると
+	 * ブラウザが接続を解放しないため、実装が cancel を呼ぶことを直接確かめる。
+	 */
+	function respondWithTrackedBody(init: ResponseInit, observe: { canceled: boolean }): Response {
+		const body = new ReadableStream({
+			pull() { /* 本文は送られてこない (読まないので問題ない) */ },
+			cancel() { observe.canceled = true; },
+		});
+		return new Response(body, init);
+	}
+
+	it('成功しない応答の本文は読まずに破棄する (接続を解放する)', async () => {
+		const controller = new AbortController();
+
+		for (const status of [503, 429, 400]) {
+			const observe = { canceled: false };
+			const outcome = await classifyFetchResponse(
+				() => Promise.resolve(respondWithTrackedBody({ status }, observe)),
+				undefined,
+				controller.signal,
+			);
+			// リトライ対象 (503 / 429) も致命 (400) も本文は読まないので破棄する
+			expect(outcome.kind, String(status)).toBe(status === 400 ? 'fatal' : 'retryable');
+			expect(observe.canceled, `status ${status} の本文が破棄されていない`).toBe(true);
+		}
+	});
+
+	it('成功した応答の本文は破棄せず、読み取って返す', async () => {
+		const controller = new AbortController();
+
+		// 破棄したら本文は得られないので、成功時に cancel していないことがここで担保される
+		const outcome = await classifyFetchResponse(
+			() => Promise.resolve(new Response(okBody, { status: 200 })),
+			undefined,
+			controller.signal,
+		);
+
+		expect(outcome.kind).toBe('success');
+		expect(outcome.kind === 'success' && outcome.body).toEqual(JSON.parse(okBody));
+	});
+
 	it('成功した本文は、Response ではなく解釈済みの JSON として返る', async () => {
 		const controller = new AbortController();
 
@@ -853,6 +1177,7 @@ describe('応答本文の読み取り', () => {
 	});
 
 	it('本文の読み取り中に失敗しても、モデル一覧は空配列に落とさず取得を続ける', async () => {
+		// GET /models は冪等で課金されないため、本文が欠けても再送する (retryOnBodyFailure: true)
 		const modelsBody = JSON.stringify({ data: [{ id: 'gpt-4o-mini' }] });
 		mockDirectAPI(() => ({ status: 200, body: modelsBody }));
 		fetchMock.mockResponseOnce(() => respondWithBodyFailure(new TypeError('network error')));
@@ -872,6 +1197,20 @@ describe('応答本文の読み取り', () => {
 
 		expect(tracked.models).toEqual([{ id: 'gpt-4o-mini', imageInput: 'supported', detectedBy: 'name' }]);
 		expect(fetchCalls()).toHaveLength(2);
+	});
+
+	it('モデル一覧 (GET) は本文の切断が続いても試行上限まで再送する', async () => {
+		// 課金される POST とは違い、冪等な GET は本文欠落を再送対象に残す
+		fetchMock.mockIf((req) => req.url.startsWith('https://api.example.com/v1/'), () => {
+			return respondWithBodyFailure(new TypeError('network error'));
+		});
+
+		let settled = false;
+		const promise = fetchAvailableModels().then(() => { settled = true; });
+		await advanceUntil(() => settled);
+		await promise;
+
+		expect(fetchCalls()).toHaveLength(3);
 	});
 
 	it('本文が届かないまま締切に達したモデル一覧は、待ち続けずに空配列へ落とす', async () => {

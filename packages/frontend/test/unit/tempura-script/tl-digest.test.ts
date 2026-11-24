@@ -656,6 +656,43 @@ describe('parseTlDigestResponse', () => {
 		expect(parsed!.topics).toHaveLength(0);
 		expect(parsed!.fallbackText).toBe('・TypeScriptの話題\n・カレーの話題 [URL]');
 	});
+
+	it('空配列 JSON の外側に十分な説明文がある場合は、空 topics ではなく全文をフォールバック表示する', () => {
+		// 地の文で要約しつつ空配列を引用した応答。[] だけを拾うと書かれた要約が消えてしまう
+		const raw = 'こちらがダイジェストです。本日はTypeScriptの最新版に関する話題と、夕食のカレーについての雑談が中心でした。 [] 以上です。';
+		const parsed = parseTlDigestResponse(raw, refMap);
+		expect(parsed).not.toBeNull();
+		expect(parsed!.topics).toHaveLength(0);
+		expect(parsed!.fallbackText).toBe(raw);
+
+		// コードフェンス内の空 topics でも、外側の説明文が十分長ければ同じ扱い
+		const fenced = 'まとめると次のとおりです。TypeScript の新バージョンと週末の料理の話題で盛り上がっていました。\n```json\n{"topics":[]}\n```';
+		const parsedFenced = parseTlDigestResponse(fenced, refMap);
+		expect(parsedFenced!.fallbackText).toContain('週末の料理の話題');
+	});
+
+	it('外側の説明文が短い空 topics 応答は、正当な「話題なし」として topics: [] を返す', () => {
+		// 短い前置きだけなら JSON を信じる (noTopics の表示はこの経路に依存している)
+		expect(parseTlDigestResponse('結果は次のとおりです: []', refMap)).toEqual({ topics: [], fallbackText: null });
+		expect(parseTlDigestResponse('Here is the JSON:\n```json\n{"topics":[]}\n```', refMap)).toEqual({ topics: [], fallbackText: null });
+		expect(parseTlDigestResponse('```json\n{"topics":[]}\n```', refMap)).toEqual({ topics: [], fallbackText: null });
+		// 前後に空白・改行だけがある場合も「話題なし」
+		expect(parseTlDigestResponse('\n  {"topics": []}  \n', refMap)).toEqual({ topics: [], fallbackText: null });
+	});
+
+	it('JSON プリミティブはダイジェストの封筒として採用せず、全文をプレーンテキストで返す', () => {
+		// 裸の JSON 文字列はデコードした本文をフォールバック表示する (引用符を見せない)
+		expect(parseTlDigestResponse('"要約です"', refMap)).toEqual({ topics: [], fallbackText: '要約です' });
+		// 数値・真偽値は生の表記がそのまま人間に読める形なので、そのまま返す
+		expect(parseTlDigestResponse('42', refMap)).toEqual({ topics: [], fallbackText: '42' });
+		expect(parseTlDigestResponse('true', refMap)).toEqual({ topics: [], fallbackText: 'true' });
+		// null はスキーマ不正な応答として扱う (プリミティブかつ表示する中身が無い)
+		expect(parseTlDigestResponse('null', refMap)).toBeNull();
+		// どの経路でも topics がプリミティブ由来になることは無い
+		for (const raw of ['"要約です"', '42', 'true']) {
+			expect(parseTlDigestResponse(raw, refMap)!.topics).toEqual([]);
+		}
+	});
 });
 
 describe('buildTlDigestSystemInstruction', () => {

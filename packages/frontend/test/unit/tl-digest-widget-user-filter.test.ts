@@ -47,6 +47,8 @@ type Recount = { win: TlDigestWindow; filter: { mode: string; ids: string[] } };
 /**
  * 件数確認の呼び出しを記録するコントローラ。
  * 呼ばれた時点のユーザーフィルタ設定を控えるので、再計算が新しい設定で走ったことを確認できる。
+ * 返す件数はその時点のフィルタ設定から決めるため、フィルタを緩めたときに
+ * 件数が増えて「まとめる」が現れるかどうかを描画で確かめられる。
  */
 function createCountingController(prefer: PreferencesManager): { controller: TlDigestController; recount: Recount[] } {
 	const recount: Recount[] = [];
@@ -58,15 +60,15 @@ function createCountingController(prefer: PreferencesManager): { controller: TlD
 		pendingCount,
 		pendingWindow: ref<TlDigestWindow | null>(WINDOW),
 		refreshPendingCount: (win: TlDigestWindow) => {
-			recount.push({
-				win,
-				filter: {
-					mode: prefer.s.tlDigestUserFilterMode,
-					ids: [...prefer.s.tlDigestUserFilterUserIds],
-				},
-			});
-			// 制限の強い allow では 0 件 (= 操作できる pending が出ない) という実挙動を再現する
-			pendingCount.value = { status: 'ready', count: 0, truncated: false };
+			const filter = {
+				mode: prefer.s.tlDigestUserFilterMode,
+				ids: [...prefer.s.tlDigestUserFilterUserIds],
+			};
+			recount.push({ win, filter });
+			// 制限の強い allow では対象が 0 件 (= 操作できる pending が出ない)、
+			// 制限を外すと対象ノートが現れる、という実挙動を再現する
+			const count = filter.mode === 'allow' ? 0 : 3;
+			pendingCount.value = { status: 'ready', count, truncated: false };
 			return Promise.resolve(pendingCount.value);
 		},
 		resetPendingCount: vi.fn(),
@@ -123,20 +125,27 @@ describe('TLダイジェストウィジェットのユーザーフィルタ再�
 	});
 
 	test('allow で 0 件だった期間も、フィルタを外すと数え直して「まとめる」が出る', async () => {
+		// 制限の強い allow では対象が 0 件なので、pending 行は出ない
 		prefer.commit('tlDigestUserFilterMode', 'allow');
 		prefer.commit('tlDigestUserFilterUserIds', ['u-mutual']);
 		page = mountWidget();
 		await settle();
 
+		expect(counting.recount).toHaveLength(1);
+		expect(counting.recount[0].filter.mode).toBe('allow');
 		// 0 件なので操作できる pending は出ていない
-		expect(page.container.textContent).not.toContain('まとめる');
+		expect(page.queryByText('まとめる')).toBeNull();
 
 		// フィルタを緩めると対象ノートが現れうるので、新しい設定で数え直す
 		prefer.commit('tlDigestUserFilterMode', 'off');
 		await settle();
 
+		// 数え直しは新しい設定で走った (キャッシュされた古い結果を再利用していない)
 		expect(counting.recount.map((r) => r.filter.mode)).toEqual(['allow', 'off']);
 		expect(counting.recount.at(-1)!.filter).toEqual({ mode: 'off', ids: ['u-mutual'] });
+
+		// 数え直した結果として「まとめる」が描画される
+		expect(await page.findByText('まとめる')).toBeTruthy();
 	});
 
 	test('対象ユーザーの追加・削除でも数え直す', async () => {

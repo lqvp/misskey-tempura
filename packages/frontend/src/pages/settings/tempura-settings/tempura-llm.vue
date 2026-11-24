@@ -362,17 +362,25 @@ const tlDigestUserFilterUsers = computed<{ id: string; user: Misskey.entities.Us
 	}));
 });
 
+/** 表示用キャッシュのうち、現在保存されていない ID の行を落とす */
+function pruneTlDigestFilterUsersCache(): void {
+	const saved = new Set(normalizeTlDigestFilterUserIds(tlDigestUserFilterUserIds.value));
+	tlDigestFilterUsers.value = tlDigestFilterUsers.value.filter((user) => saved.has(user.id));
+}
+
 function syncTlDigestFilterUsers(ids: string[]): void {
 	tlDigestFilterUsers.value = tlDigestFilterUsers.value.filter((user) => ids.includes(user.id));
 	// 取得済みの ID は問い合わせ直さない (行の表示内容が変わらないため)
 	const missing = ids.filter((id) => !tlDigestFilterUsers.value.some((user) => user.id === id));
 	if (missing.length === 0) return;
 	misskeyApi('users/show', { userIds: missing }).then((users) => {
+		// 取得中にフィルタ設定が変わっている可能性があるので、要求時点の `ids` ではなく
+		// 解決時点の保存済み ID を基準にする (削除済みの ID が表示に復活しないようにする)
+		const saved = new Set(normalizeTlDigestFilterUserIds(tlDigestUserFilterUserIds.value));
 		// 同じユーザーを重複させない (取得済みと追加分の和集合)
 		const merged = new Map(tlDigestFilterUsers.value.map((user) => [user.id, user]));
 		for (const user of users) merged.set(user.id, user);
-		// 取得中に削除された ID は表示しない
-		tlDigestFilterUsers.value = [...merged.values()].filter((user) => ids.includes(user.id));
+		tlDigestFilterUsers.value = [...merged.values()].filter((user) => saved.has(user.id));
 	}).catch(() => {
 		// 表示用の取得に失敗してもフィルタ自体は ID ベースで動くため、致命的ではない
 	});
@@ -389,14 +397,17 @@ function formatTlDigestFilterUser(user: Misskey.entities.UserLite): string {
 }
 
 async function addTlDigestFilterUser(): Promise<void> {
-	const current = normalizeTlDigestFilterUserIds(tlDigestUserFilterUserIds.value);
-	if (current.length >= MAX_TL_DIGEST_FILTER_USERS) return;
+	if (normalizeTlDigestFilterUserIds(tlDigestUserFilterUserIds.value).length >= MAX_TL_DIGEST_FILTER_USERS) return;
 	const user = await os.selectUser({ includeSelf: false });
 	if (user == null) return;
-	if (current.includes(user.id)) return;
-	const next = [...current, user.id];
+	// 選択ダイアログを開いている間に削除や別タブからの同期で一覧が変わっている可能性があるため、
+	// ダイアログを開く前の配列ではなく現時点の保存済み ID に対して追加する
+	const latest = normalizeTlDigestFilterUserIds(tlDigestUserFilterUserIds.value);
+	if (latest.includes(user.id)) return;
+	if (latest.length >= MAX_TL_DIGEST_FILTER_USERS) return;
+	const next = [...latest, user.id];
 	if (!tlDigestFilterUsers.value.some((u) => u.id === user.id)) {
-		tlDigestFilterUsers.value = [...tlDigestFilterUsers.value, user];
+		tlDigestFilterUsers.value = [...tlDigestFilterUsers.value.filter((u) => latest.includes(u.id)), user];
 	}
 	tlDigestUserFilterUserIds.value = next;
 }
@@ -404,6 +415,8 @@ async function addTlDigestFilterUser(): Promise<void> {
 function removeTlDigestFilterUser(userId: string): void {
 	tlDigestUserFilterUserIds.value = normalizeTlDigestFilterUserIds(tlDigestUserFilterUserIds.value)
 		.filter((id) => id !== userId);
+	// 削除は表示にも即座に反映する (取得中の応答が後から来ても復活させない)
+	pruneTlDigestFilterUsersCache();
 	syncTlDigestFilterUsers(tlDigestUserFilterUserIds.value);
 }
 

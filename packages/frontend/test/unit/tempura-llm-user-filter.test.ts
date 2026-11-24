@@ -168,4 +168,67 @@ describe('LLM設定 > TLダイジェストのユーザーフィルタ表示', ()
 		await new Promise((resolve) => setTimeout(resolve, 0));
 		expect(prefer.s.tlDigestUserFilterUserIds).toEqual([LOCAL_ID, REMOTE_ID]);
 	});
+
+	test('ユーザー情報の取得中に一覧が変わっても、解決時点で保存されている ID は名前で表示する', async () => {
+		// users/show の応答を保留したまま、取得待ちの間に一覧が変化する状況を作る
+		let releaseUserShow!: () => void;
+		const userShowGate = new Promise<void>((resolve) => {
+			releaseUserShow = resolve;
+		});
+		apiMock.mockImplementation(async (endpoint: string, payload: Record<string, unknown>) => {
+			if (endpoint === 'users/show') {
+				await userShowGate;
+				const ids = (payload.userIds ?? []) as string[];
+				return [localUser, remoteUser].filter((u) => ids.includes(u.id));
+			}
+			return {};
+		});
+
+		prefer.commit('tlDigestUserFilterMode', 'block');
+		prefer.commit('tlDigestUserFilterUserIds', [LOCAL_ID, REMOTE_ID]);
+		const page = render(XTempuraLlmSettings, { global: { directives, components } });
+
+		// 取得が終わる前は、名前が分からないので ID で並ぶ
+		await page.findByText(LOCAL_ID);
+
+		// 取得中にリモートユーザーを削除し、その応答が届く前に別タブから同じ ID が再同期される
+		const removeButtons = (): HTMLElement[] =>
+			[...page.container.querySelectorAll<HTMLElement>('button')]
+				.filter((b) => b.textContent?.trim() === i18n.ts._tlDigest.userFilterUsersRemove);
+		await fireEvent.click(removeButtons()[1]);
+		expect(prefer.s.tlDigestUserFilterUserIds).toEqual([LOCAL_ID]);
+		prefer.commit('tlDigestUserFilterUserIds', [LOCAL_ID, REMOTE_ID]);
+
+		// ここで取得が解決する。要求時の一覧ではなく解決時の保存済み ID を基準にすれば、
+		// 保存されている REMOTE_ID は取得結果で名前を表示できる
+		releaseUserShow();
+		await page.findByText('@alice');
+		await page.findByText('@bob@remote.example');
+		expect(page.queryByText(REMOTE_ID)).toBeNull();
+		expect(removeButtons()).toHaveLength(2);
+	});
+
+	test('選択ダイアログを開いている間に削除されたユーザーを、古い一覧で復活させない', async () => {
+		const page = await mountSection([LOCAL_ID, REMOTE_ID]);
+
+		// ダイアログの応答を保留して、開いている間の設定変更を再現する
+		let resolveSelect!: (user: unknown) => void;
+		selectUserMock.mockReturnValue(new Promise((resolve) => {
+			resolveSelect = resolve;
+		}));
+
+		await fireEvent.click(await page.findByText(i18n.ts._tlDigest.userFilterUsersAdd));
+
+		// ダイアログが開いている間にリモートユーザーを削除する
+		// (別タブからの同期や、ダイアログの背後での削除に相当)
+		const removeButtons = [...page.container.querySelectorAll<HTMLElement>('button')]
+			.filter((b) => b.textContent?.trim() === i18n.ts._tlDigest.userFilterUsersRemove);
+		await fireEvent.click(removeButtons[1]);
+		expect(prefer.s.tlDigestUserFilterUserIds).toEqual([LOCAL_ID]);
+
+		// ダイアログで新しいユーザーを選ぶ。開く前の一覧を書き戻すと REMOTE_ID が復活する
+		resolveSelect({ id: 'third-user-id', username: 'carol', host: null });
+		await vi.waitFor(() => expect(prefer.s.tlDigestUserFilterUserIds).toEqual([LOCAL_ID, 'third-user-id']));
+		expect(page.queryByText('@bob@remote.example')).toBeNull();
+	});
 });

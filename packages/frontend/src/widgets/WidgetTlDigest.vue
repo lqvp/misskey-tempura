@@ -267,16 +267,31 @@ const {
 	pendingCount,
 } = controller;
 
-// 送信前の自動生成の確保 (ドロワーを閉じるなどで送信前に中断した場合は、開き直したときに再度自動生成できるよう解放する)
+// 送信前の自動生成の確保 (自動生成は同じ不在期間につき 1 回だけなので、
+// 送信前に中断した場合は確保を解放して、開き直したときに再度自動生成できるようにする)。
+//
+// 状態の遷移は必ず次のどちらかで終える:
+//   - 送信済み (onSending が呼ばれた): この期間は消費済みなので解放しない
+//   - 送信前に終了 (キャンセル / エラー / 0 件など): 解放して次の機会に再試行できるようにする
+// onSending は controller.run 側で「設定の再確認を通過し、実際に送信した」時だけ呼ばれる。
 let releaseUnsentAutoGenerate: (() => void) | null = null;
+
+/** 未送信の確保を解放する (送信済みなら null になっているので何もしない) */
+function releaseUnsentAutoGenerateClaim(): void {
+	const release = releaseUnsentAutoGenerate;
+	releaseUnsentAutoGenerate = null;
+	release?.();
+}
 
 let disposed = false;
 onBeforeUnmount(() => {
 	disposed = true;
-	if (ownsController) {
-		if (digestGenerating.value) releaseUnsentAutoGenerate?.();
-		controller.dispose();
-	}
+	// アンマウント時点で確保が残っているのは「まだ送信していない」場合だけ。
+	// キャンセルボタンはウィジェットを閉じる (= アンマウント) ので、キャンセルで中断した自動生成もここで解放され、
+	// 開き直したときに同じ不在期間の自動生成を再試行できる。
+	// 送信済みなら onSending で null になっているため、消費した期間が復活することはない。
+	releaseUnsentAutoGenerateClaim();
+	if (ownsController) controller.dispose();
 });
 
 const thresholdMinutes = computed(() => Number(widgetProps.absenceThreshold) || 60);
@@ -379,10 +394,14 @@ function maybeAutoGenerate(win: TlDigestWindow, includeRenotes: boolean, state: 
 		maxNotes: maxNotesCount.value,
 		includeRenotes,
 		onSending: () => {
+			// 実際に送信した時点でこの期間は消費済みにする (以後の finally では解放しない)
 			releaseUnsentAutoGenerate = null;
 		},
 	}).finally(() => {
-		if (releaseUnsentAutoGenerate === release) releaseUnsentAutoGenerate = null;
+		// run はキャンセル・エラー・0 件でも resolve する。送信前に終わった場合は確保を解放し、
+		// ドロワーを開き直したときや設定を直した後に再試行できるようにする。
+		// 送信済みなら onSending で null になっているので解放されない
+		if (releaseUnsentAutoGenerate === release) releaseUnsentAutoGenerateClaim();
 	});
 }
 
