@@ -8,7 +8,7 @@ import { AbortError, FetchError } from 'node-fetch';
 import { StatusError } from '@/misc/status-error.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { ApInboxService } from './ApInboxService.js';
-import type { Resolver } from './ApResolverService.js';
+import { Resolver } from './ApResolverService.js';
 import type { MiRemoteUser } from '@/models/User.js';
 
 function createService() {
@@ -88,6 +88,39 @@ describe('ApInboxService.performActivity (Collection)', () => {
 		};
 
 		await expect(service.performActivity(actor, collection, resolver)).rejects.toBe(err);
+		expect(logger.warn).not.toHaveBeenCalled();
+	});
+
+	test('システムアカウント取得の失敗は受信ジョブのリトライに伝播する', async () => {
+		const { service, logger } = createService();
+		const failure = new Error('database unavailable');
+		const signedGet = vi.fn();
+		const resolver = new Resolver(
+			{} as any, // config
+			{ signToActivityPubGet: true } as any, // meta
+			{} as any, // usersRepository
+			{} as any, // notesRepository
+			{} as any, // pollsRepository
+			{} as any, // noteReactionsRepository
+			{} as any, // followRequestsRepository
+			{
+				extractDbHost: (uri: string) => new URL(uri).hostname,
+				isSelfHost: () => false,
+				isFederationAllowedHost: () => true,
+			} as any,
+			{ fetch: vi.fn().mockRejectedValue(failure) } as any,
+			{ signedGet } as any,
+			{} as any, // httpRequestService
+			{} as any, // apRendererService
+			{} as any, // apDbResolverService
+			{ getLogger: () => logger } as any,
+		);
+
+		await expect(service.performActivity(actor, {
+			type: 'Collection',
+			items: ['https://remote.example/activities/1'],
+		}, resolver)).rejects.toMatchObject({ cause: failure });
+		expect(signedGet).not.toHaveBeenCalled();
 		expect(logger.warn).not.toHaveBeenCalled();
 	});
 

@@ -31,6 +31,13 @@ import { ApRequestService } from './ApRequestService.js';
 import { FetchAllowSoftFailMask } from './misc/check-against-url.js';
 import { ModuleRef } from '@nestjs/core';
 
+export class ResolverSystemAccountError extends Error {
+	constructor(cause: unknown) {
+		super('Failed to fetch the ActivityPub system account', { cause });
+		this.name = 'ResolverSystemAccountError';
+	}
+}
+
 @Injectable({ scope: Scope.TRANSIENT })
 export class Resolver {
 	private history: Set<string>;
@@ -128,7 +135,11 @@ export class Resolver {
 		}
 
 		if (this.meta.signToActivityPubGet && !this.user) {
-			this.user = await this.systemAccountService.fetch('actor');
+			try {
+				this.user = await this.systemAccountService.fetch('actor');
+			} catch (err) {
+				throw new ResolverSystemAccountError(err);
+			}
 		}
 
 		const object = (this.user

@@ -35,7 +35,7 @@ import { getApHrefNullable, getApId, getApIds, getApType, isAccept, isActor, isA
 import { ApNoteService } from './models/ApNoteService.js';
 import { ApLoggerService } from './ApLoggerService.js';
 import { ApDbResolverService } from './ApDbResolverService.js';
-import { ApResolverService } from './ApResolverService.js';
+import { ApResolverService, ResolverSystemAccountError } from './ApResolverService.js';
 import { ApAudienceService } from './ApAudienceService.js';
 import { ApPersonService } from './models/ApPersonService.js';
 import { ApQuestionService } from './models/ApQuestionService.js';
@@ -43,6 +43,7 @@ import type { Resolver } from './ApResolverService.js';
 import type { IAccept, IAdd, IAnnounce, IBlock, ICreate, IDelete, IFlag, IFollow, ILike, IObject, IReject, IRemove, IUndo, IUpdate, IMove, IPost } from './type.js';
 
 function isRetryableResolveError(err: unknown): boolean {
+	if (err instanceof ResolverSystemAccountError) return true;
 	if (err instanceof StatusError) {
 		return err.isRetryable;
 	}
