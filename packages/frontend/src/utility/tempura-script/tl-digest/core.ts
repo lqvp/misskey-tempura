@@ -534,15 +534,42 @@ function stripUrls(text: string): string {
 }
 
 /**
- * 開き行の info string として剥がしてよい言語・形式の識別子。
+ * 開き行の info string (言語・形式の識別子) として剥がしてよいトークン。
  *
  * CommonMark の info string は「開き行の残り全体」だが、モデルの実際の逸脱には
  * 開き行に中身を続けて書くものがある (` ```json {"topics":[]} ` / ` ```GPU was the main topic `)。
  * 「先頭の 1 トークンは常に info string」とみなすと、後者の `GPU` のような
  * 言語名ではない語まで捨てられ、要約の先頭が欠ける。
- * そのため剥がすのは、言語・形式として妥当な識別子に一致したときだけに限る。
+ *
+ * 逆に「既知の言語名だけを剥がす」と、`json5` や将来の形式名が地の文として残り、
+ * 要約ではなく形式名が表示されてしまう。
+ *
+ * そこで**位置**で判定する。開き行の残りが「空白を含まない 1 トークンだけ」なら
+ * それは info string、他に語が続くなら地の文として扱う。
+ * これにより ` ```json5 ` も ` ```foobar ` も剥がれ、` ```GPU was the main topic ` は残る。
  */
-const FENCE_INFO_STRING_PATTERN = /^(json|jsonc|typescript|ts|javascript|js|markdown|md|yaml|yml|html|css|text|txt|plaintext|python|py|xml|sql|sh|bash)$/i;
+const FENCE_INFO_STRING_PATTERN = /^[A-Za-z][\w+#.-]*$/u;
+
+/**
+ * 同じ行に中身が続く場合でも info string として剥がしてよい、既知の言語・形式名。
+ *
+ * 1 トークンだけの行は {@link FENCE_INFO_STRING_PATTERN} で判定できるが、
+ * ` ```ts 要約です ` のように同じ行に地の文が続く場合、`ts` は言語名なので剥がし、
+ * ` ```GPU was the main topic ` の `GPU` は言語名ではないので残す必要がある。
+ * この 2 つは構文では区別できないため、既知の名前だけをここに列挙する。
+ * (未知の形式名は「単独の行」なら 1) で剥がれるため、`json5` のような追加は不要)
+ */
+const KNOWN_FENCE_LANGUAGES = new Set([
+	'json', 'jsonc', 'json5', 'typescript', 'ts', 'javascript', 'js', 'markdown', 'md',
+	'yaml', 'yml', 'html', 'css', 'scss', 'text', 'txt', 'plaintext', 'python', 'py',
+	'xml', 'sql', 'sh', 'bash', 'shell', 'diff', 'csv',
+]);
+
+/** その文字列が JSON の封筒 (`{` / `[`) として始まるか */
+function isJsonEnvelopeStart(text: string): boolean {
+	const first = text.trimStart()[0];
+	return first === '{' || first === '[';
+}
 
 /**
  * コードフェンス行 (` ```` ` で始まる行) から、フェンス記号と info string を剥がす。
@@ -556,12 +583,23 @@ function stripFenceMarker(line: string): string | null {
 	const trimmed = line.trim();
 	if (!trimmed.startsWith('```')) return null;
 	// 4 文字目 (`) はフェンス記号の一部とみなす。``` の後の空白区切りだけを info string の境界にする
-	const rest = trimmed.slice(3);
-	const infoMatch = rest.match(/^[ \t]*([A-Za-z][\w+#.-]*)/u);
-	// 言語・形式の識別子ではない語 (`GPU was the main topic`) は info string ではなく中身
-	if (infoMatch == null || !FENCE_INFO_STRING_PATTERN.test(infoMatch[1]!)) return rest.trim();
-	// info string の直後が行末なら「フェンス行だけ」で中身は空
-	return rest.slice(infoMatch[0].length).trim();
+	const rest = trimmed.slice(3).trim();
+	if (rest === '') return '';
+	// 空白の有無に関わらず「先頭の識別子トークン」と「その後ろ」に分ける
+	const tokenMatch = rest.match(/^([A-Za-z][\w+#.-]*)([\s\S]*)$/u);
+	if (tokenMatch == null) return rest;
+	const [, token, after] = tokenMatch;
+	const tail = after.trim();
+
+	// 1) 1 トークンだけの行は info string (json5 や将来の形式名も含めて剥がす)
+	if (tail === '') return '';
+	// 2) トークンの後ろが JSON の封筒なら、トークンは形式名とみなして剥がす
+	//    ( ` ```json{"topics":[]} ` のように空白が無い場合も含む)
+	if (isJsonEnvelopeStart(tail) && FENCE_INFO_STRING_PATTERN.test(token!)) return tail;
+	// 3) 既知の言語名なら、同じ行に地の文が続いていても info string として剥がす
+	if (KNOWN_FENCE_LANGUAGES.has(token!.toLowerCase())) return tail;
+	// 4) それ以外は地の文。トークンも中身の一部として残す
+	return rest;
 }
 
 /** フェンス行 (` ```` ` で始まる行) か。閉じフェンスの判定に使う */
