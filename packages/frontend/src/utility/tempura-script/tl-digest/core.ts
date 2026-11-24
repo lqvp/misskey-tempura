@@ -220,6 +220,36 @@ function matchesSingleNoteWordMute(
 	return false;
 }
 
+// ワードミュートの入力が変わらない間は、ソフト・ハードを統合した配列を同一インスタンスで使い回す。
+//
+// check-word-mute の keywordsCache は WeakMap で「複合フィルタ (例: ['映画', '結末']) の配列オブジェクト」を
+// キーにした前処理結果をキャッシュしているため、統合配列を毎回作るとキーが毎回別人になりキャッシュが効かない。
+// この関数は 1 ノートにつき最大 3 回・prepareNotesForDigest では 2 回呼ばれるので、
+// 同一性が保たれているかどうかがそのままホットパスのコストになる。
+// キーはソフトミュート配列そのもの (WeakMap なので破棄されれば自動で消える)。
+// 既定引数の [] は呼び出しごとに新しい配列になるが、両方が空なら統合結果も空で何も作らないので影響しない。
+const combinedMutedWordsCache = new WeakMap<Array<string | string[]>, {
+	hardMutedWords: Array<string | string[]>;
+	combined: Array<string | string[]>;
+}>();
+
+/**
+ * ソフト・ハードのワードミュートをひとつの配列に統合する。
+ * 同じ入力 (mutedWords と hardMutedWords の両方が同じインスタンス) に対しては同じ配列を返す。
+ */
+function getCombinedMutedWords(
+	mutedWords: Array<string | string[]>,
+	hardMutedWords: Array<string | string[]>,
+): Array<string | string[]> {
+	const cached = combinedMutedWordsCache.get(mutedWords);
+	if (cached !== undefined && cached.hardMutedWords === hardMutedWords) {
+		return cached.combined;
+	}
+	const combined = [...mutedWords, ...hardMutedWords];
+	combinedMutedWordsCache.set(mutedWords, { hardMutedWords, combined });
+	return combined;
+}
+
 /**
  * ノート本体・返信先・リノート先に対してソフト/ハード両方のワードミュートを判定する
  */
@@ -229,7 +259,7 @@ export function isNoteWordMuted(
 	mutedWords: Array<string | string[]> = [],
 	hardMutedWords: Array<string | string[]> = [],
 ): boolean {
-	const allMutedWords = [...mutedWords, ...hardMutedWords];
+	const allMutedWords = getCombinedMutedWords(mutedWords, hardMutedWords);
 	if (allMutedWords.length === 0) return false;
 
 	const meUser = meId ? ({ id: meId } as Misskey.entities.UserLite) : null;

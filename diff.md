@@ -369,6 +369,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * temperature 設定 (ユーザー直指定モード)
 * WidgetTlDigest: 不在中のホームタイムラインをトピック抽出型で要約するウィジェット (公開範囲オプトイン・CW保護・ワードミュート除外・純リノート集約)
 * WidgetTlDigest: ユーザー単位の絞り込み (tlDigestUserFilterMode: 絞り込まない / 指定ユーザーを除外 / 指定ユーザーだけを対象、tlDigestUserFilterUserIds、最大 100 人)。純リノートはリノートした人と元投稿の作者の両方で判定
+* LLM 呼び出しの一時的な失敗 (408/425/429/5xx・ネットワーク断) を指数バックオフ+ジッターで自動リトライ (最大3回、全体120秒の予算内)。Retry-After を尊重し、呼び出し元の中断は常に優先されます
 
 ### LLM モデレーション
 

@@ -8,6 +8,7 @@ import * as Misskey from 'misskey-js';
 import {
 	applyFollowersConsent,
 	buildTlDigestSystemInstruction,
+	isNoteWordMuted,
 	MAX_TL_DIGEST_FILTER_USERS,
 	normalizeTlDigestCwMode,
 	normalizeTlDigestFilterUserIds,
@@ -35,6 +36,7 @@ import {
 	MAX_SCAN_NOTES,
 } from '@/utility/tempura-script/tl-digest/digest.js';
 import type { TlDigestDeps, TlDigestTimelineParams } from '@/utility/tempura-script/tl-digest/digest.js';
+import * as checkWordMuteModule from '@/utility/check-word-mute.js';
 
 function makeNote(
 	overrides: Omit<Partial<Misskey.entities.Note>, 'visibility'> & {
@@ -261,6 +263,66 @@ describe('prepareNotesForDigest', () => {
 			hardMutedWords: [['NGワード']],
 		});
 		expect(prepared.map((p) => p.noteId)).toEqual(['n-clean']);
+	});
+
+	it('同じ入力配列で繰り返し判定しても、統合後のミュート配列は同一インスタンスを使い回す', () => {
+		// checkWordMute の keywordsCache は「複合フィルタの配列オブジェクト」をキーにした WeakMap なので、
+		// 統合配列の同一性が保たれないと毎ノートで前処理がやり直しになる。その再発を防ぐ回帰テスト。
+		const note = makeNote({ id: 'n-mute-stability', userId: 'u-author', text: '映画の結末が気になる' });
+		const mutedWords: Array<string | string[]> = [['映画', '結末'], '/spam-\\d+/i'];
+		const hardMutedWords: Array<string | string[]> = [['NGワード']];
+
+		// checkWordMute が受け取った「ミュートワード配列」(第3引数) の参照を観測する
+		const spy = vi.spyOn(checkWordMuteModule, 'checkWordMute');
+		try {
+			const results = [
+				isNoteWordMuted(note, 'me', mutedWords, hardMutedWords),
+				isNoteWordMuted(note, 'me', mutedWords, hardMutedWords),
+				isNoteWordMuted(note, 'me', mutedWords, hardMutedWords),
+			];
+
+			// 振る舞いは変わらない (複合フィルタに一致するので常にミュート)
+			expect(results).toEqual([true, true, true]);
+			expect(spy.mock.calls.length).toBeGreaterThanOrEqual(3);
+
+			// 3 回とも「同じ配列インスタンス」が渡っていること
+			const passedArrays = spy.mock.calls.map((call) => call[2]);
+			expect(passedArrays[0]).toBe(passedArrays[1]);
+			expect(passedArrays[1]).toBe(passedArrays[2]);
+			// 統合配列は入力のどちらとも別インスタンス (入力配列を書き換えない)
+			expect(passedArrays[0]).not.toBe(mutedWords);
+			expect(passedArrays[0]).not.toBe(hardMutedWords);
+			expect(passedArrays[0]).toHaveLength(3);
+		} finally {
+			spy.mockRestore();
+		}
+	});
+
+	it('入力配列が変われば統合後のミュート配列は作り直す (古い内容が残らない)', () => {
+		const note = makeNote({ id: 'n-mute-refresh', userId: 'u-author', text: '映画の結末についての投稿' });
+		const hardMutedWords: Array<string | string[]> = [];
+
+		const mutedA: Array<string | string[]> = [['映画', '結末']];
+		const mutedB: Array<string | string[]> = [['別ワード']];
+
+		// mutedA は AND 条件を満たすのでミュート、mutedB は満たさないので素通り
+		expect(isNoteWordMuted(note, 'me', mutedA, hardMutedWords)).toBe(true);
+		expect(isNoteWordMuted(note, 'me', mutedB, hardMutedWords)).toBe(false);
+		// 同じ mutedA に戻しても結果は変わらない (キャッシュが壊れていない)
+		expect(isNoteWordMuted(note, 'me', mutedA, hardMutedWords)).toBe(true);
+
+		// hardMutedWords 側の入れ替えでも再計算される
+		const hardA: Array<string | string[]> = [];
+		expect(isNoteWordMuted(note, 'me', mutedB, hardA)).toBe(false);
+		expect(isNoteWordMuted(note, 'me', mutedB, [['結末']])).toBe(true);
+	});
+
+	it('ミュートワード未指定 (既定の空配列) は毎回新規配列でもミュートせず、統合配列も作らない', () => {
+		const note = makeNote({ id: 'n-mute-none', userId: 'u-author', text: '映画の結末が気になる' });
+
+		expect(isNoteWordMuted(note, 'me')).toBe(false);
+		expect(isNoteWordMuted(note, 'me', [], [])).toBe(false);
+		expect(isNoteWordMuted(note, 'me', [], [['結末']])).toBe(true);
 	});
 
 	it('ユーザー単位ブロックリスト: 指定ユーザーの投稿を除外する', () => {

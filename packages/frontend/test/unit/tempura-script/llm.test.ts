@@ -3,8 +3,13 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { describe, expect, it } from 'vitest';
-import { computeLLMDestination, detectImageInputSupport, toModelInfos, wrapUserData } from '@/utility/tempura-script/llm.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { computeLLMDestination, computeLLMRetryDelay, detectImageInputSupport, fetchAvailableModels, generateLLMResponse, shouldRetryLLMStatus, toModelInfos, wrapUserData } from '@/utility/tempura-script/llm.js';
+import { extractLLMText } from '@/utility/tempura-script/llm-response.js';
+import { i18n } from '@/i18n.js';
+import { preferState } from '../../setup.unit.js';
+import type { LLMResponse } from '@/utility/tempura-script/llm-response.js';
+import type { RequestInput } from 'vitest-fetch-mock';
 
 /**
  * 実プロバイダの /models レスポンス形式に基づくフィクスチャ。
@@ -194,5 +199,313 @@ describe('computeLLMDestination', () => {
 			token: 'sk-test',
 			baseUrl: '   ',
 		})).toBe('direct:https://api.openai.com/v1');
+	});
+});
+
+describe('shouldRetryLLMStatus', () => {
+	it('一時的な失敗 (408 / 425 / 429 / 5xx) はリトライ対象', () => {
+		for (const status of [408, 425, 429, 500, 502, 503, 504]) {
+			expect(shouldRetryLLMStatus(status), `status ${status}`).toBe(true);
+		}
+	});
+
+	it('再送しても成功し得ない失敗 (4xx の大半) はリトライ対象外', () => {
+		for (const status of [400, 401, 403, 404, 409, 410, 422, 451]) {
+			expect(shouldRetryLLMStatus(status), `status ${status}`).toBe(false);
+		}
+	});
+
+	it('成功系・未知のステータスはリトライ対象外', () => {
+		for (const status of [200, 201, 204, 301, 304, 0, -1]) {
+			expect(shouldRetryLLMStatus(status), `status ${status}`).toBe(false);
+		}
+	});
+});
+
+describe('computeLLMRetryDelay', () => {
+	// full jitter のため、乱数が上限を返すとその試行の上限値になる
+	const upperBound = (attempt: number): number => computeLLMRetryDelay(attempt, () => 0.999999999);
+
+	it('指数バックオフで伸びる (0.5s → 1s → 2s → 4s)', () => {
+		expect(upperBound(0)).toBeGreaterThan(400);
+		expect(upperBound(0)).toBeLessThanOrEqual(500);
+		expect(upperBound(1)).toBeGreaterThan(900);
+		expect(upperBound(1)).toBeLessThanOrEqual(1000);
+		expect(upperBound(2)).toBeGreaterThan(1900);
+		expect(upperBound(2)).toBeLessThanOrEqual(2000);
+		expect(upperBound(3)).toBeGreaterThan(3900);
+		expect(upperBound(3)).toBeLessThanOrEqual(4000);
+	});
+
+	it('上限 (8s) で頭打ちになる', () => {
+		// 500ms * 2^4 = 8s、そこから先は伸びない
+		expect(upperBound(4)).toBeLessThanOrEqual(8000);
+		expect(upperBound(10)).toBeLessThanOrEqual(8000);
+		expect(upperBound(10)).toBe(upperBound(20));
+	});
+
+	it('full jitter: 乱数が 0/0.5/1 のとき、それぞれ 0 / 半分 / 上限未満になる', () => {
+		expect(computeLLMRetryDelay(2, () => 0)).toBe(0);
+		expect(computeLLMRetryDelay(2, () => 0.5)).toBe(1000);
+		expect(computeLLMRetryDelay(2, () => 0)).toBeLessThanOrEqual(computeLLMRetryDelay(2, () => 0.5));
+		expect(computeLLMRetryDelay(2, () => 0.5)).toBeLessThanOrEqual(computeLLMRetryDelay(2, () => 0.99));
+	});
+
+	it('負の試行番号は 0 として扱う', () => {
+		expect(computeLLMRetryDelay(-5, () => 0.999999999)).toBe(upperBound(0));
+	});
+});
+
+/** 従来どおり CORS 扱いで返すべきエラーメッセージ */
+const i18nCorsMessage = i18n.ts._llm._error.cors;
+
+/** テストで使う正常な Chat Completions 形式のレスポンス */
+const okBody = JSON.stringify({ choices: [{ message: { role: 'assistant', content: 'まとめました' } }] });
+
+type FetchCall = [input: RequestInput, init?: RequestInit];
+
+/** 直指定モードで generateLLMResponse を呼べる設定にする */
+function setupDirectMode(): void {
+	preferState.useGeminiLLMAPI = false;
+	preferState.openaiToken = 'sk-test';
+	preferState.openaiBaseUrl = 'https://api.example.com/v1';
+	preferState.openaiModel = 'gpt-4o-mini';
+}
+
+/**
+ * 直指定 API 宛の fetch をモックする
+ *
+ * vitest-fetch-mock の mockResponses() は既定の isMocking が実 fetch へ素通しするため、
+ * mockIf で土台を敷いてから mockResponseOnce / mockRejectOnce で試行ごとの応答を積む。
+ */
+function mockDirectAPI(base: () => { status: number; body: string }): void {
+	fetchMock.mockIf((req) => req.url.startsWith('https://api.example.com/v1/'), base);
+}
+
+function fetchCalls(): FetchCall[] {
+	return fetchMock.mock.calls as unknown as FetchCall[];
+}
+
+/**
+ * フェイクタイマーを進めながら、条件が満たされるか Promise が決着するまで待つ
+ */
+/** 保留中のマイクロタスク (then/finally) を流しきる */
+async function flushMicrotasks(rounds = 8): Promise<void> {
+	for (let i = 0; i < rounds; i++) {
+		await Promise.resolve();
+	}
+}
+
+async function advanceUntil(predicate: () => boolean, maxMs = 60_000): Promise<void> {
+	let elapsed = 0;
+	// タイマーを進めても、Promise の then/finally はマイクロタスクとして
+	// 一段遅れて走る。predicate を先頭で評価するだけだと、まだ決着していない
+	// 時点でループを抜けてしまい、並列実行時の負荷次第でフレークする。
+	// そのため進めた後にマイクロタスクを流しきってから再評価する。
+	while (elapsed < maxMs) {
+		await vi.advanceTimersByTimeAsync(1_000);
+		elapsed += 1_000;
+		// 保留中の Promise コールバック (then/finally) を消化する
+		await vi.advanceTimersByTimeAsync(0);
+		if (predicate()) return;
+	}
+}
+
+/**
+ * 生成を開始し、Promise の決着を追跡する
+ */
+function startGeneration(options: { userContent?: string; signal?: AbortSignal } = {}) {
+	const settled = { done: false };
+	const tracked = {
+		generated: undefined as LLMResponse | undefined,
+		error: undefined as unknown,
+		settled: () => settled.done,
+	};
+	const promise = generateLLMResponse({ userContent: options.userContent ?? 'ノート本文', signal: options.signal })
+		.then(
+			(value) => { tracked.generated = value; tracked.error = undefined; },
+			(error: unknown) => { tracked.error = error; },
+		)
+		.finally(() => { settled.done = true; })
+		// 呼び出し元が catch するので、未処理の拒否は出さない
+		.catch(() => { /* noop */ });
+	return tracked;
+}
+
+describe('generateLLMResponse のリトライ', () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+		fetchMock.enableMocks();
+		fetchMock.resetMocks();
+		setupDirectMode();
+	});
+
+	afterEach(() => {
+		fetchMock.resetMocks();
+		vi.useRealTimers();
+	});
+
+	it('503 のあと成功したら、呼び出し元には通常どおりレスポンスを返す', async () => {
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		fetchMock.mockResponseOnce(() => ({ status: 503, body: 'unavailable' }));
+
+		const tracked = startGeneration();
+		await advanceUntil(() => tracked.settled());
+
+		expect(tracked.error).toBeUndefined();
+		expect(extractLLMText(tracked.generated!)).toBe('まとめました');
+		// 初回 + リトライ 1 回
+		expect(fetchCalls()).toHaveLength(2);
+	});
+
+	it('一時的な失敗が続いたら 3 回で打ち切り、最後の失敗を既存の API エラーで投げる', async () => {
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		fetchMock.mockResponseOnce(() => ({ status: 503, body: 'unavailable' }));
+		fetchMock.mockResponseOnce(() => ({ status: 502, body: 'bad gateway' }));
+		fetchMock.mockResponseOnce(() => ({ status: 500, body: 'internal' }));
+
+		const tracked = startGeneration();
+		await advanceUntil(() => tracked.settled());
+
+		expect(tracked.error).toBeInstanceOf(Error);
+		expect((tracked.error as Error).message).toContain('500');
+		// 4 回目は呼ばない
+		expect(fetchCalls()).toHaveLength(3);
+	});
+
+	it.each([400, 401, 403, 404, 422])('%i はリトライせず、その場で既存の API エラーを投げる', async (status) => {
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		fetchMock.mockResponseOnce(() => ({ status, body: 'not retryable' }));
+
+		const tracked = startGeneration();
+		await advanceUntil(() => tracked.settled());
+
+		expect((tracked.error as Error).message).toContain(String(status));
+		// タイマーをいくら進めても再送しない
+		await vi.advanceTimersByTimeAsync(60_000);
+		expect(fetchCalls()).toHaveLength(1);
+	});
+
+	it('バックオフ待機中に中断されたら、再送せず即座に中断を伝える', async () => {
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		fetchMock.mockResponseOnce(() => ({ status: 503, body: 'unavailable' }));
+
+		const controller = new AbortController();
+		const tracked = startGeneration({ signal: controller.signal });
+		// 1 回目の 503 を観測して、バックオフ待機に入ったところで中断する。
+		// ここでタイマーを 1 秒進めるとバックオフ (500ms) が明けて 2 回目が飛んでしまうため、
+		// マイクロタスクだけを流して「1 回目を観測した直後」で止める。
+		await flushMicrotasks(16);
+		expect(fetchCalls()).toHaveLength(1);
+		expect(tracked.settled()).toBe(false);
+		controller.abort(new Error('user canceled'));
+		// 中断はバックオフ待機を打ち切るので、タイマーを進めなくても決着する
+		// (待機を打ち切らない実装なら 500ms 経過後にしか決着しない)
+		await vi.advanceTimersByTimeAsync(0);
+		// abort 伝播と then/finally はマイクロタスクを数段渡るので流しきる
+		await flushMicrotasks();
+		expect(tracked.settled()).toBe(true);
+		expect(tracked.error).toBe(controller.signal.reason);
+
+		// 中断後はタイマーをいくら進めても再送しない
+		await vi.advanceTimersByTimeAsync(60_000);
+		expect(fetchCalls()).toHaveLength(1);
+	});
+
+	it('全体予算を使い切る前に失敗したら、予算内ならリトライし、超過ならリトライしない', async () => {
+		// 1 回目が予算 (120 秒) を使い切った直後に失敗するケース: 待つ余地が無いので再送しない
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		fetchMock.mockResponseOnce(() => {
+			// 応答を返すまでに予算をほぼ使い切らせる (実処理中に時間が経過した状況)
+			vi.advanceTimersByTime(119_999);
+			return { status: 503, body: 'unavailable' };
+		});
+
+		const tracked = startGeneration();
+		await advanceUntil(() => tracked.settled());
+
+		expect(fetchCalls()).toHaveLength(1);
+		expect(tracked.error).toBeInstanceOf(Error);
+	});
+
+	it('送信前に既に中断されていたら、一度も送らない', async () => {
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+
+		const controller = new AbortController();
+		controller.abort(new Error('canceled before send'));
+		const tracked = startGeneration({ signal: controller.signal });
+		await advanceUntil(() => tracked.settled());
+
+		expect(tracked.error).toBe(controller.signal.reason);
+		expect(fetchCalls()).toHaveLength(0);
+	});
+
+	it('ネットワーク層の失敗 (TypeError) ではリトライし、2 回目で成功する', async () => {
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		fetchMock.mockRejectOnce(new TypeError('Failed to fetch'));
+
+		const tracked = startGeneration();
+		await advanceUntil(() => tracked.settled());
+
+		expect(tracked.error).toBeUndefined();
+		expect(extractLLMText(tracked.generated!)).toBe('まとめました');
+		expect(fetchCalls()).toHaveLength(2);
+	});
+
+	it('ネットワーク層の失敗が続いたら 3 回で打ち切り、従来どおり CORS エラーにする', async () => {
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		fetchMock.mockRejectOnce(new TypeError('Failed to fetch'));
+		fetchMock.mockRejectOnce(new TypeError('Failed to fetch'));
+		fetchMock.mockRejectOnce(new TypeError('Failed to fetch'));
+
+		const tracked = startGeneration();
+		await advanceUntil(() => tracked.settled());
+
+		expect((tracked.error as Error).message).toBe(i18nCorsMessage);
+		expect(fetchCalls()).toHaveLength(3);
+	});
+});
+
+describe('fetchAvailableModels のリトライ', () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+		fetchMock.enableMocks();
+		fetchMock.resetMocks();
+		preferState.useGeminiLLMAPI = false;
+		preferState.openaiToken = 'sk-test';
+		preferState.openaiBaseUrl = 'https://api.example.com/v1';
+	});
+
+	afterEach(() => {
+		fetchMock.resetMocks();
+		vi.useRealTimers();
+	});
+
+	const modelsBody = JSON.stringify({ data: [{ id: 'gpt-4o-mini' }] });
+
+	it('503 のあと成功したらモデル一覧を返す', async () => {
+		mockDirectAPI(() => ({ status: 200, body: modelsBody }));
+		fetchMock.mockResponseOnce(() => ({ status: 503, body: 'unavailable' }));
+
+		const tracked = { models: undefined as unknown, settled: false };
+		const promise = fetchAvailableModels().then((models) => {
+			tracked.models = models;
+			tracked.settled = true;
+		});
+		await advanceUntil(() => tracked.settled);
+		await promise;
+
+		expect(tracked.models).toEqual([{ id: 'gpt-4o-mini', imageInput: 'supported', detectedBy: 'name' }]);
+		expect(fetchCalls()).toHaveLength(2);
+	});
+
+	it('401 はリトライせず、空配列に落とす', async () => {
+		mockDirectAPI(() => ({ status: 200, body: modelsBody }));
+		fetchMock.mockResponseOnce(() => ({ status: 401, body: 'unauthorized' }));
+
+		const models = await fetchAvailableModels();
+
+		expect(models).toEqual([]);
+		expect(fetchCalls()).toHaveLength(1);
 	});
 });

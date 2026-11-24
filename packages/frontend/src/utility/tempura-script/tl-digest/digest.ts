@@ -29,6 +29,10 @@ import {
 	dismissTlDigestPending,
 	MAX_ABSENCE_WINDOW_MS,
 } from '@/utility/tempura-script/tl-digest/activity.js';
+import {
+	measureTlDigestAsync,
+	measureTlDigestSync,
+} from '@/utility/tempura-script/tl-digest/metrics.js';
 
 export interface TlDigestResult {
 	topics: TlDigestTopic[];
@@ -172,6 +176,12 @@ export const MAX_SCAN_NOTES = 500;
 /** 件数表示の上限 (これ以上は「N件+」と表示する) */
 export const PENDING_COUNT_CAP = 200;
 const PREVIEW_CACHE_SIZE = 4;
+/**
+ * 件数確認の走査結果を再利用する有効期間。
+ * 不在期間の終端 (until) は固定なので内容が古くなることはないが、
+ * 削除・公開範囲変更などで件数がずれるため、長く保持しすぎない。
+ */
+const PREVIEW_CACHE_TTL_MS = 5 * 60 * 1000;
 
 interface ScanResult {
 	notes: Misskey.entities.Note[];
@@ -245,16 +255,27 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 	let lastWindow: TlDigestWindow | null = null;
 
 	// 件数確認で取得したノートを生成時に再利用する (インスタンスごと・メモリのみ・永続化しない)
-	const previewCache = new Map<string, ScanResult>();
+	const previewCache = new Map<string, { scan: ScanResult; storedAt: number }>();
 
 	function putPreviewCache(key: string, value: ScanResult): void {
 		previewCache.delete(key);
-		previewCache.set(key, value);
+		previewCache.set(key, { scan: value, storedAt: deps.now() });
 		while (previewCache.size > PREVIEW_CACHE_SIZE) {
 			const oldest = previewCache.keys().next().value;
 			if (oldest == null) break;
 			previewCache.delete(oldest);
 		}
+	}
+
+	/** TTL を過ぎたエントリは破棄して undefined を返す */
+	function getPreviewCache(key: string): ScanResult | undefined {
+		const entry = previewCache.get(key);
+		if (entry == null) return undefined;
+		if (deps.now() - entry.storedAt > PREVIEW_CACHE_TTL_MS) {
+			previewCache.delete(key);
+			return undefined;
+		}
+		return entry.scan;
 	}
 
 	/**
@@ -379,7 +400,7 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 				prepareNotesForDigest(notes, { ...filter, maxPreparedNotes: PENDING_COUNT_CAP }).prepared.length;
 
 			const key = cacheKey(win);
-			let scan = previewCache.get(key);
+			let scan = getPreviewCache(key);
 			if (scan == null || (!scan.complete && countPrepared(scan.notes) < PENDING_COUNT_CAP)) {
 				scan = await scanWindow(win, includeRenotes, abort.signal, (notes) => countPrepared(notes) >= PENDING_COUNT_CAP);
 				if (!isCurrent()) return null;
@@ -440,7 +461,11 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 
 			const maxNotes = Math.max(1, Math.min(options.maxNotes, PENDING_COUNT_CAP));
 			const prepareWith = (filter: typeof initial.filter, notes: Misskey.entities.Note[]) =>
-				prepareNotesForDigest(notes, { ...filter, maxPreparedNotes: maxNotes });
+				measureTlDigestSync(
+					'filter',
+					() => prepareNotesForDigest(notes, { ...filter, maxPreparedNotes: maxNotes }),
+					notes.length,
+				).value;
 			const isEnoughWith = (filter: typeof initial.filter) => (notes: Misskey.entities.Note[]) =>
 				prepareWith(filter, notes).prepared.length >= maxNotes;
 
@@ -448,7 +473,7 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 			// followers を含む場合は、件数確認後に削除・公開範囲変更された投稿を送らないよう必ず取得し直す
 			const cached = initial.filter.allowedVisibilities.includes('followers')
 				? undefined
-				: previewCache.get(initial.cacheKey(win));
+				: getPreviewCache(initial.cacheKey(win));
 			let notes: Misskey.entities.Note[];
 			let scanComplete: boolean;
 			let usedNetwork = false;
@@ -457,7 +482,10 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 				scanComplete = cached.complete;
 			} else {
 				usedNetwork = true;
-				const scan = await scanWindow(win, options.includeRenotes, abort.signal, isEnoughWith(initial.filter));
+				const scan = await measureTlDigestAsync(
+					'scan',
+					() => scanWindow(win, options.includeRenotes, abort.signal, isEnoughWith(initial.filter)),
+				);
 				if (!isCurrent()) return;
 				notes = scan.notes;
 				scanComplete = scan.complete;
@@ -517,7 +545,7 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 				return;
 			}
 
-			const response = await deps.generate({
+			const response = await measureTlDigestAsync('generate', () => deps.generate({
 				userContent: promptInput,
 				systemInstruction: buildTlDigestSystemInstruction(active.settings.prompt, active.settings.systemPrompt),
 				signal: abort.signal,
@@ -537,7 +565,7 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 					}
 					if (sending) options.onSending?.();
 				},
-			});
+			}), prepared.length);
 			if (!isCurrent()) return;
 
 			const parsed = parseTlDigestResponse(extractLLMText(response), refMap);

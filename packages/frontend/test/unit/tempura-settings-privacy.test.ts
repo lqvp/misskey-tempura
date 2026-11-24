@@ -4,7 +4,7 @@
  */
 
 import { afterEach, assert, describe, expect, test, vi } from 'vitest';
-import { h, type Component } from 'vue';
+import { h, nextTick, type Component } from 'vue';
 import { cleanup, fireEvent, render, type RenderResult } from '@testing-library/vue';
 import { directives } from '@/directives/index.js';
 import { components } from '@/components/index.js';
@@ -71,19 +71,30 @@ describe('Tempura設定 > プライバシーセクション', () => {
 		apiMock.mockClear();
 	});
 
-	test('プライバシーセクションがTempura設定ページの2番目に登録されている', async () => {
+	test('プライバシーセクションがTempura設定ページの2番目に登録されている', { timeout: 30_000 }, async () => {
 		for (const name of SECTION_MODULES) {
 			vi.doMock(`@/pages/settings/tempura-settings/${name}.vue`, () => stubModule(name));
 		}
+		// ここで検証したいのは「セクションの並び順」であって「描画の速さ」ではない。
+		// セクションは defineAsyncComponent の動的 import で解決されるため、
+		// フルスイート並列実行時はCPU競合で解決が遅れたり、まれに取りこぼすことがある。
+		// マウントは 1 回だけ行い、描画結果の更新だけを待つ (毎回 render すると
+		// インスタンスが積み上がって決着しなくなる)。
 		const page = render(XTempuraSettings, { global: { directives, components } });
-		// 全セクションのスタブが描画されるのを待つ
-		await page.findAllByText(() => true, { selector: '[data-stub-section]' }).catch(() => []);
-		await vi.waitFor(() => {
-			const stubs = page.container.querySelectorAll('[data-stub-section]');
-			assert.strictEqual(stubs.length, SECTION_MODULES.length, '全セクションが描画される');
-		});
-		const order = [...page.container.querySelectorAll('[data-stub-section]')]
+		const readOrder = () => [...page.container.querySelectorAll('[data-stub-section]')]
 			.map((el) => el.getAttribute('data-stub-section'));
+
+		// 非同期コンポーネントは「解決 -> 次のティックで描画」の順に進むため、
+		// タイマーで待つだけでは描画が追いつかないことがある。
+		// 明示的に nextTick を回して Vue のレンダーキューを消化させる。
+		let order = readOrder();
+		for (let tick = 0; tick < 200 && order.length !== SECTION_MODULES.length; tick++) {
+			await nextTick();
+			await new Promise((resolve) => setTimeout(resolve, 10));
+			order = readOrder();
+		}
+
+		assert.strictEqual(order.length, SECTION_MODULES.length, '全セクションが描画される');
 		assert.strictEqual(order[1], 'tempura-privacy', 'プライバシーがプロフィールの次(2番目)に配置されている');
 	});
 
