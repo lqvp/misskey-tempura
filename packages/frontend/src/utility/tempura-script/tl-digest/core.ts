@@ -557,36 +557,145 @@ function locateJsonCandidate(trimmed: string): string {
 }
 
 /**
- * 断片が自由文の「引用」なのか、応答の「本文」なのかを、外側の文で判定する。
+ * JSON 断片の外側が「導入句」か「実質的な地の文」かを分けるしきい値。単位は実質文字数、
+ * つまり句読点・記号・空白を除いた文字の数 (「**結果:**」と「結果」を同じ 2 文字とみなすため)。
  *
- * - 「結果は次のとおりです: []」のように、空配列の前に置かれた導入句 (コロンなどで終わる) だけなら
- *   JSON が本文であり、空配列はモデルの「話題なし」の表明とみなす。
- * - 「設定例 [] が共有されました。」のように、空配列の**後ろ**に地の文が続く場合は、
- *   その `[]` は文中の引用で、書かれた本文こそが要約になる (Finding B)。
+ * 実測値 (下記サンプルをそのまま計測したもの):
+ *
+ * | 分類 | サンプル (実質文字数) |
+ * | --- | --- |
+ * | 導入句 | `結果` 2 / `以上です` 4 / `以下が要約です` 7 / `次のとおりです` 7 |
+ * | 導入句 | `こちらが結果です` 8 / `結果は次のとおりです` 10 / `以下をご確認ください` 10 |
+ * | 導入句 | `まとめると次のとおりです` 12 / `以下にJSONを示します` 12 / `Here is the JSON` 13 |
+ * | 導入句 | `Here is the result` 15 / `Analysis complete` 16 |
+ * | 地の文 | `例` 1 / `設定例` 3 / `例です` 3 (いずれも終端記号なし) |
+ * | 地の文 | `GPUの話題とラーメンの話題` 14 / `今夜はカレーの話が多かったです` 15 |
+ * | 地の文 | `今日はラーメンの話題が中心でした` 16 / `今日はゲームの話題が多かったです` 16 |
+ * | 地の文 | `今日はGPUの話でもりあがりました` 17 / `今日はTypeScriptのニュースで盛り上がりました` 27 |
+ *
+ * 導入句は最大 16 文字 (`Analysis complete`)、地の文は最小 1 文字 (`例`) で、終端記号の有無を除けば
+ * 分布が重なるため長さだけでは分離できない。そこで判定は 2 段にする:
+ * - まず「文を言い切っているか」を見る。導入句の大半はコロンで終わり言い切っていないので、ここで外れる
+ * - 句点・疑問符・感嘆符で終わるものだけ長さで見分ける。`まとめると次のとおりです。` (12) のような
+ *   短い定型句は導入句とし、地の文とみなす下限を {@link LEAD_IN_MAX_CHARS} (12) に置く
+ *
+ * 境界の根拠は実測値: 句点付きの導入句の最大は `まとめると次のとおりです。` の 12 文字で、
+ * 句点付きの日本語の地の文の最小は `GPUの話題とラーメンの話題。` の 14 文字。12 < 13 <= 14 の間に
+ * 境界を置くため、12 文字以下を導入句、13 文字以上を地の文とする。英語は最短の導入句
+ * (`Here you go` 9 / `Here is the JSON` 13) がより長いので、同じ下限に 6 文字の余裕を足す。
  */
-function isQuotedFragment(trimmed: string, fragment: string): boolean {
-	const index = trimmed.indexOf(fragment);
-	if (index < 0) return false;
-	const after = trimmed.slice(index + fragment.length).replace(/```/g, '').trim();
-	// 後ろに地の文が続くなら引用
-	if (after !== '') return true;
-	// 前に置かれたのが導入句だけなら本文とみなす
-	const before = trimmed.slice(0, index).replace(/```(?:json)?/gi, '').trim();
-	return before !== '' && !/[:：]$/u.test(before);
+const LEAD_IN_MAX_CHARS = 12;
+
+/**
+ * 地の文の終わりを示す文字 (日本語の句点・終止符・疑問符・感嘆符)。
+ * 導入句に付くのはコロンだけなので、これらが末尾にあれば「文を言い切った」とみなす。
+ */
+const SENTENCE_TERMINATOR = /[。．.!？!?．]+$/u;
+
+/**
+ * 日本語・中国語・韓国語の文字。英語だけの導入句 (`Here is the JSON:`) と、
+ * 「それらしく見えるだけの英語の地の文」を取り違えないための補助的な手がかり。
+ */
+const CJK = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/u;
+
+/** 実質文字 (句読点・記号・空白を除いた文字) だけを取り出す。`**結果:**` と `結果` を同じ 2 文字とみなすため */
+function substantiveChars(text: string): string {
+	return text.replace(/[\s\p{P}\p{S}]+/gu, '');
 }
 
 /**
- * 応答全体がコードフェンス 1 つだけで構成されているか。
- * その中身は「応答そのもの」であり、外側に書かれた説明文ではない。
+ * JSON 断片の外側の文字列が、導入句ではなく「実質的な地の文」か。
  *
- * summary にコード例 (` ```ts ... ``` `) を書いた正当な JSON は珍しくないため、
- * 「最初のフェンスが応答の先頭で開き、最後のフェンスが応答の末尾で閉じている」ことだけを見る。
+ * LLM は `結果は次のとおりです: []` のような前置きを添えることがあり、これは「話題なし」の表明として
+ * 受け入れる必要がある。一方 `今日はラーメンの話題が中心でした。\n\n{"topics":[]}` は本文が地の文であり、
+ * 空の `topics` に吸収させると書かれた要約ごと消えてしまう。
+ *
+ * 判定 (実質文字数は {@link LEAD_IN_MAX_CHARS} を参照):
+ * - 空、または記号だけ (`**`) → 導入句 (内容が無い)
+ * - 終端記号で終わらない → 導入句。`結果:` `以下が要約です:` `Here is the JSON:` はいずれも
+ *   コロンで終わり、文を言い切っていない
+ * - 終端記号で終わるが {@link LEAD_IN_MAX_CHARS} 文字以下 → 導入句。`まとめると次のとおりです。`
+ * - それより長い → 地の文
  */
-function isWholeFence(trimmed: string): boolean {
-	if (!trimmed.startsWith('```')) return false;
-	if (!trimmed.endsWith('```')) return false;
-	// 先頭のフェンスを除いた位置以降に、末尾のフェンスが閉じていること
-	return trimmed.indexOf('```', 3) <= trimmed.length - 3;
+function hasSubstantiveProse(text: string): boolean {
+	const normalized = text.trim();
+	if (normalized === '') return false;
+	const chars = substantiveChars(normalized);
+	// 記号だけ (`**` や `---`) は内容が無い
+	if (chars === '') return false;
+	// 文を言い切っていない = 断片を導く前置き
+	if (!SENTENCE_TERMINATOR.test(normalized)) return false;
+	// 日本語の地の文は長さが短くても本文になり得るため、下限は短め (実測の導入句最大 13 より上) に置く
+	const threshold = CJK.test(chars) ? LEAD_IN_MAX_CHARS : LEAD_IN_MAX_CHARS + 6;
+	return Array.from(chars).length > threshold;
+}
+
+/**
+ * 空の `topics` を「話題なし」として受け入れてよいか、書かれた本文を表示すべきかを判定する。
+ *
+ * - 応答全体が構造 (フェンス 1 つに包まれている場合も含む) なら受け入れる
+ * - 断片の外側が導入句だけ、または地の文が無ければ受け入れる
+ * - 断片の外側に実質的な地の文があれば、その地の文こそが要約なので受け入れない (Finding B / 後置の地の文)
+ */
+function acceptsEmptyTopics(
+	trimmed: string,
+	fragment: string,
+	fromProse: boolean,
+	isWholeBody: boolean,
+): boolean {
+	if (!fromProse && isWholeBody) return true;
+	const index = trimmed.indexOf(fragment);
+	if (index < 0) return true;
+	const after = trimmed.slice(index + fragment.length).replace(/```/g, '').trim();
+	// 後ろに地の文が続くなら、その地の文が本文 (「設定例 [] が共有されました。」)
+	if (after !== '') return false;
+	const before = trimmed.slice(0, index).replace(/```(?:json)?/gi, '').trim();
+	return !hasSubstantiveProse(before);
+}
+
+/**
+ * 応答全体がコードフェンス 1 つだけで構成されているとき、その開き行と閉じ行の位置を返す。
+ *
+ * 「フェンスで始まり、フェンスで終わる」だけでは足りない。次の応答は独立したコードブロック 2 つの
+ * 並びであって、1 つのフェンスの中身ではない:
+ *
+ * ```
+ * []
+ * ```
+ *
+ * 要約です。今日はGPUの話でもりあがりました。
+ *
+ * ```
+ * (参考)
+ * ```
+ *
+ * これを 1 つのフェンスとみなすと、要約の地の文がフェンスの中身として捨てられ、
+ * 書かれた要約が消えたうえで未読の pending まで破棄される。そのため、開き行の直後に現れる
+ * **最初のフェンス行が応答の最終行**であることを求める (それより前に閉じフェンスがあれば不成立)。
+ * 開き行の info string (`json` / `ts` など) は許容する。
+ *
+ * @returns 開き行の終端 (改行を含む) と閉じ行の先頭の位置。フェンス全体でなければ null。
+ */
+function findWholeFence(trimmed: string): { openEnd: number; closeStart: number } | null {
+	const lines = trimmed.split('\n');
+	// 開き行のフェンスは先頭行から始まり、info string に ``` を含まない
+	const openLine = lines[0] ?? '';
+	const openingFence = openLine.match(/^```[^`]*$/u);
+	if (openingFence == null) return null;
+	// 折り返しの無いフェンス (```[]```)。閉じ行も末尾に同居しているので中身は空になる
+	if (lines.length === 1) {
+		const single = trimmed.match(/^```[^`\n]*```$/u);
+		if (single == null) return null;
+		return { openEnd: trimmed.indexOf('```', 3) + 3, closeStart: trimmed.length - 3 };
+	}
+	// 開き行の次以降で最初に現れるフェンス行が、応答の最終行でなければ「フェンス 1 つ」ではない
+	for (let i = 1; i < lines.length; i++) {
+		if (!(lines[i] ?? '').trim().startsWith('```')) continue;
+		if (i !== lines.length - 1) return null;
+		const openEnd = trimmed.indexOf('\n') + 1;
+		return { openEnd, closeStart: trimmed.length - 3 };
+	}
+	return null;
 }
 
 /**
@@ -594,10 +703,9 @@ function isWholeFence(trimmed: string): boolean {
  * `locateJsonCandidate` のような非貪欲な正規表現では、中身の ``` で切れてしまうため使わない。
  */
 function unwrapWholeFence(trimmed: string): string | null {
-	if (!isWholeFence(trimmed)) return null;
-	const openEnd = trimmed.indexOf('\n');
-	if (openEnd < 0) return null;
-	return trimmed.slice(openEnd + 1, trimmed.length - 3).trim();
+	const span = findWholeFence(trimmed);
+	if (span == null) return null;
+	return trimmed.slice(span.openEnd, span.closeStart).trim();
 }
 
 /**
@@ -618,6 +726,11 @@ function isParsedStructure(value: unknown): value is Record<string, unknown> | u
  */
 function cleanedWholeText(text: string): string {
 	const trimmed = text.trim();
+	// 中身が空のフェンス (` ```json\n``` `) は何も書かれていないのと同じ
+	const wholeFence = findWholeFence(trimmed);
+	if (wholeFence != null && trimmed.slice(wholeFence.openEnd, wholeFence.closeStart).trim() === '') {
+		return '';
+	}
 	const fenceStripped = trimmed
 		.replace(/^```(?:json)?\s*/i, '')
 		.replace(/\s*```$/, '')
@@ -625,6 +738,33 @@ function cleanedWholeText(text: string): string {
 	const body = fenceStripped !== trimmed ? fenceStripped : trimmed;
 	if (body === 'null') return '';
 	return body;
+}
+
+/**
+ * 応答から、解析に使った JSON 断片だけを取り除く。
+ *
+ * 地の文の途中や直後に JSON が置かれている場合、単に ` /^```json/ ` や ` /```$/ ` を落とすだけでは
+ * `{"topics":[]}\n```\n\n今日は…` のように断片の**末尾側**が地の文に残ってしまう。
+ * 表示する本文は地の文そのものなので、断片と、断片を囲っていたフェンス記号だけを取り除く。
+ */
+function textWithoutFragment(text: string, fragment: string | null): string {
+	if (fragment == null || fragment === '') return text;
+	const index = text.indexOf(fragment);
+	if (index < 0) return text;
+
+	const rawBefore = text.slice(0, index);
+	const rawAfter = text.slice(index + fragment.length);
+	// 断片がフェンスで始まっていた場合は、その閉じフェンス行も断片の一部として落とす
+	const after = fragment.startsWith('```') ? rawAfter.replace(/^[ \t]*```[^\n]*/u, '') : rawAfter;
+	// `[]` と `{"topics":[]}` はどちらも「何も無い」の表明なので、文中で `[]` を引用しているだけの地の文も
+	// 同じ表明として落とす (「結果は次のとおりです: []」と扱いを揃えるため)
+	const withoutEmptyArray = rawBefore.replace(/[ \t]*\[\s*\][ \t]*$/u, ' ');
+
+	// 元の地の文の区切りを復元する。改行を挟んでいたなら改行、同じ行で文が続いていたなら空白 1 つ
+	const hadLineBreak = /\n\s*$/u.test(rawBefore) || /^\s*\n/u.test(after);
+	const separator = hadLineBreak ? '\n' : ' ';
+	const joined = `${withoutEmptyArray.replace(/[ \t]+$/u, '')}${separator}${after.replace(/^[ \t]+/u, '')}`;
+	return hadLineBreak ? joined.replace(/^\n+|[ \t]+\n/gu, '').trimEnd() : joined.trim();
 }
 
 /**
@@ -701,10 +841,12 @@ function parseResponseBody(trimmed: string): ParsedBody | null {
  *          - 応答全体が JSON だがスキーマと異なる場合
  *          - トピックを含むはずの配列に有効な要素が 1 件も無い場合
  *
- * トピックを含む配列が空 (`[]`) のときは「話題なし」として受け入れるが、**自由文の中に紛れた
- * 空配列は採用しない** (「設定例 [] が共有されました。」の `[]` を拾うと、書かれた本文が消えたうえで
- * 未読の pending まで破棄されてしまう)。受け入れるのは、応答全体が空配列 / `{"topics":[]}` のときと、
- * 自由文中の断片でも `topics` キーを明示して空配列になっているときだけ。
+ * トピックを含む配列が空 (`[]`) のときは「話題なし」として受け入れるが、**断片の外側に実質的な地の文が
+ * ある場合は採用しない** (「設定例 [] が共有されました。」や「今日はラーメンの話題が中心でした。{"topics":[]}」の
+ * 空配列を拾うと、書かれた本文が消えたうえで未読の pending まで破棄されてしまう)。受け入れるのは、
+ * 応答全体が空配列 / `{"topics":[]}` のとき (フェンス 1 つに包まれている場合も含む) と、
+ * 断片の外側が導入句だけ、または地の文が無いときだけ。導入句と地の文の区別は
+ * {@link hasSubstantiveProse} を参照。
  */
 export function parseTlDigestResponse(
 	rawText: string,
@@ -765,10 +907,11 @@ export function parseTlDigestResponse(
 
 			// スキーマ不正な要素しか無い応答は「話題なし」ではなく不正な応答として扱う
 			if (topics.length > 0 || rawTopics.length === 0) {
-				// 空の topics のうち、自由文の中に紛れた `[]` は採用せずプレーンテキスト表示へ回す。
-				// ただし `topics` キーを明示した断片はモデルの意思表示とみなして受け入れる
-				if (topics.length === 0 && body.fromProse && !hasTopicsKey && isQuotedFragment(trimmed, body.text)) {
-					const fallbackText = stripUrls(cleanedWholeText(trimmed));
+				// 空の topics であっても、断片の外側に実質的な地の文があれば、その地の文こそが要約。
+				// 空 topics を優先すると書かれた要約が消えたうえで未読の pending まで破棄されてしまう
+				if (topics.length === 0 && !acceptsEmptyTopics(trimmed, body.text, body.fromProse, body.wholeBody)) {
+					const withoutFrag = textWithoutFragment(trimmed, body.text);
+					const fallbackText = stripUrls(cleanedWholeText(withoutFrag));
 					if (fallbackText !== '') {
 						return { topics: [], fallbackText };
 					}
