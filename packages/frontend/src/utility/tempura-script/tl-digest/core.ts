@@ -534,407 +534,303 @@ function stripUrls(text: string): string {
 }
 
 /**
- * 応答本文から JSON の断片を切り出す。切り出せなかった場合は全文を返す。
- * 自由文の中に JSON が引用されている場合 (`以下が要約です: {"topics":[...]}`) に、その引用を拾うためのもの。
+ * コードフェンスの「開き行」(行頭の ``` と info string) に一致する。
+ *
+ * 4 文字目がバッククォートのときは一致しない。閉じフェンスに隣接して書かれた
+ * ` ```json {...}``` ` を開き行と取り違えないため、4 文字目を見る。
  */
-function locateJsonCandidate(trimmed: string): string {
-	const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-	if (fenceMatch && fenceMatch[1] != null) {
-		return fenceMatch[1].trim();
-	}
-	const firstBracket = trimmed.indexOf('[');
-	const lastBracket = trimmed.lastIndexOf(']');
-	const firstBrace = trimmed.indexOf('{');
-	const lastBrace = trimmed.lastIndexOf('}');
-	// トップレベルが配列 ([{...}]) の場合は外側の [] を落とさない
-	if (firstBracket !== -1 && lastBracket > firstBracket && (firstBrace === -1 || firstBracket < firstBrace)) {
-		return trimmed.slice(firstBracket, lastBracket + 1);
-	}
-	if (firstBrace !== -1 && lastBrace > firstBrace) {
-		return trimmed.slice(firstBrace, lastBrace + 1);
-	}
-	return trimmed;
+const FENCE_OPEN = /^[ \t]*```[^`\n]*$/u;
+
+function isFenceLine(line: string): boolean {
+	return line.trim().startsWith('```');
 }
 
 /**
- * JSON 断片の外側が「導入句」か「実質的な地の文」かを分けるしきい値。単位は実質文字数、
- * つまり句読点・記号・空白を除いた文字の数 (「**結果:**」と「結果」を同じ 2 文字とみなすため)。
+ * 応答の先頭がちょうど 1 つのコードフェンスで、その最終行が閉じフェンスなら、中身を返す。
  *
- * 実測値 (下記サンプルをそのまま計測したもの):
- *
- * | 分類 | サンプル (実質文字数) |
- * | --- | --- |
- * | 導入句 | `結果` 2 / `以上です` 4 / `以下が要約です` 7 / `次のとおりです` 7 |
- * | 導入句 | `こちらが結果です` 8 / `結果は次のとおりです` 10 / `以下をご確認ください` 10 |
- * | 導入句 | `まとめると次のとおりです` 12 / `以下にJSONを示します` 12 / `Here is the JSON` 13 |
- * | 導入句 | `Here is the result` 15 / `Analysis complete` 16 |
- * | 地の文 | `例` 1 / `設定例` 3 / `例です` 3 (いずれも終端記号なし) |
- * | 地の文 | `GPUの話題とラーメンの話題` 14 / `今夜はカレーの話が多かったです` 15 |
- * | 地の文 | `今日はラーメンの話題が中心でした` 16 / `今日はゲームの話題が多かったです` 16 |
- * | 地の文 | `今日はGPUの話でもりあがりました` 17 / `今日はTypeScriptのニュースで盛り上がりました` 27 |
- *
- * 導入句は最大 16 文字 (`Analysis complete`)、地の文は最小 1 文字 (`例`) で、終端記号の有無を除けば
- * 分布が重なるため長さだけでは分離できない。そこで判定は 2 段にする:
- * - まず「文を言い切っているか」を見る。導入句の大半はコロンで終わり言い切っていないので、ここで外れる
- * - 句点・疑問符・感嘆符で終わるものだけ長さで見分ける。`まとめると次のとおりです。` (12) のような
- *   短い定型句は導入句とし、地の文とみなす下限を {@link LEAD_IN_MAX_CHARS} (12) に置く
- *
- * 境界の根拠は実測値: 句点付きの導入句の最大は `まとめると次のとおりです。` の 12 文字で、
- * 句点付きの日本語の地の文の最小は `GPUの話題とラーメンの話題。` の 14 文字。12 < 13 <= 14 の間に
- * 境界を置くため、12 文字以下を導入句、13 文字以上を地の文とする。英語は最短の導入句
- * (`Here you go` 9 / `Here is the JSON` 13) がより長いので、同じ下限に 6 文字の余裕を足す。
- */
-const LEAD_IN_MAX_CHARS = 12;
-
-/**
- * 地の文の終わりを示す文字 (日本語の句点・終止符・疑問符・感嘆符)。
- * 導入句に付くのはコロンだけなので、これらが末尾にあれば「文を言い切った」とみなす。
- */
-const SENTENCE_TERMINATOR = /[。．.!？!?．]+$/u;
-
-/**
- * 日本語・中国語・韓国語の文字。英語だけの導入句 (`Here is the JSON:`) と、
- * 「それらしく見えるだけの英語の地の文」を取り違えないための補助的な手がかり。
- */
-const CJK = /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/u;
-
-/** 実質文字 (句読点・記号・空白を除いた文字) だけを取り出す。`**結果:**` と `結果` を同じ 2 文字とみなすため */
-function substantiveChars(text: string): string {
-	return text.replace(/[\s\p{P}\p{S}]+/gu, '');
-}
-
-/**
- * JSON 断片の外側の文字列が、導入句ではなく「実質的な地の文」か。
- *
- * LLM は `結果は次のとおりです: []` のような前置きを添えることがあり、これは「話題なし」の表明として
- * 受け入れる必要がある。一方 `今日はラーメンの話題が中心でした。\n\n{"topics":[]}` は本文が地の文であり、
- * 空の `topics` に吸収させると書かれた要約ごと消えてしまう。
- *
- * 判定 (実質文字数は {@link LEAD_IN_MAX_CHARS} を参照):
- * - 空、または記号だけ (`**`) → 導入句 (内容が無い)
- * - 終端記号で終わらない → 導入句。`結果:` `以下が要約です:` `Here is the JSON:` はいずれも
- *   コロンで終わり、文を言い切っていない
- * - 終端記号で終わるが {@link LEAD_IN_MAX_CHARS} 文字以下 → 導入句。`まとめると次のとおりです。`
- * - それより長い → 地の文
- */
-function hasSubstantiveProse(text: string): boolean {
-	const normalized = text.trim();
-	if (normalized === '') return false;
-	const chars = substantiveChars(normalized);
-	// 記号だけ (`**` や `---`) は内容が無い
-	if (chars === '') return false;
-	// 文を言い切っていない = 断片を導く前置き
-	if (!SENTENCE_TERMINATOR.test(normalized)) return false;
-	// 日本語の地の文は長さが短くても本文になり得るため、下限は短め (実測の導入句最大 13 より上) に置く
-	const threshold = CJK.test(chars) ? LEAD_IN_MAX_CHARS : LEAD_IN_MAX_CHARS + 6;
-	return Array.from(chars).length > threshold;
-}
-
-/**
- * 空の `topics` を「話題なし」として受け入れてよいか、書かれた本文を表示すべきかを判定する。
- *
- * - 応答全体が構造 (フェンス 1 つに包まれている場合も含む) なら受け入れる
- * - 断片の外側が導入句だけ、または地の文が無ければ受け入れる
- * - 断片の外側に実質的な地の文があれば、その地の文こそが要約なので受け入れない (Finding B / 後置の地の文)
- */
-function acceptsEmptyTopics(
-	trimmed: string,
-	fragment: string,
-	fromProse: boolean,
-	isWholeBody: boolean,
-): boolean {
-	if (!fromProse && isWholeBody) return true;
-	const index = trimmed.indexOf(fragment);
-	if (index < 0) return true;
-	const after = trimmed.slice(index + fragment.length).replace(/```/g, '').trim();
-	// 後ろに地の文が続くなら、その地の文が本文 (「設定例 [] が共有されました。」)
-	if (after !== '') return false;
-	const before = trimmed.slice(0, index).replace(/```(?:json)?/gi, '').trim();
-	return !hasSubstantiveProse(before);
-}
-
-/**
- * 応答全体がコードフェンス 1 つだけで構成されているとき、その開き行と閉じ行の位置を返す。
- *
- * 「フェンスで始まり、フェンスで終わる」だけでは足りない。次の応答は独立したコードブロック 2 つの
- * 並びであって、1 つのフェンスの中身ではない:
+ * 「フェンスで始まりフェンスで終わる」だけでは足りない。次の応答は独立したコードブロック 2 つの
+ * 並びであって 1 つのフェンスの中身ではない:
  *
  * ```
  * []
  * ```
- *
  * 要約です。今日はGPUの話でもりあがりました。
- *
  * ```
  * (参考)
  * ```
  *
- * これを 1 つのフェンスとみなすと、要約の地の文がフェンスの中身として捨てられ、
- * 書かれた要約が消えたうえで未読の pending まで破棄される。そのため、開き行の直後に現れる
- * **最初のフェンス行が応答の最終行**であることを求める (それより前に閉じフェンスがあれば不成立)。
- * 開き行の info string (`json` / `ts` など) は許容する。
+ * これを 1 つのフェンスとみなすと要約の地の文が中身として捨てられるため、開き行より後で最初に現れる
+ * フェンス行が応答の最終行であることを求める。
  *
- * @returns 開き行の終端 (改行を含む) と閉じ行の先頭の位置。フェンス全体でなければ null。
- */
-function findWholeFence(trimmed: string): { openEnd: number; closeStart: number } | null {
-	const lines = trimmed.split('\n');
-	// 開き行のフェンスは先頭行から始まり、info string に ``` を含まない
-	const openLine = lines[0] ?? '';
-	const openingFence = openLine.match(/^```[^`]*$/u);
-	if (openingFence == null) return null;
-	// 折り返しの無いフェンス (```[]```)。閉じ行も末尾に同居しているので中身は空になる
-	if (lines.length === 1) {
-		const single = trimmed.match(/^```[^`\n]*```$/u);
-		if (single == null) return null;
-		return { openEnd: trimmed.indexOf('```', 3) + 3, closeStart: trimmed.length - 3 };
-	}
-	// 開き行の次以降で最初に現れるフェンス行が、応答の最終行でなければ「フェンス 1 つ」ではない
-	for (let i = 1; i < lines.length; i++) {
-		if (!(lines[i] ?? '').trim().startsWith('```')) continue;
-		if (i !== lines.length - 1) return null;
-		const openEnd = trimmed.indexOf('\n') + 1;
-		return { openEnd, closeStart: trimmed.length - 3 };
-	}
-	return null;
-}
-
-/**
- * 応答全体がコードフェンス 1 つだけのとき、そのフェンスの中身を返す (そうでなければ null)。
- * `locateJsonCandidate` のような非貪欲な正規表現では、中身の ``` で切れてしまうため使わない。
+ * @returns フェンスの中身。1 つのフェンスでなければ null。
  */
 function unwrapWholeFence(trimmed: string): string | null {
-	const span = findWholeFence(trimmed);
-	if (span == null) return null;
-	return trimmed.slice(span.openEnd, span.closeStart).trim();
-}
+	const lines = trimmed.split('\n');
 
-/**
- * JSON として解釈できた値のうち「ダイジェストの封筒」として扱える形かどうか。
- * プリミティブ (文字列・数値・真偽値・null) は JSON.parse に成功しても封筒ではない。
- */
-function isParsedStructure(value: unknown): value is Record<string, unknown> | unknown[] {
-	return typeof value === 'object' && value !== null;
-}
-
-/**
- * プレーンテキスト表示用に、応答全体からコードフェンス記号だけを取り除く。
- *
- * 応答全体が JSON プリミティブだった場合 (`"要約です"` / `42` / `true` / `null`) は封筒ではないため
- * `parseTlDigestResponse` が null を返し、この関数に届くのは JSON として解析できなかった自由文だけになる。
- * それでも JSON の `null` だけは「何も書かれていない」に最も近いので、そのまま "null" と
- * 表示しないよう空文字に倒す (呼び出し側で null 扱いになる)。
- */
-function cleanedWholeText(text: string): string {
-	const trimmed = text.trim();
-	// 中身が空のフェンス (` ```json\n``` `) は何も書かれていないのと同じ
-	const wholeFence = findWholeFence(trimmed);
-	if (wholeFence != null && trimmed.slice(wholeFence.openEnd, wholeFence.closeStart).trim() === '') {
-		return '';
-	}
-	const fenceStripped = trimmed
-		.replace(/^```(?:json)?\s*/i, '')
-		.replace(/\s*```$/, '')
-		.trim();
-	const body = fenceStripped !== trimmed ? fenceStripped : trimmed;
-	if (body === 'null') return '';
-	return body;
-}
-
-/**
- * 応答から、解析に使った JSON 断片だけを取り除く。
- *
- * 地の文の途中や直後に JSON が置かれている場合、単に ` /^```json/ ` や ` /```$/ ` を落とすだけでは
- * `{"topics":[]}\n```\n\n今日は…` のように断片の**末尾側**が地の文に残ってしまう。
- * 表示する本文は地の文そのものなので、断片と、断片を囲っていたフェンス記号だけを取り除く。
- */
-function textWithoutFragment(text: string, fragment: string | null): string {
-	if (fragment == null || fragment === '') return text;
-	const index = text.indexOf(fragment);
-	if (index < 0) return text;
-
-	const rawBefore = text.slice(0, index);
-	const rawAfter = text.slice(index + fragment.length);
-	// 断片がフェンスで始まっていた場合は、その閉じフェンス行も断片の一部として落とす
-	const after = fragment.startsWith('```') ? rawAfter.replace(/^[ \t]*```[^\n]*/u, '') : rawAfter;
-	// `[]` と `{"topics":[]}` はどちらも「何も無い」の表明なので、文中で `[]` を引用しているだけの地の文も
-	// 同じ表明として落とす (「結果は次のとおりです: []」と扱いを揃えるため)
-	const withoutEmptyArray = rawBefore.replace(/[ \t]*\[\s*\][ \t]*$/u, ' ');
-
-	// 元の地の文の区切りを復元する。改行を挟んでいたなら改行、同じ行で文が続いていたなら空白 1 つ
-	const hadLineBreak = /\n\s*$/u.test(rawBefore) || /^\s*\n/u.test(after);
-	const separator = hadLineBreak ? '\n' : ' ';
-	const joined = `${withoutEmptyArray.replace(/[ \t]+$/u, '')}${separator}${after.replace(/^[ \t]+/u, '')}`;
-	return hadLineBreak ? joined.replace(/^\n+|[ \t]+\n/gu, '').trimEnd() : joined.trim();
-}
-
-/**
- * 応答全体が JSON のプリミティブ (`null` / `true` / `42` / `"要約"` / `false`) かどうか。
- *
- * プリミティブの表記をそのまま要約として表示しても意味が無い (`null` や `42` がダイジェストになる) ため、
- * 応答全体がプリミティブなら不正な応答として扱う。呼び出し側はエラー表示にし、未読の pending を残す。
- */
-function isWholeBodyPrimitive(trimmed: string): boolean {
-	if (!/^(?:null|true|false|-?\d|")/.test(trimmed)) return false;
-	try {
-		return !isParsedStructure(JSON.parse(trimmed) as unknown);
-	} catch {
-		// プリミティブの形で始まるが JSON として壊れている。自由文として扱う
-		return false;
-	}
-}
-
-/**
- * 応答全体を JSON として解析した結果。
- * `value` は解析できた場合のみ入り、`fromProse` は「自由文の中の引用から取り出した」ことを表す。
- */
-interface ParsedBody {
-	value: unknown;
-	/** 自由文の中から取り出した断片か (応答全体が JSON として成立しているわけではない) */
-	fromProse: boolean;
-	/** 応答全体が JSON として成立しているか (フェンスの中身も「成立」に含める) */
-	wholeBody: boolean;
-	/** 解析に使った文字列 (自由文中の引用かどうかの判定に使う) */
-	text: string;
-}
-
-/**
- * 応答全体を JSON として解析する。
- *
- * 1. 応答全体をそのまま解析する (summary にコードフェンスを含む正当な JSON を壊さない)
- * 2. 応答全体がコードフェンス 1 つなら、その中身を解析する
- * 3. それでも駄目なら、コードフェンスの中身や前後の説明文を落とした断片を解析する (自由文の中の引用)
- */
-function parseResponseBody(trimmed: string): ParsedBody | null {
-	const attempts: Array<{ text: string; fromProse: boolean; wholeBody: boolean }> = [
-		{ text: trimmed, fromProse: false, wholeBody: true },
-	];
-	const fenceInner = unwrapWholeFence(trimmed);
-	if (fenceInner != null) {
-		attempts.push({ text: fenceInner, fromProse: false, wholeBody: true });
-	}
-	const extracted = locateJsonCandidate(trimmed);
-	if (extracted !== trimmed && extracted !== fenceInner) {
-		attempts.push({ text: extracted, fromProse: fenceInner == null, wholeBody: false });
+	if (lines.length === 1) {
+		// 折り返しの無いフェンス (```json []```)。閉じフェンスは末尾 3 文字とみなし、
+		// その手前は中身として扱う (中身と info string の境界は行内では決められない。
+		// `json` が残っても、中身が JSON なら名前が付いた値として解析できる)
+		if (!trimmed.startsWith('```')) return null;
+		if (!trimmed.endsWith('```') || trimmed.length < 6) return null;
+		return trimmed.slice(3, -3).trim();
 	}
 
-	for (const attempt of attempts) {
-		try {
-			const value = JSON.parse(attempt.text) as unknown;
-			if (!isParsedStructure(value)) continue;
-			return { value, fromProse: attempt.fromProse, wholeBody: attempt.wholeBody, text: attempt.text };
-		} catch {
-			// 次の候補を試す
+	if (lines.length === 2) {
+		// 開き行 + 閉じ行だけ (中身が空) のフェンス (```json\n```)
+		if (!FENCE_OPEN.test(lines[0] ?? '')) return null;
+		const second = (lines[1] ?? '').trim();
+		if (second === '```') return '';
+		// 閉じフェンスが内容の同じ行にある (```json\n{"topics":[]}```)。閉じフェンスは行末の 3 文字
+		if (!second.endsWith('```')) return null;
+		return second.slice(0, -3).trim();
+	}
+
+	if (!FENCE_OPEN.test(lines[0] ?? '')) return null;
+	if (!isFenceLine(lines[lines.length - 1] ?? '')) return null;
+	// 開き行の次以降で最初に現れるフェンス行が最終行でなければ「フェンス 1 つ」ではない
+	for (let i = 1; i < lines.length - 1; i++) {
+		if (isFenceLine(lines[i] ?? '')) return null;
+	}
+	return lines.slice(1, -1).join('\n').trim();
+}
+
+/**
+ * JSON の候補になりうる断片 (`{...}` / `[...]`) を、対応する括弧で切り出す。
+ *
+ * 文字列リテラルの外側にある括弧だけを数えるので、値の中の ``` や括弧に惑わされない。
+ * 対応する閉じ括弧が見つからない開始位置は捨てて次を探す。
+ *
+ * @returns 断片と、その本文内での範囲 [start, end)。見つからなければ null。
+ */
+function locateJsonCandidate(body: string): { text: string; start: number; end: number } | null {
+	for (let start = 0; start < body.length; start++) {
+		const first = body[start];
+		if (first !== '{' && first !== '[') continue;
+		let depth = 0;
+		let inString = false;
+		let escaped = false;
+		for (let i = start; i < body.length; i++) {
+			const char = body[i]!;
+			if (inString) {
+				if (escaped) {
+					escaped = false;
+				} else if (char === '\\') {
+					escaped = true;
+				} else if (char === '"') {
+					inString = false;
+				}
+				continue;
+			}
+			if (char === '"') {
+				inString = true;
+			} else if (char === '{' || char === '[') {
+				depth++;
+			} else if (char === '}' || char === ']') {
+				depth--;
+				if (depth === 0) return { text: body.slice(start, i + 1), start, end: i + 1 };
+				// 括弧が対応していない。この開始位置は捨てて次を探す
+				if (depth < 0) break;
+			}
 		}
 	}
 	return null;
 }
 
 /**
+ * 断片を本文から取り除く範囲を決める。断片に隣接する空白とバッククォート
+ * (インラインコードの `やフェンスの残り) も一緒に落とし、前後の文言を 1 つの区切りでつなぐ。
+ *
+ * @returns 取り除く範囲 [start, end) と、前後の文言をつなぐ区切り (同じ行なら空白 1 つ、段落が分かれるなら改行)
+ */
+function fragmentRemoval(
+	body: string,
+	start: number,
+	end: number,
+): { start: number; end: number; separator: string } {
+	let before = start;
+	while (before > 0 && /[ \t`]/u.test(body[before - 1]!)) before--;
+	let after = end;
+	while (after < body.length && /[ \t`]/u.test(body[after]!)) after++;
+	const sameLine = !body.slice(before, start).includes('\n') && !body.slice(end, after).includes('\n');
+	return { start: before, end: after, separator: sameLine ? ' ' : '\n' };
+}
+
+/** プレーンテキスト表示用に、フェンス行・取り残しのフェンス記号・連続する空白を落とす */
+function cleanPlainText(text: string): string {
+	const cleaned = text
+		.split('\n')
+		.map((line, index, all) => {
+			const withoutFenceMarker = line.replace(/```/g, '');
+			// フェンス行の language 指定 (`json` など) だけが取り残された行は落とす。
+			// 地の文に含まれるバッククォートの対 (`\`code\``) は残す
+			const strayKeyword = /^\s*[A-Za-z][\w+-]*$/u.test(withoutFenceMarker)
+				&& line !== withoutFenceMarker
+				&& index > 0 && index < all.length - 1;
+			return strayKeyword ? '' : withoutFenceMarker.trim();
+		})
+		.join('\n');
+	return cleaned
+		.replace(/[ \t]+\n/gu, '\n')
+		.replace(/\n{3,}/gu, '\n\n')
+		.replace(/^\n+|\n+$/gu, '')
+		.trim();
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * JSON から取り出した値を「ダイジェストの封筒」として調べた結果。
+ * - `{ kind: 'envelope' }`: `topics` 配列を持つ (空配列は「話題なし」)
+ * - `{ kind: 'invalid' }`: `topics` を持つが配列でない、または有効なトピックが 1 件も無い = スキーマ違反
+ * - `null`: 封筒ではない (JSON でない・`topics` を持たない・プリミティブ)
+ */
+type Envelope =
+	| { kind: 'envelope'; topics: TlDigestTopic[] }
+	| { kind: 'invalid' }
+	| null;
+
+/** 応答に現れた 1 トピックを、実在するノートへの参照に解決する */
+function convertTopic(
+	item: unknown,
+	refMap: ReadonlyMap<string, PreparedDigestNote | string>,
+): TlDigestTopic | null {
+	if (item == null || typeof item !== 'object') return null;
+	const record = item as Record<string, unknown>;
+	const rawTitle = typeof record['title'] === 'string' ? record['title'].trim() : '';
+	const rawSummary = typeof record['summary'] === 'string' ? record['summary'].trim() : '';
+	if (rawTitle === '' && rawSummary === '') return null;
+
+	const rawRefs = Array.isArray(record['refs']) ? record['refs'] : [];
+	const seenNoteIds = new Set<string>();
+	const noteIds: string[] = [];
+	const refs: TlDigestTopicRef[] = [];
+
+	for (const r of rawRefs) {
+		const seqId = normalizeSeqRef(r);
+		if (seqId == null) continue;
+		const mapped = refMap.get(seqId);
+		if (mapped == null) continue;
+		const noteId = typeof mapped === 'string' ? mapped : mapped.noteId;
+		const username = typeof mapped === 'string' ? seqId : mapped.username;
+		if (seenNoteIds.has(noteId)) continue;
+		seenNoteIds.add(noteId);
+		noteIds.push(noteId);
+		refs.push({ seqId, noteId, username });
+	}
+
+	return {
+		title: stripUrls(rawTitle || 'Topic'),
+		summary: stripUrls(rawSummary),
+		noteIds,
+		refs,
+	};
+}
+
+/** モデルが返すトピック数の上限。プロンプトは 3〜5 件を求めており、8 件でも十分な余裕がある */
+const MAX_TOPICS = 8;
+
+/** 応答全体が JSON のプリミティブ (`null` / `true` / `42` / `"要約"`) かどうか */
+function isJsonPrimitive(text: string): boolean {
+	try {
+		const parsed = JSON.parse(text) as unknown;
+		return parsed === null || typeof parsed !== 'object';
+	} catch {
+		return false;
+	}
+}
+
+/** JSON として解析し、封筒としての意味を調べる */
+function parseEnvelope(
+	text: string,
+	refMap: ReadonlyMap<string, PreparedDigestNote | string>,
+): Envelope {
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(text) as unknown;
+	} catch {
+		return null;
+	}
+	if (!isRecord(parsed) || !('topics' in parsed)) return null;
+	const rawTopics = parsed.topics;
+	if (!Array.isArray(rawTopics)) return { kind: 'invalid' };
+
+	const topics = rawTopics
+		.slice(0, MAX_TOPICS)
+		.map((item) => convertTopic(item, refMap))
+		.filter((topic): topic is TlDigestTopic => topic != null);
+	// スキーマ不正な要素しか無い応答は「話題なし」ではなく不正な応答として扱う
+	if (topics.length === 0 && rawTopics.length > 0) return { kind: 'invalid' };
+	return { kind: 'envelope', topics };
+}
+
+/**
  * LLM の応答テキストを解析し、実在するノートへの参照のみを解決する。
- * JSON が壊れている場合はプレーンテキスト表示へ安全にフォールバックする。
  *
- * @returns 解析結果。次の場合は「不正な応答」として null を返す (呼び出し側がエラー表示にし、
- *          未読ダイジェストの pending を残す)。
- *          - 空応答
- *          - 応答全体が JSON のプリミティブ (`null` / `true` / `42` / `"要約"`)。封筒ではないので、
- *            プリミティブの表記をそのまま要約として表示しない
- *          - 応答全体が JSON だがスキーマと異なる場合
- *          - トピックを含むはずの配列に有効な要素が 1 件も無い場合
+ * 判定手順 (上から順に、最初に決まったところで終わる):
  *
- * トピックを含む配列が空 (`[]`) のときは「話題なし」として受け入れるが、**断片の外側に実質的な地の文が
- * ある場合は採用しない** (「設定例 [] が共有されました。」や「今日はラーメンの話題が中心でした。{"topics":[]}」の
- * 空配列を拾うと、書かれた本文が消えたうえで未読の pending まで破棄されてしまう)。受け入れるのは、
- * 応答全体が空配列 / `{"topics":[]}` のとき (フェンス 1 つに包まれている場合も含む) と、
- * 断片の外側が導入句だけ、または地の文が無いときだけ。導入句と地の文の区別は
- * {@link hasSubstantiveProse} を参照。
+ * 1. **正規化**: 全体を trim し、応答全体がちょうど 1 つのコードフェンスなら中身を取り出す。
+ *    モデルは指示に反してフェンスを付けることが多いが、全体を包んでいるだけなら無害な逸脱として受け入れる。
+ *    中身が空のフェンスは「何も書かれていない」と同じ扱い。
+ * 2. **全体を JSON として解析**: プリミティブなら不正な応答 (`null`)。
+ *    `topics` 配列を持つオブジェクト (封筒) ならその `topics` (空配列は「話題なし」)、
+ *    スキーマ違反なら不正な応答 (`null`)。
+ *    `topics` を持たないオブジェクトや配列は封筒ではないので 3 へ進む
+ *    (別の JSON を引用しただけの応答を、本文を残したまま降ろせるようにするため)。
+ * 3. **本文中の JSON 断片**: 封筒として成立すれば、その断片の `topics` を採用する。
+ *    スキーマ違反なら不正な応答 (`null`)。
+ * 4. **プレーンテキスト**: 断片 (と、断片を囲むフェンス・インラインコードの記号) を除いた残りを
+ *    `fallbackText` にする。残りの文言が空なら「話題なし」(`fallbackText: null`)。
+ *
+ * **断片の外側に文言が残っている場合は、3 の封筒より 4 を優先する。**
+ * 外側の文言が導入句 (`結果:`) か地の文かを長さや記号で推測する判定は、何度直しても取りこぼしが出た
+ * (「ラーメンとGPUの話 / []」で要約が消える、「結果: `[]`」でバッククォートが漏れる)。
+ * そのため推測は一切せず、「外側に空白以外の文言があるか」という 1 つの事実だけで決める。
+ *
+ * 代償として `結果: []` は「結果:」を本文として表示する (話題なし表示にはならない)。
+ * それでも情報は失われず、システムプロンプトは前置きを禁じているうえ、書かれた要約を捨てる誤り
+ * (未読の pending ごと破棄される) のほうがはるかに高くつくため、この側に倒す。
+ *
+ * @returns 解析結果。不正な応答とみなす場合は null (呼び出し側がエラー表示にし、pending を残す)。
  */
 export function parseTlDigestResponse(
 	rawText: string,
 	refMap: ReadonlyMap<string, PreparedDigestNote | string>,
 ): ParsedTlDigest | null {
 	const trimmed = rawText.trim();
-	if (trimmed === '') {
-		return null;
+	if (trimmed === '') return null;
+
+	// 1. 全体を包む 1 つのフェンスだけを剥がす
+	const fenceInner = unwrapWholeFence(trimmed);
+	if (fenceInner === '') return null;
+	const body = fenceInner ?? trimmed;
+
+	// 2. 全体を JSON として解析する。プリミティブの表記をそのまま要約として表示はしない
+	if (isJsonPrimitive(body)) return null;
+	const whole = parseEnvelope(body, refMap);
+	if (whole?.kind === 'envelope') return { topics: whole.topics, fallbackText: null };
+	if (whole?.kind === 'invalid') return null;
+
+	// 3. 本文中の JSON 断片を探す
+	const candidate = locateJsonCandidate(body);
+	const extracted = candidate == null ? null : parseEnvelope(candidate.text, refMap);
+	if (extracted?.kind === 'invalid') return null;
+
+	// 4. 断片を除いた残りを本文とする。全体がフェンスに包まれていたなら、断片より外側は無い
+	let outside = body;
+	if (candidate != null) {
+		const removal = fragmentRemoval(body, candidate.start, candidate.end);
+		outside = fenceInner == null
+			? `${body.slice(0, removal.start)}${removal.separator}${body.slice(removal.end)}`
+			: '';
 	}
+	const fallbackText = stripUrls(cleanPlainText(outside));
+	if (fallbackText !== '') return { topics: [], fallbackText };
 
-	// 応答全体がプリミティブなら封筒ではない (null / true / 42 / "要約" を要約として表示しない)
-	if (isWholeBodyPrimitive(trimmed)) return null;
-
-	const body = parseResponseBody(trimmed);
-	if (body != null) {
-		const parsed = body.value;
-		const hasTopicsKey = !Array.isArray(parsed) && 'topics' in (parsed as Record<string, unknown>);
-		const rawTopics = Array.isArray(parsed)
-			? parsed
-			: Array.isArray((parsed as Record<string, unknown>)['topics'])
-				? (parsed as { topics: unknown[] }).topics
-				: null;
-
-		if (rawTopics != null) {
-			const topics: TlDigestTopic[] = [];
-			for (const item of rawTopics.slice(0, 8)) {
-				if (item == null || typeof item !== 'object') continue;
-				const record = item as Record<string, unknown>;
-				const rawTitle = typeof record['title'] === 'string' ? record['title'].trim() : '';
-				const rawSummary = typeof record['summary'] === 'string' ? record['summary'].trim() : '';
-				if (rawTitle === '' && rawSummary === '') continue;
-
-				const rawRefs = Array.isArray(record['refs']) ? record['refs'] : [];
-				const seenNoteIds = new Set<string>();
-				const noteIds: string[] = [];
-				const refs: TlDigestTopicRef[] = [];
-
-				for (const r of rawRefs) {
-					const seqId = normalizeSeqRef(r);
-					if (seqId == null) continue;
-					const mapped = refMap.get(seqId);
-					if (mapped == null) continue;
-					const noteId = typeof mapped === 'string' ? mapped : mapped.noteId;
-					const username = typeof mapped === 'string' ? seqId : mapped.username;
-					if (seenNoteIds.has(noteId)) continue;
-					seenNoteIds.add(noteId);
-					noteIds.push(noteId);
-					refs.push({ seqId, noteId, username });
-				}
-
-				topics.push({
-					title: stripUrls(rawTitle || 'Topic'),
-					summary: stripUrls(rawSummary),
-					noteIds,
-					refs,
-				});
-			}
-
-			// スキーマ不正な要素しか無い応答は「話題なし」ではなく不正な応答として扱う
-			if (topics.length > 0 || rawTopics.length === 0) {
-				// 空の topics であっても、断片の外側に実質的な地の文があれば、その地の文こそが要約。
-				// 空 topics を優先すると書かれた要約が消えたうえで未読の pending まで破棄されてしまう
-				if (topics.length === 0 && !acceptsEmptyTopics(trimmed, body.text, body.fromProse, body.wholeBody)) {
-					const withoutFrag = textWithoutFragment(trimmed, body.text);
-					const fallbackText = stripUrls(cleanedWholeText(withoutFrag));
-					if (fallbackText !== '') {
-						return { topics: [], fallbackText };
-					}
-				}
-				return {
-					topics,
-					fallbackText: null,
-				};
-			}
-			// 有効なトピックが 1 件も無い: 応答全体の JSON ならスキーマ不正、自由文の中の引用なら引用として扱う
-			if (!body.fromProse || hasTopicsKey) return null;
-		} else if (body.wholeBody || hasTopicsKey) {
-			// 応答全体が JSON なのにスキーマと異なる場合や、topics が配列でない要約形式の断片は、
-			// 自由文の救済ではなく不正な応答として扱う
-			return null;
-		}
-	}
-
-	// コードフェンス記号を取り除いてプレーンテキストとして返す
-	const cleanedFallback = stripUrls(cleanedWholeText(trimmed));
-	if (cleanedFallback === '') return null;
-	return {
-		topics: [],
-		fallbackText: cleanedFallback,
-	};
+	// 断片の外側に文言が残っていない: 封筒が成立していれば採用、成立していなければ「話題なし」
+	return extracted?.kind === 'envelope'
+		? { topics: extracted.topics, fallbackText: null }
+		: { topics: [], fallbackText: null };
 }

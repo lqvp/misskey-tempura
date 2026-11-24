@@ -582,22 +582,27 @@ describe('parseTlDigestResponse', () => {
 		expect(parsed!.topics[1].noteIds).toEqual(['real-id-2']);
 	});
 
-	it('Markdown コードフェンス付きやトップレベル配列の JSON も解析できる', () => {
-		const raw = '```json\n{"topics":[{"title":"話題A","summary":"要約A","refs":["n1"]}]}\n```';
-		const parsed = parseTlDigestResponse(raw, refMap);
-		expect(parsed).not.toBeNull();
-		expect(parsed!.fallbackText).toBeNull();
-		expect(parsed!.topics).toHaveLength(1);
-		expect(parsed!.topics[0].noteIds).toEqual(['real-id-1']);
+	it('正当な JSON なら、コードフェンスで包まれていても素の応答と同じ結果になる', () => {
+		const inner = '{"topics":[{"title":"話題A","summary":"要約A","refs":["n1"]}]}';
+		const expected = parseTlDigestResponse(inner, refMap);
+		expect(expected!.fallbackText).toBeNull();
+		expect(expected!.topics).toHaveLength(1);
+		expect(expected!.topics[0].noteIds).toEqual(['real-id-1']);
 
-		const rawArray = '[{"title":"配列話題","summary":"配列要約","refs":["n2"]}]';
-		const parsedArray = parseTlDigestResponse(rawArray, refMap);
-		expect(parsedArray).not.toBeNull();
-		expect(parsedArray!.fallbackText).toBeNull();
-		expect(parsedArray!.topics).toHaveLength(1);
-		expect(parsedArray!.topics[0].noteIds).toEqual(['real-id-2']);
+		// モデルが指示に反して付けがちなコードフェンスは、全体を包んでいるだけなら剥がして受け入れる
+		expect(parseTlDigestResponse(`\`\`\`json\n${inner}\n\`\`\``, refMap)).toEqual(expected);
+		expect(parseTlDigestResponse(`\`\`\`\n${inner}\n\`\`\``, refMap)).toEqual(expected);
+	});
 
-		// summary 内に三連バッククォートを含む正当な JSON でも全体解析が優先される
+	it('応答全体がトピックの配列でも、封筒 (topics 配列) ではないので話題として採用しない', () => {
+		// スキーマは {"topics":[...]} のみ。配列を丸ごと渡された逸脱は話題として採用せず、本文にもしない
+		expect(parseTlDigestResponse('[{"title":"配列話題","summary":"配列要約","refs":["n2"]}]', refMap))
+			.toEqual({ topics: [], fallbackText: null });
+		expect(parseTlDigestResponse('```json\n[]\n```', refMap)).toEqual({ topics: [], fallbackText: null });
+	});
+
+	it('summary の文字列値にコードフェンスがあっても、全体の JSON 解析を優先して解析する', () => {
+		// 文字列値の中の ``` を「フェンスの区切り」と数えてしまうと、ここで全体解析から外れてしまう
 		const rawWithInlineFence = JSON.stringify({
 			topics: [{
 				title: 'コード例',
@@ -612,199 +617,147 @@ describe('parseTlDigestResponse', () => {
 		expect(parsedInlineFence!.topics[0].noteIds).toEqual(['real-id-1']);
 	});
 
-	it('正当な空トピック配列は topics: [] として受け入れ、空文字や不正要素のみの応答は null を返す', () => {
+	it('空の topics は「話題なし」として受け入れ、空応答やスキーマ不正は null を返す', () => {
 		expect(parseTlDigestResponse('{"topics":[]}', refMap)).toEqual({ topics: [], fallbackText: null });
+		expect(parseTlDigestResponse('{"topics":[],"note":"例:\\n```ts\\nx\\n```"}', refMap)).toEqual({ topics: [], fallbackText: null });
 		expect(parseTlDigestResponse('', refMap)).toBeNull();
 		expect(parseTlDigestResponse('   \n\t  ', refMap)).toBeNull();
+		// 中身が空のフェンスは「何も書かれていない」と同じ (language 指定の json だけを本文にしない)
 		expect(parseTlDigestResponse('```json\n```', refMap)).toBeNull();
 		expect(parseTlDigestResponse('{"topics":[null]}', refMap)).toBeNull();
 		expect(parseTlDigestResponse('{"topics":[{}]}', refMap)).toBeNull();
+		expect(parseTlDigestResponse('{"topics":null}', refMap)).toBeNull();
+		expect(parseTlDigestResponse('{"topics":"話題A"}', refMap)).toBeNull();
 	});
 
-	it('応答全体が JSON だがスキーマと異なる場合は null を返す', () => {
-		expect(parseTlDigestResponse('{"summary":"話題の要約"}', refMap)).toBeNull();
-		expect(parseTlDigestResponse('```json\n{"items":[]}\n```', refMap)).toBeNull();
-	});
-
-	it('自由文中に引用された JSON 断片はスキーマ検証に使わず全文をフォールバック表示する', () => {
-		const raw = '設定の話題では、例として {"debug": true} が共有されました。';
-		expect(parseTlDigestResponse(raw, refMap)).toEqual({ topics: [], fallbackText: raw });
-
-		const rawArray = '数値の例 [1, 2, 3] が話題になりました。';
-		expect(parseTlDigestResponse(rawArray, refMap)).toEqual({ topics: [], fallbackText: rawArray });
-
-		// topics を持つ要約形式の断片が不正な場合は、前置きがあっても不正な応答として扱う
-		expect(parseTlDigestResponse('以下が要約です: {"topics":[{}]}', refMap)).toBeNull();
-		expect(parseTlDigestResponse('以下が要約です: {"topics":null}', refMap)).toBeNull();
-		expect(parseTlDigestResponse('以下が要約です: {"topics":"話題A"}', refMap)).toBeNull();
-
-		// topics を持たない JSON の引用は全文のフォールバックへ進む
-		const rawObject = '設定例 {"debug":true} について話題になりました。';
-		expect(parseTlDigestResponse(rawObject, refMap)).toEqual({ topics: [], fallbackText: rawObject });
-
-		// 自由文中でも有効なダイジェスト JSON なら従来どおり採用する
-		const withPreface = '以下が要約です: {"topics":[{"title":"話題A","summary":"要約A","refs":["n1"]}]}';
-		const parsed = parseTlDigestResponse(withPreface, refMap);
-		expect(parsed!.fallbackText).toBeNull();
-		expect(parsed!.topics[0].noteIds).toEqual(['real-id-1']);
-	});
-
-	it('JSON が壊れている場合はプレーンテキストにフォールバックし URL を無害化する', () => {
-		const raw = '・TypeScriptの話題\n・カレーの話題 https://malicious.example/click';
-		const parsed = parseTlDigestResponse(raw, refMap);
-		expect(parsed).not.toBeNull();
-		expect(parsed!.topics).toHaveLength(0);
-		expect(parsed!.fallbackText).toBe('・TypeScriptの話題\n・カレーの話題 [URL]');
-	});
-
-	it('空配列 JSON の外側に説明文がある場合は、空 topics ではなく説明文をフォールバック表示する', () => {
-		// 地の文で要約しつつ空配列を引用した応答。[] だけを拾うと書かれた要約が消えてしまう。
-		// 表示するのは地の文そのものなので、要約の一部にならない空配列だけを取り除く
-		const raw = 'こちらがダイジェストです。本日はTypeScriptの最新版に関する話題と、夕食のカレーについての雑談が中心でした。 [] 以上です。';
-		const parsed = parseTlDigestResponse(raw, refMap);
-		expect(parsed).not.toBeNull();
-		expect(parsed!.topics).toHaveLength(0);
-		expect(parsed!.fallbackText).toBe('こちらがダイジェストです。本日はTypeScriptの最新版に関する話題と、夕食のカレーについての雑談が中心でした。 以上です。');
-
-		// コードフェンス内の空配列でも、外側に地の文があれば同じ扱い
-		const fencedArray = 'まとめると次のとおりです。TypeScript の新バージョンと週末の料理の話題で盛り上がっていました。\n```json\n[]\n```';
-		const parsedFencedArray = parseTlDigestResponse(fencedArray, refMap);
-		expect(parsedFencedArray!.fallbackText).toContain('週末の料理の話題');
-	});
-
-	it('空配列が地の文の中に紛れているだけなら、書かれた本文をフォールバック表示する (Finding B)', () => {
-		// `[]` を空 topics として拾うと、本文が消えたうえで未読の pending まで破棄されてしまう
-		const raw = '設定例 [] が共有されました。';
-		expect(parseTlDigestResponse(raw, refMap)).toEqual({ topics: [], fallbackText: '設定例 が共有されました。' });
-
-		// 説明文が短くても (12 文字) 同じ: 短さだけでは導入句と区別できない
-		const short = '例 [] です。';
-		expect(parseTlDigestResponse(short, refMap)).toEqual({ topics: [], fallbackText: '例 です。' });
-	});
-
-	it('外側の説明文が短い空 topics 応答は、正当な「話題なし」として topics: [] を返す', () => {
-		// 短い前置きだけなら JSON を信じる (noTopics の表示はこの経路に依存している)
-		expect(parseTlDigestResponse('結果は次のとおりです: []', refMap)).toEqual({ topics: [], fallbackText: null });
-		expect(parseTlDigestResponse('Here is the JSON:\n```json\n{"topics":[]}\n```', refMap)).toEqual({ topics: [], fallbackText: null });
-		expect(parseTlDigestResponse('```json\n{"topics":[]}\n```', refMap)).toEqual({ topics: [], fallbackText: null });
-		// 前後に空白・改行だけがある場合も「話題なし」
-		expect(parseTlDigestResponse('\n  {"topics": []}  \n', refMap)).toEqual({ topics: [], fallbackText: null });
-	});
-
-	it('応答全体が空配列・空 topics なら、コードフェンス付きでも「話題なし」として受け入れる', () => {
-		expect(parseTlDigestResponse('[]', refMap)).toEqual({ topics: [], fallbackText: null });
-		expect(parseTlDigestResponse('```json\n[]\n```', refMap)).toEqual({ topics: [], fallbackText: null });
-		expect(parseTlDigestResponse('{"topics":[]}', refMap)).toEqual({ topics: [], fallbackText: null });
-		expect(parseTlDigestResponse('```json\n{"topics":[]}\n```', refMap)).toEqual({ topics: [], fallbackText: null });
-	});
-
-	it('JSON の文字列値にコードフェンスがあっても、空 topics は生の JSON ではなく「話題なし」になる (Finding C)', () => {
-		// summary にコード例を含む正当な JSON。外側の説明文を測ると JSON の残りを地の文と誤認してしまう
-		const withField = JSON.stringify({
-			note: '例:\n```ts\nconst x = 1;\n```',
-			topics: [],
-		});
-		expect(parseTlDigestResponse(withField, refMap)).toEqual({ topics: [], fallbackText: null });
-
-		// コードフェンスで囲んだ全体版 (中身にもコードフェンスがある)
-		const fenced = '```json\n{"summary":"例\\n```ts\\nx\\n```","topics":[]}\n```';
-		expect(parseTlDigestResponse(fenced, refMap)).toEqual({ topics: [], fallbackText: null });
-	});
-
-	it('応答全体が JSON プリミティブなら不正な応答として null を返す (Finding A)', () => {
-		// null / true / 数値 / 文字列のいずれも要約ではない。pending を残すためエラー側に倒す
-		expect(parseTlDigestResponse('null', refMap)).toBeNull();
-		expect(parseTlDigestResponse('true', refMap)).toBeNull();
-		expect(parseTlDigestResponse('false', refMap)).toBeNull();
-		expect(parseTlDigestResponse('42', refMap)).toBeNull();
-		expect(parseTlDigestResponse('-1.5', refMap)).toBeNull();
-		expect(parseTlDigestResponse('"要約です"', refMap)).toBeNull();
-		expect(parseTlDigestResponse('"null"', refMap)).toBeNull();
-	});
-
-	it('独立したコードブロックが複数ある応答は、1 つのフェンスとして中身を捨てない', () => {
-		// フェンスで始まりフェンスで終わるだけでは「1 つのフェンス」ではない。
-		// 空配列のフェンスと参考フェンスに挟まれた地の文こそが要約
-		const raw = '```\n[]\n```\n\n要約です。今日はGPUの話でもりあがりました。\n\n```\n(参考)\n```';
-
-		const parsed = parseTlDigestResponse(raw, refMap);
-		expect(parsed).not.toBeNull();
-		expect(parsed!.topics).toEqual([]);
-		expect(parsed!.fallbackText).toContain('要約です。今日はGPUの話でもりあがりました。');
-		// 中の地の文を「フェンスの中身」として切り出してしまうと、要約が消えたうえで pending も破棄される
-		expect(parsed!.fallbackText).not.toBe('');
-	});
-
-	it('空の topics の前に実質的な地の文があれば、空 topics ではなくその地の文を表示する', () => {
-		// 前置きの後に本文があり、最後に空 topics が続く応答。地の文こそが要約
-		const raw = '今日はラーメンの話題が中心でした。\n\n{"topics":[]}';
-
-		const parsed = parseTlDigestResponse(raw, refMap);
-		expect(parsed).not.toBeNull();
-		expect(parsed!.topics).toEqual([]);
-		expect(parsed!.fallbackText).toContain('ラーメン');
-
-		// 同じ地の文 + フェンス付きの空 topics でも同じ
-		const fenced = parseTlDigestResponse('今日はラーメンの話題が中心でした。\n\n```json\n{"topics":[]}\n```', refMap);
-		expect(fenced!.fallbackText).toContain('ラーメン');
-
-		// フェンスではなく生の空配列でも同じ (地の文が消えない)
-		const bare = parseTlDigestResponse('今日はGPUの話でもりあがりました。\n\n[]', refMap);
-		expect(bare!.fallbackText).toContain('GPU');
-	});
-
-	it('導入句だけを伴う空 topics 応答は「話題なし」として受け入れる', () => {
-		// 地の文を含まない前置き (コロン終わりの定型句) は JSON を信じる。
-		// noTopics の表示はこの経路に依存している
-		const leadIns = [
-			'結果: []',
-			'結果は次のとおりです: []',
-			'以下が要約です: {"topics":[]}',
-			'Here is the JSON: {"topics":[]}',
-			'Here is the result: []',
-			// 句点で終わるが、短い定型句なので地の文ではない
-			'まとめると次のとおりです。 []',
-		];
-		for (const raw of leadIns) {
-			expect(parseTlDigestResponse(raw, refMap), raw).toEqual({ topics: [], fallbackText: null });
-		}
-
-		// フェンスの後に導入句が続く場合も「話題なし」(前置きは要約の中身ではない)
-		for (const raw of [
-			'```json\n{"topics":[]}\n```',
-			'結果は次のとおりです: ```json\n[]\n```',
-		]) {
-			expect(parseTlDigestResponse(raw, refMap), raw).toEqual({ topics: [], fallbackText: null });
+	it('応答全体が JSON のプリミティブなら不正な応答として null を返す', () => {
+		// プリミティブの表記 (`null` / `42`) をそのまま要約として表示しない。pending を残してエラー側に倒す
+		for (const primitive of ['null', 'true', 'false', '42', '-1.5', '"要約です"', '"null"', '```json\nnull\n```']) {
+			expect(parseTlDigestResponse(primitive, refMap), primitive).toBeNull();
 		}
 	});
 
-	it('応答全体が空の構造なら、コードフェンスの有無にかかわらず「話題なし」として受け入れる', () => {
+	it('応答全体が topics を持たないオブジェクトなら、JSON を本文にせず「話題なし」とする', () => {
+		// 封筒ではない (topics 配列が無い) ので話題としては採用しない。JSON の表記も本文にしない
+		expect(parseTlDigestResponse('```json\n{"items":[]}\n```', refMap)).toEqual({ topics: [], fallbackText: null });
+		expect(parseTlDigestResponse('{"summary":"話題の要約"}', refMap)).toEqual({ topics: [], fallbackText: null });
+		expect(parseTlDigestResponse('{"a":1}', refMap)).toEqual({ topics: [], fallbackText: null });
+	});
+
+	it('応答全体が空の封筒なら、フェンスの有無や折り返しの有無にかかわらず「話題なし」になる', () => {
 		const wholeBodies = [
 			'[]',
-			'```\n[]\n```',
 			'```json\n[]\n```',
-			'{"topics":[]}',
-			'```\n{"topics":[]}\n```',
 			'```json\n{"topics":[]}\n```',
+			'```json {"topics":[]}```',
+			'```json {"topics":[]} ```',
 			'  \n```json\n{"topics":[]}\n```\n  ',
+			'```json\n\n{"topics":[]}\n\n```',
 		];
 		for (const raw of wholeBodies) {
 			expect(parseTlDigestResponse(raw, refMap), raw).toEqual({ topics: [], fallbackText: null });
 		}
 	});
 
-	it('単一フェンスの JSON は、文字列値の中にコードフェンスがあっても解析する', () => {
-		// 文字列値の中の ``` を「新しいフェンス」と誤認して 1 つのフェンスを取り違えないこと
-		const fenced = '```json\n{"topics":[{"title":"コード例","summary":"例:\\n```ts\\nconst x = 1;\\n```","refs":["n1"]}]}\n```';
-		const parsed = parseTlDigestResponse(fenced, refMap);
-		expect(parsed).not.toBeNull();
-		expect(parsed!.fallbackText).toBeNull();
-		expect(parsed!.topics).toHaveLength(1);
-		expect(parsed!.topics[0].noteIds).toEqual(['real-id-1']);
+	it('閉じフェンスが JSON と同じ行にあっても、フェンスの中身をそのまま解析する', () => {
+		// 開き行は折り返し、閉じフェンスだけが内容の行末に付いた逸脱
+		expect(parseTlDigestResponse('```json\n{"topics":[]}```', refMap)).toEqual({ topics: [], fallbackText: null });
+		// 折り返しの無いフェンスも同じ
+		expect(parseTlDigestResponse('```json []```', refMap)).toEqual({ topics: [], fallbackText: null });
+		const topics = '{"topics":[{"title":"話題A","summary":"要約A","refs":["n1"]}]}';
+		expect(parseTlDigestResponse(`\`\`\`json ${topics}\`\`\``, refMap)?.topics).toHaveLength(1);
+	});
 
-		// フェンスの外側に地の文が無い空 topics も、文字列値にフェンスがあれば「話題なし」
-		const emptyWithFenceString = '```json\n{"summary":"例\\n```ts\\nx\\n```","topics":[]}\n```';
-		expect(parseTlDigestResponse(emptyWithFenceString, refMap)).toEqual({ topics: [], fallbackText: null });
+	it('JSON が全く無い自由文は、その本文をそのままプレーンテキストとして表示する', () => {
+		const bullets = '・TypeScriptの話題\n・カレーの話題 https://malicious.example/click';
+		expect(parseTlDigestResponse(bullets, refMap)).toEqual({
+			topics: [],
+			fallbackText: '・TypeScriptの話題\n・カレーの話題 [URL]',
+		});
+
+		const prose = '今日はTypeScriptの話題とカレーの話で盛り上がりました。';
+		expect(parseTlDigestResponse(prose, refMap)).toEqual({ topics: [], fallbackText: prose });
+
+		// フェンスに包まれた自由文も、フェンス記号だけを落として本文を残す
+		expect(parseTlDigestResponse('```\n今日はカレーの話で盛り上がりました。\n```', refMap)).toEqual({
+			topics: [],
+			fallbackText: '今日はカレーの話で盛り上がりました。',
+		});
+	});
+
+	it('断片の外側に文言があれば、空 topics ではなくその文言を本文として表示する', () => {
+		// 断片を拾うと本文ごと消えたうえで未読の pending まで破棄されるため、外側の文言を優先する。
+		// 導入句か地の文かの推測はしない (長さや記号では分離できず、その推測が取りこぼしの原因だった)
+		const short = 'ラーメンとGPUの話\n[]';
+		expect(parseTlDigestResponse(short, refMap)).toEqual({
+			topics: [],
+			fallbackText: 'ラーメンとGPUの話',
+		});
+
+		const bullets = '・ラーメン\n・GPU\n[]';
+		expect(parseTlDigestResponse(bullets, refMap)).toEqual({
+			topics: [],
+			fallbackText: '・ラーメン\n・GPU',
+		});
+
+		// 空 topics 付きでも同じ。地の文こそが要約
+		const withFence = '今日はラーメンの話題が中心でした。\n\n```json\n{"topics":[]}\n```';
+		expect(parseTlDigestResponse(withFence, refMap)).toEqual({
+			topics: [],
+			fallbackText: '今日はラーメンの話題が中心でした。',
+		});
+
+	});
+
+	it('本文中の断片が topics を持つが中身が不正なら、本文を残さず不正な応答として null を返す', () => {
+		// 「topics を持つ」と表明している以上、空 topics との取り違えも本文の拾い直しもしない
+		for (const corrupt of ['以下が要約です: {"topics":[{}]}', '以下が要約です: {"topics":[null]}']) {
+			expect(parseTlDigestResponse(corrupt, refMap), corrupt).toBeNull();
+		}
+	});
+
+	it('同じ行にある断片は、囲んでいたインラインコードや前後の区切りごと取り除く', () => {
+		// 閉じ側のバッククォートだけを本文に残すと「結果: `」のように崩れる
+		expect(parseTlDigestResponse('結果: `[]`', refMap)).toEqual({ topics: [], fallbackText: '結果:' });
+		expect(parseTlDigestResponse('結果: []', refMap)).toEqual({ topics: [], fallbackText: '結果:' });
+		// 断片が本文の途中にある場合は、その位置に空白 1 つを残して文をつなぐ
+		expect(parseTlDigestResponse('設定例 [] が共有されました。', refMap)).toEqual({
+			topics: [],
+			fallbackText: '設定例 が共有されました。',
+		});
+		// 断片の後ろに地の文がある場合も、同じ行なら空白でつなぐ
+		expect(parseTlDigestResponse('こちらがダイジェストです。本日はTypeScriptとカレーの話題でした。 [] 以上です。', refMap)).toEqual({
+			topics: [],
+			fallbackText: 'こちらがダイジェストです。本日はTypeScriptとカレーの話題でした。 以上です。',
+		});
+	});
+
+	it('自由文中に引用された JSON 断片は、封筒として成立しない限り要約として扱わず残りの文言を表示する', () => {
+		// 封筒ではない断片は取り除き、引用まわりの文言だけを本文に残す
+		const raw = '設定の話題では、例として {"debug": true} が共有されました。';
+		expect(parseTlDigestResponse(raw, refMap)).toEqual({
+			topics: [],
+			fallbackText: '設定の話題では、例として が共有されました。',
+		});
+
+		const rawArray = '数値の例 [1, 2, 3] が話題になりました。';
+		expect(parseTlDigestResponse(rawArray, refMap)).toEqual({
+			topics: [],
+			fallbackText: '数値の例 が話題になりました。',
+		});
+
+		// 有効なダイジェスト JSON でも、外側に文言があればその文言を優先して表示する
+		const withPreface = '以下が要約です: {"topics":[{"title":"話題A","summary":"要約A","refs":["n1"]}]}';
+		expect(parseTlDigestResponse(withPreface, refMap)).toEqual({ topics: [], fallbackText: '以下が要約です:' });
+	});
+
+	it('独立したコードブロックが複数ある応答は、1 つのフェンスとして中身を捨てない', () => {
+		// 先頭の空配列フェンスと末尾の参考フェンスに挟まれた地の文こそが要約
+		const raw = '```\n[]\n```\n\n要約です。今日はGPUの話でもりあがりました。\n\n```\n(参考)\n```';
+		expect(parseTlDigestResponse(raw, refMap)).toEqual({
+			topics: [],
+			fallbackText: '要約です。今日はGPUの話でもりあがりました。\n\n(参考)',
+		});
 	});
 });
 
