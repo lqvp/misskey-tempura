@@ -111,7 +111,9 @@ export class MediaProxy {
 	 * 呼び出しのたびにではなく生値が変わったときに自己参照・mixed content まで含めて検証する。
 	 */
 	private get customMediaProxy(): string | null {
-		const raw = this.customMediaProxyGetter?.() ?? null;
+		const value = this.customMediaProxyGetter?.();
+		// クラウドバックアップや手編集で文字列以外が入り得るため、型を実行時にも確認する
+		const raw = typeof value === 'string' ? value : null;
 		if (this.customMediaProxyCache == null || this.customMediaProxyCache.raw !== raw) {
 			const result = validateMediaProxyUrl(raw, this.url);
 			this.customMediaProxyCache = { raw, normalized: result.ok ? result.normalized : null };
@@ -248,6 +250,8 @@ export class MediaProxy {
 	}
 
 	public rewriteProxiedImageUrl(imageUrl: string): string {
+		// 連合先やプラグイン由来のデータに null が混ざっても描画を落とさない
+		if (imageUrl == null) return '';
 		const prefix = this.matchProxyPrefix(imageUrl);
 		if (prefix == null) return imageUrl;
 

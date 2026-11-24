@@ -327,6 +327,23 @@ describe('MediaProxy additional paths', () => {
 	test('does not throw for null image URLs', () => {
 		const proxy = new MediaProxy(createMeta('https://server-proxy.example/proxy'), instanceUrl, () => 'https://client-proxy.example/proxy');
 		expect(proxy.getProxiedImageUrl(null as unknown as string)).toBe('');
-		expect(proxy.rewriteProxiedImageUrl(null as unknown as string)).toBeNull();
+		expect(proxy.rewriteProxiedImageUrl(null as unknown as string)).toBe('');
+	});
+
+	test('ignores a stored preference that is not a string', () => {
+		const proxy = new MediaProxy(createMeta('https://server-proxy.example/proxy'), instanceUrl, () => true as unknown as string);
+		expect(proxy.getProxiedImageUrl('https://remote.example/a.png'))
+			.toBe('https://server-proxy.example/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png&fallback=1');
+	});
+
+	test('treats a custom root-origin proxy as proxied only when the URL carries url=', () => {
+		const proxy = new MediaProxy(createMeta('https://server-proxy.example/proxy'), instanceUrl, () => 'https://cdn.example');
+
+		// ルートオリジン直下の /files/ はプロキシ済み URL ではない
+		expect(proxy.getProxiedImageUrl('https://cdn.example/files/abc.png'))
+			.toBe('https://cdn.example/image.webp?url=https%3A%2F%2Fcdn.example%2Ffiles%2Fabc.png&fallback=1');
+		// ?url= を持つ URL はプロキシ済みとして扱い、二重プロキシしない
+		expect(proxy.rewriteProxiedImageUrl('https://cdn.example/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png'))
+			.toBe('https://cdn.example/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png');
 	});
 });
