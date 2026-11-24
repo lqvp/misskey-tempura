@@ -276,6 +276,48 @@ export function normalizeMediaProxyUrl(url?: string | null): string | null {
 	}
 }
 
+export type MediaProxyClassification =
+	| { kind: 'invalid'; }
+	/** 自サーバーの内蔵プロキシ（ここを外部扱いすると自分自身へリダイレクトし続ける） */
+	| { kind: 'self-proxy'; url: string; }
+	/** 自サーバーのルートオリジン（プロキシのルートが無く 404 になる） */
+	| { kind: 'self-root'; url: string; }
+	| { kind: 'external'; url: string; };
+
+/**
+ * メディアプロキシ URL を「自サーバーの内蔵プロキシ / 自サーバーのルート / 外部」に分類する。
+ * スキームの違い (TLS 終端構成で http/https が混在する場合) を無視してホスト + ポート + パスで比較する。
+ */
+export function classifyMediaProxyUrl(url: string | null | undefined, selfUrl: string): MediaProxyClassification {
+	const normalized = normalizeMediaProxyUrl(url);
+	if (normalized == null) return { kind: 'invalid' };
+
+	const normalizedSelf = normalizeMediaProxyUrl(selfUrl);
+	if (normalizedSelf == null) return { kind: 'external', url: normalized };
+
+	let parsed: URL;
+	let self: URL;
+	try {
+		parsed = new URL(normalized);
+		self = new URL(normalizedSelf);
+	} catch {
+		return { kind: 'external', url: normalized };
+	}
+
+	// URL.host は小文字化・デフォルトポート除去済みなので、スキーム差だけを無視して比較できる
+	if (parsed.host !== self.host) return { kind: 'external', url: normalized };
+
+	const pathname = parsed.pathname.replace(/\/+$/, '');
+	if (pathname === '/proxy' || pathname.startsWith('/proxy/')) {
+		return { kind: 'self-proxy', url: normalized };
+	}
+	if (pathname === '') {
+		return { kind: 'self-root', url: normalized };
+	}
+
+	return { kind: 'external', url: normalized };
+}
+
 export function resolveMediaProxy(
 	config: Pick<Config, 'url' | 'mediaProxy' | 'externalMediaProxyEnabled'>,
 	meta?: { mediaProxy?: string | null } | null,
@@ -283,20 +325,21 @@ export function resolveMediaProxy(
 	mediaProxy: string;
 	externalMediaProxyEnabled: boolean;
 } {
-	const metaMediaProxy = normalizeMediaProxyUrl(meta?.mediaProxy);
-	if (metaMediaProxy != null) {
-		const internalMediaProxy = `${normalizeMediaProxyUrl(config.url) ?? config.url.replace(/\/+$/, '')}/proxy`;
-		if (metaMediaProxy === internalMediaProxy || metaMediaProxy.startsWith(`${internalMediaProxy}/`)) {
-			return {
-				mediaProxy: internalMediaProxy,
-				externalMediaProxyEnabled: false,
-			};
-		}
+	const classification = classifyMediaProxyUrl(meta?.mediaProxy, config.url);
+	if (classification.kind === 'self-proxy') {
+		// 自サーバーの /proxy を外部プロキシとして扱うと自身へリダイレクトし続けるため、内蔵プロキシとして解決する
 		return {
-			mediaProxy: metaMediaProxy,
+			mediaProxy: `${normalizeMediaProxyUrl(config.url) ?? config.url.replace(/\/+$/, '')}/proxy`,
+			externalMediaProxyEnabled: false,
+		};
+	}
+	if (classification.kind === 'external') {
+		return {
+			mediaProxy: classification.url,
 			externalMediaProxyEnabled: true,
 		};
 	}
+	// invalid / self-root は設定として成立しないので設定ファイルの値へフォールバックする
 	return {
 		mediaProxy: config.mediaProxy,
 		externalMediaProxyEnabled: config.externalMediaProxyEnabled,

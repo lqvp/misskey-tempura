@@ -5,7 +5,7 @@
 
 import { describe, expect, test } from 'vitest';
 import * as Misskey from 'misskey-js';
-import { MediaProxy, normalizeMediaProxyUrl } from '@@/js/media-proxy.js';
+import { MediaProxy, normalizeMediaProxyUrl, validateMediaProxyUrl } from '@@/js/media-proxy.js';
 
 function createMeta(mediaProxy = 'https://server.example/proxy'): Misskey.entities.MetaDetailed {
 	return {
@@ -181,6 +181,19 @@ describe('MediaProxy', () => {
 			.toBe('https://client-proxy.example/proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Favatar.png&avatar=1');
 	});
 
+	test('absolutizes relative image URLs before proxying', () => {
+		const proxy = new MediaProxy(createMeta('https://server-proxy.example/proxy'), instanceUrl, () => null);
+		expect(proxy.getProxiedImageUrl('/files/abc.png', undefined, false, true))
+			.toBe('https://server-proxy.example/proxy/image.webp?url=https%3A%2F%2Fserver.example%2Ffiles%2Fabc.png');
+	});
+
+	test('treats normalized form of the server proxy as the same proxy', () => {
+		const proxy = new MediaProxy(createMeta('https://server-proxy.example./proxy'), instanceUrl, () => null);
+		// 正規化形 (ドット無し) で保存された URL でもオリジンを変えない
+		expect(proxy.rewriteProxiedImageUrl('https://server-proxy.example/proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png&avatar=1'))
+			.toBe('https://server-proxy.example/proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png&avatar=1');
+	});
+
 	test('keeps trailing-dot origin when no client proxy is configured', () => {
 		const proxy = new MediaProxy(createMeta('https://server-proxy.example./proxy'), instanceUrl, () => null);
 
@@ -191,5 +204,33 @@ describe('MediaProxy', () => {
 		// 生成する URL もサーバーが実際に使っている表記を引き継ぐ
 		expect(proxy.getStaticImageUrl('https://remote.example/a.gif'))
 			.toBe('https://server-proxy.example./proxy/static.webp?url=https%3A%2F%2Fremote.example%2Fa.gif&static=1');
+	});
+});
+
+describe('validateMediaProxyUrl', () => {
+	const instanceUrl = 'https://misskey.test';
+
+	test('returns normalized value for a valid external proxy and null for empty input', () => {
+		expect(validateMediaProxyUrl('https://proxy.example/proxy/', instanceUrl)).toEqual({ ok: true, normalized: 'https://proxy.example/proxy' });
+		expect(validateMediaProxyUrl('  ', instanceUrl)).toEqual({ ok: true, normalized: null });
+	});
+
+	test('rejects invalid URLs', () => {
+		expect(validateMediaProxyUrl('javascript:alert(1)', instanceUrl)).toEqual({ ok: false, reason: 'invalid' });
+		expect(validateMediaProxyUrl('https://proxy.example/proxy?x=1', instanceUrl)).toEqual({ ok: false, reason: 'invalid' });
+	});
+
+	test('rejects the instance own proxy and root origin (scheme-insensitive)', () => {
+		expect(validateMediaProxyUrl('https://misskey.test/proxy', instanceUrl)).toEqual({ ok: false, reason: 'self' });
+		expect(validateMediaProxyUrl('http://misskey.test/proxy/', instanceUrl)).toEqual({ ok: false, reason: 'self' });
+		expect(validateMediaProxyUrl('https://misskey.test', instanceUrl)).toEqual({ ok: false, reason: 'self' });
+	});
+
+	test('rejects http proxy on an https instance (mixed content)', () => {
+		expect(validateMediaProxyUrl('http://proxy.example.com/proxy', instanceUrl)).toEqual({ ok: false, reason: 'insecure' });
+	});
+
+	test('allows same-host proxy on a different path', () => {
+		expect(validateMediaProxyUrl('https://misskey.test/media-proxy', instanceUrl)).toEqual({ ok: true, normalized: 'https://misskey.test/media-proxy' });
 	});
 });

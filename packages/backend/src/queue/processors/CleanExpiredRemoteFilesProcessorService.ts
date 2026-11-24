@@ -14,6 +14,7 @@ import { bindThis } from '@/decorators.js';
 import { MetaService } from '@/core/MetaService.js';
 import { appendQuery, query } from '@/misc/prelude/url.js';
 import { resolveMediaProxy, type Config } from '@/config.js';
+import { USER_AVATAR_URL_MAX_LENGTH, USER_BANNER_URL_MAX_LENGTH } from '@/misc/rewrite-user-media-proxy-urls.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
 
 @Injectable()
@@ -65,13 +66,13 @@ export class CleanExpiredRemoteFilesProcessorService {
 					const update: Partial<MiUser> = {};
 					if (userAvatarFile?.isLink) {
 						const proxiedAvatarUrl = userAvatarFile.uri != null ? this.getProxiedUrl(userAvatarFile.uri, mediaProxy, 'avatar') : null;
-						if (proxiedAvatarUrl == null || proxiedAvatarUrl.length <= 1024) {
+						if (proxiedAvatarUrl == null || proxiedAvatarUrl.length <= USER_AVATAR_URL_MAX_LENGTH) {
 							update.avatarUrl = proxiedAvatarUrl;
 						}
 					}
 					if (userBannerFile?.isLink) {
 						const proxiedBannerUrl = userBannerFile.uri != null ? this.getProxiedUrl(userBannerFile.uri, mediaProxy) : null;
-						if (proxiedBannerUrl == null || proxiedBannerUrl.length <= 512) {
+						if (proxiedBannerUrl == null || proxiedBannerUrl.length <= USER_BANNER_URL_MAX_LENGTH) {
 							update.bannerUrl = proxiedBannerUrl;
 						}
 					}

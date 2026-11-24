@@ -207,6 +207,8 @@ export class RedisSingleCache<T> {
 export class MemoryKVCache<T> {
 	private readonly cache = new Map<string, { date: number; value: T; }>();
 	private readonly gcIntervalHandle = setInterval(() => this.gc(), 1000 * 60 * 3); // 3m
+	/** clear() ごとに増加する世代番号。取得開始後に clear() された結果を再登録しないために使う */
+	private generation = 0;
 
 	constructor(
 		private readonly lifetime: number,
@@ -267,6 +269,7 @@ export class MemoryKVCache<T> {
 
 	@bindThis
 	public clear(): void {
+		this.generation++;
 		this.cache.clear();
 	}
 
@@ -290,8 +293,10 @@ export class MemoryKVCache<T> {
 		}
 
 		// Cache MISS
+		const generation = this.generation;
 		const value = await fetcher();
-		this.set(key, value);
+		// 取得中に clear() された場合は、古い値を再登録しない
+		if (generation === this.generation) this.set(key, value);
 		return value;
 	}
 
@@ -315,8 +320,10 @@ export class MemoryKVCache<T> {
 		}
 
 		// Cache MISS
+		const generation = this.generation;
 		const value = await fetcher();
-		if (value !== undefined) {
+		// 取得中に clear() された場合は、古い値を再登録しない
+		if (value !== undefined && generation === this.generation) {
 			this.set(key, value);
 		}
 		return value;

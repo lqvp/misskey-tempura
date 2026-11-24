@@ -32,6 +32,17 @@ type PackOptions = {
 
 @Injectable()
 export class DriveFileEntityService {
+	/** タイムライン整形で毎回 URL 解決が走るため、設定値が変わらない間は結果を使い回す */
+	private mediaProxyCache: { key: string; resolved: ReturnType<typeof resolveMediaProxy>; } | null = null;
+
+	private get resolvedMediaProxy(): ReturnType<typeof resolveMediaProxy> {
+		const key = `${this.config.mediaProxy}|${this.config.externalMediaProxyEnabled}|${this.meta.mediaProxy ?? ''}`;
+		if (this.mediaProxyCache?.key !== key) {
+			this.mediaProxyCache = { key, resolved: resolveMediaProxy(this.config, this.meta) };
+		}
+		return this.mediaProxyCache.resolved;
+	}
+
 	constructor(
 		@Inject(DI.config)
 		private config: Config,
@@ -92,7 +103,7 @@ export class DriveFileEntityService {
 
 	@bindThis
 	public getThumbnailUrl(file: MiDriveFile): string | null {
-		const { mediaProxy, externalMediaProxyEnabled } = resolveMediaProxy(this.config, this.meta);
+		const { mediaProxy, externalMediaProxyEnabled } = this.resolvedMediaProxy;
 		if (file.type.startsWith('video')) {
 			if (file.thumbnailUrl) return file.thumbnailUrl;
 
@@ -118,7 +129,7 @@ export class DriveFileEntityService {
 
 	@bindThis
 	public getPublicUrl(file: MiDriveFile, mode?: 'avatar'): string { // static = thumbnail
-		const { mediaProxy, externalMediaProxyEnabled } = resolveMediaProxy(this.config, this.meta);
+		const { mediaProxy, externalMediaProxyEnabled } = this.resolvedMediaProxy;
 		// リモートかつメディアプロキシ
 		if (file.uri != null && file.userHost != null && externalMediaProxyEnabled) {
 			return this.getProxiedUrl(file.uri, mediaProxy, mode);

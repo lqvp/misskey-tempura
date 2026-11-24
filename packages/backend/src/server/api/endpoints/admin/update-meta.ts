@@ -5,7 +5,7 @@
 
 import { Injectable, Inject } from '@nestjs/common';
 import { DI } from '@/di-symbols.js';
-import { normalizeMediaProxyUrl, resolveMediaProxy, type Config } from '@/config.js';
+import { classifyMediaProxyUrl, resolveMediaProxy, type Config } from '@/config.js';
 import type { MiMeta } from '@/models/Meta.js';
 import type { UsersRepository } from '@/models/_.js';
 import { ModerationLogService } from '@/core/ModerationLogService.js';
@@ -16,7 +16,7 @@ import { QueueService } from '@/core/QueueService.js';
 import { ApiLoggerService } from '../../ApiLoggerService.js';
 import { ApiError } from '../../error.js';
 import { normalizeSignupPassphrase } from '@/misc/normalize-signup-passphrase.js';
-import { rewriteUserMediaProxyUrls } from '@/misc/rewrite-user-media-proxy-urls.js';
+import { reconcileUserMediaProxyUrls } from '@/misc/rewrite-user-media-proxy-urls.js';
 
 export const meta = {
 	tags: ['admin'],
@@ -1155,14 +1155,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 				if (ps.mediaProxy == null || ps.mediaProxy.trim() === '') {
 					set.mediaProxy = null;
 				} else {
-					const normalized = normalizeMediaProxyUrl(ps.mediaProxy);
-					const selfOrigin = normalizeMediaProxyUrl(this.config.url);
-					const internalMediaProxy = `${selfOrigin ?? this.config.url.replace(/\/+$/, '')}/proxy`;
-					// 自サーバーの /proxy 配下 (ループ) とルートオリジン (プロキシルートが無く 404) は拒否する
-					if (normalized == null || normalized.startsWith(`${internalMediaProxy}/`) || (selfOrigin != null && normalized === selfOrigin)) {
+					const classification = classifyMediaProxyUrl(ps.mediaProxy, this.config.url);
+					// 自サーバーの /proxy 配下 (リダイレクトループ) とルートオリジン (プロキシルートが無く 404) は拒否する
+					if (classification.kind !== 'external') {
 						throw new ApiError(meta.errors.invalidMediaProxyUrl);
 					}
-					set.mediaProxy = normalized;
+					set.mediaProxy = classification.url;
 				}
 			}
 
@@ -1435,26 +1433,35 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					this.apiLoggerService.logger.warn(`failed to enqueue the IP intelligence update: ${err}`);
 				}
 			}
-			// メディアプロキシURLが変わったら、DBに保存済みの avatarUrl / bannerUrl のプロキシ接頭辞も新URLへ差し替える
-			const beforeMediaProxy = resolveMediaProxy(this.config, before).mediaProxy;
+			// メディアプロキシの実効値が変わったら、DB に保存済みの avatarUrl / bannerUrl を新しい実効値へ収束させる。
+			// 同じ値で明示的に保存された場合も再実行する (失敗や取り残しを管理画面から復旧できるようにするため)。
 			const afterMediaProxy = resolveMediaProxy(this.config, after).mediaProxy;
-			if (beforeMediaProxy !== afterMediaProxy) {
-				// 連続変更で書き換えが交錯しないようプロセス内で直列化する。
-				// なお書き換え対象は ?url= を含むプロキシURLに限られ、失敗やプロセス間の競合で取り残された行は自動では再同期されない
-				// (cleanRemoteFiles の fixAvatars はリンク形式のリモートファイルのみ対象)。復旧するには別のプロキシURLへ変更してから戻す。
+			if (ps.mediaProxy !== undefined) {
+				const requestedMediaProxy = afterMediaProxy;
+				// 直列化して実行する。実行時点で実効値が変わっていたら (別の変更が後勝ちしたら) 古い要求は捨てる。
+				// 収束処理は冪等なので、順序が入れ替わっても最終状態は最新の実効値に一致する。
 				this.rewriteChain = this.rewriteChain
-					.then(() => rewriteUserMediaProxyUrls(this.usersRepository, beforeMediaProxy, afterMediaProxy))
-					.then((count) => {
-						if (count > 0) {
+					.then(async () => {
+						const latest = await this.metaService.fetch(true);
+						const latestMediaProxy = resolveMediaProxy(this.config, latest).mediaProxy;
+						if (latestMediaProxy !== requestedMediaProxy) return;
+
+						const result = await reconcileUserMediaProxyUrls(this.usersRepository, latestMediaProxy);
+						if (result.rewritten > 0) {
 							// 全プロセスのユーザーキャッシュを一括で無効化する (per-user イベントは DB 負荷が行数×プロセス数になるため避ける)
 							this.globalEventService.publishInternalEvent('userMediaProxyRewritten', {
-								oldMediaProxy: beforeMediaProxy,
-								newMediaProxy: afterMediaProxy,
+								newMediaProxy: latestMediaProxy,
 							});
+						}
+						if (result.skippedByOrigin > 0 || result.skippedByLength > 0) {
+							this.apiLoggerService.logger.warn(
+								`mediaProxy URL reconcile: rewritten=${result.rewritten}, skippedByOrigin=${result.skippedByOrigin}, skippedByLength=${result.skippedByLength}. ` +
+								'skippedByLength の行は短いプロキシURLに変更するまで対象外、skippedByOrigin の行はオリジン配信が必要なため常に対象外です。',
+							);
 						}
 					})
 					.catch((err) => {
-						this.apiLoggerService.logger.warn(`failed to rewrite stored user mediaProxy URLs: ${err}`);
+						this.apiLoggerService.logger.warn(`failed to reconcile stored user mediaProxy URLs: ${err}`);
 					});
 			}
 		});

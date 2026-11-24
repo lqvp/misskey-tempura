@@ -7,12 +7,15 @@ import { afterEach, beforeAll, afterAll, describe, expect, test } from 'vitest';
 import { DataSource, type Repository } from 'typeorm';
 import { initTestDb } from '../../utils.js';
 import { MiUser } from '@/models/User.js';
-import { rewriteUserMediaProxyUrls } from '@/misc/rewrite-user-media-proxy-urls.js';
+import {
+	reconcileUserMediaProxyUrls,
+	USER_AVATAR_URL_MAX_LENGTH,
+	USER_BANNER_URL_MAX_LENGTH,
+} from '@/misc/rewrite-user-media-proxy-urls.js';
 
-const OLD = 'https://old-proxy.example/proxy';
-const NEW = 'https://new-proxy.example/proxy';
+const NEXT = 'https://new-proxy.example/proxy';
 
-describe('rewriteUserMediaProxyUrls', () => {
+describe('reconcileUserMediaProxyUrls', () => {
 	let db: DataSource;
 	let usersRepository: Repository<MiUser>;
 	let seq = 0;
@@ -43,83 +46,119 @@ describe('rewriteUserMediaProxyUrls', () => {
 		return await usersRepository.findOneByOrFail({ id });
 	}
 
-	test('旧接頭辞のプロキシ URL を新接頭辞へ書き換える (avatar + banner)', async () => {
+	test('任意の旧プロキシ接頭辞を現在のプロキシへ収束させる (avatar + banner)', async () => {
 		const user = await insertUser({
-			avatarUrl: `${OLD}/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png&avatar=1`,
-			bannerUrl: `${OLD}/image.webp?url=https%3A%2F%2Fremote.example%2Fb.png`,
+			avatarUrl: 'https://old-proxy.example/proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png&avatar=1',
+			bannerUrl: 'https://another-proxy.example/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fb.png',
 		});
 
-		const count = await rewriteUserMediaProxyUrls(usersRepository as any, OLD, NEW);
+		const result = await reconcileUserMediaProxyUrls(usersRepository, NEXT);
 
-		expect(count).toBe(2);
+		expect(result.rewritten).toBe(2);
+		expect(result.skippedByOrigin).toBe(0);
+		expect(result.skippedByLength).toBe(0);
 		const after = await usersRepository.findOneByOrFail({ id: user.id });
-		expect(after.avatarUrl).toBe(`${NEW}/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png&avatar=1`);
-		expect(after.bannerUrl).toBe(`${NEW}/image.webp?url=https%3A%2F%2Fremote.example%2Fb.png`);
+		expect(after.avatarUrl).toBe(`${NEXT}/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png&avatar=1`);
+		expect(after.bannerUrl).toBe(`${NEXT}/image.webp?url=https%3A%2F%2Fremote.example%2Fb.png`);
 	});
 
-	test('プロキシ URL でない URL・他プロキシ・origin= 付き・null は書き換えない', async () => {
+	test('冪等: 同じ値で 2 回実行しても件数 0 で URL は変化しない', async () => {
+		const user = await insertUser({
+			avatarUrl: 'https://old-proxy.example/proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png&avatar=1',
+		});
+
+		const first = await reconcileUserMediaProxyUrls(usersRepository, NEXT);
+		expect(first.rewritten).toBe(1);
+		const afterFirst = await usersRepository.findOneByOrFail({ id: user.id });
+
+		const second = await reconcileUserMediaProxyUrls(usersRepository, NEXT);
+		expect(second.rewritten).toBe(0);
+		const afterSecond = await usersRepository.findOneByOrFail({ id: user.id });
+		expect(afterSecond.avatarUrl).toBe(afterFirst.avatarUrl);
+	});
+
+	test('新接頭辞が旧接頭辞の配下でも二重前置しない', async () => {
+		const user = await insertUser({
+			avatarUrl: `${NEXT}/nested/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png&avatar=1`,
+		});
+
+		// NEXT → NEXT/nested は「旧接頭辞の配下へ移す」操作。既に移行済みの行を二重前置しない
+		const result = await reconcileUserMediaProxyUrls(usersRepository, `${NEXT}/nested`);
+
+		expect(result.rewritten).toBe(0);
+		const after = await usersRepository.findOneByOrFail({ id: user.id });
+		expect(after.avatarUrl).toBe(`${NEXT}/nested/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png&avatar=1`);
+	});
+
+	test('?url= を持たない素のファイル URL・非プロキシ URL・null は書き換えない', async () => {
 		const plain = await insertUser({
 			avatarUrl: 'https://cdn.example/files/abc.png',
-			bannerUrl: `${OLD}/files/abc.png`, // ?url= を含まないので対象外
+			bannerUrl: 'https://cdn.example/files/banner.png',
 		});
-		const other = await insertUser({
-			avatarUrl: 'https://other-proxy.example/proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png',
-		});
-		const origin = await insertUser({
-			avatarUrl: `${OLD}/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png&origin=1`,
+		const localDrive = await insertUser({
+			avatarUrl: 'https://server.example/files/abc-123',
 		});
 		const empty = await insertUser({ avatarUrl: null, bannerUrl: null });
 
-		const count = await rewriteUserMediaProxyUrls(usersRepository as any, OLD, NEW);
+		const result = await reconcileUserMediaProxyUrls(usersRepository, NEXT);
 
-		expect(count).toBe(0);
-		for (const u of [plain, other, origin, empty]) {
+		expect(result.rewritten).toBe(0);
+		for (const u of [plain, localDrive, empty]) {
 			const after = await usersRepository.findOneByOrFail({ id: u.id });
 			expect(after.avatarUrl).toBe(u.avatarUrl);
 			expect(after.bannerUrl).toBe(u.bannerUrl);
 		}
 	});
 
-	test('書き換え後に列上限を超える行はスキップする (avatar 1024 / banner 512)', async () => {
-		// 新接頭辞は旧接頭辞より delta 文字長い
-		const longNew = `https://new-proxy.example/${'p'.repeat(60)}`;
-		const delta = longNew.length - OLD.length;
-		const avatarBase = `${OLD}/avatar.webp?url=`;
-		const bannerBase = `${OLD}/image.webp?url=`;
-		const pad = (base: string, total: number): string => base + 'x'.repeat(total - base.length);
-
-		// 書き換え前は列上限以内、書き換え後はちょうど上限 (fits) / 上限超え (overflow)
-		const fits = await insertUser({
-			avatarUrl: pad(avatarBase, 1024 - delta),
-			bannerUrl: pad(bannerBase, 512 - delta),
+	test('origin= 付きは常に対象外として数える', async () => {
+		const user = await insertUser({
+			avatarUrl: 'https://old-proxy.example/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png&origin=1',
 		});
+
+		const result = await reconcileUserMediaProxyUrls(usersRepository, NEXT);
+
+		expect(result.rewritten).toBe(0);
+		expect(result.skippedByOrigin).toBe(1);
+		const after = await usersRepository.findOneByOrFail({ id: user.id });
+		expect(after.avatarUrl).toBe(user.avatarUrl);
+	});
+
+	test('列長上限を超える行はスキップし、件数として数える (avatar 1024 / banner 512)', async () => {
+		const longProxy = `https://new-proxy.example/${'p'.repeat(200)}`;
+		const base = 'https://old-proxy.example/proxy/avatar.webp?url=';
+		const bannerBase = 'https://old-proxy.example/proxy/image.webp?url=';
+		const pad = (b: string, total: number) => b + 'x'.repeat(total - b.length);
+
 		const overflow = await insertUser({
-			avatarUrl: pad(avatarBase, 1024 - delta + 1),
-			bannerUrl: pad(bannerBase, 512 - delta + 1),
+			avatarUrl: pad(base, USER_AVATAR_URL_MAX_LENGTH - 10),
+			bannerUrl: pad(bannerBase, USER_BANNER_URL_MAX_LENGTH - 10),
+		});
+		const fits = await insertUser({
+			avatarUrl: pad(base, base.length + 10),
+			bannerUrl: pad(bannerBase, bannerBase.length + 10),
 		});
 
-		const count = await rewriteUserMediaProxyUrls(usersRepository as any, OLD, longNew);
+		const result = await reconcileUserMediaProxyUrls(usersRepository, longProxy);
 
-		expect(count).toBe(2);
-		const fitsAfter = await usersRepository.findOneByOrFail({ id: fits.id });
-		expect(fitsAfter.avatarUrl!.startsWith(`${longNew}/`)).toBe(true);
-		expect(fitsAfter.avatarUrl!.length).toBe(1024);
-		expect(fitsAfter.bannerUrl!.startsWith(`${longNew}/`)).toBe(true);
-		expect(fitsAfter.bannerUrl!.length).toBe(512);
+		expect(result.rewritten).toBe(2); // fits の avatar + banner
+		expect(result.skippedByLength).toBe(2); // overflow の avatar + banner
 		const overflowAfter = await usersRepository.findOneByOrFail({ id: overflow.id });
 		expect(overflowAfter.avatarUrl).toBe(overflow.avatarUrl);
 		expect(overflowAfter.bannerUrl).toBe(overflow.bannerUrl);
+		const fitsAfter = await usersRepository.findOneByOrFail({ id: fits.id });
+		expect(fitsAfter.avatarUrl!.startsWith(`${longProxy}/`)).toBe(true);
+		expect(fitsAfter.bannerUrl!.startsWith(`${longProxy}/`)).toBe(true);
 	});
 
 	test('SQL インジェクション耐性: 接頭辞はパラメータバインドされる', async () => {
 		const user = await insertUser({
-			avatarUrl: `${OLD}/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png`,
+			avatarUrl: 'https://old-proxy.example/proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png',
 		});
 		const malicious = `https://new.example/proxy'; DROP TABLE "user"; --`;
 
-		const count = await rewriteUserMediaProxyUrls(usersRepository as any, OLD, malicious);
+		const result = await reconcileUserMediaProxyUrls(usersRepository, malicious);
 
-		expect(count).toBe(1);
+		expect(result.rewritten).toBe(1);
 		const after = await usersRepository.findOneByOrFail({ id: user.id });
 		expect(after.avatarUrl!.startsWith(`${malicious}/`)).toBe(true);
 	});

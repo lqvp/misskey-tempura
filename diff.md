@@ -429,6 +429,8 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * reactionChecksMuting
 * enableReactionConfirm / enableLikeConfirm
 * mediaProxy: 設定 → テンプラ設定 → 動作 (`/settings/tempura-settings`) からクライアント側で独自のメディアプロキシ URL を指定可能 (サーバー生成済みのプロキシ URL も差し替え)
+  * 自サーバー自身の URL と、https ページでの http プロキシ指定は入力時に拒否
+  * メンションの `/avatar/@user@host` はサーバー側の 302 を経由するため、クライアント設定の差し替え対象外 (既知の制限)
 
 ### 投稿フォーム
 
@@ -488,6 +490,8 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * /admin/tempura-admin に集約
 * ApprovalRequired / DefaultRequireSigninToViewContents / BlockMentions / LongIconUrl / UsernameMinLength / SecondsPerSignup / CustomSplashText / EmailDomainSettings / LlmModerationSettings / HanaEntranceSettings / EntranceSettings / DefaultFollowedUsers / ProxyAccountFollowModeSettings / BackgroundImages / CustomCursor / GeminiSettings / ContactFormSettings / LoginRiskSettings / ServerStatsSettings / SignedApFetchSettings / DeeplFreeModeSettings / ObjectStorageRemoteSettings / MediaProxySettings / BlockedUserImageSettings / OfflinePageSettings
 * mediaProxy: 外部メディアプロキシのベース URL を DB (meta) で管理し、管理画面から即時変更可能 (未設定時は default.yml または内蔵 /proxy にフォールバック)
+  * 変更時は保存済みの avatarUrl / bannerUrl を新しいプロキシへ収束させる (冪等・同じ値で再保存すると再実行されるので、失敗時の復旧にも使える)
+  * 自サーバーの `/proxy` 配下やルートオリジンはリダイレクトループ・404 を避けるため保存時に拒否 (スキーム違いも同判定)
 
 ### オフラインページ
 

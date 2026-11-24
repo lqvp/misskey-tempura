@@ -35,7 +35,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 							<template #label><SearchLabel>{{ i18n.ts._mediaProxySetting.url }}</SearchLabel></template>
 							<template #caption>{{ i18n.ts._mediaProxySetting.clientDescription }}</template>
 						</MkInput>
-						<MkInfo v-if="mediaProxyInvalid" warn>{{ i18n.ts._mediaProxySetting.invalidUrl }}</MkInfo>
+						<MkInfo v-if="mediaProxyValidationError != null" warn>{{ mediaProxyValidationError }}</MkInfo>
 					</SearchMarker>
 				</MkPreferenceContainer>
 			</div>
@@ -45,8 +45,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, watch } from 'vue';
-import { normalizeMediaProxyUrl } from '@@/js/media-proxy.js';
+import { computed, ref, watch } from 'vue';
+import { url } from '@@/js/config.js';
+import { validateMediaProxyUrl } from '@@/js/media-proxy.js';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkInput from '@/components/MkInput.vue';
 import MkInfo from '@/components/MkInfo.vue';
@@ -59,35 +60,38 @@ import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 const reactionChecksMuting = prefer.model('reactionChecksMuting');
 const anonymizeMutedUsers = prefer.model('anonymizeMutedUsers');
 const mediaProxyDraft = ref(prefer.s.mediaProxy ?? '');
-const mediaProxyInvalid = ref(false);
+
+function errorText(reason: 'invalid' | 'self' | 'insecure'): string {
+	switch (reason) {
+		case 'self': return i18n.ts._mediaProxySetting.selfUrl;
+		case 'insecure': return i18n.ts._mediaProxySetting.insecureUrl;
+		default: return i18n.ts._mediaProxySetting.invalidUrl;
+	}
+}
+
+// 入力に追従して即座に理由を出す (保存を押した後だけ警告が出ると直し方が分からないため)
+const mediaProxyValidationError = computed(() => {
+	const result = validateMediaProxyUrl(mediaProxyDraft.value, url);
+	return result.ok ? null : errorText(result.reason);
+});
 
 watch(prefer.r.mediaProxy, (value) => {
 	mediaProxyDraft.value = value ?? '';
-	mediaProxyInvalid.value = false;
 });
 
 function onSaveMediaProxy(value: string) {
-	const trimmed = value.trim();
-	if (trimmed === '') {
-		prefer.commit('mediaProxy', null);
-		mediaProxyDraft.value = '';
-		mediaProxyInvalid.value = false;
-		return;
-	}
-
-	const normalized = normalizeMediaProxyUrl(trimmed);
-	if (normalized == null) {
-		mediaProxyInvalid.value = true;
+	const result = validateMediaProxyUrl(value, url);
+	if (!result.ok) {
 		void os.alert({
 			type: 'error',
-			text: i18n.ts._mediaProxySetting.invalidUrl,
+			text: errorText(result.reason),
 		});
+		// 拒否した値は入力欄に残さず、確定済みの値へ戻す
+		mediaProxyDraft.value = prefer.s.mediaProxy ?? '';
 		return;
 	}
 
-	prefer.commit('mediaProxy', normalized);
-	mediaProxyDraft.value = normalized;
-	mediaProxyInvalid.value = false;
+	prefer.commit('mediaProxy', result.normalized);
+	mediaProxyDraft.value = result.normalized ?? '';
 }
-
 </script>

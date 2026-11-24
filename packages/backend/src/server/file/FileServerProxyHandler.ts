@@ -101,7 +101,9 @@ export class FileServerProxyHandler {
 		reply: FastifyReply,
 		mediaProxy: string,
 	) {
-		reply.header('Cache-Control', 'public, max-age=259200'); // 3 days
+		// 管理画面 (DB) 由来の設定は切り替えられるため、3日キャッシュだと旧プロキシへ飛び続ける端末が出る
+		const fromMeta = this.meta?.mediaProxy != null && this.meta.mediaProxy.trim() !== '';
+		reply.header('Cache-Control', fromMeta ? 'public, max-age=300' : 'public, max-age=259200');
 
 		const url = new URL(`${mediaProxy}/${request.params.url || ''}`);
 

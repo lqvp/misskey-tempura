@@ -16,6 +16,7 @@ import { MetaService } from '@/core/MetaService.js';
 import type { MiRemoteUser, MiUser } from '@/models/User.js';
 import { appendQuery, query } from '@/misc/prelude/url.js';
 import { resolveMediaProxy, type Config } from '@/config.js';
+import { USER_AVATAR_URL_MAX_LENGTH, USER_BANNER_URL_MAX_LENGTH } from '@/misc/rewrite-user-media-proxy-urls.js';
 import { NotificationService } from '@/core/NotificationService.js';
 import { RoleService } from '@/core/RoleService.js';
 import { QueueLoggerService } from '../QueueLoggerService.js';
@@ -221,7 +222,7 @@ export class CleanRemoteFilesProcessorService {
 			const avatarFile = await this.driveFilesRepository.findOneBy({ id: user.avatarId });
 			if (avatarFile?.isLink && avatarFile.uri) {
 				const avatarUrl = this.getProxiedUrl(avatarFile.uri, mediaProxy, 'avatar');
-				if (avatarUrl.length <= 1024 && avatarUrl !== user.avatarUrl) {
+				if (avatarUrl.length <= USER_AVATAR_URL_MAX_LENGTH && avatarUrl !== user.avatarUrl) {
 					update.avatarUrl = avatarUrl;
 				}
 			}
@@ -230,7 +231,7 @@ export class CleanRemoteFilesProcessorService {
 			const bannerFile = await this.driveFilesRepository.findOneBy({ id: user.bannerId });
 			if (bannerFile?.isLink && bannerFile.uri) {
 				const bannerUrl = this.getProxiedUrl(bannerFile.uri, mediaProxy);
-				if (bannerUrl.length <= 512 && bannerUrl !== user.bannerUrl) {
+				if (bannerUrl.length <= USER_BANNER_URL_MAX_LENGTH && bannerUrl !== user.bannerUrl) {
 					update.bannerUrl = bannerUrl;
 				}
 			}

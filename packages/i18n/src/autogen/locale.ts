@@ -13340,6 +13340,14 @@ export interface Locale extends ILocale {
          * 有効な http(s):// のベースURLを入力してください（ユーザー情報・クエリ・フラグメント・括弧や引用符は使用できません）。
          */
         "invalidUrl": string;
+        /**
+         * このサーバー自身のURLは指定できません。メディアプロキシのベースURL（例: https://proxy.example.com/proxy）を指定してください。
+         */
+        "selfUrl": string;
+        /**
+         * https のページからは http のメディアプロキシを使用できません。https のURLを指定してください。
+         */
+        "insecureUrl": string;
     };
     "_urlPreviewSetting": {
         /**

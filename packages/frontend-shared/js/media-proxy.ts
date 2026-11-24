@@ -26,6 +26,47 @@ export function normalizeMediaProxyUrl(url: string | null | undefined): string |
 	return normalized;
 }
 
+export type MediaProxyUrlValidation =
+	| { ok: true; normalized: string | null; }
+	| { ok: false; reason: 'invalid' | 'self' | 'insecure'; };
+
+/**
+ * クライアント設定用のメディアプロキシ URL 検証。
+ * サーバー側の検証を通らないため、自インスタンスを指す値や mixed content になる値をここで弾く。
+ * @param raw 入力値 (空文字は「未設定」として ok)
+ * @param instanceUrl インスタンスの URL (自オリジン判定に使う)
+ */
+export function validateMediaProxyUrl(raw: string | null | undefined, instanceUrl: string): MediaProxyUrlValidation {
+	const trimmed = (raw ?? '').trim();
+	if (trimmed === '') return { ok: true, normalized: null };
+
+	const normalized = normalizeMediaProxyUrl(trimmed);
+	if (normalized == null) return { ok: false, reason: 'invalid' };
+
+	const self = normalizeMediaProxyUrl(instanceUrl);
+	if (self != null) {
+		try {
+			const parsed = new URL(normalized);
+			const selfParsed = new URL(self);
+			if (parsed.host === selfParsed.host) {
+				const pathname = parsed.pathname.replace(/\/+$/, '');
+				// 自インスタンスの /proxy 配下 (リダイレクトループ) とルート (プロキシルートが無く 404) は不可
+				if (pathname === '/proxy' || pathname.startsWith('/proxy/') || pathname === '') {
+					return { ok: false, reason: 'self' };
+				}
+			}
+			// https ページから http のプロキシを読むと mixed content で全滅する
+			if (selfParsed.protocol === 'https:' && parsed.protocol === 'http:') {
+				return { ok: false, reason: 'insecure' };
+			}
+		} catch {
+			return { ok: false, reason: 'invalid' };
+		}
+	}
+
+	return { ok: true, normalized };
+}
+
 export class MediaProxy {
 	private serverMetadata: Misskey.entities.MetaDetailed;
 	private url: string;
@@ -51,6 +92,13 @@ export class MediaProxy {
 		if (raw === '') return null;
 		if (normalizeMediaProxyUrl(raw) == null) return null;
 		return raw.replace(/\/+$/, '');
+	}
+
+	/** 一致した接頭辞がサーバー側のプロキシ (元表記・正規化形のどちらでも) を指すか */
+	private isServerProxyPrefix(prefix: string): boolean {
+		const serverProxy = this.serverMediaProxy;
+		if (serverProxy == null) return false;
+		return prefix === serverProxy || prefix === normalizeMediaProxyUrl(serverProxy);
 	}
 
 	private get effectiveMediaProxy(): string {
@@ -90,11 +138,14 @@ export class MediaProxy {
 
 	public getProxiedImageUrl(imageUrl: string, type?: 'preview' | 'emoji' | 'avatar', mustOrigin = false, noFallback = false): string {
 		const localProxy = `${this.url}/proxy`;
-		let _imageUrl = imageUrl;
+		let _imageUrl: string;
 		let _mustOrigin = mustOrigin;
 		const matchedPrefix = this.matchProxyPrefix(imageUrl);
 
-		if (matchedPrefix != null) {
+		if (matchedPrefix == null) {
+			// 相対 URL はプロキシ側で取得できないため絶対 URL に直す
+			_imageUrl = tryParseUrl(imageUrl, this.url)?.href ?? imageUrl;
+		} else {
 			// もう既にproxyっぽそうだったらurlを取り出す（origin=1 は維持する）
 			const parsed = tryParseUrl(imageUrl, this.url);
 			_imageUrl = parsed?.searchParams.get('url') ?? imageUrl;
@@ -106,7 +157,7 @@ export class MediaProxy {
 		// 個別設定が無く、元の接続先が実際に使われているプロキシと同一なら、そのオリジンを維持する
 		const base = _mustOrigin
 			? localProxy
-			: matchedPrefix != null && this.customMediaProxy == null && matchedPrefix === this.serverMediaProxy
+			: matchedPrefix != null && this.customMediaProxy == null && this.isServerProxyPrefix(matchedPrefix)
 				? matchedPrefix
 				: this.effectiveMediaProxy;
 
@@ -158,7 +209,7 @@ export class MediaProxy {
 		}
 
 		// 個別設定が無く、元の接続先が実際に使われているプロキシと同一なら、オリジンを変えずにそのまま返す
-		if (this.customMediaProxy == null && prefix === this.serverMediaProxy) return imageUrl;
+		if (this.customMediaProxy == null && this.isServerProxyPrefix(prefix)) return imageUrl;
 
 		return `${this.effectiveMediaProxy}${imageUrl.slice(prefix.length)}`;
 	}

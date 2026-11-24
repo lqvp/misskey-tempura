@@ -436,6 +436,7 @@ proxyBypassHosts:
 # Reference Implementation: https://github.com/misskey-dev/media-proxy
 # * Deliver a common cache between instances
 # * Perform image compression (on a different server resource than the main process)
+# 管理画面 (独自機能 > メディアプロキシ) で設定した値が優先され、ここはそのフォールバックになる。
 #mediaProxy: https://example.com/proxy
 
 # Movie Thumbnail Generation URL

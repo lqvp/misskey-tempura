@@ -3538,6 +3538,8 @@ _mediaProxySetting:
   serverDescription: "外部のメディアプロキシ（misskey-dev/media-proxy 互換）のベースURLを指定します（例: https://proxy.example.com/proxy）。空欄の場合は設定ファイル（default.yml）または内蔵プロキシ（/proxy）を使用します。"
   clientDescription: "このクライアントでの画像表示に使用するメディアプロキシのベースURLを指定します（例: https://proxy.example.com/proxy）。空欄の場合はサーバーのメディアプロキシ設定を使用します。"
   invalidUrl: "有効な http(s):// のベースURLを入力してください（ユーザー情報・クエリ・フラグメント・括弧や引用符は使用できません）。"
+  selfUrl: "このサーバー自身のURLは指定できません。メディアプロキシのベースURL（例: https://proxy.example.com/proxy）を指定してください。"
+  insecureUrl: "https のページからは http のメディアプロキシを使用できません。https のURLを指定してください。"
 
 _urlPreviewSetting:
   title: "URLプレビューの設定"

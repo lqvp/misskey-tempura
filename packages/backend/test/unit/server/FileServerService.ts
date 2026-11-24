@@ -170,6 +170,7 @@ describe('FileServerService', () => {
 			videoProcessingService,
 			internalStorageService,
 			loggerService,
+			{ mediaProxy: null } as any,
 		);
 
 		fastify = Fastify();
@@ -194,6 +195,7 @@ describe('FileServerService', () => {
 			videoProcessingService,
 			internalStorageService,
 			loggerService,
+			{ mediaProxy: null } as any,
 		);
 		externalFastify = Fastify();
 		await externalFastify.register(fastifyStatic, {
@@ -708,6 +710,17 @@ describe('FileServerService', () => {
 				expect(resB.statusCode).toBe(301);
 				expect(resB.headers.location).toContain('https://meta-proxy-b.test/proxy/');
 				expect(resB.headers.location).toContain('url=https%3A%2F%2Fexample.com%2Fimg.png');
+
+				// 自サーバーの内蔵プロキシを指定してもリダイレクトしない (ループ防止・スキーム違いも同様)
+				dynamicMeta.mediaProxy = `${config.url.replace(/^https:/, 'http:')}/proxy`;
+				const resSelf = await dynamicFastify.inject({
+					method: 'GET',
+					url: '/proxy/image.webp?url=https%3A%2F%2Fexample.com%2Fimg.png',
+					headers: {
+						'user-agent': 'misskey/1.0',
+					},
+				});
+				expect(resSelf.statusCode).toBe(403);
 
 				dynamicMeta.mediaProxy = null;
 				const resLocal = await dynamicFastify.inject({

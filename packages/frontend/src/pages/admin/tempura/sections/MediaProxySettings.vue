@@ -19,7 +19,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<template #label>{{ i18n.ts._mediaProxySetting.url }}<span v-if="form.modifiedStates.mediaProxy" class="_modified">{{ i18n.ts.modified }}</span></template>
 			<template #caption>{{ i18n.ts._mediaProxySetting.serverDescription }}</template>
 		</MkInput>
-		<MkInfo v-if="!isValid" warn>{{ i18n.ts._mediaProxySetting.invalidUrl }}</MkInfo>
+		<MkInfo v-if="validationError != null" warn>{{ validationError }}</MkInfo>
 	</div>
 </MkFolder>
 </template>
@@ -28,7 +28,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { computed } from 'vue';
 import * as Misskey from 'misskey-js';
 import { url } from '@@/js/config.js';
-import { normalizeMediaProxyUrl } from '@@/js/media-proxy.js';
+import { validateMediaProxyUrl } from '@@/js/media-proxy.js';
 import { useForm } from '@/composables/use-form.js';
 import MkInput from '@/components/MkInput.vue';
 import MkInfo from '@/components/MkInfo.vue';
@@ -40,40 +40,33 @@ import { i18n } from '@/i18n.js';
 
 const props = defineProps<{ meta: Misskey.Endpoints['admin/meta']['res'] }>();
 
-const internalMediaProxy = `${normalizeMediaProxyUrl(url) ?? url.replace(/\/+$/, '')}/proxy`;
-
-function validateAndNormalize(raw: string): string | null | undefined {
-	const trimmed = raw.trim();
-	if (trimmed === '') return null;
-	const normalized = normalizeMediaProxyUrl(trimmed);
-	if (normalized == null || normalized.startsWith(`${internalMediaProxy}/`)) {
-		return undefined;
+function errorText(reason: 'invalid' | 'self' | 'insecure'): string {
+	switch (reason) {
+		case 'self': return i18n.ts._mediaProxySetting.selfUrl;
+		case 'insecure': return i18n.ts._mediaProxySetting.insecureUrl;
+		default: return i18n.ts._mediaProxySetting.invalidUrl;
 	}
-	// 自インスタンスのルートオリジンはメディアプロキシのルートを持たず 404 になるため拒否する
-	const selfOrigin = normalizeMediaProxyUrl(url);
-	if (selfOrigin != null && normalized === selfOrigin) {
-		return undefined;
-	}
-	return normalized;
 }
 
 const form = useForm({
 	mediaProxy: props.meta.mediaProxy ?? '',
 }, async (state) => {
-	const normalized = validateAndNormalize(state.mediaProxy);
-	if (normalized === undefined) {
+	const result = validateMediaProxyUrl(state.mediaProxy, url);
+	if (!result.ok) {
 		await os.alert({
 			type: 'error',
-			text: i18n.ts._mediaProxySetting.invalidUrl,
+			text: errorText(result.reason),
 		});
 		throw new Error('Invalid mediaProxy URL');
 	}
 	await os.apiWithDialog('admin/update-meta', {
-		mediaProxy: normalized,
+		mediaProxy: result.normalized,
 	});
-	form.state.mediaProxy = normalized ?? '';
+	form.state.mediaProxy = result.normalized ?? '';
 	fetchInstance(true);
 });
 
-const isValid = computed(() => validateAndNormalize(form.state.mediaProxy) !== undefined);
+const validation = computed(() => validateMediaProxyUrl(form.state.mediaProxy, url));
+const validationError = computed(() => validation.value.ok ? null : errorText(validation.value.reason));
+const isValid = computed(() => validation.value.ok);
 </script>

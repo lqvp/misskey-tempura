@@ -36,6 +36,7 @@ import type { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { bindThis } from '@/decorators.js';
 import { RoleService } from '@/core/RoleService.js';
 import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.js';
+import { USER_AVATAR_URL_MAX_LENGTH, USER_BANNER_URL_MAX_LENGTH } from '@/misc/rewrite-user-media-proxy-urls.js';
 import type { AccountMoveService } from '@/core/AccountMoveService.js';
 import { checkHttps } from '@/misc/check-https.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
@@ -301,14 +302,12 @@ export class ApPersonService implements OnModuleInit {
 			actually removed the images: in that case, the block above
 			returns the special {id:null}&c value, and we return those
 		*/
+		// プロキシURLが列長上限を超える場合、リモートの元URLへはフォールバックしない
+		// (閲覧者のブラウザが設定済みメディアプロキシを迂回して配信元へ直接接続してしまうため)
 		const rawAvatarUrl = avatar?.url ? this.driveFileEntityService.getPublicUrl(avatar, 'avatar') : null;
-		const safeAvatarUrl = rawAvatarUrl != null && rawAvatarUrl.length <= 1024
-			? rawAvatarUrl
-			: (avatar?.url != null && avatar.url.length <= 1024 ? avatar.url : null);
+		const safeAvatarUrl = rawAvatarUrl != null && rawAvatarUrl.length <= USER_AVATAR_URL_MAX_LENGTH ? rawAvatarUrl : null;
 		const rawBannerUrl = banner?.url ? this.driveFileEntityService.getPublicUrl(banner) : null;
-		const safeBannerUrl = rawBannerUrl != null && rawBannerUrl.length <= 512
-			? rawBannerUrl
-			: (banner?.url != null && banner.url.length <= 512 ? banner.url : null);
+		const safeBannerUrl = rawBannerUrl != null && rawBannerUrl.length <= USER_BANNER_URL_MAX_LENGTH ? rawBannerUrl : null;
 
 		const returnData: any = {
 			...( avatar ? {

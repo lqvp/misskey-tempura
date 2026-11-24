@@ -3,45 +3,99 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import type { UsersRepository } from '@/models/_.js';
+import type { Repository } from 'typeorm';
+import type { MiUser } from '@/models/User.js';
+
+/** MiUser.avatarUrl の列長 (packages/backend/src/models/User.ts) */
+export const USER_AVATAR_URL_MAX_LENGTH = 1024;
+/** MiUser.bannerUrl の列長 (packages/backend/src/models/User.ts) */
+export const USER_BANNER_URL_MAX_LENGTH = 512;
 
 /**
- * DB に保存済みの avatarUrl / bannerUrl のうち、旧メディアプロキシ接頭辞で始まる
- * プロキシ URL を新接頭辞へ書き換える。書き換えた行数 (avatar + banner) を返す。
- *
- * - `?url=` / `&url=` を含むものだけを対象にし、自サーバーの素のファイル URL を誤爆しない
- * - `origin=` を含む URL はオリジン配信が必須なので書き換えない
- * - 書き換え後の長さが列上限 (avatarUrl 1024 / bannerUrl 512) を超える行はスキップする
+ * メディアプロキシが生成する URL の接頭辞を取り出す正規表現。
+ * `<proxy>/<mode>.webp?url=...` 形式のみを対象にし、?url= を持たない素のファイル URL を誤って書き換えない。
  */
-export async function rewriteUserMediaProxyUrls(
-	usersRepository: UsersRepository,
-	oldMediaProxy: string,
-	newMediaProxy: string,
-): Promise<number> {
-	const oldPrefix = `${oldMediaProxy}/`;
-	const newPrefix = `${newMediaProxy}/`;
+const PROXY_PREFIX_PATTERN = '^(https?://[^/]+/[^?]*)/(?:image|static|avatar|preview|emoji|svg)\\.(?:webp|png)\\?(?=\\S*url=)';
 
-	// TypeORM (postgres) は UPDATE の query() で [rows, rowCount] を返す
-	const [, avatarCount] = await usersRepository.query(
-		`UPDATE "user"
-		SET "avatarUrl" = $2 || substring("avatarUrl" FROM char_length($1) + 1)
-		WHERE "avatarUrl" IS NOT NULL
-			AND left("avatarUrl", char_length($1)) = $1
-			AND (strpos("avatarUrl", '?url=') > 0 OR strpos("avatarUrl", '&url=') > 0)
-			AND strpos("avatarUrl", 'origin=') = 0
-			AND char_length($2) + char_length("avatarUrl") - char_length($1) <= 1024`,
-		[oldPrefix, newPrefix],
-	) as [unknown[], number];
-	const [, bannerCount] = await usersRepository.query(
-		`UPDATE "user"
-		SET "bannerUrl" = $2 || substring("bannerUrl" FROM char_length($1) + 1)
-		WHERE "bannerUrl" IS NOT NULL
-			AND left("bannerUrl", char_length($1)) = $1
-			AND (strpos("bannerUrl", '?url=') > 0 OR strpos("bannerUrl", '&url=') > 0)
-			AND strpos("bannerUrl", 'origin=') = 0
-			AND char_length($2) + char_length("bannerUrl") - char_length($1) <= 512`,
-		[oldPrefix, newPrefix],
-	) as [unknown[], number];
+export interface ReconcileMediaProxyResult {
+	/** 書き換えた行数 (avatar + banner) */
+	rewritten: number;
+	/** origin= を要求しているためスキップした行数 */
+	skippedByOrigin: number;
+	/** 列長上限を超えるためスキップした行数 */
+	skippedByLength: number;
+}
 
-	return avatarCount + bannerCount;
+function countSql(column: 'avatarUrl' | 'bannerUrl', maxLength: number): string {
+	return `
+		SELECT
+			count(*) FILTER (WHERE strpos("${column}", 'origin=') > 0)::int AS blocked_origin,
+			count(*) FILTER (
+				WHERE strpos("${column}", 'origin=') = 0
+					AND char_length($1) + char_length("${column}") - char_length(substring("${column}" FROM $2)) > ${maxLength}
+			)::int AS blocked_length
+		FROM "user"
+		WHERE "${column}" IS NOT NULL
+			AND (strpos("${column}", '?url=') > 0 OR strpos("${column}", '&url=') > 0)
+			AND substring("${column}" FROM $2) IS NOT NULL
+			AND substring("${column}" FROM $2) <> $1`;
+}
+
+function updateSql(column: 'avatarUrl' | 'bannerUrl', maxLength: number): string {
+	return `
+		UPDATE "user"
+		SET "${column}" = $1 || substring("${column}" FROM char_length(substring("${column}" FROM $2)) + 1)
+		WHERE "${column}" IS NOT NULL
+			AND (strpos("${column}", '?url=') > 0 OR strpos("${column}", '&url=') > 0)
+			AND substring("${column}" FROM $2) IS NOT NULL
+			AND substring("${column}" FROM $2) <> $1
+			AND strpos("${column}", 'origin=') = 0
+			AND char_length($1) + char_length("${column}") - char_length(substring("${column}" FROM $2)) <= ${maxLength}`;
+}
+
+/**
+ * DB に保存済みの avatarUrl / bannerUrl を、指定したメディアプロキシのベース URL へ収束させる。
+ *
+ * 「旧→新」のペアではなく「現在のプロキシへ寄せる」冪等な操作にしてあるため、
+ * - 同じ値で再実行しても結果が変わらない (リトライ・再保存による復旧が可能)
+ * - 途中で失敗して古い接頭辞が残っても、次回の実行で回収できる
+ *
+ * avatar と banner の更新は 1 トランザクションで実行し、advisory lock でクラスタ全体を直列化する。
+ * `?url=` を含むメディアプロキシ URL だけを対象にし、`origin=` 付きはオリジン配信が必須なので触らない。
+ */
+export async function reconcileUserMediaProxyUrls(
+	usersRepository: Repository<MiUser>,
+	toMediaProxy: string,
+): Promise<ReconcileMediaProxyResult> {
+	// 対象URLは `<proxy>/<mode>.webp?...` なので、接頭辞側の末尾スラッシュは持たない (二重スラッシュ防止)
+	const targetPrefix = toMediaProxy.replace(/\/+$/, '');
+
+	return await usersRepository.manager.transaction(async (entityManager) => {
+		// クラスタ構成でも書き換えが交錯しないよう、トランザクション内で advisory lock を取る
+		await entityManager.query('SELECT pg_advisory_xact_lock(hashtext($1))', ['misskey:mediaProxyRewrite']);
+
+		const avatarCounts = await entityManager.query(
+			countSql('avatarUrl', USER_AVATAR_URL_MAX_LENGTH),
+			[targetPrefix, PROXY_PREFIX_PATTERN],
+		) as { blocked_origin: number; blocked_length: number; }[];
+		const bannerCounts = await entityManager.query(
+			countSql('bannerUrl', USER_BANNER_URL_MAX_LENGTH),
+			[targetPrefix, PROXY_PREFIX_PATTERN],
+		) as { blocked_origin: number; blocked_length: number; }[];
+
+		const [, avatarRewritten] = await entityManager.query(
+			updateSql('avatarUrl', USER_AVATAR_URL_MAX_LENGTH),
+			[targetPrefix, PROXY_PREFIX_PATTERN],
+		) as [unknown[], number];
+		const [, bannerRewritten] = await entityManager.query(
+			updateSql('bannerUrl', USER_BANNER_URL_MAX_LENGTH),
+			[targetPrefix, PROXY_PREFIX_PATTERN],
+		) as [unknown[], number];
+
+		return {
+			rewritten: avatarRewritten + bannerRewritten,
+			skippedByOrigin: (avatarCounts[0]?.blocked_origin ?? 0) + (bannerCounts[0]?.blocked_origin ?? 0),
+			skippedByLength: (avatarCounts[0]?.blocked_length ?? 0) + (bannerCounts[0]?.blocked_length ?? 0),
+		};
+	});
 }

@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, test } from 'vitest';
-import { normalizeMediaProxyUrl, resolveMediaProxy } from '@/config.js';
+import { classifyMediaProxyUrl, normalizeMediaProxyUrl, resolveMediaProxy } from '@/config.js';
 
 describe('normalizeMediaProxyUrl', () => {
 	test('normalizes valid http(s) URLs and strips trailing slashes', () => {
@@ -82,6 +82,25 @@ describe('resolveMediaProxy', () => {
 		});
 	});
 
+	test('treats self proxy regardless of scheme as internal (no redirect loop)', () => {
+		// TLS 終端構成で http を入力してもループしない
+		expect(resolveMediaProxy(baseConfig, { mediaProxy: 'http://misskey.test/proxy' })).toEqual({
+			mediaProxy: 'https://misskey.test/proxy',
+			externalMediaProxyEnabled: false,
+		});
+		expect(resolveMediaProxy({ ...baseConfig, url: 'http://misskey.test' }, { mediaProxy: 'https://misskey.test/proxy' })).toEqual({
+			mediaProxy: 'http://misskey.test/proxy',
+			externalMediaProxyEnabled: false,
+		});
+	});
+
+	test('falls back to config when meta.mediaProxy points at the self origin root', () => {
+		expect(resolveMediaProxy(baseConfig, { mediaProxy: 'https://misskey.test' })).toEqual({
+			mediaProxy: 'https://config-proxy.test/proxy',
+			externalMediaProxyEnabled: true,
+		});
+	});
+
 	test('treats trailing-dot self host as internal (no redirect loop)', () => {
 		expect(resolveMediaProxy(baseConfig, { mediaProxy: 'https://misskey.test./proxy' })).toEqual({
 			mediaProxy: 'https://misskey.test/proxy',
@@ -91,5 +110,20 @@ describe('resolveMediaProxy', () => {
 			mediaProxy: 'https://misskey.test/proxy',
 			externalMediaProxyEnabled: false,
 		});
+	});
+});
+
+describe('classifyMediaProxyUrl', () => {
+	const self = 'https://misskey.test';
+
+	test('classifies self proxy / self root / external / invalid', () => {
+		expect(classifyMediaProxyUrl('https://misskey.test/proxy', self)).toEqual({ kind: 'self-proxy', url: 'https://misskey.test/proxy' });
+		expect(classifyMediaProxyUrl('http://misskey.test/proxy/', self)).toEqual({ kind: 'self-proxy', url: 'http://misskey.test/proxy' });
+		expect(classifyMediaProxyUrl('https://misskey.test./proxy', self)).toEqual({ kind: 'self-proxy', url: 'https://misskey.test/proxy' });
+		expect(classifyMediaProxyUrl('https://misskey.test', self)).toEqual({ kind: 'self-root', url: 'https://misskey.test' });
+		expect(classifyMediaProxyUrl('https://proxy.example/proxy', self)).toEqual({ kind: 'external', url: 'https://proxy.example/proxy' });
+		expect(classifyMediaProxyUrl('https://misskey.test/media-proxy', self)).toEqual({ kind: 'external', url: 'https://misskey.test/media-proxy' });
+		expect(classifyMediaProxyUrl('javascript:alert(1)', self)).toEqual({ kind: 'invalid' });
+		expect(classifyMediaProxyUrl(null, self)).toEqual({ kind: 'invalid' });
 	});
 });
