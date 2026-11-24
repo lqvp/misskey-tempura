@@ -430,9 +430,23 @@ describe('parseTlDigestResponse', () => {
 		expect(parseTlDigestResponse('{"topics":[{}]}', refMap)).toBeNull();
 	});
 
-	it('JSON として解析できるがスキーマと異なる応答は null を返す', () => {
+	it('応答全体が JSON だがスキーマと異なる場合は null を返す', () => {
 		expect(parseTlDigestResponse('{"summary":"話題の要約"}', refMap)).toBeNull();
 		expect(parseTlDigestResponse('```json\n{"items":[]}\n```', refMap)).toBeNull();
+	});
+
+	it('自由文中に引用された JSON 断片はスキーマ検証に使わず全文をフォールバック表示する', () => {
+		const raw = '設定の話題では、例として {"debug": true} が共有されました。';
+		expect(parseTlDigestResponse(raw, refMap)).toEqual({ topics: [], fallbackText: raw });
+
+		const rawArray = '数値の例 [1, 2, 3] が話題になりました。';
+		expect(parseTlDigestResponse(rawArray, refMap)).toEqual({ topics: [], fallbackText: rawArray });
+
+		// 自由文中でも有効なダイジェスト JSON なら従来どおり採用する
+		const withPreface = '以下が要約です: {"topics":[{"title":"話題A","summary":"要約A","refs":["n1"]}]}';
+		const parsed = parseTlDigestResponse(withPreface, refMap);
+		expect(parsed!.fallbackText).toBeNull();
+		expect(parsed!.topics[0].noteIds).toEqual(['real-id-1']);
 	});
 
 	it('JSON が壊れている場合はプレーンテキストにフォールバックし URL を無害化する', () => {
@@ -1064,7 +1078,7 @@ describe('createTlDigestController', () => {
 			// 実際の generateLLMResponse と同様に、確認ダイアログ後の送信直前で beforeSend を呼ぶ
 			generate: async (opts) => {
 				consent = null;
-				opts.beforeSend?.('server:x');
+				opts.beforeSend?.('server:x', true);
 				sent();
 				return { choices: [{ message: { content: '{"topics":[]}' } }] };
 			},
@@ -1190,10 +1204,15 @@ describe('createTlDigestController', () => {
 describe('claimTlDigestAutoGenerate', () => {
 	it('同じアカウント・不在期間の自動生成は 1 回だけ確保できる', () => {
 		const win = { since: 1000, until: 2000 };
-		expect(claimTlDigestAutoGenerate('claim-user', win)).toBe(true);
-		expect(claimTlDigestAutoGenerate('claim-user', { ...win })).toBe(false);
-		expect(claimTlDigestAutoGenerate('claim-user', { since: 1000, until: 3000 })).toBe(true);
-		expect(claimTlDigestAutoGenerate('claim-other', win)).toBe(true);
+		const release = claimTlDigestAutoGenerate('claim-user', win);
+		expect(release).not.toBeNull();
+		expect(claimTlDigestAutoGenerate('claim-user', { ...win })).toBeNull();
+		expect(claimTlDigestAutoGenerate('claim-user', { since: 1000, until: 3000 })).not.toBeNull();
+		expect(claimTlDigestAutoGenerate('claim-other', win)).not.toBeNull();
+
+		// 送信前に中断して解放した場合は再度確保できる
+		release!();
+		expect(claimTlDigestAutoGenerate('claim-user', win)).not.toBeNull();
 	});
 });
 

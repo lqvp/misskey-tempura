@@ -44,6 +44,8 @@ export interface RunTlDigestOptions {
 	until: number;
 	maxNotes: number;
 	includeRenotes: boolean;
+	/** LLM へ実際に送信する直前 (確認ダイアログなどの後) に呼ばれる */
+	onSending?: () => void;
 }
 
 export interface TlDigestWindow {
@@ -211,13 +213,15 @@ const autoGenerateClaims = new Set<string>();
 
 /**
  * 不在期間の自動生成を 1 回だけ実行できるよう確保する
- * @returns 確保できた場合 true (既に他のウィジェットが確保済みなら false)
+ * @returns 確保を解放する関数 (送信前に中断した場合に呼ぶ)。既に他のウィジェットが確保済みなら null
  */
-export function claimTlDigestAutoGenerate(userId: string | null, win: TlDigestWindow): boolean {
+export function claimTlDigestAutoGenerate(userId: string | null, win: TlDigestWindow): (() => void) | null {
 	const key = `${userId ?? ''}:${win.since}:${win.until}`;
-	if (autoGenerateClaims.has(key)) return false;
+	if (autoGenerateClaims.has(key)) return null;
 	autoGenerateClaims.add(key);
-	return true;
+	return () => {
+		autoGenerateClaims.delete(key);
+	};
 }
 
 export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}): TlDigestController {
@@ -506,7 +510,7 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 				signal: abort.signal,
 				expectedDestination: active.destination!,
 				// 確認ダイアログ中などに別タブで公開範囲・同意・CW 設定が変わっていたら送信しない
-				beforeSend: (destination) => {
+				beforeSend: (destination, sending) => {
 					const latest = deps.getSettings();
 					let visibilities = normalizeTlDigestVisibilities(latest.visibilities);
 					if (visibilities.includes('followers')) {
@@ -518,6 +522,7 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 					) {
 						throw new Error(i18n.ts._tlDigest.settingsChanged);
 					}
+					if (sending) options.onSending?.();
 				},
 			});
 			if (!isCurrent()) return;

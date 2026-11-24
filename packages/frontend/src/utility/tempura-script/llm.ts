@@ -272,7 +272,8 @@ export interface GenerateLLMOptions {
 	 * 実際に送信する直前 (確認ダイアログの後を含む) に同期的に呼ばれる。
 	 * 送信内容の前提 (公開範囲の同意など) が崩れていれば例外を投げて送信を中止する
 	 */
-	beforeSend?: (destination: LLMDestination) => void;
+	/** @param sending true なら、この直後に実際に送信する (false は確認ダイアログを出す前の事前確認) */
+	beforeSend?: (destination: LLMDestination, sending: boolean) => void;
 }
 
 // 直近のモデル一覧取得結果 (画像対応判定のキャッシュとして使う)
@@ -435,7 +436,7 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 
 	// instanceReady 待機中に設定が変わった場合も判定と送信先分岐が食い違わないよう再取得する
 	const currentUseServerApi = prefer.s.useGeminiLLMAPI;
-	const verifyBeforeSend = (useServerApi: boolean): void => {
+	const verifyBeforeSend = (useServerApi: boolean, sending: boolean): void => {
 		if (options.expectedDestination == null && options.beforeSend == null) return;
 		const actualDestination = computeCurrentLLMDestination(useServerApi);
 		if (actualDestination == null) {
@@ -444,15 +445,13 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 		if (options.expectedDestination != null && actualDestination !== options.expectedDestination) {
 			throw new Error(i18n.ts._tlDigest.settingsChanged);
 		}
-		options.beforeSend?.(actualDestination);
+		options.beforeSend?.(actualDestination, sending);
 	};
-
-	// 確認ダイアログを出す前にも一度確認し、前提が崩れていれば何も表示せず中止する
-	verifyBeforeSend(currentUseServerApi);
 
 	if (currentUseServerApi) {
 		// サーバーで OpenAI 互換 API が有効になっているかチェック
 		if (instance.value?.serverOpenAIEnabled === true) {
+			verifyBeforeSend(true, true);
 			try {
 				return await generateViaServer(options);
 			} catch (error: unknown) {
@@ -467,6 +466,8 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 
 		// サーバー側が無効な場合、ユーザー直指定にフォールバックするか確認
 		if (prefer.s.openaiToken) {
+			// 確認ダイアログを出す前にも確認し、前提が崩れていれば何も表示せず中止する
+			verifyBeforeSend(true, false);
 			const { canceled, result } = await os.actions({
 				type: 'question',
 				title: i18n.ts._llm._fallback.title,
@@ -492,6 +493,6 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 	}
 
 	// 確認ダイアログ中の設定変更も反映するため、送信直前に送信先と送信内容の前提を再確認する
-	verifyBeforeSend(false);
+	verifyBeforeSend(false, true);
 	return await generateOpenAIDirect(options);
 }

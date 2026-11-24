@@ -475,18 +475,22 @@ export function parseTlDigestResponse(
 
 	// まず応答全体をそのまま JSON として解析する (summary 内の三連バッククォート誤抽出を防ぐ)。
 	// 失敗した場合にのみコードフェンスや前後の説明文を取り除いて再解析する
-	const jsonCandidates = [trimmed];
+	// fragment: 自由文の中から取り出した断片 (自由文中の JSON 引用の可能性がある)
+	const jsonCandidates = [{ text: trimmed, fragment: false }];
 	const extracted = extractJsonCandidate(trimmed);
 	if (extracted !== trimmed) {
-		jsonCandidates.push(extracted);
+		const wholeFence = /^```(?:json)?\s*[\s\S]*?```$/i.test(trimmed) && trimmed.indexOf('```', 3) === trimmed.length - 3;
+		jsonCandidates.push({ text: extracted, fragment: !wholeFence });
 	}
 
 	let parsed: unknown;
 	let parsedOk = false;
+	let parsedFragment = false;
 	for (const candidate of jsonCandidates) {
 		try {
-			parsed = JSON.parse(candidate) as unknown;
+			parsed = JSON.parse(candidate.text) as unknown;
 			parsedOk = true;
+			parsedFragment = candidate.fragment;
 			break;
 		} catch {
 			// 次の候補を試す
@@ -536,18 +540,16 @@ export function parseTlDigestResponse(
 			}
 
 			// スキーマ不正な要素しか無い応答は「話題なし」ではなく不正な応答として扱う
-			if (topics.length === 0 && rawTopics.length > 0) {
-				return null;
+			// (自由文中の断片なら、JSON の引用とみなして全文のフォールバックへ進む)
+			if (topics.length > 0 || rawTopics.length === 0) {
+				return {
+					topics,
+					fallbackText: null,
+				};
 			}
-
-			return {
-				topics,
-				fallbackText: null,
-			};
-		}
-
-		// JSON として解析できたのにスキーマと異なる応答は、自由文の救済ではなく不正な応答として扱う
-		if (parsed != null && typeof parsed === 'object') {
+			if (!parsedFragment) return null;
+		} else if (!parsedFragment && parsed != null && typeof parsed === 'object') {
+			// 応答全体が JSON なのにスキーマと異なる場合は、自由文の救済ではなく不正な応答として扱う
 			return null;
 		}
 	}

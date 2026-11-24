@@ -267,10 +267,16 @@ const {
 	pendingCount,
 } = controller;
 
+// 送信前の自動生成の確保 (ドロワーを閉じるなどで送信前に中断した場合は、開き直したときに再度自動生成できるよう解放する)
+let releaseUnsentAutoGenerate: (() => void) | null = null;
+
 let disposed = false;
 onBeforeUnmount(() => {
 	disposed = true;
-	if (ownsController) controller.dispose();
+	if (ownsController) {
+		if (digestGenerating.value) releaseUnsentAutoGenerate?.();
+		controller.dispose();
+	}
 });
 
 const thresholdMinutes = computed(() => Number(widgetProps.absenceThreshold) || 60);
@@ -364,12 +370,19 @@ function maybeAutoGenerate(win: TlDigestWindow, includeRenotes: boolean, state: 
 	if (state.status !== 'ready' || state.count === 0) return;
 	if (digestGenerating.value || latestDigestResult.value != null) return;
 	// 自動生成は同じ不在期間につき 1 回だけ (複数設置時や失敗後の設定変更で再送しない)
-	if (!claimTlDigestAutoGenerate($i?.id ?? null, win)) return;
+	const release = claimTlDigestAutoGenerate($i?.id ?? null, win);
+	if (release == null) return;
+	releaseUnsentAutoGenerate = release;
 	void controller.run({
 		since: win.since,
 		until: win.until,
 		maxNotes: maxNotesCount.value,
 		includeRenotes,
+		onSending: () => {
+			releaseUnsentAutoGenerate = null;
+		},
+	}).finally(() => {
+		if (releaseUnsentAutoGenerate === release) releaseUnsentAutoGenerate = null;
 	});
 }
 
