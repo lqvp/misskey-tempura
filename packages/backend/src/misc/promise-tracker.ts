@@ -15,7 +15,12 @@ export function trackPromise(promise: Promise<unknown>) {
 	}
 	const ref = new WeakRef(promise);
 	promiseRefs.add(ref);
-	promise.finally(() => promiseRefs.delete(ref));
+	// .finally で繋ぐと派生Promiseが元のrejectを引き継ぎ、誰もawaitしないためunhandled rejectionになる。
+	// 追跡の目的はshutdown時のdrain (allSettledでrejectionも観測される) なので、両分岐で解除する形にする。
+	promise.then(
+		() => promiseRefs.delete(ref),
+		() => promiseRefs.delete(ref),
+	);
 }
 
 export async function allSettled(): Promise<void> {
