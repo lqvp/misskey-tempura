@@ -30,7 +30,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 				<MkPreferenceContainer k="mediaProxy">
 					<SearchMarker :keywords="['media', 'proxy', 'image', 'url']">
-						<MkInput :modelValue="mediaProxyDraft" type="url" manualSave @update:modelValue="onSaveMediaProxy" @change="onEditMediaProxy">
+						<MkInput :key="mediaProxyInputKey" :modelValue="mediaProxyDraft" type="url" manualSave @update:modelValue="onSaveMediaProxy" @change="onEditMediaProxy">
 							<template #prefix><i class="ti ti-link"></i></template>
 							<template #label><SearchLabel>{{ i18n.ts._mediaProxySetting.url }}</SearchLabel></template>
 							<template #caption>{{ i18n.ts._mediaProxySetting.clientDescription }}</template>
@@ -60,6 +60,8 @@ import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 const reactionChecksMuting = prefer.model('reactionChecksMuting');
 const anonymizeMutedUsers = prefer.model('anonymizeMutedUsers');
 const mediaProxyDraft = ref(prefer.s.mediaProxy ?? '');
+/** 拒否時に入力欄を確実に巻き戻すための再マウント用キー (同値代入では子の watch が発火しない) */
+const mediaProxyInputKey = ref(0);
 /** 編集中の入力値 (manualSave では保存するまで親に渡らないため、change から拾って検証に使う) */
 const mediaProxyEditing = ref<string | null>(null);
 
@@ -97,6 +99,8 @@ function onSaveMediaProxy(value: string) {
 		});
 		// 拒否した値は入力欄に残さず、確定済みの値へ戻す
 		mediaProxyDraft.value = prefer.s.mediaProxy ?? '';
+		mediaProxyEditing.value = null;
+		mediaProxyInputKey.value++;
 		return;
 	}
 

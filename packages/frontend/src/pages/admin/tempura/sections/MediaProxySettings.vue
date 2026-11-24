@@ -7,7 +7,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <MkFolder>
 	<template #icon><i class="ti ti-photo-shield"></i></template>
 	<template #label>{{ i18n.ts._mediaProxySetting.title }}<span class="_beta">{{ i18n.ts.originalFeature }}</span></template>
-	<template v-if="form.savedState.mediaProxy.trim() !== ''" #suffix>{{ i18n.ts.enabled }}</template>
+	<template v-if="savedMediaProxy !== ''" #suffix>{{ i18n.ts.enabled }}</template>
 	<template v-else #suffix>{{ i18n.ts.default }}</template>
 	<template v-if="form.modified.value" #footer>
 		<MkFormFooter :form="form" :canSaving="isValid"/>
@@ -21,10 +21,10 @@ SPDX-License-Identifier: AGPL-3.0-only
 		</MkInput>
 		<MkInfo v-if="validationError != null" warn>{{ validationError }}</MkInfo>
 
-		<MkButton v-if="props.meta.mediaProxy != null && props.meta.mediaProxy !== ''" :disabled="reconciling" @click="reconcile">
+		<MkButton v-if="savedMediaProxy !== ''" :disabled="reconciling" @click="reconcile">
 			<i class="ti ti-refresh"></i> {{ i18n.ts._mediaProxySetting.reconcile }}
 		</MkButton>
-		<div v-if="props.meta.mediaProxy != null && props.meta.mediaProxy !== ''" class="_caption">{{ i18n.ts._mediaProxySetting.reconcileDescription }}</div>
+		<div v-if="savedMediaProxy !== ''" class="_caption">{{ i18n.ts._mediaProxySetting.reconcileDescription }}</div>
 	</div>
 </MkFolder>
 </template>
@@ -59,13 +59,8 @@ const form = useForm({
 	mediaProxy: props.meta.mediaProxy ?? '',
 }, async (state) => {
 	const result = validateMediaProxyUrl(state.mediaProxy, url);
-	if (!result.ok) {
-		await os.alert({
-			type: 'error',
-			text: errorText(result.reason),
-		});
-		throw new Error('Invalid mediaProxy URL');
-	}
+	// 保存ボタンは canSaving (= 同じ検証結果) で無効化されるため通常ここには来ない
+	if (!result.ok) throw new Error('Invalid mediaProxy URL');
 	await os.apiWithDialog('admin/update-meta', {
 		mediaProxy: result.normalized,
 	});
@@ -73,14 +68,20 @@ const form = useForm({
 	fetchInstance(true);
 });
 
+/** 保存済みの値 (props.meta はページを開いた時点の値なので、保存後の再同期では使えない) */
+const savedMediaProxy = computed(() => form.savedState.mediaProxy.trim());
+
 async function reconcile() {
 	reconciling.value = true;
 	try {
 		// 同じ値を再保存すると、保存済みの画像URLを現在の設定へ寄せ直す処理が再実行される
 		await os.apiWithDialog('admin/update-meta', {
-			mediaProxy: props.meta.mediaProxy,
+			mediaProxy: savedMediaProxy.value,
 		});
 		fetchInstance(true);
+	} catch (err) {
+		// apiWithDialog が既にエラーを表示しているため、ここでは握りつぶす (未処理 rejection を避ける)
+		console.warn('Failed to reconcile media proxy URLs', err);
 	} finally {
 		reconciling.value = false;
 	}

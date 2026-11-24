@@ -6,6 +6,8 @@
 import * as Misskey from 'misskey-js';
 import { query, tryParseUrl } from './url.js';
 
+// NOTE: 同じ検証ロジックが backend (packages/backend/src/config.ts) にもある。
+// backend は frontend-shared に依存しないため、変更するときは双方を同時に更新すること。
 export const MEDIA_PROXY_URL_MAX_LENGTH = 256;
 
 export function normalizeMediaProxyUrl(url: string | null | undefined): string | null {
@@ -24,6 +26,11 @@ export function normalizeMediaProxyUrl(url: string | null | undefined): string |
 	const normalized = `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, '');
 	if (normalized.length > MEDIA_PROXY_URL_MAX_LENGTH) return null;
 	return normalized;
+}
+
+/** パス比較用の正規化 (小文字化・連続スラッシュの圧縮・末尾スラッシュ除去) */
+function normalizePathname(pathname: string): string {
+	return pathname.toLowerCase().replace(/\/{2,}/g, '/').replace(/\/+$/, '');
 }
 
 export type MediaProxyUrlValidation =
@@ -49,7 +56,8 @@ export function validateMediaProxyUrl(raw: string | null | undefined, instanceUr
 			const parsed = new URL(normalized);
 			const selfParsed = new URL(self);
 			if (parsed.host === selfParsed.host) {
-				const pathname = parsed.pathname.replace(/\/+$/, '');
+				// Fastify のルートは大文字小文字を区別し、// は別パスになるため、比較用に正規化する
+				const pathname = normalizePathname(parsed.pathname);
 				// 自インスタンスの /proxy 配下 (リダイレクトループ) とルート (プロキシルートが無く 404) は不可
 				if (pathname === '/proxy' || pathname.startsWith('/proxy/') || pathname === '') {
 					return { ok: false, reason: 'self' };
@@ -137,6 +145,7 @@ export class MediaProxy {
 	}
 
 	public getProxiedImageUrl(imageUrl: string, type?: 'preview' | 'emoji' | 'avatar', mustOrigin = false, noFallback = false): string {
+		if (imageUrl.trim() === '') return '';
 		const localProxy = `${this.url}/proxy`;
 		let _imageUrl: string;
 		let _mustOrigin = mustOrigin;
@@ -149,7 +158,7 @@ export class MediaProxy {
 			// もう既にproxyっぽそうだったらurlを取り出す（origin=1 は維持する）
 			const parsed = tryParseUrl(imageUrl, this.url);
 			_imageUrl = parsed?.searchParams.get('url') ?? imageUrl;
-			if (parsed?.searchParams.has('origin')) {
+			if (parsed?.searchParams.get('origin') === '1') {
 				_mustOrigin = true;
 			}
 		}
@@ -204,7 +213,7 @@ export class MediaProxy {
 		if (prefix == null) return imageUrl;
 
 		const parsed = tryParseUrl(imageUrl, this.url);
-		if (parsed?.searchParams.has('origin')) {
+		if (parsed?.searchParams.get('origin') === '1') {
 			return `${this.url}/proxy${imageUrl.slice(prefix.length)}`;
 		}
 

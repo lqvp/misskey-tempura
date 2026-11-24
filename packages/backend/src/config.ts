@@ -253,6 +253,8 @@ export type Config = {
 
 export type FulltextSearchProvider = 'sqlLike' | 'sqlPgroonga' | 'meilisearch';
 
+// NOTE: 同じ検証ロジックが frontend-shared (packages/frontend-shared/js/media-proxy.ts) にもある。
+// backend は frontend-shared に依存しないため、変更するときは双方を同時に更新すること。
 export const MEDIA_PROXY_URL_MAX_LENGTH = 256;
 
 export function normalizeMediaProxyUrl(url?: string | null): string | null {
@@ -307,7 +309,8 @@ export function classifyMediaProxyUrl(url: string | null | undefined, selfUrl: s
 	// URL.host は小文字化・デフォルトポート除去済みなので、スキーム差だけを無視して比較できる
 	if (parsed.host !== self.host) return { kind: 'external', url: normalized };
 
-	const pathname = parsed.pathname.replace(/\/+$/, '');
+	// Fastify のルートは大文字小文字を区別し、// は別パスになるため、比較用に正規化する
+	const pathname = parsed.pathname.toLowerCase().replace(/\/{2,}/g, '/').replace(/\/+$/, '');
 	if (pathname === '/proxy' || pathname.startsWith('/proxy/')) {
 		return { kind: 'self-proxy', url: normalized };
 	}

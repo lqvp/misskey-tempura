@@ -234,3 +234,49 @@ describe('validateMediaProxyUrl', () => {
 		expect(validateMediaProxyUrl('https://misskey.test/media-proxy', instanceUrl)).toEqual({ ok: true, normalized: 'https://misskey.test/media-proxy' });
 	});
 });
+
+describe('validateMediaProxyUrl edge cases', () => {
+	const instanceUrl = 'https://misskey.test';
+
+	test('rejects case/duplicate-slash variants of the self proxy path', () => {
+		expect(validateMediaProxyUrl('HTTPS://MISSKEY.TEST/PROXY', instanceUrl)).toEqual({ ok: false, reason: 'self' });
+		expect(validateMediaProxyUrl('https://misskey.test/Proxy/image.webp', instanceUrl)).toEqual({ ok: false, reason: 'self' });
+		expect(validateMediaProxyUrl('https://misskey.test//proxy', instanceUrl)).toEqual({ ok: false, reason: 'self' });
+	});
+
+	test('handles ports, IPv6, and protocol-relative inputs', () => {
+		expect(validateMediaProxyUrl('https://misskey.test:443/proxy', instanceUrl)).toEqual({ ok: false, reason: 'self' });
+		expect(validateMediaProxyUrl('https://misskey.test:8443/proxy', instanceUrl)).toEqual({ ok: true, normalized: 'https://misskey.test:8443/proxy' });
+		expect(validateMediaProxyUrl('https://[::1]:3000/proxy', 'https://[::1]:3000')).toEqual({ ok: false, reason: 'self' });
+		expect(validateMediaProxyUrl('//proxy.example/proxy', instanceUrl)).toEqual({ ok: false, reason: 'invalid' });
+	});
+});
+
+describe('MediaProxy additional paths', () => {
+	const instanceUrl = 'https://server.example';
+
+	test('converts internal /proxy to the external server proxy when no client proxy is set', () => {
+		const proxy = new MediaProxy(createMeta('https://server-proxy.example/proxy'), instanceUrl, () => null);
+		expect(proxy.rewriteProxiedImageUrl('/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png&avatar=1'))
+			.toBe('https://server-proxy.example/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png&avatar=1');
+	});
+
+	test('passes /emoji/ paths through in getStaticImageUrl', () => {
+		const proxy = new MediaProxy(createMeta('https://server-proxy.example/proxy'), instanceUrl, () => null);
+		expect(proxy.getStaticImageUrl('/emoji/foo.webp')).toBe('https://server.example/emoji/foo.webp?static=1');
+	});
+
+	test('treats only origin=1 as origin-forced', () => {
+		const proxy = new MediaProxy(createMeta('https://server-proxy.example/proxy'), instanceUrl, () => 'https://client-proxy.example/proxy');
+		expect(proxy.rewriteProxiedImageUrl('https://server-proxy.example/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png&origin=1'))
+			.toBe('https://server.example/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png&origin=1');
+		// origin=0 はオリジン強制ではないので client proxy へ寄せる
+		expect(proxy.rewriteProxiedImageUrl('https://server-proxy.example/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png&origin=0'))
+			.toBe('https://client-proxy.example/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png&origin=0');
+	});
+
+	test('returns empty string for empty image URLs', () => {
+		const proxy = new MediaProxy(createMeta('https://server-proxy.example/proxy'), instanceUrl, () => null);
+		expect(proxy.getProxiedImageUrl('')).toBe('');
+	});
+});
