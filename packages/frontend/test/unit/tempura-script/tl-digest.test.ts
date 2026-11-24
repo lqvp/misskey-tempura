@@ -706,7 +706,6 @@ describe('parseTlDigestResponse', () => {
 			topics: [],
 			fallbackText: '今日はラーメンの話題が中心でした。',
 		});
-
 	});
 
 	it('本文中の断片が topics を持つが中身が不正なら、本文を残さず不正な応答として null を返す', () => {
@@ -838,6 +837,32 @@ describe('parseTlDigestResponse', () => {
 		const parsed = parseTlDigestResponse(withTopics, refMap);
 		expect(parsed!.topics).toHaveLength(1);
 		expect(parsed!.fallbackText).toBe(prose);
+	});
+
+	it('閉じフェンス行に文言が付いていても、閉じフェンスとして扱って文言を落とさない (回帰)', () => {
+		// 閉じ行を「マーカーだけの行」に限定すると、文言付きの閉じ行が
+		// フェンスを閉じないまま中身の一部になり、逆に要約が消える
+		expect(parseTlDigestResponse('```\n[]\n``` 今日はGPUの話題でした。', refMap)).toEqual({
+			topics: [],
+			fallbackText: '今日はGPUの話題でした。',
+		});
+		expect(parseTlDigestResponse('```json\n{"topics":[]}\n``` 補足: GPU の話', refMap)).toEqual({
+			topics: [],
+			fallbackText: '補足: GPU の話',
+		});
+		// フェンスが無い (JSON の後に閉じ行だけが付く) 応答も同じ
+		expect(parseTlDigestResponse('{"topics":[]}\n``` 今日はGPUの話題でした。', refMap)).toEqual({
+			topics: [],
+			fallbackText: '今日はGPUの話題でした。',
+		});
+	});
+
+	it('閉じフェンス行の文言が複数行に続いても、すべて地の文として残す (回帰)', () => {
+		const raw = '```json\n{"topics":[]}\n``` 補足です。\n続きの文です。';
+		const parsed = parseTlDigestResponse(raw, refMap);
+		expect(parsed!.topics).toEqual([]);
+		expect(parsed!.fallbackText).toContain('補足です。');
+		expect(parsed!.fallbackText).toContain('続きの文です。');
 	});
 
 	it('対応しない括弧が大量にあっても、有限時間で「話題なし」に落ちる', () => {

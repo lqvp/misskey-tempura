@@ -691,18 +691,20 @@ function includesVisionHint(model: Record<string, unknown>): boolean {
  */
 export async function fetchAvailableModels(): Promise<LLMModelInfo[]> {
 	const { useGeminiLLMAPI, openaiToken, openaiBaseUrl } = prefer.s;
-	// 取得の途中で接続先が変わっても、結果は開始時点の接続先に紐づける
-	const endpoint = currentModelListEndpoint();
 
 	if (useGeminiLLMAPI) {
+		// キャッシュの鍵は「実際に取得した先」から決める。取得前に prefer.s から算出すると、
+		// サーバー情報が未取得 (null) や直指定トークン残存でもサーバーへ問い合わせているのに
+		// 別の鍵 (null / direct:) に結果を入れてしまう。
+		// 応答が返った時点で未取得なら、どの接続先の一覧か決められないのでキャッシュしない
+		const key = fetchGenerationKey(() => currentModelListEndpoint());
 		try {
 			const res = await misskeyApi('notes/llm-models', {});
 			const infos = toModelInfos(res.models);
-			if (endpoint != null) modelInfoCache.set(endpoint, infos);
+			storeModelInfos(key, infos);
 			return infos;
 		} catch {
-			// 取得に失敗したら、この接続先の古い判定は残さない
-			if (endpoint != null) modelInfoCache.delete(endpoint);
+			dropModelInfos(key);
 			return [];
 		}
 	}
@@ -710,8 +712,11 @@ export async function fetchAvailableModels(): Promise<LLMModelInfo[]> {
 	if (!openaiToken) return [];
 
 	// ユーザー直指定モード: ブラウザから直接取得する (サーバーは経由しない)
+	// 鍵はこの呼び出しが実際に使う baseURL から作る (設定を読み直さない。取得中に
+	// 接続先が変わっても、結果は送った先に紐づける)
+	const baseURL = (openaiBaseUrl?.trim() || 'https://api.openai.com/v1').replace(/\/+$/, '');
+	const key = fetchGenerationKey(() => directModelListEndpoint(baseURL));
 	try {
-		const baseURL = (openaiBaseUrl?.trim() || 'https://api.openai.com/v1').replace(/\/+$/, '');
 		// 一覧取得も一時的な失敗 (429 / 5xx 等) で空配列に落とさないようリトライする
 		// 本文 (JSON) の読み取りも試行の中なので、本文が届かないまま固まることはない
 		const data = await requestWithRetry(
@@ -733,11 +738,11 @@ export async function fetchAvailableModels(): Promise<LLMModelInfo[]> {
 			LLM_RETRY_POLICY_IDEMPOTENT,
 		) as { data?: { id?: string }[] } | null;
 		const infos = toModelInfos(data?.data);
-		if (endpoint != null) modelInfoCache.set(endpoint, infos);
+		storeModelInfos(key, infos);
 		return infos;
 	} catch {
 		// CORS 等でブラウザから直接取得できない場合
-		if (endpoint != null) modelInfoCache.delete(endpoint);
+		dropModelInfos(key);
 		return [];
 	}
 }
@@ -808,6 +813,23 @@ function currentModelListEndpoint(): LLMDestination | null {
 }
 
 /**
+ * ユーザー直指定モードでモデル一覧を取得する先の鍵
+ *
+ * 実際に取得に使った baseURL から作る。設定ではなくこの値を使うことで、
+ * 取得中に設定が変わっても結果は送った先に紐づく。
+ */
+function directModelListEndpoint(baseURL: string): LLMDestination {
+	const destination = computeLLMDestination({
+		useServerApi: false,
+		serverEnabled: false,
+		token: 'direct',
+		baseUrl: baseURL,
+	});
+	// ダミーのトークンを渡しているため null にはならない (型を絞るためだけの分岐)
+	return destination ?? `direct:${baseURL}`;
+}
+
+/**
  * 現在の接続先が指すキャッシュだけを返す
  *
  * 接続先 (base URL / サーバー提供か直指定か / サーバー側の接続先 ID) が変わると
@@ -816,11 +838,84 @@ function currentModelListEndpoint(): LLMDestination | null {
  */
 function cachedModelInfosForCurrentEndpoint(): LLMModelInfo[] {
 	const key = currentModelListEndpoint();
-	return key == null ? [] : (modelInfoCache.get(key) ?? []);
+	return key == null ? [] : (modelInfoCache.get(key)?.infos ?? []);
+}
+
+/**
+ * 鍵ごとの取得世代
+ *
+ * 並行する取得 (接続先を戻した直後の取り直しなど) の順序を判定するために使う。
+ * 取得の開始 (鍵が確定した時点) で採番し、書き込み・削除をしてもよいのは
+ * 自分の世代がまだ鍵の最新であるときだけ。
+ */
+interface ModelInfoCacheEntry {
+	/** この一覧を書き込んだ取得の世代 */
+	generation: number;
+	infos: LLMModelInfo[];
+	/** 次に採番する世代 */
+	sequence: number;
 }
 
 /** 接続先の鍵ごとに直近のモデル一覧を覚えておく (再接続時に取り直さずに済む) */
-const modelInfoCache = new Map<LLMDestination, LLMModelInfo[]>();
+const modelInfoCache = new Map<LLMDestination, ModelInfoCacheEntry>();
+
+/** 取得を開始した時点の世代を返す関数 (鍵の確定は呼び出し側に任せる) */
+interface ModelInfosGeneration {
+	key(): LLMDestination | null;
+	generation: number;
+}
+
+/**
+ * 取得の世代を採番する
+ *
+ * @param resolveKey 実際に取得する先の鍵。呼ぶたびに現在の状態から算出する
+ *   (サーバー提供モードは応答が返った時点で確定する)
+ */
+function fetchGenerationKey(resolveKey: () => LLMDestination | null): ModelInfosGeneration {
+	const key = resolveKey();
+	let generation = 0;
+	if (key != null) {
+		const entry = modelInfoCache.get(key);
+		if (entry != null) {
+			entry.sequence += 1;
+			generation = entry.sequence;
+		} else {
+			modelInfoCache.set(key, { generation: 0, infos: [], sequence: 1 });
+			generation = 1;
+		}
+	}
+	// 解決は 1 回だけ (呼び出し側の記述と実際の鍵が食い違わないようにする)
+	return { key: () => key, generation };
+}
+
+/**
+ * 取得結果をキャッシュする
+ *
+ * より新しい取得が始まっていれば書き込まない (古い応答で新しい一覧を上書きしない)
+ */
+function storeModelInfos(fetch: ModelInfosGeneration, infos: LLMModelInfo[]): void {
+	const key = fetch.key();
+	if (key == null) return;
+	const entry = modelInfoCache.get(key);
+	if (entry == null || entry.sequence !== fetch.generation) return;
+	entry.generation = fetch.generation;
+	entry.infos = infos;
+}
+
+/**
+ * この取得の結果を信頼できないものとして、同じ接続先の判定を捨てる
+ *
+ * ただし、より新しい取得が始まっていれば触らない (古い取得の失敗で、
+ * 既に成功した新しい一覧を消さない)。取得を始めた時点でエントリが
+ * 無かった場合も何もしない (一覧を持っていないため)。
+ */
+function dropModelInfos(fetch: ModelInfosGeneration): void {
+	const key = fetch.key();
+	if (key == null) return;
+	const entry = modelInfoCache.get(key);
+	if (entry == null || entry.sequence !== fetch.generation) return;
+	modelInfoCache.delete(key);
+}
 
 /**
  * 選択中のモデルの実効的な画像入力対応
@@ -892,7 +987,9 @@ async function generateViaServer({ note, userContent, systemInstruction, signal 
  * 古い前提のまま本文を送ってしまわないようにするため。
  *
  * @param options 呼び出し元が指定した期待送信先と検証フック
- * @param useServerApi 送信先の判定に使うサーバー提供モードの設定 (分岐した時点の値)
+ * @param useServerApi この呼び出しが使う輸送手段 (直指定 / サーバー提供) の判定値。
+ *   輸送手段は呼び出しの最初に決まり、途中で切り替えると本文の送信先が変わるため、
+ *   現在の設定がこれと食い違っていたら送信せずに打ち切る
  * @param sending true なら、この直後に実際に送信する (false は確認ダイアログを出す前の事前確認)
  * @throws 前提が崩れている場合は i18n.ts._tlDigest.settingsChanged
  */
@@ -902,6 +999,13 @@ function verifyBeforeSend(
 	sending: boolean,
 ): void {
 	if (options.expectedDestination == null && options.beforeSend == null) return;
+	// 輸送手段そのものが変わっていたら、送信先の比較では検出できない。
+	// 例えば直指定の 1 回目が 429 で待機している間にサーバー提供モードへ切り替わると、
+	// 直指定の送信先を再確認して通ってしまい、フォロワー限定の本文を別の
+	// (切り替え後の) 送信先へ送ることになる。ここで必ず打ち切る。
+	if (prefer.s.useGeminiLLMAPI !== useServerApi) {
+		throw new Error(i18n.ts._tlDigest.settingsChanged);
+	}
 	const actualDestination = computeCurrentLLMDestination(useServerApi);
 	if (actualDestination == null) {
 		throw new Error(i18n.ts._tlDigest.settingsChanged);

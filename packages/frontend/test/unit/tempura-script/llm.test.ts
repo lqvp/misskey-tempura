@@ -12,6 +12,24 @@ import type { LLMResponse } from '@/utility/tempura-script/llm-response.js';
 import type { RequestInput } from 'vitest-fetch-mock';
 
 /**
+ * llm.ts が import 時に取りに行くサーバー情報 (/api/meta)
+ *
+ * 既定は空のメタ (サーバー提供の LLM は無効) で、他のテストの前提を変えない。
+ * 評価後に差し替えられるよう、参照は呼び出し時まで遅延させる。
+ */
+const instanceMeta = vi.hoisted(() => ({ current: {} as Record<string, unknown> }));
+
+vi.mock('@/instance.js', async (importOriginal) => {
+	const original = await importOriginal() as { instance: Record<string, unknown> };
+	return {
+		...original,
+		// llm.ts は戻り値をそのまま保持するので、評価時点の空のメタにテスト用の値を重ねる
+		fetchInstance: () => Promise.resolve({ ...original.instance, ...instanceMeta.current }),
+	};
+});
+
+
+/**
  * 実プロバイダの /models レスポンス形式に基づくフィクスチャ。
  * 出典: knowledge/_drafts/llm-image-input-detection.md (2026-11-19 調査)
  */
@@ -684,6 +702,30 @@ describe('generateLLMResponse のリトライ', () => {
 		expect(fetchCalls().every(([url]) => String(url).startsWith('https://api.example.com/v1/'))).toBe(true);
 	});
 
+	it('バックオフ待機中にサーバー提供モードへ切り替わったら、2 回目を送らずに設定変更エラーで打ち切る', async () => {
+		// ここでは token / baseUrl を一切変えず、サーバー側も無効のままにする。
+		// その条件では computeLLMDestination は useServerApi の値に関わらず
+		// direct:https://api.example.com/v1 を返すため、expectedDestination の比較は通る。
+		// つまりこの中止は「輸送手段の不一致」だけを根拠にしている。
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		fetchMock.mockResponseOnce(() => ({ status: 429, body: 'slow down' }));
+		instanceMeta.current = { serverOpenAIEnabled: false };
+
+		const tracked = startGeneration({ expectedDestination: 'direct:https://api.example.com/v1' });
+		await flushMicrotasks(16);
+		expect(fetchCalls()).toHaveLength(1);
+
+		preferState.useGeminiLLMAPI = true;
+
+		await advanceUntil(() => tracked.settled());
+
+		expect((tracked.error as Error).message).toBe(i18n.ts._tlDigest.settingsChanged);
+		expect(fetchCalls()).toHaveLength(1);
+
+		await vi.advanceTimersByTimeAsync(60_000);
+		expect(fetchCalls()).toHaveLength(1);
+	});
+
 	it('設定変更が無ければ、リトライのたびに検証しても通常どおり再送して成功する', async () => {
 		mockDirectAPI(() => ({ status: 200, body: okBody }));
 		fetchMock.mockResponseOnce(() => ({ status: 429, body: 'slow down' }));
@@ -892,6 +934,122 @@ describe('fetchAvailableModels のリトライ', () => {
 		const failed = await fetchAvailableModels();
 		expect(failed).toEqual([]);
 		expect(fetchCalls()).toHaveLength(2);
+	});
+
+	/**
+	 * 失敗した取得の「古い判定を捨てる」効果を、ユーザーから見える形で確かめる
+	 *
+	 * 「キャッシュから消えたこと」自体は観測できないので、その次の生成が
+	 * 画像を添えるかどうか (effectiveImageInputSupport の verdict) で見る。
+	 * 削除を外すと、古い「対応」判定が残って画像を添えてしまう。
+	 *
+	 * ここでは reverse 側を確かめる: 一覧が「非対応」と言っていたモデルが
+	 * 取得に失敗した後は、判定材料が無くなるのでモデル名の推測 (gpt-4o は対応) に戻り、
+	 * 画像を添えるようになる。削除を外すと「非対応」のまま画像を落とす。
+	 */
+	it('一覧の取得に失敗した後は、前回の「画像非対応」判定で画像を落とさない', async () => {
+		const modelId = 'gpt-4o-mini';
+		let failing = false;
+		fetchMock.mockIf(() => true, (req) => {
+			const url = new URL(req.url);
+			// 画像の取得は成功させる (1x1 PNG)。「添えたか」だけを観測する
+			if (url.host === 'cdn.example.com') {
+				return {
+					status: 200,
+					body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64').toString('binary'),
+				};
+			}
+			if (url.pathname.endsWith('/models')) {
+				// 一覧は明示的にテキスト専用と主張する (名前からの推測「対応」と食い違う)
+				return failing
+					? { status: 401, body: 'unauthorized' }
+					: { status: 200, body: JSON.stringify({ data: [{ id: modelId, architecture: { input_modalities: ['text'] } }] }) };
+			}
+			return { status: 200, body: okBody };
+		});
+
+		const note = {
+			id: 'note1',
+			text: 'ノート本文',
+			files: [{ type: 'image/png', url: 'https://cdn.example.com/stale.png' }],
+		} as unknown as Parameters<typeof generateLLMResponse>[0]['note'];
+
+		preferState.useGeminiLLMAPI = false;
+		preferState.openaiBaseUrl = 'https://api.example.com/v1';
+		preferState.openaiModel = modelId;
+		preferState.useGeminiWithMedia = true;
+		preferState.openaiForceImageInput = false;
+
+		// 一覧を取得 → 「非対応」がこの接続先の判定としてキャッシュされる
+		expect(await fetchAvailableModels()).toEqual([{ id: modelId, imageInput: 'unsupported', detectedBy: 'field' }]);
+
+		// 取り直しに失敗する。この一覧はもう信頼できないので判定は捨てられる
+		failing = true;
+		expect(await fetchAvailableModels()).toEqual([]);
+
+		// 取り直さずに生成する。捨てていれば判定材料が無く、名前の推測で「対応」となり画像を添える
+		await generateLLMResponse({ note });
+		const cdnCalls = fetchCalls().filter(([url]) => String(url).startsWith('https://cdn.example.com/'));
+		expect(cdnCalls).toHaveLength(1);
+		const chatCalls = fetchCalls().filter(([url]) => String(url).includes('/chat/completions'));
+		expect(String(chatCalls[0][1]?.body)).toContain('image_url');
+	});
+
+	/**
+	 * 古い取得の失敗が、新しく成功した一覧を消さないこと (finding 2)
+	 *
+	 * 遅い取得と速い取得を同じ接続先に対して並行させ、遅い方が後から失敗する状況を作る。
+	 * 失敗した側が無条件に delete すると、先に成功して格納された新しい一覧まで消え、
+	 * 次の生成が名前の推測に落ちてしまう。
+	 */
+	it('古い取得が後から失敗しても、新しく成功した一覧を消さない', async () => {
+		const modelId = 'stale-race-model';
+		// 1 回目の /models は応答を保留し、2 回目はすぐ返す
+		let releaseFirst: (() => void) | null = null;
+		let modelsRequestCount = 0;
+		fetchMock.mockIf(() => true, async (req) => {
+			const url = new URL(req.url);
+			if (url.host === 'cdn.example.com') return { status: 500, body: 'nope' };
+			if (url.pathname.endsWith('/models')) {
+				modelsRequestCount += 1;
+				const attempt = modelsRequestCount;
+				if (attempt === 1) {
+					// 古い取得: 新しい取得が完了するまで保留したうえで失敗する
+					await new Promise<void>((resolve) => { releaseFirst = resolve; });
+					return { status: 401, body: 'unauthorized' };
+				}
+				return { status: 200, body: JSON.stringify({ data: [{ id: modelId, architecture: { input_modalities: ['image'] } }] }) };
+			}
+			return { status: 200, body: okBody };
+		});
+
+		preferState.useGeminiLLMAPI = false;
+		preferState.openaiBaseUrl = 'https://api.example.com/v1';
+		preferState.openaiModel = modelId;
+		preferState.useGeminiWithMedia = true;
+		preferState.openaiForceImageInput = false;
+
+		// 古い取得を開始して保留させる (この時点が世代 1)
+		const stale = fetchAvailableModels();
+		await flushMicrotasks(16);
+		expect(modelsRequestCount).toBe(1);
+
+		// 新しい取得が先に完了して一覧を格納する (世代 2)
+		expect(await fetchAvailableModels()).toEqual([{ id: modelId, imageInput: 'supported', detectedBy: 'field' }]);
+
+		// そのあとに古い取得が失敗する。新しい一覧を消してはいけない
+		releaseFirst!();
+		expect(await stale).toEqual([]);
+
+		// 取り直さずに生成すると、新しい一覧の「対応」判定で画像を試みる
+		const note = {
+			id: 'note1',
+			text: 'ノート本文',
+			files: [{ type: 'image/png', url: 'https://cdn.example.com/race.png' }],
+		} as unknown as Parameters<typeof generateLLMResponse>[0]['note'];
+		await generateLLMResponse({ note });
+		const cdnCalls = fetchCalls().filter(([url]) => String(url).startsWith('https://cdn.example.com/'));
+		expect(cdnCalls).toHaveLength(1);
 	});
 
 	/**
