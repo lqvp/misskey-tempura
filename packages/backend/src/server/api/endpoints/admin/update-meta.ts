@@ -1473,7 +1473,8 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 					const now = await this.metaService.fetch(true);
 					const nowMediaProxy = resolveMediaProxy(this.config, now).mediaProxy;
 					if (nowMediaProxy !== latestMediaProxy) {
-						this.enqueueMediaProxyReconcile(nowMediaProxy, null, depth + 1);
+						// 追従時も直前の実効値を対象に限定する (無関係な ?url= 付き URL を巻き込まない)
+						this.enqueueMediaProxyReconcile(nowMediaProxy, latestMediaProxy, depth + 1);
 					}
 				}
 			})

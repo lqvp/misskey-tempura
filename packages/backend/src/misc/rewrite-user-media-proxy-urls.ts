@@ -25,7 +25,10 @@ export interface ReconcileMediaProxyResult {
 	skippedByOrigin: number;
 	/** 列長上限を超えるためスキップした行数 */
 	skippedByLength: number;
-	/** 対象外のプロキシ接頭辞のまま残っている行数 (fromMediaProxy 指定時のみ意味を持つ) */
+	/**
+	 * 別のプロキシ接頭辞のまま残っている行数のうち、再同期で回収できるもの。
+	 * origin= 指定や列長超過で回収できない行は含まない (fromMediaProxy 指定時のみ意味を持つ)。
+	 */
 	remainingForeignProxy: number;
 }
 
@@ -53,6 +56,8 @@ function countSql(column: 'avatarUrl' | 'bannerUrl', maxLength: number, hasFromP
 				WHERE substring("${column}" FROM $2) IS NOT NULL
 					AND substring("${column}" FROM $2) <> $1
 					${unsettled}
+					AND strpos("${column}", 'origin=') = 0
+					AND char_length($1) + char_length("${column}") - char_length(substring("${column}" FROM $2)) <= ${maxLength}
 			)::int` : '0::int'} AS remaining_foreign,
 			count(*) FILTER (
 				WHERE strpos("${column}", 'origin=') > 0
