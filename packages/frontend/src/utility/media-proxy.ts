@@ -6,29 +6,39 @@
 import { MediaProxy } from '@@/js/media-proxy.js';
 import { url } from '@@/js/config.js';
 import { instance } from '@/instance.js';
+import { prefer } from '@/preferences.js';
 
 let _mediaProxy: MediaProxy | null = null;
 
-export function getProxiedImageUrl(...args: Parameters<MediaProxy['getProxiedImageUrl']>): string {
+function ensureMediaProxy(): MediaProxy {
 	if (_mediaProxy == null) {
-		_mediaProxy = new MediaProxy(instance, url);
+		_mediaProxy = new MediaProxy(
+			instance,
+			url,
+			// 実環境では r.mediaProxy は常に存在する。部分モックの単体テストでのみ null にフォールバックする
+			() => prefer.r?.mediaProxy?.value ?? null,
+		);
 	}
 
-	return _mediaProxy.getProxiedImageUrl(...args);
+	return _mediaProxy;
+}
+
+export function getProxiedImageUrl(...args: Parameters<MediaProxy['getProxiedImageUrl']>): string {
+	return ensureMediaProxy().getProxiedImageUrl(...args);
 }
 
 export function getProxiedImageUrlNullable(...args: Parameters<MediaProxy['getProxiedImageUrlNullable']>): string | null {
-	if (_mediaProxy == null) {
-		_mediaProxy = new MediaProxy(instance, url);
-	}
-
-	return _mediaProxy.getProxiedImageUrlNullable(...args);
+	return ensureMediaProxy().getProxiedImageUrlNullable(...args);
 }
 
 export function getStaticImageUrl(...args: Parameters<MediaProxy['getStaticImageUrl']>): string {
-	if (_mediaProxy == null) {
-		_mediaProxy = new MediaProxy(instance, url);
-	}
+	return ensureMediaProxy().getStaticImageUrl(...args);
+}
 
-	return _mediaProxy.getStaticImageUrl(...args);
+export function rewriteProxiedImageUrl(...args: Parameters<MediaProxy['rewriteProxiedImageUrl']>): string {
+	return ensureMediaProxy().rewriteProxiedImageUrl(...args);
+}
+
+export function rewriteProxiedImageUrlNullable(...args: Parameters<MediaProxy['rewriteProxiedImageUrlNullable']>): string | null {
+	return ensureMediaProxy().rewriteProxiedImageUrlNullable(...args);
 }
