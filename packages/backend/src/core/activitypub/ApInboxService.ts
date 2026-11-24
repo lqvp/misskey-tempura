@@ -6,6 +6,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { In } from 'typeorm';
 import * as Redis from 'ioredis';
+import { AbortError, FetchError } from 'node-fetch';
 import { DI } from '@/di-symbols.js';
 import type { Config } from '@/config.js';
 import { UserFollowingService } from '@/core/UserFollowingService.js';
@@ -40,6 +41,20 @@ import { ApPersonService } from './models/ApPersonService.js';
 import { ApQuestionService } from './models/ApQuestionService.js';
 import type { Resolver } from './ApResolverService.js';
 import type { IAccept, IAdd, IAnnounce, IBlock, ICreate, IDelete, IFlag, IFollow, ILike, IObject, IReject, IRemove, IUndo, IUpdate, IMove, IPost } from './type.js';
+
+function isRetryableResolveError(err: unknown): boolean {
+	if (err instanceof StatusError) {
+		return err.isRetryable;
+	}
+	if (err instanceof AbortError || (err instanceof Error && err.name === 'AbortError')) {
+		return true;
+	}
+	if (err instanceof FetchError) {
+		if (err.message.includes('Blocked address:')) return false;
+		return err.type === 'system' || !err.type;
+	}
+	return false;
+}
 
 @Injectable()
 export class ApInboxService {
@@ -104,13 +119,13 @@ export class ApInboxService {
 
 			for (const item of items) {
 				// 悪意ある・壊れたコレクションに1つでも問題のあるアイテムが含まれていても、
-				// 処理全体が中断されないよう、アイテムごとの失敗は続行する
-				let act: IObject | null;
+				// 処理全体が中断されないよう、アイテムごとの恒久的な失敗は続行する
+				let act: IObject;
 				try {
 					act = await resolver.resolve(item);
 				} catch (err) {
-					// 一時的な失敗（リモートの5xxなど）の可能性があるものは、ジョブのリトライに任せる
-					if (err instanceof StatusError && err.statusCode >= 500) throw err;
+					// 一時的な失敗（5xx・429・タイムアウト・ネットワーク障害など）はジョブのリトライに任せる
+					if (isRetryableResolveError(err)) throw err;
 					this.logger.warn(`failed to resolve collection item: ${err instanceof Error ? err.message : err}`);
 					continue;
 				}

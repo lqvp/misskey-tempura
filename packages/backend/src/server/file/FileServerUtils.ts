@@ -95,7 +95,10 @@ export function handleRangeRequest(
 		const rangeStream = createRangeStream(rangeHeader, size, path);
 		// 不正な Range ヘッダーの場合は 416 を返す
 		if (rangeStream === null) {
+			reply.removeHeader('Content-Type');
+			reply.removeHeader('Content-Disposition');
 			reply.header('Content-Range', `bytes */${size}`);
+			reply.header('Cache-Control', 'no-store');
 			reply.code(416);
 			return Stream.Readable.from([]);
 		}

@@ -84,6 +84,10 @@ export class FileServerDriveHandler {
 
 				attachStreamCleanup(image.data, file.cleanup);
 
+				if (reply.statusCode === 416) {
+					return image.data;
+				}
+
 				reply.header('Content-Type', getSafeContentType(image.type));
 				reply.header('Cache-Control', 'max-age=31536000, immutable');
 				reply.header('Content-Disposition',

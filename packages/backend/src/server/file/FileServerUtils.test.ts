@@ -7,8 +7,8 @@ import { once } from 'node:events';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { afterAll, beforeAll, describe, expect, test } from 'vitest';
-import { createRangeStream } from './FileServerUtils.js';
+import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
+import { createRangeStream, handleRangeRequest } from './FileServerUtils.js';
 
 describe('createRangeStream', () => {
 	const size = 100;
@@ -57,5 +57,38 @@ describe('createRangeStream', () => {
 
 	test.each(['bytes=-', 'bytes=-0', 'bytes=abc', 'bytes=20-10', 'bytes=100-', 'bytes=1-2-3'])('invalid: %s', async (header) => {
 		expect(await range(header)).toBeNull();
+	});
+
+	test('handleRangeRequest returns 416 with no-store and clears file headers on invalid range', async () => {
+		const headers = new Map<string, unknown>([
+			['Content-Type', 'image/png'],
+			['Cache-Control', 'max-age=31536000, immutable'],
+			['Content-Disposition', 'inline; filename="file.bin"'],
+		]);
+		const reply = {
+			header: vi.fn((name: string, value: unknown) => {
+				headers.set(name, value);
+				return reply;
+			}),
+			removeHeader: vi.fn((name: string) => {
+				headers.delete(name);
+				return reply;
+			}),
+			code: vi.fn(() => reply),
+		};
+
+		const stream = handleRangeRequest(reply as any, 'bytes=100-', size, file);
+		const chunks: Buffer[] = [];
+		for await (const chunk of stream) {
+			chunks.push(Buffer.from(chunk));
+		}
+
+		expect(reply.code).toHaveBeenCalledWith(416);
+		expect(headers.get('Content-Range')).toBe(`bytes */${size}`);
+		expect(headers.get('Accept-Ranges')).toBe('bytes');
+		expect(headers.get('Cache-Control')).toBe('no-store');
+		expect(headers.has('Content-Type')).toBe(false);
+		expect(headers.has('Content-Disposition')).toBe(false);
+		expect(Buffer.concat(chunks).length).toBe(0);
 	});
 });

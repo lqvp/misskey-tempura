@@ -13,7 +13,7 @@ import { contentDisposition } from '@/misc/content-disposition.js';
 import { correctFilename } from '@/misc/correct-filename.js';
 import { isMimeImage } from '@/misc/is-mime-image.js';
 import { IImageStreamable, ImageProcessingService, webpDefault } from '@/core/ImageProcessingService.js';
-import { createRangeStream, attachStreamCleanup, needsCleanup } from './FileServerUtils.js';
+import { handleRangeRequest, attachStreamCleanup, needsCleanup } from './FileServerUtils.js';
 import type { DownloadedFileResult, FileResolveResult, FileServerFileResolver } from './FileServerFileResolver.js';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
@@ -74,6 +74,10 @@ export class FileServerProxyHandler {
 
 			if (needsCleanup(file)) {
 				attachStreamCleanup(image.data, file.cleanup);
+			}
+
+			if (reply.statusCode === 416) {
+				return image.data;
 			}
 
 			reply.header('Content-Type', image.type);
@@ -238,22 +242,11 @@ export class FileServerProxyHandler {
 		reply: FastifyReply,
 	): IImageStreamable {
 		if (request.headers.range && 'file' in file && file.file.size > 0) {
-			const rangeStream = createRangeStream(request.headers.range as string, file.file.size, file.path);
-
-			if (rangeStream !== null) {
-				const { stream, start, end, chunksize } = rangeStream;
-
-				reply.header('Content-Range', `bytes ${start}-${end}/${file.file.size}`);
-				reply.header('Accept-Ranges', 'bytes');
-				reply.header('Content-Length', chunksize);
-				reply.code(206);
-
-				return {
-					data: stream,
-					ext: file.ext,
-					type: file.mime,
-				};
-			}
+			return {
+				data: handleRangeRequest(reply, request.headers.range as string, file.file.size, file.path),
+				ext: file.ext,
+				type: file.mime,
+			};
 		}
 
 		return {
