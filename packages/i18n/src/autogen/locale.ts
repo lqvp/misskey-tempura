@@ -15732,6 +15732,28 @@ export interface Locale extends ILocale {
          */
         "llmPrompt": string;
     };
+    "_tempuraAdmin": {
+        /**
+         * 登録・参加制御
+         */
+        "groupRegistration": string;
+        /**
+         * 連合・アクセス制御
+         */
+        "groupFederation": string;
+        /**
+         * モデレーション・セキュリティ
+         */
+        "groupModeration": string;
+        /**
+         * LLM・外部連携
+         */
+        "groupIntegrations": string;
+        /**
+         * 見た目・エントランス
+         */
+        "groupAppearance": string;
+    };
     "_earthquakeWarning": {
         /**
          * 地震速報
