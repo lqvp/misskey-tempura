@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 import type { IObject } from '../type.js';
+import { ApValidationError } from './validator.js';
 
 export enum FetchAllowSoftFailMask {
 	// Allow no softfail flags
@@ -78,7 +79,7 @@ function normalizeSynonymousSubdomain(url: URL | string): URL {
 export function assertActivityMatchesUrl(requestUrl: string | URL, activity: IObject, finalUrl: string | URL, allowSoftfail: FetchAllowSoftFailMask): FetchAllowSoftFailMask {
 	// must have a unique identifier to verify authority
 	if (!activity.id) {
-		throw new Error('bad Activity: missing id field');
+		throw new ApValidationError('bad Activity: missing id field');
 	}
 
 	let softfail = 0;
@@ -86,7 +87,7 @@ export function assertActivityMatchesUrl(requestUrl: string | URL, activity: IOb
 	// if the flag is allowed, set the flag on return otherwise throw
 	const requireSoftfail = (needed: FetchAllowSoftFailMask, message: string) => {
 		if ((allowSoftfail & needed) !== needed) {
-			throw new Error(message);
+			throw new ApValidationError(message);
 		}
 
 		softfail |= needed;
@@ -106,7 +107,7 @@ export function assertActivityMatchesUrl(requestUrl: string | URL, activity: IOb
 	const requestUrlSecure = requestUrlParsed.protocol === 'https:';
 	const finalUrlSecure = finalUrlParsed.protocol === 'https:';
 	if (requestUrlSecure && !finalUrlSecure) {
-		throw new Error(`bad Activity: id(${activity.id}) is not allowed to have http:// in the url`);
+		throw new ApValidationError(`bad Activity: id(${activity.id}) is not allowed to have http:// in the url`);
 	}
 
 	// Compare final URL to the ID
@@ -115,7 +116,7 @@ export function assertActivityMatchesUrl(requestUrl: string | URL, activity: IOb
 
 		// at lease host need to match exactly (ActivityPub requirement)
 		if (idParsed.host !== finalUrlParsed.host) {
-			throw new Error(`bad Activity: id(${activity.id}) does not match response host(${finalUrlParsed.host})`);
+			throw new ApValidationError(`bad Activity: id(${activity.id}) does not match response host(${finalUrlParsed.host})`);
 		}
 	}
 

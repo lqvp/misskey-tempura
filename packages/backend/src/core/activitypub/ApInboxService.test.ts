@@ -4,11 +4,14 @@
  */
 
 import { describe, expect, test, vi } from 'vitest';
-import { AbortError, FetchError } from 'node-fetch';
+import { EntityNotFoundError } from 'typeorm';
+import { AbortError, FetchError, Response } from 'node-fetch';
 import { StatusError } from '@/misc/status-error.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { ApInboxService } from './ApInboxService.js';
 import { Resolver } from './ApResolverService.js';
+import { ApValidationError, validateContentTypeSetAsActivityPub } from './misc/validator.js';
+import { assertActivityMatchesUrl, FetchAllowSoftFailMask } from './misc/check-against-url.js';
 import type { ICollection } from './type.js';
 import type { MiRemoteUser } from '@/models/User.js';
 
@@ -72,6 +75,7 @@ describe('ApInboxService.performActivity (Collection)', () => {
 		['AbortError (timeout)', new AbortError('The operation was aborted.')],
 		['FetchError (system network error)', new FetchError('request failed', 'system', { code: 'ECONNRESET' })],
 		['FetchError (premature close)', new FetchError('Premature close of server response', undefined as unknown as string)],
+		['Unexpected internal Error (e.g. DB outage)', new Error('connection terminated unexpectedly')],
 	])('一時的な解決失敗 (%s) はジョブのリトライのため再 throw する', async (_label, err) => {
 		const { service, logger } = createService();
 		const resolver = {
@@ -179,9 +183,36 @@ describe('ApInboxService.performActivity (Collection)', () => {
 		['HTTP 404', new StatusError('404 Not Found', 404, 'Not Found')],
 		['HTTP 410', new StatusError('410 Gone', 410, 'Gone')],
 		['IdentifiableError', new IdentifiableError('72180409-793c-4973-868e-5a118eb5519b', 'invalid response')],
+		['EntityNotFoundError (missing local entity)', new EntityNotFoundError('Note', { id: 'missing-note' })],
 		['FetchError (max-size)', new FetchError('content size over limit', 'max-size')],
+		['FetchError (invalid-json)', new FetchError('invalid json response body', 'invalid-json')],
 		['FetchError (blocked private address)', new FetchError('request failed, reason: Blocked address: 127.0.0.1', 'system')],
-		['Validation Error', new Error('Validate content type of AP response: No content-type header')],
+		['ApValidationError (invalid Content-Type)', (() => {
+			try {
+				validateContentTypeSetAsActivityPub(new Response('<html></html>', { headers: { 'content-type': 'text/html' } }));
+			} catch (e) {
+				return e;
+			}
+			throw new Error('expected validation failure');
+		})()],
+		['ApValidationError (missing id)', (() => {
+			try {
+				assertActivityMatchesUrl('https://remote.example/activities/1', { type: 'Create' }, 'https://remote.example/activities/1', FetchAllowSoftFailMask.Strict);
+			} catch (e) {
+				return e;
+			}
+			throw new Error('expected validation failure');
+		})()],
+		['ApValidationError (direct)', new ApValidationError('Validate content type of AP response: No content-type header')],
+		['TypeError (ERR_INVALID_URL)', (() => {
+			try {
+				// eslint-disable-next-line no-new
+				new URL('not-a-valid-url');
+			} catch (e) {
+				return e;
+			}
+			throw new Error('expected URL parse failure');
+		})()],
 	])('恒久的な解決失敗 (%s) はスキップして後続アイテムを処理する', async (_label, err) => {
 		const { service, logger } = createService();
 		const performOneSpy = vi.spyOn(service, 'performOneActivity').mockResolvedValue('ok');

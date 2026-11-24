@@ -4,7 +4,7 @@
  */
 
 import { Inject, Injectable } from '@nestjs/common';
-import { In } from 'typeorm';
+import { EntityNotFoundError, In } from 'typeorm';
 import * as Redis from 'ioredis';
 import { AbortError, FetchError } from 'node-fetch';
 import { DI } from '@/di-symbols.js';
@@ -39,6 +39,7 @@ import { ApResolverService, ResolverSystemAccountError } from './ApResolverServi
 import { ApAudienceService } from './ApAudienceService.js';
 import { ApPersonService } from './models/ApPersonService.js';
 import { ApQuestionService } from './models/ApQuestionService.js';
+import { ApValidationError } from './misc/validator.js';
 import type { Resolver } from './ApResolverService.js';
 import type { IAccept, IAdd, IAnnounce, IBlock, ICreate, IDelete, IFlag, IFollow, ILike, IObject, IReject, IRemove, IUndo, IUpdate, IMove, IPost } from './type.js';
 
@@ -65,6 +66,12 @@ const PERMANENT_RESOLVE_ERROR_IDS = new Set([
  */
 export function isRetryableResolveError(err: unknown): boolean {
 	if (err instanceof ResolverSystemAccountError) return true;
+	if (err instanceof ApValidationError) return false;
+	if (err instanceof EntityNotFoundError) return false;
+	if (err instanceof SyntaxError) return false;
+	if (err instanceof TypeError && (err as NodeJS.ErrnoException).code === 'ERR_INVALID_URL') {
+		return false;
+	}
 	if (err instanceof IdentifiableError) {
 		return !PERMANENT_RESOLVE_ERROR_IDS.has(err.id);
 	}
