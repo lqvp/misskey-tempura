@@ -13348,6 +13348,14 @@ export interface Locale extends ILocale {
          * https のページからは http のメディアプロキシを使用できません。https のURLを指定してください。
          */
         "insecureUrl": string;
+        /**
+         * 保存済みの画像URLを再同期
+         */
+        "reconcile": string;
+        /**
+         * プロフィール画像などに保存されたメディアプロキシURLを、現在の設定へ今すぐ揃え直します。切り替えに失敗した場合の復旧に使えます。
+         */
+        "reconcileDescription": string;
     };
     "_urlPreviewSetting": {
         /**

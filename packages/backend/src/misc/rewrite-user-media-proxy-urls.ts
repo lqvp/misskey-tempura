@@ -13,9 +13,10 @@ export const USER_BANNER_URL_MAX_LENGTH = 512;
 
 /**
  * メディアプロキシが生成する URL の接頭辞を取り出す正規表現。
- * `<proxy>/<mode>.webp?url=...` 形式のみを対象にし、?url= を持たない素のファイル URL を誤って書き換えない。
+ * `<proxy>/<mode>.webp?url=...` 形式のみを対象にし、`?url=` を持たない素のファイル URL を誤って書き換えない。
+ * プロキシがルート直下で配信する構成 (パスなし) にも対応する。
  */
-const PROXY_PREFIX_PATTERN = '^(https?://[^/]+/[^?]*)/(?:image|static|avatar|preview|emoji|svg)\\.(?:webp|png)\\?(?=\\S*url=)';
+const PROXY_PREFIX_PATTERN = '^(https?://[^/]+(?:/[^?]*)?)/(?:image|static|avatar|preview|emoji|svg)\\.(?:webp|png)\\?(?=\\S*url=)';
 
 export interface ReconcileMediaProxyResult {
 	/** 書き換えた行数 (avatar + banner) */
@@ -26,7 +27,21 @@ export interface ReconcileMediaProxyResult {
 	skippedByLength: number;
 }
 
-function countSql(column: 'avatarUrl' | 'bannerUrl', maxLength: number): string {
+export interface ReconcileMediaProxyOptions {
+	/**
+	 * 書き換え対象をこの接頭辞の行だけに限定する (設定変更時は旧値が分かるので、無関係な配信元 URL を巻き込まない)。
+	 * 省略した場合は「プロキシ形式の URL すべて」が対象になる (明示的な再同期用)。
+	 */
+	fromMediaProxy?: string | null;
+}
+
+/** $3 (旧接頭辞) が指定されているときだけ、対象をその接頭辞配下に限定する */
+function sourceFilterSql(column: 'avatarUrl' | 'bannerUrl', hasFromPrefix: boolean): string {
+	if (!hasFromPrefix) return '';
+	return `AND left("${column}", char_length($3)) = $3`;
+}
+
+function countSql(column: 'avatarUrl' | 'bannerUrl', maxLength: number, hasFromPrefix: boolean): string {
 	return `
 		SELECT
 			count(*) FILTER (WHERE strpos("${column}", 'origin=') > 0)::int AS blocked_origin,
@@ -38,10 +53,11 @@ function countSql(column: 'avatarUrl' | 'bannerUrl', maxLength: number): string 
 		WHERE "${column}" IS NOT NULL
 			AND (strpos("${column}", '?url=') > 0 OR strpos("${column}", '&url=') > 0)
 			AND substring("${column}" FROM $2) IS NOT NULL
-			AND substring("${column}" FROM $2) <> $1`;
+			AND substring("${column}" FROM $2) <> $1
+			${sourceFilterSql(column, hasFromPrefix)}`;
 }
 
-function updateSql(column: 'avatarUrl' | 'bannerUrl', maxLength: number): string {
+function updateSql(column: 'avatarUrl' | 'bannerUrl', maxLength: number, hasFromPrefix: boolean): string {
 	return `
 		UPDATE "user"
 		SET "${column}" = $1 || substring("${column}" FROM char_length(substring("${column}" FROM $2)) + 1)
@@ -50,7 +66,8 @@ function updateSql(column: 'avatarUrl' | 'bannerUrl', maxLength: number): string
 			AND substring("${column}" FROM $2) IS NOT NULL
 			AND substring("${column}" FROM $2) <> $1
 			AND strpos("${column}", 'origin=') = 0
-			AND char_length($1) + char_length("${column}") - char_length(substring("${column}" FROM $2)) <= ${maxLength}`;
+			AND char_length($1) + char_length("${column}") - char_length(substring("${column}" FROM $2)) <= ${maxLength}
+			${sourceFilterSql(column, hasFromPrefix)}`;
 }
 
 /**
@@ -66,30 +83,37 @@ function updateSql(column: 'avatarUrl' | 'bannerUrl', maxLength: number): string
 export async function reconcileUserMediaProxyUrls(
 	usersRepository: Repository<MiUser>,
 	toMediaProxy: string,
+	options: ReconcileMediaProxyOptions = {},
 ): Promise<ReconcileMediaProxyResult> {
-	// 対象URLは `<proxy>/<mode>.webp?...` なので、接頭辞側の末尾スラッシュは持たない (二重スラッシュ防止)
 	const targetPrefix = toMediaProxy.replace(/\/+$/, '');
+	const fromPrefix = options.fromMediaProxy != null && options.fromMediaProxy.trim() !== ''
+		? options.fromMediaProxy.trim().replace(/\/+$/, '')
+		: null;
+	const hasFromPrefix = fromPrefix != null;
+	const params: [string, string] | [string, string, string] = hasFromPrefix
+		? [targetPrefix, PROXY_PREFIX_PATTERN, `${fromPrefix}/`]
+		: [targetPrefix, PROXY_PREFIX_PATTERN];
 
 	return await usersRepository.manager.transaction(async (entityManager) => {
 		// クラスタ構成でも書き換えが交錯しないよう、トランザクション内で advisory lock を取る
 		await entityManager.query('SELECT pg_advisory_xact_lock(hashtext($1))', ['misskey:mediaProxyRewrite']);
 
 		const avatarCounts = await entityManager.query(
-			countSql('avatarUrl', USER_AVATAR_URL_MAX_LENGTH),
-			[targetPrefix, PROXY_PREFIX_PATTERN],
+			countSql('avatarUrl', USER_AVATAR_URL_MAX_LENGTH, hasFromPrefix),
+			params,
 		) as { blocked_origin: number; blocked_length: number; }[];
 		const bannerCounts = await entityManager.query(
-			countSql('bannerUrl', USER_BANNER_URL_MAX_LENGTH),
-			[targetPrefix, PROXY_PREFIX_PATTERN],
+			countSql('bannerUrl', USER_BANNER_URL_MAX_LENGTH, hasFromPrefix),
+			params,
 		) as { blocked_origin: number; blocked_length: number; }[];
 
 		const [, avatarRewritten] = await entityManager.query(
-			updateSql('avatarUrl', USER_AVATAR_URL_MAX_LENGTH),
-			[targetPrefix, PROXY_PREFIX_PATTERN],
+			updateSql('avatarUrl', USER_AVATAR_URL_MAX_LENGTH, hasFromPrefix),
+			params,
 		) as [unknown[], number];
 		const [, bannerRewritten] = await entityManager.query(
-			updateSql('bannerUrl', USER_BANNER_URL_MAX_LENGTH),
-			[targetPrefix, PROXY_PREFIX_PATTERN],
+			updateSql('bannerUrl', USER_BANNER_URL_MAX_LENGTH, hasFromPrefix),
+			params,
 		) as [unknown[], number];
 
 		return {

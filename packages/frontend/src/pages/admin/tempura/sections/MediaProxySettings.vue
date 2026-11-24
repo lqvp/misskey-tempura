@@ -20,16 +20,22 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<template #caption>{{ i18n.ts._mediaProxySetting.serverDescription }}</template>
 		</MkInput>
 		<MkInfo v-if="validationError != null" warn>{{ validationError }}</MkInfo>
+
+		<MkButton v-if="props.meta.mediaProxy != null && props.meta.mediaProxy !== ''" :disabled="reconciling" @click="reconcile">
+			<i class="ti ti-refresh"></i> {{ i18n.ts._mediaProxySetting.reconcile }}
+		</MkButton>
+		<div v-if="props.meta.mediaProxy != null && props.meta.mediaProxy !== ''" class="_caption">{{ i18n.ts._mediaProxySetting.reconcileDescription }}</div>
 	</div>
 </MkFolder>
 </template>
 
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import * as Misskey from 'misskey-js';
 import { url } from '@@/js/config.js';
 import { validateMediaProxyUrl } from '@@/js/media-proxy.js';
 import { useForm } from '@/composables/use-form.js';
+import MkButton from '@/components/MkButton.vue';
 import MkInput from '@/components/MkInput.vue';
 import MkInfo from '@/components/MkInfo.vue';
 import MkFolder from '@/components/MkFolder.vue';
@@ -39,6 +45,7 @@ import { fetchInstance } from '@/instance.js';
 import { i18n } from '@/i18n.js';
 
 const props = defineProps<{ meta: Misskey.Endpoints['admin/meta']['res'] }>();
+const reconciling = ref(false);
 
 function errorText(reason: 'invalid' | 'self' | 'insecure'): string {
 	switch (reason) {
@@ -65,6 +72,19 @@ const form = useForm({
 	form.state.mediaProxy = result.normalized ?? '';
 	fetchInstance(true);
 });
+
+async function reconcile() {
+	reconciling.value = true;
+	try {
+		// 同じ値を再保存すると、保存済みの画像URLを現在の設定へ寄せ直す処理が再実行される
+		await os.apiWithDialog('admin/update-meta', {
+			mediaProxy: props.meta.mediaProxy,
+		});
+		fetchInstance(true);
+	} finally {
+		reconciling.value = false;
+	}
+}
 
 const validation = computed(() => validateMediaProxyUrl(form.state.mediaProxy, url));
 const validationError = computed(() => validation.value.ok ? null : errorText(validation.value.reason));

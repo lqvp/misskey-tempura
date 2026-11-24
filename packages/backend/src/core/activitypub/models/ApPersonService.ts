@@ -303,21 +303,22 @@ export class ApPersonService implements OnModuleInit {
 			returns the special {id:null}&c value, and we return those
 		*/
 		// プロキシURLが列長上限を超える場合、リモートの元URLへはフォールバックしない
-		// (閲覧者のブラウザが設定済みメディアプロキシを迂回して配信元へ直接接続してしまうため)
+		// (閲覧者のブラウザが設定済みメディアプロキシを迂回して配信元へ直接接続してしまうため)。
+		// 既存の保存値はそのまま残し、短いプロキシURLへ切り替えたときは再同期で復旧できるようにする。
 		const rawAvatarUrl = avatar?.url ? this.driveFileEntityService.getPublicUrl(avatar, 'avatar') : null;
-		const safeAvatarUrl = rawAvatarUrl != null && rawAvatarUrl.length <= USER_AVATAR_URL_MAX_LENGTH ? rawAvatarUrl : null;
+		const avatarUrlFits = rawAvatarUrl != null && rawAvatarUrl.length <= USER_AVATAR_URL_MAX_LENGTH;
 		const rawBannerUrl = banner?.url ? this.driveFileEntityService.getPublicUrl(banner) : null;
-		const safeBannerUrl = rawBannerUrl != null && rawBannerUrl.length <= USER_BANNER_URL_MAX_LENGTH ? rawBannerUrl : null;
+		const bannerUrlFits = rawBannerUrl != null && rawBannerUrl.length <= USER_BANNER_URL_MAX_LENGTH;
 
 		const returnData: any = {
 			...( avatar ? {
 				avatarId: avatar.id,
-				avatarUrl: safeAvatarUrl,
+				...(avatarUrlFits ? { avatarUrl: rawAvatarUrl } : {}),
 				avatarBlurhash: avatar.blurhash,
 			} : {}),
 			...( banner ? {
 				bannerId: banner.id,
-				bannerUrl: safeBannerUrl,
+				...(bannerUrlFits ? { bannerUrl: rawBannerUrl } : {}),
 				bannerBlurhash: banner.blurhash,
 			} : {}),
 		};

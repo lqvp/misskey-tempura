@@ -150,6 +150,40 @@ describe('reconcileUserMediaProxyUrls', () => {
 		expect(fitsAfter.bannerUrl!.startsWith(`${longProxy}/`)).toBe(true);
 	});
 
+	test('ルート直下で配信する旧プロキシからも移行できる (パスなし接頭辞)', async () => {
+		const user = await insertUser({
+			avatarUrl: 'https://root-proxy.example/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png&avatar=1',
+			bannerUrl: 'https://root-proxy.example/image.webp?url=https%3A%2F%2Fremote.example%2Fb.png',
+		});
+
+		const result = await reconcileUserMediaProxyUrls(usersRepository, NEXT);
+
+		expect(result.rewritten).toBe(2);
+		const after = await usersRepository.findOneByOrFail({ id: user.id });
+		expect(after.avatarUrl).toBe(`${NEXT}/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png&avatar=1`);
+		expect(after.bannerUrl).toBe(`${NEXT}/image.webp?url=https%3A%2F%2Fremote.example%2Fb.png`);
+	});
+
+	test('fromMediaProxy 指定時はその接頭辞の行だけを書き換える (無関係な配信元 URL を巻き込まない)', async () => {
+		const target = await insertUser({
+			avatarUrl: 'https://old-a.example/proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png&avatar=1',
+		});
+		const other = await insertUser({
+			// 別のプロキシ (移行対象外) と、外部配信元の ?url= 付き URL (誤爆してはいけない)
+			avatarUrl: 'https://old-b.example/proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Fb.png&avatar=1',
+			bannerUrl: 'https://cdn.example/image.webp?url=https%3A%2F%2Fremote.example%2Fc.png',
+		});
+
+		const result = await reconcileUserMediaProxyUrls(usersRepository, NEXT, { fromMediaProxy: 'https://old-a.example/proxy' });
+
+		expect(result.rewritten).toBe(1);
+		const targetAfter = await usersRepository.findOneByOrFail({ id: target.id });
+		expect(targetAfter.avatarUrl).toBe(`${NEXT}/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png&avatar=1`);
+		const otherAfter = await usersRepository.findOneByOrFail({ id: other.id });
+		expect(otherAfter.avatarUrl).toBe(other.avatarUrl);
+		expect(otherAfter.bannerUrl).toBe(other.bannerUrl);
+	});
+
 	test('SQL インジェクション耐性: 接頭辞はパラメータバインドされる', async () => {
 		const user = await insertUser({
 			avatarUrl: 'https://old-proxy.example/proxy/avatar.webp?url=https%3A%2F%2Fremote.example%2Fa.png',

@@ -1436,8 +1436,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 			// メディアプロキシの実効値が変わったら、DB に保存済みの avatarUrl / bannerUrl を新しい実効値へ収束させる。
 			// 同じ値で明示的に保存された場合も再実行する (失敗や取り残しを管理画面から復旧できるようにするため)。
 			const afterMediaProxy = resolveMediaProxy(this.config, after).mediaProxy;
+			const beforeMediaProxy = resolveMediaProxy(this.config, before).mediaProxy;
 			if (ps.mediaProxy !== undefined) {
 				const requestedMediaProxy = afterMediaProxy;
+				// 設定値が実際に変わった場合は旧接頭辞の行だけを対象にし、無関係な配信元 URL を巻き込まない。
+				// 同じ値の再保存は「再同期」とみなし、プロキシ形式の URL すべてを現在値へ寄せる。
+				const fromMediaProxy = beforeMediaProxy !== afterMediaProxy ? beforeMediaProxy : null;
 				// 直列化して実行する。実行時点で実効値が変わっていたら (別の変更が後勝ちしたら) 古い要求は捨てる。
 				// 収束処理は冪等なので、順序が入れ替わっても最終状態は最新の実効値に一致する。
 				this.rewriteChain = this.rewriteChain
@@ -1446,7 +1450,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 						const latestMediaProxy = resolveMediaProxy(this.config, latest).mediaProxy;
 						if (latestMediaProxy !== requestedMediaProxy) return;
 
-						const result = await reconcileUserMediaProxyUrls(this.usersRepository, latestMediaProxy);
+						const result = await reconcileUserMediaProxyUrls(this.usersRepository, latestMediaProxy, { fromMediaProxy });
 						if (result.rewritten > 0) {
 							// 全プロセスのユーザーキャッシュを一括で無効化する (per-user イベントは DB 負荷が行数×プロセス数になるため避ける)
 							this.globalEventService.publishInternalEvent('userMediaProxyRewritten', {

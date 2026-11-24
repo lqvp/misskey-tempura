@@ -3540,6 +3540,8 @@ _mediaProxySetting:
   invalidUrl: "有効な http(s):// のベースURLを入力してください（ユーザー情報・クエリ・フラグメント・括弧や引用符は使用できません）。"
   selfUrl: "このサーバー自身のURLは指定できません。メディアプロキシのベースURL（例: https://proxy.example.com/proxy）を指定してください。"
   insecureUrl: "https のページからは http のメディアプロキシを使用できません。https のURLを指定してください。"
+  reconcile: "保存済みの画像URLを再同期"
+  reconcileDescription: "プロフィール画像などに保存されたメディアプロキシURLを、現在の設定へ今すぐ揃え直します。切り替えに失敗した場合の復旧に使えます。"
 
 _urlPreviewSetting:
   title: "URLプレビューの設定"
