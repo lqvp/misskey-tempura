@@ -34,8 +34,6 @@ describe('normalizeMediaProxyUrl', () => {
 		expect(normalizeMediaProxyUrl('https://proxy.example/proxy#frag')).toBeNull();
 		expect(normalizeMediaProxyUrl('https://proxy.example/x),url(https://evil.example/y)')).toBeNull();
 		expect(normalizeMediaProxyUrl("https://proxy.example/x'y")).toBeNull();
-		expect(normalizeMediaProxyUrl('https://proxy.example/' + 'a'.repeat(250))).toBeNull();
-		expect(normalizeMediaProxyUrl('https://proxy.example/' + 'あ'.repeat(30))).toBeNull();
 	});
 });
 
@@ -232,6 +230,16 @@ describe('validateMediaProxyUrl', () => {
 		expect(validateMediaProxyUrl('http://proxy.example.com/proxy', instanceUrl)).toEqual({ ok: false, reason: 'insecure' });
 	});
 
+	test('treats a non-string stored value as unset instead of throwing', () => {
+		expect(validateMediaProxyUrl(true as unknown as string, instanceUrl)).toEqual({ ok: true, normalized: null });
+		expect(validateMediaProxyUrl(123 as unknown as string, instanceUrl)).toEqual({ ok: true, normalized: null });
+	});
+
+	test('rejects client proxies longer than the input limit', () => {
+		expect(validateMediaProxyUrl('https://proxy.example/' + 'a'.repeat(250), instanceUrl)).toEqual({ ok: false, reason: 'invalid' });
+		expect(validateMediaProxyUrl('https://proxy.example/' + 'あ'.repeat(30), instanceUrl)).toEqual({ ok: false, reason: 'invalid' });
+	});
+
 	test('allows same-host proxy on a different path', () => {
 		expect(validateMediaProxyUrl('https://misskey.test/media-proxy', instanceUrl)).toEqual({ ok: true, normalized: 'https://misskey.test/media-proxy' });
 	});
@@ -286,6 +294,13 @@ describe('MediaProxy additional paths', () => {
 	test('returns empty string for empty image URLs', () => {
 		const proxy = new MediaProxy(createMeta('https://server-proxy.example/proxy'), instanceUrl, () => null);
 		expect(proxy.getProxiedImageUrl('')).toBe('');
+	});
+
+	test('keeps a server media proxy that exceeds the client input limit', () => {
+		const longProxy = `https://server-proxy.example/${'a'.repeat(300)}`;
+		const proxy = new MediaProxy(createMeta(longProxy), instanceUrl, () => null);
+		expect(proxy.getProxiedImageUrl('https://remote.example/a.png', undefined, false, true))
+			.toBe(`${longProxy}/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png`);
 	});
 
 	test('picks up the server media proxy once instance metadata is loaded', () => {

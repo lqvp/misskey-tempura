@@ -59,7 +59,13 @@ import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 
 const reactionChecksMuting = prefer.model('reactionChecksMuting');
 const anonymizeMutedUsers = prefer.model('anonymizeMutedUsers');
-const mediaProxyDraft = ref(prefer.s.mediaProxy ?? '');
+
+/** 保存値は文字列以外もあり得る (クラウドバックアップ・手編集) ため、入力欄では空欄として扱う */
+function toMediaProxyInput(value: unknown): string {
+	return typeof value === 'string' ? value : '';
+}
+
+const mediaProxyDraft = ref(toMediaProxyInput(prefer.s.mediaProxy));
 /** 拒否時に入力欄を確実に巻き戻すための再マウント用キー (同値代入では子の watch が発火しない) */
 const mediaProxyInputKey = ref(0);
 /** 編集中の入力値 (manualSave では保存するまで親に渡らないため、change から拾って検証に使う) */
@@ -86,7 +92,7 @@ const mediaProxyValidationError = computed(() => {
 });
 
 watch(prefer.r.mediaProxy, (value) => {
-	mediaProxyDraft.value = value ?? '';
+	mediaProxyDraft.value = toMediaProxyInput(value);
 	mediaProxyEditing.value = null;
 });
 
@@ -98,7 +104,7 @@ function onSaveMediaProxy(value: string) {
 			text: errorText(result.reason),
 		});
 		// 拒否した値は入力欄に残さず、確定済みの値へ戻す
-		mediaProxyDraft.value = prefer.s.mediaProxy ?? '';
+		mediaProxyDraft.value = toMediaProxyInput(prefer.s.mediaProxy);
 		mediaProxyEditing.value = null;
 		mediaProxyInputKey.value++;
 		return;

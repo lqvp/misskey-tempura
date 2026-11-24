@@ -6,7 +6,7 @@
 import * as Misskey from 'misskey-js';
 import { query, tryParseUrl } from './url.js';
 
-/** クライアント設定として受け付けるメディアプロキシ URL の最大長 */
+/** クライアント設定として受け付けるメディアプロキシ URL の最大長 (サーバー設定には適用しない) */
 export const MEDIA_PROXY_URL_MAX_LENGTH = 256;
 
 export function normalizeMediaProxyUrl(url: string | null | undefined): string | null {
@@ -24,9 +24,7 @@ export function normalizeMediaProxyUrl(url: string | null | undefined): string |
 	parsed.hostname = parsed.hostname.replace(/\.+$/, '');
 	// Fastify は // を別パスとして扱い 404 になるため、パス内の連続スラッシュは畳む
 	parsed.pathname = parsed.pathname.replace(/\/{2,}/g, '/');
-	const normalized = `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, '');
-	if (normalized.length > MEDIA_PROXY_URL_MAX_LENGTH) return null;
-	return normalized;
+	return `${parsed.origin}${parsed.pathname}`.replace(/\/+$/, '');
 }
 
 /** パス比較用の正規化 (デコード・小文字化・連続スラッシュの圧縮・末尾スラッシュ除去)。デコードできなければ null */
@@ -51,11 +49,13 @@ export type MediaProxyUrlValidation =
  * @param instanceUrl インスタンスの URL (自オリジン判定に使う)
  */
 export function validateMediaProxyUrl(raw: string | null | undefined, instanceUrl: string): MediaProxyUrlValidation {
-	const trimmed = (raw ?? '').trim();
+	// 保存値は文字列以外もあり得る (クラウドバックアップ・手編集) ため「未設定」として扱う
+	const trimmed = typeof raw === 'string' ? raw.trim() : '';
 	if (trimmed === '') return { ok: true, normalized: null };
 
 	const normalized = normalizeMediaProxyUrl(trimmed);
-	if (normalized == null) return { ok: false, reason: 'invalid' };
+	// 長さ制限は入力欄用。サーバー側の設定値は normalizeMediaProxyUrl でそのまま扱う
+	if (normalized == null || normalized.length > MEDIA_PROXY_URL_MAX_LENGTH) return { ok: false, reason: 'invalid' };
 
 	const self = normalizeMediaProxyUrl(instanceUrl);
 	if (self != null) {
