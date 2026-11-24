@@ -10,6 +10,7 @@ import httpSignature from '@peertube/http-signature';
 import { genRsaKeyPair } from '@/misc/gen-key-pair.js';
 import { ApRequestCreator } from '@/core/activitypub/ApRequestService.js';
 import { assertActivityMatchesUrl, FetchAllowSoftFailMask } from '@/core/activitypub/misc/check-against-url.js';
+import { ApValidationError } from '@/core/activitypub/misc/validator.js';
 import { IObject } from '@/core/activitypub/type.js';
 
 export const buildParsedSignature = (signingString: string, signature: string, algorithm: string) => {
@@ -224,6 +225,21 @@ describe('ap-request', () => {
 			'https://ap.alice.example.com/abc',
 			FetchAllowSoftFailMask.Strict,
 		), 'throws if relaxed origin is forbidden');
+	});
+
+	test('rejects non-object JSON bodies as validation errors', () => {
+		for (const body of [null, [], 'string', 42]) {
+			assert.throws(
+				() => assertActivityMatchesUrl(
+					'https://alice.example.com/abc',
+					body as unknown as IObject,
+					'https://alice.example.com/abc',
+					FetchAllowSoftFailMask.Strict,
+				),
+				(err: unknown) => err instanceof ApValidationError,
+				`throws ApValidationError for body ${JSON.stringify(body)}`,
+			);
+		}
 	});
 
 	test('resist HTTP downgrade', () => {

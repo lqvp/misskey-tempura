@@ -18,7 +18,7 @@ import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { LoggerService } from '@/core/LoggerService.js';
 import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
-import { validateContentTypeSetAsActivityPub } from '@/core/activitypub/misc/validator.js';
+import { ApValidationError, validateContentTypeSetAsActivityPub } from '@/core/activitypub/misc/validator.js';
 import { assertActivityMatchesUrl, FetchAllowSoftFailMask as FetchAllowSoftFailMask } from '@/core/activitypub/misc/check-against-url.js';
 import type { IObject } from './type.js';
 
@@ -221,6 +221,9 @@ export class ApRequestService {
 		) {
 			const html = await res.text();
 
+			// パースの失敗だけを無視する。代替 URL の取得失敗 (5xx など) はここで握りつぶさず、
+			// 呼び出し元へ伝播させてジョブのリトライに委ねる
+			let alternateHref: string | null = null;
 			try {
 				const document = htmlParser.parse(html);
 
@@ -228,18 +231,29 @@ export class ApRequestService {
 				if (alternate) {
 					const href = alternate.getAttribute('href');
 					if (href && this.utilityService.punyHost(url) === this.utilityService.punyHost(href)) {
-						return await this.signedGet(href, user, allowSoftfail, false);
+						alternateHref = href;
 					}
 				}
 			} catch (_) {
 				// something went wrong parsing the HTML, ignore the whole thing
+			}
+
+			if (alternateHref != null) {
+				return await this.signedGet(alternateHref, user, allowSoftfail, false);
 			}
 		}
 		//#endregion
 
 		validateContentTypeSetAsActivityPub(res);
 		const finalUrl = res.url; // redirects may have been involved
-		const activity = await res.json() as IObject;
+
+		let activity: IObject;
+		try {
+			activity = await res.json() as IObject;
+		} catch (err) {
+			// 本文が壊れているのはリモート応答の問題なので恒久的な失敗として扱う
+			throw new ApValidationError(`failed to parse ActivityPub response: ${err instanceof Error ? err.message : err}`);
+		}
 
 		assertActivityMatchesUrl(url, activity, finalUrl, allowSoftfail);
 

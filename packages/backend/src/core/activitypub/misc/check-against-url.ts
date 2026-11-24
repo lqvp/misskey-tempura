@@ -77,6 +77,12 @@ function normalizeSynonymousSubdomain(url: URL | string): URL {
 }
 
 export function assertActivityMatchesUrl(requestUrl: string | URL, activity: IObject, finalUrl: string | URL, allowSoftfail: FetchAllowSoftFailMask): FetchAllowSoftFailMask {
+	// JSON の本文が null や配列のこともあるため、プロパティ参照より先に形状を検証する
+	// (ここを素通りさせると TypeError になり、恒久的な失敗がリトライ扱いになってしまう)
+	if (activity == null || typeof activity !== 'object' || Array.isArray(activity)) {
+		throw new ApValidationError('bad Activity: body is not an object');
+	}
+
 	// must have a unique identifier to verify authority
 	if (!activity.id) {
 		throw new ApValidationError('bad Activity: missing id field');
