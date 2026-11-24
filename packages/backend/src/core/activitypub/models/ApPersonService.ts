@@ -36,7 +36,7 @@ import type { UserEntityService } from '@/core/entities/UserEntityService.js';
 import { bindThis } from '@/decorators.js';
 import { RoleService } from '@/core/RoleService.js';
 import { DriveFileEntityService } from '@/core/entities/DriveFileEntityService.js';
-import { USER_AVATAR_URL_MAX_LENGTH, USER_BANNER_URL_MAX_LENGTH } from '@/misc/rewrite-user-media-proxy-urls.js';
+import { pickStorableProfileImageUrl, USER_AVATAR_URL_MAX_LENGTH, USER_BANNER_URL_MAX_LENGTH } from '@/misc/rewrite-user-media-proxy-urls.js';
 import type { AccountMoveService } from '@/core/AccountMoveService.js';
 import { checkHttps } from '@/misc/check-https.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
@@ -304,25 +304,25 @@ export class ApPersonService implements OnModuleInit {
 		*/
 		// プロキシURLが列長上限を超える場合、リモートの元URLへはフォールバックしない
 		// (閲覧者のブラウザが設定済みメディアプロキシを迂回して配信元へ直接接続してしまうため)。
-		// 既存の保存値はそのまま残し、短いプロキシURLへ切り替えたときは再同期で復旧できるようにする。
+		// ローカル保存済みのファイルは自サーバーの配信URLで代替し、それも無理なら null にする。
+		// 旧URLを残すと新しい avatarId / bannerId と食い違うため、ID を更新するときは必ず URL も更新する。
 		const rawAvatarUrl = avatar?.url ? this.driveFileEntityService.getPublicUrl(avatar, 'avatar') : null;
-		const avatarUrlFits = rawAvatarUrl != null && rawAvatarUrl.length <= USER_AVATAR_URL_MAX_LENGTH;
+		const safeAvatarUrl = avatar?.id != null && rawAvatarUrl != null ? pickStorableProfileImageUrl(avatar, rawAvatarUrl, USER_AVATAR_URL_MAX_LENGTH) : null;
 		const rawBannerUrl = banner?.url ? this.driveFileEntityService.getPublicUrl(banner) : null;
-		const bannerUrlFits = rawBannerUrl != null && rawBannerUrl.length <= USER_BANNER_URL_MAX_LENGTH;
-		if ((rawAvatarUrl != null && !avatarUrlFits) || (rawBannerUrl != null && !bannerUrlFits)) {
-			// 列長超過で URL を更新しないと avatarId (新) と avatarUrl (旧) がずれるため、検知できるようログに残す
-			this.logger.warn(`avatar/banner proxy URL exceeds column length for ${user.id}; keeping the stored URL`);
+		const safeBannerUrl = banner?.id != null && rawBannerUrl != null ? pickStorableProfileImageUrl(banner, rawBannerUrl, USER_BANNER_URL_MAX_LENGTH) : null;
+		if ((rawAvatarUrl != null && safeAvatarUrl !== rawAvatarUrl) || (rawBannerUrl != null && safeBannerUrl !== rawBannerUrl)) {
+			this.logger.warn(`avatar/banner proxy URL exceeds column length for ${user.id}; storing a local URL or null instead`);
 		}
 
 		const returnData: any = {
 			...( avatar ? {
 				avatarId: avatar.id,
-				...(avatarUrlFits ? { avatarUrl: rawAvatarUrl } : {}),
+				avatarUrl: safeAvatarUrl,
 				avatarBlurhash: avatar.blurhash,
 			} : {}),
 			...( banner ? {
 				bannerId: banner.id,
-				...(bannerUrlFits ? { bannerUrl: rawBannerUrl } : {}),
+				bannerUrl: safeBannerUrl,
 				bannerBlurhash: banner.blurhash,
 			} : {}),
 		};

@@ -126,4 +126,10 @@ describe('classifyMediaProxyUrl', () => {
 		expect(classifyMediaProxyUrl('javascript:alert(1)', self)).toEqual({ kind: 'invalid' });
 		expect(classifyMediaProxyUrl(null, self)).toEqual({ kind: 'invalid' });
 	});
+
+	test('percent-encoded self proxy paths are still classified as self proxy', () => {
+		expect(classifyMediaProxyUrl('https://misskey.test/%70roxy', self)).toEqual({ kind: 'self-proxy', url: 'https://misskey.test/%70roxy' });
+		expect(classifyMediaProxyUrl('https://misskey.test/%50ROXY/', self)).toEqual({ kind: 'self-proxy', url: 'https://misskey.test/%50ROXY' });
+		expect(classifyMediaProxyUrl('https://misskey.test/%E0%A4%A', self)).toEqual({ kind: 'invalid' });
+	});
 });

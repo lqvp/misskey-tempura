@@ -5,11 +5,28 @@
 
 import type { Repository } from 'typeorm';
 import type { MiUser } from '@/models/User.js';
+import type { MiDriveFile } from '@/models/DriveFile.js';
 
 /** MiUser.avatarUrl の列長 (packages/backend/src/models/User.ts) */
 export const USER_AVATAR_URL_MAX_LENGTH = 1024;
 /** MiUser.bannerUrl の列長 (packages/backend/src/models/User.ts) */
 export const USER_BANNER_URL_MAX_LENGTH = 512;
+
+/**
+ * プロフィール画像として user テーブルへ保存する URL を選ぶ。
+ * 公開URL (通常はプロキシURL) が列長上限を超える場合、ローカル保存済みのファイルなら自サーバー (またはオブジェクトストレージ) の配信URLで代替する。
+ * リンク形式 (isLink) のファイルは配信元の URL しか持たず、閲覧者が設定済みのプロキシを迂回してしまうため null を返す。
+ */
+export function pickStorableProfileImageUrl(
+	file: Pick<MiDriveFile, 'isLink' | 'url' | 'webpublicUrl'>,
+	publicUrl: string,
+	maxLength: number,
+): string | null {
+	if (publicUrl.length <= maxLength) return publicUrl;
+	if (file.isLink) return null;
+	const localUrl = file.webpublicUrl ?? file.url;
+	return localUrl.length <= maxLength ? localUrl : null;
+}
 
 /**
  * メディアプロキシが生成する URL の接頭辞を取り出す正規表現。
@@ -21,13 +38,13 @@ const PROXY_PREFIX_PATTERN = '^(https?://[^/]+(?:/[^?]*)?)/(?:image|static|avata
 export interface ReconcileMediaProxyResult {
 	/** 書き換えた行数 (avatar + banner) */
 	rewritten: number;
-	/** origin= を要求しているためスキップした行数 */
+	/** origin=1 を要求しているためスキップした行数 */
 	skippedByOrigin: number;
 	/** 列長上限を超えるためスキップした行数 */
 	skippedByLength: number;
 	/**
 	 * 別のプロキシ接頭辞のまま残っている行数のうち、再同期で回収できるもの。
-	 * origin= 指定や列長超過で回収できない行は含まない (fromMediaProxy 指定時のみ意味を持つ)。
+	 * origin=1 指定や列長超過で回収できない行は含まない (fromMediaProxy 指定時のみ意味を持つ)。
 	 */
 	remainingForeignProxy: number;
 }
@@ -38,6 +55,11 @@ export interface ReconcileMediaProxyOptions {
 	 * 省略した場合は「プロキシ形式の URL すべて」が対象になる (明示的な再同期用)。
 	 */
 	fromMediaProxy?: string | null;
+}
+
+/** オリジン配信を強制する (`origin=1`) URL か。`origin=0` などは通常のプロキシ URL として扱う */
+function originForcedSql(column: 'avatarUrl' | 'bannerUrl'): string {
+	return `"${column}" ~ '[?&]origin=1(&|$)'`;
 }
 
 /** $3 (旧接頭辞) が指定されているときだけ、対象をその接頭辞配下に限定する */
@@ -56,15 +78,15 @@ function countSql(column: 'avatarUrl' | 'bannerUrl', maxLength: number, hasFromP
 				WHERE substring("${column}" FROM $2) IS NOT NULL
 					AND substring("${column}" FROM $2) <> $1
 					${unsettled}
-					AND strpos("${column}", 'origin=') = 0
+					AND NOT ${originForcedSql(column)}
 					AND char_length($1) + char_length("${column}") - char_length(substring("${column}" FROM $2)) <= ${maxLength}
 			)::int` : '0::int'} AS remaining_foreign,
 			count(*) FILTER (
-				WHERE strpos("${column}", 'origin=') > 0
+				WHERE ${originForcedSql(column)}
 					${scoped}
 			)::int AS blocked_origin,
 			count(*) FILTER (
-				WHERE strpos("${column}", 'origin=') = 0
+				WHERE NOT ${originForcedSql(column)}
 					AND char_length($1) + char_length("${column}") - char_length(substring("${column}" FROM $2)) > ${maxLength}
 					${scoped}
 			)::int AS blocked_length
@@ -83,7 +105,7 @@ function updateSql(column: 'avatarUrl' | 'bannerUrl', maxLength: number, hasFrom
 			AND (strpos("${column}", '?url=') > 0 OR strpos("${column}", '&url=') > 0)
 			AND substring("${column}" FROM $2) IS NOT NULL
 			AND substring("${column}" FROM $2) <> $1
-			AND strpos("${column}", 'origin=') = 0
+			AND NOT ${originForcedSql(column)}
 			AND char_length($1) + char_length("${column}") - char_length(substring("${column}" FROM $2)) <= ${maxLength}
 			${sourceFilterSql(column, hasFromPrefix)}`;
 }
@@ -96,7 +118,7 @@ function updateSql(column: 'avatarUrl' | 'bannerUrl', maxLength: number, hasFrom
  * - 途中で失敗して古い接頭辞が残っても、次回の実行で回収できる
  *
  * avatar と banner の更新は 1 トランザクションで実行し、advisory lock でクラスタ全体を直列化する。
- * `?url=` を含むメディアプロキシ URL だけを対象にし、`origin=` 付きはオリジン配信が必須なので触らない。
+ * `?url=` を含むメディアプロキシ URL だけを対象にし、`origin=1` 付きはオリジン配信が必須なので触らない。
  */
 export async function reconcileUserMediaProxyUrls(
 	usersRepository: Repository<MiUser>,

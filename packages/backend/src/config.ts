@@ -309,8 +309,14 @@ export function classifyMediaProxyUrl(url: string | null | undefined, selfUrl: s
 	// URL.host は小文字化・デフォルトポート除去済みなので、スキーム差だけを無視して比較できる
 	if (parsed.host !== self.host) return { kind: 'external', url: normalized };
 
-	// Fastify のルートは大文字小文字を区別し、// は別パスになるため、比較用に正規化する
-	const pathname = parsed.pathname.toLowerCase().replace(/\/{2,}/g, '/').replace(/\/+$/, '');
+	// Fastify のルーターはパーセントエンコードをデコードしてから照合し、大文字小文字を区別し、// は別パスになるため、比較用に正規化する
+	let decodedPathname: string;
+	try {
+		decodedPathname = decodeURIComponent(parsed.pathname);
+	} catch {
+		return { kind: 'invalid' };
+	}
+	const pathname = decodedPathname.toLowerCase().replace(/\/{2,}/g, '/').replace(/\/+$/, '');
 	if (pathname === '/proxy' || pathname.startsWith('/proxy/')) {
 		return { kind: 'self-proxy', url: normalized };
 	}

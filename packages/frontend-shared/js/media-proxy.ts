@@ -28,9 +28,15 @@ export function normalizeMediaProxyUrl(url: string | null | undefined): string |
 	return normalized;
 }
 
-/** パス比較用の正規化 (小文字化・連続スラッシュの圧縮・末尾スラッシュ除去) */
-function normalizePathname(pathname: string): string {
-	return pathname.toLowerCase().replace(/\/{2,}/g, '/').replace(/\/+$/, '');
+/** パス比較用の正規化 (デコード・小文字化・連続スラッシュの圧縮・末尾スラッシュ除去)。デコードできなければ null */
+function normalizePathname(pathname: string): string | null {
+	let decoded: string;
+	try {
+		decoded = decodeURIComponent(pathname);
+	} catch {
+		return null;
+	}
+	return decoded.toLowerCase().replace(/\/{2,}/g, '/').replace(/\/+$/, '');
 }
 
 export type MediaProxyUrlValidation =
@@ -56,8 +62,9 @@ export function validateMediaProxyUrl(raw: string | null | undefined, instanceUr
 			const parsed = new URL(normalized);
 			const selfParsed = new URL(self);
 			if (parsed.host === selfParsed.host) {
-				// Fastify のルートは大文字小文字を区別し、// は別パスになるため、比較用に正規化する
+				// Fastify のルーターはパーセントエンコードをデコードしてから照合し、大文字小文字を区別し、// は別パスになるため、比較用に正規化する
 				const pathname = normalizePathname(parsed.pathname);
+				if (pathname == null) return { ok: false, reason: 'invalid' };
 				// 自インスタンスの /proxy 配下 (リダイレクトループ) とルート (プロキシルートが無く 404) は不可
 				if (pathname === '/proxy' || pathname.startsWith('/proxy/') || pathname === '') {
 					return { ok: false, reason: 'self' };

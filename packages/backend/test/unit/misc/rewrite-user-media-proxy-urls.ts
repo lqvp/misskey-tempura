@@ -8,6 +8,7 @@ import { DataSource, type Repository } from 'typeorm';
 import { initTestDb } from '../../utils.js';
 import { MiUser } from '@/models/User.js';
 import {
+	pickStorableProfileImageUrl,
 	reconcileUserMediaProxyUrls,
 	USER_AVATAR_URL_MAX_LENGTH,
 	USER_BANNER_URL_MAX_LENGTH,
@@ -123,6 +124,21 @@ describe('reconcileUserMediaProxyUrls', () => {
 		expect(after.avatarUrl).toBe(user.avatarUrl);
 	});
 
+	test('origin=1 以外の origin 指定 (origin=0 など) は通常のプロキシ URL として移行する', async () => {
+		const user = await insertUser({
+			avatarUrl: 'https://old-proxy.example/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png&origin=0',
+			bannerUrl: 'https://old-proxy.example/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fb.png&origin=10',
+		});
+
+		const result = await reconcileUserMediaProxyUrls(usersRepository, NEXT);
+
+		expect(result.rewritten).toBe(2);
+		expect(result.skippedByOrigin).toBe(0);
+		const after = await usersRepository.findOneByOrFail({ id: user.id });
+		expect(after.avatarUrl).toBe(`${NEXT}/image.webp?url=https%3A%2F%2Fremote.example%2Fa.png&origin=0`);
+		expect(after.bannerUrl).toBe(`${NEXT}/image.webp?url=https%3A%2F%2Fremote.example%2Fb.png&origin=10`);
+	});
+
 	test('列長上限を超える行はスキップし、件数として数える (avatar 1024 / banner 512)', async () => {
 		const longProxy = `https://new-proxy.example/${'p'.repeat(200)}`;
 		const base = 'https://old-proxy.example/proxy/avatar.webp?url=';
@@ -226,5 +242,24 @@ describe('reconcileUserMediaProxyUrls', () => {
 		expect(result.rewritten).toBe(1);
 		const after = await usersRepository.findOneByOrFail({ id: user.id });
 		expect(after.avatarUrl!.startsWith(`${malicious}/`)).toBe(true);
+	});
+});
+
+describe('pickStorableProfileImageUrl', () => {
+	const proxied = 'https://proxy.example/proxy/image.webp?url=https%3A%2F%2Fremote.example%2Fb.png';
+
+	test('列長上限内なら公開URLをそのまま使う', () => {
+		expect(pickStorableProfileImageUrl({ isLink: true, url: 'https://remote.example/b.png', webpublicUrl: null }, proxied, 512)).toBe(proxied);
+	});
+
+	test('上限超過時、ローカル保存済みのファイルは自サーバーの配信URLで代替する', () => {
+		const file = { isLink: false, url: 'https://server.example/files/abc', webpublicUrl: 'https://server.example/files/webpublic-abc' };
+		expect(pickStorableProfileImageUrl(file, proxied, 10)).toBe(null);
+		expect(pickStorableProfileImageUrl(file, proxied, 50)).toBe('https://server.example/files/webpublic-abc');
+		expect(pickStorableProfileImageUrl({ ...file, webpublicUrl: null }, proxied, 50)).toBe('https://server.example/files/abc');
+	});
+
+	test('上限超過時、リンク形式のファイルは配信元 URL を返さず null にする', () => {
+		expect(pickStorableProfileImageUrl({ isLink: true, url: 'https://remote.example/b.png', webpublicUrl: null }, proxied, 50)).toBe(null);
 	});
 });

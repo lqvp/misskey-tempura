@@ -244,6 +244,12 @@ describe('validateMediaProxyUrl edge cases', () => {
 		expect(validateMediaProxyUrl('https://misskey.test//proxy', instanceUrl)).toEqual({ ok: false, reason: 'self' });
 	});
 
+	test('rejects percent-encoded variants of the self proxy path', () => {
+		expect(validateMediaProxyUrl('https://misskey.test/%70roxy', instanceUrl)).toEqual({ ok: false, reason: 'self' });
+		expect(validateMediaProxyUrl('https://misskey.test/%50ROXY/image.webp', instanceUrl)).toEqual({ ok: false, reason: 'self' });
+		expect(validateMediaProxyUrl('https://misskey.test/%E0%A4%A', instanceUrl)).toEqual({ ok: false, reason: 'invalid' });
+	});
+
 	test('handles ports, IPv6, and protocol-relative inputs', () => {
 		expect(validateMediaProxyUrl('https://misskey.test:443/proxy', instanceUrl)).toEqual({ ok: false, reason: 'self' });
 		expect(validateMediaProxyUrl('https://misskey.test:8443/proxy', instanceUrl)).toEqual({ ok: true, normalized: 'https://misskey.test:8443/proxy' });
