@@ -534,13 +534,21 @@ function stripUrls(text: string): string {
 }
 
 /**
+ * 開き行の info string として剥がしてよい言語・形式の識別子。
+ *
+ * CommonMark の info string は「開き行の残り全体」だが、モデルの実際の逸脱には
+ * 開き行に中身を続けて書くものがある (` ```json {"topics":[]} ` / ` ```GPU was the main topic `)。
+ * 「先頭の 1 トークンは常に info string」とみなすと、後者の `GPU` のような
+ * 言語名ではない語まで捨てられ、要約の先頭が欠ける。
+ * そのため剥がすのは、言語・形式として妥当な識別子に一致したときだけに限る。
+ */
+const FENCE_INFO_STRING_PATTERN = /^(json|jsonc|typescript|ts|javascript|js|markdown|md|yaml|yml|html|css|text|txt|plaintext|python|py|xml|sql|sh|bash)$/i;
+
+/**
  * コードフェンス行 (` ```` ` で始まる行) から、フェンス記号と info string を剥がす。
  *
- * フェンスの info string は CommonMark では「開き行の残り全体」だが、モデルの実際の逸脱には
- * 開き行に中身を続けて書くものがある (` ```json {"topics":[]} `)。
- * 行全体を info string とみなすと、この中身が丸ごと捨てられて要約が失われるため、
- * ここでは info string を「英数字だけの 1 トークン」(json / ts / markdown など) に限り、
- * その後に続くものを中身として返す。
+ * info string として剥がすのは {@link FENCE_INFO_STRING_PATTERN} に一致する 1 トークンだけ。
+ * それ以外の語で始まる開き行は、その語も中身の一部として残す。
  *
  * @returns フェンス記号と info string を除いた残り。フェンス行でなければ null。
  */
@@ -549,8 +557,9 @@ function stripFenceMarker(line: string): string | null {
 	if (!trimmed.startsWith('```')) return null;
 	// 4 文字目 (`) はフェンス記号の一部とみなす。``` の後の空白区切りだけを info string の境界にする
 	const rest = trimmed.slice(3);
-	const infoMatch = rest.match(/^[ \t]*[A-Za-z][\w+#.-]*/u);
-	if (infoMatch == null) return rest.trim();
+	const infoMatch = rest.match(/^[ \t]*([A-Za-z][\w+#.-]*)/u);
+	// 言語・形式の識別子ではない語 (`GPU was the main topic`) は info string ではなく中身
+	if (infoMatch == null || !FENCE_INFO_STRING_PATTERN.test(infoMatch[1]!)) return rest.trim();
 	// info string の直後が行末なら「フェンス行だけ」で中身は空
 	return rest.slice(infoMatch[0].length).trim();
 }
@@ -644,6 +653,9 @@ const MAX_CANDIDATE_SCAN_LENGTH = 100_000;
 /** JSON 断片の探索で試す開き括弧の上限。上限に達したら以降の開き括弧は捨てて打ち切る */
 const MAX_CANDIDATE_SCAN_STARTS = 1_000;
 
+/** 解析を試す候補断片の上限。1 応答に現れる断片は数個で、上限は暴走入力の打ち切り用 */
+const MAX_JSON_CANDIDATES = 128;
+
 /**
  * 本文を前から 1 回なめて、各位置の開き括弧に対応する閉じ括弧の位置を求める。
  *
@@ -684,20 +696,53 @@ function buildBracketMatchMap(body: string): Map<number, number> {
 	return matches;
 }
 
+/** 本文中の JSON 候補断片 1 つと、その本文内での範囲 [start, end) */
+interface JsonCandidate {
+	text: string;
+	start: number;
+	end: number;
+}
+
+/** 本文の括弧走査結果 */
+interface JsonSpanScan {
+	/** 出現順の候補断片（上限で打ち切る） */
+	candidates: JsonCandidate[];
+	/** 入れ子の内側を除いた、対応する括弧の範囲 [start, end)。外側の地の文の判定に使う */
+	topLevelSpans: Array<{ start: number; end: number }>;
+}
+
 /**
- * JSON の候補になりうる断片 (`{...}` / `[...]`) を、対応する括弧で切り出す。
+ * 対応する括弧の範囲から、入れ子の内側を取り除いて外側の範囲だけを残す。
+ * 開始位置の昇順に見れば、外側の範囲に完全に含まれる範囲は「開始位置 < 外側の終端」で判別できる。
+ */
+function collectTopLevelSpans(matches: ReadonlyMap<number, number>): Array<{ start: number; end: number }> {
+	const spans: Array<{ start: number; end: number }> = [];
+	let outerEnd = 0;
+	for (const [start, end] of [...matches.entries()].sort((a, b) => a[0] - b[0])) {
+		if (start < outerEnd) continue;
+		spans.push({ start, end: end + 1 });
+		outerEnd = end + 1;
+	}
+	return spans;
+}
+
+/**
+ * 本文を 1 回なめ、JSON の候補になりうる断片を **出現順に** すべて拾う。
  *
  * 文字列リテラルの外側にある括弧だけを数えるので、値の中の ``` や括弧に惑わされない。
  * 対応する閉じ括弧が見つからない開始位置は捨てて次を探す。
  *
+ * 断片を 1 つだけ返してはいけない。先頭の括弧書きが JSON でない (`[GPU]\n{"topics":[...]}`)
+ * 場合に探索を止めると、後ろにある正当な封筒を取り落とすため、ここでは候補を並べて返し、
+ * 採用するかどうかは呼び出し側が出現順に判定する。
+ *
  * 本文長と開き括弧の試行回数には上限を設ける (ダイジェスト応答は数千文字で、超大入力は
  * モデルの暴走か別の用途を疑うべきもの)。打ち切っても通常サイズの応答の結果は変わらない。
- *
- * @returns 断片と、その本文内での範囲 [start, end)。見つからなければ null。
  */
-function locateJsonCandidate(body: string): { text: string; start: number; end: number } | null {
+function scanJsonSpans(body: string): JsonSpanScan {
 	const limit = Math.min(body.length, MAX_CANDIDATE_SCAN_LENGTH);
 	const matches = buildBracketMatchMap(body.slice(0, limit));
+	const candidates: JsonCandidate[] = [];
 	let starts = 0;
 
 	for (let start = 0; start < limit; start++) {
@@ -706,13 +751,28 @@ function locateJsonCandidate(body: string): { text: string; start: number; end: 
 		if (starts++ >= MAX_CANDIDATE_SCAN_STARTS) break;
 		const end = matches.get(start);
 		if (end == null) continue;
-		return {
-			text: body.slice(start, end + 1),
-			start,
-			end: end + 1,
-		};
+		candidates.push({ text: body.slice(start, end + 1), start, end: end + 1 });
+		if (candidates.length >= MAX_JSON_CANDIDATES) break;
 	}
-	return null;
+	return { candidates, topLevelSpans: collectTopLevelSpans(matches) };
+}
+
+/**
+ * 対応する括弧の **外側** に地の文が残っているか。
+ *
+ * `[GPU]` のような括弧記法は「外側の文言」に数えない。数えてしまうと、
+ * 括弧書きの直後にある正当な封筒より括弧書きを優先し、要約を取り落とす。
+ * バッククォートも同様に、フェンス・インラインコードの残骸なので文言と数えない。
+ */
+function hasOutsideProse(body: string, spans: ReadonlyArray<{ start: number; end: number }>): boolean {
+	let cursor = 0;
+	let outside = '';
+	for (const span of spans) {
+		outside += body.slice(cursor, span.start);
+		cursor = span.end;
+	}
+	outside += body.slice(cursor);
+	return /[^\s`]/u.test(outside);
 }
 
 /**
@@ -872,8 +932,9 @@ function parseEnvelope(
  *    スキーマ違反なら不正な応答 (`null`)。
  *    `topics` を持たないオブジェクトや配列は封筒ではないので 3 へ進む
  *    (別の JSON を引用しただけの応答を、本文を残したまま降ろせるようにするため)。
- * 3. **本文中の JSON 断片**: 封筒として成立すれば、その断片の `topics` を採用する。
- *    スキーマ違反なら不正な応答 (`null`)。
+ * 3. **本文中の JSON 断片**: 出現順に調べ、封筒として成立する最初の断片の `topics` を採用する。
+ *    解析できない断片 (`[GPU]` など) はそこで探索を止めず、次の断片を試す。
+ *    どの断片もスキーマ違反なら不正な応答 (`null`)。
  * 4. **プレーンテキスト**: 断片 (と、断片を囲むフェンス・インラインコードの記号) を除いた残りを
  *    `fallbackText` にする。残りの文言が空なら「話題なし」(`fallbackText: null`)。
  *
@@ -888,6 +949,9 @@ function parseEnvelope(
  * 外側の文言が導入句 (`結果:`) か地の文かを長さや記号で推測する判定は、何度直しても取りこぼしが出た
  * (「ラーメンとGPUの話 / []」で要約が消える、「結果: `[]`」でバッククォートが漏れる)。
  * そのため推測は一切せず、「外側に空白以外の文言があるか」という 1 つの事実だけで決める。
+ * ただし括弧記法そのもの (`[GPU]`) は「外側の文言」に数えない。数えると、
+ * `[GPU]\n{"topics":[...]}` のように JSON の手前へ括弧書きが置かれた応答で、
+ * 正当な封筒を取り落とす (これが実際に起きた不具合だった)。
  *
  * 代償として `結果: []` は「結果:」を本文として表示する (話題なし表示にはならない)。
  * それでも情報は失われず、システムプロンプトは前置きを禁じているうえ、書かれた要約を捨てる誤り
@@ -925,23 +989,46 @@ export function parseTlDigestResponse(
 	if (whole?.kind === 'envelope') return withTrailing({ topics: whole.topics, fallbackText: null });
 	if (whole?.kind === 'invalid') return null;
 
-	// 3. 本文中の JSON 断片を探す
-	const candidate = locateJsonCandidate(body);
-	const extracted = candidate == null ? null : parseEnvelope(candidate.text, refMap);
-	if (extracted?.kind === 'invalid') return null;
+	// 3. 本文中の JSON 断片を出現順に調べ、封筒として成立する最初の断片を採用する。
+	//    解析できない断片 (`[GPU]` など) はそこで探索を止めず、次の断片を試す
+	const scan = scanJsonSpans(body);
+	let adopted: { candidate: JsonCandidate; topics: TlDigestTopic[] } | null = null;
+	let sawInvalidEnvelope = false;
+	for (const candidate of scan.candidates) {
+		const envelope = parseEnvelope(candidate.text, refMap);
+		if (envelope?.kind === 'envelope') {
+			adopted = { candidate, topics: envelope.topics };
+			break;
+		}
+		if (envelope?.kind === 'invalid') sawInvalidEnvelope = true;
+	}
+	// 「topics を持つ」と表明しながら中身が壊れている応答は、本文の拾い直しも
+	// 空 topics との取り違えもしない (正当な封筒が他に見つかった場合はそちらを採る)
+	if (sawInvalidEnvelope && adopted == null) return null;
 
 	// 4. 実際に JSON として解析できた断片だけを本文から除き、残りをプレーンテキストとする。
-	//    解析できない断片 (`[GPU]` など) は地の文なので取り除かない
+	//    解析できない断片 (`[GPU]` など) は地の文なので取り除かない。
+	//    除く対象は採用した封筒。封筒が無いときは先頭の断片だけで、しかも解析できた場合に限る
+	//    (壊れた JSON の内側にある断片を抜き出すと、本文が `{"topics":[ ,]}` のように崩れる)
+	const first = scan.candidates[0] ?? null;
+	const removalTarget = adopted?.candidate
+		?? (first != null && isParsableJson(first.text) ? first : null);
 	let outside = body;
-	if (candidate != null && isParsableJson(candidate.text)) {
-		const removal = fragmentRemoval(body, candidate.start, candidate.end);
+	if (removalTarget != null) {
+		const removal = fragmentRemoval(body, removalTarget.start, removalTarget.end);
 		outside = `${body.slice(0, removal.start)}${removal.separator}${body.slice(removal.end)}`;
 	}
 	const fallbackText = stripUrls(cleanPlainText(outside));
+
+	// 5. 括弧の外側に地の文が無い (`[GPU]\n{"topics":[...]}`) なら、封筒のほうが要約。
+	//    括弧の外側に文言が残っている (`以下が要約です: {...}`) なら、従来どおり文言を優先する
+	if (adopted != null && !hasOutsideProse(body, scan.topLevelSpans)) {
+		return withTrailing({ topics: adopted.topics, fallbackText: fallbackText === '' ? null : fallbackText });
+	}
 	if (fallbackText !== '') return withTrailing({ topics: [], fallbackText });
 
 	// 断片の外側に文言が残っていない: 封筒が成立していれば採用、成立していなければ「話題なし」
-	return withTrailing(extracted?.kind === 'envelope'
-		? { topics: extracted.topics, fallbackText: null }
+	return withTrailing(adopted != null
+		? { topics: adopted.topics, fallbackText: null }
 		: { topics: [], fallbackText: null });
 }

@@ -36,6 +36,7 @@ import {
 	MAX_SCAN_NOTES,
 } from '@/utility/tempura-script/tl-digest/digest.js';
 import type { TlDigestDeps, TlDigestTimelineParams } from '@/utility/tempura-script/tl-digest/digest.js';
+import { i18n } from '@/i18n.js';
 import * as checkWordMuteModule from '@/utility/check-word-mute.js';
 
 function makeNote(
@@ -784,6 +785,26 @@ describe('parseTlDigestResponse', () => {
 		expect(parseTlDigestResponse('```json{"topics":[]}\n```', refMap)).toEqual({ topics: [], fallbackText: null });
 	});
 
+	it('開きフェンス行の info string に見えない語は、中身として残す (回帰)', () => {
+		// `GPU` は言語名でも形式名でもない。info string とみなして 1 トークン捨てると要約の語が消える
+		expect(parseTlDigestResponse('```GPU was the main topic\n[]\n```', refMap)).toEqual({
+			topics: [],
+			fallbackText: 'GPU was the main topic',
+		});
+		// 本物の info string (言語名) は従来どおり剥がす
+		expect(parseTlDigestResponse('```json\n{"topics":[{"title":"T","summary":"S","refs":["n1"]}]}\n```', refMap))
+			.toEqual({ topics: [expect.objectContaining({ title: 'T' })], fallbackText: null });
+		expect(parseTlDigestResponse('```ts\n今日はGPUの話題でした。\n```', refMap)).toEqual({
+			topics: [],
+			fallbackText: '今日はGPUの話題でした。',
+		});
+		// info string と中身が同じ行にある場合も、言語名だけを剥がす
+		expect(parseTlDigestResponse('```ts 今日はGPUの話題でした。\n```', refMap)).toEqual({
+			topics: [],
+			fallbackText: '今日はGPUの話題でした。',
+		});
+	});
+
 	it('JSON として解析できない括弧書きは地の文として残す', () => {
 		// `[GPU]` は JSON の配列ではない。断片として削除すると要約の語が欠ける
 		expect(parseTlDigestResponse('[GPU] が主な話題でした。', refMap)).toEqual({
@@ -800,6 +821,35 @@ describe('parseTlDigestResponse', () => {
 			topics: [],
 			fallbackText: 'が話題でした。',
 		});
+	});
+
+	it('解析できない括弧書きが先頭にあっても、後ろの正当な封筒を採用する (回帰)', () => {
+		// `[GPU]` は JSON ではないので採用できないが、探索を止めてはいけない。
+		// 直後の `{...}` は正当な封筒なので、その topics を採用する
+		const parsed = parseTlDigestResponse('[GPU]\n{"topics":[{"title":"T","summary":"S","refs":["n1"]}]}', refMap);
+		expect(parsed!.topics).toHaveLength(1);
+		expect(parsed!.topics[0].title).toBe('T');
+		expect(parsed!.topics[0].noteIds).toEqual(['real-id-1']);
+		// 解析できない括弧書きは地の文なので、本文として残す
+		expect(parsed!.fallbackText).toBe('[GPU]');
+
+		// 括弧書きだけの本文は「外側の文言」と数えない。地の文が続く場合は従来どおり本文を優先する
+		expect(parseTlDigestResponse('[GPU] が主な話題でした。', refMap)).toEqual({
+			topics: [],
+			fallbackText: '[GPU] が主な話題でした。',
+		});
+		// 解析できない括弧書きが複数あっても探索は続く
+		const many = '[GPU]\n[CPU]\n{"topics":[{"title":"T","summary":"S","refs":[]}]}';
+		expect(parseTlDigestResponse(many, refMap)!.topics).toHaveLength(1);
+	});
+
+	it('閉じフェンスが最後の中身の行末に付いていても、中身を落とさない (回帰)', () => {
+		// 開き行 + 中身 + 閉じフェンスが同じ行、の 2 行だけのフェンス。
+		// 閉じフェンスを中身の一部と数えると JSON が解析できず topics が消える
+		const parsed = parseTlDigestResponse('```json\n{"topics":[{"title":"T","summary":"S","refs":["n1"]}]}```\n', refMap);
+		expect(parsed!.topics).toHaveLength(1);
+		expect(parsed!.topics[0].title).toBe('T');
+		expect(parsed!.fallbackText).toBeNull();
 	});
 
 	it('フェンスに包まれていても、フェンスの中の地の文を捨てない', () => {
@@ -1642,6 +1692,41 @@ describe('createTlDigestController', () => {
 		expect(sentInputs[0]).not.toContain('A のノート');
 		expect(sentInputs[0]).toContain('C のノート');
 		expect(controller.error.value).toBeNull();
+	});
+
+	it('プロンプト作成後にワードミュートが増えたら、ミュートした投稿を送らずに中止する', async () => {
+		const win = { since: Date.UTC(2026, 10, 24, 10, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
+		// ミュート語の配列は設定側で同じ参照のまま書き換えられる (リアクティブな配列への追加)。
+		// 実装が参照だけを控えると、この書き換えが比較基準にも伝わって中止できなくなる
+		const mutedWords: Array<string | string[]> = [['existing']];
+		const hardMutedWords: Array<string | string[]> = [];
+		const sentInputs: string[] = [];
+		const sent = vi.fn();
+		const controller = createTlDigestController(makeDeps({
+			getMe: () => ({ id: 'me', mutedWords, hardMutedWords }),
+			fetchTimeline: async () => [
+				makeNote({ id: 'n-spoiler', createdAt: '2026-11-24T10:30:00.000Z', text: 'spoiler を含む投稿' }),
+				makeNote({ id: 'n-normal', createdAt: '2026-11-24T10:31:00.000Z', text: '通常の投稿' }),
+				makeNote({ id: 'n-old', createdAt: '2026-11-24T09:00:00.000Z', text: '期間外' }),
+			],
+			generate: async (opts) => {
+				sentInputs.push(opts.userContent ?? '');
+				// プロンプトは作成済み。この後にユーザーが 'spoiler' をミュートへ追加した
+				mutedWords.push(['spoiler']);
+				opts.beforeSend?.('server:x', true);
+				sent();
+				return { choices: [{ message: { content: '{"topics":[]}' } }] };
+			},
+		}));
+
+		await controller.run({ ...win, maxNotes: 50, includeRenotes: true });
+
+		// プロンプトは追加前のミュート語で作られているので、ミュート対象の投稿が入っている
+		expect(sentInputs[0]).toContain('spoiler を含む投稿');
+		// その本文を送らないこと (比較基準がプロンプト作成時の語でなければ、ここが送信になる)
+		expect(sent).not.toHaveBeenCalled();
+		expect(controller.error.value?.message).toBe(i18n.ts._tlDigest.settingsChanged);
+		expect(controller.result.value).toBeNull();
 	});
 
 	it('途中で打ち切られた previewCache でも、ワードミュート追加後に再走査して対象件数を再計算する', async () => {

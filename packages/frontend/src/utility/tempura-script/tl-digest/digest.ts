@@ -101,7 +101,7 @@ export interface TlDigestDeps {
 		systemPrompt: string | null;
 		useServerApi: boolean;
 	};
-	getMe: () => { id: string; mutedWords: Array<string | string[]>; hardMutedWords: Array<string | string[]> } | null;
+	getMe: () => ({ id: string } & MuteWords) | null;
 	dismissPending: (userId: string | null, expectedWindow?: TlDigestWindow) => void;
 	now: () => number;
 }
@@ -190,17 +190,35 @@ interface ScanResult {
 }
 
 /**
+ * ワードミュートの語彙 (ソフト・ハード)
+ */
+interface MuteWords {
+	mutedWords: Array<string | string[]>;
+	hardMutedWords: Array<string | string[]>;
+}
+
+/**
+ * ミュート語の内容を複製して控える
+ *
+ * 設定が持つ配列は同じ参照のまま書き換えられることがある (リアクティブな配列への追加)。
+ * 参照だけを控えると、後から書き換わった内容が「控えた時点の内容」を上書きしてしまい、
+ * 送信直前の比較が常に一致してしまう。そこで要素 (AND 条件の配列) まで複製する。
+ */
+function snapshotMuteWords(words: MuteWords): MuteWords {
+	const copy = (list: Array<string | string[]>): Array<string | string[]> =>
+		list.map((entry) => Array.isArray(entry) ? [...entry] : entry);
+	return { mutedWords: copy(words.mutedWords), hardMutedWords: copy(words.hardMutedWords) };
+}
+
+/**
  * ワードミュートの設定が同一かどうか。
  *
  * 文字列と文字列配列 (AND 条件) が混在するため、順序に依存しない形へ直列化して比べる。
  * 待機中にミュート語が増えた場合は、プロンプトに該当投稿が含まれている可能性があるため
  * 送信を中止する必要がある。
  */
-function isSameMuteWords(
-	a: { mutedWords: Array<string | string[]>; hardMutedWords: Array<string | string[]> } | null,
-	b: { mutedWords: Array<string | string[]>; hardMutedWords: Array<string | string[]> } | null,
-): boolean {
-	const normalize = (value: { mutedWords: Array<string | string[]>; hardMutedWords: Array<string | string[]> } | null): string => {
+function isSameMuteWords(a: MuteWords | null, b: MuteWords | null): boolean {
+	const normalize = (value: MuteWords | null): string => {
 		if (value == null) return '';
 		const parts = [...value.mutedWords, '', ...value.hardMutedWords]
 			.map((entry) => Array.isArray(entry) ? [...entry].sort().join('\u0000') : entry)
@@ -547,6 +565,13 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 				}
 			}
 
+			// 送信直前の比較基準は「このプロンプトの作成に実際に使ったミュート語」でなければならない。
+			// active.filter は resolveFilter の時点で読んだ値で、取得や確認を挟む間に追加された語は
+			// プロンプトに反映されていない。ここで deps.getMe() を読み直すと、追加後の語を基準に
+			// 「今と同じ」と判定してしまい、ミュートした投稿がプロンプトに入ったまま送信される。
+			// また設定の配列は参照のまま書き換わり得るため、参照ではなく複製を控える。
+			const muteAtPrepare = snapshotMuteWords(active.filter);
+
 			const { prepared, promptInput, refMap } = prepareWith(active.filter, notes);
 
 			if (prepared.length === 0) {
@@ -565,9 +590,6 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 				}
 				return;
 			}
-
-			// 送信直前の比較用に、プロンプト作成時点のミュート語を控えておく
-			const muteAtPrepare = deps.getMe();
 
 			const response = await measureTlDigestAsync('generate', () => deps.generate({
 				userContent: promptInput,

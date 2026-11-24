@@ -719,7 +719,7 @@ export async function fetchAvailableModels(): Promise<LLMModelInfo[]> {
 	// 鍵はこの呼び出しが実際に使う baseURL から作る (設定を読み直さない。取得中に
 	// 接続先が変わっても、結果は送った先に紐づける)
 	const baseURL = (openaiBaseUrl?.trim() || 'https://api.openai.com/v1').replace(/\/+$/, '');
-	const modelListFetch: ModelInfosFetch = { generation: nextModelInfoGeneration(), key: directModelListEndpoint(baseURL) };
+	const modelListFetch: ModelInfosFetch = { generation: nextModelInfoGeneration(), key: directEndpointFromUrl(baseURL) };
 	try {
 		// 一覧取得も一時的な失敗 (429 / 5xx 等) で空配列に落とさないようリトライする
 		// 本文 (JSON) の読み取りも試行の中なので、本文が届かないまま固まることはない
@@ -817,15 +817,17 @@ function currentModelListEndpoint(): LLMDestination | null {
 }
 
 /**
- * ユーザー直指定モードでモデル一覧を取得する先の鍵
+ * 直指定で実際に使う baseURL から、その接続先の識別子を作る
  *
- * 実際に取得に使った baseURL から作る。設定ではなくこの値を使うことで、
- * 取得中に設定が変わっても結果は送った先に紐づく。
+ * 設定値ではなく「実際に叩く URL」から作る。要求の途中で設定が変わっても、
+ * 記録・検証する送信先と実際の送信先が食い違わないようにするため。
+ * モデル一覧の取得鍵と、chat/completions の送信先検証の双方で使う。
  */
-function directModelListEndpoint(baseURL: string): LLMDestination {
+function directEndpointFromUrl(baseURL: string): LLMDestination {
 	const destination = computeLLMDestination({
 		useServerApi: false,
 		serverEnabled: false,
+		// baseURL の正規化結果だけが欲しいので、null にならないダミーのトークンを渡す
 		token: 'direct',
 		baseUrl: baseURL,
 	});
@@ -1042,12 +1044,18 @@ function captureTransport(useServerApi: boolean): LLMTransport {
  * @param transport この呼び出しが送ると決めた輸送手段 (captureTransport で記録したもの)。
  *   決定した瞬間の設定値と現在値が食い違っていれば、送信せずに打ち切る
  * @param sending true なら、この直後に実際に送信する (false は確認ダイアログを出す前の事前確認)
+ * @param requestDestination 直指定で「この試行が実際に POST する URL」から算出した送信先。
+ *   省略時は現在の設定から算出する (サーバー提供経路と、ダイアログ前の事前確認)。
+ *   設定から読み直すと、画像取得などで待機している間に接続先が変わった場合に
+ *   「検証は新しい接続先、送信は古い接続先」という食い違いが起き得るため、
+ *   実際に送る先が確定している経路では必ずこれを渡す
  * @throws 前提が崩れている場合は i18n.ts._tlDigest.settingsChanged
  */
 function verifyBeforeSend(
 	options: Pick<GenerateLLMOptions, 'expectedDestination' | 'beforeSend'>,
 	transport: LLMTransport,
 	sending: boolean,
+	requestDestination?: LLMDestination | null,
 ): void {
 	if (options.expectedDestination == null && options.beforeSend == null) return;
 	// 送信を決めた後に輸送手段が変わっていたら、送信先の比較では検出できない。
@@ -1057,11 +1065,21 @@ function verifyBeforeSend(
 		throw new Error(i18n.ts._tlDigest.settingsChanged);
 	}
 	// 送信先はこの呼び出しが実際に使う輸送手段で算出する (設定値から読み直さない)
-	const actualDestination = computeCurrentLLMDestination(transport.useServerApi);
+	const actualDestination = requestDestination !== undefined
+		? requestDestination
+		: computeCurrentLLMDestination(transport.useServerApi);
 	if (actualDestination == null) {
 		throw new Error(i18n.ts._tlDigest.settingsChanged);
 	}
 	if (options.expectedDestination != null && actualDestination !== options.expectedDestination) {
+		throw new Error(i18n.ts._tlDigest.settingsChanged);
+	}
+	// 実際に送る URL は生成開始時に固定される。現在の設定がその URL を指していることも
+	// 確かめないと、待機中に設定が別の接続先へ変わったことを検出できない
+	// (検証だけ新しい接続先を見て通り、送信は古い接続先へ飛ぶ)。
+	// 直指定の接続先で比べるのは、サーバー提供が有効なままユーザーが直指定を選んだ
+	// フォールバック経路でも、同じ比較で「設定が指す直指定の接続先」を確認できるため。
+	if (requestDestination !== undefined && computeCurrentLLMDestination(false) !== actualDestination) {
 		throw new Error(i18n.ts._tlDigest.settingsChanged);
 	}
 	options.beforeSend?.(actualDestination, sending);
@@ -1070,11 +1088,12 @@ function verifyBeforeSend(
 /**
  * OpenAI 互換 API (Chat Completions) をユーザーのキーで直接呼び出す
  *
- * @param verifyBeforeAttempt 送信する試行ごとに呼ぶ検証 (最後の砦。リトライ前にも再確認する)
+ * @param verifyBeforeAttempt 送信する試行ごとに呼ぶ検証 (最後の砦。リトライ前にも再確認する)。
+ *   この関数が実際に POST する URL から算出した送信先を渡す
  */
 async function generateOpenAIDirect(
 	{ note, userContent, systemInstruction, signal, retryOnBodyFailure = false }: GenerateLLMOptions,
-	verifyBeforeAttempt: () => void,
+	verifyBeforeAttempt: (requestDestination: LLMDestination) => void,
 ): Promise<LLMResponse> {
 	const { openaiToken, openaiBaseUrl, openaiModel, useGeminiWithMedia = true } = prefer.s;
 
@@ -1084,6 +1103,10 @@ async function generateOpenAIDirect(
 
 	const text = wrapUserData(userContent ?? note?.text ?? '');
 	const baseURL = (openaiBaseUrl?.trim() || 'https://api.openai.com/v1').replace(/\/+$/, '');
+	// この試行が実際に POST する URL の送信先。設定を読み直さず、ここで固定した baseURL から
+	// 作ることで、画像取得などで待機している間に設定が変わっても
+	// 「検証した送信先」と「実際に送る送信先」が食い違わない
+	const requestDestination = directEndpointFromUrl(baseURL);
 	// モデルを空にしている場合は既定のモデルを使う
 	const model = openaiModel?.trim() || 'gpt-4o-mini';
 
@@ -1147,8 +1170,9 @@ async function generateOpenAIDirect(
 			// 呼び出し元が明示した場合のみ再送する
 			retryOnBodyFailure,
 			// 同意の取り消しや送信先の変更は、バックオフ待機の間にも起き得る。
-			// 再送する前にここで確認し、崩れていれば本文を一切送らずに打ち切る
-			verifyBeforeAttempt,
+			// 再送する前にここで確認し、崩れていれば本文を一切送らずに打ち切る。
+			// 検証には、この試行が実際に送る先 (requestDestination) を渡す
+			verifyBeforeAttempt: () => verifyBeforeAttempt(requestDestination),
 		},
 	);
 
@@ -1234,6 +1258,7 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 	// 直指定で送るため、決定時点の設定値を控えておき、待機中に設定が変わった場合だけ打ち切る。
 	const transport = captureTransport(false);
 	// 確認ダイアログ中の設定変更も反映するため、送信直前に送信先と送信内容の前提を再確認する。
-	// リトライの各試行でも同じ検証をやり直す (generateOpenAIDirect の verifyBeforeAttempt)
-	return await generateOpenAIDirect(options, () => verifyBeforeSend(options, transport, true));
+	// リトライの各試行でも同じ検証をやり直す (generateOpenAIDirect の verifyBeforeAttempt)。
+	// 検証する送信先は、その試行が実際に POST する URL から作ったものを渡す
+	return await generateOpenAIDirect(options, (requestDestination) => verifyBeforeSend(options, transport, true, requestDestination));
 }

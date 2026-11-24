@@ -473,6 +473,7 @@ async function advanceUntil(predicate: () => boolean, maxMs = 60_000): Promise<v
  */
 function startGeneration(options: {
 	userContent?: string;
+	note?: Parameters<typeof generateLLMResponse>[0]['note'];
 	signal?: AbortSignal;
 	retryOnBodyFailure?: boolean;
 	beforeSend?: (destination: string, sending: boolean) => void;
@@ -487,6 +488,7 @@ function startGeneration(options: {
 	const promise = generateLLMResponse({
 		userContent: options.userContent ?? 'ノート本文',
 		signal: options.signal,
+		...(options.note == null ? {} : { note: options.note }),
 		...(options.retryOnBodyFailure == null ? {} : { retryOnBodyFailure: options.retryOnBodyFailure }),
 		...(options.beforeSend == null ? {} : { beforeSend: options.beforeSend }),
 		...(options.expectedDestination == null ? {} : { expectedDestination: options.expectedDestination }),
@@ -745,6 +747,89 @@ describe('generateLLMResponse のリトライ', () => {
 		expect(fetchCalls()).toHaveLength(1);
 		// 本文 (フォロワー限定のノート本文を含み得る) を新しい送信先へ送っていない
 		expect(fetchCalls().every(([url]) => String(url).startsWith('https://api.example.com/v1/'))).toBe(true);
+	});
+
+	it('画像取得中に設定が期待送信先へ戻っても、生成開始時に固定した接続先へは送らない', async () => {
+		// 生成開始時の設定は B。呼び出し元が確認した期待送信先は A
+		// (画像の取得に時間がかかる間にユーザーが A へ戻す、という状況)
+		preferState.openaiBaseUrl = 'https://b.example.com/v1';
+		preferState.useGeminiWithMedia = true;
+		preferState.openaiForceImageInput = true;
+
+		let releaseImage: (() => void) | null = null;
+		fetchMock.mockIf(() => true, async (req) => {
+			const url = new URL(req.url);
+			if (url.host === 'cdn.example.com') {
+				// 画像の取得を保留し、その間に設定が変わる状況を作る
+				await new Promise<void>((resolve) => { releaseImage = resolve; });
+				return { status: 500, body: 'nope' };
+			}
+			return { status: 200, body: okBody };
+		});
+
+		const note = {
+			id: 'note1',
+			text: 'ノート本文',
+			files: [{ type: 'image/png', url: 'https://cdn.example.com/slow.png' }],
+		} as unknown as Parameters<typeof generateLLMResponse>[0]['note'];
+
+		const tracked = startGeneration({ note, expectedDestination: 'direct:https://a.example.com/v1' });
+
+		// 画像の取得が始まった (待機している) ことを確かめてから、設定を期待送信先へ戻す
+		await flushMicrotasks(16);
+		expect(fetchCalls().filter(([url]) => String(url).startsWith('https://cdn.example.com/'))).toHaveLength(1);
+		preferState.openaiBaseUrl = 'https://a.example.com/v1';
+		releaseImage!();
+
+		await advanceUntil(() => tracked.settled());
+
+		// 検証は「実際に POST する URL (B)」から作った送信先で行う。設定から読み直すと A に一致して
+		// 通ってしまい、本文と画像が B へ送られる
+		expect((tracked.error as Error).message).toBe(i18n.ts._tlDigest.settingsChanged);
+		expect(fetchCalls().every(([url]) => !String(url).startsWith('https://b.example.com/'))).toBe(true);
+	});
+
+	it('設定が変わらなければ、画像取得で待機しても固定した接続先へ送信する', async () => {
+		preferState.useGeminiWithMedia = true;
+		preferState.openaiForceImageInput = true;
+
+		let releaseImage: (() => void) | null = null;
+		fetchMock.mockIf(() => true, async (req) => {
+			const url = new URL(req.url);
+			if (url.host === 'cdn.example.com') {
+				await new Promise<void>((resolve) => { releaseImage = resolve; });
+				// 画像の中身はこのテストの関心ではない (待機の窓だけを作る) ので取得は失敗させる
+				return { status: 500, body: 'nope' };
+			}
+			return { status: 200, body: okBody };
+		});
+
+		const note = {
+			id: 'note1',
+			text: 'ノート本文',
+			files: [{ type: 'image/png', url: 'https://cdn.example.com/slow.png' }],
+		} as unknown as Parameters<typeof generateLLMResponse>[0]['note'];
+
+		const beforeSend = vi.fn();
+		const tracked = startGeneration({
+			note,
+			expectedDestination: 'direct:https://api.example.com/v1',
+			beforeSend,
+		});
+
+		await flushMicrotasks(16);
+		expect(fetchCalls().filter(([url]) => String(url).startsWith('https://cdn.example.com/'))).toHaveLength(1);
+		releaseImage!();
+
+		await advanceUntil(() => tracked.settled());
+
+		expect(tracked.settled()).toBe(true);
+		expect(tracked.error).toBeUndefined();
+		expect(extractLLMText(tracked.generated!)).toBe('まとめました');
+		const chatCalls = fetchCalls().filter(([url]) => String(url).includes('/chat/completions'));
+		expect(String(chatCalls[0][0])).toBe('https://api.example.com/v1/chat/completions');
+		// 実際に送る先 (URL 由来) が期待送信先と一致するので、そのまま送信する
+		expect(beforeSend).toHaveBeenCalledWith('direct:https://api.example.com/v1', true);
 	});
 
 	it('バックオフ待機中にサーバー提供モードへ切り替わったら、2 回目を送らずに設定変更エラーで打ち切る', async () => {
