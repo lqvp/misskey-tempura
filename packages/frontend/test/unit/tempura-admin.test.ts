@@ -290,6 +290,47 @@ describe('テンプラ管理画面 (/admin/tempura-admin) カテゴリ構成と�
 		assert.exists(targetEl, '子セクションに data-in-app-search-marker-id が自動付与されている');
 	});
 
+	test('同一ページ内で検索対象が別カテゴリへ切り替わった場合も対象カテゴリのMkFolderが開く', async () => {
+		const { searchIndexes: rawIndexes } = await import('search-index:admin');
+		const indexed = genSearchIndexes(structuredClone(rawIndexes));
+		const federationChild = indexed.find((m) => m.parentId === 'tempuraAdminFederation');
+		const registrationChild = indexed.find((m) => m.parentId === 'tempuraAdminRegistration');
+		assert.exists(federationChild);
+		assert.exists(registrationChild);
+
+		const activeMarkerId = ref<string | null>(federationChild!.id);
+		apiMock.mockResolvedValue(metaFixture);
+		const XTempuraAdmin = await loadTempuraAdminWithStubbedSections();
+
+		const page = render(XTempuraAdmin, {
+			global: {
+				directives,
+				components,
+				stubs: {
+					PageWithHeader: { template: '<div><slot/></div>' },
+				},
+				provide: {
+					[DI.inAppSearchMarkerId as symbol]: activeMarkerId,
+				},
+			},
+		});
+
+		await vi.waitFor(() => {
+			const folderRoots = [...page.container.querySelectorAll<HTMLElement>('[role="group"]')];
+			assert.strictEqual(folderRoots.length, EXPECTED_CATEGORIES.length);
+			expect(folderRoots[0].getAttribute('aria-expanded')).toBe('false');
+			expect(folderRoots[1].getAttribute('aria-expanded')).toBe('true');
+		});
+
+		// 同一インスタンスのまま検索ターゲットを登録カテゴリの子へ切り替える
+		activeMarkerId.value = registrationChild!.id;
+
+		await vi.waitFor(() => {
+			const folderRoots = [...page.container.querySelectorAll<HTMLElement>('[role="group"]')];
+			expect(folderRoots[0].getAttribute('aria-expanded')).toBe('true');
+		});
+	});
+
 	test('検索ターゲットがカテゴリ名自身のときも該当カテゴリのMkFolderが初期状態で開く', async () => {
 		apiMock.mockResolvedValue(metaFixture);
 		const XTempuraAdmin = await loadTempuraAdminWithStubbedSections();
@@ -383,6 +424,9 @@ describe('テンプラ管理画面 (/admin/tempura-admin) カテゴリ構成と�
 		expect(filtered.some((item) => item.path === '/admin/tempura-admin')).toBe(false);
 		expect(filtered.some((item) => item.parentId != null && EXPECTED_CATEGORIES.some((c) => c.markerId === item.parentId))).toBe(false);
 		expect(filtered.length).toBeGreaterThan(0);
+
+		// 除外パスが空のときは元の配列をそのまま返す
+		expect(excludeSearchIndexByPath(indexed, [])).toBe(indexed);
 
 		// 親参照に循環がある場合でも無限ループせず処理できること
 		const cyclic = [

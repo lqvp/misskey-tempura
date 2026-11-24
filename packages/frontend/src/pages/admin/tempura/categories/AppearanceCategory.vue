@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <SearchMarker v-slot="slotProps" markerId="tempuraAdminAppearance" :keywords="['appearance', 'entrance', 'branding', 'splash', 'background', 'cursor', 'icon', 'stats', 'offline', 'blocked']">
-	<MkFolder :defaultOpen="slotProps.isParentOfTarget || isCategoryTarget" :canPage="false">
+	<CategoryFolder :shouldOpen="Boolean(slotProps.isParentOfTarget) || isCategoryTarget">
 		<template #icon><SearchIcon><i class="ti ti-palette"></i></SearchIcon></template>
 		<template #label><SearchLabel>{{ i18n.ts._tempuraAdmin.groupAppearance }}</SearchLabel></template>
 
@@ -38,7 +38,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<OfflinePageSettings :meta="meta"/>
 			</SearchMarker>
 		</div>
-	</MkFolder>
+	</CategoryFolder>
 </SearchMarker>
 </template>
 
@@ -52,10 +52,10 @@ import CustomCursor from '../sections/CustomCursor.vue';
 import BlockedUserImageSettings from '../sections/BlockedUserImageSettings.vue';
 import ServerStatsSettings from '../sections/ServerStatsSettings.vue';
 import OfflinePageSettings from '../sections/OfflinePageSettings.vue';
+import CategoryFolder from '../CategoryFolder.vue';
 import { useIsCategorySearchTarget } from './use-category-target.js';
 import type * as Misskey from 'misskey-js';
 import { i18n } from '@/i18n.js';
-import MkFolder from '@/components/MkFolder.vue';
 
 defineProps<{
 	meta: Misskey.Endpoints['admin/meta']['res'];

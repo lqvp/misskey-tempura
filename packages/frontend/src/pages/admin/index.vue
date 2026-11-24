@@ -55,7 +55,7 @@ const isEmpty = (x: string | null) => x == null || x === '';
 
 const router = useRouter();
 const $i = ensureSignin();
-const searchIndex = $i.isAdmin ? rawSearchIndex : excludeSearchIndexByPath(rawSearchIndex, ['/admin/tempura-admin']);
+const searchIndex = computed(() => $i.isAdmin ? rawSearchIndex : excludeSearchIndexByPath(rawSearchIndex, ['/admin/tempura-admin']));
 
 const indexInfo = {
 	title: i18n.ts.controlPanel,

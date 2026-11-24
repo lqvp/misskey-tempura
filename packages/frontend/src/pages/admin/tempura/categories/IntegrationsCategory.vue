@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <SearchMarker v-slot="slotProps" markerId="tempuraAdminIntegrations" :keywords="['llm', 'ai', 'gemini', 'deepl', 'translation', 'object', 'storage', 's3', 'external', 'integration']">
-	<MkFolder :defaultOpen="slotProps.isParentOfTarget || isCategoryTarget" :canPage="false">
+	<CategoryFolder :shouldOpen="Boolean(slotProps.isParentOfTarget) || isCategoryTarget">
 		<template #icon><SearchIcon><i class="ti ti-plug"></i></SearchIcon></template>
 		<template #label><SearchLabel>{{ i18n.ts._tempuraAdmin.groupIntegrations }}</SearchLabel></template>
 
@@ -20,7 +20,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<ObjectStorageRemoteSettings :meta="meta"/>
 			</SearchMarker>
 		</div>
-	</MkFolder>
+	</CategoryFolder>
 </SearchMarker>
 </template>
 
@@ -28,9 +28,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 import GeminiSettings from '../sections/GeminiSettings.vue';
 import DeeplFreeModeSettings from '../sections/DeeplFreeModeSettings.vue';
 import ObjectStorageRemoteSettings from '../sections/ObjectStorageRemoteSettings.vue';
+import CategoryFolder from '../CategoryFolder.vue';
 import { useIsCategorySearchTarget } from './use-category-target.js';
 import type * as Misskey from 'misskey-js';
-import MkFolder from '@/components/MkFolder.vue';
 import { i18n } from '@/i18n.js';
 
 defineProps<{

@@ -5,7 +5,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <SearchMarker v-slot="slotProps" markerId="tempuraAdminRegistration" :keywords="['registration', 'signup', 'join', 'account', 'invite', 'passphrase', 'email', 'domain', 'follow']">
-	<MkFolder :defaultOpen="slotProps.isParentOfTarget || isCategoryTarget" :canPage="false">
+	<CategoryFolder :shouldOpen="Boolean(slotProps.isParentOfTarget) || isCategoryTarget">
 		<template #icon><SearchIcon><i class="ti ti-user-plus"></i></SearchIcon></template>
 		<template #label><SearchLabel>{{ i18n.ts._tempuraAdmin.groupRegistration }}</SearchLabel></template>
 
@@ -32,7 +32,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 				<DefaultFollowedUsers :meta="meta"/>
 			</SearchMarker>
 		</div>
-	</MkFolder>
+	</CategoryFolder>
 </SearchMarker>
 </template>
 
@@ -44,10 +44,10 @@ import SecondsPerSignup from '../sections/SecondsPerSignup.vue';
 import SignupCodesSettings from '../sections/SignupCodesSettings.vue';
 import EmailDomainSettings from '../sections/EmailDomainSettings.vue';
 import DefaultFollowedUsers from '../sections/DefaultFollowedUsers.vue';
+import CategoryFolder from '../CategoryFolder.vue';
 import { useIsCategorySearchTarget } from './use-category-target.js';
 import type * as Misskey from 'misskey-js';
 import { i18n } from '@/i18n.js';
-import MkFolder from '@/components/MkFolder.vue';
 
 defineProps<{
 	meta: Misskey.Endpoints['admin/meta']['res'];
