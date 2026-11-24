@@ -549,8 +549,9 @@ export function parseTlDigestResponse(
 				};
 			}
 			if (!parsedFragment || hasTopicsKey) return null;
-		} else if (!parsedFragment && parsed != null && typeof parsed === 'object') {
-			// 応答全体が JSON なのにスキーマと異なる場合は、自由文の救済ではなく不正な応答として扱う
+		} else if ((!parsedFragment || hasTopicsKey) && parsed != null && typeof parsed === 'object') {
+			// 応答全体が JSON なのにスキーマと異なる場合や、topics が配列でない要約形式の断片は、
+			// 自由文の救済ではなく不正な応答として扱う
 			return null;
 		}
 	}

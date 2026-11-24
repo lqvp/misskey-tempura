@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { randomBytes } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import * as Redis from 'ioredis';
@@ -13,8 +12,8 @@ import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { bindThis } from '@/decorators.js';
 import type { GlobalEvents } from '@/core/GlobalEventService.js';
 import { FeaturedService } from '@/core/FeaturedService.js';
+import { ensureServerOpenAIDestinationKey } from '@/misc/ensure-server-openai-destination-key.js';
 import type { OnApplicationShutdown } from '@nestjs/common';
-import type { EntityManager } from 'typeorm';
 
 @Injectable()
 export class MetaService implements OnApplicationShutdown {
@@ -80,7 +79,7 @@ export class MetaService implements OnApplicationShutdown {
 			const meta = metas[0];
 
 			if (meta) {
-				const ensured = await this.ensureServerOpenAIDestinationKey(transactionalEntityManager, meta);
+				const ensured = await ensureServerOpenAIDestinationKey(transactionalEntityManager, meta);
 				this.cache = ensured;
 				return ensured;
 			} else {
@@ -94,28 +93,12 @@ export class MetaService implements OnApplicationShutdown {
 						['id'],
 					)
 					.then((x) => transactionalEntityManager.findOneByOrFail(MiMeta, x.identifiers[0]))
-					.then((x) => this.ensureServerOpenAIDestinationKey(transactionalEntityManager, x));
+					.then((x) => ensureServerOpenAIDestinationKey(transactionalEntityManager, x));
 
 				this.cache = saved;
 				return saved;
 			}
 		});
-	}
-
-	/**
-	 * サーバー提供 LLM の接続先 ID 用の鍵が未生成なら生成する
-	 * (複数プロセスが同時に生成しても、最初に保存された鍵だけを使う)
-	 */
-	@bindThis
-	private async ensureServerOpenAIDestinationKey(transactionalEntityManager: EntityManager, meta: MiMeta): Promise<MiMeta> {
-		if (meta.serverOpenAIDestinationKey != null) return meta;
-		await transactionalEntityManager.createQueryBuilder()
-			.update(MiMeta)
-			.set({ serverOpenAIDestinationKey: randomBytes(32).toString('hex') })
-			.where('id = :id', { id: meta.id })
-			.andWhere('"serverOpenAIDestinationKey" IS NULL')
-			.execute();
-		return await transactionalEntityManager.findOneByOrFail(MiMeta, { id: meta.id });
 	}
 
 	@bindThis

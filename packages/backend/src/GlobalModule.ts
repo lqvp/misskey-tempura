@@ -13,6 +13,7 @@ import { Config, loadConfig } from './config.js';
 import { createPostgresDataSource } from './postgres.js';
 import { RepositoryModule } from './models/RepositoryModule.js';
 import { allSettled } from './misc/promise-tracker.js';
+import { ensureServerOpenAIDestinationKey } from './misc/ensure-server-openai-destination-key.js';
 import { GlobalEvents } from './core/GlobalEventService.js';
 import type { Provider, OnApplicationShutdown } from '@nestjs/common';
 
@@ -111,7 +112,7 @@ const $meta: Provider = {
 			const meta = metas[0];
 
 			if (meta) {
-				return meta;
+				return await ensureServerOpenAIDestinationKey(transactionalEntityManager, meta);
 			} else {
 				// metaが空のときfetchMetaが同時に呼ばれるとここが同時に呼ばれてしまうことがあるのでフェイルセーフなupsertを使う
 				const saved = await transactionalEntityManager
@@ -122,7 +123,8 @@ const $meta: Provider = {
 						},
 						['id'],
 					)
-					.then((x) => transactionalEntityManager.findOneByOrFail(MiMeta, x.identifiers[0]));
+					.then((x) => transactionalEntityManager.findOneByOrFail(MiMeta, x.identifiers[0]))
+					.then((x) => ensureServerOpenAIDestinationKey(transactionalEntityManager, x));
 
 				return saved;
 			}

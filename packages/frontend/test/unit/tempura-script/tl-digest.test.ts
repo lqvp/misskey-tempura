@@ -444,6 +444,12 @@ describe('parseTlDigestResponse', () => {
 
 		// topics を持つ要約形式の断片が不正な場合は、前置きがあっても不正な応答として扱う
 		expect(parseTlDigestResponse('以下が要約です: {"topics":[{}]}', refMap)).toBeNull();
+		expect(parseTlDigestResponse('以下が要約です: {"topics":null}', refMap)).toBeNull();
+		expect(parseTlDigestResponse('以下が要約です: {"topics":"話題A"}', refMap)).toBeNull();
+
+		// topics を持たない JSON の引用は全文のフォールバックへ進む
+		const rawObject = '設定例 {"debug":true} について話題になりました。';
+		expect(parseTlDigestResponse(rawObject, refMap)).toEqual({ topics: [], fallbackText: rawObject });
 
 		// 自由文中でも有効なダイジェスト JSON なら従来どおり採用する
 		const withPreface = '以下が要約です: {"topics":[{"title":"話題A","summary":"要約A","refs":["n1"]}]}';
