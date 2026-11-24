@@ -246,6 +246,11 @@ export interface GenerateLLMOptions {
 	systemInstruction?: string;
 	/** 中止用シグナル (キャンセル時に HTTP 要求そのものを中断する) */
 	signal?: AbortSignal;
+	/**
+	 * 送信直前に期待する送信先 (一致しない場合は設定変更とみなして送信を中止する)
+	 * followers 同意など送信先に紐づく処理が、送信中の設定変更で別先へ送るのを防ぐ
+	 */
+	expectedDestination?: LLMDestination;
 }
 
 // 直近のモデル一覧取得結果 (画像対応判定のキャッシュとして使う)
@@ -402,10 +407,25 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 	// プロンプトインジェクション対策: ユーザーコンテンツはデータとして扱う
 	options.systemInstruction = `${options.systemInstruction ?? ''}\n\n${GUARD_INSTRUCTION}`.trim();
 
-	if (useGeminiLLMAPI) {
+	if (useGeminiLLMAPI && instance.value == null) {
 		// 起動直後でサーバー情報が未取得の場合は、誤って「サーバー無効」と判定しないよう取得を待つ
-		if (instance.value == null) await instanceReady;
+		await instanceReady;
 		if (options.signal?.aborted) throw options.signal.reason ?? new DOMException('Aborted', 'AbortError');
+	}
+
+	if (options.expectedDestination != null) {
+		const actualDestination = computeLLMDestination({
+			useServerApi: prefer.s.useGeminiLLMAPI,
+			serverEnabled: instance.value?.serverOpenAIEnabled === true,
+			token: prefer.s.openaiToken,
+			baseUrl: prefer.s.openaiBaseUrl,
+		});
+		if (actualDestination !== options.expectedDestination) {
+			throw new Error(i18n.ts._tlDigest.settingsChanged);
+		}
+	}
+
+	if (useGeminiLLMAPI) {
 		// サーバーで OpenAI 互換 API が有効になっているかチェック
 		if (instance.value?.serverOpenAIEnabled === true) {
 			try {
@@ -432,6 +452,17 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 				],
 			});
 			if (options.signal?.aborted) throw options.signal.reason ?? new DOMException('Aborted', 'AbortError');
+			if (options.expectedDestination != null) {
+				const fallbackDestination = computeLLMDestination({
+					useServerApi: false,
+					serverEnabled: false,
+					token: prefer.s.openaiToken,
+					baseUrl: prefer.s.openaiBaseUrl,
+				});
+				if (fallbackDestination !== options.expectedDestination) {
+					throw new Error(i18n.ts._tlDigest.settingsChanged);
+				}
+			}
 			if (canceled) {
 				// ユーザーによるキャンセルなのでエラー扱いにしない
 				throw new Error(i18n.ts._llm._error.cancel);

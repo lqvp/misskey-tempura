@@ -15818,6 +15818,10 @@ export interface Locale extends ILocale {
          */
         "pendingSummaryTruncated": ParameterizedString<"duration" | "count">;
         /**
+         * {duration}ぶり・直近の確認範囲では対象なし
+         */
+        "pendingSummaryTruncatedZero": ParameterizedString<"duration">;
+        /**
          * {duration}ぶりの新着を確認中…
          */
         "pendingCounting": ParameterizedString<"duration">;
@@ -15841,6 +15845,14 @@ export interface Locale extends ILocale {
          * 要約対象のノートがありませんでした。
          */
         "noNotesToSummarize": string;
+        /**
+         * 直近の確認範囲では要約対象のノートが見つかりませんでした。
+         */
+        "noNotesInScannedRange": string;
+        /**
+         * 生成中にLLMまたは公開範囲の設定が変更されたため中止しました。もう一度お試しください。
+         */
+        "settingsChanged": string;
         /**
          * LLMから有効な応答が得られませんでした。再試行してください。
          */

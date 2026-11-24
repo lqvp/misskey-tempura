@@ -167,16 +167,17 @@ function matchesSingleNoteWordMute(
 	if (Array.isArray(checkWordMute(note, meUser, words))) {
 		return true;
 	}
-	// 画像キャプション (comment) と投票選択肢のミュートワードも検査する
+	// 画像キャプション (comment) と投票選択肢も含めて判定する。
+	// 元の本文・CW と連結して渡すことで、本文と添付説明にまたがる複合ミュート (AND条件) も検出する
 	const extraTexts = [
 		...(note.files ?? []).map((f) => f.comment?.trim() ?? ''),
 		...(note.poll?.choices ?? []).map((c) => c.text?.trim() ?? ''),
 	].filter((c) => c !== '').join('\n');
 	if (extraTexts !== '') {
+		const combinedText = [note.text?.trim() ?? '', extraTexts].filter((c) => c !== '').join('\n');
 		const syntheticNote = {
 			...note,
-			text: extraTexts,
-			cw: null,
+			text: combinedText,
 		} as Misskey.entities.Note;
 		if (Array.isArray(checkWordMute(syntheticNote, meUser, words))) {
 			return true;
@@ -344,8 +345,13 @@ export function prepareNotesForDigest(
 	const prepared: PreparedDigestNote[] = [];
 	const refMap = new Map<string, PreparedDigestNote>();
 
-	// 会話の流れが自然になるよう、選んだノートを時系列順 (古い→新しい) に戻して連番を振る
-	const chronological = [...aggregatedByNoteId.values()].reverse();
+	// 件数上限の選別は最新アクティビティ順 (RN時刻含む) で行い、
+	// プロンプト出力時は行に表示する元投稿時刻の昇順 (古い→新しい) に揃えて連番を振る
+	const chronological = [...aggregatedByNoteId.values()]
+		.reverse()
+		.map((entry, idx) => ({ entry, idx, time: new Date(entry.targetNote.createdAt).getTime() }))
+		.sort((a, b) => (a.time - b.time) || (a.idx - b.idx))
+		.map((x) => x.entry);
 
 	let index = 0;
 	for (const entry of chronological) {
@@ -467,9 +473,27 @@ export function parseTlDigestResponse(
 		return null;
 	}
 
-	const candidate = extractJsonCandidate(trimmed);
-	try {
-		const parsed = JSON.parse(candidate) as unknown;
+	// まず応答全体をそのまま JSON として解析する (summary 内の三連バッククォート誤抽出を防ぐ)。
+	// 失敗した場合にのみコードフェンスや前後の説明文を取り除いて再解析する
+	const jsonCandidates = [trimmed];
+	const extracted = extractJsonCandidate(trimmed);
+	if (extracted !== trimmed) {
+		jsonCandidates.push(extracted);
+	}
+
+	let parsed: unknown;
+	let parsedOk = false;
+	for (const candidate of jsonCandidates) {
+		try {
+			parsed = JSON.parse(candidate) as unknown;
+			parsedOk = true;
+			break;
+		} catch {
+			// 次の候補を試す
+		}
+	}
+
+	if (parsedOk) {
 		const rawTopics = Array.isArray(parsed)
 			? parsed
 			: (parsed != null && typeof parsed === 'object' && Array.isArray((parsed as Record<string, unknown>)['topics']))
@@ -521,8 +545,6 @@ export function parseTlDigestResponse(
 				fallbackText: null,
 			};
 		}
-	} catch {
-		// JSON 解析失敗時はプレーンテキストにフォールバック
 	}
 
 	// コードフェンス記号を取り除いてプレーンテキストとして返す

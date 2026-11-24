@@ -32,6 +32,8 @@ export interface TlDigestResult {
 	topics: TlDigestTopic[];
 	fallbackText: string | null;
 	noteCount: number;
+	/** 走査上限に達して全期間を確認できなかった場合 true */
+	scanTruncated?: boolean;
 	generatedAt: number;
 	since: number;
 	until: number;
@@ -89,7 +91,7 @@ export interface TlDigestDeps {
 		useServerApi: boolean;
 	};
 	getMe: () => { id: string; mutedWords: Array<string | string[]>; hardMutedWords: Array<string | string[]> } | null;
-	dismissPending: (userId: string | null) => void;
+	dismissPending: (userId: string | null, expectedWindow?: TlDigestWindow) => void;
 	now: () => number;
 }
 
@@ -160,7 +162,7 @@ const defaultDeps: TlDigestDeps = {
 		mutedWords: $i.mutedWords ?? [],
 		hardMutedWords: $i.hardMutedWords ?? [],
 	},
-	dismissPending: (userId) => dismissTlDigestPending(userId),
+	dismissPending: (userId, expectedWindow) => dismissTlDigestPending(userId, expectedWindow),
 	now: () => Date.now(),
 };
 
@@ -353,49 +355,95 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 		error.value = null;
 
 		try {
-			const { settings, me, destination, filter, cacheKey } = await resolveFilter(options.includeRenotes, true);
+			const initial = await resolveFilter(options.includeRenotes, true);
 			if (!isCurrent()) return;
 
-			if (destination == null) {
-				error.value = { message: configErrorMessage(settings.useServerApi), isConfigError: true };
+			if (initial.destination == null) {
+				error.value = { message: configErrorMessage(initial.settings.useServerApi), isConfigError: true };
 				return;
 			}
 
 			const maxNotes = Math.max(1, Math.min(options.maxNotes, PENDING_COUNT_CAP));
-			const prepare = (notes: Misskey.entities.Note[]) =>
+			const prepareWith = (filter: typeof initial.filter, notes: Misskey.entities.Note[]) =>
 				prepareNotesForDigest(notes, { ...filter, maxPreparedNotes: maxNotes });
-			const isEnough = (notes: Misskey.entities.Note[]) => prepare(notes).prepared.length >= maxNotes;
+			const isEnoughWith = (filter: typeof initial.filter) => (notes: Misskey.entities.Note[]) =>
+				prepareWith(filter, notes).prepared.length >= maxNotes;
 
 			const win = { since: options.since, until: options.until };
-			const cached = previewCache.get(cacheKey(win));
+			const cached = previewCache.get(initial.cacheKey(win));
 			let notes: Misskey.entities.Note[];
-			if (cached != null && (cached.complete || isEnough(cached.notes))) {
+			let scanComplete: boolean;
+			let usedNetwork = false;
+			if (cached != null && (cached.complete || isEnoughWith(initial.filter)(cached.notes))) {
 				notes = cached.notes;
+				scanComplete = cached.complete;
 			} else {
-				const scan = await scanWindow(win, options.includeRenotes, abort.signal, isEnough);
+				usedNetwork = true;
+				const scan = await scanWindow(win, options.includeRenotes, abort.signal, isEnoughWith(initial.filter));
 				if (!isCurrent()) return;
 				notes = scan.notes;
+				scanComplete = scan.complete;
 			}
 
-			const { prepared, promptInput, refMap } = prepare(notes);
+			// 取得中に公開範囲・CW・LLM 送信先が変更された場合は最新条件を必ず適用する
+			let active = initial;
+			if (usedNetwork) {
+				const latest = await resolveFilter(options.includeRenotes, true);
+				if (!isCurrent()) return;
+				if (latest.destination == null) {
+					error.value = { message: configErrorMessage(latest.settings.useServerApi), isConfigError: true };
+					return;
+				}
+				const filterChanged =
+					latest.destination !== initial.destination ||
+					latest.filter.cwMode !== initial.filter.cwMode ||
+					latest.filter.allowedVisibilities.join(',') !== initial.filter.allowedVisibilities.join(',');
+
+				active = latest;
+				if (filterChanged && !scanComplete && !isEnoughWith(latest.filter)(notes)) {
+					const rescan = await scanWindow(win, options.includeRenotes, abort.signal, isEnoughWith(latest.filter));
+					if (!isCurrent()) return;
+					notes = rescan.notes;
+					scanComplete = rescan.complete;
+
+					const verified = await resolveFilter(options.includeRenotes, true);
+					if (!isCurrent()) return;
+					if (
+						verified.destination == null ||
+						verified.destination !== latest.destination ||
+						verified.filter.cwMode !== latest.filter.cwMode ||
+						verified.filter.allowedVisibilities.join(',') !== latest.filter.allowedVisibilities.join(',')
+					) {
+						throw new Error(i18n.ts._tlDigest.settingsChanged);
+					}
+					active = verified;
+				}
+			}
+
+			const { prepared, promptInput, refMap } = prepareWith(active.filter, notes);
 
 			if (prepared.length === 0) {
 				result.value = {
 					topics: [],
 					fallbackText: null,
 					noteCount: 0,
+					scanTruncated: !scanComplete,
 					generatedAt: deps.now(),
 					since: options.since,
 					until: options.until,
 				};
-				deps.dismissPending(me?.id ?? null);
+				// 全期間を走査できた場合のみ、この期間と一致する pending を消化する
+				if (scanComplete) {
+					deps.dismissPending(active.me?.id ?? null, win);
+				}
 				return;
 			}
 
 			const response = await deps.generate({
 				userContent: promptInput,
-				systemInstruction: buildTlDigestSystemInstruction(settings.prompt, settings.systemPrompt),
+				systemInstruction: buildTlDigestSystemInstruction(active.settings.prompt, active.settings.systemPrompt),
 				signal: abort.signal,
+				expectedDestination: active.destination!,
 			});
 			if (!isCurrent()) return;
 
@@ -413,7 +461,7 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 				since: options.since,
 				until: options.until,
 			};
-			deps.dismissPending(me?.id ?? null);
+			deps.dismissPending(active.me?.id ?? null, win);
 		} catch (err: unknown) {
 			if (!isCurrent() || isAbortError(err, abort.signal)) return;
 			const message = err instanceof Error ? err.message : String(err);

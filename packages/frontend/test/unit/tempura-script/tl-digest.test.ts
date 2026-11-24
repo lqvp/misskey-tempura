@@ -242,15 +242,44 @@ describe('prepareNotesForDigest', () => {
 					choices: [{ isVoted: false, text: 'ネタバレ選択肢', votes: 0 }],
 				},
 			}),
+			makeNote({
+				id: 'n-compound-muted',
+				text: '昨日観た映画の話',
+				files: [{ id: 'f2', comment: '結末がすごかった', isSensitive: false } as unknown as Misskey.entities.DriveFile],
+			}),
 			makeNote({ id: 'n-clean', text: '普通の雑談です' }),
 		];
 
 		const { prepared } = prepareNotesForDigest(notes, {
 			meId: 'me',
-			mutedWords: [['ネタバレ'], '/spam-\\d+/i'],
+			mutedWords: [['ネタバレ'], ['映画', '結末'], '/spam-\\d+/i'],
 			hardMutedWords: [['NGワード']],
 		});
 		expect(prepared.map((p) => p.noteId)).toEqual(['n-clean']);
+	});
+
+	it('純リノートを含む場合でもプロンプト出力は表示時刻 (元投稿時刻) の昇順に並ぶ', () => {
+		const orig9 = makeNote({
+			id: 'orig-9',
+			createdAt: '2026-11-24T09:00:00.000Z',
+			text: '9時の元投稿',
+		});
+		const normal10 = makeNote({
+			id: 'normal-10',
+			createdAt: '2026-11-24T10:00:00.000Z',
+			text: '10時の通常投稿',
+		});
+		const rn11 = makeNote({
+			id: 'rn-11',
+			createdAt: '2026-11-24T11:00:00.000Z',
+			text: null,
+			renoteId: 'orig-9',
+			renote: orig9,
+		});
+
+		const { prepared } = prepareNotesForDigest([rn11, normal10]);
+		expect(prepared.map((p) => p.noteId)).toEqual(['orig-9', 'normal-10']);
+		expect(prepared.map((p) => p.seqId)).toEqual(['n1', 'n2']);
 	});
 
 	it('元ノート + 純リノート1件は RN×1 ([RN])、純リノート2件は [RN×2] として正確に数える', () => {
@@ -374,6 +403,20 @@ describe('parseTlDigestResponse', () => {
 		expect(parsedArray!.fallbackText).toBeNull();
 		expect(parsedArray!.topics).toHaveLength(1);
 		expect(parsedArray!.topics[0].noteIds).toEqual(['real-id-2']);
+
+		// summary 内に三連バッククォートを含む正当な JSON でも全体解析が優先される
+		const rawWithInlineFence = JSON.stringify({
+			topics: [{
+				title: 'コード例',
+				summary: '以下のような例が共有されました:\n```ts\nconst x = 1;\n```',
+				refs: ['n1'],
+			}],
+		});
+		const parsedInlineFence = parseTlDigestResponse(rawWithInlineFence, refMap);
+		expect(parsedInlineFence).not.toBeNull();
+		expect(parsedInlineFence!.fallbackText).toBeNull();
+		expect(parsedInlineFence!.topics).toHaveLength(1);
+		expect(parsedInlineFence!.topics[0].noteIds).toEqual(['real-id-1']);
 	});
 
 	it('正当な空トピック配列は topics: [] として受け入れ、空文字や不正要素のみの応答は null を返す', () => {
@@ -422,9 +465,25 @@ describe('tl-digest activity tracking', () => {
 		const win = getActivePendingWindow(60);
 		expect(win).toEqual({ since: t1 - MAX_ABSENCE_WINDOW_MS, until: t1 });
 
-		dismissTlDigestPending(userId, t1);
+		dismissTlDigestPending(userId, win, t1);
 		expect(getActivePendingWindow(30)).toBeNull();
 		expect(loadTlDigestStoredState(userId)?.lastSeenAt).toBe(t1);
+	});
+
+	it('expectedWindow が保存済みの pending と一致しない場合は消化しない', () => {
+		const userId = 'u-activity-window-match';
+		const t0 = Date.UTC(2026, 10, 24, 0, 0, 0);
+		const t1 = t0 + MIN_TRACKED_ABSENCE_MS * 2;
+		evaluateTlDigestActivity(userId, t0);
+		evaluateTlDigestActivity(userId, t1);
+
+		// 別の古い期間を指定しても新しい pending (t0..t1) は消えない
+		dismissTlDigestPending(userId, { since: t0 - 10_000, until: t1 - 10_000 }, t1);
+		expect(getActivePendingWindow(30)).toEqual({ since: t0, until: t1 });
+
+		// 一致する期間を指定すれば消化される
+		dismissTlDigestPending(userId, { since: t0, until: t1 }, t1);
+		expect(getActivePendingWindow(30)).toBeNull();
 	});
 
 	it('別タブで消化済みの pending (localStorage 上 null) を touchTlDigestLastSeen が復活させない', () => {
@@ -432,7 +491,7 @@ describe('tl-digest activity tracking', () => {
 		const t0 = Date.UTC(2026, 10, 24, 1, 0, 0);
 		const t1 = t0 + MIN_TRACKED_ABSENCE_MS * 2;
 		// タブ A が pending を消化済み (localStorage は pendingSince/Until = null)
-		dismissTlDigestPending(userId, t1);
+		dismissTlDigestPending(userId, null, t1);
 		// タブ B のメモリ上にはまだ古い pending ref が残っている状態を模擬
 		pendingSinceRef.value = t0;
 		pendingUntilRef.value = t1;
@@ -444,12 +503,9 @@ describe('tl-digest activity tracking', () => {
 		expect(pendingSinceRef.value).toBeNull();
 	});
 
-	it('非表示のまま pagehide でタブを閉じても既存の lastSeenAt を上書きしない', () => {
+	it('非表示タブでの初期化と pagehide では既存の lastSeenAt を進めない', () => {
 		const userId = 'u-activity-hidden';
 		const t0 = Date.UTC(2026, 10, 24, 1, 0, 0);
-		touchTlDigestLastSeen(userId, t0);
-		initTlDigestActivity(userId);
-		// initTlDigestActivity が現在時刻で評価するため、テスト用に t0 を再設定
 		touchTlDigestLastSeen(userId, t0);
 
 		const originalDescriptor = Object.getOwnPropertyDescriptor(window.document, 'visibilityState');
@@ -458,9 +514,14 @@ describe('tl-digest activity tracking', () => {
 			get: () => 'hidden',
 		});
 		try {
+			// 非表示状態で初期化しても lastSeenAt が現在時刻へ進まない
+			initTlDigestActivity(userId);
+			expect(loadTlDigestStoredState(userId)?.lastSeenAt).toBe(t0);
+
 			window.dispatchEvent(new Event('pagehide'));
 			expect(loadTlDigestStoredState(userId)?.lastSeenAt).toBe(t0);
-			// 2時間後に起動したとき、t0 からの不在期間が正しく検知される
+
+			// 2時間後に実際に visible になって評価したとき、t0 からの不在期間が丸ごと検知される
 			const t2 = t0 + MIN_TRACKED_ABSENCE_MS * 4;
 			const state = evaluateTlDigestActivity(userId, t2);
 			expect(state.pendingSince).toBe(t0);
@@ -746,10 +807,73 @@ describe('createTlDigestController', () => {
 		await cEmpty.run({ ...win, maxNotes: 50, includeRenotes: true });
 		expect(cEmpty.error.value).toBeNull();
 		expect(cEmpty.result.value?.topics).toEqual([]);
-		expect(dismissEmpty).toHaveBeenCalledWith('me');
+		expect(dismissEmpty).toHaveBeenCalledWith('me', win);
 	});
 
-	it('followers 同意の送信先が現在と異なる場合は followers ノートを送信せず、送信先解決は1回で済ませる', async () => {
+	it('走査上限で0件となった場合は scanTruncated: true とし pending を消化しない', async () => {
+		const win = { since: Date.UTC(2026, 10, 24, 9, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
+		const dismissPending = vi.fn();
+		const controller = createTlDigestController(makeDeps({
+			fetchTimeline: async (params) =>
+				Array.from({ length: params.limit }, (_, i) =>
+					makeNote({
+						id: `own-${params.untilId ?? 'start'}-${i}`,
+						userId: 'me',
+						createdAt: new Date(win.until - 1000).toISOString(),
+					}),
+				),
+			dismissPending,
+		}));
+
+		await controller.run({ ...win, maxNotes: 50, includeRenotes: true });
+		expect(controller.result.value?.noteCount).toBe(0);
+		expect(controller.result.value?.scanTruncated).toBe(true);
+		expect(dismissPending).not.toHaveBeenCalled();
+	});
+
+	it('HTL 取得中に CW 設定が include から cwOnly へ変わった場合、送信前に最新設定で再選別する', async () => {
+		const win = { since: Date.UTC(2026, 10, 24, 10, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
+		let cwMode: 'include' | 'cwOnly' = 'include';
+		const sentInputs: string[] = [];
+		const sentDestinations: Array<string | undefined> = [];
+
+		const controller = createTlDigestController(makeDeps({
+			getSettings: () => ({
+				visibilities: ['public', 'home'],
+				cwMode,
+				followersConsent: null,
+				prompt: null,
+				systemPrompt: null,
+				useServerApi: true,
+			}),
+			fetchTimeline: async () => {
+				// 取得中にユーザーが CW 設定を厳しく変更
+				cwMode = 'cwOnly';
+				return [
+					makeNote({
+						id: 'n-cw-mid',
+						cw: 'ネタバレ注意',
+						text: '絶対に送ってはいけない本文',
+						createdAt: '2026-11-24T10:30:00.000Z',
+					}),
+					makeNote({ id: 'n-old', createdAt: '2026-11-24T09:00:00.000Z' }),
+				];
+			},
+			generate: async (opts) => {
+				sentInputs.push(opts.userContent ?? '');
+				sentDestinations.push(opts.expectedDestination);
+				return { choices: [{ message: { content: '{"topics":[]}' } }] };
+			},
+		}));
+
+		await controller.run({ ...win, maxNotes: 50, includeRenotes: true });
+		expect(sentInputs).toHaveLength(1);
+		expect(sentInputs[0]).toContain('[CW: ネタバレ注意]');
+		expect(sentInputs[0]).not.toContain('絶対に送ってはいけない本文');
+		expect(sentDestinations).toEqual(['server']);
+	});
+
+	it('followers 同意の送信先が現在と異なる場合は followers ノートを送信しない', async () => {
 		const win = { since: Date.UTC(2026, 10, 24, 10, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
 		const sentInputs: string[] = [];
 		const resolveDestination = vi.fn(async () => 'direct:https://api.openai.com' as const);
@@ -776,7 +900,6 @@ describe('createTlDigestController', () => {
 		}));
 
 		await controller.run({ ...win, maxNotes: 50, includeRenotes: true });
-		expect(resolveDestination).toHaveBeenCalledTimes(1);
 		expect(sentInputs).toHaveLength(1);
 		expect(sentInputs[0]).toContain('公開本文');
 		expect(sentInputs[0]).not.toContain('フォロワー限定秘密本文');

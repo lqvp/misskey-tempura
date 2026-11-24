@@ -74,7 +74,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<!-- 3. result -->
 		<div v-else-if="latestDigestResult != null" :class="$style.resultBox">
 			<div v-if="latestDigestResult.noteCount === 0" :class="$style.emptyTopics">
-				{{ i18n.ts._tlDigest.noNotesToSummarize }}
+				{{ latestDigestResult.scanTruncated ? i18n.ts._tlDigest.noNotesInScannedRange : i18n.ts._tlDigest.noNotesToSummarize }}
 			</div>
 			<div v-else-if="latestDigestResult.topics.length > 0" :class="$style.topicList">
 				<div v-for="(topic, idx) in latestDigestResult.topics" :key="idx" :class="$style.topicCard">
@@ -280,7 +280,8 @@ const pendingView = computed<'counting' | 'error' | 'ready' | null>(() => {
 	const state = pendingCount.value;
 	if (state.status === 'counting') return 'counting';
 	if (state.status === 'error') return 'error';
-	if (state.status === 'ready' && state.count > 0) return 'ready';
+	// 走査上限で打ち切った 0 件は「全期間 0 件」と区別して表示する
+	if (state.status === 'ready' && (state.count > 0 || state.truncated)) return 'ready';
 	return null;
 });
 
@@ -315,7 +316,9 @@ const pendingSummaryText = computed(() => {
 	if (state.status === 'counting') return i18n.tsx._tlDigest.pendingCounting({ duration });
 	if (state.status === 'error') return i18n.tsx._tlDigest.pendingCountFailed({ duration });
 	if (state.status === 'ready' && state.truncated) {
-		return i18n.tsx._tlDigest.pendingSummaryTruncated({ duration, count: state.count });
+		return state.count === 0
+			? i18n.tsx._tlDigest.pendingSummaryTruncatedZero({ duration })
+			: i18n.tsx._tlDigest.pendingSummaryTruncated({ duration, count: state.count });
 	}
 	const count = state.status === 'ready' ? state.count : 0;
 	return i18n.tsx._tlDigest.pendingSummary({ duration, count });
@@ -326,7 +329,9 @@ const liveMessage = computed(() => {
 	if (digestError.value != null) return '';
 	if (latestDigestResult.value != null) {
 		if (latestDigestResult.value.noteCount === 0) {
-			return i18n.ts._tlDigest.noNotesToSummarize;
+			return latestDigestResult.value.scanTruncated
+				? i18n.ts._tlDigest.noNotesInScannedRange
+				: i18n.ts._tlDigest.noNotesToSummarize;
 		}
 		return i18n.tsx._tlDigest.resultFooter({
 			count: latestDigestResult.value.noteCount,
@@ -376,7 +381,7 @@ async function refreshPending(): Promise<void> {
 // followers が有効な場合、LLM の送信先設定変更でも対象件数を再計算する
 const followersDestinationTrigger = computed(() => {
 	if (!prefer.r.tlDigestVisibilities.value.includes('followers')) return '';
-	return `${prefer.r.useGeminiLLMAPI.value}:${prefer.r.openaiBaseUrl.value ?? ''}:${prefer.r.openaiToken.value ? '1' : '0'}`;
+	return `${prefer.r.useGeminiLLMAPI.value}:${prefer.r.openaiBaseUrl.value ?? ''}:${prefer.r.openaiToken.value?.trim() ? '1' : '0'}`;
 });
 
 // 対象件数に影響する設定 (公開範囲・CW・followers 同意/送信先) が変わったときも数え直す
@@ -404,6 +409,15 @@ watch(
 	},
 );
 
+// 前回の結果を閉じた時点で新しい期間の件数確認が完了していれば自動生成を再評価する
+watch(
+	latestDigestResult,
+	(next, prev) => {
+		if (next != null || prev == null || activePending.value == null) return;
+		maybeAutoGenerate(activePending.value, widgetProps.includeRenotes, pendingCount.value);
+	},
+);
+
 function onSummarizePending(): void {
 	const win = activePending.value;
 	if (win == null) return;
@@ -416,7 +430,7 @@ function onSummarizePending(): void {
 }
 
 function onDismissPending(): void {
-	dismissTlDigestPending($i?.id ?? null);
+	dismissTlDigestPending($i?.id ?? null, activePending.value);
 }
 
 function onSummarizeRecent(): void {

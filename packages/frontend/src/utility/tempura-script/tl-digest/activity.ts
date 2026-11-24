@@ -122,13 +122,36 @@ export function touchTlDigestLastSeen(userId: string, now = Date.now()): void {
 }
 
 /**
- * 未読期間のお知らせを消化済み（まとめる実行 or 閉じる）にする
+ * 未読期間のお知らせを消化済み（まとめる実行 or 閉じる）にする。
+ * `expectedWindow` が指定された場合は、保存済みの pending がその期間と一致するときだけ消化する
+ * (生成待ち・再生成中に新しく記録された別期間の pending を誤って消さないため)。
  */
-export function dismissTlDigestPending(userId: string | null = activeUserId, now = Date.now()): void {
+export function dismissTlDigestPending(
+	userId: string | null = activeUserId,
+	expectedWindow?: { since: number; until: number } | null,
+	now = Date.now(),
+): void {
+	if (userId == null) {
+		if (
+			expectedWindow != null &&
+			(pendingSinceRef.value !== expectedWindow.since || pendingUntilRef.value !== expectedWindow.until)
+		) {
+			return;
+		}
+		pendingSinceRef.value = null;
+		pendingUntilRef.value = null;
+		return;
+	}
+	const existing = loadTlDigestStoredState(userId);
+	if (expectedWindow != null) {
+		const storedSince = existing != null ? existing.pendingSince : pendingSinceRef.value;
+		const storedUntil = existing != null ? existing.pendingUntil : pendingUntilRef.value;
+		if (storedSince !== expectedWindow.since || storedUntil !== expectedWindow.until) {
+			return;
+		}
+	}
 	pendingSinceRef.value = null;
 	pendingUntilRef.value = null;
-	if (userId == null) return;
-	const existing = loadTlDigestStoredState(userId);
 	saveTlDigestStoredState(userId, {
 		lastSeenAt: existing?.lastSeenAt ?? now,
 		pendingSince: null,
@@ -153,7 +176,15 @@ export function getActivePendingWindow(thresholdMinutes: number): { since: numbe
  */
 export function initTlDigestActivity(userId: string): void {
 	activeUserId = userId;
-	evaluateTlDigestActivity(userId);
+	// バックグラウンドタブでの起動時は保存状態の読込のみ行い、実際に visible になるまで
+	// lastSeenAt / pendingUntil を進めない (不在期間の途中分が抜け落ちるのを防ぐ)
+	if (typeof window !== 'undefined' && window.document.visibilityState !== 'visible') {
+		const existing = loadTlDigestStoredState(userId);
+		pendingSinceRef.value = existing?.pendingSince ?? null;
+		pendingUntilRef.value = existing?.pendingUntil ?? null;
+	} else {
+		evaluateTlDigestActivity(userId);
+	}
 
 	if (initialized || typeof window === 'undefined') return;
 	initialized = true;
@@ -176,7 +207,8 @@ export function initTlDigestActivity(userId: string): void {
 	});
 
 	window.addEventListener('storage', (ev) => {
-		if (activeUserId == null || ev.key !== storageKey(activeUserId)) return;
+		if (activeUserId == null) return;
+		if (ev.key !== null && ev.key !== storageKey(activeUserId)) return;
 		const synced = loadTlDigestStoredState(activeUserId);
 		pendingSinceRef.value = synced?.pendingSince ?? null;
 		pendingUntilRef.value = synced?.pendingUntil ?? null;
