@@ -192,7 +192,7 @@ function toggle(o: MkRadiosOption): void {
 .optionLabel {
 	display: flex;
 	align-items: center;
-	width: 100%;
+	flex-grow: 1;
 	padding: 8px 10px;
 	cursor: pointer;
 
