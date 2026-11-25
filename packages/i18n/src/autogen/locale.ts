@@ -15746,7 +15746,7 @@ export interface Locale extends ILocale {
          */
         "visibilitiesLabel": string;
         /**
-         * 選択した公開範囲のホームタイムライン投稿のみをLLMに送信します。ダイレクト投稿は常に除外されます。
+         * 選択した公開範囲のホームタイムライン投稿のみをLLMに送信します。ダイレクト投稿とローカル限定投稿は常に除外されます。
          */
         "visibilitiesCaption": string;
         /**
@@ -15842,7 +15842,7 @@ export interface Locale extends ILocale {
          */
         "userFilterUsersRemove": string;
         /**
-         * ユーザーが選択されていないため、絞り込みは適用されません。
+         * ユーザーが選択されていないため、要約対象はありません。
          */
         "userFilterUsersIgnored": string;
         /**
@@ -15905,6 +15905,10 @@ export interface Locale extends ILocale {
          * {count}件から生成・{time}・AI生成のため不正確な場合があります
          */
         "resultFooter": ParameterizedString<"count" | "time">;
+        /**
+         * {count}件から生成・{time}・期間全体ではない可能性・AI生成のため不正確な場合があります
+         */
+        "resultFooterTruncated": ParameterizedString<"count" | "time">;
         /**
          * 再生成
          */
