@@ -571,12 +571,28 @@ function isJsonEnvelopeStart(text: string): boolean {
 	return first === '{' || first === '[';
 }
 
-/** 先頭の括弧断片が JSON として成立するか。地の文の `[GPU]` を形式名判定に使わないため */
-function startsWithParsableJson(text: string): boolean {
+/** 先頭の括弧断片を JSON として解析する。地の文の `[GPU]` を形式名判定に使わないため */
+function parseJsonPrefix(text: string): { value: unknown } | null {
 	const candidate = text.trimStart();
-	if (!isJsonEnvelopeStart(candidate)) return false;
+	if (!isJsonEnvelopeStart(candidate)) return null;
 	const end = buildBracketMatchMap(candidate).get(0);
-	return end != null && isParsableJson(candidate.slice(0, end + 1));
+	if (end == null) return null;
+	try {
+		return { value: JSON.parse(candidate.slice(0, end + 1)) as unknown };
+	} catch {
+		return null;
+	}
+}
+
+/** 先頭の括弧断片が JSON として成立するか */
+function startsWithParsableJson(text: string): boolean {
+	return parseJsonPrefix(text) != null;
+}
+
+/** 先頭の括弧断片が JSON オブジェクトとして成立するか。配列は箇条書きの可能性があるため区別する */
+function startsWithParsableJsonObject(text: string): boolean {
+	const parsed = parseJsonPrefix(text);
+	return parsed != null && typeof parsed.value === 'object' && parsed.value !== null && !Array.isArray(parsed.value);
 }
 
 /**
@@ -601,9 +617,9 @@ function stripFenceMarker(line: string, continuation = ''): string | null {
 
 	// 1) 1 トークンだけの行は info string (json5 や将来の形式名も含めて剥がす)
 	if (tail === '') return '';
-	// 2) トークンの後ろが実際に JSON として解析できるなら、トークンは形式名とみなして剥がす
-	//    ( ` ```json{"topics":[]} ` のように空白が無い場合も含む)
-	if (startsWithParsableJson(tail) && FENCE_INFO_STRING_PATTERN.test(token!)) return tail;
+	// 2) トークンの後ろが実際に JSON オブジェクトとして解析できるなら、トークンは形式名とみなして剥がす
+	//    ( ` ```json{"topics":[]} ` のように空白が無い場合も含む。配列は箇条書きの可能性があるため対象外)
+	if (startsWithParsableJsonObject(tail) && FENCE_INFO_STRING_PATTERN.test(token!)) return tail;
 	//    後続行を使って初めて JSON として成立する場合は、自然文の先頭語との区別が付かないため
 	//    既知の形式名だけを剥がす (`GPU [` のような地の文を残す)
 	const multilineJsonText = continuation === '' ? tail : `${tail}\n${continuation}`;

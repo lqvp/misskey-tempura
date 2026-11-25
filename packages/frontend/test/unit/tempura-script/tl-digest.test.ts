@@ -846,6 +846,11 @@ describe('parseTlDigestResponse', () => {
 			topics: [],
 			fallbackText: 'GPU',
 		});
+		// 同じ行で完結する配列でも同じ。箇条書きを形式名判定の根拠にすると話題名が消える
+		expect(parseTlDigestResponse('```GPU [1]\n```', refMap)).toEqual({
+			topics: [],
+			fallbackText: 'GPU',
+		});
 	});
 
 	it('JSON として解析できない括弧書きは地の文として残す', () => {
