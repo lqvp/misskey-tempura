@@ -5,15 +5,15 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <template>
 <div v-adaptive-bg :class="[$style.root]">
-	<MkAvatar :class="$style.avatar" :user="user" indicator/>
-	<div v-if="prefer.s.anonymizeMutedUsers && user.isMuted" :class="$style.body">
+	<MkAvatar :class="$style.avatar" :user="displayUser" indicator/>
+	<div v-if="shouldAnonymize" :class="$style.body">
 		<span :class="$style.name">{{ i18n.ts.mutedUsers }}</span>
 	</div>
 	<div v-else :class="$style.body">
-		<span :class="$style.name"><MkUserName :user="user"/></span>
-		<span :class="$style.sub"><slot name="sub"><span class="_monospace">@{{ acct(user) }}</span></slot></span>
+		<span :class="$style.name"><MkUserName :user="displayUser"/></span>
+		<span :class="$style.sub"><slot name="sub"><span class="_monospace">@{{ acct(displayUser) }}</span></slot></span>
 	</div>
-	<MkMiniChart v-if="!(prefer.s.anonymizeMutedUsers && user.isMuted) && chartValues" :class="$style.chart" :src="chartValues"/>
+	<MkMiniChart v-if="!shouldAnonymize && chartValues" :class="$style.chart" :src="chartValues"/>
 </div>
 </template>
 
@@ -36,8 +36,10 @@ type UserLike = Pick<Misskey.entities.UserDetailed, 'id' | 'username' | 'host' |
 const props = withDefaults(defineProps<{
 	user: UserLike;
 	withChart?: boolean;
+	forceShowMutedUser?: boolean;
 }>(), {
 	withChart: true,
+	forceShowMutedUser: false,
 });
 
 const chartValues = ref<number[] | null>(null);
@@ -45,6 +47,11 @@ const user = computed(() => ({
 	...props.user,
 	avatarDecorations: props.user.avatarDecorations ?? [],
 	onlineStatus: props.user.onlineStatus ?? 'unknown',
+}));
+const shouldAnonymize = computed(() => prefer.s.anonymizeMutedUsers && user.value.isMuted === true && !props.forceShowMutedUser);
+const displayUser = computed(() => ({
+	...user.value,
+	isMuted: props.forceShowMutedUser ? false : user.value.isMuted,
 }));
 
 onMounted(() => {

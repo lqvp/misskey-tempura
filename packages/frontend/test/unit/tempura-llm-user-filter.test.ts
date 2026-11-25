@@ -11,6 +11,7 @@ import { components } from '@/components/index.js';
 import { i18n } from '@/i18n.js';
 import { PreferencesManager } from '@/preferences/manager.js';
 import XTempuraLlmSettings from '@/pages/settings/tempura-settings/tempura-llm.vue';
+import MkUserCardMini from '@/components/MkUserCardMini.vue';
 
 const { apiMock, selectUserMock } = vi.hoisted(() => ({
 	apiMock: vi.fn(),
@@ -150,6 +151,50 @@ describe('LLM設定 > TLダイジェストのユーザーフィルタ表示', ()
 
 		const remoteLink = (await page.findByText('@bob@remote.example')).closest('a');
 		expect(remoteLink?.getAttribute('href')).toBe('/@bob@remote.example');
+	});
+
+	test('絞り込みモードのradioは表示テキストを名前に持つ', async () => {
+		const page = await mountSection([LOCAL_ID]);
+
+		const allowRadio = page.getByRole('radio', { name: i18n.ts._tlDigest.userFilterModeAllow });
+		await fireEvent.click(allowRadio);
+		expect(prefer.s.tlDigestUserFilterMode).toBe('allow');
+	});
+
+	test('ミュート済みのユーザーでも絞り込み対象を識別できる', async () => {
+		prefer.commit('anonymizeMutedUsers', true);
+		const mutedUser = {
+			...localUser,
+			name: null,
+			avatarUrl: 'https://example.com/avatar.png',
+			avatarBlurhash: null,
+			isCat: false,
+			isMuted: true,
+			approved: true,
+			emojis: {},
+			onlineStatus: 'unknown' as const,
+		};
+		apiMock.mockImplementation(async (endpoint: string, payload: Record<string, unknown>) => {
+			if (endpoint === 'users/show') {
+				const ids = (payload.userIds ?? []) as string[];
+				return ids.includes(LOCAL_ID) ? [mutedUser] : [];
+			}
+			return {};
+		});
+		prefer.commit('tlDigestUserFilterMode', 'block');
+		prefer.commit('tlDigestUserFilterUserIds', [LOCAL_ID]);
+		const page = render(XTempuraLlmSettings, { global: { directives, components } });
+
+		await page.findByText('@alice');
+		expect(page.queryByText(i18n.ts.mutedUsers)).toBeNull();
+		expect(page.container.querySelector('img')?.getAttribute('src')).toBe(mutedUser.avatarUrl);
+
+		const normalCard = render(MkUserCardMini, {
+			props: { user: mutedUser, withChart: false },
+			global: { directives, components },
+		});
+		expect(normalCard.queryByText(i18n.ts.mutedUsers)).not.toBeNull();
+		expect(normalCard.container.querySelector('img')?.getAttribute('src')).not.toBe(mutedUser.avatarUrl);
 	});
 
 	test('選択済みのユーザーを重複させずに追加できる', async () => {
