@@ -495,8 +495,8 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 
 ### テンプラ管理画面
 
-* /admin/tempura-admin に集約
-* ApprovalRequired / DefaultRequireSigninToViewContents / BlockMentions / LongIconUrl / UsernameMinLength / SecondsPerSignup / CustomSplashText / EmailDomainSettings / LlmModerationSettings / HanaEntranceSettings / EntranceSettings / DefaultFollowedUsers / ProxyAccountFollowModeSettings / BackgroundImages / CustomCursor / GeminiSettings / ContactFormSettings / LoginRiskSettings / ServerStatsSettings / SignedApFetchSettings / DeeplFreeModeSettings / ObjectStorageRemoteSettings / BlockedUserImageSettings / OfflinePageSettings
+* /admin/tempura-admin に集約 (登録・参加制御 / 連合・アクセス制御 / モデレーション・セキュリティ / LLM・外部連携 / 見た目・エントランス の5カテゴリに分類、管理画面検索に対応)
+* ApprovalRequired / DefaultRequireSigninToViewContents / BlockMentions / LongIconUrl / UsernameMinLength / SecondsPerSignup / SignupCodesSettings / CustomSplashText / EmailDomainSettings / LlmModerationSettings / HanaEntranceSettings / EntranceSettings / DefaultFollowedUsers / ProxyAccountFollowModeSettings / BackgroundImages / CustomCursor / GeminiSettings / ContactFormSettings / LoginRiskSettings / ServerStatsSettings / SignedApFetchSettings / AnonymousAccessSettings / DeeplFreeModeSettings / ObjectStorageRemoteSettings / BlockedUserImageSettings / OfflinePageSettings
 
 ### オフラインページ
 

@@ -4214,6 +4214,13 @@ _tempuraSettings:
   llmConnection: "接続設定"
   llmPrompt: "プロンプト"
 
+_tempuraAdmin:
+  groupRegistration: "登録・参加制御"
+  groupFederation: "連合・アクセス制御"
+  groupModeration: "モデレーション・セキュリティ"
+  groupIntegrations: "LLM・外部連携"
+  groupAppearance: "見た目・エントランス"
+
 _earthquakeWarning:
   settings: "地震速報"
   enable: "地震速報を有効にする"
