@@ -286,11 +286,12 @@ function releaseUnsentAutoGenerateClaim(): void {
 let disposed = false;
 onBeforeUnmount(() => {
 	disposed = true;
-	// アンマウント時点で確保が残っているのは「まだ送信していない」場合だけ。
-	// キャンセルボタンはウィジェットを閉じる (= アンマウント) ので、キャンセルで中断した自動生成もここで解放され、
-	// 開き直したときに同じ不在期間の自動生成を再試行できる。
-	// 送信済みなら onSending で null になっているため、消費した期間が復活することはない。
-	releaseUnsentAutoGenerateClaim();
+	// 自分で controller を持つ場合はこの直後に dispose して生成を中断するため、
+	// 未送信の確保を解放して開き直し後の再試行を可能にする。
+	// ネストウィジェットのストアや注入された controller ではアンマウント後も生成が続くことがある。
+	// その場合にここで解放すると、進行中の送信と別ウィジェットの自動生成が重複しうるため、
+	// run の finally に任せる (送信済みなら onSending で null になっているので解放されない)。
+	if (ownsController) releaseUnsentAutoGenerateClaim();
 	if (ownsController) controller.dispose();
 });
 

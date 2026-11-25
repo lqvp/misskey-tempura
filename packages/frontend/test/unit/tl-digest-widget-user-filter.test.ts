@@ -27,7 +27,7 @@ vi.mock('@/i.js', async (importOriginal) => ({
 }));
 
 const { default: XTlDigestWidget } = await import('@/widgets/WidgetTlDigest.vue');
-const { TL_DIGEST_CONTROLLER_KEY, claimTlDigestAutoGenerate } = await import('@/utility/tempura-script/tl-digest/digest.js');
+const { TL_DIGEST_CONTROLLER_KEY, TL_DIGEST_CONTROLLER_STORE_KEY, claimTlDigestAutoGenerate } = await import('@/utility/tempura-script/tl-digest/digest.js');
 
 const WINDOW: TlDigestWindow = { since: 1_000, until: 2_000_000 };
 
@@ -50,7 +50,7 @@ type Recount = { win: TlDigestWindow; filter: { mode: string; ids: string[] } };
  * 返す件数はその時点のフィルタ設定から決めるため、フィルタを緩めたときに
  * 件数が増えて「まとめる」が現れるかどうかを描画で確かめられる。
  */
-function createCountingController(prefer: PreferencesManager): {
+function createCountingController(prefer: PreferencesManager, initialWindow: TlDigestWindow = WINDOW): {
 	controller: TlDigestController;
 	recount: Recount[];
 	/** 生成中 (generating) を外部から作るためのハンドル */
@@ -70,7 +70,7 @@ function createCountingController(prefer: PreferencesManager): {
 		generating: generatingRef,
 		error: ref(null),
 		pendingCount,
-		pendingWindow: ref<TlDigestWindow | null>(WINDOW),
+		pendingWindow: ref<TlDigestWindow | null>(initialWindow),
 		refreshPendingCount: (win: TlDigestWindow) => {
 			const filter = {
 				mode: prefer.s.tlDigestUserFilterMode,
@@ -233,12 +233,20 @@ describe('TLダイジェストウィジェットの自動生成の確保とキ�
 	const windowOf = (run: Record<string, unknown>) => ({ since: run.since as number, until: run.until as number });
 
 	/** 自動生成を 1 回走らせ、進行中の (未送信の) 状態で返す */
-	async function startAutoGeneration(): Promise<ReturnType<typeof createCountingController>> {
+	async function startAutoGeneration(options: { useControllerStore?: boolean; initialWindow?: TlDigestWindow } = {}): Promise<ReturnType<typeof createCountingController>> {
 		const prefer = createPreferences();
-		const counting = createCountingController(prefer);
+		const counting = createCountingController(prefer, options.initialWindow);
 		page = render({
 			setup() {
-				provide(TL_DIGEST_CONTROLLER_KEY, counting.controller);
+				if (options.useControllerStore === true) {
+					provide(TL_DIGEST_CONTROLLER_STORE_KEY, {
+						get: () => counting.controller,
+						prune: () => {},
+						dispose: () => {},
+					});
+				} else {
+					provide(TL_DIGEST_CONTROLLER_KEY, counting.controller);
+				}
 				return () => h(XTlDigestWidget, { widget: { id: 'w2', data: { autoGenerate: true } } });
 			},
 		});
@@ -279,5 +287,28 @@ describe('TLダイジェストウィジェットの自動生成の確保とキ�
 		expect(counting.controller.cancel).toHaveBeenCalledTimes(1);
 		// 送信済みの期間はキャンセルでは復活しない
 		expect(claimTlDigestAutoGenerate('test-user', win)).toBeNull();
+	});
+
+	test('ネストウィジェット用ストアの controller が生成中なら、アンマウントで未送信の確保を解放しない', async () => {
+		const counting = await startAutoGeneration({
+			useControllerStore: true,
+			initialWindow: { since: 3_000, until: 4_000_000 },
+		});
+		const win = windowOf(counting.runs[0]);
+		expect(claimTlDigestAutoGenerate('test-user', win)).toBeNull();
+
+		// ネストウィジェットの切替では component だけが外れ、controller の生成処理は残る。
+		// ここで確保を解放すると、進行中の生成とは別のウィジェットが同じ期間を送信できてしまう。
+		page!.unmount();
+		page = null;
+		await settle();
+		expect(claimTlDigestAutoGenerate('test-user', win)).toBeNull();
+
+		// 生成が送信前に終わった場合は run の finally で解放され、再試行できる
+		counting.finishRun();
+		await settle();
+		const again = claimTlDigestAutoGenerate('test-user', win);
+		expect(again).not.toBeNull();
+		again!.release();
 	});
 });
