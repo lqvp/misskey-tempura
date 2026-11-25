@@ -1425,6 +1425,54 @@ describe('createTlDigestController', () => {
 		expect(dismissEmpty).toHaveBeenCalledWith('me', win);
 	});
 
+	it('空の allowlist ではタイムライン走査と LLM 呼び出しを省略して 0 件を返す', async () => {
+		const win = { since: Date.UTC(2026, 10, 24, 10, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
+		const fetchTimeline = vi.fn(async () => [makeNote({ id: 'n-should-not-scan' })]);
+		const generate = vi.fn(async () => ({ choices: [{ message: { content: '{"topics":[]}' } }] }));
+		const dismissPending = vi.fn();
+		const controller = createTlDigestController(makeDeps({
+			fetchTimeline,
+			generate,
+			getSettings: () => ({
+				visibilities: ['public', 'home'],
+				cwMode: 'cwOnly',
+				followersConsent: null,
+				userFilterMode: 'allow',
+				userFilterUserIds: [],
+				prompt: null,
+				systemPrompt: null,
+				useServerApi: true,
+			}),
+			dismissPending,
+		}));
+
+		await controller.run({ ...win, maxNotes: 50, includeRenotes: true });
+		expect(fetchTimeline).not.toHaveBeenCalled();
+		expect(generate).not.toHaveBeenCalled();
+		expect(controller.result.value?.noteCount).toBe(0);
+		expect(controller.result.value?.scanTruncated).toBe(false);
+		expect(dismissPending).toHaveBeenCalledWith('me', win);
+	});
+
+	it('走査打ち切り後に生成できた場合も scanTruncated: true を結果に残す', async () => {
+		const win = { since: Date.UTC(2026, 10, 24, 9, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
+		const controller = createTlDigestController(makeDeps({
+			fetchTimeline: async (params) =>
+				Array.from({ length: params.limit }, (_, i) =>
+					makeNote({
+						id: `n-${params.untilId ?? 'start'}-${i}`,
+						createdAt: new Date(win.until - 1000).toISOString(),
+						text: `投稿 ${i}`,
+					}),
+				),
+			generate: async () => ({ choices: [{ message: { content: '{"topics":[]}' } }] }),
+		}));
+
+		await controller.run({ ...win, maxNotes: 50, includeRenotes: true });
+		expect(controller.result.value?.noteCount).toBe(50);
+		expect(controller.result.value?.scanTruncated).toBe(true);
+	});
+
 	it('走査上限で0件となった場合は scanTruncated: true とし pending を消化しない', async () => {
 		const win = { since: Date.UTC(2026, 10, 24, 9, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
 		const dismissPending = vi.fn();

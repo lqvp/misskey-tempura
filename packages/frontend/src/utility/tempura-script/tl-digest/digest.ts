@@ -438,6 +438,13 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 			const countPrepared = (notes: Misskey.entities.Note[]) =>
 				prepareNotesForDigest(notes, { ...filter, maxPreparedNotes: PENDING_COUNT_CAP }).prepared.length;
 
+			// 空の allowlist は fail-close で必ず 0 件になるため、走査せず確定できる
+			if (filter.userFilterMode === 'allow' && filter.userFilterUserIds.length === 0) {
+				const state: TlDigestPendingCount = { status: 'ready', count: 0, truncated: false };
+				pendingCount.value = state;
+				return state;
+			}
+
 			const key = cacheKey(win);
 			let scan = getPreviewCache(key);
 			if (scan == null || (!scan.complete && countPrepared(scan.notes) < PENDING_COUNT_CAP)) {
@@ -498,6 +505,22 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 				return;
 			}
 
+			const win = { since: options.since, until: options.until };
+			// 空の allowlist は fail-close で必ず 0 件になるため、タイムライン取得と LLM 呼び出しを省略する
+			if (initial.filter.userFilterMode === 'allow' && initial.filter.userFilterUserIds.length === 0) {
+				result.value = {
+					topics: [],
+					fallbackText: null,
+					noteCount: 0,
+					scanTruncated: false,
+					generatedAt: deps.now(),
+					since: options.since,
+					until: options.until,
+				};
+				deps.dismissPending(initial.me?.id ?? null, win);
+				return;
+			}
+
 			const maxNotes = Math.max(1, Math.min(options.maxNotes, PENDING_COUNT_CAP));
 			const prepareWith = (filter: typeof initial.filter, notes: Misskey.entities.Note[]) =>
 				measureTlDigestSync(
@@ -508,7 +531,6 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 			const isEnoughWith = (filter: typeof initial.filter) => (notes: Misskey.entities.Note[]) =>
 				prepareWith(filter, notes).prepared.length >= maxNotes;
 
-			const win = { since: options.since, until: options.until };
 			// followers を含む場合は、件数確認後に削除・公開範囲変更された投稿を送らないよう必ず取得し直す
 			const cached = initial.filter.allowedVisibilities.includes('followers')
 				? undefined
@@ -634,6 +656,7 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 				topics: parsed.topics,
 				fallbackText: parsed.fallbackText,
 				noteCount: prepared.length,
+				scanTruncated: !scanComplete,
 				generatedAt: deps.now(),
 				since: options.since,
 				until: options.until,
