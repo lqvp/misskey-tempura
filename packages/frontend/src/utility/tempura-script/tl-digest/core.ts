@@ -589,18 +589,34 @@ function startsWithParsableJson(text: string): boolean {
 	return parseJsonPrefix(text) != null;
 }
 
-/** JSON 値がダイジェストの封筒、またはそれを 1 段だけ包む配列か。箇条書きの配列と区別する */
-function isDigestEnvelopeShape(value: unknown): boolean {
+/** JSON 値の中から、ダイジェストの封筒らしきオブジェクトを浅い入れ子まで探す */
+function findDigestEnvelopeRecord(value: unknown, depth = 0): Record<string, unknown> | null {
+	if (depth > 6) return null;
 	if (Array.isArray(value)) {
-		return value.length === 1 && isRecord(value[0]) && 'topics' in value[0] && Array.isArray(value[0].topics);
+		for (const item of value) {
+			const found = findDigestEnvelopeRecord(item, depth + 1);
+			if (found != null) return found;
+		}
+		return null;
 	}
-	return isRecord(value) && 'topics' in value && Array.isArray(value.topics);
+	if (!isRecord(value)) return null;
+	if ('topics' in value) return value;
+	for (const item of Object.values(value)) {
+		const found = findDigestEnvelopeRecord(item, depth + 1);
+		if (found != null) return found;
+	}
+	return null;
 }
 
-/** 先頭の括弧断片が JSON オブジェクト、またはダイジェストを含む配列として成立するか */
+/** JSON 値がダイジェストの封筒を含むか。設定例などの unrelated JSON と区別する */
+function isDigestEnvelopeShape(value: unknown): boolean {
+	return findDigestEnvelopeRecord(value) != null;
+}
+
+/** 先頭の括弧断片がダイジェストの JSON として成立するか */
 function startsWithParsableDigestJson(text: string): boolean {
 	const parsed = parseJsonPrefix(text);
-	return parsed != null && (isRecord(parsed.value) || isDigestEnvelopeShape(parsed.value));
+	return parsed != null && isDigestEnvelopeShape(parsed.value);
 }
 
 /**
@@ -988,13 +1004,9 @@ function parseEnvelope(
 	} catch {
 		return null;
 	}
-	// 配列で 1 段だけ包まれた封筒も受け入れる。開きフェンスに `jsonl` などを付けて
-	// `[{"topics": [...]}]` の形で返すモデルでも、外側の配列を本文のノイズとして残さない
-	if (Array.isArray(parsed) && parsed.length === 1) {
-		parsed = parsed[0];
-	}
-	if (!isRecord(parsed) || !('topics' in parsed)) return null;
-	const rawTopics = parsed.topics;
+	const envelopeRecord = findDigestEnvelopeRecord(parsed);
+	if (envelopeRecord == null) return null;
+	const rawTopics = envelopeRecord.topics;
 	if (!Array.isArray(rawTopics)) return { kind: 'invalid' };
 
 	const topics = rawTopics

@@ -840,6 +840,17 @@ describe('parseTlDigestResponse', () => {
 		expect(parsedTwoLines!.fallbackText).toBeNull();
 	});
 
+	it('ダイジェストではない JSON を引用する自然文では、先頭語を形式名として剥がさない (回帰)', () => {
+		expect(parseTlDigestResponse('```tsconfig.json {"strict":true} の設定が話題でした。\n```', refMap)).toEqual({
+			topics: [],
+			fallbackText: 'tsconfig.json の設定が話題でした。',
+		});
+		expect(parseTlDigestResponse('```tsconfig.json {"strict":true}\n```', refMap)).toEqual({
+			topics: [],
+			fallbackText: 'tsconfig.json',
+		});
+	});
+
 	it('入れ子オブジェクトのダイジェストでは、未知の形式名だけを剥がして話題を採用する (回帰)', () => {
 		const raw = '```jsonl {"digest":{"topics":[{"title":"GPU","summary":"新製品が話題でした。","refs":["n1"]}]}}\n```';
 		const parsed = parseTlDigestResponse(raw, refMap);
@@ -857,6 +868,12 @@ describe('parseTlDigestResponse', () => {
 		expect(parsed!.topics[0].title).toBe('GPU');
 		expect(parsed!.topics[0].noteIds).toEqual(['real-id-1']);
 		expect(parsed!.fallbackText).toBeNull();
+
+		// 配列やオブジェクトの入れ子が増えても、封筒探索と形式名判定は同じ深さで揃える
+		expect(parseTlDigestResponse('```jsonl [[{"topics":[]}]]\n```', refMap)).toEqual({
+			topics: [],
+			fallbackText: null,
+		});
 	});
 
 	it('後続行を使って初めて JSON になる配列では、自然文の先頭語を形式名として剥がさない (回帰)', () => {
