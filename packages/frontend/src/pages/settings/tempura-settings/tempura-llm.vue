@@ -229,34 +229,49 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</SearchMarker>
 
 						<SearchMarker :keywords="['llm', 'timeline', 'digest', 'user', 'block', 'allow', 'filter']">
-							<div class="_gaps_s">
-								<MkSelect v-model="tlDigestUserFilterMode" :items="tlDigestUserFilterModeItems">
+							<div class="_gaps_m">
+								<MkRadios v-model="tlDigestUserFilterMode" :options="tlDigestUserFilterModeItems" vertical>
 									<template #label><SearchLabel>{{ i18n.ts._tlDigest.userFilterModeLabel }}</SearchLabel></template>
 									<template #caption>{{ i18n.ts._tlDigest.userFilterModeCaption }}</template>
-								</MkSelect>
-								<template v-if="tlDigestUserFilterMode !== 'off'">
-									<div><SearchLabel>{{ i18n.ts._tlDigest.userFilterUsersLabel }}</SearchLabel></div>
-									<div v-if="tlDigestUserFilterUsers.length === 0" class="_formCaption">
-										{{ i18n.ts._tlDigest.userFilterUsersEmpty }}
+								</MkRadios>
+								<div v-if="tlDigestUserFilterMode !== 'off'" v-adaptive-border :class="$style.userFilterPanel">
+									<div :class="$style.userFilterHeader">
+										<div :class="$style.userFilterTitle">
+											<i class="ti ti-users" :class="$style.userFilterTitleIcon"></i>
+											<SearchLabel>{{ i18n.ts._tlDigest.userFilterUsersLabel }}</SearchLabel>
+											<span :class="$style.userFilterCount">{{ tlDigestUserFilterUsers.length }}/{{ MAX_TL_DIGEST_FILTER_USERS }}</span>
+										</div>
+										<MkButton small rounded primary :disabled="isTlDigestFilterUserLimitReached" @click="addTlDigestFilterUser">
+											<i class="ti ti-user-plus"></i> {{ i18n.ts._tlDigest.userFilterUsersAdd }}
+										</MkButton>
+									</div>
+
+									<div v-if="tlDigestUserFilterUsers.length === 0" :class="$style.userFilterEmpty">
+										<i class="ti ti-user-search" :class="$style.userFilterEmptyIcon"></i>
+										<div>{{ i18n.ts._tlDigest.userFilterUsersEmpty }}</div>
 									</div>
 									<div v-else :class="$style.userList">
 										<div v-for="item in tlDigestUserFilterUsers" :key="item.id" :class="$style.userListItem">
 											<!-- 取得できなかったユーザーはリンクを張らない (プロフィールが存在しないため遷移先が 404 になる) -->
-											<MkA v-if="item.user != null" :to="userProfilePath(item.user)" :class="$style.userName">{{ formatTlDigestFilterUser(item.user) }}</MkA>
-											<span v-else :class="$style.userName" :title="item.id">{{ item.id }}</span>
-											<MkButton small rounded @click="removeTlDigestFilterUser(item.id)">
-												{{ i18n.ts._tlDigest.userFilterUsersRemove }}
-											</MkButton>
+											<MkA v-if="item.user != null" :to="userProfilePath(item.user)" :class="$style.userCardLink">
+												<MkUserCardMini :user="item.user" :withChart="false"/>
+											</MkA>
+											<div v-else v-adaptive-bg :class="$style.unknownUser" :title="item.id">
+												<i class="ti ti-user-question" :class="$style.unknownUserIcon"></i>
+												<span :class="$style.unknownUserId">{{ item.id }}</span>
+											</div>
+											<button class="_button" :class="$style.userRemoveButton" :title="i18n.ts._tlDigest.userFilterUsersRemove" :aria-label="i18n.ts._tlDigest.userFilterUsersRemove" @click="removeTlDigestFilterUser(item.id)">
+												<i class="ti ti-x"></i>
+												<span :class="$style.visuallyHidden">{{ i18n.ts._tlDigest.userFilterUsersRemove }}</span>
+											</button>
 										</div>
 									</div>
+
 									<div class="_formCaption">{{ i18n.tsx._tlDigest.userFilterUsersCaption({ max: MAX_TL_DIGEST_FILTER_USERS }) }}</div>
 									<div v-if="tlDigestUserFilterMode === 'allow' && tlDigestUserFilterUsers.length === 0" class="_formCaption" style="color: var(--MI_THEME-warn);">
 										{{ i18n.ts._tlDigest.userFilterUsersIgnored }}
 									</div>
-									<div class="_buttons">
-										<MkButton @click="addTlDigestFilterUser">{{ i18n.ts._tlDigest.userFilterUsersAdd }}</MkButton>
-									</div>
-								</template>
+								</div>
 							</div>
 						</SearchMarker>
 
@@ -283,6 +298,8 @@ import MkSelect from '@/components/MkSelect.vue';
 import MkSwitch from '@/components/MkSwitch.vue';
 import MkButton from '@/components/MkButton.vue';
 import MkCheckbox from '@/components/MkCheckbox.vue';
+import MkRadios from '@/components/MkRadios.vue';
+import MkUserCardMini from '@/components/MkUserCardMini.vue';
 import FormSection from '@/components/form/section.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import * as os from '@/os.js';
@@ -341,9 +358,9 @@ const tlDigestVisibilityOptions = SELECTABLE_TL_DIGEST_VISIBILITIES.map((value) 
 }));
 
 const tlDigestUserFilterModeItems = computed(() => [
-	{ value: 'off' as const, label: i18n.ts._tlDigest.userFilterModeOff },
-	{ value: 'block' as const, label: i18n.ts._tlDigest.userFilterModeBlock },
-	{ value: 'allow' as const, label: i18n.ts._tlDigest.userFilterModeAllow },
+	{ value: 'off' as const, label: i18n.ts._tlDigest.userFilterModeOff, icon: 'ti ti-filter-off' },
+	{ value: 'block' as const, label: i18n.ts._tlDigest.userFilterModeBlock, icon: 'ti ti-user-x' },
+	{ value: 'allow' as const, label: i18n.ts._tlDigest.userFilterModeAllow, icon: 'ti ti-user-check' },
 ]);
 
 // ユーザー ID だけでは設定画面に名前を出せないため、表示用に Lite 情報をキャッシュする
@@ -391,10 +408,9 @@ function userProfilePath(user: Misskey.entities.UserLite): string {
 	return user.host == null ? `/@${user.username}` : `/@${user.username}@${user.host}`;
 }
 
-/** 一覧に表示する名前 (リモートユーザーはホストを添える) */
-function formatTlDigestFilterUser(user: Misskey.entities.UserLite): string {
-	return user.host == null ? `@${user.username}` : `@${user.username}@${user.host}`;
-}
+const isTlDigestFilterUserLimitReached = computed(() =>
+	tlDigestUserFilterUsers.value.length >= MAX_TL_DIGEST_FILTER_USERS,
+);
 
 async function addTlDigestFilterUser(): Promise<void> {
 	if (normalizeTlDigestFilterUserIds(tlDigestUserFilterUserIds.value).length >= MAX_TL_DIGEST_FILTER_USERS) return;
@@ -575,6 +591,62 @@ watch([useGeminiLLMAPI, openaiToken, openaiBaseUrl], () => {
 </script>
 
 <style lang="scss" module>
+.userFilterPanel {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	padding: 12px;
+	border: solid 1px var(--MI_THEME-divider);
+	border-radius: var(--MI-radius);
+	background: var(--MI_THEME-panel);
+}
+
+.userFilterHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.userFilterTitle {
+	display: flex;
+	align-items: center;
+	min-width: 0;
+	gap: 6px;
+	font-weight: bold;
+}
+
+.userFilterTitleIcon {
+	color: var(--MI_THEME-accent);
+}
+
+.userFilterCount {
+	flex: none;
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: var(--MI_THEME-accentedBg);
+	color: var(--MI_THEME-accent);
+	font-size: 0.85em;
+	font-weight: normal;
+}
+
+.userFilterEmpty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 8px;
+	padding: 24px 16px;
+	border: dashed 1px var(--MI_THEME-divider);
+	border-radius: var(--MI-radius);
+	color: color(from var(--MI_THEME-fg) srgb r g b / 0.75);
+	text-align: center;
+}
+
+.userFilterEmptyIcon {
+	font-size: 1.6em;
+	color: var(--MI_THEME-accent);
+}
+
 .userList {
 	display: flex;
 	flex-direction: column;
@@ -584,13 +656,64 @@ watch([useGeminiLLMAPI, openaiToken, openaiBaseUrl], () => {
 .userListItem {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
 	gap: 8px;
 }
 
-.userName {
+.userCardLink {
+	flex: 1;
+	min-width: 0;
+
+	&:hover {
+		text-decoration: none;
+	}
+}
+
+.unknownUser {
+	display: flex;
+	align-items: center;
+	flex: 1;
+	min-width: 0;
+	gap: 10px;
+	padding: 16px;
+	border-radius: 8px;
+	background: var(--MI_THEME-panel);
+	color: color(from var(--MI_THEME-fg) srgb r g b / 0.75);
+}
+
+.unknownUserIcon {
+	flex: none;
+	font-size: 1.4em;
+}
+
+.unknownUserId {
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
+	font-family: monospace;
+}
+
+.userRemoveButton {
+	flex: none;
+	width: 32px;
+	height: 32px;
+	border-radius: 50%;
+	color: color(from var(--MI_THEME-fg) srgb r g b / 0.75);
+
+	&:hover {
+		background: var(--MI_THEME-buttonHoverBg);
+		color: var(--MI_THEME-error);
+	}
+}
+
+.visuallyHidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
 }
 </style>
