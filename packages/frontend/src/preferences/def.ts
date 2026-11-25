@@ -684,6 +684,34 @@ export const PREF_DEF = definePreferences({
 	openaiTemperature: {
 		default: null as number | null,
 	},
+	tlDigestVisibilities: {
+		default: ['public', 'home'] as ('public' | 'home' | 'public_non_ltl' | 'followers')[],
+		// フォロワー限定の送信可否はアカウントごとに判断させる
+		accountDependent: true,
+	},
+	// フォロワー限定投稿の送信に同意したときの LLM 送信先 (送信先が変わったら再確認させる)
+	tlDigestFollowersConsent: {
+		default: null as string | null,
+		accountDependent: true,
+	},
+	tlDigestCwMode: {
+		default: 'cwOnly' as 'cwOnly' | 'exclude' | 'include',
+	},
+	tlDigestPrompt: {
+		default: null as string | null,
+	},
+	// ユーザー単位のフィルタ (off: 制限なし / block: 指定ユーザーを除外 / allow: 指定ユーザーだけを対象)
+	tlDigestUserFilterMode: {
+		default: 'off' as 'off' | 'block' | 'allow',
+		// モードが共有されると、別アカウントでの block<->allow の切替が
+		// このアカウントのユーザー一覧の意味を反転させてしまうためアカウントごとに持つ
+		accountDependent: true,
+	},
+	tlDigestUserFilterUserIds: {
+		default: [] as string[],
+		// 対象にしたい相手はアカウントごとに異なる
+		accountDependent: true,
+	},
 	enableEarthquakeWarning: {
 		default: false,
 	},

@@ -373,6 +373,9 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * プロンプトインジェクション対策 (user_content デリミタとガード指示)
 * 返信文脈を参考データとして要約に付与
 * temperature 設定 (ユーザー直指定モード)
+* WidgetTlDigest: 不在中のホームタイムラインをトピック抽出型で要約するウィジェット (公開範囲オプトイン・CW保護・ワードミュート除外・純リノート集約)
+* WidgetTlDigest: ユーザー単位の絞り込み (tlDigestUserFilterMode: 絞り込まない / 指定ユーザーを除外 / 指定ユーザーだけを対象、tlDigestUserFilterUserIds、最大 100 人)。純リノートはリノートした人と元投稿の作者の両方で判定
+* LLM 呼び出しの一時的な失敗 (408/425/429/5xx・ネットワーク断) を指数バックオフ+ジッターで自動リトライ (最大3回、全体120秒の予算内)。サーバーが Retry-After (秒数 / HTTP-date の両形式) で待機時間を指定した場合はその時間をそのまま守り、全体予算に収まらない場合は早めに再送せず失敗します。呼び出し元の中断は常に優先されます
 
 ### LLM モデレーション
 
@@ -456,6 +459,7 @@ Misskey-Tempura は Misskey をフォークした実装です。本家 Misskey �
 * WidgetListenBrainz (userId)
 * WidgetNestedWidget
 * WidgetFederationJobQueue
+* WidgetTlDigest (HTLダイジェスト)
 * ネストウィジェット
 
 ## 地震情報

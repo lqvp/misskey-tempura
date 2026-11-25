@@ -9,7 +9,7 @@
  * store / os / instance といった heavyweight な依存を持たない純粋モジュールとして分離することで、
  * レスポンス解析のユニットテストを単独で実行できるようにしている。
  */
-export type GeminiPart = { text?: string; file_data?: { mime_type: string; file_uri: string } };
+export type GeminiPart = { text?: string; thought?: boolean; file_data?: { mime_type: string; file_uri: string } };
 export type GeminiContent = { parts?: GeminiPart[] };
 export type GeminiCandidate = { content?: GeminiContent };
 export type GeminiGenerateContentResponse = {
@@ -30,6 +30,9 @@ export type LLMResponse = GeminiGenerateContentResponse | OpenAIChatCompletionRe
  * Gemini の生成結果から候補テキストを取り出す
  *
  * @param result Gemini generateContent API のレスポンス
+ * 応答本文は複数の part に分割されて返ることがあるため、思考 (thought) 以外の
+ * テキスト part を順序どおり連結する。
+ *
  * @returns 候補のテキスト (本文が無い場合は空文字)
  * @throws レスポンスの形式が不正な場合は Error
  */
@@ -44,7 +47,10 @@ export function extractCandidateText(result: GeminiGenerateContentResponse): str
 	) {
 		throw new Error('LLM応答の形式が不正です。candidates, content, partsのいずれかが存在しません。');
 	}
-	return result.candidates[0].content.parts[0].text ?? '';
+	return result.candidates[0].content.parts
+		.filter((part) => part.thought !== true)
+		.map((part) => part.text ?? '')
+		.join('');
 }
 
 /**

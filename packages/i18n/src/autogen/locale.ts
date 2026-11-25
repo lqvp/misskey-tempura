@@ -11024,6 +11024,10 @@ export interface Locale extends ILocale {
          * 連合ジョブキュー
          */
         "federationJobQueue": string;
+        /**
+         * TLダイジェスト
+         */
+        "tlDigest": string;
     };
     "_widgetOptions": {
         "_nestedWidget": {
@@ -15753,6 +15757,242 @@ export interface Locale extends ILocale {
          * プロンプト
          */
         "llmPrompt": string;
+        /**
+         * TLダイジェスト
+         */
+        "llmTlDigest": string;
+    };
+    "_tlDigest": {
+        /**
+         * 要約に含める公開範囲
+         */
+        "visibilitiesLabel": string;
+        /**
+         * 選択した公開範囲のホームタイムライン投稿のみをLLMに送信します。ダイレクト投稿とローカル限定投稿は常に除外されます。
+         */
+        "visibilitiesCaption": string;
+        /**
+         * フォロワー限定投稿の送信確認
+         */
+        "followersConfirmTitle": string;
+        /**
+         * フォロワー限定の投稿を要約対象に含めると、投稿本文が「{destination}」へ送信されます。信頼できる接続先（ローカルLLMなど）でのみ有効にすることを推奨します。有効にしますか？
+         */
+        "followersConfirmText": ParameterizedString<"destination">;
+        /**
+         * サーバー提供のLLM API
+         */
+        "destinationServer": string;
+        /**
+         * 指定したLLM API ({host})
+         */
+        "destinationDirect": ParameterizedString<"host">;
+        /**
+         * LLMの送信先が変わったため、フォロワー限定の投稿は再確認するまで送信されません。
+         */
+        "followersConsentStale": string;
+        /**
+         * 送信先を確認して有効にする
+         */
+        "followersReconfirm": string;
+        /**
+         * CW付き投稿の扱い
+         */
+        "cwModeLabel": string;
+        /**
+         * CW（閲覧注意）が設定された投稿の送信方法を選択します。
+         */
+        "cwModeCaption": string;
+        /**
+         * CWの注記のみ送信（本文は送らない）
+         */
+        "cwModeCwOnly": string;
+        /**
+         * 要約対象から除外する
+         */
+        "cwModeExclude": string;
+        /**
+         * 本文も含めて送信する
+         */
+        "cwModeInclude": string;
+        /**
+         * TLダイジェストの追加指示
+         */
+        "promptLabel": string;
+        /**
+         * タイムライン要約時に追加する指示を設定します（空欄の場合は既定のトピック抽出プロンプトのみを使用します）。
+         */
+        "promptCaption": string;
+        /**
+         * ユーザー単位の絞り込み
+         */
+        "userFilterModeLabel": string;
+        /**
+         * 特定ユーザーの投稿だけを対象にするか、特定ユーザーを除外します。純リノートはリノートした人と元投稿の作者の両方で判定します。
+         */
+        "userFilterModeCaption": string;
+        /**
+         * 絞り込まない
+         */
+        "userFilterModeOff": string;
+        /**
+         * 指定したユーザーを除外する
+         */
+        "userFilterModeBlock": string;
+        /**
+         * 指定したユーザーだけを対象にする
+         */
+        "userFilterModeAllow": string;
+        /**
+         * 対象ユーザー
+         */
+        "userFilterUsersLabel": string;
+        /**
+         * 絞り込みに使うユーザーを選択します（最大{max}人）。
+         */
+        "userFilterUsersCaption": ParameterizedString<"max">;
+        /**
+         * ユーザーを追加
+         */
+        "userFilterUsersAdd": string;
+        /**
+         * まだユーザーが選択されていません。
+         */
+        "userFilterUsersEmpty": string;
+        /**
+         * 削除
+         */
+        "userFilterUsersRemove": string;
+        /**
+         * ユーザーが選択されていないため、要約対象はありません。
+         */
+        "userFilterUsersIgnored": string;
+        /**
+         * 不在中のお知らせはありません
+         */
+        "idleMessage": string;
+        /**
+         * 直近を要約
+         */
+        "summarizeRecent": string;
+        /**
+         * {duration}ぶり・新着 {count}件
+         */
+        "pendingSummary": ParameterizedString<"duration" | "count">;
+        /**
+         * {duration}ぶり・新着 {count}件以上
+         */
+        "pendingSummaryTruncated": ParameterizedString<"duration" | "count">;
+        /**
+         * {duration}ぶり・直近の確認範囲では対象なし
+         */
+        "pendingSummaryTruncatedZero": ParameterizedString<"duration">;
+        /**
+         * {duration}ぶりの新着を確認中…
+         */
+        "pendingCounting": ParameterizedString<"duration">;
+        /**
+         * {duration}ぶり・新着件数を確認できませんでした
+         */
+        "pendingCountFailed": ParameterizedString<"duration">;
+        /**
+         * まとめる
+         */
+        "summarizeAction": string;
+        /**
+         * 要約を生成中…
+         */
+        "generating": string;
+        /**
+         * 目立った話題は見つかりませんでした。
+         */
+        "noTopics": string;
+        /**
+         * 要約対象のノートがありませんでした。
+         */
+        "noNotesToSummarize": string;
+        /**
+         * 直近の確認範囲では要約対象のノートが見つかりませんでした。
+         */
+        "noNotesInScannedRange": string;
+        /**
+         * 生成中にLLMまたは公開範囲の設定が変更されたため中止しました。もう一度お試しください。
+         */
+        "settingsChanged": string;
+        /**
+         * LLMから有効な応答が得られませんでした。再試行してください。
+         */
+        "invalidResponse": string;
+        /**
+         * {count}件から生成・{time}・AI生成のため不正確な場合があります
+         */
+        "resultFooter": ParameterizedString<"count" | "time">;
+        /**
+         * {count}件から生成・{time}・期間全体ではない可能性・AI生成のため不正確な場合があります
+         */
+        "resultFooterTruncated": ParameterizedString<"count" | "time">;
+        /**
+         * 再生成
+         */
+        "regenerate": string;
+        /**
+         * LLM設定を開く
+         */
+        "openLlmSettings": string;
+        /**
+         * {hours}時間{minutes}分
+         */
+        "durationHoursMinutes": ParameterizedString<"hours" | "minutes">;
+        /**
+         * {hours}時間
+         */
+        "durationHours": ParameterizedString<"hours">;
+        /**
+         * {minutes}分
+         */
+        "durationMinutes": ParameterizedString<"minutes">;
+        "_widgetOptions": {
+            /**
+             * 不在判定の間隔
+             */
+            "absenceThreshold": string;
+            /**
+             * 30分
+             */
+            "threshold30m": string;
+            /**
+             * 1時間
+             */
+            "threshold1h": string;
+            /**
+             * 3時間
+             */
+            "threshold3h": string;
+            /**
+             * 6時間
+             */
+            "threshold6h": string;
+            /**
+             * 要約に使う最大件数
+             */
+            "maxNotes": string;
+            /**
+             * {count}件
+             */
+            "notesCount": ParameterizedString<"count">;
+            /**
+             * リノートを含める
+             */
+            "includeRenotes": string;
+            /**
+             * 不在復帰時に自動で要約を生成する
+             */
+            "autoGenerate": string;
+            /**
+             * 有効にすると、不在から戻ったときにボタンを押さず自動でLLM APIを呼び出します。
+             */
+            "autoGenerateDescription": string;
+        };
     };
     "_tempuraAdmin": {
         /**

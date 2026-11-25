@@ -432,6 +432,15 @@ export async function mainBoot() {
 
 	initializeSw();
 
+	if ($i) {
+		const meId = $i.id;
+		void import('@/utility/tempura-script/tl-digest/activity.js')
+			.then(({ initTlDigestActivity }) => initTlDigestActivity(meId))
+			.catch((error: unknown) => {
+				console.error('Failed to load the TL digest activity tracker', error);
+			});
+	}
+
 	// 地震情報警告は機能が有効な場合のみ必要なので、遅延ロードして初期バンドルのサイズを削減する
 	if (prefer.s.enableEarthquakeWarning) {
 		void import('@/utility/tempura-script/earthquake-warning.js')

@@ -12,6 +12,7 @@ import { GlobalEventService } from '@/core/GlobalEventService.js';
 import { bindThis } from '@/decorators.js';
 import type { GlobalEvents } from '@/core/GlobalEventService.js';
 import { FeaturedService } from '@/core/FeaturedService.js';
+import { ensureServerOpenAIDestinationKey } from '@/misc/ensure-server-openai-destination-key.js';
 import type { OnApplicationShutdown } from '@nestjs/common';
 
 @Injectable()
@@ -78,8 +79,9 @@ export class MetaService implements OnApplicationShutdown {
 			const meta = metas[0];
 
 			if (meta) {
-				this.cache = meta;
-				return meta;
+				const ensured = await ensureServerOpenAIDestinationKey(transactionalEntityManager, meta);
+				this.cache = ensured;
+				return ensured;
 			} else {
 				// metaが空のときfetchMetaが同時に呼ばれるとここが同時に呼ばれてしまうことがあるのでフェイルセーフなupsertを使う
 				const saved = await transactionalEntityManager
@@ -90,7 +92,8 @@ export class MetaService implements OnApplicationShutdown {
 						},
 						['id'],
 					)
-					.then((x) => transactionalEntityManager.findOneByOrFail(MiMeta, x.identifiers[0]));
+					.then((x) => transactionalEntityManager.findOneByOrFail(MiMeta, x.identifiers[0]))
+					.then((x) => ensureServerOpenAIDestinationKey(transactionalEntityManager, x));
 
 				this.cache = saved;
 				return saved;

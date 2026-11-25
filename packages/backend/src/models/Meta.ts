@@ -1246,6 +1246,15 @@ export class MiMeta {
 	})
 	public serverOpenAIBaseURL: string | null;
 
+	/**
+	 * サーバー提供 LLM の接続先 ID を計算するための非公開の鍵 (API で公開しない)
+	 */
+	@Column('varchar', {
+		length: 64,
+		nullable: true,
+	})
+	public serverOpenAIDestinationKey: string | null;
+
 	@Column('varchar', {
 		length: 512,
 		default: 'gpt-4o-mini',
