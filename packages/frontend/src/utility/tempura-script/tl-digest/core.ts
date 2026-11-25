@@ -587,7 +587,7 @@ function startsWithParsableJson(text: string): boolean {
  *
  * @returns フェンス記号と info string を除いた残り。フェンス行でなければ null。
  */
-function stripFenceMarker(line: string): string | null {
+function stripFenceMarker(line: string, continuation = ''): string | null {
 	const trimmed = line.trim();
 	if (!trimmed.startsWith('```')) return null;
 	// 4 文字目 (`) はフェンス記号の一部とみなす。``` の後の空白区切りだけを info string の境界にする
@@ -603,7 +603,8 @@ function stripFenceMarker(line: string): string | null {
 	if (tail === '') return '';
 	// 2) トークンの後ろが実際に JSON として解析できるなら、トークンは形式名とみなして剥がす
 	//    ( ` ```json{"topics":[]} ` のように空白が無い場合も含む)
-	if (startsWithParsableJson(tail) && FENCE_INFO_STRING_PATTERN.test(token!)) return tail;
+	const jsonText = continuation === '' ? tail : `${tail}\n${continuation}`;
+	if (startsWithParsableJson(jsonText) && FENCE_INFO_STRING_PATTERN.test(token!)) return tail;
 	// 3) 既知の言語名と地の文が空白で区切られている場合だけ、言語名を剥がす
 	if (/^\s/u.test(after!) && KNOWN_FENCE_LANGUAGES.has(token!.toLowerCase())) return tail;
 	// 4) それ以外は地の文。トークンも中身の一部として残す
@@ -673,9 +674,10 @@ function unwrapWholeFence(trimmed: string): { inner: string; closedByFence: bool
 		if (second === '```') return { inner: stripFenceMarker(lines[0] ?? '') ?? '', closedByFence: true, trailingText: '' };
 		// 閉じフェンスが内容の同じ行にある (```json\n{"topics":[]}```)。閉じフェンスは行末の 3 文字
 		if (!second.endsWith('```')) return null;
-		// 開き行の info string の後ろに中身が続く場合は、その中身から始まる
-		const head = stripFenceMarker(lines[0] ?? '') ?? '';
+		// 開き行の info string の後ろに中身が続く場合は、その中身から始める。
+		// 先頭行だけでは閉じない JSON もあるため、閉じフェンスを除いた行末までを判定に使う
 		const tail = second.slice(0, -3).trim();
+		const head = stripFenceMarker(lines[0] ?? '', tail) ?? '';
 		return { inner: head === '' ? tail : `${head}\n${tail}`, closedByFence: true, trailingText: '' };
 	}
 
@@ -685,9 +687,10 @@ function unwrapWholeFence(trimmed: string): { inner: string; closedByFence: bool
 	for (let i = 1; i < lines.length - 1; i++) {
 		if (isFenceLine(lines[i] ?? '')) return null;
 	}
-	// 開き行からフェンス記号と info string だけを剥がし、同じ行に続く中身は残す
-	const firstLine = stripFenceMarker(lines[0] ?? '') ?? '';
+	// 開き行からフェンス記号と info string だけを剥がし、同じ行に続く中身は残す。
+	// 先頭行に `{` だけがある応答では、後続行まで含めないと JSON として成立するか判定できない
 	const restLines = lines.slice(1, -1);
+	const firstLine = stripFenceMarker(lines[0] ?? '', restLines.join('\n')) ?? '';
 	const innerLines = firstLine === '' ? restLines : [firstLine, ...restLines];
 	const lastLine = lines[lines.length - 1] ?? '';
 	// 閉じ行の後ろに文言が付いた (` ``` 要約です。`) なら、フェンスはそこで閉じていない

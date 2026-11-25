@@ -823,6 +823,16 @@ describe('parseTlDigestResponse', () => {
 		});
 	});
 
+	it('開きフェンスに直結した JSON が複数行に続いても、形式名だけを剥がす (回帰)', () => {
+		const raw = '```json{\n"topics":[{"title":"GPU","summary":"新製品が話題でした。","refs":["n1"]}]\n}\n```';
+		const parsed = parseTlDigestResponse(raw, refMap);
+		expect(parsed).not.toBeNull();
+		expect(parsed!.topics).toHaveLength(1);
+		expect(parsed!.topics[0].title).toBe('GPU');
+		expect(parsed!.topics[0].noteIds).toEqual(['real-id-1']);
+		expect(parsed!.fallbackText).toBeNull();
+	});
+
 	it('JSON として解析できない括弧書きは地の文として残す', () => {
 		// `[GPU]` は JSON の配列ではない。断片として削除すると要約の語が欠ける
 		expect(parseTlDigestResponse('[GPU] が主な話題でした。', refMap)).toEqual({
