@@ -1425,6 +1425,29 @@ describe('createTlDigestController', () => {
 		expect(dismissEmpty).toHaveBeenCalledWith('me', win);
 	});
 
+	it('空の allowlist の件数確認でもタイムライン走査せず 0 件確定を返す', async () => {
+		const win = { since: Date.UTC(2026, 10, 24, 10, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
+		const fetchTimeline = vi.fn(async () => [makeNote({ id: 'n-should-not-scan' })]);
+		const controller = createTlDigestController(makeDeps({
+			fetchTimeline,
+			getSettings: () => ({
+				visibilities: ['public', 'home'],
+				cwMode: 'cwOnly',
+				followersConsent: null,
+				userFilterMode: 'allow',
+				userFilterUserIds: [],
+				prompt: null,
+				systemPrompt: null,
+				useServerApi: true,
+			}),
+		}));
+
+		const state = await controller.refreshPendingCount(win, true);
+		expect(fetchTimeline).not.toHaveBeenCalled();
+		expect(state).toEqual({ status: 'ready', count: 0, truncated: false });
+		expect(controller.pendingCount.value).toEqual({ status: 'ready', count: 0, truncated: false });
+	});
+
 	it('空の allowlist ではタイムライン走査と LLM 呼び出しを省略して 0 件を返す', async () => {
 		const win = { since: Date.UTC(2026, 10, 24, 10, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
 		const fetchTimeline = vi.fn(async () => [makeNote({ id: 'n-should-not-scan' })]);
