@@ -124,10 +124,11 @@ describe('normalizeTlDigestVisibilities / normalizeTlDigestCwMode / applyFollowe
 });
 
 describe('prepareNotesForDigest', () => {
-	it('既定では public と home のみを含め、public_non_ltl (dontShowOnLtl: true)・followers・specified・自分の投稿を除外する', () => {
+	it('既定では public と home のみを含め、localOnly・public_non_ltl (dontShowOnLtl: true)・followers・specified・自分の投稿を除外する', () => {
 		const notes = [
 			makeNote({ id: 'note-public', visibility: 'public', text: '公開ノート' }),
 			makeNote({ id: 'note-home', visibility: 'home', text: 'ホームノート' }),
+			makeNote({ id: 'note-local-only', visibility: 'public', localOnly: true, text: 'ローカル限定ノート' }),
 			makeNote({ id: 'note-nonltl-api', visibility: 'public', dontShowOnLtl: true, text: '実API形式のLTL非表示ノート' }),
 			makeNote({ id: 'note-nonltl-raw', visibility: 'public_non_ltl', text: 'LTL非表示ノート' }),
 			makeNote({ id: 'note-followers', visibility: 'followers', text: 'フォロワー限定ノート' }),
@@ -157,6 +158,31 @@ describe('prepareNotesForDigest', () => {
 			allowedVisibilities: ['public', 'home', 'followers', 'specified'],
 		});
 		expect(prepared.map((p) => p.noteId)).toEqual(['note-followers']);
+	});
+
+	it('純リノートはリノート自体または元ノートが localOnly なら除外する', () => {
+		const localTarget = makeNote({ id: 'target-local', visibility: 'public', localOnly: true, text: 'ローカル限定の元ノート' });
+		const rnLocalTarget = makeNote({
+			id: 'rn-local-target',
+			visibility: 'public',
+			text: null,
+			renoteId: localTarget.id,
+			renote: localTarget,
+		});
+		const normalTarget = makeNote({ id: 'target-normal', visibility: 'public', text: '通常の元ノート' });
+		const localRn = makeNote({
+			id: 'rn-local',
+			visibility: 'public',
+			localOnly: true,
+			text: null,
+			renoteId: normalTarget.id,
+			renote: normalTarget,
+		});
+
+		const { prepared } = prepareNotesForDigest([rnLocalTarget, localRn], {
+			allowedVisibilities: ['public', 'home'],
+		});
+		expect(prepared).toEqual([]);
 	});
 
 	it('maxPreparedNotes が 50 のとき、100件の中から最新50件を選び時系列順に n1..n50 を振る', () => {
@@ -408,7 +434,7 @@ describe('prepareNotesForDigest', () => {
 		expect(prepared.map((p) => p.noteId)).toEqual(['orig']);
 	});
 
-	it('ユーザー単位フィルタ: allow でも対象ユーザーが空なら制限なしとして扱う', () => {
+	it('ユーザー単位フィルタ: allow で対象ユーザーが空なら全件除外する (fail-close)', () => {
 		const notes = [
 			makeNote({ id: 'a', userId: 'u-a', text: 'Aの投稿' }),
 			makeNote({ id: 'b', userId: 'u-b', text: 'Bの投稿' }),
@@ -419,7 +445,7 @@ describe('prepareNotesForDigest', () => {
 			userFilterUserIds: [],
 		});
 
-		expect(prepared.map((p) => p.noteId)).toEqual(['a', 'b']);
+		expect(prepared).toEqual([]);
 	});
 
 	it('ユーザー単位フィルタ: off のときは対象ユーザーが指定されていても制限しない', () => {

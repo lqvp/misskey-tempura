@@ -318,10 +318,9 @@ export function prepareNotesForDigest(
 	const userFilterMode = normalizeTlDigestUserFilterMode(options.userFilterMode);
 	const userFilterIds = normalizeTlDigestFilterUserIds(options.userFilterUserIds);
 	const userFilterSet = new Set(userFilterIds);
-	// 許可リストが空のまま allow になっている状態は「全件除外」と区別しづらいため、
-	// 既定 (制限なし) にフォールバックしてダイジェストが黙って空にならないようにする
-	const effectiveUserFilterMode: TlDigestUserFilterMode =
-		userFilterMode === 'off' || userFilterSet.size === 0 ? 'off' : userFilterMode;
+	// allow で対象ユーザーを選んでいない状態でも制限を外さない。
+	// 絞り込み設定が同期漏れや操作途中で空になったときに、送信範囲を不意に広げないため。
+	const effectiveUserFilterMode: TlDigestUserFilterMode = userFilterMode;
 
 	// 上限件数で打ち切るときに最新のノートを残すため、新しい順に処理する。
 	// (同時刻のノートは入力順で後ろにあるものを新しいとみなす)
@@ -347,6 +346,11 @@ export function prepareNotesForDigest(
 
 		// リノート元が自分の投稿の場合も除外
 		if (meId != null && targetNote.userId === meId) {
+			continue;
+		}
+
+		// localOnly は無条件で除外。サーバー内限定の投稿を外部 LLM へ送らないため
+		if (rawNote.localOnly === true || targetNote.localOnly === true) {
 			continue;
 		}
 
@@ -500,7 +504,7 @@ export function buildTlDigestSystemInstruction(
 ): string {
 	const base = [
 		'You are a timeline digest assistant for a microblogging home timeline.',
-		'From the provided timeline posts, extract 3 to 5 notable or active topics.',
+		'From the provided timeline posts, extract only genuinely notable or active topics, up to 5.',
 		'Skip greetings, single-word posts, or trivial monologue unless they form a broader trend.',
 		'Do NOT invent facts, usernames, or URLs. Do NOT include any URLs or Markdown links in your output.',
 		'Each input post begins with a reference ID such as "n1", "n2". For each topic, list the relevant reference IDs in "refs".',

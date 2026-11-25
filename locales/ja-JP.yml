@@ -4211,7 +4211,7 @@ _tempuraSettings:
 
 _tlDigest:
   visibilitiesLabel: "要約に含める公開範囲"
-  visibilitiesCaption: "選択した公開範囲のホームタイムライン投稿のみをLLMに送信します。ダイレクト投稿は常に除外されます。"
+  visibilitiesCaption: "選択した公開範囲のホームタイムライン投稿のみをLLMに送信します。ダイレクト投稿とローカル限定投稿は常に除外されます。"
   followersConfirmTitle: "フォロワー限定投稿の送信確認"
   followersConfirmText: "フォロワー限定の投稿を要約対象に含めると、投稿本文が「{destination}」へ送信されます。信頼できる接続先（ローカルLLMなど）でのみ有効にすることを推奨します。有効にしますか？"
   destinationServer: "サーバー提供のLLM API"
@@ -4235,7 +4235,7 @@ _tlDigest:
   userFilterUsersAdd: "ユーザーを追加"
   userFilterUsersEmpty: "まだユーザーが選択されていません。"
   userFilterUsersRemove: "削除"
-  userFilterUsersIgnored: "ユーザーが選択されていないため、絞り込みは適用されません。"
+  userFilterUsersIgnored: "ユーザーが選択されていないため、要約対象はありません。"
   idleMessage: "不在中のお知らせはありません"
   summarizeRecent: "直近を要約"
   pendingSummary: "{duration}ぶり・新着 {count}件"
@@ -4251,6 +4251,7 @@ _tlDigest:
   settingsChanged: "生成中にLLMまたは公開範囲の設定が変更されたため中止しました。もう一度お試しください。"
   invalidResponse: "LLMから有効な応答が得られませんでした。再試行してください。"
   resultFooter: "{count}件から生成・{time}・AI生成のため不正確な場合があります"
+  resultFooterTruncated: "{count}件から生成・{time}・期間全体ではない可能性・AI生成のため不正確な場合があります"
   regenerate: "再生成"
   openLlmSettings: "LLM設定を開く"
   durationHoursMinutes: "{hours}時間{minutes}分"

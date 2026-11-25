@@ -102,7 +102,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 			<div :class="$style.resultFooter">
 				<div v-if="latestDigestResult.noteCount > 0" :class="$style.footerMeta">
-					{{ i18n.tsx._tlDigest.resultFooter({
+					{{ (latestDigestResult.scanTruncated ? i18n.tsx._tlDigest.resultFooterTruncated : i18n.tsx._tlDigest.resultFooter)({
 						count: latestDigestResult.noteCount,
 						time: formatTime(latestDigestResult.generatedAt),
 					}) }}
@@ -365,7 +365,7 @@ const liveMessage = computed(() => {
 				? i18n.ts._tlDigest.noNotesInScannedRange
 				: i18n.ts._tlDigest.noNotesToSummarize;
 		}
-		return i18n.tsx._tlDigest.resultFooter({
+		return (latestDigestResult.value.scanTruncated ? i18n.tsx._tlDigest.resultFooterTruncated : i18n.tsx._tlDigest.resultFooter)({
 			count: latestDigestResult.value.noteCount,
 			time: formatTime(latestDigestResult.value.generatedAt),
 		});
