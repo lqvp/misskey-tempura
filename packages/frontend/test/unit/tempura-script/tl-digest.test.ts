@@ -831,6 +831,21 @@ describe('parseTlDigestResponse', () => {
 		expect(parsed!.topics[0].title).toBe('GPU');
 		expect(parsed!.topics[0].noteIds).toEqual(['real-id-1']);
 		expect(parsed!.fallbackText).toBeNull();
+
+		// 閉じフェンスも JSON の行末に直結する 2 行だけの応答でも同じ
+		const twoLines = '```json{\n"topics":[{"title":"GPU","summary":"新製品が話題でした。","refs":["n1"]}]}```';
+		const parsedTwoLines = parseTlDigestResponse(twoLines, refMap);
+		expect(parsedTwoLines!.topics).toHaveLength(1);
+		expect(parsedTwoLines!.topics[0].noteIds).toEqual(['real-id-1']);
+		expect(parsedTwoLines!.fallbackText).toBeNull();
+	});
+
+	it('後続行を使って初めて JSON になる配列では、自然文の先頭語を形式名として剥がさない (回帰)', () => {
+		const raw = '```GPU [\n"RTX 5090", "RTX 5080"\n]\n```';
+		expect(parseTlDigestResponse(raw, refMap)).toEqual({
+			topics: [],
+			fallbackText: 'GPU',
+		});
 	});
 
 	it('JSON として解析できない括弧書きは地の文として残す', () => {

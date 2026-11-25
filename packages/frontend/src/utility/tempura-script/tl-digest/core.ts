@@ -603,8 +603,11 @@ function stripFenceMarker(line: string, continuation = ''): string | null {
 	if (tail === '') return '';
 	// 2) トークンの後ろが実際に JSON として解析できるなら、トークンは形式名とみなして剥がす
 	//    ( ` ```json{"topics":[]} ` のように空白が無い場合も含む)
-	const jsonText = continuation === '' ? tail : `${tail}\n${continuation}`;
-	if (startsWithParsableJson(jsonText) && FENCE_INFO_STRING_PATTERN.test(token!)) return tail;
+	if (startsWithParsableJson(tail) && FENCE_INFO_STRING_PATTERN.test(token!)) return tail;
+	//    後続行を使って初めて JSON として成立する場合は、自然文の先頭語との区別が付かないため
+	//    既知の形式名だけを剥がす (`GPU [` のような地の文を残す)
+	const multilineJsonText = continuation === '' ? tail : `${tail}\n${continuation}`;
+	if (startsWithParsableJson(multilineJsonText) && KNOWN_FENCE_LANGUAGES.has(token!.toLowerCase())) return tail;
 	// 3) 既知の言語名と地の文が空白で区切られている場合だけ、言語名を剥がす
 	if (/^\s/u.test(after!) && KNOWN_FENCE_LANGUAGES.has(token!.toLowerCase())) return tail;
 	// 4) それ以外は地の文。トークンも中身の一部として残す
