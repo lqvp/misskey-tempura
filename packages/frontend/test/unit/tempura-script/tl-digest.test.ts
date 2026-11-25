@@ -21,8 +21,10 @@ import {
 	dismissTlDigestPending,
 	evaluateTlDigestActivity,
 	getActivePendingWindow,
+	hasTlDigestAutoGenerateSent,
 	initTlDigestActivity,
 	loadTlDigestStoredState,
+	markTlDigestAutoGenerateSent,
 	MAX_ABSENCE_WINDOW_MS,
 	MIN_TRACKED_ABSENCE_MS,
 	pendingSinceRef,
@@ -2026,17 +2028,52 @@ describe('createTlDigestController', () => {
 });
 
 describe('claimTlDigestAutoGenerate', () => {
+	beforeEach(() => {
+		window.localStorage.clear();
+	});
+
 	it('同じアカウント・不在期間の自動生成は 1 回だけ確保できる', () => {
 		const win = { since: 1000, until: 2000 };
-		const release = claimTlDigestAutoGenerate('claim-user', win);
-		expect(release).not.toBeNull();
+		const claim = claimTlDigestAutoGenerate('claim-user', win);
+		expect(claim).not.toBeNull();
 		expect(claimTlDigestAutoGenerate('claim-user', { ...win })).toBeNull();
 		expect(claimTlDigestAutoGenerate('claim-user', { since: 1000, until: 3000 })).not.toBeNull();
 		expect(claimTlDigestAutoGenerate('claim-other', win)).not.toBeNull();
 
 		// 送信前に中断して解放した場合は再度確保できる
-		release!();
+		claim!.release();
 		expect(claimTlDigestAutoGenerate('claim-user', win)).not.toBeNull();
+	});
+
+	it('送信済みの不在期間は永続化され、活動状態の更新後も再確保できない', () => {
+		const userId = 'claim-persist-user';
+		const win = { since: 1000, until: 2000 };
+		evaluateTlDigestActivity(userId, win.since);
+		markTlDigestAutoGenerateSent(userId, win, win.until);
+
+		expect(hasTlDigestAutoGenerateSent(userId, win)).toBe(true);
+		expect(loadTlDigestStoredState(userId)?.autoGenerateSentWindows).toEqual([win]);
+		expect(claimTlDigestAutoGenerate(userId, { ...win })).toBeNull();
+
+		// heartbeat 相当の通常更新では送信済み期間を消さない
+		evaluateTlDigestActivity(userId, win.until + 60_000);
+		expect(hasTlDigestAutoGenerateSent(userId, win)).toBe(true);
+		expect(claimTlDigestAutoGenerate(userId, { ...win })).toBeNull();
+	});
+
+	it('送信前の解放では永続化されず、送信済みにした後は解放しても再確保できない', () => {
+		const userId = 'claim-mark-user';
+		const win = { since: 3000, until: 4000 };
+		const unsent = claimTlDigestAutoGenerate(userId, win);
+		unsent!.release();
+		expect(hasTlDigestAutoGenerateSent(userId, win)).toBe(false);
+
+		const sent = claimTlDigestAutoGenerate(userId, win);
+		expect(sent).not.toBeNull();
+		sent!.markSent();
+		sent!.release();
+		expect(hasTlDigestAutoGenerateSent(userId, win)).toBe(true);
+		expect(claimTlDigestAutoGenerate(userId, { ...win })).toBeNull();
 	});
 });
 

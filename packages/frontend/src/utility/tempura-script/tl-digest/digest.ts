@@ -27,6 +27,8 @@ import {
 } from '@/utility/tempura-script/tl-digest/core.js';
 import {
 	dismissTlDigestPending,
+	hasTlDigestAutoGenerateSent,
+	markTlDigestAutoGenerateSent,
 	MAX_ABSENCE_WINDOW_MS,
 } from '@/utility/tempura-script/tl-digest/activity.js';
 import {
@@ -266,16 +268,31 @@ const defaultDeps: TlDigestDeps = {
 // 自動生成済みの不在期間 (同じ期間を複数のウィジェットが重複して送信しないようページ全体で共有する)
 const autoGenerateClaims = new Set<string>();
 
+export interface TlDigestAutoGenerateClaim {
+	/** 送信前に中断した場合に確保を解放する */
+	release: () => void;
+	/** 実際の送信直前に呼び、reload 後も同じ期間を再送しないよう記録する */
+	markSent: () => void;
+}
+
 /**
  * 不在期間の自動生成を 1 回だけ実行できるよう確保する
- * @returns 確保を解放する関数 (送信前に中断した場合に呼ぶ)。既に他のウィジェットが確保済みなら null
+ * @returns 確保。既に他のウィジェットが確保済みか、送信済みなら null
  */
-export function claimTlDigestAutoGenerate(userId: string | null, win: TlDigestWindow): (() => void) | null {
+export function claimTlDigestAutoGenerate(userId: string | null, win: TlDigestWindow): TlDigestAutoGenerateClaim | null {
+	if (userId != null && hasTlDigestAutoGenerateSent(userId, win)) return null;
 	const key = `${userId ?? ''}:${win.since}:${win.until}`;
 	if (autoGenerateClaims.has(key)) return null;
 	autoGenerateClaims.add(key);
-	return () => {
-		autoGenerateClaims.delete(key);
+	let sent = false;
+	return {
+		release: () => {
+			if (!sent) autoGenerateClaims.delete(key);
+		},
+		markSent: () => {
+			sent = true;
+			if (userId != null) markTlDigestAutoGenerateSent(userId, win);
+		},
 	};
 }
 

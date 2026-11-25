@@ -203,6 +203,7 @@ describe('TLダイジェストウィジェットの自動生成の確保とキ�
 	let page: RenderResult | null = null;
 
 	beforeEach(async () => {
+		window.localStorage.clear();
 		const prefer = createPreferences();
 		const preferencesModule = await import('@/preferences.js');
 		vi.spyOn(preferencesModule, 'prefer', 'get').mockReturnValue(prefer);
@@ -261,7 +262,7 @@ describe('TLダイジェストウィジェットの自動生成の確保とキ�
 		// 送信前に中断したので、開き直したとき同じ期間の自動生成を再試行できる
 		const again = claimTlDigestAutoGenerate('test-user', win);
 		expect(again).not.toBeNull();
-		again!();
+		again!.release();
 	});
 
 	test('送信後 (onSending 到達) にキャンセルしても確保は消費されたまま復活しない', async () => {

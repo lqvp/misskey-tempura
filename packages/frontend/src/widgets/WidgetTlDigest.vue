@@ -397,23 +397,24 @@ function maybeAutoGenerate(win: TlDigestWindow, includeRenotes: boolean, state: 
 	if (state.status !== 'ready' || state.count === 0) return;
 	if (digestGenerating.value || latestDigestResult.value != null) return;
 	// 自動生成は同じ不在期間につき 1 回だけ (複数設置時や失敗後の設定変更で再送しない)
-	const release = claimTlDigestAutoGenerate($i?.id ?? null, win);
-	if (release == null) return;
-	releaseUnsentAutoGenerate = release;
+	const claim = claimTlDigestAutoGenerate($i?.id ?? null, win);
+	if (claim == null) return;
+	releaseUnsentAutoGenerate = claim.release;
 	void controller.run({
 		since: win.since,
 		until: win.until,
 		maxNotes: maxNotesCount.value,
 		includeRenotes,
 		onSending: () => {
-			// 実際に送信した時点でこの期間は消費済みにする (以後の finally では解放しない)
+			// 実際に送信した時点でこの期間は消費済みにする (reload 後も再送しない)
+			claim.markSent();
 			releaseUnsentAutoGenerate = null;
 		},
 	}).finally(() => {
 		// run はキャンセル・エラー・0 件でも resolve する。送信前に終わった場合は確保を解放し、
 		// ドロワーを開き直したときや設定を直した後に再試行できるようにする。
 		// 送信済みなら onSending で null になっているので解放されない
-		if (releaseUnsentAutoGenerate === release) releaseUnsentAutoGenerateClaim();
+		if (releaseUnsentAutoGenerate === claim.release) releaseUnsentAutoGenerateClaim();
 	});
 }
 

@@ -6,10 +6,17 @@
 import { ref } from 'vue';
 import { miLocalStorage } from '@/local-storage.js';
 
+export interface TlDigestAutoGenerateSentWindow {
+	since: number;
+	until: number;
+}
+
 export interface TlDigestStoredState {
 	lastSeenAt: number;
 	pendingSince: number | null;
 	pendingUntil: number | null;
+	/** 自動生成で送信済みにした不在期間 (reload 後の再送を防ぐ) */
+	autoGenerateSentWindows?: TlDigestAutoGenerateSentWindow[];
 }
 
 /** 記録対象とする最小の離席時間 (30分: ウィジェットの最小閾値と一致) */
@@ -23,6 +30,9 @@ const MERGE_PENDING_GRACE_MS = 5 * 60 * 1000;
 
 /** アクティブ時の最終閲覧時刻更新間隔 (1分) */
 const HEARTBEAT_INTERVAL_MS = 60 * 1000;
+
+/** 自動生成の送信済み期間の保持件数 */
+const MAX_AUTOGENERATE_SENT_WINDOWS = 16;
 
 export const pendingSinceRef = ref<number | null>(null);
 export const pendingUntilRef = ref<number | null>(null);
@@ -47,20 +57,44 @@ export function loadTlDigestStoredState(userId: string): TlDigestStoredState | n
 			lastSeenAt: parsed.lastSeenAt,
 			pendingSince: typeof parsed.pendingSince === 'number' && Number.isFinite(parsed.pendingSince) ? parsed.pendingSince : null,
 			pendingUntil: typeof parsed.pendingUntil === 'number' && Number.isFinite(parsed.pendingUntil) ? parsed.pendingUntil : null,
+			autoGenerateSentWindows: normalizeAutoGenerateSentWindows(parsed.autoGenerateSentWindows),
 		};
 	} catch {
 		return null;
 	}
 }
 
+function normalizeAutoGenerateSentWindows(value: unknown): TlDigestAutoGenerateSentWindow[] {
+	if (!Array.isArray(value)) return [];
+	const seen = new Set<string>();
+	const windows: TlDigestAutoGenerateSentWindow[] = [];
+	for (const item of value) {
+		if (item == null || typeof item !== 'object') continue;
+		const { since, until } = item as Partial<TlDigestAutoGenerateSentWindow>;
+		if (typeof since !== 'number' || !Number.isFinite(since)) continue;
+		if (typeof until !== 'number' || !Number.isFinite(until) || until <= since) continue;
+		const key = `${since}:${until}`;
+		if (seen.has(key)) continue;
+		seen.add(key);
+		windows.push({ since, until });
+	}
+	return windows.slice(-MAX_AUTOGENERATE_SENT_WINDOWS);
+}
+
 function saveTlDigestStoredState(userId: string, state: TlDigestStoredState): void {
+	// 既存の送信済み期間を、引き継ぎを意識していない通常の状態更新が消さないようにする
+	const existing = loadTlDigestStoredState(userId);
+	const next: TlDigestStoredState = {
+		...state,
+		autoGenerateSentWindows: state.autoGenerateSentWindows ?? existing?.autoGenerateSentWindows ?? [],
+	};
 	try {
-		miLocalStorage.setItem(storageKey(userId), JSON.stringify(state));
+		miLocalStorage.setItem(storageKey(userId), JSON.stringify(next));
 	} catch {
 		// localStorage 書き込み失敗時は無視
 	}
-	pendingSinceRef.value = state.pendingSince;
-	pendingUntilRef.value = state.pendingUntil;
+	pendingSinceRef.value = next.pendingSince;
+	pendingUntilRef.value = next.pendingUntil;
 }
 
 /**
@@ -160,6 +194,30 @@ export function dismissTlDigestPending(
 		lastSeenAt: existing?.lastSeenAt ?? now,
 		pendingSince: null,
 		pendingUntil: null,
+	});
+}
+
+export function hasTlDigestAutoGenerateSent(userId: string, win: TlDigestAutoGenerateSentWindow): boolean {
+	const existing = loadTlDigestStoredState(userId);
+	return existing?.autoGenerateSentWindows?.some((sent) => sent.since === win.since && sent.until === win.until) === true;
+}
+
+/**
+ * 自動生成で送信を開始した不在期間を記録する。
+ * reload でメモリ内の確保状態が消えても、同じ期間を再送しないようにするため。
+ */
+export function markTlDigestAutoGenerateSent(userId: string, win: TlDigestAutoGenerateSentWindow, now = Date.now()): void {
+	const existing = loadTlDigestStoredState(userId);
+	const cutoff = now - MAX_ABSENCE_WINDOW_MS;
+	const windows = (existing?.autoGenerateSentWindows ?? []).filter((sent) => sent.until >= cutoff);
+	if (!windows.some((sent) => sent.since === win.since && sent.until === win.until)) {
+		windows.push({ since: win.since, until: win.until });
+	}
+	saveTlDigestStoredState(userId, {
+		lastSeenAt: existing?.lastSeenAt ?? now,
+		pendingSince: existing?.pendingSince ?? null,
+		pendingUntil: existing?.pendingUntil ?? null,
+		autoGenerateSentWindows: windows.slice(-MAX_AUTOGENERATE_SENT_WINDOWS),
 	});
 }
 
