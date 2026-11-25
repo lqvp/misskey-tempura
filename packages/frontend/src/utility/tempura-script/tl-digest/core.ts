@@ -571,6 +571,14 @@ function isJsonEnvelopeStart(text: string): boolean {
 	return first === '{' || first === '[';
 }
 
+/** 先頭の括弧断片が JSON として成立するか。地の文の `[GPU]` を形式名判定に使わないため */
+function startsWithParsableJson(text: string): boolean {
+	const candidate = text.trimStart();
+	if (!isJsonEnvelopeStart(candidate)) return false;
+	const end = buildBracketMatchMap(candidate).get(0);
+	return end != null && isParsableJson(candidate.slice(0, end + 1));
+}
+
 /**
  * コードフェンス行 (` ```` ` で始まる行) から、フェンス記号と info string を剥がす。
  *
@@ -593,13 +601,19 @@ function stripFenceMarker(line: string): string | null {
 
 	// 1) 1 トークンだけの行は info string (json5 や将来の形式名も含めて剥がす)
 	if (tail === '') return '';
-	// 2) トークンの後ろが JSON の封筒なら、トークンは形式名とみなして剥がす
+	// 2) トークンの後ろが実際に JSON として解析できるなら、トークンは形式名とみなして剥がす
 	//    ( ` ```json{"topics":[]} ` のように空白が無い場合も含む)
-	if (isJsonEnvelopeStart(tail) && FENCE_INFO_STRING_PATTERN.test(token!)) return tail;
-	// 3) 既知の言語名なら、同じ行に地の文が続いていても info string として剥がす
-	if (KNOWN_FENCE_LANGUAGES.has(token!.toLowerCase())) return tail;
+	if (startsWithParsableJson(tail) && FENCE_INFO_STRING_PATTERN.test(token!)) return tail;
+	// 3) 既知の言語名と地の文が空白で区切られている場合だけ、言語名を剥がす
+	if (/^\s/u.test(after!) && KNOWN_FENCE_LANGUAGES.has(token!.toLowerCase())) return tail;
 	// 4) それ以外は地の文。トークンも中身の一部として残す
 	return rest;
+}
+
+/** 閉じフェンス行からフェンス記号だけを除く。閉じ行に info string は存在しないので語句判定はしない */
+function stripClosingFenceMarker(line: string): string {
+	const trimmed = line.trim();
+	return trimmed.startsWith('```') ? trimmed.slice(3).trim() : '';
 }
 
 /** フェンス行 (` ```` ` で始まる行) か。閉じフェンスの判定に使う */
@@ -681,7 +695,7 @@ function unwrapWholeFence(trimmed: string): { inner: string; closedByFence: bool
 	return {
 		inner: innerLines.join('\n').trim(),
 		closedByFence,
-		trailingText: closedByFence ? '' : stripFenceMarker(lastLine) ?? '',
+		trailingText: closedByFence ? '' : stripClosingFenceMarker(lastLine),
 	};
 }
 

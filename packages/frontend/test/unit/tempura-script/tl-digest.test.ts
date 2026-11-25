@@ -805,6 +805,24 @@ describe('parseTlDigestResponse', () => {
 		});
 	});
 
+	it('開きフェンス行の自然文では、括弧や既知形式名に続く語を削らない (回帰)', () => {
+		// `[RTX]` は JSON ではないので、直前の `GPU` を形式名とみなして削ってはいけない
+		expect(parseTlDigestResponse('```GPU [RTX] の価格が話題でした。\n```', refMap)).toEqual({
+			topics: [],
+			fallbackText: 'GPU [RTX] の価格が話題でした。',
+		});
+		// `CSV` は既知の形式名だが、空白で区切られず日本語の文が続く場合は話題名の一部
+		expect(parseTlDigestResponse('```CSVの出力形式が話題でした。\n```', refMap)).toEqual({
+			topics: [],
+			fallbackText: 'CSVの出力形式が話題でした。',
+		});
+		// 未知の形式名らしき語の後ろが実際に JSON なら、従来どおり形式名として剥がす
+		expect(parseTlDigestResponse('```response{"topics":[]}\n```', refMap)).toEqual({
+			topics: [],
+			fallbackText: null,
+		});
+	});
+
 	it('JSON として解析できない括弧書きは地の文として残す', () => {
 		// `[GPU]` は JSON の配列ではない。断片として削除すると要約の語が欠ける
 		expect(parseTlDigestResponse('[GPU] が主な話題でした。', refMap)).toEqual({
@@ -899,6 +917,11 @@ describe('parseTlDigestResponse', () => {
 		expect(parseTlDigestResponse('```json\n{"topics":[]}\n``` 補足: GPU の話', refMap)).toEqual({
 			topics: [],
 			fallbackText: '補足: GPU の話',
+		});
+		// 閉じ行に info string は無い。続く一語だけの文言も形式名とみなして削らない
+		expect(parseTlDigestResponse('```json\n{"topics":[]}\n``` GPU', refMap)).toEqual({
+			topics: [],
+			fallbackText: 'GPU',
 		});
 		// フェンスが無い (JSON の後に閉じ行だけが付く) 応答も同じ
 		expect(parseTlDigestResponse('{"topics":[]}\n``` 今日はGPUの話題でした。', refMap)).toEqual({
