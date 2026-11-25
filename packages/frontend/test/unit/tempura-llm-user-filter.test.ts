@@ -152,6 +152,14 @@ describe('LLM設定 > TLダイジェストのユーザーフィルタ表示', ()
 		expect(remoteLink?.getAttribute('href')).toBe('/@bob@remote.example');
 	});
 
+	test('絞り込みモードのradioは表示テキストを名前に持つ', async () => {
+		const page = await mountSection([LOCAL_ID]);
+
+		const allowRadio = page.getByRole('radio', { name: i18n.ts._tlDigest.userFilterModeAllow });
+		await fireEvent.click(allowRadio);
+		expect(prefer.s.tlDigestUserFilterMode).toBe('allow');
+	});
+
 	test('ミュート済みのユーザーでも絞り込み対象を識別できる', async () => {
 		prefer.commit('anonymizeMutedUsers', true);
 		apiMock.mockImplementation(async (endpoint: string, payload: Record<string, unknown>) => {

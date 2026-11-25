@@ -11,33 +11,36 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 	<div :class="$style.body">
 		<div
-			v-for="option in options"
+			v-for="(option, index) in options"
 			:key="getKey(option.value)"
 			v-adaptive-border
 			:class="[$style.optionRoot, { [$style.disabled]: option.disabled, [$style.checked]: model === option.value }]"
-			@click="toggle(option)"
 		>
 			<input
+				:id="getInputId(index)"
 				type="radio"
 				:name="groupName"
+				:value="getKey(option.value)"
 				:checked="model === option.value"
 				:disabled="option.disabled"
-				:aria-label="option.label ?? String(option.value)"
 				:class="$style.optionInput"
+				@change="toggle(option)"
 			>
-			<span :class="$style.optionButton">
-				<span></span>
-			</span>
-			<div :class="$style.optionContent">
-				<i v-if="option.icon" :class="[$style.optionIcon, option.icon]" :style="option.iconStyle"></i>
-				<div>
-					<slot v-if="option.slotId != null" :name="`option-${option.slotId as SlotNames}`"></slot>
-					<template v-else>
-						<div :style="option.labelStyle">{{ option.label ?? option.value }}</div>
-						<div v-if="option.caption" :class="$style.optionCaption">{{ option.caption }}</div>
-					</template>
-				</div>
-			</div>
+			<label :for="getInputId(index)" :class="$style.optionLabel">
+				<span :class="$style.optionButton">
+					<span></span>
+				</span>
+				<span :class="$style.optionContent">
+					<i v-if="option.icon" :class="[$style.optionIcon, option.icon]" :style="option.iconStyle"></i>
+					<span>
+						<slot v-if="option.slotId != null" :name="`option-${option.slotId as SlotNames}`"></slot>
+						<template v-else>
+							<span :style="option.labelStyle">{{ option.label ?? option.value }}</span>
+							<span v-if="option.caption" :class="$style.optionCaption">{{ option.caption }}</span>
+						</template>
+					</span>
+				</span>
+			</label>
 		</div>
 	</div>
 
@@ -88,6 +91,10 @@ function getKey(value: OptionValue): PropertyKey {
 	return value;
 }
 
+function getInputId(index: number): string {
+	return `${groupName}-${index}`;
+}
+
 function toggle(o: MkRadiosOption): void {
 	if (o.disabled) return;
 	model.value = o.value;
@@ -128,10 +135,7 @@ function toggle(o: MkRadiosOption): void {
 .optionRoot {
 	position: relative;
 	display: inline-flex;
-	align-items: center;
 	text-align: left;
-	cursor: pointer;
-	padding: 8px 10px;
 	min-width: 60px;
 	background-color: var(--MI_THEME-panel);
 	background-clip: padding-box !important;
@@ -185,6 +189,18 @@ function toggle(o: MkRadiosOption): void {
 	margin: 0;
 }
 
+.optionLabel {
+	display: flex;
+	align-items: center;
+	width: 100%;
+	padding: 8px 10px;
+	cursor: pointer;
+
+	.disabled & {
+		cursor: not-allowed;
+	}
+}
+
 .optionButton {
 	position: relative;
 	display: inline-block;
@@ -218,6 +234,7 @@ function toggle(o: MkRadiosOption): void {
 }
 
 .optionCaption {
+	display: block;
 	font-size: 0.85em;
 	padding: 2px 0 0 0;
 	color: color(from var(--MI_THEME-fg) srgb r g b / 0.75);
