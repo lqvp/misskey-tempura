@@ -31,7 +31,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 					<span></span>
 				</span>
 				<span :class="$style.optionContent">
-					<i v-if="option.icon" :class="[$style.optionIcon, option.icon]" :style="option.iconStyle"></i>
+					<i v-if="option.icon" aria-hidden="true" :class="[$style.optionIcon, option.icon]" :style="option.iconStyle"></i>
 					<span>
 						<slot v-if="option.slotId != null" :name="`option-${option.slotId as SlotNames}`"></slot>
 						<template v-else>
