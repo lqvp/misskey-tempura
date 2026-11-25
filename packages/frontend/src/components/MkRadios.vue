@@ -15,14 +15,14 @@ SPDX-License-Identifier: AGPL-3.0-only
 			:key="getKey(option.value)"
 			v-adaptive-border
 			:class="[$style.optionRoot, { [$style.disabled]: option.disabled, [$style.checked]: model === option.value }]"
-			:aria-checked="model === option.value"
-			:aria-disabled="option.disabled"
-			role="checkbox"
 			@click="toggle(option)"
 		>
 			<input
 				type="radio"
+				:name="groupName"
+				:checked="model === option.value"
 				:disabled="option.disabled"
+				:aria-label="option.label ?? String(option.value)"
 				:class="$style.optionInput"
 			>
 			<span :class="$style.optionButton">
@@ -64,6 +64,8 @@ export type MkRadiosOption<T = OptionValue, S = string> = {
 </script>
 
 <script setup lang="ts" generic="const T extends MkRadiosOption">
+import { useId } from 'vue';
+
 defineProps<{
 	options: T[];
 	vertical?: boolean;
@@ -79,6 +81,7 @@ defineSlots<{
 }>();
 
 const model = defineModel<T['value']>({ required: true });
+const groupName = `mk-radios-${useId()}`;
 
 function getKey(value: OptionValue): PropertyKey {
 	if (value === null) return '___null___';
