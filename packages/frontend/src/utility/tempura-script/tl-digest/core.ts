@@ -589,10 +589,16 @@ function startsWithParsableJson(text: string): boolean {
 	return parseJsonPrefix(text) != null;
 }
 
-/** 先頭の括弧断片が JSON オブジェクトとして成立するか。配列は箇条書きの可能性があるため区別する */
-function startsWithParsableJsonObject(text: string): boolean {
+/** JSON 値がダイジェストの封筒、またはそれを含む配列か。箇条書きの配列と区別する */
+function isDigestEnvelopeShape(value: unknown): boolean {
+	if (Array.isArray(value)) return value.some((item) => isDigestEnvelopeShape(item));
+	return isRecord(value) && 'topics' in value && Array.isArray(value.topics);
+}
+
+/** 先頭の括弧断片がダイジェストの JSON として成立するか。配列は封筒を含む場合だけ形式名の根拠にする */
+function startsWithParsableDigestJson(text: string): boolean {
 	const parsed = parseJsonPrefix(text);
-	return parsed != null && typeof parsed.value === 'object' && parsed.value !== null && !Array.isArray(parsed.value);
+	return parsed != null && isDigestEnvelopeShape(parsed.value);
 }
 
 /**
@@ -617,9 +623,9 @@ function stripFenceMarker(line: string, continuation = ''): string | null {
 
 	// 1) 1 トークンだけの行は info string (json5 や将来の形式名も含めて剥がす)
 	if (tail === '') return '';
-	// 2) トークンの後ろが実際に JSON オブジェクトとして解析できるなら、トークンは形式名とみなして剥がす
-	//    ( ` ```json{"topics":[]} ` のように空白が無い場合も含む。配列は箇条書きの可能性があるため対象外)
-	if (startsWithParsableJsonObject(tail) && FENCE_INFO_STRING_PATTERN.test(token!)) return tail;
+	// 2) トークンの後ろが実際にダイジェストの JSON として解析できるなら、トークンは形式名とみなして剥がす
+	//    ( ` ```json{"topics":[]} ` のように空白が無い場合も含む。単なる配列は箇条書きの可能性があるため対象外)
+	if (startsWithParsableDigestJson(tail) && FENCE_INFO_STRING_PATTERN.test(token!)) return tail;
 	//    後続行を使って初めて JSON として成立する場合は、自然文の先頭語との区別が付かないため
 	//    既知の形式名だけを剥がす (`GPU [` のような地の文を残す)
 	const multilineJsonText = continuation === '' ? tail : `${tail}\n${continuation}`;
@@ -979,6 +985,11 @@ function parseEnvelope(
 		parsed = JSON.parse(text) as unknown;
 	} catch {
 		return null;
+	}
+	// 配列で 1 段だけ包まれた封筒も受け入れる。開きフェンスに `jsonl` などを付けて
+	// `[{"topics": [...]}]` の形で返すモデルでも、外側の配列を本文のノイズとして残さない
+	if (Array.isArray(parsed) && parsed.length === 1) {
+		parsed = parsed[0];
 	}
 	if (!isRecord(parsed) || !('topics' in parsed)) return null;
 	const rawTopics = parsed.topics;
