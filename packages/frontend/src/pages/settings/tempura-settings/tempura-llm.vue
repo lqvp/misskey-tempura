@@ -254,7 +254,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 										<div v-for="item in tlDigestUserFilterUsers" :key="item.id" :class="$style.userListItem">
 											<!-- 取得できなかったユーザーはリンクを張らない (プロフィールが存在しないため遷移先が 404 になる) -->
 											<MkA v-if="item.user != null" :to="userProfilePath(item.user)" :class="$style.userCardLink">
-												<MkUserCardMini :user="item.user" :withChart="false"/>
+												<MkUserCardMini :user="item.user" :withChart="false" forceShowMutedUser/>
 											</MkA>
 											<div v-else v-adaptive-bg :class="$style.unknownUser" :title="item.id">
 												<i class="ti ti-user-question" :class="$style.unknownUserIcon"></i>

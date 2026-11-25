@@ -152,6 +152,23 @@ describe('LLM設定 > TLダイジェストのユーザーフィルタ表示', ()
 		expect(remoteLink?.getAttribute('href')).toBe('/@bob@remote.example');
 	});
 
+	test('ミュート済みのユーザーでも絞り込み対象を識別できる', async () => {
+		prefer.commit('anonymizeMutedUsers', true);
+		apiMock.mockImplementation(async (endpoint: string, payload: Record<string, unknown>) => {
+			if (endpoint === 'users/show') {
+				const ids = (payload.userIds ?? []) as string[];
+				return ids.includes(LOCAL_ID) ? [{ ...localUser, isMuted: true }] : [];
+			}
+			return {};
+		});
+		prefer.commit('tlDigestUserFilterMode', 'block');
+		prefer.commit('tlDigestUserFilterUserIds', [LOCAL_ID]);
+		const page = render(XTempuraLlmSettings, { global: { directives, components } });
+
+		await page.findByText('@alice');
+		expect(page.queryByText(i18n.ts.mutedUsers)).toBeNull();
+	});
+
 	test('選択済みのユーザーを重複させずに追加できる', async () => {
 		const page = await mountSection([LOCAL_ID]);
 		const rowCount = () => page.container.querySelectorAll<HTMLElement>('button').length;
