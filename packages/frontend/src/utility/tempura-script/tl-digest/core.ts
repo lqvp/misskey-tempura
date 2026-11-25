@@ -589,16 +589,18 @@ function startsWithParsableJson(text: string): boolean {
 	return parseJsonPrefix(text) != null;
 }
 
-/** JSON 値がダイジェストの封筒、またはそれを含む配列か。箇条書きの配列と区別する */
+/** JSON 値がダイジェストの封筒、またはそれを 1 段だけ包む配列か。箇条書きの配列と区別する */
 function isDigestEnvelopeShape(value: unknown): boolean {
-	if (Array.isArray(value)) return value.some((item) => isDigestEnvelopeShape(item));
+	if (Array.isArray(value)) {
+		return value.length === 1 && isRecord(value[0]) && 'topics' in value[0] && Array.isArray(value[0].topics);
+	}
 	return isRecord(value) && 'topics' in value && Array.isArray(value.topics);
 }
 
-/** 先頭の括弧断片がダイジェストの JSON として成立するか。配列は封筒を含む場合だけ形式名の根拠にする */
+/** 先頭の括弧断片が JSON オブジェクト、またはダイジェストを含む配列として成立するか */
 function startsWithParsableDigestJson(text: string): boolean {
 	const parsed = parseJsonPrefix(text);
-	return parsed != null && isDigestEnvelopeShape(parsed.value);
+	return parsed != null && (isRecord(parsed.value) || isDigestEnvelopeShape(parsed.value));
 }
 
 /**

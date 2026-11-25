@@ -840,6 +840,15 @@ describe('parseTlDigestResponse', () => {
 		expect(parsedTwoLines!.fallbackText).toBeNull();
 	});
 
+	it('入れ子オブジェクトのダイジェストでは、未知の形式名だけを剥がして話題を採用する (回帰)', () => {
+		const raw = '```jsonl {"digest":{"topics":[{"title":"GPU","summary":"新製品が話題でした。","refs":["n1"]}]}}\n```';
+		const parsed = parseTlDigestResponse(raw, refMap);
+		expect(parsed).not.toBeNull();
+		expect(parsed!.topics).toHaveLength(1);
+		expect(parsed!.topics[0].title).toBe('GPU');
+		expect(parsed!.topics[0].noteIds).toEqual(['real-id-1']);
+	});
+
 	it('配列に包まれたダイジェストでは、未知の形式名だけを剥がして話題を採用する (回帰)', () => {
 		const raw = '```jsonl [{"topics":[{"title":"GPU","summary":"新製品が話題でした。","refs":["n1"]}]}]\n```';
 		const parsed = parseTlDigestResponse(raw, refMap);
