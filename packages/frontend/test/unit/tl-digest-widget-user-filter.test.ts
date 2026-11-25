@@ -311,4 +311,23 @@ describe('TLダイジェストウィジェットの自動生成の確保とキ�
 		expect(again).not.toBeNull();
 		again!.release();
 	});
+
+	test('ネストウィジェット用ストアの controller がアンマウント後に送信へ進んだら、終了後も確保は消費されたまま', async () => {
+		const counting = await startAutoGeneration({
+			useControllerStore: true,
+			initialWindow: { since: 5_000, until: 6_000_000 },
+		});
+		const win = windowOf(counting.runs[0]);
+
+		page!.unmount();
+		page = null;
+		await settle();
+
+		// 切替で component が外れたあとに実送信へ進み、処理が終わった状態を再現する
+		(counting.runs[0].onSending as () => void)();
+		counting.finishRun();
+		await settle();
+
+		expect(claimTlDigestAutoGenerate('test-user', win)).toBeNull();
+	});
 });
