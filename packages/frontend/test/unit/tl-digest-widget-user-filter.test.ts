@@ -28,6 +28,7 @@ vi.mock('@/i.js', async (importOriginal) => ({
 
 const { default: XTlDigestWidget } = await import('@/widgets/WidgetTlDigest.vue');
 const { TL_DIGEST_CONTROLLER_KEY, TL_DIGEST_CONTROLLER_STORE_KEY, claimTlDigestAutoGenerate } = await import('@/utility/tempura-script/tl-digest/digest.js');
+const { hasTlDigestAutoGenerateSent } = await import('@/utility/tempura-script/tl-digest/activity.js');
 
 const WINDOW: TlDigestWindow = { since: 1_000, until: 2_000_000 };
 
@@ -329,5 +330,6 @@ describe('TLダイジェストウィジェットの自動生成の確保とキ�
 		await settle();
 
 		expect(claimTlDigestAutoGenerate('test-user', win)).toBeNull();
+		expect(hasTlDigestAutoGenerateSent('test-user', win)).toBe(true);
 	});
 });
