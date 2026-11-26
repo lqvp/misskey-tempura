@@ -11,7 +11,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		<div v-if="isBeta" :class="$style.beta">{{ i18n.ts.thankYouForTestingBeta }}</div>
 		<div>
 			<MkButton v-if="shouldShowMisskeyButton" :class="$style.updateButton" full @click="whatIsNew">{{ i18n.ts.whatIsNew }}</MkButton>
-			<MkButton v-if="shouldShowTempButton" :class="$style.updateButton" full @click="whatIsNewFork">{{ i18n.ts.whatIsNew }} (misskey-tempura)</MkButton>
+			<MkButton v-if="shouldShowTempButton" :class="$style.updateButton" full @click="whatIsNewFork">{{ i18n.ts._misskeyTempura.viewFeatures }}</MkButton>
 		</div>
 		<MkButton :class="$style.gotIt" primary full @click="modal?.close()">{{ i18n.ts.gotIt }}</MkButton>
 	</div>
@@ -60,7 +60,7 @@ function whatIsNew() {
 
 function whatIsNewFork() {
 	modal.value?.close();
-	window.open(`/tempura-changelog`, '_blank');
+	window.open('/tempura-diff', '_blank');
 }
 
 onMounted(() => {

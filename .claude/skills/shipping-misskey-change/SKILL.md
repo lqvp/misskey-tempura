@@ -45,6 +45,7 @@ script は次を行い、独立した検査を最後まで続けて exit 0 (合�
   新規 migration は `up()` / `down()`、既存のマージ済 migration は差分なし
 - backend API endpoint: [misskey-api-reviewer](../../agents/misskey-api-reviewer.md) を実行
 - frontend `.vue`: [vue-component-reviewer](../../agents/vue-component-reviewer.md) を実行
+- 利用者向けの独自機能・仕様変更 (`diff.md`): [docs/contributing/feature-catalog.md](../../../docs/contributing/feature-catalog.md) に従い更新し、`pnpm --filter frontend test test/unit/tempura-script/feature-catalog.test.ts` を実行
 
 ## 3. 引き継ぎ
 

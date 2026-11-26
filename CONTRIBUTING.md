@@ -70,6 +70,8 @@ Thanks for your cooperation 🤗
 
 For ActivityPub payload changes, see [additional requirements](docs/contributing/activitypub.md).
 
+For Misskey-Tempura user-facing feature changes, update [diff.md](./diff.md) following [docs/contributing/feature-catalog.md](docs/contributing/feature-catalog.md) instead of `CHANGELOG.md`.
+
 ## Security Advisory
 
 ### For reporter

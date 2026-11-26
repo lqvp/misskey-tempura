@@ -9595,9 +9595,17 @@ export interface Locale extends ILocale {
          */
         "aboutTempura": string;
         /**
-         * tempuraの更新履歴
+         * Misskey-tempuraの独自機能
          */
         "diff": string;
+        /**
+         * 更新履歴
+         */
+        "releases": string;
+        /**
+         * 独自機能を見る (misskey-tempura)
+         */
+        "viewFeatures": string;
         "_changelog": {
             /**
              * 機能ガイド

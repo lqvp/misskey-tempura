@@ -7,6 +7,12 @@ export type FeatureItem = { text: string; children: string[] };
 export type FeatureGroup = { title: string; paragraphs: string[]; items: FeatureItem[] };
 export type FeatureSection = { id: string; title: string; groups: FeatureGroup[] };
 
+/** Strip HTML maintainer comments while preserving comment-like text inside inline code spans. */
+export function stripFeatureCatalogComments(markdown: string): string {
+	// Maintainer instructions are not part of the visible or searchable catalog.
+	return markdown.replace(/(`+)[\s\S]*?\1|<!--[\s\S]*?(?:-->|$)/g, match => match.startsWith('<!--') ? '' : match);
+}
+
 /** The heading, paragraph and nested-list subset used by diff.md. */
 export function parseFeatureCatalog(markdown: string): { introduction: string; notes: string[]; sections: FeatureSection[] } {
 	const sections: FeatureSection[] = [];
@@ -18,8 +24,7 @@ export function parseFeatureCatalog(markdown: string): { introduction: string; n
 	let inNotes = false;
 	let paragraphContinues = false;
 
-	// Maintainer instructions are not part of the visible or searchable catalog.
-	const visible = markdown.replace(/(`+)[\s\S]*?\1|<!--[\s\S]*?(?:-->|$)/g, match => match.startsWith('<!--') ? '' : match);
+	const visible = stripFeatureCatalogComments(markdown);
 	for (const raw of visible.split(/\r?\n/)) {
 		const line = raw.trim();
 		if (!line || line.startsWith('# ')) {

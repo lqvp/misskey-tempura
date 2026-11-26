@@ -1,0 +1,51 @@
+name: Feature catalog check
+
+on:
+  push:
+    branches:
+      - develop
+      - master
+    paths:
+      - diff.md
+      - docs/contributing/feature-catalog.md
+      - packages/frontend/src/utility/tempura-script/feature-catalog.ts
+      - packages/frontend/src/utility/tempura-script/feature-catalog-lint.ts
+      - packages/frontend/src/utility/tms/rj-number-parser.ts
+      - packages/frontend/src/pages/tempura-changelog.vue
+      - packages/frontend/test/unit/tempura-script/feature-catalog.test.ts
+      - packages/frontend/test/unit/tempura-changelog.test.ts
+      - .github/workflows/feature-catalog.yml
+  pull_request:
+    paths:
+      - diff.md
+      - docs/contributing/feature-catalog.md
+      - packages/frontend/src/utility/tempura-script/feature-catalog.ts
+      - packages/frontend/src/utility/tempura-script/feature-catalog-lint.ts
+      - packages/frontend/src/utility/tms/rj-number-parser.ts
+      - packages/frontend/src/pages/tempura-changelog.vue
+      - packages/frontend/test/unit/tempura-script/feature-catalog.test.ts
+      - packages/frontend/test/unit/tempura-changelog.test.ts
+      - .github/workflows/feature-catalog.yml
+
+permissions:
+  contents: read
+
+jobs:
+  feature-catalog:
+    name: Feature catalog tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.1.1
+      - name: Use Node.js
+        uses: actions/setup-node@v7.1.0
+        with:
+          node-version-file: '.node-version'
+          cache: 'pnpm'
+      - run: pnpm i --frozen-lockfile
+      - name: Build i18n
+        run: pnpm --filter i18n build
+      - name: Run feature catalog tests
+        run: pnpm --filter frontend test test/unit/tempura-script/feature-catalog.test.ts test/unit/tempura-changelog.test.ts
