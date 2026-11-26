@@ -53,6 +53,7 @@ import MkSelect from '@/components/MkSelect.vue';
 import MkButton from '@/components/MkButton.vue';
 import MkDraggable from '@/components/MkDraggable.vue';
 import { widgets as widgetDefs, federationWidgets } from '@/widgets/index.js';
+import { buildWidgetSelectItems } from '@/widgets/widget-select-items.js';
 import * as os from '@/os.js';
 import { i18n } from '@/i18n.js';
 import { instance } from '@/instance.js';
@@ -91,7 +92,13 @@ const {
 	model: widgetAdderSelected,
 	def: widgetAdderSelectedDef,
 } = useMkSelect({
-	items: computed(() => [{ label: i18n.ts.none, value: null }, ..._widgetDefs.value.map(x => ({ label: i18n.ts._widgets[x], value: x }))]),
+	items: computed(() => buildWidgetSelectItems({
+		widgetNames: _widgetDefs.value,
+		getLabel: x => i18n.ts._widgets[x],
+		originalFeatureLabel: i18n.ts.originalFeature,
+		includeNone: true,
+		noneLabel: i18n.ts.none,
+	})),
 	initialValue: null,
 });
 
