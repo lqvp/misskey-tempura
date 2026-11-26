@@ -84,6 +84,7 @@ function makeNote(
 		poll: overrides.poll,
 		clippedCount: 0,
 		dontShowOnLtl: overrides.dontShowOnLtl ?? false,
+		...(overrides.isHidden !== undefined ? { isHidden: overrides.isHidden } : {}),
 	} as unknown as Misskey.entities.Note;
 }
 
@@ -185,6 +186,65 @@ describe('prepareNotesForDigest', () => {
 			allowedVisibilities: ['public', 'home'],
 		});
 		expect(prepared).toEqual([]);
+	});
+
+	it('isHidden: true のノート、非表示化された引用ノート (renote 残存)、および非表示化されたリノート元を除外する', () => {
+		const visibleOrig = makeNote({
+			id: 'orig-visible',
+			userId: 'author-1',
+			visibility: 'public',
+			text: '通常の引用先ノート',
+		});
+		// makeNotesHiddenBefore 等で引用ノートが非表示化されると、text / cw / files / poll が消されて
+		// renote だけが残る。isPureRenoteNote() より先に isHidden を弾かないと純リノート扱いになってしまう
+		const hiddenQuote = makeNote({
+			id: 'quote-hidden',
+			userId: 'quoter-1',
+			visibility: 'public',
+			text: null,
+			cw: null,
+			files: [],
+			renoteId: visibleOrig.id,
+			renote: visibleOrig,
+			isHidden: true,
+		});
+		const hiddenPlain = makeNote({
+			id: 'plain-hidden',
+			userId: 'author-2',
+			visibility: 'public',
+			text: '非表示にされた通常ノート',
+			isHidden: true,
+		});
+		const hiddenTarget = makeNote({
+			id: 'orig-hidden',
+			userId: 'author-3',
+			visibility: 'public',
+			text: '非表示にされたリノート元',
+			isHidden: true,
+		});
+		const rnOfHiddenTarget = makeNote({
+			id: 'rn-hidden-target',
+			userId: 'renoter-1',
+			visibility: 'public',
+			text: null,
+			renoteId: hiddenTarget.id,
+			renote: hiddenTarget,
+		});
+
+		// 非表示ノート群のみを渡した場合はすべて除外される (hiddenQuote が純RNと誤認されない)
+		expect(prepareNotesForDigest([hiddenPlain, hiddenQuote, rnOfHiddenTarget], {
+			allowedVisibilities: ['public', 'home'],
+			includeRenotes: true,
+		}).prepared).toEqual([]);
+
+		// 元ノートと一緒に流れても、非表示化された引用ノートで RN カウントが増えない
+		const withOrig = prepareNotesForDigest([visibleOrig, hiddenQuote], {
+			allowedVisibilities: ['public', 'home'],
+			includeRenotes: true,
+		});
+		expect(withOrig.prepared).toHaveLength(1);
+		expect(withOrig.prepared[0].noteId).toBe('orig-visible');
+		expect(withOrig.prepared[0].renoteCount).toBe(0);
 	});
 
 	it('maxPreparedNotes が 50 のとき、100件の中から最新50件を選び時系列順に n1..n50 を振る', () => {
@@ -1563,7 +1623,7 @@ describe('createTlDigestController', () => {
 		expect(sentDestinations).toEqual(['server:x']);
 	});
 
-	it('resolveDestination 待機中に CW 設定が厳しくなった場合も previewCache ヒット時に古い設定で送信しない', async () => {
+	it('resolveDestination 待機中に CW 設定が厳しくなった場合も、件数確認後の生成で古い設定で送信しない', async () => {
 		const win = { since: Date.UTC(2026, 10, 24, 10, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
 		let cwMode: 'include' | 'cwOnly' = 'include';
 		const destDeferred = createDeferred<'server:x'>();
@@ -1595,7 +1655,7 @@ describe('createTlDigestController', () => {
 			},
 		}));
 
-		// 先に cwMode: include で previewCache を作成
+		// 先に cwMode: include で件数確認を実行しておく (previewCache が満たされた状態)
 		await controller.refreshPendingCount(win, true);
 
 		// run() の resolveDestination 待機中に cwMode を cwOnly へ厳格化
@@ -1726,6 +1786,77 @@ describe('createTlDigestController', () => {
 		expect(sentInputs).toHaveLength(1);
 		expect(sentInputs[0]).toContain('公開本文');
 		expect(sentInputs[0]).not.toContain('削除されるフォロワー限定本文');
+	});
+
+	it('followers を含まない通常設定 (public / home) でも、件数確認のキャッシュを使わず run() で再取得して削除済みノートを送らない', async () => {
+		const win = { since: Date.UTC(2026, 10, 24, 10, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
+		let deleted = false;
+		const fetchTimeline = vi.fn(async () => [
+			makeNote({ id: 'n-keep', visibility: 'public', createdAt: '2026-11-24T10:30:00.000Z', text: '残る公開ノート' }),
+			...(deleted ? [] : [makeNote({ id: 'n-del', visibility: 'public', createdAt: '2026-11-24T10:31:00.000Z', text: '削除される公開ノート' })]),
+			makeNote({ id: 'n-old', visibility: 'public', createdAt: '2026-11-24T09:00:00.000Z', text: '期間外' }),
+		]);
+		const sentInputs: string[] = [];
+		const controller = createTlDigestController(makeDeps({
+			fetchTimeline,
+			generate: async (opts) => {
+				sentInputs.push(opts.userContent ?? '');
+				return { choices: [{ message: { content: '{"topics":[]}' } }] };
+			},
+		}));
+
+		const count = await controller.refreshPendingCount(win, true);
+		expect(count).toEqual({ status: 'ready', count: 2, truncated: false });
+		expect(fetchTimeline).toHaveBeenCalledTimes(1);
+
+		deleted = true;
+		await controller.run({ ...win, maxNotes: 50, includeRenotes: true });
+		expect(fetchTimeline).toHaveBeenCalledTimes(2);
+		expect(sentInputs).toHaveLength(1);
+		expect(sentInputs[0]).toContain('残る公開ノート');
+		expect(sentInputs[0]).not.toContain('削除される公開ノート');
+	});
+
+	it('followers を含まない通常設定 (public / home) でも、件数確認後に followers / specified へ公開範囲が絞られたノートを run() で再取得して除外する', async () => {
+		const win = { since: Date.UTC(2026, 10, 24, 10, 0, 0), until: Date.UTC(2026, 10, 24, 11, 0, 0) };
+		let restricted = false;
+		const fetchTimeline = vi.fn(async () => [
+			makeNote({ id: 'n-still-pub', visibility: 'public', createdAt: '2026-11-24T10:30:00.000Z', text: '公開のままのノート' }),
+			makeNote({
+				id: 'n-downgraded-followers',
+				visibility: restricted ? 'followers' : 'public',
+				createdAt: '2026-11-24T10:31:00.000Z',
+				text: 'フォロワー限定化されたノート',
+			}),
+			makeNote({
+				id: 'n-downgraded-specified',
+				visibility: restricted ? 'specified' : 'public',
+				createdAt: '2026-11-24T10:32:00.000Z',
+				text: '非公開化されたノート',
+			}),
+			makeNote({ id: 'n-old', visibility: 'public', createdAt: '2026-11-24T09:00:00.000Z', text: '期間外' }),
+		]);
+		const sentInputs: string[] = [];
+		const controller = createTlDigestController(makeDeps({
+			fetchTimeline,
+			generate: async (opts) => {
+				sentInputs.push(opts.userContent ?? '');
+				return { choices: [{ message: { content: '{"topics":[]}' } }] };
+			},
+		}));
+
+		const count = await controller.refreshPendingCount(win, true);
+		expect(count).toEqual({ status: 'ready', count: 3, truncated: false });
+		expect(fetchTimeline).toHaveBeenCalledTimes(1);
+
+		// makeNotesFollowersOnlyBefore / notes/make-private 相当の変更が発生
+		restricted = true;
+		await controller.run({ ...win, maxNotes: 50, includeRenotes: true });
+		expect(fetchTimeline).toHaveBeenCalledTimes(2);
+		expect(sentInputs).toHaveLength(1);
+		expect(sentInputs[0]).toContain('公開のままのノート');
+		expect(sentInputs[0]).not.toContain('フォロワー限定化されたノート');
+		expect(sentInputs[0]).not.toContain('非公開化されたノート');
 	});
 
 	it('送信直前に followers 同意が取り消された場合は送信せず pending を消化しない', async () => {

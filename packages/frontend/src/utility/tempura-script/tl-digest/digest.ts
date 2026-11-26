@@ -179,9 +179,9 @@ export const MAX_SCAN_NOTES = 500;
 export const PENDING_COUNT_CAP = 200;
 const PREVIEW_CACHE_SIZE = 4;
 /**
- * 件数確認の走査結果を再利用する有効期間。
- * 不在期間の終端 (until) は固定なので内容が古くなることはないが、
- * 削除・公開範囲変更などで件数がずれるため、長く保持しすぎない。
+ * 件数確認 (refreshPendingCount) の走査結果を件数プレビュー向けに保持する有効期間。
+ * バッジ表示の連続再取得を抑えるためだけに使い、外部 LLM への送信 (run) では再利用しない
+ * (件数確認後に削除・非公開化・followers 化・isHidden 化されたノートを送らないため)。
  */
 const PREVIEW_CACHE_TTL_MS = 5 * 60 * 1000;
 
@@ -310,7 +310,8 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 	let countAbort: AbortController | null = null;
 	let lastWindow: TlDigestWindow | null = null;
 
-	// 件数確認で取得したノートを生成時に再利用する (インスタンスごと・メモリのみ・永続化しない)
+	// 件数確認 (refreshPendingCount) 専用キャッシュ (インスタンスごと・メモリのみ・永続化しない)。
+	// 外部 LLM へ送信する run() では再利用せず、必ず最新タイムラインを取得し直す。
 	const previewCache = new Map<string, { scan: ScanResult; storedAt: number }>();
 
 	function putPreviewCache(key: string, value: ScanResult): void {
@@ -548,60 +549,46 @@ export function createTlDigestController(overrides: Partial<TlDigestDeps> = {}):
 			const isEnoughWith = (filter: typeof initial.filter) => (notes: Misskey.entities.Note[]) =>
 				prepareWith(filter, notes).prepared.length >= maxNotes;
 
-			// followers を含む場合は、件数確認後に削除・公開範囲変更された投稿を送らないよう必ず取得し直す
-			const cached = initial.filter.allowedVisibilities.includes('followers')
-				? undefined
-				: getPreviewCache(initial.cacheKey(win));
-			let notes: Misskey.entities.Note[];
-			let scanComplete: boolean;
-			let usedNetwork = false;
-			if (cached != null && (cached.complete || isEnoughWith(initial.filter)(cached.notes))) {
-				notes = cached.notes;
-				scanComplete = cached.complete;
-			} else {
-				usedNetwork = true;
-				const scan = await measureTlDigestAsync(
-					'scan',
-					() => scanWindow(win, options.includeRenotes, abort.signal, isEnoughWith(initial.filter)),
-				);
-				if (!isCurrent()) return;
-				notes = scan.notes;
-				scanComplete = scan.complete;
-			}
+			// 外部 LLM へ送信する前には previewCache を再利用せず、必ず最新タイムラインを取得し直す
+			// (件数確認後に削除・非公開化・公開範囲変更・非表示化されたノートを送らないため)
+			const scan = await measureTlDigestAsync(
+				'scan',
+				() => scanWindow(win, options.includeRenotes, abort.signal, isEnoughWith(initial.filter)),
+			);
+			if (!isCurrent()) return;
+			let notes = scan.notes;
+			let scanComplete = scan.complete;
 
 			// 取得中に公開範囲・CW・LLM 送信先が変更された場合は最新条件を必ず適用する
-			let active = initial;
-			if (usedNetwork) {
-				const latest = await resolveFilter(options.includeRenotes, true);
+			const latest = await resolveFilter(options.includeRenotes, true);
+			if (!isCurrent()) return;
+			if (latest.destination == null) {
+				error.value = { message: configErrorMessage(latest.settings.useServerApi), isConfigError: true };
+				return;
+			}
+			const filterChanged =
+				latest.destination !== initial.destination ||
+				latest.filter.cwMode !== initial.filter.cwMode ||
+				latest.filter.allowedVisibilities.join(',') !== initial.filter.allowedVisibilities.join(',');
+
+			let active = latest;
+			if (filterChanged && !scanComplete && !isEnoughWith(latest.filter)(notes)) {
+				const rescan = await scanWindow(win, options.includeRenotes, abort.signal, isEnoughWith(latest.filter));
 				if (!isCurrent()) return;
-				if (latest.destination == null) {
-					error.value = { message: configErrorMessage(latest.settings.useServerApi), isConfigError: true };
-					return;
-				}
-				const filterChanged =
-					latest.destination !== initial.destination ||
-					latest.filter.cwMode !== initial.filter.cwMode ||
-					latest.filter.allowedVisibilities.join(',') !== initial.filter.allowedVisibilities.join(',');
+				notes = rescan.notes;
+				scanComplete = rescan.complete;
 
-				active = latest;
-				if (filterChanged && !scanComplete && !isEnoughWith(latest.filter)(notes)) {
-					const rescan = await scanWindow(win, options.includeRenotes, abort.signal, isEnoughWith(latest.filter));
-					if (!isCurrent()) return;
-					notes = rescan.notes;
-					scanComplete = rescan.complete;
-
-					const verified = await resolveFilter(options.includeRenotes, true);
-					if (!isCurrent()) return;
-					if (
-						verified.destination == null ||
-						verified.destination !== latest.destination ||
-						verified.filter.cwMode !== latest.filter.cwMode ||
-						verified.filter.allowedVisibilities.join(',') !== latest.filter.allowedVisibilities.join(',')
-					) {
-						throw new Error(i18n.ts._tlDigest.settingsChanged);
-					}
-					active = verified;
+				const verified = await resolveFilter(options.includeRenotes, true);
+				if (!isCurrent()) return;
+				if (
+					verified.destination == null ||
+					verified.destination !== latest.destination ||
+					verified.filter.cwMode !== latest.filter.cwMode ||
+					verified.filter.allowedVisibilities.join(',') !== latest.filter.allowedVisibilities.join(',')
+				) {
+					throw new Error(i18n.ts._tlDigest.settingsChanged);
 				}
+				active = verified;
 			}
 
 			// 送信直前の比較基準は「このプロンプトの作成に実際に使ったミュート語」でなければならない。

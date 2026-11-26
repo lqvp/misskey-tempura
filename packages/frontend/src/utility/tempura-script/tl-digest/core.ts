@@ -337,12 +337,24 @@ export function prepareNotesForDigest(
 			continue;
 		}
 
+		// makeNotesHiddenBefore 等で非表示化されたノートは除外する。
+		// 引用ノートが非表示化されると text / cw / files / poll が消されて renote だけ残るため、
+		// isPureRenoteNote() より先に判定しないと純リノートと誤認して引用先を拾ってしまう。
+		if (rawNote.isHidden === true) {
+			continue;
+		}
+
 		const pureRenote = isPureRenoteNote(rawNote);
 		if (pureRenote && !includeRenotes) {
 			continue;
 		}
 
 		const targetNote = pureRenote && rawNote.renote != null ? rawNote.renote : rawNote;
+
+		// リノート元が非表示化されている場合も除外
+		if (targetNote.isHidden === true) {
+			continue;
+		}
 
 		// リノート元が自分の投稿の場合も除外
 		if (meId != null && targetNote.userId === meId) {
