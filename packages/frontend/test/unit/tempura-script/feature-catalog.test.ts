@@ -94,7 +94,18 @@ describe('feature catalog', () => {
 		].join('\n'));
 	});
 
-	test('strips comments across lines after escaped or unpaired backticks with handwritten expectations', () => {
+	test('strips comments across and within lines after escaped or unpaired backticks with handwritten expectations', () => {
+		const sameLineInput = '## 公開カテゴリ\n* 同一行の \\` <!-- 非表示メモ -->と `code` および `<!--` の説明';
+		expect(stripFeatureCatalogComments(sameLineInput)).toBe(
+			'## 公開カテゴリ\n* 同一行の \\` と `code` および `<!--` の説明',
+		);
+		const sameLineParsed = parseFeatureCatalog(sameLineInput);
+		expect(sameLineParsed.sections.map(section => section.title)).toEqual(['公開カテゴリ']);
+		expect(sameLineParsed.sections[0].groups[0].items).toEqual([
+			{ text: '同一行の \\` と `code` および `<!--` の説明', children: [] },
+		]);
+		expect(searchFeatureCatalog(sameLineParsed.sections, '非表示メモ')).toEqual([]);
+
 		const input = [
 			'## 公開カテゴリ',
 			'* エスケープ済みバッククォート \\` の説明',
