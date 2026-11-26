@@ -5,12 +5,14 @@
 
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { cleanup, fireEvent, render } from '@testing-library/vue';
-import { nextTick } from 'vue';
+import { defineComponent, h, nextTick } from 'vue';
+import type { MkDialogReturnType } from '@/components/MkDialog.vue';
 import type { ItemGroup, ItemOption, MkSelectItem } from '@/components/MkSelect.vue';
 import type { OptionValue } from '@/types/option-value.js';
 import type { WidgetName } from '@/widgets/index.js';
 import { federationWidgets, tempuraWidgets, widgets } from '@/widgets/index.js';
 import { buildWidgetSelectItems } from '@/widgets/widget-select-items.js';
+import MkDialog from '@/components/MkDialog.vue';
 import MkWidgets from '@/components/MkWidgets.vue';
 import MkNestedWidgetEditor from '@/components/MkNestedWidgetEditor.vue';
 import { i18n } from '@/i18n.js';
@@ -34,13 +36,9 @@ type SelectOptions = {
 	items: (MkSelectItem<WidgetName> | undefined)[];
 };
 
-type SelectResult =
-	| { canceled: true; result: undefined }
-	| { canceled: false; result: WidgetName | null };
-
 const { popupMenu, select } = vi.hoisted(() => ({
 	popupMenu: vi.fn<(items: PopupMenuEntry[], evOrEl?: unknown, options?: PopupMenuOptions) => void>(),
-	select: vi.fn<(props: SelectOptions) => Promise<SelectResult>>(),
+	select: vi.fn<(props: SelectOptions) => Promise<MkDialogReturnType>>(),
 }));
 
 vi.mock('@/os.js', () => ({
@@ -55,8 +53,13 @@ const standardWidgetsWithoutFederation = standardWidgets.filter(widgetName => !f
 const widgetsWithoutFederation = widgets.filter(widgetName => !federationWidgetSet.has(widgetName));
 
 const initialFederation = instance.federation;
+const activeDialogDisposers = new Set<() => void>();
 
 afterEach(() => {
+	for (const dispose of activeDialogDisposers) {
+		dispose();
+	}
+	activeDialogDisposers.clear();
 	cleanup();
 	instance.federation = initialFederation;
 	popupMenu.mockReset();
@@ -412,6 +415,20 @@ describe('MkWidgets widget selector integration', () => {
 });
 
 describe('MkNestedWidgetEditor widget selector integration', () => {
+	// Stub only the modal shell so MkDialog, useMkSelect, MkSelect, and MkButton run end-to-end without layout/focus-trap globals.
+	const MkModalStub = defineComponent({
+		name: 'MkModal',
+		emits: ['click', 'closed', 'esc'],
+		setup(_, { slots, emit, expose }) {
+			expose({
+				close() {
+					emit('closed');
+				},
+			});
+			return () => h('div', { 'data-testid': 'mk-dialog-modal' }, slots.default?.());
+		},
+	});
+
 	function renderEditor() {
 		return render(MkNestedWidgetEditor, {
 			props: {
@@ -423,6 +440,66 @@ describe('MkNestedWidgetEditor widget selector integration', () => {
 				},
 			},
 		});
+	}
+
+	function mockSelectWithDialog() {
+		let currentDialog: ReturnType<typeof render> | null = null;
+		const onDone = vi.fn<(result: MkDialogReturnType) => void>();
+
+		select.mockImplementation(selectProps => new Promise<MkDialogReturnType>(resolve => {
+			let dialogView: ReturnType<typeof render> | null = null;
+			let disposed = false;
+
+			const dispose = () => {
+				if (disposed) return;
+				disposed = true;
+				activeDialogDisposers.delete(dispose);
+				dialogView?.unmount();
+				dialogView = null;
+			};
+
+			activeDialogDisposers.add(dispose);
+			dialogView = render(MkDialog, {
+				props: {
+					title: selectProps.title,
+					text: selectProps.text,
+					select: {
+						items: selectProps.items.filter(item => item !== undefined),
+						default: selectProps.default ?? null,
+					},
+					onDone: (result: MkDialogReturnType) => {
+						onDone(result);
+						resolve(result);
+					},
+					onClosed: dispose,
+				},
+				global: {
+					stubs: {
+						MkModal: MkModalStub,
+						MkSystemIcon: true,
+						MkLoading: true,
+						Mfm: {
+							props: ['text'],
+							template: '<span>{{ text }}</span>',
+						},
+					},
+					directives: {
+						'adaptive-border': {},
+					},
+				},
+			});
+			currentDialog = dialogView;
+		}));
+
+		return {
+			getDialog() {
+				if (currentDialog == null) {
+					throw new Error('Expected MkDialog to be mounted');
+				}
+				return currentDialog;
+			},
+			onDone,
+		};
 	}
 
 	test('passes grouped widget select items without none to os.select and emits model update and edit on selection', async () => {
@@ -515,6 +592,109 @@ describe('MkNestedWidgetEditor widget selector integration', () => {
 			})),
 		});
 
+		expect(view.emitted('update:modelValue')).toBeUndefined();
+		expect(view.emitted('edit')).toBeUndefined();
+	});
+
+	test('selects weather from the original feature group in MkDialog, confirms, and adds the child widget', async () => {
+		instance.federation = 'all';
+		const { getDialog, onDone } = mockSelectWithDialog();
+		const view = renderEditor();
+
+		await fireEvent.click(view.getByRole('button', { name: i18n.ts.add }));
+		await nextTick();
+
+		expect(select).toHaveBeenCalledTimes(1);
+		const dialog = getDialog();
+		expect(dialog.container.textContent).toContain(i18n.ts.selectWidget);
+
+		const selectTrigger = dialog.container.querySelector<HTMLElement>('[tabindex="0"]');
+		expect(selectTrigger).not.toBeNull();
+		if (selectTrigger == null) throw new Error('Expected MkSelect trigger inside MkDialog');
+
+		await fireEvent.keyDown(selectTrigger, { key: 'Enter' });
+
+		expect(popupMenu).toHaveBeenCalledTimes(1);
+		const menu = popupMenu.mock.calls[0][0];
+		const labelIndex = menu.findIndex(item => item.type === 'label');
+
+		expect(labelIndex).toBe(standardWidgets.length);
+		expect(menu).toHaveLength(standardWidgets.length + 1 + tempuraWidgets.length);
+		expect(menu.map(item => item.text)).not.toContain(i18n.ts.none);
+		expect(menu.slice(0, labelIndex).map(item => item.text)).toEqual(
+			standardWidgets.map(widgetName => i18n.ts._widgets[widgetName]),
+		);
+		expect(menu[labelIndex]).toEqual({
+			type: 'label',
+			text: i18n.ts.originalFeature,
+		});
+
+		const originalFeatureItems = menu.slice(labelIndex + 1);
+		expect(originalFeatureItems.map(item => item.text)).toEqual(
+			tempuraWidgets.map(widgetName => i18n.ts._widgets[widgetName]),
+		);
+
+		const weatherMenuItem = originalFeatureItems.find(item => item.text === i18n.ts._widgets.weather);
+		expect(weatherMenuItem?.action).toBeTypeOf('function');
+		weatherMenuItem?.action?.();
+		popupMenu.mock.calls[0][2]?.onClosing?.();
+		await nextTick();
+
+		expect(selectTrigger.textContent).toContain(i18n.ts._widgets.weather);
+
+		await fireEvent.click(dialog.getByTestId('modal-dialog-ok'));
+		await nextTick();
+
+		expect(onDone).toHaveBeenCalledTimes(1);
+		expect(onDone).toHaveBeenCalledWith({ canceled: false, result: 'weather' });
+		expect(dialog.queryByTestId('modal-dialog-ok')).toBeNull();
+
+		const updated = view.emitted<[Array<{ id: string; name: string; data: Record<string, unknown> }>]>('update:modelValue');
+		expect(updated).toHaveLength(1);
+		expect(updated[0][0]).toHaveLength(1);
+		const addedWidget = updated[0][0][0];
+		expect(addedWidget.name).toBe('weather');
+		expect(addedWidget.data).toEqual({});
+
+		const editEmitted = view.emitted<[string]>('edit');
+		expect(editEmitted).toHaveLength(1);
+		expect(editEmitted[0][0]).toBe(addedWidget.id);
+	});
+
+	test('cancels MkDialog after selecting an original feature item without adding a child widget', async () => {
+		instance.federation = 'all';
+		const { getDialog, onDone } = mockSelectWithDialog();
+		const view = renderEditor();
+
+		await fireEvent.click(view.getByRole('button', { name: i18n.ts.add }));
+		await nextTick();
+
+		const dialog = getDialog();
+		const selectTrigger = dialog.container.querySelector<HTMLElement>('[tabindex="0"]');
+		expect(selectTrigger).not.toBeNull();
+		if (selectTrigger == null) throw new Error('Expected MkSelect trigger inside MkDialog');
+
+		await fireEvent.keyDown(selectTrigger, { key: 'Enter' });
+
+		expect(popupMenu).toHaveBeenCalledTimes(1);
+		const menu = popupMenu.mock.calls[0][0];
+		const labelIndex = menu.findIndex(item => item.type === 'label');
+		expect(labelIndex).toBe(standardWidgets.length);
+
+		const weatherMenuItem = menu.slice(labelIndex + 1).find(item => item.text === i18n.ts._widgets.weather);
+		expect(weatherMenuItem?.action).toBeTypeOf('function');
+		weatherMenuItem?.action?.();
+		popupMenu.mock.calls[0][2]?.onClosing?.();
+		await nextTick();
+
+		expect(selectTrigger.textContent).toContain(i18n.ts._widgets.weather);
+
+		await fireEvent.click(dialog.getByTestId('modal-dialog-cancel'));
+		await nextTick();
+
+		expect(onDone).toHaveBeenCalledTimes(1);
+		expect(onDone).toHaveBeenCalledWith({ canceled: true, result: undefined });
+		expect(dialog.queryByTestId('modal-dialog-cancel')).toBeNull();
 		expect(view.emitted('update:modelValue')).toBeUndefined();
 		expect(view.emitted('edit')).toBeUndefined();
 	});
