@@ -5,8 +5,10 @@
 
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
-import { Brackets, In, IsNull } from 'typeorm';
-import type { MiLocalUser, MiPartialLocalUser, MiPartialRemoteUser, MiRemoteUser, MiUser } from '@/models/User.js';
+import { Brackets, DataSource, In, IsNull } from 'typeorm';
+import type { MiLocalUser, MiPartialLocalUser, MiPartialRemoteUser, MiRemoteUser } from '@/models/User.js';
+import { MiUser } from '@/models/User.js';
+import { MiFollowing } from '@/models/Following.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { QueueService } from '@/core/QueueService.js';
 import PerUserFollowingChart from '@/core/chart/charts/per-user-following.js';
@@ -54,6 +56,9 @@ export class UserFollowingService implements OnModuleInit {
 
 	constructor(
 		private moduleRef: ModuleRef,
+
+		@Inject(DI.db)
+		private db: DataSource,
 
 		@Inject(DI.config)
 		private config: Config,
@@ -451,11 +456,14 @@ export class UserFollowingService implements OnModuleInit {
 			return;
 		}
 
-		await this.followingsRepository.delete(following.id);
+		const deleted = await this.deleteFollowingAndDecrement(following.id, following.follower, following.followee);
+		if (!deleted) {
+			return;
+		}
 
 		this.cacheService.userFollowingsCache.refresh(follower.id);
 
-		await this.decrementFollowing(following.follower, following.followee);
+		this.publishUnfollowSideEffects(following.follower, following.followee);
 
 		const policies = await this.roleService.getUserPolicies(follower.id);
 
@@ -504,21 +512,82 @@ export class UserFollowingService implements OnModuleInit {
 	}
 
 	@bindThis
-	private async decrementFollowing(
+	private async deleteFollowingAndDecrement(
+		followingId: MiFollowing['id'],
 		follower: MiUser,
 		followee: MiUser,
-	): Promise<void> {
+	): Promise<boolean> {
+		return await this.db.transaction(async em => {
+			const txFollowings = em.getRepository(MiFollowing);
+			const txUsers = em.getRepository(MiUser);
+
+			const deleteResult = await txFollowings.delete(followingId);
+			if (deleteResult?.affected === 0) {
+				return false;
+			}
+
+			// Neither followee nor follower has moved.
+			if (!follower.movedToUri && !followee.movedToUri) {
+				//#region Decrement following / followers counts
+				// 相互フォローの同時解除でトランザクション内の行ロックが AB-BA デッドロックしないよう、
+				// ユーザー ID の昇順で順次更新する
+				const updates: Array<{ id: MiUser['id']; column: 'followingCount' | 'followersCount' }> = [
+					{ id: follower.id, column: 'followingCount' },
+					{ id: followee.id, column: 'followersCount' },
+				];
+				updates.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+				for (const target of updates) {
+					await txUsers.decrement({ id: target.id }, target.column, 1);
+				}
+				//#endregion
+			} else {
+				// Adjust following/followers counts
+				const orderedUsers = [follower, followee].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+				for (const user of orderedUsers) {
+					if (user.movedToUri) continue; // No need to update if the user has already moved.
+
+					const nonMovedFollowees = await txFollowings.count({
+						relations: {
+							followee: true,
+						},
+						where: {
+							followerId: user.id,
+							followee: {
+								movedToUri: IsNull(),
+							},
+						},
+					});
+					const nonMovedFollowers = await txFollowings.count({
+						relations: {
+							follower: true,
+						},
+						where: {
+							followeeId: user.id,
+							follower: {
+								movedToUri: IsNull(),
+							},
+						},
+					});
+					await txUsers.update(
+						{ id: user.id },
+						{ followingCount: nonMovedFollowees, followersCount: nonMovedFollowers },
+					);
+				}
+			}
+
+			return true;
+		});
+	}
+
+	@bindThis
+	private publishUnfollowSideEffects(
+		follower: MiUser,
+		followee: MiUser,
+	): void {
 		this.globalEventService.publishInternalEvent('unfollow', { followerId: follower.id, followeeId: followee.id });
 
 		// Neither followee nor follower has moved.
 		if (!follower.movedToUri && !followee.movedToUri) {
-			//#region Decrement following / followers counts
-			await Promise.all([
-				this.usersRepository.decrement({ id: follower.id }, 'followingCount', 1),
-				this.usersRepository.decrement({ id: followee.id }, 'followersCount', 1),
-			]);
-			//#endregion
-
 			//#region Update instance stats
 			if (this.meta.enableStatsForFederatedInstances) {
 				if (this.userEntityService.isRemoteUser(follower) && this.userEntityService.isLocalUser(followee)) {
@@ -541,38 +610,6 @@ export class UserFollowingService implements OnModuleInit {
 
 			this.perUserFollowingChart.update(follower, followee, false);
 		} else {
-			// Adjust following/followers counts
-			for (const user of [follower, followee]) {
-				if (user.movedToUri) continue; // No need to update if the user has already moved.
-
-				const nonMovedFollowees = await this.followingsRepository.count({
-					relations: {
-						followee: true,
-					},
-					where: {
-						followerId: user.id,
-						followee: {
-							movedToUri: IsNull(),
-						},
-					},
-				});
-				const nonMovedFollowers = await this.followingsRepository.count({
-					relations: {
-						follower: true,
-					},
-					where: {
-						followeeId: user.id,
-						follower: {
-							movedToUri: IsNull(),
-						},
-					},
-				});
-				await this.usersRepository.update(
-					{ id: user.id },
-					{ followingCount: nonMovedFollowees, followersCount: nonMovedFollowers },
-				);
-			}
-
 			// TODO: adjust charts
 		}
 	}
@@ -860,9 +897,10 @@ export class UserFollowingService implements OnModuleInit {
 
 		if (!following || !following.followee || !following.follower) return;
 
-		await this.followingsRepository.delete(following.id);
+		const deleted = await this.deleteFollowingAndDecrement(following.id, following.follower, following.followee);
+		if (!deleted) return;
 
-		await this.decrementFollowing(following.follower, following.followee);
+		this.publishUnfollowSideEffects(following.follower, following.followee);
 	}
 
 	/**
