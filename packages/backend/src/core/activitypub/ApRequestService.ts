@@ -46,6 +46,80 @@ type PrivateKey = {
 const MAX_REDIRECTS = 5;
 // リクエストのタイムアウト (リダイレクト全体で共有)
 const REQUEST_TIMEOUT = 5000;
+// 追従対象のリダイレクトステータスコード (300/304 などは追従しない)
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+// 2xx 応答のソケット再利用向けドレイン上限 (超過時は即座に破棄する)
+const MAX_DRAIN_BYTES = 16 * 1024;
+
+function resolveRedirectUrl(currentUrl: string, location: string, options: { allowCrossOrigin: boolean }): string {
+	const prev = new URL(currentUrl);
+	const next = new URL(location, prev);
+
+	if (next.username !== '' || next.password !== '') {
+		throw new Error('redirect URL must not contain credentials');
+	}
+
+	const isAllowedProtocol = next.protocol === 'https:'
+		|| (next.protocol === 'http:' && prev.protocol === 'http:');
+	if (!isAllowedProtocol) {
+		throw new Error('redirect protocol is not allowed');
+	}
+
+	if (!options.allowCrossOrigin) {
+		const isSameOrigin = next.origin === prev.origin;
+		const isSameHostHttpsUpgrade = prev.protocol === 'http:'
+			&& next.protocol === 'https:'
+			&& next.hostname === prev.hostname
+			&& (prev.port === '' || prev.port === '80')
+			&& (next.port === '' || next.port === '443');
+
+		if (!isSameOrigin && !isSameHostHttpsUpgrade) {
+			throw new Error('cross-origin redirect is not allowed for signed POST');
+		}
+	}
+
+	return next.href;
+}
+
+type DrainableBody = {
+	on?: (event: string, cb: (...args: any[]) => void) => void;
+	resume?: () => void;
+	destroy?: () => void;
+};
+
+function drainResponseBody(res: Response, { destroyImmediately = false }: { destroyImmediately?: boolean } = {}): void {
+	const body = (res as { body?: DrainableBody | null }).body;
+	if (body == null) return;
+
+	// 破棄するレスポンスストリーム由来の未処理エラーを抑止する
+	body.on?.('error', () => { /* ignore */ });
+
+	const hasContentEncoding = (res as { headers?: { get?: (name: string) => string | null } }).headers?.get?.('content-encoding') != null;
+	if ((destroyImmediately || hasContentEncoding) && typeof body.destroy === 'function') {
+		body.destroy();
+		return;
+	}
+
+	if (typeof body.destroy === 'function') {
+		let drainedBytes = 0;
+		let destroyed = false;
+		const destroy = body.destroy.bind(body);
+		body.on?.('data', (chunk: unknown) => {
+			if (destroyed) return;
+			if (typeof chunk === 'string') {
+				drainedBytes += Buffer.byteLength(chunk);
+			} else if (ArrayBuffer.isView(chunk)) {
+				drainedBytes += chunk.byteLength;
+			}
+			if (drainedBytes > MAX_DRAIN_BYTES) {
+				destroyed = true;
+				destroy();
+			}
+		});
+	}
+
+	body.resume?.();
+}
 
 export class ApRequestCreator {
 	static async createSignedPost(args: { key: PrivateKey, url: string, body: string, digest?: string, additionalHeaders: Record<string, string> }): Promise<Signed> {
@@ -217,24 +291,30 @@ export class ApRequestService {
 				throwErrorWhenResponseNotOk: false,
 			});
 
-			if (res.status >= 300 && res.status < 400) {
-				const location = res.headers.get('location');
-				if (location != null) {
+			if (REDIRECT_STATUSES.has(res.status)) {
+				const location = res.headers.get('location')?.trim();
+				if (location) {
+					drainResponseBody(res, { destroyImmediately: true });
 					if (redirectCount >= MAX_REDIRECTS) {
 						throw new Error('too many redirects');
 					}
-					// 303 See Other は GET で追従する
+					const nextUrl = resolveRedirectUrl(currentUrl, location, { allowCrossOrigin: false });
+					// ActivityPub の inbox 配送では POST + JSON ボディを維持する必要があるため、
+					// 301/302 でも POST のまま追従し、303 See Other のみ GET に切り替える
 					if (res.status === 303) {
 						currentMethod = 'GET';
 					}
-					currentUrl = new URL(location, currentUrl).href;
+					currentUrl = nextUrl;
 					continue;
 				}
 			}
 
 			if (!res.ok) {
+				drainResponseBody(res, { destroyImmediately: true });
 				throw new StatusError(`${res.status} ${res.statusText}`, res.status, res.statusText);
 			}
+
+			drainResponseBody(res);
 
 			return;
 		}
@@ -282,18 +362,20 @@ export class ApRequestService {
 				throwErrorWhenResponseNotOk: false,
 			});
 
-			if (res.status >= 300 && res.status < 400) {
-				const location = res.headers.get('location');
-				if (location != null) {
+			if (REDIRECT_STATUSES.has(res.status)) {
+				const location = res.headers.get('location')?.trim();
+				if (location) {
+					drainResponseBody(res, { destroyImmediately: true });
 					if (redirectCount >= MAX_REDIRECTS) {
 						throw new Error('too many redirects');
 					}
-					currentUrl = new URL(location, currentUrl).href;
+					currentUrl = resolveRedirectUrl(currentUrl, location, { allowCrossOrigin: true });
 					continue;
 				}
 			}
 
 			if (!res.ok) {
+				drainResponseBody(res, { destroyImmediately: true });
 				throw new StatusError(`${res.status} ${res.statusText}`, res.status, res.statusText);
 			}
 
@@ -326,7 +408,12 @@ export class ApRequestService {
 		}
 		//#endregion
 
-		validateContentTypeSetAsActivityPub(res);
+		try {
+			validateContentTypeSetAsActivityPub(res);
+		} catch (err) {
+			drainResponseBody(res, { destroyImmediately: true });
+			throw err;
+		}
 		const finalUrl = res.url; // redirects may have been involved
 		const activity = await res.json() as IObject;
 
