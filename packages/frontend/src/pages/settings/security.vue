@@ -72,8 +72,9 @@ SPDX-License-Identifier: AGPL-3.0-only
 
 <script lang="ts" setup>
 import { computed, markRaw, ref } from 'vue';
-import type * as Misskey from 'misskey-js';
+import { host } from '@@/js/config.js';
 import X2fa from './2fa.vue';
+import type * as Misskey from 'misskey-js';
 import FormSection from '@/components/form/section.vue';
 import FormSlot from '@/components/form/slot.vue';
 import MkButton from '@/components/MkButton.vue';
@@ -82,9 +83,12 @@ import MkSigninRiskItem from '@/components/MkSigninRiskItem.vue';
 import * as os from '@/os.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import { i18n } from '@/i18n.js';
+import { $i } from '@/i.js';
+import { removeAccount } from '@/accounts.js';
+import { miLocalStorage } from '@/local-storage.js';
 import { cloudBackup } from '@/preferences/utility.js';
-import { signout } from '@/signout.js';
 import { store } from '@/store.js';
+import { unisonReload } from '@/utility/unison-reload.js';
 import { definePage } from '@/page.js';
 import MkFeatureBanner from '@/components/MkFeatureBanner.vue';
 import { Paginator } from '@/utility/paginator.js';
@@ -167,11 +171,29 @@ async function regenerateToken() {
 			password: auth.result.password,
 			token: auth.result.token,
 		});
-
-		await signout(false);
 	} catch (err) {
 		hideWaiting();
-		throw err;
+		const message = typeof err === 'object' && err !== null && 'message' in err && typeof err.message === 'string' && err.message.length > 0
+			? err.message
+			: i18n.ts.somethingHappened;
+		await os.alert({
+			type: 'error',
+			text: message,
+		});
+		return;
+	}
+
+	// トークン再生成後は対象アカウントのログイン情報だけを削除し、
+	// 他アカウントのトークン・端末設定・loginDeviceToken を保持したまま再ログインへ遷移する
+	try {
+		if ($i) {
+			await removeAccount(host, $i.id);
+		}
+	} catch (err) {
+		console.error(err);
+	} finally {
+		miLocalStorage.removeItem('account');
+		unisonReload('/');
 	}
 }
 
