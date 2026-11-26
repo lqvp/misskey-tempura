@@ -16,6 +16,9 @@ import type { JsonObject } from '@/misc/json-value.js';
 import Channel, { type ChannelRequest } from '../channel.js';
 import { REQUEST } from '@nestjs/core';
 
+const MAX_FETCH_RETRIES = 5;
+const RETRY_BASE_DELAY_MS = 1000;
+
 @Injectable({ scope: Scope.TRANSIENT })
 export class UserListChannel extends Channel {
 	public readonly chName = 'userList';
@@ -25,6 +28,8 @@ export class UserListChannel extends Channel {
 	private membershipsMap: Record<string, Pick<MiUserListMembership, 'withReplies'> | undefined> = {};
 	private listUsersFetchCount = 0;
 	private isListDeleted = false;
+	private isDisposed = false;
+	private retryTimer: ReturnType<typeof setTimeout> | null = null;
 	private withFiles: boolean;
 	private withRenotes: boolean;
 
@@ -60,7 +65,7 @@ export class UserListChannel extends Channel {
 				userId: this.user!.id,
 			},
 		});
-		if (!listExist) return false;
+		if (!listExist || this.isInactive()) return false;
 
 		// Subscribe stream
 		this.subscriber.on(`userListStream:${this.listId}`, this.onListEvent);
@@ -68,9 +73,20 @@ export class UserListChannel extends Channel {
 		this.subscriber.on('notesStream', this.onNote);
 
 		// 初回。以降はイベントを受けたときだけ読み直す
-		this.updateListUsers();
+		void this.updateListUsers();
 
 		return true;
+	}
+
+	private isInactive(): boolean {
+		return this.isListDeleted || this.isDisposed;
+	}
+
+	private clearRetryTimer(): void {
+		if (this.retryTimer != null) {
+			clearTimeout(this.retryTimer);
+			this.retryTimer = null;
+		}
 	}
 
 	@bindThis
@@ -79,13 +95,14 @@ export class UserListChannel extends Channel {
 			// リストが削除されたら、以降のノートを配信しない
 			this.isListDeleted = true;
 			this.listUsersFetchCount++;
+			this.clearRetryTimer();
 			this.membershipsMap = {};
 			return;
 		}
 
 		// 所属の読み直しは、メンバーシップの変更時に必ず発行される internalMembershipUpdated だけをきっかけにする
 		if (data.type === 'internalMembershipUpdated') {
-			this.updateListUsers();
+			void this.updateListUsers();
 			return;
 		}
 
@@ -96,7 +113,10 @@ export class UserListChannel extends Channel {
 	}
 
 	@bindThis
-	private async updateListUsers() {
+	private async updateListUsers(retryAttempt = 0) {
+		if (this.isInactive()) return;
+		this.clearRetryTimer();
+
 		const fetchCount = ++this.listUsersFetchCount;
 
 		let memberships: Pick<MiUserListMembership, 'userId' | 'withReplies'>[];
@@ -108,12 +128,24 @@ export class UserListChannel extends Channel {
 				select: { userId: true, withReplies: true },
 			});
 		} catch {
-			// 取得に失敗した場合は何もしない
+			// 一時的な DB エラーでメンバー表が欠落・古いまま固着しないよう、上限付きの指数バックオフで再試行する
+			if (
+				!this.isInactive() &&
+				fetchCount === this.listUsersFetchCount &&
+				retryAttempt < MAX_FETCH_RETRIES
+			) {
+				const delay = Math.round(RETRY_BASE_DELAY_MS * (2 ** retryAttempt) * (0.8 + Math.random() * 0.4));
+				this.retryTimer = setTimeout(() => {
+					this.retryTimer = null;
+					void this.updateListUsers(retryAttempt + 1);
+				}, delay);
+				this.retryTimer.unref();
+			}
 			return;
 		}
 
-		// 読み込み中に次の読み込みが始まっていれば古い結果は使わない
-		if (fetchCount !== this.listUsersFetchCount) return;
+		// 読み込み中に削除・破棄または次の読み込みが始まっていれば古い結果は使わない
+		if (this.isInactive() || fetchCount !== this.listUsersFetchCount) return;
 
 		const membershipsMap: Record<string, Pick<MiUserListMembership, 'withReplies'> | undefined> = {};
 		for (const membership of memberships) {
@@ -158,14 +190,18 @@ export class UserListChannel extends Channel {
 
 		const packed = await this.noteEntityService.withMyRenoteReaction(note, this.user?.id ?? null);
 
-		// 処理中にリストが削除されていれば送らない
-		if (this.isListDeleted) return;
+		// 処理中にリストが削除・破棄されていれば送らない
+		if (this.isInactive()) return;
 
 		this.send('note', packed);
 	}
 
 	@bindThis
 	public dispose() {
+		this.isDisposed = true;
+		this.listUsersFetchCount++;
+		this.clearRetryTimer();
+
 		// Unsubscribe events
 		this.subscriber.off(`userListStream:${this.listId}`, this.onListEvent);
 		this.subscriber.off('notesStream', this.onNote);
