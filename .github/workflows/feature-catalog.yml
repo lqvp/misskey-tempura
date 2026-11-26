@@ -12,8 +12,10 @@ on:
       - packages/frontend/src/utility/tempura-script/feature-catalog-lint.ts
       - packages/frontend/src/utility/tms/rj-number-parser.ts
       - packages/frontend/src/pages/tempura-changelog.vue
+      - packages/frontend/src/router.definition.ts
       - packages/frontend/test/unit/tempura-script/feature-catalog.test.ts
       - packages/frontend/test/unit/tempura-changelog.test.ts
+      - packages/frontend/test/unit/tempura-diff-route.test.ts
       - .github/workflows/feature-catalog.yml
   pull_request:
     paths:
@@ -23,8 +25,10 @@ on:
       - packages/frontend/src/utility/tempura-script/feature-catalog-lint.ts
       - packages/frontend/src/utility/tms/rj-number-parser.ts
       - packages/frontend/src/pages/tempura-changelog.vue
+      - packages/frontend/src/router.definition.ts
       - packages/frontend/test/unit/tempura-script/feature-catalog.test.ts
       - packages/frontend/test/unit/tempura-changelog.test.ts
+      - packages/frontend/test/unit/tempura-diff-route.test.ts
       - .github/workflows/feature-catalog.yml
 
 permissions:
@@ -48,4 +52,4 @@ jobs:
       - name: Build i18n
         run: pnpm --filter i18n build
       - name: Run feature catalog tests
-        run: pnpm --filter frontend test test/unit/tempura-script/feature-catalog.test.ts test/unit/tempura-changelog.test.ts
+        run: pnpm --filter frontend test test/unit/tempura-script/feature-catalog.test.ts test/unit/tempura-changelog.test.ts test/unit/tempura-diff-route.test.ts

@@ -4,6 +4,7 @@
  */
 
 import * as mfm from 'mfm-js';
+import { FEATURE_CATALOG_COMMENT_OR_CODE_RE } from '@/utility/tempura-script/feature-catalog.js';
 import { parseRjNumberTokens } from '@/utility/tms/rj-number-parser.js';
 
 export type FeatureCatalogLintRule =
@@ -70,8 +71,7 @@ const ALLOWED_MFM_NODE_TYPES = new Set<mfm.MfmNode['type']>([
 	'link',
 ]);
 
-const COMMENT_OR_CODE_RE = /(`+)[\s\S]*?\1|<!--[\s\S]*?(?:-->|$)/g;
-const INLINE_CODE_SPAN_RE = /(`+)[\s\S]*?\1/g;
+const INLINE_CODE_SPAN_RE = /(?<!`)(`+)(?!`)[^\r\n]*?(?<!`)\1(?!`)/g;
 const SINGLE_INLINE_CODE_RE = /`[^`\n]+`/g;
 const JAPANESE_CHAR_RE = /[\u3040-\u309F\u30A0-\u30FF\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF々〆〇ヶ]/;
 const DATE_SECTION_RE = /^\d{4}-\d{2}-\d{2}/;
@@ -87,13 +87,15 @@ const OPEN_CODE_FENCE_RE = /^\s*(`{3,}|~{3,})(.*)$/;
 const CLOSE_BACKTICK_FENCE_RE = /^\s*(`{3,})\s*$/;
 const CLOSE_TILDE_FENCE_RE = /^\s*(~{3,})\s*$/;
 const MARKDOWN_TABLE_RE = /^\s*\|.+\|\s*$/;
-const NUMBERED_LIST_RE = /^\s*\d+\.\s/;
+const GFM_TABLE_DELIMITER_RE = /^\s*\|?\s*:?-{1,}:?\s*(?:\|\s*:?-{1,}:?\s*)+\|?\s*$/;
+const NUMBERED_LIST_RE = /^\s*\d+[.)]\s/;
 const HYPHEN_LIST_RE = /^\s*-\s/;
 const PLUS_LIST_RE = /^\s*\+\s/;
 const BLOCKQUOTE_RE = /^\s*>\s/;
 const HORIZONTAL_RULE_RE = /^\s*(?:---+|\*\*\*+|___+)\s*$/;
-const INDENTED_BULLET_RE = /^[ \t]+\* /;
-const VALID_CHILD_BULLET_RE = /^ {2}\* /;
+const BULLET_CANDIDATE_RE = /^\s*\*(?:\s|$)/;
+const VALID_PARENT_BULLET_RE = /^\* (?=\S)/;
+const VALID_CHILD_BULLET_RE = /^ {2}\* (?=\S)/;
 
 function getVisibleLines(markdown: string): VisibleLine[] {
 	const lines: VisibleLine[] = [];
@@ -115,7 +117,7 @@ function getVisibleLines(markdown: string): VisibleLine[] {
 		}
 	};
 
-	for (const match of markdown.matchAll(COMMENT_OR_CODE_RE)) {
+	for (const match of markdown.matchAll(FEATURE_CATALOG_COMMENT_OR_CODE_RE)) {
 		const index = match.index;
 		if (index > lastIndex) {
 			appendChunk(markdown.slice(lastIndex, index));
@@ -153,8 +155,9 @@ function parseOpeningCodeFence(raw: string): { isFenceLine: boolean; opensBlock:
 	const marker = match[1];
 	const char = marker[0] as '`' | '~';
 	const rest = match[2];
-	// Single-line fenced spans such as ```foo``` or ~~~foo~~~ must not toggle multiline fence state.
-	if (rest.includes(char)) {
+	// Per CommonMark, backtick fence info strings cannot contain backticks (so ```foo``` is not an opening fence).
+	// Tilde fence info strings may contain tildes (e.g. ~~~ lang~variant).
+	if (char === '`' && rest.includes('`')) {
 		return { isFenceLine: true, opensBlock: null };
 	}
 	return { isFenceLine: true, opensBlock: { char, len: marker.length } };
@@ -261,18 +264,19 @@ export function lintFeatureCatalog(markdown: string): FeatureCatalogLintIssue[] 
 	const seenSections = new Set<string>();
 	const seenGroups = new Set<string>();
 	const introductionLines: string[] = [];
-	const notes: { text: string; line: number }[] = [];
 
 	let currentSection: ParsedSectionWithLine | undefined;
 	let currentGroup: ParsedGroupWithLine | undefined;
 	let currentItem: ParsedItemWithLine | undefined;
 	let inNotes = false;
 	let openFence: OpenCodeFence | null = null;
+	let inGfmTable = false;
 	let paragraphContinues = false;
 	let prevParagraphLine = '';
-	let prevNoteLine = '';
 
-	for (const { raw, line } of visibleLines) {
+	for (let i = 0; i < visibleLines.length; i++) {
+		const { raw, line } = visibleLines[i];
+
 		if (openFence) {
 			if (isClosingCodeFence(raw, openFence)) {
 				openFence = null;
@@ -288,12 +292,14 @@ export function lintFeatureCatalog(markdown: string): FeatureCatalogLintIssue[] 
 				message: 'コードブロックは非対応です',
 			});
 			openFence = fence.opensBlock;
+			inGfmTable = false;
 			paragraphContinues = false;
 			continue;
 		}
 
 		const trimmed = raw.trim();
 		if (!trimmed) {
+			inGfmTable = false;
 			paragraphContinues = false;
 			continue;
 		}
@@ -342,8 +348,17 @@ export function lintFeatureCatalog(markdown: string): FeatureCatalogLintIssue[] 
 			}
 		}
 
+		const withoutInlineCode = raw.replace(INLINE_CODE_SPAN_RE, '');
+
 		// Unsupported syntax checks
 		let isBlockUnsupported = false;
+		const nextRaw = visibleLines[i + 1]?.raw;
+		const isGfmTableHeader = !trimmed.startsWith('#')
+			&& !BULLET_CANDIDATE_RE.test(raw)
+			&& withoutInlineCode.includes('|')
+			&& nextRaw != null
+			&& GFM_TABLE_DELIMITER_RE.test(nextRaw);
+
 		if (H4_OR_DEEPER_RE.test(raw)) {
 			issues.push({
 				rule: 'unsupported-syntax',
@@ -351,12 +366,35 @@ export function lintFeatureCatalog(markdown: string): FeatureCatalogLintIssue[] 
 				message: 'H4 以降の見出しは非対応です',
 			});
 			isBlockUnsupported = true;
+			inGfmTable = false;
 		} else if (MARKDOWN_TABLE_RE.test(raw)) {
 			issues.push({
 				rule: 'unsupported-syntax',
 				line,
 				message: 'Markdown 表は非対応です',
 			});
+			isBlockUnsupported = true;
+			inGfmTable = true;
+		} else if (isGfmTableHeader) {
+			issues.push({
+				rule: 'unsupported-syntax',
+				line,
+				message: 'Markdown 表は非対応です',
+			});
+			isBlockUnsupported = true;
+			inGfmTable = true;
+		} else if (GFM_TABLE_DELIMITER_RE.test(raw)) {
+			if (!inGfmTable) {
+				issues.push({
+					rule: 'unsupported-syntax',
+					line,
+					message: 'Markdown 表は非対応です',
+				});
+			}
+			isBlockUnsupported = true;
+			inGfmTable = true;
+		} else if (inGfmTable && !trimmed.startsWith('#') && !BULLET_CANDIDATE_RE.test(raw) && withoutInlineCode.includes('|')) {
+			// Subsequent rows of an already-reported GFM table without outer pipes.
 			isBlockUnsupported = true;
 		} else if (NUMBERED_LIST_RE.test(raw)) {
 			issues.push({
@@ -365,6 +403,7 @@ export function lintFeatureCatalog(markdown: string): FeatureCatalogLintIssue[] 
 				message: '番号付きリストは非対応です',
 			});
 			isBlockUnsupported = true;
+			inGfmTable = false;
 		} else if (HYPHEN_LIST_RE.test(raw)) {
 			issues.push({
 				rule: 'unsupported-syntax',
@@ -372,6 +411,7 @@ export function lintFeatureCatalog(markdown: string): FeatureCatalogLintIssue[] 
 				message: '"- " 箇条書きは非対応です ("* " を使用してください)',
 			});
 			isBlockUnsupported = true;
+			inGfmTable = false;
 		} else if (PLUS_LIST_RE.test(raw)) {
 			issues.push({
 				rule: 'unsupported-syntax',
@@ -379,6 +419,7 @@ export function lintFeatureCatalog(markdown: string): FeatureCatalogLintIssue[] 
 				message: '"+ " 箇条書きは非対応です ("* " を使用してください)',
 			});
 			isBlockUnsupported = true;
+			inGfmTable = false;
 		} else if (BLOCKQUOTE_RE.test(raw)) {
 			issues.push({
 				rule: 'unsupported-syntax',
@@ -386,6 +427,7 @@ export function lintFeatureCatalog(markdown: string): FeatureCatalogLintIssue[] 
 				message: '引用ブロック ("> ") は非対応です',
 			});
 			isBlockUnsupported = true;
+			inGfmTable = false;
 		} else if (HORIZONTAL_RULE_RE.test(raw)) {
 			issues.push({
 				rule: 'unsupported-syntax',
@@ -393,18 +435,25 @@ export function lintFeatureCatalog(markdown: string): FeatureCatalogLintIssue[] 
 				message: '水平線は非対応です',
 			});
 			isBlockUnsupported = true;
+			inGfmTable = false;
+		} else {
+			inGfmTable = false;
 		}
 
-		const isInvalidIndentedBullet = INDENTED_BULLET_RE.test(raw) && !VALID_CHILD_BULLET_RE.test(raw);
-		if (isInvalidIndentedBullet) {
+		const isInvalidBullet = BULLET_CANDIDATE_RE.test(raw)
+			&& !VALID_PARENT_BULLET_RE.test(raw)
+			&& !VALID_CHILD_BULLET_RE.test(raw);
+		if (isInvalidBullet) {
 			issues.push({
 				rule: 'unsupported-syntax',
 				line,
-				message: '不正なインデントの箇条書きです (子項目は半角空白 2 個 + "* " にしてください)',
+				message: '箇条書きの書式またはインデントが不正です (親項目は "* "、子項目は半角空白 2 個 + "* " にしてください)',
 			});
+			if (!trimmed.startsWith('* ')) {
+				isBlockUnsupported = true;
+			}
 		}
 
-		const withoutInlineCode = raw.replace(INLINE_CODE_SPAN_RE, '');
 		if (RAW_HTML_TAG_RE.test(withoutInlineCode)) {
 			issues.push({
 				rule: 'unsupported-syntax',
@@ -450,6 +499,9 @@ export function lintFeatureCatalog(markdown: string): FeatureCatalogLintIssue[] 
 				inNotes = true;
 				continue;
 			}
+			if (isBlockUnsupported) {
+				continue;
+			}
 			if (trimmed.startsWith('* ')) {
 				if (VALID_CHILD_BULLET_RE.test(raw)) {
 					issues.push({
@@ -459,7 +511,6 @@ export function lintFeatureCatalog(markdown: string): FeatureCatalogLintIssue[] 
 					});
 				}
 				const text = trimmed.slice(2);
-				notes.push({ text, line });
 				checkPlainTextMarkup(text, line, issues);
 				if (!JAPANESE_CHAR_RE.test(text)) {
 					issues.push({
@@ -468,36 +519,25 @@ export function lintFeatureCatalog(markdown: string): FeatureCatalogLintIssue[] 
 						message: `日本語を含まない項目です: ${text}`,
 					});
 				}
-				prevNoteLine = text;
 			} else if (!inNotes) {
-				if (!isBlockUnsupported) {
-					if (
-						introductionLines.length > 0
-						&& (JAPANESE_CHAR_RE.test(introductionLines[introductionLines.length - 1]) || JAPANESE_CHAR_RE.test(trimmed))
-					) {
-						issues.push({
-							rule: 'multiline-japanese',
-							line,
-							message: '導入文が複数行に分かれています (1 段落 1 行にしてください)',
-						});
-					}
-					checkPlainTextMarkup(trimmed, line, issues);
-					introductionLines.push(trimmed);
-				}
-			} else if (/^\s+/.test(raw) && notes.length > 0 && !isBlockUnsupported) {
-				if (JAPANESE_CHAR_RE.test(prevNoteLine) || JAPANESE_CHAR_RE.test(trimmed)) {
+				if (
+					introductionLines.length > 0
+					&& (JAPANESE_CHAR_RE.test(introductionLines[introductionLines.length - 1]) || JAPANESE_CHAR_RE.test(trimmed))
+				) {
 					issues.push({
 						rule: 'multiline-japanese',
 						line,
-						message: '注意事項の項目が物理改行で折り返されています (1 項目 1 行にしてください)',
+						message: '導入文が複数行に分かれています (1 段落 1 行にしてください)',
 					});
 				}
-				prevNoteLine = trimmed;
-			} else if (!isBlockUnsupported) {
+				checkPlainTextMarkup(trimmed, line, issues);
+				introductionLines.push(trimmed);
+			} else {
+				// Any non-"* " line after 注意事項 (including indented continuation lines) is silently dropped by parseFeatureCatalog.
 				issues.push({
 					rule: 'unsupported-syntax',
 					line,
-					message: '注意事項の後に箇条書き以外の行は置けません (画面では無視されます)',
+					message: '注意事項の後に "* " 箇条書き以外の行は置けません (画面では無視されます)',
 				});
 			}
 			continue;

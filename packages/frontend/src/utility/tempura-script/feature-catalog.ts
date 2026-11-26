@@ -7,10 +7,16 @@ export type FeatureItem = { text: string; children: string[] };
 export type FeatureGroup = { title: string; paragraphs: string[]; items: FeatureItem[] };
 export type FeatureSection = { id: string; title: string; groups: FeatureGroup[] };
 
+/**
+ * Matches backslash escapes, single-line inline code spans (exact backtick-run length),
+ * and HTML maintainer comments so comments after escaped or unpaired backticks are still stripped.
+ */
+export const FEATURE_CATALOG_COMMENT_OR_CODE_RE = /\\.|(?<!`)(`+)(?!`)[^\r\n]*?(?<!`)\1(?!`)|<!--[\s\S]*?(?:-->|$)/g;
+
 /** Strip HTML maintainer comments while preserving comment-like text inside inline code spans. */
 export function stripFeatureCatalogComments(markdown: string): string {
 	// Maintainer instructions are not part of the visible or searchable catalog.
-	return markdown.replace(/(`+)[\s\S]*?\1|<!--[\s\S]*?(?:-->|$)/g, match => match.startsWith('<!--') ? '' : match);
+	return markdown.replace(FEATURE_CATALOG_COMMENT_OR_CODE_RE, match => match.startsWith('<!--') ? '' : match);
 }
 
 /** The heading, paragraph and nested-list subset used by diff.md. */

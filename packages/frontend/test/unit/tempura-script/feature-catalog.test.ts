@@ -94,6 +94,36 @@ describe('feature catalog', () => {
 		].join('\n'));
 	});
 
+	test('strips comments across lines after escaped or unpaired backticks with handwritten expectations', () => {
+		const input = [
+			'## 公開カテゴリ',
+			'* エスケープ済みバッククォート \\` の説明',
+			'<!--',
+			'## 非表示カテゴリ',
+			'* 非表示の項目',
+			'  * 非表示の子項目',
+			'-->',
+			'* 別の行の `インラインコード` 項目',
+			'* 閉じない ` バッククォートのある行',
+			'<!--',
+			'## もう一つの非表示カテゴリ',
+			'* 隠すべき項目',
+			'-->',
+			'* 末尾の `コード` 項目',
+		].join('\n');
+
+		const parsed = parseFeatureCatalog(input);
+		expect(parsed.sections.map(section => section.title)).toEqual(['公開カテゴリ']);
+		expect(parsed.sections[0].groups[0].items).toEqual([
+			{ text: 'エスケープ済みバッククォート \\` の説明', children: [] },
+			{ text: '別の行の `インラインコード` 項目', children: [] },
+			{ text: '閉じない ` バッククォートのある行', children: [] },
+			{ text: '末尾の `コード` 項目', children: [] },
+		]);
+		expect(searchFeatureCatalog(parsed.sections, '非表示')).toEqual([]);
+		expect(searchFeatureCatalog(parsed.sections, '隠すべき')).toEqual([]);
+	});
+
 	test('shows matching explanations without counting unrelated features', () => {
 		const { sections } = parseFeatureCatalog(source);
 		const [result] = searchFeatureCatalog(sections, 'antennas paragraph');
@@ -196,16 +226,22 @@ describe('lintFeatureCatalog', () => {
 			'## カテゴリ\n```ts\nconst x = 1;\n```\n* 項目です。',
 			'## カテゴリ\n~~~yaml\na: 1\n~~~\n* 項目です。',
 			'## カテゴリ\n| 列1 | 列2 |\n* 項目です。',
+			'## カテゴリ\nON | OFF\n--- | ---\n有効 | 無効\n* 項目です。',
 			'## カテゴリ\n1. 番号付き項目です。',
+			'## カテゴリ\n1) 設定を開きます。',
 			'## カテゴリ\n- ハイフン箇条書きです。',
 			'## カテゴリ\n+ プラス箇条書きです。',
 			'## カテゴリ\n> 段落位置の引用ブロックです。\n* 項目です。',
+			'## カテゴリ\n*\t設定を変更できます。',
+			'## カテゴリ\n*\u3000全角空白の親項目です。',
 			'## カテゴリ\n* 親項目です。\n * 空白1個の子項目です。',
 			'## カテゴリ\n* 親項目です。\n   * 空白3個の子項目です。',
 			'## カテゴリ\n* 親項目です。\n\t* タブの子項目です。',
+			'## カテゴリ\n* 親項目です。\n\u3000* 全角空白の子項目です。',
 			'## カテゴリ\n  * 親項目のない孤立した子項目です。',
 			'注意事項\n* 注意1です。\n  * 注意事項内の子項目です。\n## カテゴリ\n* 項目です。',
 			'注意事項\nパーサーが無視する通常行です。\n* 注意1です。\n## カテゴリ\n* 項目です。',
+			'注意事項\n* 注意1です。\n  管理者に連絡してください。\n## カテゴリ\n* 項目です。',
 			'## カテゴリ\n---\n* 項目です。',
 			'## カテゴリ\n* 説明に <br> タグが含まれます。',
 			'## カテゴリ\n* 説明に <a href="https://example.com">リンク</a> が含まれます。',
@@ -215,7 +251,9 @@ describe('lintFeatureCatalog', () => {
 			expect(rulesOf(sample), sample).toContain('unsupported-syntax');
 		}
 
-		// Inline code with HTML tag or comment opener, inequalities, and angle-bracket URLs must not false-positive.
+		// Standalone pipes without a table delimiter row, inline code with HTML/comments, inequalities, and angle-bracket URLs must not false-positive.
+		expect(rulesOf('## カテゴリ\n* 項目です。\nON | OFF\n--- | ---\n有効 | 無効')).toEqual(['unsupported-syntax']);
+		expect(lintFeatureCatalog('## カテゴリ\nモードは ON | OFF から選べます。\n* 選択肢は ON | OFF です。')).toEqual([]);
 		expect(lintFeatureCatalog('## カテゴリ\n* 説明に `<br>` や `<!--` を書けます。')).toEqual([]);
 		expect(lintFeatureCatalog('## カテゴリ\n* 条件が a<b のとき -> c になります。')).toEqual([]);
 		expect(lintFeatureCatalog('## カテゴリ\n* 公式サイトは <https://example.com> です。')).toEqual([]);
@@ -248,6 +286,15 @@ describe('lintFeatureCatalog', () => {
 			'* 項目です。',
 		].join('\n');
 		expect(rulesOf(multilineTilde)).toEqual(['unsupported-syntax']);
+
+		const tildeWithInfoTilde = [
+			'## カテゴリ',
+			'~~~ lang~variant',
+			'## 非表示',
+			'~~~',
+			'* 項目です。',
+		].join('\n');
+		expect(rulesOf(tildeWithInfoTilde)).toEqual(['unsupported-syntax']);
 	});
 
 	test('detects manual version numbers', () => {
