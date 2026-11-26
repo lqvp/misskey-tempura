@@ -241,9 +241,12 @@ export const ROUTE_DEF = [{
 	component: page(() => import('@/pages/about-misskey-tempura.vue')),
 	hash: 'initialTab',
 }, {
-	path: '/tempura-changelog',
+	path: '/tempura-diff',
 	component: page(() => import('@/pages/tempura-changelog.vue')),
-	hash: 'initialTab',
+}, {
+	// Legacy Compatibility
+	path: '/tempura-changelog',
+	redirect: '/tempura-diff',
 }, {
 	path: '/contact',
 	component: page(() => import('@/pages/contact.vue')),

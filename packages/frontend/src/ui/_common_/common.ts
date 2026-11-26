@@ -199,7 +199,7 @@ export function openInstanceMenu(ev: PointerEvent) {
 	menuItems.push({
 		type: 'link',
 		text: i18n.ts._misskeyTempura.diff,
-		to: '/tempura-changelog',
+		to: '/tempura-diff',
 	});
 
 	os.popupMenu(menuItems, ev.currentTarget ?? ev.target, {
