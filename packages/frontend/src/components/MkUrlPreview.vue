@@ -29,7 +29,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 <template v-else-if="tweetInfo.id && tweetInfo.screenName && tweetExpanded">
 	<MkTwitterEmbed :tweetId="tweetInfo.id" :screenName="tweetInfo.screenName"/>
 	<div :class="$style.action">
-		<MkButton :small="true" inline @click="tweetExpanded = false">
+		<MkButton :small="true" inline @click="setTweetExpanded(false)">
 			<i class="ti ti-x"></i> {{ i18n.ts.close }}
 		</MkButton>
 	</div>
@@ -57,7 +57,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	</component>
 	<template v-if="showActions">
 		<div v-if="tweetInfo.id && tweetInfo.screenName" :class="$style.action">
-			<MkButton :small="true" inline @click="tweetExpanded = true">
+			<MkButton :small="true" inline @click="setTweetExpanded(true)">
 				<i class="ti ti-brand-x"></i> {{ i18n.ts.expandTweet }}
 			</MkButton>
 		</div>
@@ -74,7 +74,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { computed, defineAsyncComponent, onDeactivated, onUnmounted, ref } from 'vue';
+import { computed, defineAsyncComponent, onActivated, onDeactivated, ref } from 'vue';
 import { url as local } from '@@/js/config.js';
 import { versatileLang } from '@@/js/intl-const.js';
 import { maybeMakeRelative } from '@@/js/url.js';
@@ -86,7 +86,6 @@ import { deviceKind } from '@/utility/device-kind.js';
 import MkButton from '@/components/MkButton.vue';
 import { transformPlayerUrl } from '@/utility/url-preview.js';
 import { rewriteProxiedImageUrlNullable } from '@/utility/media-proxy.js';
-import { store } from '@/store.js';
 import { prefer } from '@/preferences.js';
 
 const props = withDefaults(defineProps<{
@@ -116,12 +115,19 @@ const icon = computed(() => rewriteProxiedImageUrlNullable(summalyResult.value?.
 const sitename = computed(() => summalyResult.value?.sitename ?? null);
 const sensitive = computed(() => summalyResult.value?.sensitive ?? false);
 const player = computed(() => summalyResult.value?.player ?? { url: null, width: null, height: null });
-const playerEnabled = ref(false);
+const playerEnabled = ref(false); // 初期値はsummaly取り終わったあとに設定
 const tweetInfo = ref<{ id: string | null; screenName: string | null }>({ id: null, screenName: null });
-const tweetExpanded = ref(props.detail);
+const tweetExpanded = ref(false); // 初期値はsummaly取り終わったあとに設定
+let tweetExpandedByUser = false;
 const unknownUrl = ref(false);
+let isDeactivated = false;
+
+onActivated(() => {
+	isDeactivated = false;
+});
 
 onDeactivated(() => {
+	isDeactivated = true;
 	playerEnabled.value = false;
 });
 
@@ -153,10 +159,17 @@ window.fetch(`/url?url=${encodeURIComponent(requestUrl.href)}&lang=${versatileLa
 
 		return res.json();
 	})
+	.catch(err => {
+		if (_DEV_) {
+			console.warn('Failed to fetch url preview', err);
+		}
+		return null;
+	})
 	.then((info: SummalyResult | null) => {
 		if (!info || info.url == null) {
 			fetching.value = false;
 			unknownUrl.value = true;
+			autoExpandTweet();
 			return;
 		}
 
@@ -164,7 +177,23 @@ window.fetch(`/url?url=${encodeURIComponent(requestUrl.href)}&lang=${versatileLa
 		unknownUrl.value = false;
 
 		summalyResult.value = info;
+
+		if (!info.sensitive) {
+			autoExpandTweet();
+			if (!isDeactivated) {
+				playerEnabled.value = (props.showActions && prefer.s.expandUrlPreviewAutomatically);
+			}
+		}
 	});
+
+function setTweetExpanded(expanded: boolean) {
+	tweetExpandedByUser = true;
+	tweetExpanded.value = expanded;
+}
+
+function autoExpandTweet() {
+	if (props.detail && !tweetExpandedByUser) tweetExpanded.value = true;
+}
 
 function openPlayer(): void {
 	if (!summalyResult.value) return;

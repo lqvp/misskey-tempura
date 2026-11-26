@@ -530,8 +530,6 @@ export class SignupApiService {
 	public async signupPending(request: FastifyRequest<{ Body: { code: string; } }>, reply: FastifyReply) {
 		const body = request.body;
 
-		const code = body['code'];
-
 		// signup と同様に、生ルートは endpoint-meta の limit を通らないため
 		// IP ベースのレート制限を明示的に適用する
 		if (this.config.enableIpRateLimit) {
@@ -540,6 +538,13 @@ export class SignupApiService {
 				reply.code(429);
 				return;
 			}
+		}
+
+		const code = body?.['code'];
+
+		if (typeof code !== 'string') {
+			reply.code(400);
+			return;
 		}
 
 		try {
