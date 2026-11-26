@@ -50,6 +50,16 @@ export const federationWidgets = [
 	'instanceCloud',
 ] as const;
 
+// Misskey Tempura 独自のウィジェット
+export const tempuraWidgets = [
+	'listenBrainz',
+	'weather',
+	'nestedWidget',
+	'earthQuake',
+	'federationJobQueue',
+	'tlDigest',
+] as const;
+
 export const widgets = [
 	'profile',
 	'instanceInfo',
@@ -78,13 +88,8 @@ export const widgets = [
 	'clicker',
 	'birthdayFollowings',
 	'chat',
-	'listenBrainz',
-	'weather',
-	'nestedWidget',
-	'earthQuake',
-	'federationJobQueue',
-	'tlDigest',
 	...federationWidgets,
+	...tempuraWidgets,
 ] as const;
 
 export type WidgetName = typeof widgets[number];
