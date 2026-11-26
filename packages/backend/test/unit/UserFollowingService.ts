@@ -263,3 +263,129 @@ describe('Undo / Reject が元の Follow アクティビティの ID を参照�
 		expect(lastDelivered()?.object.id).toBe(REMOTE_FOLLOW_ID);
 	});
 });
+
+describe('フォロー解除時のカウント減算完了を待機する', () => {
+	type DecrementResult = Awaited<ReturnType<UsersRepository['decrement']>>;
+
+	let service: UserFollowingService;
+	const users = mockDeep<UsersRepository>();
+	const followings = mockDeep<FollowingsRepository>();
+	const userEntity = mockDeep<UserEntityService>();
+	const role = mockDeep<RoleService>();
+	const blocking = mockDeep<UserBlockingService>();
+
+	const follower = {
+		id: 'follower', host: null, uri: null, inbox: null, sharedInbox: null, movedToUri: null,
+	} as MiLocalUser;
+	const followee = {
+		id: 'followee', host: null, uri: null, inbox: null, sharedInbox: null, movedToUri: null,
+	} as MiLocalUser;
+
+	beforeEach(async () => {
+		mockReset(users);
+		mockReset(followings);
+		mockReset(userEntity);
+		mockReset(role);
+		mockReset(blocking);
+
+		const module = await Test.createTestingModule({
+			providers: [
+				UserFollowingService,
+				{ provide: DI.meta, useValue: { enableStatsForFederatedInstances: false, forciblyFollowedUsers: [] as string[] } as MiMeta },
+				{ provide: DI.usersRepository, useValue: users },
+				{ provide: DI.followingsRepository, useValue: followings as unknown }, // 型推論が TS2590 (union type too complex) になるため unknown にする
+				{ provide: UserEntityService, useValue: userEntity },
+				{ provide: RoleService, useValue: role },
+				{ provide: 'UserBlockingService', useValue: blocking },
+			],
+		}).useMocker(() => mockDeep()).compile();
+		service = module.get(UserFollowingService);
+		service.onModuleInit();
+
+		userEntity.isLocalUser.mockImplementation(((user: { host: string | null }) => user.host == null) as never);
+		userEntity.isRemoteUser.mockImplementation(((user: { host: string | null }) => user.host != null) as never);
+		userEntity.pack.mockResolvedValue({} as never);
+		role.getUserPolicies.mockResolvedValue({ canUseUnFollowNotification: false } as never);
+		role.isModerator.mockResolvedValue(false);
+		followings.findOne.mockResolvedValue({
+			id: 'following1', follower, followee, requestId: null,
+		} as MiFollowing);
+	});
+
+	function createDeferredDecrements() {
+		const followingDecrement = Promise.withResolvers<DecrementResult>();
+		const followersDecrement = Promise.withResolvers<DecrementResult>();
+
+		users.decrement.mockImplementation((_criteria, propertyPath) => {
+			if (propertyPath === 'followingCount') return followingDecrement.promise;
+			if (propertyPath === 'followersCount') return followersDecrement.promise;
+			throw new Error(`Unexpected decrement property: ${String(propertyPath)}`);
+		});
+
+		return { followingDecrement, followersDecrement };
+	}
+
+	test('unfollow は followingCount と followersCount の減算が完了するまで解決しない', async () => {
+		const { followingDecrement, followersDecrement } = createDeferredDecrements();
+
+		let settled = false;
+		const unfollowPromise = service.unfollow(follower, followee).then(() => {
+			settled = true;
+		});
+
+		await vi.waitFor(() => {
+			expect(users.decrement).toHaveBeenCalledTimes(2);
+		});
+		await new Promise<void>(resolve => setImmediate(resolve));
+		expect(settled).toBe(false);
+
+		followingDecrement.resolve({} as DecrementResult);
+		await new Promise<void>(resolve => setImmediate(resolve));
+		expect(settled).toBe(false);
+
+		followersDecrement.resolve({} as DecrementResult);
+		await unfollowPromise;
+		expect(settled).toBe(true);
+		expect(users.decrement).toHaveBeenCalledWith({ id: follower.id }, 'followingCount', 1);
+		expect(users.decrement).toHaveBeenCalledWith({ id: followee.id }, 'followersCount', 1);
+	});
+
+	test('rejectFollow は followingCount と followersCount の減算が完了するまで解決しない', async () => {
+		const { followingDecrement, followersDecrement } = createDeferredDecrements();
+
+		let settled = false;
+		const rejectPromise = service.rejectFollow(followee, follower).then(() => {
+			settled = true;
+		});
+
+		await vi.waitFor(() => {
+			expect(users.decrement).toHaveBeenCalledTimes(2);
+		});
+		await new Promise<void>(resolve => setImmediate(resolve));
+		expect(settled).toBe(false);
+
+		followingDecrement.resolve({} as DecrementResult);
+		await new Promise<void>(resolve => setImmediate(resolve));
+		expect(settled).toBe(false);
+
+		followersDecrement.resolve({} as DecrementResult);
+		await rejectPromise;
+		expect(settled).toBe(true);
+		expect(users.decrement).toHaveBeenCalledWith({ id: follower.id }, 'followingCount', 1);
+		expect(users.decrement).toHaveBeenCalledWith({ id: followee.id }, 'followersCount', 1);
+	});
+
+	test('unfollow はカウント減算で発生したエラーを伝播する', async () => {
+		const dbError = new Error('decrement failed');
+		users.decrement.mockRejectedValue(dbError);
+
+		await expect(service.unfollow(follower, followee)).rejects.toBe(dbError);
+	});
+
+	test('rejectFollow はカウント減算で発生したエラーを伝播する', async () => {
+		const dbError = new Error('decrement failed');
+		users.decrement.mockRejectedValue(dbError);
+
+		await expect(service.rejectFollow(followee, follower)).rejects.toBe(dbError);
+	});
+});

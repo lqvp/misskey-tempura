@@ -455,7 +455,7 @@ export class UserFollowingService implements OnModuleInit {
 
 		this.cacheService.userFollowingsCache.refresh(follower.id);
 
-		this.decrementFollowing(following.follower, following.followee);
+		await this.decrementFollowing(following.follower, following.followee);
 
 		const policies = await this.roleService.getUserPolicies(follower.id);
 
@@ -862,7 +862,7 @@ export class UserFollowingService implements OnModuleInit {
 
 		await this.followingsRepository.delete(following.id);
 
-		this.decrementFollowing(following.follower, following.followee);
+		await this.decrementFollowing(following.follower, following.followee);
 	}
 
 	/**
