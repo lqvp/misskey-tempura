@@ -4,7 +4,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { classifyFetchResponse, computeLLMDestination, computeLLMRetryDelay, detectImageInputSupport, fetchAvailableModels, generateLLMResponse, parseRetryAfterMs, resolveLLMDestination, shouldRetryLLMStatus, toModelInfos, wrapUserData } from '@/utility/tempura-script/llm.js';
+import { classifyFetchResponse, computeLLMDestination, computeLLMRetryDelay, detectImageInputSupport, fetchAvailableModels, generateLLMResponse, parseRetryAfterMs, requestWithRetry, resolveLLMDestination, shouldRetryLLMStatus, toModelInfos, wrapUserData } from '@/utility/tempura-script/llm.js';
 import { extractLLMText } from '@/utility/tempura-script/llm-response.js';
 import { i18n } from '@/i18n.js';
 import { preferState } from '../../setup.unit.js';
@@ -17,14 +17,31 @@ import type { RequestInput } from 'vitest-fetch-mock';
  * 既定は空のメタ (サーバー提供の LLM は無効) で、他のテストの前提を変えない。
  * 評価後に差し替えられるよう、参照は呼び出し時まで遅延させる。
  */
-const instanceMeta = vi.hoisted(() => ({ current: {} as Record<string, unknown> }));
+const instanceMeta = vi.hoisted(() => ({
+	current: {} as Record<string, unknown>,
+	fetchCalls: [] as Array<boolean | undefined>,
+	failNext: false,
+	deferNext: null as null | Promise<void>,
+}));
 
 vi.mock('@/instance.js', async (importOriginal) => {
 	const original = await importOriginal() as { instance: Record<string, unknown> };
 	return {
 		...original,
 		// llm.ts は戻り値をそのまま保持するので、評価時点の空のメタにテスト用の値を重ねる
-		fetchInstance: () => Promise.resolve({ ...original.instance, ...instanceMeta.current }),
+		fetchInstance: async (force?: boolean) => {
+			instanceMeta.fetchCalls.push(force);
+			const gate = instanceMeta.deferNext;
+			if (gate != null) {
+				instanceMeta.deferNext = null;
+				await gate;
+			}
+			if (instanceMeta.failNext) {
+				instanceMeta.failNext = false;
+				throw new Error('meta fetch failed');
+			}
+			return { ...original.instance, ...instanceMeta.current };
+		},
 	};
 });
 
@@ -61,15 +78,22 @@ const llmModelsEndpoint = vi.hoisted(() => ({
 	respond: null as null | (() => Promise<{ models?: unknown[] }>),
 }));
 
+const llmGenEndpoint = vi.hoisted(() => ({
+	respond: null as null | ((params: Record<string, unknown>, signal?: AbortSignal) => Promise<unknown>),
+}));
+
 vi.mock('@/utility/misskey-api.js', async (importOriginal) => {
 	const original = await importOriginal() as Record<string, unknown>;
 	return {
 		...original,
-		misskeyApi: (endpoint: string) => {
-			if (endpoint !== 'notes/llm-models' || llmModelsEndpoint.respond == null) {
-				throw new Error(`unexpected misskeyApi call: ${endpoint}`);
+		misskeyApi: (endpoint: string, params?: Record<string, unknown>, _token?: string | null, signal?: AbortSignal) => {
+			if (endpoint === 'notes/llm-models' && llmModelsEndpoint.respond != null) {
+				return llmModelsEndpoint.respond();
 			}
-			return llmModelsEndpoint.respond();
+			if (endpoint === 'notes/llm-gen' && llmGenEndpoint.respond != null) {
+				return llmGenEndpoint.respond(params ?? {}, signal);
+			}
+			throw new Error(`unexpected misskeyApi call: ${endpoint}`);
 		},
 	};
 });
@@ -380,6 +404,67 @@ describe('parseRetryAfterMs', () => {
 	});
 });
 
+describe('requestWithRetry の部分ポリシー (fail-closed)', () => {
+	it('retryableStatuses を省略した部分ポリシーは 504 を再送せず即座に失敗する', async () => {
+		const attemptRequest = vi.fn()
+			.mockResolvedValueOnce({ kind: 'retryable' as const, status: 504, statusText: 'Gateway Timeout', retryAfterMs: null })
+			.mockResolvedValueOnce({ kind: 'success' as const, body: { ok: true } });
+
+		await expect(requestWithRetry(
+			attemptRequest,
+			() => 0,
+			undefined,
+			performance.now() + 10_000,
+			() => new Error('budget'),
+			() => new Error('timeout'),
+			() => new Error('network'),
+			{},
+		)).rejects.toThrow('504 Gateway Timeout');
+
+		expect(attemptRequest).toHaveBeenCalledTimes(1);
+	});
+
+	it('retryableStatuses を省略した部分ポリシーでも 429 は再送して成功する', async () => {
+		const attemptRequest = vi.fn()
+			.mockResolvedValueOnce({ kind: 'retryable' as const, status: 429, statusText: 'Too Many Requests', retryAfterMs: 0 })
+			.mockResolvedValueOnce({ kind: 'success' as const, body: { ok: true } });
+
+		const body = await requestWithRetry(
+			attemptRequest,
+			() => 0,
+			undefined,
+			performance.now() + 10_000,
+			() => new Error('budget'),
+			() => new Error('timeout'),
+			() => new Error('network'),
+			{},
+		);
+
+		expect(body).toEqual({ ok: true });
+		expect(attemptRequest).toHaveBeenCalledTimes(2);
+	});
+
+	it('retryableStatuses で 504 を明示許可したときだけ 504 を再送する', async () => {
+		const attemptRequest = vi.fn()
+			.mockResolvedValueOnce({ kind: 'retryable' as const, status: 504, statusText: 'Gateway Timeout', retryAfterMs: 0 })
+			.mockResolvedValueOnce({ kind: 'success' as const, body: { ok: true } });
+
+		const body = await requestWithRetry(
+			attemptRequest,
+			() => 0,
+			undefined,
+			performance.now() + 10_000,
+			() => new Error('budget'),
+			() => new Error('timeout'),
+			() => new Error('network'),
+			{ retryableStatuses: new Set([504]) },
+		);
+
+		expect(body).toEqual({ ok: true });
+		expect(attemptRequest).toHaveBeenCalledTimes(2);
+	});
+});
+
 /** 従来どおり CORS 扱いで返すべきエラーメッセージ */
 const i18nCorsMessage = i18n.ts._llm._error.cors;
 
@@ -519,9 +604,9 @@ describe('generateLLMResponse のリトライ', () => {
 		vi.restoreAllMocks();
 	});
 
-	it('503 のあと成功したら、呼び出し元には通常どおりレスポンスを返す', async () => {
+	it.each([408, 425, 429])('ディスパッチ前の拒否 (%i) のあと成功したら、呼び出し元には通常どおりレスポンスを返す', async (status) => {
 		mockDirectAPI(() => ({ status: 200, body: okBody }));
-		fetchMock.mockResponseOnce(() => ({ status: 503, body: 'unavailable' }));
+		fetchMock.mockResponseOnce(() => ({ status, body: 'retryable pre-dispatch rejection' }));
 
 		const tracked = startGeneration();
 		// バックオフ待機 (250ms) を経過するまでは再送しない
@@ -534,17 +619,17 @@ describe('generateLLMResponse のリトライ', () => {
 		expect(fetchCalls()).toHaveLength(2);
 	});
 
-	it('一時的な失敗が続いたら 3 回で打ち切り、最後の失敗を既存の API エラーで投げる', async () => {
+	it('一時的な失敗 (429 / 408 / 425) が続いたら 3 回で打ち切り、最後の失敗を既存の API エラーで投げる', async () => {
 		mockDirectAPI(() => ({ status: 200, body: okBody }));
-		fetchMock.mockResponseOnce(() => ({ status: 503, body: 'unavailable' }));
-		fetchMock.mockResponseOnce(() => ({ status: 502, body: 'bad gateway' }));
-		fetchMock.mockResponseOnce(() => ({ status: 500, body: 'internal' }));
+		fetchMock.mockResponseOnce(() => ({ status: 429, body: 'too many requests' }));
+		fetchMock.mockResponseOnce(() => ({ status: 408, body: 'request timeout' }));
+		fetchMock.mockResponseOnce(() => ({ status: 425, body: 'too early' }));
 
 		const tracked = startGeneration();
 		await advanceUntil(() => tracked.settled());
 
 		expect(tracked.error).toBeInstanceOf(Error);
-		expect((tracked.error as Error).message).toContain('500');
+		expect((tracked.error as Error).message).toContain('425');
 		// 4 回目は呼ばない
 		expect(fetchCalls()).toHaveLength(3);
 	});
@@ -562,13 +647,30 @@ describe('generateLLMResponse のリトライ', () => {
 		expect(fetchCalls()).toHaveLength(1);
 	});
 
+	it.each([500, 502, 503, 504])('課金される POST は %i をリトライせず、その場で既存の API エラーを投げる (二重課金の防止)', async (status) => {
+		mockDirectAPI(() => ({ status: 200, body: okBody }));
+		fetchMock.mockResponseOnce(() => ({ status, body: 'upstream server error' }));
+
+		const tracked = startGeneration();
+		// バックオフ待機に入らず即座に決着する
+		await flushMicrotasks(16);
+		expect(tracked.settled()).toBe(true);
+		expect(tracked.error).toBeInstanceOf(Error);
+		expect((tracked.error as Error).message).toContain(String(status));
+		expect(fetchCalls()).toHaveLength(1);
+
+		// タイマーをいくら進めても再送しない
+		await vi.advanceTimersByTimeAsync(60_000);
+		expect(fetchCalls()).toHaveLength(1);
+	});
+
 	it('バックオフ待機中に中断されたら、再送せず即座に中断を伝える', async () => {
 		mockDirectAPI(() => ({ status: 200, body: okBody }));
-		fetchMock.mockResponseOnce(() => ({ status: 503, body: 'unavailable' }));
+		fetchMock.mockResponseOnce(() => ({ status: 429, body: 'slow down' }));
 
 		const controller = new AbortController();
 		const tracked = startGeneration({ signal: controller.signal });
-		// 1 回目の 503 を観測して、バックオフ待機 (250ms) に入ったところで中断する。
+		// 1 回目の 429 を観測して、バックオフ待機 (250ms) に入ったところで中断する。
 		// ここでタイマーを 1 秒進めるとバックオフが明けて 2 回目が飛んでしまうため、
 		// マイクロタスクだけを流して「1 回目を観測した直後」で止める。
 		await flushMicrotasks(16);
@@ -654,7 +756,7 @@ describe('generateLLMResponse のリトライ', () => {
 		fetchMock.mockResponseOnce(() => {
 			// 応答を返すまでに予算をほぼ使い切らせる (実処理中に時間が経過した状況)
 			vi.advanceTimersByTime(119_999);
-			return { status: 503, body: 'unavailable' };
+			return { status: 429, body: 'slow down' };
 		});
 
 		const tracked = startGeneration();
@@ -676,29 +778,20 @@ describe('generateLLMResponse のリトライ', () => {
 		expect(fetchCalls()).toHaveLength(0);
 	});
 
-	it('ネットワーク層の失敗 (TypeError) ではリトライし、2 回目で成功する', async () => {
+	it('課金される POST はネットワーク層の失敗 (TypeError / status 0) をリトライせず、即座に CORS エラーを投げる (二重課金の防止)', async () => {
 		mockDirectAPI(() => ({ status: 200, body: okBody }));
 		fetchMock.mockRejectOnce(new TypeError('Failed to fetch'));
 
 		const tracked = startGeneration();
-		await advanceUntil(() => tracked.settled());
-
-		expect(tracked.error).toBeUndefined();
-		expect(extractLLMText(tracked.generated!)).toBe('まとめました');
-		expect(fetchCalls()).toHaveLength(2);
-	});
-
-	it('ネットワーク層の失敗が続いたら 3 回で打ち切り、従来どおり CORS エラーにする', async () => {
-		mockDirectAPI(() => ({ status: 200, body: okBody }));
-		fetchMock.mockRejectOnce(new TypeError('Failed to fetch'));
-		fetchMock.mockRejectOnce(new TypeError('Failed to fetch'));
-		fetchMock.mockRejectOnce(new TypeError('Failed to fetch'));
-
-		const tracked = startGeneration();
-		await advanceUntil(() => tracked.settled());
-
+		// 推論中の切断や送信後の CORS 拒否と区別できないため、再送せず即座に CORS エラーで決着する
+		await flushMicrotasks(16);
+		expect(tracked.settled()).toBe(true);
 		expect((tracked.error as Error).message).toBe(i18nCorsMessage);
-		expect(fetchCalls()).toHaveLength(3);
+		expect(fetchCalls()).toHaveLength(1);
+
+		// タイマーをいくら進めても再送しない
+		await vi.advanceTimersByTimeAsync(60_000);
+		expect(fetchCalls()).toHaveLength(1);
 	});
 
 	it('バックオフ待機中に同意が取り消されたら、2 回目を送らずに設定変更エラーで打ち切る', async () => {
@@ -732,7 +825,7 @@ describe('generateLLMResponse のリトライ', () => {
 
 	it('バックオフ待機中に送信先が変わったら、2 回目を送らずに設定変更エラーで打ち切る', async () => {
 		mockDirectAPI(() => ({ status: 200, body: okBody }));
-		fetchMock.mockResponseOnce(() => ({ status: 503, body: 'unavailable' }));
+		fetchMock.mockResponseOnce(() => ({ status: 429, body: 'slow down' }));
 
 		const tracked = startGeneration({ expectedDestination: 'direct:https://api.example.com/v1' });
 		await flushMicrotasks(16);
@@ -910,7 +1003,7 @@ describe('generateLLMResponse のリトライ', () => {
 		// 実処理中に時間が経過した状況を、締切タイマーの満了前に再現する。
 		fetchMock.mockResponseOnce(() => {
 			vi.advanceTimersByTime(119_999);
-			return { status: 503, body: 'unavailable' };
+			return { status: 429, body: 'slow down' };
 		});
 
 		const tracked = startGeneration();
@@ -1003,6 +1096,202 @@ describe('サーバー無効時のユーザーキーへのフォールバック'
 	});
 });
 
+describe('サーバー提供モードの送信先ピン留め (expectedDestinationId)', () => {
+	beforeEach(async () => {
+		preferState.useGeminiLLMAPI = true;
+		preferState.openaiToken = '';
+		preferState.openaiBaseUrl = '';
+		instanceMeta.current = { serverOpenAIEnabled: true, serverOpenAIDestinationId: 'dest-a' };
+		instanceMeta.failNext = false;
+		instanceMeta.deferNext = null;
+		await resolveLLMDestination(true);
+		instanceMeta.fetchCalls.length = 0;
+	});
+
+	afterEach(async () => {
+		llmGenEndpoint.respond = null;
+		instanceMeta.failNext = false;
+		instanceMeta.deferNext = null;
+		instanceMeta.current = {};
+		preferState.useGeminiLLMAPI = true;
+		await resolveLLMDestination(true);
+		instanceMeta.fetchCalls.length = 0;
+		preferState.useGeminiLLMAPI = false;
+		vi.restoreAllMocks();
+	});
+
+	it('expectedDestination 指定時は server: プレフィックスを除いた expectedDestinationId を notes/llm-gen へ渡す', async () => {
+		let receivedParams: Record<string, unknown> | null = null;
+		llmGenEndpoint.respond = async (params) => {
+			receivedParams = params;
+			return JSON.parse(okBody);
+		};
+
+		const res = await generateLLMResponse({
+			userContent: 'テスト本文',
+			expectedDestination: 'server:dest-a',
+		});
+
+		expect(extractLLMText(res)).toBe('まとめました');
+		expect(receivedParams).not.toBeNull();
+		expect(receivedParams!['expectedDestinationId']).toBe('dest-a');
+	});
+
+	it('beforeSend のみ指定時も検証済みの server 送信先 ID を expectedDestinationId として notes/llm-gen へ渡す', async () => {
+		let receivedParams: Record<string, unknown> | null = null;
+		llmGenEndpoint.respond = async (params) => {
+			receivedParams = params;
+			return JSON.parse(okBody);
+		};
+		const beforeSend = vi.fn();
+
+		const res = await generateLLMResponse({
+			userContent: 'テスト本文',
+			beforeSend,
+		});
+
+		expect(extractLLMText(res)).toBe('まとめました');
+		expect(beforeSend).toHaveBeenCalledWith('server:dest-a', true);
+		expect(receivedParams).not.toBeNull();
+		expect(receivedParams!['expectedDestinationId']).toBe('dest-a');
+	});
+
+	it('expectedDestination も beforeSend も未指定なら expectedDestinationId を送らない', async () => {
+		let receivedParams: Record<string, unknown> | null = null;
+		llmGenEndpoint.respond = async (params) => {
+			receivedParams = params;
+			return JSON.parse(okBody);
+		};
+
+		const res = await generateLLMResponse({
+			userContent: 'テスト本文',
+		});
+
+		expect(extractLLMText(res)).toBe('まとめました');
+		expect(receivedParams).not.toBeNull();
+		expect('expectedDestinationId' in receivedParams!).toBe(false);
+	});
+
+	it('serverOpenAIEnabled: true で serverOpenAIDestinationId が null の場合、beforeSend / expectedDestination 指定時は expectedDestinationId に空文字を送る (fail-closed)', async () => {
+		instanceMeta.current = { serverOpenAIEnabled: true, serverOpenAIDestinationId: null };
+		await resolveLLMDestination(true);
+		expect(await resolveLLMDestination(false)).toBe('server:');
+
+		const receivedPayloads: Record<string, unknown>[] = [];
+		llmGenEndpoint.respond = async (params) => {
+			receivedPayloads.push(params);
+			return JSON.parse(okBody);
+		};
+
+		const beforeSend = vi.fn();
+		await generateLLMResponse({
+			userContent: 'テスト本文',
+			beforeSend,
+		});
+		expect(beforeSend).toHaveBeenCalledWith('server:', true);
+
+		await generateLLMResponse({
+			userContent: 'テスト本文',
+			expectedDestination: 'server:',
+		});
+
+		expect(receivedPayloads).toHaveLength(2);
+		for (const payload of receivedPayloads) {
+			expect('expectedDestinationId' in payload).toBe(true);
+			expect(payload['expectedDestinationId']).toBe('');
+		}
+	});
+
+	it('notes/llm-gen が LLM_DESTINATION_MISMATCH を返したら fetchInstance(true) の完了を待ってから settingsChanged を投げ、直後の resolveLLMDestination(false) に最新値を反映する', async () => {
+		let releaseFetch!: () => void;
+		instanceMeta.deferNext = new Promise<void>((resolve) => {
+			releaseFetch = resolve;
+		});
+
+		llmGenEndpoint.respond = () => {
+			// 管理者がサーバー側接続先を dest-b へ切り替えた直後に 409 が返る状況
+			instanceMeta.current = { serverOpenAIEnabled: true, serverOpenAIDestinationId: 'dest-b' };
+			return Promise.reject({ code: 'LLM_DESTINATION_MISMATCH', message: 'Server LLM destination changed' });
+		};
+
+		let settled = false;
+		const promise = generateLLMResponse({
+			userContent: 'テスト本文',
+			expectedDestination: 'server:dest-a',
+		});
+		promise.catch(() => { /* 下で検証 */ }).finally(() => { settled = true; });
+
+		await flushMicrotasks();
+		expect(instanceMeta.fetchCalls).toEqual([true]);
+		// fetchInstance(true) が終わるまで拒否しない
+		expect(settled).toBe(false);
+
+		releaseFetch();
+		await expect(promise).rejects.toThrow(i18n.ts._tlDigest.settingsChanged);
+
+		// 追加のマイクロタスク待ちなしで最新化済み
+		expect(await resolveLLMDestination(false)).toBe('server:dest-b');
+	});
+
+	it('LLM_DESTINATION_MISMATCH 時の fetchInstance(true) 再取得が失敗しても settingsChanged エラーを返し未処理拒否を出さない', async () => {
+		llmGenEndpoint.respond = () => {
+			instanceMeta.failNext = true;
+			return Promise.reject({ code: 'LLM_DESTINATION_MISMATCH', message: 'Server LLM destination changed' });
+		};
+
+		await expect(generateLLMResponse({
+			userContent: 'テスト本文',
+			expectedDestination: 'server:dest-a',
+		})).rejects.toThrow(i18n.ts._tlDigest.settingsChanged);
+
+		expect(instanceMeta.fetchCalls).toEqual([true]);
+	});
+
+	it('notes/llm-gen が LLM_NOT_ENABLED を返したら fetchInstance(true) の完了を待ってから serverDisabled を投げ、直後の resolveLLMDestination(false) でサーバー無効を反映する', async () => {
+		let releaseFetch!: () => void;
+		instanceMeta.deferNext = new Promise<void>((resolve) => {
+			releaseFetch = resolve;
+		});
+
+		llmGenEndpoint.respond = () => {
+			// 管理者がサーバー提供 LLM を無効化した直後に LLM_NOT_ENABLED が返る状況
+			instanceMeta.current = { serverOpenAIEnabled: false, serverOpenAIDestinationId: null };
+			return Promise.reject({ code: 'LLM_NOT_ENABLED', message: 'Server LLM feature is not enabled' });
+		};
+
+		let settled = false;
+		const promise = generateLLMResponse({
+			userContent: 'テスト本文',
+			expectedDestination: 'server:dest-a',
+		});
+		promise.catch(() => { /* 下で検証 */ }).finally(() => { settled = true; });
+
+		await flushMicrotasks();
+		expect(instanceMeta.fetchCalls).toEqual([true]);
+		expect(settled).toBe(false);
+
+		releaseFetch();
+		await expect(promise).rejects.toThrow(i18n.ts._llm._error.serverDisabled);
+
+		// サーバー無効化が即座に反映され、ユーザー直指定トークン無しなので null になる
+		expect(await resolveLLMDestination(false)).toBeNull();
+	});
+
+	it('LLM_NOT_ENABLED 時の fetchInstance(true) 再取得が失敗しても serverDisabled エラーを返し未処理拒否を出さない', async () => {
+		llmGenEndpoint.respond = () => {
+			instanceMeta.failNext = true;
+			return Promise.reject({ code: 'LLM_NOT_ENABLED', message: 'Server LLM feature is not enabled' });
+		};
+
+		await expect(generateLLMResponse({
+			userContent: 'テスト本文',
+			expectedDestination: 'server:dest-a',
+		})).rejects.toThrow(i18n.ts._llm._error.serverDisabled);
+
+		expect(instanceMeta.fetchCalls).toEqual([true]);
+	});
+});
+
 describe('fetchAvailableModels のリトライ', () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
@@ -1024,9 +1313,9 @@ describe('fetchAvailableModels のリトライ', () => {
 
 	const modelsBody = JSON.stringify({ data: [{ id: 'gpt-4o-mini' }] });
 
-	it('503 のあと成功したらモデル一覧を返す', async () => {
+	it.each([500, 502, 503, 504])('冪等な GET /models は %i のあと成功したらモデル一覧を返す', async (status) => {
 		mockDirectAPI(() => ({ status: 200, body: modelsBody }));
-		fetchMock.mockResponseOnce(() => ({ status: 503, body: 'unavailable' }));
+		fetchMock.mockResponseOnce(() => ({ status, body: 'unavailable' }));
 
 		const tracked = { models: undefined as unknown, settled: false };
 		const promise = fetchAvailableModels().then((models) => {
@@ -1040,6 +1329,41 @@ describe('fetchAvailableModels のリトライ', () => {
 
 		expect(tracked.models).toEqual([{ id: 'gpt-4o-mini', imageInput: 'supported', detectedBy: 'name' }]);
 		expect(fetchCalls()).toHaveLength(2);
+	});
+
+	it('冪等な GET /models はネットワーク層の失敗 (TypeError / status 0) をリトライし、2 回目で成功する', async () => {
+		mockDirectAPI(() => ({ status: 200, body: modelsBody }));
+		fetchMock.mockRejectOnce(new TypeError('Failed to fetch'));
+
+		const tracked = { models: undefined as unknown, settled: false };
+		const promise = fetchAvailableModels().then((models) => {
+			tracked.models = models;
+			tracked.settled = true;
+		});
+		await expectNoRetryYet(1);
+		await advanceUntil(() => tracked.settled);
+		await promise;
+
+		expect(tracked.models).toEqual([{ id: 'gpt-4o-mini', imageInput: 'supported', detectedBy: 'name' }]);
+		expect(fetchCalls()).toHaveLength(2);
+	});
+
+	it('冪等な GET /models はネットワーク層の失敗が続いても試行上限 (3 回) まで再送してから空配列へ落とす', async () => {
+		mockDirectAPI(() => ({ status: 200, body: modelsBody }));
+		fetchMock.mockRejectOnce(new TypeError('Failed to fetch'));
+		fetchMock.mockRejectOnce(new TypeError('Failed to fetch'));
+		fetchMock.mockRejectOnce(new TypeError('Failed to fetch'));
+
+		const tracked = { models: undefined as unknown, settled: false };
+		const promise = fetchAvailableModels().then((models) => {
+			tracked.models = models;
+			tracked.settled = true;
+		});
+		await advanceUntil(() => tracked.settled);
+		await promise;
+
+		expect(tracked.models).toEqual([]);
+		expect(fetchCalls()).toHaveLength(3);
 	});
 
 	it('Retry-After がモデル一覧の予算 (30 秒) を超えるなら、切り詰めず即座に空配列へ落とす', async () => {

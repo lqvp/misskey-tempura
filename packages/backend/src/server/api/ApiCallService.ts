@@ -34,6 +34,13 @@ const accessDenied = {
 	id: '56f35758-7dd5-468b-8439-5d6fb8ec9b8e',
 };
 
+function isAbortError(err: unknown, signal?: AbortSignal): boolean {
+	if (signal?.aborted && err === signal.reason) return true;
+	if (err instanceof Error && err.name === 'AbortError') return true;
+	if (typeof DOMException !== 'undefined' && err instanceof DOMException && err.name === 'AbortError') return true;
+	return false;
+}
+
 /**
  * multipartのpartを一時ファイルへ書き出す。
  * クライアントの問題により書き出しできなかった場合はエラーを返し、サーバーの問題により書き出しできなかった場合は例外を投げる。
@@ -192,8 +199,35 @@ export class ApiCallService implements OnApplicationShutdown {
 		}
 	}
 
+	#watchClientDisconnect(reply: FastifyReply): {
+		signal: AbortSignal;
+		isClientDisconnected: () => boolean;
+		cleanup: () => void;
+	} {
+		// POST の JSON ボディは Fastify がハンドラ到達前に読み切るため request.raw の 'close' は
+		// 通常完了でも発火する。クライアント切断の検知には reply.raw の 'close' のみを使う。
+		const abortController = new AbortController();
+		const onClose = () => {
+			if (!reply.raw?.writableEnded) {
+				abortController.abort();
+			}
+		};
+		reply.raw?.on('close', onClose);
+		if (reply.raw?.destroyed && !reply.raw?.writableEnded) {
+			abortController.abort();
+		}
+
+		return {
+			signal: abortController.signal,
+			isClientDisconnected: () => abortController.signal.aborted || Boolean(reply.raw?.destroyed && !reply.raw?.writableEnded),
+			cleanup: () => {
+				reply.raw?.off('close', onClose);
+			},
+		};
+	}
+
 	@bindThis
-	public handleRequest(
+	public async handleRequest(
 		endpoint: IEndpoint & { exec: any },
 		request: FastifyRequest<{ Body: Record<string, unknown> | undefined, Querystring: Record<string, unknown> }>,
 		reply: FastifyReply,
@@ -208,33 +242,47 @@ export class ApiCallService implements OnApplicationShutdown {
 			: body?.['i'];
 		if (token != null && typeof token !== 'string') {
 			reply.code(400);
-			return Promise.resolve();
+			return;
 		}
 
-		return this.telemetryService.startSpan('API: ' + endpoint.name, () => this.authenticateService.authenticate(token).then(([user, app]) => {
-			const call = this.call(endpoint, user, app, body, null, request).then((res) => {
-				if (request.method === 'GET' && !token && !user) {
-					if (endpoint.meta.noStoreWhenAnonymous) {
-						// 匿名公開の可否を設定で切り替えるエンドポイントは、設定変更直後から
-						// 意図しない応答が配信され続けないようキャッシュさせない
-						reply.header('Cache-Control', 'no-store');
-					} else if (endpoint.meta.cacheSec) {
-						reply.header('Cache-Control', `public, max-age=${endpoint.meta.cacheSec}`);
+		const { signal, isClientDisconnected, cleanup } = this.#watchClientDisconnect(reply);
+
+		try {
+			if (isClientDisconnected()) return;
+
+			await this.telemetryService.startSpan('API: ' + endpoint.name, () => this.authenticateService.authenticate(token).then(([user, app]) => {
+				if (isClientDisconnected()) return;
+
+				const call = this.call(endpoint, user, app, body, null, request, signal).then((res) => {
+					if (isClientDisconnected()) return;
+
+					if (request.method === 'GET' && !token && !user) {
+						if (endpoint.meta.noStoreWhenAnonymous) {
+							// 匿名公開の可否を設定で切り替えるエンドポイントは、設定変更直後から
+							// 意図しない応答が配信され続けないようキャッシュさせない
+							reply.header('Cache-Control', 'no-store');
+						} else if (endpoint.meta.cacheSec) {
+							reply.header('Cache-Control', `public, max-age=${endpoint.meta.cacheSec}`);
+						}
 					}
+					this.send(reply, res);
+				}).catch((err: unknown) => {
+					if (isClientDisconnected()) return;
+					this.#sendApiError(reply, err as ApiError);
+				});
+
+				if (user) {
+					this.logIp(request, user);
 				}
-				this.send(reply, res);
-			}).catch((err: ApiError) => {
-				this.#sendApiError(reply, err);
-			});
 
-			if (user) {
-				this.logIp(request, user);
-			}
-
-			return call;
-		}).catch(err => {
-			this.#sendAuthenticationError(reply, err);
-		}));
+				return call;
+			}).catch(err => {
+				if (isClientDisconnected()) return;
+				this.#sendAuthenticationError(reply, err);
+			}));
+		} finally {
+			cleanup();
+		}
 	}
 
 	@bindThis
@@ -287,24 +335,37 @@ export class ApiCallService implements OnApplicationShutdown {
 				return;
 			}
 
-			return await this.telemetryService.startSpan('API: ' + endpoint.name, () => this.authenticateService.authenticate(token).then(([user, app]) => {
-				const call = this.call(endpoint, user, app, fields, {
-					name: multipartData.filename,
-					path: path,
-				}, request).then((res) => {
-					this.send(reply, res);
-				}).catch((err: ApiError) => {
-					this.#sendApiError(reply, err);
-				});
+			const { signal, isClientDisconnected, cleanup: cleanupDisconnect } = this.#watchClientDisconnect(reply);
 
-				if (user) {
-					this.logIp(request, user);
-				}
+			try {
+				if (isClientDisconnected()) return;
 
-				return call;
-			}).catch(err => {
-				this.#sendAuthenticationError(reply, err);
-			}));
+				return await this.telemetryService.startSpan('API: ' + endpoint.name, () => this.authenticateService.authenticate(token).then(([user, app]) => {
+					if (isClientDisconnected()) return;
+
+					const call = this.call(endpoint, user, app, fields, {
+						name: multipartData.filename,
+						path: path,
+					}, request, signal).then((res) => {
+						if (isClientDisconnected()) return;
+						this.send(reply, res);
+					}).catch((err: unknown) => {
+						if (isClientDisconnected()) return;
+						this.#sendApiError(reply, err as ApiError);
+					});
+
+					if (user) {
+						this.logIp(request, user);
+					}
+
+					return call;
+				}).catch(err => {
+					if (isClientDisconnected()) return;
+					this.#sendAuthenticationError(reply, err);
+				}));
+			} finally {
+				cleanupDisconnect();
+			}
 		} finally {
 			cleanup();
 		}
@@ -366,6 +427,7 @@ export class ApiCallService implements OnApplicationShutdown {
 			path: string;
 		} | null,
 		request: FastifyRequest<{ Body: Record<string, unknown> | undefined, Querystring: Record<string, unknown> }>,
+		signal?: AbortSignal,
 	) {
 		const isSecure = user != null && token == null;
 
@@ -559,10 +621,19 @@ export class ApiCallService implements OnApplicationShutdown {
 			}
 		}
 
+		if (signal?.aborted) {
+			return;
+		}
+
 		// The API span starts in handleRequest/handleMultipartRequest so it also covers
 		// authentication, rate limiting, and parameter validation.
-		return await ep.exec(data, user, token, file, request.ip, request.headers)
-			.catch((err: Error) => this.#onExecError(ep, data, err, user?.id));
+		return await ep.exec(data, user, token, file, request.ip, request.headers, signal)
+			.catch((err: Error) => {
+				if (signal?.aborted && isAbortError(err, signal)) {
+					throw err;
+				}
+				this.#onExecError(ep, data, err, user?.id);
+			});
 	}
 
 	@bindThis

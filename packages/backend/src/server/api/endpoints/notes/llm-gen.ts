@@ -3,11 +3,13 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
+import * as stream from 'node:stream';
 import ms from 'ms';
 import { Inject, Injectable } from '@nestjs/common';
 import type { MiMeta } from '@/models/_.js';
 import { Endpoint } from '@/server/api/endpoint-base.js';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
+import { computeServerOpenAIDestinationId } from '@/core/entities/MetaEntityService.js';
 import { DI } from '@/di-symbols.js';
 import { StatusError } from '@/misc/status-error.js';
 import { ApiError } from '../../error.js';
@@ -51,6 +53,13 @@ export const meta = {
 			id: '58f1cb83-fb0b-47be-9dc8-0cf39ecf44e2',
 		},
 
+		destinationMismatch: {
+			message: 'Server LLM destination has changed.',
+			code: 'LLM_DESTINATION_MISMATCH',
+			id: 'b47a1356-514c-4f34-b09d-0f4642f2a7b4',
+			httpStatusCode: 409,
+		},
+
 	},
 } as const;
 
@@ -86,6 +95,7 @@ export const paramDef = {
 		baseUrl: { type: 'string', nullable: true },
 		apiKey: { type: 'string', nullable: true },
 		model: { type: 'string', nullable: true },
+		expectedDestinationId: { type: 'string', nullable: true, maxLength: 64 },
 		fileUris: {
 			type: 'array',
 			nullable: true,
@@ -96,6 +106,13 @@ export const paramDef = {
 	required: ['text', 'prompt'],
 } as const;
 
+function isAbortError(err: unknown, signal?: AbortSignal): boolean {
+	if (signal?.aborted && err === signal.reason) return true;
+	if (err instanceof Error && err.name === 'AbortError') return true;
+	if (typeof DOMException !== 'undefined' && err instanceof DOMException && err.name === 'AbortError') return true;
+	return false;
+}
+
 @Injectable()
 export default class extends Endpoint<typeof meta, typeof paramDef> {
 	constructor(
@@ -104,7 +121,7 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 
 		private httpRequestService: HttpRequestService,
 	) {
-		super(meta, paramDef, async (ps, me) => {
+		super(meta, paramDef, async (ps, me, _token, _file, _cleanup, _ip, _headers, signal) => {
 			// 権限チェックは requiredRolePolicy (canUseGeminiLLMAPI) で行われる
 			if (ps.text == null || ps.text === '') {
 				throw new ApiError(meta.errors.emptyText);
@@ -114,17 +131,39 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				throw new ApiError(meta.errors.emptyPrompt);
 			}
 
+			// metaUpdated による並行書き換えで検証時と送出時の設定が食い違わないよう、同期的にスナップショットする
+			const {
+				serverOpenAIEnabled,
+				serverOpenAIBaseURL,
+				serverOpenAIDestinationKey,
+				serverOpenAIApiKey,
+				serverOpenAIModels,
+			} = this.serverSettings;
+
 			// ユーザー指定パラメータ (ユーザー直指定モード) の場合はサーバー設定の有効状態を参照しない
 			const userSpecified = ps.baseUrl != null || ps.apiKey != null;
 
-			if (!userSpecified && !this.serverSettings.serverOpenAIEnabled) {
+			if (!userSpecified && !serverOpenAIEnabled) {
 				throw new ApiError(meta.errors.llmNotEnabled);
+			}
+
+			if (ps.expectedDestinationId != null) {
+				const currentDestinationId = userSpecified
+					? null
+					: computeServerOpenAIDestinationId({
+						serverOpenAIEnabled,
+						serverOpenAIBaseURL,
+						serverOpenAIDestinationKey,
+					});
+				if (currentDestinationId == null || currentDestinationId !== ps.expectedDestinationId) {
+					throw new ApiError(meta.errors.destinationMismatch);
+				}
 			}
 
 			// ユーザーが baseUrl を指定した場合、サーバーAPIキーを外部ホストへ送出しない
 			const apiKey = ps.apiKey != null ? ps.apiKey
 				: ps.baseUrl != null ? null
-				: this.serverSettings.serverOpenAIApiKey;
+				: serverOpenAIApiKey;
 			if (!apiKey) {
 				// baseUrl 指定時はユーザー指定モード扱いのため apiKey が必須、
 				// それ以外はサーバー設定のキーが必要
@@ -133,8 +172,11 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 					: 'OpenAI-compatible API key is not configured on server');
 			}
 
-			const baseURL = (ps.baseUrl || this.serverSettings.serverOpenAIBaseURL || 'https://api.openai.com/v1').replace(/\/+$/, '');
-			const model = ps.model || this.serverSettings.serverOpenAIModels || 'gpt-4o-mini';
+			const rawBaseURL = ps.baseUrl != null
+				? ps.baseUrl.trim()
+				: (serverOpenAIBaseURL?.trim() || '');
+			const baseURL = (rawBaseURL || 'https://api.openai.com/v1').replace(/\/+$/, '');
+			const model = ps.model || serverOpenAIModels || 'gpt-4o-mini';
 			const url = `${baseURL}/chat/completions`;
 
 			const textContent = { type: 'text', text: ps.text };
@@ -144,8 +186,15 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				image_url: { url: fileUri },
 			}));
 
+			const throwIfAborted = () => {
+				if (signal?.aborted) {
+					throw signal.reason ?? new DOMException('Aborted', 'AbortError');
+				}
+			};
+
 			// タイムアウトは呼び出しごとに独立させる (再送に前回の残り時間を引き継がない)
 			const send = async (content: string | unknown[], timeout: number = LLM_UPSTREAM_TIMEOUT_MS) => {
+				throwIfAborted();
 				return await this.httpRequestService.send(url, {
 					method: 'POST',
 					headers: {
@@ -160,16 +209,24 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 						],
 					}),
 					timeout,
+					signal,
 					isLocalAddressAllowed: false,
 				}, {
 					throwErrorWhenResponseNotOk: false,
 				});
 			};
 			const toStatusError = (response: Awaited<ReturnType<typeof send>>) => new StatusError(`${response.status} ${response.statusText}`, response.status, response.statusText);
+			const disposeUnusedBody = (response: Awaited<ReturnType<typeof send>>) => {
+				if (response.body instanceof stream.Readable) {
+					response.body.destroy();
+				}
+			};
 
 			try {
+				throwIfAborted();
 				const response = await send(imageContents.length > 0 ? [textContent, ...imageContents] : ps.text);
 				if (response.ok) return await response.json();
+				disposeUnusedBody(response);
 
 				// クライアントは使われるモデルが画像に対応しているか分からずに画像を付けてくる。
 				// 画像非対応を示すエラーの形式はプロバイダーごとに異なり判別できないため、
@@ -181,12 +238,19 @@ export default class extends Endpoint<typeof meta, typeof paramDef> {
 				// (コンテキスト長超過・モデレーション等) でも必ず 1 回は再送するので、
 				// その経路で余計に待たせないよう再送は短いタイムアウトで打ち切る。
 				if (imageContents.length > 0 && (response.status === 400 || response.status === 422)) {
+					throwIfAborted();
 					const retried = await send(ps.text, LLM_UPSTREAM_RETRY_TIMEOUT_MS);
 					if (retried.ok) return await retried.json();
+					disposeUnusedBody(retried);
+					throwIfAborted();
 					throw toStatusError(retried);
 				}
+				throwIfAborted();
 				throw toStatusError(response);
 			} catch (error) {
+				if (signal?.aborted && isAbortError(error, signal)) {
+					throw error;
+				}
 				// 念のため、メッセージにキーが含まれていたら隠してから記録・返却する
 				const rawErrorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
 				const errorMessage = apiKey

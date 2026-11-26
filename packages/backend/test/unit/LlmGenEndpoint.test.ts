@@ -3,10 +3,12 @@
  * SPDX-License-Identifier: AGPL-3.0-only
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { afterEach, describe, test, expect, vi, beforeEach } from 'vitest';
 import type { MiMeta } from '@/models/_.js';
 import type { MiLocalUser } from '@/models/User.js';
 import type { HttpRequestService } from '@/core/HttpRequestService.js';
+import { computeServerOpenAIDestinationId } from '@/core/entities/MetaEntityService.js';
+import { ApiError } from '@/server/api/error.js';
 import LlmGenEndpoint from '@/server/api/endpoints/notes/llm-gen.js';
 
 // クライアント直指定モードの全体予算 (packages/frontend/src/utility/tempura-script/llm.ts)。
@@ -14,24 +16,28 @@ import LlmGenEndpoint from '@/server/api/endpoints/notes/llm-gen.js';
 // サーバーが先に打ち切って課金だけ残るため、ここで整合を固定しておく。
 const CLIENT_REQUEST_BUDGET_MS = 120_000;
 
+const DESTINATION_KEY = 'a'.repeat(64);
+
 const META = {
 	serverOpenAIEnabled: true,
 	serverOpenAIApiKey: 'test-key',
 	serverOpenAIBaseURL: 'https://api.example.com/v1',
 	serverOpenAIModels: 'test-model',
+	serverOpenAIDestinationKey: DESTINATION_KEY,
 } as unknown as MiMeta;
 
 const sendMock = vi.fn();
 
-function makeEndpoint(): LlmGenEndpoint {
-	return new LlmGenEndpoint(META, { send: sendMock } as unknown as HttpRequestService);
+function makeEndpoint(metaOverrides: Partial<MiMeta> = {}): LlmGenEndpoint {
+	const meta = { ...META, ...metaOverrides } as unknown as MiMeta;
+	return new LlmGenEndpoint(meta, { send: sendMock } as unknown as HttpRequestService);
 }
 
 // この endpoint は requireCredential: true なので、ユーザーは非 null のローカルユーザーとして渡す
 const USER = { id: 'user1' } as MiLocalUser;
 
-function exec(endpoint: LlmGenEndpoint, params: Record<string, unknown>): Promise<any> {
-	return endpoint.exec({ prompt: 'summarize', ...params }, USER, null);
+function exec(endpoint: LlmGenEndpoint, params: Record<string, unknown>, signal?: AbortSignal): Promise<any> {
+	return endpoint.exec({ prompt: 'summarize', ...params }, USER, null, undefined, null, null, signal);
 }
 
 function okResponse(): Response {
@@ -50,10 +56,10 @@ function timeoutAt(index: number): number {
 /**
  * ApiError はメッセージに {0} を埋め込まず info に実値を入れるので、詳細は info から読む
  */
-async function captureError(promise: Promise<unknown>): Promise<{ code?: string; info?: unknown }> {
+async function captureError(promise: Promise<unknown>): Promise<{ code?: string; id?: string; httpStatusCode?: number; info?: unknown; name?: string }> {
 	return await promise.then(
 		() => { throw new Error('expected the endpoint to reject'); },
-		(error: { code?: string; info?: unknown }) => error,
+		(error: { code?: string; id?: string; httpStatusCode?: number; info?: unknown; name?: string }) => error,
 	);
 }
 
@@ -136,5 +142,291 @@ describe('notes/llm-gen error redaction', () => {
 
 		expect(error.info).toMatch(/\[REDACTED\]/);
 		expect(error.info).not.toMatch(/test-key/);
+	});
+});
+
+describe('notes/llm-gen expectedDestinationId', () => {
+	beforeEach(() => {
+		sendMock.mockReset();
+	});
+
+	test('succeeds when expectedDestinationId matches the current server destination', async () => {
+		sendMock.mockResolvedValueOnce(okResponse());
+		const expectedDestinationId = computeServerOpenAIDestinationId(META);
+		expect(expectedDestinationId).not.toBeNull();
+
+		const result = await exec(makeEndpoint(), { text: 'hello', expectedDestinationId });
+
+		expect(result).toEqual({ text: 'ok' });
+		expect(sendMock).toHaveBeenCalledTimes(1);
+	});
+
+	test('rejects with LLM_DESTINATION_MISMATCH without sending when serverOpenAIBaseURL has changed', async () => {
+		const previousDestinationId = computeServerOpenAIDestinationId(META);
+		const changedEndpoint = makeEndpoint({ serverOpenAIBaseURL: 'https://other-llm.example.com/v1' });
+
+		const error = await captureError(exec(changedEndpoint, {
+			text: 'hello',
+			expectedDestinationId: previousDestinationId,
+		}));
+
+		expect(error).toBeInstanceOf(ApiError);
+		expect(error.code).toBe('LLM_DESTINATION_MISMATCH');
+		expect(error.id).toBe('b47a1356-514c-4f34-b09d-0f4642f2a7b4');
+		expect(error.httpStatusCode).toBe(409);
+		expect(sendMock).not.toHaveBeenCalled();
+	});
+
+	test('rejects expectedDestinationId exceeding maxLength 64 with INVALID_PARAM without sending', async () => {
+		const error = await captureError(exec(makeEndpoint(), {
+			text: 'hello',
+			expectedDestinationId: 'a'.repeat(65),
+		}));
+
+		expect(error).toBeInstanceOf(ApiError);
+		expect(error.code).toBe('INVALID_PARAM');
+		expect(sendMock).not.toHaveBeenCalled();
+	});
+
+	test('rejects empty string expectedDestinationId without sending', async () => {
+		const error = await captureError(exec(makeEndpoint(), {
+			text: 'hello',
+			expectedDestinationId: '',
+		}));
+
+		expect(error.code).toBe('LLM_DESTINATION_MISMATCH');
+		expect(error.httpStatusCode).toBe(409);
+		expect(sendMock).not.toHaveBeenCalled();
+	});
+
+	test('rejects expectedDestinationId when serverOpenAIDestinationKey is null', async () => {
+		const endpoint = makeEndpoint({ serverOpenAIDestinationKey: null });
+		const error = await captureError(exec(endpoint, {
+			text: 'hello',
+			expectedDestinationId: '0123456789abcdef',
+		}));
+
+		expect(error.code).toBe('LLM_DESTINATION_MISMATCH');
+		expect(error.httpStatusCode).toBe(409);
+		expect(sendMock).not.toHaveBeenCalled();
+	});
+
+	test('rejects expectedDestinationId combined with user-specified baseUrl or apiKey', async () => {
+		const expectedDestinationId = computeServerOpenAIDestinationId(META);
+
+		const withBaseUrl = await captureError(exec(makeEndpoint(), {
+			text: 'hello',
+			baseUrl: 'https://custom.example.com/v1',
+			apiKey: 'user-key',
+			expectedDestinationId,
+		}));
+		expect(withBaseUrl.code).toBe('LLM_DESTINATION_MISMATCH');
+		expect(withBaseUrl.httpStatusCode).toBe(409);
+
+		const withApiKeyOnly = await captureError(exec(makeEndpoint(), {
+			text: 'hello',
+			apiKey: 'user-key',
+			expectedDestinationId,
+		}));
+		expect(withApiKeyOnly.code).toBe('LLM_DESTINATION_MISMATCH');
+		expect(withApiKeyOnly.httpStatusCode).toBe(409);
+		expect(sendMock).not.toHaveBeenCalled();
+	});
+
+	test('keeps omitted or null expectedDestinationId backward-compatible', async () => {
+		sendMock.mockResolvedValueOnce(okResponse()).mockResolvedValueOnce(okResponse());
+
+		await expect(exec(makeEndpoint(), { text: 'hello' })).resolves.toEqual({ text: 'ok' });
+		await expect(exec(makeEndpoint(), { text: 'hello', expectedDestinationId: null })).resolves.toEqual({ text: 'ok' });
+		expect(sendMock).toHaveBeenCalledTimes(2);
+	});
+
+	test('still throws LLM_NOT_ENABLED before destination check when server LLM is disabled', async () => {
+		const endpoint = makeEndpoint({ serverOpenAIEnabled: false });
+		const error = await captureError(exec(endpoint, {
+			text: 'hello',
+			expectedDestinationId: '0123456789abcdef',
+		}));
+
+		expect(error.code).toBe('LLM_NOT_ENABLED');
+		expect(sendMock).not.toHaveBeenCalled();
+	});
+
+	test('matches whitespace-padded serverOpenAIBaseURL and trims the request URL', async () => {
+		sendMock.mockResolvedValueOnce(okResponse());
+		const paddedMeta = {
+			...META,
+			serverOpenAIBaseURL: '  https://api.example.com/v1/  ',
+		} as unknown as MiMeta;
+		const expectedDestinationId = computeServerOpenAIDestinationId(paddedMeta);
+		const endpoint = new LlmGenEndpoint(paddedMeta, { send: sendMock } as unknown as HttpRequestService);
+
+		await exec(endpoint, { text: 'hello', expectedDestinationId });
+
+		expect(sendMock).toHaveBeenCalledTimes(1);
+		expect(sendMock.mock.calls[0][0]).toBe('https://api.example.com/v1/chat/completions');
+	});
+
+	test('uses snapshotted server settings even if serverSettings mutates mid-request', async () => {
+		const mutableMeta = { ...META } as unknown as MiMeta;
+		const expectedDestinationId = computeServerOpenAIDestinationId(mutableMeta);
+		const endpoint = new LlmGenEndpoint(mutableMeta, { send: sendMock } as unknown as HttpRequestService);
+
+		sendMock
+			.mockImplementationOnce(async () => {
+				mutableMeta.serverOpenAIBaseURL = 'https://evil.example.com/v1';
+				mutableMeta.serverOpenAIApiKey = 'rotated-key';
+				return errorResponse(400);
+			})
+			.mockResolvedValueOnce(okResponse());
+
+		await exec(endpoint, {
+			text: 'hello',
+			fileUris: ['https://example.com/a.png'],
+			expectedDestinationId,
+		});
+
+		expect(sendMock).toHaveBeenCalledTimes(2);
+		expect(sendMock.mock.calls[0][0]).toBe('https://api.example.com/v1/chat/completions');
+		expect(sendMock.mock.calls[1][0]).toBe('https://api.example.com/v1/chat/completions');
+		expect(sendMock.mock.calls[1][1].headers.Authorization).toBe('Bearer test-key');
+	});
+});
+
+describe('notes/llm-gen abort propagation', () => {
+	beforeEach(() => {
+		sendMock.mockReset();
+	});
+
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
+	test('forwards the request AbortSignal to HttpRequestService.send', async () => {
+		sendMock.mockResolvedValueOnce(okResponse());
+		const abortController = new AbortController();
+
+		await exec(makeEndpoint(), { text: 'hello' }, abortController.signal);
+
+		expect(sendMock).toHaveBeenCalledTimes(1);
+		expect(sendMock.mock.calls[0][1].signal).toBe(abortController.signal);
+	});
+
+	test('does not call send or wrap in LLM_API_ERROR when signal is already aborted', async () => {
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const abortController = new AbortController();
+		abortController.abort();
+
+		const error = await captureError(exec(makeEndpoint(), { text: 'hello' }, abortController.signal));
+
+		expect(sendMock).not.toHaveBeenCalled();
+		expect(error.code).not.toBe('LLM_API_ERROR');
+		expect(error.name).toBe('AbortError');
+		expect(consoleErrorSpy).not.toHaveBeenCalled();
+	});
+
+	test('rethrows abort error without logging or wrapping in LLM_API_ERROR when aborted during first request', async () => {
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const abortController = new AbortController();
+		const abortError = new DOMException('The operation was aborted.', 'AbortError');
+		sendMock.mockImplementationOnce(async () => {
+			abortController.abort(abortError);
+			throw abortError;
+		});
+
+		const error = await captureError(exec(makeEndpoint(), { text: 'hello' }, abortController.signal));
+
+		expect(sendMock).toHaveBeenCalledTimes(1);
+		expect(error).toBe(abortError);
+		expect(error.code).not.toBe('LLM_API_ERROR');
+		expect(consoleErrorSpy).not.toHaveBeenCalled();
+	});
+
+	test('skips the second image-fallback request when aborted before retry', async () => {
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const abortController = new AbortController();
+		sendMock.mockImplementationOnce(async () => {
+			abortController.abort();
+			return errorResponse(400);
+		});
+
+		const error = await captureError(exec(
+			makeEndpoint(),
+			{ text: 'hello', fileUris: ['https://example.com/a.png'] },
+			abortController.signal,
+		));
+
+		expect(sendMock).toHaveBeenCalledTimes(1);
+		expect(error.code).not.toBe('LLM_API_ERROR');
+		expect(error.name).toBe('AbortError');
+		expect(consoleErrorSpy).not.toHaveBeenCalled();
+	});
+
+	test('still wraps upstream timeout AbortError in LLM_API_ERROR when client signal is not aborted', async () => {
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const abortController = new AbortController();
+		sendMock.mockRejectedValueOnce(new DOMException('The operation was aborted.', 'AbortError'));
+
+		const error = await captureError(exec(makeEndpoint(), { text: 'hello' }, abortController.signal));
+
+		expect(sendMock).toHaveBeenCalledTimes(1);
+		expect(error.code).toBe('LLM_API_ERROR');
+		expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+	});
+
+	test('still logs and wraps non-AbortError in LLM_API_ERROR even when signal is aborted', async () => {
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const abortController = new AbortController();
+		sendMock.mockImplementationOnce(async () => {
+			abortController.abort();
+			throw new Error('unexpected parse bug test-key');
+		});
+
+		const error = await captureError(exec(makeEndpoint(), { text: 'hello' }, abortController.signal));
+
+		expect(sendMock).toHaveBeenCalledTimes(1);
+		expect(error).toBeInstanceOf(ApiError);
+		expect(error.code).toBe('LLM_API_ERROR');
+		expect(error.info).toBe('unexpected parse bug [REDACTED]');
+		expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+		expect(consoleErrorSpy).toHaveBeenCalledWith('LLM API error:', 'unexpected parse bug [REDACTED]');
+	});
+
+	test('rethrows AbortError instead of wrapping StatusError when aborted on non-ok response', async () => {
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const abortController = new AbortController();
+		sendMock.mockImplementationOnce(async () => {
+			abortController.abort();
+			return errorResponse(500);
+		});
+
+		const error = await captureError(exec(makeEndpoint(), { text: 'hello' }, abortController.signal));
+
+		expect(sendMock).toHaveBeenCalledTimes(1);
+		expect(error.code).not.toBe('LLM_API_ERROR');
+		expect(error.name).toBe('AbortError');
+		expect(consoleErrorSpy).not.toHaveBeenCalled();
+	});
+
+	test('rethrows AbortError instead of wrapping StatusError when aborted on retried non-ok response', async () => {
+		const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const abortController = new AbortController();
+		sendMock
+			.mockResolvedValueOnce(errorResponse(400))
+			.mockImplementationOnce(async () => {
+				abortController.abort();
+				return errorResponse(400);
+			});
+
+		const error = await captureError(exec(
+			makeEndpoint(),
+			{ text: 'hello', fileUris: ['https://example.com/a.png'] },
+			abortController.signal,
+		));
+
+		expect(sendMock).toHaveBeenCalledTimes(2);
+		expect(error.code).not.toBe('LLM_API_ERROR');
+		expect(error.name).toBe('AbortError');
+		expect(consoleErrorSpy).not.toHaveBeenCalled();
 	});
 });

@@ -320,42 +320,110 @@ export class HttpRequestService {
 			size?: number,
 			isLocalAddressAllowed?: boolean,
 			redirect?: RequestRedirect,
+			signal?: AbortSignal,
 		} = {},
 		extra: HttpRequestSendOptions = {
 			throwErrorWhenResponseNotOk: true,
 			validators: [],
 		},
 	): Promise<Response> {
+		const externalSignal = args.signal;
+		if (externalSignal?.aborted) {
+			throw externalSignal.reason ?? new DOMException('The operation was aborted.', 'AbortError');
+		}
+
 		const timeout = args.timeout ?? 5000;
 
 		const controller = new AbortController();
-		setTimeout(() => {
+		const cleanup = () => {
+			clearTimeout(timer);
+			externalSignal?.removeEventListener('abort', cleanup);
+		};
+		const timer = setTimeout(() => {
+			cleanup();
 			controller.abort();
 		}, timeout);
+		timer.unref?.();
+
+		externalSignal?.addEventListener('abort', cleanup, { once: true });
+
+		const combinedSignal = externalSignal != null
+			? AbortSignal.any([controller.signal, externalSignal])
+			: controller.signal;
 
 		const isLocalAddressAllowed = args.isLocalAddressAllowed ?? false;
 
-		const res = await fetch(url, {
-			method: args.method ?? 'GET',
-			headers: {
-				'User-Agent': this.config.userAgent,
-				...(args.headers ?? {}),
-			},
-			body: args.body,
-			size: args.size ?? 10 * 1024 * 1024,
-			redirect: args.redirect ?? 'follow',
-			agent: (url) => this.getAgentByUrl(url, false, isLocalAddressAllowed),
-			signal: controller.signal,
-		});
+		let res: Response;
+		try {
+			res = await fetch(url, {
+				method: args.method ?? 'GET',
+				headers: {
+					'User-Agent': this.config.userAgent,
+					...(args.headers ?? {}),
+				},
+				body: args.body,
+				size: args.size ?? 10 * 1024 * 1024,
+				redirect: args.redirect ?? 'follow',
+				agent: (url) => this.getAgentByUrl(url, false, isLocalAddressAllowed),
+				signal: combinedSignal,
+			});
+		} catch (err) {
+			cleanup();
+			throw err;
+		}
+
+		const disposeBody = () => {
+			const body = res.body;
+			if (body != null) {
+				if (typeof body.on === 'function') {
+					body.on('error', () => {});
+				} else if (typeof body.once === 'function') {
+					body.once('error', () => {});
+				}
+				if (body instanceof stream.Readable) {
+					body.destroy();
+				} else if (typeof body.resume === 'function') {
+					body.resume();
+				}
+			}
+			// node-fetch@3.3.2 は response_ の 'end' でのみ abortAndFinalize リスナを解除するため、
+			// 未読ボディを destroy() しただけでは combinedSignal にリスナが残る。
+			// 内部 controller を abort して即座に解除させる。
+			controller.abort();
+		};
 
 		if (!res.ok && extra.throwErrorWhenResponseNotOk) {
+			cleanup();
+			disposeBody();
 			throw new StatusError(`${res.status} ${res.statusText}`, res.status, res.statusText);
 		}
 
 		if (res.ok) {
-			for (const validator of (extra.validators ?? [])) {
-				validator(res);
+			try {
+				for (const validator of (extra.validators ?? [])) {
+					validator(res);
+				}
+			} catch (err) {
+				cleanup();
+				disposeBody();
+				throw err;
 			}
+		}
+
+		const body = res.body;
+		const isBodyFinished = body instanceof stream.Readable && (body.readableEnded || body.destroyed);
+		if (body == null || isBodyFinished || typeof body.once !== 'function') {
+			cleanup();
+		} else {
+			const onBodyDone = () => {
+				cleanup();
+				body.removeListener('close', onBodyDone);
+				body.removeListener('end', onBodyDone);
+				body.removeListener('error', onBodyDone);
+			};
+			body.once('close', onBodyDone);
+			body.once('end', onBodyDone);
+			body.once('error', onBodyDone);
 		}
 
 		return res;
