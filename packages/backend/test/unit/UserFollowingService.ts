@@ -294,17 +294,15 @@ describe('Undo / Reject が元の Follow アクティビティの ID を参照�
 		expect(lastDelivered()?.object.id).toBe(`${LOCAL_URL}/follows/req1`);
 	});
 
-	test('フォロワーを解除したときの Reject は、受信した Follow の ID を参照する', async () => {
-		requests.findOneBy.mockResolvedValue(null);
-		followings.findOneBy.mockResolvedValue({ requestId: REMOTE_FOLLOW_ID } as MiFollowing);
+	test('フォロワーを解除したときの Reject は、削除前に保存されていた Follow の ID を参照する', async () => {
 		followings.findOne.mockResolvedValue({
 			id: 'following1', follower: remoteUser, followee: localUser, requestId: REMOTE_FOLLOW_ID,
 		} as MiFollowing);
 
 		await service.rejectFollow(localUser, remoteUser);
 
-		// Reject の配送は await されないため、配送されるまで待つ
-		await vi.waitFor(() => expect(queue.deliver).toHaveBeenCalled());
+		// 削除後に follow 行を読み直さなくても、削除前の requestId が使われる
+		expect(followings.findOneBy).not.toHaveBeenCalled();
 		expect(lastDelivered()?.type).toBe('Reject');
 		expect(lastDelivered()?.object.id).toBe(REMOTE_FOLLOW_ID);
 	});
@@ -539,10 +537,30 @@ describe('フォロー解除・フォロワー解除のトランザクション�
 		followings.findOne.mockResolvedValue({
 			id: 'following1', follower: localFollower, followee: remoteFollowee, requestId: `${LOCAL_URL}/follows/req1`,
 		} as MiFollowing);
+		const lockAndDeleteOrder: string[] = [];
+		txUsers.findOne.mockImplementation(async () => {
+			lockAndDeleteOrder.push('lock-user');
+			return null;
+		});
+		txFollowings.delete.mockImplementation(async () => {
+			lockAndDeleteOrder.push('delete-following');
+			return { affected: 1, raw: [] };
+		});
 
 		await service.unfollow(localFollower, remoteFollowee);
 
 		expect(db.transaction).toHaveBeenCalledTimes(1);
+		expect(lockAndDeleteOrder).toEqual(['lock-user', 'lock-user', 'delete-following']);
+		expect(txUsers.findOne).toHaveBeenNthCalledWith(1, {
+			select: { id: true },
+			where: { id: localFollower.id },
+			lock: { mode: 'pessimistic_write' },
+		});
+		expect(txUsers.findOne).toHaveBeenNthCalledWith(2, {
+			select: { id: true },
+			where: { id: remoteFollowee.id },
+			lock: { mode: 'pessimistic_write' },
+		});
 		expect(txFollowings.delete).toHaveBeenCalledExactlyOnceWith('following1');
 		expect(txUsers.decrement).toHaveBeenCalledWith({ id: localFollower.id }, 'followingCount', 1);
 		expect(txUsers.decrement).toHaveBeenCalledWith({ id: remoteFollowee.id }, 'followersCount', 1);
@@ -625,6 +643,19 @@ describe('フォロー解除・フォロワー解除のトランザクション�
 		expect(queue.deliver).not.toHaveBeenCalled();
 		expect(perUserFollowingChart.update).not.toHaveBeenCalled();
 		expect(history.addUnfollowHistory).not.toHaveBeenCalled();
+	});
+
+	test('rejectFollow は削除トランザクションが失敗したときリモートへ Reject を配送しない', async () => {
+		const dbError = new Error('decrement timeout');
+		followings.findOne.mockResolvedValue({
+			id: 'following1', follower: remoteFollowee, followee: localFollowee, requestId: 'https://remote.example/follows/1',
+		} as MiFollowing);
+		txUsers.decrement.mockRejectedValue(dbError);
+
+		await expect(service.rejectFollow(localFollowee, remoteFollowee)).rejects.toBe(dbError);
+
+		expect(txCallbackError).toBe(dbError);
+		expect(queue.deliver).not.toHaveBeenCalled();
 	});
 
 	test('rejectFollow (removeFollow) でカウント減算が失敗したとき、トランザクションが reject し内部 unfollow イベントやローカル publishUnfollow を行わない', async () => {

@@ -521,6 +521,17 @@ export class UserFollowingService implements OnModuleInit {
 			const txFollowings = em.getRepository(MiFollowing);
 			const txUsers = em.getRepository(MiUser);
 
+			// ユーザー削除時のカスケードと同じく、ユーザー行を先にロックする。
+			// 並行する解除同士でもデッドロックしないよう、ユーザー ID の昇順でロックする。
+			const orderedUserIds = [...new Set([follower.id, followee.id])].sort();
+			for (const userId of orderedUserIds) {
+				await txUsers.findOne({
+					select: { id: true },
+					where: { id: userId },
+					lock: { mode: 'pessimistic_write' },
+				});
+			}
+
 			const deleteResult = await txFollowings.delete(followingId);
 			if (deleteResult?.affected === 0) {
 				return false;
@@ -834,11 +845,12 @@ export class UserFollowingService implements OnModuleInit {
 	 */
 	@bindThis
 	public async rejectFollow(user: Local, follower: Both): Promise<void> {
-		if (this.userEntityService.isRemoteUser(follower)) {
-			this.deliverReject(user, follower);
-		}
+		const removed = await this.removeFollow(user, follower);
+		if (!removed) return;
 
-		await this.removeFollow(user, follower);
+		if (this.userEntityService.isRemoteUser(follower)) {
+			this.deliverReject(user, follower, removed.requestId);
+		}
 
 		if (this.userEntityService.isLocalUser(follower)) {
 			this.publishUnfollow(user, follower);
@@ -883,7 +895,7 @@ export class UserFollowingService implements OnModuleInit {
 	 * Remove follow record
 	 */
 	@bindThis
-	private async removeFollow(followee: Both, follower: Both): Promise<void> {
+	private async removeFollow(followee: Both, follower: Both): Promise<MiFollowing | null> {
 		const following = await this.followingsRepository.findOne({
 			relations: {
 				followee: true,
@@ -895,32 +907,36 @@ export class UserFollowingService implements OnModuleInit {
 			},
 		});
 
-		if (!following || !following.followee || !following.follower) return;
+		if (!following || !following.followee || !following.follower) return null;
 
 		const deleted = await this.deleteFollowingAndDecrement(following.id, following.follower, following.followee);
-		if (!deleted) return;
+		if (!deleted) return null;
 
 		this.publishUnfollowSideEffects(following.follower, following.followee);
+		return following;
 	}
 
 	/**
 	 * Deliver Reject to remote
 	 */
 	@bindThis
-	private async deliverReject(followee: Local, follower: Remote): Promise<void> {
-		const [request, following] = await Promise.all([
-			this.followRequestsRepository.findOneBy({
-				followeeId: followee.id,
-				followerId: follower.id,
-			}),
-			this.followingsRepository.findOneBy({
-				followeeId: followee.id,
-				followerId: follower.id,
-			}),
-		]);
+	private async deliverReject(followee: Local, follower: Remote, removedFollowActivityId?: string | null): Promise<void> {
+		let followActivityId = removedFollowActivityId;
+		if (followActivityId === undefined) {
+			const [request, following] = await Promise.all([
+				this.followRequestsRepository.findOneBy({
+					followeeId: followee.id,
+					followerId: follower.id,
+				}),
+				this.followingsRepository.findOneBy({
+					followeeId: followee.id,
+					followerId: follower.id,
+				}),
+			]);
+			followActivityId = request?.requestId ?? following?.requestId ?? null;
+		}
 
-		const followActivityId = request?.requestId ?? following?.requestId ?? undefined;
-		const content = this.apRendererService.addContext(this.apRendererService.renderReject(this.apRendererService.renderFollow(follower, followee, followActivityId), followee));
+		const content = this.apRendererService.addContext(this.apRendererService.renderReject(this.apRendererService.renderFollow(follower, followee, followActivityId ?? undefined), followee));
 		this.queueService.deliver(followee, content, follower.inbox, false);
 	}
 
