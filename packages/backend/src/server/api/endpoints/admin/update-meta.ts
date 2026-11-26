@@ -1384,9 +1384,12 @@ export default class extends Endpoint<typeof meta, typeof paramDef> { // eslint-
 
 			const after = await this.metaService.fetch(true);
 
+			// 接続先 ID 用の非公開鍵は監査ログにも残さない
+			const { serverOpenAIDestinationKey: _beforeKey, ...beforeForLog } = before;
+			const { serverOpenAIDestinationKey: _afterKey, ...afterForLog } = after;
 			this.moderationLogService.log(me, 'updateServerSettings', {
-				before,
-				after,
+				before: beforeForLog,
+				after: afterForLog,
 			});
 
 			// 無効から有効に切り替えたら、03:30 を待たずにデータを取得する。失敗しても設定の更新は成功させる

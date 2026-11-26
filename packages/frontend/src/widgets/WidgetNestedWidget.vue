@@ -44,7 +44,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
-import { ref, useTemplateRef, computed, watch, inject, onMounted, onBeforeUnmount, onActivated, onDeactivated } from 'vue';
+import { ref, useTemplateRef, computed, watch, inject, provide, onMounted, onBeforeUnmount, onActivated, onDeactivated } from 'vue';
 import { createVisibilityAwareInterval } from '@@/js/interval.js';
 import { widgetPreviewContext } from './widget-preview.js';
 import { getNestedWidgetRotationDelay, updateNestedWidget } from './nested-widget.js';
@@ -56,6 +56,7 @@ import MkContainer from '@/components/MkContainer.vue';
 import MkButton from '@/components/MkButton.vue';
 import MkResult from '@/components/global/MkResult.vue';
 import { i18n } from '@/i18n.js';
+import { createTlDigestControllerStore, TL_DIGEST_CONTROLLER_STORE_KEY } from '@/utility/tempura-script/tl-digest/digest.js';
 
 const name = 'nestedWidget' as const;
 
@@ -97,6 +98,10 @@ const currentWidget = computed(() => {
 });
 
 const hasWidgets = computed(() => widgetProps.widgets.length > 0);
+
+// 切り替えで子ウィジェットがアンマウントされても TL ダイジェストの生成結果・生成中の処理を保つ
+const tlDigestControllers = createTlDigestControllerStore();
+provide(TL_DIGEST_CONTROLLER_STORE_KEY, tlDigestControllers);
 
 let stopInterval: (() => void) | undefined;
 let mounted = false;
@@ -148,10 +153,12 @@ onBeforeUnmount(() => {
 	mounted = false;
 	visibilityObserver?.disconnect();
 	stopInterval?.();
+	tlDigestControllers.dispose();
 });
 onActivated(() => { mounted = true; resetInterval(); });
 onDeactivated(() => { mounted = false; stopInterval?.(); });
 watch(() => [widgetProps.interval, widgetProps.widgets], () => {
+	tlDigestControllers.prune(widgetProps.widgets.map(w => w.id));
 	currentIndex.value = Math.max(0, Math.min(currentIndex.value, widgetProps.widgets.length - 1));
 	resetInterval();
 });

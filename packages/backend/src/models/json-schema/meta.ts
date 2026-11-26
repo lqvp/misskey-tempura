@@ -471,6 +471,10 @@ export const packedMetaLiteSchema = {
 			type: 'boolean',
 			optional: false, nullable: false,
 		},
+		serverOpenAIDestinationId: {
+			type: 'string',
+			optional: false, nullable: true,
+		},
 		customCursorUrl: {
 			type: 'string',
 			optional: false, nullable: true,

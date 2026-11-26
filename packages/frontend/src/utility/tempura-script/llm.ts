@@ -17,9 +17,606 @@ export type { LLMResponse };
 
 const instance = ref<Misskey.entities.MetaDetailed | null>(null);
 
-fetchInstance(true).then((res) => {
+// サーバー提供モードの判定前に初回取得の完了を待てるよう Promise を保持する
+const instanceReady: Promise<void> = fetchInstance(true).then((res) => {
 	instance.value = res;
+}, () => {
+	// 取得に失敗した場合はサーバー提供モードを無効として扱う
 });
+
+/**
+ * LLM の実際の送信先を表す識別子
+ * - 'server:<id>': サーバー提供の LLM API (notes/llm-gen)。id はサーバー側の接続先ごとに変わる
+ * - 'direct:<baseUrl>': ブラウザから直接呼び出す OpenAI 互換 API
+ */
+export type LLMDestination = `server:${string}` | `direct:${string}`;
+
+/**
+ * 一時的な失敗としてリトライする HTTP ステータス (冪等な GET /models 用)
+ *
+ * 408 / 425 / 429 / 5xx は LLM プロバイダで日常的に起きる一過性の失敗なので、
+ * 課金されず冪等な要求 (GET /models) では再試行するに値する。
+ * 一方 400 (リクエスト不正) / 401・403 (認証) / 404 (エンドポイント無し) / 422 (検証エラー) は
+ * 再送しても必ず同じ結果になるため、ここには含めない。
+ */
+const LLM_RETRYABLE_STATUSES: ReadonlySet<number> = new Set([
+	408, // Request Timeout
+	425, // Too Early
+	429, // Too Many Requests
+	500, // Internal Server Error
+	502, // Bad Gateway
+	503, // Service Unavailable
+	504, // Gateway Timeout
+]);
+
+/**
+ * 課金される非冪等な POST (/chat/completions) でリトライを許可する HTTP ステータス
+ *
+ * 408 / 425 / 429 のようなディスパッチ前の拒否のみを再送対象にする。
+ * 5xx (500 / 502 / 503 / 504) はゲートウェイタイムアウトや上流プロキシ障害などで、
+ * プロバイダがすでに推論を実行・課金した後に返り得るため除外する
+ * (サーバー側 notes/llm-gen.ts の「推論後に課金される 5xx では再送しない」と方針を揃える)。
+ */
+const LLM_BILLABLE_RETRYABLE_STATUSES: ReadonlySet<number> = new Set([
+	408, // Request Timeout
+	425, // Too Early
+	429, // Too Many Requests
+]);
+
+/** 試行回数の上限 (初回 + リトライ2回) */
+export const LLM_MAX_ATTEMPTS = 3;
+
+/** バックオフの基準遅延 (1 回目のリトライ) */
+const LLM_RETRY_BASE_DELAY_MS = 500;
+
+/**
+ * 自前で計算するバックオフ遅延の上限
+ *
+ * サーバーが Retry-After で指定した待機時間には適用しない (サーバーの指示を
+ * 短縮すると、待てと言われた時間より早く再送してレート制限を悪化させるため)。
+ */
+const LLM_RETRY_MAX_DELAY_MS = 8_000;
+
+/** 直指定 API 呼び出し全体 (全試行とバックオフ待機の合計) のタイムアウト予算 */
+const LLM_REQUEST_TIMEOUT_MS = 120_000;
+
+/** モデル一覧取得全体 (全試行とバックオフ待機の合計) のタイムアウト予算 */
+const MODEL_LIST_TIMEOUT_MS = 30_000;
+
+/**
+ * Retry-After の HTTP-date として受け付ける形 (IMF-fixdate)
+ *
+ * RFC 9110 §10.2.3 の Retry-After は「delay-seconds か HTTP-date」で、HTTP-date の
+ * 推奨形は IMF-fixdate。Date.parse は ISO 8601 なども解釈してしまうため、
+ * 解釈の前にこの形を要求して「Retry-After ではない日付」を弾く。
+ * 廃止形 (RFC 850 / asctime) も仕様上は許されるが実際にはほぼ現れないため、
+ * 誤解釈を避けることを優先して受け付けない (解釈できなければ通常のバックオフに任せる)。
+ */
+const HTTP_DATE_PATTERN = /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun), \d{2} (?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4} \d{2}:\d{2}:\d{2} GMT$/;
+
+/**
+ * 再送しても成功し得る HTTP ステータスか
+ */
+export function shouldRetryLLMStatus(status: number): boolean {
+	return LLM_RETRYABLE_STATUSES.has(status);
+}
+
+/**
+ * リトライ前に待つ時間 (full jitter つき指数バックオフ)
+ *
+ * 指数バックオフだけだと、同じ障害で同時に失敗したクライアントが一斉に再送して
+ * 再び失敗する (thundering herd)。そのため 0〜上限の一様乱数でばらつかせる。
+ *
+ * @param attempt 0 始まりの試行番号 (0 が初回、1 が最初のリトライ)
+ * @param random 0 以上 1 未満の乱数を返す関数 (テストで決定的にするため差し替え可能)
+ * @returns 待機時間 (ミリ秒)。上限で頭打ちにする
+ */
+export function computeLLMRetryDelay(attempt: number, random: () => number = Math.random): number {
+	const exponent = Math.max(0, Math.floor(attempt));
+	const ceiling = Math.min(LLM_RETRY_BASE_DELAY_MS * (2 ** exponent), LLM_RETRY_MAX_DELAY_MS);
+	return Math.floor(random() * ceiling);
+}
+
+/**
+ * リトライを判断するための、1 回の試行結果
+ *
+ * 応答本文の読み取り (response.json()) も 1 回分の試行に含める。ブラウザの fetch は
+ * 応答ヘッダの到着で解決し、本文は後からストリームとして読むため、本文の読み取りを
+ * 試行の外へ出すと、締切シグナルもリトライ判定も届かないまま固まり得る。
+ * そのため成功時は Response そのものではなく、読み取り済みの本文を返す。
+ */
+export type LLMAttemptOutcome =
+	/** 応答本文まで読み終えた成功 (body は JSON として解釈済み) */
+	| { kind: 'success'; body: unknown }
+	/**
+	 * 冪等な要求であれば再送で回復し得る失敗
+	 *
+	 * - status: HTTP のステータス。ネットワーク層の失敗 (fetch の reject) は 0、
+	 *   本文の読み取り中の失敗は応答ヘッダの 2xx ステータスになる。
+	 * - retryAfterMs: サーバー指定の待機時間 (Retry-After が無ければ null)
+	 * - duringBody: 本文の読み取り中に失敗したか。false / 省略は応答ヘッダの時点での失敗。
+	 *   duringBody・status 0・5xx を実際に再送するかは requestWithRetry の policy が判断する
+	 *   (課金される POST では二重課金防止のためいずれも再送しない。詳細は LLMRetryPolicy 参照)。
+	 */
+	| { kind: 'retryable'; status: number; statusText: string; retryAfterMs: number | null; duringBody?: boolean }
+	/** 再送しても成功し得ない失敗。status があれば HTTP の失敗、無ければ例外そのもの */
+	| { kind: 'fatal'; status?: number; statusText?: string; error?: unknown };
+
+/**
+ * HTTP の失敗を、呼び出し元へ返すエラーに変換する
+ *
+ * 従来のエラーメッセージ (i18n の api + ステータス) をそのまま保つ。
+ */
+function toLLMHttpError(status: number, statusText: string): Error {
+	return new Error(i18n.ts._llm._error.api + `${status} ${statusText}`);
+}
+
+/**
+ * ネットワーク層の失敗として一時的な失敗とみなすか
+ *
+ * window.fetch は接続断・CORS 失敗・オフラインをすべて TypeError で拒否する。
+ * 冪等な GET では再送すれば回復し得るが、課金される POST では推論中の切断や
+ * 送信後の CORS 失敗と接続前失敗を区別できないため policy 側で再送しない。
+ * 中止は TypeError ではない (DOMException) のでここには含まれない。
+ */
+function isTransientNetworkError(error: unknown): boolean {
+	return error instanceof TypeError;
+}
+
+/**
+ * 応答本文の読み取り (response.json()) の失敗が、一過性の失敗か
+ *
+ * 本文のストリームが途中で切れたことを表す例外の型は環境で揺れる:
+ * - ヘッダ受信後に接続が切れる (Chrome は net::ERR_CONTENT_LENGTH_MISMATCH を投げる)
+ * - Chromium 系は TypeError、仕様上の EncodingError は DOMException
+ * - Node の undici は TypeError をそのまま伝える
+ *
+ * どれも「本文が得られなかった」という点は同じで、再送すれば回復し得る。
+ * 一方、本文が揃った上での JSON 構文エラー (SyntaxError) は再送しても直らないため
+ * ここには含めない (呼び出し元の致命エラーとして扱う)。
+ */
+function isTransientBodyError(error: unknown): boolean {
+	// fetch 自体の失敗と同じく TypeError は一過性
+	if (isTransientNetworkError(error)) return true;
+	// 本文のストリームの失敗は EncodingError (DOMException) として届く
+	return error instanceof DOMException && error.name === 'EncodingError';
+}
+
+/**
+ * fetch から応答本文までを取得し、リトライ可否の観点で分類する
+ *
+ * 本文の読み取りまでを 1 回分の試行に含めるのが要点:
+ * - 応答ヘッダが届いただけでは終わらせず、本文の JSON 解釈まで待つ
+ * - その間も deadlineSignal が効くので、本文を送り切らないプロバイダでも固まらない
+ * - 本文の読み取り中の接続断も、ヘッダ時点の失敗と同じくリトライ対象にする
+ *
+ * Response の本文は 1 回しか読めないが、リトライ時は fetch ごとやり直すため
+ * 常に新しい Response になる (読み終えた Response を保持して再読することは無い)。
+ *
+ * 副作用 (エラーメッセージの組み立て) は呼び出し元ごとに異なるため持たせない。
+ *
+ * 戻り値の形 (特に retryable.duringBody) はリトライ方針の入力になる契約なので、
+ * 振る舞いを直接固定できるようテストから呼べるようにしている。
+ *
+ * @param request fetch を実行する関数 (deadlineSignal を渡すこと)
+ * @param callerSignal 呼び出し元の中止シグナル。中止済みならリトライ対象にしない
+ * @param deadlineSignal 試行の締切シグナル。本文の読み取り中止の原因を切り分けるのに使う
+ */
+export async function classifyFetchResponse(
+	request: () => Promise<Response>,
+	callerSignal: AbortSignal | undefined,
+	deadlineSignal: AbortSignal,
+): Promise<LLMAttemptOutcome> {
+	let response: Response;
+	try {
+		response = await request();
+	} catch (error) {
+		// 中止はリトライせずそのまま伝える (fetch は中止時に TypeError ではなく DOMException を返す)
+		if (callerSignal?.aborted) return { kind: 'fatal', error: toAbortError(callerSignal) };
+		if (isTransientNetworkError(error)) {
+			return { kind: 'retryable', status: 0, statusText: '', retryAfterMs: null };
+		}
+		return { kind: 'fatal', error };
+	}
+
+	// 成功しない応答は本文を読まない (必要になるのは Retry-After ヘッダだけ)
+	if (!response.ok) {
+		// 読まない本文は明示的に破棄する。放置するとブラウザが接続 (HTTP/1.1 の
+		// keep-alive スロットや HTTP/2 のストリーム) を解放せず、リトライを重ねるほど
+		// 同じオリジンへの同時接続を無駄に占有する。cancel は失敗しても
+		// 分類結果に影響しないため、未処理の拒否にならないよう握りつぶす
+		cancelUnreadBody(response);
+		if (!shouldRetryLLMStatus(response.status)) {
+			// 呼び出し元が中断していれば、エラー種別より中断を優先する
+			if (callerSignal?.aborted) return { kind: 'fatal', error: toAbortError(callerSignal) };
+			return { kind: 'fatal', status: response.status, statusText: response.statusText };
+		}
+		return {
+			kind: 'retryable',
+			status: response.status,
+			statusText: response.statusText,
+			retryAfterMs: parseRetryAfterMs(response.headers?.get('Retry-After')),
+		};
+	}
+
+	const { status, statusText } = response;
+	try {
+		// 本文の読み取りも同じ試行 (同じ締切シグナル) の中で行う
+		return { kind: 'success', body: await response.json() };
+	} catch (error) {
+		// 本文の読み取り中に呼び出し元が中断していれば、リトライせず中断を伝える
+		if (callerSignal?.aborted) return { kind: 'fatal', error: toAbortError(callerSignal) };
+		// 締切による中止は、「本文が来ないまま時間切れ」と「本文の途中で途切れた」の
+		// どちらも一過性の失敗として扱う (リトライ可否は requestWithRetry が判断する)
+		if (deadlineSignal.aborted || isTransientBodyError(error)) {
+			return retryableDuringBody(status, statusText);
+		}
+		return { kind: 'fatal', error };
+	}
+}
+
+/**
+ * 読まない応答本文を破棄する
+ *
+ * 成功しない応答の本文は読まない (ヘッダだけ使う) が、破棄しないまま Response を
+ * 捨てると、ブラウザは接続を解放しない。リトライは最大 3 回なので実害は小さいものの、
+ * 同じオリジンへの接続を無駄に占有しないよう明示的に cancel する。
+ *
+ * cancel は既に閉じたストリームでは失敗し得るが、分類結果には影響しないため
+ * 未処理の拒否にならないよう握りつぶす。
+ */
+function cancelUnreadBody(response: Response): void {
+	void response.body?.cancel().catch((): void => { /* 破棄できなくても分類結果は変えない */ });
+}
+
+/**
+ * 本文の読み取り中に失敗したことを表す retryable
+ *
+ * 応答ステータスは成功系 (2xx) だが本文が得られていないため、Retry-After も無い。
+ * duringBody は「サーバーが要求を処理した可能性がある」ことを示す。
+ */
+function retryableDuringBody(status: number, statusText: string): LLMAttemptOutcome {
+	return { kind: 'retryable', status, statusText, retryAfterMs: null, duringBody: true };
+}
+
+/**
+ * Retry-After ヘッダをミリ秒に変換する
+ *
+ * RFC 9110 の 2 形式をどちらも解釈する:
+ * - delay-seconds (`Retry-After: 30`)
+ * - HTTP-date (`Retry-After: Wed, 21 Oct 2026 07:28:00 GMT`)
+ *
+ * HTTP-date は IMF-fixdate の形に限定する (`Date.parse` は ISO 8601 も通してしまい、
+ * 形式違いの日付を「遠い将来の待機」と誤解釈するため)。
+ *
+ * 解釈できない値・負の値は「指定なし」(null) として扱い、指数バックオフに任せる。
+ * 返す値はサーバーの指示そのままで、上限では頭打ちにしない (呼び出し元が予算と比較する)。
+ *
+ * @param header ヘッダ値 (前後の空白は無視する)
+ * @param now 現在時刻 (HTTP-date 形式の経過時間を測る基準。テストで固定できるようにする)
+ * @returns 待機時間 (ミリ秒)。指定が無い/解釈できない/負の値なら null
+ */
+export function parseRetryAfterMs(header: string | null | undefined, now: number = Date.now()): number | null {
+	const value = header?.trim();
+	if (value == null || value === '') return null;
+
+	// delay-seconds は数字だけの形式に限定する (Number() は '0x10' や '1e3' も通してしまう)
+	if (/^\d+$/.test(value)) {
+		const seconds = Number(value);
+		return Number.isFinite(seconds) ? seconds * 1000 : null;
+	}
+
+	// HTTP-date は IMF-fixdate の形だけを受け付ける。
+	// Date.parse は ISO 8601 ("2027-01-01" や "2027-01-01T00:00:00Z") も通してしまうが、
+	// これは Retry-After の正しい形式ではない。素通しすると誤った日付が「遠い将来」として
+	// 解釈され、通常のバックオフなら回復できるはずの要求が予算超過で即失敗してしまう。
+	if (!HTTP_DATE_PATTERN.test(value)) return null;
+	const date = Date.parse(value);
+	if (!Number.isFinite(date)) return null;
+	const deltaMs = date - now;
+	if (deltaMs < 0) return null;
+	return deltaMs;
+}
+
+/**
+ * 中止済みシグナルを「中止された」ことを表す例外にして返す
+ */
+function toAbortError(signal: AbortSignal): unknown {
+	return signal.reason ?? new DOMException('Aborted', 'AbortError');
+}
+
+/**
+ * 中止を待機でなく例外として受け取れるよう、Promise をシグナルに結びつける
+ *
+ * AbortSignal.timeout() のタイマーは vitest の fake timers では進まず、
+ * 全体予算のテストが実時間待ちになってしまう。そのためタイムアウトは setTimeout で
+ * 自前管理し、ここでは「シグナルの発火」→「待機 Promise の reject」だけを担う。
+ */
+function abortableWait<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+	if (signal.aborted) {
+		promise.catch(() => { /* 中止しても未処理の拒否を出さない */ });
+		return Promise.reject(toAbortError(signal));
+	}
+	return new Promise<T>((resolve, reject) => {
+		const onAbort = () => {
+			reject(toAbortError(signal));
+		};
+		signal.addEventListener('abort', onAbort, { once: true });
+		promise.then((value) => {
+			signal.removeEventListener('abort', onAbort);
+			resolve(value);
+		}, (error: unknown) => {
+			signal.removeEventListener('abort', onAbort);
+			reject(error);
+		});
+	});
+}
+
+/**
+ * 待てる残り時間で打ち切るシグナルを作る
+ *
+ * setTimeout で管理する理由は abortableWait のコメント参照。
+ *
+ * @param remainingMs 待てる残り時間
+ */
+function startRequestDeadline(remainingMs: number): { signal: AbortSignal; dispose: () => void } {
+	const controller = new AbortController();
+	const timer = window.setTimeout(() => {
+		// reason は省略し、どの経路でも「中止」として扱えるようにする
+		controller.abort();
+	}, remainingMs);
+	return {
+		signal: controller.signal,
+		dispose: () => window.clearTimeout(timer),
+	};
+}
+
+/**
+ * リトライ方針 (1 回の要求の性質から決まる。呼び出し元ごとに異なる)
+ */
+export interface LLMRetryPolicy {
+	/** 再送を許可する HTTP ステータス (省略時は安全な既定値 LLM_BILLABLE_RETRYABLE_STATUSES: 408 / 425 / 429) */
+	retryableStatuses?: ReadonlySet<number>;
+	/** ネットワーク層の失敗 (status 0 / TypeError) を再送するか */
+	retryOnNetworkError?: boolean;
+	/** 応答本文の読み取り中の失敗 (duringBody) を再送するか */
+	retryOnBodyFailure?: boolean;
+	/**
+	 * 実際にバイトを送る直前に呼ばれる検証フック
+	 *
+	 * 試行ごとに毎回呼ぶ。同意や送信先の前提は待機中にも変わり得るため、
+	 * 一度だけ確認して再送すると、取り消された同意のまま本文を送ってしまう。
+	 * 例外を投げた場合は送信せず、リトライも打ち切って呼び出し元へ伝える。
+	 */
+	verifyBeforeAttempt?: () => void;
+}
+
+/**
+ * 課金される非冪等な POST (/chat/completions) 用のリトライ方針
+ *
+ * ディスパッチ前の拒否 (408 / 425 / 429) のみを再送し、5xx・ネットワーク層の失敗
+ * (status 0 / TypeError)・本文の欠落 (duringBody) は二重課金防止のため再送しない。
+ */
+const LLM_RETRY_POLICY_BILLABLE: LLMRetryPolicy = {
+	retryableStatuses: LLM_BILLABLE_RETRYABLE_STATUSES,
+	retryOnNetworkError: false,
+	retryOnBodyFailure: false,
+};
+
+/**
+ * 冪等で安価な GET (/models) 用のリトライ方針
+ *
+ * 課金されず冪等なため、408 / 425 / 429 / 5xx・ネットワーク層の失敗・本文欠落の
+ * いずれの一過性エラーも再送してよい。
+ */
+const LLM_RETRY_POLICY_IDEMPOTENT: LLMRetryPolicy = {
+	retryableStatuses: LLM_RETRYABLE_STATUSES,
+	retryOnNetworkError: true,
+	retryOnBodyFailure: true,
+};
+
+/**
+ * リトライを挟みつつ 1 つの HTTP 要求を実行する
+ *
+ * ループの進み方は横断的な関心事 (試行回数・待機中の中止・全体予算) なので、
+ * 呼び出し元ごとの HTTP の手順は 1 試行分のコールバックとして受け取る。
+ *
+ * 再送可否の線引きは policy に委ねる。非ストリーミングの POST /chat/completions は
+ * 非冪等で課金されるため、二重課金を防ぐ目的で以下は再送しない:
+ * - 5xx (500 / 502 / 503 / 504): ゲートウェイタイムアウトや上流プロキシ障害など、
+ *   プロバイダがすでに推論を実行・課金した後に返り得る (サーバー側 notes/llm-gen.ts と同方針)。
+ * - status 0 (TypeError のネットワーク失敗): ブラウザの fetch では接続前の失敗と
+ *   推論中の切断・送信後の CORS 拒否を区別できない。
+ * - duringBody (2xx ヘッダ受信後の本文読み取り失敗): プロバイダが要求を受け付けて
+ *   生成を完了した後に本文の転送だけが途切れている。
+ * そのため課金 POST ではディスパッチ前の拒否 (408 / 425 / 429) のみを再送し、
+ * 冪等な GET (/models) ではすべての一過性エラーを再送する。
+ *
+ * @param attemptRequest 1 回分の試行 (締切シグナルを受け取り、応答本文まで読み切って結果を分類して返す)
+ * @param delayFor サーバーが Retry-After を返さないときの待機時間を決める (試行番号は 0 始まり)
+ * @param signal 呼び出し元の中止シグナル
+ * @param deadline 全体予算の期限 (performance.now() と同じ時間軸のミリ秒)
+ * @param handleBudgetExhausted 全体予算を使い切ったときに投げる例外を作る
+ * @param handleAttemptTimeout 1 回の試行が上限に達したときに投げる例外を作る
+ * @param handleNetworkFailure ネットワーク層の失敗でリトライを使い切ったときに投げる例外を作る
+ * @param policy 再送の方針と、試行ごとの送信前検証
+ * @returns 成功した試行の応答本文 (リトライ後ならその最後の応答)
+ * @throws 中止された場合は中止理由、リトライ不能・試行回数超過・予算超過の場合はその例外。
+ *   policy.verifyBeforeAttempt が投げた例外はそのまま伝える
+ */
+export async function requestWithRetry(
+	attemptRequest: (signal: AbortSignal) => Promise<LLMAttemptOutcome>,
+	delayFor: (attempt: number) => number,
+	signal: AbortSignal | undefined,
+	deadline: number,
+	handleBudgetExhausted: () => unknown,
+	handleAttemptTimeout: () => unknown,
+	handleNetworkFailure: () => unknown,
+	policy: LLMRetryPolicy = LLM_RETRY_POLICY_BILLABLE,
+): Promise<unknown> {
+	for (let attempt = 0; ; attempt++) {
+		if (signal?.aborted) throw toAbortError(signal);
+
+		// 送信する試行ごとに毎回検証する。待機中に同意や送信先が変わっていれば、
+		// 本文 (フォロワー限定のノート本文を含み得る) を一切送らずに打ち切る。
+		policy.verifyBeforeAttempt?.();
+
+		const remaining = deadline - performance.now();
+		if (remaining <= 0) throw handleBudgetExhausted();
+		// 残り予算ちょうどで打ち切るので、単発の試行も全体予算を超えて待たない
+		const requestScope = startRequestDeadline(remaining);
+
+		let outcome: LLMAttemptOutcome;
+		try {
+			const attemptSignal = signal != null ? AbortSignal.any([signal, requestScope.signal]) : requestScope.signal;
+			outcome = await abortableWait(attemptRequest(attemptSignal), attemptSignal);
+		} catch (error) {
+			// 呼び出し元の中断が最優先 (予算超過との同時発火でも中断として扱う)
+			if (signal?.aborted) throw toAbortError(signal);
+			// タイムアウト以外の失敗 (fetch の reject など) は元の例外を伝える
+			if (!requestScope.signal.aborted) throw error;
+			throw handleAttemptTimeout();
+		} finally {
+			requestScope.dispose();
+		}
+
+		switch (outcome.kind) {
+			case 'success':
+				return outcome.body;
+			case 'fatal':
+				// 呼び出し元が中断した場合は、分類に関わらず中断を優先して伝える
+				if (signal?.aborted) throw toAbortError(signal);
+				if (outcome.error != null) throw outcome.error;
+				throw toLLMHttpError(outcome.status ?? 0, outcome.statusText ?? '');
+			case 'retryable': {
+				// ネットワーク層の失敗でシグナル付きの reject が来た場合は既に中止済み
+				if (signal?.aborted) throw toAbortError(signal);
+				// 本文が得られなかった失敗は、ステータスが成功系でもネットワーク層の失敗として扱う
+				// (従来のメッセージ (CORS) をそのまま保つ)
+				const exhausted = (): unknown => outcome.status === 0 || outcome.duringBody === true ? handleNetworkFailure() : toLLMHttpError(outcome.status, outcome.statusText);
+				// 本文の欠落は「応答ヘッダが 2xx で返った後」の失敗のため、
+				// 課金される要求では policy に従って即座に失敗させる (従来の CORS メッセージを保つ)。
+				if (outcome.duringBody === true && policy.retryOnBodyFailure !== true) {
+					throw handleNetworkFailure();
+				}
+				// ネットワーク層の失敗 (status 0 / TypeError) は、課金される POST では
+				// 接続前失敗と推論中切断を区別できないため policy に従って再送しない。
+				if (outcome.status === 0 && outcome.duringBody !== true && policy.retryOnNetworkError !== true) {
+					throw handleNetworkFailure();
+				}
+				// policy が許可していない HTTP ステータス (課金 POST における 5xx 等) は再送しない。
+				// 省略時は fail-closed として課金 POST 向けの既定セット (408 / 425 / 429) に倒す。
+				if (outcome.status !== 0 && outcome.duringBody !== true && !(policy.retryableStatuses ?? LLM_BILLABLE_RETRYABLE_STATUSES).has(outcome.status)) {
+					throw toLLMHttpError(outcome.status, outcome.statusText);
+				}
+				// 試行回数を使い切ったら、最後の失敗をそのまま返す
+				// (ネットワーク層の失敗は status 0 なので、呼び出し元ごとのネットワークエラーに変換する)
+				if (attempt >= LLM_MAX_ATTEMPTS - 1) throw exhausted();
+
+				// サーバーが待機時間を指定した場合はその値をそのまま守る (自前の上限では頭打ちにしない)。
+				// 指定が無いときだけ、自前の指数バックオフ (+ full jitter) と上限を使う。
+				const delay = outcome.retryAfterMs ?? delayFor(attempt);
+
+				// 待つと全体予算を超過するなら、切り詰めて早く再送せず即座に失敗させる
+				// (サーバーの指示より早く再送すると、レート制限をかえって悪化させる)
+				if (deadline - performance.now() <= delay) {
+					throw exhausted();
+				}
+
+				// 待機時間が 0 なら即座に再送する。0 は「待たなくてよい」の意味であり
+				// (Retry-After: 0 は合法で、full jitter の乱数が 0 を引くこともある)、
+				// ここで諦めると待つ必要が無いのにリトライを捨ててしまう。
+				// 無限ループにはならない (この時点で attempt はまだ上限未満で、
+				// 周回ごとに増えるため必ず LLM_MAX_ATTEMPTS で打ち切られる)
+				if (delay > 0) {
+					await waitForRetry(delay, signal);
+				}
+				break;
+			}
+		}
+	}
+}
+
+/**
+ * リトライ前の待機 (中止されたら即座に拒否する)
+ */
+function waitForRetry(delayMs: number, signal: AbortSignal | undefined): Promise<void> {
+	return new Promise<void>((resolve, reject) => {
+		if (signal == null) {
+			window.setTimeout(resolve, delayMs);
+			return;
+		}
+		if (signal.aborted) {
+			reject(toAbortError(signal));
+			return;
+		}
+		const onAbort = () => {
+			window.clearTimeout(timer);
+			reject(toAbortError(signal));
+		};
+		const timer = window.setTimeout(() => {
+			signal.removeEventListener('abort', onAbort);
+			resolve();
+		}, delayMs);
+		signal.addEventListener('abort', onAbort, { once: true });
+	});
+}
+
+/**
+ * 設定値から LLM の送信先を算出する (純粋関数)
+ *
+ * サーバー提供モードでもサーバー側が無効な場合はユーザー直指定へフォールバックするため、
+ * 実際の送信先はサーバー側の有効状態にも依存する。
+ *
+ * @returns 送信先 (LLM が未設定で送信できない場合は null)
+ */
+export function computeLLMDestination(params: {
+	useServerApi: boolean;
+	serverEnabled: boolean;
+	serverDestinationId?: string | null;
+	token: string | null | undefined;
+	baseUrl: string | null | undefined;
+}): LLMDestination | null {
+	if (params.useServerApi && params.serverEnabled) return `server:${params.serverDestinationId ?? ''}`;
+	if (params.token == null || params.token.trim() === '') return null;
+	// 同一オリジン上の別 API も区別できるよう、origin ではなく正規化した baseUrl 全体を使う
+	const rawUrl = (params.baseUrl?.trim() || 'https://api.openai.com/v1').replace(/\/+$/, '');
+	try {
+		const url = new URL(rawUrl);
+		return `direct:${url.origin}${url.pathname.replace(/\/+$/, '')}`;
+	} catch {
+		return `direct:${rawUrl}`;
+	}
+}
+
+function computeCurrentLLMDestination(useServerApi = prefer.s.useGeminiLLMAPI): LLMDestination | null {
+	return computeLLMDestination({
+		useServerApi,
+		serverEnabled: instance.value?.serverOpenAIEnabled === true,
+		serverDestinationId: instance.value?.serverOpenAIDestinationId,
+		token: prefer.s.openaiToken,
+		baseUrl: prefer.s.openaiBaseUrl,
+	});
+}
+
+/**
+ * 現在の設定で LLM の送信先を解決する
+ * @param refresh サーバー提供モードの場合、サーバー側の接続先変更を反映するためサーバー情報を取得し直す
+ */
+export async function resolveLLMDestination(refresh = false): Promise<LLMDestination | null> {
+	if (prefer.s.useGeminiLLMAPI) {
+		if (refresh) {
+			try {
+				instance.value = await fetchInstance(true);
+			} catch {
+				// 取得に失敗した場合は既存のサーバー情報で判定する
+			}
+		} else if (instance.value == null) {
+			await instanceReady;
+		}
+	}
+	return computeCurrentLLMDestination();
+}
 
 /**
  * モデルの入力モダリティ情報つきモデル一覧
@@ -140,13 +737,22 @@ export async function fetchAvailableModels(): Promise<LLMModelInfo[]> {
 	const { useGeminiLLMAPI, openaiToken, openaiBaseUrl } = prefer.s;
 
 	if (useGeminiLLMAPI) {
-		cachedModelInfos = []; // 古い判定が残らないようにクリアする
+		// 世代は取得を始めた時点で採番する (先に始めた取得ほど古い = 小さい)。
+		// キャッシュの鍵はサーバーの接続先で、応答が返ってから確定させる:
+		// 取得前に prefer.s から算出すると、この呼び出しはサーバーへ問い合わせているのに、
+		// サーバー情報が未取得 (null) や直指定トークン残存の時点の鍵 (null / direct:) に
+		// 結果を入れてしまい、取得中にサーバー情報が届いても反映されない。
+		// 「今の設定が指す先」(currentModelListEndpoint) ではなく「実際に問い合わせた先」を
+		// 使うのは、取得中に輸送手段が切り替わっても一覧の出所は変わらないため。
+		// 応答時点でサーバーが有効と分からなければキャッシュしない
+		const generation = nextModelInfoGeneration();
 		try {
 			const res = await misskeyApi('notes/llm-models', {});
 			const infos = toModelInfos(res.models);
-			cachedModelInfos = infos;
+			storeModelInfos({ generation, key: serverModelListEndpoint() }, infos);
 			return infos;
 		} catch {
+			dropModelInfos({ generation, key: serverModelListEndpoint() });
 			return [];
 		}
 	}
@@ -154,23 +760,37 @@ export async function fetchAvailableModels(): Promise<LLMModelInfo[]> {
 	if (!openaiToken) return [];
 
 	// ユーザー直指定モード: ブラウザから直接取得する (サーバーは経由しない)
-	cachedModelInfos = []; // 接続先変更後の古い判定が残らないようにクリアする
+	// 鍵はこの呼び出しが実際に使う baseURL から作る (設定を読み直さない。取得中に
+	// 接続先が変わっても、結果は送った先に紐づける)
+	const baseURL = (openaiBaseUrl?.trim() || 'https://api.openai.com/v1').replace(/\/+$/, '');
+	const modelListFetch: ModelInfosFetch = { generation: nextModelInfoGeneration(), key: directEndpointFromUrl(baseURL) };
 	try {
-		const baseURL = (openaiBaseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
-		const response = await window.fetch(`${baseURL}/models`, {
-			method: 'GET',
-			headers: {
-				Authorization: `Bearer ${openaiToken}`,
-			},
-			signal: AbortSignal.timeout(30_000),
-		});
-		if (!response.ok) throw new Error('fetch failed');
-		const data = await response.json() as { data?: { id?: string }[] };
-		const infos = toModelInfos(data.data);
-		cachedModelInfos = infos;
+		// 一覧取得も一時的な失敗 (429 / 5xx 等) で空配列に落とさないようリトライする
+		// 本文 (JSON) の読み取りも試行の中なので、本文が届かないまま固まることはない
+		const data = await requestWithRetry(
+			(attemptSignal) => classifyFetchResponse(() => window.fetch(`${baseURL}/models`, {
+				method: 'GET',
+				headers: {
+					Authorization: `Bearer ${openaiToken}`,
+				},
+				signal: attemptSignal,
+			}), undefined, attemptSignal),
+			(attempt) => computeLLMRetryDelay(attempt),
+			undefined,
+			performance.now() + MODEL_LIST_TIMEOUT_MS,
+			// 失敗はすべて外側の catch で空配列に落とすためメッセージは区別しない
+			() => new Error('fetch failed'),
+			() => new Error('fetch failed'),
+			() => new Error('fetch failed'),
+			// GET /models は冪等で課金されないため、本文の欠落も再送してよい
+			LLM_RETRY_POLICY_IDEMPOTENT,
+		) as { data?: { id?: string }[] } | null;
+		const infos = toModelInfos(data?.data);
+		storeModelInfos(modelListFetch, infos);
 		return infos;
 	} catch {
 		// CORS 等でブラウザから直接取得できない場合
+		dropModelInfos(modelListFetch);
 		return [];
 	}
 }
@@ -195,10 +815,174 @@ export interface GenerateLLMOptions {
 	note?: Misskey.entities.Note;
 	userContent?: string;
 	systemInstruction?: string;
+	/** 中止用シグナル (キャンセル時に HTTP 要求そのものを中断する) */
+	signal?: AbortSignal;
+	/**
+	 * 送信直前に期待する送信先 (一致しない場合は設定変更とみなして送信を中止する)
+	 * followers 同意など送信先に紐づく処理が、送信中の設定変更で別先へ送るのを防ぐ
+	 */
+	expectedDestination?: LLMDestination;
+	/**
+	 * 実際に送信する直前 (確認ダイアログの後を含む) に同期的に呼ばれる。
+	 * 送信内容の前提 (公開範囲の同意など) が崩れていれば例外を投げて送信を中止する。
+	 *
+	 * リトライの各試行の直前にも毎回呼ばれる (待機中に同意が取り消された場合など)。
+	 * 例外を投げると本文は送られず、リトライも打ち切る
+	 */
+	/** @param sending true なら、この直後に実際に送信する (false は確認ダイアログを出す前の事前確認) */
+	beforeSend?: (destination: LLMDestination, sending: boolean) => void;
+	/**
+	 * 応答本文の読み取り中の失敗 (2xx のヘッダを受けた後に本文の転送が途切れた場合) を再送するか
+	 *
+	 * 既定は false。2xx が返っている以上プロバイダは要求を受け付けて生成を完了しており
+	 * (多くの場合すでに課金済み)、再送すると 1 回の操作で二重の完了を要求することになるため。
+	 * 課金されず冪等な要求 (GET /models) でのみ true にする。
+	 * 408 / 425 / 429 などのディスパッチ前の拒否はこの設定に関わらず再送し、
+	 * 5xx や接続断 (status 0) は二重課金防止のため POST では再送しない。
+	 */
+	retryOnBodyFailure?: boolean;
 }
 
-// 直近のモデル一覧取得結果 (画像対応判定のキャッシュとして使う)
-let cachedModelInfos: LLMModelInfo[] = [];
+/**
+ * モデル一覧の取得に使う接続先
+ *
+ * キャッシュの鍵になるため、実際に取得する URL ではなく正規化した送信先を返す
+ * (末尾スラッシュや省略時の既定 URL が揺れても同じ鍵になるようにする)。
+ * 未設定で直指定できない場合は null (取得しない)。
+ */
+function currentModelListEndpoint(): LLMDestination | null {
+	const { useGeminiLLMAPI, openaiToken, openaiBaseUrl } = prefer.s;
+	return computeLLMDestination({
+		useServerApi: useGeminiLLMAPI,
+		serverEnabled: instance.value?.serverOpenAIEnabled === true,
+		serverDestinationId: instance.value?.serverOpenAIDestinationId,
+		token: openaiToken,
+		baseUrl: openaiBaseUrl,
+	});
+}
+
+/**
+ * 直指定で実際に使う baseURL から、その接続先の識別子を作る
+ *
+ * 設定値ではなく「実際に叩く URL」から作る。要求の途中で設定が変わっても、
+ * 記録・検証する送信先と実際の送信先が食い違わないようにするため。
+ * モデル一覧の取得鍵と、chat/completions の送信先検証の双方で使う。
+ */
+function directEndpointFromUrl(baseURL: string): LLMDestination {
+	const destination = computeLLMDestination({
+		useServerApi: false,
+		serverEnabled: false,
+		// baseURL の正規化結果だけが欲しいので、null にならないダミーのトークンを渡す
+		token: 'direct',
+		baseUrl: baseURL,
+	});
+	// ダミーのトークンを渡しているため null にはならない (型を絞るためだけの分岐)
+	return destination ?? `direct:${baseURL}`;
+}
+
+/**
+ * サーバー提供モードでモデル一覧を取得する先の鍵
+ *
+ * 実際に問い合わせた先 (サーバー) を表す。現在の設定から算出する
+ * currentModelListEndpoint() と違い、取得中に輸送手段や接続先が変わっても
+ * 一覧の出所は変わらないため、応答が返った時点でもこの鍵で格納する。
+ * サーバーが有効と分からない (サーバー情報が未取得・無効) 場合は、
+ * どの接続先の一覧か決められないので null (キャッシュしない)。
+ */
+function serverModelListEndpoint(): LLMDestination | null {
+	const meta = instance.value;
+	if (meta?.serverOpenAIEnabled !== true) return null;
+	return `server:${meta.serverOpenAIDestinationId ?? ''}`;
+}
+
+/**
+ * 現在の接続先が指すキャッシュだけを返す
+ *
+ * 接続先 (base URL / サーバー提供か直指定か / サーバー側の接続先 ID) が変わると
+ * 鍵が変わるため、古い接続先のモデル一覧は引けなくなる。戻り値を書き換えないこと
+ * (キャッシュそのものを参照している)。
+ */
+function cachedModelInfosForCurrentEndpoint(): LLMModelInfo[] {
+	const key = currentModelListEndpoint();
+	return key == null ? [] : (modelInfoCache.get(key) ?? []);
+}
+
+/** 接続先の鍵ごとに直近のモデル一覧を覚えておく (再接続時に取り直さずに済む) */
+const modelInfoCache = new Map<LLMDestination, LLMModelInfo[]>();
+
+/**
+ * 接続先の鍵ごとに、最後に結果を記録した取得の世代
+ *
+ * 一覧のエントリとは別に持ち、エントリを消しても減らさない (削除もしない)。
+ * 世代をエントリの中に置くと、失敗でエントリを消した時点で採番が 1 に戻り、
+ * 同じ鍵の新しい取得と古い取得が同じ世代を名乗れてしまう。例えば
+ * 「A が取得中 → B が失敗してエントリを削除 → C が成功して格納 → A が失敗」の順では、
+ * A が C の一覧を自分のものと誤認して消す。世代を独立に保てば、
+ * 古い世代 (A) は新しい世代 (C) の結果に触れない。
+ */
+const modelInfoSequences = new Map<LLMDestination, number>();
+
+/**
+ * 取得の世代を通し番号で採番する
+ *
+ * サーバー提供モードは応答が返るまで鍵を決められないため、鍵ごとではなく
+ * 全取得で共有する通し番号にしている。採番は「取得を始めた順」なので、
+ * 先に始めた古い取得ほど小さい値になり、遅れて完了しても新しい一覧を上書きしない。
+ */
+let modelInfoGeneration = 0;
+
+function nextModelInfoGeneration(): number {
+	modelInfoGeneration += 1;
+	return modelInfoGeneration;
+}
+
+/**
+ * 1 回の取得の識別情報
+ *
+ * generation は取得を始めた順序、key は結果を書き込む先の接続先。
+ * サーバー提供モードは取得を始めた時点で鍵を決められないため、応答が返ってから埋める。
+ */
+interface ModelInfosFetch {
+	generation: number;
+	key: LLMDestination | null;
+}
+
+/**
+ * この世代が、その鍵で最後に記録された世代より新しいか
+ *
+ * 同じ鍵に対する世代は単調に増えるため、false ならより新しい取得が既に
+ * 結果 (一覧または失敗) を記録している。古い応答でそれを上書き・削除してはいけない。
+ */
+function isNewerModelInfosGeneration(key: LLMDestination, generation: number): boolean {
+	const latest = modelInfoSequences.get(key);
+	return latest == null || generation > latest;
+}
+
+/**
+ * 取得結果をキャッシュする
+ *
+ * より新しい取得が既に結果を残していれば書き込まない (古い応答で新しい一覧を上書きしない)
+ */
+function storeModelInfos(fetch: ModelInfosFetch, infos: LLMModelInfo[]): void {
+	if (fetch.key == null) return;
+	if (!isNewerModelInfosGeneration(fetch.key, fetch.generation)) return;
+	modelInfoSequences.set(fetch.key, fetch.generation);
+	modelInfoCache.set(fetch.key, infos);
+}
+
+/**
+ * この取得の結果を信頼できないものとして、同じ接続先の判定を捨てる
+ *
+ * ただし、より新しい取得が既に結果を残していれば触らない (古い取得の失敗で、
+ * 既に成功した新しい一覧を消さない)。鍵が確定していない場合も何もしない
+ * (どの接続先の一覧か決められないため)。
+ */
+function dropModelInfos(fetch: ModelInfosFetch): void {
+	if (fetch.key == null) return;
+	if (!isNewerModelInfosGeneration(fetch.key, fetch.generation)) return;
+	modelInfoSequences.set(fetch.key, fetch.generation);
+	modelInfoCache.delete(fetch.key);
+}
 
 /**
  * 選択中のモデルの実効的な画像入力対応
@@ -208,8 +992,10 @@ let cachedModelInfos: LLMModelInfo[] = [];
  */
 function effectiveImageInputSupport(modelId: string): 'supported' | 'unsupported' | 'unknown' {
 	if (prefer.s.openaiForceImageInput) return 'supported';
-	// モデル一覧取得時に判定済みの情報があればそれを使う
-	const cached = cachedModelInfos.find((m) => m.id === modelId);
+	// モデル一覧取得時に判定済みの情報があればそれを使う。
+	// 現在の接続先の一覧だけを見るので、接続先を変えた後に古い判定 (別プロバイダの
+	// モデル名の推測結果) を引きずることはない
+	const cached = cachedModelInfosForCurrentEndpoint().find((m) => m.id === modelId);
 	if (cached != null) return cached.imageInput;
 	return detectImageInputSupport({ id: modelId });
 }
@@ -237,7 +1023,10 @@ async function fileToDataUrl(url: string): Promise<string> {
 /**
  * サーバー提供の LLM API (notes/llm-gen) を呼び出す
  */
-async function generateViaServer({ note, userContent, systemInstruction }: GenerateLLMOptions): Promise<LLMResponse> {
+async function generateViaServer(
+	{ note, userContent, systemInstruction, signal }: GenerateLLMOptions,
+	expectedDestinationId?: string,
+): Promise<LLMResponse> {
 	const text = wrapUserData(userContent ?? note?.text ?? '');
 	const { useGeminiWithMedia = true } = prefer.s;
 
@@ -257,13 +1046,106 @@ async function generateViaServer({ note, userContent, systemInstruction }: Gener
 		text: text,
 		prompt: systemInstruction ?? '',
 		fileUris: fileUris.length > 0 ? fileUris.slice(0, 4) : undefined,
-	}) as LLMResponse;
+		...(expectedDestinationId != null ? { expectedDestinationId } : {}),
+	}, undefined, signal) as LLMResponse;
+}
+
+/**
+ * 送信を確定した時点の輸送手段の記録
+ *
+ * 送信先 (expectedDestination) の比較だけでは、輸送手段そのものの切り替えを
+ * 検出できない。例えば直指定の 1 回目が 429 で待機している間にサーバー提供モードへ
+ * 切り替わると、直指定の送信先を再確認して通ってしまい、フォロワー限定の本文を
+ * 切り替え後の送信先へ送ることになる。
+ *
+ * そこで「この後どちらで送るか」と「決定した瞬間の設定値」を組で控える。
+ * サーバー側が無効なときにユーザーのキーへフォールバックする経路では、設定が
+ * true (サーバー提供) のまま直指定で送るため、輸送手段と設定値は一致しない。
+ * 変化の判定を輸送手段ではなく設定値との比較で行うことで、「ユーザーがこの送信の
+ * ために選んだ直指定」を設定変更と誤判定しない。
+ */
+interface LLMTransport {
+	/** この後実際に使う輸送手段 (true = サーバー提供, false = 直指定) */
+	useServerApi: boolean;
+	/** 決定した瞬間の prefer.s.useGeminiLLMAPI */
+	preferenceAtDispatch: boolean;
+}
+
+/**
+ * いま送ると決めた輸送手段を記録する
+ *
+ * 分岐が確定した直後 (確認ダイアログの後を含む) に 1 回だけ呼ぶこと。
+ * 試行のたびに記録し直すと、待機中に変わった設定を「決定時点の値」として
+ * 取り込んでしまい、変更を検出できなくなる。
+ */
+function captureTransport(useServerApi: boolean): LLMTransport {
+	return { useServerApi, preferenceAtDispatch: prefer.s.useGeminiLLMAPI };
+}
+
+/**
+ * 送信直前に、送信先と送信内容の前提 (公開範囲の同意など) を確認する
+ *
+ * 生成処理の入口だけでなく、リトライのたびに呼ぶ。待機中 (429 のバックオフ等) に
+ * 同意が取り消されたり管理者が送信先を変えたりしても、その後の再送で
+ * 古い前提のまま本文を送ってしまわないようにするため。
+ *
+ * @param options 呼び出し元が指定した期待送信先と検証フック
+ * @param transport この呼び出しが送ると決めた輸送手段 (captureTransport で記録したもの)。
+ *   決定した瞬間の設定値と現在値が食い違っていれば、送信せずに打ち切る
+ * @param sending true なら、この直後に実際に送信する (false は確認ダイアログを出す前の事前確認)
+ * @param requestDestination 直指定で「この試行が実際に POST する URL」から算出した送信先。
+ *   省略時は現在の設定から算出する (サーバー提供経路と、ダイアログ前の事前確認)。
+ *   設定から読み直すと、画像取得などで待機している間に接続先が変わった場合に
+ *   「検証は新しい接続先、送信は古い接続先」という食い違いが起き得るため、
+ *   実際に送る先が確定している経路では必ずこれを渡す
+ * @returns 検証した実際の送信先 (expectedDestination / beforeSend のどちらも未指定なら undefined)
+ * @throws 前提が崩れている場合は i18n.ts._tlDigest.settingsChanged
+ */
+function verifyBeforeSend(
+	options: Pick<GenerateLLMOptions, 'expectedDestination' | 'beforeSend'>,
+	transport: LLMTransport,
+	sending: boolean,
+	requestDestination?: LLMDestination | null,
+): LLMDestination | undefined {
+	if (options.expectedDestination == null && options.beforeSend == null) return undefined;
+	// 送信を決めた後に輸送手段が変わっていたら、送信先の比較では検出できない。
+	// 比較するのは「決定した瞬間の設定値」: フォールバックでは設定が true のまま
+	// 直指定へ進むため、輸送手段 (false) と設定値の一致を要求してはいけない。
+	if (prefer.s.useGeminiLLMAPI !== transport.preferenceAtDispatch) {
+		throw new Error(i18n.ts._tlDigest.settingsChanged);
+	}
+	// 送信先はこの呼び出しが実際に使う輸送手段で算出する (設定値から読み直さない)
+	const actualDestination = requestDestination !== undefined
+		? requestDestination
+		: computeCurrentLLMDestination(transport.useServerApi);
+	if (actualDestination == null) {
+		throw new Error(i18n.ts._tlDigest.settingsChanged);
+	}
+	if (options.expectedDestination != null && actualDestination !== options.expectedDestination) {
+		throw new Error(i18n.ts._tlDigest.settingsChanged);
+	}
+	// 実際に送る URL は生成開始時に固定される。現在の設定がその URL を指していることも
+	// 確かめないと、待機中に設定が別の接続先へ変わったことを検出できない
+	// (検証だけ新しい接続先を見て通り、送信は古い接続先へ飛ぶ)。
+	// 直指定の接続先で比べるのは、サーバー提供が有効なままユーザーが直指定を選んだ
+	// フォールバック経路でも、同じ比較で「設定が指す直指定の接続先」を確認できるため。
+	if (requestDestination !== undefined && computeCurrentLLMDestination(false) !== actualDestination) {
+		throw new Error(i18n.ts._tlDigest.settingsChanged);
+	}
+	options.beforeSend?.(actualDestination, sending);
+	return actualDestination;
 }
 
 /**
  * OpenAI 互換 API (Chat Completions) をユーザーのキーで直接呼び出す
+ *
+ * @param verifyBeforeAttempt 送信する試行ごとに呼ぶ検証 (最後の砦。リトライ前にも再確認する)。
+ *   この関数が実際に POST する URL から算出した送信先を渡す
  */
-async function generateOpenAIDirect({ note, userContent, systemInstruction }: GenerateLLMOptions): Promise<LLMResponse> {
+async function generateOpenAIDirect(
+	{ note, userContent, systemInstruction, signal, retryOnBodyFailure = false }: GenerateLLMOptions,
+	verifyBeforeAttempt: (requestDestination: LLMDestination) => void,
+): Promise<LLMResponse> {
 	const { openaiToken, openaiBaseUrl, openaiModel, useGeminiWithMedia = true } = prefer.s;
 
 	if (!openaiToken) {
@@ -271,7 +1153,11 @@ async function generateOpenAIDirect({ note, userContent, systemInstruction }: Ge
 	}
 
 	const text = wrapUserData(userContent ?? note?.text ?? '');
-	const baseURL = (openaiBaseUrl || 'https://api.openai.com/v1').replace(/\/+$/, '');
+	const baseURL = (openaiBaseUrl?.trim() || 'https://api.openai.com/v1').replace(/\/+$/, '');
+	// この試行が実際に POST する URL の送信先。設定を読み直さず、ここで固定した baseURL から
+	// 作ることで、画像取得などで待機している間に設定が変わっても
+	// 「検証した送信先」と「実際に送る送信先」が食い違わない
+	const requestDestination = directEndpointFromUrl(baseURL);
 	// モデルを空にしている場合は既定のモデルを使う
 	const model = openaiModel?.trim() || 'gpt-4o-mini';
 
@@ -303,28 +1189,46 @@ async function generateOpenAIDirect({ note, userContent, systemInstruction }: Ge
 		...(Number.isFinite(prefer.s.openaiTemperature) ? { temperature: prefer.s.openaiTemperature } : {}),
 	};
 
-	let response: Response;
-	try {
-		// ブラウザから直接 API を呼ぶ (サーバーは経由しない)
-		response = await window.fetch(`${baseURL}/chat/completions`, {
+	const body = JSON.stringify(requestBody);
+	// ブラウザから直接 API を呼ぶ (サーバーは経由しない)
+	// ディスパッチ前の拒否 (408 / 425 / 429) のみリトライし (5xx・接続断・本文欠落は
+	// 二重課金防止のため再送しない)、失敗は既存のエラーメッセージのまま返す。
+	// 応答本文の読み取りも試行の中なので、ヘッダだけ返して本文を送らないプロバイダでも
+	// 全体予算 (120 秒) で打ち切られる
+	const data = await requestWithRetry(
+		(attemptSignal) => classifyFetchResponse(() => window.fetch(`${baseURL}/chat/completions`, {
 			method: 'POST',
 			headers: {
 				Authorization: `Bearer ${openaiToken}`,
 				'Content-Type': 'application/json',
 			},
-			body: JSON.stringify(requestBody),
-			signal: AbortSignal.timeout(120_000),
-		});
-	} catch {
-		// CORS 等でブラウザから直接呼び出せない場合
-		throw new Error(i18n.ts._llm._error.cors);
-	}
+			body,
+			signal: attemptSignal,
+		}), signal, attemptSignal),
+		(attempt) => computeLLMRetryDelay(attempt),
+		signal,
+		// 120 秒は 1 回の試行ではなく全試行 + バックオフ待機の合計予算として使う
+		performance.now() + LLM_REQUEST_TIMEOUT_MS,
+		// 全体予算切れ: 待ち続けた結果なので CORS と同じ扱いで呼び出し元へ返す
+		() => new Error(i18n.ts._llm._error.cors),
+		// 1 回の試行のタイムアウト: 従来 (120 秒 1 回分) と同じ挙動を保つ
+		() => new Error(i18n.ts._llm._error.cors),
+		// ネットワーク層の失敗: 従来どおり CORS として扱う
+		() => new Error(i18n.ts._llm._error.cors),
+		{
+			// chat/completions は課金される非冪等 POST。既定方針 (LLM_RETRY_POLICY_BILLABLE) に
+			// 従い 408 / 425 / 429 のみ再送し、5xx・status 0・duringBody は再送しない。
+			// 呼び出し元が明示した場合のみ retryOnBodyFailure を上書きする
+			...LLM_RETRY_POLICY_BILLABLE,
+			retryOnBodyFailure,
+			// 同意の取り消しや送信先の変更は、バックオフ待機の間にも起き得る。
+			// 再送する前にここで確認し、崩れていれば本文を一切送らずに打ち切る。
+			// 検証には、この試行が実際に送る先 (requestDestination) を渡す
+			verifyBeforeAttempt: () => verifyBeforeAttempt(requestDestination),
+		},
+	);
 
-	if (!response.ok) {
-		throw new Error(i18n.ts._llm._error.api + `${response.status} ${response.statusText}`);
-	}
-
-	return response.json() as Promise<LLMResponse>;
+	return data as LLMResponse;
 }
 
 /**
@@ -336,8 +1240,6 @@ async function generateOpenAIDirect({ note, userContent, systemInstruction }: Ge
  * @returns LLM API のレスポンス (extractLLMText でテキストを取り出す)
  */
 export async function generateLLMResponse(options: GenerateLLMOptions): Promise<LLMResponse> {
-	const { useGeminiLLMAPI } = prefer.s;
-
 	// ユーザーのUI言語ヒント: LLM がユーザーの言語で応答するよう促す
 	// (指示側で言語を明示している場合はそちらを優先する)
 	// NOTE: i18n オブジェクトの直接参照は locale-inliner がエラー扱いにするため @@/js/config の lang を使う
@@ -349,13 +1251,48 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 	// プロンプトインジェクション対策: ユーザーコンテンツはデータとして扱う
 	options.systemInstruction = `${options.systemInstruction ?? ''}\n\n${GUARD_INSTRUCTION}`.trim();
 
-	if (useGeminiLLMAPI) {
+	if (prefer.s.useGeminiLLMAPI && instance.value == null) {
+		// 起動直後でサーバー情報が未取得の場合は、誤って「サーバー無効」と判定しないよう取得を待つ
+		await instanceReady;
+		if (options.signal?.aborted) throw options.signal.reason ?? new DOMException('Aborted', 'AbortError');
+	}
+
+	// instanceReady 待機中に設定が変わった場合も判定と送信先分岐が食い違わないよう再取得する
+	const currentUseServerApi = prefer.s.useGeminiLLMAPI;
+
+	if (currentUseServerApi) {
 		// サーバーで OpenAI 互換 API が有効になっているかチェック
 		if (instance.value?.serverOpenAIEnabled === true) {
+			// サーバー提供で送ると確定した時点の輸送手段を控える
+			const verifiedDestination = verifyBeforeSend(options, captureTransport(true), true);
+			const expectedDestinationId = verifiedDestination != null && verifiedDestination.startsWith('server:')
+				? verifiedDestination.slice('server:'.length)
+				: undefined;
 			try {
-				return await generateViaServer(options);
+				return await generateViaServer(options, expectedDestinationId);
 			} catch (error: unknown) {
-				const err = error as { code?: string; message?: string };
+				if (options.signal?.aborted) throw error;
+				const err = typeof error === 'object' && error !== null
+					? error as { code?: string; message?: string }
+					: null;
+				if (err?.code === 'LLM_DESTINATION_MISMATCH') {
+					// サーバー側の接続先が変わっているため、次回判定向けにサーバー情報を最新化する
+					try {
+						instance.value = await fetchInstance(true);
+					} catch {
+						// 再取得に失敗しても送信先変更エラー自体は呼び出し元へ伝える
+					}
+					throw new Error(i18n.ts._tlDigest.settingsChanged);
+				}
+				if (err?.code === 'LLM_NOT_ENABLED') {
+					// サーバー側の LLM 機能が無効化されているため、次回判定向けにサーバー情報を最新化する
+					try {
+						instance.value = await fetchInstance(true);
+					} catch {
+						// 再取得に失敗してもサーバー無効エラー自体は呼び出し元へ伝える
+					}
+					throw new Error(i18n.ts._llm._error.serverDisabled);
+				}
 				if (err?.code === 'ROLE_PERMISSION_DENIED') {
 					throw new Error(i18n.ts._llm._error.serverPermission);
 				}
@@ -365,6 +1302,8 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 
 		// サーバー側が無効な場合、ユーザー直指定にフォールバックするか確認
 		if (prefer.s.openaiToken) {
+			// 確認ダイアログを出す前にも確認し、前提が崩れていれば何も表示せず中止する
+			verifyBeforeSend(options, captureTransport(true), false);
 			const { canceled, result } = await os.actions({
 				type: 'question',
 				title: i18n.ts._llm._fallback.title,
@@ -374,6 +1313,7 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 					{ value: 'disable', text: i18n.ts._llm._fallback.disable, danger: true },
 				],
 			});
+			if (options.signal?.aborted) throw options.signal.reason ?? new DOMException('Aborted', 'AbortError');
 			if (canceled) {
 				// ユーザーによるキャンセルなのでエラー扱いにしない
 				throw new Error(i18n.ts._llm._error.cancel);
@@ -388,5 +1328,14 @@ export async function generateLLMResponse(options: GenerateLLMOptions): Promise<
 		}
 	}
 
-	return await generateOpenAIDirect(options);
+	// 直指定経路 (サーバー無効時のフォールバックを含む)。輸送手段は確認ダイアログが
+	// 閉じた後のここで確定する。フォールバックでは設定が true (サーバー提供) のまま
+	// 直指定で送るため、決定時点の設定値を控えておき、待機中に設定が変わった場合だけ打ち切る。
+	const transport = captureTransport(false);
+	// 確認ダイアログ中の設定変更も反映するため、送信直前に送信先と送信内容の前提を再確認する。
+	// リトライの各試行でも同じ検証をやり直す (generateOpenAIDirect の verifyBeforeAttempt)。
+	// 検証する送信先は、その試行が実際に POST する URL から作ったものを渡す
+	return await generateOpenAIDirect(options, (requestDestination) => {
+		verifyBeforeSend(options, transport, true, requestDestination);
+	});
 }

@@ -47,14 +47,15 @@ import { lookupUser, lookupUserByEmail, lookupFile } from '@/utility/admin-looku
 import { definePage, provideMetadataReceiver, provideReactiveMetadata } from '@/page.js';
 import { useRouter } from '@/router.js';
 import { ensureSignin } from '@/i.js';
-import { genSearchIndexes } from '@/utility/inapp-search.js';
+import { excludeSearchIndexByPath, genSearchIndexes } from '@/utility/inapp-search.js';
 
-const searchIndex = await import('search-index:admin').then(({ searchIndexes }) => genSearchIndexes(searchIndexes));
+const rawSearchIndex = await import('search-index:admin').then(({ searchIndexes }) => genSearchIndexes(searchIndexes));
 
 const isEmpty = (x: string | null) => x == null || x === '';
 
 const router = useRouter();
 const $i = ensureSignin();
+const searchIndex = computed(() => $i.isAdmin ? rawSearchIndex : excludeSearchIndexByPath(rawSearchIndex, ['/admin/tempura-admin']));
 
 const indexInfo = {
 	title: i18n.ts.controlPanel,

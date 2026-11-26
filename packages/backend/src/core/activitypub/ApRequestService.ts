@@ -7,7 +7,6 @@ import * as crypto from 'node:crypto';
 import { URL } from 'node:url';
 import { promisify } from 'node:util';
 import { Inject, Injectable } from '@nestjs/common';
-import * as htmlParser from 'node-html-parser';
 import { RsaKeyPair } from 'slacc';
 import { DI } from '@/di-symbols.js';
 import type { Config } from '@/config.js';
@@ -19,7 +18,10 @@ import { LoggerService } from '@/core/LoggerService.js';
 import { bindThis } from '@/decorators.js';
 import type Logger from '@/logger.js';
 import { validateContentTypeSetAsActivityPub } from '@/core/activitypub/misc/validator.js';
+import { StatusError } from '@/misc/status-error.js';
+import type { Response } from 'node-fetch';
 import { assertActivityMatchesUrl, FetchAllowSoftFailMask as FetchAllowSoftFailMask } from '@/core/activitypub/misc/check-against-url.js';
+import { parseUntrustedHtml } from '@/misc/parse-untrusted-html.js';
 import type { IObject } from './type.js';
 
 type Request = {
@@ -39,6 +41,85 @@ type PrivateKey = {
 	privateKeyPem: string;
 	keyId: string;
 };
+
+// リダイレクトの追従上限
+const MAX_REDIRECTS = 5;
+// リクエストのタイムアウト (リダイレクト全体で共有)
+const REQUEST_TIMEOUT = 5000;
+// 追従対象のリダイレクトステータスコード (300/304 などは追従しない)
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+// 2xx 応答のソケット再利用向けドレイン上限 (超過時は即座に破棄する)
+const MAX_DRAIN_BYTES = 16 * 1024;
+
+function resolveRedirectUrl(currentUrl: string, location: string, options: { allowCrossOrigin: boolean }): string {
+	const prev = new URL(currentUrl);
+	const next = new URL(location, prev);
+
+	if (next.username !== '' || next.password !== '') {
+		throw new Error('redirect URL must not contain credentials');
+	}
+
+	const isAllowedProtocol = next.protocol === 'https:'
+		|| (next.protocol === 'http:' && prev.protocol === 'http:');
+	if (!isAllowedProtocol) {
+		throw new Error('redirect protocol is not allowed');
+	}
+
+	if (!options.allowCrossOrigin) {
+		const isSameOrigin = next.origin === prev.origin;
+		const isSameHostHttpsUpgrade = prev.protocol === 'http:'
+			&& next.protocol === 'https:'
+			&& next.hostname === prev.hostname
+			&& (prev.port === '' || prev.port === '80')
+			&& (next.port === '' || next.port === '443');
+
+		if (!isSameOrigin && !isSameHostHttpsUpgrade) {
+			throw new Error('cross-origin redirect is not allowed for signed POST');
+		}
+	}
+
+	return next.href;
+}
+
+type DrainableBody = {
+	on?: (event: string, cb: (...args: any[]) => void) => void;
+	resume?: () => void;
+	destroy?: () => void;
+};
+
+function drainResponseBody(res: Response, { destroyImmediately = false }: { destroyImmediately?: boolean } = {}): void {
+	const body = (res as { body?: DrainableBody | null }).body;
+	if (body == null) return;
+
+	// 破棄するレスポンスストリーム由来の未処理エラーを抑止する
+	body.on?.('error', () => { /* ignore */ });
+
+	const hasContentEncoding = (res as { headers?: { get?: (name: string) => string | null } }).headers?.get?.('content-encoding') != null;
+	if ((destroyImmediately || hasContentEncoding) && typeof body.destroy === 'function') {
+		body.destroy();
+		return;
+	}
+
+	if (typeof body.destroy === 'function') {
+		let drainedBytes = 0;
+		let destroyed = false;
+		const destroy = body.destroy.bind(body);
+		body.on?.('data', (chunk: unknown) => {
+			if (destroyed) return;
+			if (typeof chunk === 'string') {
+				drainedBytes += Buffer.byteLength(chunk);
+			} else if (ArrayBuffer.isView(chunk)) {
+				drainedBytes += chunk.byteLength;
+			}
+			if (drainedBytes > MAX_DRAIN_BYTES) {
+				destroyed = true;
+				destroy();
+			}
+		});
+	}
+
+	body.resume?.();
+}
 
 export class ApRequestCreator {
 	static async createSignedPost(args: { key: PrivateKey, url: string, body: string, digest?: string, additionalHeaders: Record<string, string> }): Promise<Signed> {
@@ -165,23 +246,78 @@ export class ApRequestService {
 
 		const keypair = await this.userKeypairService.getUserKeypair(user.id);
 
-		const req = await ApRequestCreator.createSignedPost({
-			key: {
-				privateKeyPem: keypair.privateKey,
-				keyId: `${this.config.url}/users/${user.id}#main-key`,
-			},
-			url,
-			body,
-			digest,
-			additionalHeaders: {
-			},
-		});
+		// リダイレクト先に向けて同じSignatureヘッダを再送すると、
+		// (request-target)やhostが署名対象と乖離し、署名の意味を失う(場合によっては署名の漏洩にもなる)ため、
+		// リダイレクト時は手動で追従してリクエストごとに再署名する
+		// なお、タイムアウトはリダイレクト全体で共有する
+		let currentUrl = url;
+		let currentMethod: 'POST' | 'GET' = 'POST';
+		const deadline = Date.now() + REQUEST_TIMEOUT;
+		for (let redirectCount = 0; ; redirectCount++) {
+			const req = currentMethod === 'POST'
+				? await ApRequestCreator.createSignedPost({
+					key: {
+						privateKeyPem: keypair.privateKey,
+						keyId: `${this.config.url}/users/${user.id}#main-key`,
+					},
+					url: currentUrl,
+					body,
+					digest,
+					additionalHeaders: {
+					},
+				})
+				: await ApRequestCreator.createSignedGet({
+					key: {
+						privateKeyPem: keypair.privateKey,
+						keyId: `${this.config.url}/users/${user.id}#main-key`,
+					},
+					url: currentUrl,
+					additionalHeaders: {
+					},
+				});
 
-		await this.httpRequestService.send(url, {
-			method: req.request.method,
-			headers: req.request.headers,
-			body,
-		});
+			const remaining = deadline - Date.now();
+			if (remaining <= 0) {
+				throw new Error('request timeout');
+			}
+
+			const res = await this.httpRequestService.send(currentUrl, {
+				method: req.request.method,
+				headers: req.request.headers,
+				...(currentMethod === 'POST' ? { body } : {}),
+				redirect: 'manual',
+				timeout: remaining,
+			}, {
+				throwErrorWhenResponseNotOk: false,
+			});
+
+			if (REDIRECT_STATUSES.has(res.status)) {
+				const location = res.headers.get('location')?.trim();
+				if (location) {
+					drainResponseBody(res, { destroyImmediately: true });
+					if (redirectCount >= MAX_REDIRECTS) {
+						throw new Error('too many redirects');
+					}
+					const nextUrl = resolveRedirectUrl(currentUrl, location, { allowCrossOrigin: false });
+					// ActivityPub の inbox 配送では POST + JSON ボディを維持する必要があるため、
+					// 301/302 でも POST のまま追従し、303 See Other のみ GET に切り替える
+					if (res.status === 303) {
+						currentMethod = 'GET';
+					}
+					currentUrl = nextUrl;
+					continue;
+				}
+			}
+
+			if (!res.ok) {
+				drainResponseBody(res, { destroyImmediately: true });
+				throw new StatusError(`${res.status} ${res.statusText}`, res.status, res.statusText);
+			}
+
+			drainResponseBody(res);
+
+			return;
+		}
 	}
 
 	/**
@@ -194,22 +330,57 @@ export class ApRequestService {
 		const _followAlternate = followAlternate ?? true;
 		const keypair = await this.userKeypairService.getUserKeypair(user.id);
 
-		const req = await ApRequestCreator.createSignedGet({
-			key: {
-				privateKeyPem: keypair.privateKey,
-				keyId: `${this.config.url}/users/${user.id}#main-key`,
-			},
-			url,
-			additionalHeaders: {
-			},
-		});
+		// リダイレクト先に向けて同じSignatureヘッダを再送すると、
+		// (request-target)やhostが署名対象と乖離し、署名の意味を失う(場合によっては署名の漏洩にもなる)ため、
+		// リダイレクト時は手動で追従してリクエストごとに再署名する
+		let currentUrl = url;
+		let res!: Response;
+		// タイムアウトはリダイレクト全体で共有する
+		const deadline = Date.now() + REQUEST_TIMEOUT;
+		for (let redirectCount = 0; ; redirectCount++) {
+			const req = await ApRequestCreator.createSignedGet({
+				key: {
+					privateKeyPem: keypair.privateKey,
+					keyId: `${this.config.url}/users/${user.id}#main-key`,
+				},
+				url: currentUrl,
+				additionalHeaders: {
+				},
+			});
 
-		const res = await this.httpRequestService.send(url, {
-			method: req.request.method,
-			headers: req.request.headers,
-		}, {
-			throwErrorWhenResponseNotOk: true,
-		});
+			const remaining = deadline - Date.now();
+			if (remaining <= 0) {
+				throw new Error('request timeout');
+			}
+
+			res = await this.httpRequestService.send(currentUrl, {
+				method: req.request.method,
+				headers: req.request.headers,
+				redirect: 'manual',
+				timeout: remaining,
+			}, {
+				throwErrorWhenResponseNotOk: false,
+			});
+
+			if (REDIRECT_STATUSES.has(res.status)) {
+				const location = res.headers.get('location')?.trim();
+				if (location) {
+					drainResponseBody(res, { destroyImmediately: true });
+					if (redirectCount >= MAX_REDIRECTS) {
+						throw new Error('too many redirects');
+					}
+					currentUrl = resolveRedirectUrl(currentUrl, location, { allowCrossOrigin: true });
+					continue;
+				}
+			}
+
+			if (!res.ok) {
+				drainResponseBody(res, { destroyImmediately: true });
+				throw new StatusError(`${res.status} ${res.statusText}`, res.status, res.statusText);
+			}
+
+			break;
+		}
 
 		//#region リクエスト先がhtmlかつactivity+jsonへのalternate linkタグがあるとき
 		const contentType = res.headers.get('content-type');
@@ -222,7 +393,7 @@ export class ApRequestService {
 			const html = await res.text();
 
 			try {
-				const document = htmlParser.parse(html);
+				const document = parseUntrustedHtml(html);
 
 				const alternate = document.querySelector('head > link[rel="alternate"][type="application/activity+json"]');
 				if (alternate) {
@@ -237,7 +408,12 @@ export class ApRequestService {
 		}
 		//#endregion
 
-		validateContentTypeSetAsActivityPub(res);
+		try {
+			validateContentTypeSetAsActivityPub(res);
+		} catch (err) {
+			drainResponseBody(res, { destroyImmediately: true });
+			throw err;
+		}
 		const finalUrl = res.url; // redirects may have been involved
 		const activity = await res.json() as IObject;
 

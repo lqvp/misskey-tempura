@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 	<MkImgWithBlurhash
 		v-if="isThumbnailAvailable && prefer.s.enableHighQualityImagePlaceholders"
 		:hash="file.blurhash"
-		:src="file.thumbnailUrl"
+		:src="thumbnailUrl"
 		:alt="file.name"
 		:title="file.name"
 		:class="$style.thumbnail"
@@ -22,8 +22,8 @@ SPDX-License-Identifier: AGPL-3.0-only
 		:forceBlurhash="forceBlurhash"
 	/>
 	<img
-		v-else-if="isThumbnailAvailable && file.thumbnailUrl != null"
-		:src="file.thumbnailUrl"
+		v-else-if="isThumbnailAvailable && thumbnailUrl != null"
+		:src="thumbnailUrl"
 		:alt="file.name"
 		:title="file.name"
 		:class="$style.thumbnail"
@@ -46,6 +46,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { computed } from 'vue';
 import * as Misskey from 'misskey-js';
 import MkImgWithBlurhash from '@/components/MkImgWithBlurhash.vue';
+import { rewriteProxiedImageUrlNullable } from '@/utility/media-proxy.js';
 import { prefer } from '@/preferences.js';
 
 const props = defineProps<{
@@ -78,8 +79,10 @@ const is = computed(() => {
 	return 'unknown';
 });
 
+const thumbnailUrl = computed(() => rewriteProxiedImageUrlNullable(props.file.thumbnailUrl));
+
 const isThumbnailAvailable = computed(() => {
-	return props.file.thumbnailUrl
+	return thumbnailUrl.value
 		? (is.value === 'image' || is.value === 'video')
 		: false;
 });

@@ -15,7 +15,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		>
 			<MkMarqueeText :key="key" :duration="marqueeDuration" :reverse="marqueeReverse">
 				<span v-for="note in notes" :key="note.id" :class="$style.item">
-					<img v-if="note.user.avatarUrl" :class="$style.avatar" :src="note.user.avatarUrl" decoding="async"/>
+					<img v-if="note.user.avatarUrl" :class="$style.avatar" :src="rewriteProxiedImageUrl(note.user.avatarUrl)" decoding="async"/>
 					<MkA :class="$style.text" :to="notePage(note)">
 						<Mfm :text="getNoteSummary(note)" :plain="true" :nowrap="true"/>
 					</MkA>
@@ -36,6 +36,7 @@ import * as Misskey from 'misskey-js';
 import { useInterval } from '@@/js/use-interval.js';
 import MkMarqueeText from '@/components/MkMarqueeText.vue';
 import { misskeyApi } from '@/utility/misskey-api.js';
+import { rewriteProxiedImageUrl } from '@/utility/media-proxy.js';
 import { getNoteSummary } from '@/utility/get-note-summary.js';
 import { notePage } from '@@/js/note.js';
 

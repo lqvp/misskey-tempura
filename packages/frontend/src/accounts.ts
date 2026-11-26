@@ -49,12 +49,39 @@ async function addAccount(host: string, user: Misskey.entities.MeDetailed, token
 export async function removeAccount(host: string, id: AccountWithToken['id']) {
 	const tokens = JSON.parse(JSON.stringify(store.s.accountTokens));
 	delete tokens[host + '/' + id];
-	store.set('accountTokens', tokens);
 	const accountInfos = JSON.parse(JSON.stringify(store.s.accountInfos));
 	delete accountInfos[host + '/' + id];
-	store.set('accountInfos', accountInfos);
 
-	prefer.commit('accounts', prefer.s.accounts.filter(x => x[0] !== host || x[1].id !== id));
+	const persistStore = (run: () => Promise<void>): Promise<void> => {
+		try {
+			return Promise.resolve(run());
+		} catch (err) {
+			return Promise.reject(err);
+		}
+	};
+
+	const tokensPromise = persistStore(() => store.set('accountTokens', tokens));
+	const infosPromise = persistStore(() => store.set('accountInfos', accountInfos));
+
+	let commitError: unknown;
+	let hasCommitError = false;
+	try {
+		prefer.commit('accounts', prefer.s.accounts.filter(x => x[0] !== host || x[1].id !== id));
+	} catch (err) {
+		commitError = err;
+		hasCommitError = true;
+	}
+
+	const results = await Promise.allSettled([tokensPromise, infosPromise]);
+	for (const result of results) {
+		if (result.status === 'rejected') {
+			throw result.reason;
+		}
+	}
+
+	if (hasCommitError) {
+		throw commitError;
+	}
 }
 
 const isAccountDeleted = Symbol('isAccountDeleted');
@@ -150,9 +177,13 @@ export function updateCurrentAccount(accountData: Partial<Misskey.entities.MeDet
 export async function refreshCurrentAccount() {
 	if (!$i) return;
 	const me = $i;
-	return fetchAccount($i.token, $i.id).then(replaceCurrentAccountData).catch(reason => {
+	return fetchAccount($i.token, $i.id).then(replaceCurrentAccountData).catch(async reason => {
 		if (reason === isAccountDeleted) {
-			removeAccount(host, me.id);
+			try {
+				await removeAccount(host, me.id);
+			} catch (err) {
+				console.error(err);
+			}
 			if (Object.keys(store.s.accountTokens).length > 0) {
 				login(Object.values(store.s.accountTokens)[0]);
 			} else {

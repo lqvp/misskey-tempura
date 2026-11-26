@@ -35,3 +35,27 @@ export function genSearchIndexes(generated: GeneratedSearchIndexItem[]): SearchI
 
 	return generated;
 }
+
+export function excludeSearchIndexByPath(items: SearchIndexItem[], excludedPaths: readonly string[]): SearchIndexItem[] {
+	if (excludedPaths.length === 0) return items;
+	const excludedSet = new Set(excludedPaths);
+	const byId = new Map(items.map(item => [item.id, item]));
+
+	const isExcluded = (item: SearchIndexItem): boolean => {
+		const visited = new Set<string>();
+		let current: SearchIndexItem | undefined = item;
+		while (current != null) {
+			if (current.path != null && excludedSet.has(current.path)) {
+				return true;
+			}
+			if (current.parentId == null || visited.has(current.id)) {
+				return false;
+			}
+			visited.add(current.id);
+			current = byId.get(current.parentId);
+		}
+		return false;
+	};
+
+	return items.filter(item => !isExcluded(item));
+}

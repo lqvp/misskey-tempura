@@ -41,12 +41,23 @@ export default function(app: App) {
 	app.component('WidgetNestedWidget', defineAsyncComponent(() => import('./WidgetNestedWidget.vue')));
 	app.component('WidgetEarthQuake', defineAsyncComponent(() => import('./WidgetEarthQuake.vue')));
 	app.component('WidgetFederationJobQueue', defineAsyncComponent(() => import('./WidgetFederationJobQueue.vue')));
+	app.component('WidgetTlDigest', defineAsyncComponent(() => import('./WidgetTlDigest.vue')));
 }
 
 // 連合関連のウィジェット（連合無効時に隠す）
 export const federationWidgets = [
 	'federation',
 	'instanceCloud',
+] as const;
+
+// Misskey Tempura 独自のウィジェット
+export const tempuraWidgets = [
+	'listenBrainz',
+	'weather',
+	'nestedWidget',
+	'earthQuake',
+	'federationJobQueue',
+	'tlDigest',
 ] as const;
 
 export const widgets = [
@@ -77,12 +88,8 @@ export const widgets = [
 	'clicker',
 	'birthdayFollowings',
 	'chat',
-	'listenBrainz',
-	'weather',
-	'nestedWidget',
-	'earthQuake',
-	'federationJobQueue',
 	...federationWidgets,
+	...tempuraWidgets,
 ] as const;
 
 export type WidgetName = typeof widgets[number];

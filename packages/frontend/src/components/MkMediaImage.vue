@@ -13,7 +13,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 		} : {
 			title: image.name,
 			class: $style.imageContainer,
-			href: image.url,
+			href: rawImageUrl,
 			style: 'cursor: zoom-in;'
 		}"
 	>
@@ -73,7 +73,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 import { watch, ref, computed } from 'vue';
 import * as Misskey from 'misskey-js';
 import type { MediaComponentExposes } from '@/types/media-component.js';
-import { getStaticImageUrl } from '@/utility/media-proxy.js';
+import { getStaticImageUrl, rewriteProxiedImageUrl, rewriteProxiedImageUrlNullable } from '@/utility/media-proxy.js';
 import bytes from '@/filters/bytes.js';
 import MkImgWithBlurhash from '@/components/MkImgWithBlurhash.vue';
 import { i18n } from '@/i18n.js';
@@ -102,11 +102,13 @@ const emit = defineEmits<{
 
 const hide = ref(true);
 
+const rawImageUrl = computed(() => rewriteProxiedImageUrl(props.image.url));
+
 const url = computed(() => (props.raw || prefer.s.loadRawImages)
-	? props.image.url
+	? rawImageUrl.value
 	: prefer.s.disableShowingAnimatedImages
 		? getStaticImageUrl(props.image.url)
-		: props.image.thumbnailUrl!,
+		: (rewriteProxiedImageUrlNullable(props.image.thumbnailUrl) ?? rawImageUrl.value),
 );
 
 async function onClick(ev: PointerEvent) {

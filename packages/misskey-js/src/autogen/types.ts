@@ -6330,6 +6330,7 @@ export type components = {
             /** @default 0 */
             entranceMarginBottom: number;
             serverOpenAIEnabled: boolean;
+            serverOpenAIDestinationId: string | null;
             customCursorUrl: string | null;
             customCursorPointerUrl: string | null;
             customCursorTextUrl: string | null;
@@ -34331,6 +34332,7 @@ export interface operations {
                     baseUrl?: string | null;
                     apiKey?: string | null;
                     model?: string | null;
+                    expectedDestinationId?: string | null;
                     fileUris?: string[] | null;
                 };
             };

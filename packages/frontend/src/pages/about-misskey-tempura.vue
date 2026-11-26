@@ -16,10 +16,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 					</div>
 				</div>
 				<MkMfm :text="i18n.ts._misskeyTempura.about" style="text-align: center;"/>
-				<FormLink to="/tempura-changelog">
-					<template #icon><i class="ti ti-sparkles"></i></template>
-					{{ i18n.ts._misskeyTempura.diff }}
-				</FormLink>
+				<div class="_gaps_s">
+					<FormLink to="/tempura-diff">
+						<template #icon><i class="ti ti-sparkles"></i></template>
+						{{ i18n.ts._misskeyTempura.diff }}
+					</FormLink>
+					<FormLink to="https://github.com/lqvp/misskey-tempura/releases" external>
+						<template #icon><i class="ti ti-history"></i></template>
+						{{ i18n.ts._misskeyTempura.releases }}
+						<template #suffix>GitHub</template>
+					</FormLink>
+				</div>
 				<FormSection>
 					<template #label>{{ i18n.ts._misskeyTempura.contributors }}</template>
 					<div :class="$style.contributors">

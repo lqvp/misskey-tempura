@@ -27,6 +27,17 @@ SPDX-License-Identifier: AGPL-3.0-only
 						</MkSwitch>
 					</SearchMarker>
 				</MkPreferenceContainer>
+
+				<MkPreferenceContainer k="mediaProxy">
+					<SearchMarker :keywords="['media', 'proxy', 'image', 'url']">
+						<MkInput :key="mediaProxyInputKey" :modelValue="mediaProxyDraft" type="url" manualSave @update:modelValue="onSaveMediaProxy" @change="onEditMediaProxy">
+							<template #prefix><i class="ti ti-link"></i></template>
+							<template #label><SearchLabel>{{ i18n.ts._mediaProxySetting.url }}</SearchLabel></template>
+							<template #caption>{{ i18n.ts._mediaProxySetting.clientDescription }}</template>
+						</MkInput>
+						<MkInfo v-if="mediaProxyValidationError != null" warn>{{ mediaProxyValidationError }}</MkInfo>
+					</SearchMarker>
+				</MkPreferenceContainer>
 			</div>
 		</div>
 	</MkFolder>
@@ -34,13 +45,75 @@ SPDX-License-Identifier: AGPL-3.0-only
 </template>
 
 <script lang="ts" setup>
+import { computed, ref, watch } from 'vue';
+import { url } from '@@/js/config.js';
+import { validateMediaProxyUrl } from '@@/js/media-proxy.js';
 import MkSwitch from '@/components/MkSwitch.vue';
+import MkInput from '@/components/MkInput.vue';
+import MkInfo from '@/components/MkInfo.vue';
 import MkFolder from '@/components/MkFolder.vue';
 import { prefer } from '@/preferences.js';
 import { i18n } from '@/i18n.js';
+import * as os from '@/os.js';
 import MkPreferenceContainer from '@/components/MkPreferenceContainer.vue';
 
 const reactionChecksMuting = prefer.model('reactionChecksMuting');
 const anonymizeMutedUsers = prefer.model('anonymizeMutedUsers');
 
+/** 保存値は文字列以外もあり得る (クラウドバックアップ・手編集) ため、入力欄では空欄として扱う */
+function toMediaProxyInput(value: unknown): string {
+	return typeof value === 'string' ? value : '';
+}
+
+const mediaProxyDraft = ref(toMediaProxyInput(prefer.s.mediaProxy));
+/** 拒否時に入力欄を確実に巻き戻すための再マウント用キー (同値代入では子の watch が発火しない) */
+const mediaProxyInputKey = ref(0);
+/** 編集中の入力値 (manualSave では保存するまで親に渡らないため、change から拾って検証に使う) */
+const mediaProxyEditing = ref<string | null>(null);
+
+function onEditMediaProxy(ev: Event) {
+	const target = ev.target as HTMLInputElement | null;
+	mediaProxyEditing.value = target?.value ?? null;
+}
+
+function errorText(reason: 'invalid' | 'self' | 'insecure'): string {
+	switch (reason) {
+		case 'self': return i18n.ts._mediaProxySetting.selfUrl;
+		case 'insecure': return i18n.ts._mediaProxySetting.insecureUrl;
+		default: return i18n.ts._mediaProxySetting.invalidUrl;
+	}
+}
+
+// 入力に追従して即座に理由を出す (保存を押した後だけ警告が出ると直し方が分からないため)
+const mediaProxyValidationError = computed(() => {
+	const raw = mediaProxyEditing.value ?? mediaProxyDraft.value;
+	const result = validateMediaProxyUrl(raw, url);
+	return result.ok ? null : errorText(result.reason);
+});
+
+watch(prefer.r.mediaProxy, (value) => {
+	mediaProxyDraft.value = toMediaProxyInput(value);
+	mediaProxyEditing.value = null;
+});
+
+function onSaveMediaProxy(value: string) {
+	const result = validateMediaProxyUrl(value, url);
+	if (!result.ok) {
+		void os.alert({
+			type: 'error',
+			text: errorText(result.reason),
+		});
+		// 拒否した値は入力欄に残さず、確定済みの値へ戻す
+		mediaProxyDraft.value = toMediaProxyInput(prefer.s.mediaProxy);
+		mediaProxyEditing.value = null;
+		mediaProxyInputKey.value++;
+		return;
+	}
+
+	prefer.commit('mediaProxy', result.normalized);
+	mediaProxyDraft.value = result.normalized ?? '';
+	mediaProxyEditing.value = null;
+	// 正規化結果が保存済みの値と同じだと modelValue が変わらず、末尾スラッシュ等が入力欄に残るため組み直す
+	mediaProxyInputKey.value++;
+}
 </script>

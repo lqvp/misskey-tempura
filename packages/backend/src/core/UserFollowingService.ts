@@ -5,8 +5,10 @@
 
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
-import { Brackets, In, IsNull } from 'typeorm';
-import type { MiLocalUser, MiPartialLocalUser, MiPartialRemoteUser, MiRemoteUser, MiUser } from '@/models/User.js';
+import { Brackets, DataSource, In, IsNull } from 'typeorm';
+import type { MiLocalUser, MiPartialLocalUser, MiPartialRemoteUser, MiRemoteUser } from '@/models/User.js';
+import { MiUser } from '@/models/User.js';
+import { MiFollowing } from '@/models/Following.js';
 import { IdentifiableError } from '@/misc/identifiable-error.js';
 import { QueueService } from '@/core/QueueService.js';
 import PerUserFollowingChart from '@/core/chart/charts/per-user-following.js';
@@ -54,6 +56,9 @@ export class UserFollowingService implements OnModuleInit {
 
 	constructor(
 		private moduleRef: ModuleRef,
+
+		@Inject(DI.db)
+		private db: DataSource,
 
 		@Inject(DI.config)
 		private config: Config,
@@ -155,6 +160,14 @@ export class UserFollowingService implements OnModuleInit {
 		})) {
 			// すでにフォロー関係が存在している場合
 			if (this.userEntityService.isRemoteUser(follower) && this.userEntityService.isLocalUser(followee)) {
+				if (requestId != null) {
+					// 以後の Reject が最新の Follow を参照するように更新しておく
+					await this.followingsRepository.update({
+						followerId: follower.id,
+						followeeId: followee.id,
+					}, { requestId });
+				}
+
 				// リモート → ローカル: acceptを送り返しておしまい
 				this.deliverAccept(follower, followee, requestId);
 				return;
@@ -249,7 +262,7 @@ export class UserFollowingService implements OnModuleInit {
 			}
 		}
 
-		await this.insertFollowingDoc(followee, follower, silent, withReplies);
+		await this.insertFollowingDoc(followee, follower, silent, withReplies, requestId ?? null);
 
 		if (this.userEntityService.isRemoteUser(follower) && this.userEntityService.isLocalUser(followee)) {
 			this.deliverAccept(follower, followee, requestId);
@@ -266,6 +279,7 @@ export class UserFollowingService implements OnModuleInit {
 		},
 		silent = false,
 		withReplies?: boolean,
+		requestId: string | null = null,
 	): Promise<void> {
 		if (follower.id === followee.id) return;
 
@@ -276,6 +290,7 @@ export class UserFollowingService implements OnModuleInit {
 			followerId: follower.id,
 			followeeId: followee.id,
 			withReplies: withReplies,
+			requestId,
 
 			// 非正規化
 			followerHost: follower.host,
@@ -441,11 +456,14 @@ export class UserFollowingService implements OnModuleInit {
 			return;
 		}
 
-		await this.followingsRepository.delete(following.id);
+		const deleted = await this.deleteFollowingAndDecrement(following.id, following.follower, following.followee);
+		if (!deleted) {
+			return;
+		}
 
 		this.cacheService.userFollowingsCache.refresh(follower.id);
 
-		this.decrementFollowing(following.follower, following.followee);
+		this.publishUnfollowSideEffects(following.follower, following.followee);
 
 		const policies = await this.roleService.getUserPolicies(follower.id);
 
@@ -460,13 +478,13 @@ export class UserFollowingService implements OnModuleInit {
 		}
 
 		if (this.userEntityService.isLocalUser(follower) && this.userEntityService.isRemoteUser(followee)) {
-			const content = this.apRendererService.addContext(this.apRendererService.renderUndo(this.apRendererService.renderFollow(follower as MiPartialLocalUser, followee as MiPartialRemoteUser), follower));
+			const content = this.apRendererService.addContext(this.apRendererService.renderUndo(this.apRendererService.renderFollow(follower as MiPartialLocalUser, followee as MiPartialRemoteUser, following.requestId ?? undefined), follower));
 			this.queueService.deliver(follower, content, followee.inbox, false);
 		}
 
 		if (this.userEntityService.isLocalUser(followee) && this.userEntityService.isRemoteUser(follower)) {
 			// local user has null host
-			const content = this.apRendererService.addContext(this.apRendererService.renderReject(this.apRendererService.renderFollow(follower as MiPartialRemoteUser, followee as MiPartialLocalUser), followee));
+			const content = this.apRendererService.addContext(this.apRendererService.renderReject(this.apRendererService.renderFollow(follower as MiPartialRemoteUser, followee as MiPartialLocalUser, following.requestId ?? undefined), followee));
 			this.queueService.deliver(followee, content, follower.inbox, false);
 		}
 
@@ -494,21 +512,93 @@ export class UserFollowingService implements OnModuleInit {
 	}
 
 	@bindThis
-	private async decrementFollowing(
+	private async deleteFollowingAndDecrement(
+		followingId: MiFollowing['id'],
 		follower: MiUser,
 		followee: MiUser,
-	): Promise<void> {
+	): Promise<boolean> {
+		return await this.db.transaction(async em => {
+			const txFollowings = em.getRepository(MiFollowing);
+			const txUsers = em.getRepository(MiUser);
+
+			// ユーザー削除時のカスケードと同じく、ユーザー行を先にロックする。
+			// 並行する解除同士でもデッドロックしないよう、ユーザー ID の昇順でロックする。
+			const orderedUserIds = [...new Set([follower.id, followee.id])].sort();
+			for (const userId of orderedUserIds) {
+				await txUsers.findOne({
+					select: { id: true },
+					where: { id: userId },
+					lock: { mode: 'pessimistic_write' },
+				});
+			}
+
+			const deleteResult = await txFollowings.delete(followingId);
+			if (deleteResult?.affected === 0) {
+				return false;
+			}
+
+			// Neither followee nor follower has moved.
+			if (!follower.movedToUri && !followee.movedToUri) {
+				//#region Decrement following / followers counts
+				// 相互フォローの同時解除でトランザクション内の行ロックが AB-BA デッドロックしないよう、
+				// ユーザー ID の昇順で順次更新する
+				const updates: Array<{ id: MiUser['id']; column: 'followingCount' | 'followersCount' }> = [
+					{ id: follower.id, column: 'followingCount' },
+					{ id: followee.id, column: 'followersCount' },
+				];
+				updates.sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+				for (const target of updates) {
+					await txUsers.decrement({ id: target.id }, target.column, 1);
+				}
+				//#endregion
+			} else {
+				// Adjust following/followers counts
+				const orderedUsers = [follower, followee].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+				for (const user of orderedUsers) {
+					if (user.movedToUri) continue; // No need to update if the user has already moved.
+
+					const nonMovedFollowees = await txFollowings.count({
+						relations: {
+							followee: true,
+						},
+						where: {
+							followerId: user.id,
+							followee: {
+								movedToUri: IsNull(),
+							},
+						},
+					});
+					const nonMovedFollowers = await txFollowings.count({
+						relations: {
+							follower: true,
+						},
+						where: {
+							followeeId: user.id,
+							follower: {
+								movedToUri: IsNull(),
+							},
+						},
+					});
+					await txUsers.update(
+						{ id: user.id },
+						{ followingCount: nonMovedFollowees, followersCount: nonMovedFollowers },
+					);
+				}
+			}
+
+			return true;
+		});
+	}
+
+	@bindThis
+	private publishUnfollowSideEffects(
+		follower: MiUser,
+		followee: MiUser,
+	): void {
 		this.globalEventService.publishInternalEvent('unfollow', { followerId: follower.id, followeeId: followee.id });
 
 		// Neither followee nor follower has moved.
 		if (!follower.movedToUri && !followee.movedToUri) {
-			//#region Decrement following / followers counts
-			await Promise.all([
-				this.usersRepository.decrement({ id: follower.id }, 'followingCount', 1),
-				this.usersRepository.decrement({ id: followee.id }, 'followersCount', 1),
-			]);
-			//#endregion
-
 			//#region Update instance stats
 			if (this.meta.enableStatsForFederatedInstances) {
 				if (this.userEntityService.isRemoteUser(follower) && this.userEntityService.isLocalUser(followee)) {
@@ -531,38 +621,6 @@ export class UserFollowingService implements OnModuleInit {
 
 			this.perUserFollowingChart.update(follower, followee, false);
 		} else {
-			// Adjust following/followers counts
-			for (const user of [follower, followee]) {
-				if (user.movedToUri) continue; // No need to update if the user has already moved.
-
-				const nonMovedFollowees = await this.followingsRepository.count({
-					relations: {
-						followee: true,
-					},
-					where: {
-						followerId: user.id,
-						followee: {
-							movedToUri: IsNull(),
-						},
-					},
-				});
-				const nonMovedFollowers = await this.followingsRepository.count({
-					relations: {
-						follower: true,
-					},
-					where: {
-						followeeId: user.id,
-						follower: {
-							movedToUri: IsNull(),
-						},
-					},
-				});
-				await this.usersRepository.update(
-					{ id: user.id },
-					{ followingCount: nonMovedFollowees, followersCount: nonMovedFollowers },
-				);
-			}
-
 			// TODO: adjust charts
 		}
 	}
@@ -643,22 +701,21 @@ export class UserFollowingService implements OnModuleInit {
 			id: MiUser['id']; host: MiUser['host']; uri: MiUser['host']
 		},
 	): Promise<void> {
+		const request = await this.followRequestsRepository.findOneBy({
+			followeeId: followee.id,
+			followerId: follower.id,
+		});
+
 		if (this.userEntityService.isRemoteUser(followee)) {
-			const content = this.apRendererService.addContext(this.apRendererService.renderUndo(this.apRendererService.renderFollow(follower as MiPartialLocalUser | MiPartialRemoteUser, followee as MiPartialRemoteUser), follower));
+			const followActivityId = request != null ? this.apRendererService.getLocalFollowRequestActivityId(request) : undefined;
+			const content = this.apRendererService.addContext(this.apRendererService.renderUndo(this.apRendererService.renderFollow(follower as MiPartialLocalUser | MiPartialRemoteUser, followee as MiPartialRemoteUser, followActivityId), follower));
 
 			if (this.userEntityService.isLocalUser(follower)) { // 本来このチェックは不要だけどTSに怒られるので
 				this.queueService.deliver(follower, content, followee.inbox, false);
 			}
 		}
 
-		const requestExist = await this.followRequestsRepository.exists({
-			where: {
-				followeeId: followee.id,
-				followerId: follower.id,
-			},
-		});
-
-		if (!requestExist) {
+		if (request == null) {
 			// throw new IdentifiableError('17447091-ce07-46dd-b331-c1fd4f15b1e7', 'request not found');
 			// 本来ならエラーを返すが、フォローリクエストの自動拒否機能の関係上、エラーを返さずに無視する
 			return;
@@ -690,7 +747,12 @@ export class UserFollowingService implements OnModuleInit {
 			throw new IdentifiableError('8884c2dd-5795-4ac9-b27e-6a01d38190f9', 'No follow request.');
 		}
 
-		await this.insertFollowingDoc(followee, follower, false, request.withReplies);
+		// 後で Undo / Reject するときに元の Follow を参照できるよう、Follow アクティビティの ID を引き継ぐ
+		const followActivityId = this.userEntityService.isLocalUser(follower) && this.userEntityService.isRemoteUser(followee)
+			? this.apRendererService.getLocalFollowRequestActivityId(request)
+			: request.requestId;
+
+		await this.insertFollowingDoc(followee, follower, false, request.withReplies, followActivityId);
 
 		if (this.userEntityService.isRemoteUser(follower) && this.userEntityService.isLocalUser(followee)) {
 			this.deliverAccept(follower, followee as MiPartialLocalUser, request.requestId ?? undefined);
@@ -783,11 +845,12 @@ export class UserFollowingService implements OnModuleInit {
 	 */
 	@bindThis
 	public async rejectFollow(user: Local, follower: Both): Promise<void> {
-		if (this.userEntityService.isRemoteUser(follower)) {
-			this.deliverReject(user, follower);
-		}
+		const removed = await this.removeFollow(user, follower);
+		if (!removed) return;
 
-		await this.removeFollow(user, follower);
+		if (this.userEntityService.isRemoteUser(follower)) {
+			this.deliverReject(user, follower, removed.requestId);
+		}
 
 		if (this.userEntityService.isLocalUser(follower)) {
 			this.publishUnfollow(user, follower);
@@ -832,7 +895,7 @@ export class UserFollowingService implements OnModuleInit {
 	 * Remove follow record
 	 */
 	@bindThis
-	private async removeFollow(followee: Both, follower: Both): Promise<void> {
+	private async removeFollow(followee: Both, follower: Both): Promise<MiFollowing | null> {
 		const following = await this.followingsRepository.findOne({
 			relations: {
 				followee: true,
@@ -844,24 +907,36 @@ export class UserFollowingService implements OnModuleInit {
 			},
 		});
 
-		if (!following || !following.followee || !following.follower) return;
+		if (!following || !following.followee || !following.follower) return null;
 
-		await this.followingsRepository.delete(following.id);
+		const deleted = await this.deleteFollowingAndDecrement(following.id, following.follower, following.followee);
+		if (!deleted) return null;
 
-		this.decrementFollowing(following.follower, following.followee);
+		this.publishUnfollowSideEffects(following.follower, following.followee);
+		return following;
 	}
 
 	/**
 	 * Deliver Reject to remote
 	 */
 	@bindThis
-	private async deliverReject(followee: Local, follower: Remote): Promise<void> {
-		const request = await this.followRequestsRepository.findOneBy({
-			followeeId: followee.id,
-			followerId: follower.id,
-		});
+	private async deliverReject(followee: Local, follower: Remote, removedFollowActivityId?: string | null): Promise<void> {
+		let followActivityId = removedFollowActivityId;
+		if (followActivityId === undefined) {
+			const [request, following] = await Promise.all([
+				this.followRequestsRepository.findOneBy({
+					followeeId: followee.id,
+					followerId: follower.id,
+				}),
+				this.followingsRepository.findOneBy({
+					followeeId: followee.id,
+					followerId: follower.id,
+				}),
+			]);
+			followActivityId = request?.requestId ?? following?.requestId ?? null;
+		}
 
-		const content = this.apRendererService.addContext(this.apRendererService.renderReject(this.apRendererService.renderFollow(follower, followee, request?.requestId ?? undefined), followee));
+		const content = this.apRendererService.addContext(this.apRendererService.renderReject(this.apRendererService.renderFollow(follower, followee, followActivityId ?? undefined), followee));
 		this.queueService.deliver(followee, content, follower.inbox, false);
 	}
 

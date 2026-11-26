@@ -1023,13 +1023,52 @@ export class NoteCreateService implements OnApplicationShutdown {
 				const senderIsPrivileged = (await this.roleService.isAdministrator(user)) || (await this.roleService.isModerator(user));
 
 				// Consolidate all local users who need their profile/following status checked.
-				const localUserIdsToCheck = new Set<string>();
-				mentionedUsers.forEach(u => {
-					if (u.host === null) localUserIdsToCheck.add(u.id);
-				});
-				note.visibleUserIds?.forEach(id => {
-					if (id !== user.id) localUserIdsToCheck.add(id);
-				});
+				const mentionedLocalUserIds = new Set<MiUser['id']>();
+				const knownUsersById = new Map<MiUser['id'], Pick<MinimumUser, 'id' | 'host'>>();
+				for (const u of mentionedUsers) {
+					knownUsersById.set(u.id, u);
+					if (u.host === null) {
+						mentionedLocalUserIds.add(u.id);
+					}
+				}
+				for (const u of data.visibleUsers ?? []) {
+					knownUsersById.set(u.id, u);
+				}
+
+				// note.visibleUserIds は通常 data.visibleUsers から生成されるが、
+				// 未解決 ID が紛れた経路でもリモートユーザーを除外できるよう DB でローカル判定を補完する
+				const localVisibleUserIds = new Set<MiUser['id']>();
+				const unknownVisibleUserIds = new Set<MiUser['id']>();
+				if (note.visibleUserIds?.length) {
+					for (const id of note.visibleUserIds) {
+						if (id === user.id) continue;
+						const knownUser = knownUsersById.get(id);
+						if (knownUser != null) {
+							if (knownUser.host === null) {
+								localVisibleUserIds.add(id);
+							}
+						} else {
+							unknownVisibleUserIds.add(id);
+						}
+					}
+				}
+				if (unknownVisibleUserIds.size > 0) {
+					const localUsers = await this.usersRepository.find({
+						where: {
+							id: In(Array.from(unknownVisibleUserIds)),
+							host: IsNull(),
+						},
+						select: { id: true },
+					});
+					for (const u of localUsers) {
+						localVisibleUserIds.add(u.id);
+					}
+				}
+
+				const localUserIdsToCheck = new Set<MiUser['id']>(mentionedLocalUserIds);
+				for (const id of localVisibleUserIds) {
+					localUserIdsToCheck.add(id);
+				}
 				const userIds = Array.from(localUserIdsToCheck);
 
 				// Bulk fetch profiles and followings once.
@@ -1097,48 +1136,70 @@ export class NoteCreateService implements OnApplicationShutdown {
 
 						if (!isThreadMuted) {
 							nm.push(data.reply.userId, 'reply');
-							this.globalEventService.publishMainStream(data.reply.userId, 'reply', noteObj);
-							this.webhookService.enqueueUserWebhook(data.reply.userId, 'reply', { note: noteObj });
+
+							// noteObj は skipHide で pack されているため、受信者向けに pack し直す
+							const packedForReplyUser = await this.noteEntityService.pack(note, { id: data.reply.userId }, { detail: true });
+							if (!packedForReplyUser.isHidden) {
+								this.globalEventService.publishMainStream(data.reply.userId, 'reply', packedForReplyUser);
+								this.webhookService.enqueueUserWebhook(data.reply.userId, 'reply', { note: packedForReplyUser });
+							}
 						}
 					}
 				}
 
 				// Handle notifications for 'specified' visibility notes
-				if (note.visibleUserIds?.length) {
-					const visibleUserIds = note.visibleUserIds.filter(id => id !== user.id);
+				// createMentionedEvents 側で判定・配信済みのローカルユーザーとリモートユーザーは除外し、
+				// 二重 pack / 二重イベントおよびリモートユーザーへの不要な pack・配信を防ぐ
+				const remainingVisibleUserIds = Array.from(localVisibleUserIds).filter(id => !mentionedLocalUserIds.has(id));
+				if (remainingVisibleUserIds.length > 0) {
+					for (const visibleUserId of remainingVisibleUserIds) {
+						let shouldNotify = false;
+						const recipientProfile = profilesMap.get(visibleUserId);
 
-					if (visibleUserIds.length > 0) {
-						for (const visibleUserId of visibleUserIds) {
-							let shouldNotify = false;
-							const recipientProfile = profilesMap.get(visibleUserId);
-
-							if (senderIsPrivileged) {
-								shouldNotify = true;
-							} else if (recipientProfile == null) {
-								// Profile not found, default to allowing notification.
-								shouldNotify = true;
-							} else {
-								switch (recipientProfile.receiveSpecifiedNotesFrom) {
-									case 'all':
+						if (senderIsPrivileged) {
+							shouldNotify = true;
+						} else if (recipientProfile == null) {
+							// Profile not found, default to allowing notification.
+							shouldNotify = true;
+						} else {
+							switch (recipientProfile.receiveSpecifiedNotesFrom) {
+								case 'all':
+									shouldNotify = true;
+									break;
+								case 'following':
+									// Check if recipient (visibleUserId) follows the author (user.id).
+									if (followingsMap.has(visibleUserId)) {
 										shouldNotify = true;
-										break;
-									case 'following':
-										// Check if recipient (visibleUserId) follows the author (user.id).
-										if (followingsMap.has(visibleUserId)) {
-											shouldNotify = true;
-										}
-										break;
-									case 'nobody':
-										shouldNotify = false;
-										break;
-								}
+									}
+									break;
+								case 'nobody':
+									shouldNotify = false;
+									break;
+								default:
+									shouldNotify = true;
+									break;
+							}
+						}
+
+						if (shouldNotify) {
+							const isThreadMuted = await this.noteThreadMutingsRepository.exists({
+								where: {
+									userId: visibleUserId,
+									threadId: note.threadId ?? note.id,
+								},
+							});
+							if (isThreadMuted) {
+								continue;
 							}
 
-							if (shouldNotify) {
-								// Using 'mention' type for specified notes, as they are direct message-like.
-								nm.push(visibleUserId, 'mention');
-								this.globalEventService.publishMainStream(visibleUserId, 'mention', noteObj);
-								this.webhookService.enqueueUserWebhook(visibleUserId, 'mention', { note: noteObj });
+							// Using 'mention' type for specified notes, as they are direct message-like.
+							nm.push(visibleUserId, 'mention');
+
+							// noteObj は skipHide で pack されているため、受信者向けに pack し直す
+							const packedForVisibleUser = await this.noteEntityService.pack(note, { id: visibleUserId }, { detail: true });
+							if (!packedForVisibleUser.isHidden) {
+								this.globalEventService.publishMainStream(visibleUserId, 'mention', packedForVisibleUser);
+								this.webhookService.enqueueUserWebhook(visibleUserId, 'mention', { note: packedForVisibleUser });
 							}
 						}
 					}
@@ -1160,8 +1221,13 @@ export class NoteCreateService implements OnApplicationShutdown {
 
 						if (!isThreadMuted) {
 							nm.push(data.reply.userId, 'reply');
-							this.globalEventService.publishMainStream(data.reply.userId, 'reply', noteObj);
-							this.webhookService.enqueueUserWebhook(data.reply.userId, 'reply', { note: noteObj });
+
+							// noteObj は skipHide で pack されているため、受信者向けに pack し直す
+							const packedForReplyUser = await this.noteEntityService.pack(note, { id: data.reply.userId }, { detail: true });
+							if (!packedForReplyUser.isHidden) {
+								this.globalEventService.publishMainStream(data.reply.userId, 'reply', packedForReplyUser);
+								this.webhookService.enqueueUserWebhook(data.reply.userId, 'reply', { note: packedForReplyUser });
+							}
 						}
 					}
 				}
@@ -1177,8 +1243,12 @@ export class NoteCreateService implements OnApplicationShutdown {
 
 					// Publish event
 					if ((user.id !== data.renote.userId) && data.renote.userHost === null) {
-						this.globalEventService.publishMainStream(data.renote.userId, 'renote', noteObj);
-						this.webhookService.enqueueUserWebhook(data.renote.userId, 'renote', { note: noteObj });
+						// noteObj は skipHide で pack されているため、受信者向けに pack し直す
+						const packedForRenoteUser = await this.noteEntityService.pack(note, { id: data.renote.userId }, { detail: true });
+						if (!packedForRenoteUser.isHidden) {
+							this.globalEventService.publishMainStream(data.renote.userId, 'renote', packedForRenoteUser);
+							this.webhookService.enqueueUserWebhook(data.renote.userId, 'renote', { note: packedForRenoteUser });
+						}
 					}
 				}
 			}

@@ -14,7 +14,7 @@ SPDX-License-Identifier: AGPL-3.0-only
 			<div
 				v-for="(image, i) in images" :key="i"
 				:class="$style.img"
-				:style="{ backgroundImage: `url(${thumbnail(image)})` }"
+				:style="{ backgroundImage: `url(${JSON.stringify(thumbnail(image))})` }"
 			></div>
 		</div>
 	</div>
@@ -28,7 +28,7 @@ import { useWidgetPropsManager } from './widget.js';
 import type { WidgetComponentEmits, WidgetComponentExpose, WidgetComponentProps } from './widget.js';
 import type { FormWithDefault, GetFormResultType } from '@/utility/form.js';
 import { useStream } from '@/stream.js';
-import { getStaticImageUrl } from '@/utility/media-proxy.js';
+import { getStaticImageUrl, rewriteProxiedImageUrl } from '@/utility/media-proxy.js';
 import { misskeyApi } from '@/utility/misskey-api.js';
 import MkContainer from '@/components/MkContainer.vue';
 import { prefer } from '@/preferences.js';
@@ -74,7 +74,7 @@ function onDriveFileCreated(file: Misskey.entities.DriveFile) {
 const thumbnail = (image: Misskey.entities.DriveFile): string => {
 	return prefer.s.disableShowingAnimatedImages
 		? getStaticImageUrl(image.url)
-		: image.thumbnailUrl ?? image.url;
+		: rewriteProxiedImageUrl(image.thumbnailUrl ?? image.url);
 };
 
 misskeyApi('drive/stream', {
