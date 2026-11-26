@@ -4,11 +4,13 @@
  */
 
 import { getEventListeners } from 'node:events';
+import { createServer } from 'node:http';
 import { PassThrough } from 'node:stream';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { HttpRequestService } from '@/core/HttpRequestService.js';
 import { StatusError } from '@/misc/status-error.js';
 import type { Config } from '@/config.js';
+import type { AddressInfo } from 'node:net';
 import type { RequestInit, Response } from 'node-fetch';
 
 const { fetchMock } = vi.hoisted(() => ({
@@ -259,5 +261,131 @@ describe('HttpRequestService.send abort and timeout lifecycle', () => {
 			.rejects.toThrow('network down');
 
 		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	test('tears down real TCP connection when caller signal aborts mid-body with real node-fetch', async () => {
+		vi.useRealTimers();
+
+		const { default: realFetch, AbortError } = await vi.importActual<typeof import('node-fetch')>('node-fetch');
+		let fetchSignal: AbortSignal | undefined;
+		fetchMock.mockImplementationOnce((url: Parameters<typeof realFetch>[0], init?: Parameters<typeof realFetch>[1]) => {
+			fetchSignal = init?.signal as unknown as AbortSignal | undefined;
+			return realFetch(url, init);
+		});
+
+		let resolveServerClosed!: () => void;
+		const serverClosed = new Promise<void>(resolve => {
+			resolveServerClosed = resolve;
+		});
+		let resClosed = false;
+		let socketClosed = false;
+		let closedBeforeEnd = false;
+		let socketClosedBeforeEnd = false;
+
+		const server = createServer((req, res) => {
+			res.writeHead(200, { 'Content-Type': 'text/plain' });
+			res.write('partial ');
+
+			const maybeResolve = () => {
+				if (resClosed && socketClosed) {
+					resolveServerClosed();
+				}
+			};
+
+			res.once('close', () => {
+				resClosed = true;
+				closedBeforeEnd = !res.writableEnded;
+				maybeResolve();
+			});
+
+			req.socket.once('close', () => {
+				socketClosed = true;
+				socketClosedBeforeEnd = !res.writableEnded;
+				maybeResolve();
+			});
+		});
+
+		let closeDeadlineTimer: ReturnType<typeof setTimeout> | undefined;
+		try {
+			await new Promise<void>((resolve, reject) => {
+				server.once('error', reject);
+				server.listen(0, '127.0.0.1', () => {
+					server.off('error', reject);
+					resolve();
+				});
+			});
+
+			const { port } = server.address() as AddressInfo;
+			const caller = new AbortController();
+
+			const res = await service.send(`http://127.0.0.1:${port}/stream`, {
+				signal: caller.signal,
+				timeout: 10_000,
+				isLocalAddressAllowed: true,
+			});
+
+			expect(res.ok).toBe(true);
+			const body = res.body;
+			expect(body).not.toBeNull();
+			if (body == null) {
+				throw new Error('Expected response body');
+			}
+
+			let received = '';
+			let resolveFirstChunk!: () => void;
+			const firstChunkReceived = new Promise<void>(resolve => {
+				resolveFirstChunk = resolve;
+			});
+
+			const readBody = (async () => {
+				for await (const chunk of body) {
+					received += typeof chunk === 'string' ? chunk : chunk.toString('utf8');
+					if (received === 'partial ') {
+						resolveFirstChunk();
+					}
+				}
+			})();
+
+			await Promise.race([firstChunkReceived, readBody]);
+			caller.abort();
+
+			await expect(readBody).rejects.toBeInstanceOf(AbortError);
+			expect(received).toBe('partial ');
+
+			const closedPromptly = await Promise.race([
+				serverClosed.then(() => true),
+				new Promise<boolean>(resolve => {
+					closeDeadlineTimer = setTimeout(() => resolve(false), 2_000);
+					closeDeadlineTimer.unref();
+				}),
+			]);
+
+			expect(closedPromptly).toBe(true);
+			expect(closedBeforeEnd).toBe(true);
+			expect(socketClosedBeforeEnd).toBe(true);
+			expect(fetchSignal).toBeDefined();
+			if (fetchSignal == null) {
+				throw new Error('Expected fetch signal');
+			}
+			expect(fetchSignal.aborted).toBe(true);
+			expect(getEventListeners(caller.signal, 'abort')).toHaveLength(0);
+			expect(getEventListeners(fetchSignal, 'abort')).toHaveLength(0);
+		} finally {
+			if (closeDeadlineTimer != null) {
+				clearTimeout(closeDeadlineTimer);
+			}
+			server.closeAllConnections();
+			if (server.listening) {
+				await new Promise<void>((resolve, reject) => {
+					server.close(err => {
+						if (err) {
+							reject(err);
+						} else {
+							resolve();
+						}
+					});
+				});
+			}
+		}
 	});
 });
