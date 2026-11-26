@@ -445,56 +445,7 @@ describe('lintFeatureCatalog', () => {
 });
 
 describe('real diff.md validation', () => {
-	// Phase 1 から即時 0 件を強制するルール
-	const ZERO_ENFORCED_RULES: readonly FeatureCatalogLintRule[] = [
-		'unsupported-syntax',
-		'manual-version',
-		'legacy-url',
-		'duplicate-heading',
-		'empty-section',
-		'empty-group',
-		'broken-cross-reference',
-		'too-many-children',
-		'mfm-unexpected-node',
-		'paragraph-markup',
-		'paragraph-after-items',
-	];
-
-	// Phase 2 の diff.md 全面書き換え PR で全項目を toEqual([])（0 件強制）へ引き締める。
-	// Phase 1 では現行 diff.md の残存件数を上限として固定し、回帰増加を即座に遮断する。
-	const PHASE2_RATCHET_BASELINES: ReadonlyArray<readonly [FeatureCatalogLintRule, number]> = [
-		['date-section', 8],
-		['relative-time', 3],
-		['positional-reference', 1],
-		['multiline-japanese', 5],
-		['ascii-only-item', 51],
-	];
-
-	test('enforces zero violations for all Phase 1 strict rules on real diff.md', () => {
-		const issues = lintFeatureCatalog(markdown);
-		const strictIssues = issues.filter(issue => ZERO_ENFORCED_RULES.includes(issue.rule));
-		expect(strictIssues).toEqual([]);
-	});
-
-	test('prevents regression increases for Phase 2 ratchet rules on real diff.md', () => {
-		const issues = lintFeatureCatalog(markdown);
-		const counts = new Map<FeatureCatalogLintRule, number>();
-		for (const issue of issues) {
-			counts.set(issue.rule, (counts.get(issue.rule) ?? 0) + 1);
-		}
-
-		// Ensure every observed rule is explicitly tracked as either strict-zero or ratchet.
-		const tracked = new Set<FeatureCatalogLintRule>([
-			...ZERO_ENFORCED_RULES,
-			...PHASE2_RATCHET_BASELINES.map(([rule]) => rule),
-		]);
-		for (const rule of counts.keys()) {
-			expect(tracked.has(rule), `Untracked lint rule observed: ${rule}`).toBe(true);
-		}
-
-		for (const [rule, baseline] of PHASE2_RATCHET_BASELINES) {
-			const actual = counts.get(rule) ?? 0;
-			expect(actual, `Rule "${rule}" exceeded Phase 1 ratchet baseline (${baseline})`).toBeLessThanOrEqual(baseline);
-		}
+	test('enforces zero lint violations across all rules on real diff.md', () => {
+		expect(lintFeatureCatalog(markdown)).toEqual([]);
 	});
 });
