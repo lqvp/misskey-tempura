@@ -7,7 +7,6 @@ import * as crypto from 'node:crypto';
 import { URL } from 'node:url';
 import { promisify } from 'node:util';
 import { Inject, Injectable } from '@nestjs/common';
-import * as htmlParser from 'node-html-parser';
 import { RsaKeyPair } from 'slacc';
 import { DI } from '@/di-symbols.js';
 import type { Config } from '@/config.js';
@@ -22,6 +21,7 @@ import { validateContentTypeSetAsActivityPub } from '@/core/activitypub/misc/val
 import { StatusError } from '@/misc/status-error.js';
 import type { Response } from 'node-fetch';
 import { assertActivityMatchesUrl, FetchAllowSoftFailMask as FetchAllowSoftFailMask } from '@/core/activitypub/misc/check-against-url.js';
+import { parseUntrustedHtml } from '@/misc/parse-untrusted-html.js';
 import type { IObject } from './type.js';
 
 type Request = {
@@ -311,7 +311,7 @@ export class ApRequestService {
 			const html = await res.text();
 
 			try {
-				const document = htmlParser.parse(html);
+				const document = parseUntrustedHtml(html);
 
 				const alternate = document.querySelector('head > link[rel="alternate"][type="application/activity+json"]');
 				if (alternate) {
